@@ -27,28 +27,37 @@
 #define LEGACY_SUPPORT
 #endif
 
-struct pci_staticdata
+struct pcipc_staticdata
 {
-    OOP_AttrBase   hiddPCIDriverAB;
-    OOP_AttrBase   hiddAB;
+    OOP_AttrBase        hiddPCIDriverAB;
+    OOP_AttrBase        hiddAB;
 
-    OOP_AttrBase   hidd_PCIDeviceAB;
+    OOP_AttrBase        hidd_PCIDeviceAB;
 
-    OOP_Class	  *driverClass;
+    OOP_Class	        *driverClass;
 
     /* Low-level sub-methods */
-    ULONG	 (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
-    void	 (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
+    ULONG	        (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
+    void	        (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
-    ACPI_TABLE_MCFG *mcfg_tbl;
+    /* ACPI related */
+    struct Library      *pcipc_acpiBase;
+    ACPI_TABLE_MCFG     *pcipc_acpiMcfgTbl;
 
 };
 
 struct pcibase
 {
     struct Library	    LibNode;
-    struct pci_staticdata   psd;
+    struct pcipc_staticdata   psd;
 };
+
+#define BASE(lib) ((struct pcibase*)(lib))
+#define PSD(cl) (&((struct pcibase*)cl->UserData)->psd)
+#define _psd PSD(cl)
+
+#undef ACPICABase
+#define ACPICABase (_psd->pcipc_acpiBase)
 
 /* PCI configuration mechanism 1 registers */
 #define PCI_AddressPort	0x0cf8
@@ -78,9 +87,6 @@ struct pcibase
 #define PCI_VENDOR_INTEL	0x8086
 #define PCI_VENDOR_COMPAQ	0x0e11
 
-#define BASE(lib) ((struct pcibase*)(lib))
-
-#define PSD(cl) (&((struct pcibase*)cl->UserData)->psd)
 
 typedef union _pcicfg
 {
@@ -89,7 +95,7 @@ typedef union _pcicfg
     UBYTE   ub[4];
 } pcicfg;
 
-static inline UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
+static inline UWORD ReadConfigWord(struct pcipc_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 {
     pcicfg temp;
 
@@ -102,11 +108,11 @@ void WriteConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
 #ifdef LEGACY_SUPPORT
 
-void ProbePCI(struct pci_staticdata *psd);
+void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd);
 
 #else
 
-#define ProbePCI(x)
+#define PCIPC_ProbeConfMech(x)
 
 #endif
 

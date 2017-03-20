@@ -50,7 +50,7 @@ static void WriteConfig2Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG v
     }
 }
 
-static inline BOOL SanityCheck(struct pci_staticdata *psd)
+static inline BOOL SanityCheck(struct pcipc_staticdata *psd)
 {
     UWORD temp;
 
@@ -63,7 +63,7 @@ static inline BOOL SanityCheck(struct pci_staticdata *psd)
     return FALSE;
 }
 
-static BOOL ProbeMech1(struct pci_staticdata *psd)
+static BOOL PCIPC_ProbeMech1Conf(struct pcipc_staticdata *psd)
 {
     ULONG temp = inl(PCI_AddressPort);
     ULONG val;
@@ -86,15 +86,15 @@ static BOOL ProbeMech1(struct pci_staticdata *psd)
     return FALSE;
 }
 
-void ProbePCI(struct pci_staticdata *psd)
+void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
 {
     /*
-     * All new board support only mechanism 1. So we probe for it first.
-     * We do it because on some machines (MacMini) PCI_MechSelect is
-     * used by chipset as a reset register (and perhaps some other proprietary control).
-     * Writing 0x01 to it makes machine cold reboot not working.
+     * All newer boards support atleast mechanism 1.
+     * We probe for it first, because on some machines (e.g. MacMini), PCI_MechSelect is
+     * used by the chipset as a reset register (and perhaps some other proprietary control).
+     * Writing 0x01 to it makes the machine's cold reboot mechanism stop working.
      */
-    if (ProbeMech1(psd))
+    if (PCIPC_ProbeMech1Conf(psd))
     	return;
 
     /*
@@ -102,7 +102,7 @@ void ProbePCI(struct pci_staticdata *psd)
      * Perhaps it's Intel Neptune or alike board. We can try to switch it to Mech1.
      */
     outb(0x01, PCI_MechSelect);
-    if (ProbeMech1(psd))
+    if (PCIPC_ProbeMech1Conf(psd))
     	return;
 
     /* Completely no support. Try mechanism 2. */

@@ -19,6 +19,9 @@
 #include <proto/oop.h>
 #include <proto/acpica.h>
 
+#include <acpica/acnames.h>
+#include <acpica/accommon.h>
+
 #include "pci.h"
 
 #undef HiddPCIDriverAttrBase
@@ -29,9 +32,6 @@
 #define HiddAttrBase          (PSD(cl)->hiddAB)
 #define HiddPCIDeviceAttrBase (PSD(cl)->hidd_PCIDeviceAB)
 
-/* ACPICABase is optional */
-struct Library *ACPICABase;
-
 /*
     We overload the New method in order to introduce the Hidd Name and
     HardwareName attributes.
@@ -41,9 +41,9 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct pRoot_New mymsg;
     struct TagItem mytags[] =
     {
-	{ aHidd_Name	    , (IPTR)"PCINative"				   },
-	{ aHidd_HardwareName, (IPTR)"IA32 native direct access PCI driver" },
-	{ TAG_DONE	    , 0 					   }
+	{ aHidd_Name,           (IPTR)"pcipc.hidd"			        },
+	{ aHidd_HardwareName,   (IPTR)"IA32 native direct access PCI driver"    },
+	{ TAG_DONE,             0 					        }
     };
 
     mymsg.mID      = msg->mID;
@@ -63,9 +63,9 @@ IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
 {
     IPTR mmio = 0;
 
-    if(PSD(cl)->mcfg_tbl) {
+    if(PSD(cl)->pcipc_acpiMcfgTbl) {
 
-        const ACPI_TABLE_MCFG      *mcfg_tbl   = (APTR)PSD(cl)->mcfg_tbl;
+        const ACPI_TABLE_MCFG      *mcfg_tbl   = (APTR)PSD(cl)->pcipc_acpiMcfgTbl;
         const ACPI_MCFG_ALLOCATION *mcfg_alloc = (APTR)mcfg_tbl +  sizeof(ACPI_TABLE_MCFG);
 
         do {
@@ -188,43 +188,39 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     }
 }
 
+#undef _psd
+
 /* Class initialization and destruction */
 
 static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 {
+    struct pcipc_staticdata *_psd = &LIBBASE->psd;
+    struct pHidd_PCI_AddHardwareDriver msg, *pmsg = &msg;
     OOP_Object *pci;
-    
+
     D(bug("[PCI.PC] Driver initialization\n"));
 
-    struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
-
-    /*
-        We only (try to) fetch the mcfg_table, no need to keep ACPI library open.
-    */
+    /* Open ACPI and cache the pointer to the MCFG table.. */
     ACPICABase = OpenLibrary("acpica.library", 0);
-    if(ACPICABase) {
-        if(AcpiGetTable("MCFG", 1, (ACPI_TABLE_HEADER **)&LIBBASE->psd.mcfg_tbl) != AE_OK) {
-            LIBBASE->psd.mcfg_tbl = NULL;
-        }
-        CloseLibrary(ACPICABase);
-    }
+    if (ACPICABase)
+        AcpiGetTable(ACPI_SIG_MCFG, 1, (ACPI_TABLE_HEADER **)&_psd->pcipc_acpiMcfgTbl);
 
-    LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
-    LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
-    LIBBASE->psd.hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    if (LIBBASE->psd.hiddPCIDriverAB == 0 || LIBBASE->psd.hiddAB == 0 || LIBBASE->psd.hidd_PCIDeviceAB == 0)
+    _psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
+    _psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+    _psd->hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    if (_psd->hiddPCIDriverAB == 0 || _psd->hiddAB == 0 || _psd->hidd_PCIDeviceAB == 0)
     {
 	D(bug("[PCI.PC] ObtainAttrBases failed\n"));
 	return FALSE;
     }
 
-    /* By default we use mechanism 1 */
-    LIBBASE->psd.ReadConfigLong  = ReadConfig1Long;
-    LIBBASE->psd.WriteConfigLong = WriteConfig1Long;
+    /* Default to using config mechanism 1 */
+    _psd->ReadConfigLong  = ReadConfig1Long;
+    _psd->WriteConfigLong = WriteConfig1Long;
 
-    ProbePCI(&LIBBASE->psd);
+    PCIPC_ProbeConfMech(&LIBBASE->psd);
 
-    msg.driverClass = LIBBASE->psd.driverClass;
+    msg.driverClass = _psd->driverClass;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
     D(bug("[PCI.PC] Registering Driver with PCI base class..\n"));
 
@@ -239,12 +235,17 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
 static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
+    struct pcipc_staticdata *_psd = &LIBBASE->psd;
+
     D(bug("[PCI.PC] Class destruction\n"));
 
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
-    
+
+    if (ACPICABase)
+        CloseLibrary(ACPICABase);
+
     return TRUE;
 }
 	
