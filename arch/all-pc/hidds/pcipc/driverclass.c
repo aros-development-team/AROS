@@ -62,6 +62,29 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
 }
 
+void PCPCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+
+    if (IS_PCIDRV_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+            case aoHidd_PCIDriver_IRQRoutingTable:
+                *msg->storage = (IPTR)PSD(cl)->pcipc_irqRoutingTable;
+                break;
+
+            default:
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                break;
+        }
+    }
+    else
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+}
+
 IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_HasExtendedConfig *msg)
 {
