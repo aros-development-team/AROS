@@ -202,13 +202,14 @@ void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item)
     if ((item->Type == 4) && (item->Package.Count == 4))
     {
         ACPI_OBJECT *jitem;
-        UBYTE bus, device;
+        D(UBYTE bus, device;)
 
         jitem = &item->Package.Elements[0];
-        bus = (jitem->Integer.Value >> 24);
-        device = (jitem->Integer.Value >> 16) & 0xFF;
 
         D(
+            bus = (jitem->Integer.Value >> 24);
+            device = (jitem->Integer.Value >> 16) & 0xFF;
+
             bug("[PCI.PC] %s:  %02d.%02d", __func__, bus, device);
             if ((jitem->Integer.Value & 0xFFFF) == 0xFFFF)
                 bug(".xx");
