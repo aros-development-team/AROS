@@ -1131,6 +1131,13 @@ void PCIDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
                         setWord(cl, o, PCIBR_CONTROL, control);
                     }
                     break;
+                
+                case aoHidd_PCIDevice_INTLine:
+                    {
+                        dev->INTLine = tag->ti_Data;
+                        setByte(cl, o, PCICS_INT_LINE, dev->INTLine);
+                    }
+                    break;
 
                 default:
                     bug("[PCIDevice] Trying to set nonsettable attribute %d!\n", idx);
