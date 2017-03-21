@@ -215,12 +215,12 @@ void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item)
         jitem = &item->Package.Elements[2];
         if (jitem->String.Length > 0)
         {
-            bug(" '%s'\n", jitem->String.Pointer);
+            D(bug(" '%s'\n", jitem->String.Pointer);)
         }
         else
         {
             jitem = &item->Package.Elements[3];
-            bug(" using GSI %02x\n", jitem->Integer.Value);
+            D(bug(" using GSI %02x\n", jitem->Integer.Value);)
         }    
     }
 }
