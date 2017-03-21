@@ -11,6 +11,9 @@
 
 #include "DriverBase.h"
 
+#define ALIGN_AC97OUT 8
+#define ALIGN_AC97(x) ((x + ALIGN_AC97OUT) & ~(ALIGN_AC97OUT-1))
+
 struct ac97Base
 {
     struct DriverBase	driverbase;

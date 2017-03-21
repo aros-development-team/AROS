@@ -232,7 +232,7 @@ static void UpdateStrings(void) {
   struct NewMenu   *menuptr;
   char           ***stringptr;
 
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   menuptr   = (struct NewMenu *) &Menus;
   stringptr = (char ***) &strings;
@@ -285,7 +285,7 @@ SIPTR xget(Object * obj, ULONG attribute)
 
 static void GUINewSettings(void)
 {
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   set(MUIUnit,MUIA_Cycle_Entries,Units);
   set(MUIUnit,MUIA_Cycle_Active,state.UnitSelected);
@@ -302,7 +302,7 @@ static void GUINewSettings(void)
 
 static void GUINewUnit(void)
 {
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   DoMethod(MUIList, MUIM_List_Clear);
   set(MUIList, MUIA_List_Quiet, TRUE);
@@ -323,7 +323,7 @@ static void GUINewMode(void)
   char* arg5 = getVersion();
   char* arg6 = getAnnotation();
 
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   buffer = AllocVec( strlen( arg1 ) +
                      strlen( arg2 ) +
@@ -436,7 +436,7 @@ SliderHookFunc( struct Hook *hook,
                 Object *obj,
                 IPTR** arg )
 {
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   if(obj == MUIFreq)
   {
@@ -491,7 +491,7 @@ static Object *MUIApp,*MUIMenu;
 
 static Object* SpecialLabel(STRPTR label)
 {
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   return(TextObject,
       MUIA_HorizWeight, 75,
@@ -505,7 +505,7 @@ static Object* SpecialButton(STRPTR label)
   Object *button = NULL;
   STRPTR lab;
 
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   lab = AllocVec(strlen(label)+1,0);
 
@@ -541,7 +541,7 @@ static Object* SpecialButton(STRPTR label)
 
 static Object* SpecialSlider(LONG min, LONG max, LONG value)
 {
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   return(SliderObject,
 	 MUIA_CycleChain,     1,
@@ -559,14 +559,14 @@ BOOL BuildGUI(char *screenname)
   Object *page1,*page2;
   Object *MUITFreq,*MUITChannels,*MUITOutvol,*MUITMonvol,*MUITGain,*MUITInput,*MUITOutput,*MUITDebug,*MUITEcho,*MUITSurround,*MUITClipvol,*MUITCpu,*MUITACTime,*MUITScalemode;
 
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   UpdateStrings();
 
   MUIMasterBase = (void *)OpenLibrary("muimaster.library", MUIMASTER_VLATEST);
   if(MUIMasterBase == NULL)
   {
-    Printf((char *) msgTextNoOpen, (IPTR) "muimaster.library", MUIMASTER_VLATEST);
+    Printf((char *) msgTextNoOpen, "muimaster.library", MUIMASTER_VLATEST);
     Printf("\n");
     return FALSE;
   }
@@ -575,7 +575,7 @@ BOOL BuildGUI(char *screenname)
   IMUIMaster = (struct MUIMasterIFace *) GetInterface(MUIMasterBase, "main", 1, NULL);
   if(IMUIMaster == NULL)
   {
-    Printf((char *) msgTextNoOpen, (IPTR) "MUIMaster main interface", 1);
+    Printf((char *) msgTextNoOpen, "MUIMaster main interface", 1);
     Printf("\n");
     CloseLibrary((struct Library*) MUIMasterBase);
     return FALSE;
@@ -795,7 +795,7 @@ BOOL BuildGUI(char *screenname)
 
 void CloseGUI(void)
 {
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   if (MUIApp)
     MUI_DisposeObject(MUIApp);
@@ -815,7 +815,7 @@ void EventLoop(void)
 {
   ULONG sigs = 0UL;
 
-  D(bug("[AHIPrefs] %s()\n", __func__);)
+  D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   while (1)
   {

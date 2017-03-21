@@ -62,16 +62,15 @@ Slave( struct ExecBase* SysBase )
   ac97Base   = (struct ac97Base*) AHIsubBase;
 
   dd->slavesignal = AllocSignal( -1 );
-    
 
 //    outb(0x1e, (IPTR)ac97Base->dmabase + PO_CR);
 //    outl(ac97Base->PCM_out, (IPTR)ac97Base->dmabase + PO_BDBAR);
 
-D(bug("SR=%04x CR=%02x CIV=%02x LVI=%02x\n",
-    inw((IPTR)ac97Base->dmabase + ac97Base->off_po_sr),
-    inb((IPTR)ac97Base->dmabase + PO_CR),
-    inb((IPTR)ac97Base->dmabase + PO_CIV),
-    inb((IPTR)ac97Base->dmabase + PO_LVI)));
+  D(bug("[AHI:AC97] %s: SR=%04x CR=%02x CIV=%02x LVI=%02x\n", __func__,
+  inw((IPTR)ac97Base->dmabase + ac97Base->off_po_sr),
+  inb((IPTR)ac97Base->dmabase + PO_CR),
+  inb((IPTR)ac97Base->dmabase + PO_CIV),
+  inb((IPTR)ac97Base->dmabase + PO_LVI)));
 
   if( dd->slavesignal != -1 )
   {
@@ -89,7 +88,6 @@ D(bug("SR=%04x CR=%02x CIV=%02x LVI=%02x\n",
     while( running )
     {
       signals = SetSignal(0L,0L);
-    
 
       if( signals & ( SIGBREAKF_CTRL_C | (1L << dd->slavesignal) ) )
       {
@@ -97,21 +95,23 @@ D(bug("SR=%04x CR=%02x CIV=%02x LVI=%02x\n",
       }
       else
       {
-	  int i,j;
-	  IPTR buff;
+	int i,j;
+	IPTR buff;
+
         CallHookPkt( AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL );
         CallHookPkt( AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer );
-        
+
 	i = AudioCtrl->ahiac_BuffSamples << 1;
-    i <<= ac97Base->size_shift; /* For SIS 7012 size must be in bytes */
+	i <<= ac97Base->size_shift; /* For SIS 7012 size must be in bytes */
 	j = tail;
 	buff = (IPTR)dd->mixbuffer;
 
 	while (i > 0)
 	{
+            D(bug("[AHI:AC97] %s: Playing sample @ %p\n", __func__, buff));
 	    ac97Base->PCM_out[j].sample_address = (APTR)buff;
 	    ac97Base->PCM_out[j].sample_size = (i > 65532) ? 65532 : i;
-	    
+
 	    i -= ac97Base->PCM_out[j].sample_size;
 	    buff += ac97Base->PCM_out[j].sample_size 
                     << (1 - ac97Base->size_shift); /* SIS 7012: size already in bytes */
@@ -141,9 +141,9 @@ D(bug("SR=%04x CR=%02x CIV=%02x LVI=%02x\n",
 //	while (!(inw((IPTR)ac97Base->dmabase + ac97Base->off_po_sr) & 8)) { 
 //	    D(bug("SR=%04x ",inw((IPTR)ac97Base->dmabase + ac97Base->off_po_sr)));
 
-    D(bug("Waiting for int..."));    
-    Wait(SIGBREAKF_CTRL_E); 
-    D(bug("Got it\n"));
+	D(bug("[AHI:AC97] %s: Waiting for int...", __func__));    
+	Wait(SIGBREAKF_CTRL_E); 
+	D(bug("[AHI:AC97] %s: Got it\n", __func__));
 
 //	 }
 //	D(bug("SR=%04x\n",inw((IPTR)ac97Base->dmabase + ac97Base->off_po_sr)));
