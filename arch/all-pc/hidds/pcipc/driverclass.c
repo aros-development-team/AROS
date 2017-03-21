@@ -197,45 +197,63 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 
 /* Class initialization and destruction */
 
-void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item)
+struct pcipc_IRQRoutingNode
+{
+    struct MinNode node;
+    UWORD device;
+    UBYTE irq_pin;
+    UBYTE irq;
+};
+
+void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item, struct MinList *list)
 {
     if ((item->Type == 4) && (item->Package.Count == 4))
     {
         ACPI_OBJECT *jitem;
-        D(UBYTE bus, device;)
 
-        jitem = &item->Package.Elements[0];
+        struct pcipc_IRQRoutingNode *n = AllocVec(sizeof(struct pcipc_IRQRoutingNode), MEMF_CLEAR | MEMF_ANY);
 
-        D(
-            bus = (jitem->Integer.Value >> 24);
-            device = (jitem->Integer.Value >> 16) & 0xFF;
+        if (n)
+        {
+            jitem = &item->Package.Elements[0];
+            n->device = (jitem->Integer.Value >> 16) & 0xFFFF;
 
-            bug("[PCI.PC] %s:  %02d.%02d", __func__, bus, device);
-            if ((jitem->Integer.Value & 0xFFFF) == 0xFFFF)
-                bug(".xx");
+            D(
+                bug("[PCI.PC] %s:  %04d", __func__, n->device);
+                if ((jitem->Integer.Value & 0xFFFF) == 0xFFFF)
+                    bug(".xx");
+                else
+                    bug(".%02d", (jitem->Integer.Value & 0xFFFF));
+            )
+            jitem = &item->Package.Elements[1];
+            n->irq_pin = jitem->Integer.Value;
+            D(bug(" INT%c", 'A' + n->irq_pin));
+
+            jitem = &item->Package.Elements[2];
+            if (jitem->String.Length > 0)
+            {
+                D(bug(" '%s'\n", jitem->String.Pointer));
+                FreeVec(n);
+            }
             else
-                bug(".%02d", (jitem->Integer.Value & 0xFFFF));
-        )
-        jitem = &item->Package.Elements[2];
-        if (jitem->String.Length > 0)
-        {
-            D(bug(" '%s'\n", jitem->String.Pointer);)
+            {
+                jitem = &item->Package.Elements[3];
+                D(bug(" using GSI %02x\n", jitem->Integer.Value));
+                n->irq = jitem->Integer.Value;
+                ADDTAIL(list, n);
+            }
         }
-        else
-        {
-            jitem = &item->Package.Elements[3];
-            D(bug(" using GSI %02x\n", jitem->Integer.Value);)
-        }    
     }
 }
 
 ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, void **ReturnValue)
 {
+    struct MinList *list = (struct MinList *)Context;
     ACPI_BUFFER RetVal;
     RetVal.Length = ACPI_ALLOCATE_BUFFER;
     int status;
 
-    D(bug("[PCI.PC] %s: Object = %p, nesting_level=%d, Context=%p\n", __func__, Object, nesting_level, Context);)
+    D(bug("[PCI.PC] %s: Object = %p, nesting_level=%d, Context=%p\n", __func__, Object, nesting_level, list);)
 
     status = AcpiEvaluateObject(Object, "_PRT", NULL, &RetVal);
     if (!ACPI_FAILURE(status))
@@ -247,7 +265,7 @@ ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, vo
 
         for (unsigned int i=0; i < RObject->Package.Count; i++)
         {
-            PCIPC_ACPIEnumPCIIRQ((ACPI_OBJECT *)&RObject->Package.Elements[i]);
+            PCIPC_ACPIEnumPCIIRQ((ACPI_OBJECT *)&RObject->Package.Elements[i], list);
         }
     }
 
@@ -261,6 +279,10 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     struct pcipc_staticdata *_psd = &LIBBASE->psd;
     struct pHidd_PCI_AddHardwareDriver msg, *pmsg = &msg;
     OOP_Object *pci;
+    struct MinList routing_list;
+    int routing_list_length = 0;
+
+    NEWLIST(&routing_list);
 
     D(bug("[PCI.PC] %s()\n", __func__));
 
@@ -273,6 +295,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     _psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     _psd->hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
     _psd->pcipc_irqRoutingTable = NULL;
+    
     if (_psd->hiddPCIDriverAB == 0 || _psd->hiddAB == 0 || _psd->hidd_PCIDeviceAB == 0)
     {
 	D(bug("[PCI.PC] %s: ObtainAttrBases failed\n", __func__));
@@ -280,7 +303,30 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     }
 
     if (ACPICABase)
-        AcpiGetDevices("PNP0A03", PCPCI_ACPIDeviceCallback, LIBBASE, NULL);
+        AcpiGetDevices("PNP0A03", PCPCI_ACPIDeviceCallback, &routing_list, NULL);
+
+    ListLength(&routing_list, routing_list_length);
+
+    if (routing_list_length > 0)
+    {
+        struct pcipc_IRQRoutingEntry *entries = 
+                AllocMem(sizeof(struct pcipc_IRQRoutingEntry) + (routing_list_length + 1), 
+                MEMF_PUBLIC | MEMF_CLEAR);
+        struct pcipc_IRQRoutingNode *node, *next;
+        int i = 0;
+
+        D(bug("[PCI.PC] Creating routing table for %d entries\n", routing_list_length));
+
+        ForeachNodeSafe(&routing_list, node, next)
+        {
+            REMOVE(node);
+            entries[i].route_s.pci_dev_num = node->device;
+            entries[i].route_s.irq_pin = node->irq_pin;
+            entries[i].route_s.irq = node->irq;
+
+            FreeVec(node);
+        }
+    }
 
     /* Default to using config mechanism 1 */
     _psd->ReadConfigLong  = ReadConfig1Long;
