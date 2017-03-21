@@ -275,11 +275,12 @@ ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, vo
     if (!ACPI_FAILURE(status))
     {
         ACPI_OBJECT *RObject = RetVal.Pointer;
+        unsigned int i;
 
         D(bug("[PCI.PC] %s: _PRT @ %p\n", __func__, RetVal.Pointer);)
         D(bug("[PCI.PC] %s:             %d PCI IRQ Entries\n", __func__, RObject->Package.Count);)
 
-        for (unsigned int i=0; i < RObject->Package.Count; i++)
+        for (i=0; i < RObject->Package.Count; i++)
         {
             PCIPC_ACPIEnumPCIIRQ((ACPI_OBJECT *)&RObject->Package.Elements[i], list);
         }
