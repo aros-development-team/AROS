@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define DB_LEVEL 0
+
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
