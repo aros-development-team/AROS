@@ -26,6 +26,8 @@
 
 #include "pci.h"
 
+#define DECAM(x)
+
 #undef HiddPCIDriverAttrBase
 #undef HiddAttrBase
 #undef HiddPCIDeviceAttrBase
@@ -96,7 +98,7 @@ IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
                 */
 
                 extcap = (APTR) (mmio + 0x100);
-                D(bug("HasExtendedConfig: bus %d dev %d sub %d extcap %08x\n", msg->bus, msg->dev, msg->sub, *extcap));
+                D(bug("[PCI.PC] %s: bus %d dev %d sub %d extcap %08x\n", __func__, msg->bus, msg->dev, msg->sub, *extcap));
                 if(*extcap == 0xffffffff) {
                     D(bug("    Device is PCI not PCIe\n"));
                     mmio = 0;
@@ -104,7 +106,7 @@ IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
 
                 break;
             }else{
-                D(bug("HasExtendedConfig: Device not found! bus %d dev %d sub %d \n", msg->bus, msg->dev, msg->sub));
+                D(bug("[PCI.PC] %s: Device not found! bus %d dev %d sub %d \n", __func__, msg->bus, msg->dev, msg->sub));
             }
 
             mcfg_alloc++;
@@ -130,12 +132,13 @@ ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &mmio);
     if(mmio) {
         /* This is the ECAM access method for long read */
-        volatile ULONG *longreg;
+        ULONG configLong;
 
-        longreg = (APTR) (mmio + (msg->reg & 0xffc));
+        configLong = *(ULONG volatile *) (mmio + (msg->reg & 0xffc));
 
-        D(bug("ECAM.read longreg %p %08x\n", longreg, *longreg));
-        return *longreg;
+        DECAM(bug("[PCI.PC] %s: ECAM Read @ %p = %08x\n", __func__, (mmio + (msg->reg & 0xffc)), configLong));
+
+        return configLong;
     }
 
     /*
@@ -173,11 +176,11 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
     OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &mmio);
     if(mmio) {
         /* This is the ECAM access method for long write */
-        volatile ULONG *longreg;
-        longreg = (APTR) (mmio + (msg->reg & 0xffc));
-        D(bug("ECAM.write.old longreg %p %08x  = %08x\n", longreg, *longreg, msg->val));
+        ULONG volatile *longreg;
+        longreg = (ULONG volatile *) (mmio + (msg->reg & 0xffc));
+        DECAM(bug("[PCI.PC] %s: ECAM.write.old longreg %p %08x  = %08x\n", __func__, longreg, *longreg, msg->val));
         *longreg = msg->val;
-        D(bug("ECAM.write.new longreg %p %08x == %08x?\n", longreg, *longreg, msg->val));
+        DECAM(bug("[PCI.PC] %s: ECAM.write.new longreg %p %08x == %08x?\n", __func__, longreg, *longreg, msg->val));
     } else {
         /*
             Last good long register without ECAM,
@@ -258,7 +261,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     struct pHidd_PCI_AddHardwareDriver msg, *pmsg = &msg;
     OOP_Object *pci;
 
-    D(bug("[PCI.PC] Driver initialization\n"));
+    D(bug("[PCI.PC] %s()\n", __func__));
 
     /* Open ACPI and cache the pointer to the MCFG table.. */
     ACPICABase = OpenLibrary("acpica.library", 0);
@@ -271,7 +274,7 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     _psd->pcipc_irqRoutingTable = NULL;
     if (_psd->hiddPCIDriverAB == 0 || _psd->hiddAB == 0 || _psd->hidd_PCIDeviceAB == 0)
     {
-	D(bug("[PCI.PC] ObtainAttrBases failed\n"));
+	D(bug("[PCI.PC] %s: ObtainAttrBases failed\n", __func__));
 	return FALSE;
     }
 
@@ -286,13 +289,13 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
     msg.driverClass = _psd->driverClass;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
-    D(bug("[PCI.PC] Registering Driver with PCI base class..\n"));
+    D(bug("[PCI.PC] %s: Registering Driver with PCI base class..\n", __func__));
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     OOP_DoMethod(pci, (OOP_Msg)pmsg);
     OOP_DisposeObject(pci);
 
-    D(bug("[PCI.PC] Driver initialization finished\n"));
+    D(bug("[PCI.PC] %s: Driver initialization finished\n", __func__));
 
     return TRUE;
 }
@@ -301,7 +304,7 @@ static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
     struct pcipc_staticdata *_psd = &LIBBASE->psd;
 
-    D(bug("[PCI.PC] Class destruction\n"));
+    D(bug("[PCI.PC] %s()\n", __func__));
 
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
