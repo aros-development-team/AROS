@@ -3,6 +3,7 @@
     $Id$
 */
 
+#define DEBUG 1
 #include <aros/debug.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
@@ -91,6 +92,8 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
     ULONG highBus = 0;
     ULONG bus, dev, sub, type;
 
+    struct MinList *irq_routing;
+
     struct TagItem devtags[] =
     {
         { aHidd_PCIDevice_Bus           , 0         },
@@ -101,7 +104,11 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
         { TAG_DONE                      , 0         }
     };
 
+    OOP_GetAttr(drv, aHidd_PCIDriver_IRQRoutingTable, (IPTR *)&irq_routing);
+
     D(bug("[PCI] Adding Driver 0x%p class 0x%p\n", drv, OOP_OCLASS(drv)));
+
+    D(bug("[PCI] drivers IRQ routing table at 0x%p\n", irq_routing));
 
     /*
      * Scan the whole PCI bus looking for devices available
@@ -144,6 +151,110 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
                     }
                 }
                 break;
+            }
+        }
+    }
+
+    if (irq_routing)
+    {
+        struct pcibase *pciBase = (struct pcibase *)cl->UserData;
+        OOP_Object *pcidev;
+
+        D(bug("[PCI] Checking IRQ routing for newly added devices\n"));
+
+        ForeachNode(&pciBase->psd.devices, pcidev)
+        {
+            IPTR d;
+            IPTR line;
+
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_Driver, &d);
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_IRQLine, &line);
+            if (d == (IPTR)drv && line)
+            {
+                IPTR bus, dev, sub;
+                struct PCI_IRQRoutingEntry *e;
+
+                OOP_GetAttr(pcidev, aHidd_PCIDevice_Bus, &bus);
+                OOP_GetAttr(pcidev, aHidd_PCIDevice_Dev, &dev);
+                OOP_GetAttr(pcidev, aHidd_PCIDevice_Sub, &sub);
+
+                D(bug("[PCI] Device %d:%02x.%02x uses LINE%c and may need IRQ fixup\n", bus, dev, sub, 'A' + line - 1));
+
+                if (bus == 0)
+                {
+                    ForeachNode(irq_routing, e)
+                    {
+                        if ((e->re_PCIDevNum == dev) && 
+                            (e->re_PCIFuncNum == 0xffff || e->re_PCIFuncNum == sub) &&
+                            (e->re_IRQPin == line))
+                        {
+                            struct TagItem attr[] =
+                            {
+                                {aHidd_PCIDevice_INTLine, e->re_IRQ},
+                                {TAG_DONE, 0UL}
+                            };
+
+                            D(bug("[PCI] Setting INTLine to %02x\n", e->re_IRQ));
+                            OOP_SetAttrs(pcidev, attr);
+                        }
+                    }
+                }
+                else
+                {
+                    OOP_Object *pcibus;
+                    D(bug("[PCI] Device is on bus %d, looking for it...\n", bus));
+
+                    ForeachNode(&pciBase->psd.devices, pcibus)
+                    {
+                        IPTR d;
+                        IPTR isBridge;
+
+                        if (pcibus == pcidev)
+                            continue;
+
+                        OOP_GetAttr(pcibus, aHidd_PCIDevice_Driver, &d);
+                        OOP_GetAttr(pcibus, aHidd_PCIDevice_isBridge, &isBridge);
+                        
+                        if (d == (IPTR)drv && isBridge)
+                        {
+                            IPTR subbus;
+                            OOP_GetAttr(pcibus, aHidd_PCIDevice_SubBus, &subbus);
+
+                            if (subbus == bus)
+                            {
+                                IPTR bbus, bdev, bsub;
+                                struct PCI_IRQRoutingEntry *e;
+                                IPTR new_line = (line + dev) % 4;
+
+                                OOP_GetAttr(pcibus, aHidd_PCIDevice_Bus, &bbus);
+                                OOP_GetAttr(pcibus, aHidd_PCIDevice_Dev, &bdev);
+                                OOP_GetAttr(pcibus, aHidd_PCIDevice_Sub, &bsub);
+
+                                D(bug("[PCI] Found match. PCI-PCI bridge at %x:%02x.%02x (%p)\n",
+                                    bbus, bdev, bsub, pcibus));
+
+                                D(bug("[PCI] Swizzling the IRQPin from LINE%c to LINE%c\n", 'A' + line - 1,
+                                    'A' + new_line - 1));
+
+                                ForeachNode(irq_routing, e)
+                                {
+                                    if ((e->re_PCIDevNum == bdev) &&
+                                        (e->re_PCIFuncNum == 0xffff || e->re_PCIFuncNum == bsub) &&
+                                        (e->re_IRQPin == new_line))
+                                    {
+                                        struct TagItem attr[] =
+                                            {
+                                                {aHidd_PCIDevice_INTLine, e->re_IRQ},
+                                                {TAG_DONE, 0UL}};
+
+                                        D(bug("[PCI] Setting INTLine to %02x\n", e->re_IRQ));
+                                        OOP_SetAttrs(pcidev, attr);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
