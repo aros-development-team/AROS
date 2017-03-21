@@ -1,20 +1,6 @@
 
 	.MACRO	LONG num
 .ifdef	LITTLE_ENDIAN
-.ifdef x86_64
-    .byte  0, 0, 0, 0
-.endif
-	.byte	((\num)>>24)&255
-	.byte	((\num)>>16)&255
-	.byte	((\num)>> 8)&255
-	.byte	((\num)>> 0)&255
-.else
-	.long	\num
-.endif
-	.ENDM
-
-	.MACRO	LONG32 num
-.ifdef	LITTLE_ENDIAN
 	.byte	((\num)>>24)&255
 	.byte	((\num)>>16)&255
 	.byte	((\num)>> 8)&255
@@ -26,17 +12,11 @@
 
 	.MACRO	LONG2 num1,num2
 .ifdef	LITTLE_ENDIAN
-.ifdef x86_64
-    .byte  0, 0, 0, 0
-.endif
 	.byte	((\num1)>>24)&255
 	.byte	((\num1)>>16)&255
 	.byte	((\num1)>> 8)&255
 	.byte	((\num1)>> 0)&255
 	
-.ifdef x86_64
-    .byte  0, 0, 0, 0
-.endif
 	.byte	((\num2)>>24)&255
 	.byte	((\num2)>>16)&255
 	.byte	((\num2)>> 8)&255
@@ -48,7 +28,7 @@
 
 	.MACRO	FORM_START name
 	.ascii	"FORM"
-	LONG32	FORMEND-FORMSTART
+	LONG	FORMEND-FORMSTART
 FORMSTART:
 	.ascii	"\name"
 	.ENDM
@@ -60,7 +40,7 @@ FORMEND:
 
 	.MACRO	CHUNK_START name
 	.ascii	"\name"
-	LONG32	101f-100f
+	LONG	101f-100f
 100:
 	.ENDM
 

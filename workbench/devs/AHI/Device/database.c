@@ -55,6 +55,68 @@ static ULONG AddModeFile ( UBYTE *filename );
 #define IS_MORPHOS 0
 #endif
 
+#if !defined( WORDS_BIGENDIAN )
+struct TagItem32 {
+  ULONG ti_Tag;
+  ULONG ti_Data;
+};
+
+struct TagItem32 *AHINextTagItem(struct TagItem32 **tagListPtr)
+{
+    ULONG tagTag, tagData;
+
+    if (!(*tagListPtr))
+	return NULL;
+
+    while(1)
+    {
+        tagTag = (*tagListPtr)->ti_Tag;
+        EndianSwap( sizeof tagTag, &tagTag );
+
+        switch(tagTag)
+        {
+            case TAG_MORE:
+                (*tagListPtr)->ti_Tag = tagTag;
+                tagData = (*tagListPtr)->ti_Data;
+                EndianSwap( sizeof tagData, &tagData );
+                (*tagListPtr)->ti_Data = tagData;
+                *(IPTR *)tagListPtr += tagData;
+                continue;
+
+            case TAG_IGNORE:
+                (*tagListPtr)->ti_Tag = tagTag;
+                break;
+
+            case TAG_END:
+                (*tagListPtr)->ti_Tag = tagTag;
+                (*tagListPtr) = 0;
+                return NULL;
+
+            case TAG_SKIP:
+                (*tagListPtr)->ti_Tag = tagTag;
+                tagData = (*tagListPtr)->ti_Data;
+                EndianSwap( sizeof tagData, &tagData );
+                (*tagListPtr)->ti_Data = tagData;
+                (*tagListPtr) += tagData + 1;
+                continue;
+
+            default:
+                (*tagListPtr)->ti_Tag = tagTag;
+                tagData = (*tagListPtr)->ti_Data;
+                EndianSwap( sizeof tagData, &tagData );
+                (*tagListPtr)->ti_Data = tagData;
+                return (*tagListPtr)++;
+
+        }
+
+        (*tagListPtr)++;
+    }
+}
+#else
+#define TagItem32 TagItem
+#define AHINextTagItem NextTagItem
+#endif
+
 /******************************************************************************
 ** Audio Database *************************************************************
 ******************************************************************************/
@@ -211,6 +273,8 @@ _AHI_NextAudioID( IPTR           id,
   struct AHI_AudioMode *node;
   IPTR  nextid=AHI_INVALID_ID;
 
+  ahibug("[AHI:Device] %s(%08x)\n", __func__, id);
+
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
   {
     Debug_NextAudioID(id);
@@ -227,7 +291,9 @@ _AHI_NextAudioID( IPTR           id,
       while(node != NULL)
       {
         IPTR thisid;
-        
+
+        ahibug("[AHI:Device] %s: node @ 0x%p)\n", __func__, node);
+
         thisid = GetTagData(AHIDB_AudioID,AHI_INVALID_ID,node->ahidbn_Tags);
         node = (struct AHI_AudioMode *) node->ahidbn_MinNode.mln_Succ;
 
@@ -311,6 +377,8 @@ _AHI_AddAudioMode( struct TagItem* DBtags,
   ULONG datalength = 0, namelength = 0, driverlength = 0, dvrbasenamelength = 0;
   struct TagItem *tstate = DBtags, *tp, *tag;
   ULONG rc = FALSE;
+
+  ahibug("[AHI:Device] %s()\n", __func__);
 
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
   {
@@ -461,6 +529,8 @@ _AHI_RemoveAudioMode( IPTR           id,
   struct AHI_AudioDatabase *audiodb;
   ULONG rc=FALSE;
 
+  ahibug("[AHI:Device] %s(%08x)\n", __func__, id);
+
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
   {
     Debug_RemoveAudioMode(id);
@@ -578,6 +648,8 @@ _AHI_LoadModeFile( UBYTE*          name,
   struct FileInfoBlock  *fib;
   BPTR  lock,thisdir;
 
+  ahibug("[AHI:Device] %s('%s')\n", __func__, name);
+
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
   {
     Debug_LoadModeFile(name);
@@ -656,7 +728,10 @@ AddModeFile ( UBYTE *filename )
   struct IFFHandle *iff;
   struct StoredProperty *name,*data;
   struct CollectionItem *ci;
-  struct TagItem *tag,*tstate;
+  struct TagItem32 *tag,*tstate;
+#if defined(__AROS__) && (__WORDSIZE==64)
+  struct TagItem *dstTag;
+#endif
   struct TagItem extratags[]=
   {
     { AHIDB_Driver,         0 },
@@ -665,6 +740,8 @@ AddModeFile ( UBYTE *filename )
     { TAG_MORE,             0 }
   };
   ULONG rc=FALSE;
+
+  ahibug("[AHI:Device] %s('%s')\n", __func__, filename);
 
   iff = AllocIFF();
 
@@ -693,6 +770,8 @@ AddModeFile ( UBYTE *filename )
 
             rc = TRUE;
 
+            ahibug("[AHI:Device] %s: ci @ 0x%p, name @ 0x%p, data @ 0x%p\n", __func__, ci, name, data);
+
             if(name != NULL)
             {
               char            driver_name[ 128 ];
@@ -710,7 +789,7 @@ AddModeFile ( UBYTE *filename )
                 STRPTR s;
 
                 // Make sure string is NUL-terminated
-                
+
                 for( s = (STRPTR) name->sp_Data;
                      (APTR) s < name->sp_Data + name->sp_Size;
                      ++s )
@@ -774,10 +853,10 @@ AddModeFile ( UBYTE *filename )
 
             if(data != NULL)
             {
-              if( name->sp_Size <= 0 )
+              if( data->sp_Size <= 0 )
               {
                 Req( "%s:\nAUDD chunk has illegal size: %ld.", 
-                     (IPTR)filename, name->sp_Size );
+                     (IPTR)filename, data->sp_Size );
 
                 rc = FALSE;
               }
@@ -787,20 +866,32 @@ AddModeFile ( UBYTE *filename )
 
             while(rc && ci != NULL)
             {
+              APTR driverTags;
+
               // Relocate loaded taglist
+              ahibug("[AHI:Device] %s: relocating taglist @ 0x%p, %d bytes\n", __func__, ci->ci_Data, ci->ci_Size);
 
               tstate = (struct TagItem *) ci->ci_Data;
 
-              while( rc && ( tag = NextTagItem( &tstate ) ) != NULL )
+#if defined(__AROS__) && (__WORDSIZE==64)
+              driverTags = AllocVec(sizeof(struct TagItem) * 128, MEMF_CLEAR);
+              dstTag = driverTags;
+#else
+              driverTags = ci->ci_Data;
+#endif
+              while( rc && ( tag = AHINextTagItem( &tstate ) ) != NULL )
               {
-		EndianSwap( sizeof tag->ti_Tag, &tag->ti_Tag );
-		EndianSwap( sizeof tag->ti_Data, &tag->ti_Data );
-		
+#if defined(__AROS__) && (__WORDSIZE==64)
+                dstTag->ti_Tag = (IPTR)tag->ti_Tag;
+                dstTag->ti_Data = (IPTR)tag->ti_Data;
+#endif
+                ahibug("[AHI:Device] %s: %08x = %p\n", __func__, dstTag->ti_Tag, dstTag->ti_Data);
+
                 if(tag->ti_Tag & (AHI_TagBaseR ^ AHI_TagBase))
                 {
-                  tag->ti_Data += (IPTR)ci->ci_Data;
+                  dstTag->ti_Data += (IPTR)ci->ci_Data;
                 }
-               
+
                 rc = FALSE;
  
                 switch( tag->ti_Tag )
@@ -808,9 +899,9 @@ AddModeFile ( UBYTE *filename )
                   case AHIDB_Name:
                   {
                     // Make sure the string is within the chunk and NUL-term.
-                    
-                    if( tag->ti_Data <  (IPTR) ci->ci_Data || 
-                        tag->ti_Data >= (IPTR) ci->ci_Data + ci->ci_Size )
+
+                    if( dstTag->ti_Data <  (IPTR) ci->ci_Data || 
+                        dstTag->ti_Data >= (IPTR) ci->ci_Data + ci->ci_Size )
                     {
                       Req( "%s:\nAUDM chunk contains an invalid string.", 
                            (IPTR)filename );
@@ -818,10 +909,10 @@ AddModeFile ( UBYTE *filename )
                     else
                     {
                       STRPTR s;
-                      
+
                       // Make sure string is NUL-terminated
-                
-                      for( s = (STRPTR) tag->ti_Data;
+
+                      for( s = (STRPTR) dstTag->ti_Data;
                            (APTR) s < ci->ci_Data + ci->ci_Size;
                            ++s )
                       {
@@ -832,7 +923,7 @@ AddModeFile ( UBYTE *filename )
                         }
                       }
                     }
-                    
+
                     break;
                   }
 
@@ -846,18 +937,24 @@ AddModeFile ( UBYTE *filename )
                   Req( "%s:\nAUDM chunk contains a string that is not "
                        "NUL-terminated.", (IPTR)filename );
                 }
+#if defined(__AROS__) && (__WORDSIZE==64)
+                dstTag++;
+#endif
               }
 
               if( rc )
               {
                 // Link taglists
 
-                extratags[3].ti_Data = (IPTR) ci->ci_Data;
+                extratags[3].ti_Data = (IPTR)driverTags;
 
                 rc = AHI_AddAudioMode(extratags);
 
                 ci = ci->ci_Next;
               }
+#if defined(__AROS__) && (__WORDSIZE==64)
+             FreeVec(driverTags);
+#endif
             }
           }
         }

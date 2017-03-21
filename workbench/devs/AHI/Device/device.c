@@ -246,6 +246,8 @@ _DevOpen ( struct AHIRequest* ioreq,
   BOOL  error = FALSE;
   struct AHIDevUnit *iounit=NULL;
 
+  ahibug("[AHI:Device] %s()\n", __func__);
+
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
     KPrintF("OpenDevice(%ld, 0x%p, %ld)", unit, (IPTR)ioreq, flags);
@@ -404,6 +406,8 @@ _DevClose ( struct AHIRequest* ioreq,
   struct AHIDevUnit *iounit;
   BPTR  seglist=0;
 
+  ahibug("[AHI:Device] %s()\n", __func__);
+
   if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
   {
     KPrintF("CloseDevice(0x%P)\n", (IPTR)ioreq);
@@ -452,6 +456,8 @@ InitUnit ( ULONG unit,
            struct AHIBase *AHIBase )
 {
   struct AHIDevUnit *iounit;
+
+  ahibug("[AHI:Device] %s()\n", __func__);
 
   if( unit == AHI_NO_UNIT )
   {
@@ -547,6 +553,8 @@ ExpungeUnit ( struct AHIDevUnit *iounit,
   struct Task *unittask;
   BYTE signal;
 
+  ahibug("[AHI:Device] %s()\n", __func__);
+
   signal = AllocSignal(-1);
   if(signal == -1)
   {
@@ -585,6 +593,8 @@ ReadConfig ( struct AHIDevUnit *iounit,
   struct StoredProperty *ahig;
   struct CollectionItem *ci;
   IPTR *mode;
+
+  ahibug("[AHI:Device] %s()\n", __func__);
 
   if(iounit)
   {
@@ -634,9 +644,11 @@ ReadConfig ( struct AHIDevUnit *iounit,
               
               globalprefs = (struct AHIGlobalPrefs *)ahig->sp_Data;
 
+#if (0)
               debug_level = globalprefs->ahigp_DebugLevel;
 	      EndianSwap( sizeof (UWORD), &debug_level );
               AHIBase->ahib_DebugLevel = debug_level;
+#endif
 
               AHIBase->ahib_Flags = 0;
 
@@ -790,6 +802,8 @@ AllocHardware ( struct AHIDevUnit *iounit,
   ULONG stereo     = FALSE;
   ULONG panning    = FALSE;
 
+  ahibug("[AHI:Device] %s()\n", __func__);
+
   /* Allocate the hardware */
   iounit->AudioCtrl = AHI_AllocAudio(
       AHIA_AudioID,       (IPTR)iounit->AudioMode,
@@ -853,6 +867,8 @@ void
 FreeHardware ( struct AHIDevUnit *iounit,
                struct AHIBase *AHIBase )
 {
+  ahibug("[AHI:Device] %s()\n", __func__);
+
   if(iounit->AudioCtrl)
   {
     if(iounit->ChannelInfoStruct)
@@ -880,6 +896,8 @@ DevProc( void )
   struct StartupMessage *sm;
   struct AHIDevUnit *iounit;
   BYTE  signalbit;
+
+  ahibug("[AHI:Device] %s()\n", __func__);
 
   proc = (struct Process *)FindTask(NULL);
   WaitPort(&proc->pr_MsgPort);
