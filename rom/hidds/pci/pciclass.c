@@ -224,7 +224,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
                             {
                                 IPTR bbus, bdev, bsub;
                                 struct PCI_IRQRoutingEntry *e;
-                                IPTR new_line = (line + dev) % 4;
+                                IPTR new_line = 1 + (line - 1 + dev) % 4;
 
                                 OOP_GetAttr(pcibus, aHidd_PCIDevice_Bus, &bbus);
                                 OOP_GetAttr(pcibus, aHidd_PCIDevice_Dev, &bdev);
