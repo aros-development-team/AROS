@@ -74,5 +74,14 @@ enum
 #define IS_PCIDRV_ATTR(attr, idx) \
     (((idx) = (attr) - HiddPCIDriverAttrBase) < num_Hidd_PCIDriver_Attrs)
 
+struct PCI_IRQRoutingEntry
+{
+    struct MinNode  re_Node;
+    UWORD           re_PCIDevNum;
+    UWORD           re_PCIFuncNum;
+    UBYTE           re_IRQPin;
+    ULONG           re_IRQ;
+};
+
 #endif
 

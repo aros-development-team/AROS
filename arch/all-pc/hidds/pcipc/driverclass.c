@@ -197,37 +197,30 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 
 /* Class initialization and destruction */
 
-struct pcipc_IRQRoutingNode
-{
-    struct MinNode node;
-    UWORD device;
-    UBYTE irq_pin;
-    UBYTE irq;
-};
-
 void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item, struct MinList *list)
 {
     if ((item->Type == 4) && (item->Package.Count == 4))
     {
         ACPI_OBJECT *jitem;
 
-        struct pcipc_IRQRoutingNode *n = AllocVec(sizeof(struct pcipc_IRQRoutingNode), MEMF_CLEAR | MEMF_ANY);
+        struct PCI_IRQRoutingEntry *n = AllocVec(sizeof(struct PCI_IRQRoutingEntry), MEMF_CLEAR | MEMF_ANY);
 
         if (n)
         {
             jitem = &item->Package.Elements[0];
-            n->device = (jitem->Integer.Value >> 16) & 0xFFFF;
+            n->re_PCIDevNum = (jitem->Integer.Value >> 16) & 0xFFFF;
+            n->re_PCIFuncNum = (jitem->Integer.Value) & 0xFFFF;
 
             D(
-                bug("[PCI.PC] %s:  %04d", __func__, n->device);
-                if ((jitem->Integer.Value & 0xFFFF) == 0xFFFF)
+                bug("[PCI.PC] %s:  %04d", __func__, n->re_PCIDevNum);
+                if (n->re_PCIFuncNum == 0xFFFF)
                     bug(".xx");
                 else
-                    bug(".%02d", (jitem->Integer.Value & 0xFFFF));
+                    bug(".%02d", n->re_PCIFuncNum);
             )
             jitem = &item->Package.Elements[1];
-            n->irq_pin = jitem->Integer.Value;
-            D(bug(" INT%c", 'A' + n->irq_pin));
+            n->re_IRQPin = jitem->Integer.Value + 1;
+            D(bug(" INT%c", 'A' + n->re_IRQPin - 1));
 
             jitem = &item->Package.Elements[2];
             if (jitem->String.Length > 0)
@@ -239,7 +232,7 @@ void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item, struct MinList *list)
             {
                 jitem = &item->Package.Elements[3];
                 D(bug(" using GSI %02x\n", jitem->Integer.Value));
-                n->irq = jitem->Integer.Value;
+                n->re_IRQ = jitem->Integer.Value;
                 ADDTAIL(list, n);
             }
         }
@@ -280,7 +273,6 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     struct pHidd_PCI_AddHardwareDriver msg, *pmsg = &msg;
     OOP_Object *pci;
     struct MinList routing_list;
-    int routing_list_length = 0;
 
     NEWLIST(&routing_list);
 
@@ -305,27 +297,9 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     if (ACPICABase)
         AcpiGetDevices("PNP0A03", PCPCI_ACPIDeviceCallback, &routing_list, NULL);
 
-    ListLength(&routing_list, routing_list_length);
-
-    if (routing_list_length > 0)
+    if (!IsListEmpty(&routing_list))
     {
-        struct pcipc_IRQRoutingEntry *entries = 
-                AllocMem(sizeof(struct pcipc_IRQRoutingEntry) + (routing_list_length + 1), 
-                MEMF_PUBLIC | MEMF_CLEAR);
-        struct pcipc_IRQRoutingNode *node, *next;
-        int i = 0;
-
-        D(bug("[PCI.PC] Creating routing table for %d entries\n", routing_list_length));
-
-        ForeachNodeSafe(&routing_list, node, next)
-        {
-            REMOVE(node);
-            entries[i].route_s.pci_dev_num = node->device;
-            entries[i].route_s.irq_pin = node->irq_pin;
-            entries[i].route_s.irq = node->irq;
-
-            FreeVec(node);
-        }
+        _psd->pcipc_irqRoutingTable = &routing_list;
     }
 
     /* Default to using config mechanism 1 */
