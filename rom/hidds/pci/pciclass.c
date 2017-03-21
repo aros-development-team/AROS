@@ -178,7 +178,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
                 OOP_GetAttr(pcidev, aHidd_PCIDevice_Dev, &dev);
                 OOP_GetAttr(pcidev, aHidd_PCIDevice_Sub, &sub);
 
-                D(bug("[PCI] Device %d:%02x.%02x uses LINE%c and may need IRQ fixup\n", bus, dev, sub, 'A' + line - 1));
+                D(bug("[PCI] Device %d:%02x.%02x uses INT%c and may need IRQ fixup\n", bus, dev, sub, 'A' + line - 1));
 
                 if (bus == 0)
                 {
@@ -233,7 +233,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
                                 D(bug("[PCI] Found match. PCI-PCI bridge at %x:%02x.%02x (%p)\n",
                                     bbus, bdev, bsub, pcibus));
 
-                                D(bug("[PCI] Swizzling the IRQPin from LINE%c to LINE%c\n", 'A' + line - 1,
+                                D(bug("[PCI] Swizzling the IRQPin from INT%c to INT%c\n", 'A' + line - 1,
                                     'A' + new_line - 1));
 
                                 ForeachNode(irq_routing, e)
