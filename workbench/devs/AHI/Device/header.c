@@ -32,8 +32,9 @@
 #if defined(__AROS__)
 #include <proto/stdc.h>
 #endif
-#include "ahi_def.h"
 
+#include "ahi_def.h"
+#include "debug.h"
 #include "header.h"
 #include "gateway.h"
 #include "gatestubs.h"
@@ -140,7 +141,6 @@ const ULONG  Revision       = REVISION;
 const char DevName[]  = AHINAME;
 const char IDString[] = "$VER: " AHINAME " " VERS
                         " ©1994-2005 Martin Blom. " CPU " version.\r\n";
-
 
 struct ExecBase           *SysBase        = NULL;
 struct DosLibrary         *DOSBase        = NULL;
@@ -267,10 +267,16 @@ _DevInit( struct AHIBase*  device,
   AHIBase = device;
   SysBase = sysbase;
 
+  ahibug("[AHI:Device] %s()\n", __func__);
+
 #ifdef __AMIGAOS4__
   IExec = (struct ExecIFace*) SysBase->MainInterface; 
 #endif
   
+#if (1)
+  device->ahib_DebugLevel = AHI_DEBUG_ALL;
+#endif
+
   device->ahib_Library.lib_Revision = REVISION;
   
   device->ahib_SysLib  = sysbase;
@@ -304,6 +310,8 @@ BPTR
 _DevExpunge( struct AHIBase* device )
 {
   BPTR seglist = 0;
+
+  ahibug("[AHI:Device] %s()\n", __func__);
 
    //DebugPrintF("AHI: _DevExpunge\n");
 
@@ -537,6 +545,8 @@ static BOOL
 OpenLibs ( void )
 {
   /* Intuition Library */
+
+  ahibug("[AHI:Device] %s()\n", __func__);
 
   IntuitionBase = (struct IntuitionBase *) OpenLibrary( "intuition.library", 37 );
 
@@ -889,6 +899,8 @@ OpenLibs ( void )
 static void
 CloseLibs ( void )
 {
+  ahibug("[AHI:Device] %s()\n", __func__);
+
   CloseahiCatalog();
 
 #if defined( ENABLE_WARPUP )
