@@ -731,6 +731,8 @@ AddModeFile ( UBYTE *filename )
   struct TagItem32 *tag,*tstate;
 #if defined(__AROS__) && (__WORDSIZE==64)
   struct TagItem *dstTag;
+#else
+#define dstTag tag
 #endif
   struct TagItem extratags[]=
   {
