@@ -365,7 +365,7 @@ struct AHIUnitPrefs
 	UBYTE	ahiup_Unit;
 	UBYTE   ahiup_Obsolete;                         /* Was ahiup_ScaleMode */
         UWORD	ahiup_Channels;
-        IPTR	ahiup_AudioMode;
+        ULONG	ahiup_AudioMode;
         ULONG	ahiup_Frequency;
         Fixed	ahiup_MonitorVolume;
         Fixed	ahiup_InputGain;
