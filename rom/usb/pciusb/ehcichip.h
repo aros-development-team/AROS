@@ -210,6 +210,9 @@ struct EhciQH
     struct EhciQH  *eqh_Succ;
     struct EhciQH  *eqh_Pred;
     ULONG           eqh_Self;       /* LE PHYSICAL pointer to self + UHCI_QHSELECT */
+#if __WORDSIZE == 64
+    ULONG           eqh_Unused1;    // Fill te gap
+#endif
     struct IOUsbHWReq *eqh_IOReq;   /* IO Request this belongs to */
 
     struct EhciTD  *eqh_FirstTD;    /* First TD */
