@@ -3,7 +3,7 @@
 #undef KPRINTF
 
 #ifndef DB_LEVEL
-#define DB_LEVEL 0
+#define DB_LEVEL 200
 #endif
 
 #define DEBUG 1
