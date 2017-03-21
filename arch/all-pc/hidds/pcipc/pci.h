@@ -28,16 +28,7 @@
 #endif
 
 
-struct pcipc_IRQRoutingEntry {
-    union {
-        ULONG   route_u;
-        struct {
-            UWORD   pci_dev_num;
-            UBYTE   irq_pin;
-            UBYTE   irq;
-        } route_s;
-    };
-};
+
 
 struct pcipc_staticdata
 {
@@ -55,7 +46,7 @@ struct pcipc_staticdata
     /* ACPI related */
     struct Library      *pcipc_acpiBase;
     ACPI_TABLE_MCFG     *pcipc_acpiMcfgTbl;
-    struct pcipc_IRQRoutingEntry *pcipc_irqRoutingTable;
+    struct MinList      *pcipc_irqRoutingTable;
 };
 
 struct pcibase
