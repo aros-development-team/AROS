@@ -166,8 +166,10 @@ Slave( struct ExecBase* SysBase )
         // The mixing buffer is now filled with AudioCtrl->ahiac_BuffSamples
         // of sample frames (type AudioCtrl->ahiac_BuffType). Send them
         // to the sound card here.
+#if defined(__AROS__) && (__WORDSIZE==64)
         if (buffPtr)
             FreePooled(ac97Base->buffer, buffPtr, bufSize);
+#endif
       }
     }
   }
