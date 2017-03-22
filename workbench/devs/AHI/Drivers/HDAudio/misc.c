@@ -873,8 +873,15 @@ static BOOL allocate_rirb(struct HDAudioChip *card)
 static BOOL allocate_pos_buffer(struct HDAudioChip *card)
 {
     card->dma_position_buffer = pci_alloc_consistent(sizeof(APTR) * 36, NULL, 128);
-    //pci_outl((ULONG) card->dma_position_buffer | HD_DPLBASE_ENABLE, HD_DPLBASE, card);
+
+#if defined(__AROS__) && (__WORDSIZE==64)
+    pci_outl(0, HD_DPLBASE, card);
     pci_outl(0, HD_DPUBASE, card);
+#else
+    //pci_outl((ULONG) card->dma_position_buffer | HD_DPLBASE_ENABLE, HD_DPLBASE, card);
+    pci_outl(0, HD_DPLBASE, card);
+    pci_outl(0, HD_DPUBASE, card);
+#endif
 
     if (card->dma_position_buffer)
     {
