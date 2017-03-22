@@ -20,6 +20,9 @@ struct ac97Base
     struct Library*	dosbase;
     struct OOPBase*	oopbase;
     struct ExecBase*	sysbase;
+#if defined(__AROS__) && (__WORDSIZE==64)
+    APTR                buffer;
+#endif
     BOOL		cardfound;
     APTR		mixerbase;
     APTR		dmabase;
@@ -32,7 +35,7 @@ struct ac97Base
     /* card specific data ends */
 
     struct {
-	APTR		sample_address;
+	ULONG		sample_address;
 	ULONG		sample_size;
     }			*PCM_out;
 

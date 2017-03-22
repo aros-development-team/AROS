@@ -96,7 +96,11 @@ Slave( struct ExecBase* SysBase )
       else
       {
 	int i,j;
-	IPTR buff;
+#if defined(__AROS__) && (__WORDSIZE==64)
+	int bufSize = 0;
+	APTR buffPtr = NULL;
+#endif
+	ULONG buff;
 
         CallHookPkt( AudioCtrl->ahiac_PlayerFunc, AudioCtrl, NULL );
         CallHookPkt( AudioCtrl->ahiac_MixerFunc, AudioCtrl, dd->mixbuffer );
@@ -104,12 +108,21 @@ Slave( struct ExecBase* SysBase )
 	i = AudioCtrl->ahiac_BuffSamples << 1;
 	i <<= ac97Base->size_shift; /* For SIS 7012 size must be in bytes */
 	j = tail;
-	buff = (IPTR)dd->mixbuffer;
-
+#if defined(__AROS__) && (__WORDSIZE==64)
+        if (((IPTR)dd->mixbuffer > 0xFFFFFFFF) || (((IPTR)dd->mixbuffer + i) > 0xFFFFFFFF))
+        {
+            bufSize = i;
+            buffPtr = AllocPooled(ac97Base->buffer, i);
+            CopyMem(dd->mixbuffer, buffPtr, i);
+            buff = (ULONG)(IPTR)buffPtr;
+        }
+        else
+#endif
+            buff = (ULONG)(IPTR)dd->mixbuffer;
 	while (i > 0)
 	{
-            D(bug("[AHI:AC97] %s: Playing sample @ %p\n", __func__, buff));
-	    ac97Base->PCM_out[j].sample_address = (APTR)buff;
+	    D(bug("[AHI:AC97] %s: Playing sample @ %p\n", __func__, (IPTR)buff));
+	    ac97Base->PCM_out[j].sample_address = buff;
 	    ac97Base->PCM_out[j].sample_size = (i > 65532) ? 65532 : i;
 
 	    i -= ac97Base->PCM_out[j].sample_size;
@@ -153,6 +166,8 @@ Slave( struct ExecBase* SysBase )
         // The mixing buffer is now filled with AudioCtrl->ahiac_BuffSamples
         // of sample frames (type AudioCtrl->ahiac_BuffType). Send them
         // to the sound card here.
+        if (buffPtr)
+            FreePooled(ac97Base->buffer, buffPtr, bufSize);
       }
     }
   }
