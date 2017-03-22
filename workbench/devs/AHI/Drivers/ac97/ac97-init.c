@@ -125,6 +125,9 @@ static AROS_UFH3(void, Enumerator,
                 ac97Base->size_shift    = 0;
             }
 
+#if defined(__AROS__) && (__WORDSIZE==64)
+            ac97Base->buffer = CreatePool(MEMF_CLEAR | MEMF_31BIT, 131072, 65536);
+#endif
             if ((value = (IPTR)AllocMem((8*32) + ALIGN_AC97OUT, MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR)) != 0)
             {
                 ac97Base->PCM_out = (APTR)ALIGN_AC97(value);
