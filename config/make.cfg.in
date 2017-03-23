@@ -174,8 +174,11 @@ GENINCDIR	:= $(GENDIR)/include
 
 .PHONY : all clean setup subdirs
 
+BASE_CFLAGS := $(CONFIG_BASE_CFLAGS)
+
 # Was debugging enabled? Better set up the options.
 ifeq ($(DEBUG),yes)
+BASE_CFLAGS += $(DEBUG_CFLAGS)
 CONFIG_CFLAGS += $(DEBUG_CFLAGS)
 CONFIG_AFLAGS += $(DEBUG_AFLAGS)
 CONFIG_LDFLAGS += $(DEBUG_LDFLAGS)
@@ -189,6 +192,7 @@ MECHO	:= $(NOP)
 endif
 
 # Optimization and instruction set architecture flags
+BASE_CFLAGS += $(ISA_FLAGS)
 CONFIG_CFLAGS += $(OPTIMIZATION_CFLAGS)
 CONFIG_CFLAGS += $(ISA_FLAGS)
 CONFIG_AFLAGS += $(ISA_FLAGS)

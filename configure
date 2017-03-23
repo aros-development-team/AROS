@@ -686,6 +686,7 @@ aros_config_ldflags
 aros_config_aflags
 aros_config_cflags
 aros_nowarn_flags
+aros_warn_flags
 aros_config_sysroot
 aros_shared_ldflags
 aros_shared_aflags
@@ -7491,7 +7492,8 @@ aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OP
 
 toolchain_needs_sysroot=no
 
-aros_config_cflags="-Wall -Werror-implicit-function-declaration"
+aros_warn_flags="-Wall -Werror-implicit-function-declaration"
+aros_config_cflags=
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
@@ -14889,6 +14891,7 @@ fi
 
 
 # Target Related
+
 
 
 
