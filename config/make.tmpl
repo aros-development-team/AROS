@@ -2923,9 +2923,9 @@ ifeq (%(compiler),target)
         CPP="$(TARGET_CPP) $(TARGET_SYSROOT)" \
         CXXCPP="$(TARGET_CPP) $(TARGET_SYSROOT)" \
         CC="$(TARGET_CC) $(TARGET_SYSROOT)" \
-        CFLAGS=" $(TARGET_CFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+        CFLAGS="$(USER_INCLUDES) $(BASE_CFLAGS) $(OPTIMIZATION_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         CXX="$(TARGET_CXX) $(TARGET_SYSROOT)" \
-        CXXFLAGS=" $(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+        CXXFLAGS="$(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         LDFLAGS="-L$(AROS_DEVELOPMENT)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         AS="$(TARGET_AS)" \
         CC_FOR_BUILD="$(HOST_DEF_CC)" \
@@ -2945,9 +2945,9 @@ ifeq (%(compiler),target)
         TARGET_STRIP="$(STRIP_PLAIN)" \
         TARGET_NM="$(NM_PLAIN)" \
         CC_FOR_TARGET="$(TARGET_CC) $(TARGET_SYSROOT)" \
-        CFLAGS_FOR_TARGET="$(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+        CFLAGS_FOR_TARGET="$(USER_INCLUDES) $(BASE_CFLAGS) $(OPTIMIZATION_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         CXX_FOR_TARGET="$(TARGET_CXX) $(TARGET_SYSROOT)" \
-        CXXFLAGS_FOR_TARGET="$(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
+        CXXFLAGS_FOR_TARGET="$(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
 ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
