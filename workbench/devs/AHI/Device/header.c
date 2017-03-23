@@ -272,10 +272,6 @@ _DevInit( struct AHIBase*  device,
 #ifdef __AMIGAOS4__
   IExec = (struct ExecIFace*) SysBase->MainInterface; 
 #endif
-  
-#if (1)
-  device->ahib_DebugLevel = AHI_DEBUG_ALL;
-#endif
 
   device->ahib_Library.lib_Revision = REVISION;
   
