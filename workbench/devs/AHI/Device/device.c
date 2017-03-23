@@ -644,11 +644,9 @@ ReadConfig ( struct AHIDevUnit *iounit,
               
               globalprefs = (struct AHIGlobalPrefs *)ahig->sp_Data;
 
-#if (0)
               debug_level = globalprefs->ahigp_DebugLevel;
 	      EndianSwap( sizeof (UWORD), &debug_level );
               AHIBase->ahib_DebugLevel = debug_level;
-#endif
 
               AHIBase->ahib_Flags = 0;
 
