@@ -645,7 +645,7 @@ aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OP
 
 toolchain_needs_sysroot=no
 
-aros_warn_flags="-Wall -Werror-implicit-function-declaration"
+aros_warn_flags=
 aros_config_cflags=
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
@@ -890,7 +890,7 @@ paranoia_default=yes
 AC_MSG_CHECKING([which paranoia flags to use])
 AC_ARG_WITH(paranoia,AC_HELP_STRING([--with-paranoia=(yes|no|FLAGS)],[Specific compiler warning FLAGS to enable for paranoia builds (default=-Wall -Werror)]),[paranoia_flags="$withval"],[paranoia_flags="$paranoia_default"])
 if test "$paranoia_flags" = "no"; then
-        paranoia_flags=""
+        paranoia_flags="-Wall -Werror-implicit-function-declaration"
         msg_result="none"
 else
     if test "$paranoia_flags" = "yes"; then
@@ -899,7 +899,7 @@ else
     msg_result="$paranoia_flags"
 fi
 AC_MSG_RESULT($msg_result)
-aros_config_cflags="$aros_config_cflags $paranoia_flags"
+aros_warn_flags="$aros_warn_flags $paranoia_flags"
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what target variant to enable])
