@@ -7492,7 +7492,7 @@ aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OP
 
 toolchain_needs_sysroot=no
 
-aros_warn_flags="-Wall -Werror-implicit-function-declaration"
+aros_warn_flags=
 aros_config_cflags=
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
@@ -7886,7 +7886,7 @@ else
 fi
 
 if test "$paranoia_flags" = "no"; then
-        paranoia_flags=""
+        paranoia_flags="-Wall -Werror-implicit-function-declaration"
         msg_result="none"
 else
     if test "$paranoia_flags" = "yes"; then
@@ -7896,7 +7896,7 @@ else
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
 $as_echo "$msg_result" >&6; }
-aros_config_cflags="$aros_config_cflags $paranoia_flags"
+aros_warn_flags="$aros_warn_flags $paranoia_flags"
 
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what target variant to enable" >&5
