@@ -873,7 +873,7 @@ AddModeFile ( UBYTE *filename )
               // Relocate loaded taglist
               ahibug("[AHI:Device] %s: relocating taglist @ 0x%p, %d bytes\n", __func__, ci->ci_Data, ci->ci_Size);
 
-              tstate = (struct TagItem *) ci->ci_Data;
+              tstate = (struct TagItem32 *) ci->ci_Data;
 
 #if defined(__AROS__) && (__WORDSIZE==64)
               driverTags = AllocVec(sizeof(struct TagItem) * 128, MEMF_CLEAR);
