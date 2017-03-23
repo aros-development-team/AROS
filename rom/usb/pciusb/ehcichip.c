@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DB_LEVEL 0
+#define DB_LEVEL 100
 
 #include <proto/exec.h>
 #include <proto/oop.h>
