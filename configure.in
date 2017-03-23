@@ -645,7 +645,8 @@ aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OP
 
 toolchain_needs_sysroot=no
 
-aros_config_cflags="-Wall -Werror-implicit-function-declaration"
+aros_warn_flags="-Wall -Werror-implicit-function-declaration"
+aros_config_cflags=
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
@@ -2876,6 +2877,7 @@ AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
 
 AC_SUBST(aros_config_sysroot)
+AC_SUBST(aros_warn_flags)
 AC_SUBST(aros_nowarn_flags)
 AC_SUBST(aros_config_cflags)
 AC_SUBST(aros_config_aflags)
