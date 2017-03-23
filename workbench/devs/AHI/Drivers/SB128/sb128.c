@@ -310,8 +310,8 @@ _AHIsub_Start( ULONG                   flags,
 //    card->playback_buffer_phys = IMMU->GetPhysicalAddress(card->playback_buffer);
     card->playback_buffer_phys = card->playback_buffer;
     UserState(stack);
-    
-    pci_outl((unsigned long)(card->playback_buffer_phys), SB128_DAC2_FRAME, card);
+
+    pci_outl((ULONG)((IPTR)card->playback_buffer_phys), SB128_DAC2_FRAME, card);
     pci_outl((((dma_buffer_size * 2) >> 2) - 1) & 0xFFFF, SB128_DAC2_COUNT, card);
 
     /* Playback format is always 16 Bit, Stereo, but checks exist in case of a Mono mode (not possible). */
@@ -358,7 +358,7 @@ _AHIsub_Start( ULONG                   flags,
     card->record_buffer_phys = card->record_buffer;
     UserState(stack);
 
-    pci_outl((unsigned long) card->record_buffer_phys, SB128_ADC_FRAME, card);
+    pci_outl((ULONG)((IPTR)card->record_buffer_phys), SB128_ADC_FRAME, card);
     pci_outl((((card->current_record_bytesize * 2) >> 2) - 1) & 0xFFFF, SB128_ADC_COUNT, card);
 
     card->is_recording = TRUE;
@@ -506,10 +506,10 @@ _AHIsub_Stop( ULONG                   flags,
 ** AHIsub_GetAttr *************************************************************
 ******************************************************************************/
 
-LONG
+IPTR
 _AHIsub_GetAttr( ULONG                   attribute,
 		 LONG                    argument,
-		 LONG                    def,
+		 IPTR                    def,
 		 struct TagItem*         taglist,
 		 struct AHIAudioCtrlDrv* AudioCtrl,
 		 struct DriverBase*      AHIsubBase )
@@ -544,11 +544,11 @@ _AHIsub_GetAttr( ULONG                   attribute,
         {
           if( ( argument - (LONG) Frequencies[ i - 1 ] ) < ( (LONG) Frequencies[ i ] - argument ) )
           {
-            return i-1;
+            return (IPTR)i-1;
           }
           else
           {
-            return i;
+            return (IPTR)i;
           }
         }
       }
@@ -556,16 +556,16 @@ _AHIsub_GetAttr( ULONG                   attribute,
       return 0;  /* Will not happen */
 
     case AHIDB_Author:
-      return (LONG) "Ross Vumbaca";
+      return (IPTR) "Ross Vumbaca";
 
     case AHIDB_Copyright:
-      return (LONG) "(C) Ross Vumbaca";
+      return (IPTR) "(C) Ross Vumbaca";
 
     case AHIDB_Version:
-      return (LONG) LibIDString;
+      return (IPTR) LibIDString;
 
     case AHIDB_Annotation:
-      return (LONG)
+      return (IPTR)
    	"AROS SB128/ES137x Audio driver";
 
     case AHIDB_Record:
@@ -610,13 +610,13 @@ _AHIsub_GetAttr( ULONG                   attribute,
       return INPUTS;
 
     case AHIDB_Input:
-      return (LONG) Inputs[ argument ];
+      return (IPTR) Inputs[ argument ];
 
     case AHIDB_Outputs:
       return OUTPUTS;
 
     case AHIDB_Output:
-      return (LONG) Outputs[ argument ];
+      return (IPTR) Outputs[ argument ];
 
     default:
       return def;

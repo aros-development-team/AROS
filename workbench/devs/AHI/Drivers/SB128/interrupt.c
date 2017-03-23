@@ -64,7 +64,7 @@ CardInterrupt( struct SB128_DATA* card )
       else  /* just played buf 2 */
       {
          card->flip = 0;
-         card->current_buffer = (APTR) ((unsigned long) card->playback_buffer + card->current_bytesize);
+         card->current_buffer = (APTR) ((IPTR) card->playback_buffer + card->current_bytesize);
       }
       
       card->playback_interrupt_enabled = FALSE;
