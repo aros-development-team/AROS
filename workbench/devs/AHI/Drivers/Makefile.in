@@ -16,6 +16,7 @@ DEVDIR		= ${DISTDIR}/Developer
 DRIVERDIR	= ${DEVDIR}/Drivers
 
 host		= @host@
+host_cpu	= @host_cpu@
 
 INSTALL		= @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
@@ -38,13 +39,15 @@ SUBDIRS		= Device Filesave Void
 
 ifneq ($(strip $(HAVE_ASMIO)),)
 SUBDIRS		+= ac97
+SUBDIRS		+= HDAudio
+ifneq ($(host_cpu),x86_64)
 SUBDIRS		+= VIA-AC97
 SUBDIRS		+= CMI8738
 SUBDIRS		+= SB128
-SUBDIRS		+= HDAudio
 SUBDIRS		+= EMU10kx
 SUBDIRS		+= Envy24HT
 SUBDIRS		+= Envy24
+endif
 endif
 
 ifneq ($(strip $(HAVE_OSS)),)
