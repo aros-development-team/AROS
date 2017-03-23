@@ -33,7 +33,7 @@
 /************************************************************************************************/
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(KERNEL__ACPISUPPORT)
-DEFINESET(KERNEL__ACPISUPPORT)
+DECLARESET(KERNEL__ACPISUPPORT)
 
 int acpi_ScanTableEntries(CONST ACPI_TABLE_HEADER *table, ULONG thl, UINT8 type, const struct Hook *hook, APTR data)
 {

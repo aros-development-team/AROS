@@ -37,6 +37,7 @@ FILES    := \
              acpi_pm \
              acpi_apic \
              acpi_ioapic \
+             acpi_set \
              smp \
              syscall \
              cpu_traps \
