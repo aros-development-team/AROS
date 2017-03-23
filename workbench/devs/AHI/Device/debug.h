@@ -35,11 +35,19 @@ KPrintFArgs( UBYTE* fmt,
 #endif
 
 #ifndef __AMIGAOS4__
+#if defined(__AROS__)
 #define KPrintF( fmt, ... )        \
 ({                                 \
-  IPTR _args[] = { __VA_ARGS__ }; \
+  const IPTR _args[] = {AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
   KPrintFArgs( (fmt), (RAWARG)_args );     \
 })
+#else
+#define KPrintF( fmt, ... )        \
+({                                 \
+  ULONG _args[] = { __VA_ARGS__ }; \
+  KPrintFArgs( (fmt), _args );     \
+})
+#endif
 #else
 #define KPrintF DebugPrintF
 #endif
