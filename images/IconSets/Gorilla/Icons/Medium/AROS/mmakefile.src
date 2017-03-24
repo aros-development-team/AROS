@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Demos Development Devs Fonts \
+ICONS := Debug Demos Development Devs Fonts \
          Libs Locale Prefs Storage System \
          Tests Tools Utilities WBStartup \
          Rexxc
