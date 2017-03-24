@@ -15,8 +15,8 @@ include $(SRCDIR)/config/aros.cfg
 EXEDIR := $(AROSDIR)
 
 NOWARN_FLAGS := $(NOWARN_POINTER_SIGN)
-AHI_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN_FLOOR)
-AHI_OPTIONS=--with-os-includedir=$(AROS_INCLUDES) $(OPTIMIZATION_CFLAGS)
+AHI_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN_FLOOR) $(OPTIMIZATION_CFLAGS)
+AHI_OPTIONS=--with-os-includedir=$(AROS_INCLUDES)
 
 %build_with_configure mmake=workbench-devs-AHI prefix=$(EXEDIR) \
     extraoptions="$(AHI_OPTIONS)" \
