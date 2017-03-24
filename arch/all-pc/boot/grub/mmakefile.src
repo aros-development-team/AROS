@@ -11,6 +11,7 @@ GRUBOPTS += --enable-affs --disable-fat --disable-ffs --disable-minix --disable-
             --disable-packet-retransmission --disable-ext2fs --disable-serial \
             --disable-hercules
 endif
+GRUBCFLAGS := $(OPTIMIZATION_CFLAGS) -Wl,--build-id=none
 
 #MM
 grub-copy-stages : $(AROSARCHDIR)/grub/stage1 $(AROSARCHDIR)/grub/stage2 $(AROSARCHDIR)/grub/stage2_hdisk $(AROSARCHDIR)/grub/iso9660_stage1_5
@@ -19,7 +20,7 @@ grub-copy-stages : $(AROSARCHDIR)/grub/stage1 $(AROSARCHDIR)/grub/stage2 $(AROSA
 # OR MAKE SURE -fno-stack-protector IS DETECTED IF COMPILER SUPPORTS IT
 
 %build_with_configure mmake=grub compiler=kernel install_target= \
-    extraoptions="$(GRUBOPTS)" extracflags="-Wl,--build-id=none"
+    extraoptions="$(GRUBOPTS)" extracflags="$(GRUBCFLAGS)"
 
 $(AROSARCHDIR)/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
 	%mkdirs_q $(dir $@)
