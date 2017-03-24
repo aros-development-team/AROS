@@ -1,12 +1,14 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Page-based memory allocator, linear algorithm.
     Lang: english
 */
 
+#ifndef __KERNEL_NOLIBBASE__
 #define __KERNEL_NOLIBBASE__
+#endif /* !__KERNEL_NOLIBBASE__ */
 
 #include <exec/alerts.h>
 #include <exec/execbase.h>
