@@ -2798,7 +2798,8 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #
 
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
-    aros_prefix= extraoptions= extracflags=$(OPTIMIZATION_CFLAGS) extracxxflags=$(OPTIMIZATION_CFLAGS) nix_dir_layout= nix=no compiler=target \
+    extraoptions= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
+    aros_prefix= nix_dir_layout= nix=no compiler=target \
     install_target=install preconfigure= postconfigure= postinstall= \
     config_env_extra= install_env= use_build_env=no gnuflags=yes
 
