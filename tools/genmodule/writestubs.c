@@ -99,12 +99,12 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
             "#endif  /* NOLIBDEFINES */\n"
             "#define NOLIBINLINE\n"
             "#define NOLIBDEFINES\n"
-            "char *__aros_getoffsettable(void);\n"
+            "char *__aros_getoffsettable_%s(void);\n"
             "#ifndef __%s_NOLIBBASE__\n"
             "/* Do not include the libbase */\n"
             "#define __%s_NOLIBBASE__\n"
             "#endif\n",
-            banner, cfg->includenameupper, cfg->includenameupper
+            banner, cfg->modulename, cfg->includenameupper, cfg->includenameupper
         );
     } else {
         fprintf

@@ -71,10 +71,10 @@ void writeincproto(struct config *cfg)
                 " #define AROS_RELLIB_OFFSET_%s __aros_rellib_offset_%s\n"
                 " #define AROS_RELLIB_BASE_%s __aros_rellib_base_%s\n"
                 " #ifndef __aros_getbase_%s\n"
-                "  #ifndef __aros_getoffsettable\n"
-                "   char *__aros_getoffsettable(void);\n"
+                "  #ifndef __aros_getoffsettable_%s\n"
+                "   char *__aros_getoffsettable_%s(void);\n"
                 "  #endif\n"
-                "  #define __aros_getbase_%s() (*(%s*)(__aros_getoffsettable()+__aros_rellib_offset_%s))\n"
+                "  #define __aros_getbase_%s() (*(%s*)(__aros_getoffsettable_%s()+__aros_rellib_offset_%s))\n"
                 " #endif\n"
                 "#endif\n"
                 "\n"
@@ -95,7 +95,8 @@ void writeincproto(struct config *cfg)
                 cfg->includenameupper, cfg->libbase,
                 cfg->includenameupper, cfg->libbase,
                 cfg->libbase,
-                cfg->libbase, cfg->libbasetypeptrextern, cfg->libbase,
+                cfg->modulename, cfg->modulename,
+                cfg->libbase, cfg->libbasetypeptrextern, cfg->modulename,cfg->libbase,
                 cfg->libbase, cfg->libbasetypeptrextern, cfg->libbase
         );
     }
