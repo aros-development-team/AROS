@@ -172,14 +172,24 @@ void writeinclibdefs(struct config *cfg)
     }
 
     if (cfg->rellibs || (cfg->options & OPTION_DUPBASE) || (cfg->options & OPTION_STACKCALL))
-        fprintf(out,
-                "\n"
-                "%s\n"
-                "char *__aros_getoffsettable(void);\n"
-                "%s\n"
-                , !(cfg->options & OPTION_STACKCALL) ? "#ifndef __aros_getoffsettable" : "/* Thus must be externally visible for stackcall libs */"
-                , !(cfg->options & OPTION_STACKCALL) ? "#endif" : ""
-        );
+    {
+        if (cfg->options & OPTION_STACKCALL)
+            fprintf(out,
+                    "\n"
+                    "/* Thus must be externally visible for stackcall libs */\n"
+                    "char *__aros_getoffsettable_%s(void);\n"
+                    "\n",
+                    cfg->modulename
+            );
+        else
+            fprintf(out,
+                    "\n"
+                    "#ifndef __aros_getoffsettable_%s\n"
+                    "char *__aros_getoffsettable_%s(void);\n"
+                    "#endif\n",
+                    cfg->modulename, cfg->modulename
+            );
+    }
 
     if (cfg->options & OPTION_PERTASKBASE)
     {
