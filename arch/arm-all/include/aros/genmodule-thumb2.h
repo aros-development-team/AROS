@@ -1,5 +1,5 @@
 /*
-    Copyright © 2016, The AROS Development Team. All rights reserved.
+    Copyright © 2016-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: genmodule-thumb2.h include file for arm-le systems in thumb2 mode
@@ -60,7 +60,7 @@
             /* Up to four parameters are in r0 - r3 , the rest are on stack */ \
             "\tpush {r0, r1, r2, r3, lr}\n"                             \
             /* r0 = __aros_getoffsettable() */                          \
-            "\tbl  __aros_getoffsettable\n"                             \
+            "\tbl  __aros_getoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             /* r12 = libbase */                                         \
             "\tldr r1, 1f\n"                                            \
             "\tldr r1, [r1]\n"                                          \
@@ -109,7 +109,7 @@
             /* Up to four parameters are in r0 - r3 , the rest are on stack */  \
             "\tpush {r0, r1, r2, r3, lr}\n"                                     \
             "\tmov  r0, r12\n"                                                  \
-            "\tbl   __aros_setoffsettable\n"                                    \
+            "\tbl   __aros_setoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             "\tpop  {r0, r1, r2, r3, lr}\n"                                     \
             "\tb   " #fname "\n"                                                \
         );                                                                      \

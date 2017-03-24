@@ -2,7 +2,7 @@
 #define AROS_M68K_GENMODULE_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:CPU-specific genmodule definitions for Motorola m68k processors
@@ -53,7 +53,7 @@
         asm volatile( \
             ".weak " #fname "\n" \
             #fname " :\n" \
-            "\tjsr __aros_getoffsettable\n" \
+            "\tjsr __aros_getoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             "\tmove.l __aros_rellib_offset_" #libbasename ", %%a0\n" \
             "\tmove.l %%a0@(%%d0), %%a0\n" \
             "\tjmp %%a0@(%c0)\n" \
@@ -90,7 +90,7 @@
         asm volatile( \
             "\t" __GM_STRINGIZE(libfuncname) " :\n" \
             "\tmove.l %a0,%sp@-\n" \
-            "\tjsr __aros_setoffsettable\n" \
+            "\tjsr __aros_setoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             "\taddq.l #4,%sp\n"     \
             "\tjmp  " #fname "\n"  \
         ); \

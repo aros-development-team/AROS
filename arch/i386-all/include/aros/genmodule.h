@@ -2,7 +2,7 @@
 #define AROS_I386_GENMODULE_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -49,7 +49,7 @@
         asm volatile( \
             ".weak " #fname "\n" \
             "\t" #fname " :\n" \
-            "\tcall __aros_getoffsettable\n" \
+            "\tcall __aros_getoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             "\taddl __aros_rellib_offset_" #libbasename ", %%eax\n" \
             "\tmovl (%%eax), %%eax\n" \
             "\tjmp *%c0(%%eax)\n" \
@@ -84,7 +84,7 @@
         asm volatile( \
             "\t" __GM_STRINGIZE(libfuncname) " :\n" \
             "\tpush %eax\n" \
-            "\tcall __aros_setoffsettable\n" \
+            "\tcall __aros_setoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             "\tpop  %eax\n" \
             "\tjmp  " #fname "\n" \
         ); \
