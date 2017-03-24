@@ -40,20 +40,34 @@ void writeincinline(struct config *cfg)
             "#include <exec/types.h>\n"
             "#include <aros/symbolsets.h>\n"
             "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
-            "\n"
-            "#if !defined(__%s_LIBBASE)\n"
-            "#  if !defined(__NOLIBBASE__) && !defined(__%s_NOLIBBASE__)\n"
-            "#    define __%s_LIBBASE __aros_getbase_%s()\n"
-            "#  else\n"
-            "#    define __%s_LIBBASE %s\n"
-            "#  endif\n"
-            "#endif\n"
             "\n",
-            cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename,
-            cfg->includenameupper, cfg->includenameupper,
-            cfg->includenameupper, cfg->libbase,
-            cfg->includenameupper, cfg->libbase
+            cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename
     );
+    if (cfg->options & OPTION_RELLINKLIB)
+    {
+        fprintf(out,
+                "#if !defined(__%s_LIBBASE)\n"
+                "#  if !defined(__NOLIBBASE__) && !defined(__%s_NOLIBBASE__)\n"
+                "#    define __%s_LIBBASE __aros_getbase_%s()\n"
+                "#  else\n"
+                "#    define __%s_LIBBASE %s\n"
+                "#  endif\n"
+                "#endif\n"
+                "\n",
+                cfg->includenameupper, cfg->includenameupper,
+                cfg->includenameupper, cfg->libbase,
+                cfg->includenameupper, cfg->libbase
+        );
+    }
+    else
+        fprintf(out,
+                "#if !defined(__%s_LIBBASE)\n"
+                "#    define __%s_LIBBASE %s\n"
+                "#endif\n"
+                "\n",
+                cfg->includenameupper, 
+                cfg->includenameupper, cfg->libbase
+        );        
     freeBanner(banner);
 
     for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
