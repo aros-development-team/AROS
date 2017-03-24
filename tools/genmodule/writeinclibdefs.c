@@ -179,7 +179,7 @@ void writeinclibdefs(struct config *cfg)
                     "/* Thus must be externally visible for stackcall libs */\n"
                     "char *__aros_getoffsettable_%s(void);\n"
                     "\n",
-                    cfg->modulename
+                    cfg->basename
             );
         else
             fprintf(out,
@@ -187,7 +187,7 @@ void writeinclibdefs(struct config *cfg)
                     "#ifndef __aros_getoffsettable_%s\n"
                     "char *__aros_getoffsettable_%s(void);\n"
                     "#endif\n",
-                    cfg->modulename, cfg->modulename
+                    cfg->basename, cfg->basename
             );
     }
 

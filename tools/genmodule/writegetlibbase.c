@@ -57,10 +57,10 @@ void writegetlibbase(struct config *cfg, int is_rel)
                 "{\n"
                 "    return *((%s*)(__aros_getoffsettable_%s()+__aros_rellib_offset_%s));\n"
                 "}\n",
-                cfg->modulename, cfg->libbase,
+                cfg->basename, cfg->libbase,
                 cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbasetypeptrextern, cfg->libbase,
-                cfg->libbasetypeptrextern, cfg->modulename, cfg->libbase
+                cfg->libbasetypeptrextern, cfg->basename, cfg->libbase
          );
     }
     fclose(out);

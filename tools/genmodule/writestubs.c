@@ -104,7 +104,7 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
             "/* Do not include the libbase */\n"
             "#define __%s_NOLIBBASE__\n"
             "#endif\n",
-            banner, cfg->modulename, cfg->includenameupper, cfg->includenameupper
+            banner, cfg->basename, cfg->includenameupper, cfg->includenameupper
         );
     } else {
         fprintf
