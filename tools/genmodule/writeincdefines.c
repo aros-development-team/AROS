@@ -41,9 +41,20 @@ void writeincdefines(struct config *cfg)
             "#include <aros/symbolsets.h>\n"
             "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
             "\n"
+            "#if !defined(__%s_LIBBASE)\n"
+            "#  if !defined(__NOLIBBASE__) && !defined(__%s_NOLIBBASE__)\n"
+            "#    define __%s_LIBBASE __aros_getbase_%s()\n"
+            "#  else\n"
+            "#    define __%s_LIBBASE %s\n"
+            "#  endif\n"
+            "#endif\n"
+            "\n"
             "__BEGIN_DECLS\n"
             "\n",
-            cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename
+            cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename,
+            cfg->includenameupper, cfg->includenameupper,
+            cfg->includenameupper, cfg->libbase,
+            cfg->includenameupper, cfg->libbase
     );
     freeBanner(banner);
 
@@ -281,8 +292,8 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
             fprintf(out, ", ");
         fprintf(out, "arg%d", count);
     }
-    fprintf(out, ") \\\n    __%s_WB(__aros_getbase_%s()",
-            funclistit->name, cfg->libbase
+    fprintf(out, ") \\\n    __%s_WB(__%s_LIBBASE",
+            funclistit->name, cfg->includenameupper
     );
     for (arglistit = funclistit->arguments, count = 1;
          arglistit != NULL;
@@ -406,9 +417,9 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
                 "...) __%s_WB(",
                 varargname, cfg->libbase
         );
-        fprintf(out, "(%s)__aros_getbase_%s(), ",
+        fprintf(out, "(%s)__%s_LIBBASE, ",
                 cfg->libbasetypeptrextern,
-                cfg->libbase);
+                cfg->includenameupper);
         for (arglistit = funclistit->arguments, count = 1;
              arglistit != NULL && arglistit->next != NULL && arglistit->next->next != NULL;
              arglistit = arglistit->next, count++
@@ -486,9 +497,9 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
                 "    __inline_%s_%s(",
                 cfg->basename, varargname
         );
-        fprintf(out, "(%s)__aros_getbase_%s(), ",
+        fprintf(out, "(%s)__%s_LIBBASE, ",
                 cfg->libbasetypeptrextern,
-                cfg->libbase);
+                cfg->includenameupper);
         for (arglistit = funclistit->arguments, count = 1;
              arglistit != NULL && arglistit->next != NULL && arglistit->next->next != NULL;
              arglistit = arglistit->next, count++

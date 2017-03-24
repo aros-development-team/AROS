@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write module stubs. Part of genmodule.
@@ -91,8 +91,12 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
         (
             out,
             "%s"
+            "#ifdef  NOLIBINLINE\n"
             "#undef  NOLIBINLINE\n"
+            "#endif  /* NOLIBINLINE */\n"
+            "#ifdef  NOLIBDEFINES\n"
             "#undef  NOLIBDEFINES\n"
+            "#endif  /* NOLIBDEFINES */\n"
             "#define NOLIBINLINE\n"
             "#define NOLIBDEFINES\n"
             "char *__aros_getoffsettable(void);\n"
@@ -107,14 +111,22 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
         (
             out,
             "%s"
+            "#ifdef  NOLIBINLINE\n"
             "#undef  NOLIBINLINE\n"
+            "#endif  /* NOLIBINLINE */\n"
+            "#ifdef  NOLIBDEFINES\n"
             "#undef  NOLIBDEFINES\n"
+            "#endif  /* NOLIBDEFINES */\n"
             "#define NOLIBINLINE\n"
             "#define NOLIBDEFINES\n"
             "/* Be sure that the libbases are included in the stubs file */\n"
-            "#undef __NOLIBBASE__\n"
-            "#undef __%s_NOLIBBASE__\n",
-            banner, cfg->includenameupper
+            "#ifdef  __NOLIBBASE__\n"
+            "#undef  __NOLIBBASE__\n"
+            "#endif  /* __NOLIBBASE__ */\n"
+            "#ifdef  __%s_NOLIBBASE__\n"
+            "#undef  __%s_NOLIBBASE__\n"
+            "#endif  /* __%s_NOLIBBASE__ */\n",
+            banner, cfg->includenameupper, cfg->includenameupper, cfg->includenameupper
         );
     }
     freeBanner(banner);
