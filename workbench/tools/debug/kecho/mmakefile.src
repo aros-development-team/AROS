@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_prog mmake=workbench-tools \
-    progname=KEcho targetdir=$(AROSDIR)/Tools/Debug \
+    progname=KEcho targetdir=$(AROSDIR)/Debug \
     files=KEcho usestartup=no
 
 %common
