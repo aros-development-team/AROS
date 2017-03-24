@@ -5,7 +5,10 @@
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
+
+#ifndef __ACPICA_NOLIBBASE__
 #define __ACPICA_NOLIBBASE__
+#endif /* !__ACPICA_NOLIBBASE__ */
 
 #define DEBUG 0
 #include <aros/debug.h>
