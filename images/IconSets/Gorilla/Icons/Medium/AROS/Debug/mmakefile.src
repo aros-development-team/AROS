@@ -3,9 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Sashimi Bifteck
+ICONS := Bifteck Sashimi Tests 
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-tools-debug-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-tools-debug
-%build_icons mmake=iconset-Gorilla-icons-aros-tools-debug icons=$(ICONS) \
-             dir=$(AROS_TOOLS)/Debug
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-debug-clean
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-debug
+%build_icons mmake=iconset-Gorilla-icons-aros-debug icons=$(ICONS) \
+             dir=$(AROSDIR)/Debug
