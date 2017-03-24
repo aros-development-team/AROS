@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-tools : includes linklibs
 
 %build_prog mmake=workbench-tools \
-    progname=Bifteck targetdir=$(AROSDIR)/Tools/Debug \
+    progname=Bifteck targetdir=$(AROSDIR)/Debug \
     files=Bifteck
 
 %common
