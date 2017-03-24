@@ -42,11 +42,14 @@ ACPI_STATUS AcpiOsInitialize (void)
 
     if ((ACPICABase->ab_TimeMsgPort = CreateMsgPort())) {
         if ((ACPICABase->ab_TimeRequest = CreateIORequest(ACPICABase->ab_TimeMsgPort, sizeof(*ACPICABase->ab_TimeRequest)))) {
+            D(bug("[ACPI] %s: Ready\n", __func__));
             ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
             return AE_OK;
         }
         DeleteMsgPort(ACPICABase->ab_TimeMsgPort);
     }
+
+    D(bug("[ACPI] %s: Failed\n", __func__));
 
     return AE_NO_MEMORY;
 }
@@ -128,11 +131,13 @@ ACPI_STATUS AcpiOsGetPhysicalAddress(void *LogicalAddress, ACPI_PHYSICAL_ADDRESS
 
 void *AcpiOsAllocate(ACPI_SIZE Size)
 {
+    D(bug("[ACPI] %s(%d)\n", __func__, Size));
     return AllocVec(Size, MEMF_PUBLIC);
 }
 
 void AcpiOsFree(void *Memory)
 {
+    D(bug("[ACPI] %s(0x%p)\n", __func__, Memory));
     FreeVec(Memory);
 }
 
@@ -150,7 +155,9 @@ BOOLEAN AcpiOsWritable(void *Memory, ACPI_SIZE Length)
 ACPI_THREAD_ID AcpiOsGetThreadId(void)
 {
     ACPI_THREAD_ID tid;
-    
+
+    D(bug("[ACPI] %s()\n", __func__));
+
     tid = (ACPI_THREAD_ID)(ACPI_PHYSICAL_ADDRESS)FindTask(NULL);
 
     /* If we are running during kernel bring-up, return
@@ -202,7 +209,9 @@ void AcpiOsWaitEventsComplete(void)
 ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits, ACPI_SEMAPHORE *OutHandle)
 {
     struct SignalSemaphore *Handle;
-    
+
+    D(bug("[ACPI] %s()\n", __func__));
+
     Handle = ACPI_ALLOCATE(sizeof(*Handle));
     if (Handle) {
         InitSemaphore(Handle);
@@ -214,12 +223,16 @@ ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits, ACPI_SEM
 
 ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     ACPI_FREE(Handle);
     return AE_OK;
 }
 
 ACPI_STATUS AcpiOsWaitSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units, UINT16 Timeout)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     if (Timeout == ACPI_DO_NOT_WAIT) {
         if (!AttemptSemaphore(Handle))
             return AE_TIME;
@@ -235,6 +248,8 @@ ACPI_STATUS AcpiOsWaitSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units, UINT16 Time
 
 ACPI_STATUS AcpiOsSignalSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     ReleaseSemaphore(Handle);
     return AE_OK;
 }
@@ -247,11 +262,15 @@ struct SpinLock {
 
 static inline struct SpinLock *CreateSpin(VOID)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     return AllocVec(sizeof(struct SpinLock), MEMF_ANY | MEMF_CLEAR);
 }
 
 static inline void DeleteSpin(struct SpinLock *sl)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     Disable();
     while (sl->sl_Lock > 0) {
         Enable();
@@ -266,6 +285,8 @@ static inline VOID LockSpin(struct SpinLock *sl)
 {
     BYTE pri, pri_lower;
     struct Task *task = FindTask(NULL);
+
+    D(bug("[ACPI] %s()\n", __func__));
 
     pri = task->tc_Node.ln_Pri;
     pri_lower = pri;
@@ -287,12 +308,16 @@ static inline VOID LockSpin(struct SpinLock *sl)
 
 static inline void UnlockSpin(struct SpinLock *sl)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     sl->sl_Lock--;
     Enable();
 }
 
 ACPI_STATUS AcpiOsCreateLock(ACPI_SPINLOCK *OutHandle)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     *OutHandle = CreateSpin();
 
     return (*OutHandle == NULL) ? AE_NO_MEMORY : AE_OK;
@@ -305,12 +330,16 @@ void AcpiOsDeleteLock(ACPI_SPINLOCK Handle)
 
 ACPI_CPU_FLAGS AcpiOsAcquireLock(ACPI_SPINLOCK Handle)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     LockSpin(Handle);
     return 1;
 }
 
 void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     if (Flags == 1)
         UnlockSpin(Handle);
 }
@@ -327,6 +356,8 @@ static AROS_INTH1(AcpiOsIntServer, struct AcpiOsInt *, ai)
 
     UINT32 ret;
 
+    D(bug("[ACPI] %s()\n", __func__));
+
     ret = ai->ai_Handler(ai->ai_Context);
 
     return (ret == ACPI_INTERRUPT_HANDLED) ? TRUE : FALSE;
@@ -337,6 +368,8 @@ static AROS_INTH1(AcpiOsIntServer, struct AcpiOsInt *, ai)
 ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel, ACPI_OSD_HANDLER Handler, void *Context)
 {
     struct AcpiOsInt *ai;
+
+    D(bug("[ACPI] %s()\n", __func__));
 
     if ((ai = ACPI_ALLOCATE(sizeof(*ai)))) {
         ai->ai_Interrupt.is_Node.ln_Name = "ACPI";
@@ -409,6 +442,8 @@ ACPI_STATUS AcpiOsWritePort(ACPI_IO_ADDRESS Address, UINT32 Value, UINT32 Width)
 static UINT8 *find_pci(struct ACPICABase *ACPICABase, ACPI_PCI_ID *PciId)
 {
     int i;
+
+    D(bug("[ACPI] %s()\n", __func__));
 
     for (i = 0; i < ACPICABase->ab_PCIs; i++) {
         ACPI_MCFG_ALLOCATION *ma = &ACPICABase->ab_PCI[i];
@@ -522,6 +557,8 @@ LONG AcpiScanTables(const char *Signature, const struct Hook *Hook, APTR UserDat
     int i;
     LONG count;
 
+    D(bug("[ACPI] %s()\n", __func__));
+
     for (count = 0, i = 1; ; i++) {
         ACPI_STATUS err;
         ACPI_TABLE_HEADER *hdr;
@@ -550,11 +587,15 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
     ACPI_STATUS err;
     const UINT8 initlevel = ACPI_FULL_INITIALIZATION;
 
+    D(bug("[ACPI] %s: Starting Full initialization...\n", __func__));
+
     err = AcpiInitializeSubsystem();
     if (ACPI_FAILURE(err)) {
         D(bug("[ACPI] %s: AcpiInitializeSubsystem returned error %d\n", __func__, err));
         return FALSE;
     }
+
+    D(bug("[ACPI] %s: Subsystem Initialized\n", __func__));
 
     err = AcpiLoadTables();
     if (ACPI_FAILURE(err)) {
@@ -562,11 +603,15 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
         return FALSE;
     }
 
+    D(bug("[ACPI] %s: Tables Initialized\n", __func__));
+    
     err = AcpiEnableSubsystem(initlevel);
     if (ACPI_FAILURE(err)) {
         D(bug("[ACPI] %s: AcpiEnableSubsystem(0x%02x) returned error %d\n", __func__, initlevel, err));
         return FALSE;
     }
+
+    D(bug("[ACPI] %s: Subsystem Enabled\n", __func__));
 
     err = AcpiInitializeObjects(initlevel);
     if (ACPI_FAILURE(err)) {
@@ -619,6 +664,8 @@ ADD2INITLIB(ACPICA_init,0)
 
 int ACPICA_expunge(struct ACPICABase *ACPICABase)
 {
+    D(bug("[ACPI] %s()\n", __func__));
+
     AcpiTerminate();
 
     return TRUE;
@@ -662,6 +709,8 @@ static AROS_UFH3 (APTR, ACPICAPost,
 
     struct ACPICABase *ACPICABase;
 
+    D(bug("[ACPI] %s()\n", __func__));
+
     /* If ACPICA isnt available, dont run */
     ACPICABase = (struct ACPICABase *)OpenResource("kernel.resource");
     if (!ACPICABase)
@@ -671,6 +720,8 @@ static AROS_UFH3 (APTR, ACPICAPost,
     if (NewCreateTask(TASKTAG_PC, ACPICA_InitTask, TASKTAG_NAME, "ACPICA_InitTask", TASKTAG_PRI, 127, TASKTAG_ARG1, ACPICABase, TAG_DONE) == NULL) {
         bug("[ACPI] %s: Failed to start ACPI init task\n", __func__);
     }
+
+    D(bug("[ACPI] %s: Finished\n", __func__));
 
     AROS_USERFUNC_EXIT
 
