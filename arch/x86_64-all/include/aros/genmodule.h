@@ -2,7 +2,7 @@
 #define AROS_X86_64_GENMODULE_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: genmodule specific definitions for x86_64
@@ -54,7 +54,7 @@
             "\tpushq %%rcx\n"     \
             "\tpushq %%r8\n"      \
             "\tpushq %%r9\n"      \
-            "\tcall __aros_getoffsettable\n" \
+            "\tcall __aros_getoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             "\taddq __aros_rellib_offset_" #libbasename "(%%rip), %%rax\n" \
             "\tmovq (%%rax),%%r11\n" \
             "\tpopq %%r9\n"      \
@@ -105,7 +105,7 @@
             "\tpushq %%r8\n"      \
             "\tpushq %%r9\n"      \
             "\tmovq  %%r11,%%rdi\n" \
-            "\tcall __aros_setoffsettable\n" \
+            "\tcall __aros_setoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
             "\tpopq %%r9\n"      \
             "\tpopq %%r8\n"      \
             "\tpopq %%rcx\n"     \
