@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to write a Makefile with variables that provides the files
@@ -110,14 +110,25 @@ void writemakefile(struct config *cfg)
     }
     fprintf(out, "\n");
 
-    fprintf(out, "%s_CFLAGS  +=", cfg->modulename);
+
+    fprintf(out, "%s_LINKLIBCFLAGS  +=", cfg->modulename);
     for (s = cfg->rellibs; s ; s = s->next)
         fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
     fprintf(out, "\n");
 
-    fprintf(out, "%s_DFLAGS  +=", cfg->modulename);
+    fprintf(out, "%s_CFLAGS  += $(%s_LINKLIBCFLAGS)", cfg->modulename, cfg->modulename);
+    if (cfg->options & OPTION_AUTOINIT)
+        fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
+    fprintf(out, "\n");
+
+    fprintf(out, "%s_LINKLIBDFLAGS  +=", cfg->modulename);
     for (s = cfg->rellibs; s ; s = s->next)
         fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
+    fprintf(out, "\n");
+
+    fprintf(out, "%s_DFLAGS  += $(%s_LINKLIBDFLAGS)", cfg->modulename, cfg->modulename);
+    if (cfg->options & OPTION_AUTOINIT)
+        fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
     fprintf(out, "\n");
 
     fprintf(out, "%s_LDFLAGS +=", cfg->modulename);
