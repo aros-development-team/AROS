@@ -95,8 +95,8 @@ void writeincproto(struct config *cfg)
                 cfg->includenameupper, cfg->libbase,
                 cfg->includenameupper, cfg->libbase,
                 cfg->libbase,
-                cfg->modulename, cfg->modulename,
-                cfg->libbase, cfg->libbasetypeptrextern, cfg->modulename,cfg->libbase,
+                cfg->basename, cfg->basename,
+                cfg->libbase, cfg->libbasetypeptrextern, cfg->basename, cfg->libbase,
                 cfg->libbase, cfg->libbasetypeptrextern, cfg->libbase
         );
     }
