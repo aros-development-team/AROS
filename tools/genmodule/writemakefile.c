@@ -117,7 +117,7 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
     fprintf(out, "%s_CFLAGS  += $(%s_LINKLIBCFLAGS)", cfg->modulename, cfg->modulename);
-    if (cfg->options & OPTION_AUTOINIT)
+    if (cfg->options & OPTION_RELLINKLIB)
         fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
     fprintf(out, "\n");
 
@@ -127,7 +127,7 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
     fprintf(out, "%s_DFLAGS  += $(%s_LINKLIBDFLAGS)", cfg->modulename, cfg->modulename);
-    if (cfg->options & OPTION_AUTOINIT)
+    if (cfg->options & OPTION_RELLINKLIB)
         fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
     fprintf(out, "\n");
 
