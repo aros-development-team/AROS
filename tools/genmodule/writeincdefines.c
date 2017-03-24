@@ -43,7 +43,7 @@ void writeincdefines(struct config *cfg)
             "\n",
             cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename
     );
-    if (cfg->options & OPTION_RELLINKLIB)
+    if ((cfg->options & OPTION_RELLINKLIB) || (cfg->options & OPTION_DUPBASE))
     {
         fprintf(out,
                 "#if !defined(__%s_LIBBASE)\n"
