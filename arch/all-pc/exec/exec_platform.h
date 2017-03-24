@@ -1,5 +1,5 @@
 /*
-    Copyright � 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __EXEC_PLATFORM_H
@@ -9,7 +9,9 @@
 #include <aros/config.h>
 #include <aros/atomic.h>
 
+#ifndef __KERNEL_NOLIBBASE__
 #define __KERNEL_NOLIBBASE__
+#endif /* !__KERNEL_NOLIBBASE__ */
 #include <proto/kernel.h>
 
 #if (__WORDSIZE==64)
