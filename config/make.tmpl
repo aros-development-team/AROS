@@ -1922,20 +1922,26 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 BD_NLIBARCHFILES := $(filter-out $(BD_LIBARCHFILES),$(BD_LIBFILES))
 BD_ARCHNLIBFILES := $(filter-out $(BD_LIBFILES),$(BD_LIBARCHFILES))
 
-BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CFLAGS)
-BD_CXXFLAGS := %(cxxflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CXXFLAGS)
+BD_COMMONCFLAGS=-I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
+BD_CFLAGS        := %(cflags) $(BD_COMMONCFLAGS) $(%(modname)_CFLAGS)
+BD_LINKLIBCFLAGS := %(cflags) $(BD_COMMONCFLAGS) $(%(modname)_LINKLIBCFLAGS)
+BD_CXXFLAGS      := %(cxxflags) $(BD_COMMONCFLAGS) $(%(modname)_CXXFLAGS)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_CFLAGS    := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_CFLAGS)
-BD_CXXFLAGS := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_CXXFLAGS)
+BD_LTOFLAGS=$(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH)
+BD_CFLAGS        := $(BD_LTOFLAGS) $(BD_CFLAGS)
+BD_LINKLIBCFLAGS := $(BD_LTOFLAGS) $(BD_LINKLIBCFLAGS)
+BD_CXXFLAGS      := $(BD_LTOFLAGS) $(BD_CXXFLAGS)
 endif
 endif
 ifneq (%(includedir),)
-BD_CFLAGS     += -I%(includedir)
-BD_CXXFLAGS += -I%(includedir)
+BD_CFLAGS        += -I%(includedir)
+BD_LINKLIBCFLAGS += -I%(includedir)
+BD_CXXFLAGS      += -I%(includedir)
 endif
-BD_DFLAGS     := %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_DFLAGS)
-BD_DXXFLAGS := %(dxxflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_DXXFLAGS)
+BD_DFLAGS        := %(dflags) $(BD_COMMONCFLAGS) $(%(modname)_DFLAGS)
+BD_LINKLIBDFLAGS := %(dflags) $(BD_COMMONCFLAGS) $(%(modname)_LINKLIBDFLAGS)
+BD_DXXFLAGS      := %(dxxflags) $(BD_COMMONCFLAGS) $(%(modname)_DXXFLAGS)
 
 ifeq (%(modtype),library)
     BD_LIBSUFFIX := 
@@ -2002,11 +2008,11 @@ BD_LINKLIBCCGENFILES := $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES)
     compiler="%(compiler)"
 %rule_compile_multi \
     basenames=$(BD_NLIBARCHFILES) targetdir="%(objdir)/linklib" \
-    cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
+    cflags="$(BD_LINKLIBCFLAGS) -D__AROS__" dflags=$(BD_LINKLIBDFLAGS) \
     compiler="%(compiler)"
 %rule_compile_multi \
     basenames=$(BD_LINKLIBCCGENFILES) srcdir="%(objdir)/linklib" targetdir="%(objdir)/linklib" \
-    cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
+    cflags="$(BD_LINKLIBCFLAGS) -D__AROS__" dflags=$(BD_LINKLIBDFLAGS) \
     compiler="%(compiler)"
 
 ifneq ($(BD_LINKLIBAFILES),)
