@@ -9,7 +9,7 @@ USER_CFLAGS := $(NOWARN_FLAGS) \
         -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_prog mmake=workbench-tools \
-    progname=WinDebug targetdir=$(AROSDIR)/Tools/Debug \
+    progname=WinDebug targetdir=$(AROSDIR)/Debug \
     files=windebug
 
 %common
