@@ -8,7 +8,9 @@
     Desc:
 */
 
+#ifndef __KERNEL_NOLIBBASE__
 #define __KERNEL_NOLIBBASE__
+#endif /* __KERNEL_NOLIBBASE__ */
 
 #include <exec/execbase.h>
 #include <exec/memory.h>
