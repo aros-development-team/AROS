@@ -5,6 +5,7 @@
     Desc:
     Lang:
 */
+
 #include <stdarg.h>
 #include <exec/types.h>
 #include <aros/libcall.h>
@@ -42,18 +43,12 @@ AROS_LH2(ULONG, __int_asl,
 
 LONG printx(LONG nargs, ...)
 {
-    struct DummyBase *DummyBase = __aros_getbase_DummyBase();
+    struct DummyBase *DummyBase = (struct DummyBase *)__aros_getbase_DummyBase();
     struct Library *DOSBase = OpenLibrary("dos.library", 0);
     va_list args;
     LONG i, baseval = 0;
 
-// Warning: The following line is disabled, because
-//    __aros_getbase_DummyBase() seems to return
-//   nonsense on x86_64
-
-#if (__WORDSIZE!=64)
     baseval = DummyBase->lastval;
-#endif
 
     va_start(args, nargs); 
 
