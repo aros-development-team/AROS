@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Support function for generating code for BOOPSI classes. Part of genmodule.
@@ -55,7 +55,7 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
         );
         if (cfg->options & OPTION_DUPBASE)
             fprintf(out,
-            "    __aros_setoffsettable_%s(CLASS->cl_UserData);\n", cfg->basename
+            "    __aros_setoffsettable(CLASS->cl_UserData);\n"
             );
         fprintf
         (

@@ -314,56 +314,54 @@ static void writedecl(FILE *out, struct config *cfg)
         fprintf(
             out,
             "static LONG __GM_BaseSlot;\n"
-            "char *__aros_getoffsettable_%s(void)\n"
+            "char *__aros_getoffsettable(void)\n"
             "{\n"
             "    return (char *)GetTaskStorageSlot(__GM_BaseSlot);\n"
             "}\n"
-            "void __aros_setoffsettable_%s(void *base)\n"
+            "void __aros_setoffsettable(void *base)\n"
             "{\n"
             "    SetTaskStorageSlot(__GM_BaseSlot, (IPTR)base);\n"
             "}\n"
             "%s__aros_getbase_%s(void)\n"
             "{\n"
-            "    return (%s)__aros_getoffsettable_%s();\n"
+            "    return (%s)__aros_getoffsettable();\n"
             "}\n",
-            cfg->basename, cfg->basename,
             cfg->libbasetypeptrextern, cfg->libbase,
-            cfg->libbasetypeptrextern, cfg->basename
+            cfg->libbasetypeptrextern
         );
     } else if (cfg->rellibs || (cfg->options & OPTION_STACKCALL)) {
         fprintf(out,
-            "#ifdef __aros_getoffsettable_%s\n", cfg->basename
+            "#ifdef __aros_getoffsettable\n"
         );
         if ((cfg->options & OPTION_STACKCALL))
             fprintf(out,
-             "#error Redefining __aros_setoffsettable_%s is not permitted with stackcall APIs\n", cfg->basename
+             "#error Redefining __aros_setoffsettable is not permitted with stackcall APIs\n"
             );
         else
             fprintf(out,
-                    "#define __aros_getbase_%s() __aros_getoffsettable_%s()\n",
-                    cfg->libbase, cfg->basename
+                    "#define __aros_getbase_%s() __aros_getoffsettable()\n",
+                    cfg->libbase
             );
         fprintf(out,
             "#else /* !__aros_getoffsettable */\n"
             "static char *__GM_OffsetTable;\n"
-            "char *__aros_getoffsettable_%s(void)\n"
+            "char *__aros_getoffsettable(void)\n"
             "{\n"
             "    return __GM_OffsetTable;\n"
             "}\n"
-            "BOOL __aros_setoffsettable_%s(char *base)\n"
+            "BOOL __aros_setoffsettable(char *base)\n"
             "{\n"
             "    __GM_OffsetTable = base;\n"
             "    return TRUE;\n"
             "}\n"
             "%s__aros_getbase_%s(void)\n"
             "{\n"
-            "    return (%s)__aros_getoffsettable_%s();\n"
+            "    return (%s)__aros_getoffsettable();\n"
             "}\n"
             "#endif /* __aros_getoffsettable */\n"
             "\n",
-            cfg->basename, cfg->basename,
             cfg->libbasetypeptrextern, cfg->libbase,
-            cfg->libbasetypeptrextern, cfg->basename
+            cfg->libbasetypeptrextern
         );
     }
 
@@ -998,7 +996,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
         );
     else if (cfg->rellibs || (cfg->options & OPTION_STACKCALL))
         fprintf(out,
-                "    __aros_setoffsettable_%s((char *)LIBBASE);\n", cfg->basename
+                "    __aros_setoffsettable((char *)LIBBASE);\n"
         );
     if (cfg->options & OPTION_PERTASKBASE)
         fprintf(out,
@@ -1241,8 +1239,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
                     "        CopyMem(LIBBASE, newlib, possize);\n"
                     "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
                     "        dupbase->oldbase = oldbase;\n"
-                    "        __aros_setoffsettable_%s((char *)newlib);\n",
-                    cfg->basename
+                    "        __aros_setoffsettable((char *)newlib);\n"
             );
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
@@ -1344,8 +1341,7 @@ static void writecloselib(FILE *out, struct config *cfg)
         fprintf(out,
                 "    LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(LIBBASE);\n"
                 "    struct __GM_DupBase *dupbase = (struct __GM_DupBase *)LIBBASE;\n"
-                "    __aros_setoffsettable_%s(LIBBASE);\n",
-                cfg->basename
+                "    __aros_setoffsettable(LIBBASE);\n"
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
@@ -1357,8 +1353,7 @@ static void writecloselib(FILE *out, struct config *cfg)
                 "\n"
                 "    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, LIBBASE);\n"
                 "    set_close_rellibraries(LIBBASE);\n"
-                "    __aros_setoffsettable_%s((char *)dupbase->oldbase);\n",
-                cfg->basename
+                "    __aros_setoffsettable((char *)dupbase->oldbase);\n"
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
@@ -1421,7 +1416,7 @@ static void writeexpungelib(FILE *out, struct config *cfg)
             );
         }
         if (cfg->options & OPTION_DUPBASE)
-            fprintf(out, "    __aros_setoffsettable_%s(LIBBASE);\n", cfg->basename);
+            fprintf(out, "    __aros_setoffsettable(LIBBASE);\n");
         fprintf(out,
                 "\n"
                 "    if ( ((struct Library *)LIBBASE)->lib_OpenCnt == 0 )\n"
