@@ -8,7 +8,10 @@ NOWARN_FLAGS := $(NOWARN_FORMAT) $(NOWARN_ATTRIBUTES)
 USER_CFLAGS := $(NOWARN_FLAGS) \
         -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
-%build_prog mmake=workbench-tools \
+#MM- debug-tools : debug-tools-windebug
+#MM debug-tools-windebug : includes linklibs
+
+%build_prog mmake=debug-tools-windebug \
     progname=WinDebug targetdir=$(AROSDIR)/Debug \
     files=windebug
 

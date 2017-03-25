@@ -4,10 +4,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench : workbench-tools
-#MM workbench-tools : includes linklibs
+#MM- debug-tools : debug-tools-bifteck
+#MM debug-tools-bifteck : includes linklibs
 
-%build_prog mmake=workbench-tools \
+%build_prog mmake=debug-tools-bifteck \
     progname=Bifteck targetdir=$(AROSDIR)/Debug \
     files=Bifteck
 
