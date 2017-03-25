@@ -23,7 +23,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM      test-library-pertasklib-clean \
 #MM      test-library-userellib-clean
 
-TARGETDIR := $(AROSDIR)/Tests/Library
+TARGETDIR := $(AROSDIR)/Debug/Tests/Library
 
 USER_CFLAGS := -I$(TARGETDIR)/Development/include
 USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
