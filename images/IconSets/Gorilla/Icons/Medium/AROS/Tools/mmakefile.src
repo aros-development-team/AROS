@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Calculator HDToolBox PCITool InstallAROS Editor Commodities WiMP \
+ICONS := Calculator HDToolBox InstallAROS Editor Commodities WiMP \
          ScreenGrabber ShowConfig SysExplorer KeyShow InitPrinter PrintFiles GraphicDump \
          BoingIconBar
 
