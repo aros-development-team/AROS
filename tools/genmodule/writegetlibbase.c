@@ -32,13 +32,10 @@ void writegetlibbase(struct config *cfg, int is_rel)
         fprintf(out,
                 "extern %s%s;\n"
                 "\n"
-                "%s__aros_getbase_%s(void);\n"
-                "\n"
                 "%s__aros_getbase_%s(void)\n"
                 "{\n"
                 "    return %s;\n"
                 "}\n",
-                cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbase
@@ -51,14 +48,11 @@ void writegetlibbase(struct config *cfg, int is_rel)
                 "char *__aros_getoffsettable(void);\n"
                 "extern IPTR __aros_rellib_offset_%s;\n"
                 "\n"
-                "%s__aros_getbase_%s(void);\n"
-                "\n"
                 "%s__aros_getbase_%s(void)\n"
                 "{\n"
                 "    return *((%s*)(__aros_getoffsettable()+__aros_rellib_offset_%s));\n"
                 "}\n",
                 cfg->libbase,
-                cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbasetypeptrextern, cfg->libbase
          );
