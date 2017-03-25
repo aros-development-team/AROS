@@ -54,7 +54,7 @@
             "\tpushq %%rcx\n"     \
             "\tpushq %%r8\n"      \
             "\tpushq %%r9\n"      \
-            "\tcall __aros_getoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
+            "\tcall __aros_getoffsettable\n" \
             "\taddq __aros_rellib_offset_" #libbasename "(%%rip), %%rax\n" \
             "\tmovq (%%rax),%%r11\n" \
             "\tpopq %%r9\n"      \
@@ -105,7 +105,7 @@
             "\tpushq %%r8\n"      \
             "\tpushq %%r9\n"      \
             "\tmovq  %%r11,%%rdi\n" \
-            "\tcall __aros_setoffsettable_"  __GM_STRINGIZE(libbasename) "\n" \
+            "\tcall __aros_setoffsettable\n" \
             "\tpopq %%r9\n"      \
             "\tpopq %%r8\n"      \
             "\tpopq %%rcx\n"     \
