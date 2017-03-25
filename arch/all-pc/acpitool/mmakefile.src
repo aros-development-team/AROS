@@ -4,14 +4,14 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES       := main locale parsers
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
-EXEDIR      := $(AROSDIR)/Tools
+EXEDIR      := $(AROSDIR)/Debug
 
 # Build ACPITool only for PC
-#MM- workbench-pc-$(CPU) : workbench-tools-acpitool
+#MM- workbench-pc-$(CPU) : debug-tools-acpitool
 
-#MM workbench-tools-acpitool : workbench-tools-acpitool-icon workbench-tools-acpitool-catalogs
+#MM debug-tools-acpitool : debug-tools-acpitool-icon debug-tools-acpitool-catalogs
 
-%build_prog mmake=workbench-tools-acpitool \
+%build_prog mmake=debug-tools-acpitool \
     progname=ACPITool targetdir=$(EXEDIR) \
     files=$(FILES) uselibs=acpica
 
