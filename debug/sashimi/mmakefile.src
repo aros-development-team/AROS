@@ -4,10 +4,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench : workbench-tools
-#MM workbench-tools : includes linklibs
+#MM- debug-tools : debug-tools-sasimi
+#MM debug-tools-sasimi : includes linklibs
 
-%build_prog mmake=workbench-tools \
+%build_prog mmake=debug-tools-sasimi \
     progname=sashimi targetdir=$(AROSDIR)/Debug \
     files=sashimi
 
