@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write libdefs.h. Part of genmodule.
@@ -172,24 +172,14 @@ void writeinclibdefs(struct config *cfg)
     }
 
     if (cfg->rellibs || (cfg->options & OPTION_DUPBASE) || (cfg->options & OPTION_STACKCALL))
-    {
-        if (cfg->options & OPTION_STACKCALL)
-            fprintf(out,
-                    "\n"
-                    "/* Thus must be externally visible for stackcall libs */\n"
-                    "char *__aros_getoffsettable_%s(void);\n"
-                    "\n",
-                    cfg->basename
-            );
-        else
-            fprintf(out,
-                    "\n"
-                    "#ifndef __aros_getoffsettable_%s\n"
-                    "char *__aros_getoffsettable_%s(void);\n"
-                    "#endif\n",
-                    cfg->basename, cfg->basename
-            );
-    }
+        fprintf(out,
+                "\n"
+                "%s\n"
+                "char *__aros_getoffsettable(void);\n"
+                "%s\n"
+                , !(cfg->options & OPTION_STACKCALL) ? "#ifndef __aros_getoffsettable" : "/* Thus must be externally visible for stackcall libs */"
+                , !(cfg->options & OPTION_STACKCALL) ? "#endif" : ""
+        );
 
     if (cfg->options & OPTION_PERTASKBASE)
     {
