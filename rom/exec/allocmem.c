@@ -124,7 +124,7 @@
     if (res == NULL)
     {
         struct Process *process = (struct Process *)GET_THIS_TASK;
-        if (process->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+        if (process && process->pr_Task.tc_Node.ln_Type == NT_PROCESS)
             process->pr_Result2 = ERROR_NO_FREE_STORE;
     }
 

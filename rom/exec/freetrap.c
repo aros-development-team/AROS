@@ -45,13 +45,15 @@
     {
         /* No more atomic problem - i beleive THIS is atomic. - sonic */
         struct Task *me = GET_THIS_TASK;
-
-        if (me->tc_Flags & TF_ETASK) {
-	    struct ETask *et = me->tc_UnionETask.tc_ETask;
-	    
-	    et->et_TrapAlloc &= ~(1<<trapNum);
-	} else
-	    me->tc_TrapAlloc &= ~(1<<trapNum);
+        if (me)
+        {
+            if (me->tc_Flags & TF_ETASK) {
+            struct ETask *et = me->tc_UnionETask.tc_ETask;
+            
+            et->et_TrapAlloc &= ~(1<<trapNum);
+        } else
+            me->tc_TrapAlloc &= ~(1<<trapNum);
+        }
     }
 
     AROS_LIBFUNC_EXIT

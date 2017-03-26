@@ -48,7 +48,7 @@
     struct Task *ThisTask = GET_THIS_TASK;
     struct TaskStorageFreeSlot *tsfs;
     LONG slot;
-    struct IntETask *iet = GetIntETask(ThisTask);
+    struct IntETask *iet = ThisTask ? GetIntETask(ThisTask) : NULL;
 
     if (!iet)
         return 0;
@@ -57,7 +57,10 @@
     tsfs = (struct TaskStorageFreeSlot *)
         GetHead(&PrivExecBase(SysBase)->TaskStorageSlots);
     if (!tsfs)
+    {
         Alert(AT_DeadEnd|AN_MemoryInsane);
+        __builtin_unreachable();
+    }
 
     slot = tsfs->FreeSlot;
 

@@ -45,47 +45,50 @@
     UWORD mask;
     UWORD mask1;
 
-    mask = GetTrapAlloc(ThisTask);
-
-    /* Will any trap do? */
-    if(trapNum < 0)
+    if (ThisTask)
     {
-	/*
-	 * To get the last nonzero bit in a number I use a&~a+1:
-	 * Given a number that ends with a row of zeros  xxxx1000
-	 * I first toggle all bits in that number	 XXXX0111
-	 * then add 1 to toggle all but the last 0 again XXXX1000
-	 * and AND this with the original number	 00001000
-	 *
-	 * And since ~a+1=-a I can use a&-a instead.
-	 *
-	 * And to get the last zero bit I finally use ~a&-~a.
-	 */
-	mask1 = ~mask & - ~mask;
+        mask = GetTrapAlloc(ThisTask);
 
-	/* Is the bit already allocated? */
-	if(mask1 == 0)
-	    return -1;
+        /* Will any trap do? */
+        if(trapNum < 0)
+        {
+        /*
+        * To get the last nonzero bit in a number I use a&~a+1:
+        * Given a number that ends with a row of zeros  xxxx1000
+        * I first toggle all bits in that number	 XXXX0111
+        * then add 1 to toggle all but the last 0 again XXXX1000
+        * and AND this with the original number	 00001000
+        *
+        * And since ~a+1=-a I can use a&-a instead.
+        *
+        * And to get the last zero bit I finally use ~a&-~a.
+        */
+        mask1 = ~mask & - ~mask;
 
-	/* And get the bit number */
-	trapNum = (mask1 & 0xff00 ? 8 : 0) + (mask1 & 0xf0f0 ? 4 : 0) +
-		  (mask1 & 0xcccc ? 2 : 0) + (mask1 & 0xaaaa ? 1 : 0);
+        /* Is the bit already allocated? */
+        if(mask1 == 0)
+            return -1;
+
+        /* And get the bit number */
+        trapNum = (mask1 & 0xff00 ? 8 : 0) + (mask1 & 0xf0f0 ? 4 : 0) +
+            (mask1 & 0xcccc ? 2 : 0) + (mask1 & 0xaaaa ? 1 : 0);
+        }
+        else
+        {
+        mask1 = 1 << trapNum;
+
+        /* If trap bit is already allocated, return. */
+        if(mask & mask1)
+            return -1;
+        }
+
+        if (ThisTask->tc_Flags & TF_ETASK) {
+            struct ETask *et = ThisTask->tc_UnionETask.tc_ETask;
+        
+        et->et_TrapAlloc |= mask1;
+        } else
+            ThisTask->tc_TrapAlloc |= mask1;
     }
-    else
-    {
-	mask1 = 1 << trapNum;
-
-	/* If trap bit is already allocated, return. */
-	if(mask & mask1)
-	    return -1;
-    }
-
-    if (ThisTask->tc_Flags & TF_ETASK) {
-        struct ETask *et = ThisTask->tc_UnionETask.tc_ETask;
-	
-	et->et_TrapAlloc |= mask1;
-    } else
-        ThisTask->tc_TrapAlloc |= mask1;
 
     return trapNum;
     AROS_LIBFUNC_EXIT

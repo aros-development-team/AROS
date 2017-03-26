@@ -122,54 +122,57 @@ void cpu_Switch(struct ExceptionContext *regs)
 
     task = GET_THIS_TASK;
 
-    timeCur = RDTSC();
-
-    ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
-
-    /*
-     * Copy current task's context into the ETask structure. Note that context on stack
-     * misses SSE data pointer.
-     */
-    CopyMemQuick(regs, ctx, sizeof(struct ExceptionContext) - sizeof(struct FPXContext *));
-
-    /*
-     * Copy the fpu, mmx, xmm state
-     * TODO: Change to the lazy saving of the XMM state!!!!
-     */
-    asm volatile("fxsave (%0)"::"r"(ctx->FXData));
-
-    /* We have the complete data now */
-    ctx->Flags = ECF_SEGMENTS | ECF_FPX;
-
-    /* Set task's tc_SPReg */
-    task->tc_SPReg = (APTR)regs->rsp;
-
-    if (apicData && apicData->cores[cpunum].cpu_TimerFreq && timeCur)
+    if (task)
     {
+        timeCur = RDTSC();
+
+        ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
+
         /*
-        if (timeCur < IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
-            timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 - timeCur;
-        else
-            timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
+        * Copy current task's context into the ETask structure. Note that context on stack
+        * misses SSE data pointer.
         */
-        timeCur -= IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
-        
-        /* Increase CPU Usage cycles */
-        IntETask(task->tc_UnionETask.tc_ETask)->iet_private2 += timeCur;
+        CopyMemQuick(regs, ctx, sizeof(struct ExceptionContext) - sizeof(struct FPXContext *));
 
-        // Convert TSC cycles into nanoseconds
-        timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TSCFreq;
+        /*
+        * Copy the fpu, mmx, xmm state
+        * TODO: Change to the lazy saving of the XMM state!!!!
+        */
+        asm volatile("fxsave (%0)"::"r"(ctx->FXData));
 
-        /* Update the task's CPU time */
-        timeSpec.tv_sec = timeCur / 1000000000;
-        timeSpec.tv_nsec = timeCur % 1000000000;
+        /* We have the complete data now */
+        ctx->Flags = ECF_SEGMENTS | ECF_FPX;
 
-        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec += timeSpec.tv_nsec;
-        IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec  += timeSpec.tv_sec;
-        while(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec >= 1000000000)
+        /* Set task's tc_SPReg */
+        task->tc_SPReg = (APTR)regs->rsp;
+
+        if (apicData && apicData->cores[cpunum].cpu_TimerFreq && timeCur)
         {
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec -= 1000000000;
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec++;
+            /*
+            if (timeCur < IntETask(task->tc_UnionETask.tc_ETask)->iet_private1)
+                timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 - timeCur;
+            else
+                timeCur = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 + apicData->cores[cpunum].cpu_TimerFreq - timeCur;
+            */
+            timeCur -= IntETask(task->tc_UnionETask.tc_ETask)->iet_private1;
+            
+            /* Increase CPU Usage cycles */
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_private2 += timeCur;
+
+            // Convert TSC cycles into nanoseconds
+            timeCur = (timeCur * 1000000000) / apicData->cores[cpunum].cpu_TSCFreq;
+
+            /* Update the task's CPU time */
+            timeSpec.tv_sec = timeCur / 1000000000;
+            timeSpec.tv_nsec = timeCur % 1000000000;
+
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec += timeSpec.tv_nsec;
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec  += timeSpec.tv_sec;
+            while(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec >= 1000000000)
+            {
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_nsec -= 1000000000;
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuTime.tv_sec++;
+            }
         }
     }
     core_Switch();

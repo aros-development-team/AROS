@@ -55,7 +55,7 @@
 
 IPTR TaskGetStorageSlot(struct Task * t, LONG id)
 {
-    struct ETask *et = GetETask(t);
+    struct ETask *et = t ? GetETask(t) : NULL;
     IPTR *ts;
 
     D(bug("TaskGetStorageSlot: %p: Get TaskGetStorageSlot %d\n", et, id);)

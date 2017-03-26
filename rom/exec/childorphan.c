@@ -57,40 +57,43 @@
     struct Task *ThisTask = GET_THIS_TASK;
     struct ETask *et, *child;
 
-    et = GetETask(ThisTask);
-    if (et == NULL)
-	return CHILD_NOTNEW;
+	if (ThisTask)
+	{
+		et = GetETask(ThisTask);
+		if (et == NULL)
+		return CHILD_NOTNEW;
 
-    if (tid == 0L)
-    {
-    	Forbid();
-	ForeachNode(&et->et_Children, child)
-	{
-	    /*
-		Don't need to Remove(), because I'll blow away the entire
-		list at the end of the loop.
-	     */
-	    child->et_Parent = NULL;
+		if (tid == 0L)
+		{
+			Forbid();
+		ForeachNode(&et->et_Children, child)
+		{
+			/*
+			Don't need to Remove(), because I'll blow away the entire
+			list at the end of the loop.
+			*/
+			child->et_Parent = NULL;
+		}
+		NEWLIST(&et->et_Children);
+			Permit();
+		}
+		else
+		{
+			Forbid();
+		child = FindChild(tid);
+		if (child != NULL)
+		{
+			child->et_Parent = NULL;
+			Remove((struct Node *)child);
+		}
+		else
+		{
+				Permit();
+			return CHILD_NOTFOUND;
+		}
+		Permit();
+		}
 	}
-	NEWLIST(&et->et_Children);
-    	Permit();
-    }
-    else
-    {
-    	Forbid();
-	child = FindChild(tid);
-	if (child != NULL)
-	{
-	    child->et_Parent = NULL;
-	    Remove((struct Node *)child);
-	}
-	else
-	{
-    	    Permit();
-	    return CHILD_NOTFOUND;
-	}
-	Permit();
-    }
     return 0;
 
     AROS_LIBFUNC_EXIT

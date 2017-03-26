@@ -76,7 +76,7 @@
 
 	Firstly, are we a new-style Task?
     */
-    if ((ThisTask->tc_Flags & TF_ETASK) == 0)
+    if (!ThisTask || (ThisTask->tc_Flags & TF_ETASK) == 0)
 	return CHILD_NOTNEW;
 
     et = ThisTask->tc_UnionETask.tc_ETask;

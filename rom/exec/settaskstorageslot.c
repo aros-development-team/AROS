@@ -49,7 +49,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ETask *et = GetETask(GET_THIS_TASK);
+    struct Task *ThisTask = GET_THIS_TASK;
+    struct ETask *et = ThisTask ? GetETask(ThisTask) : NULL;
     IPTR *ts;
 
     D(bug("SetTaskStorage: %p: Set TaskStorageSlot %d to %p\n", et, id, (APTR)value);)
