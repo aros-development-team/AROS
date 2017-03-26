@@ -224,6 +224,20 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     {
         core_IPIHandle(regs, irq_number - APIC_IRQ_IPI_START, KernelBase);
     }
+    else if (irq_number == APIC_IRQ_ERROR)
+    {
+        ULONG error_code = 0;
+        struct PlatformData *pdata = KernelBase->kb_PlatformData;
+        struct APICData *apicData = pdata->kb_APIC;
+        IPTR __LAPICBase = apicData->lapicBase;
+
+        // IN order to read APIC_ESR register one has to first write it with anything (zero is fine)
+        // This forces update of the contents and new error codes may be read
+        APIC_REG(__LAPICBase, APIC_ESR) = error_code;
+        error_code = APIC_REG(__LAPICBase, APIC_ESR);
+
+        bug("[KERNEL] %s: APIC Error interrupt! Error code=%08x\n", __func__, error_code);
+    }
     else if ((irq_number < HW_IRQ_BASE) || (irq_number > (APIC_IRQ_BASE + APIC_IRQ_COUNT)))
     {
         /* 
