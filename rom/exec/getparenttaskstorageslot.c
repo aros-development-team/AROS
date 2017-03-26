@@ -49,7 +49,7 @@
     AROS_LIBFUNC_INIT
 
     struct Task *ThisTask = GET_THIS_TASK;
-    struct ETask *et = GetETask(ThisTask);
+    struct ETask *et = ThisTask ? GetETask(ThisTask) : NULL;
     IPTR result = (IPTR)NULL;
 
     if (!et)

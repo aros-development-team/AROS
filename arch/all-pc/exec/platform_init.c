@@ -52,16 +52,19 @@ AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
     struct IntETask *thisET;
 
     DSPIN(bug("[Exec:X86] %s()\n", __func__));
-    thisET = GetIntETask(spinTask);
-    if (thisET)
+    if (spinTask)
     {
-        DSPIN(bug("[Exec:X86] %s: Setting task @ 0x%p to spinning...\n", __func__, spinTask));
+        thisET = GetIntETask(spinTask);
+        if (thisET)
+        {
+            DSPIN(bug("[Exec:X86] %s: Setting task @ 0x%p to spinning...\n", __func__, spinTask));
 
-        /* tell the scheduler that the task is waiting on a spinlock */
-        spinTask->tc_State = TS_SPIN;
+            /* tell the scheduler that the task is waiting on a spinlock */
+            spinTask->tc_State = TS_SPIN;
 
-        thisET->iet_SpinLock = spinLock;
+            thisET->iet_SpinLock = spinLock;
 
+        }
     }
     DSPIN(bug("[Exec:X86] %s: Forcing Reschedule...\n", __func__));
 

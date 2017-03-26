@@ -57,19 +57,22 @@
 
     struct Task *thisTask = GET_THIS_TASK;
     ULONG *sig;
-    ULONG old;
+    ULONG old = 0;
 
-    /* Protect the signal mask against access by other tasks. */
-    Disable();
+    if (thisTask)
+    {
+        /* Protect the signal mask against access by other tasks. */
+        Disable();
 
-    /* Get address */
-    sig = &thisTask->tc_SigRecvd;
+        /* Get address */
+        sig = &thisTask->tc_SigRecvd;
 
-    /* Change only the bits in 'mask' */
-    old = *sig;
-    *sig = (old & ~signalSet) | (newSignals & signalSet);
+        /* Change only the bits in 'mask' */
+        old = *sig;
+        *sig = (old & ~signalSet) | (newSignals & signalSet);
 
-    Enable();
+        Enable();
+    }
 
     return old;
     AROS_LIBFUNC_EXIT

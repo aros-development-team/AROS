@@ -52,8 +52,9 @@
         /* No more atomic problem - i beleive THIS is atomic. - sonic */
         struct Task *me = GET_THIS_TASK;
 
-	/* Clear the bit */
-	me->tc_SigAlloc &= ~(1<<signalNum);
+        /* Clear the bit */
+        if (me)
+            me->tc_SigAlloc &= ~(1 << signalNum);
     }
     AROS_LIBFUNC_EXIT
 } /* FreeSignal() */

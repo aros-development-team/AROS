@@ -73,66 +73,69 @@ BOOL core_Schedule(void)
 
     FLAG_SCHEDSWITCH_CLEAR;
 
-    if (
-#if defined(__AROSEXEC_SMP__)
-        (task->tc_State == TS_TOMBSTONED) ||
-#endif
-        (task->tc_State == TS_REMOVED))
+    if (task)
     {
-        /* always let finalising tasks finish... */
-        corereschedule = FALSE;
-#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
-        bug("[Kernel:%03u] core_Schedule: letting finalising task run..\n", cpuNo);
-#endif
-    }
-    else if (!(task->tc_Flags & TF_EXCEPT))
-    {
+        if (
 #if defined(__AROSEXEC_SMP__)
-        KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
-                    SPINLOCK_MODE_READ);
+            (task->tc_State == TS_TOMBSTONED) ||
 #endif
-        /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
-        if (IsListEmpty(&SysBase->TaskReady))
-            corereschedule = FALSE;
-        else
+            (task->tc_State == TS_REMOVED))
         {
-            struct Task *nexttask;
-            /*
-                    If there are tasks ready for this cpu that have equal or lower priority,
-                    and the current task has used its alloted time - reschedule so they can run
-                */
-            for (nexttask = (struct Task *)GetHead(&SysBase->TaskReady); nexttask != NULL; nexttask = (struct Task *)GetSucc(nexttask))
-            {
-#if defined(__AROSEXEC_SMP__)
-                if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (core_APIC_CPUInMask(cpuNo, GetIntETask(nexttask)->iet_CpuAffinity)))
-                {
+            /* always let finalising tasks finish... */
+            corereschedule = FALSE;
+#if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
+            bug("[Kernel:%03u] core_Schedule: letting finalising task run..\n", cpuNo);
 #endif
-                    if (
+        }
+        else if (!(task->tc_Flags & TF_EXCEPT))
+        {
 #if defined(__AROSEXEC_SMP__)
-                        (task->tc_State != TS_SPIN) &&
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
+                        SPINLOCK_MODE_READ);
+#endif
+            /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
+            if (IsListEmpty(&SysBase->TaskReady))
+                corereschedule = FALSE;
+            else
+            {
+                struct Task *nexttask;
+                /*
+                        If there are tasks ready for this cpu that have equal or lower priority,
+                        and the current task has used its alloted time - reschedule so they can run
+                    */
+                for (nexttask = (struct Task *)GetHead(&SysBase->TaskReady); nexttask != NULL; nexttask = (struct Task *)GetSucc(nexttask))
+                {
+#if defined(__AROSEXEC_SMP__)
+                    if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (GetIntETask(nexttask) && core_APIC_CPUInMask(cpuNo, GetIntETask(nexttask)->iet_CpuAffinity)))
+                    {
+#endif
+                     if (
+#if defined(__AROSEXEC_SMP__)
+                            (task->tc_State != TS_SPIN) &&
 
 #endif
-                        (nexttask->tc_Node.ln_Pri <= task->tc_Node.ln_Pri))
-                    {
-                        /* If the running task did not used it's whole quantum yet, let it work */
-                        if (!FLAG_SCHEDQUANTUM_ISSET)
-                            corereschedule = FALSE;
+                            (nexttask->tc_Node.ln_Pri <= task->tc_Node.ln_Pri))
+                        {
+                            /* If the running task did not used it's whole quantum yet, let it work */
+                            if (!FLAG_SCHEDQUANTUM_ISSET)
+                                corereschedule = FALSE;
+                        }
+                        break;
+#if defined(__AROSEXEC_SMP__)
                     }
-                    break;
-#if defined(__AROSEXEC_SMP__)
-                }
 #endif
+                }
             }
-        }
 #if defined(__AROSEXEC_SMP__)
-        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+#endif
+        }
+
+#if defined(__AROSEXEC_SMP__)
+        if ((!corereschedule) && (task->tc_State == TS_SPIN))
+            task->tc_State = TS_RUN;
 #endif
     }
-
-#if defined(__AROSEXEC_SMP__)
-    if ((!corereschedule) && (task->tc_State == TS_SPIN))
-        task->tc_State = TS_RUN;
-#endif
 
     DSCHED
         (
@@ -288,7 +291,7 @@ struct Task *core_Dispatch(void)
     for (newtask = (struct Task *)GetHead(&SysBase->TaskReady); newtask != NULL; newtask = (struct Task *)GetSucc(newtask))
     {
 #if defined(__AROSEXEC_SMP__)
-        if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (core_APIC_CPUInMask(cpuNo, GetIntETask(newtask)->iet_CpuAffinity)))
+        if (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (GetIntETask(newtask) && core_APIC_CPUInMask(cpuNo, GetIntETask(newtask)->iet_CpuAffinity)))
         {
 #endif
             REMOVE(&newtask->tc_Node);

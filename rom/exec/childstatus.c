@@ -52,39 +52,42 @@
     struct ETask    *child;
     ULONG	     status = CHILD_NOTFOUND;
 
-    if ((ThisTask->tc_Flags & TF_ETASK) == 0)
-	return CHILD_NOTNEW;
-
-    et = ThisTask->tc_UnionETask.tc_ETask;
-
-    /* Sigh... */
-    Forbid();
-
-    /* Search through the running tasks list */
-    ForeachNode(&et->et_Children, child)
+    if (ThisTask)
     {
-	if (child->et_UniqueID == tid)
-	{
-	    status = CHILD_ACTIVE;
-	    break;
-	}
-    }
+        if ((ThisTask->tc_Flags & TF_ETASK) == 0)
+        return CHILD_NOTNEW;
+
+        et = ThisTask->tc_UnionETask.tc_ETask;
+
+        /* Sigh... */
+        Forbid();
+
+        /* Search through the running tasks list */
+        ForeachNode(&et->et_Children, child)
+        {
+        if (child->et_UniqueID == tid)
+        {
+            status = CHILD_ACTIVE;
+            break;
+        }
+        }
 
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&et->et_TaskMsgPort.mp_SpinLock, NULL, SPINLOCK_MODE_READ);
+        EXEC_SPINLOCK_LOCK(&et->et_TaskMsgPort.mp_SpinLock, NULL, SPINLOCK_MODE_READ);
 #endif
-    ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
-    {
-	if (child->et_UniqueID == tid)
-	{
-	    status = CHILD_EXITED;
-	    break;
-	}
-    }
+        ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
+        {
+        if (child->et_UniqueID == tid)
+        {
+            status = CHILD_EXITED;
+            break;
+        }
+        }
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&et->et_TaskMsgPort.mp_SpinLock);
+        EXEC_SPINLOCK_UNLOCK(&et->et_TaskMsgPort.mp_SpinLock);
 #endif
-    Permit();
+        Permit();
+    }
     return status;
 
     AROS_LIBFUNC_EXIT

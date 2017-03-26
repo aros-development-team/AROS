@@ -237,12 +237,12 @@
     */
     if (
 #if defined(__AROSEXEC_SMP__)
-        (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))))
+        (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (IntETask(task->tc_UnionETask.tc_ETask) && KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))))
     {
         parent = GET_THIS_TASK;
         if (
 #endif
-        task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
+        parent && task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
         parent->tc_State == TS_RUN)
     {
         DADDTASK("NewAddTask: Rescheduling...\n");
@@ -256,14 +256,16 @@
     {
         //bug("[Exec] AddTask: CPU #%d not in mask [%08x:%08x]\n", cpunum, KrnGetCPUMask(cpunum), IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
         DADDTASK("NewAddTask: CPU #%d not in mask\n", cpunum);
-        KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+        if (IntETask(task->tc_UnionETask.tc_ETask))
+            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
     }
     else
     {
        bug("[Exec] NewAddTask: Unable to Launch on the selected CPU\n");
         // TODO: Free up all the task data ..
         krnSysCallReschedTask(task, TS_REMOVED);
-        KrnDeleteContext(GetETask(task)->et_RegFrame);
+        if (GetETask(task))
+            KrnDeleteContext(GetETask(task)->et_RegFrame);
         CleanupETask(task);
         task = NULL;
     }
