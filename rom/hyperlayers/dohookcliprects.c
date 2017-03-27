@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -196,14 +196,7 @@
                                 bounds.MaxX += ALIGN_OFFSET(CR->bounds.MinX);
                 		bounds.MaxY -= CR->bounds.MinY;
 
-                		offsetX += L->bounds.MinX;
-                		offsetX -= CR->bounds.MinX;
-                		offsetX += ALIGN_OFFSET(CR->bounds.MinX);
-                		offsetY += L->bounds.MinY;
-                		offsetY -= CR->bounds.MinY;
-
                 		rport->BitMap = CR->BitMap;
-                		rport->Layer = NULL;
 			    }
         		    _CallLayerHook(hook, rport, rport->Layer, &bounds, offsetX, offsetY, LayersBase);
         		    rport->BitMap = bm;
