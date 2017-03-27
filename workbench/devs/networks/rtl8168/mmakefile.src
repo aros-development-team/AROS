@@ -17,7 +17,7 @@ USER_LDFLAGS := -static
 %build_module mmake=workbench-devs-networks-rtl8168-normal \
     modname=rtl8168 modtype=device \
     files="rtl8168_init $(FILES)" cflags=$(CFLAGSNORMAL) \
-    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
+    objdir=$(OBJDIR)/normal moduledir=Storage/Networks uselibs="hiddstubs"
 
 %build_module mmake=workbench-devs-networks-rtl8168-debug \
     modname=rtl8168_debug modtype=device \
