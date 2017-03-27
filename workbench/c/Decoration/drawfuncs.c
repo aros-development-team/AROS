@@ -52,6 +52,7 @@ struct ShadeData
     struct NewImage     *ni;
     UWORD               offy;
     UWORD               fact;
+    WORD                startx, starty;
 };
 
 struct RectList
@@ -1312,6 +1313,8 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
         D(bug("[Decoration] %s: SHADE > %d,%d -> %d,%d\n", __func__, x0, y0, x1, y1);)
 
         shadeParams.ni = ni;
+        shadeParams.startx = x0,
+        shadeParams.starty = y0;
         shadeParams.offy = _offy;
         shadeParams.fact = fact;
 
