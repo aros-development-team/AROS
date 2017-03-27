@@ -3,6 +3,7 @@
     $Id$
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <intuition/imageclass.h>
@@ -1104,41 +1105,33 @@ AROS_UFH3(void, RectShadeFunc,
 {
     AROS_USERFUNC_INIT
 
-    struct Rectangle bounds;
-#if defined(DECOR_USELINEBUFF)
-    ULONG       *outline = NULL;
-    UWORD       width = 1 + msg->MaxX - msg->MinX;
-    UWORD       height = 1 + msg->MaxY - msg->MinY;
-    ULONG        linesize = 0;
-#endif
-    UWORD       outX = msg->OffsetX, outY = msg->OffsetY;
-    ULONG       color;
-
-    HIDDT_Color col;
-    APTR        bm_handle = NULL;
-    int         px, py;
-#if !defined(DECOR_FAKESHADE)
-    int x = 0, y;
     struct ShadeData *data = h->h_Data;
+
+#if defined(DECOR_USELINEBUFF)
+    ULONG               *outline = NULL;
+    UWORD               width = 1 + msg->MaxX - msg->MinX;
+    UWORD               height = 1 + msg->MaxY - msg->MinY;
+    ULONG               linesize = 0;
+#endif
+    WORD                src_offset_x = data->startx - msg->OffsetX;
+    WORD                src_offset_y = data->starty - msg->OffsetY;
+    struct RastPort     *dstRp;
+    ULONG               color;
+
+    HIDDT_Color         col;
+    APTR                bm_handle = NULL;
+    int                 px, py;
+#if !defined(DECOR_FAKESHADE)
+    int                 x = 0, y;
+
 #endif
     D(
        bug("[Decoration] %s: data @ 0x%p\n", __func__, data);
        bug("[Decoration] %s: offy = %d, fact = %d, ni @ 0x%p\n", __func__, data->offy, data->fact, data->ni);
    
        bug("[Decoration] %s: Area = %d,%d -> %d,%d\n", __func__, msg->MinX, msg->MinY, msg->MaxX, msg->MaxY);
-       bug("[Decoration] %s: Offset = %d,%d\n", __func__, msg->OffsetX, msg->OffsetY);
+       bug("[Decoration] %s: Offset = %d,%d\n", __func__, src_offset_x, src_offset_y);
     )
-    if (rp->Layer)
-    {
-        D(bug("[Decoration] %s: Layer @ 0x%p = %d,%d -> %d,%d\n", __func__, rp->Layer, rp->Layer->bounds.MinX, rp->Layer->bounds.MinY, rp->Layer->bounds.MaxX, rp->Layer->bounds.MaxY);)
-        bounds.MinX = rp->Layer->bounds.MinX - msg->OffsetX;
-        bounds.MinY = rp->Layer->bounds.MinY - msg->OffsetY;
-    }
-    else
-    {
-        bounds.MinX = 0;
-        bounds.MinY = 0;
-    }
 
 #if defined(DECOR_USELINEBUFF)
     if (width > 1)
@@ -1146,14 +1139,16 @@ AROS_UFH3(void, RectShadeFunc,
     else if (height > 1)
     {
 #if !defined(DECOR_FAKESHADE)
-        x = (msg->MinX - bounds.MinX) % data->ni->h;
+        x = src_offset_x % data->ni->w;
 #endif
         linesize = height << 2;
     }
 
     if (linesize)
+    {
         outline = AllocMem(linesize, MEMF_ANY);
-    
+    }
+
     if (!outline)
 #endif
     {
@@ -1161,12 +1156,18 @@ AROS_UFH3(void, RectShadeFunc,
         bm_handle = LockBitMapTags(rp->BitMap,
                     TAG_END);
 #endif
+        dstRp = rp;
+    }
+    else
+    {
+        dstRp = CloneRastPort(rp);
+        dstRp->Layer = NULL;
     }
 
     for (py = msg->MinY; py <= msg->MaxY; py++)
     {
 #if !defined(DECOR_FAKESHADE)
-        y = (py - bounds.MinY) % data->ni->h;
+        y = (src_offset_y + py - msg->MinY) % data->ni->h;
 #endif
 
 #if defined(DECOR_USELINEBUFF)
@@ -1186,7 +1187,7 @@ AROS_UFH3(void, RectShadeFunc,
         for (px = msg->MinX; px <= msg->MaxX; px++)
         {
 #if !defined(DECOR_FAKESHADE)
-            x = (px - bounds.MinX) % data->ni->w;
+            x = (src_offset_x + px - msg->MinX) % data->ni->w;
 
             color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
 #else
@@ -1207,13 +1208,13 @@ AROS_UFH3(void, RectShadeFunc,
                     col.green = (HIDDT_ColComp) GET_ARGB_G(color) << 8;
                     col.blue = (HIDDT_ColComp) GET_ARGB_B(color) << 8;
 
-                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
+                    HIDD_BM_PutPixel(HIDD_BM_OBJ(dstRp->BitMap), px, py, HIDD_BM_MapColor(HIDD_BM_OBJ(dstRp->BitMap), &col));
                 }
                 else
                 {
-                    WriteRGBPixel(rp,
-                        outX + (px - msg->MinX),
-                        outY + (py - msg->MinY),
+                    WriteRGBPixel(dstRp,
+                        px,
+                        py,
 #if AROS_BIG_ENDIAN
                         color);
 #else
@@ -1227,9 +1228,9 @@ AROS_UFH3(void, RectShadeFunc,
             WritePixelArray(outline,
                 0, 0,
                 linesize,
-                rp,
-                outX,
-                outY + (py - msg->MinY),
+                dstRp,
+                msg->MinX,
+                msg->MinY,
                 width, 1,
                 RECTFMT_ARGB);
         }
@@ -1244,9 +1245,9 @@ AROS_UFH3(void, RectShadeFunc,
             WritePixelArray(outline,
                 0, 0,
                 sizeof(ULONG),
-                rp,
-                outX,
-                outY,
+                dstRp,
+                msg->MinX,
+                msg->MinY,
                 1, height,
                 RECTFMT_ARGB);
         }
@@ -1273,6 +1274,9 @@ AROS_UFH3(void, RectShadeFunc,
 
             UnLockBitMapTagList(bm_handle, bm_ultags);
         }
+
+    if (dstRp != rp)
+        FreeRastPort(dstRp);
 
     AROS_USERFUNC_EXIT
 }
