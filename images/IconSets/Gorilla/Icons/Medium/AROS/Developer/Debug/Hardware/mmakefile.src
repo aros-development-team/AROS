@@ -1,0 +1,11 @@
+# Copyright © 2017, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := PCITool 
+
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-debug-hardware-clean
+#MM- iconset-Gorilla-icons-aros-debug : iconset-Gorilla-icons-aros-debug-hardware
+%build_icons mmake=iconset-Gorilla-icons-aros-debug-hardware icons=$(ICONS) \
+             dir=$(AROS_DEBUG)/Hardware

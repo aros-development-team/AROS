@@ -8,4 +8,4 @@ ICONS := Bifteck Hardware Sashimi Tests
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-debug-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-debug
 %build_icons mmake=iconset-Gorilla-icons-aros-debug icons=$(ICONS) \
-             dir=$(AROSDIR)/Debug
+             dir=$(AROS_DEBUG)
