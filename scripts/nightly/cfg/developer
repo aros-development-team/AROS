@@ -1,0 +1,2 @@
+CFG_PACKAGES=(developer)
+CFG_MAIL_ENABLE=yes
