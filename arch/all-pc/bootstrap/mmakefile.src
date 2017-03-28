@@ -12,7 +12,7 @@ ifeq ($(CPU),x86_64)
     ARCH_DEFS := -DMULTIBOOT_64BIT
     ARCH_LIBS := -L$(GENDIR)/lib32 -nostdlib
 else
-    ARCH_LIBS := -L$(AROSDIR)/Development/lib -L$(GENDIR)/lib
+    ARCH_LIBS := -L$(AROSDIR)/Developer/lib -L$(GENDIR)/lib
 endif
 
 USER_CFLAGS  := -Wl,--oformat,elf_i386 -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include \
