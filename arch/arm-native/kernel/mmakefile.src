@@ -51,7 +51,7 @@ $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #MM kernel-kernel-raspi-arm : includes
 #MM kernel-kernel-raspi-arm-kobj : includes
 
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROSDIR)/Developer/include
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel arch=raspi-arm \
