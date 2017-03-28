@@ -738,6 +738,8 @@ IPTR Tasklist__MUIM_Show(Class *CLASS, Object *self, struct MUIP_Show *message)
     DoMethod( _app(self), MUIM_Application_AddInputHandler, (IPTR) &data->tld_TimerEvent);
 #endif
 
+    DoMethod(self, MUIM_Tasklist_Refresh);
+
     return retval;
 }
 
