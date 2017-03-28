@@ -1,4 +1,4 @@
-prefix=/Development
+prefix=/Developer
 exec_prefix=${prefix}
 libdir=${prefix}/lib
 includedir=${prefix}/include

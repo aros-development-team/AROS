@@ -34,7 +34,7 @@ $(AROS_LIB)/pkgconfig/libpng.pc : $(SRCDIR)/$(CURDIR)/libpng.pc.in $(SRCDIR)/$(C
 	       -e 's|@includedir@/libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@|$${prefix}/include|' \
 	       -e 's|-lpng@PNGLIB_MAJOR@@PNGLIB_MINOR@|-lpng|' \
 	       -e 's|@libdir@|$(AROS_LIB)|' \
-	       -e 's|@prefix@|/Development|' \
+	       -e 's|@prefix@|/Developer|' \
 	       -e 's|@LIBS@||' \
 	       -e 's|@PNGLIB_VERSION@|1.6.3|' \
 	       -e 's| -I$${includedir}||' \

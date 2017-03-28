@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM tools-ilbmtoicon : includes linklibs tools-ilbmtoicon-docs
 
 FILES := ilbmtoicon infoinfo
-EXEDIR := $(AROS_CONTRIB)/Development/Build
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
 
 %build_progs mmake=tools-ilbmtoicon \
     targetdir=$(EXEDIR) \

@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- tools-flexcat : tools-flexcat-doc tools-flexcat-cpy
 
 FILES := AUTHORS ChangeLog COPYING README TODO
-EXEDIR := $(AROS_CONTRIB)/Development/FlexCat
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/FlexCat
 
 %copy_dir_recursive mmake=tools-flexcat-doc src=doc dst=$(EXEDIR)/Docs
 

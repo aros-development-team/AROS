@@ -82,5 +82,5 @@ $(AROS_LIB)/pkgconfig/freetype2.pc : $(SRCDIR)/$(CURDIR)/../builds/unix/freetype
 	       -e 's|%ft_version%|2.5.0|' \
 	       -e 's|%includedir%|$${prefix}/include|' \
 	       -e 's|%libdir%|$(AROS_LIB)|' \
-	       -e 's|%prefix%|/Development|' \
+	       -e 's|%prefix%|/Developer|' \
 	       $< >$@

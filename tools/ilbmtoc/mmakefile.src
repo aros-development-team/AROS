@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM tools-ilbmtoc : includes linklibs
 
 FILES := ilbmtoc
-EXEDIR := $(AROS_CONTRIB)/Development/Build
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
 NOWARN_FLAGS := $(NOWARN_FORMAT)
 USER_CFLAGS := $(NOWARN_FLAGS)
 
