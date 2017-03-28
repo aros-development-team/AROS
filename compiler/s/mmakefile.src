@@ -6,4 +6,4 @@ FILES := Package-Startup Package-Shutdown
 
 #MM- AROS : compiler-startup
 
-%copy_files_q mmake=compiler-startup dst=$(AROSDIR)/Development/S
+%copy_files_q mmake=compiler-startup dst=$(AROSDIR)/Developer/S

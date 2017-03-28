@@ -1,9 +1,9 @@
-Assign INCLUDE: Development:include
-Assign LIB: Development:lib
-Assign USR: Development:
+Assign INCLUDE: Developer:include
+Assign LIB: Developer:lib
+Assign USR: Developer:
 Assign TMP: T:
-Assign ETC: Development:etc
+Assign ETC: Developer:etc
 Stack 262144
 
-Assign BIN: Development:bin
-Path ADD Development:bin
+Assign BIN: Developer:bin
+Path ADD Developer:bin
