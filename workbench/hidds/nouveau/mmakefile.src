@@ -127,7 +127,7 @@ USER_INCLUDES := \
                 -I$(DRM_PATH)/drm-aros                      \
                 -I$(DRM_PATH)/drm-aros/nouveau              \
                 -I$(GALLIUM_PATH)/drivers                   \
-                -I$(AROS_DEVELOPMENT)/include/gallium       \
+                -I$(AROS_DEVELOPER)/include/gallium       \
                 -I$(GALLIUM_PATH)/include                   \
                 -I$(DRM_PATH)/libdrm                        \
                 -I$(DRM_PATH)/libdrm/nouveau                \

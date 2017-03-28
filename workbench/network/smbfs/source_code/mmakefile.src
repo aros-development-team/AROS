@@ -16,7 +16,7 @@ FILES = \
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS) \
- -I$(AROS_DEVELOPMENT)/netinclude -I$(SRCDIR)/$(CURDIR)/include
+ -I$(AROS_DEVELOPER)/netinclude -I$(SRCDIR)/$(CURDIR)/include
 USER_LDFLAGS := -static
 
 #MM workbench-network-smbfs-client : aros-tcpip workbench-network-smbfs-setup includes

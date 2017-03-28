@@ -50,7 +50,7 @@ SOFTPIPE_HIDD_SOURCES := \
 
 USER_INCLUDES := \
             -I$(GALLIUM_PATH)/drivers \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(AROS_DEVELOPER)/include/gallium \
             -I$(GALLIUM_PATH)/include \
 
 %build_module mmake=hidd-softpipe modname=softpipe modtype=hidd \
