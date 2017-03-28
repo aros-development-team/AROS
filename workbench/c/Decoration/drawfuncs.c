@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <intuition/imageclass.h>
@@ -51,6 +51,7 @@
 struct ShadeData
 {
     struct NewImage     *ni;
+    struct BitMap     *rpBm;
     UWORD               offy;
     UWORD               fact;
     WORD                startx, starty;
@@ -1109,12 +1110,12 @@ AROS_UFH3(void, RectShadeFunc,
 
 #if defined(DECOR_USELINEBUFF)
     ULONG               *outline = NULL;
-    UWORD               width = 1 + msg->MaxX - msg->MinX;
-    UWORD               height = 1 + msg->MaxY - msg->MinY;
     ULONG               linesize = 0;
 #endif
-    WORD                src_offset_x = data->startx - msg->OffsetX;
-    WORD                src_offset_y = data->starty - msg->OffsetY;
+    UWORD               startx, starty, width = 1 + msg->MaxX - msg->MinX;
+    UWORD               height = 1 + msg->MaxY - msg->MinY;
+    WORD                src_offset_x = 0;
+    WORD                src_offset_y = 0;
     struct RastPort     *dstRp;
     ULONG               color;
 
@@ -1127,9 +1128,37 @@ AROS_UFH3(void, RectShadeFunc,
 #endif
     D(
        bug("[Decoration] %s: data @ 0x%p\n", __func__, data);
-       bug("[Decoration] %s: offy = %d, fact = %d, ni @ 0x%p\n", __func__, data->offy, data->fact, data->ni);
-   
-       bug("[Decoration] %s: Area = %d,%d -> %d,%d\n", __func__, msg->MinX, msg->MinY, msg->MaxX, msg->MaxY);
+       bug("[Decoration] %s:      offy = %d, fact = %d, ni @ 0x%p\n", __func__, data->offy, data->fact, data->ni);
+       bug("[Decoration] %s: Msg  Area = %d,%d -> %d,%d\n", __func__, msg->MinX, msg->MinY, msg->MaxX, msg->MaxY);
+       bug("[Decoration] %s:      Offset = %d,%d\n", __func__, msg->OffsetX, msg->OffsetY);
+    )
+
+    if (data->rpBm == rp->BitMap)
+    {
+        startx = msg->MinX;
+        starty = msg->MinY;
+        src_offset_x = msg->OffsetX;
+        src_offset_y = msg->OffsetY;
+    }
+    else
+    {
+        struct ClipRect * CR;
+
+        // Hidden cliprect..
+        startx = msg->MinX;
+        starty = msg->MinY;
+
+        for (CR=rp->Layer->ClipRect;CR;CR=CR->Next)
+        {
+            if (CR->BitMap == data->rpBm)
+            {
+                src_offset_x = startx + (CR->bounds.MinX - dstRp->Layer->bounds.MinX) - ALIGN_OFFSET(CR->bounds.MinX);
+                src_offset_y = starty + (CR->bounds.MinY - dstRp->Layer->bounds.MinY);
+            }
+        }
+    }
+
+    D(
        bug("[Decoration] %s: Offset = %d,%d\n", __func__, src_offset_x, src_offset_y);
     )
 
@@ -1164,10 +1193,10 @@ AROS_UFH3(void, RectShadeFunc,
         dstRp->Layer = NULL;
     }
 
-    for (py = msg->MinY; py <= msg->MaxY; py++)
+    for (py = starty; py < (starty + height); py++)
     {
 #if !defined(DECOR_FAKESHADE)
-        y = (src_offset_y + py - msg->MinY) % data->ni->h;
+        y = (src_offset_y + py - starty) % data->ni->h;
 #endif
 
 #if defined(DECOR_USELINEBUFF)
@@ -1178,16 +1207,16 @@ AROS_UFH3(void, RectShadeFunc,
 #else
             color = SET_ARGB(00, 0xFF, 0x00, 0x70);
 #endif
-            outline[py - msg->MinY] = color;
+            outline[py - starty] = color;
 
             continue;
         }
 
 #endif
-        for (px = msg->MinX; px <= msg->MaxX; px++)
+        for (px = startx; px < (startx + width); px++)
         {
 #if !defined(DECOR_FAKESHADE)
-            x = (src_offset_x + px - msg->MinX) % data->ni->w;
+            x = (src_offset_x + px - startx) % data->ni->w;
 
             color = CalcShade(data->ni->data[(y * data->ni->w) + x], data->fact);
 #else
@@ -1197,7 +1226,7 @@ AROS_UFH3(void, RectShadeFunc,
 #if defined(DECOR_USELINEBUFF)
             if (outline)
             {
-                outline[px - msg->MinX] = color;
+                outline[px - startx] = color;
             }
             else
 #endif
@@ -1229,8 +1258,8 @@ AROS_UFH3(void, RectShadeFunc,
                 0, 0,
                 linesize,
                 dstRp,
-                msg->MinX,
-                msg->MinY,
+                startx,
+                starty,
                 width, 1,
                 RECTFMT_ARGB);
         }
@@ -1246,8 +1275,8 @@ AROS_UFH3(void, RectShadeFunc,
                 0, 0,
                 sizeof(ULONG),
                 dstRp,
-                msg->MinX,
-                msg->MinY,
+                startx,
+                starty,
                 1, height,
                 RECTFMT_ARGB);
         }
@@ -1317,6 +1346,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
         D(bug("[Decoration] %s: SHADE > %d,%d -> %d,%d\n", __func__, x0, y0, x1, y1);)
 
         shadeParams.ni = ni;
+        shadeParams.rpBm = rp->BitMap;
         shadeParams.startx = x0,
         shadeParams.starty = y0;
         shadeParams.offy = _offy;
