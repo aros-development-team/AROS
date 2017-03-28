@@ -223,10 +223,10 @@ USER_CFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 USER_AFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 
 $(KOBJSDIR)/%.o : %.c
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(AROSDIR)/Development/include -I$(GENINCDIR)"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(AROSDIR)/Developer/include -I$(GENINCDIR)"
 
 $(KOBJSDIR)/%.o : %.S
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(AROSDIR)/Development/include -I$(GENINCDIR)"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(AROSDIR)/Developer/include -I$(GENINCDIR)"
 
 $(KOBJSDIR)/%.d : %.c
 	%mkdepend_q
