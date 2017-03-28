@@ -6,7 +6,7 @@ source  $SP/setup
 # The log-name MUST match the name of the package script
 setl   sdk-$BUILDTARGET.log
 
-ARCHIVE_BASE=$ARCHIVE_BASE/Development_Tools
+ARCHIVE_BASE=$ARCHIVE_BASE/Developer_Tools
 
 printi "Creating AROS/$BUILDTARGET SDK package..."
 
