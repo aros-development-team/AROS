@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM debug-tools-sasimi : includes linklibs
 
 %build_prog mmake=debug-tools-sasimi \
-    progname=sashimi targetdir=$(AROSDIR)/Debug \
+    progname=sashimi targetdir=$(AROS_DEBUG) \
     files=sashimi
 
 %common
