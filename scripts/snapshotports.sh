@@ -55,10 +55,10 @@ build()
     echo "Copying the binaries"
     mkdir "$bindir" -p
 
-    copy "$target" "Extras/Development"             "BWBasic"
-    copy "$target" "Extras/Development"             "CBMBasic"
-    copy "$target" "Extras/Development"             "CFlow"
-    copy "$target" "Extras/Development"             "Ctags"
+    copy "$target" "Extras/Developer"             "BWBasic"
+    copy "$target" "Extras/Developer"             "CBMBasic"
+    copy "$target" "Extras/Developer"             "CFlow"
+    copy "$target" "Extras/Developer"             "Ctags"
     copy "$target" "Extras/Emu"                     "DOSBox"
     copy "$target" "Extras/Emu"                     "Scummvm"
     copy "$target" "Extras/Emu"                     "Vbam"
