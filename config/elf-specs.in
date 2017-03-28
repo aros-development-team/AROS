@@ -5,15 +5,15 @@
 
 
 *aros_include:
-%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/stdc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include}
+%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include/aros/stdc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include}
 
 *endfile:
 
 
 *link:
-@spec_obj_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
+@spec_obj_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib
 
-%include_noerr <@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/auto>
+%include_noerr <@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/auto>
 
 *lib:
 %(autolib) %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} %{!nosysbase:-lexec} %{nostdc:-lstdc.static}
@@ -22,7 +22,7 @@
 @aros_arch_libs@ -lgcc
 
 *startfile:
-@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/elf-startup.o
+@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/elf-startup.o
 
 *aros_predefines:
 -D__ELF__ @gcc_target_cpu@ -A-system -Asystem(posix)
