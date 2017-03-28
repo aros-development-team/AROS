@@ -43,7 +43,7 @@ GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
 
 USER_INCLUDES := \
                 -I$(GALLIUM_PATH)/drivers                   \
-                -I$(AROS_DEVELOPMENT)/include/gallium       \
+                -I$(AROS_DEVELOPER)/include/gallium       \
                 -I$(GALLIUM_PATH)/include
 
 USER_CFLAGS := -std=gnu99

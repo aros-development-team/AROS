@@ -40,8 +40,8 @@ MAN_FILES := bzdiff.1 bzgrep.1 bzip2.1 bzmore.1
 USER_CFLAGS  := -Winline
 USER_CFLAGS += $(NOWARN_FLAGS)
 
-BIN_DIR := $(AROS_DEVELOPMENT)/bin
-MAN_DIR := $(AROS_DEVELOPMENT)/man/man1
+BIN_DIR := $(AROS_DEVELOPER)/bin
+MAN_DIR := $(AROS_DEVELOPER)/man/man1
 
 #MM- external-bz2-bzip2 : \
 #MM     external-bz2-bzip2-bin \

@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-gallium : includes hidd-gallium
 
 USER_INCLUDES := \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(AROS_DEVELOPER)/include/gallium \
 
 LIB_GALLIUM_SOURCES = \
             gallium_init \

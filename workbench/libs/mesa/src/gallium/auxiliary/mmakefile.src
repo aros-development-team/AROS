@@ -188,7 +188,7 @@ GALLIUM_AUXILIARY_GENERATED_SOURCES = \
             $(GENDIR)/$(CURDIR)/util/u_half \
 
 USER_INCLUDES := \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(AROS_DEVELOPER)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/util \
             -I$(SRCDIR)/$(CURDIR)/indices \
 

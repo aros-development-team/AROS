@@ -6,10 +6,10 @@
 #MM
 development-collect-aros-quick :
 	$(MAKE) HOST_CC="$(TARGET_CC) $(TARGET_SYSROOT)" HOST_CFLAGS="$(CFLAGS)" \
-	COLLECT-AROS=$(AROS_DEVELOPMENT)/bin/collect-aros \
+	COLLECT-AROS=$(AROS_DEVELOPER)/bin/collect-aros \
 	COLLECT-AROS-BACKEND=backend-bfd.c \
 	USER_CFLAGS="-nix -D_HAVE_LIBIBERTY_ -D_NATIVE_" HOST_LDFLAGS="-L$(GENDIR)/contrib/gnu/binutils/binutils/libiberty -lbfd -liberty -lz"
-	$(STRIP) $(AROS_DEVELOPMENT)/bin/collect-aros
+	$(STRIP) $(AROS_DEVELOPER)/bin/collect-aros
 
 collect-aros-installflag := $(CROSSTOOLSDIR)/.installflag-collect-aros
 

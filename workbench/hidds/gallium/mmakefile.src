@@ -14,7 +14,7 @@ FILES := gallium_class gallium_init
 #MM hidd-gallium : includes
 
 USER_INCLUDES := \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(AROS_DEVELOPER)/include/gallium \
 
 %build_module mmake=hidd-gallium modname=gallium modtype=hidd \
     files="$(FILES)"

@@ -20,5 +20,5 @@ include $(SRCDIR)/config/aros.cfg
 
 
 #MM compiler-setup :
-%rule_makedirs dirs="$(AROS_INCLUDES) $(AROS_LIB) $(AROS_DEVELOPMENT)/bin $(AROS_DEVELOPMENT)/etc" \
+%rule_makedirs dirs="$(AROS_INCLUDES) $(AROS_LIB) $(AROS_DEVELOPER)/bin $(AROS_DEVELOPER)/etc" \
     setuptarget=compiler-setup

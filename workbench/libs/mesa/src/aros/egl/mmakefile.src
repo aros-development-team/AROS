@@ -49,7 +49,7 @@ LIBRARY_SOURCES = \
             $(addprefix ../../, $(SHARED_LIB_SOURCES))
 
 USER_INCLUDES := \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(AROS_DEVELOPER)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/egl \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega \
             -I$(SRCDIR)/$(CURDIR)/../../egl/main \

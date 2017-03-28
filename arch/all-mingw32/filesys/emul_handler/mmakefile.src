@@ -16,13 +16,13 @@ FILES := emul_host_mingw32 emul_host filenames
   arch=mingw32 files=$(FILES)
 
 NATIVE_BINDIR := $(AROSDIR)/Libs/Host
-NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
+NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := emul_handler_native
 
 NATIVE_LDFLAGS := -shared -L$(NATIVE_LIBDIR)
 
-USER_INCLUDES := -I$(AROS_DEVELOPMENT)/$(CPU)-mingw32/include
+USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
 
 %build_prog mmake=kernel-fs-emul-mingw32-native \
     progname=emul_handler.dll targetdir=$(NATIVE_BINDIR) \

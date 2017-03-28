@@ -12,11 +12,11 @@ else
 endif
 
 # Remove C-only flags
-CXX_FLAGS := $(CFLAGS) -isystem $(AROS_DEVELOPMENT)/include
+CXX_FLAGS := $(CFLAGS) -isystem $(AROS_DEVELOPER)/include
 CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
 CXX_FLAGS := $(subst -fno-exceptions,, $(CXX_FLAGS))
 
-USER_LDFLAGS := -L$(AROS_DEVELOPMENT)/lib
+USER_LDFLAGS := -L$(AROS_DEVELOPER)/lib
 
 EXEDIR := $(AROS_TESTS)/cplusplus
 OBJDIR := $(GENDIR)/$(CURDIR)

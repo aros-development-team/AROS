@@ -1129,8 +1129,8 @@ IPTR Install__MUIM_IC_CancelInstall
             &backupOptions->opt_copycore);
         GET(data->instc_options_main->opt_copyextra, MUIA_Disabled,
             &backupOptions->opt_copyextra);
-        GET(data->instc_options_main->opt_development, MUIA_Disabled,
-            &backupOptions->opt_development);
+        GET(data->instc_options_main->opt_developer, MUIA_Disabled,
+            &backupOptions->opt_developer);
         GET(data->instc_options_main->opt_bootloader, MUIA_Disabled,
             &backupOptions->opt_bootloader);
         GET(data->instc_options_main->opt_reboot, MUIA_Disabled,
@@ -1140,7 +1140,7 @@ IPTR Install__MUIM_IC_CancelInstall
         SET(data->instc_options_main->opt_locale, MUIA_Disabled, TRUE);
         SET(data->instc_options_main->opt_copycore, MUIA_Disabled, TRUE);
         SET(data->instc_options_main->opt_copyextra, MUIA_Disabled, TRUE);
-        SET(data->instc_options_main->opt_development, MUIA_Disabled, TRUE);
+        SET(data->instc_options_main->opt_developer, MUIA_Disabled, TRUE);
         SET(data->instc_options_main->opt_bootloader, MUIA_Disabled, TRUE);
         SET(data->instc_options_main->opt_reboot, MUIA_Disabled, TRUE);
         goto donecancel;
@@ -1220,8 +1220,8 @@ IPTR Install__MUIM_IC_ContinueInstall
             (BOOL) backupOptions->opt_copycore);
         SET(data->instc_options_main->opt_copyextra, MUIA_Disabled,
             (BOOL) backupOptions->opt_copyextra);
-        SET(data->instc_options_main->opt_development, MUIA_Disabled,
-            (BOOL) backupOptions->opt_development);
+        SET(data->instc_options_main->opt_developer, MUIA_Disabled,
+            (BOOL) backupOptions->opt_developer);
         SET(data->instc_options_main->opt_bootloader, MUIA_Disabled,
             (BOOL) backupOptions->opt_bootloader);
         SET(data->instc_options_main->opt_reboot, MUIA_Disabled,
@@ -2093,23 +2093,22 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
 
     DoMethod(data->installer, MUIM_Application_InputBuffered);
 
-    /* STEP : COPY DEVELOPMENT */
+    /* STEP : COPY DEVELOPER FILES */
 
-    GET(data->instc_options_main->opt_development, MUIA_Selected, &option);
+    GET(data->instc_options_main->opt_developer, MUIA_Selected, &option);
     if (option && (data->inst_success == MUIV_Inst_InProgress))
     {
         ULONG srcLen = strlen(source_Path);
-        ULONG developerDirLen = srcLen + strlen("Development") + 2;
+        ULONG developerDirLen = srcLen + strlen("Developer") + 2;
         TEXT developerDir[srcLen + developerDirLen];
 
         CopyMem(source_Path, &developerDir, srcLen + 1);
-        AddPart(developerDir, "Development", srcLen + developerDirLen);
+        AddPart(developerDir, "Developer", srcLen + developerDirLen);
 
         if ((lock = Lock(developerDir, SHARED_LOCK)) != NULL)
         {
             CONST_STRPTR developer_dirs[] = {
-                "Development", "Development",
-                "Tests", "Tests",
+                "Developer", "Developer",
                 NULL
             };
             TEXT developmentpath[100];
@@ -2129,7 +2128,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
                 developer_dirs);
 
             /* Set DEVELPATH environment variable */
-            AddPart(developmentpath, "Development", 100);
+            AddPart(developmentpath, "Developer", 100);
             create_environment_variable(dest_Path, "DEVELPATH",
                 developmentpath);
 
@@ -3562,7 +3561,7 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) check_extras,
                                             Child, (IPTR) LLabel("Install Extra Software"),
                                             Child, (IPTR) check_dev,
-                                            Child, (IPTR) LLabel("Install Development Software"),
+                                            Child, (IPTR) LLabel("Install Debugging tools and Developer Software"),
                                             Child, (IPTR) check_bootloader,
                                             Child, (IPTR) LLabel("Install Bootloader"),
                                         End,
@@ -3882,7 +3881,7 @@ int main(int argc, char *argv[])
     install_opts->opt_locale = check_locale;
     install_opts->opt_copycore = check_core;
     install_opts->opt_copyextra = check_extras;
-    install_opts->opt_development = check_dev;
+    install_opts->opt_developer = check_dev;
     install_opts->opt_bootloader = check_bootloader;
 
     install_opts->opt_reboot = check_reboot;

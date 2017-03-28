@@ -109,7 +109,7 @@ GLSL_C_SOURCES = \
             ralloc.c \
 
 USER_INCLUDES := \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(AROS_DEVELOPER)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/../../../include \
             -I$(SRCDIR)/$(CURDIR)/../../../include/GL \
             -I$(SRCDIR)/$(CURDIR)/../../mesa \

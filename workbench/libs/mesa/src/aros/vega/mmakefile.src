@@ -55,7 +55,7 @@ LIBRARY_SOURCES = \
 
 
 USER_INCLUDES := \
-            -I$(AROS_DEVELOPMENT)/include/gallium \
+            -I$(AROS_DEVELOPER)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/../../mapi \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
             -I$(SRCDIR)/$(CURDIR)/../.. \
