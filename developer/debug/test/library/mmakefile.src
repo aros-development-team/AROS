@@ -23,10 +23,10 @@ include $(SRCDIR)/config/aros.cfg
 #MM      test-library-pertasklib-clean \
 #MM      test-library-userellib-clean
 
-TARGETDIR := $(AROSDIR)/Debug/Tests/Library
+TARGETDIR := $(AROS_TESTS)/Library
 
-USER_CFLAGS := -I$(TARGETDIR)/Development/include
-USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
+USER_CFLAGS := -I$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/include
+USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
 
 %build_prog mmake=test-library-peropenertest \
     progname=peropenertest targetdir=$(TARGETDIR) \
