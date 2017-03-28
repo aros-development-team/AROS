@@ -10,7 +10,7 @@ USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 #MM debug-tools-kecho : includes linklibs
 
 %build_prog mmake=debug-tools-kecho \
-    progname=KEcho targetdir=$(AROSDIR)/Debug \
+    progname=KEcho targetdir=$(AROS_DEBUG) \
     files=KEcho usestartup=no
 
 %common

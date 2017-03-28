@@ -12,7 +12,7 @@ USER_CFLAGS := $(NOWARN_FLAGS) \
 #MM debug-tools-windebug : includes linklibs
 
 %build_prog mmake=debug-tools-windebug \
-    progname=WinDebug targetdir=$(AROSDIR)/Debug \
+    progname=WinDebug targetdir=$(AROS_DEBUG) \
     files=windebug
 
 %common
