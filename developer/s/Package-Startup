@@ -1,3 +1,14 @@
+Assign EXISTS "Developer:" >NIL:
+If WARN
+    If EXISTS "$DEVELPATH"
+        Assign "Developer:" "$DEVELPATH"
+    EndIf
+Endif
+Assign EXISTS "Developer:" >NIL:
+If WARN
+    Assign "Developer:" "SYS:Developer" >NIL:
+EndIf
+
 Assign INCLUDE: Developer:include
 Assign LIB: Developer:lib
 Assign USR: Developer:
