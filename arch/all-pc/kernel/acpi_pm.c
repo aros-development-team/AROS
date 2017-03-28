@@ -18,6 +18,7 @@
 #include "acpi.h"
 
 #define D(x)
+#define DPOFF(x)
 
 #define ACPI_MODPRIO_PM       10
 
@@ -79,7 +80,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
         UINT8                   acpiSleepTypeA, acpiSleepTypeB;
         ACPI_TABLE_FADT *fadt = (ACPI_TABLE_FADT *)acpiData->acpi_fadt;
 
-        D(bug("[Kernel:ACPI-PM] %s: STATE 0x00 - Powering Off...\n", __func__));
+        DPOFF(bug("[Kernel:ACPI-PM] %s: STATE 0x00 - Powering Off...\n", __func__));
 
         // we must be in user-mode with interrupts enabled to use AcpiCA
         krnLeaveSupervisorRing(FLAGS_INTENABLED);
@@ -89,12 +90,12 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 
         if (!ACPI_FAILURE(status))
         {
-            D(bug("[Kernel:ACPI-PM] %s:     %d:%d\n", __func__, acpiSleepTypeA, acpiSleepTypeB));
+            DPOFF(bug("[Kernel:ACPI-PM] %s:     %d:%d\n", __func__, acpiSleepTypeA, acpiSleepTypeB));
 
             // call Prepare To Sleep
             arg.Integer.Value = ACPI_STATE_S5;
             pathName = METHOD_PATHNAME__PTS;
-            D(bug("[Kernel:ACPI-PM] %s:     > ACPI %s\n", __func__, &pathName[1]));
+            DPOFF(bug("[Kernel:ACPI-PM] %s:     > ACPI %s\n", __func__, &pathName[1]));
             status = AcpiEvaluateObject(NULL,
                                         pathName,
                                         &arg_list,
@@ -112,7 +113,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
             // ignore the return value
             arg.Integer.Value = ACPI_SST_INDICATOR_OFF;
             pathName = METHOD_PATHNAME__SST;
-            D(bug("[Kernel:ACPI-PM] %s:     > ACPI %s\n", __func__, &pathName[1]));
+            DPOFF(bug("[Kernel:ACPI-PM] %s:     > ACPI %s\n", __func__, &pathName[1]));
             status = AcpiEvaluateObject(NULL,
                                         pathName,
                                         &arg_list,
@@ -134,8 +135,8 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
                 {
                     acpiSleepTypeB = ((acpiSleepTypeA << ACPI_X_SLEEP_TYPE_POSITION) & ACPI_X_SLEEP_TYPE_MASK);
 
-                    D(bug("[Kernel:ACPI-PM] %s:     Sleep Control Register @ 0x%p, Width %d, Offset %d, MemSpace %d\n", __func__, (IPTR)fadt->SleepControl.Address, fadt->SleepControl.BitWidth, fadt->SleepControl.BitOffset, fadt->SleepControl.SpaceId));
-                    D(bug("[Kernel:ACPI-PM] %s:     Sleep Value = 0x%2x\n", __func__, acpiSleepTypeB));
+                    DPOFF(bug("[Kernel:ACPI-PM] %s:     Sleep Control Register @ 0x%p, Width %d, Offset %d, MemSpace %d\n", __func__, (IPTR)fadt->SleepControl.Address, fadt->SleepControl.BitWidth, fadt->SleepControl.BitOffset, fadt->SleepControl.SpaceId));
+                    DPOFF(bug("[Kernel:ACPI-PM] %s:     Sleep Value = 0x%2x\n", __func__, acpiSleepTypeB));
 
                     status = AcpiWrite ((UINT64) (acpiSleepTypeB | ACPI_X_SLEEP_ENABLE), &fadt->SleepControl);
                 }
@@ -149,7 +150,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
                 sleepTypeRegInfo = AcpiHwGetBitRegisterInfo (ACPI_BITREG_SLEEP_TYPE);
                 sleepEnableRegInfo = AcpiHwGetBitRegisterInfo (ACPI_BITREG_SLEEP_ENABLE);
 
-                // Clear ACPI Wake status */
+                // Clear ACPI Wake status
                 pathName = " ACPI Wake Status";
                 status = AcpiWriteBitRegister (ACPI_BITREG_WAKE_STATUS, ACPI_CLEAR_STATUS);
 
@@ -171,7 +172,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
                     xpm1aControl |= (acpiSleepTypeA << sleepTypeRegInfo->BitPosition);
                     xpm1bControl |= (acpiSleepTypeB << sleepTypeRegInfo->BitPosition);
 
-                    D(bug("[Kernel:ACPI-PM] %s:     PM1A = 0xd\n", __func__, xpm1aControl));
+                    DPOFF(bug("[Kernel:ACPI-PM] %s:     PM1A = 0xd\n", __func__, xpm1aControl));
 
                     status = AcpiWrite (xpm1aControl, &fadt->XPm1aControlBlock);
                 }
@@ -188,7 +189,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
                     xpm1aControl |= sleepEnableRegInfo->AccessBitMask;
                     xpm1bControl |= sleepEnableRegInfo->AccessBitMask;
 
-                    D(bug("[Kernel:ACPI-PM] %s:     PM1A = 0xd\n", __func__, xpm1aControl));
+                    DPOFF(bug("[Kernel:ACPI-PM] %s:     PM1A = 0xd\n", __func__, xpm1aControl));
 
                     CacheClearU();
 
@@ -228,7 +229,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
     else
     {
         // We cant handle any other states atm =/
-        D(bug("[Kernel:ACPI-PM] %s: UNHANDLED STATE 0x%02x\n", __func__, pmState));
+        bug("[Kernel:ACPI-PM] %s: UNHANDLED STATE 0x%02x\n", __func__, pmState);
     }
 }
 
