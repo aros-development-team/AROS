@@ -1757,7 +1757,7 @@ AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
 AC_MSG_CHECKING([If we need to use --sysroot])
 if test "$toolchain_needs_sysroot" = "yes" ; then
-    aros_config_sysroot="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development"
+    aros_config_sysroot="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Developer"
 fi
 AC_MSG_RESULT($toolchain_needs_sysroot)
 
@@ -2258,7 +2258,7 @@ aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/host/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
-aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Development/include/aros"
+aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Developer/include/aros"
 aros_gendir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
