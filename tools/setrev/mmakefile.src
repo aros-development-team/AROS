@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM tools-setrev : includes linklibs
 
 FILES  := setrev
-EXEDIR := $(AROS_CONTRIB)/Development/Build
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
 USER_CFLAGS :=
 
 %build_prog mmake=tools-setrev progname=setrev \

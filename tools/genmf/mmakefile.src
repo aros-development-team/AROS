@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM tools-genmf : includes linklibs
 
 FILES  := genmf
-EXEDIR := $(AROS_CONTRIB)/Development/Build
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
 
 %build_prog mmake=tools-genmf files=$(FILES) \
     progname=genmf targetdir=$(EXEDIR)

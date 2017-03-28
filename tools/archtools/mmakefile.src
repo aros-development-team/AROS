@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM tools-archtool : includes linklibs
 
 FILES  := archtool
-EXEDIR := $(AROS_CONTRIB)/Development/Build
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
 
 %build_prog mmake=tools-archtool \
     progname=archtool targetdir=$(EXEDIR) \
