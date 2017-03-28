@@ -1150,10 +1150,10 @@ AROS_UFH3(void, RectShadeFunc,
 
         for (CR=rp->Layer->ClipRect;CR;CR=CR->Next)
         {
-            if (CR->BitMap == data->rpBm)
+            if (CR->BitMap == rp->BitMap)
             {
-                src_offset_x = startx + (CR->bounds.MinX - dstRp->Layer->bounds.MinX) - ALIGN_OFFSET(CR->bounds.MinX);
-                src_offset_y = starty + (CR->bounds.MinY - dstRp->Layer->bounds.MinY);
+                src_offset_x = startx + (CR->bounds.MinX - rp->Layer->bounds.MinX) - ALIGN_OFFSET(CR->bounds.MinX);
+                src_offset_y = starty + (CR->bounds.MinY - rp->Layer->bounds.MinY);
             }
         }
     }
