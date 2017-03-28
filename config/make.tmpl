@@ -462,7 +462,7 @@ endif
 
 # Adjust compiler flags to suit ObjC
 TMP_OBJCFLAGS := %(cflags)
-TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPMENT)/include
+TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPER)/include
 TMP_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_OBJCFLAGS)))
 ifeq (%(dflags),)
   TMP_OBJCDFLAGS := %(cflags)
@@ -785,7 +785,7 @@ endif
 
 # Adjust compiler flags to suit ObjC
 TMP_OBJCFLAGS := %(cflags)
-TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPMENT)/include
+TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPER)/include
 TMP_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_OBJCFLAGS)))
 ifeq (%(dflags),)
   TMP_OBJCDFLAGS := %(cflags)
@@ -2925,7 +2925,7 @@ ifeq (%(compiler),host)
 endif
 ifeq (%(compiler),target)
     CONFIG_ENV := %(config_env_extra) \
-        PKG_CONFIG_LIBDIR="$(AROS_DEVELOPMENT)/lib/pkgconfig" \
+        PKG_CONFIG_LIBDIR="$(AROS_DEVELOPER)/lib/pkgconfig" \
         PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)" \
         CPP="$(TARGET_CPP) $(TARGET_SYSROOT)" \
         CXXCPP="$(TARGET_CPP) $(TARGET_SYSROOT)" \
@@ -2933,7 +2933,7 @@ ifeq (%(compiler),target)
         CFLAGS="$(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         CXX="$(TARGET_CXX) $(TARGET_SYSROOT)" \
         CXXFLAGS="$(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
-        LDFLAGS="-L$(AROS_DEVELOPMENT)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+        LDFLAGS="-L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         AS="$(TARGET_AS)" \
         CC_FOR_BUILD="$(HOST_DEF_CC)" \
         CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
@@ -2952,9 +2952,9 @@ ifeq (%(compiler),target)
         TARGET_STRIP="$(STRIP_PLAIN)" \
         TARGET_NM="$(NM_PLAIN)" \
         CC_FOR_TARGET="$(TARGET_CC) $(TARGET_SYSROOT)" \
-        CFLAGS_FOR_TARGET="$(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+        CFLAGS_FOR_TARGET="$(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
         CXX_FOR_TARGET="$(TARGET_CXX) $(TARGET_SYSROOT)" \
-        CXXFLAGS_FOR_TARGET="$(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPMENT)/lib %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
+        CXXFLAGS_FOR_TARGET="$(TARGET_CXXFLAGS) $(DEBUG_CFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"
 ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros\
@@ -3474,8 +3474,8 @@ GNU_REPOSITORY := gnu://
 
 #------------------------------------------------------------------------------
 # Same job as the one of %fetch_and_build_gnu, except that this one assumes
-# that the package is a "Development" package, and as such it needs to be placed
-# under the $(AROS_DEVELOPMENT) directory, as a default. 
+# that the package is a "Developer" package, and as such it needs to be placed
+# under the $(AROS_DEVELOPER) directory, as a default. 
 #
 # All the arguments have the same meaning as the ones of the %fetch_and_build_gnu 
 # macro, but notice that %fetch_and_build_gnu_development *doesn't* have a
@@ -3484,8 +3484,8 @@ GNU_REPOSITORY := gnu://
 #     #MM- development-%(package)
 
 %define fetch_and_build_gnu_development package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
-    srcdir= package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPMENT) \
-    aros_prefix=/Development config_env_extra= preconfigure= postconfigure= postinstall=  extraoptions= extracflags= extracxxflags=
+    srcdir= package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPER) \
+    aros_prefix=/Developer config_env_extra= preconfigure= postconfigure= postinstall=  extraoptions= extracflags= extracxxflags=
 
 #MM- development : development-%(package)
 
@@ -3498,7 +3498,7 @@ GNU_REPOSITORY := gnu://
 
 #MM
 postinstall-%(package)-delete-la-files:
-	$(RM) $(AROS_DEVELOPMENT)/lib/*.la
+	$(RM) $(AROS_DEVELOPER)/lib/*.la
 
 %end
 #------------------------------------------------------------------------------

@@ -13,7 +13,7 @@ SET(CMAKE_SYSTEM_PROCESSOR @aros_target_cpu@)
 SET(BUILD_SHARED_LIBS OFF)
 SET(LIBTYPE STATIC)
 SET(CMAKE_BUILD_TYPE Release)
-SET(CMAKE_FIND_ROOT_PATH @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development)
+SET(CMAKE_FIND_ROOT_PATH @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer)
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
@@ -21,7 +21,7 @@ SET(CMAKE_SYSTEM_PROCESSOR @aros_target_cpu@)
 SET(CMAKE_AR @aros_plain_ar@ CACHE FILEPATH "Archiver")
 
 # CMAKE_SYSROOT works only from CMake 3.0, hack below for older versions
-SET(CMAKE_SYSROOT @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development)
+SET(CMAKE_SYSROOT @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer)
 SET(CMAKE_C_FLAGS "--sysroot ${CMAKE_SYSROOT} ${CMAKE_C_FLAGS}" CACHE STRING "" FORCE)
 SET(CMAKE_CXX_FLAGS "--sysroot ${CMAKE_SYSROOT} ${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
 
