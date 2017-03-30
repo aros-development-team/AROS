@@ -32,13 +32,17 @@ TARGET_DEF_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
 TARGET_OBJDUMP          := @aros_target_objdump@
 KERNEL_RESCOMP          := @aros_kernel_rescomp@
 
-CONFIG_NOWARN_FLAGS     = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
+CONFIG_NOWARN_CFLAGS    = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
+CONFIG_WARN_CFLAGS      := @aros_warn_flags@
+CONFIG_NOWARN_CXXFLAGS  = $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@aros_nowarn_flags@),$($(nowarn)))
+CONFIG_WARN_CFLAGS      := $(subst -Werror-implicit-function-declaration,,@aros_warn_flags@)
 
 TARGET_SYSROOT          := @aros_config_sysroot@
 KERNEL_SYSROOT          := @aros_kernel_sysroot@
-CONFIG_WARN_FLAGS        := @aros_warn_flags@
-CONFIG_BASE_CFLAGS      = @aros_config_cflags@ $(CONFIG_NOWARN_FLAGS)
-CONFIG_CFLAGS	        = $(CONFIG_WARN_FLAGS) @aros_config_cflags@ $(CONFIG_NOWARN_FLAGS)
+CONFIG_BASE_CFLAGS      = @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS)
+CONFIG_BASE_CXXFLAGS    = @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS)
+CONFIG_CFLAGS	        = $(CONFIG_WARN_CFLAGS) @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS)
+CONFIG_CXXFLAGS	        = $(CONFIG_WARN_CXXFLAGS) @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS)
 CONFIG_AFLAGS	        := @aros_config_aflags@
 CONFIG_LDFLAGS	        := @aros_config_ldflags@
 SHARED_CFLAGS	        := @aros_shared_cflags@
