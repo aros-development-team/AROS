@@ -28,6 +28,8 @@ TARGETDIR   := $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SU
 
 GENDIR      := $(TARGETDIR)/gen
 
+CC_PREFIX := @aros_cc_pre@
+
 -include $(GENDIR)/config/make.defaults
 -include $(GENDIR)/config/make.opts
 
