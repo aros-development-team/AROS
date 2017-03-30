@@ -22,9 +22,8 @@
 /*
  * Unlike the VBlankServer, we might not run at a fixed 60Hz.
  */
-void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
+int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *KernelBase, struct ExecBase *SysBase)
 {
-    struct KernelBase *KernelBase = __kernelBase;
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct APICData *apicData = pdata->kb_APIC;
 #if defined(__AROSEXEC_SMP__)
@@ -147,4 +146,6 @@ void APICHeartbeatServer(struct ExecBase *SysBase, void *unused)
         }
 #endif
     }
+
+    return 1;
 }

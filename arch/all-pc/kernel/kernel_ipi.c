@@ -26,7 +26,7 @@
 void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase)
 {
     int cpunum = KrnGetCPUNumber();
-    ULONG cmd = (APIC_IRQ_IPI_START + ipi_number) | ICR_INT_ASSERT;
+    ULONG cmd = APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_IPI_NOP + ipi_number) | ICR_INT_ASSERT;
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     IPTR __APICBase = apicPrivate->lapicBase;
@@ -35,7 +35,7 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
     
     asm volatile("sfence");
 
-    if ((cmd & 0xff) <= APIC_IRQ_IPI_END)
+    if ((cmd & 0xff) <= APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_IPI_CAUSE))
     {
         // special case - send IPI to all
         if ((IPTR)cpu_mask == TASKAFFINITY_ANY)
@@ -273,9 +273,10 @@ static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelB
     KrnSpinUnLock(&pdata->kb_BusyIPIHooksLock);
 }
 
-void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, struct KernelBase *KernelBase)
+int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase *KernelBase)
 {
-    //int cpunum = KrnGetCPUNumber();
+    D(int cpunum = KrnGetCPUNumber();)
+    IPTR ipi_number = (IPTR)data1;
     IPTR __APICBase = core_APIC_GetBase();
     
     D(bug("[Kernel:IPI] CPU.%03u IPI%02d\n", cpunum, ipi_number));
@@ -305,4 +306,6 @@ void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, str
             APIC_REG(__APICBase, APIC_EOI) = 0;
             break;
     }
+
+    return TRUE;
 }

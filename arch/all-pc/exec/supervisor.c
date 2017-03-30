@@ -20,7 +20,7 @@ AROS_LH1I(IPTR, Supervisor,
     IPTR retval;
 
     /* Put function pointer into e(r)dx because on x86-64 it doesn't require additional reload */
-    __asm__ __volatile__ ("int $0x80":"=a"(retval):"a"(SC_SUPERVISOR),"D"(userFunction));
+    __asm__ __volatile__ ("int $0xfe":"=a"(retval):"a"(SC_SUPERVISOR),"D"(userFunction));
     return retval;
 
     AROS_LIBFUNC_EXIT

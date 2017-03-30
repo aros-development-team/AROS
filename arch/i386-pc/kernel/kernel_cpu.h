@@ -30,7 +30,7 @@
 #define goBack(mode)
 
 /* A command to issue a syscall */
-#define krnSysCall(num) asm volatile("int $0x80"::"a"(num):"memory")
+#define krnSysCall(num) asm volatile("int $0xfe"::"a"(num):"memory")
 
 #define IN_USER_MODE \
 	({  short __value; \

@@ -42,7 +42,7 @@ AROS_INTH1(Exec_X86WarmResetHandler, struct Interrupt *, handler)
     if (action == SD_ACTION_WARMREBOOT)
     {
         /* Tell kernel to reboot */
-        __asm__ __volatile__ ("int $0x80"::"a"(0x100));
+        __asm__ __volatile__ ("int $0xfe"::"a"(0x100));
     }
 
     /* We really should not return from that */

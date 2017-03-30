@@ -11,12 +11,14 @@
 #include <asm/io.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <inttypes.h>
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
 #include "kernel_debug.h"
+#include "kernel_intr.h"
 
 #define D(x)
 #define DAPIC(x)
@@ -186,20 +188,24 @@ void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, void *Ha
 }
 #endif
 
+int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2);
+
 static int Platform_Init(struct KernelBase *LIBBASE)
 {
     struct PlatformData *pdata;
+    struct KernelBase *KernelBase = LIBBASE;
+#if 1
     int i;
+#endif
 
-    D(
-        bug("[Kernel:x86_64] %s: Performing Post-Exec initialization\n", __func__);
-        bug("[Kernel:x86_64] %s: KernelBase @ %p\n", __func__, LIBBASE);
-    )
+        D(
+            bug("[Kernel:x86_64] %s: Performing Post-Exec initialization\n", __func__);
+            bug("[Kernel:x86_64] %s: KernelBase @ %p\n", __func__, LIBBASE);)
 
-    /*
+        /*
      * Setup the Interrupt Controller Environment ...
      */
-    NEWLIST(&LIBBASE->kb_ICList);
+        NEWLIST(&LIBBASE->kb_ICList);
     NEWLIST(&LIBBASE->kb_InterruptMappings);
     LIBBASE->kb_ICTypeBase = KBL_INTERNAL + 1;
 
@@ -207,16 +213,8 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     for (i = 0; i < HW_IRQ_COUNT; i++)
     {
-        if (i == APIC_IRQ_SYSCALL)
-        {
-            LIBBASE->kb_Interrupts[i].ki_Priv |= IRQINTF_ENABLED;               // Reserve the Syscall Handler..
-            LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL - 1;
-        }
-        else
-        {
-            LIBBASE->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
-            LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
-        }
+        LIBBASE->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
+        LIBBASE->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
     }
 
     D(bug("[Kernel:x86_64] %s: Interrupt Lists initialised\n", __func__));
@@ -238,12 +236,16 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     NEWLIST(&pdata->kb_SysCallHandlers);
 
     // we need to setup the BSP's syscall gate early..
-    if (!core_SetIDTGate((apicidt_t *)__KernBootPrivate->BOOTIDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+    if (!core_SetIDTGate((apicidt_t *)__KernBootPrivate->BOOTIDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE))
     {
         krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
-                       "Vector #%02X\n", APIC_IRQ_SYSCALL);
+                       "Vector #%02X\n",
+                 APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL));
     }
+    KrnAddExceptionHandler(APIC_EXCEPT_SYSCALL, core_SysCallHandler, LIBBASE, NULL);
     krnAddSysCallHandler(pdata, &x86_SCSupervisorHandler, FALSE, TRUE);
+
+    D(bug("[Kernel:x86_64] %s: SysCall set up\n", __func__));
 
 #if defined(EMULATE_SYSBASE)
 //    KrnAddExceptionHandler(0x0E, core_IRQ0EHandle, void *handlerData, void *handlerData2);

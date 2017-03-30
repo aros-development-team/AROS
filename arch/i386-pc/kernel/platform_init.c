@@ -3,20 +3,27 @@
     $Id$
 */
 
+#define __KERNEL_NOLIBBASE__
+
 #include <aros/symbolsets.h>
 #include <asm/cpu.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_intr.h"
 
 #include "utils.h"
 
 #define D(x)
+#define DSYSCALL(x)
 
 extern struct syscallx86_Handler x86_SCSupervisorHandler;
+
+int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2);
 
 static int PlatformInit(struct KernelBase *KernelBase)
 {
@@ -32,16 +39,8 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     for (i = 0; i < HW_IRQ_COUNT; i++)
     {
-        if (i == APIC_IRQ_SYSCALL)
-        {
-            KernelBase->kb_Interrupts[i].ki_Priv |= IRQINTF_ENABLED;               // Reserve the Syscall Handler..
-            KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL - 1;
-        }
-        else
-        {
-            KernelBase->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
-            KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
-        }
+        KernelBase->kb_Interrupts[i].ki_Priv &= ~IRQINTF_ENABLED;
+        KernelBase->kb_Interrupts[i].ki_List.lh_Type = KBL_INTERNAL;
     }
 
     data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
@@ -76,11 +75,14 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     // Setup the base syscall handler(s) ...
     NEWLIST(&data->kb_SysCallHandlers);
-    if (!core_SetIDTGate(idt, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+    if (!core_SetIDTGate(idt, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL),
+                         (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE))
     {
         krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
-                       "Vector #%02X\n", APIC_IRQ_SYSCALL);
+                       "Vector #%02X\n",
+                 APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL));
     }
+    KrnAddExceptionHandler(APIC_EXCEPT_SYSCALL, core_SysCallHandler, KernelBase, NULL);
     krnAddSysCallHandler(data, &x86_SCSupervisorHandler, FALSE, TRUE);
     
     /* Set correct TSS address in the GDT */

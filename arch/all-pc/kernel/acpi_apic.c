@@ -224,12 +224,10 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
             pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
             D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].cpu_LocalID));
 
-#if (__WORDSIZE==64)
             pdata->kb_APIC->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
             pdata->kb_APIC->cores[0].cpu_TLS = __KernBootPrivate->BOOTTLS;
             pdata->kb_APIC->cores[0].cpu_IDT = __KernBootPrivate->BOOTIDT;
             pdata->kb_APIC->cores[0].cpu_MMU = &__KernBootPrivate->MMU;
-#endif
 
             /* Initialize LAPIC for ourselves (CPU #0) */
             acpi_APIC_InitCPU(pdata, 0);
