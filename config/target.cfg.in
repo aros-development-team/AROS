@@ -19,6 +19,7 @@ KERNEL_CPP	        := @aros_kernel_cpp@
 TARGET_CC	        := $(CC_PREFIX) @aros_target_cc@
 KERNEL_CC	        := @aros_kernel_cc@
 TARGET_CXX	        := @aros_target_cxx@
+KERNEL_CXX	        := @aros_target_cxx@
 TARGET_AS	        := @aros_target_as@
 TARGET_LD	        := @aros_target_ld@
 SHARED_LD	        := @aros_shared_ld@
