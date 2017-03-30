@@ -24,11 +24,61 @@
 #include "cpu_traps.h"
 
 #define D(x)
+#define DSYSCALL(x)
 
 #if (__WORDSIZE != 64)
 extern void core_Kick(struct TagItem *msg, void *target);
 extern void kernel_cstart(const struct TagItem *msg);
 #endif
+
+int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)
+{
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+    struct syscallx86_Handler *scHandler;
+    ULONG sc =
+#if (__WORDSIZE == 64)
+        regs->rax;
+#else
+        regs->eax;
+#endif
+    BOOL systemSysCall = TRUE;
+
+    /* Syscall number is actually ULONG (we use only eax) */
+    DSYSCALL(bug("[Kernel] %s: Syscall %08x\n", __func__, sc));
+
+    ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
+    {
+        if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
+        {
+            DSYSCALL(bug("[Kernel] %s: calling handler @ 0x%p\n", __func__, scHandler));
+            scHandler->sc_SysCall(regs);
+            if (scHandler->sc_Node.ln_Type == 1)
+                systemSysCall = FALSE;
+        }
+    }
+
+    /*
+     * Scheduler can be called only from within user mode.
+     * Every task has ss register initialized to a valid segment descriptor.
+     * The descriptor itself isn't used by x86-64, however when a privilege
+     * level switch occurs upon an interrupt, ss is reset to zero. Old ss value
+     * is always pushed to stack as part of interrupt context.
+     * We rely on this in order to determine which CPL we are returning to.
+     */
+    if ((systemSysCall) && INTR_USERMODESTACK)
+    {
+        DSYSCALL(bug("[Kernel] %s: User-mode syscall\n", __func__));
+
+        /* Disable interrupts for a while */
+        __asm__ __volatile__("cli; cld;");
+
+        core_SysCall(sc, regs);
+    }
+
+    DSYSCALL(bug("[Kernel] %s: Returning from syscall...\n", __func__));
+
+    return TRUE;
+}
 
 BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler *newscHandler, BOOL custom, BOOL force)
 {

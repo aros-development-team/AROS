@@ -10,20 +10,42 @@
 
 #include "i8259a.h"
 
-// put the APIC IRQs after the cpu exceptions & pic IRQ's
+// From CPU and LAPIC point of view we have 256 interrupt vectors. The first 32 are reserved
+// For CPU exceptions. Further, there are 16 vectors reserved for legacy XT-PIC (which can be
+// eventually remapped to LAPIC with help of IOAPIC). Official APIC IRQ Base starts Right 
+// after legacy XT-PIC 
 #define APIC_IRQ_MAX            256
-#define X86_CPU_EXCEPT_COUNT   32
+#define X86_CPU_EXCEPT_COUNT    32
 #define APIC_IRQ_BASE           (X86_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
-#define APIC_LOCALIRQ_COUNT     10
-#define APIC_IRQ_COUNT          (APIC_IRQ_MAX - (INTB_KERNEL + APIC_IRQ_BASE + APIC_LOCALIRQ_COUNT))
-#define APIC_CPU_EXCEPT_COUNT   (APIC_IRQ_MAX - APIC_IRQ_COUNT)
 
-// really vectors...
-#define APIC_IRQ_SYSCALL        0x80
-#define APIC_IRQ_IPI_START      0xF0
-#define APIC_IRQ_IPI_END        0xF8
-#define APIC_IRQ_ERROR          0xFE
-#define APIC_IRQ_HEARTBEAT      (APIC_IRQ_BASE + APIC_IRQ_COUNT - 1)
+// Local APIC exceptions, with SysCall beeing the last (int $0xff)! The numeric values start 
+// at X86_CPU_EXCEPT_COUNT in order to make the handler simplier
+enum
+{
+    APIC_EXCEPT_HEARTBEAT = X86_CPU_EXCEPT_COUNT,
+    APIC_EXCEPT_IPI_NOP,
+    APIC_EXCEPT_IPI_IPI_STOP,
+    APIC_EXCEPT_IPI_RESUME,
+    APIC_EXCEPT_IPI_RESCHEDULE,
+    APIC_EXCEPT_IPI_CALL_HOOK,
+    APIC_EXCEPT_IPI_CAUSE,
+    APIC_EXCEPT_ERROR,
+    APIC_EXCEPT_SYSCALL,
+    APIC_EXCEPT_SPURIOUS,
+    APIC_EXCEPT_TOP
+};
+
+#define APIC_CPU_EXCEPT_COUNT   (APIC_EXCEPT_TOP - X86_CPU_EXCEPT_COUNT)
+#define APIC_CPU_EXCEPT_BASE    (APIC_IRQ_MAX - APIC_CPU_EXCEPT_COUNT)
+#define APIC_IRQ_COUNT          (APIC_CPU_EXCEPT_BASE - APIC_IRQ_BASE)
+
+#define APIC_CPU_EXCEPT_TO_VECTOR(num)  ((num) - X86_CPU_EXCEPT_COUNT + APIC_CPU_EXCEPT_BASE)
+#define GET_EXCEPTION_NUMBER(irq) \
+    ((irq) < X86_CPU_EXCEPT_COUNT ? (irq) : ((irq) - APIC_CPU_EXCEPT_BASE + X86_CPU_EXCEPT_COUNT))
+#define GET_DEVICE_IRQ(irq)     ((irq) - X86_CPU_EXCEPT_COUNT)
+#define IS_APIC_EXCEPTION(irq)  (((irq) >= APIC_CPU_EXCEPT_BASE) && ((irq) < APIC_EXCEPT_SYSCALL))
+#define IS_EXCEPTION(irq)       ((irq) < X86_CPU_EXCEPT_COUNT || (irq) >= APIC_CPU_EXCEPT_BASE)
+
 
 /* Local APIC base address register (MSR #27) */
 #define MSR_LAPIC_BASE 0x1B

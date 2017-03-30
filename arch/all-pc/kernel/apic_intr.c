@@ -27,7 +27,6 @@
 #define D(x)
 #define DIDT(x)
 #define DIRQ(x)
-#define DSYSCALL(x)
 #define DTRAP(x)
 #define DUMP_CONTEXT
 
@@ -216,90 +215,53 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
+#if 0 
+    // THis debug works only if Local APIC exists...
+    DIRQ(
+        IPTR __APICBase = core_APIC_GetBase();
+        int cpunum = KrnGetCPUNumber();
 
-    if (irq_number == 0xff)
-        (bug("[Kernel] %s: APIC Spurious interrupt!\n", __func__, irq_number));
-    // TODO: make sure we have IPI interrupts ;)
-    else if (irq_number >= APIC_IRQ_IPI_START && irq_number <= APIC_IRQ_IPI_END)
-    {
-        core_IPIHandle(regs, irq_number - APIC_IRQ_IPI_START, KernelBase);
-    }
-    else if (irq_number == APIC_IRQ_ERROR)
-    {
-        ULONG error_code = 0;
-        struct PlatformData *pdata = KernelBase->kb_PlatformData;
-        struct APICData *apicData = pdata->kb_APIC;
-        IPTR __LAPICBase = apicData->lapicBase;
+        bug("core_IRQHandle(%d), eflags=%08x\n", irq_number, regs->rflags);
 
-        // IN order to read APIC_ESR register one has to first write it with anything (zero is fine)
-        // This forces update of the contents and new error codes may be read
-        APIC_REG(__LAPICBase, APIC_ESR) = error_code;
-        error_code = APIC_REG(__LAPICBase, APIC_ESR);
-
-        bug("[KERNEL] %s: APIC Error interrupt! Error code=%08x\n", __func__, error_code);
-    }
-    else if ((irq_number < HW_IRQ_BASE) || (irq_number > (APIC_IRQ_BASE + APIC_IRQ_COUNT)))
+        bug("IRR.%03x: %08x%08x%08x%08x%08x%08x%08x%08x\n", cpunum,
+            APIC_REG(__APICBase, APIC_IRR+0x70), APIC_REG(__APICBase, APIC_IRR+0x60),
+            APIC_REG(__APICBase, APIC_IRR+0x50), APIC_REG(__APICBase, APIC_IRR+0x40),
+            APIC_REG(__APICBase, APIC_IRR+0x30), APIC_REG(__APICBase, APIC_IRR+0x20),
+            APIC_REG(__APICBase, APIC_IRR+0x10), APIC_REG(__APICBase, APIC_IRR+0x00));
+        bug("ISR.%03x: %08x%08x%08x%08x%08x%08x%08x%08x\n", cpunum,
+            APIC_REG(__APICBase, APIC_ISR+0x70), APIC_REG(__APICBase, APIC_ISR + 0x60),
+            APIC_REG(__APICBase, APIC_ISR + 0x50), APIC_REG(__APICBase, APIC_ISR + 0x40),
+            APIC_REG(__APICBase, APIC_ISR + 0x30), APIC_REG(__APICBase, APIC_ISR + 0x20),
+            APIC_REG(__APICBase, APIC_ISR + 0x10), APIC_REG(__APICBase, APIC_ISR + 0x00));
+    )
+#endif
+    // An IRQ which arrived at the CPU is *either* an exception (let it be syscall, cpu exception,
+    // LAPIC local irq) or a device IRQ.
+    if (IS_EXCEPTION(irq_number))
     {
-        /* 
-         * The Device IRQ's come after the first 32 CPU exception vectors
-         * Vectors above the highest APIC Device IRQ are also treated as exceptions.
-         */
+        unsigned long exception_number = GET_EXCEPTION_NUMBER(irq_number);
+
         DTRAP(bug("[Kernel] %s: CPU Exception %08x\n", __func__, irq_number);)
-        if (irq_number > HW_IRQ_BASE)
-            irq_number =  (irq_number - (APIC_IRQ_BASE + APIC_IRQ_COUNT)) + HW_IRQ_BASE;
+        DTRAP(bug("[Kernel] %s: --> CPU Trap #$%08x\n", __func__, exception_number);)
 
-        DTRAP(bug("[Kernel] %s: --> CPU Trap #$%08x\n", __func__, irq_number);)
+        cpu_Trap(regs, error_code, exception_number);
 
-    	cpu_Trap(regs, error_code, irq_number);
-    }
-    else if (irq_number == APIC_IRQ_SYSCALL)  /* Was it a Syscall? */
-    {
-        struct PlatformData *pdata = KernelBase->kb_PlatformData;
-        struct syscallx86_Handler *scHandler;
-    	ULONG sc = INTR_REGA;
-        BOOL systemSysCall = TRUE;
-
-	/* Syscall number is actually ULONG (we use only eax) */
-        DSYSCALL(bug("[Kernel] %s: Syscall %08x\n", __func__, sc));
-
-        ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
+        // NOT a CPU exception, must be APIC or Syscall. If APIC, send EOI
+        if (exception_number >= X86_CPU_EXCEPT_COUNT && exception_number != APIC_EXCEPT_SYSCALL)
         {
-            if ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == sc)
-            {
-                DSYSCALL(bug("[Kernel] %s: calling handler @ 0x%p\n", __func__, scHandler));
-                scHandler->sc_SysCall(regs);
-                if (scHandler->sc_Node.ln_Type == 1)
-                    systemSysCall = FALSE;
-            }
+            DTRAP(bug("[Kernel] %s: Sending EOI to LAPIC on CPU%03x\n", __func__, KrnGetCPUNumber());)
+            IPTR __APICBase = core_APIC_GetBase();
+            APIC_REG(__APICBase, APIC_EOI) = 0;
         }
-
-	/*
-	 * Scheduler can be called only from within user mode.
-	 * Every task has ss register initialized to a valid segment descriptor.
-	 * The descriptor itself isn't used by x86-64, however when a privilege
-	 * level switch occurs upon an interrupt, ss is reset to zero. Old ss value
-	 * is always pushed to stack as part of interrupt context.
-	 * We rely on this in order to determine which CPL we are returning to.
-	 */
-        if ((systemSysCall) && INTR_USERMODESTACK)
-        {
-            DSYSCALL(bug("[Kernel] %s: User-mode syscall\n", __func__));
-
-	    /* Disable interrupts for a while */
-	    __asm__ __volatile__("cli; cld;");
-
-	    core_SysCall(sc, regs);
-        }
-
-	DSYSCALL(bug("[Kernel] %s: Returning from syscall...\n", __func__));
     }
-    else if (irq_number >= HW_IRQ_BASE)  
+    else
     {
-        irq_number -= HW_IRQ_BASE;
+        irq_number = GET_DEVICE_IRQ(irq_number);
+
         DIRQ(bug("[Kernel] %s: Device IRQ #$%02X\n", __func__, irq_number);)
 
-	if (KernelBase)
-    	{
+        if (KernelBase)
+        {
             struct IntrController *irqIC;
             struct KernelInt *irqInt;
 
@@ -320,20 +282,20 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
                         irqIC->ic_IntrEnable(irqIC->ic_Private, irqInt->ki_List.l_pad, irq_number);
                 }
             }
-	}
+        }
 
-	/*
+        /*
          * Upon exit from the lowest-level Device IRQ,
          * if we are in user mode and not in forbid state,
          * we run the task scheduler.
          */
         if ((SysBase) && (INTR_USERMODESTACK))
-	{
-	    /* Disable interrupts for a while */
-	    __asm__ __volatile__("cli; cld;");
+        {
+            /* Disable interrupts for a while */
+            __asm__ __volatile__("cli; cld;");
 
-	    core_ExitInterrupt(regs);
-	}
+            core_ExitInterrupt(regs);
+        }
     }
 
     core_LeaveInterrupt(regs);

@@ -9,18 +9,19 @@
 #include <aros/types/spinlock_s.h>
 #include <utility/hooks.h>
 #include "kernel_base.h"
+#include "apic_ia32.h"
 
 /*
     Private KERNEL IPI messages
 */
-#define IPI_NOP         0
-#define IPI_STOP        1
-#define IPI_RESUME      2
-#define IPI_RESCHEDULE  3
-#define IPI_CALL_HOOK   4
-#define IPI_CAUSE       5
+#define IPI_NOP         (APIC_EXCEPT_IPI_NOP - X86_CPU_EXCEPT_COUNT)
+#define IPI_STOP        (APIC_EXCEPT_IPI_STOP - X86_CPU_EXCEPT_COUNT)
+#define IPI_RESUME      (APIC_EXCEPT_IPI_RESUME - X86_CPU_EXCEPT_COUNT)
+#define IPI_RESCHEDULE  (APIC_EXCEPT_IPI_RESCHEDULE - X86_CPU_EXCEPT_COUNT)
+#define IPI_CALL_HOOK   (APIC_EXCEPT_IPI_CALL_HOOK - X86_CPU_EXCEPT_COUNT)
+#define IPI_CAUSE       (APIC_EXCEPT_IPI_CAUSE - X86_CPU_EXCEPT_COUNT)
 
-void core_IPIHandle(struct ExceptionContext *regs, unsigned long ipi_number, struct KernelBase *KernelBase);
+int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase *KernelBase);
 void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase);
 int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR *args, APTR _KB);
 

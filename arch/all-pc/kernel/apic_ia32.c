@@ -26,6 +26,7 @@
 #include "kernel_debug.h"
 #include "kernel_syscall.h"
 #include "kernel_timer.h"
+#include "kernel_ipi.h"
 
 #include "kernel_interrupts.h"
 
@@ -46,8 +47,9 @@
 #define CONFIG_LEGACY
 #endif
 
-extern void core_APICErrorHandle(struct ExceptionContext *, void *, void *);
-AROS_INTP(APICHeartbeatServer);
+extern int core_APICErrorHandle(struct ExceptionContext *, void *, void *);
+extern int core_APICSpuriousHandle(struct ExceptionContext *, void *, void *);
+extern int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *KernelBase, struct ExecBase *SysBase);
 
 /* APIC Interrupt Controller Functions ... ***************************/
 
@@ -79,27 +81,19 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         /* Setup the APIC IRQs for CPU #0*/
         for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
         {
-            if (((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE) == irq) && (apicPrivate->flags & APF_TIMER))
+            if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
             {
-                /* if we have the heartbeat timer, its time to enable it for the boot processor... */
-                ictl_enable_irq((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), KernelBase);
+                D(bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);)
             }
             else
             {
-                if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
+                /* dont enable the vector yet...*/
+                if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE))
                 {
-                    D(bug("[Kernel:APIC-IA32] %s: failed to obtain IRQ %d\n", __func__, irq);)
+                    bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
                 }
                 else
-                {
-                    /* dont enable the vector yet...*/
-                    if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE))
-                    {
-                        bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
-                    }
-                    else
-                        count++;
-                }
+                    count++;
             }
         }
         UserState(ssp);
@@ -283,60 +277,39 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             /* Obtain/set the critical IRQs and Vectors */
             for (i = 0; i < X86_CPU_EXCEPT_COUNT; i++)
             {
-                if ((HW_IRQ_BASE < i) && (cpuNum == 0))
+                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
                 {
-                    if (!krnInitInterrupt(KernelBase, (i - HW_IRQ_BASE), APICInt_IntrController.ic_Node.ln_Type, 0))
-                    {
-                        krnPanic(NULL, "Failed to obtain APIC Exception IRQ\n"
-                                       "IRQ #$%02X\n", (i - HW_IRQ_BASE));
-                    }
-                    if (!core_SetIRQGate(apic->cores[cpuNum].cpu_IDT, (i - HW_IRQ_BASE), (uintptr_t)IntrDefaultGates[i]))
-                    {
-                        krnPanic(NULL, "Failed to set APIC Exception IRQ Vector\n"
-                                       "IRQ #$%02X, Vector #$%02X\n", (i - HW_IRQ_BASE), i);
-                    }
+                    krnPanic(NULL, "Failed to set CPU Exception Vector\n"
+                                   "Vector #$%02X\n", i);
                 }
-                else if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
+            }
+            for (i = X86_CPU_EXCEPT_COUNT; i < APIC_EXCEPT_TOP; i++)
+            {
+                if (i == APIC_EXCEPT_SYSCALL)
+                    continue;
+
+                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(i), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(i)], TRUE))
                 {
                     krnPanic(NULL, "Failed to set APIC Exception Vector\n"
-                                   "Vector #$%02X\n", i);
+                                    "Vector #$%02X\n", i);
                 }
             }
             D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Exception Vectors configured\n", cpuNum, __func__));
 
-            if ((APIC_IRQ_ERROR < HW_IRQ_COUNT) && (cpuNum == 0))
+            if (cpuNum == 0)
             {
-                if (!krnInitInterrupt(KernelBase, (APIC_IRQ_ERROR - HW_IRQ_BASE), APICInt_IntrController.ic_Node.ln_Type, 0))
-                {
-                    krnPanic(NULL, "Failed to obtain APIC Error IRQ\n"
-                                   "IRQ #$%02X\n", (APIC_IRQ_ERROR - HW_IRQ_BASE));
-                }
-                if (!core_SetIRQGate(apic->cores[cpuNum].cpu_IDT, (APIC_IRQ_ERROR - HW_IRQ_BASE), (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR]))
-                {
-                    krnPanic(NULL, "Failed to set APIC Error IRQ Vector\n"
-                                   "IRQ #$%02X, Vector #$%02X\n", (APIC_IRQ_ERROR - HW_IRQ_BASE), APIC_IRQ_ERROR);
-                }
-            }
-            else if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, APIC_IRQ_ERROR, (uintptr_t)IntrDefaultGates[APIC_IRQ_ERROR], TRUE))
-            {
-                krnPanic(NULL, "Failed to set APIC Error Vector\n"
-                               "Vector #$%02X\n", APIC_IRQ_ERROR);
-            }
-            else if (cpuNum == 0)
-                KrnAddExceptionHandler((APIC_IRQ_ERROR - APIC_IRQ_COUNT), core_APICErrorHandle, NULL, NULL);
+                KrnAddExceptionHandler(APIC_EXCEPT_ERROR, core_APICErrorHandle, KernelBase, NULL);
+                KrnAddExceptionHandler(APIC_EXCEPT_SPURIOUS, core_APICSpuriousHandle, KernelBase, NULL);
 
-            D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Error Vector #$%02X configured\n", cpuNum, __func__, APIC_IRQ_ERROR));
+                D(bug("[Kernel:APIC-IA32.%03u] %s: APIC Error Exception handler (exception #$%02X) installed\n", cpuNum, __func__, APIC_EXCEPT_ERROR));
 
-            for (i = APIC_IRQ_IPI_START; i <= APIC_IRQ_IPI_END; i++)
-            {
-                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
+                for (i = APIC_EXCEPT_IPI_NOP; i <= APIC_EXCEPT_IPI_CAUSE; i++)
                 {
-                    krnPanic(NULL, "Failed to set APIC IPI Vector\n"
-                                "Vector #$%02X\n", i);
+                    KrnAddExceptionHandler(i, core_IPIHandle, (void *)((intptr_t)i - APIC_EXCEPT_IPI_NOP), KernelBase);
                 }
+                D(bug("[Kernel:APIC-IA32.%03u] %s: APIC IPI Vectors configured\n", cpuNum, __func__));
             }
-            D(bug("[Kernel::APIC-IA32.%03u] %s: APIC IPI Vectors configured\n", cpuNum, __func__));
-
+            
             if (ssp)
                 UserState(ssp);
         }
@@ -354,7 +327,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         APIC_REG(__APICBase, APIC_TPR) = 0;
 
         /* Set spurious IRQ vector to 0xFF. APIC enabled, focus check disabled. */
-        APIC_REG(__APICBase, APIC_SVR) = SVR_ASE|SVR_FCC|0xFF;
+        APIC_REG(__APICBase, APIC_SVR) = SVR_ASE|APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS);
 
         /*
          * Set LINT0 to external and LINT1 to NMI.
@@ -376,7 +349,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         D(bug("[Kernel:APIC-IA32.%03u] %s: APIC ESR before enabling vector: %08x\n", cpuNum, __func__, APIC_REG(__APICBase, APIC_ESR)));
 
         /* Set APIC error interrupt to fixed vector interrupt "APIC_IRQ_ERROR",  on APIC error */
-        APIC_REG(__APICBase, APIC_ERROR_VEC) = APIC_IRQ_ERROR;
+        APIC_REG(__APICBase, APIC_ERROR_VEC) = APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_ERROR);
 
         /* spec says clear errors after enabling vector. */
         if (maxlvt > 3)
@@ -433,36 +406,9 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
          */
         if (cpuNum == 0)
         {
-            if (krnInitInterrupt(KernelBase, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), APICInt_IntrController.ic_Node.ln_Type, 0))
-            {
-                struct IntrNode *hbHandle;
-                
-                hbHandle = krnAllocIntrNode();
-                D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat IRQ #$%02X (%d) handler @ 0x%p\n", cpuNum, __func__, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), hbHandle);)
-
-                if (hbHandle)
-                {
-                    hbHandle->in_Handler = APICHeartbeatServer;
-                    hbHandle->in_HandlerData = SysBase;
-                    hbHandle->in_HandlerData2 = NULL;
-                    hbHandle->in_type = it_interrupt;
-                    hbHandle->in_nr = APIC_IRQ_HEARTBEAT - HW_IRQ_BASE;
-
-                    Disable();
-                    ADDHEAD(&KERNELIRQ_LIST(hbHandle->in_nr), &hbHandle->in_Node);
-                    Enable();
-
-                    apic->flags |= APF_TIMER;
-                }
-                else
-                {
-                    D(bug("[Kernel:APIC-IA32.%03u] %s: failed to allocate HeartBeat handler\n", cpuNum, __func__);)
-                }
-            }
-            else
-            {
-                D(bug("[Kernel:APIC-IA32.%03u] %s: failed to obtain HeartBeat IRQ %d\n", cpuNum, __func__, (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE));)
-            }
+            KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatServer, KernelBase, SysBase);
+            
+            apic->flags |= APF_TIMER;
         }
 
         APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
@@ -476,14 +422,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             D(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
 #endif
 
-            if (!core_SetIDTGate(apic->cores[cpuNum].cpu_IDT, APIC_IRQ_HEARTBEAT, (uintptr_t)IntrDefaultGates[APIC_IRQ_HEARTBEAT], TRUE))
-            {
-                krnPanic(NULL, "Failed to set APIC HeartBeat IRQ Vector\n"
-                               "IRQ #$%02X, Vector #$%02X\n", (APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), APIC_IRQ_HEARTBEAT);
-            }
-
             apic->cores[cpuNum].cpu_LAPICTick = 0;
-            D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat IRQ Vector #$%02X (%d) set\n", cpuNum, __func__, APIC_IRQ_HEARTBEAT, APIC_IRQ_HEARTBEAT);)
+            D(bug("[Kernel:APIC-IA32.%03u] %s: heartbeat Exception Vector #$%02X (%d) set\n", cpuNum, __func__, APIC_EXCEPT_HEARTBEAT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT));)
 
             if (ssp)
                 UserState(ssp);
@@ -496,8 +436,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 #else
             APIC_REG(__APICBase, APIC_TIMER_ICR) = (apic->cores[cpuNum].cpu_TimerFreq + 25) / 50;
 #endif
-            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_IRQ_HEARTBEAT; // | LVT_TMM_PERIOD;
-            
+            APIC_REG(__APICBase, APIC_TIMER_VEC) = APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT); // | LVT_TMM_PERIOD;
         }
         else
         {

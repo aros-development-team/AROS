@@ -17,11 +17,26 @@
 
 #define D(x)
 
-void core_APICErrorHandle(struct ExceptionContext *regs, void *HandlerData, void *HandlerData2)
+int core_APICErrorHandle(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)
 {
-    struct KernelBase *KernelBase = getKernelBase();
+    ULONG error_code = 0;
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+    struct APICData *apicData = pdata->kb_APIC;
+    IPTR __LAPICBase = apicData->lapicBase;
 
-    bug("[Exec] %s(0x%p)\n", __func__, KernelBase);
+    // IN order to read APIC_ESR register one has to first write it with anything (zero is fine)
+    // This forces update of the contents and new error codes may be read
+    APIC_REG(__LAPICBase, APIC_ESR) = error_code;
+    error_code = APIC_REG(__LAPICBase, APIC_ESR);
 
-    return;
+    bug("[KERNEL] %s: APIC Error interrupt! Error code=%08x\n", __func__, error_code);
+
+    return TRUE;
+}
+
+int core_APICSpuriousHandle(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)
+{
+    bug("[KERNEL] %s: APIC Spurious interrupt!\n", __func__);
+
+    return TRUE;
 }

@@ -14,32 +14,32 @@
 
 #define krnSysCallSwitch() 				                                                \
 ({								                                        \
-    __asm__ __volatile__ ("int $0x80"::"a"(SC_X86SWITCH):"memory");	                                \
+    __asm__ __volatile__ ("int $0xfe"::"a"(SC_X86SWITCH):"memory");	                                \
 })
 
 #define krnSysCallReschedTask(task, state) 				                                        \
 ({								                                        \
-    __asm__ __volatile__ ("int $0x80"::"a"(SC_X86RESCHEDTASK),"b"(task),"c"(state):"memory");                       \
+    __asm__ __volatile__ ("int $0xfe"::"a"(SC_X86RESCHEDTASK),"b"(task),"c"(state):"memory");                       \
 })
 
 #define krnSysCallSpinLock(spindata) 				                                        \
 ({								                                        \
     spinlock_t *__value;						                                \
-    __asm__ __volatile__ ("int $0x80":"=a"(__value):"a"(SC_X86CPUSPINLOCK),"b"(spindata):"memory");     \
+    __asm__ __volatile__ ("int $0xfe":"=a"(__value):"a"(SC_X86CPUSPINLOCK),"b"(spindata):"memory");     \
     __value;						                                                \
 })
 
 #define krnSysCallCPUWake(wakedata) 				                                        \
 ({								                                        \
     int __value;						                                        \
-    __asm__ __volatile__ ("int $0x80":"=a"(__value):"a"(SC_X86CPUWAKE),"b"(wakedata):"memory");         \
+    __asm__ __volatile__ ("int $0xfe":"=a"(__value):"a"(SC_X86CPUWAKE),"b"(wakedata):"memory");         \
     __value;						                                                \
 })
 
 #define krnSysCallChangePMState(state) 				                                        \
 ({								                                        \
     int __value;						                                        \
-    __asm__ __volatile__ ("int $0x80":"=a"(__value):"a"(SC_X86CHANGEPMSTATE),"b"(state):"memory");      \
+    __asm__ __volatile__ ("int $0xfe":"=a"(__value):"a"(SC_X86CHANGEPMSTATE),"b"(state):"memory");      \
     __value;						                                                \
 })
 

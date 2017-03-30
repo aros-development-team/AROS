@@ -96,19 +96,13 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 #if (__WORDSIZE==64)
     core_SetupIDT(apicCPUNo, apicCPU->cpu_IDT);
 
-    if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, APIC_IRQ_SYSCALL, (uintptr_t)IntrDefaultGates[APIC_IRQ_SYSCALL], TRUE))
+    if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE))
     {
         krnPanic(NULL, "Failed to set APIC Syscall Vector\n"
-                       "Vector #$%02X\n", APIC_IRQ_SYSCALL);
+                       "Vector #$%02X\n",
+                 APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL));
     }
     D(bug("[Kernel:SMP] %s[%03u]: APIC Syscall Vector configured\n", __func__, apicCPUNo));
-
-    if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, 0xff, (uintptr_t)IntrDefaultGates[0xff], TRUE))
-    {
-        krnPanic(NULL, "Failed to set APIC Spurious Vector\n"
-                       "Vector #$%02X\n", 0xff);
-    }
-    D(bug("[Kernel:SMP] %s[%03u]: APIC Spurious Vector configured\n", __func__, apicCPUNo));
 
     D(bug("[Kernel:SMP] %s[%03u]: Preparing MMU...\n", __func__, apicCPUNo));
     core_LoadMMU(&__KernBootPrivate->MMU);

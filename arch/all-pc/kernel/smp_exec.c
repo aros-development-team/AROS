@@ -190,9 +190,6 @@ void cpu_BootStrap(struct Task *bstask)
 
     Exec_X86CreateIdleTask(SysBase);
 
-    if (apicData->flags & APF_TIMER)
-        ictl_enable_irq((APIC_IRQ_HEARTBEAT - HW_IRQ_BASE), KernelBase);
-
     D(bug("[Kernel:%03u] %s: Done\n", cpuNo, __func__));
 }
 #endif

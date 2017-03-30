@@ -80,6 +80,11 @@ extern "C" {
 #define _EFER_NXE_B     11      /* RW: No-execute bit enable */
 #define _EFER_FFXSR_B   14      /* RW: Fast fxsave/fxrstor */
 
+/* SYSCALL/SYSRET registers */
+#define IA32_STAR   0xc0000081
+#define IA32_LSTAR  0xc0000082
+#define IA32_FMASK  0xc0000084
+
 #define _EFER_SCE   (1 << _EFER_SCE_B)
 #define _EFER_LME   (1 << _EFER_LME_B)
 #define _EFER_LMA   (1 << _EFER_LMA_B)
