@@ -55,6 +55,7 @@ KERNEL_LDFLAGS	        := @aros_kernel_ldflags@
 TARGET_CFLAGS           := @aros_target_cflags@
 
 DEBUG_CFLAGS	        := @aros_debug_cflags@
+DEBUG_CXXFLAGS          :=
 DEBUG_AFLAGS            := @aros_debug_aflags@
 DEBUG_LDFLAGS           := @aros_debug_ldflags@
 OPTIMIZATION_CFLAGS     := @aros_optimization_cflags@

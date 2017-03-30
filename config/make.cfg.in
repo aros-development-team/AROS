@@ -178,15 +178,18 @@ GENINCDIR	:= $(GENDIR)/include
 .PHONY : all clean setup subdirs
 
 BASE_CFLAGS := $(CONFIG_BASE_CFLAGS)
+BASE_CXXFLAGS := $(CONFIG_BASE_CXXFLAGS)
 
 # Was debugging enabled? Better set up the options.
 ifeq ($(DEBUG),yes)
 BASE_CFLAGS += $(DEBUG_CFLAGS)
+BASE_CXXFLAGS += $(DEBUG_CXXFLAGS)
 CONFIG_CFLAGS += $(DEBUG_CFLAGS)
+CONFIG_CXXFLAGS += $(DEBUG_CXXFLAGS)
 CONFIG_AFLAGS += $(DEBUG_AFLAGS)
 CONFIG_LDFLAGS += $(DEBUG_LDFLAGS)
 HOST_CFLAGS += $(DEBUG_CFLAGS)
-HOST_CXXFLAGS += $(DEBUG_CFLAGS) $(DEBUG_CXXFLAGS)
+HOST_CXXFLAGS += $(DEBUG_CXXFLAGS)
 HOST_AFLAGS += $(DEBUG_AFLAGS)
 HOST_LDFLAGS += $(DEBUG_LDFLAGS)
 MECHO	:= $(ECHO)
@@ -196,11 +199,12 @@ endif
 
 # Optimization and instruction set architecture flags
 BASE_CFLAGS += $(ISA_FLAGS)
+BASE_CXXFLAGS += $(ISA_FLAGS)
 CONFIG_CFLAGS += $(OPTIMIZATION_CFLAGS)
 CONFIG_CFLAGS += $(ISA_FLAGS)
+CONFIG_CXXFLAGS += $(OPTIMIZATION_CFLAGS)
+CONFIG_CXXFLAGS += $(ISA_FLAGS)
 CONFIG_AFLAGS += $(ISA_FLAGS)
-
-CONFIG_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CONFIG_CFLAGS)))
 
 # compiler and assembler flags are set depending upon the directory
 CFLAGS      = $(USER_INCLUDES) $(CONFIG_CFLAGS) $(USER_CFLAGS)
