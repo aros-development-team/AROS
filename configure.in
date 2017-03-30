@@ -647,6 +647,7 @@ toolchain_needs_sysroot=no
 
 aros_warn_flags=
 aros_config_cflags=
+aros_config_cxxflags=
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
@@ -775,6 +776,7 @@ else
 fi
 
 aros_config_cflags="$aros_config_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
+aros_config_cxxflags="$aros_config_cxxflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
 
 AC_MSG_RESULT($build_type)
 
@@ -1031,6 +1033,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
                 aros_config_cflags="$aros_config_cflags -mcmodel=large -mno-red-zone -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -mcmodel=large -mno-red-zone -fno-omit-frame-pointer"
                 aros_nominal_depth=8
                 pci_hidd_target="hidd-pci-linux"
                 ;;
@@ -1062,6 +1065,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
                 gcc_target_cpu="aarch64"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -fno-omit-frame-pointer"
                 aros_config_aflags="$aros_config_aflags -fno-strict-aliasing"
                 aros_arch_libs="-laeabi"
                 gcc_default_float_abi="hard"
@@ -1075,6 +1079,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
                 gcc_target_cpu="arm"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -fno-omit-frame-pointer"
                 aros_config_aflags="$aros_config_aflags -fno-strict-aliasing"
                 aros_arch_libs="-laeabi"
                 gcc_default_float_abi="hard"
@@ -1090,6 +1095,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
                 gcc_target_cpu="arm"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -fno-omit-frame-pointer"
                 aros_config_aflags="$aros_config_aflags -fno-strict-aliasing"
                 aros_arch_libs="-laeabi"
                 android_tool_dir_prefix="arm-linux-androideabi"
@@ -1169,6 +1175,7 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_config_cflags="$aros_config_cflags -mcmodel=large -fno-asynchronous-unwind-tables -mno-red-zone -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -mcmodel=large -fno-asynchronous-unwind-tables -mno-red-zone -fno-omit-frame-pointer"
                 aros_kernel_ldflags=""
                 aros_nominal_width=640
                 aros_nominal_height=480
@@ -1232,6 +1239,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_macosx_version="10.6"
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-omit-frame-pointer"
                 aros_kernel_cflags="-m64"
                 aros_kernel_ldflags="-m64"
                 aros_target_cflags="-mcmodel=large"
@@ -1314,6 +1322,7 @@ case "$target_os" in
                 ;;
             *x86_64*)
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-omit-frame-pointer"
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__DragonFly__"
@@ -1395,6 +1404,7 @@ case "$target_os" in
                 ;;
         esac
         aros_config_cflags="$aros_config_cflags -D$aros_target_cpu"
+        aros_config_cxxflags="$aros_config_cxxflags -D$aros_target_cpu"
         aros_flavour="emulation"
         ;;
 
@@ -1420,6 +1430,7 @@ case "$target_os" in
         aros_nominal_height=768
         aros_nominal_depth=24
         aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
+        aros_config_cxxflags="$aros_config_cxxflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
         gcc_target_cpu="powerpc"
         ;;
 
@@ -1437,6 +1448,7 @@ case "$target_os" in
         gcc_default_cpu="armv7-a"
         gcc_default_fpu="vfpv3"
         aros_config_cflags="$aros_config_cflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables"
+        aros_config_cxxflags="$aros_config_cxxflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables"
         aros_config_aflags="$aros_config_aflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables"
         aros_optimization_cflags="$aros_optimization_cflags -Os"
         case "$target_cpu" in
@@ -1464,11 +1476,13 @@ case "$target_os" in
         aros_kernel_ldflags=""
         aros_nominal_width=640
         aros_nominal_height=480
-        aros_config_cflags="$aros_config_cflags -mno-toc -fno-asynchronous-unwind-tables"    
+        aros_config_cflags="$aros_config_cflags -mno-toc -fno-asynchronous-unwind-tables"
+        aros_config_cxxflags="$aros_config_cxxflags -mno-toc -fno-asynchronous-unwind-tables"
         gcc_target_cpu="powerpc"
         case "$aros_target_variant" in
             efika)
                 aros_config_cflags="$aros_config_cflags -DBIG_ENDIAN_OHCI=1 -mcpu=603e"
+                aros_config_cxxflags="$aros_config_cxxflags -DBIG_ENDIAN_OHCI=1 -mcpu=603e"
             ;;
         esac
         ;;
@@ -1494,6 +1508,7 @@ case "$target_os" in
                 gcc_default_cpu_tune="arm1176jzf-s"
                 aros_object_format="armelf_aros"
                 aros_config_cflags="$aros_config_cflags -marm"
+                aros_config_cxxflags="$aros_config_cxxflags -marm"
                 aros_config_aflags="$aros_config_aflags -marm"
                 aros_kernel_cflags="$aros_kernel_cflags -marm"
                 aros_target_cflags="$aros_kernel_cflags -marm"
@@ -1506,6 +1521,7 @@ case "$target_os" in
                 gcc_default_cpu_tune="arm1176jzf-s"
                 aros_object_format="armelf_aros"
                 aros_config_cflags="$aros_config_cflags -marm"
+                aros_config_cxxflags="$aros_config_cxxflags -marm"
                 aros_config_aflags="$aros_config_aflags -marm"
                 aros_kernel_cflags="$aros_kernel_cflags -marm"
                 aros_target_cflags="$aros_kernel_cflags -marm"
@@ -1517,10 +1533,11 @@ case "$target_os" in
                 ;;
         esac
 
-        aros_config_cflags="$aros_config_cflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_config_aflags="$aros_config_aflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_kernel_cflags="$aros_kernel_cflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_target_cflags="$aros_kernel_cflags -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_cxxflags="$aros_config_cxxflags -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_kernel_cflags="$aros_kernel_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_target_cflags="$aros_kernel_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
 
         case "$aros_target_variant" in
             smp)
@@ -1564,6 +1581,7 @@ case "$target_os" in
                 gcc_target_cpu="m68000"
                 aros_nowarn_flags="$aros_nowarn_flags NOWARN_VOLATILE_REGISTER_VAR"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -DNOLIBINLINE"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -DNOLIBINLINE"
                 aros_optimization_cflags="$aros_optimization_cflags -Os"
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
@@ -1605,6 +1623,7 @@ case "$target_os" in
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-omit-frame-pointer"
                 aros_nominal_depth=8
                 kernel_tool_prefix="x86_64-w64-mingw32-"
                 ;;
@@ -1926,6 +1945,7 @@ arm*)
     esac
 
     aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
+    aros_config_cxxflags="$aros_config_cxxflags -fno-asynchronous-unwind-tables -fno-exceptions"
     aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
     ;;
 i386)
@@ -2880,6 +2900,7 @@ AC_SUBST(aros_config_sysroot)
 AC_SUBST(aros_warn_flags)
 AC_SUBST(aros_nowarn_flags)
 AC_SUBST(aros_config_cflags)
+AC_SUBST(aros_config_cxxflags)
 AC_SUBST(aros_config_aflags)
 AC_SUBST(aros_config_ldflags)
 
