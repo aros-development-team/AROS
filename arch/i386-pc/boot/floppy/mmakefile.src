@@ -74,7 +74,7 @@ BOOT_TAR_EXECUTABLES := \
     System/Wanderer/Tools/Info System/Wanderer/Tools/WBNewDrawer \
     System/Wanderer/Tools/WBRename \
     Tools/HDToolBox \
-    Tools/Debug/sashimi \
+    Developer/Debug/sashimi \
     Utilities/MultiView
 
 
@@ -93,8 +93,9 @@ BOOT_TAR_ICONS := \
     System/Wanderer/Tools/WBNewDrawer.info System/Wanderer/Tools/WBRename.info \
     Tools.info \
     Tools/HDToolBox.info \
-    Tools/Debug.info \
-    Tools/Debug/Sashimi.info \
+    Developer.info \
+    Developer/Debug.info \
+    Developer/Debug/Sashimi.info \
     Utilities.info
 
 
