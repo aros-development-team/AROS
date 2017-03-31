@@ -2805,7 +2805,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     extraoptions= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    aros_prefix= nix_dir_layout= nix=no compiler=target \
+    aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
     install_target=install preconfigure= postconfigure= postinstall= \
     config_env_extra= install_env= use_build_env=no gnuflags=yes
 
@@ -2930,11 +2930,17 @@ ifeq (%(compiler),target)
         CPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
         CXXCPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
         CC="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
-        CFLAGS="$(strip $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
-        CXX="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
+        CXX="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))"
+ifeq (%(crossbuild),yes)
+    CONFIG_ENV += CFLAGS="$(strip $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
+        CXXFLAGS="$(strip $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))" \
+        LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-s_flag))"
+else
+    CONFIG_ENV +=         CFLAGS="$(strip $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CXXFLAGS="$(strip $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
-        LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
-        AS="$(strip $(TARGET_AS))" \
+        LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+endif
+    CONFIG_ENV += AS="$(strip $(TARGET_AS))" \
         CC_FOR_BUILD="$(strip $(HOST_DEF_CC))" \
         CFLAGS_FOR_BUILD="$(strip $(HOST_CFLAGS))" \
         CXX_FOR_BUILD="$(strip $(HOST_CXX))" \
@@ -2954,12 +2960,15 @@ ifeq (%(compiler),target)
         CC_FOR_TARGET="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
         CFLAGS_FOR_TARGET="$(strip $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CXX_FOR_TARGET="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_TARGET="$(strip $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+        CXXFLAGS_FOR_TARGET="$(strip $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        LDFLAGS_FOR_TARGET="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
 ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
-        --host=$(AROS_TARGET_CPU)-aros\
-        --target=$(AROS_TARGET_CPU)-aros\
-        --disable-nls\
+        --host=$(AROS_TARGET_CPU)-aros
+ifeq (%(crossbuild),yes)
+    %(mmake)-config_opts += --target=$(AROS_TARGET_CPU)-aros
+endif
+    %(mmake)-config_opts += --disable-nls\
         --without-x --without-pic --disable-shared
 endif
 endif
@@ -3327,7 +3336,7 @@ endif
 #    - nix_dir_layout   = same meaning as the one for the %build_with_configure macro.
 #    - create_pkg       = create a distributable package of the compiled sources, defaults to no
 
-%define fetch_and_build mmake=/A package=/A subpackage= compiler=target install_target=install \
+%define fetch_and_build mmake=/A package=/A subpackage= compiler=target crossbuild=no install_target=install \
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= package_repo= patch=no patch_repo= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
     extraoptions=  extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
@@ -3398,7 +3407,7 @@ ifneq (%(create_pkg),no)
     %(mmake)-%(subpackage)-package := $(%(mmake)-%(subpackage)-package-basename).tar.bz2
 endif
 
-%build_with_configure mmake="%(mmake)-%(subpackage)" package="%(package)" compiler="%(compiler)" install_target="%(install_target)" \
+%build_with_configure mmake="%(mmake)-%(subpackage)" package="%(package)" compiler="%(compiler)"  crossbuild="%(crossbuild)" install_target="%(install_target)" \
      srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-builddir) gendir="%(gendir)" \
      config_env_extra="%(config_env_extra)" install_env="%(install_env)" use_build_env="%(use_build_env)" \
      nix="%(nix)" nix_dir_layout="%(nix_dir_layout)" prefix=$(%(mmake)-prefix) \
@@ -3456,7 +3465,7 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
 #    - prefix           = defaults to $(GNUDIR).
 #    - aros_prefix      = defaults to /GNU.
 
-%define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
+%define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A crossbuild=no suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU config_env_extra= preconfigure= postconfigure= postinstall=  nix=yes \
     extraoptions=  extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)"
@@ -3464,7 +3473,7 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
 GNU_REPOSITORY := gnu://
 
 %fetch_and_build mmake="%(mmake)" package="%(package)" subpackage="%(subpackage)" version="%(version)" \
-    suffixes="%(suffixes)" srcdir="%(srcdir)" \
+    crossbuild="%(crossbuild)" suffixes="%(suffixes)" srcdir="%(srcdir)" \
     package_repo="%(package_repo) $(GNU_REPOSITORY)%(package)" \
     patch="%(patch)" patch_repo="%(patch_repo)" \
     prefix="%(prefix)" aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" \
@@ -3485,7 +3494,7 @@ GNU_REPOSITORY := gnu://
 #
 #     #MM- development-%(package)
 
-%define fetch_and_build_gnu_development package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
+%define fetch_and_build_gnu_development package=/A subpackage= version=/A  crossbuild=no suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPER) \
     aros_prefix=/Developer config_env_extra= preconfigure= postconfigure= postinstall=  nix=yes \
     extraoptions=  extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)"
@@ -3494,7 +3503,7 @@ GNU_REPOSITORY := gnu://
 
 
 %fetch_and_build_gnu mmake="development-%(package)" package="%(package)" subpackage="%(subpackage)" \
-   version="%(version)" suffixes="%(suffixes)" srcdir="%(srcdir)" \
+   version="%(version)" crossbuild="%(crossbuild)" suffixes="%(suffixes)" srcdir="%(srcdir)" \
    package_repo="%(package_repo)" \
    patch="%(patch)" patch_repo="%(patch_repo)" \
    prefix="%(prefix)"  aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" \
