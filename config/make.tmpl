@@ -2958,11 +2958,18 @@ endif
         TARGET_RANLIB="$(strip $(RANLIB))" \
         TARGET_STRIP="$(strip $(STRIP_PLAIN))" \
         TARGET_NM="$(strip $(NM_PLAIN))" \
-        CC_FOR_TARGET="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
+        CC_FOR_HOST="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
+        CFLAGS_FOR_HOST="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CXX_FOR_HOST="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
+        CXXFLAGS_FOR_HOST="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        LDFLAGS_FOR_HOST="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+ifeq (%(crossbuild),yes)
+    CONFIG_ENV += CC_FOR_TARGET="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
         CFLAGS_FOR_TARGET="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CXX_FOR_TARGET="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
         CXXFLAGS_FOR_TARGET="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         LDFLAGS_FOR_TARGET="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+endif
 ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)\
         --host=$(AROS_TARGET_CPU)-aros
