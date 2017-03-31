@@ -26,7 +26,7 @@ if [ -z ${BUILDTARGETDIR+x} ]; then BUILDTARGETDIR=$BUILDTARGET; fi
 cd      $BUILD_BASE/AROS/bin/$BUILDTARGETDIR/AROS
 mkdir   $PACKAGE
 move    Extras $PACKAGE/
-move    Development $PACKAGE/
+move    Developer $PACKAGE/
 move    Libs $PACKAGE/
 mkdir   -p $PACKAGE/Prefs/Env-Archive/SYS
 move    Prefs/Env-Archive/SYS/Packages $PACKAGE/Prefs/Env-Archive/SYS/
