@@ -7,7 +7,7 @@ Execute S/Test exec/allocmem
 
 Execute S/Test dos/addpart
 Execute S/Test dos/dosvartest
-Execute S/Test dos/examine Tests/dos/examine
+Execute S/Test dos/examine Developer/Debug/Tests/dos/examine
 Execute S/Test dos/ExNext
 Execute S/Test dos/filetest
 
