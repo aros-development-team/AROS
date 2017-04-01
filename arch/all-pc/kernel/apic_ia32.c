@@ -332,11 +332,14 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         /*
          * Set LINT0 to external and LINT1 to NMI.
          * These are common defaults and they are going to be overriden by ACPI tables.
+         *
+         * On all other LAPICs mask LINT0 and use some fake vector (0xff in this case),
+         * otherwise LAPIC may throw an error.
          */
         if (cpuNum == 0)
             APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MT_EXT;
         else
-            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MASK;
+            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MASK | 0xff;
 
         APIC_REG(__APICBase, APIC_LINT1_VEC) = LVT_MT_NMI;
 
@@ -370,7 +373,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
          */
 
         /* Set the timer to one-shot mode, no interrupt, 1:1 divisor */
-        APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK;
+        APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
         APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
         APIC_REG(__APICBase, APIC_TIMER_ICR) = 0x80000000;	/* Just some very large value */
 
@@ -440,8 +443,8 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         }
         else
         {
-            APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;   
-            APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD;
+            APIC_REG(__APICBase, APIC_TIMER_ICR) = apic->cores[cpuNum].cpu_TimerFreq;
+            APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK | LVT_TMM_PERIOD | APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_HEARTBEAT);
         }
     }
 }
