@@ -33,11 +33,11 @@ void core_InitMMU(struct CPUMMUConfig *MMU)
     PML4[0].pcd= 0; /* cache enabled */
     PML4[0].a  = 0; /* not yet accessed */
     PML4[0].mbz= 0; /* must be zero */
-    PML4[0].base_low = (unsigned long)PDP >> 12;
+    PML4[0].base_low = ((IPTR)PDP) >> 12;
     PML4[0].avl= 0;
     PML4[0].nx = 0;
     PML4[0].avail = 0;
-    PML4[0].base_high = ((unsigned long)PDP >> 32) & 0x000FFFFF;
+    PML4[0].base_high = (((IPTR)PDP) >> 32) & 0x000FFFFF;
 
     for (i = 0; i < MMU->mmu_PDEPageCount; i++)
     {
@@ -55,11 +55,11 @@ void core_InitMMU(struct CPUMMUConfig *MMU)
             PDP[idx].pcd= 0;
             PDP[idx].a  = 0;
             PDP[idx].mbz= 0;
-            PDP[idx].base_low = (unsigned long)pdes >> 12;
+            PDP[idx].base_low = pdes >> 12;
 
             PDP[idx].nx = 0;
             PDP[idx].avail = 0;
-            PDP[idx].base_high = ((unsigned long)pdes >> 32) & 0x000FFFFF;
+            PDP[idx].base_high = (pdes >> 32) & 0x000FFFFF;
         }
 
         /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */
@@ -189,16 +189,16 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
 
     MMU = &__KernBootPrivate->MMU;
     pml4 = MMU->mmu_PML4;
-    pdpe = (struct PDPE *)((pml4[pml4_off].base_low << 12) | ((unsigned long)pml4[pml4_off].base_high << 32));
-    pde  = (struct PDE4K *)((pdpe[pdpe_off].base_low << 12) | ((unsigned long)pdpe[pdpe_off].base_high << 32));
+    pdpe = (struct PDPE *)((((IPTR)pml4[pml4_off].base_low) << 12) | (((IPTR)pml4[pml4_off].base_high) << 32));
+    pde  = (struct PDE4K *)((((IPTR)pdpe[pdpe_off].base_low) << 12) | (((IPTR)pdpe[pdpe_off].base_high) << 32));
     Pages4K = MMU->mmu_PTE;
-    
+
     if (pde[pde_off].ps)
     {
         /* work on local copy of the affected PDE */
         struct PDE4K tmp_pde = pde[pde_off]; 
         struct PDE2M *pde2 = (struct PDE2M *)pde;
-        intptr_t base = (pde2[pde_off].base_low << 13) | ((unsigned long)pde2[pde_off].base_high << 32);
+        intptr_t base = ((IPTR)pde2[pde_off].base_low << 13) | ((IPTR)pde2[pde_off].base_high << 32);
         int i;
 
         pte = &Pages4K[512 * MMU->mmu_PDEPageUsed++];
@@ -226,7 +226,7 @@ void core_ProtPage(intptr_t addr, char p, char rw, char us)
         pde[pde_off] = tmp_pde;
     }
             
-    pte = (struct PTE *)((pde[pde_off].base_low << 12) | ((unsigned long)pde[pde_off].base_high << 32));
+    pte = (struct PTE *)((((IPTR)pde[pde_off].base_low) << 12) | (((IPTR)pde[pde_off].base_high) << 32));
 
     pte[pte_off].rw = rw ? 1:0;
     pte[pte_off].us = us ? 1:0;
