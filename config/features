@@ -698,6 +698,8 @@ aros_nowarnflags_unknown_warning_option
 aros_warnflags_unknown_warning_option
 aros_nowarnflags_unused_command_line_argument
 aros_warnflags_unused_command_line_argument
+aros_nowarnflags_error
+aros_warnflags_error
 aros_cflags_no_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
@@ -3075,6 +3077,7 @@ fi
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some options used for de-linting:
+#  -Werror
 #  -Wunused-command-line-argument
 #  -Wunknown-warning-option
 #  -Wunused-but-set-variable
@@ -3132,6 +3135,33 @@ fi
 #  -Wreturn-type
 #  -Wformat-zero-length
 #  -Wlto-type-mismatch
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Werror" >&5
+$as_echo_n "checking whether ${CC} accepts -Werror... " >&6; }
+CFLAGS=-Werror
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_error="yes"
+else
+  aros_error="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_error" >&5
+$as_echo "$aros_error" >&6; }
+if test "x-$aros_error" = "x-yes" ; then
+    aros_warnflags_error=-Werror
+    aros_nowarnflags_error=-Wno-error
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-command-line-argument" >&5
 $as_echo_n "checking whether ${CC} accepts -Wunused-command-line-argument... " >&6; }
@@ -4704,6 +4734,8 @@ fi
 #
 # ...and warning flags...
 #
+
+
 
 
 

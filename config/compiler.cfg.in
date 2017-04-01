@@ -34,8 +34,75 @@ CFLAGS_IQUOTE_END                       := @aros_cflags_iquote_end@
 CFLAGS_NO_RED_ZONE                      := @aros_cflags_no_red_zone@
 
 #
+# "Enable" compiler warning flags
+#
+
+WARN_ERROR                              := @aros_warnflags_error@
+
+WARN_UNUSED_COMMAND_LINE_ARGUMENT       := @aros_warnflags_unused_command_line_argument@
+WARN_UNKNOWN_WARNING_OPTION             := @aros_warnflags_unknown_warning_option@
+
+WARN_UNUSED_BUT_SET_VARIABLE            := @aros_warnflags_unused_but_set_variable@
+WARN_STRICT_ALIASING                    := @aros_warnflags_strict_aliasing@
+WARN_ARRAY_BOUNDS                       := @aros_warnflags_array_bounds@
+WARN_ENUM_COMPARE                       := @aros_warnflags_enum_compare@
+WARN_BOOL_COMPARE                       := @aros_warnflags_bool_compare@
+WARN_SIGN_COMPARE                       := @aros_warnflags_sign_compare@
+WARN_NONNULL_COMPARE                    := @aros_warnflags_nonnull_compare@
+WARN_OVERFLOW                           := @aros_warnflags_overflow@
+WARN_STRICT_OVERFLOW                    := @aros_warnflags_strict_overflow@
+WARN_FORMAT_SECURITY                    := @aros_warnflags_format_security@
+WARN_MISLEADING_INDENTATION             := @aros_warnflags_misleading_indentation@
+WARN_UNUSED                             := @aros_warnflags_unused@
+WARN_UNUSED_VALUE                       := @aros_warnflags_unused_value@
+WARN_UNUSED_VARIABLE                    := @aros_warnflags_unused_variable@
+WARN_UNUSED_FUNCTION                    := @aros_warnflags_unused_function@
+WARN_UNUSED_PARAMETER                   := @aros_warnflags_unused_parameter@
+WARN_IMPLICIT_FUNCTION_DECL             := @aros_warnflags_implicit_function_declaration@
+WARN_UNINITIALIZED                      := @aros_warnflags_uninitialized@
+WARN_MAYBE_UNINITIALIZED                := @aros_warnflags_maybe_uninitialized@
+WARN_FORMAT                             := @aros_warnflags_format@
+WARN_PARENTHESES                        := @aros_warnflags_parentheses@
+WARN_CHAR_SUBSCRIPTS                    := @aros_warnflags_char_subscripts@
+WARN_ENDIF_LABELS                       := @aros_warnflags_endif_labels@
+WARN_FORMAT_CONTAINS_NUL                := @aros_warnflags_format_contains_nul@
+WARN_IMPLICIT_INT                       := @aros_warnflags_implicit_int@
+WARN_AGGRESSIVE_LOOP_OPT                := @aros_warnflags_aggressive_loop_optimizations@
+WARN_CPP                                := @aros_warnflags_cpp@
+WARN_SWITCH                             := @aros_warnflags_switch@
+WARN_DISCARDED_QUALIFIERS               := @aros_warnflags_discarded_qualifiers@
+WARN_SEQUENCE_POINT                     := @aros_warnflags_sequence_point@
+WARN_UNKNOWN_PRAGMAS                    := @aros_warnflags_unknown_pragmas@
+WARN_DISCARDED_ARRAY_QUAL               := @aros_warnflags_discarded_array_qualifiers@
+WARN_INT_CONVERSION                     := @aros_warnflags_int_conversion@
+WARN_INT_TO_POINTER_CAST                := @aros_warnflags_int_to_pointer_cast@
+WARN_POINTER_TO_INT_CAST                := @aros_warnflags_pointer_to_int_cast@
+WARN_UNUSED_CONST_VARIABLE              := @aros_warnflags_unused_const_variable@
+WARN_WRITE_STRINGS                      := @aros_warnflags_write_strings@
+WARN_COMMENT                            := @aros_warnflags_comment@
+WARN_INCOMPAT_POINTER_TYPES             := @aros_warnflags_incompatible_pointer_types@
+WARN_LOGICAL_NOT_PARENTHESES            := @aros_warnflags_logical_not_parentheses@
+WARN_STRICT_PROTOTYPES                  := @aros_warnflags_strict_prototypes@
+WARN_POINTER_SIGN                       := @aros_warnflags_pointer_sign@
+WARN_SHIFT_OVERFLOW                     := @aros_warnflags_shift_overflow@
+WARN_FRAME_ADDRESS                      := @aros_warnflags_frame_address@
+WARN_DEPRECATED_DECLARATIONS            := @aros_warnflags_deprecated_declarations@
+WARN_ATTRIBUTES                         := @aros_warnflags_attributes@
+WARN_UNUSED_LOCAL_TYPEDEFS              := @aros_warnflags_unused_local_typedefs@
+WARN_MISSING_BRACES                     := @aros_warnflags_missing_braces@
+WARN_CONVERSION_NULL                    := @aros_warnflags_conversion_null@
+WARN_NARROWING                          := @aros_warnflags_narrowing@
+WARN_VOLATILE_REGISTER_VAR              := @aros_warnflags_volatile_register_var@
+WARN_SIZEOF_POINTER_MEMACCESS           := @aros_warnflags_sizeof_pointer_memaccess@
+WARN_RETURN_TYPE                        := @aros_warnflags_return_type@
+WARN_FORMAT_ZERO_LENGTH                 := @aros_warnflags_format_zero_length@
+WARN_LTO_TYPE_MISMATCH                  := @aros_warnflags_lto_type_mismatch@
+
+#
 # Disable compiler warning flags
 #
+
+NOWARN_ERROR                            := @aros_nowarnflags_error@
 
 NOWARN_UNUSED_COMMAND_LINE_ARGUMENT     := @aros_nowarnflags_unused_command_line_argument@
 NOWARN_UNKNOWN_WARNING_OPTION           := @aros_nowarnflags_unknown_warning_option@
