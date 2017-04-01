@@ -539,7 +539,7 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         xa->data = scsi->scsi_Data;
         xa->datalen = scsi->scsi_Length;
         xa->complete = ahci_io_complete;
-        xa->timeout = 1000;    /* milliseconds */
+        xa->timeout = 1500;    /* milliseconds */
 #if 0
         if (xa->timeout > 10000)    /* XXX - debug */
             xa->timeout = 10000;
@@ -642,7 +642,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
     xa->flags = flags;
     xa->data = scsi->scsi_Data;
     xa->datalen = scsi->scsi_Length;
-    xa->timeout = 1000;    /* milliseconds */
+    xa->timeout = 1500;    /* milliseconds */
 
     /*
      * Copy the cdb to the packetcmd buffer in the FIS using a
