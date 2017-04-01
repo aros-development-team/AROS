@@ -63,8 +63,9 @@ extern struct KernBootPrivate *__KernBootPrivate;
             "pushq %%r12\n\t"                                   \
             "pushq %[iflags]\n\t"                               \
             "pushq %[cs]\n\t"		                        \
-            "pushq $1f\n\t"                                     \
-            "iretq\n 1:"                                        \
+            "movabsq $1f,%%r12\n\t"                         \
+            "pushq %%r12\n\t"                                     \
+            "iretq\n1:"                                        \
             : : [user_ds] "r" (USER_DS), [ds] "i" (USER_DS),    \
                 [cs] "i" (USER_CS), [iflags] "i" (_flags)       \
             : "r12")
