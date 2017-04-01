@@ -320,6 +320,11 @@ IPTR mmap_LargestAddress(struct mb_mmap *mmap, unsigned long len)
 
     while(len >= sizeof(struct mb_mmap))
     {
+        // break here if memory map is comprised (size is smaller then the size of mmap)
+        // Apparently conversion between grub2 mmap and old style mmap is not perfect...
+        if (mmap->size < sizeof(struct mb_mmap) - 4)
+            break;
+
         if (mmap->type == MMAP_TYPE_RAM)
         {
             D(bug("type %02x ", mmap->type));
