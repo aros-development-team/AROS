@@ -342,6 +342,8 @@ void kernel_cstart(const struct TagItem *start_msg)
     core_SetupIDT(0, (apicidt_t *)__KernBootPrivate->BOOTIDT);
 
     /* Set-up MMU */
+    // Re-read mmap pointer, since we have modified it previously...
+    mmap = (struct mb_mmap *)LibGetTagData(KRN_MMAPAddress, 0, BootMsg);
     memtop = mmap_LargestAddress(mmap, mmap_len);
     D(bug("[Kernel] %s: memtop @ 0x%p\n", __func__, memtop));
     core_SetupMMU(&__KernBootPrivate->MMU, memtop);
