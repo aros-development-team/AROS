@@ -7,10 +7,11 @@ ICU_VERSION := 4.2.1
 ICU_PKGNAME := icu4c
 ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
 
-ICU_EXTRA_OPTS= \
+ICU_EXTRA_OPTS = \
         --bindir=$(CROSSTOOLSDIR) \
         --sbindir=$(CROSSTOOLSDIR) \
         --enable-static \
+        --disable-strict \
         --disable-dyload \
         --disable-shared \
         --disable-tests \
@@ -247,7 +248,7 @@ HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-d
 	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
 	patch=yes srcdir=icu builddir=source gendir=$(CROSSTOOLSDIR) basedir= \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="$(ICU_EXTRA_OPTS)"
+	extraoptions="$(ICU_EXTRA_OPTS)" extracflags=$(ICU_FLAGS)
 
 #MM
 tools-crosstools-gdb :
