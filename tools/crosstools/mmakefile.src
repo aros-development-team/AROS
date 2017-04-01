@@ -234,7 +234,7 @@ tools-crosstools-gcc :
 tools-crosstools-icu :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
 	    || ! $(TEST) -f $(icu-installflag) ; then \
-	       $(RM) $(HOSTGENDIR)/$(CURDIR)/icu/.files-touched \
+	       $(RM) $(CROSSTOOLSDIR)/$(ICU_PKGNAME)/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-icu--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-icu--build_and_install-quick \
 	    && $(TOUCH) $(icu-installflag) ; \
@@ -243,9 +243,9 @@ tools-crosstools-icu :
 HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(HOST_CXXFLAGS)))
 
 # specify the gendir for icu to be in HOSTDIR so it ends up under CROSSTOOLSDIR, and can be reused
-%fetch_and_build mmake=crosstools-icu package=icu4c version=$(ICU_PKGVERSION)-src compiler=host \
+%fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-src compiler=host \
 	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
-	patch=yes srcdir=icu builddir=source gendir=$(HOSTDIR) \
+	patch=yes srcdir=icu builddir=source gendir=$(CROSSTOOLSDIR) basedir= \
 	prefix="$(CROSSTOOLSDIR)" \
 	extraoptions="$(ICU_EXTRA_OPTS)"
 
