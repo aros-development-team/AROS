@@ -38,7 +38,6 @@ endif
 TARGET_LTO      := @aros_config_lto@
 
 KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(KERNEL_CFLAGS)))
-TARGET_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TARGET_CFLAGS)))
 
 # Kernel private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))

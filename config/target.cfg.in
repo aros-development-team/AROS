@@ -52,7 +52,8 @@ KERNEL_CFLAGS           := @aros_kernel_cflags@
 KERNEL_OBJCFLAGS        := @aros_kernel_objcflags@
 KERNEL_INCLUDES         := @aros_kernel_includes@
 KERNEL_LDFLAGS	        := @aros_kernel_ldflags@
-TARGET_CFLAGS           := @aros_target_cflags@
+TARGET_CFLAGS           = $(ISA_FLAGS) $(OPTIMIZATION_CFLAGS) $(USER_INCLUDES) $(CONFIG_CFLAGS) $(USER_CFLAGS)
+TARGET_CXXFLAGS         = $(ISA_FLAGS) $(OPTIMIZATION_CFLAGS) $(USER_INCLUDES) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
 
 DEBUG_CFLAGS	        := @aros_debug_cflags@
 DEBUG_CXXFLAGS          :=
