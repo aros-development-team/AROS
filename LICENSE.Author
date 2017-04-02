@@ -71,3 +71,17 @@ Statement: I, Toni Wilen, permit all of of my changesets to AROS
            licenses: Lesser GNU Public License v2 (or later), GNU Public
            License v2 (or later). I have not yet decided if I'll permit
            other licenses.
+
+Author: Krzysztof Smiechowicz
+Email: deadwood@wp.pl
+SVN: deadwood
+Changesets: ALL
+Licenses: LGPLv2 BSD-2-Clause BSD-3-Clause Apache-2.0 MIT MPLv2
+Statement: I, Krzysztof Smiechowicz, permit all of my changesets to AROS
+           to be used in any other project, under any one of the following
+           licenses: Lesser GNU Public License v2 (or later), BSD 2-clause
+           License, BSD 3-clause License, Apache License 2.0, MIT License,
+           or Mozilla Public License v2.0.
+           For clarity I specifically forbid licensing any of my changesets
+           under GNU Public License v2 (or later).
+
