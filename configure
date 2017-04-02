@@ -676,7 +676,6 @@ aros_target_genmap
 aros_debug_ldflags
 aros_debug_aflags
 aros_debug_cflags
-aros_target_cflags
 aros_kernel_ldflags
 aros_kernel_objcflags
 aros_kernel_includes
@@ -8290,7 +8289,7 @@ case "$target_os" in
                 need_x11=no
                 host_android_gfx=yes
                 # Disable implicit PIC mode
-                aros_target_cflags="$aros_target_cflags -fno-pic"
+                aros_config_cflags="$aros_config_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
             ;;
         esac
@@ -8389,11 +8388,11 @@ case "$target_os" in
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_macosx_version="10.6"
+                aros_isa_flags="$aros_isa_flags -mcmodel=large"
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
                 aros_config_cxxflags="$aros_config_cxxflags -fno-omit-frame-pointer"
                 aros_kernel_cflags="-m64"
                 aros_kernel_ldflags="-m64"
-                aros_target_cflags="-mcmodel=large"
                 aros_nominal_depth=8
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
@@ -8667,7 +8666,6 @@ case "$target_os" in
                 aros_config_cxxflags="$aros_config_cxxflags"
                 aros_config_aflags="$aros_config_aflags -marm"
                 aros_kernel_cflags="$aros_kernel_cflags -marm"
-                aros_target_cflags="$aros_kernel_cflags -marm"
                 aros_target_mkdep="$aros_target_mkdep -Darm"
                 aros_arch_libs="-laeabi"
                 ;;
@@ -8681,7 +8679,6 @@ case "$target_os" in
                 aros_config_cxxflags="$aros_config_cxxflags"
                 aros_config_aflags="$aros_config_aflags -marm"
                 aros_kernel_cflags="$aros_kernel_cflags -marm"
-                aros_target_cflags="$aros_kernel_cflags -marm"
                 aros_target_mkdep="$aros_target_mkdep -Darm"
                 aros_arch_libs="-laeabi"
                 ;;
@@ -8694,7 +8691,6 @@ case "$target_os" in
         aros_config_cxxflags="$aros_config_cxxflags -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
         aros_kernel_cflags="$aros_kernel_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
-        aros_target_cflags="$aros_kernel_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
 
         case "$aros_target_variant" in
             smp)
@@ -14921,7 +14917,6 @@ fi
 
 
 # Target Related
-
 
 
 
