@@ -209,6 +209,10 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 
         bug("[Kernel:ACPI-APIC] Local APIC address 0x%p; Flags 0x%04X\n", pdata->kb_APIC->lapicBase, pdata->kb_APIC->flags);
         D(bug("[Kernel:ACPI-APIC] MADT @ 0x%p\n", pdata->kb_ACPI->acpi_madt));
+
+        /* Remember ID of the bootstrap APIC, this is CPU #1 */
+        pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
+        D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].cpu_LocalID));
     }
 
     if ((pdata->kb_APIC) && (processor->LapicFlags & ACPI_MADT_ENABLED))
@@ -219,10 +223,6 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 	    bug("[Kernel:ACPI-APIC] Registering Core #1 [ID=%03u] as BSP\n", processor->Id);
 
 	    pdata->kb_APIC->cores[0].cpu_PrivateID = processor->ProcessorId;
-
-            /* Remember ID of the bootstrap APIC, this is CPU #1 */
-            pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
-            D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].cpu_LocalID));
 
             pdata->kb_APIC->cores[0].cpu_GDT = __KernBootPrivate->BOOTGDT;
             pdata->kb_APIC->cores[0].cpu_TLS = __KernBootPrivate->BOOTTLS;
