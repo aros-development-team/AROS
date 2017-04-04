@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
+
 #include "mathieeedoubbas_intern.h"
 
 /*****************************************************************************
@@ -25,17 +26,15 @@
     INPUTS
 
     RESULT
-       +1 : y > z
-	0 : y = z
-       -1 : y < z
+        Quotient.
 
-	Flags:
-	  zero	   : y = z
-	  negative : y < z
-	  overflow : 0
+    NOTES
+
+    EXAMPLE
 
     BUGS
-        This function is unimplemented.
+
+    SEE ALSO
 
     INTERNALS
 
@@ -43,21 +42,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    union {
-        QUAD i;
-        double d;
-    } Res;
-    
-#if 0
-    QUAD * Qy = (QUAD *)&y;
-    QUAD * Qz = (QUAD *)&z;
-#endif
-    
-    Res.i = 0x0badc0de0badc0deULL;
-
-    aros_print_not_implemented("Software IEEEDPDiv");
-
-    return Res.d;
+    return y / z;
 
     AROS_LIBFUNC_EXIT
 }
