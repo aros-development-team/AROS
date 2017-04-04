@@ -97,7 +97,7 @@ int maximal_ray_depth = 1000;
 
 // ca. 650bytes per ray depth, 650KB stack required for max ray depth of 1000
 
-Vec radiance_expl(const Ray &r, int depth, unsigned short *Xi,int E=1){
+Vec radiance_expl(struct Task *me, const Ray &r, int depth, unsigned short *Xi,int E=1){
   double t;                               // distance to intersection
   int id=0;                               // id of intersected object
   if (!intersect(r, t, id)) return Vec(); // if miss, return black
@@ -105,11 +105,33 @@ Vec radiance_expl(const Ray &r, int depth, unsigned short *Xi,int E=1){
   Vec x=r.o+r.d*t, n=(x-obj.p).norm(), nl=n.dot(r.d)<0?n:n*-1, f=obj.c;
   double p = f.x>f.y && f.x>f.z ? f.x : f.y>f.z ? f.y : f.z; // max refl
   depth++;
+#if 1
+  // Since we do not have automaticly expanding stack, check if there is still
+  // room for further recurencies
+  {
+      ULONG *sp = (ULONG *)AROS_GET_SP;
+      SIPTR diff = 0;
+#if AROS_STACK_GROWS_DOWNWARDS
+      diff = (SIPTR)sp - (SIPTR)me->tc_SPLower;
+#else
+      diff = (SIPTR)me->tc_SPUpper - (SIPTR)sp;
+#endif
+      if (diff < AROS_STACKSIZE / 2)
+      {
+          bug("[SMP-SmallPT-Task] Stack nearly exhausted after %d iterations (%dkB left of %dkB total), breaking recurency\n", depth, (diff + 512) / 1024,
+              ((IPTR)me->tc_SPUpper - (IPTR)me->tc_SPLower + 512) / 1024);
+          return obj.e;
+      }
+  }
+  #endif
+  #if 0
   // If depth larger than maximal_ray_depth do not use Russian roulette, give up unconditionally
   // because AROS does not have automatic stack expansion
   if (depth > maximal_ray_depth)
     return obj.e*E;
-  else if (depth>10||!p) { // From depth 10 start Russian roulette
+  else 
+  #endif
+  if (depth>10||!p) { // From depth 10 start Russian roulette
        if (erand48(Xi)<p) f=f*(1/p); else return obj.e*E;
     }
   if (obj.refl == DIFF){                  // Ideal DIFFUSE reflection
@@ -137,23 +159,23 @@ Vec radiance_expl(const Ray &r, int depth, unsigned short *Xi,int E=1){
       }
     }
 
-    return obj.e*E+e+f.mult(radiance_expl(Ray(x,d),depth,Xi,0));
+    return obj.e*E+e+f.mult(radiance_expl(me, Ray(x,d),depth,Xi,0));
   } else if (obj.refl == SPEC)              // Ideal SPECULAR reflection
-    return obj.e + f.mult(radiance_expl(Ray(x,r.d-n*2*n.dot(r.d)),depth,Xi));
+    return obj.e + f.mult(radiance_expl(me, Ray(x,r.d-n*2*n.dot(r.d)),depth,Xi));
   Ray reflRay(x, r.d-n*2*n.dot(r.d));     // Ideal dielectric REFRACTION
   bool into = n.dot(nl)>0;                // Ray from outside going in?
   double nc=1, nt=1.5, nnt=into?nc/nt:nt/nc, ddn=r.d.dot(nl), cos2t;
   if ((cos2t=1-nnt*nnt*(1-ddn*ddn))<0)    // Total internal reflection
-    return obj.e + f.mult(radiance_expl(reflRay,depth,Xi));
+    return obj.e + f.mult(radiance_expl(me, reflRay,depth,Xi));
   Vec tdir = (r.d*nnt - n*((into?1:-1)*(ddn*nnt+sqrt(cos2t)))).norm();
   double a=nt-nc, b=nt+nc, R0=a*a/(b*b), c = 1-(into?-ddn:tdir.dot(n));
   double Re=R0+(1-R0)*c*c*c*c*c,Tr=1-Re,P=.25+.5*Re,RP=Re/P,TP=Tr/(1-P);
   return obj.e + f.mult(depth>2 ? (erand48(Xi)<P ?   // Russian roulette
-    radiance_expl(reflRay,depth,Xi)*RP:radiance_expl(Ray(x,tdir),depth,Xi)*TP) :
-    radiance_expl(reflRay,depth,Xi)*Re+radiance_expl(Ray(x,tdir),depth,Xi)*Tr);
+    radiance_expl(me, reflRay,depth,Xi)*RP:radiance_expl(me, Ray(x,tdir),depth,Xi)*TP) :
+    radiance_expl(me, reflRay,depth,Xi)*Re+radiance_expl(me, Ray(x,tdir),depth,Xi)*Tr);
 }
 
-Vec radiance(const Ray &r, int depth, unsigned short *Xi)
+Vec radiance(struct Task *me, const Ray &r, int depth, unsigned short *Xi)
 { 
     double t; // distance to intersection 
     int id=0; // id of intersected object 
@@ -166,10 +188,32 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi)
     Vec x=r.o+r.d*t, n=(x-obj.p).norm(), nl=n.dot(r.d)<0?n:n*-1, f=obj.c; 
     
     depth++;
+#if 1
+    // Since we do not have automaticly expanding stack, check if there is still
+    // room for further recurencies
+    {
+        ULONG *sp = (ULONG *)AROS_GET_SP;
+        SIPTR diff = 0;
+#if AROS_STACK_GROWS_DOWNWARDS
+        diff = (SIPTR)sp - (SIPTR)me->tc_SPLower;
+#else
+        diff = (SIPTR)me->tc_SPUpper - (SIPTR)sp;
+#endif
+        if (diff < AROS_STACKSIZE / 2)
+        {
+            bug("[SMP-SmallPT-Task] Stack nearly exhausted after %d iterations (%dkB left of %dkB total), breaking recurency\n", depth, (diff + 512) / 1024,
+                ((IPTR)me->tc_SPUpper - (IPTR)me->tc_SPLower + 512) / 1024);
+            return obj.e;
+        }
+    }
+    #endif
+#if 0
     // Above maximal_ray_depth break recursive loop unconditionally
     if (depth > maximal_ray_depth)
         return obj.e;
-    else if (depth>5) // From depth of 5 start Russian roulette
+    else
+#endif
+    if (depth>5) // From depth of 5 start Russian roulette
     {
         double p = f.x>f.y && f.x>f.z ? f.x : f.y>f.z ? f.y : f.z; // max refl 
 
@@ -181,20 +225,20 @@ Vec radiance(const Ray &r, int depth, unsigned short *Xi)
         double r1=2*M_PI*erand48(Xi), r2=erand48(Xi), r2s=sqrt(r2); 
         Vec w=nl, u=((fabs(w.x)>.1?Vec(0,1):Vec(1))%w).norm(), v=w%u; 
         Vec d = (u*cos(r1)*r2s + v*sin(r1)*r2s + w*sqrt(1-r2)).norm(); 
-        return obj.e + f.mult(radiance(Ray(x,d),depth,Xi)); 
+        return obj.e + f.mult(radiance(me, Ray(x,d),depth,Xi)); 
     } else if (obj.refl == SPEC)            // Ideal SPECULAR reflection 
-        return obj.e + f.mult(radiance(Ray(x,r.d-n*2*n.dot(r.d)),depth,Xi)); 
+        return obj.e + f.mult(radiance(me, Ray(x,r.d-n*2*n.dot(r.d)),depth,Xi)); 
     Ray reflRay(x, r.d-n*2*n.dot(r.d));     // Ideal dielectric REFRACTION 
     bool into = n.dot(nl)>0;                // Ray from outside going in? 
     double nc=1, nt=1.5, nnt=into?nc/nt:nt/nc, ddn=r.d.dot(nl), cos2t; 
     if ((cos2t=1-nnt*nnt*(1-ddn*ddn))<0)    // Total internal reflection 
-        return obj.e + f.mult(radiance(reflRay,depth,Xi)); 
+        return obj.e + f.mult(radiance(me, reflRay,depth,Xi)); 
     Vec tdir = (r.d*nnt - n*((into?1:-1)*(ddn*nnt+sqrt(cos2t)))).norm(); 
     double a=nt-nc, b=nt+nc, R0=a*a/(b*b), c = 1-(into?-ddn:tdir.dot(n)); 
     double Re=R0+(1-R0)*c*c*c*c*c,Tr=1-Re,P=.25+.5*Re,RP=Re/P,TP=Tr/(1-P); 
     return obj.e + f.mult(depth>2 ? (erand48(Xi)<P ?   // Russian roulette 
-        radiance(reflRay,depth,Xi)*RP:radiance(Ray(x,tdir),depth,Xi)*TP) : 
-        radiance(reflRay,depth,Xi)*Re+radiance(Ray(x,tdir),depth,Xi)*Tr); 
+        radiance(me, reflRay,depth,Xi)*RP:radiance(me, Ray(x,tdir),depth,Xi)*TP) : 
+        radiance(me, reflRay,depth,Xi)*Re+radiance(me, Ray(x,tdir),depth,Xi)*Tr); 
 }
 
 static inline struct MyMessage *AllocMsg(struct MinList *msgPool)
@@ -261,6 +305,7 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
     struct MsgPort *port = CreateMsgPort();
     struct MsgPort *syncPort = CreateMsgPort();
     struct MinList msgPool;
+    struct Task *me = FindTask(NULL);
 
     c = (Vec *)AllocMem(sizeof(Vec) * TILE_SIZE * TILE_SIZE, MEMF_ANY | MEMF_CLEAR);
 
@@ -363,9 +408,9 @@ extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort,
                                                 Vec d = cx*( ( (sx+.5 + dx)/2 + x)/w - .5) + 
                                                         cy*( ( (sy+.5 + dy)/2 + y)/h - .5) + cam.d; 
                                                 if (explicit_mode)
-                                                    r = r + radiance_expl(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
+                                                    r = r + radiance_expl(me, Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
                                                 else
-                                                    r = r + radiance(Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
+                                                    r = r + radiance(me, Ray(cam.o+d*140,d.norm()),0,Xi)*(1./samps); 
                                             } // Camera rays are pushed ^^^^^ forward to start in interior 
                                             c[i] = c[i] + Vec(clamp(r.x),clamp(r.y),clamp(r.z))*.25; 
                                         } 
