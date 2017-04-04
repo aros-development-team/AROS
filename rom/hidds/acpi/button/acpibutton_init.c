@@ -134,31 +134,46 @@ static ACPI_STATUS ACPIButton_DeviceQuery(ACPI_HANDLE handle,
         if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0C"))
         {
             D(bug("[HWACPIButton] %s: Power Button Device Found\n", __func__));
-            _csd->acpiPowerBHandle = handle;
-            _csd->acpiPowerBType = vHW_ACPIButton_Power;
+            if ((!_csd->powerButtonObj) && (!_csd->acpiPowerBHandle))
+            {
+                _csd->acpiPowerBHandle = handle;
+                _csd->acpiPowerBType = vHW_ACPIButton_Power;
+            }
         }
         else if (ACPIButton_MatchDeviceID(acpiDevInfo, "ACPI_FPB"))
         {
             D(bug("[HWACPIButton] %s: Fixed Power Button Device Found\n", __func__));
-            _csd->acpiPowerBHandle = handle;
-            _csd->acpiPowerBType = vHW_ACPIButton_PowerF;
+            if ((!_csd->powerButtonObj) && (!_csd->acpiPowerBHandle))
+            {
+                _csd->acpiPowerBHandle = handle;
+                _csd->acpiPowerBType = vHW_ACPIButton_PowerF;
+            }
         }
         else if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0E"))
         {
             D(bug("[HWACPIButton] %s: Sleep Button Device Found\n", __func__));
-            _csd->acpiSleepBHandle = handle;
-            _csd->acpiSleepBType = vHW_ACPIButton_Sleep;
+            if ((!_csd->sleepButtonObj) && (!_csd->acpiSleepBHandle))
+            {
+                _csd->acpiSleepBHandle = handle;
+                _csd->acpiSleepBType = vHW_ACPIButton_Sleep;
+            }
         }
         else if (ACPIButton_MatchDeviceID(acpiDevInfo, "ACPI_FSB"))
         {
             D(bug("[HWACPIButton] %s: Fixed Sleep Button Device Found\n", __func__));
-            _csd->acpiSleepBHandle = handle;
-            _csd->acpiSleepBType = vHW_ACPIButton_SleepF;
+            if ((!_csd->sleepButtonObj) && (!_csd->acpiSleepBHandle))
+            {
+                _csd->acpiSleepBHandle = handle;
+                _csd->acpiSleepBType = vHW_ACPIButton_SleepF;
+            }
         }
         else if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0D"))
         {
             D(bug("[HWACPIButton] %s: Lid Button Device Found\n", __func__));
-            _csd->acpibLidBHandle = handle;
+            if ((!_csd->lidButtonObj) && (!_csd->acpibLidBHandle))
+            {
+                _csd->acpibLidBHandle = handle;
+            }
         }
     }
 
@@ -211,7 +226,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
         /* check for fixed feature buttons .. */
         if (AcpiGetTable(ACPI_SIG_FADT, 1, (ACPI_TABLE_HEADER **)&fadt) == AE_OK)
         {
-            if (!(fadt->Flags & ACPI_FADT_POWER_BUTTON))
+            if ((!(fadt->Flags & ACPI_FADT_POWER_BUTTON)) && (!_csd->powerButtonObj))
             {
                 D(bug("[HWACPIButton] %s: Fixed Power-Button Enabled in FADT\n", __func__));
                 AcpiEnableEvent(ACPI_EVENT_POWER_BUTTON, 0);
@@ -233,7 +248,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                 else
                     FreeMem(buttonHook, sizeof(struct Hook));
             }
-            if (!(fadt->Flags & ACPI_FADT_SLEEP_BUTTON))
+            if ((!(fadt->Flags & ACPI_FADT_SLEEP_BUTTON)) && (!_csd->sleepButtonObj))
             {
                 D(bug("[HWACPIButton] %s: Fixed Sleep-Button Enabled in FADT\n", __func__));
                 AcpiEnableEvent(ACPI_EVENT_SLEEP_BUTTON, 0);
@@ -261,7 +276,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
         acpiStatus = AcpiWalkNamespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, INT_MAX, ACPIButton_DeviceQuery, NULL, _csd, NULL);
         if (acpiStatus == AE_OK)
         {
-            if (_csd->acpiPowerBHandle != NULL)
+            if ((_csd->acpiPowerBHandle != NULL) && (!_csd->powerButtonObj))
             {
                 instanceTags[0].ti_Data = (IPTR)_csd->acpiPowerBType;
                 instanceTags[1].ti_Data = (IPTR)_csd->acpiPowerBHandle;
@@ -280,7 +295,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                     FreeMem(buttonHook, sizeof(struct Hook));
             }
 
-            if (_csd->acpiSleepBHandle != NULL)
+            if ((_csd->acpiSleepBHandle != NULL) && (!_csd->sleepButtonObj))
             {
                 instanceTags[0].ti_Data = (IPTR)_csd->acpiSleepBType;
                 instanceTags[1].ti_Data = (IPTR)_csd->acpiSleepBHandle;
@@ -299,7 +314,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                     FreeMem(buttonHook, sizeof(struct Hook));
             }
 
-            if (_csd->acpibLidBHandle != NULL)
+            if ((_csd->acpibLidBHandle != NULL) && (!_csd->lidButtonObj))
             {
                 instanceTags[0].ti_Data = vHW_ACPIButton_Lid;
                 instanceTags[1].ti_Data = (IPTR)_csd->acpibLidBHandle;
