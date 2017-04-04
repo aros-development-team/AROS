@@ -38,8 +38,12 @@ struct SemaphoreRequest
 {
     struct MinNode              sr_Link;
     struct Task                 *sr_Waiter;
+#if defined(__AROSPLATFORM_SMP__)
 #if defined(__AROSEXEC_SMP__)
     spinlock_t                  sr_SpinLock;
+#else
+    spinlock_t                  sr_Pad;
+#endif
 #else
     ULONG                       sr_Pad;
 #endif
