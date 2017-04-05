@@ -1387,9 +1387,13 @@ ahci_comreset(struct ahci_port *ap, int *pmdetectp)
 	 */
 	cmd = ahci_pread(ap, AHCI_PREG_CMD) & ~AHCI_PREG_CMD_ICC;
 
+        cmd &= ~AHCI_PREG_CMD_SUD;
+	ahci_pwrite(ap, AHCI_PREG_CMD, cmd);
+	ahci_os_sleep(100);
+
 	cmd |= AHCI_PREG_CMD_SUD | AHCI_PREG_CMD_POD;
 	ahci_pwrite(ap, AHCI_PREG_CMD, cmd);
-	ahci_os_sleep(10);
+	ahci_os_sleep(1000);
 
 	/*
 	 * Make sure that all power management is disabled.
@@ -2092,7 +2096,7 @@ ahci_start_timeout(struct ahci_ccb *ccb)
 	if (ccb->ccb_xa.flags & ATA_F_TIMEOUT_DESIRED) {
 		ccb->ccb_xa.flags |= ATA_F_TIMEOUT_RUNNING;
 		callout_reset(&ccb->ccb_timeout,
-			      (ccb->ccb_xa.timeout * hz + 999) / 1000,
+			      ccb->ccb_xa.timeout,
 			      ahci_ata_cmd_timeout_unserialized, ccb);
 	}
 }

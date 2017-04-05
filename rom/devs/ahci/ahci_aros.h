@@ -404,8 +404,6 @@ static inline int lockmgr(struct lock *lock, int flags)
 
 /* Callouts */
 
-static const int hz = (1000000 / 2); /* UNIT_MICROHZ frequency */
-
 typedef void timeout_t (void *);
 
 struct callout {
