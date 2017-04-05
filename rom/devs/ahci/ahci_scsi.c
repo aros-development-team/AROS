@@ -642,7 +642,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
     xa->flags = flags;
     xa->data = scsi->scsi_Data;
     xa->datalen = scsi->scsi_Length;
-    xa->timeout = 1500;    /* milliseconds */
+    xa->timeout = 5000;    /* milliseconds - longer timeout for ATAPI devices */
 
     /*
      * Copy the cdb to the packetcmd buffer in the FIS using a
