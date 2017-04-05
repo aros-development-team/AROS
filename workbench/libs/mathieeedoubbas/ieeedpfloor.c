@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,21 +18,27 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Calculates the floor-value of a IEEE double precision number
+        Calculates the floor value of an IEEE double precision number.
 
     INPUTS
+        y - IEEE double precision floating point number.
 
     RESULT
-       +1 : y > z
-	0 : y = z
-       -1 : y < z
+        x - floor of y.
 
-	Flags:
-	  zero	   : y = z
-	  negative : y < z
-	  overflow : 0
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : 0
+
+    NOTES
+
+    EXAMPLE
 
     BUGS
+
+    SEE ALSO
+        IEEEDPCeil(), IEEEDPFix()
 
     INTERNALS
 

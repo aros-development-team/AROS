@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,19 +18,27 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Convert IEEE double precision floating point number to integer
+	Converts an IEEE double precision floating point number to an integer.
 
     INPUTS
+        y - IEEE double precision floating point number.
 
     RESULT
-	absolute value of y
+        x - the closest signed 32-bit integer to y.
 
 	Flags:
 	  zero	   : result is zero
 	  negative : result is negative
 	  overflow : ieeedp out of integer-range
 
+    NOTES
+
+    EXAMPLE
+
     BUGS
+
+    SEE ALSO
+        IEEEDPFlt(), IEEEDPFloor(), IEEEDPCeil()
 
     INTERNALS
 

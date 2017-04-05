@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <aros/debug.h>
@@ -34,21 +34,22 @@ static void add128(ULONG *s, ULONG *d)
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Multiplies two IEEE double precision numbers
+	Multiplies two IEEE double precision numbers.
 
     INPUTS
+        y - first multiplicand.
+        z - second multiplicand.
 
     RESULT
-        +1 : y > z
-	 0 : y = z
-        -1 : y < z
+        x - product.
 
-	Flags:
-	  zero	   : y = z
-	  negative : y < z
-	  overflow : 0
+    NOTES
+
+    EXAMPLE
 
     BUGS
+
+    SEE ALSO
 
     INTERNALS
 
@@ -92,10 +93,10 @@ static void add128(ULONG *s, ULONG *d)
     ULONG t1[4], t2[4];
 
     x1 = Get_High32of64(Qtmp1);
-    x1 |= 0x00100000; /* Set "hidden" 53th mantissa bit */
+    x1 |= 0x00100000; /* Set "hidden" 53rd mantissa bit */
     x2 = Get_Low32of64(Qtmp1);
     y1 = Get_High32of64(Qtmp2);
-    y1 |= 0x00100000; /* Set "hidden" 53th mantissa bit */
+    y1 |= 0x00100000; /* Set "hidden" 53rd mantissa bit */
     y2 = Get_Low32of64(Qtmp2);
 
     D(bug("%08x %08x %08x %08x\n", x1, x2, y1, y2));
@@ -126,7 +127,7 @@ static void add128(ULONG *s, ULONG *d)
 
     D(bug("%08x %08x %08x %08x\n", t1[0], t1[1], t1[2], t1[3]));
 
-    /* Normalize. Pobably could be more optimal.. */
+    /* Normalize. Probably could be more optimal */
     if (t1[0] || t1[1] || t1[2] || t1[3]) {
         while (t1[0] & 0xfffffe00) {
             t1[3] >>= 1;

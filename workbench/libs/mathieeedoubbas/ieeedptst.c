@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,24 +18,33 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Compare a IEEE double precision floting point number against zero.
+        Compares an IEEE double precision floting point number against zero.
 
     INPUTS
+        y - IEEE double precision floating point number.
 
     RESULT
-	+1 : y > 0.0
-	 0 : y = 0.0
-	-1 : y < 0.0
+        c -
+            +1: y > 0.0
+             0: y = 0.0
+            -1: y < 0.0
 
 	Flags:
 	  zero	   : result is zero
 	  negative : result is negative
 	  overflow : 0
 
+    NOTES
+
+    EXAMPLE
+
     BUGS
 
+    SEE ALSO
+        IEEEDPCmp()
+
     INTERNALS
-        ALGORITHM:
+        Algorithm:
 	Sign is negative: return -1
 	y == 0		: return 0
 	Otherwise	: return 1

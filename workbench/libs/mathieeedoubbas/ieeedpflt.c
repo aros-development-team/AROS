@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,18 +18,28 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas)
 
 /*  FUNCTION
+        Convert an integer into an IEEE double precision floating point
+        number.
 
     INPUTS
+        y - a 32-bit integer.
 
     RESULT
-        IEEE double precision number
+        x - IEEE double precision floating point number.
 
 	Flags:
 	  zero	   : result is zero
 	  negative : result is negative
 	  overflow : 0
 
+    NOTES
+
+    EXAMPLE
+
     BUGS
+
+    SEE ALSO
+        IEEEDPFix()
 
     INTERNALS
 

@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include <aros/debug.h>
-
 #include "mathieeedoubbas_intern.h"
 
 /*****************************************************************************
@@ -21,12 +19,14 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Divides two IEEE double precision numbers
+	Divides two IEEE double precision numbers.
 
     INPUTS
+        y - dividend.
+        z - divisor.
 
     RESULT
-        Quotient.
+        x - quotient.
 
     NOTES
 

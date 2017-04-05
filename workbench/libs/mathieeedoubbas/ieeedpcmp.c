@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,21 +19,31 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 7, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Compares two IEEE double precision numbers
+	Compares two IEEE double precision numbers.
 
     INPUTS
+        y - IEEE double precision floating point number.
+        z - IEEE double precision floating point number.
 
     RESULT
-       +1 : y > z
-	0 : y = z
-       -1 : y < z
+        c -
+            +1: y > z
+             0: y = z
+            -1: y < z
 
 	Flags:
 	  zero	   : y = z
 	  negative : y < z
 	  overflow : 0
 
+    NOTES
+
+    EXAMPLE
+
     BUGS
+
+    SEE ALSO
+        IEEEDPTst()
 
     INTERNALS
 
