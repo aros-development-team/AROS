@@ -46,10 +46,10 @@ static void callout_handler(struct callout *co, unsigned ticks, timeout_t *func,
 {
     struct IORequest *io;
     ULONG signals = 0;
-    ULONG ms = ticks / hz;
+    ULONG ms = ticks;
 
     if ((io = ahci_OpenTimer())) {
-        signals = ahci_WaitTO(io, ms, 0, SIGF_ABORT);
+        signals = ahci_WaitTO(io, ms / 1000, 1000 * (ms % 1000), SIGF_ABORT);
         ahci_CloseTimer(io);
     }
 
