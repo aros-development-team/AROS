@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,21 +19,23 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 12, MathIeeeDoubBas)
 
 /*  FUNCTION
-        Subtracts two IEEE double precision numbers
+        Subtracts two IEEE double precision floating point numbers.
 
     INPUTS
+        y - minuend.
+        z - subtrahend.
 
     RESULT
-       +1 : y > z
-        0 : y = z
-       -1 : y < z
+        x - difference.
 
-        Flags:
-          zero     : y = z
-          negative : y < z
-          overflow : 0
+    NOTES
+
+    EXAMPLE
 
     BUGS
+
+    SEE ALSO
+        IEEEDPNeg()
 
     INTERNALS
 

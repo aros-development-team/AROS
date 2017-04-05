@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,23 +18,31 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, MathIeeeDoubBas)
 
 /*  FUNCTION
-	Switch the sign of the given IEEE double precision
-        floating point number
+        Switches the sign of the given IEEE double precision floating point
+        number.
 
     INPUTS
+        y - IEEE double precision floating point number.
 
     RESULT
-	-y
+	x - the negation of y.
 
 	Flags:
 	  zero	   : result is zero
 	  negative : result is negative
 	  overflow : 0
 
+    NOTES
+
+    EXAMPLE
+
     BUGS
 
+    SEE ALSO
+        IEEEDPAbs()
+
     INTERNALS
-        ALGORITHM:
+        Algorithm:
 	Flip the sign-bit (even for zeroes).
 
 *****************************************************************************/

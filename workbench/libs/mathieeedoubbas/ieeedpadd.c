@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,19 +19,27 @@
         struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 11, MathIeeeDoubBas)
 
 /*  FUNCTION
-        Calculate the sum of two IEEE double precision numbers
+        Calculate the sum of two IEEE double precision numbers.
 
     INPUTS
+        y - first addend.
+        z - first addend.
 
     RESULT
-        sum of y and z
+        x - sum of y and z.
 
         Flags:
           zero     : result is zero
           negative : result is negative
-          overflow : result is too large or too small for ffp format
+          overflow : result is too large or too small for IEEE DP format
+
+    NOTES
+
+    EXAMPLE
 
     BUGS
+
+    SEE ALSO
 
     INTERNALS
 

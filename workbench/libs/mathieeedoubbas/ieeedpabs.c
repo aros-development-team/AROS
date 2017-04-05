@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,23 +19,31 @@
 
 /*  FUNCTION
         Calculate the absolute value of the given IEEE double precision
-        floating point number
+        floating point number.
 
     INPUTS
+        y - IEEE double precision floating point number.
 
     RESULT
-	absolute value of y
+        x - absolute value of y.
 
 	Flags:
 	  zero	   : result is zero
 	  negative : 0
 	  overflow : 0
 
+    NOTES
+
+    EXAMPLE
+
     BUGS
 
+    SEE ALSO
+        IEEEDPNeg()
+
     INTERNALS
-        ALGORITHM:
-	set the sign-bit to zero
+        Algorithm:
+        Set the sign-bit to zero.
 
 *****************************************************************************/
 {
