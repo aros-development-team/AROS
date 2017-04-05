@@ -199,18 +199,18 @@ static void parse_config_file(void)
 {
     BPTR config_file;
     BPTR handle;
-    
-    handle = Lock("ENV:hdaudio.config", SHARED_LOCK);
+
+    handle = Lock("ENVARC:hdaudio.config", SHARED_LOCK);
   
     if (handle == 0)
     {
-        bug("No handle found\n");
+        bug("No handle found. IoErr()=%d\n", IoErr());
         return;
     }
     
     UnLock(handle);
-    
-    config_file = Open("ENV:hdaudio.config", MODE_OLDFILE);
+
+    config_file = Open("ENVARC:hdaudio.config", MODE_OLDFILE);
 
     if (config_file)
     {   
