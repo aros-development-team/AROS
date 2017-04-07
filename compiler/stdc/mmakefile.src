@@ -259,7 +259,7 @@ STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(STDC
 # lint issues, that should be fixed.
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
 
-USER_CFLAGS := $(NOWARN_FLAGS) -noposixc -Dlint '-D__FBSDID(x)='
+USER_CFLAGS := $(NOWARN_FLAGS) -noposixc -Dlint '-D__FBSDID(x)=' -fno-builtin
 USER_LDFLAGS := -nostdc -noposixc
 
 %build_module mmake=compiler-stdc \
@@ -339,7 +339,7 @@ STDC_STATIC := \
     vsprintf \
     vsscanf
 
-USER_CFLAGS := $(NOWARN_FLAGS) -DSTDC_STATIC -Dlint
+USER_CFLAGS := $(NOWARN_FLAGS) -DSTDC_STATIC -Dlint -fno-builtin
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
