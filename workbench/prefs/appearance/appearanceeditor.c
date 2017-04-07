@@ -536,7 +536,6 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Export
     else
     {
         DeleteVar(THEMES_ENVPATH, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
-        success = DoMethod(self, MUIM_PrefsEditor_ExportFH, NULL);
     }
 
     return success;
