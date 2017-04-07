@@ -29,7 +29,8 @@
         asm volatile( \
             ".weak " #fname "\n" \
             #fname " :\n" \
-            "\tmovq " #libbasename "(%%rip), %%r11\n" \
+            "\tmovabsq $" #libbasename ", %%r11\n" \
+            "\tmovq (%%r11),%%r11\n" \
             "\tjmp  *%c0(%%r11)\n" \
             : : "i" ((-lvo)*LIB_VECTSIZE) \
         ); \
@@ -54,7 +55,8 @@
             "\tpushq %%rcx\n"     \
             "\tpushq %%r8\n"      \
             "\tpushq %%r9\n"      \
-            "\tcall __aros_getoffsettable\n" \
+            "\tmovabsq $__aros_getoffsettable,%%r11\n" \
+            "\tcall *%%r11\n" \
             "\taddq __aros_rellib_offset_" #libbasename "(%%rip), %%rax\n" \
             "\tmovq (%%rax),%%r11\n" \
             "\tpopq %%r9\n"      \
@@ -105,7 +107,8 @@
             "\tpushq %%r8\n"      \
             "\tpushq %%r9\n"      \
             "\tmovq  %%r11,%%rdi\n" \
-            "\tcall __aros_setoffsettable\n" \
+            "\tmovabsq $__aros_setoffsettable,%%r11\n" \
+            "\tcall *%%r11\n" \
             "\tpopq %%r9\n"      \
             "\tpopq %%r8\n"      \
             "\tpopq %%rcx\n"     \
@@ -113,7 +116,8 @@
             "\tpopq %%rsi\n"     \
             "\tpopq %%rdi\n"     \
             "\tpopq %%rax\n"     \
-            "\tjmp  " #fname "\n" \
+            "\tmovabsq $" #fname ",%%r11\n" \
+            "\tjmp  *%%r11\n" \
             : : : \
         ); \
     }
