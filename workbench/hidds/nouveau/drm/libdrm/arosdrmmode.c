@@ -31,7 +31,7 @@
 #define U642VOID(x) ((void *)(unsigned long)(x))
 #define VOID2U64(x) ((uint64_t)(unsigned long)(x))
 
-static inline int DRM_IOCTL(int fd, int cmd, void *arg)
+static inline int DRM_IOCTL(int fd, unsigned long cmd, void *arg)
 {
 	int ret = drmIoctl(fd, cmd, arg);
 	return ret < 0 ? -errno : ret;
