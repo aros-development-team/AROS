@@ -2,6 +2,169 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- AROS : compiler-stdc compiler-stdcio
 
+STDC_MATH := \
+    math/e_acos \
+    math/e_acosf \
+    math/e_acosh \
+    math/e_acoshf \
+    math/e_asin \
+    math/e_asinf \
+    math/e_atan2 \
+    math/e_atan2f \
+    math/e_atanh \
+    math/e_atanhf \
+    math/e_cosh \
+    math/e_coshf \
+    math/e_exp \
+    math/e_expf \
+    math/e_fmod \
+    math/e_fmodf \
+    math/e_gamma \
+    math/e_gammaf \
+    math/e_gamma_r \
+    math/e_gammaf_r \
+    math/e_hypot \
+    math/e_hypotf \
+    math/e_j0 \
+    math/e_j0f \
+    math/e_j1 \
+    math/e_j1f \
+    math/e_jn \
+    math/e_jnf \
+    math/e_lgamma \
+    math/e_lgammaf \
+    math/e_lgamma_r \
+    math/e_lgammaf_r \
+    math/e_log \
+    math/e_logf \
+    math/e_log2 \
+    math/e_log2f \
+    math/e_log10 \
+    math/e_log10f \
+    math/e_pow \
+    math/e_powf \
+    math/e_rem_pio2 \
+    math/e_rem_pio2f \
+    math/e_remainder \
+    math/e_remainderf \
+    math/e_scalb \
+    math/e_scalbf \
+    math/e_sinh \
+    math/e_sinhf \
+    math/e_sqrt \
+    math/e_sqrtf \
+    math/k_cos \
+    math/k_cosf \
+    math/k_rem_pio2 \
+    math/k_rem_pio2f \
+    math/k_sin \
+    math/k_sinf \
+    math/k_tan \
+    math/k_tanf \
+    math/nan \
+    math/s_asinh \
+    math/s_asinhf \
+    math/s_atan \
+    math/s_atanf \
+    math/s_cbrt \
+    math/s_cbrtf \
+    math/s_ceil \
+    math/s_ceilf \
+    math/s_ceill \
+    math/s_cimag \
+    math/s_cimagf \
+    math/s_cimagl \
+    math/s_conj \
+    math/s_conjf \
+    math/s_conjl \
+    math/s_copysign \
+    math/s_copysignf \
+    math/s_copysignl \
+    math/s_cos \
+    math/s_cosf \
+    math/s_creal \
+    math/s_crealf \
+    math/s_creall \
+    math/s_erf \
+    math/s_erff \
+    math/s_exp2 \
+    math/s_exp2f \
+    math/s_expm1 \
+    math/s_expm1f \
+    math/s_fabs \
+    math/s_fabsf \
+    math/s_fabsl \
+    math/s_fdim \
+    math/s_floor \
+    math/s_floorf \
+    math/s_floorl \
+    math/s_fma \
+    math/s_fmaf  \
+    math/s_fmax \
+    math/s_fmaxf \
+    math/s_fmaxl \
+    math/s_fmin \
+    math/s_fminf \
+    math/s_fminl \
+    math/s_frexp \
+    math/s_frexpf  \
+    math/s_ilogb \
+    math/s_ilogbf \
+    math/s_ilogbl \
+    math/s_isfinite \
+    math/s_isinf \
+    math/s_isinff \
+    math/s_isnan \
+    math/s_isnormal \
+    math/s_log1p \
+    math/s_log1pf \
+    math/s_logb \
+    math/s_logbf \
+    math/s_modf \
+    math/s_modff \
+    math/s_modfl \
+    math/s_nearbyint \
+    math/s_nextafter \
+    math/s_nextafterf  \
+    math/s_nexttowardf \
+    math/s_remquo \
+    math/s_remquof \
+    math/s_rint \
+    math/s_rintf \
+    math/s_lrint \
+    math/s_lrintf \
+    math/s_llrint \
+    math/s_llrintf \
+    math/s_round \
+    math/s_roundf \
+    math/s_roundl \
+    math/s_lround \
+    math/s_lroundf \
+    math/s_lroundl \
+    math/s_llround \
+    math/s_llroundf \
+    math/s_llroundl \
+    math/s_scalbln \
+    math/s_scalbn \
+    math/s_scalbnf  \
+    math/s_signbit \
+    math/s_significand \
+    math/s_significandf \
+    math/s_sin \
+    math/s_sinf \
+    math/s_tan \
+    math/s_tanf \
+    math/s_tanh \
+    math/s_tanhf \
+    math/s_trunc \
+    math/s_truncf \
+    math/s_truncl \
+    math/sincos \
+    math/sincosf \
+    math/sincosl \
+    math/w_cabs \
+    math/w_cabsf
+
 STDC := \
     __ctype \
     __exitfunc \
@@ -37,78 +200,7 @@ STDC := \
     longjmp \
     malloc \
     malloc_align \
-    math/e_acos  math/e_acosf \
-    math/e_acosh  math/e_acoshf \
-    math/e_asin  math/e_asinf \
-    math/e_atan2  math/e_atan2f \
-    math/e_atanh  math/e_atanhf \
-    math/e_cosh  math/e_coshf \
-    math/e_exp  math/e_expf \
-    math/e_fmod  math/e_fmodf \
-    math/e_gamma  math/e_gammaf  math/e_gamma_r  math/e_gammaf_r \
-    math/e_hypot  math/e_hypotf \
-    math/e_j0  math/e_j0f \
-    math/e_j1  math/e_j1f \
-    math/e_jn  math/e_jnf \
-    math/e_lgamma  math/e_lgammaf  math/e_lgamma_r  math/e_lgammaf_r \
-    math/e_log  math/e_logf \
-    math/e_log2  math/e_log2f \
-    math/e_log10  math/e_log10f \
-    math/e_pow  math/e_powf \
-    math/e_rem_pio2  math/e_rem_pio2f \
-    math/e_remainder  math/e_remainderf \
-    math/e_scalb  math/e_scalbf \
-    math/e_sinh  math/e_sinhf \
-    math/e_sqrt  math/e_sqrtf \
-    math/k_cos  math/k_cosf \
-    math/k_rem_pio2  math/k_rem_pio2f \
-    math/k_sin  math/k_sinf \
-    math/k_tan  math/k_tanf \
-    math/nan \
-    math/s_asinh  math/s_asinhf \
-    math/s_atan  math/s_atanf \
-    math/s_cbrt  math/s_cbrtf \
-    math/s_ceil  math/s_ceilf  math/s_ceill \
-    math/s_cimag  math/s_cimagf  math/s_cimagl \
-    math/s_conj  math/s_conjf  math/s_conjl \
-    math/s_copysign  math/s_copysignf  math/s_copysignl \
-    math/s_cos  math/s_cosf \
-    math/s_creal  math/s_crealf  math/s_creall \
-    math/s_erf  math/s_erff \
-    math/s_exp2  math/s_exp2f \
-    math/s_expm1  math/s_expm1f \
-    math/s_fabs  math/s_fabsf  math/s_fabsl \
-    math/s_fdim \
-    math/s_floor  math/s_floorf  math/s_floorl \
-    math/s_fma  math/s_fmaf  \
-    math/s_fmax  math/s_fmaxf  math/s_fmaxl \
-    math/s_fmin  math/s_fminf  math/s_fminl \
-    math/s_frexp  math/s_frexpf  \
-    math/s_ilogb  math/s_ilogbf  math/s_ilogbl \
-    math/s_isfinite \
-    math/s_isinf  math/s_isinff \
-    math/s_isnan \
-    math/s_isnormal \
-    math/s_log1p  math/s_log1pf \
-    math/s_logb  math/s_logbf \
-    math/s_modf  math/s_modff  math/s_modfl \
-    math/s_nearbyint \
-    math/s_nextafter  math/s_nextafterf  \
-    math/s_nexttowardf \
-    math/s_remquo  math/s_remquof \
-    math/s_rint  math/s_rintf  math/s_lrint  math/s_lrintf  math/s_llrint  math/s_llrintf \
-    math/s_round  math/s_roundf  math/s_roundl  math/s_lround  math/s_lroundf  math/s_lroundl \
-        math/s_llround  math/s_llroundf  math/s_llroundl \
-    math/s_scalbln \
-    math/s_scalbn  math/s_scalbnf  \
-    math/s_signbit \
-    math/s_significand  math/s_significandf \
-    math/s_sin  math/s_sinf \
-    math/s_tan  math/s_tanf \
-    math/s_tanh  math/s_tanhf \
-    math/s_trunc  math/s_truncf  math/s_truncl \
-    math/sincos  math/sincosf  math/sincosl \
-    math/w_cabs  math/w_cabsf \
+    $(STDC_MATH) \
     mblen \
     memchr \
     memcmp \
@@ -275,6 +367,28 @@ STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(ST
     linklibobjs=$(STDCIO_LINKOBJS) \
     uselibs="stdc_rel"
 
+STDC_MATH_STATIC := \
+    math/s_copysign \
+    math/s_copysignf \
+    math/s_copysignl \
+    math/e_log \
+    math/e_logf \
+    math/e_log2 \
+    math/e_log2f \
+    math/e_log10 \
+    math/e_log10f \
+    math/e_pow \
+    math/e_powf \
+    math/k_cos \
+    math/k_rem_pio2 \
+    math/k_sin \
+    math/s_cos \
+    math/s_fabs \
+    math/s_floor \
+    math/s_scalbn \
+    math/s_scalbnf  \
+    math/e_sqrt
+
 STDC_STATIC := \
     __ctype \
     __vcformat \
@@ -282,17 +396,7 @@ STDC_STATIC := \
     atoi \
     atol \
     bsearch \
-    math/s_copysign  math/s_copysignf  math/s_copysignl \
-    math/e_log  math/e_logf \
-    math/e_log2  math/e_log2f \
-    math/e_log10  math/e_log10f \
-    math/e_pow  math/e_powf \
-    math/k_cos \
-    math/k_rem_pio2 \
-    math/k_sin \
-    math/s_cos math/s_floor \
-    math/s_scalbn  math/s_scalbnf  \
-    math/e_sqrt \
+    $(STDC_MATH_STATIC) \
     memchr \
     memcmp \
     memcpy \
