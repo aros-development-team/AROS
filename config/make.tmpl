@@ -1829,7 +1829,7 @@ endif
 ifneq (%(includedir),)
 BD_INCDIR    := %(includedir)
 else
-BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
+BD_INCDIR    := %(prefix)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_INCLUDE)
 endif
 BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
 BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
@@ -1950,7 +1950,7 @@ else
 endif
 
 ifeq (%(libdir),)
-BD_LIBDIR := %(prefix)/$(AROS_DIR_LIB)
+BD_LIBDIR := %(prefix)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_LIB)
 else
 BD_LIBDIR := %(libdir)
 endif
