@@ -3014,6 +3014,12 @@ ifeq (%(use_build_env),yes)
     BUILD_ENV := $(CONFIG_ENV)
 endif
 
+ifneq ("$(wildcard %(srcdir)/Makefile)","")
+    BUILD_MAKEENV := -C %(srcdir)
+else
+    BUILD_MAKEENV := -C $(%(mmake)-pkgdir)
+endif
+
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
 # When building for the host, we don't need to build the
@@ -3031,12 +3037,12 @@ endif
 ifneq (%(install_target),)
     %(mmake)-install_command = \
         $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
-        -C $(%(mmake)-pkgdir) %(install_target) -j1
+        $(BUILD_MAKEENV) %(install_target) -j1
 
     %(mmake)-uninstall_command = \
     $(RM) $(%(mmake)-installflag) && \
     $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" \
-    $(%(mmake)-install_opts) -C $(%(mmake)-pkgdir) uninstall
+    $(%(mmake)-install_opts) $(BUILD_MAKEENV) uninstall
 else
     %(mmake)-install_command   := true
     %(mmake)-uninstall_command := true
@@ -3048,10 +3054,10 @@ endif
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
-	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(%(mmake)-pkgdir); then \
+	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(BUILD_MAKEENV); then \
             $(RM)  $(%(mmake)-installflag) && \
 	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)"\
-	     -C $(%(mmake)-pkgdir) && \
+	      $(BUILD_MAKEENV) && \
 	    $(%(mmake)-install_command) && \
 	    $(TOUCH) $@ -r $^; \
         fi
