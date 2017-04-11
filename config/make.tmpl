@@ -3535,7 +3535,7 @@ GNU_REPOSITORY := gnu://
 
 #MM
 postinstall-%(package)-delete-la-files:
-	$(RM) $(AROS_DEVELOPER)/lib/*.la
+	$(RM) %(prefix)/lib/*.la
 
 %end
 #------------------------------------------------------------------------------
