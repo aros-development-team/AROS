@@ -372,18 +372,50 @@ int i2c_del_adapter(struct i2c_adapter *);
 #define jiffies get_jiffies()
 unsigned long get_jiffies();
 
-/* Wait queue (lame) handling */
-#define init_waitqueue_head(x)
-#define wake_up_all(x)
-#define wait_event(wq, condition)   \
-    { IMPLEMENT("\n"); }
+typedef struct {
+    struct MinNode wt_Node;
+    struct Task *   wt_Task;
+} waitqueue_task_t;
 
-#define wait_event_interruptible(wq, condition) \
-({                                              \
-    int __ret = 0;                              \
-    IMPLEMENT("\n");                            \
-    __ret;                                      \
-})
+/* Wait queue (lame) handling */
+#define init_waitqueue_head(x)  NEWLIST(x)
+#define wake_up_all(x)                          \
+    {                                           \
+        waitqueue_task_t *wt,*next;             \
+        ForeachNodeSafe(x, wt, next) {          \
+            REMOVE(wt);                         \
+            Signal(wt->wt_Task, SIGF_SINGLE);   \
+        }                                       \
+    }
+
+#define wait_event(wq, condition)       \
+    {                                   \
+        waitqueue_task_t wt;            \
+        wt.wt_Task = FindTask(NULL);    \
+        for(;;) {                       \
+            if (condition)              \
+                break;                  \
+            ADDTAIL(&wq, &wt);          \
+            Wait(SIGF_SINGLE);          \
+        }                               \
+    }
+
+#define wait_event_interruptible(wq, condition)                   \
+    ({                                                            \
+        int __ret = 0;                                            \
+        {                                                         \
+            waitqueue_task_t wt;                                  \
+            wt.wt_Task = FindTask(NULL);                          \
+            for (;;)                                              \
+            {                                                     \
+                if (condition)                                    \
+                    break;                                        \
+                ADDTAIL(&wq, &wt);                                \
+                Wait(SIGF_SINGLE);                                \
+            }                                                     \
+        }                                                         \
+        __ret;                                                    \
+    })
 
 /* other */
 #define do_div(n,base) ({ \
