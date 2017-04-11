@@ -2912,7 +2912,7 @@ ifeq (%(compiler),host)
     # since that won't get picked up during configure.
     # We also cannot pass in the compiler including std flags so we need to use
     # the "plain" host compiler.
-    CONFIG_ENV := %(config_env_extra) \
+    %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
         CC="$(HOST_DEF_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
@@ -2930,22 +2930,22 @@ ifeq (%(compiler),host)
         TARGET_OBJCOPY="$(TARGET_OBJCOPY)"
 endif
 ifeq (%(compiler),target)
-    CONFIG_ENV := %(config_env_extra) \
+    %(mmake)-cfg-env := %(config_env_extra) \
         PKG_CONFIG_LIBDIR="$(AROS_DEVELOPER)/lib/pkgconfig" \
         PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)"
-    CONFIG_ENV += CPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
+    %(mmake)-cfg-env += CPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
         CXXCPP="$(strip $(TARGET_CPP) $(TARGET_SYSROOT))" \
         CC="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
         CXX="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
         LD="$(strip $(TARGET_LD))"
 ifeq (%(crossbuild),yes)
-    CONFIG_ENV += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
+    %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
         CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))"
 else
-    CONFIG_ENV += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+    %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))"
 endif
-    CONFIG_ENV += LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+    %(mmake)-cfg-env += LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CC_FOR_BUILD="$(strip $(HOST_DEF_CC))" \
         CFLAGS_FOR_BUILD="$(strip $(HOST_CFLAGS) $(%(mmake)-s_flag))" \
         CXX_FOR_BUILD="$(strip $(HOST_CXX))" \
@@ -2985,7 +2985,7 @@ ifeq (%(gnuflags),yes)
 endif
 endif
 ifeq (%(compiler),kernel)
-    CONFIG_ENV := %(config_env_extra) \
+    %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(KERNEL_CPP)" \
         CXXCPP="$(KERNEL_CPP)" \
         CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
@@ -3010,7 +3010,7 @@ endif
 endif
 
 ifeq (%(use_build_env),yes)
-    BUILD_ENV := $(CONFIG_ENV)
+    BUILD_ENV := $(%(mmake)-cfg-env)
 endif
 
 ifneq ("$(wildcard %(srcdir)/Makefile)","")
@@ -3021,11 +3021,11 @@ $(%(mmake)-pkgdir)/.local-copy:
 
 $(%(mmake)-pkgdir)/.files-touched : $(%(mmake)-pkgdir)/.local-copy
 
-    BUILD_SRCDIR=$(%(mmake)-pkgdir)
+    %(mmake)-cfg-srcdir=$(%(mmake)-pkgdir)
 else
-    BUILD_SRCDIR=%(srcdir)
+    %(mmake)-cfg-srcdir=%(srcdir)
 endif
-BUILD_MAKEENV := -C $(%(mmake)-pkgdir)
+%(mmake)-make-env := -C $(%(mmake)-pkgdir)
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
@@ -3044,12 +3044,12 @@ BUILD_MAKEENV := -C $(%(mmake)-pkgdir)
 ifneq (%(install_target),)
     %(mmake)-install_command = \
         $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
-        $(BUILD_MAKEENV) %(install_target) -j1
+        $(%(mmake)-make-env) %(install_target) -j1
 
     %(mmake)-uninstall_command = \
     $(RM) $(%(mmake)-installflag) && \
     $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" \
-    $(%(mmake)-install_opts) $(BUILD_MAKEENV) uninstall
+    $(%(mmake)-install_opts) $(%(mmake)-make-env) uninstall
 else
     %(mmake)-install_command   := true
     %(mmake)-uninstall_command := true
@@ -3061,16 +3061,16 @@ endif
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
-	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(BUILD_MAKEENV); then \
+	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
 	    $(RM) $(%(mmake)-installflag) && \
-	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" $(BUILD_MAKEENV) && \
+	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" $(%(mmake)-make-env) && \
 	    $(%(mmake)-install_command) && \
 	    $(TOUCH) $@ -r $^; \
 	fi
 
 $(%(mmake)-pkgdir)/.files-touched:
 	%mkdirs_q $(%(mmake)-pkgdir)
-	@find %(srcdir) -exec $(TOUCH) -c -r $(BUILD_SRCDIR)/configure '{}' \; && \
+	@find %(srcdir) -exec $(TOUCH) -c -r $(%(mmake)-cfg-srcdir)/configure '{}' \; && \
 	$(TOUCH) $@
 
 #MM
@@ -3080,13 +3080,13 @@ $(%(mmake)-pkgdir)/.files-touched:
 #MM
 %(mmake)-configure : $(%(mmake)-configflag)
 
-$(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo $(BUILD_SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+$(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo $(%(mmake)-cfg-srcdir) | sed 's/^\(.\):\//\/\1\//')
 $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	@$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	@cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	$(CONFIG_ENV) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) && \
+	$(%(mmake)-cfg-env) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) && \
 	$(TOUCH) $@
 
 #MM
