@@ -46,6 +46,8 @@ VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
 
+    LOCK_ENGINE
+
     if (visible)
     {
         drmModeSetCursor(nvdev->fd, gfxdata->selectedcrtcid, 
@@ -56,6 +58,8 @@ VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
         drmModeSetCursor(nvdev->fd, gfxdata->selectedcrtcid, 
             0, 64, 64);
     }
+
+    UNLOCK_ENGINE
 }
 
 static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
@@ -66,11 +70,14 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
     drmModeResPtr drmmode = NULL;
     LONG i; ULONG crtc_id;
 
+    LOCK_ENGINE
+
     /* Get all components information */
     drmmode = drmModeGetResources(fd);
     if (!drmmode)
     {
         D(bug("[Nouveau] Not able to get resources information\n"));
+        UNLOCK_ENGINE
         return FALSE;
     }
     
@@ -96,6 +103,7 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
     {
         D(bug("[Nouveau] No connected connector\n"));
         drmModeFreeResources(drmmode);
+        UNLOCK_ENGINE
         return FALSE;
     }
 
@@ -112,10 +120,12 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
         drmModeFreeConnector(*selectedconnector);
         *selectedconnector = NULL;
         drmModeFreeResources(drmmode);
+        UNLOCK_ENGINE
         return FALSE;
     }
     
     drmModeFreeResources(drmmode);
+    UNLOCK_ENGINE
     return TRUE;
 }    
 
@@ -185,12 +195,14 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
     OOP_Object * gfx = NULL;
     LONG ret;
 
+    LOCK_ENGINE
     LOCK_BITMAP
     
     /* Check if passed bitmap has been registered as framebuffer */
     if (bmdata->fbid == 0)
     {
         UNLOCK_BITMAP
+        UNLOCK_ENGINE
         return FALSE;
     }
     
@@ -205,7 +217,8 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
 	        output_count, gfxdata->selectedmode);
 
     UNLOCK_BITMAP
-    
+    UNLOCK_ENGINE
+
     if (ret) return FALSE; else return TRUE;
 }
 
@@ -225,8 +238,9 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     IPTR pixel, e;
     IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
     LONG ret;
-    
-    
+
+    LOCK_ENGINE
+
     OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
     gfx = (OOP_Object *)e;
     gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
@@ -240,6 +254,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     if (modeid == vHidd_ModeID_Invalid)
     {
         D(bug("[Nouveau] Invalid ModeID\n"));
+        UNLOCK_ENGINE
         return FALSE;
     }
 
@@ -288,6 +303,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     if (!gfxdata->selectedmode)
     {
         D(bug("[Nouveau] Not able to select mode\n"));
+        UNLOCK_ENGINE
         return FALSE;
     }
 
@@ -304,6 +320,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
         if (ret)
         {
             D(bug("[Nouveau] Not able to add framebuffer\n"));
+            UNLOCK_ENGINE
             return FALSE;
         }
     }
@@ -313,11 +330,13 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     if (!HIDDNouveauShowBitmapForSelectedMode(bm))
     {
         D(bug("[Nouveau] Not able to set crtc\n"));
+        UNLOCK_ENGINE
         return FALSE;        
     }
 
     HIDDNouveauShowCursor(gfx, TRUE);
-        
+
+    UNLOCK_ENGINE
     return TRUE;
 }
 
@@ -336,6 +355,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
     if (nouveau_init() < 0)
         return NULL;
 
+    LOCK_ENGINE
+
     nouveau_device_open(&dev, "");
     nvdev = nouveau_device(dev);
 
@@ -343,6 +364,9 @@ OOP_Object * METHOD(Nouveau, Root, New)
     if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
     {
         D(bug("[Nouveau] Not able to select connector and crtc\n"));
+
+        UNLOCK_ENGINE
+
         return NULL;
     }
     
@@ -354,6 +378,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     if (syncs == NULL)
     {
         D(bug("[Nouveau] Not able to read any sync modes\n"));
+        UNLOCK_ENGINE
         return NULL;
     }
     
@@ -464,6 +489,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 break;
             default:
                 /* TODO: report error, how to handle it? */
+                UNLOCK_ENGINE
                 return NULL;
             }
             
@@ -537,10 +563,12 @@ OOP_Object * METHOD(Nouveau, Root, New)
             }
 
         }
+        UNLOCK_ENGINE
 
         return o;
     }
-    
+    UNLOCK_ENGINE
+
     return NULL;
 }
 
@@ -620,7 +648,9 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         BOOL ret = FALSE;
         
         D(bug("[Nouveau] CopyBox 0x%x -> 0x%x\n", msg->src, msg->dest));
- 
+
+        LOCK_ENGINE
+
         LOCK_MULTI_BITMAP
         LOCK_BITMAP_BM(srcdata)
         LOCK_BITMAP_BM(destdata)
@@ -654,6 +684,8 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
 
         UNLOCK_BITMAP_BM(destdata);
         UNLOCK_BITMAP_BM(srcdata);
+
+        UNLOCK_ENGINE
 
         if (ret)
             return;
@@ -772,6 +804,8 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
         if (width > 64) width = 64;
         if (height > 64) height = 64;
 
+        LOCK_ENGINE
+
         /* Map the cursor buffer */
         nouveau_bo_map(gfxdata->cursor, NOUVEAU_BO_WR);
 
@@ -817,6 +851,8 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
         
         /* Show updated cursor */
         HIDDNouveauShowCursor(o, TRUE);
+
+        UNLOCK_ENGINE
     }
 
     return TRUE;   
@@ -828,8 +864,10 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorPos)
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
 
+    LOCK_ENGINE
     drmModeMoveCursor(nvdev->fd, gfxdata->selectedcrtcid, msg->x, msg->y);
-    
+    UNLOCK_ENGINE
+
     return TRUE;
 }
 

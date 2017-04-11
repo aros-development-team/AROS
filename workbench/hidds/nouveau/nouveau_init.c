@@ -12,6 +12,7 @@
 
 /* GLOBALS */
 APTR NouveauMemPool;
+struct SignalSemaphore globalLock;
 
 /* This pointer is necessary to limit the number of changes function signatures
    of xf86-video-nouveau codes. Without, carddata needs to be passed to each
@@ -38,6 +39,8 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_BitMap_Nouveau,  &LIBBASE->sd.bitMapNouveauAttrBase },
     { NULL, NULL }
     };
+
+    InitSemaphore(&globalLock);
 
     if (!OOP_ObtainAttrBases(attrbases))
         return FALSE;

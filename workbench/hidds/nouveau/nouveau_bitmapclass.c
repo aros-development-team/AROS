@@ -88,10 +88,13 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;
     InitSemaphore(&bmdata->semaphore);
 
+    LOCK_ENGINE
     /* Creation of buffer object */
     nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
             bmdata->pitch * bmdata->height,
             &bmdata->bo);
+    UNLOCK_ENGINE
+
     if (bmdata->bo == NULL)
         goto exit_fail;
 
@@ -120,6 +123,7 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     D(bug("[Nouveau] Dispose %x\n", o));
 
+    LOCK_ENGINE
     /* Unregister from framebuffer if needed */
     if (bmdata->fbid != 0)
     {
@@ -133,6 +137,7 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         UNMAP_BUFFER
         nouveau_bo_ref(NULL, &bmdata->bo); /* Release reference */
     }
+    UNLOCK_ENGINE
 
     OOP_DoSuperMethod(cl, o, msg);
 }
@@ -295,6 +300,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     struct CardData * carddata = &(SD(cl)->carddata);
     BOOL ret = FALSE;
     
+    LOCK_ENGINE
+
     LOCK_BITMAP
     UNMAP_BUFFER
 
@@ -321,6 +328,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
 
     UNLOCK_BITMAP
 
+    UNLOCK_ENGINE
+
     if (ret)
         return;    
     
@@ -337,6 +346,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
     struct CardData * carddata = &(SD(cl)->carddata);
     BOOL ret = FALSE;
     
+    LOCK_ENGINE
+
     LOCK_BITMAP
     UNMAP_BUFFER
 
@@ -363,6 +374,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
 
     UNLOCK_BITMAP
 
+    UNLOCK_ENGINE
+
     if (ret)
         return;    
     
@@ -374,6 +387,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    LOCK_ENGINE
 
     LOCK_BITMAP
 
@@ -397,6 +412,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
         if (result)
         {
             UNLOCK_BITMAP;
+            UNLOCK_ENGINE;
             return;
         }
     }
@@ -420,12 +436,16 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
     }
 
     UNLOCK_BITMAP
+
+    UNLOCK_ENGINE
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    LOCK_ENGINE
 
     LOCK_BITMAP
 
@@ -449,6 +469,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
         if (result)
         {
             UNLOCK_BITMAP;
+            UNLOCK_ENGINE;
             return;
         }
     }
@@ -472,6 +493,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     }
 
     UNLOCK_BITMAP
+    UNLOCK_ENGINE
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
@@ -479,6 +501,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
+    LOCK_ENGINE
     LOCK_BITMAP
 
     /* Try hardware method NV10-NV40*/
@@ -506,6 +529,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
         {
             MAP_BUFFER; /* FIXME: This is needed to flush execution buffer, atrifact otherwise */
             UNLOCK_BITMAP;
+            UNLOCK_ENGINE;
             return;
         }
     }
@@ -527,6 +551,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
            
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         UNLOCK_BITMAP;
+        UNLOCK_ENGINE;
         return;
     }
 
@@ -557,6 +582,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
     } /* switch(bmdata->bytesperpixel) */
 
     UNLOCK_BITMAP
+    UNLOCK_ENGINE
 }
 
 ULONG METHOD(NouveauBitMap, Hidd_BitMap, BytesPerLine)
@@ -569,7 +595,8 @@ ULONG METHOD(NouveauBitMap, Hidd_BitMap, BytesPerLine)
 BOOL METHOD(NouveauBitMap, Hidd_BitMap, ObtainDirectAccess)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
-
+    
+    LOCK_ENGINE
     LOCK_BITMAP
     MAP_BUFFER
 
@@ -586,6 +613,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, ReleaseDirectAccess)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
 
     UNLOCK_BITMAP
+    UNLOCK_ENGINE
 }
 
 #define COMPLEMENT_JAM2_DECISION_BLOCK                                              \
@@ -636,6 +664,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
                 fg_green = color.green >> 8;
                 fg_blue  = color.blue >> 8;
                 
+                LOCK_ENGINE
                 LOCK_BITMAP
                 UNMAP_BUFFER
                 
@@ -648,6 +677,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
                 ReleaseSemaphore(&carddata->gartsemaphore);
                 MAP_BUFFER; /* FIXME: This is needed to flush execution buffer, atrifact otherwise */
                 UNLOCK_BITMAP
+                UNLOCK_ENGINE
 
                 if (result) return;
             }

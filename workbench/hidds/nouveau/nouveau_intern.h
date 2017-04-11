@@ -5,6 +5,7 @@
     $Id$
 */
 
+#include <exec/semaphores.h>
 #include <hidd/gfx.h>
 #include <hidd/i2c.h>
 #include <hidd/gallium.h>
@@ -25,6 +26,8 @@
 #ifndef __OOP_NOATTRBASES__
 extern OOP_AttrBase HiddGfxNouveauAttrBase;
 #endif
+
+extern struct SignalSemaphore globalLock;
 
 enum
 {
@@ -214,6 +217,9 @@ LIBBASETYPE
 #define BASE(lib)                   ((LIBBASETYPEPTR)(lib))
 
 #define SD(cl)                      (&BASE(cl->UserData)->sd)
+
+#define LOCK_ENGINE                 { ObtainSemaphore(&globalLock); }
+#define UNLOCK_ENGINE               { ReleaseSemaphore(&globalLock); }
 
 #define LOCK_BITMAP                 { ObtainSemaphore(&bmdata->semaphore); }
 #define UNLOCK_BITMAP               { ReleaseSemaphore(&bmdata->semaphore); }

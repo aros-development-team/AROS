@@ -24,6 +24,7 @@
 #include "nouveau_intern.h"
 #include "nouveau_class.h"
 #include <proto/oop.h>
+#include <proto/exec.h>
 
 #undef HiddBitMapAttrBase
 #define HiddBitMapAttrBase  (SD(cl)->bitMapAttrBase)
@@ -872,6 +873,8 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
     srcdata.bytesperpixel = 4;
     srcdata.pitch = gartpitch;
 
+    LOCK_ENGINE
+
     /* Render using 3D engine */
     switch(carddata->architecture)
     {
@@ -892,6 +895,8 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
             0, 0, x, y, width, height, BLENDOP_ALPHA);
         break;
     }
+
+    UNLOCK_ENGINE
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
