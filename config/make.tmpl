@@ -2461,11 +2461,11 @@ GLOB_MKDIRS += %(dir)
 cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) compiler=target modulename=
 
 ifeq (%(files) %(linklibfiles) %(linklibobjs) %(asmfiles),)
-  $(error no files or asmfiles given)
+    $(error no files or asmfiles given)
 endif
 
 ifneq (%(cxxfiles),)
-  $(error cxx support is TODO)
+    $(error cxx support is TODO)
 endif
 
 %buildid targets="%(mainmmake)-%(arch)"
@@ -2526,7 +2526,7 @@ GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
 %(mainmmake)-%(arch)-quick :: $(BD_OBJS$(BDID))
 
 ifeq ($(findstring %(compiler),host kernel target),)
-  $(error unknown compiler %(compiler))
+    $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
@@ -2663,7 +2663,6 @@ endif
 
 $(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
 	@$(CP) $< $@
-
 
 ifeq (%(compiler),target)
 
@@ -2843,7 +2842,7 @@ endif
 %(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
 
 %(mmake)-install_opts := prefix=$(%(mmake)-prefix) \
-	exec_prefix=$(%(mmake)-prefix) %(install_env)
+        exec_prefix=$(%(mmake)-prefix) %(install_env)
 
 # Check if chosen compiler is valid
 ifeq ($(findstring %(compiler),host target kernel),)
@@ -2897,9 +2896,9 @@ else
     %(mmake)-PROGDIR := $(%(mmake)-aros_prefix)
     
     %(mmake)-install_opts := bindir=$(%(mmake)-prefix) \
-	sbindir=$(%(mmake)-prefix) \
-	libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) \
-	oldincludedir=$(AROS_INCLUDES) %(install_env)
+        sbindir=$(%(mmake)-prefix) \
+        libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) \
+        oldincludedir=$(AROS_INCLUDES) %(install_env)
 endif
 
 ifneq ($(DEBUG),yes)
@@ -3015,10 +3014,18 @@ ifeq (%(use_build_env),yes)
 endif
 
 ifneq ("$(wildcard %(srcdir)/Makefile)","")
-    BUILD_MAKEENV := -C %(srcdir)
+$(%(mmake)-pkgdir)/.local-copy:
+	%mkdirs_q $(%(mmake)-pkgdir)
+	@$(ECHO) "Copying Local-Build Sources to  \`$(patsubst $(TOP)/%,%,$(abspath $(%(mmake)-pkgdir)))'"
+	@$(CP) -Rf "%(srcdir)/." $(%(mmake)-pkgdir)/ && $(TOUCH) $@
+
+$(%(mmake)-pkgdir)/.files-touched : $(%(mmake)-pkgdir)/.local-copy
+
+    BUILD_SRCDIR=$(%(mmake)-pkgdir)
 else
-    BUILD_MAKEENV := -C $(%(mmake)-pkgdir)
+    BUILD_SRCDIR=%(srcdir)
 endif
+BUILD_MAKEENV := -C $(%(mmake)-pkgdir)
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
@@ -3055,16 +3062,15 @@ endif
 
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
 	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(BUILD_MAKEENV); then \
-            $(RM)  $(%(mmake)-installflag) && \
-	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)"\
-	      $(BUILD_MAKEENV) && \
+	    $(RM) $(%(mmake)-installflag) && \
+	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" $(BUILD_MAKEENV) && \
 	    $(%(mmake)-install_command) && \
 	    $(TOUCH) $@ -r $^; \
-        fi
+	fi
 
 $(%(mmake)-pkgdir)/.files-touched:
 	%mkdirs_q $(%(mmake)-pkgdir)
-	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/configure '{}' \; && \
+	@find %(srcdir) -exec $(TOUCH) -c -r $(BUILD_SRCDIR)/configure '{}' \; && \
 	$(TOUCH) $@
 
 #MM
@@ -3074,14 +3080,13 @@ $(%(mmake)-pkgdir)/.files-touched:
 #MM
 %(mmake)-configure : $(%(mmake)-configflag)
 
-$(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
+$(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo $(BUILD_SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
-	$(RM) $@
+	@$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
-	cd $(%(mmake)-pkgdir) && \
+	@cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	$(CONFIG_ENV) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) \
-	    %(extraoptions) && \
+	$(CONFIG_ENV) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) && \
 	$(TOUCH) $@
 
 #MM
@@ -3166,13 +3171,13 @@ endif
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
 $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
-	if ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
-            $(RM)  $(%(mmake)-installflag) && \
+	$(IF) ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
+	    $(RM)  $(%(mmake)-installflag) && \
 	    $(MAKE) -C $(%(mmake)-pkgdir) %(maketarget) && \
 	    cd $(%(mmake)-pkgdir) && \
 	    cmake %(installoptions) -P cmake_install.cmake && \
 	    $(TOUCH) $@ -r $^; \
-        fi
+	fi
 
 $(%(mmake)-pkgdir)/.files-touched:
 	%mkdirs_q $(%(mmake)-pkgdir)
@@ -3445,15 +3450,15 @@ endif
 #the package got installed would not exist anymore. 
 #We work this around by using an if statement to manually check the mtimes.
 $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
-	@$(IF) test $(%(mmake)-installflag) -nt $@ || ! test -f $@; then \
-        $(RM) $@ ; \
-        $(ECHO) "Building   \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" ; \
-        mkdir -p "$(DISTDIR)/Packages" ; \
-        mkdir -p "$(%(mmake)-prefix)" ; \
-        cd $(%(mmake)-%(subpackage)-package-dir) ; \
-        tar -cvf $(%(mmake)-%(subpackage)-package-basename).tar * ; \
-        bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar ; \
-    fi
+	@$(IF) $(TEST) $(%(mmake)-installflag) -nt $@ || ! $(TEST) -f $@; then \
+	    $(RM) $@ ; \
+	    $(ECHO) "Building   \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" ; \
+	    mkdir -p "$(DISTDIR)/Packages" ; \
+	    mkdir -p "$(%(mmake)-prefix)" ; \
+	    cd $(%(mmake)-%(subpackage)-package-dir) ; \
+	    tar -cvf $(%(mmake)-%(subpackage)-package-basename).tar * ; \
+	    bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar ; \
+	fi
 %end
 #------------------------------------------------------------------------------
 
