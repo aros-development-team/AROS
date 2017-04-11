@@ -193,9 +193,11 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
         return NULL;
     }
 
+    LOCK_ENGINE
 
     nvws = CALLOC_STRUCT(HiddNouveauWinSys);
     if (!nvws) {
+        UNLOCK_ENGINE
         return NULL;
     }
     ws = &nvws->base.base;
@@ -204,6 +206,7 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     nvws->pscreen = init(ws, dev);
     if (!nvws->pscreen) {
         ws->destroy(ws);
+        UNLOCK_ENGINE
         return NULL;
     }
     
@@ -211,7 +214,9 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     
     /* Preserve pointer to HIDD driver */
     nvws->base.driver = o;
-    
+
+    UNLOCK_ENGINE
+
     return nvws->pscreen;
 }
 
@@ -229,6 +234,8 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
 
     if (!HIDDNouveauWrapResource(carddata, msg->resource, &srcdata))
         return;
+
+    LOCK_ENGINE
 
     /* srcdata does not require a lock, because it's a local object that is
        access only by one task at a time */
@@ -266,4 +273,6 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
 
 
     UNLOCK_BITMAP_BM(dstdata)
+
+    UNLOCK_ENGINE
 }
