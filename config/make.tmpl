@@ -3453,8 +3453,8 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
 	@$(IF) $(TEST) $(%(mmake)-installflag) -nt $@ || ! $(TEST) -f $@; then \
 	    $(RM) $@ ; \
 	    $(ECHO) "Building   \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" ; \
-	    mkdir -p "$(DISTDIR)/Packages" ; \
-	    mkdir -p "$(%(mmake)-prefix)" ; \
+	    $(MKDIR) -p "$(DISTDIR)/Packages" ; \
+	    $(MKDIR) -p "$(%(mmake)-prefix)" ; \
 	    cd $(%(mmake)-%(subpackage)-package-dir) ; \
 	    tar -cvf $(%(mmake)-%(subpackage)-package-basename).tar * ; \
 	    bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar ; \
