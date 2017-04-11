@@ -8,6 +8,7 @@
 
 #include <aros/config.h>
 
+#include <exec/lists.h>
 #include <exec/types.h>
 #include <exec/semaphores.h>
 #include <sys/types.h>
@@ -185,11 +186,7 @@ struct i2c_msg
 };
 
 /* Wait queue handling */
-struct wait_queue_head
-{
-    ULONG dummy;
-};
-typedef struct wait_queue_head wait_queue_head_t;
+typedef struct MinList wait_queue_head_t;
 
 /* Firmware */
 struct firmware
