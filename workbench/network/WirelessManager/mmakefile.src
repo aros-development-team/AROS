@@ -1,0 +1,22 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+WMSUBDIRS :=	patches				\
+		src
+
+.PHONY : wirelessmanager-copydirs
+
+#MM
+wirelessmanager-copydirs :
+	@$(IF) ! $(TEST) -f $(GENDIR)/$(CURDIR)/.dirs-copied ; then \
+	       $(MKDIR) -p "$(GENDIR)/$(CURDIR)" ; \
+	       $(FOR) dir in $(WMSUBDIRS) ; do \
+	           $(ECHO) "Copying   \`$$dir' from \`$(SRCDIR)/$(CURDIR)/' to \`$(GENDIR)/$(CURDIR)/'" ; \
+	           $(CP) -Rf $(addprefix $(SRCDIR)/$(CURDIR)/, $$dir) $(addprefix $(GENDIR)/$(CURDIR)/, $$dir) ; \
+	       done ; \
+	       $(TOUCH) $(GENDIR)/$(CURDIR)/.dirs-copied ; \
+	fi
+
+#MM- workbench-network-wirelessmanager-setup : wirelessmanager-copydirs
+

@@ -1,2 +1,2 @@
-DIR="$( cd "$( dirname "$0" )" && pwd )"
-cp -Rf $DIR/../* ../
+#! /bin/sh
+#  Just to fool the build system into using build_with_configure

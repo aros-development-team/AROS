@@ -3,8 +3,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-network : workbench-network-wirelessmanager
+#MM workbench-network-wirelessmanager : workbench-network-wirelessmanager-setup
 
 %build_with_configure mmake=workbench-network-wirelessmanager\
- install_env="BINDIR=$(AROS_C)" use_build_env=yes
+    	install_env="BINDIR=$(AROS_C)" use_build_env=yes
 
 %common
