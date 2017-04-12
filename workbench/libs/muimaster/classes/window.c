@@ -193,6 +193,39 @@ struct __dummyXFC3__
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))
 
+/****** List.mui/MUIA_Window_ScreenTitle *************************************
+*
+*   NAME
+*       MUIA_Window_ScreenTitle -- (V5) [ISG], STRPTR
+*
+*   FUNCTION
+*       The title shown in the drag bar of the window's screen when the
+*       screen is active. If set to NULL, the screen's default title is shown.
+*       The set string is not copied.
+*
+*   SEE ALSO
+*       MUIA_Window_Title
+*
+******************************************************************************
+*
+*/
+
+/****** List.mui/MUIA_Window_Title *******************************************
+*
+*   NAME
+*       MUIA_Window_Title -- (V4) [ISG], STRPTR
+*
+*   FUNCTION
+*       The window title, as shown in the drag bar. If set to NULL, no title
+*       is shown. The set string is not copied.
+*
+*   SEE ALSO
+*       MUIA_Window_ScreenTitle
+*
+******************************************************************************
+*
+*/
+
 static void ActivateObject(struct MUI_WindowData *data);
 static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
     struct IntuiMessage *event);
@@ -3043,12 +3076,6 @@ IPTR Window__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     if (data->wd_ChildMenustrip)
         MUI_DisposeObject(data->wd_ChildMenustrip);
 
-    if (data->wd_Title)
-        FreeVec(data->wd_Title);
-
-    if (data->wd_ScreenTitle)
-        FreeVec(data->wd_ScreenTitle);
-
     DeletePool(data->wd_MemoryPool);
 
 /*      D(bug(" Window_Dispose(%p) : calling supermethod\n", obj)); */
@@ -3165,18 +3192,14 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_Window_Title:
-            if (data->wd_Title)
-                FreeVec(data->wd_Title);
-            data->wd_Title = StrDup((STRPTR) tag->ti_Data);
+            data->wd_Title = (STRPTR) tag->ti_Data;
             if (data->wd_RenderInfo.mri_Window)
                 SetWindowTitles(data->wd_RenderInfo.mri_Window,
                     data->wd_Title, (CONST_STRPTR) ~ 0);
             break;
 
         case MUIA_Window_ScreenTitle:
-            if (data->wd_ScreenTitle)
-                FreeVec(data->wd_ScreenTitle);
-            data->wd_ScreenTitle = StrDup((STRPTR) tag->ti_Data);
+            data->wd_ScreenTitle = (STRPTR) tag->ti_Data;
             if (data->wd_RenderInfo.mri_Window)
                 SetWindowTitles(data->wd_RenderInfo.mri_Window,
                     (CONST_STRPTR) ~ 0, data->wd_ScreenTitle);
@@ -3993,8 +4016,8 @@ IPTR Window__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 
 
 /**************************************************************************
- This adds the the control char handler and also do the MUIA_CycleChain
- stuff. Orginal MUI does this in an other way.
+ This adds the the control char handler and also does the MUIA_CycleChain
+ stuff. Orginal MUI does this another way.
 **************************************************************************/
 IPTR Window__MUIM_AddControlCharHandler(struct IClass *cl, Object *obj,
     struct MUIP_Window_AddControlCharHandler *msg)
