@@ -3,17 +3,23 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Demos Developer Devs Fonts \
-         Libs Locale Prefs Storage System \
-         Tools Utilities WBStartup \
+BASEICONS := Developer Devs Fonts \
+         Locale Prefs System \
+         Tools Utilities
+ADDITIONALICONS := Demos \
+         Libs Storage \
+         WBStartup \
          Rexxc
 
-#MM- iconset-Gorilla-icons-clean : iconset-Gorilla-icons-aros-clean
-#MM- iconset-Gorilla-icons : iconset-Gorilla-icons-aros
-#MM iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-livecd
+#MM- iconset-Gorilla-wbench-icons-clean : iconset-Gorilla-wbench-icons-aros-clean iconset-Gorilla-additional-icons-aros-clean
+#MM- iconset-Gorilla-wbench-icons : iconset-Gorilla-wbench-icons-aros
+#MM- iconset-Gorilla-wbench-icons : iconset-Gorilla-additional-icons-aros
+#MM iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-livecd
 
-%build_icons mmake=iconset-Gorilla-icons-aros icons=$(ICONS) dir=$(AROSDIR)
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros icons=$(BASEICONS) dir=$(AROSDIR)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros icons=$(ADDITIONALICONS) dir=$(AROSDIR)
 
 #MM
-iconset-Gorilla-icons-aros-livecd :  
+iconset-Gorilla-wbench-icons-aros-livecd :  
 	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/LiveCD.info.src $(SRCDIR)/$(CURDIR)/LiveCD.png $(AROSDIR)/disk.info

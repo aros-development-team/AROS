@@ -3,16 +3,23 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := About FixFonts Format FTManager SysMon WorkBook Snoopy Shell Find
-IMGS  := DiskImageGUI-1.png DiskImageGUI-2.png
-DSKIM := DiskImageGUI
+BASEICONS := About FixFonts Format FTManager WorkBook Shell
+ADDITIONALICONS := SysMon Snoopy Find
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-system-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-system
-#MM  iconset-Gorilla-icons-aros-system : iconset-Gorilla-icons-aros-system-diskimage
+DISKIMAGESRCS := DiskImageGUI-1.png DiskImageGUI-2.png
+DISKIMAGEICON := DiskImageGUI
 
-%build_icons mmake=iconset-Gorilla-icons-aros-system icons=$(ICONS) \
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-system-clean
+#MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-system-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-system
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-system
+#MM  iconset-Gorilla-additional-icons-aros-system : iconset-Gorilla-additional-icons-aros-system-diskimage
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-system icons=$(BASEICONS) \
              dir=$(AROS_SYSTEM)
 
-%build_icons mmake=iconset-Gorilla-icons-aros-system-diskimage \
-             icons=$(DSKIM) dir=$(AROS_SYSTEM) image=$(IMGS)
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-system icons=$(ADDITIONALICONS) \
+             dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-system-diskimage \
+             icons=$(DISKIMAGEICON) dir=$(AROS_SYSTEM) image=$(DISKIMAGESRCS)

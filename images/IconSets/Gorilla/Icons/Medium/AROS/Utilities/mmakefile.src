@@ -3,9 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Clock Help Installer More MultiView
+BASEICONS := Clock Help Installer More MultiView
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-utilities-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-utilities
-%build_icons mmake=iconset-Gorilla-icons-aros-utilities icons=$(ICONS) \
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-utilities-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-utilities
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-utilities icons=$(BASEICONS) \
              dir=$(AROS_UTILITIES)

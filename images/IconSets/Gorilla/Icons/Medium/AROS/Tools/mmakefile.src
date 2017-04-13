@@ -3,11 +3,17 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Calculator HDToolBox InstallAROS Editor Commodities WiMP \
-         ScreenGrabber ShowConfig SysExplorer KeyShow InitPrinter PrintFiles GraphicDump \
-         BoingIconBar
+BASEICONS := Calculator HDToolBox InstallAROS Editor Commodities \
+         ShowConfig KeyShow InitPrinter PrintFiles GraphicDump
+ADDITIONALICONS := WiMP ScreenGrabber SysExplorer BoingIconBar
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-tools-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-tools
-%build_icons mmake=iconset-Gorilla-icons-aros-tools icons=$(ICONS) \
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-tools-clean
+#MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-tools-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-tools
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-tools
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-tools icons=$(BASEICONS) \
+             dir=$(AROS_TOOLS)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-tools icons=$(ADDITIONALICONS) \
              dir=$(AROS_TOOLS)

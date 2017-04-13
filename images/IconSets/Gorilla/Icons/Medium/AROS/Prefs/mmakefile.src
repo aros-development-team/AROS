@@ -3,11 +3,18 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := AHI Appearance Boot Time Locale Serial Presets Input IControl Font \
- ReqTools Wanderer Zune ScreenMode Editor Trackdisk PSI Network Trident \
- OpenURL Pointer Printer BoingIconBar
+BASEICONS := Time Locale Serial Presets Input IControl Font ScreenMode Pointer Printer
+ADDITIONALICONS := AHI Appearance Boot  \
+ ReqTools Wanderer Zune Editor Trackdisk PSI Network Trident \
+ OpenURL BoingIconBar
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs
-%build_icons mmake=iconset-Gorilla-icons-aros-prefs icons=$(ICONS) \
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-prefs-clean
+#MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-prefs-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-prefs
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-prefs
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs icons=$(BASEICONS) \
+             dir=$(AROS_PREFS)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-prefs icons=$(ADDITIONALICONS) \
              dir=$(AROS_PREFS)
