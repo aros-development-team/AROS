@@ -3056,9 +3056,13 @@ AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
 
 # Generic build tools (metamake, etc)
 AC_CONFIG_COMMANDS([genmf-executable-support],
-    [chmod a+x ${aros_tools_dir}/uname],
-    [chmod a+x ${aros_tools_dir}/genmf.py],
-    [aros_tools_dir=${aros_tools_dir}]
+    [
+        chmod a+x ${aros_tools_dir}/uname
+        chmod a+x ${aros_tools_dir}/genmf.py
+    ],
+    [
+        aros_tools_dir=${aros_tools_dir}
+    ]
 )
 AC_CONFIG_FILES(
     Makefile

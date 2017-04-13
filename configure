@@ -15844,7 +15844,10 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 #
 # INIT-COMMANDS
 #
-chmod a+x ${aros_tools_dir}/genmf.py
+
+        aros_tools_dir=${aros_tools_dir}
+
+
 
         aros_host_exe_suffix=${aros_host_exe_suffix}
         aros_tools_dir=${aros_tools_dir}
@@ -16464,7 +16467,10 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
 
 
   case $ac_file$ac_mode in
-    "genmf-executable-support":C) chmod a+x ${aros_tools_dir}/uname ;;
+    "genmf-executable-support":C)
+        chmod a+x ${aros_tools_dir}/uname
+        chmod a+x ${aros_tools_dir}/genmf.py
+     ;;
     "binutils-support":C)
         prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
         mkdir -p $prefix
