@@ -2,15 +2,13 @@
 #define CLIB_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
 #include <sys/types.h>
 #include <sys/select.h>
-/* Stub macros for 'emulation' of some functions */
-#define select(nfds,rfds,wfds,efds,timeout) WaitSelect(nfds,rfds,wfds,efds,timeout,NULL)
-#define inet_ntoa(addr) Inet_NtoA(((struct in_addr)addr).s_addr)
+
 AROS_LP3(int, socket,
          AROS_LPA(int, domain, D0),
          AROS_LPA(int, type, D1),
@@ -435,4 +433,14 @@ AROS_LP2(LONG, inet_aton,
          LIBBASETYPEPTR, SocketBase, 99, BSDSocket
 );
 #endif /* __CONFIG_ROADSHOW__ */
+
+#if (1)
+/*
+ * Stubs to wrap some *nix socket functions
+ * Should they be protected by __BSD_VISIBLE?
+ */
+#define inet_ntoa(addr) Inet_NtoA(((struct in_addr)addr).s_addr)
+static inline int select(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds, struct timeval *timeout) {return WaitSelect(nfds,rfds,wfds,efds,timeout,NULL);};
+#endif
+
 #endif /* CLIB_BSDSOCKET_PROTOS_H */
