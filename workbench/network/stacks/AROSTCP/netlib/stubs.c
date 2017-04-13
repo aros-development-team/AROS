@@ -7,6 +7,8 @@
  *                       All rights reserved.
  */
 
+#define POSIXC_SELECT
+
 #include <exec/types.h>
 #include <sys/types.h>
 #include <proto/socket.h>
