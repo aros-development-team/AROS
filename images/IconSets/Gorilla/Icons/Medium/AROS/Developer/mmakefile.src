@@ -3,9 +3,16 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Debug Include Lib
+BASEICONS := Debug
+ADDITIONALICONS := Include Lib
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-development-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-development
-%build_icons mmake=iconset-Gorilla-icons-aros-development icons=$(ICONS) \
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-development-clean
+#MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-development-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-development
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-development
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-development icons=$(BASEICONS) \
+             dir=$(AROS_DEVELOPER)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-development icons=$(ADDITIONALICONS) \
              dir=$(AROS_DEVELOPER)

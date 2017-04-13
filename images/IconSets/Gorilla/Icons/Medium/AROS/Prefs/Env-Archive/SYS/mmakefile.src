@@ -21,12 +21,12 @@ ICONS := \
 IMGS := def_AppIcon1.png def_AppIcon2.png
 APPI := def_AppIcon
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-envarc-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs-envarc \
-#MM  iconset-Gorilla-icons-aros-prefs-envarc-appicon
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-prefs-envarc-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-prefs-envarc \
+#MM  iconset-Gorilla-wbench-icons-aros-prefs-envarc-appicon
 
-%build_icons mmake=iconset-Gorilla-icons-aros-prefs-envarc icons=$(ICONS) \
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs-envarc icons=$(ICONS) \
              dir=$(AROS_ENVARC)/SYS
 
-%build_icons mmake=iconset-Gorilla-icons-aros-prefs-envarc-appicon icons=$(APPI) \
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs-envarc-appicon icons=$(APPI) \
              dir=$(AROS_ENVARC)/SYS  image=$(IMGS)

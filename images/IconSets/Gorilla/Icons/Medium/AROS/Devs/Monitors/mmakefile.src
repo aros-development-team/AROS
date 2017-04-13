@@ -6,11 +6,11 @@ include $(SRCDIR)/config/aros.cfg
 STORAGEICONS := Wrapper
 DEVSICONS    := ATI IntelGMA NVidia VMWare
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-devs-monitors-clean iconset-Gorilla-icons-storage-monitors-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-devs-monitors iconset-Gorilla-icons-storage-monitors
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-devs-monitors-clean iconset-Gorilla-wbench-icons-storage-monitors-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-devs-monitors iconset-Gorilla-wbench-icons-storage-monitors
 
-%build_icons mmake=iconset-Gorilla-icons-devs-monitors icons=$(DEVSICONS) image=Wrapper.png \
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors icons=$(DEVSICONS) image=Wrapper.png \
              dir=$(AROS_DEVS)/Monitors
 
-%build_icons mmake=iconset-Gorilla-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
+%build_icons mmake=iconset-Gorilla-wbench-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
              dir=$(AROSDIR)/Storage/Monitors

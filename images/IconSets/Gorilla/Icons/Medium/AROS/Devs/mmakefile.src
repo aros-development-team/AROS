@@ -6,11 +6,11 @@ include $(SRCDIR)/config/aros.cfg
 STORAGEICONS := DataTypes DOSDrivers Drivers Keymaps Monitors Printers
 DEVSICONS := $(STORAGEICONS) Midi
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-devs-clean iconset-Gorilla-icons-aros-storage-clean
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-devs iconset-Gorilla-icons-aros-storage
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-devs-clean iconset-Gorilla-wbench-icons-aros-storage-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-devs iconset-Gorilla-wbench-icons-aros-storage
 
-%build_icons mmake=iconset-Gorilla-icons-aros-devs icons=$(DEVSICONS) \
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-devs icons=$(DEVSICONS) \
              dir=$(AROS_DEVS)
 
-%build_icons mmake=iconset-Gorilla-icons-aros-storage icons=$(STORAGEICONS) \
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-storage icons=$(STORAGEICONS) \
              dir=$(AROSDIR)/Storage

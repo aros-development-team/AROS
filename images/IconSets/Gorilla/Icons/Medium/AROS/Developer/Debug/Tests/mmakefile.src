@@ -5,9 +5,9 @@ include $(SRCDIR)/config/aros.cfg
 
 ICONS := DualPNG
 
-#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-debug-tests-clean
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-debug-tests-clean
 
-#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-debug-tests
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-debug-tests
 
-%build_icons mmake=iconset-Gorilla-icons-aros-debug-tests icons=$(ICONS) \
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-debug-tests icons=$(ICONS) \
              dir=$(AROS_TESTS)/Icon

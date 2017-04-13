@@ -1,6 +1,7 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-complete : iconset-$(AROS_TARGET_ICONSET)-icons
+#MM- workbench : iconset-$(AROS_TARGET_ICONSET)-wbench-icons
+#MM- workbench-complete : iconset-$(AROS_TARGET_ICONSET)-wbench-icons iconset-$(AROS_TARGET_ICONSET)-additional-icons
