@@ -440,7 +440,9 @@ AROS_LP2(LONG, inet_aton,
  * Should they be protected by __BSD_VISIBLE?
  */
 #define inet_ntoa(addr) Inet_NtoA(((struct in_addr)addr).s_addr)
+#ifndef POSIXC_SELECT
 static inline int select(int nfds, fd_set *rfds, fd_set *wfds, fd_set *efds, struct timeval *timeout) {return WaitSelect(nfds,rfds,wfds,efds,timeout,NULL);};
+#endif /* !POSIXC_SELECT */
 #endif
 
 #endif /* CLIB_BSDSOCKET_PROTOS_H */
