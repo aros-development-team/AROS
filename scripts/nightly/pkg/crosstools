@@ -12,7 +12,7 @@ delete  $BUILD_BASE/AROS-CROSSTOOLS
 copy    $SOURCE_AROS $BUILD_BASE/AROS-CROSSTOOLS
 
 cd      $BUILD_BASE/AROS-CROSSTOOLS
-execute ./configure --target=$BUILDTARGET $CONFIGURE_EXTRA --enable-ccache --enable-build-type=nightly $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT
+execute ./configure --target=$BUILDTARGET $CONFIGUREEXTRA --enable-ccache --enable-build-type=nightly $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT
 make    -j $MAKE_JOBS crosstools
 
 cd      $ROOT
