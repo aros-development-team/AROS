@@ -48,7 +48,6 @@
 */
 
 #ifdef AMIGA
-#define POSIXC_SELECT
 #include <clib/netlib_protos.h>
 #include <proto/socket.h>
 #include <proto/dos.h>
