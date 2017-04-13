@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# print usage
+usage() {
+    echo "Usage: $( basename "$0" ) [options] [ -- ] command"
+    echo "Options:"
+    echo "    -s, --kernel-name"
+    echo "    -n, --nodename"
+    echo "    -r, --kernel-release"
+    echo "    -v, --kernel-version"
+    echo "    -m, --machine"
+    echo "    -p, --processor"
+    echo "    -i, --hardware-platform"
+    echo "    -o, --operating-system"
+    echo "        --help"
+    exit 0
+}
+
+[ $# -eq 0 ] &&  echo -n "AROS"
+
+for arg in "$@"; do
+    case "$arg" in
+        -s|--kernel-name) echo -n "AROS";;
+        -n|--nodename) echo -n "localhost";;
+        -r|--kernel-release) echo -n "1";;
+        -v|--kernel-version) echo -n "0";;
+        -m|--machine) echo -n "@aros_target_cpu@";;
+        -p|--processor) echo -n "@aros_target_cpu@";;
+        -i|--hardware-platform) echo -n "@aros_target_cpu@";;
+        -o|--operating-system) echo -n "AmigaOS/AROS";;
+        --help) usage;;
+    esac
+done
+
+echo
