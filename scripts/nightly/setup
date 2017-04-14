@@ -2,8 +2,6 @@
 source $SP/cfg/defaults
 source $SP/cfg/$CFG_NAME
 
-CONFIGURE_EXTRA=
-
 # Determine version
 VERSION=$(date -u +"%Y%m%d")
 BASENAME=AROS-$VERSION
