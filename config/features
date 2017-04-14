@@ -716,6 +716,7 @@ aros_cflags_lto
 aros_cflags_no_builtin_floor
 aros_cflags_fast_math
 aros_cflags_permissive
+aros_cflags_exceptions
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -2712,6 +2713,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some features:
+#  -fexceptions
 #  -fpermissive
 #  -ffast-math
 #  -fno-builtin-floor
@@ -2724,10 +2726,36 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fstrict-aliasing
 #  -funroll-loops
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
+$as_echo_n "checking whether ${CC} accepts -fexceptions... " >&6; }
+CFLAGS=-fexceptions
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_exceptions="yes"
+else
+  aros_exceptions="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_exceptions" >&5
+$as_echo "$aros_exceptions" >&6; }
+if test "x-$aros_exceptions" = "x-yes" ; then
+    aros_cflags_exceptions=-fexceptions
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fpermissive" >&5
 $as_echo_n "checking whether ${CC} accepts -fpermissive... " >&6; }
 CFLAGS=-fpermissive
-
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4708,6 +4736,7 @@ fi
 #
 # export the feature flags...
 #
+
 
 
 
