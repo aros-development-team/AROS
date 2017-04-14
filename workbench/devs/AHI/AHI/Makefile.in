@@ -168,6 +168,6 @@ Makefile.dep:	$(DEPENDENCIES) version.h
 	@echo Making $@
 	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
 
-include Makefile.dep
+-include Makefile.dep
 
 $(wildcard $(srcdir)/translations/*.ct) $(srcdir)/ahiprefs.ct:	ahiprefs.cd
