@@ -1816,7 +1816,10 @@ GLOB_MKDIRS += %(objdir)
 # Do not parse these statements if metatarget is not appropriate
 ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
 
-include %(objdir)/Makefile.%(modname)%(modtype)
+# suppress makes warning that the Makefile doesnt yet exist
+# on early passes (it will generate the file as needed though)
+# when we include it.
+-include %(objdir)/Makefile.%(modname)%(modtype)
 
 BD_DEFMODDIR := $(%(modname)_MODDIR)
 ifeq (%(archspecific),yes)
