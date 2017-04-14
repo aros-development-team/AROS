@@ -15,5 +15,5 @@ ADDITIONALICONS := Bifteck Hardware Tests
 %build_icons mmake=iconset-Gorilla-wbench-icons-aros-debug icons=$(BASEICONS) \
              dir=$(AROS_DEBUG)
 
-%build_icons mmake=iconset-Gorilla-additional-icons-aros-debug icons=$(BASEICONS) \
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-debug icons=$(ADDITIONALICONS) \
              dir=$(AROS_DEBUG)
