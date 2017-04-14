@@ -177,4 +177,4 @@ Makefile.dep:	$(DEPENDENCIES) version.h \
 	@echo Making $@
 	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
 
-include Makefile.dep
+-include Makefile.dep
