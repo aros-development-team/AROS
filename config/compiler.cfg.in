@@ -3,14 +3,18 @@
 # features and warnings for target compilers.
 
 #
+# Standard compiler features ...
+#
+CFLAGS_EXCEPTIONS                       := @aros_cflags_exceptions@
 CFLAGS_PERMISSIVE                       := @aros_cflags_permissive@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
 CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
 
+#
 # LTO/Graphite optimization flags
-
+#
 CFLAGS_LTO                              := @aros_cflags_lto@
 CFLAGS_NO_LTO                           := @aros_cflags_nolto@
 CFLAGS_WHOLE_PROGRAM                    := @aros_cflags_whole_program@
@@ -26,11 +30,15 @@ CFLAGS_UNROLL_LOOPS                     := @aros_cflags_unroll_loops@
 CFLAGS_STRICT_ALIASING                  := @aros_cflags_strictaliasing@
 CFLAGS_NO_STRICT_ALIASING               := @aros_cflags_nostrictaliasing@
 
+#
 # -iquote support
+#
 CFLAGS_IQUOTE                           := @aros_cflags_iquote@
 CFLAGS_IQUOTE_END                       := @aros_cflags_iquote_end@
 
+#
 # -mno-red-zone support
+#
 CFLAGS_NO_RED_ZONE                      := @aros_cflags_no_red_zone@
 
 #
@@ -99,7 +107,7 @@ WARN_FORMAT_ZERO_LENGTH                 := @aros_warnflags_format_zero_length@
 WARN_LTO_TYPE_MISMATCH                  := @aros_warnflags_lto_type_mismatch@
 
 #
-# Disable compiler warning flags
+# "Disable" compiler warning flags
 #
 
 NOWARN_ERROR                            := @aros_nowarnflags_error@

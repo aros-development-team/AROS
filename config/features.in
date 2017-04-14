@@ -34,6 +34,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some features:
+#  -fexceptions
 #  -fpermissive
 #  -ffast-math
 #  -fno-builtin-floor
@@ -45,6 +46,14 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fpeel-loops
 #  -fstrict-aliasing
 #  -funroll-loops
+
+AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
+CFLAGS=-fexceptions
+AC_TRY_COMPILE(,, aros_exceptions="yes", aros_exceptions="no")
+AC_MSG_RESULT($aros_exceptions)
+if test "x-$aros_exceptions" = "x-yes" ; then
+    aros_cflags_exceptions=-fexceptions
+fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fpermissive])
 CFLAGS=-fpermissive
@@ -751,6 +760,7 @@ fi
 #
 # export the feature flags...
 #
+AC_SUBST(aros_cflags_exceptions)
 AC_SUBST(aros_cflags_permissive)
 AC_SUBST(aros_cflags_fast_math)
 AC_SUBST(aros_cflags_no_builtin_floor)
