@@ -216,7 +216,7 @@ Makefile.dep:	$(DEPENDENCIES) $(GENERATED)
 	@echo Making $@
 	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
 
-include Makefile.dep
+-include Makefile.dep
 
 addroutines_ppc.o:	addroutines_ppc.s
 addroutines_68k.o:	addroutines_68k.s
