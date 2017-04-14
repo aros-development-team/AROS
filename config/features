@@ -584,6 +584,8 @@ PACKAGE_URL=
 ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_nowarnflags_tautological_compare
+aros_warnflags_tautological_compare
 aros_nowarnflags_lto_type_mismatch
 aros_warnflags_lto_type_mismatch
 aros_nowarnflags_format_zero_length
@@ -3163,6 +3165,7 @@ fi
 #  -Wreturn-type
 #  -Wformat-zero-length
 #  -Wlto-type-mismatch
+#  -Wtautological-compare
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Werror" >&5
 $as_echo_n "checking whether ${CC} accepts -Werror... " >&6; }
@@ -4733,6 +4736,33 @@ if test "x-$aros_lto_type_mismatch" = "x-yes" ; then
     aros_nowarnflags_lto_type_mismatch=-Wno-lto-type-mismatch
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wtautological-compare" >&5
+$as_echo_n "checking whether ${CC} accepts -Wtautological-compare... " >&6; }
+CFLAGS=-Wtautological-compare
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_tautological_compare="yes"
+else
+  aros_tautological_compare="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_tautological_compare" >&5
+$as_echo "$aros_tautological_compare" >&6; }
+if test "x-$aros_tautological_compare" = "x-yes" ; then
+    aros_warnflags_tautological_compare=-Wtautological-compare
+    aros_nowarnflags_tautological_compare=-Wno-tautological-compare
+fi
+
 #
 # export the feature flags...
 #
@@ -4763,6 +4793,8 @@ fi
 #
 # ...and warning flags...
 #
+
+
 
 
 

@@ -231,6 +231,7 @@ fi
 #  -Wreturn-type
 #  -Wformat-zero-length
 #  -Wlto-type-mismatch
+#  -Wtautological-compare
 
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
 CFLAGS=-Werror
@@ -757,6 +758,15 @@ if test "x-$aros_lto_type_mismatch" = "x-yes" ; then
     aros_nowarnflags_lto_type_mismatch=-Wno-lto-type-mismatch
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wtautological-compare])
+CFLAGS=-Wtautological-compare
+AC_TRY_COMPILE(,, aros_tautological_compare="yes", aros_tautological_compare="no")
+AC_MSG_RESULT($aros_tautological_compare)
+if test "x-$aros_tautological_compare" = "x-yes" ; then
+    aros_warnflags_tautological_compare=-Wtautological-compare
+    aros_nowarnflags_tautological_compare=-Wno-tautological-compare
+fi
+
 #
 # export the feature flags...
 #
@@ -903,6 +913,8 @@ AC_SUBST(aros_warnflags_format_zero_length)
 AC_SUBST(aros_nowarnflags_format_zero_length)
 AC_SUBST(aros_warnflags_lto_type_mismatch)
 AC_SUBST(aros_nowarnflags_lto_type_mismatch)
+AC_SUBST(aros_warnflags_tautological_compare)
+AC_SUBST(aros_nowarnflags_tautological_compare)
     
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in

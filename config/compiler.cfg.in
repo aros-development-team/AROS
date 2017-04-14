@@ -105,6 +105,7 @@ WARN_SIZEOF_POINTER_MEMACCESS           := @aros_warnflags_sizeof_pointer_memacc
 WARN_RETURN_TYPE                        := @aros_warnflags_return_type@
 WARN_FORMAT_ZERO_LENGTH                 := @aros_warnflags_format_zero_length@
 WARN_LTO_TYPE_MISMATCH                  := @aros_warnflags_lto_type_mismatch@
+WARN_TAUTOLOGICAL_COMPARE               := @aros_warnflags_tautological_compare@
 
 #
 # "Disable" compiler warning flags
@@ -170,3 +171,4 @@ NOWARN_SIZEOF_POINTER_MEMACCESS         := @aros_nowarnflags_sizeof_pointer_mema
 NOWARN_RETURN_TYPE                      := @aros_nowarnflags_return_type@
 NOWARN_FORMAT_ZERO_LENGTH               := @aros_nowarnflags_format_zero_length@
 NOWARN_LTO_TYPE_MISMATCH                := @aros_nowarnflags_lto_type_mismatch@
+NOWARN_TAUTOLOGICAL_COMPARE             := @aros_nowarnflags_tautological_compare@
