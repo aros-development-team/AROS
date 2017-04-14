@@ -35,7 +35,7 @@ KERNEL_RESCOMP          := @aros_kernel_rescomp@
 CONFIG_NOWARN_CFLAGS    = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
 CONFIG_WARN_CFLAGS      := @aros_warn_flags@
 CONFIG_NOWARN_CXXFLAGS  = $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@aros_nowarn_flags@),$($(nowarn)))
-CONFIG_WARN_CFLAGS      := $(subst -Werror-implicit-function-declaration,,@aros_warn_flags@)
+CONFIG_WARN_CXXFLAGS    := $(subst -Werror-implicit-function-declaration,,@aros_warn_flags@)
 
 TARGET_SYSROOT          := @aros_config_sysroot@
 KERNEL_SYSROOT          := @aros_kernel_sysroot@
