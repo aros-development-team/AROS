@@ -15120,7 +15120,7 @@ ac_config_headers="$ac_config_headers ${aros_geninc_dir}/host-conf.h:config/host
 # Generic build tools (metamake, etc)
 ac_config_commands="$ac_config_commands genmf-executable-support"
 
-ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in ${aros_targetcfg_dir}/build.cfg:config/build.cfg.in mmake.config compiler/include/mmakefile:compiler/include/mmakefile.in ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py ${aros_tools_dir}/uname:scripts/uname.in tools/collect-aros/env.h"
+ac_config_files="$ac_config_files Makefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in ${aros_targetcfg_dir}/build.cfg:config/build.cfg.in mmake.config compiler/include/mmakefile:compiler/include/mmakefile.in ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname:scripts/uname.in tools/collect-aros/env.h"
 
 
 # Binutils
@@ -15845,6 +15845,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 # INIT-COMMANDS
 #
 
+        AROS_CROSSTOOLSDIR=${AROS_CROSSTOOLSDIR}
         aros_tools_dir=${aros_tools_dir}
 
 
@@ -15903,7 +15904,7 @@ do
     "compiler/include/mmakefile") CONFIG_FILES="$CONFIG_FILES compiler/include/mmakefile:compiler/include/mmakefile.in" ;;
     "${aros_targetcfg_dir}/make.defaults") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in" ;;
     "${aros_tools_dir}/genmf.py") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py" ;;
-    "${aros_tools_dir}/uname") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/uname:scripts/uname.in" ;;
+    "${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname") CONFIG_FILES="$CONFIG_FILES ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname:scripts/uname.in" ;;
     "tools/collect-aros/env.h") CONFIG_FILES="$CONFIG_FILES tools/collect-aros/env.h" ;;
     "binutils-support") CONFIG_COMMANDS="$CONFIG_COMMANDS binutils-support" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-${aros_ld}:scripts/aros-ld.in" ;;
@@ -16468,7 +16469,7 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
 
   case $ac_file$ac_mode in
     "genmf-executable-support":C)
-        chmod a+x ${aros_tools_dir}/uname
+        chmod a+x ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname
         chmod a+x ${aros_tools_dir}/genmf.py
      ;;
     "binutils-support":C)

@@ -3057,10 +3057,11 @@ AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
 # Generic build tools (metamake, etc)
 AC_CONFIG_COMMANDS([genmf-executable-support],
     [
-        chmod a+x ${aros_tools_dir}/uname
+        chmod a+x ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname
         chmod a+x ${aros_tools_dir}/genmf.py
     ],
     [
+        AROS_CROSSTOOLSDIR=${AROS_CROSSTOOLSDIR}
         aros_tools_dir=${aros_tools_dir}
     ]
 )
@@ -3076,7 +3077,7 @@ AC_CONFIG_FILES(
     compiler/include/mmakefile:compiler/include/mmakefile.in
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
-    ${aros_tools_dir}/uname:scripts/uname.in
+    ${AROS_CROSSTOOLSDIR}/${aros_target_cpu}-aros-uname:scripts/uname.in
     tools/collect-aros/env.h
 )
 
