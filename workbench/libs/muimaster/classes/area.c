@@ -1055,17 +1055,14 @@ static void Area_Draw_handle_background(Object *obj,
         background = data->mad_SelBack;
 
     if (zframe->customframe)
-    {
-        bgtop = _top(obj) + data->mad_TitleHeightAbove;
-    }
+        bgtop = data->mad_TitleHeightAbove;
     else
-    {
-        bgtop = _top(obj) + data->mad_TitleHeightAbove + zframe->itop;
-    }
+        bgtop = data->mad_TitleHeightAbove + zframe->itop;
 
     bgleft = _left(obj);
     bgw = _width(obj);
-    bgh = _height(obj) - bgtop + _top(obj);
+    bgh = _height(obj) - bgtop;
+    bgtop += _top(obj);
 
     r.MinX = bgleft;
     r.MinY = bgtop;
