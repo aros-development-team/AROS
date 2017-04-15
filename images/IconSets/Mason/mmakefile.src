@@ -1,0 +1,6 @@
+# Copyright © 2017, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- iconset-Mason-icons : iconset-Mason-wbench-icons iconset-Mason-additional-icons

@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 ICONS     := def_Disk def_RAM def_Drawer def_Project def_Tool def_Text def_Document def_Harddisk def_CDROM
 ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
 
-#MM- iconset-Mason-icons : masonworkbenchenvicons
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-env
 
-%build_icons mmake=masonworkbenchenvicons icons=$(ICONS) \
+%build_icons mmake=iconset-Mason-wbench-icons-aros-env icons=$(ICONS) \
              dir=$(ICONDIR)

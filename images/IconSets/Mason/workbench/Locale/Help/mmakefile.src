@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 ICONS   := LICENSE
 ICONDIR := $(AROS_HELP)
 
-#MM- iconset-Mason-icons : masonworkbenchlocalehelpicons
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-localehelp
 
-%build_icons mmake=masonworkbenchlocalehelpicons icons=$(ICONS) \
+%build_icons mmake=iconset-Mason-wbench-icons-aros-localehelp icons=$(ICONS) \
              dir=$(ICONDIR)

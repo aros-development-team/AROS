@@ -4,10 +4,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS     := Debug Commodities Calculator HDToolBox WiMP
+ICONS     := Commodities Calculator HDToolBox WiMP
 ICONDIR   := $(AROSDIR)/Tools
 
-#MM- iconset-Mason-icons : masonworkbenchtoolicons
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-tools
 
-%build_icons mmake=masonworkbenchtoolicons icons=$(ICONS) \
+%build_icons mmake=iconset-Mason-wbench-icons-aros-tools icons=$(ICONS) \
              dir=$(ICONDIR)
