@@ -1869,8 +1869,8 @@ endif
 endif
 
 %rule_genmodule_genlibdefs modname="%(modname)" modtype="%(modtype)" \
-		 	   modsuffix="%(modsuffix)" targetdir="%(objdir)/include" \
-		 	   conffile="%(conffile)" version="%(version)"
+    modsuffix="%(modsuffix)" targetdir="%(objdir)/include" \
+    conffile="%(conffile)" version="%(version)"
 
 $(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
 $(BD_DEFLIBDEFSINC) :
@@ -1883,8 +1883,8 @@ GLOB_MKDIRS += %(objdir)/include
 ## Extra genmodule src files generation
 ## 
 %rule_genmodule_files modname="%(modname)" modtype="%(modtype)" \
-		      modsuffix="%(modsuffix)" targetdir="%(objdir)" stubdir="%(objdir)/linklib" \
-		      conffile="%(conffile)"
+    modsuffix="%(modsuffix)" targetdir="%(objdir)" stubdir="%(objdir)/linklib" \
+    conffile="%(conffile)"
 
 GLOB_MKDIRS += %(objdir)/linklib
 
@@ -1898,7 +1898,7 @@ endif
 %(mmake)-fd : $(BD_FDDIR)/%(modname)_lib.fd
 
 %rule_genmodule_fd modname="%(modname)" modtype="%(modtype)" \
-                   modsuffix="%(modsuffix)" targetdir=$(BD_FDDIR) conffile="%(conffile)"
+    modsuffix="%(modsuffix)" targetdir=$(BD_FDDIR) conffile="%(conffile)"
 
 $(BD_FDDIR)/%(modname)_lib.fd : | $(BD_FDDIR)
 
@@ -3263,7 +3263,7 @@ endif
 #MM
 %(mmake) :
 	$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
-        -d %(destination) -po "%(patches_origins)" -p "%(patches_specs)"
+	-d %(destination) -po "%(patches_origins)" -p "%(patches_specs)"
 %end
 #------------------------------------------------------------------------------
 
