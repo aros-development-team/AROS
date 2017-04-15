@@ -4,9 +4,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Prefs Storage System T Tools Utilities Devs Fonts Locale Demos
+ICONS := Demos Developer Devs Fonts Locale Prefs Storage System T Tools Utilities
 
-#MM- iconset-Mason-icons : masonworkbenchicons
+#MM- iconset-Mason-wbench-icons : iconset-Mason-wbench-icons-aros
 
-%build_icons mmake=masonworkbenchicons icons=$(ICONS) \
+%build_icons mmake=iconset-Mason-wbench-icons-aros icons=$(ICONS) \
              dir=$(AROSDIR)

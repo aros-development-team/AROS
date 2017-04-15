@@ -1,0 +1,13 @@
+# $Id$
+#
+# Makefile for Mason's workbench icons
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS     := Sashimi
+ICONDIR   := $(AROSDIR)/Developer/Debug
+
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-debug
+
+%build_icons mmake=iconset-Mason-wbench-icons-aros-debug icons=$(ICONS) \
+             dir=$(ICONDIR)

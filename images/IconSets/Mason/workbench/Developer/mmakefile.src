@@ -1,0 +1,13 @@
+# $Id$
+#
+# Makefile for Mason's workbench icons
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS     := Debug
+ICONDIR   := $(AROSDIR)/Developer
+
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-developer
+
+%build_icons mmake=iconset-Mason-wbench-icons-aros-developer icons=$(ICONS) \
+             dir=$(ICONDIR)

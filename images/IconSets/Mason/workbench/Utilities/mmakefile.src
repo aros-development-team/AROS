@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 ICONS     := Multiview Clock More Installer
 ICONDIR   := $(AROSDIR)/Utilities
 
-#MM- iconset-Mason-icons : masonworkbenchutilityicons
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-utility
 
-%build_icons mmake=masonworkbenchutilityicons icons=$(ICONS) \
+%build_icons mmake=iconset-Mason-wbench-icons-aros-utility icons=$(ICONS) \
              dir=$(ICONDIR)

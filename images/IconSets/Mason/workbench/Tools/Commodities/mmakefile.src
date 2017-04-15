@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 ICONS     := AutoPoint Blanker ClickToFront Exchange Opaque
 ICONDIR   := $(AROSDIR)/Tools/Commodities
 
-#MM- iconset-Mason-icons : masonworkbenchcxicons
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-commodities
 
-%build_icons mmake=masonworkbenchcxicons icons=$(ICONS) \
+%build_icons mmake=iconset-Mason-wbench-icons-aros-commodities icons=$(ICONS) \
              dir=$(ICONDIR)
