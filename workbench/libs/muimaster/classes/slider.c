@@ -339,10 +339,14 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj,
     UWORD knob_frame_state;
     LONG val = 0;
 
+    D(bug("[slider] %s: obj @ 0x%p", __func__, obj);)
+
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
         return FALSE;
+
+    D(bug("[slider] %s: %d,%d->%d,%d (%d,%d)", __func__, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), _mwidth(obj), _mheight(obj));)
 
     if (data->flags & SLIDER_HORIZ)
         data->scale_length = _mwidth(obj);
@@ -359,16 +363,12 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj,
         data->flags |= SLIDER_VALIDOFFSET;
     }
 
+    data->knob_top = _mtop(obj);
+    data->knob_left = _mleft(obj);
     if (data->flags & SLIDER_HORIZ)
-    {
-        data->knob_top = _mtop(obj);
-        data->knob_left = _mleft(obj) + data->knob_offset;
-    }
+        data->knob_left += data->knob_offset;
     else
-    {
-        data->knob_top = _mtop(obj) + data->knob_offset;
-        data->knob_left = _mleft(obj);
-    }
+        data->knob_top += data->knob_offset;
 
     DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
         _mwidth(obj), _mheight(obj), 0, 0, 0);
