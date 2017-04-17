@@ -898,7 +898,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
 
     /* Write all hunks */
     for (i = hunks = 0; i < int_shnum; i++) {
-    	int s;
+    	D(int s;)
 
     	if (hh[i]==NULL || hh[i]->hunk < 0)
     	    continue;
