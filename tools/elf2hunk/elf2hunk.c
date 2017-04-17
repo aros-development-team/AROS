@@ -908,13 +908,14 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
 
     	switch (hh[i]->type) {
     	case HUNK_BSS:
-    	    D(bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4)));
-if (0) {
-    	    for (s = 0; s < int_shnum; s++) {
-    	    	if (hh[s] && hh[s]->type == HUNK_SYMBOL)
-    	    	    sym_dump(hunk_fd, sh, hh, i, s);
-    	    }
-}
+    	    D(
+                bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4));
+                for (s = 0; s < int_shnum; s++) {
+                    if (hh[s] && hh[s]->type == HUNK_SYMBOL)
+                        sym_dump(hunk_fd, sh, hh, i, s);
+                }
+            )
+
     	    wlong(hunk_fd, HUNK_END);
     	    hunks++;
     	    break;
@@ -924,12 +925,12 @@ if (0) {
     	    err = write(hunk_fd, hh[i]->data, ((hh[i]->size + 4)/4)*4);
     	    if (err < 0)
     	    	return EXIT_FAILURE;
-if (0) {
-    	    for (s = 0; s < int_shnum; s++) {
-    	    	if (hh[s] && hh[s]->type == HUNK_SYMBOL)
-    	    	    sym_dump(hunk_fd, sh, hh, i, s);
-    	    }
-}
+            D(
+                for (s = 0; s < int_shnum; s++) {
+                    if (hh[s] && hh[s]->type == HUNK_SYMBOL)
+                        sym_dump(hunk_fd, sh, hh, i, s);
+                }
+            )
     	    reloc_dump(hunk_fd, hh, i);
     	    wlong(hunk_fd, HUNK_END);
     	    D(bug("\tHUNK_END\n"));
@@ -965,6 +966,14 @@ error:
 
 static int copy(const char *src, const char *dst, int flags);
 
+static BOOL valid_dir(const char *dir)
+{
+    /* Don't convert anything in a Developer directory */
+    if (strcasecmp(dir, "Developer") == 0)
+            return FALSE;
+    return TRUE;
+}
+
 static int copy_dir(const char *src, const char *dst, int flags)
 {
     DIR *sdir;
@@ -997,8 +1006,8 @@ static int copy_dir(const char *src, const char *dst, int flags)
             (strcmp(de->d_name, "..") == 0))
             continue;
 
-        /* Don't convert anything in a Development directory */
-        if (strcasecmp(de->d_name, "Developer") == 0)
+        /* Don't convert anything if its an invalid directory */
+        if (!valid_dir(de->d_name))
             eflags |= F_NOCONVERT;
 
         strncpy(sp, de->d_name, sleft);
