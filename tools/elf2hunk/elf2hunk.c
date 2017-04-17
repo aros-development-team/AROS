@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -998,7 +998,7 @@ static int copy_dir(const char *src, const char *dst, int flags)
             continue;
 
         /* Don't convert anything in a Development directory */
-        if (strcasecmp(de->d_name, "Development") == 0)
+        if (strcasecmp(de->d_name, "Developer") == 0)
             eflags |= F_NOCONVERT;
 
         strncpy(sp, de->d_name, sleft);
