@@ -1,6 +1,8 @@
 #!/bin/zsh
 # Creates linux-x86_64 "hosted" binary packages.
 
+CONFIGUREEXTRA="--with-binutils-version=2.25 --with-gcc-version=6.3.0"
+
 BUILDTARGET=linux-x86_64
 
 source $SP/pkg/hosted
