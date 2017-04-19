@@ -20,4 +20,4 @@ AHI_OPTIONS=--with-os-includedir=$(AROS_INCLUDES)
 
 %build_with_configure mmake=workbench-devs-AHI prefix=$(EXEDIR) \
     extraoptions="$(AHI_OPTIONS)" \
-    extracflags="$(AHI_CFLAGS)"
+    extracflags="$(AHI_CFLAGS)" gnuflags=no
