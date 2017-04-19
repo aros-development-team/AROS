@@ -2812,7 +2812,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
     extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
     install_target=install preconfigure= postconfigure= postinstall= \
-    config_env_extra= install_env= use_build_env=no gnuflags=yes
+    config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -2982,9 +2982,12 @@ endif
         TARGET_RANLIB="$(strip $(RANLIB))" \
         TARGET_STRIP="$(strip $(STRIP_PLAIN))" \
         TARGET_NM="$(strip $(NM_PLAIN))"
-ifeq (%(gnuflags),yes)
+ifeq (%(buildflags),yes)
     %(mmake)-config_opts += --target=$(AROS_TARGET_CPU)-aros
-    %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) --host=$(AROS_TARGET_CPU)-aros
+    %(mmake)-config_opts += --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)
+    %(mmake)-config_opts += --host=$(AROS_TARGET_CPU)-aros
+endif
+ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --without-pic --disable-shared
     %(mmake)-config_opts += --disable-nls --without-x
 endif
