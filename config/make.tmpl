@@ -1,10 +1,10 @@
 #############################################################################
 #############################################################################
 ##                                                                         ##
-## Here are the mmakefile macros that are used as commands in the body     ##
-## of a make rule.                                                         ##
-## They are used to help the portability of mmakefiles to different        ##
-## platforms and also will handle the error handling in a standard way.    ##
+## AROS MetaMake Template File                                             ##
+## This file defines the macros/templates used by the AROS build system.   ##
+## They are used to ease writing of portable mmakefiles for different      ##
+## platforms, and will also perform error handling in a standard way.      ##
 ##                                                                         ##
 #############################################################################
 #############################################################################
@@ -2944,11 +2944,12 @@ ifeq (%(compiler),target)
         CXX="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
         LD="$(strip $(TARGET_LD))"
 ifeq (%(crossbuild),yes)
-    %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
-        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
+        CXXFLAGS="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))"
 else
-    %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
-        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CXXFLAGS="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CPPFLAGS="$(strip $(TARGET_CPPFLAGS))"
 endif
     %(mmake)-cfg-env += LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CC_FOR_BUILD="$(strip $(HOST_DEF_CC))" \
@@ -2958,15 +2959,15 @@ endif
         LD_FOR_BUILD="$(strip $(HOST_LD))" \
         LDFLAGS_FOR_BUILD="$(strip $(HOST_LDFLAGS) $(%(mmake)-s_flag))" \
         CC_FOR_HOST="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
-        CFLAGS_FOR_HOST="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CFLAGS_FOR_HOST="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CXX_FOR_HOST="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_HOST="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CXXFLAGS_FOR_HOST="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         LD_FOR_HOST="$(strip $(TARGET_LD))" \
         LDFLAGS_FOR_HOST="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CC_FOR_TARGET="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
-        CFLAGS_FOR_TARGET="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CFLAGS_FOR_TARGET="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CXX_FOR_TARGET="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_TARGET="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CXXFLAGS_FOR_TARGET="$(strip $(ISA_FLAGS) $(CPPFLAGS) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         LD_FOR_TARGET="$(strip $(TARGET_LD))" \
         LDFLAGS_FOR_TARGET="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         AR="$(strip $(AR_PLAIN))" \
@@ -3000,6 +3001,7 @@ ifeq (%(compiler),kernel)
         CFLAGS="$(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)" \
         CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
         CXXFLAGS="$(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag)" \
+        CPPFLAGS="$(KERNEL_CPPFLAGS)" \
         AS="$(KERNEL_AS)" \
         CC_FOR_BUILD="$(HOST_DEF_CC)" \
         CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
@@ -3075,7 +3077,8 @@ endif
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
-	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
+	@$(IF) ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
+	    $(ECHO) "Performing Build from \`$(patsubst $(TOP)/%,%,$(abspath $(%(mmake)-pkgdir)))'" ; \
 	    $(RM) $(%(mmake)-installflag) && \
 	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" $(%(mmake)-make-env) && \
 	    $(%(mmake)-install_command) && \
@@ -3098,6 +3101,7 @@ $(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo $(%(mmake)-cfg-srcdir) | sed
 $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	@$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
+	@$(ECHO) "Performing Configure in \`$(patsubst $(TOP)/%,%,$(abspath $(%(mmake)-pkgdir)))'"
 	@cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	$(%(mmake)-cfg-env) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) && \
@@ -3591,7 +3595,7 @@ PKG_DIR   := $(dir %(file))
 %(mmake)-quick : %(file)
 
 %(file): $(PKG_FILES) | $(PKG_DIR)
-	@$(ECHO) Packaging $@...
+	@$(ECHO) "Packaging $@..."
 	@$(SRCDIR)/tools/package/pkg c $@ $^
 
 %compress_file mmake="%(mmake)" file="%(file)"
@@ -3612,7 +3616,7 @@ GLOB_MKDIRS += $(PKG_DIR)
 %(mmake)-gz-quick : %(file).gz
 
 %(file).gz: %(file)
-	@$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
+	@$(ECHO) "Compressing $(subst $(TARGETDIR)/,,$^)..."
 	@gzip -9 -f $^
 
 %end
