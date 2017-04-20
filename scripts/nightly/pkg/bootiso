@@ -4,7 +4,7 @@
 BOOTLOADER=$1
 WITHCONTRIB=$2
 
-CONFIGURE_OPTIONS=
+CONFIGURE_OPTIONS=""
 
 TARGET=$BUILDTARGET
 if [[ "$VARIANT" != "" ]]; then
@@ -26,14 +26,18 @@ if [[ "$WITHCONTRIB" != "no" ]]; then
     copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 fi
 
-CONFIGURE_OPTIONS="--target=$TARGET --enable-target-variant=$VARIANT $CONFIGUREEXTRA --enable-ccache"
+CONFIGURE_OPTIONS="--target=$TARGET"
+if [[ "$VARIANT" != ""  ]]; then
+     CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --enable-target-variant=$VARIANT"
+fi
+CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS $CONFIGUREEXTRA --enable-ccache"
 if [[ ( "$AROSTOOLCHAININSTALLOPT" != "" ) && -e  $TOOLCHAIN_BASE/$BUILDCPU-aros-gcc ]]; then
      CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS $AROSTOOLCHAININSTALLOPT $AROSTOOLCHAINOPT"
 fi
 CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --with-bootloader=$BOOTLOADER --enable-build-type=nightly $PORTSSOURCESOPT"
 
 cd      $BUILD_BASE/AROS
-execute ./configure $CONFIGURE_OPTIONS
+execute ./configure ${CONFIGURE_OPTIONS}
 make    -j $MAKE_JOBS
 if [[ "$WITHCONTRIB" != "no" ]]; then
     make    -j $MAKE_JOBS contrib
