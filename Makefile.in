@@ -223,7 +223,7 @@ distfiles::
 %-quick %-clean: 
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
-.DEFAULT:
+.DEFAULT: $(TOP)/compiler/include/mmakefile
 	@$(MAKE) $(MKARGS) crosstools
 	@$(MAKE) $(MKARGS) crosstools features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
