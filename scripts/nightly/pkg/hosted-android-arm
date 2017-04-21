@@ -1,7 +1,8 @@
 #!/bin/zsh
 # Creates generic "hosted" binary packages.
 
-BUILDTARGET=android-arm
+BUILDCPU=arm
+BUILDTARGET=android-$BUILDCPU
 
 source $SP/setup
 # The log-name MUST match the name of the package script

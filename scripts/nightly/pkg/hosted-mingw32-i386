@@ -1,7 +1,8 @@
 #!/bin/zsh
 # Creates mingw32-i386 "hosted" binary packages.
 
-BUILDTARGET=mingw32-i386
+BUILDCPU=i386
+BUILDTARGET=mingw32-$BUILDCPU
 
 source $SP/setup
 # The log-name MUST match the name of the package script

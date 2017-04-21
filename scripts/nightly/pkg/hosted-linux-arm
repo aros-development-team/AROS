@@ -1,7 +1,8 @@
 #!/bin/zsh
 # Creates linux-arm "hosted" binary packages.
 
-BUILDTARGET=linux-arm
+BUILDCPU=arm
+BUILDTARGET=linux-$BUILDCPU
 BUILDEXTRAOPTS=(--enable-includes=/opt/cross/sys-root/arm-linux-gnueabi/usr/include --x-includes=/opt/cross/sys-root/arm-linux-gnueabi/usr/include --x-libraries=/opt/cross/sys-root/arm-linux-gnueabi/usr/lib)
 
 source $SP/pkg/hosted
