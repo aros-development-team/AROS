@@ -1,7 +1,8 @@
 #!/bin/zsh
 # Creates linux-i386 "hosted" binary packages.
 
-BUILDTARGET=linux-i386
+BUILDCPU=i386
+BUILDTARGET=linux-$BUILDCPU
 TESTEXE=boot/linux/AROSBootstrap
 TESTARGS="mungwall"
 TESTTIMEOUT=5m

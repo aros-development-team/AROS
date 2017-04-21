@@ -3,6 +3,7 @@
 
 CONFIGUREEXTRA="--with-binutils-version=2.25 --with-gcc-version=6.3.0"
 
-BUILDTARGET=linux-x86_64
+BUILDCPU=x86_64
+BUILDTARGET=linux-$BUILDCPU
 
 source $SP/pkg/hosted

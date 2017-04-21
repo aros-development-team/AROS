@@ -1,6 +1,7 @@
 #!/bin/zsh
 # Creates darwin-i386 "hosted" binary packages.
 
-BUILDTARGET=darwin-i386
+BUILDCPU=i386
+BUILDTARGET=darwin-$BUILDCPU
 
 source $SP/pkg/hosted
