@@ -11,8 +11,14 @@ printi "Creating AROS/$BUILDTARGET crosstools packages..."
 delete  $BUILD_BASE/AROS-CROSSTOOLS
 copy    $SOURCE_AROS $BUILD_BASE/AROS-CROSSTOOLS
 
+CONFIGURE_OPTIONS="--target=$BUILDTARGET $CONFIGUREEXTRA --enable-ccache"
+if [[ "$AROSTOOLCHAININSTALLOPT" != "" ]]; then
+     CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS $AROSTOOLCHAININSTALLOPT"
+fi
+CONFIGURE_OPTIONS="$CONFIGURE_OPTIONS --enable-build-type=nightly $PORTSSOURCESOPT"
+
 cd      $BUILD_BASE/AROS-CROSSTOOLS
-execute ./configure --target=$BUILDTARGET $CONFIGUREEXTRA --enable-ccache --enable-build-type=nightly $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT
+execute ./configure ${=CONFIGURE_OPTIONS}
 make    -j $MAKE_JOBS crosstools
 
 cd      $ROOT
