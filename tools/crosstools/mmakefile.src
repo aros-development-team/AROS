@@ -26,6 +26,7 @@ BINUTILS_EXTRA_OPTS += -bindir=$(CROSSTOOLSDIR)
 BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPER)
 BINUTILS_EXTRA_OPTS += --disable-werror
+BINUTILS_EXTRA_OPTS += --disable-nls
 ifeq (yes, $(TARGET_LTO))
 BINUTILS_EXTRA_OPTS += --enable-plugins --enable-lto
 endif
@@ -80,6 +81,7 @@ GCC_EXTRA_OPTS += --disable-tls
 ifneq (yes, $(TARGET_LTO))
 GCC_EXTRA_OPTS += --disable-plugins
 endif
+GCC_EXTRA_OPTS += --disable-nls
 GCC_EXTRA_OPTS += --disable-libssp
 GCC_EXTRA_OPTS += --disable-libstdcxx-pch
 GCC_EXTRA_OPTS += --disable-build-with-cxx
