@@ -1,6 +1,7 @@
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
+include $(TOP)/$(CURDIR)/geninc.cfg
 
 INCSUBDIRS :=	aros				\
 		aros/preprocessor		\
