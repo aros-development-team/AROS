@@ -73,8 +73,6 @@ compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES) includes-execbase_h
 # execbase is copied seperately, since on SMP builds we need to
 # remove some fields
 
-EXECSMP="@ENABLE_EXECSMP@"
-
 $(GENINCDIR)/exec/execbase.h : $(SRCDIR)/$(CURDIR)/exec/execbase.inc
 	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
 	@$(CP) $< $@
