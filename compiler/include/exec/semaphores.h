@@ -44,8 +44,6 @@ struct SemaphoreRequest
 #else
     spinlock_t                  sr_Pad;
 #endif
-#else
-    ULONG                       sr_Pad;
 #endif
 };
 
