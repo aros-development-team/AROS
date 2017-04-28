@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     This file defines the private part of PosixCBase.
@@ -35,6 +35,8 @@ struct PosixCIntBase
     /* random.c */
     struct random_state *rs;
 
+    /* getpass.c */
+    char passbuffer[PASS_MAX];
 #if (0)
     /* sigprocmask.c */
     sigset_t   sigmask;
