@@ -1,40 +1,47 @@
 /*
-    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2017, The AROS Development Team. All rights reserved.
     $Id$
-
-    POSIX.1-2008 function getgid().
 */
+
+#include <sys/types.h>
+
+#include <exec/tasks.h>
+#include <proto/exec.h>
+
+#include <assert.h>
+
+#include "__vfork.h"
+#include "__posixc_intbase.h"
 
 /*****************************************************************************
 
     NAME */
 #include <unistd.h>
 
-	gid_t getgid(
+	int tcgetpgrp(
 
 /*  SYNOPSIS */
-	void)
+	int fd)
 
 /*  FUNCTION
-	Returns the group ID of the calling process
+	Returns the process group ID for the specified file descriptor.
 
     INPUTS
-	
+
     RESULT
-	
+
     NOTES
-        Always return 0 for the moment.
 
     EXAMPLE
 
     BUGS
-    	
+
     SEE ALSO
-    	setgid()
-        
+
     INTERNALS
 
 ******************************************************************************/
 {
-    return (gid_t)0;
-} /* getgid() */
+  return 0;
+}
+

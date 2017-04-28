@@ -58,6 +58,7 @@ POSIXC := \
     fgets \
     fileno \
     flock \
+    flockfile \
     fopen \
     fprintf \
     fputc \
@@ -73,6 +74,7 @@ POSIXC := \
     ftell \
     ftello \
     ftruncate \
+    funlockfile \
     fwrite \
     getchar \
     getcwd \
@@ -87,6 +89,8 @@ POSIXC := \
     getgroups \
     getloadavg \
     getlogin \
+    getpass \
+    getpgid \
     getpgrp \
     getpid \
     getppid \
@@ -150,6 +154,7 @@ POSIXC := \
     setgrent \
     setpwent \
     setrlimit \
+    setsid \
     setuid \
     setvbuf \
     sigaction \
@@ -175,6 +180,7 @@ POSIXC := \
     sysconf \
     system \
     tcgetattr \
+    tcgetpgrp \
     tcsetattr \
     telldir \
     tempnam \
