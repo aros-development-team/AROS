@@ -76,6 +76,7 @@ POSIXC := \
     ftruncate \
     funlockfile \
     fwrite \
+    getc_unlocked \
     getchar \
     getcwd \
     getegid \
