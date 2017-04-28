@@ -30,7 +30,7 @@ int fseeko(FILE *stream, off_t offset, int whence);
 off_t ftello(FILE *stream);
 /* NOTIMPL int ftrylockfile(FILE *); */
 void funlockfile(FILE *);
-/* NOTIMPL int getc_unlocked(FILE *); */
+int getc_unlocked(FILE *);
 /* NOTIMPL int getchar_unlocked(void); */
 /* NOTIMPL ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict); */
 /* NOTIMPL ssize_t getline(char **restrict, size_t *restrict, FILE *restrict); */
