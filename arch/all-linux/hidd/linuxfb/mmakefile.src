@@ -5,6 +5,10 @@ include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS		= -static
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
+ifneq ("","$(strip $(WARN_ERROR))")
+CONFIG_CFLAGS := $(subst $(WARN_ERROR),,$(CONFIG_CFLAGS))
+endif
+
 FILES	:=	\
 	linuxfbgfx_startup \
 	linuxfbgfx_init \
