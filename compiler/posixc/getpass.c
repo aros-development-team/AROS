@@ -31,6 +31,11 @@
     RESULT
 
     NOTES
+	This function returns a pointer to a static buffer
+	containing (the first PASS_MAX bytes of) the password without the
+	trailing newline, terminated by a null byte ('\0').
+
+	The buffer may be overwritten by a subsequent call
 
     EXAMPLE
 
@@ -42,5 +47,7 @@
 
 ******************************************************************************/
 {
-  return NULL;
+    struct PosixCIntBase *PosixCIntBase = (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    return PosixCIntBase->passbuffer;
 }

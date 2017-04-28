@@ -2,7 +2,7 @@
 #define _POSIXC_LIMITS_H_
 
 /*
- *  Copyright Â© 2004-2012 The AROS Developmemt Team. All rights reserved.
+ *  Copyright © 2004-2017 The AROS Developmemt Team. All rights reserved.
  *  $Id$
  *
  *  POSIX.1-2008 header file limits.h
