@@ -2,7 +2,7 @@
 #define _POSIXC_STDIO_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdio.h
@@ -24,12 +24,12 @@ __BEGIN_DECLS
 /* NOTIMPL int dprintf(int, const char *restrict, ...) */
 FILE *fdopen (int filedes, const char *mode);
 int fileno(FILE *);
-/* NOTIMPL void flockfile(FILE *); */
+void flockfile(FILE *);
 /* NOTIMPL FILE *fmemopen(void *restrict, size_t, const char *restrict) */
 int fseeko(FILE *stream, off_t offset, int whence);
 off_t ftello(FILE *stream);
 /* NOTIMPL int ftrylockfile(FILE *); */
-/* NOTIMPL void funlockfile(FILE *); */
+void funlockfile(FILE *);
 /* NOTIMPL int getc_unlocked(FILE *); */
 /* NOTIMPL int getchar_unlocked(void); */
 /* NOTIMPL ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict); */

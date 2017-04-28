@@ -2,7 +2,7 @@
 #define _POSIXC_UNISTD_H_
 
 /*
-    Copyright Â© 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file unistd.h
@@ -392,7 +392,8 @@ int getgroups(int gidsetlen, gid_t *gidset);
 char *getlogin(void);
 /* NOTIMPL int getlogin_r(char *, size_t); */
 int getopt(int argc, char * const argv[], const char *optstring);
-/* NOTIMPL pid_t getpgid(pid_t); */
+char *getpass(const char *prompt);
+pid_t getpgid(pid_t);
 pid_t getpgrp(void);
 pid_t getpid(void);
 pid_t getppid(void);
@@ -421,7 +422,7 @@ int setgid(gid_t gid);
 /* NOTIMPL int setpgrp(pid_t pid, pid_t pgrp); */
 /* NOTIMPL int setregid(gid_t rgid, gid_t egid); */
 /* NOTIMPL int setreuid(uid_t ruid, uid_t euid); */
-/* NOTIMPL pid_t setsid(void); */
+pid_t setsid(void);
 int setuid(uid_t uid);
 unsigned sleep(unsigned);
 void swab(const void * restrict src, void * restrict dst, size_t len);
@@ -429,7 +430,7 @@ int symlink(const char *name1, const char *name2);
 /* NOTIMPL int symlinkat(const char *, int, const char *); */
 void sync(void);
 long sysconf(int name);
-/* NOTIMPL pid_t tcgetpgrp(int fd); */
+pid_t tcgetpgrp(int fd);
 /* NOTIMPL int tcsetpgrp(int fd, pid_t pgrp_id); */
 int truncate(const char *path, off_t length);
 char *ttyname(int fd);

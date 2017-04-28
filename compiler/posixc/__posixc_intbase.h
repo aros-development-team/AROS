@@ -35,6 +35,12 @@ struct PosixCIntBase
     /* random.c */
     struct random_state *rs;
 
+#if (0)
+    /* sigprocmask.c */
+    sigset_t   sigmask;
+    sigset_t   signals;
+#endif
+
     /* __posixc_environ.c; don't use this field outside that file */
     char ***environptr;
 

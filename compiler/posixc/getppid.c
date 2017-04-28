@@ -24,6 +24,7 @@
 	void)
 
 /*  FUNCTION
+	Returns the Parent process ID of the calling processes.
 
     INPUTS
 
