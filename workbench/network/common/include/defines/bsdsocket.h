@@ -50,8 +50,10 @@
                   AROS_LCA(socklen_t *,(__arg3),A1), \
         struct Library *, (__SocketBase), 8, BSDSocket)
 
+#ifndef PTHREAD_H
 #define accept(arg1, arg2, arg3) \
     __accept_WB(SocketBase, (arg1), (arg2), (arg3))
+#endif
 
 #define __connect_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, connect, \
@@ -60,8 +62,10 @@
                   AROS_LCA(socklen_t,(__arg3),D1), \
         struct Library *, (__SocketBase), 9, BSDSocket)
 
+#ifndef PTHREAD_H
 #define connect(arg1, arg2, arg3) \
     __connect_WB(SocketBase, (arg1), (arg2), (arg3))
+#endif
 
 #define __sendto_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6) \
         AROS_LC6(int, sendto, \
@@ -73,8 +77,10 @@
                   AROS_LCA(socklen_t,(__arg6),D3), \
         struct Library *, (__SocketBase), 10, BSDSocket)
 
+#ifndef PTHREAD_H
 #define sendto(arg1, arg2, arg3, arg4, arg5, arg6) \
     __sendto_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5), (arg6))
+#endif
 
 #define __send_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(int, send, \
@@ -84,8 +90,10 @@
                   AROS_LCA(int,(__arg4),D2), \
         struct Library *, (__SocketBase), 11, BSDSocket)
 
+#ifndef PTHREAD_H
 #define send(arg1, arg2, arg3, arg4) \
     __send_WB(SocketBase, (arg1), (arg2), (arg3), (arg4))
+#endif
 
 #define __recvfrom_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6) \
         AROS_LC6(int, recvfrom, \
@@ -97,8 +105,10 @@
                   AROS_LCA(socklen_t *,(__arg6),A2), \
         struct Library *, (__SocketBase), 12, BSDSocket)
 
+#ifndef PTHREAD_H
 #define recvfrom(arg1, arg2, arg3, arg4, arg5, arg6) \
     __recvfrom_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5), (arg6))
+#endif
 
 #define __recv_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(int, recv, \
@@ -108,8 +118,10 @@
                   AROS_LCA(int,(__arg4),D2), \
         struct Library *, (__SocketBase), 13, BSDSocket)
 
+#ifndef PTHREAD_H
 #define recv(arg1, arg2, arg3, arg4) \
     __recv_WB(SocketBase, (arg1), (arg2), (arg3), (arg4))
+#endif
 
 #define __shutdown_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(int, shutdown, \
@@ -179,8 +191,10 @@
                   AROS_LCA(int,(__arg1),D0), \
         struct Library *, (__SocketBase), 20, BSDSocket)
 
+#ifndef PTHREAD_H
 #define CloseSocket(arg1) \
     __CloseSocket_WB(SocketBase, (arg1))
+#endif
 
 #define __WaitSelect_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6) \
         AROS_LC6(int, WaitSelect, \
@@ -192,8 +206,10 @@
                   AROS_LCA(ULONG *,(__arg6),D1), \
         struct Library *, (__SocketBase), 21, BSDSocket)
 
+#ifndef PTHREAD_H
 #define WaitSelect(arg1, arg2, arg3, arg4, arg5, arg6) \
     __WaitSelect_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5), (arg6))
+#endif
 
 #define __SetSocketSignals_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3NR(void, SetSocketSignals, \
@@ -410,8 +426,11 @@
                   AROS_LCA(int,(__arg3),D1), \
         struct Library *, (__SocketBase), 45, BSDSocket)
 
+#ifndef PTHREAD_H
 #define sendmsg(arg1, arg2, arg3) \
     __sendmsg_WB(SocketBase, (arg1), (arg2), (arg3))
+
+#endif
 
 #define __recvmsg_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, recvmsg, \
@@ -420,8 +439,10 @@
                   AROS_LCA(int,(__arg3),D1), \
         struct Library *, (__SocketBase), 46, BSDSocket)
 
+#ifndef PTHREAD_H
 #define recvmsg(arg1, arg2, arg3) \
     __recvmsg_WB(SocketBase, (arg1), (arg2), (arg3))
+#endif
 
 #define __gethostname_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(int, gethostname, \
@@ -796,4 +817,9 @@
     __inet_aton_WB(SocketBase, (arg1), (arg2))
 
 #endif /* __CONFIG_ROADSHOW__ */
+
+#ifdef PTHREAD_H
+#include <defines/pthreadsocket.h>
+#endif
+
 #endif /* DEFINES_BSDSOCKET_PROTOS_H */
