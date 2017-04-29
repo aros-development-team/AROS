@@ -437,6 +437,9 @@ int pthread_kill(pthread_t thread, int sig);
 #endif
 
 #if defined(CLIB_BSDSOCKET_PROTOS_H) || defined(CLIB_SOCKET_PROTOS_H)
+#if defined(DEFINES_BSDSOCKET_PROTOS_H) || defined(DEFINES_SOCKET_PROTOS_H)
+#include <defines/pthreadsocket.h>
+#else /* !DEFINES_BSDSOCKET_PROTOS_H && !DEFINES_SOCKET_PROTOS_H */
 #define accept(...) (pthread_testcancel(), accept(__VA_ARGS__))
 #define connect(...) (pthread_testcancel(), connect(__VA_ARGS__))
 #define CloseSocket(...) (pthread_testcancel(), CloseSocket(__VA_ARGS__))
@@ -449,6 +452,7 @@ int pthread_kill(pthread_t thread, int sig);
 #define send(...) (pthread_testcancel(), send(__VA_ARGS__))
 #define sendmsg(...) (pthread_testcancel(), sendmsg(__VA_ARGS__))
 #define sendto(...) (pthread_testcancel(), sendto(__VA_ARGS__))
+#endif /* !DEFINES_BSDSOCKET_PROTOS_H && !DEFINES_SOCKET_PROTOS_H */
 #endif
 
 #ifdef  __cplusplus
