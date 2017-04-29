@@ -18,7 +18,7 @@
     NAME */
 #include <unistd.h>
 
-	int tcgetpgrp(
+	pid_t tcgetpgrp(
 
 /*  SYNOPSIS */
 	int fd)
