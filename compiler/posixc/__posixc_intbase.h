@@ -14,6 +14,7 @@
 #include <exec/lists.h>
 #include <dos/dos.h>
 
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
