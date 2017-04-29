@@ -2,7 +2,7 @@
 #define DEFINES_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -264,14 +264,6 @@
 
 #define Inet_NtoA(arg1) \
     __Inet_NtoA_WB(SocketBase, (arg1))
-
-#if !defined(NO_INLINE_STDARG) && !defined(BSDSOCKET_NO_INLINE_STDARG)
-#define Inet_Nto(...) \
-({ \
-    IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-    Inet_NtoA((unsigned long)__args); \
-})
-#endif /* !NO_INLINE_STDARG */
 
 #define __inet_addr_WB(__SocketBase, __arg1) \
         AROS_LC1(unsigned long, inet_addr, \
