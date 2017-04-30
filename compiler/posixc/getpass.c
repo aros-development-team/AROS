@@ -5,12 +5,11 @@
 
 #include <sys/types.h>
 
-#include <exec/tasks.h>
 #include <proto/exec.h>
 
-#include <assert.h>
+#include <limits.h>
+#include <string.h>
 
-#include "__vfork.h"
 #include "__posixc_intbase.h"
 
 /*****************************************************************************
@@ -47,7 +46,26 @@
 
 ******************************************************************************/
 {
-    struct PosixCIntBase *PosixCIntBase = (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    struct PosixCBase *PosixCBase = __aros_getbase_PosixCBase();
+    struct PosixCIntBase *PosixCIntBase = (struct PosixCIntBase *)PosixCBase;
+    char *s;
 
-    return PosixCIntBase->passbuffer;
+    /* quick and ugly... */
+    if ((prompt) &&
+        ((fputs(prompt, PosixCBase->_stdout) != EOF) &&
+          (fputs("\n", PosixCBase->_stdout) != EOF)))
+    {
+        fflush(PosixCBase->_stdout);
+    }
+    s = fgets(PosixCIntBase->passbuffer, PASS_MAX, PosixCBase->_stdin);
+    if (s)
+    {
+	/* strip trailing \n */
+	size_t sl = strlen(s);
+	if ( (sl > 0) && (s[sl-1] == '\n') )
+	{
+	    s[sl-1] = '\0';
+	}
+    }
+    return s;
 }
