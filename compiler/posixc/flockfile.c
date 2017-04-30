@@ -5,18 +5,14 @@
 
 #include <sys/types.h>
 
-#include <exec/tasks.h>
 #include <proto/exec.h>
 
 #include <assert.h>
 
-#include "__vfork.h"
-#include "__posixc_intbase.h"
-
 /*****************************************************************************
 
     NAME */
-#include <unistd.h>
+#include <stdio.h>
 
 	void flockfile(
 
