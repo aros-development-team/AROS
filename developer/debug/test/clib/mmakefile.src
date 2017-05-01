@@ -19,6 +19,7 @@ FILES := \
         fcntl \
         flock \
         getfsstat \
+        getpass \
         jmpbuf \
         lseek \
         mktime \
