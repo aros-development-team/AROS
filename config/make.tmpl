@@ -3062,6 +3062,7 @@ ifneq (%(install_target),)
 
     %(mmake)-uninstall_command = \
     $(RM) $(%(mmake)-installflag) && \
+    $(ECHO) "Installing from build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))" && \
     $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" \
     $(%(mmake)-install_opts) $(%(mmake)-make-env) uninstall
 else
@@ -3074,9 +3075,13 @@ endif
 #MM
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
+#
+# NB : the make test for the targets being upto date generates a benign Error 1.
+#
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
-	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
+	@if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
 	    $(RM) $(%(mmake)-installflag) && \
+	    $(ECHO) "Performing build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))" && \
 	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" $(%(mmake)-make-env) && \
 	    $(%(mmake)-install_command) && \
 	    $(TOUCH) $@ -r $^; \
@@ -3098,6 +3103,7 @@ $(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo $(%(mmake)-cfg-srcdir) | sed
 $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	@$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
+	@$(ECHO) "Configuring build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))"
 	@cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	$(%(mmake)-cfg-env) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) && \
