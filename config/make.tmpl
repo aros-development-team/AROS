@@ -3057,12 +3057,12 @@ endif
 # where N > 1.
 ifneq (%(install_target),)
     %(mmake)-install_command = \
+        $(ECHO) "Installing from build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))" && \
         $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
         $(%(mmake)-make-env) %(install_target) -j1
 
     %(mmake)-uninstall_command = \
     $(RM) $(%(mmake)-installflag) && \
-    $(ECHO) "Installing from build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))" && \
     $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" \
     $(%(mmake)-install_opts) $(%(mmake)-make-env) uninstall
 else
