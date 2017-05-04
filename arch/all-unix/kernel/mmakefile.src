@@ -8,6 +8,10 @@ USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) -I$(GENDIR)/$(MAINDIR)/include \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
+ifneq ("","$(strip $(WARN_ERROR))")
+CONFIG_CFLAGS := $(subst $(WARN_ERROR),,$(CONFIG_CFLAGS))
+endif
+
 FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
 	 obtaininput releaseinput getpagesize allockernelbase
 FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
