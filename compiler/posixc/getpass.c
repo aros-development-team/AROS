@@ -34,7 +34,8 @@
 	containing (the first PASS_MAX bytes of) the password without the
 	trailing newline, terminated by a null byte ('\0').
 
-	The buffer may be overwritten by a subsequent call
+	Function is not re-entrant. Results will be overwritten by
+	subsequent calls.
 
     EXAMPLE
 

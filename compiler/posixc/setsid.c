@@ -10,7 +10,6 @@
 
 #include <assert.h>
 
-#include "__vfork.h"
 #include "__posixc_intbase.h"
 
 /*****************************************************************************
