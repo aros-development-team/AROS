@@ -6,6 +6,10 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/timer \
 		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
 		 -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
+ifneq ("","$(strip $(WARN_ERROR))")
+CONFIG_CFLAGS := $(subst $(WARN_ERROR),,$(CONFIG_CFLAGS))
+endif
+
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
   arch=unix modulename=timer \
