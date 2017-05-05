@@ -149,6 +149,7 @@ POSIXC := \
     seed48 \
     seekdir \
     setbuf \
+    setegid \
     setenv \
     seteuid \
     setgid \

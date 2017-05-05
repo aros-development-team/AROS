@@ -1,5 +1,5 @@
 /*
-    Copyright © 2016, The AROS Development Team. All rights reserved.
+    Copyright © 2016-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: single user defintion for POSIX user/groups
@@ -13,27 +13,30 @@
 
 #include "__usergrp.h"
 
-#define USER_UID    1000
-#define USER_GID    1000
-#define USER_NAME   "aros"
-#define USER_SHELL  "sh"
-#define USER_DIR    "/home"
+#define DEF_USER_UID    1000
+#define DEF_USER_GID    1000
+#define DEF_USER_NAME   "aros"
+#define DEF_USER_SHELL  "sh"
+#define DEF_USER_DIR    "/home"
 
-void __fill_passwd(struct passwd *pwd)
+void __fill_passwd(struct passwd *pwd, uid_t uid)
 {
-    pwd->pw_name     = USER_NAME;
-    pwd->pw_uid      = USER_UID;
-    pwd->pw_gid      = USER_GID;
-    pwd->pw_dir      = USER_DIR;
-    pwd->pw_shell    = USER_SHELL;
-    pwd->pw_passwd   = USER_NAME;
-    pwd->pw_gecos    = USER_NAME;
+    /* we only support the hard coded default user atm */
+    pwd->pw_name     = DEF_USER_NAME;
+    pwd->pw_uid      = DEF_USER_UID;
+    pwd->pw_gid      = DEF_USER_GID;
+    pwd->pw_dir      = DEF_USER_DIR;
+    pwd->pw_shell    = DEF_USER_SHELL;
+    pwd->pw_passwd   = DEF_USER_NAME;
+    pwd->pw_gecos    = DEF_USER_NAME;
 }
 
 int __init_usergrp(struct PosixCIntBase *PosixCIntBase)
 {
-    PosixCIntBase->uid      = USER_UID;
-    PosixCIntBase->euid     = USER_UID;
+    PosixCIntBase->uid      = DEF_USER_UID;
+    PosixCIntBase->euid     = DEF_USER_UID;
+    PosixCIntBase->gid     = DEF_USER_GID;
+    PosixCIntBase->egid     = DEF_USER_GID;
 
     return 1;
 }
