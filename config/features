@@ -676,6 +676,8 @@ aros_nowarnflags_unused_variable
 aros_warnflags_unused_variable
 aros_nowarnflags_unused_value
 aros_warnflags_unused_value
+aros_nowarnflags_unused_label
+aros_warnflags_unused_label
 aros_nowarnflags_unused
 aros_warnflags_unused
 aros_nowarnflags_nonnull_compare
@@ -3120,6 +3122,7 @@ fi
 #  -Wmisleading-indentation
 #  -Wnonnull-compare
 #  -Wunused
+#  -Wunused-label
 #  -Wunused-value
 #  -Wunused-variable
 #  -Wunused-function
@@ -3516,6 +3519,33 @@ $as_echo "$aros_unused" >&6; }
 if test "x-$aros_unused" = "x-yes" ; then
     aros_warnflags_unused=-Wunused
     aros_nowarnflags_unused=-Wno-unused
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-label" >&5
+$as_echo_n "checking whether ${CC} accepts -Wunused-label... " >&6; }
+CFLAGS=-Wunused-label
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unused_label="yes"
+else
+  aros_unused_label="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unused_label" >&5
+$as_echo "$aros_unused_label" >&6; }
+if test "x-$aros_unused_label" = "x-yes" ; then
+    aros_warnflags_unused_label=-Wunused-label
+    aros_nowarnflags_unused_label=-Wno-unused-label
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-value" >&5
@@ -4793,6 +4823,8 @@ fi
 #
 # ...and warning flags...
 #
+
+
 
 
 
