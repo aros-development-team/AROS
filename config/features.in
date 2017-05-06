@@ -186,6 +186,7 @@ fi
 #  -Wmisleading-indentation
 #  -Wnonnull-compare
 #  -Wunused
+#  -Wunused-label
 #  -Wunused-value
 #  -Wunused-variable
 #  -Wunused-function
@@ -348,6 +349,15 @@ AC_MSG_RESULT($aros_unused)
 if test "x-$aros_unused" = "x-yes" ; then
     aros_warnflags_unused=-Wunused
     aros_nowarnflags_unused=-Wno-unused
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-label])
+CFLAGS=-Wunused-label
+AC_TRY_COMPILE(,, aros_unused_label="yes", aros_unused_label="no")
+AC_MSG_RESULT($aros_unused_label)
+if test "x-$aros_unused_label" = "x-yes" ; then
+    aros_warnflags_unused_label=-Wunused-label
+    aros_nowarnflags_unused_label=-Wno-unused-label
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-value])
@@ -823,6 +833,8 @@ AC_SUBST(aros_warnflags_nonnull_compare)
 AC_SUBST(aros_nowarnflags_nonnull_compare)
 AC_SUBST(aros_warnflags_unused)
 AC_SUBST(aros_nowarnflags_unused)
+AC_SUBST(aros_warnflags_unused_label)
+AC_SUBST(aros_nowarnflags_unused_label)
 AC_SUBST(aros_warnflags_unused_value)
 AC_SUBST(aros_nowarnflags_unused_value)
 AC_SUBST(aros_warnflags_unused_variable)
