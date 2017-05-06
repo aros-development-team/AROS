@@ -31,6 +31,7 @@ void *memset (void * dest, int c, size_t n);
 char *strchr (const char * s, int c);
 char *strrchr (const char * s, int c);
 
+#ifndef STDC_NOINLINE_DEPRECATED
 /* Deprecated, removed in POSIX.1-2008 */
 static __inline__ int bcmp(const void * s1, const void * s2, size_t n)
 {
@@ -56,6 +57,7 @@ static __inline__ char *rindex(const char * s, int c)
 {
     return strrchr(s, c);
 }
+#endif /* !STDC_NOINLINE_DEPRECATED */
 
 /* BSD */
 char *strcasestr(const char * str, const char * search);
