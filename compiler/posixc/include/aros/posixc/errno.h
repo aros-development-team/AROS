@@ -90,6 +90,7 @@
 #define ENODATA		89		/* No message available */
 #define	ENODEV		19		/* Operation not supported by device */
 #define	ENOLCK		77		/* No locks available */
+#define	EFTYPE		79		/* Inappropriate file type or format */
 #define ENOLINK		95		/* Link has been severed */
 #define	ENOMSG		83		/* No message of desired type */
 #define	ENOPROTOOPT	42		/* Protocol not available */
