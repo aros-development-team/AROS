@@ -121,7 +121,7 @@ const UWORD product_codes[] =
 };
 
 
-static struct TagItem unit_tags[] =
+static const struct TagItem unit_tags[] =
 {
    {IOTAG_ByteIn, (UPINT)ByteInHook},
    {IOTAG_ByteOut, (UPINT)ByteOutHook},

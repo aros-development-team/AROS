@@ -38,7 +38,7 @@ struct BusContext
    struct DevBase *device;
    VOID *card;
    UPINT io_base;
-   struct TagItem *unit_tags;
+   const struct TagItem *unit_tags;
    BOOL have_card;
    UWORD id;
    APTR reset_handler;

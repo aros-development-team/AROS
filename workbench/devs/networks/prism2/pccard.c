@@ -118,7 +118,7 @@ static const ULONG product_codes[] =
 };
 
 
-static struct TagItem unit_tags[] =
+static const struct TagItem unit_tags[] =
 {
    {IOTAG_WordsIn, (UPINT)WordsInHook},
    {IOTAG_WordsOut, (UPINT)WordsOutHook},
@@ -512,7 +512,7 @@ static BOOL IsCardCompatible(struct BusContext *context,
    BOOL success = TRUE;
    struct CardHandle *card_handle;
    UBYTE *tuple_buffer;
-   struct TagItem *tuple_tags = NULL;
+   const struct TagItem *tuple_tags = NULL;
    ULONG code;
    const ULONG *p;
    UWORD maker = 0, product = 0;
@@ -567,7 +567,7 @@ static BOOL InitialiseCard(struct BusContext *context,
    struct CardHandle *card_handle;
    struct CardMemoryMap *card_map;
    UBYTE config_value, i, window_count, *tuple_buffer;
-   struct TagItem *tuple_tags = NULL;
+   const struct TagItem *tuple_tags = NULL;
    ULONG *io_bases, *io_lengths, io_base_offset = 0, config_base_offset;
 
    /* Wake up card's I/O functionality */
