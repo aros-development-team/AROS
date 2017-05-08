@@ -32,7 +32,7 @@ Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
 #define MAX_REGION_COUNT 4
 
 
-static struct TagItem device_tag_list[]=
+static const struct TagItem device_tag_list[]=
 {
    {PCCARD_RegionCount,0},
    {PCCARD_RegionLists,0},
@@ -40,67 +40,67 @@ static struct TagItem device_tag_list[]=
 };
 
 
-static struct TagItem longlinkcb_tag_list[]=
+static const struct TagItem longlinkcb_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem configcb_tag_list[]=
+static const struct TagItem configcb_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem cftableentrycb_tag_list[]=
+static const struct TagItem cftableentrycb_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem longlinkmfc_tag_list[]=
+static const struct TagItem longlinkmfc_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem bar_tag_list[]=
+static const struct TagItem bar_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem checksum_tag_list[]=
+static const struct TagItem checksum_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem longlinka_tag_list[]=
+static const struct TagItem longlinka_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem longlinkc_tag_list[]=
+static const struct TagItem longlinkc_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem linktarget_tag_list[]=
+static const struct TagItem linktarget_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem nolink_tag_list[]=
+static const struct TagItem nolink_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem vers1_tag_list[]=
+static const struct TagItem vers1_tag_list[]=
 {
    {PCCARD_MajorVersion,0},
    {PCCARD_MinorVersion,0},
@@ -110,25 +110,25 @@ static struct TagItem vers1_tag_list[]=
 };
 
 
-static struct TagItem altstr_tag_list[]=
+static const struct TagItem altstr_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem jedecc_tag_list[]=
+static const struct TagItem jedecc_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem jedeca_tag_list[]=
+static const struct TagItem jedeca_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem config_tag_list[]=
+static const struct TagItem config_tag_list[]=
 {
    {PCCARD_RegisterBase,0},
    {PCCARD_ModeCount,0},
@@ -136,7 +136,7 @@ static struct TagItem config_tag_list[]=
 };
 
 
-static struct TagItem cftableentry_tag_list[]=
+static const struct TagItem cftableentry_tag_list[]=
 {
    {PCCARD_ModeNo,0},
    {PCCARD_Flags,0},
@@ -161,31 +161,31 @@ static struct TagItem cftableentry_tag_list[]=
 };
 
 
-static struct TagItem deviceoc_tag_list[]=
+static const struct TagItem deviceoc_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem deviceoa_tag_list[]=
+static const struct TagItem deviceoa_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem devicegeo_tag_list[]=
+static const struct TagItem devicegeo_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem devicegeoa_tag_list[]=
+static const struct TagItem devicegeoa_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem manfid_tag_list[]=
+static const struct TagItem manfid_tag_list[]=
 {
    {PCCARD_Maker,0},
    {PCCARD_Product,0},
@@ -193,7 +193,7 @@ static struct TagItem manfid_tag_list[]=
 };
 
 
-static struct TagItem funcid_tag_list[]=
+static const struct TagItem funcid_tag_list[]=
 {
    {PCCARD_Type,0},
    {PCCARD_Flags,0},
@@ -201,61 +201,61 @@ static struct TagItem funcid_tag_list[]=
 };
 
 
-static struct TagItem funce_tag_list[]=
+static const struct TagItem funce_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem swil_tag_list[]=
+static const struct TagItem swil_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem vers2_tag_list[]=
+static const struct TagItem vers2_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem format_tag_list[]=
+static const struct TagItem format_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem geometry_tag_list[]=
+static const struct TagItem geometry_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem byteorder_tag_list[]=
+static const struct TagItem byteorder_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem date_tag_list[]=
+static const struct TagItem date_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem battery_tag_list[]=
+static const struct TagItem battery_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem org_tag_list[]=
+static const struct TagItem org_tag_list[]=
 {
    {TAG_END}
 };
 
 
-static struct TagItem *const tag_lists[]=
+static const struct TagItem *const tag_lists[]=
 {
    NULL,
    device_tag_list,
@@ -331,7 +331,7 @@ static struct TagItem *const tag_lists[]=
 };
 
 
-static struct TagItem power_tag_list[]=
+static const struct TagItem power_tag_list[]=
 {
    {PCCARD_NominalVoltage,0},
    {PCCARD_MinVoltage,0},
@@ -345,7 +345,7 @@ static struct TagItem power_tag_list[]=
 };
 
 
-static struct TagItem timing_tag_list[]=
+static const struct TagItem timing_tag_list[]=
 {
    {PCCARD_Value,0},
    {PCCARD_Scale,0},
@@ -353,7 +353,7 @@ static struct TagItem timing_tag_list[]=
 };
 
 
-static struct TagItem region_tag_list[]=
+static const struct TagItem region_tag_list[]=
 {
    {PCCARD_Flags,0},
    {PCCARD_Type,0},
