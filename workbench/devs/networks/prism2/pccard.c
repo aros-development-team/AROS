@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2010 Neil Cafferkey
+Copyright (C) 2000-2014 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -114,6 +114,7 @@ static const ULONG product_codes[] =
    0xd6010002,
    0xd6010004,
    0xd6010005,
+   0xd6010010,
    0
 };
 
