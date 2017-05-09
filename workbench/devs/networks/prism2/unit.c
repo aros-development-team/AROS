@@ -1,7 +1,6 @@
 /*
 
-Copyright (C) 2012-2017 The AROS Dev Team
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2017 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +23,7 @@ MA 02111-1307, USA.
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <exec/errors.h>
+#include <exec/tasks.h>
 
 #include <proto/exec.h>
 #ifndef __amigaos4__
@@ -60,14 +60,6 @@ MA 02111-1307, USA.
 #define FRAME_BUFFER_SIZE (P2_H2FRM_ETHFRAME + ETH_HEADERSIZE \
    + SNAP_HEADERSIZE + ETH_MTU + EIV_SIZE + ICV_SIZE + MIC_SIZE)
 
-
-#ifndef AbsExecBase
-#ifdef __AROS__
-#define AbsExecBase sys_base
-#else
-#define AbsExecBase (*(struct ExecBase **)4)
-#endif
-#endif
 
 static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left,
@@ -116,15 +108,13 @@ static LONG ConvertScanLevel(struct DevUnit *unit, UWORD raw_level,
    struct DevBase *base);
 static UBYTE *GetIE(UBYTE id, UBYTE *ies, UWORD ies_length,
    struct DevBase *base);
-static VOID UnitTask(struct ExecBase *sys_base);
+static BOOL CompareMACAddresses(APTR mac1, APTR mac2);
+static VOID UnitTask(struct DevUnit *unit);
 static UPINT StrLen(const TEXT *s);
 
 
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
 static const UBYTE scan_params[] = {0xff, 0x3f, 0x01, 0x00, 0x00, 0x00};
-#if !defined(__AROS__)
-static const TEXT options_name[] = "Prism 2 options";
-#endif
 static const TEXT h1_firmware_file_name[] = "DEVS:Firmware/HermesI";
 static const TEXT h2_firmware_file_name[] = "DEVS:Firmware/HermesII";
 static const TEXT h25_firmware_file_name[] = "DEVS:Firmware/HermesII.5";
@@ -137,27 +127,42 @@ static const UBYTE h2_wpa_ie[] =
 };
 
 
+#ifdef __mc68000
+#define AddUnitTask(task, initial_pc, unit) \
+   ({ \
+      task->tc_SPReg -= sizeof(APTR); \
+      *((APTR *)task->tc_SPReg) = unit; \
+      AddTask(task, initial_pc, NULL); \
+   })
+#endif
 #ifdef __amigaos4__
-#undef AddTask
-#define AddTask(task, initial_pc, final_pc) \
-   IExec->AddTask(task, initial_pc, final_pc, NULL)
-#endif
-#ifdef __MORPHOS__
-static const struct EmulLibEntry mos_task_trap =
-{
-   TRAP_LIB,
-   0,
-   (APTR)UnitTask
-};
-#define UnitTask &mos_task_trap
-#endif
-#ifdef __AROS__
-#undef AddTask
-#define AddTask(task, initial_pc, final_pc) \
+#define AddUnitTask(task, initial_pc, unit) \
    ({ \
       struct TagItem _task_tags[] = \
-         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
-      NewAddTask(task, initial_pc, final_pc, _task_tags); \
+         {{AT_Param1, (UPINT)unit}, {TAG_END, 0}}; \
+      AddTask(task, initial_pc, NULL, _task_tags); \
+   })
+#endif
+#ifdef __MORPHOS__
+#define AddUnitTask(task, initial_pc, unit) \
+   ({ \
+      struct TagItem _task_tags[] = \
+      { \
+         {TASKTAG_CODETYPE, CODETYPE_PPC}, \
+         {TASKTAG_PC, (UPINT)initial_pc}, \
+         {TASKTAG_PPC_ARG1, (UPINT)unit}, \
+         {TAG_END, 1} \
+      }; \
+      struct TaskInitExtension _task_init = {0xfff0, 0, _task_tags}; \
+      AddTask(task, &_task_init, NULL); \
+   })
+#endif
+#ifdef __AROS__
+#define AddUnitTask(task, initial_pc, unit) \
+   ({ \
+      struct TagItem _task_tags[] = \
+         {{TASKTAG_ARG1, (UPINT)unit}, {TAG_END, 0}}; \
+      NewAddTask(task, initial_pc, NULL, _task_tags); \
    })
 #endif
 
@@ -327,19 +332,17 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       task->tc_Node.ln_Name = base->device.dd_Library.lib_Node.ln_Name;
       task->tc_SPUpper = stack + STACK_SIZE;
       task->tc_SPLower = stack;
-      task->tc_SPReg = stack + STACK_SIZE;
+      task->tc_SPReg = task->tc_SPUpper;
       NewList(&task->tc_MemEntry);
 
-      if(AddTask(task, UnitTask, NULL) == NULL)
+      if(AddUnitTask(task, UnitTask, unit) != NULL)
+         unit->flags |= UNITF_TASKADDED;
+      else
          success = FALSE;
    }
 
    if(success)
    {
-      /* Send the unit to the new task */
-
-      task->tc_UserData = unit;
-
       /* Set default wireless options */
 
       unit->mode = S2PORT_MANAGED;
@@ -391,7 +394,7 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base)
       task = unit->task;
       if(task != NULL)
       {
-         if(task->tc_UserData != NULL)
+         if((unit->flags & UNITF_TASKADDED) != 0)
          {
             RemTask(task);
             FreeMem(task->tc_SPLower, STACK_SIZE);
@@ -418,6 +421,7 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base)
 
       /* Free buffers and unit structure */
 
+      FreeVec(unit->beacons);
       FreeVec(unit->scan_results_rec);
       FreeVec(unit->tx_descriptor);
       FreeVec(unit->rx_descriptor);
@@ -693,7 +697,7 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
    }
 
    if(unit->wpa_ie[1] != 0)
-      highest_enc = S2ENC_TKIP; // TO DO: Be more specific?
+      highest_enc = S2ENC_TKIP;
 
    /* Allow reception of beacon/probe-response frames */
 
@@ -807,9 +811,7 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
 
       if(unit->firmware_type == INTERSIL_FIRMWARE)
       {
-         typedef union { UBYTE b[2]; UWORD w;} BW;
-         BW *p = (BW*)(unit->bssid + ETH_ADDRESSSIZE);
-         p->w = MakeLEWord(unit->channel);
+         unit->bssid[ETH_ADDRESSSIZE] = unit->channel;
          P2SetData(unit, P2_REC_JOIN, unit->bssid, ETH_ADDRESSSIZE + 2,
             base);
       }
@@ -956,8 +958,7 @@ VOID SetOptions(struct DevUnit *unit, const struct TagItem *tag_list,
          break;
 
       case S2INFO_Channel:
-         if(tag_item->ti_Data != 0)   // ???
-            unit->channel = tag_item->ti_Data;
+         unit->channel = tag_item->ti_Data;
          break;
 
       case S2INFO_WPAInfo:
@@ -2447,9 +2448,9 @@ static VOID InfoInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
    struct DevBase *base;
    UWORD id, length, rec_length, status, ies_length, data_length,
-      ssid_length, *ap_rec;
+      ssid_length, *ap_rec, *rec, count, i;
    UBYTE *ie, *ssid, *descriptor, *frame, *data, *bssid = unit->bssid;
-   BOOL associated;
+   BOOL associated, is_duplicate = FALSE;
 
    base = unit->device;
    id = unit->LEWordIn(unit->card, P2_REG_INFOFID);
@@ -2517,15 +2518,29 @@ static VOID InfoInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
             LEWord(*(UWORD *)(descriptor + unit->datalen_offset));
          ies_length = data_length - WIFI_BEACON_IES;
          *(UWORD *)(frame + ETH_PACKET_IEEELEN) = MakeBEWord(data_length);
-         SaveBeacon(unit, frame, base);
 
          /* Append a fake old-style scan record on to fake record list */
 
          rec_length = LEWord(unit->scan_results_rec[0]);
+         ap_rec = unit->scan_results_rec + 1 + rec_length;
 
-         if(2 + rec_length * 2 + P2_APRECLEN < SCAN_BUFFER_SIZE)
+         /* Check for duplicate scan results */
+
+         rec = unit->scan_results_rec + 2;
+         count = (rec_length - 1) * 2 / P2_APRECLEN;
+         for(i = 0; i < count && !is_duplicate; i++, rec += P2_APRECLEN / 2)
+            if(CompareMACAddresses(frame + ETH_PACKET_SOURCE,
+               rec + P2_APREC_BSSID / 2))
+               is_duplicate = TRUE;
+
+         /* Only add new record if there's space and its BSSID hasn't
+            already been seen */
+
+         if(2 + rec_length * 2 + P2_APRECLEN < SCAN_BUFFER_SIZE
+            && !is_duplicate)
          {
-            ap_rec = unit->scan_results_rec + 1 + rec_length;
+            SaveBeacon(unit, frame, base);
+
             CopyMem(frame + ETH_PACKET_SOURCE, ap_rec + P2_APREC_BSSID / 2,
                ETH_ADDRESSSIZE);
 
@@ -2568,7 +2583,7 @@ static VOID InfoInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
       if(status == 1 || unit->firmware_type < LUCENT_FIRMWARE
          && status == 3)
          associated = TRUE;
-      else //if(unit->firmware_type < LUCENT_FIRMWARE || status == 3)
+      else
          associated = FALSE;
 
       if(!(*(ULONG *)bssid == 0 && *(UWORD *)(bssid + 4) == 0))
@@ -3739,41 +3754,47 @@ static LONG ConvertScanLevel(struct DevUnit *unit, UWORD raw_level,
 *
 */
 
-#if 0
-static UBYTE *GetIE(UBYTE id, UBYTE *ies, UWORD ies_length,
-   struct DevBase *base)
-{
-   BOOL found = FALSE;
-   UBYTE *ie, *end;
-
-//   for(ie = ies; ie < end && ie + ie[1] < end; ie += length + 2)
-   end = ies + ies_length;
-   while(ie < end && !found)
-   {
-      if(ie[0] == id)
-         found = TRUE;
-      else
-         ie += ie[1] + 2;
-   }
-   if(!found)
-      ie = NULL;
-
-   return ie;
-}
-#else
 static UBYTE *GetIE(UBYTE id, UBYTE *ies, UWORD ies_length,
    struct DevBase *base)
 {
    UBYTE *ie;
 
    for(ie = ies; ie < ies + ies_length && ie[0] != id; ie += ie[1] + 2);
-//   for(ie = ies, end = ies + ies_length; ie < end && ie[0] != id; ie += ie[1] + 2);
    if(ie >= ies + ies_length)
       ie = NULL;
 
    return ie;
 }
-#endif
+
+
+
+/****i* prism2.device/CompareMACAddresses **********************************
+*
+*   NAME
+*	CompareMACAddresses -- Compare two MAC addresses for equality.
+*
+*   SYNOPSIS
+*	same = CompareMACAddresses(mac1, mac2)
+*
+*	UBYTE *CompareMACAddresses(UBYTE *, UBYTE *);
+*
+*   INPUTS
+*	mac1 - first MAC address.
+*	mac2 - second MAC address.
+*
+*   RESULT
+*	same - TRUE if MAC addresses are equal.
+*
+****************************************************************************
+*
+*/
+
+static BOOL CompareMACAddresses(APTR mac1, APTR mac2)
+{
+   return *(ULONG *)mac1 == *(ULONG *)mac2
+      && *((UWORD *)mac1 + 2) == *((UWORD *)mac2 + 2);
+}
+
 
 
 /****i* prism2.device/UnitTask *********************************************
@@ -3782,9 +3803,9 @@ static UBYTE *GetIE(UBYTE id, UBYTE *ies, UWORD ies_length,
 *	UnitTask
 *
 *   SYNOPSIS
-*	UnitTask(sys_base)
+*	UnitTask(unit)
 *
-*	VOID UnitTask(struct ExecBase *);
+*	VOID UnitTask(struct DevUnit *);
 *
 *   FUNCTION
 *	Completes deferred requests, and handles card insertion and removal
@@ -3794,30 +3815,20 @@ static UBYTE *GetIE(UBYTE id, UBYTE *ies, UWORD ies_length,
 *
 */
 
-#ifdef __MORPHOS__
-#undef UnitTask
-#endif
-
-static VOID UnitTask(struct ExecBase *sys_base)
+static VOID UnitTask(struct DevUnit *unit)
 {
-   struct Task *task;
-   struct IORequest *request;
-   struct DevUnit *unit;
    struct DevBase *base;
+   struct IORequest *request;
    struct MsgPort *general_port;
    ULONG signals = 0, wait_signals, card_removed_signal,
       card_inserted_signal, scan_complete_signal, general_port_signal;
 
-   /* Get parameters */
-
-   task = FindTask(NULL);
-   unit = task->tc_UserData;
    base = unit->device;
 
    /* Activate general request port */
 
    general_port = unit->request_ports[GENERAL_QUEUE];
-   general_port->mp_SigTask = task;
+   general_port->mp_SigTask = unit->task;
    general_port->mp_SigBit = AllocSignal(-1);
    general_port_signal = 1 << general_port->mp_SigBit;
    general_port->mp_Flags = PA_SIGNAL;
@@ -3832,7 +3843,7 @@ static VOID UnitTask(struct ExecBase *sys_base)
 
    /* Tell ourselves to check port for old messages */
 
-   Signal(task, general_port_signal);
+   Signal(unit->task, general_port_signal);
 
    /* Infinite loop to service requests and signals */
 
@@ -3876,8 +3887,6 @@ static VOID UnitTask(struct ExecBase *sys_base)
          }
       }
    }
-
-   FreeMem(task->tc_SPLower, STACK_SIZE);
 }
 
 
