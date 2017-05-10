@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2013 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -81,6 +81,8 @@ static BOOL CmdSetOptions(struct IOSana2Req *request, struct DevBase *base);
 static BOOL CmdSetKey(struct IOSana2Req *request, struct DevBase *base);
 static BOOL CmdGetNetworkInfo(struct IOSana2Req *request,
    struct DevBase *base);
+static BOOL CmdGetCryptTypes(struct IOSana2Req *request,
+   struct DevBase *base);
 
 
 static const UWORD supported_commands[] =
@@ -112,7 +114,7 @@ static const UWORD supported_commands[] =
    S2_SETOPTIONS,
    S2_SETKEY,
    S2_GETNETWORKINFO,
-//   P2_DISASSOCIATE,
+   S2_GETCRYPTTYPES,
    0
 };
 
@@ -263,6 +265,9 @@ VOID ServiceRequest(struct IOSana2Req *request, struct DevBase *base)
       break;
    case S2_GETNETWORKINFO:
       complete = CmdGetNetworkInfo(request, base);
+      break;
+   case S2_GETCRYPTTYPES:
+      complete = CmdGetCryptTypes(request, base);
       break;
    default:
       complete = CmdInvalid(request, base);
@@ -457,7 +462,6 @@ static BOOL CmdWrite(struct IOSana2Req *request, struct DevBase *base)
 
    /* Queue request for sending */
 
-//error = 1;
    if(error == 0)
       PutRequest(unit->request_ports[WRITE_QUEUE], (APTR)request, base);
    else
@@ -1127,7 +1131,6 @@ static BOOL CmdOnEvent(struct IOSana2Req *request, struct DevBase *base)
    }
 
    /* Reply request if a wanted event has already occurred */
-//if(wanted_events & S2EVENT_CONNECT) unit->special_stats[8]++;
 
    if(events != 0)
    {
@@ -1660,17 +1663,15 @@ static BOOL CmdGetNetworks(struct IOSana2Req *request,
 /****** prism2.device/S2_SETOPTIONS ****************************************
 *
 *   NAME
-*	S2_SETOPTIONS -- Associate with a network.
+*	S2_SETOPTIONS -- Set network options.
 *
 *   FUNCTION
-*	Associate with a specified network using the parameters supplied.[?]
 *	Set various parameters for the network interface. This command
 *	should be called before going online to set any essential parameters
 *	not covered elsewhere.
 *
 *   INPUTS
-*	ios2_Data - Pointer to taglist that specifies the network and
-*	    parameters to use.
+*	ios2_Data - Pointer to taglist that specifies the parameters to use.
 *
 *   RESULTS
 *	io_Error - Zero if successful; non-zero otherwise.
@@ -1684,15 +1685,12 @@ static BOOL CmdSetOptions(struct IOSana2Req *request, struct DevBase *base)
 {
    struct DevUnit *unit;
 
-   /*  */
+   /* Set options, and reconfigure if already online */
 
    unit = (APTR)request->ios2_Req.io_Unit;
    SetOptions(unit, request->ios2_Data, base);
-#if 1
    if((unit->flags & UNITF_ONLINE) != 0)
-//&& FindTagItem(P2OPT_Key, request->ios2_Data) == NULL)
       ConfigureAdapter(unit, base);
-#endif
    unit->stats.Reconfigurations++;
 
    /* Return */
@@ -1788,6 +1786,65 @@ static BOOL CmdGetNetworkInfo(struct IOSana2Req *request,
       request->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
       request->ios2_WireError = S2WERR_UNIT_OFFLINE;
    }
+
+   /* Return */
+
+   return TRUE;
+}
+
+
+
+/****** prism2.device/S2_GETCRYPTTYPES *************************************
+*
+*   NAME
+*	S2_GETCRYPTTYPES -- Get encryption capabilities.
+*
+*   FUNCTION
+*	This command returns a list of encryption types supported by the
+*	device (including S2ENC_NONE).
+*
+*   INPUTS
+*	ios2_Data - Pointer to an Exec memory pool.
+*
+*   RESULTS
+*	ios2_Data - Remains unchanged.
+*	ios2_DataLength - Number of encryption types returned.
+*	ios2_StatData - Pointer to a UBYTE array of encryption types.
+*	io_Error - Zero if successful; non-zero otherwise.
+*	ios2_WireError - More specific error code.
+*
+****************************************************************************
+*
+*/
+
+static BOOL CmdGetCryptTypes(struct IOSana2Req *request,
+   struct DevBase *base)
+{
+   struct DevUnit *unit;
+   APTR pool;
+   UBYTE *list;
+
+   /* Allocate array and fill it with supported encryption types */
+
+   unit = (APTR)request->ios2_Req.io_Unit;
+   pool = request->ios2_Data;
+   list = AllocPooled(pool, 4 * sizeof(UBYTE));
+
+   if(list != NULL)
+   {
+      request->ios2_StatData = list;
+      *list++ = S2ENC_NONE;
+      if((unit->flags & UNITF_HASWEP) != 0)
+         *list++ = S2ENC_WEP;
+      if((unit->flags & UNITF_HASTKIP) != 0)
+         *list++ = S2ENC_TKIP;
+      if((unit->flags & UNITF_HASCCMP) != 0)
+         *list++ = S2ENC_CCMP;
+      request->ios2_DataLength =
+         (UPINT)list - (UPINT)request->ios2_StatData;
+   }
+   else
+      request->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
 
    /* Return */
 
