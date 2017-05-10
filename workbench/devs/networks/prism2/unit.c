@@ -127,7 +127,7 @@ static const UBYTE h2_wpa_ie[] =
 };
 
 
-#ifdef __mc68000
+#if defined(__mc68000) && !defined(__AROS__)
 #define AddUnitTask(task, initial_pc, unit) \
    ({ \
       task->tc_SPReg -= sizeof(APTR); \
