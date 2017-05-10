@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004-2011 Neil Cafferkey
+Copyright (C) 2004-2013 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ MA 02111-1307, USA.
 IMPORT const UWORD product_codes[];
 
 
-/****i* atheros.device/GetExpansionCount ***********************************
+/****i* atheros5000.device/GetExpansionCount *******************************
 *
 *   NAME
 *	GetExpansionCount -- Get the number of compatible PCI Cards.
@@ -71,7 +71,7 @@ ULONG GetExpansionCount(struct DevBase *base)
 
 
 
-/****i* atheros.device/AllocExpansionCard **********************************
+/****i* atheros5000.device/AllocExpansionCard ******************************
 *
 *   NAME
 *	AllocExpansionCard -- Take control of a card.
@@ -103,7 +103,7 @@ struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base)
       context->card = card =
          base->i_pci->FindDeviceTags(FDT_CandidateList, product_codes,
          FDT_Index, index, TAG_END);
-context->id = 0x0013;
+      context->id = card->ReadConfigWord(PCI_DEVICE_ID);
       if(card == NULL)
          success = FALSE;
    }
@@ -138,7 +138,7 @@ context->id = 0x0013;
 
 
 
-/****i* atheros.device/FreeExpansionCard ***********************************
+/****i* atheros5000.device/FreeExpansionCard *******************************
 *
 *   NAME
 *	FreeExpansionCard -- Release a card.
@@ -173,7 +173,7 @@ VOID FreeExpansionCard(struct BusContext *context, struct DevBase *base)
 
 
 
-/****i* atheros.device/AddExpansionIntServer *******************************
+/****i* atheros5000.device/AddExpansionIntServer ***************************
 *
 *   NAME
 *	AddExpansionIntServer
@@ -196,7 +196,7 @@ BOOL AddExpansionIntServer(APTR card, struct Interrupt *interrupt,
 
 
 
-/****i* atheros.device/RemExpansionIntServer *******************************
+/****i* atheros5000.device/RemExpansionIntServer ***************************
 *
 *   NAME
 *	RemExpansionIntServer
