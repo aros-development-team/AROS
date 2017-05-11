@@ -1,7 +1,6 @@
 /*
 
-Copyright (C) 2012-2017 The AROS Dev Team
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2017 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +23,7 @@ MA 02111-1307, USA.
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <exec/errors.h>
+#include <exec/tasks.h>
 
 #include <proto/exec.h>
 #ifndef __amigaos4__
@@ -57,9 +57,6 @@ MA 02111-1307, USA.
    + 2 * ETH_MTU + EIV_SIZE + ICV_SIZE + MIC_SIZE + FCS_SIZE + 4)
 #define MAX_CHANNEL_COUNT 100
 
-#ifndef AbsExecBase
-#define AbsExecBase sys_base
-#endif
 
 static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left,
@@ -88,39 +85,66 @@ static VOID ResetHandler(REG(a1, struct DevUnit *unit),
    REG(a6, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
-static VOID UnitTask(struct ExecBase *sys_base);
+static VOID UnitTask(struct DevUnit *unit);
 
 
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
-#if !defined(__AROS__)
-static const UBYTE broadcast_address[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-#endif
 static const ULONG g_retry_rates[] = {54000, 36000, 18000, 2000};
 static const ULONG b_retry_rates[] = {11000, 5500, 2000, 1000};
 
 
+#if defined(__mc68000) && !defined(__AROS__)
+#define AddUnitTask(task, initial_pc, unit) \
+   ({ \
+      task->tc_SPReg -= sizeof(APTR); \
+      *((APTR *)task->tc_SPReg) = unit; \
+      AddTask(task, initial_pc, NULL); \
+   })
+#endif
 #ifdef __amigaos4__
-#undef AddTask
-#define AddTask(task, initial_pc, final_pc) \
-   IExec->AddTask(task, initial_pc, final_pc, NULL)
-#endif
-#ifdef __MORPHOS__
-static const struct EmulLibEntry mos_task_trap =
-{
-   TRAP_LIB,
-   0,
-   (APTR)UnitTask
-};
-#define UnitTask &mos_task_trap
-#endif
-#ifdef __AROS__
-#undef AddTask
-#define AddTask(task, initial_pc, final_pc) \
+#define AddUnitTask(task, initial_pc, unit) \
    ({ \
       struct TagItem _task_tags[] = \
-         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
-      NewAddTask(task, initial_pc, final_pc, _task_tags); \
+         {{AT_Param1, (UPINT)unit}, {TAG_END, 0}}; \
+      AddTask(task, initial_pc, NULL, _task_tags); \
    })
+#endif
+#ifdef __MORPHOS__
+#define AddUnitTask(task, initial_pc, unit) \
+   ({ \
+      struct TagItem _task_tags[] = \
+      { \
+         {TASKTAG_CODETYPE, CODETYPE_PPC}, \
+         {TASKTAG_PC, (UPINT)initial_pc}, \
+         {TASKTAG_PPC_ARG1, (UPINT)unit}, \
+         {TAG_END, 1} \
+      }; \
+      struct TaskInitExtension _task_init = {0xfff0, 0, _task_tags}; \
+      AddTask(task, &_task_init, NULL); \
+   })
+#endif
+#ifdef __AROS__
+#define AddUnitTask(task, initial_pc, unit) \
+   ({ \
+      struct TagItem _task_tags[] = \
+         {{TASKTAG_ARG1, (UPINT)unit}, {TAG_END, 0}}; \
+      NewAddTask(task, initial_pc, NULL, _task_tags); \
+   })
+#endif
+
+#ifdef __amigaos4__
+#undef CachePreDMA
+#define CachePreDMA(address, length, flags) \
+   ({ \
+      struct DMAEntry _dma_entry = {0}; \
+      if(StartDMA((address), *(length), (flags)) == 1) \
+         GetDMAList((address), *(length), (flags), &_dma_entry); \
+      *(length) = _dma_entry.BlockLength; \
+      (ULONG)_dma_entry.PhysicalAddress | (ULONG)address & 0xfff; \
+   })
+#undef CachePostDMA
+#define CachePostDMA(address, length, flags) \
+   EndDMA(address, *(length), flags);
 #endif
 
 
@@ -290,6 +314,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
          (ULONG)(UPINT)CachePreDMA(unit->tx_descs, &dma_size, 0);
       if(dma_size != sizeof(struct ath_desc) * TX_SLOT_COUNT)
          success = FALSE;
+      dma_size = sizeof(struct ath_desc) * TX_SLOT_COUNT;
       CachePostDMA(unit->tx_descs, &dma_size, 0);
 
       for(i = 0; i < TX_SLOT_COUNT; i++)
@@ -299,6 +324,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
             (ULONG)(UPINT)CachePreDMA(unit->tx_buffers[i], &dma_size, 0);
          if(dma_size != FRAME_BUFFER_SIZE)
             success = FALSE;
+         dma_size = FRAME_BUFFER_SIZE;
          CachePostDMA(unit->tx_buffers[i], &dma_size, 0);
       }
 
@@ -307,6 +333,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
          (ULONG)(UPINT)CachePreDMA(unit->mgmt_descs, &dma_size, 0);
       if(dma_size != sizeof(struct ath_desc) * MGMT_SLOT_COUNT)
          success = FALSE;
+      dma_size = sizeof(struct ath_desc) * MGMT_SLOT_COUNT;
       CachePostDMA(unit->mgmt_descs, &dma_size, 0);
 
       for(i = 0; i < MGMT_SLOT_COUNT; i++)
@@ -316,6 +343,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
             (ULONG)(UPINT)CachePreDMA(unit->mgmt_buffers[i], &dma_size, 0);
          if(dma_size != FRAME_BUFFER_SIZE)
             success = FALSE;
+         dma_size = FRAME_BUFFER_SIZE;
          CachePostDMA(unit->mgmt_buffers[i], &dma_size, 0);
       }
 
@@ -324,6 +352,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
          (ULONG)(UPINT)CachePreDMA(unit->rx_descs, &dma_size, 0);
       if(dma_size != sizeof(struct ath_desc) * RX_SLOT_COUNT)
          success = FALSE;
+      dma_size = sizeof(struct ath_desc) * RX_SLOT_COUNT;
       CachePostDMA(unit->rx_descs, &dma_size, 0);
 
       for(i = 0; i < RX_SLOT_COUNT; i++)
@@ -333,6 +362,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
             (ULONG)(UPINT)CachePreDMA(unit->rx_buffers[i], &dma_size, 0);
          if(dma_size != FRAME_BUFFER_SIZE)
             success = FALSE;
+         dma_size = FRAME_BUFFER_SIZE;
          CachePostDMA(unit->rx_buffers[i], &dma_size, 0);
       }
 
@@ -435,19 +465,17 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
       task->tc_Node.ln_Name = base->device.dd_Library.lib_Node.ln_Name;
       task->tc_SPUpper = stack + STACK_SIZE;
       task->tc_SPLower = stack;
-      task->tc_SPReg = stack + STACK_SIZE;
+      task->tc_SPReg = task->tc_SPUpper;
       NewList(&task->tc_MemEntry);
 
-      if(AddTask(task, UnitTask, NULL) == NULL)
+      if(AddUnitTask(task, UnitTask, unit) != NULL)
+         unit->flags |= UNITF_TASKADDED;
+      else
          success = FALSE;
    }
 
    if(success)
    {
-      /* Send the unit to the new task */
-
-      task->tc_UserData = unit;
-
       /* Set default wireless options */
 
       unit->mode = S2PORT_MANAGED;
@@ -497,11 +525,10 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base)
       task = unit->task;
       if(task != NULL)
       {
-         if(task->tc_UserData != NULL)
+         if((unit->flags & UNITF_TASKADDED) != 0)
          {
             RemTask(task);
             FreeMem(task->tc_SPLower, STACK_SIZE);
-            Signal(unit->task, SIGBREAKF_CTRL_C);
          }
          FreeMem(task, sizeof(struct Task));
       }
@@ -2892,9 +2919,9 @@ struct TagItem *GetRadioBands(struct DevUnit *unit, APTR pool,
 *	UnitTask
 *
 *   SYNOPSIS
-*	UnitTask()
+*	UnitTask(unit)
 *
-*	VOID UnitTask();
+*	VOID UnitTask(struct DevUnit *);
 *
 *   FUNCTION
 *	Completes deferred requests, and handles card insertion and removal
@@ -2904,30 +2931,20 @@ struct TagItem *GetRadioBands(struct DevUnit *unit, APTR pool,
 *
 */
 
-#ifdef __MORPHOS__
-#undef UnitTask
-#endif
-
-static VOID UnitTask(struct ExecBase *sys_base)
+static VOID UnitTask(struct DevUnit *unit)
 {
-   struct Task *task;
-   struct IORequest *request;
-   struct DevUnit *unit;
    struct DevBase *base;
+   struct IORequest *request;
    struct MsgPort *general_port;
    ULONG signals = 0, wait_signals, card_removed_signal,
       card_inserted_signal, general_port_signal;
 
-   /* Get parameters */
-
-   task = FindTask(NULL);
-   unit = task->tc_UserData;
    base = unit->device;
 
    /* Activate general request port */
 
    general_port = unit->request_ports[GENERAL_QUEUE];
-   general_port->mp_SigTask = task;
+   general_port->mp_SigTask = unit->task;
    general_port->mp_SigBit = AllocSignal(-1);
    general_port_signal = 1 << general_port->mp_SigBit;
    general_port->mp_Flags = PA_SIGNAL;
@@ -2941,7 +2958,7 @@ static VOID UnitTask(struct ExecBase *sys_base)
 
    /* Tell ourselves to check port for old messages */
 
-   Signal(task, general_port_signal);
+   Signal(unit->task, general_port_signal);
 
    /* Infinite loop to service requests and signals */
 
@@ -2982,8 +2999,6 @@ static VOID UnitTask(struct ExecBase *sys_base)
          }
       }
    }
-
-   FreeMem(task->tc_SPLower, STACK_SIZE);
 }
 
 
