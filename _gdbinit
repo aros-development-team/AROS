@@ -347,11 +347,11 @@ document findaddr
 -Searching in the loaded modules...
 -Address found in Workbench:contrib/Zune/Libs/muimaster.library, which is loaded at 0x405379a4.
 -If this is an executable, its .text section starts at 0x405379b0.
--(gdb) add-symbol-file contrib/Zune/Libs/muimaster.library 0x405379b0
--add symbol table from file "contrib/Zune/Libs/muimaster.library" at
+-(gdb) add-symbol-file contrib/Zune/Libs/muimaster.library.dbg 0x405379b0
+-add symbol table from file "contrib/Zune/Libs/muimaster.library.dbg" at
 -        .text_addr = 0x405379b0
 -(y or n) y
--Reading symbols from contrib/Zune/Libs/muimaster.library...done.
+-Reading symbols from contrib/Zune/Libs/muimaster.library.dbg...done.
 -(gdb) bt
 -#0  0x4058d45b in strlen (ptr=0x80 <Address 0x80 out of bounds>) at strlen.c:45
 -#1  0x00000000 in lastx.78 ()
