@@ -20,7 +20,7 @@ all: $(DEV_NAME)
 
 $(DEV_NAME): $(MAKEFILE) startup.o $(OBJS)
 	$(LINKER) startup.o $(OBJS) $(AMIGA_LIB) $(C_LIB) -o $(DEV_NAME)
-	echo strip $(DEV_NAME)
+	strip $(DEV_NAME)
 	Protect "$(DEV_NAME)" "-e"
 
 $(OBJS): $(MAKEFILE) $(HDRS)

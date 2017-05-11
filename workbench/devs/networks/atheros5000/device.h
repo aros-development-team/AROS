@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2017 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,15 +31,14 @@ MA 02111-1307, USA.
 #include <devices/sana2specialstats.h>
 #include <devices/sana2wireless.h>
 #include <devices/timer.h>
-#include <dos/dosextens.h>
 
 #include "wireless.h"
 #include "io.h"
 
 #define DEVICE_NAME "atheros5000.device"
 #define VERSION 1
-#define REVISION 3
-#define DATE "1.8.2012"
+#define REVISION 5
+#define DATE "30.8.2013"
 
 #define UTILITY_VERSION 39
 #define PROMETHEUS_VERSION 2
@@ -340,6 +339,7 @@ struct AddressRange
 #define UNITF_RESETADDED (1 << 15)
 #define UNITF_SHORTPREAMBLE (1 << 16)
 #define UNITF_SLOWRETRIES (1 << 17)
+#define UNITF_TASKADDED (1 << 18)
 
 
 /* Endianness macros */
