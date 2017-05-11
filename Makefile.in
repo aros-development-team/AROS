@@ -35,10 +35,20 @@ ifneq (,$(findstring s,$(MAKEFLAGS)))
 MMAKE_OPTIONS += -q
 endif
 
+#
+# Rules for Configure generated files ...
+#
+
 $(TOP)/compiler/include/geninc.cfg: $(SRCDIR)/compiler/include/geninc.cfg.in $(TOP)/config.status
 	@$(TOP)/config.status --file=$@:$<
 
-all: $(TOP)/compiler/include/geninc.cfg crosstools features
+CONFIGUREFILES += $(TOP)/compiler/include/geninc.cfg
+
+#
+# Standard Rules ...
+#
+
+all: $(CONFIGUREFILES) crosstools features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.AROS
 
 makedirs:
@@ -202,7 +212,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 	test kernel boot workbench compiler contrib ports sdk mmake query
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
-install test kernel boot workbench compiler contrib ports sdk : crosstools features $(TOP)/compiler/include/geninc.cfg
+install test kernel boot workbench compiler contrib ports sdk : crosstools features $(CONFIGUREFILES)
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 # Bypass crosstools target.
@@ -223,7 +233,7 @@ distfiles::
 %-quick %-clean: 
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
-.DEFAULT: $(TOP)/compiler/include/geninc.cfg
+.DEFAULT: $(CONFIGUREFILES)
 	@$(MAKE) $(MKARGS) crosstools
 	@$(MAKE) $(MKARGS) crosstools features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
