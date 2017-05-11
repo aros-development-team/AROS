@@ -26,13 +26,8 @@ HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
 HOST_SDL_LIBS   := @aros_host_sdl_libs@
 endif
 
-ifeq ($(DEBUG),yes)
-TARGET_STRIP	:= @NOP@
-HOST_STRIP	:= @NOP@
-else
 TARGET_STRIP	:= $(TARGET_DEF_STRIP)
 HOST_STRIP      := $(HOST_DEF_STRIP)
-endif
 
 # Enable LTO if supported ...
 TARGET_LTO      := @aros_config_lto@

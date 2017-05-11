@@ -78,7 +78,10 @@ endif
 		$(ECHO) "Link failed: %(cmd) %(from) -o $(LINKTARGET) %(opt) %(libs)" 1>&2 ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
-	fi; \
+	fi
+	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
+		%(strip) $(LINKTARGET) --only-keep-debug -o $(LINKTARGET).dbg; \
+	fi
 	%(strip) $(LINKTARGET)
 %end
 #------------------------------------------------------------------------------
@@ -101,8 +104,10 @@ endif
 		cat %(objdir)/%(err); \
 		exit 1; \
 	fi
-
-	@if $(TEST) ! -s %(objdir)/%(err) ; then $(RM) %(objdir)/%(err) ; fi
+	@$(IF) $(TEST) ! -s %(objdir)/%(err) ; then $(RM) %(objdir)/%(err) ; fi
+	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
+		$(STRIP) $@ --only-keep-debug -o $@.dbg; \
+	fi
 	@$(STRIP) $@
 %end
 #------------------------------------------------------------------------------
@@ -3079,7 +3084,7 @@ endif
 # NB : the make test for the targets being upto date generates a benign Error 1.
 #
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
-	@if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
+	@$(IF) ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
 	    $(RM) $(%(mmake)-installflag) && \
 	    $(ECHO) "Performing build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))" && \
 	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" $(%(mmake)-make-env) && \
@@ -3684,6 +3689,9 @@ endif
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	@$(ECHO) "Kickstart  $(subst $(TARGETDIR)/,,$@)..."
 	@$(TARGET_CC) $(TARGET_SYSROOT) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
+ifeq ($(DEBUG),yes)
+	@$(STRIP) $@ --only-keep-debug -o $@.dbg
+endif
 	@$(STRIP) $@
 
 %compress_file mmake="%(mmake)" file="%(file)"
