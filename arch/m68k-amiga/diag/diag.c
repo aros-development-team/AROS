@@ -72,10 +72,11 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *c
 	// call autoconfig ROM da_DiagPoint
 	D(bug("Call boot rom @%p board %p diag %p configdev %p\n",
 		code, configDev->cd_BoardAddr, diag, configDev));
-	ret = AROS_UFC5(ULONG, code,
+	ret = AROS_UFC6(ULONG, code,
 		AROS_UFCA(APTR, configDev->cd_BoardAddr, A0),
 		AROS_UFCA(struct DiagArea*, diag, A2),
 		AROS_UFCA(struct ConfigDev*, configDev, A3),
+		AROS_UFCA(ULONG, 0, A4), // Dummy variable. Preserve A4 because Blizzard 1260 ROM modifies it.
 		AROS_UFCA(struct ExpansionBase*, ExpansionBase, A5),
 		AROS_UFCA(struct ExecBase*, SysBase, A6));
 	D(bug(ret ? "->success\n" : "->failed\n"));
