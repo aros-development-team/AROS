@@ -73,8 +73,10 @@ int main(int argc, char **argv)
 	    unsigned char ff = 0xff;
 	    write(fd, &ff, 1);
 	}
+        if (len > size)
+            printf("Warning: ROM Size > 512KB\n");
 
-	rom = mmap(NULL, size, PROT_READ | PROT_WRITE,
+	rom = mmap(NULL, len, PROT_READ | PROT_WRITE,
 			MAP_SHARED, fd, 0);
 	if (rom == MAP_FAILED) {
 		perror(argv[1]);
@@ -83,23 +85,23 @@ int main(int argc, char **argv)
 	}
 
 	/* add interrupt vector offsets, needed by 68000 and 68010 */
-	p = (uint8_t*)rom + size - 16;
+	p = (uint8_t*)rom + len - 16;
 	for (i = 0; i < 7; i++) {
 		p[i * 2 + 1] = i + 0x18;
 		p[i * 2 + 0] = 0;
 	}
 
 	/* set rom size */
-	p = (uint8_t*)rom + size - 20;
-	p[0] = size >> 24;
-	p[1] = size >> 16;
-	p[2] = size >>  8;
-	p[3] = size >>  0;
+	p = (uint8_t*)rom + len - 20;
+	p[0] = len >> 24;
+	p[1] = len >> 16;
+	p[2] = len >>  8;
+	p[3] = len >>  0;
 
-	err = amiga_checksum(rom, size, size - 24, 0);
-	err = amiga_checksum(rom, size, size - 24, 1);
+	err = amiga_checksum(rom, len, len - 24, 0);
+	err = amiga_checksum(rom, len, len - 24, 1);
 
-	munmap(rom, size);
+	munmap(rom, len);
 
 	close(fd);
 
