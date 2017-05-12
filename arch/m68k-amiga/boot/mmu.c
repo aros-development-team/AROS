@@ -153,7 +153,8 @@ static void mmuprotectextrom(void *KernelBase)
     ForeachNode(bs->mlist, ml) {
         if (ml->ml_Node.ln_Type == NT_KICKMEM) {
             for(i = 0; i < ml->ml_NumEntries; i++) {
-                mmuprotectregion(KernelBase, "ROM", ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, MAP_Readable | MAP_Executable);
+                // me_Length bit 31 is KICKMEM_ALLOCATED bit
+                mmuprotectregion(KernelBase, "ROM", ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length & ~0x80000000, MAP_Readable | MAP_Executable);
             }
         }
     }
