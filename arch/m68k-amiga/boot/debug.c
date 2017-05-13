@@ -86,17 +86,6 @@ void DebugPutDec(const char *what, ULONG val)
 	DebugPutChar('\n');
 }
 
-void DebugPutHex(const char *what, ULONG val)
-{
-	int i;
-	DebugPutStr(what);
-	DebugPutStr(": ");
-	for (i = 0; i < 8; i ++) {
-		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
-	}
-	DebugPutChar('\n');
-}
-
 void DebugPutHexVal(ULONG val)
 {
 	int i;
@@ -104,6 +93,14 @@ void DebugPutHexVal(ULONG val)
 		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
 	}
 	DebugPutChar(' ');
+}
+
+void DebugPutHex(const char *what, ULONG val)
+{
+	DebugPutStr(what);
+	DebugPutStr(": ");
+	DebugPutHexVal(val);
+	DebugPutChar('\n');
 }
 
 #endif
