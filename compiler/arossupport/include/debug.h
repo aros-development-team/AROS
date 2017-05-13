@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Debugging macros.
@@ -158,7 +158,11 @@
 /* The trick with THIS_FILE allows us to reuse the same static string
  * instead of allocating a new copy for each invocation of these macros.
  */
+#ifndef __SRCFILENAME__
 #define THIS_FILE __FILE__
+#else
+#define THIS_FILE __SRCFILENAME__
+#endif
 
 #define ASSERT(x) do {						\
 	if (!(x)) {						\
