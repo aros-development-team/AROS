@@ -1,13 +1,15 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: m68k-amiga bootstrap to exec.
     Lang: english
  */
 
-#include <aros/kernel.h>
+#define DEBUG 0
 #include <aros/debug.h>
+
+#include <aros/kernel.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
@@ -19,6 +21,7 @@
 #include "kernel_romtags.h"
 #include "kernel_base.h"
 
+#define __AROS_KERNEL__
 #include "exec_intern.h"
 
 #include "amiga_hwreg.h"
@@ -551,7 +554,7 @@ void doColdCapture(void)
 
 static void RomInfo(IPTR rom)
 {
-#if AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG && (DEBUG > 0)
     APTR ptr = (APTR)rom;
     CONST_STRPTR str;
 
@@ -597,7 +600,7 @@ static UWORD GetAttnFlags(ULONG *cpupcr)
             attnflags |= AFF_68881 | AFF_68882;
     }
 
-#if AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG && (DEBUG > 0)
     DEBUGPUTS(("CPU: "));
     if (attnflags & AFF_68060)
         DEBUGPUTS(("68060"));
@@ -754,7 +757,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
         membanks[i + 0] = 0x400;
     membanks[i + 1] -= membanks[i + 0];
  
-#if AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG && (DEBUG > 0)
     for (i = 0; membanks[i + 1]; i += 2) {
         ULONG addr = membanks[i + 0];
         ULONG size = membanks[i + 1];
@@ -816,7 +819,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
         Early_Alert(AT_DeadEnd | AG_NoMemory);
     }
 
-#if AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG && (DEBUG > 0)
     for (i = 0; kickrom [i] != (UWORD*)~0; i += 2) {
         DEBUGPUTHEX(("Resident start", (ULONG)kickrom[i]));
         DEBUGPUTHEX(("Resident end  ", (ULONG)kickrom[i + 1]));

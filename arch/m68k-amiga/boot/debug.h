@@ -8,6 +8,10 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
 #include <aros/config.h>
 
 void DebugInit(void);
@@ -19,11 +23,14 @@ void DebugPutStr(register const char *buff);
 void DebugPutHex(const char *what, ULONG val);
 void DebugPutDec(const char *what, ULONG val);
 void DebugPutHexVal(ULONG val);
-
+#if DEBUG > 0
 #define DEBUGPUTS(x) do { DebugPutStr x; } while(0)
 #define DEBUGPUTD(x) do { DebugPutDec x; } while(0)
 #define DEBUGPUTHEX(x) do { DebugPutHex x; } while(0)
-#else
+#endif
+#endif /* !AROS_SERIAL_DEBUG */
+
+#ifndef DEBUGPUTS
 #define DEBUGPUTS(x) do { } while (0)
 #define DEBUGPUTD(x) do { } while (0)
 #define DEBUGPUTHEX(x) do { } while (0)

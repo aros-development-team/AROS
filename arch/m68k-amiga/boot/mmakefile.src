@@ -90,6 +90,9 @@ Q ?= @
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
+# Make sure we optimize this code for size ..
+OPTIMIZATION_CFLAGS := -Os
+
 USELIBS := amiga arossupport autoinit libinit stdc.static
 LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(AROS_LIB)/lib,$(addsuffix .a,$(USELIBS)))
