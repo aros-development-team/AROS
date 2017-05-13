@@ -33,10 +33,21 @@ If EXISTS "AROS Live CD:"
         Assign "LIBS:" "DEVS:Drivers" ADD
     EndIf
   EndIf
-  If EXISTS "S:Startup-Sequence"
-    Execute S:Startup-Sequence
-    EndCLI
+  If EXISTS "C:Avail"
+    C:Avail TOTAL >ENV:AvailMem
+  Endif
+  If VAL "$AvailMem" GE "8388608"
+    If EXISTS "S:Startup-Sequence"
+      If EXISTS "ENV:AvailMem"
+        C:Delete QUIET ENV:AvailMem
+      Endif
+      Execute S:Startup-Sequence
+      EndCLI
+    EndIf
   EndIf
+  If EXISTS "ENV:AvailMem"
+    C:Delete QUIET ENV:AvailMem
+  Endif
   Assign LIBS: SYS:Classes ADD
   Assign IMAGES: SYS:System/Images DEFER
   Assign LOCALE: SYS:Locale
