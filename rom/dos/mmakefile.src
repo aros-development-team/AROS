@@ -6,6 +6,11 @@ SVNREV        := $(shell $(SRCDIR)/scripts/svnrev.sh $(SRCDIR))
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
 USER_CFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\"" -DSVNREV=\"$(SVNREV)\"
 USER_LDFLAGS := -static
+ifeq ($(AROS_TARGET_CPU),m68k)
+# Make sure we optimize this code for size on m68k..
+OPTIMIZATION_CFLAGS := -Os
+USER_CFLAGS   += -D__DOS_NOLIBINLINE__ 
+endif
 
 IMAGE_TYPES := aos elf
 
