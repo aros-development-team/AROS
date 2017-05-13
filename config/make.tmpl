@@ -24,15 +24,15 @@ endif
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
 %define compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="$(CFLAGS)" from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 	@$(ECHO) "Compiling  $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))"
-	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))"\" -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-			$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+			$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
 		else \
 			$(NOP) ; \
 		fi ; \
 	else \
-		$(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+		$(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" 1>&2 ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
 	fi
