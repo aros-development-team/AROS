@@ -107,14 +107,25 @@ int main(int argc, char **argv)
 
         if (len > size)
         {
-            printf("Error: ROM Size > %uKB (+%uKB).\n", size/1024, (len - size)/1024);
+            printf("Error: ROM Size > %uKB", size/1024);
+            if ((len - size) >= 1024)
+                printf(" (+%uKB).\n", (len - size)/1024);
+            else
+                printf(" (+%uB).\n", (len - size));
             return retval;
         }
 
 	/* Pad with 0xff */
 	for (; len < size; len++) {
-	    unsigned char ff = 0xff;
-	    write(fd, &ff, 1);
+	    unsigned char padb;
+
+#if (0)
+            /* Earlier kickstarts used 0x00 as the pad byte.. */
+            padb = 0x0;
+#else
+            padb = 0xff;
+#endif
+	    write(fd, &padb, 1);
 	}
 
 	rom = mmap(NULL, len, PROT_READ | PROT_WRITE,
@@ -150,7 +161,7 @@ int main(int argc, char **argv)
             }
             else
             {
-                printf("Error: Rom Data Size exceeds available space.\n");
+                printf("Error: Rom Data Size exceeds available space (%u bytes remaining).\n", size - origlen);
             }
 
             munmap(rom, len);
