@@ -322,7 +322,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         FreeMem(dp, sizeof(struct DevProc));
         kprintf("%s:%d: DosList entry 0x%p has unknown type %d. Probably a bug, report it!\n"
                 "    GetDeviceProc() called for '%s'\n",
-                __FILE__, __LINE__, dl, dl->dol_Type, name);
+                THIS_FILE, __LINE__, dl, dl->dol_Type, name);
         SetIoErr(ERROR_BAD_NUMBER);
         return NULL;
     }
