@@ -613,6 +613,7 @@ __startup AROS_CLI(ShellStart)
     APTR DOSBase;
     struct Process *me = (struct Process *)FindTask(NULL);
     struct CommandLineInterface *cli;
+    IPTR prntArgs[2];
 
     DOSBase = OpenLibrary("dos.library",36);
     if (!DOSBase)
@@ -659,11 +660,12 @@ __startup AROS_CLI(ShellStart)
 
     initDefaultInterpreterState(ss);
 
+    prntArgs[0] = me->pr_TaskNum;
     if (AROS_CLI_Type == CLI_RUN) {
-        FPrintf(cli->cli_StandardError, "[CLI %ld]\n", me->pr_TaskNum);
+        VFPrintf(cli->cli_StandardError, "[CLI %ld]\n", (RAWARG)prntArgs);
     }
     if (AROS_CLI_Type == CLI_NEWCLI) {
-        FPrintf(cli->cli_StandardOutput, "New Shell process %ld\n", me->pr_TaskNum);
+        VFPrintf(cli->cli_StandardOutput, "New Shell process %ld\n", (RAWARG)prntArgs);
     }
 
     error = interact(ss);
