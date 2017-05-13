@@ -10,14 +10,37 @@ Assign  CLIPS:   RAM:Clipboards
 Mount >NIL: DEVS:DOSDrivers/~(#?.info)
 
 If EXISTS "AROS Live CD:"
-  Assign SYS: "AROS Live CD:"
-  Assign LIBS: SYS:Libs
+  Assign "SYS:" "AROS Live CD:"
+  If EXISTS "SYS:S"
+    Assign "S:" "SYS:S"
+  EndIf
+  If EXISTS "SYS:L"
+    Assign "L:" "SYS:L"
+  EndIf
+  If EXISTS "SYS:C"
+    Assign "C:" "SYS:C"
+  EndIf
+  If EXISTS "SYS:Libs"
+    Assign "LIBS:" "SYS:Libs"
+  EndIf
+  If EXISTS "SYS:L"
+    Assign "FONTS:" "SYS:Fonts"
+  EndIf
+  If EXISTS "SYS:Devs"
+    Assign "DEVS:" "SYS:Devs"
+    If EXISTS "DEVS:Driver"
+        Assign "DRIVERS:" "DEVS:Drivers"
+        Assign "LIBS:" "DEVS:Drivers" ADD
+    EndIf
+  EndIf
+  If EXISTS "S:Startup-Sequence"
+    Execute S:Startup-Sequence
+    EndCLI
+  EndIf
   Assign LIBS: SYS:Classes ADD
   Assign IMAGES: SYS:System/Images DEFER
   Assign LOCALE: SYS:Locale
-  Assign Fonts:  SYS:Fonts
   Assign HELP:   LOCALE:Help DEFER
-  Assign C: SYS:C
 EndIf
 
 LoadWB
