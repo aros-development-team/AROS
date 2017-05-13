@@ -119,7 +119,9 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	    struct Segment *found;
 
 	    Forbid();
-	    found = FindSegment(name, NULL, TRUE);
+	    found = FindSegment(name, NULL, FALSE);
+	    if (!found)
+	        found = FindSegment(name, NULL, TRUE);
 	    if (!found)
 	    {
 	        Permit();
@@ -137,7 +139,7 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	    if (IoErr())
 	    {
 	        PrintFault(IoErr(), SHArg(NAME));
-		return RETURN_FAIL;
+		return RETURN_WARN;
 	    }
 
 	    return RETURN_OK;
