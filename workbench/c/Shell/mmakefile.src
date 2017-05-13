@@ -37,6 +37,11 @@ USER_LDFLAGS := -static
     usestartup="no"
 
 USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
+ifeq ($(AROS_TARGET_CPU),m68k)
+# Make sure we optimize this code for size on m68k..
+OPTIMIZATION_CFLAGS := -Os
+USER_CFLAGS   += -D__DOS_NOLIBINLINE__ 
+endif
 OBJDIR := $(OBJDIR).kernel
 
 %build_module mmake=kernel-shell \
