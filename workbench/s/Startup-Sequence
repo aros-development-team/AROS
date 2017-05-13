@@ -2,7 +2,9 @@ SetClock LOAD
 
 FailAt 21
 
-Makedir "RAM:Clipboards"
+If NOT EXISTS "RAM:Clipboards"
+    Makedir "RAM:Clipboards"
+EndIf
 If NOT EXISTS "RAM:T"
     Makedir "RAM:T"
 EndIf
