@@ -53,8 +53,8 @@
     BUGS
 
     SEE ALSO
-        kill, pause, sigaction, signal, sigprocmask,
-        sigwaitinfo, sigsetops, sigwait, signal
+        kill(), pause(), sigaction(), signal(), sigprocmask(),
+        sigwaitinfo(), sigsetops(), sigwait()
 
     INTERNALS
         POSIX.1-2001
