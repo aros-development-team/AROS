@@ -55,6 +55,9 @@
 
 ******************************************************************************/
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <aros/macros.h>
 #include <aros/bigendianio.h>
 #include <exec/types.h>
@@ -69,6 +72,7 @@
 #include <workbench/startup.h>
 
 #include <proto/exec.h>
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/iffparse.h>
@@ -134,7 +138,7 @@ struct CompoundDataType *CreateBasicType(struct StackVars *sv,
 					 UWORD Flags, ULONG ID, ULONG GroupID);
 void LoadDataType(struct StackVars *sv, STRPTR name);
 struct CompoundDataType *CreateDataType(struct StackVars *sv,
-					struct IFFHandle *iff);
+					struct IFFHandle *iff, STRPTR name);
 struct CompoundDataType *AddDataType(struct StackVars *sv, 
 				     struct CompoundDataType *cdt);
 void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt);
@@ -691,7 +695,7 @@ void LoadDataType(struct StackVars *sv, STRPTR name)
 			    
 			    while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC) 
 			    {
-				CreateDataType(sv, iff);
+				CreateDataType(sv, iff, name);
 				/* FIXME: The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix */
 				break;
 			    }
@@ -776,21 +780,23 @@ LONG MemStreamHook(struct Hook * hook, UBYTE **memptr, Msg msg)
 */
 
 struct CompoundDataType *CreateDataType(struct StackVars *sv,
-					struct IFFHandle *iff)
+					struct IFFHandle *iff, STRPTR name)
 {
     struct CompoundDataType *cdt = NULL;
     struct StoredProperty *prop;
-    ULONG  AllocLen;
+#if __mc68000
+    LONG   DefaultStack = AROS_STACKSIZE;
     UBYTE *func;
-    LONG   DefaultStack = AROS_STACKSIZE, i;
+#endif
+    ULONG  AllocLen, i;
     BPTR   SegList;
- 
+
     if((prop = FindProp(iff, ID_DTYP, ID_DTHD)))
     {
 	AllocLen = sizeof(struct CompoundDataType) - 
 	          32 + /* was sizeof(struct DataTypeHeader), but we must use struct size as it would be on Amiga */
 		  prop->sp_Size;
-	
+
 	if(!(cdt = AllocVec(AllocLen, MEMF_PUBLIC | MEMF_CLEAR)))
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
@@ -800,14 +806,14 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
 	    struct FileDataTypeHeader *fdh = NULL;
 	    UBYTE *memptr = (UBYTE *)prop->sp_Data;
 	    struct Hook hook;
-	    
+
 	    hook.h_Entry = (HOOKFUNC)HookEntry;
 	    hook.h_SubEntry = (HOOKFUNC)MemStreamHook;
-	    
+
 	    if (ReadStruct(&hook, (APTR *) &fdh, &memptr, FileDataTypeHeaderDesc))
 	    {
 		IPTR extraoffset = sizeof(struct DataTypeHeader) - 32;
-		
+
 		cdt->DT.dtn_Header= &cdt->DTH;
 
 		cdt->DTH.dth_Name = (STRPTR)(fdh->fdth_NameOffset + extraoffset + (IPTR)&cdt->DTH);
@@ -826,35 +832,34 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
 		for(i = 0; i < cdt->DTH.dth_MaskLen; i++)
 		{
 	            cdt->DTH.dth_Mask[i] = AROS_BE2WORD(cdt->DTH.dth_Mask[i]);
-#if 0
-		    kprintf("mask[%d] = %04x (%c %c)\n", i, 
+		    D(bug("[AddDataTypes] mask[%d] = %04x (%c %c)\n", i, 
 			    cdt->DTH.dth_Mask[i],
 			    cdt->DTH.dth_Mask[i] & 255,
-			    (cdt->DTH.dth_Mask[i] >> 8) & 255);
-#endif
+			    (cdt->DTH.dth_Mask[i] >> 8) & 255);)
 		}
 
-#if 0	    
-		kprintf("groupid  = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
-						 cdt->DTH.dth_GroupID >> 16,
-						 cdt->DTH.dth_GroupID >> 8,
-						 cdt->DTH.dth_GroupID);
-		kprintf("id       = %c%c%c%c\n", cdt->DTH.dth_ID >> 24,
-						 cdt->DTH.dth_ID >> 16,
-						 cdt->DTH.dth_ID >> 8,
-						 cdt->DTH.dth_ID);
-		kprintf("flags    = %x\n",	 cdt->DTH.dth_Flags);
-		kprintf("pri      = %d\n",	 cdt->DTH.dth_Priority);
-		kprintf("name     = %s\n",	 cdt->DTH.dth_Name);
-		kprintf("basename = %s\n",	 cdt->DTH.dth_BaseName);
-		kprintf("pattern  = %s\n",	 cdt->DTH.dth_Pattern);
-		kprintf("masklen  = %d\n",	 cdt->DTH.dth_MaskLen);
-#endif
+                D(
+                    bug("[AddDataTypes] groupid  = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
+                                                     cdt->DTH.dth_GroupID >> 16,
+                                                     cdt->DTH.dth_GroupID >> 8,
+                                                     cdt->DTH.dth_GroupID);
+                    bug("[AddDataTypes] id       = %c%c%c%c\n", cdt->DTH.dth_ID >> 24,
+                                                     cdt->DTH.dth_ID >> 16,
+                                                     cdt->DTH.dth_ID >> 8,
+                                                     cdt->DTH.dth_ID);
+                    bug("[AddDataTypes] flags    = %x\n",	 cdt->DTH.dth_Flags);
+                    bug("[AddDataTypes] pri      = %d\n",	 cdt->DTH.dth_Priority);
+                    bug("[AddDataTypes] name     = %s\n",	 cdt->DTH.dth_Name);
+                    bug("[AddDataTypes] basename = %s\n",	 cdt->DTH.dth_BaseName);
+                    bug("[AddDataTypes] pattern  = %s\n",	 cdt->DTH.dth_Pattern);
+                    bug("[AddDataTypes] masklen  = %d\n",	 cdt->DTH.dth_MaskLen);
+                )
 
 		NewList(&cdt->DT.dtn_ToolList);
 
 		cdt->DT.dtn_Length = AllocLen;
 
+#if __mc68000
 		if((prop = FindProp(iff, ID_DTYP, ID_DTCD)))
 		{
 		    if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR)))
@@ -883,7 +888,20 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
 		    } /* if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR))) */
 
 		} /* if((prop = FindProp(iff, ID_DTYP, ID_DTCD))) */
+#else
+                TEXT CDname[256];
 
+                __sprintf(CDname,"%s.%s", name, TARGETCPU);
+                D(bug("[AddDataTypes] Checking for '%s'\n", CDname);)
+
+                if((SegList = LoadSeg(CDname)))
+                {
+                    D(bug("[AddDataTypes] Found!\n");)
+                    cdt->SegList = SegList;
+                    cdt->Function = BADDR(SegList) + sizeof(BPTR);
+                    D(bug("[AddDataTypes] Entry @ 0x%p\n", cdt->Function);)
+                }
+#endif
 		cdt = AddDataType(sv, cdt);
 
 		FreeStruct(fdh, FileDataTypeHeaderDesc);
