@@ -13,6 +13,7 @@
 #include <resources/cia.h>
 
 #include "lowlevel_intern.h"
+#include "cia_intern.h"
 #include "cia_timer.h"
 
 AROS_LH1(VOID, StopTimerInt,
@@ -21,6 +22,16 @@ AROS_LH1(VOID, StopTimerInt,
 {
   AROS_LIBFUNC_INIT
 
+    struct CIABase *CiaBase = (struct CIABase *)LowLevelBase->ll_CIA.llciat_Base;
+
+    if (LowLevelBase->ll_CIA.llciat_iCRBit == CIAICRB_TA)
+    {
+        CiaBase->hw->ciacra &= CIASTOP_A;
+    }
+    else
+    {
+        CiaBase->hw->ciacrb &= CIASTOP_B;
+    }
     return;
 
   AROS_LIBFUNC_EXIT
