@@ -18,12 +18,18 @@
 
 #include <aros/debug.h>
 
+struct llCIATimer
+{
+    struct Library              *llciat_Base;
+    struct Interrupt            llciat_Int;
+    WORD                        llciat_iCRBit;
+};
+
 /*
     This is the LowLevelBase structure. It is documented here because 
     it is completely private. Applications should treat it as a struct 
     Library, and use the workbench.library functions to get information.
 */
-
 struct LowLevelBase
 {
     struct Library              ll_Lib;
@@ -40,6 +46,7 @@ struct LowLevelBase
      */
     ULONG                       ll_PortType[2];
     struct Library              *ll_PotgoBase;
+    struct llCIATimer           ll_CIA;
 #endif
 };
 
