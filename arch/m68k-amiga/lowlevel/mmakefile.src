@@ -2,9 +2,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := readjoyport \
-         setjoyportattrsa \
-         lowlevel_amiga
+FILES := \
+	addtimerint \
+	readjoyport \
+	remtimerint \
+	setjoyportattrsa \
+	starttimerint \
+	stoptimerint \
+	lowlevel_amiga
 
 USER_INCLUDES += -I$(SRCDIR)/workbench/libs/lowlevel
 
