@@ -50,7 +50,36 @@ struct CIA
 
 /* Used in rom/exec/execstrap_init.c */
 /* Still has to be completed */
-#define CIAF_GAMEPORT0	(1L<<6)
+#define CIAF_GAMEPORT0                  (1L<<6)
 
+/* iCR bit definitions */
+#define CIAICRB_TA                      0
+#define CIAICRB_TB                      1
+
+/* iCR bit definitions for Timer A */
+#define CIACRAB_START	                0
+#define CIACRAB_PBON	                1
+#define CIACRAB_OUTMODE                 2
+#define CIACRAB_SPMODE	                6
+#define CIACRAB_TODIN	                7
+
+/* iCR Flags for Timer A */
+#define CIACRAF_START	                (1 << CIACRAB_START)
+#define CIACRAF_PBON	                (1 << CIACRAB_PBON)
+#define CIACRAF_OUTMODE                 (1 << CIACRAB_OUTMODE)
+#define CIACRAF_SPMODE	                (1 << CIACRAB_SPMODE)
+#define CIACRAF_TODIN	                (1 << CIACRAB_TODIN)
+
+/* iCR bit definitions for Timer B */
+#define CIACRBB_START	                0
+#define CIACRBB_PBON	                1
+#define CIACRBB_OUTMODE                 2
+#define CIACRBB_ALARM	                7
+
+/* iCR Flags for Timer B */
+#define CIACRBF_START	                (1 << CIACRBB_START)
+#define CIACRBF_PBON	                (1 << CIACRBB_PBON)
+#define CIACRBF_OUTMODE                 (1 << CIACRBB_OUTMODE)
+#define CIACRBF_ALARM	                (1 << CIACRBB_ALARM)
 
 #endif /* HARDWARE_CIA_H */
