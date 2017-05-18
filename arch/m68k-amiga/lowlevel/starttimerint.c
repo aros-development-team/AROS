@@ -13,6 +13,7 @@
 #include <resources/cia.h>
 
 #include "lowlevel_intern.h"
+#include "cia_intern.h"
 #include "cia_timer.h"
 
 AROS_LH3(VOID, StartTimerInt,
@@ -23,7 +24,10 @@ AROS_LH3(VOID, StartTimerInt,
 {
   AROS_LIBFUNC_INIT
 
-
+    if (intHandle && timeInterval > 0)
+    {
+        
+    }
     return;
 
   AROS_LIBFUNC_EXIT

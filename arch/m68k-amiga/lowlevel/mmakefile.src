@@ -11,7 +11,7 @@ FILES := \
 	stoptimerint \
 	lowlevel_amiga
 
-USER_INCLUDES += -I$(SRCDIR)/workbench/libs/lowlevel
+USER_INCLUDES += -I$(SRCDIR)/workbench/libs/lowlevel -I$(SRCDIR)/$(CURDIR)/../cia
 
 #MM- workbench-libs-lowlevel-amiga-m68k: kernel-potgo-includes
 
