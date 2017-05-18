@@ -11,6 +11,8 @@
 
 static int Lowlevel_amiga_InitLib(struct LowLevelBase *LowLevelBase)
 {
+    LowLevelBase->ll_CIA.llciat_iCRBit = -1;
+
     LowLevelBase->ll_PotgoBase = OpenResource("potgo.resource");
     if (LowLevelBase->ll_PotgoBase == NULL)
         return 0;
