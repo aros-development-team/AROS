@@ -38,17 +38,14 @@ AROS_LH0I(int, KrnIsSuper,
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(KrnIsSuper,Kernel,13)
+	.globl AROS_SLIB_ENTRY(KrnIsSuper,Kernel,13)
+	.globl Kernel_Is_Super
 
 AROS_SLIB_ENTRY(KrnIsSuper,Kernel,13):
-	movem.l	%a5-%a6,%sp@-
-	move.l	SysBase,%a6
-	lea	1f,%a5
-	jsr	%a6@(Supervisor)
-	movem.l	%sp@+,%a5-%a6
-	rts
-
-1:	move.w	%sp@,%d0
+Kernel_Is_Super:
+	/* 68010+ privilege violation exception handler checks for this special case.
+	 * (move from SR is not privileged on 68000) */
+	move %sr,%d0
+	/* If above instruction caused exception, exception handler returns here */
 	and.l	#0x2000,%d0
-	rte
-
+	rts
