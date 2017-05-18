@@ -2,7 +2,7 @@
 #define HARDWARE_CIA_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Amiga CIA chips
