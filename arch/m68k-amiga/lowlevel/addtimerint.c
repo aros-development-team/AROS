@@ -52,6 +52,8 @@ AROS_LH2(APTR, AddTimerInt,
             }
             if (LowLevelBase->ll_CIA.llciat_Base && (LowLevelBase->ll_CIA.llciat_iCRBit != -1))
                 result = (APTR)&LowLevelBase->ll_CIA.llciat_Int;
+            else
+                LowLevelBase->ll_CIA.llciat_Int.is_Code = NULL;
         }
 
         ReleaseSemaphore(&LowLevelBase->ll_Lock);

@@ -21,6 +21,8 @@ AROS_LH1(VOID, RemTimerInt,
     if (LowLevelBase->ll_CIA.llciat_Base && intHandle)
     {
         RemICRVector(LowLevelBase->ll_CIA.llciat_Base, LowLevelBase->ll_CIA.llciat_iCRBit, intHandle);
+        LowLevelBase->ll_CIA.llciat_Int.is_Code = NULL;
+        LowLevelBase->ll_CIA.llciat_iCRBit = -1;
     }
 
     return;
