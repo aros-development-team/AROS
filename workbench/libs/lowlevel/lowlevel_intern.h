@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for lowlevel library
@@ -26,15 +26,21 @@
 
 struct LowLevelBase
 {
-    struct Library         ll_Lib;
+    struct Library              ll_Lib;
 
-    struct SignalSemaphore ll_Lock;
-    struct Interrupt       ll_VBlank;
-    BPTR                   ll_SegList;
+    struct SignalSemaphore      ll_Lock;
+    struct Interrupt            ll_VBlank;
+    BPTR                        ll_SegList;
 
-    /* Variables used by amiga-m68k */
-    ULONG ll_PortType[2];
-    struct Library *ll_PotgoBase;
+#if (1)
+    /*
+     * Variables used by amiga-m68k
+     * TODO: these should be handled in an arch specific manner ..
+     * see kernelbase.
+     */
+    ULONG                       ll_PortType[2];
+    struct Library              *ll_PotgoBase;
+#endif
 };
 
 /*
