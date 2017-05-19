@@ -60,12 +60,14 @@ struct CIA
 #define CIACRAB_START	                0
 #define CIACRAB_PBON	                1
 #define CIACRAB_OUTMODE                 2
+#define CIACRAB_RUNMODE                 3
 #define CIACRAB_SPMODE	                6
 #define CIACRAB_TODIN	                7
 
 /* iCR Flags for Timer A */
 #define CIACRAF_START	                (1 << CIACRAB_START)
 #define CIACRAF_PBON	                (1 << CIACRAB_PBON)
+#define CIACRAF_RUNMODE                 (1 << CIACRAB_RUNMODE)
 #define CIACRAF_OUTMODE                 (1 << CIACRAB_OUTMODE)
 #define CIACRAF_SPMODE	                (1 << CIACRAB_SPMODE)
 #define CIACRAF_TODIN	                (1 << CIACRAB_TODIN)
@@ -74,11 +76,13 @@ struct CIA
 #define CIACRBB_START	                0
 #define CIACRBB_PBON	                1
 #define CIACRBB_OUTMODE                 2
+#define CIACRBB_RUNMODE                 3
 #define CIACRBB_ALARM	                7
 
 /* iCR Flags for Timer B */
 #define CIACRBF_START	                (1 << CIACRBB_START)
 #define CIACRBF_PBON	                (1 << CIACRBB_PBON)
+#define CIACRBF_RUNMODE                 (1 << CIACRBB_RUNMODE)
 #define CIACRBF_OUTMODE                 (1 << CIACRBB_OUTMODE)
 #define CIACRBF_ALARM	                (1 << CIACRBB_ALARM)
 
