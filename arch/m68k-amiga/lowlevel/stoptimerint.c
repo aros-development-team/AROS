@@ -20,7 +20,7 @@ AROS_LH1(VOID, StopTimerInt,
       AROS_LHA(APTR , intHandle, A1),
       struct LowLevelBase *, LowLevelBase, 15, LowLevel)
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     struct CIABase *CiaBase = (struct CIABase *)LowLevelBase->ll_CIA.llciat_Base;
 
@@ -34,5 +34,5 @@ AROS_LH1(VOID, StopTimerInt,
     }
     return;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
