@@ -31,6 +31,8 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
         return FALSE;
     }
 
+    /* Some m68k programs initialize semaphores manually, without setting up ln_Type */
+#if !defined(__mc68000__) || DEBUG
     if ((sigSem->ss_Link.ln_Type != NT_SIGNALSEM) || (sigSem->ss_WaitQueue.mlh_Tail != NULL))
     {
         struct Task *ThisTask = GET_THIS_TASK;
@@ -41,6 +43,7 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
 
         return FALSE;
     }
+#endif
 
     return TRUE;
 }
