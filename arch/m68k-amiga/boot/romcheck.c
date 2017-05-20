@@ -149,7 +149,7 @@ int main(int argc, char **argv)
                 /* Add the interrupt vector offsets,
                  * needed by 68000 and 68010 */
                 p = (uint8_t*)rom + len - 16;
-                for (i = 0; i < 7; i++) {
+                for (i = 0; i < 8; i++) {
                         p[i * 2 + 1] = i + 0x18;
                         p[i * 2 + 0] = 0;
                 }
