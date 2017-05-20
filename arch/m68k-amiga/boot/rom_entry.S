@@ -1,6 +1,6 @@
 
 Version = 46
-Revision= 11
+Revision= 12
 
 	.text
 
@@ -9,7 +9,7 @@ Revision= 11
 	.align 4 
 
 rom_start:
-	.word	0x1111
+	.word	0x1114
 _start:
 software_reset:
 	jmp rom_init
@@ -37,4 +37,4 @@ software_reset:
     .global rom_magic_reset
 rom_magic_reset:
     reset
-    nop
+    jmp rom_init
