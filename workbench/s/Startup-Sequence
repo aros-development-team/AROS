@@ -36,7 +36,7 @@ If EXISTS "SYS:DiskImages"
 EndIf
 
 Automount >NIL:
-Mount >NIL: "DEVS:DOSDrivers/~((.#?)|(#?.info))"
+Mount >NIL: "DEVS:DOSDrivers/~((.#?)|(#?.info)|(#?.dbg))"
 
 Dir >NIL: "PIPE:"
 
