@@ -47,6 +47,7 @@ struct LowLevelBase
     ULONG                       ll_PortType[2];
     struct Library              *ll_PotgoBase;
     struct llCIATimer           ll_CIA;
+    WORD                        ll_EClockMult;
 #endif
 };
 
