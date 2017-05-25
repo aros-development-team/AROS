@@ -2,7 +2,7 @@
 #define LIBRARIES_LOWLEVEL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for lowlevel.library
@@ -142,7 +142,6 @@ struct KeyQuery
 #define RAWKEY_PORT0_JOY_LEFT		0x07C
 
 #define RAWKEY_PORT1_BUTTON_BLUE	0x172
-#define RAWKEY_PORT1_BUTTON_BLUE	0x172
 #define RAWKEY_PORT1_BUTTON_PLAY	0x173
 #define RAWKEY_PORT1_BUTTON_REVERSE	0x174
 #define RAWKEY_PORT1_BUTTON_FORWARD	0x175
@@ -154,6 +153,7 @@ struct KeyQuery
 #define RAWKEY_PORT1_JOY_RIGHT		0x17B
 #define RAWKEY_PORT1_JOY_LEFT		0x17C
 
+#define RAWKEY_PORT2_BUTTON_BLUE	0x272
 #define RAWKEY_PORT2_BUTTON_PLAY	0x273
 #define RAWKEY_PORT2_BUTTON_REVERSE	0x274
 #define RAWKEY_PORT2_BUTTON_FORWARD	0x275
