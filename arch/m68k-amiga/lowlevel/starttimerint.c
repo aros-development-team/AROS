@@ -28,11 +28,15 @@ AROS_LH3(VOID, StartTimerInt,
     struct CIABase *CiaBase = (struct CIABase *)LowLevelBase->ll_CIA.llciat_Base;
     UBYTE volatile *ciacr_ptr;
     UBYTE crflags;
+    long long ecv;
 
     if (intHandle && (timeInterval > 0))
     {
         /* Stop the timer if it is currently running */
         StopTimerInt(intHandle);
+
+        /* convert to EClock's */
+        ecv = ((long long)timeInterval * LowLevelBase->ll_EClockMult) >> 15;
 
         /* 
          * Set the requested interval, and Choose appropriate flags
@@ -40,8 +44,8 @@ AROS_LH3(VOID, StartTimerInt,
          */
         if (LowLevelBase->ll_CIA.llciat_iCRBit == CIAICRB_TA)
         {
-            CiaBase->hw->ciatalo = (timeInterval & 0xFF);
-            CiaBase->hw->ciatahi = ((timeInterval >> 8) & 0xFF);
+            CiaBase->hw->ciatalo = (ecv & 0xFF);
+            CiaBase->hw->ciatahi = ((ecv >> 8) & 0xFF);
 
             ciacr_ptr = &CiaBase->hw->ciacra;
             crflags =  CIASTART_A;
@@ -50,8 +54,8 @@ AROS_LH3(VOID, StartTimerInt,
         }
         else
         {
-            CiaBase->hw->ciatblo = (timeInterval & 0xFF);
-            CiaBase->hw->ciatbhi = ((timeInterval >> 8) & 0xFF);
+            CiaBase->hw->ciatblo = (ecv & 0xFF);
+            CiaBase->hw->ciatbhi = ((ecv >> 8) & 0xFF);
 
             ciacr_ptr = &CiaBase->hw->ciacrb;
             crflags = CIASTART_B;
