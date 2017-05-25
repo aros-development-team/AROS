@@ -37,6 +37,8 @@ AROS_LH3(VOID, StartTimerInt,
 
         /* convert to EClock's */
         ecv = ((long long)timeInterval * LowLevelBase->ll_EClockMult) >> 15;
+        if ((ecv & 0xFFFF) == 0)
+            ecv = 1;
 
         /* 
          * Set the requested interval, and Choose appropriate flags
@@ -48,9 +50,9 @@ AROS_LH3(VOID, StartTimerInt,
             CiaBase->hw->ciatahi = ((ecv >> 8) & 0xFF);
 
             ciacr_ptr = &CiaBase->hw->ciacra;
-            crflags =  CIASTART_A;
-            if (continuous)
-                crflags |=  CIACRAF_RUNMODE;
+            crflags = CIASTART_A;
+            if (!continuous)
+                crflags |= CIACRAF_RUNMODE;
         }
         else
         {
@@ -59,7 +61,7 @@ AROS_LH3(VOID, StartTimerInt,
 
             ciacr_ptr = &CiaBase->hw->ciacrb;
             crflags = CIASTART_B;
-            if (continuous)
+            if (!continuous)
                 crflags |=  CIACRBF_RUNMODE;
         }
 
