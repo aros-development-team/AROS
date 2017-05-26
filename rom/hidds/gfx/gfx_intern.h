@@ -25,6 +25,9 @@
 #define USE_FAST_DRAWLINE               1
 #define USE_FAST_GETIMAGE               1
 #define USE_FAST_PUTIMAGE               1
+#define USE_FAST_CONVERTPIXELS          1
+#define USE_FAST_UNMAPPIXEL             1
+#define USE_FAST_MAPCOLOR               1
 #define COPYBOX_CHECK_FOR_ALIKE_PIXFMT	1
 
 struct HWGfxData
@@ -239,6 +242,18 @@ struct HIDDBitMapData
     OOP_MethodFunc         putimage;
     OOP_Class             *putimage_Class;
 #endif
+#if USE_FAST_CONVERTPIXELS
+    OOP_MethodFunc         convertpixels;
+    OOP_Class             *convertpixels_Class;
+#endif
+#if USE_FAST_UNMAPPIXEL
+    OOP_MethodFunc         unmappixel;
+    OOP_Class             *unmappixel_Class;
+#endif
+#if USE_FAST_MAPCOLOR
+    OOP_MethodFunc         mapcolor;
+    OOP_Class             *mapcolor_Class;
+#endif
 };
 
 #define NUM_ATTRBASES   11
@@ -353,13 +368,13 @@ static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD
 #if USE_FAST_GETPIXEL
 static inline HIDDT_Pixel GETPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y)
 {
-    struct pHidd_BitMap_GetPixel get_p;
+    struct pHidd_BitMap_GetPixel getp_p;
 
-    get_p.mID = HiddBitMapBase + moHidd_BitMap_GetPixel;
-    get_p.x   = x;
-    get_p.y   = y;
+    getp_p.mID = HiddBitMapBase + moHidd_BitMap_GetPixel;
+    getp_p.x   = x;
+    getp_p.y   = y;
 
-    return HBM(o)->getpixel(HBM(o)->getpixel_Class, o, &get_p.mID);
+    return HBM(o)->getpixel(HBM(o)->getpixel_Class, o, &getp_p.mID);
 }
 #else
 #define GETPIXEL(cl, obj, x, y) HIDD_BM_GetPixel(obj, x, y)
@@ -368,14 +383,14 @@ static inline HIDDT_Pixel GETPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y)
 #if USE_FAST_PUTPIXEL
 static inline void PUTPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y, HIDDT_Pixel val)
 {
-    struct pHidd_BitMap_PutPixel put_p;
+    struct pHidd_BitMap_PutPixel putp_p;
 
-    put_p.mID   = HiddBitMapBase + moHidd_BitMap_PutPixel;
-    put_p.x     = x;
-    put_p.y     = y;
-    put_p.pixel = val;
+    putp_p.mID   = HiddBitMapBase + moHidd_BitMap_PutPixel;
+    putp_p.x     = x;
+    putp_p.y     = y;
+    putp_p.pixel = val;
 
-    HBM(o)->putpixel(HBM(o)->putpixel_Class, o, &put_p.mID);
+    HBM(o)->putpixel(HBM(o)->putpixel_Class, o, &putp_p.mID);
 }
 #else
 #define PUTPIXEL(cl, obj, x, y, val) HIDD_BM_PutPixel(obj, x, y, val)
@@ -384,14 +399,14 @@ static inline void PUTPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y, HIDDT_
 #if USE_FAST_DRAWPIXEL
 static inline void DRAWPIXEL(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, WORD x, WORD y)
 {
-    struct pHidd_BitMap_DrawPixel draw_p;
+    struct pHidd_BitMap_DrawPixel drawp_p;
 
-    draw_p.mID = HiddBitMapBase + moHidd_BitMap_DrawPixel;
-    draw_p.gc  = gc;
-    draw_p.x   = x;
-    draw_p.y   = y;
+    drawp_p.mID = HiddBitMapBase + moHidd_BitMap_DrawPixel;
+    drawp_p.gc  = gc;
+    drawp_p.x   = x;
+    drawp_p.y   = y;
 
-    HBM(o)->drawpixel(HBM(o)->drawpixel_Class, o, &draw_p.mID);
+    HBM(o)->drawpixel(HBM(o)->drawpixel_Class, o, &drawp_p.mID);
 }
 #else
 #define DRAWPIXEL(cl, obj, gc, x, y) HIDD_BM_PutPixel(obj, gc, x, y)
@@ -456,6 +471,58 @@ static inline void PUTIMAGE(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, UBYTE 
 }
 #else
 #define PUTIMAGE(cl, obj, gc, pixels, modulo, x, y, width, height, pixFmt) HIDD_BM_PutImage(obj, gc, pixels, modulo, x, y, width, height, pixFmt)
+#endif
+
+#if USE_FAST_CONVERTPIXELS
+static inline void CONVERTPIXELS(OOP_Class *cl, OOP_Object *o, APTR *srcPixels, HIDDT_PixelFormat *srcPixFmt, ULONG srcMod, APTR *dstBuf, HIDDT_PixelFormat *dstPixFmt, ULONG dstMod, UWORD width, UWORD height, HIDDT_PixelLUT *pixlut)
+{
+    struct pHidd_BitMap_ConvertPixels convp_p;
+
+    convp_p.mID = HiddBitMapBase + moHidd_BitMap_ConvertPixels;
+    convp_p.srcPixels   = srcPixels;
+    convp_p.srcPixFmt   = srcPixFmt;
+    convp_p.srcMod      = srcMod;
+    convp_p.dstBuf      = dstBuf;
+    convp_p.dstPixFmt   = dstPixFmt;
+    convp_p.dstMod      = dstMod;
+    convp_p.width       = width;
+    convp_p.height      = height;
+    convp_p.pixlut      = pixlut;
+
+    HBM(o)->convertpixels(HBM(o)->convertpixels_Class, o, &convp_p.mID);
+}
+#else
+#define CONVERTPIXELS(cl, obj, srcPixels, srcPixFmt, srcMod, dstBuf, dstPixFmt, dstMod, width, height, pixlut) HIDD_BM_ConvertPixels(obj, srcPixels, srcPixFmt, srcMod, dstBuf, dstPixFmt, dstMod, width, height, pixlut)
+#endif
+
+#if USE_FAST_UNMAPPIXEL
+static inline void UNMAPPIXEL(OOP_Class *cl, OOP_Object *o, HIDDT_Pixel pixel, HIDDT_Color *color)
+{
+    struct pHidd_BitMap_UnmapPixel unmpp_p;
+
+    unmpp_p.mID = HiddBitMapBase + moHidd_BitMap_UnmapPixel;
+    unmpp_p.pixel   = pixel;
+    unmpp_p.color   = color;
+
+    HBM(o)->unmappixel(HBM(o)->unmappixel_Class, o, &unmpp_p.mID);
+}
+#else
+#define UNMAPPIXEL(cl, obj, pixel, color) HIDD_BM_UnmapPixel(obj, pixel, color)
+#endif
+
+//HIDD_BM_MapColor(o, &col)
+#if USE_FAST_MAPCOLOR
+static inline HIDDT_Pixel MAPCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color)
+{
+    struct pHidd_BitMap_MapColor mapc_p;
+
+    mapc_p.mID = HiddBitMapBase + moHidd_BitMap_MapColor;
+    mapc_p.color   = color;
+
+    return HBM(o)->mapcolor(HBM(o)->mapcolor_Class, o, &mapc_p.mID);
+}
+#else
+#define MAPCOLOR(cl, obj, color) HIDD_BM_MapColor(obj, color)
 #endif
 
 #endif /* GFX_HIDD_INTERN_H */

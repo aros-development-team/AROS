@@ -1075,6 +1075,15 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 #if USE_FAST_PUTIMAGE
             data->putimage = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutImage, &data->putimage_Class);
 #endif
+#if USE_FAST_CONVERTPIXELS
+            data->convertpixels = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_ConvertPixels, &data->convertpixels_Class);
+#endif
+#if USE_FAST_UNMAPPIXEL
+            data->unmappixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_UnmapPixel, &data->unmappixel_Class);
+#endif
+#if USE_FAST_MAPCOLOR
+            data->mapcolor = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_MapColor, &data->mapcolor_Class);
+#endif
             /*
              * Try to create the colormap.
              *
@@ -2729,7 +2738,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
                                          1,
                                          vHidd_StdPixFmt_Native);
 
-                        HIDD_BM_ConvertPixels(o,
+                        CONVERTPIXELS(cl, o,
                                               &srcPixels,
                                               (HIDDT_PixelFormat *)data->prot.pixfmt,
                                               0,
@@ -2884,7 +2893,7 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                 {
                     for(y = 0; y < msg->height; y++)
                     {
-                        HIDD_BM_ConvertPixels(o,
+                        CONVERTPIXELS(cl, o,
                                               (APTR *)ppixarray,
                                               (HIDDT_PixelFormat *)srcpf,
                                               msg->modulo,
@@ -3091,7 +3100,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                 LONG        dst_red, dst_green, dst_blue;
 
                 destpix = GETPIXEL(cl, o, x, y);
-                HIDD_BM_UnmapPixel(o, destpix, &col);
+                UNMAPPIXEL(cl, o, destpix, &col);
 
                 srcpix = *pixarray++;
                 ARGB32_DECOMPOSE(src_alpha, src_red, src_green, src_blue, srcpix);
@@ -3108,7 +3117,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                 col.green = dst_green << 8;
                 col.blue  = dst_blue << 8;
 
-                PUTPIXEL(cl, o, x, y, HIDD_BM_MapColor(o, &col));
+                PUTPIXEL(cl, o, x, y, MAPCOLOR(cl, o, &col));
             } /* for(x = msg->x; x < msg->x + msg->width; x++) */
 
            data.pixels += msg->modulo;
@@ -3458,7 +3467,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     if (msg->width <= 0 || msg->height <= 0)
         return;
 
-    HIDD_BM_UnmapPixel(o, GC_FG(gc), &color);
+    UNMAPPIXEL(cl, o, GC_FG(gc), &color);
     data.a_red   = color.red   >> 8;
     data.a_green = color.green >> 8;
     data.a_blue  = color.blue  >> 8;
@@ -3476,7 +3485,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
         op  = JAM2AlphaTemplateBuffered;
         get = FALSE;
 
-        HIDD_BM_UnmapPixel(o, GC_BG(gc), &color);
+        UNMAPPIXEL(cl, o, GC_BG(gc), &color);
         data.b_red   = color.red   >> 8;
         data.b_green = color.green >> 8;
         data.b_blue  = color.blue  >> 8;
