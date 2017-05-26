@@ -1618,12 +1618,12 @@ VOID BM__Hidd_BitMap__DrawLine
             {
                 if(GC_LINEPAT(gc) & maskLine)
                 {
-                    HIDD_BM_DrawPixel(obj, gc, i, y);
+                    DRAWPIXEL(cl, obj, gc, i, y);
                 }
                 else if (opaque)
                 {
                     GC_FG(gc) = GC_BG(gc);
-                    HIDD_BM_DrawPixel(obj, gc, i, y);
+                    DRAWPIXEL(cl, obj, gc, i, y);
                     GC_FG(gc) = fg;
                 }
             }
@@ -1659,12 +1659,12 @@ VOID BM__Hidd_BitMap__DrawLine
             {
                 if(GC_LINEPAT(gc) & maskLine)
                 {
-                    HIDD_BM_DrawPixel(obj, gc, x, i);
+                    DRAWPIXEL(cl, obj, gc, x, i);
                 }
                 else if (opaque)
                 {
                     GC_FG(gc) = GC_BG(gc);
-                    HIDD_BM_DrawPixel(obj, gc, x, i);
+                    DRAWPIXEL(cl, obj, gc, x, i);
                     GC_FG(gc) = fg;
                 }
             }
@@ -1714,12 +1714,12 @@ VOID BM__Hidd_BitMap__DrawLine
             {
                 if(GC_LINEPAT(gc) & maskLine)
                 {
-                    HIDD_BM_DrawPixel(obj, gc, x, y);
+                    DRAWPIXEL(cl, obj, gc, x, y);
                 }
                 else if (opaque)
                 {
                     GC_FG(gc) = GC_BG(gc);
-                    HIDD_BM_DrawPixel(obj, gc, x, y);
+                    DRAWPIXEL(cl, obj, gc, x, y);
                     GC_FG(gc) = fg;
                 }
             }
@@ -1958,24 +1958,32 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
         {
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
+            }
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
+            }
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
+            }
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
+            }
 
         }
         else
         {
-            HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
-            HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
-            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
-            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
+            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
+            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
+            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
         }
 
         y++;            /* always move up here */
@@ -2002,32 +2010,38 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
         {
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
+            }
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
+            }
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
+            }
 
             if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
-                HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+            {
+                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
+            }
 
         }
         else
         {
-
-            HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
-            HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
-            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
-            HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
+            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
+            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
+            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
         }
     #else
-
-        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
-        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
+        DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
+        DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
+        DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
+        DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
     #endif
         x--;            /* always move left here */
         t8 = t8 - t6;
@@ -2364,7 +2378,7 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
             {
                 if(*(charPatternPtr + fx / 8 + fy * modulo) & (128 >> (fx % 8)))
                 {
-                    HIDD_BM_DrawPixel(obj, msg->gc, x, y);
+                    DRAWPIXEL(cl, obj, msg->gc, x, y);
                 }
                 x++;
             }
@@ -2530,7 +2544,7 @@ VOID BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
     {
         for(x = 0; x < width; x++)
         {
-            HIDD_BM_PutPixel(obj, x, y, 0);
+            PUTPIXEL(cl, obj, x, y, 0);
         }
     }
 
@@ -2647,7 +2661,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
                 {
                     register HIDDT_Pixel pix;
 
-                    pix = HIDD_BM_GetPixel(o, x + msg->x , y + msg->y);
+                    pix = GETPIXEL(cl, o, x + msg->x , y + msg->y);
 
                     switch (bpp)
                     {
@@ -2842,7 +2856,7 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 
                     GC_FG(gc) = pix;
 
-                    HIDD_BM_DrawPixel(o, gc, x + msg->x , y + msg->y);
+                    DRAWPIXEL(cl, o, gc, x + msg->x , y + msg->y);
                 }
                 pixarray += (msg->modulo - msg->width * bpp);
             }
@@ -3068,7 +3082,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                 LONG        src_red, src_green, src_blue, src_alpha;
                 LONG        dst_red, dst_green, dst_blue;
 
-                destpix = HIDD_BM_GetPixel(o, x, y);
+                destpix = GETPIXEL(cl, o, x, y);
                 HIDD_BM_UnmapPixel(o, destpix, &col);
 
                 srcpix = *pixarray++;
@@ -3086,8 +3100,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                 col.green = dst_green << 8;
                 col.blue  = dst_blue << 8;
 
-                HIDD_BM_PutPixel(o, x, y, HIDD_BM_MapColor(o, &col));
-                
+                PUTPIXEL(cl, o, x, y, HIDD_BM_MapColor(o, &col));
             } /* for(x = msg->x; x < msg->x + msg->width; x++) */
 
            data.pixels += msg->modulo;
@@ -3904,7 +3917,7 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
                 for(x = 0; x < msg->width; x++)
                 {
                     GC_FG(gc) = lut[pixarray[x]];
-                    HIDD_BM_DrawPixel(o, gc, msg->x + x, msg->y + y);
+                    DRAWPIXEL(cl, o, gc, msg->x + x, msg->y + y);
                 }
             }
             else
@@ -3912,7 +3925,7 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
                 for(x = 0; x < msg->width; x++)
                 {
                     GC_FG(gc) = pixarray[x];
-                    HIDD_BM_DrawPixel(o, gc, msg->x + x, msg->y + y);
+                    DRAWPIXEL(cl, o, gc, msg->x + x, msg->y + y);
                 }
             }
             GC_FG(gc) = old_fg;
@@ -4156,14 +4169,14 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
                 /* FIXME: This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway */
                 for(x = 0; x < msg->width; x++)
                 {
-                    pixarray[x] = (UBYTE)HIDD_BM_GetPixel(o, msg->x + x, msg->y + y);
+                    pixarray[x] = (UBYTE)GETPIXEL(cl, o, msg->x + x, msg->y + y);
                 }
             }
             else
             {
                 for(x = 0; x < msg->width; x++)
                 {
-                    pixarray[x] = (UBYTE)HIDD_BM_GetPixel(o, msg->x + x, msg->y + y);
+                    pixarray[x] = (UBYTE)GETPIXEL(cl, o, msg->x + x, msg->y + y);
                 }
             }
 
@@ -4256,6 +4269,12 @@ VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
             ULONG is_set;
 
             /* Pixel value is either 0 or 1 for BM of depth 1 */
+/*
+#if USE_FAST_GETPIXEL
+            if (cl==()) is_set = GETPIXEL(cl, msg->srcBitMap, x + msg->srcX, y + msg->srcY);
+            else
+#endif
+*/
             is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
 
 /*
@@ -4266,7 +4285,7 @@ else
 */
             if (is_set)
             {
-                HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
+                DRAWPIXEL(cl, o, gc, x + msg->destX, y + msg->destY);
             }
             else
             {
@@ -4274,7 +4293,7 @@ else
                 {
                     /* Write bixel with BG pen */
                     GC_FG(gc) = bg;
-                    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
+                    DRAWPIXEL(cl, o, gc, x + msg->destX, y + msg->destY);
                     /* Reset to FG pen */
                     GC_FG(gc) = fg;
                 }
