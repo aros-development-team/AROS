@@ -13,7 +13,8 @@ AFILES=newstackswap stackswap \
        cacheclearu_ cachecleare_ cachepostdma_ cachepredma_ \
        setsr cachecontrol_ \
        obtainquickvector \
-       copymem_ copymemquick
+       copymem_ copymem_020 copymem_040 copymem_060 \
+       copymemquick copymemquick_040 copymemquick_060
 
 USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR) -m68060
