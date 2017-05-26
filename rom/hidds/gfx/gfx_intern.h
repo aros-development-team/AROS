@@ -18,10 +18,13 @@
 #include <graphics/monitor.h>
 
 
+#define USE_FAST_GETPIXEL		1
 #define USE_FAST_PUTPIXEL		1
 #define OPTIMIZE_DRAWPIXEL_FOR_COPY	1
 #define USE_FAST_DRAWPIXEL		1
-#define USE_FAST_GETPIXEL		1
+#define USE_FAST_DRAWLINE               1
+#define USE_FAST_GETIMAGE               1
+#define USE_FAST_PUTIMAGE               1
 #define COPYBOX_CHECK_FOR_ALIKE_PIXFMT	1
 
 struct HWGfxData
@@ -224,6 +227,18 @@ struct HIDDBitMapData
     OOP_MethodFunc         drawpixel;
     OOP_Class             *drawpixel_Class;
 #endif
+#if USE_FAST_DRAWLINE
+    OOP_MethodFunc         drawline;
+    OOP_Class             *drawline_Class;
+#endif
+#if USE_FAST_GETIMAGE
+    OOP_MethodFunc         getimage;
+    OOP_Class             *getimage_Class;
+#endif
+#if USE_FAST_PUTIMAGE
+    OOP_MethodFunc         putimage;
+    OOP_Class             *putimage_Class;
+#endif
 };
 
 #define NUM_ATTRBASES   11
@@ -380,6 +395,67 @@ static inline void DRAWPIXEL(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, WORD 
 }
 #else
 #define DRAWPIXEL(cl, obj, gc, x, y) HIDD_BM_PutPixel(obj, gc, x, y)
+#endif
+
+#if USE_FAST_DRAWLINE
+static inline void DRAWLINE(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, WORD x1, WORD y1, WORD x2, WORD y2)
+{
+    struct pHidd_BitMap_DrawLine drawl_p;
+
+    drawl_p.mID = HiddBitMapBase + moHidd_BitMap_DrawLine;
+    drawl_p.gc   = gc;
+    drawl_p.x1   = x1;
+    drawl_p.y1   = y1;
+    drawl_p.x2   = x2;
+    drawl_p.y2   = y2;
+
+    HBM(o)->drawline(HBM(o)->drawline_Class, o, &drawl_p.mID);
+}
+#else
+#define DRAWLINE(cl, obj, gc, x1, y1, x2, y2) HIDD_BM_DrawLine(obj, gc, x1, y1, x2, y2)
+#endif
+
+#if USE_FAST_GETIMAGE
+static inline void GETIMAGE(OOP_Class *cl, OOP_Object *o, UBYTE *pixels, ULONG modulo, WORD x, WORD y,
+                               WORD width, WORD height, HIDDT_StdPixFmt pixFmt)
+{
+    struct pHidd_BitMap_GetImage geti_p;
+
+    geti_p.mID = HiddBitMapBase + moHidd_BitMap_GetImage;
+    geti_p.pixels       = pixels;
+    geti_p.modulo       = modulo;
+    geti_p.x            = x;
+    geti_p.y            = y;
+    geti_p.width        = width;
+    geti_p.height       = height;
+    geti_p.pixFmt       = pixFmt;
+
+    HBM(o)->getimage(HBM(o)->getimage_Class, o, &geti_p.mID);
+}
+#else
+#define GETIMAGE(cl, o, obj, pixels, modulo, x, y, width, height, pixFmt) HIDD_BM_GetImage(o, obj, pixels, modulo, x, y, width, height, pixFmt)
+#endif
+
+#if USE_FAST_PUTIMAGE
+static inline void PUTIMAGE(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, UBYTE *pixels, ULONG modulo,
+                               WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt)
+{
+    struct pHidd_BitMap_PutImage puti_p;
+
+    puti_p.mID = HiddBitMapBase + moHidd_BitMap_PutImage;
+    puti_p.gc           = gc;
+    puti_p.pixels       = pixels;
+    puti_p.modulo       = modulo;
+    puti_p.x            = x;
+    puti_p.y            = y;
+    puti_p.width        = width;
+    puti_p.height       = height;
+    puti_p.pixFmt       = pixFmt;
+
+    HBM(o)->putimage(HBM(o)->putimage_Class, o, &puti_p.mID);
+}
+#else
+#define PUTIMAGE(cl, obj, gc, pixels, modulo, x, y, width, height, pixFmt) HIDD_BM_PutImage(obj, gc, pixels, modulo, x, y, width, height, pixFmt)
 #endif
 
 #endif /* GFX_HIDD_INTERN_H */

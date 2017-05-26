@@ -114,12 +114,12 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
         if (getimage)
         {
             /* For some operations this can be optimized away */
-            HIDD_BM_GetImage(o, buf, bytesperline, startx, y, width, buflines, stdpf);
+            GETIMAGE(cl, o, buf, bytesperline, startx, y, width, buflines, stdpf);
         }
 
         operation(buf, y, width, buflines, userdata);
 
-        HIDD_BM_PutImage(o, data->gc, buf, bytesperline, startx, y, width, buflines, stdpf);
+        PUTIMAGE(cl, o, data->gc, buf, bytesperline, startx, y, width, buflines, stdpf);
     }
 
     FreeMem(buf, bufsize);
@@ -1066,7 +1066,15 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 #if USE_FAST_DRAWPIXEL
             data->drawpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawPixel, &data->drawpixel_Class);
 #endif
-
+#if USE_FAST_DRAWLINE
+            data->drawline = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawLine, &data->drawline_Class);
+#endif
+#if USE_FAST_GETIMAGE
+            data->getimage = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_GetImage, &data->getimage_Class);
+#endif
+#if USE_FAST_PUTIMAGE
+            data->putimage = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutImage, &data->putimage_Class);
+#endif
             /*
              * Try to create the colormap.
              *
@@ -1809,10 +1817,10 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
     if(msg->minX == msg->maxX) addX = 0; else addX = 1;
     if(msg->minY == msg->maxY) addY = 0; else addY = 1;
 
-    HIDD_BM_DrawLine(obj, gc, msg->minX, msg->minY       , msg->maxX, msg->minY);
-    HIDD_BM_DrawLine(obj, gc, msg->maxX, msg->minY + addY, msg->maxX, msg->maxY);
-    HIDD_BM_DrawLine(obj, gc, msg->maxX - addX, msg->maxY, msg->minX, msg->maxY);
-    HIDD_BM_DrawLine(obj, gc, msg->minX, msg->maxY - addY, msg->minX, msg->minY + addY);
+    DRAWLINE(cl, obj, gc, msg->minX, msg->minY       , msg->maxX, msg->minY);
+    DRAWLINE(cl, obj, gc, msg->maxX, msg->minY + addY, msg->maxX, msg->maxY);
+    DRAWLINE(cl, obj, gc, msg->maxX - addX, msg->maxY, msg->minX, msg->maxY);
+    DRAWLINE(cl, obj, gc, msg->minX, msg->maxY - addY, msg->minX, msg->minY + addY);
 #endif
 
     ReturnVoid("BitMap::DrawRect");
@@ -1877,7 +1885,7 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
     
     for(; y <= msg->maxY; y++)
     {
-        HIDD_BM_DrawLine(obj, gc, msg->minX, y, msg->maxX, y);
+        DRAWLINE(cl, obj, gc, msg->minX, y, msg->maxX, y);
     }
 
     GC_LINEPAT(gc) = linepat;
@@ -2126,8 +2134,8 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
     while (d2 < 0)                  /* till slope = -1 */
     {
         /* draw 4 points using symmetry */
-        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
-        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
+        DRAWLINE(cl, obj, gc, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
+        DRAWLINE(cl, obj, gc, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
 
         y++;            /* always move up here */
         t9 = t9 + t3;
@@ -2148,8 +2156,8 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
     do                              /* rest of top right quadrant */
     {
         /* draw 4 points using symmetry */
-        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
-        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
+        DRAWLINE(cl, obj, gc, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
+        DRAWLINE(cl, obj, gc, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
 
         x--;            /* always move left here */
         t8 = t8 - t6;
@@ -2222,7 +2230,7 @@ VOID BM__Hidd_BitMap__DrawPolygon(OOP_Class *cl, OOP_Object *obj,
 
     for(i = 2; i < (2 * msg->n); i = i + 2)
     {
-        HIDD_BM_DrawLine(obj, gc, msg->coords[i - 2], msg->coords[i - 1],
+        DRAWLINE(cl, obj, gc, msg->coords[i - 2], msg->coords[i - 1],
                               msg->coords[i], msg->coords[i + 1]);
     }
 #endif
@@ -2712,7 +2720,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
                 {
                     for(y = 0; y < msg->height; y++)
                     {
-                        HIDD_BM_GetImage(o,
+                        GETIMAGE(cl, o,
                                          buf,
                                          0,
                                          msg->x,
@@ -2887,7 +2895,7 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                                               1,
                                               NULL);
 
-                        HIDD_BM_PutImage(o,
+                        PUTIMAGE(cl, o,
                                          msg->gc,
                                          buf,
                                          0,
@@ -3894,7 +3902,7 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
             }
             pixarray += msg->modulo;
 
-            HIDD_BM_PutImage(o,
+            PUTIMAGE(cl, o,
                              msg->gc,
                              (UBYTE *)linebuf,
                              0,
@@ -4136,7 +4144,7 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     {
         if (linebuf)
         {
-            HIDD_BM_GetImage(o,
+            GETIMAGE(cl, o,
                             (UBYTE *)linebuf,
                             0,
                             msg->x,
