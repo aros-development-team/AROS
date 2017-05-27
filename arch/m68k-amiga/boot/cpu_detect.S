@@ -104,6 +104,11 @@ cpu_detect_asm:
  	movec	%pcr,%d0
  	move.l	%d0,%a2@(4) // save PCR
 	move.w	#0x008f,%d0
+
+	/* Apollo 68080 */
+	dc.l	0x06d00000 // check for 68080 addiw.l instruction
+	move.w	#0x020f,%d0
+
 cpu_detect_trap_illg:
 	move.l %a1,%sp	/* remove exception stack frame */
 	rts				/* return to cpu_detect() */
