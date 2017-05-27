@@ -263,7 +263,7 @@ BOOL Prefs_Default(VOID)
 {
     static struct Preferences def;
 
-    GetDefPrefs(&def, sizeof(def));
+    GetPrefs(&def, sizeof(def));
     screenmodeprefs.smp_Reserved[0] = 0;
     screenmodeprefs.smp_Reserved[1] = 0;
     screenmodeprefs.smp_Reserved[2] = 0;
@@ -274,7 +274,7 @@ BOOL Prefs_Default(VOID)
     screenmodeprefs.smp_Depth       = def.wb_Depth;
     screenmodeprefs.smp_Control     = 0;
 
-    D(Printf("[Prefs_Default] Default Workbench screen: %ldx%ldx%ld\n",
+    D(Printf("[Prefs_Default] Workbench screen: %ldx%ldx%ld\n",
              screenmodeprefs.smp_Width, screenmodeprefs.smp_Height, screenmodeprefs.smp_Depth));
 
     return TRUE;
