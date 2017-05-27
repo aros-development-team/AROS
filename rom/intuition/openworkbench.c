@@ -244,9 +244,9 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
             if (GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID != modeid)
             {
                 GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID = modeid;
-                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width = width;
-                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height = height;
-                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth = depth;
+                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Width = width;
+                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Height = height;
+                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Depth = depth;
             }
 
 	    screenTags[0].ti_Data = width;
