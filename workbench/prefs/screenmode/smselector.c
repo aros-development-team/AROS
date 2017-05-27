@@ -29,6 +29,7 @@
 
 struct ScreenModeSelector_DATA
 {
+    Object *mode_list;
     STRPTR *modes_array;
     ULONG  *ids_array;
 };
@@ -167,7 +168,8 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     DoMethod(self, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
              (IPTR)self, 3, MUIM_CallHook, (IPTR)&SelectHook, MUIV_TriggerValue);
  
-    data = INST_DATA(CLASS, self);    
+    data = INST_DATA(CLASS, self);
+    data->mode_list = list;
     data->modes_array = modes_array;
     data->ids_array   = ids_array;
 
@@ -232,10 +234,10 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
                     tag->ti_Data = INVALID_ID;
                 else
                 {
-                    if (XGET(self, MUIA_List_Active) != i)
+                    if (XGET(data->mode_list, MUIA_List_Active) != i)
                     {
                         D(bug("[smselector] Set active item %lu\n", i));
-                        NNFSET(self, MUIA_List_Active, i);
+                        NNFSET(data->mode_list, MUIA_List_Active, i);
                     }
                 }
                 break;
@@ -254,7 +256,7 @@ IPTR ScreenModeSelector__OM_GET(Class *CLASS, Object *self, struct opGet *messag
     {
         case MUIA_ScreenModeSelector_Active:
             *message->opg_Storage =
-                data->ids_array[XGET(self, MUIA_List_Active)];
+                data->ids_array[XGET(data->mode_list, MUIA_List_Active)];
             break;
         default:
             return DoSuperMethodA(CLASS, self, (Msg)message);
