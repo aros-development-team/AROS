@@ -347,7 +347,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 width = tag->ti_Data;
 
                 D(bug("[smproperties] Set Width = %ld\n", width));
-                if (width == -1)
+                if ((WORD)width == STDSCREENWIDTH)
                     width = data->DefWidth;
                 else
                     width = AdjustWidth(width, data);
@@ -366,7 +366,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 height = tag->ti_Data;
 
                 D(bug("[smproperties] Set Height = %ld\n", height));
-                if (height == -1)
+                if ((WORD)height == STDSCREENHEIGHT)
                     height = data->DefHeight;
                 else
                     height = AdjustHeight(height, data);
