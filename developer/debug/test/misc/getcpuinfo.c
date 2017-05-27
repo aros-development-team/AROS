@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -62,10 +62,11 @@ struct TagDescription VectorUnit [] =
 struct TagDescription ProcessorFamily [] =
 {
     { CPUFAMILY_UNKNOWN, "Unknown" },
-    { CPUFAMILY_60X, "PowerPC 60X" },
-    { CPUFAMILY_7X0, "PowerPC 7X0" },
-    { CPUFAMILY_74XX, "PowerPC 74XX" },
-    { CPUFAMILY_4XX, "PowerPC 4XX" },
+    { CPUFAMILY_MOTOROLA_68000, "Motorola MC680x0" },
+    { CPUFAMILY_60X, "IBM PowerPC 60x" },
+    { CPUFAMILY_7X0, "IBM PowerPC 7x0" },
+    { CPUFAMILY_74XX, "IBM PowerPC 74xx" },
+    { CPUFAMILY_4XX, "IBM PowerPC 4xx" },
     { CPUFAMILY_AMD_K5, "AMD K5" },
     { CPUFAMILY_AMD_K6, "AMD K6" },
     { CPUFAMILY_AMD_K7, "AMD K7" },
@@ -82,7 +83,7 @@ struct TagDescription ProcessorFamily [] =
 struct TagDescription ProcessorArchitecture [] =
 {
     { PROCESSORARCH_UNKNOWN, "Unknown" },
-    { PROCESSORARCH_M68K, "Motorola 68K" },
+    { PROCESSORARCH_M68K, "M68K" },
     { PROCESSORARCH_PPC, "PowerPC" },
     { PROCESSORARCH_X86, "X86" },
     { PROCESSORARCH_ARM, "ARM" },
