@@ -148,6 +148,7 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
 
     list = (Object *)ListObject,
         InputListFrame,
+        MUIA_List_AutoVisible, (IPTR)TRUE,
         MUIA_List_DisplayHook, (IPTR)&DisplayHook,
         MUIA_List_Format, (IPTR)"BAR,",
         MUIA_List_SourceArray, (IPTR)modes_array,
