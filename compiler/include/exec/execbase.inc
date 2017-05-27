@@ -109,32 +109,32 @@ struct ExecBase
 
 /* AttnFlags */
 /* Processors */
-#define AFB_68010        0
-#define AFF_68010   (1L<<AFB_68010)
-#define AFB_68020        1
-#define AFF_68020   (1L<<AFB_68020)
-#define AFB_68030        2
-#define AFF_68030   (1L<<AFB_68030)
-#define AFB_68040        3
-#define AFF_68040   (1L<<AFB_68040)
-#define AFB_68060        7
-#define AFF_68060   (1L<<AFB_68060)
-#define AFB_AP68080        9
-#define AFF_AP68080   (1L<<AFB_AP68080)
+#define AFB_68010       0
+#define AFF_68010       (1L<<AFB_68010)
+#define AFB_68020       1
+#define AFF_68020       (1L<<AFB_68020)
+#define AFB_68030       2
+#define AFF_68030       (1L<<AFB_68030)
+#define AFB_68040       3
+#define AFF_68040       (1L<<AFB_68040)
+#define AFB_68060       7
+#define AFF_68060       (1L<<AFB_68060)
+#define AFB_AP68080     9
+#define AFF_AP68080     (1L<<AFB_AP68080)
 /* Co-Processors */
-#define AFB_68881        4
-#define AFF_68881   (1L<<AFB_68881)
-#define AFB_68882        5
-#define AFF_68882   (1L<<AFB_68882)
-#define AFB_FPU40        6
-#define AFF_FPU40   (1L<<AFB_FPU40)
+#define AFB_68881       4
+#define AFF_68881       (1L<<AFB_68881)
+#define AFB_68882       5
+#define AFF_68882       (1L<<AFB_68882)
+#define AFB_FPU40       6
+#define AFF_FPU40       (1L<<AFB_FPU40)
 /* AROS extensions */
-#define AFB_ADDR32       13 /* CPU has 32-bit addressing */
-#define AFF_ADDR32  (1L<<AFB_ADDR32)
-#define AFB_PRIVATEB       14 /* MMU is present */
-#define AFF_PRIVATEB  (1L<<AFB_PRIVATEB)
-#define AFB_PRIVATE      15 /* FPU presence - See below */
-#define AFF_PRIVATE (1L<<AFB_PRIVATE)
+#define AFB_ADDR32      13                      /* CPU has 32-bit addressing */
+#define AFF_ADDR32      (1L<<AFB_ADDR32)
+#define AFB_PRIVATEB    14                      /* MMU is present */
+#define AFF_PRIVATEB    (1L<<AFB_PRIVATEB)
+#define AFB_PRIVATE     15                      /* FPU presence - See below */
+#define AFF_PRIVATE     (1L<<AFB_PRIVATE)
 /*
  * AFB_PRIVATE is actually FPU presence flag with architecture-specific meaning:
  * m68k   - Set if any FPU type detected. AmigaOS-compatible, however considered private.
