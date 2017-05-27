@@ -259,6 +259,9 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
             FireScreenNotifyMessage((IPTR) NULL, SNOTIFY_BEFORE_OPENWB, IntuitionBase);
 
             wbscreen = OpenScreenTagList(NULL, screenTags);
+           
+            if (wbscreen)
+                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Depth = GetBitMapAttr(wbscreen->RastPort.BitMap, BMA_DEPTH);
         }
 
         if( !wbscreen )
