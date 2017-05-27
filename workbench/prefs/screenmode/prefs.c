@@ -13,6 +13,7 @@
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/iffparse.h>
 #include <proto/intuition.h>
 
@@ -261,14 +262,22 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
+    struct Screen *defScreen;
     static struct Preferences def;
 
     GetPrefs(&def, sizeof(def));
+
     screenmodeprefs.smp_Reserved[0] = 0;
     screenmodeprefs.smp_Reserved[1] = 0;
     screenmodeprefs.smp_Reserved[2] = 0;
     screenmodeprefs.smp_Reserved[3] = 0;
-    screenmodeprefs.smp_DisplayID   = INVALID_ID;
+    if ((defScreen = LockPubScreen(NULL)) != NULL)
+    {
+        screenmodeprefs.smp_DisplayID = GetVPModeID(&defScreen->ViewPort);
+        UnlockPubScreen(NULL, defScreen);
+    }
+    else
+        screenmodeprefs.smp_DisplayID   = INVALID_ID;
     screenmodeprefs.smp_Width       = def.wb_Width;
     screenmodeprefs.smp_Height      = def.wb_Height;
     screenmodeprefs.smp_Depth       = def.wb_Depth;
