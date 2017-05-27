@@ -90,7 +90,7 @@ struct
 } ProcessorArchitecture [] =
 {
     { PROCESSORARCH_UNKNOWN, "Unknown" },
-    { PROCESSORARCH_M68K, "Motorola 68K" },
+    { PROCESSORARCH_M68K, "M68K" },
     { PROCESSORARCH_PPC, "PowerPC" },
     { PROCESSORARCH_X86, "X86" },
     { PROCESSORARCH_ARM, "ARM" },
