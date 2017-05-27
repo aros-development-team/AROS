@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -237,10 +237,17 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
             }
 
 	    /*
-	     * Remember this ModeID because OpenScreen() with SA_LikeWorkbench set to TRUE
-	     * looks at this field. We MUST have something valid here.
+	     * Cache the used display info.
+             * OpenScreen() with SA_LikeWorkbench set to TRUE
+	     * uses the DisplayID field. We MUST have something valid here.
 	     */
-	    GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID = modeid;
+            if (GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID != modeid)
+            {
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_DisplayID = modeid;
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width = width;
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height = height;
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth = depth;
+            }
 
 	    screenTags[0].ti_Data = width;
             screenTags[1].ti_Data = height;
