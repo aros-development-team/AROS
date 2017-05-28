@@ -29,7 +29,7 @@ MSG_SIMULATED_CPU
 Processeur simulé par AROS
 ;
 MSG_PROCESSOR
-Processeur #%d: %s
+Processeur #%id: %s
 ;
 MSG_TASK
 Tâche

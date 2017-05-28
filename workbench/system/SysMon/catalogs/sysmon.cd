@@ -24,7 +24,7 @@ MSG_SIMULATED_CPU (//)
 Simulated AROS processor
 ;
 MSG_PROCESSOR (//)
-Processor #%d: %s
+Processor #%id: %s
 ;
 MSG_TASK (//)
 Task
