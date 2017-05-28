@@ -37,8 +37,8 @@ Simulovaný AROS procesor
 ; Simulated AROS processor
 ;
 MSG_PROCESSOR
-Procesor #%d: %s
-; Processor #%d: %s
+Procesor #%id: %s
+; Processor #%id: %s
 ;
 MSG_TASK
 Úloha
