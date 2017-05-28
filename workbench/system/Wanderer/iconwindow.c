@@ -1,5 +1,5 @@
 /*
-  Copyright © 2004-2016, The AROS Development Team. All rights reserved.
+  Copyright © 2004-2017, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -529,10 +529,10 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
          * Use MUI built-in support to keep window aligned to size of screen
          * Remember: sizes of screen can change without window being recreated
          */
-        _newIconWin__WindowWidth = MUIV_Window_Width_Screen(100);
-        _newIconWin__WindowHeight = MUIV_Window_Height_Screen(100);
-        _newIconWin__WindowTop = MUIV_Window_TopEdge_Delta(0);
+        _newIconWin__WindowTop = _newIconWin__Screen->BarHeight + 1;
         _newIconWin__WindowLeft = 0;
+        _newIconWin__WindowWidth = MUIV_Window_Width_Screen(100);
+        _newIconWin__WindowHeight = _newIconWin__Screen->Height - _newIconWin__WindowTop;
 
         DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Screen dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
