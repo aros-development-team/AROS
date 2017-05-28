@@ -41,7 +41,7 @@ static BOOL InitProcessor(struct SysMonData *smdata)
                     TRUE;
 #else
                     FALSE;
-#endif        
+#endif
     }
 
 #if SIMULATE_USAGE_FREQ
@@ -109,9 +109,9 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
             { GCIT_ProcessorSpeed, (IPTR)&frequency },
             { TAG_DONE, TAG_DONE }
         };
-        
+
         GetCPUInfo(tags);
-        
+
         frequency /= 1000000;
 #endif
         __sprintf(buffer, "%d MHz", (ULONG)frequency);
@@ -124,7 +124,7 @@ VOID UpdateProcessorStaticInformation(struct SysMonData * smdata)
     ULONG i;
     TEXT buffer[172];
     CONST_STRPTR modelstring;
-    
+
     for (i = 0; i < processorcount; i++)
     {
 #if SIMULATE_USAGE_FREQ
@@ -136,7 +136,7 @@ VOID UpdateProcessorStaticInformation(struct SysMonData * smdata)
             { GCIT_ModelString, (IPTR)&modelstring },
             { TAG_DONE, TAG_DONE }
         };
-        
+
         GetCPUInfo(tags);
 #endif
         __sprintf(buffer, (STRPTR)_(MSG_PROCESSOR), i + 1, modelstring);
