@@ -26,6 +26,10 @@ Assign "IMAGES:"  "SYS:System/Images" DEFER
 Assign "PRINTERS:" "DEVS:Printers"
 Assign "WANDERER:" "SYS:System/Wanderer" DEFER
 
+If EXISTS "C:SetPatch"
+    C:SetPatch QUIET
+EndIf
+
 If EXISTS "SYS:Classes/USB"
     Assign "USBCLASSES:" "SYS:Classes/USB"
     AddUSBClasses >NIL:
