@@ -80,7 +80,14 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     else if (SysBase->AttnFlags & AFF_68030)
     {
         info->CPUModel = CPUMODEL_68030;
-        __sprintf(info->ModelStringBuffer, "%s", "68030");
+        if (SysBase->AttnFlags  & AFB_PRIVATEB)
+        {
+            __sprintf(info->ModelStringBuffer, "%s", "68030");
+        }
+        else
+        {
+            __sprintf(info->ModelStringBuffer, "%s", "68EC030");
+        }
         info->L1InstructionCacheSize = 256;
         info->L1DataCacheSize = 256;
     }
