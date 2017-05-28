@@ -35,8 +35,8 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
         info->CPUModel = CPUMODEL_68060;
         info->FPUModel = FPUMODEL_INTERNAL;
         __sprintf(info->ModelStringBuffer, "%s", "Apollo 68080 Core");
-        info->L1InstructionCacheSize = 8192;
-        info->L1DataCacheSize = 8192;
+        info->L1InstructionCacheSize = 16384;
+        info->L1DataCacheSize = 32768;
 
     }
     else if (SysBase->AttnFlags & AFF_68060)
