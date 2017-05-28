@@ -87,7 +87,7 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     else if (SysBase->AttnFlags & AFF_68020)
     {
         info->CPUModel = CPUMODEL_68020;
-        if (attnflags & AFF_ADDR32)
+        if (SysBase->AttnFlags & AFF_ADDR32)
         {
             __sprintf(info->ModelStringBuffer, "%s", "68020");
         }
