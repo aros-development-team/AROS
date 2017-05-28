@@ -111,15 +111,18 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     }
 
     if (info->FPUModel != FPUMODEL_INTERNAL) {
+        UBYTE *s = info->ModelStringBuffer;
+        while (*s)
+            s++;
         if (SysBase->AttnFlags & AFF_68882)
         {
             info->FPUModel = FPUMODEL_68882;
-            __sprintf(info->ModelStringBuffer + 5, "%s", "/68882");
+            __sprintf(s, "%s", "/68882");
         }
         else if (SysBase->AttnFlags & AFF_68881)
         {
             info->FPUModel = FPUMODEL_68881;
-            __sprintf(info->ModelStringBuffer + 5, "%s", "/68881");
+            __sprintf(s, "%s", "/68881");
         }
         else
             info->FPUModel = FPUMODEL_NONE;
