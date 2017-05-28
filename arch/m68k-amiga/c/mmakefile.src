@@ -68,12 +68,11 @@ CFILES	      := mmudump
     files=$(CFILES) targetdir=$(AROS_C) \
     usestartup=no
 
-CFILES		:= SetPatch patches
-AFILES		:= copymem_040 copymem_060
+CFILES		:= SetPatch
 #USER_INCLUDES := -isystem
 
 %build_prog mmake=workbench-c-m68k-setpatch progname=SetPatch \
-    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_C) \
+    files=$(CFILES) targetdir=$(AROS_C) \
     uselibs=setpatch usestartup=no
 
 %common

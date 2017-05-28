@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2017, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
@@ -169,12 +169,9 @@ static void mmusetup(BOOL quiet)
     Enable();
 }
 
-extern void patches(BOOL, ULONG);
-
-AROS_SH6H(SetPatch, 41.4, "AROS SetPatch (m68k)",
+AROS_SH5H(SetPatch, 41.4, "AROS SetPatch (m68k)",
     AROS_SHAH(BOOL, Q=,       QUIET, /S, FALSE, "Be quiet"),
     AROS_SHAH(BOOL, NOCA=,  NOCACHE, /S, FALSE, "Don't install cache patches"),
-    AROS_SHAH(BOOL, NOCO=,NOCOPYMEM, /S, FALSE, "Don't install CopyMem patches"),
     AROS_SHAH(BOOL, NOV=, NOVBRMOVE, /S, FALSE, "Don't move the VBR to MEMF_FAST"),
     AROS_SHAH(BOOL, NOAGA=,   NOAGA, /S, FALSE, "Don't enable AGA modes"),
     AROS_SHAH(BOOL, DMMU=, DEBUGMMU, /S, FALSE, "MMU protect first page"))
@@ -219,9 +216,6 @@ AROS_SH6H(SetPatch, 41.4, "AROS SetPatch (m68k)",
         if (!SHArg(NOVBRMOVE))
             fastvbr(SHArg(QUIET));
 
-        if (justinstalled680x0)
-            patches(SHArg(QUIET), SHArg(NOCOPYMEM) ? 0 : 1);
- 
         if (!SHArg(NOCACHE)) {
             if (justinstalled680x0)
                 p5stuff(SHArg(QUIET));
