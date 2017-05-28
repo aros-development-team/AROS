@@ -10,7 +10,7 @@
 
 struct M68KProcessorInformation
 {
-    TEXT    ModelStringBuffer[16];
+    TEXT    ModelStringBuffer[18];
     STRPTR  ModelString;
     ULONG   CPUModel;
     ULONG   FPUModel;
