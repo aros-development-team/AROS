@@ -16,8 +16,8 @@ static void ata_out(struct pio_data *data, UBYTE val, UWORD offset)
 {
     volatile UBYTE *addr;
     addr = data->port;
-    addr[offset * 4] = val;
     DIO(bug("%p REG %d <- %02X\n", addr, offset, val));
+    addr[offset * 4] = val;
 }
 static UBYTE ata_in(struct pio_data *data, UWORD offset)
 {
