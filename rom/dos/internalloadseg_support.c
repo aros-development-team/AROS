@@ -21,7 +21,7 @@ static char *getname(BPTR file, char **bufferp, struct DosLibrary *DOSBase)
      * A real-life example of this is C:AddDataTypes
      * from AmigaOS 3.9
      */
-    if (ISFILEHANDLE(file) && DOSBase) {
+    if (DOSBase && ISFILEHANDLE(file)) {
         char *buffer = AllocMem(512, MEMF_ANY);
         if (buffer) {
             *bufferp = buffer;
