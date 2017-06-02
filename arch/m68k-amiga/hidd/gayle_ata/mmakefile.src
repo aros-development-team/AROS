@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := class_init probe gayleata_busclass interface_pio 
+FILES := class_init probe gayleata_busclass fastata_busclass interface_pio 
 
 %build_module mmake=kernel-hidd-gayleata \
     modname=ata_gayle modtype=hidd \
