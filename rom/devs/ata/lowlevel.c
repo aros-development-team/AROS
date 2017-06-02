@@ -10,7 +10,7 @@
  * TODO:
  * - put a critical section around DMA transfers (shared dma channels)
  */
- 
+
 // use #define xxx(a) D(a) to enable particular sections.
 #if DEBUG
 #define DIRQ(a) D(a)
@@ -371,17 +371,18 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     BOOL fake_irq, UBYTE *stout)
 {
     struct ata_Bus *bus = unit->au_Bus;
-    UBYTE status;
+    UBYTE status = 0xff;
     ULONG step = 0;
     BOOL res = TRUE;
 
     if (bus->ab_Base->ata_Poll)
         irq = FALSE;
 
-    status = PIO_InAlt(bus, ata_AltStatus);
-
     if (irq)
     {
+        /* Do not read ata_Status in irq mode. It can cause random lost interrupts. */
+        if (bus->haveAltIO)
+            status = PIO_InAlt(bus, ata_AltStatus);
         /*
          * wait for either IRQ or timeout
          */
@@ -414,6 +415,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     }
     else
     {
+        status = PIO_InAlt(bus, ata_AltStatus);
         while (status & ATAF_BUSY)
         {
             ++step;
@@ -2182,10 +2184,8 @@ static ULONG ata_ReadSignature(struct ata_Bus *bus, int unit,
 static void ata_ResetBus(struct ata_Bus *bus)
 {
     struct ataBase *ATABase = bus->ab_Base;
-    OOP_Object *obj = OOP_OBJECT(ATABase->busClass, bus);
     ULONG TimeOut;
     BOOL  DiagExecuted = FALSE;
-    IPTR haveAltIO;
 
     /*
      * Set and then reset the soft reset bit in the Device Control
@@ -2197,8 +2197,7 @@ static void ata_ResetBus(struct ata_Bus *bus)
     ata_WaitNano(400, ATABase);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
-    OOP_GetAttr(obj, aHidd_ATABus_UseIOAlt, &haveAltIO);
-    if (haveAltIO)
+    if (bus->haveAltIO)
     {
         PIO_OutAlt(bus, ATACTLF_RESET | ATACTLF_INT_DISABLE, ata_AltControl);
         ata_WaitTO(bus->ab_Timer, 0, 10, 0);    /* sleep 10us; min: 5us */
@@ -2278,6 +2277,9 @@ static void ata_ResetBus(struct ata_Bus *bus)
 
 void ata_InitBus(struct ata_Bus *bus)
 {
+    struct ataBase *ATABase = bus->ab_Base;
+    OOP_Object *obj = OOP_OBJECT(ATABase->busClass, bus);
+    IPTR haveAltIO;
     UBYTE tmp1, tmp2;
     UWORD i;
 
@@ -2285,6 +2287,9 @@ void ata_InitBus(struct ata_Bus *bus)
      * initialize timer for the sake of scanning
      */
     bus->ab_Timer = ata_OpenTimer(bus->ab_Base);
+
+    OOP_GetAttr(obj, aHidd_ATABus_UseIOAlt, &haveAltIO);
+    bus->haveAltIO = haveAltIO != 0;
 
     DINIT(bug("[ATA  ] ata_InitBus(%p)\n", bus));
 

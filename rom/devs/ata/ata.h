@@ -121,6 +121,7 @@ struct ata_Bus
    void                    *pioInterface;   /* PIO interface object     */
    void                    *dmaInterface;   /* DMA interface object     */
    BOOL                    keepEmpty;       /* Whether we should keep empty bus object */
+   BOOL                    haveAltIO;
 
    UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
    UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
