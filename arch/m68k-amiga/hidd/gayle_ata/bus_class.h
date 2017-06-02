@@ -25,7 +25,8 @@ struct ataBase
 {
     struct Library  lib;
 
-    OOP_Class      *busClass;
+    OOP_Class      *GayleBusClass;
+    OOP_Class      *FastATABusClass;
 
     OOP_AttrBase    hiddAttrBase;
     OOP_AttrBase    ATABusAttrBase;

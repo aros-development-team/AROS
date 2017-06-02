@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: A600/A1200/A4000 ATA HIDD hardware detection routine
@@ -50,6 +50,11 @@ static BOOL custom_check(APTR addr)
     custom->intena = 0x7fff;
     custom->intena = intena | 0x8000;
     return iscustom;
+}
+
+static BOOL isFastATA(struct ata_ProbedBus *ddata)
+{
+    return FALSE;
 }
 
 static UBYTE *getport(struct ata_ProbedBus *ddata)
@@ -132,6 +137,7 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
 static int ata_Scan(struct ataBase *base)
 {
     struct ata_ProbedBus *probedbus;
+    OOP_Class *busClass = base->GayleBusClass;
 
     probedbus = AllocVec(sizeof(struct ata_ProbedBus), MEMF_ANY | MEMF_CLEAR);
     if (probedbus && getport(probedbus)) {
@@ -148,7 +154,7 @@ static int ata_Scan(struct ataBase *base)
                 {TAG_DONE                 , 0                                  }
             };
             OOP_Object *bus;
-            
+
             /*
              * We use this field as ownership indicator.
              * The trick is that HW_AddDriver() fails if either object creation fails
@@ -159,7 +165,13 @@ static int ata_Scan(struct ataBase *base)
              */
             probedbus->atapb_Node.ln_Succ = NULL;
 
-            bus = HW_AddDriver(ata, base->busClass, attrs);
+            /*
+             * Check if we have a FastATA adaptor
+             */
+            if (isFastATA(probedbus))
+                busClass = base->FastATABusClass;
+
+            bus = HW_AddDriver(ata, busClass, attrs);
             if (bus)
                 return TRUE;
             D(bug("[GAYLE-ATA] Failed to create object for device IO: %x:%x IRQ: %x\n",
