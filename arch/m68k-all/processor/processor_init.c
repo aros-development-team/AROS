@@ -22,6 +22,19 @@ static VOID  __sprintf(UBYTE *buffer, const UBYTE *format, ...)
 
 static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
 {
+    /*
+     * The inline assembler doesn't like the reference to the 68060 specific
+     * PCR register.  So here we put the manually assembled code into ReadPCR[]
+     * and later we'll call it from Supervisor() to retrieve that PCR register
+     * contents.  The assembled code is:
+     *
+     *     movec PCR,d0      ; 4E7A0808
+     *     rte               ; 4E73
+     */
+
+    ULONG ReadPCR[2] = { 0x4E7A0808, 0x4E730000 };
+    register ULONG pcr asm("d0");
+
     __sprintf(info->ModelStringBuffer, "%s", "68000");
     info->ModelString = info->ModelStringBuffer;
 
@@ -30,14 +43,22 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     info->L1InstructionCacheSize = 0;
     info->L1DataCacheSize = 0;
 
-    if (SysBase->AttnFlags & AFF_AP68080)
-    {
-        info->CPUModel = CPUMODEL_68060;
-        info->FPUModel = FPUMODEL_INTERNAL;
-        __sprintf(info->ModelStringBuffer, "%s", "Apollo 68080 Core");
-        info->L1InstructionCacheSize = 16384;
-        info->L1DataCacheSize = 32768;
+    pcr = 0;
 
+    if (SysBase->AttnFlags & (AFF_68060 | AFF_68080)) {
+	pcr = Supervisor(ReadPCR);
+    }
+
+    if (SysBase->AttnFlags & AFF_68080)
+    {
+        info->CPUModel = CPUMODEL_68080;
+        // info->FPUModel = FPUMODEL_UNKNOWN;
+        __sprintf(info->ModelStringBuffer, "%s", "Apollo Core 68080");
+ 
+        if (pcr & 0x04400000) {
+            info->L1InstructionCacheSize = 16384;
+            info->L1DataCacheSize = 32768;
+        }
     }
     else if (SysBase->AttnFlags & AFF_68060)
     {

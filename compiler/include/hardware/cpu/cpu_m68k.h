@@ -8,7 +8,8 @@
 #define AFB_68020	1	                                /* also set for 68030 */
 #define AFB_68030	2	                                /* also set for 68040 */
 #define AFB_68040	3                                       /* also set for 68060 */
-#define	AFB_68060	7
+#define AFB_68060	7                                       /* also set for 68080 */
+#define AFB_68080	10                                      /* Apollo Core 'AC68080' */
 
 #define AFB_68881	4	                                /* also set for 68882 */
 #define AFB_68882	5
@@ -29,7 +30,8 @@
 #define AFF_68020	(1L<<1)
 #define AFF_68030	(1L<<2)
 #define AFF_68040	(1L<<3)
-#define	AFF_68060	(1L<<7)
+#define AFF_68060	(1L<<7)
+#define AFF_68080	(1L<<10)                                /* Apollo 'AC68080' */
 
 #define AFF_68881	(1L<<4)
 #define AFF_68882	(1L<<5)

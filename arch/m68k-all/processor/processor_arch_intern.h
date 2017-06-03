@@ -41,6 +41,7 @@ struct SystemProcessors
 #define CPUMODEL_68030      4
 #define CPUMODEL_68040      5
 #define CPUMODEL_68060      6
+#define CPUMODEL_68080      7    /* Apollo 'AC68080' */
 
 
 #endif /* PROCESSOR_ARCH_INTERN_H */

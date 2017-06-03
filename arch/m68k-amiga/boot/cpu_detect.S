@@ -53,7 +53,7 @@ cpu_detect_asm:
 	movec	%cacr,%d0
  	/* bit 15 still set? */
 	tst.w	%d0
- 	/* yes, it is 68040 or 68060 */
+ 	/* yes, it is 68040, 68060 or 68080 */
 	bmi.s	0f
  	/* enable 68020/030 code cache and 68030 data cache */
  	move.l	#0x0101,%d0
@@ -72,7 +72,7 @@ cpu_detect_asm:
 1:
 	move.w	#0x0007,%d0
 	bra cpu_detect_trap_illg
-	/* 68040 or 68060 */
+	/* 68040, 68060, or 68080 */
 0:
 	moveq	#0,%d0
 	/* disable caches */
@@ -89,25 +89,33 @@ cpu_detect_asm:
 	movec	%d0,%dtt1
 	movec	%d0,%itt0
 	move.w	#0x000f,%d0
- 	/* PCR is 68060 only */
+ 	/* PCR is 68060 or 68080 only */
 	movec	%pcr,%d1
+	move.l	%d1,%d2
+        /* Apollo 68080 has PCR ID 0x0440xxxx */
+	and.l	#0xffff0000,%d1
+	cmp.l	#0x04400000,%d1
+	bcc.s	2f
+	move.l	%d2,%d1
 	/* 68060 */
 	moveq	#0,%d0
 	cmp.w	#0x0600,%d1
-	bcc.s	2f
+	bcc.s	3f
 	/* rev5 or older 68060 revision
 	 * enable I14 and I15 errata workaround
 	 */
 	bset	#5,%d0
-2:	/* Also enables FPU */
+	bra.s	3f
+2:	/* Apollo 68080 */
+	movec	%pcr,%d0
+	move.l	%d0,%a2@(4) // save PCR
+	move.w	#0x048f,%d0
+	bra.s	cpu_detect_trap_illg
+3:	/* Also enables FPU */
 	movec	%d0,%pcr
- 	movec	%pcr,%d0
- 	move.l	%d0,%a2@(4) // save PCR
+	movec	%pcr,%d0
+	move.l	%d0,%a2@(4) // save PCR
 	move.w	#0x008f,%d0
-
-	/* Apollo 68080 */
-	dc.l	0x06d00000 // check for 68080 addiw.l instruction
-	move.w	#0x020f,%d0
 
 cpu_detect_trap_illg:
 	move.l %a1,%sp	/* remove exception stack frame */

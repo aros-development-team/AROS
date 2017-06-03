@@ -119,8 +119,8 @@ struct ExecBase
 #define AFF_68040       (1L<<AFB_68040)
 #define AFB_68060       7
 #define AFF_68060       (1L<<AFB_68060)
-#define AFB_AP68080     9
-#define AFF_AP68080     (1L<<AFB_AP68080)
+#define AFB_68080       10                /* Apollo 'AC68080' */
+#define AFF_68080       (1L<<AFB_68080)   /* Apollo 'AC68080' */
 /* Co-Processors */
 #define AFB_68881       4
 #define AFF_68881       (1L<<AFB_68881)
