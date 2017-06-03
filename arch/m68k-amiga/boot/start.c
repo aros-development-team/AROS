@@ -587,7 +587,7 @@ static UWORD GetAttnFlags(ULONG *cpupcr)
 {
     /* Convert CPU/FPU flags to AttnFlags */
     UWORD attnflags = cpupcr[0] & 0xffff;
-    if (attnflags & (AFF_68030 | AFF_68040 | AFF_68060))
+    if (attnflags & (AFF_68030 | AFF_68040 | AFF_68060 | AFF_68080))
         attnflags |= AFF_ADDR32;
     if (cpupcr[0] & 0xffff0000) {
         attnflags |= AFF_FPU;
@@ -602,7 +602,9 @@ static UWORD GetAttnFlags(ULONG *cpupcr)
 
 #if AROS_SERIAL_DEBUG && (DEBUG > 0)
     DEBUGPUTS(("CPU: "));
-    if (attnflags & AFF_68060)
+    if (attnflags & AFF_68080)
+        DEBUGPUTS(("Apollo Core 68080"));
+    else if (attnflags & AFF_68060)
         DEBUGPUTS(("68060"));
     else if (attnflags & AFF_68040)
         DEBUGPUTS(("68040"));

@@ -26,8 +26,9 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     	return FALSE;
 
     LIBBASE->kb_PlatformData = pd;
-
-    if (SysBase->AttnFlags & AFF_68060)
+    if (SysBase->AttnFlags & AFF_68080)
+	pd->mmu_type = 0;
+    else if (SysBase->AttnFlags & AFF_68060)
     	pd->mmu_type = MMU060;
     else if (SysBase->AttnFlags & AFF_68040)
     	pd->mmu_type = MMU040;

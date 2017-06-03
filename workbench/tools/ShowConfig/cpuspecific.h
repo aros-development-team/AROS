@@ -12,6 +12,10 @@
 #define HAS_CPU_SPECIFIC
 #endif
 
+#ifdef __m68k__
+#define HAS_CPU_SPECIFIC
+#endif
+
 #ifdef HAS_CPU_SPECIFIC
 void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase);
 #else

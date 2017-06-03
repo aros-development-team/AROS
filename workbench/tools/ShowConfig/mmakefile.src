@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES   := ShowConfig cpu_i386 cpu_arm
+FILES   := ShowConfig cpu_i386 cpu_arm cpu_m68k
 EXEDIR  := $(AROS_TOOLS)
 
 #MM- workbench-tools : kernel-kernel-includes workbench-tools-showconfig
