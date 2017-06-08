@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 2.0 (14.01.2012)
+## version $VER: wanderer.catalog 3.0 (8.6.2017)
 ## language italiano
 ## codeset 0
 ;
@@ -208,7 +208,7 @@ R
 ; R
 ;
 MSG_MEN_INFO
-Informazioni
+Informazioni...
 ; Information...
 ;
 MSG_MEN_SC_INFO
@@ -216,7 +216,7 @@ I
 ; I
 ;
 MSG_MEN_DELETE
-Elimina
+Elimina...
 ; Delete...
 ;
 MSG_MEN_TOOLS
