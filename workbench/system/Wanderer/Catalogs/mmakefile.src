@@ -1,9 +1,9 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS:=german czech
+CATALOGS := czech french german italian
 # other catalogs need update to version 3
 
 %build_catalogs mmake=workbench-system-wanderer-catalogs \
