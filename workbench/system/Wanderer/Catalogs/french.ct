@@ -1,4 +1,4 @@
-## version $VER: Wanderer.catalog 2.0 (05.01.2012)
+## version $VER: Wanderer.catalog 3.0 (8.6.2017)
 ## language français
 ## codeset 0
 ;
@@ -60,7 +60,7 @@ W
 ; W
 ;
 MSG_MEN_GUISET
-Réglages de l'interface graphique
+Réglages de l'interface graphique...
 ; GUI settings...
 ;
 MSG_MEN_ABOUT
@@ -264,7 +264,7 @@ Arrêt du système
 ; System shutdown
 ;
 MSG_SHUTDOWN_BODY
-Que désirez vous faire ? 
+Que désirez vous faire ?
 ; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
