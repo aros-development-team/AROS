@@ -2,11 +2,11 @@
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: portuguese.language description file.
+    Desc: portuguese-brasil.language description file.
 */
 
-#define LANGSTR     "portuguese"        /* String version of above      */
-#define NLANGSTR    "português"         /* Native version of LANGSTR    */
+#define LANGSTR     "portuguese-brasil" /* String version of above      */
+#define NLANGSTR    "português-brasil"  /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     2                   /* Revision number of language  */
 #define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (09.06.2017)"
@@ -83,7 +83,7 @@ const STRPTR ___strings[] =
     "\xAD", "-",
 
     /* Open and close quotes */
-    "«", "»",
+    "\"", "\"",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
