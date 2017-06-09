@@ -2,10 +2,10 @@
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: portuguese-brasil.language description file.
+    Desc: portuguese-brazil.language description file.
 */
 
-#define LANGSTR     "portuguese-brasil" /* String version of above      */
+#define LANGSTR     "portuguese-brazil" /* String version of above      */
 #define NLANGSTR    "português-brasil"  /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     2                   /* Revision number of language  */
