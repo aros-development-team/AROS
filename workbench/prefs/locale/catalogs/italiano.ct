@@ -1,4 +1,4 @@
-## version $VER: Locale.catalog 1.0 (23.02.2001)
+## version $VER: Locale.catalog 2.0 (10.6.2017)
 ## codeset 0
 ## language italiano
 ;
@@ -100,4 +100,13 @@ Fuso orario: %ld Ore rispetto UTC
 ;
 MSG_TIMEZONE_HOURSMINS
 Fuso orario: %ld ore e %ld minuti rispetto UTC
+;
+MSG_CHARACTER_SET
+Set di caratteri predefinito
+;
+MSG_NOT_SPECIFIED
+Non specificato
+;
+MSG_GMT_CLOCK
+Orologio hardware sincronizzato con UTC
 ;
