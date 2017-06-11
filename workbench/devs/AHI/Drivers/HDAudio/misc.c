@@ -249,37 +249,16 @@ void FreeDriverData(struct HDAudioChip* card, struct DriverBase*  AHIsubBase)
 #define CNT_VEN_ID_ATI_HUDSON   0x780D1022
 #define CNT_VEN_ID_NVIDIA       0x10DE
 
-static const UWORD intel_snoop_list[] =
+static const UWORD intel_no_snoop_list[] =
 {
-    0x080a,
-    0x0f04,
-    0x0a0c,
-    0x0c0c,
-    0x0d0c,
-    0x160c,
-    0x1a98,
-    0x1c20,
-    0x1d20,
-    0x1e20,
-    0x2284,
-    0x3198,
-    0x3b56,
-    0x5a98,
-    0x811b,
-    0x8c20,
-    0x8ca0,
-    0x8d20,
-    0x8d21,
-    0x9c20,
-    0x9c21,
-    0x9ca0,
-    0x9d70,
-    0x9d71,
-    0xa1f0,
-    0xa170,
-    0xa171,
-    0xa270,
-    0xa2f0,
+    0x2668,
+    0x27d8,
+    0x269a,
+    0x284b,
+    0x293e,
+    0x293f,
+    0x3a3e,
+    0x3a6e,
     0
 };
 
@@ -289,6 +268,7 @@ static void perform_controller_specific_settings(struct HDAudioChip *card)
     ULONG data, subsystem;
     ULONG mask = (1 << 16) - 1;
     UWORD i, vendor_id, product_id;
+    BOOL snoop = TRUE;
 
     /* Get vendor/product/subsystem IDs */
     data = inl_config(0x0, card->pci_dev);
@@ -301,15 +281,20 @@ static void perform_controller_specific_settings(struct HDAudioChip *card)
     if (vendor_id == 0x8086)
     {
         D(bug("[HDAudio] Intel controller detected, checking if snooping needed\n"));
-        for (i = 0; intel_snoop_list[i] != 0; i++)
+        for (i = 0; intel_no_snoop_list[i] != 0; i++)
         {
-            if (intel_snoop_list[i] == product_id)
+            if (intel_no_snoop_list[i] == product_id)
             {
-                D(bug("[HDAudio] Enabling snooping\n"));
-                data = inw_config(0x78, card->pci_dev);
-                data &= ~0x800;
-                outw_config(0x78, data, card->pci_dev);
+                snoop = FALSE;
             }
+        }
+
+        if (snoop)
+        {
+            D(bug("[HDAudio] Enabling snooping\n"));
+            data = inw_config(0x78, card->pci_dev);
+            data &= ~0x800;
+            outw_config(0x78, data, card->pci_dev);
         }
     }
 
