@@ -1,45 +1,12 @@
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION (//)
-Can't create application object.
-;
-MSG_CANT_CREATE_REQ (//)
-Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT (//)
-Can't create context for Gadtools!
-;
 MSG_CANT_OPEN_STREAM (//)
 Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE (//)
-Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE (//)
-Can't read preferences!
 ;
 MSG_CANT_ALLOCATE_IFFPTR (//)
 Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM (//)
-Can't allocate application memory (%s)!
-;
 MSG_NAME (//)
 Font Preferences
-;
-MSG_MENU_PREFERENCES (//)
-Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT (//)
-I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT (//)
-E\0Export...
-;
-MSG_ASL_OPEN_TITLE (//)
-Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE (//)
-Save Font Preferences
 ;
 MSG_OK (//)
 Ok
@@ -52,7 +19,4 @@ System:
 ;
 MSG_SCREEN (//)
 Screen:
-;
-MSG_DESCRIPTION (//)
-Fonts preferences
 ;

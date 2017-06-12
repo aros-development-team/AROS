@@ -1,63 +1,19 @@
-## version $VER: fontprefs.catalog 2.0 (13.1.2002)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language svenska
 ## codeset 0
 ;
-;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Kan inte skapa applikationsobjekt.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Kan inte skapa filväljare!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Kan inte skapa underlag för Gadtools!
-; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Kan inte öppna IFF-ström!
 ; Can't open IFF stream!
 ;
-MSG_CANT_WRITE_PREFFILE
-Kan inte skriva inställningarna!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Kan inte läsa inställningarna!
-; Can't read preferences!
-;
 MSG_CANT_ALLOCATE_IFFPTR
 Kan inte allokera IFF-pekare!
 ; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Kan inte allokera programminne! (%s)!
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
 Typsnittsinställningar
 ; Font Preferences
-;
-MSG_MENU_PREFERENCES
-Inställningar
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importera...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Exportera...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Ladda typstilsinställningar
-; Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Spara typstilsinställningar
-; Save Font Preferences
 ;
 MSG_OK
 OK

@@ -1,66 +1,26 @@
-## version $VER: fontprefs.catalog 1.0 (26.9.2001)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language norsk
 ## codeset 0
 ;
-;
-MSG_ERROR_CANT_CREATE_APPLICATION
-*** Can't create application object.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Kan ikke åpne fildialog!
-; Can't open create filerequester!
 ;
 MSG_CANT_OPEN_STREAM
 Kan ikke åpne IFF-strøm!
 ; Can't open IFF stream!
 ;
-MSG_CANT_WRITE_PREFFILE
-Kan ikke skrive innstillingene!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Kan ikke lese instillingene!
-; Can't read preferences!
-;
 MSG_CANT_ALLOCATE_IFFPTR
 Kan ikke allokere IFF-peker!
 ; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Kan ikke allokere programminne!
-; Can't allocate application memory!
-;
 MSG_NAME
 Fontinstillinger
 ; Font Preferences
-;
-MSG_MENU_PREFERENCES
-*** Preferences
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0*** Import...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0*** Export...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Hente Fontinstillinger
-; Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Lagre Fontinstillinger
-; Save Font Preferences
 ;
 MSG_OK
 OK
 ; Ok
 ;
 MSG_ICONS
-*** Icons:
+Icons:
 ; Icons:
 ;
 MSG_SYSTEM

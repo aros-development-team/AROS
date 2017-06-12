@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,7 +17,7 @@
 #include "fpeditor.h"
 #include "prefs.h"
 
-#define VERSION "$VER: Fonts 0.2 ("ADATE") ©AROS Dev Team"
+#define VERSION "$VER: Fonts 1.1 ("ADATE") ©AROS Dev Team"
 
 int main(int argc, char **argv)
 {
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
             application = (Object *)ApplicationObject,
                 MUIA_Application_Title,  __(MSG_NAME),
                 MUIA_Application_Version, (IPTR) VERSION,
-                MUIA_Application_Description,  __(MSG_DESCRIPTION),
+                MUIA_Application_Description,  __(MSG_NAME),
                 MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "FONTPREF",
                 SubWindow, (IPTR) (window = (Object *)SystemPrefsWindowObject,
