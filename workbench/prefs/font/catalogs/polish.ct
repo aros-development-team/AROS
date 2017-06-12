@@ -1,62 +1,19 @@
-## version $VER: font.catalog 2.0 (30.03.2016)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language polski
 ## codeset 5
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Nie mo¿na uworzyæ obiektu aplikacji.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Nie mo¿na otworzyæ okna dialogowego!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Nie mo¿na uworzyæ kontekstu dla Gadtools!
-; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Nie mo¿na otworzyæ danych w formacie IFF!
 ; Can't open IFF stream!
 ;
-MSG_CANT_WRITE_PREFFILE
-Nie mo¿na zapisaæ preferencji!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Nie mo¿na odczytaæ preferencji!
-; Can't read preferences!
-;
 MSG_CANT_ALLOCATE_IFFPTR
 Nie mo¿na zaalokowaæ struktury IFF!
 ; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Nie mo¿na zaalokowaæ pamiêci aplikacji (%s)!
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
 Preferencje - Fonts
 ; Font Preferences
-;
-MSG_MENU_PREFERENCES
-Preferencje
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importuj...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Eksportuj...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Wczytaj preferencje
-; Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Zapisz preferencje
-; Save Font Preferences
 ;
 MSG_OK
 OK
@@ -73,8 +30,4 @@ System:
 MSG_SCREEN
 Ekran:
 ; Screen:
-;
-MSG_DESCRIPTION
-Ustawienia czcionek
-; Fonts preferences
 ;

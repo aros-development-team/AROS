@@ -1,64 +1,20 @@
-## version $VER: fontprefs.catalog 2.0 (30.03.2016)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language dansk
 ## codeset 0
 ;
 ; initial translation by Kristian Poul Herkild
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Kan ikke oprette programobjekt.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Kan ikke oprette filforespørger.
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Kan ikke oprette sammenhæng for Gadtools.
-; Can't create context for Gadtools!
-;
 MSG_CANT_OPEN_STREAM
 Kan ikke åbne IFF-strøm.
 ; Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Kan ikke skrive indstillinger.
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Kan ikke læse indstillinger.
-; Can't read preferences!
 ;
 MSG_CANT_ALLOCATE_IFFPTR
 Kan ikke tildele IFF-håndtag.
 ; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Kan ikke tildele programhukommelse (%s).
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
 Skrifttypeindstillinger
 ; Font Preferences
-;
-MSG_MENU_PREFERENCES
-Indstillinger
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importér...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Eksportér...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Indlæs skrifttypeindstillinger
-; Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Gem skrifttypeindstillinger
-; Save Font Preferences
 ;
 MSG_OK
 O.k.
@@ -75,8 +31,4 @@ System:
 MSG_SCREEN
 Skærm:
 ; Screen:
-;
-MSG_DESCRIPTION
-Skrifttypeindstillinger
-; Fonts preferences
 ;

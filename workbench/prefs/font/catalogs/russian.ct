@@ -1,63 +1,19 @@
-## version $VER: fontprefs.catalog 2.0 (30.03.2016)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language russian
 ## codeset 0
 ;
-;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Ошибка создания объекта приложения !
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Ошибка открытия файлового реквестера!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Ошибка создания контекста Gadtools!
-; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Невозможно открытие потока IFF!
 ; Can't open IFF stream!
 ;
-MSG_CANT_WRITE_PREFFILE
-Невозможно сохранение настроек!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Не могу прочитать настройки!
-; Can't read preferences!
-;
 MSG_CANT_ALLOCATE_IFFPTR
 Can't allocate IFF handle!
 ; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Не могу выделить память приложению (%s) !
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
 Настройки шрифтов
 ; Font Preferences
-;
-MSG_MENU_PREFERENCES
-Настройки
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Импорт...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Экспорт...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Загрузить настройки шрифтов
-; Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Сохранить настройки шрифта
-; Save Font Preferences
 ;
 MSG_OK
 Ok
@@ -74,8 +30,4 @@ MSG_SYSTEM
 MSG_SCREEN
 Экран:
 ; Screen:
-;
-MSG_DESCRIPTION
-Настройка шрифтов
-; Fonts preferences
 ;

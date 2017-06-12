@@ -1,63 +1,19 @@
-## version $VER: fontprefs.catalog 2.0 (30.03.2016)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language deutsch
 ## codeset 0
 ;
-;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Kann Application-Objekt nicht erzeugen.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Kann Datei Requester nicht erzeugen!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Kann Kontext für Gadtools nicht erzeugen!
-; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Kann IFF Stream nicht öffnen!
 ; Can't open IFF stream!
 ;
-MSG_CANT_WRITE_PREFFILE
-Fehler beim Schreiben der Voreinstellungen!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Fehler beim Lesen der Voreinstellungen!
-; Can't read preferences!
-;
 MSG_CANT_ALLOCATE_IFFPTR
 Kann IFF Handle nicht allozieren!
 ; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Kann Anwendungs-Speicher nicht allozieren (%s)!
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
 Schriftarten-Einstellungen (Font)
 ; Font Preferences
-;
-MSG_MENU_PREFERENCES
-Vorgaben
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Import...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Export...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Lade Font-Vorgaben
-; Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Speichere Font-Vorgaben
-; Save Font Preferences
 ;
 MSG_OK
 Ok
@@ -74,8 +30,4 @@ System:
 MSG_SCREEN
 Schirm:
 ; Screen:
-;
-MSG_DESCRIPTION
-Font-Vorgaben
-; Fonts preferences
 ;

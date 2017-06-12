@@ -1,64 +1,20 @@
-## version $VER: fontprefs.catalog 2.0 (30.03.2016)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language português
 ## codeset 0
 ;
 ; Translated by João Ralha
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Não foi possível criar a aplicação.
-;Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Não possível abrir o requester de ficheiros!
-;Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Não foi possível criar o contexto para GadTools!
-;Can't create context for Gadtools!
-;
 MSG_CANT_OPEN_STREAM
 Não foi possível ler ficheiro IFF!
 ;Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Não possível guardar as preferências!
-;Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Não possível ler as preferências!
-;Can't read preferences!
 ;
 MSG_CANT_ALLOCATE_IFFPTR
 ¡No se puede asignar un handle IFF!
 ;Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Não foi possível disponibilizar memória para a aplicação (%s)!
-;Can't allocate application memory (%s)!
-;
 MSG_NAME
 Preferências das Fontes
 ;Font Preferences
-;
-MSG_MENU_PREFERENCES
-Preferências
-;Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importar...
-;I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Exportar...
-;E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Carregar as Preferências das Fontes
-;Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Guardar as Preferências das Fontes
-;Save Font Preferences
 ;
 MSG_OK
 Aceitar
@@ -75,8 +31,4 @@ Sistema:
 MSG_SCREEN
 Écran:
 ;Screen:
-;
-MSG_DESCRIPTION
-Preferências das Fontes
-;Fonts preferences
 ;

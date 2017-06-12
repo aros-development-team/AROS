@@ -1,63 +1,19 @@
-## version $VER: Font.catalog 2.0 (30.03.2016)
+## version $VER: Font.catalog 3.1 (11.6.2017)
 ## language czech
 ## codeset 5
 ;
-;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Nelze vytvoøit objekt application.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Nelze otevøít dialog pro výbìr souboru!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Nelze vytvoøit po¾adované tlaèítko!
-; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Nelze otevøít data formátu IFF!
 ; Can't open IFF stream!
 ;
-MSG_CANT_WRITE_PREFFILE
-Nelze ulo¾it nastavení programu!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Nelze naèíst nastavení programu!
-; Can't read preferences!
-;
 MSG_CANT_ALLOCATE_IFFPTR
 Nelze alokovat strukturu IFF!
 ; Can't allocate IFF handle!
 ;
-MSG_CANT_ALLOCATE_MEM
-Není dostatek volné pamìti (%s)!
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
 Písma (editor Font)
 ; Font Preferences
-;
-MSG_MENU_PREFERENCES
-Nastavení
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importovat...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Exportovat...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Naètení nastavení
-; Load Font Preferences
-;
-MSG_ASL_SAVE_TITLE
-Ulo¾ení nastavení
-; Save Font Preferences
 ;
 MSG_OK
 OK
@@ -74,8 +30,4 @@ Systém:
 MSG_SCREEN
 Obrazovka:
 ; Screen:
-;
-MSG_DESCRIPTION
-Nastavení písem systému
-; Fonts preferences
 ;
