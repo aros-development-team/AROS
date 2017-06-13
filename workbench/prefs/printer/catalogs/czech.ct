@@ -1,103 +1,15 @@
-## version $VER: printer.catalog 1.0 (06.09.2016)
+## version $VER: Printer.catalog 2.1 (13.6.2017)
 ## language czech
 ## codeset 5
 ;
-;
-MSG_CANT_OPEN_LIB
-Nelze otevøít %s V%ld!\n
-; Can't open %s V%ld!\n
-;
-MSG_CANT_LOCK_SCR
-Nelze zamknout veøejnou obrazovku!
-; Can't lock public screen!
-;
-MSG_CANT_GET_DRI
-Nelze obdr¾et DrawInfo!
-; Can't get DrawInfo!
-;
-MSG_CANT_GET_VI
-Nelze obdr¾et VisualInfo!
-; Can't get VisualInfo!
-;
-MSG_CANT_CREATE_GADGET
-Nelze vytvoøit tlaèítka!
-; Can't create gadgets!
-;
-MSG_CANT_CREATE_MENUS
-Nelze vytvoøit menu!
-; Can't create menus!
-;
-MSG_CANT_CREATE_WIN
-Nelze vytvoøit okno!
-; Can't create window!
 ;
 MSG_WINTITLE
 Nastavení mo¾ností tisku
 ; Printer Preferences
 ;
-MSG_MEN_PROJECT
-Soubor
-; Project
-;
-MSG_MEN_PROJECT_OPEN
-O\0Otevøít...
-; O\0Open...
-;
-MSG_MEN_PROJECT_SAVEAS
-A\0Ulo¾it jako...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Ukonèit
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Upravit
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Nastavit pùvodní hodnoty
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Poslední ulo¾ené
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Obnovit
-; R\0Restore
-;
-MSG_MEN_SETTINGS
-Nastavení
-; Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Vytvoøit ikonu?
-; I\0Create Icons?
-;
-MSG_ASL_OPEN_TITLE
-Otevøít nastavení tiskárny
-; Load Printer Preferences
-;
-MSG_ASL_SAVE_TITLE
-Ulo¾it nastavení tiskárny
-; Save Printer Preferences
-;
 MSG_OK
 Ok
 ; Ok
-;
-MSG_GAD_SAVE
-Ulo¾it
-; Save
-;
-MSG_GAD_USE
-Pou¾ít
-; Use
-;
-MSG_GAD_CANCEL
-Zru¹it
-; Cancel
 ;
 MSG_PRINTER_DRIVER
 Vlastnosti zaøízení
@@ -127,45 +39,9 @@ MSG_PRINTER_CUSTOM_DEVICE
 Vlastní zaøízení:
 ; Custom device:
 ;
-MSG_PRINTER_DEVICE_UNIT0
-Jednotka 0
-; Unit 0
-;
-MSG_PRINTER_DEVICE_UNIT1
-Jednotka 1
-; Unit 1
-;
-MSG_PRINTER_DEVICE_UNIT2
-Jednotka 2
-; Unit 2
-;
-MSG_PRINTER_DEVICE_UNIT3
-Jednotka 3
-; Unit 3
-;
-MSG_PRINTER_DEVICE_UNIT4
-Jednotka 4
-; Unit 4
-;
-MSG_PRINTER_DEVICE_UNIT5
-Jednotka 5
-; Unit 5
-;
-MSG_PRINTER_DEVICE_UNIT6
-Jednotka 6
-; Unit 6
-;
-MSG_PRINTER_DEVICE_UNIT7
-Jednotka 7
-; Unit 7
-;
-MSG_PRINTER_DEVICE_UNIT8
-Jednotka 8
-; Unit 8
-;
-MSG_PRINTER_DEVICE_UNIT9
-Jednotka 9
-; Unit 9
+MSG_PRINTER_DEVICE_UNIT
+Jednotka %d
+; Unit %d
 ;
 MSG_PRINTER_PARALLEL
 Paralelní port
