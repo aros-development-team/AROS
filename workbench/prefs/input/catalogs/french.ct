@@ -1,71 +1,15 @@
-## version $VER: Input.catalog 2.0 (30.03.2016)
+## version $VER: Input.catalog 3.1 (13.6.2017)
 ## language français
 ## codeset 0
 ;
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Impossible de créer l'objet application.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Impossible d'ouvrir le requêteur de création de fichier !
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Impossible de créer le context pour Gadtools !
-; Can't create context for Gadtools!
-;
-MSG_CANT_OPEN_STREAM
-Impossible d'ouvrir le flux IFF !
-; Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Impossible d'écrire les préférences !
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Impossible de lire les préférences !
-; Can't read preferences!
-;
-MSG_CANT_ALLOCATE_IFFPTR
-Impossible d'allouer le descripteur IFF !
-; Can't allocate IFF handle!
-;
-MSG_CANT_ALLOCATE_MEM
-Impossible d'allouer la mémoire pour l'applications (%s) !
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
-Préférences clavier & souris
+Préférences clavier et souris
 ; Input Preferences
-;
-MSG_MENU_PREFERENCES
-Préférences
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0 Import...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0 Export...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Charger les préférences d'entrées
-; Load Input Preferences
-;
-MSG_ASL_SAVE_TITLE
-Sauver les préférences d'entrées
-; Save Input Preferences
 ;
 MSG_OK
 Ok
 ; Ok
-;
-MSG_DESCRIPTION
-Préférences clavier et souris
-; Input preferences
 ;
 MSG_GAD_TAB_MOUSE
 Souris
@@ -103,10 +47,6 @@ MSG_GAD_KEY_TYPE
 Modèle de clavier
 ; Type
 ;
-MSG_TIME_FORMAT
-%d.%02d s
-; %d.%02d s
-;
 MSG_GAD_MOUSE_BUTTON_SETTINGS
 Assignation des boutons
 ;Mouse buttons
@@ -114,18 +54,6 @@ Assignation des boutons
 MSG_GAD_LEFT_HANDED_MOUSE
 Souris pour gauchers
 ;Left-handed mouse
-;
-MSG_GAD_MOUSE_MAPPING_MENU
-Menu
-; Menu
-;
-MSG_GAD_MOUSE_MAPPING_THIRD
-Troisième
-; Third
-;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Délai du double clic
-; Double-Click Delay
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Lente

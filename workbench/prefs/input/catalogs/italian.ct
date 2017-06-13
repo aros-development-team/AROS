@@ -1,71 +1,15 @@
-## version $VER: inputprefs.catalog 1.1 (25.9.2007)
+## version $VER: Input.catalog 3.0 (13.6.2017)
 ## language italiano
 ## codeset 0
 ;
-;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Impossibile creare oggetto.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Impossibile aprire file requester!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Impossibile creare contesto per Gadtools!
-; Can't create context for Gadtools!
-;
-MSG_CANT_OPEN_STREAM
-Impossibile aprire flusso IFF!
-; Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Impossibile registrare le impostazioni!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Impossibile accedere alle impostazioni!
-; Can't read preferences!
-;
-MSG_CANT_ALLOCATE_IFFPTR
-Impossibile allocare risorse IFF!
-; Can't allocate IFF handle!
-;
-MSG_CANT_ALLOCATE_MEM
-Impossibile allocare la memoria dell'applicazione (%s)!
-; Can't allocate application memory (%s)!
 ;
 MSG_NAME
 Impostazioni Input
 ; Input Preferences
 ;
-MSG_MENU_PREFERENCES
-Impostazioni
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importa...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Esporta...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Carica impostazioni
-; Load Input Preferences
-;
-MSG_ASL_SAVE_TITLE
-Salva impostazioni
-; Save Input Preferences
-;
 MSG_OK
 Ok
 ; Ok
-;
-MSG_DESCRIPTION
-Impostazioni Input
-; Input preferences
 ;
 MSG_GAD_TAB_MOUSE
 Mouse
@@ -103,13 +47,13 @@ MSG_GAD_KEY_TYPE
 Scrivi
 ; Type
 ;
-MSG_TIME_FORMAT
-%d.%02d s
-; %d.%02d s
+MSG_GAD_MOUSE_BUTTON_SETTINGS
+
+; Mouse buttons
 ;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Intervallo doppio click
-; Double-Click Delay
+MSG_GAD_LEFT_HANDED_MOUSE
+
+; Left-handed mouse
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Lento
@@ -122,4 +66,28 @@ Normale
 MSG_GAD_MOUSE_SPEED_FAST
 Veloce
 ; Fast
+;
+MSG_GAD_KEY_DEF  
+
+; Default
+;
+MSG_GAD_KEY_ALT
+
+; Alternate
+;
+MSG_GAD_KEY_SET
+
+; Set
+;
+MSG_GAD_KEY_SWITCH
+
+; Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE
+
+; Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY
+
+; Hotkey
 ;

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Prefs/Input.catalog"
-#define CATALOG_VERSION  2
+#define CATALOG_VERSION  3
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;

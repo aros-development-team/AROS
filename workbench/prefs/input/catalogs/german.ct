@@ -1,71 +1,15 @@
-## version $VER: inputprefs.catalog 2.0 (30.03.2016)
+## version $VER: Input.catalog 3.1 (13.7.2017)
 ## language deutsch
 ## codeset 0
 ;
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Kann Application-Objekt nicht erzeugen.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Kann Datei Requester nicht erzeugen!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Kann Kontext für Gadtools nicht erzeugen!
-; Can't create context for Gadtools!
-;
-MSG_CANT_OPEN_STREAM
-Kann IFF Stream nicht öffnen!
-; Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Fehler beim Schreiben der Voreinstellungen!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Fehler beim Lesen der Voreinstellungen!
-; Can't read preferences!
-;
-MSG_CANT_ALLOCATE_IFFPTR
-Kann IFF Handle nicht allozieren!
-; Can't allocate IFF handle!
-;
-MSG_CANT_ALLOCATE_MEM
-Kann Anwendungs-Speicher nicht allozieren (%s)!
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
-Eingabe-Einstellungen (Input)
+Eingabe-Einstellungen
 ; Input Preferences
-;
-MSG_MENU_PREFERENCES
-Vorgaben
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Import...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Export...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Lade Eingabe-Vorgaben
-; Load Input Preferences
-;
-MSG_ASL_SAVE_TITLE
-Speichere Eingabe-Vorgaben
-; Save Input Preferences
 ;
 MSG_OK
 Ok
 ; Ok
-;
-MSG_DESCRIPTION
-Eingabe-Vorgaben
-; Input preferences
 ;
 MSG_GAD_TAB_MOUSE
 Maus
@@ -103,10 +47,6 @@ MSG_GAD_KEY_TYPE
 Tastaturbelegung
 ; Type
 ;
-MSG_TIME_FORMAT
-%d,%02d s
-; %d.%02d s
-;
 MSG_GAD_MOUSE_BUTTON_SETTINGS
 Mausknöpfe
 ; Mouse buttons
@@ -114,18 +54,6 @@ Mausknöpfe
 MSG_GAD_LEFT_HANDED_MOUSE
 Linkshändische Maus
 ; Left-handed mouse
-;
-MSG_GAD_MOUSE_MAPPING_MENU
-Menü
-; Menu
-;
-MSG_GAD_MOUSE_MAPPING_THIRD
-Dritte
-; Third
-;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Pause Doppelklick
-; Double-Click Delay
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Langsam

@@ -1,71 +1,15 @@
-## version $VER: Input.catalog 1.4 (23.12.2009)
+## version $VER: Input.catalog 3.0 (13.6.2017)
 ## language hrvatski
 ## codeset 0
 ;
-;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Ne mogu stvoriti objekt aplikacije!
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Ne mogu otvoriti Biraè Datoteka!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Ne mogu stvoriti sklop za Gadtools!
-; Can't create context for Gadtools!
-;
-MSG_CANT_OPEN_STREAM
-Ne mogu otvoriti IFF tok!
-; Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Ne mogu zapisati postavke!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Ne mogu uèitati postavke!
-; Can't read preferences!
-;
-MSG_CANT_ALLOCATE_IFFPTR
-Ne mogu alocirati IFF handle!
-; Can't allocate IFF handle!
-;
-MSG_CANT_ALLOCATE_MEM
-Ne mogu alocirati memoriju aplikacije (%s)!
-; Can't allocate application memory (%s)!
 ;
 MSG_NAME
 Ulazne Periferije
 ; Input Preferences
 ;
-MSG_MENU_PREFERENCES
-Postavke
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Uvezi...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Izvezi...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Uèitaj Postavke Ulaznih Periferija
-; Load Input Preferences
-;
-MSG_ASL_SAVE_TITLE
-Spremi Postavke Ulaznih Periferija
-; Save Input Preferences
-;
 MSG_OK
 U redu
 ; Ok
-;
-MSG_DESCRIPTION
-Ulazne periferije
-; Input preferences
 ;
 MSG_GAD_TAB_MOUSE
 Mi¹
@@ -103,29 +47,13 @@ MSG_GAD_KEY_TYPE
 Tip
 ; Type
 ;
-MSG_TIME_FORMAT
-%d.%02d s
-; %d.%02d s
+MSG_GAD_MOUSE_BUTTON_SETTINGS
+
+; Mouse buttons
 ;
-MSG_GAD_MOUSE_BUTTON_MAPPING
-Mapiranje tipke
-; Button mapping
-;
-MSG_GAD_MOUSE_MAPPING_SELECT
-Izaberi
-; Select
-;
-MSG_GAD_MOUSE_MAPPING_MENU
-Izbornik
-; Menu
-;
-MSG_GAD_MOUSE_MAPPING_THIRD
-Treèi
-; Third
-;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Dupli-Klik Zastoj
-; Double-Click Delay
+MSG_GAD_LEFT_HANDED_MOUSE
+
+; Left-handed mouse
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Sporo
@@ -139,15 +67,27 @@ MSG_GAD_MOUSE_SPEED_FAST
 Brzo
 ; Fast
 ;
-MSG_GAD_MOUSE_LEFT
-Lijevo Dugme
-; Left Button
+MSG_GAD_KEY_DEF  
+
+; Default
 ;
-MSG_GAD_MOUSE_MIDDLE
-Srednje Dugme
-; Middle Button
+MSG_GAD_KEY_ALT
+
+; Alternate
 ;
-MSG_GAD_MOUSE_RIGHT
-Desno Dugme
-; Right Button
+MSG_GAD_KEY_SET
+
+; Set
+;
+MSG_GAD_KEY_SWITCH
+
+; Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE
+
+; Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY
+
+; Hotkey
 ;
