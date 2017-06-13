@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,7 @@
 #include <stdio.h>
 
 #include "misc.h"
+#include "locale.h"
 
 void ShowMessage(CONST_STRPTR msg)
 {
@@ -22,7 +23,7 @@ void ShowMessage(CONST_STRPTR msg)
         {
             es.es_StructSize   = sizeof(es);
             es.es_Flags        = 0;
-            es.es_Title        = (CONST_STRPTR) "Input";
+            es.es_Title        = (CONST_STRPTR) _(MSG_NAME);
             es.es_TextFormat   = (CONST_STRPTR) msg;
             es.es_GadgetFormat = "OK";
 
@@ -30,7 +31,7 @@ void ShowMessage(CONST_STRPTR msg)
         }
         else
         {
-            printf("Input: %s\n", msg);
+            printf("%s: %s\n", _(MSG_NAME), msg);
         }
     }
 }
