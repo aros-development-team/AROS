@@ -1,72 +1,16 @@
-## version $VER: input.catalog 1.0 (19.07.2010)
+## version $VER: Input.catalog 3.0 (13.6.2017)
 ## language dansk
 ## codeset 0
 ;
 ; Initial Danish translation by Kristian Poul Herkild
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Kan ikke oprette programobjekt.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Kan ikke oprette filudvælgningsvindue!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Kan ikke oprette sammenhæng for Gadtools!
-; Can't create context for Gadtools!
-;
-MSG_CANT_OPEN_STREAM
-Kan ikke åbne IFF-strøm!
-; Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Kan ikke skrive indstillinger!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Kan ikke læse indstillinger!
-; Can't read preferences!
-;
-MSG_CANT_ALLOCATE_IFFPTR
-Kan ikke tildele IFF-håndtag!
-; Can't allocate IFF handle!
-;
-MSG_CANT_ALLOCATE_MEM
-Kan ikke tildele programhukommelse (%s)!
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
 Inputindstillinger
 ; Input Preferences
 ;
-MSG_MENU_PREFERENCES
-Indstillinger
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importér...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Ekportér...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Indlæs inputindstillinger
-; Load Input Preferences
-;
-MSG_ASL_SAVE_TITLE
-Gem inputindstillinger
-; Save Input Preferences
-;
 MSG_OK
 O.k.
 ; Ok
-;
-MSG_DESCRIPTION
-Inputindstillinger
-; Input preferences
 ;
 MSG_GAD_TAB_MOUSE
 Mus
@@ -104,13 +48,13 @@ MSG_GAD_KEY_TYPE
 Type
 ; Type
 ;
-MSG_TIME_FORMAT
-%d.%02d s
-; %d.%02d s
+MSG_GAD_MOUSE_BUTTON_SETTINGS
+
+; Mouse buttons
 ;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Dobbeltklikforsinkelse
-; Double-Click Delay
+MSG_GAD_LEFT_HANDED_MOUSE
+
+; Left-handed mouse
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Langsom
@@ -123,4 +67,28 @@ Normal
 MSG_GAD_MOUSE_SPEED_FAST
 Hurtig
 ; Fast
+;
+MSG_GAD_KEY_DEF  
+
+; Default
+;
+MSG_GAD_KEY_ALT
+
+; Alternate
+;
+MSG_GAD_KEY_SET
+
+; Set
+;
+MSG_GAD_KEY_SWITCH
+
+; Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE
+
+; Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY
+
+; Hotkey
 ;

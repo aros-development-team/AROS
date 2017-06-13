@@ -1,106 +1,16 @@
-## version $VER: inputprefs.catalog 1.0 (29.09.2007)
+## version $VER: Input.catalog 3.0 (13.6.2017)
 ## language español
 ## codeset 0
 ; 
 ; Translated by ahg
 ;
-; FIXME: Still rest some msg to translate
-;
-MSG_CANT_OPEN_LIB
-¡No se puede abrir %s V%ld!\n
-;¡No puedo abrir %s V%ld!\n
-;Can't open %s V%ld!\n
-;
-MSG_CANT_LOCK_SCR
-¡No se puede bloquear la pantalla pública!
-;Can't lock public screen!
-;
-MSG_CANT_GET_DRI
-Can't get DrawInfo!
-;
-MSG_CANT_GET_VI
-Can't get VisualInfo!
-;
-MSG_CANT_CREATE_GADGET
-¡No se pueden crear los gadgets!
-;Can't create gadgets!
-;
-MSG_CANT_CREATE_MENUS
-¡No se pueden crear los menús!
-;Can't create menus!
-;
-MSG_CANT_CREATE_WIN
-¡No se puede crear la ventana!
-;Can't create window!
-;
-MSG_WINTITLE
+MSG_NAME
 Preferencias para la Entrada de datos
 ;Input Preferences
-;
-MSG_MEN_PROJECT
-Proyecto
-;Project
-;
-MSG_MEN_PROJECT_OPEN
-A\0Abrir...
-;O\0Open...
-;
-MSG_MEN_PROJECT_SAVEAS
-G\0Guardar como...
-;A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-S\0Salir
-;Q\0Quit
-;
-MSG_MEN_EDIT
-Editar
-;Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Valores de fábrica;
-;D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Valores previos
-;U\0Ultima revisione
-;L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Restaurar
-;R\0Restore
-;
-MSG_MEN_SETTINGS
-Configuraciones
-;Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0¿Crear los Íconos?
-;I\0Create Icons?
-;
-MSG_ASL_OPEN_TITLE
-Cargar las Preferencias para la Entrada
-;Load Input Preferences
-;
-MSG_ASL_SAVE_TITLE
-Guardar las Preferencias para la Entrada
-;Save Input Preferences
 ;
 MSG_OK
 Aceptar
 ;Ok
-;
-MSG_GAD_SAVE
-Guardar
-;Save
-;
-MSG_GAD_USE
-Usar
-;Use
-;
-MSG_GAD_CANCEL
-Cancelar
-;Cancel
 ;
 MSG_GAD_TAB_MOUSE
 Ratón
@@ -141,28 +51,13 @@ MSG_GAD_KEY_TYPE
 Tipear
 ;Type
 ;
-MSG_TIME_FORMAT
-%d.%02d s
+MSG_GAD_MOUSE_BUTTON_SETTINGS
+
+; Mouse buttons
 ;
-MSG_GAD_MOUSE_BUTTON_MAPPING
-Configurar los botones
-;Button mapping
-;
-MSG_GAD_MOUSE_MAPPING_SELECT
-Elegir
-;Select
-;
-MSG_GAD_MOUSE_MAPPING_MENU
-Menú
-;Menu
-;
-MSG_GAD_MOUSE_MAPPING_THIRD
-Tercero
-;Third
-;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Retardo del doble-click
-;Double-Click Delay
+MSG_GAD_LEFT_HANDED_MOUSE
+
+; Left-handed mouse
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Lento
@@ -174,4 +69,28 @@ Normal
 MSG_GAD_MOUSE_SPEED_FAST
 Rápido
 ;Fast
+;
+MSG_GAD_KEY_DEF  
+
+; Default
+;
+MSG_GAD_KEY_ALT
+
+; Alternate
+;
+MSG_GAD_KEY_SET
+
+; Set
+;
+MSG_GAD_KEY_SWITCH
+
+; Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE
+
+; Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY
+
+; Hotkey
 ;

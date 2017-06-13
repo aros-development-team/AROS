@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2016, The AROS Development Team. All rights reserved.
+    Copyright  2003-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,7 +23,7 @@
 
 #include <aros/debug.h>
 
-#define VERSION "$VER: Input 0.6 ("ADATE") AROS Dev Team"
+#define VERSION "$VER: Input 1.1 ("ADATE") AROS Dev Team"
 
 /*********************************************************************************************/
 
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
                 application = ApplicationObject,
                     MUIA_Application_Title,  __(MSG_NAME),
                     MUIA_Application_Version, (IPTR) VERSION,
-                    MUIA_Application_Description,  __(MSG_DESCRIPTION),
+                    MUIA_Application_Description,  __(MSG_NAME),
                     MUIA_Application_SingleTask, TRUE,
                     MUIA_Application_Base, (IPTR) "INPUTPREF",
                     SubWindow, (IPTR) (window = SystemPrefsWindowObject,

@@ -1,71 +1,15 @@
-## version $VER: Input.catalog 2.0 (30.03.2016)
+## version $VER: Input.catalog 3.1 (13.6.2017)
 ## language czech
 ## codeset 5
 ;
 ;
-MSG_ERROR_CANT_CREATE_APPLICATION
-Nelze vytvoøit objekt application.
-; Can't create application object.
-;
-MSG_CANT_CREATE_REQ
-Nelze otevøít dialog pro výbìr souboru!
-; Can't open create filerequester!
-;
-MSG_CANT_CREATE_CONTEXT
-Nelze vytvoøit po¾adované tlaèítko!
-; Can't create context for Gadtools!
-;
-MSG_CANT_OPEN_STREAM
-Nelze otevøít data formátu IFF!
-; Can't open IFF stream!
-;
-MSG_CANT_WRITE_PREFFILE
-Nelze ulo¾it nastavení programu!
-; Can't write preferences!
-;
-MSG_CANT_READ_PREFFILE
-Nelze naèíst nastavení programu!
-; Can't read preferences!
-;
-MSG_CANT_ALLOCATE_IFFPTR
-Nelze alokovat strukturu IFF!
-; Can't allocate IFF handle!
-;
-MSG_CANT_ALLOCATE_MEM
-Není dostatek volné pamìti (%s)!
-; Can't allocate application memory (%s)!
-;
 MSG_NAME
-Klávesnice a my¹ (editor Input)
+Klávesnice a my¹
 ; Input Preferences
-;
-MSG_MENU_PREFERENCES
-Nastavení
-; Preferences
-;
-MSG_MENU_PREFERENCES_IMPORT
-I\0Importovat...
-; I\0Import...
-;
-MSG_MENU_PREFERENCES_EXPORT
-E\0Exportovat...
-; E\0Export...
-;
-MSG_ASL_OPEN_TITLE
-Naètení nastavení
-; Load Input Preferences
-;
-MSG_ASL_SAVE_TITLE
-Ulo¾ení nastavení
-; Save Input Preferences
 ;
 MSG_OK
 OK
 ; Ok
-;
-MSG_DESCRIPTION
-Nastavení klávesnice a my¹i
-; Input preferences
 ;
 MSG_GAD_TAB_MOUSE
 My¹
@@ -103,10 +47,6 @@ MSG_GAD_KEY_TYPE
 Druh
 ; Type
 ;
-MSG_TIME_FORMAT
-%d.%02d sek.
-; %d.%02d s
-;
 MSG_GAD_MOUSE_BUTTON_SETTINGS
 Tlaèítka my¹i
 ; Mouse buttons
@@ -114,18 +54,6 @@ Tlaèítka my¹i
 MSG_GAD_LEFT_HANDED_MOUSE
 Pro levoruké
 ; Left-handed mouse
-;
-MSG_GAD_MOUSE_MAPPING_MENU
-Menu
-; Menu
-;
-MSG_GAD_MOUSE_MAPPING_THIRD
-Tøetí
-; Third
-;
-MSG_GAD_MOUSE_DOUBLECLICK_DELAY
-Èas mezi dvojím kliknutím
-; Double-Click Delay
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
 Nízká
