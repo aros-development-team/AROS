@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "System/Prefs/BIBPrefs.catalog"
+#define CATALOG_NAME     "System/Prefs/BoingIconBar.catalog"
 #define CATALOG_VERSION  2
 
 /*** Variables **************************************************************/
