@@ -1,4 +1,4 @@
-## version $VER: Input.catalog 3.0 (13.6.2017)
+## version $VER: Input.catalog 3.1 (15.6.2017)
 ## language italiano
 ## codeset 0
 ;
@@ -24,7 +24,7 @@ Velocità mouse
 ; Mouse Speed
 ;
 MSG_GAD_MOUSE_ACCELERATED
-Accelerato
+Accelerazione
 ; Accelerated
 ;
 MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
@@ -48,11 +48,11 @@ Scrivi
 ; Type
 ;
 MSG_GAD_MOUSE_BUTTON_SETTINGS
-
+Pulsanti del mouse
 ; Mouse buttons
 ;
 MSG_GAD_LEFT_HANDED_MOUSE
-
+Per mancini
 ; Left-handed mouse
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
@@ -68,26 +68,26 @@ Veloce
 ; Fast
 ;
 MSG_GAD_KEY_DEF  
-
+Predefinita
 ; Default
 ;
 MSG_GAD_KEY_ALT
-
+Alternativa
 ; Alternate
 ;
 MSG_GAD_KEY_SET
-
+Imposta
 ; Set
 ;
 MSG_GAD_KEY_SWITCH
-
+Scambia layout
 ; Layout switching
 ;
 MSG_GAD_KEY_SWITCH_ENABLE
-
+Abilitato
 ; Enabled
 ;
 MSG_GAD_KEY_SWITCH_KEY
-
+Hotkey
 ; Hotkey
 ;

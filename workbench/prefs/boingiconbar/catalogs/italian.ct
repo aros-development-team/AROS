@@ -1,46 +1,46 @@
-## version $VER: BoingIconBar.catalog 2.0 (13.6.2016)
-## language czech
-## codeset 5
+## version $VER: BoingIconBar.catalog 2.1 (15.6.2017)
+## language italiano
+## codeset 0
 ;
 ;
 MSG_APP
-BIBNastavení
+BIBPrefs
 ; BIBPrefs
 ;
 MSG_DESCRIPTION
-BoingIconBar (nastavení)
+Preferenze di BoingIconBar
 ; BoingIconBar Preferences
 ;
 MSG_TITLE
-BoingIconBar (nastavení)
+Preferenze di BoingIconBar
 ; BoingIconBar Preferences
 ;
 MSG_DOCK
-\33cLi¹ta
+\33cDock
 ; \33cDock
 ;
 MSG_ADD_DOCK
-Pøidat
+Aggiungi
 ; Add
 ;
 MSG_DEL_DOCK
-Odebrat
+Elimina
 ; Delete
 ;
 MSG_SAVE
-Ulo¾it
+Salva
 ; Save
 ;
 MSG_PROGRAMS
-\33cProgramy
+\33cProgrammi
 ; \33cPrograms
 ;
 MSG_ADD_P
-Pøidat program
+Aggiungi programma
 ; Add program
 ;
 MSG_DEL_P
-Odebrat program
+Rimuovi programma
 ; Del program
 ;
 MSG_OK
