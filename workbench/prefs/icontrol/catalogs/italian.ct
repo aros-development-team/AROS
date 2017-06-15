@@ -1,72 +1,15 @@
-## version $VER: icontrolprefs.catalog 1.0 (25.08.2003)
+## version $VER: IControl.catalog 2.1 (15.6.2017)
+## language italiano
 ## codeset 0
-## language deutsch
 ;
-; TODO: update me and set version to 2
-;
-MSG_CANT_OPEN_LIB
-Impossibile aprire %s V%ld!\n
-;
-MSG_CANT_CREATE_APP
-Impossibile creare oggetto applicazione!
-; Can't create application object!
 ;
 MSG_WINTITLE
 Preferenze IControl
 ; IControl Preferences
 ;
-MSG_MEN_PROJECT
-Progetto
-; Project
-;
-MSG_MEN_PROJECT_OPEN
-O\0Apri ...
-; O\0Open...
-;
-MSG_MEN_PROJECT_SAVEAS
-A\0Salva come...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Esci
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Modifica
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Rirpistina valori iniziali
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Ultima versione salvata
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Ripristina
-; R\0Restore
-;
-MSG_MEN_SETTINGS
-Impostazioni
-; Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Creare icona?
-; I\0Create Icons?
-;
-MSG_ASL_OPEN_TITLE
-Carica preferenze IControl
-; Load IControl Preferences
-;
-MSG_ASL_SAVE_TITLE
-Salva preferenze IControl
-; Save IControl Preferences
-;
 MSG_OK
 Ok
 ; Ok
-;
 ;
 MSG_MENUS_GROUP
 Menu
@@ -77,11 +20,11 @@ Tipo
 ; Type
 ;
 MSG_MENUS_TYPE_PULLDOWN
-Pull-Down
+A tendina
 ; Pull-Down
 ;
 MSG_MENUS_TYPE_POPUP
-Pop-Up
+A comparsa
 ; Pop-Up
 ;
 MSG_MENUS_LOOK
@@ -95,4 +38,56 @@ Classico
 MSG_MENUS_LOOK_3D
 3D
 ; 3D
+;
+MSG_WINDOWS
+Finestre
+; Windows
+;
+MSG_OFFSCREEN_MOVE
+Movimento libero:
+; Offscreen move:
+;
+MSG_SCREENS
+Schermi
+; Screens
+;
+MSG_FRONTMOST_DEFAULT
+Rendi schermo in primo piano pubblico di default
+; Frontmost set as default public screen:
+;
+MSG_OFFSCREEN_DESC
+Consenti di trascinare le finestre\noltre l'area visibile
+; Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+Trasforma lo schermo in primo piano\nnello schermo pubblico di default
+; Make the frontmost public screen\nthe default public screen
+;
+MSG_BOUND_LEFT_DRAG
+Blocca trascinamento a sinistra
+; Bound drag in left direction
+;
+MSG_BOUND_RIGHT_DRAG
+Blocca trascinamento a destra
+; Bound drag in right direction
+;
+MSG_BOUND_TOP_DRAG
+Blocca trascinamento in alto
+; Bound drag in top direction
+;
+MSG_BOUND_BOTTOM_DRAG
+Blocca trascinamento in basso
+; Bound drag in bottom direction
+;
+MSG_META_DRAG
+Tasti trascinamento
+; Drag keys
+;
+MSG_MENUS_STICKY
+Sempre in primo piano
+; Sticky
+;
+MSG_MENUS_TITLEPOPUP
+Attiva su barra del titolo
+; Pull-Down on Screen Title
 ;

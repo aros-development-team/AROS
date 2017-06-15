@@ -1,0 +1,66 @@
+## version $VER: Appearance.catalog 2.1 (15.6.2017)
+## language italiano
+## codeset 0
+;
+;
+MSG_WINTITLE
+Preferenze dell'aspetto
+; Appearance Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_ENABLETHEMES
+Abilitare decorazioni?
+; Enable theming?
+;
+MSG_PREVIEW
+Anteprima
+; Preview
+;
+MSG_NOPREVIEW
+-Anteprima non disponibile-
+; -Preview Unavailable-
+;
+MSG_SELECTEDTHEME
+Decorazione
+; Theme
+;
+MSG_ENABLEZUNEPREFS
+Ereditare le impostazioni di Zune?
+; Inherit Zune Configuration?
+;
+MSG_ENABLEWANDPREFS
+Ereditare le impostazioni di Wanderer?
+; Inherit Wanderer Configuration?
+;
+MSG_SEC_THEMING
+Decorazioni
+; Theming
+;
+MSG_SEC_COMPOSITING
+Composizione
+; Compositing
+;
+MSG_ENABLE_SCREEN_COMPOSITION
+Abilitare composizione schermo
+; Enable Screen Composition
+;
+MSG_COMPOSITE_BELOW
+Composizione sotto
+; Composite Below
+;
+MSG_COMPOSITE_LEFT
+Composizione a sinistra
+; Composite Left
+;
+MSG_COMPOSITE_RIGHT
+Composizione a destra
+; Composite Right
+;
+MSG_ENABLE_COMPOSITE_WITH_ALPHA
+Composizione con trasparenza
+; Enable Compositing with Alpha
+;
+;

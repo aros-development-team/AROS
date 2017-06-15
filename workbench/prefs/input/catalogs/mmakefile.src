@@ -3,8 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS := czech french german
-# other catalogs need update to version 3
+CATALOGS := czech french german italian
+# other catalogs need updating
 
 %build_catalogs mmake=workbench-prefs-input-catalogs \
     catalogs=$(CATALOGS) \
