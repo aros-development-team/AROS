@@ -1,14 +1,6 @@
-;**************************
-;
-;   ReqTools Preferences
-;
-;**************************
-;
-## version $VER: reqtoolsprefs.catalog 38.4 (17.4.94)
-## codeset 0
+## version $VER: ReqTools.catalog 3.0 (30.6.2017)
 ## language português
-;
-; *** Misc ***
+## codeset 0
 ;
 MSG_WINDOW_TITLE
 Preferências do ReqTools
@@ -22,64 +14,8 @@ File Requester
 MSG_SIZE
 Tamanho (% do tamanho visivel):
 ;
-MSG_SET
-Acertar...
-;
-MSG_TEST
-Testar...
-;
-MSG_SAVE
-Gravar
-;
-MSG_USE
-Usar
-;
-MSG_CANCEL
-Cancelar
-;
-MSG_ABORT
-Abortar
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- Ok
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Projecto
-;
-MSG_PROJECT_OPEN
-A\0Abrir ficheiro...
-;
-MSG_PROJECT_SAVEAS
-G\0Gravar ficheiro como...
-;
-MSG_PROJECT_ABOUT
-?\0Acerca...
-;
-MSG_PROJECT_QUIT
-S\0Sair do programa...
-;
-MSG_EDIT_MENU
-Editar
-;
-MSG_EDIT_RESET
-I\0Voltar ás opções iniciais
-;
-MSG_EDIT_LASTSAVED
-U\0Últimas opções gravadas...
-;
-MSG_EDIT_RESTORE
-R\0Restaurar estado anterior
-;
-MSG_OPTIONS_MENU
-Opções
-;
-MSG_OPTIONS_CREATEICONS
- \0Gravar icones?
-;
-; *** Switches ***
+Ok
 ;
 MSG_POPSCREEN
 Por Ecran Para a Frente
@@ -99,40 +35,35 @@ LED
 MSG_DEFAULTFONT
 Tipo de letra habitual do sistema
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Use function keys
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Color wheel
+Color wheel:
 ;
-; *** Requester Type ***
+MSG_DEFAULTS
+Defaults
 ;
 MSG_REQUESTER
-Defaults para
+\33bRequester:
 ;
 MSG_FILEREQ
-File Requester
+File
 ;
 MSG_FONTREQ
-Font Requester
+Font
 ;
 MSG_PALETTEREQ
-Palette Requester
+Palette
 ;
 MSG_SCRMODEREQ
-Screen Mode Requester
+Screen Mode
 ;
 MSG_VOLUMEREQ
-Volume Requester
+Volume
 ;
 MSG_OTHERREQ
-Other Requesters
-;
-; *** Position ***
+Other
 ;
 MSG_POSITION
 Posição:
@@ -153,59 +84,14 @@ MSG_TOPLEFTSCR
 Topo Esquerdo do Ecran
 ;
 MSG_OFFSET
-Offset:
-;
-; *** Entries ***
+\33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Numero de Entradas Visiveis:
+\33bNumero de Entradas Visiveis
 ;
 MSG_MIN
-Minimo
+Minimo:
 ;
 MSG_MAX
-Maximo
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Precisa da reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-A versão da reqtools.library que voce tem\nnão suporta preferencias!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-ATENÇÃO: Esta versão do editor de preferencias\n\
-não suporta todas as preferencias da\n\
-reqtools.library que voce tem instalada!!
-;
-MSG_NO_WB_LIB
-Não pude abrir a workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Não pude abrir a utility.library!
-;
-MSG_NO_ICON_LIB
-Não pude abrir a icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Não pude apanhar o public screen!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Erro a apanhar a informação da gaveta!
-;
-MSG_ERROR_GETVISUALINFO
-Erro a apanhar a informação visual!
-;
-MSG_COULDNT_OPEN_WINDOW
-Não pude abrir a janela!
-;
-MSG_ERROR_ACCESSING_FILE
-Erro a aceder ao ficheiro\n%s,\n%s
-;
-MSG_READ_ERROR
-Erro de Leitura!
-;
-MSG_ERROR_SAVING_PREFS
-Erro a gravar preferencias!
+Maximo:
 ;

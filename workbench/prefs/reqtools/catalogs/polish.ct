@@ -1,4 +1,4 @@
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language polski
 ## codeset 0
 ;
@@ -18,81 +18,9 @@ MSG_SIZE
 Wielko¶æ (% wysoko¶ci ekranu):
 ; Size (% of visible height):
 ;
-MSG_SET
-Ustaw...
-; Set...
-;
-MSG_TEST
-Sprawd¼...
-; Test...
-;
-MSG_SAVE
-Zapisz
-; Save
-;
-MSG_USE
-U¿yj
-; Use
-;
-MSG_CANCEL
-Poniechaj
-; Cancel
-;
-MSG_ABORT
-Przerwij
-; Abort
-;
 MSG_OK
 Ok
 ;  Ok
-;
-MSG_INFORMATION
-Informacje
-; Information
-;
-MSG_PROJECT_MENU
-Projekt
-; Project
-;
-MSG_PROJECT_OPEN
-O\0Wczytaj...
-; O\0Open...
-;
-MSG_PROJECT_SAVEAS
-A\0Zapisz jako...
-; A\0Save As...
-;
-MSG_PROJECT_ABOUT
-?\0O programie...
-; ?\0About...
-;
-MSG_PROJECT_QUIT
-Q\0Skoñcz
-; Q\0Quit
-;
-MSG_EDIT_MENU
-Edycja
-; Edit
-;
-MSG_EDIT_RESET
-D\0Przywróæ ustawienia domy¶lne
-; D\0Reset To Defaults
-;
-MSG_EDIT_LASTSAVED
-L\0Ostatnio zapisane
-; L\0Last Saved
-;
-MSG_EDIT_RESTORE
-R\0Przywróæ
-; R\0Restore
-;
-MSG_OPTIONS_MENU
-Opcje
-; Options
-;
-MSG_OPTIONS_CREATEICONS
-I\0Twórz ikonki
-; I\0Create Icons?
 ;
 MSG_POPSCREEN
 Umie¶æ ekran na wierzchu
@@ -123,52 +51,56 @@ U¿yj klawiszy funkcyjnych
 ; Use function keys
 ;
 MSG_DOWHEEL
-Ko³o kolorów
-; Color wheel
+Ko³o kolorów:
+; Color wheel:
 ;
 MSG_WHEEL_NONE
-bez ko³a kolorów
-; No color wheel
+Wy³±czony
+; None
 ;
 MSG_WHEEL_SIMPLE
-proste ko³o kolorów
-; Simple color wheel
+proste
+; Simple
 ;
 MSG_WHEEL_FANCY
-wybajerzone ko³o kolorów
-; Fancy color wheel
+wybajerzone
+; Fancy
 ;
 MSG_MMB_PARENT
 ¦rodkowy przycisk myszki = nadrzêdny
 ; MMB gives parent
 ;
+MSG_DEFAULTS
+Ustawienie
+; Defaults
+;
 MSG_REQUESTER
-Ustawienie dla
-; Defaults for
+\33bOkna:
+; \33bRequester:
 ;
 MSG_FILEREQ
-okna wyboru plików
-; File Requester
+Plik
+; File
 ;
 MSG_FONTREQ
-okna wyboru czcionek
-; Font Requester
+Czcionka
+; Font
 ;
 MSG_PALETTEREQ
-okna palety kolorów
-; Palette Requester
+Palety kolorów
+; Palette
 ;
 MSG_SCRMODEREQ
-okna trybów ekranu
-; Screen Mode Requester
+Trybów ekranu
+; Screen Mode
 ;
 MSG_VOLUMEREQ
-okna wyboru wolumenów
-; Volume Requester
+Wolumenów
+; Volume
 ;
 MSG_OTHERREQ
-pozosta³ych okien
-; Other Requesters
+pozosta³ych
+; Other
 ;
 MSG_POSITION
 Pozycja:
@@ -195,92 +127,18 @@ lewy górny róg ekranu
 ; Top left of screen
 ;
 MSG_OFFSET
-Przesuniêcie:
-; Offset:
+\33bPrzesuniêcie
+; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Liczba widocznych elementów:
-; Number of visible entries:
+\33bLiczba widocznych elementów
+; \33bNumber of visible entries
 ;
 MSG_MIN
-Minimalna
-; Minimum
+Minimalna:
+; Minimum:
 ;
 MSG_MAX
-Maksymalna
-; Maximum
-;
-MSG_YOU_NEED_REQTOOLS38
-Potrzebujesz co najmniej wersji 38\n\
-biblioteki reqtools.library!
-; You need reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-Wersja biblioteki reqtools.library której u¿ywasz,\n\
-nie obs³uguje preferencji!
-; The version of reqtools.library you have\ndoes not support preferences!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-UWAGA! Ta wersja Preferencji ReqTools nie pozwala\n\
-na obs³ugê wszystkich funkcji aktualnie u¿ywaniej\n\
-biblioteki!
-; WARNING: This version of the preference editor\n\
-; doesn't support all the preferences of the\n\
-; reqtools.library you've got installed!
-;
-MSG_NO_WB_LIB
-Nie mo¿na otworzyæ biblioteki workbench.library!
-; Couldn't open workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Nie mo¿na otworzyæ biblioteki utility.library!
-; Couldn't open utility.library!
-;
-MSG_NO_ICON_LIB
-Nie mo¿na otworzyæ biblioteki icon.library!
-; Couldn't open icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Nie mo¿na u¿yæ ekranu publicznego!
-; Couldn't lock public screen!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Nie mo¿na pobraæ DrawInfo!
-; Error getting draw info!
-;
-MSG_ERROR_GETVISUALINFO
-Nie mo¿na pobraæ VisualInfo!
-; Error getting visual info!
-;
-MSG_COULDNT_OPEN_WINDOW
-Nie mo¿na otworzyæ okna!
-; Couldn't open window!
-;
-MSG_ERROR_ACCESSING_FILE
-B³±d podczas dostêpu do pliku\n\
-%s,\n\
-%s
-; Error accessing file\n%s,\n%s
-;
-MSG_READ_ERROR
-B³±d odczytu!
-; Read error!
-;
-MSG_ERROR_SAVING_PREFS
-B³±d zapisu preferencji!
-; Error saving preferences!
-;
-MSG_ERROR_ARGS
-B³±d parametru
-; Argument error
-;
-MSG_ERROR_LIBRARY
-Nie mo¿na otworzyæ %s\n\
-w wersji %ld lub nowszej!
-; Couldn't open %s\n\
-; version %ld or higher!
-;
-MSG_ERROR_MENUS
-Nie mo¿na utworzyæ menu!
-; Couldn't create menus!
+Maksymalna:
+; Maximum:
 ;

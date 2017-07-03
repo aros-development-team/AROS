@@ -1,16 +1,7 @@
-## version $VER: reqtoolsprefs.catalog 38.1 (1.2.96)
-## codeset 5
+## version $VER: ReqTools.catalog 3.0 (30.6.2017)
 ## language magyar
-; készítette: Kertai Gábor
-;
-;**************************
-;
-;   ReqTools Preferences
-;
-;**************************
-;
-;
-; FOLD *** Misc ***
+## codeset 5
+; Authors: Kertai Gábor
 ;
 MSG_WINDOW_TITLE
 ReqTools beállítások
@@ -28,91 +19,9 @@ MSG_SIZE
 Méret (látható magasság %%-a)
 ; Size (% of visible height):
 ;
-MSG_SET
-Beállít...
-; Set...
-;
-MSG_TEST
-Kipróbál...
-; Test...
-;
-MSG_SAVE
-Tárold
-; Save
-;
-MSG_USE
-Használd
-; Use
-;
-MSG_CANCEL
-Nem kell
-; Cancel
-;
-MSG_ABORT
-Hagyd abba
-; Abort
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
-;
 MSG_OK
 Rendben
 ;  Ok
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Information
-; Information
-;
-; ENDF
-; FOLD *** Menus ***
-;
-MSG_PROJECT_MENU
-Állomány
-; Project
-;
-MSG_PROJECT_OPEN
-N\0Megnyit...
-; O\0Open...
-;
-MSG_PROJECT_SAVEAS
-S\0Más néven ment...
-; A\0Save As...
-;
-MSG_PROJECT_ABOUT
-?\0Névjegy...
-; ?\0About...
-;
-MSG_PROJECT_QUIT
-K\0Kilép
-; Q\0Quit
-;
-MSG_EDIT_MENU
-Szerkesztés
-; Edit
-;
-MSG_EDIT_RESET
-A\0Alapértelmezés
-; D\0Reset To Defaults
-;
-MSG_EDIT_LASTSAVED
-U\0Utoljára tárolt
-; L\0Last Saved
-;
-MSG_EDIT_RESTORE
-E\0Eredeti
-; R\0Restore
-;
-MSG_OPTIONS_MENU
-Opciók
-; Options
-;
-MSG_OPTIONS_CREATEICONS
-I\0Ikonokat készít
-; I\0Create Icons?
-;
-; ENDF
-; FOLD *** Switches ***
 ;
 MSG_POPSCREEN
 Képernyõ elõre
@@ -138,64 +47,56 @@ MSG_DEFAULTFONT
 Rendszerfont
 ; Use system default font
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Funkcióbillentyûk
 ; Use function keys
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Color wheel
-;
-; ** 2.7 **
+Color wheel:
 ;
 MSG_WHEEL_NONE
-No color wheel
-; No color wheel
+None
+; None
 ;
 MSG_WHEEL_SIMPLE
-Simple color wheel
-; Simple color wheel
+Simple
+; Simple
 ;
 MSG_WHEEL_FANCY
-Fancy color wheel
-; Fancy color wheel
+Fancy
+; Fancy
 ;
-; ENDF
-; FOLD *** Requester Type ***
+MSG_DEFAULTS
+Alapértelmezések
+; Defaults
 ;
 MSG_REQUESTER
-Alapértelmezések:
-; Defaults for
+\33bRequester:
+; \33bRequester:
 ;
 MSG_FILEREQ
-Állomány-requester
-; File Requester
+Állomány
+; File
 ;
 MSG_FONTREQ
-Font-requester
-; Font Requester
+Font
+; Font
 ;
 MSG_PALETTEREQ
-Paletta-requester
-; Palette Requester
+Paletta
+; Palette
 ;
 MSG_SCRMODEREQ
-Képernyõmód-requester
-; Screen Mode Requester
+Képernyõmód
+; Screen Mode
 ;
 MSG_VOLUMEREQ
-Egység-requester
-; Volume Requester
+Egység
+; Volume
 ;
 MSG_OTHERREQ
-Egyéb requesterek
-; Other Requesters
-;
-; ENDF
-; FOLD *** Position ***
+Egyéb
+; Other
 ;
 MSG_POSITION
 Pozíció:
@@ -222,97 +123,18 @@ Képernyõn bal felülre
 ; Top left of screen
 ;
 MSG_OFFSET
-Távolság:
-; Offset:
-;
-; ENDF
-; FOLD *** Entries ***
+\33bTávolság
+; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Látható bejegyzések száma:
-; Number of visible entries:
+\33bLátható bejegyzések száma
+; \33bNumber of visible entries
 ;
 MSG_MIN
-Legalább
+Legalább:
 ; Minimum
 ;
 MSG_MAX
-Legfeljebb
+Legfeljebb:
 ; Maximum
 ;
-; ENDF
-; FOLD *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Legalább 38-as reqtools.library szükséges!
-; You need reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-A reqtools.library jelenleg telepített\n\
-változata nem használja a beállításokat!
-; The version of reqtools.library you have\ndoes not support preferences!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-FIGYELEM: A beálításszerkesztõ ezen verziója\n\
-nem ismeri a reqtools.library jelenleg telepített\n\
-változatának összes lehetõségét!
-; WARNING: This version of the preference editor\ndoesn't support all the preferences of the\nreqtools.library you've got installed!
-;
-MSG_NO_WB_LIB
-Nem sikerült megnyitnom a workbench.libraryt!
-; Couldn't open workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Nem sikerült megnyitnom a utility.libraryt!
-; Couldn't open utility.library!
-;
-MSG_NO_ICON_LIB
-Nem sikerült megnyitnom az icon.libraryt!
-; Couldn't open icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Nem tudom használni a publikus képernyõt!
-; Couldn't lock public screen!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Nem sikerült megszereznem a 'draw info'-t!
-; Error getting draw info!
-;
-MSG_ERROR_GETVISUALINFO
-Nem sikerült megszereznem a 'visual info'-t!
-; Error getting visual info!
-;
-MSG_COULDNT_OPEN_WINDOW
-Nem sikerült megnyitni az ablakot!
-; Couldn't open window!
-;
-MSG_ERROR_ACCESSING_FILE
-Hiba a(z) '%s' állománnyal,\n\
-%s
-; Error accessing file\n%s,\n%s
-;
-MSG_READ_ERROR
-Olvasási hiba!
-; Read error!
-;
-MSG_ERROR_SAVING_PREFS
-Hiba a beállítások mentése közben!
-; Error saving preferences!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Argument error
-; Argument error
-;
-MSG_ERROR_LIBRARY
-Couldn't open %s\n\
-version %ld or higher!
-; Couldn't open %s\n\
-; version %ld or higher!
-;
-MSG_ERROR_MENUS
-Couldn't create menus!
-; Couldn't create menus!
-;
-; ENDF

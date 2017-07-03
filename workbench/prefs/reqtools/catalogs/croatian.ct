@@ -1,14 +1,6 @@
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language hrvatski
 ## codeset 0
-;
-;**************************
-;
-;   ReqTools Preferences
-;
-;**************************
-;
-; *** Misc ***
 ;
 MSG_WINDOW_TITLE
 ReqTools Postavke
@@ -26,88 +18,9 @@ MSG_SIZE
 Velièina (% of vidljive visine)
 ; Size (% of visible height):
 ;
-MSG_SET
-Postavi...
-; Set...
-;
-MSG_TEST
-Testiraj...
-; Test...
-;
-MSG_SAVE
-Spremi
-; Save
-;
-MSG_USE
-Koristi
-; Use
-;
-MSG_CANCEL
-Odustani
-; Cancel
-;
-MSG_ABORT
-Obustavi
-; Abort
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
-  U redu
+U redu
 ;  Ok
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Informacije
-; Information
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Projekt
-; Project
-;
-MSG_PROJECT_OPEN
-O\0Otvori...
-; O\0Open...
-;
-MSG_PROJECT_SAVEAS
-A\0Spremi Kao...
-; A\0Save As...
-;
-MSG_PROJECT_ABOUT
-?\0O Programu...
-; ?\0About...
-;
-MSG_PROJECT_QUIT
-Q\0Izlaz
-; Q\0Quit
-;
-MSG_EDIT_MENU
-Uredi
-; Edit
-;
-MSG_EDIT_RESET
-Resetiraj na Predlo¾ene Postavke
-; D\0Reset To Defaults
-;
-MSG_EDIT_LASTSAVED
-L\0Zadnje Spremljeno
-; L\0Last Saved
-;
-MSG_EDIT_RESTORE
-R\0Povrat
-; R\0Restore
-;
-MSG_OPTIONS_MENU
-Opcije
-; Options
-;
-MSG_OPTIONS_CREATEICONS
-I\0Napravi Ikone?
-; I\0Create Icons?
-;
-; *** Switches ***
 ;
 MSG_POPSCREEN
 Izbaci zaslon naprijed
@@ -133,69 +46,61 @@ MSG_DEFAULTFONT
 Koristi slovo sustava
 ; Use system default font
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Koristi funkcijske kljuèeve
 ; Use function keys
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Kolo boja
-; Color wheel
-;
-; ** 2.7 **
+Kolo boja:
+; Color wheel:
 ;
 MSG_WHEEL_NONE
-Bez kola boja
-; No color wheel
+Iskljuèen
+; None
 ;
 MSG_WHEEL_SIMPLE
-Jednostavno kolo boja
-; Simple color wheel
+Jednostavno
+; Simple
 ;
 MSG_WHEEL_FANCY
-Ukra¹eno kolo boja
-; Fancy color wheel
-;
-; ** 2.8 **
+Ukra¹eno
+; Fancy
 ;
 MSG_MMB_PARENT
 MMB daje osnovno
 ; MMB gives parent
 ;
-; *** Requester Type ***
+MSG_DEFAULTS
+Predlo¾ak
+; Defaults
 ;
 MSG_REQUESTER
-Predlo¾ak za
-; Defaults for
+\33bBiraè:
+; \33bRequester:
 ;
 MSG_FILEREQ
-Biraè Datoteka
-; File Requester
+Datoteka
+; File
 ;
 MSG_FONTREQ
-Biraè Slova
-; Font Requester
+Slova
+; Font
 ;
 MSG_PALETTEREQ
-Biraè Boja
-; Palette Requester
+Boja
+; Palette
 ;
 MSG_SCRMODEREQ
-Biraè Rezolucije Zaslona
-; Screen Mode Requester
+Rezolucije Zaslona
+; Screen Mode
 ;
 MSG_VOLUMEREQ
 Pode¹avanje Glasnoèe
-; Volume Requester
+; Volume
 ;
 MSG_OTHERREQ
 Drugi
-; Other Requesters
-;
-; *** Position ***
+; Other
 ;
 MSG_POSITION
 Pozicija:
@@ -222,94 +127,18 @@ Gore lijevo od zaslona
 ; Top left of screen
 ;
 MSG_OFFSET
-Razmak:
-; Offset:
-;
-; *** Entries ***
+\33bRazmak
+; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Broj vidljivih ulaza:
-; Number of visible entries:
+\33bBroj vidljivih ulaza
+; \33bNumber of visible entries
 ;
 MSG_MIN
-Minimalno
-; Minimum
+Minimalno:
+; Minimum:
 ;
 MSG_MAX
-Maksimalno
-; Maximum
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Potrebno reqtools.library V38+!
-; You need reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-Va¹a verzija reqtools.library ne\npodr¾ava postavke!
-; The version of reqtools.library you have\ndoes not support preferences!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-UPOZORENJE: Va¹a verzija editora postavki ne\n\
-podr¾ava sve postavke od reqtools.library\n\
-koju imate instaliranu!
-; WARNING: This version of the preference editor\n\
-; doesn't support all the preferences of the\n\
-; reqtools.library you've got installed!
-;
-MSG_NO_WB_LIB
-Ne mogu otvoriti workbench.library!
-; Couldn't open workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Ne mogu otvoriti utility.library!
-; Couldn't open utility.library!
-;
-MSG_NO_ICON_LIB
-Ne mogu otvoriti icon.library!
-; Couldn't open icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Ne mogu zakljuèati javni zaslon!
-; Couldn't lock public screen!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Gre¹ka pri dobivanju draw info-a!
-; Error getting draw info!
-;
-MSG_ERROR_GETVISUALINFO
-Gre¹ka pri dobivanju visual info-a!
-; Error getting visual info!
-;
-MSG_COULDNT_OPEN_WINDOW
-Ne mogu otvoriti prozor!
-; Couldn't open window!
-;
-MSG_ERROR_ACCESSING_FILE
-Gre¹ka pri otvaranju datoteke\n%s,\n%s
-; Error accessing file\n%s,\n%s
-;
-MSG_READ_ERROR
-Gre¹ka pri èitanju!
-; Read error!
-;
-MSG_ERROR_SAVING_PREFS
-Gre¹ka pri spa¹avanju postavki!
-; Error saving preferences!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Pogre¹an argument
-; Argument error
-;
-MSG_ERROR_LIBRARY
-Ne mogu otvoriti %s\n\
-verziju %ld ili vi¹u!
-; Couldn't open %s\n\
-; version %ld or higher!
-;
-MSG_ERROR_MENUS
-Ne mogu stvoriti izbornike!
-; Couldn't create menus!
+Maksimalno:
+; Maximum:
 ;

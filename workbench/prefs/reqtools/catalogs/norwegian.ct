@@ -1,18 +1,7 @@
-;**************************
-;
-;   ReqTools Preferences
-;
-;   Norsk
-;
-;**************************
-;
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
-## codeset 0
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language norsk
-;
-; av Kim Roar Utsi
-; (updated by Daniel Holmen)
-; *** Misc ***
+## codeset 0
+; Authors: Kim Roar Utsi, Daniel Holmen
 ;
 MSG_WINDOW_TITLE
 ReqTools-Innstillinger
@@ -26,71 +15,8 @@ Fil-forespørsel
 MSG_SIZE
 Størrelse (% av synlig høyde):
 ;
-MSG_SET
-Sett...
-;
-MSG_TEST
-Test...
-;
-MSG_SAVE
-Lagre
-;
-MSG_USE
-Bruk
-;
-MSG_CANCEL
-Avbryt
-;
-MSG_ABORT
-Avbryt
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- Ok
-;
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Informasjon
-;Information
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Prosjekt
-;
-MSG_PROJECT_OPEN
-O\0Hent...
-;
-MSG_PROJECT_SAVEAS
-A\0Lagre som...
-;
-MSG_PROJECT_ABOUT
-?\0Om...
-;
-MSG_PROJECT_QUIT
-Q\0Avslutt
-;
-MSG_EDIT_MENU
-Endre
-;
-MSG_EDIT_RESET
-F\0Standardverdier
-;
-MSG_EDIT_LASTSAVED
-B\0Sist lagret
-;
-MSG_EDIT_RESTORE
-G\0Gjenopprett
-;
-MSG_OPTIONS_MENU
-Valg
-;
-MSG_OPTIONS_CREATEICONS
-I\0Lage ikoner?
-;
-; *** Switches ***
+Ok
 ;
 MSG_POPSCREEN
 Roter skjerm til front
@@ -110,60 +36,51 @@ LED
 MSG_DEFAULTFONT
 Standard systemskrift
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Bruk funksjonstaster
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Fargehjul
-;
-; ** 2.7 **
+Fargehjul:
 ;
 MSG_WHEEL_NONE
-Ingen fargehjul
-;No color wheel
+Ingen
+;None
 ;
 MSG_WHEEL_SIMPLE
-Enkelt fargehjul
-;Simple color wheel
+Enkelt
+;Simple
 ;
 MSG_WHEEL_FANCY
-Fancy fargehjul
-;Fancy color wheel
-;
-; ** 2.8 **
+Fancy
+;Fancy
 ;
 MSG_MMB_PARENT
 MMB nivå opp
 ;MMB gives parent
 ;
-; *** Requester Type ***
+MSG_DEFAULTS
+Standardverdier
 ;
 MSG_REQUESTER
-Standardverdier For
+\33bForespørsel:
 ;
 MSG_FILEREQ
-Filforespørsel
+Fil
 ;
 MSG_FONTREQ
-Skrifttype-forespørsel
+Skrifttype
 ;
 MSG_PALETTEREQ
-Palett-forespørsel
+Palett
 ;
 MSG_SCRMODEREQ
-Skjermmodus-forespørsel
+Skjermmodus
 ;
 MSG_VOLUMEREQ
-Enhets-forespørsel
+Enhets
 ;
 MSG_OTHERREQ
-Andre forespørsler
-;
-; *** Position ***
+Andre
 ;
 MSG_POSITION
 Posisjon:
@@ -184,75 +101,14 @@ MSG_TOPLEFTSCR
 Øverst til venstre på skjerm
 ;
 MSG_OFFSET
-Offset:
-;
-; *** Entries ***
+\33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Antall synlige poster:
+\33bAntall synlige poster
 ;
 MSG_MIN
-Minimum
+Minimum:
 ;
 MSG_MAX
-Maksimum
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Du må ha reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-Den versjonen av reqtools.library du har\nstøtter ikke Innstillinger!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-ADVARSEL: Denne versjonen av ReqTools Innstillinger\n\
-støtter ikke alle innstillingene til den versjonen\n\
-av reqtools.library du har installert!
-;
-MSG_NO_WB_LIB
-Klarte ikke å åpne workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Klarte ikke å åpne utility.library!
-;
-MSG_NO_ICON_LIB
-Klarte ikke å åpne icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Klarte ikke å låse offentlig skjerm!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Feil ved henting av 'ScreenDrawInfo'!
-;
-MSG_ERROR_GETVISUALINFO
-Feil ved henting av 'VisualInfo'!
-;
-MSG_COULDNT_OPEN_WINDOW
-Klarte ikke å åpne vindu!
-;
-MSG_ERROR_ACCESSING_FILE
-Feil i fil\n%s,\n%s
-;
-MSG_READ_ERROR
-Lesefeil!
-;
-MSG_ERROR_SAVING_PREFS
-Feil ved lagring av innstillinger!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Feil i argument
-;Argument error
-;
-MSG_ERROR_LIBRARY
-Klarte ikke å åpne %s\n\
-versjon %ld eller høyere!
-;Couldn't open %s\n\
-;version %ld or higher!
-;
-MSG_ERROR_MENUS
-Klarte ikke å lage menyer!
-;Couldn't create menus!
+Maksimum:
 ;

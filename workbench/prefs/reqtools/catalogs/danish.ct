@@ -1,16 +1,7 @@
-;**************************
-;
-;   ReqTools Preferences
-;
-;   Dansk
-;
-;**************************
-;
-## version $VER: reqtools.catalog 38.4 (17.4.94) by Jesper Juul
-## codeset 0
+## version $VER: ReqTools.catalog 3.0 (30.6.2017)
 ## language dansk
-;
-; *** Diverse ***
+## codeset 0
+; Authors: Jesper Juul
 ;
 MSG_WINDOW_TITLE
 ReqTools indstillinger
@@ -24,68 +15,8 @@ Fil Vælgeren
 MSG_SIZE
 Størrelse (% af synlig højde):
 ;
-MSG_SET
-Indstil...
-;
-MSG_TEST
-Test...
-;
-MSG_SAVE
-Gem indstillinger
-;
-MSG_USE
-Brug indstillinger
-;
-MSG_CANCEL
-Afbryd
-;
-MSG_ABORT
-Afbryd
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
-;
-; Bemærk: Der er to mellemrum før og efter OK texten, for at gøre den
-;         4 tegn lang.
-;
 MSG_OK
- Ok
-;
-; *** Menyer ***
-;
-MSG_PROJECT_MENU
-Projekt
-;
-MSG_PROJECT_OPEN
-Å\0Åben...
-;
-MSG_PROJECT_SAVEAS
-G\0Gem som...
-;
-MSG_PROJECT_ABOUT
-?\0Om programmet...
-;
-MSG_PROJECT_QUIT
-A\0Afslut
-;
-MSG_EDIT_MENU
-Ret
-;
-MSG_EDIT_RESET
-R\0Tilbage til grundværdier
-;
-MSG_EDIT_LASTSAVED
-S\0Sidst gemte
-;
-MSG_EDIT_RESTORE
-F\0Forfra
-;
-MSG_OPTIONS_MENU
-Valgmuligheder
-;
-MSG_OPTIONS_CREATEICONS
-I\0Opret Ikoner?
-;
-; *** Switches ***
+Ok
 ;
 MSG_POPSCREEN
 Flyt skærmen forrest
@@ -105,40 +36,35 @@ LED
 MSG_DEFAULTFONT
 Systemets grund tekst
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Use function keys
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Color wheel
+Color wheel:
 ;
-; *** Requester Type ***
+MSG_DEFAULTS
+Grundværdier
 ;
 MSG_REQUESTER
-Grundværdier for
+\33bVælger:
 ;
 MSG_FILEREQ
-Fil Vælger
+Fil
 ;
 MSG_FONTREQ
-Skrift Vælger
+Skrift
 ;
 MSG_PALETTEREQ
-Palette Vælger
+Palette
 ;
 MSG_SCRMODEREQ
-Skærm-opløsnings Vælger
+Skærm-opløsnings
 ;
 MSG_VOLUMEREQ
-Volume Vælger
+Volume
 ;
 MSG_OTHERREQ
-Andre Vælgere
-;
-; *** Position ***
+Andre
 ;
 MSG_POSITION
 Position:
@@ -159,59 +85,14 @@ MSG_TOPLEFTSCR
 Øverst til venstre på Skærmen
 ;
 MSG_OFFSET
-Offset:
-;
-; *** Entries ***
+\33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Antal synlige filer/skuffer:
+\33bAntal synlige filer/skuffer
 ;
 MSG_MIN
-Minimum
+Minimum:
 ;
 MSG_MAX
-Maksimum
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Dette program kræver MINDST version 38 af reqtools.library !
-;
-MSG_WRONG_REQTOOLS_VERSION
-Denne version af reqtools.library\nunderstøtter ikke Indstillinger!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-ADVARSEL: Denne version af Indstillings-\n\
-programmet understøtter IKKE alle indstil-\n\
-linger i det installerede reqtools.library!
-;
-MSG_NO_WB_LIB
-Kunne ikke åbne workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Kunne ikke åbne utility.library!
-;
-MSG_NO_ICON_LIB
-Kunne ikke åbne icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Kunne ikke få adgang til offentlig skærm!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Fejl ved forespørgsel på 'DrawInfo'!
-;
-MSG_ERROR_GETVISUALINFO
-Fejl ved forespørgsel på 'VisualInfo'!
-;
-MSG_COULDNT_OPEN_WINDOW
-Kunne ikke åbne Vindue!
-;
-MSG_ERROR_ACCESSING_FILE
-Fejl ved læsning af fil\n%s,\n%s
-;
-MSG_READ_ERROR
-Læsefejl!
-;
-MSG_ERROR_SAVING_PREFS
-Fejl ved gemning af Indstillinger!
+Maksimum:
 ;

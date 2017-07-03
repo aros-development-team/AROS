@@ -1,18 +1,7 @@
-;**************************
-;
-;   ReqTools Preferences
-;
-;   Deutsch
-;
-;   von Steffen.Salzmann@frankfurt.netsurf.de
-;
-;**************************
-;
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
-## codeset 0
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language deutsch
-;
-; *** Misc ***
+## codeset 0
+; Authors: Steffen Salzmann
 ;
 MSG_WINDOW_TITLE
 ReqTools-Einstellungen
@@ -26,68 +15,8 @@ Datei-Auswahlfenster
 MSG_SIZE
 Größe (% der sichtbaren Höhe):
 ;
-MSG_SET
-Einstellen...
-;
-MSG_TEST
-Testen...
-;
-MSG_SAVE
-Speichern
-;
-MSG_USE
-Benutzen
-;
-MSG_CANCEL
-Abbrechen
-;
-MSG_ABORT
-Abbruch
-;
 MSG_OK
 Ok
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Information
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Projekt
-;
-MSG_PROJECT_OPEN
-O\0Öffnen...
-;
-MSG_PROJECT_SAVEAS
-A\0Speichern als...
-;
-MSG_PROJECT_ABOUT
-?\0Über...
-;
-MSG_PROJECT_QUIT
-Q\0Beenden
-;
-MSG_EDIT_MENU
-Bearbeiten
-;
-MSG_EDIT_RESET
-Z\0Auf Vorgaben zurücksetzen
-;
-MSG_EDIT_LASTSAVED
-L\0Auf zuletzt gespeichertes
-;
-MSG_EDIT_RESTORE
-S\0Auf vorherigen Stand
-;
-MSG_OPTIONS_MENU
-Optionen
-;
-MSG_OPTIONS_CREATEICONS
-I\0Piktogramme erzeugen?
-;
-; *** Switches ***
 ;
 MSG_POPSCREEN
 Bildschirm nach vorne
@@ -107,56 +36,47 @@ Diskzugriffs-LED
 MSG_DEFAULTFONT
 Standard-System-Zeichensatz
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Funktionstasten benutzen
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Farbrad benutzen
-;
-; ** 2.7 **
+Farbrad benutzen:
 ;
 MSG_WHEEL_NONE
-Kein Farbrad
+Nichts
 ;
 MSG_WHEEL_SIMPLE
-Einfaches Farbrad
+Einfaches
 ;
 MSG_WHEEL_FANCY
-Aufwendiges Farbrad
-;
-; ** 2.8 **
+Aufwendiges
 ;
 MSG_MMB_PARENT
 Mittlere Maustaste für übergeordnete Schublade
 ;
-; *** Requester Type ***
+MSG_DEFAULTS
+Vorgaben
 ;
 MSG_REQUESTER
-Vorgaben für
+\33bAuswahlfenster:
 ;
 MSG_FILEREQ
-Datei-Auswahlfenster
+Datei
 ;
 MSG_FONTREQ
-Zeichensatz-Auswahlfenster
+Zeichensatz
 ;
 MSG_PALETTEREQ
-Farb-Auswahlfenster
+Farb
 ;
 MSG_SCRMODEREQ
-Schirmmodus-Auswahlfenster
+Schirmmodus
 ;
 MSG_VOLUMEREQ
-Datenträger-Auswahlfenster
+Datenträger
 ;
 MSG_OTHERREQ
-Andere Auswahlfenster
-;
-; *** Position ***
+Andere
 ;
 MSG_POSITION
 Position:
@@ -177,72 +97,14 @@ MSG_TOPLEFTSCR
 Oben links auf Bildschirm
 ;
 MSG_OFFSET
-Abstand:
-;
-; *** Entries ***
+\33bAbstand
 ;
 MSG_NR_OF_ENTRIES
-Anzahl sichtbarer Einträge:
+\33bAnzahl sichtbarer Einträge
 ;
 MSG_MIN
-Minimum
+Minimum:
 ;
 MSG_MAX
-Maximum
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Sie benötigen reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-Die Version der reqtools.library, die Sie benutzen,\n\
-unterstützt keine Voreinstellungen!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-WARNUNG: Diese Version des Voreinstellers unterstützt\n\
-nicht alle Einstellungen der reqtools.library,\n\
-die Sie installiert haben!
-;
-MSG_NO_WB_LIB
-Konnte workbench.library nicht öffnen!
-;
-MSG_NO_UTILITY_LIB
-Konnte utility.library nicht öffnen!
-;
-MSG_NO_ICON_LIB
-Konnte icon.library nicht öffnen!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Bekam keinen Lock auf öffentlichen Bildschirm!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Konnte kein DrawInfo bekommen!
-;
-MSG_ERROR_GETVISUALINFO
-Konnte kein VisualInfo bekommen!
-;
-MSG_COULDNT_OPEN_WINDOW
-Konnte Fenster nicht öffnen!
-;
-MSG_ERROR_ACCESSING_FILE
-Fehler beim Zugriff auf Datei\n%s,\n%s
-;
-MSG_READ_ERROR
-Lesefehler!
-;
-MSG_ERROR_SAVING_PREFS
-Fehler beim Speichern der Einstellungen!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Fehlerhaftes Argument
-;
-MSG_ERROR_LIBRARY
-Konnte %s in der\n\
-Version %ld oder höher nicht öffnen!
-;
-MSG_ERROR_MENUS
-Konnte keine Menüs erzeugen!
+Maximum:
 ;

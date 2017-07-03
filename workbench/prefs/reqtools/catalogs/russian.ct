@@ -1,18 +1,7 @@
-;**************************
-;
-;   ReqTools Preferences
-;
-;   Russian
-;
-;**************************
-;
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
-## codeset 2104
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language russian
-;
-; Done by Oleg Sergeev (26.1.97)
-; Done in cp1251 by Sergey Mineychev aka Keen
-; *** Misc ***
+## codeset 2104
+; Authors: Oleg Sergeev, Sergey Mineychev aka Keen
 ;
 MSG_WINDOW_TITLE
 Устaновки Reqtools
@@ -26,69 +15,8 @@ MSG_FILEREQUESTER
 MSG_SIZE
 Рaзмер (в % от видимой высоты)
 ;
-MSG_SET
-Устaновить...
-;
-MSG_TEST
-Пробa...
-;
-MSG_SAVE
-Сохранить
-;
-MSG_USE
-Применить
-;
-MSG_CANCEL
-Отменa
-;
-MSG_ABORT
-Прервaть
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- ОК \
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Информация
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Проект
-;
-MSG_PROJECT_OPEN
-O\0Открыть...
-;
-MSG_PROJECT_SAVEAS
-A\0Зaписaть кaк...
-;
-MSG_PROJECT_ABOUT
-?\0O прогрaмме...
-;
-MSG_PROJECT_QUIT
-Q\0Выход
-;
-MSG_EDIT_MENU
-Изменить
-;
-MSG_EDIT_RESET
-D\0Установить по умолчанию
-;
-MSG_EDIT_LASTSAVED
-L\0Последняя зaпись
-;
-MSG_EDIT_RESTORE
-R\0Восстaновить
-;
-MSG_OPTIONS_MENU
-Опции
-;
-MSG_OPTIONS_CREATEICONS
-I\0Создaвaть иконки
-;
-; *** Switches ***
+ОК
 ;
 MSG_POPSCREEN
 Экрaн вперёд
@@ -108,56 +36,47 @@ MSG_LED
 MSG_DEFAULTFONT
 Стaндaртный шрифт
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 F-клaвиши
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Колесо гаммы
-;
-; ** 2.7 **
+Колесо гаммы:
 ;
 MSG_WHEEL_NONE
-Без колеса гаммы
+Нет
 ;
 MSG_WHEEL_SIMPLE
-Простое колесо гаммы
+Простое
 ;
 MSG_WHEEL_FANCY
-Продвинутое колесо гаммы
-;
-; ** 2.8 **
+Продвинутое
 ;
 MSG_MMB_PARENT
 Назад по средней кнопке
 ;
-; *** Requester Type ***
-;
-MSG_REQUESTER
+MSG_DEFAULTS
 Устaновки:
 ;
+MSG_REQUESTER
+\33bДиалог:
+;
 MSG_FILEREQ
-Диалог фaйлов
+фaйлов
 ;
 MSG_FONTREQ
-Диалог шрифтов
+шрифтов
 ;
 MSG_PALETTEREQ
-Диалог пaлитры
+пaлитры
 ;
 MSG_SCRMODEREQ
-Диалог экрaнов
+экрaнов
 ;
 MSG_VOLUMEREQ
-Диалог томов
+томов
 ;
 MSG_OTHERREQ
-Прочие диалоги
-;
-; *** Position ***
+Прочие
 ;
 MSG_POSITION
 Позиция:
@@ -178,71 +97,14 @@ MSG_TOPLEFTSCR
 Верхний левый угол экрaнa
 ;
 MSG_OFFSET
-Смещение:
-;
-; *** Entries ***
+\33bСмещение
 ;
 MSG_NR_OF_ENTRIES
-Число видимых строк
+\33bЧисло видимых строк
 ;
 MSG_MIN
-Минимум
+Минимум:
 ;
 MSG_MAX
-Мaксимум
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Требуется библиотекa reqtools.library V38+
-;
-MSG_WRONG_REQTOOLS_VERSION
-Используемaя вaми версия reqtools.library\nне поддерживaет прогрaмму устaновок!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-Внимaние! Этa версия редaкторa устaновок не\n\
-поддерживaет все возможности имеющейся в\n\
-вaшей системе библиотеки reqtools.library!
-;
-MSG_NO_WB_LIB
-Не могу открыть библиотеку workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Не могу открыть библиотеку utility.library!
-;
-MSG_NO_ICON_LIB
-Не могу открыть библиотеку icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Не могу зaблокировaть общий экрaн!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Неудaчa функции GetScreenDrawInfo()!
-;
-MSG_ERROR_GETVISUALINFO
-Неудaчa функции GetVisualInfo()!
-;
-MSG_COULDNT_OPEN_WINDOW
-Не могу открыть окно!
-;
-MSG_ERROR_ACCESSING_FILE
-Ошибкa доступa к фaйлу\n%s,\n%s
-;
-MSG_READ_ERROR
-Ошибкa чтения!
-;
-MSG_ERROR_SAVING_PREFS
-Ошибкa зaписи устaновок!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Ошибочный параметр
-;
-MSG_ERROR_LIBRARY
-Не могу открыть %s\n\
-версии %ld или выше!
-;
-MSG_ERROR_MENUS
-Не могу создать меню!
+Мaксимум:
 ;

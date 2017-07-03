@@ -1,12 +1,10 @@
-;
-; by Georges 'Melkor' Goncalves
-;
-## version $VER: ReqToolsPrefs.catalog 39.0 (31.03.2016)
-## codeset 0
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language français
+## codeset 0
+; Authors: Georges 'Melkor' Goncalves
 ;
 MSG_WINDOW_TITLE
-Préférences : ReqTools
+Préférences: ReqTools
 ; ReqTools Preferences
 ;
 MSG_GENERAL
@@ -18,86 +16,12 @@ Requête de fichiers
 ; File Requester
 ;
 MSG_SIZE
-Taille (% de la hauteur visible) :
+Taille (% de la hauteur visible):
 ; Size (% of visible height):
-;
-MSG_SET
-Régler...
-; Set...
-;
-MSG_TEST
-Tester...
-; Test...
-;
-MSG_SAVE
-Sauver
-; Save
-;
-MSG_USE
-Utiliser
-; Use
-;
-MSG_CANCEL
-Annuler
-; Cancel
-;
-MSG_ABORT
-Annuler
-; Abort
 ;
 MSG_OK
 Valider
 ;  Ok
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Information
-; Information
-;
-MSG_PROJECT_MENU
-Projet
-; Project
-;
-MSG_PROJECT_OPEN
-O\0Ouvrir...
-; O\0Open...
-;
-MSG_PROJECT_SAVEAS
-A\0Sauver en...
-; A\0Save As...
-;
-MSG_PROJECT_ABOUT
-?\0A propos...
-; ?\0About...
-;
-MSG_PROJECT_QUIT
-Q\0Quitter
-; Q\0Quit
-;
-MSG_EDIT_MENU
-Editer
-; Edit
-;
-MSG_EDIT_RESET
-D\0Valeurs par défaut
-; D\0Reset To Defaults
-;
-MSG_EDIT_LASTSAVED
-L\0Dernières valeurs sauvées
-; L\0Last Saved
-;
-MSG_EDIT_RESTORE
-R\0Valeurs initiales
-; R\0Restore
-;
-MSG_OPTIONS_MENU
-Options
-; Options
-;
-MSG_OPTIONS_CREATEICONS
-I\0Créer des icônes ?
-; I\0Create Icons?
 ;
 MSG_POPSCREEN
 Passer l'écran en avant
@@ -127,62 +51,60 @@ MSG_FKEYS
 Utiliser touches de fonction
 ; Use function keys
 ;
-; * 2.5 *
-;
 MSG_DOWHEEL
-Roue colorée
-; Color wheel
-;
-; * 2.7 *
+Roue colorée:
+; Color wheel:
 ;
 MSG_WHEEL_NONE
-Pas de roue colorée
-; No color wheel
+Aucun
+; None
 ;
 MSG_WHEEL_SIMPLE
-Roue colorée simple
-; Simple color wheel
+Simple
+; Simple
 ;
 MSG_WHEEL_FANCY
-Roue colorée complète
-; Fancy color wheel
-;
-; * 2.8 *
+Complète
+; Fancy
 ;
 MSG_MMB_PARENT
 MMB retourne le répertoire parent
 ; MMB gives parent
 ;
+MSG_DEFAULTS
+Défauts
+; Defaults
+;
 MSG_REQUESTER
-Défauts pour
-; Defaults for
+\33bRequête:
+; \33bRequester:
 ;
 MSG_FILEREQ
-Requête de fichiers
-; File Requester
+Fichier
+; File
 ;
 MSG_FONTREQ
-Requête de fonte
-; Font Requester
+Fonte
+; Font
 ;
 MSG_PALETTEREQ
-Requête de palette
-; Palette Requester
+Palette
+; Palette
 ;
 MSG_SCRMODEREQ
-Requête de mode écran
-; Screen Mode Requester
+Mode écran
+; Screen Mode
 ;
 MSG_VOLUMEREQ
-Requête de volume
-; Volume Requester
+Volume
+; Volume
 ;
 MSG_OTHERREQ
-Autres requêtes
-; Other Requesters
+Autres
+; Other
 ;
 MSG_POSITION
-Position :
+Position:
 ; Position:
 ;
 MSG_POINTER
@@ -206,89 +128,18 @@ Coin gauche de l'écran
 ; Top left of screen
 ;
 MSG_OFFSET
-Décalage :
-; Offset:
+\33bDécalage
+; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Nombre d'entrées visibles :
-; Number of visible entries:
+\33bNombre d'entrées visibles
+; \33bNumber of visible entries
 ;
 MSG_MIN
-Minimum
-; Minimum
+Minimum:
+; Minimum:
 ;
 MSG_MAX
-Maximum
-; Maximum
-;
-MSG_YOU_NEED_REQTOOLS38
-La reqtools.library V38+ est nécessaire !
-; You need reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-La version de reqtools.library que vous\n\
-possédez ne supporte pas les préférences !
-; The version of reqtools.library you have\ndoes not support preferences!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-ATTENTION: Cette version de l'éditeur de préférences\n\
-ne supporte pas toutes les préférences de la\n\
-reqtools.library que vous avez installé !
-; WARNING: This version of the preference editor\ndoesn't support all the preferences of the\nreqtools.library you've got installed!
-;
-MSG_NO_WB_LIB
-Impossible d'ouvrir la workbench.library !
-; Couldn't open workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Impossible d'ouvrir la utility.library !
-; Couldn't open utility.library!
-;
-MSG_NO_ICON_LIB
-Impossible d'ouvrir la icon.library !
-; Couldn't open icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Impossible de vérouiller l'écran public !
-; Couldn't lock public screen!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Erreur lors de l'obtention du DrawInfo !
-; Error getting draw info!
-;
-MSG_ERROR_GETVISUALINFO
-Erreur lors de l'obtention du VisualInfo !
-; Error getting visual info!
-;
-MSG_COULDNT_OPEN_WINDOW
-Impossible d'ouvrir la fenêtre !
-; Couldn't open window!
-;
-MSG_ERROR_ACCESSING_FILE
-Impossible d'accéder au fichier\n%s,\n%s
-; Error accessing file\n%s,\n%s
-;
-MSG_READ_ERROR
-Erreur de lecture !
-; Read error!
-;
-MSG_ERROR_SAVING_PREFS
-Erreur en sauvant les préférences !
-; Error saving preferences!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Erreur dans l'argument
-; Argument error
-;
-MSG_ERROR_LIBRARY
-Impossible d'ouvrir %s\n\
-version %ld ou ultérieur !
-; Couldn't open %s\n\
-; version %ld or higher!
-;
-MSG_ERROR_MENUS
-Impossible de créer les menus !
-; Couldn't create menus!
+Maximum:
+; Maximum:
 ;

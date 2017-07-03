@@ -1,14 +1,6 @@
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language czech
-## codeset 0
-;
-;**************************
-;
-;   ReqTools Preferences
-;
-;**************************
-;
-; *** Misc ***
+## codeset 5
 ;
 MSG_WINDOW_TITLE
 Nastavení ReqTools
@@ -26,87 +18,9 @@ MSG_SIZE
 Velikost (v % viditelné vý¹ky):
 ; Size (% of visible height):
 ;
-MSG_SET
-Nastavit...
-; Set...
-;
-MSG_TEST
-Zkusit...
-; Test...
-;
-MSG_SAVE
-Ulo¾it
-; Save
-;
-MSG_USE
-Pou¾ít
-; Use
-;
-MSG_CANCEL
-Zru¹it
-; Cancel
-;
-MSG_ABORT
-Pøeru¹it
-; Abort
-;
 MSG_OK
 OK
 ;  Ok
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Informace
-; Information
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Projekt
-; Project
-;
-MSG_PROJECT_OPEN
-O\0Otevøít...
-; O\0Open...
-;
-MSG_PROJECT_SAVEAS
-A\0Ulo¾it jako...
-; A\0Save As...
-;
-MSG_PROJECT_ABOUT
-?\0O programu...
-; ?\0About...
-;
-MSG_PROJECT_QUIT
-Q\0Ukonèit
-; Q\0Quit
-;
-MSG_EDIT_MENU
-Úpravy
-; Edit
-;
-MSG_EDIT_RESET
-D\0Obnovit výchozí
-; D\0Reset To Defaults
-;
-MSG_EDIT_LASTSAVED
-L\0Naposledy ulo¾ené
-; L\0Last Saved
-;
-MSG_EDIT_RESTORE
-R\0Obnovit pøedchozí
-; R\0Restore
-;
-MSG_OPTIONS_MENU
-Nastavení
-; Options
-;
-MSG_OPTIONS_CREATEICONS
-I\0Vytváøet ikony?
-; I\0Create Icons?
-;
-; *** Switches ***
 ;
 MSG_POPSCREEN
 Obrazovka do popøedí
@@ -132,69 +46,61 @@ MSG_DEFAULTFONT
 Pou¾ít systémové písmo
 ; Use system default font
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Pou¾ít funkèní klávesy
 ; Use function keys
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Barevný kruh
-; Color wheel
-;
-; ** 2.7 **
+Barevný kruh:
+; Color wheel:
 ;
 MSG_WHEEL_NONE
-®ádný barevný kruh
-; No color wheel
+Vypnuto
+; None
 ;
 MSG_WHEEL_SIMPLE
-Zjedn. barevný kruh
+Zjedn.
 ; Simple color wheel
 ;
 MSG_WHEEL_FANCY
-Plnobarevný kruh
+Plno
 ; Fancy color wheel
-;
-; ** 2.8 **
 ;
 MSG_MMB_PARENT
 Støední tlaèítko = Vy¹¹í
 ; MMB gives parent
 ;
-; *** Requester Type ***
+MSG_DEFAULTS
+Mo¾nosti
+; Defaults
 ;
 MSG_REQUESTER
-Mo¾nosti pro
-; Defaults for
+\33bvýbìr:
+; \33bRequester:
 ;
 MSG_FILEREQ
-výbìr souborù
+souborù
 ; File Requester
 ;
 MSG_FONTREQ
-výbìr písem
+písem
 ; Font Requester
 ;
 MSG_PALETTEREQ
-výbìr barev
+barev
 ; Palette Requester
 ;
 MSG_SCRMODEREQ
-výbìr rozli¹ení
+rozli¹ení
 ; Screen Mode Requester
 ;
 MSG_VOLUMEREQ
-výbìr zaøízení
+zaøízení
 ; Volume Requester
 ;
 MSG_OTHERREQ
-ostatní dialogy
-; Other Requesters
-;
-; *** Position ***
+ostatní
+; Other
 ;
 MSG_POSITION
 Umístìní:
@@ -221,92 +127,18 @@ Horní levý roh obrazovky
 ; Top left of screen
 ;
 MSG_OFFSET
-Odstup:
-; Offset:
-;
-; *** Entries ***
+\33bOdstup
+; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-Poèet viditelných polo¾ek:
-; Number of visible entries:
+\33bPoèet viditelných polo¾ek
+; \33bNumber of visible entries
 ;
 MSG_MIN
-Minimum
-; Minimum
+Minimum:
+; Minimum:
 ;
 MSG_MAX
-Maximum
-; Maximum
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Vy¾aduje knihovnu reqtools.library V38 nebo novìj¹í!
-; You need reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-Nainstalovaná verze knihovny reqtools.library\nnepodporuje nastavení!
-; The version of reqtools.library you have\ndoes not support preferences!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-Upozornìní: Tato verze editoru nastavení nepodporuje\n\
-v¹echny mo¾nosti nainstalované verze reqtools.library.
-; WARNING: This version of the preference editor\n\
-; doesn't support all the preferences of the\n\
-; reqtools.library you've got installed!
-;
-MSG_NO_WB_LIB
-Nelze otevøít knihovnu workbench.library!
-; Couldn't open workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Nelze otevøít knihovnu utility.library!
-; Couldn't open utility.library!
-;
-MSG_NO_ICON_LIB
-Nelze otevøít knihovnu icon.library!
-; Couldn't open icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Nelze zamknout veøejnou obrazovku!
-; Couldn't lock public screen!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Nelze naèíst strukturu DrawInfo!
-; Error getting draw info!
-;
-MSG_ERROR_GETVISUALINFO
-Nelze naèíst strukturu VisualInfo!
-; Error getting visual info!
-;
-MSG_COULDNT_OPEN_WINDOW
-Nelze otevøít okno!
-; Couldn't open window!
-;
-MSG_ERROR_ACCESSING_FILE
-Chyba pøi otevírání souboru %s,\n%s
-; Error accessing file\n%s,\n%s
-;
-MSG_READ_ERROR
-Chyba pøi ètení!
-; Read error!
-;
-MSG_ERROR_SAVING_PREFS
-Chyba pøi ukládání nastavení!
-; Error saving preferences!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Neplatný argument
-; Argument error
-;
-MSG_ERROR_LIBRARY
-Nelze otevøít knihovnu %s V%ld nebo novìj¹í!
-; Couldn't open %s\n\
-; version %ld or higher!
-;
-MSG_ERROR_MENUS
-Nelze vytvoøit menu!
-; Couldn't create menus!
+Maximum:
+; Maximum:
 ;

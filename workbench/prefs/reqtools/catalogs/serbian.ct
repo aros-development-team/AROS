@@ -1,16 +1,6 @@
-;**************************
-;
-;   ReqTools Preferences
-;
-;   Srpski
-;
-;**************************
-;
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
-## codeset 0
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language srpski
-;
-; *** Misc ***
+## codeset 0
 ;
 MSG_WINDOW_TITLE
 ReqTools preference
@@ -24,69 +14,8 @@ Fajl upitnik
 MSG_SIZE
 VeliŸina (% vidljive visine):
 ;
-MSG_SET
-Namesti...
-;
-MSG_TEST
-Testiraj...
-;
-MSG_SAVE
-Snimi
-;
-MSG_USE
-Koristi
-;
-MSG_CANCEL
-Odustani
-;
-MSG_ABORT
-Prekini
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- Ok
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Informacije
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Projekat
-;
-MSG_PROJECT_OPEN
-O\0Otvori...
-;
-MSG_PROJECT_SAVEAS
-K\0Snimi kao...
-;
-MSG_PROJECT_ABOUT
-?\0O...
-;
-MSG_PROJECT_QUIT
-Q\0Izadji
-;
-MSG_EDIT_MENU
-Edit
-;
-MSG_EDIT_RESET
-P\0Vrati ugraÐeno
-;
-MSG_EDIT_LASTSAVED
-L\0Poslednje snimljeno
-;
-MSG_EDIT_RESTORE
-D\0Prethodno stanje
-;
-MSG_OPTIONS_MENU
-Opcije
-;
-MSG_OPTIONS_CREATEICONS
-I\0Pravi ikone?
-;
-; *** Switches ***
+Ok
 ;
 MSG_POPSCREEN
 Izbaci skrin napred
@@ -106,56 +35,47 @@ LED pri isŸitavanju
 MSG_DEFAULTFONT
 Standardni font
 ;
-; ** 2.3 **
-;
 MSG_FKEYS
 Funkcijski tasteri
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL
-Color wheel
-;
-; ** 2.7 **
+Color wheel:
 ;
 MSG_WHEEL_NONE
-Bez color wheel-a
+Nema
 ;
 MSG_WHEEL_SIMPLE
-Prost color wheel
+Prost
 ;
 MSG_WHEEL_FANCY
-Luksuzan color wheel
-;
-; ** 2.8 **
+Luksuzan
 ;
 MSG_MMB_PARENT
 SDM daje prethodni
 ;
-; *** Requester Type ***
+MSG_DEFAULTS
+UgraÐeno
 ;
 MSG_REQUESTER
-Upitnik
+\33bUpitnik:
 ;
 MSG_FILEREQ
-Fajl upitnik
+Fajl
 ;
 MSG_FONTREQ
-Font upitnik
+Font
 ;
 MSG_PALETTEREQ
-Upitnik za boje
+Boje
 ;
 MSG_SCRMODEREQ
-Skrinmod upitnik
+Skrinmod
 ;
 MSG_VOLUMEREQ
-Disk upitnik
+Disk
 ;
 MSG_OTHERREQ
-Ostali upitnici
-;
-; *** Position ***
+Ostali
 ;
 MSG_POSITION
 Pozicija:
@@ -176,69 +96,14 @@ MSG_TOPLEFTSCR
 Gore-levo na skrinu
 ;
 MSG_OFFSET
-Polo§aj:
-;
-; *** Entries ***
+\33bPolo§aj
 ;
 MSG_NR_OF_ENTRIES
-Broj vidljivih linija:
+\33bBroj vidljivih linija
 ;
 MSG_MIN
-Minimum
+Minimum:
 ;
 MSG_MAX
-Maksimum
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Potrebna vam je reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION
-Verzija reqtools.library, koju imate,\nnije odgovaraju†a!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-PA¦NJA:Ova verzija biblioteke ne podr§ava\nsve opcije reqtools.library,\nkoje ste podesili!
-;
-MSG_NO_WB_LIB
-Ne mogu da otvorim workbench.library!
-;
-MSG_NO_UTILITY_LIB
-Ne mogu da otvorim utility.library!
-;
-MSG_NO_ICON_LIB
-Ne mogu da otvorim icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Ne mogu da se zakaŸim za pablik skrin!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Ne mogu da nadjem DrawInfo!
-;
-MSG_ERROR_GETVISUALINFO
-Ne mogu da nadjem VisualInfo!
-;
-MSG_COULDNT_OPEN_WINDOW
-Ne mogu da otvorim prozor!
-;
-MSG_ERROR_ACCESSING_FILE
-Greçka pri tra§enju fajla\n%s,\n%s
-;
-MSG_READ_ERROR
-Greçka pri isŸitavanju!
-;
-MSG_ERROR_SAVING_PREFS
-Greçka pri snimanju preferenci!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Greçka u argumentima
-;
-MSG_ERROR_LIBRARY
-Ne mogu da otvorim %s\n\
-verzija %ld ili viça!
-;
-MSG_ERROR_MENUS
-Ne mogu da kreiram menije!
+Maksimum:
 ;
