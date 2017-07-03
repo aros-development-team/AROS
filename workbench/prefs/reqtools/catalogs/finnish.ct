@@ -1,16 +1,6 @@
-;**************************
-;
-;   ReqTools Preferences
-;
-;   Suomi
-;
-;**************************
-;
-## version $VER: reqtoolsprefs.catalog 39.0 (31.03.2016)
-## codeset 0
+## version $VER: ReqTools.catalog 3.1 (30.6.2017)
 ## language suomi
-;
-; *** Misc ***
+## codeset 0
 ;
 MSG_WINDOW_TITLE
 ReqToolsin asetukset
@@ -24,70 +14,8 @@ Tiedostonvalitsija
 MSG_SIZE
 Koko (% näkyvästä korkeudesta):
 ;
-MSG_SET
-Aseta...
-;
-MSG_TEST
-Kokeile...
-;
-MSG_SAVE
-Tallenna
-;
-MSG_USE
-Käytä
-;
-MSG_CANCEL
-Peru
-;
-MSG_ABORT
-Keskeytä
-;
-; Note: there are two spaces around the Ok string to make it 4 chars wide.
 MSG_OK
- Ok
-;
-; * 2.7 *
-;
-MSG_INFORMATION
-Information
-;Information
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU
-Projekti
-;
-MSG_PROJECT_OPEN
-O\0Avaa...
-;
-MSG_PROJECT_SAVEAS
-A\0Tallenna nimellä...
-;
-MSG_PROJECT_ABOUT
-?\0Tietoja...
-;
-MSG_PROJECT_QUIT
-Q\0Lopeta
-;
-MSG_EDIT_MENU
-Muokkaus
-;
-MSG_EDIT_RESET
-D\0Palauta oletusarvot
-;
-MSG_EDIT_LASTSAVED
-L\0Viimeksi tallennetut
-;
-MSG_EDIT_RESTORE
-R\0Palauta
-;
-MSG_OPTIONS_MENU
-Asetukset
-;
-MSG_OPTIONS_CREATEICONS
-I\0Luo ikonit?
-;
-; *** Switches ***
+Ok
 ;
 MSG_POPSCREEN
 Tuo näyttö eteen
@@ -107,58 +35,51 @@ Levyn toimintavalo
 MSG_DEFAULTFONT
 Käytä järjestelmän oletusfonttia
 ;
-; ** 2.5 **
-;
 MSG_FKEYS
 Käytä funktionäppäimiä
 ;
 MSG_DOWHEEL
-Väripyörä
-;
-; ** 2.7 **
+Väripyörä:
 ;
 MSG_WHEEL_NONE
-Ei väripyörää
-;No color wheel
+Ei mitään
+;None
 ;
 MSG_WHEEL_SIMPLE
-Yksinkertainen väripyörä
-;Simple color wheel
+Yksinkertainen
+;Simple
 ;
 MSG_WHEEL_FANCY
-Hieno väripyörä
-;Fancy color wheel
-;
-; ** 2.8 **
+Hieno
+;Fancy
 ;
 MSG_MMB_PARENT
 MMB gives parent
 ;MMB gives parent
 ;
-; *** Requester Type ***
-;
-MSG_REQUESTER
+MSG_DEFAULTS
 Oletusarvot
 ;
+MSG_REQUESTER
+\33bValitsija:
+;
 MSG_FILEREQ
-Tiedostonvalitsija
+Tiedostoa
 ;
 MSG_FONTREQ
-Fontinvalitsija
+Font
 ;
 MSG_PALETTEREQ
-Paletinvalitsija
+Palet
 ;
 MSG_SCRMODEREQ
-Näyttötilan valitsija
+Näyttötilan
 ;
 MSG_VOLUMEREQ
-Levyn valitsija
+Levyn
 ;
 MSG_OTHERREQ
-Muut valitsijat
-;
-; *** Position ***
+Muut
 ;
 MSG_POSITION
 Paikka:
@@ -179,78 +100,14 @@ MSG_TOPLEFTSCR
 Näytön vasen ylänurkka
 ;
 MSG_OFFSET
-Siirto:
-;
-; *** Entries ***
+\33bSiirto
 ;
 MSG_NR_OF_ENTRIES
-Näkyvien rivien määrä:
+\33bNäkyvien rivien määrä
 ;
 MSG_MIN
 Minimi:
 ;
 MSG_MAX
 Maksimi:
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38
-Tarvitset reqtools.library V38+:n!
-;
-MSG_WRONG_REQTOOLS_VERSION
-Reqtools.library -versiosi\n\
-ei käytä asetuksia!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED
-VAROITUS: Tämä versio asetusten muokkaajasta\n\
-ei käytä kaikkia reqtools.library:n\n\
-asetuksia, jotka olet asentanut!
-;
-MSG_NO_WB_LIB
-Workbench.library ei auennut!
-;
-MSG_NO_UTILITY_LIB
-Utility.library ei auennut!
-;
-MSG_NO_ICON_LIB
-Icon.library ei auennut!
-;
-MSG_COULDNT_LOCK_PUBSCREEN
-Julkinen näyttö ei lukkiutunut!
-;
-MSG_ERROR_GETSCREENDRAWINFO
-Virhe piirtotietoja haettaessa!
-;
-MSG_ERROR_GETVISUALINFO
-Virhe visuaalisia tietoja haettaessa!
-;
-MSG_COULDNT_OPEN_WINDOW
-Ikkuna ei auennut!
-;
-MSG_ERROR_ACCESSING_FILE
-Virhe osoitettaessa tiedostoa\n\
-%s,\n\
-%s
-;
-MSG_READ_ERROR
-Lukuvirhe!
-;
-MSG_ERROR_SAVING_PREFS
-Virhe asetuksia tallennettaessa!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS
-Arkumentti virhe
-;Argument error
-;
-MSG_ERROR_LIBRARY
-Ei voitu avata %s\n\
-versiota %ld tai uudempaa!
-;Couldn't open %s\n\
-;version %ld or higher!
-;
-MSG_ERROR_MENUS
-Ei voitu luoda valikoita!
-;Couldn't create menus!
 ;

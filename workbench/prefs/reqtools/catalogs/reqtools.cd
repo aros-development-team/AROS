@@ -4,8 +4,6 @@
 ;
 ;**************************
 ;
-; *** Misc ***
-;
 MSG_WINDOW_TITLE (1//)
 ReqTools Preferences
 ;
@@ -18,70 +16,10 @@ File Requester
 MSG_SIZE (//)
 Size (% of visible height):
 ;
-MSG_SET (//)
-Set...
-;
-MSG_TEST (//)
-Test...
-;
-MSG_SAVE (//)
-Save
-;
-MSG_USE (//)
-Use
-;
-MSG_CANCEL (//)
-Cancel
-;
-MSG_ABORT (//)
-Abort
-;
 MSG_OK (//)
 Ok
 ;
-; * 2.7 *
-;
-MSG_INFORMATION (//)
-Information
-;
-; *** Menus ***
-;
-MSG_PROJECT_MENU (100//)
-Project
-;
-MSG_PROJECT_OPEN (//)
-O\0Open...
-;
-MSG_PROJECT_SAVEAS (//)
-A\0Save As...
-;
-MSG_PROJECT_ABOUT (//)
-?\0About...
-;
-MSG_PROJECT_QUIT (//)
-Q\0Quit
-;
-MSG_EDIT_MENU (//)
-Edit
-;
-MSG_EDIT_RESET (//)
-D\0Reset To Defaults
-;
-MSG_EDIT_LASTSAVED (//)
-L\0Last Saved
-;
-MSG_EDIT_RESTORE (//)
-R\0Restore
-;
-MSG_OPTIONS_MENU (//)
-Options
-;
-MSG_OPTIONS_CREATEICONS (//)
-I\0Create Icons?
-;
-; *** Switches ***
-;
-MSG_POPSCREEN (200//)
+MSG_POPSCREEN (//)
 Pop screen to front
 ;
 MSG_IMMEDIATESORT (//)
@@ -99,58 +37,49 @@ Disk activity LED
 MSG_DEFAULTFONT (//)
 Use system default font
 ;
-; ** 2.3 **
-;
 MSG_FKEYS (//)
 Use function keys
 ;
-; ** 2.5 **
-;
 MSG_DOWHEEL (//)
-Color wheel
-;
-; ** 2.7 **
+Color wheel:
 ;
 MSG_WHEEL_NONE (//)
-No color wheel
+None
 ;
 MSG_WHEEL_SIMPLE (//)
-Simple color wheel
+Simple
 ;
 MSG_WHEEL_FANCY (//)
-Fancy color wheel
-;
-; ** 2.8 **
+Fancy
 ;
 MSG_MMB_PARENT  (//)
 MMB gives parent
 ;
-; *** Requester Type ***
+MSG_DEFAULTS  (//)
+Defaults
 ;
-MSG_REQUESTER (300//)
-Defaults for
+MSG_REQUESTER (//)
+\33bRequester:
 ;
 MSG_FILEREQ (//)
-File Requester
+File
 ;
 MSG_FONTREQ (//)
-Font Requester
+Font
 ;
 MSG_PALETTEREQ (//)
-Palette Requester
+Palette
 ;
 MSG_SCRMODEREQ (//)
-Screen Mode Requester
+Screen Mode
 ;
 MSG_VOLUMEREQ (//)
-Volume Requester
+Volume
 ;
 MSG_OTHERREQ (//)
-Other Requesters
+Other
 ;
-; *** Position ***
-;
-MSG_POSITION (400//)
+MSG_POSITION (//)
 Position:
 ;
 MSG_POINTER (//)
@@ -169,71 +98,14 @@ MSG_TOPLEFTSCR (//)
 Top left of screen
 ;
 MSG_OFFSET (//)
-Offset:
+\33bOffset
 ;
-; *** Entries ***
-;
-MSG_NR_OF_ENTRIES (500//)
-Number of visible entries:
+MSG_NR_OF_ENTRIES (//)
+\33bNumber of visible entries
 ;
 MSG_MIN (//)
-Minimum
+Minimum:
 ;
 MSG_MAX (//)
-Maximum
-;
-; *** Errors ***
-;
-MSG_YOU_NEED_REQTOOLS38 (600//)
-You need reqtools.library V38+!
-;
-MSG_WRONG_REQTOOLS_VERSION (//)
-The version of reqtools.library you have\ndoes not support preferences!
-;
-MSG_ALL_PREFS_NOT_SUPPORTED (//)
-WARNING: This version of the preference editor\n\
-doesn't support all the preferences of the\n\
-reqtools.library you've got installed!
-;
-MSG_NO_WB_LIB (//)
-Couldn't open workbench.library!
-;
-MSG_NO_UTILITY_LIB (//)
-Couldn't open utility.library!
-;
-MSG_NO_ICON_LIB (//)
-Couldn't open icon.library!
-;
-MSG_COULDNT_LOCK_PUBSCREEN (//)
-Couldn't lock public screen!
-;
-MSG_ERROR_GETSCREENDRAWINFO (//)
-Error getting draw info!
-;
-MSG_ERROR_GETVISUALINFO (//)
-Error getting visual info!
-;
-MSG_COULDNT_OPEN_WINDOW (//)
-Couldn't open window!
-;
-MSG_ERROR_ACCESSING_FILE (//)
-Error accessing file\n%s,\n%s
-;
-MSG_READ_ERROR (//)
-Read error!
-;
-MSG_ERROR_SAVING_PREFS (//)
-Error saving preferences!
-;
-; * 2.7 *
-;
-MSG_ERROR_ARGS (//)
-Argument error
-;
-MSG_ERROR_LIBRARY (//)
-Couldn't open %s\n\
-version %ld or higher!
-;
-MSG_ERROR_MENUS (//)
-Couldn't create menus!
+Maximum:
 ;
