@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2016, The AROS Development Team.
+    Copyright © 2002-2017, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -741,6 +741,16 @@ IPTR Group__MUIM_Remove(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_Family_GetChild
+**************************************************************************/
+IPTR Group__MUIM_Family_GetChild(struct IClass *cl, Object *obj,
+    struct MUIP_Group_Remove *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+
+    return DoMethodA(data->family, (APTR) msg);
+}
 
 /**************************************************************************
  MUIM_ConnectParent
@@ -3371,6 +3381,8 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     case OM_REMMEMBER:         /* Fall through */
     case MUIM_Group_Remove:
         return Group__MUIM_Remove(cl, obj, (APTR) msg);
+    case MUIM_Family_GetChild:
+        return Group__MUIM_Family_GetChild(cl, obj, (APTR) msg);
     case MUIM_AskMinMax:
         return Group__MUIM_AskMinMax(cl, obj, (APTR) msg);
     case MUIM_Group_ExitChange:
