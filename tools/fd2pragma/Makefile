@@ -1,9 +1,9 @@
-# Copyright © 2003-2016, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2017, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
-NOWARN_FLAGS := -Wno-format-security
+NOWARN_FLAGS := -Wno-format-security -Wno-empty-body
 
 all : $(FD2PRAGMA)
 
