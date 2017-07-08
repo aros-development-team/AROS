@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2017 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "realtek8180.device"
 #define VERSION 0
-#define REVISION 4
-#define DATE "1.8.2012"
+#define REVISION 5
+#define DATE "7.7.2017"
 
 #define UTILITY_VERSION 39
 #define POSEIDON_VERSION 0
@@ -346,6 +346,7 @@ struct AddressRange
 #define UNITF_SHORTPREAMBLE (1 << 11)
 #define UNITF_INTADDED (1 << 12)
 #define UNITF_RESETADDED (1 << 13)
+#define UNITF_TASKADDED (1 << 14)
 
 
 /* Endianness macros */
