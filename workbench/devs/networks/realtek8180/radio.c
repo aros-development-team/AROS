@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2011 Neil Cafferkey
+Copyright (C) 2001-2017 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -84,18 +84,6 @@ static const UBYTE ofdm_table[] =
    0x6d, 0x3c, 0xfb, 0x07
 };
 
-#if !defined(__AROS__)
-static const UBYTE cck_power_table1[] =
-{
-   0x2b, 0x2a, 0x25, 0x1e, 0x16, 0x0e, 0x07, 0x03
-};
-
-
-static const UBYTE cck_power_table2[] =
-{
-   0x26, 0x25, 0x21, 0x1b, 0x14, 0x0d, 0x06, 0x03
-};
-#endif
 
 static UBYTE rtl8225_power_tables[][8] =
 {
