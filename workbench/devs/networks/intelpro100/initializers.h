@@ -34,7 +34,7 @@ MA 02111-1307, USA.
 #endif
 */
 #define OFFSET(struct_name, struct_field) \
-   ((IPTR)(&(((struct struct_name *)0)->struct_field)))
+   ((UPINT)(&(((struct struct_name *)0)->struct_field)))
 
 /* Use the following macros in the structure definition */
 
