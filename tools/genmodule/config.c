@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to parse the command line options and the module config file for
@@ -20,7 +20,7 @@
 const static char bannertemplate[] =
     "/*\n"
     "    *** Automatically generated from '%s'. Edits will be lost. ***\n"
-    "    Copyright © 1995-%4u, The AROS Development Team. All rights reserved.\n"
+    "    Copyright \xA9 1995-%4u, The AROS Development Team. All rights reserved.\n"
     "*/\n";
 
 char*
