@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2005 Neil Cafferkey
+Copyright (C) 2001-2017 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ MA 02111-1307, USA.
 
 */
 
-#include <string.h>
 
 #include <exec/types.h>
 #include <exec/errors.h>
@@ -509,9 +508,12 @@ static BOOL CmdConfigInterface(struct IOSana2Req *request,
 static BOOL CmdBroadcast(struct IOSana2Req *request,
    struct DevBase *base)
 {
+   UWORD i;
+
    /* Fill in the broadcast address as destination */
 
-   memset(request->ios2_DstAddr, 0xff, 6);
+   for(i = 0; i < ETH_ADDRESSSIZE; i++)
+      request->ios2_DstAddr[i] = 0xff;
 
    /* Queue the write as normal */
 
@@ -946,7 +948,7 @@ static BOOL CmdOnline(struct IOSana2Req *request, struct DevBase *base)
 
    /* Clear global and special stats and put adapter back online */
 
-   if((error == 0) && ((unit->flags & UNITF_ONLINE) == 0))
+   if(error == 0 && (unit->flags & UNITF_ONLINE) == 0)
    {
       UpdateStats(unit, base);
       unit->stats.PacketsReceived = 0;

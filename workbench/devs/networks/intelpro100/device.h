@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2017 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "intelpro100.device"
 #define VERSION 1
-#define REVISION 1
-#define DATE "12.6.2012"
+#define REVISION 2
+#define DATE "8.7.2017"
 
 #define UTILITY_VERSION 39
 #define PROMETHEUS_VERSION 2
@@ -247,6 +247,7 @@ struct AddressRange
 #define UNITF_WASONLINE (1 << 6)   /* card was online at time of removal */
 #define UNITF_TXBUFFERINUSE (1 << 7)
 #define UNITF_MCASTBUFFERINUSE (1 << 8)
+#define UNITF_TASKADDED (1 << 9)
 
 
 /* Library and device bases */
