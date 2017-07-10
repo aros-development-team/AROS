@@ -24,6 +24,16 @@ MA 02111-1307, USA.
 
 #define __NOLIBBASE__
 
+#ifdef __AROS__
+#include <aros/asmcall.h>
+#include <aros/libcall.h>
+#else
+#define AROS_LIBFUNC_INIT
+#define AROS_LIBFUNC_EXIT
+#define AROS_INTFUNC_INIT
+#define AROS_INTFUNC_EXIT
+#endif
+
 #include <proto/exec.h>
 #include <proto/expansion.h>
 #include <proto/utility.h>
@@ -53,7 +63,7 @@ MA 02111-1307, USA.
 #define BUFFER_END   0x80
 #define INTMASK      (INT_RXPACKET | INT_TXPACKET | INT_TXERROR)
 
-/* PCI card ID's */
+/* PCI card IDs */
 
 #define PCI_VENDOR_REALTEK       0x10EC
 #define PCI_DEVICE_RTL8029       0x8029
@@ -191,6 +201,30 @@ struct BuffFunctions
 ///
 /// prototypes
 
+#ifdef __AROS__
+AROS_UFP3(struct DevData *, DevInit,
+   AROS_UFPA(IPTR, num, D0),
+   AROS_UFPA(APTR, seglist, A0),
+   AROS_UFPA(struct Library *, sysb, A6));
+AROS_LD3(LONG, DevOpen,
+   AROS_LDA(struct IOSana2Req *, req, A1),
+   AROS_LDA(LONG, unit, D0),
+   AROS_LDA(ULONG, flags, D1),
+   struct DevData *, dd, 1, S2);
+AROS_LD1(APTR, DevClose,
+   AROS_LDA(struct IOSana2Req *, req, A1),
+   struct DevData *, dd, 2, S2);
+AROS_LD0(APTR, DevExpunge,
+   struct DevData *, dd, 3, S2);
+AROS_LD0(APTR, DevReserved,
+   struct DevData *, dd, 4, S2);
+AROS_LD1(VOID, DevBeginIO,
+   AROS_LDA(struct IOSana2Req *, req, A1),
+   struct DevData *, dd, 5, S2);
+AROS_LD1(ULONG, DevAbortIO,
+   AROS_LDA(struct IOSana2Req *, req, A1),
+   struct DevData *, dd, 6, S2);
+#else
 LONG DevOpen(REG(a1, struct IOSana2Req *req), REG(d0, LONG unit),
   REG(d1, LONG flags), REG(a6, struct DevData *dd));
 APTR DevClose(REG(a1, struct IOSana2Req *req), REG(a6, struct DevData *dd));
@@ -200,6 +234,7 @@ void DevBeginIO(REG(a1, struct IOSana2Req *req),
   REG(a6, struct DevData *dd));
 ULONG DevAbortIO(REG(a1, struct IOSana2Req *req),
   REG(a6, struct DevData *dd));
+#endif
 
 void IoDone(struct UnitData *ud, struct IOSana2Req *req, LONG err, LONG werr);
 LONG OpenDeviceLibraries(struct DevData *dd);
@@ -234,6 +269,10 @@ struct IOSana2Req *SearchReadRequest(struct UnitData *ud,
   struct MinList *queue, ULONG type);
 void UnitTask(void);
 
+#ifdef __AROS__
+struct Library *sys_base;
+#endif
+
 ///
 /// tables and constants
 
@@ -242,12 +281,21 @@ const UBYTE IdString[] = DEV_IDSTRING;
 
 const void *FuncTable[] =
   {
+#ifdef __AROS__
+    AROS_SLIB_ENTRY(DevOpen, S2, 1),
+    AROS_SLIB_ENTRY(DevClose, S2, 2),
+    AROS_SLIB_ENTRY(DevExpunge, S2, 3),
+    AROS_SLIB_ENTRY(DevReserved, S2, 4),
+    AROS_SLIB_ENTRY(DevBeginIO, S2, 5),
+    AROS_SLIB_ENTRY(DevAbortIO, S2, 6),
+#else
     DevOpen,
     DevClose,
     DevExpunge,
     DevReserved,
     DevBeginIO,
     DevAbortIO,
+#endif
     (APTR)-1
   };
 
@@ -273,9 +321,18 @@ UWORD NSDSupported[] =
 // Called when the device is loaded into memory. Makes system library, initializes Library structure, opens
 // libraries used by the device. Returns device base or NULL if init failed.
 
+#ifdef __AROS__
+AROS_UFH3(struct DevData *, DevInit,
+   AROS_UFHA(IPTR, num, D0),
+   AROS_UFHA(APTR, seglist, A0),
+   AROS_UFHA(struct Library *, sysb, A6))
+#else
 struct DevData *DevInit(REG(d0, ULONG num), REG(a0, void *seglist),
   REG(a6, struct Library *sysb))
+#endif
   {
+    AROS_LIBFUNC_INIT
+
     struct DevData *dd;
     struct Library *SysBase = sysb;
 
@@ -298,6 +355,10 @@ struct DevData *DevInit(REG(d0, ULONG num), REG(a0, void *seglist),
 
             for (i = 0; i < 4; i++) dd->dd_Units[i] = NULL;
 
+#ifdef __AROS__
+            sys_base = SysBase;
+#endif
+
             #ifdef PDEBUG
             strcpy(dd->dpath, "KCON:0/17/400/300/prm-rtl8029.device (main)/AUTO/CLOSE/WAIT");
             GetVar("PrometheusDebug", dd->dpath, 128, 0);
@@ -311,14 +372,26 @@ struct DevData *DevInit(REG(d0, ULONG num), REG(a0, void *seglist),
         CloseDeviceLibraries(dd);
       }
     return NULL;
+
+    AROS_LIBFUNC_EXIT
   }
 
 ///
 /// DevOpen()
 
+#ifdef __AROS__
+AROS_LH3(LONG, DevOpen,
+   AROS_LHA(struct IOSana2Req *, req, A1),
+   AROS_LHA(LONG, unit, D0),
+   AROS_LHA(ULONG, flags, D1),
+   struct DevData *, dd, 1, S2)
+#else
 LONG DevOpen(REG(a1, struct IOSana2Req *req), REG(d0, LONG unit),
   REG(d1, LONG flags), REG(a6, struct DevData *dd))
+#endif
   {
+    AROS_LIBFUNC_INIT
+
     USE_D(DOSBase)
     struct UnitData *ud;
 
@@ -348,13 +421,23 @@ LONG DevOpen(REG(a1, struct IOSana2Req *req), REG(d0, LONG unit),
     req->ios2_Req.io_Unit = (struct Unit*)-1;
     dd->dd_Lib.lib_OpenCnt--;                       /* end of expunge protection */
     return IOERR_OPENFAIL;
+
+    AROS_LIBFUNC_EXIT
   }
 
 ///
 /// DevClose()
 
+#ifdef __AROS__
+AROS_LH1(APTR, DevClose,
+   AROS_LHA(struct IOSana2Req *, req, A1),
+   struct DevData *, dd, 2, S2)
+#else
 APTR DevClose(REG(a1, struct IOSana2Req *req), REG(a6, struct DevData *dd))
+#endif
   {
+    AROS_LIBFUNC_INIT
+
     USE(SysBase)
     USE_D(DOSBase)
 
@@ -366,16 +449,30 @@ APTR DevClose(REG(a1, struct IOSana2Req *req), REG(a6, struct DevData *dd))
     if (--dd->dd_Lib.lib_OpenCnt == 0)
       {
         DBG("DevClose(): open counter reached 0.");
-        if (dd->dd_Lib.lib_Flags & LIBF_DELEXP) return (DevExpunge(dd));
+        if (dd->dd_Lib.lib_Flags & LIBF_DELEXP)
+#ifdef __AROS__
+        return AROS_LVO_CALL0(APTR, struct DevData *, dd, 2, );
+#else
+          return (DevExpunge(dd));
+#endif
       }
     return 0;
+
+    AROS_LIBFUNC_EXIT
   }
 
 ///
 /// DevExpunge()
 
+#ifdef __AROS__
+AROS_LH0(APTR, DevExpunge,
+   struct DevData *, dd, 3, S2)
+#else
 APTR DevExpunge(REG(a6, struct DevData *dd))
+#endif
   {
+    AROS_LIBFUNC_INIT
+
     USE(SysBase)
     USE_D(DOSBase)
     APTR seglist;
@@ -392,22 +489,41 @@ APTR DevExpunge(REG(a6, struct DevData *dd))
         (IPTR)dd->dd_Lib.lib_PosSize + (IPTR)dd->dd_Lib.lib_NegSize);
     DBG("DevExpunge(): expunged.");
     return seglist;
+
+    AROS_LIBFUNC_EXIT
   }
 
 ///
 /// DevReserved()
 
+#ifdef __AROS__
+AROS_LH0(APTR, DevReserved,
+   struct DevData *, dd, 4, S2)
+#else
 LONG DevReserved (void)
+#endif
   {
+    AROS_LIBFUNC_INIT
+
     return 0;
+
+    AROS_LIBFUNC_EXIT
   }
 
 ///
 /// DevBeginIo()
 
+#ifdef __AROS__
+AROS_LH1(VOID, DevBeginIO,
+   AROS_LHA(struct IOSana2Req *, req, A1),
+   struct DevData *, dd, 5, S2)
+#else
 void DevBeginIO(REG(a1, struct IOSana2Req *req),
   REG(a6, struct DevData *dd))
+#endif
   {
+    AROS_LIBFUNC_INIT
+
     USE(SysBase)
     USE_D(DOSBase)
     struct UnitData *ud = (struct UnitData*)req->ios2_Req.io_Unit;
@@ -449,14 +565,24 @@ void DevBeginIO(REG(a1, struct IOSana2Req *req),
         break;
       }
     return;
+
+    AROS_LIBFUNC_EXIT
   }
 
 ///
-/// DevAbortIo()
+/// DevAbortIO()
 
+#ifdef __AROS__
+AROS_LH1(ULONG, DevAbortIO,
+   AROS_LHA(struct IOSana2Req *, req, A1),
+   struct DevData *, dd, 6, S2)
+#else
 ULONG DevAbortIO(REG(a1, struct IOSana2Req *req),
   REG(a6, struct DevData *dd))
+#endif
   {
+    AROS_LIBFUNC_INIT
+
     USE(SysBase)
     USE_D(DOSBase)
     LONG ret = 0;
@@ -499,6 +625,8 @@ ULONG DevAbortIO(REG(a1, struct IOSana2Req *req),
       }
     else ret = IOERR_NOCMD;
     return ret;
+
+    AROS_LIBFUNC_EXIT
   }
 
 ///
@@ -965,8 +1093,14 @@ void CmdNSDQuery(struct UnitData *ud, struct IOStdReq *req)
 
 /// IntCode()
 
+#ifdef __AROS__
+AROS_INTH1(IntCode, struct UnitData *, ud)
+#else
 LONG IntCode(REG(a1, struct UnitData *ud))
+#endif
   {
+    AROS_INTFUNC_INIT
+
     USE_U(SysBase)
     UBYTE intstatus;
     struct IOSana2Req *req;
@@ -1009,9 +1143,17 @@ LONG IntCode(REG(a1, struct UnitData *ud))
                   {
                     if (req->ios2_Req.io_Flags & SANA2IOF_RAW) offset = 0;
                     else offset = 7;
+#ifdef __AROS__
+                    AROS_UFC3(BOOL, ((struct BuffFunctions*)
+                      req->ios2_BufferManagement)->bf_CopyTo,
+                      AROS_UFCA(APTR, req->ios2_Data, A0),
+                      AROS_UFCA(APTR, &ud->ud_RxBuffer[offset], A1),
+                      AROS_UFCA(ULONG, len - (offset << 1), D0));
+#else
                     ((struct BuffFunctions*)req->ios2_BufferManagement)->
                       bf_CopyTo(req->ios2_Data, &ud->ud_RxBuffer[offset],
                       len - (offset << 1));
+#endif
                     CopyMem(&ud->ud_RxBuffer[0], req->ios2_DstAddr, 6);
                     CopyMem(&ud->ud_RxBuffer[3], req->ios2_SrcAddr, 6);
                     req->ios2_DataLength = len - (offset << 1);
@@ -1026,6 +1168,8 @@ LONG IntCode(REG(a1, struct UnitData *ud))
           }
       }
     return my_int;
+
+    AROS_INTFUNC_EXIT
   }
 
 ///
@@ -1308,8 +1452,16 @@ void SendPacket(struct UnitData *ud, struct IOSana2Req *req)
 
     /* Copy data from network stack using supplied CopyFrom() function. */
 
+#ifdef __AROS__
+    AROS_UFC3(BOOL, ((struct BuffFunctions*)
+      req->ios2_BufferManagement)->bf_CopyFrom,
+      AROS_UFCA(APTR, datapointer, A0),
+      AROS_UFCA(APTR, req->ios2_Data, A1),
+      AROS_UFCA(ULONG, data_len, D0));
+#else
     ((struct BuffFunctions*)req->ios2_BufferManagement)->bf_CopyFrom(
       datapointer, req->ios2_Data, data_len);
+#endif
 
     /* Now we need length of data to send to hardware. IORequest ios2_DataLength does not include header   */
     /* length if packet is not RAW. So we should add it.                                                   */
@@ -1575,7 +1727,7 @@ void MainLoop(struct UnitData *ud, struct MsgPort *port)
 
 void UnitTask(void)
   {
-    struct Library *SysBase = *(struct Library**)4;
+    struct Library *SysBase;
     struct Task *task;
     struct MsgPort *port;
     struct UnitData *ud;
@@ -1584,6 +1736,11 @@ void UnitTask(void)
     struct Library *DOSBase;
     #endif
 
+#ifdef __AROS__
+    SysBase = sys_base;
+#else
+    SysBase = *(struct Library**)4;
+#endif
     task = FindTask(NULL);
     if (port = CreateMsgPort())
       {
