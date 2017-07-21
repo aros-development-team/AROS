@@ -2268,7 +2268,6 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - cflags are the flags to compile the source (default $(CFLAGS))
 # - dflags are the flags used during makedepend (default equal to cflags)
 # - aflags are the flags used during assembling (default $(AFLAGS))
-# - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
 %define build_linklib mmake=/A libname=/A files= cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
   includedir= \
@@ -2410,9 +2409,9 @@ endif
 #-----------------------------------------------------------------------------
 # Build icons.
 # - mmake is the mmaketarget
-# - icons is a list of icon base names (ie. without the .info suffix)
+# - icons is a list of icon base names (i.e. without the .info suffix)
 # - dir is the destination directory
-# - srcdir is where *.png and *.info.src are searched
+# - srcdir is where *.png and *.info.src are sought
 #-----------------------------------------------------------------------------
 
 %define build_icons mmake=/A icons=/A dir=/A srcdir=$(SRCDIR)/$(CURDIR) image=
