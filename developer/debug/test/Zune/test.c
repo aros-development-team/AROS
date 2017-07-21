@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2016, The AROS Development Team.
+    Copyright © 2002-2017, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -46,6 +46,16 @@
 #define NUMERIC_MIN 0
 #define NUMERIC_MAX 100
 
+static const CONST_STRPTR window_left_modes[] =
+    {"No change", "Pixels", "Centered", "Under pointer", NULL};
+static const CONST_STRPTR window_top_modes[] =
+    {"No change", "Pixels", "Centered", "Under pointer",
+    "Pixels below screen bar", NULL};
+static const CONST_STRPTR window_dim_modes[] =
+    {"Default", "Pixels", "Growth percentage", "Total screen percentage",
+    "Visible screen percentage", "Scaled", NULL};
+static const CONST_STRPTR window_menu_modes[] =
+    {"Parent", "Custom", "None", NULL};
 static const TEXT digits[] = "-0123456789";
 static const TEXT vowels[] = "aeiou";
 static const TEXT default_accept_chars[] = "aeiou?.";
@@ -111,9 +121,57 @@ Object *app, *wnd;
 
 static struct
 {
-    Object *open_button;
+    Object *open_button,
+        *menus_check;
 }
 general;
+
+static struct
+{
+    Object *window,
+        *title_string,
+        *screen_string,
+        *left_cycle,
+        *left_index_string,
+        *width_cycle,
+        *width_index_string,
+        *top_cycle,
+        *top_index_string,
+        *height_cycle,
+        *height_index_string,
+        *alt_left_cycle,
+        *alt_left_index_string,
+        *alt_width_cycle,
+        *alt_width_index_string,
+        *alt_top_cycle,
+        *alt_top_index_string,
+        *alt_height_cycle,
+        *alt_height_index_string,
+        *appwindow_check,
+        *backdrop_check,
+        *borderless_check,
+        *close_check,
+        *depth_check,
+        *ref_check,
+        *dragbar_check,
+        *size_check,
+        *activate_check,
+        *id_check,
+        *menu_cycle,
+        *open_button,
+        *close_button,
+        *apply_button,
+        *close_item,
+        *left_text,
+        *top_text,
+        *width_text,
+        *height_text,
+        *alt_left_text,
+        *alt_top_text,
+        *alt_width_text,
+        *alt_height_text;
+}
+window;
 
 static struct
 {
@@ -287,6 +345,419 @@ static void About(void)
 
     if (about_wnd)
         set(about_wnd, MUIA_Window_Open, TRUE);
+}
+
+/* Get the test window position and dimension values input by the user */
+static void GetWindowDimensions(LONG *left, LONG *top, LONG *width,
+    LONG *height, LONG *alt_left, LONG *alt_top, LONG *alt_width,
+    LONG *alt_height)
+{
+    LONG mode;
+
+    /* Get left edge */
+    mode = XGET(window.left_cycle, MUIA_Cycle_Active);
+    if (mode == 0)
+        *left = XGET(window.left_index_string, MUIA_String_Integer);
+    else
+        *left = 0 - mode;
+
+    /* Get top edge */
+    mode = XGET(window.top_cycle, MUIA_Cycle_Active);
+    if (mode == 0)
+        *top = XGET(window.top_index_string, MUIA_String_Integer);
+    else if (mode == 3)
+        *top = MUIV_Window_TopEdge_Delta(
+            XGET(window.top_index_string, MUIA_String_Integer));
+    else
+        *top = 0 - mode;
+
+    /* Get width */
+    mode = XGET(window.width_cycle, MUIA_Cycle_Active);
+    *width = XGET(window.width_index_string, MUIA_String_Integer);
+    if (mode != 1 && *width > 100)
+        *width = 100;
+    switch (mode)
+    {
+    case 0:
+        *width = MUIV_Window_Width_Default;
+        break;
+    case 2:
+        *width = MUIV_Window_Width_MinMax(*width);
+        break;
+    case 3:
+        *width = MUIV_Window_Width_Screen(*width);
+        break;
+    case 4:
+        *width = MUIV_Window_Width_Visible(*width);
+        break;
+    case 5:
+        *width = MUIV_Window_Width_Scaled;
+        break;
+    }
+
+    /* Get height */
+    mode = XGET(window.height_cycle, MUIA_Cycle_Active);
+    *height = XGET(window.height_index_string, MUIA_String_Integer);
+    if (mode != 1 && *height > 100)
+        *height = 100;
+    switch (mode)
+    {
+    case 0:
+        *height = MUIV_Window_Height_Default;
+        break;
+    case 2:
+        *height = MUIV_Window_Height_MinMax(*height);
+        break;
+    case 3:
+        *height = MUIV_Window_Height_Screen(*height);
+        break;
+    case 4:
+        *height = MUIV_Window_Height_Visible(*height);
+        break;
+    case 5:
+        *height = MUIV_Window_Height_Scaled;
+    }
+
+    /* Get alternative left edge */
+    mode = XGET(window.alt_left_cycle, MUIA_Cycle_Active);
+    if (mode == 0)
+        *alt_left = MUIV_Window_AltLeftEdge_NoChange;
+    else if (mode == 1)
+        *alt_left = XGET(window.alt_left_index_string, MUIA_String_Integer);
+    else
+        *alt_left = 1 - mode;
+
+    /* Get alternative top edge */
+    mode = XGET(window.alt_top_cycle, MUIA_Cycle_Active);
+    if (mode == 0)
+        *alt_top = MUIV_Window_AltTopEdge_NoChange;
+    else if (mode == 1)
+        *alt_top = XGET(window.alt_top_index_string, MUIA_String_Integer);
+    else if (mode == 3)
+        *alt_top = MUIV_Window_AltTopEdge_Delta(
+            XGET(window.alt_top_index_string, MUIA_String_Integer));
+    else
+        *alt_top = 1 - mode;
+
+    /* Get alternative width */
+    mode = XGET(window.alt_width_cycle, MUIA_Cycle_Active);
+    *alt_width = XGET(window.alt_width_index_string, MUIA_String_Integer);
+    if (mode != 0 && *alt_width > 100)
+        *alt_width = 100;
+    switch (mode)
+    {
+    case 1:
+        *alt_width = MUIV_Window_AltWidth_MinMax(*alt_width);
+        break;
+    case 2:
+        *alt_width = MUIV_Window_AltWidth_Screen(*alt_width);
+        break;
+    case 3:
+        *alt_width = MUIV_Window_AltWidth_Visible(*alt_width);
+        break;
+    case 4:
+        *alt_width = MUIV_Window_AltWidth_Scaled;
+    }
+
+    /* Get alternative height */
+    mode = XGET(window.alt_height_cycle, MUIA_Cycle_Active);
+    *alt_height = XGET(window.alt_height_index_string, MUIA_String_Integer);
+    if (mode != 0 && *alt_height > 100)
+        *alt_height = 100;
+    switch (mode)
+    {
+    case 1:
+        *alt_height = MUIV_Window_AltHeight_MinMax(*alt_height);
+        break;
+    case 2:
+        *alt_height = MUIV_Window_AltHeight_Screen(*alt_height);
+        break;
+    case 3:
+        *alt_height = MUIV_Window_AltHeight_Visible(*alt_height);
+        break;
+    case 4:
+        *alt_height = MUIV_Window_AltHeight_Scaled;
+    }
+}
+
+/* Refresh the current position and dimension information shown in the test
+   window */
+static void WindowUpdate(void)
+{
+    DoMethod(window.left_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_LeftEdge));
+    DoMethod(window.width_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_Width));
+    DoMethod(window.top_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_TopEdge));
+    DoMethod(window.height_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_Height));
+
+    DoMethod(window.alt_left_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_AltLeftEdge));
+    DoMethod(window.alt_width_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_AltWidth));
+    DoMethod(window.alt_top_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_AltTopEdge));
+    DoMethod(window.alt_height_text, MUIM_SetAsString, MUIA_Text_Contents,
+        "%ld", XGET(window.window, MUIA_Window_AltHeight));
+}
+
+/* Close and reopen the test window. Refresh its info while it's closed */
+static void WindowReopen(void)
+{
+    SET(window.window, MUIA_Window_Open, FALSE);
+    WindowUpdate();
+    SET(window.window, MUIA_Window_Open, TRUE);
+}
+
+/* Close the test window */
+static void WindowClose(void)
+{
+    SET(window.open_button, MUIA_Disabled, FALSE);
+    SET(window.close_button, MUIA_Disabled, TRUE);
+    SET(window.apply_button, MUIA_Disabled, TRUE);
+    SET(window.window, MUIA_Window_Open, FALSE);
+
+    DoMethod(app, OM_REMMEMBER, window.window);
+    MUI_DisposeObject(window.window);
+    window.window = NULL;
+    window.close_item = NULL;
+}
+
+/* Open a new test window */
+static void WindowOpen(void)
+{
+    LONG mode, left, top, width, height, alt_left, alt_top, alt_width,
+        alt_height;
+    Object *menus = NULL, *update_button, *reopen_button, *close_button;
+    BOOL no_menus = FALSE;
+    STRPTR title = NULL, screen_title = NULL;
+
+    /* Get window and screen titles */
+    GET(window.title_string, MUIA_String_Contents, &title);
+    if (title[0] == '\0')
+        title = NULL;
+    else
+        title = StrDup(title);
+
+    GET(window.screen_string, MUIA_String_Contents, &screen_title);
+    if (screen_title[0] == '\0')
+        screen_title = NULL;
+    else
+        screen_title = StrDup(screen_title);
+
+    GetWindowDimensions(&left, &top, &width, &height, &alt_left, &alt_top,
+        &alt_width, &alt_height);
+
+    /* Create menus */
+    window.close_item = NULL;
+    mode = XGET(window.menu_cycle, MUIA_Cycle_Active);
+    if (mode == 1)
+    {
+        menus = MenustripObject,
+            MUIA_Family_Child, MenuObject,
+                MUIA_Menu_Title, "Test",
+                MUIA_Family_Child, window.close_item = MenuitemObject,
+                    MUIA_Menuitem_Title, "Close", End,
+                End,
+            End;
+    }
+    else if (mode == 2)
+        no_menus = TRUE;
+
+    /* Create window object */
+    window.window = WindowObject,
+        XGET(window.id_check, MUIA_Selected) ? MUIA_Window_ID : TAG_IGNORE,
+            MAKE_ID('T','S','T','2'),
+        MUIA_Window_Title, title,
+        MUIA_Window_ScreenTitle, screen_title,
+        MUIA_Window_LeftEdge, left,
+        MUIA_Window_TopEdge, top,
+        MUIA_Window_Width, width,
+        MUIA_Window_Height, height,
+        MUIA_Window_AltLeftEdge, alt_left,
+        MUIA_Window_AltTopEdge, alt_top,
+        MUIA_Window_AltWidth, alt_width,
+        MUIA_Window_AltHeight, alt_height,
+        MUIA_Window_Backdrop,
+            XGET(window.backdrop_check, MUIA_Selected),
+        MUIA_Window_Borderless,
+            XGET(window.borderless_check, MUIA_Selected),
+        MUIA_Window_CloseGadget,
+            XGET(window.close_check, MUIA_Selected),
+        MUIA_Window_DepthGadget,
+            XGET(window.depth_check, MUIA_Selected),
+        MUIA_Window_RefWindow,
+            XGET(window.ref_check, MUIA_Selected) ? wnd : NULL,
+        MUIA_Window_DragBar,
+            XGET(window.dragbar_check, MUIA_Selected),
+        MUIA_Window_SizeGadget,
+            XGET(window.size_check, MUIA_Selected),
+        MUIA_Window_Activate,
+            XGET(window.activate_check, MUIA_Selected),
+        MUIA_Window_Menustrip, menus,
+        MUIA_Window_NoMenus, no_menus,
+        WindowContents, VGroup,
+            Child, ColGroup(4),
+                GroupFrameT("Current dimensions"),
+                Child, MUI_MakeObject(MUIO_Label, "Left Edge:", 0),
+                Child, window.left_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                Child, MUI_MakeObject(MUIO_Label, "Width:", 0),
+                Child, window.width_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                Child, MUI_MakeObject(MUIO_Label, "Top Edge:", 0),
+                Child, window.top_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                Child, MUI_MakeObject(MUIO_Label, "Height:", 0),
+                Child, window.height_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                End,
+            Child, ColGroup(4),
+                GroupFrameT("Alternative dimensions"),
+                Child, MUI_MakeObject(MUIO_Label, "Left Edge:", 0),
+                Child, window.alt_left_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                Child, MUI_MakeObject(MUIO_Label, "Width:", 0),
+                Child, window.alt_width_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                Child, MUI_MakeObject(MUIO_Label, "Top Edge:", 0),
+                Child, window.alt_top_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                Child, MUI_MakeObject(MUIO_Label, "Height:", 0),
+                Child, window.alt_height_text = TextObject,
+                    TextFrame,
+                    MUIA_Text_Contents, "N/A",
+                    End,
+                End,
+            Child, HVSpace,
+            Child, update_button =
+                MUI_MakeObject(MUIO_Button, "Update"),
+            Child, reopen_button =
+                MUI_MakeObject(MUIO_Button, "Reopen"),
+            Child, close_button =
+                MUI_MakeObject(MUIO_Button, "Close"),
+            End,
+        End;
+
+    if (window.window != NULL)
+    {
+        DoMethod(app, OM_ADDMEMBER, window.window);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+            app, 3, MUIM_CallHook, &hook_standard, WindowClose);
+        DoMethod(close_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, WindowClose);
+        if (window.close_item != NULL)
+            DoMethod(window.close_item, MUIM_Notify, MUIA_Menuitem_Trigger,
+                MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+                WindowClose);
+
+        /* Update dimensions when they change */
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_LeftEdge,
+            MUIV_EveryTime, window.left_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_Width,
+            MUIV_EveryTime, window.width_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_TopEdge,
+            MUIV_EveryTime, window.top_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_Height,
+            MUIV_EveryTime, window.height_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_AltLeftEdge,
+            MUIV_EveryTime, window.alt_left_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_AltWidth,
+            MUIV_EveryTime, window.alt_width_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_AltTopEdge,
+            MUIV_EveryTime, window.alt_top_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+        DoMethod(window.window, MUIM_Notify, MUIA_Window_AltHeight,
+            MUIV_EveryTime, window.alt_height_text, 4, MUIM_SetAsString,
+            MUIA_Text_Contents, "%ld", MUIV_TriggerValue);
+
+        /* Update dimensions when asked */
+        DoMethod(update_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, WindowUpdate);
+
+        /* Close and reopen window when asked */
+        DoMethod(reopen_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, WindowReopen);
+
+        /* Get initial dimensions before window is opened */
+        WindowUpdate();
+
+        SET(window.window, MUIA_Window_Open, TRUE);
+        SET(window.open_button, MUIA_Disabled, TRUE);
+        SET(window.close_button, MUIA_Disabled, FALSE);
+        SET(window.apply_button, MUIA_Disabled, FALSE);
+
+    }
+
+    /* Test getting title attributes */
+    GET(window.window, MUIA_Window_Title, &title);
+    if (title != NULL)
+       SET(window.title_string, MUIA_String_Contents, title);
+    GET(window.window, MUIA_Window_ScreenTitle, &screen_title);
+    if (screen_title != NULL)
+       SET(window.screen_string, MUIA_String_Contents, screen_title);
+}
+
+/* Apply new specifications to the current test window */
+static void WindowApply(void)
+{
+    LONG left, top, width, height, alt_left, alt_top, alt_width,
+        alt_height;
+    STRPTR title = (APTR)~0;
+
+    /* Update window and screen titles */
+    GET(window.window, MUIA_Window_Title, &title);
+    FreeVec(title);
+    GET(window.title_string, MUIA_String_Contents, &title);
+    if (title[0] == '\0')
+        title = NULL;
+    else
+        title = StrDup(title);
+    SET(window.window, MUIA_Window_Title, title);
+
+    GET(window.window, MUIA_Window_ScreenTitle, &title);
+    FreeVec(title);
+    GET(window.screen_string, MUIA_String_Contents, &title);
+    if (title[0] == '\0')
+        title = NULL;
+    else
+        title = StrDup(title);
+    SET(window.window, MUIA_Window_ScreenTitle, title);
+
+    GetWindowDimensions(&left, &top, &width, &height, &alt_left, &alt_top,
+        &alt_width, &alt_height);
+
+    SET(window.window, MUIA_Window_LeftEdge, left);
+    SET(window.window, MUIA_Window_Width, width);
+    SET(window.window, MUIA_Window_TopEdge, top);
+    SET(window.window, MUIA_Window_Height, height);
+
+    SET(window.window, MUIA_Window_AltLeftEdge, alt_left);
+    SET(window.window, MUIA_Window_AltWidth, alt_width);
+    SET(window.window, MUIA_Window_AltTopEdge, alt_top);
+    SET(window.window, MUIA_Window_AltHeight, alt_height);
 }
 
 AROS_UFH3(static void, ObjStrHook,
@@ -1136,7 +1607,7 @@ int main(void)
     Object *min_string, *max_string;
     Object *slider_button;
     Object *country_radio[2];
-    CONST_STRPTR title;
+    STRPTR title;
     UWORD i;
     LONG value = 0;
 
@@ -1147,6 +1618,8 @@ int main(void)
             "Icon List",
 #endif
             "Balancing", NULL};
+    static char *general_pages[] =
+        {"Group", "Window", NULL};
     static char *text_pages[] =
         {"Text", "String", NULL};
     static char *color_pages[] =
@@ -1308,6 +1781,7 @@ int main(void)
 
             SubWindow, wnd = TestWindowObject,
                 MUIA_Window_Title, "test",
+                MUIA_Window_ID, MAKE_ID('T','E','S','T'),
                 MUIA_Window_Activate, TRUE,
 
                 WindowContents, VGroup,
@@ -1315,6 +1789,9 @@ int main(void)
                         //MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
 
                         /* general */
+                        Child, RegisterGroup(general_pages),
+
+                        /* group */
                         Child, VGroup,
                             Child, HGroup,
                                 GroupFrameT("A horizontal group"),
@@ -1370,12 +1847,13 @@ int main(void)
                                     Child, HVSpace,
                                     Child, HGroup,
                                         Child, HVSpace,
-                                        Child, MUI_MakeObject(MUIO_Checkmark,
-                                            "_Checkmark"),
+                                        Child, general.menus_check =
+                                            MUI_MakeObject(MUIO_Checkmark,
+                                            "_Enable menus"),
                                         End,
                                     Child, HGroup,
                                         Child, MUI_MakeObject(MUIO_Label,
-                                            "_Checkmark", 0),
+                                            "_Enable menus", 0),
                                         Child, HVSpace,
                                         End,
                                     Child, HVSpace,
@@ -1462,6 +1940,289 @@ int main(void)
                                 End,
                             End,
 
+                            /* window */
+                            Child, VGroup,
+
+                                Child, ColGroup(4),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Window title:", 0),
+                                    Child, window.title_string =
+                                        StringObject,
+                                        StringFrame,
+                                        MUIA_String_Contents, "Test window",
+                                        End,
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Screen title:", 0),
+                                    Child, window.screen_string =
+                                        StringObject,
+                                        StringFrame,
+                                        MUIA_String_Contents, "Test window",
+                                        End,
+                                    End,
+
+                                Child, ColGroup(2),
+                                    GroupFrameT("Initial dimensions"),
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Left Edge"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.left_cycle = CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_left_modes + 1,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels:", 0),
+                                        Child, window.left_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Width"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.width_cycle = CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_dim_modes,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels/percentage:", 0),
+                                        Child, window.width_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Top Edge"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.top_cycle = CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_top_modes + 1,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels:", 0),
+                                        Child, window.top_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Height"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.height_cycle =
+                                            CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_dim_modes,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels/percentage:", 0),
+                                        Child, window.height_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    End,
+
+                                Child, ColGroup(2),
+                                    GroupFrameT("Alternative dimensions"),
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Left Edge"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.alt_left_cycle =
+                                            CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_left_modes,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels:", 0),
+                                        Child, window.alt_left_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Width"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.alt_width_cycle =
+                                            CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_dim_modes + 1,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels/percentage:", 0),
+                                        Child, window.alt_width_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Top Edge"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.alt_top_cycle =
+                                            CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_top_modes,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels:", 0),
+                                        Child, window.alt_top_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    Child, ColGroup(2),
+                                        GroupFrameT("Height"),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Mode:", 0),
+                                        Child, window.alt_height_cycle =
+                                            CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_dim_modes + 1,
+                                            End,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Pixels/percentage:", 0),
+                                        Child, window.alt_height_index_string =
+                                            StringObject,
+                                            StringFrame,
+                                            MUIA_String_Accept, (IPTR)digits,
+                                            MUIA_String_Integer, 100,
+                                            End,
+                                        End,
+                                    End,
+
+                                Child, ColGroup(6),
+                                    Child, HGroup,
+                                        Child, window.appwindow_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "AppWindow", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.backdrop_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Backdrop", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.borderless_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Borderless", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.close_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Close gadget", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.depth_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Depth gadget", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HVSpace,
+                                    Child, HGroup,
+                                        Child, window.dragbar_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Draggable", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.ref_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Reference parent", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.size_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Size gadget", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.activate_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Active", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, window.id_check =
+                                            MUI_MakeObject(
+                                                MUIO_Checkmark, NULL),
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Use ID", 0),
+                                        Child, HVSpace,
+                                        End,
+                                    Child, HGroup,
+                                        Child, MUI_MakeObject(MUIO_Label,
+                                            "Menus:", 0),
+                                        Child, window.menu_cycle = CycleObject,
+                                            ButtonFrame,
+                                            MUIA_Cycle_Entries,
+                                                window_menu_modes,
+                                            End,
+                                        End,
+                                    End,
+
+                                Child, HGroup,
+                                    Child, window.open_button =
+                                        MUI_MakeObject(MUIO_Button, "Open"),
+                                    Child, window.close_button =
+                                        MUI_MakeObject(MUIO_Button, "Close"),
+                                    Child, window.apply_button =
+                                        MUI_MakeObject(MUIO_Button, "Apply"),
+                                    End,
+
+                                Child, HVSpace,
+                                End,
+                            End,
+
                         /* text */
                         Child, RegisterGroup(text_pages),
 
@@ -1490,7 +2251,7 @@ int main(void)
                                        orginal MUI doesn't allow to alter the
                                        height of the window */
                                 MUIA_Rectangle_HBar, TRUE,
-                                MUIA_Rectangle_BarTitle,"Enter a string",
+                                MUIA_Rectangle_BarTitle, "Enter a string",
                                 End,
                             Child, StringObject,
                                 StringFrame,
@@ -2502,6 +3263,10 @@ int main(void)
             second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
         DoMethod(general.open_button, MUIM_Notify, MUIA_Pressed, FALSE,
             second_wnd, 3, MUIM_Set, MUIA_Window_Open, TRUE);
+        SET(general.menus_check, MUIA_Selected, TRUE);
+        DoMethod(general.menus_check, MUIM_Notify, MUIA_Selected,
+            MUIV_EveryTime, wnd, 3, MUIM_Set, MUIA_Window_NoMenus,
+            MUIV_NotTriggerValue);
         DoMethod(about_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2,
             MUIM_Application_AboutMUI, NULL);
         DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2,
@@ -2510,6 +3275,22 @@ int main(void)
             MUIM_CallHook, &hook_objects);
         DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
             app, 2, MUIM_CallHook, &hook);
+
+        /* Notifications and set-up for window tab */
+        set(window.close_check, MUIA_Selected, TRUE);
+        set(window.depth_check, MUIA_Selected, TRUE);
+        set(window.close_check, MUIA_Selected, TRUE);
+        set(window.dragbar_check, MUIA_Selected, TRUE);
+        set(window.size_check, MUIA_Selected, TRUE);
+        set(window.activate_check, MUIA_Selected, TRUE);
+        set(window.close_button, MUIA_Disabled, TRUE);
+        set(window.apply_button, MUIA_Disabled, TRUE);
+        DoMethod(window.open_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, WindowOpen);
+        DoMethod(window.close_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, WindowClose);
+        DoMethod(window.apply_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            app, 3, MUIM_CallHook, &hook_standard, WindowApply);
 
         /* Notifications and set-up for string objects */
         DoMethod(string.max_len_text, MUIM_SetAsString, MUIA_Text_Contents,
@@ -2899,7 +3680,23 @@ int main(void)
             }
         }
 
+        /* clean up */
         DoMethod(list.multi_lists[0], MUIM_List_DeleteImage, list.image);
+
+        for (i = 0; i < LIST_COUNT; i++)
+        {
+            GET(list.lists[i], MUIA_List_Title, &title);
+            SET(list.lists[i], MUIA_List_Title, NULL);
+            FreeVec(title);
+        }
+
+        if (window.window != NULL)
+        {
+            GET(window.window, MUIA_Window_Title, &title);
+            SET(window.window, MUIA_Window_Title, NULL);
+            FreeVec(title);
+        }
+
         MUI_DisposeObject(app);
     }
     if (context_menu)
