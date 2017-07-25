@@ -520,7 +520,7 @@ static void WindowClose(void)
     SET(window.window, MUIA_Window_Open, FALSE);
 
     DoMethod(app, OM_REMMEMBER, window.window);
-    MUI_DisposeObject(window.window);
+    DoMethod(app, MUIM_Application_PushMethod, window.window, 1, OM_DISPOSE);
     window.window = NULL;
     window.close_item = NULL;
 }
