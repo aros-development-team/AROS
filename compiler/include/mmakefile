@@ -43,8 +43,8 @@ INCSUBDIRS :=	aros				\
 		workbench
 
 # clib & proto are handled above.
-INCEMPTYDIRS := defines				\
-		inline
+#INCEMPTYDIRS := defines				\
+#		inline
 
 INCLUDES_BASE    := $(foreach d,$(addprefix $(SRCDIR)/$(CURDIR)/,$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)) $(wildcard *.h)
 INCLUDES      := $(subst $(SRCDIR)/$(CURDIR)/,,$(INCLUDES_BASE))
