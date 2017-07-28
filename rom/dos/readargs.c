@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -114,7 +114,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
 
 /*  SYNOPSIS */
         AROS_LHA(CONST_STRPTR, template, D1),
-        AROS_LHA(IPTR *, array, D2),
+        AROS_LHA(SIPTR *, array, D2),
         AROS_LHA(struct RDArgs *, rdargs, D3),
 
 /*  LOCATION */
