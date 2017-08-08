@@ -36,6 +36,8 @@
     EXAMPLE
 
     BUGS
+	Errors during writing of any of the remaining chunks are just 
+	ignored and both the faulty and all following chunks are not written.
 
     SEE ALSO
 	OpenIFF(), InitIFF()
@@ -50,6 +52,7 @@
     AROS_LIBFUNC_INIT
 
     struct IFFStreamCmd    cmd;
+    LONG error=0;
 
     if (iff != NULL)
     {
@@ -69,10 +72,15 @@
 	    PopContextNode(iff, IPB(IFFParseBase));
 	}
 	*/
-	while (iff->iff_Depth)
+	while (iff->iff_Depth && !error)
 	{
-	    PopChunk(iff);
+	    error = PopChunk(iff);
 	}
+  if(error)
+  {
+      /* TODO: handle error */
+      bug("[CloseIFF] unhandled error code: %d\n", error);
+  }
 
 	/* This is for safety:
 	  It might be in PopChunk that seeking or writing to streams failed.
