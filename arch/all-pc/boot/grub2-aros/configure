@@ -25552,6 +25552,7 @@ fi
 # `-fPIE' in the default specs.
 if [ x"$pie_possible" = xyes ]; then
   TARGET_CFLAGS="$TARGET_CFLAGS -fno-PIE"
+  TARGET_LDFLAGS="$TARGET_LDFLAGS -no-pie"
 fi
 
 CFLAGS="$TARGET_CFLAGS"
