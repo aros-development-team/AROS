@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,42 +10,42 @@
     NAME */
 #include <proto/iffparse.h>
 
-	AROS_LH1(void, CloseIFF,
+    AROS_LH1(void, CloseIFF,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IFFHandle *, iff, A0),
+    AROS_LHA(struct IFFHandle *, iff, A0),
 
 /*  LOCATION */
-	struct Library *, IFFParseBase, 8, IFFParse)
+    struct Library *, IFFParseBase, 8, IFFParse)
 
 /*  FUNCTION
-	Completes a read or write session by closing the IFF handle.
-	The IFFHandle struct is ready for reuse in another session,
-	it's just to open it again with OpenIFF(). This function
-	also automatically cleans up if a read or write fails halfway through.
+    Completes a read or write session by closing the IFF handle.
+    The IFFHandle struct is ready for reuse in another session,
+    it's just to open it again with OpenIFF(). This function
+    also automatically cleans up if a read or write fails halfway through.
 
     INPUTS
-	iff - Pointer to an IFFhandle struct previously opened with OpenIFF()
+    iff - Pointer to an IFFhandle struct previously opened with OpenIFF()
 
     RESULT
 
     NOTES
-	This function tells the custom stream handler to clean up
-	by sending it a IFFCMD_CLEANUP IFFStreamCmd.
+    This function tells the custom stream handler to clean up
+    by sending it a IFFCMD_CLEANUP IFFStreamCmd.
 
     EXAMPLE
 
     BUGS
-	Errors during writing of any of the remaining chunks are just 
-	ignored and both the faulty and all following chunks are not written.
+    Errors during writing of any of the remaining chunks are just 
+    ignored and both the faulty and all following chunks are not written.
 
     SEE ALSO
-	OpenIFF(), InitIFF()
+    OpenIFF(), InitIFF()
 
     INTERNALS
-	This function checks that buffers for buffered streams
-	have been freed. This is not very elegant and should have been
-	done at an earlier stadium. It is not a real bug though.
+    This function checks that buffers for buffered streams
+    have been freed. This is not very elegant and should have been
+    done at an earlier stadium. It is not a real bug though.
 
 *****************************************************************************/
 {
@@ -56,54 +56,54 @@
 
     if (iff != NULL)
     {
-	/* clear the IFFF_OPEN bit to mark IFF stream closed */
-	if (!(iff->iff_Flags & IFFF_OPEN) )
-	{
-	    return;
-	}
+    /* clear the IFFF_OPEN bit to mark IFF stream closed */
+    if (!(iff->iff_Flags & IFFF_OPEN) )
+    {
+        return;
+    }
 
-	iff->iff_Flags &= ~IFFF_OPEN;
+    iff->iff_Flags &= ~IFFF_OPEN;
 
-	/* Pop of all contextnodes so that only the default one is remaining */
+    /* Pop of all contextnodes so that only the default one is remaining */
 
-	/*
-	for (count = iff->iff_Depth; count; count -- )
-	{
-	    PopContextNode(iff, IPB(IFFParseBase));
-	}
-	*/
-	while (iff->iff_Depth && !error)
-	{
-	    error = PopChunk(iff);
-	}
-  if(error)
-  {
-      /* TODO: handle error */
-      bug("[CloseIFF] unhandled error code: %d\n", error);
-  }
+    /*
+    for (count = iff->iff_Depth; count; count -- )
+    {
+        PopContextNode(iff, IPB(IFFParseBase));
+    }
+    */
+    while (iff->iff_Depth && !error)
+    {
+        error = PopChunk(iff);
+    }
+    if(error)
+    {
+        /* FIXME: handle error */
+        bug("[CloseIFF] unhandled error code: %d\n", error);
+    }
 
-	/* This is for safety:
-	  It might be in PopChunk that seeking or writing to streams failed.
-	  In that case the memory for eventual buffered setreams
-	  were not freed, so we should free it here.
+    /* This is for safety:
+      It might be in PopChunk that seeking or writing to streams failed.
+      In that case the memory for eventual buffered setreams
+      were not freed, so we should free it here.
 
-	  (Yes, it is is a kludge !)
-	*/
-	if ( GetIntIH(iff)->iff_BufferStartDepth)
-	{
-	    FreeBuffer((struct BufferList*)iff->iff_Stream, IPB(IFFParseBase));
+      (Yes, it is is a kludge !)
+    */
+    if ( GetIntIH(iff)->iff_BufferStartDepth)
+    {
+        FreeBuffer((struct BufferList*)iff->iff_Stream, IPB(IFFParseBase));
 
-	    GetIntIH(iff)->iff_BufferStartDepth = 0;
-	}
+        GetIntIH(iff)->iff_BufferStartDepth = 0;
+    }
 
-	/* Tell the custom stream to cleanup */
-	cmd.sc_Command = IFFCMD_CLEANUP;
-	CallHookPkt
-	(
-	    GetIntIH(iff)->iff_StreamHandler,
-	    iff,
-	    &cmd
-	);
+    /* Tell the custom stream to cleanup */
+    cmd.sc_Command = IFFCMD_CLEANUP;
+    CallHookPkt
+    (
+        GetIntIH(iff)->iff_StreamHandler,
+        iff,
+        &cmd
+    );
     }
     
     AROS_LIBFUNC_EXIT
