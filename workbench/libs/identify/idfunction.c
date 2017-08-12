@@ -278,7 +278,7 @@ static struct LibNode *loadFD(struct List *libList, CONST_STRPTR libname, struct
         D(bug("[idfunction/loadFD] out of mem for filename\n"));
         goto bailout;
     }
-    sprintf(fileName, "Development:fd/%s_lib.fd", libNameStripped);
+    sprintf(fileName, "Developer:fd/%s_lib.fd", libNameStripped);
 
     D(bug("[idfunction/loadFD] libnamestripped %s filename %s\n", libNameStripped, fileName));
 
