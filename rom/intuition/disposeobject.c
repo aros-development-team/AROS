@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -25,8 +25,8 @@
 /*  FUNCTION
         Deletes a BOOPSI object. All memory associated with the object
         is freed. The object must have been created with NewObject().
-        Some object contain other object which might be freed as well
-        when this function is used on the "parent" while others might
+        Some objects contain other objects which might be freed as well
+        when this function is used on the "parent", while others might
         also contain children but won't free them. Read the documentation
         of the class carefully to find out how it behaves.
 
@@ -38,7 +38,7 @@
         None.
 
     NOTES
-        This functions sends OM_DISPOSE to the oejct.
+        This functions sends OM_DISPOSE to the object.
 
     EXAMPLE
  
