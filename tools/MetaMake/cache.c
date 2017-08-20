@@ -138,29 +138,22 @@ printtargetlist (struct List * l)
 
 
 static int progcount;
-static int token;
-static char tokens[]="|/-\\";
 
 static void
 progress_reset (FILE * fh)
 {
     progcount = 0;
-    token = 0;
-    fprintf (fh, "\r|\r");
-    fflush (fh);
+    fprintf(fh, "\n");
 }
 
 static void
 progress (FILE * fh)
 {
     progcount++;
-    if (progcount == 13)
+    if (progcount == 20)
     {
 	progcount = 0;
-	token++;
-	if (token == 4)
-	    token = 0;
-	fprintf (fh, "%c\r", tokens[token]);
+	fprintf(fh, ".");
 	fflush (fh);
     }
 }
@@ -677,6 +670,7 @@ activatecache (struct Project *prj)
 
     writecache (cache);
 
+    progress_reset (stdout);
     printf ("[MMAKE] Collecting targets...\n");
     buildtargetlist (cache, cache->topdir);
     if (debug)
