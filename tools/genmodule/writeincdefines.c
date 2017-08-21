@@ -431,7 +431,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         }
         fprintf(out,
                 "...) __%s_WB(",
-                varargname, cfg->libbase
+                varargname
         );
         fprintf(out, "(%s)__%s_LIBBASE, ",
                 cfg->libbasetypeptrextern,
