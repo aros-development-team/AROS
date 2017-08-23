@@ -156,15 +156,16 @@ int main(void)
 #if (__WORDSIZE == 64)
 	    FPuts(Output(),"       Address  Name\n");
 #else
-	    FPuts(Output(),"Address\t\tName\n");
+	    FPuts(Output(),"   Address  Name\n");
 #endif
 	    for(ress2=buffer;ress2<ress;ress2++)
 	    {
 #if (__WORDSIZE == 64)
-		Printf("0x%012.ix  %s\n", ress2->address, ress2->name);
+                Printf("0x%012.ix  %s\n",
 #else
-		Printf("0x%08.ix\t%s\n", ress2->address, ress2->name);
+                Printf("0x%08.ix  %s\n",
 #endif
+                    ress2->address, ress2->name);
 	    }
 	    FreeVec(buffer);
             return 0; 

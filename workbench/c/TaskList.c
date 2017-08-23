@@ -227,7 +227,7 @@ int main(void)
 #if (__WORDSIZE == 64)
         PutStr("       Address     Type   Pri    State      CPU Time  CPU Usage     Stack      Used  Name\n");
 #else
-        PutStr("Address\t\tType\tPri\tState\tCPU Time\tCPU Usage\tStack\tUsed\tName\n");
+        PutStr("   Address     Type   Pri    State      CPU Time  CPU Usage     Stack      Used  Name\n");
 #endif
         ForeachNodeSafe(&tasks, currentTask, tmpTask)
         {
@@ -243,7 +243,7 @@ int main(void)
 #if (__WORDSIZE == 64)
             Printf("0x%012.ix %8s  %4id  %7s  %3id:%02id:%02id.%02id    %3id.%02id%% %9id %9id  %s\n",
 #else
-            Printf("0x%08.ix\t%s\t%ld\t%s\t%03ld:%02ld:%02ld.%02ld\t%3id.%02id%%\t%id\t%id\t%s\n",
+            Printf("0x%08.ix %8s  %4id  %7s  %3id:%02id:%02id.%02id    %3id.%02id%% %9id %9id  %s\n",
 #endif
                     currentTask->address,
                     (currentTask->node.ln_Type == NT_TASK) ? "task" :
