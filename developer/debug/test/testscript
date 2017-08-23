@@ -1,10 +1,24 @@
 # default test script for "runtests"
 
-misc/versionlib
-utility/amiga2date
-dos/addpart
+hidds/graphics/convertpixels
+misc/fileseek
+diskfont/fontinfo topaz.font 8
+misc/frequencies
 
-# clib tests ..
-clib/sprintf_f
-clib/abort
-clib/exit
+exec/allocmem
+
+dos/addpart
+dos/dosvartest
+dos/examine SYS:Developer/Debug/Tests/dos/examine
+dos/ExNext
+dos/filetest
+
+utility/amiga2date
+utility/callhooktest
+utility/date2amiga
+
+Avail FLUSH
+LibList
+DevList
+ResList
+TaskList
