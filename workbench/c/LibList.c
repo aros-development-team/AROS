@@ -168,16 +168,16 @@ int main(void)
         if(fillbuffer(&libs,size))
         {
 #if (__WORDSIZE == 64)
-	    FPuts(Output(),"       Address  Version  Rev  OpenCnt  Flags  name\n");
+	    FPuts(Output(),"       Address  Version  Rev  OpenCnt  Flags  Name\n");
 #else
-        FPuts(Output(),"address\t\tversion\trev\topencnt\tflags\tname\n");
+	    FPuts(Output(),"   Address  Version  Rev  OpenCnt  Flags  Name\n");
 #endif
 	    for(libs2=buffer;libs2<libs;libs2++)
 	    {
 #if (__WORDSIZE == 64)
         Printf("0x%012.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
 #else
-		Printf("0x%08.ix\t%ld\t%ld\t%ld\t0x%lx\t%s\n",
+        Printf("0x%08.ix  %7ld %4ld  %7ld   0x%02lx  %s\n",
 #endif
 		        libs2->address, (ULONG)libs2->version,
 		        (ULONG)libs2->revision,
