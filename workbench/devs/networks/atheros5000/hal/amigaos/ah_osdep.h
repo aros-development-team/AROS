@@ -26,9 +26,6 @@
 #include <exec/types.h>
 
 #define	__ahdecl
-#ifndef __packed
-#define	__packed	__attribute__((__packed__))
-#endif
 
 /* NB: arm defaults to unsigned so be explicit */
 typedef BYTE int8_t;

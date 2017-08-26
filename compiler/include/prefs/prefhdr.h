@@ -30,7 +30,7 @@ struct PrefHeader
     UBYTE   ph_Version;     /* The version of the PrefHeader data */
     UBYTE   ph_Type;        /* The type of the PrefHeader data */
     ULONG   ph_Flags;       /* Flags, set to 0 for now */
-} __attribute__((__packed__));
+} __packed;
 
 #define PHV_AMIGAOS     0               /* Format from AmigaOS v36+ */
 #define PHV_CURRENT     PHV_AMIGAOS     /* The current version */
