@@ -8,13 +8,6 @@
 #ifndef PCIXHCICONTROLLER_H
 #define PCIXHCICONTROLLER_H
 
-#ifndef __packed
-#ifdef __GNUC__
-#define __packed __attribute__((__packed__))
-#else
-#define __packed
-#endif
-#endif
 
 /*
  *----------------------------------------------------------------------------

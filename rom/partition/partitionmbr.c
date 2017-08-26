@@ -45,7 +45,7 @@ struct FATBootSector {
             ULONG bs_volid;
             UBYTE bs_vollab[11];
             UBYTE bs_filsystype[8];
-        } __attribute__ ((__packed__)) fat16;
+        } __packed fat16;
 
         struct {
             ULONG bpb_fat_size_32;
@@ -61,11 +61,11 @@ struct FATBootSector {
             ULONG bs_volid;
             UBYTE bs_vollab[11];
             UBYTE bs_filsystype[8];
-        } __attribute__ ((__packed__)) fat32;
+        } __packed fat32;
     } type;
     UBYTE pad[420];
     UBYTE bpb_signature[2];
-} __attribute__ ((__packed__));
+} __packed;
 
 struct rootblock
 {

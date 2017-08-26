@@ -12,9 +12,6 @@
 #include <exec/types.h>
 #include <dos/filehandler.h>
 
-#ifndef __packed
-#define __packed    __attribute__((__packed__))
-#endif
 
 typedef UBYTE   int8;
 typedef TEXT    strA;   /* ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ 

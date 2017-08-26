@@ -21,8 +21,7 @@ struct FATEBPB
     ULONG bs_volid;
     UBYTE bs_vollab[FAT_MAX_SHORT_NAME];
     UBYTE bs_filsystype[8];
-}
-__attribute__ ((__packed__));
+} __packed;
 
 struct FATBootSector
 {
@@ -54,14 +53,12 @@ struct FATBootSector
             UWORD bpb_back_bootsec;
             UBYTE bpb_reserved[12];
             struct FATEBPB ebpb;
-        }
-        __attribute__ ((__packed__)) ebpb32;
+        } __packed ebpb32;
     }
     ebpbs;
     UBYTE pad[420];
     UBYTE bpb_signature[2];
-}
-__attribute__ ((__packed__));
+} __packed;
 
 struct FATFSInfo
 {
@@ -72,8 +69,7 @@ struct FATFSInfo
     ULONG next_free;
     UBYTE reserved2[12];
     ULONG trail_sig;
-}
-__attribute__ ((__packed__));
+} __packed;
 
 #define FSI_LEAD_SIG 0x41615252
 #define FSI_STRUCT_SIG 0x61417272
@@ -93,8 +89,7 @@ struct FATDirEntry
     UWORD write_date;
     UWORD first_cluster_lo;
     ULONG file_size;
-}
-__attribute__ ((__packed__));
+} __packed;
 
 #define ATTR_READ_ONLY  0x01
 #define ATTR_HIDDEN     0x02
@@ -117,5 +112,4 @@ struct FATLongDirEntry
     UWORD name2[6];
     UWORD first_cluster_lo;
     UWORD name3[2];
-}
-__attribute__ ((__packed__));
+} __packed;

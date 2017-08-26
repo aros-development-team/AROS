@@ -30,9 +30,7 @@
  * maximum portability).
  */
 #define	__ahdecl
-#ifndef __packed
-#define	__packed	__attribute__((__packed__))
-#endif
+
 
 /*
  * Beware of these being mismatched against the contents of <linux/types.h>

@@ -15,9 +15,6 @@
  * Data structures for Plain, Spare, and VAT filesystems
  */
 
-#ifndef __packed
-#define __packed    __attribute__((__packed__))
-#endif
 
 typedef UBYTE   Uint8;
 typedef BYTE    Int8;

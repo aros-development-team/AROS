@@ -100,6 +100,8 @@
 #ifndef __packed
 #if __GNUC_PREREQ(2,5)
 #   define __packed __attribute__((__packed__))
+#else
+#   error Define __packed appropriately for your compiler!
 #endif
 #endif
 

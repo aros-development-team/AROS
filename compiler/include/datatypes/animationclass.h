@@ -31,13 +31,6 @@
 
 #define	ANIMATIONDTCLASS	"animation.datatype"
 
-#ifndef __packed
-#ifdef __GNUC__
-#define __packed __attribute__((__packed__))
-#else
-#define __packed
-#endif
-#endif
 
 /* Tags */
 #define	ADTA_Dummy		(DTA_Dummy + 600)

@@ -36,12 +36,6 @@
 #undef kprintf
 #define kprintf(fmt, args...) device_printf(NULL, fmt ,##args)
 
-#ifdef __GNUC__
-#define __packed __attribute__((__packed__))
-#else
-#error Define __packed appropriately for your compiler!
-#endif
-
 typedef uint8_t u_int8_t;
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;

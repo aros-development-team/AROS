@@ -104,7 +104,7 @@ struct NTFSBootSector {
     UBYTE  reserved4[3];
     UQUAD volume_serial_number;       /* Irrelevant (serial number). */
     ULONG checksum;                   /* Boot sector checksum. */
-} __attribute__ ((__packed__));
+} __packed;
 
 /* MultiSectorHeader */
 struct MFTRecordMSH
@@ -112,14 +112,14 @@ struct MFTRecordMSH
     UBYTE magic[4];				// 0x00
     UWORD usa_offset;				// 0x04
     UWORD usa_count;				// 0x06
-} __attribute__ ((__packed__));
+} __packed;
 
 struct MFTSegmentReference
 {
     ULONG seg_low;				// 0x00
     UWORD seg_high;				// 0x04
     UWORD seg_sn;				// 0x06
-} __attribute__ ((__packed__));
+} __packed;
 
 struct MFTRecordEntry
 {
@@ -135,7 +135,7 @@ struct MFTRecordEntry
     UWORD next_attr_instance;		// 0x28
     UWORD reserved;				// 0x2A
     ULONG mft_record_number;		// 0x2C
-} __attribute__ ((__packed__));
+} __packed;
 
 
 struct MFTAttr {
@@ -152,7 +152,7 @@ struct MFTAttr {
 	    UWORD value_offset;
 	    UBYTE flags;
 	    UBYTE reserved;
-	} __attribute__ ((__packed__)) resident;
+	} __packed resident;
 	struct {
 	    UQUAD lowest_vcn;
 	    UQUAD highest_vcn;
@@ -163,38 +163,38 @@ struct MFTAttr {
 	    UQUAD data_size;
 	    UQUAD valid_size;
 	    UQUAD actual_size;
-		} __attribute__ ((__packed__)) non_resident;
-	} __attribute__ ((__packed__)) data;
-} __attribute__ ((__packed__));
+		} __packed non_resident;
+	} __packed data;
+} __packed;
 
 struct MFTIndexHeader {
     union {
 	struct {
 	    UQUAD indexed_file;
-	} __attribute__ ((__packed__)) dir;
+	} __packed dir;
 	struct {
 	    UWORD data_offset;
 	    UWORD data_length;
 	    ULONG reserved00;
-	} __attribute__ ((__packed__)) vi;
-    } __attribute__ ((__packed__)) data;
+	} __packed vi;
+    } __packed data;
     UWORD length;
     UWORD key_length;
     UWORD flags;
     UWORD reserved;
-} __attribute__ ((__packed__));
+} __packed;
 
 struct MFTIndexEntry {
     union {
 	struct {
 	    UQUAD indexed_file;
-	} __attribute__ ((__packed__)) dir;
+	} __packed dir;
 	struct {
 	    UWORD data_offset;
 	    UWORD data_length;
 	    ULONG reserved00;
-	} __attribute__ ((__packed__)) vi;
-    } __attribute__ ((__packed__)) data;
+	} __packed vi;
+    } __packed data;
     UWORD length;
     UWORD key_length;
     UWORD flags;
@@ -207,7 +207,7 @@ struct MFTIndexEntry {
 	UQUAD reparse;
 	uuid_t sid;
 	ULONG owner_id;
-    } __attribute__ ((__packed__)) key;*/
-} __attribute__ ((__packed__));
+    } __packed key;*/
+} __packed;
 
 #endif /* NTFS_STRUCT_H */
