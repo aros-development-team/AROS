@@ -1,9 +1,9 @@
 # DataType Description for MPEG Video
 Name=MPEGVideo
-Version=$VER: MPEGVideo 1.11 (01.01.2016)
+Version=$VER: MPEGVideo 1.12 (02.09.2017)
 BaseName=mpegvideo
 Pattern=#?
-Mask= 0x00 0x00
+Mask=0x00 0x00 0x01 0xB3
 GroupID=anim
 ID=_mpegvideo
 Flags=DTF_BINARY,DTF_CASE
