@@ -4849,7 +4849,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_empty_body" >&5
 $as_echo "$aros_empty_body" >&6; }
 if test "x-$aros_empty_body" = "x-yes" ; then
-    aros_warnflags_empty_body=-Wtautological-compare
+    aros_warnflags_empty_body=-Wempty-body
     aros_nowarnflags_empty_body=-Wno-empty-body
 fi
 
