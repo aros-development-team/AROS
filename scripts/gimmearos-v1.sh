@@ -8,13 +8,14 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos-v1.sh 1.12 (08.02.2015) WIP
+# $VER: gimmearos-v1.sh 1.13 (03.09.2017)
 
 curdir="`pwd`"
 srcdir="aros-src"
 portsdir="$HOME/aros-ports-src"
 tooldir="$HOME/aros-toolchain"
-makeopts="-j2 -s"
+makeopts="-j3 -s"
+configopts="--with-binutils-version=2.25 --with-gcc-version=6.3.0 --disable-sdl-hidd --with-portssources="$portsdir""
 
 install_pkg()
 {
@@ -52,7 +53,7 @@ echo -e "4 .. Get packages with pacman for Arch"
 echo -e "5 .. Get packages with zypper for openSuse"
 echo -e "6 .. As 5) but with additional packages for building 32-bit AROS"
 echo -e "     on 64-bit Linux"
-echo -e "9 .. Skip this step"
+echo -e "99 ..Skip this step"
 echo -e "0 .. Exit"
 
 echo -e "\nEnter number and press <Enter>:"
@@ -77,7 +78,7 @@ case "$input" in
         install_pkg "apt-get install" libc6-dev
         install_pkg "apt-get install" liblzo2-dev
         install_pkg "apt-get install" libxxf86vm-dev
-        install_pkg "apt-get install" libpng12-dev
+        install_pkg "apt-get install" libpng-dev
         install_pkg "apt-get install" gcc-multilib
         install_pkg "apt-get install" libsdl1.2-dev
         install_pkg "apt-get install" byacc
@@ -101,7 +102,7 @@ case "$input" in
         install_pkg "apt-get install" libc6-dev
         install_pkg "apt-get install" liblzo2-dev
         install_pkg "apt-get install" libxxf86vm-dev
-        install_pkg "apt-get install" libpng12-dev
+        install_pkg "apt-get install" libpng-dev
         install_pkg "apt-get install" gcc-multilib
         install_pkg "apt-get install" libsdl1.2-dev
         install_pkg "apt-get install" byacc
@@ -166,11 +167,13 @@ case "$input" in
 
         # libs
         install_pkg "zypper --non-interactive install" libXxf86vm1
+        install_pkg "zypper --non-interactive install" alsa-plugins-pulse
 
         #devel
         install_pkg "zypper --non-interactive install" libX11-devel
         install_pkg "zypper --non-interactive install" glibc-devel
         install_pkg "zypper --non-interactive install" libpng12-devel
+        install_pkg "zypper --non-interactive install" alsa-devel
         ;;
 
     6 ) echo -e "\nInstalling prerequisites with zypper..."
@@ -195,6 +198,7 @@ case "$input" in
 
         # libs
         install_pkg "zypper --non-interactive install" libXxf86vm1
+        install_pkg "zypper --non-interactive install" alsa-plugins-pulse
 
         #devel
         install_pkg "zypper --non-interactive install" libX11-devel
@@ -206,6 +210,8 @@ case "$input" in
         install_pkg "zypper --non-interactive install" gcc-c++-32bit
         install_pkg "zypper --non-interactive install" glibc-devel-32bit
         install_pkg "zypper --non-interactive install" libXxf86vm1-32bit
+        install_pkg "zypper --non-interactive install" alsa-plugins-pulse-32bit
+        install_pkg "zypper --non-interactive install" alsa-devel-32bit
         ;;
 
     0 ) exit 0
@@ -215,9 +221,9 @@ esac
 cd "$curdir"
 
 input=""
-until [ "$input" = "9" ]
+until [ "$input" = "99" ]
 do
-	echo -e "\n\n\n\n\n"
+    echo -e "\n\n\n\n\n"
     echo -e "***********************************************"
     echo -e "* Step 2: get the sources from the repository *"
     echo -e "***********************************************"
@@ -232,8 +238,8 @@ do
     echo -e "\n     3      |    23    | Get ports source (optional, needs contrib)"
     echo -e "\n     4      |    ---   | Get documentation source (optional)"
     echo -e   "     5      |    ---   | Get binaries (wallpapers, logos etc.) (optional)"
-    echo -e "\n9 .. Go to next step"
-    echo -e   "0 .. Exit"
+    echo -e "\n99 .. Go to next step"
+    echo -e   "0  .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
 
@@ -273,11 +279,11 @@ done
 cd "$curdir"
 
 input=""
-until [ "$input" = "9" ]
+until [ "$input" = "99" ]
 do
     cd "$curdir"
 
-	echo -e "\n\n\n\n\n"
+    echo -e "\n\n\n\n\n"
     echo -e "*******************************"
     echo -e "* Step 3: configure toolchain *"
     echo -e "*******************************"
@@ -285,8 +291,8 @@ do
     echo -e   "  2    | x86_64 (64-bit)"
     echo -e   "  3    | m68k   (32-bit)"
     echo -e   "  4    | armhf  (32-bit)"
-    echo -e "\n9 .. Go to next step"
-    echo -e   "0 .. Exit"
+    echo -e "\n99 .. Go to next step"
+    echo -e   "0  .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
 
@@ -296,25 +302,25 @@ do
             mkdir -p "$portsdir"
             mkdir -p aros-i386-toolchain-builddir
             cd aros-i386-toolchain-builddir
-            "../$srcdir/configure" --target=linux-i386 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
+            "../$srcdir/configure" $configopts --target=linux-i386 --with-aros-toolchain-install="$tooldir"-i386
             ;;
         2 ) echo -e "\nConfiguring x86_64 Toolchain...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-x86_64-toolchain-builddir
             cd aros-x86_64-toolchain-builddir
-            "../$srcdir/configure" --target=linux-x86_64 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
+            "../$srcdir/configure" $configopts --target=linux-x86_64 --with-aros-toolchain-install="$tooldir"-x86_64
             ;;
         3 ) echo -e "\nConfiguring m68k Toolchain...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-m68k-toolchain-builddir
             cd aros-m68k-toolchain-builddir
-            "../$srcdir/configure" --target=amiga-m68k --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
+            "../$srcdir/configure" $configopts --target=amiga-m68k --with-aros-toolchain-install="$tooldir"-m68k
             ;;
         4 ) echo -e "\nConfiguring armhf Toolchain...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-armhf-toolchain-builddir
             cd aros-armhf-toolchain-builddir
-            "../$srcdir/configure" --target=raspi-armhf --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
+            "../$srcdir/configure" $configopts --target=raspi-armhf --with-aros-toolchain-install="$tooldir"-armhf
             ;;
 
         0 ) exit 0
@@ -326,11 +332,11 @@ done
 cd "$curdir"
 
 input=""
-until [ "$input" = "9" ]
+until [ "$input" = "99" ]
 do
     cd "$curdir"
 
-	echo -e "\n\n\n\n\n"
+    echo -e "\n\n\n\n\n"
     echo -e "***************************"
     echo -e "* Step 4: build toolchain *"
     echo -e "***************************"
@@ -379,24 +385,25 @@ done
 cd "$curdir"
 
 input=""
-until [ "$input" = "9" ]
+until [ "$input" = "99" ]
 do
     cd "$curdir"
 
-	echo -e "\n\n\n\n\n"
+    echo -e "\n\n\n\n\n"
     echo -e "**************************"
     echo -e "* Step 5: configure AROS *"
     echo -e "**************************"
-    echo -e "\n  1    | linux-i386   (32-bit) debug"
-    echo -e   "  2    | linux-i386   (32-bit)"
-    echo -e   "  3    | linux-x86_64 (64-bit) debug"
-    echo -e   "  4    | linux-x86_64 (64-bit)"
-    echo -e   "  5    | pc-i386      (32-bit)"
-    echo -e   "  6    | pc-x86_64    (64-bit)"
-    echo -e   "  7    | amiga-m68k   (32-bit)"
-    echo -e   "  8    | raspi-armhf  (32-bit)"
-    echo -e "\n9 .. Go to next step"
-    echo -e   "0 .. Exit"
+    echo -e "\n  1    | linux-i386    (32-bit) debug"
+    echo -e   "  2    | linux-i386    (32-bit)"
+    echo -e   "  3    | linux-x86_64  (64-bit) debug"
+    echo -e   "  4    | linux-x86_64  (64-bit)"
+    echo -e   "  5    | pc-i386       (32-bit)"
+    echo -e   "  6    | pc-x86_64     (64-bit)"
+    echo -e   "  7    | pc-x86_64 SMP (64-bit)"
+    echo -e   "  8    | amiga-m68k    (32-bit)"
+    echo -e   "  9    | raspi-armhf   (32-bit)"
+    echo -e "\n99 .. Go to next step"
+    echo -e   "0  .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
 
@@ -406,49 +413,55 @@ do
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386-dbg
             cd aros-linux-i386-dbg
-            "../$srcdir/configure" --target=linux-i386 --enable-debug=all --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=linux-i386 --enable-debug --with-aros-toolchain-install="$tooldir"-i386 --with-aros-toolchain=yes
             ;;
         2 ) echo -e "\nConfiguring linux-i386 V1 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386
             cd aros-linux-i386
-            "../$srcdir/configure" --target=linux-i386 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=linux-i386 --with-aros-toolchain-install="$tooldir"-i386 --with-aros-toolchain=yes
             ;;
         3 ) echo -e "\nConfiguring linux-x86_64 V1 with full debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64-dbg
             cd aros-linux-x86_64-dbg
-            "../$srcdir/configure" --target=linux-x86_64 --enable-debug=all --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=linux-x86_64 --enable-debug --with-aros-toolchain-install="$tooldir"-x86_64 --with-aros-toolchain=yes
             ;;
         4 ) echo -e "\nConfiguring linux-x86_64 V1 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64
             cd aros-linux-x86_64
-            "../$srcdir/configure" --target=linux-x86_64 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=linux-x86_64 --with-aros-toolchain-install="$tooldir"-x86_64 --with-aros-toolchain=yes
             ;;
         5 ) echo -e "\nConfiguring pc-i386 V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-i386
             cd aros-pc-i386
-            "../$srcdir/configure" --target=pc-i386 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=pc-i386 --with-aros-toolchain-install="$tooldir"-i386 --with-aros-toolchain=yes
             ;;
         6 ) echo -e "\nConfiguring pc-x86_64 V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-x86_64
             cd aros-pc-x86_64
-            "../$srcdir/configure" --target=pc-x86_64 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=pc-x86_64 --with-aros-toolchain-install="$tooldir"-x86_64 --with-aros-toolchain=yes
             ;;
-        7 ) echo -e "\nConfiguring amiga-m68k V1...\n"
+        7 ) echo -e "\nConfiguring pc-x86_64 SMP V1...\n"
+            mkdir -p "$portsdir"
+            mkdir -p aros-pc-x86_64-smp
+            cd aros-pc-x86_64-smp
+            "../$srcdir/configure" $configopts --target=pc-x86_64 --enable-target-variant=smp --with-aros-toolchain-install="$tooldir"-x86_64 --with-aros-toolchain=yes
+            ;;
+        8 ) echo -e "\nConfiguring amiga-m68k V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-amiga-m68k
             cd aros-amiga-m68k
-            "../$srcdir/configure" --target=amiga-m68k --with-serial-debug=yes --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=amiga-m68k --with-serial-debug=yes --with-aros-toolchain-install="$tooldir"-m68k --with-aros-toolchain=yes
             ;;
-        8 ) echo -e "\nConfiguring raspi-armhf V1...\n"
+        9 ) echo -e "\nConfiguring raspi-armhf V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-raspi-armhf
             cd aros-raspi-armhf
-            "../$srcdir/configure" --target=raspi-armhf --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir" --with-aros-toolchain=yes
+            "../$srcdir/configure" $configopts --target=raspi-armhf --with-aros-toolchain-install="$tooldir"-armhf --with-aros-toolchain=yes
             ;;
 
         0 ) exit 0
@@ -460,7 +473,7 @@ done
 cd "$curdir"
 
 input=""
-until [ "$input" = "9" ]
+until [ "$input" = "99" ]
 do
     cd "$curdir"
 
@@ -469,16 +482,17 @@ do
     echo -e "* Step 6: build *"
     echo -e "*****************"
     echo -e "\nYou can only build what you've already configured."
-    echo -e "\n   1   | linux-i386   (32-bit) debug"
-    echo -e   "   2   | linux-i386   (32-bit)"
-    echo -e   "   3   | linux-x86_64 (64-bit) debug"
-    echo -e   "   4   | linux-x86_64 (64-bit)"
-    echo -e   "   5   | pc-i386      (32-bit)"
-    echo -e   "   6   | pc-x86_64    (64-bit)"
-    echo -e   "   7   | amiga-m68k   (32-bit)"
-    echo -e   "   8   | raspi-armhf  (32-bit)"
-    echo -e "\n9 .. Go to next step"
-    echo -e   "0 .. Exit"
+    echo -e "\n   1   | linux-i386    (32-bit) debug"
+    echo -e   "   2   | linux-i386    (32-bit)"
+    echo -e   "   3   | linux-x86_64  (64-bit) debug"
+    echo -e   "   4   | linux-x86_64  (64-bit)"
+    echo -e   "   5   | pc-i386       (32-bit)"
+    echo -e   "   6   | pc-x86_64     (64-bit)"
+    echo -e   "   7   | pc-x86_64 SMP (64-bit)"
+    echo -e   "   8   | amiga-m68k    (32-bit)"
+    echo -e   "   9   | raspi-armhf   (32-bit)"
+    echo -e "\n99 .. Go to next step"
+    echo -e   "0  .. Exit"
     echo -e "\nEnter number and press <Enter>:"
 
     read input
@@ -522,7 +536,7 @@ do
             make $makeopts ports
             make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-i386/bin/<target>/AROS"
+            echo -e "in the directory aros-pc-i386/distfiles"
             ;;
         6 ) echo -e "\nBuilding pc-x86_64 V1...\n"
             cd aros-pc-x86_64
@@ -531,9 +545,18 @@ do
             make $makeopts ports
             make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-x86_64/bin/<target>/AROS"
+            echo -e "in the directory aros-pc-x86_64/distfiles"
             ;;
-        7 ) echo -e "\nBuilding amiga-m68k V1...\n"
+        7 ) echo -e "\nBuilding pc-x86_64 SMP V1...\n"
+            cd aros-pc-x86_64-smp
+            make $makeopts
+            make $makeopts contrib
+            make $makeopts ports
+            make $makeopts distfiles
+            echo -e "\nIf everything went well AROS will be available"
+            echo -e "in the directory aros-pc-x86_64-smp/distfiles"
+            ;;
+        8 ) echo -e "\nBuilding amiga-m68k V1...\n"
             cd aros-amiga-m68k
             make $makeopts
             make $makeopts contrib
@@ -542,7 +565,7 @@ do
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-amiga-m68k/distfiles"
             ;;
-        8 ) echo -e "\nBuilding raspi-armhf V1...\n"
+        9 ) echo -e "\nBuilding raspi-armhf V1...\n"
             cd aros-raspi-armhf
             make $makeopts
             make $makeopts contrib
