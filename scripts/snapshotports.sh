@@ -29,7 +29,26 @@ copy()
         echo "Copying '$from' to '$to'"
         mkdir -p "$to"
         cp -r "$from" "$to"
-        cp -r "$from.info" "$to"
+        if [ -f "$from.info" ] ; then
+            cp "$from.info" "$to"
+        fi
+    else
+        echo "'$from' doesn't exist"
+    fi
+}
+
+copyenv()
+{
+    local target="$1"   # e.g. "pc-i386"
+    local reldir="Prefs/Env-Archive/SYS/Packages"
+    local variable="$2" # e.g. "Lua"
+    local from="$root/build/$target/bin/$target/AROS/$reldir/$variable"
+    local to="$root/bin/AROS-$date-$target-ports/$reldir"
+
+    if [ -f "$from" ] ; then
+        echo "Copying '$from' to '$to'"
+        mkdir -p "$to"
+        cp "$from" "$to"
     else
         echo "'$from' doesn't exist"
     fi
@@ -42,23 +61,21 @@ build()
     local arcname="AROS-$date-$target-ports"
     local bindir="$root/bin/$arcname"
 
-    echo "Building $target in $builddir"
-    rm "$builddir" -rf
-    mkdir "$builddir" -p
-    cd "$builddir"
-    "$srcdir/configure" --target="$target" --with-portssources="$portsdir"
-    make -s -j3
-    make -s -j3 ports
-
-    # TODO: copy package variables
+    #echo "Building $target in $builddir"
+    #rm "$builddir" -rf
+    #mkdir "$builddir" -p
+    #cd "$builddir"
+    #"$srcdir/configure" --target="$target" --with-portssources="$portsdir" --with-binutils-version=2.25 --with-gcc-version=6.3.0
+    #make -s -j4
+    #make -s -j4 ports
 
     echo "Copying the binaries"
     mkdir "$bindir" -p
 
-    copy "$target" "Extras/Developer"             "BWBasic"
-    copy "$target" "Extras/Developer"             "CBMBasic"
-    copy "$target" "Extras/Developer"             "CFlow"
-    copy "$target" "Extras/Developer"             "Ctags"
+    copy "$target" "Extras/Developer"               "BWBasic"
+    copy "$target" "Extras/Developer"               "CBMBasic"
+    copy "$target" "Extras/Developer"               "CFlow"
+    copy "$target" "Extras/Developer"               "Ctags"
     copy "$target" "Extras/Emu"                     "DOSBox"
     copy "$target" "Extras/Emu"                     "Scummvm"
     copy "$target" "Extras/Emu"                     "Vbam"
@@ -70,6 +87,7 @@ build()
     copy "$target" "Extras/Games/Action"            "CircusLinux"
     copy "$target" "Extras/Games/Action"            "Defendguin"
     copy "$target" "Extras/Games/Puzzle"            "GemDropX"
+    copy "$target" "Extras/Games/Action"            "GnuJump"
     copy "$target" "Extras/Games/Action"            "GnuRobbo"
     copy "$target" "Extras/Games/Platform"          "Hurrican"
     copy "$target" "Extras/Games/Puzzle"            "InterLogic"
@@ -89,9 +107,11 @@ build()
     copy "$target" "Extras/Games/Action"            "Xpired"
     copy "$target" "Extras/MultiMedia/Audio"        "Abcm2ps"
     copy "$target" "Extras/MultiMedia/Audio"        "MilkyTracker"
+    copy "$target" "Extras/MultiMedia/Audio"        "Timidity"
     copy "$target" "Extras/MultiMedia/Gfx"          "GrafX2"
     copy "$target" "Extras/MultiMedia/Gfx"          "Lodepaint"
     copy "$target" "Extras/MultiMedia/Gfx"          "Potrace"
+    copy "$target" "Extras/MultiMedia/Gfx"          "ZunePaint"
     copy "$target" "Extras/MultiMedia/Gfx"          "ZuneView"
     copy "$target" "Extras/MultiMedia/Video"        "ScreenRecorder"
     copy "$target" "Extras/Office"                  "MUIbase"
@@ -105,6 +125,11 @@ build()
     copy "$target" "Extras/Utilities/Text"          "Gocr"
     copy "$target" "Extras/Utilities/Text"          "PolyglotMan"
     copy "$target" "Extras/Utilities/Text"          "Vim"
+
+    # copy package variables
+    copyenv "$target" "Freepats"
+    copyenv "$target" "MUIbase"
+    copyenv "$target" "Vim"
 
     echo "Creating the archive $arcdir/$arcname.tar.bz2"
     mkdir -p "$arcdir"
@@ -131,8 +156,8 @@ if [ $# -eq 1 ] && [ "$1" == "-b" ] ; then
     svn up "$srcdir" "$srcdir/contrib" "$srcdir/ports"
 
     build pc-i386
-    #build pc-x86_64
-    #build amiga-m68k
+    build pc-x86_64
+    build amiga-m68k
     #build raspi-armhf
     exit 0
 fi
