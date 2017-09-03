@@ -709,6 +709,8 @@ aros_warnflags_error
 aros_cflags_no_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_noinlinesmallfunctions
+aros_cflags_inlinesmallfunctions
 aros_cflags_nostrictaliasing
 aros_cflags_strictaliasing
 aros_cflags_unroll_loops
@@ -2730,6 +2732,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -floop-strip-mine
 #  -fpeel-loops
 #  -fstrict-aliasing
+#  -finline-small-functions
 #  -funroll-loops
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
@@ -3045,6 +3048,33 @@ $as_echo "$aros_strict_aliasing" >&6; }
 if test "x-$aros_strict_aliasing" = "x-yes" ; then
     aros_cflags_strictaliasing=-fstrict-aliasing
     aros_cflags_nostrictaliasing=-fno-strict-aliasing
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -finline-small-functions" >&5
+$as_echo_n "checking whether ${CC} accepts -finline-small-functions... " >&6; }
+CFLAGS=-finline-small-functions
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_inline_small_functions="yes"
+else
+  aros_inline_small_functions="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_inline_small_functions" >&5
+$as_echo "$aros_inline_small_functions" >&6; }
+if test "x-$aros_inline_small_functions" = "x-yes" ; then
+    aros_cflags_inlinesmallfunctions=-finline-small-functions
+    aros_cflags_noinlinesmallfunctions=-fno-inline-small-functions
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
@@ -4826,6 +4856,9 @@ fi
 #
 # export the feature flags...
 #
+
+
+
 
 
 

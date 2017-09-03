@@ -45,6 +45,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -floop-strip-mine
 #  -fpeel-loops
 #  -fstrict-aliasing
+#  -finline-small-functions
 #  -funroll-loops
 
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
@@ -143,6 +144,15 @@ AC_MSG_RESULT($aros_strict_aliasing)
 if test "x-$aros_strict_aliasing" = "x-yes" ; then
     aros_cflags_strictaliasing=-fstrict-aliasing
     aros_cflags_nostrictaliasing=-fno-strict-aliasing
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -finline-small-functions])
+CFLAGS=-finline-small-functions
+AC_TRY_COMPILE(,, aros_inline_small_functions="yes", aros_inline_small_functions="no")
+AC_MSG_RESULT($aros_inline_small_functions)
+if test "x-$aros_inline_small_functions" = "x-yes" ; then
+    aros_cflags_inlinesmallfunctions=-finline-small-functions
+    aros_cflags_noinlinesmallfunctions=-fno-inline-small-functions
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
@@ -805,6 +815,9 @@ AC_SUBST(aros_cflags_unroll_loops)
 
 AC_SUBST(aros_cflags_strictaliasing)
 AC_SUBST(aros_cflags_nostrictaliasing)
+
+AC_SUBST(aros_cflags_inlinesmallfunctions)
+AC_SUBST(aros_cflags_noinlinesmallfunctions)
 
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
