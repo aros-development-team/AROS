@@ -238,6 +238,12 @@ int main(void)
     if (!args.nomodes) {
       printf("*********** Display modes **********\n\n");
       for (;;) {
+        if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+        {
+            printf("\n*** break\n");
+            break;
+        }
+              
 	ULONG len;
 
         modeid = NextDisplayInfo(modeid);
