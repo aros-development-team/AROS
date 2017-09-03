@@ -61,13 +61,13 @@ build()
     local arcname="AROS-$date-$target-ports"
     local bindir="$root/bin/$arcname"
 
-    #echo "Building $target in $builddir"
-    #rm "$builddir" -rf
-    #mkdir "$builddir" -p
-    #cd "$builddir"
-    #"$srcdir/configure" --target="$target" --with-portssources="$portsdir" --with-binutils-version=2.25 --with-gcc-version=6.3.0
-    #make -s -j4
-    #make -s -j4 ports
+    echo "Building $target in $builddir"
+    rm "$builddir" -rf
+    mkdir "$builddir" -p
+    cd "$builddir"
+    "$srcdir/configure" --target="$target" --with-portssources="$portsdir" --with-binutils-version=2.25 --with-gcc-version=6.3.0
+    make -s -j4
+    make -s -j4 ports
 
     echo "Copying the binaries"
     mkdir "$bindir" -p
