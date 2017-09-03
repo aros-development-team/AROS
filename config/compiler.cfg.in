@@ -31,6 +31,10 @@ CFLAGS_STRICT_ALIASING                  := @aros_cflags_strictaliasing@
 CFLAGS_NO_STRICT_ALIASING               := @aros_cflags_nostrictaliasing@
 
 #
+CFLAGS_INLINE_SMALL_FUNCTIONS           := @aros_cflags_inlinesmallfunctions@
+CFLAGS_NO_INLINE_SMALL_FUNCTIONS        := @aros_cflags_noinlinesmallfunctions@
+
+#
 # -iquote support
 #
 CFLAGS_IQUOTE                           := @aros_cflags_iquote@
