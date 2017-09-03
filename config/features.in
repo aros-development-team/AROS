@@ -793,7 +793,7 @@ CFLAGS=-Wempty-body
 AC_TRY_COMPILE(,, aros_empty_body="yes", aros_empty_body="no")
 AC_MSG_RESULT($aros_empty_body)
 if test "x-$aros_empty_body" = "x-yes" ; then
-    aros_warnflags_empty_body=-Wtautological-compare
+    aros_warnflags_empty_body=-Wempty-body
     aros_nowarnflags_empty_body=-Wno-empty-body
 fi
 
