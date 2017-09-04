@@ -75,35 +75,35 @@ struct IntuitionBase *IntuitionBase = NULL;
 ** and copy the data to that block.  See the Exec chapter on
 ** Memory Allocation for more information on AllocMem().
 */
-UWORD __chip myImageData[] =
+UBYTE __chip myImageData[] =
     {
     /* first bitplane of data,
     ** open rectangle.
     */
-    0xFFFF, 0xFF00,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xFFFF, 0xFF00,
+    0xFF,0xFF, 0xFF,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xFF,0xFF, 0xFF,0x00,
 
     /* second bitplane of data,
     ** filled rectangle to appear within open rectangle.
     */
-    0x0000, 0x0000,
-    0x0000, 0x0000,
-    0x0000, 0x0000,
-    0x00FF, 0x0000,
-    0x00FF, 0x0000,
-    0x00FF, 0x0000,
-    0x00FF, 0x0000,
-    0x0000, 0x0000,
-    0x0000, 0x0000,
-    0x0000, 0x0000,
+    0x00,0x00, 0x00,0x00,
+    0x00,0x00, 0x00,0x00,
+    0x00,0x00, 0x00,0x00,
+    0x00,0xFF, 0x00,0x00,
+    0x00,0xFF, 0x00,0x00,
+    0x00,0xFF, 0x00,0x00,
+    0x00,0xFF, 0x00,0x00,
+    0x00,0x00, 0x00,0x00,
+    0x00,0x00, 0x00,0x00,
+    0x00,0x00, 0x00,0x00,
     };
 
 /* used to get the "new look" on a custom screen */
@@ -121,6 +121,8 @@ int main(int argc, char *argv[])
 struct Screen *scr;
 struct Window *win;
 struct Image myImage;
+BOOL quitme = FALSE;
+struct IntuiMessage *imsg;
 
 IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
 if (IntuitionBase != NULL)
@@ -134,7 +136,11 @@ if (IntuitionBase != NULL)
 	if (NULL != (win = OpenWindowTags(NULL,
 			    WA_RMBTrap,      TRUE,
 			    WA_CustomScreen, (IPTR) scr,
-			    WA_IDCMP,	     IDCMP_RAWKEY,
+			    WA_IDCMP,	     IDCMP_RAWKEY|IDCMP_CLOSEWINDOW,
+                            WA_Activate,     TRUE,
+                            WA_CloseGadget,  TRUE,
+                            WA_Width,        200,
+                            WA_Height,       200,
 			    TAG_END)))
 #else
 	if (NULL != (win = OpenWindowTags(NULL,
@@ -148,23 +154,23 @@ if (IntuitionBase != NULL)
 	    myImage.Width	= MYIMAGE_WIDTH;
 	    myImage.Height	= MYIMAGE_HEIGHT;
 	    myImage.Depth	= MYIMAGE_DEPTH;
-	    myImage.ImageData	= myImageData;
+	    myImage.ImageData	= (UWORD *)myImageData;
 	    myImage.PlanePick	= 0x3;		    /* use first two bitplanes */
 	    myImage.PlaneOnOff	= 0x0;		    /* clear all unused planes	*/
 	    myImage.NextImage	= NULL;
 
 	    /* Draw the image into the first two bitplanes */
-	    DrawImage(win->RPort,&myImage,10,10);
+	    DrawImage(win->RPort,&myImage,20,50);
 
 	    /* Draw the same image at a new location */
-	    DrawImage(win->RPort,&myImage,100,10);
+	    DrawImage(win->RPort,&myImage,100,50);
 
 	    /* Change the image to use the second and fourth bitplanes,
 	    ** PlanePick is 1010 binary or 0xA,
 	    ** and draw it again at a different location
 	    */
 	    myImage.PlanePick = 0xA;
-	    DrawImage(win->RPort,&myImage,10,50);
+	    DrawImage(win->RPort,&myImage,20,100);
 
 	    /* Now set all the bits in the first bitplane with PlaneOnOff.
 	    ** This will make all the bits set in the second bitplane
@@ -179,8 +185,30 @@ if (IntuitionBase != NULL)
 	    DrawImage(win->RPort,&myImage,100,50);
 
 #ifdef __AROS__
-	    /* Wait for a keypress */
-	    Wait (1L << win->UserPort->mp_SigBit);
+            while (!quitme)
+            {
+                WaitPort(win->UserPort);
+
+                while ((imsg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+                {
+                    switch (imsg->Class)
+                    {
+                        case IDCMP_CLOSEWINDOW:
+                            quitme = TRUE;
+                            break;
+                        #if 0
+                        case IDCMP_RAWKEY: // bug or feature? The program immediately exits
+                                           // when querying for RAWKEY
+                            printf("code %d\n", imsg->Code);
+                            quitme = TRUE;
+                            break;
+                        #endif
+                    }
+
+                    ReplyMsg((struct Message *)imsg);
+                }
+            }
+
 #else
 	    /* Wait a bit, then quit.
 	    ** In a real application, this would be an event loop, like the
