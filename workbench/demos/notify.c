@@ -19,6 +19,9 @@
 
 int main(int argc, char* argv[])
 {
+    printf("Program waits till a file with the name 'Olle' is"
+        "created in RAM:\n");
+    
     struct NotifyRequest *nr = AllocVec(sizeof(struct NotifyRequest),
 					MEMF_CLEAR);
     BPTR lock;
