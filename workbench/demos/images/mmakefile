@@ -9,7 +9,7 @@ IMAGEFILES  := $(foreach f,$(IMAGES),$(TOP)/$(CURDIR)/$(f)0.h $(TOP)/$(CURDIR)/$
 demos-images-setup : $(IMAGEFILES)
 	@$(NOP)
 
-$(TOP)/$(CURDIR)/%.h : %.dat datfilt.awk
+$(TOP)/$(CURDIR)/%.h : $(SRCDIR)/$(CURDIR)/%.dat $(SRCDIR)/$(CURDIR)/datfilt.awk
 	$(MKDIR) $(TOP)/$(CURDIR)
 	cd $(TOP)/$(CURDIR); ${AWK} -f $(SRCDIR)/$(CURDIR)/datfilt.awk $<
 
