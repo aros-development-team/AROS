@@ -139,10 +139,10 @@ if (IntuitionBase)
 	shadowBorder.XY 	= shineBorder.XY	= myBorderData;
 
 	/* Draw the border at 10,10 */
-	DrawBorder(win->RPort,&shadowBorder,10,10);
+	DrawBorder(win->RPort,&shadowBorder,20,50);
 
 	/* Draw the border again at 100,10 */
-	DrawBorder(win->RPort,&shadowBorder,100,10);
+	DrawBorder(win->RPort,&shadowBorder,100,50);
 
 #ifdef __AROS__
 	Wait (1L << win->UserPort->mp_SigBit);

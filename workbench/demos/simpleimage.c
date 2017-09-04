@@ -71,18 +71,18 @@ struct IntuitionBase *IntuitionBase = NULL;
 ** and then copy the data to that block.  See the Exec chapter on Memory
 ** Allocation for more information on AllocMem().
 */
-UWORD __chip myImageData[] =
+UBYTE __chip myImageData[] =
     {
-    0xFFFF, 0xFF00,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xC000, 0x0300,
-    0xFFFF, 0xFF00,
+    0xFF,0xFF, 0xFF,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xC0,0x00, 0x03,0x00,
+    0xFF,0xFF, 0xFF,0x00
     };
 
 /*
@@ -119,16 +119,16 @@ if (IntuitionBase != NULL)
 	myImage.Width	    = MYIMAGE_WIDTH;
 	myImage.Height	    = MYIMAGE_HEIGHT;
 	myImage.Depth	    = MYIMAGE_DEPTH;
-	myImage.ImageData   = myImageData;
+	myImage.ImageData   = (UWORD *)myImageData;
 	myImage.PlanePick   = 0x1;		/* use first bit-plane	   */
 	myImage.PlaneOnOff  = 0x0;		/* clear all unused planes */
 	myImage.NextImage   = NULL;
 
 	/* Draw the 1 bit-plane image into the first bit-plane (color 1) */
-	DrawImage(win->RPort,&myImage,10,10);
+	DrawImage(win->RPort,&myImage,20,50);
 
 	/* Draw the same image at a new location */
-	DrawImage(win->RPort,&myImage,100,10);
+	DrawImage(win->RPort,&myImage,100,50);
 
 #ifdef __AROS__
 	/* Wait for a keypress */
