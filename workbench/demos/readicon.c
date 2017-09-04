@@ -236,8 +236,11 @@ int main (int argc, char ** argv)
 	FreeArgs (rda);
     }
     else
+    {
+        PrintFault(IoErr(), argv[0]);
 	rc = 10;
-
+    }
+    
     return rc;
 } /* main */
 
