@@ -207,10 +207,10 @@ struct Gadget Gadg2 = {
 
 struct NewWindow NewWindowStructure = {
    351,39,
-   220,70,
+   250,120,
    0,1,
    GADGETDOWN+GADGETUP+CLOSEWINDOW,
-   WINDOWDRAG+WINDOWCLOSE+ACTIVATE,
+   WINDOWDRAG+WINDOWCLOSE+ACTIVATE+GIMMEZEROZERO,
    &Gadg2,
    NULL,
    (UBYTE *)"Mutual Exclude Test",
