@@ -27,6 +27,9 @@ int main(int argc, char **argv)
     maxw = strtol(argv[1], NULL, 0);
     maxh = strtol(argv[2], NULL, 0);
 
+    if (maxw < 20) maxw = 20;
+    if (maxh < 20) maxh = 20;
+    
     scalebox = PACK_ICON_SCALEBOX(maxw, maxh);
 
     IconControl(NULL, ICONCTRLA_SetGlobalScaleBox, scalebox, TAG_END);
