@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     
     D(bug("Opening CON:\n"));
     
-    fh = Open("CON:", MODE_NEWFILE);
+    fh = Open("CON:5/5/200/200/Test Console/CLOSE/WAIT", MODE_NEWFILE);
     if (fh)
     {
     	LONG ret;
