@@ -65,8 +65,8 @@ void Refresh (struct RastPort * rp)
 
     SetDrPt (rp, 0xF0F0);
     len = 150;
-    x = 340;
-    y = 150;
+    x = 320;
+    y = 170;
 
     xy[0] = x; xy[1] = y+len;
     xy[2] = x+len; xy[3] = y+len;
@@ -140,8 +140,8 @@ void Refresh (struct RastPort * rp)
     Move (rp, 300, 100);
     Text (rp, "Hello World.", 12);
 
-    Move (rp, 20, 350);
-    Text (rp, "Press \"Complement\" to flip PropGadgets", 39);
+    Move (rp, 20, 360);
+    Text (rp, "Press \"Complement\" to flip PropGadgets", 38);
 
     tend = 10;
     t = 0;
@@ -596,6 +596,7 @@ int main (int argc, char ** argv)
 			    | IDCMP_GADGETUP
 			    | IDCMP_CLOSEWINDOW
 	, WA_SimpleRefresh, TRUE
+	, WA_GimmeZeroZero, TRUE
 	, WA_Gadgets,	    (IPTR)&ExitGadget
 	, TAG_END
     );
