@@ -598,6 +598,7 @@ activatecache (struct Project *prj)
     progress_reset (stdout);
     printf ("[MMAKE] Scanning dirs...\n");
     reread = updatemflist (cache, cache->topdir, &regeneratefiles);
+    progress_reset (stdout);
 
     debug(printf("MMAKE:cache.c->activatecache: Updated MF list.\n"));
 
