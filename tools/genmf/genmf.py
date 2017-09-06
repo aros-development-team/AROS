@@ -330,6 +330,7 @@ def read_templates(filename):
 argv = []
 i = 0
 listfile = None
+progcount = 0
 while i < len(sys.argv):
     if sys.argv[i] == "--listfile":
         listfile = sys.argv[i+1]
@@ -381,14 +382,19 @@ else:
     infile = open(listfile, "r")
     filelist = infile.readlines()
     infile.close()
+
+    sys.stderr.write('Regenerating %d files\n' % (len(filelist)))
     
     for fileno in range(len(filelist)):
         files = filelist[fileno].split()
         if len(files) <> 2:
             sys.exit('%s:%d: Syntax error: %s' % (listfile, fileno+1, filelist[fileno]))
 
-        sys.stderr.write('Regenerating file %4d of %4d\r' % (fileno+1, len(filelist)))
-        sys.stderr.flush()
+        progcount = progcount + 1
+        if progcount == 20:
+            progcount = 0
+            sys.stderr.write('.')
+            sys.stderr.flush()
         
         infile = open(files[0], "r")
         lines = infile.readlines()
