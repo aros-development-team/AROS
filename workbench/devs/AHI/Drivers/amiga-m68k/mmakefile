@@ -1,0 +1,24 @@
+# Makefile to copy amiga-m68k drivers for AHI.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-AHI : workbench-devs-AHI-drivers-$(AROS_TARGET_ARCH)-$(CPU)
+
+#MM workbench-devs-AHI-drivers-amiga-m68k : workbench-devs-AHI-drivers-amiga-m68k-setup
+
+#MM
+workbench-devs-AHI-drivers-amiga-m68k-setup :
+	$(MKDIR) -p $(AROS_DEVS)/AudioModes
+	$(MKDIR) -p $(AROS_DEVS)/AHI
+
+#MM
+workbench-devs-AHI-drivers-amiga-m68k : \
+	$(AROS_DEVS)/AudioModes/PAULA \
+	$(AROS_DEVS)/AHI/paula.audio \
+
+$(AROS_DEVS)/AudioModes/PAULA : $(SRCDIR)/$(CURDIR)/PAULA
+	$(CP) $^ $@
+
+$(AROS_DEVS)/AHI/paula.audio : $(SRCDIR)/$(CURDIR)/paula.audio.000
+	$(CP) $^ $@
