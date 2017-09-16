@@ -4,6 +4,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := \
+ aslhook \
  busyloop \
  camdtree \
  cctest \
