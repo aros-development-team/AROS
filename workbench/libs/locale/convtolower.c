@@ -31,7 +31,8 @@
         Otherwise, the original character will be returned.
 
     INPUTS
-        locale      - The Locale to use for this conversion.
+        locale      - The Locale to use for this conversion or NULL for
+                      the system default locale.
         character   - The character to convert to lower case.
 
     RESULT
@@ -54,6 +55,13 @@
     AROS_LIBFUNC_INIT
 
     ULONG retval;
+    struct Locale *def_locale = NULL;
+
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = (struct Locale *)locale;
+    }
 
     DEBUG_CONVTOLOWER(dprintf("ConvToLower: locale 0x%lx char 0x%lx\n",
             locale, character));
@@ -72,7 +80,9 @@
 
     DEBUG_CONVTOLOWER(dprintf("ConvToLower: retval 0x%lx\n", retval));
 
-    return (retval);
+    CloseLocale(def_locale);
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
 }

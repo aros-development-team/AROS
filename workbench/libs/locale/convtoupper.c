@@ -32,7 +32,8 @@
         Otherwise it will return the original character.
 
     INPUTS
-        locale      - The Locale to use for this conversion.
+        locale      - The Locale to use for this conversion or NULL for
+                      the system default locale.
         character   - The character to convert.
 
     RESULT
@@ -56,6 +57,13 @@
     AROS_LIBFUNC_INIT
 
     ULONG retval;
+    struct Locale *def_locale;
+
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = (struct Locale *)locale;
+    }
 
     DEBUG_CONVTOUPPER(dprintf("ConvToUpper: locale 0x%lx char 0x%lx\n",
             locale, character));
@@ -74,7 +82,9 @@
 
     DEBUG_CONVTOUPPER(dprintf("ConvToUpper: retval 0x%lx\n", retval));
 
-    return (retval);
+    CloseLocale(def_locale);
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
 }

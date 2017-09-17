@@ -39,7 +39,8 @@
         to, or greater than the string pointed to string2.
 
     INPUTS
-        locale      -   Which locale to use for this comparison.
+        locale      -   Which locale to use for this comparison or
+                        NULL for the system default locale.
         string1     -   NULL terminated string.
         string2     -   NULL terminated string.
         length      -   Maximum length of string to compare, or -1 to
@@ -91,6 +92,13 @@
     AROS_LIBFUNC_INIT
 
     LONG result;
+    struct Locale *def_locale = NULL;
+
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = (struct Locale *)locale;
+    }
 
     DEBUG_STRNCMP(dprintf
         ("StrnCmp: locale 0x%lx <%s> <%s> len %ld type 0x%lx\n", locale,
@@ -111,6 +119,8 @@
         AROS_UFCA(CONST_STRPTR, string2, A2),
         AROS_UFCA(ULONG, length, D0), AROS_UFCA(ULONG, type, D1));
 #endif
+
+    CloseLocale(def_locale);
 
     DEBUG_STRNCMP(dprintf("StrnCmp: retval %ld\n", result));
 
