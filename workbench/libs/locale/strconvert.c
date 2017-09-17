@@ -40,7 +40,8 @@
         function on the two strings.
 
     INPUTS
-        locale      -   the Locale to use for the transformation.
+        locale      -   the Locale to use for the transformation or
+                        NULL for the system default locale.
         string      -   the string to be transformed
         buffer      -   the destination for the transformed string.
                         This buffer may need to be larger than the
@@ -70,6 +71,13 @@
     AROS_LIBFUNC_INIT
 
     LONG result;
+    struct Locale *def_locale = NULL;
+
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = (struct Locale *)locale;
+    }
 
     DEBUG_STRCONVERT(dprintf
         ("StrConvert: locale 0x%lx <%s> buffer 0x%lx size %ld type 0x%lx\n",
@@ -92,6 +100,8 @@
 #endif
 
     DEBUG_STRCONVERT(dprintf("StrConvert: retval %lu\n", result));
+
+    CloseLocale(def_locale);
 
     return result;
 

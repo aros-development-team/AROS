@@ -43,7 +43,8 @@
         IsXDigit() - is this a hexadecimal digit
 
     INPUTS
-        locale      - The Locale to use for this function.
+        locale      - The Locale to use for this function or NULL
+                      for the system default locale.
         character   - the character to test
 
     RESULT
@@ -52,8 +53,6 @@
             FALSE - otherwise
 
     NOTES
-        The Locale MUST be supplied.
-
         These functions require a 32-bit character to support future
         multi-byte character sets.
 
@@ -75,15 +74,27 @@ AROS_LH2(ULONG, IsAlNum,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[4],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[4],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[4],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[4],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsAlNum */
@@ -95,15 +106,27 @@ AROS_LH2(ULONG, IsAlpha,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[5],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[5],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[5],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[5],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsAlpha */
@@ -115,15 +138,27 @@ AROS_LH2(ULONG, IsCntrl,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[6],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[6],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[6],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[6],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsCntrl */
@@ -135,15 +170,27 @@ AROS_LH2(ULONG, IsDigit,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[7],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[7],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[7],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[7],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsDigit */
@@ -155,15 +202,27 @@ AROS_LH2(ULONG, IsGraph,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[8],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[8],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[8],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[8],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsGraph */
@@ -175,15 +234,27 @@ AROS_LH2(ULONG, IsLower,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[9],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[9],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[9],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[9],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsLower */
@@ -195,15 +266,27 @@ AROS_LH2(ULONG, IsPrint,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[10],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[10],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[10],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[10],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsPrint */
@@ -215,15 +298,27 @@ AROS_LH2(ULONG, IsPunct,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[11],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[11],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[11],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[11],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsPunct */
@@ -235,15 +330,27 @@ AROS_LH2(ULONG, IsSpace,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[12],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[12],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[12],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[12],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsSpace */
@@ -255,15 +362,27 @@ AROS_LH2(ULONG, IsUpper,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[13],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[13],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[13],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[13],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsUpper */
@@ -275,15 +394,27 @@ AROS_LH2(ULONG, IsXDigit,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG retval;
+    struct Locale *def_locale = NULL;
+    
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = locale;
+    }
+
 #ifdef AROS_CALL1
-    return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[14],
+    retval = AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[14],
         AROS_LCA(ULONG,    character, D0),
         struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[14],
+    retval = AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[14],
         AROS_UFCA(ULONG,    character, D0),
         AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif
+
+    CloseLocale(def_locale);
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* IsXDigit */

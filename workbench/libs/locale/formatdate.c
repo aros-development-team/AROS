@@ -48,7 +48,8 @@ static const ULONG dayspermonth[13] =
 
     INPUTS
 
-    locale        --  the locale to use when formatting the string
+    locale        --  the locale to use when formatting the string or NULL
+                      for the system default locale.
     formatString  --  the formatting template string; this is much like the
                       printf() formatting style, i.e. a % followed by a
                       formatting command. The following commands exist:
@@ -118,13 +119,23 @@ static const ULONG dayspermonth[13] =
 
     struct ClockData cData;
     ULONG week, days, tmp;
+    struct Locale *def_locale = NULL;
 
-    if ( /* locale == NULL || */ hook == NULL)
+    if (hook == NULL)
         return;
+
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        if (locale == NULL)
+            return;
+        def_locale = (struct Locale *)locale;
+    }
 
     if (formatString == NULL)
     {
         _WriteChar(0, hook, locale);
+        CloseLocale(def_locale);
         return;
     }
 
@@ -337,6 +348,8 @@ static const ULONG dayspermonth[13] =
     }
 
     _WriteChar(0, hook, locale);        /* Write null terminator */
+
+    CloseLocale(def_locale);
 
     AROS_LIBFUNC_EXIT
 }

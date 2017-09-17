@@ -15,13 +15,13 @@ void dispose_catalog(struct IntCatalog * cat,
 {
     if (cat->ic_StringChunk)
     {
-            FreeVec(cat->ic_StringChunk);
+        FreeVec(cat->ic_StringChunk);
         cat->ic_StringChunk = NULL;
     }
     
     if (cat->ic_CatStrings)
     {
-            FreeVec(cat->ic_CatStrings);
+        FreeVec(cat->ic_CatStrings);
         cat->ic_CatStrings = NULL;
     }
     

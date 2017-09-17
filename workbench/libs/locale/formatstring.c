@@ -613,19 +613,31 @@ APTR InternalFormatString(const struct Locale * locale,
     AROS_LIBFUNC_INIT
     ULONG *indices;
     ULONG indexSize = 0;
+    APTR retval;
+    struct Locale *def_locale = NULL;
 #if defined(__arm__) || defined(__x86_64__)
     va_list nullarg = {};
 #else
     va_list nullarg = 0;
 #endif
 
+    if (locale == NULL)
+    {
+        locale = OpenLocale(NULL);
+        def_locale = (struct Locale *)locale;
+    }
+
     /* Generate the indexes for the provided datastream */
     GetDataStreamFromFormat(fmtTemplate, nullarg, NULL, NULL, NULL, &indexSize);
     indices = alloca(indexSize);
     GetDataStreamFromFormat(fmtTemplate, nullarg, NULL, NULL, indices, &indexSize);
 
-    return InternalFormatString(locale, fmtTemplate,
+    retval = InternalFormatString(locale, fmtTemplate,
                                 dataStream, indices, putCharFunc);
+
+    CloseLocale(def_locale);
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
 }
