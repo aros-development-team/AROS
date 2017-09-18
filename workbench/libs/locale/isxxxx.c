@@ -68,7 +68,7 @@
 
 
 AROS_LH2(ULONG, IsAlNum,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 14, Locale)
 {
@@ -80,7 +80,7 @@ AROS_LH2(ULONG, IsAlNum,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -100,7 +100,7 @@ AROS_LH2(ULONG, IsAlNum,
 } /* IsAlNum */
 
 AROS_LH2(ULONG, IsAlpha,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 15, Locale)
 {
@@ -112,7 +112,7 @@ AROS_LH2(ULONG, IsAlpha,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -132,7 +132,7 @@ AROS_LH2(ULONG, IsAlpha,
 } /* IsAlpha */
 
 AROS_LH2(ULONG, IsCntrl,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 16, Locale)
 {
@@ -144,7 +144,7 @@ AROS_LH2(ULONG, IsCntrl,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -164,7 +164,7 @@ AROS_LH2(ULONG, IsCntrl,
 } /* IsCntrl */
 
 AROS_LH2(ULONG, IsDigit,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 17, Locale)
 {
@@ -176,7 +176,7 @@ AROS_LH2(ULONG, IsDigit,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -196,7 +196,7 @@ AROS_LH2(ULONG, IsDigit,
 } /* IsDigit */
 
 AROS_LH2(ULONG, IsGraph,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 18, Locale)
 {
@@ -208,7 +208,7 @@ AROS_LH2(ULONG, IsGraph,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -228,7 +228,7 @@ AROS_LH2(ULONG, IsGraph,
 } /* IsGraph */
 
 AROS_LH2(ULONG, IsLower,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 19, Locale)
 {
@@ -240,7 +240,7 @@ AROS_LH2(ULONG, IsLower,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -260,7 +260,7 @@ AROS_LH2(ULONG, IsLower,
 } /* IsLower */
 
 AROS_LH2(ULONG, IsPrint,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 20, Locale)
 {
@@ -272,7 +272,7 @@ AROS_LH2(ULONG, IsPrint,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -292,7 +292,7 @@ AROS_LH2(ULONG, IsPrint,
 } /* IsPrint */
 
 AROS_LH2(ULONG, IsPunct,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 21, Locale)
 {
@@ -304,7 +304,7 @@ AROS_LH2(ULONG, IsPunct,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -324,7 +324,7 @@ AROS_LH2(ULONG, IsPunct,
 } /* IsPunct */
 
 AROS_LH2(ULONG, IsSpace,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 22, Locale)
 {
@@ -336,7 +336,7 @@ AROS_LH2(ULONG, IsSpace,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -356,7 +356,7 @@ AROS_LH2(ULONG, IsSpace,
 } /* IsSpace */
 
 AROS_LH2(ULONG, IsUpper,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 23, Locale)
 {
@@ -368,7 +368,7 @@ AROS_LH2(ULONG, IsUpper,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
@@ -388,7 +388,7 @@ AROS_LH2(ULONG, IsUpper,
 } /* IsUpper */
 
 AROS_LH2(ULONG, IsXDigit,
-    AROS_LHA(struct Locale *, locale, A0),
+    AROS_LHA(const struct Locale *, locale, A0),
     AROS_LHA(ULONG          , character, D0),
     struct LocaleBase *, LocaleBase, 24, Locale)
 {
@@ -400,7 +400,7 @@ AROS_LH2(ULONG, IsXDigit,
     if (locale == NULL)
     {
         locale = OpenLocale(NULL);
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
     }
 
 #ifdef AROS_CALL1
