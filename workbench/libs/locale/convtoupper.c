@@ -57,7 +57,7 @@
     AROS_LIBFUNC_INIT
 
     ULONG retval;
-    struct Locale *def_locale;
+    struct Locale *def_locale = NULL;
 
     if (locale == NULL)
     {
