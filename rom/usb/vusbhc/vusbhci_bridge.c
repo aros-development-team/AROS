@@ -55,44 +55,67 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                     rc = LIBUSBCALL(libusb_open, dev, &dev_handle);
                     if(dev_handle) {
-                        LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
-
-                        struct libusb_config_descriptor *config = NULL;
-                        unsigned int i;
-
-                        rc = LIBUSBCALL(libusb_get_active_config_descriptor, dev, &config);
-                        if(rc == LIBUSB_SUCCESS) {
-	                        for (i = 0; i < config->bNumInterfaces; i++) {
-		                        if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i)) {
-                                    bug("\nClaiming interface %d...\n", i);
-                                    rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
-		                            if (rc != LIBUSB_SUCCESS) {
-			                            bug("   Failed.\n");
-		                            }
-		                        }
-	                        }
-                            LIBUSBCALL(libusb_free_config_descriptor, config);
-                        }
-
+                        
                         speed = LIBUSBCALL(libusb_get_device_speed, dev);
                         switch(speed) {
                             case LIBUSB_SPEED_LOW:
-                                unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                                bug("\nLIBUSB_SPEED_LOW...\n");
                             break;
                             case LIBUSB_SPEED_FULL:
-                                unit->roothub.portstatus.wPortStatus &= ~(AROS_WORD2LE(UPSF_PORT_HIGH_SPEED)|AROS_WORD2LE(UPSF_PORT_LOW_SPEED));
+                                bug("\nLIBUSB_SPEED_FULL...\n");
                             break;
                             case LIBUSB_SPEED_HIGH:
-                                unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
+                                bug("\nLIBUSB_SPEED_HIGH...\n");
                             break;
-                            //case LIBUSB_SPEED_SUPER:
-                            //break;
+                            case LIBUSB_SPEED_SUPER:
+                                bug("\nLIBUSB_SPEED_SUPER...\n");
+                            break;
                         }
 
-                        unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
-                        unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+                        if(speed != LIBUSB_SPEED_SUPER) {
+                        
+                            LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
 
-                        uhwCheckRootHubChanges(unit);
+                            struct libusb_config_descriptor *config = NULL;
+                            unsigned int i;
+
+                            rc = LIBUSBCALL(libusb_get_active_config_descriptor, dev, &config);
+                            if(rc == LIBUSB_SUCCESS) {
+                                for (i = 0; i < config->bNumInterfaces; i++) {
+                                    if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i)) {
+                                        bug("\nClaiming interface %d...\n", i);
+                                        rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
+                                        if (rc != LIBUSB_SUCCESS) {
+                                            bug("   Failed.\n");
+                                        }
+                                    }
+                                }
+                                LIBUSBCALL(libusb_free_config_descriptor, config);
+                            }
+
+                            //speed = LIBUSBCALL(libusb_get_device_speed, dev);
+                            switch(speed) {
+                                case LIBUSB_SPEED_LOW:
+                                    unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                                break;
+                                case LIBUSB_SPEED_FULL:
+                                    unit->roothub.portstatus.wPortStatus &= ~(AROS_WORD2LE(UPSF_PORT_HIGH_SPEED)|AROS_WORD2LE(UPSF_PORT_LOW_SPEED));
+                                break;
+                                case LIBUSB_SPEED_HIGH:
+                                    unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
+                                break;
+                                //case LIBUSB_SPEED_SUPER:
+                                //break;
+                            }
+
+                            unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+                            unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
+
+                            uhwCheckRootHubChanges(unit);
+                        } else {
+                            LIBUSBCALL(libusb_close, dev_handle);
+                            dev_handle = NULL;
+                        }
                     } else {
                         if(rc == LIBUSB_ERROR_ACCESS) {
                             mybug_unit(-1, ("libusb_open, access error, try running as superuser\n\n"));
