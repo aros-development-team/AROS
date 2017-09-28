@@ -355,7 +355,11 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_ProductName:
-                *((STRPTR *) tag->ti_Data) = "VUSBHCI Host Controller";
+                if(unit->roothub.devdesc.bcdUSB == AROS_WORD2LE(0x0200)) {
+                    *((STRPTR *) tag->ti_Data) = "VUSBHCI Host Controller USB2.0";
+                } else {
+                    *((STRPTR *) tag->ti_Data) = "VUSBHCI Host Controller USB3.0";
+                }
                 count++;
                 break;
             case UHA_Description:
