@@ -156,7 +156,7 @@ UWORD SetAddress(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLe
         wIndex          Zero or Language ID
         wLength         Descriptor Length
         Data            Descriptor
-*/ 	 	 	 	
+*/
 UWORD GetDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
@@ -487,17 +487,15 @@ UWORD GetHubDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
             return UHIOERR_NO_ERROR;
         break;
 
-/*
         case UDT_SSHUB:
             mybug_unit(-1, ("GetHubDescriptor UDT_SSHUB (length %ld)\n", wLength));
 
-            ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubSSDesc)) ? sizeof(struct UsbHubSSDesc) : wLength;
+            ioreq->iouh_Actual = (wLength > sizeof(struct UsbSSHubDesc)) ? sizeof(struct UsbSSHubDesc) : wLength;
             CopyMem((APTR) &unit->roothub.hubdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
             mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
             return UHIOERR_NO_ERROR;
         break;
-*/
     }
 
     return UHIOERR_BADPARAMS;

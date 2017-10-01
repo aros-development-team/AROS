@@ -60,7 +60,10 @@ struct VUSBHCIUnit {
             struct UsbStdEPDesc  epdesc;
         }                        config;
 
-        struct UsbHubDesc        hubdesc;
+        union {
+            struct UsbHubDesc        hubdesc;
+            struct UsbSSHubDesc    sshubdesc;
+        };
 
         struct UsbHubStatus      hubstatus;
 
