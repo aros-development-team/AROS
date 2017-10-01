@@ -690,7 +690,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
 /* /// "nAllocHub()" */
 struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
     struct UsbSSHubDesc *usshd;
-    struct UsbStdBOSDesc *usbosd;
+    //struct UsbStdBOSDesc *usbosd;
     struct Task *thistask;
     struct NepClassHub *nch;
     struct UsbHubStatus uhhs;
