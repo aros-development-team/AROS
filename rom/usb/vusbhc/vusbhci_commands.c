@@ -451,6 +451,8 @@ UWORD ClearPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
         wIndex TT_port
         wLength Zero
         Data None
+        
+        Not for USB3
 */
 
 UWORD ClearTTBuffer(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
@@ -466,7 +468,7 @@ UWORD ClearTTBuffer(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD 
         bmRequestType (URTF_IN|URTF_CLASS|URTF_DEVICE) 10100000B
         bRequest USR_GET_DESCRIPTOR
         wValue Descriptor Type and Descriptor Index
-        wIndex Zero
+        wIndex Zero (or language ID)
         wLength Descriptor Length
         Data Descriptor
 */
@@ -605,6 +607,23 @@ UWORD GetPortStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD 
 }
 
 /*
+    GetPortErrorCount:
+        bmRequestType (URTF_IN|URTF_CLASS|URTF_OTHER) 10100011B
+        bRequest USR_PORT_ERR_COUNT (Check: Has it been defined?)
+        wValue Zero
+        wIndex Port
+        wLength Two
+        Data Number of link errors on this port
+*/
+UWORD GetPortErrorCount(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+    return UHIOERR_NO_ERROR;
+}
+
+/*
     ResetTT:
         bmRequestType (URTF_OUT|URTF_CLASS|URTF_OTHER) 00100011B
         bRequest USR_RESET_TT
@@ -612,6 +631,8 @@ UWORD GetPortStatus(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD 
         wIndex Port
         wLength Zero
         Data None
+        
+        Not for USB3
 */
 UWORD ResetTT(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -648,6 +669,23 @@ UWORD SetHubDescriptor(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWO
         Data None
 */
 UWORD SetHubFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(-1, ("return UHIOERR_NO_ERROR\n\n"));
+    return UHIOERR_NO_ERROR;
+}
+
+/*
+    SetHubDescriptor:
+        bmRequestType (URTF_OUT|URTF_CLASS|URTF_DEVICE) 00100000B
+        bRequest USR_SET_HUB_DEPTH (Check: Has it been defined?)
+        wValue Hub Depth
+        wIndex Zero
+        wLength Zero
+        Data None
+*/
+UWORD SetHubDepth(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
     mybug_unit(-1, ("Entering function\n"));
 
@@ -743,6 +781,8 @@ UWORD SetPortFeature(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD
         wIndex Port
         wLength TT State Length
         Data TT State
+        
+        Not for USB3
 */
 UWORD GetTTState(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -760,6 +800,8 @@ UWORD GetTTState(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLe
         wIndex Port
         wLength Zero
         Data None
+        
+        Not for USB3
 */
 UWORD StopTT(struct IOUsbHWReq *ioreq, UWORD wValue, UWORD wIndex, UWORD wLength) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -816,7 +858,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
         case ((((URTF_OUT|URTF_STANDARD|URTF_DEVICE))<<16)|(USR_SET_CONFIGURATION)):
             return(SetConfiguration(ioreq, wValue, wIndex, wLength));
 
-/* Hub Class Requests */
+/* Hub Class Requests. Check here if the command is for USB2 or USB3 hub...  */
         case (((URTF_OUT|URTF_CLASS|URTF_DEVICE)<<16)|(USR_CLEAR_FEATURE)):
             return(ClearHubFeature(ioreq, wValue, wIndex, wLength));
 
