@@ -30,6 +30,7 @@
 #include LC_LIBDEFS_FILE
 
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void);
+struct VUSBHCIUnit *VUSBHCI_AddNewUnit300(void);
 
 static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
     Signal(parent, SIGF_CHILD);
@@ -118,7 +119,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
     VUSBHCIBase->usbunit200 = VUSBHCI_AddNewUnit200();
 
     if(VUSBHCIBase->usbunit200 == NULL) {
-        mybug(-1, ("[VUSBHCI] Init: Failed to create new USB unit!\n"));
+        mybug(-1, ("[VUSBHCI] Init: Failed to create new USB2.0 unit!\n"));
+        return FALSE;
+    }
+
+    VUSBHCIBase->usbunit300 = VUSBHCI_AddNewUnit300();
+
+    if(VUSBHCIBase->usbunit300 == NULL) {
+        mybug(-1, ("[VUSBHCI] Init: Failed to create new USB3.0 unit!\n"));
         return FALSE;
     }
 
@@ -146,35 +154,33 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
     ioreq->iouh_Req.io_Unit = NULL;
 
     if(unitnum == 0) {
-
         unit = VUSBHCIBase->usbunit200;
+    } else if(unitnum == 1) {
+        unit = VUSBHCIBase->usbunit300;
+    } else {
+        return FALSE;
+    }
+        
+    if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
+        mybug(-1, ("[VUSBHCI] Open: Invalid MN_LENGTH!\n"));
+        ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
+    }
 
-        if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
-            mybug(-1, ("[VUSBHCI] Open: Invalid MN_LENGTH!\n"));
-            ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
-        }
+    ioreq->iouh_Req.io_Unit = NULL;
 
+    if(unit->allocated) {
+        ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
         ioreq->iouh_Req.io_Unit = NULL;
-
-        if(unit->allocated) {
-            ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
-            ioreq->iouh_Req.io_Unit = NULL;
-            mybug(-1, ("Unit 0 already in use!\n\n"));
-            return FALSE;
-        }
-
+        mybug(-1, ("Unit already in use!\n\n"));
+        return FALSE;
+    } else {
         unit->allocated = TRUE;
         ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
 
-        if(ioreq->iouh_Req.io_Unit != NULL) {
-            /* Opened ok! */
-            ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-            ioreq->iouh_Req.io_Error				   = 0;
-
-            return TRUE;
-        } else {
-            return FALSE;
-        }
+        /* Opened ok! */
+        ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+        ioreq->iouh_Req.io_Error                   = 0;
+        return TRUE;
     }
 
     return FALSE;
@@ -367,7 +373,11 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_Capabilities:
-                *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCF_ISO);
+                if(unit->roothub.devdesc.bcdUSB == AROS_WORD2LE(0x0200)) {
+                    *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCF_ISO);
+                } else {
+                    *((ULONG *) tag->ti_Data) = (UHCF_USB30|UHCF_ISO);
+                }
                 count++;
                 break;
             default:
@@ -476,4 +486,92 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
     }
 }
 
+struct VUSBHCIUnit *VUSBHCI_AddNewUnit300(void) {
 
+    struct VUSBHCIUnit *unit;
+
+    static const char name[] = {"[VUSBHCI3.00]"};
+
+    unit = AllocVec(sizeof(struct VUSBHCIUnit), MEMF_ANY|MEMF_CLEAR);
+
+    if(unit == NULL) {
+        mybug(-1, ("[VUSBHCI] VUSBHCI_AddNewUnit: Failed to create new unit structure\n"));
+        return NULL;
+    } else {
+        unit->state = UHSF_SUSPENDED;
+        unit->allocated = FALSE;
+
+        NEWLIST(&unit->ctrlxfer_queue);
+        NEWLIST(&unit->intrxfer_queue);
+        NEWLIST(&unit->bulkxfer_queue);
+        NEWLIST(&unit->isocxfer_queue);
+
+        NEWLIST(&unit->roothub.intrxfer_queue);
+
+        /* This is our root hub device descriptor */
+        unit->roothub.devdesc.bLength                       = sizeof(struct UsbStdDevDesc);
+        unit->roothub.devdesc.bDescriptorType               = UDT_DEVICE;
+        unit->roothub.devdesc.bcdUSB                        = AROS_WORD2LE(0x0300);
+        unit->roothub.devdesc.bDeviceClass                  = HUB_CLASSCODE;
+        unit->roothub.devdesc.bDeviceSubClass               = 0;
+        unit->roothub.devdesc.bDeviceProtocol               = 0;
+        unit->roothub.devdesc.bMaxPacketSize0               = 9; // Valid values are 8, 9(SuperSpeed), 16, 32, 64
+        unit->roothub.devdesc.idVendor                      = AROS_WORD2LE(0x0000);
+        unit->roothub.devdesc.idProduct                     = AROS_WORD2LE(0x0000);
+        unit->roothub.devdesc.bcdDevice                     = AROS_WORD2LE(0x0300);
+        unit->roothub.devdesc.iManufacturer                 = 1;
+        unit->roothub.devdesc.iProduct                      = 2;
+        unit->roothub.devdesc.iSerialNumber                 = 0;
+        unit->roothub.devdesc.bNumConfigurations            = 1;
+
+        /* This is our root hub config descriptor */
+        unit->roothub.config.cfgdesc.bLength                = sizeof(struct UsbStdCfgDesc);
+        unit->roothub.config.cfgdesc.bLength                = sizeof(struct UsbStdCfgDesc);
+        unit->roothub.config.cfgdesc.bDescriptorType        = UDT_CONFIGURATION;
+        unit->roothub.config.cfgdesc.wTotalLength           = AROS_WORD2LE(sizeof(struct RHConfig));
+        unit->roothub.config.cfgdesc.bNumInterfaces         = 1;
+        unit->roothub.config.cfgdesc.bConfigurationValue    = 1;
+        unit->roothub.config.cfgdesc.iConfiguration         = 0;
+        unit->roothub.config.cfgdesc.bmAttributes           = (USCAF_SELF_POWERED);
+        unit->roothub.config.cfgdesc.bMaxPower              = 0;
+
+        unit->roothub.config.ifdesc.bLength                 = sizeof(struct UsbStdIfDesc);
+        unit->roothub.config.ifdesc.bDescriptorType         = UDT_INTERFACE;
+        unit->roothub.config.ifdesc.bInterfaceNumber        = 0;
+        unit->roothub.config.ifdesc.bAlternateSetting       = 0;
+        unit->roothub.config.ifdesc.bNumEndpoints           = 1;
+        unit->roothub.config.ifdesc.bInterfaceClass         = HUB_CLASSCODE;
+        unit->roothub.config.ifdesc.bInterfaceSubClass      = 0;
+        unit->roothub.config.ifdesc.bInterfaceProtocol      = 0;
+        unit->roothub.config.ifdesc.iInterface              = 0;
+
+        unit->roothub.config.epdesc.bLength                 = sizeof(struct UsbStdEPDesc);
+        unit->roothub.config.epdesc.bDescriptorType         = UDT_ENDPOINT;
+        unit->roothub.config.epdesc.bEndpointAddress        = (URTF_IN|1);
+        unit->roothub.config.epdesc.bmAttributes            = USEAF_INTERRUPT;
+        unit->roothub.config.epdesc.wMaxPacketSize          = AROS_WORD2LE(4);
+        unit->roothub.config.epdesc.bInterval               = 12;
+
+        /* This is our root hub hub descriptor */
+        unit->roothub.sshubdesc.bLength             = sizeof(struct UsbSSHubDesc);
+        unit->roothub.sshubdesc.bDescriptorType     = UDT_SSHUB;
+        unit->roothub.sshubdesc.bNbrPorts           = 1;
+        unit->roothub.sshubdesc.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
+        unit->roothub.sshubdesc.bPwrOn2PwrGood      = 1;
+        unit->roothub.sshubdesc.bHubContrCurrent    = 1;
+        unit->roothub.sshubdesc.bHubHdrDecLat       = 0;
+        unit->roothub.sshubdesc.wHubDelay           = 0;
+        unit->roothub.sshubdesc.DeviceRemovable     = 0;
+
+        unit->name = name;
+
+        InitSemaphore(&unit->ctrlxfer_queue_lock);
+        InitSemaphore(&unit->intrxfer_queue_lock);
+        InitSemaphore(&unit->bulkxfer_queue_lock);
+        InitSemaphore(&unit->isocxfer_queue_lock);
+
+        InitSemaphore(&unit->roothub.intrxfer_queue_lock);
+        
+        return unit;
+    }
+}
