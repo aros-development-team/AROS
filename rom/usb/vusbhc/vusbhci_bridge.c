@@ -355,8 +355,6 @@ int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
         timeout = 0;
     }
 
-    mybug(-1, ("timeout %d\n", timeout));
-
     if( (ioreq->iouh_Flags & UHFF_NOSHORTPKT)) {
         xfr->flags |= LIBUSB_TRANSFER_SHORT_NOT_OK;
     }
@@ -420,8 +418,6 @@ int do_libusb_bulk_transfer(struct IOUsbHWReq *ioreq) {
     } else {
         timeout = 0;
     }
-
-    mybug(-1, ("timeout %d\n", timeout));
 
     if( (ioreq->iouh_Flags & UHFF_NOSHORTPKT)) {
         xfr->flags |= LIBUSB_TRANSFER_SHORT_NOT_OK;
