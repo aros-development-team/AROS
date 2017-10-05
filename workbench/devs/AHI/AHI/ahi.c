@@ -515,6 +515,8 @@ char *getFreq(void) {
   if( state.ModeSelected != ~0 )
   {
     mode = (struct ModeNode *) GetNode(state.ModeSelected, ModeList);
+  } else {
+    return NULL;
   }
 
   if( mode != NULL )
@@ -524,6 +526,8 @@ char *getFreq(void) {
       AHIDB_FrequencyArg, state.FreqSelected,
       AHIDB_Frequency,    (IPTR) &freq,
       TAG_DONE);
+  } else {
+    return NULL;
   }
 
   sprintf(freqBuffer, msgFreqFmt, freq);
