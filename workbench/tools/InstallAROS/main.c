@@ -5,7 +5,7 @@
 
 #define INTUITION_NO_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -2054,7 +2054,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         {
             D(bug
                 ("[INSTALLER] Changing Protection on Env Files failed: %d\n",
-                    IOErr()));
+                    IoErr()));
         }
     }
 
