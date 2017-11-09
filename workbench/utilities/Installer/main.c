@@ -20,7 +20,7 @@
 
 
 #ifdef DEBUG
-char test_script[] = "SYS:Tests/Installer/test.script";
+char test_script[] = "SYS:Developer/Debug/Tests/Installer/test.script";
 #endif /* DEBUG */
 
 char *filename = NULL;
