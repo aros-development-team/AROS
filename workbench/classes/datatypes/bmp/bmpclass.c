@@ -657,17 +657,24 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     bmphandle->linebufpos = bmphandle->linebuf;
 
     /* write the chunky buffer to file, after encoding */
-    
-    /* write end-of-BMP marker */
-    if ( !bmphandle->filebufbytes-- && !SaveBMP_EmptyBuf(bmphandle, 1) )
+    if ( !bmphandle->filebufbytes-- && !SaveBMP_EmptyBuf(bmphandle, widthxheight) )
     {
 	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
 	return FALSE;
     }
-    *(bmphandle->filebufpos)++ = ';';
+    
+    /* write end-of-BMP marker */
+    //if ( !bmphandle->filebufbytes-- && !SaveBMP_EmptyBuf(bmphandle, 1) )
+    //{
+	//BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
+	//return FALSE;
+    //}
+    //*(bmphandle->filebufpos)++ = ';';
+    
 
     /* flush write buffer to file and exit */
-    SaveBMP_EmptyBuf(bmphandle, 0);
+    //SaveBMP_EmptyBuf(bmphandle, 0);
+    
     D(bug("bmp.datatype/SaveBMP() --- Normal Exit\n"));
     BMP_Exit(bmphandle, 0);
     return TRUE;
