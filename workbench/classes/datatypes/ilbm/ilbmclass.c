@@ -435,7 +435,6 @@ static void CopyColRegs(Object *o, ULONG numcolors, UBYTE *srcstart, BOOL ehb)
 }
 
 /**************************************************************************************************/
-/**************************************************************************************************/
 
 static BOOL ReadILBM(Class *cl, Object *o)
 {
@@ -598,6 +597,275 @@ static BOOL ReadILBM(Class *cl, Object *o)
 
 /**************************************************************************************************/
 
+unsigned char *WriteBytesBigEndian_UintBE16(WORD val, int offset)
+{
+    unsigned char *buffer;
+    buffer[offset] = (UBYTE)(val >> 8);
+    buffer[offset + 1] = (UBYTE)(val & 0xFF);
+    return buffer;
+}
+
+/**************************************************************************************************/
+
+LONG WriteBytes(BPTR file, char *data, LONG offset, LONG length)
+{    
+    LONG count = 0;
+    Seek(file,offset,OFFSET_BEGINNING);
+    
+	//Write contents of buffer to file.
+    count = Write(file, data, length);
+    if (count != length)
+    {
+    	//Write error!
+        return 0;
+    }
+
+    return count;
+}
+
+/**************************************************************************************************/
+
+SaveILBM(struct IClass *cl, Object *DTImage, struct dtWrite *dtw )
+{		
+    struct BitMapHeader     *bmhd;	
+
+	if (DTImage)
+	{
+        /* Get BitMapHeader. */
+        if( GetDTAttrs(DTImage,  PDTA_BitMapHeader, &bmhd,
+			TAG_DONE ) != 1UL || !bmhd )
+        {
+	        D(bug("ilbm.datatype/SaveILBM --- missing attributes\n"))
+	        return FALSE;
+        }
+
+        //If bmhd->depth <= 8,24,32 then save ILBM with correct no. bitplanes
+        //else Process fails. Incorrect number of bitplanes.        
+
+        if (bmhd->bmh_Depth <= 8) 
+        {            
+            Save_BitMapPic(cl, DTImage, dtw);
+        }
+        else if ((bmhd->bmh_Depth == 24) || (bmhd->bmh_Depth == 32))
+        {            
+            //Save_RGBPic(cl, DTImage, dtw);            
+        }
+        else
+        {
+            //Process fails. Incorrect number of bitplanes.            
+            D(bug("ilbm.datatype/SaveILBM --- incorrect bitplanes\n"))
+	        return FALSE;
+        }
+    }
+}
+
+/**************************************************************************************************/
+
+Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
+{    
+    BPTR *fileHandle;
+    UBYTE                   *Cmap;
+    UBYTE                   *filebuf;    
+    int                     width, height, widthxheight, numcolors;
+    struct BitMapHeader     *bmhd;
+    struct BitMap           *bm;
+    BitMapImage             *BMI = NULL;
+    struct RastPort         rp;
+    struct ColorRegister    *colormap;
+    LONG                    *colorregs;    
+    int                     i, j, ret;
+
+    D(bug("iff.datatype/Save_BitMapPic()\n"));
+    
+    /* No filehandle is not an error, just NOP */
+    if (!dtw->dtw_FileHandle)
+    {
+	    D(bug("iff.datatype/Save_BitMapPic(): empty filehandle\n"));
+	    ILBM_Exit(fileHandle, 0);
+        return TRUE;
+    }
+    filehandle = dtw->dtw_FileHandle;
+
+    /* Get BitMap and color palette */
+    if( GetDTAttrs( o,  PDTA_BitMapHeader, &bmhd,
+			PDTA_BitMap,       &bm,
+			PDTA_CRegs,        (IPTR)&colorregs,
+			PDTA_NumColors,    &numcolors,
+			PDTA_ColorRegisters,     (IPTR)&colormap,
+			TAG_DONE ) != 5UL ||
+	!bmhd || !bm || !colorregs || !numcolors || !colormap)
+    {
+	    D(bug("bmp.datatype/Save_BitMapPic() --- missing attributes\n"));	
+	    return FALSE;
+    }
+
+    /* Write fileID 'FORM' and typeID 'ILBM' and chunkID 'BMHD'. */
+
+    //Write IFF File Signature 'FORM'.
+    LONG offset = 0;
+    LONG length = 4;
+    unsigned char *fileID = "FORM";
+    WriteBytes(fileHandle, fileID, offset, length);
+
+    //Calculate file size less (4+4, FORM+size)
+    LONG fileSize = (LONG)(((bm->BytesPerRow * bmhd->bmh_Depth) * bmhd->bmh_Height) + (numcolors * 3) + 48);
+    //Add padding byte if needed.
+    
+    offset += 4;
+    length = 4;    
+    unsigned char *FileSize;
+    FileSize = WriteBytesBigEndian_UintBE32(fileSize, 0);
+    WriteBytes(fileHandle, FileSize, offset, length);
+
+    //Write File Format Type 'ILBM'.    
+    offset += 4;
+    length = 4;
+    unsigned char *typeID = "ILBM";
+    WriteBytes(fileHandle, typeID, offset, length);
+
+    //Write ChunkID 'BMHD'.
+    
+    offset += 4;
+    length = 4;    
+    WriteBytes(fileHandle, "BMHD", offset, length);    
+
+    //Write BMHD ChunkSize.    
+    offset += 4;
+    length = 4;
+    LONG chunkSize = 20;
+    unsigned char *ChunkSize;
+    ChunkSize = WriteBytesBigEndian_UintBE32(chunkSize, 0);
+    WriteBytes(fileHandle, ChunkSize, offset, length);
+
+    /* Prepare BMHD information. */
+    //Set_BMHD.    
+    offset += 4;
+    length = 20;
+    int count = 0;
+    unsigned char BMHD[21];
+    unsigned char *buffer;    
+    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Width, 0);
+    memcpy(BMHD + count, buffer, 2);
+    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Height, 0);
+    memcpy(BMHD + count+2, buffer, 2);
+    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Left, 0);
+    memcpy(BMHD + count+4, buffer, 2);
+    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Top, 0);
+    memcpy(BMHD + count+6, buffer, 2);
+    BMHD[8] = bmhd->bmh_Depth;
+    BMHD[9] = 0; //bmhd->bmh_Masking;
+    BMHD[10] = 0; //bmhd->bmh_Compression;
+    BMHD[11] = bmhd->bmh_Pad;
+    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Transparent, 0);
+    memcpy(BMHD + count+12, buffer, 2);
+    BMHD[14] = 10; //bmhd->bmh_XAspect;
+    BMHD[15] = 11; //bmhd->bmh_YAspect;
+    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_PageWidth, 0);
+    memcpy(BMHD + count+16, buffer, 2);
+    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_PageHeight, 0);
+    memcpy(BMHD + count+18, buffer, 2);
+    BMHD[21] = ('\0');
+
+    /* Write BMHD to File. */
+    WriteBytes(fileHandle, BMHD, offset, length);
+
+    if (bmhd->bmh_Depth <= 8)
+    {
+        /* Prepare ColorMap information. */
+        //Set_CMAP.
+        offset = 40;
+        length = 4;
+        WriteBytes(fileHandle, "CMAP", offset, length);
+
+        //Write chunkSize to File.        
+        offset += 4;
+        chunkSize = numcolors*3;
+        ChunkSize = WriteBytesBigEndian_UintBE32(chunkSize, 0);
+        WriteBytes(fileHandle, ChunkSize, offset, length);
+
+        //Convert CMAP from Colormap.
+        for( i = 0; i < numcolors ; i++)
+        {            
+	        Cmap[(i*3)] = colormap[i].red;
+            Cmap[(i*3)+1] = colormap[i].green;
+            Cmap[(i*3)+2] = colormap[i].blue;
+        }
+
+        /* Write ColorMap and CAMG information. */               
+        offset += 4;
+        length = numcolors*3;        
+        count = WriteBytes(fileHandle, Cmap, offset, numcolors*3);        
+    }
+
+    //=====================================================================//
+    
+    //** Write CAMG for EHB and HAM only. Standard ILBM doesn't need CAMG.**//
+
+    //=====================================================================//
+
+    /* Prepare BODY information. */
+    offset = (numcolors*3) + 48;
+    length = 4;
+    WriteBytes(fileHandle, "BODY", offset, length);
+
+    //Set_BODY.
+    UBYTE *BODY;    
+    UBYTE *chunkyBuffer;    
+    UBYTE *planarBuffer;    
+    UBYTE *scanLine;
+    UBYTE    *src;
+    LONG     y, p;
+    
+    int comp = 0;
+    int lineOffset = 0;    
+    int numplanes = bmhd->bmh_Depth;
+    int imageWidth = bmhd->bmh_Width;
+    int imageHeight = bmhd->bmh_Height;
+    //UBYTE compress = bmhd->bmh_Compression ? cmpByteRun1 : cmpNone;    
+    int bytesPerRow = bm->BytesPerRow;
+    int scanLength = (bytesPerRow * numplanes);    
+
+
+    if (comp == 0)
+    {
+        chunkSize = (bytesPerRow * numplanes) * imageHeight;
+    }
+
+    /* Write chunkSize to File. */
+    //Does NOT include Padding Byte!
+    //Calculate BODY size without Padding Byte if Odd. 
+    offset += 4;
+    ChunkSize = WriteBytesBigEndian_UintBE32(chunkSize, 0);
+    WriteBytes(fileHandle, ChunkSize, offset, length);
+
+    /* For images with <= 8 bitplanes. */
+    //Copy planar data from the bitplanes of the bitmap to the BODY buffer 
+    //one scanline at a time. Compress as needed. 
+   
+    //Set the offset to write the planar data to file.    
+    offset += 4;    
+    
+    //Copy planar data from the bitplanes of the bitmap.
+    for(y = 0; y < imageHeight; y++)
+    {
+        for(p = 0; p < numplanes; p++)
+        {
+            src = bm->Planes[p] + y * bytesPerRow;
+            //src = bm->Planes[p];
+
+            WriteBytes(fileHandle, src, offset, bytesPerRow);
+            offset += bytesPerRow;
+        }
+    }            
+    //Add padding byte if needed.
+
+    if (fileHandle)
+        Close(fileHandle);       
+
+}
+
+/**************************************************************************************************/
+
 IPTR ILBM__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
@@ -613,6 +881,23 @@ IPTR ILBM__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     }
     
     return retval;
+}
+
+/**************************************************************************************************/
+
+IPTR IFF__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
+{
+    D(bug("iff.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
+    if( (dtw -> dtw_Mode) == DTWM_RAW )
+    {
+	    /* Local data format requested */
+	    return SaveILBM(cl, o, dtw );
+    }
+    else
+    {
+	    /* Pass msg to superclass (which writes an IFF ILBM picture)... */
+	    return DoSuperMethodA( cl, o, (Msg)dtw );
+    }
 }
 
 /**************************************************************************************************/
