@@ -597,6 +597,18 @@ static BOOL ReadILBM(Class *cl, Object *o)
 
 /**************************************************************************************************/
 
+unsigned char *WriteBytesBigEndian_UintBE32(LONG val, int offset)
+{
+    unsigned char *buffer;
+    buffer[offset] = (UBYTE)((val >> 24) & 0xFF);
+    buffer[offset + 1] = (UBYTE)((val >> 16) & 0xFF);
+    buffer[offset + 2] = (UBYTE)((val >> 8) & 0xFF);
+    buffer[offset + 3] = (UBYTE)(val & 0xFF);
+    return buffer;
+}
+
+/**************************************************************************************************/
+
 unsigned char *WriteBytesBigEndian_UintBE16(WORD val, int offset)
 {
     unsigned char *buffer;
@@ -669,7 +681,7 @@ Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     int                     width, height, widthxheight, numcolors;
     struct BitMapHeader     *bmhd;
     struct BitMap           *bm;
-    BitMapImage             *BMI = NULL;
+    //BitMapImage             *BMI = NULL;
     struct RastPort         rp;
     struct ColorRegister    *colormap;
     LONG                    *colorregs;    
@@ -681,10 +693,10 @@ Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     if (!dtw->dtw_FileHandle)
     {
 	    D(bug("iff.datatype/Save_BitMapPic(): empty filehandle\n"));
-	    ILBM_Exit(fileHandle, 0);
+	    //ILBM_Exit(fileHandle, 0);
         return TRUE;
     }
-    filehandle = dtw->dtw_FileHandle;
+    fileHandle = dtw->dtw_FileHandle;
 
     /* Get BitMap and color palette */
     if( GetDTAttrs( o,  PDTA_BitMapHeader, &bmhd,
