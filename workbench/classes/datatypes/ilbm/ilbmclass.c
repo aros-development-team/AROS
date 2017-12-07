@@ -637,7 +637,7 @@ LONG WriteBytes(BPTR file, char *data, LONG offset, LONG length)
 
 /**************************************************************************************************/
 
-SaveILBM(struct IClass *cl, Object *DTImage, struct dtWrite *dtw )
+static BOOL SaveILBM(struct IClass *cl, Object *DTImage, struct dtWrite *dtw )
 {		
     struct BitMapHeader     *bmhd;	
 
@@ -669,23 +669,24 @@ SaveILBM(struct IClass *cl, Object *DTImage, struct dtWrite *dtw )
 	        return FALSE;
         }
     }
+    return TRUE;
 }
 
 /**************************************************************************************************/
 
-Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
+static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {    
-    BPTR *fileHandle;
-    UBYTE                   *Cmap;
-    UBYTE                   *filebuf;    
-    int                     width, height, widthxheight, numcolors;
+    //UBYTE                   *filebuf;    
+    //int                      width, height, numcolors;
+    BPTR                     *fileHandle;    
+    int                      i, numcolors;
     struct BitMapHeader     *bmhd;
     struct BitMap           *bm;
     //BitMapImage             *BMI = NULL;
-    struct RastPort         rp;
+    //struct RastPort         rp;
     struct ColorRegister    *colormap;
-    LONG                    *colorregs;    
-    int                     i, j, ret;
+    LONG                     *colorregs;    
+    //int                     i, j, ret; 
 
     D(bug("iff.datatype/Save_BitMapPic()\n"));
     
@@ -754,7 +755,7 @@ Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     offset += 4;
     length = 20;
     int count = 0;
-    unsigned char BMHD[21];
+    unsigned char BMHD[20];
     unsigned char *buffer;    
     buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Width, 0);
     memcpy(BMHD + count, buffer, 2);
@@ -776,7 +777,7 @@ Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     memcpy(BMHD + count+16, buffer, 2);
     buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_PageHeight, 0);
     memcpy(BMHD + count+18, buffer, 2);
-    BMHD[21] = ('\0');
+    //BMHD[21] = ('\0');
 
     /* Write BMHD to File. */
     WriteBytes(fileHandle, BMHD, offset, length);
@@ -796,6 +797,7 @@ Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
         WriteBytes(fileHandle, ChunkSize, offset, length);
 
         //Convert CMAP from Colormap.
+        UBYTE Cmap[numcolors * 3];
         for( i = 0; i < numcolors ; i++)
         {            
 	        Cmap[(i*3)] = colormap[i].red;
@@ -821,22 +823,20 @@ Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     WriteBytes(fileHandle, "BODY", offset, length);
 
     //Set_BODY.
-    UBYTE *BODY;    
-    UBYTE *chunkyBuffer;    
-    UBYTE *planarBuffer;    
-    UBYTE *scanLine;
+    //UBYTE *BODY;    
+    //UBYTE *chunkyBuffer;    
+    //UBYTE *planarBuffer;    
+    //UBYTE *scanLine;    
+    int comp = 0;
     UBYTE    *src;
     LONG     y, p;
-    
-    int comp = 0;
-    int lineOffset = 0;    
+    //int lineOffset = 0;    
     int numplanes = bmhd->bmh_Depth;
-    int imageWidth = bmhd->bmh_Width;
+    //int imageWidth = bmhd->bmh_Width;
     int imageHeight = bmhd->bmh_Height;
     //UBYTE compress = bmhd->bmh_Compression ? cmpByteRun1 : cmpNone;    
     int bytesPerRow = bm->BytesPerRow;
-    int scanLength = (bytesPerRow * numplanes);    
-
+    //int scanLength = (bytesPerRow * numplanes); 
 
     if (comp == 0)
     {
@@ -872,8 +872,9 @@ Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     //Add padding byte if needed.
 
     if (fileHandle)
-        Close(fileHandle);       
-
+        Close(fileHandle); 
+    
+    return TRUE;
 }
 
 /**************************************************************************************************/
