@@ -599,7 +599,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
 
 unsigned char *WriteBytesBigEndian_UintBE32(LONG val, int offset)
 {
-    unsigned char *buffer;
+    unsigned char *buffer = NULL;
     buffer[offset] = (UBYTE)((val >> 24) & 0xFF);
     buffer[offset + 1] = (UBYTE)((val >> 16) & 0xFF);
     buffer[offset + 2] = (UBYTE)((val >> 8) & 0xFF);
@@ -611,7 +611,7 @@ unsigned char *WriteBytesBigEndian_UintBE32(LONG val, int offset)
 
 unsigned char *WriteBytesBigEndian_UintBE16(WORD val, int offset)
 {
-    unsigned char *buffer;
+    unsigned char *buffer = NULL;
     buffer[offset] = (UBYTE)(val >> 8);
     buffer[offset + 1] = (UBYTE)(val & 0xFF);
     return buffer;
@@ -633,43 +633,6 @@ LONG WriteBytes(BPTR file, char *data, LONG offset, LONG length)
     }
 
     return count;
-}
-
-/**************************************************************************************************/
-
-static BOOL SaveILBM(struct IClass *cl, Object *DTImage, struct dtWrite *dtw )
-{		
-    struct BitMapHeader     *bmhd;	
-
-	if (DTImage)
-	{
-        /* Get BitMapHeader. */
-        if( GetDTAttrs(DTImage,  PDTA_BitMapHeader, &bmhd,
-			TAG_DONE ) != 1UL || !bmhd )
-        {
-	        D(bug("ilbm.datatype/SaveILBM --- missing attributes\n"))
-	        return FALSE;
-        }
-
-        //If bmhd->depth <= 8,24,32 then save ILBM with correct no. bitplanes
-        //else Process fails. Incorrect number of bitplanes.        
-
-        if (bmhd->bmh_Depth <= 8) 
-        {            
-            Save_BitMapPic(cl, DTImage, dtw);
-        }
-        else if ((bmhd->bmh_Depth == 24) || (bmhd->bmh_Depth == 32))
-        {            
-            //Save_RGBPic(cl, DTImage, dtw);            
-        }
-        else
-        {
-            //Process fails. Incorrect number of bitplanes.            
-            D(bug("ilbm.datatype/SaveILBM --- incorrect bitplanes\n"))
-	        return FALSE;
-        }
-    }
-    return TRUE;
 }
 
 /**************************************************************************************************/
@@ -874,6 +837,43 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     if (fileHandle)
         Close(fileHandle); 
     
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+static BOOL SaveILBM(struct IClass *cl, Object *DTImage, struct dtWrite *dtw )
+{		
+    struct BitMapHeader     *bmhd;	
+
+	if (DTImage)
+	{
+        /* Get BitMapHeader. */
+        if( GetDTAttrs(DTImage,  PDTA_BitMapHeader, &bmhd,
+			TAG_DONE ) != 1UL || !bmhd )
+        {
+	        D(bug("ilbm.datatype/SaveILBM --- missing attributes\n"))
+	        return FALSE;
+        }
+
+        //If bmhd->depth <= 8,24,32 then save ILBM with correct no. bitplanes
+        //else Process fails. Incorrect number of bitplanes.        
+
+        if (bmhd->bmh_Depth <= 8) 
+        {            
+            Save_BitMapPic(cl, DTImage, dtw);
+        }
+        else if ((bmhd->bmh_Depth == 24) || (bmhd->bmh_Depth == 32))
+        {            
+            //Save_RGBPic(cl, DTImage, dtw);            
+        }
+        else
+        {
+            //Process fails. Incorrect number of bitplanes.            
+            D(bug("ilbm.datatype/SaveILBM --- incorrect bitplanes\n"))
+	        return FALSE;
+        }
+    }
     return TRUE;
 }
 
