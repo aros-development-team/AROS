@@ -67,6 +67,6 @@ struct IntCountryPrefs taiwanPrefs =
         CT_7SUN
     },
     "$VER: taiwan.country 44.1 (11.07.2016)",
-    "Taiwan",
+    NULL,
     "Countries/Taiwan"
 };

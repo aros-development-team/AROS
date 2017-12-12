@@ -82,6 +82,7 @@ struct IntCountryPrefs templatePrefs =
         /* Calendar type */
         CT_7SUN
     },
-    "$VER: template.country 44.0 (12.04.2013)",
+    "$VER: template.country 44.0 (12.12.2017)",
+    NULL,
     "Countries/Template"
 };
