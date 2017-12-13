@@ -641,7 +641,7 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {    
     //UBYTE                   *filebuf;    
     //int                      width, height, numcolors;
-    BPTR                     *fileHandle;    
+    BPTR                     fileHandle;    
     int                      i, numcolors;
     struct BitMapHeader     *bmhd;
     struct BitMap           *bm;
