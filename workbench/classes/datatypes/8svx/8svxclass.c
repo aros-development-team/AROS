@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -154,7 +154,7 @@ BOOL Read8SVX(Class *cl, Object *o)
 		     file_vhd->vh_Volume[3];
     
     D(bug("8svx.datatype: OneShotHiSamples : %d\n"
-    	  "               RepeatHiSampoles : %d\n"
+    	  "               RepeatHiSamples : %d\n"
 	  "               SamplesPerHiCycle: %d\n"
 	  "               SamplesPerSec    : %d\n"
 	  "               Octaves          : %d\n"
