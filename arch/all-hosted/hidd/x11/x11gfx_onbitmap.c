@@ -257,55 +257,59 @@ BOOL X11BM_NotifyFB(OOP_Class *cl, OOP_Object *o)
 
     D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
 
-        /*
-         * Now we need to get some message from the X11 task about when
-         * the window has been mapped (i.e. MapWindow event).
-         * This is because we cannot render into the window until
-         * it has been mapped.
-         */
+    /*
+     * Now we need to get some message from the X11 task about when
+     * the window has been mapped (i.e. MapWindow event).
+     * This is because we cannot render into the window until
+     * it has been mapped.
+     */
 
-        port = CreateMsgPort();
+    port = CreateMsgPort();
 
-        if (NULL != port)
+    if (NULL != port)
+    {
+        /* Send a message to the x11 task that the window has been created */
+        struct notify_msg msg;
+
+        msg.notify_type = NOTY_WINCREATE;
+        msg.xdisplay = GetSysDisplay();
+        msg.xwindow = WINDRAWABLE(data);
+        msg.masterxwindow = MASTERWIN(data);
+        msg.bmobj = o;
+        msg.execmsg.mn_ReplyPort = port;
+
+        HostLib_Lock();
+        XCALL(XSync, GetSysDisplay(), FALSE);
+        HostLib_Unlock();
+
+        D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__,
+            xsd->x11task_notify_port));
+        X11DoNotify(xsd, &msg);
+
+        if (!(XSD(cl)->options & OPTION_DELAYXWINMAPPING))
         {
-            /* Send a message to the x11 task that the window has been created */
-            struct notify_msg msg;
-
-            msg.notify_type = NOTY_WINCREATE;
-            msg.xdisplay = GetSysDisplay();
-            msg.xwindow = WINDRAWABLE(data);
-            msg.masterxwindow = MASTERWIN(data);
-            msg.bmobj = o;
-            msg.execmsg.mn_ReplyPort = port;
+            D(bug("[X11OnBm] %s: notifying x11 task to map window...\n",
+                __PRETTY_FUNCTION__));
+            /*
+             * Send a message to the X11 task to ask when the window has
+             * been mapped. We change only notify_type; other fields are
+             * already set.
+             */
+            msg.notify_type = NOTY_MAPWINDOW;
 
             HostLib_Lock();
             XCALL(XSync, GetSysDisplay(), FALSE);
             HostLib_Unlock();
 
-            D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__, xsd->x11task_notify_port));
+            D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__,
+                xsd->x11task_notify_port));
             X11DoNotify(xsd, &msg);
+        }
 
-            if (!(XSD(cl)->options & OPTION_DELAYXWINMAPPING))
-            {
-                D(bug("[X11OnBm] %s: notifying x11 task to map window...\n", __PRETTY_FUNCTION__));
-                /*
-                 * Send a message to the X11 task to ask when the window has been mapped.
-                 * We change only notify_type, other fields are already set.
-                 */
-                msg.notify_type = NOTY_MAPWINDOW;
+        DeleteMsgPort(port);
 
-                HostLib_Lock();
-                XCALL(XSync, GetSysDisplay(), FALSE);
-                HostLib_Unlock();
-
-                D(bug("[X11] %s: notifying port @ 0x%p\n", __PRETTY_FUNCTION__, xsd->x11task_notify_port));
-                X11DoNotify(xsd, &msg);
-            }
-
-            DeleteMsgPort(port);
-
-            return TRUE;
-        } /* if (port) */
+        return TRUE;
+    }
 
     return FALSE;
 }
