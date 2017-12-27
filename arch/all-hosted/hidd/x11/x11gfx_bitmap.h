@@ -38,6 +38,7 @@ struct bitmap_data
 #define BMDF_BACKINGSTORE       4
 
 BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList);
+BOOL X11BM_NotifyFB(OOP_Class *cl, OOP_Object *o);
 VOID X11BM_InitEmptyCursor(struct bitmap_data *data);
 VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd);
 BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid, struct x11_staticdata *xsd);

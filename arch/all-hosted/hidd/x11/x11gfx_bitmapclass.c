@@ -102,6 +102,11 @@ OOP_Object *X11BM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 #endif
         }
 
+        if (ok && (data->flags & BMDF_FRAMEBUFFER) != 0)
+        {
+            ok = X11BM_NotifyFB(cl, o);
+        }
+
         if (!ok)
         {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
