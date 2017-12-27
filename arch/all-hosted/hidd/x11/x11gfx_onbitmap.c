@@ -169,7 +169,6 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
     if (WINDRAWABLE(data))
     {
-        struct MsgPort *port;
         Pixmap icon;
 #if !ADJUST_XWIN_SIZE
         XSizeHints sizehint;
@@ -242,6 +241,22 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
         HostLib_Unlock();
 
+        return TRUE;
+    } /* if WINDRAWABLE(data) */
+
+    return FALSE;
+}
+
+/****************************************************************************************/
+
+BOOL X11BM_NotifyFB(OOP_Class *cl, OOP_Object *o)
+{
+    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    struct x11_staticdata *xsd = XSD(cl);
+    struct MsgPort *port;
+
+    D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
+
         /*
          * Now we need to get some message from the X11 task about when
          * the window has been mapped (i.e. MapWindow event).
@@ -291,7 +306,6 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
             return TRUE;
         } /* if (port) */
-    } /* if WINDRAWABLE(data) */
 
     return FALSE;
 }

@@ -118,9 +118,8 @@ int X11_Init(struct x11_staticdata *xsd)
         return TRUE;
     }
 
-    /* Do not need to singlethead this
-     * since no other tasks are using X currently
-     */
+    /* Do not need to single-thread this since no other tasks are using X
+       currently */
 
     xsd->display = XCALL(XOpenDisplay, NULL);
     D(bug("[X11] %s: X display @ 0x%p\n", __PRETTY_FUNCTION__, xsd->display));
