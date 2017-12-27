@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright © 2004-2016, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
 # $Id$
 
 
@@ -41,7 +41,10 @@ fetch_gnu()
     $ret
 }
 
-sf_mirrors="http://download.sourceforge.net http://aleron.dl.sourceforge.net http://voxel.dl.sourceforge.net http://heanet.dl.sourceforge.net http://avh.dl.sourceforge.net http://umn.dl.sourceforge.net http://unc.dl.sourceforge.net http://puzzle.dl.sourceforge.net http://mesh.dl.sourceforge.net"
+# Note: at time of writing, the main SF download server redirects to mirrors
+# and corrects moved paths, so we retry this server multiple times (in one
+# wget call).
+sf_mirrors="http://downloads.sourceforge.net"
 
 fetch_sf()
 {
@@ -87,7 +90,7 @@ fetch()
     
     case $protocol in
         https| http | ftp)    
-            if ! wget -t 5 -T 15 -c "$origin/$file" -O "$destination/$file".tmp; then
+            if ! wget -t 3 --retry-connrefused -T 15 -c "$origin/$file" -O "$destination/$file".tmp; then
                 ret=false
             else
                 mv "$destination/$file".tmp "$destination/$file"
