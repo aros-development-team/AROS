@@ -17,7 +17,9 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
+if [ "$CFG_M68K_CROSSTOOLS" != "" ]; then
+    export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
+fi
 execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-serial-debug $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT $AROSTOOLCHAINOPT
 make    tools mmake contrib
 
