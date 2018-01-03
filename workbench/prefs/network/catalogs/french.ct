@@ -1,4 +1,4 @@
-## version $VER: networkprefs.catalog 4.0 ($TODAY)
+## version $VER: networkprefs.catalog 4.1 (03.01.2018)
 ## language français
 ## codeset 0
 ;
@@ -168,7 +168,7 @@ Erreur
 ; Error
 ;
 MSG_ERR_NOT_SAVED_PREFS
-Les préférences réseau n'ont pas été sauvées sur %s.
+Les préférences réseau n'ont pas été sauvegardées sur %s.
 ; Network preferences not saved to %s
 ;
 MSG_ERR_NOT_COPIED_FILES
@@ -180,7 +180,7 @@ Information
 ; Information
 ;
 MSG_PREFS_SAVED_RESTART
-Les préférences ont été sauvées vers %s. \nRedémarrer AROS pour que les modifications prenent effet.
+Les préférences ont été sauvegardées vers %s. \nRedémarrer AROS pour que les modifications prennent effet.
 ; Preferences have been saved to %s.\nRestart AROS for them to take effect.
 ;
 MSG_IFWINDOW_TITLE
@@ -209,6 +209,14 @@ Groupe de travail
 ;Workgroup
 ;
 MSG_SERVICE
-Service
-;Service
+Nom de partage
+;Share Name
+;
+MSG_SERVICE_TYPES
+Type de service
+;Service Type
+;
+MSG_SERVICETYPE_CIFS
+CIFS/SMB
+;CIFS/SMB
 ;

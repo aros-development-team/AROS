@@ -1,6 +1,6 @@
 ## version $VER: icontrolprefs.catalog 2.0 (8.9.2010)
-## language français
 ## codeset 0
+## language français
 ;
 ;
 MSG_WINTITLE
@@ -86,4 +86,8 @@ Combinaison de touches pour déplacer l'écran
 MSG_MENUS_STICKY
 Menus collants
 ; Sticky
+;
+MSG_MENUS_TITLEPOPUP
+Tirez sur le titre de l'écran
+;Pull-Down on Screen Title
 ;

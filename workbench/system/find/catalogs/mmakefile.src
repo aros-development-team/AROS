@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS:=german czech
+CATALOGS:=german czech french
 
 %build_catalogs mmake=workbench-system-find-catalogs \
     catalogs=$(CATALOGS) \
