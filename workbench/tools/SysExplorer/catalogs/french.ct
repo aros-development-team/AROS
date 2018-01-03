@@ -1,13 +1,13 @@
-## version $VER: SysExplorer.catalog 1.0 (16.02.2013)
+## version $VER: SysExplorer.catalog 2.0 (03.01.2018)
 ## language français
 ## codeset 0
 ;
 ;
 MSG_TITLE
-System Explorer
+Explorateur système
 ;
 MSG_WINTITLE
-System Explorer
+Explorateur système
 ;
 MSG_DESCRIPTION
 Outil d'information matériel et système
@@ -16,6 +16,18 @@ Outil d'information matériel et système
 MSG_MENU_PROJECT
 Projet
 ;Project
+;
+MSG_MENU_PROPERTIES
+Propriétés
+;Properties
+;
+MSG_MENU_EXPANDALL
+Tout développer
+;Expand All
+;
+MSG_MENU_COLLAPSEALL
+Tout réduire
+;Collapse All
 ;
 MSG_MENU_QUIT
 Quitter
@@ -62,11 +74,11 @@ Mémoire
 ;Memory
 ;
 MSG_BOOTLOADER
-Chargeur de boot
+Chargeur de démarrage
 ;Boot loader
 ;
 MSG_ARGUMENTS
-Arguments
+Arguments du chargeur de démarrage
 ;Arguments
 ;
 MSG_AVAILABLE
@@ -86,15 +98,15 @@ Nom matériel
 ;Hardware Name
 ;
 MSG_PRODUCT_ID
-Produit
+ID du produit
 ;Product ID
 ;
 MSG_PRODUCER_NAME
-Constructeur
+Nom du constructeur
 ;Vendor Name
 ;
 MSG_PRODUCER_ID
-Distributeur
+ID du constructeur
 ;Vendor ID
 ;
 MSG_DEVICE_PROPERTIES
@@ -124,4 +136,40 @@ Supporte le DMA
 MSG_USE_80WIRE
 Câble 80 fils
 ;80-wire cable
+;
+MSG_ATA_UNIT_PROPERTIES
+Propriétés du périphérique IDE
+;IDE device properties
+;
+MSG_UNIT_NUMBER
+Numéro de l'unité
+;Unit number
+;
+MSG_MODEL
+Modèle
+;Model
+;
+MSG_REVISION
+Révision
+;Revision
+;
+MSG_SERIAL
+Numéro de série
+;Serial
+;
+MSG_TRANSFER_MODES
+Modes supportés
+;Supported modes
+;
+MSG_MULTISECTOR
+Limite secteurs multiples
+;Multisector limit
+;
+MSG_REMOVABLE
+Éjectable
+;Removable
+;
+MSG_CONFIG_MODES
+Modes configurés
+;Configured modes
 ;

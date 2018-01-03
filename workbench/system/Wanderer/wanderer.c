@@ -3468,7 +3468,8 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
         return DoSuperMethodA(CLASS, self, (Msg) message);
     }
     
-    // FIXME: Temporary solution to avoid a crash if there's no SDL
+    // FIXME: Temporary solution to avoid a crash if there's no SDL (I know this shouldn't happen)
+    //        (I hope this won't bring any unwanted bugs)
     return (IPTR) NULL;//DoSuperMethodA(CLASS, self, (Msg) message);
 }
 ///
