@@ -1,103 +1,149 @@
-## version $VER: Locale.catalog 1.0 (02.07.2008)
-## codeset 0
+## version $VER: Locale.catalog 2.0 (03.01.2018)
 ## language français
+## codeset 0
+;
 ;
 MSG_CANT_OPEN_LIB
 Impossible d'ouvrir %s V%ld !\n
+; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
 Impossible de verrouiller l'écran public !
+; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
 Impossible d'ouvrir la structure DrawInfo !
+; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
 Impossible d'ouvrir la structure VisualInfo !
+; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
 Impossible de créer les Gadgets !
+; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
 Impossible de créer les Menus !
+; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
 Impossible d'ouvrir la fenêtre !
+; Can't create window!
 ;
 MSG_WINTITLE
-Préférences de langage (Locale)
+Préférences de langage
+; Locale Preferences
 ;
 MSG_MEN_PROJECT
 Projet
+; Project
 ;
 MSG_MEN_PROJECT_OPEN
 O\0Ouvrir ...
+; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Sauver sous ...
+; A\0Save As...
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Quitter
+; Q\0Quit
 ;
 MSG_MEN_EDIT
 Modifier
+; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
 D\0Configuration par défaut
+; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
 L\0Dernière sauvegarde
+; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
 R\0Revenir à l'initial
+; R\0Restore
 ;
 MSG_MEN_SETTINGS
 Préférences
+; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
 I\0Créer des icônes ?
+; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
 Charger les préférences
+; Load Locale Preferences
 ;
 MSG_ASL_SAVE_TITLE
 Sauver les préférences
+; Save Locale Preferences
 ;
 MSG_OK
 Ok
+; Ok
 ;
 MSG_GAD_AVAIL_LANGUAGES
 Langages disponibles
+; Available Languages
 ;
 MSG_GAD_PREF_LANGUAGES
 Langages préférés
+; Preferred Languages
 ;
 MSG_GAD_CLEAR_LANGUAGES
 Effacer les langues
+; Clear Languages
 ;
 MSG_GAD_SAVE
 Sauver
+; Save
 ;
 MSG_GAD_USE
 Utiliser
+; Use
 ;
 MSG_GAD_CANCEL
 Annuler
+; Cancel
 ;
 MSG_GAD_TAB_LANGUAGE
 Langue
+; Language
 ;
 MSG_GAD_TAB_REGION
 Région
+; Country
 ;
 MSG_GAD_TAB_TIMEZONE
 Fuseau horaire
+; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
 Fuseau horaire : 1 Heure de UTC
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
 Fuseau horaire : %ld Heures de UTC
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
 Fuseau horaire : %ld Heures %ld Minutes de UTC
+; Time Zone: %ld Hours, %ld Minutes from UTC
+;
+MSG_CHARACTER_SET
+Jeu de caractères standard
+; Default character set
+;
+MSG_NOT_SPECIFIED
+Non spécifié
+; Not specified
+;
+MSG_GMT_CLOCK
+L'horloge matérielle enregistre UTC
+; Hardware clock stores UTC
 ;

@@ -1,10 +1,10 @@
-## version $VER: clock.catalog 2.0 (30.03.2016)
+## version $VER: clock.catalog 2.0 (03.01.2018)
 ## codeset 0
 ## language français
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
-*** Error: Can not create application object.
-; Error: Can't create application object.
+Erreur: Impossible de créer l'objet de l'application.
+;Error: Can't create application object.
 ;
 MSG_WINDOW_TITLE
 Horloge
@@ -12,8 +12,13 @@ Horloge
 ;
 MSG_DESCRIPTION
 Une Horloge pour Wanderer
+;Wanderer Clock
 ;
 MSG_OK
 Ok
 ; Ok
+;
+MSG_ERROR_DISKOBJECT
+Erreur: Impossible de créer l'objet disque.
+;Error: Can't create diskobject
 ;

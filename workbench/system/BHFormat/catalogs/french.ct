@@ -1,4 +1,4 @@
-## version $VER: XX.catalog XX.XX ($TODAY)
+## version $VER: format.catalog 2.0 (03.01.2018)
 ## language x
 ## codeset 0
 ;
@@ -180,7 +180,7 @@ Erreur
 ; Error
 ;
 MSG_ERRORS_FAILURE
-Ratage
+Échec
 ; Failure
 ;
 MSG_FORMAT

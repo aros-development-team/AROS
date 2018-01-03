@@ -1,0 +1,117 @@
+## version $VER: Find.catalog 1.0 (03.01.2018)
+## language français
+## codeset 0
+;
+MSG_APP_TITLE
+Rechercher
+; Find
+;
+MSG_APP_DESCRIPTION
+Outil de recherche de fichier
+; File search tool
+;
+MSG_APP_COPYRIGHT
+Copyright \xa9 2016 The AROS Development Team
+; Copyright \xa9 2016 The AROS Development Team
+;
+MSG_WI_TITLE
+Rechercher
+; Find
+;
+MSG_OK
+OK
+; OK
+;
+MSG_LST_FULLPATH
+Chemin complet
+; Full Path
+;
+MSG_LST_SIZE
+Taille
+; Size
+;
+MSG_LST_ATTRIBUTES
+Attributs
+; Attributes
+;
+MSG_LST_DATE
+Date
+; Date
+;
+MSG_LST_TIME
+Heure
+; Time
+;
+MSG_LST_COMMENT
+Commentaire
+; Comment
+;
+MSG_LBL_PATH
+Chemin :
+; Path
+;
+MSG_LBL_PATTERN
+Motif :
+; Pattern
+;
+MSG_LBL_CONTENTS
+Contenu :
+; Contents
+;
+MSG_BTN_START
+Débuter
+; Start
+;
+MSG_BTN_STOP
+Arrêter
+; Stop
+;
+MSG_BTN_OPEN
+Ouvrir
+; Open
+;
+MSG_BTN_VIEW
+Voir
+; View
+;
+MSG_BTN_DRAWER
+Répertoire
+; Drawer
+;
+; Error messages
+;
+MSG_ERR
+Erreur
+; Error
+;
+MSG_ERR_NO_APPLICATION
+Impossible de créer l'application.
+; Can't create application.
+;
+MSG_ERR_READARGS
+Impossible de lire les arguments de la ligne de commande.
+; Can't read commandline arguments.
+;
+MSG_ERR_NO_MEM
+Impossible d'allouer la mémoire.
+; Error:\nCan't allocate memory.
+;
+MSG_ERR_NO_WINDOW
+Impossible d'ouvrir la fenêtre.
+; Error:\nCan't open window.
+;
+MSG_ERR_DOS
+Erreur DOS:\n%s
+; DOS Error:\n%s
+;
+MSG_ERR_NO_FILE
+Impossible d'ouvrir le fichier\n\"%s\".
+; Error:\nCan't open file\n\"%s\".
+;
+MSG_ERR_NO_DIR
+Impossible d'ouvrir le répertoire\n\"%s\".
+; Error:\nCan't open directory\n\"%s\".
+;
+MSG_ERR_PATTERN
+Impossible d'analyser le motif.
+; Error:\nCan't parse pattern.

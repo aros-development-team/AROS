@@ -1,4 +1,4 @@
-## version $VER: more.catalog 1.0 (13.09.2000)
+## version $VER: more.catalog 2.0 (03.01.2018)
 ## codeset 0
 ## language français
 ;
@@ -115,4 +115,7 @@ N
 ;
 MSG_SHORTCUT_PREV
 P
+;
+MSG_SHORTCUT_EDITOR
+E
 ;

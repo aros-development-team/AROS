@@ -3465,9 +3465,11 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 
         DisposeObject(data->wd_Prefs);
         data->wd_Prefs = NULL;
+        return DoSuperMethodA(CLASS, self, (Msg) message);
     }
-
-    return DoSuperMethodA(CLASS, self, (Msg) message);
+    
+    // FIXME: Temporary solution to avoid a crash if there's no SDL
+    return (IPTR) NULL;//DoSuperMethodA(CLASS, self, (Msg) message);
 }
 ///
 
