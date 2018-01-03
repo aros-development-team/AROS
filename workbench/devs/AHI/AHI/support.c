@@ -518,8 +518,9 @@ struct List *GetModes(struct AHIUnitPrefs *prefs) {
       struct Node     *node;
       
       t = AllocVec( sizeof(struct ModeNode), MEMF_CLEAR);
-
-      if( t != NULL ) {
+  
+      if( t != NULL )
+      {
         LONG realtime;
 
         t->node.ln_Name = t->name;
@@ -534,17 +535,26 @@ struct List *GetModes(struct AHIUnitPrefs *prefs) {
             TAG_DONE);
 
         if((prefs->ahiup_Unit == AHI_NO_UNIT) ||
-	   (realtime && (id & 0x00ff0000) != 0x00030000 /* Argh!! */)) {
+	   (realtime && (id & 0x00ff0000) != 0x00030000 /* Argh!! */))
+        {
           // Insert node alphabetically
           for(node = list->lh_Head;
               node->ln_Succ;
-              node = node->ln_Succ) {
+              node = node->ln_Succ)
+          {
             if(Stricmp(t->node.ln_Name,node->ln_Name) < 0)
-              break;
+            {
+                break;
+            }
           }
-          Insert(list, (struct Node *) t, node->ln_Pred);
+
+          if(t != NULL)
+          {
+            Insert(list, (struct Node *) t, node->ln_Pred);
+          }
         }
-        else {
+        else
+        {
           FreeVec(t);
         }
       }
