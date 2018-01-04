@@ -8,6 +8,7 @@
 #include <dos/exall.h>
 #include <graphics/rastport.h>
 #include <exec/memory.h>
+#include <libraries/asl.h>
 #include <workbench/startup.h>
 #include "Project.h"
 #include "Gui.h"
@@ -21,6 +22,9 @@
 
 #define  CATCOMP_NUMBERS			/* We will need the string id */
 #include "strings.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 static Project first = NULL;		/* Keep track of first created project */
 UBYTE NbProject = 0;					/* Number of opened projects */
@@ -97,7 +101,8 @@ WORD load_in_project( Project p, STRPTR path )
 /*** Load and create a new project from a path ***/
 Project load_and_activate(Project ins, STRPTR name, BYTE use_prj)
 {
-	Project new;
+	Project new = NULL;
+    
 	if( ( new = (use_prj ? ins : new_project(ins, &prefs)) ) )
 	{
 		if( use_prj >= 2 )
@@ -121,6 +126,50 @@ Project load_and_activate(Project ins, STRPTR name, BYTE use_prj)
 			if( RETURN_OK == load_in_project(new, name) )
 			{
 				set_project_name(new, name);
+				/* Add a panel tab and show content of file */
+				if(use_prj) update_panel_name(ins);
+				else        refresh:reshape_panel(new);
+				active_project(new, TRUE);
+				return new;
+			}
+		}
+		/* Something failed, close project */
+		if(use_prj == 0) close_project(new),FreeVec(new);
+		FreeVec(name);
+	}
+	else ThrowError(Wnd, ErrMsg(ERR_NOMEM));
+	return NULL;
+}
+
+/*** Load and create a new project from a path ***/
+Project load_and_activate_fr(Project ins, APTR name, BYTE use_prj)
+{
+    struct FileRequester *fr = (struct FileRequester *) name;
+	Project new = NULL;
+
+	if( ( new = (use_prj ? ins : new_project(ins, &prefs)) ) )
+	{
+		if( use_prj >= 2 )
+		{
+			/* Multi-selection */
+			if( fr->fr_NumArgs > 0 )
+			{
+				new = create_projects(ins, fr->fr_ArgList, fr->fr_NumArgs);
+				if(new != ins ) {
+					inv_curs(ins, FALSE);
+					if(use_prj == 2) close_project(ins), FreeVec(ins);
+					goto refresh;
+				}
+			}
+			return NULL;
+		}
+		else /* Load a single file into `new' */
+		{
+			inv_curs(ins, FALSE);
+			/* We have a correct path, try to load file */
+			if( RETURN_OK == load_in_project(new, fr->fr_ArgList[0].wa_Name) )
+			{
+				set_project_name(new, fr->fr_ArgList[0].wa_Name);
 				/* Add a panel tab and show content of file */
 				if(use_prj) update_panel_name(ins);
 				else        refresh:reshape_panel(new);
@@ -312,8 +361,10 @@ STRPTR IsPat( STRPTR name )
 	if((tok = (STRPTR) AllocVec(len + 512, MEMF_CLEAR)))
 	{
 		if( ParsePatternNoCase(name, tok+512, len) > 0 )
+        {
 			return tok;
-		FreeVec( tok );
+        }
+        FreeVec( tok );
 	}
 	return NULL;
 }
@@ -348,6 +399,7 @@ Project create_projects(Project ins_after, APTR args, ULONG nb)
 	if(nb > 0)
 	{
 		register struct WBArg *arg = (struct WBArg *)args;
+
 		for(new = ins_after; nb--; arg++ )
 		{
 			CurrentDir(arg->wa_Lock);
@@ -359,6 +411,7 @@ Project create_projects(Project ins_after, APTR args, ULONG nb)
 				struct FileLock     *lock;
 				char   more;
 				((STRPTR)PathPart(arg->wa_Name))[0] = 0;
+
 				if((lock = (void *) Lock(arg->wa_Name, SHARED_LOCK)))
 				{
 					CurrentDir((BPTR) lock );
@@ -370,9 +423,11 @@ Project create_projects(Project ins_after, APTR args, ULONG nb)
 							more = ExAll((BPTR)lock, (struct ExAllData *)pattern, 512, ED_TYPE, eac);
 							if( eac->eac_Entries == 0 ) continue;
 							for(ead = (void *)pattern; ead; ead = ead->ed_Next)
+                            {
 								if(ead->ed_Type < 0 && !new_file(&new, ead->ed_Name))
 									goto stop_now;
-						} while( more );
+                            }
+                        } while( more );
 						stop_now: FreeDosObject(DOS_EXALLCONTROL, eac);
 					}
 					UnLock((BPTR) lock );

@@ -1,8 +1,8 @@
 /*** Debug.h : Simple ressource tracking for Memory allocation
 **** Written by T.Pierron  june 27, 2001
 ***/
-
-#if	DEBUG				/* Do not include this code if DEBUG isn't defined */
+// Changed from DEBUG to DEBUG_EDIT to avoid conflicts with <aros/debug.h>
+#if	DEBUG_EDIT				/* Do not include this code if DEBUG isn't defined */
 
 #if 0
 #ifdef	DEBUG_STUFF		/* One arbitrary file must defined this macro */
