@@ -2,7 +2,7 @@
 #define DATATYPES_PICTURECLASS_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Includes for pictureclass
@@ -74,7 +74,7 @@ struct ColorRegister
 
 /* Interface modes */
 #define PMODE_V42 (0)	/* Mode used for backward compatibility */
-#define PMODE_V43 (1)	/* Use the new features*/
+#define PMODE_V43 (1)	/* Use the new features */
 
 
 #define mskNone                 0

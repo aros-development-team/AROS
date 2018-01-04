@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Loader for shared libraries and devices.
@@ -96,7 +96,7 @@ static BPTR LDLoad(struct Process *caller, STRPTR name, STRPTR basedir,
 
     /*
 	If the caller was a process, we have more scope for loading
-	libraries. We can load them from the callers current directory,
+	libraries. We can load them from the caller's current directory,
 	or from the PROGDIR: assign. These could both be the same
 	though.
     */
