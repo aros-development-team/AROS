@@ -22,6 +22,7 @@
 #define	DEBUG_STUFF				/* Only activated if DEBUG macro is defined */
 #include "Debug.h"
 
+#define CATCOMP_ARRAY
 #define  CATCOMP_NUMBERS		/* We will need the string id */
 #include "strings.h"
 
