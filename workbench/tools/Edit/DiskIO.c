@@ -19,6 +19,9 @@
 
 #define	MEM_CHUNK		8192		/* To save file */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 extern struct Library *AslBase;
 
 extern struct Screen *Scr;
@@ -314,9 +317,11 @@ STRPTR ask_load(struct Window *wnd, AskArgs *path, BYTE set_file, CONST_STRPTR t
 		if(AslRequest(fr, init_tags(wnd, (set_file ? FRF_DOPATTERNS : FRF_DOMULTISELECT|FRF_DOPATTERNS))))
 		{
 			STRPTR path;
-			save_asl_dim(fr);
-			/* This is actually a (StartUpArgs *) */
-			if( set_file == 0 ) return (STRPTR) &fr->fr_NumArgs;
+
+            save_asl_dim(fr);
+
+            /* This is actually a (StartUpArgs *) */
+			if( set_file == 0 ) return (STRPTR) fr;
 
 			if( ( path = CatPath(fr->fr_Drawer, fr->fr_File) ) )
 			{
@@ -430,4 +435,3 @@ WORD load_file( LoadFileArgs *args )
 	WakeUp(Wnd);
 	return err;
 }
-

@@ -78,6 +78,7 @@ Project save_projects     (Project active,  char close);	/* Save all modified pr
 Project select_panel      (Project current, WORD x);		/* Search for panel under position x */
 Project create_projects   (Project, APTR, ULONG);			/* Create a list of projects */
 Project load_and_activate (Project, STRPTR name, BYTE);	/* Load and create a project */
+Project load_and_activate_fr(Project, APTR, BYTE);
 WORD    load_in_project   (Project, STRPTR file);			/* Try to a load a file */
 void    reload_project    (Project);							/* Load project and flush changes */
 char    active_project    (Project, char);					/* Makes specified project, the active one */
