@@ -1,7 +1,6 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include <exec/alerts.h>
@@ -27,7 +26,7 @@
 
 #define DSCHED(x)
 
-/* Check if the currently running task on this cpu should be rescheduled.. */
+/* Check if the currently running task on this cpu should be rescheduled */
 BOOL core_Schedule(void)
 {
 #if defined(DEBUG)
@@ -252,7 +251,7 @@ struct Task *core_Dispatch(void)
     }
     else
     {
-        /* Go idle if there is nothing to do ... */
+        /* Go idle if there is nothing to do */
         DSCHED(bug("[Kernel:%02d] No ready Task(s) - entering sleep mode\n", cpunum));
 
         /*

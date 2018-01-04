@@ -3080,7 +3080,7 @@ endif
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
 #
-# NB : the make test for the targets being upto date generates a benign Error 1.
+# N.B.: the make test for the targets being up to date generates a benign Error 1.
 #
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
 	@$(IF) ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
@@ -3243,7 +3243,7 @@ $(%(mmake)-cmakeflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmake
 #                         in sequence, until the archive is found and fetching it 
 #                         succeeded. If not specified, the current directory is assumed.
 #     - archive         = the archive name. Mandatory.
-#     - suffixes        = a list of suffixes to append to the the package name plus the
+#     - suffixes        = a list of suffixes to append to the package name plus the
 #                         version. Each one of them is tried until a matching archive is
 #                         found. They are appended to patches and these are tried the
 #                         same way as packages are.

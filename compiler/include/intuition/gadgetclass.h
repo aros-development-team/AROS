@@ -2,10 +2,10 @@
 #define INTUITION_GADGETCLASS_H
 
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Headerfile for Intuitions' gadget classes.
+    Desc: Header file for Intuition's gadget classes.
     Lang: english
 */
 
@@ -329,7 +329,7 @@ struct gpGoInactive
 #define GMR_HELPCODE  ((ULONG)0x00010000)
 
 
-/* This method is called by intuition, if on of the GFLG_REL flags or one of
+/* This method is called by intuition, if one of the GFLG_REL flags or one of
    the GA_Rel attributes is set and the window size changes or you are added to
    a window. In this method you should re-evaluate the size of yourself. You
    are not allowed to do any rendering operation during this method! */
@@ -346,7 +346,7 @@ struct gpLayout
 
 
 /* This method is invoked to learn about the sizing requirements of your class,
-   before an object is created. This is AROS specific. */
+   before an object is created. */
 #define GM_DOMAIN 7
 struct gpDomain
 {
