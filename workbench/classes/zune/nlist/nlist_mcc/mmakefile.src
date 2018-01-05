@@ -32,9 +32,6 @@ USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)
 
 USER_CFLAGS := -DAROS_ABI_V1
 USER_CFLAGS += $(PARANOIA_CFLAGS)
-ifeq ($(TARGET_GCC_VER), 6.3.0)
-USER_CFLAGS += -O1
-endif
 USER_LDFLAGS := -static
 
 %build_module_simple mmake=classes-zune-nlist-class \
