@@ -129,8 +129,10 @@ If EXISTS "S:User-Startup"
     Execute "S:User-Startup"
 EndIf
 
-WANDERER:Wanderer
+If EXISTS "WANDERER:Wanderer"
+    WANDERER:Wanderer
 
-If NOT ERROR
-    EndCLI
+    If NOT ERROR
+        EndCLI
+    EndIf
 EndIf
