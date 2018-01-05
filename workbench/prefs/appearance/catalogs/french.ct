@@ -28,11 +28,11 @@ Thème
 ; Theme
 ;
 MSG_ENABLEZUNEPREFS
-Hérite de la configuration de Zune ?
+Hériter de la configuration de Zune ?
 ; Inherit Zune Configuration?
 ;
 MSG_ENABLEWANDPREFS
-Hérite de la configuration de Wanderer ?
+Hériter de la configuration de Wanderer ?
 ; Inherit Wanderer Configuration?
 ;
 MSG_SEC_THEMING
