@@ -14,6 +14,7 @@ Execute S/Test dos/filetest
 Execute S/Test utility/amiga2date
 Execute S/Test utility/callhooktest
 Execute S/Test utility/date2amiga
+Execute S/Test utility/vartags
 
 Execute S/Try Avail FLUSH
 Execute S/Try LibList
