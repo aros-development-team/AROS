@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2016, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2018, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for target compiler feature detection
@@ -46,6 +46,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fpeel-loops
 #  -fstrict-aliasing
 #  -finline-small-functions
+#  -fipa-cp
 #  -funroll-loops
 
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
@@ -153,6 +154,15 @@ AC_MSG_RESULT($aros_inline_small_functions)
 if test "x-$aros_inline_small_functions" = "x-yes" ; then
     aros_cflags_inlinesmallfunctions=-finline-small-functions
     aros_cflags_noinlinesmallfunctions=-fno-inline-small-functions
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fipa-cp])
+CFLAGS=-fipa-cp
+AC_TRY_COMPILE(,, aros_ipa_cp="yes", aros_ipa_cp="no")
+AC_MSG_RESULT($aros_ipa_cp)
+if test "x-$aros_ipa_cp" = "x-yes" ; then
+    aros_cflags_ipacp=-fipa-cp
+    aros_cflags_noipacp=-fno-ipa-cp
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
@@ -818,6 +828,9 @@ AC_SUBST(aros_cflags_nostrictaliasing)
 
 AC_SUBST(aros_cflags_inlinesmallfunctions)
 AC_SUBST(aros_cflags_noinlinesmallfunctions)
+
+AC_SUBST(aros_cflags_ipacp)
+AC_SUBST(aros_cflags_noipacp)
 
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
