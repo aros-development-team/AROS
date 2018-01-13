@@ -206,9 +206,20 @@ CXXFLAGS    = $(TARGET_CXXFLAGS)
 AFLAGS	    = $(ISA_FLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS)
 LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
 
+# Target arch/CPU-specific options that we can't set in 'configure'
+# (these could be added to CFLAGS instead of using a new variable, except
+# that CFLAGS is unfortunately also passed to host and kernel compilers,
+# which might not recognise the same options)
+ifeq ($(AROS_TARGET_CPU),i386)
+    SAFETY_CFLAGS = $(CFLAGS_NO_IPA_CP)
+endif
+ifeq ($(AROS_TARGET_CPU),m68k)
+    SAFETY_CFLAGS += $(CFLAGS_NO_IPA_CP)
+endif
+
 # if LTO is desired use these flags ...
-# NB: make.tmpl builds the objects individualy
-#     so we dont include -fwhole-program for
+# NB: make.tmpl builds the objects individually
+#     so we don't include -fwhole-program for
 #     binaries by default.
 LTO_CFLAGS  = $(CFLAGS_LTO)
 LTO_BINARY_CFLAGS = $(LTO_CFLAGS)
