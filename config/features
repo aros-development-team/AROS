@@ -709,6 +709,8 @@ aros_warnflags_error
 aros_cflags_no_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_noipacp
+aros_cflags_ipacp
 aros_cflags_noinlinesmallfunctions
 aros_cflags_inlinesmallfunctions
 aros_cflags_nostrictaliasing
@@ -2733,6 +2735,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fpeel-loops
 #  -fstrict-aliasing
 #  -finline-small-functions
+#  -fipa-cp
 #  -funroll-loops
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
@@ -3075,6 +3078,33 @@ $as_echo "$aros_inline_small_functions" >&6; }
 if test "x-$aros_inline_small_functions" = "x-yes" ; then
     aros_cflags_inlinesmallfunctions=-finline-small-functions
     aros_cflags_noinlinesmallfunctions=-fno-inline-small-functions
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fipa-cp" >&5
+$as_echo_n "checking whether ${CC} accepts -fipa-cp... " >&6; }
+CFLAGS=-fipa-cp
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_ipa_cp="yes"
+else
+  aros_ipa_cp="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_ipa_cp" >&5
+$as_echo "$aros_ipa_cp" >&6; }
+if test "x-$aros_ipa_cp" = "x-yes" ; then
+    aros_cflags_ipacp=-fipa-cp
+    aros_cflags_noipacp=-fno-ipa-cp
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
@@ -4856,6 +4886,9 @@ fi
 #
 # export the feature flags...
 #
+
+
+
 
 
 
