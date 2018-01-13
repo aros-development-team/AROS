@@ -15,7 +15,9 @@ static const Tag tags[] =
 static struct TagItem *CloneTags(Tag tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE_AS(tag1, struct TagItem *)
+
     retval = CloneTagItems(AROS_SLOWSTACKTAGS_ARG(tag1));
+
     AROS_SLOWSTACKTAGS_POST
 }
 
@@ -27,8 +29,8 @@ LONG main(void)
 
     /* Create a tag list from an argument list */
 
-    temp_tag_list = tag_list = CloneTags(ANO_NameSpace, TRUE,
-        ANO_UserSpace, 100, ANO_Priority, -127, ANO_Flags, 0, TAG_END);
+    temp_tag_list = tag_list = CloneTags((IPTR)ANO_NameSpace, (IPTR)TRUE,
+        (IPTR)ANO_UserSpace, (IPTR)100, (IPTR)ANO_Priority, (IPTR)-127, (IPTR)ANO_Flags, (IPTR)0, (IPTR)TAG_END);
 
     /* Check that the returned tag list is correct */
 
