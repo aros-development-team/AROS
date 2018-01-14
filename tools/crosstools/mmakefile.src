@@ -97,7 +97,7 @@ GDB_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 
 GNU_REPOSITORY := gnu://
 ISL_REPOSITORY :=  ftp://gcc.gnu.org/pub/gcc/infrastructure
-MPC_REPOSITORY := http://www.multiprecision.org/mpc/download http://ftp.osuosl.org/pub/lfs/lfs-packages/7.3
+MPC_REPOSITORY := http://www.multiprecision.org/mpc/download http://ftp.osuosl.org/pub/lfs/lfs-packages/7.8
 ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
 
 binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
