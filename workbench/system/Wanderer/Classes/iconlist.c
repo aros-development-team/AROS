@@ -7,7 +7,7 @@
 #if !defined(__AROS__)
 #define WANDERER_BUILTIN_ICONLIST 1
 #else
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -16,7 +16,7 @@
 //#define DEBUG_ILC_EVENTS
 //#define DEBUG_ILC_KEYEVENTS
 //#define DEBUG_ILC_ICONDRAGDROP
-//#define DEBUG_ILC_ICONRENDERING
+#define DEBUG_ILC_ICONRENDERING
 //#define DEBUG_ILC_ICONSORTING
 //#define DEBUG_ILC_ICONSORTING_DUMP
 //#define DEBUG_ILC_ICONPOSITIONING
@@ -744,7 +744,7 @@ static void NullifyLasso(struct IconList_DATA *data, Object *obj)
     struct IconEntry    *node = NULL;
     struct Window       *thisWindow = NULL;
 
-    #if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
+#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
                             D(bug("[IconList] %s: Removing Lasso\n", __PRETTY_FUNCTION__));
 #endif
 
@@ -827,7 +827,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
         case INDEX_LASTACCESS:
             text = AllocVec(strlen(entry->ie_TxtBuf_DATE) + strlen(entry->ie_TxtBuf_TIME) + 5, MEMF_CLEAR);
             if (text)
-                sprintf(text, "%s at %s", entry->ie_TxtBuf_DATE,
+                sprintf(text, "%s %s", entry->ie_TxtBuf_DATE,
                     entry->ie_TxtBuf_TIME);
             break;
 
@@ -898,7 +898,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
 
         if (((rect->MaxY - rect->MinY + 1) - data->icld_IconLabelFont->tf_YSize) > 0)
         {
-            rect->MinY += ((rect->MaxY - rect->MinY + 1) - data->icld_IconLabelFont->tf_YSize)/2;
+            rect->MinY += ((rect->MaxY - rect->MinY + 1) - data->icld_IconLabelFont->tf_YSize) / 2;
         }
         
         switch(data->icld_LVMAttribs->lmva_ColumnHAlign[index])
@@ -996,7 +996,7 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
         for(i = 0; i < NUM_COLUMNS; i++)
         {
             struct Rectangle field_rect;
-            LONG                      index = data->icld_LVMAttribs->lmva_ColumnPos[i];
+            LONG index = data->icld_LVMAttribs->lmva_ColumnPos[i];
 
             if (!(data->icld_LVMAttribs->lmva_ColumnFlags[i] & LVMCF_COLVISIBLE)) continue;
 
@@ -2234,7 +2234,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 
                 case INDEX_LASTACCESS:
                     data->icld_LVMAttribs->lmva_ColumnFlags[i] |= LVMCF_COLSORTABLE;
-                    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Last Accessed";
+                    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Last Accessed  ";
                     break;
 
                 case INDEX_COMMENT:
@@ -3775,7 +3775,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                     yrect.MaxY = _mtop(obj) - data->update_scrolldy;
 
                     OrRectRegion(region, &yrect);
-
+                    
                     data->update_rect2 = &yrect;
                 }
 
@@ -3784,13 +3784,26 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 #endif
                 if (data->icld_DisplayRastPort == data->icld_BufferRastPort)
                 {
-                    ScrollRasterBF(data->icld_BufferRastPort,
-                                            data->update_scrolldx,
-                                            data->update_scrolldy,
-                                            _mleft(obj),
-                                            _mtop(obj),
-                                            _mright(obj),
-                                            _mbottom(obj));
+                    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+                    {
+                        ScrollRasterBF(data->icld_BufferRastPort,
+                                                data->update_scrolldx,
+                                                data->update_scrolldy,
+                                                _mleft(obj),
+                                                _mtop(obj) + (data->update_scrolldx ? 0 : data->icld_LVMAttribs->lmva_HeaderHeight),
+                                                _mright(obj),
+                                                _mbottom(obj));
+                    }
+                    else
+                    {
+                        ScrollRasterBF(data->icld_BufferRastPort,
+                                                data->update_scrolldx,
+                                                data->update_scrolldy,
+                                                _mleft(obj),
+                                                _mtop(obj),
+                                                _mright(obj),
+                                                _mbottom(obj));
+                    }
                 }
                 else
                 {
@@ -3817,10 +3830,12 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
             if (!data->icld__Option_IconListFixedBackground)
             {
+D(bug("[IconList] %s#%d: TEST1...\n", __PRETTY_FUNCTION__, draw_id));
                 MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
 
                 if (scroll_caused_damage)
                 {
+D(bug("[IconList] %s#%d: TEST2..\n", __PRETTY_FUNCTION__, draw_id));
                     if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
                     {
                         /* Theoretically it might happen that more damage is caused
@@ -3829,6 +3844,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                         window, not just this object */
 
                         Object *o = NULL;
+D(bug("[IconList] %s#%d: TEST3..\n", __PRETTY_FUNCTION__, draw_id));
 
                         GET(_win(obj),MUIA_Window_RootObject, &o);
                         MUI_Redraw(o, MADF_DRAWOBJECT);
