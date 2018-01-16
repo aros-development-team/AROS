@@ -16,7 +16,7 @@
 //#define DEBUG_ILC_EVENTS
 //#define DEBUG_ILC_KEYEVENTS
 //#define DEBUG_ILC_ICONDRAGDROP
-#define DEBUG_ILC_ICONRENDERING
+//#define DEBUG_ILC_ICONRENDERING
 //#define DEBUG_ILC_ICONSORTING
 //#define DEBUG_ILC_ICONSORTING_DUMP
 //#define DEBUG_ILC_ICONPOSITIONING
@@ -2234,7 +2234,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 
                 case INDEX_LASTACCESS:
                     data->icld_LVMAttribs->lmva_ColumnFlags[i] |= LVMCF_COLSORTABLE;
-                    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Last Accessed  ";
+                    data->icld_LVMAttribs->lmva_ColumnTitle[i] = "Last Accessed";
                     break;
 
                 case INDEX_COMMENT:
@@ -3830,12 +3830,10 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
             if (!data->icld__Option_IconListFixedBackground)
             {
-D(bug("[IconList] %s#%d: TEST1...\n", __PRETTY_FUNCTION__, draw_id));
                 MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
 
                 if (scroll_caused_damage)
                 {
-D(bug("[IconList] %s#%d: TEST2..\n", __PRETTY_FUNCTION__, draw_id));
                     if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
                     {
                         /* Theoretically it might happen that more damage is caused
@@ -3844,7 +3842,6 @@ D(bug("[IconList] %s#%d: TEST2..\n", __PRETTY_FUNCTION__, draw_id));
                         window, not just this object */
 
                         Object *o = NULL;
-D(bug("[IconList] %s#%d: TEST3..\n", __PRETTY_FUNCTION__, draw_id));
 
                         GET(_win(obj),MUIA_Window_RootObject, &o);
                         MUI_Redraw(o, MADF_DRAWOBJECT);
