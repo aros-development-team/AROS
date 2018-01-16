@@ -7,7 +7,7 @@
 #if !defined(__AROS__)
 #define WANDERER_BUILTIN_ICONLIST 1
 #else
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #endif
 
