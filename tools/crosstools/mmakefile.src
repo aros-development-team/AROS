@@ -87,7 +87,7 @@ GCC_EXTRA_OPTS += --disable-libstdcxx-pch
 GCC_EXTRA_OPTS += --disable-build-with-cxx
 GCC_EXTRA_OPTS += --disable-build-poststage1-with-cxx
 
-GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
+GCC_PATH = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 
 GDB_VERSION=7.9
 
@@ -96,8 +96,8 @@ GDB_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
 GDB_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 
 GNU_REPOSITORY := gnu://
-ISL_REPOSITORY :=  ftp://gcc.gnu.org/pub/gcc/infrastructure
-MPC_REPOSITORY := http://www.multiprecision.org/mpc/download http://ftp.osuosl.org/pub/lfs/lfs-packages/7.8
+ISL_REPOSITORY := ftp://gcc.gnu.org/pub/gcc/infrastructure
+MPC_REPOSITORY := ftp://ftp.gnu.org/gnu/mpc http://ftp.osuosl.org/pub/lfs/lfs-packages/7.8
 ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
 
 binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
@@ -105,7 +105,7 @@ gmp-installflag := $(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
 isl-installflag := $(CROSSTOOLSDIR)/.installflag-isl-$(ISL_VERSION)
 mpfr-installflag := $(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
 mpc-installflag := $(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
-gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
+gcc-installflag := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
 icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
 gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
 
