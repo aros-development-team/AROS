@@ -486,7 +486,7 @@ static int ata_pci_Scan(struct ataBase *base)
                     {
                         D(bug("[PCI-ATA] Disabling all ATA devices\n"));
 #ifdef SUPPORT_LEGACY
-                        scanlegacy =
+                        scanlegacy = FALSE;
 #endif
                         scanpci = FALSE;
 
