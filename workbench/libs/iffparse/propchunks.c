@@ -58,7 +58,7 @@
 
 #if DEBUG
     {
-    LONG * lptr = propArray;
+    const LONG * lptr = propArray;
     bug ("PropChunks (iff=%p, [\n", iff);
     for (count = 0; count < numPairs; count++)
     {
