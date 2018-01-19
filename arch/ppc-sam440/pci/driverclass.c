@@ -86,10 +86,13 @@ static ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UB
     outl_le(CFGADD(bus, dev, sub, reg),PCI0_CFGADDR);
     temp=inl_le(PCI0_CFGDATA);
     Enable();
+#if 0
+    /* FIXME: Is this really needed on SAM460? Other OSes do not seem to confirm this. */
     if (reg == 0x3c && psd->IntLine != 0xff) { /* PCICS_INT_LINE */
         temp &= ~0xff;
         temp |= psd->IntLine;
     }
+#endif
     DB2(bug("[PCI440] -> %08x = %08x\n", CFGADD(bus, dev, sub, reg), temp));
 
     return temp;
