@@ -885,7 +885,7 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
     ULONG count=blk->sectors;
     APTR buffer = blk->buffer;
     APTR bounce_buffer = NULL;
-    IPTR bounce_buffer_length;
+    IPTR bounce_buffer_length = 0;
 
     if (blk->type == CT_LBA48)
         max <<= 8;
