@@ -2849,7 +2849,7 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                                 nhi->nhi_LogicalMin = nch->nch_HidGlobal.nhg_LogicalMin;
                                                 nhi->nhi_LogicalMax = nch->nch_HidGlobal.nhg_LogicalMax;
 
-                                                count = nhi->nhi_MapSize = (nhi->nhi_LogicalMax - nhi->nhi_LogicalMin)+1;
+                                                nhi->nhi_MapSize = (nhi->nhi_LogicalMax - nhi->nhi_LogicalMin)+1;
                                                 usageptr = nhi->nhi_UsageMap = psdAllocVec(sizeof(ULONG) * count);
                                                 alistptr = nhi->nhi_ActionMap = psdAllocVec(sizeof(struct List) * count);
                                                 nhi->nhi_Buffer = psdAllocVec(2 * sizeof(LONG) * nhi->nhi_Count);
@@ -2879,7 +2879,7 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                                             nhi->nhi_LogicalMin, nhi->nhi_LogicalMax));
 
                                                 nhi->nhi_SameUsages = TRUE;
-                                                do
+                                                for (count = nhi->nhi_MapSize; count; count--)
                                                 {
                                                     nhu = (struct NepHidUsage *) nch->nch_HidDesigns.lh_Head;
                                                     if(nhu->nhu_Node.ln_Succ)
@@ -2925,14 +2925,17 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                                     *usageptr++ = usageid;
                                                     NewList(alistptr);
                                                     alistptr++;
-                                                } while(--count);
+                                                }
 
                                                 if(nhi->nhi_SameUsages)
                                                 {
                                                     // if it's all the same, we can assign a usage id to this array
                                                     nhi->nhi_Usage = nhi->nhi_UsageMap[0];
                                                 }
-                                                AddTail(&nhc->nhc_Items, &nhi->nhi_Node);
+                                                if(nhi->nhi_MapSize)
+                                                {
+                                                    AddTail(&nhc->nhc_Items, &nhi->nhi_Node);
+                                                }
                                             }
                                         } /* FIXME: Clean string/delimiter stack if no usage? */
                                         bitpos += nch->nch_HidGlobal.nhg_ReportSize * nch->nch_HidGlobal.nhg_ReportCount;
