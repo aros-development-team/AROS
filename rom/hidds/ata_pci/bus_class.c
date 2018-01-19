@@ -34,7 +34,7 @@ AROS_INTH1(ata_PCI_Interrupt, struct ATA_BusData *, data)
      */
     if (data->bus->atapb_DMABase != 0)
     {
-        port_t dmaStatusPort = dma_Status + data->bus->atapb_DMABase;
+        port_t dmaStatusPort = (port_t)(dma_Status + data->bus->atapb_DMABase);
         UBYTE dmastatus = inb(dmaStatusPort);
 
         if (!(dmastatus & DMAF_Interrupt))
@@ -284,8 +284,8 @@ APTR PCIATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     
     if (pio)
     {
-        pio->ioBase = data->bus->atapb_IOBase;
-        pio->ioAlt  = data->bus->atapb_IOAlt;
+        pio->ioBase = (port_t)data->bus->atapb_IOBase;
+        pio->ioAlt  = (port_t)data->bus->atapb_IOAlt;
     }
 
     return pio;
@@ -307,7 +307,7 @@ APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     dma = (struct dma_data *)OOP_DoSuperMethod(cl, o, msg);
     if (dma)
     {
-        dma->au_DMAPort = data->bus->atapb_DMABase;
+        dma->au_DMAPort = (port_t)data->bus->atapb_DMABase;
         dma->ab_PRD     = data->dmaBuf;
 
         /* Ensure table does not cross a 4kB boundary (required by VirtualBox,
@@ -375,7 +375,7 @@ BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
 void PCIATA__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
-    port_t dmaBase = data->bus->atapb_DMABase;
+    port_t dmaBase = (port_t)data->bus->atapb_DMABase;
 
     if (dmaBase)
     {
