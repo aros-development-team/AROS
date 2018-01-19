@@ -72,7 +72,7 @@
 
 // bug("OOP_NewObject(class=%s, classptr=%p, tags=%p)\n", classID, classPtr, tagList);    
     EnterFunc(bug("OOP_NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
-    		classPtr, ((classID != (CONST_STRPTR)NULL) ? classID : "(null)"), tagList));
+		  classPtr, (classID ? (const char *)classID : "(null)"), tagList));
 
     if (!classPtr)
     {
