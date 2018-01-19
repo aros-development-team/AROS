@@ -39,7 +39,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-console \
 #MM     kernel-fs-con \
 #MM     kernel-fs-ram \
-#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-gfx \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-hidd \
