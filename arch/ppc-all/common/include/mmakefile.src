@@ -2,6 +2,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-copy_includes includes=multiboot.h dir=aros
+%copy_includes includes=multiboot.h dir=aros
 
 %common
