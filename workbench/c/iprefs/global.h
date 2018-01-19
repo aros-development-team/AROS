@@ -179,7 +179,7 @@
 struct IPrefsSem
 {
     struct SignalSemaphore sem;
-    UBYTE   	    	   semname[12];
+    UBYTE   	    	   semname[13];
 };
 
 /*********************************************************************************************/
