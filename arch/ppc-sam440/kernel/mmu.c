@@ -95,15 +95,15 @@ static struct mmu_page_size {
 void map_region(struct tlb_info *info, uint8_t extra, uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32_t prot)
 {
     long tlb_temp = info->free;
-    
+
     D(bug("[KRN] map_region(%08x, %08x, %08x, %04x): ", physbase, virtbase, length, prot));
-    
+
     /* While there is still something to map */
     while (length)
     {
         int tlb;
         int i = 0;
-        
+
         /* Check all available page sizes and try to match the best (the biggest) usable TLB entry */
         while (allowable_pages[i].code != 0xff)
         {
@@ -111,13 +111,13 @@ void map_region(struct tlb_info *info, uint8_t extra, uintptr_t physbase, uintpt
                 break;
             i++;
         }
-        
+
         if (allowable_pages[i].code == 0xff)
         {
             D(bug("\n[KRN] map_region failed\n"));
             return;
         }
-        
+
         /* get free TLB */
         tlb = alloc_tlb(info);
         if (tlb == -1)
@@ -125,20 +125,19 @@ void map_region(struct tlb_info *info, uint8_t extra, uintptr_t physbase, uintpt
             D(bug("\n[KRN] map_region: No more free TLB entries\n"));
             return;
         }
-        
+
         //D(bug("\n[KRN] TLB%02x: %08x - %08x : %08x - %08x: ", tlb,
               //physbase, physbase + allowable_pages[i].mask,
               //virtbase, virtbase + allowable_pages[i].mask));
-        
+
         /* Do really write to the tlb */
         asm volatile("tlbwe %0,%3,0; tlbwe %1,%3,1; tlbwe %2,%3,2"
                      ::"r"(virtbase | allowable_pages[i].code | TLB_V), "r"(physbase | extra), "r"(prot), "r"(tlb));
         //D(bug("%08x %08x %08x ", virtbase | allowable_pages[i].code | 0x200, physbase, prot));
-        
+
         length -= allowable_pages[i].mask + 1;
         physbase += allowable_pages[i].mask + 1;
         virtbase += allowable_pages[i].mask + 1;
-        
     }
     tlb_temp -= info->free;
     D(bug("%2d TLB%s\n", tlb_temp, tlb_temp > 1 ? "s":""));
@@ -155,6 +154,18 @@ static void free_remaining(struct tlb_info *info)
     D(bug("[KRN] TLB%02x: Clear\n", tlb));
     free_remaining(info);
     free_tlb(info, tlb);
+}
+
+static void copy_tlb_entry(int from, int to)
+{
+    asm volatile("tlbre %%r0,%0,0\n"
+                 "tlbwe %%r0,%1,0\n"
+                 "tlbre %%r0,%0,1\n"
+                 "tlbwe %%r0,%1,1\n"
+                 "tlbre %%r0,%0,2\n"
+                 "tlbwe %%r0,%1,2\n"
+                 "isync"
+                 ::"r"(from), "r"(to):"r0");
 }
 
 #if DEBUG
@@ -249,6 +260,15 @@ void mmu_init(struct TagItem *tags)
 
     D(tlb_dump());
 
+    /* Before we overwrite TLB entries make sure we have a valid entry for this code we are executing
+     * now otherwise we may get exceptions before the appropriate entries are set up. To avoid this
+     * copy the current entry to the end so by the time we overwrite it the first entries cover us */
+    copy_tlb_entry(0, 31);
+#if DEBUG
+    /* Also make sure we have an entry to access the serial port if we are debugging */
+    copy_tlb_entry(13, 63);
+#endif
+
     /*
      * In order to reduce the usage of TLB entries, align the kernel regions.
      * It wastes a tiny bit of RAM but saves a lot of TLB entries.
@@ -265,7 +285,7 @@ void mmu_init(struct TagItem *tags)
      *   the AmigaOS semantic of the CacheClearE() routines,
      *   which appear to assume Write-Through caching.
      */
-    
+
     /* 
      * The very first entry has to cover the executable part of kernel, 
      * where exception handlers are located
@@ -275,7 +295,7 @@ void mmu_init(struct TagItem *tags)
     map_region(&info, 0x0, krn_lowest, 0xff000000 + krn_lowest, krn_base - krn_lowest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_W);
     /* The low memory will be RW for the supervisor mode, RO from user */
     map_region(&info, 0x0, 0, 0xff000000, krn_lowest, TLB_SR | TLB_SW | TLB_UR | TLB_W);
-    
+
     /* The regular RAM, make 1GB of it - amcc440 cannot do more. */
     map_region(&info, 0x0, krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX | TLB_W);
 
@@ -313,7 +333,7 @@ void mmu_init(struct TagItem *tags)
     D(tlb_dump());
 
     D(bug("[KRN] TLB status: %d used, %d free\n", 64 - info.free, info.free));
-    
+
     /* flush TLB shadow regs */
     asm volatile("isync;");
 }
