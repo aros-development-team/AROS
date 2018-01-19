@@ -211,7 +211,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     ULONG *iStream;
     APTR dStream;
     ULONG iSize = 0, dSize = 0;
-#if defined(__arm__) || defined(__x86_64__)
+#if defined(__arm__) || defined(__x86_64__) || defined(__powerpc__)
     va_list nullarg = {};
 #else
     va_list nullarg = 0;
