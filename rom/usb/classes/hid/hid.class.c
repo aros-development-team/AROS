@@ -2850,8 +2850,8 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                                 nhi->nhi_LogicalMax = nch->nch_HidGlobal.nhg_LogicalMax;
 
                                                 nhi->nhi_MapSize = (nhi->nhi_LogicalMax - nhi->nhi_LogicalMin)+1;
-                                                usageptr = nhi->nhi_UsageMap = psdAllocVec(sizeof(ULONG) * count);
-                                                alistptr = nhi->nhi_ActionMap = psdAllocVec(sizeof(struct List) * count);
+                                                nhi->nhi_UsageMap = psdAllocVec(sizeof(ULONG) * nhi->nhi_MapSize);
+                                                nhi->nhi_ActionMap = psdAllocVec(sizeof(struct List) * nhi->nhi_MapSize);
                                                 nhi->nhi_Buffer = psdAllocVec(2 * sizeof(LONG) * nhi->nhi_Count);
                                                 nhi->nhi_OldBuffer = &nhi->nhi_Buffer[nhi->nhi_Count];
                                                 nhi->nhi_PhysicalMin = nch->nch_HidGlobal.nhg_PhysicalMin;
@@ -2859,6 +2859,8 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                                 nhi->nhi_UnitExp = nch->nch_HidGlobal.nhg_UnitExp;
                                                 nhi->nhi_Unit = nch->nch_HidGlobal.nhg_Unit;
 
+                                                usageptr = nhi->nhi_UsageMap;
+                                                alistptr = nhi->nhi_ActionMap;
                                                 if(!(usageptr && alistptr && nhi->nhi_Buffer))
                                                 {
                                                     psdFreeVec(usageptr);
