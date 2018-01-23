@@ -13,9 +13,9 @@ struct MUI_CustomClass *FontListClass;
 
 struct MUIS_FontList_Entry
 {
-	STRPTR FileName;
-	STRPTR FamilyName;
-	STRPTR StyleName;
+    STRPTR FileName;
+    STRPTR FamilyName;
+    STRPTR StyleName;
 };
 
 void CleanupFontListClass(void);
