@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #undef NO_INLINE_STDARG
@@ -23,17 +24,7 @@
 #include "globals.h"
 #include "locale.h"
 
-#define ARG_TEMPLATE "TTFFONT/A,OUTFONT/A,CODEPAGE"
-
-#define VERSION "$VER: FTManager 1.4 (22.5.2015) ©2011-2015 The AROS Development Team"
-
-enum
-{
-    ARG_TTFFONT,
-    ARG_OUTFONT,
-    ARG_CODEPAGE,
-    ARG_COUNT
-};
+#define VERSION "$VER: FTManager 1.5 (23.1.2018) (C) 2011-2018 The AROS Development Team"
 
 /***********************************************************************/
 
@@ -48,6 +39,10 @@ static struct RDArgs *rda;
 static Object *app;
 static STRPTR *codesetentries;
 static STRPTR *codesetsupported;
+
+/***********************************************************************/
+
+int ftmanager_cli(void);
 
 /***********************************************************************/
 
@@ -169,7 +164,6 @@ static int ftmanager_gui(void)
     if (!Init(TRUE))
         return RETURN_FAIL;
 
-    SetDefaultCodePage();
 
     codesetsupported = CodesetsSupportedA(NULL); // Available codesets
     countfrom = 0;
@@ -379,17 +373,14 @@ static int ftmanager_gui(void)
     return ret;
 }
 
-static int ftmanager_cli(void)
-{
-    // TODO implement me
-    return RETURN_FAIL;
-}
 
 int main(int argc, char **argv)
 {
     int retval = RETURN_FAIL;
 
         Locale_Initialize();
+
+    SetDefaultCodePage();
 
     if (argc > 1)
     {

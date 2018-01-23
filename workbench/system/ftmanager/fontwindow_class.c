@@ -10,9 +10,9 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
+#include "globals.h"
 #include "fontwindow_class.h"
 #include "fontinfo_class.h"
-#include "globals.h"
 #include "locale.h"
 
 struct FontWindowData

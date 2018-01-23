@@ -14,41 +14,10 @@
 #include <proto/asl.h>
 #include <proto/dos.h>
 
+#include "globals.h"
 #include "fontinfo_class.h"
 #include "fontbitmap_class.h"
-#include "globals.h"
 #include "locale.h"
-
-struct FontInfoData
-{
-    STRPTR Filename;
-    FT_Face Face;
-    Object *AttachedFile;
-    Object *Name;
-    Object *YSizeFactorHigh;
-    Object *YSizeFactorLow;
-    Object *StemWeight;
-    Object *SlantStyle;
-    Object *HorizStyle;
-    Object *Family;
-    Object *Fixed;
-    Object *Serif;
-    //Object *AlgoStyle;
-    Object *FaceNum;
-    Object *Metric;
-    Object *BBoxYMin;
-    Object *BBoxYMax;
-    Object *SpaceWidth;
-    Object *Preview;
-    Object *PreviewGroup;
-    Object *Gray;
-    Object *TestSize;
-    Object *TestString;
-    struct TagItem OTags[26];
-    UWORD AvailSizes[OT_MAXAVAILSIZES];
-};
-
-typedef struct FontInfoData FontInfoData;
 
 struct CycleToStringP
 {
@@ -552,9 +521,16 @@ IPTR fiDispose(Class *cl, Object *o)
 }
 #endif
 
+IPTR fiSetOTags_real(FontInfoData *dat);
+
 IPTR fiSetOTags(Class *cl, Object *o)
 {
     FontInfoData *dat = INST_DATA(cl, o);
+  return fiSetOTags_real(dat);
+}
+
+IPTR fiSetOTags_real(FontInfoData *dat)
+{
     struct TagItem *tag = dat->OTags;
     IPTR x = 0;
     IPTR y = 0;
@@ -706,28 +682,50 @@ ULONG fiUpdatePreview(Class *cl, Object *o)
     return preview != NULL;
 }
 
-ULONG fiWriteFiles(Class *cl, Object *o)
+static ULONG fiWriteFiles_gui(Class *cl, Object *o)
 {
     FontInfoData *dat = INST_DATA(cl, o);
-    BPTR file;
-    char name[32];
-    STRPTR base = NULL;
-    BPTR olddir;
+  STRPTR base = NULL;
 
     get(dat->Name, MUIA_String_Contents, &base);
     if (!base || !base[0])
         return FALSE;
 
-    olddir = CurrentDir(destdir);
+  ULONG size = sizeof(ULONG) + (fiSetOTags(cl, o) + 2) * sizeof(UQUAD);
 
-    strcpy(name, base);
+  return fiWriteFiles(dat, base, NULL, size);
+}
+
+ULONG fiWriteFiles(FontInfoData *dat, STRPTR base, STRPTR target_dir, ULONG nr_tags)
+{
+    BPTR file;
+    char path[256];
+    char name[256];
+    BPTR olddir;
+
+  D(bug("target_dir: %s\n", target_dir));
+  if(target_dir)
+  {
+      strncpy(path, target_dir, 230); /* hmm */
+      AddPart(path, base, 250); /* leave at least space for .otag and .font */
+  }
+  else
+  {
+      strncpy(path, base, 250);
+  }
+
+  olddir = CurrentDir(destdir);
+
+    strcpy(name, path);
     strcat(name, ".otag");
+
+  D(bug("otag filename: %s\n", name));
 
     file = Open(name, MODE_NEWFILE);
     if (file)
     {
         struct TagItem *tag;
-        ULONG size, indirect_size;
+        ULONG indirect_size;
         UBYTE *buffer;
         int num_sizes;
 
@@ -736,7 +734,6 @@ ULONG fiWriteFiles(Class *cl, Object *o)
          * Each complete tag can be represented by UQUAD (two ULONGs),
          * and we also append one ULONG for TAG_DONE terminator
          */
-        size = sizeof(ULONG) + (fiSetOTags(cl, o) + 2) * sizeof(UQUAD);
         indirect_size = 0;
 
         for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
@@ -759,7 +756,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
         num_sizes = 1 + dat->AvailSizes[0];
         indirect_size += num_sizes * sizeof(UWORD);
 
-        dat->OTags[0].ti_Data = size + indirect_size;
+        dat->OTags[0].ti_Data = nr_tags + indirect_size;
 
         buffer = malloc(indirect_size);
         if (buffer)
@@ -777,7 +774,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
                 offset += 1;
                 offset &= ~1;
                 memcpy(buffer + offset, codepage, sizeof(codepage));
-                tag->ti_Data = size + offset;
+                tag->ti_Data = nr_tags + offset;
                 offset += sizeof(codepage);
             }
             else if (tag->ti_Tag & OT_Indirect && tag->ti_Data)
@@ -785,7 +782,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
                 size_t len = strlen((const char *)tag->ti_Data) + 1;
 
                 memcpy(buffer + offset, (const char *)tag->ti_Data, len);
-                tag->ti_Data = size + offset;
+                tag->ti_Data = nr_tags + offset;
                 offset += len;
             }
             }
@@ -794,7 +791,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
             offset &= ~1;
 
             tag->ti_Tag = OT_AvailSizes;
-            tag->ti_Data = size + offset;
+            tag->ti_Data = nr_tags + offset;
             ++tag;
 
             tag->ti_Tag = TAG_END;
@@ -802,7 +799,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
             memcpy(buffer + offset, dat->AvailSizes, num_sizes * sizeof(UWORD));
             offset += num_sizes * sizeof(UWORD);
 
-            write_tags = malloc(size);
+            write_tags = malloc(nr_tags);
 
             dest = write_tags;
             for (tag = dat->OTags; tag->ti_Tag != TAG_END; tag++)
@@ -813,7 +810,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
             }
             dest[0] = AROS_LONG2BE(TAG_END);
 
-            Write(file, write_tags, size);
+            Write(file, write_tags, nr_tags);
             free(write_tags);
 
             Write(file, buffer, offset);
@@ -822,9 +819,14 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 
         Close(file);
     }
+  else
+  {
+      printf("ERROR: unable to write to file \"%s\"\n", name);
+  }
 
-    strcpy(name, base);
+    strcpy(name, path);
     strcat(name, ".font");
+  D(bug("font filename: %s\n", name));
 
     file = Open(name, MODE_NEWFILE);
     if (file)
@@ -833,6 +835,10 @@ ULONG fiWriteFiles(Class *cl, Object *o)
         Write(file, data, sizeof(data));
         Close(file);
     }
+  else
+  {
+      printf("ERROR: unable to write to file \"%s\"\n", name);
+  }
 
     CurrentDir(olddir);
 
@@ -865,7 +871,7 @@ AROS_UFH3(ULONG, FontInfoDispatch,
             break;
 
         case MUIM_FontInfo_WriteFiles:
-            ret = fiWriteFiles(cl, o);
+            ret = fiWriteFiles_gui(cl, o);
             break;
 
         default:
