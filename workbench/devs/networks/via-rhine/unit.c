@@ -549,15 +549,16 @@ VOID CopyPacket(struct VIARHINEBase *VIARHINEDeviceBase, struct VIARHINEUnit *un
 {
     struct Opener *opener;
     BOOL filtered = FALSE;
-    UBYTE *ptr;
+    UBYTE *ptr, *address;
 
 D(bug("%s: CopyPacket(packet @ %x, len = %d)\n", unit->rhineu_name, buffer, packet_size));
 
     /* Set multicast and broadcast flags */
 
     request->ios2_Req.io_Flags &= ~(SANA2IOF_BCAST | SANA2IOF_MCAST);
-    if((*((ULONG *)(buffer->eth_packet_dest)) == 0xffffffff) &&
-       (*((UWORD *)(buffer->eth_packet_dest + 4)) == 0xffff))
+    address = buffer->eth_packet_dest;
+    if((*((ULONG *)address) == 0xffffffff) &&
+            (*((UWORD *)(address + 4)) == 0xffff))
     {
        request->ios2_Req.io_Flags |= SANA2IOF_BCAST;
 D(bug("%s: CopyPacket: BROADCAST Flag set\n", unit->rhineu_name));
@@ -855,21 +856,21 @@ D(bug("%s CreateUnit:   NIC Private Data Area @ %x, start @ %x\n", unit->rhineu_
                     unit->rhineu_irqhandler.is_Node.ln_Type = NT_INTERRUPT;
                     unit->rhineu_irqhandler.is_Node.ln_Pri = 100;
                     unit->rhineu_irqhandler.is_Node.ln_Name = LIBBASE->rhineb_Device.dd_Library.lib_Node.ln_Name;
-                    unit->rhineu_irqhandler.is_Code = VIARHINE_IntHandlerF;
+                    unit->rhineu_irqhandler.is_Code = (APTR)VIARHINE_IntHandlerF;
                     unit->rhineu_irqhandler.is_Data = unit;
 
                     unit->rhineu_touthandler.is_Node.ln_Type = NT_INTERRUPT;
                     unit->rhineu_touthandler.is_Node.ln_Pri = 100;
                     unit->rhineu_touthandler.is_Node.ln_Name = LIBBASE->rhineb_Device.dd_Library.lib_Node.ln_Name;
-                    unit->rhineu_touthandler.is_Code = VIARHINE_TimeoutHandlerF;
+                    unit->rhineu_touthandler.is_Code = (APTR)VIARHINE_TimeoutHandlerF;
                     unit->rhineu_touthandler.is_Data = unit;
 
                     unit->rhineu_rx_int.is_Node.ln_Name = unit->rhineu_name;
-                    unit->rhineu_rx_int.is_Code = VIARHINE_RX_IntF;
+                    unit->rhineu_rx_int.is_Code = (APTR)VIARHINE_RX_IntF;
                     unit->rhineu_rx_int.is_Data = unit;
 
                     unit->rhineu_tx_int.is_Node.ln_Name = unit->rhineu_name;
-                    unit->rhineu_tx_int.is_Code = VIARHINE_TX_IntF;
+                    unit->rhineu_tx_int.is_Code = (APTR)VIARHINE_TX_IntF;
                     unit->rhineu_tx_int.is_Data = unit;
 
                     for (i=0; i < REQUEST_QUEUE_COUNT; i++)
