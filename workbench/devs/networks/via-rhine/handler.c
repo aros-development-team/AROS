@@ -346,10 +346,12 @@ D(bug("%s: S2CmdConfigInterface()\n", unit->rhineu_name));
 
 static BOOL CmdBroadcast(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
+    UWORD i;
+
     /* Fill in the broadcast address as destination */
 
-    *((ULONG *)request->ios2_DstAddr) = 0xffffffff;
-    *((UWORD *)(request->ios2_DstAddr + 4)) = 0xffff;
+    for(i = 0; i < ETH_ADDRESSSIZE; i++)
+        request->ios2_DstAddr[i] = 0xff;
 
     /* Queue the write as normal */
 
