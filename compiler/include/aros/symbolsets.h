@@ -2,7 +2,7 @@
 #define _AROS_SYMBOLSETS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Symbol sets support
@@ -173,7 +173,7 @@ AROS_IMPORT_ASM_SYM(void *, _##bname, __aros_rellib_base_##bname);
 #define ForeachElementInSet(set, direction, pos, elem)                       \
 for                                                                          \
 (                                                                            \
-    pos = (direction >= 0) ? 1 : ((long *)(set))[0];                         \
+    pos = (direction >= 0) ? 1 : (long)(set)[0];                             \
     elem = (void *)(set)[pos], (direction >= 0) ? elem != NULL : (pos) != 0; \
     pos += (direction >= 0) ? 1 : -1                                         \
 ) 
