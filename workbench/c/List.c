@@ -144,7 +144,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: List 41.13 (18.12.2014)\n";
+const TEXT version[] = "$VER: List 41.14 (26.01.2018)";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -1151,6 +1151,13 @@ int main(void)
         
         for (i = 0; directories[i] != NULL; i++)
         {
+            if (!IsFileSystem(directories[i]))
+            {
+                Printf("\"%s\" cannot be listed: not a FileSystem device\n", directories[i]);
+                result = RETURN_FAIL;
+                break;
+            }
+
             error = listFile(directories[i], files, dirs, parsedPattern,
                              noHead, lFormat, quick, dates, noDates,
                              block, &sinceDatetime.dat_Stamp,

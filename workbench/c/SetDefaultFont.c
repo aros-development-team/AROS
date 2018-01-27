@@ -89,10 +89,7 @@ static void Cleanup(char *msg)
         Printf("SetDefaultFont: %s\n",msg);
     }
     
-    if (myargs)
-    {
-        FreeArgs(myargs);
-    }
+    FreeArgs(myargs);
 }
 
 int GfxBase_version = 0;
