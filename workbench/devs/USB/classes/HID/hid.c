@@ -64,19 +64,19 @@ int hid_maxrepid(void *s, int len)
     struct hid_data *d;
     int maxid = -1;
     h.report_ID = 0;
-    
+
     bug("[HID] hid_maxrepid(%p,%d)\n", s, len);
-    
+
     for (d = hid_start_parse(s, len, hid_none); hid_get_item(d, &h);)
     {
         bug("[HID]   ReportID=%d\n", h.report_ID);
-        
+
         if (h.report_ID > maxid)
             maxid = h.report_ID;
     }
-    
+
     hid_end_parse(d);
-    
+
     return maxid;
 }
 
@@ -322,28 +322,28 @@ int hid_get_item(struct hid_data *s, struct hid_item *h)
                     case 0:
                         if (bSize == 1)
                             dval = c->_usage_page | (dval&0xff);
-                            else if (bSize == 2)
-                                dval = c->_usage_page | (dval&0xffff);
-                                c->usage = dval;
-                                if (s->nu < MAXUSAGE)
-                                    s->usages[s->nu++] = dval;
-                                    /* else XXX */
-                                    break;
+                        else if (bSize == 2)
+                            dval = c->_usage_page | (dval&0xffff);
+                        c->usage = dval;
+                        if (s->nu < MAXUSAGE)
+                            s->usages[s->nu++] = dval;
+                        /* else XXX */
+                            break;
                     case 1:
                         s->minset = 1;
                         if (bSize == 1)
                             dval = c->_usage_page | (dval&0xff);
-                            else if (bSize == 2)
-                                dval = c->_usage_page | (dval&0xffff);
-                                c->usage_minimum = dval;
-                                break;
+                        else if (bSize == 2)
+                            dval = c->_usage_page | (dval&0xffff);
+                        c->usage_minimum = dval;
+                        break;
                     case 2:
                         if (bSize == 1)
                             dval = c->_usage_page | (dval&0xff);
-                            else if (bSize == 2)
-                                dval = c->_usage_page | (dval&0xffff);
-                                c->usage_maximum = dval;
-                                break;
+                        else if (bSize == 2)
+                            dval = c->_usage_page | (dval&0xffff);
+                        c->usage_maximum = dval;
+                        break;
                     case 3:
                         c->designator_index = dval;
                         break;

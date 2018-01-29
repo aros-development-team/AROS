@@ -60,6 +60,6 @@ intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagLis
     if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
         return ti->ti_Data;
 
-        return defaultVal;
+    return defaultVal;
 }
 
