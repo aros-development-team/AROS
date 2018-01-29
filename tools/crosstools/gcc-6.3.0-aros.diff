@@ -768,16 +768,15 @@ diff -ruN gcc-6.3.0/gcc/config/rs6000/rs6000.c gcc-6.3.0.aros/gcc/config/rs6000/
    if (TARGET_MACHO && rs6000_darwin64_struct_check_p (mode, type))
      {
        rtx rslt = rs6000_darwin64_record_arg (cum, type, named, /*retval= */false);
-@@ -12154,6 +12162,9 @@
-   int first_reg_offset;
-   alias_set_type set;
+@@ -12156,6 +12164,8 @@
  
-+  if (cum->stackparm)
-+    return;
-+
    /* Skip the last named argument.  */
    next_cum = *get_cumulative_args (cum);
++  if (next_cum.stackparm)
++    return;
    rs6000_function_arg_advance_1 (&next_cum, mode, type, true, 0);
+ 
+   if (DEFAULT_ABI == ABI_V4)
 diff -ruN gcc-6.3.0/gcc/config/rs6000/rs6000.h gcc-6.3.0.aros/gcc/config/rs6000/rs6000.h
 --- gcc-6.3.0/gcc/config/rs6000/rs6000.h	2016-07-07 20:42:07.000000000 +0100
 +++ gcc-6.3.0.aros/gcc/config/rs6000/rs6000.h	2017-03-31 05:50:59.846860603 +0100
