@@ -24,19 +24,13 @@
 #ifdef __i386__
 #define PC eip
 #define FP ebp
-#if __GNUC__ > 4 || \
-              (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 ))
-#define CALLER_FRAME NULL
 #endif
-#endif
+
 #ifdef __x86_64__
 #define PC rip
 #define FP rbp
-#if __GNUC__ > 4 || \
-              (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 ))
-#define CALLER_FRAME NULL
 #endif
-#endif
+
 #ifdef __mc68000__
 #define PC pc
 #ifdef CONFIG_GCC_FP_A6
@@ -46,20 +40,26 @@
 #define CALLER_FRAME NULL
 #endif
 #endif
+
 #ifdef __powerpc__
 #define PC ip
 #define FP gpr[1]
 #endif
+
 #ifdef __arm__
 #define PC pc
 #define FP r[11]
-/* __builtin_frame_address(1) returns LR value. Perhaps not AAPCS-compatible. */
-//#define CALLER_FRAME ({void * _fp; asm volatile("ldr %0, [%%fp, #-4]":"=r"(_fp)); _fp;})
 #define CALLER_FRAME NULL
 #endif
 
 #ifndef PC
 #error unsupported CPU type
+#endif
+
+/* Newer gcc gives an error for calling __builtin_frame_address with non 0 arg */
+/* FIXME: Find a way to get caller's frame, until then it's disabled for now */
+#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 ))
+#define CALLER_FRAME NULL
 #endif
 
 #ifndef CALLER_FRAME
