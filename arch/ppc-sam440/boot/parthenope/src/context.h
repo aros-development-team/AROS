@@ -1,6 +1,3 @@
-#ifndef CONTEXT_H_
-#define CONTEXT_H_
-
 /*
  * $Id$
  * 
@@ -19,6 +16,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
+
+#ifndef CONTEXT_H_
+#define CONTEXT_H_
 
 #include "uboot.h"
 

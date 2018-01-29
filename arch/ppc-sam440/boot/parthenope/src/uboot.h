@@ -1,6 +1,3 @@
-#ifndef UBOOT_H_
-#define UBOOT_H_
-
 /*
  * $Id$
  * 
@@ -19,6 +16,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
+
+#ifndef UBOOT_H_
+#define UBOOT_H_
 
 #include "support.h"
 
