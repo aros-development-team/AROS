@@ -791,7 +791,7 @@ AROS_UFH3(void, EMAC_UnitProcess,
             struct IOSana2Req *io;
 
             /* Handle incoming transactions */
-            while ((io = (struct IOSana2Req *)GetMsg(iport))!= NULL);
+            while ((io = (struct IOSana2Req *)GetMsg(iport)) != NULL)
             {
                 D(bug("[EMAC%d] Handle incomming transaction.\n", unit->eu_UnitNum));
                 ObtainSemaphore(&unit->eu_Lock);
