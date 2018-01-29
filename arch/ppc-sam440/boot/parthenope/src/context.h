@@ -48,7 +48,7 @@ typedef struct context {
 
 	int (*c_my_netloop) (char *filename, void *dump_here);
 
-	char *(*c_getenv) (unsigned char *);
+	char *(*c_getenv) (char *);
 	void (*c_setenv) (char *, char *);
 
 	void *(*c_alloc_mem_for_iobuffers) (const int size);
@@ -124,7 +124,7 @@ inline void free(void *ptr);
 inline void *memmove(void *dest, const void *src, int count);
 
 /* ENV functions */
-inline char *getenv(unsigned char *var);
+inline char *getenv(char *var);
 inline void setenv(char *var, char *value);
 
 /* misc functions */
