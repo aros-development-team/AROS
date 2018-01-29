@@ -461,10 +461,12 @@ static block_dev_desc_t *get_dev()
 	block_dev_desc_t *bdev = NULL;
 	SCAN_HANDLE hnd;
 	uint32_t blocksize;
+	void *scan_list = get_scan_list();
 
-	start_unit_scan(NULL, &blocksize);
+	if(scan_list == NULL)
+		return NULL;
 
-	for (hnd = start_unit_scan(get_scan_list(), &blocksize);
+	for (hnd = start_unit_scan(scan_list, &blocksize);
 	     hnd != NULL; hnd = next_unit_scan(hnd, &blocksize)) {
 		if (hnd->ush_device.type == DEV_TYPE_CDROM) {
 			bdev = malloc(sizeof(block_dev_desc_t));
