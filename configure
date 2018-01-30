@@ -8707,14 +8707,10 @@ case "$target_os" in
         aros_object_format="armelf_aros"
         aros_shared_default="no"
 
-        # stm32f7 has DSP opcode support
         gcc_default_cpu="armv7e-m"
-        # gcc_default_cpu="armv7-m"
         gcc_default_cpu_tune="cortex-m7"
-        gcc_default_fpu="fpv4-sp-d16"
-        # GCC does not recognize fpv5-sp-d16 which should be the correct one to use, or not...
-        # gcc_default_fpu="fpv5-sp-d16"
-		gcc_default_float_abi="hard"
+        gcc_default_fpu="fpv5-sp-d16"
+        gcc_default_float_abi="hard"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
