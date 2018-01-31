@@ -1,0 +1,48 @@
+#!/usr/bin/python
+
+# Script for translating trac.aros.org's RSS feed to html for including
+# in www.aros.org's commits section.
+# The result will be stored in htdocs
+
+import urllib2
+#import ssl # not needed on Sourceforge with Python 2.6
+import re
+
+# regex for parsing a RSS item
+rssre = re.compile(r'''<item>.*?
+<title>Changeset\sin\sAROS\s(?P<title>.*?)</title>.*?
+<dc:creator>(?P<creator>.*?)</dc:creator>.*?
+<pubDate>(?P<pubDate>.*?)</pubDate>.*?
+<link>(?P<link>.*?)</link>.*?
+<description>(?P<description>.*?)</description>.*?
+</item>''',
+re.DOTALL | re.VERBOSE)
+
+count = 10 # number of entries
+rsspath='https://trac.aros.org/trac/timeline?changeset=on&wiki=on&max=%d&authors=&daysback=90&format=rss' % (count)
+#ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+#rssfile = urllib2.urlopen(rsspath, context=ctx)
+rssfile = urllib2.urlopen(rsspath)
+content = rssfile.read()
+rssfile.close()
+
+targetpath='/home/project-web/aros/htdocs/commits.php'
+targetfile = open(targetpath, 'w')
+
+# output of the content in html format
+
+targetfile.write('<html>\n')
+targetfile.write('<head>\n')
+# TODO: add something useful
+targetfile.write('</head>\n')
+targetfile.write('<body>\n')
+
+for entry in rssre.finditer(content):
+    targetfile.write('<h2><a href="%s">%s</a></h2>\n' % (entry.group('link'), entry.group('title')))
+    targetfile.write('Creator: %s Date: %s<br>\n' % (entry.group('creator'), entry.group('pubDate')))
+    targetfile.write('%s\n' % (entry.group('description')))
+
+targetfile.write('</body>\n')
+targetfile.write('</html>\n')
+
+targetfile.close()
