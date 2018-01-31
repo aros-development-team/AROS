@@ -31,16 +31,24 @@ targetfile = open(targetpath, 'w')
 
 # output of the content in html format
 
+targetfile.write('<!DOCTYPE html>\n')
 targetfile.write('<html>\n')
 targetfile.write('<head>\n')
-# TODO: add something useful
+targetfile.write('<title>AROS commits</title>\n')
+targetfile.write('<meta charset="UTF-8">\n')
+targetfile.write('<link rel="stylesheet" href="/aros.css">\n')
 targetfile.write('</head>\n')
 targetfile.write('<body>\n')
+targetfile.write('<!--This file is created by script /home/project-web/aros/scripts/updatecommits as cron job -->\n')
 
 for entry in rssre.finditer(content):
-    targetfile.write('<h2><a href="%s">%s</a></h2>\n' % (entry.group('link'), entry.group('title')))
-    targetfile.write('Creator: %s Date: %s<br>\n' % (entry.group('creator'), entry.group('pubDate')))
-    targetfile.write('%s\n' % (entry.group('description')))
+    desc = entry.group('description')
+    desc = desc.replace('&lt;', '<')
+    desc = desc.replace('&gt;', '>')
+
+    targetfile.write('<h2><a href="%s" target="_top">%s</a></h2>\n' % (entry.group('link'), entry.group('title')))
+    targetfile.write('Creator: %s; Date: %s<br>\n' % (entry.group('creator'), entry.group('pubDate')))
+    targetfile.write('%s\n' % (desc))
 
 targetfile.write('</body>\n')
 targetfile.write('</html>\n')
