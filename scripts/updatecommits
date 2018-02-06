@@ -17,7 +17,7 @@ sys.setdefaultencoding('utf8')
 
 # regex for parsing a RSS item
 rssre = re.compile(r'''<item>.*?
-<title>Changeset\sin\sAROS\s(?P<title>.*?)</title>.*?
+<title>.*?\[(?P<commit>.*?)\].*?</title>.*?
 <dc:creator>(?P<creator>.*?)</dc:creator>.*?
 <pubDate>(?P<pubDate>.*?)</pubDate>.*?
 <link>(?P<link>.*?)</link>.*?
@@ -52,11 +52,10 @@ targetfile.write('''
 
 for entry in rssre.finditer(content):
     targetfile.write('''
-<h2><a href="%s" target="_top">%s</a></h2>
-Author: %s; Date: %s
+<h2><a href="%s" target="_top">%s | %s | %s </a></h2>
 %s\n''' % (
     entry.group('link'),
-    HTMLParser.HTMLParser().unescape(entry.group('title')),
+    HTMLParser.HTMLParser().unescape(entry.group('commit')),
     HTMLParser.HTMLParser().unescape(entry.group('creator')),
     HTMLParser.HTMLParser().unescape(entry.group('pubDate')),
     HTMLParser.HTMLParser().unescape(entry.group('description'))))
