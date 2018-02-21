@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel 8259A "Legacy" PIC driver.
@@ -56,7 +56,7 @@ BOOL i8259a_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     if (intNum == 2)
     {
-    	/* IRQ2 must never be disabled. Doing so breaks communication between two 8259's */
+    	/* IRQ2 must never be disabled. Doing so breaks communication between two 8259s */
     	return FALSE;
     }
     xtPic->irq_mask |= 1 << intNum;
@@ -80,7 +80,8 @@ BOOL i8259a_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint1
 
     if (intNum == 2)
     {
-    	/* IRQ2 must never be disabled. Doing so breaks communication between two 8259's */
+        /* IRQ2 is always enabled anyway, and it's not a "real" IRQ, so it's probably 
+         * appropriate to report failure */
     	return FALSE;
     }
     xtPic->irq_mask &= ~(1 << intNum);    
@@ -125,19 +126,20 @@ BOOL i8259a_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum) // uint16_
 
 BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
-    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
-    struct APICData *apicPrivate = kernPlatD->kb_APIC;
     struct i8259a_Private *xtpicPriv;
     struct i8259a_Instance *xtPic;
     int instance, irq;
 
     DINT(bug("[Kernel:i8259a] %s(%d)\n", __func__, instanceCount));
 
-    /* sanity check .. */
+    /* Sanity check */
     if (i8259a_IntrController.ic_Flags & ICF_DISABLED)
         return FALSE;
 
-    xtpicPriv = (struct i8259a_Private *)AllocMem(sizeof(struct i8259a_Instance) * instanceCount, MEMF_ANY);
+    xtpicPriv = (struct i8259a_Private *)
+        AllocMem(sizeof(struct i8259a_Private)
+        + sizeof(struct i8259a_Instance) * instanceCount, MEMF_ANY);
+
     if ((i8259a_IntrController.ic_Private = xtpicPriv) != NULL)
     {
         /*
@@ -162,7 +164,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
                 if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
                 {
-                    /* Take over the first 8259a IRQ's */
+                    /* Take over the first 8259A's IRQs */
                     for (irq = instIRQBase; irq < (instIRQBase + I8259A_IRQCOUNT); irq++)
                     {
                         if (!krnInitInterrupt(KernelBase, irq, i8259a_IntrController.ic_Node.ln_Type, instance))
@@ -173,7 +175,9 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                         {
                             if ((irq - instIRQBase) != 2)
                             {
-                                if (!core_SetIRQGate((struct int_gate_64bit *)apicPrivate->cores[0].cpu_IDT, irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
+                                if (!core_SetIRQGate(
+                                    (struct int_gate_64bit *)__KernBootPrivate->BOOTIDT,
+                                    irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq]))
                                 {
                                     bug("[Kernel:i8259a] %s: failed to set IRQ %d's gate\n", __func__, irq);
                                 }
@@ -189,7 +193,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     if (ssp)
                         UserState(ssp);
                 }
-                /* Setup the first registered 8259. Send four ICWs (see 8529 datasheet) */
+                /* Set up the first registered 8259. Send four ICWs (see 8259 datasheet) */
                 asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(MASTER8259_CMDREG)); /* Initialization sequence for 8259A-1 (edge-triggered, cascaded, ICW4 needed) */
                 asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(SLAVE8259_CMDREG)); /* Initialization sequence for 8259A-2, the same as above */
                 asm("outb   %b0,%b1\n\tcall delay"::"a"(xtPic->irq_base),"i"(MASTER8259_MASKREG)); /* IRQs for master */
@@ -201,7 +205,7 @@ BOOL i8259a_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
                 /* Now initialize interrupt masks */
                 asm("outb   %b0,%b1\n\tcall delay"::"a"((char)(xtPic->irq_mask & 0xFF)),"i"(MASTER8259_MASKREG)); /* Enable cascade int */
-                asm("outb   %b0,%b1\n\tcall delay"::"a"((char)(xtPic->irq_mask > 8)),"i"(SLAVE8259_MASKREG)); /* Mask all interrupts */
+                asm("outb   %b0,%b1\n\tcall delay"::"a"((char)(xtPic->irq_mask >> 8)),"i"(SLAVE8259_MASKREG)); /* Mask all interrupts */
             }
         }
         DINT(bug("[Kernel:i8259a] %s: complete\n", __func__));
@@ -240,7 +244,7 @@ void i8259a_Disable()
 
 BOOL i8259a_Probe()
 {
-    UBYTE maskres;
+    BYTE maskres;
 
     D(bug("[Kernel:i8259a] %s()\n", __func__));
 
