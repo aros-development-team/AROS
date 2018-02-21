@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2017, The AROS Development Team
+ * Copyright (C) 2012-2018, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -643,6 +643,7 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
             return FALSE;
         }
     }
+    ACPICABase->ab_Flags |= ACPICAF_ENABLED;
 
     AcpiDbgLevel = ~0;
 
@@ -669,7 +670,8 @@ int ACPICA_expunge(struct ACPICABase *ACPICABase)
 {
     D(bug("[ACPI] %s()\n", __func__));
 
-    AcpiTerminate();
+    if ((ACPICABase->ab_Flags & ACPICAF_ENABLED) != 0)
+        AcpiTerminate();
 
     return TRUE;
 }
@@ -714,13 +716,16 @@ static AROS_UFH3 (APTR, ACPICAPost,
 
     D(bug("[ACPI] %s()\n", __func__));
 
-    /* If ACPICA isnt available, dont run */
-    ACPICABase = (struct ACPICABase *)OpenResource("kernel.resource");
-    if (!ACPICABase)
-            return NULL;
+    /* If ACPICA isn't available, don't run */
+    ACPICABase = (struct ACPICABase *)OpenLibrary("acpica.library", 0);
+    if (!ACPICABase) {
+        D(bug("[ACPI] %s(): Can't open acpica.library. Quitting\n", __func__));
+        return NULL;
+    }
 
     /* Start up the late initialization thread at the highest priority */
-    if (NewCreateTask(TASKTAG_PC, ACPICA_InitTask, TASKTAG_NAME, "ACPICA_InitTask", TASKTAG_PRI, 127, TASKTAG_ARG1, ACPICABase, TAG_DONE) == NULL) {
+    if (NewCreateTask(TASKTAG_PC, ACPICA_InitTask, TASKTAG_NAME, "ACPICA_InitTask",
+        TASKTAG_PRI, 127, TASKTAG_ARG1, ACPICABase, TAG_DONE) == NULL) {
         bug("[ACPI] %s: Failed to start ACPI init task\n", __func__);
     }
 
