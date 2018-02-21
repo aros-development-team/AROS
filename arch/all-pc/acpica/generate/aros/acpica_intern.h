@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2013, The AROS Development Team
+ * Copyright (C) 2012-2018, The AROS Development Team
  * All rights reserved.
  */
 
@@ -13,8 +13,12 @@
 #include "acdebug.h"
 #include "acmacros.h"
 
+#define ACPICAB_ENABLED 0
+#define ACPICAF_ENABLED (1 << ACPICAB_ENABLED)
+
 struct ACPICABase {
     struct Library ab_Lib;
+    UWORD ab_Flags;
     struct MsgPort *ab_TimeMsgPort;
     struct timerequest *ab_TimeRequest;
     struct Library *ab_TimerBase;
