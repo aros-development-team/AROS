@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI configuration mechanism 2 access functions
@@ -89,7 +89,7 @@ static BOOL PCIPC_ProbeMech1Conf(struct pcipc_staticdata *psd)
 void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
 {
     /*
-     * All newer boards support atleast mechanism 1.
+     * All newer boards support at least mechanism 1.
      * We probe for it first, because on some machines (e.g. MacMini), PCI_MechSelect is
      * used by the chipset as a reset register (and perhaps some other proprietary control).
      * Writing 0x01 to it makes the machine's cold reboot mechanism stop working.
@@ -125,7 +125,7 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd)
     }
 
     /*
-     * Newer systems may have empty bus 0. In this case SanityCheck() will fail. We
+     * Newer systems may have an empty bus 0. In this case SanityCheck() will fail. We
      * assume configuration type 1 for such systems.
      * Probably SanityCheck() should be revised or removed at all.
      */

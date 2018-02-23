@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI direct driver for i386 native.
@@ -37,6 +37,21 @@
 #define HiddPCIDeviceAttrBase (PSD(cl)->hidd_PCIDeviceAB)
 
 /*
+ * N.B. Do not move/remove/refactor the following variable unless you fully
+ * understand the implications. It must be an explicit global variable for the
+ * following reasons:
+ *  - Linking with the linklib: acpica.library is a stack-call library, which
+ *    means that its functions are always called through a stub linklib.
+ *    Linking with the linklib will fail if ACPICABase is not a global variable.
+ *  - acpica.library is optional: this class must still be able to run if
+ *    acpica.library is unavailable. If ACPICABase is not defined as a global
+ *    variable, the autoinit system will create one. However, in that case the
+ *    autoinit system will also take over the opening of the library, and not
+ *    allow this class to be loaded if the library isn't found.
+ */
+struct Library *ACPICABase;
+
+/*
     We overload the New method in order to introduce the Hidd Name and
     HardwareName attributes.
 */
@@ -71,7 +86,10 @@ void PCPCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch (idx)
         {
             case aoHidd_PCIDriver_IRQRoutingTable:
-                *msg->storage = (IPTR)PSD(cl)->pcipc_irqRoutingTable;
+                if (IsListEmpty(&PSD(cl)->pcipc_irqRoutingTable))
+                    *msg->storage = (IPTR)NULL;
+                else
+                    *msg->storage = (IPTR)&PSD(cl)->pcipc_irqRoutingTable;
                 break;
 
             default:
@@ -296,22 +314,21 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     struct pcipc_staticdata *_psd = &LIBBASE->psd;
     struct pHidd_PCI_AddHardwareDriver msg, *pmsg = &msg;
     OOP_Object *pci;
-    struct MinList routing_list;
 
-    NEWLIST(&routing_list);
+    NEWLIST(&_psd->pcipc_irqRoutingTable);
 
     D(bug("[PCI.PC] %s()\n", __func__));
 
-    /* Open ACPI and cache the pointer to the MCFG table.. */
+    /* Open ACPI and cache the pointer to the MCFG table */
     ACPICABase = OpenLibrary("acpica.library", 0);
+
     if (ACPICABase)
         AcpiGetTable(ACPI_SIG_MCFG, 1, (ACPI_TABLE_HEADER **)&_psd->pcipc_acpiMcfgTbl);
 
     _psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     _psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     _psd->hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    _psd->pcipc_irqRoutingTable = NULL;
-    
+
     if (_psd->hiddPCIDriverAB == 0 || _psd->hiddAB == 0 || _psd->hidd_PCIDeviceAB == 0)
     {
 	D(bug("[PCI.PC] %s: ObtainAttrBases failed\n", __func__));
@@ -319,12 +336,8 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     }
 
     if (ACPICABase)
-        AcpiGetDevices("PNP0A03", PCPCI_ACPIDeviceCallback, &routing_list, NULL);
-
-    if (!IsListEmpty(&routing_list))
-    {
-        _psd->pcipc_irqRoutingTable = &routing_list;
-    }
+        AcpiGetDevices("PNP0A03", PCPCI_ACPIDeviceCallback,
+            &_psd->pcipc_irqRoutingTable, NULL);
 
     /* Default to using config mechanism 1 */
     _psd->ReadConfigLong  = ReadConfig1Long;
@@ -347,8 +360,6 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
 static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    struct pcipc_staticdata *_psd = &LIBBASE->psd;
-
     D(bug("[PCI.PC] %s()\n", __func__));
 
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
