@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef _PCI_H
 #define _PCI_H
 
@@ -28,8 +33,6 @@
 #endif
 
 
-
-
 struct pcipc_staticdata
 {
     OOP_AttrBase        hiddPCIDriverAB;
@@ -44,9 +47,8 @@ struct pcipc_staticdata
     void	        (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
     /* ACPI related */
-    struct Library      *pcipc_acpiBase;
     ACPI_TABLE_MCFG     *pcipc_acpiMcfgTbl;
-    struct MinList      *pcipc_irqRoutingTable;
+    struct MinList      pcipc_irqRoutingTable;
 };
 
 struct pcibase
@@ -58,9 +60,6 @@ struct pcibase
 #define BASE(lib) ((struct pcibase*)(lib))
 #define PSD(cl) (&((struct pcibase*)cl->UserData)->psd)
 #define _psd PSD(cl)
-
-#undef ACPICABase
-#define ACPICABase (_psd->pcipc_acpiBase)
 
 /* PCI configuration mechanism 1 registers */
 #define PCI_AddressPort	0x0cf8
