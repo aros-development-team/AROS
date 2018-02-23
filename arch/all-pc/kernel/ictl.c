@@ -1,7 +1,11 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <proto/arossupport.h>
+
+#include <string.h>
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
@@ -70,13 +74,21 @@ void ictl_Initialize(struct KernelBase *KernelBase)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     int cnt;
+    struct TagItem *cmdTags;
 
     D(bug("[Kernel] %s()\n", __func__));
 
     if (!pdata->kb_APIC)
     {
-	/* No APIC was discovered by ACPI/whatever else. Do the probe. */
-	pdata->kb_APIC = core_APIC_Probe();
+        /* No APIC was discovered by ACPI/whatever else. Do the probe. */
+        cmdTags = LibFindTagItem(KRN_CmdLine, BootMsg);
+        if (cmdTags && strstr((const char *)cmdTags->ti_Data, "noapic"))
+            D(bug("[Kernel] %s: APIC support disabled\n", __func__));
+        else
+        {
+            D(bug("[Kernel] %s(): probing for APIC\n", __func__));
+            pdata->kb_APIC = core_APIC_Probe();
+        }
     }
 
 #if (__WORDSIZE==64)
@@ -87,11 +99,12 @@ void ictl_Initialize(struct KernelBase *KernelBase)
     }
 #endif
 
-    /* Check if the 8259a has already been registered, if not probe for it ... */
+    /* Check if the 8259A has already been registered, if not probe for it */
     if (!krnFindInterruptController(KernelBase, ICTYPE_I8259A))
     {
         D(__unused icintrid_t xtpicICInstID;)
 
+        D(bug("[Kernel] %s(): probing for PIC\n", __func__));
         if (i8259a_Probe())
         {
             D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
