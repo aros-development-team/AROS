@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel IA-32 APIC driver.
@@ -75,11 +75,11 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 
     DINT(bug("[Kernel:APIC-IA32] %s(%d)\n", __func__, instanceCount));
 
-    /* its not fatal to fail on these irqs... */
+    /* It's not fatal to fail on these IRQs */
     if ((ssp = SuperState()) != NULL)
     {
-        /* Setup the APIC IRQs for CPU #0*/
-        for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
+        /* Set up the APIC IRQs for CPU #0 */
+        for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < HW_IRQ_COUNT; irq++)
         {
             if (!krnInitInterrupt(KernelBase, irq, APICInt_IntrController.ic_Node.ln_Type, 0))
             {
@@ -87,7 +87,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             }
             else
             {
-                /* dont enable the vector yet...*/
+                /* Don't enable the vector yet */
                 if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE))
                 {
                     bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
@@ -100,7 +100,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
     }
 
     /*
-     * If we have atleast 32 APIC interrupts available (the
+     * If we have at least 32 APIC interrupts available (the
      * most a single MSI device will request) then report that
      * we can use MSI
      */
@@ -257,7 +257,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
     icintrid_t coreICInstID;
 
 #ifdef CONFIG_LEGACY
-    /* 82489DX doesnt report no. of LVT entries. */
+    /* 82489DX doesn't report no. of LVT entries. */
     if (!APIC_INTEGRATED(apic_ver))
     	maxlvt = 2;
 #endif
@@ -331,7 +331,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
 
         /*
          * Set LINT0 to external and LINT1 to NMI.
-         * These are common defaults and they are going to be overriden by ACPI tables.
+         * These are common defaults and they are going to be overridden by ACPI tables.
          *
          * On all other LAPICs mask LINT0 and use some fake vector (0xff in this case),
          * otherwise LAPIC may throw an error.
@@ -366,10 +366,10 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
          * unified way to get it on whatever CPU. Intel has own way, AMD has own way... Etc... Which, additionally,
          * varies between CPU generations.
          *
-         * The idea behing the calibration is to run the timer once, and see how much ticks passes in some defined
-         * period of time. Then calculate a proportion.
+         * The idea behind the calibration is to run the timer once, and see how many ticks
+         * pass in some defined period of time. Then calculate a proportion.
          * We use 8253 PIT as our reference.
-         * This calibrarion algorighm is based on NetBSD one.
+         * This calibration algorithm is based on NetBSD one.
          */
 
         /* Set the timer to one-shot mode, no interrupt, 1:1 divisor */
@@ -403,7 +403,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         D(bug("[Kernel:APIC-IA32.%03u] %s: TSC frequency should be %u kHz (%u MHz)\n", cpuNum, __func__, (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500)/1000), (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500000) / 1000000)));
         /*
          * Once APIC timer has been calibrated -:
-         * # Set it to run at it's full frequency.
+         * # Set it to run at its full frequency.
          * # Enable the heartbeat vector and use a suitable rate,
          *   otherwise set to reload every second and disable it.
          */
