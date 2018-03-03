@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -104,7 +104,8 @@ BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable)
 
         bug("[Kernel] %s: Setting IDTGate #%d IDT @ 0x%p\n", __func__, vect, IGATES);
         bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
-    
+        bug("[Kernel] %s: enable=%d\n", __func__, enable);
+
         gateOld = 
 #if (__WORDSIZE != 64)
             (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));
@@ -114,7 +115,7 @@ BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable)
         if (gateOld) bug("[Kernel] %s: existing gate @ 0x%p\n", __func__, gateOld);
     )
 
-    /* If the gate isnt already enabled, set it..*/
+    /* If the gate isn't already enabled, set it */
     if (!IGATES[vect].p)
     {
         IGATES[vect].offset_low = gate & 0xFFFF;
@@ -140,7 +141,7 @@ BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable)
     return FALSE;
 }
 
-/* Set a hardware IRQs gate in the IDT */
+/* Set a hardware IRQ's gate in the IDT */
 BOOL core_SetIRQGate(void *idt, int IRQ, uintptr_t gate)
 {
     apicidt_t *IGATES = (apicidt_t *)idt;
@@ -216,7 +217,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 {
     struct KernelBase *KernelBase = getKernelBase();
 #if 0 
-    // THis debug works only if Local APIC exists...
+    // This debug works only if Local APIC exists...
     DIRQ(
         IPTR __APICBase = core_APIC_GetBase();
         int cpunum = KrnGetCPUNumber();

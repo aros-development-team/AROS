@@ -1,10 +1,5 @@
 /*
  * CPU-specific definitions.
- *
- * Architectures with the same CPU will likely share single kernel_cpu.h
- * in arch/$(CPU)-all/kernel/kernel_cpu.h
- *
- * As you can see, this file is just a sample.
  */
 
 #ifndef KERNEL_CPU_H_
