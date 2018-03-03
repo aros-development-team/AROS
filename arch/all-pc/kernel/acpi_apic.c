@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -74,7 +74,7 @@ struct syscallx86_Handler acpi_APIC_SCCPUWakeHandler =
     (APTR)acpi_APIC_HandleCPUWakeSC
 };
 
-/* Process the 'Local APIC Address Overide' MADT Table */
+/* Process the 'Local APIC Address Override' MADT Table */
 AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
 	  AROS_UFHA(struct Hook *, table_hook, A0),
 	  AROS_UFHA(ACPI_MADT_LOCAL_APIC_OVERRIDE *, lapic_addr_ovr, A2),
@@ -161,7 +161,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 
 /*
  * Initialize APIC on a CPU core with specified number.
- * This routine is ran by all cores.
+ * This routine is run by all cores.
  */
 void acpi_APIC_InitCPU(struct PlatformData *pdata, IPTR cpuNum)
 {
@@ -274,7 +274,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Count,
     {
         /*
      	 * The local APIC base address is obtained from the MADT (32-bit value) and
-     	 * (optionally) overriden by a LAPIC_ADDR_OVR entry (64-bit value).
+     	 * (optionally) overridden by a LAPIC_ADDR_OVR entry (64-bit value).
      	 */
         scanHook = (struct ACPI_TABLE_HOOK *)AllocMem(sizeof(struct ACPI_TABLE_HOOK), MEMF_CLEAR);
         if (scanHook)

@@ -1,7 +1,7 @@
 #ifndef _KERNEL_ARCH_H_
 #define _KERNEL_ARCH_H_
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Machine-specific definitions for IBM PC hardware
@@ -22,8 +22,8 @@
 /*
  * Simulate SysBase access
  * Disabled because global SysBase is moved away from zeropage.
- *
-#define EMULATE_SYSBASE*/
+ */
+/*#define EMULATE_SYSBASE*/
 
 /* Platform-specific part of KernelBase */
 struct PlatformData
@@ -44,7 +44,7 @@ struct PlatformData
 
 /* Hardware IRQ's ********************************************************************************/
 
-/* by default we only know about the xtpic's irq's */
+/* By default we only know about the xtpic's IRQs */
 #define IRQ_COUNT       I8259A_IRQCOUNT
 
 /*
@@ -52,6 +52,7 @@ struct PlatformData
  *  (0 - 31 are cpu exceptions, see below..)
  */
 #define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
+
 /*
  * We handle all 255 exception vectors. However vectors starting from 0x20
  * are hardware IRQs which are handled separately. So - 32 raw exceptions.

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,7 +52,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     /*
      * Now we have a complete memory list and working AllocMem().
-     * We can build IDT and TSS nowt to make interrupts work.
+     * We can build IDT and TSS now to make interrupts work.
      */
     SysBase->SysStkLower = AllocMem(0x10000, MEMF_PUBLIC);  /* 64KB of system stack */
 

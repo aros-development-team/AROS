@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,7 +20,7 @@ int krnPutC(int c, struct KernelBase *KernelBase)
     __save_flags(flags);
 
     /*
-     * stegerg: Don't use Disable/Enable, because we want  interrupt enabled flag
+     * Don't use Disable/Enable, because we want the interrupt enabled flag
      * to stay the same as it was before the Disable() call
      */
     __cli();
@@ -44,7 +44,7 @@ int krnPutC(int c, struct KernelBase *KernelBase)
 
     /*
      * Interrupt flag is stored in flags - if it was enabled before,
-     * it will be renabled when the flags are restored
+     * it will be re-enabled when the flags are restored
      */
     __restore_flags(flags);
 

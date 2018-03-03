@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +55,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
 
         AcpiWrite (fadt->ResetValue, &fadt->ResetRegister);
         
-        // If we got here the reset didnt happen,
+        // If we got here the reset didn't happen,
         // check if we are the known "faulty" implementation.
         
         if ((fadt->Header.Revision >= 2) &&

@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
     
     http://download.intel.com/design/chipsets/datashts/29056601.pdf
@@ -202,10 +202,10 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             DINT(bug("[Kernel:IOAPIC] %s: IOAPIC LocalID configured\n", __func__);)
         }
 
-        /* Check if the 8259a has been registered, and siable it ... */
+        /* Check if the 8259A has been registered, and disable it */
         if ((instance == 0) && ((xtpicIC = krnFindInterruptController(KernelBase, ICTYPE_I8259A)) != NULL))
         {
-            DINT(bug("[Kernel:IOAPIC] %s: Disabling i8259a controller...\n", __func__);)
+            DINT(bug("[Kernel:IOAPIC] %s: Disabling i8259A controller...\n", __func__);)
             i8259a_Disable();
         }
 

@@ -1,7 +1,7 @@
 #ifndef APIC_IA32_H
 #define APIC_IA32_H
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IA-32 APIC hardware definitions.
@@ -11,14 +11,14 @@
 #include "i8259a.h"
 
 // From CPU and LAPIC point of view we have 256 interrupt vectors. The first 32 are reserved
-// For CPU exceptions. Further, there are 16 vectors reserved for legacy XT-PIC (which can be
-// eventually remapped to LAPIC with help of IOAPIC). Official APIC IRQ Base starts Right 
-// after legacy XT-PIC 
+// for CPU exceptions. Further, there are 16 vectors reserved for legacy XT-PIC (which can be
+// eventually remapped to LAPIC with help of IOAPIC). Official APIC IRQ base starts right
+// after legacy XT-PIC
 #define APIC_IRQ_MAX            256
 #define X86_CPU_EXCEPT_COUNT    32
 #define APIC_IRQ_BASE           (X86_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
 
-// Local APIC exceptions, with SysCall beeing the last (int $0xff)! The numeric values start 
+// Local APIC exceptions, with SysCall being the last (int $0xff)! The numeric values start
 // at X86_CPU_EXCEPT_COUNT in order to make the handler simplier
 enum
 {

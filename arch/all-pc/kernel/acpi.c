@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -108,7 +108,7 @@ void acpi_Init(struct PlatformData *pdata)
                         D(bug("[Kernel:ACPI] %s: Table Hooks @ 0x%p for '%s'\n", __func__, acpiTableHook, acpiTableHook->acpith_Node.ln_Name));
                         if ((!tableLast) || (tableLast != acpiTableHook->acpith_Node.ln_Name))
                         {
-                            D(bug("[Kernel:ACPI] %s: Trying to obtain Table ...\n", __func__));
+                            D(bug("[Kernel:ACPI] %s: Trying to obtain Table...\n", __func__));
                             acpiTSData.acpits_Table = NULL;
                             if (AE_OK == (Status = AcpiGetTable(acpiTableHook->acpith_Node.ln_Name, 1, (ACPI_TABLE_HEADER **)&acpiTSData.acpits_Table)))
                             {
@@ -146,11 +146,11 @@ void acpi_Init(struct PlatformData *pdata)
                 bug("\n");
             }
 
-            /* Initialize legacy 8529A PIC if present. */
+            /* Initialize legacy 8259A PIC if present. */
             if ((pdata->kb_APIC) && (pdata->kb_APIC->flags & APF_8259))
             {
                 D(xtpicICInstID =) krnAddInterruptController(KernelBase, &i8259a_IntrController);
-                D(bug("[Kernel:ACPI] %s: Registered i8259a IC ID #%d:%d\n", __func__, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
+                D(bug("[Kernel:ACPI] %s: Registered i8259A IC ID #%d:%d\n", __func__, ICINTR_ICID(xtpicICInstID), ICINTR_INST(xtpicICInstID)));
             }
         }
     }
