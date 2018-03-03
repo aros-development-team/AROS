@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -86,11 +86,15 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
 
     D(bug("[Kernel] %s(%08x)\n", __func__, newscHandler->sc_Node.ln_Name));
 
-    ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
+    /* Unless the 'force' flag is set, bale out if there is already a handler of the same type
+     * (note that we're not comparing strings here - ln_Name is abused) */
+    if (!force)
     {
-        if ((!force) &&
-            ((ULONG)((IPTR)scHandler->sc_Node.ln_Name) == (ULONG)((IPTR)newscHandler->sc_Node.ln_Name)))
-            return FALSE;
+        ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
+        {
+            if (scHandler->sc_Node.ln_Name == newscHandler->sc_Node.ln_Name)
+                return FALSE;
+        }
     }
 
     if (custom)
@@ -104,7 +108,7 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
     return TRUE;
 }
 
-/* Deafult x86 Syscall Handlers */
+/* Default x86 syscall handlers */
 
 void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 {

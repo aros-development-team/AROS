@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 */
 
 #include <asm/cpu.h>

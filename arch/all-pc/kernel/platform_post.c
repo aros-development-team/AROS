@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -84,7 +84,7 @@ APTR PlatformAllocIDT(struct KernelBase *LIBBASE, apicid_t _APICID)
  * directly after exec.library.
  *
  * At this point exec is fully configured, and
- * and multitasking is enabled. It also means
+ * multitasking is enabled. It also means
  * acpica's "full initialization" task will have
  * been run.
  */
@@ -151,10 +151,10 @@ static AROS_UFH3 (APTR, KernelPost,
 
     pdata = KernelBase->kb_PlatformData;
 
-    D(bug("[Kernel] %s: Checking for ACPI ...\n", __func__));
+    D(bug("[Kernel] %s: Checking for ACPI...\n", __func__));
     
     ACPICABase = OpenLibrary("acpica.library", 0);
-    // Probe for ACPI configuration ...
+    /* Probe for ACPI configuration */
     if (ACPICABase)
         acpi_Init(pdata);
 
@@ -162,14 +162,14 @@ static AROS_UFH3 (APTR, KernelPost,
 
     Disable();
 
-    // Add the default reboot/shutdown handlers if ACPI ones havent been registered...
+    // Add the default reboot/shutdown handlers if ACPI ones haven't been registered
     krnAddSysCallHandler(pdata, &x86_SCRebootHandler, TRUE, FALSE);
     krnAddSysCallHandler(pdata, &x86_SCChangePMStateHandler, TRUE, FALSE);
 
-    D(bug("[Kernel] %s: Attempting to bring up aditional cores ...\n", __func__));
+    D(bug("[Kernel] %s: Attempting to bring up additional cores...\n", __func__));
     smp_Initialize();
 
-    D(bug("[Kernel] %s: Initializing Interrupt Controllers ...\n", __func__));
+    D(bug("[Kernel] %s: Initializing interrupt controllers...\n", __func__));
     ictl_Initialize(KernelBase);
 
     Enable();
