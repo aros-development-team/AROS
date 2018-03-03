@@ -1,6 +1,6 @@
 /*
     Copyright � 1995-2013, The AROS Development Team. All rights reserved.
-    $Id: kernel_debug.h 49922 2015-01-21 01:34:41Z NicJA $
+    $Id$
 
     Desc:
 */
