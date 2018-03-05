@@ -4,6 +4,7 @@
 */
 
 #include <aros/asmcall.h>
+#include <hardware/intbits.h>
 #include <proto/acpica.h>
 #include <proto/exec.h>
 
@@ -14,6 +15,7 @@
 #include "kernel_debug.h"
 #include "kernel_globals.h"
 #include "kernel_intern.h"
+#include "kernel_intr.h"
 
 #include "acpi.h"
 
@@ -109,8 +111,7 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
         if (!ACPI_FAILURE(status) || (status == AE_NOT_FOUND))
         {
             // call System State Transition...
-            // n.b: this is an optional method so we
-            // ignore the return value
+            // N.B. this is an optional method so we ignore the return value
             arg.Integer.Value = ACPI_SST_INDICATOR_OFF;
             pathName = METHOD_PATHNAME__SST;
             DPOFF(bug("[Kernel:ACPI-PM] %s:     > ACPI %s\n", __func__, &pathName[1]));
@@ -225,6 +226,8 @@ void ACPI_HandleChangePMStateSC(struct ExceptionContext *regs)
         timeWake = RDTSC();
         apicData->cores[cpunum].cpu_SleepTime += timeWake - timeSleep;
 #endif
+        if (SysBase->SysFlags & SFF_SoftInt)
+            core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
     }
     else
     {
