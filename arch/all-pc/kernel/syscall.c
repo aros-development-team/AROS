@@ -86,8 +86,9 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
 
     D(bug("[Kernel] %s(%08x)\n", __func__, newscHandler->sc_Node.ln_Name));
 
-    /* Unless the 'force' flag is set, bale out if there is already a handler of the same type
-     * (note that we're not comparing strings here - ln_Name is abused) */
+    /* Unless the 'force' flag is set, bale out if there is already a handler
+     * of the same type (note that we're not comparing strings here - ln_Name
+     * is abused) */
     if (!force)
     {
         ForeachNode(&pdata->kb_SysCallHandlers, scHandler)
@@ -142,9 +143,17 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 
         while (1) asm volatile("hlt");
     }
+    else if (pmState == 0x90)
+    {
+        /* Sleep almost forever ;) */
+        __asm__ __volatile__("sti; hlt; cli");
+
+        if (SysBase->SysFlags & SFF_SoftInt)
+            core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+    }
     else
     {
-        // We cant handle any other states atm =/
+        /* We can't handle any other states atm =/ */
         D(bug("[Kernel] %s: UNHANDLED STATE 0x%02x\n", __func__, pmState));
     }
 }
