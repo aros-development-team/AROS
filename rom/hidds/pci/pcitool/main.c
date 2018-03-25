@@ -458,7 +458,7 @@ AROS_UFH3(void, select_function,
         }
         else
         {
-            OOP_GetAttr(obj, aHidd_PCIDevice_SubBus, (APTR)&val);
+            OOP_GetAttr(obj, aHidd_PCIDevice_SecBus, (APTR)&val);
             OOP_GetAttr(obj, aHidd_PCIDevice_ISAEnable, (APTR)&val2);
             OOP_GetAttr(obj, aHidd_PCIDevice_VGAEnable, (APTR)&val3);
 

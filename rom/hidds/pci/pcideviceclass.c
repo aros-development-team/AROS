@@ -453,7 +453,7 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             if (ht == PCIHT_BRIDGE)
             {
                 dev->isBridge = 1;
-                dev->subbus = getByte(cl, o, PCIBR_SUBBUS);
+                dev->secbus = getByte(cl, o, PCIBR_SECBUS);
             }
             
             /* Get all constant ID's */
@@ -723,8 +723,8 @@ static void dispatch_pci2pcibridge(OOP_Class *cl, OOP_Object *o, struct pRoot_Ge
             *msg->storage = dev->isBridge;
             break;
         
-        case aoHidd_PCIDevice_SubBus:
-            *msg->storage = dev->subbus;
+        case aoHidd_PCIDevice_SecBus:
+            *msg->storage = dev->secbus;
             break;
         
         case aoHidd_PCIDevice_MemoryBase:
@@ -864,7 +864,7 @@ static const dispatcher_t Dispatcher[num_Hidd_PCIDevice_Attrs] =
 
     /* Bridge attributes */
     [aoHidd_PCIDevice_isBridge]     = dispatch_pci2pcibridge,
-    [aoHidd_PCIDevice_SubBus]       = dispatch_pci2pcibridge,
+    [aoHidd_PCIDevice_SecBus]       = dispatch_pci2pcibridge,
     [aoHidd_PCIDevice_MemoryBase]   = dispatch_pci2pcibridge,
     [aoHidd_PCIDevice_MemoryLimit]  = dispatch_pci2pcibridge,
     [aoHidd_PCIDevice_PrefetchableBase] = dispatch_pci2pcibridge,
