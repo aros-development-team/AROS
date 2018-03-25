@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,6 +16,10 @@
 #include <proto/oop.h>
 
 #include "pci.h"
+
+static OOP_Object *FindBridge(OOP_Class *cl, OOP_Object *drv, UBYTE bus);
+static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
+    struct MinList *irq_routing, OOP_Object *pcidev);
 
 /* 
     Returns 0 for no device, 1 for non-multi device and 2 for
@@ -108,7 +112,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
 
     D(bug("[PCI] Adding Driver 0x%p class 0x%p\n", drv, OOP_OCLASS(drv)));
 
-    D(bug("[PCI] drivers IRQ routing table at 0x%p\n", irq_routing));
+    D(bug("[PCI] driver's IRQ routing table at 0x%p\n", irq_routing));
 
     /*
      * Scan the whole PCI bus looking for devices available
@@ -155,7 +159,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
         }
     }
 
-    if (irq_routing)
+    if (irq_routing != NULL)
     {
         struct pcibase *pciBase = (struct pcibase *)cl->UserData;
         OOP_Object *pcidev;
@@ -164,103 +168,111 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
 
         ForeachNode(&pciBase->psd.devices, pcidev)
         {
-            IPTR d;
-            IPTR line;
+            AssignIRQ(cl, drv, irq_routing, pcidev);
+        }
+    }
 
-            OOP_GetAttr(pcidev, aHidd_PCIDevice_Driver, &d);
-            OOP_GetAttr(pcidev, aHidd_PCIDevice_IRQLine, &line);
-            if (d == (IPTR)drv && line)
+    /* Successful, add the driver to the end of drivers list */
+    return TRUE;
+}
+
+/* Assign an IRQ to a device according to the routing table */
+static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
+    struct MinList *irq_routing, OOP_Object *pcidev)
+{
+    IPTR d, line;
+    OOP_Object *bridge;
+    BOOL irq_found = FALSE;
+    IPTR bus, dev;
+    struct PCI_IRQRoutingEntry *e;
+
+    OOP_GetAttr(pcidev, aHidd_PCIDevice_Driver, &d);
+    OOP_GetAttr(pcidev, aHidd_PCIDevice_IRQLine, &line);
+
+    if (d == (IPTR)drv && line != 0)
+    {
+        /* For the first loop iteration, it's simpler to consider the device
+         * it's own bridge! */
+        bridge = pcidev;
+
+        while (!irq_found)
+        {
+            OOP_GetAttr(bridge, aHidd_PCIDevice_Bus, &bus);
+            OOP_GetAttr(bridge, aHidd_PCIDevice_Dev, &dev);
+
+            D(bug("[PCI] Looking for routing for device %02x"
+                " and INT%c on bus %d\n", dev, 'A' + line - 1, bus));
+
+            ForeachNode(irq_routing, e)
             {
-                IPTR bus, dev, sub;
-                struct PCI_IRQRoutingEntry *e;
-
-                OOP_GetAttr(pcidev, aHidd_PCIDevice_Bus, &bus);
-                OOP_GetAttr(pcidev, aHidd_PCIDevice_Dev, &dev);
-                OOP_GetAttr(pcidev, aHidd_PCIDevice_Sub, &sub);
-
-                D(bug("[PCI] Device %d:%02x.%02x uses INT%c and may need IRQ fixup\n", bus, dev, sub, 'A' + line - 1));
-
-                if (bus == 0)
+                if ((e->re_PCIBusNum == bus) && (e->re_PCIDevNum == dev)
+                    && (e->re_IRQPin == line))
                 {
-                    ForeachNode(irq_routing, e)
+                    struct TagItem attr[] =
                     {
-                        if ((e->re_PCIDevNum == dev) && 
-                            (e->re_PCIFuncNum == 0xffff || e->re_PCIFuncNum == sub) &&
-                            (e->re_IRQPin == line))
-                        {
-                            struct TagItem attr[] =
-                            {
-                                {aHidd_PCIDevice_INTLine, e->re_IRQ},
-                                {TAG_DONE, 0UL}
-                            };
+                        {aHidd_PCIDevice_INTLine, e->re_IRQ},
+                        {TAG_DONE, 0UL}
+                    };
 
-                            D(bug("[PCI] Setting INTLine to %02x\n", e->re_IRQ));
-                            OOP_SetAttrs(pcidev, attr);
-                        }
-                    }
+                    D(bug("[PCI] Got a match. Setting INTLine to %d\n",
+                        e->re_IRQ));
+                    OOP_SetAttrs(pcidev, attr);
+                    irq_found = TRUE;
                 }
-                else
-                {
-                    OOP_Object *pcibus;
-                    D(bug("[PCI] Device is on bus %d, looking for it...\n", bus));
+            }
 
-                    ForeachNode(&pciBase->psd.devices, pcibus)
-                    {
-                        IPTR d;
-                        IPTR isBridge;
+            if (!irq_found)
+            {
+                D(bug("[PCI] No match on bus %d. Trying parent bridge...\n",
+                    bus));
 
-                        if (pcibus == pcidev)
-                            continue;
+                /* We have to look for a routing entry that matches the
+                 * parent bridge instead, so first find the bridge */
+                bridge = FindBridge(cl, drv, bus);
+                OOP_GetAttr(bridge, aHidd_PCIDevice_Bus, &bus);
 
-                        OOP_GetAttr(pcibus, aHidd_PCIDevice_Driver, &d);
-                        OOP_GetAttr(pcibus, aHidd_PCIDevice_isBridge, &isBridge);
-                        
-                        if (d == (IPTR)drv && isBridge)
-                        {
-                            IPTR subbus;
-                            OOP_GetAttr(pcibus, aHidd_PCIDevice_SubBus, &subbus);
+                /* Swizzle the INT pin as we traverse up to the parent
+                 * bridge */
+                D(bug("[PCI] Swizzling the IRQPin from INT%c to INT%c\n",
+                    'A' + line - 1, 'A' + (line - 1 + dev) % 4));
+                line = (line - 1 + dev) % 4 + 1;
+            }
+        }
+    }
+}
 
-                            if (subbus == bus)
-                            {
-                                IPTR bbus, bdev, bsub;
-                                struct PCI_IRQRoutingEntry *e;
-                                IPTR new_line = 1 + (line - 1 + dev) % 4;
+/* Find the bridge that links to the given secondary bus */
+static OOP_Object *FindBridge(OOP_Class *cl, OOP_Object *drv, UBYTE bus)
+{
+    struct pcibase *pciBase = (struct pcibase *)cl->UserData;
+    OOP_Object *bridge = NULL, *pcidev;
+    IPTR subbus, d, is_bridge;
 
-                                OOP_GetAttr(pcibus, aHidd_PCIDevice_Bus, &bbus);
-                                OOP_GetAttr(pcibus, aHidd_PCIDevice_Dev, &bdev);
-                                OOP_GetAttr(pcibus, aHidd_PCIDevice_Sub, &bsub);
+    ForeachNode(&pciBase->psd.devices, pcidev)
+    {
+        OOP_GetAttr(pcidev, aHidd_PCIDevice_Driver, &d);
+        OOP_GetAttr(pcidev, aHidd_PCIDevice_isBridge, &is_bridge);
+        
+        if (d == (IPTR)drv && is_bridge)
+        {
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_SubBus, &subbus);
 
-                                D(bug("[PCI] Found match. PCI-PCI bridge at %x:%02x.%02x (%p)\n",
-                                    bbus, bdev, bsub, pcibus));
-
-                                D(bug("[PCI] Swizzling the IRQPin from INT%c to INT%c\n", 'A' + line - 1,
-                                    'A' + new_line - 1));
-
-                                ForeachNode(irq_routing, e)
-                                {
-                                    if ((e->re_PCIDevNum == bdev) &&
-                                        (e->re_PCIFuncNum == 0xffff || e->re_PCIFuncNum == bsub) &&
-                                        (e->re_IRQPin == new_line))
-                                    {
-                                        struct TagItem attr[] =
-                                            {
-                                                {aHidd_PCIDevice_INTLine, e->re_IRQ},
-                                                {TAG_DONE, 0UL}};
-
-                                        D(bug("[PCI] Setting INTLine to %02x\n", e->re_IRQ));
-                                        OOP_SetAttrs(pcidev, attr);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            if (subbus == bus)
+            {
+                D(
+                    IPTR bbus, dev, sub;
+                    OOP_GetAttr(pcidev, aHidd_PCIDevice_Bus, &bbus);
+                    OOP_GetAttr(pcidev, aHidd_PCIDevice_Dev, &dev);
+                    OOP_GetAttr(pcidev, aHidd_PCIDevice_Sub, &sub);
+                    bug("[PCI] Found PCI-PCI bridge at %x:%02x.%x (%p)\n",
+                        bbus, dev, sub, pcidev);
+                )
+                bridge = pcidev;
             }
         }
     }
 
-    /* Succesful, add the driver to the end of drivers list */
-    return TRUE;
+    return bridge;
 }
 
 static const UBYTE attrTable[] =
