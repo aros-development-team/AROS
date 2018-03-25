@@ -2,7 +2,7 @@
 #define HIDD_PCI_H
 
 /*
-    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -77,10 +77,11 @@ enum
 struct PCI_IRQRoutingEntry
 {
     struct MinNode  re_Node;
-    UWORD           re_PCIDevNum;
-    UWORD           re_PCIFuncNum;
+    UBYTE           re_PCISegNum;
+    UBYTE           re_PCIBusNum;
+    UBYTE           re_PCIDevNum;
     UBYTE           re_IRQPin;
-    ULONG           re_IRQ;
+    UWORD           re_IRQ;
 };
 
 #endif
