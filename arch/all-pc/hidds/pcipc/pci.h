@@ -79,15 +79,10 @@ struct pcibase
  */
 #define PCI_MechSelect	0x0cfb
 
-#define PCICS_VENDOR	0x00
 #define PCICS_PRODUCT   0x02
-#define PCICS_SUBCLASS	0x0a
 
-#define PCI_CLASS_BRIDGE_HOST	0x0600
-#define PCI_CLASS_DISPLAY_VGA	0x0300
-
-#define PCI_VENDOR_INTEL	0x8086
-#define PCI_VENDOR_COMPAQ	0x0e11
+#define PCIBR_SUBCLASS  0x0a
+#define PCIBR_SECBUS    0x19
 
 
 typedef union _pcicfg
@@ -97,12 +92,22 @@ typedef union _pcicfg
     UBYTE   ub[4];
 } pcicfg;
 
-static inline UWORD ReadConfigWord(struct pcipc_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
+static inline UWORD ReadConfigWord(struct pcipc_staticdata *psd, UBYTE bus,
+    UBYTE dev, UBYTE sub, UWORD reg)
 {
     pcicfg temp;
 
     temp.ul = psd->ReadConfigLong(bus, dev, sub, reg);
     return temp.uw[(reg&2)>>1];
+}
+
+static inline UWORD ReadConfigByte(struct pcipc_staticdata *psd, UBYTE bus,
+    UBYTE dev, UBYTE sub, UWORD reg)
+{
+    pcicfg temp;
+
+    temp.ul = psd->ReadConfigLong(bus, dev, sub, reg);
+    return temp.ub[reg & 3];
 }
 
 ULONG ReadConfig1Long(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
