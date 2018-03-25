@@ -58,7 +58,7 @@ static OOP_Object *InsertDevice(OOP_Class *cl, ULONG *highBus, struct TagItem *d
 {
     struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     OOP_Object *pcidev;
-    IPTR bridge, subbus;
+    IPTR bridge, secbus;
 
     pcidev = OOP_NewObject(pciBase->psd.pciDeviceClass, NULL, devtags);
     if (pcidev)
@@ -66,9 +66,9 @@ static OOP_Object *InsertDevice(OOP_Class *cl, ULONG *highBus, struct TagItem *d
         OOP_GetAttr(pcidev, aHidd_PCIDevice_isBridge, &bridge);
         if (bridge)
         {
-            OOP_GetAttr(pcidev, aHidd_PCIDevice_SubBus, &subbus);
-            if (subbus > *highBus)
-                *highBus = subbus;
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_SecBus, &secbus);
+            if (secbus > *highBus)
+                *highBus = secbus;
         }
         
         /*
@@ -246,7 +246,7 @@ static OOP_Object *FindBridge(OOP_Class *cl, OOP_Object *drv, UBYTE bus)
 {
     struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     OOP_Object *bridge = NULL, *pcidev;
-    IPTR subbus, d, is_bridge;
+    IPTR secbus, d, is_bridge;
 
     ForeachNode(&pciBase->psd.devices, pcidev)
     {
@@ -255,9 +255,9 @@ static OOP_Object *FindBridge(OOP_Class *cl, OOP_Object *drv, UBYTE bus)
         
         if (d == (IPTR)drv && is_bridge)
         {
-            OOP_GetAttr(pcidev, aHidd_PCIDevice_SubBus, &subbus);
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_SecBus, &secbus);
 
-            if (subbus == bus)
+            if (secbus == bus)
             {
                 D(
                     IPTR bbus, dev, sub;

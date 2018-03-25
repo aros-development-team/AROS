@@ -35,7 +35,7 @@ typedef struct DeviceData {
     OOP_Object          *driver;
     UBYTE               bus,dev,sub;
     UBYTE               isBridge;
-    UBYTE               subbus;
+    UBYTE               secbus;
     UWORD               VendorID;
     UWORD               ProductID;
     UBYTE               RevisionID;
