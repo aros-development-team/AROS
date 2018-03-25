@@ -2,7 +2,7 @@
     Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PCI direct driver for i386 native.
+    Desc: PCI direct driver for i386/x86_64 native.
     Lang: English
 */
 
@@ -238,75 +238,113 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 
 /* Class initialization and destruction */
 
-void PCIPC_ACPIEnumPCIIRQ(ACPI_OBJECT *item, struct MinList *list)
+/* Parse an individual routing entry */
+static void EnumPCIIRQ(struct pcipc_staticdata *psd,
+    ACPI_PCI_ROUTING_TABLE *item, UWORD bus_num)
 {
-    if ((item->Type == 4) && (item->Package.Count == 4))
+    struct PCI_IRQRoutingEntry *n =
+        AllocVec(sizeof(struct PCI_IRQRoutingEntry), MEMF_CLEAR | MEMF_ANY);
+
+    if (n)
     {
-        ACPI_OBJECT *jitem;
+        n->re_PCIBusNum = bus_num;
+        n->re_PCIDevNum = (item->Address >> 16) & 0xFFFF;
 
-        struct PCI_IRQRoutingEntry *n = AllocVec(sizeof(struct PCI_IRQRoutingEntry), MEMF_CLEAR | MEMF_ANY);
+        D(bug("[PCI.PC] %s:  %02x:%02x.x", __func__, n->re_PCIBusNum,
+            n->re_PCIDevNum);)
 
-        if (n)
+        n->re_IRQPin = item->Pin + 1;
+        D(bug(" INT%c", 'A' + n->re_IRQPin - 1));
+
+        if (strlen(item->Source) > 0)
         {
-            jitem = &item->Package.Elements[0];
-            n->re_PCIDevNum = (jitem->Integer.Value >> 16) & 0xFFFF;
-            n->re_PCIFuncNum = (jitem->Integer.Value) & 0xFFFF;
-
-            D(
-                bug("[PCI.PC] %s:  %04d", __func__, n->re_PCIDevNum);
-                if (n->re_PCIFuncNum == 0xFFFF)
-                    bug(".xx");
-                else
-                    bug(".%02d", n->re_PCIFuncNum);
-            )
-            jitem = &item->Package.Elements[1];
-            n->re_IRQPin = jitem->Integer.Value + 1;
-            D(bug(" INT%c", 'A' + n->re_IRQPin - 1));
-
-            jitem = &item->Package.Elements[2];
-            if (jitem->String.Length > 0)
-            {
-                D(bug(" '%s'\n", jitem->String.Pointer));
-                FreeVec(n);
-            }
-            else
-            {
-                jitem = &item->Package.Elements[3];
-                D(bug(" using GSI %02x\n", jitem->Integer.Value));
-                n->re_IRQ = jitem->Integer.Value;
-                ADDTAIL(list, n);
-            }
+            D(bug(" '%s'\n", item->Source));
+            FreeVec(n);
+        }
+        else
+        {
+            D(bug(" using GSI %u\n", item->SourceIndex));
+            n->re_IRQ = item->SourceIndex;
+            ADDTAIL(&psd->pcipc_irqRoutingTable, n);
         }
     }
 }
 
-ACPI_STATUS PCPCI_ACPIDeviceCallback(ACPI_HANDLE Object, ULONG nesting_level, void *Context, void **ReturnValue)
+static void FindIRQRouting(struct pcipc_staticdata *psd, ACPI_HANDLE parent,
+    UBYTE bus_num)
 {
-    struct MinList *list = (struct MinList *)Context;
-    ACPI_BUFFER RetVal;
-    RetVal.Length = ACPI_ALLOCATE_BUFFER;
-    int status;
+    ACPI_HANDLE child = NULL;
+    ACPI_DEVICE_INFO *dev_info;
+    ACPI_BUFFER buffer;
+    ACPI_PCI_ROUTING_TABLE *entry;
+    UBYTE dev_num, func_num, child_bus_num;
+    BOOL is_bridge;
+    ULONG address;
 
-    D(bug("[PCI.PC] %s: Object = %p, nesting_level=%d, Context=%p\n", __func__, Object, nesting_level, list);)
+    D(bug("[PCI.PC] %s: Scanning bus %d\n", __func__, bus_num);)
 
-    status = AcpiEvaluateObject(Object, "_PRT", NULL, &RetVal);
-    if (!ACPI_FAILURE(status))
+    /* Get routing table for current bus */
+    buffer.Length = ACPI_ALLOCATE_BUFFER;
+    if (AcpiGetIrqRoutingTable(parent, &buffer) == AE_OK)
     {
-        ACPI_OBJECT *RObject = RetVal.Pointer;
-        unsigned int i;
+        D(bug("[PCI.PC] %s: Found _PRT\n", __func__);)
 
-        D(bug("[PCI.PC] %s: _PRT @ %p\n", __func__, RetVal.Pointer);)
-        D(bug("[PCI.PC] %s:             %d PCI IRQ Entries\n", __func__, RObject->Package.Count);)
-
-        for (i=0; i < RObject->Package.Count; i++)
+        /* Translate routing table entries into nodes for our own list */
+        for (entry = buffer.Pointer; entry->Length != 0;
+            entry = (APTR)entry + entry->Length)
         {
-            PCIPC_ACPIEnumPCIIRQ((ACPI_OBJECT *)&RObject->Package.Elements[i], list);
+            EnumPCIIRQ(psd, entry, bus_num);
         }
+
+        FreeVec(buffer.Pointer);
     }
 
-    D(bug("[PCI.PC] %s: Finished\n", __func__);)
+    /* Walk current bus's devices, and process the buses on the other side of
+     * any bridges found recursively */
+    while (AcpiGetNextObject(ACPI_TYPE_DEVICE, parent, child, &child) == AE_OK)
+    {
+        /* Get device:function part of PCI address */
+        if (AcpiGetObjectInfo(child, &dev_info) == AE_OK)
+        {
+            if ((dev_info->Valid & ACPI_VALID_ADR) != 0)
+            {
+                address = (ULONG)dev_info->Address;
+                dev_num = address >> 16 & 0xff;
+                func_num = address & 0xff;
+                FreeVec(dev_info);
 
-    return 0;
+                /* Check if this is a PCI-PCI bridge */
+                is_bridge = ReadConfigWord(psd, bus_num, dev_num, func_num,
+                    PCIBR_SUBCLASS) == 0x0604;
+
+                /* Look for more routing tables */
+                if (is_bridge)
+                {
+                    D(bug("[PCI.PC] %s: Found a bridge at %02x:%02x.%x\n",
+                        __func__, bus_num, dev_num, func_num);)
+
+                    /* Get this bridge's bus number */
+                    child_bus_num = ReadConfigByte(psd, bus_num, dev_num, func_num,
+                        PCIBR_SECBUS);
+                    FindIRQRouting(psd, child, child_bus_num);
+                }
+            }
+        }
+
+    }
+
+    return;
+}
+
+/* Parse a routing table */
+static ACPI_STATUS ACPIDeviceCallback(ACPI_HANDLE handle, ULONG nesting_level,
+    void *context, void **return_value)
+{
+    struct pcipc_staticdata *psd = (struct pcipc_staticdata *)context;
+
+    FindIRQRouting(psd, handle, 0);
+
+    return AE_OK;
 }
 
 static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
@@ -331,13 +369,9 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
     if (_psd->hiddPCIDriverAB == 0 || _psd->hiddAB == 0 || _psd->hidd_PCIDeviceAB == 0)
     {
-	D(bug("[PCI.PC] %s: ObtainAttrBases failed\n", __func__));
-	return FALSE;
+        D(bug("[PCI.PC] %s: ObtainAttrBases failed\n", __func__));
+        return FALSE;
     }
-
-    if (ACPICABase)
-        AcpiGetDevices("PNP0A03", PCPCI_ACPIDeviceCallback,
-            &_psd->pcipc_irqRoutingTable, NULL);
 
     /* Default to using config mechanism 1 */
     _psd->ReadConfigLong  = ReadConfig1Long;
@@ -345,9 +379,15 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
     PCIPC_ProbeConfMech(&LIBBASE->psd);
 
+    /* Find routing tables */
+    if (ACPICABase)
+    {
+        AcpiGetDevices("PNP0A03", ACPIDeviceCallback, _psd, NULL);
+    }
+
     msg.driverClass = _psd->driverClass;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
-    D(bug("[PCI.PC] %s: Registering Driver with PCI base class..\n", __func__));
+    D(bug("[PCI.PC] %s: Registering Driver with PCI base class...\n", __func__));
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     OOP_DoMethod(pci, (OOP_Msg)pmsg);
