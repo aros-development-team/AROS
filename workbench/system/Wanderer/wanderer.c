@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -2928,15 +2928,9 @@ void wanderer_menufunc_wanderer_shutdown(void)
 {
     LONG action;
 
-#if defined(__AROS_ARCH_pc__) && defined(__i386__)
     action = MUI_RequestA(_WandererIntern_AppObj, NULL, 0,
-        _(MSG_SHUTDOWN_TITLE), strchr(_(MSG_SHUTDOWN_BUTTONS), '|') + 1,
+        _(MSG_SHUTDOWN_TITLE), _(MSG_SHUTDOWN_BUTTONS),
         _(MSG_SHUTDOWN_BODY), NULL);
-    if (action != 0)
-        action++;
-#else
-    action = MUI_RequestA(_WandererIntern_AppObj, NULL, 0, _(MSG_SHUTDOWN_TITLE), _(MSG_SHUTDOWN_BUTTONS), _(MSG_SHUTDOWN_BODY), NULL);
-#endif
     switch (action) {
     case 0:
         return;
