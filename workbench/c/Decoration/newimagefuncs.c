@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team.
+    Copyright © 2011-2018, The AROS Development Team.
     $Id$
 */
 
@@ -339,7 +339,6 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
         {
             /* If this is LUT screen, try to load LUT version of image */
             out->ok = FALSE;
-            strcpy(out->filename, in->filename);
             strcat(out->filename, "_LUT");
         
             out->o = LoadPicture(out->filename, scr);
