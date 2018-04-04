@@ -213,7 +213,7 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
 }
 
 /* CPU exceptions are processed here */
-void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
+void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long int_number)
 {
     struct KernelBase *KernelBase = getKernelBase();
 #if 0 
@@ -222,7 +222,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         IPTR __APICBase = core_APIC_GetBase();
         int cpunum = KrnGetCPUNumber();
 
-        bug("core_IRQHandle(%d), eflags=%08x\n", irq_number, regs->rflags);
+        bug("core_IRQHandle(%d), eflags=%08x\n", int_number, regs->rflags);
 
         bug("IRR.%03x: %08x%08x%08x%08x%08x%08x%08x%08x\n", cpunum,
             APIC_REG(__APICBase, APIC_IRR+0x70), APIC_REG(__APICBase, APIC_IRR+0x60),
@@ -238,11 +238,11 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 #endif
     // An IRQ which arrived at the CPU is *either* an exception (let it be syscall, cpu exception,
     // LAPIC local irq) or a device IRQ.
-    if (IS_EXCEPTION(irq_number))
+    if (IS_EXCEPTION(int_number))
     {
-        unsigned long exception_number = GET_EXCEPTION_NUMBER(irq_number);
+        unsigned long exception_number = GET_EXCEPTION_NUMBER(int_number);
 
-        DTRAP(bug("[Kernel] %s: CPU Exception %08x\n", __func__, irq_number);)
+        DTRAP(bug("[Kernel] %s: CPU Exception %08x\n", __func__, int_number);)
         DTRAP(bug("[Kernel] %s: --> CPU Trap #$%08x\n", __func__, exception_number);)
 
         cpu_Trap(regs, error_code, exception_number);
@@ -257,7 +257,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     }
     else
     {
-        irq_number = GET_DEVICE_IRQ(irq_number);
+        UBYTE irq_number = GET_DEVICE_IRQ(int_number);
 
         DIRQ(bug("[Kernel] %s: Device IRQ #$%02X\n", __func__, irq_number);)
 
@@ -286,9 +286,8 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
         }
 
         /*
-         * Upon exit from the lowest-level Device IRQ,
-         * if we are in user mode and not in forbid state,
-         * we run the task scheduler.
+         * Upon exit from the lowest-level device IRQ, if we are returning to user mode,
+         * we check if we need to call software interrupts or run the task scheduler.
          */
         if ((SysBase) && (INTR_USERMODESTACK))
         {
