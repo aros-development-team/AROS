@@ -42,7 +42,7 @@ struct PlatformData
 
 #define PLATFORMF_HAVEMSI       (1 << 1)
 
-/* Hardware IRQ's ********************************************************************************/
+/* Hardware IRQs *********************************************************************************/
 
 /* By default we only know about the xtpic's IRQs */
 #define IRQ_COUNT       I8259A_IRQCOUNT
@@ -89,7 +89,7 @@ BOOL ictl_is_irq_enabled(unsigned char, struct KernelBase *);
 #define IRQINTB_ENABLED 1
 #define IRQINTF_ENABLED (1 << IRQINTB_ENABLED)
 
-/* CPU TImer *************************************************************************************/
+/* CPU Timer *************************************************************************************/
 
 #define ADDTIME(dest, src)			\
     (dest)->tv_micro += (src)->tv_micro;	\
@@ -100,16 +100,32 @@ BOOL ictl_is_irq_enabled(unsigned char, struct KernelBase *);
 	(dest)->tv_micro -= 1000000;		\
     }
 
-/* use the correct registers depending on arch. */
+/*
+ * INTR_FROMUSERMODE uses arch-specific mechanisms to determine which CPL we
+ * are returning to.
+ * For x86-64, every task has the SS register initialized to a valid segment
+ * descriptor. The descriptor itself isn't used by x86-64; however when a
+ * privilege level switch occurs upon an interrupt, SS is reset to zero and
+ * the old value is pushed to the stack as part of the interrupt context.
+ * Both steps are done as part of the CPU's atomic interrupt mechanism, so
+ * we can rely on the sequence not being only partly completed.
+ * On x86-32, we rely on a similar mechanism, but using the CS register
+ * instead of SS. CS is set to one value for user mode, but replaced with a
+ * new value specific to the kernel privilege level when an interrupt occurs.
+ */
 #if (__WORDSIZE==64)
-#define INTR_USERMODESTACK        (regs->ss != 0)
+#define INTR_FROMUSERMODE (regs->ss != 0)
+#else
+#define INTR_FROMUSERMODE (regs->cs != KERNEL_CS)
+#endif
+
+#if (__WORDSIZE==64)
 static inline unsigned long long RDTSC() {
    unsigned long _tsc_upper, _tsc_lower;
    asm volatile (".byte 0x0f, 0x31" : "=a" (_tsc_lower), "=d"(_tsc_upper));
    return _tsc_lower | ((unsigned long long)_tsc_upper << 32);
 } 
 #else
-#define INTR_USERMODESTACK        (regs->ds != KERNEL_DS)
 static inline unsigned long long RDTSC() {
    unsigned long long _tsc;
    asm volatile (".byte 0x0f, 0x31" : "=A" (_tsc));
