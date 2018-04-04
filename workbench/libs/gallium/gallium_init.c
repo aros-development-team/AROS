@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,8 +16,10 @@ CONST_STRPTR softpipe_str = "softpipe";
 static int Init(LIBBASETYPEPTR LIBBASE)
 {
     InitSemaphore(&LIBBASE->driversemaphore);
-    LIBBASE->driver = NULL;
-    LIBBASE->drivermodule = NULL;
+
+    LIBBASE->basegallium = OOP_FindClass(CLID_Hidd_Gallium);
+    if (!LIBBASE->basegallium)
+        return FALSE;
 
     LIBBASE->gfxAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gfx);
     if (!LIBBASE->gfxAttrBase)
@@ -34,9 +36,11 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->fallback = (char *)softpipe_str;
     LIBBASE->fallbackmodule = NULL;
 
-    /* cache method id's that we use ..  */
-    LIBBASE->galliumMId_UpdateRect = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect);
-    LIBBASE->galliumMId_DisplayResource = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResource);
+    /* Cache method IDs that we use */
+    LIBBASE->galliumMId_UpdateRect =
+        OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect);
+    LIBBASE->galliumMId_DisplayResource =
+        OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DisplayResource);
 
     return TRUE;
 }
