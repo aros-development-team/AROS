@@ -57,15 +57,7 @@ int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *Kernel
         }
     }
 
-    /*
-     * Scheduler can be called only from within user mode.
-     * Every task has ss register initialized to a valid segment descriptor.
-     * The descriptor itself isn't used by x86-64, however when a privilege
-     * level switch occurs upon an interrupt, ss is reset to zero. Old ss value
-     * is always pushed to stack as part of interrupt context.
-     * We rely on this in order to determine which CPL we are returning to.
-     */
-    if ((systemSysCall) && INTR_USERMODESTACK)
+    if (systemSysCall && INTR_FROMUSERMODE)
     {
         DSYSCALL(bug("[Kernel] %s: User-mode syscall\n", __func__));
 
@@ -148,6 +140,8 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
         /* Sleep almost forever ;) */
         __asm__ __volatile__("sti; hlt; cli");
 
+        D(bug("[Kernel] %s: Woke from sleep; checking for softints...\n",
+            __func__);)
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
     }

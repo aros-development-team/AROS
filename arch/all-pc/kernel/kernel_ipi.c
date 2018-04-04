@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -287,7 +287,7 @@ int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase
             APIC_REG(__APICBase, APIC_EOI) = 0;
             // If IPI was called when CPU was in user mode, and not in forbid state,
             // perform task switch - otherwise set delayed schedule flag.
-            if ((INTR_USERMODESTACK) && (TDNESTCOUNT_GET < 0))
+            if (INTR_FROMUSERMODE && (TDNESTCOUNT_GET < 0))
             {
                 if (core_Schedule())
                 {

@@ -289,7 +289,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
          * Upon exit from the lowest-level device IRQ, if we are returning to user mode,
          * we check if we need to call software interrupts or run the task scheduler.
          */
-        if ((SysBase) && (INTR_USERMODESTACK))
+        if (SysBase != NULL && INTR_FROMUSERMODE)
         {
             /* Disable interrupts for a while */
             __asm__ __volatile__("cli; cld;");
