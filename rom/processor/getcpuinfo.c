@@ -37,7 +37,7 @@
     INPUTS
 
         Function takes an array of tags. Data is returned for each tag. See
-        specific tag description. There is a control tag CGIT_SelecetProcessor.
+        specific tag description. There is a control tag CGIT_SelectedProcessor.
 
     TAGS
 
