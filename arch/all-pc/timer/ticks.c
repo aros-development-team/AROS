@@ -21,7 +21,7 @@
  */
 
 /*
- * The math magic behing this is:
+ * The math magic behind this is:
  *
  * 1. Theoretical value of microseconds is: tick * 1000000 / tb_eclock_rate.
  * 2. tb_eclock_rate is constant and equal to 1193180Hz (frequency of PIT's master quartz).
