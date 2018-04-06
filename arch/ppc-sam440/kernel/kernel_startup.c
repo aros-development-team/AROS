@@ -239,7 +239,6 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     /* Enable FPU */
     wrspr(CCR0, rdspr(CCR0) & ~0x00100000);
-    wrspr(CCR1, rdspr(CCR1) | (0x80000000 >> 24));
 
     /* First message after FPU is enabled, otherwise illegal instruction */
     D(bug("[KRN] Sam440 Kernel built on %s\n", __DATE__));
@@ -449,8 +448,11 @@ void SetupClocking440(struct PlatformData *pd)
      * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
      * 1kHz DEC counter. Enable decrementer timer and automatic reload of decrementer value.
      */
+    reg = rdspr(TCR);
+    wrspr(TCR, reg & ~(TCR_DIE | TCR_ARE));
+    wrspr(CCR1, rdspr(CCR1) | (0x80000000 >> 24));
     wrspr(DECAR, pd->pd_OPBFreq / 50);
-    wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
+    wrspr(TCR, reg | TCR_DIE | TCR_ARE);
 }
 
 
@@ -510,7 +512,7 @@ void SetupClocking460(struct PlatformData *pd)
     /* Early PLL divisor */
     wrdcr(CPR0_CFGADDR, CPR0_PLBED);
     reg = rddcr(CPR0_CFGDATA);
-    uint32_t plbed = (reg >> 24) & 0x7;
+    uint32_t plbed = (reg >> 24) & 7;
     if (plbed == 0)
         plbed = 8;
 
@@ -547,27 +549,28 @@ void SetupClocking460(struct PlatformData *pd)
         m = fbdv;
     } else {
         /* PLL Per-Clock feedback */
-        m = fwdva * plbed * opbd * ahbd;
+        m = fwdva * plbed * opbd * perd;
     }
 
     D(bug("fbdv %d, fwdva = %d, fwdvb = %d\n", fbdv, fwdva, fwdvb));
     D(bug("plbed %d, opbd = %d, perd = %d, ahbd = %d\n",
                 plbed, opbd, perd, ahbd));
 
-    uint64_t vco = m * 55000000;
+    /* FIXME: Some boards have 50Mhz and others 55MHz. How to distinguish? */
+    uint64_t vco = m * 50000000 + m / 2;
     pd->pd_CPUFreq = vco / fwdva;
     pd->pd_PLBFreq = vco / fwdva / plbed;
     pd->pd_OPBFreq = pd->pd_PLBFreq / opbd;
     pd->pd_EPBFreq = pd->pd_OPBFreq / perd;
     pd->pd_PCIFreq = pd->pd_PLBFreq / ahbd;
 
-    /*
-     * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
-     * 1kHz DEC counter. Enable decrementer timer and automatic reload of decrementer value.
-     */
-    wrspr(DECAR, pd->pd_OPBFreq / 5);
-    wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
+    /* Set decrementer interrupt to fire at a frequency of 50 Hz.*/
+    reg = rdspr(TCR);
+    wrspr(TCR, reg & ~(TCR_DIE | TCR_ARE));
     wrspr(CCR1, rdspr(CCR1) & ~(0x80000000 >> 24));
+    wrspr(DECAR, pd->pd_CPUFreq / 50);
+    /* Enable decrementer timer interrupt and automatic reload of decrementer value. */
+    wrspr(TCR, reg | TCR_DIE | TCR_ARE);
 }
 
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
