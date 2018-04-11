@@ -79,6 +79,7 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 void PCPCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
+    struct pcipc_staticdata *psd = PSD(cl);
     ULONG idx;
 
     if (IS_PCIDRV_ATTR(msg->attrID, idx))
@@ -86,10 +87,10 @@ void PCPCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch (idx)
         {
             case aoHidd_PCIDriver_IRQRoutingTable:
-                if (IsListEmpty(&PSD(cl)->pcipc_irqRoutingTable))
+                if (IsListEmpty(&psd->pcipc_irqRoutingTable))
                     *msg->storage = (IPTR)NULL;
                 else
-                    *msg->storage = (IPTR)&PSD(cl)->pcipc_irqRoutingTable;
+                    *msg->storage = (IPTR)&psd->pcipc_irqRoutingTable;
                 break;
 
             default:
