@@ -98,7 +98,7 @@ struct HDAudioChip
     UBYTE nr_of_input_streams;
     UBYTE nr_of_output_streams;
     
-    // important node ID's
+    // important node IDs
     UBYTE function_group;
     UBYTE dac_nid; // front L&R
     UBYTE adc_nid;
@@ -108,6 +108,7 @@ struct HDAudioChip
     UBYTE dac_volume_count;
     UBYTE speaker_nid;
     UBYTE headphone_nid;
+
     BOOL speaker_active;
     
     UBYTE line_in_nid;
