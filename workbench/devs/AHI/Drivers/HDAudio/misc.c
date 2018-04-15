@@ -45,6 +45,7 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card);
 static void determine_frequencies(struct HDAudioChip *card);
 static void set_frequency_info(struct Freq *freq, UWORD bitnr);
 static BOOL reset_chip(struct HDAudioChip *card);
+static void codec_discovery(struct HDAudioChip *card);
 static ULONG get_response(struct HDAudioChip *card);
 static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
@@ -493,91 +494,102 @@ static BOOL reset_chip(struct HDAudioChip *card)
 }
 
 
-void codec_discovery(struct HDAudioChip *card)
+static void codec_discovery(struct HDAudioChip *card)
 {
     UWORD i, j;
 
-    ULONG subnode_count_response = get_parameter(card->function_group, VERB_GET_PARMS_NODE_COUNT, card);
+    ULONG subnode_count_response = get_parameter(card->function_group,
+        VERB_GET_PARMS_NODE_COUNT, card);
     UBYTE subnode_count = subnode_count_response & 0xFF;
     UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
     ULONG connections = 0, config_default;
 
-    D(bug("[HDAudio] Subnode count = %d, sub_starting_node = %x\n", subnode_count, sub_starting_node));
+    bug("[HDAudio] Subnode count = %d, sub_starting_node = %x\n",
+        subnode_count, sub_starting_node);
 
-    //D(bug("[HDAudio] Audio supported = %lx\n", get_parameter(card->function_group, 0xA, card)));
-    //D(bug("[HDAudio] Sup streams = %lx\n", get_parameter(card->function_group, 0xB, card)));
+    //bug("[HDAudio] Audio supported = %lx\n",
+    //    get_parameter(card->function_group, 0xA, card));
+    //bug("[HDAudio] Sup streams = %lx\n",
+    //    get_parameter(card->function_group, 0xB, card));
 
     for (i = 0; i < subnode_count; i++) // widgets
     {
         const ULONG NID = i + sub_starting_node;
         ULONG widget_caps;
 
-        widget_caps = get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+        widget_caps =
+            get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
 
-        //if ((NID == 0x18) || (NID == 0xB))
+        bug("[HDAudio] Subnode %x has caps %lx\n", NID, widget_caps);
+        bug("[HDAudio] %xh: Supported PCM size/rate = %lx\n", NID,
+            get_parameter(NID, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card));
+
+        if (AUDIO_WIDGET_CAPS(widget_caps) == 0x4) // pin complex
         {
-            D(bug("[HDAudio] Subnode %x has caps %lx\n", NID, widget_caps));
-            D(bug("[HDAudio] %xh: Supported PCM size/rate = %lx\n", NID, get_parameter(NID, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card)));
+            bug("[HDAudio] PIN: caps = %lx\n",
+                get_parameter(NID, VERB_GET_PARMS_PIN_CAPS, card));
+            bug("[HDAudio] PIN: Connected = %s\n",
+                is_jack_connected(card, NID) ? "TRUE" : "FALSE");
 
-            if (AUDIO_WIDGET_CAPS(widget_caps) == 0x4) // pin complex
+            config_default = send_command_12(card->codecnr, NID,
+                VERB_GET_CONFIG_DEFAULT, 0, card);
+            bug("[HDAudio] PIN: Configuration Default = %08lx\n",
+                config_default);
+        }
+
+        bug("[HDAudio] %xh: Input Amp caps = %lx\n", NID,
+            get_parameter(NID, 0xD, card));
+        bug("[HDAudio] %xh: Output Amp caps = %lx\n", NID,
+            get_parameter(NID, 0x12, card));
+
+        connections = get_parameter(NID, 0xE, card);
+        bug("[HDAudio] %xh: Conn list len = %lx\n", NID, connections);
+        if (connections > 0) // print connections
+        {
+            ULONG entry = 0;
+
+            bug("[HDAudio] %xh: Incoming connection list: ", NID);
+            for (entry = 0; entry < connections; entry+=4)
             {
-                D(bug("[HDAudio] PIN: caps = %lx\n", get_parameter(NID, VERB_GET_PARMS_PIN_CAPS, card)));
-                D(bug("[HDAudio] PIN: Connected = %s\n", is_jack_connected(card, NID) ? "TRUE" : "FALSE"));
+                ULONG connectedTo = send_command_12(card->codecnr, NID,
+                    VERB_GET_CONNECTION_LIST_ENTRY, entry, card);
 
-                config_default = send_command_12(card->codecnr, NID,
-                    VERB_GET_CONFIG_DEFAULT, 0, card);
-                D(bug("[HDAudio] PIN: Configuration Default = %08lx\n", config_default));
-            }
-
-            D(bug("[HDAudio] %xh: Input Amp caps = %lx\n", NID, get_parameter(NID, 0xD, card)));
-            D(bug("[HDAudio] %xh: Output Amp caps = %lx\n", NID, get_parameter(NID, 0x12, card)));
-
-            connections = get_parameter(NID, 0xE, card);
-            D(bug("[HDAudio] %xh: Conn list len = %lx\n", NID, connections));
-            if (connections > 0) // print connections
-            {
-                ULONG entry = 0;
-
-                D(bug("[HDAudio] %xh: Incoming connection list: ", NID));
-                for (entry = 0; entry < connections; entry+=4)
-                {
-                    ULONG connectedTo = send_command_12(card->codecnr, NID, VERB_GET_CONNECTION_LIST_ENTRY, entry, card);
-
-                    bug("%lx, ", connectedTo);
-                }
-                bug("\n");
-            }
-
-            D(bug("[HDAudio] %xh: Supported power state = %lx\n", NID, get_parameter(NID, 0xF, card)));
-
-            D(ULONG n);
-            D(n = send_command_12(card->codecnr, NID, VERB_GET_CONNECTION_SELECT, 0, card));
-            D(bug("[HDAudio] %xh: Connection selection = %lx\n", NID, n));
-
-            D(bug("[HDAudio] %xh: Input Amp gain =", NID));
-            for (j = 0; j < connections; j++)
-            {
-                if (j != 0) bug(",");
-                n = send_command_4(card->codecnr, NID, 0xB, j, card);
-                bug(" %ld", n & 0x7f);
-                if (n & 0x80) bug(" (muted)");
+                bug("%lx, ", connectedTo);
             }
             bug("\n");
-
-            D(n = send_command_4(card->codecnr, NID, 0xB, 0x8000, card));
-            D(bug("[HDAudio] %xh: Output Amp gain = %ld%s\n", NID, n & 0x7f,
-                n & 0x80 ? " (muted)" : ""));
-
-            D(n = send_command_4(card->codecnr, NID, 0xA, 0, card));
-            D(bug("[HDAudio] %xh: Format = %lx\n", NID, n));
-            D(n = send_command_12(card->codecnr, NID, 0xF05, 0, card));
-            D(bug("[HDAudio] %xh: Power state = %lx\n", NID, n));
-            D(n = send_command_12(card->codecnr, NID, 0xF06, 0, card));
-            D(bug("[HDAudio] %xh: Stream = %lx\n", NID, n));
-            D(n = send_command_12(card->codecnr, NID, 0xF07, 0, card));
-            D(bug("[HDAudio] %xh: Pin widget control = %lx\n", NID, n));
-            D(bug("[HDAudio] --------------------------------\n\n"));
         }
+
+        bug("[HDAudio] %xh: Supported power state = %lx\n", NID,
+            get_parameter(NID, 0xF, card));
+
+        ULONG n;
+        n = send_command_12(card->codecnr, NID,
+            VERB_GET_CONNECTION_SELECT, 0, card);
+        bug("[HDAudio] %xh: Connection selection = %lx\n", NID, n);
+
+        bug("[HDAudio] %xh: Input Amp gain =", NID);
+        for (j = 0; j < connections; j++)
+        {
+            if (j != 0) bug(",");
+            n = send_command_4(card->codecnr, NID, 0xB, j, card);
+            bug(" %ld", n & 0x7f);
+            if (n & 0x80) bug(" (muted)");
+        }
+        bug("\n");
+
+        n = send_command_4(card->codecnr, NID, 0xB, 0x8000, card);
+        bug("[HDAudio] %xh: Output Amp gain = %ld%s\n", NID, n & 0x7f,
+            n & 0x80 ? " (muted)" : "");
+
+        n = send_command_4(card->codecnr, NID, 0xA, 0, card);
+        bug("[HDAudio] %xh: Format = %lx\n", NID, n);
+        n = send_command_12(card->codecnr, NID, 0xF05, 0, card);
+        bug("[HDAudio] %xh: Power state = %lx\n", NID, n);
+        n = send_command_12(card->codecnr, NID, 0xF06, 0, card);
+        bug("[HDAudio] %xh: Stream = %lx\n", NID, n);
+        n = send_command_12(card->codecnr, NID, 0xF07, 0, card);
+        bug("[HDAudio] %xh: Pin widget control = %lx\n", NID, n);
+        bug("[HDAudio] --------------------------------\n\n");
     }
 }
 
