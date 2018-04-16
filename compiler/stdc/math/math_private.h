@@ -272,7 +272,7 @@ do {								\
  * Attempt to get strict C99 semantics for assignment with non-C99 compilers.
  */
 #if FLT_EVAL_METHOD == 0 || __GNUC__ == 0
-#define	STRICT_ASSIGN(type, lval, rval)	((lval) = (rval))
+#define	STRICT_ASSIGN(type, lval, rval)	(*((volatile type *)&lval) = (rval))
 #else
 #define	STRICT_ASSIGN(type, lval, rval) do {	\
 	volatile type __lval;			\
@@ -286,7 +286,7 @@ do {								\
 } while (0)
 #endif
 #else
-#define	STRICT_ASSIGN(type, lval, rval)	((lval) = (rval))
+#define	STRICT_ASSIGN(type, lval, rval)	(*((volatile type *)&lval) = (rval))
 #endif /* FLT_EVAL_METHOD */
 
 /* Support switching the mode to FP_PE if necessary. */
