@@ -18,6 +18,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_fabs.c,v 1.7 2002/05/28 18:1
  * fabs(x) returns the absolute value of x.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -29,3 +30,8 @@ fabs(double x)
 	SET_HIGH_WORD(x,high&0x7fffffff);
         return x;
 }
+
+#if	(LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(fabsl), fabsl, AROS_CSYM_FROM_ASM_NAME(fabsl), AROS_CSYM_FROM_ASM_NAME(fabs));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(fabsl));
+#endif

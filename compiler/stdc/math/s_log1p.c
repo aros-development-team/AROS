@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_log1p.c,v 1.8 2005/12/04 12:28:33 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_log1p.c,v 1.10 2008/03/29 16:37:59 das Exp $";
 #endif
 
 /* double log1p(double x)
@@ -79,6 +79,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_log1p.c,v 1.8 2005/12/04 12:
  *	 See HP-15C Advanced Functions Handbook, p.193.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -95,6 +96,7 @@ Lp6 = 1.531383769920937332e-01,  /* 3FC39A09 D078C69F */
 Lp7 = 1.479819860511658591e-01;  /* 3FC2F112 DF3E5244 */
 
 static const double zero = 0.0;
+static volatile double vzero = 0.0;
 
 double
 log1p(double x)
@@ -108,7 +110,7 @@ log1p(double x)
 	k = 1;
 	if (hx < 0x3FDA827A) {			/* 1+x < sqrt(2)+ */
 	    if(ax>=0x3ff00000) {		/* x <= -1.0 */
-		if(x==-1.0) return -two54/zero; /* log1p(-1)=+inf */
+		if(x==-1.0) return -two54/vzero; /* log1p(-1)=+inf */
 		else return (x-x)/(x-x);	/* log1p(x<-1)=NaN */
 	    }
 	    if(ax<0x3e200000) {			/* |x| < 2**-29 */
@@ -124,7 +126,7 @@ log1p(double x)
 	if (hx >= 0x7ff00000) return x+x;
 	if(k!=0) {
 	    if(hx<0x43400000) {
-		u  = 1.0+x;
+		STRICT_ASSIGN(double,u,1.0+x);
 		GET_HIGH_WORD(hu,u);
 	        k  = (hu>>20)-1023;
 	        c  = (k>0)? 1.0-(u-x):x-(u-1.0);/* correction term */
@@ -154,8 +156,14 @@ log1p(double x)
 	}
 	hfsq=0.5*f*f;
 	if(hu==0) {	/* |f| < 2**-20 */
-	    if(f==zero) if(k==0) return zero;
-			else {c += k*ln2_lo; return k*ln2_hi+c;}
+	    if(f==zero) {
+		if(k==0) {
+		    return zero;
+		} else {
+		    c += k*ln2_lo;
+		    return k*ln2_hi+c;
+		}
+	    }
 	    R = hfsq*(1.0-0.66666666666666666*f);
 	    if(k==0) return f-R; else
 	    	     return k*ln2_hi-((R-(k*ln2_lo+c))-f);
@@ -166,3 +174,8 @@ log1p(double x)
 	if(k==0) return f-(hfsq-s*(hfsq+R)); else
 		 return k*ln2_hi-((hfsq-(s*(hfsq+R)+(k*ln2_lo+c)))-f);
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(log1pl), log1pl, AROS_CSYM_FROM_ASM_NAME(log1pl), AROS_CSYM_FROM_ASM_NAME(log1p));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(log1pl));
+#endif

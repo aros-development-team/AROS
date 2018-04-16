@@ -26,6 +26,7 @@
  * $FreeBSD: src/lib/msun/src/s_creal.c,v 1.1 2004/05/30 09:21:56 stefanf Exp $
  */
 
+#include <float.h>
 #include <complex.h>
 #undef creal
 
@@ -34,3 +35,8 @@ creal(double complex z)
 {
 	return z;
 }
+
+#if LDBL_MANT_DIG == 53
+AROS_MAKE_ASM_SYM(typeof(creall), creall, AROS_CSYM_FROM_ASM_NAME(creall), AROS_CSYM_FROM_ASM_NAME(creal));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(creall));
+#endif

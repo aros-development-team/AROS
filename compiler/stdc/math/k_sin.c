@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_sin.c,v 1.10 2005/11/02 13:06:49 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_sin.c,v 1.11 2008/02/19 12:54:14 bde Exp $";
 #endif
 
 /* __kernel_sin( x, y, iy)
@@ -60,11 +60,12 @@ S6  =  1.58969099521155010221e-10; /* 0x3DE5D93A, 0x5ACFD57C */
 double
 __kernel_sin(double x, double y, int iy)
 {
-	double z,r,v;
+	double z,r,v,w;
 
 	z	=  x*x;
+	w	=  z*z;
+	r	=  S2+z*(S3+z*S4) + z*w*(S5+z*S6);
 	v	=  z*x;
-	r	=  S2+z*(S3+z*(S4+z*(S5+z*S6)));
 	if(iy==0) return x+v*(S1+z*r);
 	else      return x-((z*(half*y-v*r)-y)-v*S1);
 }

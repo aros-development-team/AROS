@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tan.c,v 1.10 2005/11/02 14:01:45 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tan.c,v 1.13 2011/02/10 07:37:50 das Exp $";
 #endif
 
 /* tan(x)
@@ -44,6 +44,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tan.c,v 1.10 2005/11/02 14:0
  *	TRIG(x) returns trig(x) nearly rounded
  */
 
+#include <float.h>
 #include "math.h"
 #define INLINE_REM_PIO2
 #include "math_private.h"
@@ -61,7 +62,7 @@ tan(double x)
     /* |x| ~< pi/4 */
 	ix &= 0x7fffffff;
 	if(ix <= 0x3fe921fb) {
-	    if(ix<0x3e300000)			/* x < 2**-28 */
+	    if(ix<0x3e400000)			/* x < 2**-27 */
 		if((int)x==0) return x;		/* generate inexact */
 	    return __kernel_tan(x,z,1);
 	}
@@ -76,3 +77,8 @@ tan(double x)
 							-1 -- n odd */
 	}
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(tanl), tanl, AROS_CSYM_FROM_ASM_NAME(tanl), AROS_CSYM_FROM_ASM_NAME(tan));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(tanl));
+#endif

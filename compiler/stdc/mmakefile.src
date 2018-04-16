@@ -2,7 +2,12 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- AROS : compiler-stdc compiler-stdcio
 
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math
+
 STDC_MATH := \
+    math/bsdsrc/b_exp \
+    math/bsdsrc/b_log \
+    math/bsdsrc/b_tgamma \
     math/e_acos \
     math/e_acosf \
     math/e_acosh \
@@ -55,36 +60,68 @@ STDC_MATH := \
     math/e_sqrtf \
     math/k_cos \
     math/k_cosf \
+    math/k_exp \
+    math/k_expf \
     math/k_rem_pio2 \
     math/k_rem_pio2f \
     math/k_sin \
     math/k_sinf \
     math/k_tan \
     math/k_tanf \
-    math/nan \
+    math/s_nan \
     math/s_asinh \
     math/s_asinhf \
     math/s_atan \
     math/s_atanf \
+    math/s_cacos \
+    math/s_cacosf \
+    math/s_cacosh \
+    math/s_cacoshf \
+    math/s_carg \
+    math/s_cargf \
+    math/s_casin \
+    math/s_casinf \
+    math/s_casinh \
+    math/s_casinhf \
+    math/s_catan \
+    math/s_catanf \
+    math/s_catanh \
+    math/s_catanhf \
     math/s_cbrt \
     math/s_cbrtf \
+    math/s_ccos \
+    math/s_ccosf \
+    math/s_ccosh \
+    math/s_ccoshf \
     math/s_ceil \
     math/s_ceilf \
-    math/s_ceill \
+    math/s_cexp \
+    math/s_cexpf \
     math/s_cimag \
     math/s_cimagf \
-    math/s_cimagl \
     math/s_conj \
     math/s_conjf \
-    math/s_conjl \
-    math/s_copysign \
-    math/s_copysignf \
-    math/s_copysignl \
-    math/s_cos \
-    math/s_cosf \
+    math/s_clog \
+    math/s_clogf \
+    math/s_cpow \
+    math/s_cpowf \
+    math/s_cproj \
+    math/s_cprojf \
     math/s_creal \
     math/s_crealf \
-    math/s_creall \
+    math/s_csinh \
+    math/s_csinhf \
+    math/s_csin \
+    math/s_csqrt \
+    math/s_csqrtf \
+    math/s_ctan \
+    math/s_ctanf \
+    math/s_ctanh \
+    math/s_ctanhf \
+    math/s_copysign \
+    math/s_copysignf \
+    math/s_cos \
+    math/s_cosf \
     math/s_erf \
     math/s_erff \
     math/s_exp2 \
@@ -93,11 +130,10 @@ STDC_MATH := \
     math/s_expm1f \
     math/s_fabs \
     math/s_fabsf \
-    math/s_fabsl \
     math/s_fdim \
     math/s_floor \
     math/s_floorf \
-    math/s_floorl \
+    math/s_fpclassify \
     math/s_fma \
     math/s_fmaf  \
     math/s_fmax \
@@ -110,10 +146,8 @@ STDC_MATH := \
     math/s_frexpf  \
     math/s_ilogb \
     math/s_ilogbf \
-    math/s_ilogbl \
     math/s_isfinite \
     math/s_isinf \
-    math/s_isinff \
     math/s_isnan \
     math/s_isnormal \
     math/s_log1p \
@@ -122,7 +156,6 @@ STDC_MATH := \
     math/s_logbf \
     math/s_modf \
     math/s_modff \
-    math/s_modfl \
     math/s_nearbyint \
     math/s_nextafter \
     math/s_nextafterf  \
@@ -137,13 +170,10 @@ STDC_MATH := \
     math/s_llrintf \
     math/s_round \
     math/s_roundf \
-    math/s_roundl \
     math/s_lround \
     math/s_lroundf \
-    math/s_lroundl \
     math/s_llround \
     math/s_llroundf \
-    math/s_llroundl \
     math/s_scalbln \
     math/s_scalbn \
     math/s_scalbnf  \
@@ -151,19 +181,164 @@ STDC_MATH := \
     math/s_significand \
     math/s_significandf \
     math/s_sin \
+    math/s_sincos \
+    math/s_sincosf \
     math/s_sinf \
     math/s_tan \
     math/s_tanf \
     math/s_tanh \
     math/s_tanhf \
+    math/s_tgammaf \
     math/s_trunc \
-    math/s_truncf \
-    math/s_truncl \
-    math/sincos \
-    math/sincosf \
-    math/sincosl \
+    math/s_truncf
+
+STDC_SCABS_MATH := \
+    math/s_cabs \
+    math/s_cabsf
+
+STDC_WCABS_MATH := \
     math/w_cabs \
     math/w_cabsf
+
+STDC_LONGDB_MATH := \
+    math/e_acosl \
+    math/e_asinl \
+    math/e_atan2l \
+    math/e_fmodl \
+    math/e_hypotl \
+    math/e_lgammal \
+    math/e_remainderl \
+    math/e_sqrtl \
+    math/polevll \
+    math/s_atanl \
+    math/s_cacoshl \
+    math/s_cacosl \
+    math/s_cargl \
+    math/s_casinhl \
+    math/s_casinl \
+    math/s_catanhl \
+    math/s_catanl \
+    math/s_cbrtl \
+    math/s_ccoshl \
+    math/s_ccosl \
+    math/s_ceill \
+    math/s_cexpl \
+    math/s_cimagl \
+    math/s_clogl \
+    math/s_conjl \
+    math/s_copysignl \
+    math/s_cosl \
+    math/s_cpowl \
+    math/s_cprojl \
+    math/s_creall \
+    math/s_csinhl \
+    math/s_csinl \
+    math/s_csqrtl \
+    math/s_ctanhl \
+    math/s_ctanl \
+    math/s_fabsl \
+    math/s_floorl \
+    math/s_fmal \
+    math/s_frexpl \
+    math/s_ilogbl \
+    math/s_llrintl \
+    math/s_llroundl \
+    math/s_lrintl \
+    math/s_lroundl \
+    math/s_logbl \
+    math/s_modfl \
+    math/s_nextafterl \
+    math/s_nexttoward \
+    math/s_remquol \
+    math/s_rintl \
+    math/s_roundl \
+    math/s_scalbnl \
+    math/s_sincosl \
+    math/s_sinl \
+    math/s_tanl \
+    math/s_truncl
+
+# Support files for 80bit and 128bit precision long double.
+
+STDC_LONGDB80_MATH := \
+    math/ld80/e_acoshl \
+    math/ld80/e_atanhl \
+    math/ld80/e_coshl \
+    math/ld80/e_expl \
+    math/ld80/e_lgammal_r \
+    math/ld80/e_log2l \
+    math/ld80/e_log10l \
+    math/ld80/e_logl \
+    math/ld80/e_powl \
+    math/ld80/e_sinhl \
+    math/ld80/e_tgammal \
+    math/ld80/invtrig \
+    math/ld80/k_cosl \
+    math/ld80/k_sinl \
+    math/ld80/k_tanl \
+    math/ld80/s_asinhl \
+    math/ld80/s_erfl \
+    math/ld80/s_exp2l \
+    math/ld80/s_expm1l \
+    math/ld80/s_log1pl \
+    math/ld80/s_nanl \
+    math/ld80/s_tanhl
+
+STDC_LONGDB128_MATH := \
+    math/ld128/e_acoshl \
+    math/ld128/e_atanhl \
+    math/ld128/e_coshl \
+    math/ld128/e_expl \
+    math/ld128/e_lgammal_r \
+    math/ld128/e_log2l \
+    math/ld128/e_log10l \
+    math/ld128/e_logl \
+    math/ld128/e_powl \
+    math/ld128/e_sinhl \
+    math/ld128/e_tgammal \
+    math/ld128/invtrig \
+    math/ld128/k_cosl \
+    math/ld128/k_sinl \
+    math/ld128/k_tanl \
+    math/ld128/s_asinhl \
+    math/ld128/s_erfl \
+    math/ld128/s_exp2l \
+    math/ld128/s_expm1l \
+    math/ld128/s_log1pl \
+    math/ld128/s_nanl \
+    math/ld128/s_tanhl
+
+#
+# Add 80bit long double support on x86, x64 and m68k
+#
+ifneq ($(filter $(AROS_TARGET_CPU),i386 x86_64 m68k),)
+STDC_MATH += $(STDC_LONGDB_MATH)
+STDC_MATH += $(STDC_LONGDB80_MATH)
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld80
+STDC_SCABS_MATH += math/s_cabsl
+STDC_WCABS_MATH += math/w_cabsl
+else
+#
+# Add 128bit long double support for aarch64
+#
+ifneq ($(filter $(AROS_TARGET_CPU),aarch64),)
+STDC_MATH += $(STDC_LONGDB_MATH)
+STDC_MATH += $(STDC_LONGDB128_MATH)
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld128
+STDC_SCABS_MATH += math/s_cabsl
+STDC_WCABS_MATH += math/w_cabsl
+else
+#
+# We either dont know what long double format is required
+# or the platform doesnt support it, so alias the double versions
+# of necessary functions.
+# These architectures should have
+# LDBL_MANT_DIG == DBL_MANT_DIG (53) in float.h
+#
+endif
+endif
+
+STDC_MATH += $(STDC_WCABS_MATH)
 
 STDC := \
     __ctype \
@@ -184,6 +359,7 @@ STDC := \
     atof \
     atoi \
     atol \
+    atoll \
     bsearch \
     calloc \
     clock \
@@ -195,6 +371,8 @@ STDC := \
     free \
     getc \
     gmtime gmtime_r \
+	imaxabs \
+	imaxdiv \
     localeconv \
     localtime localtime_r \
     longjmp \
@@ -259,11 +437,12 @@ STDC := \
     strspn \
     strstr \
     strtod \
-    strtold \
+    strtof \
     strtoimax \
     strtok \
     strtok_r \
     strtol \
+    strtold \
     strtoll \
     strtoul \
     strtoull \
@@ -274,15 +453,6 @@ STDC := \
     vsnprintf \
     vsprintf \
     vsscanf
-
-# If long double != double use these; otherwise, we alias the double versions
-# These are architectures that have LDBL_MANT_DIG == 53 in float.h
-# XXX use configure to determine this
-ifneq ($(AROS_TARGET_CPU), ppc)
-ifneq ($(AROS_TARGET_CPU), arm)
-STDC += math/s_fmal math/s_frexpl math/s_nextafterl math/s_nexttoward math/s_scalbnl
-endif
-endif
 
 STDC_LINKLIB := \
     __ctype_linklib \
@@ -349,7 +519,8 @@ STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(STDC
 
 # Ugh. These are for the math routines, which have a number of
 # lint issues, that should be fixed.
-NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
+NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) \
+    $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
 
 USER_CFLAGS := $(NOWARN_FLAGS) -noposixc -Dlint '-D__FBSDID(x)=' -fno-builtin
 USER_LDFLAGS := -nostdc -noposixc
@@ -368,9 +539,6 @@ STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(ST
     uselibs="stdc_rel"
 
 STDC_MATH_STATIC := \
-    math/s_copysign \
-    math/s_copysignf \
-    math/s_copysignl \
     math/e_log \
     math/e_logf \
     math/e_log2 \
@@ -379,15 +547,20 @@ STDC_MATH_STATIC := \
     math/e_log10f \
     math/e_pow \
     math/e_powf \
+    math/e_rem_pio2 \
+    math/e_sqrt \
     math/k_cos \
     math/k_rem_pio2 \
     math/k_sin \
+    math/s_copysign \
+    math/s_copysignf \
+    math/s_copysignl \
     math/s_cos \
     math/s_fabs \
     math/s_floor \
+    math/s_fpclassify \
     math/s_scalbn \
-    math/s_scalbnf  \
-    math/e_sqrt
+    math/s_scalbnf
 
 STDC_STATIC := \
     __ctype \
@@ -395,6 +568,7 @@ STDC_STATIC := \
     __vcscan \
     atoi \
     atol \
+    atoll \
     bsearch \
     $(STDC_MATH_STATIC) \
     memchr \
@@ -437,6 +611,7 @@ STDC_STATIC := \
     strspn \
     strstr \
     strtod \
+    strtof \
     strtol \
     strtoul \
     vsnprintf \

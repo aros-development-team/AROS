@@ -11,5 +11,6 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_llround.c,v 1.2 2005/04/08 00:52:27 das E
 #define	DTYPE_MIN	LLONG_MIN
 #define	DTYPE_MAX	LLONG_MAX
 #define	fn		llround
+#define	fnld	llroundl
 
 #include "s_lround.c"

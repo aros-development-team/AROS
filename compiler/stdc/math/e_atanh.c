@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atanh.c,v 1.7 2005/02/04 18:26:05 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atanh.c,v 1.8 2008/02/22 02:30:34 das Exp $";
 #endif
 
 /* __ieee754_atanh(x)
@@ -34,6 +34,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atanh.c,v 1.7 2005/02/04 18:
  *
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -50,14 +51,19 @@ __ieee754_atanh(double x)
 	ix = hx&0x7fffffff;
 	if ((ix|((lx|(-lx))>>31))>0x3ff00000) /* |x|>1 */
 	    return (x-x)/(x-x);
-	if(ix==0x3ff00000)
+	if(ix==0x3ff00000) 
 	    return x/zero;
 	if(ix<0x3e300000&&(huge+x)>zero) return x;	/* x<2**-28 */
 	SET_HIGH_WORD(x,ix);
 	if(ix<0x3fe00000) {		/* x < 0.5 */
 	    t = x+x;
 	    t = 0.5*log1p(t+t*x/(one-x));
-	} else
+	} else 
 	    t = 0.5*log1p((x+x)/(one-x));
 	if(hx>=0) return t; else return -t;
 }
+
+#if LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(atanhl), atanhl, AROS_CSYM_FROM_ASM_NAME(atanhl), AROS_CSYM_FROM_ASM_NAME(atanh));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(atanhl));
+#endif

@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_asinh.c,v 1.8 2002/05/28 18:15:04 alfred Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_asinh.c,v 1.9 2008/02/22 02:30:35 das Exp $";
 #endif
 
 /* asinh(x)
@@ -25,6 +25,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_asinh.c,v 1.8 2002/05/28 18:
  *		 := sign(x)*log1p(|x| + x^2/(1 + sqrt(1+x^2)))
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -55,3 +56,8 @@ asinh(double x)
 	}
 	if(hx>0) return w; else return -w;
 }
+
+#if LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(asinhl), asinhl, AROS_CSYM_FROM_ASM_NAME(asinhl), AROS_CSYM_FROM_ASM_NAME(asinh));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(asinhl));
+#endif

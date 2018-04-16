@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_log1pf.c,v 1.9 2005/12/04 12:30:44 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_log1pf.c,v 1.12 2008/03/29 16:37:59 das Exp $";
 #endif
 
 #include "math.h"
@@ -33,6 +33,7 @@ Lp6 = 1.5313838422e-01, /* 3E1CD04F */
 Lp7 = 1.4798198640e-01; /* 3E178897 */
 
 static const float zero = 0.0;
+static volatile float vzero = 0.0;
 
 float
 log1pf(float x)
@@ -46,12 +47,12 @@ log1pf(float x)
 	k = 1;
 	if (hx < 0x3ed413d0) {			/* 1+x < sqrt(2)+  */
 	    if(ax>=0x3f800000) {		/* x <= -1.0 */
-		if(x==(float)-1.0) return -two25/zero; /* log1p(-1)=+inf */
+		if(x==(float)-1.0) return -two25/vzero; /* log1p(-1)=+inf */
 		else return (x-x)/(x-x);	/* log1p(x<-1)=NaN */
 	    }
-	    if(ax<0x31000000) {			/* |x| < 2**-29 */
+	    if(ax<0x38000000) {			/* |x| < 2**-15 */
 		if(two25+x>zero			/* raise inexact */
-	            &&ax<0x24800000) 		/* |x| < 2**-54 */
+	            &&ax<0x33800000) 		/* |x| < 2**-24 */
 		    return x;
 		else
 		    return x - x*x*(float)0.5;
@@ -62,7 +63,7 @@ log1pf(float x)
 	if (hx >= 0x7f800000) return x+x;
 	if(k!=0) {
 	    if(hx<0x5a000000) {
-		*(volatile float *)&u = (float)1.0+x;
+		STRICT_ASSIGN(float,u,(float)1.0+x);
 		GET_FLOAT_WORD(hu,u);
 	        k  = (hu>>23)-127;
 		/* correction term */
@@ -93,8 +94,14 @@ log1pf(float x)
 	}
 	hfsq=(float)0.5*f*f;
 	if(hu==0) {	/* |f| < 2**-20 */
-	    if(f==zero) if(k==0) return zero;
-			else {c += k*ln2_lo; return k*ln2_hi+c;}
+	    if(f==zero) {
+		if(k==0) {
+		    return zero;
+		} else {
+		    c += k*ln2_lo;
+		    return k*ln2_hi+c;
+		}
+	    }
 	    R = hfsq*((float)1.0-(float)0.66666666666666666*f);
 	    if(k==0) return f-R; else
 	    	     return k*ln2_hi-((R-(k*ln2_lo+c))-f);

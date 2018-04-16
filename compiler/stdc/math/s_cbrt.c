@@ -13,9 +13,10 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrt.c,v 1.14 2005/12/20 01:21:30 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrt.c,v 1.17 2011/03/12 16:50:39 kargl Exp $";
 #endif
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -60,18 +61,18 @@ cbrt(double x)
      * error of about 1 in 16.  Adding a bias of -0.03306235651 to the
      * (e%3+m)/3 term reduces the error to about 1 in 32. With the IEEE
      * floating point representation, for finite positive normal values,
-     * ordinary integer divison of the value in bits magically gives
+     * ordinary integer division of the value in bits magically gives
      * almost exactly the RHS of the above provided we first subtract the
      * exponent bias (1023 for doubles) and later add it back.  We do the
      * subtraction virtually to keep e >= 0 so that ordinary integer
      * division rounds towards minus infinity; this is also efficient.
      */
 	if(hx<0x00100000) { 		/* zero or subnormal? */
-	if((hx|low)==0)
-	    return(x);		/* cbrt(0) is itself */
+	    if((hx|low)==0)
+		return(x);		/* cbrt(0) is itself */
 	    SET_HIGH_WORD(t,0x43500000); /* set t= 2**54 */
 	    t*=x;
-	GET_HIGH_WORD(high,t);
+	    GET_HIGH_WORD(high,t);
 	    INSERT_WORDS(t,sign|((high&0x7fffffff)/3+B2),0);
 	} else
 	    INSERT_WORDS(t,sign|(hx/3+B1),0);
@@ -95,7 +96,7 @@ cbrt(double x)
      * 2 23-bit ulps larger).  With rounding towards zero, the error bound
      * would be ~5/6 instead of ~4/6.  With a maximum error of 2 23-bit ulps
      * in the rounded t, the infinite-precision error in the Newton
-     * approximation barely affects third digit in the the final error
+     * approximation barely affects third digit in the final error
      * 0.667; the error in the rounded t can be up to about 3 23-bit ulps
      * before the final error is larger than 0.667 ulps.
      */
@@ -104,7 +105,7 @@ cbrt(double x)
 	t=u.value;
 
     /* one step Newton iteration to 53 bits with error < 0.667 ulps */
-	s=t*t;		/* t*t is exact */
+	s=t*t;				/* t*t is exact */
 	r=x/s;				/* error <= 0.5 ulps; |r| < |t| */
 	w=t+t;				/* t+t is exact */
 	r=(r-t)/(w+r);			/* r-t is exact; w+r ~= 3*t */
@@ -112,3 +113,8 @@ cbrt(double x)
 
 	return(t);
 }
+
+#if	LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(cbrtl), cbrtl, AROS_CSYM_FROM_ASM_NAME(cbrtl), AROS_CSYM_FROM_ASM_NAME(cbrt));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(cbrtl));
+#endif

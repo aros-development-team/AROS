@@ -15,7 +15,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrtf.c,v 1.17 2007/05/29 07:13:07 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrtf.c,v 1.18 2008/02/22 02:30:35 das Exp $";
 #endif
 
 #include "math.h"
@@ -48,7 +48,7 @@ cbrtf(float x)
 		return(x);		/* cbrt(+-0) is itself */
 	    SET_FLOAT_WORD(t,0x4b800000); /* set t= 2**24 */
 	    t*=x;
-	GET_FLOAT_WORD(high,t);
+	    GET_FLOAT_WORD(high,t);
 	    SET_FLOAT_WORD(t,sign|((high&0x7fffffff)/3+B2));
 	} else
 	    SET_FLOAT_WORD(t,sign|(hx/3+B1));

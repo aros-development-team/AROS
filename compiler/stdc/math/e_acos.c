@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_acos.c,v 1.10 2005/02/04 18:26:05 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_acos.c,v 1.13 2008/07/31 22:41:26 das Exp $";
 #endif
 
 /* __ieee754_acos(x)
@@ -39,14 +39,17 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_acos.c,v 1.10 2005/02/04 18:
  * Function needed: sqrt
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
 static const double
 one=  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
 pi =  3.14159265358979311600e+00, /* 0x400921FB, 0x54442D18 */
-pio2_hi =  1.57079632679489655800e+00, /* 0x3FF921FB, 0x54442D18 */
-pio2_lo =  6.12323399573676603587e-17, /* 0x3C91A626, 0x33145C07 */
+pio2_hi =  1.57079632679489655800e+00; /* 0x3FF921FB, 0x54442D18 */
+static volatile double
+pio2_lo =  6.12323399573676603587e-17; /* 0x3C91A626, 0x33145C07 */
+static const double
 pS0 =  1.66666666666666657415e-01, /* 0x3FC55555, 0x55555555 */
 pS1 = -3.25565818622400915405e-01, /* 0xBFD4D612, 0x03EB6F7D */
 pS2 =  2.01212532134862925881e-01, /* 0x3FC9C155, 0x0E884455 */
@@ -102,3 +105,8 @@ __ieee754_acos(double x)
 	    return 2.0*(df+w);
 	}
 }
+
+#if LDBL_MANT_DIG == 53
+AROS_MAKE_ASM_SYM(typeof(acosl), acosl, AROS_CSYM_FROM_ASM_NAME(acosl), AROS_CSYM_FROM_ASM_NAME(acos));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(acosl));
+#endif

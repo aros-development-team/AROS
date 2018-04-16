@@ -15,36 +15,20 @@
 static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_log2.c,v 1.4 2011/10/15 05:23:28 das Exp $";
 #endif
 
+/*
+ * Return the base 2 logarithm of x.  See e_log.c and k_log.h for most
+ * comments.
+ *
+ * This reduces x to {k, 1+f} exactly as in e_log.c, then calls the kernel,
+ * then does the combining and scaling steps
+ *    log2(x) = (f - 0.5*f*f + k_log1p(f)) / ln2 + k
+ * in not-quite-routine extra precision.
+ */
+
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
-
-static const double
-Lg1 = 6.666666666666735130e-01,  /* 3FE55555 55555593 */
-Lg2 = 3.999999999940941908e-01,  /* 3FD99999 9997FA04 */
-Lg3 = 2.857142874366239149e-01,  /* 3FD24924 94229359 */
-Lg4 = 2.222219843214978396e-01,  /* 3FCC71C5 1D8E78AF */
-Lg5 = 1.818357216161805012e-01,  /* 3FC74664 96CB03DE */
-Lg6 = 1.531383769920937332e-01,  /* 3FC39A09 D078C69F */
-Lg7 = 1.479819860511658591e-01;  /* 3FC2F112 DF3E5244 */
-
-/*
- * We always inline k_log1p(), since doing so produces a
- * substantial performance improvement (~40% on amd64).
- */
-static inline double
-k_log1p(double f)
-{
-	double hfsq,s,z,R,w,t1,t2;
-
- 	s = f/(2.0+f);
-	z = s*s;
-	w = z*z;
-	t1= w*(Lg2+w*(Lg4+w*Lg6));
-	t2= z*(Lg1+w*(Lg3+w*(Lg5+w*Lg7)));
-	R = t2+t1;
-	hfsq=0.5*f*f;
-	return s*(hfsq+R);
-}
+#include "k_log.h"
 
 static const double
 two54      =  1.80143985094819840000e+16, /* 0x43500000, 0x00000000 */
@@ -52,6 +36,7 @@ ivln2hi    =  1.44269504072144627571e+00, /* 0x3ff71547, 0x65200000 */
 ivln2lo    =  1.67517131648865118353e-10; /* 0x3de705fc, 0x2eefa200 */
 
 static const double zero   =  0.0;
+static volatile double vzero = 0.0;
 
 double
 __ieee754_log2(double x)
@@ -65,7 +50,7 @@ __ieee754_log2(double x)
 	k=0;
 	if (hx < 0x00100000) {			/* x < 2**-1022  */
 	    if (((hx&0x7fffffff)|lx)==0)
-		return -two54/zero;		/* log(+-0)=-inf */
+		return -two54/vzero;		/* log(+-0)=-inf */
 	    if (hx<0) return (x-x)/zero;	/* log(-#) = NaN */
 	    k -= 54; x *= two54; /* subnormal number, scale up x */
 	    GET_HIGH_WORD(hx,x);
@@ -126,3 +111,8 @@ __ieee754_log2(double x)
 
 	return val_lo + val_hi;
 }
+
+#if	LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(log2l), log2l, AROS_CSYM_FROM_ASM_NAME(log2l), AROS_CSYM_FROM_ASM_NAME(log2));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(log2l));
+#endif

@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_erf.c,v 1.7 2002/05/28 18:15:04 alfred Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_erf.c,v 1.8 2008/02/22 02:30:35 das Exp $";
 #endif
 
 /* double erf(double x)
@@ -109,21 +109,29 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_erf.c,v 1.7 2002/05/28 18:15
  */
 
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
+/* XXX Prevent compilers from erroneously constant folding: */
+static const volatile double tiny= 1e-300;
+
 static const double
-tiny	    = 1e-300,
-half=  5.00000000000000000000e-01, /* 0x3FE00000, 0x00000000 */
-one =  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
-two =  2.00000000000000000000e+00, /* 0x40000000, 0x00000000 */
+half= 0.5,
+one = 1,
+two = 2,
 	/* c = (float)0.84506291151 */
 erx =  8.45062911510467529297e-01, /* 0x3FEB0AC1, 0x60000000 */
 /*
- * Coefficients for approximation to  erf on [0,0.84375]
+ * In the domain [0, 2**-28], only the first term in the power series
+ * expansion of erf(x) is used.  The magnitude of the first neglected
+ * terms is less than 2**-84.
  */
 efx =  1.28379167095512586316e-01, /* 0x3FC06EBA, 0x8214DB69 */
 efx8=  1.02703333676410069053e+00, /* 0x3FF06EBA, 0x8214DB69 */
+/*
+ * Coefficients for approximation to erf on [0,0.84375]
+ */
 pp0  =  1.28379167095512558561e-01, /* 0x3FC06EBA, 0x8214DB68 */
 pp1  = -3.25042107247001499370e-01, /* 0xBFD4CD7D, 0x691CB913 */
 pp2  = -2.84817495755985104766e-02, /* 0xBF9D2A51, 0xDBD7194F */
@@ -202,7 +210,7 @@ erf(double x)
 	if(ix < 0x3feb0000) {		/* |x|<0.84375 */
 	    if(ix < 0x3e300000) { 	/* |x|<2**-28 */
 	        if (ix < 0x00800000)
-		    return 0.125*(8.0*x+efx8*x);  /*avoid underflow */
+		    return (8*x+efx8*x)/8;	/* avoid spurious underflow */
 		return x + efx*x;
 	    }
 	    z = x*x;
@@ -223,15 +231,12 @@ erf(double x)
 	x = fabs(x);
  	s = one/(x*x);
 	if(ix< 0x4006DB6E) {	/* |x| < 1/0.35 */
-	    R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(
-				ra5+s*(ra6+s*ra7))))));
-	    S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(
-				sa5+s*(sa6+s*(sa7+s*sa8)))))));
+	    R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(ra5+s*(ra6+s*ra7))))));
+	    S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(sa5+s*(sa6+s*(sa7+
+		s*sa8)))))));
 	} else {	/* |x| >= 1/0.35 */
-	    R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(
-				rb5+s*rb6)))));
-	    S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(
-				sb5+s*(sb6+s*sb7))))));
+	    R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(rb5+s*rb6)))));
+	    S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(sb5+s*(sb6+s*sb7))))));
 	}
 	z  = x;
 	SET_LOW_WORD(z,0);
@@ -280,23 +285,28 @@ erfc(double x)
 	    x = fabs(x);
  	    s = one/(x*x);
 	    if(ix< 0x4006DB6D) {	/* |x| < 1/.35 ~ 2.857143*/
-	        R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(
-				ra5+s*(ra6+s*ra7))))));
-	        S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(
-				sa5+s*(sa6+s*(sa7+s*sa8)))))));
+		R=ra0+s*(ra1+s*(ra2+s*(ra3+s*(ra4+s*(ra5+s*(ra6+s*ra7))))));
+		S=one+s*(sa1+s*(sa2+s*(sa3+s*(sa4+s*(sa5+s*(sa6+s*(sa7+
+		    s*sa8)))))));
+
 	    } else {			/* |x| >= 1/.35 ~ 2.857143 */
 		if(hx<0&&ix>=0x40180000) return two-tiny;/* x < -6 */
-	        R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(
-				rb5+s*rb6)))));
-	        S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(
-				sb5+s*(sb6+s*sb7))))));
+		R=rb0+s*(rb1+s*(rb2+s*(rb3+s*(rb4+s*(rb5+s*rb6)))));
+		S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(sb5+s*(sb6+s*sb7))))));
 	    }
 	    z  = x;
 	    SET_LOW_WORD(z,0);
-	    r  =  __ieee754_exp(-z*z-0.5625)*
-			__ieee754_exp((z-x)*(z+x)+R/S);
+	    r  =  __ieee754_exp(-z*z-0.5625)*__ieee754_exp((z-x)*(z+x)+R/S);
 	    if(hx>0) return r/x; else return two-r/x;
 	} else {
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}
 }
+
+#if	LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(erfl), erfl, AROS_CSYM_FROM_ASM_NAME(erfl), AROS_CSYM_FROM_ASM_NAME(erf));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(erfl));
+
+AROS_MAKE_ASM_SYM(typeof(erfcl), erfcl, AROS_CSYM_FROM_ASM_NAME(erfcl), AROS_CSYM_FROM_ASM_NAME(erfc));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(erfcl));
+#endif	/* LDBL_MANT_DIG == DBL_MANT_DIG */

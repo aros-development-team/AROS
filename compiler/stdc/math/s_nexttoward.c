@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nexttoward.c,v 1.1 2005/03/07 04:56:46 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nexttoward.c,v 1.3 2011/02/10 07:38:13 das Exp $";
 #endif
 
 /*
@@ -64,8 +64,8 @@ nexttoward(double x, long double y)
 	if(ix<0x00100000) {		/* underflow */
 	    t = x*x;
 	    if(t!=x) {		/* raise underflow flag */
-	        INSERT_WORDS(y,hx,lx);
-		return y;
+	        INSERT_WORDS(x,hx,lx);
+		return x;
 	    }
 	}
 	INSERT_WORDS(x,hx,lx);

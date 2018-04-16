@@ -24,8 +24,11 @@
  * SUCH DAMAGE.
  */
 
-__FBSDID("$FreeBSD: src/lib/msun/src/s_exp2.c,v 1.1 2005/04/05 02:57:15 das Exp $");
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_exp2.c,v 1.7 2008/02/22 02:27:34 das Exp $";
+#endif
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -33,14 +36,16 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_exp2.c,v 1.1 2005/04/05 02:57:15 das Exp 
 #define	TBLSIZE	(1 << TBLBITS)
 
 static const double
-    huge     = 0x1p1000,
-    twom1000 = 0x1p-1000,
     redux    = 0x1.8p52 / TBLSIZE,
     P1	     = 0x1.62e42fefa39efp-1,
     P2	     = 0x1.ebfbdff82c575p-3,
     P3	     = 0x1.c6b08d704a0a6p-5,
     P4	     = 0x1.3b2ab88f70400p-7,
     P5	     = 0x1.5d88003875c74p-10;
+
+static volatile double
+    huge     = 0x1p1000,
+    twom1000 = 0x1p-1000;
 
 static const double tbl[TBLSIZE * 2] = {
 /*	exp2(z + eps)		eps	*/
@@ -336,8 +341,8 @@ static const double tbl[TBLSIZE * 2] = {
 double
 exp2(double x)
 {
-	double r, t, z;
-	uint32_t hx, hr, ix, lx, i0;
+	double r, t, twopk, twopkp1000, z;
+	uint32_t hx, ix, lx, i0;
 	int k;
 
 	/* Filter out exceptional cases. */
@@ -347,7 +352,7 @@ exp2(double x)
 		if(ix >= 0x7ff00000) {
 			GET_LOW_WORD(lx,x);
 			if(((ix & 0xfffff) | lx) != 0 || (hx & 0x80000000) == 0)
-				return (x); 	/* x is NaN or +Inf */
+				return (x + x);	/* x is NaN or +Inf */
 			else 
 				return (0.0);	/* x is -Inf */
 		}
@@ -360,7 +365,7 @@ exp2(double x)
 	}
 
 	/* Reduce x, computing z, i0, and k. */
-	t = x + redux;
+	STRICT_ASSIGN(double, t, x + redux);
 	GET_LOW_WORD(i0, t);
 	i0 += TBLSIZE / 2;
 	k = (i0 >> TBLBITS) << 20;
@@ -371,18 +376,23 @@ exp2(double x)
 	/* Compute r = exp2(y) = exp2t[i0] * p(z - eps[i]). */
 	t = tbl[i0];		/* exp2t[i0] */
 	z -= tbl[i0 + 1];	/* eps[i0]   */
+	if (k >= -(1021 << 20))
+		INSERT_WORDS(twopk, 0x3ff00000 + k, 0);
+	else
+		INSERT_WORDS(twopkp1000, 0x3ff00000 + k + (1000 << 20), 0);
 	r = t + t * z * (P1 + z * (P2 + z * (P3 + z * (P4 + z * P5))));
 
 	/* Scale by 2**(k>>20). */
-	if(k >= -1021 << 20) {
-		if (k != 0) {
-			GET_HIGH_WORD(hr, r);
-			SET_HIGH_WORD(r, hr + k);
-		}
-		return (r);
+	if(k >= -(1021 << 20)) {
+		if (k == 1024 << 20)
+			return (r * 2.0 * 0x1p1023);
+		return (r * twopk);
 	} else {
-		GET_HIGH_WORD(hr, r);
-		SET_HIGH_WORD(r, hr + (k + (1000 << 20)));
-		return (r * twom1000);
+		return (r * twopkp1000 * twom1000);
 	}
 }
+
+#if	LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(exp2l), exp2l, AROS_CSYM_FROM_ASM_NAME(exp2l), AROS_CSYM_FROM_ASM_NAME(exp2));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(exp2l));
+#endif

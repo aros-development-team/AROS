@@ -24,7 +24,9 @@
  * SUCH DAMAGE.
  */
 
-__FBSDID("$FreeBSD: src/lib/msun/src/s_exp2f.c,v 1.1 2005/04/05 02:57:15 das Exp $");
+#ifndef lint
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_exp2f.c,v 1.9 2008/02/22 02:27:34 das Exp $";
+#endif
 
 #include "math.h"
 #include "math_private.h"
@@ -33,13 +35,15 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_exp2f.c,v 1.1 2005/04/05 02:57:15 das Exp
 #define	TBLSIZE	(1 << TBLBITS)
 
 static const float
-    huge    = 0x1p100f,
-    twom100 = 0x1p-100f,
     redux   = 0x1.8p23f / TBLSIZE,
     P1	    = 0x1.62e430p-1f,
     P2	    = 0x1.ebfbe0p-3f,
     P3	    = 0x1.c6b348p-5f,
     P4	    = 0x1.3b2c9cp-7f;
+
+static volatile float
+    huge    = 0x1p100f,
+    twom100 = 0x1p-100f;
 
 static const double exp2ft[TBLSIZE] = {
 	0x1.6a09e667f3bcdp-1,
@@ -78,7 +82,8 @@ static const double exp2ft[TBLSIZE] = {
  *
  *   We compute exp2(i/TBLSIZE) via table lookup and exp2(z) via a
  *   degree-4 minimax polynomial with maximum error under 1.4 * 2**-33.
- *   Using double precision in the final calculation avoids roundoff error.
+ *   Using double precision for everything except the reduction makes
+ *   roundoff error insignificant and simplifies the scaling step.
  *
  *   This method is due to Tang, but I do not use his suggested parameters:
  *
@@ -88,19 +93,18 @@ static const double exp2ft[TBLSIZE] = {
 float
 exp2f(float x)
 {
-	double tv;
-	float r, z;
-	volatile float t;	/* prevent gcc from using too much precision */
-	uint32_t hx, hr, ix, i0;
+	double tv, twopk, u, z;
+	float t;
+	uint32_t hx, ix, i0;
 	int32_t k;
 
 	/* Filter out exceptional cases. */
-	GET_FLOAT_WORD(hx,x);
+	GET_FLOAT_WORD(hx, x);
 	ix = hx & 0x7fffffff;		/* high word of |x| */
 	if(ix >= 0x43000000) {			/* |x| >= 128 */
 		if(ix >= 0x7f800000) {
 			if ((ix & 0x7fffff) != 0 || (hx & 0x80000000) == 0)
-				return (x); 	/* x is NaN or +Inf */
+				return (x + x);	/* x is NaN or +Inf */
 			else 
 				return (0.0);	/* x is -Inf */
 		}
@@ -113,28 +117,20 @@ exp2f(float x)
 	}
 
 	/* Reduce x, computing z, i0, and k. */
-	t = x + redux;
+	STRICT_ASSIGN(float, t, x + redux);
 	GET_FLOAT_WORD(i0, t);
 	i0 += TBLSIZE / 2;
-	k = (i0 >> TBLBITS) << 23;
+	k = (i0 >> TBLBITS) << 20;
 	i0 &= TBLSIZE - 1;
 	t -= redux;
 	z = x - t;
+	INSERT_WORDS(twopk, 0x3ff00000 + k, 0);
 
 	/* Compute r = exp2(y) = exp2ft[i0] * p(z). */
 	tv = exp2ft[i0];
-	r = tv + tv * (z * (P1 + z * (P2 + z * (P3 + z * P4))));
+	u = tv * z;
+	tv = tv + u * (P1 + z * P2) + u * (z * z) * (P3 + z * P4);
 
-	/* Scale by 2**(k>>23). */
-	if(k >= -125 << 23) {
-		if (k != 0) {
-			GET_FLOAT_WORD(hr, r);
-			SET_FLOAT_WORD(r, hr + k);
-		}
-		return (r);
-	} else {
-		GET_FLOAT_WORD(hr, r);
-		SET_FLOAT_WORD(r, hr + (k + (100 << 23)));
-		return (r * twom100);
-	}
+	/* Scale by 2**(k>>20). */
+	return (tv * twopk);
 }

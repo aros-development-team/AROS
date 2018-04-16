@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_logb.c,v 1.10 2005/12/03 11:57:19 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_logb.c,v 1.12 2008/02/08 01:22:13 bde Exp $";
 #endif
 
 /*
@@ -20,6 +20,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_logb.c,v 1.10 2005/12/03 11:
  * Use ilogb instead.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -36,9 +37,14 @@ logb(double x)
 	if(ix>=0x7ff00000) return x*x;
 	if(ix<0x00100000) {
 		x *= two54;		 /* convert subnormal x to normal */
-		GET_FLOAT_WORD(ix,x);
+		GET_HIGH_WORD(ix,x);
 		ix &= 0x7fffffff;
-		return (float) ((ix>>20)-1023-54);
+		return (double) ((ix>>20)-1023-54);
 	} else
 		return (double) ((ix>>20)-1023);
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(logbl), logbl, AROS_CSYM_FROM_ASM_NAME(logbl), AROS_CSYM_FROM_ASM_NAME(logb));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(logbl));
+#endif

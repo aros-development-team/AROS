@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ceil.c,v 1.9 2003/07/23 04:53:46 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ceil.c,v 1.11 2008/02/15 07:01:40 bde Exp $";
 #endif
 
 /*
@@ -23,6 +23,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ceil.c,v 1.9 2003/07/23 04:5
  *	Inexact flag raised if x not equal to ceil(x).
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -70,3 +71,8 @@ ceil(double x)
 	INSERT_WORDS(x,i0,i1);
 	return x;
 }
+
+#if	LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(ceill), ceill, AROS_CSYM_FROM_ASM_NAME(ceill), AROS_CSYM_FROM_ASM_NAME(ceil));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(ceill));
+#endif

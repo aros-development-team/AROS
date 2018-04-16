@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_pow.c,v 1.11 2005/02/04 18:26:06 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_pow.c,v 1.14 2011/10/21 06:26:07 das Exp $";
 #endif
 
 /* __ieee754_pow(x,y) return x**y
@@ -20,20 +20,20 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_pow.c,v 1.11 2005/02/04 18:2
  *	1. Compute and return log2(x) in two pieces:
  *		log2(x) = w1 + w2,
  *	   where w1 has 53-24 = 29 bit trailing zeros.
- *	2. Perform y*log2(x) = n+y' by simulating muti-precision
+ *	2. Perform y*log2(x) = n+y' by simulating multi-precision
  *	   arithmetic, where |y'|<=0.5.
  *	3. Return x**y = 2**n*exp(y'*log2)
  *
  * Special cases:
  *	1.  (anything) ** 0  is 1
  *	2.  (anything) ** 1  is itself
- *	3.  (anything) ** NAN is NAN
+ *	3.  (anything) ** NAN is NAN except 1 ** NAN = 1
  *	4.  NAN ** (anything except 0) is NAN
  *	5.  +-(|x| > 1) **  +INF is +INF
  *	6.  +-(|x| > 1) **  -INF is +0
  *	7.  +-(|x| < 1) **  +INF is +0
  *	8.  +-(|x| < 1) **  -INF is +INF
- *	9.  +-1         ** +-INF is NAN
+ *	9.  +-1         ** +-INF is 1
  *	10. +0 ** (+anything except 0, NAN)               is +0
  *	11. -0 ** (+anything except 0, NAN, odd integer)  is +0
  *	12. +0 ** (-anything except 0, NAN)               is +INF
@@ -58,6 +58,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_pow.c,v 1.11 2005/02/04 18:2
  * to produce the hexadecimal values shown.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -108,12 +109,15 @@ __ieee754_pow(double x, double y)
 	ix = hx&0x7fffffff;  iy = hy&0x7fffffff;
 
     /* y==zero: x**0 = 1 */
-	if((iy|ly)==0) return one;
+	if((iy|ly)==0) return one; 	
 
-    /* +-NaN return x+y */
+    /* x==1: 1**y = 1, even if y is NaN */
+	if (hx==0x3ff00000 && lx == 0) return one;
+
+    /* y!=zero: result is NaN if either arg is NaN */
 	if(ix > 0x7ff00000 || ((ix==0x7ff00000)&&(lx!=0)) ||
-	   iy > 0x7ff00000 || ((iy==0x7ff00000)&&(ly!=0)))
-		return x+y;
+	   iy > 0x7ff00000 || ((iy==0x7ff00000)&&(ly!=0))) 
+		return (x+0.0)+(y+0.0);
 
     /* determine if y is an odd int when x < 0
      * yisint = 0	... y is not an integer
@@ -121,7 +125,7 @@ __ieee754_pow(double x, double y)
      * yisint = 2	... y is an even int
      */
 	yisint  = 0;
-	if(hx<0) {
+	if(hx<0) {	
 	    if(iy>=0x43400000) yisint = 2; /* even integer y */
 	    else if(iy>=0x3ff00000) {
 		k = (iy>>20)-0x3ff;	   /* exponent */
@@ -132,26 +136,26 @@ __ieee754_pow(double x, double y)
 		    j = iy>>(20-k);
 		    if((j<<(20-k))==iy) yisint = 2-(j&1);
 		}
-	    }
-	}
+	    }		
+	} 
 
     /* special value of y */
-	if(ly==0) {
+	if(ly==0) { 	
 	    if (iy==0x7ff00000) {	/* y is +-inf */
 	        if(((ix-0x3ff00000)|lx)==0)
-		    return  y - y;	/* inf**+-1 is NaN */
+		    return  one;	/* (-1)**+-inf is 1 */
 	        else if (ix >= 0x3ff00000)/* (|x|>1)**+-inf = inf,0 */
 		    return (hy>=0)? y: zero;
 	        else			/* (|x|<1)**-,+inf = inf,0 */
 		    return (hy<0)?-y: zero;
-	    }
+	    } 
 	    if(iy==0x3ff00000) {	/* y is  +-1 */
 		if(hy<0) return one/x; else return x;
 	    }
-	    if(hy==0x40000000) return x*x; /* y is  2 */
-	    if(hy==0x3fe00000) {	/* y is  0.5 */
+            if(hy==0x40000000) return x*x;   /* y is  2 */
+	    if(hy==0x3fe00000) {             /* y is  0.5 */
 		if(hx>=0)	/* x >= +0 */
-		return sqrt(x);	
+                    return sqrt(x);
 	    }
 	}
 
@@ -164,13 +168,13 @@ __ieee754_pow(double x, double y)
 		if(hx<0) {
 		    if(((ix-0x3ff00000)|yisint)==0) {
 			z = (z-z)/(z-z); /* (-1)**non-int is NaN */
-		    } else if(yisint==1)
+		    } else if(yisint==1) 
 			z = -z;		/* (x<0)**odd = -(|x|**odd) */
 		}
 		return z;
 	    }
 	}
-
+    
     /* CYGNUS LOCAL + fdlibm-5.3 fix: This used to be
 	n = (hx>>31)+1;
        but ANSI C says a right shift of a signed negative quantity is
@@ -192,7 +196,7 @@ __ieee754_pow(double x, double y)
 	/* over/underflow if x is not close to one */
 	    if(ix<0x3fefffff) return (hy<0)? s*huge*huge:s*tiny*tiny;
 	    if(ix>0x3ff00000) return (hy>0)? s*huge*huge:s*tiny*tiny;
-	/* now |1-x| is tiny <= 2**-20, suffice to compute
+	/* now |1-x| is tiny <= 2**-20, suffice to compute 
 	   log(x) by x-x^2/2+x^3/3-x^4/4 */
 	    t = ax-one;		/* t has 20 trailing zeros */
 	    w = (t*t)*(0.5-t*(0.3333333333333333333333-t*0.25));
@@ -285,7 +289,7 @@ __ieee754_pow(double x, double y)
 	    n = ((n&0x000fffff)|0x00100000)>>(20-k);
 	    if(j<0) n = -n;
 	    p_h -= t;
-	}
+	} 
 	t = p_l+p_h;
 	SET_LOW_WORD(t,0);
 	u = t*lg2_h;
@@ -302,3 +306,8 @@ __ieee754_pow(double x, double y)
 	else SET_HIGH_WORD(z,j);
 	return s*z;
 }
+
+#if	(LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(powl), powl, AROS_CSYM_FROM_ASM_NAME(powl), AROS_CSYM_FROM_ASM_NAME(pow));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(powl));
+#endif

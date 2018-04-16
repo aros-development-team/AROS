@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_rintf.c,v 1.10 2005/12/03 09:00:29 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_rintf.c,v 1.12 2008/02/22 02:30:35 das Exp $";
 #endif
 
 #include "math.h"
@@ -30,22 +30,21 @@ float
 rintf(float x)
 {
 	int32_t i0,j0,sx;
-	volatile float w; /* N.b. - gcc optimises "w" away so use volatile to work around*/
-        float t;
+	float w,t;
 	GET_FLOAT_WORD(i0,x);
 	sx = (i0>>31)&1;
 	j0 = ((i0>>23)&0xff)-0x7f;
 	if(j0<23) {
 	    if(j0<0) {
 		if((i0&0x7fffffff)==0) return x;
-	        w = TWO23[sx]+x;
+		STRICT_ASSIGN(float,w,TWO23[sx]+x);
 	        t =  w-TWO23[sx];
 		GET_FLOAT_WORD(i0,t);
 		SET_FLOAT_WORD(t,(i0&0x7fffffff)|(sx<<31));
 	        return t;
-	}
-	w = TWO23[sx]+x;
-	return w-TWO23[sx];
+	    }
+	    STRICT_ASSIGN(float,w,TWO23[sx]+x);
+	    return w-TWO23[sx];
 	}
 	if(j0==0x80) return x+x;	/* inf or NaN */
 	else return x;			/* x is integral */

@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_logf.c,v 1.9 2006/07/07 04:33:08 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_logf.c,v 1.11 2008/03/29 16:37:59 das Exp $";
 #endif
 
 #include "math.h"
@@ -31,6 +31,7 @@ Lg3 =      0x91e9ee.0p-25,	/* 0.28498786688 */
 Lg4 =      0xf89e26.0p-26;	/* 0.24279078841 */
 
 static const float zero   =  0.0;
+static volatile float vzero = 0.0;
 
 float
 __ieee754_logf(float x)
@@ -43,7 +44,7 @@ __ieee754_logf(float x)
 	k=0;
 	if (ix < 0x00800000) {			/* x < 2**-126  */
 	    if ((ix&0x7fffffff)==0)
-		return -two25/zero;		/* log(+-0)=-inf */
+		return -two25/vzero;		/* log(+-0)=-inf */
 	    if (ix<0) return (x-x)/zero;	/* log(-#) = NaN */
 	    k -= 25; x *= two25; /* subnormal number, scale up x */
 	    GET_FLOAT_WORD(ix,x);
@@ -56,8 +57,14 @@ __ieee754_logf(float x)
 	k += (i>>23);
 	f = x-(float)1.0;
 	if((0x007fffff&(0x8000+ix))<0xc000) {	/* -2**-9 <= f < 2**-9 */
-	    if(f==zero) if(k==0) return zero;  else {dk=(float)k;
-				 return dk*ln2_hi+dk*ln2_lo;}
+	    if(f==zero) {
+		if(k==0) {
+		    return zero;
+		} else {
+		    dk=(float)k;
+		    return dk*ln2_hi+dk*ln2_lo;
+		}
+	    }
 	    R = f*f*((float)0.5-(float)0.33333333333333333*f);
 	    if(k==0) return f-R; else {dk=(float)k;
 	    	     return dk*ln2_hi-((R-dk*ln2_lo)-f);}

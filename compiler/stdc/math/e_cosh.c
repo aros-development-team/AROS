@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_cosh.c,v 1.8 2005/02/04 18:26:05 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_cosh.c,v 1.10 2011/10/21 06:28:47 das Exp $";
 #endif
 
 /* __ieee754_cosh(x)
@@ -36,6 +36,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_cosh.c,v 1.8 2005/02/04 18:2
  *	only cosh(0)=1 is exact for finite x.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -46,14 +47,13 @@ __ieee754_cosh(double x)
 {
 	double t,w;
 	int32_t ix;
-	uint32_t lx;
 
     /* High word of |x|. */
 	GET_HIGH_WORD(ix,x);
 	ix &= 0x7fffffff;
 
     /* x is INF or NaN */
-	if(ix>=0x7ff00000) return x*x;
+	if(ix>=0x7ff00000) return x*x;	
 
     /* |x| in [0,0.5*ln2], return 1+expm1(|x|)^2/(2*exp(|x|)) */
 	if(ix<0x3fd62e43) {
@@ -73,14 +73,14 @@ __ieee754_cosh(double x)
 	if (ix < 0x40862E42)  return half*__ieee754_exp(fabs(x));
 
     /* |x| in [log(maxdouble), overflowthresold] */
-	GET_LOW_WORD(lx,x);
-	if (ix<0x408633CE ||
-	      ((ix==0x408633ce)&&(lx<=(uint32_t)0x8fb9f87d))) {
-	    w = __ieee754_exp(half*fabs(x));
-	    t = half*w;
-	    return t*w;
-	}
+	if (ix<=0x408633CE)
+	    return __ldexp_exp(fabs(x), -1);
 
     /* |x| > overflowthresold, cosh(x) overflow */
 	return huge*huge;
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(coshl), coshl, AROS_CSYM_FROM_ASM_NAME(coshl), AROS_CSYM_FROM_ASM_NAME(cosh));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(coshl));
+#endif
