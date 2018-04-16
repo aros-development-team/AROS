@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atan2.c,v 1.10 2005/02/04 18:26:05 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atan2.c,v 1.14 2008/08/02 19:17:00 das Exp $";
 #endif
 
 /* __ieee754_atan2(y,x)
@@ -43,15 +43,18 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atan2.c,v 1.10 2005/02/04 18
  * to produce the hexadecimal values shown.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
+static volatile double
+tiny  = 1.0e-300;
 static const double
-tiny  = 1.0e-300,
 zero  = 0.0,
 pi_o_4  = 7.8539816339744827900E-01, /* 0x3FE921FB, 0x54442D18 */
 pi_o_2  = 1.5707963267948965580E+00, /* 0x3FF921FB, 0x54442D18 */
-pi      = 3.1415926535897931160E+00, /* 0x400921FB, 0x54442D18 */
+pi      = 3.1415926535897931160E+00; /* 0x400921FB, 0x54442D18 */
+static volatile double
 pi_lo   = 1.2246467991473531772E-16; /* 0x3CA1A626, 0x33145C07 */
 
 double
@@ -68,13 +71,13 @@ __ieee754_atan2(double y, double x)
 	if(((ix|((lx|-lx)>>31))>0x7ff00000)||
 	   ((iy|((ly|-ly)>>31))>0x7ff00000))	/* x or y is NaN */
 	   return x+y;
-	if((hx-0x3ff00000|lx)==0) return atan(y);   /* x=1.0 */
+	if(hx==0x3ff00000&&lx==0) return atan(y);   /* x=1.0 */
 	m = ((hy>>31)&1)|((hx>>30)&2);	/* 2*sign(x)+sign(y) */
 
     /* when y = 0 */
 	if((iy|ly)==0) {
 	    switch(m) {
-		case 0:
+		case 0: 
 		case 1: return y; 	/* atan(+-0,+anything)=+-0 */
 		case 2: return  pi+tiny;/* atan(+0,-anything) = pi */
 		case 3: return -pi-tiny;/* atan(-0,-anything) =-pi */
@@ -82,7 +85,7 @@ __ieee754_atan2(double y, double x)
 	}
     /* when x = 0 */
 	if((ix|lx)==0) return (hy<0)?  -pi_o_2-tiny: pi_o_2+tiny;
-
+	    
     /* when x is INF */
 	if(ix==0x7ff00000) {
 	    if(iy==0x7ff00000) {
@@ -106,19 +109,22 @@ __ieee754_atan2(double y, double x)
 
     /* compute y/x */
 	k = (iy-ix)>>20;
-	if(k > 60) z=pi_o_2+0.5*pi_lo; 	/* |y/x| >  2**60 */
-	else if(hx<0&&k<-60) z=0.0; 	/* |y|/x < -2**60 */
+	if(k > 60) {		 	/* |y/x| >  2**60 */
+	    z=pi_o_2+0.5*pi_lo;
+	    m&=1;
+	}
+	else if(hx<0&&k<-60) z=0.0; 	/* 0 > |y|/x > -2**-60 */
 	else z=atan(fabs(y/x));		/* safe to do y/x */
 	switch (m) {
 	    case 0: return       z  ;	/* atan(+,+) */
-	    case 1: {
-	    	      uint32_t zh;
-		      GET_HIGH_WORD(zh,z);
-		      SET_HIGH_WORD(z,zh ^ 0x80000000);
-		    }
-		    return       z  ;	/* atan(-,+) */
+	    case 1: return      -z  ;	/* atan(-,+) */
 	    case 2: return  pi-(z-pi_lo);/* atan(+,-) */
 	    default: /* case 3 */
 	    	    return  (z-pi_lo)-pi;/* atan(-,-) */
 	}
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(atan2l), atan2l, AROS_CSYM_FROM_ASM_NAME(atan2l), AROS_CSYM_FROM_ASM_NAME(atan2));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(atan2l));
+#endif

@@ -12,8 +12,10 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_j1.c,v 1.8 2005/02/04 18:26:06 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_j1.c,v 1.9 2008/02/22 02:30:35 das Exp $";
 #endif
+
+#include <assert.h>
 
 /* __ieee754_j1(x), __ieee754_y1(x)
  * Bessel function of the first and second kinds of order zero.
@@ -63,7 +65,9 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_j1.c,v 1.8 2005/02/04 18:26:
 #include "math.h"
 #include "math_private.h"
 
-static double pone(double), qone(double);
+static __inline double pone(double), qone(double);
+
+static const volatile double vone = 1, vzero = 0;
 
 static const double
 huge    = 1e300,
@@ -148,10 +152,16 @@ __ieee754_y1(double x)
 
 	EXTRACT_WORDS(hx,lx,x);
         ix = 0x7fffffff&hx;
-    /* if Y1(NaN) is NaN, Y1(-inf) is NaN, Y1(inf) is 0 */
-	if(ix>=0x7ff00000) return  one/(x+x*x);
-        if((ix|lx)==0) return -one/zero;
-        if(hx<0) return zero/zero;
+	/*
+	 * y1(NaN) = NaN.
+	 * y1(Inf) = 0.
+	 * y1(-Inf) = NaN and raise invalid exception.
+	 */
+	if(ix>=0x7ff00000) return  vone/(x+x*x); 
+	/* y1(+-0) = -inf and raise divide-by-zero exception. */
+        if((ix|lx)==0) return -one/vzero;
+	/* y1(x<0) = NaN and raise invalid exception. */
+        if(hx<0) return vzero/vzero;
         if(ix >= 0x40000000) {  /* |x| >= 2.0 */
                 s = sin(x);
                 c = cos(x);
@@ -179,10 +189,10 @@ __ieee754_y1(double x)
                     z = invsqrtpi*(u*ss+v*cc)/sqrt(x);
                 }
                 return z;
-        }
+        } 
         if(ix<=0x3c900000) {    /* x < 2**-54 */
             return(-tpi/x);
-        }
+        } 
         z = x*x;
         u = U0[0]+z*(U0[1]+z*(U0[2]+z*(U0[3]+z*U0[4])));
         v = one+z*(V0[0]+z*(V0[1]+z*(V0[2]+z*(V0[3]+z*V0[4]))));
@@ -273,7 +283,7 @@ static const double ps2[5] = {
         if(ix>=0x40200000)     {p = pr8; q= ps8;}
         else if(ix>=0x40122E8B){p = pr5; q= ps5;}
         else if(ix>=0x4006DB6D){p = pr3; q= ps3;}
-        else if(ix>=0x40000000){p = pr2; q= ps2;}
+        else                   {p = pr2; q= ps2;}	/* ix>=0x40000000 */
         z = one/(x*x);
         r = p[0]+z*(p[1]+z*(p[2]+z*(p[3]+z*(p[4]+z*p[5]))));
         s = one+z*(q[0]+z*(q[1]+z*(q[2]+z*(q[3]+z*q[4]))));
@@ -369,7 +379,7 @@ static const double qs2[6] = {
 	if(ix>=0x40200000)     {p = qr8; q= qs8;}
 	else if(ix>=0x40122E8B){p = qr5; q= qs5;}
 	else if(ix>=0x4006DB6D){p = qr3; q= qs3;}
-	else if(ix>=0x40000000){p = qr2; q= qs2;}
+	else                   {p = qr2; q= qs2;}	/* ix>=0x40000000 */
 	z = one/(x*x);
 	r = p[0]+z*(p[1]+z*(p[2]+z*(p[3]+z*(p[4]+z*p[5]))));
 	s = one+z*(q[0]+z*(q[1]+z*(q[2]+z*(q[3]+z*(q[4]+z*q[5])))));

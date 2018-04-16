@@ -51,16 +51,16 @@ scalbn (double x, int n)
         if (k >  0x7fe) return huge*copysign(huge,x); /* overflow  */
         if (k > 0) 				/* normal result */
 	    {SET_HIGH_WORD(x,(hx&0x800fffff)|(k<<20)); return x;}
-        if (k <= -54)
+        if (k <= -54) {
             if (n > 50000) 	/* in case integer overflow in n+k */
 		return huge*copysign(huge,x);	/*overflow*/
-	    else return tiny*copysign(tiny,x); 	/*underflow*/
+	    else
+		return tiny*copysign(tiny,x); 	/*underflow*/
+	}
         k += 54;				/* subnormal result */
 	SET_HIGH_WORD(x,(hx&0x800fffff)|(k<<20));
         return x*twom54;
 }
-
-AROS_MAKE_ALIAS(scalbn, ldexp);
 
 #if (LDBL_MANT_DIG == 53)
 /* Alias scalbn -> ldexpl */
@@ -71,3 +71,5 @@ AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(ldexpl));
 AROS_MAKE_ASM_SYM(typeof(scalbnl), scalbnl, AROS_CSYM_FROM_ASM_NAME(scalbnl), AROS_CSYM_FROM_ASM_NAME(scalbn));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(scalbnl));
 #endif
+
+AROS_MAKE_ALIAS(scalbn, ldexp);

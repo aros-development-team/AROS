@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_rint.c,v 1.13 2005/12/03 07:38:35 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_rint.c,v 1.16 2008/02/22 02:30:35 das Exp $";
 #endif
 
 /*
@@ -24,6 +24,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_rint.c,v 1.13 2005/12/03 07:
  *	Inexact flag raised if x not equal to rint(x).
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -38,8 +39,7 @@ rint(double x)
 {
 	int32_t i0,j0,sx;
 	uint32_t i,i1;
-	volatile double w; /* N.b. - gcc optimises "w" away so use volatile to work around*/
-        double t;
+	double w,t;
 	EXTRACT_WORDS(i0,i1,x);
 	sx = (i0>>31)&1;
 	j0 = ((i0>>20)&0x7ff)-0x3ff;
@@ -50,7 +50,7 @@ rint(double x)
 		i0 &= 0xfffe0000;
 		i0 |= ((i1|-i1)>>12)&0x80000;
 		SET_HIGH_WORD(x,i0);
-	        w = TWO52[sx]+x;
+	        STRICT_ASSIGN(double,w,TWO52[sx]+x);
 	        t =  w-TWO52[sx];
 		GET_HIGH_WORD(i0,t);
 		SET_HIGH_WORD(t,(i0&0x7fffffff)|(sx<<31));
@@ -83,6 +83,11 @@ rint(double x)
 	    if((i1&i)!=0) i1 = (i1&(~i))|((0x40000000)>>(j0-20));
 	}
 	INSERT_WORDS(x,i0,i1);
-	*(volatile double *)&w = TWO52[sx]+x;	/* clip any extra precision */
+	STRICT_ASSIGN(double,w,TWO52[sx]+x);
 	return w-TWO52[sx];
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(rintl), rintl, AROS_CSYM_FROM_ASM_NAME(rintl), AROS_CSYM_FROM_ASM_NAME(rint));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(rintl));
+#endif

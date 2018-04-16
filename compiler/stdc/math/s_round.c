@@ -26,25 +26,35 @@
 
 __FBSDID("$FreeBSD: src/lib/msun/src/s_round.c,v 1.4 2005/12/02 13:45:06 bde Exp $");
 
+#include <float.h>
 #include <math.h>
+
+#include "math_private.h"
 
 double
 round(double x)
 {
 	double t;
+	uint32_t hx;
 
-	if (!isfinite(x))
-		return (x);
+	GET_HIGH_WORD(hx, x);
+	if ((hx & 0x7fffffff) == 0x7ff00000)
+		return (x + x);
 
-	if (x >= 0.0) {
+	if (!(hx & 0x80000000)) {
 		t = floor(x);
 		if (t - x <= -0.5)
-			t += 1.0;
+			t += 1;
 		return (t);
 	} else {
 		t = floor(-x);
 		if (t + x <= -0.5)
-			t += 1.0;
+			t += 1;
 		return (-t);
 	}
 }
+
+#if (LDBL_MANT_DIG == 53)
+AROS_MAKE_ASM_SYM(typeof(roundl), roundl, AROS_CSYM_FROM_ASM_NAME(roundl), AROS_CSYM_FROM_ASM_NAME(round));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(roundl));
+#endif

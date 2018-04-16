@@ -21,8 +21,9 @@
 #include <inttypes.h>
 #include <limits.h>
 
+#ifndef __GNUC_PREREQ__
 #define __GNUC_PREREQ__ __GNUC_PREREQ
-
+#endif
 
 /*
  * ANSI/POSIX
@@ -105,10 +106,8 @@ extern const union __nan_un {
     : ld(x))
 #endif
 
-#if (0)
-    NOT IMPL #define	fpclassify(x) \
-    NOT IMPL    __fp_type_select(x, __fpclassifyf, __fpclassifyd, __fpclassifyl)
-#endif
+#define	fpclassify(x) \
+    __fp_type_select(x, __fpclassifyf, __fpclassifyd, __fpclassifyl)
 #define	isfinite(x) __fp_type_select(x, __isfinitef, __isfinite, __isfinitel)
 #define	isinf(x) __fp_type_select(x, __isinff, __isinf, __isinfl)
 #if !defined(NOLIBINLINE)
@@ -194,9 +193,9 @@ __BEGIN_DECLS
 /*
  * Internal support functions
  */
-// NOT IMPL int	__fpclassifyd(double) __pure2;
-// NOT IMPL int	__fpclassifyf(float) __pure2;
-// NOT IMPL int	__fpclassifyl(long double) __pure2;
+int	__fpclassifyd(double) __pure2;
+int	__fpclassifyf(float) __pure2;
+int	__fpclassifyl(long double) __pure2;
 int	__isfinitef(float) __pure2;
 int	__isfinite(double) __pure2;
 int	__isfinitel(long double) __pure2;
@@ -209,7 +208,6 @@ int	__isnormall(long double) __pure2;
 int	__signbit(double) __pure2;
 int	__signbitf(float) __pure2;
 int	__signbitl(long double) __pure2;
-
 static __inline int
 __inline_isnan(__const double __x)
 {
@@ -224,10 +222,10 @@ __inline_isnanf(__const float __x)
 
 static __inline int
 __inline_isnanl(__const long double __x)
+
 {
     return (__x != __x);
 }
-
 int     __isnan(double) __pure2;
 int     __isnanf(float) __pure2;
 int	__isnanl(long double) __pure2;
@@ -274,7 +272,7 @@ double	sqrt(double);
 double	erf(double);
 double	erfc(double);
 double	lgamma(double);
-//NOT IMPL double	tgamma(double);
+double	tgamma(double);
 
 double	ceil(double);
 double	floor(double);
@@ -381,7 +379,7 @@ float	sqrtf(float);
 float	erff(float);
 float	erfcf(float);
 float	lgammaf(float);
-//NOT IMPL float	tgammaf(float);
+float	tgammaf(float);
 
 float	ceilf(float);
 float	floorf(float);
@@ -436,61 +434,61 @@ float	significandf(float);
 /*
  * C99 long double versions of functions
  */
-//NOT IMPL long double	acosl(long double);
-//NOT IMPL long double	asinl(long double);
-//NOT IMPL long double	atanl(long double);
-//NOT IMPL long double	atan2l(long double, long double);
-//NOT IMPL long double	cosl(long double);
-//NOT IMPL long double	sinl(long double);
-//NOT IMPL long double	tanl(long double);
+long double	acosl(long double);
+long double	asinl(long double);
+long double	atanl(long double);
+long double	atan2l(long double, long double);
+long double	cosl(long double);
+long double	sinl(long double);
+long double	tanl(long double);
 
-//NOT IMPL long double	acoshl(long double);
-//NOT IMPL long double	asinhl(long double);
-//NOT IMPL long double	atanhl(long double);
-//NOT IMPL long double	coshl(long double);
-//NOT IMPL long double	sinhl(long double);
-//NOT IMPL long double	tanhl(long double);
+long double	acoshl(long double);
+long double	asinhl(long double);
+long double	atanhl(long double);
+long double	coshl(long double);
+long double	sinhl(long double);
+long double	tanhl(long double);
 
-//NOT IMPL long double	expl(long double);
-//NOT IMPL long double	exp2l(long double);
-//NOT IMPL long double	expm1l(long double);
+long double	expl(long double);
+long double	exp2l(long double);
+long double	expm1l(long double);
 long double	frexpl(long double value, int *); /* fundamentally !__pure2 */
 int		ilogbl(long double) __pure2;
 long double	ldexpl(long double, int);
-//NOT IMPL long double	logl(long double);
-//NOT IMPL long double	log10l(long double);
-//NOT IMPL long double	log1pl(long double);
-//NOT IMPL long double	log2l(long double);
-//NOT IMPL long double	logbl(long double);
+long double	logl(long double);
+long double	log10l(long double);
+long double	log1pl(long double);
+long double	log2l(long double);
+long double	logbl(long double);
 long double	modfl(long double, long double *); /* fundamentally !__pure2 */
 long double	scalbnl(long double, int);
 long double	scalblnl(long double, long);
 
-//NOT IMPL long double	cbrtl(long double);
+long double	cbrtl(long double);
 long double	fabsl(long double) __pure2;
-//NOT IMPL long double	hypotl(long double, long double);
-//NOT IMPL long double	powl(long double, long double);
-//NOT IMPL long double	sqrtl(long double);
+long double	hypotl(long double, long double);
+long double	powl(long double, long double);
+long double	sqrtl(long double);
 
-//NOT IMPL long double	erfl(long double);
-//NOT IMPL long double	erfcl(long double);
-//NOT IMPL long double	lgammal(long double);
-//NOT IMPL long double	tgammal(long double);
+long double	erfl(long double);
+long double	erfcl(long double);
+long double	lgammal(long double);
+long double	tgammal(long double);
 
 long double	ceill(long double);
 long double	floorl(long double);
-//NOT IMPL long double	nearbyintl(long double);
-//NOT IMPL long double	rintl(long double);
-//NOT IMPL long		lrintl(long double);
-//NOT IMPL long long	llrintl(long double);
+long double	nearbyintl(long double);
+long double	rintl(long double);
+long		lrintl(long double);
+long long	llrintl(long double);
 long double	roundl(long double);
 long		lroundl(long double);
 long long	llroundl(long double);
 long double	truncl(long double);
 
-//NOT IMPL long double	fmodl(long double, long double);
-//NOT IMPL long double	remainderl(long double, long double);
-//NOT IMPL long double	remquol(long double, long double, int *);
+long double	fmodl(long double, long double);
+long double	remainderl(long double, long double);
+long double	remquol(long double, long double, int *);
 
 long double	copysignl(long double, long double) __pure2;
 long double     nanl(const char *tagp);
@@ -504,8 +502,8 @@ long double	fminl(long double, long double) __pure2;
 long double	fmal(long double, long double, long double);
 
 /* aliases */
-//NOT IMPL long double 	gammal(long double);
-//NOT IMPL long double	dreml(long double, long double);
+long double 	gammal(long double);
+long double	dreml(long double, long double);
 int	finitel(long double) __pure2;
 int	isinfl(long double) __pure2;
 int	isnanl(long double) __pure2;
@@ -521,7 +519,7 @@ int	isnanl(long double) __pure2;
 //NOT IMPL long double	y1l(long double);
 //NOT IMPL long double	ynl(int, long double);
 //NOT IMPL long double	gammal_r(long double, int *);
-//NOT IMPL long double	lgammal_r(long double, int *);
+long double	lgammal_r(long double, int *);
 void	sincosl(long double x, long double *sin, long double *cos);
 
 /* IEEE Test Vector */

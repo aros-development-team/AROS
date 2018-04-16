@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_asin.c,v 1.11 2005/02/04 18:26:05 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_asin.c,v 1.15 2011/02/10 07:37:50 das Exp $";
 #endif
 
 /* __ieee754_asin(x)
@@ -45,7 +45,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_asin.c,v 1.11 2005/02/04 18:
  *
  */
 
-
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -79,13 +79,13 @@ __ieee754_asin(double x)
 	    GET_LOW_WORD(lx,x);
 	    if(((ix-0x3ff00000)|lx)==0)
 		    /* asin(1)=+-pi/2 with inexact */
-		return x*pio2_hi+x*pio2_lo;
-	    return (x-x)/(x-x);		/* asin(|x|>1) is NaN */
+		return x*pio2_hi+x*pio2_lo;	
+	    return (x-x)/(x-x);		/* asin(|x|>1) is NaN */   
 	} else if (ix<0x3fe00000) {	/* |x|<0.5 */
-	    if(ix<0x3e400000) {		/* if |x| < 2**-27 */
+	    if(ix<0x3e500000) {		/* if |x| < 2**-26 */
 		if(huge+x>one) return x;/* return x with inexact if x!=0*/
-	    } else
-		t = x*x;
+	    }
+	    t = x*x;
 	    p = t*(pS0+t*(pS1+t*(pS2+t*(pS3+t*(pS4+t*pS5)))));
 	    q = one+t*(qS1+t*(qS2+t*(qS3+t*qS4)));
 	    w = p/q;
@@ -108,6 +108,12 @@ __ieee754_asin(double x)
 	    p  = 2.0*s*r-(pio2_lo-2.0*c);
 	    q  = pio4_hi-2.0*w;
 	    t  = pio4_hi-(p-q);
-	}
-	if(hx>0) return t; else return -t;
+	}    
+	if(hx>0) return t; else return -t;    
+
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(asinl), asinl, AROS_CSYM_FROM_ASM_NAME(asinl), AROS_CSYM_FROM_ASM_NAME(asin));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(asinl));
+#endif

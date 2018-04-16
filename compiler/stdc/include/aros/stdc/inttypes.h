@@ -2,7 +2,7 @@
 #define _STDC_INTTYPES_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file inttypes.h with standard fixed sized integral types.
@@ -241,13 +241,18 @@
 
 #endif	/* C++ && format macros */
 
+typedef struct {
+	intmax_t quot;		/* quotient */
+	intmax_t rem;		/* remainder */
+} imaxdiv_t;
+
 #include <aros/types/wchar_t.h>
 
 __BEGIN_DECLS
 
 /* Functions for greatest-width integer types */
-/* NOTIMPL intmax_t imaxabs(intmax_t j); */
-/* NOTIMPL imaxdiv_t imaxdic(intmax_t numer, intmax_t denom); */
+intmax_t imaxabs(intmax_t j);
+imaxdiv_t imaxdiv(intmax_t numer, intmax_t denom);
 intmax_t strtoimax(const char * restrict nptr,
 		    char ** restrict endptr, int base);
 uintmax_t strtoumax(const char * restrict nptr,

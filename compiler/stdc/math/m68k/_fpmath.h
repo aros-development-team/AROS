@@ -14,6 +14,11 @@ union IEEEl2bits {
 		unsigned int		manh	:32;
 		unsigned int		manl	:32;
 	} bits;
+	struct {
+		unsigned int 	expsign	:16;
+		unsigned int	junk	:16;
+		unsigned long long man	:64;
+	} xbits;
 };
 
 #define	LDBL_NBIT	0x80000000

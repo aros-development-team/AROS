@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_hypot.c,v 1.9 2005/02/04 18:26:05 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_hypot.c,v 1.14 2011/10/15 07:00:28 das Exp $";
 #endif
 
 /* __ieee754_hypot(x,y)
@@ -47,13 +47,14 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_hypot.c,v 1.9 2005/02/04 18:
  * 	than 1 ulps (units in the last place)
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
 double
 __ieee754_hypot(double x, double y)
 {
-	double a=x,b=y,t1,t2,y1,y2,w;
+	double a,b,t1,t2,y1,y2,w;
 	int32_t j,k,ha,hb;
 
 	GET_HIGH_WORD(ha,x);
@@ -61,14 +62,15 @@ __ieee754_hypot(double x, double y)
 	GET_HIGH_WORD(hb,y);
 	hb &= 0x7fffffff;
 	if(hb > ha) {a=y;b=x;j=ha; ha=hb;hb=j;} else {a=x;b=y;}
-	SET_HIGH_WORD(a,ha);	/* a <- |a| */
-	SET_HIGH_WORD(b,hb);	/* b <- |b| */
+	a = fabs(a);
+	b = fabs(b);
 	if((ha-hb)>0x3c00000) {return a+b;} /* x/y > 2**60 */
 	k=0;
 	if(ha > 0x5f300000) {	/* a>2**500 */
 	   if(ha >= 0x7ff00000) {	/* Inf or NaN */
 	       uint32_t low;
-	       w = a+b;			/* for sNaN */
+	       /* Use original arg order iff result is NaN; quieten sNaNs. */
+	       w = fabs(x+0.0)-fabs(y+0.0);
 	       GET_LOW_WORD(low,a);
 	       if(((ha&0xfffff)|low)==0) w = a;
 	       GET_LOW_WORD(low,b);
@@ -123,3 +125,8 @@ __ieee754_hypot(double x, double y)
 	    return t1*w;
 	} else return w;
 }
+
+#if	LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(hypotl), hypotl, AROS_CSYM_FROM_ASM_NAME(hypotl), AROS_CSYM_FROM_ASM_NAME(hypot));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(hypotl));
+#endif

@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_remainderf.c,v 1.7 2002/05/28 18:15:04 alfred Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_remainderf.c,v 1.8 2008/02/12 17:11:36 bde Exp $";
 #endif
 
 #include "math.h"
@@ -40,7 +40,7 @@ __ieee754_remainderf(float x, float p)
 	if(hp==0) return (x*p)/(x*p);	 	/* p = 0 */
 	if((hx>=0x7f800000)||			/* x not finite */
 	  ((hp>0x7f800000)))			/* p is NaN */
-	    return (x*p)/(x*p);
+	    return ((long double)x*p)/((long double)x*p);
 
 
 	if (hp<=0x7effffff) x = __ieee754_fmodf(x,p+p);	/* now x < 2p */
@@ -60,6 +60,7 @@ __ieee754_remainderf(float x, float p)
 	    }
 	}
 	GET_FLOAT_WORD(hx,x);
+	if ((hx&0x7fffffff)==0) hx = 0;
 	SET_FLOAT_WORD(x,hx^sx);
 	return x;
 }

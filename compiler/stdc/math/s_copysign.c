@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_copysign.c,v 1.9 2003/07/23 04:53:46 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_copysign.c,v 1.10 2008/02/22 02:30:35 das Exp $";
 #endif
 
 /*
@@ -20,6 +20,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_copysign.c,v 1.9 2003/07/23 
  * with the sign bit of y.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -32,3 +33,8 @@ copysign(double x, double y)
 	SET_HIGH_WORD(x,(hx&0x7fffffff)|(hy&0x80000000));
         return x;
 }
+
+#if LDBL_MANT_DIG == 53
+AROS_MAKE_ASM_SYM(typeof(copysignl), copysignl, AROS_CSYM_FROM_ASM_NAME(copysignl), AROS_CSYM_FROM_ASM_NAME(copysign));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(copysignl));
+#endif

@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogb.c,v 1.9 2004/10/09 17:14:28 stefanf Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogb.c,v 1.10 2008/02/22 02:30:35 das Exp $";
 #endif
 
 /* ilogb(double x)
@@ -21,6 +21,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogb.c,v 1.9 2004/10/09 17:
  * ilogb(inf) = INT_MAX (no signal is raised)
  */
 
+#include <float.h>
 #include <limits.h>
 
 #include "math.h"
@@ -47,3 +48,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogb.c,v 1.9 2004/10/09 17:
 	else if (hx>0x7ff00000 || lx!=0) return FP_ILOGBNAN;
 	else return INT_MAX;
 }
+
+#if	LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(ilogbl), ilogbl, AROS_CSYM_FROM_ASM_NAME(ilogbl), AROS_CSYM_FROM_ASM_NAME(ilogb));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(ilogbl));
+#endif

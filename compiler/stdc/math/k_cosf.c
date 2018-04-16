@@ -16,7 +16,7 @@
 
 #ifndef INLINE_KERNEL_COSDF
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_cosf.c,v 1.15 2005/11/30 11:51:17 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_cosf.c,v 1.18 2009/06/03 08:16:34 ed Exp $";
 #endif
 #endif
 
@@ -40,7 +40,7 @@ __kernel_cosdf(double x)
 	double r, w, z;
 
 	/* Try to optimize for parallel evaluation as in k_tanf.c. */
-	z  = x*x;
+	z = x*x;
 	w = z*z;
 	r = C2+z*C3;
 	return ((one+z*C0) + w*C1) + (w*z)*r;

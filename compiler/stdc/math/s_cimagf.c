@@ -23,14 +23,16 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD: src/lib/msun/src/s_cimagf.c,v 1.1 2004/05/30 09:21:56 stefanf Exp $
+ * $FreeBSD: src/lib/msun/src/s_cimagf.c,v 1.3 2009/03/14 18:24:15 das Exp $
  */
 
 #include <complex.h>
-#undef cimagf
+#include "math_private.h"
 
 float
 cimagf(float complex z)
 {
-	return -z * I;
+	const float_complex z1 = { .f = z };
+
+	return (IMAGPART(z1));
 }

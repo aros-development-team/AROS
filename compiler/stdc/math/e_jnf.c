@@ -14,14 +14,19 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_jnf.c,v 1.8 2002/05/28 18:15:04 alfred Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_jnf.c,v 1.11 2010/11/13 10:54:10 uqs Exp $";
 #endif
+
+/*
+ * See e_jn.c for complete comments.
+ */
 
 #include "math.h"
 #include "math_private.h"
 
+static const volatile float vone = 1, vzero = 0;
+
 static const float
-invsqrtpi=  5.6418961287e-01, /* 0x3f106ebb */
 two   =  2.0000000000e+00, /* 0x40000000 */
 one   =  1.0000000000e+00; /* 0x3F800000 */
 
@@ -154,7 +159,12 @@ __ieee754_jnf(int n, float x)
 			}
 	     	    }
 		}
-	    	b = (t*__ieee754_j0f(x)/b);
+		z = __ieee754_j0f(x);
+		w = __ieee754_j1f(x);
+		if (fabsf(z) >= fabsf(w))
+		    b = (t*z/b);
+		else
+		    b = (t*w/a);
 	    }
 	}
 	if(sgn==1) return -b; else return b;
@@ -169,10 +179,9 @@ __ieee754_ynf(int n, float x)
 
 	GET_FLOAT_WORD(hx,x);
 	ix = 0x7fffffff&hx;
-    /* if Y(n,NaN) is NaN */
 	if(ix>0x7f800000) return x+x;
-	if(ix==0) return -one/zero;
-	if(hx<0) return zero/zero;
+	if(ix==0) return -one/vzero;
+	if(hx<0) return vzero/vzero;
 	sign = 1;
 	if(n<0){
 		n = -n;

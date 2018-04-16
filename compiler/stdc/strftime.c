@@ -115,7 +115,7 @@ static size_t strfnumb(char *s, size_t maxsize, signed int places, size_t value)
         if (*format == '%')
         {
             tmp = 0;
-            
+
             switch(*++format)
             {
                 case 'a':
@@ -198,21 +198,20 @@ static size_t strfnumb(char *s, size_t maxsize, signed int places, size_t value)
         
         format++;
     }
-  
+
     STOR('\0');
-    
+
     if (size > maxsize)
     { 
         s -= size;
-        
+
         if (maxsize) /* Don't know if this is necessary, therefore it's here ;-) */
         {
             s[maxsize - 1] = '\0';
         }
-        
+
         size = 1;
     }
-    
+
     return size - 1;
 }
-

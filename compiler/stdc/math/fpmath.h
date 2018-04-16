@@ -24,8 +24,10 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD: src/lib/libc/include/fpmath.h,v 1.3 2005/02/06 03:23:31 das Exp $
+ * $FreeBSD: src/lib/libc/include/fpmath.h,v 1.4 2008/12/23 22:20:59 marcel Exp $
  */
+#ifndef _FPMATH_H_
+#define _FPMATH_H_
 
 #include <aros/cpu.h>
 
@@ -77,3 +79,5 @@ union IEEEd2bits {
 #endif
 	} bits;
 };
+
+#endif

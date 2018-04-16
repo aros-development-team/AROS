@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanh.c,v 1.8 2006/07/05 22:59:33 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanh.c,v 1.9 2008/02/22 02:30:36 das Exp $";
 #endif
 
 /* Tanh(x)
@@ -38,10 +38,12 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanh.c,v 1.8 2006/07/05 22:5
  *	only tanh(0)=0 is exact for finite argument.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
-static const double one = 1.0, two = 2.0, tiny = 1.0e-300, huge = 1.0e300;
+static const volatile double tiny = 1.0e-300;
+static const double one = 1.0, two = 2.0, huge = 1.0e300;
 
 double
 tanh(double x)
@@ -76,3 +78,8 @@ tanh(double x)
 	}
 	return (jx>=0)? z: -z;
 }
+
+#if (LDBL_MANT_DIG == 53)
+AROS_MAKE_ASM_SYM(typeof(tanhl), tanhl, AROS_CSYM_FROM_ASM_NAME(tanhl), AROS_CSYM_FROM_ASM_NAME(tanh));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(tanhl));
+#endif

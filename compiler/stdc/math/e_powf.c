@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_powf.c,v 1.12 2004/06/01 19:33:30 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_powf.c,v 1.16 2011/10/21 06:26:07 das Exp $";
 #endif
 
 #include "math.h"
@@ -47,8 +47,8 @@ lg2_h  =  6.93145752e-01, /* 0x3f317200 */
 lg2_l  =  1.42860654e-06, /* 0x35bfbe8c */
 ovt =  4.2995665694e-08, /* -(128-log2(ovfl+.5ulp)) */
 cp    =  9.6179670095e-01, /* 0x3f76384f =2/(3ln2) */
-cp_h  =  9.6179199219e-01, /* 0x3f763800 =head of cp */
-cp_l  =  4.7017383622e-06, /* 0x369dc3a0 =tail of cp_h */
+cp_h  =  9.6191406250e-01, /* 0x3f764000 =12b cp */
+cp_l  = -1.1736857402e-04, /* 0xb8f623c6 =tail of cp_h */
 ivln2    =  1.4426950216e+00, /* 0x3fb8aa3b =1/ln2 */
 ivln2_h  =  1.4426879883e+00, /* 0x3fb8aa00 =16b 1/ln2*/
 ivln2_l  =  7.0526075433e-06; /* 0x36eca570 =1/ln2 tail*/
@@ -68,10 +68,13 @@ __ieee754_powf(float x, float y)
     /* y==zero: x**0 = 1 */
 	if(iy==0) return one;
 
-    /* +-NaN return x+y */
+    /* x==1: 1**y = 1, even if y is NaN */
+	if (hx==0x3f800000) return one;
+
+    /* y!=zero: result is NaN if either arg is NaN */
 	if(ix > 0x7f800000 ||
 	   iy > 0x7f800000)
-		return x+y;
+		return (x+0.0F)+(y+0.0F);
 
     /* determine if y is an odd int when x < 0
      * yisint = 0	... y is not an integer
@@ -91,7 +94,7 @@ __ieee754_powf(float x, float y)
     /* special value of y */
 	if (iy==0x7f800000) {	/* y is +-inf */
 	    if (ix==0x3f800000)
-	        return  y - y;	/* inf**+-1 is NaN */
+	        return  one;	/* (-1)**+-inf is NaN */
 	    else if (ix > 0x3f800000)/* (|x|>1)**+-inf = inf,0 */
 	        return (hy>=0)? y: zero;
 	    else			/* (|x|<1)**-,+inf = inf,0 */
@@ -100,10 +103,10 @@ __ieee754_powf(float x, float y)
 	if(iy==0x3f800000) {	/* y is  +-1 */
 	    if(hy<0) return one/x; else return x;
 	}
-	if(hy==0x40000000) return x*x; /* y is  2 */
-	if(hy==0x3f000000) {	/* y is  0.5 */
+        if(hy==0x40000000) return x*x;   /* y is  2 */
+        if(hy==0x3f000000) {             /* y is  0.5 */
 	    if(hx>=0)	/* x >= +0 */
-	    return __ieee754_sqrtf(x);
+                return __ieee754_sqrtf(x);
 	}
 
 	ax   = fabsf(x);

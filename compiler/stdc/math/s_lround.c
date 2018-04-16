@@ -24,6 +24,7 @@
  * SUCH DAMAGE.
  */
 
+#include <float.h>
 #include <limits.h>
 #include <fenv.h>
 #include <math.h>
@@ -36,6 +37,7 @@ __FBSDID("$FreeBSD: src/lib/msun/src/s_lround.c,v 1.2 2005/04/08 00:52:16 das Ex
 #define	DTYPE_MIN	LONG_MIN
 #define	DTYPE_MAX	LONG_MAX
 #define	fn		lround
+#define	fnld	lroundl
 #endif
 
 /*
@@ -63,3 +65,8 @@ fn(type x)
 		return (DTYPE_MAX);
 	}
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG) && defined(fnld)
+AROS_MAKE_ASM_SYM(typeof(fnld),fnld, AROS_CSYM_FROM_ASM_NAME(fnld), AROS_CSYM_FROM_ASM_NAME(fn));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(fnld));
+#endif

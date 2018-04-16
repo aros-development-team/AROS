@@ -2,7 +2,7 @@
 #define _STDC_STDLIB_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdlib.h
@@ -49,11 +49,11 @@ double atof(const char *nptr);
 int atoi(const char *nptr);
 long int atol(const char *nptr);
 #if defined AROS_HAVE_LONG_LONG
-/* NOTIMPL long long int atoll(const char *nptr); */
+long long int atoll(const char *nptr);
 #endif
 
 double strtod(const char * restrict nptr, char ** restrict endptr);
-/* NOTIMPL float strtof(const char * restrict nptr, char ** restrict endptr); */
+float strtof(const char * restrict nptr, char ** restrict endptr);
 long double strtold(const char * restrict nptr,
 		char ** restrict endptr);
 long int strtol(const char * restrict nptr,
@@ -87,7 +87,7 @@ void *realloc(void *oldmem, size_t newsize);
 void abort (void) __noreturn;
 int atexit(void (*func)(void));
 void exit(int code) __noreturn;
-/* NOTIMPL void _Exit(int status); */
+void _Exit(int status) __noreturn;
 char *getenv(const char *name);
 int system(const char *string);
 

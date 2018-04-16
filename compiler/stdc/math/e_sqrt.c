@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_sqrt.c,v 1.10 2005/02/04 18:26:06 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_sqrt.c,v 1.11 2008/03/02 01:47:58 das Exp $";
 #endif
 
 /* __ieee754_sqrt(x)
@@ -85,6 +85,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_sqrt.c,v 1.10 2005/02/04 18:
  *---------------
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -101,10 +102,10 @@ __ieee754_sqrt(double x)
 	EXTRACT_WORDS(ix0,ix1,x);
 
     /* take care of Inf and NaN */
-	if((ix0&0x7ff00000)==0x7ff00000) {
+	if((ix0&0x7ff00000)==0x7ff00000) {			
 	    return x*x+x;		/* sqrt(NaN)=NaN, sqrt(+inf)=+inf
 					   sqrt(-inf)=sNaN */
-	}
+	} 
     /* take care of zero */
 	if(ix0<=0) {
 	    if(((ix0&(~sign))|ix1)==0) return x;/* sqrt(+-0) = +-0 */
@@ -138,12 +139,12 @@ __ieee754_sqrt(double x)
 	r = 0x00200000;		/* r = moving bit from right to left */
 
 	while(r!=0) {
-	    t = s0+r;
-	    if(t<=ix0) {
-		s0   = t+r;
-		ix0 -= t;
-		q   += r;
-	    }
+	    t = s0+r; 
+	    if(t<=ix0) { 
+		s0   = t+r; 
+		ix0 -= t; 
+		q   += r; 
+	    } 
 	    ix0 += ix0 + ((ix1&sign)>>31);
 	    ix1 += ix1;
 	    r>>=1;
@@ -151,9 +152,9 @@ __ieee754_sqrt(double x)
 
 	r = sign;
 	while(r!=0) {
-	    t1 = s1+r;
+	    t1 = s1+r; 
 	    t  = s0;
-	    if((t<ix0)||((t==ix0)&&(t1<=ix1))) {
+	    if((t<ix0)||((t==ix0)&&(t1<=ix1))) { 
 		s1  = t1+r;
 		if(((t1&sign)==sign)&&(s1&sign)==0) s0 += 1;
 		ix0 -= t;
@@ -174,7 +175,7 @@ __ieee754_sqrt(double x)
 	        if (q1==(uint32_t)0xffffffff) { q1=0; q += 1;}
 		else if (z>one) {
 		    if (q1==(uint32_t)0xfffffffe) q+=1;
-		    q1+=2;
+		    q1+=2; 
 		} else
 	            q1 += (q1&1);
 	    }
@@ -187,21 +188,26 @@ __ieee754_sqrt(double x)
 	return z;
 }
 
+#if (LDBL_MANT_DIG == 53)
+AROS_MAKE_ASM_SYM(typeof(sqrtl), sqrtl, AROS_CSYM_FROM_ASM_NAME(sqrtl), AROS_CSYM_FROM_ASM_NAME(sqrt));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sqrtl));
+#endif
+
 /*
 Other methods  (use floating-point arithmetic)
 -------------
-(This is a copy of a drafted paper by Prof W. Kahan
+(This is a copy of a drafted paper by Prof W. Kahan 
 and K.C. Ng, written in May, 1986)
 
-	Two algorithms are given here to implement sqrt(x)
+	Two algorithms are given here to implement sqrt(x) 
 	(IEEE double precision arithmetic) in software.
 	Both supply sqrt(x) correctly rounded. The first algorithm (in
 	Section A) uses newton iterations and involves four divisions.
 	The second one uses reciproot iterations to avoid division, but
 	requires more multiplications. Both algorithms need the ability
-	to chop results of arithmetic operations instead of round them,
+	to chop results of arithmetic operations instead of round them, 
 	and the INEXACT flag to indicate when an arithmetic operation
-	is executed exactly with no roundoff error, all part of the
+	is executed exactly with no roundoff error, all part of the 
 	standard (IEEE 754-1985). The ability to perform shift, add,
 	subtract and logical AND operations upon 32-bit words is needed
 	too, though not part of the standard.
@@ -211,7 +217,7 @@ A.  sqrt(x) by Newton Iteration
    (1)	Initial approximation
 
 	Let x0 and x1 be the leading and the trailing 32-bit words of
-	a floating point number x (in IEEE double format) respectively
+	a floating point number x (in IEEE double format) respectively 
 
 	    1    11		     52				  ...widths
 	   ------------------------------------------------------
@@ -219,7 +225,7 @@ A.  sqrt(x) by Newton Iteration
 	   ------------------------------------------------------
 	      msb    lsb  msb				      lsb ...order
 
-
+ 
 	     ------------------------  	     ------------------------
 	x0:  |s|   e    |    f1     |	 x1: |          f2           |
 	     ------------------------  	     ------------------------
@@ -244,7 +250,7 @@ A.  sqrt(x) by Newton Iteration
 
     (2)	Iterative refinement
 
-	Apply Heron's rule three times to y, we have y approximates
+	Apply Heron's rule three times to y, we have y approximates 
 	sqrt(x) to within 1 ulp (Unit in the Last Place):
 
 		y := (y+x/y)/2		... almost 17 sig. bits
@@ -269,12 +275,12 @@ A.  sqrt(x) by Newton Iteration
 	it requires more multiplications and additions. Also x must be
 	scaled in advance to avoid spurious overflow in evaluating the
 	expression 3y*y+x. Hence it is not recommended uless division
-	is slow. If division is very slow, then one should use the
+	is slow. If division is very slow, then one should use the 
 	reciproot algorithm given in section B.
 
     (3) Final adjustment
 
-	By twiddling y's last bit it is possible to force y to be
+	By twiddling y's last bit it is possible to force y to be 
 	correctly rounded according to the prevailing rounding mode
 	as follows. Let r and i be copies of the rounding mode and
 	inexact flag before entering the square root program. Also we
@@ -305,7 +311,7 @@ A.  sqrt(x) by Newton Iteration
 	        I := i;	 		... restore inexact flag
 	        R := r;  		... restore rounded mode
 	        return sqrt(x):=y.
-
+		    
     (4)	Special cases
 
 	Square root of +inf, +-0, or NaN is itself;
@@ -324,7 +330,7 @@ B.  sqrt(x) by Reciproot Iteration
 	    k := 0x5fe80000 - (x0>>1);
 	    y0:= k - T2[63&(k>>14)].	... y ~ 1/sqrt(x) to 7.8 bits
 
-	Here k is a 32-bit integer and T2[] is an integer array
+	Here k is a 32-bit integer and T2[] is an integer array 
 	containing correction terms. Now magically the floating
 	value of y (y's leading 32-bit word is y0, the value of
 	its trailing word y1 is set to zero) approximates 1/sqrt(x)
@@ -345,9 +351,9 @@ B.  sqrt(x) by Reciproot Iteration
 
 	Apply Reciproot iteration three times to y and multiply the
 	result by x to get an approximation z that matches sqrt(x)
-	to about 1 ulp. To be exact, we will have
+	to about 1 ulp. To be exact, we will have 
 		-1ulp < sqrt(x)-z<1.0625ulp.
-
+	
 	... set rounding mode to Round-to-nearest
 	   y := y*(1.5-0.5*x*y*y)	... almost 15 sig. bits to 1/sqrt(x)
 	   y := y*((1.5-2^-30)+0.5*x*y*y)... about 29 sig. bits to 1/sqrt(x)
@@ -356,14 +362,14 @@ B.  sqrt(x) by Reciproot Iteration
 	   z := z + 0.5*z*(1-z*y)	... about 1 ulp to sqrt(x)
 
 	Remark 2. The constant 1.5-2^-30 is chosen to bias the error so that
-	(a) the term z*y in the final iteration is always less than 1;
+	(a) the term z*y in the final iteration is always less than 1; 
 	(b) the error in the final result is biased upward so that
 		-1 ulp < sqrt(x) - z < 1.0625 ulp
 	    instead of |sqrt(x)-z|<1.03125ulp.
 
     (3)	Final adjustment
 
-	By twiddling y's last bit it is possible to force y to be
+	By twiddling y's last bit it is possible to force y to be 
 	correctly rounded according to the prevailing rounding mode
 	as follows. Let r and i be copies of the rounding mode and
 	inexact flag before entering the square root program. Also we
@@ -403,27 +409,27 @@ B.  sqrt(x) by Reciproot Iteration
 	    I := 1;		... Raise Inexact flag: z is not exact
 	else {
 	    j := 1 - [(x0>>20)&1]	... j = logb(x) mod 2
-	    k := z1 >> 26;		... get z's 25-th and 26-th
+	    k := z1 >> 26;		... get z's 25-th and 26-th 
 					    fraction bits
 	    I := i or (k&j) or ((k&(j+j+1))!=(x1&3));
 	}
 	R:= r		... restore rounded mode
 	return sqrt(x):=z.
 
-	If multiplication is cheaper then the foregoing red tape, the
+	If multiplication is cheaper then the foregoing red tape, the 
 	Inexact flag can be evaluated by
 
 	    I := i;
 	    I := (z*z!=x) or I.
 
-	Note that z*z can overwrite I; this value must be sensed if it is
+	Note that z*z can overwrite I; this value must be sensed if it is 
 	True.
 
 	Remark 4. If z*z = x exactly, then bit 25 to bit 0 of z1 must be
 	zero.
 
 		    --------------------
-		z1: |        f2        |
+		z1: |        f2        | 
 		    --------------------
 		bit 31		   bit 0
 
@@ -440,7 +446,6 @@ B.  sqrt(x) by Reciproot Iteration
 	11			01		even
 	-------------------------------------------------
 
-    (4)	Special cases (see (4) of Section A).
-
+    (4)	Special cases (see (4) of Section A).	
+ 
  */
-

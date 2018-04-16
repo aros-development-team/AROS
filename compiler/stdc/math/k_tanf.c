@@ -15,7 +15,7 @@
 
 #ifndef INLINE_KERNEL_TANDF
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_tanf.c,v 1.20 2005/11/28 11:46:20 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_tanf.c,v 1.23 2009/06/03 08:16:34 ed Exp $";
 #endif
 #endif
 
@@ -55,7 +55,7 @@ __kernel_tandf(double x, int iy)
 	 * spare.  However, the chosen splitting is good for accuracy too,
 	 * and would give results as accurate as Horner's method if the
 	 * small terms were added from highest degree down.
-     */
+	 */
 	r = T[4]+z*T[5];
 	t = T[2]+z*T[3];
 	w = z*z;

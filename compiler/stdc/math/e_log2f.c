@@ -16,30 +16,13 @@
 static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_log2f.c,v 1.5 2011/10/15 05:23:28 das Exp $";
 #endif
 
+/*
+ * Float version of e_log2.c.  See the latter for most comments.
+ */
+
 #include "math.h"
 #include "math_private.h"
-
-static const float
-/* |(log(1+s)-log(1-s))/s - Lg(s)| < 2**-34.24 (~[-4.95e-11, 4.97e-11]). */
-Lg1 =      0xaaaaaa.0p-24,	/* 0.66666662693 */
-Lg2 =      0xccce13.0p-25,	/* 0.40000972152 */
-Lg3 =      0x91e9ee.0p-25,	/* 0.28498786688 */
-Lg4 =      0xf89e26.0p-26;	/* 0.24279078841 */
-
-static inline float
-k_log1pf(float f)
-{
-	float hfsq,s,z,R,w,t1,t2;
-
- 	s = f/((float)2.0+f);
-	z = s*s;
-	w = z*z;
-	t1= w*(Lg2+w*Lg4);
-	t2= z*(Lg1+w*Lg3);
-	R = t2+t1;
-	hfsq=(float)0.5*f*f;
-	return s*(hfsq+R);
-}
+#include "k_logf.h"
 
 static const float
 two25      =  3.3554432000e+07, /* 0x4c000000 */
@@ -47,6 +30,7 @@ ivln2hi    =  1.4428710938e+00, /* 0x3fb8b000 */
 ivln2lo    = -1.7605285393e-04; /* 0xb9389ad4 */
 
 static const float zero   =  0.0;
+static volatile float vzero = 0.0;
 
 float
 __ieee754_log2f(float x)
@@ -59,7 +43,7 @@ __ieee754_log2f(float x)
 	k=0;
 	if (hx < 0x00800000) {			/* x < 2**-126  */
 	    if ((hx&0x7fffffff)==0)
-		return -two25/zero;		/* log(+-0)=-inf */
+		return -two25/vzero;		/* log(+-0)=-inf */
 	    if (hx<0) return (x-x)/zero;	/* log(-#) = NaN */
 	    k -= 25; x *= two25; /* subnormal number, scale up x */
 	    GET_FLOAT_WORD(hx,x);

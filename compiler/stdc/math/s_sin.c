@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sin.c,v 1.10 2005/10/24 14:08:36 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sin.c,v 1.13 2011/02/10 07:37:50 das Exp $";
 #endif
 
 /* sin(x)
@@ -45,6 +45,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sin.c,v 1.10 2005/10/24 14:0
  *	TRIG(x) returns trig(x) nearly rounded
  */
 
+#include <float.h>
 #include "math.h"
 #define INLINE_REM_PIO2
 #include "math_private.h"
@@ -62,7 +63,7 @@ sin(double x)
     /* |x| ~< pi/4 */
 	ix &= 0x7fffffff;
 	if(ix <= 0x3fe921fb) {
-	    if(ix<0x3e400000)			/* |x| < 2**-27 */
+	    if(ix<0x3e500000)			/* |x| < 2**-26 */
 	       {if((int)x==0) return x;}	/* generate inexact */
 	    return __kernel_sin(x,z,0);
 	}
@@ -82,3 +83,8 @@ sin(double x)
 	    }
 	}
 }
+
+#if (LDBL_MANT_DIG == 53)
+AROS_MAKE_ASM_SYM(typeof(sinl), sinl, AROS_CSYM_FROM_ASM_NAME(sinl), AROS_CSYM_FROM_ASM_NAME(sin));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sinl));
+#endif

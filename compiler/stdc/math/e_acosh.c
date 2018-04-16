@@ -13,7 +13,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_acosh.c,v 1.8 2005/02/04 18:26:05 das Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_acosh.c,v 1.9 2008/02/22 02:30:34 das Exp $";
 #endif
 
 /* __ieee754_acosh(x)
@@ -30,6 +30,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_acosh.c,v 1.8 2005/02/04 18:
  *	acosh(NaN) is NaN without signal.
  */
 
+#include <float.h>
 #include "math.h"
 #include "math_private.h"
 
@@ -49,7 +50,7 @@ __ieee754_acosh(double x)
 	} else if(hx >=0x41b00000) {	/* x > 2**28 */
 	    if(hx >=0x7ff00000) {	/* x is inf of NaN */
 	        return x+x;
-	    } else
+	    } else 
 		return __ieee754_log(x)+ln2;	/* acosh(huge)=log(2x) */
 	} else if(((hx-0x3ff00000)|lx)==0) {
 	    return 0.0;			/* acosh(1) = 0 */
@@ -61,3 +62,8 @@ __ieee754_acosh(double x)
 	    return log1p(t+sqrt(2.0*t+t*t));
 	}
 }
+
+#if (LDBL_MANT_DIG == DBL_MANT_DIG)
+AROS_MAKE_ASM_SYM(typeof(acoshl), acoshl, AROS_CSYM_FROM_ASM_NAME(acoshl), AROS_CSYM_FROM_ASM_NAME(acosh));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(acoshl));
+#endif

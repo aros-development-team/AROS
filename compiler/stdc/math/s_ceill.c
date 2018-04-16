@@ -12,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ceill.c,v 1.4 2005/04/28 19:45:55 stefanf Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ceill.c,v 1.9 2008/02/14 15:10:33 bde Exp $";
 #endif
 
 /*
@@ -63,7 +63,7 @@ ceill(long double x)
 			if (huge + x > 0.0)
 				if (u.bits.exp > 0 ||
 				    (u.bits.manh | u.bits.manl) != 0)
-					u.e = u.bits.sign ? 0.0 : 1.0;
+					u.e = u.bits.sign ? -0.0 : 1.0;
 		} else {
 			uint64_t m = ((1llu << MANH_SIZE) - 1) >> (e + 1);
 			if (((u.bits.manh & m) | u.bits.manl) == 0)

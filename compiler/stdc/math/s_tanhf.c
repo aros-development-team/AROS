@@ -14,13 +14,15 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanhf.c,v 1.8 2005/12/11 11:40:55 bde Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanhf.c,v 1.9 2008/02/22 02:30:36 das Exp $";
 #endif
 
 #include "math.h"
 #include "math_private.h"
 
-static const float one=1.0, two=2.0, tiny = 1.0e-30, huge = 1.0e30;
+static const volatile float tiny = 1.0e-30;
+static const float one=1.0, two=2.0, huge = 1.0e30;
+
 float
 tanhf(float x)
 {

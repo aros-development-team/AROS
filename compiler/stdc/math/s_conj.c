@@ -23,13 +23,21 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD: src/lib/msun/src/s_conj.c,v 1.1 2004/05/30 09:21:56 stefanf Exp $
+ * $FreeBSD: src/lib/msun/src/s_conj.c,v 1.2 2008/08/07 14:39:56 das Exp $
  */
 
+#include <float.h>
 #include <complex.h>
+
+#include "math_private.h"
 
 double complex
 conj(double complex z)
 {
-	return creal(z) - I * cimag(z);
+	return (CMPLX(creal(z), -cimag(z)));
 }
+
+#if LDBL_MANT_DIG == 53
+AROS_MAKE_ASM_SYM(typeof(conjl), conjl, AROS_CSYM_FROM_ASM_NAME(conjl), AROS_CSYM_FROM_ASM_NAME(conj));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(conjl));
+#endif

@@ -23,14 +23,22 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD: src/lib/msun/src/s_cimag.c,v 1.1 2004/05/30 09:21:56 stefanf Exp $
+ * $FreeBSD: src/lib/msun/src/s_cimag.c,v 1.3 2009/03/14 18:24:15 das Exp $
  */
 
+#include <float.h>
 #include <complex.h>
-#undef cimag
+#include "math_private.h"
 
 double
 cimag(double complex z)
 {
-	return -z * I;
+	const double_complex z1 = { .f = z };
+
+	return (IMAGPART(z1));
 }
+
+#if LDBL_MANT_DIG == 53
+AROS_MAKE_ASM_SYM(typeof(cimagl), cimagl, AROS_CSYM_FROM_ASM_NAME(cimagl), AROS_CSYM_FROM_ASM_NAME(cimag));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(cimagl));
+#endif
