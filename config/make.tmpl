@@ -1919,6 +1919,9 @@ BD_LIBFILES := %(linklibfiles)
 
 BD_FDIRS      := $(sort $(dir $(BD_FILES)))
 
+BD_FILEMATCH = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+BD_MATCHARCH = $(foreach matchfile,$(2),$(foreach archfile,$(1),$(if $(call BD_FILEMATCH,$(archfile),$(notdir $(matchfile))),$(matchfile),)))
+BD_FILTERARCH = $(filter-out $(call BD_MATCHARCH,$(1),$(2)),$(2))
 BD_STARTFILES := $(addprefix %(objdir)/,$(%(modname)_STARTFILES))
 BD_ENDFILES   := $(addprefix %(objdir)/,$(%(modname)_ENDFILES))
 
@@ -1926,9 +1929,9 @@ BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 BD_LIBARCHOBJS   := $(wildcard %(objdir)/linklib/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_LIBARCHFILES  := $(basename $(notdir $(BD_LIBARCHOBJS)))
-BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
-BD_NLIBARCHFILES := $(filter-out $(BD_LIBARCHFILES),$(BD_LIBFILES))
-BD_ARCHNLIBFILES := $(filter-out $(BD_LIBFILES),$(BD_LIBARCHFILES))
+BD_NARCHFILES := $(call BD_FILTERARCH,$(BD_ARCHFILES),$(BD_FILES))
+BD_NLIBARCHFILES := $(call BD_FILTERARCH,$(BD_LIBARCHFILES),$(BD_LIBFILES))
+BD_ARCHNLIBFILES := $(call BD_FILTERARCH,$(BD_LIBFILES),$(BD_LIBARCHFILES))
 
 BD_COMMONCFLAGS=-I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
 BD_CFLAGS        := %(cflags) $(BD_COMMONCFLAGS) $(%(modname)_CFLAGS)
