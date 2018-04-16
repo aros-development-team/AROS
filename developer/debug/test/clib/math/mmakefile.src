@@ -1,0 +1,44 @@
+#   $Id$
+#
+#   Makefile for AROS C Library Math Tests
+
+include $(SRCDIR)/config/aros.cfg
+
+FILESINFTORTURE := \
+        inf_torture
+
+FILESDOUBLE := \
+        test-double
+
+FILESFLOAT := \
+        test-float
+
+FILESIEEE754 := \
+        tst-ieee754
+
+EXEDIR := $(AROS_TESTS)/clib
+
+USER_CFLAGS = -DSYS_MATH_H
+
+#MM- test-clib : test-clib-math
+#MM- test-clib-math : test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-double test-clib-math-float
+#MM test-clib-math-inftorture : includes includes-copy linklibs kernel
+#MM test-clib-math-double : includes includes-copy linklibs kernel
+#MM test-clib-math-float : includes includes-copy linklibs kernel
+#MM test-clib-math-ieee754 : includes includes-copy linklibs kernel
+
+%build_prog mmake=test-clib-math-ieee754 \
+    files=$(FILESIEEE754) targetdir=$(EXEDIR) \
+    progname=math-ieee754
+
+%build_prog mmake=test-clib-math-inftorture \
+    files=$(FILESINFTORTURE) targetdir=$(EXEDIR) \
+    progname=math-inftorture
+
+%build_prog mmake=test-clib-math-double \
+    files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
+    progname=math-double
+
+%build_prog mmake=test-clib-math-float \
+    files=$(FILESFLOAT) targetdir=$(EXEDIR) \
+    progname=math-float
