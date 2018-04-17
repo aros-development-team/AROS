@@ -29,12 +29,11 @@
 #define __BSD_VISIBLE 1
 #include "fenv.h"
 
+#define	__INITIAL_FPUCW_I386__	0x127F
+#define	__INITIAL_NPXCW__	__INITIAL_FPUCW_I386__
+
 const fenv_t __fe_dfl_env = {
-#ifndef __AROS__
 	__INITIAL_NPXCW__,
-#else
-        0x127F,
-#endif
 	0x0000,
 	0x0000,
 	0x1f80,
