@@ -40,8 +40,6 @@ STDC_I386_ASMFILES += \
     math/s_significand \
     math/s_trunc
 
-#    s_finite \
-
 # float counterparts
 STDC_I386_ASMFILES += \
     math/e_fmodf \
