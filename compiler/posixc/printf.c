@@ -127,6 +127,10 @@
 		 digits that must appear; if the converted value requires fewer
 		 digits, it is padded on the left with zeros.
 
+	aA - (TODO) The double argument is rounded and converted to the C99
+	      floating-point number in hexadecimal notation - preserving all
+	      bits of precision, and presenting them in a robust way.
+
 	eE - The double argument is rounded and converted in the style
 	     [<->]d.dddedd where there is one digit before the decimal-point
 	     character and the number of digits after it is equal to the
