@@ -26,7 +26,12 @@
  * $FreeBSD: src/lib/msun/amd64/fenv.c,v 1.4 2007/01/05 07:15:26 das Exp $
  */
 
+#define __BSD_VISIBLE 1
 #include "fenv.h"
+
+#define	__INITIAL_FPUCW__	0x037F
+#define	__INITIAL_MXCSR__	0x1F80
+
 
 const fenv_t __fe_dfl_env = {
 	{ 0xffff0000 | __INITIAL_FPUCW__,
@@ -37,6 +42,9 @@ const fenv_t __fe_dfl_env = {
 	},
 	__INITIAL_MXCSR__
 };
+
+extern inline int feclearexcept(int __excepts);
+extern inline int fegetexceptflag(fexcept_t *__flagp, int __excepts);
 
 int
 fesetexceptflag(const fexcept_t *flagp, int excepts)
@@ -66,6 +74,10 @@ feraiseexcept(int excepts)
 	return (0);
 }
 
+extern inline int fetestexcept(int __excepts);
+extern inline int fegetround(void);
+extern inline int fesetround(int __round);
+
 int
 fegetenv(fenv_t *envp)
 {
@@ -83,7 +95,7 @@ fegetenv(fenv_t *envp)
 int
 feholdexcept(fenv_t *envp)
 {
-	int mxcsr;
+	uint32_t mxcsr;
 
 	__stmxcsr(&mxcsr);
 	__fnstenv(&envp->__x87);
@@ -95,11 +107,13 @@ feholdexcept(fenv_t *envp)
 	return (0);
 }
 
+extern inline int fesetenv(const fenv_t *__envp);
+
 int
 feupdateenv(const fenv_t *envp)
 {
-	short status;
-	int mxcsr;
+	uint32_t mxcsr;
+	uint16_t status;
 
 	__fnstsw(&status);
 	__stmxcsr(&mxcsr);
@@ -109,9 +123,10 @@ feupdateenv(const fenv_t *envp)
 }
 
 int
-feenableexcept(int mask)
+__feenableexcept(int mask)
 {
-	int mxcsr, control, omask;
+	uint32_t mxcsr, omask;
+	uint16_t control;
 
 	mask &= FE_ALL_EXCEPT;
 	__fnstcw(&control);
@@ -125,9 +140,10 @@ feenableexcept(int mask)
 }
 
 int
-fedisableexcept(int mask)
+__fedisableexcept(int mask)
 {
-	int mxcsr, control, omask;
+	uint32_t mxcsr, omask;
+	uint16_t control;
 
 	mask &= FE_ALL_EXCEPT;
 	__fnstcw(&control);
@@ -139,3 +155,9 @@ fedisableexcept(int mask)
 	__ldmxcsr(mxcsr);
 	return (~omask);
 }
+
+AROS_MAKE_ASM_SYM(typeof(feenableexcept), feenableexcept, AROS_CSYM_FROM_ASM_NAME(feenableexcept), AROS_CSYM_FROM_ASM_NAME(__feenableexcept));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(feenableexcept));
+
+AROS_MAKE_ASM_SYM(typeof(fedisableexcept), fedisableexcept, AROS_CSYM_FROM_ASM_NAME(fedisableexcept), AROS_CSYM_FROM_ASM_NAME(__fedisableexcept));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(fedisableexcept));
