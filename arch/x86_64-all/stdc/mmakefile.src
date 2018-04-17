@@ -5,10 +5,43 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_AFLAGS 	:= -I$(GENINCDIR)
 
+STDC_X8664_FILES := \
+    fenv
+
+STDC_X8664_ASMFILES := \
+    longjmp \
+    setjmp
+
+# Add replacement math functions ..
+STDC_X8664_ASMFILES += \
+    math/e_fmod \
+    math/e_fmodf \
+    math/e_fmodl \
+    math/e_remainder \
+    math/e_remainderf \
+    math/e_remainderl \
+    math/e_sqrt \
+    math/e_sqrtf \
+    math/e_sqrtl \
+    math/s_llrint \
+    math/s_llrintf \
+    math/s_llrintl \
+    math/s_logbl \
+    math/s_lrint \
+    math/s_lrintf \
+    math/s_lrintl \
+    math/s_remquo \
+    math/s_remquof \
+    math/s_remquol \
+    math/s_rintl \
+    math/s_scalbn \
+    math/s_scalbnf \
+    math/s_scalbnl
+
 %build_archspecific \
   mainmmake=compiler-stdc \
   maindir=compiler/stdc \
   arch=x86_64 \
-  files="fenv" asmfiles="longjmp setjmp"
+  files="$(STDC_X8664_FILES)" asmfiles="$(STDC_X8664_ASMFILES)"
 
 #MM compiler-stdc-x86_64 : includes-asm_h-x86_64
