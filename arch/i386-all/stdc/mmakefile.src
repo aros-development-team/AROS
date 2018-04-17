@@ -3,12 +3,84 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_CFLAGS := -I$(SRCDIR)/compiler/stdc/math/ld80
 USER_AFLAGS := -I$(GENINCDIR)
+
+STDC_I386_SSE_FILES := \
+    sse
+
+STDC_I386_FILES := \
+    fenv \
+    $(STDC_I386_SSE_FILES)
+
+STDC_I386_ASMFILES := \
+    longjmp \
+    setjmp
+
+# Add replacement math functions ..
+STDC_I386_FILES += \
+    math/ld80/invtrig
+
+STDC_I386_ASMFILES += \
+    math/e_exp \
+    math/e_fmod \
+    math/e_log \
+    math/e_log10 \
+    math/e_remainder \
+    math/e_sqrt \
+    math/s_ceil \
+    math/s_copysign \
+    math/s_floor \
+    math/s_llrint \
+    math/s_logb \
+    math/s_lrint \
+    math/s_remquo \
+    math/s_rint \
+    math/s_scalbn \
+    math/s_significand \
+    math/s_trunc
+
+#    s_finite \
+
+# float counterparts
+STDC_I386_ASMFILES += \
+    math/e_fmodf \
+    math/e_log10f \
+    math/e_logf \
+    math/e_remainderf \
+    math/e_sqrtf \
+    math/s_ceilf \
+    math/s_copysignf \
+    math/s_floorf \
+    math/s_llrintf \
+    math/s_logbf \
+    math/s_lrintf \
+    math/s_remquof \
+    math/s_rintf \
+    math/s_scalbnf \
+    math/s_significandf \
+    math/s_truncf
+
+# long double counterparts
+STDC_I386_ASMFILES += \
+    math/e_fmodl \
+    math/e_remainderl \
+    math/e_sqrtl \
+    math/s_ceill \
+    math/s_copysignl \
+    math/s_floorl \
+    math/s_llrintl \
+    math/s_logbl \
+    math/s_lrintl \
+    math/s_remquol \
+    math/s_rintl \
+    math/s_scalbnl \
+    math/s_truncl
 
 %build_archspecific \
   mainmmake=compiler-stdc \
   maindir=compiler/stdc \
   arch=i386 \
-  files="fenv sse" linklibfiles="sse" asmfiles="longjmp setjmp"
+  files="$(STDC_I386_FILES)" linklibfiles="$(STDC_I386_SSE_FILES)" asmfiles="$(STDC_I386_ASMFILES)"
 
 #MM- compiler-stdc-i386 : includes-asm_h-i386
