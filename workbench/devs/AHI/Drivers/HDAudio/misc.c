@@ -50,6 +50,8 @@ static ULONG get_response(struct HDAudioChip *card);
 static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device);
+static BOOL perform_ad_specific_settings(struct HDAudioChip *card,
+    UWORD device);
 static void set_gpio(UBYTE mask, struct HDAudioChip *card);
 static BOOL interrogate_unknown_chip(struct HDAudioChip *card);
 static UBYTE find_widget(struct HDAudioChip *card, UBYTE type, UBYTE pin_type);
@@ -1021,16 +1023,9 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
     UWORD vendor = (vendor_device_id >> 16);
     UWORD device = (vendor_device_id & 0xFFFF);
     
-    card->frequencies = NULL;
-    card->nr_of_frequencies = 0;
-    card->selected_freq_index = 0;
-    
     card->dac_min_gain = -64.0;
     card->dac_max_gain = 0;
     card->dac_step_gain = 1.0;
-    card->speaker_nid = 0; // off
-    card->headphone_nid = 0; // off
-    card->speaker_active = FALSE;
 
     D(bug("[HDAudio] vendor = %x, device = %x\n", vendor, device));
     
@@ -1046,10 +1041,17 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
     {
         configured = perform_idt_specific_settings(card, device);
     }
-
-    if (!configured) // default: fall-back 
+    else if (vendor == 0x11d4 && forceQuery == FALSE) // Analog Devices
     {
-        if (interrogate_unknown_chip(card) == FALSE)
+        configured = perform_ad_specific_settings(card, device);
+    }
+
+    // call query-based configuration if the vendor-specific configuration
+    // functions haven't configured the codec or have only partially
+    // configured it by overriding some values
+    if (!configured)
+    {
+        if (!interrogate_unknown_chip(card))
         {
             return FALSE;
         }
@@ -1379,6 +1381,39 @@ static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device
 }
 
 
+static BOOL perform_ad_specific_settings(struct HDAudioChip *card,
+    UWORD device)
+{
+    D(bug("[HDAudio] Found Analog Devices codec\n"));
+
+    // device specific support
+    if (device == 0x1981) // AD1981HD
+    {
+        D(bug("[HDAudio] Adding AD1981HD specific support\n"));
+        if (force_speaker_nid == 0)
+        {
+            force_speaker_nid = 0x7;
+        }
+    }
+    else if (device == 0x1884) // AD1884
+    {
+        // Use the second DAC for all outputs, since the line-out port can't
+        // use the first DAC!
+        card->dac_nid = 0x4;
+        send_command_12(card->codecnr, 0xe,
+            VERB_SET_CONNECTION_SELECT, 1, card); // Mono
+        send_command_12(card->codecnr, 0xf,
+            VERB_SET_CONNECTION_SELECT, 1, card); // Port F
+        send_command_12(card->codecnr, 0x22,
+            VERB_SET_CONNECTION_SELECT, 1, card); // Port A
+        send_command_12(card->codecnr, 0x23,
+            VERB_SET_CONNECTION_SELECT, 1, card); // Port E
+    }
+
+    return FALSE;
+}
+
+
 static void update_gpio(UBYTE mask, BOOL on, struct HDAudioChip *card)
 {
     ULONG gpio_data, gpio_enable, gpio_dir;
@@ -1519,18 +1554,21 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
         unmute_widget(i, card);
     }
 
-    // find out the first PCM DAC
-    dac = find_widget(card, 0, 0);
-    D(bug("[HDAudio] DAC NID = %xh\n", dac));
-	
-    if (dac == 0)
+    if (card->dac_nid == 0)
     {
-        bug("Didn't find DAC!\n");
-        return FALSE;
+        // find out the first PCM DAC
+        dac = find_widget(card, 0, 0);
+
+        if (dac == 0)
+        {
+            bug("Didn't find DAC!\n");
+            return FALSE;
+        }
+
+        card->dac_nid = dac;
     }
-	
-    card->dac_nid = dac;
-    
+    D(bug("[HDAudio] DAC NID = %xh\n", card->dac_nid));
+
     check_widget_volume(dac, card);
 
     // find FRONT pin
