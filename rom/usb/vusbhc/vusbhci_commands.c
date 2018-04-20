@@ -882,6 +882,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 //            return( X (ioreq));
 
         default:
+            mybug_unit(-1, ("ATTENTION! Unhandled!\n"));
+            mybug_unit(-1, ("ioreq->iouh_SetupData.bmRequestType %x\n", ioreq->iouh_SetupData.bmRequestType));
+            mybug_unit(-1, ("ioreq->iouh_SetupData.bRequest      %x\n", ioreq->iouh_SetupData.bRequest));
+            mybug_unit(-1, ("ioreq->iouh_SetupData.wValue        %x\n", ioreq->iouh_SetupData.wValue));
+            mybug_unit(-1, ("ioreq->iouh_SetupData.wIndex        %x\n", ioreq->iouh_SetupData.wIndex));
+            mybug_unit(-1, ("ioreq->iouh_SetupData.wLength       %x\n", ioreq->iouh_SetupData.wLength));
             break;
     }
 
@@ -920,6 +926,39 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
     return(RC_DONTREPLY);
 }
 
+/*
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
+
+    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+*/
+    /*
+        Check the status of the controller
+        We might encounter these states:
+        UHSB_OPERATIONAL USB can be used for transfers
+        UHSB_RESUMING    USB is currently resuming
+        UHSB_SUSPENDED   USB is in suspended state
+        UHSB_RESET       USB is just inside a reset phase
+    */
+/*
+    if(unit->state == UHSF_OPERATIONAL) {
+        mybug_unit(0, ("Unit state is operational\n"));
+    } else {
+        mybug_unit(-1, ("Unit state is not operational!\n"));
+        return UHIOERR_USBOFFLINE;
+    }
+
+    if(ioreq->iouh_DevAddr == unit->roothub.addr) {
+        return(cmdControlXFerRootHub(ioreq));
+    }
+
+    mybug_unit(-1, ("Sending transfer request to libusb ->\n"));
+    return(do_libusb_ctrl_transfer(ioreq));
+}
+*/
 
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
@@ -949,8 +988,15 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         return(cmdControlXFerRootHub(ioreq));
     }
 
-    mybug_unit(0, ("Sending transfer request to libusb\n\n"));
-    return(do_libusb_ctrl_transfer(ioreq));
+    mybug_unit(-1, ("Adding CNTR transfer request to queue\n"));
+    ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
+    ioreq->iouh_Actual = 0;
+
+    ObtainSemaphore(&unit->ctrlxfer_queue_lock);
+    AddTail(&unit->ctrlxfer_queue, (struct Node *) ioreq);
+    ReleaseSemaphore(&unit->ctrlxfer_queue_lock);
+
+    return(RC_DONTREPLY);
 }
 
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {

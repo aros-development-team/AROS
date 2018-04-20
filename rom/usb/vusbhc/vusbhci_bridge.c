@@ -35,7 +35,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
     struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
 
     struct libusb_device_descriptor desc;
-    int rc, speed;
+    int rc, speed, num_interfaces;
 
     mybug(-1, ("\n"));
     mybug_unit(-1, ("Hotplug callback event!\n"));
@@ -74,24 +74,49 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                         if(speed != LIBUSB_SPEED_SUPER) {
                         
-                            LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
+                            //LIBUSBCALL(libusb_set_auto_detach_kernel_driver, dev_handle, 1);
 
                             struct libusb_config_descriptor *config = NULL;
                             unsigned int i;
 
                             rc = LIBUSBCALL(libusb_get_active_config_descriptor, dev, &config);
                             if(rc == LIBUSB_SUCCESS) {
-                                for (i = 0; i < config->bNumInterfaces; i++) {
-                                    if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i)) {
-                                        bug("\nClaiming interface %d...\n", i);
-                                        rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
-                                        if (rc != LIBUSB_SUCCESS) {
-                                            bug("   Failed.\n");
-                                        }
-                                    }
-                                }
-                                LIBUSBCALL(libusb_free_config_descriptor, config);
+                            	bug("\nGot active config descriptor %d...\n\n", i);
                             }
+
+							num_interfaces = config->bNumInterfaces;
+							//LIBUSBCALL(libusb_free_config_descriptor, config);
+
+                            for (i=0; i<num_interfaces; i++) {
+                                if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i) == 1) {
+                                    bug("Kernel driver is active on interface %d...\n", i);
+
+									rc = LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, i);
+
+                                    rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
+                                    if (rc != LIBUSB_SUCCESS) {
+                                        bug("    Failed to detach it...\n");
+                                    }
+                                } else {
+                                	bug("Kernel driver is not active on interface %d...\n", i);
+                                }
+
+                                if (LIBUSBCALL(libusb_kernel_driver_active, dev_handle, i) == 1) {
+                                    bug("Kernel driver is active on interface %d...\n", i);
+
+									rc = LIBUSBCALL(libusb_detach_kernel_driver, dev_handle, i);
+
+                                    rc = LIBUSBCALL(libusb_claim_interface, dev_handle, i);
+                                    if (rc != LIBUSB_SUCCESS) {
+                                        bug("    Failed to detach it...\n");
+                                    }
+                                } else {
+                                	bug("Kernel driver is not active on interface %d...\n", i);
+                                }
+                            }
+                            
+                            LIBUSBCALL(libusb_free_config_descriptor, config);
+
 
                             //speed = LIBUSBCALL(libusb_get_device_speed, dev);
                             switch(speed) {
@@ -108,9 +133,12 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                                 //break;
                             }
 
+                			unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_CONNECTION;
+                			unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
+                			uhwCheckRootHubChanges(unit);
+
                             unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
                             unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
-
                             uhwCheckRootHubChanges(unit);
                         } else {
                             LIBUSBCALL(libusb_close, dev_handle);
@@ -240,9 +268,9 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
     struct IOUsbHWReq *ioreq = (struct IOUsbHWReq *) xfr->user_data;;
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("callbackUSBTransferComplete\n"));
+    mybug_unit(0, ("callbackUSBTransferComplete\n"));
 
-    int err;
+    int err, xfr_type;
 
     switch(xfr->status) {
         case LIBUSB_TRANSFER_COMPLETED:
@@ -278,6 +306,8 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
 
     }
 
+    xfr_type = xfr->type;
+
     mybug_unit(0, ("Releasing libusb transfer structure...\n"));
     LIBUSBCALL(libusb_free_transfer, xfr);
 
@@ -287,6 +317,22 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
     /* Terminate the iorequest */
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
     ReplyMsg(&ioreq->iouh_Req.io_Message);
+
+    switch(xfr_type) {
+    	case LIBUSB_TRANSFER_TYPE_CONTROL:
+    		unit->ctrlxfer_pending = FALSE;
+    	break;
+    	case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+    		unit->intrxfer_pending = FALSE;
+    	break;
+    	case LIBUSB_TRANSFER_TYPE_BULK:
+    		unit->bulkxfer_pending = FALSE;
+    	break;
+    	case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
+    		unit->isocxfer_pending = FALSE;
+    	break;
+    }
+
 }
 
 /*
@@ -295,19 +341,52 @@ void callbackUSBTransferComplete(struct libusb_transfer *xfr) {
 int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    int rc;
+    int rc, err;
 
     UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType);
+    UWORD bmRequestType_raw  = bmRequestType&~URTF_IN;
+
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
     UWORD wValue             = (ioreq->iouh_SetupData.wValue);
     UWORD wIndex             = (ioreq->iouh_SetupData.wIndex);
     UWORD wLength            = (ioreq->iouh_SetupData.wLength);
 
+	mybug_unit(-1, ("bmRequestType   ( "));
+
+	if(bmRequestType&URTF_IN) {
+		mybug(-1, ("URTF_IN "));
+	} else {
+		mybug(-1, ("URTF_OUT "));
+	}
+	if(bmRequestType_raw == URTF_STANDARD) mybug(-1, ("URTF_STANDARD "));
+	//if(bmRequestType_raw == URTF_DEVICE) mybug(-1, ("URTF_DEVICE "));
+	mybug(-1, (")\n"));
+
+	if( (bmRequestType_raw == URTF_STANDARD) ) {
+		mybug_unit(-1, ("bRequest        "));
+		if(bRequest == USR_GET_STATUS) mybug(-1, ("USR_GET_STATUS\n"));
+		if(bRequest == USR_CLEAR_FEATURE) mybug(-1, ("USR_CLEAR_FEATURE\n"));
+		if(bRequest == USR_SET_FEATURE) mybug(-1, ("USR_SET_FEATURE\n"));
+		if(bRequest == USR_SET_ADDRESS) mybug(-1, ("USR_SET_ADDRESS\n"));
+		if(bRequest == USR_GET_DESCRIPTOR) mybug(-1, ("USR_GET_DESCRIPTOR\n"));
+		if(bRequest == USR_SET_DESCRIPTOR) mybug(-1, ("USR_SET_DESCRIPTOR\n"));
+		if(bRequest == USR_GET_CONFIGURATION) mybug(-1, ("USR_GET_CONFIGURATION\n"));
+		if(bRequest == USR_SET_CONFIGURATION) mybug(-1, ("USR_SET_CONFIGURATION\n"));
+		if(bRequest == USR_GET_INTERFACE) mybug(-1, ("USR_GET_INTERFACE\n"));
+		if(bRequest == USR_SET_INTERFACE) mybug(-1, ("USR_SET_INTERFACE\n"));
+		if(bRequest == USR_SYNCH_FRAME) mybug(-1, ("USR_SYNCH_FRAME\n"));
+	}
+
+    mybug_unit(-1, ("ioreq->iouh_SetupData.bmRequestType %x\n", ioreq->iouh_SetupData.bmRequestType));
+    mybug_unit(-1, ("ioreq->iouh_SetupData.bRequest      %x\n", ioreq->iouh_SetupData.bRequest));
+    mybug_unit(-1, ("ioreq->iouh_SetupData.wValue        %x\n", ioreq->iouh_SetupData.wValue));
+    mybug_unit(-1, ("ioreq->iouh_SetupData.wIndex        %x\n", ioreq->iouh_SetupData.wIndex));
+    mybug_unit(-1, ("ioreq->iouh_SetupData.wLength       %x\n", ioreq->iouh_SetupData.wLength));
+
     switch(ioreq->iouh_SetupData.bmRequestType) {
 
         case (URTF_OUT|URTF_STANDARD|URTF_DEVICE):
-            mybug_unit(-1, ("Filtering out (URTF_OUT|URTF_STANDARD|URTF_DEVICE)\n"));
-            mybug_unit(-1, ("ioreq->iouh_SetupData.bmRequestType %x\n", ioreq->iouh_SetupData.bRequest));
+            mybug_unit(-1, ("    Maybe filtering out\n"));
 
             switch(ioreq->iouh_SetupData.bRequest) {
 
@@ -315,19 +394,73 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
                     mybug_unit(-1, (" - SET_ADDRESS\n"));
                     mybug_unit(-1, ("Filtering out SET_ADDRESS\n\n"));
                     ioreq->iouh_Actual = ioreq->iouh_Length;
+
+    				/* Set error codes */
+    				ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR & 0xff;
+
+    				/* Terminate the iorequest */
+    				ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+    				ReplyMsg(&ioreq->iouh_Req.io_Message);
+
+					unit->ctrlxfer_pending = FALSE;
+
                     return UHIOERR_NO_ERROR;
                 break;
             }
+            mybug_unit(-1, ("    NOT filtered\n"));
         break;
     }
 
-    mybug_unit(0, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
+    mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
 
-    LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout);
+    rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout);
 
-    mybug_unit(0, ("Done!\n\n"));
+    if(rc<0) {
+    	switch(rc) {
+        	case LIBUSB_ERROR_TIMEOUT:
+            	mybug_unit(-1, ("LIBUSB_TRANSFER_TIMED_OUT\n"));
+            	err = UHIOERR_TIMEOUT;
+        	break;
+
+        	case LIBUSB_ERROR_PIPE:
+            	mybug_unit(-1, ("LIBUSB_ERROR_PIPE\n"));
+            	err = UHIOERR_STALL;
+        	break;
+
+        	case LIBUSB_ERROR_NO_DEVICE:
+            	mybug_unit(-1, ("LIBUSB_TRANSFER_NO_DEVICE\n"));
+            	err = UHIOERR_USBOFFLINE;
+        	break;
+
+        	case LIBUSB_ERROR_BUSY:
+            	mybug_unit(-1, ("LIBUSB_ERROR_BUSY\n"));
+            	err = UHIOERR_STALL;
+        	break;
+
+        	case LIBUSB_ERROR_INVALID_PARAM:
+            	mybug_unit(-1, ("LIBUSB_ERROR_INVALID_PARAM\n"));
+            	err = UHIOERR_STALL;
+        	break;
+    	}
+	} else {
+		mybug_unit(-1, ("LIBUSB_TRANSFER_COMPLETED\n"));
+		ioreq->iouh_Actual = rc;
+        err = UHIOERR_NO_ERROR;
+	}
+
+    /* Set error codes */
+    ioreq->iouh_Req.io_Error = err & 0xff;
+
+    /* Terminate the iorequest */
+    ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+    ReplyMsg(&ioreq->iouh_Req.io_Message);
+
+	unit->ctrlxfer_pending = FALSE;
+
+    mybug_unit(-1, ("Done!\n\n"));
     return UHIOERR_NO_ERROR;   
 }
+
 
 int do_libusb_intr_transfer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;

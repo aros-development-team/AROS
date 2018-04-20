@@ -63,29 +63,50 @@ static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
                 while(VUSBHCIBase->handler_task_run) {
                     //mybug(-1,("[handler_task] Ping...\n"));
 
-                    ObtainSemaphore(&unit->intrxfer_queue_lock); {
-                        ForeachNode(&unit->intrxfer_queue, ioreq) {
-                            /* Now the iorequest lives only on our pointer */
-                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                            do_libusb_bulk_transfer(ioreq);
-                        }
-                    } ReleaseSemaphore(&unit->intrxfer_queue_lock);
+                    if(!unit->ctrlxfer_pending) {
+                        ObtainSemaphore(&unit->ctrlxfer_queue_lock); {
+                            ForeachNode(&unit->ctrlxfer_queue, ioreq) {
+                                /* Now the iorequest lives only on our pointer */
+                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                mybug(-1,("[handler_task] Control transfer caught...\n"));
+                                unit->ctrlxfer_pending = TRUE;
+                                do_libusb_ctrl_transfer(ioreq);
+                            }
+                        } ReleaseSemaphore(&unit->ctrlxfer_queue_lock);
+                    }
 
-                    ObtainSemaphore(&unit->bulkxfer_queue_lock); {
-                        ForeachNode(&unit->bulkxfer_queue, ioreq) {
-                            /* Now the iorequest lives only on our pointer */
-                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                            do_libusb_bulk_transfer(ioreq);
-                        }
-                    } ReleaseSemaphore(&unit->bulkxfer_queue_lock);
+                    if(!unit->intrxfer_pending) {
+                        ObtainSemaphore(&unit->intrxfer_queue_lock); {
+                            ForeachNode(&unit->intrxfer_queue, ioreq) {
+                                /* Now the iorequest lives only on our pointer */
+                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                unit->intrxfer_pending = TRUE;
+                                do_libusb_intr_transfer(ioreq);
+                            }
+                        } ReleaseSemaphore(&unit->intrxfer_queue_lock);
+                    }
 
-                    ObtainSemaphore(&unit->isocxfer_queue_lock); {
-                        ForeachNode(&unit->isocxfer_queue, ioreq) {
-                            /* Now the iorequest lives only on our pointer */
-                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                            do_libusb_bulk_transfer(ioreq);
-                        }
-                    } ReleaseSemaphore(&unit->isocxfer_queue_lock);
+                    if(!unit->bulkxfer_pending) {
+                        ObtainSemaphore(&unit->bulkxfer_queue_lock); {
+                            ForeachNode(&unit->bulkxfer_queue, ioreq) {
+                                /* Now the iorequest lives only on our pointer */
+                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                unit->bulkxfer_pending = TRUE;
+                                do_libusb_bulk_transfer(ioreq);
+                            }
+                        } ReleaseSemaphore(&unit->bulkxfer_queue_lock);
+                    }
+
+                    if(!unit->isocxfer_pending) {
+                        ObtainSemaphore(&unit->isocxfer_queue_lock); {
+                            ForeachNode(&unit->isocxfer_queue, ioreq) {
+                                /* Now the iorequest lives only on our pointer */
+                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                unit->isocxfer_pending = TRUE;
+                                do_libusb_isoc_transfer(ioreq);
+                            }
+                        } ReleaseSemaphore(&unit->isocxfer_queue_lock);
+                    }
 
                     //Forbid();
                     call_libusb_event_handler();
@@ -136,7 +157,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
                                               TASKTAG_PC, handler_task,
                                               TASKTAG_ARG1, FindTask(NULL),
                                               TASKTAG_ARG2, VUSBHCIBase,
-                                              TASKTAG_PRI, 25,
+                                              TASKTAG_PRI, 5,
                                               TAG_END);
     Wait(SIGF_CHILD);
 
@@ -405,6 +426,11 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
     } else {
         unit->state = UHSF_SUSPENDED;
         unit->allocated = FALSE;
+
+        unit->ctrlxfer_pending = FALSE;
+        unit->intrxfer_pending = FALSE;
+        unit->bulkxfer_pending = FALSE;
+        unit->isocxfer_pending = FALSE;
 
         NEWLIST(&unit->ctrlxfer_queue);
         NEWLIST(&unit->intrxfer_queue);

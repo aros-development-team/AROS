@@ -35,6 +35,11 @@ struct VUSBHCIUnit {
     ULONG                        state;
     BOOL                         allocated;
 
+    BOOL                         ctrlxfer_pending;
+    BOOL                         intrxfer_pending;
+    BOOL                         bulkxfer_pending;
+    BOOL                         isocxfer_pending;
+
     struct SignalSemaphore       ctrlxfer_queue_lock;
     struct SignalSemaphore       intrxfer_queue_lock;
     struct SignalSemaphore       bulkxfer_queue_lock;
