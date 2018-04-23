@@ -21,10 +21,10 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
     GetCPUInfo(tags);
 
     if (icache > 0)
-	printf("L1 I-CACHE:\t%ld bytes\n", icache);
+	printf("L1 I-CACHE:\t%d bytes\n", icache);
  
     if (dcache > 0)
-	printf("L1 D-CACHE:\t%ld bytes\n", dcache);
+	printf("L1 D-CACHE:\t%d bytes\n", dcache);
 }
 
 #endif
