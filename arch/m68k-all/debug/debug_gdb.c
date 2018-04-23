@@ -11,7 +11,6 @@
 #include <proto/exec.h>
 
 #ifdef AROS_MODULES_DEBUG
-typedef ULONG size_t;
 /* 'malloc' and 'free' are needed for GDB's strcmp(), which is
  * used by the 'loadseg' method of the .gdbinit of AROS
  */
