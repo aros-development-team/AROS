@@ -75,7 +75,7 @@
 #endif
 
 #ifndef AROS_32BIT_TYPE
-#define AROS_32BIT_TYPE     long
+#define AROS_32BIT_TYPE     int
 #endif
 
 #ifndef AROS_16BIT_TYPE
