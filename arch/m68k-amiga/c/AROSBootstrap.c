@@ -1471,7 +1471,7 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
                 ROM_Loaded = TRUE;
 
                 scanMemLists();
-                LoadResidents(MKBADDR(&args[ARG_MODULES]));
+                LoadResidents(MKBADDR((APTR)&args[ARG_MODULES]));
                 BootS = CreateBootStruct(ROMSegList, BADDR(args[ARG_CMD]));
 
 #if DEBUG
