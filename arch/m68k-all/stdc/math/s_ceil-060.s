@@ -1,11 +1,13 @@
+#    Copyright © 2018, The AROS Development Team. All rights reserved.
+#    $Id$
 #include "aros/m68k/asm.h"
 
 	.text
 	.balign 4
-	.globl	AROS_CDEFNAME(ceil060)
-	_FUNCTION(AROS_CDEFNAME(ceil060))
+	.globl	AROS_SLIB_ENTRY(ceil060, STDC, 156)
+	_FUNCTION(AROS_SLIB_ENTRY(ceil060, STDC, 156))
 	
-AROS_CDEFNAME(ceil060):
+AROS_SLIB_ENTRY(ceil060, STDC, 156):
 	fmove.s	%d0,%fp0
 	fmove.x	%fp0,%fp1
 	fintrz.x	%fp0
