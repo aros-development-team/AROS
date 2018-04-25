@@ -14,6 +14,7 @@
 #ifdef __AROS_EXEC_LIBRARY__
 
 struct ucontext;
+typedef struct ucontext regs_t;
 
 #else
 
@@ -38,6 +39,8 @@ struct ucontext;
 #define __KERNEL_STRICT_NAMES
 #endif
 #include <bits/sigcontext.h>
+
+typedef ucontext_t regs_t;
 
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
@@ -213,7 +216,6 @@ struct ucontext;
 
 #define EXCEPTIONS_COUNT 17
 
-typedef struct ucontext regs_t;
 
 /* Use this structure to save/restore registers */
 struct AROSCPUContext
