@@ -6,7 +6,9 @@
     Lang: English
 */
 
+#define DEBUG 1
 #include <aros/debug.h>
+
 #include <hardware/ata.h>
 #include <hidd/ata.h>
 #include <hidd/pci.h>
@@ -116,9 +118,9 @@ static void ata_RemoveGayleInterrupt(struct ATA_BusData *bus)
 
 OOP_Object *GAYLEATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    D(bug("[ATA:Gayle] %s()\n", __func__));
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
-    D(bug("[ATA:Gayle] %s: %p\n", __func__, o));
+    D(bug("[ATA:Gayle] %s: %p\n", __func__, o);)
     if (o)
     {
         struct ataBase *base = cl->UserData;
@@ -142,7 +144,7 @@ void GAYLEATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     //struct ataBase *base = cl->UserData;
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[ATA:Gayle] %s()\n", __func__));
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
 
     ata_RemoveGayleInterrupt(data);
     FreeVec(data->bus);
@@ -156,7 +158,7 @@ void GAYLEATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     //struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    D(bug("[ATA:Gayle] %s()\n", __func__));
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
 
     Hidd_ATABus_Switch(msg->attrID, idx)
     {
@@ -180,7 +182,7 @@ void GAYLEATA__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct TagItem *tstate = msg->attrList;
     struct TagItem *tag;
 
-    D(bug("[ATA:Gayle] %s()\n", __func__));
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
 
     while ((tag = NextTagItem(&tstate)))
     {
@@ -204,7 +206,7 @@ APTR GAYLEATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Ms
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     struct pio_data *pio = (struct pio_data *)OOP_DoSuperMethod(cl, o, msg);
     
-    D(bug("[ATA:Gayle] %s()\n", __func__));
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
 
     if (pio)
     {

@@ -7,11 +7,11 @@
 */
 
 #define DEBUG 1
+#include <aros/debug.h>
 
 #define __OOP_NOMETHODBASES__
 
 #include <aros/asmcall.h>
-#include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <asm/io.h>
 #include <exec/lists.h>
@@ -82,13 +82,41 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
     Enable();
     CloseLibrary((struct Library*)gfx);
 
-    D(bug("[ATA] Gayle ID=%02x. Possible IDE port=%08x.\n", id, (ULONG)port & ~3));
+    // Detect FastATA...
+    if (ddata->gayleirqbase)
+    {
+        altport = (UBYTE*)GAYLE_BASE_FASTATA;
+        Disable();
+        status1 = altport[GAYLE_BASE_FASTATA_PIO0 + GAYLE_FASTATA_PIO_STAT];
+        status2 = altport[GAYLE_BASE_FASTATA_PIO3 + GAYLE_FASTATA_STAT];
+        Enable();
+        D(bug("[ATA:Gayle] Status=%02x,%02x\n", status1, status2);)
+        if ((status1 & 0xfd) == (status2 & 0xfd))
+        {
+            port = (UBYTE*)altport;
+            ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_FASTATA;
+        }
+    }
+
     if (port == NULL)
+    {
+        D(bug("[ATA:Gayle] No Gayle ATA Detected (ID=%02x)\n", id);)
         return NULL;
+    }
 
     ddata->port = (UBYTE*)port;
-    altport = port + 0x1010;
+    if ((ddata->port == (UBYTE*)GAYLE_BASE_1200) || (ddata->port == (UBYTE*)GAYLE_BASE_4000))
+    {
+        D(bug("[ATA:Gayle] Possible Gayle IDE port @ %08x (ID=%02x)\n", (ULONG)port & ~3, id);)
+        altport = port + 0x1010;
+    }
+    else
+    {
+        D(bug("[ATA:Gayle] Possible FastATA IDE port @ %08x (ID=%02x)\n", (ULONG)port & ~3, id);)
+        altport = NULL;
+    }
     ddata->altport = (UBYTE*)altport;
+
     Disable();
     port[ata_DevHead * 4] = ATAF_ERROR;
     /* If nothing connected, we get back what we wrote, ATAF_ERROR set */
@@ -97,12 +125,13 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
     status2 = port[ata_Status * 4];
     port[ata_DevHead * 4] = 0;
     Enable();
-    D(bug("[ATA] Status=%02x,%02x\n", status1, status2));
+
+    D(bug("[ATA:Gayle] Status=%02x,%02x\n", status1, status2);)
     // BUSY and DRDY both active or ERROR/DATAREQ = no drive(s) = do not install driver
     if (   (((status1 | status2) & (ATAF_BUSY | ATAF_DRDY)) == (ATAF_BUSY | ATAF_DRDY))
         || ((status1 | status2) & (ATAF_ERROR | ATAF_DATAREQ)))
     {
-        D(bug("[ATA] Drives not detected\n"));
+        D(bug("[ATA:Gayle] No Devices detected\n");)
         return NULL;
     }
     if (ddata->doubler) {
@@ -127,7 +156,7 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
         } else {
             ddata->doubler = 0;
         }
-        D(bug("[ATA] IDE doubler check (%02X, %02X) = %d\n", v1, v2, ddata->doubler));
+        D(bug("[ATA:Gayle] IDE doubler check (%02X, %02X) = %d\n", v1, v2, ddata->doubler);)
         ddata->altport = NULL;
     }
     /* we may have connected drives */
@@ -174,8 +203,8 @@ static int ata_Scan(struct ataBase *base)
             bus = HW_AddDriver(ata, busClass, attrs);
             if (bus)
                 return TRUE;
-            D(bug("[GAYLE-ATA] Failed to create object for device IO: %x:%x IRQ: %x\n",
-                probedbus->port, probedbus->altport, probedbus->gayleirqbase));
+            D(bug("[ATA:Gayle] Failed to create object for device IO: %x:%x IRQ: %x\n",
+                probedbus->port, probedbus->altport, probedbus->gayleirqbase);)
 
             /*
              * Free the structure only upon object creation failure!
