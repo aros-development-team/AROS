@@ -35,6 +35,9 @@ STDC_M68K_ASMFILES += \
     math/s_signbit-060 \
     math/s_trunc-060
 
+STDC_M68K_FILES += \
+    mathpatch
+
 %build_archspecific \
   mainmmake=compiler-stdc \
   maindir=compiler/stdc \
