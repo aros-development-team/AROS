@@ -6,7 +6,9 @@
     Lang: English
 */
 
+#define DEBUG 1
 #include <aros/debug.h>
+
 #include <hardware/ata.h>
 #include <hidd/ata.h>
 #include <hidd/pci.h>
@@ -25,7 +27,7 @@ AROS_INTH1(IDE_Handler_FASTATA, struct ATA_BusData *, bus)
 {
     AROS_INTFUNC_INIT
 
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
 
     return FALSE;
 
@@ -34,19 +36,19 @@ AROS_INTH1(IDE_Handler_FASTATA, struct ATA_BusData *, bus)
 
 static BOOL ata_CreateFastATAInterrupt(struct ATA_BusData *bus, UBYTE num)
 {
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
     return FALSE;
 }
 static void ata_RemoveFastATAInterrupt(struct ATA_BusData *bus)
 {
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
 }
 
 OOP_Object *FASTATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
-    D(bug("[ATA:FastATA] %s: %p\n", __func__, o));
+    D(bug("[ATA:FastATA] %s: %p\n", __func__, o);)
     if (o)
     {
         struct ataBase *base = cl->UserData;
@@ -66,7 +68,7 @@ void FASTATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
 
     ata_RemoveFastATAInterrupt(data);
     FreeVec(data->bus);
@@ -79,7 +81,7 @@ void FASTATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct ataBase *base = cl->UserData;
     ULONG idx;
 
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
 
     Hidd_ATABus_Switch(msg->attrID, idx)
     {
@@ -103,7 +105,7 @@ void FASTATA__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct TagItem *tstate = msg->attrList;
     struct TagItem *tag;
 
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
 
     while ((tag = NextTagItem(&tstate)))
     {
@@ -127,7 +129,7 @@ APTR FASTATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     struct pio_data *pio = (struct pio_data *)OOP_DoSuperMethod(cl, o, msg);
 
-    D(bug("[ATA:FastATA] %s()\n", __func__));
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
 
     if (pio)
     {

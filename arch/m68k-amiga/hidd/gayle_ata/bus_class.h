@@ -1,12 +1,15 @@
 
+#ifndef BUS_CLASS_H
+#define BUS_CLASS_H
+
 struct ata_ProbedBus
 {
     struct Node atapb_Node;
     UBYTE *port;
     UBYTE *altport;
     UBYTE *gayleirqbase;
-    BOOL a4000;
     UBYTE doubler;
+    BOOL a4000;
 };
 
 struct ATA_BusData
@@ -44,3 +47,5 @@ struct ataBase
 #define HWBase                (base->HWMethodBase)
 #define OOPBase               (base->cs_OOPBase)
 #define UtilityBase           (base->cs_UtilityBase)
+
+#endif /* !BUS_CLASS_H */
