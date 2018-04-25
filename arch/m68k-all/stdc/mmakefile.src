@@ -3,13 +3,43 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0
+USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0 -mc68020
+
+STDC_M68K_FILES := \
+    fenv
+
+STDC_M68K_ASMFILES := \
+    longjmp \
+    setjmp
+
+# Add '060 runtime-replacement math functions ..
+STDC_M68K_ASMFILES += \
+    math/e_hypot-060 \
+    math/e_sqrt-060 \
+    math/s_ceil-060 \
+    math/s_copysign-060 \
+    math/s_fabs-060 \
+    math/s_fdim-060 \
+    math/s_floor-060 \
+    math/s_fma-060 \
+    math/s_fmax-060 \
+    math/s_fmin-060 \
+    math/s_fpclassify-060 \
+    math/s_isfinite-060 \
+    math/s_isinf-060 \
+    math/s_isnan-060 \
+    math/s_isnormal-060 \
+    math/s_lround-060 \
+    math/s_nearbyint-060 \
+    math/s_round-060 \
+    math/s_signbit-060 \
+    math/s_trunc-060
 
 %build_archspecific \
   mainmmake=compiler-stdc \
   maindir=compiler/stdc \
   arch=m68k \
-  files="fenv" asmfiles="longjmp setjmp"
+  files="$(STDC_M68K_FILES)" asmfiles="$(STDC_M68K_ASMFILES)"
 
 #MM- compiler-stdc-m68k : includes-asm_h-m68k
 
