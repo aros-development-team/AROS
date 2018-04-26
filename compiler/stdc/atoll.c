@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
-    C99 function atol().
+    C99 function atoll().
 */
 
 #include <aros/system.h>

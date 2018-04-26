@@ -329,8 +329,8 @@ STDC_SCABS_MATH += math/s_cabsl
 STDC_WCABS_MATH += math/w_cabsl
 else
 #
-# We either dont know what long double format is required
-# or the platform doesnt support it, so alias the double versions
+# We either don't know what long double format is required
+# or the platform doesn't support it, so alias the double versions
 # of necessary functions.
 # These architectures should have
 # LDBL_MANT_DIG == DBL_MANT_DIG (53) in float.h
@@ -371,8 +371,8 @@ STDC := \
     free \
     getc \
     gmtime gmtime_r \
-	imaxabs \
-	imaxdiv \
+    imaxabs \
+    imaxdiv \
     localeconv \
     localtime localtime_r \
     longjmp \
