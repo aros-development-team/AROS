@@ -467,9 +467,9 @@ struct DiskObject *__GetDefaultIconFromName_WB
 {
     return GetIconTags
     (
-        NULL, 
-        ICONGETA_GetDefaultName, (IPTR) name, 
-        TAG_END,
+        NULL,
+        ICONGETA_GetDefaultName, (IPTR)name,
+        TAG_END
     );
 }
 
@@ -481,7 +481,7 @@ struct DiskObject *__GetDefaultIconFromType_WB
     return GetIconTags
     (
         NULL,
-        ICONGETA_GetDefaultType,        type,
-        TAG_END,
+        ICONGETA_GetDefaultType, type,
+        TAG_END
     );
 }
