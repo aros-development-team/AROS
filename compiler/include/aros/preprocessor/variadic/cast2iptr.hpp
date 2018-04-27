@@ -4,6 +4,9 @@
 # undef BOOST_PP_VARIADICS
 # define  BOOST_PP_VARIADICS 1
 #
+# define AROS_PP_VARIADIC_SIZE_OVERRIDES_BOOST 1
+# include <aros/preprocessor/variadic/size.hpp>
+#
 # include <aros/preprocessor/array/cast2iptr.hpp>
 # include <boost/preprocessor/tuple/enum.hpp>
 # include <boost/preprocessor/if.hpp>
