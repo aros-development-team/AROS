@@ -469,6 +469,7 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
       case 'a':
       case 'A':
       case 'f':
+      case 'F':
       case 'e':
       case 'E':
       case 'g':
@@ -504,9 +505,12 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
 	  if(preci==ULONG_MAX) /* old default */
 	    preci=6; /* new default */
 
-	  if(fparg.dbl<0.0)
+	  if(((subtype!='L') && (fparg.dbl<0.0)) || ((subtype=='L') && (fparg.ldbl<0.0)))
 	  { sign='-';
-	    fparg.dbl=-fparg.dbl;
+            if (subtype=='L')
+	      fparg.ldbl=-fparg.ldbl;
+            else
+	      fparg.dbl=-fparg.dbl;
 	  }else
 	  { if(flags&SIGNFLAG)
 	      sign='+';
@@ -515,27 +519,46 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
 	  }
 
 	  ex1=0;
-	  if(fparg.dbl!=0.0)
-	  { ex1=log10(fparg.dbl);
-	    if(fparg.dbl<1.0)
-	      fparg.dbl=fparg.dbl*pow(10,- --ex1); /* Caution: (int)log10(.5)!=-1 */
-	    else
-	      fparg.dbl=fparg.dbl/pow(10,ex1);
-	    if(fparg.dbl<1.0) /* adjust if we are too low (log10(.1)=-.999999999) */
-	    { fparg.dbl*=10.0; /* luckily this cannot happen with FLT_MAX and FLT_MIN */
-	      ex1--; } /* The case too high (log(10.)=.999999999) is done later */
-	  }
+          if (subtype!='L')
+          { if(fparg.dbl!=0.0)
+	    { ex1=log10(fparg.dbl);
+	      if(fparg.dbl<1.0)
+	        fparg.dbl=fparg.dbl*pow(10,- --ex1); /* Caution: (int)log10(.5)!=-1 */
+	      else
+	        fparg.dbl=fparg.dbl/pow(10,ex1);
+	      if(fparg.dbl<1.0) /* adjust if we are too low (log10(.1)=-.999999999) */
+	      { fparg.dbl*=10.0; /* luckily this cannot happen with FLT_MAX and FLT_MIN */
+ 	        ex1--; } /* The case too high (log(10.)=.999999999) is done later */
+	    }
+          }else
+          { if(fparg.ldbl!=0.0)
+	    { ex1=log10l(fparg.ldbl);
+	      if(fparg.ldbl<1.0)
+	        fparg.ldbl=fparg.ldbl*powl(10,- --ex1);
+	      else
+	        fparg.ldbl=fparg.ldbl/powl(10,ex1);
+	      if(fparg.ldbl<1.0)
+	      { fparg.ldbl*=10.0;
+ 	        ex1--; }
+	    }
+          }
 
 	  ex2=preci;
-	  if(type=='f')
+	  if(type=='f' || type=='F')
 	    ex2+=ex1;
 	  if(tolower(type)=='g')
 	    ex2--;
-	  fparg.dbl+=.5/pow(10,ex2<MINFLOATSIZE?ex2:MINFLOATSIZE); /* Round up */
-
-	  if(fparg.dbl>=10.0) /* Adjusts log10(10.)=.999999999 too */
-	  { fparg.dbl/=10.0;
-	    ex1++; }
+          if (subtype!='L')
+          { fparg.dbl+=.5/pow(10,ex2<MINFLOATSIZE?ex2:MINFLOATSIZE); /* Round up */
+            if(fparg.dbl>=10.0) /* Adjusts log10(10.)=.999999999 too */
+	    { fparg.dbl/=10.0;
+	      ex1++; }
+          }else
+          { fparg.ldbl+=.5/powl(10,ex2<MINFLOATSIZE?ex2:MINFLOATSIZE); /* Round up */
+	    if(fparg.ldbl>=10.0) /* Adjusts log10(10.)=.999999999 too */
+	    { fparg.ldbl/=10.0;
+	      ex1++; }
+          }
 
 	  if(tolower(type)=='g') /* This changes to one of the other types */
 	  { if(ex1<(signed long)preci&&ex1>=-4)
@@ -554,14 +577,19 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
 
 	  dnum=0;
 	  while(dnum<dreq&&dnum<MINFLOATSIZE) /* Calculate all decimal places needed */
-	  { buffer[dnum++]=(char)fparg.dbl+'0';
-	    fparg.dbl=(fparg.dbl-(double)(char)fparg.dbl)*10.0; }
-
+	  { if (subtype!='L')
+            { buffer[dnum++]=(char)fparg.dbl+'0';
+	      fparg.dbl=(fparg.dbl-(double)(char)fparg.dbl)*10.0;
+            }else
+            { buffer[dnum++]=(char)fparg.ldbl+'0';
+	      fparg.ldbl=(fparg.ldbl-(long double)(char)fparg.ldbl)*10.0;
+            }
+          }
 	  if(killzeros) /* Kill trailing zeros if possible */
 	    while(preci&&(dreq-->dnum||buffer[dreq]=='0'))
 	      preci--;
 
-	  if(type=='f')/* Calculate actual size of string (without sign) */
+	  if(tolower(type)=='f')/* Calculate actual size of string (without sign) */
 	  { size=preci+1; /* numbers after decimal point + 1 before */
 	    if(ex1>0)
 	      size+=ex1; /* numbers >= 10 */
@@ -589,7 +617,19 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
 	    OUT(sign);
 
 	  dreq=0;
-	  if(type=='f')
+	  if(tolower(type)=='a')
+	  { // TODO: Implement hexfloat literals
+            OUT('0');
+	    OUT('x');
+	    OUT('0');
+	    OUT('.');
+	    OUT('0');
+            if (type=='A')
+	      OUT('P');
+            else
+	      OUT('p');
+	    OUT('0');
+          }else if(tolower(type)=='f')
 	  { if(ex1<0)
 	      OUT('0');
 	    else
