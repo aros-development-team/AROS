@@ -1,33 +1,25 @@
 # ifndef AROS_PREPROCESSOR_VARIADIC_CAST2IPTR_HPP
 # define AROS_PREPROCESSOR_VARIADIC_CAST2IPTR_HPP
 # 
-# include <boost/preprocessor/repetition/for.hpp>
-# include <boost/preprocessor/logical/compl.hpp>
-# include <boost/preprocessor/punctuation/comma_if.hpp>
-# include <aros/preprocessor/facilities/is_empty.hpp>
-# include <aros/preprocessor/variadic/first.hpp>
-# include <aros/preprocessor/variadic/rest.hpp>
+# undef BOOST_PP_VARIADICS
+# define  BOOST_PP_VARIADICS 1
 #
-# define AROS_PP_VARIADIC_CAST2IPTR_O(_, tuple) \
-      (AROS_PP_VARIADIC_REST tuple)
+# include <aros/preprocessor/array/cast2iptr.hpp>
+# include <boost/preprocessor/tuple/enum.hpp>
+# include <boost/preprocessor/if.hpp>
+# include <boost/preprocessor/facilities/is_empty.hpp>
 #
-# define AROS_PP_VARIADIC_CAST2IPTR_M(_, tuple)              \
-      (IPTR)(AROS_PP_VARIADIC_FIRST tuple)BOOST_PP_COMMA_IF( \
-          AROS_PP_VARIADIC_CAST2IPTR_P(,                     \
-              (AROS_PP_VARIADIC_REST tuple)                  \
-          )                                                  \
-      )                                                      \
+# include <boost/preprocessor/variadic/to_array.hpp>
+#
+# define AROS_PP_VARIADIC_CAST2IPTR(...)                                          \
+      BOOST_PP_TUPLE_ENUM(                                                        \
+          BOOST_PP_IF(                                                            \
+              BOOST_PP_COMPL(BOOST_PP_IS_EMPTY(__VA_ARGS__)),                     \
+              (AROS_PP_ARRAY_CAST2IPTR(BOOST_PP_VARIADIC_TO_ARRAY(__VA_ARGS__))), \
+              ()                                                                  \
+          )                                                                       \
+      )                                                                           \
       /**/
-#
-# define AROS_PP_VARIADIC_CAST2IPTR_P(_, tuple) \
-      BOOST_PP_COMPL(AROS_PP_IS_EMPTY(AROS_PP_VARIADIC_FIRST tuple))
-#
-# define AROS_PP_VARIADIC_CAST2IPTR(...)                              \
-      BOOST_PP_FOR(                                                   \
-          (__VA_ARGS__), AROS_PP_VARIADIC_CAST2IPTR_P,                \
-          AROS_PP_VARIADIC_CAST2IPTR_O, AROS_PP_VARIADIC_CAST2IPTR_M  \
-      )                                                               \
-      /**/
-#
-# endif
+#     
+#endif
 

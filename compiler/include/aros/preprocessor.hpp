@@ -3,8 +3,8 @@
 #
 # include <boost/preprocessor.hpp>
 #
+# include <aros/preprocessor/array.hpp>
 # include <aros/preprocessor/variadic.hpp>
-# include <aros/preprocessor/facilities.hpp>
 #
 # endif
 

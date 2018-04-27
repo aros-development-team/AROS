@@ -5,8 +5,8 @@ include $(TOP)/$(CURDIR)/geninc.cfg
 
 INCSUBDIRS :=	aros				\
 		aros/preprocessor		\
-		aros/preprocessor/facilities	\
 		aros/preprocessor/variadic	\
+		aros/preprocessor/array		\
 		aros/types			\
 		asm				\
 		bluetooth			\
