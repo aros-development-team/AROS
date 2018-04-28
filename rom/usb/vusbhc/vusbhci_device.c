@@ -32,102 +32,101 @@
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void);
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit300(void);
 
-static void handler_task(struct Task *parent, struct VUSBHCIBase *VUSBHCIBase) {
-    Signal(parent, SIGF_CHILD);
+static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
+    mybug_unit(-1,("Starting %s handler task\n", unit->name));
+    mybug_unit(-1, ("Sending signal number %ld\n", unit->handler_task_sig_run));
+    Signal(parent, (1L<<unit->handler_task_sig_run) );
 
-    mybug(-1,("[handler_task] Starting\n"));
+    ULONG check_handler = 0;
 
-    const char animate[4]={'/','-','\\','|'};
-    static ULONG i;
-
-    struct VUSBHCIUnit *unit = VUSBHCIBase->usbunit200;
-
-    struct timerequest *tr = NULL;
-    struct MsgPort *mp = NULL;
-
-    struct IOUsbHWReq *ioreq;
-
-    mp = CreateMsgPort();
-    if (mp) {
-        tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
-        if (tr) {
-            FreeSignal(mp->mp_SigBit);
-            if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)tr, 0)) {
+    unit->mp = CreateMsgPort();
+    if (unit->mp) {
+        unit->tr = (struct timerequest *)CreateIORequest(unit->mp, sizeof(struct timerequest));
+        if (unit->tr) {
+            FreeSignal(unit->mp->mp_SigBit);
+            if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)unit->tr, 0)) {
                 /* Allocate a signal within this task context */
-                tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
-                tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
+                unit->tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = SIGB_SINGLE;
+                unit->tr->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
                 /* Specify the request */
-                tr->tr_node.io_Command = TR_ADDREQUEST;
+                unit->tr->tr_node.io_Command = TR_ADDREQUEST;
 
                 /* FIXME: Use signals */
-                while(VUSBHCIBase->handler_task_run) {
+                while(1) {
                     //mybug(-1,("[handler_task] Ping...\n"));
 
                     if(!unit->ctrlxfer_pending) {
                         ObtainSemaphore(&unit->ctrlxfer_queue_lock); {
-                            ForeachNode(&unit->ctrlxfer_queue, ioreq) {
+                            ForeachNode(&unit->ctrlxfer_queue, unit->ioreq) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
                                 mybug(-1,("[handler_task] Control transfer caught...\n"));
                                 unit->ctrlxfer_pending = TRUE;
-                                do_libusb_ctrl_transfer(ioreq);
+                                do_libusb_ctrl_transfer(unit->ioreq);
                             }
                         } ReleaseSemaphore(&unit->ctrlxfer_queue_lock);
                     }
 
                     if(!unit->intrxfer_pending) {
                         ObtainSemaphore(&unit->intrxfer_queue_lock); {
-                            ForeachNode(&unit->intrxfer_queue, ioreq) {
+                            ForeachNode(&unit->intrxfer_queue, unit->ioreq) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
                                 unit->intrxfer_pending = TRUE;
-                                do_libusb_intr_transfer(ioreq);
+                                do_libusb_intr_transfer(unit->ioreq);
                             }
                         } ReleaseSemaphore(&unit->intrxfer_queue_lock);
                     }
 
                     if(!unit->bulkxfer_pending) {
                         ObtainSemaphore(&unit->bulkxfer_queue_lock); {
-                            ForeachNode(&unit->bulkxfer_queue, ioreq) {
+                            ForeachNode(&unit->bulkxfer_queue, unit->ioreq) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
                                 unit->bulkxfer_pending = TRUE;
-                                do_libusb_bulk_transfer(ioreq);
+                                do_libusb_bulk_transfer(unit->ioreq);
                             }
                         } ReleaseSemaphore(&unit->bulkxfer_queue_lock);
                     }
 
                     if(!unit->isocxfer_pending) {
                         ObtainSemaphore(&unit->isocxfer_queue_lock); {
-                            ForeachNode(&unit->isocxfer_queue, ioreq) {
+                            ForeachNode(&unit->isocxfer_queue, unit->ioreq) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
                                 unit->isocxfer_pending = TRUE;
-                                do_libusb_isoc_transfer(ioreq);
+                                do_libusb_isoc_transfer(unit->ioreq);
                             }
                         } ReleaseSemaphore(&unit->isocxfer_queue_lock);
                     }
 
                     //Forbid();
-                    call_libusb_event_handler();
+                    if((check_handler==0)|(unit->ctrlxfer_pending|unit->intrxfer_pending|unit->bulkxfer_pending|unit->isocxfer_pending)) {
+                        check_handler = 10;
+                        call_libusb_event_handler();
+                    }
                     //Permit();
 
                     /* Wait */
-                    tr->tr_time.tv_secs = 0;
-                    tr->tr_time.tv_micro = 1000;
-                    DoIO((struct IORequest *)tr);
+                    unit->tr->tr_time.tv_secs = 0;
+                    unit->tr->tr_time.tv_micro = 100000;
+                    DoIO((struct IORequest *)unit->tr);
+
+                    if(check_handler>0) {
+                        check_handler--;
+                    }
                 }
-                CloseDevice((struct IORequest *)tr);
+                CloseDevice((struct IORequest *)unit->tr);
             }
-            DeleteIORequest((struct IORequest *)tr);
-            mp->mp_SigBit = AllocSignal(-1);
+            DeleteIORequest((struct IORequest *)unit->tr);
+            unit->mp->mp_SigBit = AllocSignal(-1);
         }
-        DeleteMsgPort(mp);
+        DeleteMsgPort(unit->mp);
     }
 
-    mybug(-1,("[handler_task] Exiting\n"));
+    mybug(-1,("Exiting %s handler task\n", unit->name));
 
-    Signal(parent, SIGF_CHILD);
+    //Signal(parent, SIGF_CHILD);
 }
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
@@ -138,28 +137,16 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
     }
 
     VUSBHCIBase->usbunit200 = VUSBHCI_AddNewUnit200();
-
     if(VUSBHCIBase->usbunit200 == NULL) {
         mybug(-1, ("[VUSBHCI] Init: Failed to create new USB2.0 unit!\n"));
         return FALSE;
     }
 
     VUSBHCIBase->usbunit300 = VUSBHCI_AddNewUnit300();
-
     if(VUSBHCIBase->usbunit300 == NULL) {
         mybug(-1, ("[VUSBHCI] Init: Failed to create new USB3.0 unit!\n"));
         return FALSE;
     }
-
-    /* Create periodic handler task */
-    VUSBHCIBase->handler_task_run = TRUE;
-    VUSBHCIBase->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task",
-                                              TASKTAG_PC, handler_task,
-                                              TASKTAG_ARG1, FindTask(NULL),
-                                              TASKTAG_ARG2, VUSBHCIBase,
-                                              TASKTAG_PRI, 5,
-                                              TAG_END);
-    Wait(SIGF_CHILD);
 
     return TRUE;
 }
@@ -508,6 +495,25 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void) {
 
         InitSemaphore(&unit->roothub.intrxfer_queue_lock);
 
+        /* Create periodic handler task */
+        if (-1 == (unit->handler_task_sig_run = AllocSignal(-1))) {
+            mybug_unit(-1, ("No signal bits available\n\n"));
+        } else {
+            mybug_unit(-1, ("allocated signal number %ld\n", unit->handler_task_sig_run));
+        }
+
+        unit->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task usb 2.0",
+                                           TASKTAG_PC, handler_task,
+                                           TASKTAG_ARG1, FindTask(NULL),
+                                           TASKTAG_ARG2, unit,
+                                           TASKTAG_PRI, 5,
+                                           TAG_END);
+
+        mybug_unit(-1, ("Waiting for %s handler task\n", unit->name));
+        Wait( (1L<<unit->handler_task_sig_run) );
+        mybug_unit(-1, ("%s handler task responded\n\n", unit->name));
+        //FreeSignal(unit->handler_task_sig_run);
+
         return unit;
     }
 }
@@ -597,7 +603,26 @@ struct VUSBHCIUnit *VUSBHCI_AddNewUnit300(void) {
         InitSemaphore(&unit->isocxfer_queue_lock);
 
         InitSemaphore(&unit->roothub.intrxfer_queue_lock);
-        
+
+        /* Create periodic handler task */
+        if (-1 == (unit->handler_task_sig_run = AllocSignal(-1))) {
+            mybug_unit(-1, ("No signal bits available\n\n"));
+        } else {
+            mybug_unit(-1, ("allocated signal number %ld\n", unit->handler_task_sig_run));
+        }
+
+        unit->handler_task = NewCreateTask(TASKTAG_NAME, "libusb handler task usb 3.0",
+                                           TASKTAG_PC, handler_task,
+                                           TASKTAG_ARG1, FindTask(NULL),
+                                           TASKTAG_ARG2, unit,
+                                           TASKTAG_PRI, 5,
+                                           TAG_END);
+
+        mybug_unit(-1, ("Waiting for %s handler task\n", unit->name));
+        Wait( (1L<<unit->handler_task_sig_run) );
+        mybug_unit(-1, ("%s handler task responded\n\n", unit->name));
+        //FreeSignal(unit->handler_task_sig_run);
+
         return unit;
     }
 }
