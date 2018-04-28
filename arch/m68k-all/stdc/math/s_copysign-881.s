@@ -4,15 +4,15 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(copysign060, STDC, 169)
-	_FUNCTION(AROS_SLIB_ENTRY(copysign060, STDC, 169))
+	.globl	AROS_SLIB_ENTRY(copysign881, STDC, 169)
+	_FUNCTION(AROS_SLIB_ENTRY(copysign881, STDC, 169))
 	
-AROS_SLIB_ENTRY(copysign060, STDC, 169):
+AROS_SLIB_ENTRY(copysign881, STDC, 169):
 	fmove.s	%d0,%fp0
 	fabs.x	%fp0
 	tst.l	%d1
-	bpl	.copysign060done
+	bpl	.copysign881done
 	fneg.x	%fp0
-.copysign060done:
+.copysign881done:
 	fmove.s	%fp0,%d0
 	rts

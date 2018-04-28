@@ -4,10 +4,10 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(hypot060, STDC, 149)
-	_FUNCTION(AROS_SLIB_ENTRY(hypot060, STDC, 149))
+	.globl	AROS_SLIB_ENTRY(hypot881, STDC, 149)
+	_FUNCTION(AROS_SLIB_ENTRY(hypot881, STDC, 149))
 	
-AROS_SLIB_ENTRY(hypot060, STDC, 149):
+AROS_SLIB_ENTRY(hypot881, STDC, 149):
 	fmove.s	%d0,%fp0
 	fmove.s	%d1,%fp1
 	fmul.x	%fp0,%fp0
