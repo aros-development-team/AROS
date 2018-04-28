@@ -31,10 +31,10 @@
 
 #include <aros/cpu.h>
 
-#if defined __i386__
-#   include "i386/_fpmath.h"
-#elif defined __x86_64__
+#if defined __x86_64__
 #   include "x86_64/_fpmath.h"
+#elif defined __i386__
+#   include "i386/_fpmath.h"
 #elif defined __mc68000__
 #   include "m68k/_fpmath.h"
 #elif defined __powerpc__
