@@ -35,6 +35,14 @@ struct VUSBHCIUnit {
     ULONG                        state;
     BOOL                         allocated;
 
+    struct timerequest          *tr;
+    struct MsgPort              *mp;
+
+    struct IOUsbHWReq           *ioreq;
+
+    struct Task                 *handler_task;
+    ULONG                        handler_task_sig_run;
+
     BOOL                         ctrlxfer_pending;
     BOOL                         intrxfer_pending;
     BOOL                         bulkxfer_pending;
@@ -80,9 +88,6 @@ struct VUSBHCIUnit {
 
 struct VUSBHCIBase {
     struct Device                device;
-
-    struct Task                 *handler_task;
-    BOOL                         handler_task_run;
 
     //struct Library              *HostLibBase;
 

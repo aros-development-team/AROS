@@ -81,7 +81,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
 
                             rc = LIBUSBCALL(libusb_get_active_config_descriptor, dev, &config);
                             if(rc == LIBUSB_SUCCESS) {
-                            	bug("\nGot active config descriptor %d...\n\n", i);
+                            	bug("\nGot active config descriptor %d...\n", i);
                             }
 
 							num_interfaces = config->bNumInterfaces;
@@ -117,25 +117,27 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                             
                             LIBUSBCALL(libusb_free_config_descriptor, config);
 
-
                             //speed = LIBUSBCALL(libusb_get_device_speed, dev);
                             switch(speed) {
                                 case LIBUSB_SPEED_LOW:
-                                    unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                                    unit->roothub.portstatus.wPortStatus |=  AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                                    unit->roothub.portstatus.wPortStatus &= ~AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
                                 break;
                                 case LIBUSB_SPEED_FULL:
-                                    unit->roothub.portstatus.wPortStatus &= ~(AROS_WORD2LE(UPSF_PORT_HIGH_SPEED)|AROS_WORD2LE(UPSF_PORT_LOW_SPEED));
+                                    unit->roothub.portstatus.wPortStatus &= ~AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                                    unit->roothub.portstatus.wPortStatus &= ~AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
                                 break;
                                 case LIBUSB_SPEED_HIGH:
-                                    unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
+                                    unit->roothub.portstatus.wPortStatus &= ~AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                                    unit->roothub.portstatus.wPortStatus |=  AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
                                 break;
                                 //case LIBUSB_SPEED_SUPER:
                                 //break;
                             }
 
-                			unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_CONNECTION;
-                			unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
-                			uhwCheckRootHubChanges(unit);
+                			//unit->roothub.portstatus.wPortStatus &= ~UPSF_PORT_CONNECTION;
+                			//unit->roothub.portstatus.wPortChange |= UPSF_PORT_CONNECTION;
+                			//uhwCheckRootHubChanges(unit);
 
                             unit->roothub.portstatus.wPortStatus |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
                             unit->roothub.portstatus.wPortChange |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
@@ -146,7 +148,7 @@ int hotplug_callback_event_handler(libusb_context *ctx, libusb_device *dev, libu
                         }
                     } else {
                         if(rc == LIBUSB_ERROR_ACCESS) {
-                            mybug_unit(-1, ("libusb_open, access error, try running as superuser\n\n"));
+                            mybug_unit(-1, ("libusb_open, access error, try running as superuser or create udev\n\n"));
                         }
                     }
                 }
@@ -413,7 +415,7 @@ int do_libusb_ctrl_transfer(struct IOUsbHWReq *ioreq) {
 
     mybug_unit(-1, ("ioreq->iouh_Length %d\n", ioreq->iouh_Length));
 
-    rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout);
+    rc = LIBUSBCALL(libusb_control_transfer, dev_handle, bmRequestType, bRequest, wValue, wIndex, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_NakTimeout*2);
 
     if(rc<0) {
     	switch(rc) {
