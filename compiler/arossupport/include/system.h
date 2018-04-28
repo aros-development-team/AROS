@@ -32,6 +32,7 @@
 #else
 #    define __GNUC_PREREQ(maj, min) 0
 #endif
+#define __GNUC_PREREQ__ __GNUC_PREREQ
 
 
 /*
