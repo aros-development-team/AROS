@@ -1,5 +1,5 @@
 /*
-    Copyright © 2016, The AROS Development Team. All rights reserved.
+    Copyright © 2016-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -87,6 +87,8 @@ static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern
             TEXT *text, *oldtext;
             LONG i;
 
+            if (textlen != 0)
+            {
             fh = Open(anchorpath->ap_Buf, MODE_OLDFILE);
             if (fh)
             {
@@ -134,6 +136,7 @@ static BOOL checkfile(Object *app, struct AnchorPath *anchorpath, STRPTR pattern
                 // Open() failed
                 // app must be NULL to avoid deadlocks
                 display_doserror(NULL, IoErr());
+            }
             }
         }
         else
