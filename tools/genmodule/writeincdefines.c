@@ -348,6 +348,18 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         fprintf(out,
                 "...) \\\n"
                 "({ \\\n"
+        );        
+        for (arglistit = funclistit->arguments, count = 1;
+             arglistit != NULL;
+             arglistit = arglistit->next, count++
+        )
+        {
+            if (arglistit->next == NULL)
+            {
+                fprintf(out, "    const IPTR %s_args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };\\\n", funclistit->name);
+            }
+        }
+        fprintf(out,
                 "    %s(",
                 funclistit->name
         );
@@ -363,7 +375,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
             {
                 type = getargtype(arglistit);
                 assert(type != NULL);
-                fprintf(out, "(%s)(const IPTR []){ AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }", type);
+                fprintf(out, "(%s)(%s_args)", type, funclistit->name);
                 free(type);
             }
             else
