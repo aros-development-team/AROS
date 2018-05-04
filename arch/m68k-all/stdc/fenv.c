@@ -43,7 +43,7 @@ static fenv_t fe_env;
 /* Clear the supported exceptions represented by EXCEPTS.  */
 int feclearexcept (int __excepts)
 {
-    fe_env.__status_register &= ~__excepts;
+    fe_env.__status_register &= ~(__excepts & FE_ALL_EXCEPT);
     return 0;
 }
 
@@ -51,7 +51,7 @@ int feclearexcept (int __excepts)
    indicated by EXCEPTS in the object pointed to by FLAGP.  */
 int fegetexceptflag (fexcept_t *__flagp, int __excepts)
 {
-    *__flagp = __excepts;
+    *__flagp = (fe_env.__status_register & __excepts & FE_ALL_EXCEPT);
     return 0;
 }
 
@@ -70,7 +70,9 @@ int feraiseexcept (int __excepts)
    the representation in the object pointed to by FLAGP.  */
 int fesetexceptflag(const fexcept_t *flagp, int excepts)
 {
-    fe_env.__status_register &= ~excepts;
+    fe_env.__status_register &= ~(excepts & FE_ALL_EXCEPT);
+    fe_env.__status_register |= (*flagp & excepts & FE_ALL_EXCEPT);
+
     return 0;
 }
 
@@ -78,7 +80,7 @@ int fesetexceptflag(const fexcept_t *flagp, int excepts)
    currently set.  */
 int fetestexcept (int __excepts)
 {
-    return (fe_env.__status_register & __excepts);
+    return (fe_env.__status_register & __excepts & FE_ALL_EXCEPT);
 }
 
 /* Store the current floating-point environment in the object pointed
