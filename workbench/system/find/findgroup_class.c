@@ -586,6 +586,8 @@ Object *FindGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->activeentry_hook.h_Entry = (HOOKFUNC)activeentry_func;
         data->activeentry_hook.h_Data = data;
 
+        SET(data->btn_stop, MUIA_Disabled, TRUE);
+
         SET(data->btn_open, MUIA_Disabled, TRUE);
         SET(data->btn_view, MUIA_Disabled, TRUE);
         SET(data->btn_parent, MUIA_Disabled, TRUE);
@@ -754,6 +756,10 @@ IPTR FindGroup__MUIM_Process_Process(Class *CLASS, Object *self, struct MUIP_Pro
     DoMethod(_app(self), MUIM_Application_UnpushMethod, self, methodid1, 0);
     DoMethod(_app(self), MUIM_Application_UnpushMethod, self, methodid2, 0);
 
+    // Allow another start
+    SET(data->btn_start, MUIA_Disabled, FALSE);
+    SET(data->btn_stop, MUIA_Disabled, TRUE);
+
     return 0;
 }
 
@@ -763,6 +769,8 @@ IPTR FindGroup__MUIM_FindGroup_Start(Class *CLASS, Object *self, Msg msg)
 {
     struct FindGroup_DATA *data = INST_DATA(CLASS, self);
 
+    SET(data->btn_start, MUIA_Disabled, TRUE);
+    SET(data->btn_stop, MUIA_Disabled, FALSE);
     DoMethod(data->scanproc, MUIM_Process_Launch);
 
     return 0;
@@ -775,6 +783,8 @@ IPTR FindGroup__MUIM_FindGroup_Stop(Class *CLASS, Object *self, Msg msg)
     struct FindGroup_DATA *data = INST_DATA(CLASS, self);
 
     DoMethod(data->scanproc, MUIM_Process_Kill, 4);
+    SET(data->btn_start, MUIA_Disabled, FALSE);
+    SET(data->btn_stop, MUIA_Disabled, TRUE);
 
     return 0;
 }

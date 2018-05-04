@@ -1,5 +1,5 @@
 /*
-    Copyright © 2016, The AROS Development Team. All rights reserved.
+    Copyright © 2016-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Base, (IPTR)"FIND",
         MUIA_Application_Title, __(MSG_APP_TITLE),
-        MUIA_Application_Version, (IPTR)"$VER: Find 1.1 (30.03.2016)",
+        MUIA_Application_Version, (IPTR)"$VER: Find 1.2 (4.5.2018)",
         MUIA_Application_Copyright, __(MSG_APP_COPYRIGHT),
         MUIA_Application_Description, __(MSG_APP_DESCRIPTION),
         MUIA_Application_DiskObject, (IPTR)dobj,
