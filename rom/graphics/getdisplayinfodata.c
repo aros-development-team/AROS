@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetDisplayInfoData()
@@ -7,10 +7,10 @@
 */
 
 #include <aros/debug.h>
-#include <proto/graphics.h>
 #include <graphics/displayinfo.h>
 #include <hidd/gfx.h>
 #include <proto/oop.h>
+#include <proto/exec.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -30,7 +30,7 @@ static const ULONG size_checks[] =
 
 #define KNOWN_IDS 4
 
-static ULONG check_sizes(ULONG tagID, ULONG size);
+static ULONG check_sizes(ULONG tagID, ULONG size, struct GfxBase *GfxBase);
 static UBYTE popcount(IPTR x);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
@@ -178,7 +178,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
     	, (ULONG)handle, tagID));
 
     /* Build the queryheader */
-    structsize = check_sizes(tagID, size);
+    structsize = check_sizes(tagID, size, GfxBase);
     if (!structsize)
 	return 0;
     qh = AllocMem(structsize, MEMF_CLEAR);
@@ -530,15 +530,15 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 
 /****************************************************************************************/
 
-static ULONG check_sizes(ULONG tagID, ULONG size)
+static ULONG check_sizes(ULONG tagID, ULONG size, struct GfxBase *GfxBase)
 {
     ULONG idx;
 
     idx = DTAG_TO_IDX(tagID);
 
-    if (idx > KNOWN_IDS)
+    if (idx >= KNOWN_IDS)
     {
-    	D(bug("!!! INVALID tagID TO GetDisplayInfoData"));
+    	D(bug("[GetDisplayInfoData] INVALID tagID 0x%lx (idx=%ld)!\n", tagID, idx));
 	return 0;
     }
 
