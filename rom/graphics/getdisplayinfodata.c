@@ -174,8 +174,8 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	return 0;
     }
 
-    D(bug("GetDisplayInfoData(handle=%d, tagID=%x)\n"
-    	, (ULONG)handle, tagID));
+    D(bug("GetDisplayInfoData(handle=%p, tagID=%x)\n"
+    	, handle, tagID));
 
     /* Build the queryheader */
     structsize = check_sizes(tagID, size, GfxBase);
