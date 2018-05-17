@@ -53,7 +53,7 @@ extern void AROS_SLIB_ENTRY(hypot881, STDC, 149)(void);
 
 static int STDCM68KMATH_Init(struct StdCBase *StdCBase)
 {
-    if (SysBase->AttnFlags & AFF_68060) {
+    if ((SysBase->AttnFlags & AFF_68060) && (SysBase->AttnFlags & AFF_FPU)) {
         /* Override supported MC68060+ math functions */
         __AROS_SETVECADDR(StdCBase, 149, AROS_SLIB_ENTRY(hypot881, STDC, 149));
         __AROS_SETVECADDR(StdCBase, 151, AROS_SLIB_ENTRY(sqrt881, STDC, 151));
@@ -76,7 +76,7 @@ static int STDCM68KMATH_Init(struct StdCBase *StdCBase)
         __AROS_SETVECADDR(StdCBase, 118, AROS_SLIB_ENTRY(signbit881, STDC, 118));
         __AROS_SETVECADDR(StdCBase, 165, AROS_SLIB_ENTRY(trunc881, STDC, 165));
     }
-   else if (SysBase->AttnFlags & AFF_68881 || SysBase->AttnFlags & AFF_68882) {
+   else if ((SysBase->AttnFlags & AFF_68881) || (SysBase->AttnFlags & AFF_68882)) {
         /* Override supported 68881/68882 math functions */
         __AROS_SETVECADDR(StdCBase, 120, AROS_SLIB_ENTRY(acos881, STDC, 120));
         __AROS_SETVECADDR(StdCBase, 142, AROS_SLIB_ENTRY(log2881, STDC, 142));
