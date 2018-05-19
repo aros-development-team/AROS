@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,7 +50,7 @@
 
 
 #define GETPIX8(s, pix)    \
-    do { pix = *(BYTE *)s; s = (UBYTE *)s + 1; } while (0)
+    do { pix = *(UBYTE *)s; s = (UBYTE *)s + 1; } while (0)
 
 #define GET_TRUE_PIX(s, pix, pf)                                        \
     switch ((pf)->bytes_per_pixel) {                                    \
