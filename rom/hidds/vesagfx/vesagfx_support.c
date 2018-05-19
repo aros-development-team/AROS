@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VESA Gfx hardware support functions
@@ -49,14 +49,29 @@ BOOL initVesaGfxHW(struct HWData *data)
 	    data->width = vi->XSize; data->height = vi->YSize;
 	    data->bitsperpixel = data->depth = vi->BitsPerPixel;
 	    data->bytesperline = vi->BytesPerLine;
-	    data->redmask = vi->Masks[VI_Red];
-	    data->greenmask = vi->Masks[VI_Green];
-	    data->bluemask = vi->Masks[VI_Blue];
-	    data->redshift = vi->Shifts[VI_Red];
-	    data->greenshift = vi->Shifts[VI_Green];
-	    data->blueshift = vi->Shifts[VI_Blue];
+            if (data->depth > 8)
+            {
+                data->redmask = vi->Masks[VI_Red];
+                data->greenmask = vi->Masks[VI_Green];
+                data->bluemask = vi->Masks[VI_Blue];
+                data->redshift = vi->Shifts[VI_Red];
+                data->greenshift = vi->Shifts[VI_Green];
+                data->blueshift = vi->Shifts[VI_Blue];
+            }
+            else
+            {
+                /* Fake masks to allow this mode to be displayed */
+                data->redmask = 0xff0000;
+                data->greenmask = 0xff00;
+                data->bluemask = 0xff;
+                data->redshift = 16;
+                data->greenshift = 8;
+                data->blueshift = 0;
+            }
 	    data->framebuffer = vi->FrameBuffer;
 	    data->palettewidth = vi->PaletteWidth;
+            if (data->palettewidth > 8)
+                data->palettewidth = 8;
 
 	    if (!data->framebuffer)
 		Find_PCI_Card(data);
@@ -258,7 +273,7 @@ static void Find_PCI_Card(struct HWData *sd)
 
 /*
 ** DACLoad --
-**      load a palette
+**      load palette registers
 */
 void DACLoad(struct VESAGfx_staticdata *xsd, UBYTE *DAC,
 	     unsigned char first, int num)

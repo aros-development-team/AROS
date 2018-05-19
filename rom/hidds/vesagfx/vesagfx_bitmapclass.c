@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for VESA Gfx hidd.
@@ -57,10 +57,11 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	data->height       = OOP_GET(o, aHidd_BitMap_Height);
 	data->bytesperline = OOP_GET(o, aHidd_BitMap_BytesPerRow);
 	data->bytesperpix  = OOP_GET(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel);
+	data->bpp          = OOP_GET(data->pixfmtobj, aHidd_PixFmt_BitsPerPixel);
 	data->disp_width   = OOP_GET(sync, aHidd_Sync_HDisp);
 	data->disp_height  = OOP_GET(sync, aHidd_Sync_VDisp);
 
-	D(bug("[VESAGfx:BitMap] Bitmap %ld x % ld, %u bytes per pixel, %u bytes per line\n",
+	D(bug("[VESAGfx:BitMap] Bitmap %ld x %ld, %u bytes per pixel, %u bytes per line\n",
 	      data->width, data->height, data->bytesperpix, data->bytesperline));
 	D(bug("[VESAGfx:BitMap] Video data at 0x%p (%u bytes)\n", data->VideoData, data->bytesperline * data->height));
 
@@ -193,7 +194,7 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 	    green = msg->colors[col_i].green >> 8;
 	    blue  = msg->colors[col_i].blue  >> 8;
 
-	    /* Update DAC registers */
+	    /* Update DAC register values */
 	    p_shift = 8 - hwdata->palettewidth;
 	    data->DAC[xc_i*3] = red >> p_shift;
 	    data->DAC[xc_i*3+1] = green >> p_shift;
