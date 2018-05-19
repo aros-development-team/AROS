@@ -114,7 +114,7 @@
     do { *(UWORD *)d = AROS_SWAP_BYTES_WORD(pix); d = (UBYTE *)d + 2; } while (0)
 
 #define PUTPIX8(s, pix)    \
-    do { *(BYTE *)s = pix; s = (UBYTE *)s + 1; } while (0)
+    do { *(UBYTE *)s = pix; s = (UBYTE *)s + 1; } while (0)
 
 #define PUT_TRUE_PIX(d, pix, pf)                                    \
     switch (pf->bytes_per_pixel) {                                  \
