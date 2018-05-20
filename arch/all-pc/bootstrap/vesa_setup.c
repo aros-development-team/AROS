@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define DEBUG
+#define DEBUG 0
 
 #include <aros/kernel.h>
 #include <hardware/vbe.h>
@@ -109,10 +109,12 @@ void setupVESA(char *vesa)
     	AllocFB();
 
 	D(kprintf("[VESA] VBE version 0x%04X\n", VBEControllerInfo.version));
+        D(kprintf("[VESA] Mode 0x%x\n", mode));
 	D(kprintf("[VESA] Resolution %d x %d\n", VBEModeInfo.x_resolution, VBEModeInfo.y_resolution));
 	D(kprintf("[VESA] %d bits per pixel, %d/%d bytes per line\n", VBEModeInfo.bits_per_pixel, VBEModeInfo.bytes_per_scanline, VBEModeInfo.linear_bytes_per_scanline));
 	D(kprintf("[VESA] Mode flags 0x%04X, framebuffer 0x%p\n", VBEModeInfo.mode_attributes, VBEModeInfo.phys_base));
 	D(kprintf("[VESA] Windows A 0x%04X B 0x%04X\n", VBEModeInfo.win_a_segment, VBEModeInfo.win_b_segment));
+        D(kprintf("[VESA] Palette width %d\n", palwidth));
 
         tag->ti_Tag = KRN_VBEModeInfo;
         tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
