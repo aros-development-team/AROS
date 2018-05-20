@@ -1,5 +1,5 @@
 /*
-      Copyright © 2009-2012, The AROS Development Team. All rights reserved.
+      Copyright © 2009-2018, The AROS Development Team. All rights reserved.
       $Id$
 
       Bifteck -- Retrieves memory-stored debug output.
@@ -13,32 +13,31 @@
 
 struct Args
 {
-     TEXT *to;
+    TEXT *to;
 };
 
 struct LogBlock
 {
-      struct MinNode node;
-      ULONG length;    /* number of data bytes that follow */
+    struct MinNode node;
+    ULONG length;    /* number of data bytes that follow */
 };
 
 struct LogData
 {
-      struct SignalSemaphore lock;
-      struct MinList buffers;
-      struct LogBlock *block;
-      ULONG block_pos;
-      APTR pool;
+    struct SignalSemaphore lock;
+    struct MinList buffers;
+    struct LogBlock *block;
+    ULONG block_pos;
+    APTR pool;
 };
 
 static TEXT GetLogChar(struct LogData *data, struct LogBlock **block,
-     ULONG *pos);
+    ULONG *pos);
 
 const TEXT template[] = "TO/K";
 const TEXT version_string[] = "$VER: Bifteck 41.2 (30.8.2012)";
-#if (0)
 static const TEXT data_name[] = "bifteck";
-#endif
+
 
 LONG main(VOID)
 {
@@ -58,7 +57,7 @@ LONG main(VOID)
     /* Get buffer */
 
     Forbid();
-    data = (struct LogData *)FindSemaphore("bifteck");
+    data = (struct LogData *)FindSemaphore(data_name);
     Permit();
 
     if (read_args != NULL && data != NULL)
@@ -124,12 +123,12 @@ LONG main(VOID)
     else
         PrintFault(error, NULL);
 
-     return result;
+    return result;
 }
 
 
 static TEXT GetLogChar(struct LogData *data, struct LogBlock **block,
-     ULONG *pos)
+    ULONG *pos)
 {
     TEXT ch = '\0';
 
@@ -149,7 +148,7 @@ static TEXT GetLogChar(struct LogData *data, struct LogBlock **block,
         && (*block != data->block || *pos < data->block_pos))
         ch = ((UBYTE *)*block)[sizeof(struct LogBlock) + (*pos)++];
 
-     return ch;
+    return ch;
 }
 
 
