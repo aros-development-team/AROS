@@ -2951,44 +2951,44 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                 {
                                     nch->nch_HidGlobal.nhg_LogicalMax = HID_PARAM_UNDEF;
                                 }
-                                break;
-                            }
+							}
+							break;
+						}
 
-                        case REPORT_MAIN_COLLECT:
-                            {
-                                struct NepHidUsage *nhu;
-                                struct NepHidCollection *oldnhc = nhc;
-                                KPRINTF(1, ("Collection(%lx)\n", udata));
-                                if((nhc = psdAllocVec(sizeof(struct NepHidCollection))))
-                                {
-                                    NewList(&nhc->nhc_Items);
-                                    nhc->nhc_Parent = oldnhc;
-                                    nhu = (struct NepHidUsage *) nch->nch_HidUsages.lh_Head;
-                                    if(nhu->nhu_Node.ln_Succ)
-                                    {
-                                        nhc->nhc_Usage = nhu->nhu_Usage;
-                                        nhc->nhc_Name = nGetUsageName(nch, nhu->nhu_Usage);
-                                    } else {
-                                        if(nhc->nhc_Parent)
-                                        {
-                                            nhc->nhc_Usage = nhc->nhc_Parent->nhc_Usage;
-                                            nhc->nhc_Name = psdCopyStr(nhc->nhc_Parent->nhc_Name);
-                                        } else {
-                                            nhc->nhc_Name = psdCopyStr("Argl!");
-                                        }
-                                    }
-                                }
-                                node = nch->nch_HidUsages.lh_Head;
-                                while(node->ln_Succ)
-                                {
-                                    KPRINTF(1, ("Removing usage %08lx\n", node));
-                                    Remove(node);
-                                    psdFreeVec(node);
-                                    node = nch->nch_HidUsages.lh_Head;
-                                }
-                            }
-                            break;
-                        }
+					case REPORT_MAIN_COLLECT:
+						{
+							struct NepHidUsage *nhu;
+							struct NepHidCollection *oldnhc = nhc;
+							KPRINTF(1, ("Collection(%lx)\n", udata));
+							if((nhc = psdAllocVec(sizeof(struct NepHidCollection))))
+							{
+								NewList(&nhc->nhc_Items);
+								nhc->nhc_Parent = oldnhc;
+								nhu = (struct NepHidUsage *) nch->nch_HidUsages.lh_Head;
+								if(nhu->nhu_Node.ln_Succ)
+								{
+									nhc->nhc_Usage = nhu->nhu_Usage;
+									nhc->nhc_Name = nGetUsageName(nch, nhu->nhu_Usage);
+								} else {
+									if(nhc->nhc_Parent)
+									{
+										nhc->nhc_Usage = nhc->nhc_Parent->nhc_Usage;
+										nhc->nhc_Name = psdCopyStr(nhc->nhc_Parent->nhc_Name);
+									} else {
+										nhc->nhc_Name = psdCopyStr("Argl!");
+									}
+								}
+							}
+							node = nch->nch_HidUsages.lh_Head;
+							while(node->ln_Succ)
+							{
+								KPRINTF(1, ("Removing usage %08lx\n", node));
+								Remove(node);
+								psdFreeVec(node);
+								node = nch->nch_HidUsages.lh_Head;
+							}
+						break;
+						}
 
                     case REPORT_MAIN_ENDCOLL:
                         KPRINTF(1, ("EndCollection(%lx)\n", udata));
