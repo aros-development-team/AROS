@@ -4,9 +4,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILESINFTORTURE := \
-        inf_torture
-
 FILESDOUBLE := \
         test-double
 
@@ -16,16 +13,32 @@ FILESFLOAT := \
 FILESIEEE754 := \
         tst-ieee754
 
+FILESINFTORTURE := \
+        inf_torture
+
+FILESPARANOIA := \
+        paranoia
+
 EXEDIR := $(AROS_TESTS)/clib
 
-USER_CFLAGS = -DSYS_MATH_H
+USER_CFLAGS = -DSYS_MATH_H -fno-builtin
 
 #MM- test-clib : test-clib-math
-#MM- test-clib-math : test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-double test-clib-math-float
-#MM test-clib-math-inftorture : includes includes-copy linklibs kernel
+#MM- test-clib-math : test-clib-math-double test-clib-math-float test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-paranoia-double test-clib-math-paranoia-float
 #MM test-clib-math-double : includes includes-copy linklibs kernel
 #MM test-clib-math-float : includes includes-copy linklibs kernel
 #MM test-clib-math-ieee754 : includes includes-copy linklibs kernel
+#MM test-clib-math-inftorture : includes includes-copy linklibs kernel
+#MM test-clib-math-paranoia-double : includes includes-copy linklibs kernel
+#MM test-clib-math-paranoia-float : includes includes-copy linklibs kernel
+
+%build_prog mmake=test-clib-math-double \
+    files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
+    progname=math-double objdir=$(GENDIR)/$(CURDIR)/double
+
+%build_prog mmake=test-clib-math-float \
+    files=$(FILESFLOAT) targetdir=$(EXEDIR) \
+    progname=math-float objdir=$(GENDIR)/$(CURDIR)/float
 
 %build_prog mmake=test-clib-math-ieee754 \
     files=$(FILESIEEE754) targetdir=$(EXEDIR) \
@@ -35,10 +48,14 @@ USER_CFLAGS = -DSYS_MATH_H
     files=$(FILESINFTORTURE) targetdir=$(EXEDIR) \
     progname=math-inftorture
 
-%build_prog mmake=test-clib-math-double \
-    files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
-    progname=math-double
+USER_CFLAGS =
 
-%build_prog mmake=test-clib-math-float \
-    files=$(FILESFLOAT) targetdir=$(EXEDIR) \
-    progname=math-float
+%build_prog mmake=test-clib-math-paranoia-double \
+    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
+    progname=math-paranoia-double objdir=$(GENDIR)/$(CURDIR)/double
+
+USER_CFLAGS = -DSingle
+
+%build_prog mmake=test-clib-math-paranoia-float \
+    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
+    progname=math-paranoia-float objdir=$(GENDIR)/$(CURDIR)/float
