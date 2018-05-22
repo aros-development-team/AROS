@@ -24,21 +24,21 @@ EXEDIR := $(AROS_TESTS)/clib
 USER_CFLAGS = -DSYS_MATH_H -fno-builtin
 
 #MM- test-clib : test-clib-math
-#MM- test-clib-math : test-clib-math-double test-clib-math-float test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-paranoia-double test-clib-math-paranoia-float
-#MM test-clib-math-double : includes includes-copy linklibs kernel
-#MM test-clib-math-float : includes includes-copy linklibs kernel
+#MM- test-clib-math : test-clib-math-c99-double test-clib-math-c99-float test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-paranoia-double test-clib-math-paranoia-float
+#MM test-clib-math-c99-double : includes includes-copy linklibs kernel
+#MM test-clib-math-c99-float : includes includes-copy linklibs kernel
 #MM test-clib-math-ieee754 : includes includes-copy linklibs kernel
 #MM test-clib-math-inftorture : includes includes-copy linklibs kernel
 #MM test-clib-math-paranoia-double : includes includes-copy linklibs kernel
 #MM test-clib-math-paranoia-float : includes includes-copy linklibs kernel
 
-%build_prog mmake=test-clib-math-double \
+%build_prog mmake=test-clib-math-c99-double \
     files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
-    progname=math-double objdir=$(GENDIR)/$(CURDIR)/double
+    progname=math-c99-double objdir=$(GENDIR)/$(CURDIR)/double
 
-%build_prog mmake=test-clib-math-float \
+%build_prog mmake=test-clib-math-c99-float \
     files=$(FILESFLOAT) targetdir=$(EXEDIR) \
-    progname=math-float objdir=$(GENDIR)/$(CURDIR)/float
+    progname=math-c99-float objdir=$(GENDIR)/$(CURDIR)/float
 
 %build_prog mmake=test-clib-math-ieee754 \
     files=$(FILESIEEE754) targetdir=$(EXEDIR) \
