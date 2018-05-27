@@ -203,7 +203,7 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
 	to print.
 
     INPUTS
-	data - This is passed to the usercallback outc
+	data - This is passed to the user callback outc as its second argument.
 	outc - Call this function for every character that should be
 		emitted. The function should return EOF on error and
 		> 0 otherwise.

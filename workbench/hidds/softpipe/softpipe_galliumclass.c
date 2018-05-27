@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -108,7 +108,7 @@ HiddSoftpipeCreateSoftpipeWinSys(void)
     * communicate with the window system, buffer manager, etc. 
     */
 
-    /* Since Mesa 7.9 softpipe mo longer uses pipe_winsys - it uses sw_winsys */
+    /* Since Mesa 7.9 softpipe no longer uses pipe_winsys - it uses sw_winsys */
     ws->base.base.buffer_create         = NULL;
     ws->base.base.user_buffer_create    = NULL;
     ws->base.base.buffer_map            = NULL;

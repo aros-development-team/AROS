@@ -1,7 +1,8 @@
 #ifndef KERNEL_INTR_H
 #define KERNEL_INTR_H
+
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -19,7 +20,7 @@ void core_SysCall(int sc, regs_t *regs);
 void cpu_Switch(regs_t *regs);
 void cpu_Dispatch(regs_t *regs);
 
-/* This constant can be redefined this in arch-specific includes */
+/* This constant can be redefined in arch-specific includes */
 #ifndef _CUSTOM
 #define _CUSTOM NULL
 #endif

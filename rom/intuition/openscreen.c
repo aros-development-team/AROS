@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -1791,10 +1791,10 @@ static const char THIS_FILE[] = __FILE__;
 
         if (NULL != layer_info_hook)
         {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: instal layerinfohook\n"));
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: install layerinfohook\n"));
             InstallLayerInfoHook(&screen->Screen.LayerInfo, layer_info_hook);
         }
-        D(bug("layers intited screen\n"));
+        D(bug("layers inited screen\n"));
 
         /* AROS: We have already obtained resolution data from DisplayInfo */
 #ifdef __AROS__

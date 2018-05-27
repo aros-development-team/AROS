@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Cause() - Cause a software interrupt.
@@ -30,7 +30,7 @@
 /*  FUNCTION
 	Schedule a software interrupt to occur. If the processor is
 	currently running a user task, then the software interrupt will
-	prempt the current task and run itself. From a real interrupt, it
+	pre-empt the current task and run itself. From a real interrupt, it
 	will queue the software interrupt for a later time.
 
 	Software interrupts are useful from hardware interrupts if you

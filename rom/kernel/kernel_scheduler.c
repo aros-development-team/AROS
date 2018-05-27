@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -43,7 +43,7 @@ BOOL core_Schedule(void)
         if (IsListEmpty(&SysBase->TaskReady))
             return FALSE;
 
-        /* Does the TaskReady list contains tasks with priority equal or lower than current task?
+        /* Does the TaskReady list contain tasks with priority equal to or lower than current task?
          * If so, then check further... */
         pri = ((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri;
         if (pri <= task->tc_Node.ln_Pri)

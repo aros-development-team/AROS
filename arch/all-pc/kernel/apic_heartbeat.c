@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -81,7 +81,7 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
                 if (cpuNum == IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuNumber)
                 {
                     /* 
-                        TaskRunnign list is different than others. Here the iet_private2 field is not yet updated,
+                        TaskRunning list is different than others. Here the iet_private2 field is not yet updated,
                         so we have to update the CPU time in this place.
                     */
                     UQUAD time = IntETask(t->tc_UnionETask.tc_ETask)->iet_private2 + 
