@@ -2,11 +2,11 @@
 #define SCREENNOTIFYTASK_H
 
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define SCREENNOTIFYTASK_NAME 	    	"<< Screennotify Handler >>"
+#define SCREENNOTIFYTASK_NAME 	    	"« Screennotify Handler »"
 #define SCREENNOTIFYTASK_STACKSIZE  	AROS_STACKSIZE
 #define SCREENNOTIFYTASK_PRIORITY   	0
 

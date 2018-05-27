@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Conclip CLI command
@@ -89,7 +89,7 @@
 #define CODE_COPY       'C'
 #define CODE_PASTE      'V'
 
-const TEXT version[] = "$VER: Conclip 42.1 (19.2.2015)\n";
+const TEXT version[] = "$VER: Conclip 42.2 (27.5.2018)\n";
 
 struct MyEditHookMsg
 {
@@ -100,7 +100,7 @@ struct MyEditHookMsg
 
 /*****************************************************************************************/
 
-const STRPTR CONCLIP_TASKNAME = "<< ConClip >>";
+const STRPTR CONCLIP_TASKNAME = "« ConClip »";
 const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
 /*****************************************************************************************/
