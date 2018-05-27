@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -173,13 +173,13 @@
 #define GET_WORD(x) x
 #endif
 
-#define IPREFS_SEM_NAME     "<< IPrefs >>"
+#define IPREFS_SEM_NAME     "« IPrefs »"
 #define DO_LOCALE_PATCHES   0
 
 struct IPrefsSem
 {
     struct SignalSemaphore sem;
-    UBYTE   	    	   semname[13];
+    UBYTE   	    	   semname[12];
 };
 
 /*********************************************************************************************/

@@ -2,12 +2,12 @@
 #define MENUTASK_H
 
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2018, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
-#define MENUTASK_NAME 	    	"<< Menu Handler >>"
+#define MENUTASK_NAME 	    	"« Menu Handler »"
 #define MENUTASK_STACKSIZE  	AROS_STACKSIZE
 #ifdef __MORPHOS__
 #define MENUTASK_PRIORITY   	19
