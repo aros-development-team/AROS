@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics colormap class implementation.
@@ -343,7 +343,7 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
      
     if (msg->pixelNo < 0 || msg->pixelNo >= data->clut.entries)
     {
-	D(bug("!!! Unvalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+	D(bug("!!! Invalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
 		msg->pixelNo,
 		data->clut.entries));
 	
@@ -398,7 +398,7 @@ BOOL CM__Hidd_ColorMap__GetColor(OOP_Class *cl, OOP_Object *o,
     
     if (msg->colorNo < 0 || msg->colorNo >= data->clut.entries)
     {
-	D(bug("!!! Unvalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+	D(bug("!!! Invalid msg->colorNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
 		msg->colorNo,
 		data->clut.entries));
 		

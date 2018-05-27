@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common IORequest processing routines
@@ -197,7 +197,7 @@ BOOL common_BeginIO(struct timerequest *timereq, struct TimerBase *TimerBase)
 
                 /*
                  * Adjust the time request to be relative to the
-                 * the elapsed time counter that we keep.
+                 * elapsed time counter that we keep.
                 */
                 ADDTIME(&timereq->tr_time, &TimerBase->tb_Elapsed);
 
@@ -375,6 +375,7 @@ void TimerProcessVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase, B
 	else
 	    break;
     }
+
     /*
      * The other this is the "wait until a specified time". Here a request
      * is complete if the time we are waiting for is before the current time.

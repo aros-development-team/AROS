@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -57,7 +57,6 @@ struct GalliumBase
     struct SignalSemaphore      driversemaphore;
     struct Library              *drivermodule;
     OOP_Object                  *driver;
-
 };
 
 OOP_Object * SelectGalliumDriver(ULONG requestedinterfaceversion, struct Library * GalliumBase);

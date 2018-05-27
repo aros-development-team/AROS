@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write module stubs. Part of genmodule.
@@ -11,7 +11,7 @@
     executable. If all stubs are in one object file, all stubs are present
     in executable, inflating its size, even if they are not used.
 
-    In majority of cases REG call function stubs will be handled be inlines
+    In majority of cases REG call function stubs will be handled by inlines
     or defines while STACK call function stubs will be linked from linklib.
 
     Based on above paragraphs, putting stubs of STACK functions into separate
@@ -54,7 +54,7 @@ void writestubs(struct config *cfg, int is_rel)
         }
     }
 
-    /* Build REGCALL - all stusb in one object file */
+    /* Build REGCALL - all stubs in one object file */
     snprintf(line, 255, "%s/%s_regcall_%sstubs.c", cfg->libgendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
@@ -291,7 +291,7 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
         /* Library version requirement added only for stack call functions
          * since each function is in separate compilation unit. Reg call
          * functions are all in one compilation unit. In such case highest
-         * version would alway be required even if function for that version
+         * version would always be required even if function for that version
          * is not used.
          */
         fprintf(out, "void __%s_%s_libreq(){ AROS_LIBREQ(%s,%d); }\n",

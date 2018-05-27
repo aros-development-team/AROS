@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,7 +41,7 @@ void IdleTask(struct ExecBase *SysBase)
                 if (current != lastcount)
                 {
                     lastcount = current;
-                    bug("[IDLE:%03d] CPU has idled for %d seconds..\n", cpunum, lastcount);
+                    bug("[IDLE:%03d] CPU has idled for %d seconds\n", cpunum, lastcount);
                 }
             }
             else

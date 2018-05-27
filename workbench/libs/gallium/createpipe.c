@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -84,7 +84,7 @@
 
     D(bug("[Gallium] %s: friendbm @ 0x%p\n", __PRETTY_FUNCTION__, friendbm));
 
-    if (friendbm  && IS_HIDD_BM(friendbm))
+    if (friendbm && IS_HIDD_BM(friendbm))
     {
         OOP_Object *bmObj = HIDD_BM_OBJ(friendbm);
         if (bmObj)

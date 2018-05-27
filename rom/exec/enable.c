@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enable() - Allow interrupts to occur after Disable().
@@ -60,7 +60,7 @@
         this function has the side effect of disabling
         multitasking.
 
-        (*) On EXECSMP builds, Enable() only aplies to the processor
+        (*) On EXECSMP builds, Enable() only applies to the processor
             it is called from. Data which needs to be protected from
             parallel access will also require a spinlock.            
 
@@ -110,7 +110,7 @@
                     /*
                      * First we react on SFF_SoftInt by issuing KrnCause() call. This triggers
                      * the complete interrupt processing code in kernel, which implies also
-                     * rescheduling if became necessary.
+                     * rescheduling if it becomes necessary.
                      */
                     D(bug("[Exec] Enable: causing softints\n");)
                     KrnCause();

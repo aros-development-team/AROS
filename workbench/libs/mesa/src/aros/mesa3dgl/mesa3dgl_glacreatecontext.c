@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -88,7 +88,7 @@
 
     RESULT
 
-        A valid GL context or NULL of creation was not succesfull.
+        A valid GL context or NULL if creation was not successful.
  
     BUGS
 
