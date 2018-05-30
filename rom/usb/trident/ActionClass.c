@@ -35,8 +35,9 @@ extern struct DosLibrary *DOSBase;
 #define USE_NEPTUNE8_COLORS
 #include "neptune8logo.c"
 
-#define CLASSPATH "SYS:Classes/USB"
-#define STACKLOADER "Sys/poseidon.prefs"
+#define CLASSPATH       "SYS:Classes/USB"
+#define STACKLOADER     "Sys/poseidon.prefs"
+#define CLASSNAMEMAX    128
 
 /* /// "Some strings" */
 static STRPTR mainpanels[] =
@@ -4617,11 +4618,11 @@ IPTR Action_Cls_Scan(struct IClass *cl, Object *obj, Msg msg)
     struct ExAllControl *exall;
     BPTR lock;
     struct ExAllData *exdata;
-    ULONG ents;
+    ULONG ents, namelen;
     struct List *puclist;
     UBYTE buf[1024];
-    UBYTE sbuf[128];
-    BOOL exready;
+    UBYTE sbuf[CLASSNAMEMAX];
+    BOOL                exready, isvalid;
 
     psdGetAttrs(PGA_STACK, NULL, PA_ClassList, &puclist, TAG_END);
     if((exall = AllocDosObject(DOS_EXALLCONTROL, NULL)))
@@ -4638,11 +4639,26 @@ IPTR Action_Cls_Scan(struct IClass *cl, Object *obj, Msg msg)
                 ents = exall->eac_Entries;
                 while(ents--)
                 {
-                    psdSafeRawDoFmt(sbuf, 128, CLASSPATH "/%s", exdata->ed_Name);
+                    isvalid = TRUE;
+                    psdSafeRawDoFmt(sbuf, CLASSNAMEMAX, CLASSPATH "/%s", exdata->ed_Name);
 
-                    if(!FindName(puclist, exdata->ed_Name))
+                    namelen = strlen(sbuf);
+                    if (((namelen > 4) && (!strcmp(&sbuf[namelen-4], ".dbg"))) || ((namelen > 5) && (!strcmp(&sbuf[namelen-5], ".info"))))
+                        isvalid = FALSE;
+
+                    if (isvalid)
                     {
-                        psdAddClass(sbuf, 0);
+                        if(namelen > 4)
+                        {
+                            if(!strcmp(&sbuf[namelen-4], ".elf"))
+                            {
+                                sbuf[namelen-4] = 0;
+                            }
+                        }
+                        if(!FindName(puclist, exdata->ed_Name))
+                        {
+                            psdAddClass(sbuf, 0);
+                        }
                     }
                     exdata = exdata->ed_Next;
                 }

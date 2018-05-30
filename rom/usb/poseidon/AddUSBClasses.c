@@ -15,9 +15,12 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#define ARGS_QUIET    0
-#define ARGS_REMOVE   1
-#define ARGS_SIZEOF   2
+#define ARGS_QUIET      0
+#define ARGS_REMOVE     1
+#define ARGS_SIZEOF     2
+
+#define CLASSPATH       "SYS:Classes/USB"
+#define CLASSNAMEMAX    128
 
 static const char *template = "QUIET/S,REMOVE/S";
 const char *version = "$VER: AddUSBClasses 1.8 (24.05.2017) © The AROS Development Team";
@@ -48,8 +51,7 @@ int main(int argc, char *argv[])
     STRPTR              errmsg = NULL;
     struct List         *puclist;
     struct Node         *puc;
-    STRPTR              classpath;
-    STRPTR              sbuf;
+    UBYTE               sbuf[CLASSNAMEMAX];
     BPTR                lock;
     ULONG               ents;
     ULONG               namelen;
@@ -80,8 +82,7 @@ int main(int argc, char *argv[])
         } else {
             if((exall = AllocDosObject(DOS_EXALLCONTROL, NULL)))
             {
-                classpath = "SYS:Classes/USB";
-                lock = Lock(classpath, ACCESS_READ);
+                lock = Lock(CLASSPATH, ACCESS_READ);
                 if(lock)
                 {
                     exall->eac_LastKey = 0;
@@ -95,11 +96,7 @@ int main(int argc, char *argv[])
                         while(ents--)
                         {
                             isvalid = TRUE;
-                            sbuf = psdCopyStrFmt("%s/%s", classpath, exdata->ed_Name);
-                            if(!sbuf)
-                            {
-                                break;
-                            }
+                            psdSafeRawDoFmt(sbuf, CLASSNAMEMAX, CLASSPATH "/%s", exdata->ed_Name);
                             namelen = strlen(sbuf);
                             if (((namelen > 4) && (!strcmp(&sbuf[namelen-4], ".dbg"))) || ((namelen > 5) && (!strcmp(&sbuf[namelen-5], ".info"))))
                                 isvalid = FALSE;
@@ -152,14 +149,13 @@ int main(int argc, char *argv[])
                                     }
                                 }
                             }
-                            psdFreeVec(sbuf);
                             exdata = exdata->ed_Next;
                         }
                     } while(exready);
                     UnLock(lock);
                     psdClassScan();
                 } else {
-                    errmsg = "Could not lock on SYS:Classes/USB.\n";
+                    errmsg = "Failed to lock " CLASSPATH ".\n";
                 }
                 FreeDosObject(DOS_EXALLCONTROL, exall);
             }
