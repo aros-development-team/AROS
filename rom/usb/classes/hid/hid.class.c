@@ -2951,7 +2951,7 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                 {
                                     nch->nch_HidGlobal.nhg_LogicalMax = HID_PARAM_UNDEF;
                                 }
-                             }
+                            }
                             break;
                         }
 
@@ -2987,7 +2987,7 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                 psdFreeVec(node);
                                 node = nch->nch_HidUsages.lh_Head;
                             }
-                        break;
+                            break;
                         }
 
                     case REPORT_MAIN_ENDCOLL:
