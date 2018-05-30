@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -34,6 +34,8 @@ void PrinterPrefs_Handler(STRPTR filename)
     struct IFFHandle *iff;
     struct PrinterTxtPrefs *ptp;
     struct PrinterGfxPrefs *pgp;
+    char *devname;
+    ULONG devnamelen;
 
     D(bug("[PrinterPrefs] filename=%s\n",filename));
 
@@ -52,7 +54,20 @@ void PrinterPrefs_Handler(STRPTR filename)
                     ptp = LoadChunk(iff, sizeof(struct PrinterTxtPrefs), MEMF_ANY);
                     if (ptp)
                     {
-                        strncpy(prefs.PrtDevName, ptp->pt_Driver, DRIVERNAMESIZE);
+                        devname = FilePart(ptp->pt_Driver);
+                        devnamelen = strlen(devname);
+                        if (devnamelen < DEVNAME_SIZE + 6)
+                        {
+                            if ((devnamelen >= 6) && (!strcmp(&devname[devnamelen - 6], ".device")))
+                                strncpy(prefs.PrtDevName, devname, devnamelen - 6);
+                            else if (devnamelen < DEVNAME_SIZE)
+                                strncpy(prefs.PrtDevName, devname, devnamelen);
+                            else
+                                bug("[IPREFS] ERROR: printer device name (%s) is too long!", devname);
+                        }
+                        else
+                            bug("[IPREFS] ERROR: printer device name (%s) is too long!", devname);
+
                         prefs.PrinterPort = ptp->pt_Port;
                         prefs.PaperType = AROS_BE2WORD(ptp->pt_PaperType);
                         prefs.PaperSize = AROS_BE2WORD(ptp->pt_PaperSize);
