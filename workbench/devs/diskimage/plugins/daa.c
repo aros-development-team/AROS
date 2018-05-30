@@ -270,8 +270,8 @@ APTR DAA_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file, CONST_ST
 		} else {
 			multi = 3;
 			multinum = 0;
-			p = find_ext(name, ".daa");
-			if (!p) p = strchr(p, 0);
+			p = strrchr(name, '.');
+			if (!p) p = name + strlen(name);
 		}
 		len = p - name;
 		namebuf = AllocVec(len + 16, MEMF_ANY);
