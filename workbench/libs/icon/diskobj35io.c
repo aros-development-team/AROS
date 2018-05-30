@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -401,14 +401,14 @@ fail:
 BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     	    	void *stream, struct IconBase *IconBase)
 {
-    static const LONG const stopchunks[] =
+    static const LONG stopchunks[] =
     {
-    	ID_ICON, ID_FACE,
-	ID_ICON, ID_IMAG,
-	ID_ICON, ID_png,
-	ID_ICON, ID_ARGB,
+        ID_ICON, ID_FACE,
+        ID_ICON, ID_IMAG,
+        ID_ICON, ID_png,
+        ID_ICON, ID_ARGB,
     };
-    
+
     struct IFFHandle 	    *iff;
     struct Hook     	     iffhook;
     struct FileFaceChunk     fc;
