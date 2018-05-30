@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -51,6 +51,8 @@ struct FilePrefHeader
 #define IMPORT_WORD(x)  do { x = AROS_BE2WORD(x); } while (0)
 #define IMPORT_LONG(x)  do { x = AROS_BE2LONG(x); } while (0)
 
+#define PATHMAX 63
+
 BOOL Printer_LoadPrefs(struct PrinterBase *PrinterBase, LONG unitnum, struct PrinterPrefs *prefs)
 {
     struct PrinterTxtPrefs txt = prefs->pp_Txt;
@@ -58,8 +60,8 @@ BOOL Printer_LoadPrefs(struct PrinterBase *PrinterBase, LONG unitnum, struct Pri
     struct PrinterDeviceUnitPrefs devunit = prefs->pp_DeviceUnit;
     struct PrinterGfxPrefs gfx = prefs->pp_Gfx;
     BPTR fh;
-    TEXT envpath[64];
-    TEXT envarcpath[64];
+    TEXT envpath[PATHMAX + 1];
+    TEXT envarcpath[PATHMAX + 1];
 
     struct IFFHandle   *iff;
     LONG chunk_map = 0;
@@ -70,15 +72,17 @@ BOOL Printer_LoadPrefs(struct PrinterBase *PrinterBase, LONG unitnum, struct Pri
         ID_PREF, ID_PGFX,
     };
 
-    AddPart(envpath, PREFS_PATH_ENV, sizeof(envpath));
-    AddPart(envarcpath, PREFS_PATH_ENVARC, sizeof(envarcpath));
+    AddPart(envpath, PREFS_PATH_ENV, PATHMAX);
+    AddPart(envarcpath, PREFS_PATH_ENVARC, PATHMAX);
     if (unitnum) {
         TEXT c[2] = { '0' + unitnum, 0 };
-        strncat(envpath, c, sizeof(envpath));
-        strncat(envarcpath, c, sizeof(envarcpath));
+        strncat(envpath, c, PATHMAX);
+        strncat(envarcpath, c, PATHMAX);
     }
-    strncat(envpath, ".prefs", sizeof(envpath));
-    strncat(envarcpath, ".prefs", sizeof(envarcpath));
+    strncat(envpath, ".prefs", PATHMAX);
+    strncat(envarcpath, ".prefs", PATHMAX);
+    envpath[PATHMAX] = '\0';
+    envarcpath[PATHMAX] = '\0';
 
     D(bug("%s: envpath \"%s\"\n", __func__, envpath));
     D(bug("%s: envarcpath \"%s\"\n", __func__, envpath));
