@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -195,13 +195,13 @@ LONG PropArray[2*NUM_PROP]=
 
 #define  NUM_COLL  1
 
-const LONG const CollArray[2*NUM_COLL]=
+const LONG CollArray[2*NUM_COLL]=
 {
     ID_DTYP, ID_DTTL
 };
 
 
-const LONG_FUNC const FunctionArray[]=
+const LONG_FUNC FunctionArray[]=
 {				/* Note! */
     (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
     (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0),
