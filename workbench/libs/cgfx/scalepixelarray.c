@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,18 +23,20 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
     struct GfxBase *GfxBase);
 
-/* Terrifying bad hack to work around a GCC issue with AROS_LH10 macros.
+/* Work around an m68k GCC issue, with AROS_LH10 macros.
  *
- * On gcc v4 on m68k, we get a register spill during certain optimization
- * levels, due to the AROS_LH10() macro using so many registers.
+ * Due to the AROS_LH10() macro using so many data registers,
+ * we get a register spill during certain optimization levels.
  *
- * This 'hack' thunks the register call to a stack call, so that the gcc
- * optimizer has more registers to play with. It must have global scope
- * (not 'static') so that it doesn't fold into the regcall routine.
- *
- * On non-regcall systems, this will, at worst, convert to a 'JMP internal_ScalePixelArray' with no stack manipulation.
+ * This 'hack' thunks the register call to a stack call, and passes
+ * the bounds using an address register, so that optimization has more
+ * data registers to play with.
+
+ * NB: It must have global scope (not 'static') so that it doesn't fold
+ * into the regcall routine. On non-regcall systems, this will, at worst,
+ * convert to a 'JMP internal_ScalePixelArray' with no stack manipulation.
  */
-LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat, struct Library *CyberGfxBase);
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, struct Rectangle *DstBounds, UBYTE SrcFormat, struct Library *CyberGfxBase);
 
 /*****************************************************************************
 
@@ -93,12 +95,19 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
 {
     AROS_LIBFUNC_INIT
 
-    return internal_ScalePixelArray(srcRect, SrcW, SrcH, SrcMod, RastPort, DestX, DestY, DestW, DestH, SrcFormat, CyberGfxBase);
+    struct Rectangle DestBounds;
+    
+    DestBounds.MinX = DestX;
+    DestBounds.MinY = DestY;
+    DestBounds.MaxX = DestW;
+    DestBounds.MaxY = DestH;
+    
+    return internal_ScalePixelArray(srcRect, SrcW, SrcH, SrcMod, RastPort, &DestBounds, SrcFormat, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 }
 
-LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, UWORD DestX, UWORD DestY, UWORD DestW, UWORD DestH, UBYTE SrcFormat, struct Library *CyberGfxBase)
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, struct Rectangle *DstBounds, UBYTE SrcFormat, struct Library *CyberGfxBase)
 {
     ULONG result = 0;
     struct render_data data;
@@ -120,10 +129,10 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
     };
 
     D(bug("ScalePixelArray(%p, %d, %d, %d, %p, %d, %d, %d, %d, %d)\n",
-        srcRect, SrcW, SrcH, SrcMod, RastPort, DestX, DestY, DestW, DestH,
+        srcRect, SrcW, SrcH, SrcMod, RastPort, DstBounds->MinX, DstBounds->MinY, DstBounds->MaxX, DstBounds->MaxY,
         SrcFormat));
 
-    if (SrcW == 0 || SrcH == 0 || DestW == 0 || DestH == 0)
+    if (SrcW == 0 || SrcH == 0 || DstBounds->MaxX == 0 || DstBounds->MaxY == 0)
     	return 0;
 
     /* This is AROS Cybergraphx - We only work wih Gfx Hidd bitmaps */
@@ -149,8 +158,8 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
         tempbm_obj = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
         if (tempbm_obj)
         {
-            bm_tags[1].ti_Data = DestW;
-            bm_tags[2].ti_Data = DestH;
+            bm_tags[1].ti_Data = DstBounds->MaxX;
+            bm_tags[2].ti_Data = DstBounds->MaxY;
 #if 0
             // FIXME: This doesn't work (X11 and VESA). Should it?
             bm_tags[3].ti_Tag = aHidd_BitMap_Friend;
@@ -168,8 +177,8 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
 
                 scale_args.bsa_SrcWidth = SrcW;
                 scale_args.bsa_SrcHeight = SrcH;
-                scale_args.bsa_DestWidth = DestW;
-                scale_args.bsa_DestHeight = DestH;
+                scale_args.bsa_DestWidth = DstBounds->MaxX;
+                scale_args.bsa_DestHeight = DstBounds->MaxY;
                 HIDD_BM_BitMapScale(tempbm2_obj, tempbm_obj, tempbm2_obj, &scale_args,
                     gc);
 
@@ -177,13 +186,15 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
 
                 data.srcbm_obj = tempbm2_obj;
                 data.gfx_hidd = gfx_hidd;
-                rr.MinX = DestX;
-                rr.MinY = DestY;
-                rr.MaxX = DestX + DestW - 1;
-                rr.MaxY = DestY + DestH - 1;
+                rr.MinX = DstBounds->MinX;
+                rr.MinY = DstBounds->MinY;
+                rr.MaxX = DstBounds->MinX + DstBounds->MaxX - 1;
+                rr.MaxY = DstBounds->MinY + DstBounds->MaxY - 1;
                 result = DoRenderFunc(RastPort, NULL, &rr, RenderHook, &data, TRUE);
 
-// Discard temporary resources ...
+/*
+ * Discard temporary resources ...
+ */
 
                 OOP_DisposeObject(tempbm2_obj);
             }
