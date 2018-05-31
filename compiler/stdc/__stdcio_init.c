@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2012-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Initialisation code for stdcio.library
