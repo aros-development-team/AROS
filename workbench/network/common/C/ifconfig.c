@@ -535,7 +535,7 @@ printall()
 		if (!strncmp(ifreq.ifr_name, ifr->ifr_name,
 			     sizeof(ifr->ifr_name)))
 			continue;
-		(void) strncpy(name, ifr->ifr_name, sizeof(ifr->ifr_name));
+		(void) strncpy(name, ifr->ifr_name, sizeof(name));
 		ifreq = *ifr;
 
 		if (getinfo(&ifreq) < 0)
