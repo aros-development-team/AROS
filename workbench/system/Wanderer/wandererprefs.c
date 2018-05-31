@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2013, The AROS Development Team. All rights reserved.
+  Copyright  2004-2018, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -259,7 +259,7 @@ STRPTR ProcessUserScreenTitle(STRPTR screentitle_Template)
   int screentitle_TemplateLen;
   STATIC char title[256];
   char temp[256], buffer[256];
-  char infostr[10];
+  char infostr[12];
   int screentitle_curChar;
 
   if (screentitle_Template == NULL)
