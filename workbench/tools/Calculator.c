@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
     Command line options:
 
@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *version = "$VER: Calculator 1.4 (08.08.2013) © AROS Dev Team";
+const char *version = "$VER: Calculator 1.5 (31.05.2018) � AROS Dev Team";
 
 #define ARG_TEMPLATE "PUBSCREEN,TAPE/K"
 enum {ARG_PUBSCREEN,ARG_TAPE,NUM_ARGS};
@@ -79,8 +79,9 @@ struct CalcButtonInfo BUTTONS[] =
  * Most of the application state is local or in BOOPSI objects.
  * The only global state is to communicate the command line arguments
  */
+#define CALC_TAPENAME_MAX       320
 static char pubscrname[256];
-static char tapename[256];
+static char tapename[CALC_TAPENAME_MAX];
 static BOOL use_tape;
 
 /**********************************************************************
@@ -595,7 +596,7 @@ static void get_arguments(void)
     if (args[ARG_TAPE])
     {
         use_tape = TRUE;
-        strncpy(tapename, (const char *) args[ARG_TAPE], 255);
+        strncpy(tapename, (const char *) args[ARG_TAPE], CALC_TAPENAME_MAX);
     }
     if (rdargs) FreeArgs(rdargs);
 }
@@ -617,7 +618,7 @@ static void open_raw_tape_if_needed(Object *window, Object *obj_tape)
         if (x > (win->WScreen->Width - (x + w))) x -= w;
         else                                     x += win->WScreen->Width;
 
-        snprintf(tapename, 255, RAW_TAPE_NAME, x, y, w, h, pubscrname);
+        snprintf(tapename, CALC_TAPENAME_MAX, RAW_TAPE_NAME, x, y, w, h, pubscrname);
         tapefh = Open(tapename, MODE_NEWFILE);
         SetAttrs(obj_tape, TAPEA_FILEHANDLE, tapefh);
     }
@@ -688,8 +689,8 @@ int main(void)
 
     app = ApplicationObject,
           MUIA_Application_Title, "Calculator",
-          MUIA_Application_Version, "1.4",
-          MUIA_Application_Copyright, "©2007-2013, AROS Dev Team",
+          MUIA_Application_Version, "1.5",
+          MUIA_Application_Copyright, "©2007-2018, AROS Dev Team",
           MUIA_Application_Author, "AROS Team",
           MUIA_Application_Description, "Simple desktop calculator",
           MUIA_Application_Base, "calculator",
