@@ -604,7 +604,7 @@ BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScre
     struct URL_MailerNode *mn;
     STRPTR                start, end, data, address = NULL, subject = NULL, body = NULL,
                           cmd = NULL, *tag;
-    TEXT                  fileName[32];
+    TEXT                  fileName[36];
     BOOL                  res = FALSE, written = FALSE;
     UWORD                 offset, len;
 
