@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: m68k-amiga bootstrap to exec.
@@ -781,7 +781,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
         oldLastAlert[0] = (LONG)-1;
         oldLastAlert[1] = 0;
         oldLastAlert[2] = 0;
-        oldLastAlert[2] = 0;
+        oldLastAlert[3] = 0;
     }
 
     /* Clear alert marker */
