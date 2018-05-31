@@ -161,8 +161,9 @@ STACK_NAME := AROSTCP
 
 USER_INCLUDES :=  -idirafter $(SRCDIR)/$(CURDIR) -idirafter $(SRCDIR)/$(CURDIR)/protos
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_PARENTHESES)
-USER_CFLAGS := $(NOWARN_FLAGS) -DAMITCP -DKERNEL \
-	-DDIRECTED_BROADCAST -D__BSD_VISIBLE=1
+USER_CPPFLAGS := -DUSE_ALIGNED_COPIES -DDIRECTED_BROADCAST \
+	-DAMITCP -DKERNEL -D__BSD_VISIBLE=1
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 #MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-bsdsocket
 %build_prog mmake=workbench-network-stacks-arostcp-bsdsocket \
