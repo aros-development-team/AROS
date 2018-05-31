@@ -9,5 +9,5 @@
 #include <proto/stdcio.h>
 
 /* Set StdCBase offset */
-const ULONG const __aros_rellib_base_StdCBase = 0;
+const ULONG __aros_rellib_base_StdCBase = 0;
 SETRELLIBOFFSET(StdCBase, struct StdCIOBase, StdCBase)
