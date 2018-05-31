@@ -147,7 +147,7 @@ void gui_open()
 	long showflags = 0;
 	char ifname[IFNAMSIZ+2];
 	long ifstate;
-  	char ifspeed[7];
+  	char ifspeed[8];
 	int  i;
 
 #if defined(__AROS__)
@@ -297,7 +297,7 @@ void gui_process_msg(struct SysLogPacket *msg)
 {
 	struct ifnet *ifp;
 	long state;
-  	char ifspeed[7];
+  	char ifspeed[8];
 
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_gui.c) gui_process_msg()\n"));
