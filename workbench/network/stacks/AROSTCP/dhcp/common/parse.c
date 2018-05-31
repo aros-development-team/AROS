@@ -4800,7 +4800,7 @@ int parse_warn (struct parse *cfile, const char *fmt, ...)
 	va_list list;
 	char lexbuf [256];
 	char mbuf [1024];
-	char fbuf [1024];
+	char fbuf [1040];
 	unsigned i, lix;
 	
 	do_percentm (mbuf, fmt);
