@@ -584,6 +584,8 @@ PACKAGE_URL=
 ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_nowarnflags_stringop_overflow
+aros_warnflags_stringop_overflow
 aros_nowarnflags_empty_body
 aros_warnflags_empty_body
 aros_nowarnflags_tautological_compare
@@ -3232,6 +3234,7 @@ fi
 #  -Wlto-type-mismatch
 #  -Wtautological-compare
 #  -Wempty-body
+#  -Wstringop-overflow
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Werror" >&5
 $as_echo_n "checking whether ${CC} accepts -Werror... " >&6; }
@@ -4883,6 +4886,34 @@ if test "x-$aros_empty_body" = "x-yes" ; then
     aros_nowarnflags_empty_body=-Wno-empty-body
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstringop-overflow" >&5
+$as_echo_n "checking whether ${CC} accepts -Wstringop-overflow... " >&6; }
+CFLAGS=-Wstringop-overflow
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_stringop_overflow="yes"
+else
+  aros_stringop_overflow="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_stringop_overflow" >&5
+$as_echo "$aros_stringop_overflow" >&6; }
+if test "x-$aros_stringop_overflow" = "x-yes" ; then
+    aros_warnflags_stringop_overflow=-Wstringop-overflow
+    aros_nowarnflags_stringop_overflow=-Wno-stringop-overflow
+fi
+
+
 #
 # export the feature flags...
 #
@@ -4919,6 +4950,8 @@ fi
 #
 # ...and warning flags...
 #
+
+
 
 
 
