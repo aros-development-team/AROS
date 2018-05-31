@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2017, The AROS Development Team.
+    Copyright (C) 2003-2018, The AROS Development Team.
     $Id$
 */
 
@@ -266,7 +266,7 @@ AROS_UFH3(void, select_function,
         set(StrDriverHWName, MUIA_Text_Contents, str);
         strcpy(SaveDeviceInfo.Hardware_info, str); //Save Debug Info
         OOP_GetAttr(drv, aHidd_PCIDriver_IOBase, &val);
-        snprintf(SaveDeviceInfo.IOBase, 10, "0x%08lx", val);
+        snprintf(SaveDeviceInfo.IOBase, 11, "0x%08lx", val);
         set(StrIOBase, MUIA_Text_Contents, SaveDeviceInfo.IOBase);
         OOP_GetAttr(drv, aHidd_PCIDriver_DirectBus, (APTR)&val);
         set(StrDriverDirect, MUIA_Text_Contents, (IPTR)((val)?_(MSG_YES):_(MSG_NO)));
