@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2011, The AROS Development Team. All rights reserved.
+    Copyright  2004-2018, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
     
@@ -718,10 +718,9 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Image-type spec (%d) - Enab
 D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Existing options @ 0x%p\n", _viewSettings_Current->wpedbo_Options));
             }
 
+            IPTR DRAWMODEENTRY = 0;
             switch ((int)_viewSettings_Current->wpedbo_Type)
             {
-                IPTR DRAWMODEENTRY = 0;
-
                 case 5:
                 {
                     if ((strcmp(_viewSettings_Current->wpedbo_ViewName, "Workbench")) == 0)
