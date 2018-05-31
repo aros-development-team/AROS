@@ -1,4 +1,4 @@
-#   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2018, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: host.cfg - an autoconf output file for make variables.
@@ -11,6 +11,7 @@ AROS_HOST_ARCH          := @aros_host_arch@
 AROS_HOST_CPU           := @aros_host_cpu@
 
 HOST_CPP                := @aros_host_cpp@
+HOST_CPPFLAGS           :=
 HOST_DEF_CC             := $(CC_PREFIX) @aros_host_def_cc@
 HOST_CC                 := $(CC_PREFIX) @aros_host_cc@
 HOST_CFLAGS             := @aros_host_cflags@

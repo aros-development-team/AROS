@@ -1,4 +1,4 @@
-#   Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2018, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -41,8 +41,10 @@ TARGET_SYSROOT          := @aros_config_sysroot@
 KERNEL_SYSROOT          := @aros_kernel_sysroot@
 CONFIG_BASE_CFLAGS      = @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS)
 CONFIG_BASE_CXXFLAGS    = @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS)
+CONFIG_BASE_CPPFLAGS    =
 CONFIG_CFLAGS	        = @aros_config_cflags@ $(CONFIG_WARN_CFLAGS) $(CONFIG_NOWARN_CFLAGS)
 CONFIG_CXXFLAGS	        = @aros_config_cxxflags@ $(CONFIG_WARN_CXXFLAGS) $(CONFIG_NOWARN_CXXFLAGS)
+CONFIG_CPPFLAGS         =
 CONFIG_AFLAGS	        := @aros_config_aflags@
 CONFIG_LDFLAGS	        := @aros_config_ldflags@
 SHARED_CFLAGS	        := @aros_shared_cflags@
@@ -54,9 +56,10 @@ KERNEL_INCLUDES         := @aros_kernel_includes@
 KERNEL_LDFLAGS	        := @aros_kernel_ldflags@
 TARGET_CFLAGS           = $(ISA_FLAGS) $(OPTIMIZATION_CFLAGS) $(USER_INCLUDES) $(CONFIG_CFLAGS) $(USER_CFLAGS)
 TARGET_CXXFLAGS         = $(ISA_FLAGS) $(OPTIMIZATION_CFLAGS) $(USER_INCLUDES) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
-
+TARGET_CPPFLAGS         = $(USER_CPPFLAGS)
 DEBUG_CFLAGS	        := @aros_debug_cflags@
 DEBUG_CXXFLAGS          :=
+DEBUG_CPPFLAGS          :=
 DEBUG_AFLAGS            := @aros_debug_aflags@
 DEBUG_LDFLAGS           := @aros_debug_ldflags@
 OPTIMIZATION_CFLAGS     := @aros_optimization_cflags@

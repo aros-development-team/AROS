@@ -1,4 +1,4 @@
-# Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+# Copyright © 1995-2018, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Static makefile rule file for AROS.
@@ -182,17 +182,21 @@ GENINCDIR	:= $(GENDIR)/include
 
 BASE_CFLAGS := $(CONFIG_BASE_CFLAGS)
 BASE_CXXFLAGS := $(CONFIG_BASE_CXXFLAGS)
+BASE_CPPFLAGS := $(CONFIG_BASE_CPPFLAGS)
 
 # Was debugging enabled? Better set up the options.
 ifeq ($(DEBUG),yes)
 BASE_CFLAGS += $(DEBUG_CFLAGS)
 BASE_CXXFLAGS += $(DEBUG_CXXFLAGS)
+BASE_CPPFLAGS += $(DEBUG_CPPFLAGS)
 CONFIG_CFLAGS += $(DEBUG_CFLAGS)
 CONFIG_CXXFLAGS += $(DEBUG_CXXFLAGS)
+CONFIG_CPPFLAGS += $(DEBUG_CPPFLAGS)
 CONFIG_AFLAGS += $(DEBUG_AFLAGS)
 CONFIG_LDFLAGS += $(DEBUG_LDFLAGS)
 HOST_CFLAGS += $(DEBUG_CFLAGS)
 HOST_CXXFLAGS += $(DEBUG_CXXFLAGS)
+HOST_CPPFLAGS += $(DEBUG_CPPFLAGS)
 HOST_AFLAGS += $(DEBUG_AFLAGS)
 HOST_LDFLAGS += $(DEBUG_LDFLAGS)
 MECHO	:= $(ECHO)
@@ -203,6 +207,7 @@ endif
 # compiler and assembler flags are set depending upon the directory
 CFLAGS      = $(TARGET_CFLAGS)
 CXXFLAGS    = $(TARGET_CXXFLAGS)
+CPPFLAGS = $(TARGET_CPPFLAGS)
 AFLAGS	    = $(ISA_FLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS)
 LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
 
