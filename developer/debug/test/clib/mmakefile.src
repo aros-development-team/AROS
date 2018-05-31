@@ -4,7 +4,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := \
+CLIBTESTFILES := \
         all-tests \
         arguments \
         chdir \
@@ -32,9 +32,6 @@ FILES := \
         randtest \
         scandir \
         setjmp \
-        snprintf \
-        sprintf \
-        sprintf_f \
         sscanf \
         statfs \
         stpblk \
@@ -61,16 +58,29 @@ FILES := \
         assert \
         posix_memalign
 
+CLIBPRINTTESTFILES := \
+        snprintf \
+        sprintf \
+        sprintf_f
+
 FILES_NIXC := \
         argv0_test3 argv0_test4 argv0_slave_nixc
 
 EXEDIR := $(AROS_TESTS)/clib
 
-#MM test-clib : includes includes-copy linklibs kernel
+#MM- test-clib : test-clib-general test-clib-print
+#MM test-clib-general : includes includes-copy linklibs kernel
+#MM test-clib-print : includes includes-copy linklibs kernel
 
 USER_CFLAGS = -ffloat-store
-%build_progs mmake=test-clib \
+%build_progs mmake=test-clib-general \
     files=$(FILES) targetdir=$(EXEDIR)
+
+NOWARN_CFLAGS := $(NOWARN_FORMAT_TRUNCATION)
+USER_CFLAGS = -ffloat-store $(NOWARN_CFLAGS)
+
+%build_progs mmake=test-clib-print \
+    files=$(CLIBPRINTTESTFILES) targetdir=$(EXEDIR)
 
 # From here on compile with -nix flag
 
