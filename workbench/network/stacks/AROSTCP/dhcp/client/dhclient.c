@@ -184,7 +184,7 @@ int main (argc, argv, envp)
 	SetErrnoPtr(&errno, sizeof(errno));
 
 	static TEXT dh_conf[256];
-	static TEXT dh_db[256];
+	static TEXT dh_db[288];
 	LONG len;
 
 	dh_conf[0] = dh_db[0] = '\0';
