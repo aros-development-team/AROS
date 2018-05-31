@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS :=	-I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes -D__BSD_VISIBLE=1
+USER_CPPFLAGS :=	-I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes -D__BSD_VISIBLE=1
 
 FILES :=	alloc bpf comapi conflex ctrace discover dispatch	\
 		dlpi dns ethernet execute fddi icmp inet lpf memory	\
