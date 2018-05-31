@@ -254,6 +254,7 @@ fi
 #  -Wlto-type-mismatch
 #  -Wtautological-compare
 #  -Wempty-body
+#  -Wstringop-overflow
 
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
 CFLAGS=-Werror
@@ -807,6 +808,16 @@ if test "x-$aros_empty_body" = "x-yes" ; then
     aros_nowarnflags_empty_body=-Wno-empty-body
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wstringop-overflow])
+CFLAGS=-Wstringop-overflow
+AC_TRY_COMPILE(,, aros_stringop_overflow="yes", aros_stringop_overflow="no")
+AC_MSG_RESULT($aros_stringop_overflow)
+if test "x-$aros_stringop_overflow" = "x-yes" ; then
+    aros_warnflags_stringop_overflow=-Wstringop-overflow
+    aros_nowarnflags_stringop_overflow=-Wno-stringop-overflow
+fi
+
+
 #
 # export the feature flags...
 #
@@ -965,7 +976,9 @@ AC_SUBST(aros_warnflags_tautological_compare)
 AC_SUBST(aros_nowarnflags_tautological_compare)
 AC_SUBST(aros_warnflags_empty_body)
 AC_SUBST(aros_nowarnflags_empty_body)
-    
+AC_SUBST(aros_warnflags_stringop_overflow)
+AC_SUBST(aros_nowarnflags_stringop_overflow)
+
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
 )
