@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     WiMP -- Window manipulation program.
@@ -104,8 +104,8 @@ struct ListEntry
     LONG type;
     APTR aptr;
     TEXT address[20];
-    TEXT size[12];
-    TEXT pos[12];
+    TEXT size[16];
+    TEXT pos[16];
     TEXT status[4];
     TEXT title[40];
 };
