@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team.
+    Copyright (C) 2013-2018, The AROS Development Team.
     $Id$
 */
 
@@ -224,7 +224,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     Object *processors_flt;
     Object *hpet_flt;
     Object *ram_flt;
-    char aros_ver[8], exec_ver[8];
+    char aros_ver[12], exec_ver[12];
     IPTR bootldr = 0;
     IPTR args = 0;
     APTR KernelBase;
