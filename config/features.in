@@ -255,6 +255,7 @@ fi
 #  -Wtautological-compare
 #  -Wempty-body
 #  -Wstringop-overflow
+#  -Wformat-truncation
 
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
 CFLAGS=-Werror
@@ -817,6 +818,14 @@ if test "x-$aros_stringop_overflow" = "x-yes" ; then
     aros_nowarnflags_stringop_overflow=-Wno-stringop-overflow
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-truncation])
+CFLAGS=-Wformat-truncation
+AC_TRY_COMPILE(,, aros_format_truncation="yes", aros_format_truncation="no")
+AC_MSG_RESULT($aros_format_truncation)
+if test "x-$aros_format_truncation" = "x-yes" ; then
+    aros_warnflags_format_truncation=-Wformat-truncation
+    aros_nowarnflags_format_truncation=-Wno-format-truncation
+fi
 
 #
 # export the feature flags...
@@ -978,6 +987,8 @@ AC_SUBST(aros_warnflags_empty_body)
 AC_SUBST(aros_nowarnflags_empty_body)
 AC_SUBST(aros_warnflags_stringop_overflow)
 AC_SUBST(aros_nowarnflags_stringop_overflow)
+AC_SUBST(aros_warnflags_format_truncation)
+AC_SUBST(aros_nowarnflags_format_truncation)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in

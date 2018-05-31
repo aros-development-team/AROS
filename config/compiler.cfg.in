@@ -117,6 +117,7 @@ WARN_LTO_TYPE_MISMATCH                  := @aros_warnflags_lto_type_mismatch@
 WARN_TAUTOLOGICAL_COMPARE               := @aros_warnflags_tautological_compare@
 WARN_EMPTY_BODY                         := @aros_warnflags_empty_body@
 WARN_STRINGOP_OVERFLOW                  := @aros_warnflags_stringop_overflow@
+WARN_FORMAT_TRUNCATION                  := @aros_warnflags_format_truncation@
 
 #
 # "Disable" compiler warning flags
@@ -186,3 +187,4 @@ NOWARN_LTO_TYPE_MISMATCH                := @aros_nowarnflags_lto_type_mismatch@
 NOWARN_TAUTOLOGICAL_COMPARE             := @aros_nowarnflags_tautological_compare@
 NOWARN_EMPTY_BODY                       := @aros_nowarnflags_empty_body@
 NOWARN_STRINGOP_OVERFLOW                := @aros_nowarnflags_stringop_overflow@
+NOWARN_FORMAT_TRUNCATION                := @aros_nowarnflags_format_truncation@
