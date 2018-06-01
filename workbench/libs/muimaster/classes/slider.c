@@ -17,7 +17,7 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
-/*#define MYDEBUG 1*/
+//#define MYDEBUG 1
 #include "debug.h"
 
 #include "support.h"
@@ -339,14 +339,14 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj,
     UWORD knob_frame_state;
     LONG val = 0;
 
-    D(bug("[slider] %s: obj @ 0x%p", __func__, obj);)
+    D(bug("[slider] %s: obj @ 0x%p\n", __func__, obj);)
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
         return FALSE;
 
-    D(bug("[slider] %s: %d,%d->%d,%d (%d,%d)", __func__, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), _mwidth(obj), _mheight(obj));)
+    D(bug("[slider] %s: %d,%d->%d,%d (%d,%d)\n", __func__, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj), _mwidth(obj), _mheight(obj));)
 
     if (data->flags & SLIDER_HORIZ)
         data->scale_length = _mwidth(obj);
