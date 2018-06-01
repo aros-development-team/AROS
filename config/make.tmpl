@@ -2776,6 +2776,11 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #     - extraoptions    = additional options for the configure script.
 #     - extracflags     = additional flags to use with the C compiler.
 #     - extracxxflags   = additional flags to use with the C++ compiler.
+#     - usecppflags      = enable the use of cpp flags. some external configure
+#                         scripts will not set their own cppflags if it is already
+#                         set, so this allows them to be disabled (unless you can provide
+#                         all the options they would need)
+#     - extracppflags      = additional preprocessor flags.
 #     - nix_dir_layout  = if yes the binary will be stored in a bin subdirectory.
 #                         Defaults to the value of the nix argument.
 #     - nix             = enable u*nix path handling, i.e. a path like
@@ -2822,7 +2827,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) \
     prefix= gendir= basedir=$(CURDIR) extraoptions= \
-    extracflags="$(OPTIMIZATION_CFLAGS)" extracppflags= extracxxflags="$(OPTIMIZATION_CFLAGS)" \
+    usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
     install_target=install preconfigure= postconfigure= postinstall= \
     config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes
@@ -2958,12 +2963,16 @@ ifeq (%(compiler),target)
         LD="$(strip $(TARGET_LD))"
 ifeq (%(crossbuild),yes)
     %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
-        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))" \
-        CPPFLAGS="$(strip $(USER_CPPFLAGS) %(extracppflags))"
+        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))"
+ifeq (%(usecppflags),yes)
+    %(mmake)-cfg-env += CPPFLAGS="$(strip $(USER_CPPFLAGS) %(extracppflags))"
+endif
 else
     %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
-        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
-        CPPFLAGS="$(strip $(USER_CPPFLAGS) %(extracppflags))"
+        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+ifeq (%(usecppflags),yes)
+    %(mmake)-cfg-env += CPPFLAGS="$(strip $(USER_CPPFLAGS) %(extracppflags))"
+endif
 endif
     %(mmake)-cfg-env += LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         CC_FOR_BUILD="$(strip $(HOST_DEF_CC))" \
@@ -3014,9 +3023,11 @@ ifeq (%(compiler),kernel)
         CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
         CFLAGS="$(strip $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
         CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
-        CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))" \
-        CPPFLAGS="$(strip $(KERNEL_CPPFLAGS) %(extracppflags))" \
-        AS="$(KERNEL_AS)" \
+        CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))"
+ifeq (%(usecppflags),yes)
+    %(mmake)-cfg-env += CPPFLAGS="$(strip $(KERNEL_CPPFLAGS) %(extracppflags))"
+endif
+    %(mmake)-cfg-env += AS="$(KERNEL_AS)" \
         CC_FOR_BUILD="$(HOST_DEF_CC)" \
         CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
         CXX_FOR_BUILD="$(HOST_CXX)" \
@@ -3120,7 +3131,7 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	@$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	@$(ECHO) "Configuring build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))"
-	cd $(%(mmake)-pkgdir) && \
+	@cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	$(%(mmake)-cfg-env) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) && \
 	$(TOUCH) $@
@@ -3388,6 +3399,7 @@ endif
 #    - aros_prefix      = same meaning as the one for the %build_with_configure macro.
 #    - extraoptions     = same meaning as the one for the %build_with_configure macro.
 #    - extracflags      = same meaning as the one for the %build_with_configure macro.
+#    - extracppflags      = same meaning as the one for the %build_with_configure macro.
 #    - extracxxflags    = same meaning as the one for the %build_with_configure macro.
 #    - preconfigure     = same meaning as the one for the %build_with_configure macro.
 #    - postconfigure    = same meaning as the one for the %build_with_configure macro.
@@ -3401,7 +3413,7 @@ endif
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target crossbuild=no install_target=install \
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir=$(CURDIR) package_repo= patch=no patch_repo= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
-    extraoptions=  extracflags="$(OPTIMIZATION_CFLAGS)" extracppflags= extracxxflags="$(OPTIMIZATION_CFLAGS)" \
+    extraoptions=  usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no buildflags=yes gnuflags=yes
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
@@ -3474,7 +3486,7 @@ endif
      config_env_extra="%(config_env_extra)" install_env="%(install_env)" use_build_env="%(use_build_env)" \
      nix="%(nix)" nix_dir_layout="%(nix_dir_layout)" prefix=$(%(mmake)-prefix) \
      aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
-     %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" extracflags="%(extracflags)" extracppflags="%(extracppflags)" extracxxflags="%(extracxxflags)" buildflags=%(buildflags) gnuflags=%(gnuflags)
+     %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" buildflags=%(buildflags) gnuflags=%(gnuflags)
 
 .PHONY : %(mmake)-%(subpackage)-make-package %(mmake)-%(subpackage)-create-patch
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
