@@ -7,7 +7,9 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- AHI       : workbench-devs-AHI
 
-#MM workbench-devs-AHI : includes \
+#MM- workbench-devs-AHI : workbench-devs-AHI-subsystem AHI-drivers
+
+#MM workbench-devs-AHI-subsystem : includes \
 #MM                         linklibs \
 #MM                         AHI-alsa-bridge-$(AROS_TARGET_ARCH) \
 #MM                         workbench-libs-muimaster-includes
@@ -18,6 +20,8 @@ NOWARN_FLAGS := $(NOWARN_POINTER_SIGN)
 AHI_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN_FLOOR) $(OPTIMIZATION_CFLAGS)
 AHI_OPTIONS=--with-os-includedir=$(AROS_INCLUDES)
 
-%build_with_configure mmake=workbench-devs-AHI prefix=$(EXEDIR) \
+# AHI's configure will not set its needed preprocessor flags if we already provide them (even if empty)
+# so we disable their use in build_with_configure.
+%build_with_configure mmake=workbench-devs-AHI-subsystem prefix=$(EXEDIR) \
     extraoptions="$(AHI_OPTIONS)" \
-    extracflags="$(AHI_CFLAGS)" gnuflags=no
+    extracflags="$(AHI_CFLAGS)" usecppflags=no gnuflags=no
