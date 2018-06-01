@@ -82,7 +82,7 @@ endif
 	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
 		%(strip) $(LINKTARGET) --only-keep-debug -o $(LINKTARGET).dbg; \
 	fi
-	%(strip) $(LINKTARGET)
+	@%(strip) $(LINKTARGET)
 %end
 #------------------------------------------------------------------------------
 
