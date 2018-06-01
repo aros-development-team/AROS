@@ -3012,10 +3012,10 @@ ifeq (%(compiler),kernel)
         CPP="$(KERNEL_CPP)" \
         CXXCPP="$(KERNEL_CPP)" \
         CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
-        CFLAGS="$(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag)" \
+        CFLAGS="$(strip $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
         CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
-        CXXFLAGS="$(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag)" \
-        CPPFLAGS="$(KERNEL_CPPFLAGS) %(extracppflags)" \
+        CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))" \
+        CPPFLAGS="$(strip $(KERNEL_CPPFLAGS) %(extracppflags))" \
         AS="$(KERNEL_AS)" \
         CC_FOR_BUILD="$(HOST_DEF_CC)" \
         CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
@@ -3120,7 +3120,7 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	@$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	@$(ECHO) "Configuring build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))"
-	@cd $(%(mmake)-pkgdir) && \
+	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	$(%(mmake)-cfg-env) $(TMP_SRCDIR)/configure $(%(mmake)-config_opts) %(extraoptions) && \
 	$(TOUCH) $@
