@@ -70,7 +70,7 @@ endif
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 				$(ECHO) "$(LINKTARGET): %(cmd) %(from) -o $(LINKTARGET) %(opt) %(libs)" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
-	   	else \
+		else \
 			$(NOP) ; \
 		fi ; \
 		$(CP) $(LINKTMPFILE) $(LINKTARGET) ; \
@@ -145,7 +145,7 @@ endif
 # Create several directories without any output
 %define mkdirs_q dirs=/M
 	@$(FOR) dir in %(dirs) ; do \
-	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+		$(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
 	done
 %end
 #------------------------------------------------------------------------------
@@ -2958,7 +2958,7 @@ ifeq (%(compiler),target)
         LD="$(strip $(TARGET_LD))"
 ifeq (%(crossbuild),yes)
     %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
-        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag)) %(extracppflags)" \
+        CXXFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))" \
         CPPFLAGS="$(USER_CPPFLAGS) %(extracppflags)"
 else
     %(mmake)-cfg-env += CFLAGS="$(strip $(ISA_FLAGS) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
