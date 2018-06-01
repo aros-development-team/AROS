@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -179,7 +179,7 @@ static BOOL Buffer_Alloc(struct MUI_StringData *data)
         (STRPTR) AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
     if (NULL == data->Buffer)
     {
-        bug("MUIC_String: Can't allocate %ld bytes for buffer1\n",
+        bug("[MUI:String] Buffer_Alloc: Failed to allocate %ld bytes for buffer1\n",
             data->BufferSize * sizeof(char));
         return FALSE;
     }
@@ -189,7 +189,7 @@ static BOOL Buffer_Alloc(struct MUI_StringData *data)
             (STRPTR) AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
         if (NULL == data->SecBuffer)
         {
-            bug("MUIC_String: Can't allocate %ld bytes for buffer2\n",
+            bug("[MUI:String] Buffer_Alloc: Failed to allocate %ld bytes for buffer2\n",
                 data->BufferSize * sizeof(char));
             FreeVec(data->Buffer);
             data->Buffer = NULL;
@@ -451,7 +451,6 @@ static BOOL Buffer_KillMarked(struct MUI_StringData *data)
     memmove(&data->Buffer[markstart],
         &data->Buffer[markstart + marklen],
         data->NumChars - markstart - marklen + 1);
-
     data->NumChars -= marklen;
     data->BufferPos = markstart;
 
@@ -567,7 +566,7 @@ IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return 0;
     }
 
-    D(bug("String_New(%p)\n", obj));
+    D(bug("[MUI:String] New(%p)\n", obj));
 
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 0;
@@ -590,7 +589,7 @@ IPTR String__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     FreeVec(data->Buffer);
     FreeVec(data->SecBuffer);
 
-    D(bug("String_Dispose %p\n", obj));
+    D(bug("[MUI:String] Dispose %p\n", obj));
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -828,7 +827,7 @@ IPTR String__MUIM_Cleanup(struct IClass *cl, Object *obj,
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
 
-    D(bug("String_Cleanup %p\n", obj));
+    D(bug("[MUI:String] Cleanup %p\n", obj));
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
 
     zune_penspec_cleanup(&data->inactive_text);
@@ -1279,7 +1278,7 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
         (struct MUI_StringData *)INST_DATA(cl, obj);
     BOOL doinput;
 
-    D(bug("String_HandleVanillakey: code=%d qual=%d\n", code, qual));
+    D(bug("[MUI:String] HandleVanillakey: code=%d qual=%d\n", code, qual));
 
     if (0 == code)
         return 0;
@@ -1308,8 +1307,14 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
                 data->msd_RedrawReason = DO_BACKSPACE;
             }
 
-            strcpy(&data->Buffer[data->BufferPos - shift],
-                &data->Buffer[data->BufferPos]);
+            if (data->BufferSize - data->BufferPos > 0)
+            {
+                D(bug("[MUI:String] HandleVanillakey: 'Backspace' count=%d pos=%d shift=%d\n", data->NumChars, data->BufferPos, shift));
+                memmove(&data->Buffer[data->BufferPos - shift],
+                    &data->Buffer[data->BufferPos],
+                    data->NumChars - shift);
+                data->Buffer[data->NumChars - shift] = 0;
+            }
             data->BufferPos -= shift;
             data->NumChars -= shift;
             return 1;
@@ -1326,7 +1331,14 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
 
         if (data->BufferPos > 0)
         {
-            strcpy(&data->Buffer[0], &data->Buffer[data->BufferPos]);
+            if (data->NumChars - data->BufferPos > 0)
+            {
+                D(bug("[MUI:String] HandleVanillakey: 'Ctrl-U' count=%d pos=%d\n", data->NumChars, data->BufferPos));
+                memmove(&data->Buffer[0],
+                    &data->Buffer[data->BufferPos],
+                    data->NumChars - data->BufferPos);
+                data->Buffer[data->NumChars - data->BufferPos] = 0;
+            }
             data->NumChars -= data->BufferPos;
             data->BufferPos = 0;
             data->msd_RedrawReason = NEW_CONTENTS;
@@ -1349,9 +1361,14 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
             {
                 if (data->BufferPos < data->NumChars)
                 {
-                    strcpy(&data->Buffer[data->BufferPos],
-                        &data->Buffer[data->BufferPos + 1]);
-                    data->NumChars--;
+                    if (data->BufferSize - data->BufferPos > 0)
+                    {
+                        D(bug("[MUI:String] HandleVanillakey: 'Delete' count=%d pos=%d\n", data->NumChars, data->BufferPos));
+                        memmove(&data->Buffer[data->BufferPos],
+                            &data->Buffer[data->BufferPos + 1],
+                            data->NumChars - data->BufferPos);
+                        data->Buffer[data->NumChars--] = 0;
+                    }
                 }
 
                 data->msd_RedrawReason = DO_DELETE;
@@ -1573,7 +1590,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         }
     }
 
-    D(bug("String_HandleEvent: muikey %d, imsg %p is_active=%d\n", muikey,
+    D(bug("[MUI:String] HandleEvent: muikey %d, imsg %p is_active=%d\n", muikey,
             msg->imsg, data->is_active));
     if (muikey != MUIKEY_NONE && data->is_active)
     {
