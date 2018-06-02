@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: System memory allocator for MMU-less systems.
@@ -22,27 +22,15 @@
 APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     APTR res = NULL;
-    struct MemHeader *mh, *mhn;
+    struct MemHeader *mh;
     ULONG requirements = flags & MEMF_PHYSICAL_MASK;
 
     /* Protect memory list against other tasks */
     MEM_LOCK;
 
-    if (flags & MEMF_REVERSE)
-        mhn = (struct MemHeader *)GetTail(&SysBase->MemList);
-    else
-        mhn = (struct MemHeader *)GetHead(&SysBase->MemList);
-
     /* Loop over MemHeader structures */
-    while (mhn)
+    ForeachNode(&SysBase->MemList, mh)
     {
-        mh = mhn;
-
-        if (flags & MEMF_REVERSE)
-            mhn = (struct MemHeader *)(((struct Node *)(mh))->ln_Pred);
-        else
-            mhn = (struct MemHeader *)(((struct Node *)(mh))->ln_Succ);
-
         /*
          * Check for the right requirements and enough free memory.
          * The requirements are OK if there's no bit in the
@@ -91,7 +79,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
             {
                 if (mhe->mhe_AllocAbs)
                 {
-                    void * ret = mhe->mhe_AllocAbs(mhe, byteSize, location);
+                    APTR ret = mhe->mhe_AllocAbs(mhe, byteSize, location);
 
                     MEM_UNLOCK;
 
@@ -122,8 +110,8 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
         
         /*
             The free memory list is only single linked, i.e. to remove
-            elements from the list I need the node's predessor. For the
-            first element I can use freeList->mh_First instead of a real
+            elements from the list we need the node's predecessor. For the
+            first element we can use freeList->mh_First instead of a real
             predecessor.
         */
         p1 = (struct MemChunk *)&mh->mh_First;
