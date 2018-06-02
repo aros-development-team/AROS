@@ -243,7 +243,7 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 		sa = &ifr->ifr_addr;
 		++icnt;
 		dcnt += SA_RLEN(sa);
-		ncnt += sizeof(ifr->ifr_name) + 1;
+		ncnt += IFNAMSIZ + 1;
 		
 		if (SA_LEN(sa) < sizeof(*sa))
 			ifr = (struct ifreq *)(((char *)sa) + sizeof(*sa));
@@ -393,8 +393,8 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 		struct sockaddr *sa;
 
 		ift->ifa_name = names;
-		names[sizeof(ifr->ifr_name)] = 0;
-		strncpy(names, ifr->ifr_name, sizeof(ifr->ifr_name));
+		names[IFNAMSIZ] = 0;
+		strncpy(names, ifr->ifr_name, IFNAMSIZ);
 		while (*names++)
 			;
 
