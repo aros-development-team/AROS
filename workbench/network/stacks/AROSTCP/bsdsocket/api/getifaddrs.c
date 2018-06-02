@@ -394,7 +394,7 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 
 		ift->ifa_name = names;
 		names[sizeof(ifr->ifr_name)] = 0;
-		strncpy(names, ifr->ifr_name, sizeof(*ifr->ifr_name));
+		strncpy(names, ifr->ifr_name, sizeof(ifr->ifr_name));
 		while (*names++)
 			;
 
