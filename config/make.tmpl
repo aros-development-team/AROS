@@ -2774,13 +2774,13 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #     - aros_prefix     = set a path which is valid within the AROS filesystem.
 #                         Defaults to the value of the prefix option.
 #     - extraoptions    = additional options for the configure script.
-#     - extracflags     = additional flags to use with the C compiler.
-#     - extracxxflags   = additional flags to use with the C++ compiler.
 #     - usecppflags      = enable the use of cpp flags. some external configure
 #                         scripts will not set their own cppflags if it is already
 #                         set, so this allows them to be disabled (unless you can provide
 #                         all the options they would need)
 #     - extracppflags      = additional preprocessor flags.
+#     - extracflags     = additional flags to use with the C compiler.
+#     - extracxxflags   = additional flags to use with the C++ compiler.
 #     - nix_dir_layout  = if yes the binary will be stored in a bin subdirectory.
 #                         Defaults to the value of the nix argument.
 #     - nix             = enable u*nix path handling, i.e. a path like
@@ -3157,12 +3157,19 @@ $(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 #     - aros_prefix     = set a path which is valid within the AROS filesystem.
 #                         Defaults to the value of the prefix option.
 #     - extraoptions    = additional options for the cmake script.
+#     - usecppflags     = enable the use of cpp flags. some external cmake
+#                         scripts will not set their own cppflags if it is already
+#                         set, so this allows them to be disabled (unless you can provide
+#                         all the options they would need)
+#     - cppflags        = preprocessor flags.
+#     - cflags          = flags to use with the C compiler.
+#     - cxxflags        = flags to use with the C++ compiler.
 #     - installoptions    = additional options for the install step.
 #
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
-    cflags=$(CFLAGS) cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) ldflags=$(LDFLAGS)
+    usecppflags=yes cppflags=$(CPPFLAGS) cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) ldflags=$(LDFLAGS)
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -3181,7 +3188,11 @@ ifeq (%(compiler),host)
     BD_CFLAGS := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include
     BD_CXXFLAGS := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include
     BD_CPPFLAGS := $(HOST_CPPFLAGS)
-    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_DEF_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)" -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
+    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_DEF_CC)" -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    ifeq (%(usecppflags),yes)
+        %(mmake)-cmake_opts += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
+    endif
+    %(mmake)-cmake_opts += -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
     ifeq (%(package),)
         %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
     else
@@ -3192,7 +3203,11 @@ else
     BD_CFLAGS := %(cflags) 
     BD_CXXFLAGS := %(cxxflags)
     BD_CPPFLAGS := %(cppflags)
-    %(mmake)-cmake_opts  := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(BD_CFLAGS)" -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)" -DCMAKE_EXE_LINKER_FLAGS="$(BD_LDFLAGS)"
+    %(mmake)-cmake_opts  := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    ifeq (%(usecppflags),yes)
+        %(mmake)-cmake_opts += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
+    endif
+    %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))" -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
     ifeq (%(package),)
         %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
     else
@@ -3398,8 +3413,9 @@ endif
 #    - prefix           = same meaning as the one for the %build_with_configure macro.
 #    - aros_prefix      = same meaning as the one for the %build_with_configure macro.
 #    - extraoptions     = same meaning as the one for the %build_with_configure macro.
+#    - usecppflags      = same meaning as the one for the %build_with_configure macro.
+#    - extracppflags    = same meaning as the one for the %build_with_configure macro.
 #    - extracflags      = same meaning as the one for the %build_with_configure macro.
-#    - extracppflags      = same meaning as the one for the %build_with_configure macro.
 #    - extracxxflags    = same meaning as the one for the %build_with_configure macro.
 #    - preconfigure     = same meaning as the one for the %build_with_configure macro.
 #    - postconfigure    = same meaning as the one for the %build_with_configure macro.
