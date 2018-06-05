@@ -267,7 +267,7 @@ diff -ruN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.aros/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup.o%s %{detach:detach.o%s} %{nix:nixmain.o%s}"
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
