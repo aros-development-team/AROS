@@ -349,6 +349,7 @@ STDC := \
     __stdc_gmtoffset \
     __stdc_ioerr2errno \
     __stdc_startup \
+    __stdc_fpuprivate \
     __vcformat \
     __vcscan \
     _exit \
