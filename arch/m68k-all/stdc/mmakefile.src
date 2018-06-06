@@ -4,6 +4,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0 -mc68020
+USER_CFLAGS := -I$(SRCDIR)/compiler/stdc
 
 STDC_M68K_FILES := \
     fenv
@@ -53,7 +54,7 @@ STDC_M68K_ASMFILES += \
     math/s_trunc-881
 
 STDC_M68K_FILES += \
-    mathpatch
+    __stdc_fpumath
 
 %build_archspecific \
   mainmmake=compiler-stdc \
