@@ -2,7 +2,7 @@
 #define _LIBRARIES_STDC_H
 
 /*
-    Copyright © 2012-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Public part of StdC libbase.
@@ -46,6 +46,8 @@ int *__stdc_set_errorptr(int *errorptr);
 int *__stdc_get_errorptr(void);
 void __stdc_set_exitjmp(jmp_buf exitjmp, jmp_buf previousjmp);
 void __stdc_jmp2exit(int normal, int returncode) __noreturn;
+void *__stdc_set_fpuprivate(void *fpuprivate);
+void *__stdc_get_fpuprivate(void);
 
 __END_DECLS
 
