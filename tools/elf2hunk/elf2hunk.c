@@ -568,7 +568,8 @@ static int relocate
                 break;
 
             case R_68K_PC16:
-                bug("[ELF2HUNK] Unsupported relocation type R_68K_PC16\n");
+                bug("[ELF2HUNK] Unsupported relocation type R_68K_PC16,\n");
+                bug("[ELF2HUNK]    for symbol '%s'\n", symname);
                 set_error(EINVAL);
                 return 0;
                 break;
@@ -578,7 +579,8 @@ static int relocate
                 break;
 
             default:
-                bug("[ELF2HUNK] Unrecognized relocation type %d %d\n", (int)i, (int)ELF_R_TYPE(rel->info));
+                bug("[ELF2HUNK] Unrecognized relocation type %d %d,\n", (int)i, (int)ELF_R_TYPE(rel->info));
+                bug("[ELF2HUNK]    for symbol '%s'\n", symname);
                 set_error(EINVAL);
 		return 0;
         }
