@@ -40,49 +40,49 @@ endif
 #
 
 $(TOP)/config/make.cfg: $(SRCDIR)/config/make.cfg.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(TOP)/config/make.cfg
 
 $(TOP)/compiler/include/geninc.cfg: $(SRCDIR)/compiler/include/geninc.cfg.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(TOP)/compiler/include/geninc.cfg
 
 $(AROS_INCLUDES)/aros/config.h: $(SRCDIR)/config/config.h.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(AROS_INCLUDES)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(AROS_INCLUDES)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(AROS_INCLUDES)/aros/config.h
 
 $(GENINCDIR)/aros/config.h: $(SRCDIR)/config/config.h.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(GENINCDIR)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(GENINCDIR)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENINCDIR)/aros/config.h
 
 $(GENDIR)/config/target.cfg: $(SRCDIR)/config/target.cfg.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/target.cfg
 
 $(GENDIR)/config/build.cfg: $(SRCDIR)/config/build.cfg.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/build.cfg
 
 $(GENDIR)/config/make.defaults: $(SRCDIR)/config/make.defaults.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/make.defaults
 
 $(HOSTGENDIR)/config/host.cfg: $(SRCDIR)/config/host.cfg.in $(TOP)/config.status
-	@$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
+	@+$(ECHO) "Regenerating " $(subst $(GENDIR)/,,$@); \
 	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(HOSTGENDIR)/config/host.cfg
