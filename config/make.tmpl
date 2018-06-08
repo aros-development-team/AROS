@@ -553,7 +553,7 @@ endif
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
-%define rule_compile_multi basenames=/A cflags=$(CFLAGS) cppflags=$(cppflags) dflags= srcdir= targetdir= \
+%define rule_compile_multi basenames=/A cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= srcdir= targetdir= \
     compiler=target
 
 ifeq (%(srcdir),)
