@@ -1215,6 +1215,8 @@ $(TMP_TARGET) : $(TMP_DEPS)
 %define rule_genmodule_files modname=/A modtype=/A modsuffix= targetdir= stubdir= \
     conffile=
 
+.PHONY : $(MODNAME).$(MODTYPE)-genfiles
+
 TMP_GENTARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES)
 TMP_STUBTARGETS := $(%(modname)_LINKLIBFILES) $(%(modname)_RELLINKLIBFILES)
 TMP_GENTARGETS := $(addsuffix .c,$(TMP_GENTARGETS))
@@ -1264,7 +1266,8 @@ endif
 $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
 $(TMP_TARGETS) : MODNAME := %(modname)
 $(TMP_TARGETS) : MODTYPE := %(modtype)
-$(TMP_TARGETS) : $(TMP_DEPS)
+$(TMP_TARGETS) : $(TMP_DEPS) $(MODNAME).$(MODTYPE)-genfiles
+$(MODNAME).$(MODTYPE)-genfiles:
 	@$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
 ifneq (%(conffile),lib.conf)
 	@$(IF) $(TEST) -f lib.conf; then \
@@ -1286,6 +1289,9 @@ endif
     targetdir= conffile=
 
 ifneq ($(%(modname)_INCLUDES),)
+
+.PHONY : $(MODNAME).$(MODTYPE)-includes
+
 TMP_TARGETS := $(%(modname)_INCLUDES)
 
 TMP_DEPS := $(GENMODULE)
@@ -1314,7 +1320,8 @@ endif
 $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
 $(TMP_TARGETS) : MODNAME := %(modname)
 $(TMP_TARGETS) : MODTYPE := %(modtype)
-$(TMP_TARGETS) : $(TMP_DEPS)
+$(TMP_TARGETS) : $(TMP_DEPS) $(MODNAME).$(MODTYPE)-genincludes
+$(MODNAME).$(MODTYPE)-genincludes:
 	@$(ECHO) "Generating $(MODNAME).$(MODTYPE) includes"
 	@$(GENMODULE) $(OPTS) writeincludes $(MODNAME) $(MODTYPE)
 endif
