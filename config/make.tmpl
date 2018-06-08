@@ -1215,14 +1215,11 @@ $(TMP_TARGET) : $(TMP_DEPS)
 %define rule_genmodule_files modname=/A modtype=/A modsuffix= targetdir= stubdir= \
     conffile=
 
-.PHONY : $(MODNAME).$(MODTYPE)-genfiles
-
 TMP_GENTARGETS := $(%(modname)_STARTFILES) $(%(modname)_ENDFILES)
 TMP_STUBTARGETS := $(%(modname)_LINKLIBFILES) $(%(modname)_RELLINKLIBFILES)
 TMP_GENTARGETS := $(addsuffix .c,$(TMP_GENTARGETS))
 TMP_STUBTARGETS := $(addsuffix .c,$(TMP_STUBTARGETS)) \
                $(addsuffix .S, $(%(modname)_LINKLIBAFILES) $(%(modname)_RELLINKLIBAFILES))
-
 
 TMP_DEPS := $(GENMODULE)
 TMP_OPTS :=
@@ -1246,6 +1243,9 @@ ifneq (%(targetdir),)
     TMP_OPTS += -d %(targetdir)
     TMP_TARGETDIR := $(shell echo %(targetdir) | sed 's/^\(.\):\//\/\1\//')
     TMP_GENTARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_GENTARGETS))
+    TMP_GENFILEFLAG=$(TMP_TARGETDIR)/.%(modname).%(modtype)-genfiles
+else
+    TMP_GENFILEFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-genfiles
 endif
 ifneq (%(stubdir),)
     TMP_OPTS += -l %(stubdir)
@@ -1263,11 +1263,12 @@ ifneq ($(TMP_TARGETDIRS),)
 $(TMP_TARGETS) : | $(TMP_TARGETDIRS)
 endif
 
-$(TMP_TARGETS) : OPTS := $(TMP_OPTS)
-$(TMP_TARGETS) : MODNAME := %(modname)
-$(TMP_TARGETS) : MODTYPE := %(modtype)
-$(TMP_TARGETS) : $(TMP_DEPS) $(MODNAME).$(MODTYPE)-genfiles
-$(MODNAME).$(MODTYPE)-genfiles:
+$(TMP_TARGETS) : $(TMP_DEPS) $(TMP_GENFILEFLAG)
+
+$(TMP_GENFILEFLAG) : OPTS := $(TMP_OPTS)
+$(TMP_GENFILEFLAG) : MODNAME := %(modname)
+$(TMP_GENFILEFLAG) : MODTYPE := %(modtype)
+$(TMP_GENFILEFLAG) : $(TMP_DEPS)
 	@$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
 ifneq (%(conffile),lib.conf)
 	@$(IF) $(TEST) -f lib.conf; then \
@@ -1278,6 +1279,7 @@ endif
 	  $(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
 	fi
 	@$(GENMODULE) $(OPTS) writefiles $(MODNAME) $(MODTYPE)
+	@$(TOUCH) $@
 %end
 #------------------------------------------------------------------------------
 
@@ -1289,8 +1291,6 @@ endif
     targetdir= conffile=
 
 ifneq ($(%(modname)_INCLUDES),)
-
-.PHONY : $(MODNAME).$(MODTYPE)-includes
 
 TMP_TARGETS := $(%(modname)_INCLUDES)
 
@@ -1315,15 +1315,20 @@ endif
 ifneq (%(targetdir),)
     TMP_OPTS += -d %(targetdir)
     TMP_TARGETS := $(addprefix %(targetdir)/,$(TMP_TARGETS))
+    TMP_GENINCFLAG=%(targetdir)/.%(modname).%(modtype)-includes
+else
+    TMP_GENINCFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-includes
 endif
 
-$(TMP_TARGETS) : OPTS := $(TMP_OPTS)
-$(TMP_TARGETS) : MODNAME := %(modname)
-$(TMP_TARGETS) : MODTYPE := %(modtype)
-$(TMP_TARGETS) : $(TMP_DEPS) $(MODNAME).$(MODTYPE)-genincludes
-$(MODNAME).$(MODTYPE)-genincludes:
+$(TMP_TARGETS) : $(TMP_DEPS) $(TMP_GENINCFLAG)
+
+$(TMP_GENINCFLAG) : OPTS := $(TMP_OPTS)
+$(TMP_GENINCFLAG) : MODNAME := %(modname)
+$(TMP_GENINCFLAG) : MODTYPE := %(modtype)
+$(TMP_GENINCFLAG) : $(TMP_DEPS)
 	@$(ECHO) "Generating $(MODNAME).$(MODTYPE) includes"
 	@$(GENMODULE) $(OPTS) writeincludes $(MODNAME) $(MODTYPE)
+	@$(TOUCH) $@
 endif
 %end
 #------------------------------------------------------------------------------
