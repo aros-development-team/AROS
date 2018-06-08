@@ -4,6 +4,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+FILESFENV := \
+        test-fenv
+
 FILESDOUBLE := \
         test-double
 
@@ -21,24 +24,47 @@ FILESPARANOIA := \
 
 EXEDIR := $(AROS_TESTS)/clib
 
-USER_CFLAGS = -DSYS_MATH_H -fno-builtin
+USER_CFLAGS = -fno-builtin
 
 #MM- test-clib : test-clib-math
-#MM- test-clib-math : test-clib-math-c99-double test-clib-math-c99-float test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-paranoia-double test-clib-math-paranoia-float
-#MM test-clib-math-c99-double : includes includes-copy linklibs kernel
-#MM test-clib-math-c99-float : includes includes-copy linklibs kernel
-#MM test-clib-math-ieee754 : includes includes-copy linklibs kernel
-#MM test-clib-math-inftorture : includes includes-copy linklibs kernel
-#MM test-clib-math-paranoia-double : includes includes-copy linklibs kernel
-#MM test-clib-math-paranoia-float : includes includes-copy linklibs kernel
+#MM- test-clib-math : test-clib-math-fenv test-clib-math-c99-double test-clib-math-c99-float test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-paranoia-double test-clib-math-paranoia-float
+#MM- test-clib-math-common : includes includes-copy linklibs kernel
 
-%build_prog mmake=test-clib-math-c99-double \
-    files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
-    progname=math-c99-double objdir=$(GENDIR)/$(CURDIR)/double
+#MM test-clib-math-fenv : test-clib-math-common
+#MM test-clib-math-c99-double : test-clib-math-common
+#MM test-clib-math-c99-float : test-clib-math-common
+#MM test-clib-math-ieee754 : test-clib-math-common
+#MM test-clib-math-inftorture : test-clib-math-common
+#MM test-clib-math-paranoia-double : test-clib-math-common
+#MM test-clib-math-paranoia-float : test-clib-math-common
+
+USER_CPPFLAGS = -DSingle
+
+%build_prog mmake=test-clib-math-paranoia-float \
+    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
+    progname=math-paranoia-float objdir=$(GENDIR)/$(CURDIR)/float
+
+USER_CPPFLAGS =
+
+%build_prog mmake=test-clib-math-paranoia-double \
+    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
+    progname=math-paranoia-double objdir=$(GENDIR)/$(CURDIR)/double
+
+USER_CPPFLAGS = -DNO_STRICT_DFL_ENV
+
+%build_prog mmake=test-clib-math-fenv \
+    files=$(FILESFENV) targetdir=$(EXEDIR) \
+    progname=math-fenv
+
+USER_CPPFLAGS = -DSYS_MATH_H 
 
 %build_prog mmake=test-clib-math-c99-float \
     files=$(FILESFLOAT) targetdir=$(EXEDIR) \
     progname=math-c99-float objdir=$(GENDIR)/$(CURDIR)/float
+
+%build_prog mmake=test-clib-math-c99-double \
+    files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
+    progname=math-c99-double objdir=$(GENDIR)/$(CURDIR)/double
 
 %build_prog mmake=test-clib-math-ieee754 \
     files=$(FILESIEEE754) targetdir=$(EXEDIR) \
@@ -48,14 +74,3 @@ USER_CFLAGS = -DSYS_MATH_H -fno-builtin
     files=$(FILESINFTORTURE) targetdir=$(EXEDIR) \
     progname=math-inftorture
 
-USER_CFLAGS =
-
-%build_prog mmake=test-clib-math-paranoia-double \
-    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
-    progname=math-paranoia-double objdir=$(GENDIR)/$(CURDIR)/double
-
-USER_CFLAGS = -DSingle
-
-%build_prog mmake=test-clib-math-paranoia-float \
-    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
-    progname=math-paranoia-float objdir=$(GENDIR)/$(CURDIR)/float
