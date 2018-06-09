@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -499,7 +499,8 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG 
 	/* Object is a directory */
 	fh->fd = emulbase->pdata.SysIFace->opendir(fh->hostname);
 #ifndef HOST_OS_android
-        fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
+        if (fh->fd != NULL)
+            fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
 #endif
 	AROS_HOST_BARRIER
 
