@@ -701,7 +701,8 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
 	fh->type = FHD_DIRECTORY;
 	fh->fd   = emulbase->pdata.SysIFace->opendir(fh->hostname);
 #ifndef HOST_OS_android
-        fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
+        if (fh->fd != NULL)
+            fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
 #endif
 	AROS_HOST_BARRIER
     }
