@@ -177,8 +177,10 @@
 /*
  * Internet address (a structure for historical reasons)
  */
+typedef uint32_t in_addr_t;
+
 struct in_addr {
-	uint32_t s_addr;
+	in_addr_t s_addr;
 };
 
 /*
