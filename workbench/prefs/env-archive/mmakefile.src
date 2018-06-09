@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-SUBDIRS := Zune SYS SYS/Packages DiskImage
+SUBDIRS := Zune SYS SYS/Certificates SYS/Packages DiskImage
 FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(call WILDCARD, $(dir)/*)))
 
 #MM- workbench-prefs : workbench-prefs-envarc
