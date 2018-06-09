@@ -2,7 +2,7 @@
 #define _POSIXC_SIGNAL_H_
 
 /*
-    Copyright Â© 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file <signal.h>
@@ -64,6 +64,7 @@
 */
 
 #define _SIGMAX 64
+#define NSIG	(_SIGMAX + 1)
 
 /* Extra POSIX-2008.1 signal values */
 #define SIGALRM		14	/* alarm clock */
