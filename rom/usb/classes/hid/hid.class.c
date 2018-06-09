@@ -3078,9 +3078,9 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
 
                     case REPORT_GLOB_LOGMAX:
                         /* Some devices (like usb-kbd in QEMU) have wrong descriptors
-                         * Try to detect and correct this here.
+                         * Try to detect and correct this here which seems to be what other OSes do
                          * This only works if LogMin is defined before LogMax but that's likely common
-                         * FIXME: Is there a better way to handle this? */
+			 */
                         nch->nch_HidGlobal.nhg_LogicalMax = (data < nch->nch_HidGlobal.nhg_LogicalMin ? udata : data);
                         KPRINTF(1, ("LogMax(%ld)\n", nch->nch_HidGlobal.nhg_LogicalMax));
                         break;
@@ -3091,8 +3091,8 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                         break;
 
                     case REPORT_GLOB_PHYMAX:
-                        KPRINTF(1, ("PhyMax(%ld)\n", data));
-                        nch->nch_HidGlobal.nhg_PhysicalMax = data;
+                        nch->nch_HidGlobal.nhg_PhysicalMax = (data < nch->nch_HidGlobal.nhg_PhysicalMin ? udata : data);
+                        KPRINTF(1, ("PhyMax(%ld)\n", nch->nch_HidGlobal.nhg_PhysicalMax));
                         break;
 
                     case REPORT_GLOB_UNITEXP:
