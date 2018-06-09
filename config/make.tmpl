@@ -3441,7 +3441,7 @@ endif
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target crossbuild=no install_target=install \
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir=$(CURDIR) package_repo= patch=no patch_repo= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
-    extraoptions=  usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
+    extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no buildflags=yes gnuflags=yes
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
@@ -3570,7 +3570,7 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
 %define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A crossbuild=no suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU config_env_extra= preconfigure= postconfigure= postinstall=  nix=yes \
-    extraoptions=  extracflags="$(OPTIMIZATION_CFLAGS)" extracppflags= extracxxflags="$(OPTIMIZATION_CFLAGS)"
+    extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)"
 
 GNU_REPOSITORY := gnu://
 
@@ -3578,7 +3578,7 @@ GNU_REPOSITORY := gnu://
     crossbuild="%(crossbuild)" suffixes="%(suffixes)" srcdir="%(srcdir)" \
     package_repo="%(package_repo) $(GNU_REPOSITORY)%(package)" \
     patch="%(patch)" patch_repo="%(patch_repo)" \
-    prefix="%(prefix)" aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" extracflags="%(extracflags)" extracppflags="%(extracppflags)" extracxxflags="%(extracxxflags)" \
+    prefix="%(prefix)" aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" \
     config_env_extra="%(config_env_extra)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" nix=%(nix)
 
 %end
@@ -3599,7 +3599,7 @@ GNU_REPOSITORY := gnu://
 %define fetch_and_build_gnu_development package=/A subpackage= version=/A  crossbuild=no suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPER) \
     aros_prefix=/Developer config_env_extra= preconfigure= postconfigure= postinstall=  nix=yes \
-    extraoptions=  extracflags="$(OPTIMIZATION_CFLAGS)" extracppflags= extracxxflags="$(OPTIMIZATION_CFLAGS)"
+    extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)"
 
 #MM- development : development-%(package)
 
@@ -3608,7 +3608,7 @@ GNU_REPOSITORY := gnu://
    version="%(version)" crossbuild="%(crossbuild)" suffixes="%(suffixes)" srcdir="%(srcdir)" \
    package_repo="%(package_repo)" \
    patch="%(patch)" patch_repo="%(patch_repo)" \
-   prefix="%(prefix)"  aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" extracflags="%(extracflags)" extracppflags="%(extracppflags)" extracxxflags="%(extracxxflags)" \
+   prefix="%(prefix)"  aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracflags="%(extracflags)" extracppflags="%(extracppflags)" extracxxflags="%(extracxxflags)" \
    config_env_extra="%(config_env_extra)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="postinstall-%(package)-delete-la-files %(postinstall)" nix=%(nix)
 
 #MM
