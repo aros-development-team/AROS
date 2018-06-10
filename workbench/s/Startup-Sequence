@@ -115,7 +115,7 @@ If WARN
 Endif
 
 If EXISTS "ENV:SYS/Packages"
-    List "ENV:SYS/Packages" NOHEAD FILES TO "T:P" LFORMAT="If EXISTS ${SYS/Packages/%N}*NCD ${SYS/Packages/%N}*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
+    List "ENV:SYS/Packages" NOHEAD FILES TO "T:P" LFORMAT="If EXISTS ${SYS/Packages/%N}*NCD ${SYS/Packages/%N}*NIf EXISTS S/%N-Startup*NExecute S/%N-Startup*NElse*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*NEndif*N"
     Execute "T:P"
     Delete "T:P" QUIET
     CD "SYS:"
