@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,7 @@ static const char *alsa_func_names[] =
 
 APTR HostLibBase;
 struct alsa_func alsa_func;
-static void * libasoundhandle;
+static void *libasoundhandle;
 
 static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs,
         void **funcptr)
@@ -98,5 +98,6 @@ BOOL ALSA_HostLib_Init()
 
 VOID ALSA_HostLib_Cleanup()
 {
-    HostLib_Close(libasoundhandle, NULL);
+    if (libasoundhandle != NULL)
+        HostLib_Close(libasoundhandle, NULL);
 }
