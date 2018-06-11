@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2012-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     This file defines the private part of StdCBase.
@@ -22,40 +22,43 @@ struct signal_func_data;
 
 struct StdCIntBase
 {
-    struct StdCBase StdCBase;
+    struct StdCBase             StdCBase;
 
     /* common */
-    int flags;
+    int                         flags;
 
     /* stdlib.h */
-    APTR mempool;
-    unsigned int srand_seed;
+    APTR                        mempool;
+    unsigned int                srand_seed;
 
     /* time.h and it's functions */
-    struct timerequest timereq;
-    struct MsgPort timeport;
-    char timebuffer[26];
-    struct tm tmbuffer;
-    clock_t starttime;
+    struct timerequest          timereq;
+    struct MsgPort              timeport;
+    char                        timebuffer[26];
+    struct tm                   tmbuffer;
+    clock_t                     starttime;
 
     /* __stdc_startup.c */
-    int *startup_errorptr;
-    jmp_buf exit_jmpbuf;
+    int                         *startup_errorptr;
+    jmp_buf                     exit_jmpbuf;
 
     /* atexit.c */
-    struct MinList atexit_list;
+    struct MinList              atexit_list;
 
     /* signal.c & co. */
-    struct signal_func_data *sigfunc_array;
+    struct signal_func_data     *sigfunc_array;
 
     /* strerror.c */
-    char *fault_buf;
+    char                        *fault_buf;
 
     /* strtok.c */
-    char *last;
+    char                        *last;
 
-    /* private for softfloat implementations */
-    APTR __fpu_private;
+    /* private for fenv.c/softfloat implementations */
+    APTR                        __fe_private;
+    APTR                        __fe_dfl_env;
+    APTR                        __fe_nomask_env;
+    int                         __fe_round;
 };
 
 /* Make a distinction between exit() and abort() */
