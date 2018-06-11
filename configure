@@ -7720,8 +7720,8 @@ else
 fi
 
 # These are the flags to pass when compiling debugged programs
-aros_debug_cppflags=
-aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
+aros_debug_cppflags="$aros_messages_debug"
+aros_debug_cflags="$aros_symbols_debug"
 aros_debug_cxxflags=
 aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
@@ -8560,8 +8560,7 @@ case "$target_os" in
                 as_fn_error $? "\"Unknown CPU for Solaris -- $target_cpu\"" "$LINENO" 5
                 ;;
         esac
-        aros_config_cflags="$aros_config_cflags -D$aros_target_cpu"
-        aros_config_cxxflags="$aros_config_cxxflags -D$aros_target_cpu"
+        aros_config_cppflags="$aros_config_cppflags -D$aros_target_cpu"
         aros_flavour="emulation"
         ;;
 
@@ -8642,8 +8641,7 @@ case "$target_os" in
         case "$aros_target_variant" in
             efika)
                 aros_isa_flags="$aros_isa_flags -mcpu=603e"
-                aros_config_cflags="$aros_config_cflags -DBIG_ENDIAN_OHCI=1"
-                aros_config_cxxflags="$aros_config_cxxflags -DBIG_ENDIAN_OHCI=1"
+                aros_config_cppflags="$aros_config_cppflags -DBIG_ENDIAN_OHCI=1"
             ;;
         esac
         ;;
@@ -8740,8 +8738,9 @@ fi
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
                 aros_nowarn_flags="$aros_nowarn_flags NOWARN_VOLATILE_REGISTER_VAR"
-                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -DNOLIBINLINE"
-                aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -DNOLIBINLINE"
+                aros_config_cppflags="$aros_config_cppflags -DNOLIBINLINE"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin"
+                aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin"
                 aros_optimization_cflags="$aros_optimization_cflags -Os"
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
@@ -8826,7 +8825,8 @@ fi
                 aros_shared_aflags=""
                 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
                 aros_kernel_ldflags="-Wl,-rpath,./lib"
-                aros_debug_cflags="$aros_symbols_debug  $aros_messages_debug"
+                aros_debug_cppflags="$aros_messages_debug"
+                aros_debug_cflags="$aros_symbols_debug"
                 aros_debug_aflags=""
                 aros_debug_ldflags="$aros_symbols_debug"
                 aros_mungwall_debug="0"
@@ -8859,7 +8859,8 @@ fi
                 aros_shared_aflags=""
                 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
                 aros_kernel_ldflags="-Wl,-rpath,./lib"
-                aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
+                aros_debug_cppflags="$aros_messages_debug"
+                aros_debug_cflags="$aros_symbols_debug"
                 aros_debug_aflags=""
                 aros_debug_ldflags="$aros_symbols_debug"
                 aros_mungwall_debug="0"
@@ -14046,7 +14047,7 @@ else
 fi
 
 if test "$usb30_code" = "yes" ; then
-    aros_config_cflags="$aros_config_cflags -DAROS_USB30_CODE"
+    aros_config_cppflags="$aros_config_cppflags -DAROS_USB30_CODE"
     aros_kernel_cflags="$aros_kernel_cflags -DAROS_USB30_CODE"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $usb30_code" >&5
