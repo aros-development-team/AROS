@@ -37,7 +37,7 @@ static AROS_UFH3(UBYTE*, SegTrack,
         ULONG segNum2;
         BPTR segPtr, firstSeg;
         char *modName;
-        if (DecodeLocation(Address, DL_SegmentNumber, &segNum2, DL_SegmentPointer, &segPtr,
+        if (DecodeLocation((APTR)Address, DL_SegmentNumber, &segNum2, DL_SegmentPointer, &segPtr,
             DL_FirstSegment, &firstSeg, DL_ModuleName, &modName, TAG_DONE)) {
             if (SegNum == Offset) {
                 *SegNum = firstSeg;
