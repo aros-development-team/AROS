@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) 2012-2017, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
@@ -250,7 +250,7 @@ AROS_SH5H(SetPatch, 41.4, "AROS SetPatch (m68k)",
             if ((GfxBase->ChipRevBits0 & SETCHIPREV_AA) ==  SETCHIPREV_AA)
                 Printf("Enabled Advanced Graphics Modes\n");
         }
-        CloseLibrary(GfxBase);
+        CloseLibrary((APTR)GfxBase);
         CloseLibrary(SetPatchBase);
     }
     return (SetPatchBase != NULL) ? RETURN_OK : RETURN_FAIL;
