@@ -682,6 +682,7 @@ aros_kernel_ldflags
 aros_kernel_objcflags
 aros_kernel_includes
 aros_kernel_cflags
+aros_kernel_cppflags
 aros_kernel_sysroot
 aros_config_ldflags
 aros_config_aflags
@@ -14873,6 +14874,8 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
 fi
 
+aros_kernel_cppflags=aros_config_cppflags
+
 
 # Generic
 
@@ -14922,6 +14925,7 @@ fi
 
 
 # Target Related
+
 
 
 

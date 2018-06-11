@@ -2803,6 +2803,8 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
 fi
 
+aros_kernel_cppflags=aros_config_cppflags
+
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
@@ -2913,6 +2915,7 @@ AC_SUBST(aros_config_aflags)
 AC_SUBST(aros_config_ldflags)
 
 AC_SUBST(aros_kernel_sysroot)
+AC_SUBST(aros_kernel_cppflags)
 AC_SUBST(aros_kernel_cflags)
 AC_SUBST(aros_kernel_includes)
 AC_SUBST(aros_kernel_objcflags)
