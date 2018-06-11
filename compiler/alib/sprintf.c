@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,7 @@ const ULONG m68k_string_sprintf = 0x16c04e75;
     /* Special case for m68k, so that we are AmigaOS 1.x/2.x compliant
      * New programs should be using snprintf() from stdc.library
      */
-    RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
+    RawDoFmt(format, (RAWARG)&format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
 #else
     va_list args;
 
