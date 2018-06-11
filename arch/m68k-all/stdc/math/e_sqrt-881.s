@@ -4,10 +4,10 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(sqrt881, STDC, 151)
-	_FUNCTION(AROS_SLIB_ENTRY(sqrt881, STDC, 151))
+	.globl	AROS_SLIB_ENTRY(sqrt881, STDC, 161)
+	_FUNCTION(AROS_SLIB_ENTRY(sqrt881, STDC, 161))
 	
-AROS_SLIB_ENTRY(sqrt881, STDC, 151):
+AROS_SLIB_ENTRY(sqrt881, STDC, 161):
 	fmove.s	%d0,%fp0
 	fsqrt.x	%fp0
 	fmove.s	%fp0,%d0
