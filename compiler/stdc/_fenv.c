@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,26 @@
  * function name with _ prepended will be used.
  */ 
 
+#include "__stdc_intbase.h"
 #include <fenv.h>
+
+void *__stdc_get_fe_dfl(void)
+{
+    struct StdCIntBase *_StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    return (void *)_StdCBase->__fe_dfl_env;
+}
+
+void *__stdc_get_fe_nom(void)
+{
+    struct StdCIntBase *_StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    return (void *)_StdCBase->__fe_nomask_env;
+}
+
+int __stdc_get_fe_round(void)
+{
+    struct StdCIntBase *_StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    return _StdCBase->__fe_round;
+}
 
 int _feclearexcept(int excepts)
 {
