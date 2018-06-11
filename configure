@@ -675,7 +675,9 @@ aros_target_strip_flags
 aros_target_genmap
 aros_debug_ldflags
 aros_debug_aflags
+aros_debug_cxxflags
 aros_debug_cflags
+aros_debug_cppflags
 aros_kernel_ldflags
 aros_kernel_objcflags
 aros_kernel_includes
@@ -685,6 +687,7 @@ aros_config_ldflags
 aros_config_aflags
 aros_config_cxxflags
 aros_config_cflags
+aros_config_cppflags
 aros_nowarn_flags
 aros_warn_flags
 aros_config_sysroot
@@ -731,6 +734,7 @@ aros_host_ldflags
 gnu89_inline
 aros_host_cxxflags
 aros_host_cflags
+aros_host_cppflags
 aros_host_make
 aros_host_cxx
 aros_host_cc
@@ -4363,6 +4367,7 @@ fi
 aros_host_make="make"
 aros_host_cflags="$CFLAGS"
 aros_host_cxxflags="$CXXFLAGS"
+aros_host_cppflags="$CPPFLAGS"
 aros_host_ldflags="$LDFLAGS"
 aros_host_debug="-g -O0"
 aros_host_mkdep="\$(SRCDIR)/scripts/mkdep"
@@ -7494,6 +7499,7 @@ toolchain_needs_sysroot=no
 
 aros_warn_flags=
 aros_isa_flags=
+aros_config_cppflags=
 aros_config_cflags=
 aros_config_cxxflags=
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
@@ -7647,8 +7653,7 @@ else
     build_type="personal"
 fi
 
-aros_config_cflags="$aros_config_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
-aros_config_cxxflags="$aros_config_cxxflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
+aros_config_cppflags="$aros_config_cppflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $build_type" >&5
 $as_echo "$build_type" >&6; }
@@ -7715,7 +7720,9 @@ else
 fi
 
 # These are the flags to pass when compiling debugged programs
+aros_debug_cppflags=
 aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
+aros_debug_cxxflags=
 aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
 
@@ -14912,7 +14919,11 @@ fi
 
 
 
+
 # Target Related
+
+
+
 
 
 
