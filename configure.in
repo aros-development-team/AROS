@@ -130,6 +130,7 @@ AROS_REQUIRED(ld,$aros_host_ld)
 aros_host_make="make"
 aros_host_cflags="$CFLAGS"
 aros_host_cxxflags="$CXXFLAGS"
+aros_host_cppflags="$CPPFLAGS"
 aros_host_ldflags="$LDFLAGS"
 aros_host_debug="-g -O0"
 aros_host_mkdep="\$(SRCDIR)/scripts/mkdep"
@@ -647,6 +648,7 @@ toolchain_needs_sysroot=no
 
 aros_warn_flags=
 aros_isa_flags=
+aros_config_cppflags=
 aros_config_cflags=
 aros_config_cxxflags=
 aros_config_aflags="-Wall -x assembler-with-cpp -c"
@@ -776,8 +778,7 @@ else
     build_type="personal"
 fi
 
-aros_config_cflags="$aros_config_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
-aros_config_cxxflags="$aros_config_cxxflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
+aros_config_cppflags="$aros_config_cppflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
 
 AC_MSG_RESULT($build_type)
 
@@ -836,7 +837,9 @@ else
 fi
 
 # These are the flags to pass when compiling debugged programs
+aros_debug_cppflags=
 aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
+aros_debug_cxxflags=
 aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
 
@@ -2833,6 +2836,7 @@ AC_SUBST(aros_host_ar)
 AC_SUBST(aros_host_ranlib)
 AC_SUBST(aros_host_ld)
 AC_SUBST(aros_host_make)
+AC_SUBST(aros_host_cppflags)
 AC_SUBST(aros_host_cflags)
 AC_SUBST(aros_host_cxxflags)
 AC_SUBST(gnu89_inline)
@@ -2901,6 +2905,7 @@ AC_SUBST(aros_shared_ldflags)
 AC_SUBST(aros_config_sysroot)
 AC_SUBST(aros_warn_flags)
 AC_SUBST(aros_nowarn_flags)
+AC_SUBST(aros_config_cppflags)
 AC_SUBST(aros_config_cflags)
 AC_SUBST(aros_config_cxxflags)
 AC_SUBST(aros_config_aflags)
@@ -2911,7 +2916,9 @@ AC_SUBST(aros_kernel_cflags)
 AC_SUBST(aros_kernel_includes)
 AC_SUBST(aros_kernel_objcflags)
 AC_SUBST(aros_kernel_ldflags)
+AC_SUBST(aros_debug_cppflags)
 AC_SUBST(aros_debug_cflags)
+AC_SUBST(aros_debug_cxxflags)
 AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
 AC_SUBST(aros_target_genmap)
