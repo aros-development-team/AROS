@@ -3,9 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -I$(SRCDIR) -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
-               -fno-delete-null-pointer-checks
-USER_AFLAGS := -I$(GENINCDIR) -Os -march=68060
+USER_CPPFLAGS := -I$(GENINCDIR) -I$(SRCDIR) -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CFLAGS := -fno-delete-null-pointer-checks
+USER_AFLAGS := -Os -march=68060
 
 #MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
 #MM- workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
