@@ -21,6 +21,8 @@
 #include <intuition/iprefs.h>
 #include <proto/datatypes.h>
 
+#define DEV_EXT_LEN 7
+
 /*********************************************************************************************/
 
 static LONG stopchunks[] =
@@ -36,8 +38,9 @@ void PrinterPrefs_Handler(STRPTR filename)
     struct PrinterGfxPrefs *pgp;
     char *devname;
     ULONG devnamelen;
+    BOOL name_too_long = FALSE;
 
-    D(bug("[PrinterPrefs] filename=%s\n",filename));
+    D(bug("[PrinterPrefs] filename=%s\n", filename));
 
     iff = CreateIFF(filename, stopchunks, 2);
     if (iff)
@@ -56,17 +59,25 @@ void PrinterPrefs_Handler(STRPTR filename)
                     {
                         devname = FilePart(ptp->pt_Driver);
                         devnamelen = strlen(devname);
-                        if (devnamelen < DEVNAME_SIZE + 6)
+                        if (devnamelen < DEVNAME_SIZE + DEV_EXT_LEN)
                         {
-                            if ((devnamelen >= 6) && (!strcmp(&devname[devnamelen - 6], ".device")))
-                                strncpy(prefs.PrtDevName, devname, devnamelen - 6);
+                            if (devnamelen >= DEV_EXT_LEN && !strcmp(
+                                &devname[devnamelen - DEV_EXT_LEN], ".device"))
+                            {
+                                strncpy(prefs.PrtDevName, devname,
+                                    devnamelen - DEV_EXT_LEN);
+                            }
                             else if (devnamelen < DEVNAME_SIZE)
                                 strncpy(prefs.PrtDevName, devname, devnamelen);
                             else
-                                bug("[IPREFS] ERROR: printer device name (%s) is too long!", devname);
+                                name_too_long = TRUE;
                         }
                         else
-                            bug("[IPREFS] ERROR: printer device name (%s) is too long!", devname);
+                            name_too_long = TRUE;
+
+                        if (name_too_long)
+                            bug("[IPREFS] ERROR: printer device name (%s) "
+                                "is too long!", devname);
 
                         prefs.PrinterPort = ptp->pt_Port;
                         prefs.PaperType = AROS_BE2WORD(ptp->pt_PaperType);
