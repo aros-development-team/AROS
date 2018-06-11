@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2018, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
@@ -1423,7 +1423,7 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
          */
         if (OpenResource("kernel.resource") != NULL) {
             if (!forceAROS) {
-                CloseLibrary(DOSBase);
+                CloseLibrary((APTR)DOSBase);
                 FreeMem(lowmem, PAGE_SIZE);
                 return RETURN_OK;
             }
