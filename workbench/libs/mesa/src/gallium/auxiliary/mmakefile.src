@@ -201,7 +201,6 @@ USER_CFLAGS += $(NOWARN_CFLAGS)
     files="$(GALLIUM_AUXILIARY_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_SOURCES)"
 
 USER_CPPFLAGS := -DHAVE_LLVM=0x0209 -D__STDC_CONSTANT_MACROS
-USER_CFLAGS := -ffast-math
 
 %build_linklib mmake=linklibs-galliumvm libname=galliumvm \
     files="$(GALLIVM_SOURCES)" cxxfiles="gallivm/lp_bld_misc" objdir=$(OBJDIR)/galliumvm
