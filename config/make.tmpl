@@ -22,7 +22,7 @@ endif
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
-%define compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="$(CFLAGS) $(CPPFLAGS)" from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+%define compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip $(CFLAGS) $(CPPFLAGS))" from=$< to=$@ iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 	@$(ECHO) "Compiling  $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))"
 	@$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))"\" -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -42,7 +42,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Assemble the file %(from) to %(to) with %(cmd) with the options in %(opt).
-%define assemble_q cmd="$(CC) $(TARGET_SYSROOT)" opt="$(AFLAGS) $(CPPFLAGS)" from=$< to=$@
+%define assemble_q cmd="$(strip $(CC) $(TARGET_SYSROOT))" opt="$(strip $(AFLAGS) $(CPPFLAGS))" from=$< to=$@
 	@$(ECHO) "Assembling $(notdir %(from))..."
 	@$(IF) %(cmd) %(opt) %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -62,7 +62,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd="$(AROS_CC) $(TARGET_SYSROOT)" opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP) objdir=$(GENDIR)/$(CURDIR)
+%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP) objdir=$(GENDIR)/$(CURDIR)
 	@$(eval LINKTARGET=%(to))
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
 	@$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
@@ -91,7 +91,7 @@ endif
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q cmd="$(AROS_CC) $(TARGET_SYSROOT)" err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
+%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
 	@$(IF) %(cmd) $(NOSTARTUP_LDFLAGS) \
 		$(GENMAP) %(objdir)/%(module).map \
@@ -125,7 +125,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Create the dependency file %(to) for %(from)
-%define mkdepend_q flags="$(CFLAGS) $(CPPFLAGS)" from=$< to=$@ cc="$(AROS_CC) $(TARGET_SYSROOT)"
+%define mkdepend_q flags="$(strip $(CFLAGS) $(CPPFLAGS))" from=$< to=$@ cc="$(strip $(AROS_CC) $(TARGET_SYSROOT))"
 	%mkdir_q dir="$(dir %(to))"
 	@$(ECHO) "Makedepend $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))..."
 	@AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
@@ -284,7 +284,7 @@ GLOB_MKDIRS += %(dirs)
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile basename=/A cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= targetdir= compiler=target
+%define rule_compile basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
 BD_NIXFLAG ?= -nix
 
@@ -308,13 +308,13 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
+BD_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(TMP_TARGETBASE).d : TMP_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
 $(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
 $(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(TMP_CFLAGS) $(SAFETY_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(strip $(TMP_CFLAGS) $(SAFETY_CFLAGS))
 $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TMP_DFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
@@ -322,28 +322,28 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-BD_LINK ?= $(HOST_CC) $(HOST_LDFLAGS)
+BD_LINK ?= $(strip $(HOST_CC) $(HOST_LDFLAGS))
 BD_STRIP ?= $(HOST_STRIP)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
-$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(HOST_CFLAGS) $(TMP_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(HOST_CFLAGS) $(TMP_DFLAGS)
+$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_CFLAGS))
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_DFLAGS))
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK ?= $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
-$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(KERNEL_CFLAGS) $(TMP_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(KERNEL_CFLAGS) $(TMP_DFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(TMP_TARGETBASE).d : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).o : TMP_CFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_CFLAGS))
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_DFLAGS))
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -356,10 +356,10 @@ $(TMP_TARGETBASE).o : %(basename).c
 	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 ifeq (%(nix),yes)
-  $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(BD_NIXFLAG) $(TMP_DFLAGS)
+  $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(strip $(BD_NIXFLAG) $(TMP_DFLAGS))
 endif
 $(TMP_TARGETBASE).d : %(basename).c
-	%mkdepend_q cc=$(TMP_CMD) flags="$(TMP_DFLAGS) $(TMP_CPPFLAGS)"
+	%mkdepend_q cc=$(TMP_CMD) flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
 %end
 #------------------------------------------------------------------------------
 
@@ -376,7 +376,7 @@ $(TMP_TARGETBASE).d : %(basename).c
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile_cxx basename=/A cxxflags=$(CXXFLAGS) cppflags=$(CPPFLAGS) dxxflags= targetdir= compiler=target
+%define rule_compile_cxx basename=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= targetdir= compiler=target
 
 ifneq (%(basename),)
 BD_NIXFLAG ?= -nix
@@ -399,13 +399,13 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
+BD_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(AROS_CXX) $(TARGET_SYSROOT)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(AROS_CXX) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
+$(TMP_TARGETBASE).d : TMP_CMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
 $(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
 $(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(TMP_CXXFLAGS) $(SAFETY_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(strip $(TMP_CXXFLAGS) $(SAFETY_CFLAGS))
 $(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(TMP_DXXFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
@@ -413,14 +413,14 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-BD_LINK ?= $(HOST_CXX) $(HOST_LDFLAGS)
+BD_LINK ?= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
 BD_STRIP ?= $(HOST_STRIP)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CXX)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CXX)
-$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(HOST_CXXFLAGS) $(TMP_CXXFLAGS) 
-$(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(HOST_CXXFLAGS) $(TMP_DXXFLAGS)
+$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(strip $(HOST_CXXFLAGS) $(TMP_CXXFLAGS))
+$(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(strip $(HOST_CXXFLAGS) $(TMP_DXXFLAGS))
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
@@ -428,14 +428,14 @@ $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
 KERNEL_CXX ?= $(KERNEL_CC)
-BD_LINK ?= $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT)
-$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(KERNEL_CXXFLAGS) $(TMP_CXXFLAGS)
-$(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(KERNEL_CXXFLAGS) $(TMP_DXXFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+$(TMP_TARGETBASE).d : TMP_CMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).o : TMP_CXXFLAGS:=$(strip $(KERNEL_CXXFLAGS) $(TMP_CXXFLAGS))
+$(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(strip $(KERNEL_CXXFLAGS) $(TMP_DXXFLAGS))
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -445,13 +445,13 @@ endif
 $(TMP_TARGETBASE).o : CPPFLAGS := $(TMP_CPPFLAGS)
 $(TMP_TARGETBASE).o : CXXFLAGS := $(TMP_CXXFLAGS)
 $(TMP_TARGETBASE).o : %(basename).cpp
-	%compile_q cmd=$(TMP_CMD) opt="$(CXXFLAGS) $(CPPFLAGS)" iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(TMP_CMD) opt="$(strip $(CXXFLAGS) $(CPPFLAGS))" iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 ifeq (%(nix),yes)
-  $(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(BD_NIXFLAG) $(TMP_DXXFLAGS)
+  $(TMP_TARGETBASE).d : TMP_DXXFLAGS:=$(strip $(BD_NIXFLAG) $(TMP_DXXFLAGS))
 endif
 $(TMP_TARGETBASE).d : %(basename).cpp
-	%mkdepend_q cc=$(TMP_CMD) flags="$(TMP_DXXFLAGS) $(TMP_CPPFLAGS)"
+	%mkdepend_q cc=$(TMP_CMD) flags="$(strip $(TMP_DXXFLAGS) $(TMP_CPPFLAGS))"
 
 endif
 
@@ -471,7 +471,7 @@ endif
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .m file
-%define rule_compile_objc basename=/A cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= targetdir= compiler=target
+%define rule_compile_objc basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
 ifneq (%(basename),)
 BD_NIXFLAG ?= -nix
@@ -503,13 +503,13 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(TMP_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
+BD_LINK ?= $(strip $(TMP_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
 BD_STRIP ?= $(TARGET_STRIP)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(TMP_CC) $(TARGET_SYSROOT)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(TMP_CC) $(TARGET_SYSROOT)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(strip $(TMP_CC) $(TARGET_SYSROOT))
+$(TMP_TARGETBASE).d : TMP_CMD:=$(strip $(TMP_CC) $(TARGET_SYSROOT))
 $(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
 $(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(TMP_OBJCFLAGS) $(SAFETY_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(strip $(TMP_OBJCFLAGS) $(SAFETY_CFLAGS))
 $(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(TMP_OBJCDFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
@@ -517,28 +517,28 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-BD_LINK ?= $(HOST_CC) $(HOST_LDFLAGS)
+BD_LINK ?= $(strip $(HOST_CC) $(HOST_LDFLAGS))
 BD_STRIP ?= $(HOST_STRIP)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
-$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCFLAGS)
-$(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCDFLAGS)
+$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_OBJCFLAGS))
+$(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_OBJCDFLAGS))
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK ?= $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
 BD_STRIP ?= $(ECHO) >/dev/null
-$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
-$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCFLAGS)
-$(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCDFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(TMP_TARGETBASE).d : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(TMP_TARGETBASE).o : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).d : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETBASE).o : TMP_OBJCFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_OBJCFLAGS))
+$(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_OBJCDFLAGS))
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -551,10 +551,10 @@ $(TMP_TARGETBASE).o : %(basename).m
 	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 ifeq (%(nix),yes)
-  $(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(BD_NIXFLAG) $(TMP_OBJCDFLAGS)
+  $(TMP_TARGETBASE).d : TMP_OBJCDFLAGS:=$(strip $(BD_NIXFLAG) $(TMP_OBJCDFLAGS))
 endif
 $(TMP_TARGETBASE).d : %(basename).m
-	%mkdepend_q cc=$(TMP_CMD) flags="$(TMP_OBJCDFLAGS) $(TMP_CPPFLAGS)"
+	%mkdepend_q cc=$(TMP_CMD) flags="$(strip $(TMP_OBJCDFLAGS) $(TMP_CPPFLAGS))"
 
 endif
 
@@ -577,7 +577,7 @@ endif
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
-%define rule_compile_multi basenames=/A cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= srcdir= targetdir= \
+%define rule_compile_multi basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= srcdir= targetdir= \
     compiler=target
 
 ifeq (%(srcdir),)
@@ -621,35 +621,35 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-BD_LINK ?= $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
+BD_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
 BD_STRIP ?= $(TARGET_STRIP)
-BD_ASSEMBLER ?= $(TARGET_CC) $(TARGET_SYSROOT)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
+BD_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(TMP_CFLAGS) $(SAFETY_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(strip $(TMP_CFLAGS) $(SAFETY_CFLAGS))
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(TMP_DFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-BD_LINK ?= $(HOST_CC) $(HOST_LDFLAGS)
+BD_LINK ?= $(strip $(HOST_CC) $(HOST_LDFLAGS))
 BD_STRIP ?= $(HOST_STRIP)
-BD_ASSEMBLER ?= $HOST_CC) $(HOST_SYSROOT)
+BD_ASSEMBLER ?= $(strip $HOST_CC) $(HOST_SYSROOT))
 $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CC)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(HOST_CFLAGS) $(TMP_CFLAGS)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(HOST_CFLAGS) $(TMP_DFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_CFLAGS))
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_DFLAGS))
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-BD_LINK ?= $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
+BD_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
 BD_STRIP ?= $(ECHO) >/dev/null
-BD_ASSEMBLER ?= $(KERNEL_CC) $(KERNEL_SYSROOT)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(KERNEL_CFLAGS) $(TMP_CFLAGS)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(KERNEL_CFLAGS) $(TMP_DFLAGS)
+BD_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_CFLAGS))
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_DFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_DFLAGS))
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -660,7 +660,7 @@ $(TMP_TARGETS) : $(TMP_TGTWILDCARD).o : $(TMP_SRCWILDCARD).c
 	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 $(TMP_DTARGETS) : $(TMP_TGTWILDCARD).d : $(TMP_SRCWILDCARD).c
-	%mkdepend_q cc=$(CMD) flags="$(TMP_DFLAGS) $(TMP_CPPFLAGS)"
+	%mkdepend_q cc=$(CMD) flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
 %end
 #------------------------------------------------------------------------------
 
@@ -681,7 +681,7 @@ $(TMP_DTARGETS) : $(TMP_TGTWILDCARD).d : $(TMP_SRCWILDCARD).c
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
-%define rule_compile_cxx_multi basenames=/A cxxflags=$(CXXFLAGS) cppflags=$(CPPFLAGS) dxxflags= \
+%define rule_compile_cxx_multi basenames=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= \
     targetdir= compiler=target
 
 TMP_CXXABSBASENAMES := $(foreach TMP_CXXBASE,%(basenames),$(if $(filter /%,$(TMP_CXXBASE)),$(TMP_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(TMP_CXXBASE))))
@@ -719,46 +719,46 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),host)
-  BD_LINK ?= $(HOST_CXX) $(HOST_LDFLAGS)
+  BD_LINK ?= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
   BD_STRIP ?= $(HOST_STRIP)
-  BD_ASSEMBLER ?= $(HOST_CC) $(HOST_SYSROOT)
+  BD_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
   TMP_CXXCMD:=$(HOST_CXX)
-  TMP_CPPFLAGS := $(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-  TMP_CXXFLAGS := $(HOST_CXXFLAGS) $(TMP_CXXFLAGS)
-  TMP_DXXFLAGS := $(HOST_CXXFLAGS) $(TMP_DXXFLAGS)
+  TMP_CPPFLAGS := $(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+  TMP_CXXFLAGS := $(strip $(HOST_CXXFLAGS) $(TMP_CXXFLAGS))
+  TMP_DXXFLAGS := $(strip $(HOST_CXXFLAGS) $(TMP_DXXFLAGS))
   TMP_CXXIQUOTE:=$(HOST_IQUOTE)
   TMP_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),target)
-  BD_LINK ?= $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
+  BD_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
   BD_STRIP ?= $(TARGET_STRIP)
-  BD_ASSEMBLER ?= $(TARGET_CC) $(TARGET_SYSROOT)
-  TMP_CXXCMD:=$(AROS_CXX) $(TARGET_SYSROOT)
+  BD_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+  TMP_CXXCMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
   TMP_CPPFLAGS := $(TMP_CPPFLAGS)
-  TMP_CXXFLAGS := $(TMP_CXXFLAGS) $(SAFETY_CFLAGS)
+  TMP_CXXFLAGS := $(strip $(TMP_CXXFLAGS) $(SAFETY_CFLAGS))
   TMP_DXXFLAGS := $(TMP_DXXFLAGS)
   TMP_CXXIQUOTE:=$(CFLAGS_IQUOTE)
   TMP_CXXIQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
   KERNEL_CXX ?= $(KERNEL_CC)
-  BD_LINK ?= $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
+  BD_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
   BD_STRIP ?= $(ECHO) >/dev/null
-  BD_ASSEMBLER ?= $(KERNEL_CC) $(KERNEL_SYSROOT)
-  TMP_CXXCMD:=$(KERNEL_CXX) $(KERNEL_SYSROOT)
-  TMP_CXXFLAGS := $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-  TMP_CXXFLAGS := $(KERNEL_CXXFLAGS) $(TMP_CXXFLAGS) 
-  TMP_DXXFLAGS := $(KERNEL_CXXFLAGS) $(TMP_DXXFLAGS)
+  BD_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+  TMP_CXXCMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+  TMP_CXXFLAGS := $(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+  TMP_CXXFLAGS := $(strip $(KERNEL_CXXFLAGS) $(TMP_CXXFLAGS))
+  TMP_DXXFLAGS := $(strip $(KERNEL_CXXFLAGS) $(TMP_DXXFLAGS))
   TMP_CXXIQUOTE:=$(KERNEL_IQUOTE)
   TMP_CXXIQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
 define cxx_multi_recipe_template
  $(1).o : $(2)
- 	%compile_q cmd=$(TMP_CXXCMD) opt="$(TMP_CXXFLAGS) $(TMP_CPPFLAGS)" iquote=$(TMP_CXXIQUOTE) iquote_end=$(TMP_CXXIQUOTE_END) from=$(2) to=$(1).o
+ 	%compile_q cmd=$(TMP_CXXCMD) opt="$(strip $(TMP_CXXFLAGS) $(TMP_CPPFLAGS))" iquote=$(TMP_CXXIQUOTE) iquote_end=$(TMP_CXXIQUOTE_END) from=$(2) to=$(1).o
 
  $(1).d : $(2)
- 	%mkdepend_q cc=$(TMP_CXXCMD) flags="$(TMP_DXXFLAGS) $(TMP_CPPFLAGS)" from=$(2) to=$(1).d
+ 	%mkdepend_q cc=$(TMP_CXXCMD) flags="$(strip $(TMP_DXXFLAGS) $(TMP_CPPFLAGS))" from=$(2) to=$(1).d
 endef
 ifeq (%(targetdir),)
   $(foreach TMP_CXXFILE,$(TMP_CXXFILES),$(eval $(call cxx_multi_recipe_template,$(notdir $(basename $(TMP_CXXFILE))),$(TMP_CXXFILE))))
@@ -787,7 +787,7 @@ endif
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
-%define rule_compile_objc_multi basenames=/A cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= \
+%define rule_compile_objc_multi basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= \
     targetdir= compiler=target
 
 ifneq (%(basenames),)
@@ -836,36 +836,36 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-  BD_LINK ?= $(TMP_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS)
+  BD_LINK ?= $(strip $(TMP_CC) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
   BD_STRIP ?= $(TARGET_STRIP)
-  BD_ASSEMBLER ?= $(TARGET_CC) $(TARGET_SYSROOT)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_SYSROOT)
+  BD_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(strip $(TMP_CC) $(TARGET_SYSROOT))
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(TMP_OBJCFLAGS)  $(SAFETY_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(strip $(TMP_OBJCFLAGS) $(SAFETY_CFLAGS))
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(TMP_OBJCDFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-  BD_LINK ?= $(HOST_OBJC) $(HOST_LDFLAGS)
+  BD_LINK ?= $(strip $(HOST_OBJC) $(HOST_LDFLAGS))
   BD_STRIP ?= $(HOST_STRIP)
-  BD_ASSEMBLER ?= $(HOST_CC) $(HOST_SYSROOT)
+  BD_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
   $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_OBJC)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(HOST_CPPFLAGS) $(TMP_CPPFLAGS)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCFLAGS)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(HOST_CFLAGS) $(TMP_OBJCDFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(strip $(HOST_CPPFLAGS) $(TMP_CPPFLAGS))
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_OBJCFLAGS))
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(strip $(HOST_CFLAGS) $(TMP_OBJCDFLAGS))
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
   KERNEL_OBJC ?= $(KERNEL_CC)
-  BD_LINK ?= $(KERNEL_OBJC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS)
+  BD_LINK ?= $(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
   BD_STRIP ?= $(ECHO) >/dev/null
-  BD_ASSEMBLER ?= $(KERNEL_CC) $(KERNEL_SYSROOT)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_OBJC) $(KERNEL_SYSROOT)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS) 
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCFLAGS) 
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(KERNEL_CFLAGS) $(TMP_OBJCDFLAGS) 
+  BD_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_OBJCFLAGS))
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_OBJCDFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_OBJCDFLAGS))
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -876,7 +876,7 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %.m
 	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.m
-	%mkdepend_q cc=$(CMD) flags="$(TMP_OBJCDFLAGS) $(TMP_CPPFLAGS)"
+	%mkdepend_q cc=$(CMD) flags="$(strip $(TMP_OBJCDFLAGS) $(TMP_CPPFLAGS))"
 
 endif
 
@@ -906,7 +906,7 @@ endif
 # - flags (default $(AFLAGS)): the asm flags to use for assembling
 # - targetdir: the directory to put the .o file in. By default it is put in the
 #   same directory as the .s file
-%define rule_assemble basename=/A aflags=$(AFLAGS) cppflags=$(CPPFLAGS) targetdir=
+%define rule_assemble basename=/A cppflags=$(CPPFLAGS) aflags=$(AFLAGS) targetdir=
 
 ifeq (%(targetdir),)
 %(basename).o : CPPFLAGS := %(cppflags)
@@ -941,7 +941,7 @@ endif
 #   it is put in the same directory as the .c file. When targetdir is not
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
-%define rule_assemble_multi cmd="$(CC) $(TARGET_SYSROOT)"  basenames=/A cppflags=$(CPPFLAGS) aflags=$(AFLAGS) targetdir= suffix=.s
+%define rule_assemble_multi cmd="$(strip $(CC) $(TARGET_SYSROOT))"  basenames=/A cppflags=$(CPPFLAGS) aflags=$(AFLAGS) targetdir= suffix=.s
 
 ifeq (%(targetdir),)
 TMP_TARGETS := $(addsuffix .o,%(basenames))
@@ -979,7 +979,7 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
 #------------------------------------------------------------------------------
 # Link %(objs) to %(prog) using the libraries in %(uselibs)
 %define rule_link_prog prog=/A objs=/A ldflags=$(LDFLAGS) uselibs= \
-    usehostlibs= usestartup=yes detach=no nix=no cmd="$(AROS_CC) $(TARGET_SYSROOT)" strip=$(TARGET_STRIP) objdir=$(GENDIR)/$(CURDIR)
+    usehostlibs= usestartup=yes detach=no nix=no cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" strip=$(TARGET_STRIP) objdir=$(GENDIR)/$(CURDIR)
 
 TMP_EXTRA_LDFLAGS := 
 TMP_EXTRA_LIBS :=
@@ -1017,7 +1017,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 
 %(prog) : OBJDIR := %(objdir)
 %(prog) : OBJS := %(objs)
-%(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
+%(prog) : LDFLAGS := $(strip %(ldflags) $(TMP_EXTRA_LDFLAGS))
 %(prog) : LIBS := $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
 %(prog) : %(objs) $(TMP_DEPLIBS)
 	%link_q cmd="%(cmd)" strip="%(strip)" from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
@@ -1030,7 +1030,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 # the AROS libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_link_progs progs=/A targetdir=$(AROSDIR)/$(CURDIR) nix=%(nix) \
     objdir=$(GENDIR)/$(CURDIR) ldflags=$(LDFLAGS) uselibs= usehostlibs= \
-    usestartup=yes detach=no cmd="$(AROS_CC) $(TARGET_SYSROOT)" strip=$(TARGET_STRIP)
+    usestartup=yes detach=no cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" strip=$(TARGET_STRIP)
 
 TMP_EXTRA_LDFLAGS := 
 TMP_EXTRA_LIBS :=
@@ -1062,7 +1062,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 TMP_PROGS := $(addprefix %(targetdir)/,%(progs))
 
 $(TMP_PROGS) : OBJDIR := %(objdir)
-$(TMP_PROGS) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
+$(TMP_PROGS) : LDFLAGS := $(strip %(ldflags) $(TMP_EXTRA_LDFLAGS))
 $(TMP_PROGS) : LIBS := $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
 $(TMP_PROGS) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLIBS)
 	%link_q cmd="%(cmd)" strip="%(strip)" from=$< opt=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
@@ -1096,7 +1096,7 @@ endif
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
-    cmd="$(AROS_CC) $(TARGET_SYSROOT)" ldflags=$(LDFLAGS) uselibs= usehostlibs=
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldflags=$(LDFLAGS) uselibs= usehostlibs=
 
 TMP_LDFLAGS  := %(ldflags)
 # Make a list of the lib files the programs depend on.
@@ -1470,8 +1470,8 @@ BD_CFLAGS    := %(cflags)
 BD_CXXFLAGS := %(cxxflags)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_CFLAGS    := $(LTO_BINARY_CFLAGS) $(BD_CFLAGS)
-BD_CXXFLAGS := $(LTO_BINARY_CFLAGS) $(BD_CXXFLAGS)
+BD_CFLAGS    := $(strip $(LTO_BINARY_CFLAGS) $(BD_CFLAGS))
+BD_CXXFLAGS := $(strip $(LTO_BINARY_CFLAGS) $(BD_CXXFLAGS))
 endif
 endif
 BD_AFLAGS    := %(aflags)
@@ -1549,7 +1549,7 @@ endif
 BD_CFLAGS    := %(cflags)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_CFLAGS    := $(LTO_BINARY_CFLAGS) $(BD_CFLAGS)
+BD_CFLAGS    := $(strip $(LTO_BINARY_CFLAGS) $(BD_CFLAGS))
 endif
 endif
 BD_DFLAGS    := %(dflags)
@@ -1627,7 +1627,7 @@ BD_DEFLINKLIBNAME := %(modname)
 BD_DEFDFLAGS := %(cflags)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_DEFDFLAGS    := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(BD_DEFDFLAGS)
+BD_DEFDFLAGS    := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(BD_DEFDFLAGS))
 endif
 endif
 BD_DEFDXXFLAGS := %(dxxflags)
@@ -1717,7 +1717,7 @@ endif
 
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir="%(objdir)" \
-		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
+		 ldflags="$(strip $(LDFLAGS) $(%(modname)_LDFLAGS))" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
@@ -1850,8 +1850,8 @@ BD_DEFDFLAGS := %(cflags)
 BD_DEFDXXFLAGS := %(cxxflags)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_DEFDFLAGS    := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_DEFDFLAGS)
-BD_DEFDXXFLAGS := $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_DEFDXXFLAGS)
+BD_DEFDFLAGS    := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_DEFDFLAGS))
+BD_DEFDXXFLAGS := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(BD_DEFDXXFLAGS))
 endif
 endif
 OBJDIR ?= $(GENDIR)/$(CURDIR)
@@ -1984,24 +1984,24 @@ BD_NARCHFILES := $(call BD_FILTERARCH,$(BD_ARCHFILES),$(BD_FILES))
 BD_NLIBARCHFILES := $(call BD_FILTERARCH,$(BD_LIBARCHFILES),$(BD_LIBFILES))
 BD_ARCHNLIBFILES := $(call BD_FILTERARCH,$(BD_LIBFILES),$(BD_LIBARCHFILES))
 
-BD_CPPFLAGS      := %(cppflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
+BD_CPPFLAGS      := $(strip %(cppflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC))
 ifneq (%(includedir),)
 BD_CPPFLAGS        += -I%(includedir)
 endif
-BD_CFLAGS        := %(cflags) $(%(modname)_CFLAGS)
-BD_LINKLIBCFLAGS := %(cflags) $(%(modname)_LINKLIBCFLAGS)
-BD_CXXFLAGS      := %(cxxflags) $(%(modname)_CXXFLAGS)
+BD_CFLAGS        := $(strip %(cflags) $(%(modname)_CFLAGS))
+BD_LINKLIBCFLAGS := $(strip %(cflags) $(%(modname)_LINKLIBCFLAGS))
+BD_CXXFLAGS      := $(strip %(cxxflags) $(%(modname)_CXXFLAGS))
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_LTOFLAGS=$(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH)
-BD_CFLAGS        := $(BD_LTOFLAGS) $(BD_CFLAGS)
-BD_LINKLIBCFLAGS := $(BD_LTOFLAGS) $(BD_LINKLIBCFLAGS)
-BD_CXXFLAGS      := $(BD_LTOFLAGS) $(BD_CXXFLAGS)
+BD_LTOFLAGS=$(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH))
+BD_CFLAGS        := $(strip $(BD_LTOFLAGS) $(BD_CFLAGS))
+BD_LINKLIBCFLAGS := $(strip $(BD_LTOFLAGS) $(BD_LINKLIBCFLAGS))
+BD_CXXFLAGS      := $(strip $(BD_LTOFLAGS) $(BD_CXXFLAGS))
 endif
 endif
-BD_DFLAGS        := %(dflags) $(%(modname)_DFLAGS)
-BD_LINKLIBDFLAGS := %(dflags) $(%(modname)_LINKLIBDFLAGS)
-BD_DXXFLAGS      := %(dxxflags) $(%(modname)_DXXFLAGS)
+BD_DFLAGS        := $(strip %(dflags) $(%(modname)_DFLAGS))
+BD_LINKLIBDFLAGS := $(strip %(dflags) $(%(modname)_LINKLIBDFLAGS))
+BD_DXXFLAGS      := $(strip %(dxxflags) $(%(modname)_DXXFLAGS))
 
 ifeq (%(modtype),library)
     BD_LIBSUFFIX := 
@@ -2050,9 +2050,9 @@ $(BD_LINKLIBFILES) $(BD_RELLINKLIBFILES) : | %(objdir)/linklib
 $(BD_LINKLIBOBJS) $(BD_RELLINKLIBOBJS) : | %(objdir)/linklib
 
 BD_CCFILES := $(BD_NARCHFILES)
-BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES)
-BD_LINKLIBCCFILES := $(BD_NLIBARCHFILES) $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES)
-BD_LINKLIBCCGENFILES := $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES)
+BD_TARGETCCFILES := $(strip $(BD_STARTFILES) $(BD_ENDFILES))
+BD_LINKLIBCCFILES := $(strip $(BD_NLIBARCHFILES) $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES))
+BD_LINKLIBCCGENFILES := $(strip $(BD_LINKLIBCFILES) $(BD_RELLINKLIBCFILES))
 
 %rule_compile_cxx_multi \
     basenames=$(BD_CXXFILES) targetdir="%(objdir)" \
@@ -2351,8 +2351,8 @@ BD_CFLAGS    := %(cflags)
 BD_CXXFLAGS := %(cxxflags)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-BD_CFLAGS    := $(LTO_CFLAGS) $(BD_CFLAGS)
-BD_CXXFLAGS := $(LTO_CFLAGS) $(BD_CXXFLAGS)
+BD_CFLAGS    := $(strip $(LTO_CFLAGS) $(BD_CFLAGS))
+BD_CXXFLAGS := $(strip $(LTO_CFLAGS) $(BD_CXXFLAGS))
 endif
 endif
 BD_AFLAGS    := %(aflags)
@@ -2588,15 +2588,15 @@ ifeq ($(findstring %(compiler),host kernel target),)
     $(error unknown compiler %(compiler))
 endif
 ifneq (%(modulename),)
-$(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=%(cppflags) -I$(GENDIR)/%(maindir) $(BD_DEFLIBDEFSINC$(BDID))
+$(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip %(cppflags) -I$(GENDIR)/%(maindir) $(BD_DEFLIBDEFSINC$(BDID)))
 else
 $(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=%(cppflags)
 endif
 $(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
 ifeq (%(compiler),target)
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(TARGET_CC) $(TARGET_SYSROOT)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(TMP_CFLAGS) $(SAFETY_CFLAGS)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(TMP_CFLAGS) $(SAFETY_CFLAGS))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -2606,22 +2606,22 @@ $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_SYSROOT)
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS)
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(KERNEL_CFLAGS) $(TMP_CFLAGS)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_CFLAGS))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
 ifeq ($(TARGET),$(BD_TARGET))
 $(BD_LIBOBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
-	%compile_q cmd=$(TMP_CMD) opt="$(TMP_CFLAGS) $(TMP_CPPFLAGS)" iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(TMP_CMD) opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 $(BD_OBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
-	%compile_q cmd=$(TMP_CMD) opt="$(TMP_CFLAGS) $(TMP_CPPFLAGS)" iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+	%compile_q cmd=$(TMP_CMD) opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 endif
 
 ifeq (%(dflags),)
-$(BD_DEPS$(BDID)) : TMP_CPPFLAGS:=%(cppflags) $(BD_DEFLIBDEFSINC$(BDID))
+$(BD_DEPS$(BDID)) : TMP_CPPFLAGS:=$(strip %(cppflags) $(BD_DEFLIBDEFSINC$(BDID)))
 $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(cflags)
 else
 $(BD_DEPS$(BDID)) : TMP_CPPFLAGS:=%(cppflags)
@@ -2629,10 +2629,10 @@ $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
 ifeq ($(TARGET),$(BD_TARGET))
 $(BD_LIBOBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
-	%mkdepend_q cc=$(TMP_CMD) flags="$(TMP_DFLAGS) $(TMP_CPPFLAGS)"
+	%mkdepend_q cc=$(TMP_CMD) flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
 
 $(BD_OBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
-	%mkdepend_q cc=$(TMP_CMD) flags="$(TMP_DFLAGS) $(TMP_CPPFLAGS)"
+	%mkdepend_q cc=$(TMP_CMD) flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
 endif
 
 $(BD_ASMOBJS$(BDID)) : CPPFLAGS:=%(cppflags)
@@ -2775,10 +2775,10 @@ $(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
 	%mklib_q from=$^
 
 $(STUBS_OBJ) : $(STUBS_SRC) 
-	%compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="%(cflags) %(cppflags)" iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
+	%compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip %(cflags) %(cppflags))" iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
 
 $(STUBS_DEP) : $(STUBS_SRC)
-	%mkdepend_q flags="%(dflags) %(cppflags)"
+	%mkdepend_q flags="$(strip %(dflags) %(cppflags))"
 
 setup ::
 	%mkdirs_q $(OBJDIR) $(AROS_LIB)
@@ -2988,13 +2988,13 @@ ifeq (%(compiler),host)
     %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
-        CC="$(HOST_DEF_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include" \
-        CXX="$(HOST_CXX) $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include" \
+        CC="$(strip $(HOST_DEF_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)" \
+        CXX="$(strip $(HOST_CXX) $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)" \
-        TARGET_CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
-        TARGET_CFLAGS="$(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
-        TARGET_CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
-        TARGET_CXXFLAGS="$(KERNEL_CXXFLAGS) $(%(mmake)-s_flag)" \
+        TARGET_CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
+        TARGET_CFLAGS="$(strip $(KERNEL_CFLAGS) $(%(mmake)-s_flag))" \
+        TARGET_CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
+        TARGET_CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag))" \
         TARGET_AS="$(TARGET_AS)" \
         OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" \
@@ -3077,9 +3077,9 @@ ifeq (%(compiler),kernel)
     %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(KERNEL_CPP)" \
         CXXCPP="$(KERNEL_CPP)" \
-        CC="$(KERNEL_CC) $(KERNEL_SYSROOT)" \
+        CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
         CFLAGS="$(strip $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
-        CXX="$(KERNEL_CXX) $(KERNEL_SYSROOT)" \
+        CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
         CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(KERNEL_CPPFLAGS) %(extracppflags))"
@@ -3249,15 +3249,15 @@ else
 endif
 
 ifeq (%(compiler),host)
-    BD_LDFLAGS   := -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)
-    BD_CFLAGS := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include
-    BD_CXXFLAGS := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include
+    BD_LDFLAGS   := $(strip -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS))
+    BD_CFLAGS := $(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)
+    BD_CXXFLAGS := $(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)
     BD_CPPFLAGS := $(HOST_CPPFLAGS)
-    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_DEF_CC)" -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_DEF_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)"
     ifeq (%(usecppflags),yes)
         %(mmake)-cmake_opts += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
     endif
-    %(mmake)-cmake_opts += -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
+    %(mmake)-cmake_opts += -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
     ifeq (%(package),)
         %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
     else
