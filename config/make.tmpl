@@ -2880,7 +2880,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
     usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
     install_target=install preconfigure= postconfigure= postinstall= \
-    config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes
+    config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -3063,7 +3063,14 @@ ifeq (%(buildflags),yes)
 endif
 ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --without-pic --disable-shared
-    %(mmake)-config_opts += --disable-nls --without-x
+ifeq (%(nlsflags),yes)
+# disable native language support
+    %(mmake)-config_opts += --disable-nls
+endif
+ifeq (%(xflags),yes)
+# disable X window system
+    %(mmake)-config_opts += --without-x
+endif
 endif
 endif
 ifeq (%(compiler),kernel)
@@ -3093,7 +3100,15 @@ ifeq (%(buildflags),yes)
 endif
 ifeq (%(gnuflags),yes)
     %(mmake)-config_opts += --without-pic --disable-shared
-    %(mmake)-config_opts += --disable-nls --without-x
+ifeq (%(nlsflags),yes)
+# disable native language support
+    %(mmake)-config_opts += --disable-nls
+endif
+ifeq (%(xflags),yes)
+# disable X window system
+    %(mmake)-config_opts += --without-x
+endif
+
 endif
 endif
 
@@ -3480,7 +3495,7 @@ endif
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir=$(CURDIR) package_repo= patch=no patch_repo= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
     extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no buildflags=yes gnuflags=yes
+    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -3550,9 +3565,10 @@ endif
 %build_with_configure mmake="%(mmake)-%(subpackage)" package="%(package)" compiler="%(compiler)"  crossbuild="%(crossbuild)" install_target="%(install_target)" \
      srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-builddir) gendir="%(gendir)" basedir="%(basedir)" \
      config_env_extra="%(config_env_extra)" install_env="%(install_env)" use_build_env="%(use_build_env)" \
-     nix="%(nix)" nix_dir_layout="%(nix_dir_layout)" prefix=$(%(mmake)-prefix) \
-     aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
-     %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" buildflags=%(buildflags) gnuflags=%(gnuflags)
+     nix="%(nix)" nix_dir_layout="%(nix_dir_layout)" prefix=$(%(mmake)-prefix)  aros_prefix="%(aros_prefix)" \
+     preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" \
+     extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" \
+     buildflags=%(buildflags) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
 
 .PHONY : %(mmake)-%(subpackage)-make-package %(mmake)-%(subpackage)-create-patch
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
