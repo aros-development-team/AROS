@@ -52,6 +52,7 @@ struct FilePrefHeader
 #define IMPORT_LONG(x)  do { x = AROS_BE2LONG(x); } while (0)
 
 #define PATHMAX 63
+#define EXTMAX   7 /* ".prefs" + 1 for unit num */
 
 BOOL Printer_LoadPrefs(struct PrinterBase *PrinterBase, LONG unitnum, struct PrinterPrefs *prefs)
 {
@@ -72,20 +73,18 @@ BOOL Printer_LoadPrefs(struct PrinterBase *PrinterBase, LONG unitnum, struct Pri
         ID_PREF, ID_PGFX,
     };
 
-    AddPart(envpath, PREFS_PATH_ENV, PATHMAX);
-    AddPart(envarcpath, PREFS_PATH_ENVARC, PATHMAX);
+    AddPart(envpath, PREFS_PATH_ENV, PATHMAX - EXTMAX + 1);
+    AddPart(envarcpath, PREFS_PATH_ENVARC, PATHMAX - EXTMAX + 1);
     if (unitnum) {
         TEXT c[2] = { '0' + unitnum, 0 };
-        strncat(envpath, c, PATHMAX);
-        strncat(envarcpath, c, PATHMAX);
+        strcat(envpath, c);
+        strcat(envarcpath, c);
     }
-    strncat(envpath, ".prefs", PATHMAX);
-    strncat(envarcpath, ".prefs", PATHMAX);
-    envpath[PATHMAX] = '\0';
-    envarcpath[PATHMAX] = '\0';
+    strcat(envpath, ".prefs");
+    strcat(envarcpath, ".prefs");
 
     D(bug("%s: envpath \"%s\"\n", __func__, envpath));
-    D(bug("%s: envarcpath \"%s\"\n", __func__, envpath));
+    D(bug("%s: envarcpath \"%s\"\n", __func__, envarcpath));
 
     if (((fh = Open(envpath, MODE_OLDFILE)) == BNULL) &&
         ((fh = Open(envarcpath, MODE_OLDFILE)) == BNULL))
