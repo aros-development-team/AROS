@@ -256,6 +256,7 @@ fi
 #  -Wempty-body
 #  -Wstringop-overflow
 #  -Wformat-truncation
+#  -Wshift-negative-value
 
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
 CFLAGS=-Werror
@@ -827,6 +828,15 @@ if test "x-$aros_format_truncation" = "x-yes" ; then
     aros_nowarnflags_format_truncation=-Wno-format-truncation
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wshift-negative-value])
+CFLAGS=-Wshift-negative-value
+AC_TRY_COMPILE(,, aros_shift_negative_value="yes", aros_shift_negative_value="no")
+AC_MSG_RESULT($aros_shift_negative_value)
+if test "x-$aros_shift_negative_value" = "x-yes" ; then
+    aros_warnflags_shift_negative_value=-Wshift-negative-value
+    aros_nowarnflags_shift_negative_value=-Wno-shift-negative-value
+fi
+
 #
 # export the feature flags...
 #
@@ -989,7 +999,9 @@ AC_SUBST(aros_warnflags_stringop_overflow)
 AC_SUBST(aros_nowarnflags_stringop_overflow)
 AC_SUBST(aros_warnflags_format_truncation)
 AC_SUBST(aros_nowarnflags_format_truncation)
-
+AC_SUBST(aros_warnflags_shift_negative_value)
+AC_SUBST(aros_nowarnflags_shift_negative_value)
+    
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
 )
