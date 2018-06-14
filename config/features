@@ -584,6 +584,8 @@ PACKAGE_URL=
 ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_nowarnflags_missing_field_initializers
+aros_warnflags_missing_field_initializers
 aros_nowarnflags_shift_negative_value
 aros_warnflags_shift_negative_value
 aros_nowarnflags_format_truncation
@@ -3241,6 +3243,7 @@ fi
 #  -Wstringop-overflow
 #  -Wformat-truncation
 #  -Wshift-negative-value
+#  -Wmissing-field-initializers
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Werror" >&5
 $as_echo_n "checking whether ${CC} accepts -Werror... " >&6; }
@@ -4971,6 +4974,33 @@ $as_echo "$aros_shift_negative_value" >&6; }
 if test "x-$aros_shift_negative_value" = "x-yes" ; then
     aros_warnflags_shift_negative_value=-Wshift-negative-value
     aros_nowarnflags_shift_negative_value=-Wno-shift-negative-value
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmissing-field-initializers]" >&5
+$as_echo_n "checking whether ${CC} accepts -Wmissing-field-initializers]... " >&6; }
+CFLAGS=-Wmissing-field-initializers]
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_missing_field_initializers="yes"
+else
+  aros_missing_field_initializers="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_missing_field_initializers" >&5
+$as_echo "$aros_missing_field_initializers" >&6; }
+if test "x-$aros_missing_field_initializers" = "x-yes" ; then
+    aros_warnflags_missing_field_initializers=-Wmissing-field-initializers
+    aros_nowarnflags_missing_field_initializers=-Wno-missing-field-initializers
 fi
 
 #

@@ -257,6 +257,7 @@ fi
 #  -Wstringop-overflow
 #  -Wformat-truncation
 #  -Wshift-negative-value
+#  -Wmissing-field-initializers
 
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
 CFLAGS=-Werror
@@ -837,6 +838,15 @@ if test "x-$aros_shift_negative_value" = "x-yes" ; then
     aros_nowarnflags_shift_negative_value=-Wno-shift-negative-value
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wmissing-field-initializers])
+CFLAGS=-Wmissing-field-initializers
+AC_TRY_COMPILE(,, aros_missing_field_initializers="yes", aros_missing_field_initializers="no")
+AC_MSG_RESULT($aros_missing_field_initializers)
+if test "x-$aros_missing_field_initializers" = "x-yes" ; then
+    aros_warnflags_missing_field_initializers=-Wmissing-field-initializers
+    aros_nowarnflags_smissing_field_initializers=-Wno-missing-field-initializers
+fi
+
 #
 # export the feature flags...
 #
@@ -1001,6 +1011,8 @@ AC_SUBST(aros_warnflags_format_truncation)
 AC_SUBST(aros_nowarnflags_format_truncation)
 AC_SUBST(aros_warnflags_shift_negative_value)
 AC_SUBST(aros_nowarnflags_shift_negative_value)
+AC_SUBST(aros_warnflags_missing_field_initializers)
+AC_SUBST(aros_nowarnflags_missing_field_initializers)
     
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in

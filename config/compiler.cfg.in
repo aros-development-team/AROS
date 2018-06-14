@@ -119,6 +119,7 @@ WARN_EMPTY_BODY                         := @aros_warnflags_empty_body@
 WARN_STRINGOP_OVERFLOW                  := @aros_warnflags_stringop_overflow@
 WARN_FORMAT_TRUNCATION                  := @aros_warnflags_format_truncation@
 WARN_SHIFT_NEGATIVE_VALUE               := @aros_warnflags_shift_negative_value@
+WARN_MISSING_FIELD_INITIALIZERS         := @aros_warnflags_missing_field_initializers@
 
 #
 # "Disable" compiler warning flags
@@ -190,3 +191,4 @@ NOWARN_EMPTY_BODY                       := @aros_nowarnflags_empty_body@
 NOWARN_STRINGOP_OVERFLOW                := @aros_nowarnflags_stringop_overflow@
 NOWARN_FORMAT_TRUNCATION                := @aros_nowarnflags_format_truncation@
 NOWARN_SHIFT_NEGATIVE_VALUE             := @aros_nowarnflags_shift_negative_value@
+NOWARN_MISSING_FIELD_INITIALIZERS       := @aros_nowarnflags_missing_field_initializers@
