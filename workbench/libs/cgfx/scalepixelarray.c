@@ -19,6 +19,11 @@ struct render_data
     OOP_Object *gfx_hidd;
 };
 
+struct dest_box
+{
+    UWORD x, y, w, h;
+};
+
 static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
     struct GfxBase *GfxBase);
@@ -36,7 +41,9 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
  * into the regcall routine. On non-regcall systems, this will, at worst,
  * convert to a 'JMP internal_ScalePixelArray' with no stack manipulation.
  */
-LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, struct Rectangle *DstBounds, UBYTE SrcFormat, struct Library *CyberGfxBase);
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
+    UWORD SrcMod, struct RastPort *RastPort, struct dest_box *dest_bounds,
+    UBYTE SrcFormat, struct Library *CyberGfxBase);
 
 /*****************************************************************************
 
@@ -95,19 +102,22 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
 {
     AROS_LIBFUNC_INIT
 
-    struct Rectangle DestBounds;
-    
-    DestBounds.MinX = DestX;
-    DestBounds.MinY = DestY;
-    DestBounds.MaxX = DestW;
-    DestBounds.MaxY = DestH;
-    
-    return internal_ScalePixelArray(srcRect, SrcW, SrcH, SrcMod, RastPort, &DestBounds, SrcFormat, CyberGfxBase);
+    struct dest_box dest_bounds;
+
+    dest_bounds.x = DestX;
+    dest_bounds.y = DestY;
+    dest_bounds.w = DestW;
+    dest_bounds.h = DestH;
+
+    return internal_ScalePixelArray(srcRect, SrcW, SrcH, SrcMod, RastPort,
+        &dest_bounds, SrcFormat, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 }
 
-LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod, struct RastPort *RastPort, struct Rectangle *DstBounds, UBYTE SrcFormat, struct Library *CyberGfxBase)
+LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
+    UWORD SrcMod, struct RastPort *RastPort, struct dest_box *dest_bounds,
+    UBYTE SrcFormat, struct Library *CyberGfxBase)
 {
     ULONG result = 0;
     struct render_data data;
@@ -129,10 +139,10 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
     };
 
     D(bug("ScalePixelArray(%p, %d, %d, %d, %p, %d, %d, %d, %d, %d)\n",
-        srcRect, SrcW, SrcH, SrcMod, RastPort, DstBounds->MinX, DstBounds->MinY, DstBounds->MaxX, DstBounds->MaxY,
-        SrcFormat));
+        srcRect, SrcW, SrcH, SrcMod, RastPort, dest_bounds->x, dest_bounds->y,
+        dest_bounds->w, dest_bounds->h, SrcFormat));
 
-    if (SrcW == 0 || SrcH == 0 || DstBounds->MaxX == 0 || DstBounds->MaxY == 0)
+    if (SrcW == 0 || SrcH == 0 || dest_bounds->w == 0 || dest_bounds->h == 0)
     	return 0;
 
     /* This is AROS Cybergraphx - We only work wih Gfx Hidd bitmaps */
@@ -158,8 +168,8 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
         tempbm_obj = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
         if (tempbm_obj)
         {
-            bm_tags[1].ti_Data = DstBounds->MaxX;
-            bm_tags[2].ti_Data = DstBounds->MaxY;
+            bm_tags[1].ti_Data = dest_bounds->w;
+            bm_tags[2].ti_Data = dest_bounds->h;
 #if 0
             // FIXME: This doesn't work (X11 and VESA). Should it?
             bm_tags[3].ti_Tag = aHidd_BitMap_Friend;
@@ -177,8 +187,8 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
 
                 scale_args.bsa_SrcWidth = SrcW;
                 scale_args.bsa_SrcHeight = SrcH;
-                scale_args.bsa_DestWidth = DstBounds->MaxX;
-                scale_args.bsa_DestHeight = DstBounds->MaxY;
+                scale_args.bsa_DestWidth = dest_bounds->w;
+                scale_args.bsa_DestHeight = dest_bounds->h;
                 HIDD_BM_BitMapScale(tempbm2_obj, tempbm_obj, tempbm2_obj, &scale_args,
                     gc);
 
@@ -186,15 +196,13 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH, UWORD SrcMod
 
                 data.srcbm_obj = tempbm2_obj;
                 data.gfx_hidd = gfx_hidd;
-                rr.MinX = DstBounds->MinX;
-                rr.MinY = DstBounds->MinY;
-                rr.MaxX = DstBounds->MinX + DstBounds->MaxX - 1;
-                rr.MaxY = DstBounds->MinY + DstBounds->MaxY - 1;
+                rr.MinX = dest_bounds->x;
+                rr.MinY = dest_bounds->y;
+                rr.MaxX = dest_bounds->x + dest_bounds->w - 1;
+                rr.MaxY = dest_bounds->y + dest_bounds->h - 1;
                 result = DoRenderFunc(RastPort, NULL, &rr, RenderHook, &data, TRUE);
 
-/*
- * Discard temporary resources ...
- */
+                /* Discard temporary resources */
 
                 OOP_DisposeObject(tempbm2_obj);
             }
