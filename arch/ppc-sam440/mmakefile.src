@@ -4,6 +4,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- distfiles-sam440-ppc : bootiso
+#MM- distfiles-quick-sam440-ppc : bootiso-quick
+
 #MM- AROS-sam440-ppc : kernel-sam440-ppc software-sam440-ppc
 
 #MM- software-sam440-ppc : general-setup binary-sam440-ppc \
