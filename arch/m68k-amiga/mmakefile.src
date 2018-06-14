@@ -5,6 +5,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- distfiles-amiga-m68k : bootdisk bootiso
+#MM- distfiles-quick-amiga-m68k : bootdisk-quick bootiso-quick
 
 #MM- AROS-amiga-m68k : kernel-amiga-m68k software-amiga-m68k
 
