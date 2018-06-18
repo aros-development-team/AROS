@@ -11,6 +11,6 @@ USER_INCLUDES := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel -I$(SRCDIR)/arch/a
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc \
-  files=$(FILES) modulename=exec
+  files=$(FILES) modname=exec
 
 %common

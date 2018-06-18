@@ -8,7 +8,7 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=compiler-posixc maindir=compiler/posixc \
-  arch=x86_64 \
+  modname=posixc arch=x86_64 \
   asmfiles="siglongjmp sigsetjmp vfork vfork_longjmp"
 
 %common

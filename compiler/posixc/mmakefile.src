@@ -230,7 +230,7 @@ POSIXC_COMMON := \
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
 USER_CFLAGS += $(NOWARN_FLAGS)
 USER_LDFLAGS := -noposixc
-POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(POSIXC_COMMON))))
+POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notdir $(POSIXC_COMMON))))
 
 %build_module mmake=compiler-posixc \
     modname=posixc modtype=library \

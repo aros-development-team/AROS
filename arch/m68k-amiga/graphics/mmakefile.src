@@ -15,6 +15,6 @@ USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
 %build_archspecific \
   mainmmake=kernel-graphics maindir=rom/graphics arch=amiga-m68k \
   files="$(CFILES)" asmfiles="$(AFILES)" \
-  modulename=graphics
+  modname=graphics
 
 %common

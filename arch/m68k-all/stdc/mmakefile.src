@@ -58,7 +58,7 @@ STDC_M68K_FILES += \
 
 %build_archspecific \
   mainmmake=compiler-stdc \
-  maindir=compiler/stdc \
+  modname=stdc maindir=compiler/stdc \
   arch=m68k \
   files="$(STDC_M68K_FILES)" asmfiles="$(STDC_M68K_ASMFILES)"
 

@@ -13,7 +13,7 @@ FILES := \
 
 #MM- kernel-processor-raspi-arm : includes
 
-%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
     arch=raspi-arm files=$(FILES)
 
 %common

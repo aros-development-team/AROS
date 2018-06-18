@@ -7,7 +7,7 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=compiler-stdc \
-  maindir=compiler/stdc \
+  modname=stdc maindir=compiler/stdc \
   arch=arm \
   files="fenv" asmfiles="longjmp setjmp"
 

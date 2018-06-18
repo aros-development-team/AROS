@@ -6,7 +6,7 @@ USER_INCLUDES := -I.. -I$(SRCDIR)/rom/dos
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos \
-  arch=chrp-ppc-efika \
+  arch=chrp-ppc-efika modname=dos \
   files="internalloadseg_elf internalunloadseg"
 
 #MM- kernel-dos-chrp-ppc : kernel-bootloader-chrp-ppc-includes

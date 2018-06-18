@@ -516,22 +516,23 @@ STDCIO_COMMON := \
 
 #MM- core-linklibs : linklibs-stdc linklibs-stdcio linklibs-libm
 
-STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(STDC_COMMON))))
+STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $(STDC_COMMON))))
 
 # Ugh. These are for the math routines, which have a number of
 # lint issues, that should be fixed.
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) \
     $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
 
-USER_CFLAGS := $(NOWARN_FLAGS) -noposixc -Dlint '-D__FBSDID(x)=' -fno-builtin
+USER_CFLAGS := $(NOWARN_FLAGS) -noposixc -fno-builtin
 USER_LDFLAGS := -nostdc -noposixc
+USER_CPPFLAGS := -Dlint '-D__FBSDID(x)=' 
 
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
     files="$(STDC) $(STDC_COMMON)" \
     linklibfiles=$(STDC_LINKLIB) linklibobjs=$(STDC_LINKOBJS)
 
-STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(STDCIO_COMMON))))
+STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
 
 %build_module mmake=compiler-stdcio \
     modname=stdcio modtype=library \
@@ -619,7 +620,8 @@ STDC_STATIC := \
     vsprintf \
     vsscanf
 
-USER_CFLAGS := $(NOWARN_FLAGS) -DSTDC_STATIC -Dlint -fno-builtin
+USER_CFLAGS := $(NOWARN_FLAGS) -fno-builtin
+USER_CPPFLAGS := -DSTDC_STATIC -Dlint
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
@@ -631,7 +633,7 @@ USER_CFLAGS := $(NOWARN_FLAGS) -DSTDC_STATIC -Dlint -fno-builtin
 # setjmp()/longjmp() is used in dos.library so make it available.
 # Plan to put stdc.library also in aros-base rom so this is not needed anymore
 %build_linklib mmake=linklibs-romhack \
-    libname=romhack files="setjmp longjmp"
+    objdir=$(GENDIR)/$(CURDIR)/stdc libname=romhack files="setjmp longjmp"
 
 CFLAGS32 := $(filter-out -mcmodel=large,$(CFLAGS))
 

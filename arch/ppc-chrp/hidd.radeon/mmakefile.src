@@ -5,5 +5,5 @@ include $(SRCDIR)/config/aros.cfg
 %build_archspecific \
   mainmmake=hidd-radeon maindir=workbench/hidds/radeon \
   arch=chrp-ppc cflags="$(CFLAGS) -I$(SRCDIR)/workbench/hidds/radeon"\
-  files="radeon_bios"
+  files="radeon_bios" modname=radeon
 

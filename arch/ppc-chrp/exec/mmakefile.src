@@ -21,6 +21,6 @@ USER_CFLAGS     := $(PRIV_EXEC_INCLUDES) -Os
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR) -Os
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=chrp-ppc \
-  files=$(CFILES) modulename=exec
+  files=$(CFILES) modname=exec
 
 TARGETDIR = $(BD_OBJDIR$(BDID))

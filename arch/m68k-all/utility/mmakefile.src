@@ -8,7 +8,7 @@ AFILES := sdivmod32 smult32 smult64 udivmod32 umult32 umult64
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -mc68020
 
 %build_archspecific \
-  mainmmake=kernel-utility maindir=rom/utility arch=m68k \
+  mainmmake=kernel-utility modname=utility maindir=rom/utility arch=m68k \
   files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel
 
 #MM kernel-utility-m68k : includes-asm_h-m68k

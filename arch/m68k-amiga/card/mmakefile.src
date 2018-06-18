@@ -10,7 +10,7 @@ FUNCTIONS := card_init lowlevel task \
 	cardchangecount cardinterface
 
 %build_archspecific \
-  mainmmake=kernel-cardres maindir=rom/card \
+  mainmmake=kernel-cardres modname=card maindir=rom/card \
   arch=amiga-m68k \
   files="$(FUNCTIONS)"
 

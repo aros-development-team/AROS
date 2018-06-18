@@ -6,7 +6,7 @@ USER_INCLUDES := -I.. -I$(SRCDIR)/rom/devs/ata
 
 %build_archspecific \
   mainmmake=kernel-ata maindir=rom/devs/ata \
-  arch=chrp-ppc-efika \
+  arch=chrp-ppc-efika modname=ata \
   files="lowlevel_mpc5200b ata_bestcomm" 
 
 %common

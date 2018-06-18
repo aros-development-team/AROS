@@ -12,6 +12,6 @@ USER_AFLAGS 	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-i386 \
-  files=$(CFILES) asmfiles=$(AFILES) modulename=exec
+  files=$(CFILES) asmfiles=$(AFILES) modname=exec
 
 %common

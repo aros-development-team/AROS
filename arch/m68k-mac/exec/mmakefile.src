@@ -17,6 +17,6 @@ USER_CFLAGS     := $(PRIV_EXEC_INCLUDES) -fomit-frame-pointer -O6
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=mac-m68k \
-  files=$(CFILES) asmfiles=$(AFILES) modulename=exec
+  files=$(CFILES) asmfiles=$(AFILES) modname=exec
 
 %common

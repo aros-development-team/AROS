@@ -16,7 +16,7 @@ USER_INCLUDES += -I$(SRCDIR)/workbench/libs/lowlevel -I$(SRCDIR)/$(CURDIR)/../ci
 #MM- workbench-libs-lowlevel-amiga-m68k: kernel-potgo-includes
 
 %build_archspecific \
-  mainmmake=workbench-libs-lowlevel maindir=workbench/libs/lowlevel \
+  mainmmake=workbench-libs-lowlevel modname=lowlevel maindir=workbench/libs/lowlevel \
   arch=amiga-m68k \
   files="$(FILES)"
 

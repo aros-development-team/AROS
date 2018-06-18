@@ -6,4 +6,4 @@ USER_INCLUDES := -I.. -I$(SRCDIR)/rom/dosboot
 
 %build_archspecific \
   mainmmake=kernel-dosboot maindir=rom/dosboot \
-  arch=chrp-ppc files="bootconfig"
+  arch=chrp-ppc files="bootconfig" modname=dosboot

@@ -6,6 +6,6 @@ USER_CFLAGS     := -I$(SRCDIR)/rom/disk
 
 %build_archspecific \
   mainmmake=kernel-disk maindir=rom/disk arch=amiga-m68k \
-  files="disk_intern_init" modulename=disk
+  files="disk_intern_init" modname=disk
 
 %common

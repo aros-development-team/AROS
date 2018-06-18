@@ -7,7 +7,7 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)	\
 	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk		\
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
-%build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
+%build_archspecific mainmmake=workbench-devs-hostdisk modname=hostdisk maindir=arch/all-hosted/devs/hostdisk \
     arch=linux files="geometry"
 
 %common

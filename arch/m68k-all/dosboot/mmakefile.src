@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 %build_archspecific \
-  mainmmake=kernel-dosboot maindir=rom/dosboot \
+  mainmmake=kernel-dosboot modname=dosboot maindir=rom/dosboot \
   arch=m68k files="bootcode"
 
 %common

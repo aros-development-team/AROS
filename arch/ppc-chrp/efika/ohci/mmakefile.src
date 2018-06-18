@@ -6,7 +6,7 @@ USER_INCLUDES := -I.. -I$(SRCDIR)/workbench/devs/USB/drivers/OHCI
 
 %build_archspecific \
   mainmmake=hidd-usb-drivers-ohci maindir=workbench/devs/USB/drivers/OHCI \
-  arch=chrp-ppc-efika modulename=ohci \
+  arch=chrp-ppc-efika modname=ohci \
   files="ohci_init" 
 
 %common

@@ -11,7 +11,7 @@ USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) \
 	       -DHOST_OS_linux -DHOST_OS_android
 
 %build_archspecific \
-    mainmmake=kernel-kernel maindir=$(MAINDIR) \
+    mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \
     arch=linux-android files=$(FILES)
 
 #MM

@@ -9,7 +9,7 @@ USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles="execstubs stackswap taskexit" \
   files="copymem newstackswap preparecontext alert_cpu" \
-  arch=x86_64
+  arch=x86_64 modname=exec
 
 #MM kernel-exec-x86_64 : includes-asm_h-x86_64 kernel-kernel-includes
 

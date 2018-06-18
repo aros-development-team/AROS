@@ -10,7 +10,7 @@ USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 	       -DHOST_OS_darwin -DHOST_OS_ios
 
 %build_archspecific \
-  mainmmake=kernel-kernel maindir=$(MAINDIR) \
+  mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \
   arch=darwin-ios files=$(FILES)
 
 %common

@@ -16,6 +16,6 @@ USER_AFLAGS := -isystem $(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-x86_64 \
-  asmfiles=$(AFILES) modulename=exec
+  asmfiles=$(AFILES) modname=exec
 
 %common

@@ -20,7 +20,7 @@ USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR) -m68060
 
 %build_archspecific \
-  mainmmake=kernel-exec maindir=rom/exec \
+  mainmmake=kernel-exec modname=exec maindir=rom/exec \
   asmfiles="$(AFILES)" \
   files="$(FILES)" \
   arch=m68k

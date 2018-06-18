@@ -7,7 +7,7 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
 #MM- compiler-posixc-arm : includes-asm_h-arm
 
 %build_archspecific \
-  mainmmake=compiler-posixc maindir=compiler/posixc \
+  mainmmake=compiler-posixc modname=posixc maindir=compiler/posixc \
   arch=arm \
   asmfiles="siglongjmp sigsetjmp vfork vfork_longjmp"
 

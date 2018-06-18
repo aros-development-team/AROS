@@ -7,7 +7,7 @@ FILES=debug_gdb segtracker
 USER_CFLAGS += -I$(SRCDIR)/rom/debug
 
 %build_archspecific \
-  mainmmake=kernel-debug maindir=rom/debug arch=m68k \
+  mainmmake=kernel-debug modname=debug maindir=rom/debug arch=m68k \
   files="$(FILES)"
 
 %common

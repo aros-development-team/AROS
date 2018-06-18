@@ -9,7 +9,7 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs/mathieeesingbas
 USER_AFLAGS := -I$(GENINCDIR) -march=68040
 
 %build_archspecific \
-  mainmmake=workbench-libs-mathieeesingbas maindir=workbench/libs/mathieeesingbas arch=m68k \
+  mainmmake=workbench-libs-mathieeesingbas modname=mathieeesingbas maindir=workbench/libs/mathieeesingbas arch=m68k \
   files="$(FILES)" asmfiles="$(AFILES)"
 
 %common

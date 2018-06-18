@@ -3,13 +3,13 @@
 include $(SRCDIR)/config/aros.cfg
 
 SVNREV        := $(shell $(SRCDIR)/scripts/svnrev.sh $(SRCDIR))
-USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
-USER_CFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\"" -DSVNREV=\"$(SVNREV)\"
+USER_INCLUDES := -I$(GENDIR)/$(CURDIR)/dos
+USER_CPPFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\"" -DSVNREV=\"$(SVNREV)\"
 USER_LDFLAGS := -static
 ifeq ($(AROS_TARGET_CPU),m68k)
 # Make sure we optimize this code for size on m68k..
 OPTIMIZATION_CFLAGS := -Os
-USER_CFLAGS   += -D__DOS_NOLIBINLINE__ 
+USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
 endif
 
 IMAGE_TYPES := aos elf
@@ -66,18 +66,18 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 #MM- core-linklibs : linklibs-dos
 
-USER_CFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+USER_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \
   files="dos_init $(FUNCTIONS) $(FILES) $(LOADSEG_FILES)" uselibs="romhack"
 
-$(GENDIR)/$(CURDIR)/errorlist.d : $(GENDIR)/$(CURDIR)/errorlist.h
+$(GENDIR)/$(CURDIR)/dos/errorlist.d : $(GENDIR)/$(CURDIR)/dos/errorlist.h
 
-$(GENDIR)/$(CURDIR)/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
+$(GENDIR)/$(CURDIR)/dos/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
 	@$(ECHO) Generating $@...
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
 
-%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" libdir=$(GENDIR)/lib
+%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" objdir=$(OBJDIR)/dos libdir=$(GENDIR)/lib
 
 %common
