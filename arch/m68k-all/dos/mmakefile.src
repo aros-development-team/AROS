@@ -21,6 +21,6 @@ USER_AFLAGS := -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos arch=m68k \
-  files="$(CFILES)" asmfiles="$(AFILES)" modulename=dos
+  files="$(CFILES)" asmfiles="$(AFILES)" modname=dos
 
 %common

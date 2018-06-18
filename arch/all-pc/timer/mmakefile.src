@@ -8,7 +8,7 @@ include $(SRCDIR)/$(CURDIR)/make.opts
 
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
-  arch=pc modulename=timer \
+  arch=pc modname=timer \
   files="timer_init beginio ticks"
 
 %common

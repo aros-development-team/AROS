@@ -14,6 +14,6 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(MAINDIR) -I$(SRCDIR)/rom/ex
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=chrp-ppc-pegasos files="$(FILES)"
+  arch=chrp-ppc-pegasos files="$(FILES)" modname=kernel
 
 %common

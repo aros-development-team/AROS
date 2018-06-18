@@ -11,7 +11,7 @@ BCM2708FILES = \
 
 %build_archspecific \
   mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
-  arch=raspi-arm modulename=sdcard \
+  arch=raspi-arm modname=sdcard \
   files="$(BCM2708FILES)"
 
 %common

@@ -1,7 +1,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 %build_archspecific \
-  mainmmake=kernel-battclock maindir=rom/battclock \
+  mainmmake=kernel-battclock modname=battclock maindir=rom/battclock \
   arch=amiga-m68k \
   files="battclock_init readbattclock writebattclock battclock_intern"
 

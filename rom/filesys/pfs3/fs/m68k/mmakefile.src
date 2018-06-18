@@ -17,13 +17,13 @@ USER_AFLAGS := -I$(GENINCDIR)
         mainmmake=kernel-fs-pfs3ds-ks13 \
         maindir=rom/filesys/pfs3/fs \
         arch=amiga-m68k \
-        asmfiles="$(AFILES)" modulename=pfs3ds_ks13
+        asmfiles="$(AFILES)" modname=pfs3ds_ks13
 
 %build_archspecific \
         mainmmake=kernel-fs-pfs3-ks13 \
         maindir=rom/filesys/pfs3/fs \
         arch=amiga-m68k \
-        asmfiles="$(AFILES)" modulename=pfs3_ks13
+        asmfiles="$(AFILES)" modname=pfs3_ks13
 
 
 %common

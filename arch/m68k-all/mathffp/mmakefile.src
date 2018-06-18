@@ -8,7 +8,7 @@ AFILES := spcmp sptst
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -mc68020
 
 %build_archspecific \
-  mainmmake=workbench-libs-mathffp maindir=workbench/libs/mathffp arch=m68k \
+  mainmmake=workbench-libs-mathffp modname=mathffp maindir=workbench/libs/mathffp arch=m68k \
   files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel
 
 %common

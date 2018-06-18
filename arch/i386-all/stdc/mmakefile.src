@@ -77,7 +77,7 @@ STDC_I386_ASMFILES += \
 
 %build_archspecific \
   mainmmake=compiler-stdc \
-  maindir=compiler/stdc \
+  modname=stdc maindir=compiler/stdc \
   arch=i386 \
   files="$(STDC_I386_FILES)" linklibfiles="$(STDC_I386_SSE_FILES)" asmfiles="$(STDC_I386_ASMFILES)"
 

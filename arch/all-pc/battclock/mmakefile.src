@@ -6,6 +6,6 @@ FILES := battclock_init readbattclock writebattclock
 
 %build_archspecific \
   mainmmake=kernel-battclock maindir=rom/battclock arch=pc \
-  files="$(FILES)" modulename=battclock
+  files="$(FILES)" modname=battclock
 
 %common

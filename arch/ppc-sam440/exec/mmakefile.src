@@ -14,6 +14,6 @@ USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=sam440-ppc \
-  files=$(CFILES) modulename=exec
+  files=$(CFILES) modname=exec
 
 TARGETDIR = $(BD_OBJDIR$(BDID))

@@ -11,7 +11,7 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 ## complaints with -O1 or higher optimizations enabled.
 USER_CFLAGS += -Wno-attributes
 
-%build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
+%build_archspecific mainmmake=workbench-devs-hostdisk modname=hostdisk maindir=arch/all-hosted/devs/hostdisk \
     arch=unix files="hostdisk_host geometry"
 
 %common

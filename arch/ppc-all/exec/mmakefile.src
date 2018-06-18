@@ -10,7 +10,7 @@ USER_CFLAGS := -DHOST_OS_$(ARCH)
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles="execstubs stackswap" \
   files="alert_cpu cachecleare newstackswap preparecontext" \
-  arch=ppc
+  arch=ppc modname=exec
 
 #MM kernel-exec-ppc : includes-asm_h-ppc
 

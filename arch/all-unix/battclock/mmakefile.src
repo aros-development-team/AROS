@@ -6,7 +6,7 @@ USER_CFLAGS := -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
 %build_archspecific \
-  mainmmake=kernel-battclock maindir=rom/battclock \
+  mainmmake=kernel-battclock modname=battclock maindir=rom/battclock \
   arch=unix \
   files="battclock_init readbattclock"
 

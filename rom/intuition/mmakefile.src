@@ -156,10 +156,10 @@ FUNCS := \
 	windowtofront \
 	zipwindow
 
-
-USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
+INTUITION_BUILDDIR := $(GENDIR)/$(CURDIR)/intuition
+USER_INCLUDES := -I$(INTUITION_BUILDDIR)
 USER_LDFLAGS := -static
-USER_CFLAGS := -D__DOS_NOLIBBASE__ \
+USER_CPPFLAGS := -D__DOS_NOLIBBASE__ \
                  -D__INTUITION_NOLIBBASE__ \
                  -D__LAYERS_NOLIBBASE__ \
                  -D__UTILITY_NOLIBBASE__ \
@@ -190,8 +190,8 @@ USER_CFLAGS := -D__DOS_NOLIBBASE__ \
   modname=intuition modtype=library \
   files="intuition_init $(FUNCS) $(FILES)"
 
-$(GENDIR)/$(CURDIR)/shutdownscreen.d : $(GENDIR)/$(CURDIR)/shutdown_image.h
+$(INTUITION_BUILDDIR)/shutdownscreen.d : $(INTUITION_BUILDDIR)/shutdown_image.h
 
-$(GENDIR)/$(CURDIR)/shutdown_image.h : shutdown.ilbm
+$(INTUITION_BUILDDIR)/shutdown_image.h : shutdown.ilbm
 	@$(ECHO) "Creating   $@..."
 	@$(ILBMTOC) $< >$@

@@ -19,6 +19,6 @@ USER_AFLAGS   := -isystem $(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \
   cflags="$(CFLAGS) $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)"    \
-  arch=sam440-ppc files="$(FILES)" modulename=kernel
+  arch=sam440-ppc files="$(FILES)" modname=kernel
 
 %common

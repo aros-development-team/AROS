@@ -12,7 +12,7 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(MAINDIR)
 FILES := emul_host_mingw32 emul_host filenames
 
 %build_archspecific mainmmake=kernel-fs-emul \
-  maindir=$(MAINDIR) \
+  modname=emul maindir=$(MAINDIR) \
   arch=mingw32 files=$(FILES)
 
 NATIVE_BINDIR := $(AROSDIR)/Libs/Host

@@ -8,7 +8,7 @@ USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 #MM- kernel-exec-arm: includes-asm_h-arm kernel-kernel-includes
 
 %build_archspecific \
-  mainmmake=kernel-exec maindir=rom/exec \
+  mainmmake=kernel-exec modname=exec maindir=rom/exec \
   files="alert_cpu newstackswap preparecontext" asmfiles="execstubs stackswap" \
   arch=arm
 

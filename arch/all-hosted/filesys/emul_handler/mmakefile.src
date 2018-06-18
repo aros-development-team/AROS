@@ -6,7 +6,7 @@ ifneq ($(FAMILY),)
     FAMILY_INCLUDES := -I$(SRCDIR)/arch/all-$(FAMILY)/filesys/emul_handler
 endif
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/filesys/emul_handler $(FAMILY_INCLUDES) -I$(SRCDIR)/$(CURDIR) -iquote $(SRCDIR)/rom/expansion -iquote $(SRCDIR)/rom/dosboot
 USER_LDFLAGS := -static
 

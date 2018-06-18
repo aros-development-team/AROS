@@ -13,5 +13,5 @@ FILES := \
 USER_CFLAGS := -D__UTILITY_NOLIBBASE__
 USER_INCLUDES := -I$(SRCDIR)/rom/processor
 
-%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
     arch=m68k files=$(FILES)

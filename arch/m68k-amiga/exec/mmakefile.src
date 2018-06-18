@@ -16,6 +16,6 @@ USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR) -Os
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=amiga-m68k \
-  files=$(CFILES) asmfiles=$(AFILES) modulename=exec
+  files=$(CFILES) asmfiles=$(AFILES) modname=exec
 
 TARGETDIR = $(BD_OBJDIR$(BDID))

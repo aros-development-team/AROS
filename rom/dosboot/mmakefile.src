@@ -10,16 +10,16 @@ FILES := dosboot_init bootstrap bootscan \
 #MM- kernel-dosboot-includes : kernel-bootloader-includes
 #MM- kernel-dosboot : includes linklibs kernel-bootloader-includes
 
-USER_INCLUDES := -I$(SRCDIR)/rom/devs -I$(GENDIR)/$(CURDIR)
+USER_INCLUDES := -I$(SRCDIR)/rom/devs -I$(GENDIR)/$(CURDIR)/dosboot
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-dosboot \
   modname=dosboot modtype=resource \
   files="$(FILES)" uselibs="hiddstubs"
 
-$(GENDIR)/$(CURDIR)/bootanim.d : $(GENDIR)/$(CURDIR)/nomedia_image.h
+$(GENDIR)/$(CURDIR)/dosboot/bootanim.d : $(GENDIR)/$(CURDIR)/dosboot/nomedia_image.h
 
-$(GENDIR)/$(CURDIR)/nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
+$(GENDIR)/$(CURDIR)/dosboot/nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
 	@$(ECHO) "Creating   $@..."
 	@$(ILBMTOC) $< >$@
 

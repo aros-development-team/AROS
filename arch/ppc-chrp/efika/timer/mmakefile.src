@@ -8,7 +8,7 @@ include $(SRCDIR)/$(CURDIR)/make.opts
 
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
-  arch=chrp-ppc-efika modulename=timer \
+  arch=chrp-ppc-efika modname=timer \
   files="timer_init beginio getsystime lowlevel readeclock ticks"
 
 %common

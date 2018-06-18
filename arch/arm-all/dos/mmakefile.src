@@ -8,6 +8,6 @@ USER_CFLAGS := -I$(SRCDIR)/rom/dos
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos arch=arm \
-  files="probecpu" modulename=dos
+  files="probecpu" modname=dos
 
 %common

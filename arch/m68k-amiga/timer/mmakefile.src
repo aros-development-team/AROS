@@ -9,7 +9,7 @@ USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer \
 
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
-  arch=amiga-m68k modulename=timer \
+  arch=amiga-m68k modname=timer \
   files="$(FILES)"
 
 %common

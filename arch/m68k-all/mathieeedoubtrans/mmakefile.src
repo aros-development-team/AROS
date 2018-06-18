@@ -9,7 +9,7 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs/mathieeedoubtrans
 USER_AFLAGS := -I$(GENINCDIR) -march=68040
 
 %build_archspecific \
-  mainmmake=workbench-libs-mathieeedoubtrans maindir=workbench/libs/mathieeedoubtrans arch=m68k \
+  mainmmake=workbench-libs-mathieeedoubtrans modname=mathieeedoubtrans maindir=workbench/libs/mathieeedoubtrans arch=m68k \
   files="$(FILES)" asmfiles="$(AFILES)"
 
 %common

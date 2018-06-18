@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -D__AROS_EXEC_LIBRARY__
 
 %build_archspecific \
-  mainmmake=kernel-kernel maindir=rom/kernel \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel \
   files="cpu_init createcontext" \
   arch=arm
 

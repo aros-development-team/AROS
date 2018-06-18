@@ -25,7 +25,7 @@ USER_INCLUDES := -DHOST_OS_$(AROS_TARGET_VARIANT)
 endif
 
 %build_archspecific \
-  mainmmake=kernel-exec maindir=rom/exec \
+  mainmmake=kernel-exec modname=exec maindir=rom/exec \
   arch=unix files=$(FILES)
 
 #MM kernel-exec-unix: kernel-kernel-includes kernel-hostlib-includes

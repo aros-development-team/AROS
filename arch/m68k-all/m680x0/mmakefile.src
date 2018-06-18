@@ -16,7 +16,7 @@ USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-all/m680x0
    files="$(FILES)"
 
 %build_archspecific \
- mainmmake=kernel-m680x0 maindir=arch/m68k-all/m680x0 arch=m68k \
+ mainmmake=kernel-m680x0 modname=680x0 maindir=arch/m68k-all/m680x0 arch=m68k \
  asmfiles="$(AFILES)" 
 
 %common

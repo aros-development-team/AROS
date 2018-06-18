@@ -10,7 +10,7 @@ AFILES :=
 USER_CFLAGS := -I$(SRCDIR)/rom/hidds/gfx
 
 %build_archspecific \
-  mainmmake=kernel-hidd-gfx maindir=rom/hidds/gfx \
+  mainmmake=kernel-hidd-gfx modname=gfx maindir=rom/hidds/gfx \
   asmfiles=$(AFILES) files=$(FILES) \
   arch=amiga-m68k
 

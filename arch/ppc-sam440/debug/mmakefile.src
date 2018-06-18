@@ -12,6 +12,6 @@ USER_CFLAGS     := $(PRIV_KERNEL_INCLUDES) \
 
 %build_archspecific \
   mainmmake=kernel-debug maindir=rom/debug arch=sam440-ppc \
-  files=$(CFILES) modulename=debug
+  files=$(CFILES) modname=debug
 
 TARGETDIR = $(BD_OBJDIR$(BDID))

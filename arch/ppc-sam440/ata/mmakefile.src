@@ -14,6 +14,6 @@ FILES := bus_ppc460
 #%build_archspecific \
 #  mainmmake=kernel-ata maindir=rom/devs/ata \
 #  arch=sam440-ppc \
-#  files="$(FILES)"
+#  files="$(FILES)" modname=ata
 
 %common
