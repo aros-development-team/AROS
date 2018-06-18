@@ -4976,9 +4976,9 @@ if test "x-$aros_shift_negative_value" = "x-yes" ; then
     aros_nowarnflags_shift_negative_value=-Wno-shift-negative-value
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmissing-field-initializers]" >&5
-$as_echo_n "checking whether ${CC} accepts -Wmissing-field-initializers]... " >&6; }
-CFLAGS=-Wmissing-field-initializers]
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmissing-field-initializers" >&5
+$as_echo_n "checking whether ${CC} accepts -Wmissing-field-initializers... " >&6; }
+CFLAGS=-Wmissing-field-initializers
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5000,7 +5000,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_missing_field_initializers" >&6; }
 if test "x-$aros_missing_field_initializers" = "x-yes" ; then
     aros_warnflags_missing_field_initializers=-Wmissing-field-initializers
-    aros_nowarnflags_missing_field_initializers=-Wno-missing-field-initializers
+    aros_nowarnflags_smissing_field_initializers=-Wno-missing-field-initializers
 fi
 
 #
@@ -5039,6 +5039,8 @@ fi
 #
 # ...and warning flags...
 #
+
+
 
 
 
