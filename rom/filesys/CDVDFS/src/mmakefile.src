@@ -17,24 +17,24 @@ CHECKCD_FILES := checkcd cdrom iso9660 rock joliet \
 	hfs generic path charset
 
 #Turn these flags on to enable debugging
-#USER_CFLAGS := -DDEBUG=1
+#USER_CPPFLAGS := -DDEBUG=1
 
 #And these ones are for normal operation
-USER_CFLAGS := -DNDEBUG -DDEBUG=0
+USER_CPPFLAGS := -DNDEBUG -DDEBUG=0
 
 %build_prog mmake=kernel-fs-cdvdfs-cdcontrol \
     progname=cdcontrol targetdir=$(AROS_C) \
-    files="$(CDCONTROL_FILES)"
+    objdir=$(GENDIR)/$(CURDIR)/progs files="$(CDCONTROL_FILES)"
 
 %build_prog mmake=kernel-fs-cdvdfs-cdrom \
     progname=cdrom targetdir=$(TESTSDIR) \
-    files="$(CDROM_FILES)"
+    objdir=$(GENDIR)/$(CURDIR)/progs files="$(CDROM_FILES)"
 
 %build_prog mmake=kernel-fs-cdvdfs-checkcd \
     progname=checkcd targetdir=$(AROS_C) \
-    files="$(CHECKCD_FILES)"
+    objdir=$(GENDIR)/$(CURDIR)/progs files="$(CHECKCD_FILES)"
 
-USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
+USER_CPPFLAGS := -DAROS_KERNEL $(USER_CPPFLAGS)
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-fs-cdvdfs \
