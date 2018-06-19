@@ -31,7 +31,7 @@ USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 # $(GENDIR)/$(CURDIR)
 
 OBJDIR := $(GENDIR)/$(CURDIR)
-ARCHOBJDIR := $(GENDIR)/$(MAINDIR)/arch
+ARCHOBJDIR := $(GENDIR)/$(MAINDIR)/kernel/arch
 
 kernel-kernel-pc-i386 :: $(ARCHOBJDIR)/smpboot.bin.o 
 kernel-kernel-pc-i386-quick :: $(ARCHOBJDIR)/smpboot.bin.o 
