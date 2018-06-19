@@ -31,7 +31,7 @@ USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
 # This builds SMP bootstrap code
 
 OBJDIR  := $(GENDIR)/$(CURDIR)
-ARCHOBJDIR := $(GENDIR)/$(MAINDIR)/arch
+ARCHOBJDIR := $(GENDIR)/$(MAINDIR)/kernel/arch
 
 kernel-kernel-pc-x86_64 :: $(ARCHOBJDIR)/smpboot.bin.o 
 kernel-kernel-pc-x86_64-quick :: $(ARCHOBJDIR)/smpboot.bin.o 
