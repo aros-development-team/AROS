@@ -1307,14 +1307,11 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
                 data->msd_RedrawReason = DO_BACKSPACE;
             }
 
-            if (data->BufferSize - data->BufferPos > 0)
-            {
-                D(bug("[MUI:String] HandleVanillakey: 'Backspace' count=%d pos=%d shift=%d\n", data->NumChars, data->BufferPos, shift));
-                memmove(&data->Buffer[data->BufferPos - shift],
-                    &data->Buffer[data->BufferPos],
-                    data->NumChars - shift);
-                data->Buffer[data->NumChars - shift] = 0;
-            }
+            D(bug("[MUI:String] HandleVanillakey: 'Backspace' count=%d pos=%d"
+                " shift=%d\n", data->NumChars, data->BufferPos, shift));
+            memmove(&data->Buffer[data->BufferPos - shift],
+                &data->Buffer[data->BufferPos],
+                data->NumChars - data->BufferPos + 1);
             data->BufferPos -= shift;
             data->NumChars -= shift;
             return 1;
@@ -1331,14 +1328,11 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
 
         if (data->BufferPos > 0)
         {
-            if (data->NumChars - data->BufferPos > 0)
-            {
-                D(bug("[MUI:String] HandleVanillakey: 'Ctrl-U' count=%d pos=%d\n", data->NumChars, data->BufferPos));
-                memmove(&data->Buffer[0],
-                    &data->Buffer[data->BufferPos],
-                    data->NumChars - data->BufferPos);
-                data->Buffer[data->NumChars - data->BufferPos] = 0;
-            }
+            D(bug("[MUI:String] HandleVanillakey: 'Ctrl-U' count=%d pos=%d\n",
+                data->NumChars, data->BufferPos));
+            memmove(&data->Buffer[0],
+                &data->Buffer[data->BufferPos],
+                data->NumChars - data->BufferPos + 1);
             data->NumChars -= data->BufferPos;
             data->BufferPos = 0;
             data->msd_RedrawReason = NEW_CONTENTS;
@@ -1361,14 +1355,12 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
             {
                 if (data->BufferPos < data->NumChars)
                 {
-                    if (data->BufferSize - data->BufferPos > 0)
-                    {
-                        D(bug("[MUI:String] HandleVanillakey: 'Delete' count=%d pos=%d\n", data->NumChars, data->BufferPos));
-                        memmove(&data->Buffer[data->BufferPos],
-                            &data->Buffer[data->BufferPos + 1],
-                            data->NumChars - data->BufferPos);
-                        data->Buffer[data->NumChars--] = 0;
-                    }
+                    D(bug("[MUI:String] HandleVanillakey: 'Delete' count=%d"
+                        " pos=%d\n", data->NumChars, data->BufferPos));
+                    memmove(&data->Buffer[data->BufferPos],
+                        &data->Buffer[data->BufferPos + 1],
+                        data->NumChars - data->BufferPos);
+                    data->NumChars--;
                 }
 
                 data->msd_RedrawReason = DO_DELETE;
