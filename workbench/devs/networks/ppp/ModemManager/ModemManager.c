@@ -48,7 +48,7 @@ LONG XGET(Object * obj, ULONG attribute)
 #define SimpleText(text) TextObject, MUIA_Text_Contents, (IPTR) text, End
 
 #define TIMERVALUE 5
-#define STRSIZE 100
+#define STRSIZE 110
 
 #define STATE_UNPLUGGED 0
 #define STATE_PLUGGED 1
