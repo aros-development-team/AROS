@@ -4,5 +4,5 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/devs/hostdisk
 
-%build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
+%build_archspecific mainmmake=workbench-devs-hostdisk modname=hostdisk maindir=arch/all-hosted/devs/hostdisk \
     arch=mingw32 files="hostdisk_host"
