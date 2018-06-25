@@ -434,7 +434,7 @@ static int
 get_src_vec(struct gen_context *gen,
             struct tgsi_full_instruction *inst, int src_reg, uint chan)
 {
-   const const struct tgsi_full_src_register *src = 
+   const struct tgsi_full_src_register *src = 
       &inst->Src[src_reg];
    int vec;
    uint i;
@@ -471,7 +471,7 @@ release_src_vecs(struct gen_context *gen)
 {
    uint i;
    for (i = 0; i < gen->num_regs; i++) {
-      const const struct tgsi_full_src_register src = gen->regs[i].src;
+      const struct tgsi_full_src_register src = gen->regs[i].src;
       if (!is_ppc_vec_temporary(&src)) {
          ppc_release_vec_register(gen->f, gen->regs[i].vec);
       }
