@@ -2,8 +2,7 @@
     Copyright © 2010-2018, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: CPU context parsing routines. Dummy nonfunctional template.
-          See code in arch/i386/all/exec/alert_cpu.c for working example.
+    Desc: CPU context parsing routines.
     Lang: english
 */
 
