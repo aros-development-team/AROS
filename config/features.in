@@ -48,6 +48,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -finline-small-functions
 #  -fipa-cp
 #  -funroll-loops
+#  -fomit-frame-pointer
 
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
 CFLAGS=-fexceptions
@@ -55,6 +56,7 @@ AC_TRY_COMPILE(,, aros_exceptions="yes", aros_exceptions="no")
 AC_MSG_RESULT($aros_exceptions)
 if test "x-$aros_exceptions" = "x-yes" ; then
     aros_cflags_exceptions=-fexceptions
+    aros_cflags_noexceptions=-fno-exceptions
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fpermissive])
@@ -165,6 +167,15 @@ if test "x-$aros_ipa_cp" = "x-yes" ; then
     aros_cflags_noipacp=-fno-ipa-cp
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -fomit-frame-pointer])
+CFLAGS=-fomit-frame-pointer
+AC_TRY_COMPILE(,, aros_omit_frame_pointer="yes", aros_omit_frame_pointer="no")
+AC_MSG_RESULT($aros_omit_frame_pointer)
+if test "x-$aros_omit_frame_pointer" = "x-yes" ; then
+    aros_cflags_omitfp=-fomit-frame-pointer
+    aros_cflags_noomitfp=-fno-omit-frame-pointer
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 CFLAGS="-iquote."
 AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
@@ -194,6 +205,8 @@ fi
 
 # Check if the target compiler supports some options used for de-linting:
 #  -Werror
+#  -Wall
+#  -Wrestrict
 #  -Wunused-command-line-argument
 #  -Wunknown-warning-option
 #  -Wunused-but-set-variable
@@ -260,6 +273,10 @@ fi
 #  -Wstringop-truncation
 #  -Wshift-negative-value
 #  -Wmissing-field-initializers
+#  -Wimplicit-fallthrough
+#  -Wmissing-prototypes
+#  -Wclass-memaccess
+#  -Wint-in-bool-context
 
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
 CFLAGS=-Werror
@@ -268,6 +285,23 @@ AC_MSG_RESULT($aros_error)
 if test "x-$aros_error" = "x-yes" ; then
     aros_warnflags_error=-Werror
     aros_nowarnflags_error=-Wno-error
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wall])
+CFLAGS=-Wall
+AC_TRY_COMPILE(,, aros_all="yes", aros_all="no")
+AC_MSG_RESULT($aros_all)
+if test "x-$aros_all" = "x-yes" ; then
+    aros_warnflags_all=-Wall
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wrestrict])
+CFLAGS=-Wrestrict
+AC_TRY_COMPILE(,, aros_restrict="yes", aros_restrict="no")
+AC_MSG_RESULT($aros_restrict)
+if test "x-$aros_restrict" = "x-yes" ; then
+    aros_warnflags_restrict=-Wrestrict
+    aros_nowarnflags_restrict=-Wno-restrict
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -Wunused-command-line-argument])
@@ -867,6 +901,42 @@ if test "x-$aros_missing_field_initializers" = "x-yes" ; then
     aros_nowarnflags_missing_field_initializers=-Wno-missing-field-initializers
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-fallthrough])
+CFLAGS=-Wimplicit-fallthrough
+AC_TRY_COMPILE(,, aros_implicit_fallthrough="yes", aros_implicit_fallthrough="no")
+AC_MSG_RESULT($aros_implicit_fallthrough)
+if test "x-$aros_implicit_fallthrough" = "x-yes" ; then
+    aros_warnflags_implicit_fallthrough=-Wimplicit-fallthrough
+    aros_nowarnflags_implicit_fallthrough=-Wno-implicit-fallthrough
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmissing-prototypes])
+CFLAGS=-Wmissing-prototypes
+AC_TRY_COMPILE(,, aros_missing_prototypes="yes", aros_missing_prototypes="no")
+AC_MSG_RESULT($aros_missing_prototypes)
+if test "x-$aros_missing_prototypes" = "x-yes" ; then
+    aros_warnflags_missing_prototypes=-Wmissing-prototypes
+    aros_nowarnflags_missing_prototypes=-Wno-missing-prototypes
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wclass-memaccess])
+CFLAGS=-Wclass-memaccess
+AC_TRY_COMPILE(,, aros_class_memaccess="yes", aros_class_memaccess="no")
+AC_MSG_RESULT($aros_class_memaccess)
+if test "x-$aros_class_memaccess" = "x-yes" ; then
+    aros_warnflags_class_memaccess=-Wclass-memaccess
+    aros_nowarnflags_class_memaccess=-Wno-class-memaccess
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wint-in-bool-context])
+CFLAGS=-Wint-in-bool-context
+AC_TRY_COMPILE(,, aros_int_in_bool_context="yes", aros_int_in_bool_context="no")
+AC_MSG_RESULT($aros_int_in_bool_context)
+if test "x-$aros_int_in_bool_context" = "x-yes" ; then
+    aros_warnflags_int_in_bool_context=-Wint-in-bool-context
+    aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
+fi
+
 #
 # export the feature flags...
 #
@@ -892,6 +962,9 @@ AC_SUBST(aros_cflags_noinlinesmallfunctions)
 AC_SUBST(aros_cflags_ipacp)
 AC_SUBST(aros_cflags_noipacp)
 
+AC_SUBST(aros_cflags_omitfp)
+AC_SUBST(aros_cflags_noomitfp)
+
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 
@@ -905,6 +978,9 @@ AC_SUBST(aros_cflags_no_red_zone)
 #
 AC_SUBST(aros_warnflags_error)
 AC_SUBST(aros_nowarnflags_error)
+AC_SUBST(aros_warnflags_all)
+AC_SUBST(aros_warnflags_restrict)
+AC_SUBST(aros_nowarnflags_restrict)
 AC_SUBST(aros_warnflags_unused_command_line_argument)
 AC_SUBST(aros_nowarnflags_unused_command_line_argument)
 AC_SUBST(aros_warnflags_unknown_warning_option)
@@ -1037,7 +1113,15 @@ AC_SUBST(aros_warnflags_shift_negative_value)
 AC_SUBST(aros_nowarnflags_shift_negative_value)
 AC_SUBST(aros_warnflags_missing_field_initializers)
 AC_SUBST(aros_nowarnflags_missing_field_initializers)
-    
+AC_SUBST(aros_warnflags_implicit_fallthrough)
+AC_SUBST(aros_nowarnflags_implicit_fallthrough)
+AC_SUBST(aros_warnflags_missing_prototypes)
+AC_SUBST(aros_nowarnflags_missing_prototypes)
+AC_SUBST(aros_warnflags_class_memaccess)
+AC_SUBST(aros_nowarnflags_class_memaccess)
+AC_SUBST(aros_warnflags_int_in_bool_context)
+AC_SUBST(aros_nowarnflags_int_in_bool_context)
+
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
 )

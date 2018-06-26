@@ -39,6 +39,10 @@ CFLAGS_IPA_CP                           := @aros_cflags_ipacp@
 CFLAGS_NO_IPA_CP                        := @aros_cflags_noipacp@
 
 #
+CFLAGS_OMIT_FP                          := @aros_cflags_omitfp@
+CFLAGS_NO_OMIT_FP                       := @aros_cflags_noomitfp@
+
+#
 # -iquote support
 #
 CFLAGS_IQUOTE                           := @aros_cflags_iquote@
@@ -54,6 +58,9 @@ CFLAGS_NO_RED_ZONE                      := @aros_cflags_no_red_zone@
 #
 
 WARN_ERROR                              := @aros_warnflags_error@
+WARN_ALL                                := @aros_warnflags_all@
+
+WARN_RESTRICT                           := @aros_warnflags_restrict@
 
 WARN_UNUSED_COMMAND_LINE_ARGUMENT       := @aros_warnflags_unused_command_line_argument@
 WARN_UNKNOWN_WARNING_OPTION             := @aros_warnflags_unknown_warning_option@
@@ -122,12 +129,18 @@ WARN_FORMAT_TRUNCATION                  := @aros_warnflags_format_truncation@
 WARN_STRINGOP_TRUNCATION                := @aros_warnflags_stringop_truncation@
 WARN_SHIFT_NEGATIVE_VALUE               := @aros_warnflags_shift_negative_value@
 WARN_MISSING_FIELD_INITIALIZERS         := @aros_warnflags_missing_field_initializers@
+WARN_IMPLICIT_FALLTHROUGH               := @aros_warnflags_implicit_fallthrough@
+WARN_MISSING_PROTOTYPES                 := @aros_warnflags_missing_prototypes@
+WARN_CLASS_MEMACCESS                    := @aros_warnflags_class_memaccess@
+WARN_INT_IN_BOOL_CONTEXT                := @aros_warnflags_int_in_bool_context@
 
 #
 # "Disable" compiler warning flags
 #
 
 NOWARN_ERROR                            := @aros_nowarnflags_error@
+
+NOWARN_RESTRICT                         := @aros_nowarnflags_restrict@
 
 NOWARN_UNUSED_COMMAND_LINE_ARGUMENT     := @aros_nowarnflags_unused_command_line_argument@
 NOWARN_UNKNOWN_WARNING_OPTION           := @aros_nowarnflags_unknown_warning_option@
@@ -196,3 +209,7 @@ NOWARN_FORMAT_TRUNCATION                := @aros_nowarnflags_format_truncation@
 NOWARN_STRINGOP_TRUNCATION              := @aros_nowarnflags_stringop_truncation@
 NOWARN_SHIFT_NEGATIVE_VALUE             := @aros_nowarnflags_shift_negative_value@
 NOWARN_MISSING_FIELD_INITIALIZERS       := @aros_nowarnflags_missing_field_initializers@
+NOWARN_IMPLICIT_FALLTHROUGH             := @aros_nowarnflags_implicit_fallthrough@
+NOWARN_MISSING_PROTOTYPES               := @aros_nowarnflags_missing_prototypes@
+NOWARN_CLASS_MEMACCESS                  := @aros_nowarnflags_class_memaccess@
+NOWARN_INT_IN_BOOL_CONTEXT              := @aros_nowarnflags_int_in_bool_context@

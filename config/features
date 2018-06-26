@@ -584,6 +584,14 @@ PACKAGE_URL=
 ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+aros_nowarnflags_int_in_bool_context
+aros_warnflags_int_in_bool_context
+aros_nowarnflags_class_memaccess
+aros_warnflags_class_memaccess
+aros_nowarnflags_missing_prototypes
+aros_warnflags_missing_prototypes
+aros_nowarnflags_implicit_fallthrough
+aros_warnflags_implicit_fallthrough
 aros_nowarnflags_missing_field_initializers
 aros_warnflags_missing_field_initializers
 aros_nowarnflags_shift_negative_value
@@ -716,11 +724,16 @@ aros_nowarnflags_unknown_warning_option
 aros_warnflags_unknown_warning_option
 aros_nowarnflags_unused_command_line_argument
 aros_warnflags_unused_command_line_argument
+aros_nowarnflags_restrict
+aros_warnflags_restrict
+aros_warnflags_all
 aros_nowarnflags_error
 aros_warnflags_error
 aros_cflags_no_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_noomitfp
+aros_cflags_omitfp
 aros_cflags_noipacp
 aros_cflags_ipacp
 aros_cflags_noinlinesmallfunctions
@@ -2749,6 +2762,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -finline-small-functions
 #  -fipa-cp
 #  -funroll-loops
+#  -fomit-frame-pointer
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
 $as_echo_n "checking whether ${CC} accepts -fexceptions... " >&6; }
@@ -2775,6 +2789,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_exceptions" >&6; }
 if test "x-$aros_exceptions" = "x-yes" ; then
     aros_cflags_exceptions=-fexceptions
+    aros_cflags_noexceptions=-fno-exceptions
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fpermissive" >&5
@@ -3119,6 +3134,33 @@ if test "x-$aros_ipa_cp" = "x-yes" ; then
     aros_cflags_noipacp=-fno-ipa-cp
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fomit-frame-pointer" >&5
+$as_echo_n "checking whether ${CC} accepts -fomit-frame-pointer... " >&6; }
+CFLAGS=-fomit-frame-pointer
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_omit_frame_pointer="yes"
+else
+  aros_omit_frame_pointer="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_omit_frame_pointer" >&5
+$as_echo "$aros_omit_frame_pointer" >&6; }
+if test "x-$aros_omit_frame_pointer" = "x-yes" ; then
+    aros_cflags_omitfp=-fomit-frame-pointer
+    aros_cflags_noomitfp=-fno-omit-frame-pointer
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
 $as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
 CFLAGS="-iquote."
@@ -3184,6 +3226,8 @@ fi
 
 # Check if the target compiler supports some options used for de-linting:
 #  -Werror
+#  -Wall
+#  -Wrestrict
 #  -Wunused-command-line-argument
 #  -Wunknown-warning-option
 #  -Wunused-but-set-variable
@@ -3250,6 +3294,10 @@ fi
 #  -Wstringop-truncation
 #  -Wshift-negative-value
 #  -Wmissing-field-initializers
+#  -Wimplicit-fallthrough
+#  -Wmissing-prototypes
+#  -Wclass-memaccess
+#  -Wint-in-bool-context
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Werror" >&5
 $as_echo_n "checking whether ${CC} accepts -Werror... " >&6; }
@@ -3276,6 +3324,59 @@ $as_echo "$aros_error" >&6; }
 if test "x-$aros_error" = "x-yes" ; then
     aros_warnflags_error=-Werror
     aros_nowarnflags_error=-Wno-error
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wall" >&5
+$as_echo_n "checking whether ${CC} accepts -Wall... " >&6; }
+CFLAGS=-Wall
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_all="yes"
+else
+  aros_all="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_all" >&5
+$as_echo "$aros_all" >&6; }
+if test "x-$aros_all" = "x-yes" ; then
+    aros_warnflags_all=-Wall
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wrestrict" >&5
+$as_echo_n "checking whether ${CC} accepts -Wrestrict... " >&6; }
+CFLAGS=-Wrestrict
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_restrict="yes"
+else
+  aros_restrict="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_restrict" >&5
+$as_echo "$aros_restrict" >&6; }
+if test "x-$aros_restrict" = "x-yes" ; then
+    aros_warnflags_restrict=-Wrestrict
+    aros_nowarnflags_restrict=-Wno-restrict
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wunused-command-line-argument" >&5
@@ -5063,9 +5164,120 @@ if test "x-$aros_missing_field_initializers" = "x-yes" ; then
     aros_nowarnflags_missing_field_initializers=-Wno-missing-field-initializers
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wimplicit-fallthrough" >&5
+$as_echo_n "checking whether ${CC} accepts -Wimplicit-fallthrough... " >&6; }
+CFLAGS=-Wimplicit-fallthrough
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_implicit_fallthrough="yes"
+else
+  aros_implicit_fallthrough="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_implicit_fallthrough" >&5
+$as_echo "$aros_implicit_fallthrough" >&6; }
+if test "x-$aros_implicit_fallthrough" = "x-yes" ; then
+    aros_warnflags_implicit_fallthrough=-Wimplicit-fallthrough
+    aros_nowarnflags_implicit_fallthrough=-Wno-implicit-fallthrough
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wmissing-prototypes" >&5
+$as_echo_n "checking whether ${CC} accepts -Wmissing-prototypes... " >&6; }
+CFLAGS=-Wmissing-prototypes
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_missing_prototypes="yes"
+else
+  aros_missing_prototypes="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_missing_prototypes" >&5
+$as_echo "$aros_missing_prototypes" >&6; }
+if test "x-$aros_missing_prototypes" = "x-yes" ; then
+    aros_warnflags_missing_prototypes=-Wmissing-prototypes
+    aros_nowarnflags_missing_prototypes=-Wno-missing-prototypes
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wclass-memaccess" >&5
+$as_echo_n "checking whether ${CC} accepts -Wclass-memaccess... " >&6; }
+CFLAGS=-Wclass-memaccess
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_class_memaccess="yes"
+else
+  aros_class_memaccess="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_class_memaccess" >&5
+$as_echo "$aros_class_memaccess" >&6; }
+if test "x-$aros_class_memaccess" = "x-yes" ; then
+    aros_warnflags_class_memaccess=-Wclass-memaccess
+    aros_nowarnflags_class_memaccess=-Wno-class-memaccess
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wint-in-bool-context" >&5
+$as_echo_n "checking whether ${CC} accepts -Wint-in-bool-context... " >&6; }
+CFLAGS=-Wint-in-bool-context
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_int_in_bool_context="yes"
+else
+  aros_int_in_bool_context="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_int_in_bool_context" >&5
+$as_echo "$aros_int_in_bool_context" >&6; }
+if test "x-$aros_int_in_bool_context" = "x-yes" ; then
+    aros_warnflags_int_in_bool_context=-Wint-in-bool-context
+    aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
+fi
+
 #
 # export the feature flags...
 #
+
+
+
 
 
 
@@ -5099,6 +5311,17 @@ fi
 #
 # ...and warning flags...
 #
+
+
+
+
+
+
+
+
+
+
+
 
 
 
