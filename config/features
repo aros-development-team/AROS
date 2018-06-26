@@ -588,10 +588,14 @@ aros_nowarnflags_missing_field_initializers
 aros_warnflags_missing_field_initializers
 aros_nowarnflags_shift_negative_value
 aros_warnflags_shift_negative_value
+aros_nowarnflags_stringop_truncation
+aros_warnflags_stringop_truncation
 aros_nowarnflags_format_truncation
 aros_warnflags_format_truncation
 aros_nowarnflags_stringop_overflow
 aros_warnflags_stringop_overflow
+aros_nowarnflags_format_overflow
+aros_warnflags_format_overflow
 aros_nowarnflags_empty_body
 aros_warnflags_empty_body
 aros_nowarnflags_tautological_compare
@@ -3240,8 +3244,10 @@ fi
 #  -Wlto-type-mismatch
 #  -Wtautological-compare
 #  -Wempty-body
+#  -Wformat-overflow
 #  -Wstringop-overflow
 #  -Wformat-truncation
+#  -Wstringop-truncation
 #  -Wshift-negative-value
 #  -Wmissing-field-initializers
 
@@ -4895,6 +4901,33 @@ if test "x-$aros_empty_body" = "x-yes" ; then
     aros_nowarnflags_empty_body=-Wno-empty-body
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wformat-overflow" >&5
+$as_echo_n "checking whether ${CC} accepts -Wformat-overflow... " >&6; }
+CFLAGS=-Wformat-overflow
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_format_overflow="yes"
+else
+  aros_format_overflow="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_format_overflow" >&5
+$as_echo "$aros_format_overflow" >&6; }
+if test "x-$aros_format_overflow" = "x-yes" ; then
+    aros_warnflags_format_overflow=-Wformat-overflow
+    aros_nowarnflags_format_overflow=-Wno-format-overflow
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstringop-overflow" >&5
 $as_echo_n "checking whether ${CC} accepts -Wstringop-overflow... " >&6; }
 CFLAGS=-Wstringop-overflow
@@ -4949,6 +4982,33 @@ if test "x-$aros_format_truncation" = "x-yes" ; then
     aros_nowarnflags_format_truncation=-Wno-format-truncation
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wstringop-truncation" >&5
+$as_echo_n "checking whether ${CC} accepts -Wstringop-truncation... " >&6; }
+CFLAGS=-Wstringop-truncation
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_stringop_truncation="yes"
+else
+  aros_stringop_truncation="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_stringop_truncation" >&5
+$as_echo "$aros_stringop_truncation" >&6; }
+if test "x-$aros_stringop_truncation" = "x-yes" ; then
+    aros_warnflags_stringop_truncation=-Wstringop-truncation
+    aros_nowarnflags_stringop_truncation=-Wno-stringop-truncation
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wshift-negative-value" >&5
 $as_echo_n "checking whether ${CC} accepts -Wshift-negative-value... " >&6; }
 CFLAGS=-Wshift-negative-value
@@ -5000,7 +5060,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_missing_field_initializers" >&6; }
 if test "x-$aros_missing_field_initializers" = "x-yes" ; then
     aros_warnflags_missing_field_initializers=-Wmissing-field-initializers
-    aros_nowarnflags_smissing_field_initializers=-Wno-missing-field-initializers
+    aros_nowarnflags_missing_field_initializers=-Wno-missing-field-initializers
 fi
 
 #
@@ -5039,6 +5099,10 @@ fi
 #
 # ...and warning flags...
 #
+
+
+
+
 
 
 
