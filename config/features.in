@@ -254,8 +254,10 @@ fi
 #  -Wlto-type-mismatch
 #  -Wtautological-compare
 #  -Wempty-body
+#  -Wformat-overflow
 #  -Wstringop-overflow
 #  -Wformat-truncation
+#  -Wstringop-truncation
 #  -Wshift-negative-value
 #  -Wmissing-field-initializers
 
@@ -811,6 +813,15 @@ if test "x-$aros_empty_body" = "x-yes" ; then
     aros_nowarnflags_empty_body=-Wno-empty-body
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-overflow])
+CFLAGS=-Wformat-overflow
+AC_TRY_COMPILE(,, aros_format_overflow="yes", aros_format_overflow="no")
+AC_MSG_RESULT($aros_format_overflow)
+if test "x-$aros_format_overflow" = "x-yes" ; then
+    aros_warnflags_format_overflow=-Wformat-overflow
+    aros_nowarnflags_format_overflow=-Wno-format-overflow
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -Wstringop-overflow])
 CFLAGS=-Wstringop-overflow
 AC_TRY_COMPILE(,, aros_stringop_overflow="yes", aros_stringop_overflow="no")
@@ -829,6 +840,15 @@ if test "x-$aros_format_truncation" = "x-yes" ; then
     aros_nowarnflags_format_truncation=-Wno-format-truncation
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -Wstringop-truncation])
+CFLAGS=-Wstringop-truncation
+AC_TRY_COMPILE(,, aros_stringop_truncation="yes", aros_stringop_truncation="no")
+AC_MSG_RESULT($aros_stringop_truncation)
+if test "x-$aros_stringop_truncation" = "x-yes" ; then
+    aros_warnflags_stringop_truncation=-Wstringop-truncation
+    aros_nowarnflags_stringop_truncation=-Wno-stringop-truncation
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -Wshift-negative-value])
 CFLAGS=-Wshift-negative-value
 AC_TRY_COMPILE(,, aros_shift_negative_value="yes", aros_shift_negative_value="no")
@@ -844,7 +864,7 @@ AC_TRY_COMPILE(,, aros_missing_field_initializers="yes", aros_missing_field_init
 AC_MSG_RESULT($aros_missing_field_initializers)
 if test "x-$aros_missing_field_initializers" = "x-yes" ; then
     aros_warnflags_missing_field_initializers=-Wmissing-field-initializers
-    aros_nowarnflags_smissing_field_initializers=-Wno-missing-field-initializers
+    aros_nowarnflags_missing_field_initializers=-Wno-missing-field-initializers
 fi
 
 #
@@ -1005,10 +1025,14 @@ AC_SUBST(aros_warnflags_tautological_compare)
 AC_SUBST(aros_nowarnflags_tautological_compare)
 AC_SUBST(aros_warnflags_empty_body)
 AC_SUBST(aros_nowarnflags_empty_body)
+AC_SUBST(aros_warnflags_format_overflow)
+AC_SUBST(aros_nowarnflags_format_overflow)
 AC_SUBST(aros_warnflags_stringop_overflow)
 AC_SUBST(aros_nowarnflags_stringop_overflow)
 AC_SUBST(aros_warnflags_format_truncation)
 AC_SUBST(aros_nowarnflags_format_truncation)
+AC_SUBST(aros_warnflags_stringop_truncation)
+AC_SUBST(aros_nowarnflags_stringop_truncation)
 AC_SUBST(aros_warnflags_shift_negative_value)
 AC_SUBST(aros_nowarnflags_shift_negative_value)
 AC_SUBST(aros_warnflags_missing_field_initializers)
