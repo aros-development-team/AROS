@@ -4365,7 +4365,7 @@ static VOID SetAttributes( struct NListtree_Data *data, struct opSet *msg, BOOL 
         if((tag->ti_Data == (ULONG)MUIV_NListtree_Active_Off) ||
            (tag->ti_Data == (IPTR)&data->RootList) ||
            ((tag->ti_Data == (ULONG)MUIV_NListtree_Active_Parent) &&
-            (data->ActiveNode == (ULONG)MUIV_NListtree_Active_Off))
+            (data->ActiveNode == (APTR)MUIV_NListtree_Active_Off))
           )
         {
           actnode = MUIV_NListtree_Active_Off;
