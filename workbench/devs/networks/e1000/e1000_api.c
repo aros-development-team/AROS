@@ -1,7 +1,7 @@
 /*******************************************************************************
 
   Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2008 Intel Corporation.
+  Copyright(c) 1999 - 2010 Intel Corporation.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms and conditions of the GNU General Public License,
@@ -105,7 +105,6 @@ s32 e1000_init_phy_params(struct e1000_hw *hw)
 out:
 	return ret_val;
 }
-
 
 /**
  *  e1000_set_mac_type - Sets MAC type
@@ -637,20 +636,6 @@ s32 e1000_validate_mdi_setting(struct e1000_hw *hw)
 }
 
 /**
- *  e1000_mta_set - Sets multicast table bit
- *  @hw: pointer to the HW structure
- *  @hash_value: Multicast hash value.
- *
- *  This sets the bit in the multicast table corresponding to the
- *  hash value.  This is a function pointer entry point called by drivers.
- **/
-void e1000_mta_set(struct e1000_hw *hw, u32 hash_value)
-{
-	if (hw->mac.ops.mta_set)
-		hw->mac.ops.mta_set(hw, hash_value);
-}
-
-/**
  *  e1000_hash_mc_addr - Determines address location in multicast table
  *  @hw: pointer to the HW structure
  *  @mc_addr: Multicast address to hash.
@@ -979,18 +964,19 @@ s32 e1000_read_mac_addr(struct e1000_hw *hw)
 }
 
 /**
- *  e1000_read_pba_num - Read device part number
+ *  e1000_read_pba_string - Read device part number string
  *  @hw: pointer to the HW structure
  *  @pba_num: pointer to device part number
+ *  @pba_num_size: size of part number buffer
  *
  *  Reads the product board assembly (PBA) number from the EEPROM and stores
  *  the value in pba_num.
  *  Currently no func pointer exists and all implementations are handled in the
  *  generic version of this function.
  **/
-s32 e1000_read_pba_num(struct e1000_hw *hw, u32 *pba_num)
+s32 e1000_read_pba_string(struct e1000_hw *hw, u8 *pba_num, u32 pba_num_size)
 {
-	return e1000_read_pba_num_generic(hw, pba_num);
+	return e1000_read_pba_string_generic(hw, pba_num, pba_num_size);
 }
 
 /**

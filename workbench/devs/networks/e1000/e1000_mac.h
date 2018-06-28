@@ -1,7 +1,7 @@
 /*******************************************************************************
 
   Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2008 Intel Corporation.
+  Copyright(c) 1999 - 2010 Intel Corporation.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms and conditions of the GNU General Public License,
@@ -40,7 +40,6 @@ s32  e1000_null_link_info(struct e1000_hw *hw, u16 *s, u16 *d);
 bool e1000_null_mng_mode(struct e1000_hw *hw);
 void e1000_null_update_mc(struct e1000_hw *hw, u8 *h, u32 a);
 void e1000_null_write_vfta(struct e1000_hw *hw, u32 a, u32 b);
-void e1000_null_mta_set(struct e1000_hw *hw, u32 a);
 void e1000_null_rar_set(struct e1000_hw *hw, u8 *h, u32 a);
 s32  e1000_blink_led_generic(struct e1000_hw *hw);
 s32  e1000_check_for_copper_link_generic(struct e1000_hw *hw);
@@ -66,7 +65,7 @@ s32  e1000_id_led_init_generic(struct e1000_hw *hw);
 s32  e1000_led_on_generic(struct e1000_hw *hw);
 s32  e1000_led_off_generic(struct e1000_hw *hw);
 void e1000_update_mc_addr_list_generic(struct e1000_hw *hw,
-	                               u8 *mc_addr_list, u32 mc_addr_count);
+                                       u8 *mc_addr_list, u32 mc_addr_count);
 s32  e1000_set_default_fc_generic(struct e1000_hw *hw);
 s32  e1000_set_fc_watermarks_generic(struct e1000_hw *hw);
 s32  e1000_setup_fiber_serdes_link_generic(struct e1000_hw *hw);
@@ -79,7 +78,6 @@ void e1000_clear_hw_cntrs_base_generic(struct e1000_hw *hw);
 void e1000_clear_vfta_generic(struct e1000_hw *hw);
 void e1000_config_collision_dist_generic(struct e1000_hw *hw);
 void e1000_init_rx_addrs_generic(struct e1000_hw *hw, u16 rar_count);
-void e1000_mta_set_generic(struct e1000_hw *hw, u32 hash_value);
 void e1000_pcix_mmrbc_workaround_generic(struct e1000_hw *hw);
 void e1000_put_hw_semaphore_generic(struct e1000_hw *hw);
 void e1000_rar_set_generic(struct e1000_hw *hw, u8 *addr, u32 index);

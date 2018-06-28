@@ -9,9 +9,6 @@ FILES := handler unit e1000
 INTELCOREFILES := e1000_api e1000_phy e1000_mac e1000_nvm e1000_manage
 INTELMACFILES := e1000_82540 e1000_82541 e1000_82542 e1000_82543
 
-CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
-CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
-##CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1 -Dintel_debug
 USER_LDFLAGS := -static
 
 #MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-normal
@@ -19,10 +16,13 @@ USER_LDFLAGS := -static
 
 %build_module mmake=workbench-devs-networks-e1000-normal \
     modname=e1000 modtype=device \
-    files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" cflags=$(CFLAGSNORMAL) \
+    files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" \
     objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
+
+USER_CPPFLAGS :=  -DDEBUG=1
+#USER_CPPFLAGS +=  -Dintel_debug
 
 %build_module mmake=workbench-devs-networks-e1000-debug \
     modname=e1000_debug modtype=device \
-    files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" conffile=e1000.conf cflags=$(CFLAGSDEBUG) \
+    files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" conffile=e1000.conf \
     objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="hiddstubs"
