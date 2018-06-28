@@ -1,7 +1,7 @@
 /*******************************************************************************
 
   Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2008 Intel Corporation.
+  Copyright(c) 1999 - 2010 Intel Corporation.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms and conditions of the GNU General Public License,
@@ -43,6 +43,7 @@ static s32  e1000_led_on_82542(struct e1000_hw *hw);
 static s32  e1000_led_off_82542(struct e1000_hw *hw);
 static void e1000_rar_set_82542(struct e1000_hw *hw, u8 *addr, u32 index);
 static void e1000_clear_hw_cntrs_82542(struct e1000_hw *hw);
+static s32  e1000_read_mac_addr_82542(struct e1000_hw *hw);
 
 /**
  *  e1000_init_phy_params_82542 - Init PHY func ptrs.
@@ -126,8 +127,8 @@ static s32 e1000_init_mac_params_82542(struct e1000_hw *hw)
 	mac->ops.write_vfta = e1000_write_vfta_generic;
 	/* clearing VFTA */
 	mac->ops.clear_vfta = e1000_clear_vfta_generic;
-	/* setting MTA */
-	mac->ops.mta_set = e1000_mta_set_generic;
+	/* read mac address */
+	mac->ops.read_mac_addr = e1000_read_mac_addr_82542;
 	/* set RAR */
 	mac->ops.rar_set = e1000_rar_set_82542;
 	/* turn on/off LED */
@@ -547,4 +548,35 @@ static void e1000_clear_hw_cntrs_82542(struct e1000_hw *hw)
 	E1000_READ_REG(hw, E1000_PTC511);
 	E1000_READ_REG(hw, E1000_PTC1023);
 	E1000_READ_REG(hw, E1000_PTC1522);
+}
+
+/**
+ *  e1000_read_mac_addr_82542 - Read device MAC address
+ *  @hw: pointer to the HW structure
+ *
+ *  Reads the device MAC address from the EEPROM and stores the value.
+ **/
+s32 e1000_read_mac_addr_82542(struct e1000_hw *hw)
+{
+	s32  ret_val = E1000_SUCCESS;
+	u16 offset, nvm_data, i;
+
+	DEBUGFUNC("e1000_read_mac_addr");
+
+	for (i = 0; i < ETH_ADDR_LEN; i += 2) {
+		offset = i >> 1;
+		ret_val = hw->nvm.ops.read(hw, offset, 1, &nvm_data);
+		if (ret_val) {
+			DEBUGOUT("NVM Read Error\n");
+			goto out;
+		}
+		hw->mac.perm_addr[i] = (u8)(nvm_data & 0xFF);
+		hw->mac.perm_addr[i+1] = (u8)(nvm_data >> 8);
+	}
+
+	for (i = 0; i < ETH_ADDR_LEN; i++)
+		hw->mac.addr[i] = hw->mac.perm_addr[i];
+
+out:
+	return ret_val;
 }

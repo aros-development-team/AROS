@@ -1,7 +1,7 @@
 /*******************************************************************************
 
   Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2008 Intel Corporation.
+  Copyright(c) 1999 - 2010 Intel Corporation.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms and conditions of the GNU General Public License,
@@ -253,8 +253,6 @@ static s32 e1000_init_mac_params_82541(struct e1000_hw *hw)
 	mac->ops.write_vfta = e1000_write_vfta_generic;
 	/* clearing VFTA */
 	mac->ops.clear_vfta = e1000_clear_vfta_generic;
-	/* setting MTA */
-	mac->ops.mta_set = e1000_mta_set_generic;
 	/* ID LED init */
 	mac->ops.id_led_init = e1000_id_led_init_generic;
 	/* setup LED */
@@ -315,6 +313,7 @@ static s32 e1000_reset_hw_82541(struct e1000_hw *hw)
 	/* Must reset the Phy before resetting the MAC */
 	if ((hw->mac.type == e1000_82541) || (hw->mac.type == e1000_82547)) {
 		E1000_WRITE_REG(hw, E1000_CTRL, (ctrl | E1000_CTRL_PHY_RST));
+		E1000_WRITE_FLUSH(hw);
 		msec_delay(5);
 	}
 
@@ -371,6 +370,7 @@ static s32 e1000_reset_hw_82541(struct e1000_hw *hw)
 static s32 e1000_init_hw_82541(struct e1000_hw *hw)
 {
 	struct e1000_mac_info *mac = &hw->mac;
+	struct e1000_dev_spec_82541 *dev_spec = &hw->dev_spec._82541;
 	u32 i, txdctl;
 	s32 ret_val;
 
@@ -382,6 +382,13 @@ static s32 e1000_init_hw_82541(struct e1000_hw *hw)
 		DEBUGOUT("Error initializing identification LED\n");
 		/* This is not fatal and we should not stop init due to this */
 	}
+
+	/* Storing the Speed Power Down  value for later use */
+	ret_val = hw->phy.ops.read_reg(hw,
+	                               IGP01E1000_GMII_FIFO,
+	                               &dev_spec->spd_default);
+	if (ret_val)
+		goto out;
 
 	/* Disabling VLAN filtering */
 	DEBUGOUT("Initializing the IEEE VLAN\n");
@@ -419,6 +426,7 @@ static s32 e1000_init_hw_82541(struct e1000_hw *hw)
 	 */
 	e1000_clear_hw_cntrs_82541(hw);
 
+out:
 	return ret_val;
 }
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 
   Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2008 Intel Corporation.
+  Copyright(c) 1999 - 2010 Intel Corporation.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms and conditions of the GNU General Public License,
@@ -28,8 +28,6 @@
 
 #include "e1000_api.h"
 
-static u8 e1000_calculate_checksum(u8 *buffer, u32 length);
-
 /**
  *  e1000_calculate_checksum - Calculate checksum for buffer
  *  @buffer: pointer to EEPROM
@@ -41,7 +39,7 @@ static u8 e1000_calculate_checksum(u8 *buffer, u32 length);
 static u8 e1000_calculate_checksum(u8 *buffer, u32 length)
 {
 	u32 i;
-	u8  sum = 0;
+	u8 sum = 0;
 
 	DEBUGFUNC("e1000_calculate_checksum");
 
@@ -68,9 +66,15 @@ s32 e1000_mng_enable_host_if_generic(struct e1000_hw *hw)
 {
 	u32 hicr;
 	s32 ret_val = E1000_SUCCESS;
-	u8  i;
+	u8 i;
 
 	DEBUGFUNC("e1000_mng_enable_host_if_generic");
+
+	if (!(hw->mac.arc_subsystem_valid)) {
+		DEBUGOUT("ARC subsystem not valid.\n");
+		ret_val = -E1000_ERR_HOST_INTERFACE_COMMAND;
+		goto out;
+	}
 
 	/* Check that the host interface is enabled. */
 	hicr = E1000_READ_REG(hw, E1000_HICR);
@@ -106,18 +110,17 @@ out:
  **/
 bool e1000_check_mng_mode_generic(struct e1000_hw *hw)
 {
-	u32 fwsm;
+	u32 fwsm = E1000_READ_REG(hw, E1000_FWSM);
 
 	DEBUGFUNC("e1000_check_mng_mode_generic");
 
-	fwsm = E1000_READ_REG(hw, E1000_FWSM);
 
 	return (fwsm & E1000_FWSM_MODE_MASK) ==
 	        (E1000_MNG_IAMT_MODE << E1000_FWSM_MODE_SHIFT);
 }
 
 /**
- *  e1000_enable_tx_pkt_filtering_generic - Enable packet filtering on TX
+ *  e1000_enable_tx_pkt_filtering_generic - Enable packet filtering on Tx
  *  @hw: pointer to the HW structure
  *
  *  Enables packet filtering on transmit packets if manageability is enabled
@@ -130,13 +133,14 @@ bool e1000_enable_tx_pkt_filtering_generic(struct e1000_hw *hw)
 	u32 offset;
 	s32 ret_val, hdr_csum, csum;
 	u8 i, len;
-	bool tx_filter = true;
 
 	DEBUGFUNC("e1000_enable_tx_pkt_filtering_generic");
 
+	hw->mac.tx_pkt_filtering = true;
+
 	/* No manageability, no filtering */
 	if (!hw->mac.ops.check_mng_mode(hw)) {
-		tx_filter = false;
+		hw->mac.tx_pkt_filtering = false;
 		goto out;
 	}
 
@@ -146,18 +150,16 @@ bool e1000_enable_tx_pkt_filtering_generic(struct e1000_hw *hw)
 	 */
 	ret_val = hw->mac.ops.mng_enable_host_if(hw);
 	if (ret_val != E1000_SUCCESS) {
-		tx_filter = false;
+		hw->mac.tx_pkt_filtering = false;
 		goto out;
 	}
 
 	/* Read in the header.  Length and offset are in dwords. */
 	len    = E1000_MNG_DHCP_COOKIE_LENGTH >> 2;
 	offset = E1000_MNG_DHCP_COOKIE_OFFSET >> 2;
-	for (i = 0; i < len; i++) {
-		*(buffer + i) = E1000_READ_REG_ARRAY_DWORD(hw,
-		                                           E1000_HOST_IF,
+	for (i = 0; i < len; i++)
+		*(buffer + i) = E1000_READ_REG_ARRAY_DWORD(hw, E1000_HOST_IF,
 		                                           offset + i);
-	}
 	hdr_csum = hdr->checksum;
 	hdr->checksum = 0;
 	csum = e1000_calculate_checksum((u8 *)hdr,
@@ -167,18 +169,19 @@ bool e1000_enable_tx_pkt_filtering_generic(struct e1000_hw *hw)
 	 * the cookie area isn't considered valid, in which case we
 	 * take the safe route of assuming Tx filtering is enabled.
 	 */
-	if (hdr_csum != csum)
+	if ((hdr_csum != csum) || (hdr->signature != E1000_IAMT_SIGNATURE)) {
+		hw->mac.tx_pkt_filtering = true;
 		goto out;
-	if (hdr->signature != E1000_IAMT_SIGNATURE)
-		goto out;
+	}
 
 	/* Cookie area is valid, make the final check for filtering. */
-	if (!(hdr->status & E1000_MNG_DHCP_COOKIE_STATUS_PARSING))
-		tx_filter = false;
+	if (!(hdr->status & E1000_MNG_DHCP_COOKIE_STATUS_PARSING)) {
+		hw->mac.tx_pkt_filtering = false;
+		goto out;
+	}
 
 out:
-	hw->mac.tx_pkt_filtering = tx_filter;
-	return tx_filter;
+	return hw->mac.tx_pkt_filtering;
 }
 
 /**
@@ -338,10 +341,11 @@ out:
 }
 
 /**
- *  e1000_enable_mng_pass_thru - Enable processing of ARP's
+ *  e1000_enable_mng_pass_thru - Check if management passthrough is needed
  *  @hw: pointer to the HW structure
  *
- *  Verifies the hardware needs to allow ARPs to be processed by the host.
+ *  Verifies the hardware needs to leave interface enabled so that frames can
+ *  be directed to and from the management interface.
  **/
 bool e1000_enable_mng_pass_thru(struct e1000_hw *hw)
 {
@@ -356,11 +360,10 @@ bool e1000_enable_mng_pass_thru(struct e1000_hw *hw)
 
 	manc = E1000_READ_REG(hw, E1000_MANC);
 
-	if (!(manc & E1000_MANC_RCV_TCO_EN) ||
-	    !(manc & E1000_MANC_EN_MAC_ADDR_FILTER))
+	if (!(manc & E1000_MANC_RCV_TCO_EN))
 		goto out;
 
-	if (hw->mac.arc_subsystem_valid) {
+	if (hw->mac.has_fwsm) {
 		fwsm = E1000_READ_REG(hw, E1000_FWSM);
 		factps = E1000_READ_REG(hw, E1000_FACTPS);
 
@@ -370,12 +373,10 @@ bool e1000_enable_mng_pass_thru(struct e1000_hw *hw)
 			ret_val = true;
 			goto out;
 		}
-	} else {
-		if ((manc & E1000_MANC_SMBUS_EN) &&
+	} else if ((manc & E1000_MANC_SMBUS_EN) &&
 		    !(manc & E1000_MANC_ASF_EN)) {
 			ret_val = true;
 			goto out;
-		}
 	}
 
 out:

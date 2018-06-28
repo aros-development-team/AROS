@@ -1,7 +1,7 @@
 /*******************************************************************************
 
   Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2008 Intel Corporation.
+  Copyright(c) 1999 - 2010 Intel Corporation.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms and conditions of the GNU General Public License,
@@ -54,7 +54,6 @@ s32  e1000_get_speed_and_duplex(struct e1000_hw *hw, u16 *speed,
 s32  e1000_disable_pcie_master(struct e1000_hw *hw);
 void e1000_config_collision_dist(struct e1000_hw *hw);
 void e1000_rar_set(struct e1000_hw *hw, u8 *addr, u32 index);
-void e1000_mta_set(struct e1000_hw *hw, u32 hash_value);
 u32  e1000_hash_mc_addr(struct e1000_hw *hw, u8 *mc_addr);
 void e1000_update_mc_addr_list(struct e1000_hw *hw,
                                u8 *mc_addr_list, u32 mc_addr_count);
@@ -79,7 +78,8 @@ s32  e1000_phy_commit(struct e1000_hw *hw);
 void e1000_power_up_phy(struct e1000_hw *hw);
 void e1000_power_down_phy(struct e1000_hw *hw);
 s32  e1000_read_mac_addr(struct e1000_hw *hw);
-s32  e1000_read_pba_num(struct e1000_hw *hw, u32 *part_num);
+s32  e1000_read_pba_string(struct e1000_hw *hw, u8 *pba_num,
+                           u32 pba_num_size);
 void e1000_reload_nvm(struct e1000_hw *hw);
 s32  e1000_update_nvm_checksum(struct e1000_hw *hw);
 s32  e1000_validate_nvm_checksum(struct e1000_hw *hw);
@@ -101,6 +101,7 @@ s32  e1000_mng_write_cmd_header(struct e1000_hw *hw,
 s32  e1000_mng_write_dhcp_info(struct e1000_hw * hw,
                                     u8 *buffer, u16 length);
 u32  e1000_translate_register_82542(u32 reg);
+
 
 /*
  * TBI_ACCEPT macro definition:

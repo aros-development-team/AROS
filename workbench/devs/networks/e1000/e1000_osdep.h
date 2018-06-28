@@ -165,33 +165,87 @@
 #define DEBUGOUT7 DEBUGOUT3
 #endif
 
-#define MMIO_R8(addr)		(*((volatile UBYTE *)(addr)))
-#define MMIO_R16(addr)		(*((volatile UWORD *)(addr)))
-#define MMIO_R32(addr)		(*((volatile ULONG *)(addr)))
+static inline ULONG readl(u8 __iomem *base)
+{
+    return *((ULONG volatile *)base);
+}
+static inline void writel(ULONG val, u8 __iomem *base)
+{
+    *((ULONG volatile *)base) = val;
+}
 
-extern void MMIO_W8(APTR, UBYTE);
-extern void MMIO_W16(APTR, UWORD);
-extern void MMIO_W32(APTR, ULONG);
+static inline UBYTE MMIO_R8(u8 __iomem *base)
+{
+    return *((UBYTE volatile *)base);
+}
+static inline UWORD MMIO_R16(u8 __iomem *base)
+{
+    return *((UWORD volatile *)base);
+}
+static inline ULONG MMIO_R32(u8 __iomem *base)
+{
+    return *((ULONG volatile *)base);
+}
 
-#define E1000_REGISTER(a, reg) (((a)->mac.type >= e1000_82543) ? reg : e1000_translate_register_82542(reg))
+static inline void MMIO_W8(APTR addr, UBYTE val8)
+{
+    *((volatile UBYTE *)(addr)) = (val8);
 
-#define E1000_WRITE_REG(a, reg, value) (MMIO_W32((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg)), (value)))
+    MMIO_R8(addr);
+}
+static inline void MMIO_W16(APTR addr, UWORD val16)
+{
+    *((volatile UWORD *)(addr)) = (val16);
 
-#define E1000_READ_REG(a, reg) (*((volatile ULONG *)((a)->hw_addr + E1000_REGISTER(a, reg))))
+    MMIO_R16(addr);
+    
+}
+static inline void MMIO_W32(APTR addr, ULONG val32)
+{
+    *((volatile ULONG *)(addr)) = (val32);
 
-#define E1000_WRITE_REG_ARRAY(a, reg, offset, value) (MMIO_W32((APTR)(((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2))), (value)))
-#define E1000_READ_REG_ARRAY(a, reg, offset) (*((volatile ULONG *)((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2))))
+    MMIO_R32(addr);
+}
+
+#define E1000_REGISTER(a, reg) (((a)->mac.type >= e1000_82543) \
+                                                  ? reg \
+                                                  : e1000_translate_register_82542(reg))
+
+static inline u32 er32(u8 __iomem *reg)
+{
+    return readl(reg);
+}
+
+static inline void ew32(u8 __iomem *reg, u32 val)
+{
+    writel(val, reg);
+}
+
+#define E1000_WRITE_REG(a, reg, value) \
+    ew32(((a)->hw_addr + E1000_REGISTER(a, reg)),value)
+
+#define E1000_READ_REG(a, reg) (er32((a)->hw_addr + E1000_REGISTER(a, reg)))
+
+#define E1000_WRITE_REG_ARRAY(a, reg, offset, value) ( \
+    writel((value), ((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2))))
+
+#define E1000_READ_REG_ARRAY(a, reg, offset) ( \
+    readl((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2)))
 
 #define E1000_READ_REG_ARRAY_DWORD E1000_READ_REG_ARRAY
 #define E1000_WRITE_REG_ARRAY_DWORD E1000_WRITE_REG_ARRAY
 
-#define E1000_WRITE_REG_ARRAY_WORD(a, reg, offset, value) (MMIO_W16((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1)), (value)))
- 
-#define E1000_READ_REG_ARRAY_WORD(a, reg, offset) (*((volatile UWORD *)((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1)))))
+#define E1000_WRITE_REG_ARRAY_WORD(a, reg, offset, value) ( \
+    writew((value), ((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1))))
 
-#define E1000_WRITE_REG_ARRAY_BYTE(a, reg, offset, value) (MMIO_W8((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg) + (offset)), (value)))
+#define E1000_READ_REG_ARRAY_WORD(a, reg, offset) ( \
+    readw((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1)))
 
-#define E1000_READ_REG_ARRAY_BYTE(a, reg, offset) (*((volatile UBYTE *)((a)->hw_addr + E1000_REGISTER(a, reg) + (offset)))))
+#define E1000_WRITE_REG_ARRAY_BYTE(a, reg, offset, value) ( \
+    writeb((value), ((a)->hw_addr + E1000_REGISTER(a, reg) + (offset))))
+
+#define E1000_READ_REG_ARRAY_BYTE(a, reg, offset) ( \
+    readb((a)->hw_addr + E1000_REGISTER(a, reg) + (offset)))
 
 #define E1000_WRITE_REG_IO(a, reg, offset) do { \
     LONGOUT(((a)->io_base), reg);                  \
@@ -199,13 +253,15 @@ extern void MMIO_W32(APTR, ULONG);
 
 #define E1000_WRITE_FLUSH(a) E1000_READ_REG(a, E1000_STATUS)
 
-#define E1000_WRITE_FLASH_REG(a, reg, value) (MMIO_W32((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg)), (value)))
+#define E1000_WRITE_FLASH_REG(a, reg, value) ( \
+    writel((value), ((a)->flash_address + reg)))
 
-#define E1000_WRITE_FLASH_REG16(a, reg, value) (MMIO_W16((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg)), (value)))
+#define E1000_WRITE_FLASH_REG16(a, reg, value) ( \
+    writew((value), ((a)->flash_address + reg)))
 
-#define E1000_READ_FLASH_REG(a, reg) (*((volatile ULONG *)((a)->hw_addr + E1000_REGISTER(a, reg))))
+#define E1000_READ_FLASH_REG(a, reg) (readl((a)->flash_address + reg))
 
-#define E1000_READ_FLASH_REG16(a, reg) (*((volatile UWORD *)((a)->hw_addr + E1000_REGISTER(a, reg))))
+#define E1000_READ_FLASH_REG16(a, reg) (readw((a)->flash_address + reg))
 
 #define SANA2_SPECIAL_STAT_COUNT 3
 

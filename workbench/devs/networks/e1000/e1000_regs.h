@@ -1,7 +1,7 @@
 /*******************************************************************************
 
   Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2008 Intel Corporation.
+  Copyright(c) 1999 - 2010 Intel Corporation.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms and conditions of the GNU General Public License,
@@ -41,6 +41,7 @@
 #define E1000_FCAL     0x00028  /* Flow Control Address Low - RW */
 #define E1000_FCAH     0x0002C  /* Flow Control Address High -RW */
 #define E1000_FEXT     0x0002C  /* Future Extended - RW */
+#define E1000_FEXTNVM4 0x00024  /* Future Extended NVM 4 - RW */
 #define E1000_FEXTNVM  0x00028  /* Future Extended NVM - RW */
 #define E1000_FCT      0x00030  /* Flow Control Type - RW */
 #define E1000_CONNSW   0x00034  /* Copper/Fiber switch control - RW */
@@ -92,8 +93,6 @@
 #define E1000_RDPUWD   0x025D4  /* DMA Rx Descriptor uC Data Write - RW */
 #define E1000_RDPURD   0x025D8  /* DMA Rx Descriptor uC Data Read - RW */
 #define E1000_RDPUCTL  0x025DC  /* DMA Rx Descriptor uC Control - RW */
-#define E1000_RXCTL(_n)   (0x0C014 + (0x40 * (_n)))
-#define E1000_RQDPC(_n)   (0x0C030 + (0x40 * (_n)))
 #define E1000_RDTR     0x02820  /* Rx Delay Timer - RW */
 #define E1000_RADV     0x0282C  /* Rx Interrupt Absolute Delay Timer - RW */
 /*
@@ -114,10 +113,15 @@
                                          (0x0C00C + ((_n) * 0x40)))
 #define E1000_RDH(_n)        ((_n) < 4 ? (0x02810 + ((_n) * 0x100)) : \
                                          (0x0C010 + ((_n) * 0x40)))
+#define E1000_RXCTL(_n)      ((_n) < 4 ? (0x02814 + ((_n) * 0x100)) : \
+                                         (0x0C014 + ((_n) * 0x40)))
+#define E1000_DCA_RXCTRL(_n) E1000_RXCTL(_n)
 #define E1000_RDT(_n)        ((_n) < 4 ? (0x02818 + ((_n) * 0x100)) : \
                                          (0x0C018 + ((_n) * 0x40)))
 #define E1000_RXDCTL(_n)     ((_n) < 4 ? (0x02828 + ((_n) * 0x100)) : \
                                          (0x0C028 + ((_n) * 0x40)))
+#define E1000_RQDPC(_n)      ((_n) < 4 ? (0x02830 + ((_n) * 0x100)) : \
+                                         (0x0C030 + ((_n) * 0x40)))
 #define E1000_TDBAL(_n)      ((_n) < 4 ? (0x03800 + ((_n) * 0x100)) : \
                                          (0x0E000 + ((_n) * 0x40)))
 #define E1000_TDBAH(_n)      ((_n) < 4 ? (0x03804 + ((_n) * 0x100)) : \
@@ -126,17 +130,18 @@
                                          (0x0E008 + ((_n) * 0x40)))
 #define E1000_TDH(_n)        ((_n) < 4 ? (0x03810 + ((_n) * 0x100)) : \
                                          (0x0E010 + ((_n) * 0x40)))
+#define E1000_TXCTL(_n)      ((_n) < 4 ? (0x03814 + ((_n) * 0x100)) : \
+                                         (0x0E014 + ((_n) * 0x40)))
+#define E1000_DCA_TXCTRL(_n) E1000_TXCTL(_n)
 #define E1000_TDT(_n)        ((_n) < 4 ? (0x03818 + ((_n) * 0x100)) : \
                                          (0x0E018 + ((_n) * 0x40)))
 #define E1000_TXDCTL(_n)     ((_n) < 4 ? (0x03828 + ((_n) * 0x100)) : \
                                          (0x0E028 + ((_n) * 0x40)))
-#define E1000_TARC(_n)       (0x03840 + (_n << 8))
-#define E1000_DCA_TXCTRL(_n) (0x03814 + (_n << 8))
-#define E1000_DCA_RXCTRL(_n) (0x02814 + (_n << 8))
 #define E1000_TDWBAL(_n)     ((_n) < 4 ? (0x03838 + ((_n) * 0x100)) : \
                                          (0x0E038 + ((_n) * 0x40)))
 #define E1000_TDWBAH(_n)     ((_n) < 4 ? (0x0383C + ((_n) * 0x100)) : \
                                          (0x0E03C + ((_n) * 0x40)))
+#define E1000_TARC(_n)                   (0x03840 + ((_n) * 0x100))
 #define E1000_RSRPD    0x02C00  /* Rx Small Packet Detect - RW */
 #define E1000_RAID     0x02C08  /* Receive Ack Interrupt Delay - RW */
 #define E1000_TXDMAC   0x03000  /* Tx DMA Control - RW */
@@ -146,6 +151,8 @@
                                        (0x054E0 + ((_i - 16) * 8)))
 #define E1000_RAH(_i)  (((_i) <= 15) ? (0x05404 + ((_i) * 8)) : \
                                        (0x054E4 + ((_i - 16) * 8)))
+#define E1000_SHRAL(_i)         (0x05438 + ((_i) * 8))
+#define E1000_SHRAH(_i)         (0x0543C + ((_i) * 8))
 #define E1000_IP4AT_REG(_i)     (0x05840 + ((_i) * 8))
 #define E1000_IP6AT_REG(_i)     (0x05880 + ((_i) * 4))
 #define E1000_WUPM_REG(_i)      (0x05A00 + ((_i) * 4))
@@ -263,6 +270,8 @@
 #define E1000_RA       0x05400  /* Receive Address - RW Array */
 #define E1000_VFTA     0x05600  /* VLAN Filter Table Array - RW Array */
 #define E1000_VT_CTL   0x0581C  /* VMDq Control - RW */
+#define E1000_CIAA     0x05B88  /* Config Indirect Access Address - RW */
+#define E1000_CIAD     0x05B8C  /* Config Indirect Access Data - RW */
 #define E1000_VFQA0    0x0B000  /* VLAN Filter Queue Array 0 - RW Array */
 #define E1000_VFQA1    0x0B200  /* VLAN Filter Queue Array 1 - RW Array */
 #define E1000_WUC      0x05800  /* Wakeup Control - RW */
@@ -283,6 +292,7 @@
 #define E1000_KMRNCTRLSTA 0x00034 /* MAC-PHY interface - RW */
 #define E1000_MDPHYA      0x0003C /* PHY address - RW */
 #define E1000_MANC2H      0x05860 /* Management Control To Host - RW */
+#define E1000_MDEF(_n)    (0x05890 + (4 * (_n))) /* Mngmt Decision Filters */
 #define E1000_SW_FW_SYNC  0x05B5C /* Software-Firmware Synchronization - RW */
 #define E1000_CCMCTL      0x05B48 /* CCM Control Register */
 #define E1000_GIOCTL      0x05B44 /* GIO Analog Control Register */
@@ -323,5 +333,19 @@
 #define E1000_RSSRK(_i) (0x05C80 + ((_i) * 4)) /* RSS Random Key - RW */
 #define E1000_RSSIM     0x05864 /* RSS Interrupt Mask */
 #define E1000_RSSIR     0x05868 /* RSS Interrupt Request */
+#define E1000_TSYNCRXCTL 0x0B620 /* Rx Time Sync Control register - RW */
+#define E1000_TSYNCTXCTL 0x0B614 /* Tx Time Sync Control register - RW */
+#define E1000_TSYNCRXCFG 0x05F50 /* Time Sync Rx Configuration - RW */
+#define E1000_RXSTMPL    0x0B624 /* Rx timestamp Low - RO */
+#define E1000_RXSTMPH    0x0B628 /* Rx timestamp High - RO */
+#define E1000_RXSATRL    0x0B62C /* Rx timestamp attribute low - RO */
+#define E1000_RXSATRH    0x0B630 /* Rx timestamp attribute high - RO */
+#define E1000_TXSTMPL    0x0B618 /* Tx timestamp value Low - RO */
+#define E1000_TXSTMPH    0x0B61C /* Tx timestamp value High - RO */
+#define E1000_SYSTIML    0x0B600 /* System time register Low - RO */
+#define E1000_SYSTIMH    0x0B604 /* System time register High - RO */
+#define E1000_TIMINCA    0x0B608 /* Increment attributes register - RW */
+
+
 
 #endif

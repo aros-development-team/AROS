@@ -4,7 +4,7 @@ e1000.device
 see "COPYING" for license information
 This driver is incomplete/ experimental - use at your own risk!
 
-Based on the gpl Linux Intel gigabit NIC driver version 8.0.13
+Based on the gpl Linux Intel gigabit NIC driver version 8.0.35
 (http://sourceforge.net/projects/e1000) 
 
 supported NIC's:
@@ -46,6 +46,7 @@ supported NIC's:
     0x8086, 0x10B5 - Intel 82546GB [Quad Copper KSP3]
 
 TODO/Known Issues:
-Fix releasing recieve buffers after Rx
-Fix deadlock at end of Rx queue
-Use pre-allocated Tx buffers to improve performance
+# Even though we set the Rx queue size to 256, the code only allocates 255 buffers, and sets the tail to 254!?!
+# Enabling the disabled code results in queue stalls, and not doing anything results in the queue stalling when the end of the ring is reached.
+# We appear to need to tell the chipset to start at the begining of the ring again.
+# Look at the possibility of using pre-allocated Tx buffers to try improve performance
