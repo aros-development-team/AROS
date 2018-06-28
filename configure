@@ -1642,7 +1642,8 @@ Optional Packages:
   --with-kernel-gcc-version=VERSION
                           Use gcc-VERSION for building bootstrap
   --with-optimization=FLAGS
-                          Use optimization flags FLAGS (default=-O2).
+                          Use optimization flags FLAGS (e.g
+                          --with-optimization=-O2).
   --with-paranoia=(yes|no|FLAGS)
                           Specific compiler warning FLAGS to enable for
                           paranoia builds (default=-Wall -Werror)
@@ -7868,19 +7869,21 @@ $as_echo_n "checking what optimization flags to use... " >&6; }
 
 # Check whether --with-optimization was given.
 if test "${with_optimization+set}" = set; then :
-  withval=$with_optimization; optimization="$withval"
+  withval=$with_optimization; optimization_level="$withval"
 else
-  optimization="unknown"
+  optimization_level="unknown"
 fi
 
-if test "$optimization" = "unknown"; then
-        if test "$debug" != "none"; then
-        optimization="-O0"
+if test "$optimization_level" = "unknown"; then
+        optimization="default"
+    if test "$debug" != "none"; then
+        optimization_level="-O0"
     else
-        optimization="-O2"
+        optimization_level="-O2"
     fi
+else
+    optimization="$optimization_level"
 fi
-aros_optimization_cflags="$optimization"
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $optimization" >&5
 $as_echo "$optimization" >&6; }
 
@@ -8609,7 +8612,9 @@ case "$target_os" in
         aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-asynchronous-unwind-tables"
         aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -fno-asynchronous-unwind-tables"
         aros_config_aflags="$aros_config_aflags -fno-strict-aliasing -fno-asynchronous-unwind-tables"
-        aros_optimization_cflags="$aros_optimization_cflags -Os"
+        if test "$optimization" = "default"; then
+            optimization_level="-Os"
+        fi
         case "$target_cpu" in
             *armhf*)
                 gcc_default_float_abi="hard"
@@ -8742,7 +8747,9 @@ fi
                 aros_config_cppflags="$aros_config_cppflags -DNOLIBINLINE"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin"
                 aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin"
-                aros_optimization_cflags="$aros_optimization_cflags -Os"
+                if test "$optimization" = "default"; then
+                    optimization_level="-Os"
+                fi
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
                 aros_nominal_width=640
@@ -14875,6 +14882,13 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
 fi
 
 aros_kernel_cppflags=$aros_config_cppflags
+aros_optimization_cflags="$optimization_level"
+if test "$optimization" = "default"; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking default optimization level to use" >&5
+$as_echo_n "checking default optimization level to use... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $optimization_level" >&5
+$as_echo "$optimization_level" >&6; }
+fi
 
 
 # Generic
