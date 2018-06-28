@@ -879,16 +879,18 @@ AC_MSG_RESULT($msg_result)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what optimization flags to use])
-AC_ARG_WITH(optimization,AC_HELP_STRING([--with-optimization=FLAGS],[Use optimization flags FLAGS (default=-O2).]),optimization="$withval",optimization="unknown")
-if test "$optimization" = "unknown"; then
+AC_ARG_WITH(optimization,AC_HELP_STRING([--with-optimization=FLAGS],[Use optimization flags FLAGS (e.g --with-optimization=-O2).]),optimization_level="$withval",optimization_level="unknown")
+if test "$optimization_level" = "unknown"; then
     dnl default is -O2 for normal builds, -O0 for debug builds
+    optimization="default"
     if test "$debug" != "none"; then
-        optimization="-O0"
+        optimization_level="-O0"
     else
-        optimization="-O2"
+        optimization_level="-O2"
     fi
+else
+    optimization="$optimization_level"
 fi
-aros_optimization_cflags="$optimization"
 AC_MSG_RESULT($optimization)
 
 paranoia_default=yes
@@ -1457,7 +1459,9 @@ case "$target_os" in
         aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-asynchronous-unwind-tables"
         aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -fno-asynchronous-unwind-tables"
         aros_config_aflags="$aros_config_aflags -fno-strict-aliasing -fno-asynchronous-unwind-tables"
-        aros_optimization_cflags="$aros_optimization_cflags -Os"
+        if test "$optimization" = "default"; then
+            optimization_level="-Os"
+        fi
         case "$target_cpu" in
             *armhf*)
                 gcc_default_float_abi="hard"
@@ -1586,7 +1590,9 @@ case "$target_os" in
                 aros_config_cppflags="$aros_config_cppflags -DNOLIBINLINE"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin"
                 aros_config_cxxflags="$aros_config_cxxflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin"
-                aros_optimization_cflags="$aros_optimization_cflags -Os"
+                if test "$optimization" = "default"; then
+                    optimization_level="-Os"
+                fi
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
                 aros_nominal_width=640
@@ -2804,6 +2810,11 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
 fi
 
 aros_kernel_cppflags=$aros_config_cppflags
+aros_optimization_cflags="$optimization_level"
+if test "$optimization" = "default"; then
+AC_MSG_CHECKING([default optimization level to use])
+AC_MSG_RESULT($optimization_level)
+fi
 
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
