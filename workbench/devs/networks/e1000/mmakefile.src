@@ -19,7 +19,7 @@ USER_LDFLAGS := -static
     files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" \
     objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
 
-USER_CPPFLAGS :=  -DDEBUG=0
+USER_CPPFLAGS :=  -DDEBUG=1
 #USER_CPPFLAGS +=  -Dintel_debug
 
 %build_module mmake=workbench-devs-networks-e1000-debug \
