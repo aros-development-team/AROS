@@ -1334,7 +1334,10 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         /* Check for address validity */
         if(AddressFilter(LIBBASE, unit, frame->eth_packet_dest))
         {
-            D(bug("[%s] %s: Packet IP accepted with type = %d, checksum = %08x\n", unit->e1ku_name, __PRETTY_FUNCTION__, AROS_BE2WORD(frame->eth_packet_type), AROS_LE2LONG(*(frame->eth_packet_crc)));)
+            D(
+                ULONG *framecrc_ptr = (ULONG *)frame->eth_packet_crc;
+                bug("[%s] %s: Packet IP accepted with type = %d, checksum = %08x\n", unit->e1ku_name, __PRETTY_FUNCTION__, AROS_BE2WORD(frame->eth_packet_type), AROS_LE2LONG(*framecrc_ptr));
+              ) 
             /* Packet is addressed to this driver */
 
             opener = (APTR)unit->e1ku_Openers.mlh_Head;
