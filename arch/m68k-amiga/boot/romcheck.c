@@ -109,9 +109,9 @@ int main(int argc, char **argv)
         {
             printf("Error: ROM Size > %uKB", size/1024);
             if ((len - size) >= 1024)
-                printf(" (+%uKB).\n", (len - size)/1024);
+                printf(" (+%luKB).\n", (len - size)/1024);
             else
-                printf(" (+%uB).\n", (len - size));
+                printf(" (+%luB).\n", (len - size));
             return retval;
         }
 
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
             }
             else
             {
-                printf("Error: Rom Data Size exceeds available space (%u bytes remaining).\n", size - origlen);
+                printf("Error: Rom Data Size exceeds available space (%lu bytes remaining).\n", size - origlen);
             }
 
             munmap(rom, len);
