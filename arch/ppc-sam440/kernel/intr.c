@@ -79,7 +79,7 @@ exception_handler * const exception_handlers[16] = {
     generic_handler,            /*  3 - Instr. Storage   -- */
     uic_handler,                /*  4 - External Input   EE */
     alignment_handler,          /*  5 - Alignment        -- */
-    generic_handler,            /*  6 - Program          -- */
+    program_handler,            /*  6 - Program          -- */
     generic_handler,            /*  7 - FP Unavailable   -- */
     syscall_handler,            /*  8 - System Call      -- */
     generic_handler,            /*  9 - AP Unavailable   -- */
@@ -353,6 +353,43 @@ void generic_handler(context_t *ctx, uint8_t exception)
             wrmsr(rdmsr() | MSR_POW);
         }
     }
+
+    ExitInterrupt(ctx);
+}
+
+void program_handler(context_t *ctx, uint8_t exception)
+{
+
+    uint32_t pc;
+    BOOL exchandled = FALSE;
+
+    DB2(bug("[KRN] Program handler. Context @ %p. srr1=%08x\n", ctx, ctx->cpu.srr1));
+
+#define ESR_PIL (1 << 27)
+
+    if(rdspr(ESR) & ESR_PIL)
+    {
+        pc = ctx->cpu.srr0;
+
+        DB2(bug("[KRN] Illegal Instruction @ %08x\n", pc));
+
+        if (*(uint32_t *)pc == 0x7c2004ac)
+        {
+            bug("[KRN] Warning: emulating 'lwsync'\n");
+
+            exchandled = TRUE;
+
+            /* Emulate 'lwsync' instruction using sync */
+            asm volatile("sync" : : : "memory");
+
+            /* move the return address forward so the
+                  instruction isnt run again */
+            ctx->cpu.srr0 += 4;
+        }
+    }
+
+    if (!exchandled)
+        generic_handler(ctx, exception);
 
     ExitInterrupt(ctx);
 }

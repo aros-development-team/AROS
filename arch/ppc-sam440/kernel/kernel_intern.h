@@ -118,6 +118,7 @@ extern exception_handler alignment_handler;
 extern exception_handler syscall_handler;
 extern exception_handler decrementer_handler;
 extern exception_handler mmu_handler;
+extern exception_handler program_handler;
 
 
 uint32_t findNames(intptr_t addr, char **module, char **function);
