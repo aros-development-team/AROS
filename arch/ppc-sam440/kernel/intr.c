@@ -365,25 +365,24 @@ void program_handler(context_t *ctx, uint8_t exception)
 
     DB2(bug("[KRN] Program handler. Context @ %p. srr1=%08x\n", ctx, ctx->cpu.srr1));
 
-#define ESR_PIL (1 << 27)
-
     if(rdspr(ESR) & ESR_PIL)
     {
         pc = ctx->cpu.srr0;
 
         DB2(bug("[KRN] Illegal Instruction @ %08x\n", pc));
 
+        /* Check if lwsync is executed */
         if (*(uint32_t *)pc == 0x7c2004ac)
         {
             bug("[KRN] Warning: emulating 'lwsync'\n");
 
             exchandled = TRUE;
 
-            /* Emulate 'lwsync' instruction using sync */
+            /* PPC440 doesn't have lwsync, do sync instead */
             asm volatile("sync" : : : "memory");
 
             /* move the return address forward so the
-                  instruction isnt run again */
+                  instruction isn't run again */
             ctx->cpu.srr0 += 4;
         }
     }
