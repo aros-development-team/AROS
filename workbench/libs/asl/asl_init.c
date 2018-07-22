@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     ASL initialization code.
@@ -51,7 +51,8 @@ const struct IntFileReq def_filereq =
         NULL,                   /* PositiveText         */
         NULL,                   /* NegativeText         */
         -1, -1,                 /* --> center on screen */
-        300, 300                /* Width/Height         */
+        300, 300,               /* Width/Height         */
+        IF_POPTOFRONT
     },
 
     "",                         /* File                 */
@@ -93,7 +94,8 @@ const struct IntSMReq def_smreq =
         NULL,                           /* PositiveText         */
         NULL,                           /* NegativeText         */
         -1, -1,                         /* --> center on screen */
-        300, 300                        /* Width/Height         */
+        300, 300,                       /* Width/Height         */
+        IF_POPTOFRONT
     },
 
     NULL,                               /* CustomSMList         */
@@ -141,7 +143,8 @@ const struct IntFontReq def_fontreq =
         NULL,                           /* PositiveText         */
         NULL,                           /* NegativeText         */
         -1, -1,                         /* --> center on screen */
-        300, 300                        /* Width/Height         */
+        300, 300,                       /* Width/Height         */
+        IF_POPTOFRONT
     },
     {"topaz", 8, FS_NORMAL,FPF_ROMFONT},/* Default textattr     */
     1,                                  /* FrontPen             */
