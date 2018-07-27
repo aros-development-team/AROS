@@ -62,6 +62,11 @@ ifeq ($(strip $(host)),powerpc-unknown-amigaos)
 SUBDIRS		+= EMU10kx
 endif
 
+ifeq ($(strip $(host)),powerpc-unknown-aros)
+SUBDIRS		+= ac97
+SUBDIRS		+= SB128
+endif
+
 ifneq ($(strip $(HAVE_ALSA)),)
 SUBDIRS		+= Alsa
 endif
