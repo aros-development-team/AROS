@@ -1,19 +1,12 @@
+/*
+    Copyright � 1995-2018, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef ASM_PPC_IO_H
 #define ASM_PPC_IO_H
 
 #include <inttypes.h>
-
-static inline eieio() {
-    asm volatile("eieio":::"memory");
-}
-
-static inline sync() {
-    asm volatile("sync":::"memory");
-}
-
-static inline isync() {
-    asm volatile("isync":::"memory");
-}
 
 static inline uint8_t _inb(volatile uint8_t *port) {
     uint8_t ret; asm volatile("lbz%U1%X1 %0,%1; eieio":"=r"(ret):"m"(*port)); return ret;
