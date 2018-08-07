@@ -83,6 +83,9 @@ endif
 		%(strip) $(LINKTARGET) --only-keep-debug -o $(LINKTARGET).dbg; \
 	fi
 	@%(strip) $(LINKTARGET)
+	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
+		$(OBJCOPY) --add-gnu-debuglink=$(LINKTARGET).dbg $(LINKTARGET); \
+	fi
 %end
 #------------------------------------------------------------------------------
 
@@ -109,6 +112,9 @@ endif
 		$(STRIP) $@ --only-keep-debug -o $@.dbg; \
 	fi
 	@$(STRIP) $@
+	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
+		$(OBJCOPY) --add-gnu-debuglink=$(LINKTARGET).dbg $(LINKTARGET); \
+	fi
 %end
 #------------------------------------------------------------------------------
 
@@ -3859,6 +3865,9 @@ ifeq ($(DEBUG),yes)
 	@$(STRIP) $@ --only-keep-debug -o $@.dbg
 endif
 	@$(STRIP) $@
+ifeq ($(DEBUG),yes)
+	@$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
+endif
 
 %compress_file mmake="%(mmake)" file="%(file)"
 
