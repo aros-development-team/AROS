@@ -59,8 +59,8 @@
 
     /* Query the hardware */
     EClockUpdate(GetTimerBase(TimerBase));
-    dest->tv_secs  = GetTimerBase(TimerBase)->tb_ElapsedTime.tv_secs;
-    dest->tv_micro = GetTimerBase(TimerBase)->tb_ElapsedTime.tv_micro;
+    dest->tv_secs  = GetTimerBase(TimerBase)->tb_Elapsed.tv_secs;
+    dest->tv_micro = GetTimerBase(TimerBase)->tb_Elapsed.tv_micro;
 
     Enable();
 
