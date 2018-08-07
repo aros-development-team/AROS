@@ -113,7 +113,7 @@ endif
 	fi
 	@$(STRIP) $@
 	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
-		$(OBJCOPY) --add-gnu-debuglink=$(LINKTARGET).dbg $(LINKTARGET); \
+		$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@; \
 	fi
 %end
 #------------------------------------------------------------------------------
