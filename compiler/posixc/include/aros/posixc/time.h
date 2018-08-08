@@ -39,7 +39,7 @@ __BEGIN_DECLS
 
 /* NOTIMPL int clock_getcpuclockid(pid_t, clockid_t *); */
 /* NOTIMPL int clock_getres(clockid_t, struct timespec *); */
-/* NOTIMPL int clock_gettime(clockid_t, struct timespec *); */
+int clock_gettime(clockid_t, struct timespec *);
 /* NOTIMPL int clock_nanosleep(clockid_t, int, const struct timespec *, struct timespec *); */
 /* NOTIMPL int clock_settime(clockid_t, const struct timespec *); */
 /* NOTIMPL struct tm *getdate(const char *); */

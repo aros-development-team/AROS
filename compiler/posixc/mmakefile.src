@@ -10,6 +10,7 @@ POSIXC := \
     __posixc_environ \
     __posixc_init \
     __posixc_nixmain \
+    __posixc_timer \
     __stdio \
     __get_default_file \
     __rand48 \
@@ -28,6 +29,7 @@ POSIXC := \
     chmod \
     chown \
     clearerr \
+    clock_gettime \
     close \
     closedir \
     creat \
@@ -229,7 +231,9 @@ POSIXC_COMMON := \
 
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
 USER_CFLAGS += $(NOWARN_FLAGS)
+USER_CPPFLAGS := -D__TIMER_NOLIBBASE__
 USER_LDFLAGS := -noposixc
+
 POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notdir $(POSIXC_COMMON))))
 
 %build_module mmake=compiler-posixc \
