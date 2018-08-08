@@ -13,6 +13,7 @@
 #include <libraries/posixc.h>
 #include <exec/lists.h>
 #include <dos/dos.h>
+#include <devices/timer.h>
 
 #include <limits.h>
 #include <stdint.h>
@@ -33,6 +34,10 @@ struct PosixCIntBase
     /* common */
     APTR internalpool;
     int32_t flags;
+
+    struct Device *timerBase;
+    struct timerequest timerReq;
+    struct MsgPort timerPort;
 
     /* random.c */
     struct random_state *rs;

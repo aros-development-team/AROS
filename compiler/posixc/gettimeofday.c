@@ -1,24 +1,20 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Query the current time and/or timezone.
 */
 
 #include <proto/exec.h>
-#include <proto/dos.h>
 #include <proto/timer.h>
-#include <proto/locale.h>
 #include <exec/types.h>
-#include <devices/timer.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
 
 #include <time.h>
 #include <errno.h>
 
-struct Device *TimerBase;
-static void __init_timerbase(void);
+#include "__posixc_time.h"
 
 /*****************************************************************************
 
@@ -101,8 +97,10 @@ static void __init_timerbase(void);
 
 ******************************************************************************/
 {
+    struct PosixCIntBase *PosixCBase = (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
     if (!TimerBase)
-        __init_timerbase();
+        __init_timerbase(PosixCBase);
 
     if (tv)
     {
@@ -129,50 +127,3 @@ static void __init_timerbase(void);
 
     return 0;
 } /* gettimeofday */
-
-
-static struct timerequest __timereq;
-static struct MsgPort __timeport;
-
-static void __init_timerbase(void)
-{
-    memset( &__timeport, 0, sizeof( __timeport ) );
-    __timeport.mp_Node.ln_Type   = NT_MSGPORT;
-    __timeport.mp_Flags          = PA_IGNORE;
-    __timeport.mp_SigTask        = FindTask(NULL);
-    NEWLIST(&__timeport.mp_MsgList);
-
-    __timereq.tr_node.io_Message.mn_Node.ln_Type    = NT_MESSAGE;
-    __timereq.tr_node.io_Message.mn_Node.ln_Pri     = 0;
-    __timereq.tr_node.io_Message.mn_Node.ln_Name    = NULL;
-    __timereq.tr_node.io_Message.mn_ReplyPort       = &__timeport;
-    __timereq.tr_node.io_Message.mn_Length          = sizeof (__timereq);
-
-    if
-    (
-        OpenDevice
-        (
-            "timer.device",
-            UNIT_VBLANK,
-            (struct IORequest *)&__timereq,
-            0
-        )
-        ==
-        0
-    )
-    {
-        TimerBase = (struct Device *)__timereq.tr_node.io_Device;
-    }
-}
-
-
-static void __exit_timerbase(APTR dummy)
-{
-    if (TimerBase != NULL)
-    {
-        CloseDevice((struct IORequest *)&__timereq);
-        TimerBase = NULL;
-    }
-}
-
-ADD2EXIT(__exit_timerbase, 0);
