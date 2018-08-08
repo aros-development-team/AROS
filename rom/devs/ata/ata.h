@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ata.device main private include file
@@ -123,7 +123,7 @@ struct ata_Bus
    BOOL                    keepEmpty;       /* Whether we should keep empty bus object */
    BOOL                    haveAltIO;
 
-   UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
+   volatile UBYTE          ab_Dev[2];  /* Master/Slave type, see below */
    UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
    BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
    /* for data requests/DMA */
