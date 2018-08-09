@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for oop.library classes. Part of genmodule.
@@ -28,7 +28,6 @@ void writeoopinit(FILE *out, struct classinfo *cl)
     fprintf
     (
         out,
-        "\n"
         "/* Initialisation routines of a OOP class */\n"
         "/* =======================================*/\n"
         "\n"
@@ -47,8 +46,21 @@ void writeoopinit(FILE *out, struct classinfo *cl)
     /* Write defines of methods */
     writefuncdefs(out, NULL, cl->methlist);
 
-    fprintf(out,
+    fprintf
+    (
+        out,
         "\n"
+        "\n"
+        "/*** Library startup and shutdown *******************************************/\n"
+        "static int OOP_%s_Startup(LIBBASETYPEPTR LIBBASE)\n"
+        "{\n"
+        "#ifdef GM_OOPBASE_FIELD\n"
+        "    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);\n"
+        "#endif\n"
+        "    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);\n"
+        "    OOP_Class *cl = NULL;\n"
+        "\n",
+        cl->basename
     );
 
     /* Write variables initialization */
@@ -63,14 +75,8 @@ void writeoopinit(FILE *out, struct classinfo *cl)
             {
                 /* Close the previous declaration */
                 fprintf(out,
-                        "    {NULL, 0}\n"
-                        "};\n"
-                );
-                fprintf(out, "struct OOP_MethodDescr *%s_%s_descr = %s_%s_mdtable;\n",
-                        cl->basename, interface->s,
-                        cl->basename, interface->s
-                );
-                fprintf(out,
+                        "        {NULL, 0}\n"
+                        "    };\n"
                         "#define NUM_%s_%s_METHODS %d\n"
                         "\n",
                         cl->basename, interface->s, methods
@@ -78,7 +84,7 @@ void writeoopinit(FILE *out, struct classinfo *cl)
             }
 
             /* Start new MethodDescr declaration */
-            fprintf(out, "struct OOP_MethodDescr %s_%s_mdtable[] =\n{\n",
+            fprintf(out, "    struct OOP_MethodDescr %s_%s_descr[] =\n    {\n",
                     cl->basename, methlistit->interface->s
             );
             methods = 1;
@@ -87,42 +93,20 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         else
             methods++;
 
-        fprintf(out, "    {(OOP_MethodFunc)%s, %s},\n",
+        fprintf(out, "        {(OOP_MethodFunc)%s, %s},\n",
                 methlistit->internalname, methlistit->method
         );
     }
     if (methods) {
         /* Close the last declaration */
         fprintf(out,
-                "    {NULL, 0}\n"
-                "};\n"
-        );
-        fprintf(out, "struct OOP_MethodDescr *%s_%s_descr = %s_%s_mdtable;\n",
-                cl->basename, interface->s,
-                cl->basename, interface->s
-        );
-        fprintf(out,
+                "        {NULL, 0}\n"
+                "    };\n"
                 "#define NUM_%s_%s_METHODS %d\n"
                 "\n",
                 cl->basename, interface->s, methods
         );
     }
-
-    fprintf
-    (
-        out,
-        "\n"
-        "/*** Library startup and shutdown *******************************************/\n"
-        "static int OOP_%s_Startup(LIBBASETYPEPTR LIBBASE)\n"
-        "{\n"
-        "#ifdef GM_OOPBASE_FIELD\n"
-        "    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);\n"
-        "#endif\n"
-        "    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);\n"
-        "    OOP_Class *cl = NULL;\n"
-        "\n",
-        cl->basename
-    );
 
     /* Write the interface description */
     fprintf(out, "    struct OOP_InterfaceDescr %s_ifdescr[] =\n    {\n", cl->basename);
