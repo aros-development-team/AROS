@@ -173,7 +173,7 @@ void X86_HandleRebootSC()
      * Such situation is rare but can occur in the following situation:
      * 1. Boot task calls SuperState(). Privilege changed, but stack is manually reset
      *    back into our .bss space.
-     * 2. Boot task crashes. Privilege doesn't change this time, RSP is not changed.
+     * 2. Boot task crashes. Privilege doesn't change this time, ESP/RSP is not changed.
      * 3. If we call core_Kick() right now, we are dead (core_Kick() clears .bss).
      */
 #if (__WORDSIZE == 64)
@@ -188,8 +188,10 @@ void X86_HandleRebootSC()
         "cli\n\t"
         "cld\n\t"
         "movl %0, %%esp\n\t"
+        "pushl %3\n\t"
+        "pushl %2\n\t"
         "call *%1\n"
-        ::"r"(0x1000), "r"(core_Kick), "D"(BootMsg), "S"(kernel_cstart));
+        ::"r"(0x1000), "r"(core_Kick), "r"(BootMsg), "r"(kernel_cstart));
 #endif
 }
 
