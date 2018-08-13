@@ -21,6 +21,8 @@
 #define D(x)
 #define DSYSCALL(x)
 
+#define TSS_SELECTOR 0x30
+
 extern struct syscallx86_Handler x86_SCSupervisorHandler;
 
 int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2);
@@ -73,7 +75,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
     /* Restore IDT structure */
     core_SetupIDT(0, idt);
 
-    // Setup the base syscall handler(s) ...
+    // Set up the base syscall handler(s)
     NEWLIST(&data->kb_SysCallHandlers);
     if (!core_SetIDTGate(idt, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL),
                          (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE))
@@ -97,7 +99,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
     asm
     (
 	"ltr %%ax\n\t"
-	::"ax"(0x30)
+	::"ax"(TSS_SELECTOR)
     );
 
     D(bug("[Kernel:i386] %s: System restored\n", __func__));
