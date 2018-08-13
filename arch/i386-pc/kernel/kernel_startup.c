@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386-pc kernel startup code
@@ -121,7 +121,8 @@ void core_Kick(struct TagItem *msg, void *target)
 		 "movb	$-1,%%al      \n\t"      /* CPU side and hardware side. We don't  */
 		 "outb  %%al,$0x21    \n\t"      /* have proper structures in RAM yet.   */
 		 "outb  %%al,$0xa1    \n\t"
-    		 "call *%2\n"::"r"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
+    		 "call *%2\n"
+		 ::"r"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
 }
 
 /*
@@ -237,10 +238,10 @@ void kernel_cstart(const struct TagItem *msg)
     {
         /* Allocate space for GDT */
 	__KernBootPrivate->BOOTGDT = krnAllocBootMemAligned(sizeof(GDT_Table), 128);
-
-        /* Create global descriptor table */
-        krnCopyMem(GDT_Table, __KernBootPrivate->BOOTGDT, sizeof(GDT_Table));
     }
+
+    /* Create global descriptor table */
+    krnCopyMem(GDT_Table, __KernBootPrivate->BOOTGDT, sizeof(GDT_Table));
 
     if (!__KernBootPrivate->TSS)
         __KernBootPrivate->TSS = krnAllocBootMemAligned(sizeof(struct tss), 64);
@@ -248,7 +249,7 @@ void kernel_cstart(const struct TagItem *msg)
     if (!__KernBootPrivate->BOOTIDT)
         __KernBootPrivate->BOOTIDT = krnAllocBootMemAligned(sizeof(apicidt_t) * 256, 256);
 
-    D(bug("[Kernel] BOOT GDT @ 0x%p, LDT @ 0x%p, TSS @ 0x%p\n", __KernBootPrivate->BOOTGDT, __KernBootPrivate->BOOTIDT, __KernBootPrivate->TSS));
+    D(bug("[Kernel] BOOT GDT @ 0x%p, IDT @ 0x%p, TSS @ 0x%p\n", __KernBootPrivate->BOOTGDT, __KernBootPrivate->BOOTIDT, __KernBootPrivate->TSS));
 
     if (!kick_end)
     {
@@ -372,8 +373,8 @@ void kernel_cstart(const struct TagItem *msg)
     /*
      * Now we have working exec.library memory allocator.
      * Move console mirror buffer away from unused memory.
-     * WARNING!!! Do not report anything in the debug log before this is done. Remember that sequental
-     * AllocMem()s return sequental blocks! And right beyond our allocated area there will be MemChunk.
+     * WARNING!!! Do not report anything in the debug log before this is done. Remember that sequential
+     * AllocMem()s return sequential blocks! And right beyond our allocated area there will be MemChunk.
      * Between krnPrepareExecBase() and this AllocMem() upon warm reboot console mirror buffer is set
      * to an old value right above ExecBase. During krnPrepareExecBase() a MemChunk is built there,
      * which can be overwritten by bootconsole, especially if the output scrolls.
