@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: VGAGfx hardware support routines...
+    Desc: VGAGfx hardware support routines
     Lang: English.
 */
 
@@ -19,11 +19,6 @@
 #include "vgagfx_support.h"
 #include "vgagfx_hidd.h"
 #include "vgagfx_bitmap.h"
-
-/****************************************************************************************/
-
-#undef SysBase
-#define SysBase (*(struct ExecBase **)4UL)
 
 /****************************************************************************************/
 
@@ -699,12 +694,14 @@ void vgaEraseArea(struct VGAGfxBitMapData *bmap, struct Box *pbox)
     outw(0x3ce, 0x0003);	/* RFSR = 0 (no shift, no modify)      */
     outw(0x3ce, 0xff08);	/* Bit mask = 0xFF (all bits from CPU) */
 
-    /* Start and end coordinates of our box have to be on byte border */
-    left   = (pbox->x1 & ~7) + 7;     /* Round up left (start) coordinate   */
-    right  = (pbox->x2 & ~7) + 7;     /* Round up right (end) coordinate    */
-    width  = (right - left + 1) >> 3; /* Width of destination box in UBYTEs */
+    /* Start and end coordinates of our box have to be on a byte border,
+       so get X dimensions in bytes */
+    left   = pbox->x1 >> 3;
+    right  = pbox->x2 >> 3;
+    width  = right - left + 1;
+
     height = pbox->y2 - pbox->y1 + 1;
-    dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
+    dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + left;
 
     outw(0x3c4, 0x0F02); /* Enable write to all planes */
 
