@@ -2,7 +2,7 @@
 #define _TIMER_INTERN_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's
@@ -38,6 +38,7 @@ struct TimerBase
     struct Device tb_Device;
 
     struct timeval tb_CurrentTime;	/* system time */
+    struct timeval tb_Elapsed;
     struct timeval tb_lastsystime;
 
     struct MinList tb_Lists[NUM_LISTS];

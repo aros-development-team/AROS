@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CIA timer.device
@@ -185,6 +185,7 @@ AROS_INTH1(ciab_eclock, struct TimerBase *, TimerBase)
 	if (TimerBase->tb_eclock_to_usec >= TimerBase->tb_eclock_rate) {
 		TimerBase->tb_eclock_to_usec -= TimerBase->tb_eclock_rate;
 		TimerBase->tb_CurrentTime.tv_secs++;
+		TimerBase->tb_Elapsed.tv_secs++;
 	}
 
 	return FALSE;	

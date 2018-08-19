@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := timer_init abortio beginio readeclock lowlevel getsystime common_init ticks initcustom
+FILES := timer_init abortio beginio readeclock lowlevel getsystime getuptime common_init ticks initcustom
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/timer \
                  -I$(SRCDIR)/rom/timer
