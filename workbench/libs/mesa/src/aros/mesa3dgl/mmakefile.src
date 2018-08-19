@@ -124,7 +124,8 @@ USER_INCLUDES := \
 NOWARN_FLAGS := $(NOWARN_UNUSED_CONST_VARIABLE) $(NOWARN_STRICT_ALIASING) \
                 $(NOWARN_VOLATILE_REGISTER_VAR)
 GLCOMMON_FLAGS := $(NOWARN_FLAGS) \
-                -ffast-math -DMAPI_MODE_UTIL -DFEATURE_GL=1 \
+                -ffast-math
+USER_CPPFLAGS := -DMAPI_MODE_UTIL -DFEATURE_GL=1 \
                 -DMAPI_ABI_HEADER=\"glapi/glapi_mapi_tmp.h\"
 USER_CFLAGS := $(GLCOMMON_FLAGS)
 USER_CXXFLAGS := -fno-rtti -fno-exceptions $(GLCOMMON_FLAGS)

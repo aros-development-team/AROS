@@ -732,6 +732,10 @@ aros_warnflags_error
 aros_cflags_no_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_notestcoverage
+aros_cflags_testcoverage
+aros_cflags_noprofilearcs
+aros_cflags_profilearcs
 aros_cflags_noomitfp
 aros_cflags_omitfp
 aros_cflags_noipacp
@@ -2763,6 +2767,8 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fipa-cp
 #  -funroll-loops
 #  -fomit-frame-pointer
+#  -fprofile-arcs
+#  -ftest-coverage
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
 $as_echo_n "checking whether ${CC} accepts -fexceptions... " >&6; }
@@ -3160,6 +3166,63 @@ if test "x-$aros_omit_frame_pointer" = "x-yes" ; then
     aros_cflags_omitfp=-fomit-frame-pointer
     aros_cflags_noomitfp=-fno-omit-frame-pointer
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fprofile-arcs" >&5
+$as_echo_n "checking whether ${CC} accepts -fprofile-arcs... " >&6; }
+CFLAGS=-fprofile-arcs
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_profile_arcs="yes"
+else
+  aros_profile_arcs="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_profile_arcs" >&5
+$as_echo "$aros_profile_arcs" >&6; }
+if test "x-$aros_profile_arcs" = "x-yes" ; then
+    aros_cflags_profilearcs=-fprofile-arcs
+    aros_cflags_noprofilearcs=-fno-profile-arcs
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ftest-coverage" >&5
+$as_echo_n "checking whether ${CC} accepts -ftest-coverage... " >&6; }
+CFLAGS=-ftest-coverage
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_test_coverage="yes"
+else
+  aros_test_coverage="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_test_coverage" >&5
+$as_echo "$aros_test_coverage" >&6; }
+if test "x-$aros_test_coverage" = "x-yes" ; then
+    aros_cflags_testcoverage=-ftest-coverage
+    aros_cflags_notestcoverage=-fno-test-coverage
+fi
+
+#
+#
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
 $as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
@@ -5275,6 +5338,12 @@ fi
 #
 # export the feature flags...
 #
+
+
+
+
+
+
 
 
 

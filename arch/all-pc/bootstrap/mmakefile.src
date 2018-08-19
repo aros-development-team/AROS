@@ -23,13 +23,13 @@ USER_OBJS    := $(OBJDIR)/vesa.bin.o
 
 CFLAGS       := $(filter-out -mcmodel=large,$(CFLAGS)) $(USER_CFLAGS)
 
-BD_LINK := $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
+kernel-bootstrap-pc_LINK := $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 
 %build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \
 	files=$(FILES) targetdir=$(EXEDIR) \
 	uselibs="bootstrap bootconsole stdc.static" usestartup=no lto=no
 
-%rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa files=vesa \
+%rule_link_binary mmake=kernel-bootstrap-pc file=$(OBJDIR)/vesa.bin.o name=vesa files=vesa \
 	start=0x1000 ldflags="-m elf_i386"
 
 %compress_file mmake=kernel-bootstrap-pc file=$(EXEDIR)/$(EXENAME)

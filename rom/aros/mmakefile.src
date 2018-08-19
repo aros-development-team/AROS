@@ -21,5 +21,5 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
 #MM
 kernel-aros-create-abi-file :
-	$(MKDIR) $(AROS_PREFS)/Env-Archive
-	$(SED) -n 's/#define AROS_ABI_VERSION_MAJOR// p' < $(SRCDIR)/$(CURDIR)/arosinquirea.c | $(SED) -n 's/^ *//;s/[ */*].*//p' > $(AROS_PREFS)/Env-Archive/ABI
+	@$(MKDIR) $(AROS_PREFS)/Env-Archive
+	@$(SED) -n 's/#define AROS_ABI_VERSION_MAJOR// p' < $(SRCDIR)/$(CURDIR)/arosinquirea.c | $(SED) -n 's/^ *//;s/[ */*].*//p' > $(AROS_PREFS)/Env-Archive/ABI

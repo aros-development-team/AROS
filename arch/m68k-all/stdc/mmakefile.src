@@ -64,8 +64,10 @@ STDC_M68K_FILES += \
 
 #MM- compiler-stdc-m68k : includes-asm_h-m68k
 
+#
+#
+#
 
-#MM- test-clib: test-clib-$(AROS_TARGET_CPU)
 #MM- test-clib-m68k: includes-asm_h-m68k test-clib-m68k-jmptests
 
 USER_AFLAGS := -I$(GENINCDIR) # -DDEBUG_MAGIC=0x40506070 -DDEBUG=1

@@ -18,8 +18,7 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 #MM  test-common : includes workbench-libs-version linklibs
 
 %build_progs mmake=test-common \
-    files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
-    uselibs="coolimagesstatic hiddstubs"
+    files=$(COMMONTESTFILES) targetdir=$(EXEDIR)
 
 %copy_files_q mmake=test-miscfiles files="testscript" dst=$(EXEDIR)
 

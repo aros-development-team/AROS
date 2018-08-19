@@ -68,9 +68,11 @@ FILES_NIXC := \
 
 EXEDIR := $(AROS_TESTS)/clib
 
-#MM- test-clib : test-clib-general test-clib-print
+#MM- test-clib : test-clib-$(AROS_TARGET_CPU)
+#MM- test-clib : test-clib-general test-clib-print test-clib-nix
 #MM test-clib-general : includes includes-copy linklibs kernel
 #MM test-clib-print : includes includes-copy linklibs kernel
+#MM test-clib-nix : includes includes-copy linklibs kernel
 
 USER_CFLAGS = -ffloat-store
 %build_progs mmake=test-clib-general \
@@ -84,6 +86,6 @@ USER_CFLAGS = -ffloat-store $(NOWARN_CFLAGS)
 
 # From here on compile with -nix flag
 
-%build_progs mmake=test-clib \
-    files=$(FILES_NIXC) targetdir=$(EXEDIR) nix=yes
+%build_progs mmake=test-clib-nix \
+    files=$(FILES_NIXC) targetdir=$(EXEDIR) nix=yes coverageinstr=no
 

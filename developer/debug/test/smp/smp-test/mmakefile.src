@@ -3,14 +3,13 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES	:= main master worker
+FILES	:= smpt_main master worker
 EXEDIR := $(AROS_TESTS)/smp
 
 #MM- test-smp : test-smp-smp
 #MM- test-smp-quick : test-smp-smp-quick
 
 USER_CFLAGS := $(PARANOIA_CFLAGS)
-USER_LDFLAGS := -static
 
 %build_prog mmake=test-smp-smp \
     files=$(FILES) targetdir=$(EXEDIR) \

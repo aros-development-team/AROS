@@ -1,4 +1,4 @@
-# Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2018, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -89,15 +89,18 @@ USER_LDFLAGS    := -static
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
+#MM workbench-c : workbench-c-$(AROS_TARGET_CPU)
+#MM workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
+
 #MM workbench-c : includes kernel-task-includes linklibs workbench-c-adddatatypes workbench-c-sh workbench-c-requeststring workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-adddatatypes-quick workbench-c-sh-quick workbench-c-requeststring-quick
 
 %build_prog mmake=workbench-c-requeststring progname=RequestString \
-    files=RequestString targetdir=$(AROS_C)
+    files=RequestString targetdir=$(AROS_C) coverageinstr=no
 
 %build_progs mmake=workbench-c \
     files="$(FILES) $(BLFILES)" targetdir=$(AROS_C) \
-    uselibs="uuid debug"
+    uselibs="uuid debug" coverageinstr=no
 
 %build_progs mmake=workbench-c-sh \
     files=$(SH_FILES) targetdir=$(AROS_C) \
@@ -108,7 +111,7 @@ ifneq ($(AROS_TARGET_CPU),m68k)
 endif
 
 %build_prog mmake=workbench-c-adddatatypes progname=AddDataTypes \
-    files="$(DTFILE)" targetdir=$(AROS_C)
+    files="$(DTFILE)" targetdir=$(AROS_C) coverageinstr=no
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...

@@ -66,6 +66,8 @@ DEBUG_LDFLAGS           := @aros_debug_ldflags@
 OPTIMIZATION_CFLAGS     := @aros_optimization_cflags@
 ISA_FLAGS               := @aros_isa_flags@
 
+COVERAGEINSTR_FLAGS     = $(CFLAGS_PROFILE_ARCS) $(CFLAGS_TEST_COVERAGE)
+
 NOSTDINC_CFLAGS         := @aros_target_nostdinc_cflags@
 KERNEL_IQUOTE           := @kernel_cflags_iquote@
 KERNEL_IQUOTE_END       := @kernel_cflags_iquote_end@

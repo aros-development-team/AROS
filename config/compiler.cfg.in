@@ -42,6 +42,13 @@ CFLAGS_NO_IPA_CP                        := @aros_cflags_noipacp@
 CFLAGS_OMIT_FP                          := @aros_cflags_omitfp@
 CFLAGS_NO_OMIT_FP                       := @aros_cflags_noomitfp@
 
+# GCOV flags
+CFLAGS_PROFILE_ARCS                     := @aros_cflags_profilearcs@
+CFLAGS_NO_PROFILE_ARCS                  := @aros_cflags_noprofilearcs@
+
+CFLAGS_TEST_COVERAGE                    := @aros_cflags_testcoverage@
+CFLAGS_NO_TEST_COVERAGE                 := @aros_cflags_notestcoverage@
+
 #
 # -iquote support
 #

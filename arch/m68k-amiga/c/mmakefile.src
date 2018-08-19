@@ -1,4 +1,4 @@
-# Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2018, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -6,9 +6,6 @@ include $(SRCDIR)/config/aros.cfg
 USER_CPPFLAGS := -I$(GENINCDIR) -I$(SRCDIR) -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_CFLAGS := -fno-delete-null-pointer-checks
 USER_AFLAGS := -Os -march=68060
-
-#MM- workbench-c : workbench-c-$(AROS_TARGET_CPU)
-#MM- workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
 
 #MM- workbench-c-m68k : includes \
 #MM                     kernel-kernel-includes \
@@ -27,11 +24,12 @@ USER_AFLAGS := -Os -march=68060
 #MM                          workbench-c-m68k-mmudump-quick \
 #MM                          workbench-c-m68k-setpatch-quick
 
-#MM workbench-c-m68k-gdbstub : linklibs-loadseg
+#MM workbench-c-m68k-gdbstub : linklibs-romhack
 
 #MM workbench-c-m68k-arosbootstrap : linklibs-loadseg
 
 #MM workbench-c-m68k-setpatcharos : linklibs-loadseg
+#MM workbench-c-m68k-setpatch : kernel-setpatch-includes kernel-setpatch-linklib
 
 USER_LDFLAGS := -static
 
@@ -39,7 +37,7 @@ FILES := gdbstub
 
 %build_progs mmake=workbench-c-m68k-gdbstub \
     files=$(FILES) targetdir=$(AROS_C) \
-    detach=yes uselibs=romhack
+    detach=yes uselibs=romhack coverageinstr=no
 
 FILES := gdbstop
 
@@ -54,7 +52,7 @@ USER_LDFLAGS  := -L$(GENDIR)/lib -static
 
 %build_prog mmake=workbench-c-m68k-setpatcharos progname=SetPatchAROS \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROSARCHDIR) \
-    uselibs="loadseg"
+    uselibs="loadseg" coverageinstr=no
 
 CFILES	      := AROSBootstrap
 
