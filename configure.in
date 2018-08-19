@@ -704,6 +704,14 @@ if test "$aros_config_lto" != "no"; then
 fi
 AC_MSG_RESULT($aros_config_lto)
 
+AC_MSG_CHECKING([if we should enable coverage instrumentation])
+AC_ARG_ENABLE(coverage,AC_HELP_STRING([--enable-coverage=[yes|no]],[Enable coverage instrumentation if the target compiler supports it (default=no)]),
+ aros_config_coverage="$enableval",aros_config_coverage="no")
+if test "$aros_config_coverage" != "no"; then
+    aros_config_coverage="yes"
+fi
+AC_MSG_RESULT($aros_config_coverage)
+
 use_ld_wrapper=yes
 
 case "$aros_toolchain" in
@@ -2939,6 +2947,7 @@ AC_SUBST(aros_debug_ldflags)
 AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
 AC_SUBST(aros_config_lto)
+AC_SUBST(aros_config_coverage)
 AC_SUBST(aros_optimization_cflags)
 AC_SUBST(aros_isa_flags)
 

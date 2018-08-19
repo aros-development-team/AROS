@@ -670,6 +670,7 @@ crosstools_cxx_target
 crosstools_target
 aros_isa_flags
 aros_optimization_cflags
+aros_config_coverage
 aros_config_lto
 aros_target_strip_flags
 aros_target_genmap
@@ -911,6 +912,7 @@ with_cxx_compiler
 enable_libpng_config
 with_toolchain
 enable_lto
+enable_coverage
 enable_build_type
 enable_debug
 enable_distcc
@@ -1591,6 +1593,9 @@ Optional Features:
 --disable-libpng-config    disable libpng-config test and configuration
   --enable-lto=yes|no     Enable link time optimizations if the target
                           compiler supports them (default=no)
+  --enable-coverage=yes|no
+                          Enable coverage instrumentation if the target
+                          compiler supports it (default=no)
   --enable-build-type=TYPE
                           Select the build type. Available types are:
                           personal, nightly, snapshot, milestone, release. Do
@@ -7572,6 +7577,21 @@ if test "$aros_config_lto" != "no"; then
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_config_lto" >&5
 $as_echo "$aros_config_lto" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if we should enable coverage instrumentation" >&5
+$as_echo_n "checking if we should enable coverage instrumentation... " >&6; }
+# Check whether --enable-coverage was given.
+if test "${enable_coverage+set}" = set; then :
+  enableval=$enable_coverage; aros_config_coverage="$enableval"
+else
+  aros_config_coverage="no"
+fi
+
+if test "$aros_config_coverage" != "no"; then
+    aros_config_coverage="yes"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_config_coverage" >&5
+$as_echo "$aros_config_coverage" >&6; }
 
 use_ld_wrapper=yes
 
@@ -14939,6 +14959,7 @@ fi
 
 
 # Target Related
+
 
 
 
