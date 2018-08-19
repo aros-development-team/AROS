@@ -9,6 +9,6 @@ USER_LDFLAGS := -static
 %build_prog mmake=workbench-devs-networks-rhine \
     progname="rhine.device" \
     files="startup aros_device device request unit pci timer" \
-    targetdir="$(AROSDIR)/Devs/Networks"
+    targetdir="$(AROSDIR)/Devs/Networks" coverageinstr=no
 
 %common

@@ -1,4 +1,4 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2018, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -12,6 +12,6 @@ USER_LDFLAGS := -static
 
 %build_prog mmake=workbench-c-partition \
     progname=Partition targetdir=$(AROS_C) \
-    files=$(FILES)
+    files=$(FILES) coverageinstr=no
 
 %common

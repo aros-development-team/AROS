@@ -11,7 +11,7 @@ USER_LDFLAGS := -static
 %build_prog mmake=workbench-devs-networks-rtl8029 \
     progname=prm-rtl8029.device \
     files="header driver" \
-    targetdir=$(AROSDIR)/Devs/Networks
+    targetdir=$(AROSDIR)/Devs/Networks coverageinstr=no
 
 %common
 

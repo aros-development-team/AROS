@@ -117,7 +117,13 @@ LIBNURBS_SOURCES = \
             libnurbs/nurbtess/sampleMonoPoly \
             libnurbs/nurbtess/searchTree
 
-LIBRARY_SOURCES = \
+EMUL_C_SOURCES := \
+    emul_stdc
+
+EMUL_CXX_SOURCES := \
+    emul_stdc++
+
+LIBRARY_SOURCES := \
             $(addprefix $(top_srcdir)/src/, $(LIBUTIL_SOURCES)) \
             $(addprefix $(top_srcdir)/src/, $(LIBTESS_SOURCES)) \
             $(EMUL_C_SOURCES)
@@ -135,14 +141,6 @@ USER_CXXFLAGS := $(GLU_COMMONFLAGS) -fno-rtti $(NOWARN_FLAGS)
 
 CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
-
-EMUL_C_SOURCES = \
-    emul_stdc
-
-EMUL_CXX_SOURCES := \
-    emul_stdc++
-
-#MM- core-linklibs : linklibs-glu
 
 %fetch mmake=workbench-libs-glu-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/glu \
     location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.bz2" \

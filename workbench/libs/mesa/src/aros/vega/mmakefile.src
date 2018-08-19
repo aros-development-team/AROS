@@ -60,24 +60,22 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
             -I$(SRCDIR)/$(CURDIR)/../.. \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega \
-            -I$(GENDIR)/$(CURDIR) \
+            -I$(GENDIR)/$(CURDIR)/vega \
 
 NOWARN_FLAGS := $(NOWARN_STRICT_ALIASING)
-USER_CFLAGS := $(NOWARN_FLAGS) \
-        -ffast-math -DMAPI_ABI_HEADER=\"vgapi_tmp.h\" -DVEGA_VERSION_STRING=\"\"
+USER_CFLAGS := $(NOWARN_FLAGS) -ffast-math
+USER_CPPFLAGS := -DMAPI_ABI_HEADER=\"vgapi_tmp.h\" -DVEGA_VERSION_STRING=\"\"
 
 #MM
-workbench-libs-vega-generated : $(GENDIR)/$(CURDIR)/api_tmp.h $(GENDIR)/$(CURDIR)/vgapi_tmp.h
+workbench-libs-vega-generated : $(GENDIR)/$(CURDIR)/vega/api_tmp.h $(GENDIR)/$(CURDIR)/vega/vgapi_tmp.h
 
-$(GENDIR)/$(CURDIR)/api_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
-	@$(MKDIR) $(GENDIR)/$(CURDIR)
+$(GENDIR)/$(CURDIR)/vega/api_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
+	@$(MKDIR) $(GENDIR)/$(CURDIR)/vega
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py $< --printer vgapi --mode app > $@
 
-$(GENDIR)/$(CURDIR)/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
-	@$(MKDIR) $(GENDIR)/$(CURDIR)
+$(GENDIR)/$(CURDIR)/vega/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
+	@$(MKDIR) $(GENDIR)/$(CURDIR)/vega
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py $< --printer vgapi --mode lib > $@
-
-#MM- core-linklibs : linklibs-vega
 
 %build_module mmake=workbench-libs-vega \
     modname=vega modtype=library linklibname=OpenVG \

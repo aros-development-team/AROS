@@ -1,4 +1,4 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2018, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -6,8 +6,6 @@ FILES	:= main
 
 #MM- workbench-c : workbench-c-identify
 #MM workbench-c-identify : includes linklibs
-
-USER_LDFLAGS := -nostdc
 
 %build_prog mmake=workbench-c-identify \
     progname=Identify targetdir=$(AROS_C) \

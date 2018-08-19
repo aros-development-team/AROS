@@ -54,7 +54,7 @@ FILES := $(IGMA_HIDD_SOURCES) intelgma_winsys 3D_blitter \
 EXEDIR := $(AROSDIR)/Devs/Monitors
 
 #MM- workbench-devs-monitors: devs-monitors-intelgma
-#MM devs-monitors-intelgma : hidd-i2c hidd-gallium
+#MM devs-monitors-intelgma : hidd-i2c hidd-gallium linklibs-galliumauxiliary
 
 %build_prog mmake=devs-monitors-intelgma \
            progname=IntelGMA targetdir=$(EXEDIR) \

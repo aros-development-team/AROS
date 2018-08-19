@@ -49,6 +49,8 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fipa-cp
 #  -funroll-loops
 #  -fomit-frame-pointer
+#  -fprofile-arcs
+#  -ftest-coverage
 
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
 CFLAGS=-fexceptions
@@ -175,6 +177,27 @@ if test "x-$aros_omit_frame_pointer" = "x-yes" ; then
     aros_cflags_omitfp=-fomit-frame-pointer
     aros_cflags_noomitfp=-fno-omit-frame-pointer
 fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fprofile-arcs])
+CFLAGS=-fprofile-arcs
+AC_TRY_COMPILE(,, aros_profile_arcs="yes", aros_profile_arcs="no")
+AC_MSG_RESULT($aros_profile_arcs)
+if test "x-$aros_profile_arcs" = "x-yes" ; then
+    aros_cflags_profilearcs=-fprofile-arcs
+    aros_cflags_noprofilearcs=-fno-profile-arcs
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ftest-coverage])
+CFLAGS=-ftest-coverage
+AC_TRY_COMPILE(,, aros_test_coverage="yes", aros_test_coverage="no")
+AC_MSG_RESULT($aros_test_coverage)
+if test "x-$aros_test_coverage" = "x-yes" ; then
+    aros_cflags_testcoverage=-ftest-coverage
+    aros_cflags_notestcoverage=-fno-test-coverage
+fi
+
+#
+#
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 CFLAGS="-iquote."
@@ -965,6 +988,12 @@ AC_SUBST(aros_cflags_noipacp)
 AC_SUBST(aros_cflags_omitfp)
 AC_SUBST(aros_cflags_noomitfp)
 
+AC_SUBST(aros_cflags_profilearcs)
+AC_SUBST(aros_cflags_noprofilearcs)
+
+AC_SUBST(aros_cflags_testcoverage)
+AC_SUBST(aros_cflags_notestcoverage)
+    
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 

@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 # EGL                                                                          #
 ################################################################################
 
-#MM- workbench-libs-egl : includes workbench-libs-mesa-linklib workbench-libs-vega-linklib \
+#MM workbench-libs-egl : includes workbench-libs-mesa-linklib workbench-libs-vega-linklib \
 #MM     workbench-libs-gallium-linklib
 
 SHARED_LIB_SOURCES = \
@@ -57,15 +57,13 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
             -I$(SRCDIR)/$(CURDIR)/../.. \
 
-USER_CFLAGS :=  -DFEATURE_GL=1 \
+USER_CPPFLAGS :=  -DFEATURE_GL=1 \
                 -DFEATURE_VG=1 \
                 -D_EGL_BUILT_IN_DRIVER_GALLIUM \
                 -D_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_AROS \
                 -D_EGL_OS_AROS=1 \
                 -DHAVE_AROS_BACKEND \
                 -D_EGL_MAIN=_eglBuiltInDriverGALLIUM \
-
-#MM- core-linklibs : linklibs-egl
 
 %build_module mmake=workbench-libs-egl \
     modname=egl modtype=library linklibname=EGL \
