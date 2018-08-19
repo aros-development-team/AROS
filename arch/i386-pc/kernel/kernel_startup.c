@@ -248,6 +248,7 @@ void kernel_cstart(const struct TagItem *msg)
 
     if (!__KernBootPrivate->BOOTIDT)
         __KernBootPrivate->BOOTIDT = krnAllocBootMemAligned(sizeof(apicidt_t) * 256, 256);
+    else memset(__KernBootPrivate->BOOTIDT, 0, sizeof(apicidt_t) * 256);
 
     D(bug("[Kernel] BOOT GDT @ 0x%p, IDT @ 0x%p, TSS @ 0x%p\n", __KernBootPrivate->BOOTGDT, __KernBootPrivate->BOOTIDT, __KernBootPrivate->TSS));
 
