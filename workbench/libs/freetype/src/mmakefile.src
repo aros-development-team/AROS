@@ -57,12 +57,14 @@ SHFILES := \
 USER_INCLUDES := -I. -I$(SRCDIR)/$(CURDIR)/../include $(addprefix -I,$(DIRS))
 
 # Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
-NOWARN_FLAGS := -Wno-error
-USER_CFLAGS += $(NOWARN_FLAGS) -DFT2_BUILD_LIBRARY
+NOWARN_FLAGS := $(NOWARN_ERROR)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -DFT2_BUILD_LIBRARY
 
 #MM- workbench-libs : workbench-libs-freetype-module
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes workbench-libs-freetype-pkgconfig
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
+#MM- workbench-libs-freetype-linklibs : workbench-libs-freetype-linklib workbench-libs-freetype-module-linklib
 
 %build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2.static \
     files=$(FT2FILES) objdir=$(OBJDIR)/static
