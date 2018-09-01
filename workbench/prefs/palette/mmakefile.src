@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES   := main locale paleditor prefs args misc
 EXEDIR  := $(AROSDIR)/Prefs
 
-##MM- workbench-prefs : workbench-prefs-palette
+#MM- workbench-prefs : workbench-prefs-palette
 #MM workbench-prefs-palette : includes linklibs workbench-prefs-palette-catalogs \
 #MM workbench-prefs-palette-icons
 
