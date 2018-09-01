@@ -553,8 +553,7 @@ maketarget (struct Project * prj, char * tname)
     struct MakefileTarget * mftarget;
     struct List deps;
 
-    if (!quiet)
-        printf ("[MMAKE] Building %s.%s\n", prj->node.name, tname);
+
 
     NewList (&deps);
 
@@ -572,10 +571,17 @@ maketarget (struct Project * prj, char * tname)
 
     if (!target)
     {
-        if (!quiet)
+        if ((!strcmp(mm_envtarget, tname)) || (verbose))
             printf ("[MMAKE] Nothing known about target %s in project %s\n", tname, prj->node.name);
+        if (mm_faillogfh)
+        {
+            fputs(tname, mm_faillogfh);
+            fputs("\n", mm_faillogfh);
+        }
         return;
     }
+    else if (!quiet)
+        printf ("[MMAKE] Building %s.%s\n", prj->node.name, tname);
 
     target->updated = 1;
 
@@ -593,8 +599,13 @@ maketarget (struct Project * prj, char * tname)
 
         if (!subtarget)
         {
-            if (!quiet)
-                printf ("[MMAKE] Nothing known about target %s in project %s\n", node->name, prj->node.name);
+            if ((!strcmp(mm_envtarget, node->name)) || (verbose))
+                printf ("[MMAKE] Nothing known about subtarget %s in project %s\n", node->name, prj->node.name);
+            if (mm_faillogfh)
+            {
+                fputs(node->name, mm_faillogfh);
+                fputs("\n", mm_faillogfh);
+            }
         }
         else if (!subtarget->updated)
         {
