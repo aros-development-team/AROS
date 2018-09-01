@@ -77,9 +77,12 @@ int mflagc;
 int verbose = 0;
 int quiet = 0;
 int debug = 0;
+int logfailed = 0;
+FILE *mm_faillogfh = NULL;
 
 char *mm_srcdir;    /* Location to scan for cfg files */
 char *mm_builddir;  /* Location to generate files/build in */
+char *mm_envtarget;
 
 /* Functions */
 void
@@ -103,6 +106,7 @@ main (int argc, char ** argv)
     int t;
     char * targets[64];
     int targetc;
+    int doenv = 0;
 
     currdir = getcwd (NULL, 1024);
 
@@ -140,6 +144,10 @@ main (int argc, char ** argv)
 	    else if (!strcmp (argv[t], "--debug"))
 	    {
 		debug = 1;
+	    }
+            else if (!strcmp (argv[t], "--logfailed"))
+	    {
+		logfailed = 1;
 	    }
 	    else if (!strcmp (argv[t], "--help"))
 	    {
@@ -185,6 +193,13 @@ main (int argc, char ** argv)
 	debug(printf("MMAKE:mmake.c->main: targetc not set, using default'%s'\n", firstprj->node.name));
     }
 
+    mm_envtarget = getenv("_MMAKE_TARGETS");
+    if (!mm_envtarget)
+        doenv = 1;
+
+    if (logfailed)
+        mm_faillogfh = fopen ("mmake.failed", "w");
+
     for (t=0; t<targetc; t++)
     {
 	char * pname, * tname, * ptr;
@@ -204,10 +219,22 @@ main (int argc, char ** argv)
 	    printf ("[MMAKE] Nothing known about project %s\n", pname);
 	    return 20;
 	}
-
+        
+        if (doenv)
+        {
+            setenv("_MMAKE_TARGET", tname, 1);
+            mm_envtarget = tname;
+        }
+        
 	debug(printf("MMAKE:mmake.c->main: calling maketarget '%s'\n", tname));
 	maketarget (prj, tname);
+
+        if (doenv)
+            unsetenv("_MMAKE_TARGET");
     }
+
+    if (mm_faillogfh)
+        fclose (mm_faillogfh);
 
     expungeprojects ();
 
