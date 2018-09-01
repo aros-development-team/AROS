@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,6 +25,8 @@
 
 #include "prefs.h"
 #include "misc.h"
+
+//#define DELETEONERROR
 
 /*********************************************************************************************/
 
@@ -151,7 +153,9 @@ BOOL Prefs_ExportFH(BPTR fh)
     struct PalettePrefs saveprefs;
     struct IFFHandle   *iff;
     BOOL                retval = FALSE;
+#if defined(DELETEONERROR)
     BOOL                delete_if_error = FALSE;
+#endif
     LONG                i;
 
     CopyMem(paletteprefs.pap_Reserved, saveprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
@@ -172,7 +176,9 @@ BOOL Prefs_ExportFH(BPTR fh)
         iff->iff_Stream = (IPTR) fh;
         D(bug("Prefs_ExportFH: stream opened.\n"));
 
+#if defined(DELETEONERROR)
         delete_if_error = TRUE;
+#endif
 
         InitIFFasDOS(iff);
 
@@ -230,12 +236,12 @@ BOOL Prefs_ExportFH(BPTR fh)
 
     } /* if ((iff = AllocIFF())) */
 
-    #if 0
+#if defined(DELETEONERROR)
     if (!retval && delete_if_error)
     {
         DeleteFile(filename);
     }
-    #endif
+#endif
 
     return retval;
 }
