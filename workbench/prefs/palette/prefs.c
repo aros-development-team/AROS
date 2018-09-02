@@ -8,20 +8,19 @@
 
 /*********************************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include <aros/macros.h>
-
-/* #define DEBUG 1 */
 #include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/iffparse.h>
 #include <proto/dos.h>
 
+#include <aros/macros.h>
 #include <prefs/prefhdr.h>
+#include <datatypes/pictureclass.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "prefs.h"
 #include "misc.h"
@@ -35,12 +34,14 @@
 
 /*********************************************************************************************/
 
-STATIC UWORD defaultpen[32] =
+#define MAXPENS       8
+
+STATIC UWORD defaultpen[MAXPENS * 4] =
 {
     0, 1, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1, 65535
 };
 
-STATIC struct ColorSpec defaultcolor[32] =
+STATIC struct ColorSpec defaultcolor[MAXPENS * 4] =
 {
     {0, 43690,  43690,  43690   },
     {1, 0,      0,      0       },
@@ -85,7 +86,6 @@ static BOOL Prefs_Load(STRPTR from)
 
 BOOL Prefs_ImportFH(BPTR fh)
 {
-    struct PalettePrefs loadprefs;
     struct IFFHandle   *iff;
     BOOL                retval = FALSE;
     LONG                i;
@@ -102,7 +102,8 @@ BOOL Prefs_ImportFH(BPTR fh)
 
             if (!StopChunk(iff, ID_PREF, ID_PALT))
             {
-                D(bug("Prefs_ImportFH: StopChunk okay.\n"));
+                struct PalettePrefs loadprefs;
+                D(bug("Prefs_ImportFH: ID_PREF->ID_PALT\n"));
 
                 if (!ParseIFF(iff, IFFPARSE_SCAN))
                 {
@@ -120,24 +121,55 @@ BOOL Prefs_ImportFH(BPTR fh)
                         {
                             D(bug("Prefs_ImportFH: Reading chunk successful.\n"));
 
+#if (AROS_BIG_ENDIAN == 0)
                             CopyMem(loadprefs.pap_Reserved, paletteprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
                             for (i = 0; i < 32; i++)
                             {
                                 paletteprefs.pap_4ColorPens[i] = AROS_BE2WORD(loadprefs.pap_4ColorPens[i]);
-                                paletteprefs.pap_8ColorPens[i] = AROS_BE2WORD(loadprefs.pap_8ColorPens[i]);
-                                paletteprefs.pap_Colors[i].ColorIndex = AROS_BE2WORD(loadprefs.pap_Colors[i].ColorIndex);
-                                paletteprefs.pap_Colors[i].Red = AROS_BE2WORD(loadprefs.pap_Colors[i].Red);
-                                paletteprefs.pap_Colors[i].Green = AROS_BE2WORD(loadprefs.pap_Colors[i].Green);
-                                paletteprefs.pap_Colors[i].Blue = AROS_BE2WORD(loadprefs.pap_Colors[i].Blue);
-                            }
 
+                                paletteprefs.pap_8ColorPens[i] = AROS_BE2WORD(loadprefs.pap_8ColorPens[i]);
+
+                                paletteprefs.pap_Colors[i].ColorIndex   = AROS_BE2WORD(loadprefs.pap_Colors[i].ColorIndex);
+                                paletteprefs.pap_Colors[i].Red          = AROS_BE2WORD(loadprefs.pap_Colors[i].Red);
+                                paletteprefs.pap_Colors[i].Green        = AROS_BE2WORD(loadprefs.pap_Colors[i].Green);
+                                paletteprefs.pap_Colors[i].Blue         = AROS_BE2WORD(loadprefs.pap_Colors[i].Blue);
+                            }
+#else
+                            CopyMem(loadprefs, paletteprefs, sizeof(paletteprefs));
+#endif
+                            for (i = 0; i < MAXPENS; i++)
+                            {
+                                if (paletteprefs.pap_8ColorPens[i] >= PEN_C3)
+                                    paletteprefs.pap_8ColorPens[i] -= (PEN_C3 - 4);
+                            }
                             D(bug("Prefs_ImportFH: Everything okay :-)\n"));
 
                             retval = TRUE;
                         }
                     }
                 } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
-            } /* if (!StopChunk(iff, ID_PREF, ID_SERL)) */
+            }
+            else if (!StopChunk(iff, ID_ILBM, ID_CMAP))
+            {
+                struct ColorRegister colreg;
+                D(bug("Prefs_ImportFH: ID_ILBM->ID_CMAP\n"));
+
+                for (i = 0; i < MAXPENS; i++)
+                {
+                    if (ReadChunkBytes(iff, &colreg, sizeof(struct ColorRegister)) != sizeof(struct ColorRegister))
+                        break;
+#if (AROS_BIG_ENDIAN == 0)
+                    paletteprefs.pap_Colors[i].Red   = AROS_BE2WORD(colreg.red);
+                    paletteprefs.pap_Colors[i].Green = AROS_BE2WORD(colreg.green);
+                    paletteprefs.pap_Colors[i].Blue  = AROS_BE2WORD(colreg.blue);
+#else
+                    paletteprefs.pap_Colors[i].Red   = (colreg.red << 24) | (colreg.red << 16) | (colreg.red << 8) | colreg.red;
+                    paletteprefs.pap_Colors[i].Green = (colreg.green << 24) | (colreg.green << 16) | (colreg.green << 8) | colreg.green;
+                    paletteprefs.pap_Colors[i].Blue  = (colreg.blue << 24) | (colreg.blue << 16) | (colreg.blue << 8) | colreg.blue;
+#endif
+                }
+            }
+
             CloseIFF(iff);
         } /* if (!OpenIFF(iff, IFFF_READ)) */
         FreeIFF(iff);
@@ -158,16 +190,28 @@ BOOL Prefs_ExportFH(BPTR fh)
 #endif
     LONG                i;
 
+#if (AROS_BIG_ENDIAN == 0)
     CopyMem(paletteprefs.pap_Reserved, saveprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
     for (i = 0; i < 32; i++)
     {
         saveprefs.pap_4ColorPens[i] = AROS_WORD2BE(paletteprefs.pap_4ColorPens[i]);
-        saveprefs.pap_8ColorPens[i] = AROS_WORD2BE(paletteprefs.pap_8ColorPens[i]);
+        if ((i >= MAXPENS) || (paletteprefs.pap_8ColorPens[i] < 4))
+            saveprefs.pap_8ColorPens[i] = AROS_WORD2BE(paletteprefs.pap_8ColorPens[i]);
+        else
+            saveprefs.pap_8ColorPens[i] = AROS_WORD2BE(paletteprefs.pap_8ColorPens[i] + (PEN_C3 - 4));
         saveprefs.pap_Colors[i].ColorIndex = AROS_WORD2BE(paletteprefs.pap_Colors[i].ColorIndex);
         saveprefs.pap_Colors[i].Red = AROS_WORD2BE(paletteprefs.pap_Colors[i].Red);
         saveprefs.pap_Colors[i].Green = AROS_WORD2BE(paletteprefs.pap_Colors[i].Green);
         saveprefs.pap_Colors[i].Blue = AROS_WORD2BE(paletteprefs.pap_Colors[i].Blue);
     }
+#else
+    CopyMem(paletteprefs, saveprefs, sizeof(paletteprefs));
+    for (i = 0; i < MAXPENS; i++)
+    {
+        if (saveprefs.pap_8ColorPens[i] >= 4)
+            saveprefs.pap_8ColorPens[i] += (PEN_C3 - 4);
+    }
+#endif
 
     D(bug("Prefs_ExportFH: fh: %lx\n", fh));
 
