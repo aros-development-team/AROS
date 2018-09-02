@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,7 +42,19 @@ extern struct Library *MUIMasterBase;
 #define ColorWheelBase data->colorwheelbase
 #define IColorWheel data->icolorwheel
 
-static void NotifyGun(Object *obj, struct Coloradjust_DATA *data, LONG gun)
+/* private msg structure's passed to the hook functions */
+struct MUIP_CANotifyMsg
+{
+    STACKED struct Coloradjust_DATA *caData;
+};
+
+struct MUIP_CASliderNotifyMsg
+{
+    STACKED struct Coloradjust_DATA *caData;
+    STACKED ULONG caGun;
+};
+
+static void NotifyGun(Object *obj, struct Coloradjust_DATA *data, ULONG gun)
 {
     static Tag guntotag[3] = {
         MUIA_Coloradjust_Red,
@@ -79,11 +91,11 @@ static void NotifyAll(Object *obj, struct Coloradjust_DATA *data)
     CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR) tags, NULL);
 }
 
-static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
+static void SliderFunc(struct Hook *hook, Object *obj, struct MUIP_CASliderNotifyMsg *msg)
 {
+    struct Coloradjust_DATA *data = msg->caData;
+    ULONG gun = msg->caGun;
     struct ColorWheelRGB cw;
-    struct Coloradjust_DATA *data = *(struct Coloradjust_DATA **)msg;
-    IPTR gun = ((IPTR *) msg)[1];
 
     ULONG red = XGET(data->rslider, MUIA_Numeric_Value);
     ULONG green = XGET(data->gslider, MUIA_Numeric_Value);
@@ -122,9 +134,9 @@ static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
     NotifyGun(obj, data, gun);
 }
 
-static void WheelFunc(struct Hook *hook, Object *obj, APTR msg)
+static void WheelFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *msg)
 {
-    struct Coloradjust_DATA *data = *(struct Coloradjust_DATA **)msg;
+    struct Coloradjust_DATA *data = msg->caData;
     struct ColorWheelHSB hsb;
     struct ColorWheelRGB cw;
 
@@ -159,9 +171,9 @@ static void WheelFunc(struct Hook *hook, Object *obj, APTR msg)
     NotifyAll(obj, data);
 }
 
-static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
+static void GradFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *msg)
 {
-    struct Coloradjust_DATA *data = *(struct Coloradjust_DATA **)msg;
+    struct Coloradjust_DATA *data = msg->caData;
     struct ColorWheelHSB hsb;
     struct ColorWheelRGB cw;
 
@@ -208,58 +220,71 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_Group_Columns, 2,
         MUIA_Group_VertSpacing, 1,
         Child, (IPTR) Label1("Red:"),
-        Child, (IPTR) (rslider =
-            (Object *) (SliderObject, MUIA_Group_Horiz, TRUE,
-                MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End)), Child,
-        (IPTR) Label1("Green:"), Child, (IPTR) (gslider =
-            (Object *) (SliderObject, MUIA_Group_Horiz, TRUE,
-                MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End)), Child,
-        (IPTR) Label1("Blue:"), Child, (IPTR) (bslider =
-            (Object *) (SliderObject, MUIA_Group_Horiz, TRUE,
-                MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End)), Child,
-        (IPTR) VSpace(1), Child, (IPTR) VSpace(1), Child, (IPTR) (colfield =
-            (Object *) (ColorfieldObject, TextFrame, MUIA_Weight, 0, End)),
-        Child, (!colorwheelbase
-            || !gradientsliderbase) ? (IPTR) HVSpace : (IPTR) HGroup,
-        /* FIXME: this looks severely broken if the HVSpace path is taken... */
-        MUIA_Group_HorizSpacing, 2,
-        Child, (IPTR) (wheel = (Object *) BoopsiObject,
-            MUIA_Boopsi_ClassID, (IPTR) "colorwheel.gadget",
-            MUIA_Boopsi_MinWidth, 16,
-            MUIA_Boopsi_MinHeight, 16,
-            MUIA_Boopsi_Remember, WHEEL_Saturation,
-            MUIA_Boopsi_Remember, WHEEL_Hue,
-            MUIA_Boopsi_TagScreen, WHEEL_Screen,
-            WHEEL_Screen, (IPTR) NULL,
-            GA_Left, 0,
-            GA_Top, 0,
-            GA_Width, 0,
-            GA_Height, 0,
-            ICA_TARGET, ICTARGET_IDCMP,
-            MUIA_FillArea, TRUE,
+        Child, (IPTR) (rslider = (Object *)SliderObject,
+            MUIA_Group_Horiz, TRUE,
+            MUIA_Numeric_Min, 0,
+            MUIA_Numeric_Max, 255,
+        End),
+        Child, (IPTR) Label1("Green:"),
+        Child, (IPTR) (gslider = (Object *)SliderObject,
+            MUIA_Group_Horiz, TRUE,
+            MUIA_Numeric_Min, 0,
+            MUIA_Numeric_Max, 255,
+        End),
+        Child, (IPTR) Label1("Blue:"),
+        Child, (IPTR) (bslider = (Object *)SliderObject,
+            MUIA_Group_Horiz, TRUE,
+            MUIA_Numeric_Min, 0,
+            MUIA_Numeric_Max, 255,
+        End),
+        Child, (IPTR) VSpace(1),
+        Child, (IPTR) VSpace(1),
+        Child, (IPTR) (colfield = (Object *) ColorfieldObject, TextFrame, MUIA_Weight, 0, End),
+        Child, (IPTR) (HGroup,
+            MUIA_Group_HorizSpacing, 2,
+            (!colorwheelbase) ? TAG_IGNORE : Child,
+                (IPTR) (wheel = (Object *) BoopsiObject,
+                MUIA_Boopsi_ClassID, (IPTR) "colorwheel.gadget",
+                MUIA_Boopsi_MinWidth, 16,
+                MUIA_Boopsi_MinHeight, 16,
+                MUIA_Boopsi_Remember, WHEEL_Saturation,
+                MUIA_Boopsi_Remember, WHEEL_Hue,
+                MUIA_Boopsi_TagScreen, WHEEL_Screen,
+                WHEEL_Screen, (IPTR) NULL,
+                GA_Left, 0,
+                GA_Top, 0,
+                GA_Width, 0,
+                GA_Height, 0,
+                ICA_TARGET, ICTARGET_IDCMP,
+                MUIA_FillArea, TRUE,
             End),
-        Child, (IPTR) (grad = (Object *) BoopsiObject,
-            MUIA_Boopsi_ClassID, (IPTR) "gradientslider.gadget",
-            MUIA_Boopsi_MinWidth, 16,
-            MUIA_Boopsi_MinHeight, 16,
-            MUIA_Boopsi_MaxWidth, 16,
-            MUIA_Boopsi_Remember, GRAD_CurVal,
-            MUIA_Boopsi_Remember, GRAD_PenArray,
-            MUIA_Boopsi_Remember, GRAD_KnobPixels,
-            GA_Left, 0,
-            GA_Top, 0,
-            GA_Width, 0,
-            GA_Height, 0,
-            GRAD_KnobPixels, 8,
-            PGA_Freedom, LORIENT_VERT,
-            ICA_TARGET, ICTARGET_IDCMP,
-            MUIA_FillArea, TRUE,
-            End), End, TAG_MORE, (IPTR) msg->ops_AttrList);
+            (!gradientsliderbase) ? TAG_IGNORE : Child,
+                (IPTR) (grad = (Object *) BoopsiObject,
+                MUIA_Boopsi_ClassID, (IPTR) "gradientslider.gadget",
+                MUIA_Boopsi_MinWidth, 16,
+                MUIA_Boopsi_MinHeight, 16,
+                MUIA_Boopsi_MaxWidth, 16,
+                MUIA_Boopsi_Remember, GRAD_CurVal,
+                MUIA_Boopsi_Remember, GRAD_PenArray,
+                MUIA_Boopsi_Remember, GRAD_KnobPixels,
+                GA_Left, 0,
+                GA_Top, 0,
+                GA_Width, 0,
+                GA_Height, 0,
+                GRAD_KnobPixels, 8,
+                PGA_Freedom, LORIENT_VERT,
+                ICA_TARGET, ICTARGET_IDCMP,
+                MUIA_FillArea, TRUE,
+            End),
+        End),
+        TAG_MORE, (IPTR) msg->ops_AttrList);
 
     if (!obj)
     {
-        CloseLibrary(gradientsliderbase);
-        CloseLibrary(colorwheelbase);
+        if (gradientsliderbase)
+            CloseLibrary(gradientsliderbase);
+        if (colorwheelbase)
+            CloseLibrary(colorwheelbase);
         return FALSE;
     }
 

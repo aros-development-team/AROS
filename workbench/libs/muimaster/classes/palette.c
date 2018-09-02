@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,6 +33,14 @@
 #define ColorWheelBase data->colorwheelbase
 
 extern struct Library *MUIMasterBase;
+
+/* private msg structure passed to the hook function */
+struct MUIP_PalNotifyMsg
+{
+    STACKED struct MUI_PaletteData *palData;
+    STACKED ULONG palMode;
+    STACKED ULONG palGun;
+};
 
 static LONG display_func(struct Hook *hook, char **array,
     struct MUI_Palette_Entry *entry)
@@ -76,12 +84,11 @@ static void NotifyGun(Object * obj, struct MUI_PaletteData *data, LONG gun)
     CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR) tags, NULL);
 }
 
-static LONG setcolor_func(struct Hook *hook, APTR * obj,
-    STACKULONG * notify)
+static LONG setcolor_func(struct Hook *hook, APTR * obj, struct MUIP_PalNotifyMsg *msg)
 {
-    ULONG mode = *notify++;
-    ULONG gun = *notify++;
-    struct MUI_PaletteData *data = (struct MUI_PaletteData *)*notify++;
+    struct MUI_PaletteData *data = msg->palData;
+    ULONG mode = msg->palMode;
+    ULONG gun = msg->palGun;
 
     LONG entrie = XGET(data->list, MUIA_List_Active);
     if ((entrie < 0) || (entrie >= data->numentries))
@@ -193,17 +200,18 @@ IPTR Palette__OM_NEW(struct IClass * cl, Object * obj, struct opSet * msg)
         data->rgb[2] = data->entries[0].mpe_Blue;
     }
 
-    DoMethod(data->list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, obj,
-        5, MUIM_CallHook, &data->setcolor_hook, 1, 0, data);
+    DoMethod(data->list, MUIM_Notify, MUIA_List_Active,
+        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
+        data, 1, 0);
     DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Red,
-        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook, 2, 0,
-        data);
+        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
+        data, 2, 0);
     DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Green,
-        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook, 2, 1,
-        data);
+        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
+        data, 2, 1);
     DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Blue,
-        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook, 2, 2,
-        data);
+        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
+        data, 2, 2);
     return (IPTR) obj;
 }
 

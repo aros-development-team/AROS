@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -152,7 +152,6 @@ IPTR Scale__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
     struct Scale_DATA *data = INST_DATA(cl, obj);
-    //ULONG val;
 
     DoSuperMethodA(cl, obj, (Msg) msg);
     D(bug("muimaster.library/scale.c: Draw Scale Object "
