@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-BASEICONS := Time Locale Serial Presets Input IControl Font ScreenMode Pointer Printer
+BASEICONS := Time Locale Serial Presets Input IControl Font ScreenMode Palette Pointer Printer
 ADDITIONALICONS := AHI Appearance Boot  \
  ReqTools Wanderer Zune Editor Trackdisk PSI Network Trident \
  OpenURL BoingIconBar

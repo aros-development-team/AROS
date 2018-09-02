@@ -5,26 +5,38 @@ MSG_OK (//)
 Ok
 ;
 MSG_PEN0 (//)
-Pen 0
+Detail Pen
 ;
 MSG_PEN1 (//)
-Pen 1
+Block Pen
 ;
 MSG_PEN2 (//)
-Pen 2
+Text Pen
 ;
 MSG_PEN3 (//)
-Pen 3
+Shine Pen
 ;
 MSG_PEN4 (//)
-Pen 4
+Shadow Pen
 ;
 MSG_PEN5 (//)
-Pen 5
+Fill Pen
 ;
 MSG_PEN6 (//)
-Pen 6
+Fill Text Pen
 ;
 MSG_PEN7 (//)
-Pen 7
+Background Pen
+;
+MSG_PEN8 (//)
+Highlight Text Pen
+;
+MSG_PEN9 (//)
+Bar Detail Pen
+;
+MSG_PEN10 (//)
+Bar Block Pen
+;
+MSG_PEN11 (//)
+Bar Trim Pen
 ;

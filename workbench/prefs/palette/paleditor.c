@@ -1,5 +1,5 @@
 /*
-    Copyright  2010, The AROS Development Team. All rights reserved.
+    Copyright  2010-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -69,19 +69,20 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object *palpe_palette;
 
-pennames[0] = _(MSG_PEN0);
-pennames[1] = _(MSG_PEN1);
-pennames[2] = _(MSG_PEN2);
-pennames[3] = _(MSG_PEN3);
-pennames[4] = _(MSG_PEN4);
-pennames[5] = _(MSG_PEN5);
-pennames[6] = _(MSG_PEN6);
-pennames[7] = _(MSG_PEN7);
+    pennames[0] = _(MSG_PEN0);
+    pennames[1] = _(MSG_PEN1);
+    pennames[2] = _(MSG_PEN2);
+    pennames[3] = _(MSG_PEN3);
+    pennames[4] = _(MSG_PEN4);
+    pennames[5] = _(MSG_PEN5);
+    pennames[6] = _(MSG_PEN6);
+    pennames[7] = _(MSG_PEN7);
+    pennames[8] = NULL;
 
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
-        MUIA_PrefsEditor_Name, _(MSG_WINTITLE),
+        MUIA_PrefsEditor_Name, __(MSG_WINTITLE),
         MUIA_PrefsEditor_Path, (IPTR) "SYS/palette.prefs",
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Palette",
         Child, HGroup,
