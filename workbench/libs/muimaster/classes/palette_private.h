@@ -9,7 +9,6 @@ struct MUI_PaletteData
 {
     const char                  **names;
     struct  MUI_Palette_Entry   *entries;
-    struct IClass               *notifyclass;
     Object                      *list, *coloradjust;
     ULONG                       numentries;
     ULONG                       group;

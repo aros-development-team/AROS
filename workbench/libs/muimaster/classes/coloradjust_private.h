@@ -10,7 +10,6 @@ struct Coloradjust_DATA
 {
     struct Library *colorwheelbase;
     struct Library *gradientsliderbase;
-    struct IClass  *notifyclass;
     struct Hook     sliderhook, wheelhook, gradhook;
     Object         *rslider, *gslider, *bslider, *colfield, *wheel, *grad;       
     ULONG           rgb[3];

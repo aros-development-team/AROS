@@ -72,16 +72,17 @@ static void NotifyGun(Object * obj, struct MUI_PaletteData *data, LONG gun)
     };
 
     struct TagItem tags[] = {
-        {0, 0},
-        {MUIA_Coloradjust_RGB, 0},
-        {TAG_DONE}
+        { MUIA_NoNotify, TRUE},
+        { 0, 0},
+        { MUIA_Coloradjust_RGB, 0},
+        { TAG_DONE}
     };
 
-    tags[0].ti_Tag = guntotag[gun];
-    tags[0].ti_Data = data->rgb[gun];
-    tags[1].ti_Data = (IPTR) data->rgb;
+    tags[1].ti_Tag = guntotag[gun];
+    tags[1].ti_Data = data->rgb[gun];
+    tags[2].ti_Data = (IPTR) data->rgb;
 
-    CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR) tags, NULL);
+    SetAttrsA(obj, tags);
 }
 
 static LONG setcolor_func(struct Hook *hook, APTR * obj, struct MUIP_PalNotifyMsg *msg)
@@ -106,7 +107,7 @@ static LONG setcolor_func(struct Hook *hook, APTR * obj, struct MUIP_PalNotifyMs
             data->rgb[0] = r;
             data->rgb[1] = g;
             data->rgb[2] = b;
-            NotifyGun((Object *) obj, data, gun);
+            NotifyGun(data->coloradjust, data, gun);
         }
     }
     else if (mode == 2)
@@ -136,12 +137,13 @@ IPTR Palette__OM_NEW(struct IClass * cl, Object * obj, struct opSet * msg)
         GroupFrame,
         MUIA_Background, MUII_ButtonBack,
         MUIA_Group_Horiz, TRUE,
-        Child, list = ListviewObject,
-        MUIA_Listview_List, ListObject,
-        End,
-        End,
-        Child, coloradjust = ColoradjustObject,
-        End, TAG_MORE, (IPTR) msg->ops_AttrList);
+        Child, (IPTR)(ListviewObject,
+                MUIA_Listview_List, (IPTR)(list = ListObject,
+            End),
+        End),
+        Child, (coloradjust = ColoradjustObject,
+        End),
+        TAG_MORE, (IPTR) msg->ops_AttrList);
 
     if (obj == NULL)
         return (IPTR) NULL;
@@ -179,8 +181,6 @@ IPTR Palette__OM_NEW(struct IClass * cl, Object * obj, struct opSet * msg)
         }
     }
 
-    data->notifyclass = cl->cl_Super->cl_Super;
-
     if (data->numentries > 0)
     {
         for (i = 0; i < data->numentries; i++)
@@ -200,18 +200,20 @@ IPTR Palette__OM_NEW(struct IClass * cl, Object * obj, struct opSet * msg)
         data->rgb[2] = data->entries[0].mpe_Blue;
     }
 
-    DoMethod(data->list, MUIM_Notify, MUIA_List_Active,
-        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
-        data, 1, 0);
-    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Red,
-        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
-        data, 2, 0);
-    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Green,
-        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
-        data, 2, 1);
-    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Blue,
-        MUIV_EveryTime, obj, 5, MUIM_CallHook, &data->setcolor_hook,
-        data, 2, 2);
+    DoMethod(data->list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+        (IPTR) obj, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+        (IPTR) data, 1, 0);
+
+    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Red, MUIV_EveryTime,
+        (IPTR) obj, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+        (IPTR) data, 2, 0);
+    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Green, MUIV_EveryTime,
+        (IPTR) obj, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+        (IPTR) data, 2, 1);
+    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Blue, MUIV_EveryTime,
+        (IPTR) obj, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+        (IPTR) data, 2, 2);
+
     return (IPTR) obj;
 }
 
