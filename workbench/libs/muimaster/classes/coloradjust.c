@@ -72,7 +72,7 @@ static void NotifyGun(Object *obj, struct Coloradjust_DATA *data, ULONG gun)
     tags[0].ti_Data = data->rgb[gun];
     tags[1].ti_Data = (IPTR) data->rgb;
 
-    CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR) tags, NULL);
+    CoerceMethod(OCLASS(obj), obj, OM_SET, (IPTR) tags, TAG_DONE);
 }
 
 static void NotifyAll(Object *obj, struct Coloradjust_DATA *data)
@@ -88,7 +88,8 @@ static void NotifyAll(Object *obj, struct Coloradjust_DATA *data)
     tags[1].ti_Data = data->rgb[1];
     tags[2].ti_Data = data->rgb[2];
     tags[3].ti_Data = (IPTR) data->rgb;
-    CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR) tags, NULL);
+
+    CoerceMethod(OCLASS(obj), obj, OM_SET, (IPTR) tags, TAG_DONE);
 }
 
 static void SliderFunc(struct Hook *hook, Object *obj, struct MUIP_CASliderNotifyMsg *msg)
@@ -117,7 +118,8 @@ static void SliderFunc(struct Hook *hook, Object *obj, struct MUIP_CASliderNotif
 
         ConvertRGBToHSB(&cw, &hsb);
         nnset(data->wheel, WHEEL_HSB, (IPTR) & hsb);
-        nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
+        if (data->grad)
+            nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
 
         if (data->gradpen != -1)
         {
@@ -126,7 +128,7 @@ static void SliderFunc(struct Hook *hook, Object *obj, struct MUIP_CASliderNotif
 
             SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red,
                 cw.cw_Green, cw.cw_Blue);
-            if (data->truecolor)
+            if ((data->truecolor) && (data->grad))
                 MUI_Redraw(data->grad, MADF_DRAWUPDATE);
         }
     }
@@ -142,9 +144,11 @@ static void WheelFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *m
 
     hsb.cw_Hue = XGET(data->wheel, WHEEL_Hue);
     hsb.cw_Saturation = XGET(data->wheel, WHEEL_Saturation);
-    hsb.cw_Brightness = 0xFFFF - XGET(data->grad, GRAD_CurVal);
-    hsb.cw_Brightness |= (hsb.cw_Brightness << 16);
-
+    if (data->grad)
+    {
+        hsb.cw_Brightness = 0xFFFF - XGET(data->grad, GRAD_CurVal);
+        hsb.cw_Brightness |= (hsb.cw_Brightness << 16);
+    }
     ConvertHSBToRGB(&hsb, &cw);
 
     data->rgb[0] = cw.cw_Red;
@@ -164,7 +168,7 @@ static void WheelFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *m
 
         SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red,
             cw.cw_Green, cw.cw_Blue);
-        if (data->truecolor)
+        if ((data->truecolor) && (data->grad))
             MUI_Redraw(data->grad, MADF_DRAWUPDATE);
     }
 
@@ -177,7 +181,9 @@ static void GradFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *ms
     struct ColorWheelHSB hsb;
     struct ColorWheelRGB cw;
 
-    ULONG bright = XGET(data->grad, GRAD_CurVal);
+    ULONG bright = 0;
+    if (data->grad)
+        bright = XGET(data->grad, GRAD_CurVal);
 
     bright = 0xFFFF - bright;
     bright |= (bright << 16);
@@ -200,7 +206,6 @@ static void GradFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *ms
 
     NotifyAll(obj, data);
 }
-
 
 IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -239,7 +244,10 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         End),
         Child, (IPTR) VSpace(1),
         Child, (IPTR) VSpace(1),
-        Child, (IPTR) (colfield = (Object *) ColorfieldObject, TextFrame, MUIA_Weight, 0, End),
+        Child, (IPTR) (colfield = (Object *) ColorfieldObject,
+            TextFrame,
+            MUIA_Weight, 0,
+        End),
         Child, (IPTR) (HGroup,
             MUIA_Group_HorizSpacing, 2,
             (!colorwheelbase) ? TAG_IGNORE : Child,
@@ -276,6 +284,8 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 ICA_TARGET, ICTARGET_IDCMP,
                 MUIA_FillArea, TRUE,
             End),
+            (!colorwheelbase && !gradientsliderbase) ? Child : TAG_IGNORE,
+                (IPTR)HVSpace,
         End),
         TAG_MORE, (IPTR) msg->ops_AttrList);
 
@@ -295,9 +305,8 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!EXEC_INTERFACE_GET_MAIN(data->icolorwheel, data->colorwheelbase))
     {
         CoerceMethod(cl, obj, OM_DISPOSE);
-        return 0;
+        return (IPTR)NULL;
     }
-    data->notifyclass = cl->cl_Super->cl_Super;
 
     data->sliderhook.h_Entry = HookEntry;
     data->sliderhook.h_SubEntry = (HOOKFUNC) SliderFunc;
@@ -349,7 +358,7 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     nnset(gslider, MUIA_Numeric_Value, data->rgb[1] >> 24);
     nnset(bslider, MUIA_Numeric_Value, data->rgb[2] >> 24);
 
-    if (wheel)
+    if (data->wheel )
     {
         struct ColorWheelRGB cw;
         struct ColorWheelHSB hsb;
@@ -360,12 +369,15 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         ConvertRGBToHSB(&cw, &hsb);
 
-        nnset(wheel, WHEEL_HSB, (IPTR) & hsb);
+        nnset(data->wheel, WHEEL_HSB, (IPTR) & hsb);
         /* just to be sure - colorwheel seems to have some problems */
-        nnset(wheel, WHEEL_Saturation, hsb.cw_Saturation);
-        nnset(wheel, WHEEL_Hue, hsb.cw_Hue);
-        nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
-        nnset(data->grad, GRAD_PenArray, (IPTR) data->gradpenarray);
+        nnset(data->wheel, WHEEL_Saturation, hsb.cw_Saturation);
+        nnset(data->wheel, WHEEL_Hue, hsb.cw_Hue);
+        if (data->grad)
+        {
+            nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
+            nnset(data->grad, GRAD_PenArray, (IPTR) data->gradpenarray);
+        }
     }
 
     DoMethod(rslider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
@@ -378,16 +390,20 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         (IPTR) obj, 4, MUIM_CallHook, (IPTR) & data->sliderhook,
         (IPTR) data, 2);
 
-    if (wheel)
+    if (data->wheel )
     {
-        DoMethod(wheel, MUIM_Notify, WHEEL_Hue, MUIV_EveryTime, (IPTR) obj,
-            3, MUIM_CallHook, (IPTR) & data->wheelhook, (IPTR) data);
-        DoMethod(wheel, MUIM_Notify, WHEEL_Saturation, MUIV_EveryTime,
+        DoMethod(data->wheel , MUIM_Notify, WHEEL_Hue, MUIV_EveryTime,
             (IPTR) obj, 3, MUIM_CallHook, (IPTR) & data->wheelhook,
             (IPTR) data);
-        DoMethod(grad, MUIM_Notify, GRAD_CurVal, MUIV_EveryTime, (IPTR) obj,
-            3, MUIM_CallHook, (IPTR) & data->gradhook, (IPTR) data);
-
+        DoMethod(data->wheel , MUIM_Notify, WHEEL_Saturation, MUIV_EveryTime,
+            (IPTR) obj, 3, MUIM_CallHook, (IPTR) & data->wheelhook,
+            (IPTR) data);
+    }
+    if (data->grad)
+    {
+        DoMethod(data->grad, MUIM_Notify, GRAD_CurVal, MUIV_EveryTime,
+            (IPTR) obj, 3, MUIM_CallHook, (IPTR) & data->gradhook,
+            (IPTR) data);
     }
     return (IPTR) obj;
 }
@@ -480,8 +496,9 @@ IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj,
             nnset(data->wheel, WHEEL_HSB, (IPTR) & hsb);
             nnset(data->wheel, WHEEL_Saturation, hsb.cw_Saturation);
             nnset(data->wheel, WHEEL_Hue, hsb.cw_Hue);
-            nnset(data->grad, GRAD_CurVal,
-                0xFFFF - (hsb.cw_Brightness >> 16));
+            if (data->grad)
+                nnset(data->grad, GRAD_CurVal,
+                    0xFFFF - (hsb.cw_Brightness >> 16));
 
             if ((_flags(obj) & MADF_SETUP) && (data->gradpen != -1))
             {
@@ -490,12 +507,11 @@ IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj,
 
                 SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red,
                     cw.cw_Green, cw.cw_Blue);
-                if (data->truecolor)
+                if ((data->truecolor) && (data->grad))
                 {
                     MUI_Redraw(data->grad, MADF_DRAWOBJECT);
                 }
             }
-
         }
     }
 

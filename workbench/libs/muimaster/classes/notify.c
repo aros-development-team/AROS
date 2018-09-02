@@ -283,10 +283,10 @@ static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
     /* Is the notification already being performed? */
     if (nnode->nn_Active)
     {
-#if DEBUG
         static int counter;
 
-        D(bug("Notifyloop detected! (#%d)\n", counter++));
+        bug("%s: MUI Notification loop detected! (#%d)\n", FindTask(NULL)->tc_Node.ln_Name, counter++);
+#if DEBUG
         D(bug("  Source object: 0x%x", obj));
 
         switch ((IPTR) nnode->nn_DestObj)
