@@ -135,7 +135,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                                 paletteprefs.pap_Colors[i].Blue         = AROS_BE2WORD(loadprefs.pap_Colors[i].Blue);
                             }
 #else
-                            CopyMem(loadprefs, paletteprefs, sizeof(paletteprefs));
+                            CopyMem(&loadprefs, &paletteprefs, sizeof(paletteprefs));
 #endif
                             for (i = 0; i < MAXPENS; i++)
                             {
@@ -205,7 +205,7 @@ BOOL Prefs_ExportFH(BPTR fh)
         saveprefs.pap_Colors[i].Blue = AROS_WORD2BE(paletteprefs.pap_Colors[i].Blue);
     }
 #else
-    CopyMem(paletteprefs, saveprefs, sizeof(paletteprefs));
+    CopyMem(&paletteprefs, &saveprefs, sizeof(paletteprefs));
     for (i = 0; i < MAXPENS; i++)
     {
         if (saveprefs.pap_8ColorPens[i] >= 4)

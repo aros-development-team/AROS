@@ -10,3 +10,51 @@ MSG_OK
 OK
 ; Ok
 ;
+MSG_PEN0
+
+; Kolor Szczegu³u
+;
+MSG_PEN1
+
+; Kolor Bloku
+;
+MSG_PEN2
+
+; Kolor Tekstu
+;
+MSG_PEN3
+
+; Kolor Rozja¶nienia
+;
+MSG_PEN4
+
+; Kolor Cienia
+;
+MSG_PEN5
+
+; Kolor Wype³nienia
+;
+MSG_PEN6
+
+; Kolor Wype³nienia Tekstu
+;
+MSG_PEN7
+
+; Kolor T³a
+;
+MSG_PEN8
+
+; Kolor Pod¶wietlenia Tekstu
+;
+MSG_PEN9
+
+; Kolor Szczegu³u Belki
+;
+MSG_PEN10
+
+; Kolor Wype³nienia Belki
+;
+MSG_PEN11
+
+; Kolor Brzegu Belki
+;
