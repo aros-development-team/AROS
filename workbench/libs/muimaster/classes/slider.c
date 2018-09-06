@@ -1,6 +1,6 @@
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2013, The AROS Development Team.
+    Copyright © 2002-2018, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -424,6 +424,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
+    IPTR result = 0;
     BOOL increase;
 
     if (!msg->imsg)
@@ -476,6 +477,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     DoMethod(obj, increase ?
                         MUIM_Numeric_Increase : MUIM_Numeric_Decrease, 1);
                 }
+                result = MUI_EventHandlerRC_Eat;
             }
         }
         else
@@ -489,6 +491,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     (IPTR) & data->ehn);
                 set(obj, MUIA_Pressed, FALSE);
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
+                result = MUI_EventHandlerRC_Eat;
             }
         }
         break;
@@ -522,18 +525,29 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 {
                     /* Bypass our own set method so that knob position is not
                      * reset */
+                    struct TagItem superSetTags[] =
+                    {
+                        { MUIA_Numeric_Value,   newval  },
+                        { TAG_DONE,             0       }
+                    };
+                    struct opSet superSet =
+                    {
+                        .MethodID = OM_SET,
+                        .ops_AttrList = superSetTags,
+                        .ops_GInfo = NULL
+                    };
                     data->flags &= ~SLIDER_VALIDSTRING;
-                    IPTR tag_list[] = {MUIA_Numeric_Value, newval, TAG_END};
-                    DoSuperMethod(cl, obj, OM_SET, tag_list, NULL);
+                    DoSuperMethodA(cl, obj, (Msg)&superSet);
                 }
                 else
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
+                result = MUI_EventHandlerRC_Eat;
             }
         }
         break;
     }
 
-    return 0;
+    return result;
 }
 
 BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
