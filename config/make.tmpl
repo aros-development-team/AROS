@@ -84,7 +84,9 @@ endif
 	fi
 	@%(strip) $(LINKTARGET)
 	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
-		$(OBJCOPY) --add-gnu-debuglink=$(LINKTARGET).dbg $(LINKTARGET) ; \
+		$(IF) $(TEST) -s $(LINKTARGET).dbg ; then \
+			$(OBJCOPY) --add-gnu-debuglink=$(LINKTARGET).dbg $(LINKTARGET) ; \
+		fi ; \
 	fi
 	@$(IF) [ "%(coverageinstr)" = "yes" ]; then \
 		LINKBASEFILES="$(strip $(notdir $(basename %(from))))" ; \
@@ -124,7 +126,9 @@ endif
 	fi
 	@$(STRIP) $@
 	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
-		$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@; \
+		$(IF) $(TEST) -s $@.dbg ; then \
+			$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@; \
+		fi ; \
 	fi
 %end
 #------------------------------------------------------------------------------
