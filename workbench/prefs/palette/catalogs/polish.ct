@@ -1,4 +1,4 @@
-## version $VER: palette.catalog 1.0 (29.04.2010)
+## version $VER: palette.catalog 2.0 (29.04.2010)
 ## codeset 5
 ## language polski
 ;
@@ -11,50 +11,50 @@ OK
 ; Ok
 ;
 MSG_PEN0
-
-; Kolor Szczegu³u
+Kolor Szczegu³u
+; Detail Pen
 ;
 MSG_PEN1
-
-; Kolor Bloku
+Kolor Bloku
+; Block Pen
 ;
 MSG_PEN2
-
-; Kolor Tekstu
+Kolor Tekstu
+; Text Pen
 ;
 MSG_PEN3
-
-; Kolor Rozja¶nienia
+Kolor Rozja¶nienia
+; Shine Pen
 ;
 MSG_PEN4
-
-; Kolor Cienia
+Kolor Cienia
+; Shadow Pen
 ;
 MSG_PEN5
-
-; Kolor Wype³nienia
+Kolor Wype³nienia
+; Fill Pen
 ;
 MSG_PEN6
-
-; Kolor Wype³nienia Tekstu
+Kolor Wype³nienia Tekstu
+; Fill Text Pen
 ;
 MSG_PEN7
-
-; Kolor T³a
+Kolor T³a
+; Background Pen
 ;
 MSG_PEN8
-
-; Kolor Pod¶wietlenia Tekstu
+Kolor Pod¶wietlenia Tekstu
+; Highlight Text Pen
 ;
 MSG_PEN9
-
-; Kolor Szczegu³u Belki
+Kolor Szczegu³u Belki
+; Bar Detail Pen
 ;
 MSG_PEN10
-
-; Kolor Wype³nienia Belki
+Kolor Wype³nienia Belki
+; Bar Block Pen
 ;
 MSG_PEN11
-
-; Kolor Brzegu Belki
+Kolor Brzegu Belki
+; Bar Trim Pen
 ;
