@@ -57,6 +57,11 @@ AROSDIR	             := $(TARGETDIR)/AROS
 
 # Relative paths for standard directories
 AROS_DIR_BOOT        := boot
+ifeq ($(AROS_TARGET_ARCH),pc)
+AROS_DIR_ARCH        := boot/$(AROS_TARGET_ARCH)
+else
+AROS_DIR_ARCH        := boot/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
+endif
 AROS_DIR_C           := C
 AROS_DIR_CLASSES     := Classes
 AROS_DIR_DATATYPES   := $(AROS_DIR_CLASSES)/Datatypes
@@ -67,15 +72,13 @@ AROS_DIR_FS          := L
 AROS_DIR_LIBRARIES   := Libs
 AROS_DIR_LOCALE      := Locale
 AROS_DIR_S           := S
-AROS_DIR_DEVELOPER := Developer
+AROS_DIR_TOOLS       := Tools
+
+AROS_DIR_DEVELOPER   := Developer
 AROS_DIR_INCLUDE     := include
 AROS_DIR_LIB         := lib
+
 AROS_DIR_CONTRIB     := Extras
-ifeq ($(AROS_TARGET_ARCH),pc)
-AROS_DIR_ARCH        := boot/$(AROS_TARGET_ARCH)
-else
-AROS_DIR_ARCH        := boot/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
-endif
 
 # Absolute paths for standard directories
 AROSARCHDIR          := $(AROSDIR)/$(AROS_DIR_ARCH)
@@ -106,7 +109,7 @@ AROS_SYSTEM          := $(AROSDIR)/System
 AROS_WANDERER        := $(AROS_SYSTEM)/Wanderer
 AROS_THEMES          := $(AROS_PREFS)/Presets/Themes
 AROS_IMAGES          := $(AROS_SYSTEM)/Images
-AROS_TOOLS           := $(AROSDIR)/Tools
+AROS_TOOLS           := $(AROSDIR)/$(AROS_DIR_TOOLS)
 AROS_UTILITIES       := $(AROSDIR)/Utilities
 
 AROS_DEVELOPER       := $(AROSDIR)/$(AROS_DIR_DEVELOPER)
