@@ -1,0 +1,228 @@
+## version $VER: boot.catalog 2.0 (07.09.2018)
+## language polski
+## codeset 5
+;
+MSG_NAME
+Ustawienia startu
+; Boot Preferences
+;
+MSG_DESCRIPTION
+Ustawienia startu
+; Boot preferences
+;
+MSG_GFX
+Grafika
+; Graphics
+;
+MSG_GFX_COMPOSITION
+Uaktywnij kompozycjê
+; Enable composition
+;
+MSG_GFX_TYPE
+Typ:
+; Type:
+;
+MSG_GFX_TYPE_AUTO
+Automatyczny
+; Automatic
+;
+MSG_GFX_TYPE_NATIVE
+Natywny
+; Native
+;
+MSG_GFX_TYPE_VESA
+VESA
+; VESA
+;
+MSG_GFX_TYPE_VGA
+VGA
+; VGA
+;
+MSG_GFX_VESAMODE
+VESA modus
+; VESA Mode
+;
+MSG_GFX_WIDTH
+Szeroko¶æ:
+; Width:
+;
+MSG_GFX_HEIGHT
+Wysoko¶æ:
+; Height:
+;
+MSG_GFX_DEPTH
+G³êboko¶æ barwy:
+; Colour Depth:
+;
+MSG_GFX_DEPTH_TRUE
+Miliony barw
+; True Colour
+;
+MSG_GFX_DEPTH_HIGH
+Tysi±ce barw
+; High Colour
+;
+MSG_GFX_DEPTH_LOW
+256 barw
+; 256 Colours
+;
+MSG_GFX_REFRESH
+Czêstotliwo¶æ powtarzania obrazu:
+; Refresh Rate:
+;
+MSG_GFX_HERTZ
+Hz
+; Hz
+;
+MSG_GFX_DEFAULTREFRESH
+U¿yj domy¶lnej czêstotliwo¶ci 
+; Use Default Refresh Rate
+;
+MSG_GFX_BESTRES
+U¿yj najwy¿szej dostêpnej rozdzielczos¶ci
+; Use Highest Available Resolution
+;
+MSG_ATA
+ATA
+; ATA
+;
+MSG_ATA_BUSES
+Uaktywnij magistrale:
+; Enabled Buses:
+;
+MSG_ATA_BUS_PCI
+PCI
+; PCI
+;
+MSG_ATA_BUS_LEGACY
+Zasadnicze
+; Legacy
+;
+MSG_ATA_BUS_ALL
+Wszystkie
+; All
+;
+MSG_ATA_BUS_NONE
+®adne
+; None
+;
+MSG_ATA_DMA
+Uaktywnij DMA
+; Enable DMA Data Transfers
+;
+MSG_ATA_32BIT
+Uaktywnij 32-bitowy przekaz danych
+; Enable 32-bit Data Transfers
+;
+MSG_ATA_POLL
+U¿yj pollingu do wykrycia koñca hibernacji
+; Use Polling to Detect End of Busy State
+;
+MSG_ATA_MULTI
+Uaktywnij wielosektorowy przekaz danych
+; Enable Multisector Data Transfers
+;
+MSG_ATA_AHCI
+Uaktywnij natywny AHCI
+; Enable Native AHCI
+;
+MSG_DEBUG
+Debugowanie
+; Debugging
+;
+MSG_DEBUG_OUTPUT
+Wyj¶cie:
+; Output:
+;
+MSG_DEBUG_OUTPUT_NONE
+®aden
+; None
+;
+MSG_DEBUG_OUTPUT_MEMORY
+Bufor pamiêci
+; Memory Buffer
+;
+MSG_DEBUG_OUTPUT_SERIAL
+Port szeregowy
+; Serial Port
+;
+MSG_DEBUG_MUNGWALL
+Uaktywnij Mungwall
+; Enable Mungwall
+;
+MSG_DEBUG_USB
+Debug USB
+; Debug USB
+;
+MSG_MISC
+Ró¿ne
+; Miscellaneous
+;
+MSG_USB_ENABLE
+Zapnout USB
+; Enable USB
+;
+MSG_ACPI_ENABLE
+Uaktywnij ACPI
+; Enable ACPI
+;
+MSG_FLOPPY_ENABLE
+Uaktywnij napêd dyskietek
+; Enable Floppy Disk Drive
+;
+MSG_DEVICE
+Urz±dzenie startowe 
+; Boot Device
+;
+MSG_DEVICE_NAME
+Urz±dzenie DOS:
+; DOS Device:
+;
+MSG_DEVICE_DELAY
+Opóznienie startu
+; Boot Delay:
+;
+MSG_DEVICE_SECONDS
+sekundy
+; seconds
+;
+MSG_DEVICE_DEFAULTDELAY
+U¿yj domy¶lnego opóznienia startu
+; Use Default Boot Delay
+;
+MSG_OPTIONS
+Opcje
+;Options
+;
+MSG_MODULES
+Modu³y
+;Modules
+;
+MSG_ACTIVE
+Aktywne
+;Active
+;
+MSG_PATH
+¶cie¿ka
+;Path
+;
+MSG_ADD
+Dodaj
+;Add
+;
+MSG_REMOVE
+Usuñ
+;Remove
+;
+MSG_OK
+OK
+;OK
+;
+MSG_CANCEL
+Poniechaj
+;Cancel
+;
+MSG_BAD_MODULE
+Z³a ¶cie¿ka modu³u "%s"
+;Bad module path "%s"
+;

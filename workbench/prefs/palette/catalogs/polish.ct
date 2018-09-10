@@ -1,9 +1,9 @@
-## version $VER: palette.catalog 2.0 (29.04.2010)
+## version $VER: palette.catalog 2.0 (06.09.2018)
 ## codeset 5
 ## language polski
 ;
 MSG_WINTITLE
-Preferencje - Palette
+Ustawienia palety
 ; Palette Preferences
 ;
 MSG_OK

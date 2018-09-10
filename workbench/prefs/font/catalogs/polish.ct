@@ -1,4 +1,4 @@
-## version $VER: Font.catalog 3.1 (11.6.2017)
+## version $VER: Font.catalog 3.2 (07.09.2018)
 ## language polski
 ## codeset 5
 ;
@@ -12,7 +12,7 @@ Nie mo¿na zaalokowaæ struktury IFF!
 ; Can't allocate IFF handle!
 ;
 MSG_NAME
-Preferencje - Fonts
+Ustawienia czcionki
 ; Font Preferences
 ;
 MSG_OK
@@ -20,7 +20,7 @@ OK
 ; Ok
 ;
 MSG_ICONS
-Ikonki:
+Ikony:
 ; Icons:
 ;
 MSG_SYSTEM
