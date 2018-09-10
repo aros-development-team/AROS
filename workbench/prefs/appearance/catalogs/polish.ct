@@ -1,0 +1,66 @@
+## version $VER: Appearance.catalog 2.0 (06.09.2018)
+## language polski
+## codeset 5
+;
+;
+MSG_WINTITLE
+Ustawienia motywów graficznych
+; Appearance Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_ENABLETHEMES
+Uaktywnij motywy graficzne
+; Enable Theme'ing?
+;
+MSG_PREVIEW
+Podgl±d
+; Preview
+;
+MSG_NOPREVIEW
+-Podgl±d niedostêpny-
+; -Preview Unavailable-
+;
+MSG_SELECTEDTHEME
+Motyw
+; Theme
+;
+MSG_ENABLEZUNEPREFS
+Przej±æ ustawienia Zune?
+; Inherit Zune Configuration?
+;
+MSG_ENABLEWANDPREFS
+Przej±æ ustawienia Wanderera?
+; Inherit Wanderer Configuration?
+;
+MSG_SEC_THEMING
+Motywy
+; Theming
+;
+MSG_SEC_COMPOSITING
+Kompozycja
+; Compositing
+;
+MSG_ENABLE_SCREEN_COMPOSITION
+Uaktywnij kompozycjê ekranu
+; Enable Screen Composition
+;
+MSG_COMPOSITE_BELOW
+Nakladaæ poni¿ej
+; Composite Below
+;
+MSG_COMPOSITE_LEFT
+Nakladaæ po lewej
+; Composite Left
+;
+MSG_COMPOSITE_RIGHT
+Nakladaæ po prawej
+; Composite Right
+;
+MSG_ENABLE_COMPOSITE_WITH_ALPHA
+Uaktywnij kompozycjê z przezroczystosci±
+; Enable Compositing with Alpha
+;
+;
