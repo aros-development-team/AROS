@@ -1,9 +1,9 @@
-## version $VER: screenmode.catalog 1.0 (29.04.2010)
+## version $VER: screenmode.catalog 2.0 (11.09.2018)
 ## codeset 5
 ## language polski
 ;
 MSG_NAME
-Preferencje - ScreenMode
+Ustawienia rozdzielczosci ekranu
 ; ScreenMode Preferences
 ;
 MSG_WIDTH
@@ -37,4 +37,24 @@ Identyfikator
 MSG_DESCRIPTION
 Opis
 ; Description
+;
+MSG_MODE_ATTRIBUTES
+Informace o trybie
+; Mode Attributes
+;
+MSG_VISIBLE_SIZE
+Wielko¶æ widoczna:
+; Visible Size:
+;
+MSG_MINIMUM_SIZE
+Wielko¶æ minimalna:
+; Minimum Size:
+;
+MSG_MAXIMUM_SIZE
+Wielko¶æ maksymalna:
+; Maximum Size:
+;
+MSG_MAXIMUM_COLORS
+Maksymalna g³êbia barw:
+; Maximum Colors:
 ;
