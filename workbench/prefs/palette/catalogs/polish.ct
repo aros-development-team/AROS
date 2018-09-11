@@ -11,50 +11,50 @@ OK
 ; Ok
 ;
 MSG_PEN0
-Kolor szczegó³ów
+Pisak szczegó³ów
 ; Detail Pen
 ;
 MSG_PEN1
-Kolor bloku
+Pisak bloku
 ; Block Pen
 ;
 MSG_PEN2
-Kolor tekstu
+Pisak tekstu
 ; Text Pen
 ;
 MSG_PEN3
-Kolor rozja¶nienia
+Pisak rozja¶nienia
 ; Shine Pen
 ;
 MSG_PEN4
-Kolor cienia
+Pisak cienia
 ; Shadow Pen
 ;
 MSG_PEN5
-Kolor wype³nienia
+Pisak wype³nienia
 ; Fill Pen
 ;
 MSG_PEN6
-Kolor wype³nienia tekstu
+Pisak wype³nienia tekstu
 ; Fill Text Pen
 ;
 MSG_PEN7
-Kolor t³a
+Pisak t³a
 ; Background Pen
 ;
 MSG_PEN8
-Kolor pod¶wietlenia tekstu
+Pisak pod¶wietlenia tekstu
 ; Highlight Text Pen
 ;
 MSG_PEN9
-Kolor szczegó³ów belki
+Pisak szczegó³ów belki
 ; Bar Detail Pen
 ;
 MSG_PEN10
-Kolor wype³nienia belki
+Pisak wype³nienia belki
 ; Bar Block Pen
 ;
 MSG_PEN11
-Kolor obrze¿a belki
+Pisak krawêdzi belki
 ; Bar Trim Pen
 ;

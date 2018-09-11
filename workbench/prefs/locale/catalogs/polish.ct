@@ -31,7 +31,7 @@ Nie mo¿na utworzyæ okna!
 ; Can't create window!
 ;
 MSG_WINTITLE
-Preferencje - Locale 
+Ustawienia lokalizacji 
 ; Locale Preferences
 ;
 MSG_MEN_PROJECT
@@ -71,15 +71,15 @@ Ustawienia
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Twórz ikonki
+I\0Twórz ikony
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-Wczytaj preferencje
+Wczytaj ustawienia
 ; Load Locale Preferences
 ;
 MSG_ASL_SAVE_TITLE
-Zapisz preferencje
+Zapisz ustawienia
 ; Save Locale Preferences
 ;
 MSG_OK
@@ -141,4 +141,8 @@ Domy¶lny zestaw znaków
 MSG_NOT_SPECIFIED
 nieokre¶lony
 ; Not specified
+;
+MSG_GMT_CLOCK
+Sprzêtowy zegar zachowa UTC
+; Hardware clock stores UTC
 ;

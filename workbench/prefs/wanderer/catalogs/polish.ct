@@ -1,9 +1,9 @@
-## version $VER: Wanderer.catalog 2.0 (29.04.2010)
+## version $VER: Wanderer.catalog 3.0 (10.09.2018)
 ## language polski
 ## codeset 5
 ;
 MSG_NAME
-Preferencje - Wanderer
+Ustawienia pulpitu (Wanderer)
 ; Wanderer Prefs
 ;
 MSG_DESCRIPTION
@@ -79,7 +79,7 @@ Tryb wy¶wietlania ikon
 ; Icon listmode
 ;
 MSG_ICONLISTMODE_PLAIN
-wolne
+p³ynne
 ; List icons plainly
 ;
 MSG_ICONLISTMODE_GRID
@@ -87,11 +87,11 @@ uszeregowane
 ; List icons by grid
 ;
 MSG_ICONTEXTMODE
-Tekst pod ikonami
+Tryb pisma etykiet
 ; Icons text drawmode
 ;
 MSG_ICONTEXTMODE_OUTLINE
-z obrysem
+kontur
 ; Outline
 ;
 MSG_ICONTEXTMODE_PLAIN
@@ -99,7 +99,7 @@ zwyk³y
 ; Plain
 ;
 MSG_ICONTEXTMODE_SHADOW
-z cieniem
+cieñ
 ; Drop shadow
 ;
 MSG_ICONTEXTLENGTH
@@ -149,39 +149,39 @@ Odstêpy pionowe:
 ; Y Offset :
 ;
 MSG_ICONLABELFONT
-Czcionka podpisów ikonek...
+Czcionka etykiet ikon...
 ; Icon Label Font...
 ;
 MSG_ICONINFOFONT
-Czcionka informacji ikonek...
+Czcionka informacji ikon...
 ; Icon Info Font...
 ;
 MSG_HORIZSPACINGICON
-Poziomy odstêp miêdzy ikonami
+Poziomy odstêp pomiêdzy ikonami
 ; Horizontal spacing between icons
 ;
 MSG_VERTSPACINGICON
-Pionowy odstêp miêdzy ikonami
+Pionowy odstêp pomiêdzy ikonami
 ; Vertical spacing between icons
 ;
 MSG_PADDINGICONIMAGELABEL
-Odstêpy miêdzy ikonami i podpisami
+Odstêp ikon od etykiet
 ; Padding between Icon Image and Label
 ;
 MSG_HORIZPADDINGLABELTEXT
-Poziomy odstêp miêdzy ramk± ikonki i tekstem
+Poziomy margines etykiety
 ; Horizontal Padding between Label Frame and Text
 ;
 MSG_VERTPADDINGLABELTEXT
-Pionowy odstêp miêdzy ramk± ikonki i tekstem
+Pionowy margines etykiety
 ; Vertical Padding between Label Frame and Text
 ;
 MSG_FRAMEWIDTH
-Szeroko¶æ ramki podpisu
+Szeroko¶æ ramki etykiety
 ; Label Frame Width
 ;
 MSG_FRAMEHEIGHT
-Wysoko¶æ ramki podpisu
+Wysoko¶æ ramki etykiety
 ; Label Frame Height
 ;
 MSG_TILED
@@ -193,7 +193,7 @@ skalowanie
 ; Scaled
 ;
 MSG_FLOATING
-wolne
+p³ynne
 ; Floating
 ;
 MSG_FIXED
@@ -201,23 +201,23 @@ uszeregowane
 ; Fixed
 ;
 MSG_LABELLINELENGTH
-Maksymalna d³ugo¶æ podpisu...
+Maksymalna d³ugo¶æ wiersza etykiety...
 ; Max. Label line length...
 ;
 MSG_USEMULTILINELABELS
-U¿yj podpisów wielolinijkowych
+U¿yj wielu wierszy
 ; Use MultiLine Labels
 ;
 MSG_SHOWFOCUSEDICON
-Pokazuj tylko dla zaznaczonych ikonek
+Tylko dla zaznaczonych ikon
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
-Ilo¶æ wy¶wietlanych linii...
+Ilo¶æ widocznych wierszy...
 ; No. of lines to display...
 ;
 MSG_TILEMODEOPTIONS
-Opcje kafelków...
+Opcje trybu kafelkowego...
 ; Tile Mode Options...
 ;
 MSG_SCALEMODEOPTIONS
@@ -253,7 +253,7 @@ Tytu³ ekranu Wanderera
 ; Wanderer ScreenTitle
 ;
 MSG_ADVANCED
-Zaawansowane
+zaawansowane
 ; Advanced
 ;
 MSG_USE
@@ -263,4 +263,56 @@ _U¿yj
 MSG_CANCEL
 Ponie_chaj
 ; C_ancel
+;
+MSG_LABELSPREFS
+Wygl±d etykiet
+; Labels look and feel
+;
+MSG_ADVANCEDBACKGROUND
+T³o
+; Background
+;
+MSG_ADVANCEDICONS
+Ikony
+; Icons
+;
+MSG_ADVANCEDLABELS
+Etykiety
+; Labels
+;
+MSG_ICONSORTMODE_BYNAME
+alfabetycznie
+; By name
+;
+MSG_ICONSORTMODE_BYDATE
+wed³ug daty
+; By date
+;
+MSG_ICONSORTMODE_BYSIZE
+wed³ug wielko¶ci
+; By size
+;
+MSG_DEFAULT_ICONSORTMODE
+Porz±dek domy¶lny
+; Default sort order
+;
+MSG_ICON_AUTOSORT_ENABLED
+Sortowanie automayczne
+; Autosorting enabled
+;
+MSG_ICON_DRAG_TRANSPARENT
+U¿yj przezroczysto¶ci przeci±gaj±c ikony
+; Use transparency when draging icons
+;
+MSG_DEFAULT_ICONVIEWMODE
+Tryb domy¶lny
+; Default view mode
+;
+MSG_ICONVIEWMODE_ALL
+wszystkie pliki
+; All files
+;
+MSG_ICONVIEWMODE_ICONS
+tylko ikony
+; Icons only
 ;

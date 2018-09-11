@@ -31,7 +31,7 @@ Nie mo¿na utworzyæ okna!
 ; Can't create window!
 ;
 MSG_WINTITLE
-Preferencje - Serial
+Ustawienia portu szeregowego
 ; Serial Preferences
 ;
 MSG_MEN_PROJECT
@@ -55,7 +55,7 @@ Edycja
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Przywróæ ustawienia domy¶lne
+D\0Przywróæ domy¶lne ustawienia 
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -71,15 +71,15 @@ Ustawienia
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Twórz ikonki
+I\0Twórz ikony
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-Wczytaj preferencje
+Wczytaj ustawienia
 ; Load Serial Preferences
 ;
 MSG_ASL_SAVE_TITLE
-Zapisz preferencje
+Zapisz ustawienia
 ; Save Serial Preferences
 ;
 MSG_OK
@@ -115,11 +115,11 @@ Bity danych
 ; Data Bits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Wielko¶æ bufora wej¶ciowego
+Wielko¶æ bufora wej¶cia
 ; Input Buffer Size
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
-Wielko¶æ bufora wyj¶ciowego
+Wielko¶æ bufora wyj¶cia
 ; Output Buffer Size
 ;
 MSG_PARITY_NONE

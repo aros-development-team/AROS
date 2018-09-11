@@ -7,7 +7,7 @@ Trackdisk
 ; Trackdisk
 ;
 MSG_TITLE
-Preferencje - Trackdisk
+Ustawienia stacji dysków
 ; Trackdisk prefs
 ;
 MSG_SAVE
@@ -27,7 +27,7 @@ Edytor preferencji trackdisk.device
 ; trackdisk.device preferences editor
 ;
 MSG_WINDOW_TITLE
-Preferencje - trackdisk.device
+Preferencje stacji dysków
 ; trackdisk.device preferences
 ;
 MSG_DRIVE

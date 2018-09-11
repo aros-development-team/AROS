@@ -1,10 +1,10 @@
-## version $VER: Input.catalog 3.0 (13.6.2017)
+## version $VER: Input.catalog 3.1 (10.09.2018)
 ## language polski
 ## codeset 5
 ;
 ;
 MSG_NAME
-Preferencje - Input
+Ustawienia wej¶æ
 ; Input Preferences
 ;
 MSG_OK
@@ -48,19 +48,19 @@ Typ
 ; Type
 ;
 MSG_GAD_MOUSE_BUTTON_SETTINGS
-
+Przyciski myszy
 ; Mouse buttons
 ;
 MSG_GAD_LEFT_HANDED_MOUSE
-
+Mysz leworêczna
 ; Left-handed mouse
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
-wolna
+powolna
 ; Slow
 ;
 MSG_GAD_MOUSE_SPEED_NORMAL
-normalna
+zwyk³a
 ; Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST
@@ -68,26 +68,26 @@ szybka
 ; Fast
 ;
 MSG_GAD_KEY_DEF  
-
+Domy¶lne
 ; Default
 ;
 MSG_GAD_KEY_ALT
-
+Opcjonalne
 ; Alternate
 ;
 MSG_GAD_KEY_SET
-
+wybierz
 ; Set
 ;
 MSG_GAD_KEY_SWITCH
-
+Prze³±czanie uk³adu
 ; Layout switching
 ;
 MSG_GAD_KEY_SWITCH_ENABLE
-
+Aktywny
 ; Enabled
 ;
 MSG_GAD_KEY_SWITCH_KEY
-
+Klawisz skrótu 
 ; Hotkey
 ;
