@@ -1,70 +1,11 @@
-## version $VER: icontrol.catalog 1.0 (29.04.2010)
+## version $VER: icontrol.catalog 2.0 (11.09.2018)
 ## language polski
 ## codeset 5
 ;
-MSG_CANT_OPEN_LIB
-Nie mo¿na otworzyæ biblioteki %s w wersji %ld!\n
-; Can't open %s V%ld!\n
-;
-MSG_CANT_CREATE_APP
-Nie mo¿na uworzyæ obiektu aplikacji!
-; Can't create application object!
-;
-MSG_CANT_CREATE_CUSTOM_CLASS
-Nie mo¿na uworzyæ klasy okna ustawieñ.
-; Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
-Preferencje -  IControl
+Ustawienia IControl
 ; IControl Preferences
-;
-MSG_MEN_PROJECT
-Projekt
-; Project
-;
-MSG_MEN_PROJECT_OPEN
-O\0Otwórz...
-; O\0Open...
-;
-MSG_MEN_PROJECT_SAVEAS
-A\0Zapisz jako...
-; A\0Save As...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Skoñcz
-; Q\0Quit
-;
-MSG_MEN_EDIT
-Edycja
-; Edit
-;
-MSG_MEN_EDIT_DEFAULT
-D\0Przywróæ ustawienia domy¶lne
-; D\0Reset to Defaults
-;
-MSG_MEN_EDIT_LASTSAVED
-L\0Ostatnio zapisane
-; L\0Last Saved
-;
-MSG_MEN_EDIT_RESTORE
-R\0Przywróæ
-; R\0Restore
-;
-MSG_MEN_SETTINGS
-Ustawienia
-; Settings
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Twórz ikonki
-; I\0Create Icons?
-;
-MSG_ASL_OPEN_TITLE
-Wczytaj ustawienia
-; Load IControl Preferences
-;
-MSG_ASL_SAVE_TITLE
-Zapisz ustawienia
-; Save IControl Preferences
 ;
 MSG_OK
 OK
@@ -111,7 +52,7 @@ Ekrany
 ; Screens
 ;
 MSG_FRONTMOST_DEFAULT
-Ustaw aktywny ekran jako domy¶lny ekran publiczny
+Aktywny ekran jako domy¶lny publiczny
 ; Frontmost set as DefaultPubScreen:
 ;
 MSG_OFFSCREEN_DESC
@@ -120,11 +61,34 @@ widzialny obszar ekranu
 ; Allow windows to be moved out of\nthe visible area
 ;
 MSG_FRONTMOST_DEFAULT_DESC
-Ustawia aktywny ekran\n\
-jako domy¶lny ekran publiczny
+Aktywny ekran jako domy¶lny publiczny
 ; Make the frontmost public screen\nthe default public screen
 ;
-MSG_BACKWARDS_DRAG
-Wy³±cz przeci±ganie w kierunku w górê/w lewo
-; Disable drag in top-left direction
+MSG_BOUND_LEFT_DRAG
+Przeci±ganie w lewo
+; Bound drag in left direction
+;
+MSG_BOUND_RIGHT_DRAG
+Przeci±ganie w prawo
+; Bound drag in right direction
+;
+MSG_BOUND_TOP_DRAG
+Przeci±ganie w górê
+; Bound drag in top direction
+;
+MSG_BOUND_BOTTOM_DRAG
+Przeci±ganie w dó³
+; Bound drag in bottom direction
+;
+MSG_META_DRAG
+Klawisze skrótu przeci±gania
+;Drag keys
+;
+MSG_MENUS_STICKY
+Przypiête
+; Sticky
+;
+MSG_MENUS_TITLEPOPUP
+Rozwijane od belki tytu³owej
+; Pull-Down on Screen Title
 ;
