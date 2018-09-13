@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,7 +18,7 @@ extern struct ReqToolsBase * ReqToolsBase;
 /*****************************************************************************
 
     NAME */
-	ULONG rtReqHandler (
+	IPTR rtReqHandler (
 
 /*  SYNOPSIS */
 	struct rtHandlerInfo *handlerinfo,
