@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -447,8 +447,7 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     tags = msg->ops_AttrList;
     while ((tag = NextTagItem(&tags)))
     {
-        for (node = data->mnd_NotifyList->mlh_Head;
-            node->mln_Succ; node = node->mln_Succ)
+        ForeachNode (data->mnd_NotifyList, node)
         {
             check_notify((NNode) node, obj, tag);
         }
