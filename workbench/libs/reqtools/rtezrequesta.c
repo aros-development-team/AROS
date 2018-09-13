@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -317,14 +317,14 @@
     AROS_LIBFUNC_INIT
 
     return GetString(bodyfmt,
-    		     (IPTR)argarray,
-		     gadfmt,
-		     0,
-		     NULL,
-		     IS_EZREQUEST,
-		     reqinfo,
-		     taglist);
-		     
+             (SIPTR)argarray,
+             gadfmt,
+             0,
+             NULL,
+             IS_EZREQUEST,
+             reqinfo,
+             taglist);
+
     AROS_LIBFUNC_EXIT
 
 } /* rtEZRequestA */

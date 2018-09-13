@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -98,7 +98,7 @@ typedef struct Req_RealHandlerInfo	Req_GlobData;
 
 struct Req_RealHandlerInfo
 {
-    ULONG 			(*func)();        /* private */
+    IPTR 			(*func)();        /* private */
     ULONG 			WaitMask;
     ULONG 			DoNotWait;
 
@@ -137,7 +137,7 @@ static CONST UWORD pattern[] = { 0xAAAA,0x5555 };
 static ULONG REGARGS ReqExit (Req_GlobData *, int);
 static struct Image * REGARGS CreateRectImage
 			(Req_GlobData *, struct Image *, int, int, int, int, int, int);
-static ULONG ASM SAVEDS myReqHandler (REGPARAM(a1, Req_GlobData *,),
+static IPTR ASM SAVEDS myReqHandler (REGPARAM(a1, Req_GlobData *,),
 			    	      REGPARAM(d0, ULONG,),
 				      REGPARAM(a0, struct TagItem *,));
 
@@ -151,7 +151,7 @@ static ULONG ASM SAVEDS myReqHandler (REGPARAM(a1, Req_GlobData *,),
 
 ULONG ASM SAVEDS GetString (
 	REGPARAM(a1, UBYTE *, stringbuff),		/* str in case of rtEZRequestA */
-	REGPARAM(d0, LONG, maxlen),			/* args in case of rtEZRequestA */
+	REGPARAM(d0, SIPTR, maxlen),			/* args in case of rtEZRequestA */
 	REGPARAM(a2, char *, title),			/* gadfmt in case of rtEZRequestA */
 	REGPARAM(d1, ULONG, checksum),
 	REGPARAM(d2, ULONG *, value),
@@ -197,7 +197,7 @@ ULONG ASM SAVEDS GetString (
 
     if (!(glob = AllocVec (sizeof (Req_GlobData), MEMF_PUBLIC | MEMF_CLEAR)))
 	return (FALSE);
-	    
+
     glob->mode = mode;
     glob->checksum = checksum;
     glob->value = value;
@@ -216,7 +216,7 @@ ULONG ASM SAVEDS GetString (
 	if (reqinfo->Width) glob->width = reqinfo->Width;
 	if (reqinfo->ReqTitle) title = reqinfo->ReqTitle;
 	if (reqinfo->ReqPos != REQPOS_DEFAULT) reqpos = reqinfo->ReqPos;
-	
+
 	glob->newreqwin.LeftEdge = reqinfo->LeftOffset;
 	glob->newreqwin.TopEdge = reqinfo->TopOffset;
 	glob->reqflags = reqinfo->Flags;
@@ -225,7 +225,7 @@ ULONG ASM SAVEDS GetString (
 	glob->shareidcmp = reqinfo->ShareIDCMP;
 	glob->imsghook = reqinfo->IntuiMsgFunc;
     }
-	    
+
     /* parse tags */
     tstate = taglist;
     while ((tag = NextTagItem (&tstate)))
@@ -725,7 +725,7 @@ ULONG ASM SAVEDS GetString (
     glob->pubscr = (glob->newreqwin.Type == PUBLICSCREEN);
 
     /* fill in RealHandlerInfo */
-    glob->func = (ULONG (*)())myReqHandler;
+    glob->func = (IPTR (*)())myReqHandler;
     glob->WaitMask = (1 << glob->reqwin->UserPort->mp_SigBit);
     glob->DoNotWait = TRUE;
 
@@ -772,7 +772,7 @@ static struct Image * REGARGS CreateRectImage (Req_GlobData *glob,
 
 /****************************************************************************************/
 
-static ULONG ASM SAVEDS myReqHandler (
+static IPTR ASM SAVEDS myReqHandler (
 	REGPARAM(a1, Req_GlobData *, glob),
 	REGPARAM(d0, ULONG, sigs),
 	REGPARAM(a0, struct TagItem *, taglist))
@@ -836,7 +836,7 @@ static ULONG ASM SAVEDS myReqHandler (
 			    case 'N': case 'R': selgad = glob->nogad; break;
 			}
 		    }
-		    
+
 		    if ( ( glob->fkeys ) &&
 			 !(qual & QUALS_CONSIDERED) &&
 			 (code >= F1_KEY) && (code <= F10_KEY) &&

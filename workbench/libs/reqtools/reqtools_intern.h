@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -40,7 +40,7 @@ int GetVScreenSize (struct Screen *scr, int *width, int *height);
 
 /* req.c */
 
-ULONG GetString (UBYTE *stringbuff, LONG maxlen, char *title,
+ULONG GetString (UBYTE *stringbuff, SIPTR maxlen, char *title,
 		 ULONG checksum, ULONG *value, LONG mode,
 	         struct rtReqInfo *reqinfo, struct TagItem *taglist);
 

@@ -27,7 +27,7 @@ ULONG rtGetStringA (UBYTE *,ULONG,char *,struct rtReqInfo *,struct TagItem *);
 ULONG rtGetLongA (ULONG *, char *, struct rtReqInfo *, struct TagItem *);
 ULONG rtFontRequestA (struct rtFontRequester *, char *, struct TagItem *);
 LONG  rtPaletteRequestA (char *, struct rtReqInfo *, struct TagItem *);
-ULONG rtReqHandlerA (struct rtHandlerInfo *, ULONG, struct TagItem *);
+IPTR rtReqHandlerA (struct rtHandlerInfo *, ULONG, struct TagItem *);
 void  rtSetWaitPointer (struct Window *);
 ULONG rtGetVScreenSize (struct Screen *, ULONG *, ULONG *);
 void  rtSetReqPosition (ULONG, struct NewWindow *,
@@ -56,7 +56,7 @@ ULONG rtGetString (UBYTE *, ULONG, char *, struct rtReqInfo *, Tag,...);
 ULONG rtGetLong (ULONG *, char *, struct rtReqInfo *, Tag,...);
 ULONG rtFontRequest (struct rtFontRequester *, char *, Tag,...);
 LONG  rtPaletteRequest (char *, struct rtReqInfo *, Tag,...);
-ULONG rtReqHandler (struct rtHandlerInfo *, ULONG, Tag,...);
+IPTR rtReqHandler (struct rtHandlerInfo *, ULONG, Tag,...);
 ULONG rtScreenModeRequest (struct rtScreenModeRequester *, char *, Tag,...);
 
 #endif /* CLIB_REQTOOLS_PROTOS_H */

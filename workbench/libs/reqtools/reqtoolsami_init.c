@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AmigaOS specific ReqTools initialization code.
@@ -99,7 +99,7 @@ struct ReqToolsBase * SAVEDS ASM libinit(REGPARAM(d0, struct ReqToolsBase *, RTB
 /****************************************************************************************/
 
 extern ULONG ASM SAVEDS GetString (REGPARAM(a1, UBYTE *, stringbuff),
-				   REGPARAM(d0, LONG, maxlen),
+				   REGPARAM(d0, SIPTR, maxlen),
 				   REGPARAM(a2, char *, title),
 				   REGPARAM(d1, ULONG, checksum),
 				   REGPARAM(d2, ULONG *, value),
@@ -144,7 +144,7 @@ struct MyStackSwapStruct
 /****************************************************************************************/
 
 static ULONG CheckStack_GetString(UBYTE *stringbuff,
-    	    	    	    	  LONG maxlen,
+    	    	    	    	  SIPTR maxlen,
 				  char *title,
 				  ULONG checksum,
 				  ULONG *value,
@@ -226,7 +226,7 @@ ULONG SAVEDS ASM librtEZRequestA(REGPARAM(a1, char *, bodyfmt),
 			         REGPARAM(a0, struct TagItem *, taglist))
 {
     return GETSTRING(bodyfmt,
-    		     (LONG)argarray,
+		     (SIPTR)argarray,
 		     gadfmt,
 		     0,
 		     NULL,
