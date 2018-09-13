@@ -1,12 +1,41 @@
-## version $VER: pointer.catalog 1.0 (29.04.2010)
-## codeset 5
+## version $VER: pointer.catalog 2.0 (13.09.2018)
 ## language polski
+## codeset 5
+;
 ;
 MSG_WINTITLE
-Preferencje - Pointer
+Ustawienia wskaŒnika
 ; Pointer Preferences
 ;
 MSG_OK
 OK
 ; Ok
+;
+MSG_HOTSPOT
+Czu³y punkt
+;  Hotspot
+;
+MSG_ALPHA
+Przezroczysto¶æ
+; Alpha
+;
+MSG_FILENAME
+Nazwa pliku
+; Filename
+;
+MSG_TYPE
+Typ
+; Type
+;
+MSG_TYPE_NORMAL
+Zwyk³y
+; Normal
+;
+MSG_TYPE_BUSY
+Zajêty
+; Busy
+;
+MSG_SETVIEW
+Ustaw / Poka¿
+; Set / View
 ;

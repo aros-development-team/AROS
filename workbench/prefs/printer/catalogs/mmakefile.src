@@ -1,9 +1,9 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2018, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS:=czech french
+CATALOGS:=czech french polish
 
 # The need to update french catalog
 
