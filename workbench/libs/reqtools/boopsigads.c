@@ -68,8 +68,6 @@ extern struct ExecBase 		*SysBase;
 extern struct Device 		*ConsoleDevice;
 
 extern void ShortDelay (void);
-extern APTR STDARGS DofmtArgs (char *, char *,...);
-
 
 #ifndef __AROS__
 extern ULONG ASM myBoopsiDispatch (

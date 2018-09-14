@@ -34,7 +34,7 @@ FUNCS := \
     rtsetwaitpointer \
     rtspread \
     rtunlockprefs \
-    rtunlockwindow 
+    rtunlockwindow
 
 #MM- workbench-libs-reqtools-includes : \
 #MM      kernel-exec-includes \

@@ -115,8 +115,10 @@ void CountNewLinesAndChars(REGPARAM(d0, UBYTE, chr),
 
 /****************************************************************************************/
 
-APTR DofmtArgs (char *buff, char *fmt ,...)
+APTR DofmtArgs (char *buff, char *fmt, ...)
 {
+    APTR retval;
+    char *str = buff;
 #ifdef __AROS__
     va_list ap;
 
@@ -125,13 +127,13 @@ APTR DofmtArgs (char *buff, char *fmt ,...)
      * - we will use VNewRawDoFmt() instead.
      */
     va_start(ap, fmt);
-    VNewRawDoFmt(fmt, (VOID_FUNC)RAWFMTFUNC_STRING, buff, ap);
+    retval = VNewRawDoFmt(fmt, (VOID_FUNC)RAWFMTFUNC_STRING, &str, ap);
     va_end(ap);
 #else
-    RawDoFmt(fmt, &fmt + 1, (VOID_FUNC)puttostr, &str);
+    retval = RawDoFmt(fmt, &fmt + 1, (VOID_FUNC)puttostr, &str);
 #endif
 
-    return NULL;
+    return retval;
 }
 
 /****************************************************************************************/
@@ -176,7 +178,7 @@ IPTR LoopReqHandler(struct rtHandlerInfo *rthi)
 	else
 	    sigs = Wait(rthi->WaitMask);
 
-	handler_retval = (ULONG)rtReqHandlerA(rthi, sigs, NULL);
+	handler_retval = rtReqHandlerA(rthi, sigs, NULL);
 	
     } while (handler_retval == CALL_HANDLER);
     
