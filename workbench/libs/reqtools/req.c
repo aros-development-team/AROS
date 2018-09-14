@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <exec/types.h>
 #include <exec/io.h>
 #include <exec/memory.h>
@@ -72,7 +74,7 @@ extern struct GfxBase *GfxBase;
 
 struct FmtBuff
 {
-    long numlines, bufflen;
+    LONG numlines, bufflen;
 };
 
 #define DOFMT_COUNTNEWLINES		0
@@ -81,15 +83,12 @@ struct FmtBuff
 /****************************************************************************************/
 
 
-extern APTR ASM DofmtCount (ASM_REGPARAM(a0, char *,),
-    	    	    	    ASM_REGPARAM(a1, APTR,),
-			    ASM_REGPARAM(a3, struct FmtBuff *,),
-			    ASM_REGPARAM(d0, int,));
+extern APTR DofmtCount (char *, APTR, ULONG *, int);
 extern APTR STDARGS DofmtArgs (char *, char *,...);
 
 
-extern void ASM FillBarTable (ASM_REGPARAM(a1, char **,), ASM_REGPARAM(a0, char *,));
-extern void ASM FillNewLineTable (ASM_REGPARAM(a1, char **,), ASM_REGPARAM(a0, char *,));
+extern void FillBarTable (char **, char *);
+extern void FillNewLineTable (char **, char *);
 
 /****************************************************************************************/
 
@@ -190,7 +189,7 @@ ULONG ASM SAVEDS GetString (
     int 		invisible, scrfontht, gadlines = 0;
     int 		leftoff, rightoff;
     ULONG 		*gadlenptr = NULL, *gadposptr = NULL, idcmpflags;
-    APTR 		gadfmtargs = NULL, textfmtargs = NULL, args;
+    APTR 		gadfmtargs = NULL, textfmtargs = NULL;
 
     memset (&itxt, 0, sizeof (struct IntuiText));
     memset (&ng, 0, sizeof (struct NewGadget));
@@ -308,14 +307,14 @@ ULONG ASM SAVEDS GetString (
 
     if (!(glob->scr = GetReqScreen (&glob->newreqwin, &glob->prwin, glob->scr, pubname)))
 	return (ReqExit (glob, FALSE));
-	
+
     spacing = rtGetVScreenSize (glob->scr, (ULONG *)&scrwidth, (ULONG *)&scrheight);
 
     if (fontattr)
     {
 	if (!(glob->reqfont = OpenFont (fontattr))) fontattr = NULL;
     }
-    
+
     if (!fontattr) fontattr = glob->scr->Font;
 
     if (!(glob->visinfo = GetVisualInfoA (glob->scr, NULL))
@@ -362,20 +361,20 @@ ULONG ASM SAVEDS GetString (
 		calculates number of lines in format string.
 		(APTR)maxlen points to the arguments! */
 
-	DofmtCount (glob->textfmt, textfmtargs, &glob->bodyfmt, DOFMT_COUNTNEWLINES);
+	DofmtCount (glob->textfmt, textfmtargs, &glob->bodyfmt.numlines, DOFMT_COUNTNEWLINES);
 	glob->numlines = glob->bodyfmt.numlines;
-	
+
 	if (!(glob->buff = (char **)AllocVec (glob->bodyfmt.bufflen
-			   + (8 + (int)sizeof (struct IntuiText)) * glob->numlines, MEMF_PUBLIC)))
+			   + ((sizeof(APTR) * 2) + (int)sizeof (struct IntuiText)) * glob->numlines, MEMF_PUBLIC)))
 	    return (ReqExit (glob, FALSE));
 
 	/* expand format string and fill in table of pointers to each line */
 	glob->lenptr = (ULONG *)&glob->buff[glob->numlines];
 	bodyitxt = (struct IntuiText *)&glob->lenptr[glob->numlines];
 	ptr = (char *)&bodyitxt[glob->numlines];
-	args = Dofmt (ptr, glob->textfmt, textfmtargs);
+	Dofmt (ptr, glob->textfmt, textfmtargs);
 
-	if (mode == IS_EZREQUEST) gadfmtargs = args;
+	if (mode == IS_EZREQUEST) gadfmtargs = textfmtargs;
 	FillNewLineTable (glob->buff, ptr);
 
 	/* Calculate width on screen of each line, remember largest */
@@ -387,14 +386,15 @@ ULONG ASM SAVEDS GetString (
 	}
 	glob->width = glob->len + 70;
     }
-    
+
     nogadgets = (gadfmt == NULL);
 
     if (!nogadgets)
     {
-	DofmtCount (gadfmt, gadfmtargs, &glob->gadfmtbuff, DOFMT_COUNTBARS);
+	DofmtCount (gadfmt, gadfmtargs, &glob->gadfmtbuff.numlines, DOFMT_COUNTBARS);
 	gadlines = glob->gadfmtbuff.numlines;
-	glob->gadfmtbuff.bufflen += 12 * gadlines;
+
+	glob->gadfmtbuff.bufflen += (sizeof(APTR) * 3) * gadlines;
 	if (!(glob->gadstrbuff = (char **)AllocVec (glob->gadfmtbuff.bufflen, MEMF_PUBLIC)))
 	    return (ReqExit (glob, FALSE));
 		
@@ -451,11 +451,11 @@ ULONG ASM SAVEDS GetString (
 	{
 	    height += glob->fontht + spacing + 4;
 	    if (min == 0x80000000)
-		    DofmtArgs (glob->minmaxstr, GetStr (glob->catalog, MSG_MAX_FMT), max);
-	    else DofmtArgs (glob->minmaxstr, (max != 0x7FFFFFFF) ?
-						     GetStr (glob->catalog, MSG_MIN_MAX_FMT) :
-						     GetStr (glob->catalog, MSG_MIN_FMT),
-						     min, max);
+                DofmtArgs (glob->minmaxstr, GetStr (glob->catalog, MSG_MAX_FMT), max);
+	    else if (max != 0x7FFFFFFF)
+                DofmtArgs (glob->minmaxstr, GetStr (glob->catalog, MSG_MIN_MAX_FMT), min, max);
+            else
+                DofmtArgs (glob->minmaxstr, GetStr (glob->catalog, MSG_MIN_FMT), min);
 	    itxt.IText = glob->minmaxstr;
 	    glob->minmaxlen = IntuiTextLength (&itxt) + 8;
 	    if (glob->minmaxlen + 16 > glob->width) glob->width = glob->minmaxlen + 16;

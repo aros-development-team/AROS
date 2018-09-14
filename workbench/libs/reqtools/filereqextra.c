@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -195,12 +195,13 @@ void REGARGS PrintEntry (GlobData *glob, int i)
 	}
 	else if (type == FONT || (type == glob->file_id))
 	{
+            BOOL useLocFmt = LocaleBase ? TRUE : FALSE;
 #ifdef __AROS__
 	    /* FIXME: AROS LocaleLibrary does not yet patch RawDoFmt. So "%lD" (uppercase D) does not work yet here!  */
-	    Dofmt (sizestr, " %ld", &size);
-#else
-	    Dofmt (sizestr, LocaleBase ? " %lD" : " %ld", &size);
+            useLocFmt = FALSE;
 #endif
+	    DofmtArgs (sizestr, useLocFmt ? " %lD" : " %ld", size);
+
 	    if (type == FONT)
 	    {
 		StrCat (tempstr, sizestr);
@@ -214,7 +215,7 @@ void REGARGS PrintEntry (GlobData *glob, int i)
 	}
 	else if (type == VOLUME)
 	{
-	    if (size >= 0) Dofmt (sizestr, GetStr (glob->catalog, MSG_FULL), &size);
+	    if (size >= 0) DofmtArgs (sizestr, GetStr (glob->catalog, MSG_FULL), size);
 	}
 
 	if (type == VOLUME && entry->re_VolLen)
@@ -1074,7 +1075,7 @@ void REGARGS UpdateNumSelGad (GlobData *glob)
 
     if (glob->numselectedgad)
     {
-	Dofmt (str, "%4ld", &glob->numselected);
+	DofmtArgs (str, "%4ld", glob->numselected);
 	
 	SetAPen (glob->reqrp, glob->pens[TEXTPEN]);
 	SetBPen (glob->reqrp, glob->pens[BACKGROUNDPEN]);

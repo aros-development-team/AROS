@@ -114,6 +114,8 @@
 	bodyfmt  - requester body text, can be format string a la RawDoFmt().
 	gadfmt   - text for gadgets (left to right, separated by '|') or NULL.
 	argarray - pointer to array of arguments for format string(s).
+                   nb - : arguments must be handled the same as for RawDoFmt!
+                   use aros slowstack macros.
 	reqinfo  - pointer to a rtReqInfo structure allocated with
 	    rtAllocRequest() or NULL.
 	taglist  - pointer to a TagItem array.
