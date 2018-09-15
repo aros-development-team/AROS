@@ -575,6 +575,14 @@ const struct HidUsageIDMap hidusage09[] =
     { 0x0e, "Button 14" },
     { 0x0f, "Button 15" },
     { 0x10, "Button 16" },
+    { 0x11, "Button 17" },
+    { 0x12, "Button 18" },
+    { 0x13, "Button 19" },
+    { 0x14, "Button 20" },
+    { 0x15, "Button 21" },
+    { 0x16, "Button 22" },
+    { 0x17, "Button 23" },
+    { 0x18, "Button 24" },
     { 0x00, NULL }
 };
 /* \\\ */
@@ -1358,8 +1366,8 @@ const struct HidUsageIDMap hidusage82[] =
     { 0x48, "Top Corner Distortion Balance" },
     { 0x4A, "Bottom Corner Distortion Control" },
     { 0x4C, "Bottom Corner Distortion Balance" },
-    { 0x56, "Horizontal Moiré" },
-    { 0x58, "Vertical Moiré" },
+    { 0x56, "Horizontal MoirÃ©" },
+    { 0x58, "Vertical MoirÃ©" },
     { 0x6C, "Red Video Black Level" },
     { 0x6E, "Green Video Black Level" },
     { 0x70, "Blue Video Black Level" },
