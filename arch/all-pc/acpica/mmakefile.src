@@ -1,0 +1,84 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+
+ACPICAREPOSITORIES := https://acpica.org/sites/acpica/files
+ACPICAPACKAGE      := acpica
+ACPICAVERSION      := 20131115
+ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)
+ACPICASRCDIR       := $(PORTSDIR)/acpica/$(ACPICAARCHBASE)
+
+ACPICAPSPECS := $(ACPICAARCHBASE)-aros.diff:$(ACPICAARCHBASE):-f,-p1
+
+ACPICA_INCLUDE     := $(ACPICASRCDIR)/source/include
+
+%fetch mmake=acpica-fetch archive=$(ACPICAARCHBASE) \
+    destination=$(PORTSDIR)/acpica \
+    location=$(PORTSSOURCEDIR) \
+    archive_origins=$(ACPICAREPOSITORIES) \
+    suffixes="tar.gz" patches_specs=$(ACPICAPSPECS)
+
+%create_patch mmake="acpica-create-patch" \
+    archive=$(ACPICAARCHBASE) \
+    srcdir=$(ACPICAARCHBASE) \
+    suffixes="tar.gz" \
+    destination=$(PORTSDIR)/acpica
+
+#MM kernel-pc-acpica : acpica-fetch
+
+ACPICA_SOURCES = \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/executer/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/hardware/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/dispatcher/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/tables/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/events/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/parser/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/utilities/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/resources/*.c) \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/namespace/*.c)
+
+NOWARN_FLAGS := $(NOWARN_STRICT_ALIASING)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_LDFLAGS := -static
+
+# ACPICA debugging options
+#ACPICA_SOURCES +=  \
+#       $(call WILDCARD, $(ACPICASRCDIR)/source/components/disassembler/*.c)
+#USER_CFLAGS += -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
+
+# AROS Glue code debugging options
+#USER_CFLAGS += -DDEBUG=1
+
+FILES := acpios_aros \
+         $(ACPICA_SOURCES:%.c=%)
+
+USER_INCLUDES += -I$(ACPICA_INCLUDE)
+
+%build_module mmake=kernel-pc-acpica \
+  modname=acpica modtype=library \
+  files="$(FILES)"
+
+# Headers
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+%copy_includes path=libraries dir=include
+
+INCLUDE_FILES := $(call WILDCARD, $(ACPICA_INCLUDE)/*.h)
+
+%copy_includes path=acpica dir=$(ACPICA_INCLUDE)
+
+# Programs
+
+USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+
+FILES := ACPIInfo
+
+#MM- workbench-c : workbench-c-$(AROS_TARGET_ARCH)-acpi
+#MM- workbench-c-quick : workbench-c-$(AROS_TARGET_ARCH)-acpi-quick
+
+%build_progs mmake=workbench-c-pc-acpi targetdir=$(AROS_C) \
+  files="$(FILES)" usestartup=no uselibs="acpica"
+
+%common
