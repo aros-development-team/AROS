@@ -57,45 +57,45 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
 
                     if(!unit->ctrlxfer_pending) {
                         ObtainSemaphore(&unit->ctrlxfer_queue_lock); {
-                            ForeachNode(&unit->ctrlxfer_queue, unit->ioreq) {
+                            ForeachNode(&unit->ctrlxfer_queue, unit->ioreq_ctrl) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq_ctrl->iouh_Req.io_Message.mn_Node);
                                 mybug(-1,("[handler_task] Control transfer caught...\n"));
                                 unit->ctrlxfer_pending = TRUE;
-                                do_libusb_ctrl_transfer(unit->ioreq);
+                                do_libusb_ctrl_transfer(unit->ioreq_ctrl);
                             }
                         } ReleaseSemaphore(&unit->ctrlxfer_queue_lock);
                     }
 
                     if(!unit->intrxfer_pending) {
                         ObtainSemaphore(&unit->intrxfer_queue_lock); {
-                            ForeachNode(&unit->intrxfer_queue, unit->ioreq) {
+                            ForeachNode(&unit->intrxfer_queue, unit->ioreq_intr) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq_intr->iouh_Req.io_Message.mn_Node);
                                 unit->intrxfer_pending = TRUE;
-                                do_libusb_intr_transfer(unit->ioreq);
+                                do_libusb_intr_transfer(unit->ioreq_intr);
                             }
                         } ReleaseSemaphore(&unit->intrxfer_queue_lock);
                     }
 
                     if(!unit->bulkxfer_pending) {
                         ObtainSemaphore(&unit->bulkxfer_queue_lock); {
-                            ForeachNode(&unit->bulkxfer_queue, unit->ioreq) {
+                            ForeachNode(&unit->bulkxfer_queue, unit->ioreq_bulk) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq_bulk->iouh_Req.io_Message.mn_Node);
                                 unit->bulkxfer_pending = TRUE;
-                                do_libusb_bulk_transfer(unit->ioreq);
+                                do_libusb_bulk_transfer(unit->ioreq_bulk);
                             }
                         } ReleaseSemaphore(&unit->bulkxfer_queue_lock);
                     }
 
                     if(!unit->isocxfer_pending) {
                         ObtainSemaphore(&unit->isocxfer_queue_lock); {
-                            ForeachNode(&unit->isocxfer_queue, unit->ioreq) {
+                            ForeachNode(&unit->isocxfer_queue, unit->ioreq_isoc) {
                                 /* Now the iorequest lives only on our pointer */
-                                Remove(&unit->ioreq->iouh_Req.io_Message.mn_Node);
+                                Remove(&unit->ioreq_isoc->iouh_Req.io_Message.mn_Node);
                                 unit->isocxfer_pending = TRUE;
-                                do_libusb_isoc_transfer(unit->ioreq);
+                                do_libusb_isoc_transfer(unit->ioreq_isoc);
                             }
                         } ReleaseSemaphore(&unit->isocxfer_queue_lock);
                     }

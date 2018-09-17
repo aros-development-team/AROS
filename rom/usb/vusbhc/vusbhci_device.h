@@ -38,7 +38,10 @@ struct VUSBHCIUnit {
     struct timerequest          *tr;
     struct MsgPort              *mp;
 
-    struct IOUsbHWReq           *ioreq;
+    struct IOUsbHWReq           *ioreq_ctrl;
+    struct IOUsbHWReq           *ioreq_intr;
+    struct IOUsbHWReq           *ioreq_bulk;
+    struct IOUsbHWReq           *ioreq_isoc;
 
     struct Task                 *handler_task;
     ULONG                        handler_task_sig_run;

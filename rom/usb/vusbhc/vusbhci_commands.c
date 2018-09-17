@@ -27,18 +27,67 @@
 #include "vusbhci_device.h"
 
 /*
-    FIXME: cmdAbortIO does not work for the request that is already passed to libusb
+    Our iorequests are divided into many different queus or dispatched immediatly (cannot be aborted)
+    Libusb handler task blocks us from the queue whenever it dispatches an iorequest
+    cmdAbortIO also blocks the libusb handler from accessing the queue
+    Which ever comes first gets the change to access the queue
+    Libusb handler task removes the iorequest from the queue before unblocking the queue
 */
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
-    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
-    ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    /* If not quick I/O, reply the message */
-    if (!(ioreq->iouh_Req.io_Flags & IOF_QUICK)) {
-        ReplyMsg(&ioreq->iouh_Req.io_Message);
+    struct IOUsbHWReq *ioreq_tmp;
+    BOOL ret = FALSE;
+
+    switch (ioreq->iouh_Req.io_Command) {
+        case UHCMD_CONTROLXFER:
+            mybug_unit(-1, ("Aborting cmdControlXFer ioreq\n"));
+            /* We need to block the libusb handler task from messing up with our queue */
+            ObtainSemaphore(&unit->ctrlxfer_queue_lock); {
+            } ReleaseSemaphore(&unit->ctrlxfer_queue_lock);
+            break;
+
+        case UHCMD_INTXFER:
+            mybug_unit(-1, ("Aborting cmdIntXFer ioreq %lx\n", ioreq->iouh_Req));
+            /* We need to block the libusb handler task from messing up with our queue */
+            ObtainSemaphore(&unit->intrxfer_queue_lock); {
+                mybug_unit(-1, ("    Semaphore accuired\n"));
+                ForeachNode(&unit->intrxfer_queue, ioreq_tmp) {
+                    mybug_unit(-1, ("    %lx == %lx\n", ioreq_tmp->iouh_Req, ioreq->iouh_Req));
+                    /* Found the iorequest from our queue */
+                    if(ioreq_tmp == ioreq) {
+                        /* Remove it from our queue */
+                        ioreq_tmp->iouh_Req.io_Error = IOERR_ABORTED;
+                        ioreq_tmp->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+                        Remove(&ioreq_tmp->iouh_Req.io_Message.mn_Node);
+                        ReplyMsg(&ioreq->iouh_Req.io_Message);
+                        mybug_unit(-1, ("    removed\n"));
+                        ret = TRUE;
+                    }
+                }
+            } ReleaseSemaphore(&unit->intrxfer_queue_lock);
+            break;
+
+        case UHCMD_BULKXFER:
+            mybug_unit(-1, ("Aborting cmdBulkXFer ioreq\n"));
+            ObtainSemaphore(&unit->bulkxfer_queue_lock); {
+            } ReleaseSemaphore(&unit->bulkxfer_queue_lock);
+            break;
+
+        case UHCMD_ISOXFER:
+            mybug_unit(-1, ("Aborting cmdISOXFer ioreq\n"));
+            ObtainSemaphore(&unit->isocxfer_queue_lock); {
+            } ReleaseSemaphore(&unit->isocxfer_queue_lock);
+            break;
+
+        default:
+            mybug_unit(-1, ("Aborting default  ioreq ?!?\n"));
+            break;
     }
 
-    return TRUE;
+    mybug_unit(-1, ("Returning %s\n", ((ret) ? "TRUE":"FALSE")));
+
+    return ret;
 }
 
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
