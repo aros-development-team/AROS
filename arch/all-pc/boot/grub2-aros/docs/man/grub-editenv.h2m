@@ -1,5 +1,0 @@
-[NAME]
-grub-editenv \- edit GRUB environment block
-[SEE ALSO]
-.BR grub-reboot (8),
-.BR grub-set-default (8)

@@ -1,6 +1,0 @@
-[NAME]
-grub-emu \- GRUB emulator
-[SEE ALSO]
-If you are trying to install GRUB, then you should use
-.BR grub-install (8)
-rather than this program.

@@ -1,7 +1,7 @@
-# Copyright © 2004-2016, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2018, The AROS Development Team. All rights reserved.
 # $Id$
 # just for building the grub2 utils
-# in prevision to use grub-mkimage in InstallAROS
+# in provision to use grub-mkimage in InstallAROS
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -13,17 +13,19 @@ else
     GRUB_ARCH := pc
 endif
 
-DESTDIR     :=	$(AROS_CONTRIB)/GNU
+GRUB2PACKAGE    := grub
+GRUB2DESTDIR    := $(AROS_CONTRIB)/GNU
+GRUB2REPOS      := ftp://ftp.gnu.org/gnu/grub
+
 CONFIG_OPTS := \
 		--with-platform=$(GRUB_ARCH) \
-		--datarootdir=$(DESTDIR)/share \
-		--sysconfdir=$(DESTDIR)/etc	\
+		--datarootdir=$(GRUB2DESTDIR)/share \
+		--sysconfdir=$(GRUB2DESTDIR)/etc	\
 		--disable-grub-mkfont \
 		--disable-werror \
-		--program-prefix= \
-		--enable-skip-platform
+		--program-prefix=
 
-%build_with_configure mmake=grub2-aros \
-        prefix="$(DESTDIR)" aros_prefix="/GNU" nix=yes \
-        extraoptions="$(CONFIG_OPTS)"
-
+%fetch_and_build mmake=grub2-aros \
+        package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.gz" package_repo=$(GRUB2REPOS) \
+        prefix="$(GRUB2DESTDIR)" patch=yes aros_prefix="/GNU" nix=no gnuflags=no xflag=no \
+        extraoptions="$(CONFIG_OPTS)" targetisaflags=

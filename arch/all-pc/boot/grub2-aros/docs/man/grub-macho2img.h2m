@@ -1,4 +1,0 @@
-[NAME]
-grub-macho2img \- convert Mach-O to raw image
-[SEE ALSO]
-.BR grub-mkimage (1)

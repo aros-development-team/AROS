@@ -1,4 +1,0 @@
-[NAME]
-grub-mknetdir \- prepare a GRUB netboot directory.
-[SEE ALSO]
-.BR grub-mkimage (1)

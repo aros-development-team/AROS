@@ -1,3 +1,0 @@
-#! @builddir@/grub-shell-tester
-
-echo if then else fi for do done

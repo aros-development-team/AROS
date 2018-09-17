@@ -653,6 +653,7 @@ aros_palm_debug_hack
 ENABLE_EXECSMP
 PLATFORM_EXECSMP
 aros_serial_debug
+target_grub2_version
 aros_host_sdl_libs
 aros_host_sdl_cflags
 aros_host_x11_ldflags
@@ -2797,6 +2798,8 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 # Default versions for the gnu tools we build
 default_gcc_version="4.6.4"
 default_binutils_version="2.23.2"
+default_grub2_version="2.02"
+target_grub2_version=$default_grub2_version
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -15053,6 +15056,9 @@ fi
 
 
 
+
+
+# Bootloader related
 
 
 # Native version related

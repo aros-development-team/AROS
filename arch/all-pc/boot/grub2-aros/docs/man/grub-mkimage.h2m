@@ -1,6 +1,0 @@
-[NAME]
-grub-mkimage \- make a bootable image of GRUB
-[SEE ALSO]
-.BR grub-install (8),
-.BR grub-mkrescue (1),
-.BR grub-mknetdir (8)

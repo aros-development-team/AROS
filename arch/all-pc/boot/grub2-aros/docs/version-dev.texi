@@ -1,4 +1,0 @@
-@set UPDATED 1 February 2015
-@set UPDATED-MONTH February 2015
-@set EDITION 2.02~beta2
-@set VERSION 2.02~beta2

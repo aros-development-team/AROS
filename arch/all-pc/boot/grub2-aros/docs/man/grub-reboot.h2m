@@ -1,5 +1,0 @@
-[NAME]
-grub-reboot \- set the default boot entry for GRUB, for the next boot only
-[SEE ALSO]
-.BR grub-set-default (8),
-.BR grub-editenv (1)

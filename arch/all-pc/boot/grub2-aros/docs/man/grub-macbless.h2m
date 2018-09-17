@@ -1,4 +1,0 @@
-[NAME]
-grub-macbless \- bless a mac file/directory
-[SEE ALSO]
-.BR grub-install (1)

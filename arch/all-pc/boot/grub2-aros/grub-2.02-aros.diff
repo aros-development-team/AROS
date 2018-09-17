@@ -1,0 +1,47 @@
+diff -ruN grub-2.02/grub-core/fs/affs.c grub-2.02.aros/grub-core/fs/affs.c
+--- grub-2.02/grub-core/fs/affs.c	2015-05-21 16:50:29.000000000 +0100
++++ grub-2.02.aros/grub-core/fs/affs.c	2017-04-24 12:30:25.000000000 +0100
+@@ -202,7 +202,9 @@
+ 	goto fail;
+ 
+       /* Make sure this is an affs filesystem.  */
+-      if (grub_strncmp ((char *) (data->bblock.type), "DOS", 3) != 0
++      if (((grub_strncmp ((char *) (data->bblock.type), "DOS", 3) != 0)
++	  /* Test if the filesystem is a muFS filesystem.  */
++	  && (grub_strncmp ((char *) (data->bblock.type), "muF", 3) != 0))
+ 	  /* Test if the filesystem is a OFS filesystem.  */
+ 	  || !(data->bblock.flags & GRUB_AFFS_FLAG_FFS))
+ 	continue;
+diff -ruN grub-2.02/grub-core/osdep/aros/getroot.c grub-2.02.aros/grub-core/osdep/aros/getroot.c
+--- grub-2.02/grub-core/osdep/aros/getroot.c	2015-05-21 16:50:29.000000000 +0100
++++ grub-2.02.aros/grub-core/osdep/aros/getroot.c	2017-04-24 12:30:25.000000000 +0100
+@@ -29,7 +29,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <proto/exec.h>
+diff -ruN grub-2.02/grub-core/osdep/aros/hostdisk.c grub-2.02.aros/grub-core/osdep/aros/hostdisk.c
+--- grub-2.02/grub-core/osdep/aros/hostdisk.c	2016-02-28 14:22:21.000000000 +0000
++++ grub-2.02.aros/grub-core/osdep/aros/hostdisk.c	2017-04-24 12:30:25.000000000 +0100
+@@ -45,7 +45,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <devices/hardblocks.h>
+diff -ruN grub-2.02/grub-core/osdep/aros/relpath.c grub-2.02.aros/grub-core/osdep/aros/relpath.c
+--- grub-2.02/grub-core/osdep/aros/relpath.c	2015-05-21 16:50:29.000000000 +0100
++++ grub-2.02.aros/grub-core/osdep/aros/relpath.c	2017-04-24 12:30:25.000000000 +0100
+@@ -29,7 +29,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <proto/exec.h>

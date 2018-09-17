@@ -25,6 +25,8 @@ AC_CANONICAL_HOST
 # Default versions for the gnu tools we build
 default_gcc_version="4.6.4"
 default_binutils_version="2.23.2"
+default_grub2_version="2.02"
+target_grub2_version=$default_grub2_version
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -2971,6 +2973,9 @@ AC_SUBST(aros_host_x11_cflags)
 AC_SUBST(aros_host_x11_ldflags)
 AC_SUBST(aros_host_sdl_cflags)
 AC_SUBST(aros_host_sdl_libs)
+
+# Bootloader related
+AC_SUBST(target_grub2_version)
 
 # Native version related
 AC_SUBST(aros_serial_debug)
