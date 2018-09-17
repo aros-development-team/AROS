@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Virtual USB host controller
@@ -56,7 +56,8 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
                     //mybug(-1,("[handler_task] Ping...\n"));
 
                     if(!unit->ctrlxfer_pending) {
-                        ObtainSemaphore(&unit->ctrlxfer_queue_lock); {
+                        /* Try and get a lock on the semaphore, if not then just move on as some housekeeping is being done */
+                        AttemptSemaphore(&unit->ctrlxfer_queue_lock); {
                             ForeachNode(&unit->ctrlxfer_queue, unit->ioreq_ctrl) {
                                 /* Now the iorequest lives only on our pointer */
                                 Remove(&unit->ioreq_ctrl->iouh_Req.io_Message.mn_Node);
@@ -68,7 +69,7 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
                     }
 
                     if(!unit->intrxfer_pending) {
-                        ObtainSemaphore(&unit->intrxfer_queue_lock); {
+                        AttemptSemaphore(&unit->intrxfer_queue_lock); {
                             ForeachNode(&unit->intrxfer_queue, unit->ioreq_intr) {
                                 /* Now the iorequest lives only on our pointer */
                                 Remove(&unit->ioreq_intr->iouh_Req.io_Message.mn_Node);
@@ -79,7 +80,7 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
                     }
 
                     if(!unit->bulkxfer_pending) {
-                        ObtainSemaphore(&unit->bulkxfer_queue_lock); {
+                        AttemptSemaphore(&unit->bulkxfer_queue_lock); {
                             ForeachNode(&unit->bulkxfer_queue, unit->ioreq_bulk) {
                                 /* Now the iorequest lives only on our pointer */
                                 Remove(&unit->ioreq_bulk->iouh_Req.io_Message.mn_Node);
@@ -90,7 +91,7 @@ static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
                     }
 
                     if(!unit->isocxfer_pending) {
-                        ObtainSemaphore(&unit->isocxfer_queue_lock); {
+                        AttemptSemaphore(&unit->isocxfer_queue_lock); {
                             ForeachNode(&unit->isocxfer_queue, unit->ioreq_isoc) {
                                 /* Now the iorequest lives only on our pointer */
                                 Remove(&unit->ioreq_isoc->iouh_Req.io_Message.mn_Node);
