@@ -53,7 +53,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
             ObtainSemaphore(&unit->intrxfer_queue_lock); {
                 mybug_unit(-1, ("    Semaphore accuired\n"));
                 ForeachNode(&unit->intrxfer_queue, ioreq_tmp) {
-                    mybug_unit(-1, ("    %lx == %lx\n", ioreq_tmp->iouh_Req, ioreq->iouh_Req));
+                    mybug_unit(-1, ("    %lx == %lx\n", ioreq_tmp, ioreq));
                     /* Found the iorequest from our queue */
                     if(ioreq_tmp == ioreq) {
                         /* Remove it from our queue */
