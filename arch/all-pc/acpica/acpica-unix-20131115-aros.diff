@@ -4,7 +4,7 @@ diff -ruN acpica-unix-20131115/source/include/platform/acaros.h acpica-unix-2013
 @@ -0,0 +1,86 @@
 +/******************************************************************************
 + *
-+ * Name: aclinux.h - OS specific defines, etc. for AROS
++ * Name: acaros.h - OS specific defines, etc. for AROS
 + *
 + *****************************************************************************/
 +
