@@ -2,7 +2,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-
 ACPICAREPOSITORIES := https://acpica.org/sites/acpica/files
 ACPICAPACKAGE      := acpica
 ACPICAVERSION      := 20131115
@@ -26,6 +25,7 @@ ACPICA_INCLUDE     := $(ACPICASRCDIR)/source/include
     destination=$(PORTSDIR)/acpica
 
 #MM kernel-pc-acpica : acpica-fetch
+#MM includes-copy :  acpica-fetch
 
 ACPICA_SOURCES = \
        $(call WILDCARD, $(ACPICASRCDIR)/source/components/executer/*.c) \
@@ -65,7 +65,7 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 %copy_includes path=libraries dir=include
 
-INCLUDE_FILES := $(call WILDCARD, $(ACPICA_INCLUDE)/*.h)
+INCLUDE_FILES = $(call WILDCARD, $(ACPICA_INCLUDE)/*.h)
 
 %copy_includes path=acpica dir=$(ACPICA_INCLUDE)
 
