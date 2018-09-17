@@ -1,4 +1,0 @@
-[NAME]
-grub-fstest \- debug tool for GRUB filesystem drivers
-[SEE ALSO]
-.BR grub-probe (8)

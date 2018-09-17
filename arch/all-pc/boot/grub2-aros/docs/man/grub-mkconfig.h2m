@@ -1,4 +1,0 @@
-[NAME]
-grub-mkconfig \- generate a GRUB configuration file
-[SEE ALSO]
-.BR grub-install (8)

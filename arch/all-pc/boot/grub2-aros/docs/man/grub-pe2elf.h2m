@@ -1,4 +1,0 @@
-[NAME]
-grub-pe2elf \- convert PE image to ELF
-[SEE ALSO]
-.BR grub-mkimage (1)

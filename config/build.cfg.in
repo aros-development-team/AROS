@@ -12,6 +12,9 @@ endif
 
 # Optional components
 
+#Bootloader
+GRUB2_VERSION := @target_grub2_version@
+
 # DBUS flags
 DBUS_CFLAGS	:= @DBUS_CFLAGS@
 DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@

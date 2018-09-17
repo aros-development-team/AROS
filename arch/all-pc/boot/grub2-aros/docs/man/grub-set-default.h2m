@@ -1,5 +1,0 @@
-[NAME]
-grub-set-default \- set the saved default boot entry for GRUB
-[SEE ALSO]
-.BR grub-reboot (8),
-.BR grub-editenv (1)

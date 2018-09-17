@@ -1,4 +1,0 @@
-[NAME]
-grub-glue-efi \- generate a fat binary for EFI
-[DESCRIPTION]
-grub-glue-efi processes ia32 and amd64 EFI images and glues them according to Apple format.

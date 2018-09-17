@@ -1,6 +1,0 @@
-#! @builddir@/grub-shell-tester
-
-eval echo "Hello world"
-valname=tst
-eval $valname=hi
-echo $tst

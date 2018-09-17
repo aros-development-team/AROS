@@ -1,6 +1,0 @@
-[NAME]
-grub-sparc64-setup \- set up a device to boot using GRUB
-[SEE ALSO]
-.BR grub-install (8),
-.BR grub-mkimage (1),
-.BR grub-mkrescue (1)

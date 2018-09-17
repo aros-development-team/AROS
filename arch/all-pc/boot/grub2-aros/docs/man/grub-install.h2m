@@ -1,6 +1,0 @@
-[NAME]
-grub-install \- install GRUB to a device
-[SEE ALSO]
-.BR grub-mkconfig (8),
-.BR grub-mkimage (1),
-.BR grub-mkrescue (1)
