@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, The AROS Development Team
+ * Copyright (C) 2013-2018, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -16,6 +16,7 @@
 #define SH_GLOBAL_DOSBASE 1
 
 #include <aros/shcommands.h>
+#include <acpica/acnames.h>
 
 const char * const TypeMap[ACPI_TYPE_EXTERNAL_MAX+1] = {
     "Any",
@@ -43,9 +44,15 @@ ACPI_STATUS OnDescend (
     void                            *Context,
     void                            **ReturnValue)
 {
-    int i;
-    ACPI_STATUS err;
-    ACPI_DEVICE_INFO *info;
+    ACPI_BUFFER buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+    ACPI_PNP_DEVICE_ID_LIST *cIdList;
+    ACPI_DEVICE_INFO    *info;
+    ACPI_OBJECT         *obj;
+    ACPI_PNP_DEVICE_ID  *pnpid;
+    ACPI_STATUS         err;
+    UINT64              addr;
+    char                *dstates;
+    int                 i;
 
     for (i = 0; i < NestingLevel; i++)
         Printf(" ");
@@ -66,72 +73,103 @@ ACPI_STATUS OnDescend (
         if (info->Type == ACPI_TYPE_METHOD) {
             Printf("(%ld)", info->ParamCount);
         }
-        if (info->Flags & ACPI_PCI_ROOT_BRIDGE) {
+        if (AcpiGetInfoFlags(info) & ACPI_PCI_ROOT_BRIDGE) {
             Printf(" [PCI Root Bridge]");
         }
         Printf("\n");
-        for (i = 0; i < 8; i++) {
-            int j;
-            if ((info->Valid & (1 << i)) == 0)
-                continue;
 
-            for (j = 0; j < NestingLevel; j++)
+        addr = AcpiGetInfoAddress(info);
+        if (addr) {
+            for (i = 0; i < NestingLevel; i++)
                 Printf(" ");
-            Printf("    ");
-
-            switch (info->Valid & (1 << i)) {
-            case ACPI_VALID_STA:
-                Printf("_STA: [");
-                if (info->CurrentStatus & ACPI_STA_DEVICE_PRESENT)
-                    Printf(" Present");
-                if (info->CurrentStatus & ACPI_STA_DEVICE_ENABLED)
-                    Printf(" Enabled");
-                if (info->CurrentStatus & ACPI_STA_DEVICE_UI)
-                    Printf(" UI");
-                if (info->CurrentStatus & ACPI_STA_DEVICE_OK)
-                    Printf(" Ok");
-                if (info->CurrentStatus & ACPI_STA_BATTERY_PRESENT)
-                    Printf(" Battery");
-                Printf(" ]\n");
-                break;
-            case ACPI_VALID_ADR:
-                Printf("_ADR: 0x%llx\n", info->Address);
-                break;
-            case ACPI_VALID_HID:
-                Printf("_HID: %s\n",info->HardwareId.String);
-                break;
-            case ACPI_VALID_UID:
-                Printf("_UID: %s\n",info->UniqueId.String);
-                break;
-            case ACPI_VALID_SUB:
-                Printf("_SUB: %s\n",info->SubsystemId.String);
-                break;
-            case ACPI_VALID_CID:
-                Printf("_CID: [");
-                for (j = 0; j < info->CompatibleIdList.Count; j++) {
-                    Printf(" %s", info->CompatibleIdList.Ids[j].String);
-                }
-                Printf(" ]\n");
-                break;
-            case ACPI_VALID_SXDS:
-                Printf("_SxD:");
-                for (j = 0; j < 4; j++) {
-                    if (info->HighestDstates[j] != 0xff)
-                        Printf(" %d", info->HighestDstates[j]);
-                }
-                Printf("\n");
-                break;
-            case ACPI_VALID_SXWS:
-                Printf("_SxW:");
-                for (j = 0; j < 5; j++) {
-                    if (info->LowestDstates[j] != 0xff)
-                        Printf(" %d", info->LowestDstates[j]);
-                }
-                Printf("\n");
-                break;
-            default: break;
-            }
+            Printf("    %s: 0x%llx\n", METHOD_NAME__ADR, addr);
         }
+
+        pnpid = AcpiGetInfoHardwareId(info);
+        if (pnpid) {
+            for (i = 0; i < NestingLevel; i++)
+                Printf(" ");
+            Printf("    %s: %s\n", METHOD_NAME__HID, pnpid->String);
+        }
+        
+        pnpid = AcpiGetInfoUniqueId(info);
+        if (pnpid) {
+            for (i = 0; i < NestingLevel; i++)
+                Printf(" ");
+            Printf("    %s: %s\n", METHOD_NAME__UID, pnpid->String);
+        }
+
+        cIdList = AcpiGetInfoCompatIdList(info);
+        if (cIdList) {
+            for (i = 0; i < NestingLevel; i++)
+                Printf(" ");
+            Printf("    %s: [", METHOD_NAME__CID);
+            for (i = 0; i < cIdList->Count; i++) {
+                Printf(" %s", cIdList->Ids[i].String);
+            }
+            Printf(" ]\n");
+        }
+
+        dstates = AcpiGetInfoHighDstates(info);
+        if (dstates) {
+            for (i = 0; i < NestingLevel; i++)
+                Printf(" ");
+            Printf("    _SxD:");
+            for (i = 0; i < 4; i++) {
+                if (dstates[i] != 0xff)
+                    Printf(" %d", dstates[i]);
+            }
+            Printf("\n");
+        }
+        dstates = AcpiGetInfoLowDstates(info);
+        if (dstates) {
+            for (i = 0; i < NestingLevel; i++)
+                Printf(" ");
+            Printf("    _SxW:");
+            for (i = 0; i < 5; i++) {
+                if (dstates[i] != 0xff)
+                    Printf(" %d", dstates[i]);
+            }
+            Printf("\n");
+        }
+
+	err = AcpiEvaluateObject (Object, METHOD_NAME__SUB,
+            NULL, &buffer);
+	if (ACPI_SUCCESS(err)) {
+            obj = buffer.Pointer;
+
+            if (obj->Type == ACPI_TYPE_STRING)
+            {
+                Printf("%s: %s\n", METHOD_NAME__SUB, obj->String.Pointer);
+            }
+            FreeVec(buffer.Pointer);
+	}
+
+ #if (0)
+        buffer.Pointer = NULL;
+        err = AcpiEvaluateObject (Object, METHOD_NAME__STA,
+            NULL, &buffer);
+        if (ACPI_SUCCESS(err)) {
+            obj = buffer.Pointer;
+
+            for (i = 0; i < NestingLevel; i++)
+                Printf(" ");
+            Printf("    %s: [", METHOD_NAME__STA);
+            if (obj->Integer.Value & ACPI_STA_DEVICE_PRESENT)
+                Printf(" Present");
+            if (obj->Integer.Value & ACPI_STA_DEVICE_ENABLED)
+                Printf(" Enabled");
+            if (obj->Integer.Value & ACPI_STA_DEVICE_UI)
+                Printf(" UI");
+            if (obj->Integer.Value & ACPI_STA_DEVICE_OK)
+                Printf(" Ok");
+            if (obj->Integer.Value & ACPI_STA_BATTERY_PRESENT)
+                Printf(" Battery");
+            Printf(" ]\n");
+            FreeVec(buffer.Pointer);
+        }
+#endif
+        FreeVec(info);
     }
 
     return err;

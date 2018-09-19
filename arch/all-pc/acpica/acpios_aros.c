@@ -10,7 +10,6 @@
 #define __ACPICA_NOLIBBASE__
 #endif /* !__ACPICA_NOLIBBASE__ */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include "acpica_intern.h"
@@ -31,6 +30,8 @@
 #define _COMPONENT          ACPI_OS_SERVICES
         ACPI_MODULE_NAME    ("osarosxf")
 
+#define DLOCK(a)
+
 /* FIXME: __aros_getbase_ACPICABase() for internal use should be handled
    properly by genmodule
 */
@@ -44,9 +45,11 @@ ACPI_STATUS AcpiOsInitialize (void)
     D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
     if ((ACPICABase->ab_TimeMsgPort = CreateMsgPort())) {
+        D(bug("[ACPI] %s: MsgPort @ %p\n", __func__, ACPICABase->ab_TimeMsgPort));
         if ((ACPICABase->ab_TimeRequest = CreateIORequest(ACPICABase->ab_TimeMsgPort, sizeof(*ACPICABase->ab_TimeRequest)))) {
             D(bug("[ACPI] %s: Ready\n", __func__));
             ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
+            D(bug("[ACPI] %s: TimerBase = %p\n", __func__, ACPICABase->ab_TimerBase));
             return AE_OK;
         }
         DeleteMsgPort(ACPICABase->ab_TimeMsgPort);
@@ -116,6 +119,7 @@ ACPI_STATUS AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER *ExistingTable, ACPI_P
     return AE_OK;
 }
 
+
 void *AcpiOsMapMemory (ACPI_PHYSICAL_ADDRESS PhysicalAddress, ACPI_SIZE Length)
 {
     return (void *)PhysicalAddress;
@@ -136,6 +140,12 @@ void *AcpiOsAllocate(ACPI_SIZE Size)
 {
     D(bug("[ACPI] %s(%d)\n", __func__, Size));
     return AllocVec(Size, MEMF_PUBLIC);
+}
+
+void *AcpiOsAllocateZeroed(ACPI_SIZE Size)
+{
+    D(bug("[ACPI] %s(%d)\n", __func__, Size));
+    return AllocVec(Size, MEMF_PUBLIC|MEMF_CLEAR);
 }
 
 void AcpiOsFree(void *Memory)
@@ -159,7 +169,7 @@ ACPI_THREAD_ID AcpiOsGetThreadId(void)
 {
     ACPI_THREAD_ID tid;
 
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__));
 
     tid = (ACPI_THREAD_ID)(ACPI_PHYSICAL_ADDRESS)FindTask(NULL);
 
@@ -213,7 +223,7 @@ ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits, ACPI_SEM
 {
     struct SignalSemaphore *Handle;
 
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__);)
 
     Handle = ACPI_ALLOCATE(sizeof(*Handle));
     if (Handle) {
@@ -226,7 +236,7 @@ ACPI_STATUS AcpiOsCreateSemaphore(UINT32 MaxUnits, UINT32 InitialUnits, ACPI_SEM
 
 ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__);)
 
     ACPI_FREE(Handle);
     return AE_OK;
@@ -234,7 +244,7 @@ ACPI_STATUS AcpiOsDeleteSemaphore(ACPI_SEMAPHORE Handle)
 
 ACPI_STATUS AcpiOsWaitSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units, UINT16 Timeout)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__);)
 
     if (Timeout == ACPI_DO_NOT_WAIT) {
         if (!AttemptSemaphore(Handle))
@@ -251,7 +261,7 @@ ACPI_STATUS AcpiOsWaitSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units, UINT16 Time
 
 ACPI_STATUS AcpiOsSignalSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__);)
 
     ReleaseSemaphore(Handle);
     return AE_OK;
@@ -265,14 +275,14 @@ struct SpinLock {
 
 static inline struct SpinLock *CreateSpin(VOID)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__));
 
     return AllocVec(sizeof(struct SpinLock), MEMF_ANY | MEMF_CLEAR);
 }
 
 static inline void DeleteSpin(struct SpinLock *sl)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__);)
 
     Disable();
     while (sl->sl_Lock > 0) {
@@ -289,7 +299,7 @@ static inline VOID LockSpin(struct SpinLock *sl)
     BYTE pri, pri_lower;
     struct Task *task = FindTask(NULL);
 
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__);)
 
     pri = task->tc_Node.ln_Pri;
     pri_lower = pri;
@@ -311,7 +321,7 @@ static inline VOID LockSpin(struct SpinLock *sl)
 
 static inline void UnlockSpin(struct SpinLock *sl)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__));
 
     sl->sl_Lock--;
     Enable();
@@ -319,7 +329,7 @@ static inline void UnlockSpin(struct SpinLock *sl)
 
 ACPI_STATUS AcpiOsCreateLock(ACPI_SPINLOCK *OutHandle)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__));
 
     *OutHandle = CreateSpin();
 
@@ -333,7 +343,7 @@ void AcpiOsDeleteLock(ACPI_SPINLOCK Handle)
 
 ACPI_CPU_FLAGS AcpiOsAcquireLock(ACPI_SPINLOCK Handle)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__));
 
     LockSpin(Handle);
     return 1;
@@ -341,7 +351,7 @@ ACPI_CPU_FLAGS AcpiOsAcquireLock(ACPI_SPINLOCK Handle)
 
 void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags)
 {
-    D(bug("[ACPI] %s()\n", __func__));
+    DLOCK(bug("[ACPI] %s()\n", __func__));
 
     if (Flags == 1)
         UnlockSpin(Handle);
@@ -529,14 +539,20 @@ UINT64 AcpiOsGetTimer(void)
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
     struct Library *TimerBase;
     struct timeval tv;
+    UINT64 retVal = 0;
 
     D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
 
-    TimerBase = ACPICABase->ab_TimerBase;
+    if ((TimerBase = ACPICABase->ab_TimerBase))
+    {
+        D(bug("[ACPI] %s: TimerBase=0x%p\n", __func__, TimerBase));
 
-    GetSysTime(&tv);
+        GetSysTime(&tv);
 
-    return (tv.tv_secs*1000000ULL + tv.tv_micro)*10;
+        D(bug("[ACPI] %s: GetSysTime returned\n", __func__));
+        retVal = (tv.tv_secs*1000000ULL + tv.tv_micro)*10;
+    }
+    return retVal;
 }
 
 ACPI_STATUS AcpiOsSignal(UINT32 Function, void *Info)
@@ -552,9 +568,77 @@ ACPI_STATUS AcpiOsGetLine(char *Buffer, UINT32 BufferLength, UINT32 *BytesRead)
     return AE_NOT_IMPLEMENTED;
 }
 
+ACPI_STATUS
+AcpiOsEnterSleep (
+    UINT8                   SleepState,
+    UINT32                  RegaValue,
+    UINT32                  RegbValue)
+{
+    D(bug("[ACPI] %s()\n", __func__));
+
+    return (AE_OK);
+}
+
 /*
  * AROS Custom Code
  */
+UINT8 AcpiGetInfoFlags(ACPI_DEVICE_INFO *DevInfo)
+{
+    return DevInfo->Flags;
+}
+
+UINT8 *AcpiGetInfoLowDstates(ACPI_DEVICE_INFO *DevInfo)
+{
+    if (DevInfo->Valid & ACPI_VALID_SXWS)
+        return DevInfo->LowestDstates;
+    return NULL;
+}
+
+UINT8 *AcpiGetInfoHighDstates(ACPI_DEVICE_INFO *DevInfo)
+{
+    if (DevInfo->Valid & ACPI_VALID_SXDS)
+        return DevInfo->HighestDstates;
+    return NULL;
+}
+
+UINT64 AcpiGetInfoAddress(ACPI_DEVICE_INFO *DevInfo)
+{
+    if (DevInfo->Valid & ACPI_VALID_ADR)
+        return DevInfo->Address;
+    return 0;
+}
+
+ACPI_PNP_DEVICE_ID *AcpiGetInfoHardwareId(ACPI_DEVICE_INFO *DevInfo)
+{
+    if (DevInfo->Valid & ACPI_VALID_HID)
+        return &DevInfo->HardwareId;
+    return NULL;
+}
+
+ACPI_PNP_DEVICE_ID *AcpiGetInfoUniqueId(ACPI_DEVICE_INFO *DevInfo)
+{
+    if (DevInfo->Valid & ACPI_VALID_UID)
+        return &DevInfo->UniqueId;
+    return NULL;
+}
+
+ACPI_PNP_DEVICE_ID *AcpiGetInfoClassCode(ACPI_DEVICE_INFO *DevInfo)
+{
+    ACPI_PNP_DEVICE_ID *classCode = NULL;
+#if defined(ACPI_VALID_CLS)
+    if (DevInfo->Valid & ACPI_VALID_CLS)
+        classCode = &DevInfo->ClassCode;
+#endif
+    return classCode;
+}
+
+ACPI_PNP_DEVICE_ID_LIST *AcpiGetInfoCompatIdList(ACPI_DEVICE_INFO *DevInfo)
+{
+    if (DevInfo->Valid & ACPI_VALID_CID)
+        return &DevInfo->CompatibleIdList;
+    return NULL;
+}
+
 LONG AcpiScanTables(const char *Signature, const struct Hook *Hook, APTR UserData)
 {
     int i;

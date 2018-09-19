@@ -1,7 +1,31 @@
+diff -ruN acpica-unix-20131115/source/components/parser/psxface.c acpica-unix-20131115.aros/source/components/parser/psxface.c
+--- acpica-unix-20131115/source/components/parser/psxface.c	2013-11-15 18:19:09.000000000 +0000
++++ acpica-unix-20131115.aros/source/components/parser/psxface.c	2018-09-19 05:40:08.043930665 +0100
+@@ -160,7 +160,7 @@
+ 
+ ACPI_STATUS
+ AcpiDebugTrace (
+-    char                    *Name,
++    const char                    *Name,
+     UINT32                  DebugLevel,
+     UINT32                  DebugLayer,
+     UINT32                  Flags)
+diff -ruN acpica-unix-20131115/source/include/acpixf.h acpica-unix-20131115.aros/source/include/acpixf.h
+--- acpica-unix-20131115/source/include/acpixf.h	2013-11-15 18:19:11.000000000 +0000
++++ acpica-unix-20131115.aros/source/include/acpixf.h	2018-09-19 05:31:19.185957614 +0100
+@@ -373,7 +373,7 @@
+ 
+ ACPI_STATUS
+ AcpiDebugTrace (
+-    char                    *Name,
++    const char                    *Name,
+     UINT32                  DebugLevel,
+     UINT32                  DebugLayer,
+     UINT32                  Flags);
 diff -ruN acpica-unix-20131115/source/include/platform/acaros.h acpica-unix-20131115.aros/source/include/platform/acaros.h
 --- acpica-unix-20131115/source/include/platform/acaros.h	1970-01-01 01:00:00.000000000 +0100
-+++ acpica-unix-20131115.aros/source/include/platform/acaros.h	2018-09-17 22:30:46.815054812 +0100
-@@ -0,0 +1,86 @@
++++ acpica-unix-20131115.aros/source/include/platform/acaros.h	2018-09-19 05:47:22.089908547 +0100
+@@ -0,0 +1,89 @@
 +/******************************************************************************
 + *
 + * Name: acaros.h - OS specific defines, etc. for AROS
@@ -38,6 +62,9 @@ diff -ruN acpica-unix-20131115/source/include/platform/acaros.h acpica-unix-2013
 +#define ACPI_USE_STANDARD_HEADERS
 +#define ACPI_MUTEX_TYPE             ACPI_BINARY_SEMAPHORE
 +#define ACPI_USE_LOCAL_CACHE
++
++/* Use native AROS version of AcpiOsAllocateZeroed */
++#define USE_NATIVE_ALLOCATE_ZEROED
 +
 +/*
 + * Calling conventions:
@@ -90,7 +117,7 @@ diff -ruN acpica-unix-20131115/source/include/platform/acaros.h acpica-unix-2013
 +#endif /* __ACAROS_H__ */
 diff -ruN acpica-unix-20131115/source/include/platform/acenv.h acpica-unix-20131115.aros/source/include/platform/acenv.h
 --- acpica-unix-20131115/source/include/platform/acenv.h	2013-11-15 18:19:11.000000000 +0000
-+++ acpica-unix-20131115.aros/source/include/platform/acenv.h	2018-09-17 22:30:32.347895235 +0100
++++ acpica-unix-20131115.aros/source/include/platform/acenv.h	2018-09-19 05:20:50.236989664 +0100
 @@ -259,6 +259,9 @@
  #elif defined(__HAIKU__)
  #include "achaiku.h"

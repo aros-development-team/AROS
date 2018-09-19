@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -95,13 +95,19 @@ AROS_UFH3(IPTR, ACPIButton_LidEventHandle,
 
 BOOL ACPIButton_MatchDeviceID(ACPI_DEVICE_INFO *acpiDevInfo, char *deviceID)
 {
+    ACPI_PNP_DEVICE_ID_LIST *cIdList;
+    ACPI_PNP_DEVICE_ID *hwId;
     int cmptid;
 
-    if (!(strcmp(acpiDevInfo->HardwareId.String, deviceID)))
+    hwId = AcpiGetInfoHardwareId(acpiDevInfo);
+    if (hwId && !(strcmp(hwId->String, deviceID)))
         return TRUE;
-    for (cmptid = 0; cmptid < acpiDevInfo->CompatibleIdList.Count; cmptid++) {
-        if (!(strcmp(acpiDevInfo->CompatibleIdList.Ids[cmptid].String, deviceID)))
-            return TRUE;
+    cIdList = AcpiGetInfoCompatIdList(acpiDevInfo);
+    if (cIdList) {
+        for (cmptid = 0; cmptid < cIdList->Count; cmptid++) {
+            if (!(strcmp(cIdList->Ids[cmptid].String, deviceID)))
+                return TRUE;
+        }
     }
     return FALSE;
 }
@@ -120,60 +126,55 @@ static ACPI_STATUS ACPIButton_DeviceQuery(ACPI_HANDLE handle,
     D(bug("[HWACPIButton] %s(0x%p)\n", __func__, handle));
 
     acpiStatus = AcpiGetObjectInfo(handle, &acpiDevInfo);
-    if (acpiStatus != AE_OK) {
+    if (ACPI_FAILURE(acpiStatus)) {
         if (acpiDevInfo) {
             FreeVec(acpiDevInfo);
         }
         return acpiStatus;
     }
 
-    if (acpiDevInfo->Valid & ACPI_VALID_HID)
+    if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0C"))
     {
-        D(bug("[HWACPIButton] %s: HardwareID = '%s'\n", __func__, acpiDevInfo->HardwareId.String));
-
-        if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0C"))
+        D(bug("[HWACPIButton] %s: Power Button Device Found\n", __func__));
+        if ((!_csd->powerButtonObj) && (!_csd->acpiPowerBHandle))
         {
-            D(bug("[HWACPIButton] %s: Power Button Device Found\n", __func__));
-            if ((!_csd->powerButtonObj) && (!_csd->acpiPowerBHandle))
-            {
-                _csd->acpiPowerBHandle = handle;
-                _csd->acpiPowerBType = vHW_ACPIButton_Power;
-            }
+            _csd->acpiPowerBHandle = handle;
+            _csd->acpiPowerBType = vHW_ACPIButton_Power;
         }
-        else if (ACPIButton_MatchDeviceID(acpiDevInfo, "ACPI_FPB"))
+    }
+    else if (ACPIButton_MatchDeviceID(acpiDevInfo, "ACPI_FPB"))
+    {
+        D(bug("[HWACPIButton] %s: Fixed Power Button Device Found\n", __func__));
+        if ((!_csd->powerButtonObj) && (!_csd->acpiPowerBHandle))
         {
-            D(bug("[HWACPIButton] %s: Fixed Power Button Device Found\n", __func__));
-            if ((!_csd->powerButtonObj) && (!_csd->acpiPowerBHandle))
-            {
-                _csd->acpiPowerBHandle = handle;
-                _csd->acpiPowerBType = vHW_ACPIButton_PowerF;
-            }
+            _csd->acpiPowerBHandle = handle;
+            _csd->acpiPowerBType = vHW_ACPIButton_PowerF;
         }
-        else if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0E"))
+    }
+    else if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0E"))
+    {
+        D(bug("[HWACPIButton] %s: Sleep Button Device Found\n", __func__));
+        if ((!_csd->sleepButtonObj) && (!_csd->acpiSleepBHandle))
         {
-            D(bug("[HWACPIButton] %s: Sleep Button Device Found\n", __func__));
-            if ((!_csd->sleepButtonObj) && (!_csd->acpiSleepBHandle))
-            {
-                _csd->acpiSleepBHandle = handle;
-                _csd->acpiSleepBType = vHW_ACPIButton_Sleep;
-            }
+            _csd->acpiSleepBHandle = handle;
+            _csd->acpiSleepBType = vHW_ACPIButton_Sleep;
         }
-        else if (ACPIButton_MatchDeviceID(acpiDevInfo, "ACPI_FSB"))
+    }
+    else if (ACPIButton_MatchDeviceID(acpiDevInfo, "ACPI_FSB"))
+    {
+        D(bug("[HWACPIButton] %s: Fixed Sleep Button Device Found\n", __func__));
+        if ((!_csd->sleepButtonObj) && (!_csd->acpiSleepBHandle))
         {
-            D(bug("[HWACPIButton] %s: Fixed Sleep Button Device Found\n", __func__));
-            if ((!_csd->sleepButtonObj) && (!_csd->acpiSleepBHandle))
-            {
-                _csd->acpiSleepBHandle = handle;
-                _csd->acpiSleepBType = vHW_ACPIButton_SleepF;
-            }
+            _csd->acpiSleepBHandle = handle;
+            _csd->acpiSleepBType = vHW_ACPIButton_SleepF;
         }
-        else if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0D"))
+    }
+    else if (ACPIButton_MatchDeviceID(acpiDevInfo, "PNP0C0D"))
+    {
+        D(bug("[HWACPIButton] %s: Lid Button Device Found\n", __func__));
+        if ((!_csd->lidButtonObj) && (!_csd->acpibLidBHandle))
         {
-            D(bug("[HWACPIButton] %s: Lid Button Device Found\n", __func__));
-            if ((!_csd->lidButtonObj) && (!_csd->acpibLidBHandle))
-            {
-                _csd->acpibLidBHandle = handle;
-            }
+            _csd->acpibLidBHandle = handle;
         }
     }
 
