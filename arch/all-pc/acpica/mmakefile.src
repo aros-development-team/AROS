@@ -2,6 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+DEBUG_ACPI=no
+
 ACPICAREPOSITORIES := https://acpica.org/sites/acpica/files
 ACPICAPACKAGE      := acpica
 ACPICAVERSION      := 20131115
@@ -10,7 +12,7 @@ ACPICASRCDIR       := $(PORTSDIR)/acpica/$(ACPICAARCHBASE)
 
 ACPICAPSPECS := $(ACPICAARCHBASE)-aros.diff:$(ACPICAARCHBASE):-f,-p1
 
-ACPICA_INCLUDE     := $(ACPICASRCDIR)/source/include
+ACPICA_INCLUDES     := $(ACPICASRCDIR)/source/include
 
 %fetch mmake=acpica-fetch archive=$(ACPICAARCHBASE) \
     destination=$(PORTSDIR)/acpica \
@@ -27,7 +29,7 @@ ACPICA_INCLUDE     := $(ACPICASRCDIR)/source/include
 #MM kernel-pc-acpica : acpica-fetch
 #MM includes-copy :  acpica-fetch
 
-ACPICA_SOURCES = \
+ACPICA_BASESOURCES = \
        $(call WILDCARD, $(ACPICASRCDIR)/source/components/executer/*.c) \
        $(call WILDCARD, $(ACPICASRCDIR)/source/components/hardware/*.c) \
        $(call WILDCARD, $(ACPICASRCDIR)/source/components/dispatcher/*.c) \
@@ -43,17 +45,28 @@ USER_CFLAGS := $(NOWARN_FLAGS)
 USER_LDFLAGS := -static
 
 # ACPICA debugging options
-#ACPICA_SOURCES +=  \
-#       $(call WILDCARD, $(ACPICASRCDIR)/source/components/disassembler/*.c)
-#USER_CFLAGS += -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
-
+ifeq ($(DEBUG_ACPI),yes)
+ACPICA_BASESOURCES +=  \
+       $(call WILDCARD, $(ACPICASRCDIR)/source/components/disassembler/*.c)
+USER_CPPFLAGS += -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
 # AROS Glue code debugging options
-#USER_CFLAGS += -DDEBUG=1
+USER_CPPFLAGS += -DDEBUG=1
+ACPICA_SOURCES = \
+       $(ACPICA_BASESOURCES:%.c=%)
+else
+ACPICA_SKIPFILES := \
+       $(ACPICASRCDIR)/source/components/resources/rsdump
+ACPICA_SOURCES = \
+       $(filter-out $(ACPICA_SKIPFILES), $(ACPICA_BASESOURCES:%.c=%))
+endif
 
 FILES := acpios_aros \
-         $(ACPICA_SOURCES:%.c=%)
+         $(ACPICA_SOURCES)
 
-USER_INCLUDES += -I$(ACPICA_INCLUDE)
+USER_INCLUDES += \
+         -I$(AROS_INCLUDES)/acpica \
+         -iquote $(ACPICA_INCLUDES) \
+         -iquote $(ACPICA_INCLUDES)/platform
 
 %build_module mmake=kernel-pc-acpica \
   modname=acpica modtype=library \
@@ -65,13 +78,13 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 %copy_includes path=libraries dir=include
 
-INCLUDE_FILES = $(call WILDCARD, $(ACPICA_INCLUDE)/*.h)
+INCLUDE_FILES = $(call WILDCARD, $(ACPICA_INCLUDES)/*.h)
 
-%copy_includes path=acpica dir=$(ACPICA_INCLUDE)
+%copy_includes path=acpica dir=$(ACPICA_INCLUDES)
 
 # Programs
 
-USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CPPFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 FILES := ACPIInfo
 

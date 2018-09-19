@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2017, The AROS Development Team
+ * Copyright (C) 2012-2018, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -33,9 +33,15 @@
 #define ACPI_INTERNAL_XFACE         
 #define ACPI_INTERNAL_VAR_XFACE     
 
-#define ACPI_ALLOCATE(size)             AllocVec(size, MEMF_PUBLIC)
-#define ACPI_ALLOCATE_ZEROED(size)      AllocVec(size, MEMF_PUBLIC | MEMF_CLEAR)
-#define ACPI_FREE(ptr)                  FreeVec(ptr)
+#ifndef __ACAROS_H__
+#define ACPI_EXTERNAL_RETURN_STATUS(Prototype)
+#define ACPI_EXTERNAL_RETURN_OK(Prototype)
+#define ACPI_EXTERNAL_RETURN_VOID(Prototype)
+#define ACPI_EXTERNAL_RETURN_UINT32(Prototype)
+#define ACPI_EXTERNAL_RETURN_PTR(Prototype)
+
+#define ACPI_INLINE             __inline__
+#define ACPI_PRINTF_LIKE(c) __attribute__ ((__format__ (__printf__, c, c+1)))
 
 #include <acpica/actypes.h>
 #include <acpica/actbl.h>
@@ -44,5 +50,6 @@
 #include <acpica/acpixf.h>
 #include <acpica/acexcep.h>
 #include <acpica/aclocal.h>
+#endif
 
 #endif /* LIBRARIES_ACPICA_H */
