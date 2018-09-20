@@ -2,7 +2,7 @@
 #define _TIMER_INTERN_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's
@@ -51,6 +51,7 @@ struct TimerBase
     /* This is required for hardware-specific code */
     APTR		 tb_TimerIRQHandle;	/* Timer IRQ handle					*/
     struct Interrupt	 tb_VBlankInt;		/* Used by older implementations, needs to be removed	*/
+    struct Interrupt	 tb_ResetHandler;	/* Stops interrupt generation before a reboot		*/
 
     /* Request queues */
     struct MinList	 tb_Lists[NUM_LISTS];

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -46,6 +46,20 @@ static void TimerInt(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
 /****************************************************************************************/
 
+static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
+{
+    AROS_INTFUNC_INIT
+
+    /* Set a mode that won't generate interrupts */
+    outb(CH0|ACCESS_FULL|MODE_ONESHOT, PIT_CONTROL);
+
+    return 0;
+
+    AROS_INTFUNC_EXIT
+}
+
+/****************************************************************************************/
+
 static int hw_Init(struct TimerBase *LIBBASE)
 {
 #if defined(__AROSEXEC_SMP__)
@@ -67,6 +81,13 @@ static int hw_Init(struct TimerBase *LIBBASE)
     D(bug("[Timer] IRQ handle = 0x%p\n", LIBBASE->tb_TimerIRQHandle));
     if (!LIBBASE->tb_TimerIRQHandle)
     	return FALSE;
+
+    /* Install a reset handler */
+    LIBBASE->tb_ResetHandler.is_Node.ln_Name =
+        LIBBASE->tb_Device.dd_Library.lib_Node.ln_Name;
+    LIBBASE->tb_ResetHandler.is_Code = (VOID_FUNC)ResetHandler;
+    LIBBASE->tb_ResetHandler.is_Data = LIBBASE;
+    AddResetCallback(&LIBBASE->tb_ResetHandler);
 
     D(bug("[Timer] Initializing hardware...\n"));
 
@@ -113,6 +134,7 @@ static int hw_Init(struct TimerBase *LIBBASE)
 static int hw_Expunge(struct TimerBase *LIBBASE)
 {
     KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
+    RemResetCallback(&LIBBASE->tb_ResetHandler);
 
     return TRUE;
 }
