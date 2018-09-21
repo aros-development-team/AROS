@@ -47,9 +47,14 @@ ACPI_STATUS AcpiOsInitialize (void)
     if ((ACPICABase->ab_TimeMsgPort = CreateMsgPort())) {
         D(bug("[ACPI] %s: MsgPort @ %p\n", __func__, ACPICABase->ab_TimeMsgPort));
         if ((ACPICABase->ab_TimeRequest = CreateIORequest(ACPICABase->ab_TimeMsgPort, sizeof(*ACPICABase->ab_TimeRequest)))) {
-            D(bug("[ACPI] %s: Ready\n", __func__));
-            ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
-            D(bug("[ACPI] %s: TimerBase = %p\n", __func__, ACPICABase->ab_TimerBase));
+            D(bug("[ACPI] %s: TimeRequest @ %p\n", __func__, ACPICABase->ab_TimeRequest));
+
+			if (ACPICABase->ab_Flags & ACPICAF_TIMER)
+				if (0 == OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)ACPICABase->ab_TimeRequest, 0))	
+				{
+					ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
+				}
+
             return AE_OK;
         }
         DeleteMsgPort(ACPICABase->ab_TimeMsgPort);
@@ -65,6 +70,12 @@ ACPI_STATUS AcpiOsTerminate (void)
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
 
     D(bug("[ACPI] %s: ACPICABase=0x%p\n", __func__, ACPICABase));
+
+	if (ACPICABase->ab_TimeRequest->tr_node.io_Device)
+	{
+		ACPICABase->ab_TimerBase = NULL;
+		CloseDevice((struct IORequest *)ACPICABase->ab_TimeRequest);
+	}
 
     DeleteIORequest(ACPICABase->ab_TimeRequest);
     DeleteMsgPort(ACPICABase->ab_TimeMsgPort);
@@ -761,6 +772,8 @@ int ACPICA_expunge(struct ACPICABase *ACPICABase)
 }
 ADD2EXPUNGELIB(ACPICA_expunge, 0)
 
+/******************* ACPICA Post Exec/Kernel Setup ******************/
+
 extern void acpicapost_end(void);
 
 static AROS_UFP3 (APTR, ACPICAPost,
@@ -822,3 +835,64 @@ static AROS_UFH3 (APTR, ACPICAPost,
 
 void acpicapost_end(void) { };
 
+/******************* Timer Setup - Runs after timer.device is initialised ******************/
+
+extern void acpicatimer_end(void);
+
+static AROS_UFP3 (APTR, ACPICATimerSetup,
+		  AROS_UFPA(struct Library *, lh, D0),
+		  AROS_UFPA(BPTR, segList, A0),
+		  AROS_UFPA(struct ExecBase *, sysBase, A6));
+
+static const TEXT acpicatimer_namestring[] = "acpica.timer";
+static const TEXT acpicatimer_versionstring[] = "acpica.timer 1.0\n";
+
+const struct Resident acpicatimer_romtag =
+{
+   RTC_MATCHWORD,
+   (struct Resident *)&acpicatimer_romtag,
+   (APTR)&acpicatimer_end,
+   RTF_COLDSTART,
+   1,
+   NT_UNKNOWN,
+   49,
+   (STRPTR)acpicatimer_namestring,
+   (STRPTR)acpicatimer_versionstring,
+   (APTR)ACPICATimerSetup
+};
+
+extern struct syscallx86_Handler x86_SCRebootHandler;
+extern struct syscallx86_Handler x86_SCChangePMStateHandler;
+
+static AROS_UFH3 (APTR, ACPICATimerSetup,
+		  AROS_UFHA(struct Library *, lh, D0),
+		  AROS_UFHA(BPTR, segList, A0),
+		  AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    struct ACPICABase *ACPICABase;
+
+    D(bug("[ACPI] %s()\n", __func__));
+
+    /* If ACPICA isn't available, don't run */
+    ACPICABase = (struct ACPICABase *)OpenLibrary("acpica.library", 0);
+    if (!ACPICABase) {
+        D(bug("[ACPI] %s(): Can't open acpica.library. Quitting\n", __func__));
+        return NULL;
+    }
+
+	if (0 == OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)ACPICABase->ab_TimeRequest, 0))	
+	{
+		ACPICABase->ab_Flags |= ACPICAF_TIMER;
+		ACPICABase->ab_TimerBase = (struct Library *)ACPICABase->ab_TimeRequest->tr_node.io_Device;
+	}
+    D(bug("[ACPI] %s: Finished\n", __func__));
+
+    AROS_USERFUNC_EXIT
+
+    return NULL;
+}
+
+void acpicatimer_end(void) { };

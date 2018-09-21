@@ -15,6 +15,8 @@
 
 #define ACPICAB_ENABLED 0
 #define ACPICAF_ENABLED (1 << ACPICAB_ENABLED)
+#define ACPICAB_TIMER 1
+#define ACPICAF_TIMER (1 << ACPICAB_TIMER)
 
 struct ACPICABase {
     struct Library ab_Lib;
