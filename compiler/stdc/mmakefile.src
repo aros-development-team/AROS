@@ -2,7 +2,8 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- AROS : compiler-stdc compiler-stdcio
 
-USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math
+FMTPRINTFDIR := $(SRCDIR)/compiler/fmtprintf
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math -iquote $(FMTPRINTFDIR)
 
 STDC_MATH := \
     math/bsdsrc/b_exp \
