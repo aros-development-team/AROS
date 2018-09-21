@@ -29,7 +29,7 @@
 #define PREV(c) do{if((c)!=EOF)(*unget_char)((c),data);size--;incount--;}while(0)
 #define VAL(a)    ((a)&&size<=width)
 
-extern unsigned char *__decimalpoint;
+extern unsigned char *__stdc_char_decimalpoint;
 
 struct vcs_ieeetype
 {
@@ -303,7 +303,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                         NEXT(c);
                     }
 
-                    if(VAL(c==__decimalpoint[0]))
+                    if(VAL(c==__stdc_char_decimalpoint[0]))
                     { 
                         double dp=0.1;
                         NEXT(c);
@@ -316,7 +316,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
                         if(size==2+(min!=0)) /* No number read till now -> malformatted */
                         { 
                             PREV(c);
-                            c=__decimalpoint[0]; 
+                            c=__stdc_char_decimalpoint[0]; 
                         }
                     }
 

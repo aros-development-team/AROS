@@ -49,7 +49,9 @@ FILES	:= \
 #MM- linklibs: linklibs-arossupport
 #MM linklibs-arossupport : includes
 
-USER_CFLAGS := -I$(SRCDIR)/rom/exec
+FMTPRINTFDIR := $(SRCDIR)/compiler/fmtprintf
+USER_INCLUDES := -I$(SRCDIR)/rom/exec -iquote $(FMTPRINTFDIR)
+USER_CFLAGS :=  -fno-builtin
 
 %build_linklib mmake=linklibs-arossupport libname=arossupport files=$(FILES)
 
