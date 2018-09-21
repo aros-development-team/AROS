@@ -4,7 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 
 DEBUG_ACPI=no
 
-ACPICAREPOSITORIES := https://acpica.org/sites/acpica/files
+ACPICAREPOSITORIES := \
+    https://acpica.org/sites/acpica/files https://mirrors.omniosce.org/acpica
 ACPICAPACKAGE      := acpica
 ACPICAVERSION      := 20180810
 ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)
