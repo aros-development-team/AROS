@@ -48,7 +48,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
             break;
 
         case UHCMD_INTXFER:
-            mybug_unit(-1, ("Aborting cmdIntXFer ioreq %lx\n", ioreq->iouh_Req));
+            mybug_unit(-1, ("Aborting cmdIntXFer ioreq %lx\n", ioreq));
             /* We need to block the libusb handler task from messing up with our queue */
             ObtainSemaphore(&unit->intrxfer_queue_lock); {
                 mybug_unit(-1, ("    Semaphore accuired\n"));
@@ -66,6 +66,21 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
                     }
                 }
             } ReleaseSemaphore(&unit->intrxfer_queue_lock);
+
+            /*
+            	Must have been a request for the roothub intr queue or not...
+            	When a device gets unbind we get an iorequest followed by an abort command
+            	can't find the request... Maybe the roothub intr code is broken
+            */
+            if(ret == FALSE) {
+				ObtainSemaphore(&unit->roothub.intrxfer_queue_lock); {
+                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                    ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+                    ReplyMsg(&ioreq->iouh_Req.io_Message);
+                    mybug_unit(-1, ("    removed\n"));
+                    ret = TRUE;
+	            } ReleaseSemaphore(&unit->roothub.intrxfer_queue_lock);
+            }
             break;
 
         case UHCMD_BULKXFER:
@@ -955,7 +970,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(0, ("Entering function\n"));
+    mybug_unit(-1, ("Entering function\n"));
 
     if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
         mybug_unit(-1, ("UHIOERR_BADPARAMS\n"));
@@ -973,7 +988,7 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
     }
 #endif
 
-    mybug_unit(0, ("ioreq added to roothub intrxfer_queue\n"));
+    mybug_unit(-1, ("ioreq added to roothub intrxfer_queue\n"));
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ObtainSemaphore(&unit->roothub.intrxfer_queue_lock);
@@ -1059,10 +1074,10 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(0, ("Entering function\n"));
+    mybug_unit(-1, ("Entering function\n"));
 
-    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -1084,7 +1099,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
         return(cmdIntXFerRootHub(ioreq));
     }
 
-    mybug_unit(0, ("Adding INTR transfer request to queue\n"));
+    mybug_unit(-1, ("Adding INTR transfer request to queue\n"));
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
