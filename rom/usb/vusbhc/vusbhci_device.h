@@ -95,10 +95,13 @@ struct VUSBHCIBase {
     //struct Library              *HostLibBase;
 
     struct VUSBHCIUnit          *usbunit200;
+/*
     struct VUSBHCIUnit          *usbunit300;
+*/
 };
 
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
+WORD cmdFlush(struct IOUsbHWReq *ioreq);
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
 WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
