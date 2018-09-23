@@ -16,13 +16,16 @@
 #undef AROS_HAVE_LONG_LONG
 #endif
 
-#define MINFLOATSIZE (DBL_DIG+1) /* Why not 1 more - it's 97% reliable */
 #define MININTSIZE (sizeof(unsigned long)*BITSPERBYTE/3+1)
 #define MINPOINTSIZE (sizeof(void *)*BITSPERBYTE/4+1)
+#if defined(FULL_SPECIFIERS)
+#define MINFLOATSIZE (DBL_DIG+1) /* Why not 1 more - it's 97% reliable */
 #define REQUIREDBUFFER (MININTSIZE>MINPOINTSIZE? \
                         (MININTSIZE>MINFLOATSIZE?MININTSIZE:MINFLOATSIZE): \
                         (MINPOINTSIZE>MINFLOATSIZE?MINPOINTSIZE:MINFLOATSIZE))
-
+#else
+#define REQUIREDBUFFER (MININTSIZE>MINPOINTSIZE ? (MININTSIZE) : (MINPOINTSIZE))
+#endif
 #define ALTERNATEFLAG 1  /* '#' is set */
 #define ZEROPADFLAG   2  /* '0' is set */
 #define LALIGNFLAG    4  /* '-' is set */

@@ -23,7 +23,17 @@
 extern volatile ULONG   safedebug;
 #endif
 
+/*
+  The floating point math code pulls in symbols
+  that cannot be used in the amiga rom
+  */
+#if !defined(__m68k__)
+#define FULL_SPECIFIERS
+#endif
+
+#if defined(FULL_SPECIFIERS)
 #include <float.h>
+#endif
 
 /* provide inline versions of clib functions
    used in FMTPRINTF */
@@ -62,15 +72,13 @@ static inline int kprintf_strlen(const char *c)
 /* limits.h ... */
 #define ULONG_MAX   	4294967295UL
 
-static const unsigned char *const __arossupport_char_decimalpoint = ".";
-
-#define FULL_SPECIFIERS
-
 /* support macros for FMTPRINTF */
 #define FMTPRINTF_COUT(c)       RawPutChar(c)
 #define FMTPRINTF_STRLEN(str)   kprintf_strlen(str)
 
+#if defined(FULL_SPECIFIERS)
 #define FMTPRINTF_DECIMALPOINT	__arossupport_char_decimalpoint
+#endif
 
 #include "fmtprintf_pre.c"
 
@@ -126,6 +134,9 @@ static const unsigned char *const __arossupport_char_decimalpoint = ".";
 /******************************************************************************/
 int vkprintf (const char * format, va_list args)
 {
+#if defined(FULL_SPECIFIERS)
+	const unsigned char *const __arossupport_char_decimalpoint = ".";
+#endif
 #if defined(__AROSEXEC_SMP__)
     if (safedebug & 1)
     {
