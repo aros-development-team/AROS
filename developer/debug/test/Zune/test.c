@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2017, The AROS Development Team.
+    Copyright © 2002-2018, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -271,6 +271,7 @@ static struct Hook hook_objects;
 static struct Hook hook_compare, hook_multitest;
 static struct Hook hook_construct, hook_destruct, hook_display;
 static struct Hook hook_objstr;
+static Object *city_radios[3];
 
 #if defined(TEST_ICONLIST)
 static Object *drawer_iconlist;
@@ -1421,6 +1422,14 @@ static void Save(void)
     }
 }
 
+static void RadioCopyActive(void)
+{
+    UWORD i;
+
+    i = XGET(city_radios[1], MUIA_Radio_Active);
+    nnset(city_radios[2], MUIA_Radio_Active, i);
+}
+
 #if defined(TEST_ICONLIST)
 /* IconList callbacks */
 static void volume_doubleclicked(void)
@@ -1606,7 +1615,6 @@ int main(void)
     Object *numerics[NUMERIC_COUNT];
     Object *min_string, *max_string;
     Object *slider_button;
-    Object *country_radio[2];
     STRPTR title;
     UWORD i;
     LONG value = 0;
@@ -1626,9 +1634,8 @@ int main(void)
         {"Palette", "Colors", "Pens", NULL};
     static char *list_pages[] =
         {"Single Column", "Multicolumn", NULL};
-    static char **radio_entries1 = pages;
-    static char *radio_entries2[] =
-        {"Paris", "Pataya", "London", "New York", "Reykjavik", NULL};
+    static char *radio_entries[] =
+        {"Paris", "Pataya", "London", "New York", "Reykjavik", "Tokyo", NULL};
 
     static IPTR entries[] = {1, 2, 3, 4, 5, 6, (IPTR)NULL};
 
@@ -3154,28 +3161,23 @@ int main(void)
                             End,
 
                         /* radios */
-                        Child, HGroup,
-                            Child, VGroup, 
-                                Child, RadioObject,
-                                GroupFrame,
-                                MUIA_Radio_Entries, radio_entries1,
-                                End,
-                            Child, country_radio[0] = RadioObject,
-                                GroupFrame,
-                                MUIA_Radio_Entries, radio_entries2,
+                        Child, VGroup,
+                            Child, city_radios[0] = RadioObject,
+                                GroupFrameT("Vertical"),
+                                MUIA_Radio_Entries, radio_entries,
                                 MUIA_Radio_Active, 1,
                                 End,
-                            End,
-                        Child, HGroup,
-                            Child, RadioObject,
-                                GroupFrame,
-                                MUIA_Radio_Entries, radio_entries1,
+                            Child, city_radios[1] = RadioObject,
+                                GroupFrameT("Horizontal"),
+                                MUIA_Group_Horiz, TRUE,
+                                MUIA_Radio_Entries, radio_entries,
+                                MUIA_Radio_Active, 1,
                                 End,
-                                Child, country_radio[1] = RadioObject,
-                                    GroupFrame,
-                                    MUIA_Radio_Entries, radio_entries2,
-                                    MUIA_Radio_Active, 1,
-                                    End,
+                            Child, city_radios[2] = RadioObject,
+                                GroupFrameT("Grid"),
+                                MUIA_Group_Rows, 2,
+                                MUIA_Radio_Entries, radio_entries,
+                                MUIA_Radio_Active, 1,
                                 End,
                             End,
 
@@ -3612,11 +3614,17 @@ int main(void)
             numerics[HRSLIDER], 3, MUIM_Set, MUIA_Slider_Horiz, FALSE);
 
         /* radio */
-        DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active,
-            MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet,
+        DoMethod(city_radios[0], MUIM_Notify, MUIA_Radio_Active,
+            MUIV_EveryTime, city_radios[1], 3, MUIM_Set,
             MUIA_Radio_Active, MUIV_TriggerValue);
-        DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active,
-            MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet,
+        DoMethod(city_radios[1], MUIM_Notify, MUIA_Radio_Active,
+            MUIV_EveryTime, city_radios[0], 3, MUIM_NoNotifySet,
+            MUIA_Radio_Active, MUIV_TriggerValue);
+        DoMethod(city_radios[1], MUIM_Notify, MUIA_Radio_Active,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            RadioCopyActive);
+        DoMethod(city_radios[2], MUIM_Notify, MUIA_Radio_Active,
+            MUIV_EveryTime, city_radios[0], 3, MUIM_Set,
             MUIA_Radio_Active, MUIV_TriggerValue);
 
 #if defined(TEST_ICONLIST)
