@@ -30,7 +30,9 @@
 #include LC_LIBDEFS_FILE
 
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit200(void);
+/*
 struct VUSBHCIUnit *VUSBHCI_AddNewUnit300(void);
+*/
 
 static void handler_task(struct Task *parent, struct VUSBHCIUnit *unit) {
     mybug_unit(-1,("Starting %s handler task\n", unit->name));
@@ -143,12 +145,13 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VUSBHCIBase) {
         return FALSE;
     }
 
+/*
     VUSBHCIBase->usbunit300 = VUSBHCI_AddNewUnit300();
     if(VUSBHCIBase->usbunit300 == NULL) {
         mybug(-1, ("[VUSBHCI] Init: Failed to create new USB3.0 unit!\n"));
         return FALSE;
     }
-
+*/
     return TRUE;
 }
 
@@ -164,8 +167,10 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VUSBHCIBase, struct IOUsbHWReq *io
 
     if(unitnum == 0) {
         unit = VUSBHCIBase->usbunit200;
+ /*
     } else if(unitnum == 1) {
         unit = VUSBHCIBase->usbunit300;
+*/
     } else {
         return FALSE;
     }
@@ -243,6 +248,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VUSBHCI
                 break;
             case CMD_FLUSH:
                 mybug_unit(-1, ("CMD_FLUSH\n"));
+                ret = cmdFlush(ioreq);
                 break;
             case UHCMD_QUERYDEVICE:
                 mybug_unit(-1, ("UHCMD_QUERYDEVICE\n"));

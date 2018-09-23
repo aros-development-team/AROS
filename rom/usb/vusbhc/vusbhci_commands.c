@@ -90,10 +90,18 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
     return ret;
 }
 
+WORD cmdFlush(struct IOUsbHWReq *ioreq) {
+    struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
+
+    return RC_OK;
+}
+
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     struct VUSBHCIUnit *unit = (struct VUSBHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(0, ("Entering function\n"));
+    mybug_unit(-1, ("Entering function\n"));
 
     /* We should do a proper reset sequence with a real driver */
     unit->state = UHSF_RESET;
