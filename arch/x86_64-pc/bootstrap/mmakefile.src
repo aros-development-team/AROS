@@ -6,12 +6,14 @@ include $(SRCDIR)/config/aros.cfg
 
 MAINDIR := arch/all-pc/bootstrap
 
-CFLAGS32 := $(filter-out -mcmodel=large,$(CFLAGS))
-USER_CFLAGS := -m32 -I $(SRCDIR)/$(MAINDIR) -isystem $(SRCDIR)/bootstrap/include \
+USER_INCLUDES := -I $(SRCDIR)/$(MAINDIR) -isystem $(SRCDIR)/bootstrap/include \
                -I$(GENDIR)/include
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    ISA_FLAGS := $(ISA_X86_FLAGS)
+endif
 
 %build_archspecific \
 	mainmmake=kernel-bootstrap-pc maindir=$(MAINDIR) arch=x86_64 \
-	cflags="$(CFLAGS32) $(USER_CFLAGS)" files=cpu compiler=kernel
+	files=cpu compiler=kernel
 
 %common

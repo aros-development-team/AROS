@@ -12,9 +12,11 @@ USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)/include -I $(GENINCDIR)
 
 # linklibs-bootstrap32 target is used by x86-64 bootstrap which runs in 32-bit mode
 
-CFLAGS32 := $(filter-out -mcmodel=large,$(CFLAGS))
-
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    ISA_FLAGS := $(ISA_X86_FLAGS)
+endif
+USER_CPPFLAGS := -DELF_64BIT
 %build_linklib mmake=linklibs-bootstrap32 libname=bootstrap files="$(FILES)" \
-	       cflags="-m32 -DELF_64BIT $(CFLAGS32)" compiler=kernel objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+	       compiler=kernel objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
 
 %common

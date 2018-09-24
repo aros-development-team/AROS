@@ -71,12 +71,12 @@ CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
 %build_with_configure mmake=grub2-host compiler=host nix=yes		\
         prefix="$(DESTDIR)" srcdir=$(GRUBSRCDIR)	\
         package=pc extraoptions="$(CONFIG_OPTS) --with-platform=pc"	\
-        install_target=
+        install_target= targetisaflags=
 
 %build_with_configure mmake=grub2-efi-host compiler=host nix=yes	\
         prefix="$(DESTDIR)" srcdir=$(GRUBSRCDIR)	\
         package=efi extraoptions="$(CONFIG_OPTS) --with-platform=efi"	\
-        install_target=
+        install_target= targetisaflags=
 
 PC_MODS	    := biosdisk
 EFI_MODS    :=
