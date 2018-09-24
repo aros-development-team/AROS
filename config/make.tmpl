@@ -363,8 +363,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).o : %(mmake)_C_CPPFLAGS:=$(strip $(KERNEL_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS))
 $(%(mmake)_TARGETBASE).d : %(mmake)_C_CPPFLAGS:=$(strip $(KERNEL_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS))
-$(%(mmake)_TARGETBASE).o : %(mmake)_CFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
-$(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -558,8 +558,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).o : %(mmake)_OBJC_CPPFLAGS:=$(strip $(KERNEL_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS))
 $(%(mmake)_TARGETBASE).d : %(mmake)_OBJC_CPPFLAGS:=$(strip $(KERNEL_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS))
-$(%(mmake)_TARGETBASE).o : %(mmake)_OBJCFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
-$(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJCFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -669,8 +669,8 @@ ifeq (%(compiler),kernel)
 %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_MC_CPPFLAGS:=$(strip $(KERNEL_MC_CPPFLAGS) $(%(mmake)_MC_CPPFLAGS))
-$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_CFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
-$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_DFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_CFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_DFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -885,8 +885,8 @@ ifeq (%(compiler),kernel)
   %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : CMD:=$(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_MOBJC_CPPFLAGS:=$(strip $(KERNEL_MOBJC_CPPFLAGS) $(%(mmake)_MOBJC_CPPFLAGS))
-  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
-  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCDFLAGS:=$(strip $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCDFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -2785,7 +2785,7 @@ endif
 ifeq (%(compiler),kernel)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(KERNEL_CFLAGS) $(TMP_CFLAGS))
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(TMP_CFLAGS))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -3173,7 +3173,7 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += TARGET_CPPFLAGS="$(KERNEL_CPPFLAGS)"
 endif
     %(mmake)-cfg-env += TARGET_CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
-        TARGET_CFLAGS="$(strip $(KERNEL_CFLAGS) $(%(mmake)-s_flag))" \
+        TARGET_CFLAGS="$(strip %(targetisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag))" \
         TARGET_CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
         TARGET_CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag))" \
         TARGET_AS="$(TARGET_AS)" \
@@ -3242,7 +3242,7 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += TARGET_CPPFLAGS="$(KERNEL_CPPFLAGS)"
 endif
     %(mmake)-cfg-env += TARGET_CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
-        TARGET_CFLAGS="$(strip $(KERNEL_CFLAGS) $(%(mmake)-s_flag))" \
+        TARGET_CFLAGS="$(strip %(targetisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag))" \
         TARGET_CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
         TARGET_CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag))" \
         TARGET_AS="$(strip $(TARGET_AS))" \
@@ -3274,7 +3274,7 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(KERNEL_CPPFLAGS) %(extracppflags))"
 endif
     %(mmake)-cfg-env += CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
-        CFLAGS="$(strip $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
+        CFLAGS="$(strip %(targetisaflags) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
         CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
         CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))" \
         AS="$(KERNEL_AS)"

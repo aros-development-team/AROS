@@ -208,8 +208,8 @@ MECHO	:= $(NOP)
 endif
 
 # compiler and assembler flags are set depending upon the directory
-CFLAGS      = $(TARGET_CFLAGS)
-CXXFLAGS    = $(TARGET_CXXFLAGS)
+CFLAGS      = $(ISA_FLAGS) $(TARGET_CFLAGS)
+CXXFLAGS    = $(ISA_FLAGS) $(TARGET_CXXFLAGS)
 CPPFLAGS = $(TARGET_CPPFLAGS)
 AFLAGS	    = $(ISA_FLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS)
 LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
