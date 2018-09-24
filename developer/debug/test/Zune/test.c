@@ -67,6 +67,8 @@ static const char *fruits[] = {"Strawberry", "Apple", "Banana", "Orange",
     "Peach", "Lemon", "Lime", "Date", "Pineapple", "Blueberry", "Papaya",
     "Cranberry", "Gooseberry", "Pear", "Fig", "Coconut", "Melon",
     "Pumpkin", NULL};
+static char *cities[] =
+    {"Paris", "Pataya", "London", "New York", "Reykjavik", "Tokyo", NULL};
 static const char *empty[] = {"", "", "", "", "", NULL};
 static const LONG list_active_positions[] =
 {
@@ -248,6 +250,15 @@ static struct
     IPTR image;
 }
 list;
+
+static struct
+{
+    Object *city_cycle,
+        *prev_button,
+        *next_button,
+        *city_text;
+}
+cycle;
 
 static Object *wheel;
 static Object *r_slider;
@@ -1430,6 +1441,14 @@ static void RadioCopyActive(void)
     nnset(city_radios[2], MUIA_Radio_Active, i);
 }
 
+static void CycleCopyActive(void)
+{
+    UWORD i;
+
+    i = XGET(cycle.city_cycle, MUIA_Cycle_Active);
+    SET(cycle.city_text, MUIA_Text_Contents, cities[i]);
+}
+
 #if defined(TEST_ICONLIST)
 /* IconList callbacks */
 static void volume_doubleclicked(void)
@@ -1621,7 +1640,7 @@ int main(void)
 
     static char *pages[] =
         {"General", "Text", "Boopsi", "Color", "Edit", "List", "Gauges",
-            "Numeric", "Radio",
+            "Numeric", "Select",
 #if defined(TEST_ICONLIST)
             "Icon List",
 #endif
@@ -1634,8 +1653,6 @@ int main(void)
         {"Palette", "Colors", "Pens", NULL};
     static char *list_pages[] =
         {"Single Column", "Multicolumn", NULL};
-    static char *radio_entries[] =
-        {"Paris", "Pataya", "London", "New York", "Reykjavik", "Tokyo", NULL};
 
     static IPTR entries[] = {1, 2, 3, 4, 5, 6, (IPTR)NULL};
 
@@ -3160,24 +3177,51 @@ int main(void)
                                 End,
                             End,
 
-                        /* radios */
-                        Child, VGroup,
-                            Child, city_radios[0] = RadioObject,
-                                GroupFrameT("Vertical"),
-                                MUIA_Radio_Entries, radio_entries,
-                                MUIA_Radio_Active, 1,
+                        /* select */
+                        Child, HGroup,
+                            Child, VGroup,
+                                GroupFrameT("Radio"),
+                                Child, city_radios[0] = RadioObject,
+                                    GroupFrameT("Vertical"),
+                                    MUIA_Radio_Entries, cities,
+                                    MUIA_Radio_Active, 1,
+                                    End,
+                                Child, city_radios[1] = RadioObject,
+                                    GroupFrameT("Horizontal"),
+                                    MUIA_Group_Horiz, TRUE,
+                                    MUIA_Radio_Entries, cities,
+                                    MUIA_Radio_Active, 1,
+                                    End,
+                                Child, city_radios[2] = RadioObject,
+                                    GroupFrameT("Grid"),
+                                    MUIA_Group_Rows, 2,
+                                    MUIA_Radio_Entries, cities,
+                                    MUIA_Radio_Active, 1,
+                                    End,
+                                Child, HVSpace,
                                 End,
-                            Child, city_radios[1] = RadioObject,
-                                GroupFrameT("Horizontal"),
-                                MUIA_Group_Horiz, TRUE,
-                                MUIA_Radio_Entries, radio_entries,
-                                MUIA_Radio_Active, 1,
-                                End,
-                            Child, city_radios[2] = RadioObject,
-                                GroupFrameT("Grid"),
-                                MUIA_Group_Rows, 2,
-                                MUIA_Radio_Entries, radio_entries,
-                                MUIA_Radio_Active, 1,
+                            Child, VGroup,
+                                GroupFrameT("Cycle"),
+                                Child, ColGroup(3),
+                                    Child, MUI_MakeObject(
+                                        MUIO_Label, "Choose city:", 0),
+                                    Child, cycle.city_cycle = CycleObject,
+                                        ButtonFrame,
+                                        MUIA_Cycle_Entries, cities,
+                                        MUIA_Radio_Active, 1,
+                                        End,
+                                    Child, cycle.prev_button =
+                                        MUI_MakeObject(MUIO_Button, "Previous"),
+                                    Child, MUI_MakeObject(MUIO_Label,
+                                        "Chosen city:", 0),
+                                    Child, cycle.city_text = TextObject,
+                                        TextFrame,
+                                        MUIA_Text_Contents, "N/A",
+                                        End,
+                                    Child, cycle.next_button =
+                                        MUI_MakeObject(MUIO_Button, "Next"),
+                                    End,
+                                Child, HVSpace,
                                 End,
                             End,
 
@@ -3626,6 +3670,20 @@ int main(void)
         DoMethod(city_radios[2], MUIM_Notify, MUIA_Radio_Active,
             MUIV_EveryTime, city_radios[0], 3, MUIM_Set,
             MUIA_Radio_Active, MUIV_TriggerValue);
+
+        /* cycle */
+        DoMethod(cycle.city_cycle, MUIM_Notify, MUIA_Cycle_Active,
+            MUIV_EveryTime, city_radios[0], 3, MUIM_Set,
+            MUIA_Radio_Active, MUIV_TriggerValue);
+        DoMethod(cycle.prev_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            cycle.city_cycle, 3, MUIM_Set, MUIA_Cycle_Active,
+            MUIV_Cycle_Active_Prev);
+        DoMethod(cycle.next_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            cycle.city_cycle, 3, MUIM_Set, MUIA_Cycle_Active,
+            MUIV_Cycle_Active_Next);
+        DoMethod(cycle.city_cycle, MUIM_Notify, MUIA_Cycle_Active,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            CycleCopyActive);
 
 #if defined(TEST_ICONLIST)
         /* iconlist */
