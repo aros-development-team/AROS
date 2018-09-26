@@ -31,8 +31,8 @@ half =  0.5;
 #if defined(__amd64__) || defined(__i386__)
 /* Long double constants are slow on these arches, and broken on i386. */
 static const volatile double
-S1hi = -0.16666666666666666,		/* -0x15555555555555.0p-55 */
-S1lo = -9.2563760475949941e-18;		/* -0x15580000000000.0p-109 */
+S1hi __attribute__ ((__section__(".rodata"))) = -0.16666666666666666,		/* -0x15555555555555.0p-55 */
+S1lo __attribute__ ((__section__(".rodata"))) = -9.2563760475949941e-18;		/* -0x15580000000000.0p-109 */
 #define	S1	((long double)S1hi + S1lo)
 #else
 static const long double

@@ -71,7 +71,7 @@
  * 1/sqrt(2) <= x < sqrt(2)
  * Theoretical peak relative error = 6.2e-22
  */
-static long double P[] = {
+static const long double P[] = {
  4.9962495940332550844739E-1L,
  1.0767376367209449010438E1L,
  7.7671073698359539859595E1L,
@@ -80,7 +80,7 @@ static long double P[] = {
  3.4258224542413922935104E2L,
  1.0747524399916215149070E2L,
 };
-static long double Q[] = {
+static const long double Q[] = {
 /* 1.0000000000000000000000E0,*/
  2.3479774160285863271658E1L,
  1.9444210022760132894510E2L,
@@ -97,13 +97,13 @@ static long double Q[] = {
  * Theoretical peak relative error = 6.16e-22
  */
 
-static long double R[4] = {
+static const long double R[4] = {
  1.9757429581415468984296E-3L,
 -7.1990767473014147232598E-1L,
  1.0777257190312272158094E1L,
 -3.5717684488096787370998E1L,
 };
-static long double S[4] = {
+static const long double S[4] = {
 /* 1.00000000000000000000E0L,*/
 -2.6201045551331104417768E1L,
  1.9361891836232102174846E2L,
@@ -164,7 +164,7 @@ else
 	}
 x = z / y;
 z = x*x;
-y = x * ( z * __polevll( z, R, 3 ) / __p1evll( z, S, 3 ) );
+y = x * ( z * __polevll( z, (void *)R, 3 ) / __p1evll( z, (void *)S, 3 ) );
 goto done;
 }
 
@@ -181,7 +181,7 @@ else
 	x = x - 1.0L;
 	}
 z = x*x;
-y = x * ( z * __polevll( x, P, 6 ) / __p1evll( x, Q, 7 ) );
+y = x * ( z * __polevll( x, (void *)P, 6 ) / __p1evll( x, (void *)Q, 7 ) );
 y = y - ldexpl( z, -1 );   /* -0.5x^2 + ... */
 
 done:

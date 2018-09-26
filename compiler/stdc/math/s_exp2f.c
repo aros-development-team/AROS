@@ -41,9 +41,9 @@ static const float
     P3	    = 0x1.c6b348p-5f,
     P4	    = 0x1.3b2c9cp-7f;
 
-static volatile float
-    huge    = 0x1p100f,
-    twom100 = 0x1p-100f;
+static const volatile float
+    huge    __attribute__ ((__section__(".rodata"))) = 0x1p100f,
+    twom100 __attribute__ ((__section__(".rodata"))) = 0x1p-100f;
 
 static const double exp2ft[TBLSIZE] = {
 	0x1.6a09e667f3bcdp-1,

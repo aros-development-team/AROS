@@ -76,12 +76,12 @@
 
 #include "math_private.h"
 
-static long double P[3] = {
+static const long double P[3] = {
  1.2617719307481059087798E-4L,
  3.0299440770744196129956E-2L,
  9.9999999999999999991025E-1L,
 };
-static long double Q[4] = {
+static const long double Q[4] = {
  3.0019850513866445504159E-6L,
  2.5244834034968410419224E-3L,
  2.2726554820815502876593E-1L,
@@ -122,8 +122,8 @@ x -= px * C2;
  * e**x =  1 + 2x P(x**2)/( Q(x**2) - P(x**2) )
  */
 xx = x * x;
-px = x * __polevll( xx, P, 2 );
-x =  px/( __polevll( xx, Q, 3 ) - px );
+px = x * __polevll( xx, (void *)P, 2 );
+x =  px/( __polevll( xx, (void *)Q, 3 ) - px );
 x = 1.0L + ldexpl( x, 1 );
 
 x = ldexpl( x, n );

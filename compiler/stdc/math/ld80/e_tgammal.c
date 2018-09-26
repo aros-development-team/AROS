@@ -68,7 +68,7 @@ Peak error =  1.83e-20
 Relative error spread =  8.4e-23
 */
 
-static long double P[8] = {
+static const long double P[8] = {
  4.212760487471622013093E-5L,
  4.542931960608009155600E-4L,
  4.092666828394035500949E-3L,
@@ -78,7 +78,7 @@ static long double P[8] = {
  8.378004301573126728826E-1L,
  1.000000000000000000009E0L,
 };
-static long double Q[9] = {
+static const long double Q[9] = {
 -1.397148517476170440917E-5L,
  2.346584059160635244282E-4L,
 -1.237799246653152231188E-3L,
@@ -126,7 +126,7 @@ Peak error =  9.44e-21
 Relative error spread =  8.8e-4
 */
 
-static long double STIR[9] = {
+static const long double STIR[9] = {
  7.147391378143610789273E-4L,
 -2.363848809501759061727E-5L,
 -5.950237554056330156018E-4L,
@@ -147,7 +147,7 @@ static const long double SQTPI = 2.50662827463100050242E0L;
  * Peak relative error 4.2e-23
  */
 
-static long double S[9] = {
+static const long double S[9] = {
 -1.193945051381510095614E-3L,
  7.220599478036909672331E-3L,
 -9.622023360406271645744E-3L,
@@ -166,7 +166,7 @@ static long double S[9] = {
  * Relative error spread =  2.5e-24
  */
 
-static long double SN[9] = {
+static const long double SN[9] = {
  1.133374167243894382010E-3L,
  7.220837261893170325704E-3L,
  9.621911155035976733706E-3L,
@@ -199,7 +199,7 @@ if( x > 1024.0L )
 		+ 8.33333333333333333333E-2L) * w
 		+ 1.0L;
 else
-	w = 1.0L + w * __polevll( w, STIR, 8 );
+	w = 1.0L + w * __polevll( w, (void *)STIR, 8 );
 y = expl(x);
 if( x > MAXSTIR )
 	{ /* Avoid overflow in pow() */
@@ -291,8 +291,8 @@ if( x == 2.0L )
 	return(z);
 
 x -= 2.0L;
-p = __polevll( x, P, 7 );
-q = __polevll( x, Q, 8 );
+p = __polevll( x, (void *)P, 7 );
+q = __polevll( x, (void *)Q, 8 );
 z = z * p / q;
 return z;
 
@@ -304,10 +304,10 @@ else
 	if( x < 0.0L )
 		{
 		x = -x;
-		q = z / (x * __polevll( x, SN, 8 ));
+		q = z / (x * __polevll( x, (void *)SN, 8 ));
 		}
 	else
-		q = z / (x * __polevll( x, S, 8 ));
+		q = z / (x * __polevll( x, (void *)S, 8 ));
 	}
 return q;
 }

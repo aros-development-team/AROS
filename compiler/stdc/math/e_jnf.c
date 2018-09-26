@@ -24,7 +24,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_jnf.c,v 1.11 2010/11/13 10:5
 #include "math.h"
 #include "math_private.h"
 
-static const volatile float vone = 1, vzero = 0;
+static const volatile float vone __attribute__ ((__section__(".rodata"))) = 1, vzero __attribute__ ((__section__(".rodata"))) = 0;
 
 static const float
 two   =  2.0000000000e+00, /* 0x40000000 */

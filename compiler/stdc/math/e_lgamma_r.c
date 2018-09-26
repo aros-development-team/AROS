@@ -87,7 +87,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_lgamma_r.c,v 1.11 2011/10/15
 #include "math.h"
 #include "math_private.h"
 
-static const volatile double vzero = 0;
+static const volatile double vzero __attribute__ ((__section__(".rodata"))) = 0;
 
 static const double
 zero=  0.00000000000000000000e+00,

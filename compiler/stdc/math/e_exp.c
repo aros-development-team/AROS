@@ -97,9 +97,9 @@ P3   =  6.61375632143793436117e-05, /* 0x3F11566A, 0xAF25DE2C */
 P4   = -1.65339022054652515390e-06, /* 0xBEBBBD41, 0xC5D26BF1 */
 P5   =  4.13813679705723846039e-08; /* 0x3E663769, 0x72BEA4D0 */
 
-static volatile double
-huge	= 1.0e+300,
-twom1000= 9.33263618503218878990e-302;     /* 2**-1000=0x01700000,0*/
+static const volatile double
+huge	__attribute__ ((__section__(".rodata"))) = 1.0e+300,
+twom1000 __attribute__ ((__section__(".rodata"))) = 9.33263618503218878990e-302;     /* 2**-1000=0x01700000,0*/
 
 double
 __ieee754_exp(double x)	/* default IEEE double exp */

@@ -20,7 +20,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanhf.c,v 1.9 2008/02/22 02:
 #include "math.h"
 #include "math_private.h"
 
-static const volatile float tiny = 1.0e-30;
+static const volatile float tiny __attribute__ ((__section__(".rodata"))) = 1.0e-30;
 static const float one=1.0, two=2.0, huge = 1.0e30;
 
 float
