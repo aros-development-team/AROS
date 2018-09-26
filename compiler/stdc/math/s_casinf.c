@@ -55,7 +55,7 @@ casinf(float complex z)
 {
 	float complex w;
 	float x, y;
-	static float complex ca, ct, zz, z2;
+	float complex ca, ct, zz, z2;
 	/*
 	float cn, n;
 	static float a, b, s, t, u, v, y2;

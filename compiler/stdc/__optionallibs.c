@@ -1,17 +1,20 @@
 /*
-    Copyright Â© 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2018, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
+
+#define __NOBLIBBASE__
+
 #include <proto/locale.h>
 #include <proto/intuition.h>
+
+#include "__stdc_intbase.h"
+#include "__optionallibs.h"
 
 /* Internal function __libfindandopen will only open a library when it is
    already in the list of open libraries
 */
-struct LocaleBase *LocaleBase = NULL;
-struct IntuitionBase *IntuitionBase = NULL;
-
 static struct Library *__libfindandopen(const char *libname, int version)
 {
     struct Node *found;
@@ -23,18 +26,18 @@ static struct Library *__libfindandopen(const char *libname, int version)
     return (found != NULL) ? OpenLibrary(libname, version) : NULL;
 }
 
-int __locale_available(void)
+int __locale_available(struct StdCIntBase *StdCBase)
 {
-    if (LocaleBase == NULL)
-        LocaleBase = (struct LocaleBase *)__libfindandopen("locale.library", 0);
+    if (StdCBase->StdCLocaleBase == NULL)
+        StdCBase->StdCLocaleBase = (struct LocaleBase *)__libfindandopen("locale.library", 0);
 
-    return LocaleBase != NULL;
+    return StdCBase->StdCLocaleBase != NULL;
 }
 
-int __intuition_available(void)
+int __intuition_available(struct StdCIntBase *StdCBase)
 {
-    if (IntuitionBase == NULL)
-        IntuitionBase = (struct IntuitionBase *)__libfindandopen("intuition.library", 0);
+    if (StdCBase->StdCIntuitionBase == NULL)
+        StdCBase->StdCIntuitionBase = (struct IntuitionBase *)__libfindandopen("intuition.library", 0);
 
-    return IntuitionBase != NULL;
+    return StdCBase->StdCIntuitionBase != NULL;
 }

@@ -66,7 +66,7 @@ casinl(long double complex z)
 {
 	long double complex w;
 	long double x, y, b;
-	static long double complex ca, ct, zz, z2;
+	long double complex ca, ct, zz, z2;
 
 	x = creall(z);
 	y = cimagl(z);

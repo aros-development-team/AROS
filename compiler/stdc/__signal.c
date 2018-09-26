@@ -1,10 +1,12 @@
 /*
-    Copyright Â© 2012-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <proto/exec.h>
-#include <proto/intuition.h>
+
+#define __NOBLIBBASE__
+
 #include <libraries/stdc.h>
 
 /* We include the signal.h of posixc.library for getting min/max signal number
@@ -62,9 +64,11 @@ struct signal_func_data *__sig_getfuncdata(int signum)
 */
 void __sig_default(int signum)
 {
-    char s[50];
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
     char *taskname = FindTask(NULL)->tc_Node.ln_Name;
-
+    char s[50];
+ 
     switch (signum)
     {
     case SIGABRT:
@@ -83,7 +87,7 @@ void __sig_default(int signum)
     }
 
     /* Open requester if IntuitionBase is available otherwise use kprintf() */
-    if (__intuition_available())
+    if (__intuition_available(StdCBase))
     {
         struct EasyStruct es =
             {
@@ -93,8 +97,7 @@ void __sig_default(int signum)
                 "%s",
                 "OK"
             };
-        
-        EasyRequest(NULL, &es, NULL, s);
+        stdcEasyRequest(StdCBase->StdCIntuitionBase, NULL, &es, NULL, s);
     }
     else
         kprintf("%s\n", s);

@@ -85,13 +85,13 @@
 /* log(1+x) =  x - .5x^2 + x^3 *  P(z)/Q(z)
  * on the domain  2^(-1/32) - 1  <=  x  <=  2^(1/32) - 1
  */
-static long double P[] = {
+static const long double P[] = {
  8.3319510773868690346226E-4L,
  4.9000050881978028599627E-1L,
  1.7500123722550302671919E0L,
  1.4000100839971580279335E0L,
 };
-static long double Q[] = {
+static const long double Q[] = {
 /* 1.0000000000000000000000E0L,*/
  5.2500282295834889175431E0L,
  8.4000598057587009834666E0L,
@@ -100,7 +100,7 @@ static long double Q[] = {
 /* A[i] = 2^(-i/32), rounded to IEEE long double precision.
  * If i is even, A[i] + B[i/2] gives additional accuracy.
  */
-static long double A[33] = {
+static const long double A[33] = {
  1.0000000000000000000000E0L,
  9.7857206208770013448287E-1L,
  9.5760328069857364691013E-1L,
@@ -135,7 +135,7 @@ static long double A[33] = {
  5.1094857432705833910408E-1L,
  5.0000000000000000000000E-1L,
 };
-static long double B[17] = {
+static const long double B[17] = {
  0.0000000000000000000000E0L,
  2.6176170809902549338711E-20L,
 -1.0126791927256478897086E-20L,
@@ -158,7 +158,7 @@ static long double B[17] = {
 /* 2^x = 1 + x P(x),
  * on the interval -1/32 <= x <= 0
  */
-static long double R[] = {
+static const long double R[] = {
  1.5089970579127659901157E-5L,
  1.5402715328927013076125E-4L,
  1.3333556028915671091390E-3L,
@@ -189,8 +189,7 @@ static long double R[] = {
 static const long double MAXLOGL = 1.1356523406294143949492E4L;
 static const long double MINLOGL = -1.13994985314888605586758E4L;
 static const long double LOGE2L = 6.9314718055994530941723E-1L;
-static volatile long double z;
-static long double w, W, Wa, Wb, ya, yb, u;
+
 static const long double huge = 0x1p10000L;
 #if 0 /* XXX Prevent gcc from erroneously constant folding this. */
 static const long double twom10000 = 0x1p-10000L;
@@ -204,6 +203,8 @@ static long double powil ( long double, int );
 long double
 powl(long double x, long double y)
 {
+volatile long double z;
+long double w, W, Wa, Wb, ya, yb, u;
 /* double F, Fa, Fb, G, Ga, Gb, H, Ha, Hb */
 int i, nflg, iyflg, yoddint;
 long e;
@@ -371,7 +372,7 @@ x /= douba(i);
  * log(1+v)  =  v  -  v**2/2  +  v**3 P(v) / Q(v)
  */
 z = x*x;
-w = x * ( z * __polevll( x, P, 3 ) / __p1evll( x, Q, 3 ) );
+w = x * ( z * __polevll( x, (void *)P, 3 ) / __p1evll( x, (void *)Q, 3 ) );
 w = w - ldexpl( z, -1 );   /*  w - 0.5 * z  */
 
 /* Convert to base 2 logarithm:
@@ -432,7 +433,7 @@ if( Hb > 0.0L )
  * Compute base 2 exponential of Hb,
  * where -0.0625 <= Hb <= 0.
  */
-z = Hb * __polevll( Hb, R, 6 );  /*    z  =  2**Hb - 1    */
+z = Hb * __polevll( Hb, (void *)R, 6 );  /*    z  =  2**Hb - 1    */
 
 /* Express e/NXT as an integer plus a negative number of (1/NXT)ths.
  * Find lookup table entry for the fractional power of 2.

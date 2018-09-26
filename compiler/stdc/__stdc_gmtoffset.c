@@ -1,13 +1,17 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal arossstdc function to get current GMT offset
 */
 #include <proto/exec.h>
+
+#define __NOBLIBBASE__
+
 #include <proto/locale.h>
 #include <exec/execbase.h>
 
+#include "__stdc_intbase.h"
 #include "__optionallibs.h"
 
 /*****************************************************************************
@@ -42,13 +46,20 @@
 
 ******************************************************************************/
 {
-    struct Locale *loc;
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+    struct LocaleBase *LocaleBase;
     int gmtoffset = 0;
 
-    if (__locale_available() && (loc = OpenLocale(NULL)))
+    if (__locale_available(StdCBase))
     {
-        gmtoffset = (int)loc->loc_GMTOffset;
-        CloseLocale(loc);
+        struct Locale *loc;
+        LocaleBase = StdCBase->StdCLocaleBase;
+        if ((loc = OpenLocale(NULL)))
+        {
+            gmtoffset = (int)loc->loc_GMTOffset;
+            CloseLocale(loc);
+        }
     }
 
     return gmtoffset;
