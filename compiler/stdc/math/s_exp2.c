@@ -43,9 +43,9 @@ static const double
     P4	     = 0x1.3b2ab88f70400p-7,
     P5	     = 0x1.5d88003875c74p-10;
 
-static volatile double
-    huge     = 0x1p1000,
-    twom1000 = 0x1p-1000;
+static const volatile double
+    huge     __attribute__ ((__section__(".rodata"))) = 0x1p1000,
+    twom1000 __attribute__ ((__section__(".rodata"))) = 0x1p-1000;
 
 static const double tbl[TBLSIZE * 2] = {
 /*	exp2(z + eps)		eps	*/

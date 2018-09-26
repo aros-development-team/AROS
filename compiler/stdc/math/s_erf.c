@@ -114,7 +114,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_erf.c,v 1.8 2008/02/22 02:30
 #include "math_private.h"
 
 /* XXX Prevent compilers from erroneously constant folding: */
-static const volatile double tiny= 1e-300;
+static const volatile double tiny __attribute__ ((__section__(".rodata"))) = 1e-300;
 
 static const double
 half= 0.5,

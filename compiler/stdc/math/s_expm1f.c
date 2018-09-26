@@ -35,7 +35,7 @@ invln2		= 1.4426950216e+00,/* 0x3fb8aa3b */
 Q1 = -3.3333212137e-2,		/* -0x888868.0p-28 */
 Q2 =  1.5807170421e-3;		/*  0xcf3010.0p-33 */
 
-static volatile float huge = 1.0e+30;
+static const volatile float huge __attribute__ ((__section__(".rodata"))) = 1.0e+30;
 
 float
 expm1f(float x)

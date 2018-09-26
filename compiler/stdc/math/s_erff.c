@@ -21,7 +21,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_erff.c,v 1.8 2008/02/22 02:3
 #include "math_private.h"
 
 /* XXX Prevent compilers from erroneously constant folding: */
-static const volatile float tiny = 1e-30;
+static const volatile float tiny __attribute__ ((__section__(".rodata"))) = 1e-30;
 
 static const float
 half= 0.5,

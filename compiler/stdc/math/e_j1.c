@@ -67,7 +67,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_j1.c,v 1.9 2008/02/22 02:30:
 
 static __inline double pone(double), qone(double);
 
-static const volatile double vone = 1, vzero = 0;
+static const volatile double vone __attribute__ ((__section__(".rodata"))) = 1, vzero __attribute__ ((__section__(".rodata"))) = 0;
 
 static const double
 huge    = 1e300,

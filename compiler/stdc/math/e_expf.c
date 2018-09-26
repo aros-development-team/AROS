@@ -37,9 +37,9 @@ invln2 =  1.4426950216e+00, 		/* 0x3fb8aa3b */
 P1 =  1.6666625440e-1,		/*  0xaaaa8f.0p-26 */
 P2 = -2.7667332906e-3;		/* -0xb55215.0p-32 */
 
-static volatile float
-huge	= 1.0e+30,
-twom100 = 7.8886090522e-31;      /* 2**-100=0x0d800000 */
+static const volatile float
+huge	__attribute__ ((__section__(".rodata"))) = 1.0e+30,
+twom100 __attribute__ ((__section__(".rodata"))) = 7.8886090522e-31;      /* 2**-100=0x0d800000 */
 
 float
 __ieee754_expf(float x)	/* default IEEE double exp */

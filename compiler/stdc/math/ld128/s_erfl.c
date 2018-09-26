@@ -24,7 +24,7 @@
 #include "math_private.h"
 
 /* XXX Prevent compilers from erroneously constant folding these: */
-static const volatile long double tiny = 0x1p-10000L;
+static const volatile long double tiny __attribute__ ((__section__(".rodata"))) = 0x1p-10000L;
 
 static const double
 half= 0.5,
