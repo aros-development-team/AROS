@@ -1,16 +1,21 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function strerror().
 */
 
-#include "__stdc_intbase.h"
+#include <proto/exec.h>
+
+#define __NOBLIBBASE__
 
 #include <proto/dos.h>
+
 #include <clib/macros.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#include "__stdc_intbase.h"
 
 static const char * _errstrings[];
 
@@ -88,6 +93,7 @@ static const char * _errstrings[];
     {
         struct StdCIntBase *StdCBase =
             (struct StdCIntBase *)__aros_getbase_StdCBase();
+#define DOSBase StdCBase->StdCDOSBase
 
         if (StdCBase->fault_buf == NULL)
             /* This is not freed anywhere, will be cleaned when
@@ -96,7 +102,7 @@ static const char * _errstrings[];
             StdCBase->fault_buf = malloc(100);
 
 	Fault(n - MAX_ERRNO, NULL, StdCBase->fault_buf, 100);
-
+#undef DOSBase
 	return StdCBase->fault_buf;
     }
     else
@@ -203,3 +209,12 @@ static const char * _errstrings[__STDC_ELAST+2] =
     /* EILSEQ	       */	"Illegal byte sequence",
     /* Too high        */	NULL,
 };
+
+static int __stdc_dosinit(struct StdCIntBase *StdCBase)
+{
+    StdCBase->StdCDOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
+
+    return 1;
+}
+
+ADD2OPENLIB(__stdc_dosinit, 0);

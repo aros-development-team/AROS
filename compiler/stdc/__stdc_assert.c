@@ -5,13 +5,16 @@
     C99 assert() stdc.library support
 */
 #include <proto/exec.h>
-#include <proto/intuition.h>
+
+#define __NOBLIBBASE__
+
 #include <aros/arossupportbase.h>
 #include <intuition/intuition.h>
 #include <aros/debug.h>
 
 #include <stdlib.h>
 
+#include "__stdc_intbase.h"
 #include "__optionallibs.h"
 
 /*****************************************************************************
@@ -58,7 +61,10 @@
 
 ******************************************************************************/
 {
-    if (__intuition_available())
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+
+    if (__intuition_available(StdCBase))
     {
         struct EasyStruct es =
             {
@@ -68,7 +74,8 @@
                 (CONST_STRPTR)"Assertion (%s) failed in %s:%u",
                 (CONST_STRPTR)"OK"
             };
-        EasyRequest(NULL, &es, NULL, expr, file, line);
+
+        stdcEasyRequest(StdCBase->StdCIntuitionBase, NULL, &es, NULL, expr, file, line);
     }
     else
         kprintf("Assertion (%s) failed in %s:%u", expr, file, line);

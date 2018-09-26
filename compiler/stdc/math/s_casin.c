@@ -57,7 +57,7 @@ double complex
 casin(double complex z)
 {
 	double complex w;
-	static double complex ca, ct, zz, z2;
+	double complex ca, ct, zz, z2;
 	double x, y;
 
 	x = creal (z);

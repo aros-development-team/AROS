@@ -11,7 +11,10 @@
 #define __STDC_INTBASE_H
 
 #include <libraries/stdc.h>
+#include <libraries/locale.h>
+#include <intuition/intuitionbase.h>
 #include <devices/timer.h>
+#include <dos/bptr.h>
 
 #include <time.h>
 
@@ -19,10 +22,17 @@
 /* Some structs that are defined privately */
 struct signal_func_data;
 
-
 struct StdCIntBase
 {
     struct StdCBase             StdCBase;
+    struct StdCIntBase          *StdCRootBase;
+    BPTR                        StdCSegList;
+
+    struct DosLibrary           *StdCDOSBase;           // Needed for strerror->Fault
+    /* optional libs */
+    struct LocaleBase           *StdCLocaleBase;
+    struct IntuitionBase        *StdCIntuitionBase;
+    struct Device               *StdCTimerBase;
 
     /* common */
     int                         flags;

@@ -36,7 +36,7 @@ ivln2hi    =  1.44269504072144627571e+00, /* 0x3ff71547, 0x65200000 */
 ivln2lo    =  1.67517131648865118353e-10; /* 0x3de705fc, 0x2eefa200 */
 
 static const double zero   =  0.0;
-static volatile double vzero = 0.0;
+static const volatile double vzero = 0.0;
 
 double
 __ieee754_log2(double x)

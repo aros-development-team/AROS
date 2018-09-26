@@ -6,6 +6,9 @@
 */
 
 #include <proto/exec.h>
+
+#define __NOBLIBBASE__
+
 #include <proto/timer.h>
 
 #include <errno.h>
@@ -16,7 +19,7 @@
 #include <aros/debug.h>
 
 static int __init_timerbase(struct StdCIntBase *StdCBase);
-struct Device *TimerBase = NULL;
+#define TimerBase       StdCBase->StdCTimerBase
 
 /*****************************************************************************
 
@@ -61,13 +64,14 @@ struct Device *TimerBase = NULL;
 
 ******************************************************************************/
 {
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     struct timeval tv;
 
     /* We get TimerBase here and not during LIBINIT because timer.device is not available
        when stdc.library is initialized.
     */
     if (TimerBase == NULL)
-        __init_timerbase((struct StdCIntBase *)__aros_getbase_StdCBase());
+        __init_timerbase(StdCBase);
     if (TimerBase == NULL)
     {
         errno = EACCES;
