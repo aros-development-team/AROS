@@ -1,0 +1,16 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_LDFLAGS := -static
+
+FILES :=    arosx.class debug
+
+#MM- kernel-usb-classes-arosx : kernel-usb-usbclass kernel-usb-poseidon-includes
+
+%build_module_library mmake=kernel-usb-classes-arosx \
+    modname=arosx modtype=usbclass modsuffix="class" \
+    files="$(FILES)"
+
+%common
