@@ -85,6 +85,12 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
                     DA_ConfigList, &pdd,
                     TAG_END);
 
+        /*
+            Check to see if it is believed to be an XInput Gamepad interface
+             - We could extend this class to also house code for other XInput devices,
+               but for now it's only XInput Gamepad
+            TODO: Force usbForceInterfaceBinding to go through this too
+        */
         pdd = psdFindDescriptor(pd, NULL, DDA_DescriptorType, 33, DDA_Interface, pif, TAG_END);
 
         CloseLibrary(ps);
@@ -105,7 +111,7 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
     struct NepClassHid *nch;
     struct PsdConfig *pc;
     struct PsdDevice *pd;
-    STRPTR devname;
+
     UBYTE buf[64];
     struct Task *tmptask;
 
@@ -131,10 +137,10 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
                     //FreeSignal(nch->nch_ReadySignal);
                     psdGetAttrs(PGA_INTERFACE, pif, IFA_Config, &pc, TAG_END);
                     psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
-                    psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                    psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &nch->nch_devname, TAG_END);
                     psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                    "Play it again, '%s'!",
-                                   devname);
+                                   nch->nch_devname);
 
                     CloseLibrary(ps);
                     return(nch);
@@ -159,6 +165,13 @@ void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch)
     STRPTR devname;
 
     mybug(1, ("nepHidReleaseInterfaceBinding(%08lx)\n", nch));
+
+    /* Kill the nch_GUITask */
+    if(nch->nch_GUITask)
+    {
+        Signal(nch->nch_GUITask, SIGBREAKF_CTRL_C);
+    }
+
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         Forbid();
@@ -335,7 +348,7 @@ AROS_UFH0(void, nHidTask)
                 }
             }
         } while(!(sigs & SIGBREAKF_CTRL_C));
-        mybug(20, ("Going down the river!\n"));
+        mybug(-1, ("Going down the river!\n"));
         psdAbortPipe(nch->nch_EPInPipe);
         psdWaitPipe(nch->nch_EPInPipe);
         nFreeHid(nch);
@@ -575,7 +588,7 @@ AROS_UFH0(void, nGUITask)
 
             SubWindow, (IPTR)(nch->nch_MainWindow = WindowObject,
                 MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-                MUIA_Window_Title, (IPTR)libname,
+                MUIA_Window_Title, (IPTR)nch->nch_devname,
                 MUIA_HelpNode, (IPTR)libname,
 
                 WindowContents, (IPTR)VGroup,

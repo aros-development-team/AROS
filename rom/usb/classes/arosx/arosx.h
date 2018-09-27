@@ -71,6 +71,8 @@ struct NepClassHid
     Object             *nch_UseMI;
     Object             *nch_MUIPrefsMI;
 
+    STRPTR              nch_devname;
+
     struct PsdDescriptor *nch_pdd;
 
     UWORD stick_lx;
