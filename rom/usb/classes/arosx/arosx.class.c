@@ -365,9 +365,32 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 
 /*
     Ta-daa!!
-    When Logitech Wireless Gamepad goes to sleep we get this in our endpoint
+    When Logitech Wireless Gamepad F710 goes to sleep we get this in our endpoint
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 84 00 00 00 0 0 00
 
+    And this is the first message after it wakes on button press
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 94 00 55 00 00 00
+
+    Mode LED on
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 9c 00 55 00 00 00
+
+    Mode LED off
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 94 00 55 00 00 00
+
+    Long vibration
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
+
+    Short vibration
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 94 00 55 00 00 00
+
+    Taking the battery out and the dongle soon sends this
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 a4 00 00 00 00 00
+
+    Re-inserting the battery and we get this
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
+
+    Taking the controller out of range and we get this
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 a4 00 00 00 00 00
 
     mybug(1, ("Msg: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
                     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10],
@@ -561,7 +584,7 @@ AROS_UFH0(void, nGUITask)
             nch->nch_App = ApplicationObject,
             MUIA_Application_Title      , (IPTR)libname,
             MUIA_Application_Version    , (IPTR)VERSION_STRING,
-            MUIA_Application_Copyright  , (IPTR)"©2017 The AROS Development Team",
+            MUIA_Application_Copyright  , (IPTR)"©2018 The AROS Development Team",
             MUIA_Application_Author     , (IPTR)"The AROS Development Team",
             MUIA_Application_Description, (IPTR)"Settings for the arosx.class",
             MUIA_Application_Base       , (IPTR)"AROSX",
