@@ -370,11 +370,13 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     nch->stick_rx = (UWORD)AROS_WORD2LE((UWORD)((buf[10]) | (buf[11]<<8)));
     nch->stick_ry = (UWORD)AROS_WORD2LE((UWORD)((buf[12]) | (buf[13]<<8)));
 
+    /*
     mybug(1, ("\n"))
     mybug(1, ("stick_lx: %04x\n", nch->stick_lx)); //0x8000 - 0x7fff
     mybug(1, ("stick_ly: %04x\n", nch->stick_ly));
     mybug(1, ("stick_rx: %04x\n", nch->stick_rx));
     mybug(1, ("stick_ry: %04x\n", nch->stick_ry));
+    */
 
     if(nch->nch_GUITask)
     {
@@ -415,7 +417,7 @@ struct NepClassHid * nAllocHid(void)
         {
             mybug(1, ("Ooops!?! No Endpoints defined?\n"));
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
-                           "No Bulk-In Endpoint!");
+                           "No Interrupt-In Endpoint!");
             break;
         }
         if((nch->nch_InpMsgPort = CreateMsgPort()))
