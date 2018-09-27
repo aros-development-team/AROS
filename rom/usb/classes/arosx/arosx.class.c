@@ -362,14 +362,16 @@ AROS_UFH0(void, nHidTask)
 void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 {
 /* TODO: Store controller information and parse accordingly */
+
 /*
+    Ta-daa!!
+    When Logitech Wireless Gamepad goes to sleep we get this in our endpoint
+        Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 84 00 00 00 0 0 00
+
+
     mybug(1, ("Msg: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
                     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10],
                     buf[11], buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19]));
-
-    psdAddErrorMsg(RETURN_OK, (STRPTR)libname, "Msg: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
-                    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10],
-                    buf[11], buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19]);
 */
 
     /*
