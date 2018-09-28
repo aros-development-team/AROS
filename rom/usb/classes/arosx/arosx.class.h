@@ -14,6 +14,8 @@
 
 #include "arosx.h"
 
+static const STRPTR libname = MOD_NAME_STRING;
+
 struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif);
 struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif);
 void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch);
