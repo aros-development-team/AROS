@@ -1,0 +1,42 @@
+diff -ruN llvm-7.0.0.src/include/llvm/ADT/Triple.h llvm-7.0.0.src-AROS/include/llvm/ADT/Triple.h
+--- llvm-7.0.0.src/include/llvm/ADT/Triple.h	2018-07-06 01:41:17.000000000 +0200
++++ llvm-7.0.0.src-AROS/include/llvm/ADT/Triple.h	2018-09-27 22:05:03.000000000 +0200
+@@ -151,6 +151,7 @@
+   enum OSType {
+     UnknownOS,
+ 
++    AROS,
+     Ananas,
+     CloudABI,
+     Darwin,
+@@ -437,6 +438,11 @@
+     return isOSVersionLT(Minor + 4, Micro, 0);
+   }
+ 
++  /// 
++  bool isAROS() const {
++    return getOS() == Triple::AROS;
++  }
++  
+   /// isMacOSX - Is this a Mac OS X triple. For legacy reasons, we support both
+   /// "darwin" and "osx" as OS X triples.
+   bool isMacOSX() const {
+diff -ruN llvm-7.0.0.src/lib/Support/Triple.cpp llvm-7.0.0.src-AROS/lib/Support/Triple.cpp
+--- llvm-7.0.0.src/lib/Support/Triple.cpp	2018-07-06 01:41:17.000000000 +0200
++++ llvm-7.0.0.src-AROS/lib/Support/Triple.cpp	2018-09-27 22:08:18.000000000 +0200
+@@ -178,6 +178,7 @@
+   switch (Kind) {
+   case UnknownOS: return "unknown";
+ 
++  case AROS: return "aros";
+   case Ananas: return "ananas";
+   case CloudABI: return "cloudabi";
+   case Darwin: return "darwin";
+@@ -470,6 +471,7 @@
+ 
+ static Triple::OSType parseOS(StringRef OSName) {
+   return StringSwitch<Triple::OSType>(OSName)
++    .StartsWith("aros", Triple::AROS)
+     .StartsWith("ananas", Triple::Ananas)
+     .StartsWith("cloudabi", Triple::CloudABI)
+     .StartsWith("darwin", Triple::Darwin)
