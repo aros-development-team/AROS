@@ -324,6 +324,7 @@ AROS_UFH0(void, nHidTask)
         }
         Permit();
         sigmask = (1L<<nch->nch_TaskMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
+
         buf = nch->nch_EPInBuf;
         psdSendPipe(nch->nch_EPInPipe, buf, 20);
         do
@@ -378,10 +379,10 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     Mode LED off
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 94 00 55 00 00 00
 
-    Long vibration
+    Long vibration (Enables rumble effect on controller)
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
 
-    Short vibration
+    Short vibration (Disables rumble effect on controller)
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 94 00 55 00 00 00
 
     Taking the controller out of range and we get this (same as removing the battery)
@@ -417,6 +418,22 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     nch->stick_ly = (UWORD)AROS_WORD2LE((UWORD)((buf[8])  | (buf[9]<<8)));
     nch->stick_rx = (UWORD)AROS_WORD2LE((UWORD)((buf[10]) | (buf[11]<<8)));
     nch->stick_ry = (UWORD)AROS_WORD2LE((UWORD)((buf[12]) | (buf[13]<<8)));
+
+
+    /* Rumble effect
+    UBYTE *bufout;
+    bufout = nch->nch_EPInBuf;
+
+    bufout[0] = 0x00;
+    bufout[1] = 0x08;
+    bufout[2] = 0x00;
+    bufout[3] = buf[6];
+    bufout[4] = buf[7];
+    bufout[5] = 0x00;
+    bufout[6] = 0x00;
+    bufout[7] = 0x00;
+    psdDoPipe(nch->nch_EPOutPipe, bufout, 8);
+    */
 
     /*
     mybug(1, ("\n"))
@@ -461,11 +478,17 @@ struct NepClassHid * nAllocHid(void)
                                        EA_IsIn, TRUE,
                                        EA_TransferType, USEAF_INTERRUPT,
                                        TAG_END);
-        if(!nch->nch_EPIn)
+
+        nch->nch_EPOut = psdFindEndpoint(nch->nch_Interface, NULL,
+                                       EA_IsIn, FALSE,
+                                       EA_TransferType, USEAF_INTERRUPT,
+                                       TAG_END);
+
+        if((!nch->nch_EPIn)|(!nch->nch_EPOut))
         {
             mybug(1, ("Ooops!?! No Endpoints defined?\n"));
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
-                           "No Interrupt-In Endpoint!");
+                           "Failed to get endpoints!");
             break;
         }
         if((nch->nch_InpMsgPort = CreateMsgPort()))
@@ -486,10 +509,23 @@ struct NepClassHid * nAllocHid(void)
                                             PPA_AllowRuntPackets, TRUE,
                                             TAG_END);
 
-                                if((nch->nch_EPInBuf = psdAllocVec(1024)))
+                                if((nch->nch_EPInBuf = psdAllocVec(100)))
                                 {
-                                    nch->nch_Task = thistask;
-                                    return(nch);
+                                    if((nch->nch_EPOutPipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EPOut)))
+                                    {
+                                        psdSetAttrs(PGA_PIPE, nch->nch_EPOutPipe,
+                                            PPA_NakTimeout, FALSE,
+                                            PPA_AllowRuntPackets, TRUE,
+                                            TAG_END);
+
+                                        if((nch->nch_EPOutBuf = psdAllocVec(100)))
+                                        {
+                                            nch->nch_Task = thistask;
+                                            return(nch);
+                                        }
+                                        psdFreePipe(nch->nch_EPOutPipe);
+                                    }
+                                    psdFreeVec(nch->nch_EPInBuf);
                                 }
                                 psdFreePipe(nch->nch_EPInPipe);
                             }
@@ -518,14 +554,20 @@ struct NepClassHid * nAllocHid(void)
 /* /// "nFreeHid()" */
 void nFreeHid(struct NepClassHid *nch)
 {
+    psdFreeVec(nch->nch_EPOutBuf);
     psdFreeVec(nch->nch_EPInBuf);
+
+    psdFreePipe(nch->nch_EPOutPipe);
     psdFreePipe(nch->nch_EPInPipe);
     psdFreePipe(nch->nch_EP0Pipe);
+
     DeleteMsgPort(nch->nch_TaskMsgPort);
     CloseDevice((struct IORequest *) nch->nch_InpIOReq);
     DeleteIORequest((struct IORequest *) nch->nch_InpIOReq);
     DeleteMsgPort(nch->nch_InpMsgPort);
+
     CloseLibrary(nch->nch_Base);
+
     Forbid();
     nch->nch_Task = NULL;
     if(nch->nch_ReadySigTask)
