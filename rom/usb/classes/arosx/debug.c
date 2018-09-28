@@ -1,7 +1,7 @@
 
 #include "debug.h"
 
-#include "xinput.class.h"
+#include "arosx.class.h"
 
 void nDebugMem(struct Library *ps, UBYTE *rptr, ULONG rptlen) {
     char  fmtstr[108];

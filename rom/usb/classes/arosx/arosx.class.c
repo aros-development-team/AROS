@@ -11,8 +11,6 @@
 #include "arosx.class.h"
 
 /* /// "Lib Stuff" */
-static const STRPTR libname = MOD_NAME_STRING;
-
 static int libInit(LIBBASETYPEPTR nh)
 {
     mybug(10, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
