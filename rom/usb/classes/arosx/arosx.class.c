@@ -422,7 +422,7 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 
     /* Rumble effect
     UBYTE *bufout;
-    bufout = nch->nch_EPInBuf;
+    bufout = nch->nch_EPOutBuf;
 
     bufout[0] = 0x00;
     bufout[1] = 0x08;
