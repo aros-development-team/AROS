@@ -37,10 +37,16 @@ struct NepClassHid
     struct PsdDevice   *nch_Device;       /* Up linkage */
     struct PsdConfig   *nch_Config;       /* Up linkage */
     struct PsdInterface *nch_Interface;   /* Up linkage */
+
     struct PsdPipe     *nch_EP0Pipe;      /* Endpoint 0 pipe */
     struct PsdEndpoint *nch_EPIn;         /* Endpoint 1 */
     struct PsdPipe     *nch_EPInPipe;     /* Endpoint 1 pipe */
     UBYTE              *nch_EPInBuf;      /* Packet buffer for EP1 */
+
+    struct PsdEndpoint *nch_EPOut;         /* Endpoint 2 */
+    struct PsdPipe     *nch_EPOutPipe;     /* Endpoint 2 pipe */
+    UBYTE              *nch_EPOutBuf;      /* Packet buffer for EP2 */
+
     struct Task        *nch_ReadySigTask; /* Task to send ready signal to */
     LONG                nch_ReadySignal;  /* Signal to send when ready */
     struct Task        *nch_Task;         /* Subtask */
@@ -49,6 +55,7 @@ struct NepClassHid
     struct IOStdReq    *nch_InpIOReq;     /* input.device IORequest */
     struct InputEvent   nch_FakeEvent;    /* Input Event */
     struct Library     *nch_InputBase;    /* Pointer to input.device base */
+
     IPTR                nch_IfNum;        /* Interface Number */
 
     LONG                nch_TrackingSignal;
