@@ -90,6 +90,7 @@ struct NepClassHid
     UWORD stick_rx;
     UWORD stick_ry;
 
+    BOOL  wireless;
     BOOL  signallost;
 
 };
