@@ -327,6 +327,8 @@ AROS_UFH0(void, nHidTask)
     	epinbuf = nch->nch_EPInBuf;
 		ep0buf  = nch->nch_EP0Buf;
 
+        nch->signallost = TRUE;
+
         Forbid();
         if(nch->nch_ReadySigTask)
         {
@@ -347,6 +349,7 @@ AROS_UFH0(void, nHidTask)
             	    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
         	        ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
 
+        nch->wireless = (ep0buf[18]&(1<<0))? TRUE:FALSE;
 
 		/*
 			:) First
@@ -818,10 +821,12 @@ AROS_UFH0(void, nGUITask)
 
 							if((ULONG)(1<<nch->nch_TrackingSignal)) {
 
-								set(nch->nch_GaugeGroupObject, MUIA_Disabled, (nch->signallost));
-
-								if((!nch->signallost)) {
-
+                                /* TODO: Check if the GUI goes to sleep when the controller says it's sleepy */
+								if((nch->wireless)&&(nch->signallost)) {
+                                    set(nch->nch_GaugeGroupObject, MUIA_Disabled, (nch->signallost));
+                                    psdDelayMS(10);
+                                } else {
+                                    set(nch->nch_GaugeGroupObject, MUIA_Disabled, FALSE);
                             		if(nch->stick_lx>=0x8000) {
                                 		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (nch->stick_lx-0x8000));
                             		} else {
