@@ -335,21 +335,32 @@ AROS_UFH0(void, nHidTask)
         Permit();
         sigmask = (1L<<nch->nch_TaskMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
 
+        psdDelayMS(2000);
+
         psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_VENDOR|URTF_INTERFACE, 0x01, 0x0100, 0x00);
-        psdDoPipe(nch->nch_EP0Pipe, ep0buf, 20);
+
+        do {
+        	ioerr = psdDoPipe(nch->nch_EP0Pipe, ep0buf, 20);
+    	} while(ioerr);
+
     	mybug(1, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
-                    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
-                    ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
+            	    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
+        	        ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
+
 
 		/*
 			:) First
 
+            Wireless Logitech F710
 			EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 01 00
 			 - What we have here is a bitmask for all(?) the inputs
 			 - We're the first, I think...
 			 - If this holds true then the analog thumb stick values aren't exactly 16-bit wide :)
 
 		   EPIn: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
+
+            Wired Logitech F310
+            EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 00 00
 		*/
 
 		psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
