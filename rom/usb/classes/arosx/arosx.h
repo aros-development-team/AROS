@@ -39,6 +39,8 @@ struct NepClassHid
     struct PsdInterface *nch_Interface;   /* Up linkage */
 
     struct PsdPipe     *nch_EP0Pipe;      /* Endpoint 0 pipe */
+    UBYTE              *nch_EP0Buf;       /* Packet buffer for EP0 */
+
     struct PsdEndpoint *nch_EPIn;         /* Endpoint 1 */
     struct PsdPipe     *nch_EPInPipe;     /* Endpoint 1 pipe */
     UBYTE              *nch_EPInBuf;      /* Packet buffer for EP1 */
@@ -58,7 +60,7 @@ struct NepClassHid
 
     IPTR                nch_IfNum;        /* Interface Number */
 
-    LONG                nch_TrackingSignal;
+    ULONG               nch_TrackingSignal;
 
     struct Task        *nch_GUITask;       /* GUI Task */
     Object             *nch_App;
@@ -69,6 +71,7 @@ struct NepClassHid
     Object             *nch_UseObj;
     Object             *nch_CloseObj;
 
+    Object             *nch_GaugeGroupObject;
     Object             *nch_GaugeObject_stick_lx;
     Object             *nch_GaugeObject_stick_ly;
     Object             *nch_GaugeObject_stick_rx;
@@ -86,6 +89,9 @@ struct NepClassHid
     UWORD stick_ly;
     UWORD stick_rx;
     UWORD stick_ry;
+
+    BOOL  signallost;
+
 };
 
 #endif /* AROSX_H */

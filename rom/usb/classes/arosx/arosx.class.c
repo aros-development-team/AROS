@@ -308,15 +308,25 @@ AROS_UFH0(void, nHidTask)
     AROS_USERFUNC_INIT
 
     struct NepClassHid *nch;
+
     struct PsdPipe *pp;
+
     ULONG sigmask;
     ULONG sigs;
-    UBYTE *buf;
+
+    UBYTE *epinbuf;
+	UBYTE *ep0buf;
+
     LONG ioerr;
+
     ULONG len;
 
     if((nch = nAllocHid()))
     {
+
+    	epinbuf = nch->nch_EPInBuf;
+		ep0buf  = nch->nch_EP0Buf;
+
         Forbid();
         if(nch->nch_ReadySigTask)
         {
@@ -325,8 +335,24 @@ AROS_UFH0(void, nHidTask)
         Permit();
         sigmask = (1L<<nch->nch_TaskMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
 
-        buf = nch->nch_EPInBuf;
-        psdSendPipe(nch->nch_EPInPipe, buf, 20);
+        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_VENDOR|URTF_INTERFACE, 0x01, 0x0100, 0x00);
+        psdDoPipe(nch->nch_EP0Pipe, ep0buf, 20);
+    	mybug(1, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
+                    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
+                    ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
+
+		/*
+			:) First
+
+			EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 01 00
+			 - What we have here is a bitmask for all(?) the inputs
+			 - We're the first, I think...
+			 - If this holds true then the analog thumb stick values aren't exactly 16-bit wide :)
+
+		   EPIn: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
+		*/
+
+		psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
         do
         {
             sigs = Wait(sigmask);
@@ -337,12 +363,12 @@ AROS_UFH0(void, nHidTask)
                     if(!(ioerr = psdGetPipeError(pp)))
                     {
                         len = psdGetPipeActual(pp);
-                        nParseMsg(nch, buf, len);
+                        nParseMsg(nch, epinbuf, len);
                     } else {
                         mybug(1, ("Int Pipe failed %ld\n", ioerr));
                         psdDelayMS(200);
                     }
-                    psdSendPipe(nch->nch_EPInPipe, buf, 20);
+                    psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
                     break;
                 }
             }
@@ -402,17 +428,19 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
         Byte 16 might be the battery level on Wireless F710?
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 00 00 00 00 00 00
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 00 00 00 00 00 00
-
-    mybug(1, ("Msg: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
+*/
+    mybug(1, ("EPIn: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
                     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10],
                     buf[11], buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19]));
-*/
+
 
     /*
         Just blindly map thumb sticks (They should be there for XBox360 and Logitech F710 and F310)
          - Needs a structure defined for them (there are different kinds of mappings)
         These are not actually UWORDS, see below how they are placed on the gauge objects
     */
+
+	nch->signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
     nch->stick_lx = (UWORD)AROS_WORD2LE((UWORD)((buf[6])  | (buf[7]<<8)));
     nch->stick_ly = (UWORD)AROS_WORD2LE((UWORD)((buf[8])  | (buf[9]<<8)));
@@ -509,24 +537,28 @@ struct NepClassHid * nAllocHid(void)
                                             PPA_AllowRuntPackets, TRUE,
                                             TAG_END);
 
-                                if((nch->nch_EPInBuf = psdAllocVec(100)))
+                                if((nch->nch_EP0Buf = psdAllocVec(100)))
                                 {
-                                    if((nch->nch_EPOutPipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EPOut)))
-                                    {
-                                        psdSetAttrs(PGA_PIPE, nch->nch_EPOutPipe,
-                                            PPA_NakTimeout, FALSE,
-                                            PPA_AllowRuntPackets, TRUE,
-                                            TAG_END);
+                                	if((nch->nch_EPInBuf = psdAllocVec(100)))
+                                	{
+                                    	if((nch->nch_EPOutPipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EPOut)))
+                                    	{
+                                        	psdSetAttrs(PGA_PIPE, nch->nch_EPOutPipe,
+                                            	PPA_NakTimeout, FALSE,
+                                            	PPA_AllowRuntPackets, TRUE,
+                                           		TAG_END);
 
-                                        if((nch->nch_EPOutBuf = psdAllocVec(100)))
-                                        {
-                                            nch->nch_Task = thistask;
-                                            return(nch);
-                                        }
-                                        psdFreePipe(nch->nch_EPOutPipe);
-                                    }
-                                    psdFreeVec(nch->nch_EPInBuf);
-                                }
+                                        	if((nch->nch_EPOutBuf = psdAllocVec(100)))
+                                        	{
+                                            	nch->nch_Task = thistask;
+                                            	return(nch);
+                                        	}
+                                        	psdFreePipe(nch->nch_EPOutPipe);
+                                    	}
+                                    	psdFreeVec(nch->nch_EPInBuf);
+                                	}
+                                	psdFreeVec(nch->nch_EP0Buf);
+                            	}
                                 psdFreePipe(nch->nch_EPInPipe);
                             }
                             psdFreePipe(nch->nch_EP0Pipe);
@@ -669,36 +701,38 @@ AROS_UFH0(void, nGUITask)
                 MUIA_HelpNode, (IPTR)libname,
 
                 WindowContents, (IPTR)VGroup,
-                    Child, (IPTR)ColGroup(2), GroupFrameT("Gamepad"),
+                    Child, (IPTR)(nch->nch_GaugeGroupObject = ColGroup(2),
+                    	GroupFrameT("Gamepad"),
+                    	MUIA_Disabled, TRUE,
                         Child, (IPTR)(nch->nch_GaugeObject_stick_lx = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xfffe,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
                         Child, (IPTR)(nch->nch_GaugeObject_stick_ly = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xfffe,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
                         Child, (IPTR)(nch->nch_GaugeObject_stick_rx = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xfffe,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
                         Child, (IPTR)(nch->nch_GaugeObject_stick_ry = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xfffe,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
-                        End,
+                        End),
                     Child, (IPTR)VSpace(0),
                     Child, (IPTR)HGroup,
                         MUIA_Group_SameWidth, TRUE,
@@ -771,30 +805,40 @@ AROS_UFH0(void, nGUITask)
                                 break;
                             }
 
-                            if(nch->stick_lx>=0x8000) {
-                                set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (nch->stick_lx-0x8000));
-                            } else {
-                                set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (0x7fff+nch->stick_lx));
-                            }
+							if((ULONG)(1<<nch->nch_TrackingSignal)) {
 
-                            if(nch->stick_ly>=0x8000) {
-                                set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (nch->stick_ly-0x8000));
-                            } else {
-                                set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (0x7fff+nch->stick_ly));
-                            }
+								set(nch->nch_GaugeGroupObject, MUIA_Disabled, (nch->signallost));
 
-                            if(nch->stick_rx>=0x8000) {
-                                set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (nch->stick_rx-0x8000));
-                            } else {
-                                set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (0x7fff+nch->stick_rx));
-                            }
+								if((!nch->signallost)) {
 
-                            if(nch->stick_ry>=0x8000) {
-                                set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (nch->stick_ry-0x8000));
-                            } else {
-                                set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (0x7fff+nch->stick_ry));
-                            }
+                            		if(nch->stick_lx>=0x8000) {
+                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (nch->stick_lx-0x8000));
+                            		} else {
+                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (0x8000+nch->stick_lx));
+                            		}
 
+                            		if(nch->stick_ly>=0x8000) {
+                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (nch->stick_ly-0x8000));
+                            		} else {
+                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (0x8000+nch->stick_ly));
+                            		}
+
+                            		if(nch->stick_rx>=0x8000) {
+                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (nch->stick_rx-0x8000));
+                            		} else {
+                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (0x8000+nch->stick_rx));
+                            		}
+
+                            		if(nch->stick_ry>=0x8000) {
+                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (nch->stick_ry-0x8000));
+                            		} else {
+                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (0x8000+nch->stick_ry));
+                            		}
+
+                            		/* 100Hz max. GUI update frequency should be enough for everyone... */
+                            		psdDelayMS(10);
+                            	}
+                            }
                         }
                     } while(TRUE);
                     set(nch->nch_MainWindow, MUIA_Window_Open, FALSE);
