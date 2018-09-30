@@ -54,59 +54,17 @@ ADD2EXPUNGELIB(libExpunge, 0)
  */
 
 #define ps ps
-
 /* /// "usbAttemptInterfaceBinding()" */
 struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
+
+    struct NepClassHid *nch;
+    
     IPTR ifclass;
     IPTR subclass;
     IPTR proto;
 
-    struct PsdConfig *pc;
-    struct PsdDevice *pd;
-
-    struct PsdDescriptor *pdd;
-
-    mybug(1, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
-    if((ps = OpenLibrary("poseidon.library", 4)))
-    {
-        psdGetAttrs(PGA_INTERFACE, pif,
-                    IFA_Class, &ifclass,
-                    IFA_SubClass, &subclass,
-                    IFA_Protocol, &proto,
-                    IFA_Config, &pc,
-                    TAG_DONE);
-
-        psdGetAttrs(PGA_CONFIG, pc,
-                    CA_Device, &pd,
-                    DA_ConfigList, &pdd,
-                    TAG_END);
-
-        /*
-            Check to see if it is believed to be an XInput Gamepad interface
-             - We could extend this class to also house code for other XInput devices,
-               but for now it's only XInput Gamepad
-            TODO: Force usbForceInterfaceBinding to go through this too
-        */
-        pdd = psdFindDescriptor(pd, NULL, DDA_DescriptorType, 33, DDA_Interface, pif, TAG_END);
-
-        CloseLibrary(ps);
-
-        if(((ifclass == 255) && (subclass == 93) && (proto == 1) && (pdd != NULL)))
-        {
-            return(usbForceInterfaceBinding(nh, pif));
-        }
-    }
-    return(NULL);
-}
-/* \\\ */
-
-/* /// "usbForceInterfaceBinding()" */
-struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
-{
-    struct Library *ps;
-    struct NepClassHid *nch;
     struct PsdConfig *pc;
     struct PsdDevice *pd;
 
@@ -122,6 +80,32 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
             nch->nch_Device = NULL;
             nch->nch_Interface = pif;
 
+            psdGetAttrs(PGA_INTERFACE, pif,
+                        IFA_Class, &ifclass,
+                        IFA_SubClass, &subclass,
+                        IFA_Protocol, &proto,
+                        IFA_Config, &pc,
+                        TAG_DONE);
+
+            psdGetAttrs(PGA_CONFIG, pc,
+                        CA_Device, &pd,
+                        DA_ConfigList, &nch->nch_pdd,
+                        TAG_END);
+
+            /*
+                Check to see if it is believed to be an XInput Gamepad interface and if so store the XInput descriptor
+                 - We could extend this class to also house code for other XInput devices,
+                   but for now it's only XInput Gamepad
+            */
+            nch->nch_pdd = psdFindDescriptor(pd, NULL, DDA_DescriptorType, 33, DDA_Interface, pif, TAG_END);
+            if(((ifclass != 255) || (subclass != 93) || (proto != 1) || (nch->nch_pdd == NULL)))
+            {
+                mybug(0, ("nepHidAttemptInterfaceBinding(%08lx) %d %d %d Nope!\n", pif, ifclass, subclass, proto));
+                psdFreeVec(nch);
+                CloseLibrary(ps);
+                return(NULL);
+            }
+
             psdSafeRawDoFmt(buf, 64, "arosx.class<%08lx>", nch);
             nch->nch_ReadySignal = SIGB_SINGLE;
             nch->nch_ReadySigTask = FindTask(NULL);
@@ -133,8 +117,6 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
                 {
                     nch->nch_ReadySigTask = NULL;
                     //FreeSignal(nch->nch_ReadySignal);
-                    psdGetAttrs(PGA_INTERFACE, pif, IFA_Config, &pc, TAG_END);
-                    psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
                     psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &nch->nch_devname, TAG_END);
                     psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                    "Play it again, '%s'!",
@@ -273,14 +255,14 @@ AROS_LH2(IPTR, usbDoMethodA,
 {
     AROS_LIBFUNC_INIT
 
-    mybug(10, ("Do Method %ld\n", methodid));
+    mybug(0, ("Do Method %ld\n", methodid));
     switch(methodid)
     {
         case UCM_AttemptInterfaceBinding:
             return((IPTR) usbAttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
 
         case UCM_ForceInterfaceBinding:
-            return((IPTR) usbForceInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
+            return((IPTR) usbAttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
 
         case UCM_ReleaseInterfaceBinding:
             usbReleaseInterfaceBinding(nh, (struct NepClassHid *) methoddata[0]);
@@ -359,11 +341,34 @@ AROS_UFH0(void, nHidTask)
 			 - What we have here is a bitmask for all(?) the inputs
 			 - We're the first, I think...
 			 - If this holds true then the analog thumb stick values aren't exactly 16-bit wide :)
-
-		   EPIn: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
+            EPIn: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 b4 00 55 00 00 00
 
             Wired Logitech F310
             EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 00 00
+
+            XInput descriptors for various gamepads, we have one for this interface in nch->nch_pdd
+             - Check if it's an index to the bitmask
+
+            [Gamepad F710 descriptors, wireless]
+              0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+             16  33  16   1   1  36 129  20   3   0   3  19   2   0   3   0
+
+            [Gamepad F510 descriptors]
+              0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+             16  33  16   1   1  36 129  20   3   0   3  19   2   0   3   0
+
+            [Gamepad F310 descriptors]
+              0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+             16  33  16   1   1  36 129  20   3   0   3  19   2   0   3   0
+
+            [Xbox360 Controller, other]
+              0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+             16  33  16   1   1  36 129  20   3   0   3  19   2   0   3   0
+
+            [Xbox360 Controller, v1.60]
+              0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+             17  33  16   1   1  37 129  20   3   3   3   4  19   2   8   3   3
+
 		*/
 
 		psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
