@@ -110,8 +110,8 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
                 Make sure the XInput descriptor takes the form we expect
                     [16]   33   16    1    1  [36] [129]  20    3    0    3   19    2    0    3    0
                     [17]   33   16    1    1  [37] [129]  20    3    3    3    4   19    2    8    3    3
-                XInput descriptor lenght has to match with the "nibble count"
-                    - XInput "USAGE" seems to take the form of nibbles
+                XInput descriptor length has to match with the "nibble count"
+                    - XInput "USAGE" seems to take the form of nibbles on the bitmask
                     - Nibble byte count seems to relate to the size of the descriptor (adjusted)
                 TODO: Make the class bailout earlier if the interface isn't what we want and clean this mess
             */
@@ -126,7 +126,7 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
 
             if( (nch->nch_xinput_desc[6] != 129) | (nibble_check != nch->nch_xinput_desc[0]) ) 
             {
-                mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Not a gamepad!\n", pif));
+                mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Not a gamepad! (that we know of...)\n", pif));
                 psdFreeVec(nch);
                 CloseLibrary(ps);
                 return(NULL);
@@ -481,16 +481,24 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 
     /*
         Just blindly map thumb sticks (They should be there for XBox360 and Logitech F710 and F310)
-         - Needs a structure defined for them (there are different kinds of mappings)
-        These are not actually UWORDS, see below how they are placed on the gauge objects
+
+        Blindly adjust for 10-bit analog as reported by F710 bitmask
+        Values reported seems like they fall short, but actually the gamepad has reached
+        the maximum analog output well before the thumb stick meets it's mechanical limit
+        Also there is a built in deadband around the center when the bitmask is applied (now just shift 6)
+
+        If DPad is set as the left thumb stick and UP button is pressed
+        then the analog channel on left and right shows the thumb stick value and vice versa
     */
+    //UBYTE *ep0buf;
+    //ep0buf  = nch->nch_EP0Buf;
 
 	nch->signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
-    nch->stick_lx = (UWORD)AROS_WORD2LE((UWORD)((buf[6])  | (buf[7]<<8)));
-    nch->stick_ly = (UWORD)AROS_WORD2LE((UWORD)((buf[8])  | (buf[9]<<8)));
-    nch->stick_rx = (UWORD)AROS_WORD2LE((UWORD)((buf[10]) | (buf[11]<<8)));
-    nch->stick_ry = (UWORD)AROS_WORD2LE((UWORD)((buf[12]) | (buf[13]<<8)));
+    nch->stick_lx = (UWORD)AROS_WORD2LE((UWORD)((buf[6])  | (buf[7]<<8)))>>6;
+    nch->stick_ly = (UWORD)AROS_WORD2LE((UWORD)((buf[8])  | (buf[9]<<8)))>>6;
+    nch->stick_rx = (UWORD)AROS_WORD2LE((UWORD)((buf[10]) | (buf[11]<<8)))>>6;
+    nch->stick_ry = (UWORD)AROS_WORD2LE((UWORD)((buf[12]) | (buf[13]<<8)))>>6;
 
 
     /* Rumble effect
@@ -713,7 +721,7 @@ AROS_UFH0(void, nGUITask)
             nch->nch_App = ApplicationObject,
             MUIA_Application_Title      , (IPTR)libname,
             MUIA_Application_Version    , (IPTR)VERSION_STRING,
-            MUIA_Application_Copyright  , (IPTR)"©2017 The AROS Development Team",
+            MUIA_Application_Copyright  , (IPTR)"©2018 The AROS Development Team",
             MUIA_Application_Author     , (IPTR)"The AROS Development Team",
             MUIA_Application_Description, (IPTR)"Settings for the arosx.class",
             MUIA_Application_Base       , (IPTR)"AROSX",
@@ -751,28 +759,28 @@ AROS_UFH0(void, nGUITask)
                     	MUIA_Disabled, TRUE,
                         Child, (IPTR)(nch->nch_GaugeObject_stick_lx = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
+                            MUIA_Gauge_Max, 0x3ff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
                         Child, (IPTR)(nch->nch_GaugeObject_stick_ly = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
+                            MUIA_Gauge_Max, 0x3ff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
                         Child, (IPTR)(nch->nch_GaugeObject_stick_rx = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
+                            MUIA_Gauge_Max, 0x3ff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
                         Child, (IPTR)(nch->nch_GaugeObject_stick_ry = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
+                            MUIA_Gauge_Max, 0x3ff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
@@ -855,35 +863,35 @@ AROS_UFH0(void, nGUITask)
                                 /* TODO: Check if the GUI goes to sleep when the controller says it's sleepy */
 								if((nch->wireless)&&(nch->signallost)) {
                                     set(nch->nch_GaugeGroupObject, MUIA_Disabled, (nch->signallost));
-                                    psdDelayMS(10);
+                                    //psdDelayMS(10);
                                 } else {
                                     set(nch->nch_GaugeGroupObject, MUIA_Disabled, FALSE);
-                            		if(nch->stick_lx>=0x8000) {
-                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (nch->stick_lx-0x8000));
+                            		if(nch->stick_lx>=0x200) {
+                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (nch->stick_lx-0x200));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (0x8000+nch->stick_lx));
+                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (0x200+nch->stick_lx));
                             		}
 
-                            		if(nch->stick_ly>=0x8000) {
-                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (nch->stick_ly-0x8000));
+                            		if(nch->stick_ly>=0x200) {
+                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (nch->stick_ly-0x200));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (0x8000+nch->stick_ly));
+                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (0x200+nch->stick_ly));
                             		}
 
-                            		if(nch->stick_rx>=0x8000) {
-                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (nch->stick_rx-0x8000));
+                            		if(nch->stick_rx>=0x200) {
+                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (nch->stick_rx-0x200));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (0x8000+nch->stick_rx));
+                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (0x200+nch->stick_rx));
                             		}
 
-                            		if(nch->stick_ry>=0x8000) {
-                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (nch->stick_ry-0x8000));
+                            		if(nch->stick_ry>=0x200) {
+                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (nch->stick_ry-0x200));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (0x8000+nch->stick_ry));
+                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (0x200+nch->stick_ry));
                             		}
 
                             		/* 100Hz max. GUI update frequency should be enough for everyone... */
-                            		psdDelayMS(10);
+                            		//psdDelayMS(10);
                             	}
                             }
                         }
