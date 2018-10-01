@@ -84,6 +84,7 @@ struct NepClassHid
     STRPTR              nch_devname;
 
     struct PsdDescriptor *nch_pdd;
+    UBYTE                *nch_xinput_desc;
 
     UWORD stick_lx;
     UWORD stick_ly;

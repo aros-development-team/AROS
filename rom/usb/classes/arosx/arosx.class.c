@@ -93,7 +93,7 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
                         TAG_END);
 
             /*
-                Check to see if it is believed to be an XInput Gamepad interface and if so store the XInput descriptor
+                Check to see if it is believed to be an XInput Gamepad interface and if so store the XInput descriptor pdd and the data
                  - We could extend this class to also house code for other XInput devices,
                    but for now it's only XInput Gamepad
             */
@@ -101,6 +101,32 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
             if(((ifclass != 255) || (subclass != 93) || (proto != 1) || (nch->nch_pdd == NULL)))
             {
                 mybug(0, ("nepHidAttemptInterfaceBinding(%08lx) %d %d %d Nope!\n", pif, ifclass, subclass, proto));
+                psdFreeVec(nch);
+                CloseLibrary(ps);
+                return(NULL);
+            }
+
+            /*
+                Make sure the XInput descriptor takes the form we expect
+                    [16]   33   16    1    1  [36] [129]  20    3    0    3   19    2    0    3    0
+                    [17]   33   16    1    1  [37] [129]  20    3    3    3    4   19    2    8    3    3
+                XInput descriptor lenght has to match with the "nibble count"
+                    - XInput "USAGE" seems to take the form of nibbles
+                    - Nibble byte count seems to relate to the size of the descriptor (adjusted)
+                TODO: Make the class bailout earlier if the interface isn't what we want and clean this mess
+            */
+
+            psdGetAttrs(PGA_DESCRIPTOR, nch->nch_pdd, DDA_DescriptorData, &nch->nch_xinput_desc, TAG_END);
+
+            UBYTE nibble_check;
+            nibble_check = ( (( (nch->nch_xinput_desc[5]>>1) + (nch->nch_xinput_desc[5] & 1) ) - 2) );
+
+            mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Nibble check %d\n", pif, nibble_check));
+            nDebugMem(ps, nch->nch_xinput_desc, nch->nch_xinput_desc[0]);
+
+            if( (nch->nch_xinput_desc[6] != 129) | (nibble_check != nch->nch_xinput_desc[0]) ) 
+            {
+                mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Not a gamepad!\n", pif));
                 psdFreeVec(nch);
                 CloseLibrary(ps);
                 return(NULL);
@@ -346,7 +372,7 @@ AROS_UFH0(void, nHidTask)
             Wired Logitech F310
             EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 00 00
 
-            XInput descriptors for various gamepads, we have one for this interface in nch->nch_pdd
+            XInput descriptors for various gamepads, we have one for this interface in *nch_xinput_desc as a UBYTE array
              - Check if it's an index to the bitmask
 
             [Gamepad F710 descriptors, wireless]
