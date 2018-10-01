@@ -120,7 +120,7 @@ AROS_UFH3(struct DevBase *, AROSDevInit,
    AROS_UFHA(APTR, seg_list, A0),
    AROS_UFHA(struct DevBase *, base, A6))
 {
-   AROS_LIBFUNC_INIT
+   AROS_USERFUNC_INIT
 
    base = DevInit(dev_base, seg_list, base);
 
@@ -130,7 +130,7 @@ AROS_UFH3(struct DevBase *, AROSDevInit,
    }
    return base;
 
-   AROS_LIBFUNC_EXIT
+   AROS_USERFUNC_EXIT
 }
 
 

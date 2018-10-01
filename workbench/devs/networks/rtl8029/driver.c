@@ -331,7 +331,7 @@ struct DevData *DevInit(REG(d0, ULONG num), REG(a0, void *seglist),
   REG(a6, struct Library *sysb))
 #endif
   {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     struct DevData *dd;
     struct Library *SysBase = sysb;
@@ -373,7 +373,7 @@ struct DevData *DevInit(REG(d0, ULONG num), REG(a0, void *seglist),
       }
     return NULL;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
   }
 
 ///
