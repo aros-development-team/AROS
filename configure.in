@@ -1348,6 +1348,7 @@ case "$target_os" in
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__DragonFly__"
+                aros_isa_flags="$""(ISA_X86_FLAGS)"
                 ;;
             *x86_64*)
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
@@ -1355,6 +1356,7 @@ case "$target_os" in
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__DragonFly__"
+                aros_isa_flags="$""(ISA_X8664_FLAGS)"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for DragonFly -- $target_cpu")
@@ -1378,6 +1380,7 @@ case "$target_os" in
                 aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
+                aros_isa_flags="$""(ISA_X86_FLAGS)"
                 aros_nominal_depth=8
                 gcc_target_cpu="i386"
                 ;;
@@ -1399,6 +1402,7 @@ case "$target_os" in
                 aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__OpenBSD__"
+                aros_isa_flags="$""(ISA_X86_FLAGS)"
                 gcc_target_cpu="i386"
                 ;;
             *)
@@ -1419,6 +1423,7 @@ case "$target_os" in
                aros_object_format="elf_i386"
                aros_flavour="emulation"
                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__Solaris__"
+               aros_isa_flags="$""(ISA_X86_FLAGS)"
                aros_nominal_depth=8
                gcc_target_cpu="i386"
                ;;
@@ -1644,6 +1649,7 @@ case "$target_os" in
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+                aros_isa_flags="$""(ISA_X86_FLAGS)"
                 aros_nominal_depth=8
                 gcc_target_cpu="i386"
 
@@ -1653,6 +1659,7 @@ case "$target_os" in
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
+                aros_isa_flags="$""(ISA_X8664_FLAGS)"
                 aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
                 aros_config_cxxflags="$aros_config_cxxflags -fno-omit-frame-pointer"
                 aros_nominal_depth=8
