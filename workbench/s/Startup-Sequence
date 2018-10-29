@@ -84,6 +84,7 @@ EndIf
 
 AddDatatypes REFRESH QUIET
 IPrefs
+PsdStackLoader >NIL:
 Run <NIL: >NIL: QUIET ConClip
 
 If EXISTS "C:RexxMast"
