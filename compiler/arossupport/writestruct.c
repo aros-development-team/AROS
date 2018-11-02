@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Write a big endian structure to a streamhook
@@ -58,6 +58,7 @@ struct WriteLevel
         See ReadStruct().
 
     BUGS
+        SDT_SPECIAL not implemented.
 
     INTERNALS
         The function uses the Write*()-functions to write data into
@@ -129,6 +130,20 @@ struct WriteLevel
                 goto error;
 
             break;
+
+        case SDT_COPY: {     /* Copy 'n' bytes */
+            int i, count, offset ;
+    
+            offset = IDESC;
+            count = IDESC;
+
+            for (i=0; i<count; i++)
+            {
+                if (!WriteByte (hook, *((UBYTE *)(curr->s + offset + i)), stream))
+                    goto error;
+            }
+
+            break; }
 
         case SDT_STRING: {   /* Write a string */
             STRPTR str;
