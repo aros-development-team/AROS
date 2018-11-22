@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -1970,6 +1970,7 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     struct SCSICmd sc = {
        0
     };
+    UWORD i;
 
     D(bug("[ATA%02ld] atapi_TestUnitOK()\n", unit->au_UnitNum));
 
@@ -1980,7 +1981,11 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     sc.scsi_Flags = SCSIF_AUTOSENSE;
 
     DATAPI(bug("[ATA%02ld] atapi_TestUnitOK: Testing Unit Ready sense...\n", unit->au_UnitNum));
-    unit->au_DirectSCSI(unit, &sc);
+
+    /* Send command twice, and take the second result, as some drives give
+     * invalid (or at least not so useful) sense data straight after reset */
+    for (i = 0; i < 2; i++)
+        unit->au_DirectSCSI(unit, &sc);
     unit->au_SenseKey = sense[2];
 
     /*
