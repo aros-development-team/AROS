@@ -93,8 +93,9 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
         D(bug("[ATA:Gayle] Status=%02x,%02x\n", status1, status2);)
         if ((status1 & 0xfd) == (status2 & 0xfd))
         {
-            port = (UBYTE*)altport;
-            ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_FASTATA;
+//FIXME: the check is flawed for an a4000, disabled for now. 
+//            port = (UBYTE*)altport;
+//            ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_FASTATA;
         }
     }
 
