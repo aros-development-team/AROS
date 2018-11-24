@@ -82,7 +82,8 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
     Enable();
     CloseLibrary((struct Library*)gfx);
 
-    // Detect FastATA...
+    // Detect FastATA... FIXME: the check is flawed for an a4000, disabled for now.
+#if (0)
     if (ddata->gayleirqbase)
     {
         altport = (UBYTE*)GAYLE_BASE_FASTATA;
@@ -93,12 +94,11 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
         D(bug("[ATA:Gayle] Status=%02x,%02x\n", status1, status2);)
         if ((status1 & 0xfd) == (status2 & 0xfd))
         {
-//FIXME: the check is flawed for an a4000, disabled for now. 
-//            port = (UBYTE*)altport;
-//            ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_FASTATA;
+            port = (UBYTE*)altport;
+            ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_FASTATA;
         }
     }
-
+#endif
     if (port == NULL)
     {
         D(bug("[ATA:Gayle] No Gayle ATA Detected (ID=%02x)\n", id);)
