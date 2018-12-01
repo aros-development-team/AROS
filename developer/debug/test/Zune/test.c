@@ -48,8 +48,7 @@
 #define NUMERIC_INIT 30
 
 static const char *pages[] =
-    {"General", "Text", "Boopsi", "Color", "Edit", "List", "Gauge",
-        "Numeric", "Select",
+    {"General", "Text", "Boopsi", "Color", "Edit", "List", "Numeric", "Select",
 #if defined(TEST_ICONLIST)
         "Icon List",
 #endif
@@ -118,7 +117,6 @@ static Object *CreateBoopsiGroup();
 static Object *CreateColorGroup();
 static Object *CreateEditGroup();
 static Object *CreateListGroup();
-static Object *CreateGaugeGroup();
 static Object *CreateNumericGroup();
 static Object *CreateSelectGroup();
 static Object *CreateBalancingGroup();
@@ -1872,7 +1870,6 @@ int main(void)
                         Child, CreateColorGroup(),
                         Child, CreateEditGroup(),
                         Child, CreateListGroup(),
-                        Child, CreateGaugeGroup(),
                         Child, CreateNumericGroup(),
                         Child, CreateSelectGroup(),
 #if defined(TEST_ICONLIST)
@@ -3587,70 +3584,6 @@ static Object *CreateListGroup()
                     MUIA_Text_Contents, "N/A",
                     End,
                 End,
-            End,
-        End;
-
-    return group;
-}
-
-static Object *CreateGaugeGroup()
-{
-    Object *group;
-
-    group = HGroup,
-        Child, VGroup,
-            Child, VGroup,
-                GroupFrame,
-                Child, GaugeObject,
-                    GaugeFrame,
-                    MUIA_Gauge_InfoText, "%ld %%",
-                    MUIA_Gauge_Horiz, TRUE,
-                    MUIA_Gauge_Current, 25,
-                    End,
-                Child, ScaleObject,
-                    End,
-                End,
-            Child, VGroup,
-                GroupFrame,
-                Child, GaugeObject,
-                    GaugeFrame,
-                    MUIA_Gauge_InfoText, "%ld %%",
-                    MUIA_Gauge_Horiz, TRUE,
-                    MUIA_Gauge_Current, 50,
-                    End,
-                Child, ScaleObject,
-                    End,
-                End,
-            Child, VGroup,
-                GroupFrame,
-                Child, GaugeObject,
-                    GaugeFrame,
-                    MUIA_Gauge_InfoText, "%ld %%",
-                    MUIA_Gauge_Horiz, TRUE,
-                    MUIA_Gauge_Current, 75,
-                    End,
-                Child, ScaleObject,
-                    End,
-                End,
-            End,
-        Child, HGroup,
-            Child, HVSpace,
-            Child, GaugeObject,
-                GaugeFrame,
-                MUIA_Gauge_InfoText, "%ld %%",
-                MUIA_Gauge_Current, 25,
-                End,
-            Child, GaugeObject,
-                GaugeFrame,
-                MUIA_Gauge_InfoText, "%ld %%",
-                MUIA_Gauge_Current, 50,
-                End,
-            Child, GaugeObject,
-                GaugeFrame,
-                MUIA_Gauge_InfoText, "%ld %%",
-                MUIA_Gauge_Current, 75,
-                End,
-            Child, HVSpace,
             End,
         End;
 
