@@ -140,6 +140,15 @@ enum
     NUMERIC_COUNT
 };
 
+enum
+{
+    HNGAUGE,
+    HQGAUGE,
+    VNGAUGE,
+    VQGAUGE,
+    GAUGE_COUNT
+};
+
 struct Library *MUIMasterBase;
 struct Library *ColorWheelBase;
 
@@ -283,6 +292,16 @@ list;
 
 static struct
 {
+    Object *numerics[NUMERIC_COUNT],
+        *gauges[GAUGE_COUNT],
+        *min_string,
+        *max_string,
+        *slider_button;
+}
+numeric;
+
+static struct
+{
     Object *city_cycle,
         *prev_button,
         *next_button,
@@ -316,10 +335,6 @@ static struct Hook hook_objects;
 static struct Hook hook_compare, hook_multitest;
 static struct Hook hook_construct, hook_destruct, hook_display;
 static struct Hook hook_objstr;
-static Object *numerics[NUMERIC_COUNT];
-static Object *min_string, *max_string;
-static Object *slider_button;
-static Object *horiz_gauge, *vert_gauge, *quiet_gauge;
 static Object *city_radios[3];
 
 #if defined(TEST_ICONLIST)
@@ -1478,24 +1493,24 @@ static void GaugeSetMax(void)
     UWORD i, div;
     TEXT info_text[10];
 
-    i = XGET(max_string, MUIA_String_Integer);
+    i = XGET(numeric.max_string, MUIA_String_Integer);
     sprintf(info_text, "%%ld/%d", (int)i);
-    SET(horiz_gauge, MUIA_Gauge_InfoText, info_text);
+    SET(numeric.gauges[HNGAUGE], MUIA_Gauge_InfoText, info_text);
 
-    SET(vert_gauge, MUIA_Gauge_Max, i);
+    SET(numeric.gauges[VNGAUGE], MUIA_Gauge_Max, i);
 
-    div = XGET(quiet_gauge, MUIA_Gauge_Divide);
-    SET(quiet_gauge, MUIA_Gauge_Max, i / div);
+    div = XGET(numeric.gauges[VQGAUGE], MUIA_Gauge_Divide);
+    SET(numeric.gauges[VQGAUGE], MUIA_Gauge_Max, i / div);
 }
 
 static void SliderCopyActive(void)
 {
     UWORD i;
 
-    i = XGET(numerics[HRSLIDER], MUIA_Numeric_Value);
-    nnset(numerics[HQSLIDER], MUIA_Numeric_Value, i);
-    i = XGET(numerics[VRSLIDER], MUIA_Numeric_Value);
-    nnset(numerics[VQSLIDER], MUIA_Numeric_Value, i);
+    i = XGET(numeric.numerics[HRSLIDER], MUIA_Numeric_Value);
+    nnset(numeric.numerics[HQSLIDER], MUIA_Numeric_Value, i);
+    i = XGET(numeric.numerics[VRSLIDER], MUIA_Numeric_Value);
+    nnset(numeric.numerics[VQSLIDER], MUIA_Numeric_Value, i);
 }
 
 static void RadioCopyActive(void)
@@ -2264,76 +2279,76 @@ int main(void)
          * changed */
         for (i = 0; i < NUMERIC_COUNT; i++)
         {
-            DoMethod(min_string, MUIM_Notify, MUIA_String_Integer,
-                MUIV_EveryTime, numerics[i], 3, MUIM_Set, MUIA_Numeric_Min,
-                MUIV_TriggerValue);
-            DoMethod(max_string, MUIM_Notify, MUIA_String_Integer,
-                MUIV_EveryTime, numerics[i], 3, MUIM_Set, MUIA_Numeric_Max,
-                MUIV_TriggerValue);
+            DoMethod(numeric.min_string, MUIM_Notify, MUIA_String_Integer,
+                MUIV_EveryTime, numeric.numerics[i], 3, MUIM_Set,
+                MUIA_Numeric_Min, MUIV_TriggerValue);
+            DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Integer,
+                MUIV_EveryTime, numeric.numerics[i], 3, MUIM_Set,
+                MUIA_Numeric_Max, MUIV_TriggerValue);
         }
-        DoMethod(max_string, MUIM_Notify, MUIA_String_Integer,
+        DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Integer,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             GaugeSetMax);
-        DoMethod(max_string, MUIM_Notify, MUIA_String_Integer,
-            MUIV_EveryTime, horiz_gauge, 3, MUIM_Set, MUIA_Gauge_Max,
-            MUIV_TriggerValue);
+        DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Integer,
+            MUIV_EveryTime, numeric.gauges[HNGAUGE], 3, MUIM_Set,
+            MUIA_Gauge_Max, MUIV_TriggerValue);
 
-        DoMethod(numerics[NKNOB], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[NLEVELMETER], 3, MUIM_Set,
+        DoMethod(numeric.numerics[NKNOB], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[NLEVELMETER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
-        DoMethod(numerics[RKNOB], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[RLEVELMETER], 3, MUIM_Set,
+        DoMethod(numeric.numerics[RKNOB], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[RLEVELMETER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
-        DoMethod(slider_button, MUIM_Notify, MUIA_Pressed, FALSE,
-            numerics[HRSLIDER], 3, MUIM_Set, MUIA_Slider_Horiz, FALSE);
+        DoMethod(numeric.slider_button, MUIM_Notify, MUIA_Pressed, FALSE,
+            numeric.numerics[HRSLIDER], 3, MUIM_Set, MUIA_Slider_Horiz, FALSE);
 
         /* Get horizontal sliders to follow each other */
-        DoMethod(numerics[HNSLIDER], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[HRSLIDER], 3, MUIM_Set,
+        DoMethod(numeric.numerics[HNSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[HRSLIDER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
-        DoMethod(numerics[HRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[HNSLIDER], 3, MUIM_NoNotifySet,
+        DoMethod(numeric.numerics[HRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[HNSLIDER], 3, MUIM_NoNotifySet,
             MUIA_Numeric_Value, MUIV_TriggerValue);
-        DoMethod(numerics[HRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+        DoMethod(numeric.numerics[HRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             SliderCopyActive);
-        DoMethod(numerics[HQSLIDER], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[HNSLIDER], 3, MUIM_Set,
+        DoMethod(numeric.numerics[HQSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[HNSLIDER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
 
         /* Get horizontal gauge to follow horizontal sliders */
         for (i = HNSLIDER; i <= HRSLIDER; i++)
         {
-            DoMethod(numerics[i], MUIM_Notify, MUIA_Numeric_Value,
-                MUIV_EveryTime, horiz_gauge, 3, MUIM_Set,
+            DoMethod(numeric.numerics[i], MUIM_Notify, MUIA_Numeric_Value,
+                MUIV_EveryTime, numeric.gauges[HNGAUGE], 3, MUIM_Set,
                 MUIA_Gauge_Current, MUIV_TriggerValue);
         }
 
         /* Get vertical sliders to follow each other */
-        DoMethod(numerics[VNSLIDER], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[VRSLIDER], 3, MUIM_Set,
+        DoMethod(numeric.numerics[VNSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[VRSLIDER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
-        DoMethod(numerics[VRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[VNSLIDER], 3, MUIM_NoNotifySet,
+        DoMethod(numeric.numerics[VRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[VNSLIDER], 3, MUIM_NoNotifySet,
             MUIA_Numeric_Value, MUIV_TriggerValue);
-        DoMethod(numerics[VRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+        DoMethod(numeric.numerics[VRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             SliderCopyActive);
-        DoMethod(numerics[VQSLIDER], MUIM_Notify, MUIA_Numeric_Value,
-            MUIV_EveryTime, numerics[VNSLIDER], 3, MUIM_Set,
+        DoMethod(numeric.numerics[VQSLIDER], MUIM_Notify, MUIA_Numeric_Value,
+            MUIV_EveryTime, numeric.numerics[VNSLIDER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
 
         /* Get vertical gauge to follow vertical sliders */
         for (i = VNSLIDER; i <= VRSLIDER; i++)
         {
-            DoMethod(numerics[i], MUIM_Notify, MUIA_Numeric_Value,
-                MUIV_EveryTime, vert_gauge, 3, MUIM_Set,
+            DoMethod(numeric.numerics[i], MUIM_Notify, MUIA_Numeric_Value,
+                MUIV_EveryTime, numeric.gauges[VNGAUGE], 3, MUIM_Set,
                 MUIA_Gauge_Current, MUIV_TriggerValue);
         }
 
         /* Get quiet gauge to follow vertical gauge */
-        DoMethod(vert_gauge, MUIM_Notify, MUIA_Gauge_Current,
-            MUIV_EveryTime, quiet_gauge, 3, MUIM_Set,
+        DoMethod(numeric.gauges[VNGAUGE], MUIM_Notify, MUIA_Gauge_Current,
+            MUIV_EveryTime, numeric.gauges[VQGAUGE], 3, MUIM_Set,
             MUIA_Gauge_Current, MUIV_TriggerValue);
 
         /* radio */
@@ -3651,21 +3666,21 @@ static Object *CreateNumericGroup()
             Child, ColGroup(2),
                 GroupFrameT("Horizontal Sliders"),
                 Child, MUI_MakeObject(MUIO_Label, "Normal:", 0),
-                Child, numerics[HNSLIDER] = SliderObject,
+                Child, numeric.numerics[HNSLIDER] = SliderObject,
                     MUIA_Slider_Horiz, TRUE,
                     MUIA_Numeric_Min, NUMERIC_MIN,
                     MUIA_Numeric_Max, NUMERIC_MAX,
                     MUIA_CycleChain, 1,
                     End,
                 Child, MUI_MakeObject(MUIO_Label, "Reverse:", 0),
-                Child, numerics[HRSLIDER] = SliderObject,
+                Child, numeric.numerics[HRSLIDER] = SliderObject,
                     MUIA_Numeric_Reverse, TRUE,
                     MUIA_Numeric_Min, NUMERIC_MIN,
                     MUIA_Numeric_Max, NUMERIC_MAX,
                     MUIA_CycleChain, 1,
                     End,
                 Child, MUI_MakeObject(MUIO_Label, "Quiet:", 0),
-                Child, numerics[HQSLIDER] = SliderObject,
+                Child, numeric.numerics[HQSLIDER] = SliderObject,
                     MUIA_Slider_Quiet, TRUE,
                     MUIA_Numeric_Min, NUMERIC_MIN,
                     MUIA_Numeric_Max, NUMERIC_MAX,
@@ -3681,13 +3696,13 @@ static Object *CreateNumericGroup()
                     Child, MUI_MakeObject(MUIO_Label, "Reverse", 0),
                     Child, HVSpace,
                     Child, HVSpace,
-                    Child, numerics[NKNOB] = KnobObject,
+                    Child, numeric.numerics[NKNOB] = KnobObject,
                         MUIA_Numeric_Min, NUMERIC_MIN,
                         MUIA_Numeric_Max, NUMERIC_MAX,
                         MUIA_CycleChain, 1,
                         End,
                     Child, HVSpace,
-                    Child, numerics[RKNOB] = KnobObject,
+                    Child, numeric.numerics[RKNOB] = KnobObject,
                         MUIA_Numeric_Reverse, TRUE,
                         MUIA_Numeric_Min, NUMERIC_MIN,
                         MUIA_Numeric_Max, NUMERIC_MAX,
@@ -3699,7 +3714,7 @@ static Object *CreateNumericGroup()
                     Child, ColGroup(2),
                         Child, MUI_MakeObject(MUIO_Label,
                             "Minimum Value:", 0),
-                        Child, min_string = (Object *)StringObject,
+                        Child, numeric.min_string = (Object *)StringObject,
                             StringFrame,
                             MUIA_String_Accept, (IPTR)digits,
                             MUIA_String_Integer, NUMERIC_MIN,
@@ -3707,14 +3722,14 @@ static Object *CreateNumericGroup()
                             End,
                         Child, MUI_MakeObject(MUIO_Label,
                             "Maximum Value:", 0),
-                        Child, max_string = (Object *)StringObject,
+                        Child, numeric.max_string = (Object *)StringObject,
                             StringFrame,
                             MUIA_String_Accept, (IPTR)digits,
                             MUIA_String_Integer, NUMERIC_MAX,
                             MUIA_CycleChain, 1,
                             End,
                         End,
-                    Child, slider_button = TextObject,
+                    Child, numeric.slider_button = TextObject,
                         ButtonFrame,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
                         MUIA_CycleChain, 1,
@@ -3727,12 +3742,12 @@ static Object *CreateNumericGroup()
                     GroupFrameT("Level Meters"),
                     Child, MUI_MakeObject(MUIO_Label, "Normal", 0),
                     Child, MUI_MakeObject(MUIO_Label, "Reverse", 0),
-                    Child, numerics[NLEVELMETER] = LevelmeterObject,
+                    Child, numeric.numerics[NLEVELMETER] = LevelmeterObject,
                         MUIA_Numeric_Min, NUMERIC_MIN,
                         MUIA_Numeric_Max, NUMERIC_MAX,
                         MUIA_CycleChain, 1,
                         End,
-                    Child, numerics[RLEVELMETER] = LevelmeterObject,
+                    Child, numeric.numerics[RLEVELMETER] = LevelmeterObject,
                         MUIA_Numeric_Reverse, TRUE,
                         MUIA_Numeric_Min, NUMERIC_MIN,
                         MUIA_Numeric_Max, NUMERIC_MAX,
@@ -3742,7 +3757,7 @@ static Object *CreateNumericGroup()
                 Child, ColGroup(3),
                     GroupFrameT("Numeric Buttons"),
                     Child, MUI_MakeObject(MUIO_Label, "Normal:", 0),
-                    Child, numerics[NNUMERICBUTTON] =
+                    Child, numeric.numerics[NNUMERICBUTTON] =
                         NumericbuttonObject,
                         MUIA_Numeric_Min, NUMERIC_MIN,
                         MUIA_Numeric_Max, NUMERIC_MAX,
@@ -3750,7 +3765,7 @@ static Object *CreateNumericGroup()
                         End,
                     Child, HVSpace,
                     Child, MUI_MakeObject(MUIO_Label, "Reverse:", 0),
-                    Child, numerics[RNUMERICBUTTON] =
+                    Child, numeric.numerics[RNUMERICBUTTON] =
                         NumericbuttonObject,
                         MUIA_Numeric_Reverse, TRUE,
                         MUIA_Numeric_Min, NUMERIC_MIN,
@@ -3769,14 +3784,14 @@ static Object *CreateNumericGroup()
             Child, MUI_MakeObject(MUIO_Label, "Normal", 0),
             Child, MUI_MakeObject(MUIO_Label, "Reverse", 0),
             Child, MUI_MakeObject(MUIO_Label, "Quiet", 0),
-            Child, numerics[VNSLIDER] = SliderObject,
+            Child, numeric.numerics[VNSLIDER] = SliderObject,
                 MUIA_Slider_Horiz, FALSE,
                 MUIA_Numeric_Min, NUMERIC_MIN,
                 MUIA_Numeric_Max, NUMERIC_MAX,
                 MUIA_Numeric_Value, NUMERIC_INIT,
                 MUIA_CycleChain, 1,
                 End,
-            Child, numerics[VRSLIDER] = SliderObject,
+            Child, numeric.numerics[VRSLIDER] = SliderObject,
                 MUIA_Slider_Horiz, FALSE,
                 MUIA_Numeric_Reverse, TRUE,
                 MUIA_Numeric_Min, NUMERIC_MIN,
@@ -3784,7 +3799,7 @@ static Object *CreateNumericGroup()
                 MUIA_Numeric_Value, NUMERIC_INIT,
                 MUIA_CycleChain, 1,
                 End,
-            Child, numerics[VQSLIDER] = SliderObject,
+            Child, numeric.numerics[VQSLIDER] = SliderObject,
                 MUIA_Slider_Horiz, FALSE,
                 MUIA_Slider_Quiet, TRUE,
                 MUIA_Numeric_Min, NUMERIC_MIN,
@@ -3796,19 +3811,25 @@ static Object *CreateNumericGroup()
 
         Child, VGroup,
             GroupFrameT("Gauges"),
-            Child, horiz_gauge = GaugeObject,
+            Child, numeric.gauges[HNGAUGE] = GaugeObject,
                 GaugeFrame,
                 MUIA_Gauge_Horiz, TRUE,
                 MUIA_Gauge_InfoText, "%ld/100",
                 End,
+            Child, numeric.gauges[HQGAUGE] = GaugeObject,
+                GaugeFrame,
+                MUIA_Gauge_Horiz, TRUE,
+                End,
+            Child, ScaleObject,
+                End,
             Child, HGroup,
-                Child, vert_gauge = GaugeObject,
+                Child, numeric.gauges[VNGAUGE] = GaugeObject,
                     GaugeFrame,
                     MUIA_Gauge_Current, NUMERIC_INIT,
                     MUIA_Gauge_Max, 100,
                     MUIA_Gauge_InfoText, "%ld",
                     End,
-                Child, quiet_gauge = GaugeObject,
+                Child, numeric.gauges[VQGAUGE] = GaugeObject,
                     GaugeFrame,
                     MUIA_Gauge_Current, 75,
                     MUIA_Gauge_Max, 50,
