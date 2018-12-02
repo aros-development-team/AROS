@@ -1484,8 +1484,8 @@ static void Save(void)
     }
 }
 
-/* Update gauge maximums. Note that the maximum for the horizontal gauge is
- * set elsewhere through notification. */
+/* Update gauge maximums. Note that the maximum is set for some gauges
+ * elsewhere through notification. */
 static void GaugeSetMax(void)
 {
     UWORD i, div;
@@ -1501,7 +1501,15 @@ static void GaugeSetMax(void)
     SET(numeric.gauges[VQGAUGE], MUIA_Gauge_Max, i / div);
 }
 
-static void SliderCopyActive(void)
+static void GaugeCopyCurrent(void)
+{
+    UWORD i;
+
+    i = XGET(numeric.gauges[HNGAUGE], MUIA_Gauge_Current);
+    SET(numeric.gauges[HQGAUGE], MUIA_Gauge_Current, i);
+}
+
+static void SliderCopyValue(void)
 {
     UWORD i;
 
@@ -2286,8 +2294,11 @@ int main(void)
         DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Integer,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
             GaugeSetMax);
-        DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Integer,
+        DoMethod(numeric.numerics[HNSLIDER], MUIM_Notify, MUIA_Numeric_Max,
             MUIV_EveryTime, numeric.gauges[HNGAUGE], 3, MUIM_Set,
+            MUIA_Gauge_Max, MUIV_TriggerValue);
+        DoMethod(numeric.gauges[HNGAUGE], MUIM_Notify, MUIA_Gauge_Max,
+            MUIV_EveryTime, numeric.gauges[HQGAUGE], 3, MUIM_Set,
             MUIA_Gauge_Max, MUIV_TriggerValue);
 
         DoMethod(numeric.numerics[NKNOB], MUIM_Notify, MUIA_Numeric_Value,
@@ -2308,7 +2319,7 @@ int main(void)
             MUIA_Numeric_Value, MUIV_TriggerValue);
         DoMethod(numeric.numerics[HRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
-            SliderCopyActive);
+            SliderCopyValue);
         DoMethod(numeric.numerics[HQSLIDER], MUIM_Notify, MUIA_Numeric_Value,
             MUIV_EveryTime, numeric.numerics[HNSLIDER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
@@ -2321,6 +2332,11 @@ int main(void)
                 MUIA_Gauge_Current, MUIV_TriggerValue);
         }
 
+        /* Get horizontal quiet gauge to follow horizontal normal gauge */
+        DoMethod(numeric.gauges[HNGAUGE], MUIM_Notify, MUIA_Gauge_Current,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            GaugeCopyCurrent);
+
         /* Get vertical sliders to follow each other */
         DoMethod(numeric.numerics[VNSLIDER], MUIM_Notify, MUIA_Numeric_Value,
             MUIV_EveryTime, numeric.numerics[VRSLIDER], 3, MUIM_Set,
@@ -2330,7 +2346,7 @@ int main(void)
             MUIA_Numeric_Value, MUIV_TriggerValue);
         DoMethod(numeric.numerics[VRSLIDER], MUIM_Notify, MUIA_Numeric_Value,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
-            SliderCopyActive);
+            SliderCopyValue);
         DoMethod(numeric.numerics[VQSLIDER], MUIM_Notify, MUIA_Numeric_Value,
             MUIV_EveryTime, numeric.numerics[VNSLIDER], 3, MUIM_Set,
             MUIA_Numeric_Value, MUIV_TriggerValue);
@@ -2343,7 +2359,7 @@ int main(void)
                 MUIA_Gauge_Current, MUIV_TriggerValue);
         }
 
-        /* Get quiet gauge to follow vertical gauge */
+        /* Get vertical quiet gauge to follow vertical normal gauge */
         DoMethod(numeric.gauges[VNGAUGE], MUIM_Notify, MUIA_Gauge_Current,
             MUIV_EveryTime, numeric.gauges[VQGAUGE], 3, MUIM_Set,
             MUIA_Gauge_Current, MUIV_TriggerValue);
