@@ -1485,22 +1485,38 @@ static void Save(void)
     }
 }
 
-/* Update gauge maximums. Note that the maximum is set for some gauges
- * elsewhere through notification. */
-static void GaugeSetMax(void)
+/* Update numeric minimums */
+static void NumericSetMin(void)
 {
-    UWORD i, div;
+    UWORD min, i;
+
+    min = XGET(numeric.min_string, MUIA_String_Integer);
+
+    for (i = 0; i < NUMERIC_COUNT; i++)
+        SET(numeric.numerics[i], MUIA_Numeric_Min, min);
+}
+
+/* Update numeric/gauge maximums. Note that the maximum is set for some gauges
+ * elsewhere through notification */
+static void NumericSetMax(void)
+{
+    UWORD max, div, i;
     TEXT info_text[10];
 
-    i = XGET(numeric.max_string, MUIA_String_Integer);
-    sprintf(info_text, "%%ld/%d", (int)i);
-    SET(numeric.gauges[HNGAUGE], MUIA_Gauge_InfoText, info_text);
+    max = XGET(numeric.max_string, MUIA_String_Integer);
 
-    SET(numeric.gauges[VNGAUGE], MUIA_Gauge_Max, i);
+    for (i = 0; i < NUMERIC_COUNT; i++)
+        SET(numeric.numerics[i], MUIA_Numeric_Max, max);
 
-    i = XGET(numeric.gauges[VNGAUGE], MUIA_Gauge_Max);
+    sprintf(info_text, "%%ld/%d", (int)max);
+    FreeVec((APTR)XGET(numeric.gauges[HNGAUGE], MUIA_Gauge_InfoText));
+    SET(numeric.gauges[HNGAUGE], MUIA_Gauge_InfoText, StrDup(info_text));
+
+    SET(numeric.gauges[VNGAUGE], MUIA_Gauge_Max, max);
+
+    max = XGET(numeric.gauges[VNGAUGE], MUIA_Gauge_Max);
     div = XGET(numeric.gauges[VQGAUGE], MUIA_Gauge_Divide);
-    SET(numeric.gauges[VQGAUGE], MUIA_Gauge_Max, i / div);
+    SET(numeric.gauges[VQGAUGE], MUIA_Gauge_Max, max / div);
 }
 
 static void GaugeCopyCurrent(void)
@@ -2282,20 +2298,14 @@ int main(void)
 
         /* numeric */
 
-        /* Update max value of sliders and gauges whenever the max field is
-         * changed */
-        for (i = 0; i < NUMERIC_COUNT; i++)
-        {
-            DoMethod(numeric.min_string, MUIM_Notify, MUIA_String_Integer,
-                MUIV_EveryTime, numeric.numerics[i], 3, MUIM_Set,
-                MUIA_Numeric_Min, MUIV_TriggerValue);
-            DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Integer,
-                MUIV_EveryTime, numeric.numerics[i], 3, MUIM_Set,
-                MUIA_Numeric_Max, MUIV_TriggerValue);
-        }
-        DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Integer,
+        /* Update min/max values of sliders and gauges whenever the min/max
+         * fields are changed */
+        DoMethod(numeric.min_string, MUIM_Notify, MUIA_String_Acknowledge,
             MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
-            GaugeSetMax);
+            NumericSetMin);
+        DoMethod(numeric.max_string, MUIM_Notify, MUIA_String_Acknowledge,
+            MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard,
+            NumericSetMax);
         DoMethod(numeric.numerics[HNSLIDER], MUIM_Notify, MUIA_Numeric_Max,
             MUIV_EveryTime, numeric.gauges[HNGAUGE], 3, MUIM_Set,
             MUIA_Gauge_Max, MUIV_TriggerValue);
@@ -3765,7 +3775,7 @@ static Object *CreateNumericGroup()
             Child, numeric.gauges[HNGAUGE] = GaugeObject,
                 GaugeFrame,
                 MUIA_Gauge_Horiz, TRUE,
-                MUIA_Gauge_InfoText, "%ld/100",
+                MUIA_Gauge_InfoText, StrDup("%ld/100"),
                 End,
             Child, numeric.gauges[HQGAUGE] = GaugeObject,
                 GaugeFrame,
@@ -3778,7 +3788,7 @@ static Object *CreateNumericGroup()
                     GaugeFrame,
                     MUIA_Gauge_Current, NUMERIC_INIT,
                     MUIA_Gauge_Max, NUMERIC_MAX,
-                    MUIA_Gauge_InfoText, "%ld",
+                    MUIA_Gauge_InfoText, StrDup("%ld"),
                     End,
                 Child, numeric.gauges[VQGAUGE] = GaugeObject,
                     GaugeFrame,
