@@ -22,7 +22,7 @@
 /*  SYNOPSIS */
     	AROS_LHA(ULONG,            type,      D0),
     	AROS_LHA(APTR,             usbstruct, A0),
-    	AROS_LHA(struct TagItem *, taglist,   D0),
+    	AROS_LHA(struct TagItem *, taglist,   A1),
 	
 /*  LOCATION */
 	LIBBASETYPEPTR, FELSunxiBase, 6, FELSunxi)
