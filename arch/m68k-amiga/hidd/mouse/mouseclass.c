@@ -125,7 +125,7 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         struct mouse_data   *data = OOP_INST_DATA(cl, o);
         struct TagItem      *tag, *tstate;
         struct Interrupt *inter;
-        volatile struct Custom *custom = (struct Custom*)0xdff00;
+        volatile struct Custom *custom = (struct Custom*)0xdff000;
         volatile struct CIA *cia = (struct CIA*)0xbfe001;
         struct PotgoBase *PotgoBase;
         UWORD potgobits;
