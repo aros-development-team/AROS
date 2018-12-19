@@ -39,6 +39,7 @@
 #include "../../workbench/system/Wanderer/Classes/iconlist.h"
 #endif
 
+#define TEXT_RAW_IMAGE_SIZE 16
 #define STRING_COUNT 6
 #define LIST_COUNT 5
 #define MULTI_LIST_COUNT 2
@@ -212,6 +213,12 @@ static struct
         *alt_height_text;
 }
 window;
+
+static struct
+{
+    STRPTR image_text;
+}
+text;
 
 static struct
 {
@@ -2454,6 +2461,7 @@ int main(void)
         strncpy(pen_str, pen_spec->buf, 10);
         set(pendisplay_spec, MUIA_String_Contents, pen_str);
 
+        /* Main loop: wait until quit */
         while ((LONG) DoMethod(app, MUIM_Application_NewInput,
                 &sigs) != MUIV_Application_ReturnID_Quit)
         {
@@ -2476,6 +2484,8 @@ int main(void)
             SET(list.lists[i], MUIA_List_Title, NULL);
             FreeVec(title);
         }
+
+        FreeVec(text.image_text);
 
         if (window.window != NULL)
         {
@@ -2894,6 +2904,45 @@ static Object *CreateGeneralGroup()
 static Object *CreateTextGroup()
 {
     Object *group;
+    UWORD i, j;
+    ULONG colour;
+    struct MUI_AlphaData *raw_image;
+    ULONG *pixels;
+    TEXT image_text[100];
+
+    /* Allocate image data */
+    raw_image = AllocVec(sizeof(struct MUI_AlphaData)
+        + TEXT_RAW_IMAGE_SIZE * TEXT_RAW_IMAGE_SIZE * sizeof(ULONG), MEMF_ANY);
+    if (raw_image == NULL)
+        return NULL;
+
+    /* Create a pattern where each quadrant of a square is a different colour */
+    raw_image->width = TEXT_RAW_IMAGE_SIZE;
+    raw_image->height = TEXT_RAW_IMAGE_SIZE;
+    pixels = raw_image->data;
+    for (i = 0; i < TEXT_RAW_IMAGE_SIZE / 2; i++)
+    {
+        colour = 0xff0000ff;
+        for (j = 0; j < TEXT_RAW_IMAGE_SIZE / 2; j++)
+            *pixels++ = AROS_LONG2LE(colour);
+        colour = 0x00ff00ff;
+        for (j = 0; j < TEXT_RAW_IMAGE_SIZE / 2; j++)
+            *pixels++ = AROS_LONG2LE(colour);
+    }
+    for (i = 0; i < TEXT_RAW_IMAGE_SIZE / 2; i++)
+    {
+        colour = 0x0000ffff;
+        for (j = 0; j < TEXT_RAW_IMAGE_SIZE / 2; j++)
+            *pixels++ = AROS_LONG2LE(colour);
+        colour = 0x00000000;
+        for (j = 0; j < TEXT_RAW_IMAGE_SIZE / 2; j++)
+            *pixels++ = AROS_LONG2LE(colour);
+    }
+
+    /* Embed image in a string */
+    sprintf(image_text,
+        "This is a text object with a raw ARGB image: \33A[%lx]",
+        (IPTR)raw_image);
 
     group = RegisterGroup(text_pages),
 
@@ -2916,6 +2965,10 @@ static Object *CreateTextGroup()
                 MUIA_Text_Contents,
                     "This is a \33P[3]text \33P[]object "
                     "\33P[1]with pen specifications",
+                End,
+            Child, TextObject,
+                TextFrame,
+                MUIA_Text_Contents, (text.image_text = StrDup(image_text)),
                 End,
             Child, RectangleObject,
                 MUIA_VertWeight, 0,
