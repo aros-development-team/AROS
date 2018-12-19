@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2013, The AROS Development Team.
+    Copyright © 2002-2018, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -22,6 +22,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/cybergraphics.h>
 
 #include "mui.h"
 #include "textengine.h"
@@ -71,6 +72,7 @@ struct zune_context
     CONST_STRPTR text;
     CONST_STRPTR imspec;
     Object *obj;                /* Area subclass, see List_CreateImage */
+    struct MUI_AlphaData *alpha_data;
 };
 
 ZText *zune_text_new(CONST_STRPTR preparse, CONST_STRPTR content,
@@ -141,6 +143,7 @@ ZText *zune_text_new(CONST_STRPTR preparse, CONST_STRPTR content,
     zc.align = ZTL_LEFT;
     zc.imspec = NULL;
     zc.obj = NULL;
+    zc.alpha_data = NULL;
 
     if (argtype == ZTEXT_ARG_HICHAR)
     {
@@ -239,6 +242,13 @@ void zune_text_chunk_new(struct zune_context *zc)
     {
         ztc->obj = zc->obj;
         zc->obj = NULL;
+
+        AddTail((struct List *)&zc->line->chunklist, (struct Node *)ztc);
+    }
+    else if (zc->alpha_data)
+    {
+        ztc->alpha_data = zc->alpha_data;
+        zc->alpha_data = NULL;
 
         AddTail((struct List *)&zc->line->chunklist, (struct Node *)ztc);
     }
@@ -374,6 +384,42 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
             zc->text_start = t + 1;
             break;
         }
+    case 'A':                  /* pointer to MUI_AlphaData */
+        {
+            IPTR tmp;
+            char *t;
+
+            if (*s != '[')
+                break;
+            s++;
+            /* s points on the first char of pointer printed as %08lx.
+             *  Extract it to the trailing ']'.
+             */
+            t = strchr(s, ']');
+            if (t == NULL)
+                break;
+            *t = 0;
+            if (HexToIPTR(s, &tmp) != -1)
+            {
+                D(bug("image = %lx\n", tmp));
+                if (tmp == 0)
+                {
+                    /* Draw nothing if image pointer is NULL, as MUI 4 does
+                     * (although undocumented)
+                     */
+                    *t = ']';
+                    zc->text = t + 1;
+                    zc->text_start = t + 1;
+                    break;
+                }
+                zc->alpha_data = (struct MUI_AlphaData *)tmp;
+            }
+            *t = ']';
+            zc->text = t;
+            zune_text_chunk_new(zc);
+            zc->text_start = t + 1;
+            break;
+        }
     case 'P':                  /* pen number */
         {
             LONG pen;
@@ -404,7 +450,7 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
         zc->text += strlenlf(s);
         break;                  /* disable engine */
 
-    default:                   /* some other ESC code ? */
+    default:                   /* some other ESC code? */
         if (isdigit(c))         /* pen */
         {
             zc->dripen = c - '0';
@@ -557,6 +603,13 @@ void zune_text_get_bounds(ZText * text, Object * obj)
                 line_node->lheight =
                     MAX(line_node->lheight, chunk_node->cheight);
             }
+            else if (chunk_node->alpha_data)
+            {
+                chunk_node->cwidth = chunk_node->alpha_data->width;
+                chunk_node->cheight = chunk_node->alpha_data->height;
+                line_node->lheight =
+                    MAX(line_node->lheight, chunk_node->cheight);
+            }
             else if (chunk_node->str)
             {
                 chunk_node->cheight = font->tf_YSize;
@@ -650,6 +703,13 @@ void zune_text_draw(ZText * text, Object * obj, WORD left, WORD right,
                 MUI_Redraw(chunk_node->obj, MADF_DRAWOBJECT);
                 SetAPen(rp, pensave);
                 DoHideMethod(chunk_node->obj);
+            }
+            else if (chunk_node->alpha_data)
+            {
+                struct MUI_AlphaData *alpha_data = chunk_node->alpha_data;
+                WritePixelArrayAlpha(alpha_data->data, 0, 0,
+                    alpha_data->width * 4, rp, x, top, alpha_data->width,
+                    alpha_data->height, 0);
             }
             else if (chunk_node->str)
             {

@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2018, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -22,6 +22,7 @@ typedef struct ZTextChunk {
     CONST_STRPTR          spec;
     struct MUI_ImageSpec_intern *image;
     Object               *obj; /* Area subclass, see List_CreateImage */
+    struct MUI_AlphaData *alpha_data;
     LONG                  dripen;
     LONG                  pen;
     UBYTE                 style; /* FSF_UNDERLINED, FSF_BOLD, ... */
