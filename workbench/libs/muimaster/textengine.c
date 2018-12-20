@@ -435,13 +435,12 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
             if (t == NULL)
                 break;
             *t = 0;
-            if (StrToLong(s, &pen) != -1)
-            {
-                D(bug("pen = %ld\n", pen));
-                zc->pen = pen;
-            }
+            if (StrToLong(s, &pen) == -1)
+                pen = 0;
+            D(bug("pen = %ld\n", pen));
+            zc->pen = pen;
             *t = ']';
-            zc->text = t;
+            zc->text = s - 1;
             zune_text_chunk_new(zc);
             zc->text_start = t + 1;
             break;
