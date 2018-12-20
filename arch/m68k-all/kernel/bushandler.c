@@ -25,7 +25,7 @@ struct busframe
 };
 
 #if AROS_SERIAL_DEBUG
-static const UBYTE *sizes[] = { "LONG", "BYTE", "WORD", "?" };
+static const UBYTE *const sizes[] = { "LONG", "BYTE", "WORD", "?" };
 
 extern BOOL mmu_valid_check_030(APTR);
 extern BOOL mmu_valid_check_040(APTR);
