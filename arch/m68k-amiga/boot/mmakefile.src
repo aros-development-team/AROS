@@ -268,8 +268,8 @@ DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 
 #MM kernel-boot-elf:
 #MM kernel-boot-elf-quick:
-kernel-boot-elf: $(AROSARCHDIR)/aros.elf
-kernel-boot-elf-quick: $(AROSARCHDIR)/aros.elf
+kernel-boot-elf: $(AROSARCHDIR)/aros.elf $(AROSARCHDIR)/aros.elf.dbg
+kernel-boot-elf-quick: $(AROSARCHDIR)/aros.elf $(AROSARCHDIR)/aros.elf.dbg
 
 # Main ROM, that must live in MEMF_LOCAL memory
 
@@ -349,5 +349,28 @@ $(AROSARCHDIR)/aros.elf: $(DISTDIR)/aros-amiga-m68k-ram.elf \
 	$(Q)$(TARGET_OBJCOPY) \
 	    --strip-unneeded \
 	    $< $@
+
+
+$(AROSARCHDIR)/aros.elf.dbg : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
+	$(OBJS_start) \
+	$(OBJS_local) $(KOBJS_local) \
+        $(OBJS_any) $(KOBJS_any) \
+	$(SRCDIR)/$(CURDIR)/aros-dbg.ld \
+	$(GENDIR)/start_objs.ld \
+	$(GENDIR)/local_objs.ld \
+	$(GENDIR)/any_objs.ld
+	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
+	    $(ECHO) Linking $@...; \
+	    $(KERNEL_CC) -Wl,-r \
+		-static -nostartfiles -nostdlib \
+		-Wl,--defsym -Wl,start=0x0 \
+		-Wl,--defsym -Wl,SysBase=0x4 \
+		-Wl,--defsym -Wl,AbsExecBase=0x4 \
+		-m68000 \
+		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-dbg.ld \
+		-L$(AROS_LIB) $(LIBS) -lgcc; \
+	    $(TARGET_OBJCOPY) --add-gnu-debuglink=$@ $(AROSARCHDIR)/aros.elf; \
+	fi
+
 
 %common
