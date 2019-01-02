@@ -756,7 +756,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
     /* Look for the string table */
     D(bug("Look for string table\n"));
     for (i = 0; i < int_shnum; i++) {
-        if (sh[i].type == SHT_STRTAB) {
+        if (sh[i].type == SHT_STRTAB && i == eh.shstrndx) {
             strtab = load_block(file, sh[i].offset, sh[i].size);
             break;
         }
