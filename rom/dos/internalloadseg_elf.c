@@ -923,7 +923,7 @@ BPTR InternalLoadSeg_ELF
             if (!sh[i].addr)
                 goto error;
 
-            if (sh[i].type == SHT_STRTAB) {
+            if (sh[i].type == SHT_STRTAB && i == eh.shstrndx) {
                 if (strtab == NULL) {
                     strtab = &sh[i];
                 } else {
