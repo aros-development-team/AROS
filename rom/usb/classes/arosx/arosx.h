@@ -6,6 +6,8 @@
 #include <libraries/mui.h>
 #include <libraries/gadtools.h>
 
+#include "include/arosx.h"
+
 #define ID_ABOUT        0x55555555
 #define ID_STORE_CONFIG 0xaaaaaaaa
 
@@ -105,30 +107,7 @@ struct NepClassHid
     struct PsdDescriptor *nch_pdd;
     UBYTE                *nch_xinput_desc;
 
-
-    BOOL  button_a;
-    BOOL  button_b;
-    BOOL  button_x;
-    BOOL  button_y;
-    BOOL  button_ls;
-    BOOL  button_rs;
-    BOOL  left_thumb;
-    BOOL  right_thumb;
-    BOOL  button_back;
-    BOOL  button_start;
-
-    BOOL  dpad_left;
-    BOOL  dpad_right;
-    BOOL  dpad_up;
-    BOOL  dpad_down;
-
-    UBYTE left_trigger;
-    UBYTE right_trigger;
-
-    UWORD left_stick_x;
-    UWORD left_stick_y;
-    UWORD right_stick_x;
-    UWORD right_stick_y;
+    struct AROSX_GAMEPAD nch_arosx_gamepad;
 
     BOOL  wireless;
     BOOL  signallost;

@@ -435,7 +435,7 @@ AROS_UFH0(void, nHidTask)
 /* /// "nParseMsg()" */
 void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 {
-/* TODO: Store controller information and parse accordingly */
+/* TODO: Check the input message type... */
 
 /*
     Ta-daa!!
@@ -482,45 +482,21 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
                     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10],
                     buf[11], buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19]));
 
-
     /*
-        Just blindly map inputs (They should be there for XBox360 and Logitech F710 and F310)
+        Works at least with Logitech F710
     */
-
 	nch->signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
-    nch->dpad_up =(buf[2]&(1<<0))? TRUE:FALSE;
-    nch->dpad_down =(buf[2]&(1<<1))? TRUE:FALSE;
-    nch->dpad_left =(buf[2]&(1<<2))? TRUE:FALSE;
-    nch->dpad_right =(buf[2]&(1<<3))? TRUE:FALSE;
-
-    nch->button_start =(buf[2]&(1<<4))? TRUE:FALSE;
-    nch->button_back =(buf[2]&(1<<5))? TRUE:FALSE;
-    nch->left_thumb =(buf[2]&(1<<6))? TRUE:FALSE;
-    nch->right_thumb =(buf[2]&(1<<7))? TRUE:FALSE;
-
-    nch->button_ls = (buf[3]&(1<<0))? TRUE:FALSE;
-    nch->button_rs = (buf[3]&(1<<1))? TRUE:FALSE;
-
-    nch->button_a = (buf[3]&(1<<4))? TRUE:FALSE;
-    nch->button_b = (buf[3]&(1<<5))? TRUE:FALSE;
-    nch->button_x = (buf[3]&(1<<6))? TRUE:FALSE;
-    nch->button_y = (buf[3]&(1<<7))? TRUE:FALSE;
-
-    /*
-    This will map all the buttons according to Microsoft game controller API, maybe remove booleans?
-    UWORD buttons;
-    buttons = (buf[2]<<0) | (buf[3]<<8);
-	mybug(1, ("buttons: %04lx\n", buttons));
-	*/
-
-    nch->left_trigger = (buf[4]);
-    nch->right_trigger = (buf[5]);
-
-    nch->left_stick_x = ((buf[6])  | (buf[7]<<8));
-    nch->left_stick_y = ((buf[8])  | (buf[9]<<8));
-    nch->right_stick_x = ((buf[10]) | (buf[11]<<8));
-    nch->right_stick_y = ((buf[12]) | (buf[13]<<8));
+ 	/*
+    	This will map everything according to Microsoft game controller API
+    */
+    nch->nch_arosx_gamepad.Buttons = (buf[2]<<0) | (buf[3]<<8);
+    nch->nch_arosx_gamepad.LeftTrigger = (buf[4]);
+	nch->nch_arosx_gamepad.RightTrigger = (buf[5]);
+	nch->nch_arosx_gamepad.ThumbLX = ((buf[6])  | (buf[7]<<8));
+	nch->nch_arosx_gamepad.ThumbLY = ((buf[8])  | (buf[9]<<8));
+	nch->nch_arosx_gamepad.ThumbRX = ((buf[10]) | (buf[11]<<8));
+	nch->nch_arosx_gamepad.ThumbRY = ((buf[12]) | (buf[13]<<8));
 
     /* Rumble effect
     UBYTE *bufout;
@@ -1016,46 +992,46 @@ AROS_UFH0(void, nGUITask)
                                 } else {
                                     set(nch->nch_GamepadGroupObject, MUIA_Disabled, FALSE);
 
-                                    set(nch->nch_GamepadObject_button_a, MUIA_Selected, nch->button_a);
-                                    set(nch->nch_GamepadObject_button_b, MUIA_Selected, nch->button_b);
-                                    set(nch->nch_GamepadObject_button_x, MUIA_Selected, nch->button_x);
-                                    set(nch->nch_GamepadObject_button_y, MUIA_Selected, nch->button_y);
-                                    set(nch->nch_GamepadObject_button_ls, MUIA_Selected, nch->button_ls);
-                                    set(nch->nch_GamepadObject_button_rs, MUIA_Selected, nch->button_rs);
-                                    set(nch->nch_GamepadObject_left_thumb, MUIA_Selected, nch->left_thumb);
-                                    set(nch->nch_GamepadObject_right_thumb, MUIA_Selected, nch->right_thumb);
-                                    set(nch->nch_GamepadObject_dpad_left, MUIA_Selected, nch->dpad_left);
-									set(nch->nch_GamepadObject_dpad_right, MUIA_Selected, nch->dpad_right);
-									set(nch->nch_GamepadObject_dpad_up, MUIA_Selected, nch->dpad_up);
-									set(nch->nch_GamepadObject_dpad_down, MUIA_Selected, nch->dpad_down);
-									set(nch->nch_GamepadObject_button_back, MUIA_Selected, nch->button_back);
-									set(nch->nch_GamepadObject_button_start, MUIA_Selected, nch->button_start);
+                                    set(nch->nch_GamepadObject_button_a, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_A));
+                                    set(nch->nch_GamepadObject_button_b, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_B));
+                                    set(nch->nch_GamepadObject_button_x, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_X));
+                                    set(nch->nch_GamepadObject_button_y, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_Y));
+                                    set(nch->nch_GamepadObject_button_ls, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_LEFT_SHOULDER));
+                                    set(nch->nch_GamepadObject_button_rs, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_RIGHT_SHOULDER));
+                                    set(nch->nch_GamepadObject_left_thumb, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_LEFT_THUMB));
+                                    set(nch->nch_GamepadObject_right_thumb, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_RIGHT_THUMB));
+                                    set(nch->nch_GamepadObject_dpad_left, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_LEFT));
+									set(nch->nch_GamepadObject_dpad_right, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_RIGHT));
+									set(nch->nch_GamepadObject_dpad_up, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_UP));
+									set(nch->nch_GamepadObject_dpad_down, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_DOWN));
+									set(nch->nch_GamepadObject_button_back, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_BACK));
+									set(nch->nch_GamepadObject_button_start, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_START));
 
-                                    set(nch->nch_GamepadObject_left_trigger, MUIA_Gauge_Current, (nch->left_trigger));
-                                    set(nch->nch_GamepadObject_right_trigger, MUIA_Gauge_Current, (nch->right_trigger));
+                                    set(nch->nch_GamepadObject_left_trigger, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.LeftTrigger));
+                                    set(nch->nch_GamepadObject_right_trigger, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.RightTrigger));
 
-                            		if(nch->left_stick_x>=0x8000) {
-                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (nch->left_stick_x-0x8000));
+                            		if(nch->nch_arosx_gamepad.ThumbLX>=0x8000) {
+                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbLX-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+nch->left_stick_x));
+                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbLX));
                             		}
 
-                            		if(nch->left_stick_y>=0x8000) {
-                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (nch->left_stick_y-0x8000));
+                            		if(nch->nch_arosx_gamepad.ThumbLY>=0x8000) {
+                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbLY-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+nch->left_stick_y));
+                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbLY));
                             		}
 
-                            		if(nch->right_stick_x>=0x8000) {
-                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (nch->right_stick_x-0x8000));
+                            		if(nch->nch_arosx_gamepad.ThumbRX>=0x8000) {
+                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbRX-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+nch->right_stick_x));
+                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbRX));
                             		}
 
-                            		if(nch->right_stick_y>=0x8000) {
-                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (nch->right_stick_y-0x8000));
+                            		if(nch->nch_arosx_gamepad.ThumbRY>=0x8000) {
+                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbRY-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+nch->right_stick_y));
+                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbRY));
                             		}
 
                             		/* 100Hz max. GUI update frequency should be enough for everyone... */
