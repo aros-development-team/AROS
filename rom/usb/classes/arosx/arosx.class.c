@@ -89,7 +89,6 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
 
             psdGetAttrs(PGA_CONFIG, pc,
                         CA_Device, &pd,
-                        DA_ConfigList, &nch->nch_pdd,
                         TAG_END);
 
             /*
@@ -500,6 +499,12 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     nch->stick_rx = (UWORD)AROS_WORD2LE((UWORD)((buf[10]) | (buf[11]<<8)))>>6;
     nch->stick_ry = (UWORD)AROS_WORD2LE((UWORD)((buf[12]) | (buf[13]<<8)))>>6;
 
+    nch->buttonA = (buf[3]&(1<<4))? TRUE:FALSE;
+    nch->buttonB = (buf[3]&(1<<5))? TRUE:FALSE;
+    nch->buttonX = (buf[3]&(1<<6))? TRUE:FALSE;
+    nch->buttonY = (buf[3]&(1<<7))? TRUE:FALSE;
+    nch->buttonLB = (buf[3]&(1<<0))? TRUE:FALSE;
+    nch->buttonRB = (buf[3]&(1<<1))? TRUE:FALSE;
 
     /* Rumble effect
     UBYTE *bufout;
@@ -754,9 +759,63 @@ AROS_UFH0(void, nGUITask)
                 MUIA_HelpNode, (IPTR)libname,
 
                 WindowContents, (IPTR)VGroup,
-                    Child, (IPTR)(nch->nch_GaugeGroupObject = ColGroup(2),
+                    Child, (IPTR)(nch->nch_GamepadGroupObject = ColGroup(2),
                     	GroupFrameT("Gamepad"),
                     	MUIA_Disabled, TRUE,
+
+
+                    	Child, (IPTR)HGroup,
+            			Child, (IPTR)(nch->nch_GaugeObject_buttonA = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GaugeObject_buttonB = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GaugeObject_buttonX = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GaugeObject_buttonY = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GaugeObject_buttonLB = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GaugeObject_buttonRB = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+                        End,
+
+
+
                         Child, (IPTR)(nch->nch_GaugeObject_stick_lx = GaugeObject,
                             GaugeFrame,
                             MUIA_Gauge_Max, 0x3ff,
@@ -862,10 +921,18 @@ AROS_UFH0(void, nGUITask)
 
                                 /* TODO: Check if the GUI goes to sleep when the controller says it's sleepy */
 								if((nch->wireless)&&(nch->signallost)) {
-                                    set(nch->nch_GaugeGroupObject, MUIA_Disabled, (nch->signallost));
+                                    set(nch->nch_GamepadGroupObject, MUIA_Disabled, (nch->signallost));
                                     //psdDelayMS(10);
                                 } else {
-                                    set(nch->nch_GaugeGroupObject, MUIA_Disabled, FALSE);
+                                    set(nch->nch_GamepadGroupObject, MUIA_Disabled, FALSE);
+
+                                    set(nch->nch_GaugeObject_buttonA, MUIA_Selected, nch->buttonA);
+                                    set(nch->nch_GaugeObject_buttonB, MUIA_Selected, nch->buttonB);
+                                    set(nch->nch_GaugeObject_buttonX, MUIA_Selected, nch->buttonX);
+                                    set(nch->nch_GaugeObject_buttonY, MUIA_Selected, nch->buttonY);
+                                    set(nch->nch_GaugeObject_buttonLB, MUIA_Selected, nch->buttonLB);
+                                    set(nch->nch_GaugeObject_buttonRB, MUIA_Selected, nch->buttonRB);
+
                             		if(nch->stick_lx>=0x200) {
                                 		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (nch->stick_lx-0x200));
                             		} else {

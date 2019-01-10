@@ -71,7 +71,15 @@ struct NepClassHid
     Object             *nch_UseObj;
     Object             *nch_CloseObj;
 
-    Object             *nch_GaugeGroupObject;
+    Object             *nch_GamepadGroupObject;
+    Object             *nch_ButtonsGroupObject;
+    Object             *nch_GaugeObject_buttons[10];
+    Object             *nch_GaugeObject_buttonA;
+    Object             *nch_GaugeObject_buttonB;
+    Object             *nch_GaugeObject_buttonX;
+    Object             *nch_GaugeObject_buttonY;
+    Object             *nch_GaugeObject_buttonLB;
+    Object             *nch_GaugeObject_buttonRB;
     Object             *nch_GaugeObject_stick_lx;
     Object             *nch_GaugeObject_stick_ly;
     Object             *nch_GaugeObject_stick_rx;
@@ -90,6 +98,13 @@ struct NepClassHid
     UWORD stick_ly;
     UWORD stick_rx;
     UWORD stick_ry;
+
+    BOOL  buttonA;
+    BOOL  buttonB;
+    BOOL  buttonX;
+    BOOL  buttonY;
+    BOOL  buttonLB;
+    BOOL  buttonRB;
 
     BOOL  wireless;
     BOOL  signallost;
