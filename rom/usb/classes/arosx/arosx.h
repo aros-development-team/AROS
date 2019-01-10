@@ -72,18 +72,29 @@ struct NepClassHid
     Object             *nch_CloseObj;
 
     Object             *nch_GamepadGroupObject;
-    Object             *nch_ButtonsGroupObject;
-    Object             *nch_GaugeObject_buttons[10];
-    Object             *nch_GaugeObject_buttonA;
-    Object             *nch_GaugeObject_buttonB;
-    Object             *nch_GaugeObject_buttonX;
-    Object             *nch_GaugeObject_buttonY;
-    Object             *nch_GaugeObject_buttonLB;
-    Object             *nch_GaugeObject_buttonRB;
-    Object             *nch_GaugeObject_stick_lx;
-    Object             *nch_GaugeObject_stick_ly;
-    Object             *nch_GaugeObject_stick_rx;
-    Object             *nch_GaugeObject_stick_ry;
+    Object             *nch_GamepadObject_button_a;
+    Object             *nch_GamepadObject_button_b;
+    Object             *nch_GamepadObject_button_x;
+    Object             *nch_GamepadObject_button_y;
+    Object             *nch_GamepadObject_button_ls;
+    Object             *nch_GamepadObject_button_rs;
+    Object             *nch_GamepadObject_left_thumb;
+    Object             *nch_GamepadObject_right_thumb;
+
+    Object             *nch_GamepadObject_dpad_left;
+    Object             *nch_GamepadObject_dpad_right;
+    Object             *nch_GamepadObject_dpad_up;
+    Object             *nch_GamepadObject_dpad_down;
+
+    Object             *nch_GamepadObject_button_back;
+    Object             *nch_GamepadObject_button_start;
+
+    Object             *nch_GamepadObject_left_trigger;
+    Object             *nch_GamepadObject_right_trigger;
+    Object             *nch_GamepadObject_left_stick_x;
+    Object             *nch_GamepadObject_left_stick_y;
+    Object             *nch_GamepadObject_right_stick_x;
+    Object             *nch_GamepadObject_right_stick_y;
 
     Object             *nch_AboutMI;
     Object             *nch_UseMI;
@@ -94,17 +105,30 @@ struct NepClassHid
     struct PsdDescriptor *nch_pdd;
     UBYTE                *nch_xinput_desc;
 
-    UWORD stick_lx;
-    UWORD stick_ly;
-    UWORD stick_rx;
-    UWORD stick_ry;
 
-    BOOL  buttonA;
-    BOOL  buttonB;
-    BOOL  buttonX;
-    BOOL  buttonY;
-    BOOL  buttonLB;
-    BOOL  buttonRB;
+    BOOL  button_a;
+    BOOL  button_b;
+    BOOL  button_x;
+    BOOL  button_y;
+    BOOL  button_ls;
+    BOOL  button_rs;
+    BOOL  left_thumb;
+    BOOL  right_thumb;
+    BOOL  button_back;
+    BOOL  button_start;
+
+    BOOL  dpad_left;
+    BOOL  dpad_right;
+    BOOL  dpad_up;
+    BOOL  dpad_down;
+
+    UBYTE left_trigger;
+    UBYTE right_trigger;
+
+    UWORD left_stick_x;
+    UWORD left_stick_y;
+    UWORD right_stick_x;
+    UWORD right_stick_y;
 
     BOOL  wireless;
     BOOL  signallost;
