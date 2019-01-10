@@ -478,24 +478,14 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 00 00 00 00 00 00
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 00 00 00 00 00 00
 */
-    mybug(1, ("EPIn: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
+    mybug(0, ("EPIn: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
                     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10],
                     buf[11], buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19]));
 
 
     /*
-        Just blindly map thumb sticks (They should be there for XBox360 and Logitech F710 and F310)
-
-        Blindly adjust for 10-bit analog as reported by F710 bitmask
-        Values reported seems like they fall short, but actually the gamepad has reached
-        the maximum analog output well before the thumb stick meets it's mechanical limit
-        Also there is a built in deadband around the center when the bitmask is applied (now just shift 6)
-
-        If DPad is set as the left thumb stick and UP button is pressed
-        then the analog channel on left and right shows the thumb stick value and vice versa
+        Just blindly map inputs (They should be there for XBox360 and Logitech F710 and F310)
     */
-    //UBYTE *ep0buf;
-    //ep0buf  = nch->nch_EP0Buf;
 
 	nch->signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
@@ -516,6 +506,13 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     nch->button_b = (buf[3]&(1<<5))? TRUE:FALSE;
     nch->button_x = (buf[3]&(1<<6))? TRUE:FALSE;
     nch->button_y = (buf[3]&(1<<7))? TRUE:FALSE;
+
+    /*
+    This will map all the buttons according to Microsoft game controller API, maybe remove booleans?
+    UWORD buttons;
+    buttons = (buf[2]<<0) | (buf[3]<<8);
+	mybug(1, ("buttons: %04lx\n", buttons));
+	*/
 
     nch->left_trigger = (buf[4]);
     nch->right_trigger = (buf[5]);
