@@ -1,5 +1,5 @@
 /*
-    Copyright © 2018, The AROS Development Team. All rights reserved.
+    Copyright © 2018-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gamepad (XInput) USB class driver
@@ -412,6 +412,11 @@ AROS_UFH0(void, nHidTask)
                         mybug(1, ("Int Pipe failed %ld\n", ioerr));
                         psdDelayMS(200);
                     }
+                    /*
+                    	TODO: One Chinese gamepad doesn't wait for new input but sends data back at once
+                    		   - Check if response is the same and not much time has elapsed between and set some babble flag and force wait between calls
+                    */
+                    //psdDelayMS(1);
                     psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
                     break;
                 }
@@ -494,17 +499,31 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 
 	nch->signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
-    nch->stick_lx = (UWORD)AROS_WORD2LE((UWORD)((buf[6])  | (buf[7]<<8)))>>6;
-    nch->stick_ly = (UWORD)AROS_WORD2LE((UWORD)((buf[8])  | (buf[9]<<8)))>>6;
-    nch->stick_rx = (UWORD)AROS_WORD2LE((UWORD)((buf[10]) | (buf[11]<<8)))>>6;
-    nch->stick_ry = (UWORD)AROS_WORD2LE((UWORD)((buf[12]) | (buf[13]<<8)))>>6;
+    nch->dpad_up =(buf[2]&(1<<0))? TRUE:FALSE;
+    nch->dpad_down =(buf[2]&(1<<1))? TRUE:FALSE;
+    nch->dpad_left =(buf[2]&(1<<2))? TRUE:FALSE;
+    nch->dpad_right =(buf[2]&(1<<3))? TRUE:FALSE;
 
-    nch->buttonA = (buf[3]&(1<<4))? TRUE:FALSE;
-    nch->buttonB = (buf[3]&(1<<5))? TRUE:FALSE;
-    nch->buttonX = (buf[3]&(1<<6))? TRUE:FALSE;
-    nch->buttonY = (buf[3]&(1<<7))? TRUE:FALSE;
-    nch->buttonLB = (buf[3]&(1<<0))? TRUE:FALSE;
-    nch->buttonRB = (buf[3]&(1<<1))? TRUE:FALSE;
+    nch->button_start =(buf[2]&(1<<4))? TRUE:FALSE;
+    nch->button_back =(buf[2]&(1<<5))? TRUE:FALSE;
+    nch->left_thumb =(buf[2]&(1<<6))? TRUE:FALSE;
+    nch->right_thumb =(buf[2]&(1<<7))? TRUE:FALSE;
+
+    nch->button_ls = (buf[3]&(1<<0))? TRUE:FALSE;
+    nch->button_rs = (buf[3]&(1<<1))? TRUE:FALSE;
+
+    nch->button_a = (buf[3]&(1<<4))? TRUE:FALSE;
+    nch->button_b = (buf[3]&(1<<5))? TRUE:FALSE;
+    nch->button_x = (buf[3]&(1<<6))? TRUE:FALSE;
+    nch->button_y = (buf[3]&(1<<7))? TRUE:FALSE;
+
+    nch->left_trigger = (buf[4]);
+    nch->right_trigger = (buf[5]);
+
+    nch->left_stick_x = ((buf[6])  | (buf[7]<<8));
+    nch->left_stick_y = ((buf[8])  | (buf[9]<<8));
+    nch->right_stick_x = ((buf[10]) | (buf[11]<<8));
+    nch->right_stick_y = ((buf[12]) | (buf[13]<<8));
 
     /* Rumble effect
     UBYTE *bufout;
@@ -519,14 +538,6 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     bufout[6] = 0x00;
     bufout[7] = 0x00;
     psdDoPipe(nch->nch_EPOutPipe, bufout, 8);
-    */
-
-    /*
-    mybug(1, ("\n"))
-    mybug(1, ("stick_lx: %04x\n", nch->stick_lx)); //0x8000 - 0x7fff
-    mybug(1, ("stick_ly: %04x\n", nch->stick_ly));
-    mybug(1, ("stick_rx: %04x\n", nch->stick_rx));
-    mybug(1, ("stick_ry: %04x\n", nch->stick_ry));
     */
 
     if(nch->nch_GUITask)
@@ -765,7 +776,7 @@ AROS_UFH0(void, nGUITask)
 
 
                     	Child, (IPTR)HGroup,
-            			Child, (IPTR)(nch->nch_GaugeObject_buttonA = ImageObject,
+            			Child, (IPTR)(nch->nch_GamepadObject_button_a = ImageObject,
                 			MUIA_Image_FontMatch, TRUE,
                 			MUIA_Selected, FALSE,
                 			MUIA_ShowSelState, FALSE,
@@ -773,7 +784,7 @@ AROS_UFH0(void, nGUITask)
                 			MUIA_Frame, MUIV_Frame_None,
                    			End),
 
-            			Child, (IPTR)(nch->nch_GaugeObject_buttonB = ImageObject,
+            			Child, (IPTR)(nch->nch_GamepadObject_button_b = ImageObject,
                 			MUIA_Image_FontMatch, TRUE,
                 			MUIA_Selected, FALSE,
                 			MUIA_ShowSelState, FALSE,
@@ -781,7 +792,7 @@ AROS_UFH0(void, nGUITask)
                 			MUIA_Frame, MUIV_Frame_None,
                    			End),
 
-            			Child, (IPTR)(nch->nch_GaugeObject_buttonX = ImageObject,
+            			Child, (IPTR)(nch->nch_GamepadObject_button_x = ImageObject,
                 			MUIA_Image_FontMatch, TRUE,
                 			MUIA_Selected, FALSE,
                 			MUIA_ShowSelState, FALSE,
@@ -789,7 +800,7 @@ AROS_UFH0(void, nGUITask)
                 			MUIA_Frame, MUIV_Frame_None,
                    			End),
 
-            			Child, (IPTR)(nch->nch_GaugeObject_buttonY = ImageObject,
+            			Child, (IPTR)(nch->nch_GamepadObject_button_y = ImageObject,
                 			MUIA_Image_FontMatch, TRUE,
                 			MUIA_Selected, FALSE,
                 			MUIA_ShowSelState, FALSE,
@@ -797,7 +808,7 @@ AROS_UFH0(void, nGUITask)
                 			MUIA_Frame, MUIV_Frame_None,
                    			End),
 
-            			Child, (IPTR)(nch->nch_GaugeObject_buttonLB = ImageObject,
+            			Child, (IPTR)(nch->nch_GamepadObject_button_ls = ImageObject,
                 			MUIA_Image_FontMatch, TRUE,
                 			MUIA_Selected, FALSE,
                 			MUIA_ShowSelState, FALSE,
@@ -805,7 +816,71 @@ AROS_UFH0(void, nGUITask)
                 			MUIA_Frame, MUIV_Frame_None,
                    			End),
 
-            			Child, (IPTR)(nch->nch_GaugeObject_buttonRB = ImageObject,
+            			Child, (IPTR)(nch->nch_GamepadObject_button_rs = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_left_thumb = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_right_thumb = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_dpad_left = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_dpad_right = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_dpad_up = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_dpad_down = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_button_back = ImageObject,
+                			MUIA_Image_FontMatch, TRUE,
+                			MUIA_Selected, FALSE,
+                			MUIA_ShowSelState, FALSE,
+                			MUIA_Image_Spec, MUII_RadioButton,
+                			MUIA_Frame, MUIV_Frame_None,
+                   			End),
+
+            			Child, (IPTR)(nch->nch_GamepadObject_button_start = ImageObject,
                 			MUIA_Image_FontMatch, TRUE,
                 			MUIA_Selected, FALSE,
                 			MUIA_ShowSelState, FALSE,
@@ -814,36 +889,54 @@ AROS_UFH0(void, nGUITask)
                    			End),
                         End,
 
+                        Child, (IPTR)(nch->nch_GamepadObject_left_trigger = GaugeObject,
+                            GaugeFrame,
+                            MUIA_Gauge_Max, 0xff,
+                            MUIA_Gauge_InfoText, (IPTR)"%lx",
+                            MUIA_Gauge_Horiz, TRUE,
+                            MUIA_Gauge_Current, 0,
+                            End),
 
+                        Child, (IPTR)(nch->nch_GamepadObject_right_trigger = GaugeObject,
+                            GaugeFrame,
+                            MUIA_Gauge_Max, 0xff,
+                            MUIA_Gauge_InfoText, (IPTR)"%lx",
+                            MUIA_Gauge_Horiz, TRUE,
+                            MUIA_Gauge_Current, 0,
+                            End),
 
-                        Child, (IPTR)(nch->nch_GaugeObject_stick_lx = GaugeObject,
+                        Child, (IPTR)(nch->nch_GamepadObject_left_stick_x = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0x3ff,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
-                        Child, (IPTR)(nch->nch_GaugeObject_stick_ly = GaugeObject,
+
+                        Child, (IPTR)(nch->nch_GamepadObject_left_stick_y = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0x3ff,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
-                        Child, (IPTR)(nch->nch_GaugeObject_stick_rx = GaugeObject,
+
+                        Child, (IPTR)(nch->nch_GamepadObject_right_stick_x = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0x3ff,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
-                        Child, (IPTR)(nch->nch_GaugeObject_stick_ry = GaugeObject,
+
+                        Child, (IPTR)(nch->nch_GamepadObject_right_stick_y = GaugeObject,
                             GaugeFrame,
-                            MUIA_Gauge_Max, 0x3ff,
+                            MUIA_Gauge_Max, 0xffff,
                             MUIA_Gauge_InfoText, (IPTR)"%lx",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
                             End),
+
                         End),
                     Child, (IPTR)VSpace(0),
                     Child, (IPTR)HGroup,
@@ -926,35 +1019,46 @@ AROS_UFH0(void, nGUITask)
                                 } else {
                                     set(nch->nch_GamepadGroupObject, MUIA_Disabled, FALSE);
 
-                                    set(nch->nch_GaugeObject_buttonA, MUIA_Selected, nch->buttonA);
-                                    set(nch->nch_GaugeObject_buttonB, MUIA_Selected, nch->buttonB);
-                                    set(nch->nch_GaugeObject_buttonX, MUIA_Selected, nch->buttonX);
-                                    set(nch->nch_GaugeObject_buttonY, MUIA_Selected, nch->buttonY);
-                                    set(nch->nch_GaugeObject_buttonLB, MUIA_Selected, nch->buttonLB);
-                                    set(nch->nch_GaugeObject_buttonRB, MUIA_Selected, nch->buttonRB);
+                                    set(nch->nch_GamepadObject_button_a, MUIA_Selected, nch->button_a);
+                                    set(nch->nch_GamepadObject_button_b, MUIA_Selected, nch->button_b);
+                                    set(nch->nch_GamepadObject_button_x, MUIA_Selected, nch->button_x);
+                                    set(nch->nch_GamepadObject_button_y, MUIA_Selected, nch->button_y);
+                                    set(nch->nch_GamepadObject_button_ls, MUIA_Selected, nch->button_ls);
+                                    set(nch->nch_GamepadObject_button_rs, MUIA_Selected, nch->button_rs);
+                                    set(nch->nch_GamepadObject_left_thumb, MUIA_Selected, nch->left_thumb);
+                                    set(nch->nch_GamepadObject_right_thumb, MUIA_Selected, nch->right_thumb);
+                                    set(nch->nch_GamepadObject_dpad_left, MUIA_Selected, nch->dpad_left);
+									set(nch->nch_GamepadObject_dpad_right, MUIA_Selected, nch->dpad_right);
+									set(nch->nch_GamepadObject_dpad_up, MUIA_Selected, nch->dpad_up);
+									set(nch->nch_GamepadObject_dpad_down, MUIA_Selected, nch->dpad_down);
+									set(nch->nch_GamepadObject_button_back, MUIA_Selected, nch->button_back);
+									set(nch->nch_GamepadObject_button_start, MUIA_Selected, nch->button_start);
 
-                            		if(nch->stick_lx>=0x200) {
-                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (nch->stick_lx-0x200));
+                                    set(nch->nch_GamepadObject_left_trigger, MUIA_Gauge_Current, (nch->left_trigger));
+                                    set(nch->nch_GamepadObject_right_trigger, MUIA_Gauge_Current, (nch->right_trigger));
+
+                            		if(nch->left_stick_x>=0x8000) {
+                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (nch->left_stick_x-0x8000));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_lx, MUIA_Gauge_Current, (0x200+nch->stick_lx));
+                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+nch->left_stick_x));
                             		}
 
-                            		if(nch->stick_ly>=0x200) {
-                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (nch->stick_ly-0x200));
+                            		if(nch->left_stick_y>=0x8000) {
+                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (nch->left_stick_y-0x8000));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_ly, MUIA_Gauge_Current, (0x200+nch->stick_ly));
+                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+nch->left_stick_y));
                             		}
 
-                            		if(nch->stick_rx>=0x200) {
-                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (nch->stick_rx-0x200));
+                            		if(nch->right_stick_x>=0x8000) {
+                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (nch->right_stick_x-0x8000));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_rx, MUIA_Gauge_Current, (0x200+nch->stick_rx));
+                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+nch->right_stick_x));
                             		}
 
-                            		if(nch->stick_ry>=0x200) {
-                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (nch->stick_ry-0x200));
+                            		if(nch->right_stick_y>=0x8000) {
+                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (nch->right_stick_y-0x8000));
                             		} else {
-                                		set(nch->nch_GaugeObject_stick_ry, MUIA_Gauge_Current, (0x200+nch->stick_ry));
+                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+nch->right_stick_y));
                             		}
 
                             		/* 100Hz max. GUI update frequency should be enough for everyone... */
