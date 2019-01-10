@@ -20,8 +20,8 @@
 
 struct AROSX_GAMEPAD {
     UWORD   Buttons;
-    BYTE    LeftTrigger;
-    BYTE    RightTrigger;
+    UBYTE   LeftTrigger;
+    UBYTE   RightTrigger;
     WORD    ThumbLX;
     WORD    ThumbLY;
     WORD    ThumbRX;
