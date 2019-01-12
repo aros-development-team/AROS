@@ -6,27 +6,44 @@
     Lang: English
 */
 
+
+#include <aros/libcall.h>
+
 #include "debug.h"
 
 #include "arosx.class.h"
 
+struct Library * AROSXInit(void);
+
 /* /// "Lib Stuff" */
 static int libInit(LIBBASETYPEPTR nh)
 {
-    mybug(10, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
 
-    nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
+    mybug(-1, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
 
-#define	UtilityBase	nh->nh_UtilityBase
+	nh->nh_gamepad1 = FALSE;
+	nh->nh_gamepad2 = FALSE;
+	nh->nh_gamepad3 = FALSE;
+	nh->nh_gamepad4 = FALSE;
 
-    if(!UtilityBase)
+	InitSemaphore(&nh->nh_gamepadlock);
+
+#define	AROSXBase	nh->nh_AROSXBase
+
+	AROSXBase = AROSXInit();
+
+    if(!AROSXBase)
     {
-        mybug(20, ("libInit: OpenLibrary(\"utility.library\", 39) failed!\n"));
-        nh = NULL;
+        mybug(-1, ("libInit: MakeLibrary(\"arosx.library\") failed!\n"));
+        return(FALSE);
     }
 
+ 	mybug(-1, ("AROSX: 0x%08lx\n", AROSXBase));
+	AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
+
     mybug(10, ("libInit: Ok\n"));
-    return(nh ? TRUE : FALSE);
+
+    return(TRUE);
 }
 
 static int libOpen(LIBBASETYPEPTR nh)
@@ -38,7 +55,7 @@ static int libOpen(LIBBASETYPEPTR nh)
 static int libExpunge(LIBBASETYPEPTR nh)
 {
     mybug(10, ("libExpunge nh: 0x%08lx\n", nh));
-    CloseLibrary((struct Library *) UtilityBase);
+    //CloseLibrary((struct Library *) UtilityBase);
     return(TRUE);
 }
 
@@ -71,7 +88,8 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
     UBYTE buf[64];
     struct Task *tmptask;
 
-    mybug(1, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
+    mybug(0, ("nepHidAttemptInterfaceBinding(%08lx)\n", pif));
+
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         if((nch = psdAllocVec(sizeof(struct NepClassHid))))
@@ -131,7 +149,43 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
                 return(NULL);
             }
 
-            psdSafeRawDoFmt(buf, 64, "arosx.class<%08lx>", nch);
+            /*
+            	We have a valid XInput gamepad, hopefully... Let's see if there's a free gamepad slot for it
+            */
+
+			ObtainSemaphore(&nh->nh_gamepadlock);
+
+			UBYTE gamepad = 0;
+
+			if(nh->nh_gamepad1 == FALSE) {
+				nh->nh_gamepad1 = TRUE;
+				gamepad = 1;
+			}else if(nh->nh_gamepad2 == FALSE) {
+				nh->nh_gamepad2 = TRUE;
+				gamepad = 2;
+			}else if(nh->nh_gamepad3 == FALSE) {
+				nh->nh_gamepad3 = TRUE;
+				gamepad = 3;
+			}else if(nh->nh_gamepad4 == FALSE) {
+				nh->nh_gamepad4 = TRUE;
+				gamepad = 4;
+			}
+
+			ReleaseSemaphore(&nh->nh_gamepadlock);
+
+			mybug(1, ("nepHidAttemptInterfaceBinding gamepad (%01x)\n", gamepad));
+
+            if(!gamepad)
+            {
+                mybug(1, ("nepHidAttemptInterfaceBinding gamepad count exceeded\n"));
+                psdFreeVec(nch);
+                CloseLibrary(ps);
+                return(NULL);
+            }
+
+        	nch->nch_gamepad = gamepad;
+
+            psdSafeRawDoFmt(buf, 64, "arosx.class.gamepad.%01x", nch->nch_gamepad);
             nch->nch_ReadySignal = SIGB_SINGLE;
             nch->nch_ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
@@ -143,9 +197,10 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
                     nch->nch_ReadySigTask = NULL;
                     //FreeSignal(nch->nch_ReadySignal);
                     psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &nch->nch_devname, TAG_END);
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                   "Play it again, '%s'!",
-                                   nch->nch_devname);
+
+					psdSafeRawDoFmt(nch->nch_gamepadname, 64, "%s (%01x)", nch->nch_devname, nch->nch_gamepad);
+
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Play it again, '%s'!", nch->nch_gamepadname);
 
                     CloseLibrary(ps);
                     return(nch);
@@ -157,6 +212,7 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
         }
         CloseLibrary(ps);
     }
+
     return(NULL);
 }
 /* \\\ */
@@ -195,9 +251,20 @@ void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch)
         psdGetAttrs(PGA_INTERFACE, nch->nch_Interface, IFA_Config, &pc, TAG_END);
         psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
-        psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                       "'%s' fell silent!",
-                       devname);
+        psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "'%s' fell silent!", devname);
+
+		ObtainSemaphore(&nh->nh_gamepadlock);
+		if(nch->nch_gamepad == 1) {
+			nh->nh_gamepad1 = FALSE;
+		}else if(nch->nch_gamepad == 2) {
+			nh->nh_gamepad2 = FALSE;
+		}else if(nch->nch_gamepad == 3) {
+			nh->nh_gamepad3 = FALSE;
+		}else if(nch->nch_gamepad == 4) {
+			nh->nh_gamepad4 = FALSE;
+		}
+		ReleaseSemaphore(&nh->nh_gamepadlock);
+
         psdFreeVec(nch);
         CloseLibrary(ps);
     }
@@ -242,7 +309,7 @@ AROS_LH3(LONG, usbGetAttrsA,
              }
              if((ti = FindTagItem(UCCA_AfterDOSRestart, tags)))
              {
-                 *((IPTR *) ti->ti_Data) = TRUE;
+                 *((IPTR *) ti->ti_Data) = FALSE;
                  count++;
              }
              break;
@@ -395,6 +462,28 @@ AROS_UFH0(void, nHidTask)
              17  33  16   1   1  37 129  20   3   3   3   4  19   2   8   3   3
 
 		*/
+
+        /*
+        	Set led ring to gamepad number. Should flash for a while and then lid on constantly.
+        */
+
+    	UBYTE *bufout;
+    	bufout = nch->nch_EPOutBuf;
+
+    	bufout[0] = 0x01;
+    	bufout[1] = 0x03;
+    	bufout[2] = nch->nch_gamepad + 1;
+    	bufout[3] = 0x00;
+    	bufout[4] = 0x00;
+    	bufout[5] = 0x00;
+    	bufout[6] = 0x00;
+    	bufout[7] = 0x00;
+		bufout[8] = 0x00;
+    	bufout[9] = 0x00;
+    	bufout[10] = 0x00;
+		bufout[11] = 0x00;
+
+    	psdDoPipe(nch->nch_EPOutPipe, bufout, 12);
 
 		psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
         do
@@ -739,7 +828,7 @@ AROS_UFH0(void, nGUITask)
 
             SubWindow, (IPTR)(nch->nch_MainWindow = WindowObject,
                 MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-                MUIA_Window_Title, (IPTR)nch->nch_devname,
+                MUIA_Window_Title, (IPTR)nch->nch_gamepadname,
                 MUIA_HelpNode, (IPTR)libname,
 
                 WindowContents, (IPTR)VGroup,

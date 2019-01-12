@@ -22,18 +22,25 @@ struct ClsGlobalCfg
 
 struct NepHidBase
 {
-    struct Library      nh_Library;       /* standard */
-    UWORD               nh_Flags;         /* various flags */
-    struct Library     *nh_UtilityBase;   /* utility base */
+    struct Library          nh_Library;     /* standard */
 
-    struct Library     *nh_MUIBase;       /* MUI master base */
-    struct Library     *nh_PsdBase;       /* Poseidon base */
-    struct Library     *nh_IntBase;       /* Intuition base */
+    struct Library         *nh_MUIBase;     /* MUI master base */
+    struct Library         *nh_PsdBase;     /* Poseidon base */
+
+    struct SignalSemaphore  nh_gamepadlock;
+    BOOL                    nh_gamepad1;
+    BOOL                    nh_gamepad2;
+    BOOL                    nh_gamepad3;
+    BOOL                    nh_gamepad4;
+
+    struct Library         *nh_AROSXBase;   /* AROSX base */
+
 };
 
 struct NepClassHid
 {
     struct Node         nch_Node;         /* Node linkage */
+
     struct NepHidBase  *nch_ClsBase;      /* Up linkage */
     struct Library     *nch_Base;         /* Poseidon base */
     struct PsdDevice   *nch_Device;       /* Up linkage */
@@ -107,6 +114,8 @@ struct NepClassHid
     struct PsdDescriptor *nch_pdd;
     UBYTE                *nch_xinput_desc;
 
+    UBYTE                nch_gamepad;
+    UBYTE                nch_gamepadname[64];
     struct AROSX_GAMEPAD nch_arosx_gamepad;
 
     BOOL  wireless;
