@@ -116,6 +116,7 @@ gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
 #MM- tools-crosstools-gnu-x86_64   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-gnu-ppc      : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-gnu-arm      : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-armeb    : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-gnu-aarch64  : tools-crosstools-gcc crosstools-gcc
 
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
