@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2016, The AROS Development Team. All rights reserved.
+dnl Copyright ï¿½ 1997-2016, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -1554,6 +1554,21 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -Darm"
                 aros_arch_libs="-laeabi"
                 ;;
+            *armeb*)
+                aros_flavour="standcompat"
+                aros_target_cpu="armeb"
+                gcc_default_float_abi="hard"
+                gcc_default_cpu="armv6zk"
+                gcc_default_cpu_tune="arm1176jzf-s"
+                aros_object_format="armelfb_aros"
+                aros_isa_flags="$aros_isa_flags -marm"
+                aros_config_cflags="$aros_config_cflags"
+                aros_config_cxxflags="$aros_config_cxxflags"
+                aros_config_aflags="$aros_config_aflags -marm"
+                aros_kernel_cflags="$aros_kernel_cflags -marm"
+                aros_target_mkdep="$aros_target_mkdep -Darm"
+                aros_arch_libs="-laeabi"
+                ;;
             *arm*)
                 aros_target_cpu="arm"
                 gcc_default_cpu="armv6zk"
@@ -1930,6 +1945,13 @@ arm*)
     if test "$gcc_default_fpu" = ""; then
         gcc_default_fpu="vfp"
     fi
+    if test "$gcc_default_endian" = ""; then
+        if test "$target_cpu" = "armeb"; then
+            gcc_default_endian="big-endian"
+        else
+            gcc_default_endian="little-endian"
+        fi
+    fi
     if test "$gcc_default_float_abi" = ""; then
         if test "$target_cpu" = "armhf"; then
             gcc_default_float_abi="hard"
@@ -1961,7 +1983,7 @@ arm*)
     case "$aros_target_cpu_mode" in
     arm32)
         gcc_default_mode="arm"
-        aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+        aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -m$gcc_default_endian -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
     ;;
     arm64)
         AC_MSG_ERROR([ARM 64-bit mode is unsupported])
@@ -1975,7 +1997,7 @@ arm*)
     thumb2)
         gcc_default_mode="thumb"
         # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
-        aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+        aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -$gcc_default_endian -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
     ;;
     *)
         AC_MSG_ERROR([Unsupported ARM mode specified $aros_target_cpu_mode])
