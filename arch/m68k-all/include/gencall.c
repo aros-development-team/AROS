@@ -54,7 +54,7 @@ void aros_ufh(int id, int is_static)
     printf(") \\\n");
     printf("\t%st n (void) {%s\n", is_static ? "static " : "", (i==0) ? "" : " \\");
     for (i = 0; i < id; i++)
-        printf(" \\\n\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_UFPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_UFSA(a%d));(__AROS_UFPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
+        printf(" \\\n\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_UFPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_UFSA(a%d));asm volatile(\"\":\"=r\"(__r):\"0\"(__r));(__AROS_UFPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
     printf("\n");
 }
 
@@ -234,9 +234,9 @@ void aros_lh(int id, int is_ignored)
     printf("bt,bn,o,s) \\\n");
     printf("\tt AROS_SLIB_ENTRY(n,s,o) (void) {");
     for (i = 0; i < id; i++)
-        printf(" \\\n\t__AROS_LPA(a%d) __attribute__((unused)) __AROS_LCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_LPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_LPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
+        printf(" \\\n\t__AROS_LPA(a%d) __attribute__((unused)) __AROS_LCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_LPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_LSA(a%d));asm volatile(\"\":\"=r\"(__r):\"0\"(__r));(__AROS_LPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
     if (!is_ignored)
-        printf(" \\\n\tregister bt __attribute__((unused)) bn = __AROS_ISREG(bn,bt,A6,__AROS_FP_REG) ? (bt)(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(\"%%a6\");(bt)__r;});");
+        printf(" \\\n\tregister bt __attribute__((unused)) bn = __AROS_ISREG(bn,bt,A6,__AROS_FP_REG) ? (bt)(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(\"%%a6\");asm volatile(\"\":\"=r\"(__r):\"0\"(__r));(bt)__r;});");
     printf("\n");
     printf("#define AROS_LH%d%s __AROS_LH%d%s\n", id, is_ignored ? "I" : "", id, is_ignored ? "I" : "");
 }
