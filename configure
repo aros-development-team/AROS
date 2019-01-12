@@ -4685,30 +4685,16 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         ;;
 
     darwin*)
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for /usr/include/stddef.h" >&5
-$as_echo_n "checking for /usr/include/stddef.h... " >&6; }
-if ${ac_cv_file__usr_include_stddef_h+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "/usr/include/stddef.h"; then
-  ac_cv_file__usr_include_stddef_h=yes
-else
-  ac_cv_file__usr_include_stddef_h=no
-fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_file__usr_include_stddef_h" >&5
-$as_echo "$ac_cv_file__usr_include_stddef_h" >&6; }
-if test "x$ac_cv_file__usr_include_stddef_h" = xyes; then :
-
-else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for macOS SDK files" >&5
+$as_echo_n "checking for macOS SDK files... " >&6; }
+        LOC=$( xcode-select -p )
+        if  test $? != 0; then :
   as_fn_error $? "XCode incorrectly configured!
 please run 'xcode-select --install' before
 re-running configure" "$LINENO" 5
-
 fi
-
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LOC" >&5
+$as_echo "$LOC" >&6; }
         aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
