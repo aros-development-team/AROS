@@ -167,6 +167,7 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
         DOSBase->dl_lib.lib_Revision     = REVISION_NUMBER;
         DOSBase->dl_lib.lib_IdString     = (char *)&version[6];
         DOSBase->dl_lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+        DOSBase->dl_lib.lib_OpenCnt      = 0;
 
         /*
          * These two are allocated together with DOSBase, for reduced fragmentation.
@@ -309,7 +310,7 @@ static void DosExpunge(struct DosLibrary *DOSBase)
          * Someone is holding us... Perhaps some handler started subprocess
          * which didn't quit. Who knows...
          */
-        D(bug("[DosInit] Open count is %d, can't expunge\n"));
+        D(bug("[DosInit] Open count is %d, can't expunge\n", DOSBase->dl_lib.lib_OpenCnt));
         return;
     }
 
