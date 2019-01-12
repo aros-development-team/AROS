@@ -46,7 +46,7 @@ endif
 GCC_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
 
 # ARM requires additional flags to determine CPU type and FP model
-ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 GCC_EXTRA_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
 GCC_EXTRA_OPTS += --with-float=$(GCC_DEFAULT_FLOAT_ABI)
 GCC_EXTRA_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
