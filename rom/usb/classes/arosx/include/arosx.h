@@ -28,4 +28,8 @@ struct AROSX_GAMEPAD {
     WORD    ThumbRY;
 };
 
+struct AROSXBase {
+    struct Library arosx_LibNode;
+};
+
 #endif /* AROSX_LIBRARY_H */
