@@ -6,7 +6,7 @@ diff -ruN binutils-2.23.2/bfd/config.bfd binutils-2.23.2.aros/bfd/config.bfd
    arm-*-elf | arm-*-freebsd* | arm*-*-linux-* | arm*-*-conix* | \
    arm*-*-uclinux* | arm-*-kfreebsd*-gnu | \
 -  arm*-*-eabi* )
-+  arm*-*-eabi* | arm-*-aros)
++  arm*-*-eabi* | arm*-*-aros)
      targ_defvec=bfd_elf32_littlearm_vec
      targ_selvecs=bfd_elf32_bigarm_vec
      ;;
