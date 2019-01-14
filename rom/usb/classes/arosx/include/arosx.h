@@ -22,6 +22,7 @@
 #define AROSX_GAMEPAD_Y                0x8000
 
 struct AROSX_GAMEPAD {
+    ULONG   Timestamp;
     UWORD   Buttons;
     UBYTE   LeftTrigger;
     UBYTE   RightTrigger;

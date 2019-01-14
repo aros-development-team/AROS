@@ -590,7 +590,9 @@ AROS_UFH0(void, nHidTask)
                     {
                         len = psdGetPipeActual(pp);
 
-                        Gamepad_ParseMsg(nch, epinbuf, len);
+                        if(Gamepad_ParseMsg(nch, epinbuf, len)) {
+                            mybug(-1,("Timestamp %u #%x\n", nch->nch_arosx_gamepad.Timestamp, nch->id));
+                        }
 
                         /* Wait */
                         /*
@@ -752,7 +754,7 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
 
     if(ret) {
         GetSysTime(&current);
-        mybug(-1,("%u secs %u micros #%x\n", current.tv_secs, current.tv_micro, nch->id));
+        arosx_gamepad->Timestamp = (ULONG)((current.tv_secs)<<14)|(UWORD)((current.tv_micro)>>6);
 
         if(nch->nch_GUITask)
         {
