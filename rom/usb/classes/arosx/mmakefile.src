@@ -13,4 +13,9 @@ FILES :=    arosx.class arosx.library debug
     modname=arosx modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 
+TARGETDIR := $(AROS_TESTS)/arosx
+
+%build_prog mmake=test-library-arosx \
+    progname=arosx_test targetdir=$(TARGETDIR)
+
 %common
