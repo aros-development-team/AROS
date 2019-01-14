@@ -8,6 +8,9 @@
 
 
 #include <aros/libcall.h>
+#include <devices/timer.h>
+
+#include <proto/timer.h>
 
 #include "debug.h"
 
@@ -160,6 +163,8 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
             nch->nch_ClsBase = nh;
             nch->nch_Device = pd;
             nch->nch_Interface = pif;
+
+            nch->controller_type = AROSX_CONTROLLER_TYPE_GAMEPAD;
 
             psdSafeRawDoFmt(buf, 64, "arosx.class.gamepad.%01x", nch->id);
             nch->nch_ReadySignal = SIGB_SINGLE;
@@ -355,8 +360,23 @@ struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYT
         arosxclass_this_controller->status.signallost = FALSE;
 
         mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Created new controller structure %04lx for controller %01x\n", arosxclass_this_controller, arosxclass_this_controller->id));
-        return arosxclass_this_controller;
+
+        if (arosxclass_this_controller->nch_TimerMP = CreatePort(NULL, 0)) {
+            if (arosxclass_this_controller->nch_TimerIO = (struct timerequest *)CreateExtIO(arosxclass_this_controller->nch_TimerMP, sizeof(struct timerequest))) {
+                if (!(OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)arosxclass_this_controller->nch_TimerIO, 0))) {
+                    arosxclass_this_controller->nch_TimerBase = arosxclass_this_controller->nch_TimerIO->tr_node.io_Device;
+                    FreeSignal(arosxclass_this_controller->nch_TimerMP->mp_SigBit);
+                    return arosxclass_this_controller;
+                }
+                DeleteExtIO((struct IORequest *)arosxclass_this_controller->nch_TimerIO);
+            }
+            DeletePort(arosxclass_this_controller->nch_TimerMP);
+        }
     }
+
+    AROSXClass_DestroyController(nh, arosxclass_this_controller);    
+
+    return NULL;
 
 }
 
@@ -429,6 +449,7 @@ void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassControl
     if(arosxclass_this_controller != NULL) {
         ObtainSemaphore(&nh->nh_arosx_controller_lock);
         arosxclass_this_controller->status.connected = FALSE;
+        arosxclass_this_controller->controller_type = AROSX_CONTROLLER_TYPE_UNKNOWN;
         ReleaseSemaphore(&nh->nh_arosx_controller_lock);
         mybug(-1, ("[AROSXClass] AROSXClass_DisconnectController: Disconnected controller number %01x\n", arosxclass_this_controller->id));
     }
@@ -439,6 +460,8 @@ void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassControl
 
 #undef  ps
 #define ps nch->nch_Base
+#undef  TimerBase
+#define TimerBase nch->nch_TimerBase
 
 /* /// "nHidTask()" */
 AROS_UFH0(void, nHidTask)
@@ -456,14 +479,18 @@ AROS_UFH0(void, nHidTask)
 	UBYTE *ep0buf;
 
     LONG ioerr;
-
     ULONG len;
 
     /*
         This does not allocate nch, it is already present. It only fetches it from the task tc_UserData.
+         - Currently code assumes controller to be a gamepad
     */
     if((nch = nAllocHid()))
     {
+
+        nch->nch_TimerMP->mp_SigBit = AllocSignal(-1);
+        nch->nch_TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigBit = nch->nch_TimerMP->mp_SigBit;
+        nch->nch_TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
     	epinbuf = nch->nch_EPInBuf;
 		ep0buf  = nch->nch_EP0Buf;
@@ -562,13 +589,23 @@ AROS_UFH0(void, nHidTask)
                     if(!(ioerr = psdGetPipeError(pp)))
                     {
                         len = psdGetPipeActual(pp);
-                        nParseMsg(nch, epinbuf, len);
+
+                        Gamepad_ParseMsg(nch, epinbuf, len);
+
+                        /* Wait */
+                        /*
+                        nch->nch_TimerIO->tr_node.io_Command = TR_ADDREQUEST;
+                        nch->nch_TimerIO->tr_time.tv_secs = 0;
+                        nch->nch_TimerIO->tr_time.tv_micro = 1000;
+                        DoIO((struct IORequest *)nch->nch_TimerIO);
+                        */
+
                     } else {
                         mybug(1, ("Int Pipe failed %ld\n", ioerr));
                         psdDelayMS(200);
                     }
                     /*
-                    	TODO: One Chinese gamepad doesn't wait for new input but sends data back at once
+                    	TODO: One Chinese gamepad doesn't wait for new input but sends data back at once (8mS apart...)
                     		   - Check if response is the same and not much time has elapsed between and set some babble flag and force wait between calls
                     */
                     //psdDelayMS(1);
@@ -587,12 +624,17 @@ AROS_UFH0(void, nHidTask)
 }
 /* \\\ */
 
-/* /// "nParseMsg()" */
-void nParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len)
-{
+/* /// "Gamepad_ParseMsg()" */
+BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
+
+    struct AROSX_GAMEPAD  arosx_gamepad_new;
 
     struct AROSX_GAMEPAD *arosx_gamepad;
     arosx_gamepad = &nch->nch_arosx_gamepad;
+
+    struct timeval current;
+
+    BOOL ret = FALSE;
 
 /* TODO: Check the input message type... */
 
@@ -636,10 +678,11 @@ void nParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len)
         Byte 16 might be the battery level on Wireless F710?
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 00 00 00 00 00 00
         Msg: 00 14 00 00 00 00 80 00 80 00 80 00 80 00 00 00 00 00 00 00
-*/
+
     mybug(0, ("EPIn: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
                     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10],
                     buf[11], buf[12], buf[13], buf[14], buf[15], buf[16], buf[17], buf[18], buf[19]));
+    */
 
     /*
         Works at least with Logitech F710
@@ -648,14 +691,49 @@ void nParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len)
 
  	/*
     	This will map everything according to Microsoft game controller API
+        Check if our gamepad needs a timestamp (change on inputs)
     */
-    arosx_gamepad->Buttons      = (UWORD)(buf[2]<<0) | (buf[3]<<8);
-    arosx_gamepad->LeftTrigger  = (UBYTE)(buf[4]);
-	arosx_gamepad->RightTrigger = (UBYTE)(buf[5]);
-	arosx_gamepad->ThumbLX      = (WORD)((buf[6])  | (buf[7]<<8));
-	arosx_gamepad->ThumbLY      = (WORD)((buf[8])  | (buf[9]<<8));
-	arosx_gamepad->ThumbRX      = (WORD)((buf[10]) | (buf[11]<<8));
-	arosx_gamepad->ThumbRY      = (WORD)((buf[12]) | (buf[13]<<8));
+    arosx_gamepad_new.Buttons = (UWORD)(buf[2]<<0) | (buf[3]<<8);
+    if(arosx_gamepad_new.Buttons != arosx_gamepad->Buttons) {
+        arosx_gamepad->Buttons = arosx_gamepad_new.Buttons;
+        ret = TRUE;
+    }
+
+    arosx_gamepad_new.LeftTrigger = (UBYTE)(buf[4]);
+    if(arosx_gamepad_new.LeftTrigger != arosx_gamepad->LeftTrigger) {
+        arosx_gamepad->LeftTrigger = arosx_gamepad_new.LeftTrigger;
+        ret = TRUE;
+    }
+
+    arosx_gamepad_new.RightTrigger = (UBYTE)(buf[5]);
+    if(arosx_gamepad_new.RightTrigger != arosx_gamepad->RightTrigger) {
+        arosx_gamepad->RightTrigger = arosx_gamepad_new.RightTrigger;
+        ret = TRUE;
+    }
+
+    arosx_gamepad_new.ThumbLX = (WORD)((buf[6])  | (buf[7]<<8));
+    if(arosx_gamepad_new.ThumbLX != arosx_gamepad->ThumbLX) {
+        arosx_gamepad->ThumbLX = arosx_gamepad_new.ThumbLX;
+        ret = TRUE;
+    }
+
+    arosx_gamepad_new.ThumbLY = (WORD)((buf[8])  | (buf[9]<<8));
+    if(arosx_gamepad_new.ThumbLY != arosx_gamepad->ThumbLY) {
+        arosx_gamepad->ThumbLY = arosx_gamepad_new.ThumbLY;
+        ret = TRUE;
+    }
+
+    arosx_gamepad_new.ThumbRX = (WORD)((buf[10]) | (buf[11]<<8));
+    if(arosx_gamepad_new.ThumbRX != arosx_gamepad->ThumbRX) {
+        arosx_gamepad->ThumbRX = arosx_gamepad_new.ThumbRX;
+        ret = TRUE;
+    }
+
+    arosx_gamepad_new.ThumbRY = (WORD)((buf[12]) | (buf[13]<<8));
+    if(arosx_gamepad_new.ThumbRY != arosx_gamepad->ThumbRY) {
+        arosx_gamepad->ThumbRY = arosx_gamepad_new.ThumbRY;
+        ret = TRUE;
+    }
 
     /* Rumble effect
     UBYTE *bufout;
@@ -672,10 +750,17 @@ void nParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len)
     psdDoPipe(nch->nch_EPOutPipe, bufout, 8);
     */
 
-    if(nch->nch_GUITask)
-    {
-        Signal(nch->nch_GUITask, (ULONG) (1<<nch->nch_TrackingSignal));
+    if(ret) {
+        GetSysTime(&current);
+        mybug(-1,("%u secs %u micros #%x\n", current.tv_secs, current.tv_micro, nch->id));
+
+        if(nch->nch_GUITask)
+        {
+            Signal(nch->nch_GUITask, (ULONG) (1<<nch->nch_TrackingSignal));
+        }
     }
+
+    return ret;
 
 }
 /* \\\ */
