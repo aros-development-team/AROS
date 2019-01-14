@@ -3,15 +3,6 @@
 
 #include "common.h"
 
-#include <devices/keyboard.h>
-#include <libraries/gadtools.h>
-
-#include <devices/usb_audio.h>
-
-#include <string.h>
-#include <stddef.h>
-#include <stdio.h>
-
 #include "arosx.h"
 
 static const STRPTR libname = MOD_NAME_STRING;
@@ -19,7 +10,7 @@ static const STRPTR libname = MOD_NAME_STRING;
 //struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *nh, struct PsdInterface *pif);
 //void usbReleaseInterfaceBinding(struct AROSXClassBase *nh, struct AROSXClassController *nch);
 
-void nParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len);
+BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len);
 
 struct AROSXClassController * nAllocHid(void);
 void nFreeHid(struct AROSXClassController *nch);

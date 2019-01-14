@@ -1,10 +1,8 @@
 #ifndef AROSXClass_H
 #define AROSXClass_H
 
-#include <intuition/intuition.h>
-#include <intuition/intuitionbase.h>
 #include <libraries/mui.h>
-#include <libraries/gadtools.h>
+#include <sys/time.h>
 
 #include "include/arosx.h"
 
@@ -44,6 +42,11 @@ struct AROSXClassController
     UBYTE   id;
     UBYTE   name[64];
 
+    UBYTE   controller_type;
+
+    UBYTE   battery_type;
+    UBYTE   battery_level;
+
     struct AROSXClassController_status {
         BOOL    connected;
 
@@ -51,14 +54,17 @@ struct AROSXClassController
         BOOL    signallost;
     } status;
 
-    /*
-        Make it a union
-    */
-    struct AROSX_GAMEPAD nch_arosx_gamepad;
+    union {
+        struct AROSX_GAMEPAD nch_arosx_gamepad;
+    };
 
     /*
         Clean the rest of this nch stuff away
     */
+    struct Device               *nch_TimerBase;
+    struct MsgPort              *nch_TimerMP;
+    struct timerequest          *nch_TimerIO;
+
     struct AROSXClassBase  *nch_ClsBase;      /* Up linkage */
     struct Library     *nch_Base;         /* Poseidon base */
     struct PsdDevice   *nch_Device;       /* Up linkage */
