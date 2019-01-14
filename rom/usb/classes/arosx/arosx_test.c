@@ -7,7 +7,7 @@
  
 #include <proto/exec.h>
 #include <proto/dos.h>
-//#include <proto/arosx.h>
+#include <proto/arosx.h>
  
 struct Library *AROSXBase;
  
@@ -17,6 +17,7 @@ int main (int argc, char *argv[]) {
  
     if (AROSXBase) {
         Printf("arosx.library opened, version %ld.%ld\n", AROSXBase->lib_Version, AROSXBase->lib_Revision);
+        libUnused();
         CloseLibrary(AROSXBase);
     } else {
         PutStr("arosx.library failed to open.\n");
