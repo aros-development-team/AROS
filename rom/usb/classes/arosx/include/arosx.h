@@ -3,6 +3,9 @@
 
 #include <exec/types.h>
 
+#define AROSX_CONTROLLER_TYPE_UNKNOWN  0x00
+#define AROSX_CONTROLLER_TYPE_GAMEPAD  0x01
+
 #define AROSX_GAMEPAD_DPAD_UP          0x0001
 #define AROSX_GAMEPAD_DPAD_DOWN        0x0002
 #define AROSX_GAMEPAD_DPAD_LEFT        0x0004
