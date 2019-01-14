@@ -7,7 +7,7 @@ USER_LDFLAGS := -static
 
 FILES :=    arosx.class arosx.library debug
 
-#MM- kernel-usb-classes-arosx : kernel-usb-usbclass kernel-usb-poseidon-includes
+#MM- kernel-usb-classes-arosx : kernel-usb-usbclass kernel-usb-poseidon-includes kernel-usb-classes-arosx-library
 
 %build_module_library mmake=kernel-usb-classes-arosx \
     modname=arosx modtype=usbclass modsuffix="class" \
@@ -15,7 +15,6 @@ FILES :=    arosx.class arosx.library debug
 
 TARGETDIR := $(AROS_TESTS)/arosx
 
-%build_prog mmake=test-library-arosx \
-    progname=arosx_test targetdir=$(TARGETDIR)
+%build_prog mmake=test-library-arosx progname=arosx_test targetdir=$(TARGETDIR)
 
 %common

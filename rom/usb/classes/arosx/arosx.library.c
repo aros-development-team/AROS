@@ -117,6 +117,7 @@ AROS_LH0(struct Library *, libReserved, struct Library *, base, 4, lib) {
 AROS_LH0(struct Library *, libUnused, struct Library *, base, 5, lib) {
     AROS_LIBFUNC_INIT
 
+    mybug(-1, ("libUnused: Hello...\n"));
     return NULL;
 
     AROS_LIBFUNC_EXIT

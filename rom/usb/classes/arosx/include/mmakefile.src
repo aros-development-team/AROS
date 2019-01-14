@@ -1,0 +1,7 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_module_abi mmake=kernel-usb-classes-arosx-library modname=arosx modtype=library
+
+%common
