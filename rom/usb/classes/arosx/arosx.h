@@ -1,5 +1,5 @@
-#ifndef AROSX_H
-#define AROSX_H
+#ifndef AROSXClass_H
+#define AROSXClass_H
 
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
@@ -20,28 +20,46 @@ struct ClsGlobalCfg
     ULONG cgc_AutoKeyUp;
 };
 
-struct NepHidBase
+struct AROSXClassBase
 {
-    struct Library          nh_Library;     /* standard */
+    struct Library               nh_Library;     /* standard */
 
-    struct Library         *nh_MUIBase;     /* MUI master base */
-    struct Library         *nh_PsdBase;     /* Poseidon base */
+    struct Library              *nh_MUIBase;     /* MUI master base */
+    struct Library              *nh_PsdBase;     /* Poseidon base */
 
-    struct SignalSemaphore  nh_gamepadlock;
-    BOOL                    nh_gamepad1;
-    BOOL                    nh_gamepad2;
-    BOOL                    nh_gamepad3;
-    BOOL                    nh_gamepad4;
+    struct SignalSemaphore       nh_arosx_controller_lock;
 
-    struct Library         *nh_AROSXBase;   /* AROSX base */
+    struct AROSXClassController *nh_arosx_controller_1;
+    struct AROSXClassController *nh_arosx_controller_2;
+    struct AROSXClassController *nh_arosx_controller_3;
+    struct AROSXClassController *nh_arosx_controller_4;
 
+    struct Library              *nh_AROSXBase;   /* AROSX base */
 };
 
-struct NepClassHid
+struct AROSXClassController
 {
     struct Node         nch_Node;         /* Node linkage */
 
-    struct NepHidBase  *nch_ClsBase;      /* Up linkage */
+    UBYTE   id;
+    UBYTE   name[64];
+
+    struct AROSXClassController_status {
+        BOOL    connected;
+
+        BOOL    wireless;
+        BOOL    signallost;
+    } status;
+
+    /*
+        Make it a union
+    */
+    struct AROSX_GAMEPAD nch_arosx_gamepad;
+
+    /*
+        Clean the rest of this nch stuff away
+    */
+    struct AROSXClassBase  *nch_ClsBase;      /* Up linkage */
     struct Library     *nch_Base;         /* Poseidon base */
     struct PsdDevice   *nch_Device;       /* Up linkage */
     struct PsdConfig   *nch_Config;       /* Up linkage */
@@ -68,6 +86,11 @@ struct NepClassHid
     struct Library     *nch_InputBase;    /* Pointer to input.device base */
 
     IPTR                nch_IfNum;        /* Interface Number */
+
+    STRPTR              nch_devname;
+
+    struct PsdDescriptor *nch_pdd;
+    UBYTE                *nch_xinput_desc;
 
     ULONG               nch_TrackingSignal;
 
@@ -109,18 +132,6 @@ struct NepClassHid
     Object             *nch_UseMI;
     Object             *nch_MUIPrefsMI;
 
-    STRPTR              nch_devname;
-
-    struct PsdDescriptor *nch_pdd;
-    UBYTE                *nch_xinput_desc;
-
-    UBYTE                nch_gamepad;
-    UBYTE                nch_gamepadname[64];
-    struct AROSX_GAMEPAD nch_arosx_gamepad;
-
-    BOOL  wireless;
-    BOOL  signallost;
-
 };
 
-#endif /* AROSX_H */
+#endif /* AROSXClass_H */

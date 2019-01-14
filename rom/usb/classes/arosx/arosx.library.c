@@ -14,131 +14,139 @@
 #include "debug.h"
 #include "include/arosx.h"
 
-static AROS_UFH2(struct Library*, OpenLib,
-    AROS_UFHA(ULONG, version, D0),
-    AROS_UFHA(struct Library*, base, A6))
-{ 
-    AROS_USERFUNC_INIT
-    
-    mybug(-1,("AROSX: OpenLib\n"));
-
-    base->lib_OpenCnt++;
-    return base;
-
-    AROS_USERFUNC_EXIT
-}
-    
-static AROS_UFH1(void, CloseLib,
-    AROS_UFHA(struct Library*, base, A6))
-{ 
-    AROS_USERFUNC_INIT
-    
-    mybug(-1,("AROSX: CloseLib\n"));
-
-    base->lib_OpenCnt--;
-
-    AROS_USERFUNC_EXIT
-}
-
-static AROS_UFH1(ULONG, DummyLib,
-    AROS_UFHA(struct Library*, base, A6))
-{ 
-    AROS_USERFUNC_INIT
-    
-    mybug(-1,("AROSX: DummyLib\n"));
-
-    return 0;
-
-    AROS_USERFUNC_EXIT
-}
-
-#define UNUSED(x) \
-static AROS_UFH1(ULONG, x, \
-AROS_UFHA(struct Library*, base, A6)) { \
-    AROS_USERFUNC_INIT \
-    mybug(-1,("AROSX: " #x "\n")); \
-    return 0; \
-    AROS_USERFUNC_EXIT \
-}
-
-UNUSED(Unused5);
-UNUSED(Unused6);
-UNUSED(Unused7);
-UNUSED(Unused8);
-UNUSED(Unused9);
-UNUSED(Unused10);
-UNUSED(Unused11);
-UNUSED(Unused12);
-UNUSED(Unused13);
-UNUSED(Unused14);
-UNUSED(Unused15);
-UNUSED(Unused16);
-
-static const APTR funcLib[] = {
-	OpenLib, CloseLib, DummyLib, DummyLib,
-	Unused5,
-	Unused6,
-	Unused7,
-	Unused8,
-	Unused9,
-	Unused10,
-	Unused11,
-	Unused12,
-	Unused13,
-	Unused14,
-	Unused15,
-	Unused16,
-	(void*)-1 };
-
 static const UBYTE libarosx[] = "arosx.library";
 
-/*
-*/
-AROS_LH0(ULONG, Dummy1, struct AROSXBase*, AROSXBase, 5, arosx)
-{
-    AROS_LIBFUNC_INIT
-    mybug(-1,("AROSX: dummy1\n"));
-    return 0;
-    AROS_LIBFUNC_EXIT
+AROS_UFH3(struct Library *, libInit, AROS_UFHA(struct Library *, base, D0), AROS_UFHA(BPTR, seglist, A0), AROS_UFHA(struct ExecBase *, SysBase, A6)) {
+    AROS_USERFUNC_INIT
+    
+    mybug(-1, ("libInit base: 0x%08lx seglist: 0x%08lx SysBase: 0x%08lx\n", base, seglist, SysBase));
+
+    base->lib_Node.ln_Type = NT_LIBRARY;
+    base->lib_Node.ln_Name = (UBYTE*)libarosx;
+    base->lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+    base->lib_Version      = 0;
+    base->lib_Revision     = 1;
+    base->lib_IdString     = (UBYTE*)libarosx;
+
+    /* Store segment, don't have one... */
+    //base->np_SegList = seglist;
+    
+    return(base);
+
+    AROS_USERFUNC_EXIT
 }
-AROS_LH0(ULONG, Dummy2, struct AROSXBase*, AROSXBase, 6, arosx)
-{
+
+AROS_LH1(struct Library *, libOpen, AROS_LHA(ULONG, version, D0), struct Library *, base, 1, lib) {
     AROS_LIBFUNC_INIT
-    mybug(-1,("AROSX: dummy2\n"));
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-AROS_LH0(ULONG, Dummy3, struct AROSXBase*, AROSXBase, 7, arosx)
-{
-    AROS_LIBFUNC_INIT
-    mybug(-1,("AROSX: dummy3\n"));
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-AROS_LH0(ULONG, Dummy4, struct AROSXBase*, AROSXBase, 8, arosx)
-{
-    AROS_LIBFUNC_INIT
-    mybug(-1,("AROSX: dummy4\n"));
-    return 0;
+
+    mybug(-1,("AROSX: OpenLib version %x.%x 0x%08lx\n", version, base->lib_Revision, base));
+
+    ++base->lib_OpenCnt;
+    base->lib_Flags &= ~LIBF_DELEXP;
+
+    return base;
+    
     AROS_LIBFUNC_EXIT
 }
 
-struct Library * AROSXInit(void)
-{
+AROS_LH0(BPTR, libClose, struct Library *, base, 2, lib) {
+    AROS_LIBFUNC_INIT
+
+    BPTR ret;
+    ret = BNULL;
+
+    mybug(-1,("AROSX: CloseLib version %x.%x 0x%08lx\n", base->lib_Version, base->lib_Revision, base));
+
+    if(--base->lib_OpenCnt == 0) {
+        if(base->lib_Flags & LIBF_DELEXP)
+        {
+            mybug(-1, ("libClose: calling expunge...\n"));
+            ret = AROS_LC1(BPTR, libExpunge, AROS_LCA(struct Library *, base, D0), struct Library *, base, 3, lib);
+        }
+    }
+
+    mybug(-1, ("libClose: lib_OpenCnt = %ld\n", base->lib_OpenCnt));
+
+    return(ret);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(BPTR, libExpunge, struct Library *, base, 3, lib) {
+    AROS_LIBFUNC_INIT
+
+    BPTR ret;
+
+    mybug(-1, ("libExpunge base: 0x%08lx\n", base));
+
+    ret = BNULL;
+
+    if(base->lib_OpenCnt == 0)
+    {
+        mybug(-1, ("libExpunge: Unloading...\n"));
+
+        //ret = base->np_SegList;
+
+        mybug(-1, ("libExpunge: removing library node 0x%08lx\n", &base->lib_Node));
+        Remove(&base->lib_Node);
+
+        mybug(-1, ("libExpunge: FreeMem()...\n"));
+        FreeMem((char *) base - base->lib_NegSize, (ULONG) (base->lib_NegSize + base->lib_PosSize));
+
+        mybug(-1, ("libExpunge: Unloading done! arosx.library expunged!\n"));
+
+        return(ret);
+    }
+    else
+    {
+        mybug(-1, ("libExpunge: Could not expunge, LIBF_DELEXP set!\n"));
+        base->lib_Flags |= LIBF_DELEXP;
+    }
+
+    return(BNULL);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(struct Library *, libReserved, struct Library *, base, 4, lib) {
+    AROS_LIBFUNC_INIT
+    return NULL;
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(struct Library *, libUnused, struct Library *, base, 5, lib) {
+    AROS_LIBFUNC_INIT
+
+    return NULL;
+
+    AROS_LIBFUNC_EXIT
+}
+
+static const APTR libFuncTable[] = {
+    &AROS_SLIB_ENTRY(libOpen, lib, 1),
+    &AROS_SLIB_ENTRY(libClose, lib, 2),
+    &AROS_SLIB_ENTRY(libExpunge, lib, 3),
+    &AROS_SLIB_ENTRY(libReserved, lib, 4),
+    &AROS_SLIB_ENTRY(libUnused, lib, 5),
+    (APTR) -1,
+};
+
+struct Library * AROSXInit(void) {
+
     struct Library *lib;
 
     mybug(-1,("AROSXInit\n"));
 
-    lib = MakeLibrary(funcLib, NULL, NULL, sizeof(struct Library), BNULL);
-    if (lib) {
-        lib->lib_Node.ln_Name = (UBYTE*)libarosx;
-        lib->lib_IdString = lib->lib_Node.ln_Name;
-        lib->lib_Version = 0;
-        lib->lib_Revision = 1;
-        lib->lib_OpenCnt = 1;
+    if((lib = MakeLibrary((APTR) libFuncTable, NULL, (APTR) libInit, sizeof(struct AROSXBase), NULL))) {
+        Forbid();
         AddLibrary(lib);
+        lib->lib_OpenCnt++;
+        Permit();
+    } else {
+        mybug(-1, ("failed to create arosx.library\n"));
     }
 
+    mybug(-1,("AROSXInit base 0x%08lx\n", lib));
     mybug(-1,("AROSXInit done\n"));
 
     return lib;

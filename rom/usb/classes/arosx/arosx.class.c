@@ -13,24 +13,34 @@
 
 #include "arosx.class.h"
 
+
 struct Library * AROSXInit(void);
+
+struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYTE id);
+struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR nh);
+void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller);
+void AROSXClass_DestroyController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller);
+
+
 
 /* /// "Lib Stuff" */
 static int libInit(LIBBASETYPEPTR nh)
 {
 
-    mybug(-1, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
+    mybug(0, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
 
-	nh->nh_gamepad1 = FALSE;
-	nh->nh_gamepad2 = FALSE;
-	nh->nh_gamepad3 = FALSE;
-	nh->nh_gamepad4 = FALSE;
+    AROSXClass_DestroyController(nh, NULL);
 
-	InitSemaphore(&nh->nh_gamepadlock);
+    nh->nh_arosx_controller_1 = AROSXClass_CreateController(nh, 1);
+    nh->nh_arosx_controller_2 = AROSXClass_CreateController(nh, 2);
+    nh->nh_arosx_controller_3 = AROSXClass_CreateController(nh, 3);
+    nh->nh_arosx_controller_4 = AROSXClass_CreateController(nh, 4);
 
-#define	AROSXBase	nh->nh_AROSXBase
+	InitSemaphore(&nh->nh_arosx_controller_lock);
 
-	AROSXBase = AROSXInit();
+	nh->nh_AROSXBase = AROSXInit();
+
+#define AROSXBase   nh->nh_AROSXBase
 
     if(!AROSXBase)
     {
@@ -38,17 +48,17 @@ static int libInit(LIBBASETYPEPTR nh)
         return(FALSE);
     }
 
- 	mybug(-1, ("AROSX: 0x%08lx\n", AROSXBase));
-	AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
+    mybug(-1, ("AROSX: AROSXBase 0x%08lx\n", AROSXBase));
+	//AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
 
-    mybug(10, ("libInit: Ok\n"));
+    mybug(0, ("libInit: Ok\n"));
 
     return(TRUE);
 }
 
 static int libOpen(LIBBASETYPEPTR nh)
 {
-    mybug(10, ("libOpen nh: 0x%08lx\n", nh));
+    mybug(0, ("libOpen nh: 0x%08lx\n", nh));
     return(TRUE);
 }
 
@@ -72,11 +82,11 @@ ADD2EXPUNGELIB(libExpunge, 0)
 
 #define ps ps
 /* /// "usbAttemptInterfaceBinding()" */
-struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
+struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
 
-    struct NepClassHid *nch;
+    struct AROSXClassController *nch;
     
     IPTR ifclass;
     IPTR subclass;
@@ -85,6 +95,9 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
     struct PsdConfig *pc;
     struct PsdDevice *pd;
 
+    struct PsdDescriptor *pdd;
+    UBYTE                *xinput_desc;
+
     UBYTE buf[64];
     struct Task *tmptask;
 
@@ -92,100 +105,63 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
-        if((nch = psdAllocVec(sizeof(struct NepClassHid))))
+
+        psdGetAttrs(PGA_INTERFACE, pif,
+                    IFA_Class, &ifclass,
+                    IFA_SubClass, &subclass,
+                    IFA_Protocol, &proto,
+                    IFA_Config, &pc,
+                    TAG_DONE);
+
+        psdGetAttrs(PGA_CONFIG, pc,
+                    CA_Device, &pd,
+                    TAG_END);
+
+        /*
+            Check to see if it is believed to be an XInput Gamepad interface and if so store the XInput descriptor pdd and the data
+             - We could extend this class to also house code for other XInput devices,
+               but for now it's only XInput Gamepad
+        */
+        pdd = psdFindDescriptor(pd, NULL, DDA_DescriptorType, 33, DDA_Interface, pif, TAG_END);
+        if(((ifclass != 255) || (subclass != 93) || (proto != 1) || (pdd == NULL)))
+        {
+            mybug(0, ("nepHidAttemptInterfaceBinding(%08lx) %d %d %d Nope!\n", pif, ifclass, subclass, proto));
+            CloseLibrary(ps);
+            return(NULL);
+        }
+
+        /*
+            Make sure the XInput descriptor takes the form we expect
+                [16]   33   16    1    1  [36] [129]  20    3    0    3   19    2    0    3    0
+                [17]   33   16    1    1  [37] [129]  20    3    3    3    4   19    2    8    3    3
+            XInput descriptor length has to match with the "nibble count"
+                - XInput "USAGE" seems to take the form of nibbles on the bitmask
+                - Nibble byte count seems to relate to the size of the descriptor (adjusted)
+            TODO: Make the class bailout earlier if the interface isn't what we want and clean this mess
+        */
+
+        psdGetAttrs(PGA_DESCRIPTOR, pdd, DDA_DescriptorData, &xinput_desc, TAG_END);
+
+        UBYTE nibble_check;
+        nibble_check = ( (( (xinput_desc[5]>>1) + (xinput_desc[5] & 1) ) - 2) );
+
+        mybug(0, ("nepHidAttemptInterfaceBinding(%08lx) Nibble check %d\n", pif, nibble_check));
+        nDebugMem(ps, xinput_desc, xinput_desc[0]);
+
+        if( (xinput_desc[6] != 129) | (nibble_check != xinput_desc[0]) ) 
+        {
+            mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Not a gamepad! (that we know of...)\n", pif));
+            CloseLibrary(ps);
+            return(NULL);
+        }
+
+        if((nch = AROSXClass_ConnectController(nh)))
         {
             nch->nch_ClsBase = nh;
-            nch->nch_Device = NULL;
+            nch->nch_Device = pd;
             nch->nch_Interface = pif;
 
-            psdGetAttrs(PGA_INTERFACE, pif,
-                        IFA_Class, &ifclass,
-                        IFA_SubClass, &subclass,
-                        IFA_Protocol, &proto,
-                        IFA_Config, &pc,
-                        TAG_DONE);
-
-            psdGetAttrs(PGA_CONFIG, pc,
-                        CA_Device, &pd,
-                        TAG_END);
-
-            /*
-                Check to see if it is believed to be an XInput Gamepad interface and if so store the XInput descriptor pdd and the data
-                 - We could extend this class to also house code for other XInput devices,
-                   but for now it's only XInput Gamepad
-            */
-            nch->nch_pdd = psdFindDescriptor(pd, NULL, DDA_DescriptorType, 33, DDA_Interface, pif, TAG_END);
-            if(((ifclass != 255) || (subclass != 93) || (proto != 1) || (nch->nch_pdd == NULL)))
-            {
-                mybug(0, ("nepHidAttemptInterfaceBinding(%08lx) %d %d %d Nope!\n", pif, ifclass, subclass, proto));
-                psdFreeVec(nch);
-                CloseLibrary(ps);
-                return(NULL);
-            }
-
-            /*
-                Make sure the XInput descriptor takes the form we expect
-                    [16]   33   16    1    1  [36] [129]  20    3    0    3   19    2    0    3    0
-                    [17]   33   16    1    1  [37] [129]  20    3    3    3    4   19    2    8    3    3
-                XInput descriptor length has to match with the "nibble count"
-                    - XInput "USAGE" seems to take the form of nibbles on the bitmask
-                    - Nibble byte count seems to relate to the size of the descriptor (adjusted)
-                TODO: Make the class bailout earlier if the interface isn't what we want and clean this mess
-            */
-
-            psdGetAttrs(PGA_DESCRIPTOR, nch->nch_pdd, DDA_DescriptorData, &nch->nch_xinput_desc, TAG_END);
-
-            UBYTE nibble_check;
-            nibble_check = ( (( (nch->nch_xinput_desc[5]>>1) + (nch->nch_xinput_desc[5] & 1) ) - 2) );
-
-            mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Nibble check %d\n", pif, nibble_check));
-            nDebugMem(ps, nch->nch_xinput_desc, nch->nch_xinput_desc[0]);
-
-            if( (nch->nch_xinput_desc[6] != 129) | (nibble_check != nch->nch_xinput_desc[0]) ) 
-            {
-                mybug(-1, ("nepHidAttemptInterfaceBinding(%08lx) Not a gamepad! (that we know of...)\n", pif));
-                psdFreeVec(nch);
-                CloseLibrary(ps);
-                return(NULL);
-            }
-
-            /*
-            	We have a valid XInput gamepad, hopefully... Let's see if there's a free gamepad slot for it
-            */
-
-			ObtainSemaphore(&nh->nh_gamepadlock);
-
-			UBYTE gamepad = 0;
-
-			if(nh->nh_gamepad1 == FALSE) {
-				nh->nh_gamepad1 = TRUE;
-				gamepad = 1;
-			}else if(nh->nh_gamepad2 == FALSE) {
-				nh->nh_gamepad2 = TRUE;
-				gamepad = 2;
-			}else if(nh->nh_gamepad3 == FALSE) {
-				nh->nh_gamepad3 = TRUE;
-				gamepad = 3;
-			}else if(nh->nh_gamepad4 == FALSE) {
-				nh->nh_gamepad4 = TRUE;
-				gamepad = 4;
-			}
-
-			ReleaseSemaphore(&nh->nh_gamepadlock);
-
-			mybug(1, ("nepHidAttemptInterfaceBinding gamepad (%01x)\n", gamepad));
-
-            if(!gamepad)
-            {
-                mybug(1, ("nepHidAttemptInterfaceBinding gamepad count exceeded\n"));
-                psdFreeVec(nch);
-                CloseLibrary(ps);
-                return(NULL);
-            }
-
-        	nch->nch_gamepad = gamepad;
-
-            psdSafeRawDoFmt(buf, 64, "arosx.class.gamepad.%01x", nch->nch_gamepad);
+            psdSafeRawDoFmt(buf, 64, "arosx.class.gamepad.%01x", nch->id);
             nch->nch_ReadySignal = SIGB_SINGLE;
             nch->nch_ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
@@ -198,9 +174,9 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
                     //FreeSignal(nch->nch_ReadySignal);
                     psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &nch->nch_devname, TAG_END);
 
-					psdSafeRawDoFmt(nch->nch_gamepadname, 64, "%s (%01x)", nch->nch_devname, nch->nch_gamepad);
+					psdSafeRawDoFmt(nch->name, 64, "%s (%01x)", nch->nch_devname, nch->id);
 
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Play it again, '%s'!", nch->nch_gamepadname);
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Play it again, '%s'!", nch->name);
 
                     CloseLibrary(ps);
                     return(nch);
@@ -208,7 +184,7 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
             }
             nch->nch_ReadySigTask = NULL;
             //FreeSignal(nch->nch_ReadySignal);
-            psdFreeVec(nch);
+            AROSXClass_DisconnectController(nh, nch);;
         }
         CloseLibrary(ps);
     }
@@ -218,14 +194,14 @@ struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct Ps
 /* \\\ */
 
 /* /// "usbReleaseInterfaceBinding()" */
-void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch)
+void usbReleaseInterfaceBinding(struct AROSXClassBase *nh, struct AROSXClassController *nch)
 {
     struct Library *ps;
     struct PsdConfig *pc;
     struct PsdDevice *pd;
     STRPTR devname;
 
-    mybug(1, ("nepHidReleaseInterfaceBinding(%08lx)\n", nch));
+    mybug(0, ("nepHidReleaseInterfaceBinding(%08lx)\n", nch));
 
     /* Kill the nch_GUITask */
     if(nch->nch_GUITask)
@@ -253,19 +229,8 @@ void usbReleaseInterfaceBinding(struct NepHidBase *nh, struct NepClassHid *nch)
         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
         psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "'%s' fell silent!", devname);
 
-		ObtainSemaphore(&nh->nh_gamepadlock);
-		if(nch->nch_gamepad == 1) {
-			nh->nh_gamepad1 = FALSE;
-		}else if(nch->nch_gamepad == 2) {
-			nh->nh_gamepad2 = FALSE;
-		}else if(nch->nch_gamepad == 3) {
-			nh->nh_gamepad3 = FALSE;
-		}else if(nch->nch_gamepad == 4) {
-			nh->nh_gamepad4 = FALSE;
-		}
-		ReleaseSemaphore(&nh->nh_gamepadlock);
+        AROSXClass_DisconnectController(nh, nch);
 
-        psdFreeVec(nch);
         CloseLibrary(ps);
     }
 }
@@ -283,7 +248,7 @@ AROS_LH3(LONG, usbGetAttrsA,
     struct TagItem *ti;
     LONG count = 0;
 
-    mybug(1, ("nepHidGetAttrsA(%ld, %08lx, %08lx)\n", type, usbstruct, tags));
+    mybug(0, ("nepHidGetAttrsA(%ld, %08lx, %08lx)\n", type, usbstruct, tags));
     switch(type)
     {
         case UGA_CLASS:
@@ -357,11 +322,11 @@ AROS_LH2(IPTR, usbDoMethodA,
             return((IPTR) usbAttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
 
         case UCM_ReleaseInterfaceBinding:
-            usbReleaseInterfaceBinding(nh, (struct NepClassHid *) methoddata[0]);
+            usbReleaseInterfaceBinding(nh, (struct AROSXClassController *) methoddata[0]);
             return(TRUE);
 
         case UCM_OpenBindingCfgWindow:
-            return(nOpenCfgWindow((struct NepClassHid *) methoddata[0]));
+            return(nOpenCfgWindow((struct AROSXClassController *) methoddata[0]));
 
         default:
             break;
@@ -370,6 +335,105 @@ AROS_LH2(IPTR, usbDoMethodA,
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */
+
+
+
+struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYTE id) {
+
+    struct AROSXClassController *arosxclass_this_controller;
+
+    arosxclass_this_controller = AllocVec(sizeof(struct AROSXClassController), MEMF_ANY|MEMF_CLEAR);
+
+    if(arosxclass_this_controller == NULL) {
+        mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Failed to create new controller structure for controller %01x\n", id));
+        return NULL;
+    } else {
+        arosxclass_this_controller->id = id;
+
+        arosxclass_this_controller->status.connected = FALSE;
+        arosxclass_this_controller->status.wireless = FALSE;
+        arosxclass_this_controller->status.signallost = FALSE;
+
+        mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Created new controller structure %04lx for controller %01x\n", arosxclass_this_controller, arosxclass_this_controller->id));
+        return arosxclass_this_controller;
+    }
+
+}
+
+/*
+    Just does a FreeVec, no checks to see if someone is using it...
+     - Implemented some sanity
+*/
+void AROSXClass_DestroyController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller) {
+
+    UBYTE id;
+
+    if(arosxclass_this_controller != NULL) {
+        id = arosxclass_this_controller->id;
+
+        ObtainSemaphore(&nh->nh_arosx_controller_lock);
+        if(id == 1) {
+            FreeVec(nh->nh_arosx_controller_1);
+            nh->nh_arosx_controller_1 = NULL;
+        }else if(id == 2) {
+            FreeVec(nh->nh_arosx_controller_2);
+            nh->nh_arosx_controller_2 = NULL;
+        }else if(id == 3) {
+            FreeVec(nh->nh_arosx_controller_3);
+            nh->nh_arosx_controller_3 = NULL;
+        }else if(id == 4) {
+            FreeVec(nh->nh_arosx_controller_4);
+            nh->nh_arosx_controller_4 = NULL;
+        }
+        ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+    }else{
+        mybug(-1, ("[AROSXClass] AROSXClass_DestroyController: Called on non existing controller...\n"));
+    }
+}
+
+struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR nh) {
+
+    struct AROSXClassController *arosxclass_this_controller;
+    arosxclass_this_controller = NULL;
+
+    ObtainSemaphore(&nh->nh_arosx_controller_lock);
+
+    if(nh->nh_arosx_controller_1->status.connected == FALSE) {
+        arosxclass_this_controller = nh->nh_arosx_controller_1;
+        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 1\n"));
+    }else if(nh->nh_arosx_controller_2->status.connected == FALSE) {
+        arosxclass_this_controller = nh->nh_arosx_controller_2;
+        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 2\n"));
+    }else if(nh->nh_arosx_controller_3->status.connected == FALSE) {
+        arosxclass_this_controller = nh->nh_arosx_controller_3;
+        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 3\n"));
+    }else if(nh->nh_arosx_controller_4->status.connected == FALSE) {
+        arosxclass_this_controller = nh->nh_arosx_controller_4;
+        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 4\n"));
+    }else {
+        ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Controller count exceeded, failing...\n"));
+        return NULL;
+    }
+
+    arosxclass_this_controller->status.connected = TRUE;
+
+    ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+
+    return arosxclass_this_controller;
+
+}
+
+void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller) {
+
+    if(arosxclass_this_controller != NULL) {
+        ObtainSemaphore(&nh->nh_arosx_controller_lock);
+        arosxclass_this_controller->status.connected = FALSE;
+        ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+        mybug(-1, ("[AROSXClass] AROSXClass_DisconnectController: Disconnected controller number %01x\n", arosxclass_this_controller->id));
+    }
+
+}
 
 /**************************************************************************/
 
@@ -381,7 +445,7 @@ AROS_UFH0(void, nHidTask)
 {
     AROS_USERFUNC_INIT
 
-    struct NepClassHid *nch;
+    struct AROSXClassController *nch;
 
     struct PsdPipe *pp;
 
@@ -395,13 +459,16 @@ AROS_UFH0(void, nHidTask)
 
     ULONG len;
 
+    /*
+        This does not allocate nch, it is already present. It only fetches it from the task tc_UserData.
+    */
     if((nch = nAllocHid()))
     {
 
     	epinbuf = nch->nch_EPInBuf;
 		ep0buf  = nch->nch_EP0Buf;
 
-        nch->signallost = TRUE;
+        nch->status.signallost = TRUE;
 
         Forbid();
         if(nch->nch_ReadySigTask)
@@ -414,16 +481,15 @@ AROS_UFH0(void, nHidTask)
         psdDelayMS(2000);
 
         psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_VENDOR|URTF_INTERFACE, 0x01, 0x0100, 0x00);
-
         do {
         	ioerr = psdDoPipe(nch->nch_EP0Pipe, ep0buf, 20);
     	} while(ioerr);
 
-    	mybug(1, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
+    	mybug(-1, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
             	    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
         	        ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
 
-        nch->wireless = (ep0buf[18]&(1<<0))? TRUE:FALSE;
+        nch->status.wireless = (ep0buf[18]&(1<<0))? TRUE:FALSE;
 
 		/*
 			:) First
@@ -472,7 +538,7 @@ AROS_UFH0(void, nHidTask)
 
     	bufout[0] = 0x01;
     	bufout[1] = 0x03;
-    	bufout[2] = nch->nch_gamepad + 1;
+    	bufout[2] = nch->id + 1;
     	bufout[3] = 0x00;
     	bufout[4] = 0x00;
     	bufout[5] = 0x00;
@@ -522,8 +588,12 @@ AROS_UFH0(void, nHidTask)
 /* \\\ */
 
 /* /// "nParseMsg()" */
-void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
+void nParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len)
 {
+
+    struct AROSX_GAMEPAD *arosx_gamepad;
+    arosx_gamepad = &nch->nch_arosx_gamepad;
+
 /* TODO: Check the input message type... */
 
 /*
@@ -574,18 +644,18 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
     /*
         Works at least with Logitech F710
     */
-	nch->signallost = (buf[14]&(1<<4))? FALSE:TRUE;
+	nch->status.signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
  	/*
     	This will map everything according to Microsoft game controller API
     */
-    nch->nch_arosx_gamepad.Buttons = (buf[2]<<0) | (buf[3]<<8);
-    nch->nch_arosx_gamepad.LeftTrigger = (buf[4]);
-	nch->nch_arosx_gamepad.RightTrigger = (buf[5]);
-	nch->nch_arosx_gamepad.ThumbLX = ((buf[6])  | (buf[7]<<8));
-	nch->nch_arosx_gamepad.ThumbLY = ((buf[8])  | (buf[9]<<8));
-	nch->nch_arosx_gamepad.ThumbRX = ((buf[10]) | (buf[11]<<8));
-	nch->nch_arosx_gamepad.ThumbRY = ((buf[12]) | (buf[13]<<8));
+    arosx_gamepad->Buttons      = (UWORD)(buf[2]<<0) | (buf[3]<<8);
+    arosx_gamepad->LeftTrigger  = (UBYTE)(buf[4]);
+	arosx_gamepad->RightTrigger = (UBYTE)(buf[5]);
+	arosx_gamepad->ThumbLX      = (WORD)((buf[6])  | (buf[7]<<8));
+	arosx_gamepad->ThumbLY      = (WORD)((buf[8])  | (buf[9]<<8));
+	arosx_gamepad->ThumbRX      = (WORD)((buf[10]) | (buf[11]<<8));
+	arosx_gamepad->ThumbRY      = (WORD)((buf[12]) | (buf[13]<<8));
 
     /* Rumble effect
     UBYTE *bufout;
@@ -611,10 +681,10 @@ void nParseMsg(struct NepClassHid *nch, UBYTE *buf, ULONG len)
 /* \\\ */
 
 /* /// "nAllocHid()" */
-struct NepClassHid * nAllocHid(void)
+struct AROSXClassController * nAllocHid(void)
 {
     struct Task *thistask;
-    struct NepClassHid *nch;
+    struct AROSXClassController *nch;
 
     thistask = FindTask(NULL);
     nch = thistask->tc_UserData;
@@ -715,7 +785,7 @@ struct NepClassHid * nAllocHid(void)
 /* \\\ */
 
 /* /// "nFreeHid()" */
-void nFreeHid(struct NepClassHid *nch)
+void nFreeHid(struct AROSXClassController *nch)
 {
     psdFreeVec(nch->nch_EPOutBuf);
     psdFreeVec(nch->nch_EPInBuf);
@@ -745,7 +815,7 @@ void nFreeHid(struct NepClassHid *nch)
 #undef ps
 
 /* /// "nOpenCfgWindow()" */
-LONG nOpenCfgWindow(struct NepClassHid *nch)
+LONG nOpenCfgWindow(struct AROSXClassController *nch)
 {
     struct Library *ps;
     mybug(10, ("Opening GUI...\n"));
@@ -780,8 +850,8 @@ AROS_UFH0(void, nGUITask)
     AROS_USERFUNC_INIT
 
     struct Task *thistask;
-    struct NepHidBase *nh;
-    struct NepClassHid *nch;
+    struct AROSXClassBase *nh;
+    struct AROSXClassController *nch;
 
     struct Library *MUIBase;
     struct Library *PsdBase;
@@ -789,6 +859,9 @@ AROS_UFH0(void, nGUITask)
     thistask = FindTask(NULL);
     nch = thistask->tc_UserData;
     nh = nch->nch_ClsBase;
+
+    struct AROSX_GAMEPAD *arosx_gamepad;
+    arosx_gamepad = &nch->nch_arosx_gamepad;
 
     ++nh->nh_Library.lib_OpenCnt;
     if((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
@@ -828,7 +901,7 @@ AROS_UFH0(void, nGUITask)
 
             SubWindow, (IPTR)(nch->nch_MainWindow = WindowObject,
                 MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-                MUIA_Window_Title, (IPTR)nch->nch_gamepadname,
+                MUIA_Window_Title, (IPTR)nch->name,
                 MUIA_HelpNode, (IPTR)libname,
 
                 WindowContents, (IPTR)VGroup,
@@ -1075,52 +1148,52 @@ AROS_UFH0(void, nGUITask)
 							if((ULONG)(1<<nch->nch_TrackingSignal)) {
 
                                 /* TODO: Check if the GUI goes to sleep when the controller says it's sleepy */
-								if((nch->wireless)&&(nch->signallost)) {
-                                    set(nch->nch_GamepadGroupObject, MUIA_Disabled, (nch->signallost));
+								if((nch->status.wireless)&&(nch->status.signallost)) {
+                                    set(nch->nch_GamepadGroupObject, MUIA_Disabled, TRUE);
                                     //psdDelayMS(10);
                                 } else {
                                     set(nch->nch_GamepadGroupObject, MUIA_Disabled, FALSE);
 
-                                    set(nch->nch_GamepadObject_button_a, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_A));
-                                    set(nch->nch_GamepadObject_button_b, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_B));
-                                    set(nch->nch_GamepadObject_button_x, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_X));
-                                    set(nch->nch_GamepadObject_button_y, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_Y));
-                                    set(nch->nch_GamepadObject_button_ls, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_LEFT_SHOULDER));
-                                    set(nch->nch_GamepadObject_button_rs, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_RIGHT_SHOULDER));
-                                    set(nch->nch_GamepadObject_left_thumb, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_LEFT_THUMB));
-                                    set(nch->nch_GamepadObject_right_thumb, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_RIGHT_THUMB));
-                                    set(nch->nch_GamepadObject_dpad_left, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_LEFT));
-									set(nch->nch_GamepadObject_dpad_right, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_RIGHT));
-									set(nch->nch_GamepadObject_dpad_up, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_UP));
-									set(nch->nch_GamepadObject_dpad_down, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_DPAD_DOWN));
-									set(nch->nch_GamepadObject_button_back, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_BACK));
-									set(nch->nch_GamepadObject_button_start, MUIA_Selected, (nch->nch_arosx_gamepad.Buttons & AROSX_GAMEPAD_START));
+                                    set(nch->nch_GamepadObject_button_a, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_A));
+                                    set(nch->nch_GamepadObject_button_b, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_B));
+                                    set(nch->nch_GamepadObject_button_x, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_X));
+                                    set(nch->nch_GamepadObject_button_y, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_Y));
+                                    set(nch->nch_GamepadObject_button_ls, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_SHOULDER));
+                                    set(nch->nch_GamepadObject_button_rs, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_SHOULDER));
+                                    set(nch->nch_GamepadObject_left_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_THUMB));
+                                    set(nch->nch_GamepadObject_right_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_THUMB));
+                                    set(nch->nch_GamepadObject_dpad_left, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_LEFT));
+									set(nch->nch_GamepadObject_dpad_right, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_RIGHT));
+									set(nch->nch_GamepadObject_dpad_up, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_UP));
+									set(nch->nch_GamepadObject_dpad_down, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_DOWN));
+									set(nch->nch_GamepadObject_button_back, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_BACK));
+									set(nch->nch_GamepadObject_button_start, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_START));
 
-                                    set(nch->nch_GamepadObject_left_trigger, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.LeftTrigger));
-                                    set(nch->nch_GamepadObject_right_trigger, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.RightTrigger));
+                                    set(nch->nch_GamepadObject_left_trigger, MUIA_Gauge_Current, (arosx_gamepad->LeftTrigger));
+                                    set(nch->nch_GamepadObject_right_trigger, MUIA_Gauge_Current, (arosx_gamepad->RightTrigger));
 
-                            		if(nch->nch_arosx_gamepad.ThumbLX>=0x8000) {
-                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbLX-0x8000));
+                            		if(arosx_gamepad->ThumbLX>=0x8000) {
+                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbLX-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbLX));
+                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLX));
                             		}
 
-                            		if(nch->nch_arosx_gamepad.ThumbLY>=0x8000) {
-                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbLY-0x8000));
+                            		if(arosx_gamepad->ThumbLY>=0x8000) {
+                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbLY-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbLY));
+                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLY));
                             		}
 
-                            		if(nch->nch_arosx_gamepad.ThumbRX>=0x8000) {
-                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbRX-0x8000));
+                            		if(arosx_gamepad->ThumbRX>=0x8000) {
+                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbRX-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbRX));
+                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRX));
                             		}
 
-                            		if(nch->nch_arosx_gamepad.ThumbRY>=0x8000) {
-                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (nch->nch_arosx_gamepad.ThumbRY-0x8000));
+                            		if(arosx_gamepad->ThumbRY>=0x8000) {
+                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbRY-0x8000));
                             		} else {
-                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+nch->nch_arosx_gamepad.ThumbRY));
+                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRY));
                             		}
 
                             		/* 100Hz max. GUI update frequency should be enough for everyone... */
