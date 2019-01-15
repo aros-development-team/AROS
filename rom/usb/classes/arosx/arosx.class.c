@@ -17,7 +17,7 @@
 #include "arosx.class.h"
 
 
-struct Library * AROSXInit(void);
+struct AROSXBase * AROSXInit(void);
 
 struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYTE id);
 struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR nh);
@@ -32,7 +32,10 @@ static int libInit(LIBBASETYPEPTR nh)
 
     mybug(0, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
 
-    AROSXClass_DestroyController(nh, NULL);
+    nh->nh_tv_secs = 0;
+    nh->nh_tv_micro = 0;
+
+    nh->nh_arosx_controller_count = 0;
 
     nh->nh_arosx_controller_1 = AROSXClass_CreateController(nh, 1);
     nh->nh_arosx_controller_2 = AROSXClass_CreateController(nh, 2);
@@ -50,6 +53,8 @@ static int libInit(LIBBASETYPEPTR nh)
         mybug(-1, ("libInit: MakeLibrary(\"arosx.library\") failed!\n"));
         return(FALSE);
     }
+
+    AROSXBase->arosx_ClsBase = nh;
 
     mybug(-1, ("AROSX: AROSXBase 0x%08lx\n", AROSXBase));
 	//AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
@@ -365,6 +370,24 @@ struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYT
             if (arosxclass_this_controller->nch_TimerIO = (struct timerequest *)CreateExtIO(arosxclass_this_controller->nch_TimerMP, sizeof(struct timerequest))) {
                 if (!(OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)arosxclass_this_controller->nch_TimerIO, 0))) {
                     arosxclass_this_controller->nch_TimerBase = arosxclass_this_controller->nch_TimerIO->tr_node.io_Device;
+
+                    /*
+                        Timestamp starts from zero once the first controller structure gets build
+                    */
+                    if((nh->nh_tv_secs == 0)|(nh->nh_tv_micro == 0)) {
+                        #undef  TimerBase
+                        #define TimerBase arosxclass_this_controller->nch_TimerBase
+                        struct timeval current;
+                        GetSysTime(&current);
+                        nh->nh_tv_secs = current.tv_secs;
+                        nh->nh_tv_micro = current.tv_micro;
+
+                        mybug(-1,("Initial timestamp %u %u\n", nh->nh_tv_secs, nh->nh_tv_micro));
+                    }
+
+                    arosxclass_this_controller->nch_tv_secs = nh->nh_tv_secs;
+                    arosxclass_this_controller->nch_tv_micro = nh->nh_tv_micro;
+
                     FreeSignal(arosxclass_this_controller->nch_TimerMP->mp_SigBit);
                     return arosxclass_this_controller;
                 }
@@ -418,23 +441,31 @@ struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR nh) {
 
     ObtainSemaphore(&nh->nh_arosx_controller_lock);
 
-    if(nh->nh_arosx_controller_1->status.connected == FALSE) {
-        arosxclass_this_controller = nh->nh_arosx_controller_1;
-        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 1\n"));
-    }else if(nh->nh_arosx_controller_2->status.connected == FALSE) {
-        arosxclass_this_controller = nh->nh_arosx_controller_2;
-        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 2\n"));
-    }else if(nh->nh_arosx_controller_3->status.connected == FALSE) {
-        arosxclass_this_controller = nh->nh_arosx_controller_3;
-        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 3\n"));
-    }else if(nh->nh_arosx_controller_4->status.connected == FALSE) {
-        arosxclass_this_controller = nh->nh_arosx_controller_4;
-        mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 4\n"));
+    if(nh->nh_arosx_controller_count != 4) {
+        if(nh->nh_arosx_controller_1->status.connected == FALSE) {
+            arosxclass_this_controller = nh->nh_arosx_controller_1;
+            mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 1\n"));
+        }else if(nh->nh_arosx_controller_2->status.connected == FALSE) {
+            arosxclass_this_controller = nh->nh_arosx_controller_2;
+            mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 2\n"));
+        }else if(nh->nh_arosx_controller_3->status.connected == FALSE) {
+            arosxclass_this_controller = nh->nh_arosx_controller_3;
+            mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 3\n"));
+        }else if(nh->nh_arosx_controller_4->status.connected == FALSE) {
+            arosxclass_this_controller = nh->nh_arosx_controller_4;
+            mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 4\n"));
+        }else {
+            ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+            mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: How did you get here? Failing...\n"));
+            return NULL;
+        }
     }else {
         ReleaseSemaphore(&nh->nh_arosx_controller_lock);
         mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Controller count exceeded, failing...\n"));
         return NULL;
     }
+
+    nh->nh_arosx_controller_count++;
 
     arosxclass_this_controller->status.connected = TRUE;
 
@@ -448,6 +479,9 @@ void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassControl
 
     if(arosxclass_this_controller != NULL) {
         ObtainSemaphore(&nh->nh_arosx_controller_lock);
+
+        nh->nh_arosx_controller_count--;
+
         arosxclass_this_controller->status.connected = FALSE;
         arosxclass_this_controller->controller_type = AROSX_CONTROLLER_TYPE_UNKNOWN;
         ReleaseSemaphore(&nh->nh_arosx_controller_lock);
@@ -754,7 +788,8 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
 
     if(ret) {
         GetSysTime(&current);
-        arosx_gamepad->Timestamp = (ULONG)((current.tv_secs)<<14)|(UWORD)((current.tv_micro)>>6);
+
+        arosx_gamepad->Timestamp = (ULONG)((((current.tv_secs-nch->nch_tv_secs) * 1000000) + (current.tv_micro-nch->nch_tv_micro))/1000);
 
         if(nch->nch_GUITask)
         {
