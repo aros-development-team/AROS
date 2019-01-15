@@ -18,6 +18,11 @@ struct ClsGlobalCfg
     ULONG cgc_AutoKeyUp;
 };
 
+struct AROSXBase {
+    struct Library          arosx_LibNode;
+    struct AROSXClassBase  *arosx_ClsBase;
+};
+
 struct AROSXClassBase
 {
     struct Library               nh_Library;     /* standard */
@@ -25,14 +30,20 @@ struct AROSXClassBase
     struct Library              *nh_MUIBase;     /* MUI master base */
     struct Library              *nh_PsdBase;     /* Poseidon base */
 
+    struct AROSXBase            *nh_AROSXBase;
+
+    ULONG                        nh_tv_secs;
+    ULONG                        nh_tv_micro;
+
     struct SignalSemaphore       nh_arosx_controller_lock;
+
+    UBYTE                        nh_arosx_controller_count;
 
     struct AROSXClassController *nh_arosx_controller_1;
     struct AROSXClassController *nh_arosx_controller_2;
     struct AROSXClassController *nh_arosx_controller_3;
     struct AROSXClassController *nh_arosx_controller_4;
 
-    struct Library              *nh_AROSXBase;   /* AROSX base */
 };
 
 struct AROSXClassController
@@ -46,6 +57,9 @@ struct AROSXClassController
 
     UBYTE   battery_type;
     UBYTE   battery_level;
+
+    ULONG                        nch_tv_secs;
+    ULONG                        nch_tv_micro;
 
     struct AROSXClassController_status {
         BOOL    connected;
