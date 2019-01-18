@@ -19,34 +19,34 @@
 
 struct AROSXBase * AROSXInit(void);
 
-struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYTE id);
-struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR nh);
-void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller);
-void AROSXClass_DestroyController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller);
+struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, UBYTE id);
+struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb);
+void AROSXClass_DisconnectController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc);
+void AROSXClass_DestroyController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc);
 
 
 
 /* /// "Lib Stuff" */
-static int libInit(LIBBASETYPEPTR nh)
+static int libInit(LIBBASETYPEPTR arosxb)
 {
 
-    mybug(0, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
+    mybug(0, ("libInit arosxb: 0x%08lx SysBase: 0x%08lx\n", arosxb, SysBase));
 
-    nh->nh_tv_secs = 0;
-    nh->nh_tv_micro = 0;
+    arosxb->tv_secs = 0;
+    arosxb->tv_micro = 0;
 
-    nh->nh_arosx_controller_count = 0;
+    arosxb->arosxc_count = 0;
 
-    nh->nh_arosx_controller_1 = AROSXClass_CreateController(nh, 1);
-    nh->nh_arosx_controller_2 = AROSXClass_CreateController(nh, 2);
-    nh->nh_arosx_controller_3 = AROSXClass_CreateController(nh, 3);
-    nh->nh_arosx_controller_4 = AROSXClass_CreateController(nh, 4);
+    arosxb->arosxc_1 = AROSXClass_CreateController(arosxb, 1);
+    arosxb->arosxc_2 = AROSXClass_CreateController(arosxb, 2);
+    arosxb->arosxc_3 = AROSXClass_CreateController(arosxb, 3);
+    arosxb->arosxc_4 = AROSXClass_CreateController(arosxb, 4);
 
-	InitSemaphore(&nh->nh_arosx_controller_lock);
+	InitSemaphore(&arosxb->arosxc_lock);
 
-	nh->nh_AROSXBase = AROSXInit();
+	arosxb->AROSXBase = AROSXInit();
 
-#define AROSXBase   nh->nh_AROSXBase
+#define AROSXBase   arosxb->AROSXBase
 
     if(!AROSXBase)
     {
@@ -54,7 +54,7 @@ static int libInit(LIBBASETYPEPTR nh)
         return(FALSE);
     }
 
-    AROSXBase->arosx_ClsBase = nh;
+    AROSXBase->arosxb = arosxb;
 
     mybug(-1, ("AROSX: AROSXBase 0x%08lx\n", AROSXBase));
 	//AROS_LC0(ULONG, Dummy1, LIBBASETYPEPTR, AROSXBase, 5, arosx);
@@ -64,15 +64,15 @@ static int libInit(LIBBASETYPEPTR nh)
     return(TRUE);
 }
 
-static int libOpen(LIBBASETYPEPTR nh)
+static int libOpen(LIBBASETYPEPTR arosxb)
 {
-    mybug(0, ("libOpen nh: 0x%08lx\n", nh));
+    mybug(0, ("libOpen arosxb: 0x%08lx\n", arosxb));
     return(TRUE);
 }
 
-static int libExpunge(LIBBASETYPEPTR nh)
+static int libExpunge(LIBBASETYPEPTR arosxb)
 {
-    mybug(10, ("libExpunge nh: 0x%08lx\n", nh));
+    mybug(10, ("libExpunge arosxb: 0x%08lx\n", arosxb));
     //CloseLibrary((struct Library *) UtilityBase);
     return(TRUE);
 }
@@ -90,11 +90,11 @@ ADD2EXPUNGELIB(libExpunge, 0)
 
 #define ps ps
 /* /// "usbAttemptInterfaceBinding()" */
-struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *nh, struct PsdInterface *pif)
+struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *arosxb, struct PsdInterface *pif)
 {
     struct Library *ps;
 
-    struct AROSXClassController *nch;
+    struct AROSXClassController *arosxc;
     
     IPTR ifclass;
     IPTR subclass;
@@ -163,38 +163,38 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
             return(NULL);
         }
 
-        if((nch = AROSXClass_ConnectController(nh)))
+        if((arosxc = AROSXClass_ConnectController(arosxb)))
         {
-            nch->nch_ClsBase = nh;
-            nch->nch_Device = pd;
-            nch->nch_Interface = pif;
+            arosxc->arosxb = arosxb;
+            arosxc->Device = pd;
+            arosxc->Interface = pif;
 
-            nch->controller_type = AROSX_CONTROLLER_TYPE_GAMEPAD;
+            arosxc->controller_type = AROSX_CONTROLLER_TYPE_GAMEPAD;
 
-            psdSafeRawDoFmt(buf, 64, "arosx.class.gamepad.%01x", nch->id);
-            nch->nch_ReadySignal = SIGB_SINGLE;
-            nch->nch_ReadySigTask = FindTask(NULL);
+            psdSafeRawDoFmt(buf, 64, "arosx.class.gamepad.%01x", arosxc->id);
+            arosxc->ReadySignal = SIGB_SINGLE;
+            arosxc->ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
-            if((tmptask = psdSpawnSubTask(buf, nHidTask, nch)))
+            if((tmptask = psdSpawnSubTask(buf, nHidTask, arosxc)))
             {
-                psdBorrowLocksWait(tmptask, 1UL<<nch->nch_ReadySignal);
-                if(nch->nch_Task)
+                psdBorrowLocksWait(tmptask, 1UL<<arosxc->ReadySignal);
+                if(arosxc->Task)
                 {
-                    nch->nch_ReadySigTask = NULL;
-                    //FreeSignal(nch->nch_ReadySignal);
-                    psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &nch->nch_devname, TAG_END);
+                    arosxc->ReadySigTask = NULL;
+                    //FreeSignal(arosxc->ReadySignal);
+                    psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &arosxc->devname, TAG_END);
 
-					psdSafeRawDoFmt(nch->name, 64, "%s (%01x)", nch->nch_devname, nch->id);
+					psdSafeRawDoFmt(arosxc->name, 64, "%s (%01x)", arosxc->devname, arosxc->id);
 
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Play it again, '%s'!", nch->name);
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Play it again, '%s'!", arosxc->name);
 
                     CloseLibrary(ps);
-                    return(nch);
+                    return(arosxc);
                 }
             }
-            nch->nch_ReadySigTask = NULL;
-            //FreeSignal(nch->nch_ReadySignal);
-            AROSXClass_DisconnectController(nh, nch);;
+            arosxc->ReadySigTask = NULL;
+            //FreeSignal(arosxc->ReadySignal);
+            AROSXClass_DisconnectController(arosxb, arosxc);;
         }
         CloseLibrary(ps);
     }
@@ -204,42 +204,42 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
 /* \\\ */
 
 /* /// "usbReleaseInterfaceBinding()" */
-void usbReleaseInterfaceBinding(struct AROSXClassBase *nh, struct AROSXClassController *nch)
+void usbReleaseInterfaceBinding(struct AROSXClassBase *arosxb, struct AROSXClassController *arosxc)
 {
     struct Library *ps;
     struct PsdConfig *pc;
     struct PsdDevice *pd;
     STRPTR devname;
 
-    mybug(0, ("nepHidReleaseInterfaceBinding(%08lx)\n", nch));
+    mybug(0, ("nepHidReleaseInterfaceBinding(%08lx)\n", arosxc));
 
-    /* Kill the nch_GUITask */
-    if(nch->nch_GUITask)
+    /* Kill the GUITask */
+    if(arosxc->GUITask)
     {
-        Signal(nch->nch_GUITask, SIGBREAKF_CTRL_C);
+        Signal(arosxc->GUITask, SIGBREAKF_CTRL_C);
     }
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         Forbid();
-        nch->nch_ReadySignal = SIGB_SINGLE;
-        nch->nch_ReadySigTask = FindTask(NULL);
-        if(nch->nch_Task)
+        arosxc->ReadySignal = SIGB_SINGLE;
+        arosxc->ReadySigTask = FindTask(NULL);
+        if(arosxc->Task)
         {
-            Signal(nch->nch_Task, SIGBREAKF_CTRL_C);
+            Signal(arosxc->Task, SIGBREAKF_CTRL_C);
         }
         Permit();
-        while(nch->nch_Task)
+        while(arosxc->Task)
         {
-            Wait(1L<<nch->nch_ReadySignal);
+            Wait(1L<<arosxc->ReadySignal);
         }
-        //FreeSignal(nch->nch_ReadySignal);
-        psdGetAttrs(PGA_INTERFACE, nch->nch_Interface, IFA_Config, &pc, TAG_END);
+        //FreeSignal(arosxc->ReadySignal);
+        psdGetAttrs(PGA_INTERFACE, arosxc->Interface, IFA_Config, &pc, TAG_END);
         psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
         psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "'%s' fell silent!", devname);
 
-        AROSXClass_DisconnectController(nh, nch);
+        AROSXClass_DisconnectController(arosxb, arosxc);
 
         CloseLibrary(ps);
     }
@@ -251,7 +251,7 @@ AROS_LH3(LONG, usbGetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, usbstruct, A0),
          AROS_LHA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, nh, 5, nep)
+         LIBBASETYPEPTR, arosxb, 5, nep)
 {
     AROS_LIBFUNC_INIT
 
@@ -306,7 +306,7 @@ AROS_LH3(LONG, usbSetAttrsA,
          AROS_LHA(ULONG, type, D0),
          AROS_LHA(APTR, usbstruct, A0),
          AROS_LHA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, nh, 6, nep)
+         LIBBASETYPEPTR, arosxb, 6, nep)
 {
     AROS_LIBFUNC_INIT
     return(0);
@@ -318,7 +318,7 @@ AROS_LH3(LONG, usbSetAttrsA,
 AROS_LH2(IPTR, usbDoMethodA,
          AROS_LHA(ULONG, methodid, D0),
          AROS_LHA(IPTR *, methoddata, A1),
-         LIBBASETYPEPTR, nh, 7, nep)
+         LIBBASETYPEPTR, arosxb, 7, nep)
 {
     AROS_LIBFUNC_INIT
 
@@ -326,13 +326,13 @@ AROS_LH2(IPTR, usbDoMethodA,
     switch(methodid)
     {
         case UCM_AttemptInterfaceBinding:
-            return((IPTR) usbAttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
+            return((IPTR) usbAttemptInterfaceBinding(arosxb, (struct PsdInterface *) methoddata[0]));
 
         case UCM_ForceInterfaceBinding:
-            return((IPTR) usbAttemptInterfaceBinding(nh, (struct PsdInterface *) methoddata[0]));
+            return((IPTR) usbAttemptInterfaceBinding(arosxb, (struct PsdInterface *) methoddata[0]));
 
         case UCM_ReleaseInterfaceBinding:
-            usbReleaseInterfaceBinding(nh, (struct AROSXClassController *) methoddata[0]);
+            usbReleaseInterfaceBinding(arosxb, (struct AROSXClassController *) methoddata[0]);
             return(TRUE);
 
         case UCM_OpenBindingCfgWindow:
@@ -348,56 +348,58 @@ AROS_LH2(IPTR, usbDoMethodA,
 
 
 
-struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYTE id) {
+struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, UBYTE id) {
 
-    struct AROSXClassController *arosxclass_this_controller;
+    struct AROSXClassController *arosxc;
 
-    arosxclass_this_controller = AllocVec(sizeof(struct AROSXClassController), MEMF_ANY|MEMF_CLEAR);
+    arosxc = AllocVec(sizeof(struct AROSXClassController), MEMF_ANY|MEMF_CLEAR);
 
-    if(arosxclass_this_controller == NULL) {
+    if(arosxc == NULL) {
         mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Failed to create new controller structure for controller %01x\n", id));
         return NULL;
     } else {
-        arosxclass_this_controller->id = id;
+        arosxc->id = id;
 
-        arosxclass_this_controller->status.connected = FALSE;
-        arosxclass_this_controller->status.wireless = FALSE;
-        arosxclass_this_controller->status.signallost = FALSE;
+        arosxc->status.connected = FALSE;
+        arosxc->status.wireless = FALSE;
+        arosxc->status.signallost = FALSE;
 
-        mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Created new controller structure %04lx for controller %01x\n", arosxclass_this_controller, arosxclass_this_controller->id));
+        NEWLIST(&arosxc->event_port_list);
 
-        if (arosxclass_this_controller->nch_TimerMP = CreatePort(NULL, 0)) {
-            if (arosxclass_this_controller->nch_TimerIO = (struct timerequest *)CreateExtIO(arosxclass_this_controller->nch_TimerMP, sizeof(struct timerequest))) {
-                if (!(OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)arosxclass_this_controller->nch_TimerIO, 0))) {
-                    arosxclass_this_controller->nch_TimerBase = arosxclass_this_controller->nch_TimerIO->tr_node.io_Device;
+        mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Created new controller structure %04lx for controller %01x\n", arosxc, arosxc->id));
+
+        if (arosxc->TimerMP = CreatePort(NULL, 0)) {
+            if (arosxc->TimerIO = (struct timerequest *)CreateExtIO(arosxc->TimerMP, sizeof(struct timerequest))) {
+                if (!(OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)arosxc->TimerIO, 0))) {
+                    arosxc->TimerBase = arosxc->TimerIO->tr_node.io_Device;
 
                     /*
                         Timestamp starts from zero once the first controller structure gets build
                     */
-                    if((nh->nh_tv_secs == 0)|(nh->nh_tv_micro == 0)) {
+                    if((arosxb->tv_secs == 0) && (arosxb->tv_micro == 0)) {
                         #undef  TimerBase
-                        #define TimerBase arosxclass_this_controller->nch_TimerBase
+                        #define TimerBase arosxc->TimerBase
                         struct timeval current;
                         GetSysTime(&current);
-                        nh->nh_tv_secs = current.tv_secs;
-                        nh->nh_tv_micro = current.tv_micro;
+                        arosxb->tv_secs = current.tv_secs;
+                        arosxb->tv_micro = current.tv_micro;
 
-                        mybug(-1,("Initial timestamp %u %u\n", nh->nh_tv_secs, nh->nh_tv_micro));
+                        mybug(-1,("Initial timestamp %u %u\n", arosxb->tv_secs, arosxb->tv_micro));
                     }
 
-                    arosxclass_this_controller->nch_tv_secs = nh->nh_tv_secs;
-                    arosxclass_this_controller->nch_tv_micro = nh->nh_tv_micro;
+                    arosxc->initial_tv_secs = arosxb->tv_secs;
+                    arosxc->initial_tv_micro = arosxb->tv_micro;
 
-                    FreeSignal(arosxclass_this_controller->nch_TimerMP->mp_SigBit);
-                    return arosxclass_this_controller;
+                    FreeSignal(arosxc->TimerMP->mp_SigBit);
+                    return arosxc;
                 }
-                DeleteExtIO((struct IORequest *)arosxclass_this_controller->nch_TimerIO);
+                DeleteExtIO((struct IORequest *)arosxc->TimerIO);
             }
-            DeletePort(arosxclass_this_controller->nch_TimerMP);
+            DeletePort(arosxc->TimerMP);
         }
     }
 
-    AROSXClass_DestroyController(nh, arosxclass_this_controller);    
+    AROSXClass_DestroyController(arosxb, arosxc);    
 
     return NULL;
 
@@ -407,85 +409,85 @@ struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR nh, UBYT
     Just does a FreeVec, no checks to see if someone is using it...
      - Implemented some sanity
 */
-void AROSXClass_DestroyController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller) {
+void AROSXClass_DestroyController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc) {
 
     UBYTE id;
 
-    if(arosxclass_this_controller != NULL) {
-        id = arosxclass_this_controller->id;
+    if(arosxc != NULL) {
+        id = arosxc->id;
 
-        ObtainSemaphore(&nh->nh_arosx_controller_lock);
+        ObtainSemaphore(&arosxb->arosxc_lock);
         if(id == 1) {
-            FreeVec(nh->nh_arosx_controller_1);
-            nh->nh_arosx_controller_1 = NULL;
+            FreeVec(arosxb->arosxc_1);
+            arosxb->arosxc_1 = NULL;
         }else if(id == 2) {
-            FreeVec(nh->nh_arosx_controller_2);
-            nh->nh_arosx_controller_2 = NULL;
+            FreeVec(arosxb->arosxc_2);
+            arosxb->arosxc_2 = NULL;
         }else if(id == 3) {
-            FreeVec(nh->nh_arosx_controller_3);
-            nh->nh_arosx_controller_3 = NULL;
+            FreeVec(arosxb->arosxc_3);
+            arosxb->arosxc_3 = NULL;
         }else if(id == 4) {
-            FreeVec(nh->nh_arosx_controller_4);
-            nh->nh_arosx_controller_4 = NULL;
+            FreeVec(arosxb->arosxc_4);
+            arosxb->arosxc_4 = NULL;
         }
-        ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+        ReleaseSemaphore(&arosxb->arosxc_lock);
     }else{
         mybug(-1, ("[AROSXClass] AROSXClass_DestroyController: Called on non existing controller...\n"));
     }
 }
 
-struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR nh) {
+struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb) {
 
-    struct AROSXClassController *arosxclass_this_controller;
-    arosxclass_this_controller = NULL;
+    struct AROSXClassController *arosxc;
+    arosxc = NULL;
 
-    ObtainSemaphore(&nh->nh_arosx_controller_lock);
+    ObtainSemaphore(&arosxb->arosxc_lock);
 
-    if(nh->nh_arosx_controller_count != 4) {
-        if(nh->nh_arosx_controller_1->status.connected == FALSE) {
-            arosxclass_this_controller = nh->nh_arosx_controller_1;
+    if(arosxb->arosxc_count != 4) {
+        if(arosxb->arosxc_1->status.connected == FALSE) {
+            arosxc = arosxb->arosxc_1;
             mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 1\n"));
-        }else if(nh->nh_arosx_controller_2->status.connected == FALSE) {
-            arosxclass_this_controller = nh->nh_arosx_controller_2;
+        }else if(arosxb->arosxc_2->status.connected == FALSE) {
+            arosxc = arosxb->arosxc_2;
             mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 2\n"));
-        }else if(nh->nh_arosx_controller_3->status.connected == FALSE) {
-            arosxclass_this_controller = nh->nh_arosx_controller_3;
+        }else if(arosxb->arosxc_3->status.connected == FALSE) {
+            arosxc = arosxb->arosxc_3;
             mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 3\n"));
-        }else if(nh->nh_arosx_controller_4->status.connected == FALSE) {
-            arosxclass_this_controller = nh->nh_arosx_controller_4;
+        }else if(arosxb->arosxc_4->status.connected == FALSE) {
+            arosxc = arosxb->arosxc_4;
             mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Assigned to controller number 4\n"));
         }else {
-            ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+            ReleaseSemaphore(&arosxb->arosxc_lock);
             mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: How did you get here? Failing...\n"));
             return NULL;
         }
     }else {
-        ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+        ReleaseSemaphore(&arosxb->arosxc_lock);
         mybug(-1, ("[AROSXClass] AROSXClass_ConnectController: Controller count exceeded, failing...\n"));
         return NULL;
     }
 
-    nh->nh_arosx_controller_count++;
+    arosxb->arosxc_count++;
 
-    arosxclass_this_controller->status.connected = TRUE;
+    arosxc->status.connected = TRUE;
 
-    ReleaseSemaphore(&nh->nh_arosx_controller_lock);
+    ReleaseSemaphore(&arosxb->arosxc_lock);
 
-    return arosxclass_this_controller;
+    return arosxc;
 
 }
 
-void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassController *arosxclass_this_controller) {
+void AROSXClass_DisconnectController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc) {
 
-    if(arosxclass_this_controller != NULL) {
-        ObtainSemaphore(&nh->nh_arosx_controller_lock);
+    if(arosxc != NULL) {
+        ObtainSemaphore(&arosxb->arosxc_lock);
 
-        nh->nh_arosx_controller_count--;
+        arosxb->arosxc_count--;
 
-        arosxclass_this_controller->status.connected = FALSE;
-        arosxclass_this_controller->controller_type = AROSX_CONTROLLER_TYPE_UNKNOWN;
-        ReleaseSemaphore(&nh->nh_arosx_controller_lock);
-        mybug(-1, ("[AROSXClass] AROSXClass_DisconnectController: Disconnected controller number %01x\n", arosxclass_this_controller->id));
+        arosxc->status.connected = FALSE;
+        arosxc->controller_type = AROSX_CONTROLLER_TYPE_UNKNOWN;
+        ReleaseSemaphore(&arosxb->arosxc_lock);
+        mybug(-1, ("[AROSXClass] AROSXClass_DisconnectController: Disconnected controller number %01x\n", arosxc->id));
     }
 
 }
@@ -493,16 +495,16 @@ void AROSXClass_DisconnectController(LIBBASETYPEPTR nh, struct AROSXClassControl
 /**************************************************************************/
 
 #undef  ps
-#define ps nch->nch_Base
+#define ps arosxc->Base
 #undef  TimerBase
-#define TimerBase nch->nch_TimerBase
+#define TimerBase arosxc->TimerBase
 
 /* /// "nHidTask()" */
 AROS_UFH0(void, nHidTask)
 {
     AROS_USERFUNC_INIT
 
-    struct AROSXClassController *nch;
+    struct AROSXClassController *arosxc;
 
     struct PsdPipe *pp;
 
@@ -516,41 +518,41 @@ AROS_UFH0(void, nHidTask)
     ULONG len;
 
     /*
-        This does not allocate nch, it is already present. It only fetches it from the task tc_UserData.
+        This does not allocate arosxc, it is already present. It only fetches it from the task tc_UserData.
          - Currently code assumes controller to be a gamepad
     */
-    if((nch = nAllocHid()))
+    if((arosxc = nAllocHid()))
     {
 
-        nch->nch_TimerMP->mp_SigBit = AllocSignal(-1);
-        nch->nch_TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigBit = nch->nch_TimerMP->mp_SigBit;
-        nch->nch_TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
+        arosxc->TimerMP->mp_SigBit = AllocSignal(-1);
+        arosxc->TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigBit = arosxc->TimerMP->mp_SigBit;
+        arosxc->TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
-    	epinbuf = nch->nch_EPInBuf;
-		ep0buf  = nch->nch_EP0Buf;
+    	epinbuf = arosxc->EPInBuf;
+		ep0buf  = arosxc->EP0Buf;
 
-        nch->status.signallost = TRUE;
+        arosxc->status.signallost = TRUE;
 
         Forbid();
-        if(nch->nch_ReadySigTask)
+        if(arosxc->ReadySigTask)
         {
-            Signal(nch->nch_ReadySigTask, 1L<<nch->nch_ReadySignal);
+            Signal(arosxc->ReadySigTask, 1L<<arosxc->ReadySignal);
         }
         Permit();
-        sigmask = (1L<<nch->nch_TaskMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
+        sigmask = (1L<<arosxc->TaskMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
 
         psdDelayMS(2000);
 
-        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_VENDOR|URTF_INTERFACE, 0x01, 0x0100, 0x00);
+        psdPipeSetup(arosxc->EP0Pipe, URTF_IN|URTF_VENDOR|URTF_INTERFACE, 0x01, 0x0100, 0x00);
         do {
-        	ioerr = psdDoPipe(nch->nch_EP0Pipe, ep0buf, 20);
+        	ioerr = psdDoPipe(arosxc->EP0Pipe, ep0buf, 20);
     	} while(ioerr);
 
     	mybug(-1, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
             	    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
         	        ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
 
-        nch->status.wireless = (ep0buf[18]&(1<<0))? TRUE:FALSE;
+        arosxc->status.wireless = (ep0buf[18]&(1<<0))? TRUE:FALSE;
 
 		/*
 			:) First
@@ -565,7 +567,7 @@ AROS_UFH0(void, nHidTask)
             Wired Logitech F310
             EP0: 00 14 ff f7 ff ff c0 ff c0 ff c0 ff c0 ff 00 00 00 00 00 00
 
-            XInput descriptors for various gamepads, we have one for this interface in *nch_xinput_desc as a UBYTE array
+            XInput descriptors for various gamepads, we have one for this interface in *xinput_desc as a UBYTE array
              - Check if it's an index to the bitmask
 
             [Gamepad F710 descriptors, wireless]
@@ -595,11 +597,11 @@ AROS_UFH0(void, nHidTask)
         */
 
     	UBYTE *bufout;
-    	bufout = nch->nch_EPOutBuf;
+    	bufout = arosxc->EPOutBuf;
 
     	bufout[0] = 0x01;
     	bufout[1] = 0x03;
-    	bufout[2] = nch->id + 1;
+    	bufout[2] = arosxc->id + 1;
     	bufout[3] = 0x00;
     	bufout[4] = 0x00;
     	bufout[5] = 0x00;
@@ -610,30 +612,30 @@ AROS_UFH0(void, nHidTask)
     	bufout[10] = 0x00;
 		bufout[11] = 0x00;
 
-    	psdDoPipe(nch->nch_EPOutPipe, bufout, 12);
+    	psdDoPipe(arosxc->EPOutPipe, bufout, 12);
 
-		psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
+		psdSendPipe(arosxc->EPInPipe, epinbuf, 20);
         do
         {
             sigs = Wait(sigmask);
-            while((pp = (struct PsdPipe *) GetMsg(nch->nch_TaskMsgPort)))
+            while((pp = (struct PsdPipe *) GetMsg(arosxc->TaskMsgPort)))
             {
-                if(pp == nch->nch_EPInPipe)
+                if(pp == arosxc->EPInPipe)
                 {
                     if(!(ioerr = psdGetPipeError(pp)))
                     {
                         len = psdGetPipeActual(pp);
 
-                        if(Gamepad_ParseMsg(nch, epinbuf, len)) {
-                            mybug(-1,("Timestamp %u #%x\n", nch->nch_arosx_gamepad.Timestamp, nch->id));
+                        if(Gamepad_ParseMsg(arosxc, epinbuf, len)) {
+                            mybug(0,("Timestamp %u #%x\n", arosxc->arosx_gamepad.Timestamp, arosxc->id));
                         }
 
                         /* Wait */
                         /*
-                        nch->nch_TimerIO->tr_node.io_Command = TR_ADDREQUEST;
-                        nch->nch_TimerIO->tr_time.tv_secs = 0;
-                        nch->nch_TimerIO->tr_time.tv_micro = 1000;
-                        DoIO((struct IORequest *)nch->nch_TimerIO);
+                        arosxc->TimerIO->tr_node.io_Command = TR_ADDREQUEST;
+                        arosxc->TimerIO->tr_time.tv_secs = 0;
+                        arosxc->TimerIO->tr_time.tv_micro = 1000;
+                        DoIO((struct IORequest *)arosxc->TimerIO);
                         */
 
                     } else {
@@ -645,15 +647,15 @@ AROS_UFH0(void, nHidTask)
                     		   - Check if response is the same and not much time has elapsed between and set some babble flag and force wait between calls
                     */
                     //psdDelayMS(1);
-                    psdSendPipe(nch->nch_EPInPipe, epinbuf, 20);
+                    psdSendPipe(arosxc->EPInPipe, epinbuf, 20);
                     break;
                 }
             }
         } while(!(sigs & SIGBREAKF_CTRL_C));
         mybug(-1, ("Going down the river!\n"));
-        psdAbortPipe(nch->nch_EPInPipe);
-        psdWaitPipe(nch->nch_EPInPipe);
-        nFreeHid(nch);
+        psdAbortPipe(arosxc->EPInPipe);
+        psdWaitPipe(arosxc->EPInPipe);
+        nFreeHid(arosxc);
     }
     
     AROS_USERFUNC_EXIT
@@ -661,12 +663,12 @@ AROS_UFH0(void, nHidTask)
 /* \\\ */
 
 /* /// "Gamepad_ParseMsg()" */
-BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
+BOOL Gamepad_ParseMsg(struct AROSXClassController *arosxc, UBYTE *buf, ULONG len) {
 
     struct AROSX_GAMEPAD  arosx_gamepad_new;
 
     struct AROSX_GAMEPAD *arosx_gamepad;
-    arosx_gamepad = &nch->nch_arosx_gamepad;
+    arosx_gamepad = &arosxc->arosx_gamepad;
 
     struct timeval current;
 
@@ -723,7 +725,7 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
     /*
         Works at least with Logitech F710
     */
-	nch->status.signallost = (buf[14]&(1<<4))? FALSE:TRUE;
+	arosxc->status.signallost = (buf[14]&(1<<4))? FALSE:TRUE;
 
  	/*
     	This will map everything according to Microsoft game controller API
@@ -773,7 +775,7 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
 
     /* Rumble effect
     UBYTE *bufout;
-    bufout = nch->nch_EPOutBuf;
+    bufout = arosxc->EPOutBuf;
 
     bufout[0] = 0x00;
     bufout[1] = 0x08;
@@ -783,17 +785,17 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
     bufout[5] = 0x00;
     bufout[6] = 0x00;
     bufout[7] = 0x00;
-    psdDoPipe(nch->nch_EPOutPipe, bufout, 8);
+    psdDoPipe(arosxc->EPOutPipe, bufout, 8);
     */
 
     if(ret) {
         GetSysTime(&current);
 
-        arosx_gamepad->Timestamp = (ULONG)((((current.tv_secs-nch->nch_tv_secs) * 1000000) + (current.tv_micro-nch->nch_tv_micro))/1000);
+        arosx_gamepad->Timestamp = (ULONG)((((current.tv_secs-arosxc->initial_tv_secs) * 1000000) + (current.tv_micro-arosxc->initial_tv_micro))/1000);
 
-        if(nch->nch_GUITask)
+        if(arosxc->GUITask)
         {
-            Signal(nch->nch_GUITask, (ULONG) (1<<nch->nch_TrackingSignal));
+            Signal(arosxc->GUITask, (ULONG) (1<<arosxc->TrackingSignal));
         }
     }
 
@@ -806,128 +808,128 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len) {
 struct AROSXClassController * nAllocHid(void)
 {
     struct Task *thistask;
-    struct AROSXClassController *nch;
+    struct AROSXClassController *arosxc;
 
     thistask = FindTask(NULL);
-    nch = thistask->tc_UserData;
+    arosxc = thistask->tc_UserData;
     do
     {
-        if(!(nch->nch_Base = OpenLibrary("poseidon.library", 4)))
+        if(!(arosxc->Base = OpenLibrary("poseidon.library", 4)))
         {
             Alert(AG_OpenLib);
             break;
         }
-        psdGetAttrs(PGA_INTERFACE, nch->nch_Interface,
-                    IFA_Config, &nch->nch_Config,
-                    IFA_InterfaceNum, &nch->nch_IfNum,
+        psdGetAttrs(PGA_INTERFACE, arosxc->Interface,
+                    IFA_Config, &arosxc->Config,
+                    IFA_InterfaceNum, &arosxc->IfNum,
                     TAG_END);
-        psdGetAttrs(PGA_CONFIG, nch->nch_Config,
-                    CA_Device, &nch->nch_Device,
+        psdGetAttrs(PGA_CONFIG, arosxc->Config,
+                    CA_Device, &arosxc->Device,
                     TAG_END);
 
-        nch->nch_EPIn = psdFindEndpoint(nch->nch_Interface, NULL,
+        arosxc->EPIn = psdFindEndpoint(arosxc->Interface, NULL,
                                        EA_IsIn, TRUE,
                                        EA_TransferType, USEAF_INTERRUPT,
                                        TAG_END);
 
-        nch->nch_EPOut = psdFindEndpoint(nch->nch_Interface, NULL,
+        arosxc->EPOut = psdFindEndpoint(arosxc->Interface, NULL,
                                        EA_IsIn, FALSE,
                                        EA_TransferType, USEAF_INTERRUPT,
                                        TAG_END);
 
-        if((!nch->nch_EPIn)|(!nch->nch_EPOut))
+        if((!arosxc->EPIn)|(!arosxc->EPOut))
         {
             mybug(1, ("Ooops!?! No Endpoints defined?\n"));
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
                            "Failed to get endpoints!");
             break;
         }
-        if((nch->nch_InpMsgPort = CreateMsgPort()))
+        if((arosxc->InpMsgPort = CreateMsgPort()))
         {
-            if((nch->nch_InpIOReq = (struct IOStdReq *) CreateIORequest(nch->nch_InpMsgPort, sizeof(struct IOStdReq))))
+            if((arosxc->InpIOReq = (struct IOStdReq *) CreateIORequest(arosxc->InpMsgPort, sizeof(struct IOStdReq))))
             {
-                if(!OpenDevice("input.device", 0, (struct IORequest *) nch->nch_InpIOReq, 0))
+                if(!OpenDevice("input.device", 0, (struct IORequest *) arosxc->InpIOReq, 0))
                 {
-                    nch->nch_InputBase = (struct Library *) nch->nch_InpIOReq->io_Device;
-                    if((nch->nch_TaskMsgPort = CreateMsgPort()))
+                    arosxc->InputBase = (struct Library *) arosxc->InpIOReq->io_Device;
+                    if((arosxc->TaskMsgPort = CreateMsgPort()))
                     {
-                        if((nch->nch_EP0Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, NULL)))
+                        if((arosxc->EP0Pipe = psdAllocPipe(arosxc->Device, arosxc->TaskMsgPort, NULL)))
                         {
-                            if((nch->nch_EPInPipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EPIn)))
+                            if((arosxc->EPInPipe = psdAllocPipe(arosxc->Device, arosxc->TaskMsgPort, arosxc->EPIn)))
                             {
-                                psdSetAttrs(PGA_PIPE, nch->nch_EPInPipe,
+                                psdSetAttrs(PGA_PIPE, arosxc->EPInPipe,
                                             PPA_NakTimeout, FALSE,
                                             PPA_AllowRuntPackets, TRUE,
                                             TAG_END);
 
-                                if((nch->nch_EP0Buf = psdAllocVec(100)))
+                                if((arosxc->EP0Buf = psdAllocVec(100)))
                                 {
-                                	if((nch->nch_EPInBuf = psdAllocVec(100)))
+                                	if((arosxc->EPInBuf = psdAllocVec(100)))
                                 	{
-                                    	if((nch->nch_EPOutPipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EPOut)))
+                                    	if((arosxc->EPOutPipe = psdAllocPipe(arosxc->Device, arosxc->TaskMsgPort, arosxc->EPOut)))
                                     	{
-                                        	psdSetAttrs(PGA_PIPE, nch->nch_EPOutPipe,
+                                        	psdSetAttrs(PGA_PIPE, arosxc->EPOutPipe,
                                             	PPA_NakTimeout, FALSE,
                                             	PPA_AllowRuntPackets, TRUE,
                                            		TAG_END);
 
-                                        	if((nch->nch_EPOutBuf = psdAllocVec(100)))
+                                        	if((arosxc->EPOutBuf = psdAllocVec(100)))
                                         	{
-                                            	nch->nch_Task = thistask;
-                                            	return(nch);
+                                            	arosxc->Task = thistask;
+                                            	return(arosxc);
                                         	}
-                                        	psdFreePipe(nch->nch_EPOutPipe);
+                                        	psdFreePipe(arosxc->EPOutPipe);
                                     	}
-                                    	psdFreeVec(nch->nch_EPInBuf);
+                                    	psdFreeVec(arosxc->EPInBuf);
                                 	}
-                                	psdFreeVec(nch->nch_EP0Buf);
+                                	psdFreeVec(arosxc->EP0Buf);
                             	}
-                                psdFreePipe(nch->nch_EPInPipe);
+                                psdFreePipe(arosxc->EPInPipe);
                             }
-                            psdFreePipe(nch->nch_EP0Pipe);
+                            psdFreePipe(arosxc->EP0Pipe);
                         }
-                        DeleteMsgPort(nch->nch_TaskMsgPort);
+                        DeleteMsgPort(arosxc->TaskMsgPort);
                     }
-                    CloseDevice((struct IORequest *) nch->nch_InpIOReq);
+                    CloseDevice((struct IORequest *) arosxc->InpIOReq);
                 }
-                DeleteIORequest((struct IORequest *) nch->nch_InpIOReq);
+                DeleteIORequest((struct IORequest *) arosxc->InpIOReq);
             }
-            DeleteMsgPort(nch->nch_InpMsgPort);
+            DeleteMsgPort(arosxc->InpMsgPort);
         }
     } while(FALSE);
-    CloseLibrary(nch->nch_Base);
+    CloseLibrary(arosxc->Base);
     Forbid();
-    nch->nch_Task = NULL;
-    if(nch->nch_ReadySigTask)
+    arosxc->Task = NULL;
+    if(arosxc->ReadySigTask)
     {
-        Signal(nch->nch_ReadySigTask, 1L<<nch->nch_ReadySignal);
+        Signal(arosxc->ReadySigTask, 1L<<arosxc->ReadySignal);
     }
     return(NULL);
 }
 /* \\\ */
 
 /* /// "nFreeHid()" */
-void nFreeHid(struct AROSXClassController *nch)
+void nFreeHid(struct AROSXClassController *arosxc)
 {
-    psdFreeVec(nch->nch_EPOutBuf);
-    psdFreeVec(nch->nch_EPInBuf);
+    psdFreeVec(arosxc->EPOutBuf);
+    psdFreeVec(arosxc->EPInBuf);
 
-    psdFreePipe(nch->nch_EPOutPipe);
-    psdFreePipe(nch->nch_EPInPipe);
-    psdFreePipe(nch->nch_EP0Pipe);
+    psdFreePipe(arosxc->EPOutPipe);
+    psdFreePipe(arosxc->EPInPipe);
+    psdFreePipe(arosxc->EP0Pipe);
 
-    DeleteMsgPort(nch->nch_TaskMsgPort);
-    CloseDevice((struct IORequest *) nch->nch_InpIOReq);
-    DeleteIORequest((struct IORequest *) nch->nch_InpIOReq);
-    DeleteMsgPort(nch->nch_InpMsgPort);
+    DeleteMsgPort(arosxc->TaskMsgPort);
+    CloseDevice((struct IORequest *) arosxc->InpIOReq);
+    DeleteIORequest((struct IORequest *) arosxc->InpIOReq);
+    DeleteMsgPort(arosxc->InpMsgPort);
 
-    CloseLibrary(nch->nch_Base);
+    CloseLibrary(arosxc->Base);
 
     Forbid();
-    nch->nch_Task = NULL;
-    if(nch->nch_ReadySigTask)
+    arosxc->Task = NULL;
+    if(arosxc->ReadySigTask)
     {
-        Signal(nch->nch_ReadySigTask, 1L<<nch->nch_ReadySignal);
+        Signal(arosxc->ReadySigTask, 1L<<arosxc->ReadySignal);
     }
 }
 /* \\\ */
@@ -937,7 +939,7 @@ void nFreeHid(struct AROSXClassController *nch)
 #undef ps
 
 /* /// "nOpenCfgWindow()" */
-LONG nOpenCfgWindow(struct AROSXClassController *nch)
+LONG nOpenCfgWindow(struct AROSXClassController *arosxc)
 {
     struct Library *ps;
     mybug(10, ("Opening GUI...\n"));
@@ -946,9 +948,9 @@ LONG nOpenCfgWindow(struct AROSXClassController *nch)
         return(FALSE);
     }
     Forbid();
-    if(!nch->nch_GUITask)
+    if(!arosxc->GUITask)
     {
-        if((nch->nch_GUITask = psdSpawnSubTask(MOD_NAME_STRING " GUI", nGUITask, nch)))
+        if((arosxc->GUITask = psdSpawnSubTask(MOD_NAME_STRING " GUI", nGUITask, arosxc)))
         {
             Permit();
             CloseLibrary(ps);
@@ -960,401 +962,3 @@ LONG nOpenCfgWindow(struct AROSXClassController *nch)
     return(FALSE);
 }
 /* \\\ */
-
-#undef ps
-#undef MUIMasterBase
-#define ps PsdBase
-#define MUIMasterBase MUIBase
-
-/* /// "nGUITask()" */
-AROS_UFH0(void, nGUITask)
-{
-    AROS_USERFUNC_INIT
-
-    struct Task *thistask;
-    struct AROSXClassBase *nh;
-    struct AROSXClassController *nch;
-
-    struct Library *MUIBase;
-    struct Library *PsdBase;
-
-    thistask = FindTask(NULL);
-    nch = thistask->tc_UserData;
-    nh = nch->nch_ClsBase;
-
-    struct AROSX_GAMEPAD *arosx_gamepad;
-    arosx_gamepad = &nch->nch_arosx_gamepad;
-
-    ++nh->nh_Library.lib_OpenCnt;
-    if((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
-    {
-        if((ps = OpenLibrary("poseidon.library", 4)))
-        {
-
-            nch->nch_App = ApplicationObject,
-            MUIA_Application_Title      , (IPTR)libname,
-            MUIA_Application_Version    , (IPTR)VERSION_STRING,
-            MUIA_Application_Copyright  , (IPTR)"©2018 The AROS Development Team",
-            MUIA_Application_Author     , (IPTR)"The AROS Development Team",
-            MUIA_Application_Description, (IPTR)"Settings for the arosx.class",
-            MUIA_Application_Base       , (IPTR)"AROSX",
-            MUIA_Application_HelpFile   , (IPTR)"HELP:Poseidon.guide",
-            MUIA_Application_Menustrip  , (IPTR)MenustripObject,
-                Child, (IPTR)MenuObjectT((IPTR)"Project"),
-                    Child, (IPTR)(nch->nch_AboutMI = MenuitemObject,
-                        MUIA_Menuitem_Title, (IPTR)"About...",
-                        MUIA_Menuitem_Shortcut, (IPTR)"?",
-                        End),
-                    End,
-                Child, (IPTR)MenuObjectT((IPTR)"Settings"),
-                    Child, (IPTR)(nch->nch_UseMI = MenuitemObject,
-                        MUIA_Menuitem_Title, (IPTR)"Save",
-                        MUIA_Menuitem_Shortcut, (IPTR)"S",
-                        End),
-                    Child, (IPTR)MenuitemObject,
-                        MUIA_Menuitem_Title, (IPTR)NM_BARLABEL,
-                        End,
-                    Child, (IPTR)(nch->nch_MUIPrefsMI = MenuitemObject,
-                        MUIA_Menuitem_Title, (IPTR)"MUI Settings",
-                        MUIA_Menuitem_Shortcut, (IPTR)"M",
-                        End),
-                    End,
-                End,
-
-            SubWindow, (IPTR)(nch->nch_MainWindow = WindowObject,
-                MUIA_Window_ID   , MAKE_ID('M','A','I','N'),
-                MUIA_Window_Title, (IPTR)nch->name,
-                MUIA_HelpNode, (IPTR)libname,
-
-                WindowContents, (IPTR)VGroup,
-                    Child, (IPTR)(nch->nch_GamepadGroupObject = ColGroup(2),
-                    	GroupFrameT("Gamepad"),
-                    	MUIA_Disabled, TRUE,
-
-
-                    	Child, (IPTR)HGroup,
-            			Child, (IPTR)(nch->nch_GamepadObject_button_a = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_button_b = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_button_x = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_button_y = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_button_ls = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_button_rs = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_left_thumb = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_right_thumb = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_dpad_left = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_dpad_right = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_dpad_up = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_dpad_down = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_button_back = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-
-            			Child, (IPTR)(nch->nch_GamepadObject_button_start = ImageObject,
-                			MUIA_Image_FontMatch, TRUE,
-                			MUIA_Selected, FALSE,
-                			MUIA_ShowSelState, FALSE,
-                			MUIA_Image_Spec, MUII_RadioButton,
-                			MUIA_Frame, MUIV_Frame_None,
-                   			End),
-                        End,
-
-                        Child, (IPTR)(nch->nch_GamepadObject_left_trigger = GaugeObject,
-                            GaugeFrame,
-                            MUIA_Gauge_Max, 0xff,
-                            MUIA_Gauge_InfoText, (IPTR)"%lx",
-                            MUIA_Gauge_Horiz, TRUE,
-                            MUIA_Gauge_Current, 0,
-                            End),
-
-                        Child, (IPTR)(nch->nch_GamepadObject_right_trigger = GaugeObject,
-                            GaugeFrame,
-                            MUIA_Gauge_Max, 0xff,
-                            MUIA_Gauge_InfoText, (IPTR)"%lx",
-                            MUIA_Gauge_Horiz, TRUE,
-                            MUIA_Gauge_Current, 0,
-                            End),
-
-                        Child, (IPTR)(nch->nch_GamepadObject_left_stick_x = GaugeObject,
-                            GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
-                            MUIA_Gauge_InfoText, (IPTR)"%lx",
-                            MUIA_Gauge_Horiz, TRUE,
-                            MUIA_Gauge_Current, 0,
-                            End),
-
-                        Child, (IPTR)(nch->nch_GamepadObject_left_stick_y = GaugeObject,
-                            GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
-                            MUIA_Gauge_InfoText, (IPTR)"%lx",
-                            MUIA_Gauge_Horiz, TRUE,
-                            MUIA_Gauge_Current, 0,
-                            End),
-
-                        Child, (IPTR)(nch->nch_GamepadObject_right_stick_x = GaugeObject,
-                            GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
-                            MUIA_Gauge_InfoText, (IPTR)"%lx",
-                            MUIA_Gauge_Horiz, TRUE,
-                            MUIA_Gauge_Current, 0,
-                            End),
-
-                        Child, (IPTR)(nch->nch_GamepadObject_right_stick_y = GaugeObject,
-                            GaugeFrame,
-                            MUIA_Gauge_Max, 0xffff,
-                            MUIA_Gauge_InfoText, (IPTR)"%lx",
-                            MUIA_Gauge_Horiz, TRUE,
-                            MUIA_Gauge_Current, 0,
-                            End),
-
-                        End),
-                    Child, (IPTR)VSpace(0),
-                    Child, (IPTR)HGroup,
-                        MUIA_Group_SameWidth, TRUE,
-                        Child, (IPTR)(nch->nch_UseObj = TextObject, ButtonFrame,
-                            MUIA_Background, MUII_ButtonBack,
-                            MUIA_CycleChain, 1,
-                            MUIA_InputMode, MUIV_InputMode_RelVerify,
-                            MUIA_Text_Contents, (IPTR)"\33c Save ",
-                            End),
-                        Child, (IPTR)(nch->nch_CloseObj = TextObject, ButtonFrame,
-                            MUIA_Background, MUII_ButtonBack,
-                            MUIA_CycleChain, 1,
-                            MUIA_InputMode, MUIV_InputMode_RelVerify,
-                            MUIA_Text_Contents, (IPTR)"\33c Use ",
-                            End),
-                        End,
-                    End,
-                End),
-            End;
-
-            if(nch->nch_App) 
-            {
-                DoMethod(nch->nch_MainWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-                         nch->nch_App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-                DoMethod(nch->nch_UseObj, MUIM_Notify, MUIA_Pressed, FALSE,
-                         nch->nch_App, 2, MUIM_Application_ReturnID, ID_STORE_CONFIG);
-                DoMethod(nch->nch_CloseObj, MUIM_Notify, MUIA_Pressed, FALSE,
-                         nch->nch_App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
-                DoMethod(nch->nch_AboutMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-                         nch->nch_App, 2, MUIM_Application_ReturnID, ID_ABOUT);
-                DoMethod(nch->nch_UseMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-                         nch->nch_App, 2, MUIM_Application_ReturnID, ID_STORE_CONFIG);
-                DoMethod(nch->nch_MUIPrefsMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
-                         nch->nch_App, 2, MUIM_Application_OpenConfigWindow, 0);
-
-
-                IPTR  isopen = 0;
-                IPTR  iconify = 0;
-                ULONG sigs;
-                ULONG sigmask;
-                LONG retid;
-
-                get(nch->nch_App, MUIA_Application_Iconified, &iconify);
-                set(nch->nch_MainWindow, MUIA_Window_Open, TRUE);
-                get(nch->nch_MainWindow, MUIA_Window_Open, &isopen);
-
-                if((isopen || (!iconify)))
-                {
-                    nch->nch_TrackingSignal = AllocSignal(-1);
-                    sigmask = (1<<nch->nch_TrackingSignal);
-                    do
-                    {
-                        retid = DoMethod(nch->nch_App, MUIM_Application_NewInput, &sigs);
-                        switch(retid)
-                        {
-                            case ID_ABOUT:
-                                MUI_RequestA(nch->nch_App, nch->nch_MainWindow, 0, NULL, "Fabulous!", VERSION_STRING, NULL);
-                                break;
-                        }
-                        if(retid == MUIV_Application_ReturnID_Quit)
-                        {
-                            break;
-                        }
-                        if(sigs)
-                        {
-                            sigs = Wait(sigs | sigmask | SIGBREAKF_CTRL_C);
-                            if(sigs & SIGBREAKF_CTRL_C)
-                            {
-                                break;
-                            }
-
-							if((ULONG)(1<<nch->nch_TrackingSignal)) {
-
-                                /* TODO: Check if the GUI goes to sleep when the controller says it's sleepy */
-								if((nch->status.wireless)&&(nch->status.signallost)) {
-                                    set(nch->nch_GamepadGroupObject, MUIA_Disabled, TRUE);
-                                    //psdDelayMS(10);
-                                } else {
-                                    set(nch->nch_GamepadGroupObject, MUIA_Disabled, FALSE);
-
-                                    set(nch->nch_GamepadObject_button_a, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_A));
-                                    set(nch->nch_GamepadObject_button_b, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_B));
-                                    set(nch->nch_GamepadObject_button_x, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_X));
-                                    set(nch->nch_GamepadObject_button_y, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_Y));
-                                    set(nch->nch_GamepadObject_button_ls, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_SHOULDER));
-                                    set(nch->nch_GamepadObject_button_rs, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_SHOULDER));
-                                    set(nch->nch_GamepadObject_left_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_THUMB));
-                                    set(nch->nch_GamepadObject_right_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_THUMB));
-                                    set(nch->nch_GamepadObject_dpad_left, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_LEFT));
-									set(nch->nch_GamepadObject_dpad_right, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_RIGHT));
-									set(nch->nch_GamepadObject_dpad_up, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_UP));
-									set(nch->nch_GamepadObject_dpad_down, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_DOWN));
-									set(nch->nch_GamepadObject_button_back, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_BACK));
-									set(nch->nch_GamepadObject_button_start, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_START));
-
-                                    set(nch->nch_GamepadObject_left_trigger, MUIA_Gauge_Current, (arosx_gamepad->LeftTrigger));
-                                    set(nch->nch_GamepadObject_right_trigger, MUIA_Gauge_Current, (arosx_gamepad->RightTrigger));
-
-                            		if(arosx_gamepad->ThumbLX>=0x8000) {
-                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbLX-0x8000));
-                            		} else {
-                                		set(nch->nch_GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLX));
-                            		}
-
-                            		if(arosx_gamepad->ThumbLY>=0x8000) {
-                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbLY-0x8000));
-                            		} else {
-                                		set(nch->nch_GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLY));
-                            		}
-
-                            		if(arosx_gamepad->ThumbRX>=0x8000) {
-                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbRX-0x8000));
-                            		} else {
-                                		set(nch->nch_GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRX));
-                            		}
-
-                            		if(arosx_gamepad->ThumbRY>=0x8000) {
-                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbRY-0x8000));
-                            		} else {
-                                		set(nch->nch_GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRY));
-                            		}
-
-                            		/* 100Hz max. GUI update frequency should be enough for everyone... */
-                            		//psdDelayMS(10);
-                            	}
-                            }
-                        }
-                    } while(TRUE);
-                    set(nch->nch_MainWindow, MUIA_Window_Open, FALSE);
-                }
-
-                if(nch->nch_App)
-                {
-                    MUI_DisposeObject(nch->nch_App);
-                    nch->nch_App = NULL;
-                }
-
-                if(MUIMasterBase)
-                {
-                    CloseLibrary(MUIMasterBase);
-                    MUIMasterBase = NULL;
-                }
-
-                if(ps)
-                {
-                    CloseLibrary(ps);
-                    ps = NULL;
-                }
-            }
-        }
-    }
-
-    Forbid();
-    FreeSignal(nch->nch_TrackingSignal);
-    nch->nch_TrackingSignal = -1;
-    nch->nch_GUITask = NULL;
-    --nh->nh_Library.lib_OpenCnt;
-
-    AROS_USERFUNC_EXIT
-}
-/* \\\ */
-

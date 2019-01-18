@@ -8,16 +8,16 @@
 static const STRPTR libname = MOD_NAME_STRING;
 
 //struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *nh, struct PsdInterface *pif);
-//void usbReleaseInterfaceBinding(struct AROSXClassBase *nh, struct AROSXClassController *nch);
+//void usbReleaseInterfaceBinding(struct AROSXClassBase *nh, struct AROSXClassController *arosxc);
 
-BOOL Gamepad_ParseMsg(struct AROSXClassController *nch, UBYTE *buf, ULONG len);
+BOOL Gamepad_ParseMsg(struct AROSXClassController *arosxc, UBYTE *buf, ULONG len);
 
 struct AROSXClassController * nAllocHid(void);
-void nFreeHid(struct AROSXClassController *nch);
+void nFreeHid(struct AROSXClassController *arosxc);
 
-LONG nOpenCfgWindow(struct AROSXClassController *nch);
+LONG nOpenCfgWindow(struct AROSXClassController *arosxc);
 
-void nGUITaskCleanup(struct AROSXClassController *nch);
+void nGUITaskCleanup(struct AROSXClassController *arosxc);
 
 AROS_UFP0(void, nHidTask);
 AROS_UFP0(void, nGUITask);

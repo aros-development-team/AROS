@@ -20,137 +20,136 @@ struct ClsGlobalCfg
 
 struct AROSXBase {
     struct Library          arosx_LibNode;
-    struct AROSXClassBase  *arosx_ClsBase;
+    struct AROSXClassBase  *arosxb;
 };
 
 struct AROSXClassBase
 {
-    struct Library               nh_Library;     /* standard */
+    struct Library               Library;     /* standard */
 
-    struct Library              *nh_MUIBase;     /* MUI master base */
-    struct Library              *nh_PsdBase;     /* Poseidon base */
+    struct Library              *MUIBase;     /* MUI master base */
+    struct Library              *PsdBase;     /* Poseidon base */
 
-    struct AROSXBase            *nh_AROSXBase;
+    struct AROSXBase            *AROSXBase;
 
-    ULONG                        nh_tv_secs;
-    ULONG                        nh_tv_micro;
+    ULONG                        tv_secs;
+    ULONG                        tv_micro;
 
-    struct SignalSemaphore       nh_arosx_controller_lock;
+    UBYTE                        arosxc_count;
 
-    UBYTE                        nh_arosx_controller_count;
-
-    struct AROSXClassController *nh_arosx_controller_1;
-    struct AROSXClassController *nh_arosx_controller_2;
-    struct AROSXClassController *nh_arosx_controller_3;
-    struct AROSXClassController *nh_arosx_controller_4;
+    struct SignalSemaphore       arosxc_lock;
+    struct AROSXClassController *arosxc_1;
+    struct AROSXClassController *arosxc_2;
+    struct AROSXClassController *arosxc_3;
+    struct AROSXClassController *arosxc_4;
 
 };
 
 struct AROSXClassController
 {
-    struct Node         nch_Node;         /* Node linkage */
+    struct Node         Node;         /* Node linkage */
 
     UBYTE   id;
     UBYTE   name[64];
 
     UBYTE   controller_type;
 
-    UBYTE   battery_type;
-    UBYTE   battery_level;
-
-    ULONG                        nch_tv_secs;
-    ULONG                        nch_tv_micro;
+    ULONG                        initial_tv_secs;
+    ULONG                        initial_tv_micro;
 
     struct AROSXClassController_status {
         BOOL    connected;
 
         BOOL    wireless;
         BOOL    signallost;
+
+        UBYTE   battery_type;
+        UBYTE   battery_level;
     } status;
 
     union {
-        struct AROSX_GAMEPAD nch_arosx_gamepad;
+        struct AROSX_GAMEPAD arosx_gamepad;
     };
 
-    /*
-        Clean the rest of this nch stuff away
-    */
-    struct Device               *nch_TimerBase;
-    struct MsgPort              *nch_TimerMP;
-    struct timerequest          *nch_TimerIO;
+    struct List                  event_port_list;
 
-    struct AROSXClassBase  *nch_ClsBase;      /* Up linkage */
-    struct Library     *nch_Base;         /* Poseidon base */
-    struct PsdDevice   *nch_Device;       /* Up linkage */
-    struct PsdConfig   *nch_Config;       /* Up linkage */
-    struct PsdInterface *nch_Interface;   /* Up linkage */
+    struct Device               *TimerBase;
+    struct MsgPort              *TimerMP;
+    struct timerequest          *TimerIO;
 
-    struct PsdPipe     *nch_EP0Pipe;      /* Endpoint 0 pipe */
-    UBYTE              *nch_EP0Buf;       /* Packet buffer for EP0 */
+    struct AROSXClassBase  *arosxb;      /* Up linkage */
 
-    struct PsdEndpoint *nch_EPIn;         /* Endpoint 1 */
-    struct PsdPipe     *nch_EPInPipe;     /* Endpoint 1 pipe */
-    UBYTE              *nch_EPInBuf;      /* Packet buffer for EP1 */
+    struct Library     *Base;         /* Poseidon base */
+    struct PsdDevice   *Device;       /* Up linkage */
+    struct PsdConfig   *Config;       /* Up linkage */
+    struct PsdInterface *Interface;   /* Up linkage */
 
-    struct PsdEndpoint *nch_EPOut;         /* Endpoint 2 */
-    struct PsdPipe     *nch_EPOutPipe;     /* Endpoint 2 pipe */
-    UBYTE              *nch_EPOutBuf;      /* Packet buffer for EP2 */
+    struct PsdPipe     *EP0Pipe;      /* Endpoint 0 pipe */
+    UBYTE              *EP0Buf;       /* Packet buffer for EP0 */
 
-    struct Task        *nch_ReadySigTask; /* Task to send ready signal to */
-    LONG                nch_ReadySignal;  /* Signal to send when ready */
-    struct Task        *nch_Task;         /* Subtask */
-    struct MsgPort     *nch_TaskMsgPort;  /* Message Port of Subtask */
-    struct MsgPort     *nch_InpMsgPort;   /* input.device MsgPort */
-    struct IOStdReq    *nch_InpIOReq;     /* input.device IORequest */
-    struct InputEvent   nch_FakeEvent;    /* Input Event */
-    struct Library     *nch_InputBase;    /* Pointer to input.device base */
+    struct PsdEndpoint *EPIn;         /* Endpoint 1 */
+    struct PsdPipe     *EPInPipe;     /* Endpoint 1 pipe */
+    UBYTE              *EPInBuf;      /* Packet buffer for EP1 */
 
-    IPTR                nch_IfNum;        /* Interface Number */
+    struct PsdEndpoint *EPOut;         /* Endpoint 2 */
+    struct PsdPipe     *EPOutPipe;     /* Endpoint 2 pipe */
+    UBYTE              *EPOutBuf;      /* Packet buffer for EP2 */
 
-    STRPTR              nch_devname;
+    struct Task        *ReadySigTask; /* Task to send ready signal to */
+    LONG                ReadySignal;  /* Signal to send when ready */
+    struct Task        *Task;         /* Subtask */
+    struct MsgPort     *TaskMsgPort;  /* Message Port of Subtask */
+    struct MsgPort     *InpMsgPort;   /* input.device MsgPort */
+    struct IOStdReq    *InpIOReq;     /* input.device IORequest */
+    struct InputEvent   FakeEvent;    /* Input Event */
+    struct Library     *InputBase;    /* Pointer to input.device base */
 
-    struct PsdDescriptor *nch_pdd;
-    UBYTE                *nch_xinput_desc;
+    IPTR                IfNum;        /* Interface Number */
 
-    ULONG               nch_TrackingSignal;
+    STRPTR              devname;
 
-    struct Task        *nch_GUITask;       /* GUI Task */
-    Object             *nch_App;
-    Object             *nch_MainWindow;
-    Object             *nch_MidiMinOctaveObj;
-    Object             *nch_KeyMaxOctaveObj;
-    Object             *nch_AutoKeyUpObj;
-    Object             *nch_UseObj;
-    Object             *nch_CloseObj;
+    struct PsdDescriptor *pdd;
+    UBYTE                *xinput_desc;
 
-    Object             *nch_GamepadGroupObject;
-    Object             *nch_GamepadObject_button_a;
-    Object             *nch_GamepadObject_button_b;
-    Object             *nch_GamepadObject_button_x;
-    Object             *nch_GamepadObject_button_y;
-    Object             *nch_GamepadObject_button_ls;
-    Object             *nch_GamepadObject_button_rs;
-    Object             *nch_GamepadObject_left_thumb;
-    Object             *nch_GamepadObject_right_thumb;
+    ULONG               TrackingSignal;
 
-    Object             *nch_GamepadObject_dpad_left;
-    Object             *nch_GamepadObject_dpad_right;
-    Object             *nch_GamepadObject_dpad_up;
-    Object             *nch_GamepadObject_dpad_down;
+    struct Task        *GUITask;       /* GUI Task */
+    Object             *App;
+    Object             *MainWindow;
+    Object             *MidiMinOctaveObj;
+    Object             *KeyMaxOctaveObj;
+    Object             *AutoKeyUpObj;
+    Object             *UseObj;
+    Object             *CloseObj;
 
-    Object             *nch_GamepadObject_button_back;
-    Object             *nch_GamepadObject_button_start;
+    Object             *GamepadGroupObject;
+    Object             *GamepadObject_button_a;
+    Object             *GamepadObject_button_b;
+    Object             *GamepadObject_button_x;
+    Object             *GamepadObject_button_y;
+    Object             *GamepadObject_button_ls;
+    Object             *GamepadObject_button_rs;
+    Object             *GamepadObject_left_thumb;
+    Object             *GamepadObject_right_thumb;
 
-    Object             *nch_GamepadObject_left_trigger;
-    Object             *nch_GamepadObject_right_trigger;
-    Object             *nch_GamepadObject_left_stick_x;
-    Object             *nch_GamepadObject_left_stick_y;
-    Object             *nch_GamepadObject_right_stick_x;
-    Object             *nch_GamepadObject_right_stick_y;
+    Object             *GamepadObject_dpad_left;
+    Object             *GamepadObject_dpad_right;
+    Object             *GamepadObject_dpad_up;
+    Object             *GamepadObject_dpad_down;
 
-    Object             *nch_AboutMI;
-    Object             *nch_UseMI;
-    Object             *nch_MUIPrefsMI;
+    Object             *GamepadObject_button_back;
+    Object             *GamepadObject_button_start;
+
+    Object             *GamepadObject_left_trigger;
+    Object             *GamepadObject_right_trigger;
+    Object             *GamepadObject_left_stick_x;
+    Object             *GamepadObject_left_stick_y;
+    Object             *GamepadObject_right_stick_x;
+    Object             *GamepadObject_right_stick_y;
+
+    Object             *AboutMI;
+    Object             *UseMI;
+    Object             *MUIPrefsMI;
 
 };
 

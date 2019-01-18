@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 USER_LDFLAGS := -static
 
-FILES :=    arosx.class arosx.library debug
+FILES :=    arosx.class arosx.class.config.gui arosx.library debug
 
 #MM- kernel-usb-classes-arosx : kernel-usb-usbclass kernel-usb-poseidon-includes kernel-usb-classes-arosx-library
 
