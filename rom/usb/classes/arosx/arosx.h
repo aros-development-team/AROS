@@ -38,10 +38,15 @@ struct AROSXClassBase
     UBYTE                        arosxc_count;
 
     struct SignalSemaphore       arosxc_lock;
+
     struct AROSXClassController *arosxc_1;
     struct AROSXClassController *arosxc_2;
     struct AROSXClassController *arosxc_3;
     struct AROSXClassController *arosxc_4;
+
+    struct SignalSemaphore       event_lock;
+    struct List                  event_port_list;
+    struct MsgPort               event_reply_port;
 
 };
 
@@ -111,14 +116,14 @@ struct AROSXClassController
     struct PsdDescriptor *pdd;
     UBYTE                *xinput_desc;
 
-    ULONG               TrackingSignal;
-
     struct Task        *GUITask;       /* GUI Task */
+
+    /*
+        TODO: Make GUI task allocate these
+    */
+
     Object             *App;
     Object             *MainWindow;
-    Object             *MidiMinOctaveObj;
-    Object             *KeyMaxOctaveObj;
-    Object             *AutoKeyUpObj;
     Object             *UseObj;
     Object             *CloseObj;
 
