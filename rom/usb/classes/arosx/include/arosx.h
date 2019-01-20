@@ -32,4 +32,17 @@ struct AROSX_GAMEPAD {
     WORD    ThumbRY;
 };
 
+struct AROSX_EventHook {
+    struct Node         eh_Node;
+    struct MsgPort     *eh_MsgPort;
+    ULONG               eh_MsgMask;
+};
+
+struct AROSX_EventNote {
+    struct Message      en_Msg;
+    UWORD               en_Event;
+    APTR                en_Param1;
+    APTR                en_Param2;
+};
+
 #endif /* AROSX_LIBRARY_H */

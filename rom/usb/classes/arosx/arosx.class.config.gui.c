@@ -7,8 +7,9 @@
 */
 
 #include "debug.h"
-
 #include "arosx.class.h"
+
+#include <proto/arosx.h>
 
 #undef ps
 #undef MUIMasterBase
@@ -26,6 +27,7 @@ AROS_UFH0(void, nGUITask)
 
     struct Library *MUIBase;
     struct Library *PsdBase;
+    struct Library *AROSXBase;
 
     thistask = FindTask(NULL);
     arosxc = thistask->tc_UserData;
@@ -34,7 +36,25 @@ AROS_UFH0(void, nGUITask)
     struct AROSX_GAMEPAD *arosx_gamepad;
     arosx_gamepad = &arosxc->arosx_gamepad;
 
+    /*
+        TODO: Make use of OpenLibrary/CloseLibrary to keep track of lib open count...
+    */
     ++arosxb->Library.lib_OpenCnt;
+
+    struct AROSX_EventHook *arosx_eventhook;
+    struct MsgPort         *arosx_eventport;
+
+    if(AROSXBase = OpenLibrary("arosx.library", 0)) {
+        mybug(-1,("[AROSXClass GUI] arosx.library openened\n"));
+
+        arosx_eventport = CreateMsgPort();
+        arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, ((arosxc->id)<<26));
+
+    } else {
+        mybug(-1,("[AROSXClass GUI] arosx.library failed to open"));
+        return;
+    }
+
     if((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
     {
         if((ps = OpenLibrary("poseidon.library", 4)))
@@ -293,8 +313,7 @@ AROS_UFH0(void, nGUITask)
 
                 if((isopen || (!iconify)))
                 {
-                    arosxc->TrackingSignal = AllocSignal(-1);
-                    sigmask = (1<<arosxc->TrackingSignal);
+                    sigmask = (1UL<<arosx_eventport->mp_SigBit);
                     do
                     {
                         retid = DoMethod(arosxc->App, MUIM_Application_NewInput, &sigs);
@@ -316,59 +335,61 @@ AROS_UFH0(void, nGUITask)
                                 break;
                             }
 
-                            if((ULONG)(1<<arosxc->TrackingSignal)) {
-
-                                /* TODO: Check if the GUI goes to sleep when the controller says it's sleepy */
-                                if((arosxc->status.wireless)&&(arosxc->status.signallost)) {
-                                    set(arosxc->GamepadGroupObject, MUIA_Disabled, TRUE);
-                                    //psdDelayMS(10);
-                                } else {
-                                    set(arosxc->GamepadGroupObject, MUIA_Disabled, FALSE);
-
-                                    set(arosxc->GamepadObject_button_a, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_A));
-                                    set(arosxc->GamepadObject_button_b, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_B));
-                                    set(arosxc->GamepadObject_button_x, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_X));
-                                    set(arosxc->GamepadObject_button_y, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_Y));
-                                    set(arosxc->GamepadObject_button_ls, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_SHOULDER));
-                                    set(arosxc->GamepadObject_button_rs, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_SHOULDER));
-                                    set(arosxc->GamepadObject_left_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_THUMB));
-                                    set(arosxc->GamepadObject_right_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_THUMB));
-                                    set(arosxc->GamepadObject_dpad_left, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_LEFT));
-                                    set(arosxc->GamepadObject_dpad_right, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_RIGHT));
-                                    set(arosxc->GamepadObject_dpad_up, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_UP));
-                                    set(arosxc->GamepadObject_dpad_down, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_DOWN));
-                                    set(arosxc->GamepadObject_button_back, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_BACK));
-                                    set(arosxc->GamepadObject_button_start, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_START));
-
-                                    set(arosxc->GamepadObject_left_trigger, MUIA_Gauge_Current, (arosx_gamepad->LeftTrigger));
-                                    set(arosxc->GamepadObject_right_trigger, MUIA_Gauge_Current, (arosx_gamepad->RightTrigger));
-
-                                    if(arosx_gamepad->ThumbLX>=0x8000) {
-                                        set(arosxc->GamepadObject_left_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbLX-0x8000));
+                            if(sigs & (1UL<<arosx_eventport->mp_SigBit)) {
+                                mybug(-1,("(%d) I may have received an event...\n", arosxc->id));
+                                APTR en;
+                                while((en = GetMsg(arosx_eventport))) {
+ 
+                                    /* TODO: GUI is disabled until we get the first message even on wired controllers... */
+                                    if((arosxc->status.wireless)&&(arosxc->status.signallost)) {
+                                        set(arosxc->GamepadGroupObject, MUIA_Disabled, TRUE);
                                     } else {
-                                        set(arosxc->GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLX));
+                                        set(arosxc->GamepadGroupObject, MUIA_Disabled, FALSE);
+
+                                        set(arosxc->GamepadObject_button_a, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_A));
+                                        set(arosxc->GamepadObject_button_b, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_B));
+                                        set(arosxc->GamepadObject_button_x, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_X));
+                                        set(arosxc->GamepadObject_button_y, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_Y));
+                                        set(arosxc->GamepadObject_button_ls, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_SHOULDER));
+                                        set(arosxc->GamepadObject_button_rs, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_SHOULDER));
+                                        set(arosxc->GamepadObject_left_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_LEFT_THUMB));
+                                        set(arosxc->GamepadObject_right_thumb, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_RIGHT_THUMB));
+                                        set(arosxc->GamepadObject_dpad_left, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_LEFT));
+                                        set(arosxc->GamepadObject_dpad_right, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_RIGHT));
+                                        set(arosxc->GamepadObject_dpad_up, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_UP));
+                                        set(arosxc->GamepadObject_dpad_down, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_DPAD_DOWN));
+                                        set(arosxc->GamepadObject_button_back, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_BACK));
+                                        set(arosxc->GamepadObject_button_start, MUIA_Selected, (arosx_gamepad->Buttons & AROSX_GAMEPAD_START));
+
+                                        set(arosxc->GamepadObject_left_trigger, MUIA_Gauge_Current, (arosx_gamepad->LeftTrigger));
+                                        set(arosxc->GamepadObject_right_trigger, MUIA_Gauge_Current, (arosx_gamepad->RightTrigger));
+
+                                        if(arosx_gamepad->ThumbLX>=0x8000) {
+                                            set(arosxc->GamepadObject_left_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbLX-0x8000));
+                                        } else {
+                                            set(arosxc->GamepadObject_left_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLX));
+                                        }
+
+                                        if(arosx_gamepad->ThumbLY>=0x8000) {
+                                            set(arosxc->GamepadObject_left_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbLY-0x8000));
+                                        } else {
+                                            set(arosxc->GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLY));
+                                        }
+
+                                        if(arosx_gamepad->ThumbRX>=0x8000) {
+                                            set(arosxc->GamepadObject_right_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbRX-0x8000));
+                                        } else {
+                                            set(arosxc->GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRX));
+                                        }
+
+                                        if(arosx_gamepad->ThumbRY>=0x8000) {
+                                            set(arosxc->GamepadObject_right_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbRY-0x8000));
+                                        } else {
+                                            set(arosxc->GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRY));
+                                        }
                                     }
 
-                                    if(arosx_gamepad->ThumbLY>=0x8000) {
-                                        set(arosxc->GamepadObject_left_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbLY-0x8000));
-                                    } else {
-                                        set(arosxc->GamepadObject_left_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbLY));
-                                    }
-
-                                    if(arosx_gamepad->ThumbRX>=0x8000) {
-                                        set(arosxc->GamepadObject_right_stick_x, MUIA_Gauge_Current, (arosx_gamepad->ThumbRX-0x8000));
-                                    } else {
-                                        set(arosxc->GamepadObject_right_stick_x, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRX));
-                                    }
-
-                                    if(arosx_gamepad->ThumbRY>=0x8000) {
-                                        set(arosxc->GamepadObject_right_stick_y, MUIA_Gauge_Current, (arosx_gamepad->ThumbRY-0x8000));
-                                    } else {
-                                        set(arosxc->GamepadObject_right_stick_y, MUIA_Gauge_Current, (0x8000+arosx_gamepad->ThumbRY));
-                                    }
-
-                                    /* 100Hz max. GUI update frequency should be enough for everyone... */
-                                    //psdDelayMS(10);
+                                    ReplyMsg(en);
                                 }
                             }
                         }
@@ -397,9 +418,12 @@ AROS_UFH0(void, nGUITask)
         }
     }
 
+
+    AROSX_RemEventHandler(arosx_eventhook);
+    CloseLibrary(AROSXBase);
+
     Forbid();
-    FreeSignal(arosxc->TrackingSignal);
-    arosxc->TrackingSignal = -1;
+
     arosxc->GUITask = NULL;
     --arosxb->Library.lib_OpenCnt;
 

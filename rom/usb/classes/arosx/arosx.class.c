@@ -43,6 +43,13 @@ static int libInit(LIBBASETYPEPTR arosxb)
     arosxb->arosxc_4 = AROSXClass_CreateController(arosxb, 4);
 
 	InitSemaphore(&arosxb->arosxc_lock);
+    InitSemaphore(&arosxb->event_lock);
+
+    memset(&arosxb->event_reply_port, 0, sizeof(arosxb->event_reply_port));
+    arosxb->event_reply_port.mp_Flags = PA_IGNORE;
+    NewList(&arosxb->event_reply_port.mp_MsgList);
+
+    NewList(&arosxb->event_port_list);
 
 	arosxb->AROSXBase = AROSXInit();
 
@@ -165,7 +172,7 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
 
         if((arosxc = AROSXClass_ConnectController(arosxb)))
         {
-            arosxc->arosxb = arosxb;
+
             arosxc->Device = pd;
             arosxc->Interface = pif;
 
@@ -364,6 +371,8 @@ struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, 
         arosxc->status.wireless = FALSE;
         arosxc->status.signallost = FALSE;
 
+        arosxc->arosxb = arosxb;
+
         NEWLIST(&arosxc->event_port_list);
 
         mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Created new controller structure %04lx for controller %01x\n", arosxc, arosxc->id));
@@ -492,6 +501,39 @@ void AROSXClass_DisconnectController(LIBBASETYPEPTR arosxb, struct AROSXClassCon
 
 }
 
+void AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR param2) {
+
+    struct AROSX_EventNote *en;
+    struct AROSX_EventHook *eh;
+    ULONG msgmask = ehmt;
+
+    while((en = (struct AROSX_EventNote *) GetMsg(&arosxb->event_reply_port))) {
+        mybug(-1, ("    Free SendEvent (%p)\n", en));
+        FreeVec(en);
+    }
+
+    ObtainSemaphore(&arosxb->event_lock);
+    eh = (struct AROSX_EventHook *) arosxb->event_port_list.lh_Head;
+    while(eh->eh_Node.ln_Succ) {
+        if((eh->eh_MsgMask>>26) == (msgmask)>>26) {
+            if((en = AllocVec(sizeof(struct AROSX_EventNote), MEMF_CLEAR|MEMF_ANY))) {
+                en->en_Msg.mn_ReplyPort = &arosxb->event_reply_port;
+                en->en_Msg.mn_Length = sizeof(struct AROSX_EventNote);
+                en->en_Event = ehmt;
+                en->en_Param1 = param1;
+                en->en_Param2 = param2;
+                mybug(-1, ("[AROSXClass] SendEvent(%p, %p, %p)\n", ehmt, param1, param2));
+                PutMsg(eh->eh_MsgPort, &en->en_Msg);
+            }
+        }
+        eh = (struct AROSX_EventHook *) eh->eh_Node.ln_Succ;
+    }
+    ReleaseSemaphore(&arosxb->event_lock);
+
+}
+
+
+
 /**************************************************************************/
 
 #undef  ps
@@ -505,6 +547,7 @@ AROS_UFH0(void, nHidTask)
     AROS_USERFUNC_INIT
 
     struct AROSXClassController *arosxc;
+    struct AROSXClassBase *arosxb;
 
     struct PsdPipe *pp;
 
@@ -523,6 +566,8 @@ AROS_UFH0(void, nHidTask)
     */
     if((arosxc = nAllocHid()))
     {
+
+        arosxb = arosxc->arosxb;
 
         arosxc->TimerMP->mp_SigBit = AllocSignal(-1);
         arosxc->TimerIO->tr_node.io_Message.mn_ReplyPort->mp_SigBit = arosxc->TimerMP->mp_SigBit;
@@ -548,7 +593,7 @@ AROS_UFH0(void, nHidTask)
         	ioerr = psdDoPipe(arosxc->EP0Pipe, ep0buf, 20);
     	} while(ioerr);
 
-    	mybug(-1, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
+    	mybug(0, ("EP0: %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx %02lx\n",
             	    ep0buf[0], ep0buf[1], ep0buf[2], ep0buf[3], ep0buf[4], ep0buf[5], ep0buf[6], ep0buf[7], ep0buf[8], ep0buf[9], ep0buf[10],
         	        ep0buf[11], ep0buf[12], ep0buf[13], ep0buf[14], ep0buf[15], ep0buf[16], ep0buf[17], ep0buf[18], ep0buf[19]));
 
@@ -627,6 +672,7 @@ AROS_UFH0(void, nHidTask)
                         len = psdGetPipeActual(pp);
 
                         if(Gamepad_ParseMsg(arosxc, epinbuf, len)) {
+                            AROSXClass_SendEvent(arosxb, ((arosxc->id)<<26), (APTR)1, (APTR)2);
                             mybug(0,("Timestamp %u #%x\n", arosxc->arosx_gamepad.Timestamp, arosxc->id));
                         }
 
@@ -790,13 +836,7 @@ BOOL Gamepad_ParseMsg(struct AROSXClassController *arosxc, UBYTE *buf, ULONG len
 
     if(ret) {
         GetSysTime(&current);
-
         arosx_gamepad->Timestamp = (ULONG)((((current.tv_secs-arosxc->initial_tv_secs) * 1000000) + (current.tv_micro-arosxc->initial_tv_micro))/1000);
-
-        if(arosxc->GUITask)
-        {
-            Signal(arosxc->GUITask, (ULONG) (1<<arosxc->TrackingSignal));
-        }
     }
 
     return ret;
