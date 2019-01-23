@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -1287,6 +1287,15 @@ VOID RefreshStrGadget(struct Gadget *gad,
                            (struct Border *)gad->GadgetRender,
                            gad->LeftEdge,
                            gad->TopEdge);
+            }
+            /* The gadget can have a linked list of IntuiTexts attached. */
+            if(gad->GadgetText)
+            {
+                struct IBox container;
+                GetGadgetIBox(gad, &gi, &container);
+                int_PrintIText(rp, gad->GadgetText, 
+                                   container.Left,
+                                   container.Top, FALSE, IntuitionBase);
             }
         }
         ReleaseGIRPort(rp);
