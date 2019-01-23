@@ -32,6 +32,11 @@ struct AROSX_GAMEPAD {
     WORD    ThumbRY;
 };
 
+#define AROSX_EHMB_CONNECT    0x00
+#define AROSX_EHMB_DISCONNECT 0x01
+#define AROSX_EHMF_CONNECT    (1L<<AROSX_EHMB_CONNECT)
+#define AROSX_EHMF_DISCONNECT (1L<<AROSX_EHMB_DISCONNECT)
+
 struct AROSX_EventHook {
     struct Node         eh_Node;
     struct MsgPort     *eh_MsgPort;
@@ -40,7 +45,7 @@ struct AROSX_EventHook {
 
 struct AROSX_EventNote {
     struct Message      en_Msg;
-    UWORD               en_Event;
+    ULONG               en_Event;
     APTR                en_Param1;
     APTR                en_Param2;
 };
