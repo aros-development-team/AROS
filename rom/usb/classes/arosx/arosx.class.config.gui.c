@@ -55,16 +55,11 @@ AROS_UFH0(void, nGUITask)
             mybug(-1,("[AROSXClass GUI] arosx.library openened\n"));
 
             arosx_eventport = CreateMsgPort();
-            //arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, (((1<<arosxc->id))<<28));
+            arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, (((1<<arosxc->id))<<28));
             /*
                 Set to listen every controller
             */
-            arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, (0xf<<28));
-
-        } else {
-            mybug(-1,("[AROSXClass GUI] arosx.library failed to open"));
-            return;
-        }
+            //arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, (0xf<<28));
 
         if((MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN)))
         {
@@ -428,6 +423,7 @@ AROS_UFH0(void, nGUITask)
                     }
                 }
             }
+        }
         }
 
         AROSX_RemEventHandler(arosx_eventhook);

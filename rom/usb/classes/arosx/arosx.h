@@ -76,8 +76,6 @@ struct AROSXClassController
         struct AROSX_GAMEPAD arosx_gamepad;
     };
 
-    struct List                  event_port_list;
-
     struct Device               *TimerBase;
     struct MsgPort              *TimerMP;
     struct timerequest          *TimerIO;

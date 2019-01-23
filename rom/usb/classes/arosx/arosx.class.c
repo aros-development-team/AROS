@@ -20,10 +20,10 @@
 struct AROSXBase * AROSXInit(void);
 
 struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, UBYTE id);
-struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb);
+struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb, UBYTE type);
 void AROSXClass_DisconnectController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc);
 void AROSXClass_DestroyController(LIBBASETYPEPTR arosxb, struct AROSXClassController *arosxc);
-void AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR param2);
+BOOL AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR param2);
 
 
 
@@ -171,13 +171,11 @@ struct AROSXClassController * usbAttemptInterfaceBinding(struct AROSXClassBase *
             return(NULL);
         }
 
-        if((arosxc = AROSXClass_ConnectController(arosxb)))
+        if((arosxc = AROSXClass_ConnectController(arosxb, AROSX_CONTROLLER_TYPE_GAMEPAD)))
         {
 
             arosxc->Device = pd;
             arosxc->Interface = pif;
-
-            arosxc->controller_type = AROSX_CONTROLLER_TYPE_GAMEPAD;
 
             psdSafeRawDoFmt(buf, 64, "arosx.class.gamepad.%01x", arosxc->id);
             arosxc->ReadySignal = SIGB_SINGLE;
@@ -374,8 +372,6 @@ struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, 
 
         arosxc->arosxb = arosxb;
 
-        NEWLIST(&arosxc->event_port_list);
-
         mybug(-1, ("[AROSXClass] AROSXClass_CreateController: Created new controller structure %04lx for controller %01x\n", arosxc, arosxc->id));
 
         if (arosxc->TimerMP = CreatePort(NULL, 0)) {
@@ -446,7 +442,7 @@ void AROSXClass_DestroyController(LIBBASETYPEPTR arosxb, struct AROSXClassContro
     }
 }
 
-struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb) {
+struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb, UBYTE type) {
 
     struct AROSXClassController *arosxc;
     arosxc = NULL;
@@ -479,7 +475,21 @@ struct AROSXClassController *AROSXClass_ConnectController(LIBBASETYPEPTR arosxb)
 
     arosxb->arosxc_count++;
 
+    arosxc->controller_type = type;
+
     arosxc->status.connected = TRUE;
+
+    /*
+        Send connect event from this controller.
+         - If no event handler has been installed then the msg goes to nowhere and is lost
+         - New connect event is sent when event handler is created including this controller
+    */
+
+    if(AROSXClass_SendEvent(arosxb, ((((1L<<arosxc->id))<<28) | ((arosxc->controller_type)<<20) | AROSX_EHMF_CONNECT), (APTR)1, (APTR)2)) {
+        mybug(-1,("Attach event sent\n"));
+    } else {
+        mybug(-1,("Attach event not sent\n"));
+    }
 
     ReleaseSemaphore(&arosxb->arosxc_lock);
 
@@ -495,18 +505,28 @@ void AROSXClass_DisconnectController(LIBBASETYPEPTR arosxb, struct AROSXClassCon
         arosxb->arosxc_count--;
 
         arosxc->status.connected = FALSE;
+
+        if(AROSXClass_SendEvent(arosxb, ((((1L<<arosxc->id))<<28) | AROSX_EHMF_DISCONNECT), (APTR)1, (APTR)2)) {
+            mybug(-1,("Detach event sent\n"));
+        } else {
+            mybug(-1,("Detach event not sent\n"));
+        }
+
         arosxc->controller_type = AROSX_CONTROLLER_TYPE_UNKNOWN;
         ReleaseSemaphore(&arosxb->arosxc_lock);
+
         mybug(-1, ("[AROSXClass] AROSXClass_DisconnectController: Disconnected controller number %01x\n", arosxc->id));
     }
 
 }
 
-void AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR param2) {
+BOOL AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR param2) {
 
     struct AROSX_EventNote *en;
     struct AROSX_EventHook *eh;
     ULONG msgmask = ehmt;
+
+    BOOL ret = FALSE;
 
     while((en = (struct AROSX_EventNote *) GetMsg(&arosxb->event_reply_port))) {
         mybug(0, ("    Free SendEvent (%p)\n", en));
@@ -519,7 +539,7 @@ void AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR p
         /*
             TODO: Make message event mask differentiate controller type also
         */
-        if((eh->eh_MsgMask>>28) | (msgmask)>>28) {
+        if((eh->eh_MsgMask>>28) & (msgmask)>>28) {
             if((en = AllocVec(sizeof(struct AROSX_EventNote), MEMF_CLEAR|MEMF_ANY))) {
                 en->en_Msg.mn_ReplyPort = &arosxb->event_reply_port;
                 en->en_Msg.mn_Length = sizeof(struct AROSX_EventNote);
@@ -528,11 +548,20 @@ void AROSXClass_SendEvent(LIBBASETYPEPTR arosxb, ULONG ehmt, APTR param1, APTR p
                 en->en_Param2 = param2;
                 mybug(0, ("[AROSXClass] SendEvent(%p, %p, %p)\n", ehmt, param1, param2));
                 PutMsg(eh->eh_MsgPort, &en->en_Msg);
+                ret = TRUE;
             }
         }
         eh = (struct AROSX_EventHook *) eh->eh_Node.ln_Succ;
     }
     ReleaseSemaphore(&arosxb->event_lock);
+
+    if(ret) {
+            mybug(0,("Event sent\n"));
+    } else {
+            mybug(0,("Event not sent\n"));
+    }
+
+    return ret;
 
 }
 
@@ -663,11 +692,7 @@ AROS_UFH0(void, nHidTask)
 
     	psdDoPipe(arosxc->EPOutPipe, bufout, 12);
 
-        AROSXClass_SendEvent(arosxb, \
-            ((((1L<<arosxc->id))<<28) | ((arosxc->controller_type)<<20) | AROSX_EHMF_CONNECT), \
-             (APTR)1, (APTR)2);
-
-		psdSendPipe(arosxc->EPInPipe, epinbuf, 20);
+        psdSendPipe(arosxc->EPInPipe, epinbuf, 20);
         do
         {
             sigs = Wait(sigmask);
@@ -706,8 +731,6 @@ AROS_UFH0(void, nHidTask)
                 }
             }
         } while(!(sigs & SIGBREAKF_CTRL_C));
-
-        AROSXClass_SendEvent(arosxb, ((((1L<<arosxc->id))<<28) | AROSX_EHMF_DISCONNECT), (APTR)1, (APTR)2);
 
         mybug(-1, ("(%d) Going down the river!\n", arosxc->id));
         psdAbortPipe(arosxc->EPInPipe);
