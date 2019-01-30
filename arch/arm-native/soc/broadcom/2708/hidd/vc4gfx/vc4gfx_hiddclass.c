@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BCM VideoCore4 Gfx Hidd Class.
@@ -81,7 +81,7 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
                 D(bug("[VideoCoreGfx] %s: SyncMode #%d Tags @ 0x%p\n", __PRETTY_FUNCTION__, i, ma_synctags));
 
                 ma_syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
-                ma_syncs[i].ti_Data = ma_synctags;
+                ma_syncs[i].ti_Data = (IPTR)ma_synctags;
 
                 ma_synctags[0].ti_Tag = aHidd_Sync_PixelClock;
                 ma_synctags[0].ti_Data = modecurrent->dm_clock * 1000;
@@ -102,7 +102,7 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
                 ma_synctags[8].ti_Tag = aHidd_Sync_VTotal;
                 ma_synctags[8].ti_Data = modecurrent->dm_vtotal;
                 ma_synctags[9].ti_Tag = aHidd_Sync_Description;
-                ma_synctags[9].ti_Data = modecurrent->dm_descr;
+                ma_synctags[9].ti_Data = (IPTR)modecurrent->dm_descr;
                 ma_synctags[10].ti_Tag = TAG_DONE;
 
                 ma_synctags = (struct TagItem  *)&ma_synctags[11];
@@ -132,7 +132,7 @@ void FNAME_SUPPORT(DestroyModeArray)(struct List *modelist, APTR modearray)
 
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    //struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     OOP_Object                  *self = NULL;
 
     struct TagItem gfxmsg_tags[] =
@@ -151,7 +151,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     EnterFunc(bug("VideoCoreGfx::New()\n"));
 
     NewList(&vc_modelist);
-    
+
     FNAME_SUPPORT(SDTV_SyncGen)(&vc_modelist, cl);
     FNAME_SUPPORT(HDMI_SyncGen)(&vc_modelist, cl);
     vc_pixfmts = FNAME_SUPPORT(GenPixFmts)(cl);
@@ -249,10 +249,10 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
         newbm_msg.cl = msg->cl;
         newbm_msg.attrList = newbm_tags;
 
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)&newbm_msg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&newbm_msg);
     }
     else
-        object = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     ReturnPtr("VideoCoreGfx::CreateObject: Obj", OOP_Object *, object);
 }

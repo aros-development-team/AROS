@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BCM VideoCore4 Gfx Hidd initialisation code
@@ -44,13 +44,13 @@ APTR KernelBase __attribute__((used)) = NULL;
 static void FNAME_SUPPORT(FreeAttrBases)(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 {
     ULONG i;
-    
+
     for (i = 0; i < num; i++)
     {
 	if (bases[i])
         {
-	    OOP_ReleaseAttrBase(iftable[i]);
-            bases[i] = NULL;
+	        OOP_ReleaseAttrBase(iftable[i]);
+            bases[i] = (OOP_AttrBase)0;
         }
     }
 }
@@ -98,7 +98,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     if (!(MBoxBase = OpenResource("mbox.resource")))
         goto failure;
 
-    if (!(xsd->vcsd_MBoxBuff = AllocVec(16 + (sizeof(IPTR) * 2 * MAX_TAGS), MEMF_CLEAR)))
+    if (!(xsd->vcsd_MBoxBuff = (IPTR)AllocVec(16 + (sizeof(IPTR) * 2 * MAX_TAGS), MEMF_CLEAR)))
         goto failure;
 
     xsd->vcsd_MBoxMessage =
@@ -107,11 +107,11 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, MBoxBase));
     D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_MBoxMessage));
 
-    
-    xsd->vcsd_MBoxMessage[0] = 8 * 4;
-    xsd->vcsd_MBoxMessage[1] = VCTAG_REQ;
-    xsd->vcsd_MBoxMessage[2] = VCTAG_GETVCRAM;
-    xsd->vcsd_MBoxMessage[3] = 8;
+
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_GETVCRAM);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(8);
     xsd->vcsd_MBoxMessage[4] = 0;
 
     xsd->vcsd_MBoxMessage[5] = 0;
@@ -119,10 +119,10 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 
     xsd->vcsd_MBoxMessage[7] = 0; // terminate tag
 
-    MBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
+    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
     {
-        if (FNAME_SUPPORT(InitMem)(xsd->vcsd_MBoxMessage[5], xsd->vcsd_MBoxMessage[6], LIBBASE))
+        if (FNAME_SUPPORT(InitMem)((void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]), AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]), LIBBASE))
         {
             bug("[VideoCoreGfx] VideoCore GPU Found\n");
 

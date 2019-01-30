@@ -1,7 +1,7 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
- 
+
     Desc: BCM VideoCore4 Gfx Hidd hardware functions
     Lang: English
 */
@@ -16,7 +16,7 @@
 
 BOOL FNAME_HW(InitGfxHW)(APTR param0)
 {
-    struct VideoCore_staticdata *xsd = param0;
+    //struct VideoCore_staticdata *xsd = param0;
 
     D(bug("[VideoCoreGfx] %s()\n", __PRETTY_FUNCTION__));
 

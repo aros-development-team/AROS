@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -140,7 +140,7 @@ IPTR vc_fmts[6] =
 APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
 {
     struct TagItem *pixfmtarray = NULL;
-    IPTR  **supportedfmts = vc_fmts;
+    IPTR  **supportedfmts = (IPTR**)vc_fmts;
     int fmtcount = 0;
 
     while (supportedfmts[fmtcount] != 0)
@@ -232,7 +232,7 @@ APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
                 continue;
             }
             pixfmtarray[fmtcount].ti_Tag = aHidd_Gfx_PixFmtTags;
-            pixfmtarray[fmtcount].ti_Data = newfmt_tags;
+            pixfmtarray[fmtcount].ti_Data = (IPTR)newfmt_tags;
         }
         pixfmtarray[fmtcount].ti_Tag = TAG_DONE;
     }
