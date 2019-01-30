@@ -61,13 +61,14 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-kbd \
 #MM kernel-hidd-mouse \
 #MM kernel-usb-nopci \
+#MM kernel-usb-usb2otg \
 #MM kernel-usb-romstrap-raspi \
 #MM kernel-econsole
 
 
 # MM hidd-i2c-bcm2708
 
-# MM kernel-usb-usb2otg
+
 
 #MM kernel-package-raspi-armeb-missing: \
 #MM kernel-battclock
@@ -80,7 +81,7 @@ PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
 PKG_RSRC_ARCH := processor
-PKG_DEVS      := input gameport keyboard console sdcard
+PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
 PKG_HIDDS     := gfx mouse keyboard hiddclass i2c vc4gfx
