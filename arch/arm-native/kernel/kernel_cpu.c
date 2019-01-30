@@ -91,7 +91,7 @@ void cpu_Register()
     asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r"(tmp));
 
     cpu_Init(&__arm_arosintern, NULL);
-    
+
 #if defined(__AROSEXEC_SMP__)
     __tls = TLS_PTR_GET();
 
@@ -201,7 +201,7 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     uint32_t tmp;
 
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
-    if ((tmp & 0xfff0) == 0xc070)
+    if ((tmp & 0xfff0) == 0xc070 || (tmp & 0xfff0) == 0xd030)
     {
         krnARMImpl->ARMI_Family = 7;
 
@@ -239,11 +239,11 @@ void cpu_Init(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
      __arm_arosintern.ARMI_AffinityMask |= (1 << cpunum);
 
     /* Enable Vector Floating Point Calculations */
-    asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
-    fpuflags |= (VFPSingle | VFPDouble);                                            // Enable Single & Double Precision 
+    asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register
+    fpuflags |= (VFPSingle | VFPDouble);                                            // Enable Single & Double Precision
     asm volatile("mcr p15,0,%[fpuflags],c1,c0,2\n" : : [fpuflags] "r" (fpuflags)); // Set Access Control Register
     asm volatile(
-        "       mov %[fpuflags],%[vfpenable]    \n"                                 // Enable VFP 
+        "       mov %[fpuflags],%[vfpenable]    \n"                                 // Enable VFP
         "       fmxr fpexc,%[fpuflags]          \n"
          : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
 }
@@ -340,7 +340,7 @@ void cpu_Dispatch(regs_t *regs)
     if (task->tc_Flags & TF_LAUNCH)
     {
         AROS_UFC1(void, task->tc_Launch,
-                  AROS_UFCA(struct ExecBase *, SysBase, A6));       
+                  AROS_UFCA(struct ExecBase *, SysBase, A6));
     }
     /* Leave interrupt and jump to the new task */
 }
@@ -349,7 +349,7 @@ void cpu_DumpRegs(regs_t *regs)
 {
     cpuid_t cpunum = GetCPUNumber();
     int i;
-    
+
     bug("[Kernel:%02d] CPU Register Dump:\n", cpunum);
     for (i = 0; i < 12; i++)
     {
