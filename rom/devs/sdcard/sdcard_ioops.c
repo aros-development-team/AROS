@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,7 +26,7 @@ static BOOL sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UB
 
 #define DEVHEAD_VAL 0x40
 
-static void sdcard_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
+static void __used sdcard_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
     register int i = size;
 
@@ -40,13 +40,13 @@ static void sdcard_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 /*
  * a STUB function for commands not supported by this particular device
  */
-static BYTE sdcard_STUB(struct sdcard_Unit *unit)
+static BYTE __used sdcard_STUB(struct sdcard_Unit *unit)
 {
     DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (GENERIC). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
     return CDERR_NOCMD;
 }
 
-static BYTE sdcard_STUB_IO32(struct sdcard_Unit *unit, ULONG blk, ULONG len,
+static BYTE __used sdcard_STUB_IO32(struct sdcard_Unit *unit, ULONG blk, ULONG len,
     APTR buf, ULONG* act)
 {
     DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (IO32). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
@@ -54,7 +54,7 @@ static BYTE sdcard_STUB_IO32(struct sdcard_Unit *unit, ULONG blk, ULONG len,
     return CDERR_NOCMD;
 }
 
-static BYTE sdcard_STUB_IO64(struct sdcard_Unit *unit, UQUAD blk, ULONG len,
+static BYTE __used sdcard_STUB_IO64(struct sdcard_Unit *unit, UQUAD blk, ULONG len,
     APTR buf, ULONG* act)
 {
     DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (IO64). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
@@ -62,7 +62,7 @@ static BYTE sdcard_STUB_IO64(struct sdcard_Unit *unit, UQUAD blk, ULONG len,
     return CDERR_NOCMD;
 }
 
-static BYTE sdcard_STUB_SCSI(struct sdcard_Unit *unit, struct SCSICmd* cmd)
+static BYTE __used sdcard_STUB_SCSI(struct sdcard_Unit *unit, struct SCSICmd* cmd)
 {
     DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (IOSCSI). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
     return CDERR_NOCMD;
@@ -106,7 +106,7 @@ void sdcard_IRQDMAReadWrite(struct sdcard_Unit *unit, UBYTE status)
 /*
  * wait for timeout or drive ready
  */
-BOOL sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
+BOOL __used sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
 {
     BYTE err = 0;
     return err;
