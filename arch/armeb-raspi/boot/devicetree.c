@@ -6,24 +6,26 @@
 
 #define D(x)
 
-struct dt_entry *root = NULL;
+of_node_t *root = NULL;
 uint32_t *data;
 char *strings;
 
-struct dt_entry * dt_build_node(struct dt_entry *parent)
+of_node_t * dt_build_node(of_node_t *parent)
 {
-    struct dt_entry *e = malloc(sizeof(struct dt_entry));
+    of_node_t *e = malloc(sizeof(of_node_t));
 
     if (e != NULL)
     {
-        e->dte_parent = parent;
-        e->dte_children = NULL;
-        e->dte_properties = NULL;
-        e->dte_next = NULL;
-        e->dte_name = (char *)data;
+        if (parent != NULL)
+        {
+            ADDTAIL(&parent->on_children, e);
+        }
+        NEWLIST(&e->on_children);
+        NEWLIST(&e->on_properties);
+        e->on_name = (char *)data;
         data += (strlen((char *)data) + 4) / 4;
 
-        D(kprintf("[BOOT] new node %s\n", e->dte_name));
+        D(kprintf("[BOOT] new node %s\n", e->on_name));
 
         while(1)
         {
@@ -31,25 +33,22 @@ struct dt_entry * dt_build_node(struct dt_entry *parent)
             {
                 case FDT_BEGIN_NODE:
                 {
-                    struct dt_entry *e1 = dt_build_node(e);
-                    e1->dte_next = e->dte_children;
-                    e->dte_children = e1;
+                    dt_build_node(e);
                     break;
                 }
 
                 case FDT_PROP:
                 {
-                    struct dt_prop *p = malloc(sizeof (struct dt_prop));
-                    p->dtp_next = e->dte_properties;
-                    e->dte_properties = p;
-                    p->dtp_length = AROS_BE2LONG(*data++);
-                    p->dtp_name = &strings[AROS_BE2LONG(*data++)];
-                    if (p->dtp_length)
-                        p->dtp_value = data;
+                    of_property_t *p = malloc(sizeof(of_property_t));
+                    p->op_length = AROS_BE2LONG(*data++);
+                    p->op_name = &strings[AROS_BE2LONG(*data++)];
+                    if (p->op_length)
+                        p->op_value = data;
                     else
-                        p->dtp_value = NULL;
-                    data += (p->dtp_length + 3)/4;
-                    D(kprintf("[BOOT] prop %s with length %d\n", p->dtp_name, p->dtp_length));
+                        p->op_value = NULL;
+                    ADDTAIL(&e->on_properties, p);
+                    data += (p->op_length + 3)/4;
+                    D(kprintf("[BOOT] prop %s with length %d\n", p->op_name, p->op_length));
                     break;
                 }
 
@@ -74,7 +73,7 @@ long dt_total_size()
         return 0;
 }
 
-struct dt_entry * dt_parse(void *dt)
+of_node_t * dt_parse(void *dt)
 {
     uint32_t token = 0;
 
@@ -132,15 +131,17 @@ struct dt_entry * dt_parse(void *dt)
     return root;
 }
 
-static struct dt_entry * dt_find_by_phandle(uint32_t phandle, struct dt_entry *root)
+static of_node_t * dt_find_by_phandle(uint32_t phandle, of_node_t *root)
 {
-    struct dt_prop *p = dt_find_property(root, "phandle");
+    of_property_t *p = dt_find_property(root, "phandle");
 
-    if (p && *((uint32_t *)p->dtp_value) == phandle)
+    if (p && *((uint32_t *)p->op_value) == AROS_LONG2BE(phandle))
         return root;
     else {
-        for (struct dt_entry *c = root->dte_children; c; c = c->dte_next) {
-            struct dt_entry *found = dt_find_by_phandle(phandle, c);
+        of_node_t *c;
+        ForeachNode(&root->on_children, c)
+        {
+            of_node_t *found = dt_find_by_phandle(phandle, c);
             if (found)
                 return found;
         }
@@ -148,17 +149,18 @@ static struct dt_entry * dt_find_by_phandle(uint32_t phandle, struct dt_entry *r
     return NULL;
 }
 
-struct dt_entry * dt_find_node_by_phandle(uint32_t phandle)
+of_node_t * dt_find_node_by_phandle(uint32_t phandle)
 {
     return dt_find_by_phandle(phandle, root);
 }
 
+#define MAX_KEY_SIZE    64
 char ptrbuf[64];
 
-struct dt_entry * dt_find_node(char *key)
+of_node_t * dt_find_node(char *key)
 {
     int i;
-    struct dt_entry *node, *ret = NULL;
+    of_node_t *node, *ret = NULL;
 
     if (*key == '/')
     {
@@ -177,9 +179,9 @@ struct dt_entry * dt_find_node(char *key)
 
             ptrbuf[i] = 0;
 
-            for (node = ret->dte_children; node; node = node->dte_next)
+            ForeachNode(&ret->on_children, node)
             {
-                if (!strcmp(node->dte_name, ptrbuf))
+                if (!strcmp(node->on_name, ptrbuf))
                 {
                     ret = node;
                     break;
@@ -191,16 +193,16 @@ struct dt_entry * dt_find_node(char *key)
     return ret;
 }
 
-struct dt_prop *dt_find_property(void *key, char *propname)
+of_property_t *dt_find_property(void *key, char *propname)
 {
-    struct dt_entry *node = (struct dt_entry *)key;
-    struct dt_prop *p, *prop = NULL;
+    of_node_t *node = (of_node_t *)key;
+    of_property_t *p, *prop = NULL;
 
     if (node)
     {
-        for (p = node->dte_properties; p; p=p->dtp_next)
+        ForeachNode(&node->on_properties, p)
         {
-            if (!strcmp(p->dtp_name, propname))
+            if (!strcmp(p->op_name, propname))
             {
                 prop = p;
                 break;
@@ -212,35 +214,39 @@ struct dt_prop *dt_find_property(void *key, char *propname)
 
 char fill[] = "                         ";
 
-void dt_dump_node(struct dt_entry *n, int level)
+void dt_dump_node(of_node_t *n, int level)
 {
-    kprintf("[BOOT] %s%s\n", &fill[25-2*level], n->dte_name);
-    for (struct dt_prop *p = n->dte_properties; p; p = p->dtp_next)
+    of_property_t *p;
+    of_node_t *c;
+
+    kprintf("[BOOT] %s%s\n", &fill[25-2*level], n->on_name);
+    ForeachNode(&n->on_properties, p)
     {
-        kprintf("[BOOT] %s  %s=", &fill[25-2*level], p->dtp_name);
-        for (int i=0; i < p->dtp_length; i++) {
-            char *pchar = p->dtp_value + i;
+        kprintf("[BOOT] %s  %s=", &fill[25-2*level], p->op_name);
+        for (int i=0; i < p->op_length; i++) {
+            char *pchar = p->op_value + i;
             if (*pchar >= ' ' && *pchar <= 'z')
                 kprintf("%c", *pchar);
             else
                 kprintf(".");
         }
 
-        if (p->dtp_length) {
+        if (p->op_length) {
             kprintf(" (");
             int max = 16;
-            if (max > p->dtp_length)
-                max = p->dtp_length;
+            if (max > p->op_length)
+                max = p->op_length;
 
-            for (int i=0; i < p->dtp_length; i++) {
-                char *pchar = p->dtp_value + i;
+            for (int i=0; i < p->op_length; i++) {
+                char *pchar = p->op_value + i;
                 kprintf("%02x", *pchar);
             }
             kprintf(")");
         }
         kprintf("\n");
     }
-    for (struct dt_entry *c = n->dte_children; c; c = c->dte_next)
+
+    ForeachNode(&n->on_children, c)
     {
         dt_dump_node(c, level+1);
     }
