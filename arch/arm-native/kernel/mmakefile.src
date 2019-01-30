@@ -34,7 +34,8 @@ CFILES := \
         unmapglobal \
         vars \
         screen_fb \
-        font8x14
+        font8x14 \
+        devicetree
 
 PLATFILES := platform_bcm2708
 
@@ -54,9 +55,8 @@ $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #MM kernel-kernel-raspi-armeb : includes
 #MM kernel-kernel-raspi-armeb-kobj : includes
 
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include -I$(SRCDIR)/rom/openfirmware
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=raspi-armeb \
   files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
-  
