@@ -1,8 +1,8 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
- * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2015 The AROS Development Team
+ * Copyright ï¿½ 2006 Marek Szyprowski
+ * Copyright ï¿½ 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -88,7 +88,7 @@ static APTR GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
  * To get at the entry we want, we find and grab the word starting at either
  * byte 0 or 1 of the three-byte set, then shift up or down as needed. FATdoc
  * 1.03 p16-17 describes the method
- * 
+ *
  * The only tricky bit is if the word falls such that the first byte is the
  * last byte of the block and the second byte is the first byte of the next
  * block. Since our block data are stored within cache block structures, a
@@ -210,7 +210,7 @@ BOOL SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val)
             if (boundary)
             {
                 /* XXX: Ideally we'd mark both blocks dirty at the same time or
-                 * only do it once if they're the same block. Unfortunately any 
+                 * only do it once if they're the same block. Unfortunately any
                  * old value of b is invalid after a call to GetFatEntryPtr, as
                  * it may have swapped the previous cache out. This is probably
                  * safe enough. */
@@ -275,7 +275,7 @@ BOOL SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val)
         p = (ULONG *) GetFatEntryPtr(sb, n << 2, &b, i);
         if (p != NULL)
         {
-            *p = (*p & 0xf0000000) | val;
+            *p = AROS_LONG2LE((AROS_LE2LONG(*p) & 0xf0000000) | val);
             Cache_MarkBlockDirty(sb->cache, b);
         }
         else
@@ -369,4 +369,3 @@ void FreeCluster(struct FSSuper *sb, ULONG cluster)
         Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
     }
 }
-
