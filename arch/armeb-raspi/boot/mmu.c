@@ -113,7 +113,7 @@ void mmu_map_section(uint32_t phys, uint32_t virt, uint32_t length, int b, int c
 #endif
 
         pde[i] = s;
-        DMMU(kprintf("[BOOT] pde[%04d] = %08x\n", i, s.raw));
+        //DMMU(kprintf("[BOOT] pde[%04d] = %08x\n", i, s.raw));
 
         phys++;
         i++;
