@@ -24,10 +24,11 @@
 #include "kernel_intr.h"
 #include "kernel_fb.h"
 #include "tls.h"
+#include "io.h"
 
 #include "exec_platform.h"
 
-#define ARM_PERIIOBASE __arm_arosintern.ARMI_PeripheralBase
+#define ARM_PERIIOBASE ((IPTR)__arm_arosintern.ARMI_PeripheralBase)
 #include <hardware/bcm2708.h>
 #include <hardware/bcm2708_boot.h>
 #include <hardware/pl011uart.h>
@@ -124,7 +125,7 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             KrnSpinLock(&startup_lock, NULL, SPINLOCK_MODE_WRITE);
 
             /* Wake up the cpu */
-            *((uint32_t *)(BCM2836_MAILBOX3_SET0 + (0x10 * cpu))) = (uint32_t)trampoline_dst;
+            wr32le(BCM2836_MAILBOX3_SET0 + (0x10 * cpu), (uint32_t)trampoline_dst);
 
             /*
              * Try to obtain spinlock again.
@@ -150,33 +151,33 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
     D(bug("[Kernel:BCM2708] %s(#%02d)\n", __PRETTY_FUNCTION__, cpunum));
 
     /* Clear all pending FIQ sources on mailboxes */
-    *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + (16 * cpunum))) = 0xffffffff;
-    *((uint32_t *)(BCM2836_MAILBOX1_CLR0 + (16 * cpunum))) = 0xffffffff;
-    *((uint32_t *)(BCM2836_MAILBOX2_CLR0 + (16 * cpunum))) = 0xffffffff;
-    *((uint32_t *)(BCM2836_MAILBOX3_CLR0 + (16 * cpunum))) = 0xffffffff;
+    wr32le(BCM2836_MAILBOX0_CLR0 + (16 * cpunum), 0xffffffff);
+    wr32le(BCM2836_MAILBOX1_CLR0 + (16 * cpunum), 0xffffffff);
+    wr32le(BCM2836_MAILBOX2_CLR0 + (16 * cpunum), 0xffffffff);
+    wr32le(BCM2836_MAILBOX3_CLR0 + (16 * cpunum), 0xffffffff);
 
 #if defined(__AROSEXEC_SMP__)
     bcm2708_cpuipid[cpunum] = (unsigned int)__tls + sizeof(tls_t);
     D(bug("[Kernel:BCM2708] %s: CPU #%02d IPI data @ 0x%p\n", __PRETTY_FUNCTION__, cpunum, bcm2708_cpuipid[cpunum]));
 
     // enable FIQ mailbox interupt
-    *((uint32_t *)(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum))) = 0x10;
+    wr32le(BCM2836_MAILBOX_INT_CTRL0 + (0x4 * cpunum), 0x10);
 #endif
 }
 
 static unsigned int bcm2708_get_time(void)
 {
-    return AROS_LE2LONG(*((volatile unsigned int *)(SYSTIMER_CLO)));
+    return rd32le(SYSTIMER_CLO);
 }
 
 static void bcm2708_irq_init(void)
 {
     // disable IRQ's
-//    *(volatile unsigned int *)ARMFIQ_CTRL = 0;
-    
-    *(volatile unsigned int *)ARMIRQ_DIBL = ~0;
-    *(volatile unsigned int *)GPUIRQ_DIBL0 = ~0; 
-    *(volatile unsigned int *)GPUIRQ_DIBL1 = ~0;
+//    wr32le(ARMFIQ_CTRL, 0);
+
+    wr32le(ARMIRQ_DIBL, ~0);
+    wr32le(GPUIRQ_DIBL0, ~0);
+    wr32le(GPUIRQ_DIBL1, ~0);
 }
 
 static void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
@@ -191,7 +192,7 @@ static void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
         {
             /* TODO:  check which mailbox is available and use it */
             bcm2708_cpuipid[cpu]->ipi_data[mbno] = ipi_data;
-            *((uint32_t *)(BCM2836_MAILBOX0_SET0 + 4 * mbno + (0x10 * cpu))) = ipi;
+            wr32le(BCM2836_MAILBOX0_SET0 + 4 * mbno + (0x10 * cpu), ipi);
         }
 #endif
     }
@@ -206,9 +207,9 @@ static void bcm2708_irq_enable(int irq)
 
     DIRQ(bug("[Kernel:BCM2708] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
-    *((volatile unsigned int *)reg) = AROS_LONG2LE(IRQ_MASK(irq));
+    wr32le(reg, IRQ_MASK(irq));
 
-    DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
+    DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", rd32le(reg)));
 }
 
 static void bcm2708_irq_disable(int irq)
@@ -220,9 +221,9 @@ static void bcm2708_irq_disable(int irq)
 
     DIRQ(bug("[Kernel:BCM2708] Disabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
-    *((volatile unsigned int *)reg) = AROS_LONG2LE(IRQ_MASK(irq));
+    wr32le(reg, IRQ_MASK(irq));
 
-    DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", *((volatile unsigned int *)reg)));
+    DIRQ(bug("[Kernel:BCM2708] irqmask=%08x\n", rd32le(reg)));
 }
 
 static void bcm2708_irq_process()
@@ -231,9 +232,9 @@ static void bcm2708_irq_process()
 
     for(;;)
     {
-        pendingarm = AROS_LE2LONG(*((volatile unsigned int *)(ARMIRQ_PEND)));
-        pending0 = AROS_LE2LONG(*((volatile unsigned int *)(GPUIRQ_PEND0)));
-        pending1 = AROS_LE2LONG(*((volatile unsigned int *)(GPUIRQ_PEND1)));
+        pendingarm = rd32le(ARMIRQ_PEND);
+        pending0 = rd32le(GPUIRQ_PEND0);
+        pending1 = rd32le(GPUIRQ_PEND1);
 
         if (!(pendingarm || pending0 || pending1))
             break;
@@ -288,7 +289,7 @@ static void bcm2708_fiq_process()
 
     DFIQ(bug("[Kernel:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, cpunum));
 
-    fiq = AROS_LE2LONG(*((uint32_t *)(BCM2836_FIQ_PEND0 + (0x4 * cpunum))));
+    fiq = rd32le(BCM2836_FIQ_PEND0 + (0x4 * cpunum));
 
     DFIQ(bug("[Kernel:BCM2708] %s: CPU #%02d FIQ %x\n", __PRETTY_FUNCTION__, cpunum, fiq));
 
@@ -298,14 +299,14 @@ static void bcm2708_fiq_process()
         {
             if (fiq & (0x10 << mbno))
             {
-                fiq_data = AROS_LE2LONG(*((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum))));
+                fiq_data = rd32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum));
                 (void)fiq_data;
                 DFIQ(bug("[Kernel:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
 #if defined(__AROSEXEC_SMP__)
                 if (bcm2708_cpuipid[cpunum])
                     handle_ipi(fiq_data, bcm2708_cpuipid[cpunum]->ipi_data[0]);
 #endif
-                *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum))) = 0xffffffff;
+                wr32le(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum), 0xffffffff);
             }
         }
     }
@@ -316,7 +317,7 @@ static void bcm2708_toggle_led(int LED, int state)
     if (__arm_arosintern.ARMI_PeripheralBase == (APTR)BCM2836_PERIPHYSBASE)
     {
         int pin = 35;
-        APTR gpiofunc = GPCLR1;
+        IPTR gpiofunc = GPCLR1;
 
         if (LED == ARM_LED_ACTIVITY)
             pin = 47;
@@ -324,15 +325,15 @@ static void bcm2708_toggle_led(int LED, int state)
         if (state == ARM_LED_ON)
             gpiofunc = GPSET1;
 
-        *(volatile unsigned int *)gpiofunc = AROS_LONG2LE((1 << (pin-32)));
+        wr32le(gpiofunc, (1 << (pin-32)));
     }
     else
     {
         // RasPi 1 only allows us to toggle the activity LED
         if (state)
-            *(volatile unsigned int *)GPCLR0 = AROS_LONG2LE((1 << 16));
+            wr32le(GPCLR0, (1 << 16));
         else
-            *(volatile unsigned int *)GPSET0 = AROS_LONG2LE((1 << 16));
+            wr32le(GPSET0, (1 << 16));
     }
 }
 
@@ -347,7 +348,7 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     DTIMER(bug("[Kernel:BCM2708] %s(%d)\n", __PRETTY_FUNCTION__, timerno));
 
     /* Acknowledge our timer interrupt */
-    *((volatile unsigned int *)(SYSTIMER_CS)) = AROS_LONG2LE(1 << timerno);
+    wr32le(SYSTIMER_CS, 1 << timerno);
 
     /* Signal the Exec VBlankServer */
     if (SysBase && (IDNESTCOUNT_GET /*SysBase->IDNestCnt*/ < 0)) {
@@ -355,9 +356,9 @@ static void bcm2708_gputimer_handler(unsigned int timerno, void *unused1)
     }
 
     /* Refresh our timer interrupt */
-    stc = AROS_LE2LONG(*((volatile unsigned int *)(SYSTIMER_CLO)));
+    stc = rd32le(SYSTIMER_CLO);
     stc += VBLANK_INTERVAL;
-    *((volatile unsigned int *)(SYSTIMER_C0 + (timerno * 4))) = AROS_LONG2LE(stc);
+    wr32le(SYSTIMER_C0 + (timerno * 4), stc);
 
     DTIMER(bug("[BCM2708] %s: Done..\n", __PRETTY_FUNCTION__));
 }
@@ -385,10 +386,10 @@ static APTR bcm2708_init_gputimer(APTR _kernelBase)
 
         DTIMER(bug("[Kernel:BCM2708] %s: Enabling Hardware IRQ.. \n", __PRETTY_FUNCTION__));
 
-        stc = AROS_LE2LONG(*((volatile unsigned int *)(SYSTIMER_CLO)));
+        stc = rd32le(SYSTIMER_CLO);
         stc += VBLANK_INTERVAL;
-        *((volatile unsigned int *)(SYSTIMER_CS)) = AROS_LONG2LE((1 << VBLANK_TIMER));
-        *((volatile unsigned int *)(SYSTIMER_C0 + (VBLANK_TIMER * 4))) = AROS_LONG2LE(stc);
+        wr32le(SYSTIMER_CS, 1 << VBLANK_TIMER);
+        wr32le(SYSTIMER_C0 + (VBLANK_TIMER * 4), stc);
 
         ictl_enable_irq(IRQ_TIMER0 + VBLANK_TIMER, KernelBase);
     }
@@ -402,7 +403,7 @@ static inline void bcm2708_ser_waitout()
 {
     while(1)
     {
-       if ((AROS_LE2LONG(*(volatile uint32_t *)(PL011_0_BASE + PL011_FR)) & PL011_FR_TXFF) == 0) break;
+       if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
 }
 
@@ -412,16 +413,16 @@ static void bcm2708_ser_putc(uint8_t chr)
 
     if (chr == '\n')
     {
-        *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = AROS_LONG2LE('\r');
+        wr32le(PL011_0_BASE + PL011_DR, '\r');
         bcm2708_ser_waitout();
     }
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = AROS_LONG2LE(chr);
+    wr32le(PL011_0_BASE + PL011_DR, chr);
 }
 
 static int bcm2708_ser_getc(void)
 {
-    if ((AROS_LE2LONG(*(volatile uint32_t *)(PL011_0_BASE + PL011_FR)) & PL011_FR_RXFE) == 0)
-        return (int)AROS_LE2LONG(*(volatile uint32_t *)(PL011_0_BASE + PL011_DR));
+    if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_RXFE) == 0)
+        return (int)rd32le(PL011_0_BASE + PL011_DR);
 
     return -1;
 }
