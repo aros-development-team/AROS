@@ -509,5 +509,20 @@ if (mem_upper)
         boottag->ti_Data = (IPTR)tracker;
         boottag++;
     }
-while(1);
+
+    boottag->ti_Tag = TAG_DONE;
+    boottag->ti_Data = 0;
+
+    kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)boottag - (intptr_t)(tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE))/sizeof(struct TagItem));
+    kprintf("[BOOT] Bootstrap wasted %d bytes of memory for kernels use\n", mem_used()   );
+
+    mmu_load();
+
+    kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
+
+    entry((struct TagItem *)(tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE));
+
+    kprintf("[BOOT] Back? Something wrong happened...\n");
+
+    while(1) asm volatile("wfe");
 }
