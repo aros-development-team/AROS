@@ -40,7 +40,7 @@ void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
     if (__arm_arosintern.ARMI_IRQDisable)
         __arm_arosintern.ARMI_IRQDisable(irq);
-} 
+}
 
 asm (
     ".globl __arm_halt                         \n"
@@ -296,13 +296,24 @@ void arm_icache_invalidate(uint32_t addr, uint32_t length)
     __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
 }
 
-void unsafe_memcpy(void * dest, const void * src, int length)
+/*
+    Beware! Here be dragons!
+
+    This function copies our vector table to address 0. We do that in *two* steps:
+    Fist we copy four bytes from source to address 0 using ASM, because gcc will
+    not allow to dereference null pointer. THen the rest of the table is copied.
+*/
+void copy_vectors(const void * src, int length)
 {
-    char *d = dest;
-    const char *s = src;
+    char *d = (char *)4;
+    const char *s = (const char *)src + 4;
+
+    asm volatile("str %1, [%0]"::"r"(0), "r"(*(ULONG*)src));
 
     while(length--)
+    {
         *d++ = *s++;
+    }
 }
 
 void core_SetupIntr(void)
@@ -310,7 +321,7 @@ void core_SetupIntr(void)
     bug("[Kernel] Initializing cpu vectors\n");
 
     /* Copy vectors into place */
-    unsafe_memcpy(0, &__intvecs_start,
+    copy_vectors(&__intvecs_start,
             (unsigned int)&__intvecs_end -
             (unsigned int)&__intvecs_start);
 
