@@ -24,7 +24,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-armeb-missing: \
 #MM kernel-battclock
 
-RASPIFW_BRANCH    := master
+RASPIFW_BRANCH    := next
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf
 
