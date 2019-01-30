@@ -40,7 +40,7 @@ ULONG FNAME_SDCBUS(GetClockDiv)(ULONG speed, struct sdcard_Bus *bus)
 
 UBYTE FNAME_BCMSDCBUS(BCMMMIOReadByte)(ULONG reg, struct sdcard_Bus *bus)
 {
-    ULONG val = *(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3);
+    ULONG val = AROS_LE2LONG(*(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3));
 
     return (val >> ((reg & 3) << 3)) & 0xFF;
 }
