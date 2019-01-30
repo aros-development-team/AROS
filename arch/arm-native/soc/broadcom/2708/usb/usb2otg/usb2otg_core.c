@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -603,12 +603,18 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
+    /* Calculate "last time handled" and "next time to be handled" frame numbers */
+    ULONG last_handled = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+    ULONG next_to_handle = (last_handled + ioreq->iouh_Interval) & 0x7ff;
+    ioreq->iouh_DriverPrivate1 = (APTR)(last_handled);
+    ioreq->iouh_DriverPrivate2 = (APTR)(next_to_handle);
+
     Disable();
     AddTail(&otg_Unit->hu_IntXFerQueue, (struct Node *) ioreq);
     Enable();
     FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
-    D(bug("[USB2OTG] UHCMD_INTXFER: handled ioreq @ 0x%p\n", ioreq));
+    D(bug("[USB2OTG] UHCMD_INTXFER: handled ioreq @ 0x%p added=%d, next=%d\n", ioreq, last_handled, next_to_handle));
 
     return (RC_DONTREPLY);
 }
