@@ -27,6 +27,7 @@
 #include "atags.h"
 #include "vc_mb.h"
 #include "elf.h"
+#include "devicetree.h"
 
 #define DBOOT(x) x
 
@@ -75,93 +76,73 @@ asm("   .section .aros.startup      \n"
 static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup"))) = (void *)(0x1000 - 16);
 static struct TagItem *boottag;
 static unsigned long *mem_upper;
-static void *pkg_image;
-static uint32_t pkg_size;
+static void *pkg_image = NULL;
+static uint32_t pkg_size = 0;
 
 struct tag;
 
 static const char bootstrapName[] = "Bootstrap/ARM BCM2708";
 
-static void parse_atags(struct tag *tags)
+
+void check_device_tree(void *dt)
 {
-    struct tag *t = NULL;
+    struct fdt_header *hdr = dt;
+    char * strings = NULL;
+    uint32_t * data = NULL;
+    uint32_t token = 0;
 
-    kprintf("[BOOT] Parsing ATAGS\n");
+    kprintf("[BOOT] Checking device tree at %p\n", dt);
+    kprintf("[BOOT] magic=%08x\n", hdr->magic);
+    kprintf("[BOOT] size=%d\n", hdr->totalsize);
+    kprintf("[BOOT] off_dt_struct=%d\n", hdr->off_dt_struct);
+    kprintf("[BOOT] off_dt_strings=%d\n", hdr->off_dt_strings);
+    kprintf("[BOOT] off_mem_rsvmap=%d\n", hdr->off_mem_rsvmap);
 
-    for_each_tag(t, tags)
-    {
-        kprintf("[BOOT]   %08x: ", AROS_LE2LONG(t->hdr.tag));
-        switch (AROS_LE2LONG(t->hdr.tag))
-        {
-            case 0:
-                kprintf("ATAG_NONE - Ignored\n");
-                break;
+    strings = dt + hdr->off_dt_strings;
+    data = dt + hdr->off_dt_struct;
 
-            case ATAG_CORE:
-                kprintf("ATAG_CORE - Ignored\n");
-                break;
+    if (hdr->off_mem_rsvmap) {
+        struct fdt_reserve_entry *rsrvd = dt + hdr->off_mem_rsvmap;
 
-            case ATAG_MEM:
-                kprintf("ATAG_MEM (%08x-%08x)\n", AROS_LE2LONG(t->u.mem.start), AROS_LE2LONG(t->u.mem.size) + AROS_LE2LONG(t->u.mem.start) - 1);
-                boottag->ti_Tag = KRN_MEMLower;
-                if ((boottag->ti_Data = AROS_LE2LONG(t->u.mem.start)) < sizeof(struct bcm2708bootmem))
-                    boottag->ti_Data = sizeof(struct bcm2708bootmem); // Skip the *reserved* space for the cpu vectors/boot tmp stack/kernel private data.
-
-                boottag++;
-                boottag->ti_Tag = KRN_MEMUpper;
-                boottag->ti_Data = AROS_LE2LONG(t->u.mem.start) + AROS_LE2LONG(t->u.mem.size);
-
-                mem_upper = &boottag->ti_Data;
-
-                boottag++;
-
-                mmu_map_section(AROS_LE2LONG(t->u.mem.start), AROS_LE2LONG(t->u.mem.start), AROS_LE2LONG(t->u.mem.size), 1, 1, 3, 1);
-
-                break;
-
-            case ATAG_VIDEOTEXT:
-                kprintf("ATAG_VIDEOTEXT - Ignored\n");
-                break;
-
-            case ATAG_RAMDISK:
-                kprintf("ATAG_RAMDISK - Ignored\n");
-                break;
-
-            case ATAG_INITRD2:
-                kprintf("ATAG_INITRD2 (%08x-%08x)\n", AROS_LE2LONG(t->u.initrd.start), AROS_LE2LONG(t->u.initrd.size) + AROS_LE2LONG(t->u.initrd.start) - 1);
-                pkg_image = (void *)AROS_LE2LONG(t->u.initrd.start);
-                pkg_size = AROS_LE2LONG(t->u.initrd.size);
-                break;
-
-            case ATAG_SERIAL:
-                kprintf("ATAG_SERIAL - Ignored\n");
-                break;
-
-            case ATAG_REVISION:
-                kprintf("ATAG_REVISION - Ignored\n");
-                break;
-
-            case ATAG_VIDEOLFB:
-                kprintf("ATAG_VIDEOLFB - Ignored\n");
-                break;
-
-            case ATAG_CMDLINE:
-            {
-                char *cmdline = malloc(strlen(t->u.cmdline.cmdline) + 1);
-                strcpy(cmdline, t->u.cmdline.cmdline);
-                kprintf("ATAG_CMDLINE \"%s\"\n", cmdline);
-
-                boottag->ti_Tag = KRN_CmdLine;
-                boottag->ti_Data = (intptr_t)cmdline;
-                boottag++;
-            }
-            break;
-
-            default:
-                kprintf("(UNKNOWN)...\n");
-                break;
+        while (rsrvd->address != 0 || rsrvd->size != 0) {
+            kprintf("[BOOT]   reserved: %08x-%08x\n", (uint32_t)rsrvd->address, (uint32_t)(rsrvd->address + rsrvd->size - 1));
+            rsrvd++;
         }
     }
+
+    char fill[] = "                         ";
+    int depth = 25;
+
+    do
+    {
+        token = *data++;
+
+        switch (token)
+        {
+            case FDT_BEGIN_NODE:
+                kprintf("[BOOT] %snode: %s\n", &fill[depth], (char *)data);
+                depth -= 2;
+                data += (strlen((char *)data) + 4) / 4;
+                break;
+            case FDT_PROP:
+            {
+                uint32_t len = *data++;
+                uint32_t nameoff = *data++;
+                uint8_t  *propval = (uint8_t *)data;
+                kprintf("[BOOT] %s  %s = ", &fill[depth], &strings[nameoff], len);
+                data += (len + 3)/4;
+                while (len--)
+                {
+                    kprintf(" %02x", *propval++);
+                }
+                kprintf("\n");
+                break;
+            }
+            case FDT_END_NODE:
+                depth += 2;
+                break;
+        }
+    } while (token != FDT_END);
 }
 
 void query_vmem()
@@ -219,6 +200,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     mmu_init();
 
+    mem_init();
+
+    dt_parse(atags);
+
     /*
         Check processor type - armv6 is old raspberry pi with SOC IO base at 0x20000000.
         armv7 will be raspberry pi 2 with SOC IO base at 0x3f000000
@@ -249,8 +234,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     /* Prepare map for MMIO registers */
     mmu_map_section(__arm_periiobase, __arm_periiobase, ARM_PERIIOSIZE, 1, 0, 3, 0);
-
-    mem_init();
 
     boottag = tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE;
 
@@ -314,6 +297,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         boottag++;
     }
 #endif
+    
 
     kprintf("[BOOT] Big-Endian AROS %s\n", bootstrapName);
     kprintf("[BOOT] Arguments: %08x, %08x, %08x, %08x\n", dummy, arch, atags, a);
@@ -329,10 +313,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         kprintf("[BOOT] main id register: %08x\n", tmp);
     })
 
-    if (atags == NULL)
-        atags = (void*)0x100;
 
-    parse_atags(atags);
+
+    kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->dtp_value);
+
+//    parse_atags((void *)0x100);
     query_vmem();
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);

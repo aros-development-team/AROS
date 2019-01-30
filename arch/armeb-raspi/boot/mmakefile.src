@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot mmu kprintf support vc_mb serialdebug elf
+FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree
 USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2 -mcpu=cortex-a7
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
