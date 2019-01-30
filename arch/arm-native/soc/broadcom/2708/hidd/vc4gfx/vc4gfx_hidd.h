@@ -1,7 +1,7 @@
 #ifndef _VIDEOCOREGFX_CLASS_H
 #define _VIDEOCOREGFX_CLASS_H
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,8 +52,8 @@ struct VideoCoreGfx_staticdata {
 struct VideoCoreGfxBase
 {
     struct Library library;
-    
-    struct VideoCoreGfx_staticdata vsd;    
+
+    struct VideoCoreGfx_staticdata vsd;
 };
 
 struct DisplayMode
@@ -68,7 +68,7 @@ struct DisplayMode
     ULONG       dm_vstart;
     ULONG       dm_vend;
     ULONG       dm_vtotal;
-    ULONG       dm_descr;
+    STRPTR      dm_descr;
 };
 
 #define XSD(cl) (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)
