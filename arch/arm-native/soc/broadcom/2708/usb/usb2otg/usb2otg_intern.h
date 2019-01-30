@@ -1,7 +1,7 @@
 #ifndef USB2OTG_INTERN_H
 #define USB2OTG_INTERN_H
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,6 +53,11 @@ extern IPTR __arm_periiobase;
 #define RC_DONTREPLY  -1
 
 #define MAX_ROOT_PORTS	 16
+
+#define VCMB_PROPCHAN   8
+#define VCPOWER_USBHCD  3
+#define VCPOWER_STATE_ON    1
+#define VCPOWER_STATE_WAIT  2
 
 struct USBNSDeviceQueryResult
 {
@@ -106,7 +111,7 @@ struct USB2OTGDevice
     APTR		hd_MemPool;	        /* memory pool */
 
     struct USB2OTGUnit  *hd_Unit;	        /* we only currently support a single unit.. */
-    
+
     struct MsgPort	*hd_MsgPort;
     struct timerequest	*hd_TimerReq;	        /* Timer I/O Requests */
 
