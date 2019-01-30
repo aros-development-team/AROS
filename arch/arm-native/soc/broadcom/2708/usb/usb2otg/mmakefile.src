@@ -8,15 +8,16 @@ FILES := \
     usb2otg_device \
     usb2otg_core \
     usb2otg_intr \
-    usb2otg_hub
+    usb2otg_hub \
+    usb2otg_schedule
 
-WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
+WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware
 
 #MM
 kernel-usb-usb2otg-directories ::
     %mkdirs_q $(WBUSBHARDWAREDIRS)
 
-#MM- kernel-usb-usb2otg : kernel-usb-usb2otg-directories 
+#MM- kernel-usb-usb2otg : kernel-usb-usb2otg-directories
 
 %build_module mmake=kernel-usb-usb2otg \
     modname=usb2otg modtype=device \
