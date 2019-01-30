@@ -34,7 +34,7 @@
 #undef ARM_PERIIOBASE
 #define ARM_PERIIOBASE (__arm_periiobase)
 
-uint32_t __arm_periiobase;
+uint32_t __arm_periiobase = 0;
 
 extern void mem_init(void);
 extern unsigned int uartclock;
@@ -83,68 +83,6 @@ struct tag;
 
 static const char bootstrapName[] = "Bootstrap/ARM BCM2708";
 
-
-void check_device_tree(void *dt)
-{
-    struct fdt_header *hdr = dt;
-    char * strings = NULL;
-    uint32_t * data = NULL;
-    uint32_t token = 0;
-
-    kprintf("[BOOT] Checking device tree at %p\n", dt);
-    kprintf("[BOOT] magic=%08x\n", hdr->magic);
-    kprintf("[BOOT] size=%d\n", hdr->totalsize);
-    kprintf("[BOOT] off_dt_struct=%d\n", hdr->off_dt_struct);
-    kprintf("[BOOT] off_dt_strings=%d\n", hdr->off_dt_strings);
-    kprintf("[BOOT] off_mem_rsvmap=%d\n", hdr->off_mem_rsvmap);
-
-    strings = dt + hdr->off_dt_strings;
-    data = dt + hdr->off_dt_struct;
-
-    if (hdr->off_mem_rsvmap) {
-        struct fdt_reserve_entry *rsrvd = dt + hdr->off_mem_rsvmap;
-
-        while (rsrvd->address != 0 || rsrvd->size != 0) {
-            kprintf("[BOOT]   reserved: %08x-%08x\n", (uint32_t)rsrvd->address, (uint32_t)(rsrvd->address + rsrvd->size - 1));
-            rsrvd++;
-        }
-    }
-
-    char fill[] = "                         ";
-    int depth = 25;
-
-    do
-    {
-        token = *data++;
-
-        switch (token)
-        {
-            case FDT_BEGIN_NODE:
-                kprintf("[BOOT] %snode: %s\n", &fill[depth], (char *)data);
-                depth -= 2;
-                data += (strlen((char *)data) + 4) / 4;
-                break;
-            case FDT_PROP:
-            {
-                uint32_t len = *data++;
-                uint32_t nameoff = *data++;
-                uint8_t  *propval = (uint8_t *)data;
-                kprintf("[BOOT] %s  %s = ", &fill[depth], &strings[nameoff], len);
-                data += (len + 3)/4;
-                while (len--)
-                {
-                    kprintf(" %02x", *propval++);
-                }
-                kprintf("\n");
-                break;
-            }
-            case FDT_END_NODE:
-                depth += 2;
-                break;
-        }
-    } while (token != FDT_END);
-}
-
 void query_vmem()
 {
     volatile unsigned int *vc_msg = (unsigned int *) BOOTMEMADDR(bm_mboxmsg);
@@ -175,14 +113,46 @@ void query_vmem()
     mmu_map_section(AROS_LE2LONG(vc_msg[5]), AROS_LE2LONG(vc_msg[5]), AROS_LE2LONG(vc_msg[6]), 1, 0, 3, 0);
 }
 
+void query_memory()
+{
+    struct dt_entry *mem = dt_find_node("/memory");
+
+    kprintf("[BOOT] Query system memory\n");
+    if (mem)
+    {
+        struct dt_prop *p = dt_find_property(mem, "reg");
+
+        if (p != NULL && p->dtp_length)
+        {
+            uint32_t *addr = p->dtp_value;
+            uint32_t lower = *addr++;
+            uint32_t upper = *addr++;
+
+            kprintf("[BOOT] System memory range: %08x-%08x\n", lower, upper-1);
+
+            boottag->ti_Tag = KRN_MEMLower;
+            if ((boottag->ti_Data = lower) < sizeof(struct bcm2708bootmem))
+                boottag->ti_Data = sizeof(struct bcm2708bootmem); // Skip the *reserved* space for the cpu vectors/boot tmp stack/kernel private data.
+
+            boottag++;
+            boottag->ti_Tag = KRN_MEMUpper;
+            boottag->ti_Data = upper;
+
+            mem_upper = &boottag->ti_Data;
+
+            boottag++;
+
+            mmu_map_section(lower, lower, upper - lower, 1, 1, 3, 1);
+        }
+    }
+}
+
 void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 {
     uint32_t tmp, initcr;
-    int plus_board = 0;
     void (*entry)(struct TagItem *);
 
-    (void)entry;
-    (void)plus_board;
+    boottag = tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE;
 
     /*
      * Disable MMU, enable caches and branch prediction. Also enabled unaligned memory
@@ -198,93 +168,104 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
                                                 /* This bit sets also endianess of page tables */
     asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r"(tmp));
 
+    /* Prepare MMU tables but do not load them yet */
     mmu_init();
 
+    /* Initialize simplistic local memory allocator */
     mem_init();
 
+    /* Parse device tree */
     dt_parse(atags);
 
-    /*
-        Check processor type - armv6 is old raspberry pi with SOC IO base at 0x20000000.
-        armv7 will be raspberry pi 2 with SOC IO base at 0x3f000000
-     */
-    asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
-
-    tmp = (tmp >> 4) & 0xfff;
-
-    /* tmp == 7 means armv6 architecture. */
-    if (tmp == 0xc07) /* armv7, also RaspberryPi 2 */
+    /* Prepare mapping for peripherals. Use the data from device tree here */
+    struct dt_entry *e = dt_find_node("/soc");
+    if (e)
     {
-        __arm_periiobase = BCM2836_PERIPHYSBASE;
-        plus_board = 1;
+        struct dt_prop *p = dt_find_property(e, "ranges");
+        uint32_t *ranges = p->dtp_value;
+        int32_t len = p->dtp_length;
 
-        /* Clear terminal screen */
-        kprintf("\033[0H\033[0J");
+        while(len > 0)
+        {
+            uint32_t addr_bus, addr_cpu;
+            uint32_t addr_len;
 
-        /* prepare map for core boot vector(s) */
-        mmu_map_section(0x40000000, 0x40000000, 0x100000, 0, 0, 3, 0);
+            addr_bus = *ranges++;
+            addr_cpu = *ranges++;
+            addr_len = *ranges++;
+
+            (void)addr_bus;
+
+            /* If periiobase was not set yet, do it now */
+            if (__arm_periiobase == 0) {
+                __arm_periiobase = (uint32_t)addr_cpu;
+            }
+
+            /* Prepare mapping - device type */
+            mmu_map_section(addr_cpu, addr_cpu, addr_len, 1, 0, 3, 0);
+
+            len -= 12;
+        }
     }
     else
-    {
-        __arm_periiobase = BCM2835_PERIPHYSBASE;
-        /* Need to detect the plus board here in order to control LEDs properly */
-        
-        kprintf("\033[0H\033[0J");
-    }
+        while(1) asm volatile("wfe");
 
-    /* Prepare map for MMIO registers */
-    mmu_map_section(__arm_periiobase, __arm_periiobase, ARM_PERIIOSIZE, 1, 0, 3, 0);
 
-    boottag = tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE;
+
+    serInit();
 
     /* first of all, store the arch for the kernel to use .. */
     boottag->ti_Tag = KRN_Platform;
     boottag->ti_Data = (IPTR)arch;
     boottag++;
 
-    /* Init LED */
+    /* Store device tree */
+    boottag->ti_Tag = KRN_FlattenedDeviceTree;
+    boottag->ti_Data = (IPTR)atags;
+    boottag++;
+
+    /* Init LED(s) */
+    e = dt_find_node("/leds");
+    if (e)
     {
-        if (plus_board)
+        kprintf("[BOOT] Configuring LEDs\n");
+        for (struct dt_entry *led = e->dte_children; led; led = led->dte_next)
         {
-            /*
-             * Either B+ or rpi2 board. Uses two leds (power and activity) on GPIOs
-             * 47 and 35. Enable both leds as output and turn both of them off.
-             *
-             * The power led will be brought back up once AROS boots.
-             */
+            struct dt_prop *p = dt_find_property(led, "gpios");
+            int32_t gpio = 0;
+            if (p && p->dtp_length >= 8) {
+                uint32_t *data = p->dtp_value;
+                uint32_t phandle = data[0];
+                gpio = data[1];
+                struct dt_entry *bus = dt_find_node_by_phandle(phandle);
 
-            tmp = AROS_LE2LONG(*(volatile unsigned int *)GPFSEL4);
-            tmp &= ~(7 << 21); // GPIO 47 = 001 - output
-            tmp |= (1 << 21);
-            *(volatile unsigned int *)GPFSEL4 = AROS_LONG2LE(tmp);
+                kprintf("[BOOT] %s: GPIO%d (%08x %08x %08x)\n", led->dte_name, gpio, data[0], data[1], data[2]);
+                if (bus)
+                {
+                    kprintf("[BOOT] LED attached to %s\n", bus->dte_name);
+                
+                    if (strncmp(bus->dte_name, "gpio", 4) == 0)
+                    {
+                        int gpio_sel = gpio / 10;
+                        int gpio_soff = 3 * (gpio - 10 * gpio_sel);
 
-            tmp = AROS_LE2LONG(*(volatile unsigned int *)GPFSEL3);
-            tmp &= ~(7 << 15); // GPIO 35 = 001 - output
-            tmp |= (1 << 15);
-            *(volatile unsigned int *)GPFSEL3 = AROS_LONG2LE(tmp);
+                        kprintf("[BOOT] GPFSEL=%x, bit=%d\n", gpio_sel * 4, gpio_soff);
 
-            /* LEDS off */
-            *(volatile unsigned int *)GPCLR1 = AROS_LONG2LE((1 << (47-32)));
-            *(volatile unsigned int *)GPCLR1 = AROS_LONG2LE((1 << (35-32)));
-        }
-        else
-        {
-            /*
-             * Classic rpi board has only one controlable LED - activity on GPIO 16. Turn it
-             * off now, kernel.resource will bring it back later.
-             */
+                        /* Configure GPIO as output */
+                        tmp = AROS_LE2LONG(*(volatile unsigned int *)(GPFSEL0 + 4*gpio_sel));
+                        tmp &= ~(7 << gpio_soff); // GPIO 47 = 001 - output
+                        tmp |= (1 << gpio_soff);
+                        *(volatile unsigned int *)(GPFSEL0 + 4*gpio_sel) = AROS_LONG2LE(tmp);
 
-            tmp = AROS_LE2LONG(*(volatile unsigned int *)GPFSEL1);
-            tmp &= ~(7 << 18); // GPIO 16 = 001 - output
-            tmp |= (1 << 18);
-            *(volatile unsigned int *)GPFSEL1 = AROS_LONG2LE(tmp);
-
-            *(volatile unsigned int *)GPSET0 = AROS_LONG2LE((1 << 16));
+                        /* Turn LED off */
+                        *(volatile unsigned int *)(GPCLR0 + 4 * (gpio / 32)) = 1 << (gpio % 32);
+                    }
+                }
+            }
         }
     }
 
-    serInit();
-
+    
     boottag->ti_Tag = KRN_BootLoader;
     boottag->ti_Data = (IPTR)bootstrapName;
     boottag++;
@@ -313,11 +294,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         kprintf("[BOOT] main id register: %08x\n", tmp);
     })
 
-
-
     kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->dtp_value);
 
-//    parse_atags((void *)0x100);
+    query_memory();
     query_vmem();
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
@@ -332,7 +311,37 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
 
-if (mem_upper)
+    e = dt_find_node("/chosen");
+    if (e)
+    {
+        struct dt_prop *p = dt_find_property(e, "linux,initrd-start");
+        if (p)
+            pkg_image = (void*)(*((uint32_t *)p->dtp_value));
+        else
+            pkg_image = NULL;
+
+        p = dt_find_property(e, "linux,initrd-end");
+        if (p)
+            pkg_size = *((uint32_t *)p->dtp_value) - (uint32_t)pkg_image;
+        else
+            pkg_size = 0;
+    }
+
+    kprintf("[BOOT] BSP image: %08x-%08x\n", pkg_image, (int32_t)pkg_image + pkg_size - 1);
+
+    kprintf("[BOOT] mem_avail=%d\n", mem_avail());
+
+#if 0
+    for (int i=0; i < 4096/16/4; i++)
+    {
+        kprintf("[BOOT]");
+        for (int j=0; j < 16; j++)
+            kprintf(" %08x", *(uint32_t*)(i*64 + j*4));
+        kprintf("\n");
+    }
+#endif
+
+    if (mem_upper)
     {
         *mem_upper = *mem_upper & ~4095;
 
@@ -439,10 +448,7 @@ if (mem_upper)
             {
                 kprintf("[BOOT] Kernel image is ELF file\n");
 
-                getElfSize(base, &size_rw, &size_ro);
-
-                total_size_ro += (size_ro + 4095) & ~4095;
-                total_size_rw += (size_rw + 4095) & ~4095;
+                loadElf(base);
             }
             else if (base[0] == 'P' && base[1] == 'K' && base[2] == 'G' && base[3] == 0x01)
             {
@@ -476,9 +482,6 @@ if (mem_upper)
 
                     /* load it */
                     loadElf(file);
-
-                    total_size_ro += (size_ro + 4095) & ~4095;
-                    total_size_rw += (size_rw + 4095) & ~4095;
 
                     /* go to the next file */
                     file += len;
