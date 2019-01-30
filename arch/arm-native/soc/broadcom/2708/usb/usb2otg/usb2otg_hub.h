@@ -1,22 +1,30 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <devices/usb_hub.h>
 
+#if AROS_BIG_ENDIAN
+#define LE16(x) ((((x) & 0xff) << 8) | (((x) & 0xff00) >> 8))
+#define BE16(x) (x)
+#else
+#define LE16(x) (x)
+#define BE16(x) ((((x) & 0xff) << 8) | (((x) & 0xff00) >> 8))
+#endif
+
 /* Root hub data */
 const struct UsbStdDevDesc OTGRootHubDevDesc = {
     sizeof(struct UsbStdDevDesc),
     UDT_DEVICE,
-    AROS_WORD2LE(0x0200),
+    LE16(0x0200),
     HUB_CLASSCODE,
     0,
     0,
     8,
-    AROS_WORD2LE(0x0000),
-    AROS_WORD2LE(0x0000),
-    AROS_WORD2LE(0x0100),
+    LE16(0x0000),
+    LE16(0x0000),
+    LE16(0x0100),
     0,
     1,
     0,
@@ -35,7 +43,7 @@ const struct OTGHubCfg OTGRootHubCfg =
     .HubCfgDesc = {
         sizeof(struct UsbStdCfgDesc),
         UDT_CONFIGURATION,
-        AROS_WORD2LE(sizeof(struct OTGHubCfg)),
+        LE16(sizeof(struct OTGHubCfg)),
         1,
         1,
         3,
@@ -55,12 +63,12 @@ const struct OTGHubCfg OTGRootHubCfg =
         4
     },
 
-    .HubEPDesc = { 
+    .HubEPDesc = {
         sizeof(struct UsbStdEPDesc),
         UDT_ENDPOINT,
         URTF_IN|1,
         USEAF_INTERRUPT,
-        AROS_WORD2LE(8),
+        LE16(8),
         255
     },
 };
