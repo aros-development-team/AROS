@@ -185,4 +185,11 @@ WORD                    FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *, struc
 WORD                    FNAME_ROOTHUB(cmdIntXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 void                    FNAME_ROOTHUB(PendingIO)(struct USB2OTGUnit *);
 
+void                    FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *);
+void                    FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *);
+void                    FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *);
+
+#define CHAN_CTRL       0
+#define CHAN_BULK       1
+
 #endif /* USB2OTG_INTERN_H */

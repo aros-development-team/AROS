@@ -36,7 +36,6 @@ static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBa
 
     if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
     {
-//        D(bug("[USB2OTG] %s: SOF intr\n", __PRETTY_FUNCTION__));
         wr32le(USB2OTG_INTR, USB2OTG_INTRCORE_DMASTARTOFFRAME);
     }
 
