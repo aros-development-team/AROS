@@ -1,11 +1,12 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #define DEBUG 0
 
 #include <aros/debug.h>
+#include <aros/macros.h>
 #include <aros/symbolsets.h>
 #include <aros/libcall.h>
 #include <proto/kernel.h>
@@ -29,7 +30,7 @@ static int gpio_init(struct GPIOBase *GPIOBase)
         InitSemaphore(&GPIOBase->gpio_Sem);
 
         D(bug("[GPIO] %s: Initialised Semaphore @ 0x%p\n", __PRETTY_FUNCTION__, &GPIOBase->gpio_Sem));
-        
+
         retval = TRUE;
     }
     return retval;
@@ -48,7 +49,7 @@ AROS_LH2(void, GPIOSet,
     D(bug("[GPIO] %s(#%d,%d)\n", __PRETTY_FUNCTION__, pin, val));
 
     if (GPIOBase->gpio_periiobase && (pin <= 53))
-    { 
+    {
         reg = val? GPSET0: GPCLR0;
         reg += (pin >> 5) << 2; /* (pin / 32) << 2 */
 
@@ -56,7 +57,7 @@ AROS_LH2(void, GPIOSet,
 
         ObtainSemaphore(&GPIOBase->gpio_Sem);
 
-        *(volatile unsigned int *)reg = bit;
+        *(volatile unsigned int *)reg = AROS_LONG2LE(bit);
 
         ReleaseSemaphore(&GPIOBase->gpio_Sem);
     }
@@ -88,7 +89,7 @@ AROS_LH2(void, GPIOSetFunc,
 
         ObtainSemaphore(&GPIOBase->gpio_Sem);
 
-        *(volatile unsigned int *)reg = func;
+        *(volatile unsigned int *)reg = AROS_LONG2LE(func);
 
         ReleaseSemaphore(&GPIOBase->gpio_Sem);
     }

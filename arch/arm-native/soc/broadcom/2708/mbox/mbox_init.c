@@ -5,6 +5,7 @@
 
 #define DEBUG 0
 
+#include <aros/macros.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/libcall.h>
@@ -39,7 +40,7 @@ AROS_LH1(unsigned int, MBoxStatus,
 
     D(bug("[MBox] MBoxStatus(0x%p)\n", mb));
 
-    return *((volatile unsigned int *)(mb + VCMB_STATUS));
+    return AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_STATUS)));
 
     AROS_LIBFUNC_EXIT
 }
@@ -74,8 +75,8 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
             }
             asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
-            msg = *((volatile unsigned int *)(mb + VCMB_READ));
-            
+            msg = AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_READ)));
+
             asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
             ReleaseSemaphore(&MBoxBase->mbox_Sem);
@@ -100,7 +101,7 @@ AROS_LH3(void, MBoxWrite,
     D(bug("[MBOX] MBoxWrite(chan %d @ 0x%p, msg @ 0x%p)\n", chan, mb, msg));
 
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
-    { 
+    {
         ULONG length = ((ULONG *)msg)[0];
 
         void *phys_addr = CachePreDMA(msg, &length, DMA_ReadFromRAM);
@@ -115,7 +116,7 @@ AROS_LH3(void, MBoxWrite,
 
         asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
-        *((volatile unsigned int *)(mb + VCMB_WRITE)) = ((unsigned int)phys_addr | chan);
+        *((volatile unsigned int *)(mb + VCMB_WRITE)) = AROS_LONG2LE(((unsigned int)phys_addr | chan));
 
         ReleaseSemaphore(&MBoxBase->mbox_Sem);
     }
