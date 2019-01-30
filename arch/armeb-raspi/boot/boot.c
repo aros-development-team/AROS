@@ -427,6 +427,8 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         kernel_phys = *mem_upper - total_size_ro - total_size_rw;
         kernel_virt = KERNEL_VIRT_ADDRESS;
 
+        bzero((void*)kernel_phys, total_size_ro + total_size_rw);
+
         kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
         kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);
 
@@ -548,6 +550,20 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         boottag->ti_Tag = KRN_OpenFirmwareTree;
         boottag->ti_Data = (IPTR)dt_location;
         boottag++;
+
+        e = dt_find_node("/chosen");
+        if (e)
+        {
+            of_property_t *p = dt_find_property(e, "bootargs");
+            if (p)
+            {
+                boottag->ti_Tag = KRN_CmdLine;
+                boottag->ti_Data = (IPTR)p->op_value;
+                boottag++;
+
+                kprintf("[BOOT] Kernel parameters @ %p: %s\n", p->op_value, p->op_value);
+            }
+        }
     }
 
     boottag->ti_Tag = TAG_DONE;
