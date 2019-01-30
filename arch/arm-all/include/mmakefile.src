@@ -6,6 +6,11 @@ INCLUDE_FILES := $(call WILDCARD, aros/*.h)
 %copy_includes mmake=compiler-includes path=aros/arm dir=aros
 %copy_includes mmake=compiler-includes path=aros/armeb dir=aros
 
+INCLUDE_FILES := $(call WILDCARD, aros-armeb/*.h)
+%copy_includes mmake=compiler-includes path=aros/armeb dir=aros-armeb
+
+INCLUDE_FILES := $(call WILDCARD, aros-armel/*.h)
+%copy_includes mmake=compiler-includes path=aros/arm dir=aros-armel
 
 INCLUDE_FILES := $(call WILDCARD, asm/*.h)
 %copy_includes mmake=compiler-includes path=asm/arm dir=asm
