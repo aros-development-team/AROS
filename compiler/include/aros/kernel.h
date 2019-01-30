@@ -62,6 +62,7 @@ typedef enum
 #define KRN_VMEMUpper           (KRN_Dummy + 29) /* Highest address of framebuffer, e.g. on embedded systems */
 #define KRN_KernelPhysLowest    (KRN_Dummy + 30) /* Lowest *PHYSICAL* address occupied by Kernel */
 #define KRN_Platform            (KRN_Dummy + 31) /* Arch specifc platform ID provided */
+#define KRN_FlattenedDeviceTree (KRN_Dummy + 32) /* Flattened device tree as used e.g. by linux kernels */
 
 /* Magic value passed by the bootstrap as second parameter */
 #define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
