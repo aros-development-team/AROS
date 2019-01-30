@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,7 @@
 
 AROS_LH1(void, KrnSpinUnLock,
 	AROS_LHA(spinlock_t *, lock, A0),
-	struct KernelBase *, KernelBase, 44, Kernel)
+	struct KernelBase *, KernelBase, 53, Kernel)
 {
     AROS_LIBFUNC_INIT
 
