@@ -97,8 +97,8 @@ void query_vmem()
     vc_msg[6] = 0;
     vc_msg[7] = 0;
 
-    vcmb_write((void *)VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
-    vc_msg = vcmb_read((void *)VCMB_BASE, VCMB_PROPCHAN);
+    vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (void *)vc_msg);
+    vc_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
 
     kprintf("[BOOT] Base = %08x, Size = %08x\n", AROS_LE2LONG(vc_msg[5]), AROS_LE2LONG(vc_msg[6]));
 
