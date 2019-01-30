@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,8 @@
 #include <proto/utility.h>
 
 #include <proto/alib.h>
+#include <proto/mbox.h>
+#include <hardware/videocore.h>
 
 #include "usb2otg_intern.h"
 
@@ -60,20 +62,20 @@ static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBa
  */
 static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 {
-    volatile unsigned int *pmmailbox;
+    void *MBoxBase = NULL;
     volatile unsigned int otg_RegVal;
-    unsigned int otg_OperatingMode = 0, pmres;
+    unsigned int otg_OperatingMode = 0;
+    ULONG *PwrOnMsg, *pwron = NULL;
 
     KernelBase = OpenResource("kernel.resource");
+    MBoxBase = OpenResource("mbox.resource");
 
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
-
-    pmmailbox = (volatile unsigned int *)(ARM_PERIIOBASE + 0xB880);
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
 
-    otg_RegVal = *((volatile unsigned int *)USB2OTG_VENDORID);
+    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_VENDORID));
 
     if ((otg_RegVal & 0xFFFFF000) != 0x4F542000)
     {
@@ -107,7 +109,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                 ((otg_RegVal >> 12) & 0xF), ((otg_RegVal >> 8) & 0xF), ((otg_RegVal >> 4) & 0xF), (otg_RegVal & 0xF)
                                 );
 
-                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_HARDWARE2));
                     bug("[USB2OTG] Architecture: %d - ", ((otg_RegVal & (3 << 3)) >> 3));
                     switch (((otg_RegVal & (3 << 3)) >> 3))
                     {
@@ -123,22 +125,47 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                     }
 
                     D(bug("[USB2OTG] %s: Disabling USB Interrupts (Globaly)..\n", __PRETTY_FUNCTION__));
-                    otg_RegVal = *((volatile unsigned int *)USB2OTG_AHB);
+                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_AHB));
                     otg_RegVal &= ~USB2OTG_AHB_INTENABLE;
-                    *((volatile unsigned int *)USB2OTG_INTRMASK) = 0;
-                    *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
+                    *((volatile unsigned int *)USB2OTG_INTRMASK) = AROS_LONG2LE(0);
+                    *((volatile unsigned int *)USB2OTG_AHB) = AROS_LONG2LE(otg_RegVal);
 
-                    while (pmmailbox[6] & 0x80000000);
-                    pmmailbox[8] = 0x80;
-                    do {
-                        while (pmmailbox[6] & 0x40000000);		
-                    } while (((pmres = pmmailbox[0]) & 0xf) != 0);
-                    if (pmres != 0x80)
+                    D(bug("[USB2OTG] Powering on USB controller\n"));
+                    pwron = AllocVec(9*sizeof(ULONG), MEMF_CLEAR);
+                    PwrOnMsg = (ULONG*)(((IPTR)pwron + 15) & ~15);
+
+                    D(bug("[USB2OTG] pwron=%p, PwrOnMsg=%p\n", pwron, PwrOnMsg));
+
+                    PwrOnMsg[0] = AROS_LE2LONG(8 * sizeof(ULONG));
+                    PwrOnMsg[1] = AROS_LE2LONG(VCTAG_REQ);
+                    PwrOnMsg[2] = AROS_LE2LONG(VCTAG_SETPOWER);
+                    PwrOnMsg[3] = AROS_LE2LONG(8);
+                    PwrOnMsg[4] = AROS_LE2LONG(0);
+                    PwrOnMsg[5] = AROS_LE2LONG(VCPOWER_USBHCD);
+                    PwrOnMsg[6] = AROS_LE2LONG(VCPOWER_STATE_ON | VCPOWER_STATE_WAIT);
+                    PwrOnMsg[7] = 0;
+
+                    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, PwrOnMsg);
+                    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == PwrOnMsg)
                     {
-                        bug("[USB2OTG] Failed to power on controller\n");
-                        //USB2OTGBase->hd_TimerReq
-                        //USB2OTGBase->hd_MsgPort
-                        USB2OTGBase = NULL;
+                        D(bug("[USB2OTG] Power on state: %08x\n", AROS_LE2LONG(PwrOnMsg[6])));
+                        if ((AROS_LE2LONG(PwrOnMsg[6]) & 1) == 0)
+                        {
+                            bug("[USB2OTG] Failed to power on USB controller\n");
+                            USB2OTGBase = NULL;
+                        }
+
+                        if ((AROS_LE2LONG(PwrOnMsg[6]) & 2) != 0)
+                        {
+                            bug("[USB2OTG] USB HCD does not exist\n");
+                            USB2OTGBase = NULL;
+                        }
+                    }
+                    FreeVec(pwron);
+                    PwrOnMsg = NULL;
+
+                    if (!USB2OTGBase)
+                    {
                         return FALSE;
                     }
 
@@ -155,13 +182,13 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                             if (USB2OTGBase)
                             {
                                 D(
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_HARDWARE));
                                     bug("[USB2OTG] %s: HWConfig: %08x-", __PRETTY_FUNCTION__, otg_RegVal);
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_HARDWARE2));
                                     bug("%08x-", otg_RegVal);
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_HARDWARE3));
                                     bug("%08x-", otg_RegVal);
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_HARDWARE4));
                                     bug("%08x\n", otg_RegVal);
                                 )
 
@@ -213,21 +240,21 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",
                                                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle, IRQ_HOSTPORT));
 
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_USB));
                                     otg_RegVal &= ~(USB2OTG_USB_ULPIDRIVEEXTERNALVBUS|USB2OTG_USB_TSDLINEPULSEENABLE);
-                                    *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                    *((volatile unsigned int *)USB2OTG_USB) = AROS_LONG2LE(otg_RegVal);
 
                                     D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
-                                    *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_CORESOFT;
+                                    *((volatile unsigned int *)USB2OTG_RESET) = AROS_LONG2LE(USB2OTG_RESET_CORESOFT);
                                     for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-                                    if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
+                                    if ((AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_RESET)) & USB2OTG_RESET_CORESOFT) != 0)
                                         bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
 
                                     D(bug("[USB2OTG] %s: Initialising PHY ..\n", __PRETTY_FUNCTION__));
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_USB));
                                     otg_RegVal &= ~USB2OTG_USB_PHYINTERFACE;
                                     otg_RegVal &= ~USB2OTG_USB_MODESELECT_UTMI;
-                                    *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                    *((volatile unsigned int *)USB2OTG_USB) = AROS_LONG2LE(otg_RegVal);
 
 #if (0)
                                     D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
@@ -237,25 +264,25 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
 #endif
 
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_HARDWARE2));
                                     if (((otg_RegVal & (3 << 6) >> 6) == 2) && ((otg_RegVal & (3 << 8) >> 8) == 1))
                                     {
                                         D(bug("[USB2OTG] %s: ULPI FSLS configuration: enabled.\n", __PRETTY_FUNCTION__));
-                                        otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                        otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_USB));
                                         otg_RegVal |= (USB2OTG_USB_ULPIFSLS|USB2OTG_USB_ULPI_CLK_SUS_M);
-                                        *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                        *((volatile unsigned int *)USB2OTG_USB) = AROS_LONG2LE(otg_RegVal);
                                     } else {
                                         D(bug("[USB2OTG] %s: ULPI FSLS configuration: disabled.\n", __PRETTY_FUNCTION__));
-                                        otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                        otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_USB));
                                         otg_RegVal &= ~(USB2OTG_USB_ULPIFSLS|USB2OTG_USB_ULPI_CLK_SUS_M);
-                                        *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                        *((volatile unsigned int *)USB2OTG_USB) = AROS_LONG2LE(otg_RegVal);
                                     }
 
                                     D(bug("[USB2OTG] %s: Enabling DMA configuration..\n", __PRETTY_FUNCTION__));
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_AHB);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_AHB));
                                     otg_RegVal &= ~(1 << USB2OTG_AHB_DMAREMAINDERMODE);
                                     otg_RegVal |= (USB2OTG_AHB_DMAENABLE|USB2OTG_AHB_DMAREMAINDERMODE_INCR);
-                                    *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
+                                    *((volatile unsigned int *)USB2OTG_AHB) = AROS_LONG2LE(otg_RegVal);
 
 #if (0)
                                     D(bug("[USB2OTG] %s: Operating Mode: ", __PRETTY_FUNCTION__));
@@ -288,15 +315,15 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     }
 #else
                                     D(bug("[USB2OTG] %s: Disable HNP/SRP\n", __PRETTY_FUNCTION__));
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_USB));
                                     otg_RegVal &= ~(USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
-                                    *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                    *((volatile unsigned int *)USB2OTG_USB) = AROS_LONG2LE(otg_RegVal);
 #endif
 
                                     D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n", __PRETTY_FUNCTION__));
-                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
+                                    otg_RegVal = AROS_LE2LONG(*((volatile unsigned int *)USB2OTG_INTR));
                                     otg_RegVal = ~0UL;
-                                    *((volatile unsigned int *)USB2OTG_INTR) = otg_RegVal;
+                                    *((volatile unsigned int *)USB2OTG_INTR) = AROS_LONG2LE(otg_RegVal);
 
                                     bug("[USB2OTG] HS OTG USB Driver Initialised\n");
                                 }
@@ -388,7 +415,7 @@ static int FNAME_DEV(Open)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq,
 
             return TRUE;
         }
-    }   
+    }
 
     return FALSE;
 }
