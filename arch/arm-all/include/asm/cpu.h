@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: cpu.h
@@ -25,5 +25,7 @@
 static inline void isb() { asm volatile("mcr p15, 0, %0, c7, c5, 4" : : "r" (0) : "memory"); }
 static inline void dsb() { asm volatile("mcr p15, 0, %0, c7, c10, 4" : : "r" (0) : "memory"); }
 static inline void dmb() { asm volatile("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); }
+static inline void sev() { asm volatile("sev"); }
+static inline void wfe() { asm volatile("wfe"); }
 
 #endif /* ASM_ARM_CPU_H */
