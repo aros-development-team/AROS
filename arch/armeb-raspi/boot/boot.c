@@ -29,6 +29,7 @@
 #include "vc_fb.h"
 #include "elf.h"
 #include "devicetree.h"
+#include "io.h"
 
 #define DBOOT(x) x
 
@@ -175,8 +176,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     /* Initialize simplistic local memory allocator */
     mem_init();
 
+    int dt_mem_usage = mem_avail();
     /* Parse device tree */
     dt_parse(atags);
+    dt_mem_usage -= mem_avail();
 
     /* Prepare mapping for peripherals. Use the data from device tree here */
     struct dt_entry *e = dt_find_node("/soc");
@@ -248,18 +251,20 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
                         kprintf("[BOOT] GPFSEL=%x, bit=%d\n", gpio_sel * 4, gpio_soff);
 
                         /* Configure GPIO as output */
-                        tmp = AROS_LE2LONG(*(volatile unsigned int *)(GPFSEL0 + 4*gpio_sel));
+                        tmp = rd32le(GPFSEL0 + 4*gpio_sel);
                         tmp &= ~(7 << gpio_soff); // GPIO 47 = 001 - output
                         tmp |= (1 << gpio_soff);
-                        *(volatile unsigned int *)(GPFSEL0 + 4*gpio_sel) = AROS_LONG2LE(tmp);
+                        wr32le(GPFSEL0 + 4*gpio_sel, tmp);
 
                         /* Turn LED off */
-                        *(volatile unsigned int *)(GPCLR0 + 4 * (gpio / 32)) = 1 << (gpio % 32);
+                        wr32le(GPCLR0 + 4 * (gpio / 32), 1 << (gpio % 32));
                     }
                 }
             }
         }
     }
+
+    kprintf("[BOOT] DT memory usage: %d\n", dt_mem_usage);
 
     boottag->ti_Tag = KRN_BootLoader;
     boottag->ti_Data = (IPTR)bootstrapName;
@@ -322,16 +327,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     kprintf("[BOOT] BSP image: %08x-%08x\n", pkg_image, (int32_t)pkg_image + pkg_size - 1);
 
     kprintf("[BOOT] mem_avail=%d\n", mem_avail());
-
-#if 0
-    for (int i=0; i < 4096/16/4; i++)
-    {
-        kprintf("[BOOT]");
-        for (int j=0; j < 16; j++)
-            kprintf(" %08x", *(uint32_t*)(i*64 + j*4));
-        kprintf("\n");
-    }
-#endif
 
     if (mem_upper)
     {
