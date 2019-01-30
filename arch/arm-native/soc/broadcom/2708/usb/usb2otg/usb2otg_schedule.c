@@ -357,7 +357,7 @@ int FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *otg_Unit, int chan)
             USB2OTG_HOSTTSIZE_PKTCNT(pkt_count) |
             USB2OTG_HOSTTSIZE_SIZE(xfer_size));
 
-        otg_Unit->hu_Channel[CHAN_CTRL].hc_XferSize = xfer_size;
+        otg_Unit->hu_Channel[chan].hc_XferSize = xfer_size;
 
         /* Set the bus address of transferred data (use L2 uncached from AHB's point of view!) */
         wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)buffer);
