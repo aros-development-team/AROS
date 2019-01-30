@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2008-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,6 +17,21 @@
 
 #include "of_intern.h"
 #include LC_LIBDEFS_FILE
+
+int my_strcmp(const char *s1, const char *s2)
+{
+    if (s1 && s2)
+    {
+        while (*s1 && *s2) {
+            if (*s1 != *s2)
+                break;
+            s1++;
+            s2++;
+        }
+        return *s1 - *s2;
+    }
+    else return -1;
+}
 
 AROS_LH1(void *, OF_OpenKey,
          AROS_LHA(char *, Key, A0),
@@ -55,7 +70,7 @@ AROS_LH1(void *, OF_OpenKey,
 
     		ForeachNode(&root->on_children, node)
     		{
-    			if (!strcmp(node->on_name, ptrbuf))
+    			if (!my_strcmp(node->on_name, ptrbuf))
     			{
     				root = node;
     				break;
@@ -108,7 +123,7 @@ AROS_LH2I(void *, OF_FindProperty,
 
     ForeachNode(&node->on_properties, p)
     {
-    	if (!strcmp(p->op_name, name))
+    	if (!my_strcmp(p->op_name, name))
     	{
     		prop = p;
 			break;
