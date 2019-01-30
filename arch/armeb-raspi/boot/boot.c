@@ -132,6 +132,11 @@ void query_memory()
 
             kprintf("[BOOT] System memory range: %08x-%08x\n", lower, upper-1);
 
+            if (((upper - lower) >> 20) < 256) {
+                kprintf("[BOOT] MISMATCHED FILES: start.elf and fixup.dat do not fit to each other!\n");
+                while(1) asm volatile("wfi");
+            }
+
             boottag->ti_Tag = KRN_MEMLower;
             if ((boottag->ti_Data = lower) < sizeof(struct bcm2708bootmem))
                 boottag->ti_Data = sizeof(struct bcm2708bootmem); // Skip the *reserved* space for the cpu vectors/boot tmp stack/kernel private data.
