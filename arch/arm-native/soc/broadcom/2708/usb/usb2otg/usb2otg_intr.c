@@ -39,6 +39,25 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
 
     if (frnm != last_frame)
     {
+        #if 0
+         if (USBUnit->hu_CtrlXFerQueue.lh_Head->ln_Succ)
+    {
+        D(bug("[USB2OTG] [0x%p:PEND] Process CtrlXFer ..\n", otg_Unit));
+        FNAME_DEV(ScheduleCtrlTDs)(USBUnit);
+    }
+
+    if (USBUnit->hu_IntXFerQueue.lh_Head->ln_Succ)
+    {
+//        D(bug("[USB2OTG] [0x%p:PEND] Process IntXFer ..\n", otg_Unit));
+        FNAME_DEV(ScheduleIntTDs)(USBUnit);
+    }
+
+    if (USBUnit->hu_BulkXFerQueue.lh_Head->ln_Succ)
+    {
+        D(bug("[USB2OTG] [0x%p:PEND] Process BulkXFer ..\n", otg_Unit));
+//        FNAME_DEV(ScheduleBulkTDs)(otg_Unit);
+    }
+#endif
         FNAME_DEV(Cause)(USB2OTGBase, &USBUnit->hu_PendingInt);
 
         ForeachNodeSafe(&USBUnit->hu_IntXFerQueue, req, next)
@@ -64,11 +83,11 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
             */
             else if (
                 (frnm > next_to_handle && frnm > last_handled) ||
-                (frnm < last_handled && frnm > next_to_handle) ||
+                (frnm < last_handled && frnm < next_to_handle) ||
                 (frnm > next_to_handle && frnm < last_handled)
             )
             {
-                //D(bug("[USB2OTG] overdued INT request, scheduling. last=%d, next=%d, frnm=%d\n", last_handled, next_to_handle, frnm));
+                D(bug("[USB2OTG] overdued INT request, scheduling. last=%d, next=%d, frnm=%d\n", last_handled, next_to_handle, frnm));
                 REMOVE(req);
                 ADDTAIL(&USBUnit->hu_IntXFerScheduled, req);
             }
@@ -215,7 +234,12 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                             //intr = 2;
         #if 1
         if ((chan >= CHAN_INT1 && chan <= CHAN_INT3))
-            FNAME_DEV(StartChannel)(USBUnit, chan, 1);
+        {
+         //   if (req->iouh_Flags & UHFF_LOWSPEED)
+         //       delayed_channel[chan] = 4;
+         //   else
+                FNAME_DEV(StartChannel)(USBUnit, chan, 1);
+        }
             //delayed_channel[chan] = 8;
         else
                             delayed_channel[chan] = 16;
@@ -232,9 +256,6 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                       /*  D(bug("[USB2OTG] Restarting split transaction\n"));
 
                         DumpChannelRegs(chan);*/
-
-//if (chan >= CHAN_INT1 && chan <= CHAN_INT3)
-//    bug("NAK channel %d\n", chan);
 
                         /* Clear interrupt flags */
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
@@ -274,7 +295,7 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                             else
                             {
                                 //CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_InvalidateD);
-                                #if 0
+                                #if 1
                                 for (int i=0; i < 1; i++)
                                 {
 
@@ -468,7 +489,10 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                             /* In case of INT requests NAK is silently ignored. Just put the request back to the IntXferQueue */
                             if (chan >= CHAN_INT1 && chan <= CHAN_INT3)
                             {
+//                                if (req->iouh_DevAddr == 4)
+//                                    bug("!NAK channel %d\n", chan);
                                 ADDTAIL(&USBUnit->hu_IntXFerQueue, req);
+                                USBUnit->hu_Channel[chan].hc_Request = NULL;
                                 req = NULL;
                             }
                             else
@@ -517,6 +541,33 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
         delayed_channel = 0;
     }
 #endif
+    {
+        ULONG reg, msk;
+
+
+        reg = rd32le(USB2OTG_OTGINTR);
+
+        if (reg)
+        {
+            bug("leaving interrupt with OTGINTR active: %08x\n", reg);
+        }
+
+        reg = rd32le(USB2OTG_INTR);
+        msk = rd32le(USB2OTG_INTRMASK);
+
+        if (reg & msk)
+        {
+            bug("leaving interrupt with INTR active: %08x %08x %08\n", reg, msk, reg&msk);
+        }
+
+        for (int i=0; i < 8; i++)
+        {
+            if (reg & (1 << i))
+            {
+                //bug("HOSTCHAN: ")
+            }
+        }
+    }
 }
 
 
@@ -537,6 +588,8 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
 
     while((req = (struct IOUsbHWReq *)REMHEAD(&otg_Unit->hu_FinishedXfers)))
     {
+        if (req->iouh_DevAddr == 4)
+            bug("Completing transfer for dev 4\n");
         FNAME_DEV(TermIO)(req, otg_Unit->hu_USB2OTGBase);
     }
 
