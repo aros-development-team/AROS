@@ -47,6 +47,9 @@ kernel-raspi-arm: $(OSGENDIR)/boot/core.elf
 #MM kernel-raspi-armeb: setup-raspi-armeb kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
 kernel-raspi-armeb: $(OSGENDIR)/boot/core.elf
 
+#MM kernel-raspi-armeb-quick: setup-raspi-armeb-quick kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick
+kernel-raspi-armeb-quick: $(OSGENDIR)/boot/core.elf
+
 $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o  $(KOBJSDIR)/task_resource.o
 		%mkdirs_q $(OSGENDIR)/boot
 		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi

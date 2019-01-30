@@ -12,11 +12,64 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirm
 ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
 #MM- distfiles-raspi-armeb : distfiles-raspi-be
+#MM- distfiles-quick-raspi-armeb : distfiles-raspi-be-quick
+
+#MM- distfiles-raspi-be-quick : \
+#MM kernel-raspi-armeb-quick \
+#MM kernel-package-raspi-armeb-quick \
+#MM distfiles-raspi-be-fw
 
 #MM distfiles-raspi-be : \
 #MM kernel-raspi-armeb \
 #MM kernel-package-raspi-armeb \
 #MM distfiles-raspi-be-fw
+
+#MM kernel-package-raspi-armeb-quick: \
+#MM linklibs-stdc-static-quick \
+#MM kernel-dos-quick \
+#MM kernel-bootloader-quick \
+#MM kernel-dosboot-quick \
+#MM kernel-oop-quick \
+#MM kernel-utility-quick \
+#MM kernel-debug-quick \
+#MM kernel-expansion-quick \
+#MM kernel-openfirmware-quick \
+#MM kernel-graphics-quick \
+#MM kernel-cgxbootpic-quick \
+#MM kernel-intuition-quick \
+#MM kernel-partition-quick \
+#MM kernel-layers-quick \
+#MM kernel-timer-quick \
+#MM kernel-lddemon-quick \
+#MM kernel-hidd-quick \
+#MM kernel-aros-quick \
+#MM kernel-misc-quick \
+#MM kernel-keymap-quick \
+#MM kernel-input-quick \
+#MM kernel-gameport-quick \
+#MM kernel-keyboard-quick \
+#MM kernel-console-quick \
+#MM kernel-shell-quick \
+#MM kernel-shellcommands-quick \
+#MM kernel-filesystem-quick \
+#MM kernel-fs-con-quick \
+#MM kernel-fs-afs-quick \
+#MM kernel-fs-cdvdfs-quick \
+#MM kernel-fs-fat-quick \
+#MM kernel-fs-sfs-quick \
+#MM kernel-fs-ram-quick \
+#MM kernel-processor-quick \
+#MM kernel-mbox-bcm2708-quick \
+#MM hidd-i2c-quick \
+#MM kernel-hidd-gfx-quick \
+#MM hidd-vc4gfx-quick \
+#MM kernel-sdcard-quick \
+#MM kernel-hidd-kbd-quick \
+#MM kernel-hidd-mouse-quick \
+#MM kernel-usb-nopci-quick \
+#MM kernel-usb-usb2otg-quick \
+#MM kernel-usb-romstrap-raspi-quick \
+#MM kernel-econsole-quick
 
 #MM kernel-package-raspi-armeb: \
 #MM linklibs-stdc-static \
@@ -114,6 +167,7 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) --be8 -r --format binary --oformat elf32-bigarm core.bin -o $@
 
 distfiles-raspi-be: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2
+distfiles-raspi-be-quick: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2
 
 $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2: $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
 	%mkdirs_q $(AROSDIR)/S
