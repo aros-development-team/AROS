@@ -42,7 +42,17 @@ asm(
 "       .globl mpcore_trampoline                \n"
 "       .type mpcore_trampoline,%function       \n"
 "mpcore_trampoline:                             \n"
-"               ldr     r3, mpcore_pde          \n"
+"               mrs     r4, cpsr_all            \n" /* Check if in hypervisor mode */
+"               and     r4, r4, #0x1f           \n" /* In that case try to leave it */
+"               mov     r8, #0x1a               \n"
+"               cmp     r4, r8                  \n"
+"               beq     leave_hyper             \n"
+"mpcore_continue_boot:                          \n"
+"               cps     #0x13                   \n"
+#if AROS_BIG_ENDIAN
+"               setend  be                      \n" /* If AROS is big endian set the endianess of cpu here */
+#endif
+"               ldr     r3, mpcore_pde          \n" /* MMU table */
 "               mcr     p15, 0, r3, c2, c0, 0   \n"
 "               mov     r3, #0                  \n"
 "               mcr     p15, 0, r3, c2, c0, 2   \n"
@@ -51,17 +61,32 @@ asm(
 "               mrc     p15, 0, r4, c1, c0, 0   \n"
 "               mov     r3, #0                  \n"
 "               mcr     p15, 0, r3, c7, c10, 4  \n"
-"               orr     r4, r4, #0x800000       \n"
-"               orr     r4, r4, #1              \n"
+"               orr     r4, r4, #0x800000       \n" /* v6 page tables */
+"               orr     r4, r4, #1              \n" /* Enable MMU */
+#if AROS_BIG_ENDIAN
+"               orr     r4, r4, #0x2000000      \n" /* EE bit - BigEndian exceptions and BigEndian page tables */
+#endif
 "               mcr     p15, 0, r4, c1, c0, 0   \n"
 "               mcr     p15, 0, r3, c7, c5, 4   \n"
 "               cps     #0x11                   \n"
+#if AROS_BIG_ENDIAN
+"               setend  be                      \n" /* If AROS is big endian set the endianess of cpu here */
+#endif
 "               ldr     sp, mpcore_fstack       \n"
 "               cps     #0x13                   \n"
 "               ldr     sp, mpcore_stack        \n"
 "               ldr     r3, mpcore_tls          \n"
 "               mcr     p15, 0, r3, c13, c0, 3  \n"
 "               ldr     pc, mpcore_code         \n"
+
+"leave_hyper:                                   \n" /* Escape hypervisor mode forever */
+"               adr     r4, mpcore_continue_boot\n"
+"               msr     ELR_hyp, r4             \n"
+"               mrs     r4, cpsr_all            \n"
+"               and     r4, r4, #0x1f           \n"
+"               orr     r4, r4, #0x13           \n"
+"               msr     SPSR_hyp, r4            \n"
+"               eret                            \n" /* Exit hypervisor */
 
 "       .globl mpcore_pde                       \n"
 "mpcore_pde:    .word   0                       \n"
@@ -144,6 +169,9 @@ cpu_registerfatal:
     uint32_t bs_stack = __tls->ThisTask->tc_SPUpper;
     asm volatile(
         "cps %[mode_user]\n"
+#if AROS_BIG_ENDIAN
+        "setend be\n"
+#endif
         "mov sp, %[bs_stack]\n"
         : : [bs_stack] "r" (bs_stack), [mode_user] "I" (CPUMODE_USER)
         );
