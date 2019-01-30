@@ -81,11 +81,24 @@
 #define USB2OTG_HOSTCHAN_DMABUFF                        (0x1c)
 #define USB2OTG_HOST_CHANREGSIZE                        (0x20)
 
-#define USB2OTG_HOSTCHAR_MAXPACKETSIZE                  0
-#define USB2OTG_HOSTCHAR_EPNO                           11
-#define USB2OTG_HOSTCHAR_EPDIR                          15
-#define USB2OTG_HOSTCHAR_DISABLE                        30
-#define USB2OTG_HOSTCHAR_ENABLE                         31
+#define USB2OTG_HOSTCHAR_MAXPACKETSIZE(x)               ((x) & 1023)
+#define USB2OTG_HOSTCHAR_EPNO(x)                        (((x) & 0x0f) << 11)
+#define USB2OTG_HOSTCHAR_EPDIR(x)                       (((x) & 1) << 15)
+#define USB2OTG_HOSTCHAR_ADDR(x)                        (((x) & 0x7f) << 22)
+#define USB2OTG_HOSTCHAR_EC(x)                          (((x) & 3) << 20)
+#define USB2OTG_HOSTCHAR_DISABLE                        (1 << 30)
+#define USB2OTG_HOSTCHAR_ENABLE                         (1 << 31)
+
+#define USB2OTG_HOSTTSIZE_PID(x)                        (((x) & 3) << 29)
+#define USB2OTG_HOSTTSIZE_PKTCNT(x)                     (((x) & 1023) << 19)
+#define USB2OTG_HOSTTSIZE_PING                          (1 << 31)
+#define USB2OTG_HOSTTSIZE_SIZE(x)                       ((x) & 524287)
+
+#define USB2OTG_PID_DATA0                               0
+#define USB2OTG_PID_DATA1                               2
+#define USB2OTG_PID_DATA2                               1
+#define USB2OTG_PID_MDATA                               3
+#define USB2OTG_PID_SETUP                               3
 
 #define USB2OTG_DEVCFG                                  (USB2OTG_BASE + 0x0800)
 #define USB2OTG_DEVCTRL                                 (USB2OTG_BASE + 0x0804)
@@ -318,5 +331,8 @@
 #define USB2OTG_POWER_ENABLESLEEPCLOCKGATING            (1 << 5)
 #define USB2OTG_POWER_PHYSLEEPING                       (1 << 6)
 #define USB2OTG_POWER_DEEPSLEEP                         (1 << 7)
+
+/* Some useful macros */
+#define USB2OTG_CHANNEL_REG(chan, reg)  ((USB2OTG_HOST_CHANBASE) + (0x20 * (chan)) + USB2OTG_HOSTCHAN_ ## reg)
 
 #endif	/* USB2OTG_H */
