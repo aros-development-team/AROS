@@ -60,27 +60,45 @@ extern IPTR __arm_periiobase;
 #define VCPOWER_STATE_WAIT  2
 
 static inline ULONG rd32le(IPTR iobase) {
-    return AROS_LE2LONG(*(volatile ULONG *)(iobase));
+    ULONG val;
+    asm volatile ("dmb":::"memory");
+    val = AROS_LE2LONG(*(volatile ULONG *)(iobase));
+    asm volatile ("dsb":::"memory");
+    return val;
 }
 
 static inline UWORD rd16le(IPTR iobase) {
-    return AROS_LE2WORD(*(volatile UWORD *)(iobase));
+    UWORD val;
+    asm volatile ("dmb":::"memory");
+    val = AROS_LE2WORD(*(volatile UWORD *)(iobase));
+    asm volatile ("dsb":::"memory");
+    return val;
 }
 
 static inline UBYTE rd8(IPTR iobase) {
-    return *(volatile UBYTE *)(iobase);
+    UBYTE val;
+    asm volatile ("dmb":::"memory");
+    val = *(volatile UBYTE *)(iobase);
+    asm volatile ("dsb":::"memory");
+    return val;
 }
 
 static inline void wr32le(IPTR iobase, ULONG value) {
+    asm volatile ("dsb":::"memory");
     *(volatile ULONG *)(iobase) = AROS_LONG2LE(value);
+    asm volatile ("dmb":::"memory");
 }
 
 static inline void wr16le(IPTR iobase, UWORD value) {
+    asm volatile ("dsb":::"memory");
     *(volatile UWORD *)(iobase) = AROS_WORD2LE(value);
+    asm volatile ("dmb":::"memory");
 }
 
 static inline void wr8be(IPTR iobase, UBYTE value) {
+    asm volatile ("dsb":::"memory");
     *(volatile UBYTE *)(iobase) = value;
+    asm volatile ("dmb":::"memory");
 }
 
 struct USBNSDeviceQueryResult
@@ -104,9 +122,17 @@ struct USB2OTGUnit
     struct List         hu_IntXFerQueue;
     struct List         hu_IntXFerScheduled;
     struct List         hu_IsoXFerQueue;
-    struct List	        hu_BulkXFerQueue;
+    struct List         hu_BulkXFerQueue;
+    struct List         hu_FinishedXfers;
 
-    struct IOUsbHWReq * hu_InProgressXFer[8];
+
+    struct USB2OTGChannel {
+        struct IOUsbHWReq * hc_Request;
+        ULONG               hc_XferSize;
+    }                   hu_Channel[8];
+
+//    struct IOUsbHWReq * hu_InProgressXFer[8];
+//    ULONG               hu_InProgressXFerSize[8];
 
     struct List         hu_AbortQueue;
 
@@ -125,6 +151,9 @@ struct USB2OTGUnit
     BOOL                hu_UnitAllocated;       /* unit opened */
     BOOL                hu_HubPortChanged;      /* Root port state change */
     APTR                hu_USB2OTGBase;
+
+    ULONG               hu_XferSizeWidth;
+    ULONG               hu_PktSizeWidth;
 
     ULONG               hu_PIDBits[128];        /* PID 2-bit pairs, one ULONG per device, each ULONG contains 2-bits for every endpoint */
 };
@@ -192,6 +221,10 @@ void                    FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit,
 void                    FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *);
+void                    FNAME_DEV(SetupChannel)(struct USB2OTGUnit *, int chan);
+void                    FNAME_DEV(StartChannel)(struct USB2OTGUnit *, int chan, int quick);
+int                     FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *, int chan);
+void                    FNAME_DEV(FinalizeChannel)(struct USB2OTGUnit *, int chan);
 
 #define CHAN_CTRL       0
 #define CHAN_BULK       1
