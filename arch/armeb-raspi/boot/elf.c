@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DELF(x) x
+#define DELF(x) /* x */
 
 uint32_t        int_shnum;
 uint32_t        int_shstrndx;
@@ -395,4 +395,3 @@ int loadElf(void *elf_file)
 	}
     return 1;
 }
-
