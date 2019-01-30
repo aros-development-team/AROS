@@ -21,7 +21,51 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-armeb: \
 #MM linklibs-stdc-static \
 #MM kernel-dos \
-#MM kernel-openfirmware
+#MM kernel-bootloader \
+#MM kernel-dosboot \
+#MM kernel-oop \
+#MM kernel-utility \
+#MM kernel-debug \
+#MM kernel-expansion \
+#MM kernel-openfirmware \
+#MM kernel-graphics \
+#MM kernel-cgxbootpic \
+#MM kernel-intuition \
+#MM kernel-partition \
+#MM kernel-layers \
+#MM kernel-timer \
+#MM kernel-lddemon \
+#MM kernel-hidd \
+#MM kernel-aros \
+#MM kernel-misc \
+#MM kernel-keymap \
+#MM kernel-input \
+#MM kernel-gameport \
+#MM kernel-keyboard \
+#MM kernel-console \
+#MM kernel-shell \
+#MM kernel-shellcommands \
+#MM kernel-filesystem \
+#MM kernel-fs-con \
+#MM kernel-fs-afs \
+#MM kernel-fs-cdvdfs \
+#MM kernel-fs-fat \
+#MM kernel-fs-sfs \
+#MM kernel-fs-ram \
+#MM kernel-processor \
+#MM kernel-mbox-bcm2708 \
+#MM hidd-i2c \
+#MM kernel-hidd-gfx \
+#MM kernel-hidd-kbd \
+#MM kernel-hidd-mouse \
+#MM kernel-usb-nopci \
+#MM kernel-usb-romstrap-raspi \
+#MM kernel-econsole
+
+# MM kernel-sdcard
+# MM hidd-i2c-bcm2708
+# MM hidd-vc4gfx
+# MM kernel-usb-usb2otg
 
 #MM kernel-package-raspi-armeb-missing: \
 #MM kernel-battclock
@@ -30,15 +74,15 @@ RASPIFW_BRANCH    := master
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf
 
-PKG_LIBS      := dos
-PKG_LIBS_ARCH :=
-PKG_RSRC      := openfirmware
-PKG_RSRC_ARCH :=
-PKG_DEVS      :=
-PKG_DEVS_ARCH :=
-PKG_HANDLERS  :=
-PKG_HIDDS     :=
-PKG_CLASSES   :=
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
+PKG_LIBS_ARCH := expansion
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
+PKG_RSRC_ARCH := processor
+PKG_DEVS      := input gameport keyboard console
+PKG_DEVS_ARCH := timer
+PKG_HANDLERS  := con ram cdrom sfs fat afs
+PKG_HIDDS     := gfx mouse keyboard hiddclass i2c
+PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
 
 %make_package mmake=kernel-package-raspi-armeb file=$(AROSDIR)/$(ARM_BSP) \
     libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
