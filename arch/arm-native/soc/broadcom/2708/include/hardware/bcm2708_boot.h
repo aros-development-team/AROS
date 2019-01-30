@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,9 +10,9 @@
 
 /* define the boot strap memory layout */
 
-#define __bcm2708_vectsize              0x20
-#define __bcm2708_bootstacksize         (256 << 2)
-#define __bcm2708_boottagssize          (128 << 3)
+#define __bcm2708_vectsize              0x40
+#define __bcm2708_bootstacksize         (768 << 2)
+#define __bcm2708_boottagssize          (64 << 3)
 
 struct bcm2708bootmem
 {
