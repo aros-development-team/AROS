@@ -102,10 +102,11 @@ struct USB2OTGUnit
     struct List         hu_PeriodicTDQueue;
     struct List         hu_CtrlXFerQueue;
     struct List         hu_IntXFerQueue;
+    struct List         hu_IntXFerScheduled;
     struct List         hu_IsoXFerQueue;
     struct List	        hu_BulkXFerQueue;
 
-    struct IOUsbHWReq * hu_InProgressCtrlXFer;
+    struct IOUsbHWReq * hu_InProgressXFer[8];
 
     struct List         hu_AbortQueue;
 
@@ -115,15 +116,17 @@ struct USB2OTGUnit
     struct timerequest  hu_NakTimeoutReq;
     struct MsgPort      hu_NakTimeoutMsgPort;
 
-    UBYTE		hu_OperatingMode;       /* HOST/DEVICE mode */
-    UBYTE		hu_HubAddr;
+    UBYTE               hu_OperatingMode;       /* HOST/DEVICE mode */
+    UBYTE               hu_HubAddr;
     UBYTE               hu_HostChans;
     UBYTE               hu_DevEPs;
     UBYTE               hu_DevInEPs;
 
-    BOOL		hu_UnitAllocated;       /* unit opened */
+    BOOL                hu_UnitAllocated;       /* unit opened */
     BOOL                hu_HubPortChanged;      /* Root port state change */
     APTR                hu_USB2OTGBase;
+
+    ULONG               hu_PIDBits[128];        /* PID 2-bit pairs, one ULONG per device, each ULONG contains 2-bits for every endpoint */
 };
 
 /* PRIVATE device node */
@@ -191,5 +194,11 @@ void                    FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *);
 
 #define CHAN_CTRL       0
 #define CHAN_BULK       1
+#define CHAN_INT1       2
+#define CHAN_INT2       3
+#define CHAN_INT3       4
+#define CHAN_ISO1       5
+#define CHAN_ISO2       6
+#define CHAN_ISO3       7
 
 #endif /* USB2OTG_INTERN_H */
