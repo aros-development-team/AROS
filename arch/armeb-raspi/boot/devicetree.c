@@ -27,7 +27,7 @@ struct dt_entry * dt_build_node(struct dt_entry *parent)
 
         while(1)
         {
-            switch (*data++)
+            switch (AROS_BE2LONG(*data++))
             {
                 case FDT_BEGIN_NODE:
                 {
@@ -42,8 +42,8 @@ struct dt_entry * dt_build_node(struct dt_entry *parent)
                     struct dt_prop *p = malloc(sizeof (struct dt_prop));
                     p->dtp_next = e->dte_properties;
                     e->dte_properties = p;
-                    p->dtp_length = *data++;
-                    p->dtp_name = &strings[*data++];
+                    p->dtp_length = AROS_BE2LONG(*data++);
+                    p->dtp_name = &strings[AROS_BE2LONG(*data++)];
                     if (p->dtp_length)
                         p->dtp_value = data;
                     else
@@ -81,31 +81,35 @@ struct dt_entry * dt_parse(void *dt)
     hdr = dt;
 
     D(kprintf("[BOOT] Checking device tree at %p\n", hdr));
-    D(kprintf("[BOOT] magic=%08x\n", hdr->magic));
+    D(kprintf("[BOOT] magic=%08x\n", AROS_LONG2BE(hdr->magic)));
 
     if (hdr->magic == AROS_LONG2BE(FDT_MAGIC))
     {
-        D(kprintf("[BOOT] size=%d\n", hdr->totalsize));
-        D(kprintf("[BOOT] off_dt_struct=%d\n", hdr->off_dt_struct));
-        D(kprintf("[BOOT] off_dt_strings=%d\n", hdr->off_dt_strings));
-        D(kprintf("[BOOT] off_mem_rsvmap=%d\n", hdr->off_mem_rsvmap));
+        D(kprintf("[BOOT] Appears to be a valid device tree\n"));
+        D(kprintf("[BOOT] size=%d\n", AROS_BE2LONG(hdr->totalsize)));
+        D(kprintf("[BOOT] off_dt_struct=%d\n", AROS_BE2LONG(hdr->off_dt_struct)));
+        D(kprintf("[BOOT] off_dt_strings=%d\n", AROS_BE2LONG(hdr->off_dt_strings)));
+        D(kprintf("[BOOT] off_mem_rsvmap=%d\n", AROS_BE2LONG(hdr->off_mem_rsvmap)));
 
-        strings = dt + hdr->off_dt_strings;
-        data = dt + hdr->off_dt_struct;
+        strings = dt + AROS_BE2LONG(hdr->off_dt_strings);
+        data = dt + AROS_BE2LONG(hdr->off_dt_struct);
 
         if (hdr->off_mem_rsvmap)
         {
-            struct fdt_reserve_entry *rsrvd = dt + hdr->off_mem_rsvmap;
+            struct fdt_reserve_entry *rsrvd = dt + AROS_BE2LONG(hdr->off_mem_rsvmap);
 
             while (rsrvd->address != 0 || rsrvd->size != 0) {
-                D(kprintf("[BOOT]   reserved: %08x-%08x\n", (uint32_t)rsrvd->address, (uint32_t)(rsrvd->address + rsrvd->size - 1)));
+                D(kprintf("[BOOT]   reserved: %08x-%08x\n",
+                    (uint32_t)AROS_BE2QUAD(rsrvd->address),
+                    (uint32_t)(AROS_BE2QUAD(rsrvd->address) + AROS_BE2QUAD(rsrvd->size - 1)))
+                );
                 rsrvd++;
             }
         }
 
         do
         {
-            token = *data++;
+            token = AROS_BE2LONG(*data++);
 
             switch (token)
             {
@@ -247,5 +251,4 @@ void dt_dump_tree()
     kprintf("[BOOT] Device Tree dump:\n");
 
     dt_dump_node(root, 0);
-
 }
