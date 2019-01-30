@@ -56,6 +56,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-mbox-bcm2708 \
 #MM hidd-i2c \
 #MM kernel-hidd-gfx \
+#MM hidd-vc4gfx \
 #MM kernel-hidd-kbd \
 #MM kernel-hidd-mouse \
 #MM kernel-usb-nopci \
@@ -64,7 +65,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
 # MM kernel-sdcard
 # MM hidd-i2c-bcm2708
-# MM hidd-vc4gfx
+
 # MM kernel-usb-usb2otg
 
 #MM kernel-package-raspi-armeb-missing: \
@@ -81,7 +82,7 @@ PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-PKG_HIDDS     := gfx mouse keyboard hiddclass i2c
+PKG_HIDDS     := gfx mouse keyboard hiddclass i2c vc4gfx
 PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
 
 %make_package mmake=kernel-package-raspi-armeb file=$(AROSDIR)/$(ARM_BSP) \
