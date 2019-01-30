@@ -127,6 +127,10 @@ static void bcm2708_init(APTR _kernelBase, APTR _sysBase)
             /* Wake up the cpu */
             wr32le(BCM2836_MAILBOX3_SET0 + (0x10 * cpu), (uint32_t)trampoline_dst);
 
+            dsb();
+
+            sev();
+
             /*
              * Try to obtain spinlock again.
              * This should put this cpu to sleep since the lock was already obtained. Once the cpu startup
