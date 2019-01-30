@@ -64,11 +64,10 @@ struct dt_entry * dt_build_node(struct dt_entry *parent)
     return e;
 }
 
-int dt_parse(void *dt)
+struct dt_entry * dt_parse(void *dt)
 {
     struct fdt_header *hdr = dt;
     uint32_t token = 0;
-    int retval = 0;
 
     D(kprintf("[BOOT] Checking device tree at %p\n", hdr));
     D(kprintf("[BOOT] magic=%08x\n", hdr->magic));
@@ -111,12 +110,34 @@ int dt_parse(void *dt)
         } while (token != FDT_END);
     }
 
-    return retval;
+    return root;
 }
+
+static struct dt_entry * dt_find_by_phandle(uint32_t phandle, struct dt_entry *root)
+{
+    struct dt_prop *p = dt_find_property(root, "phandle");
+
+    if (p && *((uint32_t *)p->dtp_value) == phandle)
+        return root;
+    else {
+        for (struct dt_entry *c = root->dte_children; c; c = c->dte_next) {
+            struct dt_entry *found = dt_find_by_phandle(phandle, c);
+            if (found)
+                return found;
+        }
+    }
+    return NULL;
+}
+
+struct dt_entry * dt_find_node_by_phandle(uint32_t phandle)
+{
+    return dt_find_by_phandle(phandle, root);
+}
+
+char ptrbuf[64];
 
 struct dt_entry * dt_find_node(char *key)
 {
-    char ptrbuf[64];
     int i;
     struct dt_entry *node, *ret = NULL;
 
@@ -156,14 +177,60 @@ struct dt_prop *dt_find_property(void *key, char *propname)
     struct dt_entry *node = (struct dt_entry *)key;
     struct dt_prop *p, *prop = NULL;
 
-    for (p = node->dte_properties; p; p=p->dtp_next)
+    if (node)
     {
-        if (!strcmp(p->dtp_name, propname))
+        for (p = node->dte_properties; p; p=p->dtp_next)
         {
-            prop = p;
-            break;
+            if (!strcmp(p->dtp_name, propname))
+            {
+                prop = p;
+                break;
+            }
         }
     }
-
     return prop;
+}
+
+char fill[] = "                         ";
+
+void dt_dump_node(struct dt_entry *n, int level)
+{
+    kprintf("[BOOT] %s%s\n", &fill[25-2*level], n->dte_name);
+    for (struct dt_prop *p = n->dte_properties; p; p = p->dtp_next)
+    {
+        kprintf("[BOOT] %s  %s=", &fill[25-2*level], p->dtp_name);
+        for (int i=0; i < p->dtp_length; i++) {
+            char *pchar = p->dtp_value + i;
+            if (*pchar >= ' ' && *pchar <= 'z')
+                kprintf("%c", *pchar);
+            else
+                kprintf(".");
+        }
+        
+        if (p->dtp_length) {
+            kprintf(" (");
+            int max = 16;
+            if (max > p->dtp_length)
+                max = p->dtp_length;
+            
+            for (int i=0; i < p->dtp_length; i++) {
+                char *pchar = p->dtp_value + i;
+                kprintf("%02x", *pchar);
+            }
+            kprintf(")");
+        }
+        kprintf("\n");
+    }
+    for (struct dt_entry *c = n->dte_children; c; c = c->dte_next)
+    {
+        dt_dump_node(c, level+1);
+    }
+}
+
+void dt_dump_tree()
+{
+    kprintf("[BOOT] Device Tree dump:\n");
+
+    dt_dump_node(root, 0);
+
 }
