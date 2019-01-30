@@ -50,7 +50,7 @@ asm (
     ".type start,%function\n"
     "start:\n"
     "           push {r0}                    \n"
-    "           bl      __clear_bss          \n" 
+    "           bl      __clear_bss          \n"
     "           pop {r0}                     \n"
     "           cps     #0x1f                \n" /* system mode */
     "           ldr     sp, stack_end        \n"
@@ -121,6 +121,26 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     char *cmdline = NULL;
     BootMsg = msg;
     tls_t *__tls;
+
+    // First find out if device tree is present
+    while(msg->ti_Tag != TAG_DONE)
+    {
+        int found = 0;
+
+        switch (msg->ti_Tag)
+        {
+        case KRN_OpenFirmwareTree:
+            dt_set_root((void *)msg->ti_Data);
+            found = 1;
+            break;
+        }
+
+        if (found)
+            break;
+
+        msg++;
+    }
+    msg = BootMsg;
 
     // Probe the ARM core
     cpu_Probe(&__arm_arosintern);
@@ -204,11 +224,14 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     __tls->ThisTask = NULL;
 
     D(bug("[Kernel] AROS ARM Native Kernel built on %s\n", __DATE__));
+    if (dt_find_node("/")) {
+        D(bug("[Kernel] Device: %s\n", dt_get_prop_value(dt_find_property(dt_find_node("/"), "model"))));
+    }
 
     D(bug("[Kernel] Entered kernel_cstart @ 0x%p, BootMsg @ 0x%p\n", kernel_cstart, BootMsg));
 
     asm volatile("mcr p15, 0, %0, c13, c0, 3" : : "r"(__tls));
-    
+
     D(
         if (__arm_arosintern.ARMI_PutChar)
         {
@@ -226,7 +249,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     if (__arm_arosintern.ARMI_Delay)
             __arm_arosintern.ARMI_Delay(1500);
-    
+
     if (__arm_arosintern.ARMI_LED_Toggle)
         __arm_arosintern.ARMI_LED_Toggle(ARM_LED_POWER, ARM_LED_ON);
 
@@ -272,7 +295,7 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     __tls->SysBase = SysBase;
     D(bug("[Kernel] SysBase @ 0x%p\n", SysBase));
 
-    /* 
+    /*
      * Make kickstart code area read-only.
      * We do it only after ExecBase creation because SysBase pointer is put
      * into .rodata. This way we prevent it from ocassional modification by buggy software.
