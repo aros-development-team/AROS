@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,7 +53,7 @@ AROS_INTH1(FNAME_DEV(NakTimeoutInt), struct USB2OTGUnit *, otg_Unit)
 {
     AROS_INTFUNC_INIT
 
-    struct IOUsbHWReq *ioreq;
+   // struct IOUsbHWReq *ioreq;
 
    D(bug("[USB2OTG] [0x%p:NAK] NakTimeout Interupt\n", otg_Unit));
 
