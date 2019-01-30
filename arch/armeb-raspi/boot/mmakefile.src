@@ -3,7 +3,8 @@
 include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree
+FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
+                   bc/vars bc/font8x14 bc/screen_fb vc_fb
 USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2 -mcpu=cortex-a7
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
@@ -29,15 +30,15 @@ RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRAN
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf
 
 PKG_LIBS      := dos
-PKG_LIBS_ARCH := 
-PKG_RSRC      := 
-PKG_RSRC_ARCH := 
-PKG_DEVS      := 
-PKG_DEVS_ARCH := 
-PKG_HANDLERS  := 
-PKG_HIDDS     := 
-PKG_CLASSES   := 
- 
+PKG_LIBS_ARCH :=
+PKG_RSRC      :=
+PKG_RSRC_ARCH :=
+PKG_DEVS      :=
+PKG_DEVS_ARCH :=
+PKG_HANDLERS  :=
+PKG_HIDDS     :=
+PKG_CLASSES   :=
+
 %make_package mmake=kernel-package-raspi-armeb file=$(AROSDIR)/$(ARM_BSP) \
     libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
     arch_res=$(PKG_RSRC_ARCH) devs=$(PKG_DEVS) arch_devs=$(PKG_DEVS_ARCH) \
@@ -77,10 +78,10 @@ clean ::
 	-$(RM) $(TESTS)
 
 $(TARGETDIR)/%.o : %.c
-	%compile_q 
+	%compile_q
 
 $(TARGETDIR)/%.o : %.S
-	%compile_q 
+	%compile_q
 
 $(TARGETDIR)/%.d : %.c
 	%mkdepend_q
