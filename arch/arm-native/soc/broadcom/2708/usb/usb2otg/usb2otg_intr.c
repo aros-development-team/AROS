@@ -218,13 +218,11 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         }
                         else if (tmp & 0x80)
                         {
-                            req->iouh_Actual = 0;
                             req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                             DumpChannelRegs(chan);
                         }
                         else if (tmp & 0x08)
                         {
-                            req->iouh_Actual = 0;
                             req->iouh_Req.io_Error = UHIOERR_STALL;
                             DumpChannelRegs(chan);
                         }
@@ -238,20 +236,17 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             }
                             else
                             {
-                                req->iouh_Actual = 0;
                                 req->iouh_Req.io_Error = UHIOERR_NAK;
                                 DumpChannelRegs(chan);
                             }
                         }
                         else if (tmp & 0x100)
                         {
-                            req->iouh_Actual = 0;
                             req->iouh_Req.io_Error = UHIOERR_BABBLE;
                             DumpChannelRegs(chan);
                         }
                         else if (tmp & 0x400)
                         {
-                            req->iouh_Actual = 0;
                             req->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                             DumpChannelRegs(chan);
                         }
