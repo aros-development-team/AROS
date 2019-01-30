@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
@@ -281,7 +281,7 @@ static int __attribute__ ((noinline)) load_hunk
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
 
         D(bug("[dos] hunk @ %p, size=%08x, addr @ %p\n", hunk, hunk->size, sh->addr));
-        
+
         /* Update the pointer to the previous one, which is now the current one */
         *next_hunk_ptr = &hunk->next;
 
@@ -364,7 +364,7 @@ static int relocate
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",
                       (STRPTR)sh[shsymtab->link].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
-                      
+
                 return 0;
 
             case SHN_ABS:
@@ -411,14 +411,14 @@ static int relocate
             case R_X86_64_32:
                 *(ULONG *)p = (UQUAD)s + (UQUAD)rel->addend;
                 break;
-                
+
             case R_X86_64_32S:
                 *(LONG *)p = (QUAD)s + (QUAD)rel->addend;
                 break;
 
             case R_X86_64_NONE: /* No reloc */
                 break;
-                
+
             #elif defined(__mc68000__)
 
             case R_68K_32:
@@ -453,14 +453,14 @@ static int relocate
             case R_PPC_ADDR32:
                 *p = s + rel->addend;
                 break;
-        
+
             case R_PPC_ADDR16_LO:
                 {
                     unsigned short *c = (unsigned short *) p;
                     *c = (s + rel->addend) & 0xffff;
                 }
                 break;
-            
+
             case R_PPC_ADDR16_HA:
                 {
                     unsigned short *c = (unsigned short *) p;
@@ -470,7 +470,7 @@ static int relocate
                         (*c)++;
                 }
                 break;
-            
+
             case R_PPC_REL16_LO:
                 {
                     unsigned short *c = (unsigned short *) p;
@@ -496,10 +496,10 @@ static int relocate
             case R_PPC_REL32:
                 *p = s + rel->addend - (ULONG) p;
                 break;
-            
+
             case R_PPC_NONE:
                 break;
-            
+
             #elif defined(__arm__)
             case R_ARM_CALL:
             case R_ARM_JUMP24:
@@ -507,7 +507,7 @@ static int relocate
             case R_ARM_PREL31:
             {
                 /* On ARM the 24 bit offset is shifted by 2 to the right */
-                signed long offset = (*p & 0x00ffffff) << 2;
+                signed long offset = (AROS_LE2LONG(*p) & 0x00ffffff) << 2;
                 /* If highest bit set, make offset negative */
                 if (offset & 0x02000000)
                     offset -= 0x04000000;
@@ -522,8 +522,8 @@ static int relocate
                 offset += s - (ULONG)p;
 
                 offset >>= 2;
-                *p &= 0xff000000;
-                *p |= offset & 0x00ffffff;
+                *p &= AROS_LONG2LE(0xff000000);
+                *p |= AROS_LONG2LE(offset & 0x00ffffff);
             }
             break;
 
@@ -533,8 +533,8 @@ static int relocate
                 ULONG upper,lower,sign,j1,j2;
                 LONG offset;
 
-                upper = *((UWORD *)p);
-                lower = *((UWORD *)p+1);
+                upper = AROS_WORD2LE(*((UWORD *)p));
+                lower = AROS_WORD2LE(*((UWORD *)p+1));
 
                 sign = (upper >> 10) & 1;
                 j1 = (lower >> 13) & 1;
@@ -561,10 +561,10 @@ static int relocate
                 j1 = sign ^ (~(offset >> 23) & 1);
                 j2 = sign ^ (~(offset >> 22) & 1);
 
-                *(UWORD *)p = (UWORD)((upper & 0xf800) | (sign << 10) |
-                                ((offset >> 12) & 0x03ff));
-                *((UWORD *)p + 1) = (UWORD)((lower & 0xd000) |
-                                (j1 << 13) | (j2 << 11) | ((offset >> 1) & 0x07ff));
+                *(UWORD *)p = AROS_WORD2LE((UWORD)((upper & 0xf800) | (sign << 10) |
+                                ((offset >> 12) & 0x03ff)));
+                *((UWORD *)p + 1) = AROS_WORD2LE((UWORD)((lower & 0xd000) |
+                                (j1 << 13) | (j2 << 11) | ((offset >> 1) & 0x07ff)));
 
             }
             break;
@@ -575,8 +575,8 @@ static int relocate
                 ULONG upper,lower;
                 LONG offset;
 
-                upper = *((UWORD *)p);
-                lower = *((UWORD *)p+1);
+                upper = AROS_LE2WORD(*((UWORD *)p));
+                lower = AROS_LE2WORD(*((UWORD *)p+1));
 
                 offset = ((upper & 0x000f) << 12) |
                                 ((upper & 0x0400) << 1) |
@@ -590,19 +590,19 @@ static int relocate
                 if (ELF_R_TYPE(rel->info) == R_ARM_THM_MOVT_ABS)
                         offset >>= 16;
 
-                *(UWORD *)p = (UWORD)((upper & 0xfbf0) |
+                *(UWORD *)p = AROS_WORD2LE((UWORD)((upper & 0xfbf0) |
                                 ((offset & 0xf000) >> 12) |
-                                ((offset & 0x0800) >> 1));
-                *((UWORD *)p + 1) = (UWORD)((lower & 0x8f00) |
+                                ((offset & 0x0800) >> 1)));
+                *((UWORD *)p + 1) = AROS_WORD2LE((UWORD)((lower & 0x8f00) |
                                 ((offset & 0x0700)<< 4) |
-                                (offset & 0x00ff));
+                                (offset & 0x00ff)));
             }
             break;
 
             case R_ARM_MOVW_ABS_NC:
             case R_ARM_MOVT_ABS:
             {
-                signed long offset = *p;
+                signed long offset = AROS_LE2LONG(*p);
                 offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
                 offset = (offset ^ 0x8000) - 0x8000;
 
@@ -611,8 +611,8 @@ static int relocate
                 if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
                     offset >>= 16;
 
-                *p &= 0xfff0f000;
-                *p |= ((offset & 0xf000) << 4) | (offset & 0x0fff);
+                *p &= AROS_LONG2LE(0xfff0f000);
+                *p |= AROS_LONG2LE(((offset & 0xf000) << 4) | (offset & 0x0fff));
             }
             break;
 
@@ -678,7 +678,7 @@ static inline ULONG readlong_unaligned(ULONG *src)
  * extracts system requirements from it. Things like float ABI,
  * minimum CPU and FPU version are described there.
  */
- 
+
 static UBYTE arm_cpus[] =
 {
     CPUFAMILY_ARM_3,
@@ -697,7 +697,7 @@ static UBYTE arm_cpus[] =
     CPUFAMILY_ARM_6, /* 6S-M */
     CPUFAMILY_ARM_7  /* 7E-M */
 };
- 
+
 static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
 {
     struct attrs_section *attrs;
@@ -778,7 +778,7 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
                                 shift += 7;
                             }
                         }
-                                
+
                         switch (tag)
                         {
                         case Tag_CPU_arch:
@@ -902,7 +902,7 @@ BPTR InternalLoadSeg_ELF
                     SetIoErr(ERROR_NOT_EXECUTABLE);
                     goto error;
                 }
-            }    
+            }
         }
     }
 #endif
@@ -995,7 +995,7 @@ error:
     hunks = 0;
 
 end:
-    
+
     /*
      * Clear the caches to let the CPU see the new data and instructions.
      * We check for SysBase's lib_Version, since this code is also built
@@ -1009,13 +1009,13 @@ end:
         while (curr)
         {
              struct hunk *hunk = BPTR2HUNK(BADDR(curr));
-             
+
              CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
-             
+
              curr = hunk->next;
         }
     }
-    
+
     /* deallocate the symbol tables */
     for (i = 0; i < int_shnum; i++)
     {
