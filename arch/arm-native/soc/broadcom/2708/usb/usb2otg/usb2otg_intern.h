@@ -188,6 +188,7 @@ WORD                    FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *, struc
 WORD                    FNAME_ROOTHUB(cmdIntXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 void                    FNAME_ROOTHUB(PendingIO)(struct USB2OTGUnit *);
 
+void                    FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase);
 void                    FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *);
