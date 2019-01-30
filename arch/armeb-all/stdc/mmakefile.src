@@ -1,0 +1,14 @@
+# $Id$
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_AFLAGS 	:= -I$(GENINCDIR)
+
+%build_archspecific \
+  mainmmake=compiler-stdc \
+  modname=stdc maindir=compiler/stdc \
+  arch=armeb \
+  files="fenv" asmfiles="longjmp setjmp"
+
+#MM compiler-stdc-armeb : includes-asm_h-armeb

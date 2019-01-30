@@ -5,9 +5,14 @@ include $(SRCDIR)/config/aros.cfg
 USER_CFLAGS := -I$(SRCDIR)/rom/dos
 
 #MM- kernel-dos-arm: includes
+#MM- kernel-dos-armeb: includes
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos arch=arm \
+  files="probecpu" modname=dos
+
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos arch=armeb \
   files="probecpu" modname=dos
 
 %common

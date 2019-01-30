@@ -1,0 +1,14 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_AFLAGS 	:= -I$(GENINCDIR)
+
+#MM- compiler-posixc-armeb : includes-asm_h-armeb
+
+%build_archspecific \
+  mainmmake=compiler-posixc modname=posixc maindir=compiler/posixc \
+  arch=armeb \
+  asmfiles="siglongjmp sigsetjmp vfork vfork_longjmp"
+
+%common
