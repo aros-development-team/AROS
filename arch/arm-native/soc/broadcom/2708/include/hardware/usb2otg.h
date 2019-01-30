@@ -88,6 +88,8 @@
 #define USB2OTG_HOSTCHAR_EC(x)                          (((x) & 3) << 20)
 #define USB2OTG_HOSTCHAR_DISABLE                        (1 << 30)
 #define USB2OTG_HOSTCHAR_ENABLE                         (1 << 31)
+#define USB2OTG_HOSTCHAR_EPTYPE(x)                      (((x) & 3) << 18)
+#define USB2OTG_HOSTCHAR_LOWSPEED                       (1 << 17)
 
 #define USB2OTG_HOSTTSIZE_PID(x)                        (((x) & 3) << 29)
 #define USB2OTG_HOSTTSIZE_PKTCNT(x)                     (((x) & 1023) << 19)
@@ -99,6 +101,11 @@
 #define USB2OTG_PID_DATA2                               1
 #define USB2OTG_PID_MDATA                               3
 #define USB2OTG_PID_SETUP                               3
+
+#define USB2OTG_TYPE_CTRL                               0
+#define USB2OTG_TYPE_ISO                                1
+#define USB2OTG_TYPE_BULK                               2
+#define USB2OTG_TYPE_INT                                3
 
 #define USB2OTG_DEVCFG                                  (USB2OTG_BASE + 0x0800)
 #define USB2OTG_DEVCTRL                                 (USB2OTG_BASE + 0x0804)
