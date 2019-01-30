@@ -205,7 +205,7 @@ static char *aimeelyrics[] =
 
     // 10
     "\33l\33iBut nobody wants to hear this tale\n"
-    "The plot is clichéd, the jokes are stale\n"
+    "The plot is clichï¿½d, the jokes are stale\n"
     "And baby we've all heard it all before\n"
     "Oh, I could get specific but\n"
     "Nobody needs a catalog\n"
@@ -474,6 +474,16 @@ static char *aimeelyrics[] =
     "\33r(Fiona Apple)  "
 
 };
+
+static inline ULONG GetLONGBE(void *address)
+{
+    UBYTE *ptr = (UBYTE*)address;
+    ULONG retval = 0;
+
+    retval = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+
+    return retval;
+}
 
 /* /// "HardwareListDisplayHook()" */
 AROS_UFH3(LONG, HardwareListDisplayHook,
@@ -1429,11 +1439,11 @@ void RecursePrefsForm(struct ActionData *data, ULONG *form, ULONG depth, STRPTR 
     }
     depth++;
     currptr = &form[3];
-    endptr = (ULONG *) (((UBYTE *) form) + ((AROS_LONG2BE(form[1]) + 9) & ~1UL));
+    endptr = (ULONG *) (((UBYTE *) form) + ((GetLONGBE(&form[1]) + 9) & ~1UL));
     while(currptr < endptr)
     {
-        chunkid = AROS_LONG2BE(currptr[0]);
-        chunklen = (AROS_LONG2BE(currptr[1]) + 9) & ~1UL;
+        chunkid = GetLONGBE(&currptr[0]);
+        chunklen = (GetLONGBE(&currptr[1]) + 9) & ~1UL;
         if((chunkid == ID_FORM) && (depth < 3))
         {
             RecursePrefsForm(data, currptr, depth, newstack);
