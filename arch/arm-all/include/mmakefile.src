@@ -4,6 +4,9 @@ include $(SRCDIR)/config/aros.cfg
 
 INCLUDE_FILES := $(call WILDCARD, aros/*.h)
 %copy_includes mmake=compiler-includes path=aros/arm dir=aros
+%copy_includes mmake=compiler-includes path=aros/armeb dir=aros
+
 
 INCLUDE_FILES := $(call WILDCARD, asm/*.h)
 %copy_includes mmake=compiler-includes path=asm/arm dir=asm
+%copy_includes mmake=compiler-includes path=asm/armeb dir=asm

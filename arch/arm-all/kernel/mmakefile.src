@@ -9,4 +9,9 @@ USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -D__AROS_EXEC_LIBRARY__
   files="cpu_init createcontext" \
   arch=arm
 
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel \
+  files="cpu_init createcontext" \
+  arch=armeb
+
 %common
