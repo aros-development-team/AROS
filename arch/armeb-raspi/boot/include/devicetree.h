@@ -50,7 +50,9 @@ struct dt_entry {
 
 #define FDT_MAGIC       0xd00dfeed
 
-int dt_parse(void *ptr);
+void dt_dump_tree();
+struct dt_entry *dt_parse(void *ptr);
+struct dt_entry *dt_find_node_by_phandle(uint32_t phandle);
 struct dt_entry *dt_find_node(char *key);
 struct dt_prop *dt_find_property(void *key, char *propname);
 
