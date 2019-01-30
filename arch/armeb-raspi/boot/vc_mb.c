@@ -15,6 +15,7 @@
 #include <hardware/videocore.h>
 #include <stdint.h>
 
+#include "boot.h"
 #include "io.h"
 
 #define ARM_PERIIOBASE (__arm_periiobase)
@@ -24,6 +25,8 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
 {
     unsigned int try = 0x20000000;
     unsigned int msg;
+
+    kprintf("[VCMB] vcmb_read(%p, %p)\n", mb, chan);
 
     if (chan <= VCMB_CHAN_MAX)
     {
@@ -43,7 +46,8 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
             asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
             msg = rd32le(mb + VCMB_READ);
-            
+            kprintf("[VCMB] -> %p\n", msg);
+
             asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
             if ((msg & VCMB_CHAN_MASK) == chan)
@@ -55,8 +59,10 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
 
 void vcmb_write(uintptr_t mb, unsigned int chan, void *msg)
 {
+    kprintf("[VCMB] vcmb_write(%p, %p, %p)\n", mb, chan, msg);
+
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
-    { 
+    {
         while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_WRITEREADY) != 0)
         {
         	/* Data synchronization barrier */
