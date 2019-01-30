@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SuperState() - Switch the processor into a higher plane.
@@ -28,7 +28,7 @@ AROS_LH0(APTR, SuperState,
         : [swi_no] "I" (6 /*SC_SUPERSTATE*/) : "r1"
     );
 
-    return superSP;
+    return (APTR)superSP;
 
     AROS_LIBFUNC_EXIT
 } /* SuperState() */

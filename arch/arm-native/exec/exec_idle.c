@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,6 +21,8 @@ void IdleTask(struct ExecBase *SysBase)
     register int tmp asm("r0");
     asm volatile ("swi %[swi_no]" : "=r"(tmp) : [swi_no] "I" (SC_GETCPUNUMBER) : "lr");
     cpunum = tmp;
+    (void)cpunum;
+    (void)thisTask;
 #endif
 
     D(bug("[IDLE:%02d] %s started up\n", cpunum, thisTask->tc_Node.ln_Name));
