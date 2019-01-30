@@ -306,7 +306,10 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
         otg_RegVal = rd32le(USB2OTG_OTGCTRL);
         D(bug("[USB2OTG] %s: OTG Control: %08x\n",
                     __PRETTY_FUNCTION__, otg_RegVal));
-
+#if 0
+for(int i=0; i < 0x600 / 4; i++)
+bug("%04x: %08x\n", i * 4, rd32le(USB2OTG_OTGCTRL + i*4));
+#endif
         return (&otg_Unit->hu_Unit);
     }
 
@@ -533,13 +536,17 @@ WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
     D(bug("[USB2OTG] UHCMD_CONTROLXFER: DevAddr #%ld\n",
                 ioreq->iouh_DevAddr));
 
+    (bug("[USB2OTG] ControlTransfer to dev %02x: %02x %02x %04x %04x %04x\n", ioreq->iouh_DevAddr,
+            ioreq->iouh_SetupData.bmRequestType, ioreq->iouh_SetupData.bRequest, AROS_LE2WORD(ioreq->iouh_SetupData.wValue),
+            AROS_LE2WORD(ioreq->iouh_SetupData.wLength), AROS_LE2WORD(ioreq->iouh_SetupData.wIndex)));
+
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
     Disable();
     AddTail(&otg_Unit->hu_CtrlXFerQueue, (struct Node *) ioreq);
     Enable();
-    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
+    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
     D(bug("[USB2OTG] UHCMD_CONTROLXFER: handled ioreq @ 0x%p\n", ioreq));
 
@@ -571,7 +578,7 @@ WORD FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *ioreq,
     Disable();
     AddTail(&otg_Unit->hu_BulkXFerQueue, (struct Node *) ioreq);
     Enable();
-    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
+    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
     D(bug("[USB2OTG] UHCMD_BULKXFER: handled ioreq @ 0x%p\n", ioreq));
 
@@ -597,22 +604,23 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
         return (FNAME_ROOTHUB(cmdIntXFer)(ioreq, otg_Unit, USB2OTGBase));
     }
 
+if (ioreq->iouh_DevAddr == 4) {
     D(bug("[USB2OTG] UHCMD_INTXFER: DevAddr #%ld\n",
                 ioreq->iouh_DevAddr));
+}
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
     /* Calculate "last time handled" and "next time to be handled" frame numbers */
-    ULONG last_handled = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
-    ULONG next_to_handle = (last_handled + ioreq->iouh_Interval) & 0x7ff;
-    ioreq->iouh_DriverPrivate1 = (APTR)(last_handled);
-    ioreq->iouh_DriverPrivate2 = (APTR)(next_to_handle);
+    ULONG next_to_handle = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+    ULONG last_handled = (next_to_handle - ioreq->iouh_Interval) & 0x7ff;
+    ioreq->iouh_DriverPrivate1 = (APTR)((last_handled << 16) | next_to_handle);
 
     Disable();
     AddTail(&otg_Unit->hu_IntXFerQueue, (struct Node *) ioreq);
     Enable();
-    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
+    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
     D(bug("[USB2OTG] UHCMD_INTXFER: handled ioreq @ 0x%p added=%d, next=%d\n", ioreq, last_handled, next_to_handle));
 
@@ -643,7 +651,7 @@ WORD FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *ioreq,
     Disable();
     AddTail(&otg_Unit->hu_IsoXFerQueue, (struct Node *) ioreq);
     Enable();
-    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
+    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
     D(bug("[USB2OTG] UHCMD_ISOXFER: handled ioreq @ 0x%p\n", ioreq));
     return(RC_DONTREPLY);
