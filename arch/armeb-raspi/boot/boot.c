@@ -216,6 +216,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     serInit();
 
+    kprintf("\n\n[BOOT] Big-Endian AROS %s\n", bootstrapName);
+    kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->op_value);
+
     /* first of all, store the arch for the kernel to use .. */
     boottag->ti_Tag = KRN_Platform;
     boottag->ti_Data = (IPTR)arch;
@@ -277,9 +280,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         boottag++;
     }
 
-    kprintf("[BOOT] Big-Endian AROS %s\n", bootstrapName);
-    kprintf("[BOOT] Arguments: %08x, %08x, %08x, %08x\n", dummy, arch, atags, a);
-
     DBOOT({
         kprintf("[BOOT] UART clock speed: %d\n", uartclock);
         kprintf("[BOOT] using %d.%d divisor for %d baud\n", uartdivint, uartdivfrac, uartbaud);
@@ -290,8 +290,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r"(tmp));
         kprintf("[BOOT] main id register: %08x\n", tmp);
     })
-
-    kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->op_value);
 
     query_memory();
     query_vmem();
