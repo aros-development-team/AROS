@@ -26,6 +26,7 @@
 #include "mmu.h"
 #include "atags.h"
 #include "vc_mb.h"
+#include "vc_fb.h"
 #include "elf.h"
 #include "devicetree.h"
 
@@ -67,7 +68,7 @@ asm("   .section .aros.startup      \n"
 "       eret                        \n"
 "       .section .text              \n"
 ".byte 0                            \n"
-".string \"$VER: arosraspi.img v40.46 (" __DATE__ ")\"\n"
+".string \"$VER: arosraspi-be.img v40.46 (" __DATE__ ")\"\n"
 ".byte 0                            \n"
 "\n\t\n\t"
 );
@@ -81,7 +82,7 @@ static uint32_t pkg_size = 0;
 
 struct tag;
 
-static const char bootstrapName[] = "Bootstrap/ARM BCM2708";
+static const char bootstrapName[] = "Bootstrap/ARM v7-a BigEndian";
 
 void query_vmem()
 {
@@ -219,11 +220,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     boottag->ti_Data = (IPTR)arch;
     boottag++;
 
-    /* Store device tree */
-    boottag->ti_Tag = KRN_FlattenedDeviceTree;
-    boottag->ti_Data = (IPTR)atags;
-    boottag++;
-
     /* Init LED(s) */
     e = dt_find_node("/leds");
     if (e)
@@ -243,7 +239,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
                 if (bus)
                 {
                     kprintf("[BOOT] LED attached to %s\n", bus->dte_name);
-                
+
                     if (strncmp(bus->dte_name, "gpio", 4) == 0)
                     {
                         int gpio_sel = gpio / 10;
@@ -265,20 +261,16 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         }
     }
 
-    
     boottag->ti_Tag = KRN_BootLoader;
     boottag->ti_Data = (IPTR)bootstrapName;
     boottag++;
 
-#if 0
     if (vcfb_init())
     {
         boottag->ti_Tag = KRN_FuncPutC;
         boottag->ti_Data = (IPTR)fb_Putc;
         boottag++;
     }
-#endif
-    
 
     kprintf("[BOOT] Big-Endian AROS %s\n", bootstrapName);
     kprintf("[BOOT] Arguments: %08x, %08x, %08x, %08x\n", dummy, arch, atags, a);
@@ -402,6 +394,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
             }
         }
 
+        /* Reserve space for flattened device tree */
+        total_size_ro += dt_total_size();
+
         total_size_ro = (total_size_ro + 1024*1024-1) & 0xfff00000;
         total_size_rw = (total_size_rw + 1024*1024-1) & 0xfff00000;
 
@@ -410,6 +405,20 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
         kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
         kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);
+
+        if (dt_total_size() > 0)
+        {
+            long dt_size = (dt_total_size() + 31) & ~31;
+            /* Copy device tree to the end of kernel RO area */
+            memcpy((void*)(kernel_phys + total_size_ro - dt_size), atags, dt_size);
+
+            /* Store device tree */
+            boottag->ti_Tag = KRN_FlattenedDeviceTree;
+            boottag->ti_Data = (IPTR)kernel_virt + total_size_ro - dt_size;
+            boottag++;
+
+            kprintf("[BOOT] Device tree (size: %d) moved to %p, phys %p\n", dt_total_size(), boottag[-1].ti_Data, kernel_phys + total_size_ro - dt_size);
+        }
 
         *mem_upper = kernel_phys;
 
