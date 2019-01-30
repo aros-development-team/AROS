@@ -60,8 +60,8 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
             wr32le(USB2OTG_INTRMASK, 1 << 25);
             wr32le(USB2OTG_HOSTINTRMASK, 0);
 
-            D(bug("[USB2OTG] [0x%p:PEND] SETUP stage. Direction: %s, Buffer %p, size %d\n", otg_Unit,
-                "OUT", &req->iouh_SetupData, 8));
+            D(bug("[USB2OTG] [0x%p:PEND] SETUP stage. Addr: %d, Direction: %s, Buffer %p, size %d\n", otg_Unit,
+                req->iouh_DevAddr, "OUT", &req->iouh_SetupData, 8));
 
             D(bug("[USB2OTG] [0x%p:PEND] bmReqType=%02x, bReq=%02x, wValue=%04x, wIndex=%04x, wLength=%04x\n",
                 otg_Unit, req->iouh_SetupData.bmRequestType, req->iouh_SetupData.bRequest,
@@ -69,6 +69,14 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
                 AROS_LE2WORD(req->iouh_SetupData.wLength)));
 
             CacheClearE(&req->iouh_SetupData, 32, CACRF_ClearD);
+            if (req->iouh_Data)
+            {
+                if (dir)
+                    CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_InvalidateD);
+                else
+                    CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_ClearD);
+            }
+
 
             /* SETUP phase of the transfer, always OUT type. Send CTRL data */
             wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_CHARBASE,
@@ -78,13 +86,14 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
                 ((req->iouh_MaxPktSize & 1023))
             );
             wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_TRANSSIZE, (3 << 29) | (1 << 19) | 8);
-            wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_DMAADDR, (ULONG)&req->iouh_SetupData);
+            wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_DMAADDR, 0xc0000000 | (ULONG)&req->iouh_SetupData);
             tmp = rd32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_CHARBASE);
             wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_CHARBASE, tmp | 0x80000000);
 
             /* Wait for interrupt (masked) */
             do {
                 tmp = rd32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_INTR);
+                D(bug("[INTR Reg] %08x\n", tmp));
             } while ((tmp & USB2OTG_INTRCHAN_HALT) == 0);
 
             if ((tmp & USB2OTG_INTRCHAN_TRANSFERCOMPLETE) == 0)
@@ -127,13 +136,14 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
                     ((req->iouh_MaxPktSize & 1023))
                 );
                 wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_TRANSSIZE, (2 << 29) | (1 << 19) | req->iouh_Length);
-                wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_DMAADDR, (ULONG)req->iouh_Data);
+                wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_DMAADDR, 0xc0000000 | (ULONG)req->iouh_Data);
                 tmp = rd32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_CHARBASE);
                 wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_CHARBASE, tmp | 0x80000000);
 
                 /* Wait for interrupt (masked) */
                 do {
                     tmp = rd32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_INTR);
+                    D(bug("[INTR Reg] %08x\n", tmp));
                 } while ((tmp & USB2OTG_INTRCHAN_HALT) == 0);
 
                 if ((tmp & USB2OTG_INTRCHAN_TRANSFERCOMPLETE) == 0)
@@ -183,9 +193,39 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
 
             do {
                 tmp = rd32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_INTR);
+                D(bug("[INTR Reg] %08x\n", tmp));
             } while ((tmp & USB2OTG_INTRCHAN_HALT) == 0);
 
             D(bug("[USB2OTG] [0x%p:PEND] Channel closed. INTR=%08x\n", otg_Unit, tmp));
+
+            if (tmp == 0x23)
+            {
+                req->iouh_Actual = req->iouh_Length;
+                req->iouh_Req.io_Error = 0;
+            }
+            else if (tmp & 0x80)
+            {
+                req->iouh_Actual = 0;
+                req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
+            }
+            else if (tmp & 0x08)
+            {
+                req->iouh_Actual = 0;
+                req->iouh_Req.io_Error = UHIOERR_STALL;
+            }
+            else if (tmp & 0x10)
+            {
+                req->iouh_Actual = 0;
+                req->iouh_Req.io_Error = UHIOERR_NAK;
+            }
+            else if (tmp & 0x100)
+            {
+                req->iouh_Actual = 0;
+                req->iouh_Req.io_Error = UHIOERR_BABBLE;
+            }
+            otg_Unit->hu_InProgressCtrlXFer = NULL;
+            FNAME_DEV(TermIO)(req, USB2OTGBase);
+            wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_INTR, tmp);
 #if 0
             {
                 volatile uint32_t *ptr = (volatile uint32_t *)USB2OTG_OTGCTRL;
