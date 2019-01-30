@@ -20,7 +20,7 @@
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uint32_t __arm_periiobase;
 
-volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
+volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
 {
     unsigned int try = 0x20000000;
     unsigned int msg;
@@ -29,7 +29,7 @@ volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
     {
     	while(1)
         {
-            while ((AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_STATUS))) & VCMB_STATUS_READREADY) != 0)
+            while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_READREADY) != 0)
             {
             	/* Data synchronization barrier */
             	asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
@@ -42,7 +42,7 @@ volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
 
             asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
-            msg = AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_READ)));
+            msg = rd32le(mb + VCMB_READ);
             
             asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
@@ -53,11 +53,11 @@ volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
     return (volatile unsigned int *)-1;
 }
 
-void vcmb_write(void *mb, unsigned int chan, void *msg)
+void vcmb_write(uintptr_t mb, unsigned int chan, void *msg)
 {
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     { 
-        while ((AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_STATUS))) & VCMB_STATUS_WRITEREADY) != 0)
+        while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_WRITEREADY) != 0)
         {
         	/* Data synchronization barrier */
         	asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
@@ -65,6 +65,6 @@ void vcmb_write(void *mb, unsigned int chan, void *msg)
 
         asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
-        *((volatile unsigned int *)(mb + VCMB_WRITE)) = AROS_LONG2LE(((unsigned int)msg | chan));
+        wr32le(mb + VCMB_WRITE, (uintptr_t)msg | chan);
     }
 }
