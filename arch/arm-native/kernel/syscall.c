@@ -94,11 +94,14 @@ void handle_syscall(void *regs)
        program counter, subtract the instruction from it and
        obtain the value from there.  we also use this to check if
        we have been called from outwith the kernel's code (illegal!)
+
+       Keep in mind ARM instructions are *always* little endian, remmeber
+       it when extracting SWI number...
      */
 
     addr = ((uint32_t *)regs)[15];
     addr -= 4;
-    swi_no = *((unsigned int *)addr) & 0x00ffffff;
+    swi_no = AROS_LE2LONG(*((unsigned int *)addr)) & 0x00ffffff;
 
     D(bug("[Kernel] ## SWI %d @ 0x%p\n", swi_no, addr));
 
@@ -110,7 +113,7 @@ void handle_syscall(void *regs)
     if (swi_no <= 0x0b || swi_no == 0x100)
     {
         DREGS(cpu_DumpRegs(regs));
-    
+
         switch (swi_no)
         {
             case SC_CLI:
