@@ -128,6 +128,10 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                         if ((AROS_LE2LONG(PwrOnMsg[6]) & 2) != 0)
                         {
                             bug("[USB2OTG] USB HCD does not exist\n");
+
+                            for (int i=0; i < 8; i++)
+                                bug("[USB2OTG] %08x\n", PwrOnMsg[i]);
+
                             USB2OTGBase = NULL;
                         }
                     }
@@ -179,6 +183,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     NewList(&USB2OTGBase->hd_Unit->hu_TDQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_AbortQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_PeriodicTDQueue);
+                                    NewList(&USB2OTGBase->hd_Unit->hu_FinishedXfers);
 
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Type = NT_INTERRUPT;
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Name = "OTG2USB Pending Work Interrupt";
@@ -259,9 +264,17 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     D(bug("[USB2OTG] %s: Enabling DMA configuration..\n", __PRETTY_FUNCTION__));
                                     otg_RegVal = rd32le(USB2OTG_AHB);
                                     otg_RegVal &= ~(1 << USB2OTG_AHB_DMAREMAINDERMODE);
+                                    otg_RegVal &= ~(0x1f);
                                     otg_RegVal |= (1 << 4) | (USB2OTG_AHB_DMAENABLE|USB2OTG_AHB_DMAREMAINDERMODE_INCR);
                                     D(bug("[USB2OTG] %s: AHB reg: %08x..\n", __PRETTY_FUNCTION__, otg_RegVal));
                                     wr32le(USB2OTG_AHB, otg_RegVal);
+
+                                    otg_RegVal = rd32le(USB2OTG_HARDWARE3);
+                                    USB2OTGBase->hd_Unit->hu_XferSizeWidth = 11 + (otg_RegVal & 0x0f);
+                                    USB2OTGBase->hd_Unit->hu_PktSizeWidth = 4 + ((otg_RegVal >> 4) & 0x07);
+
+                                    bug("[USB2OTG] %s: XferSizeWidth = %d, PktSizeWidth = %d\n", __PRETTY_FUNCTION__,
+                                        USB2OTGBase->hd_Unit->hu_XferSizeWidth, USB2OTGBase->hd_Unit->hu_PktSizeWidth);
 
 #if (0)
                                     D(bug("[USB2OTG] %s: Operating Mode: ", __PRETTY_FUNCTION__));
