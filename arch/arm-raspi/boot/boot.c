@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: boot.c
@@ -10,6 +10,7 @@
 #include <asm/cpu.h>
 #include <utility/tagitem.h>
 #include <aros/macros.h>
+#include <aros/kernel.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
