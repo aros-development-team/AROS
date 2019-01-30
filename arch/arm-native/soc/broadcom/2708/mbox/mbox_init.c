@@ -102,7 +102,7 @@ AROS_LH3(void, MBoxWrite,
 
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     {
-        ULONG length = ((ULONG *)msg)[0];
+        ULONG length = AROS_LE2LONG(((ULONG *)msg)[0]);
 
         void *phys_addr = CachePreDMA(msg, &length, DMA_ReadFromRAM);
 
