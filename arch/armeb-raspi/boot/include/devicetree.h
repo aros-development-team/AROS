@@ -4,16 +4,16 @@
 #include <aros/macros.h>
 #include <stdint.h>
 
-struct fdt_header { 
+struct fdt_header {
     uint32_t magic;
     uint32_t totalsize;
     uint32_t off_dt_struct;
     uint32_t off_dt_strings;
     uint32_t off_mem_rsvmap;
     uint32_t version;
-    uint32_t last_comp_version; 
-    uint32_t boot_cpuid_phys; 
-    uint32_t size_dt_strings; 
+    uint32_t last_comp_version;
+    uint32_t boot_cpuid_phys;
+    uint32_t size_dt_strings;
     uint32_t size_dt_struct;
 };
 
@@ -52,6 +52,7 @@ struct dt_entry {
 
 void dt_dump_tree();
 struct dt_entry *dt_parse(void *ptr);
+long dt_total_size();
 struct dt_entry *dt_find_node_by_phandle(uint32_t phandle);
 struct dt_entry *dt_find_node(char *key);
 struct dt_prop *dt_find_property(void *key, char *propname);
