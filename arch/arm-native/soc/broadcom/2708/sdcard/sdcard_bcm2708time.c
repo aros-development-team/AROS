@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,7 @@
 
 ULONG sdcard_CurrentTime()
 {
-    return *((volatile ULONG *)(SYSTIMER_CLO));
+    return AROS_LE2LONG(*((volatile ULONG *)(SYSTIMER_CLO)));
 }
 
 void sdcard_Udelay(ULONG usec)
