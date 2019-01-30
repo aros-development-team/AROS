@@ -51,12 +51,12 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Set Device Address to #%ld\n", val));
                     otg_Unit->hu_HubAddr = val;
                     ioreq->iouh_Actual = len;
-
-                    unsigned int otg_RegVal = *((volatile unsigned int *)USB2OTG_DEVCFG);
+#if (0) // In host mode do not set address!
+                    unsigned int otg_RegVal = rd32le(USB2OTG_DEVCFG);
                     otg_RegVal &= ~(0x7F << 4);
                     otg_RegVal |= ((val & 0x7F) << 4);
-                    *((volatile unsigned int *)USB2OTG_DEVCFG) = otg_RegVal;
-
+                    wr32le(USB2OTG_DEVCFG, otg_RegVal);
+#endif
                     return (0);
 
                 case USR_SET_CONFIGURATION:
@@ -178,48 +178,70 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     ULONG oldval = *((volatile unsigned int *)USB2OTG_HOSTPORT) & ~(USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTCONNSTS);
                     ULONG newval = oldval;
 #else
-                    unsigned int otg_RegVal, ns;
+                    unsigned int otg_RegVal;
 #endif
                     switch (val)
                     {
                         case UFS_PORT_ENABLE:
-                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Enabling Port #%ld\n", idx));
-
-                            otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
-                            otg_RegVal |= USB2OTG_HOSTPORT_PRTENA;
-                            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
-                            cmdgood = TRUE;
-
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld enable requested although OTG cannot do that!\n", idx));
                             break;
 
                         case UFS_PORT_SUSPEND:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Suspending Port #%ld\n", idx));
 
-                            otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
+                            otg_RegVal = rd32le(USB2OTG_HOSTPORT);
+                            otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
                             otg_RegVal |= USB2OTG_HOSTPORT_PRTSUSP;
-                            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+                            wr32le(USB2OTG_HOSTPORT, otg_RegVal);
                             cmdgood = TRUE;
 
                             break;
 
                         case UFS_PORT_RESET:
                             {
+                                struct MsgPort *port = CreateMsgPort();
+                                struct timerequest *req = (struct timerequest *)CreateIORequest(port, sizeof(struct timerequest));
+                                OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) req, 0);
+
                                 D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Resetting Port #%ld\n", idx));
 
-                                for (ns = 0; ns < 100000; ns++) { asm volatile("mov r0, r0\n"); } // see USB 2.0 spec
+                                req->tr_node.io_Command = TR_ADDREQUEST;
+                                req->tr_time.tv_secs = 0;
+                                req->tr_time.tv_micro = 10000;
+                                DoIO((struct IORequest *)req);
+                                D(bug("[USB2OTG:Hub] Pause done...\n"));
+                                D(bug("[USB2OTG:Hub] port:%08x\n", rd32le(USB2OTG_HOSTPORT)));
 
-                                otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
-                                otg_RegVal &= ~(USB2OTG_HOSTPORT_PRTCONNSTS|USB2OTG_HOSTPORT_PRTENA|USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTOVRCURRCHNG);
+                                otg_RegVal = rd32le(USB2OTG_HOSTPORT);
+                                otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
                                 otg_RegVal |= USB2OTG_HOSTPORT_PRTRST;
-                                *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+                                wr32le(USB2OTG_HOSTPORT, otg_RegVal);
 
-                                for (ns = 0; ns < 50000; ns++) { asm volatile("mov r0, r0\n"); } // see USB 2.0 spec (tDRSTR)
+                                D(bug("[USB2OTG:Hub] port:%08x\n", rd32le(USB2OTG_HOSTPORT)));
 
-                                otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
-                                otg_RegVal &= ~(USB2OTG_HOSTPORT_PRTCONNSTS|USB2OTG_HOSTPORT_PRTENA|USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTOVRCURRCHNG| USB2OTG_HOSTPORT_PRTRST);
-                                *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+                                req->tr_time.tv_secs = 0;
+                                req->tr_time.tv_micro = 60000;
+                                DoIO((struct IORequest *)req);
+                                D(bug("[USB2OTG:Hub] Pause with port reset done...\n"));
+                                D(bug("[USB2OTG:Hub] port:%08x\n", rd32le(USB2OTG_HOSTPORT)));
 
-                                for (ns = 0; ns < 20000; ns++) { asm volatile("mov r0, r0\n"); } // see USB 2.0 spec (tRSTRCY)
+                                otg_RegVal = rd32le(USB2OTG_HOSTPORT);
+                                otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
+                                otg_RegVal &= ~USB2OTG_HOSTPORT_PRTRST;
+                                wr32le(USB2OTG_HOSTPORT, otg_RegVal);
+
+                                D(bug("[USB2OTG:Hub] port:%08x\n", rd32le(USB2OTG_HOSTPORT)));
+
+                                req->tr_time.tv_secs = 0;
+                                req->tr_time.tv_micro = 10000;
+                                DoIO((struct IORequest *)req);
+                                D(bug("[USB2OTG:Hub] Pause after deasserting reset done...\n"));
+                                D(bug("[USB2OTG:Hub] port:%08x\n", rd32le(USB2OTG_HOSTPORT)));
+
+                                CloseDevice((struct IORequest *)req);
+                                DeleteIORequest((struct IORequest *)req);
+                                DeleteMsgPort(port);
+
                                 cmdgood = TRUE;
                             }
                             break;
@@ -227,9 +249,10 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UFS_PORT_POWER:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Powering Port #%ld\n", idx));
 
-                            otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTPORT);
+                            otg_RegVal = rd32le(USB2OTG_HOSTPORT);
+                            otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
                             otg_RegVal |= USB2OTG_HOSTPORT_PRTPWR;
-                            *((volatile unsigned int *)USB2OTG_HOSTPORT) = otg_RegVal;
+                            wr32le(USB2OTG_HOSTPORT, otg_RegVal);
                             cmdgood = TRUE;
 
                             break;
@@ -264,7 +287,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 
                     cmdgood = FALSE;
 
-                    ULONG oldval = *((volatile unsigned int *)USB2OTG_HOSTPORT) & ~(USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTCONNSTS);
+                    ULONG oldval = rd32le(USB2OTG_HOSTPORT) & ~USB2OTG_HOSTPORT_SC_BITS;
                     ULONG newval = oldval;
 
                     switch (val)
@@ -272,7 +295,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UFS_PORT_ENABLE:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port #%ld Enable\n", idx));
 
-                            newval &= ~USB2OTG_HOSTPORT_PRTENA;
+                            newval |= USB2OTG_HOSTPORT_PRTENA;
                             cmdgood = TRUE;
 
                             break;
@@ -280,7 +303,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UFS_PORT_SUSPEND:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port #%ld Suspend\n", idx));
 
-                            newval &= ~USB2OTG_HOSTPORT_PRTSUSP;
+                            newval |= USB2OTG_HOSTPORT_PRTRES;
                             cmdgood = TRUE;
 
                             break;
@@ -296,7 +319,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UFS_C_PORT_CONNECTION:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port #%ld Connect Change\n", idx));
 
-                            newval &= ~USB2OTG_HOSTPORT_PRTCONNDET;
+                            newval |= USB2OTG_HOSTPORT_PRTCONNDET;
                             otg_Unit->hu_HubPortChanged = TRUE;
                             cmdgood = TRUE;
 
@@ -305,7 +328,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UFS_C_PORT_ENABLE:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port #%ld Enable Change\n", idx));
 
-                            newval &= ~USB2OTG_HOSTPORT_PRTENCHNG;
+                            newval |= USB2OTG_HOSTPORT_PRTENCHNG;
                             otg_Unit->hu_HubPortChanged = TRUE;
                             cmdgood = TRUE;
 
@@ -314,7 +337,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UFS_C_PORT_SUSPEND:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port #%ld Suspend Change\n", idx));
 
-                            newval &= ~USB2OTG_HOSTPORT_PRTRES;
+//                            newval |= USB2OTG_HOSTPORT_PRTRES;
                             otg_Unit->hu_HubPortChanged = TRUE;
                             cmdgood = TRUE;
 
@@ -323,7 +346,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UFS_C_PORT_OVER_CURRENT:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port #%ld Over-Current Change\n", idx));
 
-                            newval &= ~USB2OTG_HOSTPORT_PRTOVRCURRCHNG;
+                            newval |= USB2OTG_HOSTPORT_PRTOVRCURRCHNG;
                             otg_Unit->hu_HubPortChanged = TRUE;
                             cmdgood = TRUE;
 
@@ -345,7 +368,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (cmdgood)
                     {
                         D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
-                        *((volatile unsigned int *)USB2OTG_HOSTPORT) = newval;
+                        wr32le(USB2OTG_HOSTPORT, newval);
 
                         return (0);
                     }
@@ -375,7 +398,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         return (UHIOERR_STALL);
                     }
 
-                    ULONG oldval = *((volatile unsigned int *)USB2OTG_HOSTPORT);
+                    ULONG oldval = rd32le(USB2OTG_HOSTPORT);
 
                     *mptr = 0;
                     if (oldval & USB2OTG_HOSTPORT_PRTPWR)        *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
@@ -386,7 +409,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (oldval & USB2OTG_HOSTPORT_PRTSUSP)       *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
                     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld is %s\n", idx, (oldval & USB2OTG_HOSTPORT_PRTSPD_LOW) ? "LOWSPEED" : "FULLSPEED"));
-                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld Status %08lx\n", idx, *mptr));
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld Status %08lx\n", idx, AROS_LE2WORD(*mptr)));
 
                     mptr++;
                     *mptr = 0;
@@ -394,7 +417,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (oldval & USB2OTG_HOSTPORT_PRTCONNDET)   *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
                     if (oldval & USB2OTG_HOSTPORT_PRTRES)       *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND|UPSF_PORT_ENABLE);
 
-                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld Change %08lx\n", idx, *mptr));
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld Change %08lx\n", idx, AROS_LE2WORD(*mptr)));
 
                     return (0);
                 }

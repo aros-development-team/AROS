@@ -1,12 +1,12 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef USB2OTG_H
 #define USB2OTG_H
 
-/** Maximum number of Periodic FIFOs */ 
+/** Maximum number of Periodic FIFOs */
 
 #define PERIFIFO_MAX                                    15                      // Max no. of Periodic FIFO's
 #define TXFIFO_MAX                                      15                      // Max no. of Tx FIFO's
@@ -69,6 +69,7 @@
 #define USB2OTG_HOSTPORT_PRTSPD_HIGH                    (0 << 17)
 #define USB2OTG_HOSTPORT_PRTSPD_FULL                    (1 << 17)
 #define USB2OTG_HOSTPORT_PRTSPD_LOW                     (2 << 17)
+#define USB2OTG_HOSTPORT_SC_BITS                        0x2e
 
 #define USB2OTG_HOST_CHANBASE                           (USB2OTG_BASE + 0x0500)
 #define USB2OTG_HOSTCHAN_CHARBASE                       (0x00)
@@ -104,7 +105,7 @@
 
 
 #define USB2OTG_DEV_INEP_BASE                           (USB2OTG_BASE + 0x0900)
-#define USB2OTG_DEV_INEP_DIEPCTL                        (0x00) 
+#define USB2OTG_DEV_INEP_DIEPCTL                        (0x00)
 #define USB2OTG_DEV_INEP_DIEPINT                        (0x08)
 #define USB2OTG_DEV_INEP_DIEPTSIZ                       (0x10)
 #define USB2OTG_DEV_INEP_DIEPDMA                        (0x14)
@@ -240,7 +241,7 @@
 #define USB2OTG_MDIOCTRL_MDCWRITE                       (1 << 22)
 #define USB2OTG_MDIOCTRL_MDOWRITE                       (1 << 23)
 #define USB2OTG_MDIOCTRL_BUSY                           (1 << 31)
-        
+
 /* Bits in USB2OTG_MISCCTRL */
 #define USB2OTG_MISCCTRL_SESSIONEND                     (1 << 0)
 #define USB2OTG_MISCCTRL_VBUSVALID                      (1 << 1)
