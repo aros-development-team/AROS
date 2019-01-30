@@ -522,6 +522,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
         boottag->ti_Tag = KRN_OpenFirmwareTree;
         boottag->ti_Data = (IPTR)dt_location;
+        boottag++;
     }
 
     boottag->ti_Tag = TAG_DONE;
