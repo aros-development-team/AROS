@@ -11,7 +11,7 @@
 #include "mmu.h"
 #include "boot.h"
 
-#define DMMU(x) x
+#define DMMU(x)
 
 void mmu_init()
 {
