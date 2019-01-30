@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
@@ -38,7 +38,7 @@ AROS_LH1(void, GetCPUInfo,
     /* If no processor is specified, query the BP */
     selectedprocessor = (ULONG)GetTagData(GCIT_SelectedProcessor, 0, tagList);
 
-    /* If selectedprocessor not in line with number of processors, report on 
+    /* If selectedprocessor not in line with number of processors, report on
     first available processor */
     if (selectedprocessor >= ProcessorBase->cpucount)
         selectedprocessor = 0;
@@ -70,7 +70,7 @@ AROS_LH1(void, GetCPUInfo,
             *((ULONG *)passedTag->ti_Data) = processor->VectorUnit;
             break;
         case(GCIT_L1CacheSize):
-            *((ULONG *)passedTag->ti_Data) = 
+            *((ULONG *)passedTag->ti_Data) =
                 (processor->L1DataCacheSize + processor->L1InstructionCacheSize);
             break;
         case(GCIT_L1DataCacheSize):
@@ -101,7 +101,7 @@ AROS_LH1(void, GetCPUInfo,
             *((ULONG *)passedTag->ti_Data) = 0; /* TODO: IMPLEMENT */
             break;
         case GCIT_Vendor:
-            *((ULONG *)passedTag->ti_Data) = processor->Vendor;
+            *((CONST_STRPTR *)passedTag->ti_Data) = processor->Vendor;
             break;
         }
         }
@@ -133,7 +133,7 @@ D(bug("[processor.ARM] :%s()\n", __PRETTY_FUNCTION__));
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_BRANCHP) >> FEATB_BRANCHP); break;
     case(GCIT_SupportsThumbEE):
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_THUMBEX) >> FEATB_THUMBEX); break;
-    default: 
+    default:
         *((BOOL *)tag->ti_Data) = FALSE; break;
     }
 }
