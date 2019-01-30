@@ -66,4 +66,16 @@ SECTIONS
     _end = . ;
     
     __bootstrap_end = . ;
+
+    .trailer :
+    {
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    LONG(0x04000000)
+    LONG(0x44544f4b)    /* DTOK */
+    LONG(0x20000000)
+    LONG(0x04000000)
+    LONG(0x5250544c)
+    }
 }
