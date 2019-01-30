@@ -77,7 +77,6 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
                     CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_ClearD);
             }
 
-
             /* SETUP phase of the transfer, always OUT type. Send CTRL data */
             wr32le(USB2OTG_HOST_CHANBASE + USB2OTG_HOSTCHAN_CHARBASE,
                 ((req->iouh_DevAddr & 0x7f) << 22) |
@@ -237,7 +236,7 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
 #endif
         }
             // Restore IRQ mask
-//        FNAME_DEV(ScheduleCtrlTDs)(otg_Unit);
+        FNAME_DEV(ScheduleCtrlTDs)(otg_Unit);
     }
 
     if (otg_Unit->hu_IntXFerQueue.lh_Head->ln_Succ)
