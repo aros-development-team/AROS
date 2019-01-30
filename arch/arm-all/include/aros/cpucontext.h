@@ -35,6 +35,7 @@ struct ExceptionContext
 #define CPUMODE_MASK            0x1F
 
 #define CPUMODE_IRQENABLED      (1 << 7)
+#define CPUMODE_BIGENDIAN       (1 << 9)
 
 /* Flags */
 enum enECFlags

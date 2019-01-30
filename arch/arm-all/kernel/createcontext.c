@@ -25,7 +25,7 @@ AROS_LH0(void *, KrnCreateContext,
     /*
      * Allocate common data block and FPU data block in one
      * chunk. This way we simplify things a lot.
-     * 
+     *
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
      * so we refer struct AROSCPUContext only for size calculation.
      */
@@ -34,6 +34,9 @@ AROS_LH0(void *, KrnCreateContext,
     {
         ctx->FPUType    = KernelBase->kb_ContextFlags;
         ctx->cpsr       = CPUMODE_USER;		/* Initial value for user mode */
+#if AROS_BIG_ENDIAN
+        ctx->cpsr      |= CPUMODE_BIGENDIAN;
+#endif
         ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
     }
 
