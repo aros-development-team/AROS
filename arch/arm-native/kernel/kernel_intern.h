@@ -23,9 +23,16 @@ struct KernelBase;
 #define KERNEL_PHYS_BASE        0x07800000
 #define KERNEL_VIRT_BASE        0xff800000
 
-#define VFPEnable               (1 << 30) 
-#define VFPSingle               (3 << 20) 
+#define VFPEnable               (1 << 30)
+#define VFPSingle               (3 << 20)
 #define VFPDouble               (3 << 22)
+
+void dt_set_root(void * r);
+void *dt_find_node_by_phandle(uint32_t phandle);
+void *dt_find_node(char *key);
+void *dt_find_property(void *key, char *propname);
+int dt_get_prop_len(void *prop);
+void *dt_get_prop_value(void *prop);
 
 void cpu_Probe(struct ARM_Implementation *);
 void cpu_Init(struct ARM_Implementation *, struct TagItem *);
