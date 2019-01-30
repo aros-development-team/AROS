@@ -16,6 +16,7 @@
 #include "serialdebug.h"
 #include "bootconsole.h"
 #include "vc_mb.h"
+#include "io.h"
 
 #undef ARM_PERIIOBASE
 #define ARM_PERIIOBASE (__arm_periiobase)
@@ -38,7 +39,7 @@ inline void waitSerOUT()
 {
     while(1)
     {
-       if ((AROS_LE2LONG(*(volatile uint32_t *)(PL011_0_BASE + PL011_FR)) & PL011_FR_TXFF) == 0) break;
+       if ((rd32le(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
 }
 
@@ -48,10 +49,10 @@ inline void putByte(uint8_t chr)
 
     if (chr == '\n')
     {
-        *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = AROS_LONG2LE('\r');
+        wr32le(PL011_0_BASE + PL011_DR, '\r');
         waitSerOUT();
     }
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = AROS_LONG2LE(chr);
+    wr32le(PL011_0_BASE + PL011_DR, chr);
 }
 
 void serInit(void)
@@ -76,33 +77,33 @@ void serInit(void)
 
     uartclock = AROS_LE2LONG(uart_msg[6]);
     
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_CR) = 0;
+    wr32le(PL011_0_BASE + PL011_CR, 0);
 
-    uartvar = AROS_LE2LONG(*(volatile uint32_t *)GPFSEL1);
+    uartvar = rd32le(GPFSEL1);
     uartvar &= ~(7<<12);                        // TX on GPIO14
     uartvar |= 4<<12;                           // alt0
     uartvar &= ~(7<<15);                        // RX on GPIO15
     uartvar |= 4<<15;                           // alt0
-    *(volatile uint32_t *)GPFSEL1 = AROS_LONG2LE(uartvar);
+    wr32le(GPFSEL1, uartvar);
 
     /* Disable pull-ups and pull-downs on rs232 lines */
-    *(volatile uint32_t *)GPPUD = 0;
+    wr32le(GPPUD, 0);
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 
-    *(volatile uint32_t *)GPPUDCLK0 = AROS_LONG2LE((1 << 14)|(1 << 15));
+    wr32le(GPPUDCLK0, (1 << 14)|(1 << 15));
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 
-    *(volatile uint32_t *)GPPUDCLK0 = 0;
+    wr32le(GPPUDCLK0, 0);
 
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_ICR) = AROS_LONG2LE(PL011_ICR_FLAGS);
+    wr32le(PL011_0_BASE + PL011_ICR, PL011_ICR_FLAGS);
     uartdivint = PL011_BAUDINT(uartbaud, uartclock);
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_IBRD) = AROS_LONG2LE(uartdivint);
+    wr32le(PL011_0_BASE + PL011_IBRD, uartdivint);
     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_FBRD) = AROS_LONG2LE(uartdivfrac);
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_LCRH) = AROS_LONG2LE(PL011_LCRH_WLEN8|PL011_LCRH_FEN);           // 8N1, Fifo enabled
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_CR) = AROS_LONG2LE(PL011_CR_UARTEN|PL011_CR_TXE|PL011_CR_RXE);   // enable the uart, tx and rx
+    wr32le(PL011_0_BASE + PL011_FBRD, uartdivfrac);
+    wr32le(PL011_0_BASE + PL011_LCRH, PL011_LCRH_WLEN8|PL011_LCRH_FEN);           // 8N1, Fifo enabled
+    wr32le(PL011_0_BASE + PL011_CR, PL011_CR_UARTEN|PL011_CR_TXE|PL011_CR_RXE);   // enable the uart, tx and rx
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 }

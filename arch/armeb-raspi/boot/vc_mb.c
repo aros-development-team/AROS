@@ -15,6 +15,8 @@
 #include <hardware/videocore.h>
 #include <stdint.h>
 
+#include "io.h"
+
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uint32_t __arm_periiobase;
 
