@@ -59,6 +59,7 @@ void mmu_load()
     asm volatile ("mcr  p15, 0, %[r], c7, c10, 4" : : [r] "r" (0)); /* dsb */
     asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
     asm volatile ("mcr  p15, 0, %[r], c7, c5, 4" : : [r] "r" (0)); /* isb */
+    DMMU(kprintf("[BOOT] mmu up\n"));
 }
 
 void mmu_unmap_section(uint32_t virt, uint32_t length)
@@ -96,6 +97,12 @@ void mmu_map_section(uint32_t phys, uint32_t virt, uint32_t length, int b, int c
     {
         pde_t s;
 
+        s.raw = PDE_TYPE_SECTION | (c << 3) | (b << 2);
+        s.raw |= (ap & 3) << 10;
+        s.raw |= (tex) << 12;
+        s.raw |= ((ap >> 2) & 1) << 15;
+        s.raw |= phys << 20;
+#if 0
         s.section.type = PDE_TYPE_SECTION;
         s.section.b = b;
         s.section.c = c;
@@ -103,8 +110,10 @@ void mmu_map_section(uint32_t phys, uint32_t virt, uint32_t length, int b, int c
         s.section.apx = (ap >> 2) & 1;
         s.section.tex = tex;
         s.section.base_address = phys;
+#endif
 
         pde[i] = s;
+        DMMU(kprintf("[BOOT] pde[%04d] = %08x\n", i, s.raw));
 
         phys++;
         i++;
