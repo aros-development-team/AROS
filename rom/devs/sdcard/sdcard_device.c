@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -361,14 +361,21 @@ static void cmd_ChangeState(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_ProtStatus(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
+//    struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    /* Write unsupported yet, return write protect state *always* */
+    IOStdReq(io)->io_Actual = -1;
+
+    #if 0
 
     if ((unit->sdcu_Flags & (AF_Card_WriteProtect|AF_Card_Locked)) != 0)
         IOStdReq(io)->io_Actual = -1;
     else
         IOStdReq(io)->io_Actual = 0;
+
+    #endif
 }
 
 static void cmd_GetNumTracks(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -661,7 +668,7 @@ AROS_LH1(void, BeginIO,
     else
     {
         D(bug("[SDCard%02ld] %s: Fast command\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
-    
+
         /* Immediate command. Mark unit as active and do the command directly */
         unit->sdcu_Unit.unit_flags |= UNITF_ACTIVE;
         Enable();
