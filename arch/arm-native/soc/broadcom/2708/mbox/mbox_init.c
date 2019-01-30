@@ -82,7 +82,14 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
             ReleaseSemaphore(&MBoxBase->mbox_Sem);
 
             if ((msg & VCMB_CHAN_MASK) == chan)
-                return (volatile unsigned int *)(msg & ~VCMB_CHAN_MASK);
+            {
+                uint32_t *addr = (uint32_t *)(msg & ~VCMB_CHAN_MASK);
+                uint32_t len = AROS_LE2LONG(addr[0]);
+
+                CacheClearE(addr, len, CACRF_InvalidateD);
+
+                return (volatile unsigned int *)(addr);
+            }
         }
     }
     return (volatile unsigned int *)-1;
