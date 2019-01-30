@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,8 +21,8 @@
 #include "kernel_intr.h"
 #include "kernel_syscall.h"
 
-extern char * __text_start;
-extern char * __text_end;
+extern char __text_start;
+extern char __text_end;
 
 #ifndef _CUSTOM
 #define _CUSTOM NULL
@@ -57,7 +57,7 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
     }
     else
     {
-        void *end_addr = ((uintptr_t)addr + length + 31) & ~31;
+        void *end_addr = (void*)(((uintptr_t)addr + length + 31) & ~31);
         addr = (void *)((uintptr_t)addr & ~31);
         count = (uintptr_t)(end_addr - addr) >> 5;
     }

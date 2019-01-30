@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +24,6 @@
 
 #include "exec_intern.h"
 #include "etask.h"
-
 #include "tlsf.h"
 
 #include "kernel_intern.h"
@@ -32,6 +31,9 @@
 #include "kernel_romtags.h"
 
 #include "exec_platform.h"
+
+#undef KernelBase
+#include "tls.h"
 
 extern struct TagItem *BootMsg;
 
@@ -56,7 +58,7 @@ asm (
     "           ldr     sp, stack_fiq_end    \n"
     "           cps     #0x13                \n" /* SVC (supervisor) mode */
     "           ldr     sp, stack_super_end  \n"
-    "		b       kernel_cstart	     \n"
+    "           b       kernel_cstart	     \n"
 
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );
@@ -66,7 +68,7 @@ static uint32_t * const stack_super_end __attribute__((used, section(".aros.init
 static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init"))) = &stack_fiq[1024 - sizeof(IPTR)];
 
 
-struct ARM_Implementation __arm_arosintern  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,NULL};
+struct ARM_Implementation __arm_arosintern  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,0};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
 
 static void __attribute__((used)) __clear_bss(struct TagItem *msg)
@@ -115,7 +117,6 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     UWORD *ranges[3];
     struct MinList memList;
     struct MemHeader *mh;
-    struct MemChunk *mc;
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
     char *cmdline = NULL;
     BootMsg = msg;

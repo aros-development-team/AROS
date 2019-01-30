@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -112,7 +112,8 @@ static inline void bug(const char *format, ...)
         ctx->r[__task_reg_no] = ((uint32_t *)regs)[__task_reg_no];              \
     }                                                                           \
     ctx->ip = ((uint32_t *)regs)[12];                                           \
-    ctx->sp = task->tc_SPReg = ((uint32_t *)regs)[13];                          \
+    ctx->sp = ((uint32_t *)regs)[13];                                           \
+    task->tc_SPReg = (void *)ctx->sp;                                           \
     ctx->lr = ((uint32_t *)regs)[14];                                           \
     ctx->pc = ((uint32_t *)regs)[15];                                           \
     ctx->cpsr = ((uint32_t *)regs)[16];                                         \
@@ -126,7 +127,8 @@ static inline void bug(const char *format, ...)
         ((uint32_t *)regs)[__task_reg_no] = ctx->r[__task_reg_no];              \
     }                                                                           \
     ((uint32_t *)regs)[12] = ctx->ip;                                           \
-    ((uint32_t *)regs)[13] = ctx->sp = task->tc_SPReg;                          \
+    ctx->sp = (intptr_t)task->tc_SPReg;                                         \
+    ((uint32_t *)regs)[13] = ctx->sp;                                           \
     ((uint32_t *)regs)[14] = ctx->lr;                                           \
     ((uint32_t *)regs)[15] = ctx->pc;                                           \
     ((uint32_t *)regs)[16] = ctx->cpsr;                                         \

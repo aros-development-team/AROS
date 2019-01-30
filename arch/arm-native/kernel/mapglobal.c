@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,7 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
-#include <kernel_intern.h>
+#include "kernel_intern.h"
 
 #include <proto/kernel.h>
 

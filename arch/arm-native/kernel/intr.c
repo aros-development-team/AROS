@@ -296,13 +296,21 @@ void arm_icache_invalidate(uint32_t addr, uint32_t length)
     __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
 }
 
+void unsafe_memcpy(void * dest, const void * src, int length)
+{
+    char *d = dest;
+    const char *s = src;
+
+    while(length--)
+        *d++ = *s++;
+}
+
 void core_SetupIntr(void)
 {
-    int irq;
     bug("[Kernel] Initializing cpu vectors\n");
 
     /* Copy vectors into place */
-    memcpy(0, &__intvecs_start,
+    unsafe_memcpy(0, &__intvecs_start,
             (unsigned int)&__intvecs_end -
             (unsigned int)&__intvecs_start);
 

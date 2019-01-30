@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,6 +13,7 @@
 
 #include "kernel_cpu.h"
 
+#undef D
 #define D(x)
 
 #if defined(__AROSEXEC_SMP__)

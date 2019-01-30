@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,6 +23,7 @@
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
 #include "kernel_fb.h"
+#include "tls.h"
 
 #include "exec_platform.h"
 
@@ -36,6 +37,7 @@
 #define IRQ_BANK1	0x00000100
 #define IRQ_BANK2	0x00000200
 
+#undef D
 #define D(x) x
 #define DIRQ(x)
 #define DFIQ(x)
@@ -139,6 +141,7 @@ static void bcm2708_init_cpu(APTR _kernelBase, APTR _sysBase)
 {
     struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
     struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+    (void)SysBase;
 #if defined(__AROSEXEC_SMP__)
     tls_t   *__tls = TLS_PTR_GET();
 #endif
@@ -178,11 +181,12 @@ static void bcm2708_irq_init(void)
 
 static void bcm2708_send_ipi(uint32_t ipi, uint32_t ipi_data, uint32_t cpumask)
 {
-    int cpu, mbno = 0;
+    int cpu;
 
     for (cpu = 0; cpu < 4; cpu++)
     {
 #if defined(__AROSEXEC_SMP__)
+        int mbno = 0;
         if ((cpumask & (1 << cpu)) && bcm2708_cpuipid[cpu])
         {
             /* TODO:  check which mailbox is available and use it */
@@ -295,6 +299,7 @@ static void bcm2708_fiq_process()
             if (fiq & (0x10 << mbno))
             {
                 fiq_data = *((uint32_t *)(BCM2836_MAILBOX0_CLR0 + 4 * mbno + (16 * cpunum)));
+                (void)fiq_data;
                 DFIQ(bug("[Kernel:BCM2708] %s: Mailbox%d: FIQ Data %08x\n", __PRETTY_FUNCTION__, mbno, fiq_data));
 #if defined(__AROSEXEC_SMP__)
                 if (bcm2708_cpuipid[cpunum])

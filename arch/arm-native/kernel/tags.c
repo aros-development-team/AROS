@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,7 +42,7 @@ struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
 {
     struct TagItem *tag;
-    struct TagItem *tagptr = tagList;
+    const struct TagItem *tagptr = tagList;
 
     while((tag = krnNextTagItem(&tagptr)))
     {
@@ -50,16 +50,21 @@ struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
             return tag;
     }
 
-    return 0;
+    return NULL;
 }
 
 intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList)
 {
     struct TagItem *ti = 0;
+    intptr_t value = defaultVal;
 
-    if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
-        return ti->ti_Data;
-
-        return defaultVal;
+    if (tagList != NULL)
+    {
+        ti = krnFindTagItem(tagValue, tagList);
+        if (ti != NULL)
+            value = ti->ti_Data;
+    }
+    
+    return value;
 }
 

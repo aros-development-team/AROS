@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2016, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2016, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -123,7 +123,9 @@ void cpu_Register()
 
     bug("[Kernel:%02d] Operational\n", cpunum);
 
+#if defined(__AROSEXEC_SMP__)
 cpu_registerfatal:
+#endif
     bug("[Kernel:%02d] Waiting for interrupts\n", cpunum);
 
     KrnSpinUnLock(&startup_lock);
@@ -328,10 +330,10 @@ void cpu_Dispatch(regs_t *regs)
     {
         /* Store the launch time */
         IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = __arm_arosintern.ARMI_GetTime();
-        if (!IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_secs && !IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro)
+        if (!IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_sec && !IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_nsec)
         {
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_secs = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 / 1000000;
-            IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_micro = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 % 1000000;
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_sec = IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 / 1000000;
+            IntETask(task->tc_UnionETask.tc_ETask)->iet_StartTime.tv_nsec = (IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 % 1000000) * 1000;
         }
     }
 
