@@ -67,11 +67,11 @@ SECTIONS
     
     __bootstrap_end = . ;
 
-    .trailer :
+    .trailer ALIGN(4) :
     {
     LONG(0)
     LONG(0)
-    LONG(0)
+    LONG(0x01000000)    /* DTOK = 1, please give us device tree */
     LONG(0x04000000)
     LONG(0x44544f4b)    /* DTOK */
     LONG(0x20000000)
