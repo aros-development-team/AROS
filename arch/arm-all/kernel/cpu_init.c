@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,6 +7,7 @@
 #include <exec/types.h>
 
 #include "kernel_base.h"
+#include "kernel_cpu.h"
 
 /*
  * The job of this function is to probe the CPU and set up kb_ContextFlags
@@ -16,6 +17,13 @@
  * context area (including FPU data and private data). It is needed for
  * complete context save/restore during Exec exceptions processing
  */
+
+#ifndef ARM_FPU_TYPE
+#define ARM_FPU_TYPE    FPU_VFP
+#define ARM_FPU_SIZE    32*64
+#endif // !ARM_FPU_TYPE
+
+
 static int cpu_Init(struct KernelBase *KernelBase)
 {
     /*

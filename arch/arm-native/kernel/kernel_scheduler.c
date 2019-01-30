@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,6 +10,7 @@
 #include <proto/kernel.h>
 
 //#include <kernel_base.h>
+struct KernelBase;
 #include <kernel_debug.h>
 #include <kernel_scheduler.h>
 
@@ -22,7 +23,10 @@
 
 #include <etask.h>
 
+#undef bug
 #include "exec_intern.h"
+#undef bug
+#include "kernel_intern.h"
 
 #define DSCHED(x)
 
@@ -31,6 +35,7 @@ BOOL core_Schedule(void)
 {
 #if defined(DEBUG)
     int cpunum = GetCPUNumber();
+    (void)cpunum;
 #endif
     struct Task *task = GET_THIS_TASK;
     BOOL corereschedule = TRUE;
@@ -160,6 +165,7 @@ struct Task *core_Dispatch(void)
     struct Task *task = GET_THIS_TASK;
 #if defined(__AROSEXEC_SMP__) || defined(DEBUG)
     int cpunum = GetCPUNumber();
+    (void)cpunum;
 #endif
 #if defined(__AROSEXEC_SMP__)
     uint32_t cpumask = (1 << cpunum);

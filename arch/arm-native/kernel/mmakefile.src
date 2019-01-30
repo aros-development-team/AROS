@@ -43,17 +43,20 @@ AFILES := intvecs
 #MM kernel-raspi-arm: setup-raspi-arm kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
 kernel-raspi-arm: $(OSGENDIR)/boot/core.elf
 
+#MM kernel-raspi-armeb: setup-raspi-armeb kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
+kernel-raspi-armeb: $(OSGENDIR)/boot/core.elf
+
 $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o  $(KOBJSDIR)/task_resource.o
 		%mkdirs_q $(OSGENDIR)/boot
 		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
 		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
-#MM kernel-kernel-raspi-arm : includes
-#MM kernel-kernel-raspi-arm-kobj : includes
+#MM kernel-kernel-raspi-armeb : includes
+#MM kernel-kernel-raspi-armeb-kobj : includes
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
 
 %build_archspecific \
-  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=raspi-arm \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=raspi-armeb \
   files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
   

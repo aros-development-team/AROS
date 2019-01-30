@@ -1,0 +1,92 @@
+# $Id $
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR       := $(GENDIR)/$(CURDIR)
+FILES           := boot 
+USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
+KERNEL_LDFLAGS  =
+USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
+
+ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
+
+#MM- distfiles-raspi-armeb : distfiles-raspi-be
+
+#MM distfiles-raspi-be : \
+#MM kernel-raspi-armeb \
+#MM kernel-package-raspi-armeb \
+#MM distfiles-raspi-be-fw
+
+#MM kernel-package-raspi-armeb: \
+#MM linklibs-stdc-static \
+#MM kernel-dos
+
+#MM kernel-package-raspi-armeb-missing: \
+#MM kernel-battclock
+
+RASPIFW_BRANCH    := master
+RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
+RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf
+
+PKG_LIBS      := dos
+PKG_LIBS_ARCH := 
+PKG_RSRC      := 
+PKG_RSRC_ARCH := 
+PKG_DEVS      := 
+PKG_DEVS_ARCH := 
+PKG_HANDLERS  := 
+PKG_HIDDS     := 
+PKG_CLASSES   := 
+ 
+%make_package mmake=kernel-package-raspi-armeb file=$(AROSDIR)/$(ARM_BSP) \
+    libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
+    arch_res=$(PKG_RSRC_ARCH) devs=$(PKG_DEVS) arch_devs=$(PKG_DEVS_ARCH) \
+    handlers=$(PKG_HANDLERS) hidds=$(PKG_HIDDS) classes=$(PKG_CLASSES)
+
+#MM
+distfiles-raspi-be-fw:
+	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+
+#MM
+distfiles-raspi-be-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+#MM
+distfiles-raspi-be-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+$(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
+	$(ECHO) -e "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
+
+$(AROSDIR)/aros-armeb-raspi.img: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	$(KERNEL_LD) --be8 --format elf32-bigarm -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
+
+$(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
+	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
+	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) --be8 -r --format binary --oformat elf32-bigarm core.bin -o $@
+
+distfiles-raspi-be: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2
+
+$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2: $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+	%mkdirs_q $(AROSDIR)/S
+	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(MKDIR) -p "$(DISTDIR)"
+	cd $(AROSDIR) && tar -cjf  $@ ./
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q 
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q 
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+DEPS	:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+
+-include $(DEPS)
+
+%common

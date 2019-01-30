@@ -2,7 +2,7 @@
 #define ASM_CPU_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2016, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU-specific assembler definitions.
@@ -23,9 +23,17 @@
 #endif
 #ifdef __arm__
 #   if defined __thumb2__
-#       include <asm/arm/cpu-thumb2.h>
+#       if defined __ARMEB__
+#           include <asm/armeb/cpu-thumb2.h>
+#       else
+#           include <asm/arm/cpu-thumb2.h>
+#       endif
 #   else
-#       include <asm/arm/cpu.h>
+#       if defined __ARMEB__
+#           include <asm/armeb/cpu.h>
+#       else
+#           include <asm/arm/cpu.h>
+#       endif
 #   endif
 #endif
 

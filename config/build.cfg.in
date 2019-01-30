@@ -42,7 +42,7 @@ KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-functi
 
 # Kernel private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))
-TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/kernel
+TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/arm-native/kernel
 else
 TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
 endif
@@ -55,7 +55,7 @@ TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
 
 # Exec private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))
-TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-native/exec
+TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/arm-native/exec
 else
 TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
 endif

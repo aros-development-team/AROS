@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create an empty usable CPU context, ARM version.
@@ -34,7 +34,7 @@ AROS_LH0(void *, KrnCreateContext,
     {
         ctx->FPUType    = KernelBase->kb_ContextFlags;
         ctx->cpsr       = CPUMODE_USER;		/* Initial value for user mode */
-	ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
+        ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
     }
 
     return ctx;
