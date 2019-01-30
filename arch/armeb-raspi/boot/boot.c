@@ -117,18 +117,18 @@ void query_vmem()
 
 void query_memory()
 {
-    struct dt_entry *mem = dt_find_node("/memory");
+    of_node_t *mem = dt_find_node("/memory");
 
     kprintf("[BOOT] Query system memory\n");
     if (mem)
     {
-        struct dt_prop *p = dt_find_property(mem, "reg");
+        of_property_t *p = dt_find_property(mem, "reg");
 
-        if (p != NULL && p->dtp_length)
+        if (p != NULL && p->op_length)
         {
-            uint32_t *addr = p->dtp_value;
-            uint32_t lower = *addr++;
-            uint32_t upper = *addr++;
+            uint32_t *addr = p->op_value;
+            uint32_t lower = AROS_BE2LONG(*addr++);
+            uint32_t upper = AROS_BE2LONG(*addr++);
 
             kprintf("[BOOT] System memory range: %08x-%08x\n", lower, upper-1);
 
@@ -182,21 +182,21 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     dt_mem_usage -= mem_avail();
 
     /* Prepare mapping for peripherals. Use the data from device tree here */
-    struct dt_entry *e = dt_find_node("/soc");
+    of_node_t *e = dt_find_node("/soc");
     if (e)
     {
-        struct dt_prop *p = dt_find_property(e, "ranges");
-        uint32_t *ranges = p->dtp_value;
-        int32_t len = p->dtp_length;
+        of_property_t *p = dt_find_property(e, "ranges");
+        uint32_t *ranges = p->op_value;
+        int32_t len = p->op_length;
 
         while(len > 0)
         {
             uint32_t addr_bus, addr_cpu;
             uint32_t addr_len;
 
-            addr_bus = *ranges++;
-            addr_cpu = *ranges++;
-            addr_len = *ranges++;
+            addr_bus = AROS_BE2LONG(*ranges++);
+            addr_cpu = AROS_BE2LONG(*ranges++);
+            addr_len = AROS_BE2LONG(*ranges++);
 
             (void)addr_bus;
 
@@ -214,8 +214,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     else
         while(1) asm volatile("wfe");
 
-
-
     serInit();
 
     /* first of all, store the arch for the kernel to use .. */
@@ -227,23 +225,25 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     e = dt_find_node("/leds");
     if (e)
     {
+        of_node_t *led;
         kprintf("[BOOT] Configuring LEDs\n");
-        for (struct dt_entry *led = e->dte_children; led; led = led->dte_next)
+        ForeachNode(&e->on_children, led)
         {
-            struct dt_prop *p = dt_find_property(led, "gpios");
+            of_property_t *p = dt_find_property(led, "gpios");
             int32_t gpio = 0;
-            if (p && p->dtp_length >= 8) {
-                uint32_t *data = p->dtp_value;
-                uint32_t phandle = data[0];
-                gpio = data[1];
-                struct dt_entry *bus = dt_find_node_by_phandle(phandle);
+            if (p && p->op_length >= 8) {
+                uint32_t *data = p->op_value;
+                uint32_t phandle = AROS_BE2LONG(data[0]);
+                gpio = AROS_BE2LONG(data[1]);
+                of_node_t *bus = dt_find_node_by_phandle(phandle);
 
-                kprintf("[BOOT] %s: GPIO%d (%08x %08x %08x)\n", led->dte_name, gpio, data[0], data[1], data[2]);
+                kprintf("[BOOT] %s: GPIO%d (%08x %08x %08x)\n", led->on_name, gpio,
+                    AROS_BE2LONG(data[0]), AROS_BE2LONG(data[1]), AROS_BE2LONG(data[2]));
                 if (bus)
                 {
-                    kprintf("[BOOT] LED attached to %s\n", bus->dte_name);
+                    kprintf("[BOOT] LED attached to %s\n", bus->on_name);
 
-                    if (strncmp(bus->dte_name, "gpio", 4) == 0)
+                    if (strncmp(bus->on_name, "gpio", 4) == 0)
                     {
                         int gpio_sel = gpio / 10;
                         int gpio_soff = 3 * (gpio - 10 * gpio_sel);
@@ -291,7 +291,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         kprintf("[BOOT] main id register: %08x\n", tmp);
     })
 
-    kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->dtp_value);
+    kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->op_value);
 
     query_memory();
     query_vmem();
@@ -311,15 +311,15 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     e = dt_find_node("/chosen");
     if (e)
     {
-        struct dt_prop *p = dt_find_property(e, "linux,initrd-start");
+        of_property_t *p = dt_find_property(e, "linux,initrd-start");
         if (p)
-            pkg_image = (void*)(*((uint32_t *)p->dtp_value));
+            pkg_image = (void*)(*((uint32_t *)p->op_value));
         else
             pkg_image = NULL;
 
         p = dt_find_property(e, "linux,initrd-end");
         if (p)
-            pkg_size = *((uint32_t *)p->dtp_value) - (uint32_t)pkg_image;
+            pkg_size = *((uint32_t *)p->op_value) - (uint32_t)pkg_image;
         else
             pkg_size = 0;
     }
@@ -328,6 +328,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     kprintf("[BOOT] mem_avail=%d\n", mem_avail());
 
+    unsigned long total_size_ro = 0, total_size_rw = 0;
+    void *fdt = NULL;
+
     if (mem_upper)
     {
         *mem_upper = *mem_upper & ~4095;
@@ -335,7 +338,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         unsigned long kernel_phys = *mem_upper;
         unsigned long kernel_virt = kernel_phys;
 
-        unsigned long total_size_ro, total_size_rw;
         uint32_t size_ro, size_rw;
 
         /* Calculate total size of kernel and modules */
@@ -390,13 +392,17 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         }
 
         /* Reserve space for flattened device tree */
-        total_size_ro += dt_total_size();
+        total_size_ro += (dt_total_size() + 31) & ~31;
 
+        /* Reserve space for unpacked device tree */
+        total_size_ro += (dt_mem_usage + 31) & ~31;
+
+        /* Align space to 1MB boundary - it will save some space in MMU tables */
         total_size_ro = (total_size_ro + 1024*1024-1) & 0xfff00000;
         total_size_rw = (total_size_rw + 1024*1024-1) & 0xfff00000;
 
         kernel_phys = *mem_upper - total_size_ro - total_size_rw;
-        kernel_virt = 0xf8000000;
+        kernel_virt = KERNEL_VIRT_ADDRESS;
 
         kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
         kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);
@@ -406,6 +412,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
             long dt_size = (dt_total_size() + 31) & ~31;
             /* Copy device tree to the end of kernel RO area */
             memcpy((void*)(kernel_phys + total_size_ro - dt_size), atags, dt_size);
+            fdt = (void*)(kernel_virt + total_size_ro - dt_size);
 
             /* Store device tree */
             boottag->ti_Tag = KRN_FlattenedDeviceTree;
@@ -502,13 +509,28 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         boottag++;
     }
 
+    mmu_load();
+
+    int memory_used = mem_used();
+
+    /* If device tree is in high kernel memory then parse it again */
+    if (dt_total_size() > 0)
+    {
+        void * dt_location = (void *)(KERNEL_VIRT_ADDRESS + total_size_ro - ((dt_total_size() + 31) & ~31) - ((dt_mem_usage + 31) & ~31));
+        kprintf("[BOOT] Creating device tree in kernel area at %p\n", dt_location);
+
+        explicit_mem_init(dt_location, (dt_mem_usage + 31) & ~31);
+        dt_parse(fdt);
+
+        boottag->ti_Tag = KRN_OpenFirmwareTree;
+        boottag->ti_Data = (IPTR)dt_location;
+    }
+
     boottag->ti_Tag = TAG_DONE;
     boottag->ti_Data = 0;
 
     kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)boottag - (intptr_t)(tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE))/sizeof(struct TagItem));
-    kprintf("[BOOT] Bootstrap wasted %d bytes of memory for kernels use\n", mem_used()   );
-
-    mmu_load();
+    kprintf("[BOOT] Bootstrap wasted %d bytes of memory for kernels use\n", memory_used);
 
     kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
 

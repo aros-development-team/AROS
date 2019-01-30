@@ -17,6 +17,9 @@
 
 #define MAX_BSS_SECTIONS        256
 
+#define KERNEL_VIRT_ADDRESS     0xf8000000
+
+void explicit_mem_init(void *, unsigned long);
 size_t mem_avail();
 size_t mem_used();
 const char *remove_path(const char *in);
