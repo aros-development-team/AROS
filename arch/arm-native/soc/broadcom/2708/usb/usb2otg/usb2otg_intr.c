@@ -204,9 +204,16 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
                         if (tmp == 0x23)
                         {
-                            /* Toggle PID */
-                            USBUnit->hu_PIDBits[req->iouh_DevAddr] ^= (2 << (2 * req->iouh_Endpoint));
-                            req->iouh_Actual = req->iouh_Length;
+                            /* Determine number of packets involved in last transfer. If it is even, toggle
+                               the PID (the OTG was toggling it itself) */
+                            int txsize = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE)) & 524287;
+                            int pktcnt = (txsize + req->iouh_MaxPktSize - 1) / req->iouh_MaxPktSize;
+                            if (pktcnt & 1)
+                            {
+                                /* Toggle PID */
+                                USBUnit->hu_PIDBits[req->iouh_DevAddr] ^= (2 << (2 * req->iouh_Endpoint));
+                            }
+                            req->iouh_Actual += txsize;
                             req->iouh_Req.io_Error = 0;
                         }
                         else if (tmp & 0x80)
