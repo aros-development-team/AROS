@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -404,9 +404,20 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (oldval & USB2OTG_HOSTPORT_PRTPWR)        *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
                     if (oldval & USB2OTG_HOSTPORT_PRTENA)        *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
                     if (oldval & USB2OTG_HOSTPORT_PRTCONNSTS)    *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
-                    if (oldval & USB2OTG_HOSTPORT_PRTSPD_LOW)    *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
                     if (oldval & USB2OTG_HOSTPORT_PRTRST)        *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
                     if (oldval & USB2OTG_HOSTPORT_PRTSUSP)       *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
+
+                    switch ((oldval >> 17) & 3)
+                    {
+                        case 0:
+                            *mptr |= AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
+                            break;
+                        case 2:
+                            *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
+                            break;
+                        default:
+                            break;
+                    }
 
                     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld is %s\n", idx, (oldval & USB2OTG_HOSTPORT_PRTSPD_LOW) ? "LOWSPEED" : "FULLSPEED"));
                     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld Status %08lx\n", idx, AROS_LE2WORD(*mptr)));
