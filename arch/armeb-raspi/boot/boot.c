@@ -224,6 +224,31 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     boottag->ti_Data = (IPTR)arch;
     boottag++;
 
+    /*
+        Check if device tree contains /soc/local_intc entry. In this case assume RasPi 2 or 3 with smp setup.
+        Neither PiZero nor classic Pi provide this entry.
+    */
+    e = dt_find_node("/__symbols__");
+    if (e)
+    {
+        of_property_t *p = dt_find_property(e, "local_intc");
+
+        if (p)
+        {
+            kprintf("[BOOT] local_intc points to %s\n", p->op_value);
+
+            e = dt_find_node(p->op_value);
+            p = dt_find_property(e, "reg");
+            uint32_t *reg = p->op_value;
+
+            kprintf("[BOOT] Mapping local interrupt area at %p-%p\n", reg[0], reg[0] + reg[1] - 1);
+
+            /* Prepare mapping - device type */
+            mmu_map_section(reg[0], reg[0], reg[1] < 0x100000 ? 0x100000 : reg[1], 0, 0, 3, 0);
+        }
+    }
+
+
     /* Init LED(s) */
     e = dt_find_node("/leds");
     if (e)
