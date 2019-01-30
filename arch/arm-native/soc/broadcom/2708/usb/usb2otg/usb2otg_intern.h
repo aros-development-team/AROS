@@ -59,6 +59,30 @@ extern IPTR __arm_periiobase;
 #define VCPOWER_STATE_ON    1
 #define VCPOWER_STATE_WAIT  2
 
+static inline ULONG rd32le(IPTR iobase) {
+    return AROS_LE2LONG(*(volatile ULONG *)(iobase));
+}
+
+static inline UWORD rd16le(IPTR iobase) {
+    return AROS_LE2WORD(*(volatile UWORD *)(iobase));
+}
+
+static inline UBYTE rd8(IPTR iobase) {
+    return *(volatile UBYTE *)(iobase);
+}
+
+static inline void wr32le(IPTR iobase, ULONG value) {
+    *(volatile ULONG *)(iobase) = AROS_LONG2LE(value);
+}
+
+static inline void wr16le(IPTR iobase, UWORD value) {
+    *(volatile UWORD *)(iobase) = AROS_WORD2LE(value);
+}
+
+static inline void wr8be(IPTR iobase, UBYTE value) {
+    *(volatile UBYTE *)(iobase) = value;
+}
+
 struct USBNSDeviceQueryResult
 {
     ULONG               DevQueryFormat;
@@ -72,7 +96,7 @@ struct USB2OTGUnit
 {
     struct Unit         hu_Unit;
 
-    struct List		hu_IOPendingQueue;	/* Root Hub Pending IO Requests */
+    struct List         hu_IOPendingQueue;	/* Root Hub Pending IO Requests */
 
     struct List         hu_TDQueue;
     struct List         hu_PeriodicTDQueue;
@@ -80,6 +104,8 @@ struct USB2OTGUnit
     struct List         hu_IntXFerQueue;
     struct List         hu_IsoXFerQueue;
     struct List	        hu_BulkXFerQueue;
+
+    struct IOUsbHWReq * hu_InProgressCtrlXFer;
 
     struct List         hu_AbortQueue;
 
@@ -97,6 +123,7 @@ struct USB2OTGUnit
 
     BOOL		hu_UnitAllocated;       /* unit opened */
     BOOL                hu_HubPortChanged;      /* Root port state change */
+    APTR                hu_USB2OTGBase;
 };
 
 /* PRIVATE device node */
