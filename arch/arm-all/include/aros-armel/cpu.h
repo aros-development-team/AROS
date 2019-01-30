@@ -2,7 +2,7 @@
 #define AROS_ARM_CPU_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -180,5 +180,8 @@ extern void aros_not_implemented ();
  * AROS code expects it is nonvolatile (as defined in the AAPCS).
  */
 #define AROS_HOST_BARRIER asm volatile("":::"r9");
+
+#define AROS_SWAP_BYTES_LONG_CPU(l)     __builtin_bswap32(l)
+#define AROS_SWAP_BYTES_WORD_CPU(l)     __builtin_bswap16(l)
 
 #endif /* AROS_ARM_CPU_H */
