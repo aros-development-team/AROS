@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
     UWORD val = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD len = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
     BOOL cmdgood;
-    ULONG cnt;
+    //ULONG cnt;
 
     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER(%ld:%ld)\n", rt, req));
 
@@ -51,7 +51,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Set Device Address to #%ld\n", val));
                     otg_Unit->hu_HubAddr = val;
                     ioreq->iouh_Actual = len;
-                
+
                     unsigned int otg_RegVal = *((volatile unsigned int *)USB2OTG_DEVCFG);
                     otg_RegVal &= ~(0x7F << 4);
                     otg_RegVal |= ((val & 0x7F) << 4);
@@ -71,7 +71,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
             {
                 case USR_GET_STATUS:
                     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetStatus (%ld)\n", len));
-                    if (len == 2);
+                    if (len == 2)
                     {
                         UWORD *mptr = ioreq->iouh_Data;
                         *mptr++ = AROS_WORD2LE(U_GSF_SELF_POWERED);
@@ -246,7 +246,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (cmdgood)
                     {
 #if (0)
-                        *((volatile unsigned int *)USB2OTG_HOSTPORT) = newval; 
+                        *((volatile unsigned int *)USB2OTG_HOSTPORT) = newval;
 #endif
                         return (0);
                     }
@@ -345,7 +345,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if (cmdgood)
                     {
                         D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port #%ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
-                        *((volatile unsigned int *)USB2OTG_HOSTPORT) = newval; 
+                        *((volatile unsigned int *)USB2OTG_HOSTPORT) = newval;
 
                         return (0);
                     }
@@ -430,7 +430,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                         case UDT_HUB:
                         {
                             ULONG hubdesclen = 9;
-                            ULONG powergood = 1;
+                            //ULONG powergood = 1;
 
                             struct UsbHubDesc *uhd = (struct UsbHubDesc *) ioreq->iouh_Data;
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetHubDescriptor (%ld)\n", len));
