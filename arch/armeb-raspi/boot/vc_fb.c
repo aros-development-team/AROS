@@ -23,6 +23,8 @@
 #define ARM_PERIIOBASE (__arm_periiobase)
 extern uint32_t __arm_periiobase;
 
+#define D(x) /* x */
+
 int vcfb_init(void)
 {
     unsigned int fb_width, fb_height, fb_depth, fb_pitch;
@@ -30,7 +32,7 @@ int vcfb_init(void)
     volatile unsigned int *vcmb_msg = (unsigned int *)BOOTMEMADDR(bm_mboxmsg);
     scr_FrameBuffer = 0;
 
-    kprintf("[VCFB] vcfb_init()\n");
+    D(kprintf("[VCFB] vcfb_init()\n"));
 
     scr_Type = SCR_UNKNOWN;
 
@@ -57,7 +59,7 @@ int vcfb_init(void)
             fb_height = 768;
         }
 
-        kprintf("[VCFB] fb_width=%d, fb_height=%d\n", fb_width, fb_height);
+        D(kprintf("[VCFB] fb_width=%d, fb_height=%d\n", fb_width, fb_height));
     }
 
     /* fill in our framebuffer configuration/allocation request */
@@ -116,21 +118,21 @@ int vcfb_init(void)
         if (AROS_LE2LONG(vcmb_msg[count + 2]) != (VCTAG_RESP + 8))
             return 0;
 
-        kprintf("%p, %p, %p, %p, %p\n", AROS_LE2LONG(vcmb_msg[count]), AROS_LE2LONG(vcmb_msg[count+1]), AROS_LE2LONG(vcmb_msg[count+2]),
-        AROS_LE2LONG(vcmb_msg[count+3]),AROS_LE2LONG(vcmb_msg[count+4]));
+        D(kprintf("%p, %p, %p, %p, %p\n", AROS_LE2LONG(vcmb_msg[count]), AROS_LE2LONG(vcmb_msg[count+1]), AROS_LE2LONG(vcmb_msg[count+2]),
+        AROS_LE2LONG(vcmb_msg[count+3]),AROS_LE2LONG(vcmb_msg[count+4])));
 
         if (((scr_FrameBuffer = (void *)(AROS_LE2LONG(vcmb_msg[count + 3]))) == 0) || (AROS_LE2LONG(vcmb_msg[count + 4]) == 0))
             return 0;
 
-        kprintf("[VCFB] scr_Framebuffer=%p, %p\n", scr_FrameBuffer, (intptr_t)scr_FrameBuffer & 0xc0000000);
+        D(kprintf("[VCFB] scr_Framebuffer=%p, %p\n", scr_FrameBuffer, (intptr_t)scr_FrameBuffer & 0xc0000000));
 
         if (((intptr_t)scr_FrameBuffer & 0xc0000000) == 0x40000000)
         {
-            kprintf("[VCFB] Buffer in L2 cache\n");
+            D(kprintf("[VCFB] Buffer in L2 cache\n"));
         }
         else if (((intptr_t)scr_FrameBuffer & 0xc0000000) == 0xc0000000)
         {
-            kprintf("[VCFB] Buffer uncached\n");
+            D(kprintf("[VCFB] Buffer uncached\n"));
         }
         scr_FrameBuffer = (void*)((intptr_t)scr_FrameBuffer & ~0xc0000000);
     }
@@ -154,7 +156,7 @@ int vcfb_init(void)
         if ((fb_pitch = AROS_LE2LONG(vcmb_msg[5])) == 0)
             return 0;
 
-        kprintf("[VCFB] fb_pitch=%d\n", fb_pitch);
+        D(kprintf("[VCFB] fb_pitch=%d\n", fb_pitch));
     }
 
     scr_Type = SCR_GFX;
