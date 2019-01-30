@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -159,7 +159,7 @@ static int FNAME_SDC(Open)
     {
         if ((unitnum < (busCurrent->sdcb_BusUnits->sdcbu_UnitBase + busCurrent->sdcb_BusUnits->sdcbu_UnitCnt)) && ((&busCurrent->sdcb_BusUnits->sdcbu_Units)[unitnum] != NULL))
         {
-            iorq->io_Unit = (&busCurrent->sdcb_BusUnits->sdcbu_Units)[unitnum];
+            iorq->io_Unit = (struct Unit *)(&busCurrent->sdcb_BusUnits->sdcbu_Units)[unitnum];
             ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Unit.unit_OpenCnt++;
 
             iorq->io_Error = 0;
@@ -194,7 +194,7 @@ static int FNAME_SDC(Close)
 
     /* First of all make the important fields of struct IORequest invalid! */
     iorq->io_Unit = (struct Unit *)~0;
-    
+
     /* Decrease use counters of unit */
     unit->sdcu_Unit.unit_OpenCnt--;
 

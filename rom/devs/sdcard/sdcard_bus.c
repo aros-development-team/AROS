@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,9 +51,9 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
         {SDCARD_TAG_RSP,         0},
         {TAG_DONE,               0}
     };
-    
+
     DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-    
+
     if (sdcUnit->sdcu_Flags & AF_Card_MMC)
     {
         FNAME_SDCUNIT(MMCChangeFrequency)(sdcUnit);
@@ -223,7 +223,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
 
         sdcRegTags[0].ti_Data = SD_CMD_APP_SEND_OP_COND;
         sdcRegTags[1].ti_Data = (bus->sdcb_Power & 0xFF8000) | (sdcHighCap ? OCR_HCS : 0);
-#warning "TODO: Publish support for OCR_S18R/OCR_XPC on capable Hosts"
+//#warning "TODO: Publish support for OCR_S18R/OCR_XPC on capable Hosts"
         sdcRegTags[2].ti_Data = MMC_RSP_R3;
 
         D(bug("[SDBus%02u] %s: Querying Operating conditions [%08x] ...\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
@@ -248,7 +248,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
         sdcCardPower = bus->sdcb_Power & (sdcRegTags[3].ti_Data & 0xFFFF00);
 
         D(bug("[SDBus%02u] %s: Card is now operating in Identification Mode\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
-        
+
         if (sdcRegTags[3].ti_Data & OCR_HCS)
         {
             D(bug("[SDBus%02u] %s: High Capacity Card detected\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
@@ -263,7 +263,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
         FNAME_SDCBUS(SetPowerLevel)(sdcCardPower, TRUE, bus);
         sdcard_Udelay(2000);
 
-        /* Put the "card" into identify mode*/ 
+        /* Put the "card" into identify mode*/
         D(bug("[SDBus%02u] %s: Querying Card Identification Data ...\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
         sdcRegTags[0].ti_Data = MMC_CMD_ALL_SEND_CID;
         sdcRegTags[1].ti_Data = 0;
@@ -350,7 +350,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                                 case 1:
                                 {
                                     D(bug("[SDHC/XC Card]\n"));
-                                    
+
                                     pp[DE_SECSPERBLOCK + 4] = 2;
                                     pp[DE_SIZEBLOCK + 4] = 2 << (10 - 1);
                                     pp[DE_HIGHCYL + 4] = ((1 + FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 48, 22)) * (2 << (9 - 1)));
@@ -758,7 +758,7 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 
                     sdData++;
                     sdDataLen--;
-                    if (sdDataMode != MMC_DATA_READ) 
+                    if (sdDataMode != MMC_DATA_READ)
                     {
                         if (((currbyte % 4) == 3) || (sdDataLen == 0))
                         {
@@ -987,7 +987,7 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     sig = ((1L << bus->sdcb_MsgPort->mp_SigBit)|(1L << bus->sdcb_TaskSig)|(1L << bus->sdcb_MediaSig));
 
     DINIT(bug("[SDBus%02u] %s: TaskSig: %d, MediaSig: %d\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_TaskSig, bus->sdcb_MediaSig));
-    
+
     /* Install IRQ handler */
     if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, FNAME_SDCBUS(BusIRQ), bus, NULL)) != NULL)
     {
