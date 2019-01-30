@@ -68,6 +68,10 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
     {
         if (flags & CACRF_ClearD)
         {
+            /*
+                Should be c10 (D-Cache clear) but unfortunately some software assumes that this also
+                invalidates the cache line
+            */
             __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1"::"r"(addr));
         }
         if (flags & CACRF_ClearI)
@@ -82,7 +86,7 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
         addr += 32;
     }
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+    __asm__ __volatile__("dsb":::"memory");
 }
 
 void handle_syscall(void *regs)
