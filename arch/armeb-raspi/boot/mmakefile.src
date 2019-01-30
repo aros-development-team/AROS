@@ -3,8 +3,8 @@
 include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot 
-USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
+FILES           := boot mmu kprintf support vc_mb serialdebug
+USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2 -mcpu=cortex-a7
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 
@@ -54,10 +54,10 @@ distfiles-raspi-be-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 distfiles-raspi-be-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	$(ECHO) -e "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
 
-$(AROSDIR)/aros-armeb-raspi.img: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) --be8 --format elf32-bigarm -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+$(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	$(KERNEL_LD) --be8 --format elf32-bigarm -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
 	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
 
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
