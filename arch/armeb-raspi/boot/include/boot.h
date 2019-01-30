@@ -11,9 +11,9 @@
 #include <aros/kernel.h>
 
 // Create some temporary storage in .bss for both stack and local allocations.
-#define BOOT_STACK_SIZE		(256 << 2)
-#define BOOT_TAGS_SIZE          (128 << 3)
-#define BOOT_TMP_SIZE		524288
+#define BOOT_STACK_SIZE		(768 << 2)
+#define BOOT_TAGS_SIZE          (64 << 3)
+#define BOOT_TMP_SIZE		65536
 
 #define MAX_BSS_SECTIONS        256
 
