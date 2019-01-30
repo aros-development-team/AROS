@@ -306,7 +306,11 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     InitCode(RTF_SINGLETASK, 0);
 
     D(bug("[Kernel] Dropping into USER mode ... \n"));
-    asm("cps %[mode_user]\n" : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
+    asm("cps %[mode_user]\n"
+#if AROS_BIG_ENDIAN
+        "setend be\n"
+#endif
+     : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
 
     D(bug("[Kernel] InitCode(RTF_COLDSTART) ...\n"));
     InitCode(RTF_COLDSTART, 0);
