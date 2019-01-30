@@ -13,7 +13,7 @@ char *strings;
 struct dt_entry * dt_build_node(struct dt_entry *parent)
 {
     struct dt_entry *e = malloc(sizeof(struct dt_entry));
-    
+
     if (e != NULL)
     {
         e->dte_parent = parent;
@@ -36,7 +36,7 @@ struct dt_entry * dt_build_node(struct dt_entry *parent)
                     e->dte_children = e1;
                     break;
                 }
-                
+
                 case FDT_PROP:
                 {
                     struct dt_prop *p = malloc(sizeof (struct dt_prop));
@@ -64,10 +64,21 @@ struct dt_entry * dt_build_node(struct dt_entry *parent)
     return e;
 }
 
+static struct fdt_header *hdr;
+
+long dt_total_size()
+{
+    if (hdr != NULL)
+        return AROS_BE2LONG(hdr->totalsize);
+    else
+        return 0;
+}
+
 struct dt_entry * dt_parse(void *dt)
 {
-    struct fdt_header *hdr = dt;
     uint32_t token = 0;
+
+    hdr = dt;
 
     D(kprintf("[BOOT] Checking device tree at %p\n", hdr));
     D(kprintf("[BOOT] magic=%08x\n", hdr->magic));
@@ -108,6 +119,10 @@ struct dt_entry * dt_parse(void *dt)
                 }
             }
         } while (token != FDT_END);
+    }
+    else
+    {
+        hdr = NULL;
     }
 
     return root;
@@ -206,13 +221,13 @@ void dt_dump_node(struct dt_entry *n, int level)
             else
                 kprintf(".");
         }
-        
+
         if (p->dtp_length) {
             kprintf(" (");
             int max = 16;
             if (max > p->dtp_length)
                 max = p->dtp_length;
-            
+
             for (int i=0; i < p->dtp_length; i++) {
                 char *pchar = p->dtp_value + i;
                 kprintf("%02x", *pchar);
