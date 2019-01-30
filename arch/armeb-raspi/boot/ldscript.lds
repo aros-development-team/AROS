@@ -29,6 +29,7 @@ SECTIONS
 
     .data ALIGN(0x1000) :
     {
+        *core.bin.o(.data)
         *(.data)
         *(.data.*)
         *(.gnu.linkonce.d.*)
