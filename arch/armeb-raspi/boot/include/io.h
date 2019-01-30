@@ -30,7 +30,7 @@ static inline void wr32le(uint32_t iobase, uint32_t value) {
 }
 
 static inline void wr32be(uint32_t iobase, uint32_t value) {
-    *(volatile uint32_t *)(iobase) = AROS_LONG2LE(value);
+    *(volatile uint32_t *)(iobase) = AROS_LONG2BE(value);
 }
 
 static inline void wr16le(uint32_t iobase, uint16_t value) {
