@@ -89,7 +89,7 @@
         struct TraceLocation tp = CURRENT_LOCATION("AllocPooled");
         struct Pool *pool = poolHeader + MEMHEADER_TOTAL;
 
-        D(bug("AllocPooled 0x%P memsize %u by \"%s\"\n", poolHeader, memSize, GET_THIS_TASK->tc_Node.ln_Name);)
+        D(bug("AllocPooled 0x%p memsize %u by \"%s\"\n", poolHeader, memSize, GET_THIS_TASK->tc_Node.ln_Name);)
 
         /* Allocate from the specified pool with flags stored in pool header */
         return InternalAllocPooled(poolHeader, memSize, pool->Requirements, &tp, SysBase);
