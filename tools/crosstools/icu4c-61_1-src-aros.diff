@@ -1,0 +1,1606 @@
+diff -ruN icu/source/common/Makefile.in icu.aros/source/common/Makefile.in
+--- icu/source/common/Makefile.in	2018-03-26 15:38:30.000000000 +0200
++++ icu.aros/source/common/Makefile.in	2018-04-15 23:39:39.976969085 +0200
+@@ -33,7 +33,7 @@
+ TARGET_STUBNAME=$(COMMON_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++COMMONTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -51,7 +51,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(COMMONTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -150,7 +150,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(COMMONTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ 	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
+@@ -202,7 +202,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(COMMONTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN icu/source/common/putilimp.h icu.aros/source/common/putilimp.h
+--- icu/source/common/putilimp.h	2018-03-26 15:38:30.000000000 +0200
++++ icu.aros/source/common/putilimp.h	2018-04-15 23:44:29.869209004 +0200
+@@ -101,7 +101,7 @@
+ #if U_PLATFORM_HAS_WINUWP_API == 0
+ #   define U_TZSET _tzset
+ #endif
+-#elif U_PLATFORM == U_PF_OS400
++#elif U_PLATFORM == U_PF_OS400 || defined(__AROS__)
+    /* not defined */
+ #else
+ #   define U_TZSET tzset
+@@ -139,7 +139,7 @@
+ #if U_PLATFORM_HAS_WINUWP_API == 0
+ #   define U_TZNAME _tzname
+ #endif
+-#elif U_PLATFORM == U_PF_OS400
++#elif U_PLATFORM == U_PF_OS400 || defined(__AROS__)
+    /* not defined */
+ #else
+ #   define U_TZNAME tzname
+diff -ruN icu/source/common/unicode/umachine.h icu.aros/source/common/unicode/umachine.h
+--- icu/source/common/unicode/umachine.h	2018-03-26 15:38:29.000000000 +0200
++++ icu.aros/source/common/unicode/umachine.h	2018-04-15 23:33:23.909159615 +0200
+@@ -282,6 +282,10 @@
+ #       define U_WCHAR_IS_UTF32
+ #   elif U_PLATFORM_HAS_WIN32_API
+ #       define U_WCHAR_IS_UTF16
++#   elif defined(__AROS__)
++#       if (U_SIZEOF_WCHAR_T==4)
++#           define U_WCHAR_IS_UTF32
++#       endif
+ #   endif
+ #endif
+ 
+diff -ruN icu/source/config/mh-aros icu.aros/source/config/mh-aros
+--- icu/source/config/mh-aros	1970-01-01 01:00:00.000000000 +0100
++++ icu.aros/source/config/mh-aros	2018-04-15 13:06:23.000000000 +0200
+@@ -0,0 +1,76 @@
++## AROS-specific setup
++
++## Commands to generate dependency files
++GEN_DEPS.c=  $(CC) -E -MM $(DEFS) $(CPPFLAGS)
++GEN_DEPS.cc= $(CXX) -E -MM $(DEFS) $(CPPFLAGS)
++
++## Flags for position independent code
++SHAREDLIBCFLAGS =
++SHAREDLIBCXXFLAGS =
++SHAREDLIBCPPFLAGS =
++
++## Additional flags when building libraries and with threads
++THREADSCPPFLAGS = -D_REENTRANT
++LIBCPPFLAGS =
++
++## Compiler switch to embed a runtime search path
++LD_RPATH=	
++LD_RPATH_PRE = -Wl,-rpath,
++
++## These are the library specific LDFLAGS
++LDFLAGSICUDT=-nodefaultlibs -nostdlib
++
++## Compiler switch to embed a library name
++LD_SONAME = -Wl,-soname -Wl,$(notdir $(MIDDLE_SO_TARGET))
++
++## Shared object suffix
++SO = so
++## Non-shared intermediate object suffix
++STATIC_O = ao
++
++## Compilation rules
++%.$(STATIC_O): $(srcdir)/%.c
++	$(COMPILE.c) $(STATICCPPFLAGS) $(STATICCFLAGS) -o $@ $<
++%.o: $(srcdir)/%.c
++	$(COMPILE.c) $(DYNAMICCPPFLAGS) $(DYNAMICCFLAGS) -o $@ $<
++
++%.$(STATIC_O): $(srcdir)/%.cpp
++	$(COMPILE.cc) $(STATICCPPFLAGS) $(STATICCXXFLAGS) -o $@ $<
++%.o: $(srcdir)/%.cpp
++	$(COMPILE.cc) $(DYNAMICCPPFLAGS) $(DYNAMICCXXFLAGS) -o $@ $<
++
++
++## Dependency rules
++%.d: $(srcdir)/%.c
++	@echo "generating dependency information for $<"
++	@$(SHELL) -ec '$(GEN_DEPS.c) $< \
++		| sed '\''s%\($*\)\.o[ :]*%\1.o $@ : %g'\'' > $@; \
++		[ -s $@ ] || rm -f $@'
++
++%.d: $(srcdir)/%.cpp
++	@echo "generating dependency information for $<"
++	@$(SHELL) -ec '$(GEN_DEPS.cc) $< \
++		| sed '\''s%\($*\)\.o[ :]*%\1.o $@ : %g'\'' > $@; \
++		[ -s $@ ] || rm -f $@'
++
++## Versioned libraries rules
++
++%.$(SO).$(SO_TARGET_VERSION_MAJOR): %.$(SO).$(SO_TARGET_VERSION)
++	$(RM) $@ && ln -s ${<F} $@
++%.$(SO): %.$(SO).$(SO_TARGET_VERSION_MAJOR)
++	$(RM) $@ && ln -s ${*F}.$(SO).$(SO_TARGET_VERSION) $@
++
++##  Bind internal references
++
++# LDflags that pkgdata will use
++BIR_LDFLAGS= -Wl,-Bsymbolic
++
++# Dependencies [i.e. map files] for the final library
++BIR_DEPS=
++
++## Remove shared library 's'
++STATIC_PREFIX_WHEN_USED = 
++STATIC_PREFIX = 
++
++## End AROS-specific setup
++
+diff -ruN icu/source/configure icu.aros/source/configure
+--- icu/source/configure	2018-03-26 15:38:44.000000000 +0200
++++ icu.aros/source/configure	2018-04-16 02:22:08.137356243 +0200
+@@ -5212,6 +5212,7 @@
+ *-dec-osf*) icu_cv_host_frag=mh-alpha-osf ;;
+ *-*-nto*)	icu_cv_host_frag=mh-qnx ;;
+ *-ncr-*)	icu_cv_host_frag=mh-mpras ;;
++*-*-aros)	icu_cv_host_frag=mh-aros ;;
+ *) 		icu_cv_host_frag=mh-unknown ;;
+ esac
+ 
+diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
+--- icu/source/data/Makefile.in	2018-03-26 15:38:38.000000000 +0200
++++ icu.aros/source/data/Makefile.in	2018-04-16 01:30:44.829283736 +0200
+@@ -49,7 +49,7 @@
+ ifeq ($(OS390BATCH),1)
+ PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -z -q -c -s $(CURDIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
+ else
+-PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -q -c -s $(CURDIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
++PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -q -c -s $(CURR_FULL_DIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
+ endif
+ OS390_PDS_NAME = -z -L $(BATCH_STUB_TARGET)
+ 
+@@ -81,28 +81,28 @@
+ 
+ OUTTMPDIR=$(OUTDIR)/tmp
+ MAINBUILDDIR=$(OUTDIR)/build
+-BUILDDIR=$(MAINBUILDDIR)/$(ICUDATA_PLATFORM_NAME)
++DATABUILDDIR=$(MAINBUILDDIR)/$(ICUDATA_PLATFORM_NAME)
+ UNICODEDATADIR=$(SRCDATADIR)/unidata
+ LOCSRCDIR=$(SRCDATADIR)/locales
+ CURRSRCDIR=$(SRCDATADIR)/curr
+-CURRBLDDIR=$(BUILDDIR)/curr
++CURRBLDDIR=$(DATABUILDDIR)/curr
+ LANGSRCDIR=$(SRCDATADIR)/lang
+-LANGBLDDIR=$(BUILDDIR)/lang
++LANGBLDDIR=$(DATABUILDDIR)/lang
+ REGIONSRCDIR=$(SRCDATADIR)/region
+-REGIONBLDDIR=$(BUILDDIR)/region
++REGIONBLDDIR=$(DATABUILDDIR)/region
+ ZONESRCDIR=$(SRCDATADIR)/zone
+-ZONEBLDDIR=$(BUILDDIR)/zone
++ZONEBLDDIR=$(DATABUILDDIR)/zone
+ UNITSRCDIR=$(SRCDATADIR)/unit
+-UNITBLDDIR=$(BUILDDIR)/unit
++UNITBLDDIR=$(DATABUILDDIR)/unit
+ COLSRCDIR=$(SRCDATADIR)/coll
+-COLBLDDIR=$(BUILDDIR)/coll
++COLBLDDIR=$(DATABUILDDIR)/coll
+ RBNFSRCDIR=$(SRCDATADIR)/rbnf
+-RBNFBLDDIR=$(BUILDDIR)/rbnf
++RBNFBLDDIR=$(DATABUILDDIR)/rbnf
+ TRANSLITSRCDIR=$(SRCDATADIR)/translit
+-TRANSLITBLDDIR=$(BUILDDIR)/translit
++TRANSLITBLDDIR=$(DATABUILDDIR)/translit
+ MISCSRCDIR=$(SRCDATADIR)/misc
+ BRKSRCDIR=$(SRCDATADIR)/brkitr
+-BRKBLDDIR=$(BUILDDIR)/brkitr
++BRKBLDDIR=$(DATABUILDDIR)/brkitr
+ DICTSRCDIR=$(BRKSRCDIR)/dictionaries
+ BRKRULESRCDIR=$(BRKSRCDIR)/rules
+ MISCSRCDIR=$(SRCDATADIR)/misc
+@@ -110,7 +110,7 @@
+ SPREPSRCDIR=$(SRCDATADIR)/sprep
+ COMINCDIR=$(top_srcdir)/common/unicode
+ SRCLISTDEPS=Makefile $(srcdir)/Makefile.in
+-BUILD_DIRS=$(OUTDIR) $(MAINBUILDDIR) $(BUILDDIR) $(CURRBLDDIR) $(LANGBLDDIR) $(REGIONBLDDIR) $(ZONEBLDDIR) $(UNITBLDDIR) $(BRKBLDDIR) $(COLBLDDIR) $(RBNFBLDDIR) $(TRANSLITBLDDIR) $(OUTTMPDIR) $(OUTTMPDIR_390STUB) $(OUTTMPDIR)/$(CURR_TREE) $(OUTTMPDIR)/$(LANG_TREE) $(OUTTMPDIR)/$(REGION_TREE) $(OUTTMPDIR)/$(ZONE_TREE) $(OUTTMPDIR)/$(UNIT_TREE) $(OUTTMPDIR)/$(COLLATION_TREE) $(OUTTMPDIR)/$(RBNF_TREE) $(OUTTMPDIR)/$(TRANSLIT_TREE) $(OUTTMPDIR)/$(BREAK_TREE)
++BUILD_DIRS=$(OUTDIR) $(MAINBUILDDIR) $(DATABUILDDIR) $(CURRBLDDIR) $(LANGBLDDIR) $(REGIONBLDDIR) $(ZONEBLDDIR) $(UNITBLDDIR) $(BRKBLDDIR) $(COLBLDDIR) $(RBNFBLDDIR) $(TRANSLITBLDDIR) $(OUTTMPDIR) $(OUTTMPDIR_390STUB) $(OUTTMPDIR)/$(CURR_TREE) $(OUTTMPDIR)/$(LANG_TREE) $(OUTTMPDIR)/$(REGION_TREE) $(OUTTMPDIR)/$(ZONE_TREE) $(OUTTMPDIR)/$(UNIT_TREE) $(OUTTMPDIR)/$(COLLATION_TREE) $(OUTTMPDIR)/$(RBNF_TREE) $(OUTTMPDIR)/$(TRANSLIT_TREE) $(OUTTMPDIR)/$(BREAK_TREE)
+ 
+ # relative lib links from pkgdata are the same as for tmp
+ TOOLDIR=$(top_builddir)/tools
+@@ -213,11 +213,11 @@
+ endif
+ ifneq ($(ENABLE_STATIC),)
+ ifeq ($(PKGDATA_MODE),dll)
+-	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
+ endif
+ endif
+ ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
+-	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
+ else
+ 	$(INSTALL_DATA) $(ICUDATA_SOURCE_ARCHIVE) $(DESTDIR)$(ICUPKGDATA_DIR)
+ endif
+@@ -228,7 +228,7 @@
+ #### 390 support
+ install390: package390
+ 	$(MKINSTALLDIRS) $(TMPDATADIR) $(DESTDIR)$(libdir)
+-	$(INVOKE) $(PKGDATA) -s $(BUILDDIR)$(STUB_SUFFIX) -T $(OUTTMPDIR_390STUB) -p $(ICUDATA_NAME)$(STUB_SUFFIX) $(PKGDATA_LIBNAME)$(STUB_SUFFIX) -e $(ICUDATA_ENTRY_POINT) $(OS390LIST) -m dll $(PKGDATA_VERSIONING) -I $(DESTDIR)$(ICUPKGDATA_DIR)
++	$(INVOKE) $(PKGDATA) -s $(DATABUILDDIR)$(STUB_SUFFIX) -T $(OUTTMPDIR_390STUB) -p $(ICUDATA_NAME)$(STUB_SUFFIX) $(PKGDATA_LIBNAME)$(STUB_SUFFIX) -e $(ICUDATA_ENTRY_POINT) $(OS390LIST) -m dll $(PKGDATA_VERSIONING) -I $(DESTDIR)$(ICUPKGDATA_DIR)
+ ifeq ($(PKGDATA_MODE),dll)
+ 	$(INSTALL-L) $(ICUPKGDATA_OUTDIR)/$(FINAL_IMPORT_LIB) $(DESTDIR)$(ICUPKGDATA_DIR)/$(FINAL_IMPORT_LIB)
+ endif
+@@ -236,7 +236,7 @@
+ #### $(LIB_ICUDATA_NAME)$(STUB_SUFFIX) is the subset data for batch mode
+ package390: $(OUTTMPDIR)/icudata390.lst $(PKGDATA_LIST) ./icupkg.inc packagedata
+ 	ln -s $(ICUDATA_NAME) $(OUTDIR)/build/$(ICUDATA_NAME)$(STUB_SUFFIX)
+-	$(INVOKE) $(PKGDATA) -s $(BUILDDIR)$(STUB_SUFFIX) -T $(OUTTMPDIR_390STUB) -p $(ICUDATA_NAME)$(STUB_SUFFIX) $(PKGDATA_LIBNAME)$(STUB_SUFFIX) -e $(ICUDATA_ENTRY_POINT) $(OS390LIST) -m dll $(PKGDATA_VERSIONING)
++	$(INVOKE) $(PKGDATA) -s $(DATABUILDDIR)$(STUB_SUFFIX) -T $(OUTTMPDIR_390STUB) -p $(ICUDATA_NAME)$(STUB_SUFFIX) $(PKGDATA_LIBNAME)$(STUB_SUFFIX) -e $(ICUDATA_ENTRY_POINT) $(OS390LIST) -m dll $(PKGDATA_VERSIONING)
+ 	cp $(ICUPKGDATA_OUTDIR)/$(LIB_ICUDATA_NAME)$(STUB_SUFFIX).$(SO) $(top_builddir)/stubdata/$(LIB_ICUDATA_NAME)$(STUB_SUFFIX).$(SO)
+ 
+ 
+@@ -251,7 +251,7 @@
+ # These are now hardcoded in ICU4C and only loaded in ICU4J.
+ #
+ DAT_FILES_SHORT=unames.icu cnvalias.icu coll/ucadata.icu nfkc.nrm nfkc_cf.nrm uts46.nrm
+-DAT_FILES=$(DAT_FILES_SHORT:%=$(BUILDDIR)/%)
++DAT_FILES=$(DAT_FILES_SHORT:%=$(DATABUILDDIR)/%)
+ 
+ ## BRK files
+ BREAK_TREE=brkitr
+@@ -274,7 +274,7 @@
+ ## Confusables (Spoofing) files
+ ALL_CFU_SOURCE=$(UNICODEDATADIR)/confusables.txt $(UNICODEDATADIR)/confusablesWholeScript.txt
+ CFU_FILES_SHORT=confusables.cfu
+-CFU_FILES=$(BUILDDIR)/$(CFU_FILES_SHORT)
++CFU_FILES=$(DATABUILDDIR)/$(CFU_FILES_SHORT)
+ 
+ ## UCM files
+ -include $(UCMSRCDIR)/ucmcore.mk
+@@ -283,11 +283,11 @@
+ -include $(UCMSRCDIR)/ucmlocal.mk
+ ALL_UCM_SOURCE=ibm-37_P100-1995.ucm ibm-1047_P100-1995.ucm $(UCM_SOURCE_CORE) $(UCM_SOURCE_FILES) $(UCM_SOURCE_EBCDIC) $(UCM_SOURCE_LOCAL)
+ UCM_FILES = $(ALL_UCM_SOURCE:%=$(SRCDATADIR)/%)
+-CNV_FILES = $(ALL_UCM_SOURCE:%.ucm=$(BUILDDIR)/%.cnv)
++CNV_FILES = $(ALL_UCM_SOURCE:%.ucm=$(DATABUILDDIR)/%.cnv)
+ CNV_FILES_SHORT = $(ALL_UCM_SOURCE:%.ucm=%.cnv)
+ UCM_SOURCE_SPECIAL=$(UCM_SOURCE_EBCDIC_IGNORE_SISO) $(UCM_SOURCE_EBCDIC_IGNORE_SISO_LOCAL)
+ UCM_FILES_SPECIAL=$(UCM_SOURCE_SPECIAL:%=$(UCMSRCDIR)/%) 
+-CNV_FILES_SPECIAL=$(UCM_SOURCE_SPECIAL:%.ucm=$(BUILDDIR)/%.cnv) 
++CNV_FILES_SPECIAL=$(UCM_SOURCE_SPECIAL:%.ucm=$(DATABUILDDIR)/%.cnv) 
+ CNV_FILES_SHORT_SPECIAL=$(UCM_SOURCE_SPECIAL:%.ucm=%.cnv) 
+ 
+ ## RES files
+@@ -379,7 +379,7 @@
+ INDEX_FILE=$(OUTTMPDIR)/$(INDEX_NAME).txt
+ 
+ ALL_RES_SRC= $(RES_SRC) $(TRNS_SOURCE) $(MSC_SOURCE)
+-RES_FILES = $(ALL_RES_SRC:%.txt=$(BUILDDIR)/%.res) $(BUILDDIR)/$(INDEX_NAME).res $(BUILDDIR)/pool.res
++RES_FILES = $(ALL_RES_SRC:%.txt=$(DATABUILDDIR)/%.res) $(DATABUILDDIR)/$(INDEX_NAME).res $(DATABUILDDIR)/pool.res
+ RES_FILES_SHORT = $(ALL_RES_SRC:%.txt=%.res) $(INDEX_NAME).res pool.res
+ PKGDATA_LIST = $(OUTTMPDIR)/icudata.lst
+ 
+@@ -439,7 +439,7 @@
+ -include $(SPREPSRCDIR)/sprepfiles.mk
+ -include $(SPREPSRCDIR)/spreplocal.mk
+ ALL_SPREP_SOURCE=$(SPREP_SOURCE) $(SPREP_SOURCE_LOCAL)
+-SPREP_FILES = $(ALL_SPREP_SOURCE:%.txt=$(BUILDDIR)/%.spp)
++SPREP_FILES = $(ALL_SPREP_SOURCE:%.txt=$(DATABUILDDIR)/%.spp)
+ SPREP_FILES_SHORT = $(ALL_SPREP_SOURCE:%.txt=%.spp)
+ 
+ ## All generated files
+@@ -451,7 +451,7 @@
+ LOCALE_FILES_LIST= $(RES_FILES_SHORT) $(LANG_FILES_SHORT) $(REGION_FILES_SHORT) $(ZONE_FILES_SHORT) $(UNIT_FILES_SHORT)
+ MISC_FILES_LIST=$(DAT_FILES_SHORT) $(CNV_FILES_SHORT) $(CNV_FILES_SHORT_SPECIAL) $(CURR_FILES_SHORT) $(RBNF_FILES_SHORT) $(RBNF_INDEX_RES_SHORT) $(TRANSLIT_FILES_SHORT) $(SPREP_FILES_SHORT) $(CFU_FILES_SHORT)
+ UNI_CORE_DATA=pnames.icu uprops.icu ucase.icu ubidi.icu nfc.nrm
+-UNI_CORE_TARGET_DATA=$(UNI_CORE_DATA:%=$(BUILDDIR)/%)
++UNI_CORE_TARGET_DATA=$(UNI_CORE_DATA:%=$(DATABUILDDIR)/%)
+ 
+ ifneq ($(INCLUDE_UNI_CORE_DATA),)
+ MISC_FILES_LIST+=$(UNI_CORE_DATA)
+@@ -490,7 +490,7 @@
+ ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
+ 	@echo "Unpacking $(ICUDATA_SOURCE_ARCHIVE) and generating $@ (list of data files)"
+ 	@-$(RMV) $@
+-	$(INVOKE) $(TOOLBINDIR)/icupkg -d $(BUILDDIR) --list -x \* $(ICUDATA_SOURCE_ARCHIVE) -o $@
++	$(INVOKE) $(TOOLBINDIR)/icupkg -d $(DATABUILDDIR) --list -x \* $(ICUDATA_SOURCE_ARCHIVE) -o $@
+ else
+ 	@echo "$@" > $@
+ endif
+@@ -523,30 +523,30 @@
+ # DAT FILES
+ 
+ # cnvalias.icu
+-$(BUILDDIR)/cnvalias.icu: $(UCMSRCDIR)/convrtrs.txt $(TOOLBINDIR)/gencnval$(TOOLEXEEXT)
+-	$(INVOKE) $(TOOLBINDIR)/gencnval -d $(BUILDDIR) $(UCMSRCDIR)/convrtrs.txt
++$(DATABUILDDIR)/cnvalias.icu: $(UCMSRCDIR)/convrtrs.txt $(TOOLBINDIR)/gencnval$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/gencnval -d $(DATABUILDDIR) $(UCMSRCDIR)/convrtrs.txt
+ 
+ # Targets for prebuilt Unicode data
+-$(BUILDDIR)/%.icu: $(SRCDATADIR)/in/%.icu
++$(DATABUILDDIR)/%.icu: $(SRCDATADIR)/in/%.icu
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $< $@
+ 
+-$(BUILDDIR)/%.nrm: $(SRCDATADIR)/in/%.nrm
++$(DATABUILDDIR)/%.nrm: $(SRCDATADIR)/in/%.nrm
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $< $@
+ 
+-$(BUILDDIR)/coll/ucadata.icu: $(SRCDATADIR)/in/coll/ucadata-unihan.icu
++$(DATABUILDDIR)/coll/ucadata.icu: $(SRCDATADIR)/in/coll/ucadata-unihan.icu
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $< $@
+ 
+ ####################################################    SPP
+ # SPP FILES
+ 
+-$(BUILDDIR)/%.spp: $(SPREPSRCDIR)/%.txt $(TOOLBINDIR)/gensprep$(TOOLEXEEXT) $(BUILDDIR)/unames.icu
+-	$(INVOKE) $(TOOLBINDIR)/gensprep -d $(BUILDDIR) -i $(BUILDDIR) -s $(SPREPSRCDIR) -b $(@F:%.spp=%) -m $(UNICODEDATADIR) -u 3.2.0 $(<F)
++$(DATABUILDDIR)/%.spp: $(SPREPSRCDIR)/%.txt $(TOOLBINDIR)/gensprep$(TOOLEXEEXT) $(DATABUILDDIR)/unames.icu
++	$(INVOKE) $(TOOLBINDIR)/gensprep -d $(DATABUILDDIR) -i $(DATABUILDDIR) -s $(SPREPSRCDIR) -b $(@F:%.spp=%) -m $(UNICODEDATADIR) -u 3.2.0 $(<F)
+ 
+ ####################################################    BRK
+ # BRK FILES
+ 
+ $(BRKBLDDIR)/%.brk: $(BRKRULESRCDIR)/%.txt $(TOOLBINDIR)/genbrk$(TOOLEXEEXT) $(DAT_FILES)
+-	$(INVOKE) $(TOOLBINDIR)/genbrk -c -i $(BUILDDIR) -r $< -o $@
++	$(INVOKE) $(TOOLBINDIR)/genbrk -c -i $(DATABUILDDIR) -r $< -o $@
+ 
+ ####################################################    DICT
+ # DICT FILES
+@@ -554,20 +554,20 @@
+ # .dict file generated regardless of whether dictionary file exists
+ 
+ $(BRKBLDDIR)/%.dict: $(TOOLBINDIR)/gendict$(TOOLEXEEXT) $(DAT_FILES)
+-	$(INVOKE) $(TOOLBINDIR)/gendict --uchars -c -i $(BUILDDIR) $(DICTSRCDIR)/$(*F).txt $@
++	$(INVOKE) $(TOOLBINDIR)/gendict --uchars -c -i $(DATABUILDDIR) $(DICTSRCDIR)/$(*F).txt $@
+ 
+ $(BRKBLDDIR)/thaidict.dict: $(TOOLBINDIR)/gendict$(TOOLEXEEXT) $(DAT_FILES)
+-	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x0e00 -c -i $(BUILDDIR) $(DICTSRCDIR)/thaidict.txt $(BRKBLDDIR)/thaidict.dict
++	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x0e00 -c -i $(DATABUILDDIR) $(DICTSRCDIR)/thaidict.txt $(BRKBLDDIR)/thaidict.dict
+ 
+ $(BRKBLDDIR)/laodict.dict: $(TOOLBINDIR)/gendict$(TOOLEXEEXT) $(DAT_FILES)
+-	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x0e80 -c -i $(BUILDDIR) $(DICTSRCDIR)/laodict.txt $(BRKBLDDIR)/laodict.dict
++	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x0e80 -c -i $(DATABUILDDIR) $(DICTSRCDIR)/laodict.txt $(BRKBLDDIR)/laodict.dict
+ 
+ $(BRKBLDDIR)/burmesedict.dict: $(TOOLBINDIR)/gendict$(TOOLEXEEXT) $(DAT_FILES)
+-	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x1000 -c -i $(BUILDDIR) $(DICTSRCDIR)/burmesedict.txt $(BRKBLDDIR)/burmesedict.dict
++	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x1000 -c -i $(DATABUILDDIR) $(DICTSRCDIR)/burmesedict.txt $(BRKBLDDIR)/burmesedict.dict
+ 
+ # TODO: figure out why combining characters are here?
+ $(BRKBLDDIR)/khmerdict.dict: $(TOOLBINDIR)/gendict$(TOOLEXEEXT) $(DAT_FILES)
+-	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x1780 -c -i $(BUILDDIR) $(DICTSRCDIR)/khmerdict.txt $(BRKBLDDIR)/khmerdict.dict
++	$(INVOKE) $(TOOLBINDIR)/gendict --bytes --transform offset-0x1780 -c -i $(DATABUILDDIR) $(DICTSRCDIR)/khmerdict.txt $(BRKBLDDIR)/khmerdict.dict
+ 
+ ####################################################    CFU
+ # CFU FILES
+@@ -580,30 +580,30 @@
+ 	$(INVOKE) echo ALL_CFU_SOURCE: $(ALL_CFU_SOURCE)
+ 	$(INVOKE) echo CFU_FILES: $(CFU_FILES)
+ 	$(INVOKE) echo CFU_FILES_SHORT: $(CFU_FILES_SHORT)
+-	$(INVOKE) $(TOOLBINDIR)/gencfu -c -i $(BUILDDIR) -r $(word 1,$(ALL_CFU_SOURCE)) -w $(word 2,$(ALL_CFU_SOURCE)) -o $@
++	$(INVOKE) $(TOOLBINDIR)/gencfu -c -i $(DATABUILDDIR) -r $(word 1,$(ALL_CFU_SOURCE)) -w $(word 2,$(ALL_CFU_SOURCE)) -o $@
+ 
+ 
+ ####################################################    CNV
+ # CNV FILES
+ $(CNV_FILES_SPECIAL) : $(UCM_FILES_SPECIAL) $(TOOLBINDIR)/makeconv$(TOOLEXEEXT) 
+-	$(INVOKE) $(TOOLBINDIR)/makeconv --ignore-siso-check -c -d $(BUILDDIR) $(UCMSRCDIR)/$(@F:%.cnv=%.ucm) 
+-$(BUILDDIR)/%.cnv: $(UCMSRCDIR)/%.ucm $(TOOLBINDIR)/makeconv$(TOOLEXEEXT)
+-	$(INVOKE) $(TOOLBINDIR)/makeconv -c -d $(BUILDDIR) $(UCMSRCDIR)/$(<F)
++	$(INVOKE) $(TOOLBINDIR)/makeconv --ignore-siso-check -c -d $(DATABUILDDIR) $(UCMSRCDIR)/$(@F:%.cnv=%.ucm) 
++$(DATABUILDDIR)/%.cnv: $(UCMSRCDIR)/%.ucm $(TOOLBINDIR)/makeconv$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/makeconv -c -d $(DATABUILDDIR) $(UCMSRCDIR)/$(<F)
+ 
+ ####################################################    RES
+ # RES FILES
+ 
+ ### curr res
+-$(CURRBLDDIR)/%.res: $(CURRSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(BUILDDIR) -s $(CURRSRCDIR) -d $(CURRBLDDIR) $(<F)
++$(CURRBLDDIR)/%.res: $(CURRSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(DATABUILDDIR) -s $(CURRSRCDIR) -d $(CURRBLDDIR) $(<F)
+ 
+ # copy the curr/pool.res file from the source folder to the build output folder
+ # and swap it to native endianness
+ $(CURRBLDDIR)/pool.res: $(CURRSRCDIR)/pool.res
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(CURRSRCDIR)/pool.res $(CURRBLDDIR)/pool.res
+ 
+-$(CURRBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(CURR_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(CURR_TREE) -d $(CURRBLDDIR) $(INDEX_NAME).txt
++$(CURRBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(CURR_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(CURR_TREE) -d $(CURRBLDDIR) $(INDEX_NAME).txt
+ 
+ $(CURR_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed currency name locales)"; \
+@@ -618,16 +618,16 @@
+ 	echo "}" >> $@;
+ 
+ ### lang res
+-$(LANGBLDDIR)/%.res: $(LANGSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(BUILDDIR) -s $(LANGSRCDIR) -d $(LANGBLDDIR) $(<F)
++$(LANGBLDDIR)/%.res: $(LANGSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(DATABUILDDIR) -s $(LANGSRCDIR) -d $(LANGBLDDIR) $(<F)
+ 
+ # copy the lang/pool.res file from the source folder to the build output folder
+ # and swap it to native endianness
+ $(LANGBLDDIR)/pool.res: $(LANGSRCDIR)/pool.res
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(LANGSRCDIR)/pool.res $(LANGBLDDIR)/pool.res
+ 
+-$(LANGBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(LANG_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(LANG_TREE) -d $(LANGBLDDIR) $(INDEX_NAME).txt
++$(LANGBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(LANG_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(LANG_TREE) -d $(LANGBLDDIR) $(INDEX_NAME).txt
+ 
+ $(LANG_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed language name locales)"; \
+@@ -642,16 +642,16 @@
+ 	echo "}" >> $@;
+ 
+ ### region res
+-$(REGIONBLDDIR)/%.res: $(REGIONSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(BUILDDIR) -s $(REGIONSRCDIR) -d $(REGIONBLDDIR) $(<F)
++$(REGIONBLDDIR)/%.res: $(REGIONSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(DATABUILDDIR) -s $(REGIONSRCDIR) -d $(REGIONBLDDIR) $(<F)
+ 
+ # copy the region/pool.res file from the source folder to the build output folder
+ # and swap it to native endianness
+ $(REGIONBLDDIR)/pool.res: $(REGIONSRCDIR)/pool.res
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(REGIONSRCDIR)/pool.res $(REGIONBLDDIR)/pool.res
+ 
+-$(REGIONBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(REGION_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(REGION_TREE) -d $(REGIONBLDDIR) $(INDEX_NAME).txt
++$(REGIONBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(REGION_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(REGION_TREE) -d $(REGIONBLDDIR) $(INDEX_NAME).txt
+ 
+ $(REGION_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed region name locales)"; \
+@@ -666,16 +666,16 @@
+ 	echo "}" >> $@;
+ 
+ ### zone res
+-$(ZONEBLDDIR)/%.res: $(ZONESRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(BUILDDIR) -s $(ZONESRCDIR) -d $(ZONEBLDDIR) $(<F)
++$(ZONEBLDDIR)/%.res: $(ZONESRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(DATABUILDDIR) -s $(ZONESRCDIR) -d $(ZONEBLDDIR) $(<F)
+ 
+ # copy the zone/pool.res file from the source folder to the build output folder
+ # and swap it to native endianness
+ $(ZONEBLDDIR)/pool.res: $(ZONESRCDIR)/pool.res
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(ZONESRCDIR)/pool.res $(ZONEBLDDIR)/pool.res
+ 
+-$(ZONEBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(ZONE_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(ZONE_TREE) -d $(ZONEBLDDIR) $(INDEX_NAME).txt
++$(ZONEBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(ZONE_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(ZONE_TREE) -d $(ZONEBLDDIR) $(INDEX_NAME).txt
+ 
+ $(ZONE_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed time zone name locales)"; \
+@@ -691,7 +691,7 @@
+ 
+ ### unit res
+ $(UNITBLDDIR)/%.res: $(UNITSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
+-	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(BUILDDIR) -s $(UNITSRCDIR) -d $(UNITBLDDIR) $(<F)
++	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(DATABUILDDIR) -s $(UNITSRCDIR) -d $(UNITBLDDIR) $(<F)
+ 
+ # copy the unit/pool.res file from the source folder to the build output folder
+ # and swap it to native endianness
+@@ -699,7 +699,7 @@
+ 	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(UNITSRCDIR)/pool.res $(UNITBLDDIR)/pool.res
+ 
+ $(UNITBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(UNIT_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(UNIT_TREE) -d $(UNITBLDDIR) $(INDEX_NAME).txt
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(UNIT_TREE) -d $(UNITBLDDIR) $(INDEX_NAME).txt
+ 
+ $(UNIT_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed time zone name locales)"; \
+@@ -714,11 +714,11 @@
+ 	echo "}" >> $@;
+ 
+ ### collation res
+-$(COLBLDDIR)/%.res: $(COLSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(COLSRCDIR) -d $(COLBLDDIR) $(<F)
++$(COLBLDDIR)/%.res: $(COLSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(COLSRCDIR) -d $(COLBLDDIR) $(<F)
+ 
+-$(COLBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(COLLATION_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(COLLATION_TREE) -d $(COLBLDDIR) $(INDEX_NAME).txt
++$(COLBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(COLLATION_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(COLLATION_TREE) -d $(COLBLDDIR) $(INDEX_NAME).txt
+ 
+ $(COLLATION_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed collation locales)"; \
+@@ -733,11 +733,11 @@
+ 	echo "}" >> $@;
+ 
+ ### brk res
+-$(BRKBLDDIR)/%.res: $(BRKSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(BRK_FILES) $(DICT_FILES) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(BRKSRCDIR) -d $(BRKBLDDIR) $(<F)
++$(BRKBLDDIR)/%.res: $(BRKSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(BRK_FILES) $(DICT_FILES) $(DAT_FILES) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(BRKSRCDIR) -d $(BRKBLDDIR) $(<F)
+ 
+-$(BRKBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(BREAK_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(BREAK_TREE) -d $(BRKBLDDIR) $(INDEX_NAME).txt
++$(BRKBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(BREAK_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(BREAK_TREE) -d $(BRKBLDDIR) $(INDEX_NAME).txt
+ 
+ $(BRK_RES_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed break locales)"; \
+@@ -752,11 +752,11 @@
+ 	echo "}" >> $@;
+ 
+ ### RBNF res
+-$(RBNFBLDDIR)/%.res: $(RBNFSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(RBNFSRCDIR) -d $(RBNFBLDDIR) $(<F)
++$(RBNFBLDDIR)/%.res: $(RBNFSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(RBNFSRCDIR) -d $(RBNFBLDDIR) $(<F)
+ 
+-$(RBNFBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(RBNF_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(OUTTMPDIR)/$(RBNF_TREE) -d $(RBNFBLDDIR) $(INDEX_NAME).txt
++$(RBNFBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(RBNF_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(RBNF_TREE) -d $(RBNFBLDDIR) $(INDEX_NAME).txt
+ 
+ $(RBNF_INDEX_FILE): $(SRCLISTDEPS)
+ 	@echo "generating $@ (list of installed RBNF locales)"; \
+@@ -771,19 +771,19 @@
+ 	echo "}" >> $@;
+ 
+ ### TRANSLIT res
+-$(TRANSLITBLDDIR)/%.res: $(TRANSLITSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -s $(TRANSLITSRCDIR) -d $(TRANSLITBLDDIR) $(<F)
++$(TRANSLITBLDDIR)/%.res: $(TRANSLITSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(TRANSLITSRCDIR) -d $(TRANSLITBLDDIR) $(<F)
+ 
+ ### normal (locale) res
+ all-RES:  $(RES_FILES)
+ 
+-$(BUILDDIR)/%.res: $(LOCSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(BUILDDIR) -s $(LOCSRCDIR) -d $(BUILDDIR) $(<F)
++$(DATABUILDDIR)/%.res: $(LOCSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb --usePoolBundle $(GENRBOPTS) -i $(DATABUILDDIR) -s $(LOCSRCDIR) -d $(DATABUILDDIR) $(<F)
+ 
+ # copy the locales/pool.res file from the source folder to the build output folder
+ # and swap it to native endianness
+-$(BUILDDIR)/pool.res: $(LOCSRCDIR)/pool.res
+-	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(LOCSRCDIR)/pool.res $(BUILDDIR)/pool.res
++$(DATABUILDDIR)/pool.res: $(LOCSRCDIR)/pool.res
++	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(LOCSRCDIR)/pool.res $(DATABUILDDIR)/pool.res
+ 
+ # if the tzcode directory contains a new tzdata*.tar.gz file, use it for zoneinfo
+ ifeq ($(TZDATA),)
+@@ -797,9 +797,9 @@
+ 
+ # Override the normal genrb for zoneinfo to always pull from
+ # icu/source/tools/tzcode/zoneinfo64.txt
+-$(BUILDDIR)/zoneinfo64.res: $(ZONEINFO) $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
++$(DATABUILDDIR)/zoneinfo64.res: $(ZONEINFO) $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
+ 	@echo Note: $(MISCSRCDIR)/zoneinfo.txt is IGNORED because $(TZDATA) is present.
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(BUILDDIR) -d $(BUILDDIR) $(ZONEINFO)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(DATABUILDDIR) -d $(DATABUILDDIR) $(ZONEINFO)
+ 
+ # Create the tzcode tool and zoneinfo as needed.
+ $(ZONEINFO): $(TZDATA)
+@@ -810,8 +810,8 @@
+ endif
+ 
+ # zoneinfo has some issues. Ignore some warnings with -q
+-$(BUILDDIR)/%.res: $(MISCSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(BUILDDIR) -s $(MISCSRCDIR) -d $(BUILDDIR) $(<F)
++$(DATABUILDDIR)/%.res: $(MISCSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(DATABUILDDIR) -s $(MISCSRCDIR) -d $(DATABUILDDIR) $(<F)
+ 
+ 
+ 
+@@ -829,17 +829,17 @@
+ 	echo "}" >> $@;
+ 
+ clean-resindex:
+-	-$(RMV) $(BUILDDIR)/$(INDEX_NAME).txt $(PKGDATA_LIST)
++	-$(RMV) $(DATABUILDDIR)/$(INDEX_NAME).txt $(PKGDATA_LIST)
+ 
+-$(BUILDDIR)/$(INDEX_NAME).res: $(INDEX_FILE) $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(BUILDDIR)/cnvalias.icu
+-	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(BUILDDIR) -d $(BUILDDIR) $(INDEX_FILE)
++$(DATABUILDDIR)/$(INDEX_NAME).res: $(INDEX_FILE) $(TOOLBINDIR)/genrb$(TOOLEXEEXT) | $(DATABUILDDIR)/cnvalias.icu
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -d $(DATABUILDDIR) $(INDEX_FILE)
+ 
+ # The core Unicode properties files (pnames.icu, uprops.icu, ucase.icu, ubidi.icu)
+ # are hardcoded in the common DLL and therefore not included in the data package any more.
+ # They are not built by default but need to be built for ICU4J data and for getting the .c source files
+ # when updating the Unicode data.
+ uni-core-data: build-dir $(UNI_CORE_TARGET_DATA)
+-	@echo Unicode .icu files built to $(BUILDDIR)
++	@echo Unicode .icu files built to $(DATABUILDDIR)
+ 	echo timestamp > $@
+ 
+ # Build the ICU4J icudata.jar.
+@@ -862,7 +862,7 @@
+ 	mkdir -p $(OUTDIR)/icu4j/$(ICU4J_DATA_DIRNAME)
+ 	mkdir -p $(OUTDIR)/icu4j/tzdata/$(ICU4J_DATA_DIRNAME)
+ 	echo $(UNI_CORE_DATA) > $(OUTDIR)/icu4j/add.txt
+-	$(INVOKE) $(TOOLBINDIR)/icupkg $(OUTTMPDIR)/$(ICUDATA_PLATFORM_NAME).dat $(OUTDIR)/icu4j/$(ICUDATA_BASENAME_VERSION)b.dat -a $(OUTDIR)/icu4j/add.txt -s $(BUILDDIR) -x '*' -tb -d $(OUTDIR)/icu4j/$(ICU4J_DATA_DIRNAME)
++	$(INVOKE) $(TOOLBINDIR)/icupkg $(OUTTMPDIR)/$(ICUDATA_PLATFORM_NAME).dat $(OUTDIR)/icu4j/$(ICUDATA_BASENAME_VERSION)b.dat -a $(OUTDIR)/icu4j/add.txt -s $(DATABUILDDIR) -x '*' -tb -d $(OUTDIR)/icu4j/$(ICU4J_DATA_DIRNAME)
+ 	mv $(ICU4J_TZDATA_PATHS:%=$(OUTDIR)/icu4j/%) "$(OUTDIR)/icu4j/tzdata/$(ICU4J_DATA_DIRNAME)"
+ 
+ $(OUTDIR)/icu4j/icutzdata.jar: generate-data
+diff -ruN icu/source/extra/uconv/Makefile.in icu.aros/source/extra/uconv/Makefile.in
+--- icu/source/extra/uconv/Makefile.in	2018-03-26 15:38:43.000000000 +0200
++++ icu.aros/source/extra/uconv/Makefile.in	2018-04-16 01:31:39.833009232 +0200
+@@ -156,7 +156,7 @@
+ $(UCONVMSG_LIB): $(RESFILES) $(RESDIR)/$(RESDIR).lst pkgdata.inc
+ 	$(INVOKE) $(PKGDATA_INVOKE_OPTS) $(TOOLBINDIR)/pkgdata -p $(MSGNAME) $(PKGDATA_OPTS) -m $(PKGMODE) -s $(RESDIR) -d $(RESDIR) -T $(RESDIR) $(RESDIR)/$(RESDIR).lst
+ 
+-$(RESDIR)/$(RESDIR).lst: Makefile $(srcdir)/resfiles.mk
++$(RESDIR)/$(RESDIR).lst: Makefile $(srcdir)/resfiles.mk $(RESFILES)
+ 	@-$(RMV) $@
+ 	@for file in $(RESFILES:$(RESDIR)/%.res=%.res); do \
+ 	  echo $$file >> $@; \
+diff -ruN icu/source/i18n/Makefile.in icu.aros/source/i18n/Makefile.in
+--- icu/source/i18n/Makefile.in	2018-03-26 15:38:30.000000000 +0200
++++ icu.aros/source/i18n/Makefile.in	2018-04-16 01:39:33.373393123 +0200
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(I18N_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++I18NTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -47,7 +47,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(I18NTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -146,7 +146,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(I18NTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ 	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
+@@ -190,7 +190,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(I18NTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN icu/source/io/Makefile.in icu.aros/source/io/Makefile.in
+--- icu/source/io/Makefile.in	2018-03-26 15:38:44.000000000 +0200
++++ icu.aros/source/io/Makefile.in	2018-04-16 01:52:14.177014205 +0200
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(IO_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++IOTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -47,7 +47,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(IOTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -98,7 +98,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(IOTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ 	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
+@@ -142,7 +142,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(IOTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN icu/source/layoutex/Makefile.in icu.aros/source/layoutex/Makefile.in
+--- icu/source/layoutex/Makefile.in	2018-03-26 15:38:33.000000000 +0200
++++ icu.aros/source/layoutex/Makefile.in	2018-04-16 01:52:51.273204508 +0200
+@@ -28,7 +28,7 @@
+ TARGET_STUBNAME=$(LAYOUTEX_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++LAYEXTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -46,7 +46,7 @@
+ 
+ endif   # ENABLE_SHARED
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
++ALL_TARGETS = $(LAYEXTARGET) $(ALL_SO_TARGETS) $(BATCH_TARGET)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -111,7 +111,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(LAYEXTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ 	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
+@@ -155,7 +155,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(LAYEXTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN icu/source/stubdata/Makefile.in icu.aros/source/stubdata/Makefile.in
+--- icu/source/stubdata/Makefile.in	2018-03-26 15:38:44.000000000 +0200
++++ icu.aros/source/stubdata/Makefile.in	2018-04-16 01:57:23.901465449 +0200
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(DATA_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(STUBDATA_LIBDIR)$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++STUBTARGET = $(STUBDATA_LIBDIR)$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ 
+@@ -39,7 +39,7 @@
+ endif
+ 
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS)
++ALL_TARGETS = $(STUBTARGET) $(ALL_SO_TARGETS)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -84,7 +84,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(STUBTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ 	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
+@@ -121,7 +121,7 @@
+ 	&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(STUBTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN icu/source/tools/ctestfw/Makefile.in icu.aros/source/tools/ctestfw/Makefile.in
+--- icu/source/tools/ctestfw/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/ctestfw/Makefile.in	2018-04-16 02:09:33.241113175 +0200
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(CTESTFW_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++CTFWTARGET = $(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -37,7 +37,7 @@
+ ALL_SO_TARGETS = $(SO_TARGET) $(MIDDLE_SO_TARGET) $(FINAL_SO_TARGET) $(SHARED_OBJECT)
+ endif
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS)
++ALL_TARGETS = $(CTFWTARGET) $(ALL_SO_TARGETS)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -80,7 +80,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(CTFWTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ 	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
+@@ -117,7 +117,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(CTFWTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
+diff -ruN icu/source/tools/escapesrc/Makefile.in icu.aros/source/tools/escapesrc/Makefile.in
+--- icu/source/tools/escapesrc/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/escapesrc/Makefile.in	2018-04-16 02:10:37.053119163 +0200
+@@ -29,7 +29,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES) ./output-*.cpp
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++ESRCTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ #LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC)
+@@ -54,11 +54,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(ESRCTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(ESRCTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ #	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -69,24 +69,24 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(ESRCTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+ 
+ check-local: all-local
+ 	@echo Testing test-nochange.cpp
+-	@$(INVOKE) $(TARGET) $(srcdir)/test-nochange.cpp ./output-nochange.cpp
++	@$(INVOKE) $(ESRCTARGET) $(srcdir)/test-nochange.cpp ./output-nochange.cpp
+ 	@-diff -I '#line.*' $(srcdir)/test-nochange.cpp ./output-nochange.cpp || (echo >&2 'warning: diff failed or not found' ; true)
+ 	@echo Testing test-simple.cpp
+-	@$(INVOKE) $(TARGET) $(srcdir)/test-simple.cpp ./output-simple.cpp
++	@$(INVOKE) $(ESRCTARGET) $(srcdir)/test-simple.cpp ./output-simple.cpp
+ 	@-diff -I '#line.*' $(srcdir)/expect-simple.cpp ./output-simple.cpp   || (echo >&2 'warning: diff failed or not found' ; true)
+ 
+ Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(ESRCTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/genbrk/Makefile.in icu.aros/source/tools/genbrk/Makefile.in
+--- icu/source/tools/genbrk/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/genbrk/Makefile.in	2018-04-16 02:11:14.217253373 +0200
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GBRKTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -50,11 +50,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GBRKTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GBRKTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -64,7 +64,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GBRKTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -75,7 +75,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GBRKTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/genccode/Makefile.in icu.aros/source/tools/genccode/Makefile.in
+--- icu/source/tools/genccode/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/genccode/Makefile.in	2018-04-16 02:11:30.953198380 +0200
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCODETARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCODETARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GCODETARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCODETARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCODETARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/gencfu/Makefile.in icu.aros/source/tools/gencfu/Makefile.in
+--- icu/source/tools/gencfu/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/gencfu/Makefile.in	2018-04-16 02:11:54.517127066 +0200
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCFUTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(top_srcdir)/i18n -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -50,11 +50,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCFUTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GCFUTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -64,7 +64,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCFUTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -75,7 +75,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCFUTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/gencmn/Makefile.in icu.aros/source/tools/gencmn/Makefile.in
+--- icu/source/tools/gencmn/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/gencmn/Makefile.in	2018-04-16 02:12:16.153082200 +0200
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCMNTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCMNTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GCMNTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCMNTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCMNTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/gencnval/Makefile.in icu.aros/source/tools/gencnval/Makefile.in
+--- icu/source/tools/gencnval/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/gencnval/Makefile.in	2018-04-16 02:12:44.049260335 +0200
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GCNVALTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GCNVALTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GCNVALTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GCNVALTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GCNVALTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/gendict/Makefile.in icu.aros/source/tools/gendict/Makefile.in
+--- icu/source/tools/gendict/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/gendict/Makefile.in	2018-04-16 02:13:02.365342434 +0200
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GDCTTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -50,11 +50,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GDCTTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GDCTTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -64,7 +64,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GDCTTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -75,7 +75,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GDCTTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/gennorm2/Makefile.in icu.aros/source/tools/gennorm2/Makefile.in
+--- icu/source/tools/gennorm2/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/gennorm2/Makefile.in	2018-04-16 02:13:18.913380866 +0200
+@@ -22,7 +22,7 @@
+ CLEANFILES = *~ $(DEPS)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GNR2TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -46,17 +46,17 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET)
++all-local: $(GNR2TARGET)
+ 
+ install-local: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GNR2TARGET) $(DESTDIR)$(sbindir)
+ 
+ dist-local:
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GNR2TARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -67,7 +67,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GNR2TARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/genrb/Makefile.in icu.aros/source/tools/genrb/Makefile.in
+--- icu/source/tools/genrb/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/genrb/Makefile.in	2018-04-16 02:13:39.637324361 +0200
+@@ -29,7 +29,7 @@
+ CLEANFILES = *~ $(MAN_FILES) $(DEPS) $(DERB_DEPS)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GRBTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ # derb depends on icuio
+ @ICUIO_TRUE@DERB = $(BINDIR)/$(DERB_STUB_NAME)$(EXEEXT)
+ 
+@@ -61,11 +61,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(DERB) $(MAN_FILES)
++all-local: $(GRBTARGET) $(DERB) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(GRBTARGET) $(DESTDIR)$(bindir)
+ @ICUIO_TRUE@	$(INSTALL) $(DERB) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+@@ -76,7 +76,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(DERB) $(OBJECTS) $(DERB_OBJ)
++	$(RMV) $(GRBTARGET) $(DERB) $(OBJECTS) $(DERB_OBJ)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -87,7 +87,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GRBTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/gensprep/Makefile.in icu.aros/source/tools/gensprep/Makefile.in
+--- icu/source/tools/gensprep/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/gensprep/Makefile.in	2018-04-16 02:14:02.261281034 +0200
+@@ -27,7 +27,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++GSPREPTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -51,11 +51,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(GSPREPTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(GSPREPTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GSPREPTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GSPREPTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) 
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/gentest/Makefile.in icu.aros/source/tools/gentest/Makefile.in
+--- icu/source/tools/gentest/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/gentest/Makefile.in	2018-04-16 02:14:18.081275792 +0200
+@@ -20,7 +20,7 @@
+ CLEANFILES = *~ $(DEPS)
+ 
+ ## Target information
+-TARGET = gentest$(EXEEXT)
++GTESTTARGET = gentest$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil -I$(top_srcdir)/tools/ctestfw 
+ CPPFLAGS+= -I$(top_srcdir)/i18n
+@@ -45,7 +45,7 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) 
++all-local: $(GTESTTARGET) 
+ 
+ install-local: all-local
+ 
+@@ -53,7 +53,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(GTESTTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -64,7 +64,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(GTESTTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) 
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/icuinfo/Makefile.in icu.aros/source/tools/icuinfo/Makefile.in
+--- icu/source/tools/icuinfo/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/icuinfo/Makefile.in	2018-04-16 02:14:45.177423429 +0200
+@@ -20,7 +20,7 @@
+ CLEANFILES = *~ $(DEPS) $(PLUGIN_OBJECTS) $(PLUGINFILE) $(PLUGIN)
+ 
+ ## Target information
+-TARGET = icuinfo$(EXEEXT)
++IINFTARGET = icuinfo$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil -I$(top_srcdir)/tools/ctestfw 
+ CPPFLAGS+= -I$(top_srcdir)/i18n
+@@ -50,30 +50,30 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) 
++all-local: $(IINFTARGET) 
+ 
+ install-local: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(IINFTARGET) $(DESTDIR)$(bindir)
+ 
+ dist-local:
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(IINFTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+ 
+-check-local: $(TARGET)
+-	$(INVOKE) ./$(TARGET) $(ICUINFO_OPTS)
++check-local: $(IINFTARGET)
++	$(INVOKE) ./$(IINFTARGET) $(ICUINFO_OPTS)
+ 
+ Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ -include Makefile.local
+ 
+-$(TARGET) : $(OBJECTS)
++$(IINFTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS) 
+ 	$(POST_BUILD_STEP)
+ 
+@@ -99,7 +99,7 @@
+ plugin: $(PLUGIN)
+ 
+ plugin-check: $(PLUGIN) $(PLUGINFILE)
+-	$(INVOKE) ICU_PLUGINS="$(CURR_FULL_DIR)" ./$(TARGET) -v -L
++	$(INVOKE) ICU_PLUGINS="$(CURR_FULL_DIR)" ./$(IINFTARGET) -v -L
+ else
+ plugin plugin-check $(PLUGIN):
+ 	@echo "Plugins are disabled (use --enable-plugins to enable)"
+diff -ruN icu/source/tools/icupkg/Makefile.in icu.aros/source/tools/icupkg/Makefile.in
+--- icu/source/tools/icupkg/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/icupkg/Makefile.in	2018-04-16 02:15:04.053497317 +0200
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++ICUPKGTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -50,11 +50,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(ICUPKGTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(ICUPKGTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(ICUPKGTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(ICUPKGTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/icuswap/Makefile.in icu.aros/source/tools/icuswap/Makefile.in
+--- icu/source/tools/icuswap/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/icuswap/Makefile.in	2018-04-16 02:15:23.605477565 +0200
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++ICUSWPTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -50,11 +50,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(ICUSWPTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(sbindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(sbindir)
++	$(INSTALL) $(ICUSWPTARGET) $(DESTDIR)$(sbindir)
+ 
+ install-man: $(MAN_FILES)
+ #	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(ICUSWPTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(ICUSWPTARGET) : $(OBJECTS)
+ 	echo Note: icuswap is obsolete - use icupkg instead.
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+diff -ruN icu/source/tools/makeconv/Makefile.in icu.aros/source/tools/makeconv/Makefile.in
+--- icu/source/tools/makeconv/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/makeconv/Makefile.in	2018-04-16 02:15:40.745371007 +0200
+@@ -26,7 +26,7 @@
+ CLEANFILES = *~ $(DEPS) $(MAN_FILES)
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++MAKECONVTARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ LIBS = $(LIBICUTOOLUTIL) $(LIBICUI18N) $(LIBICUUC) $(DEFAULT_LIBS) $(LIB_M)
+@@ -50,11 +50,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(MAKECONVTARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(MAKECONVTARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -65,7 +65,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(MAKECONVTARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -76,7 +76,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(MAKECONVTARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/pkgdata/Makefile.in icu.aros/source/tools/pkgdata/Makefile.in
+--- icu/source/tools/pkgdata/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/pkgdata/Makefile.in	2018-04-16 02:15:59.269283779 +0200
+@@ -30,7 +30,7 @@
+ endif
+ 
+ ## Target information
+-TARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
++PKGDATATARGET = $(BINDIR)/$(TARGET_STUB_NAME)$(EXEEXT)
+ 
+ CPPFLAGS += -I$(srcdir) -I$(top_srcdir)/common -I$(srcdir)/../toolutil
+ DEFS += -DUDATA_SO_SUFFIX=\".$(SO)\" -DSTATIC_O=\"$(STATIC_O)\"
+@@ -55,11 +55,11 @@
+ dist: dist-local
+ check: all check-local
+ 
+-all-local: $(TARGET) $(MAN_FILES)
++all-local: $(PKGDATATARGET) $(MAN_FILES)
+ 
+ install-local: all-local install-man
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+-	$(INSTALL) $(TARGET) $(DESTDIR)$(bindir)
++	$(INSTALL) $(PKGDATATARGET) $(DESTDIR)$(bindir)
+ 
+ install-man: $(MAN_FILES)
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+@@ -70,7 +70,7 @@
+ 
+ clean-local:
+ 	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
+-	$(RMV) $(TARGET) $(OBJECTS)
++	$(RMV) $(PKGDATATARGET) $(OBJECTS)
+ 
+ distclean-local: clean-local
+ 	$(RMV) Makefile
+@@ -81,7 +81,7 @@
+ 	cd $(top_builddir) \
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+-$(TARGET) : $(OBJECTS)
++$(PKGDATATARGET) : $(OBJECTS)
+ 	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
+ 	$(POST_BUILD_STEP)
+ 
+diff -ruN icu/source/tools/toolutil/Makefile.in icu.aros/source/tools/toolutil/Makefile.in
+--- icu/source/tools/toolutil/Makefile.in	2018-03-26 15:38:31.000000000 +0200
++++ icu.aros/source/tools/toolutil/Makefile.in	2018-04-16 02:16:19.797200961 +0200
+@@ -29,7 +29,7 @@
+ TARGET_STUBNAME=$(TOOLUTIL_STUBNAME)
+ 
+ ifneq ($(ENABLE_STATIC),)
+-TARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
++TOOLUTILTARGET = $(LIBDIR)/$(LIBSICU)$(TARGET_STUBNAME)$(ICULIBSUFFIX).$(A)
+ endif
+ 
+ ifneq ($(ENABLE_SHARED),)
+@@ -37,7 +37,7 @@
+ ALL_SO_TARGETS = $(SO_TARGET) $(MIDDLE_SO_TARGET) $(FINAL_SO_TARGET) $(SHARED_OBJECT)
+ endif
+ 
+-ALL_TARGETS = $(TARGET) $(ALL_SO_TARGETS)
++ALL_TARGETS = $(TOOLUTILTARGET) $(ALL_SO_TARGETS)
+ 
+ DYNAMICCPPFLAGS = $(SHAREDLIBCPPFLAGS)
+ DYNAMICCFLAGS = $(SHAREDLIBCFLAGS)
+@@ -91,7 +91,7 @@
+ install-library: all-local
+ 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+ ifneq ($(ENABLE_STATIC),)
+-	$(INSTALL-L) $(TARGET) $(DESTDIR)$(libdir)
++	$(INSTALL-L) $(TOOLUTILTARGET) $(DESTDIR)$(libdir)
+ endif
+ ifneq ($(ENABLE_SHARED),)
+ 	$(INSTALL-L) $(FINAL_SO_TARGET) $(DESTDIR)$(libdir)
+@@ -128,7 +128,7 @@
+ 	 && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+ 
+ ifneq ($(ENABLE_STATIC),)
+-$(TARGET): $(STATIC_OBJECTS)
++$(TOOLUTILTARGET): $(STATIC_OBJECTS)
+ 	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
+ 	$(RANLIB) $@
+ endif
