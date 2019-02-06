@@ -1,4 +1,4 @@
-# Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+# Copyright © 1995-2019, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Static makefile rule file for AROS.
@@ -18,8 +18,10 @@ AROS_TARGET_PLATFORM := $(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 endif
 
 # All files corresponding to a specific host go here.
-HOSTDIR     := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
-TOOLDIR     := $(HOSTDIR)/tools
+DIR_HOST    := bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+HOSTDIR     := $(TOP)/$(DIR_HOST)
+DIR_TOOLS   := tools
+TOOLDIR     := $(HOSTDIR)/$(DIR_TOOLS)
 
 HOSTGENDIR  := $(HOSTDIR)/gen/host
 
@@ -58,9 +60,9 @@ AROSDIR	             := $(TARGETDIR)/AROS
 # Relative paths for standard directories
 AROS_DIR_BOOT        := boot
 ifeq ($(AROS_TARGET_ARCH),pc)
-AROS_DIR_ARCH        := boot/$(AROS_TARGET_ARCH)
+AROS_DIR_ARCH        := $(AROS_DIR_BOOT)/$(AROS_TARGET_ARCH)
 else
-AROS_DIR_ARCH        := boot/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
+AROS_DIR_ARCH        := $(AROS_DIR_BOOT)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
 endif
 AROS_DIR_C           := C
 AROS_DIR_CLASSES     := Classes
@@ -128,7 +130,7 @@ SCRIPTDIR            := $(GENDIR)/scripts
 
 MKDEPEND             := $(SRCDIR)/scripts/mkdep
 FETCH                := $(SRCDIR)/scripts/fetch.sh
-CPYDIRREC            := @PYTHON@ $(SRCDIR)/scripts/cpy-dir-rec.py
+CPYDIRREC            := $(PYTHON) $(SRCDIR)/scripts/cpy-dir-rec.py
 
 # The paths to the generated tools
 TOOLDIR		:= $(HOSTDIR)/tools
@@ -136,7 +138,8 @@ TOOLLIB		:= $(TOOLDIR)/libtool.a
 MMAKE		:= $(TOOLDIR)/mmake$(HOST_EXE_SUFFIX)
 ARCHTOOL	:= $(TOOLDIR)/archtool$(HOST_EXE_SUFFIX)
 ELF2HUNK	:= $(TOOLDIR)/elf2hunk$(HOST_EXE_SUFFIX)
-GENMF		:= $(TOOLDIR)/genmf.py
+GENMFSCRIPT	:= $(TOOLDIR)/genmf.py
+GENMF		:= $(PYTHON) $(GENMFSCRIPT)
 FLEXCAT		:= $(TOOLDIR)/flexcat$(HOST_EXE_SUFFIX)
 FD2INLINE       := $(TOOLDIR)/fd2inline$(HOST_EXE_SUFFIX)
 FD2PRAGMA       := $(TOOLDIR)/fd2pragma$(HOST_EXE_SUFFIX)

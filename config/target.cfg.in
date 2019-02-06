@@ -1,4 +1,4 @@
-#   Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -107,7 +107,8 @@ GCC_DEFAULT_MODE        := @gcc_default_mode@
 # --------------------------------------------------------------------------
 HOSTDIR         := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 TOOLDIR         := $(HOSTDIR)/tools
-GENMF           := $(TOOLDIR)/genmf.py
+GENMFSCRIPT	:= $(TOOLDIR)/genmf.py
+GENMF		:= $(PYTHON) $(GENMFSCRIPT)
 ARCH            := $(AROS_TARGET_ARCH)
 CPU             := $(AROS_TARGET_CPU)
 CPU_MODE        := $(AROS_TARGET_CPU_MODE)
