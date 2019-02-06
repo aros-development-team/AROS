@@ -1,4 +1,4 @@
-# Copyright © 2000-2016, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2019, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Main makefile for AROS
@@ -107,7 +107,7 @@ makedirs:
 	else true ; fi
 
 # Create the tools that are used to build AROS.
-tools : makedirs mmake $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
+tools : makedirs mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
@@ -132,9 +132,9 @@ $(TOP)/config/features.status: $(SRCDIR)/config/features $(CROSSTOOLS_BUILDFLAG)
 features: crosstools $(TOP)/config/features.status
 	@$(NOP)
 
-$(GENMF): $(SRCDIR)/tools/genmf/genmf.py
-	@$(ECHO) Copying genmf...
-	@./config.status $(subst $(TOP)/,,$(GENMF)) genmf_executable
+$(GENMFSCRIPT): $(SRCDIR)/tools/genmf/genmf.py
+	@$(ECHO) Generating $(subst $(TOP)/,,$(GENMFSCRIPT))...
+	@./config.status $(subst $(TOP)/,,$(GENMFSCRIPT)) genmf_executable
 
 $(ELF2HUNK): $(SRCDIR)/tools/elf2hunk/elf2hunk.c
 	@$(ECHO) Building elf2hunk...
@@ -209,7 +209,7 @@ $(TOP)/tools/MetaMake/Makefile: $(SRCDIR)/tools/MetaMake/configure $(SRCDIR)/too
 	fi;
 	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" CFLAGS="$(HOST_CFLAGS) -D_FILE_OFFSET_BITS=64" LDFLAGS="$(HOST_LDFLAGS)" $(SRCDIR)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --with-objfiledir=$(HOSTGENDIR)/tools/MetaMake
 
-$(MMAKE): $(TOP)/tools/MetaMake/Makefile $(wildcard $(SRCDIR)/tools/MetaMake/*.[ch]) $(GENMF)
+$(MMAKE): $(TOP)/tools/MetaMake/Makefile $(wildcard $(SRCDIR)/tools/MetaMake/*.[ch]) $(GENMFSCRIPT)
 	@$(MAKE) $(MKARGS) AUTOHEADER=@aros_host_autoheader@ -C $(TOP)/tools/MetaMake
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake install
 
