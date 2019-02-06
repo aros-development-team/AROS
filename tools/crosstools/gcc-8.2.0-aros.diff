@@ -1,204 +1,19 @@
-<!DOCTYPE html><html lang="de-DE" class=""><head><script type="text/javascript" src="https://a.slack-edge.com/bv1-6/webpack.manifest.5387cbe9e546832cd1b8.min.js" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script> window.ts_endpoint_url = "https:\/\/slack.com\/beacon\/timing"; (function(e) {
-	var n=Date.now?Date.now():+new Date,r=e.performance||{},t=[],a={},i=function(e,n){for(var r=0,a=t.length,i=[];a>r;r++)t[r][e]==n&&i.push(t[r]);return i},o=function(e,n){for(var r,a=t.length;a--;)r=t[a],r.entryType!=e||void 0!==n&&r.name!=n||t.splice(a,1)};r.now||(r.now=r.webkitNow||r.mozNow||r.msNow||function(){return(Date.now?Date.now():+new Date)-n}),r.mark||(r.mark=r.webkitMark||function(e){var n={name:e,entryType:"mark",startTime:r.now(),duration:0};t.push(n),a[e]=n}),r.measure||(r.measure=r.webkitMeasure||function(e,n,r){n=a[n].startTime,r=a[r].startTime,t.push({name:e,entryType:"measure",startTime:n,duration:r-n})}),r.getEntriesByType||(r.getEntriesByType=r.webkitGetEntriesByType||function(e){return i("entryType",e)}),r.getEntriesByName||(r.getEntriesByName=r.webkitGetEntriesByName||function(e){return i("name",e)}),r.clearMarks||(r.clearMarks=r.webkitClearMarks||function(e){o("mark",e)}),r.clearMeasures||(r.clearMeasures=r.webkitClearMeasures||function(e){o("measure",e)}),e.performance=r,"function"==typeof define&&(define.amd||define.ajs)&&define("performance",[],function(){return r}) // eslint-disable-line
-})(window);</script><script>
-
-(function() {
-	
-	window.TSMark = function(mark_label) {
-		if (!window.performance || !window.performance.mark) return;
-		performance.mark(mark_label);
-	};
-	window.TSMark('start_load');
-
-	
-	window.TSMeasureAndBeacon = function(measure_label, start_mark_label) {
-		if (start_mark_label === 'start_nav' && window.performance && window.performance.timing) {
-			window.TSBeacon(
-				measure_label,
-				new Date().getTime() - performance.timing.navigationStart
-			);
-			return;
-		}
-		if (!window.performance || !window.performance.mark || !window.performance.measure) return;
-		performance.mark(start_mark_label + '_end');
-		try {
-			performance.measure(measure_label, start_mark_label, start_mark_label + '_end');
-			window.TSBeacon(measure_label, performance.getEntriesByName(measure_label)[0].duration);
-		} catch (e) {
-			
-		}
-	};
-
-	
-	if ('sendBeacon' in navigator) {
-		window.TSBeacon = function(label, value) {
-			var endpoint_url = window.ts_endpoint_url || 'https://slack.com/beacon/timing';
-			navigator.sendBeacon(
-				endpoint_url + '?data=' + encodeURIComponent(label + ':' + value),
-				''
-			);
-		};
-	} else {
-		window.TSBeacon = function(label, value) {
-			var endpoint_url = window.ts_endpoint_url || 'https://slack.com/beacon/timing';
-			new Image().src = endpoint_url + '?data=' + encodeURIComponent(label + ':' + value);
-		};
-	}
-})();
-</script><script> window.TSMark('step_load'); </script><noscript><meta http-equiv="refresh" content="0; URL=/files/UCWDC0KJB/FFZF7H801/gcc-8.2.0-aros.diff?nojsmode=1"></noscript><script type="text/javascript">var safe_hosts = ['app.optimizely.com'];
-
-if (self !== top && safe_hosts.indexOf(top.location.host) === -1) {
-	window.document.write(
-		'\u003Cstyle>body * {display:none !important;}\u003C/style>\u003Ca href="#" onclick=' +
-			'"top.location.href=window.location.href" style="display:block !important;padding:10px">Go to Slack.com\u003C/a>'
-	);
-}
-
-(function() {
-	var timer;
-	if (self !== top && safe_hosts.indexOf(top.location.host) === -1) {
-		timer = window.setInterval(function() {
-			if (window.$) {
-				try {
-					$('nav, header, section').remove();
-					$('#page').remove();
-					$('#client-ui').remove();
-					window.TS = null;
-					window.TD = null;
-					window.clearInterval(timer);
-				} catch (e) {}
-			}
-		}, 200);
-	}
-})();</script><script type="text/javascript">try {
-	if (window.location.hash && !window.location.hash.match(/^(#?[a-zA-Z0-9_]*)$/)) {
-		window.location.hash = '';
-	}
-} catch (e) {}
-</script><script type="text/javascript">
-document.addEventListener("DOMContentLoaded", function(e) {
-	var gtmDataLayer = window.dataLayer || [];
-	var gtmTags = document.querySelectorAll('*[data-gtm-click]');
-	var gtmClickHandler = function(c) {
-		var gtm_events = this.getAttribute('data-gtm-click');
-		if (!gtm_events) return;
-		var gtm_events_arr = gtm_events.split(",");
-		for(var e=0; e < gtm_events_arr.length; e++) {
-			var ev = gtm_events_arr[e].trim();
-			gtmDataLayer.push({ 'event': ev });
-		}
-	};
-	for(var g=0; g < gtmTags.length; g++){
-		var elem = gtmTags[g];
-		elem.addEventListener('click', gtmClickHandler);
-	}
-});
-</script><script type="text/javascript">
-(function(e,c,b,f,d,g,a){e.SlackBeaconObject=d;
-e[d]=e[d]||function(){(e[d].q=e[d].q||[]).push([1*new Date(),arguments])};
-e[d].l=1*new Date();g=c.createElement(b);a=c.getElementsByTagName(b)[0];
-g.async=1;g.src=f;a.parentNode.insertBefore(g,a)
-})(window,document,"script","https://a.slack-edge.com/bv1-6/slack_beacon.86b388e46eb8135e1069.min.js","sb");
-window.sb('set', 'token', '3307f436963e02d4f9eb85ce5159744c');
-sb('set', 'user_' + "batch", "signup_api");sb('set', 'user_' + "created", "2018-09-17");sb('set', 'user_id', "UCUMVVAKB");
-sb('set', 'name_tag', "amigaports" + '/' + "w.tokarski");
-window.sb('track', 'pageview');
-</script><meta name="referrer" content="no-referrer"><meta name="superfish" content="nofish"><script>var TS_last_log_date = null;
-var TSMakeLogDate = function() {
-	var date = new Date();
-
-	var y = date.getFullYear();
-	var mo = date.getMonth()+1;
-	var d = date.getDate();
-
-	var time = {
-	  h: date.getHours(),
-	  mi: date.getMinutes(),
-	  s: date.getSeconds(),
-	  ms: date.getMilliseconds()
-	};
-
-	Object.keys(time).map(function(moment, index) {
-		if (moment == 'ms') {
-			if (time[moment] < 10) {
-				time[moment] = time[moment]+'00';
-			} else if (time[moment] < 100) {
-				time[moment] = time[moment]+'0';
-			}
-		} else if (time[moment] < 10) {
-			time[moment] = '0' + time[moment];
-		}
-	});
-
-	var str = y + '/' + mo + '/' + d + ' ' + time.h + ':' + time.mi + ':' + time.s + '.' + time.ms;
-	if (TS_last_log_date) {
-		var diff = date-TS_last_log_date;
-		//str+= ' ('+diff+'ms)';
-	}
-	TS_last_log_date = date;
-	return str+' ';
-}
-
-var parseDeepLinkRequest = function(code) {
-	var m = code.match(/"id":"([CDG][A-Z0-9]{8})"/);
-	var id = m ? m[1] : null;
-
-	m = code.match(/"team":"(T[A-Z0-9]{8})"/);
-	var team = m ? m[1] : null;
-
-	m = code.match(/"message":"([0-9]+\.[0-9]+)"/);
-	var message = m ? m[1] : null;
-
-	return { id: id, team: team, message: message };
-}
-
-if ('rendererEvalAsync' in window) {
-	var origRendererEvalAsync = window.rendererEvalAsync;
-	window.rendererEvalAsync = function(blob) {
-		try {
-			var data = JSON.parse(decodeURIComponent(atob(blob)));
-			if (data.code.match(/handleDeepLink/)) {
-				var request = parseDeepLinkRequest(data.code);
-				if (!request.id || !request.team || !request.message) return;
-
-				request.cmd = 'channel';
-				TSSSB.handleDeepLinkWithArgs(JSON.stringify(request));
-				return;
-			} else {
-				origRendererEvalAsync(blob);
-			}
-		} catch (e) {
-		}
-	}
-}</script><script>var TSSSB = {
-	call: function() {
-		return false;
-	}
-};</script><script>window.addEventListener('load', function() {
-	var was_TS = window.TS;
-	delete window.TS;
-	if (was_TS) window.TS = was_TS;
-});</script><title>gcc-8.2.0-aros.diff | AmigaDev Slack</title><link href="https://a.slack-edge.com/4f227/style/rollup-slack_kit_legacy_adapters.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/70c7c/style/rollup-plastic.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/74a30/style/libs/codemirror.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/14707/style/codemirror_overrides.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/615e4/style/rollup-file_pages.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/bv1-6/modern.vendor.2454421.min.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/bv1-6/application.892c48c.min.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/4c516/style/rollup-slack_kit_helpers.css" rel="stylesheet" type="text/css" id="slack_kit_helpers_stylesheet" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/25e57/style/print.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><link href="https://a.slack-edge.com/cbc02/style/libs/lato-2-compressed.css" rel="stylesheet" type="text/css" id="" class="" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"><meta name="robots" content="noindex, nofollow"><link id="favicon" rel="shortcut icon" href="https://a.slack-edge.com/cebaa/img/icons/favicon-32.png" sizes="16x16 32x32 48x48" type="image/png"></head><body class=" feature-vogue"><script>var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-if (w > 1440) document.querySelector('body').classList.add('widescreen');</script><nav id="site_nav" class="no_transition"><div id="site_nav_contents"><div id="user_menu"><div id="user_menu_contents"><div id="user_menu_avatar"><span class="member_image thumb_48" style="background-image: url('https://secure.gravatar.com/avatar/a03e2569bc31d572ba67b2bfbab65c54.jpg?s=192&amp;d=https%3A%2F%2Fa.slack-edge.com%2F00b63%2Fimg%2Favatars%2Fava_0006-192.png')" data-thumb-size="48" data-member_id="UCUMVVAKB"><ts-icon class="member_type_badge 16"><svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="badge_bg" fill="#FFFFFF"></g></g></svg><svg class="member_type_badge_icon" width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"></g></svg></ts-icon></span><span class="member_image thumb_36" style="background-image: url('https://secure.gravatar.com/avatar/a03e2569bc31d572ba67b2bfbab65c54.jpg?s=72&amp;d=https%3A%2F%2Fa.slack-edge.com%2F00b63%2Fimg%2Favatars%2Fava_0006-72.png')" data-thumb-size="36" data-member_id="UCUMVVAKB"><ts-icon class="member_type_badge 16"><svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="badge_bg" fill="#FFFFFF"></g></g></svg><svg class="member_type_badge_icon" width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"></g></svg></ts-icon></span></div><h3>Angemeldet als</h3><span id="user_menu_name">wawa</span></div></div><div class="nav_contents"><ul class="primary_nav"><h3>Account</h3><li><a href="/messages" data-qa="app"><i class="ts_icon ts_icon_angle_arrow_up_left"></i>Zurück zu Slack</a></li><li><a href="/home" data-qa="home"><i class="ts_icon ts_icon_home"></i>Home</a></li><li><a href="/account" data-qa="account_profile"><i class="ts_icon ts_icon_user"></i>Account &amp; Profil</a></li><li><a href="/apps/manage" data-qa="configure_apps" target="_blank"><i class="ts_icon ts_icon_plug"></i>Apps konfigurieren</a></li><li><a href="/stats" data-qa="statistics"><i class="ts_icon ts_icon_dashboard"></i>Analytik</a></li><li><a href="/customize" data-qa="customize"><i class="ts_icon ts_icon_magic"></i>Anpassen</a></li><li><a href="/account/workspace-settings" data-qa="team_settings"><i class="ts_icon ts_icon_info_circle sk_dark_grey"></i>Über diesen Workspace</a></li></ul></div><div id="footer"><h3>Sonstiges</h3><ul id="footer_nav"><li><a href="/is" data-qa="tour">Tour</a></li><li><a href="/downloads" data-qa="download_apps">Apps herunterladen</a></li><li><a href="/brand-guidelines" data-qa="brand_guidelines">Markenrichtlinien</a></li><li><a href="/help" data-qa="help">Support</a></li><li><a href="https://api.slack.com" target="_blank" data-qa="api">API<i class="ts_icon ts_icon_external_link small_left_margin ts_icon_inherit"></i></a></li><li><a href="/pricing?ui_step=96&amp;ui_element=5" data-qa="pricing" data-clog-event="GROWTH_PRICING" data-clog-ui-element="pricing_link" data-clog-ui-action="click" data-clog-ui-step="admin_footer">Preise</a></li><li><a href="/help/requests/new" data-qa="contact">Kontakt</a></li><li><a href="/terms-of-service" data-qa="policies">Richtlinien</a></li><li><a href="https://slackhq.com/" target="_blank" data-qa="our_blog">Unser Blog</a></li><li><a href="https://slack.com/signout/306371982324?crumb=s-1549485375-89dec5ef5e8b861521e20acf958fbfbc46e5e999d521bcb5e8f53b3656b3499b-%E2%98%83" data-qa="sign_out">Abmelden<i class="ts_icon ts_icon_sign_out small_left_margin ts_icon_inherit"></i></a></li></ul><p id="footer_signature">Mit <i class="ts_icon ts_icon_heart"></i> gemacht von Slack</p></div></div></nav><header><a id="menu_toggle" class="no_transition" data-qa="menu_toggle_hamburger"><span class="menu_icon"></span><span class="menu_label">Menü</span><span class="vert_divider"></span></a><h1 id="header_team_name" class="inline_block no_transition" data-qa="header_team_name"><a href="/home"><i class="ts_icon ts_icon_home"></i>AmigaDev</a></h1><div class="header_nav"><div class="header_btns float_right"><a href="" onclick="return false;" id="plans_switcher" data-qa="plans_switcher"><i class="ts_icon ts_icon_rocket ts_icon_inherit"></i><span class="block label">Plans</span></a><ul id="header_plans_nav" data-qa="plans_switcher_menu"><li class="plans_switcher_item" data-plan="learn_more_standard"><a data-clog-event="UPGRDEXP_PLANS_IN_TEAM_NAV" data-clog-ui-element="learn_more_standard" data-clog-ui-action="click" data-clog-ui-step="TEAM_NAV_PLANS_MENU" href="https://slack.com/pricing/standard?ui_element=53&amp;ui_step=222"><span class="switcher_label">Standard</span></a></li><li class="plans_switcher_item" data-plan="learn_more_plus"><a data-clog-event="UPGRDEXP_PLANS_IN_TEAM_NAV" data-clog-ui-element="learn_more_plus" data-clog-ui-action="click" data-clog-ui-step="TEAM_NAV_PLANS_MENU" href="https://slack.com/pricing/plus?ui_element=54&amp;ui_step=222"><span class="switcher_label">Plus</span></a></li><li class="plans_switcher_item" data-plan="learn_more_enterprise"><a data-clog-event="UPGRDEXP_PLANS_IN_TEAM_NAV" data-clog-ui-element="learn_more_enterprise" data-clog-ui-action="click" data-clog-ui-step="TEAM_NAV_PLANS_MENU" href="https://slack.com/plans/enterprise-grid?ui_element=55&amp;ui_step=222"><span class="switcher_label">Enterprise</span></a></li><li class="plans_switcher_item" data-plan="compare_plans"><a data-clog-event="UPGRDEXP_PLANS_IN_TEAM_NAV" data-clog-ui-element="pricing_link" data-clog-ui-action="click" data-clog-ui-step="TEAM_NAV_PLANS_MENU" href="https://slack.com/plans/compare?ui_element=5&amp;ui_step=222"><span class="switcher_label">Pläne vergleichen</span></a></li></ul><a href="" onclick="return false;" id="team_switcher" data-qa="team_switcher"><i class="ts_icon ts_icon_th_large ts_icon_inherit"></i><span class="block label">Workspaces</span></a><a href="/help" id="help_link" data-qa="help_link"><i class="ts_icon ts_icon_life_ring ts_icon_inherit"></i><span class="block label">Support</span></a><a href="/messages" data-qa="launch"><img src="https://a.slack-edge.com/2b2b5/img/icons/workspace_site_launch@2x.png" srcset="https://a.slack-edge.com/2b2b5/img/icons/workspace_site_launch.png 1x, https://a.slack-edge.com/2b2b5/img/icons/workspace_site_launch@2x.png 2x" title="Slack" alt="Launch Slack"><span class="block label">Start</span></a></div><ul id="header_team_nav" data-qa="team_switcher_menu"><li class="active"><a href="https://amigaports.slack.com/home" target="https://amigaports.slack.com/"><i class="ts_icon small ts_icon_check_circle_o active_icon s"></i><i class="team_icon small" style="background-image: url('https://avatars.slack-edge.com/2018-02-21/318574918565_061ca9085ad02d6bd6b0_88.png);"></i><span class="team_name active">AmigaDev</span></a></li><li id="add_team_option"><a href="https://slack.com/signin" target="_blank"><i class="ts_icon ts_icon_plus team_icon small"></i><span class="switcher_label">In einem anderen Workspace anmelden …</span></a></li></ul></div></header><div id="page" class=""><div id="page_contents" data-qa="page_contents" class=""><p class="print_only"><strong>
-	Erstellt von Kalamatee am Mittwoch, 6. Februar 2019 um 21:22 Uhr
-	</strong><br><span class="subtle_silver break_word">https://amigaports.slack.com/files/UCWDC0KJB/FFZF7H801/gcc-8.2.0-aros.diff</span></p><div class="file_header_container no_print"></div><div class="alert_container"><div class="file_public_link_shared alert" style="display: none;"><i class="ts_icon ts_icon_link"></i>Externer Link: <a class="file_public_link" href="https://slack-files.com/T90AXUW9J-FFZF7H801-9cc6cbe21b" target="new">https://slack-files.com/T90AXUW9J-FFZF7H801-9cc6cbe21b</a></div></div><div id="file_page" class="card top_padding"><p class="small subtle_silver no_print meta">
-		69KB Diff-Snippet erstellt am <span class="date">6. Februar 2019</span>.
-		<span class="file_share_list"></span></p><a id="file_action_cog" class="action_cog action_cog_snippet float_right no_print"><span>Aktionen</span><i class="ts_icon ts_icon_cog"></i></a><a id="snippet_expand_toggle" class="float_right no_print"><i class="ts_icon ts_icon_expand "></i><i class="ts_icon ts_icon_compress hidden"></i></a><div class="large_bottom_margin clearfix"><pre id="file_contents">diff -ruN gcc-8.2.0/configure gcc-8.2.0.aros/configure
+diff -ruN gcc-8.2.0/configure gcc-8.2.0.aros/configure
 --- gcc-8.2.0/configure	2018-07-26 10:48:58.000000000 +0100
 +++ gcc-8.2.0.aros/configure	2019-02-06 14:08:00.077004600 +0000
 @@ -3791,6 +3791,9 @@
    powerpcle-*-solaris*)
-     noconfigdirs=&quot;$noconfigdirs gdb sim tcl tk itcl&quot;
+     noconfigdirs="$noconfigdirs gdb sim tcl tk itcl"
      ;;
 +  *-*-aros*)
-+    noconfigdirs=&quot;$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl tix gnuserv gdb&quot;
++    noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl tix gnuserv gdb"
 +    ;;
    powerpc-*-beos*)
-     noconfigdirs=&quot;$noconfigdirs gdb&quot;
+     noconfigdirs="$noconfigdirs gdb"
      ;;
 @@ -3926,6 +3929,8 @@
    rs6000-*-aix*)
-     host_makefile_frag=&quot;config/mh-ppc-aix&quot;
+     host_makefile_frag="config/mh-ppc-aix"
      ;;
 +  *-*-aros*)
 +    ;;
@@ -210,17 +25,17 @@ diff -ruN gcc-8.2.0/configure.ac gcc-8.2.0.aros/configure.ac
 +++ gcc-8.2.0.aros/configure.ac	2019-02-06 14:08:00.077004600 +0000
 @@ -1122,6 +1122,9 @@
    powerpcle-*-solaris*)
-     noconfigdirs=&quot;$noconfigdirs gdb sim tcl tk itcl&quot;
+     noconfigdirs="$noconfigdirs gdb sim tcl tk itcl"
      ;;
 +  *-*-aros*)
-+    noconfigdirs=&quot;$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl tix gnuserv gdb&quot;
++    noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl tix gnuserv gdb"
 +    ;;
    powerpc-*-beos*)
-     noconfigdirs=&quot;$noconfigdirs gdb&quot;
+     noconfigdirs="$noconfigdirs gdb"
      ;;
 @@ -1238,6 +1241,8 @@
    rs6000-*-aix*)
-     host_makefile_frag=&quot;config/mh-ppc-aix&quot;
+     host_makefile_frag="config/mh-ppc-aix"
      ;;
 +  *-*-aros*)
 +    ;;
@@ -273,7 +88,7 @@ diff -ruN gcc-8.2.0/gcc/config/aarch64/aros.h gcc-8.2.0.aros/gcc/config/aarch64/
 +
 +   You should have received a copy of the GNU General Public License
 +   along with GCC; see the file COPYING3.  If not see
-+   &lt;http://www.gnu.org/licenses/&gt;.  */
++   <http://www.gnu.org/licenses/>.  */
 +
 +/* On EABI GNU/Linux, we want both the BPABI builtins and the
 +   GNU/Linux builtins.  */
@@ -281,14 +96,14 @@ diff -ruN gcc-8.2.0/gcc/config/aarch64/aros.h gcc-8.2.0.aros/gcc/config/aarch64/
 +#define TARGET_OS_CPP_BUILTINS() 		\
 +  do 						\
 +    {						\
-+	builtin_define_std (&quot;AROS&quot;);		\
-+       builtin_define (&quot;AMIGA&quot;);               \
-+       builtin_define (&quot;_AMIGA&quot;);              \
-+	builtin_assert (&quot;system=posix&quot;);	\
++	builtin_define_std ("AROS");		\
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
++	builtin_assert ("system=posix");	\
 +	if (flag_pic)				\
 +	  {					\
-+	    builtin_define (&quot;__PIC__&quot;);		\
-+	    builtin_define (&quot;__pic__&quot;);		\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
 +	  }					\
 +    }						\
 +  while (false)
@@ -297,24 +112,24 @@ diff -ruN gcc-8.2.0/gcc/config/aarch64/aros.h gcc-8.2.0.aros/gcc/config/aarch64/
 +   config.gcc for big endian configurations.  */
 +#undef  TARGET_LINKER_EMULATION
 +#if TARGET_BIG_ENDIAN_DEFAULT
-+#define TARGET_LINKER_EMULATION &quot;aarch64elfb_aros&quot;
++#define TARGET_LINKER_EMULATION "aarch64elfb_aros"
 +#else
-+#define TARGET_LINKER_EMULATION &quot;aarch64elf_aros&quot;
++#define TARGET_LINKER_EMULATION "aarch64elf_aros"
 +#endif
 +
 +#undef SUBTARGET_CPP_SPEC
-+#define SUBTARGET_CPP_SPEC &quot;-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}&quot;
++#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +#undef  SUBTARGET_EXTRA_LINK_SPEC
-+#define SUBTARGET_EXTRA_LINK_SPEC &quot; -m &quot; TARGET_LINKER_EMULATION
++#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
 +
 +/* Provide a LINK_SPEC appropriate for AROS.  */
 +#undef  LINK_SPEC
-+#define LINK_SPEC &quot;-m aarch64elf_aros -L %R/lib&quot;
++#define LINK_SPEC "-m aarch64elf_aros -L %R/lib"
 +
 +/* Use own supplement to libgcc.  */
 +#undef LIBGCC_SPEC
-+#define LIBGCC_SPEC &quot;-lgcc&quot;
++#define LIBGCC_SPEC "-lgcc"
 +
 diff -ruN gcc-8.2.0/gcc/config/aarch64/t-aros gcc-8.2.0.aros/gcc/config/aarch64/t-aros
 --- gcc-8.2.0/gcc/config/aarch64/t-aros	1970-01-01 00:00:00.000000000 +0000
@@ -337,7 +152,7 @@ diff -ruN gcc-8.2.0/gcc/config/aarch64/t-aros gcc-8.2.0.aros/gcc/config/aarch64/
 +#
 +# You should have received a copy of the GNU General Public License
 +# along with GCC; see the file COPYING3.  If not see
-+# &lt;http://www.gnu.org/licenses/&gt;.
++# <http://www.gnu.org/licenses/>.
 +
 +
 +
@@ -365,7 +180,7 @@ diff -ruN gcc-8.2.0/gcc/config/arm/aros.h gcc-8.2.0.aros/gcc/config/arm/aros.h
 +
 +   You should have received a copy of the GNU General Public License
 +   along with GCC; see the file COPYING3.  If not see
-+   &lt;http://www.gnu.org/licenses/&gt;.  */
++   <http://www.gnu.org/licenses/>.  */
 +
 +/* On EABI GNU/Linux, we want both the BPABI builtins and the
 +   GNU/Linux builtins.  */
@@ -374,14 +189,14 @@ diff -ruN gcc-8.2.0/gcc/config/arm/aros.h gcc-8.2.0.aros/gcc/config/arm/aros.h
 +  do 						\
 +    {						\
 +      TARGET_BPABI_CPP_BUILTINS();		\
-+	builtin_define_std (&quot;AROS&quot;);		\
-+       builtin_define (&quot;AMIGA&quot;);               \
-+       builtin_define (&quot;_AMIGA&quot;);              \
-+	builtin_assert (&quot;system=posix&quot;);	\
++	builtin_define_std ("AROS");		\
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
++	builtin_assert ("system=posix");	\
 +	if (flag_pic)				\
 +	  {					\
-+	    builtin_define (&quot;__PIC__&quot;);		\
-+	    builtin_define (&quot;__pic__&quot;);		\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
 +	  }					\
 +    }						\
 +  while (false)
@@ -391,7 +206,7 @@ diff -ruN gcc-8.2.0/gcc/config/arm/aros.h gcc-8.2.0.aros/gcc/config/arm/aros.h
 +#undef  TARGET_DEFAULT_FLOAT_ABI
 +#define TARGET_DEFAULT_FLOAT_ABI ARM_FLOAT_ABI_SOFTFP
 +
-+/* We default to the &quot;aapcs-linux&quot; ABI so that enums are int-sized by
++/* We default to the "aapcs-linux" ABI so that enums are int-sized by
 +   default.  */
 +#undef  ARM_DEFAULT_ABI
 +#define ARM_DEFAULT_ABI ARM_ABI_AAPCS_LINUX
@@ -406,24 +221,24 @@ diff -ruN gcc-8.2.0/gcc/config/arm/aros.h gcc-8.2.0.aros/gcc/config/arm/aros.h
 +   config.gcc for big endian configurations.  */
 +#undef  TARGET_LINKER_EMULATION
 +#if TARGET_BIG_ENDIAN_DEFAULT
-+#define TARGET_LINKER_EMULATION &quot;armelfb_aros&quot;
++#define TARGET_LINKER_EMULATION "armelfb_aros"
 +#else
-+#define TARGET_LINKER_EMULATION &quot;armelf_aros&quot;
++#define TARGET_LINKER_EMULATION "armelf_aros"
 +#endif
 +
 +#undef SUBTARGET_CPP_SPEC
-+#define SUBTARGET_CPP_SPEC &quot;-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}&quot;
++#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +#undef  SUBTARGET_EXTRA_LINK_SPEC
-+#define SUBTARGET_EXTRA_LINK_SPEC &quot; -m &quot; TARGET_LINKER_EMULATION
++#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
 +
 +/* Provide a LINK_SPEC appropriate for AROS.  */
 +#undef  LINK_SPEC
-+#define LINK_SPEC &quot;-m armelf_aros -L %R/lib&quot;
++#define LINK_SPEC "-m armelf_aros -L %R/lib"
 +
 +/* Use own supplement to libgcc.  */
 +#undef LIBGCC_SPEC
-+#define LIBGCC_SPEC &quot;-laeabi -lgcc&quot;
++#define LIBGCC_SPEC "-laeabi -lgcc"
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
@@ -448,7 +263,7 @@ diff -ruN gcc-8.2.0/gcc/config/arm/t-aros gcc-8.2.0.aros/gcc/config/arm/t-aros
 +#
 +# You should have received a copy of the GNU General Public License
 +# along with GCC; see the file COPYING3.  If not see
-+# &lt;http://www.gnu.org/licenses/&gt;.
++# <http://www.gnu.org/licenses/>.
 +
 +# Enumeration of multilibs
 +
@@ -469,9 +284,9 @@ diff -ruN gcc-8.2.0/gcc/config/aros-stdint.h gcc-8.2.0.aros/gcc/config/aros-stdi
 --- gcc-8.2.0/gcc/config/aros-stdint.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/config/aros-stdint.h	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,56 @@
-+/* Definitions for &lt;stdint.h&gt; types for AROS systems.
++/* Definitions for <stdint.h> types for AROS systems.
 +   Copyright (C) 2018 Free Software Foundation, Inc.
-+   Contributed by Nick Andrews &lt;kalamatee@gmail.com&gt;
++   Contributed by Nick Andrews <kalamatee@gmail.com>
 +
 +This file is part of GCC.
 +
@@ -492,18 +307,18 @@ diff -ruN gcc-8.2.0/gcc/config/aros-stdint.h gcc-8.2.0.aros/gcc/config/aros-stdi
 +You should have received a copy of the GNU General Public License and
 +a copy of the GCC Runtime Library Exception along with this program;
 +see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
-+&lt;http://www.gnu.org/licenses/&gt;.  */
++<http://www.gnu.org/licenses/>.  */
 +
-+#define SIG_ATOMIC_TYPE   &quot;int&quot;
++#define SIG_ATOMIC_TYPE   "int"
 +
-+#define INT8_TYPE         &quot;signed char&quot;
-+#define INT16_TYPE        &quot;short int&quot;
-+#define INT32_TYPE        &quot;int&quot;
-+#define INT64_TYPE        (LONG_TYPE_SIZE == 64 ? &quot;long int&quot; : &quot;long long int&quot;)
-+#define UINT8_TYPE        &quot;unsigned char&quot;
-+#define UINT16_TYPE       &quot;short unsigned int&quot;
-+#define UINT32_TYPE       &quot;unsigned int&quot;
-+#define UINT64_TYPE       (LONG_TYPE_SIZE == 64 ? &quot;long unsigned int&quot; : &quot;long long unsigned int&quot;)
++#define INT8_TYPE         "signed char"
++#define INT16_TYPE        "short int"
++#define INT32_TYPE        "int"
++#define INT64_TYPE        (LONG_TYPE_SIZE == 64 ? "long int" : "long long int")
++#define UINT8_TYPE        "unsigned char"
++#define UINT16_TYPE       "short unsigned int"
++#define UINT32_TYPE       "unsigned int"
++#define UINT64_TYPE       (LONG_TYPE_SIZE == 64 ? "long unsigned int" : "long long unsigned int")
 +
 +#define INT_LEAST8_TYPE   INT8_TYPE
 +#define INT_LEAST16_TYPE  INT16_TYPE
@@ -555,34 +370,34 @@ diff -ruN gcc-8.2.0/gcc/config/aros.h gcc-8.2.0.aros/gcc/config/aros.h
 +#define NO_IMPLICIT_EXTERN_C
 +
 +#undef SIZE_TYPE
-+#define SIZE_TYPE &quot;long unsigned int&quot;
++#define SIZE_TYPE "long unsigned int"
 +
 +#undef WCHAR_TYPE
-+#define WCHAR_TYPE &quot;char&quot;
++#define WCHAR_TYPE "char"
 +
 +#undef WCHAR_TYPE_SIZE
 +#define WCHAR_TYPE_SIZE 8
 +
 +#undef PTRDIFF_TYPE
-+#define PTRDIFF_TYPE &quot;long int&quot;
++#define PTRDIFF_TYPE "long int"
 +
 +#undef TARGET_OS_CPP_BUILTINS
 +#define TARGET_OS_CPP_BUILTINS()		\
 +  do						\
 +    {						\
-+	builtin_define_std (&quot;AROS&quot;);            \
-+       builtin_define (&quot;AMIGA&quot;);               \
-+       builtin_define (&quot;_AMIGA&quot;);              \
-+	builtin_define (&quot;__ELF__&quot;);		\
-+	builtin_assert (&quot;system=posix&quot;);        \
++	builtin_define_std ("AROS");            \
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
++	builtin_define ("__ELF__");		\
++	builtin_assert ("system=posix");        \
 +    }						\
 +  while (0)
 +
 +#undef ASM_APP_ON
-+#define ASM_APP_ON &quot;#APP\n&quot;
++#define ASM_APP_ON "#APP\n"
 +
 +#undef ASM_APP_OFF
-+#define ASM_APP_OFF &quot;#NO_APP\n&quot;
++#define ASM_APP_OFF "#NO_APP\n"
 +
 +#undef MD_EXEC_PREFIX
 +#undef MD_STARTFILE_PREFIX
@@ -593,53 +408,53 @@ diff -ruN gcc-8.2.0/gcc/config/aros.h gcc-8.2.0.aros/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  &quot;startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}&quot;
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
 +#undef	ENDFILE_SPEC
 +#define ENDFILE_SPEC \
-+  &quot;-lautoinit&quot;
++  "-lautoinit"
 +
 +/* The compiler is configured with ONLY the gcc/g++ standard headers.
 +   N.B-: NATIVE_SYSTEM_HEADER_DIR must come after GCC_INCLUDE_DIR with gcc6!! */
 +#undef INCLUDE_DEFAULTS
 +#define INCLUDE_DEFAULTS \
 +{ \
-+    { GPLUSPLUS_INCLUDE_DIR, &quot;G++&quot;, 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 }, \
-+    { GPLUSPLUS_TOOL_INCLUDE_DIR, &quot;G++&quot;, 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 1 }, \
-+    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, &quot;G++&quot;, 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 }, \
-+    { GCC_INCLUDE_DIR, &quot;GCC&quot;, 0, 0, 0, 0 }, \
++    { GPLUSPLUS_INCLUDE_DIR, "G++", 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 }, \
++    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 1 }, \
++    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, GPLUSPLUS_INCLUDE_DIR_ADD_SYSROOT, 0 }, \
++    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
 +}
 +
 +#undef CPP_SPEC
-+#define CPP_SPEC &quot;%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}&quot;
++#define CPP_SPEC "%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +/* This is for -profile to use -lc_p instead of -lc.  */
 +#ifndef CC1_SPEC
-+#define CC1_SPEC &quot;%{profile:-p}&quot;
++#define CC1_SPEC "%{profile:-p}"
 +#endif
 +
 +/* The GNU C++ standard library requires that these macros be defined.  */
 +#undef CPLUSPLUS_CPP_SPEC
-+#define CPLUSPLUS_CPP_SPEC &quot;-D_GNU_SOURCE %(cpp)&quot;
++#define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  &quot;--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group&quot;
++  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
 +
 +#undef	LIBSTDCXX_STATIC
-+#define LIBSTDCXX_STATIC &quot;pthread&quot;
++#define LIBSTDCXX_STATIC "pthread"
 +
-+#if !defined(USE_GNULIBC_1) &amp;&amp; defined(HAVE_LD_EH_FRAME_HDR)
-+#define LINK_EH_SPEC &quot;%{!static:--eh-frame-hdr} &quot;
++#if !defined(USE_GNULIBC_1) && defined(HAVE_LD_EH_FRAME_HDR)
++#define LINK_EH_SPEC "%{!static:--eh-frame-hdr} "
 +#endif
 +
 +/* AROS uses its own collect-like program for the moment.  */
 +#undef LINKER_NAME
-+#define LINKER_NAME &quot;collect-aros&quot;
++#define LINKER_NAME "collect-aros"
 +
 +#define TARGET_HAS_F_SETLKW
 +
@@ -666,7 +481,7 @@ diff -ruN gcc-8.2.0/gcc/config/aros.opt gcc-8.2.0.aros/gcc/config/aros.opt
 +;
 +; You should have received a copy of the GNU General Public License
 +; along with GCC; see the file COPYING3.  If not see
-+; &lt;http://www.gnu.org/licenses/&gt;.
++; <http://www.gnu.org/licenses/>.
 +
 +posix
 +Driver
@@ -711,7 +526,7 @@ diff -ruN gcc-8.2.0/gcc/config/i386/aros.h gcc-8.2.0.aros/gcc/config/i386/aros.h
 +Boston, MA 02111-1307, USA.  */
 +
 +#undef	LINK_SPEC
-+#define LINK_SPEC &quot;-m elf_i386 -L%R/lib&quot;
++#define LINK_SPEC "-m elf_i386 -L%R/lib"
 diff -ruN gcc-8.2.0/gcc/config/i386/aros64.h gcc-8.2.0.aros/gcc/config/i386/aros64.h
 --- gcc-8.2.0/gcc/config/i386/aros64.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/config/i386/aros64.h	2019-02-06 14:08:00.077004600 +0000
@@ -719,7 +534,7 @@ diff -ruN gcc-8.2.0/gcc/config/i386/aros64.h gcc-8.2.0.aros/gcc/config/i386/aros
 +/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
-+   Contributed by Stanislaw Szymczyk &lt;sszymczy@gmail.com&gt;. Based on aros.h.
++   Contributed by Stanislaw Szymczyk <sszymczy@gmail.com>. Based on aros.h.
 +
 +This file is part of GNU CC.
 +
@@ -747,7 +562,7 @@ diff -ruN gcc-8.2.0/gcc/config/i386/aros64.h gcc-8.2.0.aros/gcc/config/i386/aros
 +/* Provide a LINK_SPEC appropriate for AROS.  */
 +
 +#undef	LINK_SPEC
-+#define LINK_SPEC &quot;%{!m32:-m elf_x86_64} %{m32:-m elf_i386} -L %R/lib&quot; 
++#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386} -L %R/lib" 
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 diff -ruN gcc-8.2.0/gcc/config/m68k/m68k.c gcc-8.2.0.aros/gcc/config/m68k/m68k.c
@@ -755,10 +570,10 @@ diff -ruN gcc-8.2.0/gcc/config/m68k/m68k.c gcc-8.2.0.aros/gcc/config/m68k/m68k.c
 +++ gcc-8.2.0.aros/gcc/config/m68k/m68k.c	2019-02-06 14:08:00.077004600 +0000
 @@ -4484,7 +4484,7 @@
    else if (letter == '/')
-     asm_fprintf (file, &quot;%R&quot;);
+     asm_fprintf (file, "%R");
    else if (letter == '?')
 -    asm_fprintf (file, m68k_library_id_string);
-+    asm_fprintf (file, &quot;%s&quot;, m68k_library_id_string);
++    asm_fprintf (file, "%s", m68k_library_id_string);
    else if (letter == 'p')
      {
        output_addr_const (file, op);
@@ -805,7 +620,7 @@ diff -ruN gcc-8.2.0/gcc/config/m68k/m68k.md gcc-8.2.0.aros/gcc/config/m68k/m68k.
      {
 -      operands[1] = gen_rtx_REG (Pmode, PIC_REG);
 +      operands[1] = gen_rtx_REG (Pmode, A4_REG);
-       return MOTOROLA ? &quot;move.l %?(%1),%0&quot; : &quot;movel %1@(%?), %0&quot;;
+       return MOTOROLA ? "move.l %?(%1),%0" : "movel %1@(%?), %0";
      }
    else if (MOTOROLA)
 diff -ruN gcc-8.2.0/gcc/config/m68k/t-aros gcc-8.2.0.aros/gcc/config/m68k/t-aros
@@ -813,7 +628,7 @@ diff -ruN gcc-8.2.0/gcc/config/m68k/t-aros gcc-8.2.0.aros/gcc/config/m68k/t-aros
 +++ gcc-8.2.0.aros/gcc/config/m68k/t-aros	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,2 @@
 +# Custom multilibs for AROS
-+M68K_MLIB_CPU += &amp;&amp; match(MLIB, &quot;^68&quot;)
++M68K_MLIB_CPU += && match(MLIB, "^68")
 diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/aros.h
 --- gcc-8.2.0/gcc/config/rs6000/aros.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/config/rs6000/aros.h	2019-02-06 14:08:00.077004600 +0000
@@ -852,16 +667,16 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/ar
 +#define TARGET_OS_CPP_BUILTINS()		\
 +  do						\
 +    {						\
-+	builtin_define_std (&quot;AROS&quot;);		\
-+       builtin_define (&quot;AMIGA&quot;);               \
-+       builtin_define (&quot;_AMIGA&quot;);              \
-+	builtin_define (&quot;__powerpc__&quot;);		\
-+	builtin_define (&quot;__ELF__&quot;);		\
-+	builtin_assert (&quot;system=posix&quot;);	\
++	builtin_define_std ("AROS");		\
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
++	builtin_define ("__powerpc__");		\
++	builtin_define ("__ELF__");		\
++	builtin_assert ("system=posix");	\
 +	if (flag_pic)				\
 +	  {					\
-+	    builtin_define (&quot;__PIC__&quot;);		\
-+	    builtin_define (&quot;__pic__&quot;);		\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
 +	  }					\
 +    }						\
 +  while (0)
@@ -880,7 +695,7 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/ar
 +
 +/*
 +#undef ASM_COMMENT_START
-+#define ASM_COMMENT_START &quot;#&quot;
++#define ASM_COMMENT_START "#"
 +see rs6000/rs6000.h
 +*/
 +
@@ -903,7 +718,7 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/ar
 +
 +/*
 +#undef MCOUNT_NAME
-+#define MCOUNT_NAME &quot;mcount&quot;
++#define MCOUNT_NAME "mcount"
 +see rs6000/sysv4.h RS6000_MCOUNT
 +*/
 +
@@ -911,17 +726,17 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/ar
 +   frame, so we cannot allow profiling without a frame pointer.  */
 +/*
 +#undef SUBTARGET_FRAME_POINTER_REQUIRED
-+#define SUBTARGET_FRAME_POINTER_REQUIRED crtl-&gt;profile
++#define SUBTARGET_FRAME_POINTER_REQUIRED crtl->profile
 +seems to be handled by rs6000/rs6000.h
 +*/
 +
 +#undef CC1_SPEC
-+#define CC1_SPEC &quot;%(cc1_cpu) %{profile:-p}&quot;
++#define CC1_SPEC "%(cc1_cpu) %{profile:-p}"
 +
 +/* Provide a LINK_SPEC appropriate for AROS.  */
 +
 +#undef	LINK_SPEC
-+#define LINK_SPEC &quot;-m elf32ppc -L %R/lib&quot;
++#define LINK_SPEC "-m elf32ppc -L %R/lib"
 +
 +/* A C statement (sans semicolon) to output to the stdio stream
 +   FILE the assembler definition of uninitialized global DECL named
@@ -934,7 +749,7 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/ar
 +*/
 +
 +/* A C statement to output to the stdio stream FILE an assembler
-+   command to advance the location counter to a multiple of 1&lt;&lt;LOG
++   command to advance the location counter to a multiple of 1<<LOG
 +   bytes if it is within MAX_SKIP bytes.
 +
 +   This is used to align code labels according to Intel recommendations.  */
@@ -943,8 +758,8 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/ar
 +#define ASM_OUTPUT_MAX_SKIP_ALIGN(FILE,LOG,MAX_SKIP)			\
 +  do {									\
 +    if ((LOG) != 0) {							\
-+      if ((MAX_SKIP) == 0) fprintf ((FILE), &quot;\t.p2align %d\n&quot;, (LOG));	\
-+      else fprintf ((FILE), &quot;\t.p2align %d,,%d\n&quot;, (LOG), (MAX_SKIP));	\
++      if ((MAX_SKIP) == 0) fprintf ((FILE), "\t.p2align %d\n", (LOG));	\
++      else fprintf ((FILE), "\t.p2align %d,,%d\n", (LOG), (MAX_SKIP));	\
 +    }									\
 +  } while (0)
 +#endif
@@ -956,11 +771,11 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/aros.h gcc-8.2.0.aros/gcc/config/rs6000/ar
 +/*
 +#define ASM_MAYBE_OUTPUT_ENCODED_ADDR_RTX(FILE, ENCODING, SIZE, ADDR, DONE) \
 +  do {									\
-+    if ((SIZE) == 4 &amp;&amp; ((ENCODING) &amp; 0x70) == DW_EH_PE_datarel)		\
++    if ((SIZE) == 4 && ((ENCODING) & 0x70) == DW_EH_PE_datarel)		\
 +      {									\
 +        fputs (ASM_LONG, FILE);			\
 +        assemble_name (FILE, XSTR (ADDR, 0));				\
-+	fputs (((ENCODING) &amp; DW_EH_PE_indirect ? &quot;@GOT&quot; : &quot;@GOTOFF&quot;), FILE); \
++	fputs (((ENCODING) & DW_EH_PE_indirect ? "@GOT" : "@GOTOFF"), FILE); \
 +        goto DONE;							\
 +      }									\
 +  } while (0)
@@ -974,31 +789,31 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/rs6000.c gcc-8.2.0.aros/gcc/config/rs6000/
 +++ gcc-8.2.0.aros/gcc/config/rs6000/rs6000.c	2019-02-06 14:08:00.077004600 +0000
 @@ -1543,6 +1543,8 @@
      rs6000_handle_longcall_attribute, NULL },
-   { &quot;shortcall&quot;, 0, 0, false, true,  true,  false,
+   { "shortcall", 0, 0, false, true,  true,  false,
      rs6000_handle_longcall_attribute, NULL },
-+  { &quot;stackparm&quot;, 0, 0, false, true,  true, false,
++  { "stackparm", 0, 0, false, true,  true, false,
 +    rs6000_handle_longcall_attribute, NULL },
-   { &quot;ms_struct&quot;, 0, 0, false, false, false, false,
+   { "ms_struct", 0, 0, false, false, false, false,
      rs6000_handle_struct_attribute, NULL },
-   { &quot;gcc_struct&quot;, 0, 0, false, false, false, false,
+   { "gcc_struct", 0, 0, false, false, false, false,
 @@ -11361,6 +11363,9 @@
- 	  &amp;&amp; !lookup_attribute (&quot;shortcall&quot;, TYPE_ATTRIBUTES (fntype))))
-     cum-&gt;call_cookie |= CALL_LONG;
+ 	  && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype))))
+     cum->call_cookie |= CALL_LONG;
  
-+  cum-&gt;stackparm = fntype &amp;&amp; lookup_attribute(&quot;stackparm&quot;,
++  cum->stackparm = fntype && lookup_attribute("stackparm",
 +					     TYPE_ATTRIBUTES(fntype));
 +
    if (TARGET_DEBUG_ARG)
      {
-       fprintf (stderr, &quot;\ninit_cumulative_args:&quot;);
+       fprintf (stderr, "\ninit_cumulative_args:");
 @@ -12450,6 +12455,9 @@
  
-   rs6000_discover_homogeneous_aggregate (mode, type, &amp;elt_mode, &amp;n_elts);
+   rs6000_discover_homogeneous_aggregate (mode, type, &elt_mode, &n_elts);
  
-+  if (cum-&gt;stackparm)
++  if (cum->stackparm)
 +    return NULL_RTX;
 +
-   if (TARGET_MACHO &amp;&amp; rs6000_darwin64_struct_check_p (mode, type))
+   if (TARGET_MACHO && rs6000_darwin64_struct_check_p (mode, type))
      {
        rtx rslt = rs6000_darwin64_record_arg (cum, type, named, /*retval= */false);
 @@ -13050,6 +13058,8 @@
@@ -1007,7 +822,7 @@ diff -ruN gcc-8.2.0/gcc/config/rs6000/rs6000.c gcc-8.2.0.aros/gcc/config/rs6000/
    next_cum = *get_cumulative_args (cum);
 +  if (next_cum.stackparm)
 +    return;
-   rs6000_function_arg_advance_1 (&amp;next_cum, mode, type, true, 0);
+   rs6000_function_arg_advance_1 (&next_cum, mode, type, true, 0);
  
    if (DEFAULT_ABI == ABI_V4)
 diff -ruN gcc-8.2.0/gcc/config/rs6000/rs6000.h gcc-8.2.0.aros/gcc/config/rs6000/rs6000.h
@@ -1025,7 +840,7 @@ diff -ruN gcc-8.2.0/gcc/config/t-aros gcc-8.2.0.aros/gcc/config/t-aros
 --- gcc-8.2.0/gcc/config/t-aros	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/config/t-aros	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,29 @@
-+# In AROS, &quot;/usr&quot; is a four-letter word.
++# In AROS, "/usr" is a four-letter word.
 +# Must match NATIVE_SYSTEM_HEADER_COMPONENT in aros.h !
 +NATIVE_SYSTEM_HEADER_DIR = /include
 +
@@ -1071,68 +886,68 @@ diff -ruN gcc-8.2.0/gcc/config.gcc gcc-8.2.0.aros/gcc/config.gcc
 --- gcc-8.2.0/gcc/config.gcc	2018-06-25 20:34:01.000000000 +0100
 +++ gcc-8.2.0.aros/gcc/config.gcc	2019-02-06 14:08:00.077004600 +0000
 @@ -818,6 +818,16 @@
-   nbsd_tm_file=&quot;netbsd.h netbsd-stdint.h netbsd-elf.h&quot;
+   nbsd_tm_file="netbsd.h netbsd-stdint.h netbsd-elf.h"
    default_use_cxa_atexit=yes
    ;;
 +*-*-aros*)
-+  tm_file=&quot;${tm_file} aros-stdint.h&quot;
++  tm_file="${tm_file} aros-stdint.h"
 +  gas=yes
 +  gnu_ld=yes
 +  thread_file=posix
 +  use_collect2=no
 +  xm_defines='STDC_HEADERS=1'
-+  extra_options=&quot;${extra_options} aros.opt&quot;
++  extra_options="${extra_options} aros.opt"
 +  ;;
 +
  *-*-openbsd*)
-   tmake_file=&quot;t-openbsd&quot;
+   tmake_file="t-openbsd"
    case ${enable_threads} in
 @@ -938,6 +948,11 @@
  esac
  
  case ${target} in
 +aarch64*-*-aros*)
-+	tm_file=&quot;${tm_file} dbxelf.h elfos.h aarch64/aarch64-elf.h aros.h aarch64/aros.h&quot;
-+	tmake_file=&quot;${tmake_file} aarch64/t-aarch64 aarch64/t-aros t-aros&quot;
-+	xm_file=&quot;xm-aros.h&quot;
++	tm_file="${tm_file} dbxelf.h elfos.h aarch64/aarch64-elf.h aros.h aarch64/aros.h"
++	tmake_file="${tmake_file} aarch64/t-aarch64 aarch64/t-aros t-aros"
++	xm_file="xm-aros.h"
 +	;;
  aarch64*-*-elf | aarch64*-*-fuchsia* | aarch64*-*-rtems*)
- 	tm_file=&quot;${tm_file} dbxelf.h elfos.h newlib-stdint.h&quot;
- 	tm_file=&quot;${tm_file} aarch64/aarch64-elf.h aarch64/aarch64-elf-raw.h&quot;
+ 	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h"
+ 	tm_file="${tm_file} aarch64/aarch64-elf.h aarch64/aarch64-elf-raw.h"
 @@ -1036,6 +1051,16 @@
- 	tm_file=&quot;${tm_file} vms/vms.h alpha/vms.h&quot;
- 	tmake_file=&quot;${tmake_file} alpha/t-vms alpha/t-alpha&quot;
+ 	tm_file="${tm_file} vms/vms.h alpha/vms.h"
+ 	tmake_file="${tmake_file} alpha/t-vms alpha/t-alpha"
  	;;
 +arm*-*-aros*)
-+	tm_file=&quot;dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h&quot;
-+	tm_file=&quot;$tm_file ../../libgcc/config/arm/bpabi-lib.h&quot;
-+	tmake_file=&quot;${tmake_file} arm/t-arm arm/t-arm-elf arm/t-arm-softfp arm/t-bpabi arm/t-aros t-aros&quot;
-+	xm_file=&quot;xm-aros.h&quot;
++	tm_file="dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
++	tm_file="$tm_file ../../libgcc/config/arm/bpabi-lib.h"
++	tmake_file="${tmake_file} arm/t-arm arm/t-arm-elf arm/t-arm-softfp arm/t-bpabi arm/t-aros t-aros"
++	xm_file="xm-aros.h"
 +	# The BPABI long long divmod functions return a 128-bit value in
 +	# registers r0-r3.  Correctly modeling that requires the use of
 +	# TImode.
 +	need_64bit_hwint=yes
 +	;;
  arc*-*-elf*)
- 	tm_file=&quot;arc/arc-arch.h dbxelf.h elfos.h newlib-stdint.h arc/elf.h ${tm_file}&quot;
- 	tmake_file=&quot;arc/t-multilib arc/t-arc&quot;
+ 	tm_file="arc/arc-arch.h dbxelf.h elfos.h newlib-stdint.h arc/elf.h ${tm_file}"
+ 	tmake_file="arc/t-multilib arc/t-arc"
 @@ -1638,6 +1663,16 @@
  	done
  	TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's/^,//'`
  	;;
 +i[34567]86-*-aros*)
-+	tm_file=&quot;${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h i386/aros.h&quot;
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h i386/aros.h"
 +	xm_file=xm-aros.h
-+	tmake_file=&quot;${tmake_file} i386/t-i386elf t-aros&quot;
++	tmake_file="${tmake_file} i386/t-i386elf t-aros"
 +	;;	
 +x86_64-*-aros*)
-+	tm_file=&quot;${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h i386/x86-64.h aros.h i386/aros64.h&quot;
-+	tmake_file=&quot;${tmake_file} i386/t-i386elf t-aros&quot;
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h i386/x86-64.h aros.h i386/aros64.h"
++	tmake_file="${tmake_file} i386/t-i386elf t-aros"
 +	xm_file=xm-aros.h
 +	;;
  i[34567]86-pc-msdosdjgpp*)
  	xm_file=i386/xm-djgpp.h
- 	tm_file=&quot;dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h&quot;
+ 	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h"
 @@ -1929,6 +1964,16 @@
  		thread_file='posix'
  	fi
@@ -1140,43 +955,43 @@ diff -ruN gcc-8.2.0/gcc/config.gcc gcc-8.2.0.aros/gcc/config.gcc
 +m68k-*-aros*)
 +	default_m68k_cpu=68000
 +	default_cf_cpu=5206
-+	tm_file=&quot;${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h m68k/m68kemb.h m68k/m68020-elf.h&quot;
-+	tm_file=&quot;${tm_file} aros.h&quot;
-+	tm_defines=&quot;${tm_defines} MOTOROLA=1&quot;
-+	tmake_file=&quot;m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf&quot;
-+	tmake_file=&quot;$tmake_file m68k/t-aros m68k/t-mlibs t-aros&quot;
-+	extra_parts=&quot;crtbegin.o crtend.o&quot;
++	tm_file="${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h m68k/m68kemb.h m68k/m68020-elf.h"
++	tm_file="${tm_file} aros.h"
++	tm_defines="${tm_defines} MOTOROLA=1"
++	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
++	tmake_file="$tmake_file m68k/t-aros m68k/t-mlibs t-aros"
++	extra_parts="crtbegin.o crtend.o"
 +	;;
  m68k-*-elf* | fido-*-elf*)
  	case ${target} in
  	fido-*-elf*)
 @@ -2486,6 +2531,13 @@
- 	tmake_file=&quot;${tmake_file} powerpcspe/t-ppcos powerpcspe/t-linux&quot;
- 	tm_file=&quot;${tm_file} powerpcspe/linuxspe.h powerpcspe/e500.h&quot;
+ 	tmake_file="${tmake_file} powerpcspe/t-ppcos powerpcspe/t-linux"
+ 	tm_file="${tm_file} powerpcspe/linuxspe.h powerpcspe/e500.h"
  	;;
 +powerpc-*-aros*)
-+ 	tm_file=&quot;${tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h&quot;
-+ 	extra_options=&quot;${extra_options} rs6000/sysv4.opt&quot;
-+ 	tm_file=&quot;${tm_file} rs6000/aros.h&quot;
++ 	tm_file="${tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h"
++ 	extra_options="${extra_options} rs6000/sysv4.opt"
++ 	tm_file="${tm_file} rs6000/aros.h"
 + 	xm_file=xm-aros.h
-+	tmake_file=&quot;$tmake_file t-aros&quot;
++	tmake_file="$tmake_file t-aros"
 + 	;;
  powerpc*-*-linux*)
- 	tm_file=&quot;${tm_file} dbxelf.h elfos.h gnu-user.h freebsd-spec.h rs6000/sysv4.h&quot;
- 	extra_options=&quot;${extra_options} rs6000/sysv4.opt&quot;
+ 	tm_file="${tm_file} dbxelf.h elfos.h gnu-user.h freebsd-spec.h rs6000/sysv4.h"
+ 	extra_options="${extra_options} rs6000/sysv4.opt"
 diff -ruN gcc-8.2.0/gcc/config.host gcc-8.2.0.aros/gcc/config.host
 --- gcc-8.2.0/gcc/config.host	2018-01-03 10:03:58.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/config.host	2019-02-06 14:08:00.077004600 +0000
 @@ -287,6 +287,10 @@
      out_host_hook_obj=host-hpux.o
-     host_xmake_file=&quot;${host_xmake_file} x-hpux&quot;
+     host_xmake_file="${host_xmake_file} x-hpux"
      ;;
 +  *-*-aros*)
 +    host_can_use_collect2=no
 +    host_xm_file=xm-aros.h
 +    ;;
    *-*-*vms*)
-     host_xm_file=&quot;vms/xm-vms.h&quot;
+     host_xm_file="vms/xm-vms.h"
      host_xmake_file=vms/x-vms
 diff -ruN gcc-8.2.0/gcc/ginclude/aros/types/null.h gcc-8.2.0.aros/gcc/ginclude/aros/types/null.h
 --- gcc-8.2.0/gcc/ginclude/aros/types/null.h	1970-01-01 00:00:00.000000000 +0000
@@ -1184,35 +999,35 @@ diff -ruN gcc-8.2.0/gcc/ginclude/aros/types/null.h gcc-8.2.0.aros/gcc/ginclude/a
 @@ -0,0 +1,3 @@
 +/* Replace AROS' NULL definition with gcc's one */
 +#define __need_NULL
-+#include &lt;stddef.h&gt;
++#include <stddef.h>
 diff -ruN gcc-8.2.0/gcc/ginclude/aros/types/ptrdiff_t.h gcc-8.2.0.aros/gcc/ginclude/aros/types/ptrdiff_t.h
 --- gcc-8.2.0/gcc/ginclude/aros/types/ptrdiff_t.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/ginclude/aros/types/ptrdiff_t.h	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' ptrdiff_t definition with gcc's one */
 +#define __need_ptrdiff_t
-+#include &lt;stddef.h&gt;
++#include <stddef.h>
 diff -ruN gcc-8.2.0/gcc/ginclude/aros/types/size_t.h gcc-8.2.0.aros/gcc/ginclude/aros/types/size_t.h
 --- gcc-8.2.0/gcc/ginclude/aros/types/size_t.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/ginclude/aros/types/size_t.h	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' size_t definition with gcc's one */
 +#define __need_size_t
-+#include &lt;stddef.h&gt;
++#include <stddef.h>
 diff -ruN gcc-8.2.0/gcc/ginclude/aros/types/wchar_t.h gcc-8.2.0.aros/gcc/ginclude/aros/types/wchar_t.h
 --- gcc-8.2.0/gcc/ginclude/aros/types/wchar_t.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/ginclude/aros/types/wchar_t.h	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' wchar_t definition with gcc's one */
 +#define __need_wchar_t
-+#include &lt;stddef.h&gt;
++#include <stddef.h>
 diff -ruN gcc-8.2.0/gcc/ginclude/aros/types/wint_t.h gcc-8.2.0.aros/gcc/ginclude/aros/types/wint_t.h
 --- gcc-8.2.0/gcc/ginclude/aros/types/wint_t.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/ginclude/aros/types/wint_t.h	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' wint_t definition with gcc's one */
 +#define __need_wint_t
-+#include &lt;stddef.h&gt;
++#include <stddef.h>
 diff -ruN gcc-8.2.0/gcc/ginclude/stddef.h gcc-8.2.0.aros/gcc/ginclude/stddef.h
 --- gcc-8.2.0/gcc/ginclude/stddef.h	2018-01-03 10:03:58.000000000 +0000
 +++ gcc-8.2.0.aros/gcc/ginclude/stddef.h	2019-02-06 14:08:00.077004600 +0000
@@ -1309,23 +1124,23 @@ diff -ruN gcc-8.2.0/libgcc/config.host gcc-8.2.0.aros/libgcc/config.host
 +++ gcc-8.2.0.aros/libgcc/config.host	2019-02-06 14:08:00.077004600 +0000
 @@ -839,6 +839,9 @@
  m32rle-*-linux*)
- 	tmake_file=&quot;$tmake_file m32r/t-linux t-fdpbit&quot;
+ 	tmake_file="$tmake_file m32r/t-linux t-fdpbit"
  	;;
 +m68k-*-aros*)
-+	tmake_file=&quot;$tmake_file m68k/t-floatlib&quot;
++	tmake_file="$tmake_file m68k/t-floatlib"
 +	;;
  m68k-*-elf* | fido-*-elf)
- 	tmake_file=&quot;$tmake_file m68k/t-floatlib&quot;
+ 	tmake_file="$tmake_file m68k/t-floatlib"
  	;;
 @@ -1359,6 +1362,9 @@
- 	tmake_file=&quot;$tmake_file nvptx/t-nvptx&quot;
- 	extra_parts=&quot;crt0.o&quot;
+ 	tmake_file="$tmake_file nvptx/t-nvptx"
+ 	extra_parts="crt0.o"
  	;;
 +*-*-aros*)
 +	tmake_file=
 +	;;
  *)
- 	echo &quot;*** Configuration ${host} not supported&quot; 1&gt;&amp;2
+ 	echo "*** Configuration ${host} not supported" 1>&2
  	exit 1
 diff -ruN gcc-8.2.0/libgcc/gthr.h gcc-8.2.0.aros/libgcc/gthr.h
 --- gcc-8.2.0/libgcc/gthr.h	2018-01-03 10:03:58.000000000 +0000
@@ -1350,19 +1165,19 @@ diff -ruN gcc-8.2.0/libgcc/unwind-dw2-fde.c gcc-8.2.0.aros/libgcc/unwind-dw2-fde
  
    init_object_mutex_once ();
 +#ifndef __AROS__ /* This is called when SysBase is not yet set up */
-   __gthread_mutex_lock (&amp;object_mutex);
+   __gthread_mutex_lock (&object_mutex);
 -
 +#endif
 +  
-   ob-&gt;next = unseen_objects;
+   ob->next = unseen_objects;
    unseen_objects = ob;
  #ifdef ATOMIC_FDE_FAST_PATH
 @@ -115,7 +117,9 @@
-     __atomic_store_n (&amp;any_objects_registered, 1, __ATOMIC_RELAXED);
+     __atomic_store_n (&any_objects_registered, 1, __ATOMIC_RELAXED);
  #endif
  
 +#ifndef __AROS__
-   __gthread_mutex_unlock (&amp;object_mutex);
+   __gthread_mutex_unlock (&object_mutex);
 +#endif
  }
  
@@ -1388,7 +1203,7 @@ diff -ruN gcc-8.2.0/libiberty/filename_cmp.c gcc-8.2.0.aros/libiberty/filename_c
  filename_cmp (const char *s1, const char *s2)
  {
 -#if !defined(HAVE_DOS_BASED_FILE_SYSTEM) \
--    &amp;&amp; !defined(HAVE_CASE_INSENSITIVE_FILE_SYSTEM)
+-    && !defined(HAVE_CASE_INSENSITIVE_FILE_SYSTEM)
 +#if !defined(HAVE_DOS_BASED_FILE_SYSTEM)
 +#if defined(HAVE_CASE_INSENSITIVE_FILE_SYSTEM)
 +  return strcasecmp(s1, s2);
@@ -1408,11 +1223,11 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -
 -
 -   # Check whether --enable-tls was given.
--if test &quot;${enable_tls+set}&quot; = set; then :
+-if test "${enable_tls+set}" = set; then :
 -  enableval=$enable_tls;
--      case &quot;$enableval&quot; in
+-      case "$enableval" in
 -       yes|no) ;;
--       *) as_fn_error &quot;Argument to enable/disable tls must be yes or no&quot; &quot;$LINENO&quot; 5 ;;
+-       *) as_fn_error "Argument to enable/disable tls must be yes or no" "$LINENO" 5 ;;
 -      esac
 -
 -else
@@ -1420,45 +1235,45 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -fi
 -
 -
--  { $as_echo &quot;$as_me:${as_lineno-$LINENO}: checking whether the target supports thread-local storage&quot; &gt;&amp;5
--$as_echo_n &quot;checking whether the target supports thread-local storage... &quot; &gt;&amp;6; }
--if test &quot;${gcc_cv_have_tls+set}&quot; = set; then :
--  $as_echo_n &quot;(cached) &quot; &gt;&amp;6
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the target supports thread-local storage" >&5
+-$as_echo_n "checking whether the target supports thread-local storage... " >&6; }
+-if test "${gcc_cv_have_tls+set}" = set; then :
+-  $as_echo_n "(cached) " >&6
 -else
 -
--    if test &quot;$cross_compiling&quot; = yes; then :
+-    if test "$cross_compiling" = yes; then :
 -                if test x$gcc_no_link = xyes; then
--  as_fn_error &quot;Link tests are not allowed after GCC_NO_EXECUTABLES.&quot; &quot;$LINENO&quot; 5
+-  as_fn_error "Link tests are not allowed after GCC_NO_EXECUTABLES." "$LINENO" 5
 -fi
--cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
 -__thread int a; int b; int main() { return a = b; }
 -_ACEOF
--if ac_fn_c_try_link &quot;$LINENO&quot;; then :
--  chktls_save_LDFLAGS=&quot;$LDFLAGS&quot;
+-if ac_fn_c_try_link "$LINENO"; then :
+-  chktls_save_LDFLAGS="$LDFLAGS"
 -	  	  	  case $host in
 -	    *-*-linux*)
--	      LDFLAGS=&quot;-shared -Wl,--no-undefined $LDFLAGS&quot;
+-	      LDFLAGS="-shared -Wl,--no-undefined $LDFLAGS"
 -	      ;;
 -	  esac
--	  chktls_save_CFLAGS=&quot;$CFLAGS&quot;
--	  CFLAGS=&quot;-fPIC $CFLAGS&quot;
+-	  chktls_save_CFLAGS="$CFLAGS"
+-	  CFLAGS="-fPIC $CFLAGS"
 -	  	  if test x$gcc_no_link = xyes; then
--  as_fn_error &quot;Link tests are not allowed after GCC_NO_EXECUTABLES.&quot; &quot;$LINENO&quot; 5
+-  as_fn_error "Link tests are not allowed after GCC_NO_EXECUTABLES." "$LINENO" 5
 -fi
--cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
 -int f() { return 0; }
 -_ACEOF
--if ac_fn_c_try_link &quot;$LINENO&quot;; then :
+-if ac_fn_c_try_link "$LINENO"; then :
 -  if test x$gcc_no_link = xyes; then
--  as_fn_error &quot;Link tests are not allowed after GCC_NO_EXECUTABLES.&quot; &quot;$LINENO&quot; 5
+-  as_fn_error "Link tests are not allowed after GCC_NO_EXECUTABLES." "$LINENO" 5
 -fi
--cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
 -__thread int a; int b; int f() { return a = b; }
 -_ACEOF
--if ac_fn_c_try_link &quot;$LINENO&quot;; then :
+-if ac_fn_c_try_link "$LINENO"; then :
 -  gcc_cv_have_tls=yes
 -else
 -  gcc_cv_have_tls=no
@@ -1470,8 +1285,8 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -fi
 -rm -f core conftest.err conftest.$ac_objext \
 -    conftest$ac_exeext conftest.$ac_ext
--	  CFLAGS=&quot;$chktls_save_CFLAGS&quot;
--	  LDFLAGS=&quot;$chktls_save_LDFLAGS&quot;
+-	  CFLAGS="$chktls_save_CFLAGS"
+-	  LDFLAGS="$chktls_save_LDFLAGS"
 -else
 -  gcc_cv_have_tls=no
 -fi
@@ -1480,32 +1295,32 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -
 -
 -else
--  cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
 -__thread int a; int b; int main() { return a = b; }
 -_ACEOF
--if ac_fn_c_try_run &quot;$LINENO&quot;; then :
--                      chktls_save_LDFLAGS=&quot;$LDFLAGS&quot;
--      LDFLAGS=&quot;-static $LDFLAGS&quot;
+-if ac_fn_c_try_run "$LINENO"; then :
+-                      chktls_save_LDFLAGS="$LDFLAGS"
+-      LDFLAGS="-static $LDFLAGS"
 -      if test x$gcc_no_link = xyes; then
--  as_fn_error &quot;Link tests are not allowed after GCC_NO_EXECUTABLES.&quot; &quot;$LINENO&quot; 5
+-  as_fn_error "Link tests are not allowed after GCC_NO_EXECUTABLES." "$LINENO" 5
 -fi
--cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
 -int main() { return 0; }
 -_ACEOF
--if ac_fn_c_try_link &quot;$LINENO&quot;; then :
--  if test &quot;$cross_compiling&quot; = yes; then :
--  { { $as_echo &quot;$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':&quot; &gt;&amp;5
--$as_echo &quot;$as_me: error: in \`$ac_pwd':&quot; &gt;&amp;2;}
--as_fn_error &quot;cannot run test program while cross compiling
--See \`config.log' for more details.&quot; &quot;$LINENO&quot; 5; }
+-if ac_fn_c_try_link "$LINENO"; then :
+-  if test "$cross_compiling" = yes; then :
+-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error "cannot run test program while cross compiling
+-See \`config.log' for more details." "$LINENO" 5; }
 -else
--  cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
 -__thread int a; int b; int main() { return a = b; }
 -_ACEOF
--if ac_fn_c_try_run &quot;$LINENO&quot;; then :
+-if ac_fn_c_try_run "$LINENO"; then :
 -  gcc_cv_have_tls=yes
 -else
 -  gcc_cv_have_tls=no
@@ -1519,54 +1334,54 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -fi
 -rm -f core conftest.err conftest.$ac_objext \
 -    conftest$ac_exeext conftest.$ac_ext
--      LDFLAGS=&quot;$chktls_save_LDFLAGS&quot;
+-      LDFLAGS="$chktls_save_LDFLAGS"
 -      if test $gcc_cv_have_tls = yes; then
--						chktls_save_CFLAGS=&quot;$CFLAGS&quot;
+-						chktls_save_CFLAGS="$CFLAGS"
 -	thread_CFLAGS=failed
 -	for flag in '' '-pthread' '-lpthread'; do
--	  CFLAGS=&quot;$flag $chktls_save_CFLAGS&quot;
+-	  CFLAGS="$flag $chktls_save_CFLAGS"
 -	  if test x$gcc_no_link = xyes; then
--  as_fn_error &quot;Link tests are not allowed after GCC_NO_EXECUTABLES.&quot; &quot;$LINENO&quot; 5
+-  as_fn_error "Link tests are not allowed after GCC_NO_EXECUTABLES." "$LINENO" 5
 -fi
--cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
--#include &lt;pthread.h&gt;
+-#include <pthread.h>
 -		void *g(void *d) { return NULL; }
 -int
 -main ()
 -{
--pthread_t t; pthread_create(&amp;t,NULL,g,NULL);
+-pthread_t t; pthread_create(&t,NULL,g,NULL);
 -  ;
 -  return 0;
 -}
 -_ACEOF
--if ac_fn_c_try_link &quot;$LINENO&quot;; then :
--  thread_CFLAGS=&quot;$flag&quot;
+-if ac_fn_c_try_link "$LINENO"; then :
+-  thread_CFLAGS="$flag"
 -fi
 -rm -f core conftest.err conftest.$ac_objext \
 -    conftest$ac_exeext conftest.$ac_ext
--	  if test &quot;X$thread_CFLAGS&quot; != Xfailed; then
+-	  if test "X$thread_CFLAGS" != Xfailed; then
 -	    break
 -	  fi
 -	done
--	CFLAGS=&quot;$chktls_save_CFLAGS&quot;
--	if test &quot;X$thread_CFLAGS&quot; != Xfailed; then
--	  CFLAGS=&quot;$thread_CFLAGS $chktls_save_CFLAGS&quot;
-- 	  	  	  	  	  	  if test &quot;$cross_compiling&quot; = yes; then :
--  { { $as_echo &quot;$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':&quot; &gt;&amp;5
--$as_echo &quot;$as_me: error: in \`$ac_pwd':&quot; &gt;&amp;2;}
--as_fn_error &quot;cannot run test program while cross compiling
--See \`config.log' for more details.&quot; &quot;$LINENO&quot; 5; }
+-	CFLAGS="$chktls_save_CFLAGS"
+-	if test "X$thread_CFLAGS" != Xfailed; then
+-	  CFLAGS="$thread_CFLAGS $chktls_save_CFLAGS"
+- 	  	  	  	  	  	  if test "$cross_compiling" = yes; then :
+-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error "cannot run test program while cross compiling
+-See \`config.log' for more details." "$LINENO" 5; }
 -else
--  cat confdefs.h - &lt;&lt;_ACEOF &gt;conftest.$ac_ext
+-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 -/* end confdefs.h.  */
--#include &lt;pthread.h&gt;
+-#include <pthread.h>
 -		__thread int a;
 -		static int *volatile a_in_other_thread;
 -		static void *
 -		thread_func (void *arg)
 -		{
--		  a_in_other_thread = &amp;a;
+-		  a_in_other_thread = &a;
 -		  return (void *)0;
 -		}
 -int
@@ -1575,18 +1390,18 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -pthread_t thread;
 -		void *thread_retval;
 -		int *volatile a_in_main_thread;
--		a_in_main_thread = &amp;a;
--		if (pthread_create (&amp;thread, (pthread_attr_t *)0,
+-		a_in_main_thread = &a;
+-		if (pthread_create (&thread, (pthread_attr_t *)0,
 -				    thread_func, (void *)0))
 -		  return 0;
--		if (pthread_join (thread, &amp;thread_retval))
+-		if (pthread_join (thread, &thread_retval))
 -		  return 0;
 -		return (a_in_other_thread == a_in_main_thread);
 -  ;
 -  return 0;
 -}
 -_ACEOF
--if ac_fn_c_try_run &quot;$LINENO&quot;; then :
+-if ac_fn_c_try_run "$LINENO"; then :
 -  gcc_cv_have_tls=yes
 -else
 -  gcc_cv_have_tls=no
@@ -1595,7 +1410,7 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -  conftest.$ac_objext conftest.beam conftest.$ac_ext
 -fi
 -
--	  CFLAGS=&quot;$chktls_save_CFLAGS&quot;
+-	  CFLAGS="$chktls_save_CFLAGS"
 -	fi
 -      fi
 -else
@@ -1606,17 +1421,17 @@ diff -ruN gcc-8.2.0/libobjc/configure gcc-8.2.0.aros/libobjc/configure
 -fi
 -
 -fi
--{ $as_echo &quot;$as_me:${as_lineno-$LINENO}: result: $gcc_cv_have_tls&quot; &gt;&amp;5
--$as_echo &quot;$gcc_cv_have_tls&quot; &gt;&amp;6; }
--  if test &quot;$enable_tls $gcc_cv_have_tls&quot; = &quot;yes yes&quot;; then
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gcc_cv_have_tls" >&5
+-$as_echo "$gcc_cv_have_tls" >&6; }
+-  if test "$enable_tls $gcc_cv_have_tls" = "yes yes"; then
 -
--$as_echo &quot;#define HAVE_TLS 1&quot; &gt;&gt;confdefs.h
+-$as_echo "#define HAVE_TLS 1" >>confdefs.h
 -
 -  fi
 +#dnl GCC_ENABLE_TLS
  
  
-   { $as_echo &quot;$as_me:${as_lineno-$LINENO}: checking if the type of bitfields matters&quot; &gt;&amp;5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking if the type of bitfields matters" >&5
 diff -ruN gcc-8.2.0/libobjc/configure.ac gcc-8.2.0.aros/libobjc/configure.ac
 --- gcc-8.2.0/libobjc/configure.ac	2018-01-03 10:03:58.000000000 +0000
 +++ gcc-8.2.0.aros/libobjc/configure.ac	2019-02-06 14:08:00.077004600 +0000
@@ -1633,13 +1448,13 @@ diff -ruN gcc-8.2.0/libobjc/thr.c gcc-8.2.0.aros/libobjc/thr.c
 --- gcc-8.2.0/libobjc/thr.c	2018-01-03 10:03:58.000000000 +0000
 +++ gcc-8.2.0.aros/libobjc/thr.c	2019-02-06 14:08:00.077004600 +0000
 @@ -35,6 +35,7 @@
- #include &quot;objc/runtime.h&quot;
- #include &quot;objc-private/module-abi-8.h&quot;
- #include &quot;objc-private/runtime.h&quot;
+ #include "objc/runtime.h"
+ #include "objc-private/module-abi-8.h"
+ #include "objc-private/runtime.h"
 +#define __typedef_BOOL /* Remove definition of BOOL */
- #include &lt;gthr.h&gt;
+ #include <gthr.h>
  
- #include &lt;stdlib.h&gt;
+ #include <stdlib.h>
 diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_base.h gcc-8.2.0.aros/libstdc++-v3/config/os/aros/ctype_base.h
 --- gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_base.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.2.0.aros/libstdc++-v3/config/os/aros/ctype_base.h	2019-02-06 14:08:00.077004600 +0000
@@ -1652,7 +1467,7 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_base.h gcc-8.2.0.aros/libs
 +    /* Non-standard typedefs */
 +    typedef int *              __to_type;
 +
-+    /* NB: Offsets into ctype&lt;char&gt;::_M_table force a particular size
++    /* NB: Offsets into ctype<char>::_M_table force a particular size
 +       on the mask type. Because of this, we don't use an enum. */
 +    typedef unsigned short int mask;
 +
@@ -1667,7 +1482,7 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_base.h gcc-8.2.0.aros/libs
 +    static const mask cntrl  = _IScntrl;
 +    static const mask punct  = _ISpunct;
 +    static const mask alnum  = _ISalnum;
-+#if __cplusplus &gt;= 201103L
++#if __cplusplus >= 201103L
 +    static const mask blank 	= _ISblank;
 +#endif
 +};
@@ -1700,7 +1515,7 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-8.2.
 +// You should have received a copy of the GNU General Public License and
 +// a copy of the GCC Runtime Library Exception along with this program;
 +// see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
-+// &lt;http://www.gnu.org/licenses/&gt;.
++// <http://www.gnu.org/licenses/>.
 +
 +/** @file ctype_configure_char.cc */
 +
@@ -1708,9 +1523,9 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-8.2.
 +// ISO C++ 14882: 22.1  Locales
 +//
 +
-+#include &lt;locale&gt;
-+#include &lt;cstdlib&gt;
-+#include &lt;cstring&gt;
++#include <locale>
++#include <cstdlib>
++#include <cstring>
 +
 +namespace std _GLIBCXX_VISIBILITY(default)
 +{
@@ -1719,12 +1534,12 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-8.2.
 +// Information as gleaned from /usr/include/ctype.h
 +
 +  const ctype_base::mask*
-+  ctype&lt;char&gt;::classic_table() throw()
++  ctype<char>::classic_table() throw()
 +  { return 0; }
 +
-+  ctype&lt;char&gt;::ctype(__c_locale, const mask* __table, bool __del, 
++  ctype<char>::ctype(__c_locale, const mask* __table, bool __del, 
 +		     size_t __refs) 
-+  : facet(__refs), _M_del(__table != 0 &amp;&amp; __del), 
++  : facet(__refs), _M_del(__table != 0 && __del), 
 +  _M_toupper(NULL), _M_tolower(NULL), 
 +  _M_table(__table ? __table : classic_table()) 
 +  { 
@@ -1734,8 +1549,8 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-8.2.
 +    _M_narrow_ok = 0;
 +  }
 +
-+  ctype&lt;char&gt;::ctype(const mask* __table, bool __del, size_t __refs) 
-+  : facet(__refs), _M_del(__table != 0 &amp;&amp; __del), 
++  ctype<char>::ctype(const mask* __table, bool __del, size_t __refs) 
++  : facet(__refs), _M_del(__table != 0 && __del), 
 +  _M_toupper(NULL), _M_tolower(NULL), 
 +  _M_table(__table ? __table : classic_table())
 +  { 
@@ -1746,13 +1561,13 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-8.2.
 +  }
 +
 +  char
-+  ctype&lt;char&gt;::do_toupper(char __c) const
++  ctype<char>::do_toupper(char __c) const
 +  { return ::toupper((int) __c); }
 +
 +  const char*
-+  ctype&lt;char&gt;::do_toupper(char* __low, const char* __high) const
++  ctype<char>::do_toupper(char* __low, const char* __high) const
 +  {
-+    while (__low &lt; __high)
++    while (__low < __high)
 +      {
 +	*__low = ::toupper((int) *__low);
 +	++__low;
@@ -1761,13 +1576,13 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-8.2.
 +  }
 +
 +  char
-+  ctype&lt;char&gt;::do_tolower(char __c) const
++  ctype<char>::do_tolower(char __c) const
 +  { return ::tolower((int) __c); }
 +
 +  const char* 
-+  ctype&lt;char&gt;::do_tolower(char* __low, const char* __high) const
++  ctype<char>::do_tolower(char* __low, const char* __high) const
 +  {
-+    while (__low &lt; __high)
++    while (__low < __high)
 +      {
 +	*__low = ::tolower((int) *__low);
 +	++__low;
@@ -1827,27 +1642,27 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_inline.h gcc-8.2.0.aros/li
 +// functionality should be added for the native os in question: see
 +// the config/os/bits/ctype_*.h files.
 +
-+// Constructing a synthetic &quot;C&quot; table should be seriously considered...
++// Constructing a synthetic "C" table should be seriously considered...
 +
 +namespace std _GLIBCXX_VISIBILITY(default)
 +{
 +_GLIBCXX_BEGIN_NAMESPACE_VERSION
 +
 +  bool
-+  ctype&lt;char&gt;::
++  ctype<char>::
 +  is(mask __m, char __c) const
 +  { 
 +    if (_M_table)
-+      return _M_table[static_cast&lt;unsigned char&gt;(__c)] &amp; __m;
++      return _M_table[static_cast<unsigned char>(__c)] & __m;
 +    else
 +      {
 +	bool __ret = false;
 +	const size_t __bitmasksize = 15; 
 +	size_t __bitcur = 0; // Lowest bitmask in ctype_base == 0
-+	for (; __bitcur &lt;= __bitmasksize; ++__bitcur)
++	for (; __bitcur <= __bitmasksize; ++__bitcur)
 +	  {
-+	    const mask __bit = static_cast&lt;mask&gt;(1 &lt;&lt; __bitcur);
-+	    if (__m &amp; __bit)
++	    const mask __bit = static_cast<mask>(1 << __bitcur);
++	    if (__m & __bit)
 +	      {
 +		bool __testis;
 +		switch (__bit)
@@ -1897,25 +1712,25 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_inline.h gcc-8.2.0.aros/li
 +  }
 +   
 +  const char*
-+  ctype&lt;char&gt;::
++  ctype<char>::
 +  is(const char* __low, const char* __high, mask* __vec) const
 +  {
 +    if (_M_table)
-+      while (__low &lt; __high)
-+	*__vec++ = _M_table[static_cast&lt;unsigned char&gt;(*__low++)];
++      while (__low < __high)
++	*__vec++ = _M_table[static_cast<unsigned char>(*__low++)];
 +    else
 +      {
 +	// Highest bitmask in ctype_base == 10.
 +	const size_t __bitmasksize = 15; 
-+	for (;__low &lt; __high; ++__vec, ++__low)
++	for (;__low < __high; ++__vec, ++__low)
 +	  {
 +	    mask __m = 0;
 +	    // Lowest bitmask in ctype_base == 0
 +	    size_t __i = 0; 
-+	    for (;__i &lt;= __bitmasksize; ++__i)
++	    for (;__i <= __bitmasksize; ++__i)
 +	      {
-+		const mask __bit = static_cast&lt;mask&gt;(1 &lt;&lt; __i);
-+		if (this-&gt;is(__bit, *__low))
++		const mask __bit = static_cast<mask>(1 << __i);
++		if (this->is(__bit, *__low))
 +		  __m |= __bit;
 +	      }
 +	    *__vec = __m;
@@ -1925,29 +1740,29 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_inline.h gcc-8.2.0.aros/li
 +  }
 +
 +  const char*
-+  ctype&lt;char&gt;::
++  ctype<char>::
 +  scan_is(mask __m, const char* __low, const char* __high) const
 +  {
 +    if (_M_table)
-+      while (__low &lt; __high
-+	     &amp;&amp; !(_M_table[static_cast&lt;unsigned char&gt;(*__low)] &amp; __m))
++      while (__low < __high
++	     && !(_M_table[static_cast<unsigned char>(*__low)] & __m))
 +	++__low;
 +    else
-+      while (__low &lt; __high &amp;&amp; !this-&gt;is(__m, *__low))
++      while (__low < __high && !this->is(__m, *__low))
 +	++__low;
 +    return __low;
 +  }
 +
 +  const char*
-+  ctype&lt;char&gt;::
++  ctype<char>::
 +  scan_not(mask __m, const char* __low, const char* __high) const
 +  {
 +    if (_M_table)
-+      while (__low &lt; __high
-+	     &amp;&amp; (_M_table[static_cast&lt;unsigned char&gt;(*__low)] &amp; __m) != 0)
++      while (__low < __high
++	     && (_M_table[static_cast<unsigned char>(*__low)] & __m) != 0)
 +	++__low;
 +    else
-+      while (__low &lt; __high &amp;&amp; this-&gt;is(__m, *__low) != 0)
++      while (__low < __high && this->is(__m, *__low) != 0)
 +	++__low;
 +    return __low;
 +  }
@@ -1959,12 +1774,12 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-8.2.0.aros
 +++ gcc-8.2.0.aros/libstdc++-v3/config/os/aros/ctype_noninline.h	2019-02-06 14:08:00.077004600 +0000
 @@ -0,0 +1,56 @@
 +  const ctype_base::mask*
-+  ctype&lt;char&gt;::classic_table() throw()
++  ctype<char>::classic_table() throw()
 +  { return *__ctype_b_ptr; }
 +
-+  ctype&lt;char&gt;::ctype(__c_locale, const mask* __table, bool __del, 
++  ctype<char>::ctype(__c_locale, const mask* __table, bool __del, 
 +		     size_t __refs) 
-+  : facet(__refs), _M_del(__table != 0 &amp;&amp; __del), 
++  : facet(__refs), _M_del(__table != 0 && __del), 
 +  _M_toupper(NULL), _M_tolower(NULL), 
 +  _M_table(__table ? __table : classic_table()) 
 +  { 
@@ -1974,8 +1789,8 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-8.2.0.aros
 +    _M_narrow_ok = 0;
 +  }
 +
-+  ctype&lt;char&gt;::ctype(const mask* __table, bool __del, size_t __refs) 
-+  : facet(__refs), _M_del(__table != 0 &amp;&amp; __del), 
++  ctype<char>::ctype(const mask* __table, bool __del, size_t __refs) 
++  : facet(__refs), _M_del(__table != 0 && __del), 
 +  _M_toupper(NULL), _M_tolower(NULL), 
 +  _M_table(__table ? __table : classic_table())
 +  { 
@@ -1986,13 +1801,13 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-8.2.0.aros
 +  }
 +
 +  char
-+  ctype&lt;char&gt;::do_toupper(char __c) const
++  ctype<char>::do_toupper(char __c) const
 +  { return ::toupper((int) __c); }
 +
 +  const char*
-+  ctype&lt;char&gt;::do_toupper(char* __low, const char* __high) const
++  ctype<char>::do_toupper(char* __low, const char* __high) const
 +  {
-+    while (__low &lt; __high)
++    while (__low < __high)
 +      {
 +	*__low = ::toupper((int) *__low);
 +	++__low;
@@ -2001,13 +1816,13 @@ diff -ruN gcc-8.2.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-8.2.0.aros
 +  }
 +
 +  char
-+  ctype&lt;char&gt;::do_tolower(char __c) const
++  ctype<char>::do_tolower(char __c) const
 +  { return ::tolower((int) __c); }
 +
 +  const char* 
-+  ctype&lt;char&gt;::do_tolower(char* __low, const char* __high) const
++  ctype<char>::do_tolower(char* __low, const char* __high) const
 +  {
-+    while (__low &lt; __high)
++    while (__low < __high)
 +      {
 +	*__low = ::tolower((int) *__low);
 +	++__low;
@@ -2036,13 +1851,13 @@ diff -ruN gcc-8.2.0/libstdc++-v3/configure gcc-8.2.0.aros/libstdc++-v3/configure
  
  
  # Libtool setup.
--if test &quot;x${with_newlib}&quot; != &quot;xyes&quot;; then
+-if test "x${with_newlib}" != "xyes"; then
 -  enable_dlopen=yes
 -
 -
 -
 -fi
-+#if test &quot;x${with_newlib}&quot; != &quot;xyes&quot;; then
++#if test "x${with_newlib}" != "xyes"; then
 +#  AC_LIBTOOL_DLOPEN
 +#
 +#
@@ -2050,7 +1865,7 @@ diff -ruN gcc-8.2.0/libstdc++-v3/configure gcc-8.2.0.aros/libstdc++-v3/configure
 +#fi
  case `pwd` in
    *\ * | *\	*)
-     { $as_echo &quot;$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`&quot; &gt;&amp;5
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
 @@ -8111,6 +8111,8 @@
  
  
@@ -2079,17 +1894,17 @@ diff -ruN gcc-8.2.0/libstdc++-v3/configure gcc-8.2.0.aros/libstdc++-v3/configure
 @@ -28973,6 +28977,58 @@
  
  # Base decisions on target environment.
- case &quot;${host}&quot; in
+ case "${host}" in
 +  *-aros*)
 +    for ac_header in nan.h ieeefp.h endian.h sys/isa_defs.h machine/endian.h \
 +    machine/param.h sys/machine.h sys/types.h fp.h locale.h float.h inttypes.h
 +do :
-+  as_ac_Header=`$as_echo &quot;ac_cv_header_$ac_header&quot; | $as_tr_sh`
-+ac_fn_c_check_header_mongrel &quot;$LINENO&quot; &quot;$ac_header&quot; &quot;$as_ac_Header&quot; &quot;$ac_includes_default&quot;
++  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
++ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
 +eval as_val=\$$as_ac_Header
-+   if test &quot;x$as_val&quot; = x&quot;&quot;yes; then :
-+  cat &gt;&gt;confdefs.h &lt;&lt;_ACEOF
-+#define `$as_echo &quot;HAVE_$ac_header&quot; | $as_tr_cpp` 1
++   if test "x$as_val" = x""yes; then :
++  cat >>confdefs.h <<_ACEOF
++#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 +_ACEOF
 +
 +fi
@@ -2100,34 +1915,34 @@ diff -ruN gcc-8.2.0/libstdc++-v3/configure gcc-8.2.0.aros/libstdc++-v3/configure
 +    GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
 +    GLIBCXX_CHECK_WCHAR_T_SUPPORT
 +
-+    $as_echo &quot;#define HAVE_FINITE 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_FINITE 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_FINITEF 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_FINITEF 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_FREXPF 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_FREXPF 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_HYPOTF 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_HYPOTF 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_ISINF 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_ISINF 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_ISINFF 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_ISINFF 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_ISNAN 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_ISNAN 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_ISNANF 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_ISNANF 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_SINCOS 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_SINCOS 1" >>confdefs.h
 +
-+    $as_echo &quot;#define HAVE_SINCOSF 1&quot; &gt;&gt;confdefs.h
++    $as_echo "#define HAVE_SINCOSF 1" >>confdefs.h
 +
-+    if test x&quot;long_double_math_on_this_cpu&quot; = x&quot;yes&quot;; then
-+      $as_echo &quot;#define HAVE_FINITEL 1&quot; &gt;&gt;confdefs.h
++    if test x"long_double_math_on_this_cpu" = x"yes"; then
++      $as_echo "#define HAVE_FINITEL 1" >>confdefs.h
 +
-+      $as_echo &quot;#define HAVE_HYPOTL 1&quot; &gt;&gt;confdefs.h
++      $as_echo "#define HAVE_HYPOTL 1" >>confdefs.h
 +
-+      $as_echo &quot;#define HAVE_ISINFL 1&quot; &gt;&gt;confdefs.h
++      $as_echo "#define HAVE_ISINFL 1" >>confdefs.h
 +
-+      $as_echo &quot;#define HAVE_ISNANL 1&quot; &gt;&gt;confdefs.h
++      $as_echo "#define HAVE_ISNANL 1" >>confdefs.h
 +
 +    fi
 +    ;;
@@ -2142,10 +1957,10 @@ diff -ruN gcc-8.2.0/libstdc++-v3/configure.ac gcc-8.2.0.aros/libstdc++-v3/config
  GLIBCXX_CONFIGURE
  
  # Libtool setup.
--if test &quot;x${with_newlib}&quot; != &quot;xyes&quot;; then
+-if test "x${with_newlib}" != "xyes"; then
 -  AC_LIBTOOL_DLOPEN
 -fi
-+#if test &quot;x${with_newlib}&quot; != &quot;xyes&quot;; then
++#if test "x${with_newlib}" != "xyes"; then
 +#  AC_LIBTOOL_DLOPEN
 +#fi
  AM_PROG_LIBTOOL
@@ -2155,22 +1970,22 @@ diff -ruN gcc-8.2.0/libstdc++-v3/configure.host gcc-8.2.0.aros/libstdc++-v3/conf
 --- gcc-8.2.0/libstdc++-v3/configure.host	2017-02-02 16:24:03.000000000 +0000
 +++ gcc-8.2.0.aros/libstdc++-v3/configure.host	2019-02-06 14:08:00.077004600 +0000
 @@ -222,6 +222,9 @@
-     os_include_dir=&quot;os/generic&quot;
-     atomicity_dir=&quot;cpu/generic&quot;
+     os_include_dir="os/generic"
+     atomicity_dir="cpu/generic"
      ;;
 +  aros*)
-+    os_include_dir=&quot;os/aros&quot;
++    os_include_dir="os/aros"
 +    ;;
    bsd*)
      # Plain BSD attempts to share FreeBSD files.
-     os_include_dir=&quot;os/bsd/freebsd&quot;
+     os_include_dir="os/bsd/freebsd"
 diff -ruN gcc-8.2.0/libstdc++-v3/crossconfig.m4 gcc-8.2.0.aros/libstdc++-v3/crossconfig.m4
 --- gcc-8.2.0/libstdc++-v3/crossconfig.m4	2018-07-04 12:45:51.000000000 +0100
 +++ gcc-8.2.0.aros/libstdc++-v3/crossconfig.m4	2019-02-06 14:08:00.077004600 +0000
 @@ -5,6 +5,31 @@
  AC_DEFUN([GLIBCXX_CROSSCONFIG],[
  # Base decisions on target environment.
- case &quot;${host}&quot; in
+ case "${host}" in
 +  *-aros*)
 +    AC_CHECK_HEADERS([nan.h ieeefp.h endian.h sys/isa_defs.h machine/endian.h \
 +    machine/param.h sys/machine.h sys/types.h fp.h locale.h float.h inttypes.h])
@@ -2188,7 +2003,7 @@ diff -ruN gcc-8.2.0/libstdc++-v3/crossconfig.m4 gcc-8.2.0.aros/libstdc++-v3/cros
 +    AC_DEFINE(HAVE_ISNANF)
 +    AC_DEFINE(HAVE_SINCOS)
 +    AC_DEFINE(HAVE_SINCOSF)
-+    if test x&quot;long_double_math_on_this_cpu&quot; = x&quot;yes&quot;; then
++    if test x"long_double_math_on_this_cpu" = x"yes"; then
 +      AC_DEFINE(HAVE_FINITEL)
 +      AC_DEFINE(HAVE_HYPOTL)
 +      AC_DEFINE(HAVE_ISINFL)
@@ -2207,14 +2022,14 @@ diff -ruN gcc-8.2.0/libstdc++-v3/include/Makefile.in gcc-8.2.0.aros/libstdc++-v3
  	    -e 's/_GLIBCXX_SUPPORTS_WEAK/__GXX_WEAK__/g' \
  	    -e 's/_GLIBCXX___MINGW32_GLIBCXX___/__MINGW32__/g' \
 +	    -e 's/_GLIBCXX___AROS__/__AROS__/g' \
- 	    -e 's,^#include &quot;\(.*\)&quot;,#include &lt;bits/\1&gt;,g' \
- 	    &lt; $&lt; &gt; $@
+ 	    -e 's,^#include "\(.*\)",#include <bits/\1>,g' \
+ 	    < $< > $@
  
 diff -ruN gcc-8.2.0/libstdc++-v3/include/c_global/cstdint gcc-8.2.0.aros/libstdc++-v3/include/c_global/cstdint
 --- gcc-8.2.0/libstdc++-v3/include/c_global/cstdint	2018-01-03 10:03:58.000000000 +0000
 +++ gcc-8.2.0.aros/libstdc++-v3/include/c_global/cstdint	2019-02-06 14:08:00.077004600 +0000
 @@ -41,7 +41,7 @@
- # include &lt;stdint.h&gt;
+ # include <stdint.h>
  #endif
  
 -#ifdef _GLIBCXX_USE_C99_STDINT_TR1
@@ -2239,664 +2054,15 @@ diff -ruN gcc-8.2.0/libstdc++-v3/include/std/ratio gcc-8.2.0.aros/libstdc++-v3/i
 @@ -211,10 +211,10 @@
      {
      private:
-       static_assert(__d != 0, &quot;Internal library error&quot;);
+       static_assert(__d != 0, "Internal library error");
 -      static_assert(sizeof (uintmax_t) == sizeof (unsigned long long),
--		    &quot;This library calls __builtin_clzll on uintmax_t, which &quot;
--		    &quot;is unsafe on your platform. Please complain to &quot;
--		    &quot;http://gcc.gnu.org/bugzilla/&quot;);
+-		    "This library calls __builtin_clzll on uintmax_t, which "
+-		    "is unsafe on your platform. Please complain to "
+-		    "http://gcc.gnu.org/bugzilla/");
 +//      static_assert(sizeof (uintmax_t) == sizeof (unsigned long long),
-+//		    &quot;This library calls __builtin_clzll on uintmax_t, which &quot;
-+//		    &quot;is unsafe on your platform. Please complain to &quot;
-+//		    &quot;http://gcc.gnu.org/bugzilla/&quot;);
++//		    "This library calls __builtin_clzll on uintmax_t, which "
++//		    "is unsafe on your platform. Please complain to "
++//		    "http://gcc.gnu.org/bugzilla/");
        static constexpr int __shift = __builtin_clzll(__d);
        static constexpr int __coshift_ = sizeof(uintmax_t) * 8 - __shift;
        static constexpr int __coshift = (__shift != 0) ? __coshift_ : 0;
-</pre><p class="file_page_meta no_print" style="line-height: 1.5rem;"><label class="checkbox normal mini float_right no_top_padding no_min_width"><input type="checkbox" id="file_preview_wrap_cb">Zeilenumbruch für lange Zeilen</label></p></div></div></div><div id="overlay"></div></div><script type="text/javascript">
-/**
- * A placeholder function that the build script uses to
- * replace file paths with their CDN versions.
- *
- * @param {String} file_path - File path
- * @returns {String}
- */
-function vvv(file_path) {
-		 var vvv_warning = 'You cannot use vvv on dynamic values. Please make sure you only pass in static file paths.'; if (TS && TS.warn) { TS.warn(vvv_warning); } else { console.warn(vvv_warning); } 
-	return file_path;
-}
-
-var cdn_url = "https:\/\/a.slack-edge.com";
-var vvv_abs_url = "https:\/\/slack.com\/";
-var inc_js_setup_data = {
-	emoji_sheets: {
-		apple: 'https://a.slack-edge.com/c00d19/img/emoji_2017_12_06/sheet_apple_64_indexed_256.png',
-		google: 'https://a.slack-edge.com/c00d19/img/emoji_2017_12_06/sheet_google_64_indexed_256.png',
-	},
-};
-</script><script type="text/javascript"><!--
-	// common boot_data
-	var boot_data = {
-		start_ms: Date.now(),
-		app: "web",
-		user_id: 'UCUMVVAKB',
-		team_id: 'T90AXUW9J',
-		visitor_uid: ".c1bzlzl1v0o44ookgsk00cc88",
-		no_login: false,
-		version_ts: "1549484124",
-		version_uid: "775b40dd91d50ff403efef70f8d7b746e43e4fca",
-		cache_version: "v17-ostrich",
-		cache_ts_version: "v2-bunny",
-		redir_domain: "slack-redir.net",
-		signin_url: 'https://slack.com/signin',
-		abs_root_url: "https:\/\/slack.com\/",
-		api_url: '/api/',
-		team_url: "https:\/\/amigaports.slack.com\/",
-		image_proxy_url: "https:\/\/slack-imgs.com\/",
-		beacon_timing_url: "https:\/\/slack.com\/beacon\/timing",
-		beacon_error_url: "https:\/\/slack.com\/beacon\/error",
-		clog_url: "clog\/track\/",
-		api_token: "xoxs-306371982324-436743996657-441362301058-35b424f0b97c763de2d23800b8357df54a6568b46db35ca5c935cbce85fa79cb",
-		hc_tracking_qs: "sid=zd-uf-t90axuw9j-ucumvvakb",
-
-		vvv_paths: {
-					lz_string: "https:\/\/a.slack-edge.com\/bv1-6\/lz-string-1.4.4.worker.8de1b00d670ff3dc706a0.js",
-		codemirror: "https:\/\/a.slack-edge.com\/bv1-6\/codemirror.min.b0cb89ec57f7e9cc47c3.min.js",
-		codemirror_addon_simple: "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_simple.2c7a16812f40e05135fc.min.js",
-		codemirror_load: "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_load.b5b0842cb60bc2f60271.min.js",
-
-		// Silly long list of every possible file that Codemirror might load
-		codemirror_files: {
-			'apl': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_apl.663760305bff75f3d938.min.js",
-			'asciiarmor': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_asciiarmor.b2129160f7f8d2684d9f.min.js",
-			'asn.1': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_asn.1.956821513398b13d8eda.min.js",
-			'asterisk': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_asterisk.7456a599f30bce636a2f.min.js",
-			'brainfuck': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_brainfuck.2b68f0826426a1f3ee87.min.js",
-			'clike': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_clike.5350b58a702e2f22431d.min.js",
-			'clojure': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_clojure.bed9f56b40fa79c4e899.min.js",
-			'cmake': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_cmake.ca9e03ab7a93942242a7.min.js",
-			'cobol': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_cobol.646162dc3b2c9cfa0669.min.js",
-			'coffeescript': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_coffeescript.0883459acc792dee260a.min.js",
-			'commonlisp': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_commonlisp.7666d678d1c985d3b44f.min.js",
-			'css': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_css.9d97ec06ef7ccadb17b8.min.js",
-			'crystal': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_crystal.8038e0c315a15e3f3199.min.js",
-			'cypher': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_cypher.601e112c7e66d1c4fab0.min.js",
-			'd': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_d.8d8dcaa5dc397efaf8a8.min.js",
-			'dart': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_dart.af6a3bacfb42bec45182.min.js",
-			'diff': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_diff.c7fc0286ba4d3bcd95b3.min.js",
-			'django': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_django.2c89f0afa2c10ee8a73f.min.js",
-			'dockerfile': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_dockerfile.ca0580b9da8a7b3b1532.min.js",
-			'dtd': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_dtd.3bb371dd4cedc7c5195b.min.js",
-			'dylan': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_dylan.3c1418f3f2f2ce939d2a.min.js",
-			'ebnf': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_ebnf.7200c60ce52c1878f2a0.min.js",
-			'ecl': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_ecl.d56716a3811118b7ba8c.min.js",
-			'eiffel': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_eiffel.e0943a9740c3752d6f22.min.js",
-			'elm': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_elm.ce53d0c50115ab6f46bc.min.js",
-			'erlang': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_erlang.6159b6201df7d52df4a7.min.js",
-			'factor': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_factor.45fa062dd01514c79f1c.min.js",
-			'forth': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_forth.78b639cadcae57a684a3.min.js",
-			'fortran': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_fortran.37c971edd4c076f24dde.min.js",
-			'gas': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_gas.c95f3983f625f4993b30.min.js",
-			'gfm': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_gfm.03bb4b46f32e50bb8d89.min.js",
-			'gherkin': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_gherkin.9a0ee71d64db19f24904.min.js",
-			'go': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_go.f74aa517dc286eec2566.min.js",
-			'groovy': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_groovy.f5952f6dabfbda0ac28b.min.js",
-			'haml': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_haml.4fbfa8600af21c4df647.min.js",
-			'handlebars': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_handlebars.6c378a8ebbdb20a42347.min.js",
-			'haskell': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_haskell.cb1fe6b91f05c2451018.min.js",
-			'haxe': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_haxe.c373a9e52d52879b5ee7.min.js",
-			'htmlembedded': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_htmlembedded.20c92c9750c4e9ea8d2d.min.js",
-			'htmlmixed': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_htmlmixed.95475b5e734bdc83f03d.min.js",
-			'http': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_http.6b4c9c9ef67babe408db.min.js",
-			'idl': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_idl.0454c39675e9fab26793.min.js",
-			'jade': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_jade.1a15c0dda10ab6a32ba8.min.js",
-			'javascript': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_javascript.edaafe38560a8929f52d.min.js",
-			'jinja2': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_jinja2.3db65497213351276a85.min.js",
-			'julia': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_julia.142b119d0b9c0a9521c1.min.js",
-			'livescript': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_livescript.b4bfd13c4f3d258a2c8a.min.js",
-			'lua': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_lua.f4c4d1f605021e92bf47.min.js",
-			'markdown': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_markdown.770647eed9aac2d8eec6.min.js",
-			'mathematica': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_mathematica.eb6921c6675fd66c0389.min.js",
-			'mirc': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_mirc.e71a0101712b6eeb5562.min.js",
-			'mllike': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_mllike.23dc048ba68d379db0b5.min.js",
-			'modelica': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_modelica.6e37d289718407d9dbc8.min.js",
-			'mscgen': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_mscgen.c3fe74b5d201d0bb808c.min.js",
-			'mumps': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_mumps.1f5d48f79e2df097e94b.min.js",
-			'nginx': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_nginx.8f51223dc29e6add1025.min.js",
-			'nsis': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_nsis.27325a32de34bde70ef6.min.js",
-			'ntriples': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_ntriples.71822f9439e6472cfaba.min.js",
-			'octave': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_octave.0c4fd02362947d251691.min.js",
-			'oz': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_oz.679457ccd03f632cdfd1.min.js",
-			'pascal': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_pascal.b9764cce2c046b32a756.min.js",
-			'pegjs': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_pegjs.d98397d39debc9b58ac1.min.js",
-			'perl': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_perl.e0b72f4f6a4c8281ea42.min.js",
-			'php': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_php.c122ccccad0eb4cb1f8f.min.js",
-			'pig': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_pig.7a8a75d0e872b1eff25e.min.js",
-			'powershell': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_powershell.f94db45880aca59c1216.min.js",
-			'properties': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_properties.ecd1c648ab0b28b797ab.min.js",
-			'puppet': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_puppet.6ccb1951e967f67ed6b2.min.js",
-			'python': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_python.e09ad3cce600393bdcdd.min.js",
-			'q': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_q.bea56eef48bbd6094e88.min.js",
-			'r': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_r.53035d6119ad1c3d7494.min.js",
-			'rpm': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_rpm.a0f500f2ce24097e90d0.min.js",
-			'rst': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_rst.165170fc553494fdf77a.min.js",
-			'ruby': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_ruby.924d2a2c55302db7cef1.min.js",
-			'rust': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_rust.b119288a11a7dc391897.min.js",
-			'sass': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_sass.00589ac0113fd7a339c4.min.js",
-			'scheme': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_scheme.86b09b626eaf76f10335.min.js",
-			'shell': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_shell.de8ee159a42949f58fbf.min.js",
-			'sieve': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_sieve.55fe095a4fcc1d4f7b67.min.js",
-			'slim': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_slim.63ca1039dce774ec1eae.min.js",
-			'smalltalk': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_smalltalk.96c2693e75408ae1410a.min.js",
-			'smarty': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_smarty.f1c92ef06a203cd8a224.min.js",
-			'solr': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_solr.3f9914e5a54d19e295e5.min.js",
-			'soy': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_soy.1a17467b95182d4510d9.min.js",
-			'sparql': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_sparql.91f57b063ef376513647.min.js",
-			'spreadsheet': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_spreadsheet.e72d0a04a1bd357efa6c.min.js",
-			'sql': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_sql.dbb2a33d6c06c3cf72ad.min.js",
-			'stex': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_stex.cafad3afd1d37a97db8d.min.js",
-			'stylus': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_stylus.197c5de6253590a03c1d.min.js",
-			'swift': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_swift.f56bd4cc06d0b92666b5.min.js",
-			'tcl': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_tcl.48f88db4e94afd9ff2cf.min.js",
-			'textile': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_textile.3e3f7cca283c6aed481a.min.js",
-			'tiddlywiki': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_tiddlywiki.581d4d5c73d3e76c9d58.min.js",
-			'tiki': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_tiki.6f9b54a117a2e2f4d52c.min.js",
-			'toml': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_toml.878f510bef8da2225a02.min.js",
-			'tornado': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_tornado.b946e16934ce10ef6559.min.js",
-			'troff': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_troff.33bfa2cd395d5bd4bad9.min.js",
-			'ttcn': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_ttcn.e2b80a3c2122e324b36d.min.js",
-			'ttcn:cfg': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_ttcn-cfg.d82b3405e15de5ea0e35.min.js",
-			'turtle': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_turtle.9849938440da71698018.min.js",
-			'twig': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_twig.e64f6f02ff54e24de634.min.js",
-			'vb': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_vb.affe8f658f5b6e14bf2a.min.js",
-			'vbscript': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_vbscript.1490645d935d95f1de55.min.js",
-			'velocity': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_velocity.004cec3aa510925d6ba3.min.js",
-			'verilog': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_verilog.e8f0744436c52b02f5d7.min.js",
-			'vhdl': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_vhdl.55935119e174a9f83d03.min.js",
-			'vue': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_vue.117dfa8d3b2e06a3729d.min.js",
-			'xml': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_xml.b5642b0a2ba5a812fcbb.min.js",
-			'xquery': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_xquery.518c3b3a5202772ea69b.min.js",
-			'yaml': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_yaml.10d8ca287133a4d02c51.min.js",
-			'z80': "https:\/\/a.slack-edge.com\/bv1-6\/codemirror_lang_z80.b7ad5b5dee331969fc76.min.js"
-		}
-		},
-
-		notification_sounds: [{"value":"b2.mp3","label":"Ding","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/b2.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/b2.ogg"},{"value":"animal_stick.mp3","label":"Boing","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/animal_stick.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/animal_stick.ogg"},{"value":"been_tree.mp3","label":"Klirr","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/been_tree.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/been_tree.ogg"},{"value":"complete_quest_requirement.mp3","label":"Voil\u00e0","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/complete_quest_requirement.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/complete_quest_requirement.ogg"},{"value":"confirm_delivery.mp3","label":"Kling","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/confirm_delivery.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/confirm_delivery.ogg"},{"value":"flitterbug.mp3","label":"Wow","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/flitterbug.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/flitterbug.ogg"},{"value":"here_you_go_lighter.mp3","label":"Bittesch\u00f6n","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/here_you_go_lighter.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/here_you_go_lighter.ogg"},{"value":"hi_flowers_hit.mp3","label":"Hallo","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/hi_flowers_hit.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/hi_flowers_hit.ogg"},{"value":"knock_brush.mp3","label":"Specht","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/knock_brush.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/knock_brush.ogg"},{"value":"save_and_checkout.mp3","label":"Holla!","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/save_and_checkout.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/save_and_checkout.ogg"},{"value":"item_pickup.mp3","label":"Schwipp","url":"https:\/\/a.slack-edge.com\/7e91\/sounds\/push\/item_pickup.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/item_pickup.ogg"},{"value":"hummus.mp3","label":"Hummus","url":"https:\/\/a.slack-edge.com\/7fa9\/sounds\/push\/hummus.mp3","url_ogg":"https:\/\/a.slack-edge.com\/46ebb\/sounds\/push\/hummus.ogg"},{"value":"none","label":"Keiner"}],
-		alert_sounds: [{"value":"frog.mp3","label":"Frosch","url":"https:\/\/slack.global.ssl.fastly.net\/a34a\/sounds\/frog.mp3"}],
-		call_sounds: [{"value":"call\/alert_v2.mp3","label":"Hinweis","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/alert_v2.mp3"},{"value":"call\/incoming_ring_v2.mp3","label":"Eingehender Anruf","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/incoming_ring_v2.mp3"},{"value":"call\/outgoing_ring_v2.mp3","label":"Ausgehender Anruf","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/outgoing_ring_v2.mp3"},{"value":"call\/pop_v2.mp3","label":"Eingehende Reaktion","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/pop_v2.mp3"},{"value":"call\/they_left_call_v2.mp3","label":"Sie haben Anruf verlassen","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/they_left_call_v2.mp3"},{"value":"call\/you_left_call_v2.mp3","label":"Du hast Anruf verlassen","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/you_left_call_v2.mp3"},{"value":"call\/they_joined_call_v2.mp3","label":"Sie sind Anruf beigetreten","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/they_joined_call_v2.mp3"},{"value":"call\/you_joined_call_v2.mp3","label":"Du bist Anruf beigetreten","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/you_joined_call_v2.mp3"},{"value":"call\/confirmation_v2.mp3","label":"Best\u00e4tigung","url":"https:\/\/slack.global.ssl.fastly.net\/08f7\/sounds\/call\/confirmation_v2.mp3"}],
-		call_sounds_version: "v2",
-		a11y_sounds: [],
-		
-		default_tz: "America\/Los_Angeles",
-		
-
-		feature_builder_slash_command: false, 
-feature_granular_dnd: false, 
-feature_multi_file_upload: false, 
-feature_migration_org_approvals: true, 
-feature_teambot: false, 
-feature_tinyspeck: false, 
-feature_create_team_google_auth: false, 
-feature_enterprise_custom_tos: true, 
-feature_webapp_always_collect_initial_time_period_stats: false, 
-feature_search_skip_context: false, 
-feature_flannel_use_canary_sometimes: false, 
-feature_deprecate_window_cert: true, 
-feature_deprecate_window_cert_block: true, 
-feature_ssb_q218_deprecation: true, 
-feature_ssb_q218_deprecation_modal: true, 
-feature_ssb_q218_deprecation_block: true, 
-feature_deprecate_q119_unsupported: true, 
-feature_deprecate_q119_unsupported_toast: true, 
-feature_deprecate_q119_mobile: true, 
-feature_deprecate_q119_outdated: true, 
-feature_deprecate_q119_outdated_toast: true, 
-feature_deprecate_q119_os: true, 
-feature_deprecate_q119_os_toast: true, 
-feature_deprecate_get_member_by_name: false, 
-feature_simplify_all_unreads_button: false, 
-feature_modern_edit_format: false, 
-feature_react_file_viewer: false, 
-feature_unknown_files: false, 
-feature_pillow_files: false, 
-feature_sonic_navigation_hooks: false, 
-feature_jumper_presence: true, 
-feature_presence_throttle: true, 
-feature_add_message_perf: false, 
-feature_slurp_bots: true, 
-feature_team_rename_m11n: false, 
-feature_team_icon_m11n: true, 
-feature_select_model_option_fetcher_m11n: false, 
-feature_extra_bot_logs: false, 
-feature_react_threads: true, 
-feature_react_all_threads: false, 
-feature_react_all_unreads: false, 
-feature_file_threads: true, 
-feature_file_threads_dark_launch: true, 
-feature_broadcast_indicator: true, 
-feature_new_replies_after_bcast: true, 
-feature_sonic_emoji: false, 
-feature_subteam_members_diff: true, 
-feature_email_ingestion: false, 
-feature_sidebar_context_menu: false, 
-feature_attachments_inline: false, 
-feature_fix_files: true, 
-feature_paging_api: false, 
-feature_send_host_team_to_client: true, 
-feature_custom_status_expiry: true, 
-feature_better_snooze: true, 
-feature_sonic_dnd: true, 
-feature_sonic_dnd_manager: false, 
-feature_sonic_dnd_rtm: false, 
-feature_sonic_presence_manager: false, 
-feature_modern_user_groups_rtm: true, 
-feature_sonic_user_groups: false, 
-feature_lazy_user_groups: false, 
-feature_modern_rtm_pins: false, 
-feature_untrustworthy_navigator_online: true, 
-feature_connectivity_manager: false, 
-feature_channel_converted_to_shared_rtm_handler: true, 
-feature_m11n_channel_updated_rtm_event_handler: true, 
-feature_m11n_teams_shared_channel_rtm_event_handlers: true, 
-feature_enterprise_app_teams: true, 
-feature_ent_app_management_restriction: false, 
-feature_entitlements: true, 
-feature_grid_archive_link_fixes: true, 
-feature_sonic_member_directory: false, 
-feature_safeguard_org_retention: true, 
-feature_dashboard_sortable_lists: false, 
-feature_distribute_clone_apps: true, 
-feature_leave_workspace_improvements: true, 
-feature_enteprise_user_teams_update: true, 
-feature_find_your_workspace: true, 
-feature_sk_lato_cleanup: false, 
-feature_sk_loading_button_motions: false, 
-feature_sk_base_icon: false, 
-feature_saml_authn_key_expiry_date: true, 
-feature_app_approvals_scope_awareness: false, 
-feature_wta_perm_api_split: false, 
-feature_wta_conversations_api_channel_created_msg: false, 
-feature_file_links_betterer: false, 
-feature_enterprise_dm_deeplink: true, 
-feature_enterprise_dm_deeplink_copy_update: true, 
-feature_guest_api_changes: false, 
-feature_gdpr_exports: true, 
-feature_allow_bulk_delete_join_leave_messages: true, 
-feature_shared_channels_enterprise: false, 
-feature_shared_channels_enterprise_client: false, 
-feature_shared_channels_reactions_write_one_shard: false, 
-feature_shared_channels_reactions_read_all_teams: false, 
-feature_snapshots_the_revenge: false, 
-feature_mpim_channels: false, 
-feature_esc_connected_workspaces_search: false, 
-feature_conversations_list: true, 
-feature_gdpr_user_join_tos: true, 
-feature_user_invite_tos_april_2018: true, 
-feature_modernize_invites: false, 
-feature_winssb_beta_channel: false, 
-feature_incremental_unread_counts: false, 
-feature_cust_acq_i18n_tweaks: false, 
-feature_gdpr_content_updates: true, 
-feature_marketing_build_split: false, 
-feature_presence_sub: true, 
-feature_whitelist_zendesk_chat_widget: false, 
-feature_live_support_free_plan: false, 
-feature_threads_copy_change: false, 
-feature_offline_mode: false, 
-feature_force_ls_compression: false, 
-feature_name_tagging_client: true, 
-feature_name_tagging_client_autocomplete: false, 
-feature_name_tagging_client_topic_purpose: false, 
-feature_use_imgproxy_resizing: true, 
-feature_share_mention_comment_cleanup: false, 
-feature_external_files: false, 
-feature_desktop_sandbox_signin: true, 
-feature_electron_memory_logging: false, 
-feature_native_app_start_non_mac: false, 
-feature_who_can_see_this: true, 
-feature_ssi_workday: true, 
-feature_localization_phase_two: false, 
-feature_locale_es_LA: false, 
-feature_locale_en_GB: false, 
-feature_locale_pt_BR: false, 
-feature_org_token_i18n: false, 
-feature_channel_exports: false, 
-feature_docs: false, 
-feature_boot_fallback_view_v1: false, 
-feature_calls_esc_ui: true, 
-feature_spock_calls: false, 
-feature_calls_survey_request_response: false, 
-feature_remote_files_api: false, 
-feature_default_shared_channels: true, 
-feature_react_lfs: false, 
-feature_log_quickswitcher_queries: true, 
-feature_mc_mentions_tab_prefs_and_channels: true, 
-feature_app_permissions_backend_enterprise: true, 
-feature_token_ip_whitelist: true, 
-feature_rollback_to_mapping: false, 
-feature_sidebar_theme_undo: false, 
-feature_dont_set_channel_membership_twice: false, 
-feature_allow_intra_word_formatting: true, 
-feature_allow_cjk_autocomplete: true, 
-feature_i18n_channels_validate_emoji: true, 
-feature_fw_eng_normalization: true, 
-feature_slim_scrollbar: false, 
-feature_search_query_refinements: true, 
-feature_primary_search: false, 
-feature_prefs_modernization: false, 
-feature_team_prefs_modernization: false, 
-feature_react_prefs: false, 
-feature_modern_fuzzy_matcher: false, 
-feature_sidebar_filters: false, 
-feature_sli_channel_archive_suggestions: true, 
-feature_sli_channel_search: false, 
-feature_sli_user_search: false, 
-feature_modern_mpim_make_name: false, 
-feature_react_messages: true, 
-feature_modern_file_upload: false, 
-feature_legacy_file_upload_analytics: false, 
-feature_triage_mismatched_channel_ids_on_send: true, 
-feature_sonic_activity: false, 
-feature_sonic_dm_browser: false, 
-feature_sonic_inputs: false, 
-feature_deprecate_unused_commands: true, 
-feature_hide_unfurl_urls: false, 
-feature_slack_unfurl_links: true, 
-feature_react_member_profile_card: false, 
-feature_service_import_lfs: false, 
-feature_failover_proxy_check: false, 
-feature_cdn_download_test: false, 
-feature_flannel_client_failover: true, 
-feature_channel_notif_dialog_update: false, 
-feature_oauth_react_wta: true, 
-feature_react_team_picker: true, 
-feature_a11y_datepicker: true, 
-feature_app_index: false, 
-feature_modernize_slack_actions: false, 
-feature_gdrive_do_not_install_by_default: true, 
-feature_delete_moved_channels: true, 
-feature_single_workspace_redirect: true, 
-feature_zero_workspace_onboarding: true, 
-feature_user_tos: true, 
-feature_oom_mv_channels_list: false, 
-feature_sso_formatting_error: true, 
-feature_single_user_workspace_pagination: true, 
-feature_ekm_phase_2: false, 
-feature_ekm_message_revocation_polling_test: false, 
-feature_ekm_message_revocation: false, 
-feature_longer_channel_names: false, 
-feature_org_quick_switcher: true, 
-feature_ms_latest: true, 
-feature_guests_use_entitlements: true, 
-feature_delete_empty_ims: false, 
-feature_full_user_empty_ims: false, 
-feature_app_space: true, 
-feature_app_space_links: true, 
-feature_app_canvases: false, 
-feature_attachments_v2: true, 
-feature_block_kit_documentation: false, 
-feature_block_kit_expandable_block: false, 
-feature_show_block_kit_in_share_dialogs: false, 
-feature_block_kit_error_translation: false, 
-feature_block_kit_event_block: false, 
-feature_block_kit_user_block: false, 
-feature_add_app_home_team_name: false, 
-feature_date_picker: true, 
-feature_beacon_js_errors: true, 
-feature_app_dialogs_notify_on_cancel: true, 
-feature_dialogs_v2_mobile: true, 
-feature_user_app_disable_speed_bump: false, 
-feature_app_profiles_fetch_management: true, 
-feature_onedrive_picker: true, 
-feature_onedrive_better_errors: false, 
-feature_is_unknown_refactor: false, 
-feature_lesson_onboarding: true, 
-feature_tractor_onboarding: true, 
-feature_tractor_shared_invite_link: true, 
-feature_tractor_backup_channelname_copy: true, 
-feature_tractor_slackbot_onboarding: true, 
-feature_improved_import_errors: true, 
-feature_sk_tables: false, 
-feature_grapevine_members: false, 
-feature_legacy_flannel_xws: true, 
-feature_degraded_send: true, 
-feature_shorter_joiner_flow: true, 
-feature_vitess_sidebar: false, 
-feature_degraded_rtm_always_fails: false, 
-feature_delete_team_and_apps: true, 
-feature_pjpeg: false, 
-feature_pdf_thumb: true, 
-feature_apps_manage_permissions_scope_changes: true, 
-feature_app_dir_only_default_true: false, 
-feature_reminder_cross_workspace: true, 
-feature_speedy_boot_handlebars: false, 
-feature_block_kit_pillow_file: false, 
-feature_channel_invite_modal_cannot_join: true, 
-feature_expiring_credits: true, 
-feature_email_prefs: true, 
-feature_xhp_billing_pages: false, 
-feature_xhp_fix_billing_items: false, 
-feature_checkout_flow_translations: true, 
-feature_checkout_flow_better_currency_picker: true, 
-feature_modernize_banners_v3: false, 
-feature_file_limit_i18n: false, 
-feature_sonic_i18n: false, 
-feature_flannel_always_use_canary: false, 
-feature_eventlog_blacklist: false, 
-feature_detect_history_changed_events_via_api: false, 
-feature_global_nav: false, 
-feature_global_nav_rollback: false, 
-feature_global_nav_layout: false, 
-feature_classic_nav: false, 
-feature_message_spacing: false, 
-feature_new_reactions: false, 
-feature_app_directory_home_page_redesign: true, 
-feature_hidden_wksp_unfurls: true, 
-feature_guest_wksp_unfurls: false, 
-feature_workspace_scim_management: false, 
-feature_redux_dev_tools: false, 
-feature_unified_member: false, 
-feature_new_unified_list_entities: false, 
-feature_turn_mpdm_notifs_on: true, 
-feature_browser_dragndrop: false, 
-feature_desktop_force_production_channel: false, 
-feature_desktop_logs_upload: true, 
-feature_macos_disable_hw: true, 
-feature_desktop_notifications_2018: false, 
-feature_desktop_notification_warnings: true, 
-feature_office_preview: false, 
-feature_quill_upgrade: true, 
-feature_ally_sounds: false, 
-feature_bots_not_members: false, 
-feature_wta_app_detail_oauth_updates: true, 
-feature_wta_modal_m11n: false, 
-feature_wta_stop_creation: true, 
-feature_m11n_channel_details: false, 
-feature_wta_org_level_apps: false, 
-feature_shortcuts_prompt: true, 
-feature_accessible_dialogs: true, 
-feature_app_actions: true, 
-feature_app_actions_global: false, 
-feature_app_actions_fe_refactor: false, 
-feature_shared_channel_free_trial_flow: true, 
-feature_calls_clipboard_broadcasting_optin: true, 
-feature_screen_share_needs_aero: false, 
-feature_ent_unified_stars: false, 
-feature_EVALUE_2407_xws_channel_delete_permissions: true, 
-feature_calls_disable_iss_admin: true, 
-feature_xhp_admin_email_strings: false, 
-feature_sli_trending_dashboard: false, 
-feature_i18n_custom_status: true, 
-feature_i18n_select_empty_state_string: false, 
-feature_accessible_fs_dialogs: true, 
-feature_channel_browser_dropdown: true, 
-feature_slackday_unsent_msg_sync: false, 
-feature_trap_kb_within_fs_modals: true, 
-feature_dialog_speedbump: true, 
-feature_modern_image_viewer: true, 
-feature_emoji_by_id: true, 
-feature_oauth_internal_integration_banner: true, 
-feature_labels_for_core_objects: false, 
-feature_wta_notifications: true, 
-feature_video_file_codec_support: false, 
-feature_mc_migration_banner: true, 
-feature_file_comment_deleted_rtm_handler: false, 
-feature_attachment_text_more: false, 
-feature_turn_off_sso_with_email_option: true, 
-feature_aria_application_mode: false, 
-feature_compliance_to_select_rebrand_mc: true, 
-feature_scg_api_filters: false, 
-feature_modern_help_modal: true, 
-feature_modern_starred_items: false, 
-feature_modern_profile_flexpane: false, 
-feature_hipchat_imports: true, 
-feature_mcg_conversion_channels: true, 
-feature_scg_conversion_channels: true, 
-feature_invite_user_groups: false, 
-feature_invite_user_groups_slash_cmd: false, 
-feature_sk_basic_select: false, 
-feature_delayed_message_api: true, 
-feature_app_uninstall_notifications: true, 
-feature_reduce_unexpected_uninstalls: true, 
-feature_sonic_quick_switcher: false, 
-feature_idp_group_warning: false, 
-feature_track_time_spent: true, 
-feature_file_search_sort: false, 
-feature_announce_only: false, 
-feature_delayed_messages_token_delete: true, 
-feature_channel_is_new_create_edit: false, 
-feature_newxp_joiner_landing_place: false, 
-feature_vogue: true, 
-feature_imports_slack_private_data: false, 
-feature_imports_summary_page: false, 
-feature_imports_error_strings: false, 
-feature_vat_project_jpy: false, 
-feature_vat_project_rus_qst: true, 
-feature_evalue_2641_disallow_enforce_orgwide_policy: false, 
-feature_email_addon: false, 
-feature_email_workobject_ui: false, 
-feature_retention_esc: false, 
-feature_calendar_simple_agenda_view: false, 
-feature_analytics_enable_division: false, 
-feature_enterprise_analytics_apps_tab: false, 
-feature_existing_help_request_attachments: false, 
-feature_esc_grid_migrations_client: false, 
-feature_gdrive_in_sidebar_translation: false, 
-
-		 client_logs: {"0":{"numbers":[0],"user_facing":false},"2":{"numbers":[2],"user_facing":false},"4":{"numbers":[4],"user_facing":false},"5":{"numbers":[5],"user_facing":false},"23":{"numbers":[23],"user_facing":false},"sounds":{"name":"sounds","numbers":[37]},"37":{"name":"sounds","numbers":[37],"user_facing":true},"47":{"numbers":[47],"user_facing":false},"48":{"numbers":[48],"user_facing":false},"Message History":{"name":"Message History","numbers":[58]},"58":{"name":"Message History","numbers":[58],"user_facing":true},"67":{"numbers":[67],"user_facing":false},"72":{"numbers":[72],"user_facing":false},"73":{"numbers":[73],"user_facing":false},"82":{"numbers":[82],"user_facing":false},"88":{"numbers":[88],"user_facing":false},"91":{"numbers":[91],"user_facing":false},"93":{"numbers":[93],"user_facing":false},"96":{"numbers":[96],"user_facing":false},"99":{"numbers":[99],"user_facing":false},"Channel Marking (MS)":{"name":"Channel Marking (MS)","numbers":[141]},"141":{"name":"Channel Marking (MS)","numbers":[141],"user_facing":true},"Channel Marking (Client)":{"name":"Channel Marking (Client)","numbers":[142]},"142":{"name":"Channel Marking (Client)","numbers":[142],"user_facing":true},"Close Old IMs (Client)":{"name":"Close Old IMs (Client)","numbers":[221]},"221":{"name":"Close Old IMs (Client)","numbers":[221],"user_facing":true},"365":{"numbers":[365],"user_facing":false},"389":{"numbers":[389],"user_facing":false},"438":{"numbers":[438],"user_facing":false},"444":{"numbers":[444],"user_facing":false},"481":{"numbers":[481],"user_facing":false},"488":{"numbers":[488],"user_facing":false},"529":{"numbers":[529],"user_facing":false},"552":{"numbers":[552],"user_facing":false},"dashboard":{"name":"dashboard","numbers":[666]},"666":{"name":"dashboard","numbers":[666],"user_facing":false},"667":{"numbers":[667],"user_facing":false},"773":{"numbers":[773],"user_facing":false},"777":{"numbers":[777],"user_facing":false},"794":{"numbers":[794],"user_facing":false},"Client Responsiveness":{"name":"Client Responsiveness","user_facing":false,"numbers":[808]},"808":{"name":"Client Responsiveness","user_facing":false,"numbers":[808]},"Message Pane Scrolling":{"name":"Message Pane Scrolling","numbers":[888]},"888":{"name":"Message Pane Scrolling","numbers":[888],"user_facing":true},"Unread banner and divider":{"name":"Unread banner and divider","numbers":[999]},"999":{"name":"Unread banner and divider","numbers":[999],"user_facing":true},"1000":{"numbers":[1000],"user_facing":false},"Duplicate badges (desktop app icons)":{"name":"Duplicate badges (desktop app icons)","numbers":[1701]},"1701":{"name":"Duplicate badges (desktop app icons)","numbers":[1701],"user_facing":true},"Members":{"name":"Members","numbers":[1975]},"1975":{"name":"Members","numbers":[1975],"user_facing":true},"lazy loading":{"name":"lazy loading","numbers":[1989]},"1989":{"name":"lazy loading","numbers":[1989],"user_facing":true},"thin_channel_membership":{"name":"thin_channel_membership","numbers":[1990]},"1990":{"name":"thin_channel_membership","numbers":[1990],"user_facing":true},"stats":{"name":"stats","numbers":[1991]},"1991":{"name":"stats","numbers":[1991],"user_facing":true},"ms":{"name":"ms","numbers":[1996]},"1996":{"name":"ms","numbers":[1996],"user_facing":true},"shared_channels_connection":{"name":"shared_channels_connection","numbers":[1999]},"1999":{"name":"shared_channels_connection","numbers":[1999],"user_facing":false},"dnd":{"name":"dnd","numbers":[2002]},"2002":{"name":"dnd","numbers":[2002],"user_facing":true},"2003":{"numbers":[2003],"user_facing":false},"Threads":{"name":"Threads","numbers":[2004]},"2004":{"name":"Threads","numbers":[2004],"user_facing":true},"2005":{"numbers":[2005],"user_facing":false},"Reactions":{"name":"Reactions","numbers":[2006]},"2006":{"name":"Reactions","numbers":[2006],"user_facing":true},"TSSSB.focusTabAndSwitchToChannel":{"name":"TSSSB.focusTabAndSwitchToChannel","numbers":[2007]},"2007":{"name":"TSSSB.focusTabAndSwitchToChannel","numbers":[2007],"user_facing":false},"Presence Detection":{"name":"Presence Detection","numbers":[2017]},"2017":{"name":"Presence Detection","numbers":[2017],"user_facing":true},"mc_sibs":{"name":"mc_sibs","numbers":[9999]},"9999":{"name":"mc_sibs","numbers":[9999],"user_facing":false},"Member searching":{"name":"Member searching","numbers":[90211]},"90211":{"name":"Member searching","numbers":[90211],"user_facing":true},"98765":{"numbers":[98765],"user_facing":false},"8675309":{"numbers":[8675309],"user_facing":false}}, 
-
-		 client_logs_pri: "", 
-
-		img: {
-			app_icon: 'https://a.slack-edge.com/4f28/img/slack_growl_icon.png'
-		},
-		page_needs_custom_emoji: false,
-		page_needs_enterprise: false
-	};
-
-	
-	
-	
-	
-
-	// i18n locale map (eg: maps Slack `ja-jp` to ZD `ja`)
-	 boot_data.slack_to_zd_locale = {"en-us":"en-us","fr-fr":"fr-fr","de-de":"de","es-es":"es","ja-jp":"ja"}; 
-
-	// client boot data
-	
-	
-
-	boot_data.should_use_flannel = true;
-boot_data.page_has_incomplete_user_model = true;
-boot_data.flannel_server_pool = "random";
-
-	
-	
-	
-	
-	
-	
-	boot_data.experiment_assignments = {"handlebars_from_smarty_perf":{"experiment_id":"46172931351","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"smartybars_perf":{"experiment_id":"77818061717","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"gdrive_1_5_coachmark_experiment":{"experiment_id":"94271365346","type":"user","group":"yes_coach_mark","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"channels_history_cache":{"experiment_id":"145699556609","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"ios_offline_read_marking_2":{"experiment_id":"173210517495","type":"user","group":"offline_read_marking_enabled","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"giovanna_test":{"experiment_id":"181800772038","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"rate_limit_login_by_user_email":{"experiment_id":"190131408354","type":"user","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"rate_limit_login_by_ip_and_id":{"experiment_id":"194465508597","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_channel_insights":{"experiment_id":"202656182946","type":"user","group":"sli_channel_insights","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"app_space_coachmark_copy":{"experiment_id":"205900640787","type":"user","group":"version_a","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"calls_min_bandwidth_moar":{"experiment_id":"208184370230","type":"user","group":"bw_1250","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"early_incr_boot":{"experiment_id":"215725968548","type":"user","group":"control","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"sli_channel_insights_dark":{"experiment_id":"228821173360","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_ranking_files_trained":{"experiment_id":"240703115856","type":"user","group":"trained","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"message_ranking_top_results":{"experiment_id":"249404098640","type":"user","group":"model_7","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"ios_show_join_beta_button":{"experiment_id":"250307167730","type":"user","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"quick_promo_invite_nudge_2":{"experiment_id":"254763892659","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"app_suggest_link_buttons":{"experiment_id":"259586206071","type":"user","group":"link_buttons","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_simplify_top_results":{"experiment_id":"261222155988","type":"user","group":"simplify","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"calls_p2p":{"experiment_id":"268736416752","type":"user","group":"enabled","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"unified_autocomplete":{"experiment_id":"270095428551","type":"user","group":"unified","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"email_i18n_reactivation":{"experiment_id":"275337392980","type":"user","group":"treatment","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"email_i18n_reactivation_v2":{"experiment_id":"276058626338","type":"user","group":"treatment","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"onboarding_2_skip":{"experiment_id":"279490891602","type":"user","group":"show_skip","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"autocomplete_files":{"experiment_id":"299214220897","type":"user","group":"experimental","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_channel_archive_suggestions":{"experiment_id":"303678001734","type":"user","group":"sli_channel_archive_suggestions","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"autocomplete_suggestion_length":{"experiment_id":"306300085110","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"calls_create_attach_join":{"experiment_id":"307534845478","type":"user","group":"enabled","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_refinements":{"experiment_id":"310733255011","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_refinement_query_solr":{"experiment_id":"310853463040","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_autocomplete_ranking":{"experiment_id":"314582940432","type":"user","group":"lambda_rank","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"search_chat_solrcloud_experiment":{"experiment_id":"316326569424","type":"user","group":"solrcloud","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_refinements_low_results":{"experiment_id":"319377370114","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"calls_cmd_tab":{"experiment_id":"320504100865","type":"user","group":"enabled","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"sli_refinements_spell_only":{"experiment_id":"321169193588","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_ac_diversify":{"experiment_id":"322522331094","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"solr_cache_team_fq":{"experiment_id":"323429393127","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"search_precache":{"experiment_id":"325778633617","type":"user","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_default_sorting":{"experiment_id":"328562838083","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_fq_terms_query":{"experiment_id":"329956479699","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"calls_gpu_chill":{"experiment_id":"330871370400","type":"user","group":"enabled","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"sli_all_tab":{"experiment_id":"332269941778","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_two_edit_refinements":{"experiment_id":"336506784599","type":"user","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_ac_joint_opt":{"experiment_id":"340568042483","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_ac_joint_opt_2":{"experiment_id":"353228692231","type":"user","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"solr_team_pub_filter":{"experiment_id":"374484526976","type":"user","group":"treatment","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"sli_solr_fetch_count":{"experiment_id":"379680392480","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"calls_orca_type":{"experiment_id":"380116885063","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sfmc_orphanuser_activation":{"experiment_id":"407767815137","type":"user","group":"control","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"sli_solr_fetch_count_v2":{"experiment_id":"426410803972","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"solr_no_multi":{"experiment_id":"433406677236","type":"user","group":"no_multi","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"ekm_team_search_history":{"experiment_id":"445225509542","type":"user","group":"treatment","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"solr_query_tf":{"experiment_id":"461156060609","type":"user","group":"default","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"sli_omni_switcher_2":{"experiment_id":"464499012052","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_message_search_update":{"experiment_id":"470911677639","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_searcher_member_sort":{"experiment_id":"475617738661","type":"user","group":"updated_sort","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"reactions_tokens_search":{"experiment_id":"479070804160","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_solr_rank_service_dark_test":{"experiment_id":"482149994822","type":"user","group":"sli_solr_rank_service_dark_test","trigger":"launch_user","log_exposures":false,"exposure_id":436743996657},"who_can_see_this":{"experiment_id":"490964391680","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_omni_switcher_3":{"experiment_id":"496050236177","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"add_a_channel_sidebar":{"experiment_id":"502746860464","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_facet_dark_perf":{"experiment_id":"507283593956","type":"user","group":"control","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_search_model_boost":{"experiment_id":"510624929799","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"slackrank_filter":{"experiment_id":"510852657159","type":"user","group":"","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_message_search_update_3":{"experiment_id":"517281604790","type":"user","group":"user_msg_ctr","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"ios_poseidon":{"experiment_id":"518245657188","type":"user","group":"treatment","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"tractor_coachmark_onboarding":{"experiment_id":"519401782416","type":"user","group":"variant","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"search_single_pass":{"experiment_id":"519601779104","type":"user","group":"single_pass","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"new_contact_form":{"experiment_id":"530503885698","type":"user","group":"new_page","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"sli_message_search_update_4":{"experiment_id":"532047143639","type":"user","group":"control","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"lc_nxp_webinar_invitation":{"experiment_id":"534879644512","type":"user","group":"no_invitation","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"add_a_channel_button":{"experiment_id":"536687027575","type":"user","group":"variant","trigger":"finished","log_exposures":false,"exposure_id":436743996657},"test_long_experiment_names_0123456789_0123456789_0123456789":{"experiment_id":"539187990880","type":"user","group":"control","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"sli_file_search_update_1":{"experiment_id":"540835276183","type":"user","group":"update","trigger":"hash_user","log_exposures":true,"exposure_id":436743996657},"social_nudge_v0":{"experiment_id":"57452636336","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"migrate_stats_to_cds":{"experiment_id":"70039090853","type":"team","group":"stats_cds","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"migrate_stats_enable_dark_reads":{"experiment_id":"70047028338","type":"team","group":"stats_mysql_and_cds_dark_reads","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"domain_signup_links_for_mobile":{"experiment_id":"70804845972","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"update_invite_coachmarks_cta":{"experiment_id":"84280109270","type":"team","group":"invite_cm_got_ita","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"google_contacts_invite_existing":{"experiment_id":"93086200404","type":"team","group":"google_contacts","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"google_contacts_invite_new":{"experiment_id":"93096027173","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"exp_thread_at_mention":{"experiment_id":"145686678499","type":"team","group":"autofill","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"exp_threads_everything_pref":{"experiment_id":"152393699186","type":"team","group":"show_banner","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"app_dir_channel_sidebar_cta":{"experiment_id":"159072431845","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"email_joiners_about_joiners":{"experiment_id":"169717077127","type":"team","group":"send_joiners_emails","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"guest_expiration_announcement":{"experiment_id":"175209361220","type":"team","group":"slackbot","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"edit_team_status_presets":{"experiment_id":"176895283504","type":"team","group":"treatment","trigger":"launch_team","log_exposures":false,"exposure_id":306371982324},"calls_interactive_ss":{"experiment_id":"194479526932","type":"team","group":"enabled","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"pricing_page_v2_2_signedin":{"experiment_id":"199590432480","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"slackbot_help_v2_buttons":{"experiment_id":"200318583393","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"instant_invite_link_ios":{"experiment_id":"201626291921","type":"team","group":"enabled","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"feat_onepage_signup_v2":{"experiment_id":"205971003682","type":"team","group":"single_page","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"feat_limit_meters":{"experiment_id":"212162225108","type":"team","group":"show_limit_meters","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"self_serve_invoicing_checkout":{"experiment_id":"222019723543","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"feat_msg_lim_search":{"experiment_id":"246809624001","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"email_app_onboard_all":{"experiment_id":"252073272226","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"email_app_onboard_admins":{"experiment_id":"252209807013","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"shared_channels_trial_flow":{"experiment_id":"257137512243","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"newxp_tips_loading_messages":{"experiment_id":"264238720563","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"small_feat_list":{"experiment_id":"264419561860","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"email_slack_certification":{"experiment_id":"265884802150","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"no_content_avails":{"experiment_id":"272365364819","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"email_post_upgrade_onboard":{"experiment_id":"273987023266","type":"team","group":"control","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"less_android_badges":{"experiment_id":"274765772358","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"replace_billing_link":{"experiment_id":"276628623189","type":"team","group":"has_plans_link","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"apns2":{"experiment_id":"279378859908","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"free_trial_in_prod":{"experiment_id":"281625415173","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"apns2_part_2":{"experiment_id":"283505922689","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"apns_collapse":{"experiment_id":"286616632582","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"install_apps_link":{"experiment_id":"293721709264","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"test_free_trial_in_prod":{"experiment_id":"300479776051","type":"team","group":"banner","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"email_sfmc_team_joiner_welcome":{"experiment_id":"305390696324","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"checkout_v2":{"experiment_id":"308128561633","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"calls_callstats":{"experiment_id":"313435842625","type":"team","group":"disabled","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"approaching_file_limit_banner":{"experiment_id":"331827143204","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"sfmc_trial_onboarding":{"experiment_id":"349854899936","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"email_reached_msg_lim":{"experiment_id":"350501017682","type":"team","group":"treatment","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"checkout_detailed_confirm":{"experiment_id":"356768173168","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"enable_solrjproxy":{"experiment_id":"357738984711","type":"team","group":"solrjproxy","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"approaching_file_limit_banner_v2":{"experiment_id":"359153329456","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"home_billing_links":{"experiment_id":"360880165220","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"logged_in_standard_page_2":{"experiment_id":"367507733044","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"sfmc_actions_announcement":{"experiment_id":"373115816290","type":"team","group":"control","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"calls_no_boomers":{"experiment_id":"375834290021","type":"team","group":"enabled","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"logged_in_standard_page_2_2":{"experiment_id":"383075441360","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"sfmc_onboarding_webinar":{"experiment_id":"384659518992","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"receipts_purchase":{"experiment_id":"388283674291","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"monetization_no_flannel_login":{"experiment_id":"390413163412","type":"team","group":"fast","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"sfmc_connectingtools_webinar":{"experiment_id":"391331103233","type":"team","group":"treatment","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"search_test_exp_2":{"experiment_id":"394969365857","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"search_improvements":{"experiment_id":"396534667719","type":"team","group":"search_improvements","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"sfmc_paidslack_webinar":{"experiment_id":"398407564070","type":"team","group":"treatment","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"stripe_l3_data":{"experiment_id":"402252049446","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"search_improvements_enterprise":{"experiment_id":"402584856352","type":"team","group":"search_improvements_enterprise","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"stripe_l3_data_v2":{"experiment_id":"404550106855","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"paid_feature_badge":{"experiment_id":"420716644723","type":"team","group":"has_badge","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"invite_guest_awareness":{"experiment_id":"420847333122","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"newxp_onboarding_2_0_redux":{"experiment_id":"420870515552","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"plan_awareness_team_menu_free":{"experiment_id":"423510191649","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"plan_awareness_team_menu_paid":{"experiment_id":"423857279684","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"calls_orca_beta_2018_08_28":{"experiment_id":"424285508673","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"new_dunning_notifs":{"experiment_id":"443295043686","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"users_search_restricted_users":{"experiment_id":"463287873766","type":"team","group":"enabled","trigger":"launch_team","log_exposures":false,"exposure_id":306371982324},"lc_mon_plans_price_descriptions":{"experiment_id":"468051592354","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"lc_mon_downgrade":{"experiment_id":"478112591936","type":"team","group":"control","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"lc_planspage_zendesk":{"experiment_id":"480447368694","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"invite_guest_awareness_v2":{"experiment_id":"481187860789","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"paid_onboarding":{"experiment_id":"482395575254","type":"team","group":"treatment","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"calls_orca_beta_2018_10_09":{"experiment_id":"484242518580","type":"team","group":"disabled","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"lc_checkout_v2":{"experiment_id":"494208579462","type":"team","group":"control","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"channels_latest_write_vitess_dev":{"experiment_id":"498395100628","type":"team","group":"","trigger":"finished","log_exposures":false,"exposure_id":306371982324},"vitess_latest_write_dev":{"experiment_id":"499640807760","type":"team","group":"enabled","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"solr_users_channels_by_user":{"experiment_id":"503559118610","type":"team","group":"enabled","trigger":"launch_team","log_exposures":false,"exposure_id":306371982324},"search_users_solrcloud_writes":{"experiment_id":"510570949606","type":"team","group":"solrcloud_writes1","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"users_vitess_writes_bfill_prod":{"experiment_id":"520731456917","type":"team","group":"control","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"ios_migrate_ext_cache_events":{"experiment_id":"527254918801","type":"team","group":"control","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"lc_checkout_v2_1":{"experiment_id":"530385077970","type":"team","group":"control","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324},"platform_gdrive_button_copy_2":{"experiment_id":"541322394896","type":"team","group":"variant","trigger":"hash_team","log_exposures":true,"exposure_id":306371982324}};
-
-
-	// inline_emoji
-	boot_data.pref_emoji_mode = "default";
-	boot_data.pref_jumbomoji = 1;
-	boot_data.pref_messages_theme = "default";
-
-//-->
-</script><script type="text/javascript" src="https://a.slack-edge.com/bv1-6/client-translations_de-DE.dbc0843034b92aa3fbc0.min.js" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/rollup-core_required_libs.38a91b4f6a2c95be8759.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/modern.vendor.eb27a54f0cbffa107889.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/application.41abd12024c7bbdfd087.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/rollup-core_required_ts.28ff90e2c2b71b16ec6b.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/TS.web.78400450ed7307d8d3a1.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/rollup-core_web.eb37da64f2075d95fbb3.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/rollup-secondary_a_required.10191dbd5418ae409c7c.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/rollup-secondary_b_required.3e708a05d46114e00802.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script type="text/javascript">TS.boot(boot_data);</script><script src="https://a.slack-edge.com/bv1-6/TS.web.file.97b4aeef323ceafb82f3.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/codemirror.min.b0cb89ec57f7e9cc47c3.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/codemirror_simple.2c7a16812f40e05135fc.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/codemirror_load.b5b0842cb60bc2f60271.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script src="https://a.slack-edge.com/bv1-6/TS.web.team_site_nav.2ce65eb22e19888f36fb.min.js" type="text/javascript" onload="window._cdn &amp;&amp; _cdn.ok(this, arguments)" onerror="window._cdn &amp;&amp; _cdn.failed(this, arguments)" crossorigin="anonymous"></script><script type="text/javascript">
-<!--
-	boot_data.page_needs_custom_emoji = true;
-
-	boot_data.file = {"id":"FFZF7H801","created":1549484572,"timestamp":1549484572,"name":"gcc-8.2.0-aros.diff","title":"gcc-8.2.0-aros.diff","mimetype":"text\/plain","filetype":"diff","pretty_type":"Diff","user":"UCWDC0KJB","editable":true,"size":70768,"mode":"snippet","is_external":false,"external_type":"","is_public":true,"public_url_shared":false,"display_as_bot":false,"username":"","url_private":"https:\/\/files.slack.com\/files-pri\/T90AXUW9J-FFZF7H801\/gcc-8.2.0-aros.diff","url_private_download":"https:\/\/files.slack.com\/files-pri\/T90AXUW9J-FFZF7H801\/download\/gcc-8.2.0-aros.diff","permalink":"https:\/\/amigaports.slack.com\/files\/UCWDC0KJB\/FFZF7H801\/gcc-8.2.0-aros.diff","permalink_public":"https:\/\/slack-files.com\/T90AXUW9J-FFZF7H801-9cc6cbe21b","edit_link":"https:\/\/amigaports.slack.com\/files\/UCWDC0KJB\/FFZF7H801\/gcc-8.2.0-aros.diff\/edit","preview":"diff -ruN gcc-8.2.0\/configure gcc-8.2.0.aros\/configure\n--- gcc-8.2.0\/configure\t2018-07-26 10:48:58.000000000 +0100\n+++ gcc-8.2.0.aros\/configure\t2019-02-06 14:08:00.077004600 +0000\n@@ -3791,6 +3791,9 @@\n   powerpcle-*-solaris*)","preview_highlight":"\u003Cdiv class=\"CodeMirror cm-s-default CodeMirrorServer\" oncopy=\"if(event.clipboardData){event.clipboardData.setData('text\/plain',window.getSelection().toString().replace(\/\\u200b\/g,''));event.preventDefault();event.stopPropagation();}\"\u003E\n\u003Cdiv class=\"CodeMirror-code\"\u003E\n\u003Cdiv\u003E\u003Cpre\u003Ediff -ruN gcc-8.2.0\/configure gcc-8.2.0.aros\/configure\u003C\/pre\u003E\u003C\/div\u003E\n\u003Cdiv\u003E\u003Cpre\u003E\u003Cspan class=\"cm-negative\"\u003E--- gcc-8.2.0\/configure\t2018-07-26 10:48:58.000000000 +0100\u003C\/span\u003E\u003C\/pre\u003E\u003C\/div\u003E\n\u003Cdiv\u003E\u003Cpre\u003E\u003Cspan class=\"cm-positive\"\u003E+++ gcc-8.2.0.aros\/configure\t2019-02-06 14:08:00.077004600 +0000\u003C\/span\u003E\u003C\/pre\u003E\u003C\/div\u003E\n\u003Cdiv\u003E\u003Cpre\u003E\u003Cspan class=\"cm-meta\"\u003E@@ -3791,6 +3791,9 @@\u003C\/span\u003E\u003C\/pre\u003E\u003C\/div\u003E\n\u003Cdiv\u003E\u003Cpre\u003E   powerpcle-*-solaris*)\u003C\/pre\u003E\u003C\/div\u003E\n\u003C\/div\u003E\n\u003C\/div\u003E\n","lines":2069,"lines_more":2064,"preview_is_truncated":true,"comments_count":0,"is_starred":false,"shares":{"public":{"CCY3RF5T9":[{"reply_users":[],"reply_users_count":0,"reply_count":0,"ts":"1549484573.384100","channel_name":"aros","team_id":"T90AXUW9J"}]}},"channels":["CCY3RF5T9"],"groups":[],"ims":[]};
-	boot_data.file.comments = {};
-
-	var g_editor;
-
-	var code_wrap_long_lines = true;
-
-	$(function(){
-
-		var wrap_long_lines = !!code_wrap_long_lines;
-
-		g_editor = CodeMirror(function(elt){
-			var content = document.getElementById("file_contents");
-			content.parentNode.replaceChild(elt, content);
-		}, {
-			value: $('#file_contents').text(),
-			lineNumbers: true,
-			matchBrackets: true,
-			indentUnit: 4,
-			indentWithTabs: true,
-			enterMode: "keep",
-			tabMode: "shift",
-			viewportMargin: 10,
-			readOnly: true,
-			lineWrapping: wrap_long_lines
-		});
-
-		// past a certain point, CodeMirror rendering may simply stop working.
-		// start having CodeMirror use its Long List View-style scolling at >= max_lines.
-		var max_lines = 8192;
-
-		var snippet_lines;
-
-		// determine # of lines, limit height accordingly
-		if (g_editor.doc && g_editor.doc.lineCount) {
-			snippet_lines = parseInt(g_editor.doc.lineCount());
-			var new_height;
-			if (snippet_lines) {
-				// we want the CodeMirror container to collapse around short snippets.
-				// however, we want to let it auto-expand only up to a limit, at which point
-				// we specify a fixed height so CM can display huge snippets without dying.
-				// this is because CodeMirror works nicely with no height set, but doesn't
-				// scale (big file performance issue), and doesn't work with min/max-height -
-				// so at some point, we have to set an absolute height to kick it into its
-				// smart / partial "Long List View"-style rendering mode.
-				if (snippet_lines < max_lines) {
-					new_height = 'auto';
-				} else {
-					new_height = (max_lines * 0.875) + 'rem'; // line-to-rem ratio
-				}
-				var line_count = Math.min(snippet_lines, max_lines);
-				TS.info('Applying height of ' + new_height + ' to container for this snippet of ' + snippet_lines + (snippet_lines === 1 ? ' line' : ' lines'));
-				$('#page .CodeMirror').height(new_height);
-			}
-		}
-
-		$('#file_preview_wrap_cb').bind('change', function(e) {
-			code_wrap_long_lines = $(this).prop('checked');
-			g_editor.setOption('lineWrapping', code_wrap_long_lines);
-		})
-
-		$('#file_preview_wrap_cb').prop('checked', wrap_long_lines);
-
-		CodeMirror.switchSlackMode(g_editor, "diff");
-	});
-
-	$('#file_comment').css('overflow', 'hidden').autogrow();
-//-->
-</script><style>.color_9f69e7:not(.nuc) {color:#9F69E7;}.color_4bbe2e:not(.nuc) {color:#4BBE2E;}.color_e7392d:not(.nuc) {color:#E7392D;}.color_3c989f:not(.nuc) {color:#3C989F;}.color_674b1b:not(.nuc) {color:#674B1B;}.color_e96699:not(.nuc) {color:#E96699;}.color_e0a729:not(.nuc) {color:#E0A729;}.color_684b6c:not(.nuc) {color:#684B6C;}.color_5b89d5:not(.nuc) {color:#5B89D5;}.color_2b6836:not(.nuc) {color:#2B6836;}.color_99a949:not(.nuc) {color:#99A949;}.color_df3dc0:not(.nuc) {color:#DF3DC0;}.color_4cc091:not(.nuc) {color:#4CC091;}.color_9b3b45:not(.nuc) {color:#9B3B45;}.color_d58247:not(.nuc) {color:#D58247;}.color_bb86b7:not(.nuc) {color:#BB86B7;}.color_5a4592:not(.nuc) {color:#5A4592;}.color_db3150:not(.nuc) {color:#DB3150;}.color_235e5b:not(.nuc) {color:#235E5B;}.color_9e3997:not(.nuc) {color:#9E3997;}.color_53b759:not(.nuc) {color:#53B759;}.color_c386df:not(.nuc) {color:#C386DF;}.color_385a86:not(.nuc) {color:#385A86;}.color_a63024:not(.nuc) {color:#A63024;}.color_5870dd:not(.nuc) {color:#5870DD;}.color_ea2977:not(.nuc) {color:#EA2977;}.color_50a0cf:not(.nuc) {color:#50A0CF;}.color_d55aef:not(.nuc) {color:#D55AEF;}.color_d1707d:not(.nuc) {color:#D1707D;}.color_43761b:not(.nuc) {color:#43761B;}.color_e06b56:not(.nuc) {color:#E06B56;}.color_8f4a2b:not(.nuc) {color:#8F4A2B;}.color_902d59:not(.nuc) {color:#902D59;}.color_de5f24:not(.nuc) {color:#DE5F24;}.color_a2a5dc:not(.nuc) {color:#A2A5DC;}.color_827327:not(.nuc) {color:#827327;}.color_3c8c69:not(.nuc) {color:#3C8C69;}.color_8d4b84:not(.nuc) {color:#8D4B84;}.color_84b22f:not(.nuc) {color:#84B22F;}.color_4ec0d6:not(.nuc) {color:#4EC0D6;}.color_e23f99:not(.nuc) {color:#E23F99;}.color_e475df:not(.nuc) {color:#E475DF;}.color_619a4f:not(.nuc) {color:#619A4F;}.color_a72f79:not(.nuc) {color:#A72F79;}.color_7d414c:not(.nuc) {color:#7D414C;}.color_aba727:not(.nuc) {color:#ABA727;}.color_965d1b:not(.nuc) {color:#965D1B;}.color_4d5e26:not(.nuc) {color:#4D5E26;}.color_dd8527:not(.nuc) {color:#DD8527;}.color_bd9336:not(.nuc) {color:#BD9336;}.color_e85d72:not(.nuc) {color:#E85D72;}.color_dc7dbb:not(.nuc) {color:#DC7DBB;}.color_bc3663:not(.nuc) {color:#BC3663;}.color_9d8eee:not(.nuc) {color:#9D8EEE;}.color_8469bc:not(.nuc) {color:#8469BC;}.color_73769d:not(.nuc) {color:#73769D;}.color_b14cbc:not(.nuc) {color:#B14CBC;}</style>
-
-<!-- slack-www-hhvm-main-iad-kl0p/ 2019-02-06 12:36:15/ v775b40dd91d50ff403efef70f8d7b746e43e4fca/ B:H -->
-
-</body></html>
