@@ -1,5 +1,5 @@
 /*
-  Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+  Copyright © 2004-2019, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -958,33 +958,33 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 {
                     D(bug("[Wanderer:IconWindow] %s: Screen Changed [old = %p, new = %p]\n", __PRETTY_FUNCTION__, data->iwd_Screen, __Wanderer__Screen));
                     SET(self, MUIA_Window_Screen, __Wanderer__Screen);
-                    if (((data->iwd_Flags & IWDFLAG_ISROOT)) && ((data->iwd_Flags & IWDFLAG_ISBACKDROP)))
-                    {
-                        IPTR                            _IconWin__NewWindowWidth = 0;
-                        IPTR                            _IconWin__NewWindowHeight = 0;
+                }
+                if (((data->iwd_Flags & IWDFLAG_ISROOT)) && ((data->iwd_Flags & IWDFLAG_ISBACKDROP)))
+                {
+                    IPTR                            _IconWin__NewWindowWidth = 0;
+                    IPTR                            _IconWin__NewWindowHeight = 0;
 #if 0 /* unused */
-                        IPTR                            _IconWin__NewWindowLeft = 0;
+                    IPTR                            _IconWin__NewWindowLeft = 0;
 #endif
-                        IPTR                            _IconWin__NewWindowTop = 0;
+                    IPTR                            _IconWin__NewWindowTop = 0;
 
-                        D(bug("[Wanderer:IconWindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
+                    D(bug("[Wanderer:IconWindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
 
-                        _IconWin__NewWindowWidth = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_WIDTH);
-                        _IconWin__NewWindowHeight = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_HEIGHT);
-                        D(bug("[Wanderer:IconWindow] %s: Screen dimensions ..  %d x %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight));
+                    _IconWin__NewWindowWidth = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_WIDTH);
+                    _IconWin__NewWindowHeight = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_HEIGHT);
+                    D(bug("[Wanderer:IconWindow] %s: Screen dimensions ..  %d x %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight));
 
-                        _IconWin__NewWindowTop = __Wanderer__Screen->BarHeight + 1;
+                    _IconWin__NewWindowTop = __Wanderer__Screen->BarHeight + 1;
 #if 0 /* unused */
-                        _IconWin__NewWindowLeft = 0;
+                    _IconWin__NewWindowLeft = 0;
 #endif
 
-                        _IconWin__NewWindowHeight -= _IconWin__NewWindowTop;
+                    _IconWin__NewWindowHeight -= _IconWin__NewWindowTop;
 
-                        D(bug("[Wanderer:IconWindow] %s: New Window dimensions ..  %d x %d @ %d, %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight, 0, _IconWin__NewWindowTop));
+                    D(bug("[Wanderer:IconWindow] %s: New Window dimensions ..  %d x %d @ %d, %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight, 0, _IconWin__NewWindowTop));
 
-                        SET(self, MUIA_Window_Width, _IconWin__NewWindowWidth);
-                        SET(self, MUIA_Window_Height, _IconWin__NewWindowHeight);
-                    }
+                    SET(self, MUIA_Window_Width, _IconWin__NewWindowWidth);
+                    SET(self, MUIA_Window_Height, _IconWin__NewWindowHeight);
                 }
             }
             break;
