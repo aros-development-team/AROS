@@ -32,6 +32,9 @@ TARGET_DEF_STRIP	:= @aros_target_strip@ @aros_target_strip_flags@
 TARGET_OBJDUMP          := @aros_target_objdump@
 KERNEL_RESCOMP          := @aros_kernel_rescomp@
 
+COMPILER_LIBS           := @aros_compiler_libs@
+ARCH_LIBS               := @aros_arch_libs@
+
 CONFIG_NOWARN_CFLAGS    = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
 CONFIG_WARN_CFLAGS      := @aros_warn_flags@
 CONFIG_NOWARN_CXXFLAGS  = $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@aros_nowarn_flags@),$($(nowarn)))
@@ -54,11 +57,12 @@ KERNEL_CPPFLAGS         = @aros_kernel_cppflags@
 KERNEL_CFLAGS           = @aros_kernel_cflags@
 KERNEL_OBJCFLAGS        := @aros_kernel_objcflags@
 KERNEL_INCLUDES         := @aros_kernel_includes@
-KERNEL_LDFLAGS	        := @aros_kernel_ldflags@
+KERNEL_LDFLAGS          := @aros_kernel_ldflags@
 TARGET_CFLAGS           = $(OPTIMIZATION_CFLAGS) $(CONFIG_CFLAGS) $(USER_CFLAGS)
 TARGET_CXXFLAGS         = $(OPTIMIZATION_CFLAGS) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
 TARGET_CPPFLAGS         = $(USER_INCLUDES) $(CONFIG_CPPFLAGS) $(USER_CPPFLAGS)
-DEBUG_CFLAGS	        := @aros_debug_cflags@
+TARGET_LDFLAGS          = $(CONFIG_LDFLAGS) $(ARCH_LIBS)
+DEBUG_CFLAGS            := @aros_debug_cflags@
 DEBUG_CXXFLAGS          := @aros_debug_cxxflags@
 DEBUG_CPPFLAGS          := @aros_debug_cppflags@
 DEBUG_AFLAGS            := @aros_debug_aflags@
@@ -75,9 +79,6 @@ NOSTARTUP_LDFLAGS       := @aros_target_nostartup_ldflags@
 NIX_LDFLAGS             := @aros_target_nix_ldflags@
 DETACH_LDFLAGS          := @aros_target_detach_ldflags@
 NOSTDLIB_LDFLAGS        := @aros_target_nostdlib_ldflags@
-
-COMPILER_LIBS           := @aros_compiler_libs@
-ARCH_LIBS               := @aros_arch_libs@
 
 AR                      := @aros_target_ar@
 AR_PLAIN                := @aros_plain_ar@

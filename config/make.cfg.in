@@ -215,7 +215,7 @@ CFLAGS      = $(ISA_FLAGS) $(TARGET_CFLAGS)
 CXXFLAGS    = $(ISA_FLAGS) $(TARGET_CXXFLAGS)
 CPPFLAGS = $(TARGET_CPPFLAGS)
 AFLAGS	    = $(ISA_FLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS)
-LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
+LDFLAGS     = $(USER_LDFLAGS) $(TARGET_LDFLAGS)
 
 # Target arch/CPU-specific options that we can't set in 'configure'
 # (these could be added to CFLAGS instead of using a new variable, except
