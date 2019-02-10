@@ -2486,7 +2486,7 @@ endif
 %(mmake)_OBJC_NARCHFILES   := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_OBJCFILES))
 
 %(mmake)_OBJS         := $(%(mmake)_ARCHOBJS) \
-                 $(addprefix %(objdir)/,$(notdir $(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o))) \
+                 $(addprefix %(objdir)/,$(notdir $(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o))) \
                  %(objs)
 %(mmake)_DEPS         := $(patsubst %.o,%.d,$(%(mmake)_OBJS))
 
