@@ -19,8 +19,8 @@
  * Memory and port addresses and fundamental constants
  */
 
-#define SVGA_MAX_WIDTH			2360
-#define SVGA_MAX_HEIGHT			1770
+#define SVGA_MAX_WIDTH			3840
+#define SVGA_MAX_HEIGHT			2160
 
 #define SVGA_MAX_BITS_PER_PIXEL		32
 #if SVGA_MAX_WIDTH * SVGA_MAX_HEIGHT * SVGA_MAX_BITS_PER_PIXEL / 8 > \
@@ -29,7 +29,7 @@
 #endif
 #define SVGA_MAX_PSEUDOCOLOR_DEPTH	8
 #define SVGA_MAX_PSEUDOCOLORS		(1 << SVGA_MAX_PSEUDOCOLOR_DEPTH)
-#define SVGA_NUM_PALETTE_REGS           (3 * SVGA_MAX_PSEUDOCOLORS)
+#define SVGA_NUM_PALETTE_REGS       (3 * SVGA_MAX_PSEUDOCOLORS)
 
 #define SVGA_MAGIC         0x900000
 #define SVGA_MAKE_ID(ver)  (SVGA_MAGIC << 8 | (ver))
@@ -179,12 +179,59 @@ enum {
  *  The distance from MIN to MAX must be at least 10K
  */
 
-#define	 SVGA_FIFO_MIN	      0
-#define	 SVGA_FIFO_MAX	      1
-#define	 SVGA_FIFO_NEXT_CMD   2
-#define	 SVGA_FIFO_STOP	      3
+enum VMWareSVGA_FIFO_Register
+{
+	// Block 1 - Basic registers
+	SVGA_FIFO_MIN					= 0,
+	SVGA_FIFO_MAX,
+	SVGA_FIFO_NEXT_CMD,
+	SVGA_FIFO_STOP,
 
-#define	 SVGA_FIFO_USER_DEFINED	    4
+	// Block 2 - Extended FIFO Registers (SVGA_CAP_EXTENDED_FIFO)
+	SVGA_FIFO_CAPABILITIES			= 4,
+	SVGA_FIFO_FLAGS,
+	SVGA_FIFO_FENCE,						// 													Requires SVGA_FIFO_CAP_FENCE
+
+	// Block 3a - Optional Extended FIFO Registers Banks (Only exist if enough distance is reserved)
+	SVGA_FIFO_3D_HWVERSION,
+	SVGA_FIFO_PITCHLOCK,					// 													Requires SVGA_FIFO_CAP_PITCHLOCK
+
+	SVGA_FIFO_CURSOR_ON,					// 													Requires SVGA_FIFO_CAP_CURSOR_BYPASS_3
+	SVGA_FIFO_CURSOR_X,						// 													Requires SVGA_FIFO_CAP_CURSOR_BYPASS_3
+	SVGA_FIFO_CURSOR_Y,						// 													Requires SVGA_FIFO_CAP_CURSOR_BYPASS_3
+	SVGA_FIFO_CURSOR_COUNT,					// Incremented when any of the above change		- 	Requires SVGA_FIFO_CAP_CURSOR_BYPASS_3
+	SVGA_FIFO_CURSOR_LAST_UPDATED,			// Timestamp of last update						-	Requires SVGA_FIFO_CAP_CURSOR_BYPASS_3
+
+	SVGA_FIFO_RESERVED,						// Bytes past NEXT_CMD with real contents		-	Requires SVGA_FIFO_CAP_RESERVE
+
+	SVGA_FIFO_CURSOR_SCREEN_ID,				// Either SVGA_ID_INVALID or Offset Screen id	-	Requires SVGA_FIFO_CAP_SCREEN_OBJECT or SVGA_FIFO_CAP_SCREEN_OBJECT_2
+	SVGA_FIFO_DEAD,							// Arbitrary value written by the host			-	Requires SVGA_FIFO_CAP_DEAD
+	SVGA_FIFO_3D_HWVERSION_REVISED,			// 3D Hardware version							-	Requires SVGA_FIFO_CAP_3D_HWVERSION_REVISED
+
+	// 3D Caps Block
+	SVGA_FIFO_3D_CAPS				= 32,
+	SVGA_FIFO_3D_CAPS_LAST			= (32 + 255),
+
+	// Block 3b - Optional Extended FIFO Register Entries
+	SVGA_FIFO_GUEST_3D_HWVERSION,
+	SVGA_FIFO_FENCE_GOAL,					// Target for SVGA_IRQFLAG_FENCE_GOAL
+	SVGA_FIFO_BUSY,
+	SVGA_FIFO_NUM_REGS						// To be read from SVGA_REG_MEM_REGS
+};
+
+#define SVGA_FIFO_CAP_NONE                  0
+#define SVGA_FIFO_CAP_FENCE             (1<<0)					// Fence register and command are supported
+#define SVGA_FIFO_CAP_ACCELFRONT        (1<<1)					// Front buffer only commands are supported
+#define SVGA_FIFO_CAP_PITCHLOCK         (1<<2)					// Pitch lock register is supported
+#define SVGA_FIFO_CAP_VIDEO             (1<<3)					// SVGA Video overlay units are supported
+#define SVGA_FIFO_CAP_CURSOR_BYPASS_3   (1<<4)
+#define SVGA_FIFO_CAP_ESCAPE            (1<<5)					// Escape command is supported
+#define SVGA_FIFO_CAP_RESERVE           (1<<6)
+#define SVGA_FIFO_CAP_SCREEN_OBJECT     (1<<7)
+#define SVGA_FIFO_CAP_GMR2              (1<<8)
+#define SVGA_FIFO_CAP_3D_HWVERSION_REVISED  SVGA_FIFO_CAP_GMR2
+#define SVGA_FIFO_CAP_SCREEN_OBJECT_2   (1<<9)
+#define SVGA_FIFO_CAP_DEAD              (1<<10)
 
 /*
  *  Drawing object ID's, in the range 0 to SVGA_MAX_ID

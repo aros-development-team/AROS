@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -13,6 +13,7 @@
 #include <string.h>    // memset() prototype
 #include "svga_reg.h"
 #include "vmwaresvgahardware.h"
+#include "vmwaresvgaclass.h"
 
 #ifdef OnBitmap
 /*********  BitMap::Clear()  *************************************/
@@ -100,14 +101,6 @@ STATIC VOID putpixel(struct BitmapData *data, LONG x, LONG y, HIDDT_Pixel pixel)
 
 #ifdef OnBitmap
     offset = (x*data->bytesperpix)+(y*data->data->bytesperline);
-    if (
-            (x>=data->mouse->x) && (x<(data->mouse->x+data->mouse->width)) &&
-            (y>=data->mouse->y) && (y<(data->mouse->y+data->mouse->height))
-        )
-    {
-        displayCursorVMWareSVGA(data->data, 0);
-        data->mouse->visible = 0;
-    }
 #else
     offset = (x + (y*data->width))*data->bytesperpix;
 #endif
@@ -117,13 +110,6 @@ STATIC VOID putpixel(struct BitmapData *data, LONG x, LONG y, HIDDT_Pixel pixel)
         *((UWORD*)(data->VideoData + offset)) = pixel;
     else if (data->bytesperpix == 4)
         *((ULONG*)(data->VideoData + offset)) = pixel;
-#ifdef OnBitmap
-    if (data->mouse->visible == 0)
-    {
-        displayCursorVMWareSVGA(data->data, 1);
-        data->mouse->visible = 1;
-    }
-#endif
 }
 
 VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
@@ -204,25 +190,10 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
         {
             HIDDT_Pixel *p = (HIDDT_Pixel *)src;
             xcnt = msg->width;
-            while (xcnt)
-            {
-                if (data->bytesperpix == 1)
-                {
-                    *((UBYTE *)buffer) = (UBYTE)*p++;
-                    buffer++;
-                }
-                else if (data->bytesperpix == 2)
-                {
-                    *((UWORD *)buffer) = (UWORD)*p++;
-                    buffer += 2;
-                }
-                else if (data->bytesperpix == 4)
-                {
-                    *((ULONG *)buffer) = (ULONG)*p++;
-                        buffer += 4;
-                }
-                xcnt--;
-            }
+
+            CopyMem(p, buffer, xcnt * data->bytesperpix);
+
+            buffer += (xcnt * data->bytesperpix);
             buffer += restadd;
             src += msg->modulo;
             ycnt--;
@@ -232,7 +203,7 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
         box.y1 = msg->y;
         box.x2 = box.x1+msg->width-1;
         box.y2 = box.y1+msg->height-1;
-        refreshAreaVMWareSVGA(data->data, &box);
+      	VMWareSVGA_Damage_DeltaAdd(data->data, box);
 #endif
     }
     else
@@ -268,25 +239,10 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
         {
             HIDDT_Pixel *p = (HIDDT_Pixel *)src;
             xcnt = msg->width;
-            while (xcnt)
-            {
-                if (data->bytesperpix == 1)
-                {
-                    *p++ = (HIDDT_Pixel)*((UBYTE *)buffer);
-                    buffer++;
-                }
-                else if (data->bytesperpix == 2)
-                {
-                    *p++ = (HIDDT_Pixel)*((UWORD *)buffer);
-                    buffer += 2;
-                }
-                else if (data->bytesperpix == 4)
-                {
-                    *p++ = (HIDDT_Pixel)*((ULONG *)buffer);
-                    buffer += 4;
-                }
-                xcnt--;
-            }
+
+			CopyMem(buffer, p, xcnt * data->bytesperpix);
+
+			buffer += (xcnt * data->bytesperpix);
             buffer += restadd;
             src += msg->modulo;
             ycnt--;
@@ -516,3 +472,10 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 }
 
+VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
+{
+    struct HWData *pData = &XSD(cl)->data;
+    struct Box box = { msg->x, msg->y, msg->x + msg->width + 1, msg->y + msg->height + 1};
+
+	VMWareSVGA_Damage_DeltaAdd(pData, box);
+}
