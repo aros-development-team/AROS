@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2019 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -605,7 +605,7 @@ D(bug("[AROSTCP](amiga_netdb.c) addnetent()\n"));
 	nn->nn_Ent.n_addrtype = AF_INET;
 	nn->nn_Ent.n_name = name;
 	nn->nn_Ent.n_aliases = (char **)alias;
-	bcopy(&addr, &nn->nn_Ent.n_net, sizeof (unsigned long));
+	bcopy(&addr, &nn->nn_Ent.n_net, sizeof (addr));
 
 	/* Copy aliases */
 	aliascpy(nn->nn_Ent.n_name, (UBYTE*)Args[KNDB_NAME], 

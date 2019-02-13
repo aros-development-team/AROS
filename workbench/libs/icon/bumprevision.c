@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +24,7 @@
 	Computes the right copy revision for a file name.
 
     INPUTS
-	newname  -  a buffer for the new string. Should be at leas 31 bytes.
+	newname  -  a buffer for the new string. Should be at least 31 bytes.
 	oldname  -  the old name to be revisioned.
 
     RESULT
@@ -108,7 +108,7 @@
     }
 
     /* Truncate tempstr into newstr */
-    strncpy (newname, tempstr, 30);
+	CopyMem(tempstr, newname, 30);
 
     /* Be sure that it is nullterminated */
     newname[30] = 0; /* The 31th character */

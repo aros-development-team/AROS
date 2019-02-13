@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -64,11 +64,13 @@ void PrinterPrefs_Handler(STRPTR filename)
                             if (devnamelen >= DEV_EXT_LEN && !strcmp(
                                 &devname[devnamelen - DEV_EXT_LEN], ".device"))
                             {
-                                strncpy(prefs.PrtDevName, devname,
-                                    devnamelen - DEV_EXT_LEN);
+                                CopyMem(devname, prefs.PrtDevName, devnamelen - DEV_EXT_LEN);
+                                prefs.PrtDevName[devnamelen - DEV_EXT_LEN] = '0';
                             }
                             else if (devnamelen < DEVNAME_SIZE)
-                                strncpy(prefs.PrtDevName, devname, devnamelen);
+                            {
+                                strncpy(prefs.PrtDevName, devname, sizeof(prefs.PrtDevName) - 1);
+                            }
                             else
                                 name_too_long = TRUE;
                         }

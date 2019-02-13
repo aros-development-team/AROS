@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2011, The AROS Development Team. All rights reserved.
+    Copyright  2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -153,9 +153,9 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
 
                 if ((vn_VolName = AllocPooled(newdvl->dvl_Pool, len + 2)))
                 {
+                    strncpy(vn_VolName, dosname, len + 1);
                     vn_VolName[len] = ':';
                     vn_VolName[len + 1] = 0;
-                    strncpy(vn_VolName, dosname, len);
 
                     if ((newdvn =
                             AllocPooled(newdvl->dvl_Pool,
@@ -227,7 +227,7 @@ static struct DOSVolumeList *IconVolumeList__CreateDOSList(void)
                 if ((nd_nambuf =
                         AllocPooled(newdvl->dvl_Pool, len + 2)) != NULL)
                 {
-                    strncpy(nd_nambuf, dosname, len);
+                    strncpy(nd_nambuf, dosname, len + 1);
                     nd_nambuf[len] = ':';
                     nd_nambuf[len + 1] = 0;
 

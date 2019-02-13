@@ -274,7 +274,7 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
 
     cp = &lp->lp_CountryData;
 
-    strncpy(locale->LocaleName, FilePart(filename), 30);
+    strncpy(locale->LocaleName, FilePart(filename), sizeof(locale->LocaleName) - 1);
     locale->il_Locale.loc_LocaleName = &locale->LocaleName[0];
 
     /* Configuration contains on-disk language names */

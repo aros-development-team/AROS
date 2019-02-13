@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -279,7 +279,7 @@ STRPTR GetFileName(ULONG msgtextid)
         pathbuffer[299] = 0;
         
         strncpy(filebuffer, FilePart(filenamebuffer), 299);
-        strncpy(pathbuffer, filenamebuffer, 299);
+        CopyMem(filenamebuffer, pathbuffer, 299);
         filepart = FilePart(pathbuffer);
         *filepart = 0;
 

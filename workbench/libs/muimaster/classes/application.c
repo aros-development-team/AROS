@@ -2071,7 +2071,7 @@ static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj,
     else if (message->name == MUIV_Application_Load_ENVARC)
         snprintf(name, sizeof(name), "ENVARC:Zune/%s.cfg", data->app_Base);
     else
-        strncpy(name, message->name, sizeof(name));
+        strncpy(name, message->name, sizeof(name) - 1);
 
     fh = Open(name, MODE_OLDFILE);
     if (fh)
@@ -2143,7 +2143,7 @@ static IPTR Application__MUIM_Save(struct IClass *cl, Object *obj,
     else if (message->name == MUIV_Application_Save_ENVARC)
         snprintf(name, sizeof(name), "ENVARC:Zune/%s.cfg", data->app_Base);
     else
-        strncpy(name, message->name, sizeof(name));
+        strncpy(name, message->name, sizeof(name) - 1);
 
     fh = Open(name, MODE_NEWFILE);
     if (fh)

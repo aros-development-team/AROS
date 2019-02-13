@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -249,7 +249,7 @@ static char *allocString(APTR pool, char *str)
         b = (char*) AllocVec(l+1, MEMF_CLEAR); 
     else b = (char*) AllocVecPooled(pool, l+1);
     
-    if (b && (l>0)) strncpy (b, str, l);
+    if (b && (l>0)) strncpy (b, str, l + 1);
     return b;
 }
 ///
@@ -294,10 +294,10 @@ char *CombineString(char *format, ...)
                     strncpy(str, s, len);
                     s = s1+2;
                     str += len;
-                    strncpy(str, p, strlen(p));
+                    strcpy(str, p);
                     str += strlen(p);
                 };
-                if (s) strncpy(str, s, strlen(s));
+                if (s) strcpy(str, s);
                 va_end(ap);
             }
         }
@@ -901,7 +901,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
     
     if (infoname) 
     {
-        strncpy (infoname, s, strlen(s));
+        strcpy (infoname, s);
         strcat(infoname,".info");
     }
 
@@ -909,7 +909,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
 
     if (destinfo) 
     {
-        strncpy (destinfo, d, strlen(d));
+        strcpy (destinfo, d);
         strcat(destinfo,".info");
     }
     

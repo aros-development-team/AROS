@@ -1,11 +1,12 @@
 /*
-    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <string.h>
 #include <errno.h>
 #include <sys/mount.h>
+#include <proto/exec.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include "__upath.h"
@@ -83,7 +84,8 @@ short getnixfilesystemtype(LONG id_DiskType);
 	    buf->f_ffree = 0;
 	    buf->f_fsid.val[0] = 0;
 	    buf->f_fsid.val[1] = 0;
-	    strncpy(buf->f_mntonname, __path_a2u(AROS_BSTR_ADDR(((struct DeviceList *)BADDR(data.id_VolumeNode))->dl_Name)), MNAMELEN);
+        CopyMem(__path_a2u(AROS_BSTR_ADDR(((struct DeviceList *)BADDR(data.id_VolumeNode))->dl_Name)), buf->f_mntonname, MNAMELEN);
+        buf->f_mntonname[MNAMELEN -1] = '\0';
 	    buf->f_mntfromname[0] = '\0';
 	}
 	else

@@ -1,5 +1,5 @@
 /*
-   Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+   Copyright © 2003-2019, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -221,7 +221,7 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
 
     if (GetAttr(MUIA_Region_Regionname, data->region, (IPTR *)&tmp))
     {
-        strncpy(localeprefs.lp_CountryName, tmp, 32);
+        strncpy(localeprefs.lp_CountryName, tmp, sizeof(localeprefs.lp_CountryName) - 1);
         Prefs_LoadRegion(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
     }
 

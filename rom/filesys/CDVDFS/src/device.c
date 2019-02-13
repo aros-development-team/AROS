@@ -1270,7 +1270,8 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
 			}
 		}
 		*dest++ = len;
-		strncpy(dest, src, len);
+		CopyMem(src, dest, len);
+		dest[len] = '0';
 
 		if ((global->g_map_to_lowercase && p_volume->protocol == PRO_ISO) ||
 		    (global->g_maybe_map_to_lowercase && !p_volume->mixed_char_filenames))
@@ -1302,8 +1303,8 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
 	if (len > MAX_COMMENT_LEN)
 		len = MAX_COMMENT_LEN;
 	*dest++ = len;
-	strncpy(dest, p_info->comment, len);
-	dest[len] = 0;
+	CopyMem(p_info->comment, dest, len);
+	dest[len] = '\0';
 }
 
 /*

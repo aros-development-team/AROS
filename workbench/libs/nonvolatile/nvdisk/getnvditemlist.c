@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -116,7 +116,8 @@ AROS_LH1(struct MinList *, GetNVDItemList,
 		    }
 
 		    entry->nve_Name = (STRPTR)(((char *)entry) + sizeof(struct NVEntry));
-		    strncpy(entry->nve_Name, fib->fib_FileName, 32);
+			CopyMem(fib->fib_FileName, entry->nve_Name, 32);
+			entry->nve_Name[31] = '0';
 		    entry->nve_Size = fib->fib_Size;
 		    entry->nve_Protection = fib->fib_Protection;
 		    AddTail((struct List *)minList, (struct Node *)entry);
