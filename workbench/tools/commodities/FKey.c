@@ -966,7 +966,7 @@ static void StringToKey(void)
     if (!ki) return;
 
     get(liststr, MUIA_String_Contents, &text);    
-    strncpy(ki->descr, text, sizeof(ki->descr));
+    strncpy(ki->descr, text, sizeof(ki->descr) - 1);
 
     DoMethod(list, MUIM_List_Redraw, MUIV_List_Redraw_Active);
 

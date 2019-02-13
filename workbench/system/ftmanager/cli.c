@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -69,7 +69,7 @@ static void get_basename(STRPTR basename, STRPTR outfont, STRPTR ttf_name)
         STRPTR dot = strrchr(b, '.');
         if(dot == NULL)
         {
-            strncpy(basename, b, 256);
+            strncpy(basename, b, 255);
         }
         else
         {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -196,7 +196,7 @@ int checkParent(char *startpath, int depth, int dnum, int fnum, int size)
     BPTR lock;
     BPTR dlock;
     BPTR flock;
-    char name[32];
+    char name[46];
     char path[512];
     char fpath[512];
     int i, j;
@@ -317,7 +317,7 @@ int checkFile(char *path, int depth, int dnum, int fnum, int size)
 int checkFiles(char *startpath, int depth, int dnum, int fnum, int size)
 {
     int i, j;
-    char name[32];
+    char name[46];
     char path[512];
     char fpath[512];
 
@@ -390,7 +390,7 @@ int writeFile(char *path, int size, int depth, int dnum, int fnum)
 int createFiles(char *startpath, int depth, int dnum, int fnum, int size)
 {
     int i, j;
-    char name[32];
+    char name[46];
     char path[512];
     char fpath[512];
 
@@ -421,7 +421,7 @@ int checkDirs(char *startpath, int depth, int num)
 {
     BPTR dir;
     int i;
-    char name[32];
+    char name[46];
     char path[512];
     LONG error;
 

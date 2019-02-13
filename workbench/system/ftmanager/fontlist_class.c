@@ -272,7 +272,7 @@ void ScanDirTask(void)
 
                             DEBUG_ADDDIR(dprintf("flScanDirTask: family 0x <%s> style 0x%x <%s>\n", face->family_name, face->family_name, face->style_name, face->style_name));
 
-                            strncpy(info->NameBuf, info->DirName, sizeof(info->NameBuf));
+                            strncpy(info->NameBuf, info->DirName, sizeof(info->NameBuf) - 1);
                             AddPart(info->NameBuf, ead->ed_Name, sizeof(info->NameBuf));
 
                             len1 = strlen(info->NameBuf) + 1;

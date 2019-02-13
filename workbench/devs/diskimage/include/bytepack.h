@@ -88,7 +88,8 @@ static inline void BytePackWriteText (BytePackBuffer *b, CONST_STRPTR txt, ULONG
 		len = space;
 	}
 	if (len > 0) {
-		strncpy(b->current, txt, len);
+		CopyMem(txt, b->current, len);
+		b->current[len - 1] = 0;
 		b->current += len;
 	}
 }

@@ -1196,14 +1196,16 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
             psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "Try increasing the startup delay value or fake inquiry.");
         } else {
-            strncpy(ncm->ncm_LUNIDStr, &inquirydata[16], 16);
+            CopyMem(&inquirydata[16], ncm->ncm_LUNIDStr, 16);
+            ncm->ncm_LUNIDStr[15] = '\0';
+
             // trim spaces
             cnt = strlen(ncm->ncm_LUNIDStr);
             while(cnt--)
             {
                 if(ncm->ncm_LUNIDStr[cnt] == ' ')
                 {
-                    ncm->ncm_LUNIDStr[cnt] = 0;
+                    ncm->ncm_LUNIDStr[cnt] = '\0';
                 } else {
                     break;
                 }

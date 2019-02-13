@@ -6,7 +6,7 @@
  * SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
  *
  * Copyright (C) 2000-2016 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
- * Copyright (C) 2011-2014,2016, The AROS Development Team
+ * Copyright (C) 2011-2014,2016-2019, The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2136,20 +2136,20 @@ AddVolume(
 INLINE STATIC VOID
 ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 {
-#ifdef AROS_FAST_BSTR
-	strncpy(cstring, bstring, max_len);
-#else
 	STRPTR from = bstring;
-	LONG len = from[0];
+	LONG len = 
+#if !defined(AROS_FAST_BSTR)
+		from[0];
 
 	if(len > max_len-1)
-		len = max_len-1;
+		len =
+#endif
+			max_len-1;
 
 	if(len > 0)
 		memcpy(cstring,from+1,len);
 
 	cstring[len] = '\0';
-#endif
 }
 
 /* Convert a NUL terminated 'C' string into a BCPL string. */
@@ -2161,8 +2161,13 @@ ConvertCString(APTR bstring,LONG max_len,STRPTR cstring,LONG len)
 	if(len > max_len-1)
 		len = max_len-1;
 
+#if !defined(AROS_FAST_BSTR)
 	(*to++) = len;
+#endif
 	memcpy(to,cstring,len);
+#if defined(AROS_FAST_BSTR)
+	to[len] = '\0';
+#endif
 }
 
 /****************************************************************************/

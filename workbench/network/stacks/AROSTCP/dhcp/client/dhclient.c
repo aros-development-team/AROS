@@ -2544,7 +2544,7 @@ void ifconfig (char *name, u_long addr, u_long mask, u_long bcast)
 		return;
 	}
 	memset (&req, 0, sizeof (req));
-	strncpy (req.ifra_name, name, sizeof (req.ifra_name));
+	strncpy (req.ifra_name, name, sizeof (req.ifra_name) - 1);
 	IoctlSocket (s, SIOCDIFADDR, (char *)&req);
 	setaddr ((struct sockaddr_in *)&req.ifra_addr, addr, AF_INET);
 	setaddr ((struct sockaddr_in *)&req.ifra_mask, mask, AF_UNSPEC);
@@ -2566,7 +2566,7 @@ void ifdeconfig (char *name)
 		return;
 	}
 	memset (&req, 0, sizeof (req));
-	strncpy (req.ifra_name, name, sizeof (req.ifra_name));
+	strncpy (req.ifra_name, name, sizeof (req.ifra_name) - 1);
 	IoctlSocket (s, SIOCDIFADDR, (char *)&req);
 	CloseSocket (s);
 }

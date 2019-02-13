@@ -140,6 +140,18 @@ struct EmulLibEntry callback =
 
 TEXT panel_path[FILENAME_MAX];
 
+static void getbaud(char *buf, unsigned long baud)
+{
+	if (baud > 1000000000)
+		sprintf(buf,"%luG", baud / 1000000000);
+	else if (baud > 1000000)
+		sprintf(buf,"%luM", baud / 1000000);
+	else if (baud > 1000)
+		sprintf(buf,"%luK", baud / 1000);
+	else
+		sprintf(buf,"%lu", baud);
+}
+
 void gui_open()
 {
 	struct ifnet *ifp;
@@ -147,11 +159,11 @@ void gui_open()
 	long showflags = 0;
 	char ifname[IFNAMSIZ+2];
 	long ifstate;
-  	char ifspeed[8];
+  	char ifspeed[16];
 	int  i;
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_gui.c) gui_open()\n"));
+D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 #endif
 
 	if (GUI_Running) {
@@ -171,7 +183,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_open()\n"));
 	      strcat(panel_path, ".MiamiPanel");
 	      DGUI(KPrintF("Opening GUI: %s...\n", panel_path);)
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_gui.c) gui_open: Attempting to use '%s'\n", panel_path));
+D(bug("[AROSTCP](amiga_gui.c) %s: Attempting to use '%s'\n", __func__, panel_path));
 #endif
 	      MiamiPanelBase = OpenLibrary(panel_path, 0);
 	      DGUI(KPrintF("Panel library opened, base = 0x%08lx\n", MiamiPanelBase);)
@@ -193,10 +205,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_open: Attempting to use '%s'\n", panel_path));
 					DGUI(KPrintF("Adding interface %s, index %lu, baud rate %lu\n", ifname, ifp->if_index, ifp->if_baudrate);)
 					if (ifp->if_flags & IFF_UP) {
 						ifstate = MIAMIPANELV_AddInterface_State_Online;
-						if (ifp->if_baudrate > 1000000)
-							sprintf(ifspeed,"%luM", ifp->if_baudrate / 1000000);
-						else
-							sprintf(ifspeed,"%lu", ifp->if_baudrate);
+						getbaud(ifspeed, ifp->if_baudrate);
 					} else {
 						ifstate = MIAMIPANELV_AddInterface_State_Offline;
 						ifspeed[0] = 0;
@@ -226,7 +235,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_open: Attempting to use '%s'\n", panel_path));
 void gui_close()
 {
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_gui.c) gui_close()\n"));
+D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 #endif
 	DGUI(KPrintF("Closing GUI...\n");)
 	if (gui_timerio) {
@@ -252,7 +261,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_close()\n"));
 void gui_snapshot()
 {
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_gui.c) gui_snapshot()\n"));
+D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 #endif
 	/* TODO */
 }
@@ -271,7 +280,7 @@ void gui_process_refresh()
 	} total;
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_gui.c) gui_process_refresh()\n"));
+D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 #endif
 	
 	if (GUI_Running) {
@@ -297,10 +306,10 @@ void gui_process_msg(struct SysLogPacket *msg)
 {
 	struct ifnet *ifp;
 	long state;
-  	char ifspeed[8];
+  	char ifspeed[16];
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_gui.c) gui_process_msg()\n"));
+D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 #endif
 	
 	if (GUI_Running) {
@@ -313,10 +322,7 @@ D(bug("[AROSTCP](amiga_gui.c) gui_process_msg()\n"));
 			DGUI(KPrintF("Interface state set\n");)
 			if (state & (MIAMIPANELV_AddInterface_State_Online | MIAMIPANELV_AddInterface_State_Offline)) {
 				if (state == MIAMIPANELV_AddInterface_State_Online) {
-					if (ifp->if_baudrate > 1000000)
-						sprintf(ifspeed,"%luM", ifp->if_baudrate / 1000000);
-					else
-						sprintf(ifspeed,"%lu", ifp->if_baudrate);
+					getbaud(ifspeed, ifp->if_baudrate);
 				} else
 					ifspeed[0] = 0;
 				MiamiPanelSetInterfaceSpeed(ifp->if_index, ifspeed);
@@ -342,7 +348,7 @@ void gui_set_interface_state(struct ifnet *ifp, long state)
 	struct SysLogPacket *msg;
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_gui.c) gui_set_interface_state()\n"));
+D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 #endif
 	
 	if (GUI_Running) {

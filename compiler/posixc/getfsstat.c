@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -129,8 +129,9 @@ short getnixfilesystemtype(LONG id_DiskType)
 	        buf[fscount - 1].f_ffree = 0;
 	        buf[fscount - 1].f_fsid.val[0] = 0;
 	        buf[fscount - 1].f_fsid.val[1] = 0;
-	        strncpy(buf[fscount - 1].f_mntonname, __path_a2u(name),
+			CopyMem(__path_a2u(name), buf[fscount - 1].f_mntonname, 
 	            MNAMELEN);
+	        buf[fscount - 1].f_mntfromname[MNAMELEN - 1] = '\0';
 	        buf[fscount - 1].f_mntfromname[0] = '\0';
 	    }
 	    else

@@ -357,7 +357,7 @@ main(argc, argv)
 	/* Make sure there's an interface name. */
 	if (argc < 1)
 		usage();
-	(void) strncpy(name, argv[0], sizeof(name));
+	(void) strncpy(name, argv[0], sizeof(name) - 1);
 	argc--; argv++;
 
 	/* Check for address family. */
@@ -375,7 +375,7 @@ main(argc, argv)
 	af = ifr.ifr_addr.sa_family = afp->af_af;
 
 	/* Get information about the interface. */
-	(void) strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	(void) strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name) - 1);
 	if (getinfo(&ifr) < 0)
 		exit(1);
 
@@ -430,7 +430,7 @@ main(argc, argv)
 
 	if (clearaddr) {
 		int ret;
-		(void) strncpy(afp->af_ridreq, name, sizeof ifr.ifr_name);
+		(void) strncpy(afp->af_ridreq, name, sizeof(ifr.ifr_name));
 		if ((ret = IoctlSocket(s, afp->af_difaddr, afp->af_ridreq)) < 0) {
 			if (errno == EADDRNOTAVAIL && (doalias >= 0)) {
 				/* means no previous address for interface */
@@ -439,7 +439,7 @@ main(argc, argv)
 		}
 	}
 	if (newaddr > 0) {
-		(void) strncpy(afp->af_addreq, name, sizeof ifr.ifr_name);
+		(void) strncpy(afp->af_addreq, name, sizeof(ifr.ifr_name));
 		if (IoctlSocket(s, afp->af_aifaddr, afp->af_addreq) < 0)
 			warn("SIOCAIFADDR");
 	}

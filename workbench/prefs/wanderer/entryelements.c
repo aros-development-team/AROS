@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2007, The AROS Development Team. All rights reserved.
+    Copyright  2004-2019, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
 
@@ -44,7 +44,7 @@ BOOL EntryElementRegister(struct List *entry_List, ULONG entry_ID, CONST_STRPTR 
     
     current_Node = AllocVec(sizeof(struct EntryElement__Entry), MEMF_PUBLIC|MEMF_CLEAR);
     current_Node->EE_E_Name = AllocVec(element_NameLen + 1, MEMF_PUBLIC|MEMF_CLEAR);
-    strncpy(current_Node->EE_E_Name, entry_Name, element_NameLen);
+    strcpy(current_Node->EE_E_Name, entry_Name);
 
     current_Node->EE_E_ID = (IPTR)entry_ID;
     AddTail(entry_List, (struct Node *)current_Node);

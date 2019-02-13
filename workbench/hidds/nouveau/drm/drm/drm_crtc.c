@@ -2136,7 +2136,7 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
 	INIT_LIST_HEAD(&property->enum_blob_list);
 
 	if (name)
-		strncpy(property->name, name, DRM_PROP_NAME_LEN);
+		strncpy(property->name, name, DRM_PROP_NAME_LEN - 1);
 
 	list_add_tail(&property->head, &dev->mode_config.property_list);
 	return property;

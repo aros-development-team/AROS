@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Change your input preferences
@@ -231,7 +231,8 @@ void Prefs_ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
             if (entry)
             {
                 entry->node.ln_Name = entry->layoutname;
-                strncpy(entry->realname, ap.ap_Info.fib_FileName, sizeof(entry->realname));
+                CopyMem(ap.ap_Info.fib_FileName, entry->realname, sizeof(entry->realname));
+                entry->realname[sizeof(entry->realname) - 1] = '\0';
 
                 sp = strchr(entry->realname, '_');
                 if (sp)

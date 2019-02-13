@@ -416,7 +416,7 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     	for(x = 0; x < 7; x++)
 	{
 	    CONST_STRPTR text;	    
-	    UBYTE buf[3];
+	    UBYTE buf[7];
 	    
 	    if (data->old_mday && (day != data->old_mday) && (day != data->clockdata.mday))
 	    {

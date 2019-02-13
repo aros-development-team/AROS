@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2018, The AROS Development Team.
+    Copyright © 2002-2019, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2458,7 +2458,8 @@ int main(void)
 
         struct MUI_PenSpec *pen_spec = NULL;
         GET(pendisplay, MUIA_Pendisplay_Spec, &pen_spec);
-        strncpy(pen_str, pen_spec->buf, 10);
+        CopyMem(pen_spec->buf, pen_str, 10);
+        pen_str[9] = '0';
         set(pendisplay_spec, MUIA_String_Contents, pen_str);
 
         /* Main loop: wait until quit */

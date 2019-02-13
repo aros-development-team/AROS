@@ -520,7 +520,7 @@ static struct DiskObject *smart_get_icon(struct SmartArgs *args, struct WBStartu
    BPTR old_lock, new_lock;
 
    /* Copy the WBArg contents */
-   strncpy(work_name, wbarg->wa_Name, MAXIMUM_FILENAME_LENGTH);
+   strncpy(work_name, wbarg->wa_Name, MAXIMUM_FILENAME_LENGTH - 1);
 
    new_lock = DupLock(wbarg->wa_Lock);
    if (new_lock != ZERO)
@@ -546,7 +546,7 @@ static struct DiskObject *smart_get_icon(struct SmartArgs *args, struct WBStartu
             UnLock(new_lock);
             new_lock = new_lock2;
 
-            strncpy(work_name, wbarg[1].wa_Name, MAXIMUM_FILENAME_LENGTH);
+            strncpy(work_name, wbarg[1].wa_Name, MAXIMUM_FILENAME_LENGTH - 1);
             D(DBF_STARTUP, "work_name2 : '%s'", work_name);
 
             if ((prj = GetDiskObjectNew(work_name)))

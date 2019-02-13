@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -111,11 +111,11 @@ STRPTR GetFile(BOOL open)
     AslBase = OpenLibrary("asl.library", 39);
     if (AslBase)
     {
-        filebuffer[sizeof filebuffer - 1] = 0;
-        pathbuffer[sizeof pathbuffer - 1] = 0;
+        filebuffer[sizeof(filebuffer) - 1] = 0;
+        pathbuffer[sizeof(pathbuffer) - 1] = 0;
 
-        strncpy(filebuffer, FilePart(filenamebuffer), sizeof filebuffer - 1);
-        strncpy(pathbuffer, filenamebuffer, sizeof pathbuffer - 1);
+        strncpy(filebuffer, FilePart(filenamebuffer), sizeof(filebuffer) - 1);
+        CopyMem(filenamebuffer, pathbuffer, 300);
         *(FilePart(pathbuffer)) = 0;
 
         req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText     , open                          ?

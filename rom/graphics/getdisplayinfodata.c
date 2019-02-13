@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetDisplayInfoData()
@@ -493,7 +493,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 		    snprintf(ni->Name, DISPLAYNAMELEN, "%s %2dbit %s",
 		    	 sync_description, (int)depth, pixfmt_name);
 		else
-		    strncpy(ni->Name, sync_description, DISPLAYNAMELEN);
+		    strncpy(ni->Name, sync_description, DISPLAYNAMELEN - 1);
 	    }
 	    else
 	    {
