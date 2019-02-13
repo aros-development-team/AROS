@@ -20,7 +20,7 @@
 /*
  * Location and size of SVGA frame buffer.
  */
-#define SVGA_FB_MAX_SIZE       (16*1024*1024)
+#define SVGA_FB_MAX_SIZE       (64*1024*1024)
 #define SVGA_MEM_SIZE          (256*1024)
 
 /*

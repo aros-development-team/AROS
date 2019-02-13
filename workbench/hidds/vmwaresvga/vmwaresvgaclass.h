@@ -2,7 +2,7 @@
 #define _VMWARESVGA_CLASS_H
 
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2015, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VMWareSVGA useful data.
@@ -12,6 +12,8 @@
 #include <exec/memory.h>
 #include <exec/nodes.h>
 #include <exec/types.h>
+#include <exec/semaphores.h>
+
 #include "vmwaresvgahardware.h"
 #include "vmwaresvgabitmap.h"
 
@@ -20,7 +22,7 @@
 
 struct VMWareSVGA_staticdata {
 	struct MemHeader mh;
-        OOP_Class *basebm;            /* baseclass for CreateObject */
+    OOP_Class *basebm;            /* baseclass for CreateObject */
 	OOP_Class *vmwaresvgaclass;
 	OOP_Class *vmwaresvgaonbmclass;
 	OOP_Class *vmwaresvgaoffbmclass;
@@ -28,8 +30,8 @@ struct VMWareSVGA_staticdata {
 	OOP_Object *card;
 	OOP_Object *pcihidd;
 	struct BitmapData *visible;
-	VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
-	APTR	callbackdata;
+	VOID (*activecallback)(APTR, OOP_Object *, BOOL);
+	APTR callbackdata;
 	struct MouseData mouse;
 	struct HWData data;
 };
