@@ -4,6 +4,7 @@
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
  * Copyright (c) 2005 Pavel Fedin
+ * Copyright (c) 2006-2019 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -375,7 +376,8 @@ main(argc, argv)
 	af = ifr.ifr_addr.sa_family = afp->af_af;
 
 	/* Get information about the interface. */
-	(void) strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name) - 1);
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	if (getinfo(&ifr) < 0)
 		exit(1);
 
@@ -430,7 +432,8 @@ main(argc, argv)
 
 	if (clearaddr) {
 		int ret;
-		(void) strncpy(afp->af_ridreq, name, sizeof(ifr.ifr_name));
+		CopyMem(name, afp->af_ridreq, sizeof (ifr.ifr_name));
+		afp->af_ridreq[sizeof(ifr.ifr_name) - 1] = '\0';
 		if ((ret = IoctlSocket(s, afp->af_difaddr, afp->af_ridreq)) < 0) {
 			if (errno == EADDRNOTAVAIL && (doalias >= 0)) {
 				/* means no previous address for interface */
@@ -439,7 +442,8 @@ main(argc, argv)
 		}
 	}
 	if (newaddr > 0) {
-		(void) strncpy(afp->af_addreq, name, sizeof(ifr.ifr_name));
+		CopyMem(name, afp->af_addreq, sizeof (ifr.ifr_name));
+		afp->af_addreq[sizeof(ifr.ifr_name) - 1] = '\0';
 		if (IoctlSocket(s, afp->af_aifaddr, afp->af_addreq) < 0)
 			warn("SIOCAIFADDR");
 	}
@@ -661,7 +665,8 @@ setifflags(vname, value)
 {
  	if (IoctlSocket(s, SIOCGIFFLAGS, (caddr_t)&ifr) < 0)
 		err(1, "SIOCGIFFLAGS");
-	(void) strncpy(ifr.ifr_name, name, sizeof (ifr.ifr_name));
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
  	flags = ifr.ifr_flags;
 
 	if (value < 0) {
@@ -681,7 +686,8 @@ setifmetric(val, d)
 	char *val;
 	int d;
 {
-	(void) strncpy(ifr.ifr_name, name, sizeof (ifr.ifr_name));
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	ifr.ifr_metric = atoi(val);
 	if (IoctlSocket(s, SIOCSIFMETRIC, (caddr_t)&ifr) < 0)
 		warn("SIOCSIFMETRIC");
@@ -692,7 +698,8 @@ setifmtu(val, d)
 	char *val;
 	int d;
 {
-	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	ifr.ifr_mtu = atoi(val);
 	if (IoctlSocket(s, SIOCSIFMTU, (caddr_t)&ifr) < 0)
 		warn("SIOCSIFMTU");
@@ -707,7 +714,8 @@ setmedia(val, d)
 	int first_type, subtype;
 
 	(void) memset(&ifmr, 0, sizeof(ifmr));
-	(void) strncpy(ifmr.ifm_name, name, sizeof(ifmr.ifm_name));
+	CopyMem(name, ifmr.ifm_name, sizeof (ifmr.ifm_name));
+	ifr.ifr_name[sizeof(ifmr.ifm_name) - 1] = '\0';
 
 	ifmr.ifm_count = 1;
 	ifmr.ifm_ulist = &first_type;
@@ -1171,7 +1179,8 @@ in_status(force)
 		err(1, "socket");
 	}
 	(void) memset(&ifr, 0, sizeof(ifr));
-	(void) strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	if (IoctlSocket(s, SIOCGIFADDR, (caddr_t)&ifr) < 0) {
 		if (errno == EADDRNOTAVAIL || errno == EAFNOSUPPORT) {
 			if (!force)
@@ -1180,10 +1189,12 @@ in_status(force)
 		} else
 			warn("SIOCGIFADDR");
 	}
-	(void) strncpy(ifr.ifr_name, name, sizeof (ifr.ifr_name));
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	sin = (struct sockaddr_in *)&ifr.ifr_addr;
 	printf("\tinet %s ", inet_ntoa(sin->sin_addr));
-	(void) strncpy(ifr.ifr_name, name, sizeof (ifr.ifr_name));
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	if (IoctlSocket(s, SIOCGIFNETMASK, (caddr_t)&ifr) < 0) {
 		if (errno != EADDRNOTAVAIL)
 			warn("SIOCGIFNETMASK");
@@ -1200,7 +1211,8 @@ in_status(force)
 			else
 			    warn("SIOCGIFDSTADDR");
 		}
-		(void) strncpy(ifr.ifr_name, name, sizeof (ifr.ifr_name));
+		CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+		ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 		sin = (struct sockaddr_in *)&ifr.ifr_dstaddr;
 		printf("--> %s ", inet_ntoa(sin->sin_addr));
 	}
@@ -1213,7 +1225,8 @@ in_status(force)
 			else
 			    warn("SIOCGIFBRDADDR");
 		}
-		(void) strncpy(ifr.ifr_name, name, sizeof (ifr.ifr_name));
+		CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+		ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 		sin = (struct sockaddr_in *)&ifr.ifr_addr;
 		if (sin->sin_addr.s_addr != 0)
 			printf("broadcast %s", inet_ntoa(sin->sin_addr));
