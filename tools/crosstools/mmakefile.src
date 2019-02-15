@@ -43,49 +43,54 @@ ifneq (no-java,$(JAVA_TARGET))
 GCC_LANGUAGES:=$(GCC_LANGUAGES),java
 endif
 
-GCC_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
+GCC_COMMON_OPTS := --target=$(AROS_TARGET_CPU)-aros
 
 # ARM requires additional flags to determine CPU type and FP model
 ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
-GCC_EXTRA_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
-GCC_EXTRA_OPTS += --with-float=$(GCC_DEFAULT_FLOAT_ABI)
-GCC_EXTRA_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
-GCC_EXTRA_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
-GCC_EXTRA_OPTS += --disable-libunwind-exceptions
+GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
+GCC_COMMON_OPTS += --with-float=$(GCC_DEFAULT_FLOAT_ABI)
+GCC_COMMON_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
+GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
+GCC_COMMON_OPTS += --disable-libunwind-exceptions
 else
 # If we are building GCC >= 5, for x86 targets, enable libmpx
 # ifeq ($(shell test $(GCC_VERSION_MAJOR) -gt 4; echo $$?),0)
 # ifeq ($(AROS_TARGET_CPU),i386)
-# GCC_EXTRA_OPTS += --enable-libmpx
+# GCC_COMMON_OPTS += --enable-libmpx
 # endif
 # ifeq ($(AROS_TARGET_CPU),x86_64)
-# GCC_EXTRA_OPTS += --enable-libmpx
+# GCC_COMMON_OPTS += --enable-libmpx
 # endif
 # endif
-GCC_EXTRA_OPTS += --with-dwarf2
+GCC_COMMON_OPTS += --with-dwarf2
 endif
 
-GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPER)
-GCC_EXTRA_OPTS += --with-native-system-header-dir=/include
-GCC_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
-GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
-GCC_EXTRA_OPTS += --enable-languages=$(strip $(GCC_LANGUAGES))
-GCC_EXTRA_OPTS += --enable-long-long
-GCC_EXTRA_OPTS += --enable-version-specific-runtime-libs
-GCC_EXTRA_OPTS += --enable-frame-pointer
-GCC_EXTRA_OPTS += --with-isl=$(CROSSTOOLSDIR)
-GCC_EXTRA_OPTS += --disable-isl-version-check
-GCC_EXTRA_OPTS += --disable-bootstrap 
-GCC_EXTRA_OPTS += --disable-sjlj-exceptions
-GCC_EXTRA_OPTS += --disable-tls
-ifneq (yes, $(TARGET_LTO))
-GCC_EXTRA_OPTS += --disable-plugins
+GCC_COMMON_OPTS += --with-sysroot=$(AROS_DEVELOPER)
+GCC_COMMON_OPTS += --with-native-system-header-dir=/include
+GCC_COMMON_OPTS += --bindir=$(CROSSTOOLSDIR)
+GCC_COMMON_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
+GCC_COMMON_OPTS += --enable-languages=$(strip $(GCC_LANGUAGES))
+GCC_COMMON_OPTS += --enable-long-long
+GCC_COMMON_OPTS += --enable-version-specific-runtime-libs
+GCC_COMMON_OPTS += --enable-frame-pointer
+GCC_COMMON_OPTS += --with-isl=$(CROSSTOOLSDIR)
+GCC_COMMON_OPTS += --disable-isl-version-check
+GCC_COMMON_OPTS += --disable-bootstrap 
+GCC_COMMON_OPTS += --disable-sjlj-exceptions
+GCC_COMMON_OPTS += --disable-tls
+ifneq (yes,$(TARGET_LTO))
+GCC_COMMON_OPTS += --disable-plugins
 endif
-GCC_EXTRA_OPTS += --disable-nls
-GCC_EXTRA_OPTS += --disable-libssp
-GCC_EXTRA_OPTS += --disable-libstdcxx-pch
-GCC_EXTRA_OPTS += --disable-build-with-cxx
-GCC_EXTRA_OPTS += --disable-build-poststage1-with-cxx
+GCC_COMMON_OPTS += --disable-nls
+GCC_COMMON_OPTS += --disable-libssp
+GCC_COMMON_OPTS += --disable-libstdcxx-pch
+GCC_COMMON_OPTS += --disable-build-with-cxx
+GCC_COMMON_OPTS += --disable-build-poststage1-with-cxx
+
+ifeq (,$(GCC_EXTRA_OPTS))
+GCC_EXTRA_OPTS += $(GCC_COMMON_OPTS)
+endif
+GCC_ENV=enable_libatomic=no
 
 GCC_PATH = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 
@@ -232,7 +237,7 @@ tools-crosstools-gcc :
 	package_repo="$(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="$(GCC_EXTRA_OPTS)"
+	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
 
 #MM
 tools-crosstools-icu :
