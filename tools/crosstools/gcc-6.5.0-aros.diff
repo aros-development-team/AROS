@@ -1065,6 +1065,43 @@ diff -ruN gcc-6.5.0/include/filenames.h gcc-6.5.0.aros/include/filenames.h
  #else /* not DOSish */
  #  if defined(__APPLE__)
  #    ifndef HAVE_CASE_INSENSITIVE_FILE_SYSTEM
+diff -ruN gcc-6.5.0/libatomic/configure.tgt gcc-6.5.0.aros/libatomic/configure.tgt
+--- gcc-6.5.0/libatomic/configure.tgt	2016-05-10 08:03:07.000000000 +0100
++++ gcc-6.5.0.aros/libatomic/configure.tgt	2019-02-14 11:26:21.174780700 +0000
+@@ -108,6 +108,10 @@
+ 
+ # Other system configury
+ case "${target}" in
++  *-*-aros*)
++	config_path="${config_path} posix"
++	;;
++
+   arm*-*-linux*)
+ 	# OS support for atomic primitives.
+ 	config_path="${config_path} linux/arm posix"
+diff -ruN gcc-6.5.0/libatomic/libatomic_i.h gcc-6.5.0.aros/libatomic/libatomic_i.h
+--- gcc-6.5.0/libatomic/libatomic_i.h	2016-01-04 14:30:50.000000000 +0000
++++ gcc-6.5.0.aros/libatomic/libatomic_i.h	2019-02-13 12:20:35.215061500 +0000
+@@ -35,6 +35,9 @@
+ #include <limits.h>
+ #include <string.h>
+ 
++#if defined(__AROS__)
++#include <exec/types.h>
++#endif
+ 
+ /* Symbol concatenation macros.  */
+ #define C2_(X,Y)	X ## Y
+@@ -103,7 +106,9 @@
+ };
+ 
+ /* The "word" size of the machine.  */
++#if !defined(__AROS__) || !defined(__typedef_WORD)
+ typedef unsigned UWORD __attribute__((mode(word)));
++#endif
+ 
+ /* Macros for handing sub-word sized quantities.  */
+ #define MASK_1		((UWORD)0xff)
 diff -ruN gcc-6.5.0/libgcc/config/arm/t-aros gcc-6.5.0.aros/libgcc/config/arm/t-aros
 --- gcc-6.5.0/libgcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-6.5.0.aros/libgcc/config/arm/t-aros	2019-02-13 12:20:35.215061500 +0000
