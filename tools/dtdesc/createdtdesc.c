@@ -428,7 +428,7 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
 {
  struct IFFHandle *IH;
  struct FileDataTypeHeader FileDTH;
- int i = 0;
+ int i;
 
  if(!TheDTDesc)
  {
@@ -509,16 +509,21 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   return(FALSE);
  }
 
- FileDTH.dth_Name     = (((unsigned int) sizeof(struct FileDataTypeHeader)));
+ //ASSERT((sizeof(struct FileDataTypeHeader) & 1) == 0);
+ if (TheDTDesc->DTH.dth_MaskLen > 0)
+ {
+  // Write the mask directly after the header to preserve its word alignment.
+  FileDTH.dth_Mask     = (((unsigned int) sizeof(struct FileDataTypeHeader)));
+  FileDTH.dth_Name     = (((unsigned int) FileDTH.dth_Mask) + (TheDTDesc->DTH.dth_MaskLen << 1));
+  FileDTH.dth_Mask     = Swap32IfLE(((uint32_t) FileDTH.dth_Mask));
+ }
+ else
+ {
+  FileDTH.dth_Mask     = 0;
+  FileDTH.dth_Name     = (((unsigned int) sizeof(struct FileDataTypeHeader)));
+ }
  FileDTH.dth_BaseName = (((unsigned int) FileDTH.dth_Name) + strlen(TheDTDesc->DTH.dth_Name) + 1);
  FileDTH.dth_Pattern  = (((unsigned int) FileDTH.dth_BaseName) + strlen(TheDTDesc->DTH.dth_BaseName) + 1);
- // dth_Mask _must_ be word aligned
- FileDTH.dth_Mask     = (((unsigned int) FileDTH.dth_Pattern) + strlen(TheDTDesc->DTH.dth_Pattern) + 1);
- if (FileDTH.dth_Mask & 1)
- {
-  FileDTH.dth_Mask += 1;
-  i = 1;
- }
  FileDTH.dth_GroupID  = TheDTDesc->DTH.dth_GroupID;
  FileDTH.dth_ID       = TheDTDesc->DTH.dth_ID;
  FileDTH.dth_MaskLen  = TheDTDesc->DTH.dth_MaskLen;
@@ -529,7 +534,6 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
  FileDTH.dth_Name     = Swap32IfLE(((uint32_t) FileDTH.dth_Name));
  FileDTH.dth_BaseName = Swap32IfLE(((uint32_t) FileDTH.dth_BaseName));
  FileDTH.dth_Pattern  = Swap32IfLE(((uint32_t) FileDTH.dth_Pattern));
- FileDTH.dth_Mask     = Swap32IfLE(((uint32_t) FileDTH.dth_Mask));
  FileDTH.dth_GroupID  = Swap32IfLE(FileDTH.dth_GroupID);
  FileDTH.dth_ID       = Swap32IfLE(FileDTH.dth_ID);
  FileDTH.dth_MaskLen  = Swap16IfLE(FileDTH.dth_MaskLen);
@@ -543,6 +547,22 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   CloseIFF(IH);
   remove(TheDTDesc->Name);
   return(FALSE);
+ }
+
+ if (TheDTDesc->DTH.dth_MaskLen)
+ {
+  for(i=0; i<TheDTDesc->DTH.dth_MaskLen; i++)
+  {
+   TheDTDesc->DTH.dth_Mask[i]=Swap16IfLE(TheDTDesc->DTH.dth_Mask[i]);
+  }
+
+  if(WriteChunkData(IH, (char *) TheDTDesc->DTH.dth_Mask, TheDTDesc->DTH.dth_MaskLen << 1)<=0)
+  {
+   EndChunk(IH);
+   CloseIFF(IH);
+   remove(TheDTDesc->Name);
+   return(FALSE);
+  }
  }
 
  if(WriteChunkData(IH, TheDTDesc->DTH.dth_Name, (strlen(TheDTDesc->DTH.dth_Name) + 1))<=0)
@@ -561,28 +581,12 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   return(FALSE);
  }
 
- if(WriteChunkData(IH, TheDTDesc->DTH.dth_Pattern, (strlen(TheDTDesc->DTH.dth_Pattern) + 1 + i))<=0)
+ if(WriteChunkData(IH, TheDTDesc->DTH.dth_Pattern, (strlen(TheDTDesc->DTH.dth_Pattern) + 1))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
   remove(TheDTDesc->Name);
   return(FALSE);
- }
-
- if (TheDTDesc->DTH.dth_MaskLen)
- {
-  for(i=0; i<TheDTDesc->DTH.dth_MaskLen; i++)
-  {
-   TheDTDesc->DTH.dth_Mask[i]=Swap16IfLE(TheDTDesc->DTH.dth_Mask[i]);
-  }
-
-  if(WriteChunkData(IH, (char *) TheDTDesc->DTH.dth_Mask, TheDTDesc->DTH.dth_MaskLen * sizeof(uint16_t))<=0)
-  {
-   EndChunk(IH);
-   CloseIFF(IH);
-   remove(TheDTDesc->Name);
-   return(FALSE);
-  }
  }
  
  EndChunk(IH);
