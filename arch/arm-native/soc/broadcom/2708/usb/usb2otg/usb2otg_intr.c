@@ -549,7 +549,7 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
 
         if (reg)
         {
-            bug("leaving interrupt with OTGINTR active: %08x\n", reg);
+//            bug("leaving interrupt with OTGINTR active: %08x\n", reg);
         }
 
         reg = rd32le(USB2OTG_INTR);
@@ -557,7 +557,7 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
 
         if (reg & msk)
         {
-            bug("leaving interrupt with INTR active: %08x %08x %08\n", reg, msk, reg&msk);
+//            bug("leaving interrupt with INTR active: %08x %08x %08\n", reg, msk, reg&msk);
         }
 
         for (int i=0; i < 8; i++)
