@@ -114,7 +114,7 @@ WORD FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                                 if (len > 1)
                                 {
                                     ioreq->iouh_Actual = 2;
-                                    *mptr++ = AROS_WORD2BE((slen << 9)|UDT_STRING);
+                                    *mptr++ = AROS_WORD2BE(((slen + 1) << 9)|UDT_STRING);
                                     /* "expand" string to utf16 */
                                     while ((ioreq->iouh_Actual + 1) < len)
                                     {
