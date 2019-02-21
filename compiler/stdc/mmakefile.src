@@ -524,7 +524,7 @@ STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) \
     $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
 
-USER_CFLAGS := $(NOWARN_FLAGS) -noposixc -fno-builtin
+USER_CFLAGS := $(NOWARN_FLAGS) -noposixc $(CFLAGS_NO_BUILTIN)
 USER_LDFLAGS := -nostdc -noposixc
 USER_CPPFLAGS := -Dlint '-D__FBSDID(x)=' 
 
