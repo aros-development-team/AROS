@@ -641,7 +641,6 @@ aros_android_antapk
 aros_android_level
 gcc_default_mode
 gcc_default_float_abi
-gcc_default_endian
 gcc_default_fpu
 gcc_default_cpu_tune
 gcc_default_cpu
@@ -888,6 +887,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -1016,6 +1016,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1268,6 +1269,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1405,7 +1415,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1558,6 +1568,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -7323,6 +7334,8 @@ main ()
     if (*(data + i) != *(data3 + i))
       return 14;
   close (fd);
+  free (data);
+  free (data3);
   return 0;
 }
 _ACEOF
@@ -8177,10 +8190,48 @@ esac
 kernel_tool_prefix="none"
 aros_tool_prefix="none"
 elf_tool_prefix="${target_cpu}-elf-"
-x86_isa_extra="ISA_X86_FLAGS           := -m32 -march=i486"
-x86_64_isa_extra="ISA_X8664_FLAGS         := -mcmodel=large"
+
 export_newline="
 "
+
+# Base target cpu ISA configuration switch.
+case "$target_cpu" in
+    *aarch64*)
+        ;;
+    *arm*)
+        ;;
+    *m68k*)
+        m68k_isa_extra="ISA_MC68000_FLAGS           := -march=68000"
+        m68k_020_isa_extra="ISA_MC68020_FLAGS         := -march=68020"
+        m68k_030_isa_extra="ISA_MC68030_FLAGS         := -march=68030"
+        m68k_040_isa_extra="ISA_MC68040_FLAGS         := -march=68040"
+        m68k_060_isa_extra="ISA_MC68060_FLAGS         := -march=68060"
+        m68k_ac080_isa_extra="ISA_AC68080_FLAGS         := -march=68040"
+        m68k_020_ext="ISA_MC68020_EXT           :=020"
+        m68k_030_ext="ISA_MC68030_EXT           :=030"
+        m68k_040_ext="ISA_MC68040_EXT           :=040"
+        m68k_060_ext="ISA_MC68060_EXT           :=060"
+        m68k_020_cflags="ISA_MC68020_CFLAGS        :="
+        m68k_030_cflags="ISA_MC68030_CFLAGS        :="
+        m68k_040_cflags="ISA_MC68040_CFLAGS        :="
+        m68k_060_cflags="ISA_MC68060_CFLAGS        :="
+        m68k_020_cppflags="ISA_MC68020_CPPFLAGS      :="
+        m68k_030_cppflags="ISA_MC68030_CPPFLAGS      :="
+        m68k_040_cppflags="ISA_MC68040_CPPFLAGS      :="
+        m68k_060_cppflags="ISA_MC68060_CPPFLAGS      :="
+        m68k_020_ldflags="ISA_MC68020_LDFLAGS       :="
+        m68k_030_ldflags="ISA_MC68030_LDFLAGS        :="
+        m68k_040_ldflags="ISA_MC68040_LDFLAGS        :="
+        m68k_060_ldflags="ISA_MC68060_LDFLAGS        :="
+        ;;
+    *x86_64* | *i?86*)
+        x86_isa_extra="ISA_X86_FLAGS           := -m32 -march=i486"
+        x86_64_isa_extra="ISA_X8664_FLAGS         := -mcmodel=large"
+        ;;
+    *powerpc*)
+        ;;
+esac
+
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
@@ -8192,6 +8243,7 @@ case "$target_os" in
                 aros_object_format="m68kelf"
                 aros_flavour="emulcompat"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
+                aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
                 aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
                 gcc_target_cpu="mc68000"
@@ -8447,10 +8499,10 @@ case "$target_os" in
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="ld -arch ppc"
-		aros_kernel_as="as -arch ppc"
+                aros_kernel_as="as -arch ppc"
                 aros_kernel_ranlib="ranlib -arch ppc"
-		aros_kernel_nm="nm -arch ppc"
-		aros_kernel_strip="strip -arch ppc"
+                aros_kernel_nm="nm -arch ppc"
+                aros_kernel_strip="strip -arch ppc"
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 ;;
             *arm*)
@@ -8527,6 +8579,7 @@ case "$target_os" in
                 aros_object_format="m68kelf"
                 aros_flavour="emulcompat"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
+                aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 gcc_target_cpu="mc68000"
                 ;;
             *i?86*)
@@ -8785,6 +8838,7 @@ fi
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
+                aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 aros_nowarn_flags="$aros_nowarn_flags NOWARN_VOLATILE_REGISTER_VAR"
                 aros_config_cppflags="$aros_config_cppflags -DNOLIBINLINE"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin"
@@ -8867,6 +8921,7 @@ fi
                 aros_object_format="m68kelf"
                 aros_flavour="palmnative"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+                aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 aros_nominal_width=160
                 aros_nominal_height=160
                 aros_nominal_depth=1
@@ -8901,6 +8956,7 @@ fi
                 aros_object_format="m68kelf"
                 aros_flavour="mac68knative"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+                aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 aros_nominal_width=512
                 aros_nominal_height=384
                 aros_nominal_depth=8
@@ -9124,7 +9180,7 @@ $as_echo "$target_gcc_version" >&6; }
 
     if test "$gcc_fix_bitfields" = "true" ; then
         case "$aros_target_cpu" in
-        *x86_64* | i386)
+        *x86_64* | *i?86*)
             x86_isa_extra="$x86_isa_extra -mno-ms-bitfields"
             x86_64_isa_extra="$x86_64_isa_extra -mno-ms-bitfields"
             ;;
@@ -9171,33 +9227,42 @@ spec_obj_format="-m $aros_object_format"
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
 # as well as floating-point ABI.
 case "$aros_target_cpu" in
-*x86_64*)
-    aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
-        spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
-    ;;
-arm*)
-        if test "$gcc_default_cpu" = ""; then
-        gcc_default_cpu="armv6"
-    fi
-    if test "$gcc_default_fpu" = ""; then
-        gcc_default_fpu="vfp"
-    fi
-    if test "$gcc_default_endian" = ""; then
-        if test "$target_cpu" = "armeb"; then
-            gcc_default_endian="big-endian"
-        else
-            gcc_default_endian="little-endian"
+    *m68k*)
+        aros_isa_targets="M68K_ISA_TARGETS:=MC68020 MC68040"
+        aros_isa_extra="$aros_isa_extra$export_newline$aros_isa_targets$export_newline"
+        aros_isa_extra="$aros_isa_extra$m68k_isa_extra$export_newline$m68k_020_isa_extra$export_newline$m68k_030_isa_extra$export_newline$m68k_040_isa_extra$export_newline$m68k_060_isa_extra$export_newline$m68k_ac080_isa_extra$export_newline"
+        aros_isa_extra="$aros_isa_extra$m68k_020_cppflags$export_newline$m68k_030_cppflags$export_newline$m68k_040_cppflags$export_newline$m68k_060_cppflags$export_newline"
+        aros_isa_extra="$aros_isa_extra$m68k_020_cflags$export_newline$m68k_030_cflags$export_newline$m68k_040_cflags$export_newline$m68k_060_cflags$export_newline"
+        aros_isa_extra="$aros_isa_extra$m68k_020_ldflags$export_newline$m68k_030_ldflags$export_newline$m68k_040_ldflags$export_newline$m68k_060_ldflags$export_newline"
+        aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
+        ;;
+    *x86_64*)
+        aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
+                spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
+        ;;
+    arm*)
+                if test "$gcc_default_cpu" = ""; then
+            gcc_default_cpu="armv6"
         fi
-    fi
-    if test "$gcc_default_float_abi" = ""; then
-        if test "$target_cpu" = "armhf"; then
-            gcc_default_float_abi="hard"
-        else
-            gcc_default_float_abi="softfp"
+        if test "$gcc_default_fpu" = ""; then
+            gcc_default_fpu="vfp"
         fi
-    fi
+        if test "$gcc_default_endian" = ""; then
+            if test "$target_cpu" = "armeb"; then
+                gcc_default_endian="big-endian"
+            else
+                gcc_default_endian="little-endian"
+            fi
+        fi
+        if test "$gcc_default_float_abi" = ""; then
+            if test "$target_cpu" = "armhf"; then
+                gcc_default_float_abi="hard"
+            else
+                gcc_default_float_abi="softfp"
+            fi
+        fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum CPU to use" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum CPU to use" >&5
 $as_echo_n "checking Which minimum CPU to use... " >&6; }
 
 # Check whether --with-cpu was given.
@@ -9207,10 +9272,10 @@ else
   aros_gcc_cpu=$gcc_default_cpu
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
 $as_echo "$aros_gcc_cpu" >&6; }
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum FPU to use" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum FPU to use" >&5
 $as_echo_n "checking Which minimum FPU to use... " >&6; }
 
 # Check whether --with-fpu was given.
@@ -9220,10 +9285,10 @@ else
   aros_gcc_fpu=$gcc_default_fpu
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_fpu" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_fpu" >&5
 $as_echo "$aros_gcc_fpu" >&6; }
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which floating point ABI to use" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which floating point ABI to use" >&5
 $as_echo_n "checking Which floating point ABI to use... " >&6; }
 
 # Check whether --with-float was given.
@@ -9233,52 +9298,52 @@ else
   aros_gcc_float_abi=$gcc_default_float_abi
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_float_abi" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_float_abi" >&5
 $as_echo "$aros_gcc_float_abi" >&6; }
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which ARM mode to use" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which ARM mode to use" >&5
 $as_echo_n "checking Which ARM mode to use... " >&6; }
-    if test "$aros_target_cpu_mode" = ""; then
-        aros_target_cpu_mode="arm32"
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Defaulting to $aros_target_cpu_mode" >&5
+        if test "$aros_target_cpu_mode" = ""; then
+            aros_target_cpu_mode="arm32"
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: Defaulting to $aros_target_cpu_mode" >&5
 $as_echo "Defaulting to $aros_target_cpu_mode" >&6; }
-    else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_cpu_mode" >&5
+        else
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_cpu_mode" >&5
 $as_echo "$aros_target_cpu_mode" >&6; }
-    fi
+        fi
 
-    case "$aros_target_cpu_mode" in
-    arm32)
-        gcc_default_mode="arm"
-        aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -m$gcc_default_endian -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
-    ;;
-    arm64)
-        as_fn_error $? "ARM 64-bit mode is unsupported" "$LINENO" 5
-    ;;
-    thumb)
-        as_fn_error $? "Thumb1 16-bit mode is unsupported" "$LINENO" 5
-    ;;
-    thumb1)
-        as_fn_error $? "Thumb1 16-bit mode is unsupported" "$LINENO" 5
-    ;;
-    thumb2)
-        gcc_default_mode="thumb"
-        # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
-        aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -m$gcc_default_endian -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
-    ;;
-    *)
-        as_fn_error $? "Unsupported ARM mode specified $aros_target_cpu_mode" "$LINENO" 5
-    ;;
-    esac
+        case "$aros_target_cpu_mode" in
+        arm32)
+            gcc_default_mode="arm"
+            aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -m$gcc_default_endian -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+        ;;
+        arm64)
+            as_fn_error $? "ARM 64-bit mode is unsupported" "$LINENO" 5
+        ;;
+        thumb)
+            as_fn_error $? "Thumb1 16-bit mode is unsupported" "$LINENO" 5
+        ;;
+        thumb1)
+            as_fn_error $? "Thumb1 16-bit mode is unsupported" "$LINENO" 5
+        ;;
+        thumb2)
+            gcc_default_mode="thumb"
+            # Do not specify -mthumb-interwork as it may add extra code to support arm/thumb interwork
+            aros_isa_flags="$aros_isa_flags -m$gcc_default_mode -$gcc_default_endian -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+        ;;
+        *)
+            as_fn_error $? "Unsupported ARM mode specified $aros_target_cpu_mode" "$LINENO" 5
+        ;;
+        esac
 
-    aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
-    aros_config_cxxflags="$aros_config_cxxflags -fno-asynchronous-unwind-tables -fno-exceptions"
-    aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
-    ;;
-i386)
-    aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
-    aros_kernel_ldflags="$aros_kernel_ldflags -m32"
-    ;;
+        aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_cxxflags="$aros_config_cxxflags -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
+        ;;
+    i386)
+        aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
+        aros_kernel_ldflags="$aros_kernel_ldflags -m32"
+        ;;
 esac
 
 # Some architectures may need custom ELF specs.
