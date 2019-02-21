@@ -10,7 +10,6 @@ CFLAGS_PERMISSIVE                       := @aros_cflags_permissive@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
-CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
 
 #
 # LTO/Graphite optimization flags
@@ -48,6 +47,11 @@ CFLAGS_NO_PROFILE_ARCS                  := @aros_cflags_noprofilearcs@
 
 CFLAGS_TEST_COVERAGE                    := @aros_cflags_testcoverage@
 CFLAGS_NO_TEST_COVERAGE                 := @aros_cflags_notestcoverage@
+
+#Builtins
+CFLAGS_NO_BUILTIN                       := @aros_cflags_no_builtin@
+CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
+CFLAGS_NO_BUILTIN_VSNPRINTF             := @aros_cflags_no_builtin_vsnprintf@
 
 #
 # -iquote support
