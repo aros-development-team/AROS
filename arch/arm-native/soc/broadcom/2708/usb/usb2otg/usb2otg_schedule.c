@@ -378,7 +378,7 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
 
         /* Enable interrupts for this channel */
         tmp = rd32le(USB2OTG_CHANNEL_REG(chan, INTRMASK));
-        tmp |= USB2OTG_INTRCHAN_HALT;
+        tmp |= USB2OTG_INTRCHAN_HALT | USB2OTG_INTRCHAN_TRANSFERCOMPLETE;
         wr32le(USB2OTG_CHANNEL_REG(chan, INTRMASK), tmp);
         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
 
@@ -396,6 +396,8 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
     /* Finally enable the channel and thus start transaction */
     tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
     tmp |= USB2OTG_HOSTCHAR_ENABLE;
+    if (tmp & 0x40000000)
+	bug("writing Disable bit!!!\n");
     wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
 }
 
