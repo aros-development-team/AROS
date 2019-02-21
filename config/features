@@ -732,6 +732,9 @@ aros_warnflags_error
 aros_cflags_no_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_no_builtin_vsnprintf
+aros_cflags_no_builtin_floor
+aros_cflags_no_builtin
 aros_cflags_notestcoverage
 aros_cflags_testcoverage
 aros_cflags_noprofilearcs
@@ -752,7 +755,6 @@ aros_cflags_loop_block
 aros_cflags_whole_program
 aros_cflags_nolto
 aros_cflags_lto
-aros_cflags_no_builtin_floor
 aros_cflags_fast_math
 aros_cflags_permissive
 aros_cflags_exceptions
@@ -782,6 +784,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -852,6 +855,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1104,6 +1108,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1241,7 +1254,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1394,6 +1407,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -2755,7 +2769,6 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fexceptions
 #  -fpermissive
 #  -ffast-math
-#  -fno-builtin-floor
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -2769,6 +2782,10 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fomit-frame-pointer
 #  -fprofile-arcs
 #  -ftest-coverage
+
+#  -fno-builtin
+#  -fno-builtin-floor
+#  -fno-builtin-vsnprintf
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
 $as_echo_n "checking whether ${CC} accepts -fexceptions... " >&6; }
@@ -2848,32 +2865,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_fast_math" >&6; }
 if test "x-$aros_fast_math" = "x-yes" ; then
     aros_cflags_fast_math=-ffast-math
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-floor" >&5
-$as_echo_n "checking whether ${CC} accepts -fno-builtin-floor... " >&6; }
-CFLAGS=-fno-builtin-floor
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  aros_no_builtin_floor="yes"
-else
-  aros_no_builtin_floor="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_builtin_floor" >&5
-$as_echo "$aros_no_builtin_floor" >&6; }
-if test "x-$aros_no_builtin_floor" = "x-yes" ; then
-    aros_cflags_no_builtin_floor=-fno-builtin-floor
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -flto" >&5
@@ -3221,7 +3212,85 @@ if test "x-$aros_test_coverage" = "x-yes" ; then
     aros_cflags_notestcoverage=-fno-test-coverage
 fi
 
-#
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin... " >&6; }
+CFLAGS=-fno-builtin
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_no_builtin="yes"
+else
+  aros_no_builtin="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_builtin" >&5
+$as_echo "$aros_no_builtin" >&6; }
+if test "x-$aros_no_builtin" = "x-yes" ; then
+    aros_cflags_no_builtin=-fno-builtin
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-floor" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-floor... " >&6; }
+CFLAGS=-fno-builtin-floor
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_no_builtin_floor="yes"
+else
+  aros_no_builtin_floor="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_builtin_floor" >&5
+$as_echo "$aros_no_builtin_floor" >&6; }
+if test "x-$aros_no_builtin_floor" = "x-yes" ; then
+    aros_cflags_no_builtin_floor=-fno-builtin-floor
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-vsnprintf" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-vsnprintf... " >&6; }
+CFLAGS=-fno-builtin-vsnprintf
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_no_builtin_vsnprintf="yes"
+else
+  aros_no_builtin_vsnprintf="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_builtin_vsnprintf" >&5
+$as_echo "$aros_no_builtin_vsnprintf" >&6; }
+if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
+    aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
+fi
+
+#-----------------------------------------------------------------------------
 #
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
@@ -5369,6 +5438,10 @@ fi
 
 
 
+
+
+
+#
 
 
 

@@ -37,7 +37,6 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fexceptions
 #  -fpermissive
 #  -ffast-math
-#  -fno-builtin-floor
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -51,6 +50,10 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fomit-frame-pointer
 #  -fprofile-arcs
 #  -ftest-coverage
+
+#  -fno-builtin
+#  -fno-builtin-floor
+#  -fno-builtin-vsnprintf
 
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
 CFLAGS=-fexceptions
@@ -75,14 +78,6 @@ AC_TRY_COMPILE(,, aros_fast_math="yes", aros_fast_math="no")
 AC_MSG_RESULT($aros_fast_math)
 if test "x-$aros_fast_math" = "x-yes" ; then
     aros_cflags_fast_math=-ffast-math
-fi
-
-AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-floor])
-CFLAGS=-fno-builtin-floor
-AC_TRY_COMPILE(,, aros_no_builtin_floor="yes", aros_no_builtin_floor="no")
-AC_MSG_RESULT($aros_no_builtin_floor)
-if test "x-$aros_no_builtin_floor" = "x-yes" ; then
-    aros_cflags_no_builtin_floor=-fno-builtin-floor
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
@@ -196,7 +191,31 @@ if test "x-$aros_test_coverage" = "x-yes" ; then
     aros_cflags_notestcoverage=-fno-test-coverage
 fi
 
-#
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin])
+CFLAGS=-fno-builtin
+AC_TRY_COMPILE(,, aros_no_builtin="yes", aros_no_builtin="no")
+AC_MSG_RESULT($aros_no_builtin)
+if test "x-$aros_no_builtin" = "x-yes" ; then
+    aros_cflags_no_builtin=-fno-builtin
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-floor])
+CFLAGS=-fno-builtin-floor
+AC_TRY_COMPILE(,, aros_no_builtin_floor="yes", aros_no_builtin_floor="no")
+AC_MSG_RESULT($aros_no_builtin_floor)
+if test "x-$aros_no_builtin_floor" = "x-yes" ; then
+    aros_cflags_no_builtin_floor=-fno-builtin-floor
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-vsnprintf])
+CFLAGS=-fno-builtin-vsnprintf
+AC_TRY_COMPILE(,, aros_no_builtin_vsnprintf="yes", aros_no_builtin_vsnprintf="no")
+AC_MSG_RESULT($aros_no_builtin_vsnprintf)
+if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
+    aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
+fi
+
+#-----------------------------------------------------------------------------
 #
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
@@ -966,7 +985,6 @@ fi
 AC_SUBST(aros_cflags_exceptions)
 AC_SUBST(aros_cflags_permissive)
 AC_SUBST(aros_cflags_fast_math)
-AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
 AC_SUBST(aros_cflags_whole_program)
@@ -993,7 +1011,12 @@ AC_SUBST(aros_cflags_noprofilearcs)
 
 AC_SUBST(aros_cflags_testcoverage)
 AC_SUBST(aros_cflags_notestcoverage)
-    
+
+AC_SUBST(aros_cflags_no_builtin)
+AC_SUBST(aros_cflags_no_builtin_floor)
+AC_SUBST(aros_cflags_no_builtin_vsnprintf)
+
+#
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 
