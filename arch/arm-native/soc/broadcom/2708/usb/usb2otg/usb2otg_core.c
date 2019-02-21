@@ -245,7 +245,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     wr32le(USB2OTG_HOSTPORT, otg_RegVal);
 
                     req->tr_time.tv_secs = 0;
-                    req->tr_time.tv_micro = 50000;
+                    req->tr_time.tv_micro = 60000;
                     DoIO((struct IORequest *)req);
 
                     otg_RegVal = rd32le(USB2OTG_HOSTPORT);
