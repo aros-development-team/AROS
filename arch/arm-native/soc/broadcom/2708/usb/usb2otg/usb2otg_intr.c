@@ -35,6 +35,14 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
     if (frnm < last_frame)
     {
         D(bug("[USB2OTG] SOF, frame wrap %d %d\n", frnm, last_frame));
+#if 0
+        bug("Ch2\n");
+        DumpChannelRegs(CHAN_INT1);
+        bug("Ch3\n");
+        DumpChannelRegs(CHAN_INT2);
+        bug("Ch4\n");
+        DumpChannelRegs(CHAN_INT3);
+        #endif
     }
 
     if (frnm != last_frame)
@@ -149,11 +157,28 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
         for (chan = 0; chan < 8; chan++)
         {
+
+
             if (otg_ChanVal & (1 << chan))
             {
                 struct IOUsbHWReq * req = USBUnit->hu_Channel[chan].hc_Request;
                 uint32_t intr = rd32le(USB2OTG_CHANNEL_REG(chan, INTR));
                 wr32le(USB2OTG_CHANNEL_REG(chan, INTR), intr);
+
+
+            if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & 0x40000000)
+            {
+
+                bug("disable bit on channel %d is set!!!\n", chan);
+
+                bug("req=%08x\n", USBUnit->hu_Channel[chan].hc_Request);
+
+                DumpChannelRegs(chan);
+                wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
+                bug("HOSTINTR=%08x\nHOSTINTRMASK=%08x\n", otg_ChanVal, rd32le(USB2OTG_HOSTINTRMASK));
+
+
+            }
 
                 if (req)
                 {
@@ -261,7 +286,13 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
 
                         /* Disable channel */
-                        wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
+                        if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & 0x80000000)
+                        {
+                            bug("Channel completed but still active. Disabling now...\n");
+                            wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0x40000000);
+                        }
+                        else
+                            wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
 
                         /* Put transfer back into queue */
                         if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
@@ -283,7 +314,7 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                         //if (intr != 0x12 || (chan < CHAN_INT1 && chan > CHAN_INT3))
                         //    D(bug("[USB2OTG] Channel %d closed. INTR=%08x\n", chan, intr));
 
-                        if (intr == 0x23)
+                        if ((intr & 0x21) == 0x21)
                         {
                             req->iouh_Req.io_Error = 0;
 
@@ -295,7 +326,7 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                             else
                             {
                                 //CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_InvalidateD);
-                                #if 1
+                                #if 0
                                 for (int i=0; i < 1; i++)
                                 {
 
@@ -319,158 +350,6 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                                 }
                                 #endif
                             }
-#if 0
-                            /* Determine number of packets involved in last transfer. If it is even, toggle
-                               the PID (the OTG was toggling it itself) */
-                            int txsize = USBUnit->hu_Channel[chan].hc_XferSize;
-                            int pid = (USBUnit->hu_PIDBits[req->iouh_DevAddr] >> (2 * req->iouh_Endpoint)) & 3;
-                            int pktcnt = (txsize + req->iouh_MaxPktSize - 1) / req->iouh_MaxPktSize;
-                            if (pktcnt & 1)
-                            {
-                                /* Toggle PID */
-                                USBUnit->hu_PIDBits[req->iouh_DevAddr] ^= (USB2OTG_PID_DATA1 << (2 * req->iouh_Endpoint));
-                            }
-                            /* Update the transferred size unless it was control channel in setup phase */
-                            req->iouh_Actual += txsize;
-                            req->iouh_Req.io_Error = 0;
-
-                            if (chan == CHAN_CTRL && pid == USB2OTG_PID_SETUP)
-                            {
-                                req->iouh_Actual = 0;
-                                USBUnit->hu_PIDBits[req->iouh_DevAddr] &= ~(USB2OTG_PID_SETUP << (2 * req->iouh_Endpoint));
-                                USBUnit->hu_PIDBits[req->iouh_DevAddr] |= (USB2OTG_PID_DATA1 << (2 * req->iouh_Endpoint));
-                            }
-
-                            bug("Completed transfer. Chan=%d, pid=%d, txsize=%d, %08x\n", chan, pid, txsize, HCTSIZ);
-
-                            if (chan == CHAN_CTRL)
-                            {
-                                int direction;
-
-                                /* Determine data direction */
-                                if (req->iouh_SetupData.bmRequestType & URTF_IN) direction = 1; else direction = 0;
-
-                                /*
-                                    Was it control transfer and Actual is less than requested Length? Issue the data
-                                    transfer(s) now
-                                */
-                                if (req->iouh_Actual < req->iouh_Length)
-                                {
-                                    cont = 1;
-
-                                    int pktcnt = ((req->iouh_Length - req->iouh_Actual) + req->iouh_MaxPktSize - 1) / req->iouh_MaxPktSize;
-
-                                    /* Get correct PID */
-                                    int pid = (USBUnit->hu_PIDBits[req->iouh_DevAddr] >> (2 * req->iouh_Endpoint)) & 3;
-
-                                    bug("Req %p continuing with control transfer (data phase) buf=%p len=%d, act=%d, pktcnt=%d, pid=%d\n",
-                                        req, (UBYTE*)req->iouh_Data + req->iouh_Actual, req->iouh_Length - req->iouh_Actual, req->iouh_Actual, pktcnt, pid);
-
-                                    ULONG tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
-                                    tmp &= ~USB2OTG_HOSTCHAR_EPDIR(1);
-                                    tmp |= USB2OTG_HOSTCHAR_EPDIR(direction);
-                                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
-
-                                    /* Buffer in L2 uncached AHB, it will auto advance */
-                                    wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)req->iouh_Data + req->iouh_Actual);
-
-                                    if (!do_split)
-                                    {
-                                        /* Transaction size starting with DATA1 PID */
-                                        wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE),
-                                            USB2OTG_HOSTTSIZE_PID(pid) |
-                                            USB2OTG_HOSTTSIZE_PKTCNT(pktcnt) |
-                                            USB2OTG_HOSTTSIZE_SIZE(req->iouh_Length - req->iouh_Actual));
-
-                                        USBUnit->hu_Channel[chan].hc_XferSize = req->iouh_Length - req->iouh_Actual;
-                                    }
-                                    else
-                                    {
-                                        int xfer_len = req->iouh_Length - req->iouh_Actual;
-                                        if (xfer_len > req->iouh_MaxPktSize)
-                                            xfer_len = req->iouh_MaxPktSize;
-
-                                        if (xfer_len > 188)
-                                            xfer_len = 188;
-
-                                        wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL),
-                                            (1 << 31) |     /* Split enable */
-                                            (3 << 14) |     /* Split position: 3 == ALL, 2 == Begin, 0 == Mid, 1 == END */
-                                            ((req->iouh_SplitHubAddr & 0x7f) << 7) |
-                                            ((req->iouh_SplitHubPort & 0x0f))
-                                        );
-
-                                        /* Transaction size starting with DATA1 PID */
-                                        wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE),
-                                            USB2OTG_HOSTTSIZE_PID(pid) |
-                                            USB2OTG_HOSTTSIZE_PKTCNT(1) |
-                                            USB2OTG_HOSTTSIZE_SIZE(xfer_len));
-
-                                        USBUnit->hu_Channel[chan].hc_XferSize = xfer_len;
-                                    }
-
-                                    /* Finally enable the channel and thus start transaction */
-                                    tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
-                                    tmp |= USB2OTG_HOSTCHAR_ENABLE;
-                                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
-                                }
-                                else
-                                {
-                                    /*
-                                        Done with transfer? If last transfer was zero-byte length then the whole control
-                                        transfer is completed. Otherwise prepare the ACK packet for send/reception.
-                                    */
-                                    if (txsize != 0)
-                                    {
-                                        bug("Req %p Preparing for ACK phase\n", req);
-                                        cont = 1;
-
-                                        /*
-                                            Determine direction of zero size ACK packet. Direction is IN when packet without data
-                                            or packet with OUT data was sent. Otherwise direction is OUT.
-                                        */
-                                        if (req->iouh_Length == 0 || direction == 0)
-                                            direction = 1;
-                                        else
-                                            direction = 0;
-
-                                        ULONG tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
-                                        tmp &= ~USB2OTG_HOSTCHAR_EPDIR(1);
-                                        tmp |= USB2OTG_HOSTCHAR_EPDIR(direction);
-                                        wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
-
-                                        if (do_split)
-                                        {
-                                            wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL),
-                                                (1 << 31) |     /* Split enable */
-                                                (3 << 14) |     /* Split position: 3 == ALL, 2 == Begin, 0 == Mid, 1 == END */
-                                                ((req->iouh_SplitHubAddr & 0x7f) << 7) |
-                                                ((req->iouh_SplitHubPort & 0x0f))
-                                            );
-                                        }
-                                        else
-                                            wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), 0);
-
-                                        /* Transaction size points to a zero-size packet with PID of DATA1 */
-                                        wr32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE),
-                                            USB2OTG_HOSTTSIZE_PID(USB2OTG_PID_DATA1) |
-                                            USB2OTG_HOSTTSIZE_PKTCNT(1) |
-                                            USB2OTG_HOSTTSIZE_SIZE(0));
-
-                                        USBUnit->hu_Channel[chan].hc_XferSize = 0;
-
-                                        /* Finally enable the channel, rest of the code is in IRQ handler */
-                                        tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
-                                        tmp |= USB2OTG_HOSTCHAR_ENABLE;
-                                        wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
-                                    }
-                                    else
-                                    {
-                                        bug("Req %p completed\n", req);
-                                    }
-                                }
-                            }
-#endif
                         }
                         else if (intr & 0x80)
                         {
@@ -491,6 +370,13 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                             {
 //                                if (req->iouh_DevAddr == 4)
 //                                    bug("!NAK channel %d\n", chan);
+
+                                /* Clear interrupt flags */
+                                wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
+
+                                /* Disable channel */
+                                wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
+
                                 ADDTAIL(&USBUnit->hu_IntXFerQueue, req);
                                 USBUnit->hu_Channel[chan].hc_Request = NULL;
                                 req = NULL;
@@ -508,12 +394,39 @@ FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                             req->iouh_Req.io_Error = UHIOERR_BABBLE;
                             DumpChannelRegs(chan);
                         }
+                        else if (intr & 0x200)
+                        {
+                            /* Frame overrun. Don't report problem, reinsert request for further processing */
+                            /* Clear interrupt flags */
+                            wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
+
+                            /* Disable channel */
+                            wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), 0);
+
+                            /* Put transfer back into queue */
+                            if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                                ADDHEAD(&USBUnit->hu_CtrlXFerQueue, req);
+                            if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
+                                ADDHEAD(&USBUnit->hu_BulkXFerQueue, req);
+                            if (req->iouh_Req.io_Command == UHCMD_INTXFER)
+                                ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
+
+                            /* Mark channel free */
+                            USBUnit->hu_Channel[chan].hc_Request = NULL;
+                            req = NULL;
+                        }
                         else if (intr & 0x400)
                         {
                             bug("0x400: ");
                             req->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                             DumpChannelRegs(chan);
                         }
+                        else
+                        {
+                            bug("Unknown %04x: ", intr);
+                            DumpChannelRegs(chan);
+                        }
+
 
                         /* If there is no transfer continuation on that channel then free it and reply the msg */
                         if (cont == 0)
@@ -588,8 +501,6 @@ AROS_INTH1(FNAME_DEV(PendingInt), struct USB2OTGUnit *, otg_Unit)
 
     while((req = (struct IOUsbHWReq *)REMHEAD(&otg_Unit->hu_FinishedXfers)))
     {
-        if (req->iouh_DevAddr == 4)
-            bug("Completing transfer for dev 4\n");
         FNAME_DEV(TermIO)(req, otg_Unit->hu_USB2OTGBase);
     }
 
