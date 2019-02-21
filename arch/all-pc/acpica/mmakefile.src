@@ -7,7 +7,7 @@ DEBUG_ACPI=no
 ACPICAREPOSITORIES := \
     https://acpica.org/sites/acpica/files https://mirrors.omniosce.org/acpica
 ACPICAPACKAGE      := acpica
-ACPICAVERSION      := 20190108
+ACPICAVERSION      := 20190215
 ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)
 ACPICASRCDIR       := $(PORTSDIR)/acpica/$(ACPICAARCHBASE)
 
