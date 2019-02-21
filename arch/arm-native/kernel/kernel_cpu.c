@@ -81,12 +81,12 @@ asm(
 
 "leave_hyper:                                   \n" /* Escape hypervisor mode forever */
 "               adr     r4, mpcore_continue_boot\n"
-"               msr     ELR_hyp, r4             \n"
+"               .byte   0x04,0xf3,0x2e,0xe1     \n" /* msr     ELR_hyp, r4             */
 "               mrs     r4, cpsr_all            \n"
 "               and     r4, r4, #0x1f           \n"
 "               orr     r4, r4, #0x13           \n"
-"               msr     SPSR_hyp, r4            \n"
-"               eret                            \n" /* Exit hypervisor */
+"               .byte   0x04,0xf3,0x6e,0xe1     \n" /* msr     SPSR_hyp, r4            */
+"               .byte   0x6e,0x00,0x60,0xe1     \n" /* eret                            */ /* Exit hypervisor */
 
 "       .globl mpcore_pde                       \n"
 "mpcore_pde:    .word   0                       \n"
