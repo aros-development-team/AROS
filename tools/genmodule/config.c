@@ -55,7 +55,7 @@ freeBanner(char *banner)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-l library-stub gendir] [-v versionextra]\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-l library-stub gendir] [-f flavour] [-v versionextra]\n"
     "       {writefiles|writemakefile|writeincludes|writelibdefs|writefunclist|writefd|writeskel|writethunk} modname modtype\n"
 ;
 
@@ -105,7 +105,7 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
 
-    while ((c = getopt(argc, argv, ":c:s:d:l:v:")) != -1)
+    while ((c = getopt(argc, argv, ":c:s:d:l:f:v:")) != -1)
     {
         if (c == ':')
         {
@@ -134,6 +134,10 @@ struct config *initconfig(int argc, char **argv)
             /* Remove / at end if present */
             if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
             cfg->libgendir = optarg;
+            break;
+
+        case 'f':
+            cfg->flavour = optarg;
             break;
 
         case 'v':

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Print the library magic and init code in the file modname_start.c.
@@ -189,10 +189,25 @@ static void writedecl(FILE *out, struct config *cfg)
             "#include <aros/genmodule.h>\n"
             "#include <dos/dos.h>\n"
             "\n"
-            "#include \"%s_libdefs.h\"\n"
-            "\n"
-            , cfg->modulename
     );
+
+    if (!cfg->flavour)
+    {
+        fprintf(out,
+                "#include \"%s_libdefs.h\"\n"
+                "\n"
+                , cfg->modulename
+        );
+    }
+    else
+    {
+        fprintf(out,
+                "#include \"%s_%s_libdefs.h\"\n"
+                "\n"
+                , cfg->modulename, cfg->flavour
+        );
+    }
+
     for (s = cfg->rellibs; s; s = s->next)
         fprintf(out,
                 "#include <proto/%s.h>\n"
