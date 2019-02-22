@@ -23,8 +23,8 @@ AC_CONFIG_AUX_DIR(scripts/autoconf)
 AC_CANONICAL_HOST
 
 # Default versions for the gnu tools we build
-default_gcc_version="4.6.4"
-default_binutils_version="2.23.2"
+default_gcc_version="6.5.0"
+default_binutils_version="2.32"
 default_grub2_version="2.02"
 target_grub2_version=$default_grub2_version
 
