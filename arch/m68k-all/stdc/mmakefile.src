@@ -3,8 +3,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0 -mc68020
-USER_CFLAGS := -I$(SRCDIR)/compiler/stdc
+USER_AFLAGS  := -I$(GENINCDIR)
+USER_CPPFLAGS := -DDEBUG=0
+USER_INCLUDES := -I$(SRCDIR)/compiler/stdc
+ISA_FLAGS := $(ISA_MC68020_FLAGS)
 
 STDC_M68K_FILES := \
     fenv

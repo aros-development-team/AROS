@@ -5,7 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 FILES :=
 AFILES := sdivmod32 smult32 smult64 udivmod32 umult32 umult64
 
-USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -mc68020
+USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls
+ISA_FLAGS:=$(ISA_MC68020_FLAGS)
 
 %build_archspecific \
   mainmmake=kernel-utility modname=utility maindir=rom/utility arch=m68k \

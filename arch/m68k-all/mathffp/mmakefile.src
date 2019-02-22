@@ -5,7 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 FILES :=
 AFILES := spcmp sptst
 
-USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -mc68020
+USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls
+ISA_FLAGS:=$(ISA_MC68020_FLAGS)
 
 %build_archspecific \
   mainmmake=workbench-libs-mathffp modname=mathffp maindir=workbench/libs/mathffp arch=m68k \
