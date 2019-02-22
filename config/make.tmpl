@@ -1277,7 +1277,7 @@ $(TMP_TARGET) : OPTS := $(TMP_OPTS)
 $(TMP_TARGET) : MODNAME := %(modname)
 $(TMP_TARGET) : MODTYPE := %(modtype)
 $(TMP_TARGET) : $(TMP_DEPS)
-	$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE)
+	@$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE)
 %end
 #------------------------------------------------------------------------------
 
@@ -2145,8 +2145,11 @@ endif
 ifneq (%(includedir),)
 %(mmake)%(flavour)_CPPFLAGS         += -I%(includedir)
 endif
-%(mmake)%(flavour)_CPPFLAGS           += $(strip %(cflags) $($(%(mmake)%(flavour)_DEFNAME)_CPPFLAGS))
-%(mmake)%(flavour)_LINKLIBCPPFLAGS    := $(strip %(cflags) $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBCPPFLAGS))
+%(mmake)%(flavour)_LINKLIBCPPFLAGS  := $(%(mmake)%(flavour)_CPPFLAGS)
+%(mmake)%(flavour)_CPPFLAGS         += $(strip $($(%(mmake)%(flavour)_DEFNAME)_CPPFLAGS))
+%(mmake)%(flavour)_LINKLIBCPPFLAGS  += $(strip $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBCPPFLAGS))
+%(mmake)%(flavour)_CFLAGS           := $(strip %(cflags) $($(%(mmake)%(flavour)_DEFNAME)_CFLAGS))
+%(mmake)%(flavour)_LINKLIBCFLAGS    := $(strip %(cflags) $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBCFLAGS))
 %(mmake)%(flavour)_CXXFLAGS         := $(strip %(cxxflags) $($(%(mmake)%(flavour)_DEFNAME)_CXXFLAGS))
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
@@ -2229,11 +2232,11 @@ $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_RELLINKLIBOBJS) : | $(%(m
     compiler="%(compiler)"
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames=$(%(mmake)%(flavour)_NLIBARCHFILES) targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
-    cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags=$(%(mmake)%(flavour)_CFLAGS) dflags=$(%(mmake)%(flavour)_LINKLIBDFLAGS) \
+    cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags=$(%(mmake)%(flavour)_LINKLIBCFLAGS) dflags=$(%(mmake)%(flavour)_LINKLIBDFLAGS) \
     compiler="%(compiler)"
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames=$(%(mmake)%(flavour)_LINKLIBCCGENFILES) srcdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
-    cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags=$(%(mmake)%(flavour)_CFLAGS) dflags=$(%(mmake)%(flavour)_LINKLIBDFLAGS) \
+    cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags=$(%(mmake)%(flavour)_LINKLIBCFLAGS) dflags=$(%(mmake)%(flavour)_LINKLIBDFLAGS) \
     compiler="%(compiler)"
 
 ifneq ($(%(mmake)%(flavour)_LINKLIBAFILES),)

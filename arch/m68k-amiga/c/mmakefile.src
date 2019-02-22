@@ -1,4 +1,4 @@
-# Copyright © 2003-2018, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -72,5 +72,17 @@ CFILES		:= SetPatch
 %build_prog mmake=workbench-c-m68k-setpatch progname=SetPatch \
     files=$(CFILES) targetdir=$(AROS_C) \
     uselibs=setpatch usestartup=no
+
+# Some Tests to check SetPatch functionality ..
+
+CFILES	      := test-cas
+ISA_FLAGS += -mc68020
+USER_LDFLAGS  := 
+
+%build_prog mmake=workbench-c-m68k-setpatch-testcas progname=test-CAS \
+    files=$(CFILES) targetdir=$(AROS_TESTS)/m68k
+
+#MM- workbench-c-m68k-setpatch-tests : workbench-c-m68k-setpatch-testcas
+#MM- workbench-c-m68k-setpatch-tests-quick : workbench-c-m68k-setpatch-testcas-quick
 
 %common

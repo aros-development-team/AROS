@@ -120,15 +120,25 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
 
+    fprintf(out, "%s_CPPFLAGS  +=", moduleversname);
+    for (s = cfg->rellibs; s ; s = s->next)
+        fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
+    if (cfg->options & OPTION_RELLINKLIB)
+        fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
+    fprintf(out, "\n");
     fprintf(out, "%s_LINKLIBCPPFLAGS  +=", moduleversname);
     for (s = cfg->rellibs; s ; s = s->next)
         fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
     fprintf(out, "\n");
 
-    fprintf(out, "%s_CPPFLAGS  += $(%s_LINKLIBCPPFLAGS)", moduleversname, moduleversname);
-    if (cfg->options & OPTION_RELLINKLIB)
-        fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
-    fprintf(out, "\n");
+    fprintf(out, "%s_CFLAGS +=", moduleversname);
+    fprintf(out,"\n");
+    fprintf(out, "%s_LINKLIBCFLAGS +=", moduleversname);
+    fprintf(out,"\n");
+    fprintf(out, "%s_CXXFLAGS +=", moduleversname);
+    fprintf(out,"\n");
+    fprintf(out, "%s_LINKLIBCXXFLAGS +=", moduleversname);
+    fprintf(out,"\n");
 
     fprintf(out, "%s_LDFLAGS +=", moduleversname);
     fprintf(out,"\n");

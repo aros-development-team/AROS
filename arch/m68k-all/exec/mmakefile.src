@@ -17,7 +17,8 @@ AFILES=newstackswap stackswap \
        copymemquick copymemquick_040 copymemquick_060
 
 USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
-USER_AFLAGS := -I$(GENINCDIR) -m68060
+USER_AFLAGS := -I$(GENINCDIR)
+ISA_FLAGS:=$(ISA_MC68060_FLAGS)
 
 %build_archspecific \
   mainmmake=kernel-exec modname=exec maindir=rom/exec \
