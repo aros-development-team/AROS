@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write libdefs.h. Part of genmodule.
@@ -47,7 +47,14 @@ void writeinclibdefs(struct config *cfg)
     if (strlen(residentflags) == 0)
         strcpy(residentflags, "0");
 
-    snprintf(line, 1023, "%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
+    if (!cfg->flavour)
+    {
+        snprintf(line, sizeof(line) - 1, "%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
+    }
+    else
+    {
+        snprintf(line, sizeof(line) - 1, "%s/%s_%s_libdefs.h", cfg->gendir, cfg->modulename, cfg->flavour);
+    }
 
     out = fopen(line, "w");
 
@@ -92,6 +99,8 @@ void writeinclibdefs(struct config *cfg)
     );
     if (cfg->versionextra)
         fprintf(out, "%s ", cfg->versionextra);
+    if (cfg->flavour)
+        fprintf(out, "%s ", cfg->flavour);
     fprintf(out,
         "%u.%u (%s)%s%s\\r\\n\"\n"
         "#define COPYRIGHT_STRING \"%s\"\n"

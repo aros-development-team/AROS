@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to write a Makefile with variables that provides the files
@@ -45,11 +45,20 @@ static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
 void writemakefile(struct config *cfg)
 {
     FILE *out;
+    char moduleversname[512];
     char name[512];
     struct stringlist *s;
 
-    snprintf(name, sizeof(name), "%s/Makefile.%s%s", cfg->gendir, cfg->modulename, cfg->modtypestr);
+    if (!cfg->flavour)
+    {
+        snprintf(moduleversname, sizeof(moduleversname), "%s", cfg->modulename);
+    }
+    else
+    {
+        snprintf(moduleversname, sizeof(moduleversname), "%s_%s", cfg->modulename, cfg->flavour);
+    }
 
+    snprintf(name, sizeof(name), "%s/Makefile.%s%s", cfg->gendir, moduleversname, cfg->modtypestr);
     out = fopen(name, "w");
 
     if (out == NULL)
@@ -62,12 +71,12 @@ void writemakefile(struct config *cfg)
             "%s_STARTFILES += %s_start\n"
             "%s_ENDFILES += %s_end\n"
             "%s_MODDIR += %s\n",
-            cfg->modulename, cfg->modulename,
-            cfg->modulename, cfg->modulename,
-            cfg->modulename, cfg->moddir
+            moduleversname, cfg->modulename,
+            moduleversname, cfg->modulename,
+            moduleversname, cfg->moddir
     );
 
-    fprintf(out, "%s_LINKLIBFILES +=", cfg->modulename);
+    fprintf(out, "%s_LINKLIBFILES +=", moduleversname);
     if (cfg->options & OPTION_STUBS)
         writemakefilestubs(cfg, 0, out);
     if (cfg->options & OPTION_AUTOINIT)
@@ -75,7 +84,7 @@ void writemakefile(struct config *cfg)
     if (cfg->modtype == LIBRARY)
         fprintf(out, " %s_getlibbase", cfg->modulename);
     fprintf(out, "\n");
-    fprintf(out, "%s_RELLINKLIBFILES +=", cfg->modulename);
+    fprintf(out, "%s_RELLINKLIBFILES +=", moduleversname);
     if (cfg->options & OPTION_RELLINKLIB)
     {
         if (cfg->options & OPTION_STUBS)
@@ -88,10 +97,10 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
     /* Currently there are no asm files anymore */
-    fprintf(out, "%s_LINKLIBAFILES +=\n", cfg->modulename);
-    fprintf(out, "%s_RELLINKLIBAFILES +=\n", cfg->modulename);
+    fprintf(out, "%s_LINKLIBAFILES +=\n", moduleversname);
+    fprintf(out, "%s_RELLINKLIBAFILES +=\n", moduleversname);
 
-    fprintf(out, "%s_INCLUDES += ", cfg->modulename);
+    fprintf(out, "%s_INCLUDES += ", moduleversname);
     if (cfg->options & OPTION_INCLUDES)
     {
         fprintf(out,
@@ -111,30 +120,20 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
 
-    fprintf(out, "%s_LINKLIBCFLAGS  +=", cfg->modulename);
+    fprintf(out, "%s_LINKLIBCPPFLAGS  +=", moduleversname);
     for (s = cfg->rellibs; s ; s = s->next)
         fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
     fprintf(out, "\n");
 
-    fprintf(out, "%s_CFLAGS  += $(%s_LINKLIBCFLAGS)", cfg->modulename, cfg->modulename);
+    fprintf(out, "%s_CPPFLAGS  += $(%s_LINKLIBCPPFLAGS)", moduleversname, moduleversname);
     if (cfg->options & OPTION_RELLINKLIB)
         fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
     fprintf(out, "\n");
 
-    fprintf(out, "%s_LINKLIBDFLAGS  +=", cfg->modulename);
-    for (s = cfg->rellibs; s ; s = s->next)
-        fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
-    fprintf(out, "\n");
-
-    fprintf(out, "%s_DFLAGS  += $(%s_LINKLIBDFLAGS)", cfg->modulename, cfg->modulename);
-    if (cfg->options & OPTION_RELLINKLIB)
-        fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
-    fprintf(out, "\n");
-
-    fprintf(out, "%s_LDFLAGS +=", cfg->modulename);
+    fprintf(out, "%s_LDFLAGS +=", moduleversname);
     fprintf(out,"\n");
 
-    fprintf(out, "%s_LIBS +=", cfg->modulename);
+    fprintf(out, "%s_LIBS +=", moduleversname);
     for (s = cfg->rellibs; s ; s = s->next)
         fprintf(out, " %s_rel", s->s);
     fprintf(out,"\n");
