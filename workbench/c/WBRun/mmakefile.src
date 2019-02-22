@@ -1,4 +1,4 @@
-# Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -10,7 +10,7 @@ EXEDIR  := $(AROS_C)
 #MM- workbench-c : workbench-c-wbrun
 #MM workbench-c-wbrun : includes linklibs
 
-USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_LDFLAGS := -static
 
 %build_prog mmake=workbench-c-wbrun \

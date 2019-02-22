@@ -2,7 +2,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS += -D__OOP_NOATTRBASES__ -D__OOP_NOMETHODBASES__ \
+USER_CPPFLAGS += \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__ \
                -D__OOP_NOLIBBASE__ \
                -D__GRAPHICS_NOLIBBASE__ \
                -D__UTILITY_NOLIBBASE__ \

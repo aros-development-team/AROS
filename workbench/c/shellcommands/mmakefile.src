@@ -42,8 +42,8 @@ FILES	:= \
     Unsetenv \
     Why
 
-USER_CFLAGS := -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
-		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_INCLUDES := -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_LDFLAGS := -static
 
 #MM- workbench-c : workbench-c-shellcommands
@@ -58,13 +58,13 @@ USER_LDFLAGS := -static
 # Embedded side of the world
 
 
-USER_CFLAGS := -D__NOLIBBASE__ \
+USER_CPPFLAGS := -D__NOLIBBASE__ \
 		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
-USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
+USER_CPPFLAGS += -DUSE_EMBEDDED_COMMANDS
 ifeq ($(AROS_TARGET_CPU),m68k)
 # Make sure we optimize this code for size on m68k..
 OPTIMIZATION_CFLAGS := -Os
-USER_CFLAGS   += -D__DOS_NOLIBINLINE__ 
+USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
 endif
 
 OBJDIR := $(OBJDIR).kernel

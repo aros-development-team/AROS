@@ -15,8 +15,8 @@ FILES = \
     dump_smb
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
-USER_CFLAGS := $(NOWARN_FLAGS) \
- -I$(AROS_DEVELOPER)/netinclude -I$(SRCDIR)/$(CURDIR)/include
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_INCLUDES := -I$(AROS_DEVELOPER)/netinclude -I$(SRCDIR)/$(CURDIR)/include
 USER_LDFLAGS := -static
 
 #MM workbench-network-smbfs-client : aros-tcpip workbench-network-smbfs-setup includes
