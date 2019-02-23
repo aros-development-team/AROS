@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,7 +34,8 @@
 /* Timer 1 (EClock) interrupt handler */
 static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
-    unsigned int last_CLO, last_CHI;
+    unsigned int last_CLO;
+    D(unsigned int last_CHI);
 
     D(bug("[Timer] Timer1Tick()\n"));
 
@@ -44,9 +45,9 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
         return;
     }
 
-    last_CHI = TimerBase->tb_Platform.tbp_CHI;
+    D(last_CHI = TimerBase->tb_Platform.tbp_CHI);
     last_CLO = TimerBase->tb_Platform.tbp_CLO;
-    
+
     /* Aknowledge and update our timer interrupt */
     *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << TICK_TIMER); //TimerBase->tb_Platform.tbp_cs;
     TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
