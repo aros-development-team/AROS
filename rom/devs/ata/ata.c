@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved
+    Copyright ï¿½ 2004-2014, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -648,7 +648,7 @@ static BOOL isSlow(ULONG comm)
         if (IMMEDIATE_COMMANDS & (1 << comm))
             slow = FALSE;
     }
-    else if (comm == NSCMD_TD_SEEK64) slow = FALSE;
+    else if (comm == NSCMD_TD_SEEK64 || comm == NSCMD_DEVICEQUERY) slow = FALSE;
 
     return slow;
 }
@@ -689,7 +689,7 @@ AROS_LH1(void, BeginIO,
     else
     {
     	D(bug("[ATA%02ld] Fast command\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
-    
+
         /* Immediate command. Mark unit as active and do the command directly */
         unit->au_Unit.unit_flags |= UNITF_ACTIVE;
         Enable();
@@ -838,7 +838,7 @@ void DaemonCode(struct ataBase *ATABase)
     } while (!sigs);
 
     D(bug("[ATA++] Daemon quits\n"));
-    
+
     ata_CloseTimer(timer);
 
     Forbid();
