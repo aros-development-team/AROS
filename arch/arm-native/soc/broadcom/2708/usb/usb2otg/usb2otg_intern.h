@@ -46,6 +46,8 @@ extern IPTR __arm_periiobase;
 //#define OTG_FORCEHOSTMODE
 //#define OTG_FORCEDEVICEMODE
 
+#include <asm/cpu.h>
+
 /* Reply the iorequest with success */
 #define RC_OK	      0
 
@@ -61,44 +63,44 @@ extern IPTR __arm_periiobase;
 
 static inline ULONG rd32le(IPTR iobase) {
     ULONG val;
-    asm volatile ("dmb":::"memory");
+    dmb();
     val = AROS_LE2LONG(*(volatile ULONG *)(iobase));
-    asm volatile ("dsb":::"memory");
+    dsb();
     return val;
 }
 
 static inline UWORD rd16le(IPTR iobase) {
     UWORD val;
-    asm volatile ("dmb":::"memory");
+    dmb();
     val = AROS_LE2WORD(*(volatile UWORD *)(iobase));
-    asm volatile ("dsb":::"memory");
+    dsb();
     return val;
 }
 
 static inline UBYTE rd8(IPTR iobase) {
     UBYTE val;
-    asm volatile ("dmb":::"memory");
+    dmb();
     val = *(volatile UBYTE *)(iobase);
-    asm volatile ("dsb":::"memory");
+    dsb();
     return val;
 }
 
 static inline void wr32le(IPTR iobase, ULONG value) {
-    asm volatile ("dsb":::"memory");
+    dsb();
     *(volatile ULONG *)(iobase) = AROS_LONG2LE(value);
-    asm volatile ("dmb":::"memory");
+    dmb();
 }
 
 static inline void wr16le(IPTR iobase, UWORD value) {
-    asm volatile ("dsb":::"memory");
+    dsb();
     *(volatile UWORD *)(iobase) = AROS_WORD2LE(value);
-    asm volatile ("dmb":::"memory");
+    dmb();
 }
 
 static inline void wr8be(IPTR iobase, UBYTE value) {
-    asm volatile ("dsb":::"memory");
+    dsb();
     *(volatile UBYTE *)(iobase) = value;
-    asm volatile ("dmb":::"memory");
+    dmb();
 }
 
 struct USBNSDeviceQueryResult
