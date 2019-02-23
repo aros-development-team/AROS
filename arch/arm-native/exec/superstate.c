@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SuperState() - Switch the processor into a higher plane.

@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,9 +26,9 @@ extern uint32_t __arm_periiobase;
 
 #define DEF_BAUD 115200
 
-#define PL011_DIVCLOCK(baud, clock)     ((clock * 4) / baud) 
-#define PL011_BAUDINT(baud, clock)      ((PL011_DIVCLOCK(baud, clock) & 0xFFFFFFC0) >> 6) 
-#define PL011_BAUDFRAC(baud, clock)     ((PL011_DIVCLOCK(baud, clock) & 0x0000003F) >> 0) 
+#define PL011_DIVCLOCK(baud, clock)     ((clock * 4) / baud)
+#define PL011_BAUDINT(baud, clock)      ((PL011_DIVCLOCK(baud, clock) & 0xFFFFFFC0) >> 6)
+#define PL011_BAUDFRAC(baud, clock)     ((PL011_DIVCLOCK(baud, clock) & 0x0000003F) >> 0)
 
 unsigned int uartclock;
 unsigned int uartdivint;
@@ -76,7 +76,7 @@ void serInit(void)
     uart_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
 
     uartclock = AROS_LE2LONG(uart_msg[6]);
-    
+
     wr32le(PL011_0_BASE + PL011_CR, 0);
 
     uartvar = rd32le(GPFSEL1);
