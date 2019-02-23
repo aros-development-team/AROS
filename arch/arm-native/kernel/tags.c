@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -64,7 +64,6 @@ intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *
         if (ti != NULL)
             value = ti->ti_Data;
     }
-    
+
     return value;
 }
-
