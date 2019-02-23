@@ -1,11 +1,12 @@
 /*
-    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef I2C_BCM2708_H
 #define I2C_BCM2708_H
 
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
@@ -20,6 +21,36 @@
 #include <exec/execbase.h>
 
 #include <hardware/bcm2708.h>
+
+static inline ULONG rd32le(IPTR iobase) {
+    ULONG val;
+    val = AROS_LE2LONG(*(volatile ULONG *)(iobase));
+    return val;
+}
+
+static inline UWORD rd16le(IPTR iobase) {
+    UWORD val;
+    val = AROS_LE2WORD(*(volatile UWORD *)(iobase));
+    return val;
+}
+
+static inline UBYTE rd8(IPTR iobase) {
+    UBYTE val;
+    val = *(volatile UBYTE *)(iobase);
+    return val;
+}
+
+static inline void wr32le(IPTR iobase, ULONG value) {
+    *(volatile ULONG *)(iobase) = AROS_LONG2LE(value);
+}
+
+static inline void wr16le(IPTR iobase, UWORD value) {
+    *(volatile UWORD *)(iobase) = AROS_WORD2LE(value);
+}
+
+static inline void wr8be(IPTR iobase, UBYTE value) {
+    *(volatile UBYTE *)(iobase) = value;
+}
 
 struct i2cbcm2708base {
     struct Library i2c_LibNode;
