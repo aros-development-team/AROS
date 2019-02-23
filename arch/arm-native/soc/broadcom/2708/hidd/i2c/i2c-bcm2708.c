@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,40 +21,43 @@ APTR KernelBase __attribute__((used)) = NULL;
 
 void METHOD(I2CBCM2708, Hidd_I2C, PutByte)
 {
-    while (!((*(volatile UBYTE *)BSC0_STATUS) & BSC_STATUS_DONE))
+    while (!(rd32le(BSC0_STATUS) & BSC_STATUS_DONE))
     {
         asm volatile ("mov r2,r2\n");
     }
 
-    *(volatile UBYTE *)BSC0_DATALEN = 1;
-    *(volatile UBYTE *)BSC0_FIFO = msg->data;
+    wr32le(BSC0_DATALEN, 1);
+    wr32le(BSC0_FIFO, msg->data);
 
-    *(volatile UBYTE *)BSC0_STATUS = BSC_CLEAR;
-    *(volatile UBYTE *)BSC0_CONTROL = BSC_WRITE;
+    wr32le(BSC0_STATUS, BSC_CLEAR);
+    wr32le(BSC0_CONTROL, BSC_WRITE);
 }
 
 void METHOD(I2CBCM2708, Hidd_I2C, GetByte)
 {
-    while (!((*(volatile UBYTE *)BSC0_STATUS) & BSC_STATUS_DONE))
+    while (!(rd32le(BSC0_STATUS) & BSC_STATUS_DONE))
     {
         asm volatile ("mov r2,r2\n");
     }
 
-    *(volatile UBYTE *)BSC0_DATALEN = 1;
-    *(volatile UBYTE *)BSC0_STATUS = BSC_CLEAR;
-    *(volatile UBYTE *)BSC0_CONTROL = BSC_READ;
+    wr32le(BSC0_DATALEN, 1);
+    wr32le(BSC0_STATUS, BSC_CLEAR);
+    wr32le(BSC0_CONTROL, BSC_READ);
 
-    *msg->data = *(volatile UBYTE *)BSC0_FIFO;
+    *msg->data = rd32le(BSC0_FIFO);
 }
 
 void I2CBCM2708_Init(void)
 {
+    ULONG tmp;
     KernelBase = OpenResource("kernel.resource");
     __arm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
 
     /* BSC0 is on GPIO 0 & 1 */
-    *(volatile UBYTE *)GPFSEL0 &= ~0x3f; // Mask out bits 0-5
-    *(volatile UBYTE *)GPFSEL0 |= 0x24;  // Set bits 0-5 to binary '100100'
+    tmp = rd32le(GPFSEL0);
+    tmp &= ~0x3f; // Mask out bits 0-5
+    tmp |= 0x24;  // Set bits 0-5 to binary '100100'
+    wr32le(GPFSEL0, tmp);
 }
 
 ADD2LIBS((STRPTR)"i2c.hidd", 0, static struct Library *, I2CBase);
