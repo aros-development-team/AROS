@@ -2,8 +2,8 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-darwin-$(CPU) : workbench-devs-hostdisk
 
-USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)	\
-	       -I$(SRCDIR)/arch/all-unix/devs/hostdisk			\
+USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -I$(SRCDIR)/arch/all-unix/devs/hostdisk			\
 	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk		\
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 

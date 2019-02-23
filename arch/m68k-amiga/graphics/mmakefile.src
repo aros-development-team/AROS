@@ -9,8 +9,8 @@ AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \
                -I$(SRCDIR)/rom/graphics
-USER_CPPFLAGS := -D__GRAPHICS_NOHIDDBASE__
-USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls
+USER_CPPFLAGS := -D__GRAPHICS_NOHIDDBASE__ -DDoRegisterCalls
+USER_AFLAGS := -I$(GENINCDIR)
 ISA_FLAGS := $(ISA_MC68060_FLAGS)
 
 %build_archspecific \

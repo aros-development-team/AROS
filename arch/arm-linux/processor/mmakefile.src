@@ -3,7 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -DHOST_OS_$(AROS_TARGET_VARIANT) -I$(SRCDIR)/rom/processor
+USER_CPPFLAGS := -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -I$(SRCDIR)/rom/processor
 
 FILES := arch_init getcpuinfo
 

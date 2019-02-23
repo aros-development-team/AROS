@@ -5,7 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := Install-grub2
 
-USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -isystem $(SRCDIR)/arch/all-pc/boot/grub2-aros/include
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_INCLUDES := -isystem $(SRCDIR)/arch/all-pc/boot/grub2-aros/include
 
 %build_progs mmake=workbench-c-install-grub2 \
     files=$(FILES) targetdir=$(AROS_C) \

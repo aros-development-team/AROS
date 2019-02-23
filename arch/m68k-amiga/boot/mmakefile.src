@@ -104,7 +104,8 @@ ext_entry.o: FORCE
 
 # USe -m68060 when compiling .S files, as we will need the
 # expanded instruction set to detect alterate CPUs
-USER_AFLAGS := -march=68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_AFLAGS := -march=68060
 
 # Sadly, we need to consume Chip RAM for the initial SS and the ROM BSS.
 # The initial System Stack is located at the end of the first 256K
@@ -221,8 +222,8 @@ $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/
 clean ::
 	-$(RM) $(TESTS)
 
-USER_CFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-               -fno-delete-null-pointer-checks
+USER_INCLUDES += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+USER_CFLAGS += -fno-delete-null-pointer-checks
 USER_AFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 
 $(KOBJSDIR)/%.o : %.c

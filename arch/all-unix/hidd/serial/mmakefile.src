@@ -4,8 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES       := SerialClass SerialUnitClass #unix_funcs
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
-	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_module mmake=workbench-hidd-unix-serial \
   modname=serial modtype=hidd \

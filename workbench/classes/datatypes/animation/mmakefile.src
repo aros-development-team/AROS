@@ -7,7 +7,7 @@ FILES := animationclass animationbuffer animationframe animationplayback animati
 #MM- workbench-datatypes-animation : workbench-datatype-animation
 #MM workbench-datatype-animation : includes linklibs workbench-datatype-animation-envarc
 
-USER_CFLAGS   := -DDEBUG=0
+USER_CPPFLAGS   := -DDEBUG=0
 USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatype-animation \

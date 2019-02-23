@@ -4,13 +4,13 @@ include $(SRCDIR)/config/aros.cfg
 
 MAINDIR := arch/all-hosted/filesys/emul_handler
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
-	       -I$(SRCDIR)/$(CURDIR) \
+USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) \
 	       -I$(SRCDIR)/$(MAINDIR) \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 ifeq ($(ARCH),darwin)
-USER_CFLAGS += -D_FORTIFY_SOURCE=0
+USER_CPPFLAGS += -D_FORTIFY_SOURCE=0
 endif
 
 FILES := emul_host_unix emul_host emul_dir

@@ -22,7 +22,7 @@ FILES := \
 	redirection \
 	readLine
 
-USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
+USER_CPPFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
 	       -D__DOS_NOLIBBASE__
 USER_LDFLAGS := -static
 
@@ -36,11 +36,11 @@ USER_LDFLAGS := -static
     files=$(FILES) targetdir=$(AROS_FS)	\
     usestartup="no"
 
-USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
+USER_CPPFLAGS += -DUSE_EMBEDDED_COMMANDS
 ifeq ($(AROS_TARGET_CPU),m68k)
 # Make sure we optimize this code for size on m68k..
 OPTIMIZATION_CFLAGS := -Os
-USER_CFLAGS   += -D__DOS_NOLIBINLINE__ 
+USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
 endif
 OBJDIR := $(OBJDIR).kernel
 

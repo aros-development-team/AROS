@@ -2,6 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM workbench-datatypes-wave : includes linklibs linklibs-gsm
+
 G72XFILES := \
     wave_g72x \
     g72x/g72x \
@@ -29,9 +31,8 @@ FILES := \
 
 broke :=   init
 
-#MM workbench-datatypes-wave : includes linklibs linklibs-gsm
-
-USER_CFLAGS := -DGSM610_SUPPORT -DG72X_SUPPORT -I$(SRCDIR)/$(CURDIR)/include
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+USER_CPPFLAGS := -DGSM610_SUPPORT -DG72X_SUPPORT
 USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-wave \

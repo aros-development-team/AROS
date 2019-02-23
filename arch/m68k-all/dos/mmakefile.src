@@ -13,9 +13,9 @@ AFILES := callentry \
 
 #MM kernel-dos-m68k : kernel-dos-includes includes-asm_h-m68k
 
-USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
-               -I$(SRCDIR)/rom/dos \
-               -D__DOS_NOLIBBASE__
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
+               -I$(SRCDIR)/rom/dos
+USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 USER_AFLAGS := -I$(GENINCDIR)
 

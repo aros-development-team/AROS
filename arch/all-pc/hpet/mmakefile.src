@@ -7,7 +7,7 @@ FUNCS := gethpetcount allochpetunit freehpetunit getunitattrsa
 
 #MM- includes-generate : kernel-pc-hpet-includes
 
-USER_CFLAGS += -DDEBUG=1
+USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-pc-hpet \
   modname=hpet modtype=resource \

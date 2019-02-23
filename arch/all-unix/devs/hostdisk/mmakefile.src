@@ -2,9 +2,9 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-unix : workbench-devs-hostdisk
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
-	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)		\
-	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/devs/hostdisk -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug
 ## where its strcmp() builtin generates a number of spurious

@@ -9,6 +9,7 @@ INCLUDE_FILES := aboutwindow.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-aboutwindow
 #MM workbench-classes-zune-aboutwindow : workbench-classes-zune-aboutwindow-catalogs
+
 %build_module \
     mmake=workbench-classes-zune-aboutwindow \
     modname=AboutWindow modtype=mcc \

@@ -2,8 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
-	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
 %build_archspecific \
   mainmmake=kernel-battclock modname=battclock maindir=rom/battclock \

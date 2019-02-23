@@ -6,7 +6,7 @@ FILES	:=	ParallelClass ParallelUnitClass
 
 #MM- workbench-devs-amiga-m68k: amiga-m68k-hidd-parallel
 
-#USER_CLFAGS := -DDEBUG=1
+#USER_CPPLFAGS := -DDEBUG=1
 USER_LDFLAGS := -static
 
 %build_module mmake=amiga-m68k-hidd-parallel \

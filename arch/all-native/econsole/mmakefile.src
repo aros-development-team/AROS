@@ -11,7 +11,7 @@ FILES := econsole
 #
 # Also supplies a minimal boot disk at priority -127.
 
-USER_CFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+USER_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 
 %build_module mmake=kernel-econsole \
   modname=econsole modtype=handler \

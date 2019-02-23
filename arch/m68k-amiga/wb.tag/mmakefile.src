@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module_simple mmake=kernel-amiga-m68k-wbtag \
     modname=wbtag modtype=resource \

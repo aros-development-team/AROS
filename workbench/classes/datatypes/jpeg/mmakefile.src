@@ -2,14 +2,13 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS   := -DMYDEBUG
-
 FILES := jpegclass stubs memory
 
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
 #MM workbench-datatypes-jpeg : includes linklibs workbench-libs-jpeg-linklib
 
-USER_CFLAGS := -DAROS_LC_SETFUNCS
+USER_CPPFLAGS   := -DMYDEBUG
+USER_CPPFLAGS += -DAROS_LC_SETFUNCS
 USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-jpeg \

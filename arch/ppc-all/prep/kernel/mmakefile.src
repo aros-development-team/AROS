@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 # on the build on a real PPC/prep system. Other directories in the arch/ppc
 # directory will also need to be converted before the build will work.
 
-USER_CFLAGS := -D__KERNEL__ -D__ROM__
+USER_CPPFLAGS := -D__KERNEL__ -D__ROM__
 
 %build_module_macro mmake=kernel-resource-prep-ppc \
     modname=kernel modtype=resource \

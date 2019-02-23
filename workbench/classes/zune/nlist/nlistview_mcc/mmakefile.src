@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM classes-zune-nlistview-class : includes linklibs
 
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -idirafter $(SRCDIR)/$(CURDIR)/../include/mui -I$(SRCDIR)/$(CURDIR)/../nlistviews_mcp
-USER_CFLAGS :=  -DAROS_ABI_V1
+USER_CPPFLAGS :=  -DAROS_ABI_V1
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 USER_LDFLAGS := -static
 

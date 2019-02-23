@@ -5,10 +5,10 @@ include $(SRCDIR)/config/aros.cfg
 FILES   := displayalert _displayalert getpagesize kernel_panic
 MAINDIR := rom/kernel
 
-USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) \
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
                $(PRIV_EXEC_INCLUDES) \
-	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
-	       -DHOST_OS_linux -DHOST_OS_android
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CPPFLAGS := -DHOST_OS_linux -DHOST_OS_android
 
 %build_archspecific \
     mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \

@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES := mathieeesingbas_init
 AFILES := fpu
 
-USER_CFLAGS := -I$(SRCDIR)/workbench/libs/mathieeesingbas
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/mathieeesingbas
 USER_AFLAGS := -I$(GENINCDIR) -march=68040
 
 %build_archspecific \

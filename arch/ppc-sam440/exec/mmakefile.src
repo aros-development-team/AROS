@@ -9,7 +9,7 @@ CFILES          := \
 
 #MM kernel-exec-sam440-ppc : kernel-kernel-ppc-includes kernel-exec-includes kernel-kernel-includes
 
-USER_CFLAGS     := $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 %build_archspecific \

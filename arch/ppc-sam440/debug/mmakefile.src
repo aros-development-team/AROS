@@ -7,7 +7,7 @@ CFILES := \
 
 #MM kernel-debug-sam440-ppc : kernel-kernel-ppc-includes kernel-debug-includes
 
-USER_CFLAGS     := $(PRIV_KERNEL_INCLUDES) \
+USER_INCLUDES     := $(PRIV_KERNEL_INCLUDES) \
                    -I$(SRCDIR)/rom/debug
 
 %build_archspecific \

@@ -10,7 +10,7 @@ FILES := \
 
 #MM- kernel-processor-ppc : includes
 
-USER_CFLAGS += -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS += -D__UTILITY_NOLIBBASE__
 
 %build_archspecific mainmmake=kernel-processor maindir=rom/processor \
     arch=ppc files=$(FILES) modname=processor

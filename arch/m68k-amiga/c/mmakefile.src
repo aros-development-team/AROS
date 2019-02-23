@@ -3,7 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CPPFLAGS := -I$(GENINCDIR) -I$(SRCDIR) -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_INCLUDES := -I$(GENINCDIR) -I$(SRCDIR)
 USER_CFLAGS := -fno-delete-null-pointer-checks
 USER_AFLAGS := -Os -march=68060
 
@@ -47,7 +48,7 @@ FILES := gdbstop
 
 CFILES := SetPatchAROS
 AFILES := newstackswap
-USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
+USER_INCLUDES += -isystem $(SRCDIR)/rom/dos/include
 USER_LDFLAGS  := -L$(GENDIR)/lib -static
 
 %build_prog mmake=workbench-c-m68k-setpatcharos progname=SetPatchAROS \
@@ -76,7 +77,7 @@ CFILES		:= SetPatch
 # Some Tests to check SetPatch functionality ..
 
 CFILES	      := test-cas
-ISA_FLAGS += -mc68020
+ISA_FLAGS := $(ISA_MC68020_FLAGS)
 USER_LDFLAGS  := 
 
 %build_prog mmake=workbench-c-m68k-setpatch-testcas progname=test-CAS \

@@ -15,8 +15,9 @@ else
     ARCH_LIBS := -L$(AROS_DEVELOPER)/lib -L$(GENDIR)/lib
 endif
 
-USER_CFLAGS  := -Wl,--oformat,elf_i386 -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include \
-		$(ARCH_DEFS) -DBOOTLOADER_$(AROS_TARGET_BOOTLOADER)
+USER_CFLAGS  := -Wl,--oformat,elf_i386 -m32
+USER_INCLUDES := -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include
+USER_CPPFLAGS := $(ARCH_DEFS) -DBOOTLOADER_$(AROS_TARGET_BOOTLOADER)
 USER_LDFLAGS := -m32 -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap-pc.map \
 		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -static-libgcc $(ARCH_LIBS)
 USER_OBJS    := $(OBJDIR)/vesa.bin.o

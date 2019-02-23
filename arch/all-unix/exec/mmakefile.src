@@ -7,21 +7,21 @@ FILES := platform_init coldreboot shutdowna
 # swapcontext() and friends are not implemented on ARM Linux and are totally missing on Android
 ifneq ($(AROS_TARGET_CPU), arm)
 ifneq ($(AROS_TARGET_VARIANT), android)
-USER_CFLAGS := -DHAVE_SWAPCONTEXT
+USER_CPPFLAGS := -DHAVE_SWAPCONTEXT
 FILES += newstackswap
 endif
 endif
 
 ifeq ($(ARCH),darwin)
-USER_CFLAGS += -D_FORTIFY_SOURCE=0
+USER_CPPFLAGS += -D_FORTIFY_SOURCE=0
 endif
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
-		 -DHOST_OS_$(ARCH)
+		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CPPFLAGS += -DHOST_OS_$(ARCH)
 
 ifneq ($(AROS_TARGET_VARIANT),)
-USER_INCLUDES := -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_CPPFLAGS += -DHOST_OS_$(AROS_TARGET_VARIANT)
 endif
 
 %build_archspecific \

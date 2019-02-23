@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I.. -I$(SRCDIR)/rom/devs/ata
 
-USER_CFLAGS   += -D__TIMER_NOLIBBASE__
+USER_CPPFLAGS   += -D__TIMER_NOLIBBASE__
 
 FILES := bus_ppc460
 

@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -I$(SRCDIR)/rom/dos
+USER_INCLUDES := -I$(SRCDIR)/rom/dos
 
 #MM- kernel-dos-arm: includes
 #MM- kernel-dos-armeb: includes

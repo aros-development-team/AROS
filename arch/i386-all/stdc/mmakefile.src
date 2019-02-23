@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -I$(SRCDIR)/compiler/stdc/math/ld80
+USER_INCLUDES := -I$(SRCDIR)/compiler/stdc/math/ld80
 USER_AFLAGS := -I$(GENINCDIR)
 
 STDC_I386_SSE_FILES := \

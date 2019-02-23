@@ -621,7 +621,7 @@ STDC_STATIC := \
     vsprintf \
     vsscanf
 
-USER_CFLAGS := $(NOWARN_FLAGS) -fno-builtin
+USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN)
 USER_CPPFLAGS := -DSTDC_STATIC -Dlint
 
 #MM- core-linklibs : linklibs-stdc-static

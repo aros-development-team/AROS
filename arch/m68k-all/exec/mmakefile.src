@@ -16,7 +16,7 @@ AFILES=newstackswap stackswap \
        copymem_ copymem_020 copymem_040 copymem_060 \
        copymemquick copymemquick_040 copymemquick_060
 
-USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR)
 ISA_FLAGS:=$(ISA_MC68060_FLAGS)
 

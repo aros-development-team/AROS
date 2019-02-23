@@ -4,7 +4,9 @@ include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := boot serialdebug elf support
-USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
+USER_CFLAGS     := -ffixed-r8 -Wall $(CFLAGS_NO_BUILTIN)
+USER_CPPFLAGS     := -DUSE_UBOOT 
+OPTIMIZATION_CFLAGS := -O2
 
 #MM arosboot-efika: \
 #MM	   kernel-efika-arm \

@@ -30,7 +30,7 @@ FILES := \
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../nlistviews_mcp \
     -idirafter $(SRCDIR)/$(CURDIR)/../include/mui
 
-USER_CFLAGS := -DAROS_ABI_V1
+USER_CPPFLAGS := -DAROS_ABI_V1
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 USER_LDFLAGS := -static
 

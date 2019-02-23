@@ -1,8 +1,9 @@
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+USER_CPPFLAGS := -DHOST_OS_$(ARCH)
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel
 ifneq ($(FAMILY),)
-    USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+    USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
 
 FUNCS := open close getpointer freeerrorstr getinterface dropinterface lock unlock

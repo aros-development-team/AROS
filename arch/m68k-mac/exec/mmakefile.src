@@ -12,9 +12,13 @@ AFILES          := coldreboot ints superstate sys_trap1_handler \
 
 #MM kernel-exec-mac-m68k : kernel-exec-includes includes-asm_h-m68k
 
-#USER_CFLAGS    := -I../ $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR) -D__AROS__
-USER_CFLAGS     := $(PRIV_EXEC_INCLUDES) -fomit-frame-pointer -O6
+#USER_INCLUDES      := -I../ $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+#USER_CPPFLAGS      := -D__AROS__
+USER_INCLUDES       += $(PRIV_EXEC_INCLUDES)
+USER_CFLAGS         := -fomit-frame-pointer
+OPTIMIZATION_CFLAGS := -O6
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=mac-m68k \
   files=$(CFILES) asmfiles=$(AFILES) modname=exec
