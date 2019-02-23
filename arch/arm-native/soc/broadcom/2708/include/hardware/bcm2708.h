@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013-2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -157,7 +157,7 @@
 
 #define GPIO_PADS_0_27                                  0x002c
 #define GPIO_PADS_28_45                                 0x0030
-#define GPIO_PADS_46_53                                 0x0034 
+#define GPIO_PADS_46_53                                 0x0034
 
 #define GPFSEL0                                         (GPIO_BASE + 0x0)               // GPIO Function Selectors..
 #define GPFSEL1                                         (GPIO_BASE + 0x4)
@@ -197,9 +197,9 @@
 #define SPI0_DC                                         (0x14)
 
 #define BSC0_CONTROL                                    (BSC0_BASE + 0x00)
-#define BSC0_STATUS                                     (BSC0_BASE + 0x01)
-#define BSC0_DATALEN                                    (BSC0_BASE + 0x02)
-#define BSC0_FIFO                                       (BSC0_BASE + 0x04)
+#define BSC0_STATUS                                     (BSC0_BASE + 0x04)
+#define BSC0_DATALEN                                    (BSC0_BASE + 0x08)
+#define BSC0_FIFO                                       (BSC0_BASE + 0x10)
 
 #define BSC_CONTROL_READ                                (1 << 0)
 #define BSC_CONTROL_CLEAR                               (1 << 4)
