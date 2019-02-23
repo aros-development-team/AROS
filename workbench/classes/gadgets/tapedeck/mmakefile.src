@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -DDEBUG=0
+USER_CPPFLAGS := -DDEBUG=0
 USER_LDFLAGS := -static
 
 FILES := tapedeckclass

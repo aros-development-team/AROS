@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS += -D__UTILITY_NOLIBBASE__ -D__OOP_NOLIBBASE__
+USER_CPPFLAGS += -D__UTILITY_NOLIBBASE__ -D__OOP_NOLIBBASE__
 
 %build_module mmake=kernel-amiga-m68k-kbd \
     modname=amigakbd modtype=hidd \

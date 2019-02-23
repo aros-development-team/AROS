@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS	:= $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES	:= $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 #MM- kernel-exec-arm: includes-asm_h-arm kernel-kernel-includes

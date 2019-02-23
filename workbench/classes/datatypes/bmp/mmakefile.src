@@ -8,7 +8,7 @@ FILES := bmpclass
 
 #MM workbench-datatypes-bmp : includes linklibs
 
-USER_CFLAGS   := -DMYDEBUG
+USER_CPPFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-bmp \
     modname=bmp modtype=datatype \

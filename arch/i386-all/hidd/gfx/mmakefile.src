@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES  := rgbconv_arch
 AFILES := 
 
-USER_CFLAGS := -I$(SRCDIR)/rom/hidds/gfx
+USER_INCLUDES := -I$(SRCDIR)/rom/hidds/gfx
 
 %build_archspecific \
   mainmmake=kernel-hidd-gfx modname=gfx maindir=rom/hidds/gfx \

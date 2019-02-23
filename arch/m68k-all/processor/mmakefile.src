@@ -10,7 +10,7 @@ FILES := \
 
 #MM- kernel-processor-m68k : includes
 
-USER_CFLAGS := -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS := -D__UTILITY_NOLIBBASE__
 USER_INCLUDES := -I$(SRCDIR)/rom/processor
 
 %build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \

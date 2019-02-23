@@ -7,7 +7,7 @@ FILES := pngclass memory directaccess
 #MM- workbench-datatypes-complete: workbench-datatypes-png
 #MM workbench-datatypes-png : includes linklibs workbench-libs-z workbench-libs-png-linklib
 
-USER_CFLAGS   := -DMYDEBUG
+USER_CPPFLAGS   := -DMYDEBUG
 USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-png \

@@ -18,8 +18,10 @@ CFILES          := \
 #MM kernel-exec-raspi-arm : kernel-kernel-arm-includes kernel-exec-includes 
 #MM kernel-exec-raspi-armeb : kernel-kernel-armeb-includes kernel-exec-includes 
 
-USER_CFLAGS     := $(PRIV_EXEC_INCLUDES) -Os
-USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR) -Os
+USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+
+OPTIMIZATION_CFLAGS :=  -Os
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=raspi-arm \

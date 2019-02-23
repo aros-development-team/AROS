@@ -5,7 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 FILES :=
 AFILES := spcmp sptst
 
-USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls
+USER_AFLAGS := -I$(GENINCDIR)
+USER_CPPFLAGS := -DDoRegisterCalls
 ISA_FLAGS:=$(ISA_MC68020_FLAGS)
 
 %build_archspecific \

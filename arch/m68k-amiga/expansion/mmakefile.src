@@ -2,8 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS     := -I$(SRCDIR)/rom/expansion \
-		   -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_INCLUDES     := -I$(SRCDIR)/rom/expansion
+USER_CPPFLAGS     := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 FUNCTIONS := readexpansionbyte readexpansionrom configchain configboard writeexpansionbyte writeexpansionword
 

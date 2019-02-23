@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES 	    := unpack gui package bzip2 file support
 EXEDIR      := $(AROS_C)
-USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 #MM- workbench-c : workbench-c-unpack
 #MM workbench-c-unpack : includes linklibs external-bz2

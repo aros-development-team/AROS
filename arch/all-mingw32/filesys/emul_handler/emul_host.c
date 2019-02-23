@@ -641,43 +641,44 @@ static ULONG ReadDir(struct emulbase *emulbase, struct filehandle *fh, LPWIN32_F
 
     do
     {
-    /* 
-     * 3. Now we will scan the next directory entry until its index is greater than original index
-     *    in dirpos. This means that we've repositioned and scanned the next entry. After this we
-     *	update dirpos.
-     */
-	do
-	{
-	    ULONG err;
+		/* 
+		 * 3. Now we will scan the next directory entry until its index is greater than original index
+		 *    in dirpos. This means that we've repositioned and scanned the next entry. After this we
+		 *	update dirpos.
+		 */
+		do
+		{
+			ULONG err;
 
-            if (fh->fd == INVALID_HANDLE_VALUE)
-	    {
-		DEXAM(bug("[emul] Finding first file\n"));
-		Forbid();
-		fh->fd = emulbase->pdata.KernelIFace->FindFirstFile(fh->ph.pathname, FindData);
-		err = emulbase->pdata.KernelIFace->GetLastError();
-		Permit();
-		res = (fh->fd != INVALID_HANDLE_VALUE);
-            }
-	    else
-	    {
-		Forbid();
-		res = emulbase->pdata.KernelIFace->FindNextFile(fh->fd, FindData);
-		err = emulbase->pdata.KernelIFace->GetLastError();
-		Permit();
-            }
-            if (!res)
-		return Errno_w2a(err, MODE_OLDFILE);
+			if (fh->fd == INVALID_HANDLE_VALUE)
+			{
+				DEXAM(bug("[emul] Finding first file\n"));
+				Forbid();
+				fh->fd = emulbase->pdata.KernelIFace->FindFirstFile(fh->ph.pathname, FindData);
+				err = emulbase->pdata.KernelIFace->GetLastError();
+				Permit();
+				res = (fh->fd != INVALID_HANDLE_VALUE);
+			}
+			else
+			{
+				Forbid();
+				res = emulbase->pdata.KernelIFace->FindNextFile(fh->fd, FindData);
+				err = emulbase->pdata.KernelIFace->GetLastError();
+				Permit();
+			}
 
-		fh->ph.dirpos++;
-	    DEXAM(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->ph.dirpos));
-        } while (fh->ph.dirpos <= *dirpos);
-        (*dirpos)++;
-        DEXAM(bug("[emul] New dirpos: %lu\n", *dirpos));
-    /*
-     * We also skip "." and ".." entries (however we count their indexes - just in case), because
-     * AmigaOS donesn't have them.
-     */
+			if (!res)
+				return Errno_w2a(err, MODE_OLDFILE);
+
+			fh->ph.dirpos++;
+			DEXAM(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->ph.dirpos));
+		} while (fh->ph.dirpos <= *dirpos);
+		(*dirpos)++;
+		DEXAM(bug("[emul] New dirpos: %lu\n", *dirpos));
+		/*
+		 * We also skip "." and ".." entries (however we count their indexes - just in case), because
+		 * AmigaOS donesn't have them.
+		 */
     } while (is_special_dir(FindData->cFileName));
 
     return 0;

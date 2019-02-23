@@ -7,7 +7,7 @@ AFILES := cache userstate
 
 #MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h-i386
 
-USER_CFLAGS 	:= $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES 	:= $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS 	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 %build_archspecific \

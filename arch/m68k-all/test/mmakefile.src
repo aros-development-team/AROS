@@ -8,7 +8,7 @@ EXEDIR := $(AROS_TESTS)
 
 FILES=bcpl_strings
 
-USER_CFLAGS = -I$(SRCDIR)/arch/m68k-all/dos
+USER_INCLUDES = -I$(SRCDIR)/arch/m68k-all/dos
 
 %build_progs mmake=test-m68k \
     files=$(FILES) targetdir=$(EXEDIR) \

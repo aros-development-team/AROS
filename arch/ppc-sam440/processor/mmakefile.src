@@ -3,14 +3,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -I$(SRCDIR)/rom/processor
+USER_INCLUDES := -I$(SRCDIR)/rom/processor
 
 FILES := \
     processor_init \
 
 #MM- kernel-processor-ppc : includes
 
-USER_CFLAGS += -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS += -D__UTILITY_NOLIBBASE__
 
 USER_INCLUDES += -I$(SRCDIR)/arch/ppc-native/processor
 

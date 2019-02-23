@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS     := -I$(SRCDIR)/rom/disk
+USER_INCLUDES     := -I$(SRCDIR)/rom/disk
 
 %build_archspecific \
   mainmmake=kernel-disk maindir=rom/disk arch=amiga-m68k \

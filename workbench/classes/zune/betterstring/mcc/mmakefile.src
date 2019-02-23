@@ -21,7 +21,7 @@ FILES := \
         Debug
 
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
-USER_CFLAGS := -DNO_INLINE_STDARG
+USER_CPPFLAGS := -DNO_INLINE_STDARG
 
 %build_prog mmake=workbench-classes-zune-betterstring-test \
     progname=BetterString-Test files="BetterString-Test $(FILES)" \
@@ -30,7 +30,7 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 # We need to use -idirafter, so that we
 # *don't* pick up the project's local MUI headers.
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../mcp -idirafter $(SRCDIR)/$(CURDIR)/../include
-USER_CFLAGS := -DAROS_ABI_V1
+USER_CPPFLAGS := -DAROS_ABI_V1
 USER_LDFLAGS := -static
 
 %build_module_simple mmake=workbench-classes-zune-betterstring-class \

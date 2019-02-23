@@ -66,7 +66,7 @@ FILES	:= \
     window \
     winshape
 
-USER_CFLAGS := -I$(SRCDIR)/workbench/libs
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 
 #MM demos :includes linklibs demos-images-setup workbench-demos-zune
 

@@ -5,12 +5,12 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-unixio : kernel-kernel-includes hidd-unixio-stubs
 #MM kernel-unixio-kobj : kernel-kernel-includes hidd-unixio-stubs
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
-	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 ifeq ($(ARCH),darwin)
-USER_CFLAGS += -D_FORTIFY_SOURCE=0
+USER_CPPFLAGS += -D_FORTIFY_SOURCE=0
 endif
 
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug

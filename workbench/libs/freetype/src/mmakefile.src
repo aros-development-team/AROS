@@ -66,11 +66,24 @@ USER_CPPFLAGS := -DFT2_BUILD_LIBRARY
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 #MM- workbench-libs-freetype-linklibs : workbench-libs-freetype-linklib workbench-libs-freetype-module-linklib
 
-%build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2.static \
-    files=$(FT2FILES) objdir=$(OBJDIR)/static
+BASENAME=freetype2
+TARGETNAME=$(BASENAME)
+#ifeq ($(AROS_TARGET_CPU),m68k)
+#    TARGET_ISA:=MC68020
+#
+#    TARGET_ISA_EXT=$(ISA_$(TARGET_ISA)_EXT)
+#
+#    ISA_FLAGS := $(ISA_$(TARGET_ISA)_FLAGS)
+#    TARGET_CPPFLAGS+= $(ISA_$(TARGET_ISA)_CPPFLAGS)
+#    TARGET_CFLAGS+= $(ISA_$(TARGET_ISA)_CFLAGS)
+#    TARGET_LDFLAGS+= $(ISA_$(TARGET_ISA)_LDFLAGS)
+#endif
 
-%build_module mmake=workbench-libs-freetype-module modname=freetype2 \
-    modtype=library files="$(SHFILES) $(FT2FILES)" uselibs="stdc"
+%build_linklib mmake=workbench-libs-freetype-linklib libname=$(TARGETNAME).static \
+    files=$(FT2FILES) objdir=$(OBJDIR)/$(TARGETNAME)_static
+
+%build_module mmake=workbench-libs-freetype-module modname=$(TARGETNAME) flavour=$(TARGET_ISA_EXT) \
+    modtype=library files="$(SHFILES) $(FT2FILES)" uselibs="stdc" conffile=freetype2.conf
 
 #MM
 workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc

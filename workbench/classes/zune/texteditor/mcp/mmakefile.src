@@ -14,7 +14,7 @@ include $(SRCDIR)/config/aros.cfg
 # We need to use -idirafter, so that we
 # *don't* pick up the project's local MUI headers.
 USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(TOP)/$(CURDIR)/ -I$(SRCDIR)/$(CURDIR)/../mcc
-USER_CFLAGS := -DAROS_ABI_V1
+USER_CPPFLAGS := -DAROS_ABI_V1
 USER_LDFLAGS := -static
 
 FILES := library \

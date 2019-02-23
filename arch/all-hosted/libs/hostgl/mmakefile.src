@@ -47,7 +47,8 @@ USER_INCLUDES :=  \
     -isystem $(GENINCDIR) \
      $(KERNEL_INCLUDES)
 
-USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROSMESA_TYPES='"hostgl_types.h"' $(HOST_X11_CFLAGS)
+USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DAROSMESA_TYPES='"hostgl_types.h"'
+USER_CFLAGS := $(HOST_X11_CFLAGS)
 
 %build_module_library mmake=workbench-libs-hostgl \
     modname=hostgl modtype=library conffile=$(SRCDIR)/workbench/libs/gl/gl.conf \

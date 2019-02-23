@@ -7,7 +7,10 @@ FILES     := bootstrap elf menu of1275 support gpr
 DEPS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 OBJS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
 
-USER_CFLAGS += -Os -ffreestanding -nostdlib -Wall -I$(SRCDIR)/$(CURDIR)/../include -DVERSION=\"94\"
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+USER_CPPFLAGS := -DVERSION=\"94\"
+USER_CFLAGS += -ffreestanding -nostdlib -Wall
+OPTIMIZATION_CFLAGS := -Os
 
 #MM ub2lb-chrp-ppc-efika: linklibs
 ub2lb-chrp-ppc-efika: $(AROSDIR)/os_image

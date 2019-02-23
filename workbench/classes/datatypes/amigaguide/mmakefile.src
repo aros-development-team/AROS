@@ -2,14 +2,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_LDFLAGS := -static
-
 FILES := amigaguideclass nodeclass file util process navigator
 
 #MM workbench-datatypes-amigaguide : includes linklibs \
 #MM                                  workbench-libs-rexxsyslib
 
-USER_CFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION -I$(SRCDIR)/$(CURDIR)/include
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+USER_CPPFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION
+USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-amigaguide \
     modname=amigaguide modtype=datatype \

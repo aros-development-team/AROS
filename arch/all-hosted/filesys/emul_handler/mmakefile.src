@@ -18,7 +18,7 @@ CONSOLE_FILES := boot
 ifeq ($(AROS_TARGET_VARIANT),)
     FILES += $(CONSOLE_FILES)
 else
-    USER_CFLAGS += -DNO_EMERGENCY_CONSOLE
+    USER_CPPFLAGS += -DNO_EMERGENCY_CONSOLE
 endif
 
 %build_module mmake=kernel-fs-emul \

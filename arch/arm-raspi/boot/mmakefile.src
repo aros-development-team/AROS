@@ -4,9 +4,11 @@ include $(SRCDIR)/config/aros.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := boot serialdebug mmu kprintf elf support bc/font8x14 bc/vars vc_mb vc_fb bc/screen_fb
-USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
+USER_CPPFLAGS     := -DUSE_UBOOT
+USER_CFLAGS     := -ffixed-r8 -Wall $(CFLAGS_NO_BUILTIN)
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
+OPTIMIZATION_CFLAGS :=  -O2
 
 ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 

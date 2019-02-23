@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FUNCTIONS := ableicr addicrvector remicrvector seticr
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module_simple mmake=kernel-cia \
     modname=cia modtype=resource \

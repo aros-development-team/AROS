@@ -8,7 +8,7 @@ FILES := gifclass codeclzw
 
 #MM workbench-datatypes-gif : includes linklibs
 
-USER_CFLAGS   := -DMYDEBUG
+USER_CPPFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-gif \
     modname=gif modtype=datatype \

@@ -5,9 +5,9 @@ include $(SRCDIR)/config/aros.cfg
 FILES  := alert_cpu cpu_init newstackswap preparecontext
 AFILES := execstubs stackswap copymem_SSE
 
-USER_CFLAGS   := -O0
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+OPTIMIZATION_CFLAGS := -O0
 
 %build_archspecific \
   mainmmake=kernel-exec modname=exec maindir=rom/exec \
