@@ -55,21 +55,29 @@ asm("   .section .aros.startup      \n"
 "       beq     leave_hyper         \n"
 "continue_boot:                     \n"
 "       cps     #0x13               \n" /* Should be in SVC (supervisor) mode already, but just incase.. */
+#if AROS_BIG_ENDIAN
 "       setend  be                  \n" /* Switch to big endian mode */
+#endif
 "       ldr     sp, tmp_stack_ptr   \n"
 "       b       boot                \n"
 "leave_hyper:                       \n"
+#if AROS_BIG_ENDIAN
 "       setend  be                  \n"
+#endif
 "       adr     r4, continue_boot   \n"
-"       msr     ELR_hyp, r4         \n"
+"       .byte   0x04,0xf3,0x2e,0xe1 \n" /* msr     ELR_hyp, r4  */
 "       mrs     r4, cpsr_all        \n"
 "       and     r4, r4, #0x1f       \n"
 "       orr     r4, r4, #0x13       \n"
-"       msr     SPSR_hyp, r4        \n"
-"       eret                        \n"
+"       .byte   0x04,0xf3,0x6e,0xe1 \n" /* msr     SPSR_hyp, r4 */
+"       .byte   0x6e,0x00,0x60,0xe1 \n" /* eret                 */
 "       .section .text              \n"
 ".byte 0                            \n"
+#if AROS_BIG_ENDIAN
 ".string \"$VER: arosraspi-be.img v40.46 (" __DATE__ ")\"\n"
+#else
+".string \"$VER: arosraspi.img v40.46 (" __DATE__ ")\"\n"
+#endif
 ".byte 0                            \n"
 "\n\t\n\t"
 );
@@ -83,7 +91,11 @@ static uint32_t pkg_size = 0;
 
 struct tag;
 
+#if AROS_BIG_ENDIAN
 static const char bootstrapName[] = "Bootstrap/ARM v7-a BigEndian";
+#else
+static const char bootstrapName[] = "Bootstrap/ARM v7-a LittleEndian";
+#endif
 
 void query_vmem()
 {
@@ -171,8 +183,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     tmp &= ~1;                                  /* Disable MMU */
     tmp |= (1 << 2) | (1 << 12) | (1 << 11);    /* I and D caches, branch prediction */
     tmp = (tmp & ~2) | (1 << 22);               /* Unaligned access enable */
+#if AROS_BIG_ENDIAN
     tmp |= (1 << 25);                           /* EE bit for exceptions set - big endian */
                                                 /* This bit sets also endianess of page tables */
+#endif
     asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r"(tmp));
 
     /* Prepare MMU tables but do not load them yet */
@@ -221,7 +235,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 
     serInit();
 
+#if AROS_BIG_ENDIAN
     kprintf("\n\n[BOOT] Big-Endian AROS %s\n", bootstrapName);
+#else
+    kprintf("\n\n[BOOT] Little-Endian AROS %s\n", bootstrapName);
+#endif
     kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->op_value);
 
     /* first of all, store the arch for the kernel to use .. */
@@ -246,10 +264,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
             p = dt_find_property(e, "reg");
             uint32_t *reg = p->op_value;
 
-            kprintf("[BOOT] Mapping local interrupt area at %p-%p\n", reg[0], reg[0] + reg[1] - 1);
+            kprintf("[BOOT] Mapping local interrupt area at %p-%p\n", AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[0]) + AROS_BE2LONG(reg[1]) - 1);
 
             /* Prepare mapping - device type */
-            mmu_map_section(reg[0], reg[0], reg[1] < 0x100000 ? 0x100000 : reg[1], 0, 0, 3, 0);
+            mmu_map_section(AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[1]) < 0x100000 ? 0x100000 : AROS_BE2LONG(reg[1]), 0, 0, 3, 0);
         }
     }
 
@@ -341,13 +359,13 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     {
         of_property_t *p = dt_find_property(e, "linux,initrd-start");
         if (p)
-            pkg_image = (void*)(*((uint32_t *)p->op_value));
+            pkg_image = (void*)AROS_BE2LONG((*((uint32_t *)p->op_value)));
         else
             pkg_image = NULL;
 
         p = dt_find_property(e, "linux,initrd-end");
         if (p)
-            pkg_size = *((uint32_t *)p->op_value) - (uint32_t)pkg_image;
+            pkg_size = AROS_BE2LONG(*((uint32_t *)p->op_value)) - (uint32_t)pkg_image;
         else
             pkg_size = 0;
     }

@@ -69,7 +69,11 @@ int checkHeader(struct elfheader *eh)
 			eh->ident[EI_CLASS]   != ELFCLASS32  ||
 			eh->ident[EI_VERSION] != EV_CURRENT  ||
 			eh->type              != ET_REL      ||
+#if AROS_BIG_ENDIAN
 			eh->ident[EI_DATA]        != ELFDATA2MSB ||
+#else
+			eh->ident[EI_DATA]        != ELFDATA2LSB ||
+#endif
 			eh->machine               != EM_ARM
 	)
 	{
