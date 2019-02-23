@@ -22,10 +22,18 @@
         asm("mcr p10, 7, %0, " vfpreg(_vfp_) ", cr0, 0 @ fmxr   " #_vfp_ ", %0" \
            : : "r" (_var_) : "cc")
 
+#if __ARM_ARCH >= 7
+static inline void isb() { asm volatile("isb" : : : "memory"); }
+static inline void dsb() { asm volatile("dsb" : : : "memory"); }
+static inline void dmb() { asm volatile("dmb" : : : "memory"); }
+static inline void sev() { asm volatile("sev"); }
+static inline void wfe() { asm volatile("wfe"); }
+#else
 static inline void isb() { asm volatile("mcr p15, 0, %0, c7, c5, 4" : : "r" (0) : "memory"); }
 static inline void dsb() { asm volatile("mcr p15, 0, %0, c7, c10, 4" : : "r" (0) : "memory"); }
 static inline void dmb() { asm volatile("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory"); }
 static inline void sev() { asm volatile("sev"); }
 static inline void wfe() { asm volatile("wfe"); }
+#endif
 
 #endif /* ASM_ARM_CPU_H */
