@@ -211,10 +211,10 @@ MECHO	:= $(NOP)
 endif
 
 # compiler and assembler flags are set depending upon the directory
-CFLAGS      = $(ISA_FLAGS) $(TARGET_CFLAGS)
-CXXFLAGS    = $(ISA_FLAGS) $(TARGET_CXXFLAGS)
+CFLAGS      = $(TARGET_ISA_CFLAGS) $(TARGET_CFLAGS)
+CXXFLAGS    = $(TARGET_ISA_CXXFLAGS) $(TARGET_CXXFLAGS)
 CPPFLAGS = $(TARGET_CPPFLAGS)
-AFLAGS	    = $(ISA_FLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS)
+AFLAGS	    = $(TARGET_ISA_AFLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS)
 LDFLAGS     = $(USER_LDFLAGS) $(TARGET_LDFLAGS)
 
 # Target arch/CPU-specific options that we can't set in 'configure'
