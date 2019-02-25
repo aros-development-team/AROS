@@ -225,9 +225,10 @@ clean ::
 USER_INCLUDES += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 USER_CFLAGS += -fno-delete-null-pointer-checks
 USER_AFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 $(KOBJSDIR)/%.o : %.c
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(AROS_DEVELOPER)/include -I$(GENINCDIR)"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) $(USER_INCLUDES) -I$(AROS_DEVELOPER)/include -I$(GENINCDIR)"
 
 $(KOBJSDIR)/%.o : %.S
 	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(AROS_DEVELOPER)/include -I$(GENINCDIR)"
