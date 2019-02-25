@@ -39,51 +39,63 @@ endif
 # Rules for Configure generated files ...
 #
 
+$(TOP)/Makefile: $(SRCDIR)/Makefile.in $(TOP)/config.status
+	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
+	@$(TOP)/config.status --silent --file=$@:$<
+
+CONFIGUREFILES += $(TOP)/Makefile
+
+$(TOP)/mmake.config: $(SRCDIR)/mmake.config.in $(TOP)/config.status
+	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
+	@$(TOP)/config.status --silent --file=$@:$<
+
+CONFIGUREFILES += $(TOP)/mmake.config
+
 $(TOP)/config/make.cfg: $(SRCDIR)/config/make.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(TOP)/config/make.cfg
 
 $(TOP)/compiler/include/geninc.cfg: $(SRCDIR)/compiler/include/geninc.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(TOP)/compiler/include/geninc.cfg
 
 $(AROS_INCLUDES)/aros/config.h: $(SRCDIR)/config/config.h.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(AROS_INCLUDES)/aros/config.h
 
 $(GENINCDIR)/aros/config.h: $(SRCDIR)/config/config.h.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENINCDIR)/aros/config.h
 
 $(GENDIR)/config/target.cfg: $(SRCDIR)/config/target.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/target.cfg
 
 $(GENDIR)/config/build.cfg: $(SRCDIR)/config/build.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/build.cfg
 
 $(GENDIR)/config/make.defaults: $(SRCDIR)/config/make.defaults.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/make.defaults
 
 $(HOSTGENDIR)/config/host.cfg: $(SRCDIR)/config/host.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	$(TOP)/config.status --silent --file=$@:$<
+	@$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(HOSTGENDIR)/config/host.cfg
 
@@ -115,7 +127,7 @@ tools : makedirs mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
 	@$(NOP)
 
 # rebuild the crosstools if we are reconfigured, or its dependencies change.
-$(CROSSTOOLSDIR)/.installflag-crosstools: $(TOP)/config.status $(AROS_TOOLCHAIN_DEPS) tools
+$(CROSSTOOLSDIR)/.installflag-crosstools: $(TOP)/config.status $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps $(AROS_TOOLCHAIN_DEPS) tools
 	@+$(IF) ! $(TEST) -f $@ ; then \
 	    $(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$(CROSSTOOLS_TARGET) && $(TOUCH) $@ ; \
 	fi
@@ -134,7 +146,7 @@ features: crosstools $(TOP)/config/features.status
 
 $(GENMFSCRIPT): $(SRCDIR)/tools/genmf/genmf.py
 	@$(ECHO) Generating $(subst $(TOP)/,,$(GENMFSCRIPT))...
-	@./config.status $(subst $(TOP)/,,$(GENMFSCRIPT)) genmf_executable
+	@$(TOP)/config.status --silent --file=$(subst $(TOP)/,,$@):$<
 
 $(ELF2HUNK): $(SRCDIR)/tools/elf2hunk/elf2hunk.c
 	@$(ECHO) Building elf2hunk...
