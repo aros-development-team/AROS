@@ -77,7 +77,7 @@ CFILES		:= SetPatch
 # Some Tests to check SetPatch functionality ..
 
 CFILES	      := test-cas
-ISA_FLAGS := $(ISA_MC68020_FLAGS)
+TARGET_ISA_CFLAGS := $(ISA_MC68020_FLAGS)
 USER_LDFLAGS  := 
 
 %build_prog mmake=workbench-c-m68k-setpatch-testcas progname=test-CAS \

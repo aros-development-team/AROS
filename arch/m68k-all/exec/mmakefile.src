@@ -18,7 +18,7 @@ AFILES=newstackswap stackswap \
 
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR)
-ISA_FLAGS:=$(ISA_MC68060_FLAGS)
+TARGET_ISA_AFLAGS:=$(ISA_MC68060_FLAGS)
 
 %build_archspecific \
   mainmmake=kernel-exec modname=exec maindir=rom/exec \
