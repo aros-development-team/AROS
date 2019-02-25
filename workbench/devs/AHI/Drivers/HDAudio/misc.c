@@ -8,7 +8,7 @@ limitations under the License.
 
 (C) Copyright xxxx-2009 Davy Wentzler.
 (C) Copyright 2009-2010 Stephen Jones.
-(C) Copyright 2010-2018 The AROS Dev Team.
+(C) Copyright 2010-2019 The AROS Dev Team.
 
 The Initial Developer of the Original Code is Davy Wentzler.
 
@@ -328,13 +328,20 @@ static void perform_controller_specific_settings(struct HDAudioChip *card)
         outb_config(0x4C, data, card->pci_dev);
     }
 
-    /* Check for HP Compaq nc6320 laptop */
+    /* Check for HP Compaq laptops with incorrect IRQ number */
     if (subsystem == 0x30aa103c)
     {
         D(bug("[HDAudio] HP Compaq nc6320 laptop detected, correcting IRQ\n"));
         data = inb_config(0x3C, card->pci_dev);
         if (data == 10)
             outb_config(0x3C, 11, card->pci_dev);
+    }
+    else if (subsystem == 0x30c0103c)
+    {
+        D(bug("[HDAudio] HP Compaq 6710b laptop detected, correcting IRQ\n"));
+        data = inb_config(0x3C, card->pci_dev);
+        if (data == 10)
+            outb_config(0x3C, 5, card->pci_dev);
     }
 }
 
