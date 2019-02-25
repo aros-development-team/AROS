@@ -10,7 +10,7 @@ AFILES := m68k_060sp
 USER_AFLAGS := -I$(GENINCDIR)
 USER_CPPFLAGS := -DDoRegisterCalls
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-all/m680x0
-ISA_FLAGS:=$(ISA_MC68020_FLAGS)
+TARGET_ISA_AFLAGS:=$(ISA_MC68020_FLAGS)
 
 %build_module mmake=kernel-m680x0 \
    modname=680x0 modtype=library \
