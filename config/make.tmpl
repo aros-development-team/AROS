@@ -363,8 +363,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).o : %(mmake)_C_CPPFLAGS:=$(strip $(KERNEL_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS))
 $(%(mmake)_TARGETBASE).d : %(mmake)_C_CPPFLAGS:=$(strip $(KERNEL_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS))
-$(%(mmake)_TARGETBASE).o : %(mmake)_CFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
-$(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -558,8 +558,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).o : %(mmake)_OBJC_CPPFLAGS:=$(strip $(KERNEL_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS))
 $(%(mmake)_TARGETBASE).d : %(mmake)_OBJC_CPPFLAGS:=$(strip $(KERNEL_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS))
-$(%(mmake)_TARGETBASE).o : %(mmake)_OBJCFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
-$(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJCFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
@@ -669,8 +669,8 @@ ifeq (%(compiler),kernel)
 %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_MC_CPPFLAGS:=$(strip $(KERNEL_MC_CPPFLAGS) $(%(mmake)_MC_CPPFLAGS))
-$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_CFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
-$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_DFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_CFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_DFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -885,8 +885,8 @@ ifeq (%(compiler),kernel)
   %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : CMD:=$(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_MOBJC_CPPFLAGS:=$(strip $(KERNEL_MOBJC_CPPFLAGS) $(%(mmake)_MOBJC_CPPFLAGS))
-  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
-  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCDFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCDFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -2807,7 +2807,7 @@ endif
 ifeq (%(compiler),kernel)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(ISA_FLAGS) $(KERNEL_CFLAGS) $(TMP_CFLAGS))
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(TARGET_ISA_CFLAGS) $(KERNEL_CFLAGS) $(TMP_CFLAGS))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
@@ -3077,7 +3077,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) \
     prefix= gendir= basedir=$(CURDIR) extraoptions= \
     usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    hostisaflags="$(ISA_FLAGS)" targetisaflags="$(ISA_FLAGS)" \
+    hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)" \
     aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
     install_target=install preconfigure= postconfigure= postinstall= \
     config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes
@@ -3713,7 +3713,7 @@ endif
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir=$(CURDIR) package_repo= patch=no patch_repo= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
     extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes hostisaflags="$(ISA_FLAGS)" targetisaflags="$(ISA_FLAGS)"
+    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch

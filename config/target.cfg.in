@@ -70,6 +70,10 @@ DEBUG_LDFLAGS           := @aros_debug_ldflags@
 OPTIMIZATION_CFLAGS     := @aros_optimization_cflags@
 @aros_isa_extra@ISA_FLAGS               := @aros_isa_flags@
 
+TARGET_ISA_CFLAGS=$(ISA_FLAGS)
+TARGET_ISA_CXXFLAGS=$(ISA_FLAGS)
+TARGET_ISA_AFLAGS=$(ISA_FLAGS)
+
 COVERAGEINSTR_FLAGS     = $(CFLAGS_PROFILE_ARCS) $(CFLAGS_TEST_COVERAGE)
 
 NOSTDINC_CFLAGS         := @aros_target_nostdinc_cflags@
