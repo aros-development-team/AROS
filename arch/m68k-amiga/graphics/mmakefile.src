@@ -11,7 +11,7 @@ USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \
                -I$(SRCDIR)/rom/graphics
 USER_CPPFLAGS := -D__GRAPHICS_NOHIDDBASE__ -DDoRegisterCalls
 USER_AFLAGS := -I$(GENINCDIR)
-ISA_FLAGS := $(ISA_MC68060_FLAGS)
+TARGET_ISA_AFLAGS := $(ISA_MC68060_FLAGS)
 
 %build_archspecific \
   mainmmake=kernel-graphics maindir=rom/graphics arch=amiga-m68k \
