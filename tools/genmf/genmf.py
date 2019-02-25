@@ -4,9 +4,11 @@
 
 import sys, re, os, errno
 
-if not len(sys.argv) in [2, 4] :
+if not len(sys.argv) in [2, 3, 4, 5] :
     print "Usage:",sys.argv[0],"tmplfile [inputfile outputfile]"
+    print "Usage:",sys.argv[0],"tmplfile --usetmp [inputfile outputfile]"
     print "Usage:",sys.argv[0],"tmplfile --listfile filename"
+    print "Usage:",sys.argv[0],"tmplfile --usetmp --listfile filename"
 
 # A regular expression for the start of a template instantiation (ex. %build_module)
 re_tmplinst = re.compile('%([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:\s|$))')
@@ -331,10 +333,16 @@ argv = []
 i = 0
 listfile = None
 progcount = 0
+usetemp = 0
+argin = 2
 while i < len(sys.argv):
     if sys.argv[i] == "--listfile":
         listfile = sys.argv[i+1]
         i = i + 2
+    elif sys.argv[i] == "--usetmp":
+       i = i + 1
+       argin = 3
+       usetemp = 1
     else:
         argv.append(sys.argv[i])
         i = i + 1
@@ -345,28 +353,31 @@ templates = read_templates(argv[1])
 
 if listfile == None:
     # Read one input file and write out one outputfile
-    if len(sys.argv) == 2:
+    if len(sys.argv) == argin:
         lines = sys.stdin.readlines()
     else:
-        infile = open(sys.argv[2], "r")
+        infile = open(sys.argv[argin], "r")
         lines = infile.readlines()
         infile.close()
-
-    if len(sys.argv) == 2:
+    
+    if len(sys.argv) == argin:
         outfile = sys.stdout
         closeout = 0
     else:
-        outfile = open(sys.argv[3], "w")
+        if usetemp:
+            outfile = open(sys.argv[argin + 1]+"tmp", "w")
+        else:
+            outfile = open(sys.argv[argin + 1], "w")
         closeout = 1
-
+    
     try:
         writelines(lines, generate_templrefs(lines, templates), templates, outfile)
     except GenmfException, ge:
         s = ge.s
-        if len(sys.argv) == 4:
-            s = sys.argv[3]+":"+s
+        if len(sys.argv) == argin + 2:
+            s = sys.argv[argin + 1]+":"+s
             sys.exit(s+"\n")
-
+    
     # If %common was not present in the file write it out at the end of the file
     if not template.hascommon:
         outfile.write("\n")
@@ -375,6 +386,10 @@ if listfile == None:
     
     if closeout:
         outfile.close()
+        if usetemp:
+            os.remove(sys.argv[argin + 1])
+            os.rename(sys.argv[argin + 1]+"tmp", sys.argv[argin + 1])
+
 else:
     # When a listfile is specified each line in this listfile is of the form
     # inputfile outputfile
@@ -382,14 +397,14 @@ else:
     infile = open(listfile, "r")
     filelist = infile.readlines()
     infile.close()
-
+    
     sys.stderr.write('Regenerating %d files\n' % (len(filelist)))
     
     for fileno in range(len(filelist)):
         files = filelist[fileno].split()
         if len(files) <> 2:
             sys.exit('%s:%d: Syntax error: %s' % (listfile, fileno+1, filelist[fileno]))
-
+        
         progcount = progcount + 1
         if progcount == 20:
             progcount = 0
@@ -407,22 +422,29 @@ else:
             # Do nothing ..
             s = err.errno
         
-        outfile = open(files[1], "w")
+        if usetemp:
+            outfile = open(files[1]+"tmp", "w")
+        else:
+            outfile = open(files[1], "w")
+        
         template.hascommon = 0
-    
+        
         try:
             writelines(lines, generate_templrefs(lines, templates), templates, outfile)
         except GenmfException, ge:
             s = ge.s
-            if len(sys.argv) == 4:
+            if len(sys.argv) == argin + 2:
                 s = files[0]+":"+s
                 sys.exit(s+"\n")
-    
+        
         if not template.hascommon:
             outfile.write("\n")
             if templates.has_key("common"):
                 templates["common"].write(outfile, "common", "", templates)
-    
-        outfile.close()
         
+        outfile.close()
+        if usetemp:
+            os.remove(files[1])
+            os.rename(files[1]+"tmp", files[1])
+    
     sys.stderr.write('\n')
