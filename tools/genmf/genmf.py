@@ -387,7 +387,8 @@ if listfile == None:
     if closeout:
         outfile.close()
         if usetemp:
-            os.remove(sys.argv[argin + 1])
+            if os.path.isfile(files[1]):
+                os.remove(sys.argv[argin + 1])
             os.rename(sys.argv[argin + 1]+"tmp", sys.argv[argin + 1])
 
 else:
@@ -444,7 +445,8 @@ else:
         
         outfile.close()
         if usetemp:
-            os.remove(files[1])
+            if os.path.isfile(files[1]):
+                os.remove(files[1])
             os.rename(files[1]+"tmp", files[1])
     
     sys.stderr.write('\n')
