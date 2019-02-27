@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
+ Copyright (C) 2006-2019 The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: ELF loader extracted from our internal_load_seg_elf in dos.library.
@@ -27,7 +27,7 @@ static inline int Strcmp(const char *a, const char *b) { return strcmp(a, b); }
 #include <runtime.h>
 
 #define D(x)
-#define DREL(x)
+#define DREL(x) x
 #define DSYM(x)
 
 /* Use own definitions because we may be compiled as 32-bit code but build structures for 64-bit code */
@@ -60,10 +60,10 @@ static char *check_header(struct elfheader *eh)
 {
     if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
         eh->ident[2] != 'L'  || eh->ident[3] != 'F')
-        return "Not a ELF file";
+        return "Not an ELF file";
 
     if (eh->type != ET_REL || eh->machine != AROS_ELF_MACHINE)
-        return "Wrong object type or wrong architecture";
+        return "Object of the wrong type or architecture";
 
     /* No error */
     return NULL;
@@ -159,7 +159,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                 if (!SysBase_ptr)
                 {
                     SysBase_ptr = DefSysBase;
-                    D(kprintf("[ELF Loader] SysBase pointer set to default %p\n", (void *)SysBase_ptr));
+                    D(kprintf("[ELF Loader] SysBase symbol set to default %p\n", (void *)SysBase_ptr));
                 }
 
                 s = SysBase_ptr;
@@ -188,7 +188,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                 if (!SysBase_ptr)
                 {
                     SysBase_ptr = DefSysBase;
-                    D(kprintf("[ELF Loader] SysBase pointer set to default %p\n", (void *)SysBase_ptr));
+                    D(kprintf("[ELF Loader] SysBase symbol set to default %p\n", (void *)SysBase_ptr));
                 }
 
                 s = SysBase_ptr;
@@ -212,13 +212,13 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                     if (Strcmp(name, "SysBase") == 0)
                     {
                         SysBase_ptr = s;
-                        D(kprintf("[ELF Loader] SysBase pointer set to %p\n", (void *)SysBase_ptr));
+                        D(kprintf("[ELF Loader] SysBase symbol set to %p\n", (void *)SysBase_ptr));
                     }
                 }
             }
         }
 
-        DREL(kprintf("[ELF Loader] Relocating symbol %s type ", sym->name ? name : "<unknown>"));
+        DREL(kprintf("[ELF Loader] Relocating symbol %s, type ", sym->name ? name : "<unknown>"));
         switch (ELF_R_TYPE(rel->info))
         {
 #ifdef ELF_64BIT
@@ -226,6 +226,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
             *(uint64_t *)p = s + rel->addend;
             break;
 
+        case R_X86_64_PLT32:
         case R_X86_64_PC32: /* PC relative 32 bit signed */
             *(uint32_t *)p = s + rel->addend - (uintptr_t) p;
             break;
@@ -365,7 +366,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
             break;
 #endif
         default:
-            kprintf("[ELF Loader] Unrecognized relocation type %d %ld\n", i, (long)ELF_R_TYPE(rel->info));
+            kprintf("[ELF Loader] Unknown relocation #%d type %ld\n", i, (long)ELF_R_TYPE(rel->info));
             return 0;
         }
         DREL(kprintf(" -> %p\n", *p));
@@ -412,7 +413,7 @@ int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned lon
                 n->sh = load_block(file, n->eh->shoff, n->eh->shnum * n->eh->shentsize, &err);
                 if (err)
                 {
-                    errstr = "Failed to read section headers";
+                    errstr = "Failed to read section header(s)";
                 }
             }
         }
