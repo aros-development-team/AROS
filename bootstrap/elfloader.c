@@ -27,7 +27,7 @@ static inline int Strcmp(const char *a, const char *b) { return strcmp(a, b); }
 #include <runtime.h>
 
 #define D(x)
-#define DREL(x) x
+#define DREL(x)
 #define DSYM(x)
 
 /* Use own definitions because we may be compiled as 32-bit code but build structures for 64-bit code */
