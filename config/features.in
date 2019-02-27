@@ -36,6 +36,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 # Check if the target compiler supports some features:
 #  -fexceptions
 #  -fpermissive
+#  -frtti
 #  -ffast-math
 #  -flto
 #  -fwhole-program
@@ -50,6 +51,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fomit-frame-pointer
 #  -fprofile-arcs
 #  -ftest-coverage
+#  -faligned-new
 
 #  -fno-builtin
 #  -fno-builtin-floor
@@ -70,6 +72,16 @@ AC_TRY_COMPILE(,, aros_permissive="yes", aros_permissive="no")
 AC_MSG_RESULT($aros_permissive)
 if test "x-$aros_permissive" = "x-yes" ; then
     aros_cflags_permissive=-fpermissive
+    aros_cflags_nopermissive=-fno-permissive
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -frtti])
+CFLAGS=-frtti
+AC_TRY_COMPILE(,, aros_rtti="yes", aros_rtti="no")
+AC_MSG_RESULT($aros_rtti)
+if test "x-$aros_rtti" = "x-yes" ; then
+    aros_cflags_rtti=-frtti
+    aros_cflags_nortti=-fno-rtti
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -ffast-math])
@@ -189,6 +201,15 @@ AC_MSG_RESULT($aros_test_coverage)
 if test "x-$aros_test_coverage" = "x-yes" ; then
     aros_cflags_testcoverage=-ftest-coverage
     aros_cflags_notestcoverage=-fno-test-coverage
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -faligned-new])
+CFLAGS=-faligned-new
+AC_TRY_COMPILE(,, aros_aligned_new="yes", aros_aligned_new="no")
+AC_MSG_RESULT($aros_aligned_new)
+if test "x-$aros_aligned_new" = "x-yes" ; then
+    aros_cflags_alignednew=-faligned-new
+    aros_cflags_noalignednew=-fno-aligned-new
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin])
@@ -983,7 +1004,11 @@ fi
 # export the feature flags...
 #
 AC_SUBST(aros_cflags_exceptions)
+AC_SUBST(aros_cflags_noexceptions)
 AC_SUBST(aros_cflags_permissive)
+AC_SUBST(aros_cflags_nopermissive)
+AC_SUBST(aros_cflags_rtti)
+AC_SUBST(aros_cflags_nortti)
 AC_SUBST(aros_cflags_fast_math)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
@@ -1012,6 +1037,9 @@ AC_SUBST(aros_cflags_noprofilearcs)
 AC_SUBST(aros_cflags_testcoverage)
 AC_SUBST(aros_cflags_notestcoverage)
 
+AC_SUBST(aros_cflags_alignednew)
+AC_SUBST(aros_cflags_noalignednew)
+    
 AC_SUBST(aros_cflags_no_builtin)
 AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_no_builtin_vsnprintf)
