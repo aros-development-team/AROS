@@ -735,6 +735,8 @@ aros_cflags_iquote
 aros_cflags_no_builtin_vsnprintf
 aros_cflags_no_builtin_floor
 aros_cflags_no_builtin
+aros_cflags_noalignednew
+aros_cflags_alignednew
 aros_cflags_notestcoverage
 aros_cflags_testcoverage
 aros_cflags_noprofilearcs
@@ -756,7 +758,11 @@ aros_cflags_whole_program
 aros_cflags_nolto
 aros_cflags_lto
 aros_cflags_fast_math
+aros_cflags_nortti
+aros_cflags_rtti
+aros_cflags_nopermissive
 aros_cflags_permissive
+aros_cflags_noexceptions
 aros_cflags_exceptions
 OBJEXT
 EXEEXT
@@ -2768,6 +2774,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 # Check if the target compiler supports some features:
 #  -fexceptions
 #  -fpermissive
+#  -frtti
 #  -ffast-math
 #  -flto
 #  -fwhole-program
@@ -2782,6 +2789,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fomit-frame-pointer
 #  -fprofile-arcs
 #  -ftest-coverage
+#  -faligned-new
 
 #  -fno-builtin
 #  -fno-builtin-floor
@@ -2839,6 +2847,34 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_permissive" >&6; }
 if test "x-$aros_permissive" = "x-yes" ; then
     aros_cflags_permissive=-fpermissive
+    aros_cflags_nopermissive=-fno-permissive
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -frtti" >&5
+$as_echo_n "checking whether ${CC} accepts -frtti... " >&6; }
+CFLAGS=-frtti
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_rtti="yes"
+else
+  aros_rtti="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_rtti" >&5
+$as_echo "$aros_rtti" >&6; }
+if test "x-$aros_rtti" = "x-yes" ; then
+    aros_cflags_rtti=-frtti
+    aros_cflags_nortti=-fno-rtti
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffast-math" >&5
@@ -3210,6 +3246,33 @@ $as_echo "$aros_test_coverage" >&6; }
 if test "x-$aros_test_coverage" = "x-yes" ; then
     aros_cflags_testcoverage=-ftest-coverage
     aros_cflags_notestcoverage=-fno-test-coverage
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -faligned-new" >&5
+$as_echo_n "checking whether ${CC} accepts -faligned-new... " >&6; }
+CFLAGS=-faligned-new
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_aligned_new="yes"
+else
+  aros_aligned_new="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_aligned_new" >&5
+$as_echo "$aros_aligned_new" >&6; }
+if test "x-$aros_aligned_new" = "x-yes" ; then
+    aros_cflags_alignednew=-faligned-new
+    aros_cflags_noalignednew=-fno-aligned-new
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin" >&5
@@ -5407,6 +5470,13 @@ fi
 #
 # export the feature flags...
 #
+
+
+
+
+
+
+
 
 
 

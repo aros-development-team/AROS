@@ -6,7 +6,13 @@
 # Standard compiler features ...
 #
 CFLAGS_EXCEPTIONS                       := @aros_cflags_exceptions@
+CFLAGS_NO_EXCEPTIONS                    := @aros_cflags_noexceptions@
 CFLAGS_PERMISSIVE                       := @aros_cflags_permissive@
+CFLAGS_NO_PERMISSIVE                    := @aros_cflags_nopermissive@
+
+# Runtime type-information
+CFLAGS_RTTI                             := @aros_cflags_rtti@
+CFLAGS_NO_RTTI                          := @aros_cflags_nortti@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
@@ -47,6 +53,9 @@ CFLAGS_NO_PROFILE_ARCS                  := @aros_cflags_noprofilearcs@
 
 CFLAGS_TEST_COVERAGE                    := @aros_cflags_testcoverage@
 CFLAGS_NO_TEST_COVERAGE                 := @aros_cflags_notestcoverage@
+
+CFLAGS_ALIGNED_NEW                      := @aros_cflags_alignednew@
+CFLAGS_NO_ALIGNED_NEW                   := @aros_cflags_noalignednew@
 
 #Builtins
 CFLAGS_NO_BUILTIN                       := @aros_cflags_no_builtin@
