@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1150,7 +1150,7 @@ static void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *da
         ULONG   labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
         IPTR    labelSplit_SplitStart = (IPTR)(entry->ie_IconListEntry.label + labelSplit_CharsDone);
         int     tmp_checkoffs = 0;
-        IPTR    labelSplit_RemainingCharsAfterSplit;
+        IPTR    labelSplit_RemainingCharsAfterSplit = 0;
         IPTR    labelSplit_CurSplitDest;
 
         while (*(char *)(labelSplit_SplitStart) == ' ')
