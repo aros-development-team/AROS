@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2018, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2019, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for target compiler feature detection
@@ -249,6 +249,18 @@ if test "x-$has_iquote" = "x-yes" ; then
 else
     aros_cflags_iquote=-I
     aros_cflags_iquote_end=-I-
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -isystem])
+CFLAGS="-isystem."
+AC_TRY_COMPILE(,, has_isystem="yes", has_isystem="no")
+AC_MSG_RESULT($has_isystem)
+if test "x-$has_isystem" = "x-yes" ; then
+    aros_cflags_isystem=-isystem
+    aros_cflags_isystem_end=
+else
+    aros_cflags_isystem=-I
+    aros_cflags_isystem_end=-I-
 fi
 
 #-----------------------------------------------------------------------------
@@ -1045,6 +1057,8 @@ AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_no_builtin_vsnprintf)
 
 #
+AC_SUBST(aros_cflags_isystem)
+AC_SUBST(aros_cflags_isystem_end)
 AC_SUBST(aros_cflags_iquote)
 AC_SUBST(aros_cflags_iquote_end)
 

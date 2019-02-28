@@ -63,8 +63,10 @@ CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
 CFLAGS_NO_BUILTIN_VSNPRINTF             := @aros_cflags_no_builtin_vsnprintf@
 
 #
-# -iquote support
+# -isystem/-iquote support
 #
+CFLAGS_ISYSTEM                          := @aros_cflags_isystem@
+CFLAGS_ISYSTEM_END                      := @aros_cflags_isystem_end@
 CFLAGS_IQUOTE                           := @aros_cflags_iquote@
 CFLAGS_IQUOTE_END                       := @aros_cflags_iquote_end@
 
