@@ -3357,6 +3357,7 @@ fi
 
 #-----------------------------------------------------------------------------
 #
+# Check if the target compiler supports some include directory options:
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
 $as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
@@ -3415,12 +3416,12 @@ if test "x-$has_isystem" = "x-yes" ; then
     aros_cflags_isystem_end=
 else
     aros_cflags_isystem=-I
-    aros_cflags_isystem_end=-I-
+    aros_cflags_isystem_end=
 fi
 
 #-----------------------------------------------------------------------------
 
-# Check if the target compiler supports some options:
+# Check if the target compiler supports some ISA options:
 #  -mno-red-zone
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -mno-red-zone" >&5

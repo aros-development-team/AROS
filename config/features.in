@@ -238,6 +238,7 @@ fi
 
 #-----------------------------------------------------------------------------
 #
+# Check if the target compiler supports some include directory options:
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 CFLAGS="-iquote."
@@ -260,12 +261,12 @@ if test "x-$has_isystem" = "x-yes" ; then
     aros_cflags_isystem_end=
 else
     aros_cflags_isystem=-I
-    aros_cflags_isystem_end=-I-
+    aros_cflags_isystem_end=
 fi
 
 #-----------------------------------------------------------------------------
 
-# Check if the target compiler supports some options:
+# Check if the target compiler supports some ISA options:
 #  -mno-red-zone
 
 AC_MSG_CHECKING([whether ${CC} accepts -mno-red-zone])
