@@ -732,6 +732,8 @@ aros_warnflags_error
 aros_cflags_no_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
+aros_cflags_isystem_end
+aros_cflags_isystem
 aros_cflags_no_builtin_vsnprintf
 aros_cflags_no_builtin_floor
 aros_cflags_no_builtin
@@ -3386,6 +3388,36 @@ else
     aros_cflags_iquote_end=-I-
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -isystem" >&5
+$as_echo_n "checking whether ${CC} accepts -isystem... " >&6; }
+CFLAGS="-isystem."
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  has_isystem="yes"
+else
+  has_isystem="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_isystem" >&5
+$as_echo "$has_isystem" >&6; }
+if test "x-$has_isystem" = "x-yes" ; then
+    aros_cflags_isystem=-isystem
+    aros_cflags_isystem_end=
+else
+    aros_cflags_isystem=-I
+    aros_cflags_isystem_end=-I-
+fi
+
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some options:
@@ -5512,6 +5544,8 @@ fi
 
 
 #
+
+
 
 
 
