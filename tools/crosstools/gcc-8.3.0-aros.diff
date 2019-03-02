@@ -919,8 +919,8 @@ diff -ruN gcc-8.3.0/gcc/config.gcc gcc-8.3.0.aros/gcc/config.gcc
  	tmake_file="${tmake_file} alpha/t-vms alpha/t-alpha"
  	;;
 +arm*-*-aros*)
-+	tm_file="dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
-+	tm_file="$tm_file ../../libgcc/config/arm/bpabi-lib.h"
++	tm_file="${tm_file} dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
++	tm_file="${tm_file} ../../libgcc/config/arm/bpabi-lib.h"
 +	tmake_file="${tmake_file} arm/t-arm arm/t-arm-elf arm/t-arm-softfp arm/t-bpabi arm/t-aros t-aros"
 +	xm_file="xm-aros.h"
 +	# The BPABI long long divmod functions return a 128-bit value in
@@ -958,8 +958,8 @@ diff -ruN gcc-8.3.0/gcc/config.gcc gcc-8.3.0.aros/gcc/config.gcc
 +	tm_file="${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h m68k/m68kemb.h m68k/m68020-elf.h"
 +	tm_file="${tm_file} aros.h"
 +	tm_defines="${tm_defines} MOTOROLA=1"
-+	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
-+	tmake_file="$tmake_file m68k/t-aros m68k/t-mlibs t-aros"
++	tmake_file="${tmake_file} m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
++	tmake_file="${tmake_file} m68k/t-aros m68k/t-mlibs t-aros"
 +	extra_parts="crtbegin.o crtend.o"
 +	;;
  m68k-*-elf* | fido-*-elf*)
@@ -974,7 +974,7 @@ diff -ruN gcc-8.3.0/gcc/config.gcc gcc-8.3.0.aros/gcc/config.gcc
 + 	extra_options="${extra_options} rs6000/sysv4.opt"
 + 	tm_file="${tm_file} rs6000/aros.h"
 + 	xm_file=xm-aros.h
-+	tmake_file="$tmake_file t-aros"
++	tmake_file="${tmake_file} t-aros"
 + 	;;
  powerpc*-*-linux*)
  	tm_file="${tm_file} dbxelf.h elfos.h gnu-user.h freebsd-spec.h rs6000/sysv4.h"
