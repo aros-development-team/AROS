@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tool to convert IFF ILBM images into Amiga icon file.
@@ -799,7 +799,7 @@ static void loadpng(struct ILBMImage *img, struct Palette *pal)
 
     /* Read the PNG as RGBA */
     png_set_add_alpha(png_ptr, 255, PNG_FILLER_AFTER); 
-    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_STRIP_16, NULL);
+    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_GRAY_TO_RGB | PNG_TRANSFORM_STRIP_16, NULL);
 
     row_pointers = png_get_rows(png_ptr, info_ptr);
 
