@@ -18,7 +18,7 @@ $(AROSDIR)/Parthenope: $(OBJS) $(DEPS)
 	$(KERNEL_LD) -N --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(OBJS) -o $@
 
 $(TARGETDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
+	%compile_q opt="$(CFLAGS) $(CPPFLAGS)"
 
 $(TARGETDIR)/%.d : %.c
 	%mkdepend_q
