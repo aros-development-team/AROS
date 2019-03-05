@@ -6,7 +6,7 @@ MSG_DESCRIPTION (//)
 Display Icon information
 ;
 MSG_COPYRIGHT (//)
-Icon information\n© 2003-2010 The AROS Dev Team
+Icon information \xa9 2003-2010, The AROS Development Team
 ;
 MSG_ICON (//)
 Icon
