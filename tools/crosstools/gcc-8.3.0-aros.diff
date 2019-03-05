@@ -936,7 +936,7 @@ diff -ruN gcc-8.3.0/gcc/config.gcc gcc-8.3.0.aros/gcc/config.gcc
  	TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's/^,//'`
  	;;
 +i[34567]86-*-aros*)
-+	tm_file="${tm_file} $(aros_tm_file) i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h i386/aros.h"
++	tm_file="${tm_file} ${aros_tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h i386/aros.h"
 +	xm_file=xm-aros.h
 +	tmake_file="${tmake_file} i386/t-i386elf t-aros"
 +	;;	
