@@ -1,0 +1,349 @@
+## version $VER: wimp.catalog 1.0 (03.01.2018)
+## language polski
+## codeset 0
+;
+;
+MSG_APP_NAME
+WiMP
+; WiMP
+;
+MSG_APP_TITLE
+Kontrola okien
+; Window Manipulator
+;
+MSG_APP_ABOUT
+WiMP - Program kontroli okien\n\nCopyright \xa9 2000-2019 by The AROS Development Team
+; WiMP - The Window Manipulation Program\n\nCopyright \xa9 2000-2019 by The AROS Development Team
+;
+MSG_APP_COPYRIGHT
+Copyright \xa9 1995-2019, The AROS Development Team
+; Copyright \xa9 1995-2019, The AROS Development Team
+;
+MSG_APP_AUTOR
+The AROS Development Team
+; The AROS Development Team
+;
+MSG_APP_BASE
+WIMP
+; WIMP
+;
+MSG_WINDOW_TITLE
+WiMP - Program kontroli okien
+; WiMP - The Window Manipulation Program
+;
+MSG_INFO_TITLE
+WiMP - Okno informacyjne
+; WiMP - InfoWindow
+;
+MSG_CLOSE_SCREEN
+Czy rzeczywi¶cie chcesz zamkn±æ wybrany ekran?
+; Do you really want to Close the selected Screen?
+;
+MSG_CLOSE_WINDOW
+Czy rzeczywi¶cie chcesz zamkn±æ wybrane okno?
+; Do you really want to Close the selected Window?
+;
+MSG_YES_NO
+Tak.|Nie!
+; Yes.|No!
+;
+MSG_CONTINUE
+Kontynuuj
+; Continue
+;
+MSG_BTN_KILL
+\033iZamknij
+; \033iKill
+;
+MSG_BTN_FRONT
+Do przodu
+; To _Front
+;
+MSG_BTN_BACK
+Do tylu
+; To _Back
+;
+MSG_BTN_MOVE
+Pwróæ do _oryginal³u
+; Move to _Origin
+;
+MSG_BTN_ACTIVATE
+U_aktywnij
+; _Activate
+;
+MSG_BTN_ZIP
+_Zamknij
+; _Zip
+;
+MSG_BTN_HIDE
+Ukryj
+; _Hide
+;
+MSG_BTN_SHOW
+Poka¿
+; _Show
+;
+MSG_BTN_UPDATE_LIST
+Zaktualiz_uj listê
+; _Update List
+;
+MSG_BTN_RESCUE_ALL
+Zachowaj wszystkie okna
+; _Rescue all Windows
+;
+MSG_BTN_SHOW_ALL
+Poka¿ wszystkie okna
+; Show all Windows
+;
+MSG_BTN_RETHING
+Przemy¶l Uk³ad
+; Rethink Display
+;
+MSG_BTN_ABOUT
+O programie
+; About
+;
+MSG_SCREEN_WINDOW_LIST
+Lista ekranów i okien
+; Screen/Window List
+;
+MSG_MENU_PROJECT
+Projekt
+; Project
+;
+MSG_MENU_ABOUT
+Przy okazji...
+; About...
+;
+MSG_MENU_QUIT
+Zakoñcz
+; Quit
+;
+MSG_MENU_WIN_LIST
+Lista okien
+; Window List
+;
+MSG_MENU_UPDATE_LIST
+Zaktualizuj listê
+; Update List
+;
+MSG_MENU_KILL
+Zamknij
+; Kill
+;
+MSG_MENU_TO_FRONT
+Na przód
+; To Front
+;
+MSG_MENU_TO_BACK
+Do ty³u
+; To Back
+;
+MSG_MENU_TO_ORIGIN
+Wróc
+; To Origin
+;
+MSG_MENU_ACTIVATE
+Uaktywnij
+; Activate
+;
+MSG_MENU_ZIP
+Zamknij
+; Zip
+;
+MSG_MENU_HIDE
+Ukryj
+; Hide
+;
+MSG_MENU_SHOW
+Poka¿
+; Show
+;
+MSG_MENU_INFO
+Informacje
+; Info
+;
+MSG_MENU_GENERIC
+Podstawowe
+; Generic
+;
+MSG_MENU_RESCUE_ALL
+Zachowaj wszystko
+; Rescue All
+;
+MSG_MENU_SHOW_ALL
+Poka¿ wszystko
+; Show All
+;
+MSG_MENU_RETHINGDISPLAY
+Repenser l'affichage
+; RethinkDisplay
+;
+MSG_ARRAY_WINDOW
+  \033bOkno
+;   \033bWindow
+;
+MSG_ARRAY_SCREEN
+\033b\033uEkran
+; \033b\033uScreen
+;
+MSG_ARRAY_0_TYPE
+Typ
+; Type
+;
+MSG_ARRAY_1_ADDRESS
+Adres
+; Address
+;
+MSG_ARRAY_2_SIZE
+Wymiar
+; Size
+;
+MSG_ARRAY_3_POSITION
+Pozycja
+; Position
+;
+MSG_ARRAY_4_STATUS
+Status
+; Status
+;
+MSG_ARRAY_5_TITLE
+Tytu³
+; Title
+;
+MSG_COL_SCREEN
+Ekran
+; Screen
+;
+MSG_COL_SCR_ADDRESS
+Adres
+; Address
+;
+MSG_COL_SCR_LEFTEDGE
+Lewy brzeg
+; LeftEdge
+;
+MSG_COL_SCR_TOPEDGE
+Górny brzeg
+; TopEdge
+;
+MSG_COL_SCR_WIDTH
+Szerokos¶æ
+; Width
+;
+MSG_COL_SCR_HEIGHT
+Wysoko¶æ
+; Height
+;
+MSG_COL_SCR_FLAGS
+Atrybuty
+; Flags
+;
+MSG_COL_SCR_TITLE
+Tytu³
+; Title
+;
+MSG_COL_SCR_DEFAULTIT
+Tytu³ défaut
+; DefaultTitle
+;
+MSG_COL_SCR_FRSTWIN
+Pierwsze okno
+; FirstWindow
+;
+MSG_COL_WIDOW
+Okno
+; Window
+;
+MSG_COL_WIN_ADDRESS
+Adres
+; Address
+;
+MSG_COL_WIN_NEXTWIN
+Nastêpne okno
+; NextWindow
+;
+MSG_COL_WIN_LEFTEDGE
+Lewy brzeg
+; LeftEdge
+;
+MSG_COL_WIN_TOPEDGE
+Górny brzeg
+; TopEdge
+;
+MSG_COL_WIN_WIDTH
+Szeroko¶æ
+; Width
+;
+MSG_COL_WIN_HEIGHT
+Wysoko¶æ
+; Height
+;
+MSG_COL_WIN_MINWIDTH
+Minimalna szeroko¶æ
+; MinWidth
+;
+MSG_COL_WIN_MINHEIGHT
+Minimalna wysoko¶æ
+; MinHeight
+;
+MSG_COL_WIN_MAXWIDTH
+Maksymalna szeroko¶æ
+; MaxWidth
+;
+MSG_COL_WIN_MAXHEIGHT
+Maksymalna wysoko¶æ
+; MaxHeight
+;
+MSG_COL_WIN_FLAGS
+Atrybuty
+; Flags
+;
+MSG_COL_WIN_IDCMPFLAGS
+Atrybuty IDCMP
+; IDCMPFlags
+;
+MSG_COL_WIN_TITLE
+Tytu³
+; Title
+;
+MSG_COL_WIN_REQCOUNT
+ReqCount
+; ReqCount
+;
+MSG_COL_WIN_WSCREEN
+Ekran
+; WScreen
+;
+MSG_COL_WIN_BORDERLEFT
+Lewy brzeg
+; BorderLeft
+;
+MSG_COL_WIN_BORDERTOP
+Górny brzeg
+; BorderTop
+;
+MSG_COL_WIN_BORDERRIGHT
+Prawy brzeg
+; BorderRight
+;
+MSG_COL_WIN_BORDERBOTTOM
+Dolny brzeg
+; BoderBottom
+;
+MSG_COL_WIN_PARENTWIN
+Nadrzêdne okno
+; Parent Window
+;
+MSG_COL_WIN_FIRSTCHILD
+Pierwsze okno
+; First Child
+;
+MSG_COL_WIN_PARENT
+Nadrzêdne
+; Parent
+;
+MSG_COL_WIN_DESCENDANT
+Podrzêdne
+; Descendant
+;
