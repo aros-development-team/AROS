@@ -6,7 +6,7 @@ MSG_DESCRIPTION (//)
 Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT (//)
-\xa92006, AROS Dev Team
+\xa9 2006-2019, The AROS Development Team
 ;
 MSG_WINDOW_TITLE (//)
 Create new drawer

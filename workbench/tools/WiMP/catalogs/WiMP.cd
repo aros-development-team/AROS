@@ -6,10 +6,10 @@ MSG_APP_TITLE (//)
 Window Manipulator
 ;
 MSG_APP_ABOUT (//)
-WiMP - The Window Manipulation Program\n\nCopyright © 2000-2009 by The AROS Development Team
+WiMP - The Window Manipulation Program\n\nCopyright \xa9 2000-2019 by The AROS Development Team
 ;
 MSG_APP_COPYRIGHT (//)
-Copyright  © 1995-2009, The AROS Development Team
+Copyright \xa9 1995-2019, The AROS Development Team
 ;
 MSG_APP_AUTOR (//)
 The AROS Development Team
