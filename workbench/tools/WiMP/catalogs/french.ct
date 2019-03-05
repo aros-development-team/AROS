@@ -12,12 +12,12 @@ Manipulateur de Fenêtres
 ; Window Manipulator
 ;
 MSG_APP_ABOUT
-WiMP - Le programme de manipulation de fenêtres\n\nCopyright © 2000-2019 by The AROS Development Team
-; WiMP - The Window Manipulation Program\n\nCopyright © 2000-2019 by The AROS Development Team
+WiMP - Le programme de manipulation de fenêtres\n\nCopyright \xa9 2000-2019 by The AROS Development Team
+; WiMP - The Window Manipulation Program\n\nCopyright \xa9 2000-2019 by The AROS Development Team
 ;
 MSG_APP_COPYRIGHT
-Copyright \xa9 1995-2009, The AROS Development Team
-; Copyright \xa9 1995-2009, The AROS Development Team
+Copyright \xa9 1995-2019, The AROS Development Team
+; Copyright \xa9 1995-2019, The AROS Development Team
 ;
 MSG_APP_AUTOR
 The AROS Development Team
