@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2016, The AROS Development Team. All rights reserved.
+    Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -275,7 +275,8 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
     if (png.png_type == PNG_COLOR_TYPE_GRAY_ALPHA)
     {
-    	png_set_strip_alpha(png.png_ptr);
+    	png_set_gray_to_rgb(png.png_ptr);
+        png_set_tRNS_to_alpha(png.png_ptr);
     }
 
     {
@@ -295,7 +296,6 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     switch(png.png_type)
     {
     	case PNG_COLOR_TYPE_GRAY:
-	case PNG_COLOR_TYPE_GRAY_ALPHA:
 	    png.png_depth = 8;
 	    png.png_format = PBPAFMT_GREY8;
 	    break;
@@ -310,15 +310,15 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	    png.png_format = PBPAFMT_RGB;
 	    break;
 
+	case PNG_COLOR_TYPE_GRAY_ALPHA:
 	case PNG_COLOR_TYPE_RGB_ALPHA:
 	    png.png_depth = 32;
-	#if 0
+#if defined(PBPAFMT_RGBA)
 	    png.png_format = PBPAFMT_RGBA;
-	#else
-	    /* FIXME: PBPAFMT_RGBA not supported by picture.datatype, therefore using PBPAFMT_ARGB */
+#else
 	    png.png_format = PBPAFMT_ARGB;
 	    png_set_swap_alpha(png.png_ptr);
-	#endif
+#endif
 
 	    bmhd->bmh_Masking = mskHasAlpha;
 	    break;
@@ -367,8 +367,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     /* Palette? */
 
     if ((png.png_type == PNG_COLOR_TYPE_PALETTE) ||
-    	(png.png_type == PNG_COLOR_TYPE_GRAY) ||
-	(png.png_type == PNG_COLOR_TYPE_GRAY_ALPHA))
+    	(png.png_type == PNG_COLOR_TYPE_GRAY))
     {
     	struct ColorRegister    *colorregs = 0;
 	ULONG	    	    	*cregs = 0;
