@@ -3,6 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM workbench-libs-png : workbench-libs-z
+#MM- workbench-libs-png-includes : workbench-libs-png-generated
 
 FILES := png pngerror \
 	pngget pngmem pngpread pngread pngrio pngrtran pngrutil \
@@ -19,6 +20,7 @@ USER_CFLAGS := $(NOWARN_FLAGS)
     files="$(FILES)" linklibname="png"
 
 #MM- linklibs: linklibs-png-nostdio
+#MM linklibs-png-nostdio : workbench-libs-png-generated
 
 USER_CPPFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_TIME
 
@@ -40,8 +42,14 @@ $(AROS_LIB)/pkgconfig/libpng.pc : $(SRCDIR)/$(CURDIR)/libpng.pc.in $(SRCDIR)/$(C
 	       -e 's| -I$${includedir}||' \
 	       $< >$@
 
+$(AROS_INCLUDES)/pnglibconf.h : $(SRCDIR)/$(CURDIR)/scripts/pnglibconf.h.prebuilt
+	$(SED) "s|.*PNG_ERROR_NUMBERS_SUPPORTED.*|#if defined(__AROS__)\\n#define PNG_ERROR_NUMBERS_SUPPORTED\\n#else\\n/*#undef PNG_ERROR_NUMBERS_SUPPORTED*/\\n#endif|g" $< > $@
+
+#MM
+workbench-libs-png-generated : $(AROS_INCLUDES)/pnglibconf.h
+
 #MM includes-copy
-INCLUDE_FILES := png.h pngconf.h pnglibconf.h
+INCLUDE_FILES := png.h pngconf.h
 %copy_includes
 
 %common

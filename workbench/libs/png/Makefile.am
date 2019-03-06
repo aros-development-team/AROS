@@ -1,7 +1,7 @@
 # Makefile.am, the source file for Makefile.in (and hence Makefile), is
 #
+# Copyright (c) 2018 Cosmin Truta
 # Copyright (c) 2004-2016 Glenn Randers-Pehrson
-# Last changed in libpng 1.6.25 [September 1, 2016]
 #
 # This code is released under the libpng license.
 # For conditions of distribution and use, see the disclaimer
@@ -60,6 +60,7 @@ pngcp_LDADD = libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@.la
 # set of parameters:
 TESTS =\
    tests/pngtest\
+   tests/pngtest-badpngs\
    tests/pngvalid-gamma-16-to-8 tests/pngvalid-gamma-alpha-mode\
    tests/pngvalid-gamma-background tests/pngvalid-gamma-expand16-alpha-mode\
    tests/pngvalid-gamma-expand16-background\
@@ -94,12 +95,23 @@ libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES = png.c pngerror.c\
 
 if PNG_ARM_NEON
 libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES += arm/arm_init.c\
-	arm/filter_neon.S arm/filter_neon_intrinsics.c
+	arm/filter_neon.S arm/filter_neon_intrinsics.c \
+	arm/palette_neon_intrinsics.c
 endif
 
 if PNG_MIPS_MSA
 libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES += mips/mips_init.c\
 	mips/filter_msa_intrinsics.c
+endif
+
+if PNG_INTEL_SSE
+libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES += intel/intel_init.c\
+	intel/filter_sse2_intrinsics.c
+endif
+
+if PNG_POWERPC_VSX
+libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES += powerpc/powerpc_init.c\
+        powerpc/filter_vsx_intrinsics.c
 endif
 
 nodist_libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES = pnglibconf.h
@@ -136,7 +148,7 @@ pkgconfig_DATA = libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@.pc
 # from those directories being included.  This only works if the configure is
 # not done in the source directory!
 EXTRA_DIST= \
-	ANNOUNCE CHANGES INSTALL LICENSE README TODO \
+	ANNOUNCE AUTHORS CHANGES INSTALL LICENSE README TODO TRADEMARK \
 	pngtest.png pngbar.png pngnow.png pngbar.jpg autogen.sh \
 	${srcdir}/contrib ${srcdir}/projects ${srcdir}/scripts \
 	$(TESTS) $(XFAIL_TESTS) tests/pngstest \
