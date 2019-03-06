@@ -1,0 +1,7 @@
+#   $Id: mmakefile.src 54326 2017-03-28 20:54:52Z NicJA $
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test-datatypes : test-png-pngsuite
+
+%copy_dir_recursive mmake=test-png-pngsuite dst=$(AROS_TESTS)/Datatypes/png/pngsuite
