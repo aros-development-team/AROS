@@ -20,7 +20,7 @@ USER_CFLAGS := $(NOWARN_FLAGS)
 
 #MM- linklibs: linklibs-png-nostdio
 
-USER_CFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_TIME
+USER_CPPFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_TIME
 
 %build_linklib mmake=linklibs-png-nostdio libname=png_nostdio \
 	files=$(FILES) objdir=$(OBJDIR)/no_stdio

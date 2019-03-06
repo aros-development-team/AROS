@@ -52,7 +52,7 @@ FUNCS := \
 #MM- workbench-libs-icon : linklibs
 #MM- core-linklibs: linklibs-icon
 
-USER_CFLAGS := -D__NOLIBBASE__
+USER_CPPFLAGS := -D__NOLIBBASE__
 
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \

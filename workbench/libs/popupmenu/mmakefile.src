@@ -4,7 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 
 # For m68k --with-paranoia
 NOWARN_FLAGS := $(NOWARN_FRAME_ADDRESS)
-USER_CFLAGS := -D__UTILITY_STDLIBBASE__ $(NOWARN_FLAGS)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -D__UTILITY_STDLIBBASE__
 USER_LDFLAGS := -static
 
 FILES :=  pm \

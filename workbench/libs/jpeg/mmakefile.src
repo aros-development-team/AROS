@@ -18,7 +18,8 @@ FILES := jaricom jcapimin jcapistd jcarith jccoefct jccolor \
 
 # We trust upstream
 NOWARN_FLAGS := -Wno-main
-USER_CFLAGS := $(NOWARN_FLAGS) -DNO_GETENV
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -DNO_GETENV
 
 #MM- core-linklibs : linklibs-jpeg
 
