@@ -20,6 +20,9 @@ ICU_EXTRA_OPTS = \
         --with-data-packaging=static
 
 BINUTILS_VERSION = $(TARGET_BINUTILS_VER)
+BINUTILS_VERSION_MAJOR = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f1)
+BINUTILS_VERSION_MINOR = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f2)
+BINUTILS_VERSION_PATCH = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f3)
 
 BINUTILS_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
 BINUTILS_EXTRA_OPTS += -bindir=$(CROSSTOOLSDIR)
@@ -31,9 +34,31 @@ ifeq (yes, $(TARGET_LTO))
 BINUTILS_EXTRA_OPTS += --enable-plugins --enable-lto
 endif
 
+# Binutils 2.31 enables separate code for x86 by default
+# however we do not handle it.
+BINUTILS_NOSEPCODE=no
+ifeq ($(shell test $(BINUTILS_VERSION_MAJOR) -gt 2; echo $$?),0)
+BINUTILS_NOSEPCODE=yes
+else
+ifeq ($(shell test $(BINUTILS_VERSION_MAJOR) -gt 1; echo $$?),0)
+ifeq ($(shell test $(BINUTILS_VERSION_MINOR) -gt 30; echo $$?),0)
+BINUTILS_NOSEPCODE=yes
+endif
+endif
+endif
+ifneq ($(BINUTILS_NOSEPCODE),no)
+ifeq ($(AROS_TARGET_CPU),i386)
+BINUTILS_EXTRA_OPTS += --enable-separate-code=no
+endif
+ifeq ($(AROS_TARGET_CPU),x86_64)
+BINUTILS_EXTRA_OPTS += --enable-separate-code=no
+endif
+endif
+
 GCC_VERSION     = $(TARGET_GCC_VER)
-$(eval UNUSEDREMAINDER := $$$(GCC_VERSION))
-GCC_VERSION_MAJOR := $(subst $(UNUSEDREMAINDER),,$(GCC_VERSION))
+GCC_VERSION_MAJOR = $(shell echo "$(GCC_VERSION)" | cut -d"." -f1)
+GCC_VERSION_MINOR = $(shell echo "$(GCC_VERSION)" | cut -d"." -f2)
+GCC_VERSION_PATCH = $(shell echo "$(GCC_VERSION)" | cut -d"." -f3)
 
 GCC_LANGUAGES:=c,c++
 ifneq (no-objc,$(OBJC_TARGET))
@@ -150,7 +175,7 @@ tools-crosstools-gmp :
 %fetch_and_build mmake=crosstools-gmp package=gmp version=$(GMP_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/gmp" \
 	patch=no \
-	prefix="$(CROSSTOOLSDIR)" \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
 #MM
@@ -166,7 +191,7 @@ tools-crosstools-isl :
 %fetch_and_build mmake=crosstools-isl package=isl version=$(ISL_VERSION) compiler=host \
 	package_repo="$(ISL_REPOSITORY)" \
 	patch=no \
-	prefix="$(CROSSTOOLSDIR)" \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --without-piplib --disable-shared"
 
 #MM
@@ -182,7 +207,7 @@ tools-crosstools-mpfr :
 %fetch_and_build mmake=crosstools-mpfr package=mpfr version=$(MPFR_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/mpfr" \
 	patch=no \
-	prefix="$(CROSSTOOLSDIR)" \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
 #MM
@@ -198,7 +223,7 @@ tools-crosstools-mpc :
 %fetch_and_build mmake=crosstools-mpc package=mpc version=$(MPC_VERSION) compiler=host \
 	package_repo="$(MPC_REPOSITORY)" suffixes="tar.gz" \
 	patch=no \
-	prefix="$(CROSSTOOLSDIR)" \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
 #MM
@@ -214,8 +239,8 @@ tools-crosstools-binutils :
 %fetch_and_build mmake=crosstools-binutils package=binutils version=$(BINUTILS_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/binutils" \
 	patch=yes \
-	prefix="$(CROSSTOOLSDIR)" \
-        extraoptions="$(BINUTILS_EXTRA_OPTS)"
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
+	extraoptions="$(BINUTILS_EXTRA_OPTS)"
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
@@ -236,7 +261,7 @@ tools-crosstools-gcc :
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)" \
 	patch=yes \
-	prefix="$(CROSSTOOLSDIR)" \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
 
 #MM
