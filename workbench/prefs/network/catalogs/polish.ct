@@ -54,6 +54,10 @@ MSG_HOST_NAME
 Nazwa wêz³a
 ; Host Name
 ;
+MSG_HOST_NAMES
+Nazwy wêz³ów
+; Host Name and Aliases
+;
 MSG_DOMAIN_NAME
 Domena
 ; Domain Name
@@ -122,7 +126,7 @@ MSG_TAB_IP_CONFIGURATION
 Konfiguracja TCP/IP
 ; IPv4 Configuration
 ;
-MSG_TAB_COMPUTER_NAME
+MSG_TAB_COMPUTER_NAMES
 Nazwa komputera
 ; Computer Name
 ;
@@ -133,6 +137,10 @@ Sieæ bezprzewodowa
 MSG_TAB_MOBILE
 GSM
 ; Mobile Broadband
+;
+MSG_TAB_SERVERS
+Za³o¿one udzia³y
+; Mounted Shares
 ;
 MSG_AUTOSTART_STACK
 W³±czaj sieæ podczas wczytywania systemu.
@@ -182,6 +190,10 @@ MSG_ERROR_TITLE
 B³±d
 ; Error
 ;
+MSG_WARNING_TITLE
+Ostrze¿enie
+; Warning
+;
 MSG_ERR_NOT_SAVED_PREFS
 Zapisywanie ustawieñ w %s zakoñczone niepowodzeniem.
 ; Network preferences not saved to %s
@@ -189,6 +201,10 @@ Zapisywanie ustawieñ w %s zakoñczone niepowodzeniem.
 MSG_ERR_NOT_COPIED_FILES
 Kopiowanie dodatkowych plików do %s zakoñczone niepowodzeniem.
 ; Additional files not copied to %s
+;
+MSG_WARN_MULTIPLE_IFACES
+DHCP nie dzia³a niezawodnie, je¿eli zdefiniowano kilka interfejsów
+; DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE
 Informacja
@@ -202,9 +218,17 @@ MSG_IFWINDOW_TITLE
 Interfejs
 ; Interface
 ;
+MSG_HOSTWINDOW_TITLE
+Nazwy hostów
+; Host Name(s)
+;
 MSG_NETWINDOW_TITLE
 Sieæ bezprzewodowa
 ; Wireless Network
+;
+MSG_SERVERWINDOW_TITLE
+Za³ó¿ udzia³
+; Mount Share
 ;
 MSG_USERNAME
 U¿ytkownik
@@ -213,4 +237,20 @@ U¿ytkownik
 MSG_PASSWORD
 Has³o
 ; Password
+;
+MSG_WORKGROUP
+Domena/Zespó³
+; Domain/Workgroup
+;
+MSG_SERVICE
+Nazwa udzia³u
+; Share Name
+;
+MSG_SERVICE_TYPES
+Rodzaj serwisu
+; Service Type
+;
+MSG_SERVICETYPE_CIFS
+CIFS/SMB
+; CIFS/SMB
 ;
