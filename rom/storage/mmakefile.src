@@ -5,6 +5,6 @@ include $(SRCDIR)/config/aros.cfg
 STORAGE_FILES := \
     storage_init
 
-%build_module mmake=kernel-storage \
-  modname=storage modtype=resource \
-  files="$(STORAGE_FILES)"
+#%build_module mmake=kernel-storage \
+#  modname=storage modtype=resource \
+#  files="$(STORAGE_FILES)"

@@ -4,6 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := class_init probe bus_class interface_pio interface_dma
 
+USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
+#USER_CPPFLAGS += -DDEBUG
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-hidd-pciata \

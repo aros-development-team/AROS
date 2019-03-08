@@ -57,11 +57,6 @@ void PrintCPUSpecificInfo(char *buffer, LONG bufsize, ULONG i, APTR ProcessorBas
 
     GetCPUInfo(tags);
 
-    snprintf(bufptr, bufsize, "Features: ");
-    slen = strlen(bufptr);
-    bufptr += slen;
-    bufsize -= slen;
-
     for (i = 0; bufsize > 1 && i < FLAGS_NUM; i++)
     {
         if (flags[i])

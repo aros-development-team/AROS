@@ -91,14 +91,6 @@ void PrintCPUSpecificInfo(char *buffer, LONG bufsize, ULONG i, APTR ProcessorBas
     if (bufsize < 1)
         return;
 
-    snprintf(bufptr, bufsize, "Features: ");
-    slen = strlen(bufptr);
-    bufptr += slen;
-    bufsize -= slen;
-
-    if (bufsize < 1)
-        return;
-
     found = FALSE;
     for (i = 0; bufsize > 1 && i < FLAGS_NUM; i++)
     {

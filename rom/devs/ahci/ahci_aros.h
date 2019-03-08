@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -48,14 +48,6 @@ typedef unsigned int u_int;
 #define htole16(x)      AROS_WORD2LE(x)
 
 #define PAGE_SIZE       4096
-
-typedef struct {
-    struct MinNode     dev_Node;
-    OOP_Object        *dev_Object;
-    struct AHCIBase   *dev_AHCIBase;
-    struct ahci_softc *dev_softc;
-    ULONG              dev_HostID;
-} *device_t;
 
 /* Kernel stuff */
 

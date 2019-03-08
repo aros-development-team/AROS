@@ -3,12 +3,18 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <proto/timer.h>
+
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <exec/io.h>
-#include <proto/exec.h>
-#include <aros/debug.h>
-#include <proto/timer.h>
 
 #include "timer.h"
 #include "ata.h"
@@ -26,11 +32,11 @@ BOOL ata_Calibrate(struct IORequest* tmr, struct ataBase *base)
     while (scale <= 0x80000000)
     {
 	Forbid();
-	GetSysTime(&t1);
+	GetUpTime(&t1);
 	for (x = 1; x < scale; x++)
 	    t = (((t + x) * t) - x) / x;    // add, mul, sub, div, trivial benchmark.
 
-	GetSysTime(&t2);
+	GetUpTime(&t2);
 	Permit();
 	SubTime(&t2, &t1);
 	

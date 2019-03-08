@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2012-2013, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
-#define __OOP_NOMETHODBASES__
- 
 #include "ahci_aros.h"
+
+#define DDMA(x)
 
 struct bus_dma_tag_slab {
     TAILQ_ENTRY(bus_dma_tag_slab) sl_node;
@@ -31,7 +31,7 @@ int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t bo
 {
     bus_dma_tag_t tag;
 
-    D2(bug("%s: Allocating tag, %d objects of size %d, aligned by %d\n", __func__, nsegments, maxsegsz, alignment));
+    DDMA(bug("%s: Allocating tag, %d objects of size %d, aligned by %d\n", __func__, nsegments, maxsegsz, alignment));
 
     if (nsegments > BUS_DMA_MAX_SEGMENTS) {
         D(bug("%s: Too many segments, max is %d\n", __func__, BUS_DMA_MAX_SEGMENTS));
@@ -51,7 +51,7 @@ int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t bo
 
     TAILQ_INIT(&tag->dt_slabs);
 
-    D2(bug("%s: %p: Tag created\n", __func__, tag));
+    DDMA(bug("%s: %p: Tag created\n", __func__, tag));
 
     (*dmat) = tag;
     return 0;
@@ -60,6 +60,7 @@ int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t bo
 int bus_dma_tag_destroy(bus_dma_tag_t tag)
 {
     struct bus_dma_tag_slab *slab;
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
     for (slab = TAILQ_FIRST(&tag->dt_slabs); slab;
          slab = TAILQ_FIRST(&tag->dt_slabs)) {
         TAILQ_REMOVE(&tag->dt_slabs, slab, sl_node);
@@ -75,24 +76,26 @@ static struct bus_dma_tag_slab *bus_dmamem_alloc_slab(bus_dma_tag_t tag)
     int boundary = tag->dt_boundary;
     struct bus_dma_tag_slab *slab;
 
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+
     if (boundary < 4)
         boundary = 4;
 
     slab = AllocVec(sizeof(*slab), MEMF_ANY | MEMF_CLEAR);
     if (slab == NULL) {
-        D(bug("%s: Can't allocate %d byte slab header\n", __func__, sizeof(*slab)));
+        bug("%s: Can't allocate %d byte slab header\n", __func__, sizeof(*slab));
         return NULL;
     }
 
     slab->sl_memory = AllocVec(tag->dt_segsize * tag->dt_nsegments + boundary - 4, MEMF_ANY);
     if (slab->sl_memory == NULL) {
-        D(bug("%s: %p: Can't allocate %d bytes for DMA\n", __func__, tag, tag->dt_segsize * tag->dt_nsegments + boundary - 4));
+        bug("%s: %p: Can't allocate %d bytes for DMA\n", __func__, tag, tag->dt_segsize * tag->dt_nsegments + boundary - 4);
         FreeVec(slab);
         return NULL;
     }
 
     slab->sl_segment = (APTR)(((IPTR)slab->sl_memory + boundary - 4) & ~(boundary-1));
-    D2(bug("%s: %p: Memory %p, %dx%d segments at %p\n", __func__, tag, slab->sl_memory, tag->dt_nsegments, tag->dt_maxsegsz, slab->sl_segment));
+    DDMA(bug("%s: %p: Memory %p, %dx%d segments at %p\n", __func__, tag, slab->sl_memory, tag->dt_nsegments, tag->dt_maxsegsz, slab->sl_segment));
 
     slab->sl_segfree = tag->dt_nsegments;
 
@@ -106,6 +109,7 @@ int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap
     void *addr;
     struct bus_dma_tag_slab *slab;
     int i;
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
     TAILQ_FOREACH(slab, &tag->dt_slabs, sl_node) {
         if (slab->sl_segfree != 0)
@@ -115,12 +119,12 @@ int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap
     if (slab == NULL) {
         slab = bus_dmamem_alloc_slab(tag);
         if (slab == NULL) {
-            D(bug("%s: %p: Failed to allocate segment\n", __func__, tag));
+            bug("%s: %p: Failed to allocate segment\n", __func__, tag);
             return -ENOMEM;
         }
     }
 
-    D2(bug("%s: %p: Slab %p 0x%08llx\n", __func__, tag, slab, slab->sl_segmap));
+    DDMA(bug("%s: %p: Slab %p 0x%08llx\n", __func__, tag, slab, slab->sl_segmap));
     for (i = 0; i < tag->dt_nsegments; i++ ) {
         if ((slab->sl_segmap & (1 << i)) == 0) {
             slab->sl_segmap |= (1 << i);
@@ -133,7 +137,7 @@ int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap
     if (flags & MEMF_CLEAR)
         memset(addr, 0, tag->dt_segsize);
 
-    D2(bug("%s: %p: Allocated slot %d, %p: size %d\n", __func__, tag, i, addr, tag->dt_maxsegsz));
+    DDMA(bug("%s: %p: Allocated slot %d, %p: size %d\n", __func__, tag, i, addr, tag->dt_maxsegsz));
     if (vaddr)
         *vaddr = addr;
 
@@ -168,12 +172,14 @@ void bus_dmamem_free(bus_dma_tag_t tag, void *vaddr, bus_dmamap_t map)
 
 int bus_dmamap_create(bus_dma_tag_t tag, unsigned flags, bus_dmamap_t *map)
 {
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
     bus_dmamem_alloc(tag, NULL, 0, map);
     return 0;
 }
 
 void bus_dmamap_destroy(bus_dma_tag_t tag, bus_dmamap_t map)
 {
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
     bus_dmamem_free(tag, NULL, map);
 }
 
@@ -187,6 +193,8 @@ int bus_dmamap_load(bus_dma_tag_t tag, bus_dmamap_t map, void *data, size_t len,
 void bus_dmamap_sync(bus_dma_tag_t tag, bus_dmamap_t map, unsigned flags)
 {
     ULONG len = tag->dt_maxsegsz;
+
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
     if (!(flags & (1 << 31)))
         CachePreDMA(map, &len, flags);
@@ -202,9 +210,12 @@ struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, 
 {
     struct resource *resource;
     IPTR INTLine;
-    OOP_AttrBase HiddPCIDeviceAttrBase = dev->dev_AHCIBase->ahci_HiddPCIDeviceAttrBase;
+    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    OOP_AttrBase HiddPCIDeviceAttrBase = AHCIBase->ahci_HiddPCIDeviceAttrBase;
 
-    resource = AllocPooled(dev->dev_AHCIBase->ahci_MemPool, sizeof(*resource));
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+
+    resource = AllocPooled(AHCIBase->ahci_MemPool, sizeof(*resource));
     if (!resource)
         return NULL;
 
@@ -227,7 +238,7 @@ struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, 
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Size0 + (((*rid) - PCIR_BAR(0))/4)*3, &hba_size);
         resource->res_size = hba_size;
 
-        map.mID = dev->dev_AHCIBase->ahci_HiddPCIDriverMethodBase + moHidd_PCIDriver_MapPCI;
+        map.mID = AHCIBase->ahci_HiddPCIDriverMethodBase + moHidd_PCIDriver_MapPCI;
         map.PCIAddress = (APTR)resource->res_tag;
         map.Length = resource->res_size;
         resource->res_handle = OOP_DoMethod(Driver, (OOP_Msg)&map);
@@ -242,19 +253,22 @@ struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, 
 
 int bus_release_resource(device_t dev, enum bus_resource_t type, int rid, struct resource *res)
 {
-    OOP_AttrBase HiddPCIDeviceAttrBase = dev->dev_AHCIBase->ahci_HiddPCIDeviceAttrBase;
+    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    OOP_AttrBase HiddPCIDeviceAttrBase = AHCIBase->ahci_HiddPCIDeviceAttrBase;
+
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
     if (type == SYS_RES_MEMORY && rid > PCIR_BAR(0) && rid < PCIR_BAR(6)) {
         struct pHidd_PCIDriver_UnmapPCI unmap;
         OOP_Object *Driver;
 
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver, (IPTR *)&Driver);
-        unmap.mID = dev->dev_AHCIBase->ahci_HiddPCIDriverMethodBase + moHidd_PCIDriver_UnmapPCI;
+        unmap.mID = AHCIBase->ahci_HiddPCIDriverMethodBase + moHidd_PCIDriver_UnmapPCI;
         unmap.CPUAddress = (APTR)res->res_handle;
         unmap.Length = res->res_size;
         OOP_DoMethod(Driver, (OOP_Msg)&unmap);
     }
-    FreePooled(dev->dev_AHCIBase->ahci_MemPool, res, sizeof(*res));
+    FreePooled(AHCIBase->ahci_MemPool, res, sizeof(*res));
     return 0;
 }
 
@@ -279,7 +293,9 @@ int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t fu
     OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
     struct Interrupt *handler = AllocVec(sizeof(struct Interrupt)+sizeof(void *)*2, MEMF_PUBLIC | MEMF_CLEAR);
     void **fa;
-    
+
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+
     if (handler == NULL)
         return ENOMEM;
 
@@ -306,6 +322,8 @@ int bus_teardown_intr(device_t dev, struct resource *r, void *cookie)
 {
     struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
     OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
+
+    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
     HIDD_PCIDevice_RemoveInterrupt(dev->dev_Object, cookie);
     FreeVec(cookie);

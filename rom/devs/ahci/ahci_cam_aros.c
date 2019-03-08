@@ -1,14 +1,19 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
 #include <aros/debug.h>
-#include <aros/atomic.h>
 
 #include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <aros/atomic.h>
+
 #include <proto/expansion.h>
 #include <proto/dos.h>
 
@@ -121,6 +126,7 @@ static int ahci_RegisterPort(struct ahci_port *ap)
     struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
     struct cam_sim *unit;
     char name[64];
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
     unit = AllocPooled(AHCIBase->ahci_MemPool, sizeof(*unit));
     if (!unit)
@@ -154,7 +160,7 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
     struct AHCIBase *AHCIBase;
     struct cam_sim *unit = ap->ap_sim;
 
-    D(bug("ahci_UnregisterPort: %p\n", ap));
+    D(bug("[AHCI] ahci_UnregisterPort: %p\n", ap));
 
     if (sc == NULL) {
         D(bug("No softc?\n"));
@@ -191,7 +197,7 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
  * This way, we get BootNodes if ahci.device is linked in,
  * but don't if ahci.device is loaded after booting.
  */
-static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at)
+static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struct ahci_Unit *unit)
 {
     struct ExpansionBase *ExpansionBase;
     BOOL dos_loaded;
@@ -199,9 +205,11 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at)
     TEXT dosdevname[4] = "HA0";
     const ULONG DOS_ID = AROS_MAKE_ID('D','O','S','\001');
     const ULONG CDROM_ID = AROS_MAKE_ID('C','D','V','D');
-    ULONG unit = device_get_unit(ap->ap_sc->sc_dev) * 32 + ap->ap_num;
 
-    D(bug("%s: ap = %p, at = %p, unit = %d\n", __func__, ap, at, ap->ap_sim ? ap->ap_sim->sim_Unit : -1));
+    unit->au_UnitNum = device_get_unit(ap->ap_sc->sc_dev) * 32 + ap->ap_num;
+
+    D(bug("[AHCI>>] %s()\n", __PRETTY_FUNCTION__)); 
+    D(bug("[AHCI>>] %s: ap = %p, at = %p, unit = %d\n", __func__, ap, at, ap->ap_sim ? ap->ap_sim->sim_Unit : -1));
 
     /* See if dos.library has run */
     Forbid();
@@ -209,7 +217,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at)
     Permit();
 
     if (dos_loaded) {
-        D(bug("%s: refused to register as boot volume - dos.library already loaded\n", __func__));
+        D(bug("[AHCI>>] %s: refused to register as boot volume - dos.library already loaded\n", __func__));
         return FALSE;
     }
 
@@ -243,7 +251,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at)
     
         pp[0] 		    = (IPTR)dosdevname;
         pp[1]		    = (IPTR)MOD_NAME_STRING;
-        pp[2]		    = unit;
+        pp[2]		    = unit->au_UnitNum;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
         pp[DE_SIZEBLOCK    + 4] = at->at_identify.sector_size;
         pp[DE_NUMHEADS     + 4] = at->at_identify.nheads;
@@ -265,8 +273,8 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at)
         devnode = MakeDosNode(pp);
 
         if (devnode) {
-            D(bug("[AHCI>>]:-ahci_RegisterVolume: '%s' C/H/S=%d/%d/%d, %s unit %d\n",
-                        AROS_BSTR_ADDR(devnode->dn_Name), at->at_identify.ncyls, at->at_identify.nheads,  at->at_identify.nsectors, MOD_NAME_STRING, unit));
+            D(bug("[AHCI>>]:-ahci_RegisterVolume: '%s' C/H/S=%d/%d/%d, %s unit->au_UnitNum %d\n",
+                        AROS_BSTR_ADDR(devnode->dn_Name), at->at_identify.ncyls, at->at_identify.nheads,  at->at_identify.nsectors, MOD_NAME_STRING, unit->au_UnitNum));
             AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
             D(bug("[AHCI>>]:-ahci_RegisterVolume: done\n"));
             return TRUE;
@@ -283,7 +291,7 @@ int ahci_cam_attach(struct ahci_port *ap)
 {
     int error;
 
-    D(bug("ahci_cam_attach: port %p\n", ap));
+    D(bug("[AHCI] ahci_cam_attach: port %p\n", ap));
 
     ahci_os_unlock_port(ap);
     lockmgr(&ap->ap_sim_lock, LK_EXCLUSIVE);
@@ -312,7 +320,7 @@ int ahci_cam_attach(struct ahci_port *ap)
 
 void ahci_cam_detach(struct ahci_port *ap)
 {
-    D(bug("ahci_cam_detach: port %p\n", ap));
+    D(bug("[AHCI] ahci_cam_detach: port %p\n", ap));
 
     lockmgr(&ap->ap_sim_lock, LK_EXCLUSIVE);
     if (ap->ap_flags & AP_F_BUS_REGISTERED) {
@@ -339,7 +347,7 @@ void ahci_cam_detach(struct ahci_port *ap)
  */
 void ahci_cam_changed(struct ahci_port *ap, struct ata_port *atx, int found)
 {
-    D(bug("ahci_cam_changed: ap=%p, sim = %p, atx=%p, found=%d\n", ap, ap->ap_sim, atx, found));
+    D(bug("[AHCI] ahci_cam_changed: ap=%p, sim = %p, atx=%p, found=%d\n", ap, ap->ap_sim, atx, found));
 
     if (ap->ap_sim) {
         if (found == 0) {
@@ -383,6 +391,7 @@ ata_fix_identify(struct ata_identify *id)
 {
 	u_int16_t	*swap;
 	int		i;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	swap = (u_int16_t *)id->serial;
 	for (i = 0; i < sizeof(id->serial) / sizeof(u_int16_t); i++)
@@ -420,6 +429,7 @@ ahci_set_xfer(struct ahci_port *ap, struct ata_port *atx)
 	struct ata_xfer	*xa;
 	u_int16_t mode;
 	u_int16_t mask;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	at = atx ? atx : ap->ap_ata[0];
 
@@ -474,6 +484,7 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 {
 	struct ata_port *at;
 	struct ata_xfer	*xa;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	at = atx ? atx : ap->ap_ata[0];
 
@@ -603,6 +614,7 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 static int
 ahci_cam_probe_atapi(struct ahci_port *ap, struct ata_port *atx)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	ahci_set_xfer(ap, atx);
 	return(0);
 }
@@ -636,6 +648,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 	const char	*scstr;
 	const char	*type;
 
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	error = EIO;
 
 	/*
@@ -874,13 +887,25 @@ err:
 		if (atx == NULL)
 			ap->ap_probe = at->at_probe;
 	} else {
+                struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
+                struct TagItem unitAttrs[] =
+                {
+                    {aHidd_DriverData   , (IPTR)OOP_INST_DATA(AHCIBase->busClass, ap->ap_Object)        },
+                    {TAG_DONE           , 0                                                             }
+                };
+                OOP_Object *unitObj;
+                struct ahci_Unit *unit;
+
 		at->at_probe = ATA_PROBE_GOOD;
 		if (atx == NULL)
 			ap->ap_probe = at->at_probe;
-		ahci_RegisterVolume(ap, at);
+
+                unitObj = OOP_NewObject(AHCIBase->unitClass, NULL, unitAttrs);
+                if (unitObj)
+                {
+                    unit = OOP_INST_DATA(AHCIBase->unitClass, unitObj);
+                    ahci_RegisterVolume(ap, at, unit);
+                }
 	}
 	return (error);
 }
-
-
-

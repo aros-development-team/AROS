@@ -1,20 +1,19 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Elbox FastATA HIDD
     Lang: English
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
+#include <proto/exec.h>
 
 #include <hardware/ata.h>
 #include <hidd/ata.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
-#include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -46,22 +45,27 @@ static void ata_RemoveFastATAInterrupt(struct ATA_BusData *bus)
 
 OOP_Object *FASTATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct ataBase *base = cl->UserData;
+    struct ata_ProbedBus *bus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
+
     D(bug("[ATA:FastATA] %s()\n", __func__);)
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
-    D(bug("[ATA:FastATA] %s: %p\n", __func__, o);)
+
+    if (!bus)
+        return NULL;
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-        struct ataBase *base = cl->UserData;
         struct ATA_BusData *data = OOP_INST_DATA(cl, o);
 
-        /* No check because we always supply this */
-        data->bus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
+        data->bus = bus;
         data->gaylebase = data->bus->port;
         data->gayleirqbase = data->bus->gayleirqbase;
         ata_CreateFastATAInterrupt(data, 0);
-        return o;
     }
-    return NULL;
+
+    D(bug("[ATA:FastATA] %s: Instance @ %p\n", __func__, o);)
+    return o;
 }
 
 void FASTATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -88,13 +92,16 @@ void FASTATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     case aoHidd_ATABus_Use80Wire:
         *msg->storage = FALSE;
         return;
+
     case aoHidd_ATABus_UseDMA:
         *msg->storage = FALSE;
         return;
+
     case aoHidd_ATABus_Use32Bit:
         *msg->storage = TRUE;
         return;
     }
+
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
@@ -141,7 +148,16 @@ APTR FASTATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg
     return pio;
 }
 
+BOOL FASTATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+{
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
+
+    return TRUE;
+}
+
 void FASTATA__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    D(bug("[ATA:FastATA] %s()\n", __func__);)
+
     OOP_DoSuperMethod(cl, o, msg);
 }

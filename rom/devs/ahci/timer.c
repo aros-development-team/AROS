@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved
+    Copyright © 2009-2018, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -12,13 +12,19 @@
  * 2005-03-06  T. Wiszkowski       few corrections (thanks, Georg)
  * 2005-03-05  T. Wiszkowski       created file; initial benchmarked nanowait and timer-based micro/sec wait
  */
+ 
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
 
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <exec/io.h>
-#include <proto/exec.h>
-#include <aros/debug.h>
 #include <proto/timer.h>
+
 #include "timer.h"
 
 ULONG iters_per_100ns = ~0;
@@ -36,11 +42,11 @@ static BOOL ahci_Calibrate(struct IORequest* tmr)
     while (scale <= 0x80000000)
     {
 	Forbid();
-	GetSysTime(&t1);
+	GetUpTime(&t1);
 	for (x = 1; x < scale; x++)
 	    t = (((t + x) * t) - x) / x;    // add, mul, sub, div, trivial benchmark.
 
-	GetSysTime(&t2);
+	GetUpTime(&t2);
 	Permit();
 	SubTime(&t2, &t1);
 	

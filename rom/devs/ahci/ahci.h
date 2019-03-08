@@ -17,14 +17,15 @@
  */
 
 #if defined(__DragonFly__)
-#include "ahci_dragonfly.h"
+#  include   "ahci_dragonfly.h"
+#  include   "atascsi.h"
 #elif defined(__AROS__)
-#include "ahci_aros.h"
+#  include   "ahci_aros.h"
+#  include   <devices/atascsi.h>
 #else
-#error "build for OS unknown"
+#  error   "build for OS unknown"
 #endif
 #include "pmreg.h"
-#include "atascsi.h"
 
 /* change to AHCI_DEBUG for dmesg spam */
 #define NO_AHCI_DEBUG
@@ -429,6 +430,7 @@ struct ahci_ccb {
 };
 
 struct ahci_port {
+        OOP_Object              *ap_Object;
 	struct ahci_softc	*ap_sc;
 	bus_space_handle_t	ap_ioh;
 
@@ -498,7 +500,7 @@ struct ahci_port {
 	struct sysctl_ctx_list	sysctl_ctx;
 	struct sysctl_oid	*sysctl_tree;
 
-	char			ap_name[16];
+	char			ap_name[20];
 };
 
 #define PORTNAME(_ap)		((_ap)->ap_name)

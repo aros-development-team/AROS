@@ -2,15 +2,15 @@
 #define HIDD_ATA_H
 
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ATA bus driver HIDD definitions
     Lang: english
 */
 
-#define CLID_HW_ATA      "hw.ata"
-#define CLID_Hidd_ATABus "hidd.ata.bus"
+#define CLID_Hidd_ATA           "hidd.ata"
+#define CLID_Hidd_ATABus        "hidd.ata.bus"
 
 struct ATA_BusInterface
 {
@@ -72,6 +72,7 @@ typedef enum
 #define AF_XFER_LBA     (1<<(AB_XFER_LBA))
 #define AF_XFER_PIO32   (1<<(AB_XFER_PIO32))
 
+//#include <interface/Hidd_ATA.h>
 #include <interface/Hidd_ATABus.h>
 #include <interface/Hidd_ATAUnit.h>
 

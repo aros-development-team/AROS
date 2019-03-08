@@ -2926,12 +2926,21 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+#if defined(EXACT_ALPHA)
 int static inline 
-__attribute__((always_inline, const)) do_alpha(int a, int v) 
+__attribute__((always_inline, const)) do_alpha(int a, int f, int b) 
 {
-    int tmp  = (a*v);
+    int tmp = ((f)*(a) + (b)*(255 - (a)) + 128);
+    return ((tmp + (tmp >> 8)) >> 8);
+}
+#else
+int static inline 
+__attribute__((always_inline, const)) do_alpha(int a, int f, int b) 
+{
+    int tmp  = (a*(f-b));
     return ((tmp<<8) + tmp + 32768)>>16;
 }
+#endif
 
 #if AROS_BIG_ENDIAN
 
@@ -3058,9 +3067,9 @@ static void PutAlphaImageBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD 
                 destpix = xbuf[x];
                 RGB32_DECOMPOSE(dst_red, dst_green, dst_blue, destpix);
 
-                dst_red   += do_alpha(src_alpha, src_red - dst_red);
-                dst_green += do_alpha(src_alpha, src_green - dst_green);
-                dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+                dst_red   += do_alpha(src_alpha, src_red, dst_red);
+                dst_green += do_alpha(src_alpha, src_green, dst_green);
+                dst_blue  += do_alpha(src_alpha, src_blue, dst_blue);
 
                 xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, destpix);
             }
@@ -3109,9 +3118,9 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
                 dst_green = col.green >> 8;
                 dst_blue  = col.blue  >> 8;
 
-                dst_red   += do_alpha(src_alpha, src_red - dst_red);
-                dst_green += do_alpha(src_alpha, src_green - dst_green);
-                dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
+                dst_red   += do_alpha(src_alpha, src_red, dst_red);
+                dst_green += do_alpha(src_alpha, src_green, dst_green);
+                dst_blue  += do_alpha(src_alpha, src_blue, dst_blue);
 
                 col.red   = dst_red << 8;
                 col.green = dst_green << 8;
@@ -3393,9 +3402,9 @@ static void JAM1AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
             alpha = (*pixarray++) ^ data->invert;
             RGB32_DECOMPOSE(dst_red, dst_green, dst_blue, xbuf[x]);
 
-            dst_red   += do_alpha(alpha, data->a_red - dst_red);
-            dst_green += do_alpha(alpha, data->a_green - dst_green);
-            dst_blue  += do_alpha(alpha, data->a_blue - dst_blue);
+            dst_red   += do_alpha(alpha, data->a_red, dst_red);
+            dst_green += do_alpha(alpha, data->a_green, dst_green);
+            dst_blue  += do_alpha(alpha, data->a_blue, dst_blue);
 
             xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, 0);
         }

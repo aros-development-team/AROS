@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/memory.h>
@@ -32,8 +34,6 @@
 #include "classes.h"
 #include "cpuspecific.h"
 #include "locale.h"
-
-#include <aros/debug.h>
 
 #include <zune/customclasses.h>
 
@@ -139,7 +139,7 @@ struct
     { 0, NULL}
 };
 
-static VOID PrintProcessorInformation(char *buffer, LONG bufsize)
+static VOID ParseProcessorInformation(Object *GrpProcessors)
 {
     ULONG count = GetProcessorsCount();
     ULONG i, j;
@@ -147,11 +147,17 @@ static VOID PrintProcessorInformation(char *buffer, LONG bufsize)
     ULONG architecture, endianness;
     CONST_STRPTR architecturestring = "", endiannessstring = "";
     UQUAD cpuspeed;
-    char *bufptr = buffer;
-    LONG slen;
 
-    for (i = 0; bufsize > 0 && i < count; i++)
+    D(bug("[SysExplorer] %s()\n", __func__));
+
+    for (i = 0; i < count; i++)
     {
+        Object  *CoreIDLabelObj, *CoreIDStrObj,
+                *CoreSpdLabelObj, *CoreSpdStrObj,
+                *CoreFeatLabelObj, *CoreFeatStrObj;
+
+        char    *CoreIDLabelStr, *CoreIDStr;
+
         struct TagItem tags [] =
         {
             {GCIT_SelectedProcessor, i},
@@ -163,6 +169,7 @@ static VOID PrintProcessorInformation(char *buffer, LONG bufsize)
         };
         
         GetCPUInfo(tags);
+        D(bug("[SysExplorer] %s: CPU #%d\n", __func__, i));
 
         j = 0;
         while(ProcessorArchitecture[j].Description != NULL)
@@ -189,28 +196,69 @@ static VOID PrintProcessorInformation(char *buffer, LONG bufsize)
         if (!modelstring)
             modelstring = "Unknown";
 
-        snprintf(bufptr, bufsize, "PROCESSOR %d:\t[%s/%s] %s", (int)(i + 1), architecturestring,
-                 endiannessstring, modelstring);
-        slen = strlen(bufptr);
-        bufptr += slen;
-        bufsize -= slen;
+        CoreIDLabelStr = AllocVec(14, MEMF_PUBLIC);
+        snprintf(CoreIDLabelStr, 14, "CPU Core #%u", (int)(i + 1));
+        CoreIDLabelObj = Label(CoreIDLabelStr);
 
-        if (bufsize < 10)
-            break;
+        CoreIDStr = AllocVec(strlen(architecturestring) + strlen(endiannessstring) + strlen(modelstring) + 4, MEMF_PUBLIC);
+        snprintf(CoreIDStr,
+                strlen(architecturestring) + strlen(endiannessstring) + strlen(modelstring) + 4,
+                "%s/%s %s",
+                architecturestring, endiannessstring, modelstring);
+        CoreIDStrObj = TextObject,
+                TextFrame,
+                MUIA_Background, MUII_TextBack,
+                MUIA_CycleChain, 1,
+                MUIA_Text_Contents, (IPTR)CoreIDStr,
+            End;
+        
+        if (DoMethod(GrpProcessors, MUIM_Group_InitChange))
+        {
+            DoMethod(GrpProcessors, OM_ADDMEMBER, CoreIDLabelObj);
+            DoMethod(GrpProcessors, OM_ADDMEMBER, CoreIDStrObj);
+            DoMethod(GrpProcessors, MUIM_Group_ExitChange);
+        }
 
         if (cpuspeed)
         {
-            snprintf(bufptr, bufsize, " (%llu MHz)", (unsigned long long)(cpuspeed / 1000000));
-            slen = strlen(bufptr);
-            bufptr += slen;
-            bufsize -= slen;
-        }
-        snprintf(bufptr, bufsize, "\n");
-        slen = strlen(bufptr);
-        bufptr += slen;
-        bufsize -= slen;
+            char *CoreSpdStr;
+            CoreSpdLabelObj = Label("Speed");
+            CoreSpdStr = AllocVec(20, MEMF_PUBLIC);
+            snprintf(CoreSpdStr, 20, "%llu MHz", (unsigned long long)(cpuspeed / 1000000));
+            CoreSpdStrObj = TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)CoreSpdStr,
+                End;
 
-        PrintCPUSpecificInfo(bufptr, bufsize, i, ProcessorBase);
+            if (DoMethod(GrpProcessors, MUIM_Group_InitChange))
+            {
+                DoMethod(GrpProcessors, OM_ADDMEMBER, CoreSpdLabelObj);
+                DoMethod(GrpProcessors, OM_ADDMEMBER, CoreSpdStrObj);
+                DoMethod(GrpProcessors, MUIM_Group_ExitChange);
+            }
+        }
+
+        char *CPUFeatureStr = AllocVec(1024, MEMF_PUBLIC);
+        PrintCPUSpecificInfo(CPUFeatureStr, 1024, i, ProcessorBase);
+        CoreFeatLabelObj = Label("Features");
+        CoreFeatStrObj = ScrollgroupObject,
+                TextFrame,
+                MUIA_Background, MUII_TextBack,
+                MUIA_Scrollgroup_Contents, (IPTR)(NFloattextObject,
+                    NoFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Floattext_Text, (IPTR)CPUFeatureStr,
+                End),
+            End;
+        if (DoMethod(GrpProcessors, MUIM_Group_InitChange))
+        {
+            DoMethod(GrpProcessors, OM_ADDMEMBER, CoreFeatLabelObj);
+            DoMethod(GrpProcessors, OM_ADDMEMBER, CoreFeatStrObj);
+            DoMethod(GrpProcessors, MUIM_Group_ExitChange);
+        }
     }
 }
 
@@ -219,12 +267,37 @@ static inline void VersionStr(char *ptr, int len, struct Library *base)
     snprintf(ptr, len, "%d.%d", base->lib_Version, base->lib_Revision);
 }    
 
+char *SplitBootArgs(struct TagItem *bootinfo, char *buffer, LONG bufsize)
+{
+    char *rawargs = (char *)GetTagData(KRN_CmdLine, 0, bootinfo);
+    int i, count;
+
+    D(bug("[SysExplorer] %s()\n", __func__));
+
+    if (rawargs)
+    {
+        D(bug("[SysExplorer] %s: splitting '%s'\n", __func__, rawargs));
+        count = strlen(rawargs);
+        if (count > bufsize)
+            count = bufsize;
+        for (i = 0; i < count ; i++)
+        {
+            if (rawargs[i] == ' ')
+                buffer[i] = '\n';
+            else
+                buffer[i] = rawargs[i];
+        }
+    }
+    return buffer;
+}
+
 static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
-    Object *processors_flt;
+    Object *GrpProcessors;
     Object *hpet_flt;
     Object *ram_flt;
     char aros_ver[12], exec_ver[12];
+    char buffer[2000];
     IPTR bootldr = 0;
     IPTR args = 0;
     APTR KernelBase;
@@ -232,6 +305,8 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
 
     STRPTR pagetitles[5];
     int pagecnt = 0;
+
+    D(bug("[SysExplorer] %s()\n", __func__));
 
     VersionStr(aros_ver, sizeof(aros_ver), ArosBase);
     VersionStr(exec_ver, sizeof(exec_ver), &SysBase->LibNode);
@@ -242,8 +317,10 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         struct TagItem *bootinfo = KrnGetBootInfo();
 
         bootldr = GetTagData(KRN_BootLoader, 0, bootinfo);
-        args    = GetTagData(KRN_CmdLine   , 0, bootinfo);
+        args    = (IPTR)SplitBootArgs(bootinfo, buffer, sizeof(buffer));
     }
+
+    D(bug("[SysExplorer] %s: prepairing pages ..\n", __func__));
 
     pagetitles[pagecnt++] = (STRPTR)_(MSG_GENERAL);
     if ((ProcessorBase = OpenResource(PROCESSORNAME)) != NULL)
@@ -257,6 +334,8 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     }
     pagetitles[pagecnt] = NULL;
 
+    D(bug("[SysExplorer] %s: %d pages\n", __func__, pagecnt));
+
     self = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
@@ -266,7 +345,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
             MUIA_Register_Titles, (IPTR) pagetitles,
             MUIA_CycleChain, 1,
             Child, (IPTR)(VGroup,
-                Child, (IPTR)(HGroup,
+                Child, (IPTR)(ColGroup(2),
                     MUIA_FrameTitle, __(MSG_VERSION),
                     GroupFrame,
                     MUIA_Background, MUII_GroupBack,
@@ -277,7 +356,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                         MUIA_CycleChain, 1,
                         MUIA_Text_Contents, (IPTR)aros_ver,
                     End),
-                    Child, (IPTR)Label("Exec"),
+                    Child, (IPTR)Label("Exec Library"),
                     Child, (IPTR)(TextObject,
                         TextFrame,
                         MUIA_Background, MUII_TextBack,
@@ -285,44 +364,50 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                         MUIA_Text_Contents, (IPTR)exec_ver,
                     End),
                 End),
-                Child, (IPTR)(HGroup,
+                Child, (IPTR)(ColGroup(2),
                     GroupFrame,
-                    MUIA_FrameTitle, __(MSG_BOOTLOADER),
-                    MUIA_Background, MUII_GroupBack,
+                    MUIA_FrameTitle, (IPTR)"Boot Config",
+                    Child, (IPTR)Label("Loader"),
                     Child, (IPTR)(TextObject,
                         TextFrame,
                         MUIA_Background, MUII_TextBack,
                         MUIA_CycleChain, 1,
                         MUIA_Text_Contents, bootldr,
                     End),
-                End),
-                Child, (IPTR)(HGroup,
-                    GroupFrame,
-                    MUIA_FrameTitle, __(MSG_ARGUMENTS),
-                    MUIA_Background, MUII_GroupBack,
-                    Child, (IPTR)(TextObject,
+                    Child, (IPTR)Label(__(MSG_ARGUMENTS)),
+                    Child, (IPTR)(ScrollgroupObject,
                         TextFrame,
                         MUIA_Background, MUII_TextBack,
-                        MUIA_CycleChain, 1,
-                        MUIA_Text_Contents, args,
+                        MUIA_Scrollgroup_Contents, (IPTR)(NFloattextObject,
+                            NoFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_CycleChain, 1,
+                            MUIA_Floattext_Text, args,
+                        End),
                     End),
                 End),
             End),
-            ProcessorBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
-                Child, (IPTR)(NListviewObject,
-                    MUIA_NListview_NList, (IPTR)(processors_flt = NFloattextObject,
-                    End),
+            ProcessorBase ? Child : TAG_IGNORE, (IPTR)(HGroup,
+                Child, (IPTR)(GrpProcessors = ColGroup(2),
                 End),
             End),
             Child, (IPTR)(VGroup,
                 Child, (IPTR)(NListviewObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
                     MUIA_NListview_NList, (IPTR)(ram_flt = NFloattextObject,
+                        NoFrame,
+                        MUIA_Background, MUII_TextBack,
                     End),
                 End),
             End),
             HPETBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
                 Child, (IPTR)(NListviewObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
                     MUIA_NListview_NList, (IPTR)(hpet_flt = NFloattextObject,
+                        NoFrame,
+                        MUIA_Background, MUII_TextBack,
                     End),
                 End),
             End),
@@ -333,17 +418,18 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     if (self)
     {
         struct MemHeader *mh;
-        char buffer[2000];
         char *bufptr;
         LONG slen;
         LONG bufsize;
 
+        D(bug("[SysExplorer] %s: self @ %p\n", __func__, self));
+
         // processors
         *buffer = '\0';
         if (ProcessorBase)
-            PrintProcessorInformation(buffer, sizeof(buffer));
-        // we intentionally use MUIA_Floattext_Text because it copies the text
-        SET(processors_flt, MUIA_Floattext_Text, buffer);
+            ParseProcessorInformation(GrpProcessors);
+
+        D(bug("[SysExplorer] %s: Processor Information read\n", __func__));
 
         // high precision timers
         *buffer = '\0';

@@ -74,6 +74,15 @@
 #define ATA_WRITE_MULTIPLE  0xc5
 #define ATA_WRITE_MULTIPLE64 0x39
 #define ATA_MEDIA_EJECT     0xed
+#define ATA_SMART           0xB0
+#define ATA_SET_FEATURES    0xEF
+
+/* SET_FEATURES sub-commands */
+#define ATA_SET_FEATURES_ENABLE_CACHE           0x02
+#define ATA_SET_FEATURES_DISABLE_CACHE          0x82
+#define ATA_SET_FEATURES_DISABLE_READ_AHEAD     0x55
+#define ATA_SET_FEATURES_ENABLE_READ_AHEAD      0xAA
+#define ATA_SET_FEATURES_SET_TRANSFER_MODE      0x3
 
 /* ATAPI reason flags */
 #define ATAPIF_MASK         0x03

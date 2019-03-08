@@ -3,11 +3,12 @@
     $Id$
 */
 
-#include <aros/asmcall.h>
 #include <aros/debug.h>
+#include <proto/exec.h>
+
+#include <aros/asmcall.h>
 #include <exec/resident.h>
 #include <libraries/expansionbase.h>
-#include <proto/exec.h>
 
 #include LC_LIBDEFS_FILE
 

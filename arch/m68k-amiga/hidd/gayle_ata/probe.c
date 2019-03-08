@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: A600/A1200/A4000 ATA HIDD hardware detection routine
@@ -8,18 +8,17 @@
 
 #define DEBUG 1
 #include <aros/debug.h>
-
-#define __OOP_NOMETHODBASES__
+#include <proto/exec.h>
 
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 #include <asm/io.h>
 #include <exec/lists.h>
 #include <exec/rawfmt.h>
-#include <hidd/ata.h>
 #include <hidd/hidd.h>
+#include <hidd/storage.h>
+#include <hidd/ata.h>
 #include <oop/oop.h>
-#include <proto/exec.h>
 #include <proto/oop.h>
 
 #include <hardware/custom.h>
@@ -54,6 +53,8 @@ static BOOL custom_check(APTR addr)
 
 static BOOL isFastATA(struct ata_ProbedBus *ddata)
 {
+        if (ddata->gayleirqbase == (UBYTE*)GAYLE_IRQ_FASTATA)
+                return TRUE;
     return FALSE;
 }
 
@@ -82,6 +83,8 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
     Enable();
     CloseLibrary((struct Library*)gfx);
 
+    D(bug("[ATA:Gayle] GayleID : %02x\n", id);)
+
     // Detect FastATA... FIXME: the check is flawed for an a4000, disabled for now.
 #if (0)
     if (ddata->gayleirqbase)
@@ -91,8 +94,9 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
         status1 = altport[GAYLE_BASE_FASTATA_PIO0 + GAYLE_FASTATA_PIO_STAT];
         status2 = altport[GAYLE_BASE_FASTATA_PIO3 + GAYLE_FASTATA_STAT];
         Enable();
-        D(bug("[ATA:Gayle] Status=%02x,%02x\n", status1, status2);)
-        if ((status1 & 0xfd) == (status2 & 0xfd))
+        D(bug("[ATA:Gayle] (FastATA) Status=%02x,%02x\n", status1, status2);)
+        if (((status1 != 0x00) && (status1 != 0xFF)) &&
+                        ((status1 & 0xfd) == (status2 & 0xfd)))
         {
             port = (UBYTE*)altport;
             ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_FASTATA;
@@ -101,19 +105,19 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
 #endif
     if (port == NULL)
     {
-        D(bug("[ATA:Gayle] No Gayle ATA Detected (ID=%02x)\n", id);)
+        D(bug("[ATA:Gayle] No Gayle ATA Detected\n");)
         return NULL;
     }
 
     ddata->port = (UBYTE*)port;
     if ((ddata->port == (UBYTE*)GAYLE_BASE_1200) || (ddata->port == (UBYTE*)GAYLE_BASE_4000))
     {
-        D(bug("[ATA:Gayle] Possible Gayle IDE port @ %08x (ID=%02x)\n", (ULONG)port & ~3, id);)
+        D(bug("[ATA:Gayle] Possible Gayle IDE port @ %08x\n", (ULONG)port & ~3);)
         altport = port + 0x1010;
     }
     else
     {
-        D(bug("[ATA:Gayle] Possible FastATA IDE port @ %08x (ID=%02x)\n", (ULONG)port & ~3, id);)
+        D(bug("[ATA:Gayle] Possible FastATA IDE port @ %08x\n", (ULONG)port & ~3);)
         altport = NULL;
     }
     ddata->altport = (UBYTE*)altport;
@@ -164,24 +168,45 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
     return (UBYTE*)port;
 }
 
-static int ata_Scan(struct ataBase *base)
+static int gayle_bus_Scan(struct ataBase *base)
 {
     struct ata_ProbedBus *probedbus;
     OOP_Class *busClass = base->GayleBusClass;
+    struct TagItem ata_tags[] =
+    {
+            {aHidd_Name         , (IPTR)"ata_gayle.hidd"        },
+            {aHidd_HardwareName , 0                             },
+#define ATA_TAG_HARDWARENAME 1
+            {TAG_DONE           , 0                             }
+    };
 
     probedbus = AllocVec(sizeof(struct ata_ProbedBus), MEMF_ANY | MEMF_CLEAR);
     if (probedbus && getport(probedbus)) {
-        OOP_Object *ata = OOP_NewObject(NULL, CLID_HW_ATA, NULL);
+        OOP_Object *ata;
+        if (isFastATA(probedbus))
+        {
+            ata_tags[ATA_TAG_HARDWARENAME].ti_Data = (IPTR)"PowerFlyer FastATA IDE Controller";
+        }
+        else
+        {
+            if (probedbus->doubler == 0)
+                ata_tags[ATA_TAG_HARDWARENAME].ti_Data = (IPTR)"Amiga(tm) Gayle IDE Controller";
+            else
+                ata_tags[ATA_TAG_HARDWARENAME].ti_Data = (IPTR)"Amiga(tm) Gayle IDE Controller + Port Doubler";
+        }
+        ata = HW_AddDriver(base->storageRoot, base->ataClass, ata_tags);
         if (ata) {
-            HWBase = OOP_GetMethodID(IID_HW, 0);
             struct TagItem attrs[] =
             {
-                {aHidd_DriverData         , (IPTR)probedbus                    },
-                {aHidd_ATABus_PIODataSize , sizeof(struct pio_data)            },
-                {aHidd_ATABus_BusVectors  , (IPTR)bus_FuncTable                },
-                {aHidd_ATABus_PIOVectors  , (IPTR)pio_FuncTable                },
-                {aHidd_ATABus_KeepEmpty   , FALSE                              },
-                {TAG_DONE                 , 0                                  }
+                {aHidd_Name                     , (IPTR)"ata_gayle.hidd"        },
+                {aHidd_HardwareName             , 0                             },
+ #define BUS_TAG_HARDWARENAME 1
+                {aHidd_DriverData               , (IPTR)probedbus               },
+                {aHidd_ATABus_PIODataSize       , sizeof(struct pio_data)       },
+                {aHidd_ATABus_BusVectors        , (IPTR)bus_FuncTable           },
+                {aHidd_ATABus_PIOVectors        , (IPTR)pio_FuncTable           },
+                {aHidd_ATABus_KeepEmpty         , FALSE                         },
+                {TAG_DONE                       , 0                             }
             };
             OOP_Object *bus;
 
@@ -199,9 +224,16 @@ static int ata_Scan(struct ataBase *base)
              * Check if we have a FastATA adaptor
              */
             if (isFastATA(probedbus))
+            {
                 busClass = base->FastATABusClass;
+                attrs[BUS_TAG_HARDWARENAME].ti_Data = (IPTR)"FastATA IDE Channel";
+            }
+            else
+            {
+                attrs[BUS_TAG_HARDWARENAME].ti_Data = (IPTR)"Gayle IDE Channel";
+            }
 
-            bus = HW_AddDriver(ata, busClass, attrs);
+            bus = HIDD_StorageController_AddBus(ata, busClass, attrs);
             if (bus)
                 return TRUE;
             D(bug("[ATA:Gayle] Failed to create object for device IO: %x:%x IRQ: %x\n",
@@ -221,4 +253,4 @@ static int ata_Scan(struct ataBase *base)
     return TRUE;
 }
 
-ADD2INITLIB(ata_Scan, 30)
+ADD2INITLIB(gayle_bus_Scan, 30)

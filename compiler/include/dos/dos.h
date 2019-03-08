@@ -208,21 +208,23 @@ struct InfoData32
 #define ID_VALIDATING      81 /* Volume is currently validating. */
 #define ID_VALIDATED       82 /* Volume is ready to be read and written. */
 
-/* Filesystem types as used for id_DiskType. These are multi-character
-   constants of identifier strings. They are self-descriptive. */
-#define ID_NO_DISK_PRESENT  (-1L)
-#define ID_UNREADABLE_DISK  AROS_MAKE_ID('B','A','D',0)
-#define ID_DOS_DISK         AROS_MAKE_ID('D','O','S',0)
-#define ID_FFS_DISK         AROS_MAKE_ID('D','O','S',1)
-#define ID_INTER_DOS_DISK   AROS_MAKE_ID('D','O','S',2)
-#define ID_INTER_FFS_DISK   AROS_MAKE_ID('D','O','S',3)
-#define ID_FASTDIR_DOS_DISK AROS_MAKE_ID('D','O','S',4)
-#define ID_FASTDIR_FFS_DISK AROS_MAKE_ID('D','O','S',5)
-#define ID_NOT_REALLY_DOS   AROS_MAKE_ID('N','D','O','S')
-#define ID_KICKSTART_DISK   AROS_MAKE_ID('K','I','C','K')
-#define ID_MSDOS_DISK       AROS_MAKE_ID('M','S','D',0)
-#define ID_SFS_BE_DISK      AROS_MAKE_ID('S','F','S',0)
-#define ID_SFS_LE_DISK      AROS_MAKE_ID('s','f','s',0)
+/* Filesystem Id's, as used for id_DiskType.
+   These are multi-character constants of identifier strings.
+   They are self-descriptive. */
+/* Standard AmigaOS Filesystems */
+#define ID_NO_DISK_PRESENT      (-1L)
+#define ID_UNREADABLE_DISK      AROS_MAKE_ID('B','A','D',0)
+#define ID_DOS_DISK             AROS_MAKE_ID('D','O','S',0)
+#define ID_FFS_DISK             AROS_MAKE_ID('D','O','S',1)
+#define ID_INTER_DOS_DISK       AROS_MAKE_ID('D','O','S',2)
+#define ID_INTER_FFS_DISK       AROS_MAKE_ID('D','O','S',3)
+#define ID_FASTDIR_DOS_DISK     AROS_MAKE_ID('D','O','S',4)
+#define ID_FASTDIR_FFS_DISK     AROS_MAKE_ID('D','O','S',5)
+#define ID_NOT_REALLY_DOS       AROS_MAKE_ID('N','D','O','S')
+#define ID_KICKSTART_DISK       AROS_MAKE_ID('K','I','C','K')
+#define ID_MSDOS_DISK           AROS_MAKE_ID('M','S','D',0)
+
+#include <dos/filesystemids.h>
 
 /**********************************************************************
  **************** Program Execution and Error Handling ****************

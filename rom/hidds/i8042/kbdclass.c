@@ -149,7 +149,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         /* Add some descriptional tags to our attributes */
         struct TagItem kbd_tags[] =
         {
-            {aHidd_Name        , (IPTR)"ATKbd"                     },
+            {aHidd_Name        , (IPTR)"i8042.hidd"                     },
             {aHidd_HardwareName, (IPTR)"IBM AT-compatible keyboard"},
             {TAG_MORE          , (IPTR)msg->attrList               }
         };

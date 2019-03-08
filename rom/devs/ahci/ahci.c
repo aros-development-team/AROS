@@ -95,6 +95,7 @@ ahci_init(struct ahci_softc *sc)
 	u_int32_t	bios_cap, vers;
 	int		i;
 	struct ahci_port *ap;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	DPRINTF(AHCI_D_VERBOSE, " GHC 0x%b",
 		ahci_read(sc, AHCI_REG_GHC), AHCI_FMT_GHC);
@@ -253,11 +254,12 @@ ahci_port_alloc(struct ahci_softc *sc, u_int port)
 	int	rc = ENOMEM;
 	int	error;
 	int	i;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	ap = kmalloc(sizeof(*ap), M_DEVBUF, M_WAITOK | M_ZERO);
 	ap->ap_err_scratch = kmalloc(512, M_DEVBUF, M_WAITOK | M_ZERO);
 
-	ksnprintf(ap->ap_name, sizeof(ap->ap_name), "%s%d.%d",
+	ksnprintf(ap->ap_name, sizeof(ap->ap_name), "%s%d.%02d",
 		  device_get_name(sc->sc_dev),
 		  device_get_unit(sc->sc_dev),
 		  port);
@@ -288,7 +290,7 @@ ahci_port_alloc(struct ahci_softc *sc, u_int port)
 			at->at_probe = ATA_PROBE_NEED_INIT;
 			at->at_features |= ATA_PORT_F_RESCAN;
 			ksnprintf(at->at_name, sizeof(at->at_name),
-				  "%s.%d", ap->ap_name, i);
+				  "%s.%d", PORTNAME(ap), i);
 		}
 	}
 	if (bus_space_subregion(sc->sc_iot, sc->sc_ioh,
@@ -488,6 +490,7 @@ int
 ahci_port_init(struct ahci_port *ap)
 {
 	u_int32_t cmd;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * Register [re]initialization
@@ -560,6 +563,7 @@ ahci_port_init(struct ahci_port *ap)
 void
 ahci_port_interrupt_enable(struct ahci_port *ap)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	ahci_pwrite(ap, AHCI_PREG_IE, ap->ap_intmask);
 }
 
@@ -570,6 +574,7 @@ void
 ahci_port_link_pwr_mgmt(struct ahci_port *ap, int link_pwr_mgmt)
 {
 	u_int32_t cmd, sctl;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (link_pwr_mgmt == ap->link_pwr_mgmt)
 		return;
@@ -678,6 +683,7 @@ int
 ahci_port_link_pwr_state(struct ahci_port *ap)
 {
 	uint32_t r;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	r = ahci_pread(ap, AHCI_PREG_SSTS);
 	switch (r & SATA_PM_SSTS_IPM) {
@@ -708,6 +714,7 @@ ahci_port_state_machine(struct ahci_port *ap, int initial)
 	int target;
 	int didsleep;
 	int loop;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * State machine for port.  Note that CAM is not yet associated
@@ -889,6 +896,7 @@ ahci_port_free(struct ahci_softc *sc, u_int port)
 	struct ahci_port	*ap = sc->sc_ports[port];
 	struct ahci_ccb		*ccb;
 	int i;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * Ensure port is disabled and its interrupts are all flushed.
@@ -958,6 +966,7 @@ u_int32_t
 ahci_pactive(struct ahci_port *ap)
 {
 	u_int32_t mask;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	mask = ahci_pread(ap, AHCI_PREG_CI);
 	if (ap->ap_sc->sc_cap & AHCI_REG_CAP_SNCQ)
@@ -972,6 +981,7 @@ int
 ahci_port_start(struct ahci_port *ap)
 {
 	u_int32_t	r, s, is, tfd;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * FRE must be turned on before ST.  Wait for FR to go active
@@ -1042,6 +1052,7 @@ int
 ahci_port_stop(struct ahci_port *ap, int stop_fis_rx)
 {
 	u_int32_t	r;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 #ifdef AHCI_COALESCE
 	/*
@@ -1099,6 +1110,7 @@ ahci_port_clo(struct ahci_port *ap)
 {
 	struct ahci_softc		*sc = ap->ap_sc;
 	u_int32_t			cmd;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/* Only attempt CLO if supported by controller */
 	if ((ahci_read(sc, AHCI_REG_CAP) & AHCI_REG_CAP_SCLO) == 0)
@@ -1132,6 +1144,7 @@ int
 ahci_port_reset(struct ahci_port *ap, struct ata_port *at, int hard)
 {
 	int rc;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (hard) {
 		if (at)
@@ -1163,6 +1176,7 @@ ahci_port_softreset(struct ahci_port *ap)
 	struct ahci_cmd_hdr	*cmd_slot;
 	u_int8_t		*fis;
 	int			error;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	error = EIO;
 
@@ -1369,6 +1383,7 @@ ahci_comreset(struct ahci_port *ap, int *pmdetectp)
 	int error;
 	int loop;
 	int retries = 0;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * Idle the port,
@@ -1561,6 +1576,7 @@ ahci_port_hardreset(struct ahci_port *ap, int hard)
 	u_int32_t data;
 	int	error;
 	int	pmdetect;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (bootverbose)
 		kprintf("%s: START HARDRESET\n", PORTNAME(ap));
@@ -1686,6 +1702,7 @@ ahci_port_hardstop(struct ahci_port *ap)
 	int slot;
 	int i;
 	int serial;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * Stop the port.  We can't modify things like SUD if the port
@@ -1861,6 +1878,7 @@ void
 ahci_flush_tfd(struct ahci_port *ap)
 {
 	u_int32_t r;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	r = ahci_pread(ap, AHCI_PREG_SERR);
 	if (r & AHCI_PREG_SERR_DIAG_X)
@@ -1875,6 +1893,7 @@ int
 ahci_port_signature_detect(struct ahci_port *ap, struct ata_port *at)
 {
 	u_int32_t sig;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	sig = ahci_pread(ap, AHCI_PREG_SIG);
 	if (bootverbose)
@@ -1902,6 +1921,7 @@ ahci_load_prdt(struct ahci_ccb *ccb)
 	bus_dmamap_t			dmap = ccb->ccb_dmamap;
 	struct ahci_cmd_hdr		*cmd_slot = ccb->ccb_cmd_hdr;
 	int				error;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (xa->datalen == 0) {
 		ccb->ccb_cmd_hdr->prdtl = 0;
@@ -1944,6 +1964,7 @@ ahci_load_prdt_callback(void *info, bus_dma_segment_t *segs, int nsegs,
 {
 	struct ahci_prdt *prd = *(void **)info;
 	u_int64_t addr;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	KKASSERT(nsegs <= AHCI_MAX_PRDT);
 
@@ -1967,6 +1988,7 @@ ahci_unload_prdt(struct ahci_ccb *ccb)
 	struct ahci_softc		*sc = ap->ap_sc;
 	struct ata_xfer			*xa = &ccb->ccb_xa;
 	bus_dmamap_t			dmap = ccb->ccb_dmamap;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (xa->datalen != 0) {
 		if (xa->flags & ATA_F_READ) {
@@ -2021,6 +2043,7 @@ ahci_poll(struct ahci_ccb *ccb, int timeout,
 	  void (*timeout_fn)(struct ahci_ccb *))
 {
 	struct ahci_port *ap = ccb->ccb_port;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (ccb->ccb_port->ap_state == AP_S_FATAL_ERROR) {
 		ccb->ccb_xa.state = ATA_S_ERROR;
@@ -2076,6 +2099,7 @@ ahci_check_active_timeouts(struct ahci_port *ap)
 	struct ahci_ccb *ccb;
 	u_int32_t mask;
 	int tag;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	mask = ap->ap_active | ap->ap_sactive;
 	while (mask) {
@@ -2093,6 +2117,7 @@ __inline
 void
 ahci_start_timeout(struct ahci_ccb *ccb)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	if (ccb->ccb_xa.flags & ATA_F_TIMEOUT_DESIRED) {
 		ccb->ccb_xa.flags |= ATA_F_TIMEOUT_RUNNING;
 		callout_reset(&ccb->ccb_timeout,
@@ -2106,6 +2131,7 @@ ahci_start(struct ahci_ccb *ccb)
 {
 	struct ahci_port		*ap = ccb->ccb_port;
 	struct ahci_softc		*sc = ap->ap_sc;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	KKASSERT(ccb->ccb_xa.state == ATA_S_PENDING);
 
@@ -2143,6 +2169,7 @@ ahci_start(struct ahci_ccb *ccb)
 void
 ahci_beg_exclusive_access(struct ahci_port *ap, struct ata_port *at)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	KKASSERT((ap->ap_flags & AP_F_EXCLUSIVE_ACCESS) == 0);
 	ap->ap_flags |= AP_F_EXCLUSIVE_ACCESS;
 	while (ap->ap_active || ap->ap_sactive) {
@@ -2154,6 +2181,7 @@ ahci_beg_exclusive_access(struct ahci_port *ap, struct ata_port *at)
 void
 ahci_end_exclusive_access(struct ahci_port *ap, struct ata_port *at)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	KKASSERT((ap->ap_flags & AP_F_EXCLUSIVE_ACCESS) != 0);
 	ap->ap_flags &= ~AP_F_EXCLUSIVE_ACCESS;
 	ahci_issue_pending_commands(ap, NULL);
@@ -2174,6 +2202,7 @@ ahci_issue_pending_commands(struct ahci_port *ap, struct ahci_ccb *ccb)
 {
 	u_int32_t		mask;
 	int			limit;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * Enqueue the ccb.
@@ -2324,6 +2353,7 @@ ahci_intr(void *arg)
 	u_int32_t		is;
 	u_int32_t		ack;
 	int			port;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * Check if the master enable is up, and whether any interrupts are
@@ -2382,6 +2412,7 @@ ahci_intr(void *arg)
 void
 ahci_port_thread_core(struct ahci_port *ap, int mask)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	/*
 	 * Process any expired timedouts.
 	 */
@@ -2430,6 +2461,7 @@ ahci_port_intr(struct ahci_port *ap, int blockable)
 
 	enum { NEED_NOTHING, NEED_REINIT, NEED_RESTART,
 	       NEED_HOTPLUG_INSERT, NEED_HOTPLUG_REMOVE } need = NEED_NOTHING;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	/*
 	 * All basic command completions are always processed.
@@ -3117,6 +3149,7 @@ struct ahci_ccb *
 ahci_get_ccb(struct ahci_port *ap)
 {
 	struct ahci_ccb			*ccb;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	lockmgr(&ap->ap_ccb_lock, LK_EXCLUSIVE);
 	ccb = TAILQ_FIRST(&ap->ap_ccb_free);
@@ -3137,6 +3170,7 @@ void
 ahci_put_ccb(struct ahci_ccb *ccb)
 {
 	struct ahci_port		*ap = ccb->ccb_port;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	KKASSERT(ccb->ccb_xa.state != ATA_S_PUT);
 	KKASSERT((ap->ap_sactive & (1 << ccb->ccb_slot)) == 0);
@@ -3155,6 +3189,7 @@ ahci_get_err_ccb(struct ahci_port *ap)
 	u_int32_t ci;
 
 	/* No commands may be active on the chip. */
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (ap->ap_sc->sc_cap & AHCI_REG_CAP_SNCQ) {
 		sact = ahci_pread(ap, AHCI_PREG_SACT);
@@ -3166,7 +3201,7 @@ ahci_get_err_ccb(struct ahci_port *ap)
 	ci = ahci_pread(ap, AHCI_PREG_CI);
 	if (ci) {
 		kprintf("%s: ahci_get_err_ccb: ci not 0 (%08x)\n",
-			ap->ap_name, ci);
+			PORTNAME(ap), ci);
 	}
 	KKASSERT(ci == 0);
 	KKASSERT((ap->ap_flags & AP_F_ERR_CCB_RESERVED) == 0);
@@ -3201,6 +3236,7 @@ ahci_put_err_ccb(struct ahci_ccb *ccb)
 	struct ahci_port *ap = ccb->ccb_port;
 	u_int32_t sact;
 	u_int32_t ci;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	KKASSERT((ap->ap_flags & AP_F_ERR_CCB_RESERVED) != 0);
 
@@ -3246,6 +3282,7 @@ ahci_port_read_ncq_error(struct ahci_port *ap, int target)
 	struct ahci_cmd_hdr	*cmd_slot;
 	struct ata_fis_h2d	*fis;
 	int			err_slot;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	if (bootverbose) {
 		kprintf("%s: READ LOG PAGE target %d\n", PORTNAME(ap),
@@ -3341,6 +3378,7 @@ ahci_dmamem_alloc(struct ahci_softc *sc, bus_dma_tag_t tag)
 {
 	struct ahci_dmamem *adm;
 	int	error;
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
 	adm = kmalloc(sizeof(*adm), M_DEVBUF, M_INTWAIT | M_ZERO);
 
@@ -3371,6 +3409,7 @@ static
 void
 ahci_dmamem_saveseg(void *info, bus_dma_segment_t *segs, int nsegs, int error)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	KKASSERT(error == 0);
 	KKASSERT(nsegs == 1);
 	*(bus_addr_t *)info = segs->ds_addr;
@@ -3380,6 +3419,7 @@ ahci_dmamem_saveseg(void *info, bus_dma_segment_t *segs, int nsegs, int error)
 void
 ahci_dmamem_free(struct ahci_softc *sc, struct ahci_dmamem *adm)
 {
+        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 	if (adm->adm_map) {
 		bus_dmamap_unload(adm->adm_tag, adm->adm_map);
 		bus_dmamap_destroy(adm->adm_tag, adm->adm_map);

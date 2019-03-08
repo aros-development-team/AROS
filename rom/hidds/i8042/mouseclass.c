@@ -145,6 +145,10 @@ VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
          */
         switch (idx)
         {
+        case aoHidd_Name:
+            *msg->storage = (IPTR)"i8042.hidd";
+            return;
+
         case aoHidd_HardwareName:
             *msg->storage = (IPTR)mice_str[data->mouse_protocol];
             return;

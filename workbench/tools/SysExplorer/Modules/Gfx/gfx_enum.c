@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2017, The AROS Development Team.
+    Copyright (C) 2015-2018, The AROS Development Team.
     $Id$
 */
 
@@ -22,7 +22,7 @@
 #include <hidd/gfx.h>
 
 #include "locale.h"
-#include "classes.h"
+#include "gfx_classes.h"
 #include "enums.h"
 
 OOP_AttrBase HiddGfxAttrBase;

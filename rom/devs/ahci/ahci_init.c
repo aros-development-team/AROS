@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -10,8 +10,20 @@
  */
 
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <proto/timer.h>
+#include <proto/bootloader.h>
+#include <proto/expansion.h>
+#include <proto/oop.h>
+
 #include <aros/atomic.h>
 #include <aros/symbolsets.h>
+#include <aros/bootloader.h>
 #include <exec/exec.h>
 #include <exec/resident.h>
 #include <exec/tasks.h>
@@ -25,18 +37,13 @@
 #include <dos/bptr.h>
 #include <dos/dosextens.h>
 
-#include <proto/exec.h>
-#include <proto/timer.h>
-#include <proto/bootloader.h>
-#include <proto/expansion.h>
-#include <proto/oop.h>
-
 #include <hidd/pci.h>
+#include <hidd/bus.h>
+#include <hidd/storage.h>
 
 #include <string.h>
 
 #include "ahci.h"
-#include "ahci_intern.h"
 #include "timer.h"
 
 u_int32_t AhciForceGen;
@@ -44,39 +51,115 @@ u_int32_t AhciNoFeatures;
 
 #include LC_LIBDEFS_FILE
 
-/*
-    Here shall we start. Make function static as it shouldn't be visible from
-    outside.
-*/
-static int AHCI_Init(LIBBASETYPEPTR LIBBASE)
+#if defined(__OOP_NOATTRBASES__)
+/* Keep order the same as order of IDs in struct AHCIBase! */
+static CONST_STRPTR const attrBaseIDs[] =
 {
-    D(bug("[AHCI--] AHCI_Init: ahci.device Initialization\n"));
+    IID_HW,
+    IID_Hidd,
+    IID_Hidd_PCIDevice,
+    IID_Hidd_StorageUnit,
+    IID_Hidd_AHCI,
+    IID_Hidd_Bus,
+    IID_Hidd_AHCIBus,
+    IID_Hidd_AHCIUnit,
+    NULL
+};
+#endif
 
-    /*
-     * I've decided to use memory pools again. Alloc everything needed from 
-     * a pool, so that we avoid memory fragmentation.
-     */
-    LIBBASE->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
-    if (LIBBASE->ahci_MemPool == NULL)
+#if defined(__OOP_NOMETHODBASES__)
+static CONST_STRPTR const methBaseIDs[] =
+{
+    IID_Hidd_PCIDevice,
+    IID_Hidd_PCIDriver,
+    IID_HW,
+    NULL
+};
+#endif
+
+static int AHCI_Init(struct AHCIBase *AHCIBase)
+{
+    struct BootLoaderBase	*BootLoaderBase;
+
+    D(bug("[AHCI--] %s: ahci.device Initialization\n", __PRETTY_FUNCTION__);)
+
+    AHCIBase->ahci_UtilityBase = OpenLibrary("utility.library", 36);
+    if (!AHCIBase->ahci_UtilityBase)
         return FALSE;
 
-    D(bug("[AHCI--] AHCI_Init: MemPool @ %p\n", LIBBASE->ahci_MemPool));
-
     /* Initialize lists */
-    NEWLIST(&LIBBASE->ahci_Units);
-    LIBBASE->ahci_HostCount=0;
+    NEWLIST(&AHCIBase->ahci_Controllers);
+    NEWLIST(&AHCIBase->ahci_Units);
+    AHCIBase->ahci_HostCount=0;
 
+    BootLoaderBase = OpenResource("bootloader.resource");
+    D(bug("[AHCI--] %s: BootloaderBase = %p\n", __PRETTY_FUNCTION__, BootLoaderBase));
+    if (BootLoaderBase != NULL)
+    {
+        struct List *list;
+        struct Node *node;
+
+        list = (struct List *)GetBootInfo(BL_Args);
+        if (list)
+        {
+            ForeachNode(list, node)
+            {
+                if (strncmp(node->ln_Name, "AHCI=", 4) == 0)
+                {
+                    const char *CmdLine = &node->ln_Name[4];
+
+                    if (strstr(CmdLine, "disable"))
+                    {
+                        D(bug("[AHCI--] %s: Disabling AHCI support\n", __PRETTY_FUNCTION__));
+                        return FALSE;
+                    }
+                }
+            }
+        }
+    }
+
+    /*
+     * Alloc everything needed from a pool, so that we avoid memory fragmentation.
+     */
+    AHCIBase->ahci_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+    if (AHCIBase->ahci_MemPool == NULL)
+        return FALSE;
+
+    D(bug("[AHCI--] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, AHCIBase->ahci_MemPool);)
+
+#if defined(__OOP_NOATTRBASES__)
     /* Get some useful bases */
-    LIBBASE->ahci_HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    LIBBASE->ahci_HiddPCIDeviceMethodBase = OOP_GetMethodID(IID_Hidd_PCIDevice, 0);
+    if (OOP_ObtainAttrBasesArray(&AHCIBase->ahci_HWAttrBase, attrBaseIDs))
+        return FALSE;
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    if (OOP_ObtainMethodBasesArray(&AHCIBase->ahci_HiddPCIDeviceMethodBase, methBaseIDs))
+    {
+#if defined(__OOP_NOATTRBASES__)
+        OOP_ReleaseAttrBasesArray(&AHCIBase->ahci_HWAttrBase, attrBaseIDs);
+#endif
+        return FALSE;
+    }
+#endif
 
-    LIBBASE->ahci_HiddPCIDriverMethodBase = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
+    D(bug("[AHCI--] %s: Base AHCI Hidd Class @ %p\n", __PRETTY_FUNCTION__, AHCIBase->ahciClass);)
+    D(bug("[AHCI--] %s: AHCI PCI Bus Class @ %p\n", __PRETTY_FUNCTION__, AHCIBase->busClass);)
+
+    AHCIBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+    if (!AHCIBase->storageRoot)
+        AHCIBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+    if (!AHCIBase->storageRoot)
+    {
+        return FALSE;
+    }
+    D(bug("[AHCI--] %s: storage root @ %p\n", __PRETTY_FUNCTION__, AHCIBase->storageRoot);)
+
     return TRUE;
 }
 
 static int AHCI_Open
 (
-    LIBBASETYPEPTR LIBBASE,
+    struct AHCIBase *AHCIBase,
     struct IORequest *iorq,
     ULONG unitnum,
     ULONG flags
@@ -89,7 +172,7 @@ static int AHCI_Open
      */
     iorq->io_Error = IOERR_OPENFAIL;
 
-    ForeachNode(&LIBBASE->ahci_Units, tmp) {
+    ForeachNode(&AHCIBase->ahci_Units, tmp) {
         if (tmp->sim_Unit == unitnum) {
             unit = tmp;
             AROS_ATOMIC_INC(unit->sim_UseCount);
@@ -103,7 +186,7 @@ static int AHCI_Open
     /*
      * set up iorequest
      */
-    iorq->io_Device     = &LIBBASE->ahci_Device;
+    iorq->io_Device     = &AHCIBase->ahci_Device;
     iorq->io_Unit       = (struct Unit *)unit;
     iorq->io_Error      = 0;
 
@@ -113,7 +196,7 @@ static int AHCI_Open
 /* Close given device */
 static int AHCI_Close
 (
-    LIBBASETYPEPTR LIBBASE,
+    struct AHCIBase *AHCIBase,
     struct IORequest *iorq
 )
 {

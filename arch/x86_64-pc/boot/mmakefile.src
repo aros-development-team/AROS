@@ -20,25 +20,27 @@ include $(SRCDIR)/config/aros.cfg
 
 # -------- x86_64-pc board support package --------
 
-#MM kernel-bsp-pc-x86_64 : linklibs-bootconsole		 \
-#MM			   kernel-hidd-base    		 \
-#MM			   kernel-ata    		 \
-#MM			   kernel-hidd-pciata    	 \
-#MM			   kernel-ahci    		 \
-#MM			   kernel-battclock    		 \
-#MM			   kernel-efi    		 \
-#MM			   kernel-timer    		 \
-#MM			   kernel-expansion    		 \
-#MM			   kernel-pc-acpica  		 \
-#MM			   kernel-hidd-acpibutton	 \
-#MM			   kernel-pc-hpet    		 \
-#MM			   kernel-hidd-i8042    	 \
-#MM			   kernel-pc-i386-serial    	 \
-#MM			   kernel-pc-i386-parallel    	 \
-#MM			   kernel-hidd-vgagfx    	 \
-#MM			   kernel-hidd-vesagfx    	 \
-#MM			   kernel-hidd-pci    		 \
-#MM			   kernel-hidd-pci-pcipc    	 \
+#MM kernel-bsp-pc-x86_64 :	\
+#MM			   linklibs-bootconsole		\
+#MM			   kernel-hidd-bus			\
+#MM			   kernel-hidd-base			\
+#MM			   kernel-ata				\
+#MM			   kernel-hidd-pciata		\
+#MM			   kernel-ahci				\
+#MM			   kernel-battclock			\
+#MM			   kernel-efi				\
+#MM			   kernel-timer				\
+#MM			   kernel-expansion			\
+#MM			   kernel-pc-acpica  		\
+#MM			   kernel-hidd-acpibutton	\
+#MM			   kernel-pc-hpet    		\
+#MM			   kernel-hidd-i8042    	\
+#MM			   kernel-pc-i386-serial    \
+#MM			   kernel-pc-i386-parallel  \
+#MM			   kernel-hidd-vgagfx    	\
+#MM			   kernel-hidd-vesagfx    	\
+#MM			   kernel-hidd-pci    		\
+#MM			   kernel-hidd-pci-pcipc    \
 #MM			   kernel-processor
 
 KRSRCS      := efi hpet
@@ -47,7 +49,7 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci
 KDEVS_ARCH  := timer
-KHIDDS      := parallel pci pcipc serial vesagfx vgagfx storage system ata_pci i8042 acpibutton
+KHIDDS      := acpibutton ata_pci bus i8042 parallel pci pcipc serial vesagfx vgagfx storage system
 
 %make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSARCHDIR)/aros-bsp.pkg \
 	devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \

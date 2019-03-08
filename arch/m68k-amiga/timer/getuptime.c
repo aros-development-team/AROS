@@ -1,8 +1,8 @@
 /*
-    Copyright © 2018, The AROS Development Team. All rights reserved.
+    Copyright © 2018-2019, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: GetUpTime()
+    Desc: GetUpTime() - Get time since machine was powered on.
     Lang: english
 */
 #include <proto/exec.h>

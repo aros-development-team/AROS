@@ -1,27 +1,30 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI bus driver for ahci.device
     Lang: English
 */
 
-#define __OOP_NOMETHODBASES__
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <proto/oop.h>
 
 #include <aros/asmcall.h>
-#include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <asm/io.h>
 #include <exec/lists.h>
 #include <hardware/ahci.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
-#include <proto/exec.h>
-#include <proto/oop.h>
 
 #include <string.h>
 
-#include "ahci_intern.h"
 #include "ahci.h"
 #include "pci.h"
 
@@ -33,14 +36,19 @@ typedef struct
     OOP_MethodID    HiddPCIDriverMethodBase;
 } EnumeratorArgs;
 
+CONST_STRPTR ahciDeviceName = "ahci.device";
+CONST_STRPTR ahciControllerName = "PCI AHCI Controller";
+
 int ahci_attach(device_t dev)
 {
     struct ahci_softc *sc = device_get_softc(dev);
 
-    sc->sc_ad = ahci_lookup_device(dev);
     if (sc->sc_ad == NULL)
-        return ENXIO; /* WTF? This matched during the probe... */
-
+    {
+        sc->sc_ad = ahci_lookup_device(dev);
+        if (sc->sc_ad == NULL)
+                return ENXIO; /* WTF? This matched during the probe... */
+    }
     return sc->sc_ad->ad_attach(dev);
 }
 
@@ -72,7 +80,7 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
     AROS_USERFUNC_INIT
 
     device_t dev;
-    const struct ahci_device *ad;
+
     EnumeratorArgs *a = hook->h_Data;
     struct AHCIBase *AHCIBase = a->AHCIBase;
     OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
@@ -87,25 +95,27 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
     dev->dev_softc    = (void *)&dev[1];
     dev->dev_HostID   = AHCIBase->ahci_HostCount;
 
-    D(bug("[PCI-AHCI] ahci_PCIEnumerator_h: Scan device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev)));
+    D(bug("[AHCI:PCI] %s: Checking PCI device @ 0x%p\n", __PRETTY_FUNCTION__, Device));
 
-    ad = ahci_lookup_device(dev);
-    if (!ad) {
+    dev->dev_softc->sc_ad = ahci_lookup_device(dev);
+    if (!dev->dev_softc->sc_ad) {
+        D(bug("[AHCI:PCI] %s: Device not supported\n", __PRETTY_FUNCTION__));
         FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
         return;
     }
 
-    D(bug("[AHCI] Found PCI device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev)));
+    D(bug("[AHCI:PCI] %s: Found '%s'\n", __PRETTY_FUNCTION__, dev->dev_softc->sc_ad->name));
 
     owner = HIDD_PCIDevice_Obtain(Device, AHCIBase->ahci_Device.dd_Library.lib_Node.ln_Name);
     if (owner)
     {
-        D(bug("[AHCI] Device is already in use by %s\n", owner));
+        D(bug("[AHCI:PCI] Device is already in use by %s\n", __PRETTY_FUNCTION__, owner));
         FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
         return;
     }        
 
     AHCIBase->ahci_HostCount++;
+	
     AddTail(&a->devices, (struct Node *)dev);
 
     return;
@@ -120,13 +130,25 @@ static const struct TagItem Requirements[] =
     {TAG_DONE }
 };
 
-static int ahci_pci_scan(struct AHCIBase *AHCIBase)
+static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
 {
     OOP_Object *pci;
     EnumeratorArgs Args;
     device_t dev;
+    struct TagItem ahci_tags[] =
+    {
+        {aHidd_Name             , (IPTR)ahciDeviceName          },
+        {aHidd_HardwareName     , (IPTR)ahciControllerName      },
+        {aHidd_Producer		, 0                             },
+#define AHCI_TAG_VEND 2
+        {aHidd_Product		, 0                             },
+#define AHCI_TAG_PROD 3
+        {aHidd_DriverData	, 0                             },
+#define AHCI_TAG_DATA 4
+        {TAG_DONE               , 0                             }
+    };
 
-    D(bug("[PCI-AHCI] ahci_scan: Enumerating devices\n"));
+    D(bug("[AHCI:PCI] %s: Enumerating PCI Devices\n", __PRETTY_FUNCTION__));
 
     Args.AHCIBase                 = AHCIBase;
     NEWLIST(&Args.devices);
@@ -152,11 +174,22 @@ static int ahci_pci_scan(struct AHCIBase *AHCIBase)
         OOP_DisposeObject(pci);
     }
 
-    D(bug("[PCI-AHCI] ahci_scan: Registering Probed Hosts..\n"));
-
+    D(bug("[AHCI:PCI] %s: Registering Detected Hosts..\n", __PRETTY_FUNCTION__));
+	
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
-        if (ahci_attach(dev) != 0) {
-            ahci_release(dev);
+        if ((ahci_tags[AHCI_TAG_VEND].ti_Data = dev->dev_softc->sc_ad->ad_vendor) == 0)
+            ahci_tags[AHCI_TAG_VEND].ti_Data = pci_get_vendor(dev);
+        if ((ahci_tags[AHCI_TAG_PROD].ti_Data = dev->dev_softc->sc_ad->ad_product) == 0)
+            ahci_tags[AHCI_TAG_PROD].ti_Data = pci_get_device(dev);
+        ahci_tags[AHCI_TAG_DATA].ti_Data = (IPTR)dev;
+        HW_AddDriver(AHCIBase->storageRoot, AHCIBase->ahciClass, ahci_tags);
+        D(bug("[AHCI:PCI] %s: AHCI Controller Object @ 0x%p\n", __PRETTY_FUNCTION__, dev->dev_Controller));
+        if (dev->dev_Controller)
+        {
+            if (ahci_attach(dev) != 0) {
+                ahci_release(dev);
+                return FALSE;
+            }
         }
     }
 
@@ -167,4 +200,4 @@ static int ahci_pci_scan(struct AHCIBase *AHCIBase)
  * ahci.device main code has two init routines with 0 and 127 priorities.
  * All bus scanners must run between them.
  */
-ADD2INITLIB(ahci_pci_scan, 30)
+ADD2INITLIB(ahci_bus_Detect, 30)

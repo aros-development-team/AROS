@@ -1,15 +1,24 @@
 /*
-    Copyright © 2004-2016, The AROS Development Team. All rights reserved
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
     Lang: English
 */
 
-#define __OOP_NOMETHODBASES__
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <proto/timer.h>
+#include <proto/bootloader.h>
+#include <proto/expansion.h>
+#include <proto/oop.h>
 
 #include <aros/bootloader.h>
-#include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <exec/exec.h>
 #include <exec/resident.h>
@@ -17,6 +26,7 @@
 #include <exec/memory.h>
 #include <exec/nodes.h>
 #include <hidd/hidd.h>
+#include <hidd/bus.h>
 #include <hidd/storage.h>
 #include <utility/utility.h>
 #include <libraries/expansion.h>
@@ -24,13 +34,6 @@
 #include <dos/bptr.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
-
-#include <proto/exec.h>
-#include <proto/timer.h>
-#include <proto/bootloader.h>
-#include <proto/expansion.h>
-#include <proto/oop.h>
-
 #include <string.h>
 
 #include "ata.h"
@@ -110,57 +113,37 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
+#if defined(__OOP_NOATTRBASES__)
 /* Keep order the same as order of IDs in struct ataBase! */
 static CONST_STRPTR const attrBaseIDs[] =
 {
     IID_Hidd_ATAUnit,
     IID_HW,
+    IID_Hidd_Bus,
     IID_Hidd_ATABus,
+    IID_Hidd_StorageUnit,
     NULL
 };
+#endif
 
-#define ATA_METHOD_ID_START 1
-
-/*
-    Here shall we start. Make function static as it shouldn't be visible from
-    outside.
-*/
-static int ata_init(struct ataBase *ATABase)
+#if defined(__OOP_NOMETHODBASES__)
+static CONST_STRPTR const methBaseIDs[] =
 {
-    OOP_Object *storageRoot;
+    IID_HW,
+    IID_Hidd_ATABus,
+    IID_Hidd_StorageController,
+    NULL
+};
+#endif
+
+static int ATA_init(struct ataBase *ATABase)
+{
     struct BootLoaderBase	*BootLoaderBase;
 
-    D(bug("[ATA--] ata_init: ata.device Initialization\n"));
+    D(bug("[ATA--] %s: ata.device Initialization\n", __PRETTY_FUNCTION__));
 
-    ATABase->ata_UtilityBase = OpenLibrary("utility.library", 36);
-    if (!ATABase->ata_UtilityBase)
-        return FALSE;
-
-    /*
-     * I've decided to use memory pools again. Alloc everything needed from 
-     * a pool, so that we avoid memory fragmentation.
-     */
-    ATABase->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
-    if (ATABase->ata_MemPool == NULL)
-        return FALSE;
-
-    D(bug("[ATA--] ata_init: MemPool @ %p\n", ATABase->ata_MemPool));
-
-    if (OOP_ObtainAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs))
-        return FALSE;
-
-    /* This is our own method base, so no check needed */
-    if (OOP_ObtainMethodBasesArray(&ATABase->hwMethodBase, &attrBaseIDs[ATA_METHOD_ID_START]))
-        return FALSE;
-
-    storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-    if (!storageRoot)
-        storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-    if (!storageRoot)
-        return FALSE;
-
-    if (!HW_AddDriver(storageRoot, ATABase->ataClass, NULL))
-        return FALSE;
+    /* Prepare the list of detected controllers */
+    NEWLIST(&ATABase->ata_Controllers);
 
     /* Set default ata.device config options */
     ATABase->ata_32bit   = FALSE;
@@ -173,7 +156,7 @@ static int ata_init(struct ataBase *ATABase)
      * obtain kernel parameters
      */
     BootLoaderBase = OpenResource("bootloader.resource");
-    D(bug("[ATA--] ata_init: BootloaderBase = %p\n", BootLoaderBase));
+    D(bug("[ATA--] %s: BootloaderBase = %p\n", __PRETTY_FUNCTION__, BootLoaderBase));
     if (BootLoaderBase != NULL)
     {
         struct List *list;
@@ -188,30 +171,78 @@ static int ata_init(struct ataBase *ATABase)
                 {
                     const char *CmdLine = &node->ln_Name[4];
 
+                    if (strstr(CmdLine, "disable"))
+                    {
+                        D(bug("[ATA  ] %s: Disabling ATA support\n", __PRETTY_FUNCTION__));
+                        return FALSE;
+                    }
                     if (strstr(CmdLine, "32bit"))
                     {
-                        D(bug("[ATA  ] ata_init: Using 32-bit IO transfers\n"));
+                        D(bug("[ATA  ] %s: Using 32-bit IO transfers\n", __PRETTY_FUNCTION__));
                         ATABase->ata_32bit = TRUE;
                     }
-		    if (strstr(CmdLine, "nomulti"))
-		    {
-			D(bug("[ATA  ] ata_init: Disabled multisector transfers\n"));
-			ATABase->ata_NoMulti = TRUE;
-		    }
+                    if (strstr(CmdLine, "nomulti"))
+                    {
+                        D(bug("[ATA  ] %s: Disabled multisector transfers\n", __PRETTY_FUNCTION__));
+                        ATABase->ata_NoMulti = TRUE;
+                    }
                     if (strstr(CmdLine, "nodma"))
                     {
-                        D(bug("[ATA  ] ata_init: Disabled DMA transfers\n"));
+                        D(bug("[ATA  ] %s: Disabled DMA transfers\n", __PRETTY_FUNCTION__));
                         ATABase->ata_NoDMA = TRUE;
                     }
                     if (strstr(CmdLine, "poll"))
                     {
-                        D(bug("[ATA  ] ata_init: Using polling to detect end of busy state\n"));
+                        D(bug("[ATA  ] %s: Using polling to detect end of busy state\n", __PRETTY_FUNCTION__));
                         ATABase->ata_Poll = TRUE;
                     }
                 }
             }
         }
     }
+
+    ATABase->ata_UtilityBase = OpenLibrary("utility.library", 36);
+    if (!ATABase->ata_UtilityBase)
+    {
+        bug("[ATA--] %s: Failed to open utility.library v36\n", __PRETTY_FUNCTION__);
+        return FALSE;
+    }
+    /*
+     * I've decided to use memory pools again. Alloc everything needed from 
+     * a pool, so that we avoid memory fragmentation.
+     */
+    ATABase->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+    if (ATABase->ata_MemPool == NULL)
+    {
+        bug("[ATA--] %s: Failed to Allocate MemPool!\n", __PRETTY_FUNCTION__);
+        return FALSE;
+    }
+
+    D(bug("[ATA--] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, ATABase->ata_MemPool));
+
+#if defined(__OOP_NOATTRBASES__)
+    if (OOP_ObtainAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs))
+    {
+        bug("[ATA--] %s: Failed to obtain AttrBases!\n", __PRETTY_FUNCTION__);
+        return FALSE;
+    }
+#endif
+
+#if defined(__OOP_NOMETHODBASES__)
+    if (OOP_ObtainMethodBasesArray(&ATABase->hwMethodBase, methBaseIDs))
+    {
+        bug("[ATA--] %s: Failed to obtain MethodBases!\n", __PRETTY_FUNCTION__);
+        bug("[ATA--] %s:     %s = %p\n", __PRETTY_FUNCTION__, methBaseIDs[0], ATABase->hwMethodBase);
+        bug("[ATA--] %s:     %s = %p\n", __PRETTY_FUNCTION__, methBaseIDs[1], ATABase->busMethodBase);
+        bug("[ATA--] %s:     %s = %p\n", __PRETTY_FUNCTION__, methBaseIDs[2], ATABase->HiddSCMethodBase);
+#if defined(__OOP_NOATTRBASES__)
+         OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
+#endif
+        return FALSE;
+    }
+#endif
+
+    D(bug("[ATA  ] %s: Base ATA Hidd Class @ 0x%p\n", __PRETTY_FUNCTION__, ATABase->ataClass));
 
     /* Try to setup daemon task looking for diskchanges */
     NEWLIST(&ATABase->Daemon_ios);
@@ -228,31 +259,35 @@ static int ata_init(struct ataBase *ATABase)
                        TASKTAG_ARG1       , ATABase,
                        TAG_DONE))
     {
-        D(bug("[ATA  ] Failed to start up daemon!\n"));
+        bug("[ATA  ] %s: Failed to start up daemon!\n", __PRETTY_FUNCTION__);
         return FALSE;
     }
 
     /* Wait for handshake */
     Wait(SIGF_SINGLE);
-    D(bug("[ATA  ] Daemon task set to 0x%p\n", ATABase->ata_Daemon));
+    D(bug("[ATA  ] %s: Daemon task set to 0x%p\n", __PRETTY_FUNCTION__, ATABase->ata_Daemon));
 
     return ATABase->ata_Daemon ? TRUE : FALSE;
 }
 
 static int ata_expunge(struct ataBase *ATABase)
 {
-    if (ATABase->ataObj)
+    struct ata_Controller *ataNode, *tmpNode;
+    ForeachNodeSafe (&ATABase->ata_Controllers, ataNode, tmpNode)
     {
+        OOP_Object *storageRoot;
         /*
          * CLID_Hidd_Storage is a singletone, you can get it as many times as
          * you want. Here we save up some space in struct ataBase by
          * obtaining storageRoot object only when we need it. This happens
          * rarely, so small performance loss is OK here.
          */
-        OOP_Object *storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-
-        if (storageRoot && HW_RemoveDriver(storageRoot, ATABase->ataObj))
+        storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+        if (!storageRoot)
+            storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+        if (storageRoot && HW_RemoveDriver(storageRoot, ataNode->ac_Object))
         {
+            Remove(&ataNode->ac_Node);
             /* Destroy our singletone */
             OOP_MethodID disp_msg = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
@@ -263,7 +298,8 @@ static int ata_expunge(struct ataBase *ATABase)
             Wait(SIGF_SINGLE);
 
             D(bug("[ATA  ] ata_expunge: Done, destroying subystem object\n"));
-            OOP_DoSuperMethod(ATABase->ataClass, ATABase->ataObj, &disp_msg);
+            OOP_DoSuperMethod(ataNode->ac_Class, ataNode->ac_Object, &disp_msg);
+            FreeMem(ataNode, sizeof(struct ata_Controller));
         }
         else
         {
@@ -273,8 +309,10 @@ static int ata_expunge(struct ataBase *ATABase)
         }
     }
 
+#if defined(__OOP_NOATTRBASES__)
     D(bug("[ATA  ] ata_expunge: Releasing attribute bases\n"));
-    OOP_ReleaseAttrBasesArray(&ATABase->hwAttrBase, attrBaseIDs);
+    OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
+#endif
 
     if (ATABase->ata_UtilityBase)
         CloseLibrary(ATABase->ata_UtilityBase);
@@ -286,6 +324,7 @@ static int ata_expunge(struct ataBase *ATABase)
 static int open(struct ataBase *ATABase, struct IORequest *iorq,
                 ULONG unitnum, ULONG flags)
 {
+    struct ata_Controller *ataNode;
     struct Hook searchHook =
     {
         .h_Entry = Hidd_ATABus_Open,
@@ -298,8 +337,10 @@ static int open(struct ataBase *ATABase, struct IORequest *iorq,
     iorq->io_Unit   = (APTR)(IPTR)-1;
 
     /* Try to find the unit */
-    HW_EnumDrivers(ATABase->ataObj, &searchHook, (APTR)(IPTR)unitnum);
-
+    ForeachNode (&ATABase->ata_Controllers, ataNode)
+    {
+        HIDD_StorageController_EnumBuses(ataNode->ac_Object, &searchHook, (APTR)(IPTR)unitnum);
+    }
     D(bug("[ATA%02d] Open result: %d\n", unitnum, iorq->io_Error));
 
     /* If found, io_Error will be reset to zero */
@@ -324,7 +365,7 @@ static int close
     return TRUE;
 }
 
-ADD2INITLIB(ata_init, 0)
+ADD2INITLIB(ATA_init, 0)
 ADD2EXPUNGELIB(ata_expunge, 0)
 ADD2OPENDEV(open, 0)
 ADD2CLOSEDEV(close, 0)

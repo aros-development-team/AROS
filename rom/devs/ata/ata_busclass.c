@@ -1,15 +1,22 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <proto/oop.h>
+#include <proto/utility.h>
+
+#include <hidd/storage.h>
 #include <hidd/ata.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
-#include <proto/exec.h>
-#include <proto/oop.h>
-#include <proto/utility.h>
 
 #include "ata.h"
 #include "ata_bus.h"
@@ -56,6 +63,8 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 
     struct ataBase *ATABase = bus->ab_Base;
     OOP_Object *obj = (void *)bus - ATABase->busClass->InstOffset;
+
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
 
     HIDD_ATABus_Shutdown(obj);
 
@@ -597,13 +606,16 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 
 OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct ataBase *ATABase = cl->UserData;
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
     if (o)
     {
-        struct ataBase *ATABase = cl->UserData;
         struct ata_Bus *data = OOP_INST_DATA(cl, o);
         struct TagItem *tstate = msg->attrList;
         struct TagItem *tag;
+
+        D(bug("[ATA:Bus] %s: instance @ 0x%p\n", __PRETTY_FUNCTION__, o));
 
         /* Defaults */
         data->keepEmpty = TRUE;
@@ -686,6 +698,13 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct ata_Bus *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
+    Hidd_Bus_Switch (msg->attrID, idx)
+    {
+    case aoHidd_Bus_MaxUnits:
+        *msg->storage = MAX_BUSUNITS;
+        return;
+    }
+
     Hidd_ATABus_Switch (msg->attrID, idx)
     {
     case aoHidd_ATABus_Use80Wire:
@@ -708,20 +727,25 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                          TRUE : FALSE;
         return;
 
-    case aoHidd_ATABus_Master:
-        *msg->storage = (IPTR)data->ab_Units[0];
-        return;
-
-    case aoHidd_ATABus_Slave:
-        *msg->storage = (IPTR)data->ab_Units[1];
-        return;
-
     case aoHidd_ATABus_CanSetXferMode:
         *msg->storage = FALSE;
         return;
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
+void ATABus__Hidd_StorageBus__EnumUnits(OOP_Class *cl, OOP_Object *o, struct pHidd_StorageBus_EnumUnits *msg)
+{
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
+    BOOL stop = FALSE;
+
+    D(bug ("[ATA:Bus] Hidd_StorageBus__EnumUnits()\n");)
+
+    if (data->ab_Units[0])
+	stop = CALLHOOKPKT(msg->callback, data->ab_Units[0], msg->hookMsg);
+    if ((!stop) && (data->ab_Units[1]))
+         stop = CALLHOOKPKT(msg->callback, data->ab_Units[1], msg->hookMsg);
 }
 
 /* Default ata_out_alt does nothing */
@@ -797,7 +821,9 @@ APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
 {
     struct ata_Bus *data = OOP_INST_DATA(cl, o);
     struct ATA_BusInterface *vec;
-    
+
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
+
     vec = AllocMem(sizeof(struct ATA_BusInterface) + data->pioDataSize,
                    MEMF_PUBLIC|MEMF_CLEAR);
     if (vec)
@@ -864,6 +890,8 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     struct ata_Bus *data = OOP_INST_DATA(cl, o);
     struct ATA_DMAInterface *vec;
 
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
+
     if (!data->dmaVectors)
         return NULL;
 
@@ -925,6 +953,8 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
 
 BOOL ATABus__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *o, struct pHidd_ATABus_SetXferMode *msg)
 {
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
+
     if ((msg->mode >= AB_XFER_MDMA0) && (msg->mode <= AB_XFER_UDMA6))
     {
         /* DMA is not supported, we cannot set DMA modes */
@@ -974,6 +1004,8 @@ void ATABus__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg *msg)
 {
     struct ata_Bus *data = OOP_INST_DATA(cl, o);
 
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
+
     if (data->pioInterface)
     {
         struct ATA_BusInterface *vec = data->pioInterface - sizeof(struct ATA_BusInterface);
@@ -987,6 +1019,8 @@ void ATABus__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg *msg)
 BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
 {
     struct ata_Bus *ab = OOP_INST_DATA(ATABase->busClass, o);
+
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
 
     /* Attach IRQ handler */
     OOP_SetAttrsTags(o, aHidd_ATABus_IRQHandler, Hidd_ATABus_HandleIRQ,
@@ -1062,15 +1096,18 @@ AROS_UFH3(BOOL, Hidd_ATABus_Open,
     ULONG bus = reqUnit >> 1;
     UBYTE dev = reqUnit & 1;
 
+    D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
     D(bug("[ATA%02ld] Checking bus %u dev %u\n", reqUnit, bus, dev));
     
     if ((b->ab_BusNum == bus) && b->ab_Units[dev])
     {
+        struct ata_Unit *unit = (struct ata_Unit *)OOP_INST_DATA(ATABase->unitClass, b->ab_Units[dev]);
+
         /* Got the unit */
-        req->io_Unit  = &b->ab_Units[dev]->au_Unit;
+        req->io_Unit  = &unit->au_Unit;
         req->io_Error = 0;
 
-        b->ab_Units[dev]->au_Unit.unit_OpenCnt++;
+        unit->au_Unit.unit_OpenCnt++;
         return TRUE;
     }
     

@@ -9,7 +9,9 @@
     Lang: English
 */
 
+#if !defined(__OOP_NOMETHODBASES__)
 #define __OOP_NOMETHODBASES__
+#endif
 
 #include <exec/devices.h>
 #include <exec/semaphores.h>
@@ -55,104 +57,133 @@ struct ata_Bus;
 /* ata.device base */
 struct ataBase
 {
-   struct Device           ata_Device;    /* Exec device structure                */
-   struct Task            *ata_Daemon;    /* master task pointer                  */
-   struct MsgPort         *DaemonPort;    /* Daemon's message port                */
-   struct MinList          Daemon_ios;    /* Daemon's IORequests                  */
-   struct SignalSemaphore  DaemonSem;
-   struct Task            *daemonParent;  /* Who sends control requests to daemon */
-   int                     ata__buscount; /* Number of all buses                  */
-   struct SignalSemaphore  DetectionSem;  /* Device detection semaphore           */
+    struct Device           	ata_Device;    			/* Exec device structure                */
+    struct Task            	*ata_Daemon;    		/* master task pointer                  */
+    struct MsgPort         	*DaemonPort;    		/* Daemon's message port                */
+    struct MinList          	Daemon_ios;    			/* Daemon's IORequests                  */
+    struct SignalSemaphore  	DaemonSem;
+    struct Task            	*daemonParent;  		/* Who sends control requests to daemon */
+    int                     	ata__buscount; 			/* Number of all buses                  */
+    struct SignalSemaphore  	DetectionSem;  			/* Device detection semaphore           */
 
-   /* Arguments and flags */
-   UBYTE                   ata_32bit;
-   UBYTE                   ata_NoMulti;
-   UBYTE                   ata_NoDMA;
-   UBYTE                   ata_Poll;
+    /* Arguments and flags */
+    UBYTE                   	ata_32bit;
+    UBYTE                   	ata_NoMulti;
+    UBYTE                   	ata_NoDMA;
+    UBYTE                   	ata_Poll;
 
-   /*
-    * memory pool
-    */
-   APTR                    ata_MemPool;
+    /*
+     * memory pool
+     */
+    APTR                    	ata_MemPool;
 
-   ULONG                   ata_ItersPer100ns;
+    ULONG                   	ata_ItersPer100ns;
 
-   struct Library         *ata_OOPBase;
-   struct Library         *ata_UtilityBase;
-   BPTR                    ata_SegList;
+    struct Library         	*ata_OOPBase;
+    struct Library         	*ata_UtilityBase;
+    BPTR                    	ata_SegList;
 
-   /* Bus HIDD classes */
-   OOP_AttrBase            unitAttrBase;
-   OOP_AttrBase            hwAttrBase;
-   OOP_AttrBase            ataAttrBase;
-   OOP_MethodID            hwMethodBase;
-   OOP_MethodID            ataMethodBase;
-   OOP_Class              *ataClass;
-   OOP_Class              *busClass;
-   OOP_Class              *unitClass;
-   OOP_Object             *ataObj;
+    /* Bus HIDD classes */
+    OOP_Class              	*ataClass;
+    OOP_Class              	*busClass;
+    OOP_Class              	*unitClass;
+
+#if defined(__OOP_NOATTRBASES__)
+    OOP_AttrBase                unitAttrBase;
+    OOP_AttrBase                hwAttrBase;
+    OOP_AttrBase                busAttrBase;
+    OOP_AttrBase                atabusAttrBase;
+    OOP_AttrBase                sunitAttrBase;
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+    OOP_MethodID                hwMethodBase;
+    OOP_MethodID                busMethodBase;
+    OOP_MethodID                HiddSCMethodBase;
+#endif
+
+    struct List                 ata_Controllers;
 };
 
+#if defined(__OOP_NOATTRBASES__)
 #undef HWAttrBase
+#undef HiddBusAB
 #undef HiddATABusAB
 #undef HiddATAUnitAB
+#undef HiddStorageUnitAB
+#define HWAttrBase                      (ATABase->hwAttrBase)
+#define HiddBusAB                       (ATABase->busAttrBase)
+#define HiddATABusAB                    (ATABase->atabusAttrBase)
+#define HiddATAUnitAB                   (ATABase->unitAttrBase)
+#define HiddStorageUnitAB               (ATABase->sunitAttrBase)
+#endif
+
+#if defined(__OOP_NOMETHODBASES__)
 #undef HWBase
 #undef HiddATABusBase
-#define HWAttrBase     (ATABase->hwAttrBase)
-#define HiddATABusAB   (ATABase->ataAttrBase)
-#define HiddATAUnitAB  (ATABase->unitAttrBase)
-#define HWBase         (ATABase->hwMethodBase)
-#define HiddATABusBase (ATABase->ataMethodBase)
-#define OOPBase        (ATABase->ata_OOPBase)
-#define UtilityBase    (ATABase->ata_UtilityBase)
+#define HWBase                          (ATABase->hwMethodBase)
+#define HiddATABusBase                  (ATABase->busMethodBase)
+#define HiddStorageControllerBase       (ATABase->HiddSCMethodBase)
+#endif
+
+#define OOPBase                         (ATABase->ata_OOPBase)
+#define UtilityBase                     (ATABase->ata_UtilityBase)
+
+struct ata_Controller
+{
+    struct Node         	ac_Node;
+    OOP_Class           	*ac_Class;
+    OOP_Object          	*ac_Object;
+};
 
 /*
-   The single IDE bus (channel)
+   A single IDE bus (channel)
    */
 struct ata_Bus
 {
-   struct ataBase          *ab_Base;   /* device self */
-   /* Bus object data */
-   struct ATA_BusInterface *busVectors;     /* Control vector table     */
-   struct ATA_PIOInterface *pioVectors;     /* PIO vector table         */
-   APTR                    *dmaVectors;     /* DMA vector table         */
-   ULONG                   pioDataSize;     /* PIO interface data size  */
-   ULONG                   dmaDataSize;     /* DMA interface data size  */
-   void                    *pioInterface;   /* PIO interface object     */
-   void                    *dmaInterface;   /* DMA interface object     */
-   BOOL                    keepEmpty;       /* Whether we should keep empty bus object */
-   BOOL                    haveAltIO;
+   struct ataBase          	*ab_Base;  			/* device self */
 
-   volatile UBYTE          ab_Dev[2];  /* Master/Slave type, see below */
-   UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
-   BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
-   /* for data requests/DMA */
-   UBYTE                   ab_BusNum;  /* bus id - used to calculate device id */
+   /** Bus object data **/
+   struct ATA_BusInterface	*busVectors;     		/* Control vector table     */
+   struct ATA_PIOInterface	*pioVectors;     		/* PIO vector table         */
+   APTR                    	*dmaVectors;     		/* DMA vector table         */
+   ULONG                   	pioDataSize;     		/* PIO interface data size  */
+   ULONG                   	dmaDataSize;     		/* DMA interface data size  */
+   void                    	*pioInterface;   		/* PIO interface object     */
+   void                    	*dmaInterface;   		/* DMA interface object     */
+   BOOL                    	keepEmpty;       		/* Whether we should keep empty bus object */
+   BOOL                    	haveAltIO;
 
-   struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
-   struct ata_Unit         *ab_SelectedUnit;    /* Currently selected unit */
+   volatile UBYTE          	ab_Dev[MAX_BUSUNITS];		/* Master/Slave type, see below */
+   UBYTE                   	ab_Flags;   			/* Bus flags similar to unit flags */
+   BYTE                    	ab_SleepySignal; 		/* Signal used to wake the task up, when it's waiting */
 
-   ULONG                   ab_IntCnt;
+   /** Data Requests/DMA **/
+   UBYTE                   	ab_BusNum;  			/* bus id - used to calculate device id */
 
-   struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
-   struct MsgPort          *ab_MsgPort;    /* Task's message port */
-   struct IORequest        *ab_Timer;      /* timer stuff */
+   OOP_Object        		*ab_Units[MAX_BUSUNITS];   	/* Units on the bus */
+   struct ata_Unit         	*ab_SelectedUnit;    		/* Currently selected unit */
 
-   struct Interrupt        ab_ResetInt;
+   ULONG                   	ab_IntCnt;
 
-   APTR                    ab_BounceBufferPool;
+   struct Task             	*ab_Task;       		/* Bus task handling all not-immediate transactions */
+   struct MsgPort          	*ab_MsgPort;    		/* Task's message port */
+   struct IORequest        	*ab_Timer;      		/* timer stuff */
 
-   /* functions go here */
-   void                   (*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
+   struct Interrupt        	ab_ResetInt;
+
+   APTR                    	ab_BounceBufferPool;
+
+   /** functions go here **/
+   void                   	(*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
 };
 
 /* Device types */
-#define DEV_NONE        0x00
-#define DEV_UNKNOWN     0x01
-#define DEV_ATA         0x02
-#define DEV_SATA        0x03
-#define DEV_ATAPI       0x80
-#define DEV_SATAPI      0x81
+#define DEV_NONE        		0x00
+#define DEV_UNKNOWN    			0x01
+#define DEV_ATA         		0x02
+#define DEV_SATA        		0x03
+#define DEV_ATAPI      		 	0x80
+#define DEV_SATAPI     			0x81
 
 /*
    DriveIdent structure as returned by ATA_IDENTIFY_[DEVICE|ATAPI]
@@ -166,15 +197,19 @@ struct DriveIdent {
    UWORD       id_OldSectors;          // 6
    UWORD       pad2[3];                // 7-9
    UBYTE       id_SerialNumber[20];    // 10-19
-   UWORD       pad3[3];                // 20-22
+   UWORD       pad3;                   // 20
+   ULONG       id_BufSize;             // 21-22
    UBYTE       id_FirmwareRev[8];      // 23-26
    UBYTE       id_Model[40];           // 27-46
    UWORD       id_RWMultipleSize;      // 47
-   UWORD       pad4;                   // 48
+   union {
+      UWORD    id_io32;                 // 48
+      UWORD    id_Trusted;
+   };
    UWORD       id_Capabilities;        // 49
    UWORD       id_OldCaps;             // 50
    UWORD       id_OldPIO;              // 51
-   UWORD       pad5;                   // 52
+   UWORD       id_OldDMA;              // 52
    UWORD       id_ConfigAvailable;     // 53
    UWORD       id_OldLCylinders;       // 54
    UWORD       id_OldLHeads;           // 55
@@ -207,7 +242,7 @@ struct DriveIdent {
    UWORD       id_MasterPwdRevision;   // 92
    UWORD       id_HWResetResult;       // 93
    UWORD       id_AcousticManagement;  // 94
-   UWORD       id_StreamMinimunReqSize; // 95
+   UWORD       id_StreamMinimunReqSize;// 95
    UWORD       id_StreamingTimeDMA;    // 96
    UWORD       id_StreamingLatency;    // 97
    ULONG       id_StreamingGranularity; // 98-99
@@ -222,7 +257,9 @@ struct DriveIdent {
    UWORD       pad13[8];               // 119-126
    UWORD       id_RemMediaStatusNotificationFeatures; // 127
    UWORD       id_SecurityStatus;      // 128
-   UWORD       pad14[127];
+   UWORD       pad14[40];              // 129 - 168
+   UWORD       id_DSManagement;        // 169
+   UWORD       pad15[86];              // 170 - 256
 } __attribute__((packed));
 
 typedef struct

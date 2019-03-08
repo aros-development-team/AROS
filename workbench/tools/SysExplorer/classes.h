@@ -1,8 +1,8 @@
-#ifndef COMPUTERPAGE_CL_H
-#define COMPUTERPAGE_CL_H
+#ifndef SYSEXPLORER_CLASSES_H
+#define SYSEXPLORER_CLASSES_H
 
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,13 +18,9 @@
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *ComputerWindow_CLASS;
 extern struct MUI_CustomClass *GenericWindow_CLASS;
-extern struct MUI_CustomClass *ATAWindow_CLASS;
-extern struct MUI_CustomClass *ATAUnitWindow_CLASS;
 extern struct MUI_CustomClass *DevicePage_CLASS;
-extern struct MUI_CustomClass *GfxWindow_CLASS;
-extern struct MUI_CustomClass *MonitorWindow_CLASS;
 
 /*** Macros *****************************************************************/
 #define DevicePageObject BOOPSIOBJMACRO_START(DevicePage_CLASS->mcc_Class)
 
-#endif /* COMPUTERPAGE_CL_H */
+#endif /* SYSEXPLORER_CLASSES_H */
