@@ -171,11 +171,11 @@ Erreur - %s
 ; Error - %s
 ;
 MSG_SETDEVICETYPE_GAD
-Choisir le type de périph.
+Choisir le type de périph
 ; Set Device Type
 ;
 MSG_SETDEVICETYPE_WND
-Unité : %ld - Type de périph.
+Unité : %ld - Type de périph
 ; Unit: %ld - Device Type
 ;
 MSG_DEVICETYPE_GAD

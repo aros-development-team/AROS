@@ -1,33 +1,33 @@
 ## version $VER: diskimagegui.catalog 52.26 (27.09.2010)
-## codeset 0
-## language deutsch
+## codeset 5
+## language polski
 ;
 ; *********************
 ; ** Unit/drive list **
 ; *********************
 ;
 MSG_UNIT_LBL
-Einheit
+Jednostka
 ; Unit
 ;
 MSG_DEVICE_LBL
-Gerät
+Urz±dzenie
 ; Device
 ;
 MSG_FILENAME_LBL
-Disk Image
+Obraz dysku
 ; Disk Image
 ;
 MSG_WRITEPROTECT_LBL
-Schreibgeschützt
+Bez zapisu
 ; WP
 ;
 MSG_NO_DISK
-Keine Disk eingelegt
+Brak dysku
 ; No disk present
 ;
 MSG_APPDESCRIPTION
-GUI für diskimage.device
+Interfejs diskimage.device
 ; Control GUI for diskimage.device
 ;
 ; ******************
@@ -35,7 +35,7 @@ GUI für diskimage.device
 ; ******************
 ;
 MSG_PRIORITY_LBL
-Pri
+Priorytet
 ; Pri
 ;
 MSG_PLUGIN_LBL
@@ -43,7 +43,7 @@ Plugin
 ; Plugin
 ;
 MSG_PLUGIN_GAD
-Benutze Plugin
+U¿yj Pluginu
 ; Use plugin
 ;
 MSG_AUTO_LBL
@@ -51,7 +51,7 @@ MSG_AUTO_LBL
 ; (Auto)
 ;
 MSG_WRITESUPPORT_LBL
-Beschreibbar
+Zapisywalny
 ; W
 ;
 ; *****************
@@ -59,35 +59,35 @@ Beschreibbar
 ; *****************
 ;
 MSG_PROJECT_ABOUT
-Über...
+O...
 ; About...
 ;
 MSG_PROJECT_HIDE
-Verbergen
+Ukryj
 ; Hide
 ;
 MSG_PROJECT_ICONIFY
-Ikonifizieren
+Zikonizuj
 ; Iconify
 ;
 MSG_PROJECT_SNAPSHOT
-Fenster fixieren
+Utrwal okno
 ; Snapshot
 ;
 MSG_PROJECT_QUIT
-Beenden
+Zakoncz
 ; Quit
 ;
 MSG_SETTINGS_MENU
-Einstellungen
+Ustawienia
 ; Settings
 ;
 MSG_SETTINGS_CHANGETEMPDIR
-Temp. Verzeichnis ändern...
+Wybierz tymczasowy katalog...
 ; Change temp directory...
 ;
 MSG_SETTINGS_SAVE
-Einstellungen speichern
+Zapisz ustawienia
 ; Save settings
 ;
 MSG_SETTINGS_PLUGINS
@@ -95,7 +95,7 @@ Plugins...
 ; Plugins...
 ;
 MSG_PROJECT_CLOSE
-Schliessen
+Zamknij
 ; Close
 ;
 ; ****************
@@ -107,31 +107,31 @@ Ok
 ; Ok
 ;
 MSG_ABOUT_REQ
-%s Version %ld.%ld\n%s Version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebseite: http://a500.org\nE-Mail: fredrik@a500.org
+%s Wersja %ld.%ld\n%s Wersja %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebseite: http://a500.org\nE-Mail: fredrik@a500.org
 ; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik@a500.org
 ;
 MSG_ERROR
-Fehler
+B³±d
 ; Error
 ;
 MSG_NOAISS_REQ
-AISS Assign nicht gefunden.\n\n\
-Lade und installiere die neuste Version\n\
-von hier: http://masonicons.de
+Nie znalleziono przypisania AISS.\n\n\
+Zainstaluj najnowsza wersjê\n\
+st±d: http://masonicons.de
 ; AISS assign not found.\n\n\
 ; Download and install the latest version\n\
 ; from here: http://masonicons.de
 ;
 MSG_OLDAISS_REQ
-AISS V%ld.%ld oder neuer wird benötigt.\n\n\
-Lade und installiere die neuste Version\n\
-von hier: http://masonicons.de
+Wymagany AISS V%ld.%ld albo nowszy.\n\n\
+Zainstaluj najnowsza wersjê\n\
+st±d: http://masonicons.de
 ; AISS v%ld.%ld or newer required.\n\n\
 ; Download and install the latest version\n\
 ; from here: http://masonicons.de
 ;
 MSG_IMAGENOTFOUND_REQ
-Imagedatei '%s' nicht gefunden.
+Nie znaleziono pliku obrazu '%s'.
 ; Image file '%s' not found.
 ;
 ; *******************
@@ -139,31 +139,31 @@ Imagedatei '%s' nicht gefunden.
 ; *******************
 ;
 MSG_CANCEL_GAD
-_Abbrechen
+_Poniechaj
 ; _Cancel
 ;
 MSG_SAVE_GAD
-_Sichern
+_Zapisz
 ; _Save
 ;
 MSG_USE_GAD
-An_wenden
+_U¿yj
 ; _Use
 ;
 MSG_INSERT_GAD
-Einlegen
+Wló¿
 ; Insert
 ;
 MSG_EJECT_GAD
-Auswerfen
+Wyrzuæ
 ; Eject
 ;
 MSG_WRITEPROTECT_GAD
-Schreibgeschützt
+Bez zapisu
 ; Write Protect
 ;
 MSG_REFRESH_GAD
-Aktualisieren
+Zaktualizuj
 ; Refresh
 ;
 ; *******************
@@ -179,27 +179,27 @@ MSG_MAIN_WND
 ; %s: Hot Key = <%s>
 ;
 MSG_ABOUT_WND
-Über - %s
+O - %s
 ; About - %s
 ;
 MSG_ERROR_WND
-Fehler - %s
+B³±d - %s
 ; Error - %s
 ;
 MSG_SETDEVICETYPE_GAD
-Wähle Gerätetyp
+Wybierz typ urz±dzenia
 ; Set Device Type
 ;
 MSG_SETDEVICETYPE_WND
-Einheit : %ld - Gerätetyp
+Jednostka : %ld - Gerätetyp
 ; Unit: %ld - Device Type
 ;
 MSG_DEVICETYPE_GAD
-Gerätetyp
+Typ urz±dzenia
 ; Device Type
 ;
 MSG_DEVICETYPE_DIRECT_ACCESS
-Direktezugriff (Standardeinstellung)
+Dostêp bezpo¶redni (ustawienie standardowe)
 ; Direct Access (Default setting)
 ;
 MSG_DEVICETYPE_CDROM
@@ -207,6 +207,6 @@ CD-ROM
 ; CD-ROM
 ;
 MSG_DEVICETYPE_OPTICAL_DISK
-Optisches Medium
+Optyczny dysk
 ; Optical Disk
 ;
