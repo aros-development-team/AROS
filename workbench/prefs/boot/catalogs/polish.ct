@@ -1,4 +1,4 @@
-## version $VER: boot.catalog 2.0 (07.09.2018)
+## version $VER: boot.catalog 2.1 (08.03.2019)
 ## language polski
 ## codeset 5
 ;
@@ -75,7 +75,7 @@ Hz
 ; Hz
 ;
 MSG_GFX_DEFAULTREFRESH
-U¿yj domy¶lnej czêstotliwo¶ci 
+U¿yj domy¶lnej czêstotliwo¶ci
 ; Use Default Refresh Rate
 ;
 MSG_GFX_BESTRES
@@ -171,7 +171,7 @@ Uaktywnij napêd dyskietek
 ; Enable Floppy Disk Drive
 ;
 MSG_DEVICE
-Urz±dzenie startowe 
+Urz±dzenie startowe
 ; Boot Device
 ;
 MSG_DEVICE_NAME

@@ -1,4 +1,4 @@
-## version $VER: Input.catalog 3.1 (10.09.2018)
+## version $VER: Input.catalog 3.2 (08.03.2019)
 ## language polski
 ## codeset 5
 ;
@@ -88,6 +88,6 @@ Aktywny
 ; Enabled
 ;
 MSG_GAD_KEY_SWITCH_KEY
-Klawisz skrótu 
+Klawisz skrótu
 ; Hotkey
 ;
