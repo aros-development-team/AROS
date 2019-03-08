@@ -1,9 +1,9 @@
-## version $VER: KeyShow.catalog 1.0 (30.08.2016)
-## language czech
+## version $VER: KeyShow.catalog 1.0 (08.03.2019)
+## language polski
 ## codeset 5
 ;
 MSG_AppDescription
-Zobrazení nalo¾ení kláves
+Poka¿ uk³ad klawiatury
 ; Show Keyboard Layout
 ;
 MSG_AppCopyright
@@ -21,15 +21,15 @@ OK
 ; Error messages
 ;
 MSG_ERR
-Chyba
+B³±d
 ; Error
 ;
 MSG_ERR_NO_APPLICATION
-Nelze vytvoøit aplikaci
+Nie mo¿na utworzyc aplikacji
 ; Can't create application
 ;
 MSG_ERR_NO_MEM
-Nedostatek pamìti
+Brak pamiêci
 ; Out of memory
 ;
 ; Key descriptions

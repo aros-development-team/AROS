@@ -1,0 +1,24 @@
+## version $VER: boingiconbar.catalog 2.0 (08.03.2019)
+## language polski
+## codeset 5
+;
+MSG_CX_NAME
+BoingIconBar
+; BoingIconBar
+;
+MSG_CX_TITLE
+Ikona paska narzêdzi
+; Icon Toolbar
+;
+MSG_CX_DESC
+Uruchamiaj programy z paska narzêdzi
+; Start Programs from Toolbar
+;
+MSG_MENU_SETTINGS
+Ustawienia
+; Settings
+;
+MSG_MENU_QUIT
+Zakoñcz
+; Quit
+;
