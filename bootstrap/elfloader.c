@@ -80,7 +80,7 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
     if (!sh->size)
         return addr;
 
-    D(kprintf("[ELF Loader] Chunk (%ld bytes, align=%ld (%p) @ ", sh->size, sh->addralign, (void *)sh->addralign));
+    D(kprintf("[ELF Loader] Chunk (%ld bytes, align=%ld (%p) @ ", sh->size, sh->addralign, (void *)(uintptr_t)sh->addralign));
     align = sh->addralign - 1;
     addr = (char *)(((uintptr_t)addr + align) & ~align);
 
@@ -159,7 +159,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                 if (!SysBase_ptr)
                 {
                     SysBase_ptr = DefSysBase;
-                    D(kprintf("[ELF Loader] SysBase symbol set to default %p\n", (void *)SysBase_ptr));
+                    D(kprintf("[ELF Loader] SysBase symbol set to default %p\n", (void *)(uintptr_t)SysBase_ptr));
                 }
 
                 s = SysBase_ptr;
@@ -188,7 +188,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                 if (!SysBase_ptr)
                 {
                     SysBase_ptr = DefSysBase;
-                    D(kprintf("[ELF Loader] SysBase symbol set to default %p\n", (void *)SysBase_ptr));
+                    D(kprintf("[ELF Loader] SysBase symbol set to default %p\n", (void *)(uintptr_t)SysBase_ptr));
                 }
 
                 s = SysBase_ptr;
@@ -212,7 +212,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                     if (Strcmp(name, "SysBase") == 0)
                     {
                         SysBase_ptr = s;
-                        D(kprintf("[ELF Loader] SysBase symbol set to %p\n", (void *)SysBase_ptr));
+                        D(kprintf("[ELF Loader] SysBase symbol set to %p\n", (void *)(uintptr_t)SysBase_ptr));
                     }
                 }
             }
