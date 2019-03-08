@@ -1,4 +1,4 @@
-## version $VER: info.catalog 1.0 (29.04.2010)
+## version $VER: info.catalog 1.4 (08.03.2019)
 ## language polski
 ## codeset 5
 ;
@@ -177,4 +177,12 @@ Ponie_chaj
 MSG_OK
 OK
 ; Ok
+;
+MSG_PATH
+¦cie¿ka
+; Path
+;
+MSG_BTNPATH
+Otwórz ¶cie¿kê dostepu...
+; Open path...
 ;
