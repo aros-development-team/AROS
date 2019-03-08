@@ -2,7 +2,6 @@
 ## language polski
 ## codeset 5
 ;
-;
 MSG_WINTITLE
 Ustawienia wskaånika
 ; Pointer Preferences
@@ -12,7 +11,7 @@ OK
 ; Ok
 ;
 MSG_HOTSPOT
-Czu≥y punkt
+Hot spot
 ;  Hotspot
 ;
 MSG_ALPHA
