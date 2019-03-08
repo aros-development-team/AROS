@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2017, The AROS Development Team.
+    Copyright (C) 2013-2018, The AROS Development Team.
     $Id$
 */
 
@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "classes.h"
+#include "gfx_classes.h"
 #include "cpuspecific.h"
 #include "locale.h"
 

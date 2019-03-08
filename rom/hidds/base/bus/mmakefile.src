@@ -1,0 +1,21 @@
+#$Id: mmakefile.src 52306 2016-03-28 11:39:31Z NicJA $
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES :=  bus_class
+
+NOWARN_FLAGS := $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -DAROS_USE_OOP -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
+#USER_CPPFLAGS += -DDEBUG
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-hidd-bus \
+    modname=bus modtype=hidd \
+    files="$(FILES)"
+
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
+
+%copy_includes path=hidd dir=include
+
+%common

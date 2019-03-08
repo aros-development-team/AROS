@@ -2,14 +2,22 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- kernel-hidd-base-kobj : kernel-hidd-storage-kobj
+#MM kernel-hidd-storage-includes : kernel-hidd-bus-includes
+
 FILES       := \
                 storage_init \
+                storage_controllerclass \
+                storage_busclass \
+                storage_unitclass \
                 storage_class
 
 NOWARN_FLAGS := $(NOWARN_PARENTHESES)
-USER_CFLAGS      := $(NOWARN_FLAGS) -DAROS_USE_OOP \
-                    -D__OOP_NOLIBBASE__ \
+USER_CFLAGS      := $(NOWARN_FLAGS)
+USER_CPPFLAGS      := -DAROS_USE_OOP \
+                    -D__OOP_NOLIBBASE__ -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__ \
                     -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS += -DDEBUG
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-hidd-storage \

@@ -4,32 +4,133 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-tools : workbench-tools-sysexplorer
 
-FILES       := \
-        main \
-        enum_storage \
-        locale \
+BASEFILES := \
+        sysexp_main \
+        sysexp_library \
+        sysexp_locale \
         computer_page_cl \
         cpu_arm \
         cpu_i386 \
         device_page_cl \
-        generic_window_cl \
-        ata_window_cl \
-        ataunit_window_cl
+        generic_window_cl
 
-# until a later date ;)
-DISABLED := \
-        enum_gfx \
-        gfx_window_cl \
-        monitor_window_cl
+STORAGEMODDIR := Modules/Storage
+STORAGEFILES := \
+        sysexp_locale \
+        $(STORAGEMODDIR)/storage_init \
+        $(STORAGEMODDIR)/storage_enum \
+        $(STORAGEMODDIR)/storagebus_window_cl \
+        $(STORAGEMODDIR)/storageunit_window_cl
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+ATAMODDIR := Modules/ATA
+ATAFILES := \
+        sysexp_locale \
+        $(ATAMODDIR)/ata_init \
+        $(ATAMODDIR)/ata_enum \
+        $(ATAMODDIR)/atabus_window_cl \
+        $(ATAMODDIR)/ataunit_window_cl
+
+AHCIMODDIR := Modules/AHCI
+AHCIFILES := \
+        sysexp_locale \
+        $(AHCIMODDIR)/ahci_init \
+        $(AHCIMODDIR)/ahci_enum \
+        $(AHCIMODDIR)/ahcibus_window_cl \
+        $(AHCIMODDIR)/ahciunit_window_cl
+
+# disabled until a later date ;)
+GFXMODDIR := Modules/Gfx
+GFXFILES := \
+        $(GFXMODDIR)/gfx_enum \
+        $(GFXMODDIR)/gfx_window_cl \
+        $(GFXMODDIR)/gfxmonitor_window_cl
+
+FILES := $(BASEFILES)
+
+USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
+USER_CPPFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS += -DDEBUG
+
 EXEDIR      := $(AROSDIR)/Tools
 
-#MM workbench-tools-sysexplorer : workbench-tools-sysexplorer-catalogs
-#MM workbench-tools-sysexplorer-quick : workbench-tools-sysexplorer-catalogs
+#MM- workbench-tools-sysexplorer : workbench-tools-sysexplorer-catalogs workbench-tools-sysexplorer-includes workbench-tools-sysexplorer-app workbench-tools-sysexplorer-modules
+#MM- workbench-tools-sysexplorer-quick : workbench-tools-sysexplorer-catalogs workbench-tools-sysexplorer-app-quick workbench-tools-sysexplorer-modules-quick
 
-%build_prog mmake=workbench-tools-sysexplorer \
+SYSEXPCOMMON_INCLUDES := -I$(GENDIR)/$(CURDIR)/include
+
+##MM workbench-tools-sysexplorer-module-gfx : workbench-tools-sysexplorer-includes
+##MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-gfx
+#USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(GFXMODDIR)
+#USER_LDFLAGS := -static
+#%build_module mmake=workbench-tools-sysexplorer-module-gfx \
+#    modname=gfx modtype=library modsuffix=sysexp \
+#    files="$(GFXFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+#    uselibs="amiga"
+
+#MM workbench-tools-sysexplorer-module-storage : workbench-tools-sysexplorer-includes kernel-hidd-storage-includes kernel-hidd-bus-includes
+#MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-storage
+#MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-storage-quick
+
+SYSEXPSTORAGE_INCLUDES := -I$(SRCDIR)/$(CURDIR)/$(STORAGEMODDIR)
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) $(SYSEXPSTORAGE_INCLUDES)
+USER_LDFLAGS := -static
+%build_module mmake=workbench-tools-sysexplorer-module-storage \
+    modname=storage modtype=library modsuffix=sysexp \
+    files="$(STORAGEFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+    uselibs="amiga" conffile=$(SRCDIR)/$(CURDIR)/$(STORAGEMODDIR)/storage.conf
+
+#MM workbench-tools-sysexplorer-module-ata : workbench-tools-sysexplorer-includes workbench-tools-sysexplorer-module-storage-includes kernel-ata-includes
+#MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-ata
+#MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-ata-quick
+
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) $(SYSEXPSTORAGE_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(ATAMODDIR)
+USER_LDFLAGS := -static
+%build_module mmake=workbench-tools-sysexplorer-module-ata \
+    modname=ata modtype=library modsuffix=sysexp \
+    files="$(ATAFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+    uselibs="amiga" conffile=$(SRCDIR)/$(CURDIR)/$(ATAMODDIR)/ata.conf
+
+#MM workbench-tools-sysexplorer-module-ahci : workbench-tools-sysexplorer-includes workbench-tools-sysexplorer-module-storage-includes kernel-ahci-includes
+#MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-ahci
+#MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-ahci-quick
+
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) $(SYSEXPSTORAGE_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(AHCIMODDIR)
+USER_LDFLAGS := -static
+%build_module mmake=workbench-tools-sysexplorer-module-ahci \
+    modname=ahci modtype=library modsuffix=sysexp \
+    files="$(AHCIFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+    uselibs="amiga" conffile=$(SRCDIR)/$(CURDIR)/$(AHCIMODDIR)/ahci.conf
+
+#MM workbench-tools-sysexplorer-gen-includes : workbench-tools-sysexplorer-gen-setup
+#MM- workbench-tools-sysexplorer-includes : workbench-tools-sysexplorer-gen-includes
+
+##MM
+##workbench-tools-sysexplorer-gen-includes:
+##%rule_genmodule_makefile modname=sysexp modtype=library
+##-include $(%(mmake)_OBJDIR)/Makefile.%(modname)%(modtype)
+##%rule_genmodule_genlibdefs modname=sysexp modtype=library
+##%rule_genmodule_includes modname=sysexp modtype=library
+
+#MM
+workbench-tools-sysexplorer-gen-includes: $(GENDIR)/$(CURDIR)/.includes-generated
+
+$(GENDIR)/$(CURDIR)/.includes-generated : $(GENMODULE) $(SRCDIR)/$(CURDIR)/sysexp.conf
+	@$(ECHO) "Generating SysExp.library Private API headers..."
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/sysexp.conf -d $(GENDIR)/$(CURDIR)/include writeincludes sysexp library
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/sysexp.conf -d $(GENDIR)/$(CURDIR)/include writelibdefs sysexp library
+	@$(TOUCH) $@
+
+#MM
+workbench-tools-sysexplorer-gen-setup:
+	%mkdirs_q $(GENDIR)/$(CURDIR)/include/clib $(GENDIR)/$(CURDIR)/include/defines $(GENDIR)/$(CURDIR)/include/inline $(GENDIR)/$(CURDIR)/include/proto
+
+#MM workbench-tools-sysexplorer-app : iconset-$(AROS_TARGET_ICONSET)-additional-icons-aros-tools-SysExplorer kernel-hidd-storage-includes
+
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES)
+USER_LDFLAGS :=
+%build_prog mmake=workbench-tools-sysexplorer-app \
     progname=SysExplorer targetdir=$(EXEDIR) \
     files=$(FILES)
+
 
 %common

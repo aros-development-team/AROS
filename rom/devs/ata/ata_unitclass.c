@@ -4,9 +4,15 @@
 */
 
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <hidd/storage.h>
 #include <hidd/ata.h>
 #include <oop/oop.h>
-#include <proto/exec.h>
 
 #include "ata.h"
 
@@ -58,11 +64,15 @@ static BYTE ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
 
 OOP_Object *ATAUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    D(bug("[ATA:Unit] %s()\n", __PRETTY_FUNCTION__));
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
     if (o)
     {
         struct ataBase *ATABase = cl->UserData;
         struct ata_Unit *unit = OOP_INST_DATA(cl, o);
+
+        D(bug("[ATA:Unit] %s: instance @ 0x%p\n", __PRETTY_FUNCTION__, o));
 
         unit->au_Drive = AllocPooled(ATABase->ata_MemPool, sizeof(struct DriveIdent));
         if (!unit->au_Drive)
@@ -97,113 +107,12 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct ataBase *ATABase = cl->UserData;
     struct ata_Unit *unit = OOP_INST_DATA(cl, o);
 
+    D(bug("[ATA:Unit] %s()\n", __PRETTY_FUNCTION__));
+
     FreePooled(ATABase->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
     OOP_DoSuperMethod(cl, o, msg);
 }
 
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATAUnit_Number
-
-    SYNOPSIS
-        [..G], ULONG
-
-    LOCATION
-        IID_Hidd_ATAUnit
-
-    FUNCTION
-        Returns number of ata.device unit corresponding to this device.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATAUnit_Model
-
-    SYNOPSIS
-        [..G], CONST_STRPTR
-
-    LOCATION
-        IID_Hidd_ATAUnit
-
-    FUNCTION
-        Returns model ID string for this device.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        aoHidd_ATAUnit_Revision, aoHidd_ATAUnit_Serial
-
-    INTERNALS
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATAUnit_Revision
-
-    SYNOPSIS
-        [..G], CONST_STRPTR
-
-    LOCATION
-        IID_Hidd_ATAUnit
-
-    FUNCTION
-        Returns revision ID string for this device.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        aoHidd_ATAUnit_Model, aoHidd_ATAUnit_Serial
-
-    INTERNALS
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATAUnit_Serial
-
-    SYNOPSIS
-        [..G], CONST_STRPTR
-
-    LOCATION
-        IID_Hidd_ATAUnit
-
-    FUNCTION
-        Returns serial number string for this device.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        aoHidd_ATAUnit_Model, aoHidd_ATAUnit_Revision
-
-    INTERNALS
-
-*****************************************************************************************/
 /*****************************************************************************************
 
     NAME
@@ -240,31 +149,6 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     SEE ALSO
         aoHidd_ATAUnit_ConfiguredModes
-
-    INTERNALS
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATAUnit_Removable
-
-    SYNOPSIS
-        [..G], BOOL
-
-    LOCATION
-        IID_Hidd_ATAUnit
-
-    FUNCTION
-        Tells if this drive has removable media.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
 
     INTERNALS
 
@@ -332,30 +216,59 @@ void ATAUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct ata_Unit *unit = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    Hidd_ATAUnit_Switch (msg->attrID, idx)
+    Hidd_StorageUnit_Switch (msg->attrID, idx)
     {
-    case aoHidd_ATAUnit_Number:
+    case aoHidd_StorageUnit_Device:
+        *msg->storage = (IPTR)"ata.device";
+        return;
+
+    case aoHidd_StorageUnit_Number:
         *msg->storage = unit->au_UnitNum;
         return;
 
-    case aoHidd_ATAUnit_Model:
+    case aoHidd_StorageUnit_Type:
+        {
+            UBYTE u = unit->au_UnitNum & 1;
+            switch (unit->au_Bus->ab_Dev[u])
+            {
+                case DEV_SATA:
+                case DEV_ATA:
+                    *msg->storage = vHidd_StorageUnit_Type_FixedDisk;
+                    break;
+
+                case DEV_SATAPI:
+                case DEV_ATAPI:
+                    *msg->storage = vHidd_StorageUnit_Type_OpticalDisc;
+                    break;
+
+                default:
+                    *msg->storage = vHidd_StorageUnit_Type_Unknown;
+                    break;
+            }
+            return;
+        }
+
+    case aoHidd_StorageUnit_Model:
         *msg->storage = (IPTR)unit->au_Model;
         return;
 
-    case aoHidd_ATAUnit_Revision:
+    case aoHidd_StorageUnit_Revision:
         *msg->storage = (IPTR)unit->au_FirmwareRev;
         return;
 
-    case aoHidd_ATAUnit_Serial:
+    case aoHidd_StorageUnit_Serial:
         *msg->storage = (IPTR)unit->au_SerialNumber;
         return;
 
+    case aoHidd_StorageUnit_Removable:
+        *msg->storage = (unit->au_Flags & AF_Removable) ? TRUE : FALSE;
+        return;
+    }
+
+    Hidd_ATAUnit_Switch (msg->attrID, idx)
+    {
     case aoHidd_ATAUnit_XferModes:
         *msg->storage = unit->au_XferModes;
-        return;
-
-    case aoHidd_ATAUnit_Removable:
-        *msg->storage = (unit->au_Flags & AF_Removable) ? TRUE : FALSE;
         return;
 
     case aoHidd_ATAUnit_MultiSector:

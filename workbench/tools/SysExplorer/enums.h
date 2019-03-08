@@ -1,4 +1,11 @@
+#ifndef SYSEXP_ENUMS_H
+#define SYSEXP_ENUMS_H
 
+#include <oop/oop.h>
+#include <mui/NListtree_mcc.h>
+
+typedef void (*CLASS_ENUMFUNC)(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent);
+typedef BOOL (*CLASS_VALIDFUNC)(OOP_Object *obj, ULONG *flags);
 
 struct ObjectUserData
 {
@@ -13,23 +20,23 @@ struct InsertObjectMsg
     struct MUI_CustomClass *winClass;
 };
 
-typedef void (*CLASS_ENUMFUNC)(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent);
-typedef BOOL (*CLASS_VALIDFUNC)(OOP_Object *obj, ULONG *flags);
-
 struct ClassHandlerNode
 {
     struct Node ch_Node; // ln_Name = classID;
-    struct MUI_CustomClass **muiClass;
+    struct MUI_CustomClass *muiClass;
     CLASS_ENUMFUNC enumFunc;
     CLASS_VALIDFUNC validFunc;
 };
 
-extern Object *hidd_tree;
-extern int sysExplGlobalCount;
+struct SysexpHook_data
+{
+    struct SysexpBase *hd_sysexpbase; 
+};
 
-extern BOOL RegisterClassHandler(CONST_STRPTR, BYTE pri, struct MUI_CustomClass **, CLASS_ENUMFUNC enumfunc, CLASS_VALIDFUNC validfunc);
-extern struct ClassHandlerNode *FindClassHandler(CONST_STRPTR, struct List *);
-extern struct ClassHandlerNode *FindObjectHandler(OOP_Object *, struct List *);
+struct SysexpEnum_data
+{
+    struct SysexpBase *ed_sysexpbase; 
+    struct List *ed_list;
+};
 
-extern void hwEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn);
-
+#endif /*  SYSEXP_ENUMS_H */

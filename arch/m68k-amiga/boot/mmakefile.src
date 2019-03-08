@@ -20,6 +20,8 @@ Q ?= @
 #MM     kernel-amiga-m68k-uaegfx-kobj \
 #MM     kernel-amiga-m68k-wbtag-kobj \
 #MM     kernel-aros-kobj \
+#MM     kernel-hidd-bus-kobj \
+#MM     kernel-hidd-base-kobj \
 #MM     kernel-ata-kobj \
 #MM     kernel-audio-kobj \
 #MM     kernel-battclock-kobj \
@@ -124,7 +126,7 @@ AFILES=rom_entry rom_init cpu_detect superstack_swap
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
-KHIDDS  := hiddclass gfx keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
+KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass keyboard mouse uaegfx
 KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
@@ -149,7 +151,7 @@ KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
             setpatch
 KDEVS   := cd ata
 KHNDLRS := cdfs
-KHIDDS  :=
+KHIDDS  := bus storage system
 KRSRCS  := shellcommands workbook wbtag
 KHOOKS  := alert
 

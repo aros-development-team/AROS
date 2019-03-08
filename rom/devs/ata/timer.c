@@ -6,12 +6,18 @@
     Lang: English
 */
 
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <proto/timer.h>
+
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <exec/io.h>
-#include <proto/exec.h>
-#include <aros/debug.h>
-#include <proto/timer.h>
 
 #include "timer.h"
 #include "ata.h"

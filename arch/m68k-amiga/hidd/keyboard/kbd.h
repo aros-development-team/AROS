@@ -2,7 +2,7 @@
 #define HIDD_KBD_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
@@ -65,7 +65,10 @@ struct kbd_staticdata
 
     OOP_Class *kbdclass;
     OOP_Object *kbdhidd;
+
+    OOP_AttrBase hiddAB;
     OOP_AttrBase hiddKbdAB;
+
     OOP_MethodID hiddKbdBase;
 
     BPTR                cs_SegList;
@@ -94,6 +97,17 @@ VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
 /****************************************************************************************/
 
 #define XSD(cl) 	(&((struct kbdbase *)cl->UserData)->ksd)
+
+#undef HiddAttrBase
+#define HiddAttrBase	(XSD(cl)->hiddAB)
+
+#undef HiddKbdAB
+#define HiddKbdAB	(XSD(cl)->hiddKbdAB)
+
+#undef HiddKbdBase
+#define HiddKbdBase	(XSD(cl)->hiddKbdBase)
+
+#define OOPBase		(XSD(cl)->cs_OOPBase)
 
 /****************************************************************************************/
 

@@ -1,10 +1,13 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main mouse class.
     Lang: English.
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -29,16 +32,6 @@
 
 #include "mouse.h"
 
-#include LC_LIBDEFS_FILE
-
-#define DEBUG 0
-#include <aros/debug.h>
-
-#ifdef HiddMouseAB
-#undef HiddMouseAB
-#endif
-#define HiddMouseAB	(MSD(cl)->hiddMouseAB)
-
 /* defines for buttonstate */
 
 #define LEFT_BUTTON 	1
@@ -61,43 +54,56 @@ static AROS_INTH1(mouse_vblank, struct mouse_data *, mousedata)
     y -= (BYTE)(mousedata->joydat >> 8);
     x = (BYTE)(joydat & 0xff);
     x -= (BYTE)(mousedata->joydat & 0xff);
-	
+        
     mousedata->joydat = joydat;
 
     e->x = x;
     e->y = y;
     if (e->x || e->y) {
-	e->button = vHidd_Mouse_NoButton;
-	e->type = vHidd_Mouse_Motion;
-	mousedata->mouse_callback(mousedata->callbackdata, e);
+        e->button = vHidd_Mouse_NoButton;
+        e->type = vHidd_Mouse_Motion;
+        mousedata->mouse_callback(mousedata->callbackdata, e);
     }	
 
     if ((cia->ciapra & (0x40 << mousedata->port)) == 0)
-    	buttons |= LEFT_BUTTON;
+        buttons |= LEFT_BUTTON;
     if ((potinp & (0x0400 << (mousedata->port * 4))) == 0)
-    	buttons |= RIGHT_BUTTON;
+        buttons |= RIGHT_BUTTON;
     if ((potinp & (0x0100 << (mousedata->port * 4))) == 0)
-    	buttons |= MIDDLE_BUTTON;
+        buttons |= MIDDLE_BUTTON;
     if (buttons != mousedata->buttons) {
-	int i;
-	for (i = 0; i < 3; i++) {
-	    if ((buttons & (1 << i)) != (mousedata->buttons & (1 << i))) {
-            	e->button = vHidd_Mouse_Button1 + i;
-            	e->type = (buttons & (1 << i)) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
-            	mousedata->mouse_callback(mousedata->callbackdata, e);
+        int i;
+        for (i = 0; i < 3; i++) {
+            if ((buttons & (1 << i)) != (mousedata->buttons & (1 << i))) {
+                e->button = vHidd_Mouse_Button1 + i;
+                e->type = (buttons & (1 << i)) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
+                mousedata->mouse_callback(mousedata->callbackdata, e);
             }
-   	}
+        }
         mousedata->buttons = buttons;
     }
 
     return 0;
-	
+        
     AROS_INTFUNC_EXIT
 }
 
 /***** Mouse::New()  ***************************************/
 OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    /* Add some descriptional tags to our attributes */
+    struct TagItem kbd_tags[] =
+    {
+        {aHidd_Name        , (IPTR)"AmigaMouse"                     },
+        {aHidd_HardwareName, (IPTR)"Amiga(tm) Serial Mouse"},
+        {TAG_MORE          , (IPTR)msg->attrList               }
+    };
+    struct pRoot_New new_msg =
+    {
+        .mID = msg->mID,
+        .attrList = kbd_tags
+    };
+
     BOOL has_mouse_hidd = FALSE;
     struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
 
@@ -119,7 +125,7 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         ReturnPtr("_Mouse::New", OOP_Object *, NULL); /* Should have some error code here */
     }
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
     if (o)
     {
         struct mouse_data   *data = OOP_INST_DATA(cl, o);
@@ -154,35 +160,35 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
         } /* while (tags to process) */
 
-	PotgoBase = OpenResource("potgo.resource");
-	if (!PotgoBase)
-	    Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
+        PotgoBase = OpenResource("potgo.resource");
+        if (!PotgoBase)
+            Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
 
-	MSD(cl)->potgo = PotgoBase;
+        MSD(cl)->potgo = PotgoBase;
 
-	data->port = 0;
-	potgobits = 0x0f00 << (data->port * 4);
-	if (AllocPotBits(potgobits) != potgobits)
-	    Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-			
-	WritePotgo(potgobits, potgobits);
-	cia->ciaddra &= ~(0x40 << data->port); // left button line = input
-	cia->ciapra |= 0x40 << data->port; // left button line = one
-	custom->potgo = 0xff00; // other buttons = output and set to ones
-	data->joydat = data->port ? custom->joy1dat : custom->joy0dat;
+        data->port = 0;
+        potgobits = 0x0f00 << (data->port * 4);
+        if (AllocPotBits(potgobits) != potgobits)
+            Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+
+        WritePotgo(potgobits, potgobits);
+        cia->ciaddra &= ~(0x40 << data->port); // left button line = input
+        cia->ciapra |= 0x40 << data->port; // left button line = one
+        custom->potgo = 0xff00; // other buttons = output and set to ones
+        data->joydat = data->port ? custom->joy1dat : custom->joy0dat;
    
-   	MSD(cl)->potgobits = potgobits;
-  	inter = &MSD(cl)->mouseint;
+        MSD(cl)->potgobits = potgobits;
+        inter = &MSD(cl)->mouseint;
  
-       	inter->is_Code         = (APTR)mouse_vblank;
-    	inter->is_Data         = data;
-    	inter->is_Node.ln_Name = "Mouse VBlank server";
-    	inter->is_Node.ln_Pri  = 10;
-    	inter->is_Node.ln_Type = NT_INTERRUPT;
-	
- 	AddIntServer(INTB_VERTB, inter);
-   
-       	ObtainSemaphore( &MSD(cl)->sema);
+        inter->is_Code         = (APTR)mouse_vblank;
+        inter->is_Data         = data;
+        inter->is_Node.ln_Name = "Mouse VBlank server";
+        inter->is_Node.ln_Pri  = 10;
+        inter->is_Node.ln_Type = NT_INTERRUPT;
+
+        AddIntServer(INTB_VERTB, inter);
+
+        ObtainSemaphore( &MSD(cl)->sema);
         MSD(cl)->mousehidd = o;
         ReleaseSemaphore( &MSD(cl)->sema);
     }
@@ -196,9 +202,9 @@ VOID AmigaMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     ObtainSemaphore(&MSD(cl)->sema);
     MSD(cl)->mousehidd = NULL;
     if (MSD(cl)->potgo) {
-    	struct PotgoBase *PotgoBase = MSD(cl)->potgo;
-	    RemIntServer(INTB_VERTB, &MSD(cl)->mouseint);
-	    FreePotBits(MSD(cl)->potgobits);
+        struct PotgoBase *PotgoBase = MSD(cl)->potgo;
+            RemIntServer(INTB_VERTB, &MSD(cl)->mouseint);
+            FreePotBits(MSD(cl)->potgobits);
     }
     ReleaseSemaphore( &MSD(cl)->sema);
 
@@ -213,61 +219,25 @@ VOID AmigaMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
     {
-	switch (idx)
-	{
-	    case aoHidd_Mouse_IrqHandler:
-		*msg->storage = (IPTR)data->mouse_callback;
-		return;
+        switch (idx)
+        {
+            case aoHidd_Mouse_IrqHandler:
+                *msg->storage = (IPTR)data->mouse_callback;
+                return;
 
-	    case aoHidd_Mouse_IrqHandlerData:
-		*msg->storage = (IPTR)data->callbackdata;
-		return;
+            case aoHidd_Mouse_IrqHandlerData:
+                *msg->storage = (IPTR)data->callbackdata;
+                return;
 
-	    case aoHidd_Mouse_State:
-		return;
+            case aoHidd_Mouse_State:
+                return;
 
-    	    case aoHidd_Mouse_RelativeCoords:
-	    	*msg->storage = TRUE;
-		return;
-	}
+            case aoHidd_Mouse_RelativeCoords:
+                *msg->storage = TRUE;
+                return;
+        }
 
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
-
-/********************  init_kbdclass()  *********************************/
-
-static int AmigaMouse_InitAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);
-    struct OOP_ABDescr attrbases[] =
-    {
-        { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
-        { NULL	    	, NULL      	    }
-    };
-
-    EnterFunc(bug("AmigaMouse_InitAttrs\n"));
-
-    ReturnInt("AmigaMouse_InitAttr", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/*************** free_kbdclass()  **********************************/
-static int AmigaMouse_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);
-    struct OOP_ABDescr attrbases[] =
-    {
-        { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
-        { NULL	    	, NULL      	    }
-    };
-
-    EnterFunc(bug("AmigaMouse_InitClass\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-
-    return TRUE;
-}
-
-ADD2INITLIB(AmigaMouse_InitAttrs, 0)
-ADD2EXPUNGELIB(AmigaMouse_ExpungeAttrs, 0)

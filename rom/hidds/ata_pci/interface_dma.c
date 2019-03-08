@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved
     $Id$
 
     Desc: Generic PCI-DMA ATA controller driver
@@ -7,9 +7,14 @@
 */
 
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
 #include <devices/scsidisk.h>
 #include <exec/exec.h>
-#include <proto/exec.h>
 
 #include "interface_dma.h"
 
@@ -20,12 +25,12 @@
  */
 static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
 {
-    ULONG tmp = 0, rem = 0;
-    ULONG flg = read ? DMA_ReadFromRAM : 0;
-    IPTR phy_mem;
+    ULONG rem = 0, flg = read ? DMA_ReadFromRAM : 0;
+    volatile ULONG tmp = 0;
     LONG items = 0;
+    IPTR phy_mem;
 
-    D(bug("[PCI-ATA] dma_Setup(addr %p, len %d, PRDEntry  @ %p for %s)\n", addr, len, array, read ? "READ" : "WRITE"));
+    D(bug("[ATA:PCI] dma_Setup(addr %p, len %d, PRDEntry  @ %p for %s)\n", addr, len, array, read ? "READ" : "WRITE"));
 
     /*
      * in future you may have to put this in prd construction procedure
@@ -33,9 +38,9 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
     while (0 < len)
     {
         tmp = len;
-        phy_mem = (IPTR)CachePreDMA(addr, &tmp, flg);
+        phy_mem = (IPTR)CachePreDMA(addr, (ULONG *)&tmp, flg);
 
-        D(bug("[PCI-ATA] dma_Setup: Translating V:%p > P:%p (%ld bytes)\n", addr, phy_mem, tmp));
+        D(bug("[ATA:PCI] dma_Setup: Translating V:%p > P:%p (%ld bytes)\n", addr, phy_mem, tmp));
         /*
          * update all addresses for the next call
          */
@@ -53,12 +58,12 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
              */
             if (phy_mem > 0xffffffffull || (phy_mem + tmp) > 0xffffffffull)
             {
-                D(bug("[PCI-ATA] dma_Setup: ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n"));
+                D(bug("[ATA:PCI] dma_Setup: ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n"));
                 return 0;
             }
             if (items > PRD_MAX)
             {
-                D(bug("[PCI-ATA] dma_Setup: ERROR: ATA DMA PRD TABLE SIZE TOO LARGE\n"));
+                D(bug("[ATA:PCI] dma_Setup: ERROR: ATA DMA PRD TABLE SIZE TOO LARGE\n"));
                 return 0;
             }
 
@@ -72,7 +77,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
             /*
              * update PRD with address and remainder
              */
-            D(bug("[PCI-ATA] dma_Setup: Inserting into PRD Table: %p / %d @ %p\n", phy_mem, rem, array));
+            D(bug("[ATA:PCI] dma_Setup: Inserting into PRD Table: %p / %d @ %p\n", phy_mem, rem, array));
             array->prde_Address = AROS_LONG2LE(phy_mem);
             array->prde_Length  = AROS_LONG2LE((rem & 0xffff));
             ++array;
@@ -91,7 +96,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
         --array;
         array->prde_Length |= AROS_LONG2LE(PRDE_EOT);
     }
-    D(bug("[PCI-ATA] dma_Setup: PRD Table set - %u items in total.\n", items));
+    D(bug("[ATA:PCI] dma_Setup: PRD Table set - %u items in total.\n", items));
 
     /*
      * PRD table all set.
@@ -103,7 +108,7 @@ BOOL dma_SetupPRDSize(struct dma_data *unit, APTR buffer, IPTR size, BOOL read)
 {
     LONG items = 0;
     IPTR prd_phys;
-    ULONG length;
+    volatile ULONG length;
 
     items = dma_Setup(buffer, size, read, unit->ab_PRD);
 
@@ -112,7 +117,7 @@ BOOL dma_SetupPRDSize(struct dma_data *unit, APTR buffer, IPTR size, BOOL read)
 
     length = items * sizeof(struct PRDEntry);
 
-    prd_phys = (IPTR)CachePreDMA(unit->ab_PRD, &length, DMA_ReadFromRAM);
+    prd_phys = (IPTR)CachePreDMA(unit->ab_PRD, (ULONG *)&length, DMA_ReadFromRAM);
 
     outl(prd_phys, dma_PRD + unit->au_DMAPort);
     outb(read ? DMA_WRITE : DMA_READ, dma_Command + unit->au_DMAPort); /* inverse logic */
@@ -122,7 +127,8 @@ BOOL dma_SetupPRDSize(struct dma_data *unit, APTR buffer, IPTR size, BOOL read)
 
 void dma_Cleanup(struct dma_data *unit, APTR addr, IPTR len, BOOL read)
 {
-    ULONG tmp, flg;
+    volatile ULONG tmp;
+    ULONG flg;
     port_t port = dma_Command + unit->au_DMAPort;
 
     /* Stop DMA engine */
@@ -132,7 +138,7 @@ void dma_Cleanup(struct dma_data *unit, APTR addr, IPTR len, BOOL read)
     while (len > 0)
     {
         tmp = len;
-        CachePostDMA(addr, &tmp, flg);
+        CachePostDMA(addr, (ULONG *)&tmp, flg);
         addr = &((UBYTE*)addr)[tmp];
         len -= tmp;
         flg |= DMA_Continue;

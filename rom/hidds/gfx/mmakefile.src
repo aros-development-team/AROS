@@ -22,7 +22,8 @@ FILES       := \
                 gfx_syncclass
 
 NOWARN_FLAGS := $(NOWARN_PARENTHESES)
-USER_CFLAGS      := $(NOWARN_FLAGS) -DAROS_USE_OOP \
+USER_CFLAGS      := $(NOWARN_FLAGS)
+USER_CPPFLAGS:= -DAROS_USE_OOP \
                     -D__GRAPHICS_NOLIBBASE__ \
                     -D__OOP_NOLIBBASE__ \
                     -D__UTILITY_NOLIBBASE__

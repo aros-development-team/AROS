@@ -116,27 +116,34 @@ static void ata_RemoveGayleInterrupt(struct ATA_BusData *bus)
     RemIntServer(INTB_PORTS, irq);
 }
 
+/* Class Methods */
+
 OOP_Object *GAYLEATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct ataBase *base = cl->UserData;
+    struct ata_ProbedBus *bus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
+
     D(bug("[ATA:Gayle] %s()\n", __func__);)
+
+    if (!bus)
+        return NULL;
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
-    D(bug("[ATA:Gayle] %s: %p\n", __func__, o);)
     if (o)
     {
-        struct ataBase *base = cl->UserData;
         struct ATA_BusData *data = OOP_INST_DATA(cl, o);
         //OOP_MethodID mDispose;
 
-        /* No check because we always supply this */
-        data->bus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
+        data->bus = bus;
         data->gaylebase = data->bus->port;
         data->gayleirqbase = data->bus->gayleirqbase;
         ata_CreateGayleInterrupt(data, 0);
-        return o;
+
         //mDispose = msg->mID - moRoot_New + moRoot_Dispose;
         //OOP_DoSuperMethod(cl, o, &mDispose);
     }
-    return NULL;
+    D(bug("[ATA:Gayle] %s: Instance @ %p\n", __func__, o);)
+    return o;
 }
 
 void GAYLEATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -165,13 +172,16 @@ void GAYLEATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     case aoHidd_ATABus_Use80Wire:
         *msg->storage = FALSE;
         return;
+
     case aoHidd_ATABus_UseDMA:
         *msg->storage = FALSE;
         return;
+
     case aoHidd_ATABus_Use32Bit:
         *msg->storage = TRUE;
         return;
     }
+
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 

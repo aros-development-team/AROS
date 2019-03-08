@@ -8,21 +8,21 @@ include $(SRCDIR)/config/aros.cfg
 # Rules to create kickstart packages for pc-i386
 #
 
-#MM- kernel-link-pc-i386 :	\
-#MM     kernel-pc-i386-kernel-gz \
-#MM	kernel-bsp-pc-i386-gz	\
-#MM     kernel-legacy-pc-i386-gz \
-#MM	kernel-package-base-gz	\
-#MM	kernel-package-usb-gz	\
+#MM- kernel-link-pc-i386 :			\
+#MM     kernel-pc-i386-kernel-gz	\
+#MM	kernel-bsp-pc-i386-gz			\
+#MM     kernel-legacy-pc-i386-gz 	\
+#MM	kernel-package-base-gz			\
+#MM	kernel-package-usb-gz			\
 #MM	kernel-package-fs-gz
 
 #
 # The kernel
 #
 
-#MM- kernel-pc-i386-kernel:	\
-#MM     kernel-kernel-kobj	\
-#MM     kernel-exec-kobj \
+#MM- kernel-pc-i386-kernel:			\
+#MM     kernel-kernel-kobj			\
+#MM     kernel-exec-kobj			\
 #MM     kernel-task-kobj
 
 %link_kickstart mmake=kernel-pc-i386-kernel file=$(AROSARCHDIR)/kernel \
@@ -32,27 +32,28 @@ include $(SRCDIR)/config/aros.cfg
 # Board support package
 #
 
-#MM- kernel-bsp-pc-i386 :		\
-#MM	linklibs			\
-#MM	kernel-hidd-base    		\
-#MM	kernel-battclock    		\
-#MM	kernel-processor    		\
-#MM	kernel-timer    		\
-#MM	kernel-expansion    		\
-#MM	kernel-efi     			\
-#MM	kernel-pc-acpica   		\
-#MM	kernel-hidd-acpibutton		\
-#MM	kernel-pc-hpet     		\
-#MM	kernel-ata      		\
-#MM     kernel-hidd-pciata              \
-#MM	kernel-ahci      		\
-#MM	kernel-pc-i386-serial     	\
-#MM	kernel-pc-i386-parallel     	\
-#MM     kernel-hidd-i8042               \
-#MM     kernel-hidd-pci     		\
-#MM     kernel-hidd-pci-pcipc    	\
-#MM     kernel-hidd-vesagfx      	\
-#MM     kernel-hidd-vgagfx    
+#MM- kernel-bsp-pc-i386 :			\
+#MM	linklibs						\
+#MM kernel-hidd-bus					\
+#MM kernel-hidd-base    			\
+#MM	kernel-battclock    			\
+#MM	kernel-processor    			\
+#MM	kernel-timer    				\
+#MM	kernel-expansion    			\
+#MM	kernel-efi     					\
+#MM	kernel-pc-acpica   				\
+#MM	kernel-hidd-acpibutton			\
+#MM	kernel-pc-hpet     				\
+#MM	kernel-ata      				\
+#MM kernel-hidd-pciata				\
+#MM	kernel-ahci      				\
+#MM	kernel-pc-i386-serial			\
+#MM	kernel-pc-i386-parallel			\
+#MM kernel-hidd-i8042				\
+#MM kernel-hidd-pci					\
+#MM kernel-hidd-pci-pcipc			\
+#MM kernel-hidd-vesagfx				\
+#MM kernel-hidd-vgagfx    
 
 KRSRCS      := efi hpet
 KRSRCS_ARCH := battclock processor
@@ -60,7 +61,7 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ahci ata
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci i8042 vesagfx vgagfx pci pcipc serial parallel storage system acpibutton
+KHIDDS      := ata_pci bus i8042 vesagfx vgagfx pci pcipc serial parallel storage system acpibutton
 
 %make_package mmake=kernel-bsp-pc-i386 file=$(AROSARCHDIR)/aros-bsp.pkg \
     devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \

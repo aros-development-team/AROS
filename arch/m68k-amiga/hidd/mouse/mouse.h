@@ -2,7 +2,7 @@
 #define _MOUSE_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -52,23 +52,25 @@ struct pHidd_Mouse_HandleEvent
     OOP_MethodID mID;
     ULONG event;
 };
-	    
+            
 VOID Hidd_Mouse_HandleEvent(OOP_Object *o, ULONG event);
-	    
+            
 /* misc */
 
 struct mouse_staticdata
 {
     struct SignalSemaphore      sema; /* Protexting this whole struct */
-	struct Interrupt mouseint;
-	struct PotgoBase *potgo;
-	UWORD potgobits;
+        struct Interrupt mouseint;
+        struct PotgoBase *potgo;
+        UWORD potgobits;
      
-    OOP_AttrBase	hiddMouseAB;
 
     OOP_Class		*mouseclass;
 
     OOP_Object		*mousehidd;
+
+    OOP_AttrBase	hiddAB;
+    OOP_AttrBase	hiddMouseAB;
 
     OOP_MethodID         hiddMouseBase;
 
@@ -97,6 +99,17 @@ struct mouse_data
 };
 
 #define MSD(cl)         (&((struct mousebase *)cl->UserData)->msd)
+
+#undef HiddAttrBase
+#define HiddAttrBase	(MSD(cl)->hiddAB)
+
+#undef HiddMouseAB
+#define HiddMouseAB	(MSD(cl)->hiddMouseAB)
+
+#undef HiddMouseBase
+#define HiddMouseBase	(MSD(cl)->hiddMouseBase)
+
+#define OOPBase		(MSD(cl)->cs_OOPBase)
 
 #endif /* _MOUSE_H */
 

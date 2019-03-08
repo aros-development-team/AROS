@@ -28,12 +28,18 @@ struct ataBase
 {
     struct Library  lib;
 
+    OOP_Class      *ataClass;
     OOP_Class      *GayleBusClass;
     OOP_Class      *FastATABusClass;
 
+    OOP_Object	   *storageRoot;
+
     OOP_AttrBase    hiddAttrBase;
     OOP_AttrBase    ATABusAttrBase;
+    OOP_AttrBase    hwAttrBase;
+
     OOP_MethodID    HWMethodBase;
+    OOP_MethodID    HiddSCMethodBase;
 
     struct Library *cs_OOPBase;
     struct Library *cs_UtilityBase;
@@ -41,11 +47,17 @@ struct ataBase
 
 #undef HiddAttrBase
 #undef HiddATABusAB
+#undef HWAttrBase
+#define HiddAttrBase          		(base->hiddAttrBase)
+#define HiddATABusAB          		(base->ATABusAttrBase)
+#define HWAttrBase          		(base->hwAttrBase)
+
 #undef HWBase
-#define HiddAttrBase          (base->hiddAttrBase)
-#define HiddATABusAB          (base->ATABusAttrBase)
-#define HWBase                (base->HWMethodBase)
-#define OOPBase               (base->cs_OOPBase)
-#define UtilityBase           (base->cs_UtilityBase)
+#undef HiddStorageControllerBase
+#define HWBase                		(base->HWMethodBase)
+#define HiddStorageControllerBase	(base->HiddSCMethodBase)
+
+#define OOPBase               		(base->cs_OOPBase)
+#define UtilityBase           		(base->cs_UtilityBase)
 
 #endif /* !BUS_CLASS_H */

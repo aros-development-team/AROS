@@ -1,25 +1,31 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
+#include <proto/kernel.h>
+#include <proto/oop.h>
+#include <proto/utility.h>
+
 #include <hardware/ata.h>
 #include <hidd/ata.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
-#include <proto/exec.h>
-#include <proto/kernel.h>
-#include <proto/oop.h>
-#include <proto/utility.h>
 
 #include "bus_class.h"
 #include "interface_pio.h"
 #include "interface_dma.h"
 #include "pci.h"
 
-AROS_INTH1(ata_PCI_Interrupt, struct ATA_BusData *, data)
+AROS_INTH1(ata_PCI_Interrupt, struct PCIATABusData *, data)
 {
     AROS_INTFUNC_INIT
 
@@ -65,28 +71,35 @@ AROS_INTH1(ata_PCI_Interrupt, struct ATA_BusData *, data)
     AROS_INTFUNC_EXIT
 }
 
-void ata_Raw_Interrupt(struct ATA_BusData *data, void *unused)
+void ata_Raw_Interrupt(struct PCIATABusData *data, void *unused)
 {
     AROS_INTC1(ata_PCI_Interrupt, data);
 }
 
-OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PCIATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
+    struct atapciBase *base = cl->UserData;
+    struct ata_ProbedBus *pBus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
+    D(bug("[ATA:PCI:Bus] %s()\n", __PRETTY_FUNCTION__));
+
+    if (!pBus)
+        return NULL;
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-        struct ataBase *base = cl->UserData;
-        struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+        struct PCIATABusData *data = OOP_INST_DATA(cl, o);
         OOP_MethodID mDispose;
 
-        /* No check because we always supply this */
-        data->bus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
+        D(bug("[ATA:PCI:Bus] %s: instance @ 0x%p\n", __PRETTY_FUNCTION__, o));
+
+        data->bus = pBus;
 
         if (data->bus->atapb_DMABase)
         {
             /*
              * FIXME: Currently ata.device does not support shared DMA.
-             * In order to make it working, we disable DMA for secondary channel.
+             * In order to make it work, we disable DMA for secondary channel.
              */
             if (data->bus->atapb_BusNo > 0)
             {
@@ -94,9 +107,9 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
                 if (dmaStatus & DMAF_Simplex)
                 {
-                    bug("[PCI-ATA] WARNING: Controller only supports "
+                    bug("[ATA:PCI:Bus] WARNING: Controller only supports "
                         "DMA on one bus at a time. DMAStatus=0x%02X\n", dmaStatus);
-                    bug("[PCI-ATA] DMA for secondary bus disabled\n");
+                    bug("[ATA:PCI:Bus] DMA for secondary bus disabled\n");
 
                     goto nodma;
                 }
@@ -107,6 +120,14 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                         aHidd_PCIDevice_Driver, (IPTR *)&data->pciDriver);
             data->dmaBuf = HIDD_PCIDriver_AllocPCIMem(data->pciDriver,
                                                       (PRD_MAX + 1) * 2 * sizeof(struct PRDEntry));
+
+            /* If the DMA buffer is not in the first 4G, we cannot do DMA */
+            if ((IPTR)data->dmaBuf != (ULONG)(IPTR)data->dmaBuf)
+            {
+                HIDD_PCIDriver_FreePCIMem(data->pciDriver, data->dmaBuf);
+                data->dmaBuf = NULL;
+            }
+	    D(bug("[ATA:PCI:Bus] %s: DMA Buf @ 0x%p\n", __PRETTY_FUNCTION__, data->dmaBuf));
         }
 nodma:
         if (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED)
@@ -162,13 +183,13 @@ nodma:
     return NULL;
 }
 
-void DeviceFree(struct PCIDeviceRef *ref, struct ataBase *base)
+void DeviceFree(struct PCIDeviceRef *ref, struct atapciBase *base)
 {
     HIDD_PCIDevice_Release(ref->ref_Device);
     FreeMem(ref, sizeof(struct PCIDeviceRef));
 }
 
-void DeviceUnref(struct PCIDeviceRef *ref, struct ataBase *base)
+void DeviceUnref(struct PCIDeviceRef *ref, struct atapciBase *base)
 {
     ULONG count;
 
@@ -187,10 +208,12 @@ void DeviceUnref(struct PCIDeviceRef *ref, struct ataBase *base)
         DeviceFree(ref, base);
 }
 
-void PCIATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+void PCIATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ataBase *base = cl->UserData;
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct atapciBase *base = cl->UserData;
+    struct PCIATABusData *data = OOP_INST_DATA(cl, o);
+
+    D(bug("[ATA:PCI:Bus] %s()\n", __PRETTY_FUNCTION__));
 
     if (data->dmaBuf)
         HIDD_PCIDriver_FreePCIMem(data->pciDriver, data->dmaBuf);
@@ -211,10 +234,10 @@ void PCIATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
 }
 
-void PCIATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+void PCIATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct ataBase *base = cl->UserData;
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct atapciBase *base = cl->UserData;
+    struct PCIATABusData *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
     Hidd_ATABus_Switch(msg->attrID, idx)
@@ -231,7 +254,7 @@ void PCIATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             UWORD crmask = (IOCFG_PCR0|IOCFG_PCR1) << (data->bus->atapb_BusNo << 1);
             UWORD cfgreg = HIDD_PCIDevice_ReadConfigWord(data->bus->atapb_Device->ref_Device, IDE_IO_CFG);
 
-            D(bug("[PCI-ATA] Cable report bits 0x%04X\n", cfgreg & crmask));
+            D(bug("[ATA:PCI:Bus] Cable report bits 0x%04X\n", cfgreg & crmask));
             *msg->storage = (cfgreg & crmask) ? TRUE : FALSE;
         }
         else
@@ -253,10 +276,10 @@ void PCIATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
-void PCIATA__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+void PCIATABus__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
-    struct ataBase *base = cl->UserData;
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct atapciBase *base = cl->UserData;
+    struct PCIATABusData *data = OOP_INST_DATA(cl, o);
     struct TagItem *tstate = msg->attrList;
     struct TagItem *tag;
 
@@ -277,9 +300,12 @@ void PCIATA__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     }
 }
 
-APTR PCIATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+APTR PCIATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+#if (0)
+    struct atapciBase *base = cl->UserData;
+#endif
+    struct PCIATABusData *data = OOP_INST_DATA(cl, o);
     struct pio_data *pio = (struct pio_data *)OOP_DoSuperMethod(cl, o, msg);
     
     if (pio)
@@ -291,22 +317,25 @@ APTR PCIATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     return pio;
 }
 
-APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+APTR PCIATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct PCIATABusData *data = OOP_INST_DATA(cl, o);
     struct dma_data *dma;
+
+    D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface(0x%p)\n", o));
+    D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: cl @ 0x%p\n", cl));
+    D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: cl->OOP_DoSuperMethod @ 0x%p\n", (cl)->cl_DoSuperMethod));
 
     /* If we don't have a DMA buffer, we cannot do DMA */
     if (!data->dmaBuf)
         return NULL;
 
-    /* If the DMA buffer is not in the first 4G, we cannot do DMA */
-    if ((IPTR)data->dmaBuf != (ULONG)(IPTR)data->dmaBuf)
-        return NULL;
-
+    D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: DMA Buf @ 0x%p\n", data->dmaBuf));
     dma = (struct dma_data *)OOP_DoSuperMethod(cl, o, msg);
     if (dma)
     {
+	D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: DMA private data @ 0x%p\n", dma));
+
         dma->au_DMAPort = (port_t)data->bus->atapb_DMABase;
         dma->ab_PRD     = data->dmaBuf;
 
@@ -317,12 +346,15 @@ APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
         {
             dma->ab_PRD = (APTR)((((IPTR)dma->ab_PRD) + 0xfff) & ~0xfff);
         }
+        D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: DMA PRD @ 0x%p\n", dma->ab_PRD));
     }
+
+    D(bug("[ATA:PCI:Bus] Hidd_ATABus__GetDMAInterface: Done\n"));
 
     return dma;
 }
 
-BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+BOOL PCIATABus__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
 #if 0
     /*
@@ -337,7 +369,7 @@ BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
      * Or, perhaps we should simply check these registers here.
      * Currently left as it was.
      */
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct PCIATABusData *data = OOP_INST_DATA(cl, o);
 
     if (data->bus->atapb_DMAPort)
     {
@@ -353,12 +385,12 @@ BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
             type &= ~(1 << (5 + (msg->UnitNum & 1)));
         }
 
-        DINIT(bug("[PCI-ATA] SetXferMode: Trying to apply new DMA (%lx) status: %02lx (unit %ld)\n", unit->au_DMAPort, type, unitNum));
+        DINIT(bug("[ATA:PCI:Bus] SetXferMode: Trying to apply new DMA (%lx) status: %02lx (unit %ld)\n", unit->au_DMAPort, type, unitNum));
 
         ata_outb(type, dma_Status + unit->au_DMAPort);
         if (type != (inb(dma_Status + unit->au_DMAPort) & 0x60))
         {
-            D(bug("[PCI-ATA] SetXferMode: Failed to modify DMA state for this device\n"));
+            D(bug("[ATA:PCI:Bus] SetXferMode: Failed to modify DMA state for this device\n"));
             return FALSE;
         }
     }
@@ -372,9 +404,9 @@ BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
     return TRUE;
 }
 
-void PCIATA__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+void PCIATABus__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct PCIATABusData *data = OOP_INST_DATA(cl, o);
     port_t dmaBase = (port_t)data->bus->atapb_DMABase;
 
     if (dmaBase)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -7,6 +7,9 @@
 */
 
 /****************************************************************************************/
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 #define AROS_ALMOST_COMPATIBLE
 #include <proto/exec.h>
@@ -33,15 +36,6 @@
 #include <devices/timer.h>
 
 #include "kbd.h"
-
-#include LC_LIBDEFS_FILE
-
-#define DEBUG 0
-#include <aros/debug.h>
-
-
-#undef HiddKbdAB
-#define HiddKbdAB   (XSD(cl)->hiddKbdAB)
 
 // CIA-A level 2 serial interrupt handler
 
@@ -97,6 +91,18 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
 
 OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    /* Add some descriptional tags to our attributes */
+    struct TagItem kbd_tags[] =
+    {
+	{aHidd_Name        , (IPTR)"AmigaKbd"                     },
+	{aHidd_HardwareName, (IPTR)"Amiga(tm) Keyboard"},
+	{TAG_MORE          , (IPTR)msg->attrList               }
+    };
+    struct pRoot_New new_msg =
+    {
+	.mID = msg->mID,
+	.attrList = kbd_tags
+    };
     struct TagItem *tag, *tstate;
     APTR    	    callback = NULL;
     APTR    	    callbackdata = NULL;
@@ -152,7 +158,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     if (NULL == callback)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
 
     if (o)
     {
@@ -194,40 +200,3 @@ VOID AmigaKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     ReleaseSemaphore(&XSD(cl)->sema);
     OOP_DoSuperMethod(cl, o, msg);
 }
-
-/****************************************************************************************/
-
-static int AmigaKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    struct Library *OOPBase = LIBBASE->ksd.cs_OOPBase;
-    struct OOP_ABDescr attrbases[] =
-    {
-        {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
-        {NULL	    	, NULL      	    }
-    };
-    
-    ReturnInt("AmigaKbd_InitAttrs", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/****************************************************************************************/
-
-static int AmigaKbd_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    struct Library *OOPBase = LIBBASE->ksd.cs_OOPBase;
-    struct OOP_ABDescr attrbases[] =
-    {
-        {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
-        {NULL	    	, NULL      	    }
-    };
-    
-    EnterFunc(bug("AmigaKbd_ExpungeAttrs\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    
-    ReturnInt("AmigaKbd_ExpungeAttrs", int, TRUE);
-}
-
-/****************************************************************************************/
-
-ADD2INITLIB(AmigaKbd_InitAttrs, 0)
-ADD2EXPUNGELIB(AmigaKbd_ExpungeAttrs, 0)

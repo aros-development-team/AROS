@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2015 The AROS Development Team
+ * Copyright © 2007-2018 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -31,13 +31,21 @@
 
 #include "cache.h"
 
+/* Supported Filesystem Ids */
+#if !defined(ID_FAT12_DISK)
+#define ID_FAT12_DISK   0x46415400UL
+#endif
+#if !defined(ID_FAT16_DISK)
+#define ID_FAT16_DISK   0x46415401UL
+#endif
+#if !defined(ID_FAT32_DISK)
+#define ID_FAT32_DISK   0x46415402UL
+#endif
+#if !defined(ID_FAT_DISK)
+#define ID_FAT_DISK     ID_FAT12_DISK
+#endif
+
 /* Filesystem structures */
-
-#define ID_FAT_DISK 0x46415400UL
-
-#define ID_FAT12_DISK 0x46415400UL
-#define ID_FAT16_DISK 0x46415401UL
-#define ID_FAT32_DISK 0x46415402UL
 
 #define ACTION_VOLUME_ADD 16000
 #define ACTION_VOLUME_REMOVE 16001

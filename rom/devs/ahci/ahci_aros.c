@@ -1,13 +1,17 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
+ 
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
 
 #include <aros/atomic.h>
 
-#include <proto/exec.h>
 #include <proto/oop.h>
 
 #include <hidd/pci.h>
@@ -19,16 +23,19 @@
 
 void callout_init_mp(struct callout *co)
 {
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
     memset(co, 0, sizeof(*co));
 }
 
 void callout_init(struct callout *co)
 {
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
     callout_init_mp(co);
 }
 
 void callout_stop(struct callout *co)
 {
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
     Forbid();
     if (co->co_Task) {
         Signal(co->co_Task, SIGF_ABORT);
@@ -39,6 +46,7 @@ void callout_stop(struct callout *co)
 
 void callout_stop_sync(struct callout *co)
 {
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
     callout_stop(co);
 }
 
@@ -62,6 +70,7 @@ static void callout_handler(struct callout *co, unsigned ticks, timeout_t *func,
 int callout_reset(struct callout *co, unsigned ticks, timeout_t *func, void *arg)
 {
     struct Task *t;
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
     callout_stop(co);
 
@@ -117,51 +126,55 @@ int	ahci_os_softsleep(void)
  */
 static void ahci_port_thread(void *arg)
 {
-	struct ahci_port *ap = arg;
-	int mask;
+    struct ahci_port *ap = arg;
+    int mask;
 
-	/*
-	 * The helper thread is responsible for the initial port init,
-	 * so all the ports can be inited in parallel.
-	 *
-	 * We also run the state machine which should do all probes.
-	 * Since CAM is not attached yet we will not get out-of-order
-	 * SCSI attachments.
-	 */
-	ahci_os_lock_port(ap);
-	ahci_port_init(ap);
-	atomic_clear_int(&ap->ap_signal, AP_SIGF_THREAD_SYNC);
-	ahci_port_state_machine(ap, 1);
-	ahci_os_unlock_port(ap);
-	atomic_clear_int(&ap->ap_signal, AP_SIGF_INIT);
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
-	/*
-	 * Then loop on the helper core.
-	 */
-	mask = ap->ap_signal;
-	while ((mask & AP_SIGF_STOP) == 0) {
-		ahci_port_thread_core(ap, mask);
-		// lockmgr(&ap->ap_sig_lock, LK_EXCLUSIVE);
-		if (ap->ap_signal == 0)
-			Wait(SIGF_DOS);
-		mask = ap->ap_signal;
-		atomic_clear_int(&ap->ap_signal, mask);
-		// lockmgr(&ap->ap_sig_lock, LK_RELEASE);
-	}
-	ap->ap_thread = NULL;
+    /*
+     * The helper thread is responsible for the initial port init,
+     * so all the ports can be inited in parallel.
+     *
+     * We also run the state machine which should do all probes.
+     * Since CAM is not attached yet we will not get out-of-order
+     * SCSI attachments.
+     */
+    ahci_os_lock_port(ap);
+    ahci_port_init(ap);
+    atomic_clear_int(&ap->ap_signal, AP_SIGF_THREAD_SYNC);
+    ahci_port_state_machine(ap, 1);
+    ahci_os_unlock_port(ap);
+    atomic_clear_int(&ap->ap_signal, AP_SIGF_INIT);
+
+    /*
+     * Then loop on the helper core.
+     */
+    mask = ap->ap_signal;
+    while ((mask & AP_SIGF_STOP) == 0) {
+            ahci_port_thread_core(ap, mask);
+            // lockmgr(&ap->ap_sig_lock, LK_EXCLUSIVE);
+            if (ap->ap_signal == 0)
+                    Wait(SIGF_DOS);
+            mask = ap->ap_signal;
+            atomic_clear_int(&ap->ap_signal, mask);
+            // lockmgr(&ap->ap_sig_lock, LK_RELEASE);
+    }
+    ap->ap_thread = NULL;
 }
 
 void	ahci_os_start_port(struct ahci_port *ap)
 {
-	char name[16];
+    char name[16];
 
-	atomic_set_int(&ap->ap_signal, AP_SIGF_INIT | AP_SIGF_THREAD_SYNC);
-	lockinit(&ap->ap_lock, "ahcipo", 0, LK_CANRECURSE);
-	lockinit(&ap->ap_sim_lock, "ahcicam", 0, LK_CANRECURSE);
-	ksnprintf(name, sizeof(name), "%d", ap->ap_num);
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
 
-	kthread_create(ahci_port_thread, ap, &ap->ap_thread,
-		       "%s", PORTNAME(ap));
+    atomic_set_int(&ap->ap_signal, AP_SIGF_INIT | AP_SIGF_THREAD_SYNC);
+    lockinit(&ap->ap_lock, "ahcipo", 0, LK_CANRECURSE);
+    lockinit(&ap->ap_sim_lock, "ahcicam", 0, LK_CANRECURSE);
+    ksnprintf(name, sizeof(name), "%d", ap->ap_num);
+
+    kthread_create(ahci_port_thread, ap, &ap->ap_thread,
+                   "%s", PORTNAME(ap));
 }
 
 /*
@@ -169,19 +182,20 @@ void	ahci_os_start_port(struct ahci_port *ap)
  */
 void ahci_os_stop_port(struct ahci_port *ap)
 {
-	if (ap->ap_thread) {
-		ahci_os_signal_port_thread(ap, AP_SIGF_STOP);
-		ahci_os_sleep(10);
-		if (ap->ap_thread) {
-			kprintf("%s: Waiting for thread to terminate\n",
-				PORTNAME(ap));
-			while (ap->ap_thread)
-				ahci_os_sleep(100);
-			kprintf("%s: thread terminated\n",
-				PORTNAME(ap));
-		}
-	}
-	lockuninit(&ap->ap_lock);
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    if (ap->ap_thread) {
+            ahci_os_signal_port_thread(ap, AP_SIGF_STOP);
+            ahci_os_sleep(10);
+            if (ap->ap_thread) {
+                    kprintf("%s: Waiting for thread to terminate\n",
+                            PORTNAME(ap));
+                    while (ap->ap_thread)
+                            ahci_os_sleep(100);
+                    kprintf("%s: thread terminated\n",
+                            PORTNAME(ap));
+            }
+    }
+    lockuninit(&ap->ap_lock);
 }
 
 /*
@@ -193,8 +207,9 @@ void ahci_os_stop_port(struct ahci_port *ap)
  */
 void ahci_os_signal_port_thread(struct ahci_port *ap, int mask)
 {
-	atomic_set_int(&ap->ap_signal, mask);
-	Signal(ap->ap_thread, SIGF_DOS);
+    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    atomic_set_int(&ap->ap_signal, mask);
+    Signal(ap->ap_thread, SIGF_DOS);
 }
 
 /*
@@ -202,7 +217,7 @@ void ahci_os_signal_port_thread(struct ahci_port *ap, int mask)
  */
 void ahci_os_lock_port(struct ahci_port *ap)
 {
-	lockmgr(&ap->ap_lock, LK_EXCLUSIVE);
+    lockmgr(&ap->ap_lock, LK_EXCLUSIVE);
 }
 
 /*
@@ -212,7 +227,7 @@ void ahci_os_lock_port(struct ahci_port *ap)
  */
 int ahci_os_lock_port_nb(struct ahci_port *ap)
 {
-	return 1;
+    return 1;
 }
 
 /*
@@ -220,7 +235,7 @@ int ahci_os_lock_port_nb(struct ahci_port *ap)
  */
 void ahci_os_unlock_port(struct ahci_port *ap)
 {
-	lockmgr(&ap->ap_lock, LK_RELEASE);
+    lockmgr(&ap->ap_lock, LK_RELEASE);
 }
 
 

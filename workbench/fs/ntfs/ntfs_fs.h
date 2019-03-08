@@ -38,7 +38,9 @@
 extern struct Globals 		*glob;
 
 /* filesystem structures */
+#if !defined(ID_NTFS_DISK)
 #define ID_NTFS_DISK 		0x4E544653UL
+#endif
 
 #define ACTION_VOLUME_ADD 	16000
 #define ACTION_VOLUME_REMOVE 	16001

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team.
+    Copyright (C) 2013-2018, The AROS Development Team.
     $Id$
 */
 
@@ -36,6 +36,7 @@
 
 #include <zune/customclasses.h>
 
+extern OOP_AttrBase HiddAttrBase;
 
 /*** Instance Data **********************************************************/
 struct DevicePage_DATA
@@ -48,16 +49,16 @@ static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
     OOP_Object *device_obj = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
     IPTR idName, hwName, vendorStr;
-    IPTR number;
+    IPTR prodVal, vendVal;
     TEXT productId[20], vendorId[20];
 
     OOP_GetAttr(device_obj, aHidd_Name, &idName);
     OOP_GetAttr(device_obj, aHidd_HardwareName, &hwName);
     OOP_GetAttr(device_obj, aHidd_ProducerName, &vendorStr);
-    OOP_GetAttr(device_obj, aHidd_Product, &number);
-    sprintf(productId, "0x%04lX", number);
-    OOP_GetAttr(device_obj, aHidd_Producer, &number);
-    sprintf(vendorId, "0x%04lX", number);
+    OOP_GetAttr(device_obj, aHidd_Product, &prodVal);
+    sprintf(productId, "0x%04lX", prodVal);
+    OOP_GetAttr(device_obj, aHidd_Producer, &vendVal);
+    sprintf(vendorId, "0x%04lX", vendVal);
 
     return (Object *) DoSuperNewTags
     (
@@ -81,8 +82,8 @@ static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 MUIA_CycleChain, 1,
                 MUIA_Text_Contents, hwName,
             End),
-            Child, (IPTR)Label(_(MSG_PRODUCT_ID)),
-            Child, (IPTR)(TextObject,
+            (vendVal != 0) ? Child : TAG_IGNORE, (IPTR)Label(_(MSG_PRODUCT_ID)),
+            (vendVal != 0) ? Child : TAG_IGNORE, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
                 MUIA_CycleChain, 1,
@@ -95,8 +96,8 @@ static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 MUIA_CycleChain, 1,
                 MUIA_Text_Contents, vendorStr,
             End),
-            Child, (IPTR)Label(_(MSG_PRODUCER_ID)),
-            Child, (IPTR)(TextObject,
+            (vendVal != 0) ? Child : TAG_IGNORE, (IPTR)Label(_(MSG_PRODUCER_ID)),
+            (vendVal != 0) ? Child : TAG_IGNORE, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
                 MUIA_CycleChain, 1,

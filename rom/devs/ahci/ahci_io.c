@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved
+    Copyright © 2004-2018, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -8,8 +8,14 @@
 
 /* Maintainer: Jason S. McMullan <jason.mcmullan@gmail.com>
  */
-
+ 
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+
+/* We want all other bases obtained from our base */
+#define __NOLIBBASE__
+
 #include <aros/atomic.h>
 #include <aros/symbolsets.h>
 #include <exec/exec.h>
@@ -26,7 +32,6 @@
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
 
-#include <proto/exec.h>
 #include <proto/timer.h>
 #include <proto/bootloader.h>
 #include <proto/expansion.h>
@@ -37,7 +42,6 @@
 #include <string.h>
 
 #include "ahci.h"
-#include "ahci_intern.h"
 #include "ahci_scsi.h"
 #include "timer.h"
 
@@ -244,9 +248,14 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
         break;
     case TD_EJECT:
-        // FIXME: Eject removable media
+    {
+        if (at->at_identify.config & (1 << 7))
+        {
+            // FIXME: Eject removable media
+        }
         done = TRUE;
         break;
+    }
     case TD_GETDRIVETYPE:
         IOStdReq(io)->io_Actual = DRIVE_NEWSTYLE;
         done = TRUE;

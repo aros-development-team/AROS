@@ -32,7 +32,7 @@ all: depend $(OBJDIR) $(COPYTOAFS)
 
 $(COPYTOAFS): $(OBJS)
 	@$(ECHO) "Linking $@..."
-	$(HOST_CC) $(OBJS) $(AFSLIB) -o $@ $(LIBS)
+	@$(HOST_CC) $(OBJS) $(AFSLIB) -o $@ $(LIBS)
 
 $(OBJDIR)/config.h: $(OBJDIR) myconf.aros
 	@./myconf.aros $(TOP) >> $@

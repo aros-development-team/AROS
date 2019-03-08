@@ -1,7 +1,7 @@
 /*
  * tap - TUN/TAP network driver for AROS
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright (c) 2010-2011 The AROS Development Team. All rights reserved.
+ * Copyright (c) 2010-2019 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -142,7 +142,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 
             memset(&ifr, 0, sizeof(struct ifreq));
             ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-            strncpy(ifr.ifr_name, unit->name, IFNAMSIZ);
+            strncpy(ifr.ifr_name, unit->name, IFNAMSIZ - 1);
 
             if ((Hidd_UnixIO_IOControlFile(LIBBASE->unixio, fd, TUNSETIFF, &ifr, &ioerr)) < 0)
 	    {

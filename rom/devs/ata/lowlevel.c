@@ -11,6 +11,22 @@
  * - put a critical section around DMA transfers (shared dma channels)
  */
 
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+
+#include <exec/types.h>
+#include <exec/exec.h>
+#include <exec/resident.h>
+#include <utility/utility.h>
+#include <oop/oop.h>
+
+#include <devices/timer.h>
+
+#include "ata.h"
+#include "ata_bus.h"
+#include "timer.h"
+
 // use #define xxx(a) D(a) to enable particular sections.
 #if DEBUG
 #define DIRQ(a) D(a)
@@ -31,20 +47,6 @@
 #endif
 /* Errors that shouldn't happen */
 #define DERROR(a) a
-
-#include <aros/debug.h>
-#include <exec/types.h>
-#include <exec/exec.h>
-#include <exec/resident.h>
-#include <utility/utility.h>
-#include <oop/oop.h>
-
-#include <proto/exec.h>
-#include <devices/timer.h>
-
-#include "ata.h"
-#include "ata_bus.h"
-#include "timer.h"
 
 static BYTE ata_Identify(struct ata_Unit *unit);
 static BYTE ata_ReadSector32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);

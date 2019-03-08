@@ -8,9 +8,10 @@
 
 #include <aros/debug.h>
 
+#include <proto/exec.h>
+
 #include <exec/types.h>
 #include <exec/exec.h>
-#include <proto/exec.h>
 #include <devices/scsidisk.h>
 
 #include "ata.h"
