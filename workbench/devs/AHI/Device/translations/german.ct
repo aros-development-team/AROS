@@ -1,4 +1,4 @@
-## version $VER: ahi.catalog 4.2 (27.4.97)
+## version $VER: ahi.catalog 4.3 (08.03.2019)
 ## language deutsch
 ## codeset 0
 ;
@@ -132,10 +132,10 @@ Voll Duplex Aufnahme
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel
-
+7.1 multikanal
 ; 7.1 multichannel
 ;
 msgFreqFmt
-
+%lu Hz
 ; %lu Hz
 ;

@@ -1,8 +1,8 @@
-## version $VER: ahi.catalog 4.2 (17.6.97) © Marcin Orîowski <carlos@inet.com.pl>
+## version $VER: ahi.catalog 4.3 (08.03.2019)
 ## language polski
 ## codeset 5
 ;
-## chunk AUTH Translated by Marcin Orîowski <carlos@inet.com.pl>
+## chunk AUTH Translated by Marcin Or³owski <carlos@inet.com.pl>
 ;#language english
 ;#version 4
 ;
@@ -44,7 +44,7 @@ N\0Nastëpny tryb
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\0Wîaôciwoôci trybu...
+?\0W³aôciwoôci trybu...
 ; ?\000Property List...
 ;
 msgMenuRestore
@@ -88,7 +88,7 @@ Domyôlny tryb audio
 ; The requester's info-winodow
 ;
 msgReqInfoTitle
-Wîaôciwoôci trybu
+W³aôciwoôci trybu
 ; Mode Properties
 ;
 msgReqInfoAudioID
@@ -112,11 +112,11 @@ stereo z panningiem
 ; stereo with panning
 ;
 msgReqInfoChannels
-Kanaîy: %ld
+Kana³y: %ld
 ; Channels: %ld
 ;
 msgReqInfoMixrate
-Mixing rates: %ld-%ld Hz
+Czëstotliwoôê remiksu: %ld-%ld Hz
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
@@ -128,14 +128,14 @@ Nagrywanie z póî dupleksem
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-Nagrywanie z peînym dupleksem
+Nagrywanie z pe³nym dupleksem
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel
-
+7.1 wielokana³owy
 ; 7.1 multichannel
 ;
 msgFreqFmt
-
+%lu Hz
 ; %lu Hz
 ;
