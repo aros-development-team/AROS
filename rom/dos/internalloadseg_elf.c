@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
@@ -404,6 +404,7 @@ static int relocate
                 *(UQUAD *)p = s + rel->addend;
                 break;
 
+            case R_X86_64_PLT32:
             case R_X86_64_PC32: /* PC relative 32 bit signed */
                 *(ULONG *)p = s + rel->addend - (IPTR) p;
                 break;
@@ -631,7 +632,7 @@ static int relocate
             #endif
 
             default:
-                D(bug("[ELF Loader] Unrecognized relocation type %d %d\n", i, ELF_R_TYPE(rel->info)));
+                bug("[ELF Loader] Unknown relocation #%d type %d\n", i, ELF_R_TYPE(rel->info));
                 SetIoErr(ERROR_BAD_HUNK);
                 return 0;
         }
