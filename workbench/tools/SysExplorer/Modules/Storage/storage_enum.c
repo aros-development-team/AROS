@@ -310,9 +310,9 @@ AROS_LH3(void, QueryATAStorageFeatures,
                 }
             }
         }
-        CloseDevice(io);
+        CloseDevice((struct IORequest *)io);
     }
-    DeleteIORequest(io);
+    DeleteIORequest((struct IORequest *)io);
     DeleteMsgPort(ioReplyPort);
 
     AROS_LIBFUNC_EXIT
