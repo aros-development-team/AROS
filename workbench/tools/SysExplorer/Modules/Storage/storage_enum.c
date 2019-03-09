@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, The AROS Development Team.
+    Copyright (C) 2015-2019, The AROS Development Team.
     $Id$
 */
 
@@ -21,6 +21,9 @@
 #include <mui/NListtree_mcc.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
+
+#include <devices/newstyle.h>
+#include <devices/ata.h>
 
 #include "locale.h"
 #include "enums.h"
@@ -213,6 +216,107 @@ AROS_LH4(void, EnumBusUnits,
     AROS_LIBFUNC_EXIT
 }
 
+/*
+    Query a units device to see if it supports ATA device features, and if they are enebaled
+    for the unit.
+    Add objects to the passed in colgroup(2) if supported features are found.
+*/
+AROS_LH3(void, QueryATAStorageFeatures,
+         AROS_LHA(Object *, obj, A0),
+         AROS_LHA(char *, devName, A1),
+         AROS_LHA(int, devUnit, D0),
+         struct SysexpStorageBase *, StorageBase, 16, Storage)
+{
+    AROS_LIBFUNC_INIT
+
+    struct IOStdReq *io;
+    struct MsgPort * ioReplyPort;
+    struct NSDeviceQueryResult nsdqr;
+    LONG error;
+
+    ioReplyPort = CreateMsgPort();
+    if (!ioReplyPort)
+        return;
+
+    io = CreateIORequest(ioReplyPort, sizeof(struct IOStdReq));
+    if (!io)
+    {
+        DeleteMsgPort(ioReplyPort);
+        return;
+    }
+
+    if (!OpenDevice(devName, devUnit,(struct IORequest *)io,0))
+    {
+        io->io_Command = NSCMD_DEVICEQUERY;
+        io->io_Length  = sizeof(nsdqr);
+        io->io_Data    = (APTR)&nsdqr;
+
+        error = DoIO((struct IORequest *)io);
+
+        if((!error) &&
+           (io->io_Actual >= 16) &&
+           (io->io_Actual <= sizeof(nsdqr)) &&
+           (nsdqr.SizeAvailable == io->io_Actual))
+        {
+            UWORD *cmdcheck;
+            for(cmdcheck = nsdqr.SupportedCommands;
+                *cmdcheck;
+                cmdcheck++)
+            {
+                ULONG queryres = 0;
+
+                // Does the device understand the SMART Cmd?
+                if(*cmdcheck == HD_SMARTCMD)
+                {
+                    // Check if the unit Supports SMART
+                    io->io_Command = HD_SMARTCMD;
+                    io->io_Reserved1 = io->io_Reserved2 = ATAFEATURE_TEST_AVAIL;
+                    io->io_Length  = sizeof(queryres);
+                    io->io_Data    = (APTR)&queryres;
+                    error = DoIO((struct IORequest *)io);
+                    if ((!error) && (io->io_Actual >= 4) && (queryres == SMART_MAGIC_ID))
+                    {
+                        IPTR smartSpacer = (IPTR)HVSpace;
+                        IPTR smartLabel = (IPTR)Label("SMART Supported");
+                        if (DoMethod(obj, MUIM_Group_InitChange))
+                        {
+                            DoMethod(obj, OM_ADDMEMBER, smartSpacer);
+                            DoMethod(obj, OM_ADDMEMBER, smartLabel);
+                            DoMethod(obj, MUIM_Group_ExitChange);
+                        }
+                    }
+                }
+
+                // Does the device understand the TRIM Cmd?
+                if(*cmdcheck == HD_TRIMCMD)
+                {
+                    // Check if the unit Supports TRIM
+                    io->io_Command = HD_TRIMCMD;
+                    io->io_Reserved1 = io->io_Reserved2 = ATAFEATURE_TEST_AVAIL;
+                    io->io_Length  = sizeof(queryres);
+                    io->io_Data    = (APTR)&queryres;
+                    error = DoIO((struct IORequest *)io);
+                    if ((!error) && (io->io_Actual >= 4) && (queryres == TRIM_MAGIC_ID))
+                    {
+                        IPTR trimSpacer = (IPTR)HVSpace;
+                        IPTR trimLabel = (IPTR)Label("TRIM Supported");
+                        if (DoMethod(obj, MUIM_Group_InitChange))
+                        {
+                            DoMethod(obj, OM_ADDMEMBER, trimSpacer);
+                            DoMethod(obj, OM_ADDMEMBER, trimLabel);
+                            DoMethod(obj, MUIM_Group_ExitChange);
+                        }
+                    }
+                }
+            }
+        }
+        CloseDevice(io);
+    }
+    DeleteIORequest(io);
+    DeleteMsgPort(ioReplyPort);
+
+    AROS_LIBFUNC_EXIT
+}
 
 AROS_LH5(BOOL, RegisterStorageClassHandler,
          AROS_LHA(CONST_STRPTR, classid, A0),

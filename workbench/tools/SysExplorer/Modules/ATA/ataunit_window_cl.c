@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2018, The AROS Development Team.
+    Copyright (C) 2013-2019, The AROS Development Team.
     $Id$
 */
 
@@ -8,6 +8,7 @@
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <proto/sysexp.h>
+#include <proto/storage.h>
 
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -35,6 +36,7 @@
 #include <stdlib.h>
 
 extern OOP_AttrBase HiddATAUnitAB;
+extern OOP_AttrBase HiddStorageUnitAB;
 
 struct MUI_CustomClass * ATAUnitWindow_CLASS;
 
@@ -83,6 +85,7 @@ static void DecodeBits(char *str, ULONG flags, const char *const *names)
 
 static Object *ATAUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
+    Object *window, *atagroup;
     OOP_Object *dev = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
     char xfermodes_str[256];
     char usemodes_str[256];
@@ -101,11 +104,10 @@ static Object *ATAUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 
     OOP_GetAttr(dev, aHidd_ATAUnit_MultiSector, &val);
     snprintf(multisector_str, sizeof(multisector_str), "%ld", val);
-
-    return (Object *) DoSuperNewTags
+    window = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
-        Child, (IPTR)(ColGroup(2),
+        Child, (IPTR)(atagroup = (ColGroup(2),
             MUIA_Group_SameSize, TRUE,
             MUIA_FrameTitle, (IPTR)"IDE/ATA",
             GroupFrame,
@@ -139,10 +141,18 @@ static Object *ATAUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 MUIA_CycleChain, 1,
                 MUIA_Text_Contents, (IPTR)multisector_str,
             End),
-        End),
+        End)),
         TAG_MORE, (IPTR) msg->ops_AttrList,
         TAG_DONE
     );
+    if (window)
+    {
+        IPTR unitdev;
+        OOP_GetAttr(dev, aHidd_StorageUnit_Device, &unitdev);
+        OOP_GetAttr(dev, aHidd_StorageUnit_Number, &val);
+        QueryATAStorageFeatures(atagroup, (char *)unitdev, val);
+    }
+    return window;
 }
 
 /*** Setup ******************************************************************/

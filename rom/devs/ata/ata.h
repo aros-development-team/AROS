@@ -396,6 +396,9 @@ void DaemonCode(struct ataBase *LIBBASE);
 
 BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
 
+void ata_SMARTCmd(struct IOStdReq *io);
+void ata_TRIMCmd(struct IOStdReq *io);
+
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03
 
