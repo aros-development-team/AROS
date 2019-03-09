@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team.
+    Copyright (C) 2018-2019, The AROS Development Team.
     $Id$
 */
 
@@ -8,6 +8,7 @@
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <proto/sysexp.h>
+#include <proto/storage.h>
 
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -35,6 +36,7 @@
 #include <stdlib.h>
 
 extern OOP_AttrBase HiddAHCIUnitAB;
+extern OOP_AttrBase HiddStorageUnitAB;
 
 /*** Instance Data **********************************************************/
 struct AHCIUnitWindow_DATA
@@ -77,6 +79,7 @@ static void DecodeBits(char *str, ULONG flags, const char *const *names)
 
 static Object *AHCIUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
+    Object *window, *ahcigroup;
     OOP_Object *dev = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
     char feature_str[256];
     IPTR val;
@@ -88,10 +91,10 @@ static Object *AHCIUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     OOP_GetAttr(dev, aHidd_AHCIUnit_Features, &val);
     DecodeBits(feature_str, val, featNames);
 
-    return (Object *) DoSuperNewTags
+   window = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
-        Child, (IPTR)(ColGroup(2),
+        Child, (IPTR)(ahcigroup = (ColGroup(2),
             MUIA_Group_SameSize, TRUE,
             MUIA_FrameTitle, (IPTR)"AHCI",
             GroupFrame,
@@ -107,10 +110,18 @@ static Object *AHCIUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                     MUIA_Floattext_Text, (IPTR)feature_str,
                 End),
             End),
-        End),
+        End)),
         TAG_MORE, (IPTR) msg->ops_AttrList,
         TAG_DONE
-    );;
+    );
+    if (window)
+    {
+        IPTR unitdev;
+        OOP_GetAttr(dev, aHidd_StorageUnit_Device, &unitdev);
+        OOP_GetAttr(dev, aHidd_StorageUnit_Number, &val);
+        QueryATAStorageFeatures(ahcigroup, (char *)unitdev, val);
+    }
+    return window;
 }
 
 /*** Setup ******************************************************************/

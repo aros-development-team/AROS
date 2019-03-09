@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved
+    Copyright © 2004-2019, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -24,7 +24,6 @@
 #include <dos/bptr.h>
 
 #include <devices/ata.h>
-
 
 #include "timer.h"
 #include "ata.h"
@@ -563,9 +562,7 @@ static void cmd_SMART(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
             io->io_Error = 0;
             return;
         }
-#if (0)
-        ata_SMARTCmd(io);
-#endif
+        ata_SMARTCmd(IOStdReq(io));
     }
     else
         io->io_Error = IOERR_NOCMD;
@@ -591,9 +588,7 @@ static void cmd_TRIM(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
             io->io_Error = 0;
             return;
         }
-#if (0)
-        ata_TRIMCmd(io);
-#endif
+        ata_TRIMCmd(IOStdReq(io));
     }
     else
         io->io_Error = IOERR_NOCMD;
@@ -755,17 +750,19 @@ static void HandleIO(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static const ULONG IMMEDIATE_COMMANDS = 0x803ff1e3; // 10000000001111111111000111100011
 
 /* See whether the command can be done quick */
-static BOOL isSlow(ULONG comm)
+static BOOL isSlow(struct IORequest *io)
 {
     BOOL slow = TRUE;   /* Assume always slow command */
 
     /* For commands with numbers <= 31 check the mask */
-    if (comm <= 31)
+    if (io->io_Command <= 31)
     {
-        if (IMMEDIATE_COMMANDS & (1 << comm))
+        if (IMMEDIATE_COMMANDS & (1 << io->io_Command))
             slow = FALSE;
     }
-    else if (comm == NSCMD_TD_SEEK64 || comm == NSCMD_DEVICEQUERY) slow = FALSE;
+    else if ((io->io_Command >= HD_SMARTCMD && io->io_Command <= HD_TRIMCMD) &&
+                (IOStdReq(io)->io_Reserved1 == ATAFEATURE_TEST_AVAIL)) slow = FALSE;
+    else if (io->io_Command == NSCMD_TD_SEEK64 || io->io_Command == NSCMD_DEVICEQUERY) slow = FALSE;
 
     return slow;
 }
@@ -794,7 +791,7 @@ AROS_LH1(void, BeginIO,
         If the command is not-immediate, or presence of disc is still unknown,
         let the bus task do the job.
     */
-    if (isSlow(io->io_Command))
+    if (isSlow(io))
     {
         unit->au_Unit.unit_flags |= UNITF_ACTIVE | UNITF_INTASK;
         io->io_Flags &= ~IOF_QUICK;

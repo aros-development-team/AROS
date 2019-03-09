@@ -20,6 +20,8 @@ ATA_DEVICEFILES := \
     ata_init \
     lowlevel \
     ata \
+    ata_trim \
+    ata_smart \
     timer \
     waitnano \
     waitto \

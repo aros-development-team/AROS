@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2018, The AROS Development Team.
+    Copyright (C) 2013-2019, The AROS Development Team.
     $Id: ata_window_cl.c 51417 2016-01-25 18:10:16Z NicJA $
 */
 
@@ -48,7 +48,7 @@ static Object *StorageBusWindow__OM_NEW(Class *cl, Object *self, struct opSet *m
     char maxbusunits_str[4];
     IPTR val;
 
-    D(bug("[ata.sysexp] %s: cl @ %p\n", __func__, cl));
+    D(bug("[storage.sysexp] %s: cl @ %p\n", __func__, cl));
 
     if ((!dev))
         return NULL;
