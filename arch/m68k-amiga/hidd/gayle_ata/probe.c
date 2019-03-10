@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: A600/A1200/A4000 ATA HIDD hardware detection routine
@@ -30,6 +30,8 @@
 #include "bus_class.h"
 #include "interface_pio.h"
 
+//#define ENABLE_ATAPOWERFLYER
+
 static BOOL custom_check(APTR addr)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -53,8 +55,10 @@ static BOOL custom_check(APTR addr)
 
 static BOOL isFastATA(struct ata_ProbedBus *ddata)
 {
-        if (ddata->gayleirqbase == (UBYTE*)GAYLE_IRQ_FASTATA)
-                return TRUE;
+#if defined(ENABLE_ATAPOWERFLYER)
+    if (ddata->gayleirqbase == (UBYTE*)GAYLE_IRQ_FASTATA)
+            return TRUE;
+#endif
     return FALSE;
 }
 
@@ -85,8 +89,8 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
 
     D(bug("[ATA:Gayle] GayleID : %02x\n", id);)
 
+#if defined(ENABLE_ATAPOWERFLYER)
     // Detect FastATA... FIXME: the check is flawed for an a4000, disabled for now.
-#if (0)
     if (ddata->gayleirqbase)
     {
         altport = (UBYTE*)GAYLE_BASE_FASTATA;
