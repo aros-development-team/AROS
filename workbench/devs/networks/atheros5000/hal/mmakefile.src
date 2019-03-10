@@ -8,6 +8,7 @@ CPU=powerpc-be
 endif
 
 HALTARGET=$(CPU)-elf
+AH_AROS_BUILD=1
 
 include $(SRCDIR)/$(CURDIR)/amigaos/makefile.inc
 

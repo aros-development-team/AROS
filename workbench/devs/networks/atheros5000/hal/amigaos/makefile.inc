@@ -364,6 +364,8 @@ debug: ${OBJDIR}/hal.o
 	cmp -s ${OBJDIR}/opt_ah.h ${DEBUG}/${HALTARGET}.opt_ah.h || \
 	    cp ${OBJDIR}/opt_ah.h ${DEBUG}/${HALTARGET}.opt_ah.h
 
+ifndef AH_AROS_BUILD
+
 ${OBJDIR}/ah.o:	${HAL}/ah.c
 	${CC} -c -o $@ ${CFLAGS} $<
 ${OBJDIR}/ah_eeprom_v3.o:	${HAL}/ah_eeprom_v3.c
@@ -590,6 +592,8 @@ endif
 ifeq ($(strip ${AH_ENABLE_FORCEBIAS}),1)
 	echo "#define AH_ENABLE_FORCEBIAS	1"	>>${OBJDIR}/opt_ah.h
 endif
+
+endif # AH_AROS_BUILD
 
 #clean:
 #	rm -f ${ALL} ${OBJS} ${CLEANFILES}
