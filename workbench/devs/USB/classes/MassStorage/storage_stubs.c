@@ -1,5 +1,5 @@
 /*
-    Copyright � 2004, The AROS Development Team. All rights reserved.
+    Copyright � 2004-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Stub functions for PCI subsystem
@@ -22,7 +22,7 @@
 
 #include <hidd/hidd.h>
 #include <usb/usb.h>
-#include <usb/storage.h>
+#include <usb/mstorage.h>
 
 #include <proto/oop.h>
 

@@ -27,7 +27,7 @@
 
 #include <hidd/hidd.h>
 #include <usb/usb.h>
-#include <usb/storage.h>
+#include <usb/mstorage.h>
 
 #define DEBUG 1
 
