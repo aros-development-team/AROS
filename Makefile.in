@@ -13,6 +13,8 @@ AROS_TARGET_CPU_MODE    ?= @aros_target_cpu_mode@
 AROS_TARGET_ARCH        ?= @aros_target_arch@
 AROS_TARGET_VARIANT     ?= @aros_target_variant@
 
+AMIGAOSNDKDIR           ?= $(SRCDIR)/local/NDK_3.1
+
 # normally, these variable's should go in mmake.config/globalvarfile
 export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 export AROS_TARGET_ICONSET := @aros_target_iconset@
@@ -39,11 +41,11 @@ endif
 # Rules for Configure generated files ...
 #
 
-$(TOP)/Makefile: $(SRCDIR)/Makefile.in $(TOP)/config.status
-	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
-
-CONFIGUREFILES += $(TOP)/Makefile
+#$(TOP)/Makefile: $(SRCDIR)/Makefile.in $(TOP)/config.status
+#	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
+#	@$(TOP)/config.status --silent --file=$@:$<
+#
+#CONFIGUREFILES += $(TOP)/Makefile
 
 $(TOP)/mmake.config: $(SRCDIR)/mmake.config.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
@@ -118,12 +120,24 @@ makedirs:
 	    $(CP) $(SRCDIR)/_gdbinit $(AROSDIR)/.gdbinit ; \
 	else true ; fi
 
+$(PARSEOFFSETS): $(wildcard $(SRCDIR)/tools/parseoffsets/*.[ch])
+	@$(ECHO) Building parseoffsets...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/parseoffsets SRCDIR=$(SRCDIR) TOP=$(TOP)
+
+parsesdkoffsets : $(PARSEOFFSETS)
+	@$(IF) [ ! -d $(AMIGAOSNDKDIR) ]; then \
+		$(ECHO) "Please copy the AmigaOS 3.1 (tm) NDK files to $(AMIGAOSNDKDIR)" ; \
+	else \
+		$(ECHO) "Parsing Structure.Offsets file..." ; \
+		$(PARSEOFFSETS) --offsetsfile=$(AMIGAOSNDKDIR)/Includes_Libs/StructOffsets/Structure.Offsets --gendir=$(GENDIR)/tools/parseoffsets --bindir=$(AROS_TESTS)/sdk --sdkdir=$(AROS_INCLUDES) ; \
+    fi ; 
+
 # Create the tools that are used to build AROS.
 tools : makedirs mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
-	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV)
+	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV) $(PARSEOFFSETS)
 	@$(NOP)
 
 # rebuild the crosstools if we are reconfigured, or its dependencies change.
@@ -256,6 +270,9 @@ arch-clean: clean
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
 	@$(NOP)
+
+sdk-test: parsesdkoffsets crosstools features $(CONFIGUREFILES)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(GENDIR)/tools/parseoffsets SRCDIR=$(SRCDIR) TOP=$(TOP) test-sdk-headers-genfiles
 
 # Don't try to generate $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts
 $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts:
