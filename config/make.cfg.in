@@ -179,6 +179,9 @@ CALL            := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) AROS_HOST_CPU=$(AROS_HOS
 # This is the AROS includes, minus clib/mlib.
 GENINCDIR	:= $(GENDIR)/include
 
+# Special testing tools..
+PARSEOFFSETS       := $(TOOLDIR)/parseoffsets$(HOST_EXE_SUFFIX)
+
 # Basic make configuration. No need to edit anything else under here.
 
 .SUFFIXES :

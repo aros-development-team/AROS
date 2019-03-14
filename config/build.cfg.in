@@ -16,55 +16,59 @@ endif
 GRUB2_VERSION := @target_grub2_version@
 
 # DBUS flags
-DBUS_CFLAGS	:= @DBUS_CFLAGS@
-DBUS_LIBFLAGS	:= @DBUS_LIBFLAGS@
+DBUS_CFLAGS               := @DBUS_CFLAGS@
+DBUS_LIBFLAGS             := @DBUS_LIBFLAGS@
 
 ifeq ($(OPT_HOST_X11GFX),yes)
-HOST_X11_CFLAGS := @aros_host_x11_cflags@
-HOST_X11_LDFLAGS   := @aros_host_x11_ldflags@
+HOST_X11_CFLAGS           := @aros_host_x11_cflags@
+HOST_X11_LDFLAGS          := @aros_host_x11_ldflags@
 endif
 
 ifeq ($(OPT_HOST_SDLGFX),yes)
-HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
-HOST_SDL_LIBS   := @aros_host_sdl_libs@
+HOST_SDL_CFLAGS           := @aros_host_sdl_cflags@
+HOST_SDL_LIBS             := @aros_host_sdl_libs@
 endif
 
-TARGET_STRIP	:= $(TARGET_DEF_STRIP)
-HOST_STRIP      := $(HOST_DEF_STRIP)
+TARGET_STRIP              := $(TARGET_DEF_STRIP)
+HOST_STRIP                := $(HOST_DEF_STRIP)
 
 # Enable target coverage instrumentation ...
 TARGET_COVERAGEINSTR      := @aros_config_coverage@
 TARGET_COVERAGEINSTR_EXTS := .gcno
+# Enable target function entry/exit instrumentation
+TARGET_FUNCINSTR          := no
 # Enable LTO if supported ...
-TARGET_LTO      := @aros_config_lto@
+TARGET_LTO                := @aros_config_lto@
 
 KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(KERNEL_CFLAGS)))
 
 # Kernel private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))
-TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/arm-native/kernel
+TARGET_KERNEL_INCLUDES    := -I$(SRCDIR)/arch/arm-native/kernel
 else
-TARGET_KERNEL_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
+TARGET_KERNEL_INCLUDES    := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel
 endif
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+TARGET_KERNEL_INCLUDES    += -I$(SRCDIR)/arch/all-$(ARCH)/kernel
 ifneq ($(FAMILY),)
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+TARGET_KERNEL_INCLUDES    += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
 endif
-TARGET_KERNEL_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
+TARGET_KERNEL_INCLUDES    += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
                         -I$(SRCDIR)/rom/kernel
 
 # Exec private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))
-TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/arm-native/exec
+TARGET_EXEC_INCLUDES      := -I$(SRCDIR)/arch/arm-native/exec
 else
-TARGET_EXEC_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
+TARGET_EXEC_INCLUDES      := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec
 endif
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(ARCH)/exec
+TARGET_EXEC_INCLUDES      += -I$(SRCDIR)/arch/all-$(ARCH)/exec
 ifneq ($(FAMILY),)
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
+TARGET_EXEC_INCLUDES      += -I$(SRCDIR)/arch/all-$(FAMILY)/exec
 endif
-TARGET_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
+TARGET_EXEC_INCLUDES      += -I$(SRCDIR)/arch/$(CPU)-all/exec \
                       -I$(SRCDIR)/rom/exec
 
-PRIV_KERNEL_INCLUDES := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
-PRIV_EXEC_INCLUDES := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)
+PRIV_KERNEL_INCLUDES      := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
+PRIV_EXEC_INCLUDES        := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)
+
+Q ?= @
