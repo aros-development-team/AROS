@@ -1,0 +1,19 @@
+#   $Id$
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+	profile_func_enter \
+	profile_func_exit
+
+#MM- core-linklibs : linklibs-instrfunc
+#MM- linklibs: linklibs-instrfunc
+#MM linklibs-instrfunc : includes includes-copy
+
+NOWARN_FLAGS := $(NOWARN_FRAME_ADDRESS)
+USER_CFLAGS := $(NOWARN_FLAGS)
+
+%build_linklib mmake=linklibs-instrfunc libname=instrfunc files=$(FILES)
+
+%common
