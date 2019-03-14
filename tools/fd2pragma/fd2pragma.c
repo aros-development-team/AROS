@@ -11362,7 +11362,7 @@ static uint32 CreateClib(uint32 callmode)
     }
     DoOutput("**\n**\tC prototypes. For use with 32 bit integers only.\n**\n**\t");
     if(!Copyright || (Copyright && strncmp("Copyright ", Copyright, 10)))
-      DoOutput("Copyright © %d ", tim->tm_year+1900);
+      DoOutput("Copyright \xA9 %d ", tim->tm_year+1900);
     DoOutput("%s\n", Copyright ? Copyright : Flags2 & FLAG2_SYSTEMRELEASE ?
     "Amiga, Inc." : "");
     DoOutput("**\tAll Rights Reserved\n*/\n\n");
