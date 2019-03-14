@@ -467,8 +467,8 @@ struct DevInfo
     LONG             dvi_Priority;   /* Packet-handler initial priority	  */
     BPTR             dvi_Startup;    /* (struct FileSysStartupMsg *)	  */
     BPTR             dvi_SegList;    /* SegList for the handler		  */
-    BPTR             dvi_GlobalVec;  /* Global Vector, should be (BPTR)-1 */
-
+    BPTR             dvi_GlobVec;    /* Global Vector, should be (BPTR)-1 */
+#define dvi_GlobalVec dvi_GlobVec
     BSTR             dvi_Name;
 };
 
