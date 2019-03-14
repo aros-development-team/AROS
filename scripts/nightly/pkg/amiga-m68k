@@ -23,6 +23,10 @@ if [ "$CFG_M68K_CROSSTOOLS" != "" ]; then
 fi
 execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-serial-debug $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT $AROSTOOLCHAINOPT
 make
+# If the NDK files are available build the SDK tests
+if [ -d $BUILD_BASE/AROS/local/NDK_3.1 ]; then
+    make    sdk-test
+fi
 make    distfiles
 
 cd      $BUILD_BASE/AROS/bin/amiga-m68k
