@@ -739,6 +739,8 @@ aros_cflags_no_builtin_floor
 aros_cflags_no_builtin
 aros_cflags_noalignednew
 aros_cflags_alignednew
+aros_cflags_noinstrfuncs
+aros_cflags_instrfuncs
 aros_cflags_notestcoverage
 aros_cflags_testcoverage
 aros_cflags_noprofilearcs
@@ -2791,6 +2793,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fomit-frame-pointer
 #  -fprofile-arcs
 #  -ftest-coverage
+#  -finstrument-functions
 #  -faligned-new
 
 #  -fno-builtin
@@ -3248,6 +3251,33 @@ $as_echo "$aros_test_coverage" >&6; }
 if test "x-$aros_test_coverage" = "x-yes" ; then
     aros_cflags_testcoverage=-ftest-coverage
     aros_cflags_notestcoverage=-fno-test-coverage
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -finstrument-functions" >&5
+$as_echo_n "checking whether ${CC} accepts -finstrument-functions... " >&6; }
+CFLAGS=-finstrument-functions
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_instrument_functions="yes"
+else
+  aros_instrument_functions="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_instrument_functions" >&5
+$as_echo "$aros_instrument_functions" >&6; }
+if test "x-$aros_instrument_functions" = "x-yes" ; then
+    aros_cflags_instrfuncs=-finstrument-functions
+    aros_cflags_noinstrfuncs=-fno-instrument-functions
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -faligned-new" >&5
@@ -5503,6 +5533,9 @@ fi
 #
 # export the feature flags...
 #
+
+
+
 
 
 

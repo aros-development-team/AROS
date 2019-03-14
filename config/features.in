@@ -51,6 +51,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fomit-frame-pointer
 #  -fprofile-arcs
 #  -ftest-coverage
+#  -finstrument-functions
 #  -faligned-new
 
 #  -fno-builtin
@@ -201,6 +202,15 @@ AC_MSG_RESULT($aros_test_coverage)
 if test "x-$aros_test_coverage" = "x-yes" ; then
     aros_cflags_testcoverage=-ftest-coverage
     aros_cflags_notestcoverage=-fno-test-coverage
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -finstrument-functions])
+CFLAGS=-finstrument-functions
+AC_TRY_COMPILE(,, aros_instrument_functions="yes", aros_instrument_functions="no")
+AC_MSG_RESULT($aros_instrument_functions)
+if test "x-$aros_instrument_functions" = "x-yes" ; then
+    aros_cflags_instrfuncs=-finstrument-functions
+    aros_cflags_noinstrfuncs=-fno-instrument-functions
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -faligned-new])
@@ -1050,6 +1060,9 @@ AC_SUBST(aros_cflags_noprofilearcs)
 AC_SUBST(aros_cflags_testcoverage)
 AC_SUBST(aros_cflags_notestcoverage)
 
+AC_SUBST(aros_cflags_instrfuncs)
+AC_SUBST(aros_cflags_noinstrfuncs)
+    
 AC_SUBST(aros_cflags_alignednew)
 AC_SUBST(aros_cflags_noalignednew)
     

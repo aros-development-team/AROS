@@ -54,6 +54,9 @@ CFLAGS_NO_PROFILE_ARCS                  := @aros_cflags_noprofilearcs@
 CFLAGS_TEST_COVERAGE                    := @aros_cflags_testcoverage@
 CFLAGS_NO_TEST_COVERAGE                 := @aros_cflags_notestcoverage@
 
+CFLAGS_INSTR_FUNCTIONS                  := @aros_cflags_instrfuncs@
+CFLAGS_NO_INSTR_FUNCTIONS               := @aros_cflags_noinstrfuncs@
+
 CFLAGS_ALIGNED_NEW                      := @aros_cflags_alignednew@
 CFLAGS_NO_ALIGNED_NEW                   := @aros_cflags_noalignednew@
 
