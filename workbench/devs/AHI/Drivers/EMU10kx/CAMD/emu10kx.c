@@ -87,14 +87,14 @@ static UWORD rawputchar_m68k[] =
 
 static void
 KPrintFArgs( UBYTE* fmt, 
-             ULONG* args )
+             IPTR* args )
 {
   RawDoFmt( fmt, args, (void(*)(void)) rawputchar_m68k, SysBase );
 }
 
 #define KPrintF( fmt, ... )        \
 ({                                 \
-  ULONG _args[] = { __VA_ARGS__ }; \
+  IPTR _args[] = { __VA_ARGS__ }; \
   KPrintFArgs( (fmt), _args );     \
 })
 
