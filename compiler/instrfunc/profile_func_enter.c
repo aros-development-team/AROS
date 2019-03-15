@@ -14,5 +14,5 @@ void __cyg_profile_func_enter (void *this_fn,
     struct Task *thisTask = FindTask(NULL);
     int *frame = NULL;
     frame = (int *)__builtin_frame_address(1); /*of the 'func'*/
-    bug("[0x%p>>] Enter Func @ 0x%p (frame @ 0x%p)", thisTask, this_fn, frame);
+    bug("[0x%p>>] Enter Func @ 0x%p (frame @ 0x%p)\n", thisTask, this_fn, frame);
 }
