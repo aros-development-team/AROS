@@ -59,10 +59,6 @@ FILES := \
 DTFILE := \
     AddDataTypes
 
-BLFILES :=  \
-    install-i386-pc \
-    Install-grub2-i386-pc
-
 # Files that use AROS_SHx() instead of main()
 SH_FILES := \
     AROSMonDrvs \
@@ -99,7 +95,7 @@ USER_LDFLAGS    := -static
     files=RequestString targetdir=$(AROS_C) coverageinstr=no
 
 %build_progs mmake=workbench-c \
-    files="$(FILES) $(BLFILES)" targetdir=$(AROS_C) \
+    files="$(FILES)" targetdir=$(AROS_C) \
     uselibs="uuid debug" coverageinstr=no
 
 %build_progs mmake=workbench-c-sh \
