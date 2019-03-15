@@ -18,37 +18,43 @@ GRUBSRCDIR := $(PORTSDIR)/grub/grub-$(GRUB2_VERSION)
 $(BOOT_GRUB):
 	%mkdirs_q $@
 
+$(BOOT_GRUB)/fonts:
+	%mkdirs_q $@
+
 $(BOOT_GRUB)/i386-pc:
 	%mkdirs_q $@
 
 $(BOOT_EFI):
 	%mkdirs_q $@
 
+$(BOOT_EFI)/fonts:
+	%mkdirs_q $@
+
 $(BOOT_EFI)/i386-efi:
 	%mkdirs_q $@
 
 #MM
-bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/_unicode.pf2
+bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/fonts/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/fonts/_unicode.pf2
 
 $(BOOT_GRUB)/splash.png: splash.png $(BOOT_GRUB)
 		$(CP) $< $(BOOT_GRUB)
 
-$(BOOT_GRUB)/_unicode.pf2: unicode.pf2 $(BOOT_GRUB)
-		$(CP) $< $(BOOT_GRUB)/_unicode.pf2
+$(BOOT_GRUB)/fonts/_unicode.pf2: unicode.pf2 $(BOOT_GRUB)/fonts
+		$(CP) $< $(BOOT_GRUB)/fonts/_unicode.pf2
 
 $(BOOT_EFI)/splash.png: splash.png $(BOOT_EFI)
 		$(CP) $< $(BOOT_EFI)
 
-$(BOOT_EFI)/_unicode.pf2: unicode.pf2 $(BOOT_EFI)
-		$(CP) $< $(BOOT_EFI)/_unicode.pf2
+$(BOOT_EFI)/fonts/_unicode.pf2: unicode.pf2 $(BOOT_EFI)/fonts
+		$(CP) $< $(BOOT_EFI)/fonts/_unicode.pf2
 
 #MM
-bootloader-grub2gfx-common-livecd: $(BOOT_GRUB)/unicode.pf2 $(BOOT_EFI)/unicode.pf2
+bootloader-grub2gfx-common-livecd: $(BOOT_GRUB)/fonts/unicode.pf2 $(BOOT_EFI)/fonts/unicode.pf2
 
-$(BOOT_GRUB)/unicode.pf2: unicode.pf2 $(BOOT_GRUB)
+$(BOOT_GRUB)/fonts/unicode.pf2: unicode.pf2 $(BOOT_GRUB)/fonts
 		$(CP) $< $(BOOT_GRUB)
 
-$(BOOT_EFI)/unicode.pf2: unicode.pf2 $(BOOT_EFI)
+$(BOOT_EFI)/fonts/unicode.pf2: unicode.pf2 $(BOOT_EFI)/fonts
 		$(CP) $< $(BOOT_EFI)
 
 # avoid the make.tmpl s_flag in order to disable stripping of binaries
