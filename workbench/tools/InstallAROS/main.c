@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -2232,7 +2232,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             }
 
             sprintf(tmp,
-                "C:Install-grub2-i386-pc DEVICE \"%s\" UNIT %d GRUB \"%s\"",
+                "C:Install-grub2 DEVICE \"%s\" UNIT %d GRUB \"%s\"",
                 boot_Device, boot_Unit, dstPath);
 
             break;
@@ -2272,7 +2272,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             }
 
             sprintf(tmp,
-                "C:install-i386-pc DEVICE \"%s\" UNIT %d GRUB \"%s\" FORCELBA",
+                "C:Install-grub DEVICE \"%s\" UNIT %d GRUB \"%s\" FORCELBA",
                 boot_Device, boot_Unit, dstPath);
 
             break;
