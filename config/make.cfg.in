@@ -267,3 +267,6 @@ VPATH := $(shell echo $(SRCDIR)/$(CURDIR) | sed 's/^\(.\):\//\/\1\//')
 # We use shell script here in order to avoid Unicode file names that are listed by pattern expansion but can't be accessed
 # because of failing Unicode->ACP conversion under Windows
 WILDCARD = $(shell cd $(SRCDIR)/$(CURDIR); for file in $(1); do if [ -f $$file ]; then printf "%s" "$$file "; fi; done)
+
+# Defined to quieten output..
+Q ?= @

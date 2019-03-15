@@ -42,7 +42,7 @@ TARGET_LTO                := @aros_config_lto@
 
 # If set, the build system will use this tool to convert the elf
 # binary to the targets file format - otherwise the elf will be copied
-TARGET_TRANSLATEELF       := @aros_elf_translate@
+TARGET_TRANSLATEELF       = @aros_elf_translate@
 
 KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(KERNEL_CFLAGS)))
 
@@ -74,5 +74,3 @@ TARGET_EXEC_INCLUDES      += -I$(SRCDIR)/arch/$(CPU)-all/exec \
 
 PRIV_KERNEL_INCLUDES      := $(TARGET_KERNEL_INCLUDES) $(TARGET_EXEC_INCLUDES)
 PRIV_EXEC_INCLUDES        := $(TARGET_EXEC_INCLUDES) $(TARGET_KERNEL_INCLUDES)
-
-Q ?= @
