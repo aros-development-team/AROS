@@ -2188,7 +2188,10 @@ ifeq (%(lto),yes)
 %(mmake)%(flavour)_CXXFLAGS         := $(strip $(%(mmake)%(flavour)_LTOFLAGS) $(%(mmake)%(flavour)_CXXFLAGS))
 endif
 ifeq (%(funcinstr),yes)
-%(mmake)%(flavour)_INSTRFUNCFLAGS   ?= $(strip $(FUNCINSTR_FLAGS))
+%(mmake)%(flavour)_SUBSTNULL  :=
+%(mmake)%(flavour)_SUBSTSPACE := $(%(mmake)%(flavour)_SUBSTNULL) #
+%(mmake)%(flavour)_SUBSTCOMMA := ,
+%(mmake)%(flavour)_INSTRFUNCFLAGS   ?= $(strip $(FUNCINSTR_FLAGS) -finstrument-functions-exclude-file-list=$(subst $(%(mmake)%(flavour)_SUBSTSPACE),$(%(mmake)%(flavour)_SUBSTCOMMA),$(strip $($(%(mmake)%(flavour)_DEFNAME)_STARTFILES))))
 %(mmake)%(flavour)_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
 %(mmake)%(flavour)_CFLAGS           := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)%(flavour)_CFLAGS))
 %(mmake)%(flavour)_CXXFLAGS         := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)%(flavour)_CXXFLAGS))
