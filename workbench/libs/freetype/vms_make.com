@@ -1,6 +1,6 @@
-$! make Freetype2 under OpenVMS
+$! make FreeType 2 under OpenVMS
 $!
-$! Copyright 2003, 2004, 2006, 2007 by
+$! Copyright 2003-2018 by
 $! David Turner, Robert Wilhelm, and Werner Lemberg.
 $!
 $! This file is part of the FreeType project, and may only be used, modified,
@@ -10,7 +10,7 @@ $! indicate that you have read the license and understand and accept it
 $! fully.
 $!
 $!
-$! External libraries (like Freetype, XPM, etc.) are supported via the
+$! External libraries (like FreeType, XPM, etc.) are supported via the
 $! config file VMSLIB.DAT. Please check the sample file, which is part of this
 $! distribution, for the information you need to provide
 $!
@@ -23,15 +23,15 @@ $! * LOPTS - Options to be passed to the link command
 $! * CCOPT - Options to be passed to the C compiler
 $!
 $! In case of problems with the install you might contact me at
-$! zinser@zinser.no-ip.info(preferred) or
+$! zinser@zinser.no-ip.info (preferred) or
 $! zinser@sysdev.deutsche-boerse.com (work)
 $!
-$! Make procedure history for Freetype2
+$! Make procedure history for FreeType 2
 $!
 $!------------------------------------------------------------------------------
 $! Version history
 $! 0.01 20040401 First version to receive a number
-$! 0.02 20041030 Add error handling, Freetype 2.1.9
+$! 0.02 20041030 Add error handling, FreeType 2.1.9
 $!
 $ on error then goto err_exit
 $ true  = 1
@@ -128,7 +128,7 @@ $ERR_LIB:
 $ write sys$output "Error reading config file vmslib.dat"
 $ goto err_exit
 $FT2_ERR:
-$ write sys$output "Could not locate Freetype 2 include files"
+$ write sys$output "Could not locate FreeType 2 include files"
 $ goto err_exit
 $ERR_EXIT:
 $ set message/facil/ident/sever/text
@@ -172,7 +172,7 @@ $ deck
 
 
 all :
-        define freetype [--.include.freetype]
+        define freetype [--.include]
         define psaux [-.psaux]
         define autofit [-.autofit]
         define autohint [-.autohint]
@@ -356,8 +356,8 @@ $ deck
 CFLAGS=$(COMP_FLAGS)$(DEBUG)/include=([--.builds.vms],[--.include],[--.src.base])
 
 OBJS=ftbase.obj,ftinit.obj,ftglyph.obj,ftdebug.obj,ftbdf.obj,ftmm.obj,\
-     fttype1.obj,ftxf86.obj,ftpfr.obj,ftstroke.obj,ftwinfnt.obj,ftbbox.obj,\
-     ftbitmap.obj ftlcdfil.obj ftgasp.obj
+     fttype1.obj,ftpfr.obj,ftstroke.obj,ftwinfnt.obj,ftbbox.obj,\
+     ftbitmap.obj,ftgasp.obj
 
 all : $(OBJS)
         library [--.lib]freetype.olb $(OBJS)
@@ -1070,7 +1070,7 @@ $ then
 $   type/out=vmslib.dat sys$input
 !
 ! This is a simple driver file with information used by vms_make.com to
-! check if external libraries (like t1lib and freetype) are available on
+! check if external libraries (like t1lib and FreeType) are available on
 ! the system.
 !
 ! Layout of the file:
@@ -1090,13 +1090,13 @@ $   type/out=vmslib.dat sys$input
 !          might look like. They are site specific and the locations of the
 !          library and include files need almost certainly to be changed.
 !
-! Location: All of the libaries can be found at the following addresses
+! Location: All of the libraries can be found at the following addresses
 !
 !   ZLIB:     http://zinser.no-ip.info/vms/sw/zlib.htmlx
 !
 ZLIB # sys$library:libz.olb # sys$library: # zlib.h # FT_CONFIG_OPTION_SYSTEM_ZLIB
 $   write sys$output "New driver file vmslib.dat created."
-$   write sys$output "Please customize libary locations for your site"
+$   write sys$output "Please customize library locations for your site"
 $   write sys$output "and afterwards re-execute ''myproc'"
 $   goto err_exit
 $ endif
@@ -1148,7 +1148,7 @@ $ if f$locate("EXE",libtype) .lt. f$length(libtype) then lqual = "/share"
 $ write optf libloc , lqual
 $ if (f$trnlnm("topt") .nes. "") then write topt libloc , lqual
 $!
-$! Nasty hack to get the freetype includes to work
+$! Nasty hack to get the FreeType includes to work
 $!
 $ ft2def = false
 $ if ((libname .eqs. "FREETYPE") .and. -
@@ -1197,7 +1197,7 @@ $! Analyze Object files for OpenVMS AXP to extract Procedure and Data
 $! information to build a symbol vector for a shareable image
 $! All the "brains" of this logic was suggested by Hartmut Becker
 $! (Hartmut.Becker@compaq.com). All the bugs were introduced by me
-$! (zinser@decus.de), so if you do have problem reports please do not
+$! (zinser@zinser.no-ip.info), so if you do have problem reports please do not
 $! bother Hartmut/HP, but get in touch with me
 $!
 $! Version history

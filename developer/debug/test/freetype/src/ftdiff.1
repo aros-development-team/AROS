@@ -1,0 +1,70 @@
+.TH FTDIFF 1 "May 2018" "FreeType 2.9.1"
+.
+.
+.SH NAME
+.
+ftdiff \- compare font hinting modes
+.
+.
+.SH SYNOPSIS
+.
+.B ftdiff
+.RI [ options ]
+.IR font \ .\|.\|.
+.
+.
+.SH DESCRIPTION
+.
+.B ftdiff
+displays text in three columns, using the font or fonts given on the command
+line, and applies different FreeType hinting modes to each column.
+.
+.TP
+.B font
+The font file(s) to display.
+For Type\ 1 font files,
+.B ftdiff
+also tries to attach the corresponding metrics file (with extension `.afm'
+or `.pfm').
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI \-w \ w
+Set the window width to
+.I w
+pixels (default: 640px).
+.
+.TP
+.BI \-h \ h
+Set the window height to
+.I h
+pixels (default: 480px).
+.
+.TP
+.BI \-r \ r
+Use resolution
+.I r
+dpi (default: 72dpi).
+.
+.TP
+.BI \-s \ s
+Set character size to
+.I s
+points (default: 16pt).
+.
+.TP
+.BI \-f \ textfile
+Change displayed text, using text in
+.I textfile
+(in UTF-8 encoding).
+.
+.TP
+.B \-v
+Show version.
+.
+.\" eof

@@ -1,0 +1,27 @@
+.TH FTLINT 1 "May 2018" "Freetype 2.9.1"
+.
+.
+.SH NAME
+.
+ftlint \- simple font tester
+.
+.
+.SH SYNOPSIS
+.
+.B ftlint
+.I ppem
+.IR fontname [ .ttf | .ttc "] .\|.\|."
+.
+.
+.SH DESCRIPTION
+.
+.B ftlint
+opens the given font(s), loads and renders all glyphs at the given ppem
+value, and reports failing glyphs if there are less than ten fails, or the
+number of fails only if there are more fails.
+.
+.PP
+This program does not have any options.
+It is part of the FreeType demos package.
+.
+.\" eof

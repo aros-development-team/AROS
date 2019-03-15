@@ -1,0 +1,94 @@
+.TH FTVIEW 1 "May 2018" "FreeType 2.9.1"
+.
+.
+.SH NAME
+.
+ftview \- simple glyph viewer
+.
+.
+.SH SYNOPSIS
+.
+.B ftview
+.RI [ options ]
+.I pt font
+.
+.
+.SH DESCRIPTION
+.
+.B ftview
+displays all glyphs of a font, allowing changes of various rendering
+and hinting parameters interactively.
+.
+.TP
+.B pt
+The point size for the given resolution.
+If resolution is 72dpi, this directly gives the ppem value (pixels per EM).
+.
+.TP
+.B font
+The font file(s) to display.
+For Type 1 font files, ftview also tries to attach the corresponding metrics
+file (with extension `.afm' or `.pfm').
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI \-w \ w
+Set the window width to
+.I w
+pixels (default: 640px).
+.
+.TP
+.BI \-h \ h
+Set the window height to
+.I h
+pixels (default: 480px).
+.
+.TP
+.BI \-r \ r
+Use resolution
+.I r
+dpi (default: 72dpi).
+.
+.TP
+.BI \-f \ index
+Specify first index to display (default: 0).
+.
+.TP
+.BI \-e \ enc
+Specify encoding tag (default: no encoding).
+Common values:
+.B unic
+(Unicode),
+.B symb
+(symbol),
+.B ADOB
+(Adobe standard),
+.B ADBC
+(Adobe custom).
+.
+.TP
+.BI \-m \ text
+Use
+.I text
+for rendering.
+.
+.TP
+.BI \-l \ mode
+Set start-up rendering mode (0 <=
+.I mode
+<= 6).
+.
+.TP
+.B \-p
+Preload file in memory to simulate memory-mapping.
+.
+.TP
+.B \-v
+Show version.
+.
+.\" eof

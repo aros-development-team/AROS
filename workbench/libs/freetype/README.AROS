@@ -1,34 +1,24 @@
-To make freetype link lib:
+# AROS Freetype2 Readme for v6.1 (freetype 2.9.1)
+#
 
-   mmake .contrib-freetype-linklib:
+To make the freetype link lib:
 
-To make freetype graph lib (linklib used by freetype demo programs)
+   make workbench-libs-freetype-linklib:
 
-   mmake .contrib-freetype-graph
+To make two of the freetype test programs:
 
-To install some demo truetype fonts in contrib/Freetype:
+   make test-freetype
 
-   mmake .contrib-freetype-fonts
+To make freetype graph lib (a linklib used by the freetype test programs)
 
-To make two of the Freetype demo programs:
+   make test-freetype-lib-graph
 
-   mmake .contrib-freetype-demos
+#
+#
+#
 
-
-When importing a new version of the freetype code do the following:
-- download freetype and ft2demos archive.
-- extract freetype and ft2demos somewhere outside the AROS tree.
-- rename the extracted ft2demos-version directory to freetype-version/demos
-- go to freetype-version directory
-- import the source: 'cvs import -m... contrib/freetype FreeType FreeType_VERSION'
-(VERSION with points replaced with underscores e.g. 2_1_2)
-- go to contrib/freetype in your AROS source code tree
-- merge the changes: 'cvs checkout -j FreeType -j FreeType_OLDVERSION' with
-OLDVERSION the previous version imported into CVS.
-- resolve any possible conflicts.
-
-   
-TODO : o make shared freetype library based on link lib
+When importing a new version of the freetype code, also update the
+'demos' in developer/debug/test/freetype !!
 
        o fix buggy graph AROS driver (only used by demo progs)
        

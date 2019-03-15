@@ -1,0 +1,170 @@
+.TH FTVALID 1 "May 2018" "FreeType 2.9.1"
+.
+.
+.SH NAME
+.
+ftvalid \- font layout table validator
+.
+.
+.SH SYNOPSIS
+.
+.B ftvalid
+.RI [ options ]
+.I fontfile
+.
+.
+.SH DESCRIPTION
+.
+.B ftvalid
+is an OpenType layout table validator.
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI \-f \ index
+Select font index (default: 0).
+.
+.TP
+.BI \-t \ validator
+Select validator.
+Available validators are
+.BR ot ,
+.BR gx ,
+and
+.BR ckern .
+.
+.IP
+Note that the availability of validators depends on
+compile-time options of FreeType (this is, whether the modules
+`otvalid' and `gxvalid' are compiled into the library).
+.
+.TP
+.BI \-T \ tbls
+[ot, gx] Select sfnt table name tags to be validated.
+Use `:' to separate tags.
+.
+.IP
+Supported tables in ot validator are
+.BR BASE ,
+.BR GDEF ,
+.BR GPOS ,
+.BR GSUB ,
+.BR JSTF ,
+and
+.BR MATH .
+.
+.IP
+Supported tables in gx validator are
+.BR feat ,
+.BR mort ,
+.BR morx ,
+.BR bsln ,
+.BR just ,
+.BR kern ,
+.BR opbd ,
+.BR trak ,
+.BR prop ,
+and
+.BR lcar .
+.
+.IP
+Example:
+.B \-T \(dqfeat:morx\(dq
+.
+.TP
+.BI \-T \ dialect
+[ckern] Select classic kern dialect for validation.
+Use `:' to separate dialect names.
+If more than one dialect is specified, all dialects are accepted when
+validating.
+.
+.IP
+Supported dialects in ckern validator are
+.B ms
+and
+.BR apple .
+.
+.TP
+.BI \-l
+List the layout-related SFNT tables available in the font file.
+The selected validator (with option
+.BR \-t )
+affects the list.
+.
+.IP
+ckern is applicable to `kern' table only.
+Option
+.B \-L
+lists dialects supported in ckern validator only if `kern' table is
+available in the font file.
+.
+.TP
+.BI \-V \ level
+Validation level.
+Possible values are
+.B 0
+(default),
+.B 1
+(tight), and
+.B 2
+(paranoid).
+.
+.TP
+.B \-v
+Show version.
+.
+.
+.SH ENVIRONMENT VARIABLES
+.
+.TP
+.B FT2_DEBUG
+You can specify
+.RI ` component : level '
+pairs for tracing.
+.I level
+must be in the range [1,7].
+.
+.IP
+Available components for ot validator are
+.BR otvmodule ,
+.BR otvcommon ,
+.BR otvbase ,
+.BR otvgdef ,
+.BR otvgpos ,
+.BR otvgsub ,
+and
+.BR otvjstf .
+.
+.IP
+Available components for gx validator are
+.BR gxvmodule ,
+.BR gxvcommon ,
+.BR gxvfeat ,
+.BR gxvmort ,
+.BR gxvmorx ,
+.BR gxvbsln ,
+.BR gxvjust ,
+.BR gxvkern ,
+.BR gxvopbd ,
+.BR gxvtrak ,
+.BR gxvprop ,
+and
+.BR gxvlcar .
+.IP
+Available component for ckern validator is
+.B gxvkern
+only.
+.
+.IP
+Example:
+.B FT2_DEBUG=\(dqotvcommon:5 gxvkern:7\(dq
+.
+.IP
+.B FT2_DEBUG
+only works if tracing support is compiled into FreeType.
+.
+.\" eof

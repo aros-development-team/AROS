@@ -1,0 +1,43 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test : test-freetype
+#MM- test-freetype : \
+#MM      test-freetype-ftstring \
+#MM      test-freetype-ftview
+
+#MM- test-quick : test-freetype-quick
+#MM- test-freetype-quick : \
+#MM      test-freetype-ftstring-quick \
+#MM      test-freetype-ftview-quick
+
+#MM test-freetype-ftstring : includes linklibs \
+#MM     workbench-libs-freetype-linklib test-freetype-lib-graph
+#MM test-freetype-ftview : includes linklibs \
+#MM     workbench-libs-freetype-linklib test-freetype-lib-graph
+
+USER_INCLUDES		:= -I$(SRCDIR)/$(CURDIR)/../graph
+EXEDIR := $(AROS_TESTS)/freetype
+
+# Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
+NOWARN_FLAGS := $(NOWARN_SWITCH) $(NOWARN_STRINGOP_OVERFLOW) -Wno-error
+USER_CFLAGS += $(NOWARN_FLAGS)
+
+FREETYPETEST_COMMON := \
+    common \
+    ftcommon
+
+%build_prog mmake=test-freetype-ftstring \
+    progname=ftstring targetdir=$(EXEDIR) \
+    files="ftstring $(FREETYPETEST_COMMON)" \
+    uselibs="freetype2.static graph"
+
+USER_CPPFLAGS += -DFT2_BUILD_LIBRARY
+
+%build_prog mmake=test-freetype-ftview \
+    progname=ftview targetdir=$(EXEDIR) \
+    files="ftview $(FREETYPETEST_COMMON)" \
+    uselibs="freetype2.static graph"
+
+%common

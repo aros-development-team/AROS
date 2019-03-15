@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    Debugging and logging component for WinCE (body).                    */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002, 2005, 2008, 2009, 2013 by                   */
+/*  Copyright 1996-2018 by                                                 */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -79,7 +79,7 @@
 
 
     va_start( ap, fmt );
-    vprintf( fmt, ap );
+    vfprintf( stderr, fmt, ap );
     /* send the string to the debugger as well */
     vsprintf( buf, fmt, ap );
     OutputDebugStringEx( buf );
@@ -148,7 +148,7 @@
   /* for the memory and stream components which are set to 6 and 5,        */
   /* respectively.                                                         */
   /*                                                                       */
-  /* See the file <freetype/internal/fttrace.h> for details of the         */
+  /* See the file `include/freetype/internal/fttrace.h' for details of the */
   /* available toggle names.                                               */
   /*                                                                       */
   /* The level must be between 0 and 6; 0 means quiet (except for serious  */

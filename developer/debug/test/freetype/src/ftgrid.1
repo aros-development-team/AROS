@@ -1,0 +1,95 @@
+.TH FTGRID 1 "May 2018" "Freetype 2.9.1"
+.
+.
+.SH NAME
+.
+ftgrid \- simple glyph grid viewer
+.
+.
+.SH SYNOPSIS
+.
+.B ftgrid
+.RI [ options ]
+.I pt font .\|.\|.
+.
+.
+.SH DESCRIPTION
+.
+.B ftgrid
+displays the glyphs of a font as outlines right before the conversion
+from outlines to pixels take place.
+It also displays the resulting bitmap.
+It is possible to interactively change hinting and rendering options,
+thus visualizing the applied distortions to the outlines.
+.
+.TP
+.B pt
+The point size for the given resolution.
+If resolution is 72dpi, this directly gives the ppem value (pixels per EM).
+.
+.TP
+.B font
+The font file(s) to display.
+For Type 1 font files,
+.B ftgrid
+also tries to attach the corresponding metrics file (with extension `.afm'
+or `.pfm').
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI \-w \ w
+Set the window width to
+.I w
+pixels (default: 640px).
+.
+.TP
+.BI \-h \ h
+Set the window height to
+.I h
+pixels (default: 480px).
+.
+.TP
+.BI \-r \ r
+Use resolution
+.I r
+dpi (default: 72dpi).
+.
+.TP
+.BI \-f \ index
+Specify first index to display (default: 0).
+.
+.TP
+.BI \-e \ enc
+Specify encoding tag (default: no encoding).
+Common values:
+.B unic
+(Unicode),
+.B symb
+(symbol),
+.B ADOB
+(Adobe standard),
+.B ADBC
+(Adobe custom).
+.
+.TP
+.BI "\-d\ \(dq" "axis1\ axis2\ .\|.\|." \(dq
+For Multiple Master, GX, or OpenType variation fonts, specify design
+coordinates for each axis at start-up.
+This option implies option
+.BR \-n .
+Ignored for all other font formats.
+.
+.TP
+.B \-n
+Don't display named instances of variation fonts.
+.
+.TP
+.B \-v
+Show version.
+.
+.\" eof

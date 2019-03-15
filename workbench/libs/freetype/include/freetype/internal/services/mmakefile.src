@@ -1,0 +1,8 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM
+workbench-libs-freetype-includes : includes-copy
+
+INCLUDE_FILES := $(call WILDCARD, ./*.h)
+
+%copy_includes path=freetype/internal/services

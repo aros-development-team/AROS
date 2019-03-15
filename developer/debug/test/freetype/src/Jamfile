@@ -1,0 +1,55 @@
+# FreeType 2 src Jamfile (c) 2001, 2003, 2004, 2005, 2007 David Turner
+#
+
+SubDir  FT2DEMO_TOP src ;
+
+SubDirHdrs  $(FT2_INCLUDE) ;
+SubDirHdrs  [ FT2DEMO_SubDir  src ] ;
+SubDirHdrs  [ FT2DEMO_SubDir  graph ] ;
+
+COMMON_LIB = $(LIBPREFIX)ft2common ;
+
+Library  $(COMMON_LIB) : ftcommon.c common.c output.c ;
+
+
+if $(UNIX)
+{
+  CCDEFS += UNIX ;
+  LINKLIBS += -lm ;
+}
+
+PROGRAMS = ftbench ftlint ftdump fttimer ftchkwd ftvalid ftpatchk ;
+GRAPHIC_PROGRAMS = ftview ftmulti ftstring ftgamma ftgrid ftdiff ;
+{
+  local  t ;
+
+  for t in $(PROGRAMS) $(GRAPHIC_PROGRAMS)
+  {
+    Main           $(t) : $(t).c ;
+    LinkLibraries  $(t) : $(COMMON_LIB) $(FT2_LIB) ;
+  }
+
+  for t in $(GRAPHIC_PROGRAMS)
+  {
+    LINKLIBS on $(t)$(SUFEXE) = $(LINKLIBS) $(GRAPH_LINKLIBS) ;
+    LinkLibraries  $(t) : $(GRAPH_LIB) ;
+  }
+}
+
+
+# Compile bytecode debugger when needed. Define the environment
+# variable FT2_DEBUG_TT to enable this one before calling "jam"
+#
+if $(FT2_DEBUG_TT)
+{
+  if $(UNIX) { DEFINES += UNIX ; }
+  SubDirHdrs $(FT2_INCLUDE)/../src/truetype ;
+
+  LinkLibraries  ttdebug : $(FT2_LIB) ;
+  Main           ttdebug : ttdebug.c ;
+}
+
+Main  gbench : gbench.c ;
+
+
+# end of src Jamfile

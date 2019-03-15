@@ -50,7 +50,6 @@ SrcFiles        =  \xB6
 				  :src:base:ftsystem.c \xB6
 				  :src:base:fttype1.c \xB6
 				  :src:base:ftwinfnt.c \xB6
-				  :src:base:ftxf86.c \xB6
 				  :src:cache:ftcache.c \xB6
 				  :src:bdf:bdf.c \xB6
 				  :src:cff:cff.c \xB6
@@ -95,7 +94,6 @@ ObjFiles-68K    =  \xB6
 				  "{ObjDir}ftsystem.c.o" \xB6
 				  "{ObjDir}fttype1.c.o" \xB6
 				  "{ObjDir}ftwinfnt.c.o" \xB6
-				  "{ObjDir}ftxf86.c.o" \xB6
 				  "{ObjDir}ftcache.c.o" \xB6
 				  "{ObjDir}bdf.c.o" \xB6
 				  "{ObjDir}cff.c.o" \xB6
@@ -173,7 +171,6 @@ FreeType.m68k_cfm.o  \xC4\xC4  {ObjFiles-68K} {LibFiles-68K} {\xA5MondoBuild\xA5
 "{ObjDir}ftsystem.c.o" \xC4 :src:base:ftsystem.c
 "{ObjDir}fttype1.c.o" \xC4 :src:base:fttype1.c
 "{ObjDir}ftwinfnt.c.o" \xC4 :src:base:ftwinfnt.c
-"{ObjDir}ftxf86.c.o" \xC4 :src:base:ftxf86.c
 "{ObjDir}ftcache.c.o" \xC4 :src:cache:ftcache.c
 "{ObjDir}bdf.c.o" \xC4 :src:bdf:bdf.c
 "{ObjDir}cff.c.o" \xC4 :src:cff:cff.c
