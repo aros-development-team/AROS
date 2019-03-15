@@ -18,7 +18,7 @@ all : $(PARSEOFFSETS)
 
 $(PARSEOFFSETS) : $(PARSEOFFSETS_DEPS)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) -g $(HOST_CFLAGS) $(HOST_CPPFLAGS) -fsanitize=undefined -I$(GENINCDIR) -I$(TOP)/$(CURDIR) $(PARSEOFFSETS_SRCS) -o $@
+	@$(HOST_CC) -g $(HOST_CFLAGS) $(HOST_CPPFLAGS) -I$(GENINCDIR) -I$(TOP)/$(CURDIR) $(PARSEOFFSETS_SRCS) -o $@
 #	@$(HOST_STRIP) $@
 
 clean :
