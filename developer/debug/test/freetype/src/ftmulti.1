@@ -1,0 +1,80 @@
+.TH FTMULTI 1 "May 2018" "Freetype 2.9.1"
+.
+.
+.SH NAME
+.
+ftmulti \- multiple masters font viewer
+.
+.
+.SH SYNOPSIS
+.
+.B ftmulti
+.RI [ options ]
+.I pt
+.IR fontname \ .\|.\|.
+.
+.
+.SH DESCRIPTION
+.
+.B ftmulti
+is an interactive viewer for multiple masters and GX fonts.
+.
+.TP
+.B pt
+The point size for the given resolution.
+If resolution is 72dpi, this directly gives the ppem value (pixels per EM).
+.
+.TP
+.B font
+The font file(s) to display.
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI \-w \ w
+Set the window width to
+.I w
+pixels (default: 640px).
+.
+.TP
+.BI \-h \ h
+Set the window height to
+.I h
+pixels (default: 480px).
+.
+.TP
+.BI \-e \ encoding
+Specify encoding tag (default: no encoding).
+Common values:
+.B unic
+(Unicode),
+.B symb
+(symbol),
+.B ADOB
+(Adobe standard),
+.B ADBC
+(Adobe custom).
+.
+.TP
+.BI \-r \ r
+Use resolution
+.I r
+dpi (default: 72 dpi).
+.
+.TP
+.BI \-f \ index
+Specify first glyph index to display.
+.
+.TP
+.BI "\-d\ \(dq" "axis1\ axis2\ .\|.\|." \(dq
+Specify the design coordinates for each Multiple Master axis at start-up.
+.
+.TP
+.B \-v
+Show version.
+.
+.\" eof

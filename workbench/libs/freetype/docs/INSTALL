@@ -14,7 +14,9 @@ I. Normal installation and upgrades
     compilation,  since other make tools won't work (this includes BSD
     Make).
 
-    GNU Make VERSION 3.80 OR NEWER IS NEEDED!
+    GNU Make VERSION 3.81 OR NEWER IS NEEDED!
+
+    [For `cmake' see below.]
 
 
   2. On VMS with the `mms' build tool
@@ -43,7 +45,12 @@ I. Normal installation and upgrades
     directory, where <system> stands for your OS or environment.
 
 
-  5. From you own IDE, or own Makefiles
+  5. Using cmake
+
+    See the top-level `CMakeLists.txt' file for more information.
+
+
+  6. From you own IDE, or own Makefiles
 
     If  you  want  to  create   your  own  project  file,  follow  the
     instructions   given  in  the   `INSTALL.ANY'  document   of  this
@@ -65,13 +72,13 @@ II. Custom builds of the library
 
       http://makepp.sourceforge.net
 
-    for more information; you need version 1.19 or newer, and you must
+    for more information;  you need version 2.0 or newer, and you must
     pass option `--norc-substitution'.
 
 ----------------------------------------------------------------------
 
-Copyright   2000-2008, 2010-2011
-by David Turner, Robert Wilhelm, and Werner Lemberg.
+Copyright 2000-2018 by
+David Turner, Robert Wilhelm, and Werner Lemberg.
 
 This  file is  part of  the FreeType  project, and  may only  be used,
 modified,  and distributed  under the  terms of  the  FreeType project

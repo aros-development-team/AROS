@@ -1,0 +1,51 @@
+.TH TTDEBUG 1 "May 2018" "FreeType 2.9.1"
+.
+.
+.SH NAME
+.
+ttdebug \- a TrueType bytecode debugger
+.
+.
+.SH SYNOPSIS
+.
+.B ttdebug
+.RI [ options ]
+.I index size font
+.
+.
+.SH DESCRIPTION
+.
+.B ttdebug
+is an interactive TrueType bytecode debugger working in a terminal.
+Its spartanic interface faintly resembles debuggers like
+.BR gdb .
+.
+.PP
+For the specified
+.IR font ,
+a glyph with the given
+.I index
+and
+.I size
+is loaded, making it possible to trace the bytecode execution step by step.
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI "\-I " ver
+Use TrueType interpreter version
+.IR ver .
+Available versions are depending on compilation options of FreeType;
+call
+.B ttdebug
+without an argument to get the actual list.
+.
+.TP
+.B \-v
+Show version.
+.
+.\" eof

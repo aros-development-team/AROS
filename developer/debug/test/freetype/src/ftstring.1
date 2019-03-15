@@ -1,0 +1,82 @@
+.TH FTSTRING 1 "May 2018" "Freetype 2.9.1"
+.
+.
+.SH NAME
+.
+ftstring \- string viewer
+.
+.
+.SH SYNOPSIS
+.
+.B ftstring
+.RI [ options ]
+.I pt font .\|.\|.
+.
+.
+.SH DESCRIPTION
+.
+.B ftstring
+displays a text string with the given font, allowing to change
+various rendering and display options interactively.
+.
+.TP
+.B pt
+The point size for the given resolution.
+If resolution is 72dpi, this directly gives the ppem value (pixels per EM).
+.
+.TP
+.B font
+The font file(s) to display.
+For Type 1 font files,
+.B ftstring
+also tries to attach the corresponding metrics file (with extension `.afm'
+or `.pfm').
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI \-w \ w
+Set the window width to
+.I w
+pixels (default: 640px).
+.
+.TP
+.BI \-h \ h
+Set the window height to
+.I h
+pixels (default: 480px).
+.
+.TP
+.BI \-r \ r
+Use resolution
+.I r
+dpi (default: 72dpi).
+.
+.TP
+.BI \-e \ enc
+Specify encoding tag (default: no encoding).
+Common values:
+.B unic
+(Unicode),
+.B symb
+(symbol),
+.B ADOB
+(Adobe standard),
+.B ADBC
+(Adobe custom).
+.
+.TP
+.BI \-m \ text
+Use
+.I text
+for rendering.
+.
+.TP
+.B \-v
+Show version.
+.
+.\" eof

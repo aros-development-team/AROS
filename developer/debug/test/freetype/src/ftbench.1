@@ -1,0 +1,171 @@
+'\" t
+.TH FTVIEW 1 "May 2018" "Freetype 2.9.1"
+.
+.
+.SH NAME
+.
+ftbench \- benchmark some common FreeType paths
+.
+.
+.SH SYNOPSIS
+.
+.B ftbench
+.RI [ options ]
+.I fontname
+.
+.
+.SH DESCRIPTION
+.
+The
+.B ftbench
+tool measures performance of some common FreeType operations.
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.
+.SH OPTIONS
+.
+.TP
+.BI \-b \ tests
+Perform chosen tests:
+.
+.RS
+.TS
+tab (@);
+rB l.
+a@load glyphs (FT_Load_Glyph)
+b@load advance widths (FT_Get_Advances)
+c@render glyphs (FT_Render_Glyph)
+d@load glyphs (FT_Get_Glyph)
+e@get glyph cboxes (FT_Glyph_Get_CBox)
+f@get glyph indices (FT_Get_Char_Index)
+g@iterate CMap (FT_Get_{First,Next}_Char)
+h@open a new face (FT_New_Face or FT_New_Memory_Face)
+i@embolden glyphs (FT_GlyphSlot_Embolden)
+j@get glyph bboxes (FT_Outline_Get_BBox)
+k@open a new face and load glyphs
+.TE
+.RE
+.
+.IP
+(default is
+.BR abcdefghijk ,
+this is, all tests).
+.
+.IP
+The number of used glyphs per test (within a single iteration) is given by
+options
+.B \-i
+and
+.BR \-j .
+.
+.TP
+.B \-C
+Compare with cached version if available.
+.
+.TP
+.BI \-c \ n
+Use at most
+.I n
+iterations for each test (0 means time limited).
+.
+.TP
+.BI \-f \ l
+Use
+.B hexadecimal
+(not decimal) number
+.I l
+as load flags (see the
+.RB ` FT_LOAD_XXX '
+macros in the FreeType reference).
+.
+.TP
+.BI "\-H " name
+Using CFF hinting engine
+.IR name .
+Available versions are depending on compilation options of FreeType;
+call
+.B ftbench
+without an argument to get the actual list.
+.
+.TP
+.BI "\-I " ver
+Using TT interpreter version
+.IR ver .
+Available versions are depending on compilation options of FreeType;
+call
+.B ftbench
+without an argument to get the actual list.
+.
+.TP
+.BI \-i \ idx
+Start with glyph index
+.I idx
+(default is 0).
+.
+.TP
+.BI \-j \ idx
+End with glyph index
+.I idx
+(default is the number of glyphs minus one).
+.
+.TP
+.BI \-m \ m
+Set maximum cache size to
+.I M
+KiByte (default is 1024).
+.
+.TP
+.B \-p
+Preload font file in memory (this is, testing
+.B FT_New_Memory_Face
+instead of
+.BR FT_New_Face ).
+.
+.TP
+.BI \-r \ n
+Set render mode to
+.IR n :
+.
+.RS
+.TS
+tab (@);
+rB l.
+0@normal
+1@light
+2@mono
+3@horizontal LCD
+4@vertical LCD
+.TE
+.RE
+.
+.IP
+(default is 0).
+This corresponds to the values of the
+.RB ` FT_RENDER_MODE_XXX '
+flags.
+.
+.TP
+.BI \-s \ s
+Use
+.I s
+ppem as face size (default is 10ppem).
+If set to zero, don't call
+.BR FT_Set_Pixel_Sizes .
+Use value\ 0 with option
+.RB ` "-f\ 1" '
+or something similar to load the glyphs unscaled,
+otherwise errors will show up.
+.
+.TP
+.BI \-t \ t
+Use at most
+.I t
+seconds per test (default is 2).
+.
+.TP
+.B \-v
+Show version.
+.
+.\" eof

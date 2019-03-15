@@ -1,0 +1,42 @@
+.TH FTGAMMA 1 "May 2018" "FreeType 2.9.1"
+.
+.
+.SH NAME
+.
+ftgamma \- screen gamma calibration helper
+.
+.
+.SH SYNOPSIS
+.
+.B ftgamma
+.
+.
+.SH DESCRIPTION
+.
+The
+.B ftgamma
+demo program opens a window showing series of gray stripes filled with
+solid color and checkered pattern of pixels.  Your monitor's gamma value
+roughly corresponds to the horizontal position where the solid and checkered
+stripes are equally bright when seen from some distance.  Three brightness
+targets are explored: 33%, 50%, and 67%.  If the input-output curve of your
+monitor does not follow ideal power law relationship, you might observe
+slightly different gamma values at different brightness levels.  It is also
+possible to examine gamma values for basic colors.
+.
+.PP
+Two alternative patterns relevant to font rendering are also provided,
+where slightly slanted lines are rendered using grayscale and subpixel
+anti-aliasing.  In the grayscale case, the correct gamma helps to achieve
+uniform perceived thickness of the lines.  The gamma value that corresponds
+to vanishing moiré pattern is ideal for anti-aliased font rendering.
+In the subpixel case, the correct gamma removes color fringes that remain
+even after LCD filtering.
+.
+.PP
+This program does not have any options.
+.
+.PP
+This program is part of the FreeType demos package.
+.
+.\" eof

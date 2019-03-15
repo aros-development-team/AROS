@@ -1,5 +1,114 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
 #MM- workbench-libs-freetype-complete : \
 #MM     workbench-libs-freetype-linklib \
-#MM     workbench-libs-freetype-module \
-#MM	workbench-libs-freetype-graph \
-#MM	workbench-libs-freetype-demos
+#MM     workbench-libs-freetype-module
+
+FT2AROSBUILDDIR := $(SRCDIR)/$(CURDIR)/builds/aros
+
+FT2AUXFILES := \
+    cache/ftcache \
+    gzip/ftgzip \
+    lzw/ftlzw \
+    psaux/psaux \
+    psnames/psnames
+
+#    gxvalid/gxvalid \
+#    otvalid/otvalid
+
+FT2RASTFILES := \
+    raster/raster \
+    smooth/smooth
+
+FT2FONTFILES := \
+    cff/cff \
+    sfnt/sfnt \
+    truetype/truetype \
+    type1/type1 \
+    cid/type1cid \
+    type42/type42 \
+    pcf/pcf \
+    pfr/pfr \
+    winfonts/winfnt \
+    bdf/bdf
+    
+
+FT2HINTFILES := \
+    autofit/autofit
+FT2HINTFILES += \
+    pshinter/pshinter
+
+FT2BASEFILES := \
+    ftapi \
+    ftinit \
+    ftdebug \
+    ftsystem
+    
+FT2BASEEXTFILES := \
+    ftbbox \
+    ftbdf \
+    ftbitmap \
+    ftcid \
+    ftfstype \
+    ftgasp \
+    ftglyph \
+    ftgxval \
+    ftmm \
+    ftotval \
+    ftpatent \
+    ftpfr \
+    ftstroke \
+    ftsynth \
+    fttype1 \
+    ftwinfnt
+
+# substitute BASEFILES with AROS specific versions
+FT2BASEARCHFILES  := $(basename $(wildcard $(FT2AROSBUILDDIR)/src/base/*.c))
+FT2BASENARCHFILES := $(addprefix src/base/,ftbase $(filter-out $(notdir $(FT2BASEARCHFILES)),$(FT2BASEFILES) $(FT2BASEEXTFILES)))
+
+SHFILES := \
+    ftglyphengine \
+    kerning \
+    glyph \
+    openengine \
+    closeengine \
+    setinfoa \
+    obtaininfoa \
+    releaseinfoa
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/src $(addprefix -I,$(DIRS))
+
+# Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
+NOWARN_FLAGS := $(NOWARN_ERROR)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -DFT2_BUILD_LIBRARY
+
+#MM- workbench-libs : workbench-libs-freetype-module
+#MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes workbench-libs-freetype-pkgconfig
+#MM workbench-libs-freetype-module : workbench-libs-freetype-includes
+#MM- workbench-libs-freetype-linklibs : workbench-libs-freetype-linklib workbench-libs-freetype-module-linklib
+
+FT2FILES := $(addprefix src/,$(FT2AUXFILES) $(FT2RASTFILES) $(FT2FONTFILES) $(FT2HINTFILES)) $(FT2BASEARCHFILES) $(FT2BASENARCHFILES)
+
+%build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2.static \
+    files=$(FT2FILES) objdir=$(OBJDIR)/freetype2_static
+
+%build_module mmake=workbench-libs-freetype-module modname=freetype2 \
+    modtype=library files="$(addprefix $(FT2AROSBUILDDIR)/,$(SHFILES)) $(FT2FILES)" uselibs="stdc" conffile=$(FT2AROSBUILDDIR)/freetype2.conf
+
+#MM
+workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc
+
+$(AROS_LIB)/pkgconfig/freetype2.pc : $(SRCDIR)/$(CURDIR)/builds/unix/freetype2.in
+	%mkdir_q dir=$(AROS_LIB)/pkgconfig
+	@$(SED) -e 's|%FT2_EXTRA_LIBS%||' \
+	       -e 's|%LIBBZ2%||' \
+	       -e 's|%LIBZ%|-L $(AROS_LIB) -lz|' \
+	       -e 's|%exec_prefix%|$${prefix}|' \
+	       -e 's|%ft_version%|2.5.0|' \
+	       -e 's|%includedir%|$${prefix}/include|' \
+	       -e 's|%libdir%|$(AROS_LIB)|' \
+	       -e 's|%prefix%|/Developer|' \
+	       $< >$@

@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    Debugging and logging component (body).                              */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002, 2004, 2008, 2013 by                         */
+/*  Copyright 1996-2018 by                                                 */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -152,8 +152,8 @@
   /* the memory and stream components which are set to 7 and 5,            */
   /* respectively.                                                         */
   /*                                                                       */
-  /* See the file <include/freetype/internal/fttrace.h> for details of the */
-  /* available toggle names.                                               */
+  /* See the file `include/freetype/internal/fttrace.h' for details of     */
+  /* the available toggle names.                                           */
   /*                                                                       */
   /* The level must be between 0 and 7; 0 means quiet (except for serious  */
   /* runtime errors), and 7 means _very_ verbose.                          */
@@ -161,7 +161,7 @@
   FT_BASE_DEF( void )
   ft_debug_init( void )
   {
-    const char*  ft2_debug = getenv( "FT2_DEBUG" );
+    const char*  ft2_debug = ft_getenv( "FT2_DEBUG" );
 
 
     if ( ft2_debug )
