@@ -40,6 +40,10 @@ TARGET_FUNCINSTR          := no
 # Enable LTO if supported ...
 TARGET_LTO                := @aros_config_lto@
 
+# If set, the build system will use this tool to convert the elf
+# binary to the targets file format - otherwise the elf will be copied
+TARGET_TRANSLATEELF       := @aros_elf_translate@
+
 KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(KERNEL_CFLAGS)))
 
 # Kernel private includes, in order of precedence:

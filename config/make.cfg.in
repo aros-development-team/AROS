@@ -137,7 +137,6 @@ TOOLDIR		:= $(HOSTDIR)/tools
 TOOLLIB		:= $(TOOLDIR)/libtool.a
 MMAKE		:= $(TOOLDIR)/mmake$(HOST_EXE_SUFFIX)
 ARCHTOOL	:= $(TOOLDIR)/archtool$(HOST_EXE_SUFFIX)
-ELF2HUNK	:= $(TOOLDIR)/elf2hunk$(HOST_EXE_SUFFIX)
 GENMFSCRIPT	:= $(TOOLDIR)/genmf.py
 GENMF		:= $(PYTHON) $(GENMFSCRIPT)
 FLEXCAT		:= $(TOOLDIR)/flexcat$(HOST_EXE_SUFFIX)
@@ -155,7 +154,7 @@ GENSETS         := $(TOOLDIR)/gensets$(HOST_EXE_SUFFIX)
 COLLECT-AROS    := $(TOOLDIR)/collect-aros$(HOST_EXE_SUFFIX)
 GENMODULE       := $(TOOLDIR)/genmodule$(HOST_EXE_SUFFIX)
 SETREV          := $(TOOLDIR)/setrev$(HOST_EXE_SUFFIX)
-
+@make_extra_commands@
 RESIDENT_BEGIN  := compiler/libinit/libentry
 KICKSTART_BEGIN := compiler/libinit/kickentry
 
@@ -238,10 +237,7 @@ endif
 LTO_CFLAGS  = $(CFLAGS_LTO)
 LTO_BINARY_CFLAGS = $(LTO_CFLAGS)
 LTO_BINARYWHOLE_CFLAGS = $(LTO_BINARY_CFLAGS) $(CFLAGS_WHOLE_PROGRAM)
-
-# Apple iOS stuff for gcc
-IOS_LDFLAGS  := -F$(IOS_SDK_PATH)/System/Library/Frameworks
-
+@make_extra_targetcfg@
 # Compatibility with old variables
 OBJDIR      	:=	$(GENDIR)/$(CURDIR)
 LIBDIR	    	:=	$(AROS_LIB)

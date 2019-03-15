@@ -728,6 +728,9 @@ aros_target_arch
 aros_target_bootloader
 aros_target_iconset
 aros_target_guitheme
+make_extra_targetcfg
+make_extra_commands
+aros_elf_translate
 aros_tools_dir
 aros_host_lib_suffix
 aros_host_exe_suffix
@@ -7508,6 +7511,7 @@ aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OP
 
 toolchain_needs_sysroot=no
 
+aros_elf_translate=
 aros_warn_flags=
 aros_isa_extra=
 aros_isa_flags=
@@ -8526,6 +8530,7 @@ case "$target_os" in
         esac
         case "$aros_target_variant" in
             ios)
+                make_extra_targetcfg="$export_newline""# Apple iOS stuff for gcc$export_newline""IOS_LDFLAGS  := -F$""(IOS_SDK_PATH)/System/Library/Frameworks$export_newline"
                 aros_ios_version="3.0"
                 aros_nominal_width=320
                 aros_nominal_height=480
@@ -8822,6 +8827,8 @@ case "$target_os" in
         ;;
 
     amiga*)
+        aros_elf_translate="$""(ELF2HUNK)"
+        make_extra_commands="$export_newline""ELF2HUNK	:= $""(TOOLDIR)/elf2hunk$""(HOST_EXE_SUFFIX)$export_newline"
         aros_target_arch="amiga"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
         aros_shared_default="no"
@@ -15051,6 +15058,10 @@ fi
 
 
 # Target Related
+
+
+
+
 
 
 
