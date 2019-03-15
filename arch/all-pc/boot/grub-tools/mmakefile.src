@@ -1,0 +1,18 @@
+# Copyright © 2011, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-c : grub-aros-installer
+#MM- workbench-c-quick : grub-aros-installer-quick
+
+FILES := Install-grub
+
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_INCLUDES := -isystem $(SRCDIR)/arch/all-pc/boot/grub-aros/include
+
+%build_progs mmake=grub-aros-installer \
+    files=$(FILES) targetdir=$(AROS_C) \
+    uselibs="debug"
+
+%common
