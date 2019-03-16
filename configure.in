@@ -646,6 +646,8 @@ dnl the paths for includes, and tools required to build AROS to some
 dnl particular target.
 
 aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OPTION NOWARN_POINTER_SIGN NOWARN_PARENTHESES"
+export_newline="
+"
 
 toolchain_needs_sysroot=no
 
@@ -1002,6 +1004,8 @@ ios)
     fi
     AC_MSG_RESULT($aros_android_antapk)
 
+    target_extra_cfg+="$export_newline""# Android$export_newline""AROS_ANDROID_ANTAPK           := $aros_android_antapk$export_newline"
+
     dnl MSYS bash can't run .bat files directly, then need to be started via cmd.exe
     if test "$host_os" = "mingw32"; then
         android_tool="cmd //c $android_tool"
@@ -1018,9 +1022,6 @@ kernel_tool_prefix="none"
 aros_tool_prefix="none"
 elf_tool_prefix="${target_cpu}-elf-"
 
-export_newline="
-"
-
 # Base target cpu ISA configuration switch.
 case "$target_cpu" in
     *aarch64*)
@@ -1028,32 +1029,32 @@ case "$target_cpu" in
     *arm*)
         ;;
     *m68k*)
-        m68k_isa_extra="ISA_MC68000_FLAGS           := -march=68000"
-        m68k_020_isa_extra="ISA_MC68020_FLAGS         := -march=68020"
-        m68k_030_isa_extra="ISA_MC68030_FLAGS         := -march=68030"
-        m68k_040_isa_extra="ISA_MC68040_FLAGS         := -march=68040"
-        m68k_060_isa_extra="ISA_MC68060_FLAGS         := -march=68060"
-        m68k_ac080_isa_extra="ISA_AC68080_FLAGS         := -march=68040"
-        m68k_020_ext="ISA_MC68020_EXT           :=020"
-        m68k_030_ext="ISA_MC68030_EXT           :=030"
-        m68k_040_ext="ISA_MC68040_EXT           :=040"
-        m68k_060_ext="ISA_MC68060_EXT           :=060"
-        m68k_020_cflags="ISA_MC68020_CFLAGS        :="
-        m68k_030_cflags="ISA_MC68030_CFLAGS        :="
-        m68k_040_cflags="ISA_MC68040_CFLAGS        :="
-        m68k_060_cflags="ISA_MC68060_CFLAGS        :="
-        m68k_020_cppflags="ISA_MC68020_CPPFLAGS      :="
-        m68k_030_cppflags="ISA_MC68030_CPPFLAGS      :="
-        m68k_040_cppflags="ISA_MC68040_CPPFLAGS      :="
-        m68k_060_cppflags="ISA_MC68060_CPPFLAGS      :="
-        m68k_020_ldflags="ISA_MC68020_LDFLAGS       :="
-        m68k_030_ldflags="ISA_MC68030_LDFLAGS        :="
-        m68k_040_ldflags="ISA_MC68040_LDFLAGS        :="
-        m68k_060_ldflags="ISA_MC68060_LDFLAGS        :="
+        m68k_isa_extra="ISA_MC68000_FLAGS             := -march=68000"
+        m68k_020_isa_extra="ISA_MC68020_FLAGS             := -march=68020"
+        m68k_030_isa_extra="ISA_MC68030_FLAGS             := -march=68030"
+        m68k_040_isa_extra="ISA_MC68040_FLAGS             := -march=68040"
+        m68k_060_isa_extra="ISA_MC68060_FLAGS             := -march=68060"
+        m68k_ac080_isa_extra="ISA_AC68080_FLAGS             := -march=68040"
+        m68k_020_ext="ISA_MC68020_EXT               :=020"
+        m68k_030_ext="ISA_MC68030_EXT               :=030"
+        m68k_040_ext="ISA_MC68040_EXT               :=040"
+        m68k_060_ext="ISA_MC68060_EXT               :=060"
+        m68k_020_cflags="ISA_MC68020_CFLAGS            :="
+        m68k_030_cflags="ISA_MC68030_CFLAGS            :="
+        m68k_040_cflags="ISA_MC68040_CFLAGS            :="
+        m68k_060_cflags="ISA_MC68060_CFLAGS            :="
+        m68k_020_cppflags="ISA_MC68020_CPPFLAGS          :="
+        m68k_030_cppflags="ISA_MC68030_CPPFLAGS          :="
+        m68k_040_cppflags="ISA_MC68040_CPPFLAGS          :="
+        m68k_060_cppflags="ISA_MC68060_CPPFLAGS          :="
+        m68k_020_ldflags="ISA_MC68020_LDFLAGS           :="
+        m68k_030_ldflags="ISA_MC68030_LDFLAGS           :="
+        m68k_040_ldflags="ISA_MC68040_LDFLAGS           :="
+        m68k_060_ldflags="ISA_MC68060_LDFLAGS           :="
         ;;
     *x86_64* | *i?86*)
-        x86_isa_extra="ISA_X86_FLAGS           := -m32 -march=i486"
-        x86_64_isa_extra="ISA_X8664_FLAGS         := -mcmodel=large"
+        x86_isa_extra="ISA_X86_FLAGS                 := -m32 -march=i486"
+        x86_64_isa_extra="ISA_X8664_FLAGS               := -mcmodel=large"
         ;;
     *powerpc*)
         ;;
@@ -1366,6 +1367,7 @@ case "$target_os" in
                 aros_nominal_width=320
                 aros_nominal_height=480
                 aros_ios_sdk="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/SDKs/$aros_ios_platform$aros_sdk_version.sdk"
+                target_extra_cfg+="$export_newline""# Apple iOS specific$export_newline""IOS_PLATFORM            := $aros_ios_platform$export_newline""IOS_OS_VERSION          := $aros_ios_version$export_newline""IOS_SDK_PATH            := $aros_ios_sdk$export_newline"
                 kernel_tool_flags="$target_tool_flags -isysroot $aros_ios_sdk"
                 aros_kernel_includes="-isystem $aros_ios_sdk/usr/include"
                 need_x11=no
@@ -1980,7 +1982,7 @@ spec_obj_format="-m $aros_object_format"
 # as well as floating-point ABI.
 case "$aros_target_cpu" in
     *m68k*)
-        aros_isa_targets="M68K_ISA_TARGETS:=MC68020 MC68040"
+        aros_isa_targets="M68K_ISA_TARGETS              :=MC68020 MC68040"
         aros_isa_extra="$aros_isa_extra$export_newline$aros_isa_targets$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_isa_extra$export_newline$m68k_020_isa_extra$export_newline$m68k_030_isa_extra$export_newline$m68k_040_isa_extra$export_newline$m68k_060_isa_extra$export_newline$m68k_ac080_isa_extra$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_cppflags$export_newline$m68k_030_cppflags$export_newline$m68k_040_cppflags$export_newline$m68k_060_cppflags$export_newline"
@@ -1989,7 +1991,7 @@ case "$aros_target_cpu" in
         aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
         ;;
     *x86_64*)
-        aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
+        aros_isa_extra="$export_newline$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
         dnl x86_64 can build 32 or 64bit code
         spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
         ;;
@@ -2919,6 +2921,10 @@ AC_MSG_CHECKING([default optimization level to use])
 AC_MSG_RESULT($optimization_level)
 fi
 
+if ! test "$gcc_default_cpu" = "" ; then
+    target_extra_cfg+="$export_newline""# ARM gcc default target$export_newline""GCC_DEFAULT_CPU         := $gcc_default_cpu$export_newline""GCC_DEFAULT_FPU         := $gcc_default_fpu$export_newline""GCC_DEFAULT_FLOAT_ABI   := $gcc_default_float_abi$export_newline""GCC_DEFAULT_MODE        := $gcc_default_mode$export_newline"
+fi
+
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
@@ -2974,6 +2980,7 @@ AC_SUBST(ant)
 AC_SUBST(aros_elf_translate)
 AC_SUBST(make_extra_commands)
 AC_SUBST(make_extra_targetcfg)
+AC_SUBST(target_extra_cfg)
 
 AC_SUBST(aros_target_guitheme)
 AC_SUBST(aros_target_iconset)
