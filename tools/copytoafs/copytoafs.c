@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -84,7 +84,14 @@ struct stat st;
 				{
 					retval = 1;
 					if (error == ERROR_NO_FREE_STORE)
-						printf("No more space left on device!\nNeed %ld more bytes to write file.\n", st.st_size-written);
+					{
+						printf("No more space left on device!\nNeed ");
+						if (sizeof(st.st_size) > 4)
+							printf("%lld", st.st_size-written);
+						else
+							printf("%ld", st.st_size-written);
+						printf(" more bytes to write file.\n");
+					}
 					else
 						printf("%s: error %ld\n", filename, (long int)error);
 				}
