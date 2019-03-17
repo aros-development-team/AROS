@@ -30,8 +30,11 @@ ULONG FNAME_SDCUNIT(MMCSwitch)(UBYTE offset, UBYTE value, struct sdcard_Unit *sd
 
     if ((retVal = FNAME_SDCBUS(SendCmd)(sdcSwitchTags, sdcUnit->sdcu_Bus)) != -1)
     {
-        /* Wait for units ready status */
-        FNAME_SDCUNIT(WaitStatus)(1000, sdcUnit);
+        if ((retVal = FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus)) != -1)
+        {
+            /* Wait for units ready status */
+            FNAME_SDCUNIT(WaitStatus)(1000, sdcUnit);
+        }
     }
     return retVal;
 }
@@ -75,7 +78,7 @@ ULONG FNAME_SDCUNIT(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         return -1;
     }
 
-    if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1) || (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+    if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
     {
         if (sdcRespBuf[0xB9])
         {
