@@ -38,7 +38,7 @@ static inline char *escapematch(char *p)
 static void escapeheader(char *buffer)
 {
 	char* p;
-    for (p = buffer; p = escapematch(p); ++p) {
+    for (p = buffer; (p = escapematch(p)); ++p) {
         *p = '_';
     }
 }
