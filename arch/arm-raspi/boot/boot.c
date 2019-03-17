@@ -387,8 +387,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         uint32_t size_ro, size_rw;
 
         /* Calculate total size of kernel and modules */
+#if AROS_BIG_ENDIAN
+        getElfSize(&_binary_core_be_bin_start, &size_rw, &size_ro);
+#else
         getElfSize(&_binary_core_bin_start, &size_rw, &size_ro);
-
+#endif
         total_size_ro = size_ro = (size_ro + 4095) & ~4095;
         total_size_rw = size_rw = (size_rw + 4095) & ~4095;
 
@@ -497,7 +500,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
         boottag->ti_Data = kernel_phys;
         boottag++;
 
+#if AROS_BIG_ENDIAN
+        loadElf(&_binary_core_be_bin_start);
+#else
         loadElf(&_binary_core_bin_start);
+#endif
 
         if (pkg_image && pkg_size)
         {

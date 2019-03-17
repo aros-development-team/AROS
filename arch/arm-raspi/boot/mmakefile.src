@@ -175,7 +175,7 @@ $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
 
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) --be8 --format elf32-bigarm -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	$(KERNEL_LD) --be8 --format elf32-bigarm -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core-be.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
 	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
 
 $(AROSDIR)/aros-arm-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
