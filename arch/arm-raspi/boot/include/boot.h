@@ -28,9 +28,15 @@ void arm_flush_cache(uint32_t addr, uint32_t length);
 extern uint8_t __bootstrap_start;
 extern uint8_t __bootstrap_end;
 
+#if AROS_BIG_ENDIAN
+extern void *_binary_core_be_bin_start;
+extern long *_binary_core_be_bin_end;
+extern long _binary_core_be_bin_size;
+#else
 extern void *_binary_core_bin_start;
 extern long *_binary_core_bin_end;
 extern long _binary_core_bin_size;
+#endif
 
 void kprintf(const char *format, ...);
 
