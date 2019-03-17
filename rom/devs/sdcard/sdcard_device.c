@@ -614,13 +614,13 @@ BOOL FNAME_SDC(HandleIO)(struct IORequest *io)
 }
 
 
-static const ULONG IMMEDIATE_COMMANDS = 0x803ff1e3; // 10000000001111111111000111100011
+//static const ULONG IMMEDIATE_COMMANDS = 0x803ff1e3; // 10000000001111111111000111100011
 
 /* See whether the command can be done quick */
 BOOL isSlow(ULONG comm)
 {
     BOOL slow = TRUE;   /* Assume always slow command */
-
+#if 0
     /* For commands with numbers <= 31 check the mask */
     if (comm <= 31)
     {
@@ -628,7 +628,7 @@ BOOL isSlow(ULONG comm)
             slow = FALSE;
     }
     else if (comm == NSCMD_TD_SEEK64) slow = FALSE;
-
+#endif
     return slow;
 }
 
