@@ -14,6 +14,7 @@
 #include <proto/utility.h>
 
 #include <hidd/storage.h>
+#include <hidd/bus.h>
 #include <hidd/ata.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
@@ -398,74 +399,6 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 /*****************************************************************************************
 
     NAME
-        aoHidd_ATABus_IRQHandler
-
-    SYNOPSIS
-        [.S.], APTR
-
-    LOCATION
-        CLID_Hidd_ATABus
-
-    FUNCTION
-        Specifies IRQ handler function to be called when bus interrupt arrives.
-        The function should be called using "C" calling convention and has the
-        following prototype:
-        
-            void ata_HandleIRQ(UBYTE status, APTR userdata);
-        
-        Your driver should pass the following arguments to this function:
-            status   - value read from ATA main status register.
-            userdata - value of aoHidd_ATABus_IRQData attribute.
-
-    NOTES
-        Reading the drive status register is part of the interrupt acknowledge
-        process, and therefore has to be done by the driver.
-
-        It is driver's job to check whether the interrupt really belongs to
-        the IDE bus. A generic way to do this is to test ATAF_BUSY bit of
-        the status register for being zero. However, this may not work
-        reliably with IRQ sharing, so advanced IDE controllers may offer
-        different, better way to do this.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        aoHidd_ATABus_IRQData
-
-    INTERNALS
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATABus_IRQData
-
-    SYNOPSIS
-        [.S.], APTR
-
-    LOCATION
-        CLID_Hidd_ATABus
-
-    FUNCTION
-        Caller's private data to be supplied to IRQ handler function.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        aoHidd_ATABus_IRQData
-
-    INTERNALS
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
         aoHidd_ATABus_UseIOAlt
 
     SYNOPSIS
@@ -490,35 +423,6 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         Default implementation in base class returns value depending on whether
         the subclass provided respective I/O functions in bus interface vector
         table during object creation.
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATABus_KeepEmpty
-
-    SYNOPSIS
-        [I..], BOOL
-
-    LOCATION
-        CLID_Hidd_ATABus
-
-    FUNCTION
-        If this attribute is set to FALSE during object creation, the object
-        will be destroyed if no devices are detected on the bus.
-
-        This can be useful for optional buses like legacy ISA controllers,
-        which have no other way to detect their presence.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
 
 *****************************************************************************************/
 /*****************************************************************************************
@@ -645,8 +549,10 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             case aoHidd_ATABus_DMAVectors:
                 data->dmaVectors = (APTR *)tag->ti_Data;
                 break;
-
-            case aoHidd_ATABus_KeepEmpty:
+            }
+            Hidd_Bus_Switch(tag->ti_Tag, idx)
+            {
+            case aoHidd_Bus_KeepEmpty:
                 data->keepEmpty = tag->ti_Data;
                 break;
             }
@@ -1023,8 +929,8 @@ BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
     D(bug("[ATA:Bus] %s()\n", __PRETTY_FUNCTION__));
 
     /* Attach IRQ handler */
-    OOP_SetAttrsTags(o, aHidd_ATABus_IRQHandler, Hidd_ATABus_HandleIRQ,
-                        aHidd_ATABus_IRQData   , ab,
+    OOP_SetAttrsTags(o, aHidd_Bus_IRQHandler, Hidd_ATABus_HandleIRQ,
+                        aHidd_Bus_IRQData   , ab,
                         TAG_DONE);
     
     /* scan bus - try to locate all devices (disables irq) */    

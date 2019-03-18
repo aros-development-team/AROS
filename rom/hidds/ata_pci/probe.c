@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware detection routine
@@ -22,6 +22,7 @@
 #include <exec/lists.h>
 #include <exec/rawfmt.h>
 #include <hardware/ahci.h>
+#include <hidd/bus.h>
 #include <hidd/ata.h>
 #include <hidd/storage.h>
 #include <hidd/pci.h>
@@ -631,7 +632,7 @@ static int ata_bus_Detect(struct atapciBase *base)
              * Legacy ISA controllers have no other way to detect their
              * presence. Do not confuse the user with phantom devices.
              */
-            {aHidd_ATABus_KeepEmpty     , probedbus->atapb_Node.ln_Type == ATABUSNODEPRI_LEGACY
+            {aHidd_Bus_KeepEmpty     , probedbus->atapb_Node.ln_Type == ATABUSNODEPRI_LEGACY
                                         ? FALSE : TRUE                          },
             {TAG_DONE                   , 0                                     }
         };
