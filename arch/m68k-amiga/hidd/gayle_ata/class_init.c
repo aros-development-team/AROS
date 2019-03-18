@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2018, The AROS Development Team. All rights reserved
+    Copyright © 2013-2019, The AROS Development Team. All rights reserved
     $Id$
 
     Desc: A600/A1200/A4000 ATA HIDD
@@ -12,6 +12,7 @@
 #include <aros/symbolsets.h>
 #include <hidd/hidd.h>
 #include <hidd/storage.h>
+#include <hidd/bus.h>
 #include <hidd/ata.h>
 #include <proto/oop.h>
 
@@ -23,6 +24,7 @@ static void GayleATA_Cleanup(struct ataBase *base)
     D(bug("[ATA:Gayle] %s()\n", __PRETTY_FUNCTION__);)
     OOP_ReleaseAttrBase(HiddAttrBase);
     OOP_ReleaseAttrBase(HiddATABusAB);
+    OOP_ReleaseAttrBase(HiddBusAB);
     OOP_ReleaseAttrBase(HWAttrBase);
     CloseLibrary(base->cs_UtilityBase);
 }
@@ -36,6 +38,7 @@ static int GayleATA_Init(struct ataBase *base)
         return FALSE;
 
     HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
+    HiddBusAB = OOP_ObtainAttrBase(IID_Hidd_Bus);
     HiddATABusAB = OOP_ObtainAttrBase(IID_Hidd_ATABus);
     HWAttrBase = OOP_ObtainAttrBase(IID_HW);
 

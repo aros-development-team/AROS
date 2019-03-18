@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: A600/A1200/A4000 ATA HIDD
@@ -10,6 +10,7 @@
 #include <aros/debug.h>
 
 #include <hardware/ata.h>
+#include <hidd/bus.h>
 #include <hidd/ata.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
@@ -102,6 +103,7 @@ static BOOL ata_CreateGayleInterrupt(struct ATA_BusData *bus, UBYTE num)
 
     return TRUE;
 }
+
 static void ata_RemoveGayleInterrupt(struct ATA_BusData *bus)
 {
     struct Interrupt *irq = &bus->ideint;
@@ -198,13 +200,13 @@ void GAYLEATA__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     {
         ULONG idx;
 
-        Hidd_ATABus_Switch(tag->ti_Tag, idx)
+        Hidd_Bus_Switch(tag->ti_Tag, idx)
         {
-        case aoHidd_ATABus_IRQHandler:
+        case aoHidd_Bus_IRQHandler:
             data->ata_HandleIRQ = (APTR)tag->ti_Data;
             break;
 
-        case aoHidd_ATABus_IRQData:
+        case aoHidd_Bus_IRQData:
             data->irqData = (APTR)tag->ti_Data;
             break;
         }
