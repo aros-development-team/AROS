@@ -28,7 +28,7 @@
 #include "i386/ieeefp.h"
 #endif
 
-static const volatile double vzero __attribute__ ((__section__(".rodata"))) = 0;
+static const volatile double vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0;
 
 static const double
 zero=  0,

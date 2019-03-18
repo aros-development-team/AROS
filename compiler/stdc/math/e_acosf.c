@@ -25,7 +25,7 @@ one =  1.0000000000e+00, /* 0x3F800000 */
 pi =  3.1415925026e+00, /* 0x40490fda */
 pio2_hi =  1.5707962513e+00; /* 0x3fc90fda */
 static const volatile float
-pio2_lo __attribute__ ((__section__(".rodata"))) =  7.5497894159e-08; /* 0x33a22168 */
+pio2_lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  7.5497894159e-08; /* 0x33a22168 */
 static const float
 pS0 =  1.6666586697e-01,
 pS1 = -4.2743422091e-02,

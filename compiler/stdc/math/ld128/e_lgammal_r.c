@@ -22,7 +22,7 @@
 #include "math.h"
 #include "math_private.h"
 
-static const volatile double vzero __attribute__ ((__section__(".rodata"))) = 0;
+static const volatile double vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 static const double
 zero=  0,

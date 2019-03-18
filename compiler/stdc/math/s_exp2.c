@@ -44,8 +44,8 @@ static const double
     P5	     = 0x1.5d88003875c74p-10;
 
 static const volatile double
-    huge     __attribute__ ((__section__(".rodata"))) = 0x1p1000,
-    twom1000 __attribute__ ((__section__(".rodata"))) = 0x1p-1000;
+    huge     __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0x1p1000,
+    twom1000 __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0x1p-1000;
 
 static const double tbl[TBLSIZE * 2] = {
 /*	exp2(z + eps)		eps	*/

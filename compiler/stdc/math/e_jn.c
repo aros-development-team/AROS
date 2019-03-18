@@ -44,7 +44,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_jn.c,v 1.11 2010/11/13 10:54
 #include "math.h"
 #include "math_private.h"
 
-static const volatile double vone __attribute__ ((__section__(".rodata"))) = 1, vzero __attribute__ ((__section__(".rodata"))) = 0;
+static const volatile double vone __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 1.0, vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 static const double
 invsqrtpi=  5.64189583547756279280e-01, /* 0x3FE20DD7, 0x50429B6D */

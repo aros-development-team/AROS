@@ -25,6 +25,13 @@
 #include "fpmath.h"
 #include "bsdsrc/math_private_openbsd.h"
 
+//the following define is used to comment out gcc's incorrect section attributes
+#if defined(__arm__)
+#define SECTIONCOMMENT "\n@"
+#else
+#define SECTIONCOMMENT "\n#"
+#endif
+
 /*
  * The original fdlibm code used statements like:
  *	n0 = ((*(int*)&one)>>29)^1;		* index of high word *

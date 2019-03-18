@@ -46,8 +46,8 @@
 #define	BIAS	(LDBL_MAX_EXP - 1)
 
 static const volatile long double
-    huge __attribute__ ((__section__(".rodata"))) = 0x1p10000L,
-    twom10000 __attribute__ ((__section__(".rodata"))) = 0x1p-10000L;
+    huge __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0x1p10000L,
+    twom10000 __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0x1p-10000L;
 
 static const union IEEEl2bits
 P1 = LD80C(0xb17217f7d1cf79ac, -1, 6.93147180559945309429e-1L);

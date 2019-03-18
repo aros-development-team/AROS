@@ -41,8 +41,8 @@
 #define	EXPMASK	(BIAS + LDBL_MAX_EXP)
 
 static const volatile long double
-    huge      __attribute__ ((__section__(".rodata"))) = 0x1p10000L,
-    twom10000 __attribute__ ((__section__(".rodata"))) = 0x1p-10000L;
+    huge      __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0x1p10000L,
+    twom10000 __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0x1p-10000L;
 
 static const long double
     P1        = 0x1.62e42fefa39ef35793c7673007e6p-1L,

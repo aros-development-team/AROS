@@ -30,8 +30,8 @@ one=  1.00000000000000000000e+00;
 #ifdef __i386__
 /* XXX Work around the fact that gcc truncates long double constants on i386 */
 static const volatile double
-pi1 __attribute__ ((__section__(".rodata"))) =  3.14159265358979311600e+00,	/*  0x1.921fb54442d18p+1  */
-pi2 __attribute__ ((__section__(".rodata"))) =  1.22514845490862001043e-16;	/*  0x1.1a80000000000p-53 */
+pi1 __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  3.14159265358979311600e+00,	/*  0x1.921fb54442d18p+1  */
+pi2 __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  1.22514845490862001043e-16;	/*  0x1.1a80000000000p-53 */
 #define	pi	((long double)pi1 + pi2)
 #else
 static const long double
