@@ -31,7 +31,7 @@ Lg3 =      0x91e9ee.0p-25,	/* 0.28498786688 */
 Lg4 =      0xf89e26.0p-26;	/* 0.24279078841 */
 
 static const float zero   =  0.0;
-static const volatile float vzero __attribute__ ((__section__(".rodata"))) = 0.0;
+static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 float
 __ieee754_logf(float x)

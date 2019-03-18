@@ -20,7 +20,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_lgammaf_r.c,v 1.12 2011/10/1
 #include "math.h"
 #include "math_private.h"
 
-static const volatile float vzero __attribute__ ((__section__(".rodata"))) = 0;
+static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 static const float
 zero=  0,

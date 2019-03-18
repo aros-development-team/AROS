@@ -42,7 +42,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanh.c,v 1.9 2008/02/22 02:3
 #include "math.h"
 #include "math_private.h"
 
-static const volatile double tiny __attribute__ ((__section__(".rodata"))) = 1.0e-300;
+static const volatile double tiny __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 1.0e-300;
 static const double one = 1.0, two = 2.0, huge = 1.0e300;
 
 double

@@ -30,16 +30,16 @@
 #if defined(__amd64__) || defined(__i386__)
 /* Long double constants are slow on these arches, and broken on i386. */
 static const volatile double
-T3hi __attribute__ ((__section__(".rodata"))) =  0.33333333333333331,		/*  0x15555555555555.0p-54 */
-T3lo __attribute__ ((__section__(".rodata"))) =  1.8350121769317163e-17,		/*  0x15280000000000.0p-108 */
-T5hi __attribute__ ((__section__(".rodata"))) =  0.13333333333333336,		/*  0x11111111111112.0p-55 */
-T5lo __attribute__ ((__section__(".rodata"))) =  1.3051083651294260e-17,		/*  0x1e180000000000.0p-109 */
-T7hi __attribute__ ((__section__(".rodata"))) =  0.053968253968250494,		/*  0x1ba1ba1ba1b827.0p-57 */
-T7lo __attribute__ ((__section__(".rodata"))) =  3.1509625637859973e-18,		/*  0x1d100000000000.0p-111 */
-pio4_hi __attribute__ ((__section__(".rodata"))) =  0.78539816339744828,		/*  0x1921fb54442d18.0p-53 */
-pio4_lo __attribute__ ((__section__(".rodata"))) =  3.0628711372715500e-17,	/*  0x11a80000000000.0p-107 */
-pio4lo_hi __attribute__ ((__section__(".rodata"))) = -1.2541394031670831e-20,	/* -0x1d9cceba3f91f2.0p-119 */
-pio4lo_lo __attribute__ ((__section__(".rodata"))) =  6.1493048227390915e-37;	/*  0x1a280000000000.0p-173 */
+T3hi __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  0.33333333333333331,		/*  0x15555555555555.0p-54 */
+T3lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  1.8350121769317163e-17,		/*  0x15280000000000.0p-108 */
+T5hi __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  0.13333333333333336,		/*  0x11111111111112.0p-55 */
+T5lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  1.3051083651294260e-17,		/*  0x1e180000000000.0p-109 */
+T7hi __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  0.053968253968250494,		/*  0x1ba1ba1ba1b827.0p-57 */
+T7lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  3.1509625637859973e-18,		/*  0x1d100000000000.0p-111 */
+pio4_hi __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  0.78539816339744828,		/*  0x1921fb54442d18.0p-53 */
+pio4_lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  3.0628711372715500e-17,	/*  0x11a80000000000.0p-107 */
+pio4lo_hi __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = -1.2541394031670831e-20,	/* -0x1d9cceba3f91f2.0p-119 */
+pio4lo_lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) =  6.1493048227390915e-37;	/*  0x1a280000000000.0p-173 */
 #define	T3	((long double)T3hi + T3lo)
 #define	T5	((long double)T5hi + T5lo)
 #define	T7	((long double)T7hi + T7lo)

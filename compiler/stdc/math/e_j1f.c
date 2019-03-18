@@ -26,7 +26,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_j1f.c,v 1.7 2002/05/28 18:15
 
 static __inline float ponef(float), qonef(float);
 
-static const volatile float vone __attribute__ ((__section__(".rodata"))) = 1, vzero __attribute__ ((__section__(".rodata"))) = 0;
+static const volatile float vone __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 1.0, vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 static const float
 huge    = 1e30,

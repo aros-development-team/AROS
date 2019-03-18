@@ -33,7 +33,7 @@ Lp6 = 1.5313838422e-01, /* 3E1CD04F */
 Lp7 = 1.4798198640e-01; /* 3E178897 */
 
 static const float zero = 0.0;
-static const volatile float vzero __attribute__ ((__section__(".rodata"))) = 0.0;
+static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 float
 log1pf(float x)

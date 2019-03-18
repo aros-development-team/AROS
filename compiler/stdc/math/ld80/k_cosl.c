@@ -48,8 +48,8 @@ one = 1.0;
 #if defined(__amd64__) || defined(__i386__)
 /* Long double constants are slow on these arches, and broken on i386. */
 static const volatile double
-C1hi __attribute__ ((__section__(".rodata"))) = 0.041666666666666664,		/*  0x15555555555555.0p-57 */
-C1lo __attribute__ ((__section__(".rodata"))) = 2.2598839032744733e-18;		/*  0x14d80000000000.0p-111 */
+C1hi __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.041666666666666664,		/*  0x15555555555555.0p-57 */
+C1lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 2.2598839032744733e-18;		/*  0x14d80000000000.0p-111 */
 #define	C1	((long double)C1hi + C1lo)
 #else
 static const long double

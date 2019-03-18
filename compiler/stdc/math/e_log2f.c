@@ -30,7 +30,7 @@ ivln2hi    =  1.4428710938e+00, /* 0x3fb8b000 */
 ivln2lo    = -1.7605285393e-04; /* 0xb9389ad4 */
 
 static const float zero   =  0.0;
-static const volatile float vzero __attribute__ ((__section__(".rodata"))) = 0.0;
+static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 float
 __ieee754_log2f(float x)

@@ -21,14 +21,14 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_atan2f.c,v 1.12 2008/08/03 1
 #include "math_private.h"
 
 static const volatile float
-tiny  __attribute__ ((__section__(".rodata"))) = 1.0e-30;
+tiny __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 1.0e-30;
 static const float
 zero  = 0.0,
 pi_o_4  = 7.8539818525e-01, /* 0x3f490fdb */
 pi_o_2  = 1.5707963705e+00, /* 0x3fc90fdb */
 pi      = 3.1415927410e+00; /* 0x40490fdb */
 static const volatile float
-pi_lo   __attribute__ ((__section__(".rodata"))) = -8.7422776573e-08; /* 0xb3bbbd2e */
+pi_lo __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = -8.7422776573e-08; /* 0xb3bbbd2e */
 
 float
 __ieee754_atan2f(float y, float x)

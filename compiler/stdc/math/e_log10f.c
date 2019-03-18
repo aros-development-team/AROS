@@ -33,7 +33,7 @@ log10_2hi  =  3.0102920532e-01, /* 0x3e9a2080 */
 log10_2lo  =  7.9034151668e-07; /* 0x355427db */
 
 static const float zero   =  0.0;
-static const volatile float vzero __attribute__ ((__section__(".rodata"))) = 0.0;
+static const volatile float vzero __attribute__ ((__section__(".rodata,\"a\" " SECTIONCOMMENT))) = 0.0;
 
 float
 __ieee754_log10f(float x)
