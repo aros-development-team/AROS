@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2018, The AROS Development Team. All rights reserved
+    Copyright © 2013-2019, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -28,6 +28,7 @@ static CONST_STRPTR attrBaseIDs[] =
     IID_Hidd_PCIDevice,
     IID_Hidd_PCIDriver,
     IID_Hidd,
+    IID_Hidd_Bus,
     IID_Hidd_ATABus,
     IID_HW,
     NULL

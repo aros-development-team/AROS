@@ -57,12 +57,14 @@ struct atapciBase
 
     OOP_Object	   *storageRoot;
 
+#if defined(__OOP_NOATTRBASES__)
     OOP_AttrBase    PCIDeviceAttrBase;
     OOP_AttrBase    PCIDriverAttrBase;
     OOP_AttrBase    hiddAttrBase;
+    OOP_AttrBase    busAttrBase;
     OOP_AttrBase    ATABusAttrBase;
     OOP_AttrBase    hwAttrBase;
-
+#endif
 #if defined(__OOP_NOMETHODBASES__)
     OOP_MethodID    PCIMethodBase;
     OOP_MethodID    PCIDeviceMethodBase;
@@ -76,17 +78,21 @@ struct atapciBase
     struct Library *cs_UtilityBase;
 };
 
+#if defined(__OOP_NOATTRBASES__)
 /* Attribute Bases ... */
 #undef HiddPCIDeviceAttrBase
 #undef HiddPCIDriverAttrBase
 #undef HiddAttrBase
+#undef HiddBusAB
 #undef HiddATABusAB
 #undef HWAttrBase
 #define HiddPCIDeviceAttrBase (base->PCIDeviceAttrBase)
 #define HiddPCIDriverAttrBase (base->PCIDriverAttrBase)
 #define HiddAttrBase          (base->hiddAttrBase)
+#define HiddBusAB             (base->busAttrBase)
 #define HiddATABusAB          (base->ATABusAttrBase)
 #define HWAttrBase            (base->hwAttrBase)
+#endif
 
 #if defined(__OOP_NOMETHODBASES__)
 /* Method Bases ... */
