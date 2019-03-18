@@ -1,8 +1,8 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: UAE Gfx Hidd
+    Desc: P96 Gfx Hidd
     Lang: English.
 */
 
@@ -28,9 +28,9 @@
 
 #include LC_LIBDEFS_FILE
 
-#include "uaegfx_intern.h"
-#include "uaegfx_bitmap.h"
-#include "uaertg.h"
+#include "p96gfx_intern.h"
+#include "p96gfx_bitmap.h"
+#include "p96_rtg.h"
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -41,9 +41,9 @@
 #define SIZE_PFLIST 19
 #define SIZE_MODELIST (5 + RGBFB_MaxFormats)
 
-HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
+HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct RTGMode *node;
     struct TagItem *tag, *tstate;
     ULONG minwidth = 0, maxwidth = 0xFFFFFFFF;
@@ -127,18 +127,18 @@ HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
     return modeids;
 }
 
-VOID UAEGFXCl__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ReleaseModeIDs *msg)
+VOID P96GFXCl__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ReleaseModeIDs *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     if (csd->superforward)
    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     else
     	FreeVec(msg->modeIDs);
 }
 
-HIDDT_ModeID UAEGFXCl__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NextModeID *msg)
+HIDDT_ModeID P96GFXCl__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NextModeID *msg)
 {
-	struct uaegfx_staticdata *csd = CSD(cl);
+	struct p96gfx_staticdata *csd = CSD(cl);
 	struct RTGMode *node = NULL;
 	HIDDT_ModeID mid = vHidd_ModeID_Invalid;
 
@@ -162,9 +162,9 @@ HIDDT_ModeID UAEGFXCl__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o, struct
 	return mid;
 }
 
-BOOL UAEGFXCl__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMode *msg)
+BOOL P96GFXCl__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMode *msg)
 {
-	struct uaegfx_staticdata *csd = CSD(cl);
+	struct p96gfx_staticdata *csd = CSD(cl);
 	struct RTGMode *node;
 
  	if (csd->superforward)
@@ -235,18 +235,18 @@ static const UBYTE rgbtypelist[] = {
     0
 };
 
-OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct LibResolution *r;
     WORD rescnt, i, j, k, l;
     struct TagItem *reslist, *restags, *pflist, *modetags;
     struct pRoot_New mymsg;
     struct TagItem mytags[] = {
 	{ aHidd_Gfx_ModeTags,	(IPTR)NULL	},
-        { aHidd_Name            , (IPTR)"uaegfx.hidd"     },
-        { aHidd_HardwareName    , (IPTR)"UAE Native Display Adaptor"   },
-        { aHidd_ProducerName    , (IPTR)"UAE"  },
+        { aHidd_Name            , (IPTR)"p96gfx.hidd"     },
+        { aHidd_HardwareName    , (IPTR)"P96 Native Display Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"P96"  },
 	{ TAG_MORE, 0UL }
     };
     UWORD supportedformats, gotmodes;
@@ -266,7 +266,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
         rescnt++;
     }
-    D(bug("UAEGFX: resolutions: %d, supportmask: %x\n", rescnt, supportedformats));
+    D(bug("P96GFX: resolutions: %d, supportmask: %x\n", rescnt, supportedformats));
 
     reslist = AllocVec(rescnt * SIZE_RESLIST * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
     restags = AllocVec((rescnt + 1) * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
@@ -280,7 +280,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	reslist[i * SIZE_RESLIST + 1].ti_Tag = aHidd_Sync_VDisp;
     	reslist[i * SIZE_RESLIST + 1].ti_Data = r->Height;
     	reslist[i * SIZE_RESLIST + 2].ti_Tag = aHidd_Sync_Description;
-    	reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)(csd->CardBase ? "RTGFX:%hx%v" : "UAEGFX:%hx%v");
+    	reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)(csd->CardBase ? "RTGFX:%hx%v" : "P96GFX:%hx%v");
     	reslist[i * SIZE_RESLIST + 3].ti_Tag = aHidd_Sync_PixelClock;
     	reslist[i * SIZE_RESLIST + 3].ti_Data = r->Modes[CHUNKY]->PixelClock;
     	reslist[i * SIZE_RESLIST + 4].ti_Tag = TAG_DONE;
@@ -404,7 +404,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
  
     mytags[0].ti_Data = (IPTR)modetags;
  
-    EnterFunc(bug("UAEGFX::New() tags=%x\n", mytags));
+    EnterFunc(bug("P96GFX::New() tags=%x\n", mytags));
 
     mymsg.mID	= msg->mID;
     mymsg.attrList = mytags;
@@ -417,7 +417,7 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	struct gfx_data *data = OOP_INST_DATA(cl, o);
 	HIDDT_ModeID *midp;
 
-	D(bug("UAEGFX::New(): Got object from super\n"));
+	D(bug("P96GFX::New(): Got object from super\n"));
 	NewList((struct List *)&data->bitmaps);
 	csd->initialized = 1;
 	csd->spritecolors = 16;
@@ -482,19 +482,19 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     FreeVec(pflist);
     FreeVec(modetags);
     
-    ReturnPtr("UAEGFX::New", OOP_Object *, o);
+    ReturnPtr("P96GFX::New", OOP_Object *, o);
 }
 
 /********** GfxHidd::Dispose()  ******************************/
-OOP_Object *UAEGFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *P96GFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
-    EnterFunc(bug("UAEGFX::CreateObject()\n"));
+    EnterFunc(bug("P96GFX::CreateObject()\n"));
 
     if (msg->cl == CSD(cl)->basebm)
     {
-        struct uaegfx_staticdata *csd = CSD(cl);
+        struct p96gfx_staticdata *csd = CSD(cl);
         HIDDT_ModeID		modeid;
         struct pHidd_Gfx_CreateObject   p;
         struct TagItem tags[] =
@@ -517,15 +517,15 @@ OOP_Object *UAEGFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struc
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    ReturnPtr("UAEGFX::CreateObject", OOP_Object *, object);
+    ReturnPtr("P96GFX::CreateObject", OOP_Object *, object);
 }
 
-VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID P96GFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     ULONG idx;
     
-    //bug("UAEGFXCl__Root__Get %x\n", msg->attrID);
+    //bug("P96GFXCl__Root__Get %x\n", msg->attrID);
 
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
@@ -545,23 +545,23 @@ VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    	*msg->storage = FALSE;
 	    return;
 	    case aoHidd_Gfx_DriverName:
-		*msg->storage = (IPTR)"UAEGFX";
+		*msg->storage = (IPTR)"P96GFX";
 	    return;
 	}
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+VOID P96GFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct TagItem  *tag, *tstate;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
     	ULONG idx;
-	D(bug("UAEGFXCl__Root__Set %x\n", tag->ti_Tag));
+	D(bug("P96GFXCl__Root__Set %x\n", tag->ti_Tag));
     	if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
     	    D(bug("->%d\n", idx));
 	    switch(idx)
@@ -579,9 +579,9 @@ VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 #if 0
-ULONG UAEGFXCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
+ULONG P96GFXCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     csd->vpe = NULL;
     if (!msg)
@@ -591,16 +591,16 @@ ULONG UAEGFXCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHid
     return MVP_OK;
 }
 
-void UAEGFXCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
+void P96GFXCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     csd->vpe = NULL;
     bug("cleanviewport\n");
 }
 #endif
 
-static void doshow(struct uaegfx_staticdata *csd, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
+static void doshow(struct p96gfx_staticdata *csd, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
 {
     struct IntuitionBase *ib = (struct IntuitionBase*)csd->cs_IntuitionBase;
     struct ViewPort *vpi = NULL;
@@ -638,17 +638,17 @@ static void doshow(struct uaegfx_staticdata *csd, OOP_Object *bm, struct ViewPor
     }
 }
 
-OOP_Object *UAEGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *c, struct pHidd_Gfx_Show *msg)
+OOP_Object *P96GFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *c, struct pHidd_Gfx_Show *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     doshow(csd, msg->bitMap, csd->viewport, FALSE);
     return msg->bitMap;
 }
 
-ULONG UAEGFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+ULONG P96GFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct HIDD_ViewPortData *vpd = msg->Data;
     OOP_Object *bm = NULL;
     struct ViewPort *vp = NULL;
@@ -665,9 +665,9 @@ ULONG UAEGFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct 
     return MCOP_OK;
 }
 
-ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+ULONG P96GFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct HIDD_ViewPortData *vpd = msg->Data;
     OOP_Object *bm = NULL;
     struct ViewPort *vp = NULL;
@@ -681,9 +681,9 @@ ULONG UAEGFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHi
     return TRUE;
 }
 
-VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+VOID P96GFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     struct bm_data *sdata = NULL;
     struct bm_data *ddata = NULL;
@@ -824,9 +824,9 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 }
 
-BOOL UAEGFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
+BOOL P96GFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_HW
     WaitBlitter(csd);
@@ -835,9 +835,9 @@ BOOL UAEGFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHid
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     OOP_Object *cm = NULL;
     IPTR width, height;
     WORD x, y, hiressprite, i;
@@ -913,9 +913,9 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     return TRUE;
 }
                              
-BOOL UAEGFXCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+BOOL P96GFXCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     
     LOCK_HW
     pw(csd->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)csd->boardinfo[PSSO_BoardInfo_MouseXOffset]);
@@ -925,18 +925,18 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd
     
     return TRUE;
 }
-VOID UAEGFXCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+VOID P96GFXCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     
     LOCK_HW
     SetSprite(csd, msg->visible);
     UNLOCK_HW
 }
 
-BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CheckMode *msg)
+BOOL P96GFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CheckMode *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     IPTR width, height, bpp;
     
     OOP_GetAttr(msg->sync, aHidd_Sync_HDisp, &width);
@@ -950,11 +950,11 @@ BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 }
 
 
-static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
+static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct p96gfx_staticdata *csd)
 {
     OOP_ReleaseAttrBase(IID_Hidd);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
-    OOP_ReleaseAttrBase(IID_Hidd_BitMap_UAE);
+    OOP_ReleaseAttrBase(IID_Hidd_BitMap_P96);
     OOP_ReleaseAttrBase(IID_Hidd_GC);
     OOP_ReleaseAttrBase(IID_Hidd_Sync);
     OOP_ReleaseAttrBase(IID_Hidd_Gfx);
@@ -986,7 +986,7 @@ static const struct P96RTGmode rtgmodes[] =
         { 0 }
 };
 /* real RTG only */
-static BOOL PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution *res, const struct P96RTGmode *mode)
+static BOOL PopulateModeInfo(struct p96gfx_staticdata *csd, struct LibResolution *res, const struct P96RTGmode *mode)
 {
     UWORD rgbformat;
     BOOL ok = FALSE;
@@ -1042,7 +1042,7 @@ static BOOL PopulateModeInfo(struct uaegfx_staticdata *csd, struct LibResolution
     }
     return ok;
 }
-static void PopulateResolutionList(struct uaegfx_staticdata *csd)
+static void PopulateResolutionList(struct p96gfx_staticdata *csd)
 {
     struct LibResolution *node;
     UWORD cnt;
@@ -1064,7 +1064,7 @@ static void PopulateResolutionList(struct uaegfx_staticdata *csd)
     }   
 }
 
-static int openall(struct uaegfx_staticdata *csd)
+static int openall(struct p96gfx_staticdata *csd)
 {
     if ((csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
     	if ((csd->cs_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
@@ -1073,7 +1073,7 @@ static int openall(struct uaegfx_staticdata *csd)
     }
     return FALSE;
 }
-static void freeall(struct uaegfx_staticdata *csd)
+static void freeall(struct p96gfx_staticdata *csd)
 {
     CloseLibrary(csd->cs_IntuitionBase);
     CloseLibrary(csd->cs_UtilityBase);
@@ -1083,7 +1083,7 @@ static void freeall(struct uaegfx_staticdata *csd)
     csd->boardinfo = NULL;
 }
 
-static void P96DebugInfo(struct uaegfx_staticdata *csd)
+static void P96DebugInfo(struct p96gfx_staticdata *csd)
 {
     UBYTE i;
     DRTG(bug("Name:'%s'\n",
@@ -1107,7 +1107,7 @@ static void P96DebugInfo(struct uaegfx_staticdata *csd)
     }
 }
 
-static BOOL P96Init(struct uaegfx_staticdata *csd, struct Library *lib)
+static BOOL P96Init(struct p96gfx_staticdata *csd, struct Library *lib)
 {
     DRTG(bug("P96GFX: attempting to init '%s'\n", lib->lib_Node.ln_Name));
     pl(csd->boardinfo + PSSO_BoardInfo_CardBase, (ULONG)lib);
@@ -1130,9 +1130,9 @@ static BOOL P96Init(struct uaegfx_staticdata *csd, struct Library *lib)
 }
 
 
-BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
+BOOL Init_P96GFXClass(LIBBASETYPEPTR LIBBASE)
 {
-    struct uaegfx_staticdata *csd = &LIBBASE->csd;
+    struct p96gfx_staticdata *csd = &LIBBASE->csd;
     struct MemChunk *mc;
     UBYTE i;
     struct Interrupt *intr;
@@ -1141,7 +1141,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     if (!(SysBase->AttnFlags & AFF_68020))
     	return FALSE;
 
-    D(bug("Init_UAEGFXClass\n"));
+    D(bug("Init_P96GFXClass\n"));
     if (!openall(csd)) {
     	freeall(csd);
     	return FALSE;
@@ -1193,18 +1193,18 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     Permit();
 
     if (!csd->CardBase) {
-    	csd->uaeromvector = (APTR)(0xf00000 + 0xff60);
-    	if ((gl(csd->uaeromvector) & 0xff00ffff) != 0xa0004e75) {
-	    D(bug("UAE boot ROM entry point not found. UAEGFX not enabled.\n"));
+    	csd->p96romvector = (APTR)(0xf00000 + 0xff60);
+    	if ((gl(csd->p96romvector) & 0xff00ffff) != 0xa0004e75) {
+	    D(bug("P96 boot ROM entry point not found. P96GFX not enabled.\n"));
 	    freeall(csd);
 	    return FALSE;
     	}
     	if (!FindCard(csd)) {
-    	    D(bug("UAEGFX: FindCard() returned false\n"));
+    	    D(bug("P96GFX: FindCard() returned false\n"));
     	    freeall(csd);
     	    return FALSE;
         }
-        D(bug("UAEGFX: FindCard done\n"));
+        D(bug("P96GFX: FindCard done\n"));
         InitCard(csd);
 	csd->hardwaresprite = (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE)) && SetSprite(csd, FALSE);
     } else {
@@ -1250,7 +1250,7 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 
     __IHidd                    = OOP_ObtainAttrBase(IID_Hidd);
     __IHidd_BitMap  	   = OOP_ObtainAttrBase(IID_Hidd_BitMap);
-    __IHidd_BitMap_UAE = OOP_ObtainAttrBase(IID_Hidd_BitMap_UAE);
+    __IHidd_BitMap_P96 = OOP_ObtainAttrBase(IID_Hidd_BitMap_P96);
     __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
     __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
     __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
@@ -1261,10 +1261,10 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     HiddColorMapBase	= OOP_GetMethodID(IID_Hidd_ColorMap, 0);
     HiddGfxBase		= OOP_GetMethodID(IID_Hidd_Gfx, 0);
     
-    if (!__IHidd || !__IHidd_BitMap || !__IHidd_BitMap_UAE || !__IHidd_GC ||
+    if (!__IHidd || !__IHidd_BitMap || !__IHidd_BitMap_P96 || !__IHidd_GC ||
     	!__IHidd_Sync || !__IHidd_Gfx || !__IHidd_PixFmt || !__IHidd_ColorMap)
     {
-    	D(bug("Init_UAEGFXClass fail\n"));
+    	D(bug("Init_P96GFXClass fail\n"));
     	freeattrbases(LIBBASE, csd);
     	freeall(csd);
     	return FALSE;
@@ -1274,16 +1274,16 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
+static int Expunge_P96GFXClass(LIBBASETYPEPTR LIBBASE)
 {
-    struct uaegfx_staticdata *csd = &LIBBASE->csd;
-    D(bug("Expunge_UAEGFXClass\n"));
+    struct p96gfx_staticdata *csd = &LIBBASE->csd;
+    D(bug("Expunge_P96GFXClass\n"));
     freeattrbases(LIBBASE, csd);
     freeall(csd);
     return TRUE;
 }
 
-ADD2EXPUNGELIB(Expunge_UAEGFXClass, 1)
+ADD2EXPUNGELIB(Expunge_P96GFXClass, 1)
 
 #undef SysBase
 

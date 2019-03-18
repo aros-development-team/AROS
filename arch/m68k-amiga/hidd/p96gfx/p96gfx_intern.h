@@ -1,15 +1,15 @@
-#ifndef HIDD_UAEGFX_H
-#define HIDD_UAEGFX_H
+#ifndef HIDD_P96GFX_H
+#define HIDD_P96GFX_H
 
 #include <exec/libraries.h>
 #include <oop/oop.h>
 #include <exec/semaphores.h>
 
-#include "uaegfx_hidd.h"
+#include "p96gfx_hidd.h"
 
 #define __IHidd		        (csd->hiddAttrBase)
 #define __IHidd_BitMap	        (csd->hiddBitMapAttrBase)
-#define __IHidd_BitMap_UAE      (csd->hiddUAEGFXBitMapAttrBase)
+#define __IHidd_BitMap_P96      (csd->hiddP96GFXBitMapAttrBase)
 #define __IHidd_GC              (csd->hiddGCAttrBase)
 #define __IHidd_Sync	        (csd->hiddSyncAttrBase)
 #define __IHidd_PixFmt		(csd->hiddPixFmtAttrBase)
@@ -34,7 +34,7 @@ struct RTGMode
 	OOP_Object *sync;
 };
 
-struct uaegfx_staticdata
+struct p96gfx_staticdata
 {
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
     OOP_Class 	    	    *gfxclass;
@@ -42,7 +42,7 @@ struct uaegfx_staticdata
 
 	OOP_AttrBase hiddAttrBase;
 	OOP_AttrBase hiddBitMapAttrBase;  
-	OOP_AttrBase hiddUAEGFXBitMapAttrBase;
+	OOP_AttrBase hiddP96GFXBitMapAttrBase;
 	OOP_AttrBase hiddGCAttrBase;
 	OOP_AttrBase hiddSyncAttrBase;
 	OOP_AttrBase hiddPixFmtAttrBase;
@@ -61,7 +61,7 @@ struct uaegfx_staticdata
 	struct Library *cs_UtilityBase;
 	struct Library *cs_OOPBase;
 	struct bm_data *disp;
-	APTR uaeromvector;
+	APTR p96romvector;
 	ULONG rgbformat;
 	struct ModeInfo *modeinfo;
 	struct ModeInfo *fakemodeinfo;
@@ -93,16 +93,16 @@ struct uaegfx_staticdata
     struct SignalSemaphore MultiBMLock;
 };
 
-struct UAEGFXclbase
+struct P96GFXclbase
 {
     struct Library        library;
     
-    struct uaegfx_staticdata csd;
+    struct p96gfx_staticdata csd;
     IPTR                  cs_SegList;
 };
 
 #undef CSD
-#define CSD(cl)     	(&((struct UAEGFXclbase *)cl->UserData)->csd)
+#define CSD(cl)     	(&((struct P96GFXclbase *)cl->UserData)->csd)
 
 #define SysBase         (csd->cs_SysBase)
 #define OOPBase         (csd->cs_OOPBase)
