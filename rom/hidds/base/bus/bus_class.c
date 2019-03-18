@@ -75,7 +75,7 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_ATABus_KeepEmpty
+        aoHidd_Bus_KeepEmpty
 
     SYNOPSIS
         [I..], BOOL
@@ -87,10 +87,9 @@
         If this attribute is set to FALSE during object creation, the object
         will be destroyed if no devices are detected on the bus.
 
+    NOTES
         This can be useful for optional buses like legacy ISA controllers,
         which have no other way to detect their presence.
-
-    NOTES
 
     EXAMPLE
 
