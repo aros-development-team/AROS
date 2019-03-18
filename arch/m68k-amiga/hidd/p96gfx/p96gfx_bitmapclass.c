@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for native Amiga chipset.
@@ -33,9 +33,9 @@
 
 #include LC_LIBDEFS_FILE
 
-#include "uaegfx_intern.h"
-#include "uaegfx_bitmap.h"
-#include "uaertg.h"
+#include "p96gfx_intern.h"
+#include "p96gfx_bitmap.h"
+#include "p96_rtg.h"
 
 /* LOCK_BITMAP_MULTI:
 
@@ -47,7 +47,7 @@
 
 */
   
-static APTR allocrtgvrambitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
+static APTR allocrtgvrambitmap(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     APTR vmem;
     SetMemoryMode(csd, RGBFB_CLUT);
@@ -60,7 +60,7 @@ static APTR allocrtgvrambitmap(struct uaegfx_staticdata *csd, struct bm_data *bm
     return vmem;
 }
 
-static void freertgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
+static void freertgbitmap(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     DVRAM(bug("BM %p: freeing %p:%d from %s\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM"));
     if (bm->invram)
@@ -79,7 +79,7 @@ static void freertgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
     bm->invram = FALSE;
 }	
 
-static BOOL movebitmaptofram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+static BOOL movebitmaptofram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     BOOL ok = FALSE;
     APTR vmem;
@@ -114,7 +114,7 @@ static BOOL movebitmaptofram(struct uaegfx_staticdata *csd, struct bm_data *bm)
    return ok;
 }
 
-static BOOL allocrtgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm, BOOL usevram)
+static BOOL allocrtgbitmap(struct p96gfx_staticdata *csd, struct bm_data *bm, BOOL usevram)
 {
     bm->memsize = (bm->bytesperline * bm->height + 7) & ~7;
     
@@ -166,7 +166,7 @@ static BOOL allocrtgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm, BO
     return bm->VideoData != NULL;
 }
 
-static BOOL movethisbitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+static BOOL movethisbitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     APTR vmem = allocrtgvrambitmap(csd, bm);
     if (vmem)
@@ -183,7 +183,7 @@ static BOOL movethisbitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *
     return FALSE;
 }
 
-static BOOL movebitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+static BOOL movebitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
      struct bm_data *bmnode;
  
@@ -212,7 +212,7 @@ static BOOL movebitmaptovram(struct uaegfx_staticdata *csd, struct bm_data *bm)
 }
 
 #if 0
-static BOOL maybeputinvram(struct uaegfx_staticdata *csd, struct bm_data *bm)
+static BOOL maybeputinvram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     if (bm->invram)
 	return TRUE;
@@ -222,7 +222,7 @@ static BOOL maybeputinvram(struct uaegfx_staticdata *csd, struct bm_data *bm)
 }
 #endif
 
-static void hidescreen(struct uaegfx_staticdata *csd, struct bm_data *bm)
+static void hidescreen(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     D(bug("Hide %p: (%p:%d)\n",
 	bm, bm->VideoData, bm->memsize));
@@ -241,16 +241,16 @@ static void hidescreen(struct uaegfx_staticdata *csd, struct bm_data *bm)
 
 /****************************************************************************************/
 
-OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     BOOL  ok = TRUE;      
     struct bm_data *data;
     IPTR 	    	     width, height, multi;
     IPTR		     displayable;
     struct TagItem tags[2];
 
-    DB2(bug("UAEGFXBitmap__Root__New\n"));
+    DB2(bug("P96GFXBitmap__Root__New\n"));
 
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -310,9 +310,9 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     return o;
 }
 
-VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID P96GFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data    *data;
     
     data = OOP_INST_DATA(cl, o);
@@ -320,7 +320,7 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     LOCK_HW
     WaitBlitter(csd);
     
-    DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
+    DB2(bug("P96GFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
     if (csd->disp == data)
     	hidescreen(csd, data);
 
@@ -341,15 +341,15 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
 }
 
-VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
     BOOL moved = FALSE;
 
-    DB2(bug("UAEGFXBitmap__Root__Set %p (%p:%d)\n", data, data->VideoData, data->memsize));
+    DB2(bug("P96GFXBitmap__Root__Set %p (%p:%d)\n", data, data->VideoData, data->memsize));
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
@@ -463,7 +463,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 	    }
 	}
     }
-    DB2(bug("UAEGFXBitmap__Root__Set Exit\n"));
+    DB2(bug("P96GFXBitmap__Root__Set Exit\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 #if 0
     if (moved && csd->disp == data)
@@ -473,13 +473,13 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 #endif
 }
 
-VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID P96GFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    //DB2(bug("UAEGFXBitmap__Root__Get\n"));
+    //DB2(bug("P96GFXBitmap__Root__Get\n"));
     if (IS_BITMAP_ATTR(msg->attrID, idx)) {
  	//DB2(bug("=%d\n", idx));
 	switch (idx) {
@@ -503,35 +503,35 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	    return;
 	}
     }
-    //DB2(bug("UAEGFXBitmap__Root__Get Exit\n"));
+    //DB2(bug("P96GFXBitmap__Root__Get Exit\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
 
-static int UAEGFXBitmap_Init(LIBBASETYPEPTR LIBBASE)
+static int P96GFXBitmap_Init(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("UAEGFXBitmap_Init\n"));
+    D(bug("P96GFXBitmap_Init\n"));
     return TRUE; //return OOP_ObtainAttrBases(attrbases);
 }
 
 /****************************************************************************************/
 
-static int UAEGFXBitmap_Expunge(LIBBASETYPEPTR LIBBASE)
+static int P96GFXBitmap_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("UAEGFXBitmap_Expunge\n"));
+    D(bug("P96GFXBitmap_Expunge\n"));
     //OOP_ReleaseAttrBases(attrbases);
     return TRUE;
 }
 
 /****************************************************************************************/
 
-ADD2INITLIB(UAEGFXBitmap_Init, 0);
-ADD2EXPUNGELIB(UAEGFXBitmap_Expunge, 0);
+ADD2INITLIB(P96GFXBitmap_Init, 0);
+ADD2EXPUNGELIB(P96GFXBitmap_Expunge, 0);
 
-BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
+BOOL P96GFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP(data)
@@ -557,18 +557,18 @@ BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     return TRUE;
 }
 
-VOID UAEGFXBitmap__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
+VOID P96GFXBitmap__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     data->locked--;
     
     UNLOCK_BITMAP(data)
 }
 
-BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
+BOOL P96GFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     WORD i, j;
     UBYTE *clut;
     
@@ -579,11 +579,13 @@ BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     
     WaitBlitter(csd);
     clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
+	D(bug("[P96Gfx] %s: clut @ %p\n", __func__, clut));
+
     for (i = msg->firstColor, j = 0; j < msg->numColors; i++, j++) {
         clut[i * 3 + 0] = msg->colors[j].red >> 8;
         clut[i * 3 + 1] = msg->colors[j].green >> 8;
         clut[i * 3 + 2] = msg->colors[j].blue >> 8;
-        //bug("UAESET color %d %02x%02x%02x\n", i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8);
+		D(bug("[P96Gfx] %s: color %d %02x%02x%02x\n", __func__, i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8));
     }
     SetColorArray(csd, msg->firstColor, msg->numColors);
     
@@ -592,10 +594,10 @@ BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     return TRUE;
 }
 
-VOID UAEGFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
+VOID P96GFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutPixel *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     ULONG   	       offset;
     HIDDT_Pixel       pixel = msg->pixel;
@@ -638,10 +640,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
+ULONG P96GFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 				 struct pHidd_BitMap_GetPixel *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data 	*data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	 pixel = 0;
     ULONG   	    	 offset;
@@ -683,10 +685,10 @@ ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
+VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_DrawLine *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_HW
     WaitBlitter(csd);
@@ -697,10 +699,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_BITMAP(data)
     
@@ -849,11 +851,11 @@ VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
+VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutImage *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_BITMAP(data)
 
@@ -1002,11 +1004,11 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
+VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_BITMAP(data)
     
@@ -1072,10 +1074,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
+VOID P96GFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_BitMap_GetImageLUT *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_HW
     WaitBlitter(csd);
@@ -1086,11 +1088,11 @@ VOID UAEGFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
+VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct RenderInfo ri;
     BOOL v = FALSE;
@@ -1195,10 +1197,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
+VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 				 struct pHidd_BitMap_PutPattern *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel	fg = GC_FG(msg->gc);
     HIDDT_Pixel bg = GC_BG(msg->gc);
@@ -1383,9 +1385,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
+VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel	fg = GC_FG(msg->gc);
     HIDDT_Pixel bg = GC_BG(msg->gc);
@@ -1504,9 +1506,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 
 /****************************************************************************************/
 
-VOID UAEGFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
+VOID P96GFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_HW
     WaitBlitter(csd);
@@ -1517,10 +1519,10 @@ VOID UAEGFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct 
 
 /****************************************************************************************/
 
-BOOL UAEGFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
+BOOL P96GFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_PlanarBM_SetBitMap *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_HW
     WaitBlitter(csd);
@@ -1531,10 +1533,10 @@ BOOL UAEGFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-BOOL UAEGFXBitmap__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
+BOOL P96GFXBitmap__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_PlanarBM_GetBitMap *msg)
 {
-    struct uaegfx_staticdata *csd = CSD(cl);
+    struct p96gfx_staticdata *csd = CSD(cl);
 
     LOCK_HW
     WaitBlitter(csd);

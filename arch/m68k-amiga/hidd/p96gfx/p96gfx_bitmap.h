@@ -1,14 +1,14 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _UAEGFXBITMAP_H
-#define _UAEGFXBITMAP_H
+#ifndef _P96GFXBITMAP_H
+#define _P96GFXBITMAP_H
 
-#define IID_Hidd_BitMap_UAE "hidd.bitmap.uae"
+#define IID_Hidd_BitMap_P96 "hidd.bitmap.p96"
 
-#include "uaertg.h"
+#include "p96_rtg.h"
 
 /* This structure is used as instance data for the bitmap class. */
 

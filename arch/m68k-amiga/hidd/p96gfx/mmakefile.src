@@ -9,6 +9,6 @@ USER_CPPFLAGS := \
                -D__GRAPHICS_NOLIBBASE__ \
                -D__OOP_NOLIBBASE__
 
-%build_module mmake=kernel-amiga-m68k-uaegfx \
-    modname=uaegfx modtype=hidd \
-    files="startup uaegfx_hiddclass uaegfx_bitmapclass uaertg"
+%build_module mmake=kernel-amiga-m68k-p96gfx \
+    modname=p96gfx modtype=hidd \
+    files="p96_startup p96gfx_hiddclass p96gfx_bitmapclass p96_rtg"

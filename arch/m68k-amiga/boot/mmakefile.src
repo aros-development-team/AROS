@@ -4,12 +4,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-Q ?= @
-
-#MM- kernel-link-amiga-m68k :			\
-#MM     general-setup-amiga-m68k		\
-#MM     kernel-bsp-objs				\
-#MM     kernel-objs				\
+#MM- kernel-link-amiga-m68k : \
+#MM     general-setup-amiga-m68k \
+#MM     kernel-bsp-objs \
+#MM     kernel-objs \
 #MM     kernel-alerthook-kobj \
 #MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
@@ -17,7 +15,7 @@ Q ?= @
 #MM     kernel-amiga-m68k-devs \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
-#MM     kernel-amiga-m68k-uaegfx-kobj \
+#MM     kernel-amiga-m68k-p96gfx-kobj \
 #MM     kernel-amiga-m68k-wbtag-kobj \
 #MM     kernel-aros-kobj \
 #MM     kernel-hidd-bus-kobj \
@@ -52,7 +50,7 @@ Q ?= @
 #MM     kernel-hidd-amigakbd-kobj \
 #MM     kernel-hidd-amigamouse-kobj \
 #MM     kernel-hidd-amigavideo-kobj \
-#MM     kernel-hidd-uaegfx-kobj \
+#MM     kernel-hidd-p96gfx-kobj \
 #MM     kernel-hidd-ata_gayle-kobj \
 #MM     kernel-intuition-kobj \
 #MM     kernel-input-kobj \
@@ -126,7 +124,7 @@ AFILES=rom_entry rom_init cpu_detect superstack_swap
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
-KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass keyboard mouse uaegfx
+KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass keyboard mouse p96gfx
 KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
@@ -139,7 +137,8 @@ KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.ko    ,$(KHOOKS) ))
 
 OBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
-	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+	$(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+
 $(DISTDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 
 # Expansion ROM (0xe00000-0xe7ffff)
@@ -164,8 +163,10 @@ KOBJS_ext := \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.ko,$(KRSRCS) )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.ko  ,$(KDRVRS) )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.ko    ,$(KHOOKS) ))
+
 OBJS_ext := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
-	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+	$(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+
 $(DISTDIR)/aros-amiga-m68k-ext.elf: $(KOBJS_ext) $(OBJS_ext)
 
 #MM kernel-link-amiga-m68k:
@@ -186,7 +187,7 @@ $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 
 $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_rom) $(KOBJS_rom) \
-        $(OBJS_ext) $(KOBJS_ext) \
+	$(OBJS_ext) $(KOBJS_ext) \
 	$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 	$(GENDIR)/rom_objs.ld \
 	$(GENDIR)/ext_objs.ld
@@ -203,10 +204,10 @@ $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.
 
 $(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
 	$(Q)$(KERNEL_LD) -o $@ \
-	    --section-start .rom=$(ROMLOC_rom) \
-	    --section-start .ext=$(ROMLOC_ext) \
-	    --section-start .ss=$(ROMLOC_ss) \
-	    $<
+		--section-start .rom=$(ROMLOC_rom) \
+		--section-start .ext=$(ROMLOC_ext) \
+		--section-start .ss=$(ROMLOC_ss) \
+		$<
 	$(Q)$(TARGET_OBJDUMP) -h $@ | grep '[rea][oxm][mte]   '
 
 $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/tools/romcheck
@@ -294,13 +295,13 @@ KOBJS_local := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.ko    ,$(KHOOKS) ))
 
 OBJS_local:= $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
-	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+	$(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
 
 FILES=start early debug
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 OBJS_start := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
-	      $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+	$(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
 
 
 # Everything else. Can live in MEMF_ANY
@@ -311,7 +312,7 @@ KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench setpatch
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
 KHNDLRS := cdfs con afs ram
-KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass keyboard mouse storage system uaegfx
+KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass keyboard mouse storage system p96gfx
 KRSRCS  := battclock processor task lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag card FileSystem
 KHOOKS  := alert romboot
@@ -328,7 +329,7 @@ KOBJS_any := \
 $(DISTDIR)/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_start) \
 	$(OBJS_local) $(KOBJS_local) \
-        $(OBJS_any) $(KOBJS_any) \
+	$(OBJS_any) $(KOBJS_any) \
 	$(SRCDIR)/$(CURDIR)/aros-ram.ld \
 	$(GENDIR)/start_objs.ld \
 	$(GENDIR)/local_objs.ld \
@@ -349,21 +350,21 @@ $(AROSARCHDIR)/aros.elf: $(DISTDIR)/aros-amiga-m68k-ram.elf \
 	$(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)$(MKDIR) $(AROSARCHDIR)
 	$(Q)$(TARGET_OBJCOPY) \
-	    --strip-unneeded \
-	    $< $@
+		--strip-unneeded \
+		$< $@
 
 
 $(AROSARCHDIR)/aros.elf.dbg : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 	$(OBJS_start) \
 	$(OBJS_local) $(KOBJS_local) \
-        $(OBJS_any) $(KOBJS_any) \
+	$(OBJS_any) $(KOBJS_any) \
 	$(SRCDIR)/$(CURDIR)/aros-dbg.ld \
 	$(GENDIR)/start_objs.ld \
 	$(GENDIR)/local_objs.ld \
 	$(GENDIR)/any_objs.ld
 	@$(IF) [ "$(DEBUG)" = "yes" ]; then \
-	    $(ECHO) Linking $@...; \
-	    $(KERNEL_CC) -Wl,-r \
+		$(ECHO) Linking $@...; \
+		$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
@@ -371,7 +372,7 @@ $(AROSARCHDIR)/aros.elf.dbg : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 		-m68000 \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-dbg.ld \
 		-L$(AROS_LIB) $(LIBS) -lgcc; \
-	    $(TARGET_OBJCOPY) --add-gnu-debuglink=$@ $(AROSARCHDIR)/aros.elf; \
+		$(TARGET_OBJCOPY) --add-gnu-debuglink=$@ $(AROSARCHDIR)/aros.elf; \
 	fi
 
 
