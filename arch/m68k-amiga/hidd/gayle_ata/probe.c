@@ -209,7 +209,7 @@ static int gayle_bus_Scan(struct ataBase *base)
                 {aHidd_ATABus_PIODataSize       , sizeof(struct pio_data)       },
                 {aHidd_ATABus_BusVectors        , (IPTR)bus_FuncTable           },
                 {aHidd_ATABus_PIOVectors        , (IPTR)pio_FuncTable           },
-                {aHidd_ATABus_KeepEmpty         , FALSE                         },
+                {aHidd_Bus_KeepEmpty            , FALSE                         },
                 {TAG_DONE                       , 0                             }
             };
             OOP_Object *bus;

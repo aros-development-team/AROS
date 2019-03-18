@@ -35,6 +35,7 @@ struct ataBase
     OOP_Object	   *storageRoot;
 
     OOP_AttrBase    hiddAttrBase;
+    OOP_AttrBase    busAttrBase;
     OOP_AttrBase    ATABusAttrBase;
     OOP_AttrBase    hwAttrBase;
 
@@ -46,9 +47,11 @@ struct ataBase
 };
 
 #undef HiddAttrBase
+#undef HiddBusAB
 #undef HiddATABusAB
 #undef HWAttrBase
 #define HiddAttrBase          		(base->hiddAttrBase)
+#define HiddBusAB          		    (base->busAttrBase)
 #define HiddATABusAB          		(base->ATABusAttrBase)
 #define HWAttrBase          		(base->hwAttrBase)
 
