@@ -40,15 +40,15 @@ static int P96GFX_Init(LIBBASETYPEPTR LIBBASE)
 
     if (!Init_P96GFXClass(LIBBASE)) {
         CloseLibrary(GfxBase);
-    	return FALSE;
+        return FALSE;
     }
 
     LIBBASE->library.lib_OpenCnt = 1;
 
     err = AddDisplayDriver(LIBBASE->csd.gfxclass, NULL,
-			   DDRV_KeepBootMode, TRUE,
-			   DDRV_IDMask      , 0xF0000000,
-			   TAG_DONE);
+                           DDRV_KeepBootMode, TRUE,
+                           DDRV_IDMask      , 0xF0000000,
+                           TAG_DONE);
 
     CloseLibrary(GfxBase);
 

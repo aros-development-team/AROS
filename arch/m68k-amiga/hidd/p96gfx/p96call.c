@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 /* This program generates the p96call.h macroset for gcc-4.5.1 m68k-elf
@@ -22,58 +22,58 @@ static void asm_regs_init(int id, int has_bn, const char *jmp, const char *addr)
 
     /* Input values */
     for (i = 0; i < id; i++)
-	printf("\t   ULONG _arg%d = (ULONG)__AROS_LCA(a%d); \\\n",
-		i + 1, i + 1);
+        printf("\t   ULONG _arg%d = (ULONG)__AROS_LCA(a%d); \\\n",
+                i + 1, i + 1);
     if (has_bn)
-    	printf("\t   ULONG _bn_arg = (ULONG)bn; \\\n");
+        printf("\t   ULONG _bn_arg = (ULONG)bn; \\\n");
 
     /* Define registers */
     printf("\t   register volatile ULONG _ret asm(\"%%d0\"); \\\n");
     for (i = 0; i < id; i++)
-	printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)); \\\n",
-		i + 1, i + 1);
+        printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)); \\\n",
+                i + 1, i + 1);
     if (has_bn)
-    	printf("\t   register volatile ULONG _bn asm(\"%%a6\"); \\\n");
+        printf("\t   register volatile ULONG _bn asm(\"%%a6\"); \\\n");
 
 
     /* Set registers (non FP) */
     for (i = 1; i <= id; i++)
-	printf("\t   if (! __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
-	       "\t      __AROS_LTA(a%d) = _arg%d; } \\\n",
-		i, i, i);
+        printf("\t   if (! __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
+               "\t      __AROS_LTA(a%d) = _arg%d; } \\\n",
+                i, i, i);
     if (has_bn)
-	printf("\t   if (! __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
-	       "\t      _bn = _bn_arg; } \\\n");
+        printf("\t   if (! __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
+               "\t      _bn = _bn_arg; } \\\n");
 
     /* Set FP register */
     for (i = 1; i <= id; i++) {
-    	int j;
-	printf("\t   if ( __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
-	       "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_arg%d), %s \\\n",
-		i, jmp, i, addr);
-	for (j = 0; j < id; j++)
-		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+        int j;
+        printf("\t   if ( __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
+               "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_arg%d), %s \\\n",
+                i, jmp, i, addr);
+        for (j = 0; j < id; j++)
+                printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
         printf("\t       ); }\\\n");
     }
     if (has_bn) {
-    	int j;
-	printf("\t   if ( __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
-	       "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_bn_arg), %s \\\n", jmp, addr);
-	for (j = 0; j < id; j++)
-		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+        int j;
+        printf("\t   if ( __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
+               "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_bn_arg), %s \\\n", jmp, addr);
+        for (j = 0; j < id; j++)
+                printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
         printf("\t       ); }\\\n");
     }
     if (has_bn || id > 0) {
-    	int j;
-	printf("\t   if (!(0");
-	if (has_bn)
-	    printf(" || __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)");
-	for (i = 0; i < id; i++)
-	    printf(" || __AROS_ISREG(a%d,__AROS_FP_REG)", i+1);
-	printf(")) {\\\n"
-	       "\t      asm volatile (\"%s\\n\" : : \"i\" (0), %s \\\n", jmp, addr);
-	for (j = 0; j < id; j++)
-		printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+        int j;
+        printf("\t   if (!(0");
+        if (has_bn)
+            printf(" || __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)");
+        for (i = 0; i < id; i++)
+            printf(" || __AROS_ISREG(a%d,__AROS_FP_REG)", i+1);
+        printf(")) {\\\n"
+               "\t      asm volatile (\"%s\\n\" : : \"i\" (0), %s \\\n", jmp, addr);
+        for (j = 0; j < id; j++)
+                printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
         printf("\t       ); }\\\n");
     }
 }
@@ -89,45 +89,45 @@ static void asm_regs_exit(int id, int has_bn)
 
 static void p96_lc(int id)
 {
-	int i;
-	char jmp[256];
+        int i;
+        char jmp[256];
 
-	printf("#define P96_LC%d(t,vector,id", id);
-	for (i = 0; i < id; i++)
-		printf(",a%d", i + 1);
-	printf(") \\\n");
-	printf("\t({ APTR _n = (vector);\\\n");
-	snprintf(jmp, sizeof(jmp), "move.l %%3,%%%%sp@-\\n"
-		                   "pea.l .Lufc%d_%%c2\\n"
-		                   "move.l %%1, %%%%sp@-\\n"
-		                   "rts\\n"
-		                   ".Lufc%d_%%c2:\\n"
-		                   "addq.l #4,%%%%sp\\n"
-		                   , id, id);
-	jmp[sizeof(jmp)-1]=0;
-	asm_regs_init(i, 0, jmp, "\"r\" (_n), \"i\" (__LINE__), \"i\" (id)");
+        printf("#define P96_LC%d(t,vector,id", id);
+        for (i = 0; i < id; i++)
+                printf(",a%d", i + 1);
+        printf(") \\\n");
+        printf("\t({ APTR _n = (vector);\\\n");
+        snprintf(jmp, sizeof(jmp), "move.l %%3,%%%%sp@-\\n"
+                                   "pea.l .Lufc%d_%%c2\\n"
+                                   "move.l %%1, %%%%sp@-\\n"
+                                   "rts\\n"
+                                   ".Lufc%d_%%c2:\\n"
+                                   "addq.l #4,%%%%sp\\n"
+                                   , id, id);
+        jmp[sizeof(jmp)-1]=0;
+        asm_regs_init(i, 0, jmp, "\"r\" (_n), \"i\" (__LINE__), \"i\" (id)");
 
-	asm_regs_exit(i, 0);
-	printf("\t  })\n\n");
+        asm_regs_exit(i, 0);
+        printf("\t  })\n\n");
 }
 
 int main(int argc, char **argv)
 {
-	int i;
+        int i;
 
-	printf("/* AUTOGENERATED by p96call.c */\n");
-	printf("/* If you can get this to work for anything other   */\n");
-	printf("/* than gcc-4.5.1 m68k-elf, it would be surprising. */\n");
-	printf("\n");
-	printf("#ifndef P96CALL_H\n");
-	printf("#define P96CALL_H\n");
-	printf("\n");
-	printf("/* Call a P96 function */\n");
-	printf("\n");
+        printf("/* AUTOGENERATED by p96call.c */\n");
+        printf("/* If you can get this to work for anything other   */\n");
+        printf("/* than gcc-4.5.1 m68k-elf, it would be surprising. */\n");
+        printf("\n");
+        printf("#ifndef P96CALL_H\n");
+        printf("#define P96CALL_H\n");
+        printf("\n");
+        printf("/* Call a P96 function */\n");
+        printf("\n");
 
-	for (i = 0; i < GENCALL_MAX; i++)
-		p96_lc(i);
+        for (i = 0; i < GENCALL_MAX; i++)
+                p96_lc(i);
 
-	printf("#endif /* P96CALL_H */\n");
-	return 0;
+        printf("#endif /* P96CALL_H */\n");
+        return 0;
 }
