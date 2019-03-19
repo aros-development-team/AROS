@@ -200,6 +200,23 @@ int main(int argc, char *argv[])
     fclose(ldscriptfile);
     ldscriptfile = NULL;
 
+#ifdef TARGET_FORMAT_EXE
+    if (incremental == 0)
+    {
+#ifdef OBJECT_FORMAT_EXTRA_FINAL
+        docommandlp(ld_name, ld_name, OBJECT_FORMAT, OBJECT_FORMAT_EXTRA_FINAL, "-o", output,
+            tempoutput, "-T", ldscriptname, do_verbose, NULL);
+#else
+        docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-o", output,
+            tempoutput, "-T", ldscriptname, do_verbose, NULL);
+#endif
+    }
+    else
+    {
+	docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-r", "-o", output,
+	    tempoutput, "-T", ldscriptname, do_verbose, NULL);
+    }
+#else
 #ifdef OBJECT_FORMAT_EXTRA_FINAL
     if (incremental == 0)
     {
@@ -210,6 +227,7 @@ int main(int argc, char *argv[])
 #endif
     docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-r", "-o", output,
         tempoutput, "-T", ldscriptname, do_verbose, NULL);
+#endif
 
     if (incremental != 0)
         return set_os_and_abi(output) ? EXIT_SUCCESS : EXIT_FAILURE;
