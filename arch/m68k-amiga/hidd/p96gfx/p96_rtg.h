@@ -132,6 +132,20 @@ struct Pattern {
 	UBYTE			DrawMode;
 };
 
+struct Line {
+	WORD            X, Y;
+	UWORD           Length;
+	WORD            dX, dY;
+	WORD            sDelta, lDelta, twoSDminusLD;
+	UWORD           LinePtrn;
+	UWORD           PatternShift;
+	ULONG           FgPen, BgPen;
+	BOOL            Horizontal;
+	UBYTE           DrawMode;
+	BYTE            pad;
+	UWORD           Xorigin, Yorigin;
+};
+
 struct ModeInfo {
 	struct Node	Node;
 	WORD			OpenCount;
@@ -373,10 +387,18 @@ void SetColorArray(struct p96gfx_staticdata *csd, UWORD start, UWORD count);
 void SetDAC(struct p96gfx_staticdata *csd);
 void SetGC(struct p96gfx_staticdata *csd, struct ModeInfo *mi, BOOL border);
 void SetPanning(struct p96gfx_staticdata *csd, UBYTE *video, UWORD width, WORD x, WORD y);
-#if (0)
+/*
+TODO:
+SetDPMSLevel
+GetFeatureAttrs
+SetFeatureAttrs
+*/
+
+/* Render Operation Stubs .. */
+BOOL DrawLine(struct p96gfx_staticdata *csd, struct RenderInfo *ri,
+    struct Line *line, ULONG rgbformat);
 BOOL BlitRect(struct p96gfx_staticdata *csd, struct RenderInfo *ri,
     WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
-#endif
 BOOL FillRect(struct p96gfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat);
 BOOL InvertRect(struct p96gfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL BlitRectNoMaskComplete(struct p96gfx_staticdata *csd, struct RenderInfo *risrc, struct RenderInfo *ridst,
@@ -385,6 +407,12 @@ BOOL BlitPattern(struct p96gfx_staticdata *csd, struct RenderInfo *ri, struct Pa
     WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL BlitTemplate(struct p96gfx_staticdata *csd, struct RenderInfo *ri, struct Template *tmpl,
     WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
+/*
+TODO:
+BlitPlanar2Chunky
+BlitPlanar2Direct
+WriteYUVRect
+*/
 
 WORD CalculateBytesPerRow(struct p96gfx_staticdata *csd, WORD width, ULONG rgbformat);
 BOOL SetSprite(struct p96gfx_staticdata *sd, BOOL activate);
@@ -400,5 +428,10 @@ void SetMemoryMode(struct p96gfx_staticdata *csd, ULONG rgbformat);
 void WaitBlitter(struct p96gfx_staticdata *csd);
 void SetInterrupt(struct p96gfx_staticdata *csd, ULONG state);
 void InitRTG(APTR boardinfo);
-
+/*
+TODO:
+GetVSyncState
+WaitVerticalSync
+GetVBeamPos
+*/
 #endif

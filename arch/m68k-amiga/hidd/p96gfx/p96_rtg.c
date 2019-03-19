@@ -222,7 +222,31 @@ void SetPanning(struct p96gfx_staticdata *csd, UBYTE *video, UWORD width, WORD x
             AROS_LCA(WORD, y, D2),
             AROS_LCA(ULONG, csd->rgbformat, D7));
 }
+
+BOOL DrawLine(struct p96gfx_staticdata *csd, struct RenderInfo *ri,
+    struct Line * line, ULONG rgbformat)
+{
+    if (csd->CardBase) {
+        AROS_CALL4(BOOL, gptr(csd, PSSO_BoardInfo_DrawLine),
+            AROS_LCA(APTR, csd->boardinfo, A0),
+            AROS_LCA(APTR, ri, A1),
+            AROS_LCA(struct Line *, line, A2),
+            AROS_LCA(ULONG, rgbformat, D7),
+            struct Library*, csd->CardBase);
+        return gw (csd->boardinfo + PSSO_BoardInfo_AROSFlag);
+    } 
 #if (0)
+    else
+        return P96_LC4(BOOL, csd->p96romvector, 28,
+            AROS_LCA(APTR, csd->boardinfo, A0),
+            AROS_LCA(APTR, ri, A1),
+            AROS_LCA(struct Line *, line, A2),
+            AROS_LCA(ULONG, rgbformat, D7));
+#else
+    return FALSE;
+#endif
+};
+
 BOOL BlitRect(struct p96gfx_staticdata *csd, struct RenderInfo *ri,
     WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {
@@ -240,7 +264,9 @@ BOOL BlitRect(struct p96gfx_staticdata *csd, struct RenderInfo *ri,
             AROS_LCA(ULONG, rgbformat, D7),
             struct Library*, csd->CardBase);
         return gw (csd->boardinfo + PSSO_BoardInfo_AROSFlag);
-    } else
+    }
+#if (0)
+    else
         return P96_LC10(BOOL, csd->p96romvector, 28,
             AROS_LCA(APTR, csd->boardinfo, A0),
             AROS_LCA(APTR, ri, A1),
@@ -252,8 +278,11 @@ BOOL BlitRect(struct p96gfx_staticdata *csd, struct RenderInfo *ri,
             AROS_LCA(WORD, h, D5),
             AROS_LCA(UBYTE, mask, D6),
             AROS_LCA(ULONG, rgbformat, D7));
-};
+#else
+    return FALSE;
 #endif
+};
+
 BOOL FillRect(struct p96gfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat)
 {
     if (csd->CardBase) {
