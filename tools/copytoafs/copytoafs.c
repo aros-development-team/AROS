@@ -86,10 +86,11 @@ struct stat st;
 					if (error == ERROR_NO_FREE_STORE)
 					{
 						printf("No more space left on device!\nNeed ");
-						if (sizeof(st.st_size) > 4)
+#ifdef __USE_FILE_OFFSET64
 							printf("%lld", st.st_size-written);
-						else
+#else
 							printf("%ld", st.st_size-written);
+#endif
 						printf(" more bytes to write file.\n");
 					}
 					else
