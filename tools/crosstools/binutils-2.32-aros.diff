@@ -160,7 +160,7 @@ diff -ruN binutils-2.32-orig/bfd/configure.ac binutils-2.32/bfd/configure.ac
 diff -ruN binutils-2.32-orig/bfd/elf-aros.c binutils-2.32/bfd/elf-aros.c
 --- binutils-2.32-orig/bfd/elf-aros.c	1970-01-01 01:00:00.000000000 +0100
 +++ binutils-2.32/bfd/elf-aros.c	2019-03-17 13:43:57.000000000 +0100
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,90 @@
 +/* AROS support for ELF
 +   Copyright (C) 2005-2019 Free Software Foundation, Inc.
 +
@@ -219,7 +219,8 @@ diff -ruN binutils-2.32-orig/bfd/elf-aros.c binutils-2.32/bfd/elf-aros.c
 +	{
 +	  if (*hash_ptr
 +	      && ((*hash_ptr)->root.type == bfd_link_hash_defined
-+		  || (*hash_ptr)->root.type == bfd_link_hash_defweak)
++		  || (*hash_ptr)->root.type == bfd_link_hash_defweak
++		  || (*hash_ptr)->root.type == bfd_link_hash_common)
 +	      && (*hash_ptr)->root.u.def.section->output_section != NULL)
 +	    {
 +	      /* Remove relocation dependency on symbol. Use sections only */
