@@ -292,7 +292,7 @@ diff -ruN binutils-2.32-orig/bfd/elf32-arm.c binutils-2.32/bfd/elf32-arm.c
  #include "elf/arm.h"
  
  /* Return the relocation section associated with NAME.  HTAB is the
-@@ -20296,6 +20297,69 @@
+@@ -20296,6 +20297,75 @@
  
  #include "elf32-target.h"
  
@@ -306,6 +306,10 @@ diff -ruN binutils-2.32-orig/bfd/elf32-arm.c binutils-2.32/bfd/elf32-arm.c
 +#define TARGET_BIG_SYM			arm_elf32_aros_be_vec
 +#undef TARGET_BIG_NAME
 +#define TARGET_BIG_NAME			"elf32-bigarm-aros"
++#undef elf_match_priority
++#define elf_match_priority			128
++#undef ELF_OSABI
++#define ELF_OSABI				ELFOSABI_AROS
 +
 +static void
 +elf32_arm_aros_begin_write_processing (bfd *abfd,
@@ -348,6 +352,8 @@ diff -ruN binutils-2.32-orig/bfd/elf32-arm.c binutils-2.32/bfd/elf32-arm.c
 +#include "elf32-target.h"
 +
 +/* Reset to defaults.  */
++#undef ELF_OSABI
++#undef elf_match_priority
 +#undef	ELF_MINPAGESIZE
 +#define ELF_MINPAGESIZE			0x1000
 +#undef	ELF_COMMONPAGESIZE
