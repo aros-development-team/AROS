@@ -1907,7 +1907,7 @@ GLOB_MKDIRS += %(objdir) $(%(mmake)_MODDIR) $(KOBJSDIR)
     objdir= moduledir= prefix=$(AROSDIR) \
     linklibname= uselibs= usehostlibs= \
     compiler=target funcinstr=$(TARGET_FUNCINSTR) lto=$(TARGET_LTO) nostartup=yes archspecific=no \
-    includedir= libdir= \
+    include_set=includes-all includedir= libdir= \
     build_abi= build_library=
 
 # We will employ a terrifying, but unavoidable, hack here.
@@ -1935,7 +1935,7 @@ GLOB_MKDIRS += %(objdir) $(%(mmake)_MODDIR) $(KOBJSDIR)
 #MM %(mmake)-clean
 
 # ABI targets:
-#M%(build_abi)- includes-all : %(mmake)-includes
+#M%(build_abi)- %(include_set) : %(mmake)-includes
 #M%(build_abi)- linklibs-%(modname): %(mmake)-linklib
 #M%(build_abi)- linklibs-%(modname)_rel : %(mmake)-linklib
 #M%(build_abi)- includes-%(modname): %(mmake)-includes
@@ -2129,9 +2129,9 @@ GLOB_MKDIRS                         += $(%(mmake)%(flavour)_OBJDIR)/linklib
 ifeq (%(build_abi),M)
 ## Create FD file
 ifeq (%(includedir),)
-%(mmake)%(flavour)_FDDIR            := %(prefix)/$(AROS_DIR_DEVELOPER)/fd
+%(mmake)%(flavour)_FDDIR            := %(prefix)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_SDK)/$(AROS_DIR_FD)
 else
-%(mmake)%(flavour)_FDDIR            := %(includedir)/../fd
+%(mmake)%(flavour)_FDDIR            := %(includedir)/../$(AROS_DIR_FD)
 endif
 %(mmake)-fd : $(%(mmake)%(flavour)_FDDIR)/%(modname)_lib.fd
 
@@ -2435,7 +2435,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix=$(AROSDIR) \
   linklibname= uselibs= usehostlibs= \
   compiler=target funcinstr=$(TARGET_FUNCINSTR) lto=$(TARGET_LTO) nostartup=yes archspecific=no \
-  includedir= libdir=
+  include_set=includes-all includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" \
@@ -2446,7 +2446,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" funcinstr=%(funcinstr) lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
-   includedir="%(includedir)" libdir="%(libdir)" \
+   include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
    build_abi=M build_library=M
 
 %end
@@ -2464,7 +2464,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix=$(AROSDIR) \
   linklibname= uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
-  includedir= libdir=
+  include_set=includes-all includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" \
@@ -2474,7 +2474,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
   nostartup="%(nostartup)" archspecific="%(archspecific)" \
-  includedir="%(includedir)" libdir="%(libdir)" \
+  include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
   build_abi=M build_library=
 
 %end
@@ -2491,7 +2491,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix=$(AROSDIR) \
   uselibs= usehostlibs= \
   compiler=target lto=$(TARGET_LTO) nostartup=yes archspecific=no \
-  includedir= libdir=
+  include_set=includes-all includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" \
@@ -2500,7 +2500,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
-  includedir="%(includedir)" libdir="%(libdir)" \
+   include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
    build_abi= build_library=M
 
 %end
