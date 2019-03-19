@@ -11,4 +11,4 @@ include $(SRCDIR)/config/aros.cfg
     src=$(SRCDIR)/$(CURDIR)/include dst=$(AROS_INCLUDES)/
 
 %copy_files_q mmake=workbench-libs-codesets-fd files=codesets_lib.fd \
-    src=fd dst=$(AROS_DEVELOPER)/fd
+    src=fd dst=$(AROS_SDK_FD)
