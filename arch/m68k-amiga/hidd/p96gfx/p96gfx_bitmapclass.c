@@ -55,14 +55,14 @@ static APTR allocrtgvrambitmap(struct p96gfx_staticdata *csd, struct bm_data *bm
     SetMemoryMode(csd, bm->rgbformat);
     if (vmem)
     {
-        DVRAM(bug("BM %p (%dx%dx%d %d): %p,%d bytes VRAM allocated.\n", bm, bm->width, bm->height, bm->bytesperpixel*8, bm->bytesperline, vmem, bm->memsize));
+        DVRAM(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p (%dx%dx%d %d): %p,%d bytes VRAM allocated.\n", __func__, bm, bm->width, bm->height, bm->bytesperpixel*8, bm->bytesperline, vmem, bm->memsize));
     }
     return vmem;
 }
 
 static void freertgbitmap(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
-    DVRAM(bug("BM %p: freeing %p:%d from %s\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM"));
+    DVRAM(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p: freeing %p:%d from %s\n", __func__, bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM"));
     if (bm->invram)
     {
         SetMemoryMode(csd, RGBFB_CLUT);
@@ -105,7 +105,7 @@ static BOOL movebitmaptofram(struct p96gfx_staticdata *csd, struct bm_data *bm)
             csd->fram_used += bm->memsize;
             ok = TRUE;
        }
-       DVRAM(bug("BM %p: %d x %d moved to RAM %p:%d. VRAM=%d\n", bm, bm->width, bm->height, bm->VideoData, bm->memsize, csd->vram_used));
+       DVRAM(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p (%p:%d) %d x %d moved to RAM . VRAM=%d\n", __func__, bm->VideoData, bm->memsize, bm, bm->width, bm->height, csd->vram_used));
 
        UNLOCK_BITMAP(bm)
     }
@@ -153,7 +153,7 @@ static BOOL allocrtgbitmap(struct p96gfx_staticdata *csd, struct bm_data *bm, BO
         csd->vram_used += bm->memsize;
         bm->invram = TRUE;
     }
-    DVRAM(bug("BM %p: %p,%d bytes allocated from %s. VRAM=%d\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM", csd->vram_used));
+    DVRAM(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p (%p:%d) bytes allocated from %s. VRAM=%d\n", __func__, bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM", csd->vram_used));
 
     //if (bm->VideoData != NULL)
     //{
@@ -176,7 +176,7 @@ static BOOL movethisbitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *
         bm->VideoData = vmem;
         bm->invram = TRUE;
         csd->vram_used += bm->memsize;
-        DVRAM(bug("BM %p: %p:%d (%d x %d) moved back to VRAM\n", bm, bm->VideoData, bm->memsize, bm->width, bm->height));
+        DVRAM(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p (%p:%d) %d x %d moved back to VRAM\n", __func__, bm, bm->VideoData, bm->memsize, bm->width, bm->height));
         return TRUE;
     }
     return FALSE;
@@ -189,7 +189,7 @@ static BOOL movebitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *bm)
     if (bm->invram)
         return TRUE;
 
-    DVRAM(bug("BM %p: %p,%d needs to be in VRAM...\n", bm, bm->VideoData, bm->memsize));
+    DVRAM(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p (%p:%d) needs to be in VRAM...\n", __func__, bm, bm->VideoData, bm->memsize));
 
     ForeachNode(&csd->bitmaplist, bmnode)
     {
@@ -205,7 +205,7 @@ static BOOL movebitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *bm)
         }
     }
 
-    DVRAM(bug("-> not enough memory, VRAM=%d\n", csd->vram_used));
+    DVRAM(bug("[P96Gfx:Bitmap] %s: -> not enough memory, VRAM=%d\n", __func__, csd->vram_used));
 
     return FALSE;
 }
@@ -223,8 +223,8 @@ static BOOL maybeputinvram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 
 static void hidescreen(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
-    D(bug("Hide %p: (%p:%d)\n",
-        bm, bm->VideoData, bm->memsize));
+    D(bug("[P96Gfx:Bitmap] %s: Bitmap @ 0x%p (%p:%d)\n",
+        __func__, bm, bm->VideoData, bm->memsize));
     SetInterrupt(csd, FALSE);
     SetDisplay(csd, FALSE);
     SetSwitch(csd, FALSE);
@@ -249,7 +249,7 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     IPTR		     displayable;
     struct TagItem tags[2];
 
-    DB2(bug("P96GFXBitmap__Root__New\n"));
+    DB2(bug("[P96Gfx:Bitmap] %s(%x)\n", __func__, o));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -292,7 +292,7 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     tags[1].ti_Tag = TAG_DONE;
     OOP_SetAttrs(o, tags);
 
-    DB2(bug("%dx%dx%d %d RGBF=%08x P=%08x\n", width, height, multi, data->bytesperline, data->rgbformat, data->VideoData));
+    DB2(bug("[P96Gfx:Bitmap] %s: %dx%dx%d %d RGBF=%08x P=%08x\n", __func__, width, height, multi, data->bytesperline, data->rgbformat, data->VideoData));
 
     if (data->VideoData == NULL)
         ok = FALSE;
@@ -304,7 +304,7 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         o = NULL;
     }
 
-    DB2(bug("ret=%x bm=%p (%p:%d)\n", o, data, data->VideoData, data->memsize));
+    DB2(bug("[P96Gfx:Bitmap] %s: ret=%x bm=%p (%p:%d)\n", __func__, o, data, data->VideoData, data->memsize));
 
     return o;
 }
@@ -316,10 +316,12 @@ VOID P96GFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     data = OOP_INST_DATA(cl, o);
 
+    D(bug("[P96Gfx:Bitmap] %s(%x)\n", __func__, o));
+
     LOCK_HW
     WaitBlitter(csd);
 
-    DB2(bug("P96GFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
+    DB2(bug("[P96Gfx:Bitmap] %s: bm=%x (%p,%d)\n", __func__, data, data->VideoData, data->memsize));
     if (csd->disp == data)
         hidescreen(csd, data);
 
@@ -348,14 +350,14 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     ULONG   	    idx;
     BOOL moved = FALSE;
 
-    DB2(bug("P96GFXBitmap__Root__Set %p (%p:%d)\n", data, data->VideoData, data->memsize));
+    DB2(bug("[P96Gfx:Bitmap] %s: %p (%p:%d)\n", __func__, data, data->VideoData, data->memsize));
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
-        DB2(bug("%d/%d\n", tag->ti_Tag, tag->ti_Data));
+        DB2(bug("[P96Gfx:Bitmap] %s: Tag %d/%d\n", __func__, tag->ti_Tag, tag->ti_Data));
         if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
         {
-            DB2(bug("->%d\n", idx));
+            DB2(bug("[P96Gfx:Bitmap] %s: BitMap Attr ->%d\n", __func__, idx));
             switch(idx)
             {
                 case aoHidd_BitMap_Visible:
@@ -382,8 +384,8 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                     csd->rgbformat = data->rgbformat;
                     pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
                     pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
-                    D(bug("Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
-                        data, data->VideoData, data->memsize,
+                    D(bug("[P96Gfx:Bitmap] %s: Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
+                        __func__, data, data->VideoData, data->memsize,
                         dwidth, dheight, depth, width, height, data->rgbformat));
 
                     if (!data->invram)
@@ -462,7 +464,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
             }
         }
     }
-    DB2(bug("P96GFXBitmap__Root__Set Exit\n"));
+    D(bug("[P96Gfx:Bitmap] %s: Exit\n", __func__));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 #if 0
     if (moved && csd->disp == data)
@@ -510,7 +512,7 @@ VOID P96GFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 static int P96GFXBitmap_Init(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("P96GFXBitmap_Init\n"));
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
     return TRUE; //return OOP_ObtainAttrBases(attrbases);
 }
 
@@ -518,7 +520,7 @@ static int P96GFXBitmap_Init(LIBBASETYPEPTR LIBBASE)
 
 static int P96GFXBitmap_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("P96GFXBitmap_Expunge\n"));
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
     //OOP_ReleaseAttrBases(attrbases);
     return TRUE;
 }
@@ -571,7 +573,7 @@ BOOL P96GFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     WORD i, j;
     UBYTE *clut;
 
-    D(bug("[P96Gfx] %()\n", __func__));
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
         return FALSE;
@@ -580,13 +582,13 @@ BOOL P96GFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
 
     WaitBlitter(csd);
     clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
-    D(bug("[P96Gfx] %s: clut @ %p\n", __func__, clut));
+    D(bug("[P96Gfx:Bitmap] %s: clut @ %p\n", __func__, clut));
 
     for (i = msg->firstColor, j = 0; j < msg->numColors; i++, j++) {
         clut[i * 3 + 0] = msg->colors[j].red >> 8;
         clut[i * 3 + 1] = msg->colors[j].green >> 8;
         clut[i * 3 + 2] = msg->colors[j].blue >> 8;
-        D(bug("[P96Gfx] %s: color %d %02x%02x%02x\n", __func__, i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8));
+        D(bug("[P96Gfx:Bitmap] %s: color %d %02x%02x%02x\n", __func__, i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8));
     }
     SetColorArray(csd, msg->firstColor, msg->numColors);
 
@@ -694,6 +696,8 @@ VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     struct p96gfx_staticdata *csd = CSD(cl);
     BOOL v = FALSE;
 
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+
     LOCK_HW
     WaitBlitter(csd);
 #if (0)
@@ -716,6 +720,8 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct p96gfx_staticdata *csd = CSD(cl);
+
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
     LOCK_BITMAP(data)
 
@@ -867,6 +873,8 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+
     LOCK_BITMAP(data)
 
     LOCK_HW
@@ -1017,6 +1025,8 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+
     LOCK_BITMAP(data)
 
     LOCK_HW
@@ -1085,6 +1095,8 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+
     LOCK_HW
     WaitBlitter(csd);
     UNLOCK_HW
@@ -1101,6 +1113,8 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     BOOL v = FALSE;
+
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
     LOCK_BITMAP(data)
 
@@ -1212,15 +1226,15 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     UBYTE drawmode;
     BOOL v = FALSE;
 
+    D(bug("[P96Gfx:Bitmap] %s(%d,%d)(%d,%d)(%x,%d,%d,%d,%d,%d)\n", __func__,
+        msg->x, msg->y, msg->width, msg->height,
+        msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
+
     LOCK_BITMAP(data)
 
     LOCK_HW
     WaitBlitter(csd);
     UNLOCK_HW
-
-    DB2(bug("blitpattern(%d,%d)(%d,%d)(%x,%d,%d,%d,%d,%d)\n",
-        msg->x, msg->y, msg->width, msg->height,
-        msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
 
     if ((msg->mask == NULL) && (msg->patterndepth == 1))
     {
@@ -1397,6 +1411,8 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     HIDDT_Pixel bg = GC_BG(msg->gc);
     BOOL v = FALSE;
 
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+
     LOCK_BITMAP(data)
 
     LOCK_HW
@@ -1513,6 +1529,8 @@ VOID P96GFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct 
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+
     LOCK_HW
     WaitBlitter(csd);
     UNLOCK_HW
@@ -1527,6 +1545,8 @@ BOOL P96GFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+
     LOCK_HW
     WaitBlitter(csd);
     UNLOCK_HW
@@ -1540,6 +1560,8 @@ BOOL P96GFXBitmap__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
                                    struct pHidd_PlanarBM_GetBitMap *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
+
+    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
     LOCK_HW
     WaitBlitter(csd);
