@@ -65,15 +65,15 @@ static void freertgbitmap(struct p96gfx_staticdata *csd, struct bm_data *bm)
     DVRAM(bug("BM %p: freeing %p:%d from %s\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM"));
     if (bm->invram)
     {
-	SetMemoryMode(csd, RGBFB_CLUT);
-	Deallocate(csd->vmem, bm->VideoData, bm->memsize);
-	SetMemoryMode(csd, bm->rgbformat);
-	csd->vram_used -= bm->memsize;
+        SetMemoryMode(csd, RGBFB_CLUT);
+        Deallocate(csd->vmem, bm->VideoData, bm->memsize);
+        SetMemoryMode(csd, bm->rgbformat);
+        csd->vram_used -= bm->memsize;
     }
     else if (bm->VideoData)
     {
-    	FreeMem(bm->VideoData, bm->memsize);
-    	csd->fram_used -= bm->memsize;
+        FreeMem(bm->VideoData, bm->memsize);
+        csd->fram_used -= bm->memsize;
     }
     bm->VideoData = NULL;
     bm->invram = FALSE;
@@ -98,13 +98,13 @@ static BOOL movebitmaptofram(struct p96gfx_staticdata *csd, struct bm_data *bm)
         vmem = AllocMem(bm->memsize, MEMF_ANY);
         if (vmem)
         {
-	    SetMemoryMode(csd, bm->rgbformat);
-	    CopyMemQuick(bm->VideoData, vmem, bm->memsize);
-	    freertgbitmap(csd, bm);
-	    bm->VideoData = vmem;
+            SetMemoryMode(csd, bm->rgbformat);
+            CopyMemQuick(bm->VideoData, vmem, bm->memsize);
+            freertgbitmap(csd, bm);
+            bm->VideoData = vmem;
             bm->invram = FALSE;
-	    csd->fram_used += bm->memsize;
-	    ok = TRUE;
+            csd->fram_used += bm->memsize;
+            ok = TRUE;
        }
        DVRAM(bug("BM %p: %d x %d moved to RAM %p:%d. VRAM=%d\n", bm, bm->width, bm->height, bm->VideoData, bm->memsize, csd->vram_used));
        
@@ -120,39 +120,39 @@ static BOOL allocrtgbitmap(struct p96gfx_staticdata *csd, struct bm_data *bm, BO
     
     if (!(bm->VideoData = allocrtgvrambitmap(csd, bm)))
     {
-    	if (usevram && bm->memsize < csd->vram_size)
+        if (usevram && bm->memsize < csd->vram_size)
         {
-    	     struct bm_data *bmnode;
-	     ForeachNode(&csd->bitmaplist, bmnode)
+             struct bm_data *bmnode;
+             ForeachNode(&csd->bitmaplist, bmnode)
              {
-		if (bmnode != bm && bmnode->invram && !bmnode->locked)
+                if (bmnode != bm && bmnode->invram && !bmnode->locked)
                 {
-		    if (movebitmaptofram(csd, bmnode))
+                    if (movebitmaptofram(csd, bmnode))
                     {
-			if ((bm->VideoData = allocrtgvrambitmap(csd, bm)))
+                        if ((bm->VideoData = allocrtgvrambitmap(csd, bm)))
                         {
-			    csd->vram_used += bm->memsize;
-			    bm->invram = TRUE;
-			    break;
-			}
-		    }
-    		}
-    	     }
-	}
+                            csd->vram_used += bm->memsize;
+                            bm->invram = TRUE;
+                            break;
+                        }
+                    }
+                }
+             }
+        }
         
-	if (!bm->VideoData)
+        if (!bm->VideoData)
         {
-	    bm->VideoData = AllocMem(bm->memsize, MEMF_ANY);
-	    if (bm->VideoData)
+            bm->VideoData = AllocMem(bm->memsize, MEMF_ANY);
+            if (bm->VideoData)
             {
-		csd->fram_used += bm->memsize;
+                csd->fram_used += bm->memsize;
             }
-	}
+        }
     }
     else
     {
-	csd->vram_used += bm->memsize;
-	bm->invram = TRUE;
+        csd->vram_used += bm->memsize;
+        bm->invram = TRUE;
     }
     DVRAM(bug("BM %p: %p,%d bytes allocated from %s. VRAM=%d\n", bm, bm->VideoData, bm->memsize, bm->invram ? "VRAM" : "RAM", csd->vram_used));
 
@@ -171,14 +171,14 @@ static BOOL movethisbitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *
     APTR vmem = allocrtgvrambitmap(csd, bm);
     if (vmem)
     {
-	SetMemoryMode(csd, bm->rgbformat);
-	CopyMemQuick(bm->VideoData, vmem, bm->memsize);
-	freertgbitmap(csd, bm);
-	bm->VideoData = vmem;
-	bm->invram = TRUE;
-	csd->vram_used += bm->memsize;
-	DVRAM(bug("BM %p: %p:%d (%d x %d) moved back to VRAM\n", bm, bm->VideoData, bm->memsize, bm->width, bm->height));
-	return TRUE;
+        SetMemoryMode(csd, bm->rgbformat);
+        CopyMemQuick(bm->VideoData, vmem, bm->memsize);
+        freertgbitmap(csd, bm);
+        bm->VideoData = vmem;
+        bm->invram = TRUE;
+        csd->vram_used += bm->memsize;
+        DVRAM(bug("BM %p: %p:%d (%d x %d) moved back to VRAM\n", bm, bm->VideoData, bm->memsize, bm->width, bm->height));
+        return TRUE;
     }
     return FALSE;
 }
@@ -188,22 +188,22 @@ static BOOL movebitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *bm)
      struct bm_data *bmnode;
  
      if (bm->invram)
-	return TRUE;
+        return TRUE;
         
      DVRAM(bug("BM %p: %p,%d needs to be in VRAM...\n", bm, bm->VideoData, bm->memsize));
      
      ForeachNode(&csd->bitmaplist, bmnode)
      {
-	if (bmnode != bm && bmnode->invram && !bmnode->locked)
+        if (bmnode != bm && bmnode->invram && !bmnode->locked)
         {
-	    if (movebitmaptofram(csd, bmnode))
+            if (movebitmaptofram(csd, bmnode))
             {
-	    	if (movethisbitmaptovram(csd, bm))
+                if (movethisbitmaptovram(csd, bm))
                 {
-		    return TRUE;
-		}
-	    }
-	}
+                    return TRUE;
+                }
+            }
+        }
      }
      
      DVRAM(bug("-> not enough memory, VRAM=%d\n", csd->vram_used));
@@ -215,9 +215,9 @@ static BOOL movebitmaptovram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 static BOOL maybeputinvram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     if (bm->invram)
-	return TRUE;
+        return TRUE;
     if (bm->memsize >= csd->vram_size - csd->vram_used)
-	return FALSE;
+        return FALSE;
     return movethisbitmaptovram(csd, bm);
 }
 #endif
@@ -225,7 +225,7 @@ static BOOL maybeputinvram(struct p96gfx_staticdata *csd, struct bm_data *bm)
 static void hidescreen(struct p96gfx_staticdata *csd, struct bm_data *bm)
 {
     D(bug("Hide %p: (%p:%d)\n",
-	bm, bm->VideoData, bm->memsize));
+        bm, bm->VideoData, bm->memsize));
     SetInterrupt(csd, FALSE);
     SetDisplay(csd, FALSE);
     SetSwitch(csd, FALSE);
@@ -255,7 +255,7 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
     {
-    	return NULL;
+        return NULL;
     }
     
     data = OOP_INST_DATA(cl, o);
@@ -296,17 +296,17 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     DB2(bug("%dx%dx%d %d RGBF=%08x P=%08x\n", width, height, multi, data->bytesperline, data->rgbformat, data->VideoData));
 
     if (data->VideoData == NULL)
-    	ok = FALSE;
+        ok = FALSE;
 
     if (!ok) {
- 	OOP_MethodID dispose_mid;
-	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
-	o = NULL;
+        OOP_MethodID dispose_mid;
+        dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+        OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+        o = NULL;
     }
     
     DB2(bug("ret=%x bm=%p (%p:%d)\n", o, data, data->VideoData, data->memsize));
-  	
+        
     return o;
 }
 
@@ -322,7 +322,7 @@ VOID P96GFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     DB2(bug("P96GFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
     if (csd->disp == data)
-    	hidescreen(csd, data);
+        hidescreen(csd, data);
 
     UNLOCK_HW
 
@@ -353,44 +353,44 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
- 	DB2(bug("%d/%d\n", tag->ti_Tag, tag->ti_Data));
+        DB2(bug("%d/%d\n", tag->ti_Tag, tag->ti_Data));
         if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
         {
             DB2(bug("->%d\n", idx));
             switch(idx)
             {
-	        case aoHidd_BitMap_Visible:
+                case aoHidd_BitMap_Visible:
                 LOCK_MULTI_BITMAP
                 LOCK_BITMAP(data)
                 LOCK_HW
-	        if (tag->ti_Data) {
-	     	    OOP_Object *gfxhidd, *sync, *pf;
-    		    IPTR modeid = vHidd_ModeID_Invalid;
-    		    IPTR dwidth, dheight, depth, width, height;
-    		    struct ModeInfo *modeinfo;
+                if (tag->ti_Data) {
+                    OOP_Object *gfxhidd, *sync, *pf;
+                    IPTR modeid = vHidd_ModeID_Invalid;
+                    IPTR dwidth, dheight, depth, width, height;
+                    struct ModeInfo *modeinfo;
 
-		    width = data->width;
-		    height = data->height;
-		    OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
-    		    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-		    HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
-		    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
-		    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
-		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-		    data->rgbformat = getrtgformat(csd, pf);
-		    modeinfo = getrtgmodeinfo(csd, sync, pf, csd->fakemodeinfo);
-		    csd->modeinfo = modeinfo;
-		    csd->rgbformat = data->rgbformat;
-		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
-		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
-		    D(bug("Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
-			data, data->VideoData, data->memsize,
-			dwidth, dheight, depth, width, height, data->rgbformat));
+                    width = data->width;
+                    height = data->height;
+                    OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
+                    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+                    HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
+                    OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
+                    OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
+                    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+                    data->rgbformat = getrtgformat(csd, pf);
+                    modeinfo = getrtgmodeinfo(csd, sync, pf, csd->fakemodeinfo);
+                    csd->modeinfo = modeinfo;
+                    csd->rgbformat = data->rgbformat;
+                    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
+                    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
+                    D(bug("Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
+                        data, data->VideoData, data->memsize,
+                        dwidth, dheight, depth, width, height, data->rgbformat));
 
-		    if (!data->invram)
+                    if (!data->invram)
                     {
                         WaitBlitter(csd); /* in case other bitmaps are swapped from VRAM to RAM */
-		    	if (!movebitmaptovram(csd, data))
+                        if (!movebitmaptovram(csd, data))
                         {
                             struct bm_data *bmnode;
                             
@@ -418,56 +418,56 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                         }
                     }
 
-		    csd->dwidth = dwidth;
-		    csd->dheight = dheight;
-		    csd->dmodeid = modeid;
+                    csd->dwidth = dwidth;
+                    csd->dheight = dheight;
+                    csd->dmodeid = modeid;
 
-		    if (csd->hardwaresprite && depth <= 8) {
-		    	UWORD i;
-    			UBYTE *clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
-		    	for (i = csd->spritecolors + 1; i < csd->spritecolors + 4; i++)
-		            SetSpriteColor(csd, i - (csd->spritecolors + 1),  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
-		    }
-	    	    SetInterrupt(csd, FALSE);
-    		    SetColorArray(csd, 0, 256);
-		    SetDisplay(csd, FALSE);
-		    SetGC(csd, modeinfo, 0);
- 		    SetClock(csd);
-		    SetDAC(csd);
-		    SetPanning(csd, data->VideoData, width, 0, 0);
-		    SetDisplay(csd, TRUE);
-		    SetSwitch(csd, TRUE);
-	    	    SetInterrupt(csd, TRUE);
-	            csd->disp = data;
-	            csd->disp->locked++;
-		} else {
-		    hidescreen(csd, data);
-		}
+                    if (csd->hardwaresprite && depth <= 8) {
+                        UWORD i;
+                        UBYTE *clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
+                        for (i = csd->spritecolors + 1; i < csd->spritecolors + 4; i++)
+                            SetSpriteColor(csd, i - (csd->spritecolors + 1),  clut[i * 3 + 0],  clut[i * 3 + 1],  clut[i * 3 + 2]);
+                    }
+                    SetInterrupt(csd, FALSE);
+                    SetColorArray(csd, 0, 256);
+                    SetDisplay(csd, FALSE);
+                    SetGC(csd, modeinfo, 0);
+                    SetClock(csd);
+                    SetDAC(csd);
+                    SetPanning(csd, data->VideoData, width, 0, 0);
+                    SetDisplay(csd, TRUE);
+                    SetSwitch(csd, TRUE);
+                    SetInterrupt(csd, TRUE);
+                    csd->disp = data;
+                    csd->disp->locked++;
+                } else {
+                    hidescreen(csd, data);
+                }
                 UNLOCK_HW
                 UNLOCK_BITMAP(data)
                 UNLOCK_MULTI_BITMAP
                 
-		break;
-		case aoHidd_BitMap_LeftEdge:
-		    if (data->leftedge != tag->ti_Data) {
-		    	data->leftedge = tag->ti_Data;
-		    	moved = TRUE;
-		    }
-		break;
-		case aoHidd_BitMap_TopEdge:
-		    if (data->topedge != tag->ti_Data) {
-		    	data->topedge = tag->ti_Data;
-		    	moved = TRUE;
-		    }
-		break;
-	    }
-	}
+                break;
+                case aoHidd_BitMap_LeftEdge:
+                    if (data->leftedge != tag->ti_Data) {
+                        data->leftedge = tag->ti_Data;
+                        moved = TRUE;
+                    }
+                break;
+                case aoHidd_BitMap_TopEdge:
+                    if (data->topedge != tag->ti_Data) {
+                        data->topedge = tag->ti_Data;
+                        moved = TRUE;
+                    }
+                break;
+            }
+        }
     }
     DB2(bug("P96GFXBitmap__Root__Set Exit\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 #if 0
     if (moved && csd->disp == data)
-    	setscroll(csd, data);
+        setscroll(csd, data);
 #else
     (void)moved;
 #endif
@@ -481,27 +481,27 @@ VOID P96GFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
     //DB2(bug("P96GFXBitmap__Root__Get\n"));
     if (IS_BITMAP_ATTR(msg->attrID, idx)) {
- 	//DB2(bug("=%d\n", idx));
-	switch (idx) {
-	case aoHidd_BitMap_LeftEdge:
-	    *msg->storage = 0;//data->leftedge;
-	    return;
-	case aoHidd_BitMap_TopEdge:
-	    *msg->storage = 0;//data->topedge;
-	    return;
-	case aoHidd_BitMap_Visible:
-	    *msg->storage = csd->disp == data;
-	    return;
-	case aoHidd_BitMap_Align:
-	    *msg->storage = data->align;
-	    return;
-	case aoHidd_BitMap_BytesPerRow:
-		*msg->storage = data->bytesperline;
-		return;
-	case aoHidd_BitMap_IsLinearMem:
-	    *msg->storage = TRUE;
-	    return;
-	}
+        //DB2(bug("=%d\n", idx));
+        switch (idx) {
+        case aoHidd_BitMap_LeftEdge:
+            *msg->storage = 0;//data->leftedge;
+            return;
+        case aoHidd_BitMap_TopEdge:
+            *msg->storage = 0;//data->topedge;
+            return;
+        case aoHidd_BitMap_Visible:
+            *msg->storage = csd->disp == data;
+            return;
+        case aoHidd_BitMap_Align:
+            *msg->storage = data->align;
+            return;
+        case aoHidd_BitMap_BytesPerRow:
+                *msg->storage = data->bytesperline;
+                return;
+        case aoHidd_BitMap_IsLinearMem:
+            *msg->storage = TRUE;
+            return;
+        }
     }
     //DB2(bug("P96GFXBitmap__Root__Get Exit\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -538,8 +538,8 @@ BOOL P96GFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     
 #if 0
     if (!data->invram) {
-	if (!movebitmaptovram(csd, data))
-	    return FALSE;
+        if (!movebitmaptovram(csd, data))
+            return FALSE;
     }
 #endif
 
@@ -573,19 +573,19 @@ BOOL P96GFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     UBYTE *clut;
     
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
-    	return FALSE;
+        return FALSE;
         
     LOCK_HW
     
     WaitBlitter(csd);
     clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
-	D(bug("[P96Gfx] %s: clut @ %p\n", __func__, clut));
+        D(bug("[P96Gfx] %s: clut @ %p\n", __func__, clut));
 
     for (i = msg->firstColor, j = 0; j < msg->numColors; i++, j++) {
         clut[i * 3 + 0] = msg->colors[j].red >> 8;
         clut[i * 3 + 1] = msg->colors[j].green >> 8;
         clut[i * 3 + 2] = msg->colors[j].blue >> 8;
-		D(bug("[P96Gfx] %s: color %d %02x%02x%02x\n", __func__, i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8));
+                D(bug("[P96Gfx] %s: color %d %02x%02x%02x\n", __func__, i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8));
     }
     SetColorArray(csd, msg->firstColor, msg->numColors);
     
@@ -595,7 +595,7 @@ BOOL P96GFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
 }
 
 VOID P96GFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
-				struct pHidd_BitMap_PutPixel *msg)
+                                struct pHidd_BitMap_PutPixel *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
@@ -614,23 +614,23 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     
     switch(data->bytesperpixel)
     {
-    	case 1:
-	    *(UBYTE *)mem = pixel;
-	    break;
-	   
-	case 2:
-	    *(UWORD *)mem = pixel;
-	    break;
-	    
-	case 3:
-	    *(UBYTE *)(mem) = pixel >> 16;
-	    *(UBYTE *)(mem + 1) = pixel >> 8;
-	    *(UBYTE *)(mem + 2) = pixel;
- 	    break;
-	    
-	case 4:
-	    *(ULONG *)mem = pixel;
-	    break;
+        case 1:
+            *(UBYTE *)mem = pixel;
+            break;
+           
+        case 2:
+            *(UWORD *)mem = pixel;
+            break;
+            
+        case 3:
+            *(UBYTE *)(mem) = pixel >> 16;
+            *(UBYTE *)(mem + 1) = pixel >> 8;
+            *(UBYTE *)(mem + 2) = pixel;
+            break;
+            
+        case 4:
+            *(ULONG *)mem = pixel;
+            break;
     }
     
     UNLOCK_BITMAP(data)
@@ -641,7 +641,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 /****************************************************************************************/
 
 ULONG P96GFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
-				 struct pHidd_BitMap_GetPixel *msg)
+                                 struct pHidd_BitMap_GetPixel *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data 	*data = OOP_INST_DATA(cl, o);
@@ -660,22 +660,22 @@ ULONG P96GFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     
     switch(data->bytesperpixel)
     {
-    	case 1:
-	    pixel = *(UBYTE *)mem;
-	    break;
-	    
-	case 2:
-	    pixel = *(UWORD *)mem;
-	    break;
-	    
-	case 3:
-	    pixel = (mem[0] << 16) | (mem[1] << 8) | mem[2];
-	    break;
-	    
-	case 4:
-	    pixel = *(ULONG *)mem;
-	    break;
-	    
+        case 1:
+            pixel = *(UBYTE *)mem;
+            break;
+            
+        case 2:
+            pixel = *(UWORD *)mem;
+            break;
+            
+        case 3:
+            pixel = (mem[0] << 16) | (mem[1] << 8) | mem[2];
+            break;
+            
+        case 4:
+            pixel = *(ULONG *)mem;
+            break;
+            
     }
     
     UNLOCK_BITMAP(data)
@@ -686,7 +686,7 @@ ULONG P96GFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 /****************************************************************************************/
 
 VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
-				struct pHidd_BitMap_DrawLine *msg)
+                                struct pHidd_BitMap_DrawLine *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
@@ -712,138 +712,138 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
     
     switch(msg->pixFmt)
     {
-    	case vHidd_StdPixFmt_Native:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-	    	    HIDD_BM_CopyMemBox8(o,
-		    	    		data->VideoData,
-					msg->x,
-					msg->y,
-					msg->pixels,
-					0,
-					0,
-					msg->width,
-					msg->height,
-					data->bytesperline,
-					msg->modulo);
-		    break;
-		    
-		case 2:
-	    	    HIDD_BM_CopyMemBox16(o,
-		    	    		 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperline,
-					 msg->modulo);
-		    break;
+        case vHidd_StdPixFmt_Native:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_CopyMemBox8(o,
+                                        data->VideoData,
+                                        msg->x,
+                                        msg->y,
+                                        msg->pixels,
+                                        0,
+                                        0,
+                                        msg->width,
+                                        msg->height,
+                                        data->bytesperline,
+                                        msg->modulo);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_CopyMemBox16(o,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperline,
+                                         msg->modulo);
+                    break;
 
-		case 3:
-	    	    HIDD_BM_CopyMemBox24(o,
-		    	    		 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperline,
-					 msg->modulo);
-		    break;
-		   
-		case 4:
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperline,
-					 msg->modulo);
-		    break;
-		     
-    	    } /* switch(data->bytesperpix) */
-	    break;
+                case 3:
+                    HIDD_BM_CopyMemBox24(o,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperline,
+                                         msg->modulo);
+                    break;
+                   
+                case 4:
+                    HIDD_BM_CopyMemBox32(o,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperline,
+                                         msg->modulo);
+                    break;
+                     
+            } /* switch(data->bytesperpix) */
+            break;
 
-    	case vHidd_StdPixFmt_Native32:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-		    HIDD_BM_GetMem32Image8(o,
-		    	    	    	   data->VideoData,
-					   msg->x,
-					   msg->y,
-					   msg->pixels,
-					   msg->width,
-					   msg->height,
-					   data->bytesperline,
-					   msg->modulo);
-		    break;
-		    
-		case 2:
-		    HIDD_BM_GetMem32Image16(o,
-		    	    	    	    data->VideoData,
-					    msg->x,
-					    msg->y,
-					    msg->pixels,
-					    msg->width,
-					    msg->height,
-					    data->bytesperline,
-					    msg->modulo);
-		    break;
+        case vHidd_StdPixFmt_Native32:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_GetMem32Image8(o,
+                                           data->VideoData,
+                                           msg->x,
+                                           msg->y,
+                                           msg->pixels,
+                                           msg->width,
+                                           msg->height,
+                                           data->bytesperline,
+                                           msg->modulo);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_GetMem32Image16(o,
+                                            data->VideoData,
+                                            msg->x,
+                                            msg->y,
+                                            msg->pixels,
+                                            msg->width,
+                                            msg->height,
+                                            data->bytesperline,
+                                            msg->modulo);
+                    break;
 
-		case 3:
-		    HIDD_BM_GetMem32Image24(o,
-		    	    	    	    data->VideoData,
-					    msg->x,
-					    msg->y,
-					    msg->pixels,
-					    msg->width,
-					    msg->height,
-					    data->bytesperline,
-					    msg->modulo);
-		    break;
+                case 3:
+                    HIDD_BM_GetMem32Image24(o,
+                                            data->VideoData,
+                                            msg->x,
+                                            msg->y,
+                                            msg->pixels,
+                                            msg->width,
+                                            msg->height,
+                                            data->bytesperline,
+                                            msg->modulo);
+                    break;
 
-		case 4:		    
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->pixels,
-					 0,
-					 0,
-					 msg->width,
-					 msg->height,
-					 data->bytesperline,
-					 msg->modulo);
-		    break;
-		    
-	    } /* switch(data->bytesperpix) */
-	    break;
-	    
-	default:
-	    {
-	    	APTR 	    pixels = msg->pixels;
-    	    	APTR 	    srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
-		OOP_Object *dstpf;
-		
-		dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
-		
-		HIDD_BM_ConvertPixels(o, &srcPixels, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
-		    	    	      &pixels, (HIDDT_PixelFormat *)dstpf, msg->modulo,
-				      msg->width, msg->height, NULL);    	    	
-	    }		
-	    break;
-	    
+                case 4:		    
+                    HIDD_BM_CopyMemBox32(o,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         msg->width,
+                                         msg->height,
+                                         data->bytesperline,
+                                         msg->modulo);
+                    break;
+                    
+            } /* switch(data->bytesperpix) */
+            break;
+            
+        default:
+            {
+                APTR 	    pixels = msg->pixels;
+                APTR 	    srcPixels = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
+                OOP_Object *dstpf;
+                
+                dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+                
+                HIDD_BM_ConvertPixels(o, &srcPixels, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
+                                      &pixels, (HIDDT_PixelFormat *)dstpf, msg->modulo,
+                                      msg->width, msg->height, NULL);    	    	
+            }		
+            break;
+            
     } /* switch(msg->pixFmt) */
     
     UNLOCK_BITMAP(data)
@@ -852,7 +852,7 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
 /****************************************************************************************/
 
 VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
-				struct pHidd_BitMap_PutImage *msg)
+                                struct pHidd_BitMap_PutImage *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct p96gfx_staticdata *csd = CSD(cl);
@@ -865,138 +865,138 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     
     switch(msg->pixFmt)
     {
-    	case vHidd_StdPixFmt_Native:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-	    	    HIDD_BM_CopyMemBox8(o,
-		    	    		msg->pixels,
-					0,
-					0,
-					data->VideoData,
-					msg->x,
-					msg->y,
-					msg->width,
-					msg->height,
-					msg->modulo,
-					data->bytesperline);
-		    break;
-		    
-		case 2:
-	    	    HIDD_BM_CopyMemBox16(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperline);
-		    break;
-		   
-		case 3:
-	    	    HIDD_BM_CopyMemBox24(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperline);
-		    break;
-		
-		case 4:
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperline);
-		    break;
-		     
-    	    } /* switch(data->bytesperpix) */
-	    break;
-	
-    	case vHidd_StdPixFmt_Native32:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-		    HIDD_BM_PutMem32Image8(o,
-		    	    	    	   msg->pixels,
-					   data->VideoData,
-					   msg->x,
-					   msg->y,
-					   msg->width,
-					   msg->height,
-					   msg->modulo,
-					   data->bytesperline);
-		    break;
-		    
-		case 2:
-		    HIDD_BM_PutMem32Image16(o,
-		    	    	    	    msg->pixels,
-					    data->VideoData,
-					    msg->x,
-					    msg->y,
-					    msg->width,
-					    msg->height,
-					    msg->modulo,
-					    data->bytesperline);
-		    break;
+        case vHidd_StdPixFmt_Native:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_CopyMemBox8(o,
+                                        msg->pixels,
+                                        0,
+                                        0,
+                                        data->VideoData,
+                                        msg->x,
+                                        msg->y,
+                                        msg->width,
+                                        msg->height,
+                                        msg->modulo,
+                                        data->bytesperline);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_CopyMemBox16(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperline);
+                    break;
+                   
+                case 3:
+                    HIDD_BM_CopyMemBox24(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperline);
+                    break;
+                
+                case 4:
+                    HIDD_BM_CopyMemBox32(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperline);
+                    break;
+                     
+            } /* switch(data->bytesperpix) */
+            break;
+        
+        case vHidd_StdPixFmt_Native32:
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_PutMem32Image8(o,
+                                           msg->pixels,
+                                           data->VideoData,
+                                           msg->x,
+                                           msg->y,
+                                           msg->width,
+                                           msg->height,
+                                           msg->modulo,
+                                           data->bytesperline);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_PutMem32Image16(o,
+                                            msg->pixels,
+                                            data->VideoData,
+                                            msg->x,
+                                            msg->y,
+                                            msg->width,
+                                            msg->height,
+                                            msg->modulo,
+                                            data->bytesperline);
+                    break;
 
-		case 3:
-		    HIDD_BM_PutMem32Image24(o,
-		    	    	    	    msg->pixels,
-					    data->VideoData,
-					    msg->x,
-					    msg->y,
-					    msg->width,
-					    msg->height,
-					    msg->modulo,
-					    data->bytesperline);
-		    break;
+                case 3:
+                    HIDD_BM_PutMem32Image24(o,
+                                            msg->pixels,
+                                            data->VideoData,
+                                            msg->x,
+                                            msg->y,
+                                            msg->width,
+                                            msg->height,
+                                            msg->modulo,
+                                            data->bytesperline);
+                    break;
 
-		case 4:		    
-	    	    HIDD_BM_CopyMemBox32(o,
-		    	    		 msg->pixels,
-					 0,
-					 0,
-					 data->VideoData,
-					 msg->x,
-					 msg->y,
-					 msg->width,
-					 msg->height,
-					 msg->modulo,
-					 data->bytesperline);
-		    break;
-		    
-	    } /* switch(data->bytesperpix) */
-	    break;
-	    
-	default:
-	    {
-	    	APTR 	    pixels = msg->pixels;
-    	    	APTR 	    dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
-		OOP_Object *srcpf;
-		
-		srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
-		
-		HIDD_BM_ConvertPixels(o, &pixels, (HIDDT_PixelFormat *)srcpf, msg->modulo,
-		    	    	      &dstBuf, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
-				      msg->width, msg->height, NULL);    	    	
-	    }
-	    break;
-	    
+                case 4:		    
+                    HIDD_BM_CopyMemBox32(o,
+                                         msg->pixels,
+                                         0,
+                                         0,
+                                         data->VideoData,
+                                         msg->x,
+                                         msg->y,
+                                         msg->width,
+                                         msg->height,
+                                         msg->modulo,
+                                         data->bytesperline);
+                    break;
+                    
+            } /* switch(data->bytesperpix) */
+            break;
+            
+        default:
+            {
+                APTR 	    pixels = msg->pixels;
+                APTR 	    dstBuf = data->VideoData + msg->y * data->bytesperline + msg->x * data->bytesperpixel;
+                OOP_Object *srcpf;
+                
+                srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+                
+                HIDD_BM_ConvertPixels(o, &pixels, (HIDDT_PixelFormat *)srcpf, msg->modulo,
+                                      &dstBuf, (HIDDT_PixelFormat *)data->pixfmtobj, data->bytesperline,
+                                      msg->width, msg->height, NULL);    	    	
+            }
+            break;
+            
     } /* switch(msg->pixFmt) */	  
     
     UNLOCK_BITMAP(data)  
@@ -1005,7 +1005,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 /****************************************************************************************/
 
 VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
-				   struct pHidd_BitMap_PutImageLUT *msg)
+                                   struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct p96gfx_staticdata *csd = CSD(cl);
@@ -1018,54 +1018,54 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     
     switch(data->bytesperpixel)
     {
-	case 2:
-	    HIDD_BM_CopyLUTMemBox16(o,
-		    	    	 msg->pixels,
-				 0,
-				 0,
-				 data->VideoData,
-				 msg->x,
-				 msg->y,
-				 msg->width,
-				 msg->height,
-				 msg->modulo,
-				 data->bytesperline,
-				 msg->pixlut);
-	    break;
+        case 2:
+            HIDD_BM_CopyLUTMemBox16(o,
+                                 msg->pixels,
+                                 0,
+                                 0,
+                                 data->VideoData,
+                                 msg->x,
+                                 msg->y,
+                                 msg->width,
+                                 msg->height,
+                                 msg->modulo,
+                                 data->bytesperline,
+                                 msg->pixlut);
+            break;
 
-	case 3:
-	    HIDD_BM_CopyLUTMemBox24(o,
-		    	    	 msg->pixels,
-				 0,
-				 0,
-				 data->VideoData,
-				 msg->x,
-				 msg->y,
-				 msg->width,
-				 msg->height,
-				 msg->modulo,
-				 data->bytesperline,
-				 msg->pixlut);
-	    break;
+        case 3:
+            HIDD_BM_CopyLUTMemBox24(o,
+                                 msg->pixels,
+                                 0,
+                                 0,
+                                 data->VideoData,
+                                 msg->x,
+                                 msg->y,
+                                 msg->width,
+                                 msg->height,
+                                 msg->modulo,
+                                 data->bytesperline,
+                                 msg->pixlut);
+            break;
 
-	case 4:
-	    HIDD_BM_CopyLUTMemBox32(o,
-		    	    	    msg->pixels,
-				    0,
-				    0,
-				    data->VideoData,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height,
-				    msg->modulo,
-				    data->bytesperline,
-				    msg->pixlut);
-	    break;
-	    
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
+        case 4:
+            HIDD_BM_CopyLUTMemBox32(o,
+                                    msg->pixels,
+                                    0,
+                                    0,
+                                    data->VideoData,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height,
+                                    msg->modulo,
+                                    data->bytesperline,
+                                    msg->pixlut);
+            break;
+            
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
 
     } /* switch(data->bytesperpix) */	 
     
@@ -1075,7 +1075,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 /****************************************************************************************/
 
 VOID P96GFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
-				   struct pHidd_BitMap_GetImageLUT *msg)
+                                   struct pHidd_BitMap_GetImageLUT *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
@@ -1107,18 +1107,18 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 #endif
 
     if (data->invram) {
-	makerenderinfo(csd, &ri, data);
+        makerenderinfo(csd, &ri, data);
         
         LOCK_HW
         
-	if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
-    	    ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
-	    v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
-	} else if (mode == vHidd_GC_DrawMode_Copy) {
-	    v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff, data->rgbformat);
-	} else if (mode == vHidd_GC_DrawMode_Invert) {
-	    v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
-	}
+        if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
+            ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
+            v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
+        } else if (mode == vHidd_GC_DrawMode_Copy) {
+            v = FillRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff, data->rgbformat);
+        } else if (mode == vHidd_GC_DrawMode_Invert) {
+            v = InvertRect(csd, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
+        }
         
         UNLOCK_HW
     }
@@ -1126,69 +1126,69 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     if (!v) switch(mode)
     {
         case vHidd_GC_DrawMode_Copy:
-	    switch(data->bytesperpixel)
-	    {
-	    	case 1:
-		    HIDD_BM_FillMemRect8(o,
-	    	    	    		 data->VideoData,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 data->bytesperline,
-					 fg);
-		    break;
-		    
-		case 2:
-		    HIDD_BM_FillMemRect16(o,
-	    	    	    		 data->VideoData,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 data->bytesperline,
-					 fg);
-		    break;
-	    
-	    	case 3:
-		    HIDD_BM_FillMemRect24(o,
-	    	    	    		 data->VideoData,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 data->bytesperline,
-					 fg);
-		    break;
-		
-	    	case 4:
-		    HIDD_BM_FillMemRect32(o,
-	    	    	    		 data->VideoData,
-	    	    	    		 msg->minX,
-					 msg->minY,
-					 msg->maxX,
-					 msg->maxY,
-					 data->bytesperline,
-					 fg);
-		    break;
-		
-	    }
-	    break;
+            switch(data->bytesperpixel)
+            {
+                case 1:
+                    HIDD_BM_FillMemRect8(o,
+                                         data->VideoData,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         data->bytesperline,
+                                         fg);
+                    break;
+                    
+                case 2:
+                    HIDD_BM_FillMemRect16(o,
+                                         data->VideoData,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         data->bytesperline,
+                                         fg);
+                    break;
+            
+                case 3:
+                    HIDD_BM_FillMemRect24(o,
+                                         data->VideoData,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         data->bytesperline,
+                                         fg);
+                    break;
+                
+                case 4:
+                    HIDD_BM_FillMemRect32(o,
+                                         data->VideoData,
+                                         msg->minX,
+                                         msg->minY,
+                                         msg->maxX,
+                                         msg->maxY,
+                                         data->bytesperline,
+                                         fg);
+                    break;
+                
+            }
+            break;
     
-	case vHidd_GC_DrawMode_Invert:
-	    HIDD_BM_InvertMemRect(o,
-	    	    	    	 data->VideoData,
-	    	    	    	 msg->minX * data->bytesperpixel,
-				 msg->minY,
-				 msg->maxX * data->bytesperpixel + data->bytesperpixel - 1,
-				 msg->maxY,
-				 data->bytesperline);
-	    break;
-	    
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	    break;
-	    
+        case vHidd_GC_DrawMode_Invert:
+            HIDD_BM_InvertMemRect(o,
+                                 data->VideoData,
+                                 msg->minX * data->bytesperpixel,
+                                 msg->minY,
+                                 msg->maxX * data->bytesperpixel + data->bytesperpixel - 1,
+                                 msg->maxY,
+                                 data->bytesperline);
+            break;
+            
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
+            
     } /* switch(mode) */
     
     UNLOCK_BITMAP(data)
@@ -1198,7 +1198,7 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 /****************************************************************************************/
 
 VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
-				 struct pHidd_BitMap_PutPattern *msg)
+                                 struct pHidd_BitMap_PutPattern *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
@@ -1216,67 +1216,67 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     UNLOCK_HW
     
     DB2(bug("blitpattern(%d,%d)(%d,%d)(%x,%d,%d,%d,%d,%d)\n",
-	msg->x, msg->y, msg->width, msg->height,
-	msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
+        msg->x, msg->y, msg->width, msg->height,
+        msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
 
     if ((msg->mask == NULL) && (msg->patterndepth == 1))
     {
-	switch (msg->patternheight)
-	{
-	    case 1:
-	    pat.Size = 0;
-	    break;
-	    case 2:
-	    pat.Size = 1;
-	    break;
-	    case 4:
-	    pat.Size = 2;
-	    break;
-	    case 8:
-	    pat.Size = 3;
-	    break;
-	    case 16:
-	    pat.Size = 4;
-	    break;
-	    case 32:
-	    pat.Size = 5;
-	    break;
-	    case 64:
-	    pat.Size = 6;
-	    break;
-	    case 128:
-	    pat.Size = 7;
-	    break;
-	    case 256:
-	    pat.Size = 8;
-	    break;
-	    default:
-	    pat.Size = 0xff;
-	}
+        switch (msg->patternheight)
+        {
+            case 1:
+            pat.Size = 0;
+            break;
+            case 2:
+            pat.Size = 1;
+            break;
+            case 4:
+            pat.Size = 2;
+            break;
+            case 8:
+            pat.Size = 3;
+            break;
+            case 16:
+            pat.Size = 4;
+            break;
+            case 32:
+            pat.Size = 5;
+            break;
+            case 64:
+            pat.Size = 6;
+            break;
+            case 128:
+            pat.Size = 7;
+            break;
+            case 256:
+            pat.Size = 8;
+            break;
+            default:
+            pat.Size = 0xff;
+        }
 
-	if (pat.Size <= 8)
+        if (pat.Size <= 8)
         {
 #if 0        
             maybeputinvram(csd, data);
 #endif
             if (data->invram)
             {
-	        makerenderinfo(csd, &ri, data);
-	        if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
-	             drawmode = JAM1;
-	        else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
-	             drawmode = COMPLEMENT;
-	        else
-	            drawmode = JAM2;
-	        if (msg->invertpattern)
-	             drawmode |= INVERSVID;
+                makerenderinfo(csd, &ri, data);
+                if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+                     drawmode = JAM1;
+                else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+                     drawmode = COMPLEMENT;
+                else
+                    drawmode = JAM2;
+                if (msg->invertpattern)
+                     drawmode |= INVERSVID;
 
-	        pat.Memory = msg->pattern;
-	        pat.XOffset = msg->patternsrcx;
-	        pat.YOffset = msg->patternsrcy;
-	        pat.FgPen = fg;
-	        pat.BgPen = bg;
-	        pat.DrawMode = drawmode;
+                pat.Memory = msg->pattern;
+                pat.XOffset = msg->patternsrcx;
+                pat.YOffset = msg->patternsrcy;
+                pat.FgPen = fg;
+                pat.BgPen = bg;
+                pat.DrawMode = drawmode;
             
                 LOCK_HW
                 
@@ -1284,99 +1284,99 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                 
                 UNLOCK_HW
             }
-	}
+        }
     }
 
     if (!v) switch(data->bytesperpixel)
     {
-	case 1:
-	    HIDD_BM_PutMemPattern8(o,
-	    	    	    	   msg->gc,
-				   msg->pattern,
-				   msg->patternsrcx,
-				   msg->patternsrcy,
-				   msg->patternheight,
-				   msg->patterndepth,
-				   msg->patternlut,
-				   msg->invertpattern,
-				   msg->mask,
-				   msg->maskmodulo,
-				   msg->masksrcx,
-				   data->VideoData,
-				   data->bytesperline,
-				   msg->x,
-				   msg->y,
-				   msg->width,
-				   msg->height);
-	    break;
+        case 1:
+            HIDD_BM_PutMemPattern8(o,
+                                   msg->gc,
+                                   msg->pattern,
+                                   msg->patternsrcx,
+                                   msg->patternsrcy,
+                                   msg->patternheight,
+                                   msg->patterndepth,
+                                   msg->patternlut,
+                                   msg->invertpattern,
+                                   msg->mask,
+                                   msg->maskmodulo,
+                                   msg->masksrcx,
+                                   data->VideoData,
+                                   data->bytesperline,
+                                   msg->x,
+                                   msg->y,
+                                   msg->width,
+                                   msg->height);
+            break;
 
-	case 2:
-	    HIDD_BM_PutMemPattern16(o,
-	    	    	    	    msg->gc,
-				    msg->pattern,
-				    msg->patternsrcx,
-				    msg->patternsrcy,
-				    msg->patternheight,
-				    msg->patterndepth,
-				    msg->patternlut,
-				    msg->invertpattern,
-				    msg->mask,
-				    msg->maskmodulo,
-				    msg->masksrcx,
-				    data->VideoData,
-				    data->bytesperline,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height);
-	    break;
+        case 2:
+            HIDD_BM_PutMemPattern16(o,
+                                    msg->gc,
+                                    msg->pattern,
+                                    msg->patternsrcx,
+                                    msg->patternsrcy,
+                                    msg->patternheight,
+                                    msg->patterndepth,
+                                    msg->patternlut,
+                                    msg->invertpattern,
+                                    msg->mask,
+                                    msg->maskmodulo,
+                                    msg->masksrcx,
+                                    data->VideoData,
+                                    data->bytesperline,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height);
+            break;
 
-	case 3:
-	    HIDD_BM_PutMemPattern24(o,
-	    	    	    	    msg->gc,
-				    msg->pattern,
-				    msg->patternsrcx,
-				    msg->patternsrcy,
-				    msg->patternheight,
-				    msg->patterndepth,
-				    msg->patternlut,
-				    msg->invertpattern,
-				    msg->mask,
-				    msg->maskmodulo,
-				    msg->masksrcx,
-				    data->VideoData,
-				    data->bytesperline,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height);
-	    break;
+        case 3:
+            HIDD_BM_PutMemPattern24(o,
+                                    msg->gc,
+                                    msg->pattern,
+                                    msg->patternsrcx,
+                                    msg->patternsrcy,
+                                    msg->patternheight,
+                                    msg->patterndepth,
+                                    msg->patternlut,
+                                    msg->invertpattern,
+                                    msg->mask,
+                                    msg->maskmodulo,
+                                    msg->masksrcx,
+                                    data->VideoData,
+                                    data->bytesperline,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height);
+            break;
 
-	case 4:
-	    HIDD_BM_PutMemPattern32(o,
-	    	    	    	    msg->gc,
-				    msg->pattern,
-				    msg->patternsrcx,
-				    msg->patternsrcy,
-				    msg->patternheight,
-				    msg->patterndepth,
-				    msg->patternlut,
-				    msg->invertpattern,
-				    msg->mask,
-				    msg->maskmodulo,
-				    msg->masksrcx,
-				    data->VideoData,
-				    data->bytesperline,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height);
-	    break;
+        case 4:
+            HIDD_BM_PutMemPattern32(o,
+                                    msg->gc,
+                                    msg->pattern,
+                                    msg->patternsrcx,
+                                    msg->patternsrcy,
+                                    msg->patternheight,
+                                    msg->patterndepth,
+                                    msg->patternlut,
+                                    msg->invertpattern,
+                                    msg->mask,
+                                    msg->maskmodulo,
+                                    msg->masksrcx,
+                                    data->VideoData,
+                                    data->bytesperline,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height);
+            break;
 
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    	    break;
-	    
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
+            
     } /* switch(data->bytesperpixel) */
     
     UNLOCK_BITMAP(data)
@@ -1407,96 +1407,96 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 #endif
 
     if (data->invram) {
-	makerenderinfo(csd, &ri, data);
-	if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
-	     drawmode = JAM1;
-	else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
-	     drawmode = COMPLEMENT;
-	else
-	    drawmode = JAM2;
-	if (msg->inverttemplate)
-	     drawmode |= INVERSVID;
+        makerenderinfo(csd, &ri, data);
+        if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+             drawmode = JAM1;
+        else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+             drawmode = COMPLEMENT;
+        else
+            drawmode = JAM2;
+        if (msg->inverttemplate)
+             drawmode |= INVERSVID;
 
         /* tmpl.XOffset has only UBYTE size so we must fix params up [1] [2] */
         
-	tmpl.Memory = msg->masktemplate + ((msg->srcx / 8) & ~1); /* [1] */
-	tmpl.BytesPerRow = msg->modulo;
-	tmpl.XOffset = msg->srcx & 0XF; /* [2] */
-	tmpl.DrawMode = drawmode;
-	tmpl.FgPen = fg;
-	tmpl.BgPen = bg;
+        tmpl.Memory = msg->masktemplate + ((msg->srcx / 8) & ~1); /* [1] */
+        tmpl.BytesPerRow = msg->modulo;
+        tmpl.XOffset = msg->srcx & 0XF; /* [2] */
+        tmpl.DrawMode = drawmode;
+        tmpl.FgPen = fg;
+        tmpl.BgPen = bg;
         
         LOCK_HW
-	v = BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+        v = BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
         UNLOCK_HW
     }
     
     if (!v) switch(data->bytesperpixel)
     {
-	case 1:
-	    HIDD_BM_PutMemTemplate8(o,
-	    	    	    	    msg->gc,
-				    msg->masktemplate,
-				    msg->modulo,
-				    msg->srcx,
-				    data->VideoData,
-				    data->bytesperline,
-				    msg->x,
-				    msg->y,
-				    msg->width,
-				    msg->height,
-				    msg->inverttemplate);
-	    break;
+        case 1:
+            HIDD_BM_PutMemTemplate8(o,
+                                    msg->gc,
+                                    msg->masktemplate,
+                                    msg->modulo,
+                                    msg->srcx,
+                                    data->VideoData,
+                                    data->bytesperline,
+                                    msg->x,
+                                    msg->y,
+                                    msg->width,
+                                    msg->height,
+                                    msg->inverttemplate);
+            break;
 
-	case 2:
-	    HIDD_BM_PutMemTemplate16(o,
-	    	    	    	     msg->gc,
-				     msg->masktemplate,
-				     msg->modulo,
-				     msg->srcx,
-				     data->VideoData,
-				     data->bytesperline,
-				     msg->x,
-				     msg->y,
-				     msg->width,
-				     msg->height,
-				     msg->inverttemplate);
-	    break;
+        case 2:
+            HIDD_BM_PutMemTemplate16(o,
+                                     msg->gc,
+                                     msg->masktemplate,
+                                     msg->modulo,
+                                     msg->srcx,
+                                     data->VideoData,
+                                     data->bytesperline,
+                                     msg->x,
+                                     msg->y,
+                                     msg->width,
+                                     msg->height,
+                                     msg->inverttemplate);
+            break;
 
-	case 3:
-	    HIDD_BM_PutMemTemplate24(o,
-	    	    	    	     msg->gc,
-				     msg->masktemplate,
-				     msg->modulo,
-				     msg->srcx,
-				     data->VideoData,
-				     data->bytesperline,
-				     msg->x,
-				     msg->y,
-				     msg->width,
-				     msg->height,
-				     msg->inverttemplate);
-	    break;
+        case 3:
+            HIDD_BM_PutMemTemplate24(o,
+                                     msg->gc,
+                                     msg->masktemplate,
+                                     msg->modulo,
+                                     msg->srcx,
+                                     data->VideoData,
+                                     data->bytesperline,
+                                     msg->x,
+                                     msg->y,
+                                     msg->width,
+                                     msg->height,
+                                     msg->inverttemplate);
+            break;
 
-	case 4:
-	    HIDD_BM_PutMemTemplate32(o,
-	    	    	    	     msg->gc,
-				     msg->masktemplate,
-				     msg->modulo,
-				     msg->srcx,
-				     data->VideoData,
-				     data->bytesperline,
-				     msg->x,
-				     msg->y,
-				     msg->width,
-				     msg->height,
-				     msg->inverttemplate);
-	    break;
+        case 4:
+            HIDD_BM_PutMemTemplate32(o,
+                                     msg->gc,
+                                     msg->masktemplate,
+                                     msg->modulo,
+                                     msg->srcx,
+                                     data->VideoData,
+                                     data->bytesperline,
+                                     msg->x,
+                                     msg->y,
+                                     msg->width,
+                                     msg->height,
+                                     msg->inverttemplate);
+            break;
 
-	default:
-	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    	    break;
-	    
+        default:
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            break;
+            
     } /* switch(data->bytesperpixel) */
     
     UNLOCK_BITMAP(data)
@@ -1520,7 +1520,7 @@ VOID P96GFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct 
 /****************************************************************************************/
 
 BOOL P96GFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
-				   struct pHidd_PlanarBM_SetBitMap *msg)
+                                   struct pHidd_PlanarBM_SetBitMap *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
@@ -1534,7 +1534,7 @@ BOOL P96GFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 /****************************************************************************************/
 
 BOOL P96GFXBitmap__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
-				   struct pHidd_PlanarBM_GetBitMap *msg)
+                                   struct pHidd_PlanarBM_GetBitMap *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
