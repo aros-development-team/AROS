@@ -228,7 +228,7 @@ AROS_LH3(void, QueryATAStorageFeatures,
          struct SysexpStorageBase *, StorageBase, 16, Storage)
 {
     AROS_LIBFUNC_INIT
-
+#if (0)
     struct IOStdReq *io;
     struct MsgPort * ioReplyPort;
     struct NSDeviceQueryResult nsdqr;
@@ -314,7 +314,7 @@ AROS_LH3(void, QueryATAStorageFeatures,
     }
     DeleteIORequest((struct IORequest *)io);
     DeleteMsgPort(ioReplyPort);
-
+#endif
     AROS_LIBFUNC_EXIT
 }
 
