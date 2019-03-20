@@ -13834,6 +13834,8 @@ aros_target_detach_ldflags=-detach
 aros_target_nostdlib_ldflags=-nostdlib
 
 
+aros_target_cc_path=
+
 # Target tools
 
 if test "$aros_target_toolchain" != "yes"; then

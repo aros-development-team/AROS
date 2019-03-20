@@ -2428,6 +2428,8 @@ AC_SUBST(aros_target_nix_ldflags,-nix)
 AC_SUBST(aros_target_detach_ldflags,-detach)
 AC_SUBST(aros_target_nostdlib_ldflags,-nostdlib)
 
+aros_target_cc_path=
+
 # Target tools
 AC_SUBST(aros_toolchain)
 if test "$aros_target_toolchain" != "yes"; then
