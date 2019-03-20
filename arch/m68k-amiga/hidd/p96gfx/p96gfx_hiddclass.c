@@ -2,7 +2,7 @@
     Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: P96 Gfx Hidd
+    Desc: P96 card Gfx Hidd wrapper.
     Lang: English.
 */
 

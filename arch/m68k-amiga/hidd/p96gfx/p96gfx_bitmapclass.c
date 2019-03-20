@@ -2,7 +2,7 @@
     Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Bitmap class for native Amiga chipset.
+    Desc: Bitmap class for p96 card drivers.
     Lang: English.
     
 */
