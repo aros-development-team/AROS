@@ -26,9 +26,10 @@
 #include <aros/symbolsets.h>
 
 #define DEBUG 0
-#define DB2(x) ;
+#define DB2(x)
 #define DEBUG_TEXT(x)
-#define DVRAM(x) ;
+#define DVRAM(x)
+#define DCLUT(x) x
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -573,7 +574,7 @@ BOOL P96GFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     WORD i, j;
     UBYTE *clut;
 
-    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
+    DCLUT(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
         return FALSE;
@@ -582,13 +583,13 @@ BOOL P96GFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
 
     WaitBlitter(csd);
     clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
-    D(bug("[P96Gfx:Bitmap] %s: clut @ %p\n", __func__, clut));
+    DCLUT(bug("[P96Gfx:Bitmap] %s: CLUT @ %p\n", __func__, clut));
 
     for (i = msg->firstColor, j = 0; j < msg->numColors; i++, j++) {
         clut[i * 3 + 0] = msg->colors[j].red >> 8;
         clut[i * 3 + 1] = msg->colors[j].green >> 8;
         clut[i * 3 + 2] = msg->colors[j].blue >> 8;
-        D(bug("[P96Gfx:Bitmap] %s: color %d %02x%02x%02x\n", __func__, i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8));
+        DCLUT(bug("[P96Gfx:Bitmap] %s: color %d %02x%02x%02x\n", __func__, i, msg->colors[j].red >> 8, msg->colors[j].green >> 8, msg->colors[j].blue >> 8));
     }
     SetColorArray(csd, msg->firstColor, msg->numColors);
 
@@ -705,7 +706,13 @@ VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
         struct RenderInfo ri;
         struct Line renderLine;
         makerenderinfo(csd, &ri, data);
-
+        renderline.FgPen = GC_FG(msg->gc);
+        renderline.BgPen = GC_BG(msg->gc);
+        renderline.LinePtrn = GC_LINEPAT(gc);
+        renderline.X = msg->x1;
+        renderline.Y = msg->y1;
+        renderline.dX = msg->x2;
+        renderline.dY = msg->y2;
         v = DrawLine(csd, &ri, &renderLine, data->rgbformat);
     }
 #endif
@@ -872,6 +879,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct p96gfx_staticdata *csd = CSD(cl);
+    BOOL v = FALSE;
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
@@ -881,7 +889,33 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     WaitBlitter(csd);
     UNLOCK_HW
 
-    switch(msg->pixFmt)
+    if (data->invram)
+    {
+        if ((msg->pixFmt == vHidd_StdPixFmt_Native
+            || msg->pixFmt == vHidd_StdPixFmt_Native32
+            || msg->pixFmt == vHidd_StdPixFmt_BGRA32
+            || msg->pixFmt == vHidd_StdPixFmt_BGR032))
+        {
+#if (0)
+            struct RenderInfo ri;
+            WORD sx, sy, dx, dy;
+
+            makerenderinfo(csd, &ri, data);
+            if (msg->pixels < data->VideoData)
+            {
+            }
+
+            LOCK_HW
+
+//       v =BlitRect(csd, &ri,
+//    WORD sx, WORD sy, WORD dx, WORD dy, msg->width, msg->height, UBYTE mask, data->rgbformat);
+
+            UNLOCK_HW
+#endif
+        }
+    }
+
+    if (!v) switch(msg->pixFmt)
     {
         case vHidd_StdPixFmt_Native:
             switch(data->bytesperpixel)
