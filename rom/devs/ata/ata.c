@@ -496,6 +496,7 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static BOOL ValidSMARTCmd(struct IORequest *io)
 {
+#if (0)
     if ((IOStdReq(io)->io_Reserved1) != (IOStdReq(io)->io_Reserved2))
         return FALSE;
 
@@ -528,15 +529,17 @@ static BOOL ValidSMARTCmd(struct IORequest *io)
                     io->io_Error = IOERR_NOCMD;
                     return FALSE;
         }
+#endif
         return TRUE;
 }
 
 static void cmd_SMART(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
+#if (0)
     struct ata_Bus *bus = unit->au_Bus;
     UBYTE u;
-
+#endif
     D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
 
     if (unit->au_Flags & AF_DiscPresent)
@@ -547,7 +550,7 @@ static void cmd_SMART(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     if (!ValidSMARTCmd(io))
         return;
-
+#if (0)
     u = unit->au_UnitNum & 1;
 
     if (bus->ab_Dev[u] == DEV_ATA || bus->ab_Dev[u] == DEV_SATA)
@@ -565,6 +568,7 @@ static void cmd_SMART(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         ata_SMARTCmd(IOStdReq(io));
     }
     else
+#endif
         io->io_Error = IOERR_NOCMD;
 }
 
@@ -577,7 +581,7 @@ static void cmd_TRIM(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     if ((unit->au_Drive->id_ATAVersion >= 7) && (unit->au_Drive->id_DSManagement & 1))
     {
         D(bug("[ATA%02ld] %s: Unit supports TRIM\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
-
+#if (0)
         if (IOStdReq(io)->io_Reserved1 == ATAFEATURE_TEST_AVAIL)
         {
             if (IOStdReq(io)->io_Length >= sizeof(ULONG))
@@ -589,6 +593,7 @@ static void cmd_TRIM(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
             return;
         }
         ata_TRIMCmd(IOStdReq(io));
+#endif
     }
     else
         io->io_Error = IOERR_NOCMD;
@@ -760,8 +765,10 @@ static BOOL isSlow(struct IORequest *io)
         if (IMMEDIATE_COMMANDS & (1 << io->io_Command))
             slow = FALSE;
     }
+#if(0)
     else if ((io->io_Command >= HD_SMARTCMD && io->io_Command <= HD_TRIMCMD) &&
                 (IOStdReq(io)->io_Reserved1 == ATAFEATURE_TEST_AVAIL)) slow = FALSE;
+#endif
     else if (io->io_Command == NSCMD_TD_SEEK64 || io->io_Command == NSCMD_DEVICEQUERY) slow = FALSE;
 
     return slow;
