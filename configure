@@ -13878,11 +13878,19 @@ aros_plain_ar="${prefix}${toolchain_ar}"
 if test "${enable_includes+set}" = set; then :
   enableval=$enable_includes; aros_target_incl=$enable_includes
 else
-  aros_target_incl=`$aros_kernel_cc -print-sysroot`/`$aros_kernel_cc --print-sysroot-headers-suffix 2>/dev/null || echo usr/include`
+  aros_target_incl=no
 fi
 
 
-if test "$aros_kernel_includes" = ""; then
+if test "x$aros_kernel_includes" = "xno"; then
+    if test "x$test_kernel_cc" != "xno"; then
+        aros_target_incl=`$aros_kernel_cc -print-sysroot`/`$aros_kernel_cc --print-sysroot-headers-suffix 2>/dev/null || echo usr/include`
+    else
+        aros_kernel_includes=
+    fi
+fi
+
+if test "x$aros_kernel_includes" = "x"; then
     if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
         aros_kernel_includes="-isystem $aros_target_incl"
     fi
