@@ -1,10 +1,6 @@
 #ifndef RESOURCES_EMUL_HOST_H
 #define RESOURCES_EMUL_HOST_H
 
-/* avoid conflicts between our __unused define and the ones that might come in
-   via sys/stat.h */
-#undef __unused
-
 #include <exec/libraries.h>
 #include <hidd/unixio.h>
 #include <oop/oop.h>
