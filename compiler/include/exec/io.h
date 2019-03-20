@@ -39,8 +39,6 @@ struct IOStdReq
     ULONG           io_Length;
     APTR            io_Data;
     ULONG           io_Offset;
-    ULONG           io_Reserved1;
-    ULONG           io_Reserved2;
 };
 
 #define CMD_INVALID 0
