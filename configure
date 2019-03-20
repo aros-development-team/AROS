@@ -7508,6 +7508,8 @@ fi
 $as_echo "$as_me: Performing target configuration..." >&6;}
 
 
+test_kernel_cc=no
+
 aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OPTION NOWARN_POINTER_SIGN NOWARN_PARENTHESES"
 export_newline="
 "
@@ -9546,6 +9548,7 @@ else
     # Kernel tools required - find them
     # Note that 'normally', aros_kernel_* overrides will be
     # empty, unless specified in the per-arch sections above.
+    test_kernel_cc=yes
     if test "x$aros_kernel_cpp" = "x"; then
         aros_kernel_cpp=${kernel_tool_prefix}${CPP}
     fi
@@ -13883,54 +13886,56 @@ if test "$aros_kernel_includes" = ""; then
     fi
 fi
 
-if test "$aros_kernel_includes" != "" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the kernel compiler's include path" >&5
+if test "x$test_kernel_cc" != "xno"; then
+    if test "$aros_kernel_includes" != "" ; then
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the kernel compiler's include path" >&5
 $as_echo_n "checking for the kernel compiler's include path... " >&6; }
-    if test "$aros_kernel_cc_includes" = "" ; then
-        # Try to guess where the directory is.
-        aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
-        if test -d $aros_kernel_cc_includes; then
-            # Check if there is also an include-fixed directory and add it
-            # to kernel compiler's include path as it may contain some of
-            # the headers we need.
-            if test -d "$aros_kernel_cc_includes"-fixed; then
-                aros_kernel_cc_includes+=" -isystem $aros_kernel_cc_includes"-fixed
-            fi
-            # Check for specific includes directory. Needed for Ubuntu 11.10 and Debian
-            if test -d "/usr/include/${aros_target_cpu}-linux-gnu"; then
-                aros_kernel_cc_includes+=" -isystem /usr/include/${aros_target_cpu}-linux-gnu"
-            fi
-        else
-            # The directory doesn't exist, we need to do some more work.
-            aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
+        if test "$aros_kernel_cc_includes" = "" ; then
+            # Try to guess where the directory is.
+            aros_kernel_cc_includes=`dirname \`${aros_kernel_cc} ${aros_kernel_cflags} -print-libgcc-file-name\``/include
+            if test -d $aros_kernel_cc_includes; then
+                # Check if there is also an include-fixed directory and add it
+                # to kernel compiler's include path as it may contain some of
+                # the headers we need.
+                if test -d "$aros_kernel_cc_includes"-fixed; then
+                    aros_kernel_cc_includes+=" -isystem $aros_kernel_cc_includes"-fixed
+                fi
+                # Check for specific includes directory. Needed for Ubuntu 11.10 and Debian
+                if test -d "/usr/include/${aros_target_cpu}-linux-gnu"; then
+                    aros_kernel_cc_includes+=" -isystem /usr/include/${aros_target_cpu}-linux-gnu"
+                fi
+            else
+                # The directory doesn't exist, we need to do some more work.
+                aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
 
-            # These are the headers we're looking for.
-            headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
-                     stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
-                     zutil.h stdint.h"
+                # These are the headers we're looking for.
+                headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+                         stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+                         zutil.h stdint.h"
 
-            dirs=
-            for h in $headers; do
-                # Which other headers are needed by each of the above?
-                deps=$(echo "#include <$h>" | \
-                       $aros_kernel_cc -E -M - 2>/dev/null | \
-                       sed 's/^.*://; s/\\$/ /g; s/[ \t]\+/ /g')
+                dirs=
+                for h in $headers; do
+                    # Which other headers are needed by each of the above?
+                    deps=$(echo "#include <$h>" | \
+                           $aros_kernel_cc -E -M - 2>/dev/null | \
+                           sed 's/^.*://; s/\\$/ /g; s/[ \t]\+/ /g')
 
-                # Copy all the needed headers to a directory beneath gendir.
-                for d in $deps; do
-                    h=$(basename $d)
-                    dir=${aros_kernel_cc_includes}$(echo $(dirname $d) | \
+                    # Copy all the needed headers to a directory beneath gendir.
+                    for d in $deps; do
+                        h=$(basename $d)
+                        dir=${aros_kernel_cc_includes}$(echo $(dirname $d) | \
                                                 sed -n "s,^.*/include\(/.*\),\1,p")
-                    ! test -d $dir && mkdir -p $dir
-                    ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+                        ! test -d $dir && mkdir -p $dir
+                        ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+                    done
                 done
-            done
+            fi
         fi
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cc_includes" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cc_includes" >&5
 $as_echo "$aros_kernel_cc_includes" >&6; }
-    # Adding -nostdinc to kernel includes as they are always used together.
-    aros_kernel_includes="$aros_kernel_includes $aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes"
+        # Adding -nostdinc to kernel includes as they are always used together.
+        aros_kernel_includes="$aros_kernel_includes $aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes"
+    fi
 fi
 
 if test "$crosstools" != "yes"; then
@@ -13982,15 +13987,16 @@ fi
 
 save_cc="$CC"
 save_cflags="$CFLAGS"
-CFLAGS="-iquote."
-kernel_cflags_iquote=$host_cflags_iquote
-kernel_cflags_iquote_end=$host_cflags_iquote_end
-if test "x-$cross_compiling" = "x-yes"; then
-    CC="$aros_kernel_cc"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-stack-protector" >&5
+if test "x$test_kernel_cc" != "xno"; then
+    CFLAGS="-iquote."
+    kernel_cflags_iquote=$host_cflags_iquote
+    kernel_cflags_iquote_end=$host_cflags_iquote_end
+    if test "x-$cross_compiling" = "x-yes"; then
+        CC="$aros_kernel_cc"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-stack-protector" >&5
 $as_echo_n "checking whether ${CC} accepts -fno-stack-protector... " >&6; }
-    if test "x-$crosstools" != "x-yes"; then
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        if test "x-$crosstools" != "x-yes"; then
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
@@ -14007,17 +14013,17 @@ else
   use_no_stack_protector="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    else
-        # we do know it is supported for the smallest version of gcc we are going to build
-        # we assume it's also supported by later versions
-        use_no_stack_protector=yes
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_no_stack_protector" >&5
+        else
+            # we do know it is supported for the smallest version of gcc we are going to build
+            # we assume it's also supported by later versions
+            use_no_stack_protector=yes
+        fi
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_no_stack_protector" >&5
 $as_echo "$use_no_stack_protector" >&6; }
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
 $as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
-    if test "x-$crosstools" != "x-yes"; then
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        if test "x-$crosstools" != "x-yes"; then
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
@@ -14034,34 +14040,34 @@ else
   has_iquote="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    else
-        # we do know it is supported for the smallest version of gcc we are going to build
-        # we assume it's also supported by later versions
-        has_iquote=yes
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_iquote" >&5
+        else
+            # we do know it is supported for the smallest version of gcc we are going to build
+            # we assume it's also supported by later versions
+            has_iquote=yes
+        fi
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_iquote" >&5
 $as_echo "$has_iquote" >&6; }
-    if test "x-$has_iquote" = "x-yes" ; then
-        kernel_cflags_iquote=-iquote
-        kernel_cflags_iquote_end=
-    else
-        kernel_cflags_iquote=-I
-        kernel_cflags_iquote_end=-I-
+        if test "x-$has_iquote" = "x-yes" ; then
+            kernel_cflags_iquote=-iquote
+            kernel_cflags_iquote_end=
+        else
+            kernel_cflags_iquote=-I
+            kernel_cflags_iquote_end=-I-
+        fi
     fi
-fi
-if test "x-$use_no_stack_protector" = "x-yes" ; then
-    aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
-fi
+    if test "x-$use_no_stack_protector" = "x-yes" ; then
+        aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
+    fi
 
-#-----------------------------------------------------------------------------
+    #-----------------------------------------------------------------------------
 
-# Check if we can explicitly choose older version of symbol hashing
+    # Check if we can explicitly choose older version of symbol hashing
 
-CFLAGS="save_cflags -Wl,--hash-style=sysv"
-CC="$aros_kernel_cc"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wl,--hash-style=sysv" >&5
+    CFLAGS="save_cflags -Wl,--hash-style=sysv"
+    CC="$aros_kernel_cc"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wl,--hash-style=sysv" >&5
 $as_echo_n "checking whether ${CC} accepts -Wl,--hash-style=sysv... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
@@ -14079,10 +14085,11 @@ else
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_hash_style" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_hash_style" >&5
 $as_echo "$use_hash_style" >&6; }
-if test "x-$use_hash_style" = "x-yes" ; then
-    aros_kernel_cflags="$aros_kernel_cflags -Wl,--hash-style=sysv"
+    if test "x-$use_hash_style" = "x-yes" ; then
+        aros_kernel_cflags="$aros_kernel_cflags -Wl,--hash-style=sysv"
+    fi
 fi
 CC="$save_cc"
 CFLAGS="$save_cflags"
