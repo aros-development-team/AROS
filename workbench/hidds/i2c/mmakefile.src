@@ -3,6 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-hidds: hidd-i2c
+#MM hidd-i2c : kernel-hidd-bus-includes
 
 USER_INCLUDES := -I.
 
