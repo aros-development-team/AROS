@@ -81,3 +81,12 @@ CFG_PORTSSOURCES_ENABLE=no
 # Which package to use to build toolchain that will be used for other builds in this configuration
 # Allowed: none (disable), <crosstools package name> (enable)
 CFG_PREBUILD_TOOLCHAIN_PACKAGE=none
+
+# Select which toolchain a server will use for its builds
+CFG_TOOLCHAIN_FAMILY=`cat $SOURCE_AROS/config/toolchain_def`
+
+# Import the gnu component versions
+CFG_GNU_GCC_DEFAULT=`cat $SOURCE_AROS/config/gcc_def`
+CFG_GNU_BINUTILS_DEFAULT=`cat $SOURCE_AROS/config/binutils_def`
+CFG_GNU_GCC_EXP=`cat $SOURCE_AROS/config/gcc_exp`
+CFG_GNU_BINUTILS_EXP=`cat $SOURCE_AROS/config/binutils_exp`
