@@ -2638,6 +2638,9 @@ if test "x$test_kernel_cc" != "xno"; then
     if test "x-$use_hash_style" = "x-yes" ; then
         aros_kernel_cflags="$aros_kernel_cflags -Wl,--hash-style=sysv"
     fi
+else
+    kernel_cflags_iquote="$""(CFLAGS_IQUOTE)"
+    kernel_cflags_iquote_end="$""(CFLAGS_IQUOTE_END)"
 fi
 CC="$save_cc"
 CFLAGS="$save_cflags"

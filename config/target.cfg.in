@@ -80,8 +80,8 @@ FUNCINSTR_FLAGS               = $(CFLAGS_INSTR_FUNCTIONS)
 FUNCINSTR_LIBS                = instrfunc
 
 NOSTDINC_CFLAGS               := @aros_target_nostdinc_cflags@
-KERNEL_IQUOTE                 := @kernel_cflags_iquote@
-KERNEL_IQUOTE_END             := @kernel_cflags_iquote_end@
+KERNEL_IQUOTE                 = @kernel_cflags_iquote@
+KERNEL_IQUOTE_END             = @kernel_cflags_iquote_end@
 NOSTARTUP_LDFLAGS             := @aros_target_nostartup_ldflags@
 NIX_LDFLAGS                   := @aros_target_nix_ldflags@
 DETACH_LDFLAGS                := @aros_target_detach_ldflags@
