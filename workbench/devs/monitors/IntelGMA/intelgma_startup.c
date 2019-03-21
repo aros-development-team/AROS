@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -172,6 +172,7 @@ int main(void)
 
     sd.basegc = OOP_FindClass(CLID_Hidd_GC);
     sd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
+    sd.basei2c = OOP_FindClass(CLID_Hidd_I2C);
 
     if (success)
     {
