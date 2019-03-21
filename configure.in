@@ -23,8 +23,11 @@ AC_CONFIG_AUX_DIR(scripts/autoconf)
 AC_CANONICAL_HOST
 
 # Default versions for the gnu tools we build
-default_gcc_version="6.5.0"
-default_binutils_version="2.32"
+default_toolchain_family=`cat ${srcdir}/config/toolchain_def`
+default_gcc_version=`cat ${srcdir}/config/gcc_def`
+exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
+default_binutils_version=`cat ${srcdir}/config/binutils_def`
+exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version="2.02"
 target_grub2_version=$default_grub2_version
 
@@ -701,7 +704,7 @@ host_android_gfx=no
 
 
 AC_MSG_CHECKING([Which toolchain family to use ...])
-AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="gnu")
+AC_ARG_WITH(toolchain,AC_HELP_STRING([--with-toolchain=family],[Which toolchain family to crosscompile with (defaults to gnu)]),aros_toolchain="$withval",aros_toolchain="$default_toolchain_family")
 AC_MSG_RESULT($aros_toolchain)
 
 

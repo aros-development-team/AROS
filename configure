@@ -2813,8 +2813,11 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 # Default versions for the gnu tools we build
-default_gcc_version="6.5.0"
-default_binutils_version="2.32"
+default_toolchain_family=`cat ${srcdir}/config/toolchain_def`
+default_gcc_version=`cat ${srcdir}/config/gcc_def`
+exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
+default_binutils_version=`cat ${srcdir}/config/binutils_def`
+exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version="2.02"
 target_grub2_version=$default_grub2_version
 
@@ -7570,7 +7573,7 @@ $as_echo_n "checking Which toolchain family to use ...... " >&6; }
 if test "${with_toolchain+set}" = set; then :
   withval=$with_toolchain; aros_toolchain="$withval"
 else
-  aros_toolchain="gnu"
+  aros_toolchain="$default_toolchain_family"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_toolchain" >&5
