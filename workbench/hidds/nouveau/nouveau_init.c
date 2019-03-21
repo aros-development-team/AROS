@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,8 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.basegc = OOP_FindClass(CLID_Hidd_GC);
     LIBBASE->sd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
     LIBBASE->sd.basegallium = OOP_FindClass(CLID_Hidd_Gallium);
-
+    LIBBASE->sd.basei2c = OOP_FindClass(CLID_Hidd_I2C);
+    
     LIBBASE->sd.mid_CopyMemBox16    = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
     LIBBASE->sd.mid_CopyMemBox32    = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
     LIBBASE->sd.mid_PutMem32Image16 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);

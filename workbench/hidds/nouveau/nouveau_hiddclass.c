@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -626,7 +626,12 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, CreateObject)
     }
     else if (SD(cl)->basegallium && (msg->cl == SD(cl)->basegallium))
     {
+        /* Create the gallium 3d driver object .. */
         object = OOP_NewObject(NULL, CLID_Hidd_Gallium_Nouveau, msg->attrList);
+    }
+    else if (SD(cl)->basei2c && (msg->cl == SD(cl)->basei2c))
+    {
+        /* Expose the i2c bus object .. */
     }
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
