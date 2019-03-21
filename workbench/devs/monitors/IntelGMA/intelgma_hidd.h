@@ -112,8 +112,7 @@ struct g45chip {
 
 struct g45data
 {
-    /* TODO: Move object data here from staticdata */
-    ULONG empty;
+    OOP_Object          *i2cobj;
 };
 
 struct i2cdata

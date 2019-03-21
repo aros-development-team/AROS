@@ -450,7 +450,7 @@ OOP_Object *METHOD(INTELG45, Root, New)
 //        { TAG_DONE, 0UL }
 //    };
 
-	OOP_Object *i2c;
+	OOP_Object *i2cObj = NULL;
 
     modetags = tags = AllocVecPooled(sd->MemPool,
         sizeof (struct TagItem) * (3 + SYNC_LIST_COUNT + 1));
@@ -515,15 +515,14 @@ OOP_Object *METHOD(INTELG45, Root, New)
 	}
 	else
 	{
+		OOP_Object *i2cDev = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
 
-		i2c = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
-
-		if (i2c)
+		if (i2cDev)
 		{
-			if (HIDD_I2C_ProbeAddress(i2c, 0xa0))
+			if (HIDD_I2C_ProbeAddress(i2cDev, 0xa0))
 			{
 				struct TagItem attrs[] = {
-						{ aHidd_I2CDevice_Driver,   (IPTR)i2c       },
+						{ aHidd_I2CDevice_Driver,   (IPTR)i2cDev       },
 						{ aHidd_I2CDevice_Address,  0xa0            },
 						{ aHidd_I2CDevice_Name,     (IPTR)"Display" },
 						{ TAG_DONE, 0UL }
@@ -531,16 +530,13 @@ OOP_Object *METHOD(INTELG45, Root, New)
 
 				D(bug("[GMA] I2C device found\n"));
 
-				OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+				i2cObj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
 
-				if (obj)
+				if (i2cObj)
 				{
-					G45_parse_ddc(cl, &tags, poolptr, obj);
-
-					OOP_DisposeObject(obj);
+					G45_parse_ddc(cl, &tags, poolptr, i2cObj);
 				}
 			}
-			OOP_DisposeObject(i2c);
 		}
 
 	}
@@ -566,7 +562,10 @@ OOP_Object *METHOD(INTELG45, Root, New)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
+		struct g45data * gfxdata = OOP_INST_DATA(cl, o);
+		gfxdata->i2cobj = i2cObj;
         sd->GMAObject = o;
+
 		/* Create compositor object */
 		{
 			struct TagItem comptags [] =
@@ -723,7 +722,9 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
     }
     else if (SD(cl)->basei2c && (msg->cl == SD(cl)->basei2c))
     {
+		struct g45data * gfxdata = OOP_INST_DATA(cl, o);
         /* Expose the i2c bus object .. */
+		object = gfxdata->i2cobj;
     }
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
