@@ -13882,17 +13882,19 @@ else
 fi
 
 
-if test "x$aros_kernel_includes" = "xno"; then
+if test "x$aros_target_incl" = "xno"; then
     if test "x$test_kernel_cc" != "xno"; then
         aros_target_incl=`$aros_kernel_cc -print-sysroot`/`$aros_kernel_cc --print-sysroot-headers-suffix 2>/dev/null || echo usr/include`
     else
-        aros_kernel_includes=
+        aros_target_incl=
     fi
 fi
 
 if test "x$aros_kernel_includes" = "x"; then
     if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
-        aros_kernel_includes="-isystem $aros_target_incl"
+        if test "x$aros_target_incl" != "x"; then
+            aros_kernel_includes="-isystem $aros_target_incl"
+        fi
     fi
 fi
 
