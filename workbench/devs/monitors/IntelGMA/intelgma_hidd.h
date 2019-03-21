@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -158,6 +158,7 @@ struct g45staticdata
     OOP_Class 	    	    *basegc;            /* baseclass for CreateObject */
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
     OOP_Class 	    	    *basegallium;            /* baseclass for CreateObject */
+    OOP_Class 	    	    *basei2c;            /* baseclass for CreateObject */
 
 	OOP_Class *				IntelG45Class;
 	OOP_Class *				IntelI2C;
