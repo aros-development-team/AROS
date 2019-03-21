@@ -3,22 +3,6 @@ include $(SRCDIR)/config/aros.cfg
 
 LN ?= ln
 
-ICU_VERSION := 4.2.1
-ICU_PKGNAME := icu4c
-ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
-
-ICU_EXTRA_OPTS = \
-        --bindir=$(CROSSTOOLSDIR) \
-        --sbindir=$(CROSSTOOLSDIR) \
-        --enable-static \
-        --disable-strict \
-        --disable-dyload \
-        --disable-shared \
-        --disable-tests \
-        --disable-samples \
-        --disable-extras \
-        --with-data-packaging=static
-
 BINUTILS_VERSION = $(TARGET_BINUTILS_VER)
 BINUTILS_VERSION_MAJOR = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f1)
 BINUTILS_VERSION_MINOR = $(shell echo "$(BINUTILS_VERSION)" | cut -d"." -f2)
@@ -128,7 +112,6 @@ GDB_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 GNU_REPOSITORY := gnu://
 ISL_REPOSITORY := ftp://gcc.gnu.org/pub/gcc/infrastructure
 MPC_REPOSITORY := ftp://ftp.gnu.org/gnu/mpc http://ftp.vim.org/ftp/gnu/mpc
-ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
 
 binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
 gmp-installflag := $(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
@@ -136,7 +119,6 @@ isl-installflag := $(CROSSTOOLSDIR)/.installflag-isl-$(ISL_VERSION)
 mpfr-installflag := $(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
 mpc-installflag := $(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
 gcc-installflag := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
-icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
 gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
 
 #MM- tools-crosstools : tools-crosstools-$(AROS_TOOLCHAIN)-$(AROS_TARGET_CPU)
@@ -265,25 +247,6 @@ tools-crosstools-gcc :
 	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
 
 #MM
-tools-crosstools-icu :
-	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
-	    || ! $(TEST) -f $(icu-installflag) ; then \
-	       $(RM) $(CROSSTOOLSDIR)/$(ICU_PKGNAME)/.files-touched \
-	    && $(MAKE) -f ./mmakefile crosstools-icu--fetch \
-	    && $(MAKE) -f ./mmakefile crosstools-icu--build_and_install-quick \
-	    && $(TOUCH) $(icu-installflag) ; \
-	fi
-
-HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(HOST_CXXFLAGS)))
-
-# specify the gendir for icu to be in HOSTDIR so it ends up under CROSSTOOLSDIR, and can be reused
-%fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-src compiler=host \
-	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
-	patch=yes srcdir=icu builddir=source gendir=$(CROSSTOOLSDIR) basedir= \
-	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="$(ICU_EXTRA_OPTS)" extracflags=$(ICU_FLAGS)
-
-#MM
 tools-crosstools-gdb :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
 	    || ! $(TEST) -f $(gdb-installflag) ; then \
@@ -298,7 +261,6 @@ tools-crosstools-gdb :
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
         extraoptions="$(GDB_EXTRA_OPTS)"
-
 
 #
 # LLVM toolchain

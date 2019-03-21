@@ -1,0 +1,42 @@
+include $(SRCDIR)/config/aros.cfg
+
+LN ?= ln
+
+ICU_VERSION := 4.2.1
+ICU_PKGNAME := icu4c
+ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
+
+ICU_EXTRA_OPTS = \
+        --bindir=$(CROSSTOOLSDIR) \
+        --sbindir=$(CROSSTOOLSDIR) \
+        --enable-static \
+        --disable-strict \
+        --disable-dyload \
+        --disable-shared \
+        --disable-tests \
+        --disable-samples \
+        --disable-extras \
+        --with-data-packaging=static
+
+ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
+
+icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
+
+#MM
+tools-crosstools-icu :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(icu-installflag) ; then \
+	       $(RM) $(CROSSTOOLSDIR)/$(ICU_PKGNAME)/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-icu--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-icu--build_and_install-quick \
+	    && $(TOUCH) $(icu-installflag) ; \
+	fi
+
+HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(HOST_CXXFLAGS)))
+
+# specify the gendir for icu to be in HOSTDIR so it ends up under CROSSTOOLSDIR, and can be reused
+%fetch_and_build mmake=crosstools-icu package=$(ICU_PKGNAME) version=$(ICU_PKGVERSION)-src compiler=host \
+	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
+	patch=yes srcdir=icu builddir=source gendir=$(CROSSTOOLSDIR) basedir= \
+	prefix="$(CROSSTOOLSDIR)" \
+	extraoptions="$(ICU_EXTRA_OPTS)" extracflags=$(ICU_FLAGS)
