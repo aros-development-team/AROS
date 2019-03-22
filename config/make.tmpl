@@ -3428,7 +3428,7 @@ endif
 # N.B.: the make test for the targets being up to date generates a benign Error 1.
 #
 $(%(mmake)-installflag) : $(%(mmake)-configflag)
-	$(Q)$(IF) ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
+	$(Q)$(IF) ! $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q $(%(mmake)-make-env); then \
 	    $(RM) $(%(mmake)-installflag) && \
 	    $(ECHO) "Performing build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))" && \
 	    $(BUILD_ENV) $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" $(%(mmake)-make-env) && \
