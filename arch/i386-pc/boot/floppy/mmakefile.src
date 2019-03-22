@@ -36,7 +36,7 @@ BOOT_TAR_EXECUTABLES := \
     C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
     C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
     C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
-    C/Unset C/Unsetenv C/Version C/Which C/Why C/install-i386-pc \
+    C/Unset C/Unsetenv C/Version C/Which C/Why C/Install-grub \
     C/Partition \
     Classes/DataTypes/ascii.datatype \
     Classes/DataTypes/binary.datatype \
@@ -131,8 +131,8 @@ $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/stage2 $(SYSTEM_DEST_DIR)/$(AROS_DIR_ARCH
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
-BOOT_FILES += $(AROS_DIR_ARCH)/grub/grub.cfg
-BOOT_TAR_MISC += $(AROS_DIR_ARCH)/grub/grub.cfg
+BOOT_FILES += $(AROS_DIR_ARCH)/grub2/grub.cfg
+BOOT_TAR_MISC += $(AROS_DIR_ARCH)/grub2/grub.cfg
 endif
 
 BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
