@@ -40,8 +40,8 @@ CONFIG_WARN_CFLAGS            := @aros_warn_flags@
 CONFIG_NOWARN_CXXFLAGS        = $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@aros_nowarn_flags@),$($(nowarn)))
 CONFIG_WARN_CXXFLAGS          := $(subst -Werror-implicit-function-declaration,,@aros_warn_flags@)
 
-TARGET_SYSROOT                := @aros_config_sysroot@
-KERNEL_SYSROOT                := @aros_kernel_sysroot@
+TARGET_SYSROOT                = $(COMPILER_SYSROOT)
+KERNEL_SYSROOT                = @aros_kernel_sysroot@
 CONFIG_BASE_CFLAGS            = @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS)
 CONFIG_BASE_CXXFLAGS          = @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS)
 CONFIG_BASE_CPPFLAGS          = @aros_config_cppflags@

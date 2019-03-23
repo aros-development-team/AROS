@@ -238,3 +238,7 @@ NOWARN_IMPLICIT_FALLTHROUGH             := @aros_nowarnflags_implicit_fallthroug
 NOWARN_MISSING_PROTOTYPES               := @aros_nowarnflags_missing_prototypes@
 NOWARN_CLASS_MEMACCESS                  := @aros_nowarnflags_class_memaccess@
 NOWARN_INT_IN_BOOL_CONTEXT              := @aros_nowarnflags_int_in_bool_context@
+
+# Toolchain support
+
+COMPILER_SYSROOT                        := @aros_toolchain_sysroot@
