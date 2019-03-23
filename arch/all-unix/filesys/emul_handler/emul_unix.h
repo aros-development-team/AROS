@@ -1,10 +1,18 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifdef HOST_LONG_ALIGNED
 #pragma pack(4)
+#endif
+
+#ifdef HOST_UNDEF_UNUSED
+/*
+  some linux hosts use __unused as a structure element name
+  in bits/stat.h, so we need to undefine it  in that case
+*/
+#undef __unused
 #endif
 
 #include <sys/stat.h>
