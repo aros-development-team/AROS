@@ -134,8 +134,5 @@ PCI_HIDD_TARGET               := @pci_hidd_target@
 CROSSTOOLS_TARGET             := @crosstools_target@
 OBJC_TARGET                   := @objc_target@
 JAVA_TARGET                   := @java_target@
-OPT_HOST_X11GFX               := @host_x_gfx@
-OPT_HOST_SDLGFX               := @host_sdl_gfx@
-OPT_HOST_ANDROIDGFX           := @host_android_gfx@
-
+@aros_target_options@
 ENABLE_DBUS                   := @ENABLE_DBUS@

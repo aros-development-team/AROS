@@ -60,9 +60,5 @@ CHMOD		        := @CHMOD@
 HOST_LIBPNG             := @libpng@
 HOST_LIBPNG_INCLUDES    := @libpng_incdir@
 HOST_LIBPNG_LIBEXTRA    := @libpng_libextra@
-
-# Android-specific
-ANDROID		        := @android_tool@
-ANT		        := @ant@
-
+@host_extra_cfg@
 # --------------------------------------------------------------------------
