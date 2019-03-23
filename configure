@@ -664,9 +664,6 @@ aros_nominal_depth
 aros_nominal_height
 aros_nominal_width
 pci_hidd_target
-host_android_gfx
-host_sdl_gfx
-host_x_gfx
 crosstools_cxx_target
 crosstools_target
 aros_isa_flags
@@ -727,6 +724,7 @@ aros_target_arch
 aros_target_bootloader
 aros_target_iconset
 aros_target_guitheme
+aros_target_options
 target_extra_cfg
 make_extra_targetcfg
 make_extra_commands
@@ -750,6 +748,7 @@ aros_host_cpp
 aros_host_cpu
 aros_host_arch
 aros_cc_pre
+host_extra_cfg
 aros_amigaos_compliance
 AROS_PORTSSRCDIR
 AROS_CROSSTOOLSDIR
@@ -6533,6 +6532,20 @@ fi
 
 done
 
+for ac_header in GL/glx.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "GL/glx.h" "ac_cv_header_GL_glx_h" "$ac_includes_default"
+if test "x$ac_cv_header_GL_glx_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GL_GLX_H 1
+_ACEOF
+ host_feature_glx=yes
+else
+  host_feature_glx=no
+fi
+
+done
+
 
 ac_header_dirent=no
 for ac_hdr in dirent.h sys/ndir.h sys/dir.h ndir.h; do
@@ -7558,11 +7571,6 @@ ignore_undefined_symbols=""
 # Check for X11 by default
 need_x11="auto"
 
-host_x_gfx=no
-host_sdl_gfx=no
-host_android_gfx=no
-
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which toolchain family to use ..." >&5
 $as_echo_n "checking Which toolchain family to use ...... " >&6; }
 
@@ -8185,6 +8193,8 @@ fi
 $as_echo "$aros_android_antapk" >&6; }
 
     target_extra_cfg+="$export_newline""# Android$export_newline""AROS_ANDROID_ANTAPK           := $aros_android_antapk$export_newline"
+    host_extra_cfg+="$export_newline""# Android-specific$export_newline""ANDROID                       := $android_tool$export_newline""ANT		                      := $ant$export_newline"
+    aros_target_options+="$export_newline""# Enable Android Gfx Driver$export_newline""OPT_HOST_ANDROIDGFX           := yes$export_newline"
 
         if test "$host_os" = "mingw32"; then
         android_tool="cmd //c $android_tool"
@@ -8375,7 +8385,6 @@ case "$target_os" in
                     aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
                 fi
                 need_x11=no
-                host_android_gfx=yes
                 # Disable implicit PIC mode
                 aros_config_cflags="$aros_config_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
@@ -14520,7 +14529,10 @@ fi
             fi
 
         else
-                        host_x_gfx=yes
+                        aros_target_options+="$export_newline""# Enable X11 Gfx Driver$export_newline""OPT_HOST_X11GFX               := yes$export_newline"
+            if test "x-$host_feature_glx" != "x-no" ; then
+                aros_target_options+="$export_newline""# Enable X11 HostGL 3D Passthrough$export_newline""OPT_HOST_X11_HOSTGL           := yes$export_newline"
+            fi
             ENABLE_X11=1
 
             aros_host_x11_cflags="$X_CFLAGS"
@@ -14979,7 +14991,7 @@ rm -f core conftest.err conftest.$ac_objext \
             fi
 
         else
-                        host_sdl_gfx=yes
+                        aros_target_options+="$export_newline""# Enable SDL Gfx Driver$export_newline""OPT_HOST_SDLGFX               := yes$export_newline"
             aros_host_sdl_cflags=$SDL_CFLAGS
             aros_host_sdl_libs=$SDL_LIBS
         fi
@@ -15045,6 +15057,7 @@ fi
 
 
 # Host related
+
 
 
 
@@ -15156,9 +15169,6 @@ fi
 
 
 
-
-
-# Hosted Graphics Related
 
 
 
