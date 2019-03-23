@@ -5,10 +5,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-libs-complete : workbench-libs-hostgl-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- workbench-libs-complete : workbench-libs-hostgl-$(OPT_HOST_X11_HOSTGL)
 
-#MM- workbench-libs-hostgl-linux-i386 : workbench-libs-hostgl
-#MM- workbench-libs-hostgl-linux-x86_64 : workbench-libs-hostgl
+#MM- workbench-libs-hostgl-yes : workbench-libs-hostgl
 
 #MM workbench-libs-hostgl : includes
 
