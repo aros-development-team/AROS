@@ -654,8 +654,6 @@ aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OP
 export_newline="
 "
 
-toolchain_needs_sysroot=no
-
 aros_elf_translate=
 aros_warn_flags=
 aros_isa_extra=
@@ -728,7 +726,6 @@ use_ld_wrapper=yes
 
 case "$aros_toolchain" in
     *llvm*)
-        # toolchain_needs_sysroot=yes
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
         toolchain_cpp_preprocessor="clang -E"
@@ -1831,7 +1828,6 @@ esac
 #-----------------------------------------------------------------------------
 crosstools_guess="yes"
 aros_target_toolchain="no"
-aros_config_sysroot=""
 aros_kernel_sysroot=""
 
 AC_MSG_CHECKING([Kernel toolchain prefix])
@@ -1875,20 +1871,12 @@ else
     AROS_CROSSTOOLSDIR="$aros_toolchain_install"
     PATH="$AROS_CROSSTOOLSDIR:$PATH"
     if test "$crosstools_guess" = "no" ; then
-        toolchain_needs_sysroot=yes
-
         if test "x-$aros_flavour" != "x-emulation" -a "x-$aros_flavour" != "x-emulcompat" ; then
-            aros_kernel_sysroot = $aros_config_sysroot
+            aros_kernel_sysroot="$""(TARGET_SYSROOT)"
         fi
     fi
 fi
 AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
-
-AC_MSG_CHECKING([If we need to use --sysroot])
-if test "$toolchain_needs_sysroot" = "yes" ; then
-    aros_config_sysroot="--sysroot $AROS_BUILDDIR_UNIX/bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/AROS/Developer"
-fi
-AC_MSG_RESULT($toolchain_needs_sysroot)
 
 #-----------------------------------------------------------------------------
 if test "$aros_toolchain" = "gnu" ; then
@@ -3055,7 +3043,6 @@ AC_SUBST(aros_shared_cflags)
 AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
 
-AC_SUBST(aros_config_sysroot)
 AC_SUBST(aros_warn_flags)
 AC_SUBST(aros_nowarn_flags)
 AC_SUBST(aros_config_cppflags)

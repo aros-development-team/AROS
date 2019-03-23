@@ -1023,6 +1023,50 @@ if test "x-$aros_int_in_bool_context" = "x-yes" ; then
     aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
 fi
 
+
+#########################################################
+#
+# Now check what we need to use with the toolchain
+
+cat >$AROS_DEVELOPER/include/__testsincdir.h <<_ACEOF
+/* Copyright (c) The AROS Dev Team  */
+#define _TESTINCFOUND
+_ACEOF
+
+AC_MSG_CHECKING([if we need to use --sysroot])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+     [[
+     #include <__testsincdir.h>
+     #ifndef _TESTINCFOUND
+      error: Couldnt find include!
+     #endif
+     ]])],
+     [toolchain_needs_sysroot=no],
+     [toolchain_needs_sysroot=yes])
+AC_MSG_RESULT($toolchain_needs_sysroot)
+
+if test "$toolchain_needs_sysroot" = "yes" ; then
+    aros_toolchain_sysroot="--sysroot $""(AROS_DEVELOPER)"
+fi
+
+#AC_MSG_CHECKING([if we need to use --isysroot])
+#AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+#     [[
+#     (#include <__testsincdir.h>
+#     #ifndef _TESTINCFOUND
+#      error: Couldnt find include!
+#     #endif
+#     ]])],
+#     [toolchain_needs_isysroot=no],
+#     [toolchain_needs_isysroot=yes])
+#AC_MSG_RESULT($toolchain_needs_isysroot)
+#
+#if test "$toolchain_needs_isysroot" = "yes" ; then
+#    aros_toolchain_isysroot="-isysroot $""(AROS_SDK)"
+#    aros_toolchain_iarchdir="-I $""(AROS_SDK)/$""(AROS_TARGET_CPU)-aros/include"
+#fi
+rm -f $AROS_DEVELOPER/include/__testsincdir.h
+
 #
 # export the feature flags...
 #
@@ -1229,6 +1273,9 @@ AC_SUBST(aros_warnflags_class_memaccess)
 AC_SUBST(aros_nowarnflags_class_memaccess)
 AC_SUBST(aros_warnflags_int_in_bool_context)
 AC_SUBST(aros_nowarnflags_int_in_bool_context)
+
+# Additional toolchain support ...
+AC_SUBST(aros_toolchain_sysroot)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
