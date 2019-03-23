@@ -60,5 +60,7 @@ CHMOD		        := @CHMOD@
 HOST_LIBPNG             := @libpng@
 HOST_LIBPNG_INCLUDES    := @libpng_incdir@
 HOST_LIBPNG_LIBEXTRA    := @libpng_libextra@
+
+HOST_STAT_H_FIXUP       := @host_stat_h__unused_used@
 @host_extra_cfg@
 # --------------------------------------------------------------------------
