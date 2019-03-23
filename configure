@@ -6547,6 +6547,31 @@ fi
 done
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if __unused conflicts with sys/stat.h" >&5
+$as_echo_n "checking if __unused conflicts with sys/stat.h... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+     #define __unused __attribute__((unused))
+     #include <sys/stat.h>
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  host_stat_h__unused_used=no
+else
+  host_stat_h__unused_used=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $host_stat_h__unused_used" >&5
+$as_echo "$host_stat_h__unused_used" >&6; }
+
 ac_header_dirent=no
 for ac_hdr in dirent.h sys/ndir.h sys/dir.h ndir.h; do
   as_ac_Header=`$as_echo "ac_cv_header_dirent_$ac_hdr" | $as_tr_sh`
