@@ -13,6 +13,10 @@ ifeq ($(ARCH),darwin)
 USER_CPPFLAGS += -D_FORTIFY_SOURCE=0
 endif
 
+ifeq ($(HOST_STAT_H_FIXUP),yes)
+USER_CPPFLAGS += -DHOST_UNDEF_UNUSED
+endif
+
 FILES := emul_host_unix emul_host emul_dir
 
 %build_archspecific mainmmake=kernel-fs-emul \

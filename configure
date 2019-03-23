@@ -749,6 +749,7 @@ aros_host_cpu
 aros_host_arch
 aros_cc_pre
 host_extra_cfg
+host_stat_h__unused_used
 aros_amigaos_compliance
 AROS_PORTSSRCDIR
 AROS_CROSSTOOLSDIR
@@ -15082,6 +15083,7 @@ fi
 
 
 # Host related
+
 
 
 

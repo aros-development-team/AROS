@@ -2970,6 +2970,7 @@ AC_SUBST(AROS_PORTSSRCDIR)
 AC_SUBST(aros_amigaos_compliance)
 
 # Host related
+AC_SUBST(host_stat_h__unused_used)
 AC_SUBST(host_extra_cfg)
 AC_SUBST(aros_cc_pre)
 AC_SUBST(aros_host_strip)
