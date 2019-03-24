@@ -29,7 +29,7 @@
 #define DB2(x)
 #define DEBUG_TEXT(x)
 #define DVRAM(x)
-#define DCLUT(x) x
+#define DCLUT(x)
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
