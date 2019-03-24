@@ -1163,6 +1163,7 @@ BOOL Init_P96GFXClass(LIBBASETYPEPTR LIBBASE)
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_BitMapList));
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_MemList));
     NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_WaitQ));
+    csd->rgbformat = (ULONG *)((IPTR)csd->boardinfo + PSSO_BoardInfo_RGBFormat);
     csd->bitmapextra = csd->boardinfo + PSSO_BoardInfo_SizeOf;
     csd->fakemodeinfo = (struct ModeInfo*)(csd->boardinfo + PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last);
     pl(csd->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)csd->bitmapextra);

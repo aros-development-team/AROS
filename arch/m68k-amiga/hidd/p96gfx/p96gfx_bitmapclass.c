@@ -382,7 +382,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                     data->rgbformat = getrtgformat(csd, pf);
                     modeinfo = getrtgmodeinfo(csd, sync, pf, csd->fakemodeinfo);
                     csd->modeinfo = modeinfo;
-                    csd->rgbformat = data->rgbformat;
+                    *csd->rgbformat = data->rgbformat;
                     pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
                     pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
                     D(bug("[P96Gfx:Bitmap] %s: Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
