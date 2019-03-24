@@ -10,14 +10,23 @@
 
 struct HIDDBusData
 {
+    ULONG bus_Flags;                                    /* Private bus flags */
+    ULONG bus_MaxUnit;                                  /* Maximum supported units byt the bus
+                                                            Initial value is the max supported by the base
+                                                            bus class */
+    APTR  bus_IRQHandler;                               /* Pointer to IRQ handler function */
+    APTR  bus_IRQData;                                  /* Caller-supplied data to pass to IRQ handler */
 };
+
+// Keep empty bus
+#define BFB_KeepEmpty       (1 << 0)
 
 struct class_static_data
 {
     struct Library              *cs_OOPBase;
     BPTR                        cs_SegList;
 
-    OOP_Class                   *busClass;		/* "Bus" BaseClass */
+    OOP_Class                   *busClass;              /* "Bus" BaseClass */
 };
 
 /* Library base */
