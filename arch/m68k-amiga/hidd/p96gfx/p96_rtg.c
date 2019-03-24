@@ -181,12 +181,12 @@ void SetDAC(struct p96gfx_staticdata *csd)
     if (csd->CardBase)
         AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetDAC),
             AROS_LCA(APTR, csd->boardinfo, A0),
-            AROS_LCA(ULONG, csd->rgbformat, D7),
+            AROS_LCA(ULONG, *csd->rgbformat, D7),
             struct Library*, csd->CardBase);
     else
         P96_LC2(BOOL, csd->p96romvector, 20,
             AROS_LCA(APTR, csd->boardinfo, A0),
-            AROS_LCA(ULONG, csd->rgbformat, D7));
+            AROS_LCA(ULONG, *csd->rgbformat, D7));
 }
 void SetGC(struct p96gfx_staticdata *csd, struct ModeInfo *mi, BOOL border)
 {
@@ -211,7 +211,7 @@ void SetPanning(struct p96gfx_staticdata *csd, UBYTE *video, UWORD width, WORD x
             AROS_LCA(UWORD, width, D0),
             AROS_LCA(WORD, x, D1),
             AROS_LCA(WORD, y, D2),
-            AROS_LCA(ULONG, csd->rgbformat, D7),
+            AROS_LCA(ULONG, *csd->rgbformat, D7),
             struct Library*, csd->CardBase);
     else
         P96_LC6(BOOL, csd->p96romvector, 22,
@@ -220,7 +220,7 @@ void SetPanning(struct p96gfx_staticdata *csd, UBYTE *video, UWORD width, WORD x
             AROS_LCA(UWORD, width, D0),
             AROS_LCA(WORD, x, D1),
             AROS_LCA(WORD, y, D2),
-            AROS_LCA(ULONG, csd->rgbformat, D7));
+            AROS_LCA(ULONG, *csd->rgbformat, D7));
 }
 
 BOOL DrawLine(struct p96gfx_staticdata *csd, struct RenderInfo *ri,
@@ -446,12 +446,12 @@ BOOL SetSprite(struct p96gfx_staticdata *csd, BOOL activate)
         return AROS_CALL3(BOOL, gptr(csd, PSSO_BoardInfo_SetSprite),
             AROS_LCA(APTR, csd->boardinfo, A0),
             AROS_LCA(BOOL, activate, D0),
-            AROS_LCA(ULONG, csd->rgbformat, D7),
+            AROS_LCA(ULONG, *csd->rgbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC3(BOOL, csd->p96romvector, 36,
         AROS_LCA(APTR, csd->boardinfo, A0),
         AROS_LCA(BOOL, activate, D0),
-        AROS_LCA(ULONG, csd->rgbformat, D7));
+        AROS_LCA(ULONG, *csd->rgbformat, D7));
 }	
 
 BOOL SetSpritePosition(struct p96gfx_staticdata *csd)
@@ -459,11 +459,11 @@ BOOL SetSpritePosition(struct p96gfx_staticdata *csd)
     if (csd->CardBase)
         return AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetSpritePosition),
             AROS_LCA(APTR, csd->boardinfo, A0),
-            AROS_LCA(ULONG, csd->rgbformat, D7),
+            AROS_LCA(ULONG, *csd->rgbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC2(BOOL, csd->p96romvector, 37,
         AROS_LCA(APTR, csd->boardinfo, A0),
-        AROS_LCA(ULONG, csd->rgbformat, D7));
+        AROS_LCA(ULONG, *csd->rgbformat, D7));
 }	
 
 BOOL SetSpriteImage(struct p96gfx_staticdata *csd)
@@ -471,11 +471,11 @@ BOOL SetSpriteImage(struct p96gfx_staticdata *csd)
     if (csd->CardBase)
         return AROS_CALL2(BOOL, gptr(csd, PSSO_BoardInfo_SetSpriteImage),
             AROS_LCA(APTR, csd->boardinfo, A0),
-            AROS_LCA(ULONG, csd->rgbformat, D7),
+            AROS_LCA(ULONG, *csd->rgbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC2(BOOL, csd->p96romvector, 38,
         AROS_LCA(APTR, csd->boardinfo, A0),
-        AROS_LCA(ULONG, csd->rgbformat, D7));
+        AROS_LCA(ULONG, *csd->rgbformat, D7));
 }
 
 BOOL SetSpriteColor(struct p96gfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, UBYTE b)
@@ -487,7 +487,7 @@ BOOL SetSpriteColor(struct p96gfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, 
             AROS_LCA(UBYTE, r, D1),
             AROS_LCA(UBYTE, g, D2),
             AROS_LCA(UBYTE, b, D3),
-            AROS_LCA(ULONG, csd->rgbformat, D7),
+            AROS_LCA(ULONG, *csd->rgbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC6(BOOL, csd->p96romvector, 39,
         AROS_LCA(APTR, csd->boardinfo, A0),
@@ -495,7 +495,7 @@ BOOL SetSpriteColor(struct p96gfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, 
         AROS_LCA(UBYTE, r, D1),
         AROS_LCA(UBYTE, g, D2),
         AROS_LCA(UBYTE, b, D3),
-        AROS_LCA(ULONG, csd->rgbformat, D7));
+        AROS_LCA(ULONG, *csd->rgbformat, D7));
 }	
 
 WORD getrtgdepth(ULONG rgbformat)
