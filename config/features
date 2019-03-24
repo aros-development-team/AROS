@@ -2801,6 +2801,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fno-builtin-floor
 #  -fno-builtin-vsnprintf
 
+save_cflags="$CFLAGS"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fexceptions" >&5
 $as_echo_n "checking whether ${CC} accepts -fexceptions... " >&6; }
 CFLAGS=-fexceptions
@@ -3480,6 +3481,7 @@ $as_echo "$aros_no_red_zone" >&6; }
 if test "x-$aros_no_red_zone" = "x-yes" ; then
     aros_cflags_no_red_zone=-mno-red-zone
 fi
+CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
 
@@ -3558,6 +3560,7 @@ fi
 #  -Wclass-memaccess
 #  -Wint-in-bool-context
 
+save_cflags="$CFLAGS"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Werror" >&5
 $as_echo_n "checking whether ${CC} accepts -Werror... " >&6; }
 CFLAGS=-Werror
@@ -5530,7 +5533,7 @@ if test "x-$aros_int_in_bool_context" = "x-yes" ; then
     aros_warnflags_int_in_bool_context=-Wint-in-bool-context
     aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
 fi
-
+CFLAGS="$save_cflags"
 
 #########################################################
 #
