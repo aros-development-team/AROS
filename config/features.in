@@ -58,6 +58,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fno-builtin-floor
 #  -fno-builtin-vsnprintf
 
+save_cflags="$CFLAGS"
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
 CFLAGS=-fexceptions
 AC_TRY_COMPILE(,, aros_exceptions="yes", aros_exceptions="no")
@@ -286,6 +287,7 @@ AC_MSG_RESULT($aros_no_red_zone)
 if test "x-$aros_no_red_zone" = "x-yes" ; then
     aros_cflags_no_red_zone=-mno-red-zone
 fi
+CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
 
@@ -364,6 +366,7 @@ fi
 #  -Wclass-memaccess
 #  -Wint-in-bool-context
 
+save_cflags="$CFLAGS"
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
 CFLAGS=-Werror
 AC_TRY_COMPILE(,, aros_error="yes", aros_error="no")
@@ -1022,7 +1025,7 @@ if test "x-$aros_int_in_bool_context" = "x-yes" ; then
     aros_warnflags_int_in_bool_context=-Wint-in-bool-context
     aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
 fi
-
+CFLAGS="$save_cflags"
 
 #########################################################
 #
