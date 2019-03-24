@@ -10,6 +10,7 @@
 
 struct HIDDStorageData
 {
+    IPTR                    sd_Private;
 };
 
 struct HIDDStorageControllerData
