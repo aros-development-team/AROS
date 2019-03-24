@@ -58,6 +58,9 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fno-builtin-floor
 #  -fno-builtin-vsnprintf
 
+# C features first 
+AC_LANG_PUSH(C)
+
 save_cflags="$CFLAGS"
 AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
 CFLAGS=-fexceptions
@@ -66,24 +69,6 @@ AC_MSG_RESULT($aros_exceptions)
 if test "x-$aros_exceptions" = "x-yes" ; then
     aros_cflags_exceptions=-fexceptions
     aros_cflags_noexceptions=-fno-exceptions
-fi
-
-AC_MSG_CHECKING([whether ${CC} accepts -fpermissive])
-CFLAGS=-fpermissive
-AC_TRY_COMPILE(,, aros_permissive="yes", aros_permissive="no")
-AC_MSG_RESULT($aros_permissive)
-if test "x-$aros_permissive" = "x-yes" ; then
-    aros_cflags_permissive=-fpermissive
-    aros_cflags_nopermissive=-fno-permissive
-fi
-
-AC_MSG_CHECKING([whether ${CC} accepts -frtti])
-CFLAGS=-frtti
-AC_TRY_COMPILE(,, aros_rtti="yes", aros_rtti="no")
-AC_MSG_RESULT($aros_rtti)
-if test "x-$aros_rtti" = "x-yes" ; then
-    aros_cflags_rtti=-frtti
-    aros_cflags_nortti=-fno-rtti
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -ffast-math])
@@ -247,6 +232,34 @@ if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
 fi
 
+# C++ features
+AC_LANG_PUSH(C++)
+save_cxxflags="$CXXFLAGS"
+
+AC_MSG_CHECKING([whether ${CXX} accepts -fpermissive])
+CXXFLAGS=-fpermissive
+AC_TRY_COMPILE(,, aros_permissive="yes", aros_permissive="no")
+AC_MSG_RESULT($aros_permissive)
+if test "x-$aros_permissive" = "x-yes" ; then
+    aros_cxxflags_permissive=-fpermissive
+    aros_cxxflags_nopermissive=-fno-permissive
+fi
+
+AC_MSG_CHECKING([whether ${CXX} accepts -frtti])
+CXXFLAGS=-frtti
+AC_TRY_COMPILE(,, aros_rtti="yes", aros_rtti="no")
+AC_MSG_RESULT($aros_rtti)
+if test "x-$aros_rtti" = "x-yes" ; then
+    aros_cxxflags_rtti=-frtti
+    aros_cxxflags_nortti=-fno-rtti
+fi
+
+CXXFLAGS="$save_cxxflags"
+
+
+# Check for additional C compiler options..
+AC_LANG_PUSH(C)
+
 #-----------------------------------------------------------------------------
 #
 # Check if the target compiler supports some include directory options:
@@ -365,6 +378,9 @@ CFLAGS="$save_cflags"
 #  -Wmissing-prototypes
 #  -Wclass-memaccess
 #  -Wint-in-bool-context
+
+# C warnings first
+AC_LANG_PUSH(C)
 
 save_cflags="$CFLAGS"
 AC_MSG_CHECKING([whether ${CC} accepts -Werror])
@@ -855,15 +871,6 @@ if test "x-$aros_missing_braces" = "x-yes" ; then
     aros_nowarnflags_missing_braces=-Wno-missing-braces
 fi
 
-AC_MSG_CHECKING([whether ${CC} accepts -Wconversion-null])
-CFLAGS=-Wconversion-null
-AC_TRY_COMPILE(,, aros_conversion_null="yes", aros_conversion_null="no")
-AC_MSG_RESULT($aros_conversion_null)
-if test "x-$aros_conversion_null" = "x-yes" ; then
-    aros_warnflags_conversion_null=-Wconversion-null
-    aros_nowarnflags_conversion_null=-Wno-conversion-null
-fi
-
 AC_MSG_CHECKING([whether ${CC} accepts -Wnarrowing])
 CFLAGS=-Wnarrowing
 AC_TRY_COMPILE(,, aros_narrowing="yes", aros_narrowing="no")
@@ -1027,6 +1034,23 @@ if test "x-$aros_int_in_bool_context" = "x-yes" ; then
 fi
 CFLAGS="$save_cflags"
 
+# Check the C++ warnings
+AC_LANG_PUSH(C++)
+save_cxxflags="$CXXFLAGS"
+
+AC_MSG_CHECKING([whether ${CXX} accepts -Wconversion-null])
+CXXFLAGS=-Wconversion-null
+AC_TRY_COMPILE(,, aros_conversion_null="yes", aros_conversion_null="no")
+AC_MSG_RESULT($aros_conversion_null)
+if test "x-$aros_conversion_null" = "x-yes" ; then
+    aros_warnflags_conversion_null=-Wconversion-null
+    aros_nowarnflags_conversion_null=-Wno-conversion-null
+fi
+
+CXXFLAGS="$save_cxxflags"
+
+AC_LANG_PUSH(C)
+
 #########################################################
 #
 # Now check what we need to use with the toolchain
@@ -1075,10 +1099,10 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 AC_SUBST(aros_cflags_exceptions)
 AC_SUBST(aros_cflags_noexceptions)
-AC_SUBST(aros_cflags_permissive)
-AC_SUBST(aros_cflags_nopermissive)
-AC_SUBST(aros_cflags_rtti)
-AC_SUBST(aros_cflags_nortti)
+AC_SUBST(aros_cxxflags_permissive)
+AC_SUBST(aros_cxxflags_nopermissive)
+AC_SUBST(aros_cxxflags_rtti)
+AC_SUBST(aros_cxxflags_nortti)
 AC_SUBST(aros_cflags_fast_math)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)

@@ -7,12 +7,12 @@
 #
 CFLAGS_EXCEPTIONS                       := @aros_cflags_exceptions@
 CFLAGS_NO_EXCEPTIONS                    := @aros_cflags_noexceptions@
-CFLAGS_PERMISSIVE                       := @aros_cflags_permissive@
-CFLAGS_NO_PERMISSIVE                    := @aros_cflags_nopermissive@
+CFLAGS_PERMISSIVE                       := @aros_cxxflags_permissive@
+CFLAGS_NO_PERMISSIVE                    := @aros_cxxflags_nopermissive@
 
 # Runtime type-information
-CFLAGS_RTTI                             := @aros_cflags_rtti@
-CFLAGS_NO_RTTI                          := @aros_cflags_nortti@
+CFLAGS_RTTI                             := @aros_cxxflags_rtti@
+CFLAGS_NO_RTTI                          := @aros_cxxflags_nortti@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
