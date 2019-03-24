@@ -9,6 +9,7 @@
 
 struct HIDDSystemData
 {
+    ULONG   sd_Private;
 };
 
 struct class_static_data
