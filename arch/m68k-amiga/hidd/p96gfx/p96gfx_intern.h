@@ -62,7 +62,7 @@ struct p96gfx_staticdata
 	struct Library *cs_OOPBase;
 	struct bm_data *disp;
 	APTR p96romvector;
-	ULONG *rgbformat;
+	ULONG rgbformat;
 	struct ModeInfo *modeinfo;
 	struct ModeInfo *fakemodeinfo;
 	UBYTE *boardinfo;
