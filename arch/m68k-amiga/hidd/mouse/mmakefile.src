@@ -13,4 +13,4 @@ USER_CPPFLAGS += \
 
 %build_module mmake=kernel-amiga-m68k-mouse \
     modname=amigamouse modtype=hidd \
-    files="startup mouse_init mouseclass" uselibs=" hiddstubs"
+    files="mouse_init mouseclass" uselibs=" hiddstubs"
