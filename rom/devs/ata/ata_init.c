@@ -226,6 +226,10 @@ static int ATA_init(struct ataBase *ATABase)
         bug("[ATA--] %s: Failed to obtain AttrBases!\n", __PRETTY_FUNCTION__);
         return FALSE;
     }
+    D(
+      bug("[ATA--] %s: HiddBusAB %x @ 0x%p\n", __func__, HiddBusAB, &HiddBusAB);
+      bug("[ATA--] %s: HiddATABusAB %x @ 0x%p\n", __func__, HiddATABusAB, &HiddATABusAB);
+    )
 #endif
 
 #if defined(__OOP_NOMETHODBASES__)
