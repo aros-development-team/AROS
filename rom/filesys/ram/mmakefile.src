@@ -2,7 +2,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := handler commands filesystem notification support
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-ram \
     modname=ram modtype=handler \
