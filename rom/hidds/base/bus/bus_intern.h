@@ -19,7 +19,8 @@ struct HIDDBusData
 };
 
 // Keep empty bus
-#define BFB_KeepEmpty       (1 << 0)
+#define BFB_KeepEmpty       0
+#define BFF_KeepEmpty       (1 << BFB_KeepEmpty)
 
 struct class_static_data
 {
@@ -27,7 +28,12 @@ struct class_static_data
     BPTR                        cs_SegList;
 
     OOP_Class                   *busClass;              /* "Bus" BaseClass */
+
+    OOP_AttrBase                busAttrBase;
 };
+
+#undef HiddBusAB
+#define HiddBusAB               (base->busAttrBase)
 
 /* Library base */
 
@@ -40,6 +46,6 @@ struct HiddBusIntBase
 
 #define CSD(x) (&((struct HiddStorageIntBase *)x->UserData)->hbi_csd)
 
-#define OOPBase                         (CSD(cl)->cs_OOPBase)
+#define OOPBase                         (base->cs_OOPBase)
 
 #endif /* !HIDDBUS_INTERN_H */

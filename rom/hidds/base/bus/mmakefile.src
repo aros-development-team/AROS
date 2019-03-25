@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES :=  bus_class
+FILES :=  bus_init bus_class
 
 NOWARN_FLAGS := $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS)
