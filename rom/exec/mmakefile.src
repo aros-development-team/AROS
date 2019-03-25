@@ -45,7 +45,8 @@ FILES	   := alertextra alert_cpu systemalert initkicktags intservers intserver_v
 	      exec_debug exec_util exec_locks supervisoralert
 
 # platform.h can be overriden in arch-specific directory
-USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -DAROS_ARCH_$(ARCH)
+USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+USER_CPPFLAGS := -DAROS_ARCH_$(ARCH)
 ifeq ($(AROS_TARGET_CPU),m68k)
 # Make sure we optimize this code for size on m68k..
 OPTIMIZATION_CFLAGS := -Os
