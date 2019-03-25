@@ -10,7 +10,7 @@ FILES := \
 	stats \
 	console
 
-USER_CFLAGS := \
+USER_CPPFLAGS := \
 	-DLARGE_FILE_SIZE=1 \
 	-DNO_GUI=1 \
 	-DREVISION=19 \
