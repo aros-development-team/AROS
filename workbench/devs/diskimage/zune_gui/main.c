@@ -204,7 +204,7 @@ void ScanUnits (void) {
 	struct FileSysStartupMsg *fssm;
 	TEXT devicename[20];
 	int i, num_entries;
-	struct DriveEntry **entries, *e;
+	struct DriveEntry **entries, *e = NULL;
 	ULONG selected_unit = ~0;
 	struct DriveEntry *selected_entry = NULL;
 	
