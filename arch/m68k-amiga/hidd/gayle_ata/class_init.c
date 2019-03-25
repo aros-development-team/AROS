@@ -21,7 +21,7 @@
 
 static void GayleATA_Cleanup(struct ataBase *base)
 {
-    D(bug("[ATA:Gayle] %s()\n", __PRETTY_FUNCTION__);)
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
     OOP_ReleaseAttrBase(HiddAttrBase);
     OOP_ReleaseAttrBase(HiddATABusAB);
     OOP_ReleaseAttrBase(HiddBusAB);
@@ -31,7 +31,7 @@ static void GayleATA_Cleanup(struct ataBase *base)
 
 static int GayleATA_Init(struct ataBase *base)
 {
-    D(bug("[ATA:Gayle] %s()\n", __PRETTY_FUNCTION__);)
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
 
     base->cs_UtilityBase = OpenLibrary("utility.library", 36);
     if (!base->cs_UtilityBase)
@@ -57,17 +57,17 @@ static int GayleATA_Init(struct ataBase *base)
 
         return FALSE;
     }
-    D(bug("[ATA:Gayle] %s: storage root @ 0x%p\n", __PRETTY_FUNCTION__, base->storageRoot);)
+    D(bug("[ATA:Gayle] %s: storage root @ 0x%p\n", __func__, base->storageRoot);)
 
     base->ataClass = OOP_FindClass(CLID_Hidd_ATA);
-    D(bug("[ATA:Gayle] %s: %s @ 0x%p\n", __PRETTY_FUNCTION__, CLID_Hidd_ATA, base->ataClass);)
+    D(bug("[ATA:Gayle] %s: %s @ 0x%p\n", __func__, CLID_Hidd_ATA, base->ataClass);)
 
     return TRUE;
 }
 
 static int GayleATA_Expunge(struct ataBase *base)
 {
-    D(bug("[ATA:Gayle] %s()\n", __PRETTY_FUNCTION__);)
+    D(bug("[ATA:Gayle] %s()\n", __func__);)
 
     GayleATA_Cleanup(base);
 
