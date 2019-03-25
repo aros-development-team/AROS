@@ -61,18 +61,18 @@ PFS3DS_CFLAGS := \
 	-DEXTENDED_PACKETS_OS4=1 \
 	-DLIMIT_MAXTRANSFER=0x1fe00
 
-USER_CFLAGS := \
+USER_INCLUDES := \
+    -I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+USER_CPPFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
-	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
     files="$(FILES)" objdir=$(OBJDIR)/pfs3
 
-USER_CFLAGS := \
+USER_CPPFLAGS := \
     -DAROS_KERNEL $(PFS3DS_CFLAGS) -DMIN_LIB_VERSION=36 \
-	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-pfs3ds \
@@ -91,10 +91,9 @@ KS13STUFF := \
 	-D__GRAPHICS_LIBAPI__=34 \
 	-DDISK_BASED_FILESYSTEM=1
 
-USER_CFLAGS := \
+USER_CPPFLAGS := \
 	-DAROS_NOLIBREQ \
     -DAROS_KERNEL $(PFS3_CFLAGS) $(KS13STUFF) \
-	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
 USER_AFLAGS := \
