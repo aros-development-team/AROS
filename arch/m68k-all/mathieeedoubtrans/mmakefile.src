@@ -6,7 +6,8 @@ FILES := ieeedptrans_fpu mathieeedoubtrans_init
 AFILES := fpu
 
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs/mathieeedoubtrans
-USER_AFLAGS := -I$(GENINCDIR) -march=68040
+USER_AFLAGS := -I$(GENINCDIR)
+TARGET_ISA_AFLAGS:=$(ISA_MC68040_FLAGS)
 
 %build_archspecific \
   mainmmake=workbench-libs-mathieeedoubtrans modname=mathieeedoubtrans maindir=workbench/libs/mathieeedoubtrans arch=m68k \
