@@ -227,18 +227,18 @@ void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
 
     if (glyph_8bits)
     {
-	bitmap.pixel_mode = ft_pixel_mode_grays;
+	bitmap.pixel_mode = FT_PIXEL_MODE_GRAY;
 	bitmap.pitch = bitmap.width;
 	bitmap.num_grays = 256;
-	params.flags = ft_raster_flag_aa;
+	params.flags = FT_RASTER_FLAG_AA;
     }
     else
     {
 	/* adjust bitmap to 4 byte (32 bit) alignment for width */
 	bitmap.width = (bitmap.width + 31) & ~31;
-	bitmap.pixel_mode = ft_pixel_mode_mono;
+	bitmap.pixel_mode = FT_PIXEL_MODE_MONO;
 	bitmap.pitch = bitmap.width >> 3; /* byte count */
-	params.flags = ft_raster_flag_default;
+	params.flags = FT_RASTER_FLAG_DEFAULT;
     }
 
     /*bitmap.bitmap= AllocPooled(ge->GlyphPool,(ULONG)bitmap.size); */
