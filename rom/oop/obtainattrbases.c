@@ -19,13 +19,13 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 
-	AROS_LH1(BOOL, OOP_ObtainAttrBases,
+        AROS_LH1(BOOL, OOP_ObtainAttrBases,
 
 /*  SYNOPSIS */
-	AROS_LHA(const struct OOP_ABDescr *, abd, A0),
+        AROS_LHA(const struct OOP_ABDescr *, abd, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 18, OOP)
+        struct Library *, OOPBase, 18, OOP)
 
 /*  FUNCTION
 
@@ -54,17 +54,17 @@
     for (d = abd; d->interfaceID; d ++)
     {
         *d->attrBase = OOP_ObtainAttrBase(d->interfaceID);
-	
-	if ( *d->attrBase == 0 )
-	{
-	    /* Clear all other attrbase values */
-	    d ++;
-	    while (d->interfaceID) {
-	    	*d->attrBase = 0;
-	    }
-	    OOP_ReleaseAttrBases(abd);
-	    return FALSE;
-	}   
+        
+        if ( *d->attrBase == 0 )
+        {
+            /* Clear all other attrbase values */
+            d ++;
+            while (d->interfaceID) {
+                *d->attrBase = 0;
+            }
+            OOP_ReleaseAttrBases(abd);
+            return FALSE;
+        }   
     }
     return TRUE;
     
