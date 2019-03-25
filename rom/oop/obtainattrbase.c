@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP function OOP_ObtainAttrBase
@@ -62,17 +62,16 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     /* Look up ID */
     struct iid_bucket *idb;
     struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
     ULONG base = (ULONG)-1;
-    
+
     EnterFunc(bug("OOP_ObtainAttrBase(interfaceID=%s)\n", interfaceID));
-    
+
     ObtainSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
-    
-    
+
     /* Has ID already been mapped to a numeric ID? */
     idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interfaceID, GetOBase(OOPBase));
     if (idb)
@@ -83,7 +82,7 @@
         */
         if (idb->attrbase == (ULONG)-1)
         {
-            idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
+            idb->attrbase = ++GetOBase(OOPBase)->ob_CurrentAttrBase;
         }
         
         base = idb->attrbase;
@@ -108,22 +107,22 @@
             {
                 D(bug("Allocated bucket\n"));
                 strcpy(idb->interface_id, interfaceID);
-                
+
                 /* Get next free ID, and increase the free ID count to mark it as used */
-                base = idb->attrbase = ++ GetOBase(OOPBase)->ob_CurrentAttrBase;
-                
+                base = idb->attrbase = ++GetOBase(OOPBase)->ob_CurrentAttrBase;
+
                 base <<= NUM_METHOD_BITS;
-                
+
                 /* Methodbase not inited yet */
                 idb->methodbase = (ULONG)-1;
-                
+
                 /* Insert bucket into hash table */
                 InsertBucket(iidtable, (struct Bucket *)idb, GetOBase(OOPBase));
             }
             else
             {
                 FreeMem(idb, sizeof (struct iid_bucket));
-                
+
 /* Throw exception here ? */		
                 base = 0UL;
             }
