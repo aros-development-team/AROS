@@ -6,7 +6,7 @@ FUNCS       := registermodule unregistermodule decodelocation enumeratesymbolsa
 FILES       := debug_init
 STATICFUNCS := kdofmt kgetchar kmaygetchar kputstr _kprintf kvprintf
 
-USER_CFLAGS := -DHOST_OS_$(FAMILY) -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS := -DHOST_OS_$(FAMILY) -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
 #MM- core-linklibs : kernel-debug-linklib
