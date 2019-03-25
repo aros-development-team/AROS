@@ -301,6 +301,8 @@ AROS_UFH2(VOID, M68KExceptionAction,
     }
 #endif
 
+	D(kprintf("[Kernel] %s(%d)\n", __func__, Id);)
+
     tc->traparg = Id;
     if (!Handler) {
         Handler = FindTask(NULL)->tc_TrapCode;
