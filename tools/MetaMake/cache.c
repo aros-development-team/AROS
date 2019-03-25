@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -286,7 +286,7 @@ writecacheend:
     {
 	unlink (path);
 
-	printf ("[MMAKE] Warning: Creating the cache failed\n");
+	printf ("[MMAKE] %s: Warning! - Creating the cache failed\n", __func__);
     }
 }
 
@@ -298,14 +298,14 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     char * mfdst = xmalloc (strlen (mm_builddir) + 1 + strlen (buildpath(makefile->dir)) + 1 + strlen (makefile->node.name) + 1);
     struct stat sst, dst;
 
-    debug(printf("MMAKE:cache.c->checknewsrc('%s')\n", makefile->node.name));
+    debug(printf("[MMAKE] %s('%s')\n", __func__, makefile->node.name));
 
     strcpy (mfsrc, makefile->node.name);
     strcat (mfsrc, ".src");
 
     if (stat (mfsrc, &sst) == -1)
     {
-        debug(printf("MMAKE/cache.c:stat(\"%s\", ...) failed\n", mfsrc));
+        debug(printf("[MMAKE] %s: stat(\"%s\", ...) failed\n", __func__, mfsrc));
 	xfree (mfsrc);
 	return;
     }
