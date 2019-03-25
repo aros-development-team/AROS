@@ -42,7 +42,7 @@ static int GayleATA_Init(struct ataBase *base)
     HiddATABusAB = OOP_ObtainAttrBase(IID_Hidd_ATABus);
     HWAttrBase = OOP_ObtainAttrBase(IID_HW);
 
-    if (!HiddAttrBase || !HiddATABusAB || !HWAttrBase)
+    if (!HiddAttrBase || !HiddBusAB || !HiddATABusAB || !HWAttrBase)
         return FALSE;
 
     HWBase = OOP_GetMethodID(IID_HW, 0);
