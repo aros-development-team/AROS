@@ -8,7 +8,7 @@ FUNCS := \
 
 SHELLFILES := PsdDevLister PsdErrorlog AddUSBClasses AddUSBHardware PsdStackLoader 
 
-USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
 #MM kernel-usb-poseidon-includes : \
 #MM     kernel-exec-includes \
