@@ -13,7 +13,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM      includes-copy
 #MM- core-linklibs: linklibs-aros
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
 %build_module mmake=kernel-aros \
   modname=aros modtype=library \
