@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: m68k-amiga bootstrap to exec.
@@ -31,6 +31,19 @@
 #include "debug.h"
 
 #define SS_STACK_SIZE	0x02000
+
+/* nomonitors - Until we have working m68k PCI support,
+ *              attempting to load the monitor drivers
+ *              just wastes a lot of time during boot
+ */
+ #ifndef DEFKRN_CMDLINE
+#if AROS_SERIAL_DEBUG
+#define DEFKRN_CMDLINE      "nomonitors sysdebug=InitCode"
+//#define   DEFKRN_CMDLINE  "nomonitors sysdebug=InitCode,debugmmu,mungwall"
+#else
+#define DEFKRN_CMDLINE      "nomonitors"
+#endif
+#endif
 
 static BOOL iseven(APTR p)
 {
@@ -643,19 +656,10 @@ static UWORD GetAttnFlags(ULONG *cpupcr)
 void exec_boot(ULONG *membanks, ULONG *cpupcr)
 {
     struct TagItem bootmsg[] = {
-        /* nomonitors - Until we have working m68k PCI support,
-         *              attempting to load the monitor drivers
-         *              just wastes a lot of time during boot
-         */
-#if AROS_SERIAL_DEBUG
-        { KRN_CmdLine, (IPTR)"nomonitors sysdebug=InitCode" },
-//      { KRN_CmdLine, (IPTR)"nomonitors sysdebug=InitCode,debugmmu,mungwall" },
-#else
-        { KRN_CmdLine, (IPTR)"nomonitors" },
-#endif
-        { KRN_KernelStackBase, (IPTR)&_ss },
-        { KRN_KernelStackSize, (IPTR)(&_ss_end - &_ss) },
-        { TAG_END },
+        { KRN_CmdLine,          (IPTR)DEFKRN_CMDLINE    },
+        { KRN_KernelStackBase,  (IPTR)&_ss              },
+        { KRN_KernelStackSize,  (IPTR)(&_ss_end - &_ss) },
+        { TAG_END                                       },
     };
     struct TagItem *bootmsgptr = bootmsg;
     volatile APTR *trap;
