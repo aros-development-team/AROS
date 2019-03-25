@@ -58,7 +58,7 @@ FUNCS := \
 
 #MM- core-linklibs: linklibs-layers
 
-USER_CFLAGS := -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__
+USER_CPPFLAGS := -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-layers \
