@@ -15,7 +15,7 @@ AFILES := callentry \
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
                -I$(SRCDIR)/rom/dos
-USER_CFLAGS := -D__DOS_NOLIBBASE__
+USER_CPPFLAGS := -D__DOS_NOLIBBASE__
 
 USER_AFLAGS := -I$(GENINCDIR)
 
