@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - automatic library opening/closing handling
@@ -32,24 +32,24 @@ int _set_open_libraries_list(const void * const list[], struct ExecBase *SysBase
     ForeachElementInSet(list, 1, pos, set)
     {
         LONG version = *set->versionptr;
-	BOOL do_not_fail = 0;
-	
-	if (version < 0)
-	{
-	    version = -(version + 1); 
-	    do_not_fail = 1;
-	}
+        BOOL do_not_fail = 0;
+        
+        if (version < 0)
+        {
+            version = -(version + 1); 
+            do_not_fail = 1;
+        }
 
-	D(bug("[Autoinit] %s version %d... ", set->name, version));
+        D(bug("[Autoinit] %s version %d... ", set->name, version));
         *set->baseptr = OpenLibrary(set->name, version);
         D(bug("0x%p\n", *set->baseptr));
 
-	if (!do_not_fail && *set->baseptr == NULL)
-	{
-	    __showerror("Could not open version %ld or higher of library \"%s\".", version, set->name);
+        if (!do_not_fail && *set->baseptr == NULL)
+        {
+            __showerror("Could not open version %ld or higher of library \"%s\".", version, set->name);
 
-	    return 0;
-	}
+            return 0;
+        }
     }
 
     D(bug("[Autoinit] Done\n"));
@@ -63,9 +63,9 @@ void _set_close_libraries_list(const void * const list[], struct ExecBase *SysBa
     
     ForeachElementInSet(list, 1, pos, set)
     {
-	if (*set->baseptr)
+        if (*set->baseptr)
         {
-	    CloseLibrary(*set->baseptr);
+            CloseLibrary(*set->baseptr);
             *set->baseptr = NULL;
         }
     }
@@ -86,25 +86,25 @@ int _set_open_rellibraries_list(APTR base, const void * const list[], struct Exe
     ForeachElementInSet(list, 1, pos, set)
     {
         LONG version = *set->versionptr;
-	BOOL do_not_fail = 0;
-	void **baseptr = (void **)((char *)base + *set->baseoffsetptr);
+        BOOL do_not_fail = 0;
+        void **baseptr = (void **)((char *)base + *set->baseoffsetptr);
 
-	if (version < 0)
-	{
-	    version = -(version + 1); 
-	    do_not_fail = 1;
-	}
+        if (version < 0)
+        {
+            version = -(version + 1); 
+            do_not_fail = 1;
+        }
 
-	D(bug("[Autoinit] Offset %d, %s version %d... ", *set->baseoffsetptr, set->name, version));
+        D(bug("[Autoinit] Offset %d, %s version %d... ", *set->baseoffsetptr, set->name, version));
         *baseptr = OpenLibrary(set->name, version);
         D(bug("0x%p\n", *baseptr));
 
-	if (!do_not_fail && *baseptr == NULL)
-	{
-	    __showerror("Could not open version %ld or higher of library \"%s\".", version, set->name);
+        if (!do_not_fail && *baseptr == NULL)
+        {
+            __showerror("Could not open version %ld or higher of library \"%s\".", version, set->name);
 
-	    return 0;
-	}
+            return 0;
+        }
     }
 
     D(bug("[Autoinit] %s Done\n", ((struct Node *)base)->ln_Name));
@@ -121,9 +121,9 @@ void _set_close_rellibraries_list(APTR base, const void * const list[], struct E
     {
         baseptr = (struct Library **)((char *)base + *set->baseoffsetptr);
         
-	if (*baseptr)
+        if (*baseptr)
         {
-	    CloseLibrary(*baseptr);
+            CloseLibrary(*baseptr);
             *baseptr = NULL;
         }
     }
