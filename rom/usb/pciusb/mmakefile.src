@@ -16,7 +16,7 @@ kernel-usb-pciusb-directories ::
 #       It should thus normally be in SYS:Arch but it is not ATM.
 USER_LDFLAGS := -static
 ifeq ($(ARCH),pc)
-USER_CFLAGS := -DHAVE_ACPICA=1
+USER_CPPFLAGS := -DHAVE_ACPICA=1
 USER_LDFLAGS += -lacpica
 endif
 
