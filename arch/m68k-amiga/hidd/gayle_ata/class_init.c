@@ -38,9 +38,16 @@ static int GayleATA_Init(struct ataBase *base)
         return FALSE;
 
     HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
+    D(bug("[ATA:Gayle] %s: %s AB %x @ 0x%p\n", __func__, IID_Hidd, HiddAttrBase, &HiddAttrBase);)
+
     HiddBusAB = OOP_ObtainAttrBase(IID_Hidd_Bus);
+    D(bug("[ATA:Gayle] %s: %s AB %x @ 0x%p\n", __func__, IID_Hidd_Bus, HiddBusAB, &HiddBusAB);)
+
     HiddATABusAB = OOP_ObtainAttrBase(IID_Hidd_ATABus);
+    D(bug("[ATA:Gayle] %s: %s AB %x @ 0x%p\n", __func__, IID_Hidd_ATABus, HiddATABusAB, &HiddATABusAB);)
+
     HWAttrBase = OOP_ObtainAttrBase(IID_HW);
+    D(bug("[ATA:Gayle] %s: %s AB %x @ 0x%p\n", __func__, IID_HW, HWAttrBase, &HWAttrBase);)
 
     if (!HiddAttrBase || !HiddBusAB || !HiddATABusAB || !HWAttrBase)
         return FALSE;
