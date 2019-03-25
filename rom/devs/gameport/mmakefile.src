@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/devs
 
-USER_CFLAGS += -D__OOP_NOLIBBASE__
+USER_CPPFLAGS += -D__OOP_NOLIBBASE__
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-gameport \
