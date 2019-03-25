@@ -313,7 +313,7 @@ struct IntOOPBase
     */
     
     ULONG			 ob_CurrentMethodBase;
-    ULONG			 ob_CurrentAttrBase; // NB: Always use pre-incrmeent when allocating.
+    ULONG			 ob_CurrentAttrBase; // NB: Always use pre-increment when allocating.
     
     /* An array of the interface IDs used internally. */
     ULONG			 ob_InternIDs[NUM_Indexes];
