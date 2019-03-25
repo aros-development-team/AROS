@@ -19,7 +19,7 @@ FILES := adminspaces \
 	 globals \
 	 req
 
-USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-fs-sfs \
