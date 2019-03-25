@@ -6,7 +6,8 @@ include $(SRCDIR)/config/aros.cfg
 USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_INCLUDES := -I$(GENINCDIR) -I$(SRCDIR)
 USER_CFLAGS := -fno-delete-null-pointer-checks
-USER_AFLAGS := -Os -march=68060
+USER_AFLAGS := -Os
+TARGET_ISA_AFLAGS:=$(ISA_MC68060_FLAGS)
 
 #MM- workbench-c-m68k : includes \
 #MM                     kernel-kernel-includes \
