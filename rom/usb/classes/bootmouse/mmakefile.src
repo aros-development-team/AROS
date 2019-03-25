@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 USER_LDFLAGS := -static
 
 FILES :=    bootmouse.class debug
