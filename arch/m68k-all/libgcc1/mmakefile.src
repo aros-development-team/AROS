@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-USER_AFLAGS := -mc68020
+TARGET_ISA_AFLAGS:=$(ISA_MC68020_FLAGS)
 
 %rule_assemble_multi \
     basenames="_addsubdf3 _addsubsf3 _divdf3 _divmodsi3 divsf3 _eqdf2 _eqsf2 _extend _extendsfdf2 _fixdfsi _fixsfsi _floatsidf _floatsisf _gedf2 _gesf2 _gtdf2 _gtsf2 _ledf2 _lesf2 _ltdf2 _ltsf2 _muldf3 _mulsf3 _mulsi3 _nedf2 _negdf2 _negsf2 _nesf2 _normdf _normsf _truncdfsf2 _udivmodsi3" aflags="-mc68020"
