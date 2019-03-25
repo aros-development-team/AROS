@@ -17,30 +17,30 @@
 
 #include <aros/debug.h>
 
-	AROS_LH1(OOP_AttrBase, OOP_GetAttrBase,
+        AROS_LH1(OOP_AttrBase, OOP_GetAttrBase,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR  	, interfaceID, A0),
+        AROS_LHA(CONST_STRPTR  	, interfaceID, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 15, OOP)
+        struct Library *, OOPBase, 15, OOP)
 
 /*  FUNCTION
-	Maps a globally unique string interface ID into
-	a numeric AttrBase ID that is unique on
-	pr. machine basis. IMPORTANT: You MUST
-	be sure that at least one class implementing 
-	specified interface is initialized at the time calling
-	this function. This function is especially useful
-	for a class to get AttrBases of the interfaces
-	it implements.
+        Maps a globally unique string interface ID into
+        a numeric AttrBase ID that is unique on
+        pr. machine basis. IMPORTANT: You MUST
+        be sure that at least one class implementing 
+        specified interface is initialized at the time calling
+        this function. This function is especially useful
+        for a class to get AttrBases of the interfaces
+        it implements.
 
     INPUTS
-    	interfaceID	- globally unique interface identifier.
+        interfaceID	- globally unique interface identifier.
 
     RESULT
-    	Numeric AttrBase that is unique for this machine.
-	There are NO error conditions.
+        Numeric AttrBase that is unique for this machine.
+        There are NO error conditions.
 
     NOTES
 
@@ -73,38 +73,38 @@
     if (idb)
     {
 
-    	/* If so, it has been stored in the hashtable, and we have 
-    	** to return the same numeric ID now.
-	*/
-	if (idb->attrbase == (ULONG)-1)
-	{
-	    /* The AttrBase has not yet been inited with ObtainAttrBase.
-	       I COULD init the attrbase now with the line below,
-	       but GetAttrBase() is only meant to work when
-	       attrbase has been previously initialized, so I won't
-	       support this.
-	       
-	    idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
-	    */
-	    
-	    base = 0;
-	}
-	
-    	base = idb->attrbase;
-	base <<= NUM_METHOD_BITS;
+        /* If so, it has been stored in the hashtable, and we have 
+        ** to return the same numeric ID now.
+        */
+        if (idb->attrbase == (ULONG)-1)
+        {
+            /* The AttrBase has not yet been inited with ObtainAttrBase.
+               I COULD init the attrbase now with the line below,
+               but GetAttrBase() is only meant to work when
+               attrbase has been previously initialized, so I won't
+               support this.
+               
+            idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
+            */
+            
+            base = 0;
+        }
+        
+        base = idb->attrbase;
+        base <<= NUM_METHOD_BITS;
 
-	D(bug("Bucket found: id=%ld\n", base));
+        D(bug("Bucket found: id=%ld\n", base));
     }
     else
     {
-    	base = 0;
-    	D(bug("No existing bucket\n"));
+        base = 0;
+        D(bug("No existing bucket\n"));
 
     }
     
     if (base == 0)
     {
-	/* Throw exception here */		
+        /* Throw exception here */		
     }
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
