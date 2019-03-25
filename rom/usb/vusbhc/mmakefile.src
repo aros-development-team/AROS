@@ -5,7 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 FILES := vusbhci_device vusbhci_commands vusbhci_bridge
 
 NOWARN_FLAGS := $(NOWARN_UNUSED_VARIABLE) $(NOWARN_MAYBE_UNINITIALIZED)
-USER_CFLAGS := $(NOWARN_FLAGS) -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_module mmake=kernel-usb-vusbhci \
     modname=vusbhci modtype=device \
