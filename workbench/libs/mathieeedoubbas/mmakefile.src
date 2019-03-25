@@ -26,8 +26,6 @@ FUNCS := \
 
 #MM- workbench-libs-mathieeedoubbas : includes
 
-USER_LDFLAGS:=--verbose
-
 %build_module mmake=workbench-libs-mathieeedoubbas \
   modname=mathieeedoubbas modtype=library \
   files="$(FILES) $(FUNCS)"
