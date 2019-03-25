@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -133,44 +133,44 @@ BOOL DateScan(struct StackVars *sv);
 void ScanDirectory(struct StackVars *sv, STRPTR pattern);
 struct DataTypesList *CreateDTList(struct StackVars *sv);
 struct CompoundDataType *CreateBasicType(struct StackVars *sv,
-					 struct List *list,
-					 struct List *globallist, STRPTR name,
-					 UWORD Flags, ULONG ID, ULONG GroupID);
+                                         struct List *list,
+                                         struct List *globallist, STRPTR name,
+                                         UWORD Flags, ULONG ID, ULONG GroupID);
 void LoadDataType(struct StackVars *sv, STRPTR name);
 struct CompoundDataType *CreateDataType(struct StackVars *sv,
-					struct IFFHandle *iff, STRPTR name);
+                                        struct IFFHandle *iff, STRPTR name);
 struct CompoundDataType *AddDataType(struct StackVars *sv, 
-				     struct CompoundDataType *cdt);
+                                     struct CompoundDataType *cdt);
 void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt);
 void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node);
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
-			      STRPTR name);
+                              STRPTR name);
 
 AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0), 
-	AROS_UFPA(BPTR   , fh        , D1),
-	AROS_UFPA(void * , buf       , D2),
-	AROS_UFPA(LONG   , size      , D3),
-	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+        AROS_UFPA(BPTR   , fh        , D1),
+        AROS_UFPA(void * , buf       , D2),
+        AROS_UFPA(LONG   , size      , D3),
+        AROS_UFPA(struct DosLibrary *, DOSBase, A6));
 AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0), 
-	AROS_UFPA(BPTR   , fh        , D1),
-	AROS_UFPA(LONG   , pos       , D2),
-	AROS_UFPA(LONG   , mode      , D3),
-	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+        AROS_UFPA(BPTR   , fh        , D1),
+        AROS_UFPA(LONG   , pos       , D2),
+        AROS_UFPA(LONG   , mode      , D3),
+        AROS_UFPA(struct DosLibrary *, DOSBase, A6));
 AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0), 
-	AROS_UFPA(ULONG, size, D0),
-	AROS_UFPA(ULONG, req,  D1),
-	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+        AROS_UFPA(ULONG, size, D0),
+        AROS_UFPA(ULONG, req,  D1),
+        AROS_UFPA(struct DosLibrary *, DOSBase, A6));
 AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0), 
-	AROS_UFPA(APTR , memory, A1),
-	AROS_UFPA(ULONG, size  , D0),
-	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
+        AROS_UFPA(APTR , memory, A1),
+        AROS_UFPA(ULONG, size  , D0),
+        AROS_UFPA(struct DosLibrary *, DOSBase, A6));
 
 /********************************* CONSTANTS *********************************/
 
-const TEXT Version[] = "$VER: AddDataTypes 42.1 (8.12.2007)\n";
+const TEXT Version[] = "$VER: AddDataTypes 42.2 (20.02.2019)\n";
 
 #define EXCL_LEN 18
-UBYTE ExcludePattern[] = "#?.(info|backdrop)";
+UBYTE ExcludePattern[] = "#?.(info|dbg|backdrop|ppc|arm|i386|x86_64)";
 
 UBYTE Template[] = "FILES/M,QUIET/S,REFRESH/S,LIST/S";
 
@@ -266,96 +266,93 @@ int main(void)
 
     if((DTList = CreateDTList(sv)))
     {
-    	ParsePatternNoCase(ExcludePattern, ExclPat, sizeof(ExclPat));
+        ParsePatternNoCase(ExcludePattern, ExclPat, sizeof(ExclPat));
 
-	ObtainSemaphore(&DTList->dtl_Lock);
+        ObtainSemaphore(&DTList->dtl_Lock);
 
-	if(WBenchMsg)
-	{
-	    UWORD num;
-	    struct WBArg *wa = &WBenchMsg->sm_ArgList[1];
+        if(WBenchMsg)
+        {
+            UWORD num;
+            struct WBArg *wa = &WBenchMsg->sm_ArgList[1];
 
-	    for(num = 1; num<WBenchMsg->sm_NumArgs; wa++)
-	    {
-		BPTR olddir = CurrentDir(wa->wa_Lock);
-		LoadDataType(sv, wa->wa_Name);
-		CurrentDir(olddir);
-	    }
+            for(num = 1; num<WBenchMsg->sm_NumArgs; wa++)
+            {
+                BPTR olddir = CurrentDir(wa->wa_Lock);
+                LoadDataType(sv, wa->wa_Name);
+                CurrentDir(olddir);
+            }
 
-	    result = RETURN_OK;
-	}
-	else
-	{
-	    struct RDArgs *RDArgs;
+            result = RETURN_OK;
+        }
+        else
+        {
+            struct RDArgs *RDArgs;
 
-	    if(!(RDArgs = ReadArgs(Template, (SIPTR*)&AA, NULL)))
-	    {
-		PrintFault(IoErr(), NULL);
-	    }
-	    else
-	    {
-		if(AA.aa_Refresh)
-		{
-		    if(DateScan(sv))
-		    {
-			ScanDirectory(sv, "DEVS:DataTypes");
-		    }
-		}
-		else
-		{
-		    UBYTE **files = AA.aa_Files;
+            if(!(RDArgs = ReadArgs(Template, (SIPTR*)&AA, NULL)))
+            {
+                PrintFault(IoErr(), NULL);
+            }
+            else
+            {
+                if(AA.aa_Refresh)
+                {
+                    if(DateScan(sv))
+                    {
+                        ScanDirectory(sv, "DEVS:DataTypes");
+                    }
+                }
+                else
+                {
+                    UBYTE **files = AA.aa_Files;
 
-		    if(files)
-		    {
-			while(*files)
-			{
-			    ScanDirectory(sv, *files);
-			    files++;
-			}
-		    }
-	        }
+                    if(files)
+                    {
+                        while(*files)
+                        {
+                            ScanDirectory(sv, *files);
+                            files++;
+                        }
+                    }
+                }
 
-		if(AA.aa_List)
-		{
-			struct DataTypesList *dtl = NULL;
-			struct NamedObject   *no  = NULL;
-			if((no = FindNamedObject(NULL, DATATYPESLIST, NULL)))
-			{
-				dtl = (struct DataTypesList*)no->no_Object;
-				ReleaseNamedObject(no);
-				if(dtl != NULL)
-				{
-					struct Node *node=dtl->dtl_SortedList.lh_Head;
-					while(node->ln_Succ != NULL)
-					{
-						// sorted list points to DT.dtn_Node2 ....
-						struct CompoundDataType *cdt;
-						struct DataTypeHeader *dth;
+                if(AA.aa_List)
+                {
+                    struct DataTypesList *dtl = NULL;
+                    struct NamedObject   *no  = NULL;
+                    if((no = FindNamedObject(NULL, DATATYPESLIST, NULL)))
+                    {
+                        dtl = (struct DataTypesList*)no->no_Object;
+                        ReleaseNamedObject(no);
+                        if(dtl != NULL)
+                        {
+                            struct Node *node=dtl->dtl_SortedList.lh_Head;
+                            while(node->ln_Succ != NULL)
+                            {
+                                // sorted list points to DT.dtn_Node2 ....
+                                struct CompoundDataType *cdt;
+                                struct DataTypeHeader *dth;
 
-						if(CheckSignal(SIGBREAKF_CTRL_C))
-						{
-							Flush(Output());
-							PrintFault(ERROR_BREAK,0);
-							break;
-						}
-						cdt=(struct CompoundDataType *)(node-1);
-						dth=cdt->DT.dtn_Header;
+                                if(CheckSignal(SIGBREAKF_CTRL_C))
+                                {
+                                        Flush(Output());
+                                        PrintFault(ERROR_BREAK,0);
+                                        break;
+                                }
+                                cdt=(struct CompoundDataType *)(node-1);
+                                dth=cdt->DT.dtn_Header;
 
+                                Printf("%s, \"%s\"\n", dth->dth_BaseName, dth->dth_Name);
+                                node = node->ln_Succ;
+                            }
+                        }
+                    }
+                }
+                result = RETURN_OK;
+                FreeArgs(RDArgs);
+            }
+        }
 
-						Printf("%s, \"%s\"\n", dth->dth_BaseName, dth->dth_Name);
-						node = node->ln_Succ;
-					}
-				}
-			}
-
-		}
-
-		result = RETURN_OK;
-		FreeArgs(RDArgs);
-	    }
-	}
-
-	ReleaseSemaphore(&DTList->dtl_Lock);
+        ReleaseSemaphore(&DTList->dtl_Lock);
     }
 
     return result;
@@ -392,24 +389,24 @@ BOOL DateScan(struct StackVars *sv)
 
     if((lock = Lock("DEVS:DataTypes", ACCESS_READ)))
     {
-	if((fib = AllocDosObject(DOS_FIB, NULL)))
-	{
-	    if(Examine(lock, fib))
-	    {
-		if(!CompareDates(&fib->fib_Date, &DTList->dtl_DateStamp))
-		{
-		    result = FALSE;
-		}
-		else
-		{
-		    DTList->dtl_DateStamp = fib->fib_Date;
-		}
-	    }
+        if((fib = AllocDosObject(DOS_FIB, NULL)))
+        {
+            if(Examine(lock, fib))
+            {
+                if(!CompareDates(&fib->fib_Date, &DTList->dtl_DateStamp))
+                {
+                    result = FALSE;
+                }
+                else
+                {
+                    DTList->dtl_DateStamp = fib->fib_Date;
+                }
+            }
 
-	    FreeDosObject(DOS_FIB,fib);
-	}
+            FreeDosObject(DOS_FIB,fib);
+        }
 
-	UnLock(lock);
+        UnLock(lock);
     }
     
     return result;
@@ -443,62 +440,62 @@ void ScanDirectory(struct StackVars *sv, STRPTR pattern)
     struct AnchorPath *AnchorPath;
     LONG               RetVal;
     BPTR               OldDir;
-	
+        
     if((AnchorPath = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath),
-						  MEMF_CLEAR)))
+                                                  MEMF_CLEAR)))
     {
-	AnchorPath->ap_BreakBits = SIGBREAKF_CTRL_C;
-	
-	RetVal = MatchFirst(pattern, AnchorPath);
+        AnchorPath->ap_BreakBits = SIGBREAKF_CTRL_C;
+        
+        RetVal = MatchFirst(pattern, AnchorPath);
 
-	while(!RetVal)
-	{
-	    if(CheckSignal(SIGBREAKF_CTRL_C))
-	    {
-		if(!AA.aa_Quiet)
-		{
-		    PrintFault(ERROR_BREAK, NULL);
-		}
+        while(!RetVal)
+        {
+            if(CheckSignal(SIGBREAKF_CTRL_C))
+            {
+                if(!AA.aa_Quiet)
+                {
+                    PrintFault(ERROR_BREAK, NULL);
+                }
 
-		break;
-	    }
-	    
-	    if(AnchorPath->ap_Info.fib_DirEntryType > 0L)
-	    {
-		if(!(AnchorPath->ap_Flags & APF_DIDDIR))
-		{
-		    AnchorPath->ap_Flags |= APF_DODIR;
-		}
+                break;
+            }
+            
+            if(AnchorPath->ap_Info.fib_DirEntryType > 0L)
+            {
+                if(!(AnchorPath->ap_Flags & APF_DIDDIR))
+                {
+                    AnchorPath->ap_Flags |= APF_DODIR;
+                }
 
-		AnchorPath->ap_Flags &= ~APF_DIDDIR;
-	    }
-	    else
-	    {
-		if(!MatchPatternNoCase(ExclPat, 
-				       AnchorPath->ap_Info.fib_FileName))
-		{
-		    OldDir = CurrentDir(AnchorPath->ap_Current->an_Lock);
-		    
-		    LoadDataType(sv, AnchorPath->ap_Info.fib_FileName);
-		    
-		    CurrentDir(OldDir);
-		}
-	    }
+                AnchorPath->ap_Flags &= ~APF_DIDDIR;
+            }
+            else
+            {
+                if(!MatchPatternNoCase(ExclPat, 
+                                       AnchorPath->ap_Info.fib_FileName))
+                {
+                    OldDir = CurrentDir(AnchorPath->ap_Current->an_Lock);
+                    
+                    LoadDataType(sv, AnchorPath->ap_Info.fib_FileName);
+                    
+                    CurrentDir(OldDir);
+                }
+            }
 
-	    RetVal = MatchNext(AnchorPath);
-	}
+            RetVal = MatchNext(AnchorPath);
+        }
 
-	if(RetVal != ERROR_NO_MORE_ENTRIES)
-	{
-	    if(!AA.aa_Quiet)
-	    {
-		PrintFault(RetVal, NULL);
-	    }
-	}
+        if(RetVal != ERROR_NO_MORE_ENTRIES)
+        {
+            if(!AA.aa_Quiet)
+            {
+                PrintFault(RetVal, NULL);
+            }
+        }
 
-	MatchEnd(AnchorPath);
-	
-	FreeVec((APTR)AnchorPath);
+        MatchEnd(AnchorPath);
+        
+        FreeVec((APTR)AnchorPath);
     }
 }
 
@@ -535,55 +532,55 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
        create and install DataTypes list object in memory. */
     DTBase = OpenLibrary("datatypes.library", 0);
     if (DTBase)
-	CloseLibrary(DTBase);
+        CloseLibrary(DTBase);
     
     if((no = FindNamedObject(NULL, DATATYPESLIST, NULL)))
     {
-	dtl = (struct DataTypesList*)no->no_Object;
+        dtl = (struct DataTypesList*)no->no_Object;
     }
     
     if(dtl)
     {
-	if(!__FindNameNoCase(sv, &dtl->dtl_BinaryList, "binary"))
-	{
-	    CreateBasicType
+        if(!__FindNameNoCase(sv, &dtl->dtl_BinaryList, "binary"))
+        {
+            CreateBasicType
             (
                 sv, &dtl->dtl_BinaryList, &dtl->dtl_SortedList,
                 "binary", DTF_BINARY, ID_BINARY, GID_SYSTEM
             );
-	}
+        }
 
-	if(!__FindNameNoCase(sv, &dtl->dtl_ASCIIList, "ascii"))
-	{
-	    CreateBasicType
+        if(!__FindNameNoCase(sv, &dtl->dtl_ASCIIList, "ascii"))
+        {
+            CreateBasicType
             (
                 sv, &dtl->dtl_ASCIIList,  &dtl->dtl_SortedList,
                 "ascii", DTF_ASCII, ID_ASCII, GID_TEXT
             );
-	}
+        }
 
-	if(!__FindNameNoCase(sv, &dtl->dtl_IFFList, "iff"))
-	{
-	    CreateBasicType
+        if(!__FindNameNoCase(sv, &dtl->dtl_IFFList, "iff"))
+        {
+            CreateBasicType
             (
                 sv, &dtl->dtl_IFFList, &dtl->dtl_SortedList,
                 "iff", DTF_IFF, ID_IFF, GID_SYSTEM
             );
-	}
+        }
 
-	if(!__FindNameNoCase(sv, &dtl->dtl_MiscList, "directory"))
-	{
-	    CreateBasicType
+        if(!__FindNameNoCase(sv, &dtl->dtl_MiscList, "directory"))
+        {
+            CreateBasicType
             (
                 sv, &dtl->dtl_MiscList, &dtl->dtl_SortedList,
                 "directory", DTF_MISC, ID_DIRECTORY, GID_SYSTEM
             );
-	}
+        }
     }
     
     if(no)
     {
-	ReleaseNamedObject(no);
+        ReleaseNamedObject(no);
     }
     
     
@@ -614,37 +611,37 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 */
 
 struct CompoundDataType *CreateBasicType(struct StackVars *sv, 
-					 struct List *list, 
-					 struct List *globallist, STRPTR name,
-					 UWORD Flags, ULONG ID, ULONG GroupID)
+                                         struct List *list, 
+                                         struct List *globallist, STRPTR name,
+                                         UWORD Flags, ULONG ID, ULONG GroupID)
 {
     struct CompoundDataType *cdt;
     ULONG AllocLen = sizeof(struct CompoundDataType) + strlen(name) + 1;
     
     if((cdt = AllocVec(AllocLen, MEMF_PUBLIC | MEMF_CLEAR)))
     {
-	cdt->DT.dtn_Header = &cdt->DTH;
-	
-	strcpy((UBYTE*)(cdt + 1), name);
-	
-	cdt->DTH.dth_Name=
-	    cdt->DTH.dth_BaseName=
-	    cdt->DT.dtn_Node1.ln_Name=
-	    cdt->DT.dtn_Node2.ln_Name=(UBYTE*)(cdt + 1);
+        cdt->DT.dtn_Header = &cdt->DTH;
+        
+        strcpy((UBYTE*)(cdt + 1), name);
+        
+        cdt->DTH.dth_Name=
+            cdt->DTH.dth_BaseName=
+            cdt->DT.dtn_Node1.ln_Name=
+            cdt->DT.dtn_Node2.ln_Name=(UBYTE*)(cdt + 1);
 
-	cdt->DTH.dth_GroupID = GroupID;
-	cdt->DTH.dth_ID = ID;
+        cdt->DTH.dth_GroupID = GroupID;
+        cdt->DTH.dth_ID = ID;
 
-	cdt->DTH.dth_Flags = Flags;
+        cdt->DTH.dth_Flags = Flags;
 
-	NewList(&cdt->DT.dtn_ToolList);
-		
-	cdt->DT.dtn_Length = AllocLen;
-		
-	cdt->DT.dtn_Node1.ln_Pri = -128;
-	Enqueue(list, &cdt->DT.dtn_Node1);
-		
-	AlphaInsert(sv, globallist, &cdt->DT.dtn_Node2);
+        NewList(&cdt->DT.dtn_ToolList);
+                
+        cdt->DT.dtn_Length = AllocLen;
+                
+        cdt->DT.dtn_Node1.ln_Pri = -128;
+        Enqueue(list, &cdt->DT.dtn_Node1);
+                
+        AlphaInsert(sv, globallist, &cdt->DT.dtn_Node2);
     }
 
     return cdt;
@@ -679,41 +676,41 @@ void LoadDataType(struct StackVars *sv, STRPTR name)
 
     if((iff = AllocIFF()))
     {
-	if((iff->iff_Stream = (IPTR)Open(name, MODE_OLDFILE))) /* Why IPTR? */
-	{
-	    InitIFFasDOS(iff);
-	    
-	    if(!OpenIFF(iff, IFFF_READ))
-	    {
-		if(!PropChunks(iff, PropArray, NUM_PROP))
-		{
-		    if(!CollectionChunks(iff, CollArray, NUM_COLL))
-		    {
-			if(!StopOnExit(iff, ID_DTYP, ID_FORM))
-			{
-			    LONG error;
-			    
-			    while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC) 
-			    {
-				CreateDataType(sv, iff, name);
-				/* FIXME: The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix */
-				break;
-			    }
-			}
-		    }
-		}
-		
-		CloseIFF(iff);
-	    }
+        if((iff->iff_Stream = (IPTR)Open(name, MODE_OLDFILE))) /* Why IPTR? */
+        {
+            InitIFFasDOS(iff);
+            
+            if(!OpenIFF(iff, IFFF_READ))
+            {
+                if(!PropChunks(iff, PropArray, NUM_PROP))
+                {
+                    if(!CollectionChunks(iff, CollArray, NUM_COLL))
+                    {
+                        if(!StopOnExit(iff, ID_DTYP, ID_FORM))
+                        {
+                            LONG error;
+                            
+                            while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC) 
+                            {
+                                CreateDataType(sv, iff, name);
+                                /* FIXME: The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix */
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                CloseIFF(iff);
+            }
 
-	    Close((BPTR)iff->iff_Stream);
-	}
+            Close((BPTR)iff->iff_Stream);
+        }
 
-	FreeIFF(iff);
+        FreeIFF(iff);
     }
     else
     {
-	SetIoErr(ERROR_NO_FREE_STORE);
+        SetIoErr(ERROR_NO_FREE_STORE);
     }
 }
 
@@ -745,14 +742,14 @@ LONG MemStreamHook(struct Hook * hook, UBYTE **memptr, Msg msg)
 
     switch (msg->MethodID)
     {
-	case BEIO_READ:
-	    rc = **memptr;
-	    (*memptr)++;
-	    break;
-	    
-	default:
-	    rc = -1;
-	    break;
+        case BEIO_READ:
+            rc = **memptr;
+            (*memptr)++;
+            break;
+            
+        default:
+            rc = -1;
+            break;
     }
 
     return rc;
@@ -780,7 +777,7 @@ LONG MemStreamHook(struct Hook * hook, UBYTE **memptr, Msg msg)
 */
 
 struct CompoundDataType *CreateDataType(struct StackVars *sv,
-					struct IFFHandle *iff, STRPTR name)
+                                        struct IFFHandle *iff, STRPTR name)
 {
     struct CompoundDataType *cdt = NULL;
     struct StoredProperty *prop;
@@ -793,51 +790,46 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
 
     if((prop = FindProp(iff, ID_DTYP, ID_DTHD)))
     {
-	AllocLen = sizeof(struct CompoundDataType) - 
-	          32 + /* was sizeof(struct DataTypeHeader), but we must use struct size as it would be on Amiga */
-		  prop->sp_Size;
+        D(bug("[AddDataTypes] sp_Size = %d", prop->sp_Size));
+        AllocLen = sizeof(struct CompoundDataType) - 
+                  32 + /* was sizeof(struct DataTypeHeader), but we must use struct size as it would be on Amiga */
+                  prop->sp_Size;
 
-	if(!(cdt = AllocVec(AllocLen, MEMF_PUBLIC | MEMF_CLEAR)))
-	{
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	}
-	else
-	{
-	    struct FileDataTypeHeader *fdh = NULL;
-	    UBYTE *memptr = (UBYTE *)prop->sp_Data;
-	    struct Hook hook;
+        if(!(cdt = AllocVec(AllocLen, MEMF_PUBLIC | MEMF_CLEAR)))
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+        }
+        else
+        {
+            struct FileDataTypeHeader *fdh = NULL;
+            UBYTE *memptr = (UBYTE *)prop->sp_Data;
+            struct Hook hook;
 
-	    hook.h_Entry = (HOOKFUNC)HookEntry;
-	    hook.h_SubEntry = (HOOKFUNC)MemStreamHook;
+            D(bug("[AddDataTypes] CDT @ 0x%p\n", cdt));
+            hook.h_Entry = (HOOKFUNC)HookEntry;
+            hook.h_SubEntry = (HOOKFUNC)MemStreamHook;
 
-	    if (ReadStruct(&hook, (APTR *) &fdh, &memptr, FileDataTypeHeaderDesc))
-	    {
-		IPTR extraoffset = sizeof(struct DataTypeHeader) - 32;
+            if (ReadStruct(&hook, (APTR *) &fdh, &memptr, FileDataTypeHeaderDesc))
+            {
+                IPTR extraoffset = sizeof(struct DataTypeHeader) - 32;
 
-		cdt->DT.dtn_Header= &cdt->DTH;
+                D(bug("[AddDataTypes] fdth_MaskOffset = %d\n", fdh->fdth_MaskOffset));
 
-		cdt->DTH.dth_Name = (STRPTR)(fdh->fdth_NameOffset + extraoffset + (IPTR)&cdt->DTH);
-		cdt->DTH.dth_BaseName = (STRPTR)(fdh->fdth_BaseNameOffset + extraoffset + (IPTR)&cdt->DTH);
-		cdt->DTH.dth_Pattern = (STRPTR)(fdh->fdth_PatternOffset + extraoffset + (IPTR)&cdt->DTH);
-		cdt->DTH.dth_Mask = (WORD *)(fdh->fdth_MaskOffset + extraoffset + (IPTR)&cdt->DTH);
-		cdt->DTH.dth_GroupID = fdh->fdth_GroupID;
-		cdt->DTH.dth_ID = fdh->fdth_ID;
-		cdt->DTH.dth_MaskLen = fdh->fdth_MaskLen;
-		cdt->DTH.dth_Pad = fdh->fdth_Pad;
-		cdt->DTH.dth_Flags = fdh->fdth_Flags;
-		cdt->DTH.dth_Priority = fdh->fdth_Priority;
-		
-		CopyMem(prop->sp_Data + 32, cdt + 1, prop->sp_Size - 32);
-		
-		for(i = 0; i < cdt->DTH.dth_MaskLen; i++)
-		{
-	            cdt->DTH.dth_Mask[i] = AROS_BE2WORD(cdt->DTH.dth_Mask[i]);
-		    D(bug("[AddDataTypes] mask[%d] = %04x (%c %c)\n", i, 
-			    cdt->DTH.dth_Mask[i],
-			    cdt->DTH.dth_Mask[i] & 255,
-			    (cdt->DTH.dth_Mask[i] >> 8) & 255);)
-		}
+                cdt->DT.dtn_Header= &cdt->DTH;
 
+                cdt->DTH.dth_Name = (STRPTR)(fdh->fdth_NameOffset + extraoffset + (IPTR)&cdt->DTH);
+                cdt->DTH.dth_BaseName = (STRPTR)(fdh->fdth_BaseNameOffset + extraoffset + (IPTR)&cdt->DTH);
+                cdt->DTH.dth_Pattern = (STRPTR)(fdh->fdth_PatternOffset + extraoffset + (IPTR)&cdt->DTH);
+                cdt->DTH.dth_Mask = (WORD *)(fdh->fdth_MaskOffset + extraoffset + (IPTR)&cdt->DTH);
+                cdt->DTH.dth_GroupID = fdh->fdth_GroupID;
+                cdt->DTH.dth_ID = fdh->fdth_ID;
+                cdt->DTH.dth_MaskLen = fdh->fdth_MaskLen;
+                cdt->DTH.dth_Pad = fdh->fdth_Pad;
+                cdt->DTH.dth_Flags = fdh->fdth_Flags;
+                cdt->DTH.dth_Priority = fdh->fdth_Priority;
+                
+                CopyMem(prop->sp_Data + 32, cdt + 1, prop->sp_Size - 32);
+                
                 D(
                     bug("[AddDataTypes] groupid  = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
                                                      cdt->DTH.dth_GroupID >> 16,
@@ -854,40 +846,48 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
                     bug("[AddDataTypes] pattern  = %s\n",	 cdt->DTH.dth_Pattern);
                     bug("[AddDataTypes] masklen  = %d\n",	 cdt->DTH.dth_MaskLen);
                 )
+                for(i = 0; i < cdt->DTH.dth_MaskLen; i++)
+                {
+                    cdt->DTH.dth_Mask[i] = AROS_BE2WORD(cdt->DTH.dth_Mask[i]);
+                    D(bug("[AddDataTypes] mask[%d] = %04x (%c %c)\n", i, 
+                            cdt->DTH.dth_Mask[i],
+                            cdt->DTH.dth_Mask[i] & 255,
+                            (cdt->DTH.dth_Mask[i] >> 8) & 255);)
+                }
 
-		NewList(&cdt->DT.dtn_ToolList);
+                NewList(&cdt->DT.dtn_ToolList);
 
-		cdt->DT.dtn_Length = AllocLen;
+                cdt->DT.dtn_Length = AllocLen;
 
 #if __mc68000
-		if((prop = FindProp(iff, ID_DTYP, ID_DTCD)))
-		{
-		    if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR)))
-		    {
-			cdt->DTCDChunk = func;
-			cdt->DTCDSize = prop->sp_Size;
+                if((prop = FindProp(iff, ID_DTYP, ID_DTCD)))
+                {
+                    if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR)))
+                    {
+                        cdt->DTCDChunk = func;
+                        cdt->DTCDSize = prop->sp_Size;
 
-			CopyMem(prop->sp_Data,func,prop->sp_Size);
+                        CopyMem(prop->sp_Data,func,prop->sp_Size);
 
-			HookBuffer = cdt->DTCDChunk;
-			HookBufSize = cdt->DTCDSize;
-			HookPosition = 0;
+                        HookBuffer = cdt->DTCDChunk;
+                        HookBufSize = cdt->DTCDSize;
+                        HookPosition = 0;
 
-			/* We use a cast to BPTR, since sv may not
-			 * be ULONG aligned. Since only our ReadFunc
-			 * is going to be looking at it, this is ok.
-			 */
-			if((SegList = InternalLoadSeg((BPTR)(sv), BNULL,
-						      (LONG_FUNC *)FunctionArray,
-						      &DefaultStack)))
-			{
-			    cdt->SegList = SegList;
-			    cdt->Function = BADDR(SegList) + sizeof(BPTR);
-			}
+                        /* We use a cast to BPTR, since sv may not
+                         * be ULONG aligned. Since only our ReadFunc
+                         * is going to be looking at it, this is ok.
+                         */
+                        if((SegList = InternalLoadSeg((BPTR)(sv), BNULL,
+                                                      (LONG_FUNC *)FunctionArray,
+                                                      &DefaultStack)))
+                        {
+                            cdt->SegList = SegList;
+                            cdt->Function = BADDR(SegList) + sizeof(BPTR);
+                        }
 
-		    } /* if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR))) */
+                    } /* if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR))) */
 
-		} /* if((prop = FindProp(iff, ID_DTYP, ID_DTCD))) */
+                } /* if((prop = FindProp(iff, ID_DTYP, ID_DTCD))) */
 #else
                 TEXT CDname[256];
 
@@ -902,14 +902,14 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
                     D(bug("[AddDataTypes] Entry @ 0x%p\n", cdt->Function);)
                 }
 #endif
-		cdt = AddDataType(sv, cdt);
+                cdt = AddDataType(sv, cdt);
 
-		FreeStruct(fdh, FileDataTypeHeaderDesc);
-		
-	    } /* if (ReadStruct(&hook, &fdh, &memptr, FileDataTypeHeaderDesc)) */
-	    
-	} /* cdt AllocVec okay */
-	
+                FreeStruct(fdh, FileDataTypeHeaderDesc);
+                
+            } /* if (ReadStruct(&hook, &fdh, &memptr, FileDataTypeHeaderDesc)) */
+            
+        } /* cdt AllocVec okay */
+        
     } /* if((prop = FindProp(iff, ID_DTYP, ID_DTHD))) */
     
     return cdt;
@@ -951,7 +951,7 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
 */
 
 struct CompoundDataType *AddDataType(struct StackVars *sv,
-				     struct CompoundDataType *cdt)
+                                     struct CompoundDataType *cdt)
 {
     struct List *typelist;
     BOOL   Success = FALSE;
@@ -970,162 +970,162 @@ struct CompoundDataType *AddDataType(struct StackVars *sv,
     
     if(typelist)
     {
-	cdt->DT.dtn_Node1.ln_Name = cdt->DT.dtn_Node2.ln_Name = cdt->DTH.dth_Name;
-	
-	Success = TRUE;
-	
-	if((!Stricmp(cdt->DTH.dth_Pattern, "#?")) || 
-	   (!strlen(cdt->DTH.dth_Pattern)) )
-	{
-	    cdt->FlagLong |= CFLGF_PATTERN_UNUSED;
-	}
-	else
-	{
-	    cdt->FlagLong &= ~(CFLGF_PATTERN_UNUSED);
-	    
-	    AllocSize = 2*strlen(cdt->DTH.dth_Pattern) + 2;
+        cdt->DT.dtn_Node1.ln_Name = cdt->DT.dtn_Node2.ln_Name = cdt->DTH.dth_Name;
+        
+        Success = TRUE;
+        
+        if((!Stricmp(cdt->DTH.dth_Pattern, "#?")) || 
+           (!strlen(cdt->DTH.dth_Pattern)) )
+        {
+            cdt->FlagLong |= CFLGF_PATTERN_UNUSED;
+        }
+        else
+        {
+            cdt->FlagLong &= ~(CFLGF_PATTERN_UNUSED);
+            
+            AllocSize = 2*strlen(cdt->DTH.dth_Pattern) + 2;
 
-	    if(!(cdt->ParsePatMem = AllocVec(AllocSize,
-					     MEMF_PUBLIC | MEMF_CLEAR)))
-	    {
-		Success = FALSE;
-	    }
-	    else
-	    {
-		cdt->ParsePatSize = AllocSize;
-		
-		result = ParsePatternNoCase(cdt->DTH.dth_Pattern,
-					    cdt->ParsePatMem, AllocSize);
-		
-		if(result == 1)
-		{
-		    cdt->FlagLong |= CFLGF_IS_WILD;
-		}
-		else
-		{
-		    FreeVec(cdt->ParsePatMem);
-		    cdt->ParsePatMem = NULL;
-		    cdt->ParsePatSize = 0;
-		    
-		    if(result == 0)
-		    {
-			cdt->FlagLong &= ~(CFLGF_IS_WILD);
-		    }
-		    else
-		    {
-			Success = FALSE;
-		    }
-		}
-	    }
-	}
+            if(!(cdt->ParsePatMem = AllocVec(AllocSize,
+                                             MEMF_PUBLIC | MEMF_CLEAR)))
+            {
+                Success = FALSE;
+            }
+            else
+            {
+                cdt->ParsePatSize = AllocSize;
+                
+                result = ParsePatternNoCase(cdt->DTH.dth_Pattern,
+                                            cdt->ParsePatMem, AllocSize);
+                
+                if(result == 1)
+                {
+                    cdt->FlagLong |= CFLGF_IS_WILD;
+                }
+                else
+                {
+                    FreeVec(cdt->ParsePatMem);
+                    cdt->ParsePatMem = NULL;
+                    cdt->ParsePatSize = 0;
+                    
+                    if(result == 0)
+                    {
+                        cdt->FlagLong &= ~(CFLGF_IS_WILD);
+                    }
+                    else
+                    {
+                        Success = FALSE;
+                    }
+                }
+            }
+        }
 
-	if (Success)
-	{
-	    if((oldcdt = (struct CompoundDataType*)__FindNameNoCase(sv,
-								    typelist,
-								    cdt->DT.dtn_Node1.ln_Name)))
-	    {
-		if (oldcdt->OpenCount)
-		{
-		    Success = FALSE;
-		}
-		else
-		{
-		    if((Stricmp(oldcdt->DTH.dth_Name, cdt->DTH.dth_Name)) ||
-		       (Stricmp(oldcdt->DTH.dth_BaseName, cdt->DTH.dth_BaseName)) ||
-		       (Stricmp(oldcdt->DTH.dth_Pattern, cdt->DTH.dth_Pattern)) ||
-		       (oldcdt->DTH.dth_Flags != cdt->DTH.dth_Flags) ||
-		       (oldcdt->DTH.dth_Priority != cdt->DTH.dth_Priority) ||
-		       (oldcdt->DTH.dth_MaskLen != cdt->DTH.dth_MaskLen))
-		    {
-			DeleteDataType(sv, oldcdt);
-			oldcdt = NULL;
-		    }
-		    else
-		    {
-			oldcdt->DTH.dth_GroupID = cdt->DTH.dth_GroupID;
-			oldcdt->DTH.dth_ID      = cdt->DTH.dth_ID;
-			CopyMem(cdt->DTH.dth_Mask,cdt->DTH.dth_Mask,
-				(ULONG)(sizeof(WORD)*cdt->DTH.dth_MaskLen));
-		    }
-		}
-	    }
-	    
-	    if(Success)
-	    {
-		if(oldcdt)
-		{
-		    DeleteDataType(sv, cdt);
-		    cdt = oldcdt;
-		}
-		else
-		{
-		    if(cdt->DT.dtn_FunctionName)
-		    {
-			LONG DefaultStack = 4096;
-			BPTR file;
-			ULONG AllocLen;
-			BPTR SegList;
-			
-			if((file = Open(cdt->DT.dtn_FunctionName, MODE_OLDFILE)))
-			{
-			    if(Seek(file, 0, OFFSET_END) >= 0)
-			    {
-				if((AllocLen = Seek(file, 0,
-						    OFFSET_BEGINNING)) > 0)
-				{
-				    if((cdt->DTCDChunk = AllocVec(AllocLen,
-								  MEMF_PUBLIC | MEMF_CLEAR)))
-				    {
-					cdt->DTCDSize = AllocLen;
+        if (Success)
+        {
+            if((oldcdt = (struct CompoundDataType*)__FindNameNoCase(sv,
+                                                                    typelist,
+                                                                    cdt->DT.dtn_Node1.ln_Name)))
+            {
+                if (oldcdt->OpenCount)
+                {
+                    Success = FALSE;
+                }
+                else
+                {
+                    if((Stricmp(oldcdt->DTH.dth_Name, cdt->DTH.dth_Name)) ||
+                       (Stricmp(oldcdt->DTH.dth_BaseName, cdt->DTH.dth_BaseName)) ||
+                       (Stricmp(oldcdt->DTH.dth_Pattern, cdt->DTH.dth_Pattern)) ||
+                       (oldcdt->DTH.dth_Flags != cdt->DTH.dth_Flags) ||
+                       (oldcdt->DTH.dth_Priority != cdt->DTH.dth_Priority) ||
+                       (oldcdt->DTH.dth_MaskLen != cdt->DTH.dth_MaskLen))
+                    {
+                        DeleteDataType(sv, oldcdt);
+                        oldcdt = NULL;
+                    }
+                    else
+                    {
+                        oldcdt->DTH.dth_GroupID = cdt->DTH.dth_GroupID;
+                        oldcdt->DTH.dth_ID      = cdt->DTH.dth_ID;
+                        CopyMem(cdt->DTH.dth_Mask, oldcdt->DTH.dth_Mask,
+                                (ULONG)(sizeof(WORD)*cdt->DTH.dth_MaskLen));
+                    }
+                }
+            }
+            
+            if(Success)
+            {
+                if(oldcdt)
+                {
+                    DeleteDataType(sv, cdt);
+                    cdt = oldcdt;
+                }
+                else
+                {
+                    if(cdt->DT.dtn_FunctionName)
+                    {
+                        LONG DefaultStack = 4096;
+                        BPTR file;
+                        ULONG AllocLen;
+                        BPTR SegList;
+                        
+                        if((file = Open(cdt->DT.dtn_FunctionName, MODE_OLDFILE)))
+                        {
+                            if(Seek(file, 0, OFFSET_END) >= 0)
+                            {
+                                if((AllocLen = Seek(file, 0,
+                                                    OFFSET_BEGINNING)) > 0)
+                                {
+                                    if((cdt->DTCDChunk = AllocVec(AllocLen,
+                                                                  MEMF_PUBLIC | MEMF_CLEAR)))
+                                    {
+                                        cdt->DTCDSize = AllocLen;
 
-					if(Read(file, cdt->DTCDChunk, AllocLen) == AllocLen)
-					{
-					    HookBuffer = cdt->DTCDChunk;
-					    HookBufSize = cdt->DTCDSize;
-					    HookPosition = 0;
+                                        if(Read(file, cdt->DTCDChunk, AllocLen) == AllocLen)
+                                        {
+                                            HookBuffer = cdt->DTCDChunk;
+                                            HookBufSize = cdt->DTCDSize;
+                                            HookPosition = 0;
 
-					    /* We use a cast to BPTR, since sv may not
-					     * be ULONG aligned. Since only our ReadFunc
-					     * is going to be looking at it, this is ok.
-					     */
-					    if((SegList = InternalLoadSeg((BPTR)(sv), BNULL, (LONG_FUNC *)FunctionArray, &DefaultStack)))
-					    {
-						cdt->SegList = SegList;
-						cdt->Function = BADDR(SegList) + sizeof(BPTR);  // FIXME: is this portable?
-					    }
-					}
-					else
-					{
-					    FreeVec(cdt->DTCDChunk);
-					    cdt->DTCDChunk = NULL;
-					    cdt->DTCDSize = 0;
-					}
-				    }
-				}
-			    }
-			}
-			cdt->DT.dtn_FunctionName=NULL;
-		    }
-		    
-		    if(cdt->DTH.dth_MaskLen > DTList->dtl_LongestMask)
-		    {
-			DTList->dtl_LongestMask = cdt->DTH.dth_MaskLen;
-		    }
-		    
-		    cdt->DT.dtn_Node1.ln_Pri = cdt->DTH.dth_Priority;
-		    Enqueue(typelist, &cdt->DT.dtn_Node1);
-		    
-		    AlphaInsert(sv, &DTList->dtl_SortedList, &cdt->DT.dtn_Node2);
-		}
-	    }
-	}
+                                            /* We use a cast to BPTR, since sv may not
+                                             * be ULONG aligned. Since only our ReadFunc
+                                             * is going to be looking at it, this is ok.
+                                             */
+                                            if((SegList = InternalLoadSeg((BPTR)(sv), BNULL, (LONG_FUNC *)FunctionArray, &DefaultStack)))
+                                            {
+                                                cdt->SegList = SegList;
+                                                cdt->Function = BADDR(SegList) + sizeof(BPTR);  // FIXME: is this portable?
+                                            }
+                                        }
+                                        else
+                                        {
+                                            FreeVec(cdt->DTCDChunk);
+                                            cdt->DTCDChunk = NULL;
+                                            cdt->DTCDSize = 0;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        cdt->DT.dtn_FunctionName=NULL;
+                    }
+                    
+                    if(cdt->DTH.dth_MaskLen > DTList->dtl_LongestMask)
+                    {
+                        DTList->dtl_LongestMask = cdt->DTH.dth_MaskLen;
+                    }
+                    
+                    cdt->DT.dtn_Node1.ln_Pri = cdt->DTH.dth_Priority;
+                    Enqueue(typelist, &cdt->DT.dtn_Node1);
+                    
+                    AlphaInsert(sv, &DTList->dtl_SortedList, &cdt->DT.dtn_Node2);
+                }
+            }
+        }
     }
     
     if(!Success)
     {
-	DeleteDataType(sv, cdt);
-	cdt = NULL;
+        DeleteDataType(sv, cdt);
+        cdt = NULL;
     }
     
     return cdt;
@@ -1158,36 +1158,36 @@ void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt)
 {
     if(cdt)
     {
-	if(cdt->ParsePatMem)
-	{
-	    FreeVec(cdt->ParsePatMem);
-	    cdt->ParsePatMem = NULL;
-	    cdt->ParsePatSize = 0;
-	}
-	
-	if(cdt->DTCDChunk)
-	{
-	    FreeVec(cdt->DTCDChunk);
-	    cdt->DTCDChunk = NULL;
-	    cdt->DTCDSize = 0;
-	}
-		
-	if(cdt->SegList)
-	{
-	    UnLoadSeg(cdt->SegList);
-	    cdt->SegList = BNULL;
-	    cdt->Function = NULL;
-	}
-		
-	if(cdt->DT.dtn_Node1.ln_Succ && cdt->DT.dtn_Node1.ln_Pred)
-	{
-	    Remove(&cdt->DT.dtn_Node1);
-	    Remove(&cdt->DT.dtn_Node2);
-	    cdt->DT.dtn_Node1.ln_Succ = cdt->DT.dtn_Node1.ln_Pred =
-		cdt->DT.dtn_Node2.ln_Succ = cdt->DT.dtn_Node2.ln_Pred = NULL;
-	}
+        if(cdt->ParsePatMem)
+        {
+            FreeVec(cdt->ParsePatMem);
+            cdt->ParsePatMem = NULL;
+            cdt->ParsePatSize = 0;
+        }
+        
+        if(cdt->DTCDChunk)
+        {
+            FreeVec(cdt->DTCDChunk);
+            cdt->DTCDChunk = NULL;
+            cdt->DTCDSize = 0;
+        }
+                
+        if(cdt->SegList)
+        {
+            UnLoadSeg(cdt->SegList);
+            cdt->SegList = BNULL;
+            cdt->Function = NULL;
+        }
+                
+        if(cdt->DT.dtn_Node1.ln_Succ && cdt->DT.dtn_Node1.ln_Pred)
+        {
+            Remove(&cdt->DT.dtn_Node1);
+            Remove(&cdt->DT.dtn_Node2);
+            cdt->DT.dtn_Node1.ln_Succ = cdt->DT.dtn_Node1.ln_Pred =
+                cdt->DT.dtn_Node2.ln_Succ = cdt->DT.dtn_Node2.ln_Pred = NULL;
+        }
 
-	FreeVec(cdt);
+        FreeVec(cdt);
     }
 }
 
@@ -1220,8 +1220,8 @@ void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node)
     
     for(cur = list->lh_Head; cur->ln_Succ; prev = cur, cur = cur->ln_Succ)
     {
-	if(Stricmp(cur->ln_Name, node->ln_Name) > 0)
-	    break;
+        if(Stricmp(cur->ln_Name, node->ln_Name) > 0)
+            break;
     }
 
     Insert(list, node, prev);
@@ -1251,18 +1251,18 @@ void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node)
 */
 
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
-			      STRPTR name)
+                              STRPTR name)
 {
     struct Node *node;
     struct Node *result = NULL;
     
     for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ)
     {
-	if(!Stricmp(node->ln_Name, name))
-	{
-	    result = node;
-	    break;
-	}
+        if(!Stricmp(node->ln_Name, name))
+        {
+            result = node;
+            break;
+        }
     }
 
     return result;
@@ -1292,10 +1292,10 @@ struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 */
 
 AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
-	AROS_UFHA(BPTR   , fh        , D1),
-	AROS_UFHA(void * , buffer    , D2),
-	AROS_UFHA(LONG   , length    , D3),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+        AROS_UFHA(BPTR   , fh        , D1),
+        AROS_UFHA(void * , buffer    , D2),
+        AROS_UFHA(LONG   , length    , D3),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -1304,7 +1304,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
     LONG actual = length > maxlen ? maxlen : length;
     
     CopyMem(HookBuffer+HookPosition, buffer, actual);
-	
+        
     HookPosition += actual;
     
     return actual;
@@ -1334,10 +1334,10 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
 */
 
 AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0),
-	AROS_UFHA(BPTR   , fh        , D1),
-	AROS_UFHA(LONG   , pos       , D2),
-	AROS_UFHA(LONG   , mode      , D3),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+        AROS_UFHA(BPTR   , fh        , D1),
+        AROS_UFHA(LONG   , pos       , D2),
+        AROS_UFHA(LONG   , mode      , D3),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -1352,7 +1352,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0),
     }
    
     if (pos < 0 || pos >= HookBufSize)
-    	return -1;
+        return -1;
 
     HookPosition = pos;
     
@@ -1383,9 +1383,9 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0),
 */
 
 AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0),
-	AROS_UFHA(ULONG, size, D0),
-	AROS_UFHA(ULONG, flags,D1),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+        AROS_UFHA(ULONG, size, D0),
+        AROS_UFHA(ULONG, flags,D1),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -1418,9 +1418,9 @@ AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0),
 */
 
 AROS_UFH3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
-	AROS_UFHA(APTR , memory, A1),
-	AROS_UFHA(ULONG, size  , D0),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+        AROS_UFHA(APTR , memory, A1),
+        AROS_UFHA(ULONG, size  , D0),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -1434,7 +1434,7 @@ AROS_UFH3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
 /******************************* STUB ROUTINES ********************************/
 
 struct NamedObject *allocnamedobject(struct StackVars *sv, STRPTR name,
-				     Tag FirstTag, ...)
+                                     Tag FirstTag, ...)
 {
     return AllocNamedObjectA(name, (struct TagItem*)&FirstTag);
 }
