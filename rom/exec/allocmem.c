@@ -83,8 +83,12 @@
     IPTR origSize = byteSize;
     struct TraceLocation loc = CURRENT_LOCATION("AllocMem");
 
-    D(if (SysBase->DebugAROSBase))
-    D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements);)
+    D(
+        if (SysBase->DebugAROSBase)
+        {
+            bug("Call AllocMem (%d, %08x)\n", byteSize, requirements);
+        }
+     )
 
     /* 0-sized allocation results in returning NULL (API guarantee) */
     if(!byteSize)
@@ -128,12 +132,12 @@
             process->pr_Result2 = ERROR_NO_FREE_STORE;
     }
 
-#if DEBUG
-    if (SysBase->DebugAROSBase)
-    {
-        bug("AllocMem result: 0x%p\n", res);
-    }
-#endif
+    D(
+        if (SysBase->DebugAROSBase)
+        {
+            bug("AllocMem result: 0x%p\n", res);
+        }
+     )
     return res;
     
     AROS_LIBFUNC_EXIT
