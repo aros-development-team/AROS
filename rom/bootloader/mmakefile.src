@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-bootloader-kobj: includes kernel-bootloader-includes
 #MM kernel-bootloader: includes kernel-bootloader-includes
 
-USER_CFLAGS += -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS += -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-bootloader \
