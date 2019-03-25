@@ -102,9 +102,11 @@ rom_entry.o: FORCE
 
 ext_entry.o: FORCE
 
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+#USER_CPPFLAGS += -DDEFKRN_CMDLINE="\"nomonitors sysdebug=InitCode,debugmmu,mungwall\""
+
 # Use -m68060 when compiling .S files, as we will need the
 # expanded instruction set to detect alternate CPUs
-USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 TARGET_ISA_AFLAGS := $(ISA_MC68060_FLAGS)
 
 # Sadly, we need to consume Chip RAM for the initial SS and the ROM BSS.
