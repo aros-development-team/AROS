@@ -137,6 +137,8 @@ OOP_Object *GAYLEATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         //OOP_MethodID mDispose;
 
         data->bus = bus;
+        /* Signal structure ownership */
+        data->bus->atapb_Node.ln_Succ = (struct Node *)-1;
         data->gaylebase = data->bus->port;
         data->gayleirqbase = data->bus->gayleirqbase;
         ata_CreateGayleInterrupt(data, 0);
