@@ -57,7 +57,7 @@ struct GfxBase
     BYTE  VBlank;
     BYTE  Debug;
     WORD  BeamSync;
-    WORD  system_bplcon0 ;
+    WORD  system_bplcon0;
     UBYTE SpriteReserved;
     UBYTE bytereserved;
     UWORD Flags;
