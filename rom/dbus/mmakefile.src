@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-dbus : includes
 #MM kernel-dbus-linklib : includes
 
-USER_CFLAGS := -DDBUS_API_SUBJECT_TO_CHANGE
+USER_CPPFLAGS := -DDBUS_API_SUBJECT_TO_CHANGE
 
 %build_module mmake=kernel-dbus \
   modname=dbus modtype=library \
