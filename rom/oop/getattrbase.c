@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP function OOP_GetAttrBase
@@ -84,7 +84,7 @@
                attrbase has been previously initialized, so I won't
                support this.
                
-            idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
+            idb->attrbase = ++GetOBase(OOPBase)->ob_CurrentAttrBase;
             */
             
             base = 0;

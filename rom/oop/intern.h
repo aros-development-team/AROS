@@ -2,7 +2,7 @@
 #define INTERN_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -313,7 +313,7 @@ struct IntOOPBase
     */
     
     ULONG			 ob_CurrentMethodBase;
-    ULONG			 ob_CurrentAttrBase;
+    ULONG			 ob_CurrentAttrBase; // NB: Always use pre-incrmeent when allocating.
     
     /* An array of the interface IDs used internally. */
     ULONG			 ob_InternIDs[NUM_Indexes];
