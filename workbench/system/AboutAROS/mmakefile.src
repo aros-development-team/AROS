@@ -6,8 +6,14 @@ include $(SRCDIR)/config/aros.cfg
 FILES        := main aboutaros locale
 EXEDIR       := $(AROS_SYSTEM)
 
-SVNREV       := $(shell $(SRCDIR)/scripts/repo_rev.sh $(SRCDIR))
-USER_CFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\"" -DSVNREV=\"$(SVNREV)\"
+REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(SRCDIR))
+REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(SRCDIR))
+REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(SRCDIR))
+
+USER_CPPFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+ifneq ($(REPOTYPE),)
+    USER_CPPFLAGS  += -DREPOTYPE=\"$(REPOTYPE)\" -DREPOREVISION=\"$(REPOREVISION)\" -DREPOID=\"$(REPOID)\"
+endif
 USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
 #MM- workbench-system : workbench-system-aboutaros
