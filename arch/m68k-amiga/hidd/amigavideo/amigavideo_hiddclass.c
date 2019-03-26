@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,8 +30,6 @@
 #include "chipset.h"
 #include "blitter.h"
 
-#define SDEBUG 0
-#define DEBUG 0
 #include <aros/debug.h>
 
 #define SPECIALMODES 3
@@ -47,7 +45,7 @@ VOID AmigaVideoCl__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, str
     struct amigavideo_staticdata *csd = CSD(cl);
     struct GfxBase *GfxBase = (struct GfxBase *)csd->cs_GfxBase;
 
-    DB2(bug("NominalDimensions()\n"));
+    DB2(bug("[AmigaVideo] %s()\n", __func__));
 
     if (msg->width)
         *(msg->width) = GfxBase->NormalDisplayColumns;

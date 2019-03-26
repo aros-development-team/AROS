@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,7 +15,6 @@
 #include "amigavideo_bitmap.h"
 #include "blitter.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #define ABC    0x80

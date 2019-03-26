@@ -18,7 +18,6 @@
 #include "amigavideo_bitmap.h"
 #include "chipset.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #define BPLCONMASK 0x8a55
@@ -32,8 +31,15 @@ void resetcustom(struct amigavideo_staticdata *data)
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
 
+    D(
+      bug("[AmigaVideo] %s()\n", __func__);
+      bug("[AmigaVideo] %s: GfxBase @ 0x%p\n", __func__, GfxBase);
+     )
+
     GfxBase->system_bplcon0 &= ~BPLCONMASK;
     GfxBase->system_bplcon0 |= 0x0200;
+    D(bug("[AmigaVideo] %s: bplcon0 = %04x\n", __func__, GfxBase->system_bplcon0));
+
     custom->fmode = 0x0000;
     custom->bplcon0 = GfxBase->system_bplcon0;
     custom->bplcon1 = 0x0000;
@@ -156,7 +162,7 @@ void resetmode(struct amigavideo_staticdata *data)
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
 
-    D(bug("resetmode\n"));
+    D(bug("[AmigaVideo] %s()\n", __func__));
 
     data->disp = NULL;
 
@@ -317,10 +323,15 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     UWORD bplcon0, bplcon0_res;
     ULONG pptr;
 
+    D(bug("[AmigaVideo] %s()\n", __func__));
+    D(bug("[AmigaVideo] %s: GfxBase @ 0x%p\n", __func__, GfxBase));
+    D(bug("[AmigaVideo] %s: system_bplcon0 @ 0x%p\n", __func__, system_bplcon0));
+
     c = c2d->copper2;
-    D(bug("Copperlist%d %p\n", lace ? 2 : 1, c));
+    D(bug("[AmigaVideo] %s: Copperlist%d %p\n", __func__,  lace ? 2 : 1, c));
 
     bplcon0_res = *system_bplcon0 & ~BPLCONMASK;
+    D(bug("[AmigaVideo] %s: bplcon0_res = %04x\n", __func__, bplcon0_res));
 
     if (data->res == 1)
          bplcon0_res |= 0x8000;
@@ -405,6 +416,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
         bplcon0 |= 0x0800;
 
     *system_bplcon0 = (*system_bplcon0 & ~BPLCONMASK) | bplcon0;
+    D(bug("[AmigaVideo] %s: system_bplcon0 = %04x\n", __func__, *system_bplcon0));
 
     c2d->copper2_palette = c;
     if (data->aga && data->aga_enabled) {
@@ -884,6 +896,8 @@ void initcustom(struct amigavideo_staticdata *data)
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     volatile struct CIA *ciab = (struct CIA*)0xbfd000;
 
+    D(bug("[AmigaVideo] %s()\n", __func__));
+
     /* Reset audio registers to values that help emulation
      * if some program enables audio DMA without setting period
      * or length. Very high period emulation is very CPU intensive.
@@ -893,9 +907,6 @@ void initcustom(struct amigavideo_staticdata *data)
         custom->aud[i].ac_per = 100;
         custom->aud[i].ac_len = 1000;
     }
-
-    resetcustom(data);
-    resetsprite(data);
 
     /* data->cs_OOPBase was already set up.
      * See amigavideo.conf's 'oopbase_field' config
@@ -912,6 +923,10 @@ void initcustom(struct amigavideo_staticdata *data)
         Alert(AT_DeadEnd | AN_Hidd | AG_OpenLib | AO_GraphicsLib);
     GfxBase = ((struct GfxBase *)data->cs_GfxBase);
     GfxBase->cia = OpenResource("ciab.resource");
+
+    /* Reset now we have the bases */
+    resetcustom(data);
+    resetsprite(data);
 
     data->inter.is_Code         = (APTR)gfx_vblank;
     data->inter.is_Data         = data;
