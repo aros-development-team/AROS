@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES        := main aboutaros locale
 EXEDIR       := $(AROS_SYSTEM)
 
-SVNREV       := $(shell $(SRCDIR)/scripts/svnrev.sh $(SRCDIR))
+SVNREV       := $(shell $(SRCDIR)/scripts/repo_rev.sh $(SRCDIR))
 USER_CFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\"" -DSVNREV=\"$(SVNREV)\"
 USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
