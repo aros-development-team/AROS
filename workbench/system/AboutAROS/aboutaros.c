@@ -38,7 +38,7 @@
 #include "sponsors.h"
 #include "acknowledgements.h"
 
-#define VERSION "$VER: AboutAROS 0.1 ("ADATE") ©AROS Dev Team"
+#define VERSION "$VER: AboutAROS 0.2 ("ADATE") ©AROS Dev Team"
 
 #define WINDOW_BG   ((IPTR) "2:00000000,00000000,00000000")
 #define REGISTER_BG ((IPTR) "7:V,00000000,92000000,91000000-00000000,82000000,81000000")
