@@ -313,7 +313,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 #ifdef REPOID
                     Child, (IPTR) TextObject,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) "(" REPOID ")",
+                        MUIA_Text_Contents, (IPTR) " (" REPOID ")",
                         MUIA_Weight,               0,
                     End,
 #endif
