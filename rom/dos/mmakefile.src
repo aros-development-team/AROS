@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-SVNREV        := $(shell $(SRCDIR)/scripts/svnrev.sh $(SRCDIR))
+SVNREV        := $(shell $(SRCDIR)/scripts/repo_rev.sh $(SRCDIR))
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)/dos
 USER_CPPFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\"" -DSVNREV=\"$(SVNREV)\"
 USER_LDFLAGS := -static
