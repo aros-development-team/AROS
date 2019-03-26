@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2019, The AROS Development Team. All rights reserved.
     This file is part of the About program, which is distributed under
     the terms of version 2 of the GNU General Public License.
     
@@ -298,16 +298,27 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Text_Contents, (IPTR) str_builddate,
                         MUIA_Weight,               0,
                     End,
+                    Child, (IPTR) HVSpace,
+                End,
 #ifdef REPOTYPE
+                Child, (IPTR) HGroup,
+                    InnerSpacing(0,0),
+                    GroupSpacing(0),
+
                     Child, (IPTR) TextObject,
-                        MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) "" REPOTYPE ": " REPOREVISION,
+                        MUIA_Text_Contents, (IPTR) "" REPOTYPE " ID: " REPOREVISION,
+                        MUIA_Weight,               0,
+                    End,
+#ifdef REPOID
+                    Child, (IPTR) TextObject,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_Contents, (IPTR) "(" REPOID ")",
                         MUIA_Weight,               0,
                     End,
 #endif
-                    Child, (IPTR) HVSpace,
                 End,
+#endif
                 Child, (IPTR) VSpace(4),
                 Child, (IPTR) TextObject,
                     MUIA_Text_PreParse, (IPTR) "\0333\033c",
