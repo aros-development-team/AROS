@@ -47,7 +47,7 @@ if [ "$TESTEXE" != "" ]; then
     cd $PACKAGE
     copy $SP/autotest/* S/
     #Xvfb :1
-    DISPLAY=:1 timeout $TESTTIMEOUT $TESTEXE $TESTARGS
+    DISPLAY=:1 execute timeout $TESTTIMEOUT $TESTEXE $TESTARGS
     printfile "Test_Report.txt"
 
     if [ ! -f PASSED ]; then
