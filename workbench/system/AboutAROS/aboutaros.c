@@ -298,11 +298,11 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Text_Contents, (IPTR) str_builddate,
                         MUIA_Weight,               0,
                     End,
-#ifdef SVNREV
+#ifdef REPOTYPE
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) "SVN: " SVNREV,
+                        MUIA_Text_Contents, (IPTR) "" REPOTYPE ": " REPOREVISION,
                         MUIA_Weight,               0,
                     End,
 #endif
