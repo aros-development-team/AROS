@@ -12,4 +12,4 @@ USER_LDFLAGS := -static
 
 %build_module mmake=kernel-amiga-m68k-p96gfx \
     modname=p96gfx modtype=hidd \
-    files="p96_startup p96gfx_hiddclass p96gfx_bitmapclass p96_rtg"
+    files="p96gfx_startup p96gfx_hiddclass p96gfx_bitmapclass p96gfx_card p96gfx_rtg"

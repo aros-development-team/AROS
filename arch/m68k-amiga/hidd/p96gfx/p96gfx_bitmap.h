@@ -8,7 +8,7 @@
 
 #define IID_Hidd_BitMap_P96 "hidd.bitmap.p96"
 
-#include "p96_rtg.h"
+#include "p96gfx_rtg.h"
 
 /* This structure is used as instance data for the bitmap class. */
 

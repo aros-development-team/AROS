@@ -36,7 +36,7 @@
 
 #include "p96gfx_intern.h"
 #include "p96gfx_bitmap.h"
-#include "p96_rtg.h"
+#include "p96gfx_rtg.h"
 
 /* LOCK_BITMAP_MULTI:
 
