@@ -360,9 +360,19 @@ struct ModeInfo {
 #define PSSO_BoardInfo_SyncTime			    PSSO_BoardInfo_DoubleBufferList + 4
 #define PSSO_BoardInfo_SyncPeriod		    PSSO_BoardInfo_SyncTime + 4
 #define PSSO_BoardInfo_SoftVBlankPort		    PSSO_BoardInfo_SyncPeriod + 8
-#define PSSO_BoardInfo_WaitQ		    PSSO_BoardInfo_SyncPeriod + 34
-#define PSSO_BoardInfo_AROSFlag			PSSO_BoardInfo_WaitQ + 12
+#define PSSO_BoardInfo_WaitQ		            PSSO_BoardInfo_SyncPeriod + 34
+#define PSSO_BoardInfo_AROSFlag			    PSSO_BoardInfo_WaitQ + 12
 #define PSSO_BoardInfo_SizeOf			    PSSO_BoardInfo_AROSFlag + 4
+
+#define P96BoardType_PicassoII                      6
+#define P96BoardType_Piccolo                        7
+#define P96BoardType_RetinaBLT                      8
+#define P96BoardType_PicassoIV                      10
+#define P96BoardType_PiccoloSD64                    11
+#define P96BoardType_A2410                          12
+#define P96BoardType_Pixel64                        13
+#define P96BoardType_UAEGfx                         14
+#define P96BoardType_Vampire                        25
 
 WORD getrtgdepth (ULONG rgbformat);
 ULONG getrtgformat(struct p96gfx_staticdata *csd, OOP_Object *);
