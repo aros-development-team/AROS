@@ -8297,7 +8297,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
-                x86_64_isa_extra="$x86_64_isa_extra -mno-red-zone"
+                x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_nominal_depth=8
                 gcc_target_cpu="i386"
@@ -8312,7 +8312,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
                 aros_isa_flags="$""(ISA_X8664_FLAGS)"
-                x86_64_isa_extra="$x86_64_isa_extra -mno-red-zone"
+                x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_nominal_depth=8
@@ -8433,7 +8433,7 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
-                x86_64_isa_extra="$x86_64_isa_extra -mno-red-zone"
+                x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_nominal_width=640
                 aros_nominal_height=480
@@ -8449,7 +8449,7 @@ case "$target_os" in
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
                 aros_isa_flags="$""(ISA_X8664_FLAGS)"
-                x86_64_isa_extra="$x86_64_isa_extra -mno-red-zone"
+                x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_OMIT_FP)"
                 aros_kernel_ldflags=""
