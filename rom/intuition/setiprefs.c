@@ -58,18 +58,18 @@
 
     switch (type)
     {
-	case IPREFS_TYPE_ICONTROL_V37:
+        case IPREFS_TYPE_ICONTROL_V37:
             DEBUG_SETIPREFS(bug("SetIPrefs: IP_ICONTROL_V37\n"));
             if (length > sizeof(struct IIControlPrefs))
-        	length = sizeof(struct IIControlPrefs);
+                length = sizeof(struct IIControlPrefs);
             CopyMem(data, &GetPrivIBase(IntuitionBase)->IControlPrefs, length);
 
-	    DEBUG_SETIPREFS(bug("SetIPrefs: Drag modes: 0x%04lX\n", GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0]));
+            DEBUG_SETIPREFS(bug("SetIPrefs: Drag modes: 0x%04lX\n", GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0]));
 
             break;
 
-	case IPREFS_TYPE_SCREENMODE_V37:
-	{
+        case IPREFS_TYPE_SCREENMODE_V37:
+        {
             BOOL reopen = FALSE, closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
 
             DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE_V37\n"));
@@ -79,32 +79,32 @@
             if (!GetPrivIBase(IntuitionBase)->ScreenModePrefs)
                 GetPrivIBase(IntuitionBase)->ScreenModePrefs = AllocMem(sizeof(struct IScreenModePrefs), MEMF_ANY);
 
-	    if (memcmp(GetPrivIBase(IntuitionBase)->ScreenModePrefs, data,
-	               sizeof(struct IScreenModePrefs)) == 0)
-	        break;
+            if (memcmp(GetPrivIBase(IntuitionBase)->ScreenModePrefs, data,
+                       sizeof(struct IScreenModePrefs)) == 0)
+                break;
 
-	    if (!closed)
-	    {
-	        BOOL try = TRUE;
+            if (!closed)
+            {
+                BOOL try = TRUE;
 
                 reopen = TRUE;
 
-	        UnlockIBase(lock);
+                UnlockIBase(lock);
 
-		while (try && !(closed = CloseWorkBench()))
-		{
+                while (try && !(closed = CloseWorkBench()))
+                {
                     struct EasyStruct es =
                     {
                         sizeof(struct EasyStruct),
                         0,
                         "System Request",
                         "Intuition is attempting to reset the screen,\n"
-			"please close all windows except Wanderer's ones.",
+                        "please close all windows except Wanderer's ones.",
                         "Retry|Cancel"
                     };
 
                     try = EasyRequestArgs(NULL, &es, NULL, NULL) == 1;
-		}
+                }
             }
 
             if (closed)
@@ -128,9 +128,9 @@
             }
 
             break;
-	}
+        }
 
-	case IPREFS_TYPE_POINTER_V39:
+        case IPREFS_TYPE_POINTER_V39:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER_V39\n"));
         {
             struct IPointerPrefs *fp = data;
@@ -151,42 +151,42 @@
                       &GetPrivIBase(IntuitionBase)->DefaultPointer;
 
             InstallPointer(IntuitionBase, fp->Which, oldptr, pointer);
-	    /* return -1 so that WB3.x C:IPrefs is happy */
+            /* return -1 so that WB3.x C:IPrefs is happy */
             Result = -1;
         }
         break;
 
-	case IPREFS_TYPE_POINTER_V37:
+        case IPREFS_TYPE_POINTER_V37:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER_V37\n"));
         {
-	    struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
+            struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
             struct IPointerPrefsV37 *fp = data;
             UWORD size = fp->YSize * 2;
             Object *pointer;
 
-	    if (size > POINTERSIZE)
-	    	size = POINTERSIZE;
-	    memset(ActivePrefs->PointerMatrix, 0, POINTERSIZE * sizeof (UWORD));
+            if (size > POINTERSIZE)
+                size = POINTERSIZE;
+            memset(ActivePrefs->PointerMatrix, 0, POINTERSIZE * sizeof (UWORD));
             CopyMem(fp->data, ActivePrefs->PointerMatrix, size * sizeof (UWORD));
             ActivePrefs->XOffset = fp->XOffset;
             ActivePrefs->YOffset = fp->YOffset;
 
-	    pointer = MakePointerFromPrefs(IntuitionBase, ActivePrefs);
+            pointer = MakePointerFromPrefs(IntuitionBase, ActivePrefs);
             if (pointer)
                  InstallPointer(IntuitionBase, WBP_NORMAL, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
- 	    /* return -1 so that WB2.x C:IPrefs is happy */
+            /* return -1 so that WB2.x C:IPrefs is happy */
             Result = -1;
         }
         break;
 
         case IPREFS_TYPE_PALETTE_V39:
-	case IPREFS_TYPE_PALETTE_V37:
+        case IPREFS_TYPE_PALETTE_V37:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_PALETTE_V%d %p %d\n", type == IPREFS_TYPE_PALETTE_V39 ? 39 : 37, data, length));
         {
             struct ColorSpec *pp = data;
             struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
-	    BOOL update_pointer = FALSE;
-	    struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
+            BOOL update_pointer = FALSE;
+            struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
 
             DEBUG_SETIPREFS(bug("SetIPrefs: Intuition Color32 Table 0x%p\n", p));
 
@@ -200,26 +200,26 @@
                 if (type == IPREFS_TYPE_PALETTE_V37) {
                     /* v37 cursor colors are 17 to 19 */
                     if (idx >= 17)
-                    	idx = idx - 17 + 8;
+                        idx = idx - 17 + 8;
                     else if (idx >= 8)
-                    	idx = -1;
+                        idx = -1;
                 }
                 if (idx >= 0 && idx < COLORTABLEENTRIES)
                 {
                     UWORD red, green, blue;
                     if (type == IPREFS_TYPE_PALETTE_V37) {
-                    	/* 4-bit color components */
-                    	red = (pp->Red << 4) | pp->Red;
-                    	green = (pp->Green << 4) | pp->Green;
-                    	blue = (pp->Blue << 4) | pp->Blue;
-                    	red = (red << 8) | red;
-                    	green = (green << 8) | green;
-                    	blue = (blue << 8) | blue;
+                        /* 4-bit color components */
+                        red = (pp->Red << 4) | pp->Red;
+                        green = (pp->Green << 4) | pp->Green;
+                        blue = (pp->Blue << 4) | pp->Blue;
+                        red = (red << 8) | red;
+                        green = (green << 8) | green;
+                        blue = (blue << 8) | blue;
                     } else {
-                    	/* 8-bit color components */
-                     	red = pp->Red;
-                    	green = pp->Green;
-                    	blue = pp->Blue;
+                        /* 8-bit color components */
+                        red = pp->Red;
+                        green = pp->Green;
+                        blue = pp->Blue;
                     }
                    
                     p[idx].red   = (red << 16) | red;
@@ -229,20 +229,20 @@
                     /* Update oldstyle preferences */
                     if (ActivePrefs)
                     {
-		        UWORD *cols = NULL;
-			UWORD baseindex;
-			
-			if (idx < 4) {
-			    baseindex = 0;
-			    cols = &ActivePrefs->color0;
+                        UWORD *cols = NULL;
+                        UWORD baseindex;
+                        
+                        if (idx < 4) {
+                            baseindex = 0;
+                            cols = &ActivePrefs->color0;
                         } else if (idx >= 8 && idx <= 10) {
-			    baseindex = 8;
+                            baseindex = 8;
                             cols=&ActivePrefs->color17;
-			    update_pointer = TRUE;
+                            update_pointer = TRUE;
                         }
-			
-			if (cols)
-			    cols[idx - baseindex] = ((red >> 4) & 0xf00) | ((green >> 8) & 0x0f0) | ((blue >> 12));
+                        
+                        if (cols)
+                            cols[idx - baseindex] = ((red >> 4) & 0xf00) | ((green >> 8) & 0x0f0) | ((blue >> 12));
                     }
                     DEBUG_SETIPREFS(bug("SetIPrefs: Set Color32 %ld R 0x%08lx G 0x%08lx B 0x%08lx\n",
                                 (LONG) idx,
@@ -252,15 +252,15 @@
                 }
                 pp++;
             }
-	    
-	    if (update_pointer) {
-	        DEBUG_SETIPREFS(bug("[SetIPrefs] Updating pointer colors\n"));
-	        SetPointerColors(IntuitionBase);
-	    }
+            
+            if (update_pointer) {
+                DEBUG_SETIPREFS(bug("[SetIPrefs] Updating pointer colors\n"));
+                SetPointerColors(IntuitionBase);
+            }
         }
         break;
 
-	case IPREFS_TYPE_PENS_V39:
+        case IPREFS_TYPE_PENS_V39:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_PENS_V39\n"));
         {
             struct IOldPenPrefs *fp = data;
@@ -302,16 +302,16 @@
         break;
 
 
-	case IPREFS_TYPE_POINTER_ALPHA:
-	    DEBUG_SETIPREFS(bug("[SetIPrefs]: IP_POINTER_ALPHA\n"));
-	    GetPrivIBase(IntuitionBase)->PointerAlpha = *(UWORD *)data;
-	break;
+        case IPREFS_TYPE_POINTER_ALPHA:
+            DEBUG_SETIPREFS(bug("[SetIPrefs]: IP_POINTER_ALPHA\n"));
+            GetPrivIBase(IntuitionBase)->PointerAlpha = *(UWORD *)data;
+        break;
 
-	case IPREFS_TYPE_OVERSCAN_V37:
-	    DEBUG_SETIPREFS(bug("[SetIPrefs]: IP_OVERSCAN_V37\n"));
-	break;
+        case IPREFS_TYPE_OVERSCAN_V37:
+            DEBUG_SETIPREFS(bug("[SetIPrefs]: IP_OVERSCAN_V37\n"));
+        break;
 
-	case IPREFS_TYPE_FONT_V37:
+        case IPREFS_TYPE_FONT_V37:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_FONT_V37\n"));
         {
             struct IFontPrefs *fp = data;
@@ -339,7 +339,7 @@
         }
         break;
 
-	default:
+        default:
             DEBUG_SETIPREFS(bug("SetIPrefs: Unknown Prefs Type\n"));
             Result = FALSE;
             break;
