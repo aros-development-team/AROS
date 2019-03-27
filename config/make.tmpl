@@ -1529,17 +1529,17 @@ ifeq (%(coverageinstr),yes)
 %(mmake)_COVERAGE := yes
 %(mmake)_COVERAGEFLAGS   ?= $(COVERAGEINSTR_FLAGS)
 %(mmake)_COVERAGELIBS    ?= $(COVERAGEINSTR_LIBS)
-%(mmake)_CFLAGS    := $(strip $(%(mmake)%(flavour)_COVERAGEFLAGS) $(%(mmake)_CFLAGS))
-%(mmake)_CXXFLAGS := $(strip $(%(mmake)%(flavour)_COVERAGEFLAGS) $(%(mmake)_CXXFLAGS))
-%(mmake)_LIBS += $(%(mmake)%(flavour)_COVERAGELIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_COVERAGEFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_CXXFLAGS := $(strip $(%(mmake)_COVERAGEFLAGS) $(%(mmake)_CXXFLAGS))
+%(mmake)_LIBS += $(%(mmake)_COVERAGELIBS)
 endif
 ifeq (%(funcinstr),yes)
 %(mmake)_FUNCINSTR := yes
 %(mmake)_INSTRFUNCFLAGS   ?= $(FUNCINSTR_FLAGS)
 %(mmake)_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
-%(mmake)_CFLAGS    := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)_CFLAGS))
-%(mmake)_CXXFLAGS := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)_CXXFLAGS))
-%(mmake)_LIBS += $(%(mmake)%(flavour)_INSTRFUNCLIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_INSTRFUNCFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_CXXFLAGS := $(strip $(%(mmake)_INSTRFUNCFLAGS) $(%(mmake)_CXXFLAGS))
+%(mmake)_LIBS += $(%(mmake)_INSTRFUNCLIBS)
 endif
 endif
 ifeq (%(lto),yes)
@@ -1644,15 +1644,15 @@ ifeq (%(coverageinstr),yes)
 %(mmake)_COVERAGE := yes
 %(mmake)_COVERAGEFLAGS   ?= $(COVERAGEINSTR_FLAGS)
 %(mmake)_COVERAGELIBS    ?= $(COVERAGEINSTR_LIBS)
-%(mmake)_CFLAGS    := $(strip $(%(mmake)%(flavour)_COVERAGEFLAGS) $(%(mmake)_CFLAGS))
-%(mmake)_LIBS += $(%(mmake)%(flavour)_COVERAGELIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_COVERAGEFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_LIBS += $(%(mmake)_COVERAGELIBS)
 endif
 ifeq (%(funcinstr),yes)
 %(mmake)_FUNCINSTR := yes
 %(mmake)_INSTRFUNCFLAGS   ?= $(FUNCINSTR_FLAGS)
 %(mmake)_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
-%(mmake)_CFLAGS    := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)_CFLAGS))
-%(mmake)_LIBS += $(%(mmake)%(flavour)_INSTRFUNCLIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_INSTRFUNCFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_LIBS += $(%(mmake)_INSTRFUNCLIBS)
 endif
 endif
 ifeq (%(lto),yes)
