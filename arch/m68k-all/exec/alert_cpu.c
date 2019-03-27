@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context parsing routines.
@@ -36,7 +36,7 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
                    "A0: %08lx %08lx %08lx %08lx\n"
                    "A4: %08lx %08lx %08lx %08lx\n"
                    "SR:     %04x\n"
-                   "PC: %08lx", (RAWARG)ctx, dest, buffer);
+                   "PC: %08lx\n", (RAWARG)ctx, dest, buffer);
     buf = buffer + strlen(buffer);
 
     segSem = (struct SegSem *)FindSemaphore(SEG_SEM);
@@ -52,7 +52,7 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
                AROS_UFCA(ULONG, ctx->pc, A0),
                AROS_UFCA(ULONG*, &SegList, A1),
                AROS_UFCA(ULONG*, &SegList, A2));
-            buf = NewRawDoFmt("\nSegTracker: %s\nHunk %ld, Offset $%08lx, SegList $%08lx\n", dest, buf, name, SegNum, SegOffset, SegList);
+            buf = NewRawDoFmt("SegTracker: %s\nHunk %ld, Offset $%08lx, SegList $%08lx\n", dest, buf, name, SegNum, SegOffset, SegList);
         }
         Permit();
     }
