@@ -1,4 +1,4 @@
-# Copyright © 2003, 2012, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -6,9 +6,10 @@ include $(SRCDIR)/config/aros.cfg
 FILES        := main aboutaros locale
 EXEDIR       := $(AROS_SYSTEM)
 
-REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(SRCDIR))
-REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(SRCDIR))
-REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(SRCDIR))
+REPODIR      ?= $(SRCDIR)
+REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(REPODIR))
+REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(REPODIR))
+REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(REPODIR))
 
 USER_CPPFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 ifneq ($(REPOTYPE),)
