@@ -730,11 +730,18 @@ aros_warnflags_restrict
 aros_warnflags_all
 aros_nowarnflags_error
 aros_warnflags_error
+aros_cflags_no_ms_bitfields
+aros_cflags_ms_bitfields
 aros_cflags_no_red_zone
+aros_cflags_red_zone
 aros_cflags_iquote_end
 aros_cflags_iquote
 aros_cflags_isystem_end
 aros_cflags_isystem
+aros_cflags_no_omit_frame_pointer
+aros_cflags_omit_frame_pointer
+aros_cflags_no_asynchronous_unwind_tables
+aros_cflags_asynchronous_unwind_tables
 aros_cflags_no_builtin_vsnprintf
 aros_cflags_no_builtin_floor
 aros_cflags_no_builtin
@@ -2010,7 +2017,7 @@ srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
 
 NOLINKFLAGS="-nostdlib -nostartfiles"
- LDFLAGS=$NOLINKFLAGS
+LDFLAGS=$NOLINKFLAGS
 # The first step is to find the binaries.
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -2823,9 +2830,8 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some features:
+# C/ObjC
 #  -fexceptions
-#  -fpermissive
-#  -frtti
 #  -ffast-math
 #  -flto
 #  -fwhole-program
@@ -2846,6 +2852,13 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fno-builtin
 #  -fno-builtin-floor
 #  -fno-builtin-vsnprintf
+
+#  -fasynchronous-unwind-tables
+#  -fomit-frame-pointer
+
+# C++/ObjC++
+#  -fpermissive
+#  -frtti
 
 # C features first
 ac_ext=c
@@ -3387,6 +3400,60 @@ if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fasynchronous-unwind-tables" >&5
+$as_echo_n "checking whether ${CC} accepts -fasynchronous-unwind-tables... " >&6; }
+CFLAGS=-fasynchronous-unwind-tables
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_asynchronous_unwind_tables="yes"
+else
+  aros_asynchronous_unwind_tables="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_asynchronous_unwind_tables" >&5
+$as_echo "$aros_asynchronous_unwind_tables" >&6; }
+if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
+    aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
+    aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fomit-frame-pointer" >&5
+$as_echo_n "checking whether ${CC} accepts -fomit-frame-pointer... " >&6; }
+CFLAGS=-fomit-frame-pointer
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_omit_frame_pointer="yes"
+else
+  aros_omit_frame_pointer="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_omit_frame_pointer" >&5
+$as_echo "$aros_omit_frame_pointer" >&6; }
+if test "x-$aros_omit_frame_pointer" = "x-yes" ; then
+    aros_cflags_omit_frame_pointer=-fomit-frame-pointer
+    aros_cflags_no_omit_frame_pointer=-fno-omit-frame-pointer
+fi
+
 # C++ features
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -3788,9 +3855,9 @@ fi
 # Check if the target compiler supports some ISA options:
 #  -mno-red-zone
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -mno-red-zone" >&5
-$as_echo_n "checking whether ${CC} accepts -mno-red-zone... " >&6; }
-CFLAGS=-mno-red-zone
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -mred-zone" >&5
+$as_echo_n "checking whether ${CC} accepts -mred-zone... " >&6; }
+CFLAGS=-mred-zone
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3811,8 +3878,37 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_red_zone" >&5
 $as_echo "$aros_no_red_zone" >&6; }
 if test "x-$aros_no_red_zone" = "x-yes" ; then
+    aros_cflags_red_zone=-mred-zone
     aros_cflags_no_red_zone=-mno-red-zone
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -mms-bitfields" >&5
+$as_echo_n "checking whether ${CC} accepts -mms-bitfields... " >&6; }
+CFLAGS=-mms-bitfields
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_ms_bitfields="yes"
+else
+  aros_ms_bitfields="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_ms_bitfields" >&5
+$as_echo "$aros_ms_bitfields" >&6; }
+if test "x-$aros_ms_bitfields" = "x-yes" ; then
+    aros_cflags_ms_bitfields=-mms-bitfields
+    aros_cflags_no_ms_bitfields=-mno-ms-bitfields
+fi
+
 CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
@@ -5998,6 +6094,11 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 
 
+
+
+
+
+
 #
 
 
@@ -6007,6 +6108,9 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature options...
 #
+
+
+
 
 
 #

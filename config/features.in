@@ -18,7 +18,7 @@ srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
 SRCDIR=${srcpwd}
 
 NOLINKFLAGS="-nostdlib -nostartfiles"
- LDFLAGS=$NOLINKFLAGS
+LDFLAGS=$NOLINKFLAGS
 # The first step is to find the binaries.
 AC_PROG_CC
 
@@ -34,9 +34,8 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #-----------------------------------------------------------------------------
 
 # Check if the target compiler supports some features:
+# C/ObjC
 #  -fexceptions
-#  -fpermissive
-#  -frtti
 #  -ffast-math
 #  -flto
 #  -fwhole-program
@@ -57,6 +56,12 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fno-builtin
 #  -fno-builtin-floor
 #  -fno-builtin-vsnprintf
+
+#  -fasynchronous-unwind-tables
+
+# C++/ObjC++
+#  -fpermissive
+#  -frtti
 
 # C features first 
 AC_LANG_PUSH(C)
@@ -232,6 +237,15 @@ if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -fasynchronous-unwind-tables])
+CFLAGS=-fasynchronous-unwind-tables
+AC_TRY_COMPILE(,, aros_asynchronous_unwind_tables="yes", aros_asynchronous_unwind_tables="no")
+AC_MSG_RESULT($aros_asynchronous_unwind_tables)
+if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
+    aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
+    aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
 # C++ features
 AC_LANG_PUSH(C++)
 save_cxxflags="$CXXFLAGS"
@@ -293,13 +307,24 @@ fi
 # Check if the target compiler supports some ISA options:
 #  -mno-red-zone
 
-AC_MSG_CHECKING([whether ${CC} accepts -mno-red-zone])
-CFLAGS=-mno-red-zone
+AC_MSG_CHECKING([whether ${CC} accepts -mred-zone])
+CFLAGS=-mred-zone
 AC_TRY_COMPILE(,, aros_no_red_zone="yes", aros_no_red_zone="no")
 AC_MSG_RESULT($aros_no_red_zone)
 if test "x-$aros_no_red_zone" = "x-yes" ; then
+    aros_cflags_red_zone=-mred-zone
     aros_cflags_no_red_zone=-mno-red-zone
 fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -mms-bitfields])
+CFLAGS=-mms-bitfields
+AC_TRY_COMPILE(,, aros_ms_bitfields="yes", aros_ms_bitfields="no")
+AC_MSG_RESULT($aros_ms_bitfields)
+if test "x-$aros_ms_bitfields" = "x-yes" ; then
+    aros_cflags_ms_bitfields=-mms-bitfields
+    aros_cflags_no_ms_bitfields=-mno-ms-bitfields
+fi
+
 CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
@@ -1141,6 +1166,9 @@ AC_SUBST(aros_cflags_no_builtin)
 AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_no_builtin_vsnprintf)
 
+AC_SUBST(aros_cflags_asynchronous_unwind_tables)
+AC_SUBST(aros_cflags_no_asynchronous_unwind_tables)
+
 #
 AC_SUBST(aros_cflags_isystem)
 AC_SUBST(aros_cflags_isystem_end)
@@ -1150,7 +1178,10 @@ AC_SUBST(aros_cflags_iquote_end)
 #
 # export the feature options...
 #
+AC_SUBST(aros_cflags_red_zone)
 AC_SUBST(aros_cflags_no_red_zone)
+AC_SUBST(aros_cflags_ms_bitfields)
+AC_SUBST(aros_cflags_no_ms_bitfields)
 
 #
 # ...and warning flags...
