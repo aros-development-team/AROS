@@ -36,6 +36,9 @@ struct RTGMode
 
 struct p96gfx_staticdata
 {
+	char							*p96gfx_HWName;
+	char							*p96gfx_HWResTmplt;
+
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
     OOP_Class 	    	    *gfxclass;
     OOP_Class 	    	    *bmclass;
