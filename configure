@@ -7562,7 +7562,7 @@ aros_isa_flags=
 aros_config_cppflags=
 aros_config_cflags=
 aros_config_cxxflags=
-aros_config_aflags="-Wall -x assembler-with-cpp -c"
+aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
 aros_config_ldflags=""
 
 aros_shared_default=yes
@@ -7967,11 +7967,11 @@ else
 fi
 
 if test "$paranoia_flags" = "no"; then
-        paranoia_flags="-Wall -Werror-implicit-function-declaration"
+        paranoia_flags="$""(WARN_ALL) -Werror-implicit-function-declaration"
         msg_result="none"
 else
     if test "$paranoia_flags" = "yes"; then
-        paranoia_flags="-Wall -Werror"
+        paranoia_flags="$""(WARN_ALL) $""(WARN_ERROR)"
     fi
     msg_result="$paranoia_flags"
 fi
