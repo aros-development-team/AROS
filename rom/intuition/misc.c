@@ -25,7 +25,7 @@ void MySetPointerPos(struct IntuitionBase *IntuitionBase)
     Object *mon = _intuitionBase->ActiveMonitor;
 
     if (mon)
-	DoMethod(mon, MM_SetPointerPos, IntuitionBase->MouseX, IntuitionBase->MouseY);
+        DoMethod(mon, MM_SetPointerPos, IntuitionBase->MouseX, IntuitionBase->MouseY);
 }
 
 BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
@@ -37,19 +37,19 @@ BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
     BOOL res = TRUE;
 
     if (obj)
-	GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pointer);
+        GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pointer);
     D(bug("[ResetPointer] Default pointer is 0x%p\n", pointer));
     if (!pointer)
-	return TRUE;
+        return TRUE;
 
     ObtainSemaphoreShared(&_intuitionBase->MonitorListSem);
 
     ForeachNode(&_intuitionBase->MonitorList, mon) {
-	if (!FindFirstScreen(mon, IntuitionBase)) {
-	    D(bug("[ResetPointer] Setting default pointer for monitor 0x%p\n", mon));
-	    if (!DoMethod(mon, MM_SetPointerShape, pointer))
-		res = FALSE;
-	}
+        if (!FindFirstScreen(mon, IntuitionBase)) {
+            D(bug("[ResetPointer] Setting default pointer for monitor 0x%p\n", mon));
+            if (!DoMethod(mon, MM_SetPointerShape, pointer))
+                res = FALSE;
+        }
     }
 
     ReleaseSemaphore(&_intuitionBase->MonitorListSem);
@@ -66,45 +66,45 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
     D(bug("ActivateMonitor(0x%p), old monitor 0x%p\n", newmonitor, oldmonitor));
     /* Do not bother if switching to the same monitor */
     if (newmonitor == oldmonitor)
-	return;
+        return;
 
     if (oldmonitor)
-	SetAttrs(oldmonitor, MA_PointerVisible, FALSE, TAG_DONE);
+        SetAttrs(oldmonitor, MA_PointerVisible, FALSE, TAG_DONE);
 
     _intuitionBase->ActiveMonitor = newmonitor;
     if (newmonitor) {
-	struct Screen *scr = FindFirstScreen(newmonitor, IntuitionBase);
-	UWORD DWidth, DHeight;
+        struct Screen *scr = FindFirstScreen(newmonitor, IntuitionBase);
+        UWORD DWidth, DHeight;
 
-	if (x == -1)
-	    x = IntuitionBase->MouseX;
-	if (y == -1)
-	    y = IntuitionBase->MouseY;
+        if (x == -1)
+            x = IntuitionBase->MouseX;
+        if (y == -1)
+            y = IntuitionBase->MouseY;
 
-	/* A crude copy from inputhandler.c. We should really handle this in monitorclass */
-	if (scr)
-	{
-	    DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
-	    DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
-	}
-	else
-	{
-	    /* If there's no active screen, we take 160x160 as a limit */
-	    DWidth = 159;
-	    DHeight = 159;
-	}
-	if (x > DWidth)
-	    x = DWidth;
-	if (y > DHeight)
-	    y = DHeight;
+        /* A crude copy from inputhandler.c. We should really handle this in monitorclass */
+        if (scr)
+        {
+            DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
+            DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+        }
+        else
+        {
+            /* If there's no active screen, we take 160x160 as a limit */
+            DWidth = 159;
+            DHeight = 159;
+        }
+        if (x > DWidth)
+            x = DWidth;
+        if (y > DHeight)
+            y = DHeight;
 
-	D(bug("[ActivateMonitor] Mouse pointer coordinates: (%d, %d)\n", x, y));
-	IntuitionBase->MouseX = x;
-	IntuitionBase->MouseY = y;
+        D(bug("[ActivateMonitor] Mouse pointer coordinates: (%d, %d)\n", x, y));
+        IntuitionBase->MouseX = x;
+        IntuitionBase->MouseY = y;
 
-	SetAttrs(newmonitor, MA_PointerVisible, TRUE, TAG_DONE);
-	MySetPointerPos(IntuitionBase);
-	notify_mousemove_screensandwindows(IntuitionBase);
+        SetAttrs(newmonitor, MA_PointerVisible, TRUE, TAG_DONE);
+        MySetPointerPos(IntuitionBase);
+        notify_mousemove_screensandwindows(IntuitionBase);
     }
     D(bug("[ActivateMonitor] Done\n"));
 }
@@ -114,8 +114,8 @@ struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionB
     struct Screen *scr;
 
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
-	if (GetPrivScreen(scr)->IMonitorNode == monitor)
-	    break;
+        if (GetPrivScreen(scr)->IMonitorNode == monitor)
+            break;
     }
     return scr;
 }
@@ -154,8 +154,8 @@ void MyFreeRastPort(struct IntuitionBase *IntuitionBase, struct RastPort *rp)
 {
     if (rp->RP_Extra)
     {
-    	/* Just in case... What if someone plays with ClipRects? */
-    	FreeVec(rp->RP_Extra);
+        /* Just in case... What if someone plays with ClipRects? */
+        FreeVec(rp->RP_Extra);
     }
 
     FreeMem(rp, sizeof(*rp));
@@ -179,11 +179,11 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
     if (layer->front)
     {
         struct Layer *lay;
-	
+        
         for (lay = layer->front; lay; lay = lay->front)
         {
             struct Window *lwin = lay->Window;
-	    
+            
             if (lwin && win)
             {
                 if (lwin->LeftEdge > win->LeftEdge + win->Width - 1) continue;
@@ -194,7 +194,7 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
             }
         }
         return NULL;
-	
+        
     } else return NULL;
 }
 
@@ -247,9 +247,9 @@ Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
         {POINTERA_BitMap      , (IPTR)source},
         {POINTERA_XOffset     , xOffset      },
         {POINTERA_YOffset     , yOffset      },
-	{SPRITEA_OldDataFormat, TRUE	     },
-	{SPRITEA_Width	      , width	     },
-	{SPRITEA_OutputHeight , height	     },
+        {SPRITEA_OldDataFormat, TRUE	     },
+        {SPRITEA_Width	      , width	     },
+        {SPRITEA_OutputHeight , height	     },
         {TAG_DONE                            }
     };
 
@@ -308,7 +308,7 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
     *old = pointer;
     /* Set new normal pointer image on all empty displays */
     if (which == WBP_NORMAL)
-	ResetPointer(IntuitionBase);
+        ResetPointer(IntuitionBase);
     /* Dispose old pointer only after setting new one */
     DisposeObject(oldobject);
 
@@ -334,15 +334,15 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase)
 #ifndef ALWAYS_ALLOCATE_SPRITE_COLORS
         if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) < 9)
 #endif
-	{
-	    UWORD firstcol = scr->ViewPort.ColorMap->SpriteBase_Even;
-	    
-	    /* Translate bank number and offset to color number - see graphics/getcolormap.c */
-	    firstcol = (firstcol << 4) | (firstcol >> 8);
+        {
+            UWORD firstcol = scr->ViewPort.ColorMap->SpriteBase_Even;
+            
+            /* Translate bank number and offset to color number - see graphics/getcolormap.c */
+            firstcol = (firstcol << 4) | (firstcol >> 8);
             for (k = 1; k < 4; ++k, ++p) {
-	        DEBUG_POINTER(dprintf("Color %u: R %08lx G %08lx B %08lx\n", p[k+7].red, p[k+7].green, p[k+7].blue);)
-		SetRGB32(&scr->ViewPort, k + firstcol, p[k+7].red, p[k+7].green, p[k+7].blue);
-	    }
+                DEBUG_POINTER(dprintf("Color %u: R %08lx G %08lx B %08lx\n", p[k+7].red, p[k+7].green, p[k+7].blue);)
+                SetRGB32(&scr->ViewPort, k + firstcol, p[k+7].red, p[k+7].green, p[k+7].blue);
+            }
         }
     }
 
