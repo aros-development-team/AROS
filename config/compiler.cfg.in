@@ -55,9 +55,13 @@ CFLAGS_INSTR_FUNCTIONS                  := @aros_cflags_instrfuncs@
 CFLAGS_NO_INSTR_FUNCTIONS               := @aros_cflags_noinstrfuncs@
 
 #Builtins
+CFLAGS_BUILTIN                          := @aros_cflags_builtin@
 CFLAGS_NO_BUILTIN                       := @aros_cflags_no_builtin@
 CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
 CFLAGS_NO_BUILTIN_VSNPRINTF             := @aros_cflags_no_builtin_vsnprintf@
+
+CFLAGS_FREESTANDING                     := @aros_cflags_freestanding@
+CFLAGS_NO_FREESTANDING                  := @aros_cflags_no_freestanding@
 
 CFLAGS_ASYNCHRONOUS_UNWIND_TABLES       := @aros_cflags_asynchronous_unwind_tables@
 CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES    := @aros_cflags_no_asynchronous_unwind_tables@

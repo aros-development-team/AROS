@@ -738,13 +738,14 @@ aros_cflags_iquote_end
 aros_cflags_iquote
 aros_cflags_isystem_end
 aros_cflags_isystem
-aros_cflags_no_omit_frame_pointer
-aros_cflags_omit_frame_pointer
 aros_cflags_no_asynchronous_unwind_tables
 aros_cflags_asynchronous_unwind_tables
+aros_cflags_no_freestanding
+aros_cflags_freestanding
 aros_cflags_no_builtin_vsnprintf
 aros_cflags_no_builtin_floor
 aros_cflags_no_builtin
+aros_cflags_builtin
 aros_cflags_noalignednew
 aros_cflags_alignednew
 aros_cflags_noinstrfuncs
@@ -2853,8 +2854,8 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fno-builtin-floor
 #  -fno-builtin-vsnprintf
 
+#  -ffreestanding
 #  -fasynchronous-unwind-tables
-#  -fomit-frame-pointer
 
 # C++/ObjC++
 #  -fpermissive
@@ -3322,9 +3323,9 @@ if test "x-$aros_aligned_new" = "x-yes" ; then
     aros_cflags_noalignednew=-fno-aligned-new
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin" >&5
-$as_echo_n "checking whether ${CC} accepts -fno-builtin... " >&6; }
-CFLAGS=-fno-builtin
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fbuiltin" >&5
+$as_echo_n "checking whether ${CC} accepts -fbuiltin... " >&6; }
+CFLAGS=-fbuiltin
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3337,14 +3338,15 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  aros_no_builtin="yes"
+  aros_builtin="yes"
 else
-  aros_no_builtin="no"
+  aros_builtin="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_builtin" >&5
-$as_echo "$aros_no_builtin" >&6; }
-if test "x-$aros_no_builtin" = "x-yes" ; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin" >&5
+$as_echo "$aros_builtin" >&6; }
+if test "x-$aros_builtin" = "x-yes" ; then
+    aros_cflags_builtin=-fbuiltin
     aros_cflags_no_builtin=-fno-builtin
 fi
 
@@ -3400,6 +3402,33 @@ if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffreestanding" >&5
+$as_echo_n "checking whether ${CC} accepts -ffreestanding... " >&6; }
+CFLAGS=-ffreestanding
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_freestanding="yes"
+else
+  aros_freestanding="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_freestanding" >&5
+$as_echo "$aros_freestanding" >&6; }
+if test "x-$aros_freestanding" = "x-yes" ; then
+    aros_cflags_freestanding=-ffreestanding
+    aros_cflags_no_freestanding=-fno-freestanding
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fasynchronous-unwind-tables" >&5
 $as_echo_n "checking whether ${CC} accepts -fasynchronous-unwind-tables... " >&6; }
 CFLAGS=-fasynchronous-unwind-tables
@@ -3425,33 +3454,6 @@ $as_echo "$aros_asynchronous_unwind_tables" >&6; }
 if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
     aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
     aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fomit-frame-pointer" >&5
-$as_echo_n "checking whether ${CC} accepts -fomit-frame-pointer... " >&6; }
-CFLAGS=-fomit-frame-pointer
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  aros_omit_frame_pointer="yes"
-else
-  aros_omit_frame_pointer="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_omit_frame_pointer" >&5
-$as_echo "$aros_omit_frame_pointer" >&6; }
-if test "x-$aros_omit_frame_pointer" = "x-yes" ; then
-    aros_cflags_omit_frame_pointer=-fomit-frame-pointer
-    aros_cflags_no_omit_frame_pointer=-fno-omit-frame-pointer
 fi
 
 # C++ features
@@ -6050,6 +6052,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
+
 
 
 
