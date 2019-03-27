@@ -2,9 +2,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(SRCDIR))
-REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(SRCDIR))
-REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(SRCDIR))
+REPODIR      ?= $(SRCDIR)
+REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(REPODIR))
+REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(REPODIR))
+REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(REPODIR))
 
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)/dos
 USER_CPPFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\""
