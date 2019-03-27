@@ -57,6 +57,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fno-builtin-floor
 #  -fno-builtin-vsnprintf
 
+#  -ffreestanding
 #  -fasynchronous-unwind-tables
 
 # C++/ObjC++
@@ -213,11 +214,12 @@ if test "x-$aros_aligned_new" = "x-yes" ; then
     aros_cflags_noalignednew=-fno-aligned-new
 fi
 
-AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin])
-CFLAGS=-fno-builtin
-AC_TRY_COMPILE(,, aros_no_builtin="yes", aros_no_builtin="no")
-AC_MSG_RESULT($aros_no_builtin)
-if test "x-$aros_no_builtin" = "x-yes" ; then
+AC_MSG_CHECKING([whether ${CC} accepts -fbuiltin])
+CFLAGS=-fbuiltin
+AC_TRY_COMPILE(,, aros_builtin="yes", aros_builtin="no")
+AC_MSG_RESULT($aros_builtin)
+if test "x-$aros_builtin" = "x-yes" ; then
+    aros_cflags_builtin=-fbuiltin
     aros_cflags_no_builtin=-fno-builtin
 fi
 
@@ -235,6 +237,15 @@ AC_TRY_COMPILE(,, aros_no_builtin_vsnprintf="yes", aros_no_builtin_vsnprintf="no
 AC_MSG_RESULT($aros_no_builtin_vsnprintf)
 if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffreestanding])
+CFLAGS=-ffreestanding
+AC_TRY_COMPILE(,, aros_freestanding="yes", aros_freestanding="no")
+AC_MSG_RESULT($aros_freestanding)
+if test "x-$aros_freestanding" = "x-yes" ; then
+    aros_cflags_freestanding=-ffreestanding
+    aros_cflags_no_freestanding=-fno-freestanding
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fasynchronous-unwind-tables])
@@ -1158,13 +1169,17 @@ AC_SUBST(aros_cflags_notestcoverage)
 
 AC_SUBST(aros_cflags_instrfuncs)
 AC_SUBST(aros_cflags_noinstrfuncs)
-    
+
 AC_SUBST(aros_cflags_alignednew)
 AC_SUBST(aros_cflags_noalignednew)
-    
+
+AC_SUBST(aros_cflags_builtin)
 AC_SUBST(aros_cflags_no_builtin)
 AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_no_builtin_vsnprintf)
+
+AC_SUBST(aros_cflags_freestanding)
+AC_SUBST(aros_cflags_no_freestanding)
 
 AC_SUBST(aros_cflags_asynchronous_unwind_tables)
 AC_SUBST(aros_cflags_no_asynchronous_unwind_tables)

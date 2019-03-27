@@ -68,7 +68,7 @@ DEBUG_CPPFLAGS                := @aros_debug_cppflags@
 DEBUG_AFLAGS                  := @aros_debug_aflags@
 DEBUG_LDFLAGS                 := @aros_debug_ldflags@
 OPTIMIZATION_CFLAGS           := @aros_optimization_cflags@
-@aros_isa_extra@ISA_FLAGS                     := @aros_isa_flags@
+@aros_isa_extra@ISA_FLAGS                     = @aros_isa_flags@
 
 TARGET_ISA_CFLAGS             = $(ISA_FLAGS)
 TARGET_ISA_CXXFLAGS           = $(ISA_FLAGS)
