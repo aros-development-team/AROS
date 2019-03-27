@@ -19,11 +19,11 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 {
     struct Color32 *q = GetPrivIBase(IntuitionBase)->Colors;
     UBYTE i;
-	    
+            
     for (i = 0; i < cnt; i++) {
         q[i + first].red   = ((p[i] >> 8) & 0x0F) * 0x11111111;
-	q[i + first].green = ((p[i] >> 4) & 0x0F) * 0x11111111;
-	q[i + first].blue  = (p[i] & 0x0F) * 0x11111111;
+        q[i + first].green = ((p[i] >> 4) & 0x0F) * 0x11111111;
+        q[i + first].blue  = (p[i] & 0x0F) * 0x11111111;
     }
 }
 
@@ -81,7 +81,7 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
             if (memcmp(&prefbuffer->PointerMatrix,&GetPrivIBase(IntuitionBase)->ActivePreferences.PointerMatrix,POINTERSIZE) != 0)
                 changepointer = TRUE;
         }
-	
+        
         if (size > offsetof(struct Preferences, color17))
         {
             if (memcmp(&prefbuffer->color17, &GetPrivIBase(IntuitionBase)->ActivePreferences.color17, sizeof(UWORD) * 3) != 0)
@@ -108,18 +108,18 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 
             if (size > offsetof(struct Preferences, KeyRptDelay))
             {
-    	    #ifdef __MORPHOS__
+            #ifdef __MORPHOS__
                 /* No need to setup a reply port, this command is guaranteed to support
                  * quick I/O.
                  */
-    	    #else
+            #else
                 struct MsgPort *port = CreateMsgPort();
 
                 if (port)
                 {
                     req.tr_node.io_Message.mn_ReplyPort = port;
 
-    	    #endif
+            #endif
                     DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptDelay %ld secs micros %ld\n",
                                            GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay.tv_secs,
                                            GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay.tv_micro));
@@ -129,26 +129,26 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
                     req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay;
                     DoIO(&req.tr_node);
 
-    	    #ifndef __MORPHOS__
+            #ifndef __MORPHOS__
                     DeleteMsgPort(port);
                 }
-    	    #endif
+            #endif
             }
     
             if (size > offsetof(struct Preferences, KeyRptSpeed))
             {
-    	    #ifdef __MORPHOS__
+            #ifdef __MORPHOS__
                 /* No need to setup a reply port, this command is guaranteed to support
                  * quick I/O.
                  * TODO: Implement the same for AROS, useful.
                  */
-    	    #else
+            #else
                 struct MsgPort *port = CreateMsgPort();
     
                 if (port)
                 {
                     req.tr_node.io_Message.mn_ReplyPort = port;
-    	    #endif
+            #endif
 
                 DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptSpeed secs %ld micros %ld\n",
                                        GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed.tv_secs,
@@ -160,10 +160,10 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
                 req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed;
                 DoIO(&req.tr_node);
     
-    	    #ifndef __MORPHOS__
+            #ifndef __MORPHOS__
                 DeleteMsgPort(port);
                 }
-    	    #endif
+            #endif
             }
         } 
         else 
@@ -174,16 +174,16 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
         if (changepointer)
         {
             Object *pointer;
-	    
-	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences.color17, 8, 3, IntuitionBase);
-	    pointer = MakePointerFromPrefs(IntuitionBase, &GetPrivIBase(IntuitionBase)->ActivePreferences);
+            
+            SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences.color17, 8, 3, IntuitionBase);
+            pointer = MakePointerFromPrefs(IntuitionBase, &GetPrivIBase(IntuitionBase)->ActivePreferences);
             if (pointer)
             {
                 InstallPointer(IntuitionBase, WBP_NORMAL, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
             }
         }
         if (size > offsetof(struct Preferences, color3))
-	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences.color0, 0, 4, IntuitionBase);
+            SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences.color0, 0, 4, IntuitionBase);
 
         /*
         ** If inform == TRUE then notify all windows that want to know about
