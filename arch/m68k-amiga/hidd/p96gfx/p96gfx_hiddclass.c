@@ -32,7 +32,7 @@
 
 #include "p96gfx_intern.h"
 #include "p96gfx_bitmap.h"
-#include "p96_rtg.h"
+#include "p96gfx_rtg.h"
 
 #define SDEBUG 0
 #define DEBUG 0
