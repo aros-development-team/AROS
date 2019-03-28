@@ -366,7 +366,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                 case aoHidd_BitMap_Focus:
                     {
                         ULONG boardType = gl(csd->boardinfo + PSSO_BoardInfo_BoardType);
-                        bug("[P96Gfx:Bitmap] %s: aoHidd_BitMap_Focus\n", __func__);
+                        DB2(bug("[P96Gfx:Bitmap] %s: aoHidd_BitMap_Focus\n", __func__);)
                         if (boardType == P96BoardType_Vampire)
                         {
                             volatile struct Custom *custom = (struct Custom*)0xdff000;
