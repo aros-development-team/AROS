@@ -25,6 +25,8 @@
 #include <hidd/gfx.h>
 #include <aros/symbolsets.h>
 
+#include <hardware/custom.h>
+
 #define DEBUG 0
 #define DB2(x)
 #define DEBUG_TEXT(x)
@@ -361,6 +363,19 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
             DB2(bug("[P96Gfx:Bitmap] %s: BitMap Attr ->%d\n", __func__, idx));
             switch(idx)
             {
+                case aoHidd_BitMap_Focus:
+                    {
+                        ULONG boardType = gl(csd->boardinfo + PSSO_BoardInfo_BoardType);
+                        bug("[P96Gfx:Bitmap] %s: aoHidd_BitMap_Focus\n", __func__);
+                        if (boardType == P96BoardType_Vampire)
+                        {
+                            volatile struct Custom *custom = (struct Custom*)0xdff000;
+                            /* Tell the Vampire SAGA chipset we are visible */
+                            custom->bplcon0 |= 0x80;
+                        }
+                    }
+                    break;
+
                 case aoHidd_BitMap_Visible:
                 LOCK_MULTI_BITMAP
                 LOCK_BITMAP(data)
