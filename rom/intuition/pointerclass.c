@@ -189,25 +189,24 @@ IPTR PointerClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
     case POINTERA_SharedPointer:
+        D(kprintf("[Pointer] %s: current extSprite 0x%lx\n", __func__, data->shared_pointer->sprite));
         *msg->opg_Storage = (IPTR)data->shared_pointer;
         break;
 
     case POINTERA_XOffset:
+        D(kprintf("[Pointer] %s: current XOffset %ld\n", __func__, data->shared_pointer->xoffset));
         *msg->opg_Storage = data->shared_pointer->xoffset;
         break;
 
     case POINTERA_YOffset:
+        D(kprintf("[Pointer] %s: current YOffset %ld\n", __func__, data->shared_pointer->yoffset));
         *msg->opg_Storage = data->shared_pointer->yoffset;
         break;
 
     default:
         return DoSuperMethodA(cl, o, (Msg)msg);
     }
-    D(kprintf("[Pointer] %s: current extSprite 0x%lx and XOffset %ld YOffset %ld\n",
-                                                                  __func__,
-                                                                  data->shared_pointer->sprite,
-                                                                  data->shared_pointer->xoffset,
-                                                                  data->shared_pointer->yoffset));
+
 
     return (IPTR)1;
 }
