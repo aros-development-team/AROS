@@ -9,17 +9,6 @@
 
 #include "amigavideo_intern.h"
 
-#define __IHidd 	                (csd->hiddAttrBase)
-#define __IHidd_BitMap	                (csd->hiddBitMapAttrBase)
-#define __IHidd_PlanarBM	        (csd->hiddPlanarBitMapAttrBase)
-#define __IHidd_BitMap_AmigaVideo       (csd->hiddAmigaVideoBitMapAttrBase)
-#define __IHidd_GC			(csd->hiddGCAttrBase)
-#define __IHidd_Sync	                (csd->hiddSyncAttrBase)
-#define __IHidd_PixFmt		        (csd->hiddPixFmtAttrBase)
-#define __IHidd_Gfx 	                (csd->hiddGfxAttrBase)
-//#define __IHidd_Attr		        (csd->hiddAttrBase)
-#define __IHidd_ColorMap	        (csd->hiddColorMapAttrBase)
-
 struct copper2data
 {
 	UWORD *copper2;
@@ -127,6 +116,17 @@ struct amigavideoclbase
 
 #undef CSD
 #define CSD(cl)     	(&((struct amigavideoclbase *)cl->UserData)->csd)
+
+#define __IHidd 	                (csd->hiddAttrBase)
+#define __IHidd_BitMap	                (csd->hiddBitMapAttrBase)
+#define __IHidd_PlanarBM	        (csd->hiddPlanarBitMapAttrBase)
+#define __IHidd_BitMap_AmigaVideo       (csd->hiddAmigaVideoBitMapAttrBase)
+#define __IHidd_GC			(csd->hiddGCAttrBase)
+#define __IHidd_Sync	                (csd->hiddSyncAttrBase)
+#define __IHidd_PixFmt		        (csd->hiddPixFmtAttrBase)
+#define __IHidd_Gfx 	                (csd->hiddGfxAttrBase)
+//#define __IHidd_Attr		        (csd->hiddAttrBase)
+#define __IHidd_ColorMap	        (csd->hiddColorMapAttrBase)
 
 /* Private instance data for Gfx hidd class */
 struct amigagfx_data
