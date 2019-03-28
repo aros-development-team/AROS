@@ -673,7 +673,7 @@ static void doshow(struct p96gfx_staticdata *csd, OOP_Object *bm, struct ViewPor
         OOP_SetAttrs(bm, (struct TagItem *)tags);
 
         if (csd->acb)
-            csd->acb(csd->acbdata, NULL);
+            csd->acb(csd->acbdata, bm);
 
     } else if (bm) {
         /* we are not topmost -> turn off our display */
