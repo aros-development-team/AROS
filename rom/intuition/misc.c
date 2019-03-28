@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -270,6 +270,8 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
     struct SharedPointer *oldpointer;
     struct SharedPointer *newpointer;
     Object *oldobject;
+
+    DEBUG_POINTER(dprintf("InstallPointer(0x%p)\n", pointer);)
 
     ULONG lock = LockIBase(0);
 
