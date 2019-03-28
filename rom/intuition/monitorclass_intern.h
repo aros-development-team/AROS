@@ -34,6 +34,8 @@ struct IMonitorNode
     UBYTE *active_b;
     UBYTE *active_g;
     UBYTE  screenGamma;
+
+    IPTR SpriteType;
 };
 
 /* Offsets for gamma table */
