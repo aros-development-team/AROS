@@ -251,6 +251,7 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     IPTR 	    	     width, height, multi;
     IPTR		     displayable;
     struct TagItem tags[2];
+    ULONG softsflags;
 
     DB2(bug("[P96Gfx:Bitmap] %s(%x)\n", __func__, o));
 
@@ -272,6 +273,14 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
 
     data->rgbformat = getrtgformat(csd, data->pixfmtobj);
+#if (0)
+    softsflags = gl(csd->boardinfo + PSSO_BoardInfo_SoftSpriteFlags);
+    if ((softsflags & data->rgbformat) == data->rgbformat)
+    {
+        csd->spritergbformat = data->rgbformat;
+        DB2(bug("[P96Gfx:Bitmap] %s: HW Sprite Format set to %08x\n", __func__, csd->spritergbformat));
+    }
+#endif
     data->align = displayable ? 32 : 16;
     width = (width + data->align - 1) & ~(data->align - 1);
     data->bytesperline = CalculateBytesPerRow(csd, width, data->rgbformat);

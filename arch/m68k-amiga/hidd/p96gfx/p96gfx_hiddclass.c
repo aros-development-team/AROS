@@ -239,33 +239,30 @@ static const UBYTE rgbtypelist[] = {
 
 char *P96GFX__MakeBoardName(struct p96gfx_staticdata *csd)
 {
-    if (csd->CardBase)
+    char *BoardName = gp(csd->boardinfo + PSSO_BoardInfo_BoardName);
+    if (BoardName)
+        return BoardName;
+    ULONG boardType = gl(csd->boardinfo + PSSO_BoardInfo_BoardType);
+    switch (boardType)
     {
-        char *BoardName = gp(csd->boardinfo + PSSO_BoardInfo_BoardName);
-        if (BoardName)
-            return BoardName;
-        ULONG boardType = gl(csd->boardinfo + PSSO_BoardInfo_BoardType);
-        switch (boardType)
-        {
-            case P96BoardType_UAEGfx:
-                return "UAE";
-            case P96BoardType_Vampire:
-                return "SAGA";
-            case P96BoardType_Pixel64:
-                return "Pixel64";
-            case P96BoardType_PicassoIV:
-                return "PicassoIV";
-            case P96BoardType_PiccoloSD64:
-                return "PiccoloSD64";
-            case P96BoardType_PicassoII:
-                return "PicassoII";
-            case P96BoardType_Piccolo:
-                return "Piccolo";
-            case P96BoardType_RetinaBLT:
-                return "RetinaBLT";
-            case P96BoardType_A2410:
-                return "A2410";
-        }
+        case P96BoardType_UAEGfx:
+            return "UAE";
+        case P96BoardType_Vampire:
+            return "SAGA";
+        case P96BoardType_Pixel64:
+            return "Pixel64";
+        case P96BoardType_PicassoIV:
+            return "PicassoIV";
+        case P96BoardType_PiccoloSD64:
+            return "PiccoloSD64";
+        case P96BoardType_PicassoII:
+            return "PicassoII";
+        case P96BoardType_Piccolo:
+            return "Piccolo";
+        case P96BoardType_RetinaBLT:
+            return "RetinaBLT";
+        case P96BoardType_A2410:
+            return "A2410";
     }
     return NULL;
 }
@@ -474,6 +471,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         NewList((struct List *)&data->bitmaps);
         csd->initialized = 1;
         csd->spritecolors = 16;
+        csd->spritergbformat = RGBFF_PLANAR;
 
         csd->superforward = TRUE;
         midp = HIDD_Gfx_QueryModeIDs(o, NULL);
@@ -888,44 +886,60 @@ BOOL P96GFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHid
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
+UBYTE *P96GFXCl__PrepareSprite(struct p96gfx_staticdata *csd, ULONG size, ULONG width, ULONG height, struct pHidd_Gfx_SetCursorShape *msg)
 {
-    struct p96gfx_staticdata *csd = CSD(cl);
-    OOP_Object *cm = NULL;
-    IPTR width, height;
-    WORD x, y, hiressprite, i;
-    UWORD *p;
-    ULONG flags;
+    UBYTE *p;
 
-    OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
-    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
-    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (IPTR*)&cm);
-    
-    LOCK_HW
-    
-    if (cm) {
-        for (i = 0; i < 3; i++) {
-            HIDDT_Color c;
-            HIDD_CM_GetColor(cm, i + 1, &c);
-            SetSpriteColor(csd, i, c.red, c.green, c.blue);
-        }
-    }
     Forbid();
     pb(csd->boardinfo + PSSO_BoardInfo_MouseXOffset, msg->xoffset);
     pb(csd->boardinfo + PSSO_BoardInfo_MouseYOffset, msg->yoffset);
-    p = (UWORD*)gp(csd->boardinfo + PSSO_BoardInfo_MouseImage);
+    p = (UBYTE*)gp(csd->boardinfo + PSSO_BoardInfo_MouseImage);
     if (p == NULL || width != csd->sprite_width || height != csd->sprite_height) {
         FreeVec(p);
-        p = AllocVec(4 + 4 + ((width + 15) & ~15) / 8 * height * 2, MEMF_CLEAR | MEMF_PUBLIC);
+        p = AllocVec(size, MEMF_CLEAR | MEMF_PUBLIC);
         pp(csd->boardinfo + PSSO_BoardInfo_MouseImage, p);
         if (!p) {
             Permit();
             
             UNLOCK_HW
-            return FALSE;
+            return NULL;
         }
         csd->sprite_width = width;
         csd->sprite_height = height;
+    }
+    return p;
+}
+
+BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
+{
+    struct p96gfx_staticdata *csd = CSD(cl);
+    OOP_Object *cm = NULL;
+    OOP_Object *bmPFObj = NULL;
+    HIDDT_PixelFormat *bmPF;
+    IPTR bmcmod, width, height;
+    WORD x, y, hiressprite, i;
+    ULONG flags;
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (IPTR*)&cm);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR*)&bmPFObj);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_StdPixFmt, (IPTR*)&bmPF);
+    OOP_GetAttr(bmPFObj, aHidd_PixFmt_ColorModel, &bmcmod);
+    LOCK_HW
+
+    if ((csd->spritergbformat == RGBFF_PLANAR) || (csd->spritergbformat == RGBFF_CLUT)) {
+        if (cm) {
+            for (i = 0; i < 3; i++) {
+                HIDDT_Color c;
+                HIDD_CM_GetColor(cm, i + 1, &c);
+                SetSpriteColor(csd, i, c.red, c.green, c.blue);
+            }
+        }
+        else
+        {
+            // TODO: Calculate histogram of image and choose best colors
+        }
     }
 
     flags = gl(csd->boardinfo + PSSO_BoardInfo_Flags);
@@ -940,23 +954,74 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     pb(csd->boardinfo + PSSO_BoardInfo_MouseWidth, width / hiressprite);
     pb(csd->boardinfo + PSSO_BoardInfo_MouseHeight, height);
 
-    p += 2 * hiressprite;
-    for(y = 0; y < height; y++) {
-        UWORD pix1 = 0, pix2 = 0, xcnt = 0;
-        for(x = 0; x < width; x++) {
-            UBYTE c = HIDD_BM_GetPixel(msg->shape, x, y);
-            pix1 <<= 1;
-            pix2 <<= 1;
-            pix1 |= (c & 1) ? 1 : 0;
-            pix2 |= (c & 2) ? 1 : 0;
-            xcnt++;
-            if (xcnt == 15) {
-                xcnt = 0;
-                p[x / 16] = pix1;
-                p[width / 16 + x / 16] = pix2;
+    switch (csd->spritergbformat)
+    {
+        case RGBFF_PLANAR:
+            {
+                UWORD *p = (UWORD *)P96GFXCl__PrepareSprite(csd, 4 + 4 + ((width + 15) & ~15) / 8 * height * 2, width, height, msg);
+                if (!p)
+                    return FALSE;
+                p += 2 * hiressprite;
+                for(y = 0; y < height; y++) {
+                    UWORD pix1 = 0, pix2 = 0, xcnt = 0;
+                    for(x = 0; x < width; x++) {
+                        UBYTE c;
+                        if (bmcmod != vHidd_ColorModel_TrueColor)
+                            c = HIDD_BM_GetPixel(msg->shape, x, y);
+                        else
+                        {
+                            HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
+                            c = 0;
+                            if (ALPHA_COMP(pix, bmPF) == 0xFF)
+                                c |= 2;
+                            else if (RED_COMP(pix, bmPF)|GREEN_COMP(pix, bmPF)|BLUE_COMP(pix, bmPF) != 0)
+                                c |= 1;
+                        }
+                        pix1 <<= 1;
+                        pix2 <<= 1;
+                        pix1 |= (c & 1) ? 1 : 0;
+                        pix2 |= (c & 2) ? 1 : 0;
+                        xcnt++;
+                        if (xcnt == 15) {
+                            xcnt = 0;
+                            p[x / 16] = pix1;
+                            p[width / 16 + x / 16] = pix2;
+                        }
+                    }
+                    p += (width / 16) * 2;
+                }
             }
-        }
-        p += (width / 16) * 2;
+            break;
+
+        case RGBFF_CLUT:
+            {
+                UBYTE *p = P96GFXCl__PrepareSprite(csd, 4 + 4 + ((width + 15) & ~15) * height, width, height, msg);
+                if (!p)
+                    return FALSE;
+                p += 2 * hiressprite;
+                for(y = 0; y < height; y++) {
+                    for(x = 0; x < width; x++) {
+                        UBYTE c;
+                        if (bmcmod != vHidd_ColorModel_TrueColor)
+                            c = HIDD_BM_GetPixel(msg->shape, x, y);
+                        else
+                        {
+                            HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
+                            if (ALPHA_COMP(pix, bmPF) == 0xFF)
+                                c = 0;
+                            else if (RED_COMP(pix, bmPF)|GREEN_COMP(pix, bmPF)|BLUE_COMP(pix, bmPF) != 0)
+                                c = 1; // TODO: MapColor...
+                        }
+                        p[x] = c;
+                    }
+                    p += width;
+                }
+            }
+            break;
+
+        default:
+            // TODO: >8bit
+            break;
     }
     Permit();
     SetSpriteImage(csd);
@@ -1191,10 +1256,11 @@ BOOL Init_P96GFXClass(LIBBASETYPEPTR LIBBASE)
     struct Interrupt *intr;
     struct Node *node;
 
+    D(bug("[P96Gfx] %s()\n", __func__);)
+
     if (!(SysBase->AttnFlags & AFF_68020))
         return FALSE;
 
-    D(bug("[P96Gfx] %s()\n", __func__);)
     if (!openall(csd)) {
         freeall(csd);
         return FALSE;
