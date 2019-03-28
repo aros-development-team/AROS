@@ -428,12 +428,12 @@ BOOL SetSprite(struct p96gfx_staticdata *csd, BOOL activate)
         return AROS_CALL3(BOOL, __cardFunc(csd, PSSO_BoardInfo_SetSprite),
             AROS_LCA(APTR, csd->boardinfo, A0),
             AROS_LCA(BOOL, activate, D0),
-            AROS_LCA(ULONG, *csd->rgbformat, D7),
+            AROS_LCA(ULONG, csd->spritergbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC3(BOOL, csd->p96romvector, 36,
         AROS_LCA(APTR, csd->boardinfo, A0),
         AROS_LCA(BOOL, activate, D0),
-        AROS_LCA(ULONG, *csd->rgbformat, D7));
+        AROS_LCA(ULONG, csd->spritergbformat, D7));
 }	
 
 BOOL SetSpritePosition(struct p96gfx_staticdata *csd)
@@ -441,11 +441,11 @@ BOOL SetSpritePosition(struct p96gfx_staticdata *csd)
     if (csd->CardBase)
         return AROS_CALL2(BOOL, __cardFunc(csd, PSSO_BoardInfo_SetSpritePosition),
             AROS_LCA(APTR, csd->boardinfo, A0),
-            AROS_LCA(ULONG, *csd->rgbformat, D7),
+            AROS_LCA(ULONG, csd->spritergbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC2(BOOL, csd->p96romvector, 37,
         AROS_LCA(APTR, csd->boardinfo, A0),
-        AROS_LCA(ULONG, *csd->rgbformat, D7));
+        AROS_LCA(ULONG, csd->spritergbformat, D7));
 }	
 
 BOOL SetSpriteImage(struct p96gfx_staticdata *csd)
@@ -453,11 +453,11 @@ BOOL SetSpriteImage(struct p96gfx_staticdata *csd)
     if (csd->CardBase)
         return AROS_CALL2(BOOL, __cardFunc(csd, PSSO_BoardInfo_SetSpriteImage),
             AROS_LCA(APTR, csd->boardinfo, A0),
-            AROS_LCA(ULONG, *csd->rgbformat, D7),
+            AROS_LCA(ULONG, csd->spritergbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC2(BOOL, csd->p96romvector, 38,
         AROS_LCA(APTR, csd->boardinfo, A0),
-        AROS_LCA(ULONG, *csd->rgbformat, D7));
+        AROS_LCA(ULONG, csd->spritergbformat, D7));
 }
 
 BOOL SetSpriteColor(struct p96gfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, UBYTE b)
@@ -469,7 +469,7 @@ BOOL SetSpriteColor(struct p96gfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, 
             AROS_LCA(UBYTE, r, D1),
             AROS_LCA(UBYTE, g, D2),
             AROS_LCA(UBYTE, b, D3),
-            AROS_LCA(ULONG, *csd->rgbformat, D7),
+            AROS_LCA(ULONG, csd->spritergbformat, D7),
             struct Library*, csd->CardBase);
     return P96_LC6(BOOL, csd->p96romvector, 39,
         AROS_LCA(APTR, csd->boardinfo, A0),
@@ -477,5 +477,5 @@ BOOL SetSpriteColor(struct p96gfx_staticdata *csd, UBYTE idx, UBYTE r, UBYTE g, 
         AROS_LCA(UBYTE, r, D1),
         AROS_LCA(UBYTE, g, D2),
         AROS_LCA(UBYTE, b, D3),
-        AROS_LCA(ULONG, *csd->rgbformat, D7));
+        AROS_LCA(ULONG, csd->spritergbformat, D7));
 }	
