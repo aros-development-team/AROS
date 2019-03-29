@@ -2112,7 +2112,7 @@ endif
 
 $(%(mmake)%(flavour)_DEFLIBDEFSINC) : FILENAME := $(%(mmake)%(flavour)_LIBDEFSINC)
 $(%(mmake)%(flavour)_DEFLIBDEFSINC) :
-	$(Q)$(ECHO) "Generating $@"
+	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
 	$(Q)$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
 
 $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC) : | $(%(mmake)%(flavour)_OBJDIR)/include
