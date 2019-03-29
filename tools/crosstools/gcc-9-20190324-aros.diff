@@ -343,7 +343,7 @@ diff -ruN gcc-9-20190324/gcc/config/aros-stdint.h gcc-9-20190324.aros/gcc/config
 diff -ruN gcc-9-20190324/gcc/config/aros.h gcc-9-20190324.aros/gcc/config/aros.h
 --- gcc-9-20190324/gcc/config/aros.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-9-20190324.aros/gcc/config/aros.h	2019-03-29 13:46:01.388389900 +0000
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,112 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -365,9 +365,6 @@ diff -ruN gcc-9-20190324/gcc/config/aros.h gcc-9-20190324.aros/gcc/config/aros.h
 +along with GNU CC; see the file COPYING.  If not, write to
 +the Free Software Foundation, 59 Temple Place - Suite 330,
 +Boston, MA 02111-1307, USA.  */
-+
-+/* Don't assume anything about the header files.  */
-+#define NO_IMPLICIT_EXTERN_C
 +
 +#undef SIZE_TYPE
 +#define SIZE_TYPE "long unsigned int"
