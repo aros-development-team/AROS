@@ -12,6 +12,18 @@ diff -ruN grub-2.02/grub-core/fs/affs.c grub-2.02.aros/grub-core/fs/affs.c
  	  /* Test if the filesystem is a OFS filesystem.  */
  	  || !(data->bblock.flags & GRUB_AFFS_FLAG_FFS))
  	continue;
+diff -ruN grub-2.02/grub-core/fs/btrfs.c grub-2.02.aros/grub-core/fs/btrfs.c
+--- grub-2.02/grub-core/fs/btrfs.c	2017-04-24 10:16:00.000000000 +0100
++++ grub-2.02.aros/grub-core/fs/btrfs.c	2017-04-24 12:30:25.000000000 +0100
+@@ -175,7 +175,7 @@
+ {
+   grub_int64_t sec;
+   grub_uint32_t nanosec;
+-} __attribute__ ((aligned (4)));
++} GRUB_PACKED;
+ 
+ struct grub_btrfs_inode
+ {
 diff -ruN grub-2.02/grub-core/osdep/aros/getroot.c grub-2.02.aros/grub-core/osdep/aros/getroot.c
 --- grub-2.02/grub-core/osdep/aros/getroot.c	2015-05-21 16:50:29.000000000 +0100
 +++ grub-2.02.aros/grub-core/osdep/aros/getroot.c	2017-04-24 12:30:25.000000000 +0100
@@ -45,9 +57,33 @@ diff -ruN grub-2.02/grub-core/osdep/aros/relpath.c grub-2.02.aros/grub-core/osde
  #include <dos/exall.h>
  #include <proto/dos.h>
  #include <proto/exec.h>
+diff -ruN grub-2.02/include/grub/efiemu/runtime.h grub-2.02.aros/include/grub/efiemu/runtime.h
+--- grub-2.02/include/grub/efiemu/runtime.h	2015-05-21 16:50:29.000000000 +0100
++++ grub-2.02.aros/include/grub/efiemu/runtime.h	2019-03-29 16:16:01.449086200 +0000
+@@ -29,7 +29,7 @@
+ 
+ struct efi_variable
+ {
+-  grub_efi_guid_t guid;
++  grub_efi_packed_guid_t guid;
+   grub_uint32_t namelen;
+   grub_uint32_t size;
+   grub_efi_uint32_t attributes;
+diff -ruN grub-2.02/include/grub/gpt_partition.h grub-2.02.aros/include/grub/gpt_partition.h
+--- grub-2.02/include/grub/gpt_partition.h	2015-05-21 16:50:29.000000000 +0100
++++ grub-2.02.aros/include/grub/gpt_partition.h	2019-03-29 16:16:48.443396000 +0000
+@@ -28,7 +28,7 @@
+   grub_uint16_t data2;
+   grub_uint16_t data3;
+   grub_uint8_t data4[8];
+-} __attribute__ ((aligned(8)));
++} GRUB_PACKED;
+ typedef struct grub_gpt_part_type grub_gpt_part_type_t;
+ 
+ #define GRUB_GPT_PARTITION_TYPE_EMPTY \
 diff -ruN grub-2.02/util/grub-mkimagexx.c grub-2.02.aros/util/grub-mkimagexx.c
 --- grub-2.02/util/grub-mkimagexx.c	2017-04-24 10:16:00.000000000 +0100
-+++ grub-2.02.aros/util/grub-mkimagexx.c	2019-03-18 21:51:13.401263700 +0000
++++ grub-2.02.aros/util/grub-mkimagexx.c	2017-04-24 12:30:25.000000000 +0100
 @@ -832,6 +832,7 @@
  		  break;
  
@@ -58,7 +94,7 @@ diff -ruN grub-2.02/util/grub-mkimagexx.c grub-2.02.aros/util/grub-mkimagexx.c
  		    *t32 = grub_host_to_target64 (grub_target_to_host32 (*t32)
 diff -ruN grub-2.02/util/grub-module-verifier.c grub-2.02.aros/util/grub-module-verifier.c
 --- grub-2.02/util/grub-module-verifier.c	2017-04-24 10:16:00.000000000 +0100
-+++ grub-2.02.aros/util/grub-module-verifier.c	2019-03-18 21:50:43.869656600 +0000
++++ grub-2.02.aros/util/grub-module-verifier.c	2017-04-24 12:30:25.000000000 +0100
 @@ -19,6 +19,7 @@
        -1
      }, (int[]){
