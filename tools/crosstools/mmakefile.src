@@ -110,6 +110,11 @@ GDB_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
 GDB_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 
 GNU_REPOSITORY := gnu://
+ifeq (,$(findstring -,$(GCC_VERSION)))
+GCC_REPOSITORY := $(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)
+else
+GCC_REPOSITORY := ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/snapshots/$(GCC_VERSION)
+endif
 ISL_REPOSITORY := ftp://gcc.gnu.org/pub/gcc/infrastructure
 MPC_REPOSITORY := ftp://ftp.gnu.org/gnu/mpc http://ftp.vim.org/ftp/gnu/mpc
 
@@ -241,7 +246,7 @@ tools-crosstools-gcc :
 	fi
 
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
-	package_repo="$(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)" \
+	package_repo="$(GCC_REPOSITORY)" suffixes="tar.bz2 tar.gz tar.xz" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
