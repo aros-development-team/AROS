@@ -9486,10 +9486,8 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         cross_compiling=yes
     fi
 else
-            if test "$host_cc_elf" = "no" ; then
-        cross_compiling=yes
+                    cross_compiling=yes
     fi
-fi
 
 if test "$cross_compiling" = "no" ; then
     kernel_tool_prefix=""
@@ -9568,14 +9566,15 @@ if test "$kernel_tool_prefix" = "none" ; then
         as_fn_error $? "--with-kernel-toolchain-prefix= is required for this arch" "$LINENO" 5
     fi
 else
-    # Kernel tools required - find them
-    # Note that 'normally', aros_kernel_* overrides will be
-    # empty, unless specified in the per-arch sections above.
-    test_kernel_cc=yes
-    if test "x$aros_kernel_cpp" = "x"; then
-        aros_kernel_cpp=${kernel_tool_prefix}${CPP}
-    fi
-    if test "${kernel_tool_version}" != ""; then
+    if test "x-$aros_flavour" != "x-standalone" -o "x-$aros_flavour" != "x-standcompat" ; then
+        # Kernel tools required - find them
+        # Note that 'normally', aros_kernel_* overrides will be
+        # empty, unless specified in the per-arch sections above.
+        test_kernel_cc=yes
+        if test "x$aros_kernel_cpp" = "x"; then
+            aros_kernel_cpp=${kernel_tool_prefix}${CPP}
+        fi
+        if test "${kernel_tool_version}" != ""; then
     if test "$aros_kernel_cpp" != ""; then
         ac_prog_args=`expr "X$aros_kernel_cpp" : '[^ ]* \(.*\)'`
         ac_prog_cmd=`expr "X$aros_kernel_cpp" : '^\S*'`
@@ -9757,7 +9756,7 @@ fi
     aros_kernel_cpp="$aros_kernel_cpp $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_cpp" = ""; then
     req_avail=no
 fi
@@ -9768,10 +9767,10 @@ if test "$req_avail" = "no"; then
     as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
-    if test "x$aros_kernel_cc" = "x"; then
-        aros_kernel_cc=${kernel_tool_prefix}${CC}
-    fi
-    if test "${kernel_tool_version}" != ""; then
+        if test "x$aros_kernel_cc" = "x"; then
+            aros_kernel_cc=${kernel_tool_prefix}${CC}
+        fi
+        if test "${kernel_tool_version}" != ""; then
     if test "$aros_kernel_cc" != ""; then
         ac_prog_args=`expr "X$aros_kernel_cc" : '[^ ]* \(.*\)'`
         ac_prog_cmd=`expr "X$aros_kernel_cc" : '^\S*'`
@@ -9953,7 +9952,7 @@ fi
     aros_kernel_cc="$aros_kernel_cc $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_cc" = ""; then
     req_avail=no
 fi
@@ -9964,10 +9963,10 @@ if test "$req_avail" = "no"; then
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
-    if test "x$aros_kernel_cxx" = "x"; then
-        aros_kernel_cxx=${kernel_tool_prefix}${CXX}
-    fi
-    if test "${kernel_tool_version}" != ""; then
+        if test "x$aros_kernel_cxx" = "x"; then
+            aros_kernel_cxx=${kernel_tool_prefix}${CXX}
+        fi
+        if test "${kernel_tool_version}" != ""; then
     if test "$aros_kernel_cxx" != ""; then
         ac_prog_args=`expr "X$aros_kernel_cxx" : '[^ ]* \(.*\)'`
         ac_prog_cmd=`expr "X$aros_kernel_cxx" : '^\S*'`
@@ -10149,9 +10148,9 @@ fi
     aros_kernel_cxx="$aros_kernel_cxx $ac_tool_optarg"
 fi
 
-    # If it's set, make sure it's really there
-    if test "x$aros_kernel_cxx" != "x" ; then
-        req_avail=yes
+        # If it's set, make sure it's really there
+        if test "x$aros_kernel_cxx" != "x" ; then
+            req_avail=yes
 if test "$aros_kernel_cxx" = ""; then
     req_avail=no
 fi
@@ -10161,7 +10160,7 @@ fi
 if test "$req_avail" = "no"; then
     as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
-    fi
+        fi
 
 if test "$aros_kernel_ld" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -10337,7 +10336,7 @@ fi
     aros_kernel_ld="$aros_kernel_ld $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_ld" = ""; then
     req_avail=no
 fi
@@ -10522,7 +10521,7 @@ fi
     aros_kernel_as="$aros_kernel_as $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_as" = ""; then
     req_avail=no
 fi
@@ -10707,7 +10706,7 @@ fi
     aros_kernel_ar="$aros_kernel_ar $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_ar" = ""; then
     req_avail=no
 fi
@@ -10892,7 +10891,7 @@ fi
     aros_kernel_ranlib="$aros_kernel_ranlib $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_ranlib" = ""; then
     req_avail=no
 fi
@@ -11077,7 +11076,7 @@ fi
     aros_kernel_nm="$aros_kernel_nm $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_nm" = ""; then
     req_avail=no
 fi
@@ -11262,7 +11261,7 @@ fi
     aros_kernel_strip="$aros_kernel_strip $ac_tool_optarg"
 fi
 
-    req_avail=yes
+        req_avail=yes
 if test "$aros_kernel_strip" = ""; then
     req_avail=no
 fi
@@ -11273,9 +11272,9 @@ if test "$req_avail" = "no"; then
     as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
-    # Objcopy and objdump are not required for the kernel
-    # toolchain on many architectures.
-    # So we'll look for them, but not make them strictly required.
+        # Objcopy and objdump are not required for the kernel
+        # toolchain on many architectures.
+        # So we'll look for them, but not make them strictly required.
 
 if test "$aros_kernel_objcopy" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -11626,8 +11625,8 @@ fi
     aros_kernel_objdump="$aros_kernel_objdump $ac_tool_optarg"
 fi
 
-    if test "x${crosstools}" != "xyes" ; then
-        req_avail=yes
+        if test "x${crosstools}" != "xyes" ; then
+            req_avail=yes
 if test "$aros_kernel_objcopy" = ""; then
     req_avail=no
 fi
@@ -11637,7 +11636,7 @@ fi
 if test "$req_avail" = "no"; then
     as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
-        req_avail=yes
+            req_avail=yes
 if test "$aros_kernel_objdump" = ""; then
     req_avail=no
 fi
@@ -11647,6 +11646,7 @@ fi
 if test "$req_avail" = "no"; then
     as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+        fi
     fi
 fi
 
