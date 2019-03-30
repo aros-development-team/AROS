@@ -71,10 +71,11 @@ typedef enum {
 	RGBFF_A8R8G8B8 | RGBFF_A8B8G8R8 | RGBFF_R8G8B8A8 | RGBFF_B8G8R8A8 | RGBFF_B8G8R8 | RGBFF_R8G8B8 | \
 	RGBFF_R5G6B5 | RGBFF_R5G5B5 | RGBFF_R5G6B5PC | RGBFF_R5G5B5PC | RGBFF_B5G6R5PC | RGBFF_B5G5R5PC)
 
-/* BoardInfo flags */
+/* BoardInfo hardare flags (set by the driver) */
 #define BIB_HARDWARESPRITE		0		/* board has hardware sprite */
 #define BIB_VBLANKINTERRUPT		4		/* board can cause a hardware interrupt on a vertical retrace */
 #define BIB_BLITTER				15		/* board has blitter */
+/* BoardInfo user flags (set by the rtg subsystem) */
 #define BIB_HIRESSPRITE			16		/* mouse sprite has double resolution */
 #define BIB_BIGSPRITE			17		/* user wants big mouse sprite */
 #define BIB_NOBLITTER			24		/* disable all blitter functions */
