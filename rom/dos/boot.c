@@ -146,7 +146,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 #if defined(REPOTYPE)
                          "Version " REPOTYPE "" REPOREVISION
 #if defined(REPOID)
-                         "(" REPOID ")"
+                         " (" REPOID ")"
 #endif
                          "\n"
 #endif
