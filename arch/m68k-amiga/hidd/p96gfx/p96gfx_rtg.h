@@ -74,10 +74,17 @@ typedef enum {
 /* BoardInfo flags */
 #define BIB_HARDWARESPRITE		0		/* board has hardware sprite */
 #define BIB_VBLANKINTERRUPT		4		/* board can cause a hardware interrupt on a vertical retrace */
-#define BIB_BLITTER			15		/* board has blitter */
+#define BIB_BLITTER				15		/* board has blitter */
 #define BIB_HIRESSPRITE			16		/* mouse sprite has double resolution */
 #define BIB_BIGSPRITE			17		/* user wants big mouse sprite */
 #define BIB_NOBLITTER			24		/* disable all blitter functions */
+
+#define BIF_HARDWARESPRITE		(1 << BIB_HARDWARESPRITE)
+#define BIF_VBLANKINTERRUPT		(1 << BIB_VBLANKINTERRUPT)
+#define BIF_BLITTER				(1 << BIB_BLITTER)
+#define BIF_HIRESSPRITE			(1 << BIB_HIRESSPRITE)
+#define BIF_BIGSPRITE			(1 << BIB_BIGSPRITE)
+#define BIF_NOBLITTER			(1 << BIB_NOBLITTER)
 
 enum {
     PLANAR,
