@@ -910,24 +910,57 @@ UBYTE *P96GFXCl__PrepareSprite(struct p96gfx_staticdata *csd, ULONG size, ULONG 
     return p;
 }
 
-BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
+#ifndef MAX
+#define MAX(x,y) (x)>(y)?(x):(y)
+#define MIN(x,y) (x)<(y)?(x):(y)
+#endif
+
+UBYTE P96GFXCl__PickPen(struct p96gfx_staticdata *csd, ULONG pixel, OOP_Object *cm)
+{
+    UBYTE retval = 0;
+    ULONG diff=(ULONG)-1, tmp;
+    int i;
+    bug("pixel = %08x, ", pixel);
+    for (i = 0; i < 3; i++) {
+        HIDDT_Color c;
+        HIDD_CM_GetColor(cm, i + 1, &c);
+        tmp = (MAX(c.red, ((pixel & 0xFF0000) >> 16)) - MIN(c.red, ((pixel & 0xFF0000) >> 16))) +
+                    (MAX(c.green, ((pixel & 0xFF00) >> 8)) - MIN(c.green, ((pixel & 0xFF00) >> 8))) +
+                    (MAX(c.blue, (pixel & 0xFF)) - MIN(c.blue, (pixel & 0xFF)));
+        if (tmp < diff)
+        {
+            diff = tmp;
+            retval = i + 1;
+        }
+    }
+    bug("using pen %d\n", retval);
+    return retval;
+}
+
+BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
     OOP_Object *cm = NULL;
     OOP_Object *bmPFObj = NULL;
-    HIDDT_PixelFormat *bmPF;
-    IPTR bmcmod, width, height;
+    HIDDT_PixelFormat *bmPF = NULL;
+    IPTR pf, bmcmod, width, height;
     WORD x, y, hiressprite, i;
     ULONG flags;
+
+    bug("%s()\n", __func__);
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
     OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (IPTR*)&cm);
     OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR*)&bmPFObj);
-    OOP_GetAttr(msg->shape, aHidd_BitMap_StdPixFmt, (IPTR*)&bmPF);
     OOP_GetAttr(bmPFObj, aHidd_PixFmt_ColorModel, &bmcmod);
-    LOCK_HW
+    if (bmcmod == vHidd_ColorModel_TrueColor)
+    {
+        OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
+        bmPF = HIDD_Gfx_GetPixFmt(o, pf);
+    }
 
+    LOCK_HW
     if ((csd->spritergbformat == RGBFF_PLANAR) || (csd->spritergbformat == RGBFF_CLUT)) {
         if (cm) {
             for (i = 0; i < 3; i++) {
@@ -943,10 +976,10 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     }
 
     flags = gl(csd->boardinfo + PSSO_BoardInfo_Flags);
-    flags &= ~(1 << BIB_HIRESSPRITE);
+    flags &= ~BIF_HIRESSPRITE;
     hiressprite = 1;
     if (width > 16) {
-        flags |= 1 << BIB_HIRESSPRITE;
+        flags |= BIF_HIRESSPRITE;
         hiressprite = 2;
     }
     pl(csd->boardinfo + PSSO_BoardInfo_Flags, flags);
@@ -971,11 +1004,9 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
                         else
                         {
                             HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
-                            c = 0;
-                            if (ALPHA_COMP(pix, bmPF) == 0xFF)
-                                c |= 2;
-                            else if (RED_COMP(pix, bmPF)|GREEN_COMP(pix, bmPF)|BLUE_COMP(pix, bmPF) != 0)
-                                c |= 1;
+                            if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
+                                c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), cm);
+                            else c = 0;
                         }
                         pix1 <<= 1;
                         pix2 <<= 1;
@@ -1007,10 +1038,9 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
                         else
                         {
                             HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
-                            if (ALPHA_COMP(pix, bmPF) == 0xFF)
-                                c = 0;
-                            else if (RED_COMP(pix, bmPF)|GREEN_COMP(pix, bmPF)|BLUE_COMP(pix, bmPF) != 0)
-                                c = 1; // TODO: MapColor...
+                            if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
+                                c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), cm);
+                            else c = 0;
                         }
                         p[x] = c;
                     }
