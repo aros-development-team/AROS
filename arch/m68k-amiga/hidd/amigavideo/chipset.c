@@ -591,20 +591,32 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     return 1;
  }
 
-BOOL setsprite(struct amigavideo_staticdata *csd, WORD width, WORD height, struct pHidd_Gfx_SetCursorShape *shape)
+UBYTE av__PickPen(struct amigavideo_staticdata *csd, ULONG pixel)
 {
+    UBYTE retval = 1;
+    return retval;
+}
+
+BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHidd_Gfx_SetCursorShape *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *OOPBase = csd->cs_OOPBase;
+    OOP_MethodID HiddGfxBase = csd->cs_HiddGfxBase;
     OOP_MethodID HiddBitMapBase = csd->cs_HiddBitMapBase;
     OOP_Object *bmPFObj = NULL;
     HIDDT_PixelFormat *bmPF;
-    IPTR bmcmod;
+    IPTR pf, bmcmod;
     UWORD fetchsize;
     UWORD bitmapwidth = width;
     UWORD y, *p;
 
-    OOP_GetAttr(shape->shape, aHidd_BitMap_PixFmt, (IPTR*)&bmPFObj);
-    OOP_GetAttr(shape->shape, aHidd_BitMap_StdPixFmt, (IPTR*)&bmPF);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR*)&bmPFObj);
     OOP_GetAttr(bmPFObj, aHidd_PixFmt_ColorModel, &bmcmod);
+    if (bmcmod == vHidd_ColorModel_TrueColor)
+    {
+        OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
+        bmPF = HIDD_Gfx_GetPixFmt(o, pf);
+    }
 
     if (csd->aga && csd->aga_enabled && width > 16)
         csd->fmode_spr = 2;
@@ -621,8 +633,8 @@ BOOL setsprite(struct amigavideo_staticdata *csd, WORD width, WORD height, struc
             return FALSE;
         csd->sprite_width = width;
         csd->sprite_height = height;
-        csd->sprite_offset_x = shape->xoffset;
-        csd->sprite_offset_y = shape->yoffset;
+        csd->sprite_offset_x = msg->xoffset;
+        csd->sprite_offset_y = msg->yoffset;
     }
     p = csd->sprite;
     p += fetchsize;
@@ -635,15 +647,14 @@ BOOL setsprite(struct amigavideo_staticdata *csd, WORD width, WORD height, struc
                 if (xx + x < bitmapwidth)
                 {
                     if (bmcmod != vHidd_ColorModel_TrueColor)
-                        c = HIDD_BM_GetPixel(shape->shape, xx + x, y);
+                        c = HIDD_BM_GetPixel(msg->shape, x, y);
                     else
                     {
-                        HIDDT_Pixel pix = HIDD_BM_GetPixel(shape->shape, xx + x, y);
+                        HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
                         c = 0;
-                        if (ALPHA_COMP(pix, bmPF) == 0xFF)
-                            c |= 2;
-                        else if (RED_COMP(pix, bmPF)|GREEN_COMP(pix, bmPF)|BLUE_COMP(pix, bmPF) != 0)
-                            c |= 1;
+                        if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
+                            c = av__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF));
+                        else c = 0;
                     }
                 }
                 pix1 <<= 1;
