@@ -920,7 +920,6 @@ UBYTE P96GFXCl__PickPen(struct p96gfx_staticdata *csd, ULONG pixel, OOP_Object *
     UBYTE retval = 0;
     ULONG diff=(ULONG)-1, tmp;
     int i;
-    bug("pixel = %08x, ", pixel);
     for (i = 0; i < 3; i++) {
         HIDDT_Color c;
         HIDD_CM_GetColor(cm, i + 1, &c);
@@ -933,7 +932,6 @@ UBYTE P96GFXCl__PickPen(struct p96gfx_staticdata *csd, ULONG pixel, OOP_Object *
             retval = i + 1;
         }
     }
-    bug("using pen %d\n", retval);
     return retval;
 }
 
@@ -946,8 +944,6 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
     IPTR pf, bmcmod, width, height;
     WORD x, y, hiressprite, i;
     ULONG flags;
-
-    bug("%s()\n", __func__);
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
