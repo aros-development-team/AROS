@@ -4,10 +4,11 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_CPPFLAGS := \
                -D__OOP_NOATTRBASES__ \
-               -D__GRAPHICS_NOHIDDBASE__ \
-               -D__UTILITY_NOLIBBASE__ \
+               -D__OOP_NOMETHODBASES__ \
+               -D__OOP_NOLIBBASE__ \
                -D__GRAPHICS_NOLIBBASE__ \
-               -D__OOP_NOLIBBASE__
+               -D__UTILITY_NOLIBBASE__ \
+               -D__GRAPHICS_NOHIDDBASE__
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-amiga-m68k-p96gfx \
