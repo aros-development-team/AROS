@@ -1,20 +1,20 @@
-## version $VER: acpitool.catalog 1.1 (26.10.2011)
+## version $VER: acpitool.catalog 2.0 (31.3.2019)
 ## language français
 ## codeset 0
 ;
 ;
 ;
 MSG_TITLE
-ACPI Tool
+Outil ACPI
 ;
 MSG_WINTITLE
-ACPI Tool
+Outil ACPI
 ;
 MSG_DESCRIPTION
-Requètes et gestion de l'ACPI
+Interrogation et gestion de l'ACPI
 ;
 MSG_ERROR_LOCALE
-Can't open locale
+Impossible d'ouvrir locale
 ;
 MSG_ERROR_OK
 Ok
@@ -38,7 +38,7 @@ MSG_OEM_ID
 Revendeur
 ;
 MSG_OEM_TABLE_ID
-Table Revendeur
+Table revendeur
 ;
 MSG_CREATOR_ID
 Constructeur
@@ -47,10 +47,10 @@ MSG_PM_PROFILE
 Profil système préféré
 ;
 MSG_SCI_INT
-Interruption SCI
+Interruption de contrôle du système (SCI)
 ;
 MSG_SMI_CMD
-Registre de commande SMI
+Registre de commande SMI (interruptions de gestion du système)
 ;
 MSG_ACPI_ENABLE
 Commande d'activation ACPI
@@ -74,23 +74,23 @@ Pas du cache CPU
 ;CPU Cache flush stride
 ;
 MSG_RTC_DAY_ALARM
-Décalage de l'alarme RTC quotidienne
+Décalage quotidien de l'horloge temps réel
 ;RTC alarm day offset
 ;
 MSG_RTC_MON_ALARM
-Décalage de l'alarme RTC mensuelle
+Décalage mensuel de l'horloge temps réel
 ;RTC alarm month offset
 ;
 MSG_RTC_CENTURY
-Décalage RTC sur un siècle
+Décalage sur un siècle de l'horloge temps réel
 ;RTC century offset
 ;
 MSG_RESET_REG
-Addresse du registre de R.A.Z.
+Adresse du registre de réinitialisation
 ;Reset register address
 ;
 MSG_RESET_VAL
-Valeur de R.A.Z.
+Valeur de réinitialisation
 ;Reset value
 ;
 MSG_UNKNOWN_SIZE
@@ -137,7 +137,7 @@ MSG_PC_FLAGS
 Drapeaux architecture PC
 ;
 MSG_FF_FLAGS
-Drapeaux fonctionalités fixes
+Drapeaux fonctionnalités fixes
 ;Fixed Feature flags
 ;
 MSG_LAPIC_ADDR
@@ -145,7 +145,7 @@ Adresse de l'APIC locale
 ;Local APIC address
 ;
 MSG_PCAT_COMPAT
-Muni du PIC 8259 PC-AT
+Dispose du PIC 8259 PC-AT
 ;Has 8259 PC-AT PIC
 ;
 MSG_LOCAL_APIC
@@ -153,11 +153,11 @@ APIC locale
 ;Local APIC
 ;
 MSG_CPU_ID
-ACPI ID processeur
+Identificateur ACPI du processeur
 ;ACPI Processor ID
 ;
 MSG_LAPIC_ID
-Id APIC locale
+Identificateur de l'APIC locale
 ;Local APIC ID
 ;
 MSG_ENABLED
@@ -172,24 +172,24 @@ MSG_ID
 ID
 ;
 MSG_ADDRESS
-Addresse
+Adresse
 ;
 MSG_IRQ_BASE
-Base IRQ globale au système
+Base d'interruptions matérielles (IRQ) globale du système
 ;Global system IRQ base
 ;
 MSG_INT_SRC_OVR
-Consigne int. source
+Consigne de la source d'interruptions
 ;Interrupt source override
 ;
 MSG_BUS
   Bus
 ;
 MSG_BUS_IRQ
-Bus IRQ
+Bus d'interruptions matérielles (IRQ)
 ;
 MSG_GLOBAL_IRQ
-IRQ système globale
+Interruption matérielle (IRQ) système globale
 ;
 MSG_POLARITY
   Polarité
@@ -198,19 +198,19 @@ MSG_TRIGGER
   Bascule
 ;
 MSG_NMI_SRC
-Source NMI
+Source d'interruptions non masquables (NMI)
 ;
 MSG_LAPIC_NMI
 NMI APIC locale
 ;
 MSG_DEST_ID
-ID ACPI processeur destination
+Identificateur ACPI du processeur destination
 ;
 MSG_ALL
 Tout
 ;
 MSG_LINT
-Entrée d'int. locale
+Entrée d'interruption locale
 ;Local interrupt input
 ;
 MSG_LAPIC_ADDR_OVR
@@ -231,11 +231,11 @@ MSG_LSAPIC_EID
 EID SAPIC locale
 ;
 MSG_PLAT_INT_SRC
-Source d'int. plateforme
+Source d'interruptions de plateforme
 ;Platform interrupt source
 ;
 MSG_PLAT_INT_TYPE
-  Type d'int.
+  Type d'interruption
 ;  Interrupt type
 ;
 MSG_DEST_LSAPIC_ID
@@ -247,11 +247,11 @@ EID LSAPIC destination
 ;Destination LSAPIC EID
 ;
 MSG_IOSAPIC_VECTOR
-Vector SAPIC d'E/S
+Vecteur SAPIC d'E/S
 ;I/O SAPIC vector
 ;
 MSG_CPEI_PROC_OVR
-Consigne d'int. CPE du processeur
+Consigne du processeur d'interruption CPE
 ;CPE interrupt processor override
 ;
 MSG_LOCAL_X2APIC
@@ -271,7 +271,7 @@ NMI X2APIC
 ;X2APIC NMI
 ;
 MSG_UNKNOWN_ENTRY
-Entrée inconnnue (%u), %u octets
+Entrée inconnue (%u), %u octets
 ;Unknown entry (%u), %u bytes
 ;
 MSG_RSDP_ADDR
@@ -286,7 +286,7 @@ Révision ACPI
 ;ACPI Revision
 ;
 MSG_HW_REVISION
-Révision matériel
+Révision matérielle
 ;Hardware Revision
 ;
 MSG_NUM_COMPARATORS
@@ -294,11 +294,11 @@ Nombre de comparateurs
 ;Number of comparators
 ;
 MSG_64BIT_COUNTER
-Compteur 64-bits
+Compteur 64 bits
 ;64-bit counter
 ;
 MSG_LEGACY_REPLACEMENT
-Capable de remplacement 
+Compatibilité ascendante
 ;Capable d'héritage
 ;
 MSG_PCI_VENDOR
@@ -314,7 +314,7 @@ Nombre
 ;Number
 ;
 MSG_MIN_TICK
-Battement horloge min.
+Fréquence minimale de l'horloge
 ;Minimum clock tick
 ;
 MSG_PAGE_PROTECT
@@ -326,7 +326,7 @@ Attributs revendeur
 ;OEM Attributes
 ;
 MSG_SHOW_MODE
-Montre :
+Afficher :
 ;Show:
 ;
 MSG_SAVE_DATA
@@ -368,7 +368,7 @@ MSG_MWH
 mWh
 ;
 MSG_CMD_REG
-Registre de commande/état
+Registre de commande, d'état
 ;Command/status register
 ;
 MSG_DATA_REG
@@ -386,4 +386,20 @@ Bit GPE SCI
 MSG_NAMESPACE_ID
 ID espace de nommage
 ;Namespace ID
+;
+MSG_MCFG_BASE_ADDRESS
+Adresse de base
+;Base address
+;
+MSG_MCFG_SEGMENT
+Numéro de groupe du segment PCI
+;PCI segment group number
+;
+MSG_MCFG_START_BUS_NUMBER
+Numéro du premier bus PCI
+;Starting PCI Bus number
+;
+MSG_MCFG_END_BUS_NUMBER
+Numéro du dernier bus PCI
+;Final PCI Bus number
 ;
