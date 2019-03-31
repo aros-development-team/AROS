@@ -1,4 +1,4 @@
-## version $VER: multiview.catalog 2.0 (03.01.2018)
+## version $VER: multiview.catalog 2.1 (31.3.2019)
 ## codeset 0
 ## language français
 ;
@@ -6,10 +6,10 @@ MSG_CANT_OPEN_LIB
 Impossible d'ouvrir %s V%ld !\n
 ;
 MSG_CANT_CREATE_IC
-Impossible de créer d'interconnexion !
+Impossible de créer les objets d'interconnexion !
 ;
 MSG_CANT_LOCK_SCR
-Impossible de vérouiller l'écran public !
+Impossible de verrouiller l'écran public !
 ;
 MSG_CANT_GET_DRI
 Impossible d'obtenir la structure DrawInfo !
@@ -21,13 +21,21 @@ MSG_CANT_CREATE_SYSIMAGE
 Impossible de créer les images SYSICLASS !
 ;
 MSG_CANT_CREATE_GADGET
-Impossible de créer les Gadgets !
+Impossible de créer les gadgets !
 ;
 MSG_CANT_CREATE_MENUS
-Impossible de créer les Menus !
+Impossible de créer les menus !
 ;
 MSG_CANT_CREATE_WIN
 Impossible de créer une fenêtre !
+;
+MSG_CANT_CREATE_MSGPORT
+Impossible de créer le port de messages !
+;Can't create message port!
+;
+MSG_CANT_ADD_APPWINDOW
+Impossible de promouvoir la fenêtre en AppWindow !
+;Can't promote window as an AppWindow!
 ;
 MSG_SAVE_FAILED
 La sauvegarde a échoué !
@@ -87,7 +95,7 @@ MSG_MEN_SETTINGS
 Configuration
 ;
 MSG_MEN_SETTINGS_SAVEDEF
-D\0Sauver par défaut
+D\0Sauver comme configuration par défaut
 ;
 MSG_MEN_PICT
 Image
@@ -135,7 +143,7 @@ MSG_ASL_SAVE_TITLE
 Sauver le fichier
 ;
 MSG_ABOUT
-MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+MultiView %ld.%ld (%s)\n\ndatatypes.library %s\n\n%s %s
 ;
 MSG_ABOUT_TITLE
 MultiView - L'afficheur universel
