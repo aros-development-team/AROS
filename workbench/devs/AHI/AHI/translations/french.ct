@@ -33,7 +33,7 @@ O\000Ouvrir...
 ; O\000Open...
 ;
 msgItemSaveAs
-S\000Sauver en...
+S\000Sauver sous...
 ; A\000Save As...
 ;
 msgItemAbout
@@ -49,15 +49,15 @@ msgMenuEdit
 ; \000Edit
 ;
 msgItemDefaults
-D\000Réinitialiser au défaut
+D\000Réinitialiser aux valeurs par défaut
 ; D\000Reset To Defaults
 ;
 msgItemLastSaved
-L\000Dernier sauvé
+L\000Rétablir les dernières valeurs sauvées
 ; L\000Last Saved
 ;
 msgItemRestore
-R\000Restaurer
+R\000Rétablir les valeurs à l'ouverture
 ; R\000Restore
 ;
 msgMenuSettings
@@ -65,7 +65,7 @@ msgMenuSettings
 ; \000Settings
 ;
 msgItemCreateIcons
-I\000Créer des Icônes?
+I\000Créer des Icônes ?
 ; I\000Create Icons?
 ;
 msgMenuHelp
@@ -77,21 +77,21 @@ Help\000Aide...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-H\000Guide utilisateur AHI
+H\000Guide de l'utilisateur d'AHI...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
-\000Index sur le Concept
+\000Index conceptuel...
 ; \000Concept Index...
 ;
 ; *** The pages ***
 ;
 msgPageMode
-Mode de préférences
+Réglages de base
 ; Mode settings
 ;
 msgPageAdvanced
-Préférences avancées
+Réglages avancés
 ; Advanced settings
 ;
 ; *** The units ***
@@ -107,15 +107,15 @@ Unité musicale
 ; *** Properties box ***
 ;
 msgProperties
-Mode ID\nEnregistrement\nAuteur\nCopyright\nControleur\nVersion\nAnnotation
+Mode ID\nEnregistrement\nAuteur\nCopyright\nContrôleur\nVersion\nAnnotation
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
-Full duplex
+Duplex intégral
 ; Full duplex
 ;
 msgPropRecordHalf
-Half duplex
+Semi-duplex
 ; Half duplex
 ;
 msgPropRecordNone
@@ -161,7 +161,7 @@ _Entrée
 ; _Input
 ;
 msgOptNoInputs
-Pas d'entrées
+Pas d'entrée
 ; No inputs
 ;
 msgOptOutput
@@ -176,11 +176,11 @@ Pas de sortie
 ; *** Global Options ***
 ;
 msgGlobalOptions
-Options générales
+Options globales
 ; Global options
 ;
 msgGlobOptDebugLevel
-Mode _Déboggue
+Niveau de _déboggage
 ; _Debug level
 ;
 msgGlobOptEcho
@@ -188,11 +188,11 @@ _Écho
 ; _Echo
 ;
 msgGlobOptSurround
-Surround en modes "_Fast"
+Surround en mode « écho _rapide »
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-_Limite de l'usage CPU
+Limite d'utilisation du _processeur
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
@@ -206,7 +206,7 @@ Bas
 ; Low
 ;
 msgDebugHigh
-Haut
+Élevé
 ; High
 ;
 msgDebugFull
@@ -267,45 +267,45 @@ msgTextCopyright
 ; %s%s\nCopyright ©%s
 ;
 msgTextNoWindow
-Incapable d'ouvrir la fenêtre
+Impossible d'ouvrir la fenêtre
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Incapable d'allouer la fenêtre de requête de fichiers
+Impossible d'allouer la fenêtre de requête de fichiers
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-Incapable de trouver `%s'!
+Impossible de trouver `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Incapable d'ouvrir `%s´ version %ld.
+Impossible d'ouvrir `%s´ version %ld.
 ; Unable to open `%s´ version %ld.
 ;
 ; *** Additions
 ;
 msgGlobOptMasterVol
-Volume
+Volu_me général
 ; _Master volume
 ;
 msgMVNoClip
-Sans clipping
+Sans écrêtage
 ; Without clipping
 ;
 msgMVClip
-Avec clipping
+Avec écrêtage
 ; With clipping
 ;
 msgGlobOptACTime
-Délai anti-clic par défaut
+Délai anti-_clic par défaut
 ; Default anti-click time
 ;
 msgButtonPlay
-Tester le son
+_Tester le son
 ; _Play a test sound
 ;
 msgOptScalemode
-Échelon de volume
+Limitation du _volume
 ; Volume sc_aling
 ;
 msgSMFixedSafe
@@ -345,6 +345,6 @@ msgACTimeFmt
 ; %ld ms
 ;
 msgPercentFmt
-%ld%%
+%ld %%
 ; %ld%%
 ;
