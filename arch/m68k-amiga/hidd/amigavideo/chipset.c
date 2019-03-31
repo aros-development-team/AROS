@@ -615,7 +615,7 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
     if (bmcmod == vHidd_ColorModel_TrueColor)
     {
         OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
-        bmPF = HIDD_Gfx_GetPixFmt(o, pf);
+        bmPF = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(o, pf);
     }
 
     if (csd->aga && csd->aga_enabled && width > 16)
