@@ -1,4 +1,4 @@
-## version $VER: networkprefs.catalog 4.1 (03.01.2018)
+## version $VER: networkprefs.catalog 4.2 (31.3.2019)
 ## language français
 ## codeset 0
 ;
@@ -15,7 +15,7 @@ MSG_IFNAME
 Nom
 ;
 MSG_UP
-Active
+Actif
 ;
 MSG_DEVICE
 Périphérique
@@ -61,13 +61,13 @@ Nom de domaine
 ; Domain Name
 ;
 MSG_SERIAL_DEVICE
-Périph. série
+Périphérique
 ;
 MSG_UNIT_NUMBER
 Unité
 ;
 MSG_IP_MODE_MANUAL
-Manuel
+Adresse saisie manuellement
 ; Manual
 ;
 MSG_IP_MODE_DHCP
@@ -75,7 +75,7 @@ Adresse obtenue avec DHCP
 ; Get address from DHCP
 ;
 MSG_ENC_NONE
-Aucune
+Aucun
 ;
 MSG_ENC_WEP
 WEP
@@ -84,16 +84,16 @@ MSG_ENC_WPA
 WPA
 ;
 MSG_KEY_TEXT
-Passphrase
+Alphanumérique
 ;
 MSG_KEY_HEX
-Hexadécimal
+Hexadécimale
 ;
 MSG_SSID
 Réseau
 ;
 MSG_ENCTYPE
-Encryption
+Protocole de sécurité
 ;
 MSG_KEYTYPE
 Type de clé
@@ -108,7 +108,7 @@ MSG_ADHOC
 Ad-hoc
 ;
 MSG_TAB_IP_CONFIGURATION
-Configuration IP
+Configuration IPv4
 ; IP Configuration
 ;
 MSG_TAB_COMPUTER_NAMES
@@ -116,7 +116,7 @@ Noms des ordinateurs
 ; Computer Names
 ;
 MSG_TAB_WIRELESS
-Reseaux sans fil
+Réseaux sans fil
 ;
 MSG_TAB_MOBILE
 Mobile
@@ -133,15 +133,15 @@ Erreur inconnue
 ; Unknown error
 ;
 MSG_ERR_NOT_RESTARTED_STACK
-La pile réseau n'a pu démarrer.
+La pile réseau n'a pu redémarrer.
 ; Failed to restart network stack
 ;
 MSG_ERR_NOT_RESTARTED_WIRELESS
-Échec en redémarrant le sans fil
+Échec du redémarrage du réseau sans fil
 ;Failed to restart wireless networking
 ;
 MSG_ERR_NOT_RESTARTED_MOBILE
-Échec en redémarrant ModemManager
+Échec du redémarrage de ModemManager
 ;Failed to restart ModemManager
 ;
 MSG_BUTTON_OK
@@ -167,13 +167,21 @@ MSG_ERROR_TITLE
 Erreur
 ; Error
 ;
+MSG_WARNING_TITLE
+Attention !
+;Warning
+;
 MSG_ERR_NOT_SAVED_PREFS
 Les préférences réseau n'ont pas été sauvegardées sur %s.
 ; Network preferences not saved to %s
 ;
 MSG_ERR_NOT_COPIED_FILES
-Fichiers additionnels non copiés vers %s.
+Les fichiers additionnels n'ont pas été copiés vers %s.
 ; Additional files not copied to %s
+;
+MSG_WARN_MULTIPLE_IFACES
+Le protocole DHCP n'est pas fiable quand plusieurs interfaces sont configurées
+;DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE
 Information
