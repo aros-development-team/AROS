@@ -1,4 +1,4 @@
-## version $VER: info.catalog 1.1 (13.8.2003)
+## version $VER: info.catalog 1.2 (31.3.2019)
 ## language français
 ## codeset 0
 ;
@@ -10,7 +10,8 @@ MSG_DESCRIPTION
 Informations des icônes
 ;
 MSG_COPYRIGHT
-Informations des icônes\n©AROS Dev Team
+Informations des icônes\n\xa9 2003-2019, l'équipe de développement d'AROS
+;Icon information \xa9 2003-2010, The AROS Development Team
 ;
 MSG_ICON
 Icône
@@ -58,13 +59,13 @@ MSG_INFORMATION
 Information
 ;
 MSG_PROTECTION
-Protection
+Bits de protection
 ;
 MSG_TOOLTYPES
 Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-Erreur : Ne peut être démarré depuis le shell
+Erreur : Informations ne peut être démarré depuis le shell
 ;
 MSG_ABOUT
 À propos...
@@ -103,10 +104,10 @@ MSG_VERSION
 Version
 ;
 MSG_OWNERID
-n° Propriétaire
+Identificateur du propriétaire
 ;
 MSG_GROUPID
-n° Groupe
+Identificateur du groupe
 ;
 MSG_OWNERNAME
 Propriétaire
@@ -134,4 +135,12 @@ _Annuler
 ;
 MSG_OK
 Ok
+;
+MSG_PATH
+Chemin d'accès
+;Path
+;
+MSG_BTNPATH
+Ouvrir le répertoire...
+;Open path...
 ;
