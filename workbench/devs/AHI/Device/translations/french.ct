@@ -1,10 +1,6 @@
-## version $VER: ahi.catalog 4.2 (13.4.97)
+## version $VER: ahi.catalog 4.3 (31.3.2019)
 ## language français
 ## codeset 0
-;
-## chunk AUTH Translated by Stéphane Barbaray <opty@club-internet.fr>
-;#language english
-;#version 4
 ;
 ;    AHI - Hardware independent audio subsystem
 ;    Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
@@ -36,19 +32,19 @@ msgMenuControl
 ; \000\000Control
 ;
 msgMenuLastMode
-D\000Dernier mode
+D\000Mode précédent
 ; L\000Last Mode
 ;
 msgMenuNextMode
-P\000Prochain mode
+P\000Mode suivant
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\000Liste des Propriétés
+?\000Liste des Propriétés...
 ; ?\000Property List...
 ;
 msgMenuRestore
-R\000Restaurer
+R\000Rétablir
 ; R\000Restore
 ;
 msgMenuOK
@@ -62,7 +58,7 @@ A\000Annuler
 ; Mode name in requester whose driver cannot be opened
 ;
 msgUnknown
-INCONNU:ID Audio 0x%08lx
+INCONNU : ID Audio 0x%08lx
 ; UNKNOWN:Audio ID 0x%08lx
 ;
 ; The requester gadgets
@@ -85,18 +81,18 @@ msgDefaultMode
 Mode audio par défaut
 ; Default audio mode
 ;
-; The requester's info-winodow
+; The requester's info-window
 ;
 msgReqInfoTitle
 Mode propriétés
 ; Mode Properties
 ;
 msgReqInfoAudioID
-Mode audio ID: 0x%08lx
+Mode audio ID : 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Résolution: %ld bit %s
+Résolution : %ld bit %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
@@ -112,11 +108,11 @@ stéréo avec effet panoramique
 ; stereo with panning
 ;
 msgReqInfoChannels
-Canaux: %ld
+Canaux : %ld
 ; Channels: %ld
 ;
 msgReqInfoMixrate
-Niveau de mixage: %ld-%ld Hz
+Niveau de mixage : %ld-%ld Hz
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
@@ -124,18 +120,18 @@ Mélange HiFi
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf
-Enregistrement en 'half duplex'
+Enregistrement en semi-duplex
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-Enregistrement en 'full duplex'
+Enregistrement en duplex intégral
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel
-
+7.1 multicanal
 ; 7.1 multichannel
 ;
 msgFreqFmt
-
+%lu Hz
 ; %lu Hz
 ;
