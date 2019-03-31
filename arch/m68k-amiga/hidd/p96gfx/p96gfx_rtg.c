@@ -33,7 +33,7 @@ static AROS_UFH1(ULONG, RTGCall_Default,
 }
 
 /* Set fallback functions */
-void InitRTG(APTR boardinfo)
+void P96GFXRTG__Init(APTR boardinfo)
 {
     UWORD i;
 
@@ -41,7 +41,7 @@ void InitRTG(APTR boardinfo)
         pl(boardinfo + i, (ULONG)RTGCall_Default);
 }
 
-WORD getrtgdepth(ULONG rgbformat)
+WORD P96GFXRTG__GetDepth(ULONG rgbformat)
 {
     if (rgbformat & RGBFF_CLUT)
         return 8;
@@ -56,7 +56,7 @@ WORD getrtgdepth(ULONG rgbformat)
     return 0;
 }
 
-ULONG getrtgformat(struct p96gfx_staticdata *csd, OOP_Object *pixfmt)
+ULONG P96GFXRTG__GetFormat(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, OOP_Object *pixfmt)
 {
     IPTR depth, redmask, bluemask, endianswitch;
 
@@ -98,18 +98,18 @@ ULONG getrtgformat(struct p96gfx_staticdata *csd, OOP_Object *pixfmt)
         if (redmask == 0x00ff0000)
            return RGBFB_R8G8B8;
     }
-    D(bug("getrtgformat RGBFB_NONE!? %d %08x %08x\n", depth, redmask, bluemask));
+    D(bug("P96GFXRTG__GetFormat RGBFB_NONE!? %d %08x %08x\n", depth, redmask, bluemask));
     return RGBFB_NONE;
 }
 
-void makerenderinfo(struct p96gfx_staticdata *csd, struct RenderInfo *ri, struct bm_data *bm)
+void P96GFXRTG__MakeRenderInfo(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, struct RenderInfo *ri, struct P96GfxBitMapData *bm)
 {
     ri->Memory = bm->VideoData;
     ri->BytesPerRow = bm->bytesperline;
     ri->RGBFormat = bm->rgbformat;
 }
 
-struct ModeInfo *getrtgmodeinfo(struct p96gfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo)
+struct ModeInfo *P96GFXRTG__GetModeInfo(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo)
 {
     struct LibResolution *node;
     IPTR width, height, depth;
@@ -118,10 +118,10 @@ struct ModeInfo *getrtgmodeinfo(struct p96gfx_staticdata *csd, OOP_Object *sync,
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 
-    D(bug("getrtgmodeinfo %dx%dx%d\n", width, height, depth));
+    D(bug("P96GFXRTG__GetModeInfo %dx%dx%d\n", width, height, depth));
     // P96 RTG driver does not need anything else
     // but real RTG does
-    ForeachNode((csd->boardinfo + PSSO_BoardInfo_ResolutionsList), node) {
+    ForeachNode((cid->boardinfo + PSSO_BoardInfo_ResolutionsList), node) {
         if (node->Width == width && node->Height == height) {
             UBYTE index = (depth + 7) / 8;
             if (node->Modes[index]) {

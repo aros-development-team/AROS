@@ -18,39 +18,31 @@
 
 #include LC_LIBDEFS_FILE
 
-BOOL Init_P96GFXClass(LIBBASETYPEPTR LIBBASE);
+BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE);
 
 #undef SysBase
 #undef OOPBase
 
-static int P96GFX_Init(LIBBASETYPEPTR LIBBASE)
+static int P96GFX_LibInit(LIBBASETYPEPTR LIBBASE)
 {
-    ULONG err;
     struct ExecBase *SysBase = LIBBASE->csd.cs_SysBase;
+    struct Library  *OOPBase = LIBBASE->csd.cs_OOPBase;
     LIBBASE->csd.cs_GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     struct Library *GfxBase = LIBBASE->csd.cs_GfxBase;
-    struct Library  *OOPBase = LIBBASE->csd.cs_OOPBase;
 
-    D(bug("************************* P96GFX_Init ******************************\n"));
+    D(bug("[HiddP96Gfx] %s() ******************************\n", __func__));
 
     if (!GfxBase)
         return FALSE;
 
     LIBBASE->csd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
-    if (!Init_P96GFXClass(LIBBASE)) {
+    if (!P96GFX__Initialise(LIBBASE)) {
+        D(bug("[HiddP96Gfx] %s: P96GFX__Initialise failed\n", __func__));
         CloseLibrary(GfxBase);
         return FALSE;
     }
 
-    LIBBASE->library.lib_OpenCnt = 1;
-
-    err = AddDisplayDriver(LIBBASE->csd.gfxclass, NULL,
-                           DDRV_KeepBootMode, TRUE,
-                           DDRV_IDMask      , 0xF0000000,
-                           TAG_DONE);
-
-    D(bug("P96GFXHIDD AddDisplayDriver() result: %u\n", err));
-    return err ? FALSE : TRUE;
+    return TRUE;
 }
-ADD2INITLIB(P96GFX_Init, 0)
+ADD2INITLIB(P96GFX_LibInit, 0)

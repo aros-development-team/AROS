@@ -2,7 +2,7 @@
     Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: P96 card Gfx Hidd wrapper.
+    Desc: P96 rtg card Gfx Hidd wrapper.
     Lang: English.
 */
 
@@ -11,6 +11,7 @@
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
+#include <graphics/driver.h>
 #include <graphics/displayinfo.h>
 #include <intuition/intuitionbase.h>
 #include <aros/libcall.h>
@@ -19,6 +20,7 @@
 #include <proto/kernel.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <proto/graphics.h>
 #include <oop/oop.h>
 
 #include <hidd/hidd.h>
@@ -34,17 +36,24 @@
 #include "p96gfx_bitmap.h"
 #include "p96gfx_rtg.h"
 
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG                  0
+#define DEBUG                   0
 #define DRTG(x)
+#define DEXTRA(x)
 #include <aros/debug.h>
 
-#define SIZE_RESLIST 5
-#define SIZE_PFLIST 19
-#define SIZE_MODELIST (5 + RGBFB_MaxFormats)
+#define SIZE_RESLIST            5
+#define SIZE_PFLIST             19
+#define SIZE_MODELIST           (5 + RGBFB_MaxFormats)
+
+#define SPRITE_PEN_COUNT        16
+/* REMOVE-ME: 4MB Hack (used for easier debug of vram <-> ram swapping) !!!!*/
+/*#define USE_VRAM_HACK*/
 
 HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_QueryModeIDs *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     struct RTGMode *node;
     struct TagItem *tag, *tstate;
@@ -54,7 +63,7 @@ HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
     HIDDT_ModeID *modeids;
     WORD cnt;
 
-   if (csd->superforward)
+   if (cid->superforward)
         return (HIDDT_ModeID*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     for (tstate = msg->queryTags; (tag = NextTagItem(&tstate)); )
@@ -80,12 +89,11 @@ HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
             case tHidd_GfxMode_PixFmts:
                 pf = (OOP_Object**)tag->ti_Tag;
                 break;
-
         }
     }
     DB2(bug("[P96Gfx] %s: (%dx%d)-(%dx%d) %p\n", __func__, minwidth, minheight, maxwidth, maxheight, pf);)
     cnt = 0;
-    ForeachNode(&csd->rtglist, node) {
+    ForeachNode(&cid->rtglist, node) {
         if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight) {
             OOP_Object **pfp = NULL;
             if (pf) {
@@ -106,7 +114,7 @@ HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
     if (!modeids)
         return NULL;
     cnt = 0;
-    ForeachNode(&csd->rtglist, node) {
+    ForeachNode(&cid->rtglist, node) {
         if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight) {
             OOP_Object **pfp = NULL;
             if (pf) {
@@ -131,8 +139,11 @@ HIDDT_ModeID *P96GFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
 
 VOID P96GFXCl__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ReleaseModeIDs *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
-    if (csd->superforward)
+
+    if (cid->superforward)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     else
         FreeVec(msg->modeIDs);
@@ -140,49 +151,55 @@ VOID P96GFXCl__Hidd_Gfx__ReleaseModeIDs(OOP_Class *cl, OOP_Object *o, struct pHi
 
 HIDDT_ModeID P96GFXCl__Hidd_Gfx__NextModeID(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NextModeID *msg)
 {
-        struct p96gfx_staticdata *csd = CSD(cl);
-        struct RTGMode *node = NULL;
-        HIDDT_ModeID mid = vHidd_ModeID_Invalid;
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
+    struct p96gfx_staticdata *csd = CSD(cl);
+    struct RTGMode *node = NULL;
+    HIDDT_ModeID mid = vHidd_ModeID_Invalid;
 
-        DB2(bug("[P96Gfx] %s(%08x)\n", __func__, msg->modeID);)
-        if (msg->modeID != vHidd_ModeID_Invalid) {
-                ForeachNode(&csd->rtglist, node) {
-                        if (node->modeid == msg->modeID) {
-                                node = (struct RTGMode*)node->node.ln_Succ;
-                                break;
-                        }
-                }
+    DB2(bug("[P96Gfx] %s(%08x)\n", __func__, msg->modeID);)
+
+    if (msg->modeID != vHidd_ModeID_Invalid) {
+        ForeachNode(&cid->rtglist, node) {
+            if (node->modeid == msg->modeID) {
+                node = (struct RTGMode*)node->node.ln_Succ;
+                break;
+            }
         }
-        if (!node)
-                node = (struct RTGMode*)csd->rtglist.lh_Head;
-        if (node->node.ln_Succ) {
-                mid = node->modeid;
-                *msg->syncPtr = node->sync;
-                *msg->pixFmtPtr = node->pf;
-        }
-        DB2(bug("[P96Gfx] %s:  %08x %p %p\n", __func__, mid, *msg->syncPtr, *msg->pixFmtPtr);)
-        return mid;
+    }
+    if (!node)
+        node = (struct RTGMode*)cid->rtglist.lh_Head;
+    if (node->node.ln_Succ) {
+        mid = node->modeid;
+        *msg->syncPtr = node->sync;
+        *msg->pixFmtPtr = node->pf;
+    }
+    DB2(bug("[P96Gfx] %s:  %08x %p %p\n", __func__, mid, *msg->syncPtr, *msg->pixFmtPtr);)
+    return mid;
 }
 
 BOOL P96GFXCl__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMode *msg)
 {
-        struct p96gfx_staticdata *csd = CSD(cl);
-        struct RTGMode *node;
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
+    struct p96gfx_staticdata *csd = CSD(cl);
+    struct RTGMode *node;
 
-        if (csd->superforward)
-                return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    DB2(bug("[P96Gfx] %s(%08x)\n", __func__, msg->modeID);)
 
-        DB2(bug("[P96Gfx] %s(%08x)\n", __func__, msg->modeID);)
-        ForeachNode(&csd->rtglist, node) {
-                if (node->modeid == msg->modeID) {
-                        *msg->syncPtr = node->sync;
-                        *msg->pixFmtPtr = node->pf;
-                        DB2(bug("[P96Gfx] %s: %p %p\n", __func__, node->sync, node->pf);)
-                        return TRUE;
-                }
+    if (cid->superforward)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    ForeachNode(&cid->rtglist, node) {
+        if (node->modeid == msg->modeID) {
+            *msg->syncPtr = node->sync;
+            *msg->pixFmtPtr = node->pf;
+            DB2(bug("[P96Gfx] %s: %p %p\n", __func__, node->sync, node->pf);)
+            return TRUE;
         }
-        DB2(bug("[P96Gfx] %s: FAIL\n", __func__);)
-        return FALSE;
+    }
+    DB2(bug("[P96Gfx] %s: FAIL\n", __func__);)
+    return FALSE;
 }
 
 struct RTGFormat
@@ -219,17 +236,17 @@ static const struct RTGFormat formats[] =
 
 static const UBYTE rgbtypelist[] = {
     RGBFB_CLUT,
-    
+
     RGBFB_R5G6B5PC,
     RGBFB_R5G5B5PC,
     RGBFB_B5G6R5PC,
     RGBFB_B5G5R5PC,
     RGBFB_R5G6B5,
     RGBFB_R5G5B5,
-    
+
     RGBFB_B8G8R8,
     RGBFB_R8G8B8,
-    
+
     RGBFB_B8G8R8A8,
     RGBFB_A8B8G8R8,
     RGBFB_A8R8G8B8,
@@ -237,12 +254,12 @@ static const UBYTE rgbtypelist[] = {
     0
 };
 
-char *P96GFX__MakeBoardName(struct p96gfx_staticdata *csd)
+char *P96GFX__MakeBoardName(struct p96gfx_carddata *cid)
 {
-    char *BoardName = gp(csd->boardinfo + PSSO_BoardInfo_BoardName);
+    char *BoardName = gp(cid->boardinfo + PSSO_BoardInfo_BoardName);
     if (BoardName)
         return BoardName;
-    ULONG boardType = gl(csd->boardinfo + PSSO_BoardInfo_BoardType);
+    ULONG boardType = gl(cid->boardinfo + PSSO_BoardInfo_BoardType);
     switch (boardType)
     {
         case P96BoardType_UAEGfx:
@@ -271,49 +288,48 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 {
     struct p96gfx_staticdata *csd = CSD(cl);
     struct LibResolution *r;
-    WORD rescnt, i, j, k, l;
     struct TagItem *reslist, *restags, *pflist, *modetags;
-    struct pRoot_New mymsg;
     struct TagItem mytags[] = {
-        { aHidd_Gfx_ModeTags,	0                   },
-        { aHidd_Name,           (IPTR)"p96gfx.hidd" },
-        { aHidd_HardwareName,   0                   },
-        { aHidd_ProducerName,   (IPTR)"P96"         },
-        { TAG_MORE,             0UL                 }
+        { aHidd_Gfx_ModeTags,	        0                   },
+        { aHidd_Name,                   (IPTR)"p96gfx.hidd" },
+        { aHidd_HardwareName,           0                   },
+        { aHidd_ProducerName,           (IPTR)"P96"         },
+        { TAG_MORE,                     0UL                 }
     };
+    struct pRoot_New mymsg;
     char *BoardName;
-
     UWORD supportedformats, gotmodes;
+    WORD rescnt, i, j, k, l;
+    struct p96gfx_carddata *cid = (struct p96gfx_carddata *)GetTagData(aHidd_P96Gfx_CardData, NULL, msg->attrList);
 
-    if (csd->initialized)
+    if (!cid || cid->initialized)
         return NULL;
 
-    NEWLIST(&csd->rtglist);
-    NEWLIST(&csd->bitmaplist);
-    InitSemaphore(&csd->HWLock);
-    InitSemaphore(&csd->MultiBMLock);
-    
-    BoardName  = P96GFX__MakeBoardName(csd);
+    NEWLIST(&cid->rtglist);
+    NEWLIST(&cid->bitmaplist);
+    InitSemaphore(&cid->HWLock);
+    InitSemaphore(&cid->MultiBMLock);
+
+    BoardName  = P96GFX__MakeBoardName(cid);
     if (BoardName)
     {
         D(bug("[P96Gfx] %s: BoardName '%s'\n", __func__, BoardName);)
-        csd->p96gfx_HWName = AllocVec(strlen(BoardName) + 18, MEMF_PUBLIC);
-        csd->p96gfx_HWResTmplt = AllocVec(strlen(BoardName) + 7, MEMF_PUBLIC);
-        sprintf(csd->p96gfx_HWName, "%s P96 Card Wrapper", BoardName);
-        sprintf(csd->p96gfx_HWResTmplt, "%s:%%hx%%v", BoardName);
+        cid->p96gfx_HWName = AllocVec(strlen(BoardName) + 18, MEMF_PUBLIC);
+        cid->p96gfx_HWResTmplt = AllocVec(strlen(BoardName) + 7, MEMF_PUBLIC);
+        sprintf(cid->p96gfx_HWName, "%s P96 Card Wrapper", BoardName);
+        sprintf(cid->p96gfx_HWResTmplt, "%s:%%hx%%v", BoardName);
     }
     else
     {
-        csd->p96gfx_HWResTmplt = (csd->CardBase) ? "RTGFX:%hx%v" : "P96:%hx%v";
-        csd->p96gfx_HWName = "P96 Card Wrapper";
+        cid->p96gfx_HWResTmplt = (cid->CardBase) ? "RTGFX:%hx%v" : "P96:%hx%v";
+        cid->p96gfx_HWName = "P96 Card Wrapper";
     }
-    mytags[2].ti_Data = (IPTR)csd->p96gfx_HWName;
+    mytags[2].ti_Data = (IPTR)cid->p96gfx_HWName;
 
-    supportedformats = gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats);
-    //kprintf("====== SUPPORTED FORMATS: 0x%x\n", supportedformats);
+    supportedformats = gw(cid->boardinfo + PSSO_BoardInfo_RGBFormats);
 
     rescnt = 0;
-    ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
+    ForeachNode(cid->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
         rescnt++;
     }
     D(bug("[P96Gfx] %s: resolutions: %d, supportmask: %x\n", __func__, rescnt, supportedformats);)
@@ -322,15 +338,15 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     restags = AllocVec((rescnt + 1) * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
     pflist = AllocVec(RGBFB_MaxFormats * SIZE_PFLIST * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
     modetags = AllocVec(SIZE_MODELIST * sizeof(struct TagItem), MEMF_PUBLIC | MEMF_CLEAR);
-    
+
     i = 0;
-    ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
+    ForeachNode(cid->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
         reslist[i * SIZE_RESLIST + 0].ti_Tag = aHidd_Sync_HDisp;
         reslist[i * SIZE_RESLIST + 0].ti_Data = r->Width;
         reslist[i * SIZE_RESLIST + 1].ti_Tag = aHidd_Sync_VDisp;
         reslist[i * SIZE_RESLIST + 1].ti_Data = r->Height;
         reslist[i * SIZE_RESLIST + 2].ti_Tag = aHidd_Sync_Description;
-        reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)csd->p96gfx_HWResTmplt;
+        reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)cid->p96gfx_HWResTmplt;
         reslist[i * SIZE_RESLIST + 3].ti_Tag = aHidd_Sync_PixelClock;
         reslist[i * SIZE_RESLIST + 3].ti_Data = r->Modes[CHUNKY]->PixelClock;
         reslist[i * SIZE_RESLIST + 4].ti_Tag = TAG_DONE;
@@ -342,13 +358,13 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     }
     restags[i].ti_Tag = TAG_DONE;
     restags[i].ti_Data = 0;
-    
+
     gotmodes = 0;
     k = 0;
     j = 0;
     for (i = 0; rgbtypelist[i]; i++) {
         UBYTE rgbtype = rgbtypelist[i];
-        WORD depth = getrtgdepth(1 << rgbtype);
+        WORD depth = P96GFXRTG__GetDepth(1 << rgbtype);
         if (!((1 << rgbtype) & RGBFB_SUPPORTMASK) || depth == 0 || !((1 << rgbtype) & supportedformats)) {
             pflist[j].ti_Tag = TAG_DONE;
             pflist[j].ti_Data = 0;
@@ -380,7 +396,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         modetags[k].ti_Tag = aHidd_Gfx_PixFmtTags;
         modetags[k].ti_Data = (IPTR)&pflist[j];
         k++;
-            
+
         pflist[j].ti_Tag = aHidd_PixFmt_RedShift;
         pflist[j].ti_Data = formats[l].rs;
         j++;
@@ -436,7 +452,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         pflist[j].ti_Data = 0;
         j++;
     }
- 
+
     modetags[k].ti_Tag = aHidd_Sync_HMin;
     modetags[k].ti_Data = 112;
     k++;
@@ -451,9 +467,9 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     k++;
     modetags[k].ti_Tag = TAG_MORE;
     modetags[k].ti_Data = (IPTR)restags;
- 
+
     mytags[0].ti_Data = (IPTR)modetags;
- 
+
     EnterFunc(bug("[P96Gfx] %s: tags @ %x\n", __func__, mytags);)
 
     mymsg.mID	= msg->mID;
@@ -464,16 +480,24 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL != o)
     {
-        struct gfx_data *data = OOP_INST_DATA(cl, o);
+        struct P96GfxData *data = OOP_INST_DATA(cl, o);
+        struct TagItem cmtags[] = {
+            { aHidd_ColorMap_NumEntries,    SPRITE_PEN_COUNT    },
+            { TAG_DONE,                     0UL                 }
+        };
         HIDDT_ModeID *midp;
 
         D(bug("[P96Gfx] %s: Hidd Object @ 0x%p\n", __func__, o);)
+        data->cardData = cid;
         NewList((struct List *)&data->bitmaps);
-        csd->initialized = 1;
-        csd->spritecolors = 16;
-        csd->spritergbformat = RGBFF_PLANAR;
 
-        csd->superforward = TRUE;
+        data->spriteColors = OOP_NewObject(NULL, CLID_Hidd_ColorMap, cmtags);
+        OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR*)&data->pfo);
+        cid->spritepencnt = SPRITE_PEN_COUNT;
+
+        cid->initialized = 1;
+
+        cid->superforward = TRUE;
         midp = HIDD_Gfx_QueryModeIDs(o, NULL);
         for (i = 0; midp[i] != vHidd_ModeID_Invalid; i++) {
             OOP_Object *sync, *pf;
@@ -481,7 +505,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             IPTR dwidth, dheight;
             struct RTGMode *node1, *node2;
             ULONG modeid, rtgmodeid, p96mode;
-            
+
             if (!HIDD_Gfx_GetMode(o, mid, &sync, &pf))
                 continue;
             OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
@@ -490,7 +514,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             DB2(bug("[P96Gfx] %s: w=%d h=%d mode=%08x sync=%x pf=%x\n", __func__, dwidth, dheight, mid, sync, pf);)
 
             modeid = vHidd_ModeID_Invalid;
-            ForeachNode(csd->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
+            ForeachNode(cid->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
                 if (r->Width == dwidth && r->Height == dheight) {
                     modeid = r->DisplayID;
                     break;
@@ -501,10 +525,10 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
                 continue;
             }
 
-            p96mode = getrtgformat(csd, pf);
+            p96mode = P96GFXRTG__GetFormat(csd, cid, pf);
             rtgmodeid = (modeid & 0x00ff0000) | 0x1000 | (p96mode << 8);
 
-            ForeachNode(&csd->rtglist, node2) {
+            ForeachNode(&cid->rtglist, node2) {
                 if (node2->width == dwidth && node2->height == dheight && node2->modeid == rtgmodeid)
                     break;
             }
@@ -519,20 +543,19 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             node1->pf = pf;
             node1->sync = sync;
             node1->modeid = rtgmodeid;
-            AddTail(&csd->rtglist, &node1->node);
+            AddTail(&cid->rtglist, &node1->node);
 
             DB2(bug("[P96Gfx] %s: Added %dx%d %08x %d\n", __func__, node1->width, node1->height, node1->modeid, p96mode);)
         }
         HIDD_Gfx_ReleaseModeIDs(o, midp);
-        csd->superforward = FALSE;
-
+        cid->superforward = FALSE;
     }
     
     FreeVec(restags);
     FreeVec(reslist);
     FreeVec(pflist);
     FreeVec(modetags);
-    
+
     ReturnPtr("[P96Gfx]:New", OOP_Object *, o);
 }
 
@@ -541,17 +564,17 @@ OOP_Object *P96GFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struc
 {
     OOP_Object      *object = NULL;
 
-    EnterFunc(bug("[P96Gfx] %s()\n", __func__);)
+    D(bug("[P96Gfx] %s()\n", __func__));
 
     if (msg->cl == CSD(cl)->basebm)
     {
-        struct p96gfx_staticdata *csd = CSD(cl);
-        HIDDT_ModeID		modeid;
+        struct p96gfx_staticdata        *csd = CSD(cl);
+        HIDDT_ModeID		        modeid;
         struct pHidd_Gfx_CreateObject   p;
         struct TagItem tags[] =
         {
-            { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
-            { TAG_MORE, (IPTR)msg->attrList }
+            { TAG_IGNORE,       TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
+            { TAG_MORE,         (IPTR)msg->attrList }
         };
 
         modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
@@ -573,9 +596,11 @@ OOP_Object *P96GFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struc
 
 VOID P96GFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     ULONG idx;
-    
+
     //bug("P96GFXCl__Root__Get %x\n", msg->attrID);
 
     if (IS_GFX_ATTR(msg->attrID, idx))
@@ -584,27 +609,35 @@ VOID P96GFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch (idx)
         {
             case aoHidd_Gfx_HWSpriteTypes:
-                *msg->storage = csd->hardwaresprite ? vHidd_SpriteType_3Plus1 : 0;
-            return;
+                *msg->storage = cid->hardwaresprite ? vHidd_SpriteType_3Plus1 : 0;
+                return;
             case aoHidd_Gfx_SupportsHWCursor:
-                *msg->storage = csd->hardwaresprite;
-            return;
+                *msg->storage = cid->hardwaresprite;
+                return;
             case aoHidd_Gfx_NoFrameBuffer:
                 *msg->storage = TRUE;
-            return;
+                return;
             case aoHidd_Gfx_IsWindowed:
                 *msg->storage = FALSE;
-            return;
+                return;
             case aoHidd_Gfx_DriverName:
                 *msg->storage = (IPTR)"P96GFX";
-            return;
+                return;
         }
+    }
+    Hidd_P96Gfx_Switch(msg->attrID, idx)
+    {
+        case aoHidd_P96Gfx_CardData:
+            *msg->storage = (IPTR)data->cardData;
+            return;  
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-VOID P96GFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
+VOID P96GFXCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     struct TagItem  *tag, *tstate;
 
@@ -618,21 +651,23 @@ VOID P96GFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
             switch(idx)
             {
             case aoHidd_Gfx_ActiveCallBack:
-                csd->acb = (void *)tag->ti_Data;
+                cid->acb = (void *)tag->ti_Data;
                 break;
 
             case aoHidd_Gfx_ActiveCallBackData:
-                csd->acbdata = (APTR)tag->ti_Data;
+                cid->acbdata = (APTR)tag->ti_Data;
                 break;
             }
         }
     }
-    OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 #if 0
 ULONG P96GFXCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_MakeViewPort *msg)
 {
     struct p96gfx_staticdata *csd = CSD(cl);
+
+    D(bug("[P96Gfx] %s()\n", __func__));
 
     csd->vpe = NULL;
     if (!msg)
@@ -646,20 +681,26 @@ void P96GFXCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHid
 {
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    D(bug("[P96Gfx] %s()\n", __func__));
+
     csd->vpe = NULL;
-    bug("[P96Gfx] %s()\n", __func__);
 }
 #endif
 
-static void doshow(struct p96gfx_staticdata *csd, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
+static void P96GFXCl__DoShow(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
+    struct p96gfx_staticdata *csd = CSD(cl);
     struct IntuitionBase *ib = (struct IntuitionBase*)csd->cs_IntuitionBase;
     struct ViewPort *vpi = NULL;
+
+    D(bug("[P96Gfx] %s()\n", __func__));
 
     if (ib->FirstScreen)
         vpi = &ib->FirstScreen->ViewPort;
 
-    D(bug("[P96Gfx] %s: b=%p vp=%p vpi=%p acb=%p acbd=%p\n", __func__, bm, vp, vpi, csd->acb, csd->acbdata);)
+    D(bug("[P96Gfx] %s: b=%p vp=%p vpi=%p acb=%p acbd=%p\n", __func__, bm, vp, vpi, cid->acb, cid->acbdata);)
 
     if (bm && vpi == vp) {
         /* we are topmost screen -> show our display */
@@ -670,8 +711,8 @@ static void doshow(struct p96gfx_staticdata *csd, OOP_Object *bm, struct ViewPor
 
         OOP_SetAttrs(bm, (struct TagItem *)tags);
 
-        if (csd->acb)
-            csd->acb(csd->acbdata, bm);
+        if (cid->acb)
+            cid->acb(cid->acbdata, bm);
 
     } else if (bm) {
         /* we are not topmost -> turn off our display */
@@ -680,39 +721,45 @@ static void doshow(struct p96gfx_staticdata *csd, OOP_Object *bm, struct ViewPor
     } else {
     
         LOCK_HW
-        
+
         /* no display */
-        SetDisplay(csd, FALSE);
-        SetSwitch(csd, FALSE);
-        
+        SetDisplay(cid, FALSE);
+        SetSwitch(cid, FALSE);
+
         UNLOCK_HW
     }
 }
 
-OOP_Object *P96GFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *c, struct pHidd_Gfx_Show *msg)
+OOP_Object *P96GFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
-    struct p96gfx_staticdata *csd = CSD(cl);
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
 
-    doshow(csd, msg->bitMap, csd->viewport, FALSE);
+    D(bug("[P96Gfx] %s()\n", __func__));
+
+    P96GFXCl__DoShow(cl, o, msg->bitMap, cid->viewport, FALSE);
     return msg->bitMap;
 }
 
 ULONG P96GFXCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
-    struct p96gfx_staticdata *csd = CSD(cl);
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct HIDD_ViewPortData *vpd = msg->Data;
     OOP_Object *bm = NULL;
     struct ViewPort *vp = NULL;
+
+    D(bug("[P96Gfx] %s()\n", __func__));
 
     if (vpd) {
         bm = vpd->Bitmap;
         if (vpd->vpe)
             vp = vpd->vpe->ViewPort;
     }
-    csd->viewport = vp;
-    doshow(csd, bm, vp, FALSE);
+    cid->viewport = vp;
+    P96GFXCl__DoShow(cl, o, bm, vp, FALSE);
 
-    D(bug("[P96Gfx] %s: viewport=%p\n", __func__, csd->viewport);)
+    D(bug("[P96Gfx] %s: viewport=%p\n", __func__, cid->viewport);)
     return MCOP_OK;
 }
 
@@ -723,38 +770,46 @@ ULONG P96GFXCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHi
     OOP_Object *bm = NULL;
     struct ViewPort *vp = NULL;
 
+    D(bug("[P96Gfx] %s()\n", __func__));
+
     if (vpd) {
         bm = vpd->Bitmap;
         if (vpd->vpe)
             vp = vpd->vpe->ViewPort;
     }
-    doshow(csd, bm, vp, FALSE);
+    P96GFXCl__DoShow(cl, o, bm, vp, FALSE);
     return TRUE;
 }
 
 VOID P96GFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    struct bm_data *sdata = NULL;
-    struct bm_data *ddata = NULL;
+    struct P96GfxBitMapData *sdata = NULL;
+    struct P96GfxBitMapData *ddata = NULL;
     struct RenderInfo risrc, ridst;
+
+    D(bug("[P96Gfx] %s()\n", __func__));
 
     if (OOP_OCLASS(msg->src) == csd->bmclass) sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
     if (OOP_OCLASS(msg->dest) == csd->bmclass) ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
     
     if (!sdata || !ddata)
     {
-        //kprintf("==== copybox: unknown bitmap %p %p drawmode %d\n", sdata, ddata, mode);
-        //if (!sdata) kprintf("  src: %s\n", OOP_OCLASS(msg->src)->ClassNode.ln_Name ? OOP_OCLASS(msg->src)->ClassNode.ln_Name : "unknown");
-        //if (!ddata) kprintf("  dst: %s\n", OOP_OCLASS(msg->dest)->ClassNode.ln_Name ? OOP_OCLASS(msg->dest)->ClassNode.ln_Name : "unknown");
-         
+        DEXTRA(
+          bug("[P96Gfx] %s: ==== copybox: unknown bitmap %p %p drawmode %d\n", __func__, sdata, ddata, mode);
+          if (!sdata) bug("[P96Gfx] %s:   src: %s\n", __func__, OOP_OCLASS(msg->src)->ClassNode.ln_Name ? OOP_OCLASS(msg->src)->ClassNode.ln_Name : "unknown");
+          if (!ddata) bug("[P96Gfx] %s:   dst: %s\n", __func__, OOP_OCLASS(msg->dest)->ClassNode.ln_Name ? OOP_OCLASS(msg->dest)->ClassNode.ln_Name : "unknown");
+         )
+
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;
     }
 
     if (sdata->rgbformat != ddata->rgbformat) {
-        //kprintf("==== ocpybox: format mismatch %d %d drawmode %d\n", sdata->rgbformat, ddata->rgbformat, mode);
+        DEXTRA(bug("[P96Gfx] %s: ==== copybox: format mismatch %d %d drawmode %d\n", __func__, sdata->rgbformat, ddata->rgbformat, mode);)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;
     }
@@ -765,21 +820,20 @@ VOID P96GFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     UNLOCK_MULTI_BITMAP
 
     LOCK_HW
-    WaitBlitter(csd);
+    WaitBlitter(cid);
     UNLOCK_HW
     
     if (!sdata->invram || !ddata->invram)
     {
         /* Blit from VRAM to RAM or from RAM to VRAM */
-        
-#if 0
-        bug("[P96Gfx] %s: == VRAM <-> RAM blit bpp %d\n", __func__, sdata->bytesperpixel);
-        bug("[P96Gfx] %s: %p to %p %d,%d -> %d,%d  %d x %d  modulo %d %d\n",
-        __func__, sdata->VideoData, ddata->VideoData,
-        msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height,
-        sdata->bytesperline,
-        ddata->bytesperline);
-#endif
+        DEXTRA(
+          bug("[P96Gfx] %s: == VRAM <-> RAM blit bpp %d\n", __func__, sdata->bytesperpixel);
+          bug("[P96Gfx] %s: %p to %p %d,%d -> %d,%d  %d x %d  modulo %d %d\n",
+                                                                        __func__, sdata->VideoData, ddata->VideoData,
+                                                                        msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height,
+                                                                        sdata->bytesperline,
+                                                                        ddata->bytesperline);
+         )
         
         if (mode == vHidd_GC_DrawMode_Copy)
         {
@@ -846,24 +900,24 @@ VOID P96GFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
         } /* if (mode == vHidd_GC_DrawMode_Copy) */
         else
         {
-            //if (mode == vHidd_GC_DrawMode_Clear) kprintf(" clear blit %d x %d done by superclass\n", msg->width, msg->height);
+            DEXTRA(if (mode == vHidd_GC_DrawMode_Clear) bug("[P96Gfx] %s:  clear blit %d x %d done by superclass\n", __func__, msg->width, msg->height);)
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     } /* if (!sdata->invram || !ddata->invram) */
     else
     {
-        //if (mode == vHidd_GC_DrawMode_Clear) kprintf(" clear blit %d x %d done by me\n", msg->width, msg->height);
+        DEXTRA(if (mode == vHidd_GC_DrawMode_Clear) bug("[P96Gfx] %s:  clear blit %d x %d done by me\n", __func__, msg->width, msg->height);)
 
-        makerenderinfo(csd, &risrc, sdata);
-        makerenderinfo(csd, &ridst, ddata);
+        P96GFXRTG__MakeRenderInfo(csd, cid, &risrc, sdata);
+        P96GFXRTG__MakeRenderInfo(csd, cid, &ridst, ddata);
         
         LOCK_HW
         
-        if (!BlitRectNoMaskComplete(csd, &risrc, &ridst,
+        if (!BlitRectNoMaskComplete(cid, &risrc, &ridst,
             msg->srcX, msg->srcY, msg->destX, msg->destY,
             msg->width, msg->height, modetable[mode], sdata->rgbformat))
         {
-            //kprintf("== unhandled blit %d x %d drawmode %d. super must help\n", msg->width, msg->height, mode);
+            DEXTRA(bug("[P96Gfx] %s: == unhandled blit %d x %d drawmode %d. super must help\n", __func__, msg->width, msg->height, mode);)
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
         
@@ -877,35 +931,41 @@ VOID P96GFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 BOOL P96GFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    DEXTRA(bug("[P96Gfx] %s()\n", __func__));
+
     LOCK_HW
-    WaitBlitter(csd);
+    WaitBlitter(cid);
     UNLOCK_HW
-    
+
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-UBYTE *P96GFXCl__PrepareSprite(struct p96gfx_staticdata *csd, ULONG size, ULONG width, ULONG height, struct pHidd_Gfx_SetCursorShape *msg)
+static UBYTE *P96GFXCl__PrepareSprite(OOP_Class *cl, OOP_Object *o, ULONG store, ULONG size, ULONG width, ULONG height, struct pHidd_Gfx_SetCursorShape *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
+    struct p96gfx_staticdata *csd = CSD(cl);
     UBYTE *p;
 
-    Forbid();
-    pb(csd->boardinfo + PSSO_BoardInfo_MouseXOffset, msg->xoffset);
-    pb(csd->boardinfo + PSSO_BoardInfo_MouseYOffset, msg->yoffset);
-    p = (UBYTE*)gp(csd->boardinfo + PSSO_BoardInfo_MouseImage);
-    if (p == NULL || width != csd->sprite_width || height != csd->sprite_height) {
+    D(bug("[P96Gfx] %s()\n", __func__));
+
+    pb(cid->boardinfo + PSSO_BoardInfo_MouseXOffset, msg->xoffset);
+    pb(cid->boardinfo + PSSO_BoardInfo_MouseYOffset, msg->yoffset);
+    p = (UBYTE*)gp(cid->boardinfo + store);
+    if (p == NULL || width != cid->sprite_width || height != cid->sprite_height) {
         FreeVec(p);
         p = AllocVec(size, MEMF_CLEAR | MEMF_PUBLIC);
-        pp(csd->boardinfo + PSSO_BoardInfo_MouseImage, p);
+        pp(cid->boardinfo + store, p);
         if (!p) {
-            Permit();
-            
-            UNLOCK_HW
+
             return NULL;
         }
-        csd->sprite_width = width;
-        csd->sprite_height = height;
+        cid->sprite_width = width;
+        cid->sprite_height = height;
     }
     return p;
 }
@@ -915,11 +975,14 @@ UBYTE *P96GFXCl__PrepareSprite(struct p96gfx_staticdata *csd, ULONG size, ULONG 
 #define MIN(x,y) (x)<(y)?(x):(y)
 #endif
 
-UBYTE P96GFXCl__PickPen(struct p96gfx_staticdata *csd, ULONG pixel, OOP_Object *cm)
+static UBYTE P96GFXCl__PickPen(struct p96gfx_staticdata *csd, ULONG pixel, OOP_Object *cm)
 {
     UBYTE retval = 0;
     ULONG diff=(ULONG)-1, tmp;
     int i;
+    
+    DEXTRA(bug("[P96Gfx] %s()\n", __func__));
+
     for (i = 0; i < 3; i++) {
         HIDDT_Color c;
         HIDD_CM_GetColor(cm, i + 1, &c);
@@ -937,6 +1000,8 @@ UBYTE P96GFXCl__PickPen(struct p96gfx_staticdata *csd, ULONG pixel, OOP_Object *
 
 BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     OOP_Object *cm = NULL;
     OOP_Object *bmPFObj = NULL;
@@ -944,6 +1009,11 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
     IPTR pf, bmcmod, width, height;
     WORD x, y, hiressprite, i;
     ULONG flags;
+
+    D(bug("[P96Gfx] %s()\n", __func__);)
+
+    if (!(gl(cid->boardinfo + PSSO_BoardInfo_Flags ) & BIF_HARDWARESPRITE))
+        return FALSE;
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
@@ -953,148 +1023,183 @@ BOOL P96GFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHi
     if (bmcmod == vHidd_ColorModel_TrueColor)
     {
         OOP_GetAttr(bmPFObj, aHidd_PixFmt_StdPixFmt, (IPTR*)&pf);
-        bmPF = HIDD_Gfx_GetPixFmt(o, pf);
+        bmPF = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(o, pf);
     }
 
     LOCK_HW
-    if ((csd->spritergbformat == RGBFF_PLANAR) || (csd->spritergbformat == RGBFF_CLUT)) {
-        if (cm) {
-            for (i = 0; i < 3; i++) {
-                HIDDT_Color c;
-                HIDD_CM_GetColor(cm, i + 1, &c);
-                SetSpriteColor(csd, i, c.red, c.green, c.blue);
-            }
-        }
-        else
-        {
-            // TODO: Calculate histogram of image and choose best colors
+    if (cm) {
+        for (i = 0; i < 3; i++) {
+            HIDDT_Color c;
+            HIDD_CM_GetColor(cm, i + 1, &c);
+            HIDD_P96GFX_SetCursorPen(o, i, c);
         }
     }
+    else
+    {
+        // TODO: Calculate histogram of image and choose best colors
+    }
 
-    flags = gl(csd->boardinfo + PSSO_BoardInfo_Flags);
+    flags = gl(cid->boardinfo + PSSO_BoardInfo_Flags);
     flags &= ~BIF_HIRESSPRITE;
     hiressprite = 1;
     if (width > 16) {
         flags |= BIF_HIRESSPRITE;
         hiressprite = 2;
     }
-    pl(csd->boardinfo + PSSO_BoardInfo_Flags, flags);
+    pl(cid->boardinfo + PSSO_BoardInfo_Flags, flags);
 
-    pb(csd->boardinfo + PSSO_BoardInfo_MouseWidth, width / hiressprite);
-    pb(csd->boardinfo + PSSO_BoardInfo_MouseHeight, height);
+    pb(cid->boardinfo + PSSO_BoardInfo_MouseWidth, width / hiressprite);
+    pb(cid->boardinfo + PSSO_BoardInfo_MouseHeight, height);
 
-    switch (csd->spritergbformat)
+    Forbid();
+    DB2(bug("[P96Gfx] %s: filling planar buffer ...\n", __func__);)
     {
-        case RGBFF_PLANAR:
-            {
-                UWORD *p = (UWORD *)P96GFXCl__PrepareSprite(csd, 4 + 4 + ((width + 15) & ~15) / 8 * height * 2, width, height, msg);
-                if (!p)
-                    return FALSE;
-                p += 2 * hiressprite;
-                for(y = 0; y < height; y++) {
-                    UWORD pix1 = 0, pix2 = 0, xcnt = 0;
-                    for(x = 0; x < width; x++) {
-                        UBYTE c;
-                        if (bmcmod != vHidd_ColorModel_TrueColor)
-                            c = HIDD_BM_GetPixel(msg->shape, x, y);
-                        else
-                        {
-                            HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
-                            if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
-                                c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), cm);
-                            else c = 0;
-                        }
-                        pix1 <<= 1;
-                        pix2 <<= 1;
-                        pix1 |= (c & 1) ? 1 : 0;
-                        pix2 |= (c & 2) ? 1 : 0;
-                        xcnt++;
-                        if (xcnt == 15) {
-                            xcnt = 0;
-                            p[x / 16] = pix1;
-                            p[width / 16 + x / 16] = pix2;
-                        }
-                    }
-                    p += (width / 16) * 2;
+        UWORD *pw;
+
+        pw = (UWORD *)P96GFXCl__PrepareSprite(cl, o, PSSO_BoardInfo_MouseImage, 4 + 4 + ((width + 15) & ~15) / 8 * height * 2, width, height, msg);
+        if (!pw)
+        {
+            Permit();
+            UNLOCK_HW
+            return FALSE;
+        }
+        pw += 2 * hiressprite;
+        for(y = 0; y < height; y++) {
+            UWORD pix1 = 0, pix2 = 0, xcnt = 0;
+            for(x = 0; x < width; x++) {
+                UBYTE c;
+                if (bmcmod != vHidd_ColorModel_TrueColor)
+                    c = HIDD_BM_GetPixel(msg->shape, x, y);
+                else
+                {
+                    HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
+                    if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
+                        c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), data->spriteColors);
+                    else c = 0;
+                }
+                pix1 <<= 1;
+                pix2 <<= 1;
+                pix1 |= (c & 1) ? 1 : 0;
+                pix2 |= (c & 2) ? 1 : 0;
+                xcnt++;
+                if (xcnt == 15) {
+                    xcnt = 0;
+                    pw[x / 16] = pix1;
+                    pw[width / 16 + x / 16] = pix2;
                 }
             }
-            break;
-
-        case RGBFF_CLUT:
-            {
-                UBYTE *p = P96GFXCl__PrepareSprite(csd, 4 + 4 + ((width + 15) & ~15) * height, width, height, msg);
-                if (!p)
-                    return FALSE;
-                p += 2 * hiressprite;
-                for(y = 0; y < height; y++) {
-                    for(x = 0; x < width; x++) {
-                        UBYTE c;
-                        if (bmcmod != vHidd_ColorModel_TrueColor)
-                            c = HIDD_BM_GetPixel(msg->shape, x, y);
-                        else
-                        {
-                            HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
-                            if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
-                                c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), cm);
-                            else c = 0;
-                        }
-                        p[x] = c;
-                    }
-                    p += width;
-                }
-            }
-            break;
-
-        default:
-            // TODO: >8bit
-            break;
+            pw += (width / 16) * 2;
+        }
     }
+
+#if (0)
+    DB2(bug("[P96Gfx] %s: filling clut buffer ...\n", __func__);)
+    {
+        UBYTE *pb;
+
+        pb = P96GFXCl__PrepareSprite(cl, o, PSSO_BoardInfo_MouseChunky, 4 + 4 + ((width + 15) & ~15) * height, width, height, msg);
+        if (!pb)
+        {
+            Permit();
+            UNLOCK_HW            
+            return FALSE;
+        }
+        pb += 2 * hiressprite;
+        for(y = 0; y < height; y++) {
+            for(x = 0; x < width; x++) {
+                UBYTE c;
+                if (bmcmod != vHidd_ColorModel_TrueColor)
+                    c = HIDD_BM_GetPixel(msg->shape, x, y);
+                else
+                {
+                    HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
+                    if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
+                        c = P96GFXCl__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF), data->spriteColors);
+                    else c = 0;
+                }
+                pb[x] = c;
+            }
+            pb += width;
+        }
+    }
+#endif
     Permit();
-    SetSpriteImage(csd);
-    
+
+    DB2(bug("[P96Gfx] %s: loading hw sprite ...\n", __func__));
+    SetSpriteImage(cid);
+
     UNLOCK_HW
-    
+    DB2(bug("[P96Gfx] %s: hw sprite loaded\n", __func__));
+
     return TRUE;
 }
                              
 BOOL P96GFXCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
-    
+
+    D(bug("[P96Gfx] %s()\n", __func__));
+
     LOCK_HW
-    pw(csd->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)csd->boardinfo[PSSO_BoardInfo_MouseXOffset]);
-    pw(csd->boardinfo + PSSO_BoardInfo_MouseY, msg->y + (BYTE)csd->boardinfo[PSSO_BoardInfo_MouseYOffset]);
-    SetSpritePosition(csd);
+    pw(cid->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)cid->boardinfo[PSSO_BoardInfo_MouseXOffset]);
+    pw(cid->boardinfo + PSSO_BoardInfo_MouseY, msg->y + (BYTE)cid->boardinfo[PSSO_BoardInfo_MouseYOffset]);
+    SetSpritePosition(cid);
     UNLOCK_HW
-    
+
     return TRUE;
 }
+
 VOID P96GFXCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
-    
+
+    D(bug("[P96Gfx] %s()\n", __func__));
+
     LOCK_HW
-    SetSprite(csd, msg->visible);
+    SetSprite(cid, msg->visible);
     UNLOCK_HW
+}
+
+VOID P96GFXCl__Hidd_P96Gfx__SetCursorPen(OOP_Class *cl, OOP_Object *o, struct pHidd_P96Gfx_SetCursorPen *msg)
+{
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
+    struct p96gfx_staticdata *csd = CSD(cl);
+
+    D(bug("[P96Gfx] %s()\n", __func__));
+
+    HIDD_CM_SetColors(data->spriteColors, &msg->color, msg->pen, 1, data->pfo);
+    SetSpriteColor(cid, msg->pen, msg->color.red, msg->color.green, msg->color.blue);
 }
 
 BOOL P96GFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CheckMode *msg)
 {
+    struct P96GfxData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_carddata *cid = data->cardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     IPTR width, height, bpp;
-    
+
+    D(bug("[P96Gfx] %s()\n", __func__));
+
     OOP_GetAttr(msg->sync, aHidd_Sync_HDisp, &width);
     OOP_GetAttr(msg->sync, aHidd_Sync_VDisp, &height);
     OOP_GetAttr(msg->pixFmt, aHidd_PixFmt_BytesPerPixel, &bpp);
-    if (width > csd->maxwidth[bpp])
+    if (width > cid->maxwidth[bpp])
         return FALSE;
-    if (height > csd->maxheight[bpp])
+    if (height > cid->maxheight[bpp])
         return FALSE;
-    return width * height * bpp < csd->vram_size;
+    return width * height * bpp < cid->vram_size;
 }
 
+/***********************************************************************************************************************************************/
+/***********************************************************************************************************************************************/
+/***************************************** Driver Probing and Initialization Functions *********************************************************/
 
-static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct p96gfx_staticdata *csd)
+static void P96GFX__FreeAttrBases(LIBBASETYPEPTR LIBBASE, struct p96gfx_staticdata *csd)
 {
     OOP_ReleaseAttrBase(IID_Hidd);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
@@ -1102,6 +1207,7 @@ static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct p96gfx_staticdata *csd)
     OOP_ReleaseAttrBase(IID_Hidd_GC);
     OOP_ReleaseAttrBase(IID_Hidd_Sync);
     OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+    OOP_ReleaseAttrBase(IID_Hidd_P96Gfx);
     OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
@@ -1121,19 +1227,22 @@ struct P96RTGmode
 
 static const struct P96RTGmode rtgmodes[] =
 {
-        {  320, 240, 1,  13020000,  408, 262, 0, 0, 32,  5,  24,  1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
-        {  640, 480, 3,  25060000,  800, 525, 0, 0, 40, 11,  88,  2, GMF_HPOLARITY | GMF_VPOLARITY },
-        {  800, 600, 4,  32010000, 1024, 625, 0, 0, 56,  1,  40,  2, 0 },
-        { 1024, 768, 5,  64430000, 1336, 800, 0, 0, 48,  4, 112,  5, GMF_HPOLARITY | GMF_VPOLARITY },
-        { 1152, 900, 6,  85010000, 1496, 973, 0, 0, 48,  5,  40,  4, GMF_HPOLARITY | GMF_VPOLARITY },
-        { 1440, 900, 7, 106360000, 1904, 932, 0, 0, 80,  0,   0, 10, GMF_HPOLARITY | GMF_VPOLARITY },
-        { 0 }
+    {  320, 240, 1,  13020000,  408, 262, 0, 0, 32,  5,  24,  1, GMF_HPOLARITY | GMF_VPOLARITY | GMF_DOUBLESCAN },
+    {  640, 480, 3,  25060000,  800, 525, 0, 0, 40, 11,  88,  2, GMF_HPOLARITY | GMF_VPOLARITY },
+    {  800, 600, 4,  32010000, 1024, 625, 0, 0, 56,  1,  40,  2, 0 },
+    { 1024, 768, 5,  64430000, 1336, 800, 0, 0, 48,  4, 112,  5, GMF_HPOLARITY | GMF_VPOLARITY },
+    { 1152, 900, 6,  85010000, 1496, 973, 0, 0, 48,  5,  40,  4, GMF_HPOLARITY | GMF_VPOLARITY },
+    { 1440, 900, 7, 106360000, 1904, 932, 0, 0, 80,  0,   0, 10, GMF_HPOLARITY | GMF_VPOLARITY },
+    { 0 }
 };
+
 /* real RTG only */
-static BOOL PopulateModeInfo(struct p96gfx_staticdata *csd, struct LibResolution *res, const struct P96RTGmode *mode)
+static BOOL P96GFX__PopulateModeInfo(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, struct LibResolution *res, const struct P96RTGmode *mode)
 {
     UWORD rgbformat;
     BOOL ok = FALSE;
+
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
 
     for (rgbformat = 0; rgbformat < RGBFB_MaxFormats; rgbformat++) {
         ULONG clockindex;
@@ -1143,17 +1252,17 @@ static BOOL PopulateModeInfo(struct p96gfx_staticdata *csd, struct LibResolution
 
         if (!((1 << rgbformat) & RGBFB_SUPPORTMASK))
             continue;
-        if (!((1 << rgbformat) & gw(csd->boardinfo + PSSO_BoardInfo_RGBFormats)))
+        if (!((1 << rgbformat) & gw(cid->boardinfo + PSSO_BoardInfo_RGBFormats)))
             continue;
-        depth = getrtgdepth(1 << rgbformat);
+        depth = P96GFXRTG__GetDepth(1 << rgbformat);
         index = (depth + 7) / 8;
         if (res->Modes[index])
             continue;
 
-        maxhval = gw(csd->boardinfo + PSSO_BoardInfo_MaxHorValue + index * 2);
-        maxvval = gw(csd->boardinfo + PSSO_BoardInfo_MaxVerValue + index * 2);
-        maxhres = gw(csd->boardinfo + PSSO_BoardInfo_MaxHorResolution + index * 2);
-        maxvres = gw(csd->boardinfo + PSSO_BoardInfo_MaxVerResolution + index * 2);
+        maxhval = gw(cid->boardinfo + PSSO_BoardInfo_MaxHorValue + index * 2);
+        maxvval = gw(cid->boardinfo + PSSO_BoardInfo_MaxVerValue + index * 2);
+        maxhres = gw(cid->boardinfo + PSSO_BoardInfo_MaxHorResolution + index * 2);
+        maxvres = gw(cid->boardinfo + PSSO_BoardInfo_MaxVerResolution + index * 2);
 
         if (mode->htotal > maxhval || mode->vtotal > maxvval ||
             mode->w > maxhres || mode->h > maxvres)
@@ -1176,9 +1285,9 @@ static BOOL PopulateModeInfo(struct p96gfx_staticdata *csd, struct LibResolution
         mi->HorSyncSize = mode->hsync;
         mi->VerSyncSize = mode->vsync;
         mi->Flags = mode->flags;
-        clockindex = ResolvePixelClock(csd, mi, mode->clock, rgbformat);
-        mi->PixelClock = GetPixelClock(csd, mi, clockindex, rgbformat);
-        DRTG(bug("[P96Gfx] %s: %d,%p: %dx%dx%d ci=%d clk=%d (%d/%d)\n",
+        clockindex = ResolvePixelClock(cid, mi, mode->clock, rgbformat);
+        mi->PixelClock = GetPixelClock(cid, mi, clockindex, rgbformat);
+        DRTG(bug("[HiddP96Gfx] %s: %d,%p: %dx%dx%d ci=%d clk=%d (%d/%d)\n",
             __func__, index, mi, mi->Width, mi->Height, mi->Depth,
             clockindex, mi->PixelClock, mi->Numerator, mi->Denominator);)
         res->Modes[index] = mi;
@@ -1186,12 +1295,15 @@ static BOOL PopulateModeInfo(struct p96gfx_staticdata *csd, struct LibResolution
     }
     return ok;
 }
-static void PopulateResolutionList(struct p96gfx_staticdata *csd)
+
+static void P96GFX__PopulateResolutionsList(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid)
 {
     struct LibResolution *node;
     UWORD cnt;
-    
-    NEWLIST((csd->boardinfo + PSSO_BoardInfo_ResolutionsList));
+
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
+
+    NEWLIST((cid->boardinfo + PSSO_BoardInfo_ResolutionsList));
     for (cnt = 0; rtgmodes[cnt].clock; cnt++) {
         const struct P96RTGmode *mode = &rtgmodes[cnt];
         node = AllocMem(sizeof(struct LibResolution), MEMF_CLEAR | MEMF_PUBLIC);
@@ -1200,16 +1312,17 @@ static void PopulateResolutionList(struct p96gfx_staticdata *csd)
         node->Width = mode->w;
         node->Height = mode->h;
         node->DisplayID = 0x50001000 | (mode->id << 16);
-        node->BoardInfo = csd->boardinfo;
-        if (PopulateModeInfo(csd, node, mode))
-            AddTail((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList), (struct Node*)node);
+        node->BoardInfo = cid->boardinfo;
+        if (P96GFX__PopulateModeInfo(csd, cid, node, mode))
+            AddTail((struct List*)(cid->boardinfo + PSSO_BoardInfo_ResolutionsList), (struct Node*)node);
         else
             FreeMem(node, sizeof(struct LibResolution));
-    }   
+    }
 }
 
-static int openall(struct p96gfx_staticdata *csd)
+static int P96GFX__OpenPrivateLibs(struct p96gfx_staticdata *csd)
 {
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
     if ((csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
         if ((csd->cs_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
             return TRUE;
@@ -1217,219 +1330,320 @@ static int openall(struct p96gfx_staticdata *csd)
     }
     return FALSE;
 }
-static void freeall(struct p96gfx_staticdata *csd)
+
+static void P96GFX__ClosePrivateLibs(struct p96gfx_staticdata *csd)
 {
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
     CloseLibrary(csd->cs_IntuitionBase);
     CloseLibrary(csd->cs_UtilityBase);
-    FreeMem(csd->vmem, sizeof(struct MemHeader));
-    csd->vmem = NULL;
-    FreeVec(csd->boardinfo);
-    csd->boardinfo = NULL;
 }
 
-static void P96DebugInfo(struct p96gfx_staticdata *csd)
+static void P96DebugInfo(struct p96gfx_carddata *cid)
 {
     UBYTE i;
-    DRTG(bug("[P96Gfx] %s: Name:'%s'\n", __func__,
-        gl(csd->boardinfo + PSSO_BoardInfo_BoardName));)
-    DRTG(bug("[P96Gfx] %s: Reg:%08x IO:%08x\n", __func__,
-        gl(csd->boardinfo + PSSO_BoardInfo_RegisterBase),
-        gl(csd->boardinfo + PSSO_BoardInfo_MemoryIOBase));)
-    DRTG(bug("[P96Gfx] %s: BoardType:%d GCType:%d PCType:%d BPC:%d Flags:%08x\n", __func__,
-        gl(csd->boardinfo + PSSO_BoardInfo_BoardType),
-        gl(csd->boardinfo + PSSO_BoardInfo_GraphicsControllerType),
-        gl(csd->boardinfo + PSSO_BoardInfo_PaletteChipType),
-        gw(csd->boardinfo + PSSO_BoardInfo_BitsPerCannon),
-        gl(csd->boardinfo + PSSO_BoardInfo_Flags));)
+    DRTG(bug("[HiddP96Gfx] %s: Name:'%s'\n", __func__,
+        gl(cid->boardinfo + PSSO_BoardInfo_BoardName));)
+    DRTG(bug("[HiddP96Gfx] %s: Reg:%08x IO:%08x\n", __func__,
+        gl(cid->boardinfo + PSSO_BoardInfo_RegisterBase),
+        gl(cid->boardinfo + PSSO_BoardInfo_MemoryIOBase));)
+    DRTG(bug("[HiddP96Gfx] %s: BoardType:%d GCType:%d PCType:%d BPC:%d Flags:%08x\n", __func__,
+        gl(cid->boardinfo + PSSO_BoardInfo_BoardType),
+        gl(cid->boardinfo + PSSO_BoardInfo_GraphicsControllerType),
+        gl(cid->boardinfo + PSSO_BoardInfo_PaletteChipType),
+        gw(cid->boardinfo + PSSO_BoardInfo_BitsPerCannon),
+        gl(cid->boardinfo + PSSO_BoardInfo_Flags));)
     for (i = 0; i < MAXMODES; i++) {
-        DRTG(bug("[P96Gfx] %s: %d: HV:%4d VV: %4d HR:%4d VR:%4d C:%d\n", __func__, i,
-            gw(csd->boardinfo + PSSO_BoardInfo_MaxHorValue + i * 2),
-            gw(csd->boardinfo + PSSO_BoardInfo_MaxVerValue + i * 2),
-            gw(csd->boardinfo + PSSO_BoardInfo_MaxHorResolution + i * 2),
-            gw(csd->boardinfo + PSSO_BoardInfo_MaxVerResolution + i * 2),
-            gl(csd->boardinfo + PSSO_BoardInfo_PixelClockCount + i * 4));)
+        DRTG(bug("[HiddP96Gfx] %s: %d: HV:%4d VV: %4d HR:%4d VR:%4d C:%d\n", __func__, i,
+            gw(cid->boardinfo + PSSO_BoardInfo_MaxHorValue + i * 2),
+            gw(cid->boardinfo + PSSO_BoardInfo_MaxVerValue + i * 2),
+            gw(cid->boardinfo + PSSO_BoardInfo_MaxHorResolution + i * 2),
+            gw(cid->boardinfo + PSSO_BoardInfo_MaxVerResolution + i * 2),
+            gl(cid->boardinfo + PSSO_BoardInfo_PixelClockCount + i * 4));)
     }
 }
 
-static BOOL P96Init(struct p96gfx_staticdata *csd, struct Library *lib)
+struct p96gfx_carddata *P96GFX__AllocCID(struct p96gfx_staticdata *csd)
 {
-    DRTG(bug("[P96Gfx] %s: attempting to init '%s'\n", __func__, lib->lib_Node.ln_Name);)
-    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, (ULONG)lib);
-    csd->CardBase = lib;
-    InitRTG(csd->boardinfo);
-    if (FindCard(csd)) {
-        DRTG(bug("[P96Gfx] %s: FindCard succeeded\n", __func__);)
-        if (InitCard(csd)) {
-            DRTG(bug("[P96Gfx] %s: InitCard succeeded\n", __func__);)
-            SetInterrupt(csd, FALSE);
-            /* Without this card may not be in linear memory map mode. */
-            SetMemoryMode(csd, RGBFB_CLUT);
-            P96DebugInfo(csd);
+    struct p96gfx_carddata *cid;
+    struct Interrupt *intr;
+
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
+
+    /* Allocate the Card Instance Data */
+    cid = AllocMem(sizeof(struct p96gfx_carddata), MEMF_CLEAR | MEMF_PUBLIC);
+    if (!cid) {
+        return NULL;
+    }
+
+    cid->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last + sizeof(struct ModeInfo), MEMF_CLEAR | MEMF_PUBLIC);
+    if (!cid->boardinfo) {
+        FreeMem(cid, sizeof(struct p96gfx_carddata));
+        return NULL;
+    }
+    NEWLIST((struct List*)(cid->boardinfo + PSSO_BoardInfo_ResolutionsList));
+    NEWLIST((struct List*)(cid->boardinfo + PSSO_BoardInfo_BitMapList));
+    NEWLIST((struct List*)(cid->boardinfo + PSSO_BoardInfo_MemList));
+    NEWLIST((struct List*)(cid->boardinfo + PSSO_BoardInfo_WaitQ));
+    cid->rgbformat = (ULONG *)((IPTR)cid->boardinfo + PSSO_BoardInfo_RGBFormat);
+    cid->bitmapextra = cid->boardinfo + PSSO_BoardInfo_SizeOf;
+    cid->fakemodeinfo = (struct ModeInfo*)(cid->boardinfo + PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last);
+    pl(cid->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)cid->bitmapextra);
+    pl(cid->boardinfo + PSSO_BoardInfo_ExecBase, (ULONG)SysBase);
+    pl(cid->boardinfo + PSSO_BoardInfo_UtilBase, (ULONG)csd->cs_UtilityBase);
+    InitSemaphore((struct SignalSemaphore*)(cid->boardinfo + PSSO_BoardInfo_BoardLock));
+    intr = (struct Interrupt*)(cid->boardinfo + PSSO_BoardInfo_HardInterrupt);
+    intr->is_Code = (APTR)rtg_vblank;
+    intr->is_Data         = cid->boardinfo;
+    intr->is_Node.ln_Name = "RTG VBlank";
+    intr->is_Node.ln_Pri  = 0;
+    intr->is_Node.ln_Type = NT_INTERRUPT;
+    intr = (struct Interrupt*)(cid->boardinfo + PSSO_BoardInfo_SoftInterrupt);
+    intr->is_Code = (APTR)rtg_vblank;
+    intr->is_Data         = cid->boardinfo;
+    intr->is_Node.ln_Name = "RTG VBlank";
+    intr->is_Node.ln_Pri  = 0;
+    intr->is_Node.ln_Type = NT_INTERRUPT;
+
+    return cid;
+}
+
+VOID P96GFX__FreeCID(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid)
+{
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
+    if (cid->vmem)
+        FreeMem(cid->vmem, sizeof(struct MemHeader));
+    FreeVec(cid->boardinfo);
+    FreeVec(cid->boardinfo);
+    FreeMem(cid, sizeof(struct p96gfx_carddata));
+}
+
+VOID P96GFX__FreeCardCIDList(struct p96gfx_staticdata *csd)
+{
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
+}
+
+static BOOL P96GFX__InitCard(struct p96gfx_staticdata *csd, struct Library *lib)
+{
+    struct p96gfx_carddata *cid;
+    DRTG(bug("[HiddP96Gfx] %s: attempting to init '%s'\n", __func__, lib->lib_Node.ln_Name);)
+
+    cid = P96GFX__AllocCID(csd);
+    if (!cid)
+        return FALSE;
+
+    pl(cid->boardinfo + PSSO_BoardInfo_CardBase, (ULONG)lib);
+    cid->CardBase = lib;
+    P96GFXRTG__Init(cid->boardinfo);
+    if (FindCard(cid)) {
+        DRTG(bug("[HiddP96Gfx] %s: FindCard succeeded\n", __func__);)
+        if (InitCard(cid)) {
+            DRTG(bug("[HiddP96Gfx] %s: InitCard succeeded\n", __func__);)
+            SetInterrupt(cid, FALSE);
+            /* Without this, the card may not be in linear memory map mode. */
+            SetMemoryMode(cid, RGBFB_CLUT);
+            P96DebugInfo(cid);
+            AddTail(&csd->foundCards, &cid->p96gfx_Node);
+            P96GFX__PopulateResolutionsList(csd, cid);
+            cid->hardwaresprite = gl(cid->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE);
             return TRUE;
         }
     }
-    pl(csd->boardinfo + PSSO_BoardInfo_CardBase, 0);
-    csd->CardBase = NULL;
+    pl(cid->boardinfo + PSSO_BoardInfo_CardBase, 0);
+    P96GFX__FreeCID(csd, cid);
     return FALSE;
 }
 
 
-BOOL Init_P96GFXClass(LIBBASETYPEPTR LIBBASE)
+BOOL P96GFX__Initialise(LIBBASETYPEPTR LIBBASE)
 {
     struct p96gfx_staticdata *csd = &LIBBASE->csd;
+    struct Library *GfxBase = csd->cs_GfxBase;
+    struct p96gfx_carddata *cid;
     struct MemChunk *mc;
-    UBYTE i;
     struct Interrupt *intr;
     struct Node *node;
+    UBYTE i;
+    BOOL retval = FALSE;
 
-    D(bug("[P96Gfx] %s()\n", __func__);)
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
 
     if (!(SysBase->AttnFlags & AFF_68020))
-        return FALSE;
+        return retval;
 
-    if (!openall(csd)) {
-        freeall(csd);
-        return FALSE;
+    if (!P96GFX__OpenPrivateLibs(csd)) {
+        P96GFX__ClosePrivateLibs(csd);
+        return retval;
     }
 
-    csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last + sizeof(struct ModeInfo), MEMF_CLEAR | MEMF_PUBLIC);
-    if (!csd->boardinfo) {
-        freeall(csd);
-        return FALSE;
-    }
-    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList));
-    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_BitMapList));
-    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_MemList));
-    NEWLIST((struct List*)(csd->boardinfo + PSSO_BoardInfo_WaitQ));
-    csd->rgbformat = (ULONG *)((IPTR)csd->boardinfo + PSSO_BoardInfo_RGBFormat);
-    csd->bitmapextra = csd->boardinfo + PSSO_BoardInfo_SizeOf;
-    csd->fakemodeinfo = (struct ModeInfo*)(csd->boardinfo + PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last);
-    pl(csd->boardinfo + PSSO_BoardInfo_BitMapExtra, (ULONG)csd->bitmapextra);
-    pl(csd->boardinfo + PSSO_BoardInfo_ExecBase, (ULONG)SysBase);
-    pl(csd->boardinfo + PSSO_BoardInfo_UtilBase, (ULONG)csd->cs_UtilityBase);
-    InitSemaphore((struct SignalSemaphore*)(csd->boardinfo + PSSO_BoardInfo_BoardLock));
-    intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_HardInterrupt);
-    intr->is_Code = (APTR)rtg_vblank;
-    intr->is_Data         = csd->boardinfo;
-    intr->is_Node.ln_Name = "RTG VBlank";
-    intr->is_Node.ln_Pri  = 0;
-    intr->is_Node.ln_Type = NT_INTERRUPT;
-    intr = (struct Interrupt*)(csd->boardinfo + PSSO_BoardInfo_SoftInterrupt);
-    intr->is_Code = (APTR)rtg_vblank;
-    intr->is_Data         = csd->boardinfo;
-    intr->is_Node.ln_Name = "RTG VBlank";
-    intr->is_Node.ln_Pri  = 0;
-    intr->is_Node.ln_Type = NT_INTERRUPT;
+    NEWLIST(&csd->foundCards);
+    D(bug("[HiddP96Gfx] %s: cardlist @ 0x%p\n", __func__, &csd->foundCards);)
 
+    /* find available p96 '.card' drivers .. */
     Forbid();
     ForeachNode(&SysBase->LibList.lh_Head, node) {
         struct Library *lib = (struct Library*)node;
         char *name = node->ln_Name;
         int len = strlen(name);
         if (len > 5 && !stricmp(name + len - 5, ".card")) {
-            BOOL ret;
             Permit();
-            ret = P96Init(csd, lib);
+            retval = P96GFX__InitCard(csd, lib);
             Forbid();
-            if (ret)
-                break;
-            DRTG(bug("[P96Gfx] %s: init failed\n", __func__);)   
+            DRTG(
+              if (!retval)
+                  bug("[HiddP96Gfx] %s: %s init failed\n", __func__, name);
+             )
         }
-    }	
+    }
     Permit();
 
-    if (!csd->CardBase) {
-        csd->p96romvector = (APTR)(0xf00000 + 0xff60);
-        if ((gl(csd->p96romvector) & 0xff00ffff) != 0xa0004e75) {
-            D(bug("[P96Gfx] %s: P96 boot ROM entry point not found. P96GFX not enabled.\n", __func__);)
-            freeall(csd);
-            return FALSE;
+    /* if none where found create the p96 romvector entry if available */
+    if (IsListEmpty(&csd->foundCards)) {
+        cid = P96GFX__AllocCID(csd);
+        if (cid)
+        {
+            cid->p96romvector = (APTR)(0xf00000 + 0xff60);
+            if ((gl(cid->p96romvector) & 0xff00ffff) != 0xa0004e75) {
+                D(bug("[HiddP96Gfx] %s: P96 boot ROM entry point not found. P96GFX not enabled.\n", __func__);)
+                P96GFX__FreeCID(csd, cid);
+                P96GFX__ClosePrivateLibs(csd);
+                return retval;
+            }
+            if (!FindCard(cid)) {
+                D(bug("[HiddP96Gfx] %s: P96 FindCard() returned false\n", __func__);)
+                P96GFX__FreeCID(csd, cid);
+                P96GFX__ClosePrivateLibs(csd);
+                return retval;
+            }
+            D(bug("[HiddP96Gfx] %s: P96 FindCard done\n", __func__);)
+            InitCard(cid);
+            cid->hardwaresprite = (gl(cid->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE)) && SetSprite(cid, FALSE);
+            AddTail(&csd->foundCards, &cid->p96gfx_Node);
         }
-        if (!FindCard(csd)) {
-            D(bug("[P96Gfx] %s: FindCard() returned false\n", __func__);)
-            freeall(csd);
-            return FALSE;
+    }
+
+    /* if we have found suitable drivers that have registered resolutions, setup the cards memory */
+    ForeachNode(&csd->foundCards, cid) {
+        if (IsListEmpty((struct List*)(cid->boardinfo + PSSO_BoardInfo_ResolutionsList))) {
+            continue;
         }
-        D(bug("[P96Gfx] %s: FindCard done\n", __func__);)
-        InitCard(csd);
-        csd->hardwaresprite = (gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE)) && SetSprite(csd, FALSE);
-    } else {
-        PopulateResolutionList(csd);
-        csd->hardwaresprite = gl(csd->boardinfo + PSSO_BoardInfo_Flags) & (1 << BIB_HARDWARESPRITE);
-    }
+        retval = TRUE;
+        for (i = 0; i < MAXMODES; i++) {
+            cid->maxwidth[i] = gw(cid->boardinfo + PSSO_BoardInfo_MaxHorResolution + i * 2);
+            cid->maxheight[i] = gw(cid->boardinfo + PSSO_BoardInfo_MaxVerResolution + i * 2);
+        }
 
-    if (IsListEmpty((struct List*)(csd->boardinfo + PSSO_BoardInfo_ResolutionsList))) {
-        D(bug("[P96Gfx] %s: Resolutionlist is empty, init failed.\n", __func__);)
-        freeall(csd);
-        return FALSE;
-    }
-    for (i = 0; i < MAXMODES; i++) {
-        csd->maxwidth[i] = gw(csd->boardinfo + PSSO_BoardInfo_MaxHorResolution + i * 2);
-        csd->maxheight[i] = gw(csd->boardinfo + PSSO_BoardInfo_MaxVerResolution + i * 2);
-    }
+        D(bug("[HiddP96Gfx] %s: InitCard done\n", __func__);)
 
-    D(bug("[P96Gfx] %s: InitCard done\n", __func__);)
+        DRTG(bug("[HiddP96Gfx] %s: hardware sprite: %d\n", __func__, cid->hardwaresprite);)
 
-    DRTG(bug("[P96Gfx] %s: hardware sprite: %d\n", __func__, csd->hardwaresprite);)
+        cid->vram_start = (UBYTE*)gl(cid->boardinfo + PSSO_BoardInfo_MemoryBase);
 
-    csd->vram_start = (UBYTE*)gl(csd->boardinfo + PSSO_BoardInfo_MemoryBase);
-
-
-#if 1
-    csd->vram_size = gl(csd->boardinfo + PSSO_BoardInfo_MemorySize);
+#ifdef USE_VRAM_HACK
+        /* REMOVE-ME: 4MB hack (used for easier debug of vram <-> ram swapping) !!!!*/
+        cid->vram_size = 4 * 1024 * 1024; /* gl(cid->boardinfo + PSSO_BoardInfo_MemorySize); */
 #else
-    /* REMOVEME: 4MB hack (used for easier debug of vram <-> ram swapping) !!!!*/
-    csd->vram_size = 4 * 1024 * 1024; /* gl(csd->boardinfo + PSSO_BoardInfo_MemorySize); */
-    /* REMOVEME: 4MB Hack (used for easier debug of vram <-> ram swapping) !!!!*/
+        cid->vram_size = gl(cid->boardinfo + PSSO_BoardInfo_MemorySize);
 #endif
 
-    DRTG(bug("[P96Gfx] %s: P96RTG VRAM found at %08x size %08x\n", __func__, csd->vram_start, csd->vram_size);)
-    mc = (struct MemChunk*)csd->vram_start;
-    csd->vmem = AllocVec(sizeof(struct MemHeader), MEMF_CLEAR | MEMF_PUBLIC);
-    csd->vmem->mh_Node.ln_Type = NT_MEMORY;
-    csd->vmem->mh_First = mc;
-    csd->vmem->mh_Lower = (APTR)mc;
-    csd->vmem->mh_Upper = (APTR)((ULONG)mc + csd->vram_size);
-    csd->vmem->mh_Free = csd->vram_size;
-    mc->mc_Next = NULL;
-    mc->mc_Bytes = csd->vmem->mh_Free;
+        DRTG(bug("[HiddP96Gfx] %s: P96RTG VRAM found at %08x size %08x\n", __func__, cid->vram_start, cid->vram_size);)
+        mc = (struct MemChunk*)cid->vram_start;
+        cid->vmem = AllocVec(sizeof(struct MemHeader), MEMF_CLEAR | MEMF_PUBLIC);
+        cid->vmem->mh_Node.ln_Type = NT_MEMORY;
+        cid->vmem->mh_First = mc;
+        cid->vmem->mh_Lower = (APTR)mc;
+        cid->vmem->mh_Upper = (APTR)((ULONG)mc + cid->vram_size);
+        cid->vmem->mh_Free = cid->vram_size;
+        mc->mc_Next = NULL;
+        mc->mc_Bytes = cid->vmem->mh_Free;
+    }
+    if (!retval)
+    {
+        // We dont fail if atleast one card successfully built its resolution list.
+        D(bug("[HiddP96Gfx] %s: Resolutionlist(s) empty, init failed.\n", __func__);)
+        P96GFX__FreeCardCIDList(csd);
+        P96GFX__ClosePrivateLibs(csd);
+        return retval;
+    }
 
-    __IHidd                    = OOP_ObtainAttrBase(IID_Hidd);
-    __IHidd_BitMap  	   = OOP_ObtainAttrBase(IID_Hidd_BitMap);
-    __IHidd_BitMap_P96 = OOP_ObtainAttrBase(IID_Hidd_BitMap_P96);
+    D(bug("[HiddP96Gfx] %s: initialising common data ..\n", __func__);)
+
+    retval = FALSE;
+
+    __IHidd             = OOP_ObtainAttrBase(IID_Hidd);
+    __IHidd_BitMap      = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    __IHidd_BitMap_P96  = OOP_ObtainAttrBase(IID_Hidd_BitMap_P96);
     __IHidd_GC      	= OOP_ObtainAttrBase(IID_Hidd_GC);
     __IHidd_Sync    	= OOP_ObtainAttrBase(IID_Hidd_Sync);
     __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
+    __IHidd_P96Gfx      = OOP_ObtainAttrBase(IID_Hidd_P96Gfx);
     __IHidd_PixFmt	= OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_ColorMap 	= OOP_ObtainAttrBase(IID_Hidd_ColorMap);
 
     HiddBitMapBase	= OOP_GetMethodID(IID_Hidd_BitMap, 0);
     HiddColorMapBase	= OOP_GetMethodID(IID_Hidd_ColorMap, 0);
     HiddGfxBase		= OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    HiddP96GfxBase      = OOP_GetMethodID(IID_Hidd_P96Gfx, 0);
     
     if (!__IHidd || !__IHidd_BitMap || !__IHidd_BitMap_P96 || !__IHidd_GC ||
-        !__IHidd_Sync || !__IHidd_Gfx || !__IHidd_PixFmt || !__IHidd_ColorMap)
+        !__IHidd_Sync || !__IHidd_Gfx || !__IHidd_P96Gfx || !__IHidd_PixFmt ||
+        !__IHidd_ColorMap)
     {
-        D(bug("[P96Gfx] %s: failed to obtain attribute bases!\n", __func__);)
-        freeattrbases(LIBBASE, csd);
-        freeall(csd);
-        return FALSE;
+        D(bug("[HiddP96Gfx] %s: failed to obtain attribute bases!\n", __func__);)
+        P96GFX__FreeAttrBases(LIBBASE, csd);
+        P96GFX__FreeCardCIDList(csd);
+        P96GFX__ClosePrivateLibs(csd);
+        return retval;
     }
 
-    DRTG(bug("[P96Gfx] %s: P96RTG done\n", __func__);)
-    return TRUE;
+    D(bug("[HiddP96Gfx] %s: registering found cards ...\n", __func__);)
+    ULONG driverres;
+    ForeachNode(&csd->foundCards, cid) {
+        D(bug("[HiddP96Gfx] %s:   carddata @ 0x%p\n", __func__, cid);)
+
+        /* fake an opener for every card instance */
+        LIBBASE->library.lib_OpenCnt += 1;
+
+        cid->p96gfxcd_Tags = AllocVec((sizeof(struct TagItem) << 1), MEMF_PUBLIC | MEMF_CLEAR);
+        if (cid->p96gfxcd_Tags)
+        {
+            D(bug("[HiddP96Gfx] %s:       tags @ 0x%p\n", __func__, cid->p96gfxcd_Tags);)
+            cid->p96gfxcd_Tags[0].ti_Tag = aHidd_P96Gfx_CardData;
+            cid->p96gfxcd_Tags[0].ti_Data = (IPTR)cid;
+            if (DD_OK == (driverres = AddDisplayDriver(csd->gfxclass, cid->p96gfxcd_Tags,
+                                   DDRV_KeepBootMode, TRUE,
+                                   DDRV_IDMask      , 0xF0000000,
+                                   TAG_DONE)))
+            {
+                D(bug("[HiddP96Gfx] %s:   AddDisplayDriver succeeded\n", __func__);)
+                retval = TRUE;
+            }
+            else
+            {
+                bug("[HiddP96Gfx] AddDisplayDriver failed - %08x\n", driverres);
+            }
+        }
+    }
+    DRTG(bug("[HiddP96Gfx] %s: P96GFX init done\n", __func__);)
+    return retval;
 }
 
-static int Expunge_P96GFXClass(LIBBASETYPEPTR LIBBASE)
+static int P96GFX_LibExpunge(LIBBASETYPEPTR LIBBASE)
 {
     struct p96gfx_staticdata *csd = &LIBBASE->csd;
-    D(bug("[P96Gfx] %s()\n", __func__);)
-    freeattrbases(LIBBASE, csd);
-    freeall(csd);
-    return TRUE;
+    int retval = FALSE;
+
+    D(bug("[HiddP96Gfx] %s()\n", __func__);)
+
+    if (LIBBASE->library.lib_OpenCnt == 0)
+    {
+        P96GFX__FreeAttrBases(LIBBASE, csd);
+        P96GFX__ClosePrivateLibs(csd);
+        retval = TRUE;
+    }
+    return retval;
 }
 
-ADD2EXPUNGELIB(Expunge_P96GFXClass, 1)
+ADD2EXPUNGELIB(P96GFX_LibExpunge, 1)
 
 #undef SysBase
 
@@ -1440,6 +1654,4 @@ AROS_INTH1(rtg_vblank, APTR, boardinfo)
     return 0;	
 
     AROS_INTFUNC_EXIT
-
 }
-
