@@ -1,6 +1,7 @@
 # Translation catalog description file (pot-style)
 # 
 # version 3
+# revision 1
 # Translators:
 # Alexandre BALABAN <transifex@balaban.fr>, 2014
 msgid ""
@@ -49,6 +50,30 @@ msgid ""
 "  NOAUTODATE     no operation - kept for compatibility\n"
 "  NOSPACES       no operation - kept for compatibility"
 msgstr ""
+"  CDFILE         Fichier de description de catalogue à traiter\n"
+"  CTFILE         Fichier de traduction de catalogue à traiter\n"
+"  POFILE         Traduction de catalogue au format PO\n"
+"  CATALOG        Catalogue à créer\n"
+"  NEWCTFILE      Fichier de traduction de catalogue à créer\n"
+"  SOURCES        Sources à créer ; doit être sous la forme SFILE=SDFILE,\n"
+"                 où SFILE est un fichier source, et SDFILE est un\n"
+"                 fichier de description de source\n"
+"  WARNCTGAPS     Alerte en cas d'identifiant absent de la traduction (CT)\n"
+"  NOOPTIM        Ne pas ignorer les chaînes non-modifiées dans la traduction ou la description\n"
+"  FILL           Remplace les identifiants vides par le texte original\n"
+"  FLUSH          Libére la mémoire après la création du catalogue\n"
+"  NOBEEP         N'émet pas d'alerte visuelle DisplayBeep() en cas d'erreur ou d'alerte\n"
+"  QUIET          N'affiche pas les alertes\n"
+"  NOLANGTOLOWER  Ne convertit pas le nom de langue en minuscule\n"
+"  NOBUFFEREDIO   Désactive les caches d'entrée-sortie\n"
+"  MODIFIED       Ne crée un catalogue que si la description ou la traduction a changé\n"
+"  COPYMSGNEW     Ajoute les ***nouveaux*** marqueurs à l'ancienne traduction\n"
+"  OLDMSGNEW      Identifie les marqueurs de l'ancienne traduction\n"
+"  CODESET        Jeu de caractères à utiliser dans le fichier de sortie (p.ex. « UTF-8 »)\n"
+"  VERSION        Numéro de version à renseigner lors de la génération du catalogue\n"
+"  REVISION       Numéro de révision à renseigner lors de la génération du catalogue\n"
+"  NOAUTODATE     inactif - conservé pour la compatibilité ascendante\n"
+"  NOSPACES       inactif - conservé pour la compatibilité ascendante"
 
 msgctxt "MSG_FILEUPTODATE (2//)"
 msgid "File '%s' is up to date"
@@ -80,7 +105,7 @@ msgstr "Commande de description de catalogue inconnue."
 
 msgctxt "MSG_ERR_UNEXPECTEDBLANKS (106//)"
 msgid "unexpected blanks"
-msgstr "Espacemements inattendus."
+msgstr "Espacements inattendus."
 
 msgctxt "MSG_ERR_NOIDENTIFIER (107//)"
 msgid "missing identifier"
@@ -136,7 +161,7 @@ msgstr "Impossible d'ouvrir le fichier de description « %s »."
 
 msgctxt "MSG_ERR_NOCATALOGTRANSLATION (129//)"
 msgid "cannot open catalog translation '%s'"
-msgstr "Impossible d'ouvrir le fichier de traduction« %s »."
+msgstr "Impossible d'ouvrir le fichier de traduction « %s »."
 
 msgctxt "MSG_ERR_NOCTVERSION (130//)"
 msgid ""
@@ -154,7 +179,7 @@ msgstr "Impossible de créer le ficher de traduction « %s »"
 
 msgctxt "MSG_ERR_NOCTLANGUAGE (133//)"
 msgid "missing catalog translation language"
-msgstr "Langage absent du fichier de traduction."
+msgstr "Marqueur de langue absent du fichier de traduction."
 
 msgctxt "MSG_ERR_NOSOURCE (134//)"
 msgid "cannot open source file '%s'"
@@ -194,11 +219,11 @@ msgctxt "MSG_ERR_BADCTLANGUAGE (144//)"
 msgid ""
 "invalid language in catalog translation file\n"
 "Language MUST be a string with alphabetical characters and no inlined or trailing spaces"
-msgstr "Langue invalide dans le fichier de traduction.\nLa langue doit être une suite de caractères alphabétiques\nsans chiffre ou suite d'espaces."
+msgstr "Langue invalide dans le fichier de traduction.\nLa langue doit être une suite de caractères alphabétiques\nsans chiffre et sans espace."
 
 msgctxt "MSG_ERR_DOUBLECTCODESET (146//)"
 msgid "catalog codeset declared twice"
-msgstr "Jeux de caractères (codeset) de catalogue déclaré deux fois"
+msgstr "Jeu de caractères (codeset) de catalogue déclaré deux fois"
 
 msgctxt "MSG_ERR_BADCTCODESET (147//)"
 msgid ""
@@ -220,7 +245,7 @@ msgid ""
 "Version should be something like\n"
 "## version $VER: name version.revision (date)\n"
 "without any spaces in the name"
-msgstr "Version dans le fichier de traduction invalide.\nVersion doit être quelque chose comme\n## version $VER: name version.revision (date)\nsans aucun espaces dans le nom"
+msgstr "Version dans le fichier de traduction invalide.\nVersion doit être sous la forme\n## version $VER: name version.revision (date)\nsans aucun espace dans le nom"
 
 msgctxt "MSG_ERR_WARNING_QUICK (154//)"
 msgid "%s - Warning:"
@@ -228,19 +253,19 @@ msgstr "%s - Attention :"
 
 msgctxt "MSG_ERR_MISSINGTRANSLATION (155//)"
 msgid "missing translation for identifier '%s'"
-msgstr "Traduction manquante pour l'identifiant « %s »"
+msgstr "traduction manquante pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_EMPTYTRANSLATION (156//)"
 msgid "empty translation for identifier '%s'"
-msgstr "Traduction vide pour l'identifiant « %s »"
+msgstr "traduction vide pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_MISMATCHINGCONTROLCHARACTERS (157//)"
 msgid "mismatching trailing control characters"
-msgstr "Problèmes sur les caractères de controle"
+msgstr "problèmes sur les caractères de contrôle"
 
 msgctxt "MSG_ERR_DOUBLE_IDENTIFIER (159//)"
 msgid "identifier '%s' declared twice"
-msgstr "identifiant « %s » déclaré en double"
+msgstr "identifiant « %s » déclaré deux fois"
 
 msgctxt "MSG_ERR_STRING_TOO_SHORT (160//)"
 msgid "string too short for identifier '%s'"
@@ -252,12 +277,12 @@ msgstr "chaîne trop longue pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_TRAILING_ELLIPSIS (162//)"
 msgid "original string has a trailing ellipsis ('...') for identifier '%s'"
-msgstr "la chaîne originale dispose d'une ellipse finale (« ... ») pour l'identifiant « %s »"
+msgstr "la chaîne originale se termine par des points de suspension (« ... ») pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_NO_TRAILING_ELLIPSIS (163//)"
 msgid ""
 "original string doesn't have a trailing ellipsis ('...') for identifier '%s'"
-msgstr "la chaîne originale ne dispose pas d'ellipse finale (« ... ») pour l'identifiant « %s »"
+msgstr "la chaîne originale ne se termine pas par des points de suspension (« ... ») pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_TRAILING_BLANKS (164//)"
 msgid "original string has trailing blanks for identifier '%s'"
@@ -265,7 +290,7 @@ msgstr "la chaîne originale a un espace final pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_NO_TRAILING_BLANKS (165//)"
 msgid "original string doesn't have trailing blanks for identifier '%s'"
-msgstr "la chaîne originale n'a pas d'espace final pour l'identifiant « %s »"
+msgstr "la chaîne originale n'a pas d'espace finale pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_MISMATCHING_PLACEHOLDERS (166//)"
 msgid "mismatching placeholders for identifier '%s'"
@@ -281,31 +306,31 @@ msgstr "trop de jokers pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_NO_LEADING_BRACKET (169//)"
 msgid "missing '(' for identifier '%s'"
-msgstr "« ( » manquante pour l'identifiant « %s »"
+msgstr "parenthèse ouvrante « ( » manquante pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_NO_TRAILING_BRACKET (170//)"
 msgid "missing ')' for identifier '%s'"
-msgstr "« ) » manquante pour l'identifiant « %s »"
+msgstr "parenthèse fermante « ) » manquante pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_DOUBLE_ID (171//)"
 msgid "ID number used twice for identifier '%s'"
-msgstr "Numéro d'Identifiant utilisé en double pour l'identifiant « %s »"
+msgstr "numéro d'identifiant utilisé deux fois pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_NO_MIN_LEN (172//)"
 msgid "expected MinLen (character '/') for identifier '%s'"
-msgstr "Longueur minimale attendue (caractère « / ») pour l'identifiant « %s »"
+msgstr "longueur minimale attendue (caractère « / ») pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_NO_MAX_LEN (173//)"
 msgid "expected MaxLen (character '/') for identifier '%s'"
-msgstr "Longueur maximale attendue (caractère « / ») pour l'identifiant « %s »"
+msgstr "longueur maximale attendue (caractère « / ») pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS (174//)"
 msgid "extra characters at the end of the line"
-msgstr "caractères en surplus à la fin de la ligne"
+msgstr "caractères trop nombreux à la fin de la ligne"
 
 msgctxt "MSG_ERR_EXTRA_CHARACTERS_ID (175//)"
 msgid "extra characters at the end of the line for identifier '%s'"
-msgstr "caractères en surplus à la fin de la ligne pour l'identifiant « %s »"
+msgstr "caractères trop nombreux à la fin de la ligne pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_NON_ASCII_CHARACTER (176//)"
 msgid ""
@@ -318,7 +343,7 @@ msgstr "aucune information de révision de catalogue trouvée, utilisation de la
 
 msgctxt "MSG_ERR_CONVERSION_FAILED (178//)"
 msgid "UTF8 conversion failed for identifier '%s'"
-msgstr "La conversion UTF8 a échoué pour l'identifiant  « %s »"
+msgstr "La conversion UTF8 a échoué pour l'identifiant « %s »"
 
 msgctxt "MSG_ERR_UNKNOWN_SOURCE_CHARSET (179//)"
 msgid "ERROR in CodesetsFind(): unknown source charset '%s'"
@@ -342,4 +367,4 @@ msgstr "ERREUR dans iconv_open() : %s"
 
 msgctxt "MSG_ERR_NO_CAT_VERSION (184//)"
 msgid "no catalog version information found, using version 0"
-msgstr ""
+msgstr "Aucune information de version de catalogue trouvée, utilisation de la version 0"
