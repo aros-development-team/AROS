@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Èeská republika (Czech Republic)
@@ -50,7 +50,7 @@ struct IntCountryPrefs czech_republicPrefs =
         2, 2,
 
         /* Currency symbol, Small currency symbol */
-        "Kè", "h",
+        "K\xE8", "h",
 
         /* Int CS, this is the ISO 4217 symbol, followed by the character to
            separate that symbol from the rest of the money. (\x00 for none).
@@ -66,7 +66,7 @@ struct IntCountryPrefs czech_republicPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: czech_republic.country 44.0 (12.04.2013)",
+    "$VER: czech_republic.country 44.0 (02.04.2019)",
     "Cesko",
     "Countries/Czech_Republic"
 };

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for España (Spain)
@@ -72,7 +72,7 @@ struct IntCountryPrefs spainPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: spain.country 44.0 (12.04.2013)",
-    "España", 
+    "$VER: spain.country 44.0 (02.04.2019)",
+    "Espa\xF1a", 
     "Countries/Spain"
 };
