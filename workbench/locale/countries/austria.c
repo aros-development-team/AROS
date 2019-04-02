@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Österreich (Austria)
@@ -72,7 +72,7 @@ struct IntCountryPrefs austriaPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: austria.country 44.0 (12.04.2013)",
-    "Österreich",
+    "$VER: austria.country 44.0 (02.04.2019)",
+    "\xD6sterreich",
     "Countries/Austria"
 };

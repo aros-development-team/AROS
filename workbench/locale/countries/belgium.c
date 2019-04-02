@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for België/Belgique/Belgian (Belgium)
@@ -72,7 +72,7 @@ struct IntCountryPrefs belgiumPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: belgium.country 44.0 (12.04.2013)",
-    "België/Belgique/Belgien",
+    "$VER: belgium.country 44.0 (02.04.2019)",
+    "Belgi\xEB/Belgique/Belgien",
     "Countries/Belgium"
 };

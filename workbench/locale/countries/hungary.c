@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Country data for Magyarország (Hungary).
@@ -74,7 +74,7 @@ struct IntCountryPrefs hungaryPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: hungary.country 44.0 (12.04.2013)",
-    "Magyarország",
+    "$VER: hungary.country 44.0 (02.04.2019)",
+    "Magyarorsz\xE1g",
     "Countries/Hungary"
 };

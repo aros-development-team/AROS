@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Timor-Leste (East Timor)
@@ -52,7 +52,7 @@ struct IntCountryPrefs east_timorPrefs =
         2, 3,
 
         /* Currency symbol, Small currency symbol */
-        "$", "¢",
+        "$", "\xA2",
 
         /* Int CS, this is the ISO 4217 symbol, followed by the character to
            separate that symbol from the rest of the money. (\x00 for none).
@@ -68,7 +68,7 @@ struct IntCountryPrefs east_timorPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: east_timor.country 44.0 (12.04.2013)",
+    "$VER: east_timor.country 44.0 (02.04.2019)",
     "Timor_Leste",
     "Countries/East_Timor"
 };

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Nihon (Japan)
@@ -18,14 +18,14 @@ struct IntCountryPrefs japanPrefs =
         MAKE_ID('J', 0 , 0 , 0 ), 81, MS_ISO,
 
         /* Date time format, date format, time format */
-        "%YÇ¯%m·î%eÆü %H»þ%MÊ¬%SÉÃ",
-        "%YÇ¯%m·î%eÆü",
-        "%H»þ%MÊ¬%SÉÃ",
+        "%YÇ¯%m\xB7\xEE%e\xC6\xFC %H\xBB\xFE%MÊ¬%S\xC9\xC3",
+        "%YÇ¯%m\xB7\xEE%e\xC6\xFC",
+        "%H\xBB\xFE%MÊ¬%S\xC9\xC3",
 
         /* Short datetime, short date, short time formats */
-        "%YÇ¯%m·î%eÆü %H»þ%MÊ¬%SÉÃ",
-        "%YÇ¯%m·î%eÆü",
-        "%H»þ%MÊ¬",
+        "%YÇ¯%m\xB7\xEE%e\xC6\xFC %H\xBB\xFE%MÊ¬%S\xC9\xC3",
+        "%YÇ¯%m\xB7\xEE%e\xC6\xFC",
+        "%H\xBB\xFE%MÊ¬",
 
         /* Decimal point, group separator, frac group separator */
         ".", ",", "",
@@ -50,7 +50,7 @@ struct IntCountryPrefs japanPrefs =
         2, 2,
 
         /* Currency symbol, Small currency symbol */
-        "¥", "",
+        "\xA5", "",
 
         /* Int CS, this is the ISO 4217 symbol, followed by the character to
            separate that symbol from the rest of the money. (\x00 for none).
@@ -66,7 +66,7 @@ struct IntCountryPrefs japanPrefs =
         /* Calendar type */
         CT_7SUN
     },
-    "$VER: japan.country 44.0 (12.04.2013)",
+    "$VER: japan.country 44.0 (02.04.2019)",
     "Nihon",
     "Countries/Japan"
 };
