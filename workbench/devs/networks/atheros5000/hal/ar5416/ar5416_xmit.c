@@ -91,9 +91,9 @@ ar5416StopTxDma(struct ath_hal *ah, u_int q)
 			    "TSF: 0x%08x\n", __func__, tsfLow);
 			HALASSERT(j < 1); /* TSF shouldn't count twice or reg access is taking forever */
 		}
-		
+
 		OS_REG_SET_BIT(ah, AR_DIAG_SW, AR_DIAG_CHAN_IDLE);
-		
+
 		/* Allow the quiet mechanism to do its work */
 		OS_DELAY(200);
 		OS_REG_CLR_BIT(ah, AR_TIMER_MODE, AR_TIMER_MODE_QUIET);
@@ -203,9 +203,9 @@ ar5416SetupTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 	ads->ds_ctl4 = 0;
 	ads->ds_ctl5 = 0;
 	ads->ds_ctl6 = 0;
-	ads->ds_ctl7 = SM(ahp->ah_tx_chainmask, AR_ChainSel0) 
+	ads->ds_ctl7 = SM(ahp->ah_tx_chainmask, AR_ChainSel0)
 		     | SM(ahp->ah_tx_chainmask, AR_ChainSel1)
-		     | SM(ahp->ah_tx_chainmask, AR_ChainSel2) 
+		     | SM(ahp->ah_tx_chainmask, AR_ChainSel2)
 		     | SM(ahp->ah_tx_chainmask, AR_ChainSel3)
 		     ;
 	ads->ds_ctl8 = 0;
@@ -281,7 +281,7 @@ ar5416FillTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 		/*
 		 * Last descriptor in a multi-descriptor frame,
 		 * copy the multi-rate transmit parameters from
-		 * the first frame for processing on completion. 
+		 * the first frame for processing on completion.
 		 */
 		ads->ds_ctl0 = 0;
 		ads->ds_ctl1 = segLen;
@@ -302,7 +302,7 @@ ar5416FillTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 		ads->ds_ctl3 = 0;
 	}
 	/* XXX only on last descriptor? */
-	OS_MEMZERO(ads->u.tx.status, sizeof(ads->u.tx.status));
+	OS_MEMZERO(&(ads->u.tx.status), sizeof(ads->u.tx.status));
 	return AH_TRUE;
 }
 
@@ -324,7 +324,7 @@ ar5416ChainTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 	uint32_t *ds_txstatus = AR5416_DS_TXSTATUS(ah,ads);
 
 	int isaggr = 0;
-	
+
 	(void) hdrLen;
 	(void) ah;
 
@@ -370,7 +370,7 @@ ar5416ChainTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 	}
 	ds_txstatus[0] = ds_txstatus[1] = 0;
 	ds_txstatus[9] &= ~AR_TxDone;
-	
+
 	return AH_TRUE;
 }
 
@@ -388,7 +388,7 @@ ar5416SetupFirstTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 	HALASSERT(isValidTxRate(txRate0));
 	HALASSERT((flags & RTSCTS) != RTSCTS);
 	/* XXX validate antMode */
-	
+
 	txPower = (txPower + ahp->ah_txPowerIndexOffset );
 	if(txPower > 63)  txPower=63;
 
@@ -399,11 +399,11 @@ ar5416SetupFirstTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 	ads->ds_ctl1 |= (flags & HAL_TXDESC_NOACK ? AR_NoAck : 0);
 	ads->ds_ctl2 |= SM(txTries0, AR_XmitDataTries0);
 	ads->ds_ctl3 |= (txRate0 << AR_XmitRate0_S);
-	ads->ds_ctl7 = SM(AH5416(ah)->ah_tx_chainmask, AR_ChainSel0) 
+	ads->ds_ctl7 = SM(AH5416(ah)->ah_tx_chainmask, AR_ChainSel0)
 		| SM(AH5416(ah)->ah_tx_chainmask, AR_ChainSel1)
-		| SM(AH5416(ah)->ah_tx_chainmask, AR_ChainSel2) 
+		| SM(AH5416(ah)->ah_tx_chainmask, AR_ChainSel2)
 		| SM(AH5416(ah)->ah_tx_chainmask, AR_ChainSel3);
-	
+
 	/* NB: no V1 WAR */
 	ads->ds_ctl8 = 0;
 	ads->ds_ctl9 = (txPower << 24);
@@ -419,7 +419,7 @@ ar5416SetupFirstTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 			| (flags & HAL_TXDESC_RTSENA ? AR_RTSEnable : 0);
 		ads->ds_ctl2 |= SM(rtsctsDuration, AR_BurstDur);
 	}
-	
+
 	return AH_TRUE;
 #undef RTSCTS
 }
@@ -441,7 +441,7 @@ ar5416SetupLastTxDesc(struct ath_hal *ah, struct ath_desc *ds,
 	ads->ds_ctl2 = AR5416DESC_CONST(ds0)->ds_ctl2;
 	ads->ds_ctl3 = AR5416DESC_CONST(ds0)->ds_ctl3;
 #endif
-	
+
 	return AH_TRUE;
 }
 #endif /* 0 */
@@ -469,53 +469,53 @@ ar5416ProcTxDesc(struct ath_hal *ah,
 	struct ath_desc *ds, struct ath_tx_status *ts)
 {
 	struct ar5416_desc *ads = AR5416DESC(ds);
-	uint32_t *ds_txstatus = AR5416_DS_TXSTATUS(ah,ads);
+	struct ar5416_tx_status *ds_txstatus = AR5416_DS_TXSTATUS(ah,ads);
 
 #ifdef AH_NEED_DESC_SWAP
-	if ((ds_txstatus[9] & __bswap32(AR_TxDone)) == 0)
+	if ((ds_txstatus->status[9] & __bswap32(AR_TxDone)) == 0)
 		return HAL_EINPROGRESS;
 	ar5416SwapTxDesc(ds);
 #else
-	if ((ds_txstatus[9] & AR_TxDone) == 0)
+	if ((ds_txstatus->status[9] & AR_TxDone) == 0)
 		return HAL_EINPROGRESS;
 #endif
 
 	/* Update software copies of the HW status */
-	ts->ts_seqnum = MS(ds_txstatus[9], AR_SeqNum);
-	ts->ts_tstamp = AR_SendTimestamp(ds_txstatus);
+	ts->ts_seqnum = MS(ds_txstatus->status[9], AR_SeqNum);
+	ts->ts_tstamp = AR_SendTimestamp(ds_txstatus->status);
 
 	ts->ts_status = 0;
-	if (ds_txstatus[1] & AR_ExcessiveRetries)
+	if (ds_txstatus->status[1] & AR_ExcessiveRetries)
 		ts->ts_status |= HAL_TXERR_XRETRY;
-	if (ds_txstatus[1] & AR_Filtered)
+	if (ds_txstatus->status[1] & AR_Filtered)
 		ts->ts_status |= HAL_TXERR_FILT;
-	if (ds_txstatus[1] & AR_FIFOUnderrun)
+	if (ds_txstatus->status[1] & AR_FIFOUnderrun)
 		ts->ts_status |= HAL_TXERR_FIFO;
-	if (ds_txstatus[9] & AR_TxOpExceeded)
+	if (ds_txstatus->status[9] & AR_TxOpExceeded)
 		ts->ts_status |= HAL_TXERR_XTXOP;
-	if (ds_txstatus[1] & AR_TxTimerExpired)
+	if (ds_txstatus->status[1] & AR_TxTimerExpired)
 		ts->ts_status |= HAL_TXERR_TIMER_EXPIRED;
 
 	ts->ts_flags  = 0;
-	if (ds_txstatus[0] & AR_TxBaStatus) {
+	if (ds_txstatus->status[0] & AR_TxBaStatus) {
 		ts->ts_flags |= HAL_TX_BA;
-		ts->ts_ba_low = AR_BaBitmapLow(ds_txstatus);
-		ts->ts_ba_high = AR_BaBitmapHigh(ds_txstatus);
+		ts->ts_ba_low = AR_BaBitmapLow(ds_txstatus->status);
+		ts->ts_ba_high = AR_BaBitmapHigh(ds_txstatus->status);
 	}
 	if (ds->ds_ctl1 & AR_IsAggr)
 		ts->ts_flags |= HAL_TX_AGGR;
-	if (ds_txstatus[1] & AR_DescCfgErr)
+	if (ds_txstatus->status[1] & AR_DescCfgErr)
 		ts->ts_flags |= HAL_TX_DESC_CFG_ERR;
-	if (ds_txstatus[1] & AR_TxDataUnderrun)
+	if (ds_txstatus->status[1] & AR_TxDataUnderrun)
 		ts->ts_flags |= HAL_TX_DATA_UNDERRUN;
-	if (ds_txstatus[1] & AR_TxDelimUnderrun)
+	if (ds_txstatus->status[1] & AR_TxDelimUnderrun)
 		ts->ts_flags |= HAL_TX_DELIM_UNDERRUN;
 
 	/*
 	 * Extract the transmit rate used and mark the rate as
 	 * ``alternate'' if it wasn't the series 0 rate.
 	 */
-	ts->ts_finaltsi =  MS(ds_txstatus[9], AR_FinalTxIdx);
+	ts->ts_finaltsi =  MS(ds_txstatus->status[9], AR_FinalTxIdx);
 	switch (ts->ts_finaltsi) {
 	case 0:
 		ts->ts_rate = MS(ads->ds_ctl3, AR_XmitRate0);
@@ -534,19 +534,19 @@ ar5416ProcTxDesc(struct ath_hal *ah,
 		break;
 	}
 
-	ts->ts_rssi = MS(ds_txstatus[5], AR_TxRSSICombined);
-	ts->ts_rssi_ctl[0] = MS(ds_txstatus[0], AR_TxRSSIAnt00);
-	ts->ts_rssi_ctl[1] = MS(ds_txstatus[0], AR_TxRSSIAnt01);
-	ts->ts_rssi_ctl[2] = MS(ds_txstatus[0], AR_TxRSSIAnt02);
-	ts->ts_rssi_ext[0] = MS(ds_txstatus[5], AR_TxRSSIAnt10);
-	ts->ts_rssi_ext[1] = MS(ds_txstatus[5], AR_TxRSSIAnt11);
-	ts->ts_rssi_ext[2] = MS(ds_txstatus[5], AR_TxRSSIAnt12);
-	ts->ts_evm0 = AR_TxEVM0(ds_txstatus);
-	ts->ts_evm1 = AR_TxEVM1(ds_txstatus);
-	ts->ts_evm2 = AR_TxEVM2(ds_txstatus);
+	ts->ts_rssi = MS(ds_txstatus->status[5], AR_TxRSSICombined);
+	ts->ts_rssi_ctl[0] = MS(ds_txstatus->status[0], AR_TxRSSIAnt00);
+	ts->ts_rssi_ctl[1] = MS(ds_txstatus->status[0], AR_TxRSSIAnt01);
+	ts->ts_rssi_ctl[2] = MS(ds_txstatus->status[0], AR_TxRSSIAnt02);
+	ts->ts_rssi_ext[0] = MS(ds_txstatus->status[5], AR_TxRSSIAnt10);
+	ts->ts_rssi_ext[1] = MS(ds_txstatus->status[5], AR_TxRSSIAnt11);
+	ts->ts_rssi_ext[2] = MS(ds_txstatus->status[5], AR_TxRSSIAnt12);
+	ts->ts_evm0 = AR_TxEVM0(ds_txstatus->status);
+	ts->ts_evm1 = AR_TxEVM1(ds_txstatus->status);
+	ts->ts_evm2 = AR_TxEVM2(ds_txstatus->status);
 
-	ts->ts_shortretry = MS(ds_txstatus[1], AR_RTSFailCnt);
-	ts->ts_longretry = MS(ds_txstatus[1], AR_DataFailCnt);
+	ts->ts_shortretry = MS(ds_txstatus->status[1], AR_RTSFailCnt);
+	ts->ts_longretry = MS(ds_txstatus->status[1], AR_DataFailCnt);
 	/*
 	 * The retry count has the number of un-acked tries for the
 	 * final series used.  When doing multi-rate retry we must
@@ -647,7 +647,7 @@ ar5416Set11nRateScenario(struct ath_hal *ah, struct ath_desc *ds,
 	 * currently it is split between this function and the
 	 * setupFiirstDescriptor. with this current implementation there
 	 * is an implicit assumption that setupFirstDescriptor is called
-	 * before this function. 
+	 * before this function.
 	 */
 	if (((series[0].RateFlags & HAL_RATESERIES_RTS_CTS) ||
 	     (series[1].RateFlags & HAL_RATESERIES_RTS_CTS) ||

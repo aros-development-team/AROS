@@ -24,18 +24,21 @@
  */
 #include "ah_desc.h"
 
-/* XXX Need to replace this with a dynamic 
- * method of determining Owl2 if possible 
+/* XXX Need to replace this with a dynamic
+ * method of determining Owl2 if possible
  */
-#define _get_index(_ah) ( IS_5416V1(_ah)  ? -4 : 0 )
 #define AR5416_DS_TXSTATUS(_ah, _ads) \
-	((uint32_t*)(&(_ads)->u.tx.status[_get_index(_ah)]))
+	((struct ar5416_tx_status*)(IS_5416V1(_ah) ? &(_ads)->u.tx_v1.status : &(_ads)->u.tx.status))
 #define AR5416_DS_TXSTATUS_CONST(_ah, _ads) \
-	((const uint32_t*)(&(_ads)->u.tx.status[_get_index(_ah)]))
+	((const struct ar5416_tx_status*)(IS_5416V1(_ah) ? &(_ads)->u.tx_v1.status : &(_ads)->u.tx.status))
 
 #define AR5416_NUM_TX_STATUS	10 /* Number of TX status words */
 /* Clear the whole descriptor */
 #define AR5416_DESC_TX_CTL_SZ	sizeof(struct ar5416_tx_desc)
+
+struct ar5416_tx_status {
+	uint32_t status[AR5416_NUM_TX_STATUS];
+} __packed;
 
 struct ar5416_tx_desc { /* tx desc has 12 control words + 10 status words */
 	uint32_t	ctl2;
@@ -48,7 +51,17 @@ struct ar5416_tx_desc { /* tx desc has 12 control words + 10 status words */
 	uint32_t	ctl9;
 	uint32_t	ctl10;
 	uint32_t	ctl11;
-	uint32_t	status[AR5416_NUM_TX_STATUS];
+	struct ar5416_tx_status status;
+};
+
+struct ar5416_tx_desc_v1 { /* V1 tx desc has 8 control words + 10 status words */
+	uint32_t	ctl2;
+	uint32_t	ctl3;
+	uint32_t	ctl4;
+	uint32_t	ctl5;
+	uint32_t	ctl6;
+	uint32_t	ctl7;
+	struct ar5416_tx_status status;
 };
 
 struct ar5416_rx_desc { /* rx desc has 2 control words + 9 status words */
@@ -71,6 +84,7 @@ struct ar5416_desc {
 	uint32_t   ds_ctl1;    /* DMA control 1 */
 	union {
 		struct ar5416_tx_desc tx;
+		struct ar5416_tx_desc_v1 tx_v1;
 		struct ar5416_rx_desc rx;
 	} u;
 } __packed;
