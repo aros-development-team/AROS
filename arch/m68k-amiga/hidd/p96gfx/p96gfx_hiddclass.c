@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: P96 rtg card Gfx Hidd wrapper.
@@ -205,6 +205,7 @@ BOOL P96GFXCl__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 struct RTGFormat
 {
     UWORD rgbformat;
+    IPTR pixfmt;
     ULONG rm, gm, bm, am;
     UWORD rs, gs, bs, as;
     BOOL endianswap;
@@ -212,25 +213,25 @@ struct RTGFormat
 
 static const struct RTGFormat formats[] =
 {
-    { RGBFB_CLUT,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
+    { RGBFB_CLUT,	    vHidd_StdPixFmt_LUT8,       0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_B8G8R8A8,	0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24, FALSE },
-    { RGBFB_R8G8B8A8,	0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24, FALSE },
-    { RGBFB_A8B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0, FALSE },
-    { RGBFB_A8R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0, FALSE },
+    { RGBFB_B8G8R8A8,	vHidd_StdPixFmt_BGRA32,     0x0000ff00, 0x00ff0000, 0xff000000, 0x000000ff, 16,  8,  0, 24, FALSE },
+    { RGBFB_R8G8B8A8,	vHidd_StdPixFmt_RGBA32,     0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff,  0,  8, 16, 24, FALSE },
+    { RGBFB_A8B8G8R8,	vHidd_StdPixFmt_ABGR32,     0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000, 24, 16,  8,  0, FALSE },
+    { RGBFB_A8R8G8B8,	vHidd_StdPixFmt_ARGB32,     0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_B8G8R8,	0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0, FALSE },
-    { RGBFB_R8G8B8,	0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
+    { RGBFB_B8G8R8,	    vHidd_StdPixFmt_BGR24,      0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000, 24, 16,  8,  0, FALSE },
+    { RGBFB_R8G8B8,	    vHidd_StdPixFmt_RGB24,      0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000,  8, 16, 24,  0, FALSE },
 
-    { RGBFB_R5G5B5,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
-    { RGBFB_R5G6B5,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
+    { RGBFB_R5G5B5,	    vHidd_StdPixFmt_RGB15,      0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, FALSE },
+    { RGBFB_R5G6B5,	    vHidd_StdPixFmt_RGB16,      0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, FALSE },
 
-    { RGBFB_R5G5B5PC,	0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
-    { RGBFB_R5G6B5PC,	0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
-/*
-    { RGBFB_B5G5R5PC,	0x0000003e, 0x000007c0, 0x0000f800, 0x00000000, 26, 21, 16,  0, TRUE },
-    { RGBFB_B5G6R5PC,	0x0000001f, 0x000007e0, 0x0000f800, 0x00000000, 27, 21, 16,  0, TRUE },
-*/
+    { RGBFB_R5G5B5PC,	vHidd_StdPixFmt_RGB15_LE,   0x00007c00, 0x000003e0, 0x0000001f, 0x00000000, 17, 22, 27,  0, TRUE },
+    { RGBFB_R5G6B5PC,	vHidd_StdPixFmt_RGB16_LE,   0x0000f800, 0x000007e0, 0x0000001f, 0x00000000, 16, 21, 27,  0, TRUE },
+
+    { RGBFB_B5G5R5PC,	vHidd_StdPixFmt_BGR15_LE,   0x0000003e, 0x000007c0, 0x0000f800, 0x00000000, 26, 21, 16,  0, TRUE },
+    { RGBFB_B5G6R5PC,	vHidd_StdPixFmt_BGR16_LE,   0x0000001f, 0x000007e0, 0x0000f800, 0x00000000, 27, 21, 16,  0, TRUE },
+
     { 0 }
 };
 
@@ -440,7 +441,7 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         pflist[j].ti_Data = depth;
         j++;
         pflist[j].ti_Tag = aHidd_PixFmt_StdPixFmt;
-        pflist[j].ti_Data = vHidd_StdPixFmt_Native;
+        pflist[j].ti_Data = formats[l].pixfmt;
         j++;
         pflist[j].ti_Tag = aHidd_PixFmt_BitMapType;
         pflist[j].ti_Data = vHidd_BitMapType_Chunky;
