@@ -33,15 +33,16 @@ $(MAKECOUNTRY) : $(OBJS) $(OBJDIR)/makecountry.o
 	@$(ECHO) "Making $(@F)..."
 	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@ $(LIBICONV)
 
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/makecountry -idirafter $(AROS_INCLUDES)
+USER_CPPFLAGS := -D_EURO
+
 $(OBJDIR)/makecountry.o : | $(OBJDIR)
 %rule_compile basename="makecountry/makecountry" \
-       cflags="$(HOST_CFLAGS)" targetdir=$(OBJDIR) compiler=host
-
-HOST_CFLAGS  :=  $(HOST_CFLAGS) -I$(AROS_INCLUDES) -I$(SRCDIR)/$(CURDIR)/makecountry -D_EURO
+       cflags="" targetdir=$(OBJDIR) compiler=host
 
 $(OBJS) $(DEPS) : | $(OBJDIR)
 %rule_compile_multi basenames="makecountry/countryprefs $(COUNTRIES)" \
-       cflags="$(HOST_CFLAGS)" targetdir=$(OBJDIR) compiler=host
+       cflags="" targetdir=$(OBJDIR) compiler=host
 
 %rule_makedirs dirs="$(OBJDIR) $(COUNTRYDIR)"
 

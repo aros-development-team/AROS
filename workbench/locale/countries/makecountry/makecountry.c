@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Program that makes country files
+    Desc: Program that generates country files
     Lang: english
 */
 
@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iconv.h>
+
+#include "country_locale.h"
 
 #define D(x)
 
@@ -236,17 +238,17 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
     }
 
     /* Adjust the size of the IFF file if necessary ... */
-    if ((cpVers = getCountryPrefsVers(cp)) != NULL)
+    if ((cpVers = (char *)getCountryPrefsVers(cp)) != NULL)
     {
         size += strlen(cpVers);
         size += 8;
     }
-    if ((cpFlag = getCountryPrefsFlag(cp)) != NULL)
+    if ((cpFlag = (char *)getCountryPrefsFlag(cp)) != NULL)
     {
         size += strlen(cpFlag);
         size += 8;
     }
-    if ((cpNames = getCountryNames(cp)) != NULL)
+    if ((cpNames = (char *)getCountryNames(cp)) != NULL)
     {
         size += strlen(cpNames);
         size += 8;
