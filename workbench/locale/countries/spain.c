@@ -73,6 +73,6 @@ struct IntCountryPrefs spainPrefs =
         CT_7MON
     },
     "$VER: spain.country 44.0 (02.04.2019)",
-    "Espa\xF1a", 
+    "Espa\xF1""a", 
     "Countries/Spain"
 };
