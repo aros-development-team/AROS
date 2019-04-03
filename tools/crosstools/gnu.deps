@@ -1,7 +1,7 @@
-BINUTILS_DEPS=$(SRCDIR)/tools/crosstools/binutils-$(TARGET_BINUTILS_VER)-aros.diff
+BINUTILS_DEPS=$(SRCDIR)/tools/crosstools/gnu/binutils-$(TARGET_BINUTILS_VER)-aros.diff
 GMP_DEPS=
 ISL_DEPS=
 MPFR_DEPS=
 MPC_DEPS=
-GCC_DEPS=$(SRCDIR)/tools/crosstools/gcc-$(TARGET_GCC_VER)-aros.diff
+GCC_DEPS=$(SRCDIR)/tools/crosstools/gnu/gcc-$(TARGET_GCC_VER)-aros.diff
 AROS_TOOLCHAIN_DEPS:=$(BINUTILS_DEPS) $(GMP_DEPS) $(ISL_DEPS) $(MPFR_DEPS) $(MPC_DEPS) $(GCC_DEPS)

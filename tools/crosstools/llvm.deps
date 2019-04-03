@@ -1,4 +1,4 @@
-LLVM_DEPS=$(SRCDIR)/tools/crosstools/llvm-$(LLVM_VERSION).src-aros.diff
-CLANG_DEPS=$(SRCDIR)/tools/crosstools/cfe-$(LLVM_VERSION).src-aros.diff
+LLVM_DEPS=$(SRCDIR)/tools/crosstools/llvm/llvm-$(LLVM_VERSION).src-aros.diff
+CLANG_DEPS=$(SRCDIR)/tools/crosstools/llvm/cfe-$(LLVM_VERSION).src-aros.diff
 LLD_DEPS=
 AROS_TOOLCHAIN_DEPS:=$(LLVM_DEPS) $(CLANG_DEPS) $(LLD_DEPS)
