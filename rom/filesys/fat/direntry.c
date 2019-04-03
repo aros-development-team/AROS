@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2015 The AROS Development Team
+ * Copyright © 2007-2019 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -557,16 +557,22 @@ void FillDirEntry(struct DirEntry *de, UBYTE attr, ULONG cluster,
     struct Globals *glob)
 {
     struct DateStamp ds;
+    UWORD cdate, ctime;
 
     de->e.entry.attr = attr;
     de->e.entry.nt_res = 0;
 
     DateStamp(&ds);
-    ConvertDOSDate(&ds, &(de->e.entry.create_date),
-        &(de->e.entry.create_time), glob);
-    de->e.entry.write_date = de->e.entry.create_date;
-    de->e.entry.write_time = de->e.entry.create_time;
-    de->e.entry.last_access_date = de->e.entry.create_date;
+    cdate = de->e.entry.create_date;
+    ctime = de->e.entry.create_time;
+    ConvertDOSDate(&ds, &cdate,
+        &ctime, glob);
+    de->e.entry.create_date = cdate;
+    de->e.entry.create_time = ctime;
+
+    de->e.entry.write_date = cdate;
+    de->e.entry.write_time = ctime;
+    de->e.entry.last_access_date = cdate;
     de->e.entry.create_time_tenth = ds.ds_Tick % (TICKS_PER_SECOND * 2)
         / (TICKS_PER_SECOND / 10);
 
