@@ -1,5 +1,5 @@
 include $(SRCDIR)/config/aros.cfg
--include $(SRCDIR)/$(CURDIR)/$(AROS_TOOLCHAIN).cfg
+-include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
 
 LN ?= ln
 
@@ -266,68 +266,3 @@ tools-crosstools-gdb :
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
         extraoptions="$(GDB_EXTRA_OPTS)"
-
-#
-# LLVM toolchain
-#
-
-LLVM_REPOSITORY   := http://llvm.org/releases/$(LLVM_VERSION)
-LLVM_ARCHBASE     := llvm-$(LLVM_VERSION).src
-LLVMLLD_ARCHBASE  := lld-$(LLVM_VERSION).src
-CLANG_ARCHBASE    := cfe-$(LLVM_VERSION).src
-
-LLVM_TARGETS      := "X86;ARM;PowerPC"
-LLVM_HOST         := "$(AROS_TARGET_CPU)"
-
-LLVM_CMAKETARGET  :=
-LLVM_CMAKEOPTIONS :=  \
-    -DDEFAULT_SYSROOT="$(AROS_DEVELOPER)" \
-    -DCMAKE_INSTALL_BINDIR="$(CROSSTOOLSDIR)" \
-    -DLLVM_EXTERNAL_LLD_SOURCE_DIR:PATH="$(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE)" \
-    -DLLVM_EXTERNAL_CLANG_SOURCE_DIR:PATH="$(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE)" \
-    -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) \
-    -DLLVM_DEFAULT_TARGET_TRIPLE=$(AROS_TARGET_CPU)-unknown-aros \
-    -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF
-ifeq ($(AROS_HOST_ARCH),linux)
-LLVM_CMAKEOPTIONS += -DBUILD_SHARED_LIBS=ON
-# LLVM_CMAKEOPTIONS += -DLLVM_LINK_LLVM_DYLIB=ON
-endif
-
-%fetch mmake=crosstools-clang-fetch archive=$(CLANG_ARCHBASE)  \
-    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
-    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/clang \
-    patches_specs=$(CLANG_ARCHBASE)-aros.diff:$(CLANG_ARCHBASE):-p1
-
-%create_patch mmake=crosstools-clang-create-patch \
-    archive=$(CLANG_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/clang
-
-%fetch mmake=crosstools-llvm-lld-fetch archive=$(LLVMLLD_ARCHBASE) \
-    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
-    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm-lld
-
-%create_patch mmake=crosstools-llvm-lld-create-patch \
-    archive=$(LLVMLLD_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/llvm-lld
-
-%fetch mmake=crosstools-llvm-fetch archive=$(LLVM_ARCHBASE) \
-    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
-    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm \
-    patches_specs=$(LLVM_ARCHBASE)-aros.diff:$(LLVM_ARCHBASE):-p1
-
-%create_patch mmake=crosstools-llvm-create-patch \
-    archive=$(LLVM_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/llvm
-
-#MM crosstools-llvm-fetch : crosstools-clang-fetch crosstools-llvm-lld-fetch
-
-#MM- tools-crosstools-llvm-i386   : crosstools-llvm-quick
-#MM- tools-crosstools-llvm-x86_64 : crosstools-llvm-quick
-#MM- tools-crosstools-llvm-ppc    : crosstools-llvm-quick
-#MM- tools-crosstools-llvm-arm    : crosstools-llvm-quick
-
-#MM- crosstools-llvm-quick : setup crosstools-llvm-fetch
-
-%build_with_cmake mmake=crosstools-llvm package=llvm srcdir=$(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) \
-    	prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
-	extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host
