@@ -2,7 +2,7 @@
  * fat-handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2015 The AROS Development Team
+ * Copyright © 2007-2019 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -1136,6 +1136,7 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     LONG err;
     struct DirHandle dh;
     struct DirEntry de;
+    UWORD wdate, wtime;
 
     /* Get the dir handle */
     if ((err = InitDirHandle(glob->sb,
@@ -1166,9 +1167,13 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     }
 
     /* Set and update the date */
-    ConvertDOSDate(ds, &de.e.entry.write_date, &de.e.entry.write_time,
+    wdate = de.e.entry.write_date;
+    wtime = de.e.entry.write_time;
+    ConvertDOSDate(ds, &wdate, &wtime,
         glob);
-    de.e.entry.last_access_date = de.e.entry.write_date;
+    de.e.entry.write_date = wdate;
+    de.e.entry.write_time = wtime;
+    de.e.entry.last_access_date = wdate;
     UpdateDirEntry(&de, glob);
 
     SendNotifyByDirEntry(glob->sb, &de);
