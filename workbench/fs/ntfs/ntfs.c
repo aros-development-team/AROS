@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright © 2012 The AROS Development Team
+ * Copyright © 2012-2019 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -946,6 +946,7 @@ LONG ReadBootSector(struct FSData *fs_data )
     LONG err;
     ULONG bsize = de->de_SizeBlock * 4;
     struct NTFSBootSector *boot;
+	UQUAD volserial;
     BOOL invalid = FALSE;
     int i;
 
@@ -1043,9 +1044,9 @@ LONG ReadBootSector(struct FSData *fs_data )
 	return ERROR_NO_FREE_STORE;
     }
 
-    /* Warning: todo - UUID stored in LE format- do we need to convert it? */
-    boot->volume_serial_number = AROS_LE2QUAD(boot->volume_serial_number);
-    UUID_Copy((const uuid_t *)&boot->volume_serial_number, (uuid_t *)&fs_data->uuid);
+	volserial = AROS_LE2QUAD(boot->volume_serial_number);
+    boot->volume_serial_number = volserial;
+    UUID_Copy((const uuid_t *)&volserial, (uuid_t *)&fs_data->uuid);
 
     D(
         char uuid_str[UUID_STRLEN + 1];
@@ -1144,11 +1145,13 @@ LONG ReadBootSector(struct FSData *fs_data )
 	    attrentry = FindMFTAttrib(&dir_entry.entry->attr, AT_STANDARD_INFORMATION);
 	    if ((attrentry) && (attrentry->residentflag == ATTR_RESIDENT_FORM) && (AROS_LE2LONG(attrentry->data.resident.value_length) > 0))
 	    {
+		UQUAD ntfstv;
 		attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
+		ntfstv = *(UQUAD *)attrentry;
 
-		D(bug("[NTFS] %s: nfstime     = %d\n", __PRETTY_FUNCTION__, *(UQUAD *)attrentry));
+		D(bug("[NTFS] %s: nfstime     = %d\n", __PRETTY_FUNCTION__, ntfstv));
 
-		NTFS2DateStamp((UQUAD *)attrentry, &fs_data->volume.create_time);
+		NTFS2DateStamp(&ntfstv, &fs_data->volume.create_time);
 
 		D(bug("[NTFS] %s:\tVolumeDate: %ld days, %ld, minutes, %ld ticks \n", __PRETTY_FUNCTION__, fs_data->volume.create_time.ds_Days, fs_data->volume.create_time.ds_Minute, fs_data->volume.create_time.ds_Tick));
 	    }
