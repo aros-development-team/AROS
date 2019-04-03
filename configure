@@ -622,6 +622,18 @@ ac_includes_default="\
 ac_header_list=
 ac_subst_vars='LTLIBOBJS
 aros_usb30_code
+aros_host_sdl_libs
+aros_host_sdl_cflags
+aros_host_x11_ldflags
+aros_host_x11_cflags
+DO_VIDMODE_SUPPORT
+DO_XSHM_SUPPORT
+ENABLE_X11
+KERNEL_DBUS_INCLUDES
+KERNEL_DBUS_KOBJ
+DBUS_LIBFLAGS
+DBUS_CFLAGS
+ENABLE_DBUS
 java_target
 objc_target
 target_binutils_version
@@ -631,39 +643,28 @@ aros_modules_debug
 aros_stack_debug
 aros_mungwall_debug
 aros_debug
-ENABLE_X11
-KERNEL_DBUS_INCLUDES
-KERNEL_DBUS_KOBJ
-DBUS_LIBFLAGS
-DBUS_CFLAGS
-ENABLE_DBUS
 aros_android_antapk
 aros_android_level
+aros_ios_sdk
+aros_ios_version
+aros_ios_platform
+aros_palm_debug_hack
 gcc_default_mode
 gcc_default_float_abi
 gcc_default_fpu
 gcc_default_cpu_tune
 gcc_default_cpu
-aros_ios_sdk
-aros_ios_version
-aros_ios_platform
-aros_enable_mmu
 aros_nesting_supervisor
-aros_palm_debug_hack
+target_grub2_version
+aros_enable_mmu
 ENABLE_EXECSMP
 PLATFORM_EXECSMP
 aros_serial_debug
-target_grub2_version
-aros_host_sdl_libs
-aros_host_sdl_cflags
-aros_host_x11_ldflags
-aros_host_x11_cflags
-DO_VIDMODE_SUPPORT
-DO_XSHM_SUPPORT
 aros_nominal_depth
 aros_nominal_height
 aros_nominal_width
 pci_hidd_target
+use_libatomic
 crosstools_cxx_target
 crosstools_target
 aros_isa_flags
@@ -7657,6 +7658,7 @@ case "$aros_toolchain" in
         toolchain_strip="true"
         toolchain_objcopy="llvm-objcopy"
         toolchain_objdump="llvm-objdump"
+        use_libatomic=yes
         ;;
     *gnu*)
         toolchain_c_compiler="gcc"
@@ -7678,6 +7680,7 @@ case "$aros_toolchain" in
         toolchain_strip="strip"
         toolchain_objcopy="objcopy"
         toolchain_objdump="objdump"
+        use_libatomic=yes
         ;;
     *)
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"Unknown toolchain family!\"" >&5
@@ -15079,10 +15082,10 @@ fi
 
 
 
-# Compatability with other Amiga-like operation systems
+# Compatability with other Amiga-like operating systems
 
 
-# Host related
+# Host Related ###########################
 
 
 
@@ -15113,8 +15116,8 @@ fi
 
 
 
+# Target Related #########################
 
-# Target Related
 
 
 
@@ -15204,16 +15207,6 @@ fi
 
 
 
-
-
-
-
-
-
-
-
-
-# Bootloader related
 
 
 # Native version related
@@ -15221,18 +15214,13 @@ fi
 
 
 
-# Palm native version related
-
-
-# Unix/Hosted version related
-
-
 # MMU related
 
 
-# Apple iOS related
+# Bootloader related
 
 
+# Unix/Hosted version related
 
 
 # ARM default GCC target related
@@ -15242,19 +15230,18 @@ fi
 
 
 
+# Palm native version related
+
+
+# Apple iOS related
+
+
+
+
 # Android related
 
 
 
-
-# DBUS related
-
-
-
-
-
-
-#X11 related
 
 
 # Debug related
@@ -15275,6 +15262,25 @@ fi
 
 
 #Java related
+
+
+# DBUS related
+
+
+
+
+
+
+#X11 related
+
+
+
+
+
+
+
+#X11 related
+
 
 
 # USB3.0 code
