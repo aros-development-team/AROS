@@ -16,7 +16,7 @@ typedef ULONG NODE;
 
 struct fsNode {
   ULONG be_data;
-};
+} __attribute__((packed));
 
 #define NODECONTAINER_ID         AROS_LONG2BE(MAKE_ID('N','D','C',' '))
 
