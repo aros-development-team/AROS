@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a seglist for ROM code.
@@ -14,7 +14,6 @@ struct phony_segment
 {
     ULONG Size;	/* Length of segment in # of bytes */
     BPTR  Next;	/* Next segment (always 0 for this) */
-    struct FullJumpVec Code;	/* Code to jump to the offset */
 } __attribute__((packed));
 
 /*****************************************************************************
@@ -55,19 +54,21 @@ struct phony_segment
 *****************************************************************************/
 {
     struct phony_segment *segtmp;
+    struct FullJumpVec *Code;	/* Code to jump to the offset */
 
-    segtmp = AllocMem(sizeof(*segtmp), MEMF_ANY);
+    segtmp = AllocMem(sizeof(*segtmp) + sizeof(*Code), MEMF_ANY);
     if (!segtmp)
-    	return BNULL;
+        return BNULL;
 
+    Code = (struct FullJumpVec *)((IPTR)segtmp + sizeof(*segtmp));
     segtmp->Size = sizeof(*segtmp);
     segtmp->Next = (BPTR)0;
-    __AROS_SET_FULLJMP(&segtmp->Code, function);
+    __AROS_SET_FULLJMP(Code, function);
 
     if (SysBase->LibNode.lib_Version >= 36)
-        CacheClearE(&segtmp->Code, sizeof(struct FullJumpVec), CACRF_ClearI | CACRF_ClearD);
+        CacheClearE(Code, sizeof(*Code), CACRF_ClearI | CACRF_ClearD);
 
-    D(bug("[CreateSegList] Created jump segment 0x%p, code 0x%p, target 0x%p\n", MKBADDR(&segtmp->Next), &segtmp->Code, function));
+    D(bug("[CreateSegList] Created jump segment 0x%p, code 0x%p, target 0x%p\n", MKBADDR(&segtmp->Next), Code, function));
 
     return MKBADDR(&segtmp->Next);
 }
