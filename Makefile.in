@@ -27,7 +27,7 @@ ifneq ($(CROSSTOOLS_TARGET),)
 include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
 include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps
 CROSSTOOLS_BUILDFLAG:=$(CROSSTOOLSDIR)/.installflag-crosstools
-AROS_TOOLCHAIN_DEPS:=$(AROS_TOOLCHAIN_DEPS) $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps $(SRCDIR)/tools/crosstools/mmakefile.src
+AROS_TOOLCHAIN_DEPS:=$(AROS_TOOLCHAIN_DEPS) $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN)/mmakefile.src
 else
 CROSSTOOLS_BUILDFLAG:=
 endif
@@ -145,7 +145,7 @@ tools : makedirs mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
 	@$(NOP)
 
 # rebuild the crosstools if we are reconfigured, or its dependencies change.
-$(CROSSTOOLSDIR)/.installflag-crosstools: $(TOP)/config.status $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).deps $(AROS_TOOLCHAIN_DEPS) tools
+$(CROSSTOOLSDIR)/.installflag-crosstools: $(TOP)/config.status $(AROS_TOOLCHAIN_DEPS) tools
 	@+$(IF) ! $(TEST) -f $@ ; then \
 	    $(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$(CROSSTOOLS_TARGET) && $(TOUCH) $@ ; \
 	fi
