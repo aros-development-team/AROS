@@ -1103,6 +1103,20 @@ diff -ruN gcc-9-20190324/include/filenames.h gcc-9-20190324.aros/include/filenam
  #else /* not DOSish */
  #  if defined(__APPLE__)
  #    ifndef HAVE_CASE_INSENSITIVE_FILE_SYSTEM
+diff -ruN gcc-9-20190324/libatomic/configure.tgt gcc-9-20190324.aros/libatomic/configure.tgt
+--- gcc-9-20190324/libatomic/configure.tgt	2016-05-10 08:03:07.000000000 +0100
++++ gcc-9-20190324.aros/libatomic/configure.tgt	2019-03-01 02:31:13.371291400 +0000
+@@ -119,6 +119,10 @@
+ 
+ # Other system configury
+ case "${target}" in
++  *-*-aros*)
++	config_path="${config_path} posix"
++	;;
++
+   aarch64*-*-linux*)
+ 	# OS support for atomic primitives.
+ 	config_path="${config_path} linux/aarch64 posix"
 diff -ruN gcc-9-20190324/libgcc/config.host gcc-9-20190324.aros/libgcc/config.host
 --- gcc-9-20190324/libgcc/config.host	2019-01-17 12:29:13.000000000 +0000
 +++ gcc-9-20190324.aros/libgcc/config.host	2019-03-29 13:46:01.724385100 +0000
