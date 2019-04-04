@@ -99,7 +99,10 @@ GCC_COMMON_OPTS += --disable-build-poststage1-with-cxx
 ifeq (,$(GCC_EXTRA_OPTS))
 GCC_EXTRA_OPTS += $(GCC_COMMON_OPTS)
 endif
-GCC_ENV=enable_libatomic=no
+
+# Disable libatomic until we are ready to build it...
+gcc_build_libatomic?=enable_libatomic=no
+GCC_ENV=$(gcc_build_libatomic)
 
 GCC_PATH = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 
@@ -109,6 +112,7 @@ GDB_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
 GDB_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
 GDB_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 
+# Use the correct GCC repository depending if it is a release or snapshot build...
 GNU_REPOSITORY := gnu://
 ifeq (,$(findstring -,$(GCC_VERSION)))
 GCC_REPOSITORY := $(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION)
@@ -124,9 +128,8 @@ isl-installflag := $(CROSSTOOLSDIR)/.installflag-isl-$(ISL_VERSION)
 mpfr-installflag := $(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
 mpc-installflag := $(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
 gcc-installflag := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
+libatomic-installflag := $(CROSSTOOLSDIR)/.installflag-libatomic-$(GCC_VERSION)-$(AROS_TARGET_CPU)
 gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
-
-#MM- tools-crosstools : tools-crosstools-$(AROS_TOOLCHAIN)-$(AROS_TARGET_CPU)
 
 #MM- tools-crosstools-gnu-m68k     : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-gnu-i386     : tools-crosstools-gcc crosstools-gcc
@@ -149,6 +152,8 @@ gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
 # specified by --with-aros-toolchain-install. This directory may even reside outside of the usual aros
 # build directory and can be reused between complete rebuilds.
 
+## GMP ###
+
 #MM
 tools-crosstools-gmp :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
@@ -164,6 +169,8 @@ tools-crosstools-gmp :
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
+
+## ISL ###
 
 #MM
 tools-crosstools-isl :
@@ -181,6 +188,8 @@ tools-crosstools-isl :
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --without-piplib --disable-shared"
 
+## MPFR ###
+
 #MM
 tools-crosstools-mpfr :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
@@ -196,6 +205,8 @@ tools-crosstools-mpfr :
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
+
+## MPC ###
 
 #MM
 tools-crosstools-mpc :
@@ -213,6 +224,8 @@ tools-crosstools-mpc :
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
+## Binutils ###
+
 #MM
 tools-crosstools-binutils :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
@@ -229,15 +242,14 @@ tools-crosstools-binutils :
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="$(BINUTILS_EXTRA_OPTS)"
 
+## GCC ###
+
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
 #MM
 tools-crosstools-gcc :
 	@$(IF) ! $(TEST) -f $(gcc-installflag) ; then \
-	       $(RM) $(HOSTGENDIR)/$(CURDIR)/gcc/.files-touched \
-	    && $(MAKE) -f ./mmakefile crosstools-gcc--fetch \
-	    && $(MAKE) -f ./mmakefile crosstools-gcc--configure \
-	    && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/gcc all-gcc \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/gcc all-gcc \
 	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/gcc install-gcc \
 	    && $(TOUCH) $(gcc-installflag) ; \
 	fi
@@ -245,11 +257,32 @@ tools-crosstools-gcc :
 	    $(SED) -i -e "s|@aros_target_cc_path@|$(GCC_PATH)|g" $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld ; \
 	fi
 
+#MM tools-crosstools-gcc : crosstools-gcc--fetch crosstools-gcc--configure
+
+#MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch
+#MM- linklibs-gnu-libatomic : tools-crosstools-gcc-libatomic
+
+$(info GCC_ENV='$(GCC_ENV)')
+
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
 	package_repo="$(GCC_REPOSITORY)" suffixes="tar.bz2 tar.gz tar.xz" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
+
+#MM
+tools-crosstools-gcc-libatomic :
+	@$(IF) ! $(TEST) -f $(libatomic-installflag) ; then \
+	    $(IF) $(TEST) -f $(crosstools-gcc-configflag) ; then \
+	        $(RM) $(crosstools-gcc-configflag) ; \
+	    fi ; \
+	    gcc_build_libatomic="" $(MAKE) -f ./mmakefile crosstools-gcc--configure \
+	    && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/gcc all-target-libatomic \
+	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/gcc install-target-libatomic \
+	    && $(TOUCH) $(libatomic-installflag) ; \
+	fi
+
+## GDB ###
 
 #MM
 tools-crosstools-gdb :
