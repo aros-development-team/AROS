@@ -3382,7 +3382,8 @@ $(%(mmake)-pkgdir)/.local-copy:
 	$(Q)$(ECHO) "Copying Local-Build Sources to  \`$(patsubst $(TOP)/%,%,$(abspath $(%(mmake)-pkgdir)))'"
 	$(Q)$(CP) -Rf "%(srcdir)/." $(%(mmake)-pkgdir)/ && $(TOUCH) $@
 
-$(%(mmake)-pkgdir)/.files-touched : $(%(mmake)-pkgdir)/.local-copy
+%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+$(%(mmake)-touchfileflag) : $(%(mmake)-pkgdir)/.local-copy
 
     %(mmake)-cfg-srcdir=$(%(mmake)-pkgdir)
 else
@@ -3436,7 +3437,7 @@ $(%(mmake)-installflag) : $(%(mmake)-configflag)
 	    $(TOUCH) $@ -r $^; \
 	fi
 
-$(%(mmake)-pkgdir)/.files-touched:
+$(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)
 	$(Q)find %(srcdir) -exec $(TOUCH) -c -r $(%(mmake)-cfg-srcdir)/configure '{}' \; && \
 	$(TOUCH) $@
@@ -3449,7 +3450,7 @@ $(%(mmake)-pkgdir)/.files-touched:
 %(mmake)-configure : $(%(mmake)-configflag)
 
 $(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo $(%(mmake)-cfg-srcdir) | sed 's/^\(.\):\//\/\1\//')
-$(%(mmake)-configflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 	$(Q)$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	$(Q)$(ECHO) "Configuring build in         $(subst $(TOP)/,,$(%(mmake)-pkgdir))"
@@ -3565,7 +3566,8 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	    $(TOUCH) $@ -r $^; \
 	fi
 
-$(%(mmake)-pkgdir)/.files-touched:
+%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+$(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)
 	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
 	$(TOUCH) $@
@@ -3574,7 +3576,7 @@ $(%(mmake)-pkgdir)/.files-touched:
 %(mmake)-cmake : $(%(mmake)-cmakeflag)
 
 $(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
-$(%(mmake)-cmakeflag) : $(%(mmake)-pkgdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
 	cd $(%(mmake)-pkgdir) && \
