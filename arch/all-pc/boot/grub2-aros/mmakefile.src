@@ -25,6 +25,8 @@ CONFIG_OPTS := \
 		--disable-werror \
 		--program-prefix=
 
+grub2-aros-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
+
 %fetch_and_build mmake=grub2-aros \
         package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.gz" package_repo=$(GRUB2REPOS) \
         prefix="$(GRUB2DESTDIR)" patch=yes aros_prefix="/GNU" nix=no gnuflags=no xflag=no \
