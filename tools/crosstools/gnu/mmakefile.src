@@ -262,8 +262,6 @@ tools-crosstools-gcc :
 #MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch
 #MM- linklibs-gnu-libatomic : tools-crosstools-gcc-libatomic
 
-$(info GCC_ENV='$(GCC_ENV)')
-
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
 	package_repo="$(GCC_REPOSITORY)" suffixes="tar.bz2 tar.gz tar.xz" \
 	patch=yes \
