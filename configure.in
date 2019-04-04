@@ -2952,6 +2952,10 @@ if ! test "$gcc_default_cpu" = "" ; then
     target_extra_cfg+="$export_newline""# ARM gcc default target$export_newline""GCC_DEFAULT_CPU         := $gcc_default_cpu$export_newline""GCC_DEFAULT_FPU         := $gcc_default_fpu$export_newline""GCC_DEFAULT_FLOAT_ABI   := $gcc_default_float_abi$export_newline""GCC_DEFAULT_MODE        := $gcc_default_mode$export_newline"
 fi
 
+if test "$use_libatomic" = "yes" ; then
+    aros_cxx_libs="$aros_cxx_libs  -latomic"
+fi
+
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
