@@ -10,7 +10,8 @@ CFLAGS_NO_EXCEPTIONS                    := @aros_cflags_noexceptions@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
-
+CFLAGS_NO_MATH_ERRNO                    := @aros_cflags_no_math_errno@
+CFLAGS_NO_TRAPPING_MATH                 := @aros_cflags_no_trapping_math@
 #
 # LTO/Graphite optimization flags
 #
