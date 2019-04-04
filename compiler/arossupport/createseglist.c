@@ -61,7 +61,7 @@ struct phony_segment
         return BNULL;
 
     Code = (struct FullJumpVec *)((IPTR)segtmp + sizeof(*segtmp));
-    segtmp->Size = sizeof(*segtmp);
+    segtmp->Size = sizeof(*segtmp) + sizeof(*Code);
     segtmp->Next = (BPTR)0;
     __AROS_SET_FULLJMP(Code, function);
 
