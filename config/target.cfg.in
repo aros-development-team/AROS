@@ -32,8 +32,6 @@ TARGET_DEF_STRIP              := @aros_target_strip@ @aros_target_strip_flags@
 TARGET_OBJDUMP                := @aros_target_objdump@
 KERNEL_RESCOMP                := @aros_kernel_rescomp@
 
-COMPILER_LIBS                 := @aros_compiler_libs@
-ARCH_LIBS                     := @aros_arch_libs@
 
 CONFIG_NOWARN_CFLAGS          = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
 CONFIG_WARN_CFLAGS            := @aros_warn_flags@
@@ -61,7 +59,7 @@ KERNEL_LDFLAGS                := @aros_kernel_ldflags@
 TARGET_CFLAGS                 = $(OPTIMIZATION_CFLAGS) $(CONFIG_CFLAGS) $(USER_CFLAGS)
 TARGET_CXXFLAGS               = $(OPTIMIZATION_CFLAGS) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
 TARGET_CPPFLAGS               = $(USER_INCLUDES) $(CONFIG_CPPFLAGS) $(USER_CPPFLAGS)
-TARGET_LDFLAGS                = $(CONFIG_LDFLAGS) $(ARCH_LIBS)
+TARGET_LDFLAGS                = $(CONFIG_LDFLAGS) $(TARGET_C_LIBS)
 DEBUG_CFLAGS                  := @aros_debug_cflags@
 DEBUG_CXXFLAGS                := @aros_debug_cxxflags@
 DEBUG_CPPFLAGS                := @aros_debug_cppflags@
@@ -75,6 +73,8 @@ TARGET_ISA_CXXFLAGS           = $(ISA_FLAGS)
 TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
 
 TARGET_LIBATOMIC              = @use_libatomic@
+TARGET_C_LIBS                 := @aros_c_libs@
+TARGET_CXX_LIBS               := @aros_cxx_libs@
 
 COVERAGEINSTR_FLAGS           = $(CFLAGS_PROFILE_ARCS) $(CFLAGS_TEST_COVERAGE)
 COVERAGEINSTR_LIBS            = gcov
