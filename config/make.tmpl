@@ -3692,6 +3692,7 @@ endif
 	$(FOR) f in %(excludes) ; do \
 	    $(ECHO) $$f >> ./exclude.patterns ; \
 	done ; \
+    $(ECHO) "Creating   \`%(archive)-aros-new.diff'" ; \
 	diff -ruN $(%(mmake)-exclude) \
 	    $(%(mmake)-srcdir) \
 	    $(%(mmake)-srcdir).aros \
