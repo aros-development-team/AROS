@@ -2,5 +2,6 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- tools-crosstools : tools-crosstools-$(AROS_TOOLCHAIN)-$(AROS_TARGET_CPU)
 
+#MM- linklibs-atomic : linklibs-libatomic
 #MM- linklibs-libatomic : linklibs-libatomic-$(TARGET_LIBATOMIC)
 #MM- linklibs-libatomic-yes : linklibs-$(AROS_TOOLCHAIN)-libatomic
