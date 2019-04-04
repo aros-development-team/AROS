@@ -687,8 +687,8 @@ aros_target_ar_flags="cr"
 aros_target_nm_flags="-C -ul"
 aros_target_strip_flags="--strip-unneeded -R.comment"
 
-aros_compiler_libs=
-aros_arch_libs=
+aros_c_libs=
+aros_cxx_libs=
 
 aros_target_genmap="-Wl,-Map -Xlinker"
 
@@ -1145,7 +1145,7 @@ case "$target_os" in
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_STRICT_ALIASING)"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 gcc_default_float_abi="hard"
                 kernel_tool_prefix="aarch64-linux-gnueabihf-"
                 ;;
@@ -1159,7 +1159,7 @@ case "$target_os" in
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_STRICT_ALIASING)"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 gcc_default_float_abi="hard"
                 android_tool_dir_prefix="arm-linux-androideabi"
                 android_tool_prefix="arm-linux-androideabi"
@@ -1175,7 +1175,7 @@ case "$target_os" in
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_STRICT_ALIASING)"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 android_tool_dir_prefix="arm-linux-androideabi"
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
@@ -1357,7 +1357,7 @@ case "$target_os" in
                 aros_target_cpu="arm"
                 aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 aros_nominal_depth=8
                 gcc_target_cpu="arm"
                 aros_kernel_ar="ar"
@@ -1534,7 +1534,7 @@ case "$target_os" in
         aros_kernel_ldflags=""
         aros_nominal_width=1024
         aros_nominal_height=600
-        aros_arch_libs="-laeabi"
+        aros_c_libs="$aros_c_libs -laeabi"
         gcc_default_cpu="armv7-a"
         gcc_default_fpu="vfpv3"
         aros_isa_flags="$aros_isa_flags -mtune=cortex-a8"
@@ -1607,7 +1607,7 @@ case "$target_os" in
                 aros_config_aflags="$aros_config_aflags -marm"
                 aros_kernel_cflags="$aros_kernel_cflags -marm"
                 aros_target_mkdep="$aros_target_mkdep -Darm"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 ;;
             *armeb*)
                 aros_flavour="standcompat"
@@ -1622,7 +1622,7 @@ case "$target_os" in
                 aros_config_aflags="$aros_config_aflags -marm"
                 aros_kernel_cflags="$aros_kernel_cflags -marm"
                 aros_target_mkdep="$aros_target_mkdep -Darm"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 ;;
             *arm*)
                 aros_target_cpu="arm"
@@ -1635,7 +1635,7 @@ case "$target_os" in
                 aros_config_aflags="$aros_config_aflags -marm"
                 aros_kernel_cflags="$aros_kernel_cflags -marm"
                 aros_target_mkdep="$aros_target_mkdep -Darm"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for RasPi $target_cpu")
@@ -1743,7 +1743,7 @@ case "$target_os" in
                 aros_target_cpu="arm"
                 aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
-                aros_arch_libs="-laeabi"
+                aros_c_libs="$aros_c_libs -laeabi"
                 aros_nominal_depth=8
                 gcc_target_cpu="arm"
                 gcc_default_float_abi="soft"
@@ -1773,7 +1773,7 @@ case "$target_os" in
                 aros_nominal_height=160
                 aros_nominal_depth=1
                 aros_target_ar_flags="cru"
-                aros_compiler_libs="-lgcc1"
+                aros_c_libs="$aros_c_libs -lgcc1"
                 aros_shared_default=no
                 aros_shared_cflags="-fpic"
                 aros_shared_aflags=""
@@ -1808,7 +1808,7 @@ case "$target_os" in
                 aros_nominal_height=384
                 aros_nominal_depth=8
                 aros_target_ar_flags="cru"
-                aros_compiler_libs="-lgcc1"
+                aros_c_libs="$aros_c_libs -lgcc1"
                 aros_shared_default=no
                 aros_shared_cflags="-fpic"
                 aros_shared_aflags=""
@@ -3052,8 +3052,8 @@ AC_SUBST(aros_shared_default)
 AC_SUBST(aros_shared_ld)
 AC_SUBST(aros_object_format)
 AC_SUBST(spec_obj_format)
-AC_SUBST(aros_compiler_libs)
-AC_SUBST(aros_arch_libs)
+AC_SUBST(aros_c_libs)
+AC_SUBST(aros_cxx_libs)
 
 AC_SUBST(aros_shared_cflags)
 AC_SUBST(aros_shared_aflags)
