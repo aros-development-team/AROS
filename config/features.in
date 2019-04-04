@@ -37,6 +37,8 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 # C/ObjC
 #  -fexceptions
 #  -ffast-math
+#  -fno-math-errno
+#  -fno-trapping-math
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -83,6 +85,22 @@ AC_TRY_COMPILE(,, aros_fast_math="yes", aros_fast_math="no")
 AC_MSG_RESULT($aros_fast_math)
 if test "x-$aros_fast_math" = "x-yes" ; then
     aros_cflags_fast_math=-ffast-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-math-errno])
+CFLAGS=-fno-math-errno
+AC_TRY_COMPILE(,, aros_no_math_errno="yes", aros_no_math_errno="no")
+AC_MSG_RESULT($aros_no_math_errno)
+if test "x-$aros_no_math_errno" = "x-yes" ; then
+    aros_cflags_no_math_errno=-fno-math-errno
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-trapping-math])
+CFLAGS=-fno-trapping-math
+AC_TRY_COMPILE(,, aros_no_trapping_math="yes", aros_no_trapping_math="no")
+AC_MSG_RESULT($aros_no_trapping_math)
+if test "x-$aros_no_trapping_math" = "x-yes" ; then
+    aros_cflags_no_trapping_math=-fno-trapping-math
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
@@ -1140,6 +1158,8 @@ AC_SUBST(aros_cxxflags_nopermissive)
 AC_SUBST(aros_cxxflags_rtti)
 AC_SUBST(aros_cxxflags_nortti)
 AC_SUBST(aros_cflags_fast_math)
+AC_SUBST(aros_cflags_no_math_errno)
+AC_SUBST(aros_cflags_no_trapping_math)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
 AC_SUBST(aros_cflags_whole_program)

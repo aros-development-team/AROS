@@ -770,6 +770,8 @@ aros_cflags_loop_block
 aros_cflags_whole_program
 aros_cflags_nolto
 aros_cflags_lto
+aros_cflags_no_trapping_math
+aros_cflags_no_math_errno
 aros_cflags_fast_math
 aros_cxxflags_nortti
 aros_cxxflags_rtti
@@ -2834,6 +2836,8 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 # C/ObjC
 #  -fexceptions
 #  -ffast-math
+#  -fno-math-errno
+#  -fno-trapping-math
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -2922,6 +2926,58 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_fast_math" >&6; }
 if test "x-$aros_fast_math" = "x-yes" ; then
     aros_cflags_fast_math=-ffast-math
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-math-errno" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-math-errno... " >&6; }
+CFLAGS=-fno-math-errno
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_no_math_errno="yes"
+else
+  aros_no_math_errno="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_math_errno" >&5
+$as_echo "$aros_no_math_errno" >&6; }
+if test "x-$aros_no_math_errno" = "x-yes" ; then
+    aros_cflags_no_math_errno=-fno-math-errno
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-trapping-math" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-trapping-math... " >&6; }
+CFLAGS=-fno-trapping-math
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_no_trapping_math="yes"
+else
+  aros_no_trapping_math="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_trapping_math" >&5
+$as_echo "$aros_no_trapping_math" >&6; }
+if test "x-$aros_no_trapping_math" = "x-yes" ; then
+    aros_cflags_no_trapping_math=-fno-trapping-math
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -flto" >&5
@@ -6052,6 +6108,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
+
 
 
 
