@@ -74,6 +74,9 @@ CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --disable-werror                                \
                 --program-prefix=
 
+grub2-host-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
+grub2-efi-host-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
+
 %build_with_configure mmake=grub2-host compiler=host nix=yes		\
         prefix="$(DESTDIR)" srcdir=$(GRUBSRCDIR)	\
         package=pc extraoptions="$(CONFIG_OPTS) --with-platform=pc"	\
