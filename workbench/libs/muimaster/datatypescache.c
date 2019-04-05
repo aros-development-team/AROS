@@ -174,6 +174,7 @@ VOID MyBltMaskBitMapRastPort(struct BitMap *srcBitMap, LONG xSrc, LONG ySrc,
 
 static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 {
+    BOOL dtDoRemap = TRUE, dtBMFree = TRUE;
     Object *o;
 
     struct Process *myproc = (struct Process *)FindTask(NULL);
@@ -181,6 +182,7 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
     myproc->pr_WindowPtr = (APTR) - 1;
 
     o = NewDTObject((APTR) filename,
+        DTA_SourceType,         DTST_FILE,
         DTA_GroupID,            GID_PICTURE,
         OBP_Precision,          PRECISION_EXACT,
         PDTA_Screen,            (IPTR) scr,
@@ -194,18 +196,19 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
     if (o)
     {
         struct BitMapHeader *bmhd;
+        struct FrameInfo fri = { 0 };
 
         GetDTAttrs(o, PDTA_BitMapHeader, (IPTR) & bmhd, TAG_DONE);
         if (bmhd->bmh_Masking == mskHasAlpha)
         {
             if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15)
             {
-                SetAttrs(o, PDTA_FreeSourceBitMap, FALSE,
-                    PDTA_Remap, FALSE, TAG_DONE);
+                dtDoRemap = FALSE;
+                dtBMFree = FALSE;
             }
         }
-
-        struct FrameInfo fri = { 0 };
+        SetAttrs(o, PDTA_PDTA_Remap, dtDoRemap, TAG_DONE);
+        SetAttrs(o, PDTA_FreeSourceBitMap, dtBMFree, TAG_DONE);
 
         D(bug("DTM_FRAMEBOX\n", o));
         DoMethod(o, DTM_FRAMEBOX, NULL, (IPTR) & fri, (IPTR) & fri,
