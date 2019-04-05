@@ -2529,52 +2529,59 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
   includedir= \
   cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= cxxflags=$(CXXFLAGS) dxxflags= \
-  aflags=$(AFLAGS) compiler=target lto=$(TARGET_LTO)
+  aflags=$(AFLAGS) compiler=target lto=$(TARGET_LTO) usetree=no
 
 # assign and generate the local variables used in this macro
-%(mmake)_LIBNAME      := %(libname)
-%(mmake)_LINKLIB      := %(libdir)/lib%(libname).a
+%(mmake)_LIBNAME           := %(libname)
+%(mmake)_LINKLIB           := %(libdir)/lib%(libname).a
 
-%(mmake)_FILES        := %(files)
-%(mmake)_ASMFILES     := %(asmfiles)
-%(mmake)_OBJCFILES    := %(objcfiles)
-%(mmake)_CXXFILES     := %(cxxfiles)
+%(mmake)_FILES             ?= %(files)
+%(mmake)_ASMFILES          := %(asmfiles)
+%(mmake)_OBJCFILES         := %(objcfiles)
+%(mmake)_CXXFILES          := %(cxxfiles)
 
-%(mmake)_ARCHOBJS     := $(wildcard %(objdir)/arch/*.o)
-%(mmake)_ARCHFILES    := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
-%(mmake)_C_NARCHFILES   := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_FILES))
-%(mmake)_CXX_NARCHFILES   := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_CXXFILES))
+%(mmake)_ARCHOBJS          := $(wildcard %(objdir)/arch/*.o)
+ifeq (%(usetree),no)
+    %(mmake)_ARCHFILES     := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
+else
+    %(mmake)_ARCHFILES     := $(basename $(patsubst %(objdir)/%,%,$(%(mmake)_ARCHOBJS)))
+endif
+%(mmake)_C_NARCHFILES      := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_FILES))
+%(mmake)_CXX_NARCHFILES    := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_CXXFILES))
 %(mmake)_OBJC_NARCHFILES   := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_OBJCFILES))
 
-%(mmake)_OBJS         ?= $(%(mmake)_ARCHOBJS) \
-                 $(addprefix %(objdir)/,$(notdir $(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o))) \
-                 %(objs)
-%(mmake)_DEPS         := $(patsubst %.o,%.d,$(%(mmake)_OBJS))
-
-%(mmake)_CPPFLAGS     := %(cppflags)
-ifneq (%(includedir),)
-%(mmake)_CPPFLAGS     += -I%(includedir)
+ifeq (%(usetree),no)
+    %(mmake)_OBJ_FILES     ?= $(addprefix %(objdir)/,$(notdir $(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o)))
+else
+    %(mmake)_OBJ_FILES     ?= $(addprefix %(objdir)/,$(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o))
 endif
-%(mmake)_CFLAGS       := %(cflags)
-%(mmake)_CXXFLAGS     := %(cxxflags)
+%(mmake)_OBJS              ?= $(%(mmake)_ARCHOBJS) $(%(mmake)_OBJ_FILES) %(objs)
+%(mmake)_DEPS              := $(patsubst %.o,%.d,$(%(mmake)_OBJS))
+
+%(mmake)_CPPFLAGS          := %(cppflags)
+ifneq (%(includedir),)
+    %(mmake)_CPPFLAGS      += -I%(includedir)
+endif
+%(mmake)_CFLAGS            := %(cflags)
+%(mmake)_CXXFLAGS          := %(cxxflags)
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
-%(mmake)_CFLAGS       := $(strip $(LTO_CFLAGS) $(%(mmake)_CFLAGS))
-%(mmake)_CXXFLAGS     := $(strip $(LTO_CFLAGS) $(%(mmake)_CXXFLAGS))
+        %(mmake)_CFLAGS    := $(strip $(LTO_CFLAGS) $(%(mmake)_CFLAGS))
+        %(mmake)_CXXFLAGS  := $(strip $(LTO_CFLAGS) $(%(mmake)_CXXFLAGS))
 endif
 endif
-%(mmake)_AFLAGS       := %(aflags)
-%(mmake)_DFLAGS       := %(dflags)
+%(mmake)_AFLAGS            := %(aflags)
+%(mmake)_DFLAGS            := %(dflags)
 ifneq (%(dflags),)
-    %(mmake)_DFLAGS   := %(dflags)
+    %(mmake)_DFLAGS        := %(dflags)
 else
-    %(mmake)_DFLAGS   := $(%(mmake)_CFLAGS)
+    %(mmake)_DFLAGS        := $(%(mmake)_CFLAGS)
 endif
-%(mmake)_DXXFLAGS     := %(dxxflags)
+%(mmake)_DXXFLAGS          := %(dxxflags)
 ifneq (%(dxxflags),)
-    %(mmake)_DXXFLAGS := %(dxxflags)
+    %(mmake)_DXXFLAGS      := %(dxxflags)
 else
-    %(mmake)_DXXFLAGS := $(%(mmake)_CXXFLAGS)
+    %(mmake)_DXXFLAGS      := $(%(mmake)_CXXFLAGS)
 endif
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
