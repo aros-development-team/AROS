@@ -17,7 +17,7 @@
 -lmui -lamiga -larossupport -lamiga %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -llibinit -lautoinit %{nostdc:-lstdc.static}
 
 *libgcc:
-@aros_arch_libs@ -lgcc
+@aros_c_libs@ -lgcc
 
 *startfile:
 @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/startup.o %{detach:@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/detach.o} %{nix:@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/nixmain.o}
