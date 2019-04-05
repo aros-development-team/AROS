@@ -738,6 +738,7 @@ aros_cflags_iquote_end
 aros_cflags_iquote
 aros_cflags_isystem_end
 aros_cflags_isystem
+aros_cflags_visibility_hidden
 aros_cflags_no_asynchronous_unwind_tables
 aros_cflags_asynchronous_unwind_tables
 aros_cflags_no_freestanding
@@ -2865,6 +2866,8 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fpermissive
 #  -frtti
 
+#  -fvisibility=hidden
+
 # C features first
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -3510,6 +3513,32 @@ $as_echo "$aros_asynchronous_unwind_tables" >&6; }
 if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
     aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
     aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fvisibility=hidden" >&5
+$as_echo_n "checking whether ${CC} accepts -fvisibility=hidden... " >&6; }
+CFLAGS=-fvisibility=hidden
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_visibility_hidden="yes"
+else
+  aros_visibility_hidden="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_visibility_hidden" >&5
+$as_echo "$aros_visibility_hidden" >&6; }
+if test "x-$aros_visibility_hidden" = "x-yes" ; then
+    aros_cflags_visibility_hidden=-fvisibility=hidden
 fi
 
 # C++ features
@@ -6108,6 +6137,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
+
 
 
 

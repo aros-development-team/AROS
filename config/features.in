@@ -66,6 +66,8 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fpermissive
 #  -frtti
 
+#  -fvisibility=hidden
+
 # C features first 
 AC_LANG_PUSH(C)
 
@@ -273,6 +275,14 @@ AC_MSG_RESULT($aros_asynchronous_unwind_tables)
 if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
     aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
     aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fvisibility=hidden])
+CFLAGS=-fvisibility=hidden
+AC_TRY_COMPILE(,, aros_visibility_hidden="yes", aros_visibility_hidden="no")
+AC_MSG_RESULT($aros_visibility_hidden)
+if test "x-$aros_visibility_hidden" = "x-yes" ; then
+    aros_cflags_visibility_hidden=-fvisibility=hidden
 fi
 
 # C++ features
@@ -1203,6 +1213,8 @@ AC_SUBST(aros_cflags_no_freestanding)
 
 AC_SUBST(aros_cflags_asynchronous_unwind_tables)
 AC_SUBST(aros_cflags_no_asynchronous_unwind_tables)
+
+AC_SUBST(aros_cflags_visibility_hidden)
 
 #
 AC_SUBST(aros_cflags_isystem)
