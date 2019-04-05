@@ -215,7 +215,7 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr, BOOL dtDoR
                 dtBMFree = FALSE;
             }
         }
-        SetAttrs(o, PDTA_PDTA_Remap, dtDoRemap, TAG_DONE);
+        SetAttrs(o, PDTA_Remap, dtDoRemap, TAG_DONE);
         SetAttrs(o, PDTA_FreeSourceBitMap, dtBMFree, TAG_DONE);
 
         D(bug("[Zune:DTC] %s:  DTM_FRAMEBOX\n", __func__, o));
