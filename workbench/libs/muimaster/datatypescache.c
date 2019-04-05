@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
 
     $Id$
 */
@@ -1069,8 +1069,8 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
     OffsetY = BFM->Bounds.MinY - BFI->Options.OffsetY;
 
 /*
-	if (BFI->Options.OffsetTitleY) // shift the tiles down?
-		OffsetY -= BFI->Screen->BarHeight+1;
+        if (BFI->Options.OffsetTitleY) // shift the tiles down?
+                OffsetY -= BFI->Screen->BarHeight+1;
 */
 
 //    if (BFI->Options.CenterY) // horizontal centering?
