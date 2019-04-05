@@ -171,7 +171,7 @@ VOID MyBltMaskBitMapRastPort(struct BitMap *srcBitMap, LONG xSrc, LONG ySrc,
 
 #endif
 
-static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr, BOOL dtDoRemap, BOOL dtBMFree)
+static Object *LoadDTPicture(CONST_STRPTR filename, struct Screen *scr, BOOL dtDoRemap, BOOL dtBMFree)
 {
     struct Process *myproc = (struct Process *)FindTask(NULL);
     APTR oldwindowptr = myproc->pr_WindowPtr;
@@ -426,7 +426,7 @@ struct NewImage *GetImageFromFile(char *name, struct Screen *scr)
                     depth = (ULONG) GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH);
 
                     if (depth < 15)
-                        ni->o = LoadPicture(name, scr, FALSE, FALSE);
+                        ni->o = LoadDTPicture(name, scr, FALSE, FALSE);
                     if (ni->o != NULL)
                     {
                         GetDTAttrs(ni->o, PDTA_DestBitMap,
@@ -771,7 +771,7 @@ struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
             }
             else
             {
-                if ((node->o = LoadPicture(filename, scr, TRUE, TRUE)))
+                if ((node->o = LoadDTPicture(filename, scr, TRUE, TRUE)))
                 {
                     struct BitMapHeader *bmhd;
                     GetDTAttrs(node->o, PDTA_BitMapHeader, (IPTR) & bmhd,
