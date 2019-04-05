@@ -181,10 +181,12 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
     myproc->pr_WindowPtr = (APTR) - 1;
 
     o = NewDTObject((APTR) filename,
-        DTA_GroupID, GID_PICTURE,
-        OBP_Precision, PRECISION_EXACT,
-        PDTA_Screen, (IPTR) scr,
-        PDTA_DestMode, PMODE_V43, PDTA_UseFriendBitMap, TRUE, TAG_DONE);
+        DTA_GroupID,            GID_PICTURE,
+        OBP_Precision,          PRECISION_EXACT,
+        PDTA_Screen,            (IPTR) scr,
+        PDTA_DestMode,          PMODE_V43,
+        PDTA_UseFriendBitMap,   TRUE,
+        TAG_DONE);
 
     myproc->pr_WindowPtr = oldwindowptr;
     D(bug("... picture=%lx\n", o));
