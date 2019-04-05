@@ -173,7 +173,6 @@ VOID MyBltMaskBitMapRastPort(struct BitMap *srcBitMap, LONG xSrc, LONG ySrc,
 
 static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr, BOOL dtDoRemap, BOOL dtBMFree)
 {
-    BOOL dtDoRemap = TRUE, dtBMFree = TRUE;
     struct Process *myproc = (struct Process *)FindTask(NULL);
     APTR oldwindowptr = myproc->pr_WindowPtr;
     Object *o;
