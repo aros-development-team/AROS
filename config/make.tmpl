@@ -13,9 +13,9 @@
 # Convert the ISO-8859-1 string in %(string) to the host's locale (if necessary)
 %define localisestr string= var=
 ifeq (,$(findstring "ISO-8859-1",$(LOCALE)))
-%(var) := $(shell echo %(string) | iconv -f iso-8859-1 )
+    %(var) := $(shell echo %(string) | iconv -f iso-8859-1 )
 else
-%(var) := %(string)
+    %(var) := %(string)
 endif
 %end
 
@@ -188,7 +188,7 @@ endif
 %define buildid targets=/A
 BDID := $(BDID)_
 ifneq ($(filter $(TARGET),%(targets)),)
-BDTARGETID := $(BDID)
+    BDTARGETID := $(BDID)
 endif
 %end
 #------------------------------------------------------------------------------
@@ -1434,13 +1434,13 @@ endif
 
 %rule_compile_multi basenames="%(files)" targetdir=$(%(mmake)_OBJDIR)
 
-%(file) : $(%(mmake)_OBJS) $(%(mmake)_DEPS) $(%(mmake)_OUTDIR)
+%(file) : $(%(mmake)_OBJS) $(%(mmake)_DEPS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
 	$(Q)$(KERNEL_LD) %(ldflags) --entry=%(start) --oformat=binary -Ttext=%(start) -o $(%(mmake)_TMPDIR)/%(name) $(%(mmake)_OBJS)
 	$(Q)cd $(%(mmake)_TMPDIR) && $(AROS_LD) %(ldflags) -r --format binary %(name) -o $@
 
 ifeq ($(findstring $(%(mmake)_OUTDIR),$(GLOB_MKDIRS)),)
-    GLOB_MKDIRS += $(%(mmake)_OUTDIR)
+    %rule_makedirs dirs="$(%(mmake)_OUTDIR)" setuptarget=%(file)
 endif
 
 %end
@@ -1598,7 +1598,7 @@ endif
 
 $(%(mmake)_OBJS) $(%(mmake)_DEPS) : | $(%(mmake)_OBJDIR)
 $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME) : | $(%(mmake)_TARGETDIR)
-GLOB_MKDIRS += $(%(mmake)_OBJDIR) $(%(mmake)_TARGETDIR)
+%rule_makedirs dirs="$(%(mmake)_OBJDIR) $(%(mmake)_TARGETDIR)"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME) $(%(mmake)_DEPS)
 #MM
@@ -1692,7 +1692,7 @@ endif
 
 $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_FILES)) : | $(%(mmake)_TARGETDIR)
 $(%(mmake)_DEPS) $(%(mmake)_OBJS) : | $(%(mmake)_OBJDIR)
-GLOB_MKDIRS += $(%(mmake)_TARGETDIR) $(%(mmake)_OBJDIR)
+%rule_makedirs dirs="$(%(mmake)_TARGETDIR) $(%(mmake)_OBJDIR)"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_EXES) $(%(mmake)_DEPS)
 #MM
@@ -1883,7 +1883,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 $(%(mmake)_OBJS) $(%(mmake)_DEPS) : | %(objdir)
 $(%(mmake)_MODULE) : | $(%(mmake)_MODDIR)
 $(%(mmake)_KOBJ) : | $(KOBJSDIR)
-GLOB_MKDIRS += %(objdir) $(%(mmake)_MODDIR) $(KOBJSDIR)
+%rule_makedirs dirs="%(objdir) $(%(mmake)_MODDIR) $(KOBJSDIR)"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_MODULE) $(%(mmake)_KOBJ) $(%(mmake)_DEPS)
 %(mmake)-clean ::
@@ -2042,9 +2042,9 @@ endif
 
 $(%(mmake)%(flavour)_OBJDIR)/Makefile.$(%(mmake)%(flavour)_DEFNAME)%(modtype) : | $(%(mmake)%(flavour)_OBJDIR)
 
-GLOB_MKDIRS += $(%(mmake)%(flavour)_OBJDIR)
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)"
 ifneq (%(flavour),)
-GLOB_MKDIRS += $(%(mmake)%(flavour)_OBJDIR)
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)"
 endif
 
 # Do not parse these statements if metatarget is not appropriate
@@ -2100,7 +2100,7 @@ TMP%(modname)_INCDIRS := \
     $(%(mmake)_OBJDIR)/include $(addprefix $(%(mmake)_OBJDIR)/include/,$(%(mmake)%(flavour)_INCDIRS)) \
     $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(%(mmake)%(flavour)_INCDIRS)) \
     $(%(mmake)%(flavour)_INCDIR) $(addprefix $(%(mmake)%(flavour)_INCDIR)/,$(%(mmake)%(flavour)_INCDIRS))
-%rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget="%(mmake)-includes-dirs"
+%rule_makedirs dirs="$(TMP%(modname)_INCDIRS)" setuptarget="%(mmake)-includes-dirs"
 
 endif
 
@@ -2351,7 +2351,7 @@ ifneq ($(%(mmake)%(flavour)_LC_MODNAME),$(%(mmake)%(flavour)_LC_LINKLIBNAME))
 endif
 
 $(%(mmake)%(flavour)_LINKLIB) : | $(%(mmake)%(flavour)_LIBDIR)
-GLOB_MKDIRS += $(%(mmake)%(flavour)_LIBDIR)
+%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)"
 endif
 
 ifneq ($(%(mmake)%(flavour)_RELLINKLIB),)
@@ -2361,7 +2361,7 @@ ifneq ($(%(mmake)%(flavour)_LC_MODNAME),$(%(mmake)%(flavour)_LC_LINKLIBNAME))
 endif
 
 $(%(mmake)%(flavour)_RELLINKLIB) : | $(%(mmake)%(flavour)_LIBDIR)
-GLOB_MKDIRS += $(%(mmake)%(flavour)_LIBDIR)
+%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)"
 endif
 endif
 
@@ -2609,7 +2609,7 @@ endif
 
 $(%(mmake)_OBJS) $(%(mmake)_DEPS) : | %(objdir)
 $(%(mmake)_LINKLIB) : | %(libdir)
-GLOB_MKDIRS += %(objdir) %(libdir)
+%rule_makedirs dirs="%(objdir) %(libdir)"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_LINKLIB) $(%(mmake)_DEPS)
 #MM
@@ -2658,7 +2658,7 @@ endif
 %(mmake) : $(%(mmake)_OBJS) %(source)
 
 $(%(mmake)_OBJS) : | $(%(mmake)_DIRS)
-GLOB_MKDIRS += $(%(mmake)_DIRS)
+%rule_makedirs dirs="$(%(mmake)_DIRS)"
 
 %(dir)/%/%(subdir)/%(name).catalog : %(srcdir)/%.ct $(%(mmake)_DESC).cd
 	$(Q)$(ECHO) "Creating   %(name) catalog for language $*."
@@ -2714,7 +2714,7 @@ else
 endif
 
 $(BD_OBJS) : | %(dir)
-GLOB_MKDIRS += %(dir)
+%rule_makedirs dirs="%(dir)"
 
 %(mmake)-clean : FILES := $(BD_OBJS)
 #MM
@@ -2814,7 +2814,7 @@ vpath %.S $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 endif
 
 $(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
-GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))"
 
 #MM
 %(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
@@ -2905,7 +2905,7 @@ endif
 
 %(mmake)_SRC := $(shell echo %(src) | sed 's/^\(.\):\//\/\1\//')
 
-GLOB_MKDIRS += %(dst)
+%rule_makedirs dirs="%(dst)"
 
 .PHONY : %(mmake)
 
@@ -2991,7 +2991,7 @@ endif
 .PHONY: %(mmake)
 
 $(BD_INCL_FILES) : | $(dir $(BD_INCL_FILES))
-GLOB_MKDIRS += $(dir $(BD_INCL_FILES))
+%rule_makedirs dirs="$(dir $(BD_INCL_FILES))"
 %end
 #------------------------------------------------------------------------------
 
@@ -3985,7 +3985,7 @@ PKG_DIR   := $(dir %(file))
 
 %compress_file mmake="%(mmake)" file="%(file)"
 
-GLOB_MKDIRS += $(PKG_DIR)
+%rule_makedirs dirs="$(PKG_DIR)"
 
 %end
 
@@ -4077,7 +4077,7 @@ endif
 
 %compress_file mmake="%(mmake)" file="%(file)"
 
-GLOB_MKDIRS += $(TMP_DIRS)
+%rule_makedirs dirs="$(TMP_DIRS)"
 
 %end
 
