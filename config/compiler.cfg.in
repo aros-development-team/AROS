@@ -67,6 +67,8 @@ CFLAGS_NO_FREESTANDING                  := @aros_cflags_no_freestanding@
 CFLAGS_ASYNCHRONOUS_UNWIND_TABLES       := @aros_cflags_asynchronous_unwind_tables@
 CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES    := @aros_cflags_no_asynchronous_unwind_tables@
 
+CFLAGS_VISIBILITY_HIDDEN                := @aros_cflags_visibility_hidden@
+
 # C++/ObjC++
 CFLAGS_PERMISSIVE                       := @aros_cxxflags_permissive@
 CFLAGS_NO_PERMISSIVE                    := @aros_cxxflags_nopermissive@
