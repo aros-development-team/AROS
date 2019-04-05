@@ -2540,20 +2540,24 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 %(mmake)_OBJCFILES         := %(objcfiles)
 %(mmake)_CXXFILES          := %(cxxfiles)
 
-%(mmake)_ARCHOBJS          := $(wildcard %(objdir)/arch/*.o)
+%(mmake)_OBJDIR            ?= %(objdir)
+%(mmake)_ARCHOBJS          := $(wildcard $(%(mmake)_OBJDIR)/arch/*.o)
 ifeq (%(usetree),no)
     %(mmake)_ARCHFILES     := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
 else
-    %(mmake)_ARCHFILES     := $(basename $(patsubst %(objdir)/%,%,$(%(mmake)_ARCHOBJS)))
+    %(mmake)_ARCHFILES     := $(basename $(patsubst $(%(mmake)_OBJDIR)/%,%,$(%(mmake)_ARCHOBJS)))
 endif
 %(mmake)_C_NARCHFILES      := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_FILES))
+%(mmake)_C_FILES           ?= $(%(mmake)_C_NARCHFILES)
 %(mmake)_CXX_NARCHFILES    := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_CXXFILES))
+%(mmake)_CXX_FILES         ?= $(%(mmake)_CXX_NARCHFILES)
 %(mmake)_OBJC_NARCHFILES   := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_OBJCFILES))
+%(mmake)_OBJC_FILES        ?= $(%(mmake)_OBJC_NARCHFILES)
 
 ifeq (%(usetree),no)
-    %(mmake)_OBJ_FILES     ?= $(addprefix %(objdir)/,$(notdir $(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o)))
+    %(mmake)_OBJ_FILES     ?= $(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o)))
 else
-    %(mmake)_OBJ_FILES     ?= $(addprefix %(objdir)/,$(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o))
+    %(mmake)_OBJ_FILES     ?= $(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o))
 endif
 %(mmake)_OBJS              ?= $(%(mmake)_ARCHOBJS) $(%(mmake)_OBJ_FILES) %(objs)
 %(mmake)_DEPS              := $(patsubst %.o,%.d,$(%(mmake)_OBJS))
@@ -2595,18 +2599,18 @@ endif
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 
 %rule_compile_cxx_multi mmake=%(mmake) \
-    basenames=$(%(mmake)_CXX_NARCHFILES) targetdir="%(objdir)" \
+    basenames=$(%(mmake)_CXX_FILES) targetdir="$(%(mmake)_OBJDIR)" \
     cppflags=$(%(mmake)_CPPFLAGS) cxxflags=$(%(mmake)_CXXFLAGS) dxxflags=$(%(mmake)_DXXFLAGS) \
     compiler="%(compiler)"
 %rule_compile_objc_multi mmake=%(mmake) \
-    basenames=$(%(mmake)_OBJC_NARCHFILES) targetdir=$(%(mmake)_OBJDIR) \
+    basenames=$(%(mmake)_OBJC_FILES) targetdir=$(%(mmake)_OBJDIR) \
     cppflags=$(%(mmake)_CPPFLAGS) cflags=$(%(mmake)_CFLAGS) dflags=$(%(mmake)_DFLAGS) \
     compiler="%(compiler)"
 %rule_compile_multi mmake=%(mmake) \
-    basenames=$(%(mmake)_C_NARCHFILES) targetdir="%(objdir)" \
+    basenames=$(%(mmake)_C_FILES) targetdir="$(%(mmake)_OBJDIR)" \
     cppflags=$(%(mmake)_CPPFLAGS) cflags=$(%(mmake)_CFLAGS) dflags=$(%(mmake)_DFLAGS) \
     compiler="%(compiler)"
-%rule_assemble basename=% targetdir="%(objdir)" \
+%rule_assemble basename=% targetdir="$(%(mmake)_OBJDIR)" \
     aflags=$(%(mmake)_AFLAGS)
 
 %rule_link_linklib mmake=%(mmake) libname="%(libname)" objs=$(%(mmake)_OBJS) libdir="%(libdir)" linker="%(compiler)"
@@ -2614,9 +2618,9 @@ endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(%(mmake)_DEPS)
 
-$(%(mmake)_OBJS) $(%(mmake)_DEPS) : | %(objdir)
+$(%(mmake)_OBJS) $(%(mmake)_DEPS) : | $(%(mmake)_OBJDIR)
 $(%(mmake)_LINKLIB) : | %(libdir)
-%rule_makedirs dirs="%(objdir) %(libdir)"
+%rule_makedirs dirs="$(%(mmake)_OBJDIR) %(libdir)"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_LINKLIB) $(%(mmake)_DEPS)
 #MM
