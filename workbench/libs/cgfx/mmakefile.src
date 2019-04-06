@@ -8,46 +8,46 @@ include $(SRCDIR)/config/aros.cfg
 USER_LDFLAGS := -static
 
 FUNCS := \
-	alloccmodelisttaglist                   \
-	bestcmodeidtaglist	                \
-	blttemplatealpha    	                \
-	cvideoctrltaglist	                \
-	docdrawmethodtaglist	                \
-	extractcolor		                \
-	fillpixelarray		                \
-	freecmodelist		                \
-	getcybermapattr		                \
-	getcyberidattr		                \
-	invertpixelarray	                \
-	iscybermodeid		                \
-	lockbitmaptaglist	                \
-	movepixelarray		                \
-	processpixelarray	                \
-	processpixelarray_opbrightness          \
-	processpixelarray_opsetalpha            \
-	processpixelarray_optint                \
-	processpixelarray_opblur                \
-	processpixelarray_opcol2grey            \
-	processpixelarray_opnegative            \
-	processpixelarray_opnegative_fade       \
-	processpixelarray_optint_fade           \
-	processpixelarray_opgradient            \
-	processpixelarray_opshiftrgb            \
-	readpixelarray		                \
-	readrgbpixel		                \
-	scalepixelarray		                \
-	unlockbitmap		                \
-	unlockbitmaptaglist	                \
-	writelutpixelarray	                \
-	writepixelarray		                \
-	writepixelarrayalpha	                \
-	writergbpixel
+        alloccmodelisttaglist                   \
+        bestcmodeidtaglist                      \
+        blttemplatealpha                        \
+        cvideoctrltaglist                       \
+        docdrawmethodtaglist                    \
+        extractcolor                            \
+        fillpixelarray                          \
+        freecmodelist                           \
+        getcybermapattr                         \
+        getcyberidattr                          \
+        invertpixelarray                        \
+        iscybermodeid                           \
+        lockbitmaptaglist                       \
+        movepixelarray                          \
+        processpixelarray                       \
+        processpixelarray_opbrightness          \
+        processpixelarray_opsetalpha            \
+        processpixelarray_optint                \
+        processpixelarray_opblur                \
+        processpixelarray_opcol2grey            \
+        processpixelarray_opnegative            \
+        processpixelarray_opnegative_fade       \
+        processpixelarray_optint_fade           \
+        processpixelarray_opgradient            \
+        processpixelarray_opshiftrgb            \
+        readpixelarray                          \
+        readrgbpixel                            \
+        scalepixelarray                         \
+        unlockbitmap                            \
+        unlockbitmaptaglist                     \
+        writelutpixelarray                      \
+        writepixelarray                         \
+        writepixelarrayalpha                    \
+        writergbpixel
 
 #MM- workbench-libs-cgfx : linklibs
 #MM- workbench-libs-cgfx-kobj : linklibs
 
-#MM- workbench-libs-cgfx-includes : \
-#MM      kernel-exec-includes \
+#MM- workbench-libs-cgfx-includes :             \
+#MM      kernel-exec-includes                   \
 #MM      includes-copy
 #MM- core-linklibs: linklibs-cybergraphics
 
