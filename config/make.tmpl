@@ -3384,16 +3384,17 @@ ifeq (%(use_build_env),yes)
     BUILD_ENV := $(%(mmake)-cfg-env)
 endif
 
+%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+
 ifneq ("$(wildcard %(srcdir)/Makefile)","")
 # in an ideal world, we would depend on the files in the source directory,
 # so we could copy them when they change. unfortunately filenames with
-# spaces causes problems with this
+# spaces cause problems with this
 $(%(mmake)-pkgdir)/.local-copy:
 	%mkdirs_q $(%(mmake)-pkgdir)
 	$(Q)$(ECHO) "Copying Local-Build Sources to  \`$(patsubst $(TOP)/%,%,$(abspath $(%(mmake)-pkgdir)))'"
 	$(Q)$(CP) -Rf "%(srcdir)/." $(%(mmake)-pkgdir)/ && $(TOUCH) $@
 
-%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
 $(%(mmake)-touchfileflag) : $(%(mmake)-pkgdir)/.local-copy
 
     %(mmake)-cfg-srcdir=$(%(mmake)-pkgdir)
@@ -3448,10 +3449,12 @@ $(%(mmake)-installflag) : $(%(mmake)-configflag)
 	    $(TOUCH) $@ -r $^; \
 	fi
 
+ifneq ($(%(mmake)-touchfileflag),)
 $(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)
 	$(Q)find %(srcdir) -exec $(TOUCH) -c -r $(%(mmake)-cfg-srcdir)/configure '{}' \; && \
 	$(TOUCH) $@
+endif
 
 #MM
 %(mmake)-uninstall :
@@ -3578,10 +3581,12 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	fi
 
 %(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+ifneq ($(%(mmake)-touchfileflag),)
 $(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)
 	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
 	$(TOUCH) $@
+endif
 
 #MM
 %(mmake)-cmake : $(%(mmake)-cmakeflag)
