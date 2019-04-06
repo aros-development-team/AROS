@@ -59,6 +59,11 @@ asm("   .section .aros.startup      \n"
 "       setend  be                  \n" /* Switch to big endian mode */
 #endif
 "       ldr     sp, tmp_stack_ptr   \n"
+"       mrc     p15,0,r4,c1,c0,2    \n" /* Enable signle and double VFP coprocessors */
+"       orr     r4, r4, #0x00f00000 \n" /* This is necessary since gcc might want to use vfp registers  */
+"       mcr     p15,0,r4,c1,c0,2    \n" /* Either as cache for general purpose regs or e.g. for division. This is the case with gcc9 */
+"       mov     r4,#0x40000000      \n"
+"       fmxr    fpexc,r4            \n" /* Enable VFP now */
 "       b       boot                \n"
 "leave_hyper:                       \n"
 #if AROS_BIG_ENDIAN
