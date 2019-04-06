@@ -2116,7 +2116,7 @@ $(%(mmake)%(flavour)_DEFLIBDEFSINC) :
 	$(Q)$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
 
 $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC) : | $(%(mmake)%(flavour)_OBJDIR)/include
-GLOB_MKDIRS                         += $(%(mmake)%(flavour)_OBJDIR)/include
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/include"
 
 ## Extra genmodule src files generation
 ## 
@@ -2124,7 +2124,7 @@ GLOB_MKDIRS                         += $(%(mmake)%(flavour)_OBJDIR)/include
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" stubdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
     conffile="%(conffile)" flavour="%(flavour)"
 
-GLOB_MKDIRS                         += $(%(mmake)%(flavour)_OBJDIR)/linklib
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/linklib"
 
 ifeq (%(build_abi),M)
 ## Create FD file
@@ -2140,7 +2140,7 @@ endif
 
 $(%(mmake)%(flavour)_FDDIR)/%(modname)_lib.fd : | $(%(mmake)%(flavour)_FDDIR)
 
-GLOB_MKDIRS                         += $(%(mmake)%(flavour)_FDDIR)
+%rule_makedirs dirs="$(%(mmake)%(flavour)_FDDIR)"
 endif
 
 ## Compilation
@@ -2395,7 +2395,7 @@ endif
 $(%(mmake)%(flavour)_OBJS) $(%(mmake)%(flavour)_DEPS) : | $(%(mmake)%(flavour)_OBJDIR) $(%(mmake)%(flavour)_OBJDIR)/linklib
 $(%(mmake)%(flavour)_MODULE) : | %(prefix)/$(%(mmake)%(flavour)_MODDIR)
 $(%(mmake)%(flavour)_KOBJ)   : | $(KOBJSDIR)
-GLOB_MKDIRS                         += $(%(mmake)%(flavour)_OBJDIR) %(prefix)/$(%(mmake)%(flavour)_MODDIR) $(KOBJSDIR)
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR) %(prefix)/$(%(mmake)%(flavour)_MODDIR) $(KOBJSDIR)"
 
 # Some include files need to be generated before the .c can be parsed.
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick),) # Only for this target these deps are wanted
