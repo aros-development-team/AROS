@@ -1414,7 +1414,6 @@ VOID P96GFX__FreeCID(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid)
     if (cid->vmem)
         FreeMem(cid->vmem, sizeof(struct MemHeader));
     FreeVec(cid->boardinfo);
-    FreeVec(cid->boardinfo);
     FreeMem(cid, sizeof(struct p96gfx_carddata));
 }
 
