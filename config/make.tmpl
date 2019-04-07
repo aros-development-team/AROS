@@ -251,9 +251,9 @@ $(addprefix %(targetdir)/,%(files)) : | %(stampfile)
 %define rule_join to=/A from=/A text=
 
 %(to) : %(from)
-ifneq (%(text),)
-	$(Q)$(ECHO) %(text)
-endif
+	$(Q)$(IF) $(TEST) "%(text)" != "" ; then \
+		$(Q)$(ECHO) %(text) ; \
+	fi
 	$(Q)$(CAT) $^ >$@
 %end
 #------------------------------------------------------------------------------
@@ -1349,13 +1349,11 @@ $(TMP_GENFILEFLAG) : MODNAME := %(modname)
 $(TMP_GENFILEFLAG) : MODTYPE := %(modtype)
 $(TMP_GENFILEFLAG) : $(TMP_DEPS)
 	$(Q)$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
-ifneq (%(conffile),lib.conf)
-	$(Q)$(IF) $(TEST) -f lib.conf; then \
-	  $(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
+	$(Q)$(IF) $(TEST) "%(conffile)" == "lib.conf" && $(TEST) -f lib.conf; then \
+		$(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
 	fi
-endif
 	$(Q)$(IF) $(TEST) -f libdefs.h; then \
-	  $(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
+		$(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
 	fi
 	$(Q)$(GENMODULE) $(OPTS) writefiles $(MODNAME) $(MODTYPE)
 	$(Q)$(TOUCH) $@
@@ -2188,9 +2186,9 @@ ifeq (%(lto),yes)
 %(mmake)%(flavour)_CXXFLAGS         := $(strip $(%(mmake)%(flavour)_LTOFLAGS) $(%(mmake)%(flavour)_CXXFLAGS))
 endif
 ifeq (%(funcinstr),yes)
-%(mmake)%(flavour)_SUBSTNULL  :=
-%(mmake)%(flavour)_SUBSTSPACE := $(%(mmake)%(flavour)_SUBSTNULL) #
-%(mmake)%(flavour)_SUBSTCOMMA := ,
+%(mmake)%(flavour)_SUBSTNULL        :=
+%(mmake)%(flavour)_SUBSTSPACE       := $(%(mmake)%(flavour)_SUBSTNULL) #
+%(mmake)%(flavour)_SUBSTCOMMA       := ,
 %(mmake)%(flavour)_INSTRFUNCFLAGS   ?= $(strip $(FUNCINSTR_FLAGS) -finstrument-functions-exclude-file-list=$(subst $(%(mmake)%(flavour)_SUBSTSPACE),$(%(mmake)%(flavour)_SUBSTCOMMA),$(strip $($(%(mmake)%(flavour)_DEFNAME)_STARTFILES))))
 %(mmake)%(flavour)_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
 %(mmake)%(flavour)_CFLAGS           := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)%(flavour)_CFLAGS))
