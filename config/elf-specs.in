@@ -19,7 +19,7 @@
 %(autolib) %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} %{!nosysbase:-lexec} %{nostdc:-lstdc.static}
 
 *libgcc:
-@aros_arch_libs@ -lgcc
+@aros_c_libs@ -lgcc
 
 *startfile:
 @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/elf-startup.o
