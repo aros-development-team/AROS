@@ -216,6 +216,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 	struct sheader *shsymtab = &sh[shrel->link];
 	struct sheader *toreloc = &sh[shrel->info];
 	uintptr_t orig_addr = deltas[shrel->info];
+	int is_exec = (eh->type == ET_EXEC);
 
 	struct symbol *symtab =
 			(struct symbol *)((unsigned long)shsymtab->addr);
@@ -295,18 +296,50 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 		case R_ARM_JUMP24:
 		case R_ARM_PC24:
 		{
-			/* On ARM the 24 bit offset is shifted by 2 to the right */
-			signed long offset = (AROS_LE2LONG(*p) & 0x00ffffff) << 2;
-			/* If highest bit set, make offset negative */
-			if (offset & 0x02000000)
-				offset -= 0x04000000;
+			if (is_exec)
+			{
+				/*
+					Real executables are already properly relocated. Here, adjustment is
+					necessary *only* if the jump is across sections and *only* if offset
+					between both sections differs from the one in executable.
 
-			offset += s - (ULONG)p;
+					if shrel->info == sym->shindex don't do anything!
+				*/
+				if (shrel->info != sym->shindex)
+				{
+					signed long expected_delta = deltas[sym->shindex] - deltas[shrel->info];
+					signed long actual_delta = sh[sym->shindex].addr - sh[shrel->info].addr;
 
-			offset >>= 2;
-			*p &= AROS_LONG2LE(0xff000000);
-			*p |= AROS_LONG2LE(offset & 0x00ffffff);
-		}
+					/* On ARM the 24 bit offset is shifted by 2 to the right */
+					signed long offset = (AROS_LE2LONG(*p) & 0x00ffffff) << 2;
+					/* If highest bit set, make offset negative */
+					if (offset & 0x02000000)
+						offset -= 0x04000000;
+
+					/* Adjust offset */
+					offset += actual_delta - expected_delta;
+
+					/* Store back */
+					offset >>= 2;
+					*p &= AROS_LONG2LE(0xff000000);
+					*p |= AROS_LONG2LE(offset & 0x00ffffff);
+				}
+			}
+			else
+			{
+				/* On ARM the 24 bit offset is shifted by 2 to the right */
+				signed long offset = (AROS_LE2LONG(*p) & 0x00ffffff) << 2;
+				/* If highest bit set, make offset negative */
+				if (offset & 0x02000000)
+					offset -= 0x04000000;
+
+				offset += s - (ULONG)p;
+
+				offset >>= 2;
+				*p &= AROS_LONG2LE(0xff000000);
+				*p |= AROS_LONG2LE(offset & 0x00ffffff);
+				}
+			}
 		break;
 
 
@@ -317,8 +350,21 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 			offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
 			offset = (offset ^ 0x8000) - 0x8000;
 
-			offset += s + virtoffset;
+			/* If MOVT relocation shift the offset 16 bits right */
+			if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
+				offset <<= 16;
 
+			if (is_exec)
+			{
+				/* Fix address by difference between actual address and expected address */
+				offset += (signed long)sh[sym->shindex].addr - deltas[sym->shindex] + virtoffset;
+			}
+			else
+			{
+				offset += s + virtoffset;
+			}
+
+			/* If MOVT shift the offset back */
 			if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
 				offset >>= 16;
 
@@ -328,7 +374,14 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 		break;
 
 		case R_ARM_ABS32: /* PC relative 32 bit signed */
-		*p += s + virtoffset;
+			if (is_exec)
+			{
+				*p += (signed long)sh[sym->shindex].addr - deltas[sym->shindex] + virtoffset;
+			}
+			else
+			{
+				*p += s + virtoffset;
+			}
 		break;
 
 		case R_ARM_NONE: /* No reloc */
