@@ -6,7 +6,7 @@ maketool $(HOST_MAKE) $(MKARGS) TOP=$(TOP) SRCDIR=$(SRCDIR) CURDIR=$(CURDIR) TAR
 defaultmakefilename mmakefile
 defaulttarget AROS
 genmakefilescript $(GENMF) $(SRCDIR)/config/make.tmpl --usetmp --listfile $(MMLIST)
-genmakefiledeps $(GENMF) $(SRCDIR)/config/make.tmpl --usetmp
+genmakefiledeps $(SRCDIR)/config/make.tmpl
 globalvarfile $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/gen/host/config/host.cfg
 globalvarfile $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)@aros_target_suffix@/gen/config/target.cfg
 genglobalvarfile sh $(TOP)/configure
