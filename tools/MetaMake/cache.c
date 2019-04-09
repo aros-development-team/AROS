@@ -297,8 +297,8 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     char * mfsrc = xmalloc (strlen (makefile->node.name) + 5);
     char * mfdst = xmalloc (strlen (mm_builddir) + 1 + strlen (buildpath(makefile->dir)) + 1 + strlen (makefile->node.name) + 1);
     struct stat sst, dst;
-        double diff_t = 0.0;
-        int res;
+    double diff_t = 0.0;
+    int res;
 
     debug(printf("[MMAKE] %s('%s')\n", __func__, makefile->node.name));
 
@@ -309,7 +309,7 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     {
         debug(printf("[MMAKE] %s: stat('%s') failed\n", __func__, mfsrc));
         xfree (mfsrc);
-                return;
+        return;
     }
 
     strcpy (mfdst, mm_builddir);
@@ -318,17 +318,17 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     strcat (mfdst, "/");
     strcat (mfdst, makefile->node.name);
 
-        if ((res = stat (mfdst, &dst)) != -1)
-        {
-                diff_t = difftime(dst.st_mtime, sst.st_mtime);
-        }
+    if ((res = stat (mfdst, &dst)) != -1)
+    {
+            diff_t = difftime(dst.st_mtime, sst.st_mtime);
+    }
 
     if (res == -1
             || (diff_t < 0.0)
             || checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
        )
     {
-                static char currdir[PATH_MAX];
+        static char currdir[PATH_MAX];
         struct Regenerate *reg = new (struct Regenerate);
 
         ASSERT(getcwd(currdir, PATH_MAX) != NULL);
@@ -336,9 +336,9 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
         reg->src = mfsrc;
         reg->dest = xstrdup (makefile->node.name);
 
-        printf("MMAKE/cache.c:Added \"%s\" to be regenerated from \"%s\" in \"%s\"\n",
+        debug(printf("MMAKE/cache.c:Added \"%s\" to be regenerated from \"%s\" in \"%s\"\n",
                                                  reg->dest, reg->src, reg->dir
-                        );
+                        ));
         AddTail (regeneratefiles, reg);
     }
     else
