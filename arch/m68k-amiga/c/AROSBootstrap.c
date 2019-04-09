@@ -1189,6 +1189,48 @@ static void doreboot(void)
 
 struct BootStruct *bs;
 
+/*
+  AROSBootstraps version of CacheClearE
+  This is called from the loadseg support so we check for SysBase's
+  lib_Version, since this code can be running on AOS 1.4 or lower.
+ */
+void ils_ClearCache(APTR address, IPTR length, ULONG caches)
+{
+    if (SysBase->LibNode.lib_Version >= 37)
+    {
+        CacheClearE(address, length, caches);
+    }
+    else
+    {
+        ULONG cpuflags = SysBase->AttnFlags;
+        /*
+          The current used AmigaOS version doesnt implement
+          a usable CacheClearE, so we have to do it ourselves
+         */
+        if (cpuflags & AFF_68060|AFF_68040|AFF_68020)
+        {
+            /*
+              AmigaOS may not have detected the CPU type
+              so we may need to detect it ourselves ...
+             */
+        }
+
+        if (cpuflags & AFF_68060) {
+            /* 68060 support */
+            
+        } else if (cpuflags & AFF_68040) {
+            /* 68040 support */
+            
+        } else if (cpuflags & AFF_68020) {
+            /* 68020 support */
+            
+        } else {
+            /* Everybody else (68000, 68010) */
+            
+        }
+    }
+}
+
 static void supercode(void)
 {
     ULONG *traps = 0;
