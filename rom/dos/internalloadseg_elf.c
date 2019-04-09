@@ -1001,9 +1001,9 @@ end:
      * Clear the caches to let the CPU see the new data and instructions.
      * We check for SysBase's lib_Version, since this code is also built
      * as linklib for AmigaOS version of AROS bootstrap, and it can be
-     * running on AOS 1.3 or lower.
+     * running on AOS 1.4 or lower.
      */
-    if (SysBase->LibNode.lib_Version >= 36)
+    if (SysBase->LibNode.lib_Version >= 37)
     {
         BPTR curr = hunks;
 

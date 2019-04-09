@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -495,7 +495,7 @@ done:
      * And even if AROS ever gets m68k emulator, they are still data files.
      * So we flush caches only on m68k.
      */
-    if (SysBase->LibNode.lib_Version >= 36)
+    if (SysBase->LibNode.lib_Version >= 37)
     {
         /* Clear caches */
         for (t = first; t < numhunks && t <= last; t++)
