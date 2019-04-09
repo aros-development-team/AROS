@@ -865,6 +865,9 @@ BPTR InternalLoadSeg_ELF
     struct sheader   *symtab_shndx = NULL;
     struct sheader   *strtab = NULL;
     BPTR   hunks         = 0;
+#if defined(DOCACHECLEAR)
+    BPTR curr;
+#endif
     BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
@@ -997,25 +1000,18 @@ error:
 
 end:
 
-    /*
-     * Clear the caches to let the CPU see the new data and instructions.
-     * We check for SysBase's lib_Version, since this code is also built
-     * as linklib for AmigaOS version of AROS bootstrap, and it can be
-     * running on AOS 1.4 or lower.
-     */
-    if (SysBase->LibNode.lib_Version >= 37)
+#if defined(DOCACHECLEAR)
+    /* Clear the caches to let the CPU see the new data and instructions. */
+    curr = hunks;
+
+    while (curr)
     {
-        BPTR curr = hunks;
+        struct hunk *hunk = BPTR2HUNK(BADDR(curr));
 
-        while (curr)
-        {
-             struct hunk *hunk = BPTR2HUNK(BADDR(curr));
-
-             CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
-
-             curr = hunk->next;
-        }
+        ils_ClearCache(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+        curr = hunk->next;
     }
+#endif
 
     /* deallocate the symbol tables */
     for (i = 0; i < int_shnum; i++)

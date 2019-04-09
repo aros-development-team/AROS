@@ -60,4 +60,7 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf);
         AROS_UFCA(struct DosLibrary *, DOSBase, A6) \
     )
 
+#if defined(DOCACHECLEAR)
+extern void ils_ClearCache(APTR address, IPTR length, ULONG caches);
+#endif
 #endif

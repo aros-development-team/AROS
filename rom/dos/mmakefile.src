@@ -19,6 +19,8 @@ OPTIMIZATION_CFLAGS := -Os
 USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
 endif
 
+USER_CPPFLAGS += -DDOCACHECLEAR
+
 IMAGE_TYPES := aos elf
 
 FILES	  := bstr_helper errorlist \
