@@ -1207,7 +1207,7 @@ void ils_ClearCache(APTR address, IPTR length, ULONG caches)
           The current used AmigaOS version doesnt implement
           a usable CacheClearE, so we have to do it ourselves
          */
-        if (cpuflags & AFF_68060|AFF_68040|AFF_68020)
+        if ((cpuflags & AFF_68060|AFF_68040|AFF_68020) == 0)
         {
             /*
               AmigaOS may not have detected the CPU type
