@@ -297,17 +297,19 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     char * mfsrc = xmalloc (strlen (makefile->node.name) + 5);
     char * mfdst = xmalloc (strlen (mm_builddir) + 1 + strlen (buildpath(makefile->dir)) + 1 + strlen (makefile->node.name) + 1);
     struct stat sst, dst;
+        double diff_t = 0.0;
+        int res;
 
     debug(printf("[MMAKE] %s('%s')\n", __func__, makefile->node.name));
 
     strcpy (mfsrc, makefile->node.name);
     strcat (mfsrc, ".src");
 
-    if (stat (mfsrc, &sst) == -1)
+    if ((res = stat (mfsrc, &sst)) == -1)
     {
-        debug(printf("[MMAKE] %s: stat(\"%s\", ...) failed\n", __func__, mfsrc));
+        debug(printf("[MMAKE] %s: stat('%s') failed\n", __func__, mfsrc));
         xfree (mfsrc);
-        return;
+                return;
     }
 
     strcpy (mfdst, mm_builddir);
@@ -316,12 +318,17 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     strcat (mfdst, "/");
     strcat (mfdst, makefile->node.name);
 
-    if (stat (mfdst, &dst) == -1
-            || sst.st_mtime > dst.st_mtime
+        if ((res = stat (mfdst, &dst)) != -1)
+        {
+                diff_t = difftime(dst.st_mtime, sst.st_mtime);
+        }
+
+    if (res == -1
+            || (diff_t < 0.0)
             || checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
        )
     {
-        static char currdir[PATH_MAX];
+                static char currdir[PATH_MAX];
         struct Regenerate *reg = new (struct Regenerate);
 
         ASSERT(getcwd(currdir, PATH_MAX) != NULL);
@@ -329,9 +336,9 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
         reg->src = mfsrc;
         reg->dest = xstrdup (makefile->node.name);
 
-        debug(printf("MMAKE/cache.c:Added \"%s\" to be regenerated from \"%s\" in \"%s\"\n",
-                     reg->dest, reg->src, reg->dir
-        ));
+        printf("MMAKE/cache.c:Added \"%s\" to be regenerated from \"%s\" in \"%s\"\n",
+                                                 reg->dest, reg->src, reg->dir
+                        );
         AddTail (regeneratefiles, reg);
     }
     else
