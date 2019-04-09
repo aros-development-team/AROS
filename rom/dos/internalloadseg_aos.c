@@ -489,21 +489,13 @@ done:
   {
     ULONG hunksize;
 
-#ifdef __mc68000
-    /*
-     * On non-m68k systems, hunk files are not executable.
-     * And even if AROS ever gets m68k emulator, they are still data files.
-     * So we flush caches only on m68k.
-     */
-    if (SysBase->LibNode.lib_Version >= 37)
+#if defined(DOCACHECLEAR)
+    /* Clear caches */
+    for (t = first; t < numhunks && t <= last; t++)
     {
-        /* Clear caches */
-        for (t = first; t < numhunks && t <= last; t++)
-        {
-            hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
-            if (hunksize)
-                CacheClearE(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
-        }
+        hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
+        if (hunksize)
+          ils_ClearCache(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
     }
 #endif
 
