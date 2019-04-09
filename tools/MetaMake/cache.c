@@ -96,8 +96,8 @@ freetargetlist (struct Cache_priv * cache)
 
     ForeachNodeSafe(&cache->publicpart.targets,node,next)
     {
-	Remove (node);
-	freetarget ((struct Target *)node);
+        Remove (node);
+        freetarget ((struct Target *)node);
     }
 }
 
@@ -108,31 +108,31 @@ printtargetlist (struct List * l)
 
     ForeachNode (l,n)
     {
-	struct List deps;
-	struct MakefileRef * mfref;
-	struct MakefileTarget * mftarget;
-	struct Node * node;
+        struct List deps;
+        struct MakefileRef * mfref;
+        struct MakefileTarget * mftarget;
+        struct Node * node;
 
-	printf ("target %s:\n", n->node.name);
-	printf ("  updated=%d\n", n->updated);
-	printf ("  makefiles=\n");
-	ForeachNode (&n->makefiles, mfref)
-	    printf("    \"%s/%s\"\n",
-		    buildpath(mfref->makefile->dir),
-		    mfref->makefile->node.name
-		  );
+        printf ("target %s:\n", n->node.name);
+        printf ("  updated=%d\n", n->updated);
+        printf ("  makefiles=\n");
+        ForeachNode (&n->makefiles, mfref)
+            printf("    \"%s/%s\"\n",
+                    buildpath(mfref->makefile->dir),
+                    mfref->makefile->node.name
+                  );
 
-	printf ("  deps=\n");
-	NewList (&deps);
-	ForeachNode (&n->makefiles, mfref)
-	{
-	    mftarget = FindNode (&mfref->makefile->targets, n->node.name);
-	    ForeachNode (&mftarget->deps, node)
-		addnodeonce (&deps, node->name);
-	}
+        printf ("  deps=\n");
+        NewList (&deps);
+        ForeachNode (&n->makefiles, mfref)
+        {
+            mftarget = FindNode (&mfref->makefile->targets, n->node.name);
+            ForeachNode (&mftarget->deps, node)
+                addnodeonce (&deps, node->name);
+        }
 
-	printlist (&deps);
-	freelist (&deps);
+        printlist (&deps);
+        freelist (&deps);
     }
 }
 
@@ -152,9 +152,9 @@ progress (FILE * fh)
     progcount++;
     if (progcount == 20)
     {
-	progcount = 0;
-	fprintf(fh, ".");
-	fflush (fh);
+        progcount = 0;
+        fprintf(fh, ".");
+        fflush (fh);
     }
 }
 
@@ -174,58 +174,58 @@ readcache (struct Cache_priv * cache)
 
     if (fh)
     {
-	if (!readuint32 (fh, &id) || !CHECK_ID(id))
-	{
-	    fclose (fh);
-	    fh = NULL;
-	}
+        if (!readuint32 (fh, &id) || !CHECK_ID(id))
+        {
+            fclose (fh);
+            fh = NULL;
+        }
     }
 
     if (fh)
     {
-	char * name;
+        char * name;
 
-	do
-	{
-	    if (!readstring (fh, &name))
-	    {
-		fh = NULL;
-		break;
-	    }
+        do
+        {
+            if (!readstring (fh, &name))
+            {
+                fh = NULL;
+                break;
+            }
 
-	    if (name == NULL)
-		continue;
+            if (name == NULL)
+                continue;
 
-	    addnodeonce (&cache->addedfiles, name);
-	    xfree (name);
-	}
-	while (name != NULL);
+            addnodeonce (&cache->addedfiles, name);
+            xfree (name);
+        }
+        while (name != NULL);
 
-	if (!(cache->topdir = readcachedir (fh)))
-	{
-	    fclose (fh);
-	    fh = NULL;
-	}
+        if (!(cache->topdir = readcachedir (fh)))
+        {
+            fclose (fh);
+            fh = NULL;
+        }
     }
 
     if (!fh)
     {
-	cache->topdir = newnodesize (cache->project->srctop, sizeof (struct DirNode));
-	cache->topdir->parent = NULL;
-	NewList(&cache->topdir->subdirs);
-	NewList(&cache->topdir->makefiles);
+        cache->topdir = newnodesize (cache->project->srctop, sizeof (struct DirNode));
+        cache->topdir->parent = NULL;
+        NewList(&cache->topdir->subdirs);
+        NewList(&cache->topdir->makefiles);
 
-	/* Force a check the first time */
-	cache->topdir->time = 0;
+        /* Force a check the first time */
+        cache->topdir->time = 0;
     }
 
     if (fh)
-	fclose (fh);
+        fclose (fh);
 
     if (debug)
     {
-	printf ("readcache()\n");
-	printdirnode (cache->topdir, 1);
+        printf ("readcache()\n");
+        printdirnode (cache->topdir, 1);
     }
 }
 
@@ -241,7 +241,7 @@ writecache (struct Cache_priv * cache)
     debug(printf("MMAKE:cache.c->writecache()\n"));
 
     if (!cache->topdir)
-	return;
+        return;
 
     strcpy (path, cache->project->buildtop);
     strcat (path, "/mmake.cache");
@@ -251,42 +251,42 @@ writecache (struct Cache_priv * cache)
 
     if (!fh)
     {
-	ok = 0;
-	goto writecacheend;
+        ok = 0;
+        goto writecacheend;
     }
 
     ok = writeuint32 (fh, ID);
     if (!ok)
-	goto writecacheend;
+        goto writecacheend;
 
     ForeachNode (&cache->addedfiles, addedfile)
     {
-	ok = writestring (fh, addedfile->name);
-	if (!ok)
-	{
-	    error ("writecache/writestring():%d", __LINE__);
-	    goto writecacheend;
-	}
+        ok = writestring (fh, addedfile->name);
+        if (!ok)
+        {
+            error ("writecache/writestring():%d", __LINE__);
+            goto writecacheend;
+        }
     }
 
     ok = writestring (fh, NULL);
     if (!ok)
     {
-	error("writecache/fwrite():%d", __LINE__);
-	goto writecacheend;
+        error("writecache/fwrite():%d", __LINE__);
+        goto writecacheend;
     }
 
     ok = writecachedir (fh, cache->topdir);
 
 writecacheend:
     if (fh)
-	fclose (fh);
+        fclose (fh);
 
     if (!ok)
     {
-	unlink (path);
+        unlink (path);
 
-	printf ("[MMAKE] %s: Warning! - Creating the cache failed\n", __func__);
+        printf ("[MMAKE] %s: Warning! - Creating the cache failed\n", __func__);
     }
 }
 
@@ -306,8 +306,8 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     if (stat (mfsrc, &sst) == -1)
     {
         debug(printf("[MMAKE] %s: stat(\"%s\", ...) failed\n", __func__, mfsrc));
-	xfree (mfsrc);
-	return;
+        xfree (mfsrc);
+        return;
     }
 
     strcpy (mfdst, mm_builddir);
@@ -317,27 +317,27 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
     strcat (mfdst, makefile->node.name);
 
     if (stat (mfdst, &dst) == -1
-	    || sst.st_mtime > dst.st_mtime
-	    || checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
+            || sst.st_mtime > dst.st_mtime
+            || checkdeps (&cache->project->genmakefiledeps, dst.st_mtime)
        )
     {
-	static char currdir[PATH_MAX];
-	struct Regenerate *reg = new (struct Regenerate);
+        static char currdir[PATH_MAX];
+        struct Regenerate *reg = new (struct Regenerate);
 
-	ASSERT(getcwd(currdir, PATH_MAX) != NULL);
-	reg->dir = xstrdup (buildpath(makefile->dir));
-	reg->src = mfsrc;
-	reg->dest = xstrdup (makefile->node.name);
+        ASSERT(getcwd(currdir, PATH_MAX) != NULL);
+        reg->dir = xstrdup (buildpath(makefile->dir));
+        reg->src = mfsrc;
+        reg->dest = xstrdup (makefile->node.name);
 
         debug(printf("MMAKE/cache.c:Added \"%s\" to be regenerated from \"%s\" in \"%s\"\n",
                      reg->dest, reg->src, reg->dir
         ));
-	AddTail (regeneratefiles, reg);
+        AddTail (regeneratefiles, reg);
     }
     else
     {
         debug(printf("MMAKE/cache.c:\"%s\" Not regenerated\n", makefile->node.name));
-	xfree (mfsrc);
+        xfree (mfsrc);
     }
 }
 
@@ -354,36 +354,36 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
 
     if (strlen(node->node.name) != 0)
     {
-	if (getcwd(curdir, sizeof(curdir)) == NULL)
-	{
-	    error("Could not get current directory");
-	    exit (20);
-	}
-	if (chdir(node->node.name) < 0)
-	{
-	    error("Could not change to dir '%s'", node->node.name);
-	    exit (20);
-	}
-	goup = 1;
+        if (getcwd(curdir, sizeof(curdir)) == NULL)
+        {
+            error("Could not get current directory");
+            exit (20);
+        }
+        if (chdir(node->node.name) < 0)
+        {
+            error("Could not change to dir '%s'", node->node.name);
+            exit (20);
+        }
+        goup = 1;
     }
 
     if (scandirnode(node, cache->project->defaultmakefilename, &cache->project->ignoredirs))
-	reread ++;
+        reread ++;
 
     ForeachNode(&node->subdirs, subdir)
     {
-	debug(printf("MMAKE:cache.c->updatemflist: checking subdir ..\n"));
-	reread += updatemflist(cache, subdir, regeneratefiles);
+        debug(printf("MMAKE:cache.c->updatemflist: checking subdir ..\n"));
+        reread += updatemflist(cache, subdir, regeneratefiles);
     }
 
     ForeachNode(&node->makefiles, makefile)
     {
-	debug(printf("MMAKE:cache.c->updatemflist: checking makefile ..\n"));
-	checknewsrc(cache, makefile, regeneratefiles);
+        debug(printf("MMAKE:cache.c->updatemflist: checking makefile ..\n"));
+        checknewsrc(cache, makefile, regeneratefiles);
     }
 
     if (goup)
-	ASSERT(chdir(curdir) == 0);
+        ASSERT(chdir(curdir) == 0);
 
     progress (stdout);
 
@@ -401,7 +401,7 @@ updatetargetlist (struct Project * prj, struct Cache_priv * cache, struct DirNod
     reread = scanmakefiles(prj, node, &cache->project->vars);
 
     ForeachNode(&node->subdirs, subdir)
-	reread += updatetargetlist(prj, cache, subdir);
+        reread += updatetargetlist(prj, cache, subdir);
 
     progress (stdout);
 
@@ -447,58 +447,58 @@ regeneratemf (struct Cache_priv * cache, struct List * regeneratefiles)
     debug(printf("MMAKE:cache.c->regeneratemf()\n"));
 
     if (GetHead (regeneratefiles) == NULL)
-	return;
+        return;
 
     fd = mktempfile(&tmpname);
     if (fd < 0)
     {
-	error ("Could not create temporary file %s", tmpname);
-	exit (10);
+        error ("Could not create temporary file %s", tmpname);
+        exit (10);
     }
     else
     {
-	f = fdopen (fd, "w");
-	if (f == NULL)
-	{
-	    error ("Could not open temporary file %s", tmpname);
-	    exit (10);
-	}
+        f = fdopen (fd, "w");
+        if (f == NULL)
+        {
+            error ("Could not open temporary file %s", tmpname);
+            exit (10);
+        }
     }
 
     ForeachNodeSafe (regeneratefiles, reg, reg2)
     {
-	char * mfsrc = xmalloc (strlen(cache->project->srctop) + strlen(reg->dir) + strlen(reg->src) + 3);
-	char * mfdst = xmalloc (strlen(cache->project->buildtop) + strlen(reg->dir) + strlen(reg->dest) + 3);
+        char * mfsrc = xmalloc (strlen(cache->project->srctop) + strlen(reg->dir) + strlen(reg->src) + 3);
+        char * mfdst = xmalloc (strlen(cache->project->buildtop) + strlen(reg->dir) + strlen(reg->dest) + 3);
 
-	strcpy (mfsrc, cache->project->srctop);
-	if (strlen(reg->dir) > 0)
-	{
-	    strcat (mfsrc, "/");
-	    strcat (mfsrc, reg->dir);
-	}
-	strcat (mfsrc, "/");
-	strcat (mfsrc, reg->src);
+        strcpy (mfsrc, cache->project->srctop);
+        if (strlen(reg->dir) > 0)
+        {
+            strcat (mfsrc, "/");
+            strcat (mfsrc, reg->dir);
+        }
+        strcat (mfsrc, "/");
+        strcat (mfsrc, reg->src);
 
-	strcpy (mfdst, cache->project->buildtop);
-	if (strlen(reg->dir) > 0)
-	{
-	    strcat (mfdst, "/");
-	    strcat (mfdst, reg->dir);
-	}
-	strcat (mfdst, "/");
-	strcat (mfdst, reg->dest);
+        strcpy (mfdst, cache->project->buildtop);
+        if (strlen(reg->dir) > 0)
+        {
+            strcat (mfdst, "/");
+            strcat (mfdst, reg->dir);
+        }
+        strcat (mfdst, "/");
+        strcat (mfdst, reg->dest);
 
-	debug(printf("MMAKE:cache.c->regeneratemf: regenerate '%s' as '%s'\n", mfsrc, mfdst));
+        debug(printf("MMAKE:cache.c->regeneratemf: regenerate '%s' as '%s'\n", mfsrc, mfdst));
 
-	fprintf (f, "%s %s\n", mfsrc, mfdst);
-	Remove (reg);
-	xfree (mfsrc);
-	xfree (mfdst);
+        fprintf (f, "%s %s\n", mfsrc, mfdst);
+        Remove (reg);
+        xfree (mfsrc);
+        xfree (mfdst);
 
-	xfree (reg->dir);
-	xfree (reg->src);
-	xfree (reg->dest);
-	xfree (reg);
+        xfree (reg->dir);
+        xfree (reg->src);
+        xfree (reg->dest);
+        xfree (reg);
     }
 
     fclose (f);
@@ -506,8 +506,8 @@ regeneratemf (struct Cache_priv * cache, struct List * regeneratefiles)
     setvar (&cache->project->vars, "MMLIST", tmpname);
     if (!execute (cache->project, cache->project->genmakefilescript,"-","-",""))
     {
-	error ("Error regenerating makefile");
-	exit (10);
+        error ("Error regenerating makefile");
+        exit (10);
     }
 
     debug(printf("MMAKE:cache.c->regeneratemf: Finished\n"));
@@ -529,42 +529,42 @@ buildtargetlist (struct Cache_priv * cache, struct DirNode * node)
 
     ForeachNode (&node->makefiles, makefile)
     {
-	ForeachNode (&makefile->targets, mftarget)
-	{
-	    if (strchr (mftarget->node.name, '$') != NULL)
-	    {
-		char * s = substvars(&cache->project->vars, mftarget->node.name);
-		SETSTR (mftarget->node.name, s);
-	    }
+        ForeachNode (&makefile->targets, mftarget)
+        {
+            if (strchr (mftarget->node.name, '$') != NULL)
+            {
+                char * s = substvars(&cache->project->vars, mftarget->node.name);
+                SETSTR (mftarget->node.name, s);
+            }
 
-	    ForeachNode (&mftarget->deps, n)
-	    {
-		if (strchr (n->name, '$') != NULL)
-		{
-		    char * s = substvars(&cache->project->vars, n->name);
-		    SETSTR (n->name, s);
-		}
-	    }
+            ForeachNode (&mftarget->deps, n)
+            {
+                if (strchr (n->name, '$') != NULL)
+                {
+                    char * s = substvars(&cache->project->vars, n->name);
+                    SETSTR (n->name, s);
+                }
+            }
 
-	    target = FindNode (&cache->publicpart.targets, mftarget->node.name);
+            target = FindNode (&cache->publicpart.targets, mftarget->node.name);
 
-	    if (target ==  NULL)
-	    {
-		target = newnodesize (mftarget->node.name, sizeof(struct Target));
-		target->updated = 0;
-		NewList (&target->makefiles);
-		AddTail (&cache->publicpart.targets, target);
-	    }
+            if (target ==  NULL)
+            {
+                target = newnodesize (mftarget->node.name, sizeof(struct Target));
+                target->updated = 0;
+                NewList (&target->makefiles);
+                AddTail (&cache->publicpart.targets, target);
+            }
 
-	    mfref = newnodesize ("", sizeof(struct MakefileRef));
-	    mfref->virtualtarget = mftarget->virtualtarget;
-	    mfref->makefile = makefile;
-	    AddTail (&target->makefiles, mfref);
-	}
+            mfref = newnodesize ("", sizeof(struct MakefileRef));
+            mfref->virtualtarget = mftarget->virtualtarget;
+            mfref->makefile = makefile;
+            AddTail (&target->makefiles, mfref);
+        }
     }
 
     ForeachNode (&node->subdirs, subdir)
-	buildtargetlist (cache, subdir);
+        buildtargetlist (cache, subdir);
 }
 
 struct Cache *
@@ -581,7 +581,7 @@ activatecache (struct Project *prj)
 
     cache = new (struct Cache_priv);
     if (!cache)
-	return NULL;
+        return NULL;
     NewList (&regeneratefiles);
 
     cache->project = prj;
@@ -603,12 +603,12 @@ activatecache (struct Project *prj)
     debug(printf("MMAKE:cache.c->activatecache: Updated MF list.\n"));
 
     if (verbose)
-	printf ("[MMAKE] Reread %d dirs\n", reread);
+        printf ("[MMAKE] Reread %d dirs\n", reread);
 
     if (debug)
     {
-	printf ("[MMAKE] Directory tree for project %s\n", prj->node.name);
-	printdirnode (cache->topdir, 0);
+        printf ("[MMAKE] Directory tree for project %s\n", prj->node.name);
+        printdirnode (cache->topdir, 0);
     }
 
     /* Add the extra makefiles to the tree if needed */
@@ -616,41 +616,41 @@ activatecache (struct Project *prj)
     NewList (&newadded);
     ForeachNode (&cache->project->extramakefiles, extrafile)
     {
-	addedfile = FindNode (&cache->addedfiles, extrafile->name);
-	if (addedfile == NULL)
-	{
-	    makefile = addmakefile (cache->topdir, extrafile->name);
+        addedfile = FindNode (&cache->addedfiles, extrafile->name);
+        if (addedfile == NULL)
+        {
+            makefile = addmakefile (cache->topdir, extrafile->name);
 
-	    if (makefile == NULL)
-	    {
-		error("Could not add makefile \"%s\"", extrafile->name);
-		exit (20);
-	    }
+            if (makefile == NULL)
+            {
+                error("Could not add makefile \"%s\"", extrafile->name);
+                exit (20);
+            }
 
-	    addnodeonce (&newadded, extrafile->name);
-	}
-	else /* addedfile != NULL => was already added before */
-	{
-	    makefile = findmakefile (cache->topdir, extrafile->name);
+            addnodeonce (&newadded, extrafile->name);
+        }
+        else /* addedfile != NULL => was already added before */
+        {
+            makefile = findmakefile (cache->topdir, extrafile->name);
 
-	    if (makefile == NULL)
-	    {
-		error("Makefile \"%s\" has disappeared", extrafile->name);
-		exit (20);
-	    }
+            if (makefile == NULL)
+            {
+                error("Makefile \"%s\" has disappeared", extrafile->name);
+                exit (20);
+            }
 
-	    Remove (addedfile);
-	    AddTail (&newadded, addedfile);
-	}
+            Remove (addedfile);
+            AddTail (&newadded, addedfile);
+        }
     }
     ForeachNode (&cache->addedfiles, addedfile)
     {
-	makefile = findmakefile (cache->topdir, addedfile->name);
-	if (makefile != NULL)
-	{
-	    Remove (makefile);
-	    freemakefile (makefile);
-	}
+        makefile = findmakefile (cache->topdir, addedfile->name);
+        if (makefile != NULL)
+        {
+            Remove (makefile);
+            freemakefile (makefile);
+        }
     }
     AssignList (&cache->addedfiles, &newadded);
 
@@ -662,11 +662,11 @@ activatecache (struct Project *prj)
     printf ("[MMAKE] Scanning makefiles...\n");
     reread = updatetargetlist (prj, cache, cache->topdir);
     if (verbose)
-	printf ("[MMAKE] Reread %d makefiles\n", reread);
+        printf ("[MMAKE] Reread %d makefiles\n", reread);
     if (debug)
     {
-	printf ("[MMAKE] Makefile and target tree for project %s\n", prj->node.name);
-	printdirnodemftarget (cache->topdir);
+        printf ("[MMAKE] Makefile and target tree for project %s\n", prj->node.name);
+        printdirnodemftarget (cache->topdir);
     }
 
     writecache (cache);
@@ -676,8 +676,8 @@ activatecache (struct Project *prj)
     buildtargetlist (cache, cache->topdir);
     if (debug)
     {
-	printf ("[MMAKE] Targetlist of project %s\n", prj->node.name);
-	printtargetlist (&cache->publicpart.targets);
+        printf ("[MMAKE] Targetlist of project %s\n", prj->node.name);
+        printtargetlist (&cache->publicpart.targets);
     }
 
     debug(printf("MMAKE:cache.c->activatecache: Finished\n"));

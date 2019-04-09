@@ -56,12 +56,12 @@ checkdeps (struct List * deps, time_t desttime)
     ForeachNode (deps, dep)
     {
         /*printf("MMAKE:\"%s\" %d > %d ?\n", dep->node.name, dep->time, desttime);*/
-	if (dep->time > desttime)
-	{
-	    /*printf ("%s is newer\n", dep->node.name);*/
-	    newer = 1;
-	    break;
-	}
+        if (dep->time > desttime)
+        {
+            /*printf ("%s is newer\n", dep->node.name);*/
+            newer = 1;
+            break;
+        }
     }
 
     return newer;
