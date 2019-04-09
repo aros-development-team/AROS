@@ -50,19 +50,14 @@ int
 checkdeps (struct List * deps, time_t desttime)
 {
     struct Dep * dep;
-    int newer = 0;
+    double diff_t = 0;
 
-    /*printf("MMAKE/dep.c:checkdeps()\n");*/
     ForeachNode (deps, dep)
     {
-        /*printf("MMAKE:\"%s\" %d > %d ?\n", dep->node.name, dep->time, desttime);*/
-        if (dep->time > desttime)
-        {
-            /*printf ("%s is newer\n", dep->node.name);*/
-            newer = 1;
-            break;
-        }
+        diff_t = difftime(desttime, dep->time);
+        if (diff_t < 0.0)
+            return 1;
     }
 
-    return newer;
+    return 0;
 }
