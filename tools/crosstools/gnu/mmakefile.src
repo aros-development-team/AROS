@@ -271,7 +271,7 @@ tools-crosstools-gcc :
 #MM
 tools-crosstools-gcc-libatomic :
 	@$(IF) ! $(TEST) -f $(libatomic-installflag) ; then \
-	    $(IF) $(TEST) -f $(crosstools-gcc-configflag) ; then \
+	    $(IF) $(TEST) -f $(crosstools-gcc--configflag) ; then \
 	        $(RM) $(crosstools-gcc-configflag) ; \
 	    fi ; \
 	    gcc_build_libatomic="" $(MAKE) -f ./mmakefile crosstools-gcc--configure \
