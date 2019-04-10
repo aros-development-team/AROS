@@ -119,8 +119,6 @@ static void
 GCONCAT( _gblender_blit_bgra_, GDST_TYPE )( GBlenderBlit   blit,
                                             GBlenderPixel  color )
 {
-  GBlender  blender = blit->blender;
-
   (void)color; /* unused */
 
 #include "gblbgra.h"

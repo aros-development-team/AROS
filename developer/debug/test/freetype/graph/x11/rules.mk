@@ -6,31 +6,45 @@
 #**************************************************************************
 
 
-#########################################################################
+#############################################################################
 #
 # Try to detect an X11 setup.
 #
-# We try to detect the following directories (in that order) in the current
-# path:
+# The goal is to define variable `X11_PATH', consisting of a list of
+# directories `A', `B', `C', ..., separated by spaces.  While compiling the
+# demo programs that need X11 support, include file directories `A/include',
+# `B/include', etc., are passed to the compiler.  While linking, directories
+# `A/lib', `A/lib64', `B/lib', `B/lib64', etc., are passed to the linker.
+# Note that it doesn't pose a problem to specify both 32bit and 64bit library
+# directories at the same time since the linker will properly reject the
+# incorrect ones.
 #
-#   X11   (usually a symlink to the current release)
-#   X11R6
-#   X11R5
+# 1) We try to detect the following directories (in that order) as substrings
+#    in the current path:
 #
-# If no success, we directly check the directories
+#      X11/bin   (usually a symlink to the current release)
+#      X11R6/bin
+#      X11R5/bin
 #
-#   /usr
-#   /usr/X11R6
-#   /usr/local/X11R6
+#    From the first hit we derive `X11_PATH' (by removing the `/bin' part).
 #
-# whether they contain `include/X11/Xlib.h'.  Note that the Makefile
-# silently assumes that they will also contain `lib/X11/libX11.(a|so)'.
+# 2) If no success, we directly check the directories
 #
-# If the variable X11_PATH is set (to specify unusual locations of X11), no
-# other directory is searched.  More than one directory must be separated
-# with spaces.  Example:
+#      /usr
+#      /usr/X11R6
+#      /usr/local/X11R6
 #
-#   make X11_PATH="/usr/openwin /usr/local/X11R6"
+#    whether they contain `include/X11/Xlib.h'.  The first hit sets up
+#    `X11_PATH'.
+#
+# 3) If the variable `X11_PATH' is already set (to specify unusual locations
+#    of X11), no other directories are searched.  For instance, let us assume
+#    that the X11 header files are located in `/usr/local/X11/R6/include',
+#    and the X11 library files in `/usr/openwin/lib'.  Calling
+#
+#      make X11_PATH="/usr/openwin /usr/local/X11R6"
+#
+#    should then work.
 #
 FT_PATH := $(subst ;, ,$(subst :, ,$(subst $(SEP),/,$(PATH))))
 

@@ -4,7 +4,7 @@
  *
  *    Graphics Subsystem interface
  *
- *  Copyright 1999-2007, 2013
+ *  Copyright (C) 1999-2019 by
  *     - The FreeType Development Team - www.freetype.org
  *
  ***************************************************************************/

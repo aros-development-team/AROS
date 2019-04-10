@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 2002-2018 by                                                  */
+/*  Copyright (C) 2002-2019 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftbench: bench some common FreeType call paths                          */
@@ -244,7 +244,8 @@
     }
 
     if ( done )
-      printf( "%5.3f us/op\n", TIMER_GET( &timer ) / (double)done );
+      printf( "%10.3f us/op %10d done\n",
+              TIMER_GET( &timer ) / (double)done, done );
     else
       printf( "no error-free calls\n" );
   }

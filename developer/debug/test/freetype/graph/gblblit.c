@@ -46,6 +46,14 @@
 
 /* */
 
+#define  GRGB_TO_GRAY8(r,g,b)  ( (unsigned char)( ( 2*(r) + 7*(g) + (b) ) / 10 ) )
+
+#define  GRGB24_TO_GRAY8(p)   ( (unsigned char)( ( 2*( ((p) >> 16) & 0xFF ) +         \
+                                                   7*( ((p) >>  8) & 0xFF ) +         \
+                                                     ( ((p))       & 0xFF ) ) / 10 ) )
+
+/* */
+
 /* Rgb32 blitting routines
  */
 
@@ -153,6 +161,33 @@
 
 #include "gblany.h"
 
+/* Gray8 blitting routines
+ */
+#define  GDST_TYPE               gray8
+#define  GDST_INCR               1
+#define  GDST_READ(d,p)          (p) = GRGB_PACK((d)[0],(d)[0],(d)[0])
+
+#define  GDST_COPY_VAR           /* nothing */
+#define  GDST_COPY(d)            *(d) = GRGB_TO_GRAY8(r,g,b)
+
+#define  GDST_STOREB(d,cells,a)                 \
+    {                                           \
+      GBlenderCell*  _g = (cells) + (a)*3;      \
+                                                \
+      *(d) = GRGB_TO_GRAY8(_g[0],_g[1],_g[2]);  \
+    }
+
+#define  GDST_STOREP(d,cells,a)           \
+    {                                     \
+      GBlenderPixel  _pix = (cells)[(a)]; \
+                                          \
+      *(d) = GRGB24_TO_GRAY8(_pix);       \
+    }
+
+#define  GDST_STOREC(d,r,g,b)   *(d) = GRGB_TO_GRAY8(r,g,b)
+
+#include "gblany.h"
+
 /* */
 
 static void
@@ -194,6 +229,7 @@ gblender_blit_init( GBlenderBlit           blit,
       case GBLENDER_TARGET_RGB24:  blit_func = _gblender_blit_gray8_rgb24; break;
       case GBLENDER_TARGET_RGB565: blit_func = _gblender_blit_gray8_rgb565; break;
       case GBLENDER_TARGET_BGR565: blit_func = _gblender_blit_gray8_bgr565; break;
+      case GBLENDER_TARGET_GRAY8:  blit_func = _gblender_blit_gray8_gray8; break;
       default:
           ;
       }
@@ -206,6 +242,7 @@ gblender_blit_init( GBlenderBlit           blit,
       case GBLENDER_TARGET_RGB24:  blit_func = _gblender_blit_hrgb_rgb24; break;
       case GBLENDER_TARGET_RGB565: blit_func = _gblender_blit_hrgb_rgb565; break;
       case GBLENDER_TARGET_BGR565: blit_func = _gblender_blit_hrgb_bgr565; break;
+      case GBLENDER_TARGET_GRAY8:  blit_func = _gblender_blit_hrgb_gray8; break;
       default:
           ;
       }
@@ -218,6 +255,7 @@ gblender_blit_init( GBlenderBlit           blit,
       case GBLENDER_TARGET_RGB24:  blit_func = _gblender_blit_hbgr_rgb24; break;
       case GBLENDER_TARGET_RGB565: blit_func = _gblender_blit_hbgr_rgb565; break;
       case GBLENDER_TARGET_BGR565: blit_func = _gblender_blit_hbgr_bgr565; break;
+      case GBLENDER_TARGET_GRAY8:  blit_func = _gblender_blit_hbgr_gray8; break;
       default:
           ;
       }
@@ -230,6 +268,7 @@ gblender_blit_init( GBlenderBlit           blit,
       case GBLENDER_TARGET_RGB24:  blit_func = _gblender_blit_vrgb_rgb24; break;
       case GBLENDER_TARGET_RGB565: blit_func = _gblender_blit_vrgb_rgb565; break;
       case GBLENDER_TARGET_BGR565: blit_func = _gblender_blit_vrgb_bgr565; break;
+      case GBLENDER_TARGET_GRAY8:  blit_func = _gblender_blit_vrgb_gray8; break;
       default:
           ;
       }
@@ -242,6 +281,7 @@ gblender_blit_init( GBlenderBlit           blit,
       case GBLENDER_TARGET_RGB24:  blit_func = _gblender_blit_vbgr_rgb24; break;
       case GBLENDER_TARGET_RGB565: blit_func = _gblender_blit_vbgr_rgb565; break;
       case GBLENDER_TARGET_BGR565: blit_func = _gblender_blit_vbgr_bgr565; break;
+      case GBLENDER_TARGET_GRAY8:  blit_func = _gblender_blit_vbgr_gray8; break;
       default:
           ;
       }
@@ -254,6 +294,7 @@ gblender_blit_init( GBlenderBlit           blit,
       case GBLENDER_TARGET_RGB24:  blit_func = _gblender_blit_bgra_rgb24; break;
       case GBLENDER_TARGET_RGB565: blit_func = _gblender_blit_bgra_rgb565; break;
       case GBLENDER_TARGET_BGR565: blit_func = _gblender_blit_bgra_bgr565; break;
+      case GBLENDER_TARGET_GRAY8:  blit_func = _gblender_blit_bgra_gray8; break;
       default:
           ;
       }

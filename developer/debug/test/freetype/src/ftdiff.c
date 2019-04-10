@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 2007-2018 by                                                  */
+/*  Copyright (C) 2007-2019 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -52,11 +52,8 @@
       "            `.afm' or `.pfm').\n"
       "\n" );
     fprintf( stderr,
-      "  -w W         Set the window width to W pixels (default: %dpx).\n"
-      "  -h H         Set the window height to H pixels (default: %dpx).\n"
-      "\n",
-             DIM_X, DIM_Y );
-    fprintf( stderr,
+      "  -w W         Set the window width to W pixels (default: 640px).\n"
+      "  -h H         Set the window height to H pixels (default: 480px).\n"
       "  -r R         Use resolution R dpi (default: 72dpi).\n"
       "  -s S         Set character size to S points (default: 16pt).\n"
       "  -f TEXTFILE  Change displayed text, using text in TEXTFILE\n"
@@ -721,9 +718,9 @@
       if ( rmode != HINT_MODE_AUTOHINT_LIGHT_SUBPIXEL &&
            column->use_deltas                         )
       {
-        if ( prev_rsb_delta - face->glyph->lsb_delta >= 32 )
+        if ( prev_rsb_delta - face->glyph->lsb_delta > 32 )
           x_origin -= 64;
-        else if ( prev_rsb_delta - face->glyph->lsb_delta < -32 )
+        else if ( prev_rsb_delta - face->glyph->lsb_delta < -31 )
           x_origin += 64;
       }
       prev_rsb_delta = face->glyph->rsb_delta;
@@ -1160,36 +1157,35 @@
 
     grWriteln( buf );
     grLn();
-    grWriteln( "This program displays text using various hinting algorithms." );
-    grLn();
     grWriteln( "Use the following keys:" );
     grLn();
-    grWriteln( "  F1, ?        display this help screen" );
+    /*          |----------------------------------|    |----------------------------------| */
+    grWriteln( "F1, ?       display this help screen                                        " );
+    grWriteln( "                                                                            " );
+    grWriteln( "global parameters:                                                          " );
+    grWriteln( "  p, n        previous/next font        1, 2, 3      select column          " );
+    grWriteln( "  Up, Down    adjust size by 0.5pt      Left, Right  switch between columns " );
+    grWriteln( "  PgUp, PgDn  adjust size by 5pt        g, v         adjust gamma value     " );
+    grWriteln( "                                                                            " );
+    grWriteln( " per-column parameters:                                                     " );
+    grWriteln( "  d           toggle lsb/rsb deltas     hinting modes:                      " );
+    grWriteln( "  h           cycle hinting mode          A          unhinted               " );
+    grWriteln( "  H           cycle hinting engine        B          auto-hinter            " );
+    grWriteln( "               (if CFF or TTF)            C          light auto-hinter      " );
+    grWriteln( "  w           toggle warping (if          D          light auto-hinter      " );
+    grWriteln( "               normal auto-hinting)                   (subpixel)            " );
+    grWriteln( "  k           toggle kerning (only        E          native hinter          " );
+    grWriteln( "               from `kern' table)                                           " );
+    grWriteln( "  r           toggle rendering mode                                         " );
+    grWriteln( "  x           toggle layout mode                                            " );
+    grWriteln( "                                                                            " );
+    grWriteln( "  l           cycle LCD filtering                                           " );
+    grWriteln( "  [, ]        select custom LCD                                             " );
+    grWriteln( "               filter weight                                                " );
+    grWriteln( "  -, +(=)     adjust selected custom                                        " );
+    grWriteln( "               LCD filter weight                                            " );
+    /*          |----------------------------------|    |----------------------------------| */
     grLn();
-    grWriteln( "  p, n         select previous/next font" );
-    grLn();
-    grWriteln( " global parameters:" );
-    grLn();
-    grWriteln( "  Up, Down     adjust pointsize by 0.5 unit" );
-    grWriteln( "  PgUp, PgDn   adjust pointsize by 5 units" );
-    grWriteln( "  g, v         adjust gamma value" );
-    grLn();
-    grWriteln( "  1, 2, 3      select left, middle, or right column" );
-    grWriteln( "  Left, Right  switch between columns" );
-    grLn();
-    grWriteln( " per-column parameters:" );
-    grLn();
-    grWriteln( "  d            toggle lsb/rsb deltas" );
-    grWriteln( "  h            cycle hinting mode" );
-    grWriteln( "  H            cycle hinting engine (if CFF or TTF)" );
-    grWriteln( "  w            toggle warping (if normal auto-hinting" );
-    grWriteln( "  k            toggle kerning (only from `kern' table)" );
-    grWriteln( "  r            toggle rendering mode" );
-    grWriteln( "  x            toggle layout mode" );
-    grLn();
-    grWriteln( "  l            change LCD filter type" );
-    grWriteln( "  [, ]         select custom LCD filter weight" );
-    grWriteln( "  -, +(=)      adjust selected custom LCD filter weight");
     grLn();
     grWriteln( "press any key to exit this help screen" );
 
@@ -1247,6 +1243,13 @@
     int          ret    = 0;
     ColumnState  column = &state->columns[state->col];
 
+
+    if ( event->key >= 'A'                &&
+         event->key < 'A' + HINT_MODE_MAX )
+    {
+      column->hint_mode = (HintMode)( event->key - 'A' );
+      return ret;
+    }
 
     switch ( event->key )
     {
@@ -1505,8 +1508,8 @@
     ADisplayRec     adisplay[1];
     RenderStateRec  state[1];
     DisplayRec      display[1];
-    int             width      = DIM_X;
-    int             height     = DIM_Y;
+    int             width      = 640;
+    int             height     = 480;
     int             resolution = -1;
     double          size       = -1;
     const char*     textfile   = NULL;

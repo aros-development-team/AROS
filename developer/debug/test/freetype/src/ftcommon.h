@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 2005-2018 by                                                  */
+/*  Copyright (C) 2005-2019 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -59,8 +59,7 @@
 
 
   /* default window dimensions */
-#define DIM_X  640
-#define DIM_Y  480
+#define DIM  "640x480"
 
   /* baseline distance between header lines */
 #define HEADER_HEIGHT  12
@@ -88,9 +87,7 @@
 
 
   FTDemo_Display*
-  FTDemo_Display_New( grPixelMode  mode,
-                      int          width,
-                      int          height );
+  FTDemo_Display_New( const char*  dims );
 
 
   void
@@ -119,9 +116,12 @@
     FT_UInt    glyph_index;
     FT_Glyph   image;    /* the glyph image */
 
-    FT_Pos     delta;    /* delta caused by hinting */
-    FT_Vector  vvector;  /* vert. origin => hori. origin */
-    FT_Vector  vadvance; /* vertical advance */
+    FT_Pos     lsb_delta; /* delta caused by hinting */
+    FT_Pos     rsb_delta; /* delta caused by hinting */
+    FT_Vector  hadvance;  /* kerned horizontal advance */
+
+    FT_Vector  vvector;   /* vert. origin => hori. origin */
+    FT_Vector  vadvance;  /* vertical advance */
 
   } TGlyph, *PGlyph;
 
@@ -131,6 +131,7 @@
     const char*  filepathname;
     int          face_index;
     int          cmap_index;
+    int          palette_index;
     int          num_indices;
     void*        file_address;  /* for preloaded files */
     size_t       file_size;
@@ -168,9 +169,13 @@
   {
     int         kerning_mode;
     int         kerning_degree;
+
     FT_Fixed    center;            /* 0..1 */
     int         vertical;          /* displayed vertically? */
     FT_Matrix*  matrix;            /* string transformation */
+
+    FT_Pos      extent;            /* extent to fill, glyphs recycled */
+    int         offset;            /* initial glyph */
 
   } FTDemo_String_Context;
 
@@ -194,18 +199,19 @@
     FT_Int32        load_flags;
 
     /* call FTDemo_Update_Current_Flags after setting any of the following fields */
-    int             hinted;            /* is glyph hinting active?    */
-    int             use_sbits;         /* do we use embedded bitmaps? */
-    int             autohint;          /* force auto-hinting          */
-    int             lcd_mode;          /* mono, aa, light, vrgb, ...  */
-    int             preload;           /* force font file preloading  */
+    int             hinted;            /* is glyph hinting active?        */
+    int             use_sbits;         /* do we use embedded bitmaps?     */
+    int             use_color;         /* do we use coloured glyphs?      */
+    int             use_layers;        /* do we use color-layered glyphs? */
+    int             autohint;          /* force auto-hinting              */
+    int             lcd_mode;          /* mono, aa, light, vrgb, ...      */
+    int             preload;           /* force font file preloading      */
 
     /* don't touch the following fields! */
 
     /* used for string rendering */
     TGlyph          string[MAX_GLYPHS];
     int             string_length;
-    int             string_reload;
 
     unsigned long   encoding;
     FT_Stroker      stroker;
@@ -338,9 +344,16 @@
                      const char*     string );
 
 
-  /* draw a string centered at (center_x, center_y) --  */
-  /* note that handle->use_sbits_cache is not supported */
+  /* load kerned advances with hinting compensation */
   FT_Error
+  FTDemo_String_Load( FTDemo_Handle*          handle,
+                      FTDemo_String_Context*  sc );
+
+
+  /* draw a string centered at (center_x, center_y) --  */
+  /* returns the number of rendered glyphs              */
+  /* note that handle->use_sbits_cache is not supported */
+  int
   FTDemo_String_Draw( FTDemo_Handle*          handle,
                       FTDemo_Display*         display,
                       FTDemo_String_Context*  sc,

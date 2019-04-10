@@ -6,7 +6,7 @@
  *  used by the graphics utility of the FreeType test suite.
  *
  *  Written by Antoine Leca.
- *  Copyright 1999-2018 by
+ *  Copyright (C) 1999-2019 by
  *  Antoine Leca, David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  Borrowing liberally from the other FreeType drivers.

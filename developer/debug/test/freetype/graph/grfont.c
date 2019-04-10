@@ -314,6 +314,7 @@
   static int        gr_cursor_y     = 0;
   static int        gr_line_height  = 8;
   static grBitmap*  gr_text_bitmap  = 0;
+  static grColor    gr_color        = { 0 };
   static int        gr_margin_right = 0;
   static int        gr_margin_top   = 0;
 
@@ -322,6 +323,7 @@
   grGotobitmap( grBitmap*  bitmap )
   {
     gr_text_bitmap = bitmap;
+    gr_color       = grFindColor( bitmap, 100, 100, 100, 255 );
   }
 
 
@@ -364,15 +366,11 @@
   {
     if ( string )
     {
-      grColor color;
-
-
-      color.value = 127;
       grWriteCellString( gr_text_bitmap,
                          gr_margin_right + ( gr_cursor_x << 3 ),
                          gr_margin_top   + gr_cursor_y * gr_line_height,
                          string,
-                         color );
+                         gr_color );
 
       gr_cursor_x += strlen( string );
     }

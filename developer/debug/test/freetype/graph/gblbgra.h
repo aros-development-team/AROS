@@ -3,8 +3,6 @@
   const unsigned char*  src_line = blit->src_line;
   unsigned char*        dst_line = blit->dst_line;
 
-  gblender_use_channels( blender, 0 );
-
   do
   {
     const unsigned char*  src = src_line + blit->src_x * 4;
@@ -13,12 +11,10 @@
 
     do
     {
-      unsigned int  a  = GBLENDER_SHADE_INDEX(src[3]);
-      unsigned int  ra = src[3];
-
-      unsigned int  b = src[0];
-      unsigned int  g = src[1];
-      unsigned int  r = src[2];
+      unsigned int  pix_b = src[0];
+      unsigned int  pix_g = src[1];
+      unsigned int  pix_r = src[2];
+      unsigned int  a = src[3];
 
 
       if ( a == 0 )
@@ -27,21 +23,45 @@
       }
       else if ( a == 255 )
       {
-        dst[0] = (unsigned char)r;
-        dst[1] = (unsigned char)g;
-        dst[2] = (unsigned char)b;
+        GDST_STOREC(dst,pix_r,pix_g,pix_b);
       }
       else
       {
-        unsigned int  ba = 255 - ra;
-        unsigned int  br = dst[0];
-        unsigned int  bb = dst[1];
-        unsigned int  bg = dst[2];
+        GBlenderPixel  back;
 
+        GDST_READ(dst,back);
 
-        dst[0] = (unsigned char)(br * ba / 255 + r);
-        dst[1] = (unsigned char)(bg * ba / 255 + g);
-        dst[2] = (unsigned char)(bb * ba / 255 + b);
+        {
+          unsigned int  ba = 255 - a;
+          unsigned int  back_r = (back >> 16) & 255;
+          unsigned int  back_g = (back >> 8) & 255;
+          unsigned int  back_b = (back) & 255;
+
+#if 1     /* premultiplied blending without gamma correction */
+          pix_r = (back_r * ba / 255 + pix_r);
+          pix_g = (back_g * ba / 255 + pix_g);
+          pix_b = (back_b * ba / 255 + pix_b);
+
+#else     /* gamma-corrected blending */
+          const unsigned char*   gamma_ramp_inv = blit->blender->gamma_ramp_inv;
+          const unsigned short*  gamma_ramp     = blit->blender->gamma_ramp;
+
+          back_r = gamma_ramp[back_r];
+          back_g = gamma_ramp[back_g];
+          back_b = gamma_ramp[back_b];
+
+          /* premultiplication undone */
+          pix_r = gamma_ramp[pix_r * 255 / a];
+          pix_g = gamma_ramp[pix_g * 255 / a];
+          pix_b = gamma_ramp[pix_b * 255 / a];
+
+          pix_r = gamma_ramp_inv[(back_r * ba + pix_r * a + 127) / 255];
+          pix_g = gamma_ramp_inv[(back_g * ba + pix_g * a + 127) / 255];
+          pix_b = gamma_ramp_inv[(back_b * ba + pix_b * a + 127) / 255];
+#endif
+        }
+
+        GDST_STOREC(dst,pix_r,pix_g,pix_b);
       }
 
       src += 4;
@@ -53,4 +73,3 @@
     dst_line += blit->dst_pitch;
 
   } while ( --h > 0 );
-
