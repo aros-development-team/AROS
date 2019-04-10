@@ -1,6 +1,6 @@
-diff -ruN freetype-2.9.1/builds/aros/src/base/ftsystem.c freetype-2.9.1.aros/builds/aros/src/base/ftsystem.c
---- freetype-2.9.1/builds/aros/src/base/ftsystem.c	1970-01-01 00:00:00.000000000 +0000
-+++ freetype-2.9.1.aros/builds/aros/src/base/ftsystem.c	2019-04-10 15:43:33.113531700 +0100
+diff -ruN freetype-2.10.0/builds/aros/src/base/ftsystem.c freetype-2.10.0.aros/builds/aros/src/base/ftsystem.c
+--- freetype-2.10.0/builds/aros/src/base/ftsystem.c	1970-01-01 00:00:00.000000000 +0000
++++ freetype-2.10.0.aros/builds/aros/src/base/ftsystem.c	2019-04-10 15:43:33.113531700 +0100
 @@ -0,0 +1,359 @@
 +/***************************************************************************/
 +/*                                                                         */

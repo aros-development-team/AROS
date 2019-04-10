@@ -9,7 +9,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-freetype-module : freetype2-fetch
 
 FT2NAME         := freetype
-FT2VERS         := 2.9.1
+FT2VERS         := 2.10.0
 ARCHBASE        := $(FT2NAME)-$(FT2VERS)
 
 FT2SRCDIR       := $(PORTSDIR)/$(FT2NAME)2/$(ARCHBASE)
@@ -55,7 +55,6 @@ FT2HINTFILES += \
     pshinter/pshinter
 
 FT2BASEFILES := \
-    base/ftapi \
     base/ftbase \
     base/ftinit \
     base/ftdebug \
