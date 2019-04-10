@@ -136,7 +136,7 @@ FT2_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/*.h))
 FT2I_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/*.h))
 %copy_includes path=freetype dir=$(FT2SRCDIR)/include/freetype includes=$(FT2I_INCLUDE_FILES)
 
-#MM- includes-copy : workbench-libs-freetype-genincludes
+#MM- includes-copy : freetype2-fetch workbench-libs-freetype-genincludes
 
 FT2OPTIONFILE := ftoption.h
 FT2CONFIG_INCLUDE_FILES := $(filter-out $(FT2OPTIONFILE),$(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/config/*.h)))
@@ -148,7 +148,7 @@ $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE) : $(FT2SRCDIR)/include/freetyp
 	@$(SED) "s|.*FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES.*|/*define FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES*/\\n|g" $< > $@
 
 #MM
-workbench-libs-freetype-genincludes : $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE)
+workbench-libs-freetype-genincludes : freetype2-fetch $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE)
 	$(NOP)
 
 FT2INT_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/internal/*.h))
