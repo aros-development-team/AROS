@@ -599,7 +599,7 @@ endif
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= srcdir= targetdir= \
-    compiler=target
+    compiler=target usetree=no
 
 ifeq (%(srcdir),)
 %(mmake)_MC_SRCWILDCARD := %
@@ -612,8 +612,18 @@ ifeq (%(targetdir),)
 %(mmake)_MC_DTARGETS := $(addsuffix .d,%(basenames))
 %(mmake)_MC_TGTWILDCARD := %
 else
-%(mmake)_MC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
-%(mmake)_MC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+ifeq (%(usetree),no)
+    %(mmake)_MC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+    %(mmake)_MC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+else
+ifeq (%(srcdir),)
+    %(mmake)_MC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,%(basenames)))
+    %(mmake)_MC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,%(basenames)))
+else
+    %(mmake)_MC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(patsubst %(srcdir)/%,%,%(basenames))))
+    %(mmake)_MC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,$(patsubst %(srcdir)/%,%,%(basenames))))
+endif
+endif
 %(mmake)_MC_TGTWILDCARD := %(targetdir)/%
 
 # Be sure that all .c files are generated
@@ -703,7 +713,7 @@ $(%(mmake)_MC_DTARGETS) : $(%(mmake)_MC_TGTWILDCARD).d : $(%(mmake)_MC_SRCWILDCA
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_cxx_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= \
-    targetdir= compiler=target
+    targetdir= compiler=target srcdir=
 
 %(mmake)_CXXABSBASENAMES := $(foreach %(mmake)_CXXBASE,%(basenames),$(if $(filter /%,$(%(mmake)_CXXBASE)),$(%(mmake)_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(%(mmake)_CXXBASE))))
 
@@ -713,6 +723,12 @@ ifneq ($(%(mmake)_CXXABSBASENAMES),)
 
 # Identify the "real" c++ files from the passed in basenames
 %(mmake)_MCXX_FILES  := $(strip $(foreach %(mmake)_CXXBASE,$(%(mmake)_CXXABSBASENAMES), $(firstword $(wildcard $(foreach %(mmake)_EXT, $(AROS_CXXEXTS),$(addsuffix .$(%(mmake)_EXT),$(%(mmake)_CXXBASE)))))))
+
+ifeq (%(srcdir),)
+%(mmake)_MCXX_SRCWILDCARD := %
+else
+%(mmake)_MCXX_SRCWILDCARD := %(srcdir)/%
+endif
 
 ifeq (%(targetdir),)
   %(mmake)_CXXTARGETS := $(notdir $(%(mmake)_CXXBASENAMES:=.o))
@@ -809,9 +825,15 @@ endif
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_objc_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= \
-    targetdir= compiler=target
+    targetdir= compiler=target srcdir=
 
 ifneq (%(basenames),)
+
+ifeq (%(srcdir),)
+%(mmake)_MOBJC_SRCWILDCARD := %
+else
+%(mmake)_MOBJC_SRCWILDCARD := %(srcdir)/%
+endif
 
 ifeq (%(targetdir),)
   %(mmake)_MOBJC_TARGETS := $(addsuffix .o,%(basenames))
@@ -893,10 +915,10 @@ endif
 
 $(%(mmake)_MOBJC_TARGETS) : CPPFLAGS := $(%(mmake)_MOBJC_CPPFLAGS)
 $(%(mmake)_MOBJC_TARGETS) : CFLAGS := $(%(mmake)_OBJCFLAGS)
-$(%(mmake)_MOBJC_TARGETS) : $(%(mmake)_MOBJC_WILDCARD).o : %.m
+$(%(mmake)_MOBJC_TARGETS) : $(%(mmake)_MOBJC_WILDCARD).o : $(%(mmake)_MOBJC_SRCWILDCARD).m
 	%compile_q cmd=$(CMD) iquote=$(%(mmake)_IQUOTE) iquote_end=$(%(mmake)_IQUOTE_END)
 
-$(%(mmake)_MOBJC_DTARGETS) : $(%(mmake)_MOBJC_WILDCARD).d : %.m
+$(%(mmake)_MOBJC_DTARGETS) : $(%(mmake)_MOBJC_WILDCARD).d : $(%(mmake)_MOBJC_SRCWILDCARD).m
 	%mkdepend_q cc=$(CMD) flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_MOBJC_CPPFLAGS))"
 
 endif
@@ -1349,7 +1371,7 @@ $(TMP_GENFILEFLAG) : MODNAME := %(modname)
 $(TMP_GENFILEFLAG) : MODTYPE := %(modtype)
 $(TMP_GENFILEFLAG) : $(TMP_DEPS)
 	$(Q)$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
-	$(Q)$(IF) $(TEST) "%(conffile)" == "lib.conf" -a -f lib.conf; then \
+	$(Q)$(IF) $(TEST) "%(conffile)" == "lib.conf" && $(TEST) -f lib.conf; then \
 		$(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
 	fi
 	$(Q)$(IF) $(TEST) -f libdefs.h; then \
@@ -2525,7 +2547,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 # - aflags are the flags used during assembling (default $(AFLAGS))
 %define build_linklib mmake=/A libname=/A files= objcfiles= cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
-  includedir= \
+  includedir= srcdir= \
   cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= cxxflags=$(CXXFLAGS) dxxflags= \
   aflags=$(AFLAGS) compiler=target lto=$(TARGET_LTO) usetree=no
 
@@ -2599,15 +2621,15 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_compile_cxx_multi mmake=%(mmake) \
     basenames=$(%(mmake)_CXX_FILES) targetdir="$(%(mmake)_OBJDIR)" \
     cppflags=$(%(mmake)_CPPFLAGS) cxxflags=$(%(mmake)_CXXFLAGS) dxxflags=$(%(mmake)_DXXFLAGS) \
-    compiler="%(compiler)"
+    compiler="%(compiler)" srcdir=%(srcdir)
 %rule_compile_objc_multi mmake=%(mmake) \
     basenames=$(%(mmake)_OBJC_FILES) targetdir=$(%(mmake)_OBJDIR) \
     cppflags=$(%(mmake)_CPPFLAGS) cflags=$(%(mmake)_CFLAGS) dflags=$(%(mmake)_DFLAGS) \
-    compiler="%(compiler)"
+    compiler="%(compiler)" srcdir=%(srcdir)
 %rule_compile_multi mmake=%(mmake) \
     basenames=$(%(mmake)_C_FILES) targetdir="$(%(mmake)_OBJDIR)" \
     cppflags=$(%(mmake)_CPPFLAGS) cflags=$(%(mmake)_CFLAGS) dflags=$(%(mmake)_DFLAGS) \
-    compiler="%(compiler)"
+    compiler="%(compiler)" srcdir=%(srcdir) usetree=%(usetree)
 %rule_assemble basename=% targetdir="$(%(mmake)_OBJDIR)" \
     aflags=$(%(mmake)_AFLAGS)
 
