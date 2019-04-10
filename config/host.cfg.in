@@ -7,60 +7,62 @@
 # -------------------------------------------------------------------------- 
 # HOST SECTION
 # --------------------------------------------------------------------------
-AROS_HOST_ARCH          := @aros_host_arch@
-AROS_HOST_CPU           := @aros_host_cpu@
+AROS_HOST_ARCH           := @aros_host_arch@
+AROS_HOST_CPU            := @aros_host_cpu@
 
-HOST_CPP                := @aros_host_cpp@
-HOST_CPPFLAGS           := @aros_host_cppflags@
-HOST_DEF_CC             := $(CC_PREFIX) @aros_host_def_cc@
-HOST_CC                 := $(CC_PREFIX) @aros_host_cc@
-HOST_CFLAGS             := @aros_host_cflags@
-HOST_CXX                := @aros_host_cxx@
-HOST_CXXFLAGS           := @aros_host_cxxflags@
-HOST_LD                 := @aros_host_ld@
-HOST_MAKE	        := @aros_host_make@
-HOST_LDFLAGS	        := @aros_host_ldflags@
-HOST_DEBUG	        := @aros_host_debug@
-HOST_MKDEP	        := @aros_host_mkdep@
-MKARGS		        := @aros_host_mkargs@
+HOST_CPP                 := @aros_host_cpp@
+HOST_CPPFLAGS            := @aros_host_cppflags@
+HOST_DEF_CC              := $(CC_PREFIX) @aros_host_def_cc@
+HOST_CC                  := $(CC_PREFIX) @aros_host_cc@
+HOST_CFLAGS              := @aros_host_cflags@
+HOST_CXX                 := @aros_host_cxx@
+HOST_CXXFLAGS            := @aros_host_cxxflags@
+HOST_LD                  := @aros_host_ld@
+HOST_MAKE                := @aros_host_make@
+HOST_LDFLAGS             := @aros_host_ldflags@
+HOST_DEBUG               := @aros_host_debug@
+HOST_MKDEP               := @aros_host_mkdep@
+MKARGS                   := @aros_host_mkargs@
 
-HOST_IQUOTE             := @host_cflags_iquote@
-HOST_IQUOTE_END         := @host_cflags_iquote_end@
+HOST_IQUOTE              := @host_cflags_iquote@
+HOST_IQUOTE_END          := @host_cflags_iquote_end@
 
-HOST_GNU89_INLINE       := @gnu89_inline@
+HOST_GNU89_INLINE        := @gnu89_inline@
 
-HOST_AR		        := @aros_host_ar@
-HOST_RANLIB	        := @aros_host_ranlib@
-HOST_DEF_STRIP	        := @aros_host_strip@
-HOST_EXE_SUFFIX	        := @aros_host_exe_suffix@
-HOST_LIB_SUFFIX         := @aros_host_lib_suffix@
+HOST_AR                  := @aros_host_ar@
+HOST_RANLIB              := @aros_host_ranlib@
+HOST_DEF_STRIP           := @aros_host_strip@
+HOST_EXE_SUFFIX          := @aros_host_exe_suffix@
+HOST_LIB_SUFFIX          := @aros_host_lib_suffix@
 
-MMAKE		        := @MMAKE@
-AWK		        := @AWK@
-RM		        := @RM@
-CP		        := @CP@
-MV		        := @MV@
-ECHO		        := @ECHO@
-MKDIR		        := @MKDIR@
-TOUCH		        := @TOUCH@
-PYTHON		        := @PYTHON@
-NOP		        := @NOP@
-FOR		        := @FOR@
-IF		        := @IF@
-TEST		        := @TEST@
-CMP		        := @CMP@
-CAT		        := @CAT@
-BISON		        := @BISON@
-PNGTOPNM    	        := @PNGTOPNM@
-PPMTOILBM   	        := @PPMTOILBM@
-SED		        := @SED@
-CHMOD		        := @CHMOD@
+MMAKE                    := @MMAKE@
+AWK                      := @AWK@
+RM                       := @RM@
+CP                       := @CP@
+MV                       := @MV@
+ECHO                     := @ECHO@
+MKDIR                    := @MKDIR@
+TOUCH                    := @TOUCH@
+PYTHON                   := @PYTHON@
+NOP                      := @NOP@
+FOR                      := @FOR@
+IF                       := @IF@
+TEST                     := @TEST@
+CMP                      := @CMP@
+CAT                      := @CAT@
+BISON                    := @BISON@
+PNGTOPNM                 := @PNGTOPNM@
+PPMTOILBM                := @PPMTOILBM@
+SED                      := @SED@
+CHMOD                    := @CHMOD@
+
+HOST_FLEX_VERSION        := @ax_cv_flex_version@
 
 # host libpng for ilbmtoicon
-HOST_LIBPNG             := @libpng@
-HOST_LIBPNG_INCLUDES    := @libpng_incdir@
-HOST_LIBPNG_LIBEXTRA    := @libpng_libextra@
+HOST_LIBPNG              := @libpng@
+HOST_LIBPNG_INCLUDES     := @libpng_incdir@
+HOST_LIBPNG_LIBEXTRA     := @libpng_libextra@
 
-HOST_STAT_H_FIXUP       := @host_stat_h__unused_used@
+HOST_STAT_H_FIXUP        := @host_stat_h__unused_used@
 @host_extra_cfg@
 # --------------------------------------------------------------------------

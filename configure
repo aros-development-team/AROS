@@ -750,6 +750,7 @@ aros_host_cpu
 aros_host_arch
 aros_cc_pre
 host_extra_cfg
+ax_cv_flex_version
 host_stat_h__unused_used
 aros_amigaos_compliance
 AROS_PORTSSRCDIR
@@ -5618,6 +5619,11 @@ fi
 if test "$req_avail" = "no"; then
     as_fn_error $? "flex is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking version of $FLEX" >&5
+$as_echo_n "checking version of $FLEX... " >&6; }
+ax_cv_flex_version="`$FLEX --version | cut -d\" \" -f2`"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_flex_version" >&5
+$as_echo "$ax_cv_flex_version" >&6; }
 # Extract the first word of "pngtopnm", so it can be a program name with args.
 set dummy pngtopnm; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -15090,6 +15096,7 @@ fi
 
 
 # Host Related ###########################
+
 
 
 
