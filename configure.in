@@ -492,6 +492,9 @@ AROS_PROG(BISON,[bison])
 AROS_REQUIRED(bison,$BISON)
 AROS_PROG(FLEX,[flex])
 AROS_REQUIRED(flex,$FLEX)
+AC_MSG_CHECKING([version of $FLEX])
+ax_cv_flex_version="`$FLEX --version | cut -d\" \" -f2`"
+AC_MSG_RESULT($ax_cv_flex_version)
 AROS_PROG(PNGTOPNM,[pngtopnm])
 AROS_REQUIRED(pngtopnm,$PNGTOPNM)
 AROS_PROG(PPMTOILBM,[ppmtoilbm])
@@ -2979,6 +2982,7 @@ AC_SUBST(aros_amigaos_compliance)
 
 # Host Related ###########################
 AC_SUBST(host_stat_h__unused_used)
+AC_SUBST(ax_cv_flex_version)
 AC_SUBST(host_extra_cfg)
 AC_SUBST(aros_cc_pre)
 AC_SUBST(aros_host_strip)
