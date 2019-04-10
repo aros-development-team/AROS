@@ -183,7 +183,7 @@ int SetInstance(FT_GlyphEngine *ge)
 }
 
 /* render a glyph into GMap of engine
-   caller in expected to have allocated GMap space (but not bitmap)
+   caller is expected to have allocated GMap space (but not bitmap)
  */
 void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
 {
