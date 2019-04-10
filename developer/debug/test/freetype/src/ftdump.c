@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2017                                                     */
+/*  Copyright (C) 1996-2019 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /****************************************************************************/
@@ -37,12 +37,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 
   static FT_Error  error;
 
   static int  comma_flag  = 0;
-  static int  verbose     = 0;
+  static int  coverage    = 0;
   static int  name_tables = 0;
   static int  bytecode    = 0;
   static int  tables      = 0;
@@ -94,11 +95,11 @@
              execname );
 
     fprintf( stderr,
+      "  -c, -C    Print charmap coverage.\n"
       "  -n        Print SFNT name tables.\n"
       "  -p        Print TrueType programs.\n"
       "  -t        Print SFNT table list.\n"
       "  -u        Emit UTF8.\n"
-      "  -V        Be verbose.\n"
       "\n"
       "  -v        Show version.\n"
       "\n" );
@@ -111,6 +112,7 @@
   Print_Name( FT_Face  face )
   {
     const char*  ps_name;
+    TT_Header*   head;
 
 
     printf( "font name entries\n" );
@@ -125,6 +127,27 @@
       ps_name = "UNAVAILABLE";
 
     printf( "   postscript: %s\n", ps_name );
+
+    head = (TT_Header*)FT_Get_Sfnt_Table( face, FT_SFNT_HEAD );
+    if ( head )
+    {
+      char    buf[11];
+      time_t  created  = head->Created [1];
+      time_t  modified = head->Modified[1];
+
+
+      /* ignore most of upper bits until 2176 and adjust epoch */
+      created  += head->Created [0] == 1 ? 2212122496 : -2082844800;
+      modified += head->Modified[0] == 1 ? 2212122496 : -2082844800;
+
+      strftime( buf, sizeof( buf ), "%Y-%m-%d", gmtime( &created  ) );
+      printf("   created:    %s\n", buf );
+      strftime( buf, sizeof( buf ), "%Y-%m-%d", gmtime( &modified ) );
+      printf("   modified:   %s\n", buf );
+
+      printf("   revision:   %.2f\n", head->Font_Revision / 65536.0 );
+    }
+
   }
 
 
@@ -483,7 +506,7 @@
 
       printf ( "\n" );
 
-      if ( verbose )
+      if ( coverage == 2 )
       {
         FT_ULong   charcode;
         FT_UInt    gindex;
@@ -503,6 +526,41 @@
           printf( "      0x%04lx => %d %s\n", charcode, gindex, buf );
           charcode = FT_Get_Next_Char( face, charcode, &gindex );
         }
+        printf( "\n" );
+      }
+      else if ( coverage == 1 )
+      {
+        FT_ULong  next, last = ~1;
+        FT_UInt   gindex;
+
+        const char*  f1 = "";
+        const char*  f2 = "     %04lx";
+        const char*  f3 = "";
+
+
+        FT_Set_Charmap( face, face->charmaps[i] );
+
+        next = FT_Get_First_Char( face, &gindex );
+        while ( gindex )
+        {
+          if ( next == last + 1 )
+          {
+            f1 = f3;
+            f3 = "-%04lx";
+          }
+          else
+          {
+            printf( f1, last );
+            printf( f2, next );
+
+            f1 = "";
+            f2 = f3 = ",%04lx";
+          }
+
+          last = next;
+          next = FT_Get_Next_Char( face, last, &gindex );
+        }
+        printf( f1, last );
         printf( "\n" );
       }
     }
@@ -794,13 +852,21 @@
 
     while ( 1 )
     {
-      option = getopt( argc, argv, "nptuvV" );
+      option = getopt( argc, argv, "Ccnptuv" );
 
       if ( option == -1 )
         break;
 
       switch ( option )
       {
+      case 'C':
+        coverage = 2;
+        break;
+
+      case 'c':
+        coverage = 1;
+        break;
+
       case 'n':
         name_tables = 1;
         break;
@@ -831,10 +897,6 @@
           exit( 0 );
         }
         /* break; */
-
-      case 'V':
-        verbose = 1;
-        break;
 
       default:
         usage( library, execname );

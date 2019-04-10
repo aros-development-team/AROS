@@ -4,7 +4,8 @@
  *
  *    basic type definitions
  *
- *  Copyright 1999 - The FreeType Development Team - www.freetype.org
+ *  Copyright (C) 1999-2019 by
+ *  The FreeType Development Team - www.freetype.org
  *
  *
  *

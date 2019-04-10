@@ -1,6 +1,6 @@
 /***********************************************************
-Copyright 1991-1997 by Stichting Mathematisch Centrum, Amsterdam,
-The Netherlands.
+Copyright (C) 1991-2019 by
+Stichting Mathematisch Centrum, Amsterdam, The Netherlands.
 
                         All Rights Reserved
 

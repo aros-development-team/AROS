@@ -1,4 +1,4 @@
-.TH FTGRID 1 "May 2018" "Freetype 2.9.1"
+.TH FTGRID 1 "March 2019" "Freetype 2.10.0"
 .
 .
 .SH NAME
@@ -42,16 +42,14 @@ This program is part of the FreeType demos package.
 .SH OPTIONS
 .
 .TP
-.BI \-w \ w
+.BI \-d \ W x H x D
 Set the window width to
-.I w
-pixels (default: 640px).
-.
-.TP
-.BI \-h \ h
-Set the window height to
-.I h
-pixels (default: 480px).
+.I W
+pixels, the height to
+.I H
+pixels, and the depth to
+.I D
+bpp (default: 640x480x24).
 .
 .TP
 .BI \-r \ r
@@ -77,7 +75,7 @@ Common values:
 (Adobe custom).
 .
 .TP
-.BI "\-d\ \(dq" "axis1\ axis2\ .\|.\|." \(dq
+.BI "\-a\ \(dq" "axis1\ axis2\ .\|.\|." \(dq
 For Multiple Master, GX, or OpenType variation fonts, specify design
 coordinates for each axis at start-up.
 This option implies option

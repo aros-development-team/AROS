@@ -1,3 +1,439 @@
+2019-03-15  Werner Lemberg  <wl@gnu.org>
+
+	* Version 2.10.0 released.
+	==========================
+
+
+	Tag sources with `VER-2-10-0.
+
+	* README: Updated.
+	* src/*.1: Updated.
+	* src/ftinspect/ftinspect.pro: Updated.
+
+	* Makefile (version, winversion): Since the minor version number has
+	two digits now, never omit the patch number.  We would get ambiguous
+	zip file names otherwise.
+
+	* src/ftdump.c (main): Avoid compiler warning.
+
+2019-03-07  Werner Lemberg  <wl@gnu.org>
+
+	* src/ttdebug.c (RunIns): Fix signature.
+
+2019-02-24  Werner Lemberg  <wl@gnu.org>
+
+	[ftview] Fix LCD rendering of color-layered glyphs.
+
+	* src/ftview.c (Render_All): Always use normal rendering for
+	color-layered glyphs.
+
+2019-02-23  Werner Lemberg  <wl@gnu.org>
+
+	[ftview] Add more control for color-layered glyphs.
+
+	Key `z' toggles color-layered glyph usage.
+	Keys `i' and `I' cycle through color palettes.
+
+	* src/ftcommon.h (TFont): Add `palette_index' field.
+	(FTDemo_Handle): Add `use_layers' field.
+	* src/ftcommon.c (FTDemo_New, FTDemo_Install_Font): Initialize new
+	structure elements.
+
+	* src/ftview.c (Render_All): Select palette; use `use_layers'.
+	(event_help): Updated.
+	(event_palette_change): New function.
+	(Process_Event): Handle keys `z', `i', and `I'.
+	(write_header): Updated.
+
+2019-02-22  Werner Lemberg  <wl@gnu.org>
+
+	Minor doc string fixes.
+
+	* src/ftgrid.c (usage), src/ftstring.c (usage), src/ftview.c
+	(event_help, usage): Improve.
+
+2018-11-18  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftdiff] Tweak adjustment of spacing.
+
+	Align with b82405eda. We want to avoid changing or adjusting usual
+	rounding of advances.
+
+	* src/ftdiff.c (render_state_draw): Tweak conditionals.
+
+2018-10-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdump.c (Print_Name): Ignore exuberant timestamps.
+
+2018-10-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdump.c (Print_Name): Use ISO 8601 datestamps.
+
+2018-10-26  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdump.c (Print_Name): Report `head' revision and timestamps.
+
+2018-10-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftdump.c (Print_Charmaps): Rework without \b.
+
+2018-10-06  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_String_Draw): Avoid endless loop.
+	* src/ftstring.c (main): Don't disable sbits.
+
+2018-10-04  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (Render_Waterfall): Color the size marks.
+	(event_color_change): Manipulate the warning color.
+
+2018-10-03  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftdump] New compact charmap coverage format.
+
+	* src/ftdump.c (Print_Charmaps): Implement it.
+	(main): Change corresponding options.
+	* src/ftdump.1, src/ftdump.c (usage): Document it.
+
+2018-10-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/x11/grx11.c: Remove unused fields and function.
+
+2018-10-01  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/x11/grx11.c (gr_x11_surface_init): Clean up window creation.
+
+2018-09-29  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (Render_Waterfall): Mark the status size.
+
+2018-09-29  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/grfill.c (grFillHLine): Fix cropping.
+	(grFillVLine): Refactor in line with `grFillHLine'.
+
+2018-09-26  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c (Process_Event, event_help): Implement flushing.
+
+2018-09-14  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftstring.c: Polished.
+
+2018-09-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Implement text carpeting mode.
+
+	* src/ftstring.c (main): Add text-carpeting mode implemented in...
+	(Render_Text): ... this new function.
+	(Render_CmpKern, Render_Waterfall): Minor updates and refactoring.
+
+2018-09-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	Teach `FT_String_Draw' to recycle glyphs.
+
+	* src/ftcommon.h (FTDemo_String_Context): New fields for offset glyph
+	and extent to fill.
+	(FTDemo_String_Draw): Return the number of glyphs drawn.
+	* src/ftcommon.c (FTDemo_String_Draw): Implement glyph recycling until 
+	the extent is full.
+
+2018-09-12  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Load glyphs and advances explicitly.
+
+	* src/ftcommon.h (FTDemo_Handle): Remove `string_reload' flag.
+	(TGlyph): Split `delta' into original `lsb_delta' and `rsb_delta'.
+	(FTDemo_String_Load): Declare new function.
+	* src/ftcommon.c (string_load, string_render_prepare): Merge into...
+	(FTDemo_String_Load): ... this function.
+	(FTDemo_String_Draw): Devoid of string loading.
+
+	* src/ftstring.c (main, Process_Event,Render_{Waterfall,KernCmp}):
+	Call `FTDemo_String_Load' explicitly.
+
+2018-09-11  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Keep all advances together.
+
+	* src/ftcommon.h (TGlyph): New `hadvance' field for kerned advance.
+	* src/ftcommon.c (string_load): Initialize it here.
+	(string_render_prepare): Modify it here.
+	(FTDemo_String_Draw): Use it here.
+
+2018-09-09  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview] Draw warning box for zero-width glyphs.
+
+	* src/ftview.c ({X,Y}_TOO_LONG): Reworked the macros.
+	(Render_{Stroke,Fancy,All}): Fill the added space with a warning box
+	for zero-width glyphs.
+	(Render_{Waterfall,Text}): Updated accordingly.
+
+2018-09-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview] Extra space for zero-width glyphs.
+
+	* src/ftview.c (Render_{Stroke,Fancy,All}): Add half ppem to
+	zero-width glyphs.
+
+2018-09-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview] Handle extra space differently.
+
+	* src/ftcommon.c (FTDemo_Draw_{Index,Glyph_Color}): Move extra pixel
+	from here...
+	* src/ftview.c (Render_{Stroke,Fancy,All}): ... to here.
+	(Render_{Waterfall,Text}): Do not compensate.
+
+2018-08-23  Werner Lemberg  <wl@gnu.org>
+
+	[ftdiff] New keys `A' to `E' to select hinting mode directly.
+
+	* src/ftdiff.c (process_event): Handle keys `A' to `E'.
+	(event_help): Updated.
+
+2018-08-04  Werner Lemberg  <wl@gnu.org>
+
+	Fix clang warnings.
+
+	* src/ftstring.c (Process_Event), src/ftview.c (Process_Event): Add
+	cast.
+
+2018-07-23  Hin-Tak Leung <htl10@users.sourceforge.net>
+
+	[ttdebug] Add option `-f' to access non-first member of TTC.
+
+	* src/ttdebug.1, src/ttdebug.c: Add a `-f face_index' switch to
+	access non-first member of a TTC, plus updating the man page.
+
+2018-07-05  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/grfont.c (grGotobitmap): Initialize color here...
+	(grWrite): ... instead of here.
+
+2018-07-03  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Implement waterfall as mode 2.
+
+	* src/ftstring.c (Render_String, Render_KernCmp): Extracted from ...
+	(main): ... here.
+	(Render_Waterfall): New mode function based on ftview.
+	(event_help): Updated.
+
+2018-07-03  Werner Lemberg  <wl@gnu.org>
+
+	Fix some clang warnings.
+
+	* graph/grfill.c (grFillRect): Use `int' for `size'.
+
+	* src/ftstring.c (flower_init): Use `unsigned int' for `i'.
+	Simplify some loops.
+
+	* src/ftview.c (parse_cmdline) <'L'>: Use `unsigned char' casts.
+	(main): Add `FT_LcdFilter' cast.
+
+2018-07-02  Hugh McMaster  <hugh.mcmaster@outlook.com>
+
+	Fix memory leak (patch #9666).
+
+	* src/ftcommon.c (FTDemo_Install_Font): Always free
+	`font->filepathname'.
+
+2018-07-02  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftview.c (Render_All): Update `FT_Get_Color_Glyph_Layer' call.
+
+	The function's signature was changed on 2018-07-02.
+
+2018-06-30  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Implement string shifts.
+
+	* src/ftstring.c (event_center_change): New function.
+	(Process_Event): Shift the string with left-right arrows, rotate it
+	with F5-F6.
+	(event_help): Document it.
+
+2018-06-30  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftcommon.c (FTDemo_Get_Index): Handle `FT_ENCODING_ORDER'.
+
+	* src/ftcommon.c (FTDemo_Draw_Header, FTDemo_String_Set),
+	src/ftview.c (Render_{All,Stroke,Fancy}),
+	src/ftgrid.c (grid_status_draw_outline): Simplified accordingly.
+
+2018-06-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Ditch gamma ramp.
+
+	* src/ftstring.c (status): `gamma_ramp' removed.
+	(gamma_ramp_draw): Remove.
+	(event_gamma_change): Remove setting `gamma_ramp'.
+
+	* src/ftstring.1: Mention stress test glyphs.
+
+2018-06-28  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftgrid, ftview, ftstring] Update font and encoding handling.
+
+	* src/ftcommon.c (my_face_requester): Check `cmap_index' range.
+	(FTDemo_Install_Font): `cmap_index' obeys `handle->encoding' here,
+	and postpone setting `num_indices'.
+	(FTDemo_Set_Current_Font): `handle->encoding' obeys `cmap_index' here,
+	also set `num_indices' accordingly.
+
+	* src/ftview.c (event_encoding_change): Simplify by calling
+	`FTDemo_Set_Current_Font'.
+
+2018-06-25  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Improve stress test glyphs.
+
+	* src/ftstring.c (wheel_init): Integrate into...
+	(flower_init): ...this function.
+	(main): Improve appearance of stress test glyphs.
+
+2018-06-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftstring] Display glyphs to stress test rendering.
+
+	* src/ftstring.c (wheel_init, flower_init): New functions to
+	initialize stress test glyphs.
+	(main): Display them.
+
+2018-06-17  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftgrid] Draw dots using `FT_New_Glyph'.
+
+	* src/ftgrid.c (circle_init): Make a custom glyph with a circle.
+	(circle_draw): Render it using `FTDemo_Draw_Glyph_Color'.
+	(ft_bitmap_draw, ft_outline_draw, ft_outline_new_circle): Removed.
+
+2018-06-16  Werner Lemberg  <wl@gnu.org>
+
+	[ftview] First shot at colored glyph layer support.
+
+	This is basically a proof of concept.  Still missing: Switching off
+	color layers and controlling palette selection.  Additionally, only
+	`Render_All' handles color layers.
+
+	Some code should be moved to `ftcommon' so that other demo programs
+	can show colored glyph layers also.
+
+	* src/ftview: Include FT_COLOR_H and FT_BITMAP_H.
+	(Render_All): Handle colored glyph layers.
+
+2018-06-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview] Control subpixel rendering from command line.
+
+	* src/ftview.c (parse_cmdline): New `-L' option to set subpixel filter
+	weights or geometry depending on the implemented method.
+	(write_header, Process_Event): Hide filtering if not implemented.
+	(main): Set default filter only if command line is not used.
+	(usage): Document it.
+	* src/ftview.1: Document it.
+
+2018-06-07  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftbench.c (benchmark): Output formatting.
+
+2018-05-31  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/x11/grx11.c (gr_x11_device_init): Organize logging.
+
+2018-05-27  Werner Lemberg  <wl@gnu.org>
+
+	Separate color support from sbit handling.
+
+	* src/ftcommon.h (FTDemo_Handle): New boolean field `use_color'.
+
+	* src/ftcommon.c (FTDemo_New, FTDemo_Update_Current_Flags): Updated.
+
+	* src/ftview.c (Process_Event): Use key `c' to toggle color support.
+	(write_header, event_help): Updated.
+
+2018-05-25  Werner Lemberg  <wl@gnu.org>
+
+	Update manpages.
+
+	* src/ftgrid.1, src/ftstring.1, stc/ftview: Document option `-d'.
+
+2018-05-24  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Implement grayscale target surface.
+
+	* graph/grblit.c (grBlitGlyphToBitmap): Enable gray target.
+	* graph/gblblit.c (gblender_blit_init, GRGB_TO_GRAY, GRGB24_TO_GRAY):
+	Implement gray target.
+
+2018-05-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftview, ftstring, ftgrid] Change dimension options.
+
+	* src/ftcommon.[hc] (FTDemo_Dispay_New): Use single dimension string as
+	an argument, parse it, and initialize accordingly.
+
+	* src/ftgrid.c (usage, parse_cmdline, status): Use single dimension
+	string option.
+	* src/ftstring.c (usage, parse_cmdline, status): Ditto.
+	* src/ftview.c (usage, parse_cmdline, status): Ditto, rename variable
+	axis option.
+
+	* src/ftdiff.c, src/ftgamma.c: Updated.
+
+2018-05-23  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* Makefile [unixdev]: Uncouple harfbuzz and libpng.
+
+2018-05-21  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblbgra.h: Gamma-corrected variant (disabled).
+
+2018-05-21  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/gblbgra.h: Make it wotk for all destination targets.
+
+2018-05-19  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[graph] Fast "powerless" gamma ramps.
+
+	We calculate the lookup tables for the power function using finite
+	differences. This is 10 times faster and accurate enough for gamma
+	correction.
+
+	* graph/gblender.c (gblender_set_gamma_table): Reimplement using
+	finite differences.
+	* src/ftstring.c (event_gamma_change): Ditto for the decoration ramp.
+
+2018-05-15  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftgrid.c (bitmap_scale): Mark centers of mono pixels.
+
+2018-05-13  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* graph/grfill.c (grFillRect): Thinko.
+
+2018-05-10  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftgrid] Update FT_DEBUG_AUTOFIT mode.
+
+	* src/ftgrid.c (grid_status_draw_outline) [FT_DEBUG_AUTOFIT]:
+	Show active segments only when autohinter is forced. Minor tweaks.
+
+2018-05-09  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	[ftgrid] Accept bitmap fonts.
+
+	* src/ftgrid.c (main): Accept bitmap fonts.
+	(grid_status_draw_outline): Do bitmap for any font.
+	(grid_status_rescale_initial): Bitmap-compatible improved layout.
+
+2018-05-08  Alexei Podtelezhnikov  <apodtele@gmail.com>
+
+	* src/ftgrid.c (main): Fail to open font earlier.
+
 2018-05-01  Werner Lemberg  <wl@gnu.org>
 
 	* Version 2.9.1 released.

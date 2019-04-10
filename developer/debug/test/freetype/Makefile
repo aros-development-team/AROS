@@ -171,7 +171,8 @@ else
     LINK_CMD = $(CC) $(subst /,$(COMPILER_SEP),$(LDFLAGS))
     ifeq ($(PLATFORM),unixdev)
       LINK_LIBS = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE)) -lm -lrt -lz -lbz2
-      LINK_LIBS += $(shell pkg-config --libs libpng harfbuzz)
+      LINK_LIBS += $(shell pkg-config --libs libpng)
+      LINK_LIBS += $(shell pkg-config --libs harfbuzz)
     else
       LINK_LIBS = $(subst /,$(COMPILER_SEP),$(FTLIB) $(EFENCE))
     endif
@@ -558,13 +559,13 @@ ifneq ($(findstring distx,$(MAKECMDGOALS)x),)
   minor := $(shell sed -n 's/.*FREETYPE_MINOR[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
   patch := $(shell sed -n 's/.*FREETYPE_PATCH[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
 
-  ifneq ($(findstring x0x,x$(patch)x),)
-    version := $(major).$(minor)
-    winversion := $(major)$(minor)
-  else
+#  ifneq ($(findstring x0x,x$(patch)x),)
+#    version := $(major).$(minor)
+#    winversion := $(major)$(minor)
+#  else
     version := $(major).$(minor).$(patch)
     winversion := $(major)$(minor)$(patch)
-  endif
+#  endif
 endif
 
 dist:

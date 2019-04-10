@@ -4,7 +4,8 @@
  *
  *    basic object classes definitions
  *
- *  Copyright 1999 - The FreeType Development Team - www.freetype.org
+ *  Copyright (C) 1999 by
+ *  The FreeType Development Team - www.freetype.org
  *
  *
  *

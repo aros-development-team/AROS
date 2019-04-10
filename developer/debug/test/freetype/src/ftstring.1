@@ -1,4 +1,4 @@
-.TH FTSTRING 1 "May 2018" "Freetype 2.9.1"
+.TH FTSTRING 1 "March 2019" "Freetype 2.10.0"
 .
 .
 .SH NAME
@@ -33,22 +33,25 @@ also tries to attach the corresponding metrics file (with extension `.afm'
 or `.pfm').
 .
 .PP
+Besides the string,
+.B ftstring
+also displays two stress test pattens sensitive to rendering flaws, such as
+incorrect gamma settings.
+Alternative text-carpeting and waterfall views are also available.
 This program is part of the FreeType demos package.
 .
 .
 .SH OPTIONS
 .
 .TP
-.BI \-w \ w
+.BI \-d \ W x H x D
 Set the window width to
-.I w
-pixels (default: 640px).
-.
-.TP
-.BI \-h \ h
-Set the window height to
-.I h
-pixels (default: 480px).
+.I W
+pixels, the height to
+.I H
+pixels, and the depth to
+.I D
+bpp (default: 640x480x24).
 .
 .TP
 .BI \-r \ r

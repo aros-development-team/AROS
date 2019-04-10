@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2018 by                                                  */
+/*  Copyright (C) 1996-2019 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  ftsbit: a _very_ simple embedded bitmap dumper for FreeType 1.x.        */

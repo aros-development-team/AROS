@@ -5,7 +5,7 @@
  *  This is the driver for displaying inside a window under X11,
  *  used by the graphics utility of the FreeType test suite.
  *
- *  Copyright 1999-2018 by
+ *  Copyright (C) 1999-2019 by
  *  Antoine Leca, David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  This file is part of the FreeType project, and may only be used
@@ -27,6 +27,16 @@
 
 #ifdef TEST
 #include "grfont.h"
+#define LOG(x)  printf x
+#define visualClass(x)  ( x == StaticGray  ? "StaticGray"  : \
+                          x == GrayScale   ? "GrayScale"   : \
+                          x == StaticColor ? "StaticColor" : \
+                          x == PseudoColor ? "PseudoColor" : \
+                          x == TrueColor   ? "TrueColor"   : \
+                          x == DirectColor ? "DirectColor" : "unknown" )
+#define grAlloc  malloc
+#else
+#define LOG(x)  /* nothing */
 #endif
 
 #include <stdio.h>
@@ -122,11 +132,6 @@ typedef  unsigned long   uint32;
   };
 
   typedef XPixmapFormatValues  XDepth;
-
-
-#ifdef TEST
-#define grAlloc  malloc
-#endif
 
 
   /************************************************************************/
@@ -941,19 +946,15 @@ typedef  unsigned long   uint32;
       templ.screen = DefaultScreen( x11dev.display );
       formats      = XListPixmapFormats( x11dev.display, &count );
 
-#ifdef TEST
-      printf( "available pixmap formats\n" );
-      printf( "depth  pixbits  scanpad\n" );
-#endif /* TEST */
+      LOG(( "available pixmap formats\n" ));
+      LOG(( "depth  pixbits  scanpad\n" ));
 
       for ( format = formats; count > 0; count--, format++ )
       {
-#ifdef TEST
-        printf( " %3d     %3d      %3d\n",
+        LOG(( " %3d      %3d      %3d\n",
                 format->depth,
                 format->bits_per_pixel,
-                format->scanline_pad );
-#endif /* TEST */
+                format->scanline_pad ));
 
         /* note, the 32-bit modes return a depth of 24, */
         /* and 32 bits per pixel                        */
@@ -975,41 +976,13 @@ typedef  unsigned long   uint32;
 
             for ( visual = visuals; count2 > 0; count2--, visual++ )
             {
-#ifdef TEST
-              const char*  visualClass;
-
-              switch ( visual->Class )
-              {
-              case TrueColor:
-                visualClass = "TrueColor";
-                break;
-              case DirectColor:
-                visualClass = "DirectColor";
-                break;
-              case PseudoColor:
-                visualClass = "PseudoColor";
-                break;
-              case StaticGray:
-                visualClass = "StaticGray";
-                break;
-              case StaticColor:
-                visualClass = "StaticColor";
-                break;
-              case GrayScale:
-                visualClass = "GrayScale";
-                break;
-              default:
-                visualClass = "unknown";
-              }
-
-              printf( ">   RGB %04lx:%04lx:%04lx, colors %3d, bits %2d  %s\n",
-                      visual->red_mask,
-                      visual->green_mask,
-                      visual->blue_mask,
-                      visual->colormap_size,
-                      visual->bits_per_rgb,
-                      visualClass );
-#endif /* TEST */
+              LOG(( "> R:G:B %0*lx:%0*lx:%0*lx, colors %3d, bits %2d, %s\n",
+                     format->bits_per_pixel/4, visual->red_mask,
+                     format->bits_per_pixel/4, visual->green_mask,
+                     format->bits_per_pixel/4, visual->blue_mask,
+                                               visual->colormap_size,
+                                               visual->bits_per_rgb,
+                                  visualClass( visual->Class ) ));
 
               /* compare to the list of supported formats */
               {
@@ -1081,10 +1054,6 @@ typedef  unsigned long   uint32;
     const grX11Format*  format;
     grX11ConvertFunc    convert;
 
-    int                 win_org_x,   win_org_y;
-    int                 win_width,   win_height;
-    int                 image_width, image_height;
-
     char                key_buffer[10];
     int                 key_cursor;
     int                 key_number;
@@ -1146,17 +1115,8 @@ typedef  unsigned long   uint32;
 
 
   static void
-  gr_x11_surface_refresh( grX11Surface*  surface )
-  {
-    gr_x11_surface_refresh_rect( surface, 0, 0,
-                                 surface->root.bitmap.width,
-                                 surface->root.bitmap.rows );
-  }
-
-
-  static void
   gr_x11_surface_set_title( grX11Surface*  surface,
-                             const char*   title )
+                            const char*    title )
   {
     XStoreName( surface->display, surface->win, title );
   }
@@ -1254,11 +1214,11 @@ typedef  unsigned long   uint32;
                    (unsigned int)x_event.xexpose.width,
                    (unsigned int)x_event.xexpose.height );
 #else
-        gr_x11_surface_refresh_rectangle( surface,
-                                          x_event.xexpose.x,
-                                          x_event.xexpose.y,
-                                          x_event.xexpose.width,
-                                          x_event.xexpose.height );
+        gr_x11_surface_refresh_rect( surface,
+                                     x_event.xexpose.x,
+                                     x_event.xexpose.y,
+                                     x_event.xexpose.width,
+                                     x_event.xexpose.height );
 #endif
         break;
 
@@ -1367,38 +1327,30 @@ typedef  unsigned long   uint32;
       return 0;
 
     {
-      XColor                color, dummy;
-      XTextProperty         xtp;
-      XSizeHints            xsh;
+      XTextProperty         xtp = { (unsigned char*)"FreeType", 31, 8, 8 };
+      XSizeHints            xsh = { 0 };
       XSetWindowAttributes  xswa;
-      unsigned long         xswa_mask = CWBackPixel | CWEventMask | CWCursor;
+      unsigned long         xswa_mask = CWEventMask | CWCursor;
 
       pid_t                 pid;
       Atom                  NET_WM_PID;
 
 
-      xswa.border_pixel = BlackPixel( display, screen );
+      xswa.cursor     = x11dev.busy;
+      xswa.event_mask = KeyPressMask | ExposureMask;
 
-      if (surface->visual == DefaultVisual( display, screen ) )
-      {
-        xswa.background_pixel = WhitePixel( display, screen );
+      if ( surface->visual == DefaultVisual( display, screen ) )
         surface->colormap     = DefaultColormap( display, screen );
-      }
       else
       {
-        xswa_mask             |= CWColormap | CWBorderPixel;
+        xswa_mask            |= CWBorderPixel | CWColormap;
+        xswa.border_pixel     = BlackPixel( display, screen );
         xswa.colormap         = XCreateColormap( display,
                                                  RootWindow( display, screen ),
                                                  surface->visual,
                                                  AllocNone );
-        XAllocNamedColor( display, xswa.colormap, "white", &color, &dummy );
-        xswa.background_pixel = color.pixel;
         surface->colormap     = xswa.colormap;
       }
-
-      xswa.cursor           = x11dev.busy;
-
-      xswa.event_mask = KeyPressMask | ExposureMask;
 
       surface->win = XCreateWindow( display,
                                     RootWindow( display, screen ),
@@ -1420,20 +1372,6 @@ typedef  unsigned long   uint32;
       XSetForeground( display, surface->gc, xswa.border_pixel     );
       XSetBackground( display, surface->gc, xswa.background_pixel );
 
-      /* make window manager happy :-) */
-      xtp.value    = (unsigned char*)"FreeType";
-      xtp.encoding = 31;
-      xtp.format   = 8;
-      xtp.nitems   = strlen( (char*)xtp.value );
-
-      xsh.x = 0;
-      xsh.y = 0;
-
-      xsh.width  = bitmap->width;
-      xsh.height = bitmap->rows;
-      xsh.flags  = PPosition | PSize;
-      xsh.flags  = 0;
-
       XSetWMProperties( display, surface->win, &xtp, &xtp,
                         NULL, 0, &xsh, NULL, NULL );
 
@@ -1448,8 +1386,6 @@ typedef  unsigned long   uint32;
     surface->root.refresh_rect = (grRefreshRectFunc)gr_x11_surface_refresh_rect;
     surface->root.set_title    = (grSetTitleFunc)   gr_x11_surface_set_title;
     surface->root.listen_event = (grListenEventFunc)gr_x11_surface_listen_event;
-
-    gr_x11_surface_refresh( surface );
 
     return 1;
   }

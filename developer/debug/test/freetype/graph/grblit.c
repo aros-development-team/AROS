@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2018 by                                                  */
+/*  Copyright (C) 1996-2019 by                                              */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  grblit.c: Support for blitting of bitmaps with various depth.           */
@@ -1880,9 +1880,10 @@
 
       switch ( target->mode )
       {
-      case gr_pixel_mode_rgb32: dst_format  = GBLENDER_TARGET_RGB32; break;
-      case gr_pixel_mode_rgb24: dst_format  = GBLENDER_TARGET_RGB24; break;
+      case gr_pixel_mode_rgb32:  dst_format = GBLENDER_TARGET_RGB32; break;
+      case gr_pixel_mode_rgb24:  dst_format = GBLENDER_TARGET_RGB24; break;
       case gr_pixel_mode_rgb565: dst_format = GBLENDER_TARGET_RGB565; break;
+      case gr_pixel_mode_gray:   dst_format = GBLENDER_TARGET_GRAY8; break;
       default:
           goto LegacyBlit;
       }

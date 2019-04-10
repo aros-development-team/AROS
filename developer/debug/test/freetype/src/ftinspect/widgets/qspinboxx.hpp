@@ -1,6 +1,6 @@
 // qspinboxx.hpp
 
-// Copyright (C) 2016-2017 by Werner Lemberg.
+// Copyright (C) 2016-2019 by Werner Lemberg.
 
 
 #pragma once
