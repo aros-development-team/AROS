@@ -5,8 +5,26 @@ include $(SRCDIR)/config/aros.cfg
 #MM- workbench-libs-freetype-complete : \
 #MM     workbench-libs-freetype-linklib \
 #MM     workbench-libs-freetype-module
+#MM workbench-libs-freetype-linklib : freetype2-fetch
+#MM workbench-libs-freetype-module : freetype2-fetch
 
-FT2AROSBUILDDIR := $(SRCDIR)/$(CURDIR)/builds/aros
+FT2NAME         := freetype
+FT2VERS         := 2.9.1
+ARCHBASE        := $(FT2NAME)-$(FT2VERS)
+
+FT2SRCDIR       := $(PORTSDIR)/$(FT2NAME)2/$(ARCHBASE)
+FT2AROSBUILDDIR := $(FT2SRCDIR)/builds/aros/src
+
+PATCHSPEC       := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
+REPOSITORIES    := https://download.savannah.gnu.org/releases/freetype
+
+%fetch mmake=freetype2-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/$(FT2NAME)2 \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.gz" \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=freetype2-create-patch \
+    archive=$(ARCHBASE) suffixes="tar.gz" \
+    destination=$(PORTSDIR)/$(FT2NAME)2
 
 FT2AUXFILES := \
     cache/ftcache \
@@ -14,9 +32,6 @@ FT2AUXFILES := \
     lzw/ftlzw \
     psaux/psaux \
     psnames/psnames
-
-#    gxvalid/gxvalid \
-#    otvalid/otvalid
 
 FT2RASTFILES := \
     raster/raster \
@@ -33,7 +48,6 @@ FT2FONTFILES := \
     pfr/pfr \
     winfonts/winfnt \
     bdf/bdf
-    
 
 FT2HINTFILES := \
     autofit/autofit
@@ -41,32 +55,33 @@ FT2HINTFILES += \
     pshinter/pshinter
 
 FT2BASEFILES := \
-    ftapi \
-    ftinit \
-    ftdebug \
-    ftsystem
-    
-FT2BASEEXTFILES := \
-    ftbbox \
-    ftbdf \
-    ftbitmap \
-    ftcid \
-    ftfstype \
-    ftgasp \
-    ftglyph \
-    ftgxval \
-    ftmm \
-    ftotval \
-    ftpatent \
-    ftpfr \
-    ftstroke \
-    ftsynth \
-    fttype1 \
-    ftwinfnt
+    base/ftapi \
+    base/ftbase \
+    base/ftinit \
+    base/ftdebug \
+    base/ftsystem
 
-# substitute BASEFILES with AROS specific versions
-FT2BASEARCHFILES  := $(basename $(wildcard $(FT2AROSBUILDDIR)/src/base/*.c))
-FT2BASENARCHFILES := $(addprefix src/base/,ftbase $(filter-out $(notdir $(FT2BASEARCHFILES)),$(FT2BASEFILES) $(FT2BASEEXTFILES)))
+FT2BASEEXTFILES := \
+    base/ftbbox \
+    base/ftbdf \
+    base/ftbitmap \
+    base/ftcid \
+    base/ftfstype \
+    base/ftgasp \
+    base/ftglyph \
+    base/ftgxval \
+    base/ftmm \
+    base/ftotval \
+    base/ftpatent \
+    base/ftpfr \
+    base/ftstroke \
+    base/ftsynth \
+    base/fttype1 \
+    base/ftwinfnt
+
+# Substitute BASEFILES with the AROS specific versions
+FT2BASEARCHFILES  := $(patsubst $(FT2AROSBUILDDIR)/%,%,$(basename $(wildcard $(FT2AROSBUILDDIR)/base/*.c)))
+FT2BASENARCHFILES := $(addprefix $(FT2SRCDIR)/src/,$(filter-out $(FT2BASEARCHFILES),$(FT2BASEFILES) $(FT2BASEEXTFILES)))
 
 SHFILES := \
     ftglyphengine \
@@ -78,30 +93,32 @@ SHFILES := \
     obtaininfoa \
     releaseinfoa
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/src $(addprefix -I,$(DIRS))
-
-# Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
 NOWARN_FLAGS := $(NOWARN_ERROR)
 USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS := -DFT2_BUILD_LIBRARY
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/src $(addprefix -I,$(DIRS))
 
 #MM- workbench-libs : workbench-libs-freetype-module
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes workbench-libs-freetype-pkgconfig
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 #MM- workbench-libs-freetype-linklibs : workbench-libs-freetype-linklib workbench-libs-freetype-module-linklib
 
-FT2FILES := $(addprefix src/,$(FT2AUXFILES) $(FT2RASTFILES) $(FT2FONTFILES) $(FT2HINTFILES)) $(FT2BASEARCHFILES) $(FT2BASENARCHFILES)
+FT2FILES := $(addprefix $(FT2AROSBUILDDIR)/,$(FT2BASEARCHFILES)) $(addprefix $(FT2SRCDIR)/src/,$(FT2AUXFILES) $(FT2RASTFILES) $(FT2FONTFILES) $(FT2HINTFILES)) $(FT2BASENARCHFILES)
 
 %build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2.static \
     files=$(FT2FILES) objdir=$(OBJDIR)/freetype2_static
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
-    modtype=library files="$(addprefix $(FT2AROSBUILDDIR)/,$(SHFILES)) $(FT2FILES)" uselibs="stdc" conffile=$(FT2AROSBUILDDIR)/freetype2.conf
+    modtype=library files="$(SHFILES) $(FT2FILES)" uselibs="stdc" conffile=freetype2.conf
+
+#
+# Rules for generated files and Includes...
+#
 
 #MM
 workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc
 
-$(AROS_LIB)/pkgconfig/freetype2.pc : $(SRCDIR)/$(CURDIR)/builds/unix/freetype2.in
+$(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in
 	%mkdir_q dir=$(AROS_LIB)/pkgconfig
 	@$(SED) -e 's|%FT2_EXTRA_LIBS%||' \
 	       -e 's|%LIBBZ2%||' \
@@ -112,3 +129,30 @@ $(AROS_LIB)/pkgconfig/freetype2.pc : $(SRCDIR)/$(CURDIR)/builds/unix/freetype2.i
 	       -e 's|%libdir%|$(AROS_LIB)|' \
 	       -e 's|%prefix%|/Developer|' \
 	       $< >$@
+
+FT2_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/*.h))
+%copy_includes dir=$(FT2SRCDIR)/include includes=$(FT2_INCLUDE_FILES)
+
+FT2I_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/*.h))
+%copy_includes path=freetype dir=$(FT2SRCDIR)/include/freetype includes=$(FT2I_INCLUDE_FILES)
+
+#MM- includes-copy : workbench-libs-freetype-genincludes
+
+FT2OPTIONFILE := ftoption.h
+FT2CONFIG_INCLUDE_FILES := $(filter-out $(FT2OPTIONFILE),$(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/config/*.h)))
+%copy_includes path=freetype/config  dir=$(FT2SRCDIR)/include/freetype/config includes=$(FT2CONFIG_INCLUDE_FILES)
+
+$(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE) : $(FT2SRCDIR)/include/freetype/config/$(FT2OPTIONFILE)
+	@$(ECHO) "Generating Freetype2 build options ..."
+	%mkdir_q dir=$(AROS_INCLUDES)/freetype/config
+	@$(SED) "s|.*FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES.*|/*define FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES*/\\n|g" $< > $@
+
+#MM
+workbench-libs-freetype-genincludes : $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE)
+	$(NOP)
+
+FT2INT_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/internal/*.h))
+%copy_includes path=freetype/internal dir=$(FT2SRCDIR)/include/freetype/internal includes=$(FT2INT_INCLUDE_FILES)
+
+FT2SVC_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/internal/services/*.h))
+%copy_includes path=freetype/internal/services dir=$(FT2SRCDIR)/include/freetype/internal/services includes=$(FT2SVC_INCLUDE_FILES)
