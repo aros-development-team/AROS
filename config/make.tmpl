@@ -1371,7 +1371,7 @@ $(TMP_GENFILEFLAG) : MODNAME := %(modname)
 $(TMP_GENFILEFLAG) : MODTYPE := %(modtype)
 $(TMP_GENFILEFLAG) : $(TMP_DEPS)
 	$(Q)$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
-	$(Q)$(IF) $(TEST) "%(conffile)" == "lib.conf" && $(TEST) -f lib.conf; then \
+	$(Q)$(IF) $(TEST) "%(conffile)" = "lib.conf" && $(TEST) -f lib.conf; then \
 		$(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
 	fi
 	$(Q)$(IF) $(TEST) -f libdefs.h; then \
