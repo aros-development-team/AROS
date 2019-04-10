@@ -8281,6 +8281,7 @@ esac
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
+        use_libatomic=no
         aros_target_arch="linux"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -8484,6 +8485,7 @@ case "$target_os" in
         ;;
 
     freebsd*)
+        use_libatomic=no
         aros_target_arch="freebsd"
         aros_target_family="unix"
         aros_target_cpu="i386"
@@ -8495,6 +8497,7 @@ case "$target_os" in
         ;;
 
     darwin*)
+        use_libatomic=no
         aros_target_arch="darwin"
         aros_target_family="unix"
         aros_flavour="emulation"
@@ -8593,6 +8596,7 @@ case "$target_os" in
         ;;
 
     dragonfly*)
+        use_libatomic=no
         aros_target_arch="dragonfly"
         aros_target_family="unix"
         aros_flavour="emulation"
@@ -8618,6 +8622,7 @@ case "$target_os" in
         ;;
 
     netbsd*)
+        use_libatomic=no
         aros_target_arch="netbsd"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -8648,6 +8653,7 @@ case "$target_os" in
         ;;
 
     openbsd*)
+        use_libatomic=no
         aros_target_arch="openbsd"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -8669,6 +8675,7 @@ case "$target_os" in
         ;;
 
     solaris*)
+        use_libatomic=no
         aros_target_arch="solaris"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -8913,6 +8920,7 @@ fi
         ;;
 
     mingw*)
+        use_libatomic=no
         aros_target_arch="mingw32"
         aros_shared_default="no"
         aros_flavour="emulation"
@@ -8962,6 +8970,7 @@ fi
         fi
     ;;
     pp*)
+        use_libatomic=no
         aros_target_arch="pp"
         aros_shared_default="no"
         case "$target_cpu" in
@@ -8997,6 +9006,7 @@ fi
         ;;
 
     mac*)
+        use_libatomic=no
         aros_target_arch="mac"
         aros_shared_default="no"
         case "$target_cpu" in
