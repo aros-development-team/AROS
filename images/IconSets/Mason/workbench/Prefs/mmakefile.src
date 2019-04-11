@@ -4,7 +4,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS     := Input Zune Time ReqTools Font Locale Serial
+ICONS     := Input Zune Time ReqTools Font Locale Palette Pointer Printer ScreenMode Serial Wanderer
 ICONDIR   := $(AROSDIR)/Prefs
 
 #MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-prefs
