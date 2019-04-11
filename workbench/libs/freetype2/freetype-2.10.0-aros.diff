@@ -1,6 +1,6 @@
 diff -ruN freetype-2.10.0/builds/aros/src/base/ftsystem.c freetype-2.10.0.aros/builds/aros/src/base/ftsystem.c
---- freetype-2.10.0/builds/aros/src/base/ftsystem.c	1970-01-01 00:00:00.000000000 +0000
-+++ freetype-2.10.0.aros/builds/aros/src/base/ftsystem.c	2019-04-10 15:43:33.113531700 +0100
+--- freetype-2.10.0/builds/aros/src/base/ftsystem.c	1970-01-01 01:00:00.000000000 +0100
++++ freetype-2.10.0.aros/builds/aros/src/base/ftsystem.c	2019-04-11 14:31:03.250183154 +0200
 @@ -0,0 +1,359 @@
 +/***************************************************************************/
 +/*                                                                         */
@@ -361,3 +361,220 @@ diff -ruN freetype-2.10.0/builds/aros/src/base/ftsystem.c freetype-2.10.0.aros/b
 +
 +
 +/* END */
+diff -ruN freetype-2.10.0/src/autofit/afcjk.c freetype-2.10.0.aros/src/autofit/afcjk.c
+--- freetype-2.10.0/src/autofit/afcjk.c	2019-02-23 10:06:07.000000000 +0100
++++ freetype-2.10.0.aros/src/autofit/afcjk.c	2019-04-11 14:31:46.282454489 +0200
+@@ -22,6 +22,9 @@
+    *
+    */
+ 
++#include <exec/exec.h>
++#include <proto/exec.h>
++
+ #include <ft2build.h>
+ #include FT_ADVANCES_H
+ #include FT_INTERNAL_DEBUG_H
+@@ -70,8 +73,13 @@
+                               FT_Face        face )
+   {
+     /* scan the array of segments in each direction */
+-    AF_GlyphHintsRec  hints[1];
+-
++    //AF_GlyphHintsRec  hints[1];
++    AF_GlyphHintsRec  *hints = (AF_GlyphHintsRec *)AllocVec(sizeof(AF_GlyphHintsRec) * 2, MEMF_ANY);
++    if(!hints)
++    {
++        /* no reasonable error handling possible */
++        return;
++    }
+ 
+     FT_TRACE5(( "\n"
+                 "cjk standard widths computation (style `%s')\n"
+@@ -88,7 +96,12 @@
+       FT_Error          error;
+       FT_ULong          glyph_index;
+       int               dim;
+-      AF_CJKMetricsRec  dummy[1];
++      //AF_CJKMetricsRec  dummy[1];
++      AF_CJKMetricsRec  *dummy = (AF_CJKMetricsRec  *) AllocVec(sizeof(AF_CJKMetricsRec) * 2, MEMF_ANY);
++      if(!dummy)
++      {
++          goto ErrorExit;
++      }
+       AF_Scaler         scaler = &dummy->root.scaler;
+ 
+       AF_StyleClass   style_class  = metrics->root.style_class;
+@@ -269,11 +282,15 @@
+         }
+ #endif
+       }
++      FreeVec(dummy);
++    ErrorExit:
++      ;
+     }
+ 
+     FT_TRACE5(( "\n" ));
+ 
+     af_glyph_hints_done( hints );
++    FreeVec(hints);
+   }
+ 
+ 
+diff -ruN freetype-2.10.0/src/autofit/aflatin2.c freetype-2.10.0.aros/src/autofit/aflatin2.c
+--- freetype-2.10.0/src/autofit/aflatin2.c	2019-02-23 10:06:07.000000000 +0100
++++ freetype-2.10.0.aros/src/autofit/aflatin2.c	2019-04-11 14:31:46.282454489 +0200
+@@ -20,7 +20,6 @@
+  *
+  */
+ 
+-
+ #include FT_ADVANCES_H
+ 
+ 
+@@ -68,8 +67,13 @@
+                                  FT_Face          face )
+   {
+     /* scan the array of segments in each direction */
+-    AF_GlyphHintsRec  hints[1];
+-
++    //AF_GlyphHintsRec  hints[1];
++    AF_GlyphHintsRec  *hints = (AF_GlyphHintsRec *)AllocVec(sizeof(AF_GlyphHintsRec) * 2, MEMF_ANY);
++    if(!hints)
++    {
++        /* no reasonable error handling possible */
++        return;
++    }
+ 
+     af_glyph_hints_init( hints, face->memory );
+ 
+@@ -80,7 +84,12 @@
+       FT_Error             error;
+       FT_UInt              glyph_index;
+       int                  dim;
+-      AF_LatinMetricsRec   dummy[1];
++      //AF_LatinMetricsRec   dummy[1];
++      AF_LatinMetricsRec   *dummy = (AF_LatinMetricsRec  *) AllocVec(sizeof(AF_LatinMetricsRec) * 2, MEMF_ANY);
++      if(!dummy)
++      {
++          goto ErrorExit;
++      }
+       AF_Scaler            scaler = &dummy->root.scaler;
+ 
+ 
+@@ -167,9 +176,12 @@
+         axis->standard_width          = stdw;
+         axis->extra_light             = 0;
+       }
++    ErrorExit:
++      FreeVec(dummy);
+     }
+ 
+     af_glyph_hints_done( hints );
++    FreeVec(hints);
+   }
+ 
+ 
+diff -ruN freetype-2.10.0/src/autofit/aflatin.c freetype-2.10.0.aros/src/autofit/aflatin.c
+--- freetype-2.10.0/src/autofit/aflatin.c	2019-02-23 10:06:07.000000000 +0100
++++ freetype-2.10.0.aros/src/autofit/aflatin.c	2019-04-11 14:31:46.282454489 +0200
+@@ -15,6 +15,8 @@
+  *
+  */
+ 
++#include <exec/exec.h>
++#include <proto/exec.h>
+ 
+ #include <ft2build.h>
+ #include FT_ADVANCES_H
+@@ -61,8 +63,8 @@
+                                 FT_Face          face )
+   {
+     /* scan the array of segments in each direction */
+-    AF_GlyphHintsRec  hints[1];
+-
++    //AF_GlyphHintsRec  hints[1];
++    AF_GlyphHintsRec  *hints;
+ 
+     FT_TRACE5(( "\n"
+                 "latin standard widths computation (style `%s')\n"
+@@ -70,6 +72,13 @@
+                 "\n",
+                 af_style_names[metrics->root.style_class->style] ));
+ 
++    hints = (AF_GlyphHintsRec *)AllocVec(sizeof(AF_GlyphHintsRec) * 2, MEMF_ANY);
++    if(!hints)
++    {
++        /* no reasonable error handling possible */
++        return;
++    }
++
+     af_glyph_hints_init( hints, face->memory );
+ 
+     metrics->axis[AF_DIMENSION_HORZ].width_count = 0;
+@@ -79,7 +88,12 @@
+       FT_Error            error;
+       FT_ULong            glyph_index;
+       int                 dim;
+-      AF_LatinMetricsRec  dummy[1];
++      //AF_LatinMetricsRec  dummy[1];
++      AF_LatinMetricsRec  *dummy = (AF_LatinMetricsRec  *) AllocVec(sizeof(AF_LatinMetricsRec) * 2, MEMF_ANY);
++
++      if(!dummy) 
++        goto ErrorExit;
++
+       AF_Scaler           scaler = &dummy->root.scaler;
+ 
+       AF_StyleClass   style_class  = metrics->root.style_class;
+@@ -261,12 +275,17 @@
+           FT_TRACE5(( "\n" ));
+         }
+ #endif
++
+       }
++      FreeVec(dummy);
++    ErrorExit:
++    ;
+     }
+ 
+     FT_TRACE5(( "\n" ));
+ 
+     af_glyph_hints_done( hints );
++    FreeVec(hints);
+   }
+ 
+ 
+diff -ruN freetype-2.10.0/src/autofit/afmodule.c freetype-2.10.0.aros/src/autofit/afmodule.c
+--- freetype-2.10.0/src/autofit/afmodule.c	2019-02-23 10:06:07.000000000 +0100
++++ freetype-2.10.0.aros/src/autofit/afmodule.c	2019-04-11 14:31:46.282454489 +0200
+@@ -523,8 +523,19 @@
+ 
+ #else /* !FT_DEBUG_AUTOFIT */
+ 
+-    AF_GlyphHintsRec  hints[1];
+-    AF_LoaderRec      loader[1];
++    //AF_GlyphHintsRec  hints[1];
++    AF_GlyphHintsRec  *hints = (AF_GlyphHintsRec *)AllocVec(sizeof(AF_GlyphHintsRec) * 2, MEMF_ANY);
++    if(!hints)
++    {
++        return !FT_Err_Ok; /* ? */
++    }
++    //AF_LoaderRec      loader[1];
++    AF_LoaderRec      *loader = (AF_LoaderRec *)AllocVec(sizeof(AF_LoaderRec) * 2, MEMF_ANY);
++    if(!loader)
++    {
++        FreeVec(hints);
++        return !FT_Err_Ok; /* ? */
++    }
+ 
+     FT_UNUSED( size );
+ 
+@@ -538,6 +549,9 @@
+     af_loader_done( loader );
+     af_glyph_hints_done( hints );
+ 
++    FreeVec(hints);
++    FreeVec(loader);
++
+     return error;
+ 
+ #endif /* !FT_DEBUG_AUTOFIT */
