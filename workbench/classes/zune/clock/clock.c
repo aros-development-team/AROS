@@ -203,7 +203,7 @@ IPTR Clock__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
     return TRUE;
 }
 
-IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Clock__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
  
@@ -213,6 +213,14 @@ IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
     	data->editpen = -1;
     }
     
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+
+IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+    struct Clock_DATA *data = INST_DATA(cl, obj);
+ 
     if (data->clockbm)
     {
     	FreeBitMap(data->clockbm);
