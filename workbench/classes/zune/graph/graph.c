@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -367,7 +367,6 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
-    int i;
 
     D(bug("[Graph] %s()\n", __func__);)
 
@@ -378,6 +377,21 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
         data->graph_Flags |= GRAPHF_HANDLER;
         DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
     }
+
+    data->graph_Flags |= GRAPHF_SETUP;
+
+    return TRUE;
+}
+
+
+IPTR Graph__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
+{
+    struct Graph_DATA *data = INST_DATA(cl, obj);
+    int i;
+
+    D(bug("[Graph] %s()\n", __func__);)
+
+    if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
     data->graph_BackPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
 				  0xF2F2F2F2,
@@ -426,20 +440,15 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 				  TAG_DONE);
     }
 
-    data->graph_Flags |= GRAPHF_SETUP;
-
     return TRUE;
 }
 
-
-IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Graph__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
     int i;
 
     D(bug("[Graph] %s()\n", __func__);)
-
-    data->graph_Flags &= ~GRAPHF_SETUP;
 
     if (data->graph_SegmentPen != -1)
     {
@@ -467,6 +476,17 @@ IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
         if (data->graph_Sources[i].gs_PlotPen != -1)
                 ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_Sources[i].gs_PlotPen);
     }
+    
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+    struct Graph_DATA *data = INST_DATA(cl, obj);
+
+    D(bug("[Graph] %s()\n", __func__);)
+
+    data->graph_Flags &= ~GRAPHF_SETUP;
 
     if ((data->graph_Flags & GRAPHF_PERIODIC) && (data->graph_Flags & GRAPHF_HANDLER))
     {
