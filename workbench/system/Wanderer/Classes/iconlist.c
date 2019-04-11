@@ -2867,19 +2867,12 @@ MUIM_Setup
 IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *message)
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
-    struct IconEntry            *node = NULL;
-    IPTR                        geticon_error = 0, iconlistScreen;
 
 #if defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
     if (!DoSuperMethodA(CLASS, obj, (Msg) message)) return (IPTR)NULL;
-
-    iconlistScreen = (IPTR)_screen(obj);
-#if defined(DEBUG_ILC_ICONRENDERING)
-    D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
-#endif
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
@@ -2919,67 +2912,6 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
     data->icld__Option_LabelTextBorderWidth       = ILC_ICONLABEL_BORDERWIDTH_DEFAULT;
     data->icld__Option_LabelTextBorderHeight      = ILC_ICONLABEL_BORDERHEIGHT_DEFAULT;
 
-    if (data->icld_LVMAttribs)
-    {
-        data->icld_LVMAttribs->lvma_IconDrawer = GetIconTags
-        (
-            "WANDERER:Icons/drawer",
-            (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
-            (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
-            ICONGETA_FailIfUnavailable,        TRUE,
-            ICONGETA_GenerateImageMasks,       TRUE,
-            ICONA_ErrorCode,                   &geticon_error,
-            TAG_DONE
-        );
-
-#if defined(DEBUG_ILC_ICONRENDERING)
-        if (data->icld_LVMAttribs->lvma_IconDrawer == NULL)
-        {
-            D(bug("[IconList] %s: Couldnt get drawer DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
-        }
-#endif
-        data->icld_LVMAttribs->lvma_IconFile = GetIconTags
-        (
-            "WANDERER:Icons/file",
-            (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
-            (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
-            ICONGETA_FailIfUnavailable,        TRUE,
-            ICONGETA_GenerateImageMasks,       TRUE,
-            ICONA_ErrorCode,                   &geticon_error,
-            TAG_DONE
-        );
-
-#if defined(DEBUG_ILC_ICONRENDERING)
-        if (data->icld_LVMAttribs->lvma_IconFile == NULL)
-        {
-            D(bug("[IconList] %s: Couldnt get file DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
-        }
-#endif
-    }
-
-#if defined(__AROS__)
-    ForeachNode(&data->icld_IconList, node)
-#else
-    Foreach_Node(&data->icld_IconList, node);
-#endif
-    {
-        if (!node->ie_DiskObj)
-        {
-            if (!(node->ie_DiskObj = GetIconTags(node->ie_IconNode.ln_Name,
-                                                (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
-                                                (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
-                                                ICONGETA_GenerateImageMasks, TRUE,
-                                                ICONGETA_FailIfUnavailable, FALSE,
-                                                ICONA_ErrorCode, &geticon_error,
-                                                TAG_DONE)))
-            {
-#if defined(DEBUG_ILC_ICONRENDERING)
-                D(bug("[IconList] %s: Failed to obtain Entry '%s's diskobj! (error code = 0x%p)\n", __PRETTY_FUNCTION__, node->ie_IconNode.ln_Name, geticon_error));
-#endif
-                /*  We should probably remove this node if the entry cant be obtained ? */
-            }
-        }
-    }
     return 1;
 }
 ///
@@ -2991,8 +2923,7 @@ MUIM_Show
 IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *message)
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
-    LONG                        newleft,
-                                newtop;
+
     IPTR                        rc;
 
 #if defined(DEBUG_ILC_FUNCS)
@@ -3001,6 +2932,15 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     if ((rc = DoSuperMethodA(CLASS, obj, (Msg)message)))
     {
+        struct IconEntry *node = NULL;
+        LONG newleft, newtop;
+        IPTR geticon_error = 0, iconlistScreen;
+
+        iconlistScreen = (IPTR)_screen(obj);
+#if defined(DEBUG_ILC_ICONRENDERING)
+        D(bug("[IconList] %s: IconList Screen @ 0x%p)\n", __PRETTY_FUNCTION__, iconlistScreen));
+#endif
+
         newleft = data->icld_ViewX;
         newtop = data->icld_ViewY;
 
@@ -3098,6 +3038,64 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
         if ((data->icld_BufferRastPort) && (data->icld_IconLabelFont))
             SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
+
+        if (data->icld_LVMAttribs)
+        {
+            data->icld_LVMAttribs->lvma_IconDrawer = GetIconTags
+            (
+                "WANDERER:Icons/drawer",
+                (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
+                (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
+                ICONGETA_FailIfUnavailable,        TRUE,
+                ICONGETA_GenerateImageMasks,       TRUE,
+                ICONA_ErrorCode,                   &geticon_error,
+                TAG_DONE
+            );
+
+#if defined(DEBUG_ILC_ICONRENDERING)
+            if (data->icld_LVMAttribs->lvma_IconDrawer == NULL)
+            {
+                D(bug("[IconList] %s: Couldnt get drawer DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
+            }
+#endif
+            data->icld_LVMAttribs->lvma_IconFile = GetIconTags
+            (
+                "WANDERER:Icons/file",
+                (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
+                (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
+                ICONGETA_FailIfUnavailable,        TRUE,
+                ICONGETA_GenerateImageMasks,       TRUE,
+                ICONA_ErrorCode,                   &geticon_error,
+                TAG_DONE
+            );
+
+#if defined(DEBUG_ILC_ICONRENDERING)
+            if (data->icld_LVMAttribs->lvma_IconFile == NULL)
+            {
+                D(bug("[IconList] %s: Couldnt get file DiskObject! (error code = 0x%p)\n", __PRETTY_FUNCTION__, geticon_error));
+            }
+#endif
+        }
+
+        ForeachNode(&data->icld_IconList, node)
+        {
+            if (!node->ie_DiskObj)
+            {
+                if (!(node->ie_DiskObj = GetIconTags(node->ie_IconNode.ln_Name,
+                                                    (iconlistScreen) ? ICONGETA_Screen : TAG_IGNORE, iconlistScreen,
+                                                    (iconlistScreen) ? ICONGETA_RemapIcon : TAG_IGNORE, TRUE,
+                                                    ICONGETA_GenerateImageMasks, TRUE,
+                                                    ICONGETA_FailIfUnavailable, FALSE,
+                                                    ICONA_ErrorCode, &geticon_error,
+                                                    TAG_DONE)))
+                {
+#if defined(DEBUG_ILC_ICONRENDERING)
+                    D(bug("[IconList] %s: Failed to obtain Entry '%s's diskobj! (error code = 0x%p)\n", __PRETTY_FUNCTION__, node->ie_IconNode.ln_Name, geticon_error));
+#endif
+                    /*  We should probably remove this node if the entry cant be obtained ? */
+                }
+            }
+        }
     }
     return rc;
 }
@@ -3118,6 +3116,23 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     if ((rc = DoSuperMethodA(CLASS, obj, (Msg)message)))
     {
+        struct IconEntry *node = NULL;
+
+        ForeachNode(&data->icld_IconList, node)
+        {
+            if (node->ie_DiskObj)
+                FreeDiskObject(node->ie_DiskObj);
+            node->ie_DiskObj = NULL;
+        }
+        if (data->icld_LVMAttribs)
+        {
+            if (data->icld_LVMAttribs->lvma_IconDrawer)
+                FreeDiskObject(data->icld_LVMAttribs->lvma_IconDrawer);
+            data->icld_LVMAttribs->lvma_IconDrawer = NULL;
+            if (data->icld_LVMAttribs->lvma_IconFile)
+                FreeDiskObject(data->icld_LVMAttribs->lvma_IconFile);
+            data->icld_LVMAttribs->lvma_IconFile = NULL;
+        }
         if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
         {
             DeleteLayer(0, data->icld_BufferRastPort->Layer);
