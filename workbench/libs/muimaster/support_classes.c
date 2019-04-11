@@ -250,16 +250,19 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library * mb)
 #ifdef __AROS__
 AROS_UFH3(IPTR, metaDispatcher,
     AROS_UFHA(struct IClass *, cl, A0),
-    AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
+    AROS_UFHA(Object *, obj, A2),
+    AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
-        return AROS_UFC4(IPTR, cl->cl_Dispatcher.h_SubEntry,
+
+    return AROS_UFC4(IPTR, cl->cl_Dispatcher.h_SubEntry,
         AROS_UFPA(Class *, cl, A0),
         AROS_UFPA(Object *, obj, A2),
         AROS_UFPA(Msg, msg, A1),
         AROS_UFPA(APTR, cl->cl_Dispatcher.h_Data, A6));
 
-AROS_USERFUNC_EXIT}
+    AROS_USERFUNC_EXIT
+}
 
 #else
 #ifdef __SASC
