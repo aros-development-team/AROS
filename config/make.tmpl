@@ -3131,8 +3131,12 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) \
     prefix= gendir= basedir=$(CURDIR) extraoptions= \
-    usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)" \
+    usecppflags=yes extracppflags= \
+    usecflags=yes extracflags="$(OPTIMIZATION_CFLAGS)" \
+    usecxxflags=yes extracxxflags="$(OPTIMIZATION_CFLAGS)" \
+    hostisaflags= \
+    kernelisaflags="$(TARGET_ISA_CFLAGS)" \
+    targetisaflags="$(TARGET_ISA_CFLAGS)" \
     aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
     install_target=install preconfigure= postconfigure= postinstall= \
     config_env_extra= install_env= use_build_env=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes
@@ -3233,6 +3237,25 @@ ifneq ($(DEBUG),yes)
     %(mmake)-s_flag = -s
 endif
 
+ifeq (%(usecflags),yes)
+    %(mmake)-HOST_CFLAGS := $(strip %(hostisaflags) $(HOST_CFLAGS))
+    %(mmake)-KERNEL_CFLAGS := $(strip %(kernelisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag))
+ifeq (%(crossbuild),yes)
+    %(mmake)-TARGET_CFLAGS := $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))
+else
+    %(mmake)-TARGET_CFLAGS := $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))
+endif
+endif
+ifeq (%(usecxxflags),yes)
+    %(mmake)-HOST_CXXFLAGS :=  $(strip %(hostisaflags) $(HOST_CXXFLAGS))
+    %(mmake)-KERNEL_CXXFLAGS :=  $(strip %(kernelisaflags) $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag))
+ifeq (%(crossbuild),yes)
+    %(mmake)-TARGET_CXXFLAGS := $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))
+else
+    %(mmake)-TARGET_CXXFLAGS := $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))
+endif
+endif
+
 # Set up build environment, and options for configure script
 ifeq (%(compiler),host)
     # NB: We need to pass in our crosstoolsdir, but cannot set CFLAGS since it
@@ -3243,16 +3266,16 @@ ifeq (%(compiler),host)
     %(mmake)-cfg-env := %(config_env_extra) \
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
-        CC="$(strip $(HOST_DEF_CC) $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)" \
-        CXX="$(strip $(HOST_CXX) $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)" \
+        CC="$(strip $(HOST_DEF_CC) $(%(mmake)-HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)" \
+        CXX="$(strip $(HOST_CXX) $(%(mmake)-HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)" \
         LDFLAGS="-L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS)"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += TARGET_CPPFLAGS="$(KERNEL_CPPFLAGS)"
 endif
     %(mmake)-cfg-env += TARGET_CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
-        TARGET_CFLAGS="$(strip %(targetisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag))" \
+        TARGET_CFLAGS="$(strip $(%(mmake)-KERNEL_CFLAGS))" \
         TARGET_CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
-        TARGET_CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag))" \
+        TARGET_CXXFLAGS="$(strip $(%(mmake)-KERNEL_CXXFLAGS))" \
         TARGET_AS="$(TARGET_AS)" \
         OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" \
@@ -3269,18 +3292,10 @@ ifeq (%(compiler),target)
         CC="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
         CXX="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
         LD="$(strip $(TARGET_LD))"
-ifeq (%(crossbuild),yes)
-    %(mmake)-cfg-env += CFLAGS="$(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
-        CXXFLAGS="$(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += CFLAGS="$(%(mmake)-TARGET_CFLAGS)" \
+        CXXFLAGS="$(%(mmake)-TARGET_CXXFLAGS)"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
-endif
-else
-    %(mmake)-cfg-env += CFLAGS="$(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
-        CXXFLAGS="$(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))"
-ifeq (%(usecppflags),yes)
-    %(mmake)-cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
-endif
 endif
     %(mmake)-cfg-env += LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
 ifeq (%(usecppflags),yes)
@@ -3305,9 +3320,9 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_TARGET="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
 endif
     %(mmake)-cfg-env += CC_FOR_TARGET="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
-        CFLAGS_FOR_TARGET="$(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags))" \
         CXX_FOR_TARGET="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_TARGET="$(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags)" \
         LD_FOR_TARGET="$(strip $(TARGET_LD))" \
         LDFLAGS_FOR_TARGET="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         AR="$(strip $(AR_PLAIN))" \
@@ -3319,9 +3334,9 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += TARGET_CPPFLAGS="$(KERNEL_CPPFLAGS)"
 endif
     %(mmake)-cfg-env += TARGET_CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
-        TARGET_CFLAGS="$(strip %(targetisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag))" \
+        TARGET_CFLAGS="$(strip $(%(mmake)-KERNEL_CFLAGS))" \
         TARGET_CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
-        TARGET_CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag))" \
+        TARGET_CXXFLAGS="$(strip $(%(mmake)-KERNEL_CXXFLAGS))" \
         TARGET_AS="$(strip $(TARGET_AS))" \
         TARGET_RANLIB="$(strip $(RANLIB))" \
         TARGET_STRIP="$(strip $(STRIP_PLAIN))" \
@@ -3351,9 +3366,9 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(KERNEL_CPPFLAGS) %(extracppflags))"
 endif
     %(mmake)-cfg-env += CC="$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))" \
-        CFLAGS="$(strip %(targetisaflags) $(KERNEL_CFLAGS) %(extracflags) $(%(mmake)-s_flag))" \
+        CFLAGS="$(strip $(%(mmake)-KERNEL_CFLAGS) %(extracflags))" \
         CXX="$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))" \
-        CXXFLAGS="$(strip $(KERNEL_CXXFLAGS) %(extracxxflags) $(%(mmake)-s_flag))" \
+        CXXFLAGS="$(strip $(%(mmake)-KERNEL_CXXFLAGS) %(extracxxflags))" \
         AS="$(KERNEL_AS)"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_BUILD="$(HOST_CPPFLAGS)"
@@ -3781,10 +3796,13 @@ endif
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target crossbuild=no install_target=install \
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir=$(CURDIR) package_repo= patch=no patch_repo= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
-    extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
+    extraoptions= \
+    usecppflags=yes extracppflags= \
+    usecflags=yes extracflags="$(OPTIMIZATION_CFLAGS)" \
+    usecxxflags=yes extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no \
     buildflags=yes gnuflags=yes nlsflag=yes xflag=yes \
-    hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"
+    hostisaflags= kernelisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -3860,8 +3878,12 @@ endif
      config_env_extra="%(config_env_extra)" install_env="%(install_env)" use_build_env="%(use_build_env)" \
      nix="%(nix)" nix_dir_layout="%(nix_dir_layout)" prefix=$(%(mmake)-prefix)  aros_prefix="%(aros_prefix)" \
      preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" \
-     extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" \
-     buildflags=%(buildflags) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag) hostisaflags=%(hostisaflags) targetisaflags=%(targetisaflags)
+     extraoptions="%(extraoptions)" \
+     usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" \
+     usecflags="%(usecflags)" extracflags="%(extracflags)" \
+     usecxxflags="%(usecxxflags)" extracxxflags="%(extracxxflags)" \
+     buildflags=%(buildflags) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag) \
+     hostisaflags=%(hostisaflags) kernelisaflags="%(kernelisaflags)" targetisaflags=%(targetisaflags)
 
 .PHONY : %(mmake)-%(subpackage)-make-package %(mmake)-%(subpackage)-create-patch
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
@@ -3918,7 +3940,7 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
     srcdir= package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU config_env_extra= preconfigure= postconfigure= postinstall= \
     extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)" \
+    hostisaflags= kernelisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)" \
     use_build_env=no nix=yes gnuflags=yes nlsflag=yes xflag=yes
 
 GNU_REPOSITORY := gnu://
@@ -3930,7 +3952,7 @@ GNU_REPOSITORY := gnu://
     prefix="%(prefix)" aros_prefix="%(aros_prefix)" \
     extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" \
     config_env_extra="%(config_env_extra)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" \
-    hostisaflags="%(hostisaflags)" targetisaflags="%(targetisaflags)" \
+    hostisaflags="%(hostisaflags)" kernelisaflags="%(kernelisaflags)" targetisaflags="%(targetisaflags)" \
     use_build_env=%(use_build_env) nix=%(nix) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
 
 %end
@@ -3952,7 +3974,7 @@ GNU_REPOSITORY := gnu://
     srcdir= package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPER) \
     aros_prefix=/Developer config_env_extra= preconfigure= postconfigure= postinstall= \
     extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"  \
+    hostisaflags= kernelisaflags="%(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"  \
     use_build_env=no nix=yes gnuflags=yes nlsflag=yes xflag=yes
 
 #MM- development : development-%(package)
@@ -3965,7 +3987,7 @@ GNU_REPOSITORY := gnu://
    prefix="%(prefix)"  aros_prefix="%(aros_prefix)" \
    extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracflags="%(extracflags)" extracppflags="%(extracppflags)" extracxxflags="%(extracxxflags)" \
    config_env_extra="%(config_env_extra)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="postinstall-%(package)-delete-la-files %(postinstall)" \
-   hostisaflags="%(hostisaflags)" targetisaflags="%(targetisaflags)" \
+   hostisaflags="%(hostisaflags)" kernelisaflags="%(kernelisaflags)" targetisaflags="%(targetisaflags)" \
    use_build_env=%(use_build_env) nix=%(nix) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
 
 #MM
