@@ -3302,9 +3302,9 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_BUILD="$(HOST_CPPFLAGS)"
 endif
     %(mmake)-cfg-env += CC_FOR_BUILD="$(strip $(HOST_DEF_CC))" \
-        CFLAGS_FOR_BUILD="$(strip $(HOST_CFLAGS) $(%(mmake)-s_flag))" \
+        CFLAGS_FOR_BUILD="$(strip $(%(mmake)-HOST_CFLAGS))" \
         CXX_FOR_BUILD="$(strip $(HOST_CXX))" \
-        CXXFLAGS_FOR_BUILD="$(strip $(HOST_CXXFLAGS) $(%(mmake)-s_flag))" \
+        CXXFLAGS_FOR_BUILD="$(strip $(%(mmake)-HOST_CXXFLAGS))" \
         LD_FOR_BUILD="$(strip $(HOST_LD))" \
         LDFLAGS_FOR_BUILD="$(strip $(HOST_LDFLAGS) $(%(mmake)-s_flag))"
 ifeq (%(usecppflags),yes)
@@ -3322,7 +3322,7 @@ endif
     %(mmake)-cfg-env += CC_FOR_TARGET="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
         CFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags))" \
         CXX_FOR_TARGET="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags))" \
+        CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags))" \
         LD_FOR_TARGET="$(strip $(TARGET_LD))" \
         LDFLAGS_FOR_TARGET="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         AR="$(strip $(AR_PLAIN))" \
@@ -3374,9 +3374,9 @@ ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_BUILD="$(HOST_CPPFLAGS)"
 endif
     %(mmake)-cfg-env += CC_FOR_BUILD="$(HOST_DEF_CC)" \
-        CFLAGS_FOR_BUILD="$(HOST_CFLAGS)" \
+        CFLAGS_FOR_BUILD="$(%(mmake)-HOST_CFLAGS)" \
         CXX_FOR_BUILD="$(HOST_CXX)" \
-        CXXFLAGS_FOR_BUILD="$(HOST_CXXFLAGS)" \
+        CXXFLAGS_FOR_BUILD="$(%(mmake)-HOST_CXXFLAGS)" \
         RANLIB="$(RANLIB)" \
         TARGET_RANLIB="$(RANLIB)" \
         TARGET_STRIP="$(STRIP_PLAIN)" \
