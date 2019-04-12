@@ -109,7 +109,7 @@ CONFIGUREFILES += $(HOSTGENDIR)/config/host.cfg
 # Standard Rules ...
 #
 
-all: $(CONFIGUREFILES) crosstools features
+all: $(CONFIGUREFILES) crosstools-toolchain features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.AROS
 
 makedirs:
@@ -150,8 +150,11 @@ $(CROSSTOOLSDIR)/.installflag-crosstools: $(TOP)/config.status $(AROS_TOOLCHAIN_
 	    $(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$(CROSSTOOLS_TARGET) && $(TOUCH) $@ ; \
 	fi
 
-crosstools: tools $(CROSSTOOLS_BUILDFLAG)
+crosstools-toolchain: tools $(CROSSTOOLS_BUILDFLAG)
 	@$(NOP)
+
+crosstools : crosstools-toolchain
+	@$(MAKE) $(MKARGS) linklibs-libatomic
 
 $(TOP)/config/features.status: $(SRCDIR)/config/features $(CROSSTOOLS_BUILDFLAG)
 	@$(IF) ! $(TEST) -f $@ ; then \
@@ -161,7 +164,7 @@ $(TOP)/config/features.status: $(SRCDIR)/config/features $(CROSSTOOLS_BUILDFLAG)
 
 CONFIGBUILDARCHFILES += $(TOP)/config/features.status
 
-features: crosstools $(TOP)/config/features.status
+features: crosstools-toolchain $(TOP)/config/features.status
 	@$(NOP)
 
 NATIVEBUILDFILES = $(addprefix $(AROS_SDK)/,$(notdir $(CONFIGBUILDFILES)))
@@ -299,7 +302,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 	test kernel boot workbench compiler contrib ports sdk mmake query
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
-install test kernel boot workbench compiler contrib ports : crosstools features $(CONFIGUREFILES)
+install test kernel boot workbench compiler contrib ports : crosstools-toolchain features $(CONFIGUREFILES)
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 
@@ -322,7 +325,7 @@ distfiles::
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 .DEFAULT: $(CONFIGUREFILES)
-	@$(MAKE) $(MKARGS) crosstools
-	@$(MAKE) $(MKARGS) crosstools features
+	@$(MAKE) $(MKARGS) crosstools-toolchain
+	@$(MAKE) $(MKARGS) crosstools-toolchain features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
