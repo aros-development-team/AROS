@@ -3680,7 +3680,7 @@ endif
 
 #MM
 %(mmake) :
-	$(Q)$(ECHO) "Fetching   %(archive) ..." \
+	$(Q)$(ECHO) "Fetching   %(archive) ..."
 	$(Q)$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
 	-d %(destination) -po "%(patches_origins)" -p "%(patches_specs)"
 	$(Q)$(IF) ! $(TEST) -f $(%(mmake)-fetchedflag) ; then \
