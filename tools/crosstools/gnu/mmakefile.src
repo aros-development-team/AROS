@@ -264,8 +264,8 @@ tools-crosstools-gcc :
 
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
 	package_repo="$(GCC_REPOSITORY)" suffixes="tar.bz2 tar.gz tar.xz" \
-	patch=yes \
-	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
+	patch=yes prefix="$(CROSSTOOLSDIR)" \
+	usecppflags=no usecflags=no usecxxflags=no \
 	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
 
 #MM
