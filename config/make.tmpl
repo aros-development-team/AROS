@@ -3782,7 +3782,9 @@ endif
     version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= basedir=$(CURDIR) package_repo= patch=no patch_repo= \
     prefix= aros_prefix= preconfigure= postconfigure= postinstall= \
     extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no buildflags=yes gnuflags=yes nlsflag=yes xflag=yes hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"
+    config_env_extra= install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no \
+    buildflags=yes gnuflags=yes nlsflag=yes xflag=yes \
+    hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -3917,7 +3919,7 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
     aros_prefix=/GNU config_env_extra= preconfigure= postconfigure= postinstall= \
     extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)" \
-    nix=yes gnuflags=yes nlsflag=yes xflag=yes
+    use_build_env=no nix=yes gnuflags=yes nlsflag=yes xflag=yes
 
 GNU_REPOSITORY := gnu://
 
@@ -3929,7 +3931,7 @@ GNU_REPOSITORY := gnu://
     extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracppflags="%(extracppflags)" extracflags="%(extracflags)" extracxxflags="%(extracxxflags)" \
     config_env_extra="%(config_env_extra)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall)" \
     hostisaflags="%(hostisaflags)" targetisaflags="%(targetisaflags)" \
-    nix=%(nix) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
+    use_build_env=%(use_build_env) nix=%(nix) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
 
 %end
 #------------------------------------------------------------------------------
@@ -3951,7 +3953,7 @@ GNU_REPOSITORY := gnu://
     aros_prefix=/Developer config_env_extra= preconfigure= postconfigure= postinstall= \
     extraoptions= usecppflags=yes extracppflags= extracflags="$(OPTIMIZATION_CFLAGS)" extracxxflags="$(OPTIMIZATION_CFLAGS)" \
     hostisaflags="$(TARGET_ISA_CFLAGS)" targetisaflags="$(TARGET_ISA_CFLAGS)"  \
-    nix=yes gnuflags=yes nlsflag=yes xflag=yes
+    use_build_env=no nix=yes gnuflags=yes nlsflag=yes xflag=yes
 
 #MM- development : development-%(package)
 
@@ -3964,7 +3966,7 @@ GNU_REPOSITORY := gnu://
    extraoptions="%(extraoptions)" usecppflags="%(usecppflags)" extracflags="%(extracflags)" extracppflags="%(extracppflags)" extracxxflags="%(extracxxflags)" \
    config_env_extra="%(config_env_extra)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="postinstall-%(package)-delete-la-files %(postinstall)" \
    hostisaflags="%(hostisaflags)" targetisaflags="%(targetisaflags)" \
-   nix=%(nix) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
+   use_build_env=%(use_build_env) nix=%(nix) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
 
 #MM
 postinstall-%(package)-delete-la-files:
