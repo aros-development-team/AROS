@@ -285,7 +285,11 @@ endif
 # the %(setuptarget) make target with setup as the default. 
 %define rule_makedirs dirs=/A setuptarget=setup
 
+ifneq (%(setuptarget),)
+%(setuptarget) : | %(dirs)
+else
 %(setuptarget) :: %(dirs)
+endif
 
 GLOB_MKDIRS += %(dirs)
 
@@ -1138,24 +1142,24 @@ endif
 #------------------------------------------------------------------------------
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
-%define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
+%define rule_linkmodule mmake=TMP module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
     cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldflags=$(LDFLAGS) uselibs= usehostlibs=
 
-TMP_LDFLAGS  := %(ldflags)
+%(mmake)_LDFLAGS  := %(ldflags)
 # Make a list of the lib files the programs depend on.
 # In LDFLAGS remove white space between -L and directory
-TMP_DIRS := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
+%(mmake)_DIRS := $(subst -L ,-L,$(strip $(%(mmake)_LDFLAGS)))
 # Filter out only the libdirs and remove -L
-TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+%(mmake)_DIRS := $(patsubst -L%,%,$(filter -L%,$(%(mmake)_DIRS)))
 # Add trailing /
-TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+%(mmake)_DIRS := $(subst //,/,$(addsuffix /,$(%(mmake)_DIRS)))
 # Add normal linklib path
-TMP_DIRS += $(AROS_LIB)/
+%(mmake)_DIRS += $(AROS_LIB)/
 # add lib and .a to static linklib names
-TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs)))
+%(mmake)_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs)))
 # search for the linklibs in the given path, ignore ones not found
-TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
-    $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
+%(mmake)_DEPLIBS := $(foreach lib,$(%(mmake)_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(%(mmake)_DIRS)))) \
 )
 
 %(module) : LIB_NAMES := %(uselibs)
@@ -1163,7 +1167,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 %(module) : ENDTAG := %(endobj)
 %(module) : ERR := %(err)
 %(module) : OBJDIR := %(objdir)
-%(module) : LDFLAGS := $(TMP_LDFLAGS)
+%(module) : LDFLAGS := $(%(mmake)_LDFLAGS)
 ifeq (%(usehostlibs),)
 %(module) : LIBS := $(addprefix -l,$(LIB_NAMES))
 else
@@ -1172,7 +1176,7 @@ else
 %(module) : LIBS := $(addprefix -l,$(LIB_NAMES)) \
                     -L/usr/lib $(addprefix -l,%(usehostlibs))
 endif 
-%(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
+%(module) : %(objs) %(endobj) $(%(mmake)_DEPLIBS) $(USER_DEPLIBS)
 	%link_module_q cmd="%(cmd)" err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags=$(LDFLAGS)
 
 %end
@@ -1181,44 +1185,44 @@ endif
 
 #------------------------------------------------------------------------------
 # Generate the libdefs.h include file for a module.
-%define rule_genmodule_genlibdefs modname=/A version= flavour= modtype=/A modsuffix= conffile= targetdir=
+%define rule_genmodule_genlibdefs mmake=TMP modname=/A version= flavour= modtype=/A modsuffix= conffile= targetdir=
 
-TMP_OPTS := 
+%(mmake)_OPTS := 
 ifneq (%(flavour),)
-    TMP_OPTS += -f %(flavour)
-    TMP_MODNAME := %(modname)_%(flavour)
+    %(mmake)_OPTS += -f %(flavour)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
 else
-    TMP_MODNAME := %(modname)
+    %(mmake)_MODNAME := %(modname)
 endif
-TMP_TARGET := $(TMP_MODNAME)_libdefs.h
-TMP_DEPS := $(GENMODULE)
+%(mmake)_TARGET := $(%(mmake)_MODNAME)_libdefs.h
+%(mmake)_DEPS := $(GENMODULE)
 ifneq (%(conffile),)
     ifeq ($(dir %(conffile)),./)
-        TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-        TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
     else
-        TMP_OPTS += -c %(conffile)
-        TMP_DEPS += %(conffile)
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
     endif 
 else
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
 endif
 ifneq (%(modsuffix),)
-    TMP_OPTS += -s %(modsuffix)
+    %(mmake)_OPTS += -s %(modsuffix)
 endif
 ifneq (%(targetdir),)
-    TMP_OPTS += -d %(targetdir)
-    TMP_TARGET := %(targetdir)/$(TMP_TARGET)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGET := %(targetdir)/$(%(mmake)_TARGET)
 endif
 ifneq (%(version),)
-    TMP_OPTS += -v %(version)
+    %(mmake)_OPTS += -v %(version)
 endif
 
-$(TMP_TARGET) : OPTS := $(TMP_OPTS)
-$(TMP_TARGET) : MODNAME := %(modname)
-$(TMP_TARGET) : MODTYPE := %(modtype)
-$(TMP_TARGET) : $(TMP_DEPS)
+$(%(mmake)_TARGET) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_TARGET) : MODNAME := %(modname)
+$(%(mmake)_TARGET) : MODTYPE := %(modtype)
+$(%(mmake)_TARGET) : $(%(mmake)_DEPS)
 	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
 	$(Q)$(GENMODULE) $(OPTS) writelibdefs $(MODNAME) $(MODTYPE)
 %end
@@ -1226,35 +1230,35 @@ $(TMP_TARGET) : $(TMP_DEPS)
 
 #------------------------------------------------------------------------------
 # Generate the _lib.fd file for a module.
-%define rule_genmodule_fd modname=/A modtype=/A modsuffix= conffile= targetdir=
+%define rule_genmodule_fd mmake=TMP modname=/A modtype=/A modsuffix= conffile= targetdir=
 
-TMP_TARGET := %(modname)_lib.fd
-TMP_DEPS := $(GENMODULE)
-TMP_OPTS := 
+%(mmake)_TARGET := %(modname)_lib.fd
+%(mmake)_DEPS := $(GENMODULE)
+%(mmake)_OPTS := 
 ifneq (%(conffile),)
     ifeq ($(dir %(conffile)),./)
-        TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-        TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
     else
-        TMP_OPTS += -c %(conffile)
-        TMP_DEPS += %(conffile)
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
     endif 
 else
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
 endif
 ifneq (%(modsuffix),)
-    TMP_OPTS += -s %(modsuffix)
+    %(mmake)_OPTS += -s %(modsuffix)
 endif
 ifneq (%(targetdir),)
-    TMP_OPTS += -d %(targetdir)
-    TMP_TARGET := %(targetdir)/$(TMP_TARGET)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGET := %(targetdir)/$(%(mmake)_TARGET)
 endif
 
-$(TMP_TARGET) : OPTS := $(TMP_OPTS)
-$(TMP_TARGET) : MODNAME := %(modname)
-$(TMP_TARGET) : MODTYPE := %(modtype)
-$(TMP_TARGET) : $(TMP_DEPS)
+$(%(mmake)_TARGET) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_TARGET) : MODNAME := %(modname)
+$(%(mmake)_TARGET) : MODTYPE := %(modtype)
+$(%(mmake)_TARGET) : $(%(mmake)_DEPS)
 	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
 	$(Q)$(GENMODULE) $(OPTS) writefd $(MODNAME) $(MODTYPE)
 %end
@@ -1263,42 +1267,42 @@ $(TMP_TARGET) : $(TMP_DEPS)
 #------------------------------------------------------------------------------
 # Generate a Makefile.%(modname)%(modtype) with the genmodule program and include this
 # generated file in this Makefile
-%define rule_genmodule_makefile modname=/A flavour= modtype=/A modsuffix= conffile= \
+%define rule_genmodule_makefile mmake=TMP modname=/A flavour= modtype=/A modsuffix= conffile= \
     targetdir=
 
-TMP_OPTS := 
+%(mmake)_OPTS := 
 ifneq (%(flavour),)
-    TMP_OPTS += -f %(flavour)
-    TMP_MODNAME := %(modname)_%(flavour)
+    %(mmake)_OPTS += -f %(flavour)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
 else
-    TMP_MODNAME := %(modname)
+    %(mmake)_MODNAME := %(modname)
 endif
-TMP_TARGET := Makefile.$(TMP_MODNAME)%(modtype)
-TMP_DEPS := $(GENMODULE)
+%(mmake)_TARGET := Makefile.$(%(mmake)_MODNAME)%(modtype)
+%(mmake)_DEPS := $(GENMODULE)
 ifneq (%(conffile),)
     ifeq ($(dir %(conffile)),./)
-        TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-        TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
     else
-        TMP_OPTS += -c %(conffile)
-        TMP_DEPS += %(conffile)
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
     endif 
 else
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
 endif
 ifneq (%(modsuffix),)
-    TMP_OPTS += -s %(modsuffix)
+    %(mmake)_OPTS += -s %(modsuffix)
 endif
 ifneq (%(targetdir),)
-    TMP_OPTS += -d %(targetdir)
-    TMP_TARGET := %(targetdir)/$(TMP_TARGET)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGET := %(targetdir)/$(%(mmake)_TARGET)
 endif
 
-$(TMP_TARGET) : OPTS := $(TMP_OPTS)
-$(TMP_TARGET) : MODNAME := %(modname)
-$(TMP_TARGET) : MODTYPE := %(modtype)
-$(TMP_TARGET) : $(TMP_DEPS)
+$(%(mmake)_TARGET) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_TARGET) : MODNAME := %(modname)
+$(%(mmake)_TARGET) : MODTYPE := %(modtype)
+$(%(mmake)_TARGET) : $(%(mmake)_DEPS)
 	$(Q)$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE)
 %end
 #------------------------------------------------------------------------------
@@ -1308,68 +1312,68 @@ $(TMP_TARGET) : $(TMP_DEPS)
 # Generate the support files for compiling a module. This includes include
 # files and source files. This rule has to be preceeded by
 # %rule_genmodule_makefile
-%define rule_genmodule_files modname=/A flavour= modtype=/A modsuffix= targetdir= stubdir= \
+%define rule_genmodule_files mmake=TMP modname=/A flavour= modtype=/A modsuffix= targetdir= stubdir= \
     conffile=
 
-TMP_OPTS :=
+%(mmake)_OPTS :=
 ifneq (%(flavour),)
-    TMP_OPTS += -f %(flavour)
-    TMP_MODNAME := %(modname)_%(flavour)
+    %(mmake)_OPTS += -f %(flavour)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
 else
-    TMP_MODNAME := %(modname)
+    %(mmake)_MODNAME := %(modname)
 endif
-TMP_GENTARGETS := $($(TMP_MODNAME)_STARTFILES) $($(TMP_MODNAME)_ENDFILES)
-TMP_STUBTARGETS := $($(TMP_MODNAME)_LINKLIBFILES) $($(TMP_MODNAME)_RELLINKLIBFILES)
-TMP_GENTARGETS := $(addsuffix .c,$(TMP_GENTARGETS))
-TMP_STUBTARGETS := $(addsuffix .c,$(TMP_STUBTARGETS)) \
-               $(addsuffix .S, $($(TMP_MODNAME)_LINKLIBAFILES) $($(TMP_MODNAME)_RELLINKLIBAFILES))
+%(mmake)_GENTARGETS := $($(%(mmake)_MODNAME)_STARTFILES) $($(%(mmake)_MODNAME)_ENDFILES)
+%(mmake)_STUBTARGETS := $($(%(mmake)_MODNAME)_LINKLIBFILES) $($(%(mmake)_MODNAME)_RELLINKLIBFILES)
+%(mmake)_GENTARGETS := $(addsuffix .c,$(%(mmake)_GENTARGETS))
+%(mmake)_STUBTARGETS := $(addsuffix .c,$(%(mmake)_STUBTARGETS)) \
+               $(addsuffix .S, $($(%(mmake)_MODNAME)_LINKLIBAFILES) $($(%(mmake)_MODNAME)_RELLINKLIBAFILES))
 
-TMP_DEPS := $(GENMODULE)
+%(mmake)_DEPS := $(GENMODULE)
 ifneq (%(conffile),)
     ifeq ($(dir %(conffile)),./)
-        TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-        TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
     else
-        TMP_OPTS += -c %(conffile)
-        TMP_DEPS += %(conffile)
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
     endif 
 else
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
 endif
 ifneq (%(modsuffix),)
-    TMP_OPTS += -s %(modsuffix)
+    %(mmake)_OPTS += -s %(modsuffix)
 endif
 ifneq (%(targetdir),)
-    TMP_OPTS += -d %(targetdir)
-    TMP_TARGETDIR := $(shell echo %(targetdir) | sed 's/^\(.\):\//\/\1\//')
-    TMP_GENTARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_GENTARGETS))
-    TMP_GENFILEFLAG=$(TMP_TARGETDIR)/.%(modname).%(modtype)-genfiles
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGETDIR := $(shell echo %(targetdir) | sed 's/^\(.\):\//\/\1\//')
+    %(mmake)_GENTARGETS := $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_GENTARGETS))
+    %(mmake)_GENFILEFLAG=$(%(mmake)_TARGETDIR)/.%(modname).%(modtype)-genfiles
 else
-    TMP_GENFILEFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-genfiles
+    %(mmake)_GENFILEFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-genfiles
 endif
 ifneq (%(stubdir),)
-    TMP_OPTS += -l %(stubdir)
-    TMP_STUBTARGETDIR := $(shell echo %(stubdir) | sed 's/^\(.\):\//\/\1\//')
-    TMP_STUBTARGETS := $(addprefix $(TMP_STUBTARGETDIR)/,$(TMP_STUBTARGETS))
-    TMP_TARGETDIRS += %(stubdir)
+    %(mmake)_OPTS += -l %(stubdir)
+    %(mmake)_STUBTARGETDIR := $(shell echo %(stubdir) | sed 's/^\(.\):\//\/\1\//')
+    %(mmake)_STUBTARGETS := $(addprefix $(%(mmake)_STUBTARGETDIR)/,$(%(mmake)_STUBTARGETS))
+    %(mmake)_TARGETDIRS += %(stubdir)
 else
 ifneq (%(targetdir),)
-    TMP_STUBTARGETS := $(addprefix $(TMP_TARGETDIR)/,$(TMP_STUBTARGETS))
+    %(mmake)_STUBTARGETS := $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_STUBTARGETS))
 endif
 endif
 
-TMP_TARGETS := $(TMP_GENTARGETS) $(TMP_STUBTARGETS)
-ifneq ($(TMP_TARGETDIRS),)
-$(TMP_TARGETS) : | $(TMP_TARGETDIRS)
+%(mmake)_TARGETS := $(%(mmake)_GENTARGETS) $(%(mmake)_STUBTARGETS)
+ifneq ($(%(mmake)_TARGETDIRS),)
+$(%(mmake)_TARGETS) : | $(%(mmake)_TARGETDIRS)
 endif
 
-$(TMP_TARGETS) : $(TMP_DEPS) $(TMP_GENFILEFLAG)
+$(%(mmake)_TARGETS) : $(%(mmake)_DEPS) $(%(mmake)_GENFILEFLAG)
 
-$(TMP_GENFILEFLAG) : OPTS := $(TMP_OPTS)
-$(TMP_GENFILEFLAG) : MODNAME := %(modname)
-$(TMP_GENFILEFLAG) : MODTYPE := %(modtype)
-$(TMP_GENFILEFLAG) : $(TMP_DEPS)
+$(%(mmake)_GENFILEFLAG) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_GENFILEFLAG) : MODNAME := %(modname)
+$(%(mmake)_GENFILEFLAG) : MODTYPE := %(modtype)
+$(%(mmake)_GENFILEFLAG) : $(%(mmake)_DEPS)
 	$(Q)$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
 	$(Q)$(IF) $(TEST) "%(conffile)" = "lib.conf" && $(TEST) -f lib.conf; then \
 		$(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
@@ -1386,51 +1390,51 @@ $(TMP_GENFILEFLAG) : $(TMP_DEPS)
 #------------------------------------------------------------------------------
 # Generate the support files for compiling a module. This includes include
 # files and source files.
-%define rule_genmodule_includes modname=/A flavour= modtype=/A modsuffix= \
+%define rule_genmodule_includes mmake=TMP modname=/A flavour= modtype=/A modsuffix= \
     targetdir= conffile=
 
 ifneq (%(flavour),)
-    TMP_MODNAME := %(modname)_%(flavour)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
 else
-    TMP_MODNAME := %(modname)
+    %(mmake)_MODNAME := %(modname)
 endif
 
-ifneq ($($(TMP_MODNAME)_INCLUDES),)
+ifneq ($($(%(mmake)_MODNAME)_INCLUDES),)
 
-TMP_TARGETS := $($(TMP_MODNAME)_INCLUDES)
+%(mmake)_TARGETS := $($(%(mmake)_MODNAME)_INCLUDES)
 
-TMP_DEPS := $(GENMODULE)
-TMP_OPTS :=
+%(mmake)_DEPS := $(GENMODULE)
+%(mmake)_OPTS :=
 
 ifneq (%(conffile),)
     ifeq ($(dir %(conffile)),./)
-        TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-        TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
     else
-        TMP_OPTS += -c %(conffile)
-        TMP_DEPS += %(conffile)
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
     endif 
 else
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
 endif
 ifneq (%(modsuffix),)
-    TMP_OPTS += -s %(modsuffix)
+    %(mmake)_OPTS += -s %(modsuffix)
 endif
 ifneq (%(targetdir),)
-    TMP_OPTS += -d %(targetdir)
-    TMP_TARGETS := $(addprefix %(targetdir)/,$(TMP_TARGETS))
-    TMP_GENINCFLAG=%(targetdir)/.%(modname).%(modtype)-includes
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGETS := $(addprefix %(targetdir)/,$(%(mmake)_TARGETS))
+    %(mmake)_GENINCFLAG=%(targetdir)/.%(modname).%(modtype)-includes
 else
-    TMP_GENINCFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-includes
+    %(mmake)_GENINCFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-includes
 endif
 
-$(TMP_TARGETS) : $(TMP_DEPS) $(TMP_GENINCFLAG)
+$(%(mmake)_TARGETS) : $(%(mmake)_DEPS) $(%(mmake)_GENINCFLAG)
 
-$(TMP_GENINCFLAG) : OPTS := $(TMP_OPTS)
-$(TMP_GENINCFLAG) : MODNAME := %(modname)
-$(TMP_GENINCFLAG) : MODTYPE := %(modtype)
-$(TMP_GENINCFLAG) : $(TMP_DEPS)
+$(%(mmake)_GENINCFLAG) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_GENINCFLAG) : MODNAME := %(modname)
+$(%(mmake)_GENINCFLAG) : MODTYPE := %(modtype)
+$(%(mmake)_GENINCFLAG) : $(%(mmake)_DEPS)
 	$(Q)$(ECHO) "Generating $(MODNAME).$(MODTYPE) includes"
 	$(Q)$(GENMODULE) $(OPTS) writeincludes $(MODNAME) $(MODTYPE)
 	$(Q)$(TOUCH) $@
@@ -1616,9 +1620,7 @@ endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(%(mmake)_DEPS)
 
-$(%(mmake)_OBJS) $(%(mmake)_DEPS) : | $(%(mmake)_OBJDIR)
-$(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME) : | $(%(mmake)_TARGETDIR)
-%rule_makedirs dirs="$(%(mmake)_OBJDIR) $(%(mmake)_TARGETDIR)"
+%rule_makedirs dirs="$(%(mmake)_OBJDIR) $(%(mmake)_TARGETDIR)" setuptarget="$(%(mmake)_OBJS) $(%(mmake)_DEPS) $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME)"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME) $(%(mmake)_DEPS)
 #MM
@@ -1710,9 +1712,7 @@ endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(%(mmake)_DEPS)
 
-$(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_FILES)) : | $(%(mmake)_TARGETDIR)
-$(%(mmake)_DEPS) $(%(mmake)_OBJS) : | $(%(mmake)_OBJDIR)
-%rule_makedirs dirs="$(%(mmake)_TARGETDIR) $(%(mmake)_OBJDIR)"
+%rule_makedirs dirs="$(%(mmake)_TARGETDIR) $(%(mmake)_OBJDIR)" setuptarget="$(%(mmake)_DEPS) $(%(mmake)_OBJS) $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_FILES))"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_EXES) $(%(mmake)_DEPS)
 #MM
@@ -1900,10 +1900,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 %(mmake)_DEPS       := $(addprefix %(objdir)/, $(addsuffix .d,%(files)))
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(%(mmake)_DEPS)
 
-$(%(mmake)_OBJS) $(%(mmake)_DEPS) : | %(objdir)
-$(%(mmake)_MODULE) : | $(%(mmake)_MODDIR)
-$(%(mmake)_KOBJ) : | $(KOBJSDIR)
-%rule_makedirs dirs="%(objdir) $(%(mmake)_MODDIR) $(KOBJSDIR)"
+%rule_makedirs dirs="%(objdir) $(%(mmake)_MODDIR) $(KOBJSDIR)" setuptarget="$(%(mmake)_OBJS) $(%(mmake)_DEPS) $(%(mmake)_MODULE) $(%(mmake)_KOBJ) "
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_MODULE) $(%(mmake)_KOBJ) $(%(mmake)_DEPS)
 %(mmake)-clean ::
@@ -2027,6 +2024,7 @@ ifneq (%(dxxflags),)
 else
     %(mmake)%(flavour)_DXXFLAGS     = $(%(mmake)%(flavour)_DEFDXXFLAGS)
 endif
+
 ifeq (%(compiler),target)
 ifeq (%(lto),yes)
 %(mmake)%(flavour)_DEFDFLAGS        := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(%(mmake)%(flavour)_DEFDFLAGS))
@@ -2038,34 +2036,28 @@ ifeq (%(funcinstr),yes)
 %(mmake)%(flavour)_DEFDXXFLAGS      := $(strip $(FUNCINSTR_FLAGS) $(%(mmake)%(flavour)_DEFDXXFLAGS))
 endif
 endif
+
 OBJDIR                              ?= $(GENDIR)/$(CURDIR)
 ifneq (%(objdir),)
 %(mmake)_OBJDIR                     := %(objdir)
-ifneq (%(flavour),)
-%(mmake)%(flavour)_OBJDIR           := %(objdir)
-endif
 else
-%(mmake)_OBJDIR := $(OBJDIR)/%(modname)
-ifneq (%(flavour),)
-%(mmake)%(flavour)_OBJDIR           := $(OBJDIR)/$(%(mmake)%(flavour)_DEFNAME)
+%(mmake)_OBJDIR                     := $(OBJDIR)/$(%(mmake)%(flavour)_DEFNAME)
 endif
+ifneq (%(flavour),)
+%(mmake)%(flavour)_OBJDIR           := $(%(mmake)_OBJDIR)
 endif
 
 ## Create genmodule include Makefile for the module
 ##
-%(mmake)-makefile : $(%(mmake)%(flavour)_OBJDIR)/Makefile.$(%(mmake)%(flavour)_DEFNAME)%(modtype)
+%(mmake)%(flavour)-makefile         := $(%(mmake)%(flavour)_OBJDIR)/Makefile.$(%(mmake)%(flavour)_DEFNAME)%(modtype)
+%(mmake)%(flavour)-genmakefile : $(%(mmake)%(flavour)-makefile)
 
 %rule_genmodule_makefile \
-    modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
+    mmake=%(mmake)-genmakefile modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     conffile="%(conffile)"
 
-$(%(mmake)%(flavour)_OBJDIR)/Makefile.$(%(mmake)%(flavour)_DEFNAME)%(modtype) : | $(%(mmake)%(flavour)_OBJDIR)
-
-%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)"
-ifneq (%(flavour),)
-%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)"
-endif
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)" setuptarget=$(%(mmake)%(flavour)-makefile)
 
 # Do not parse these statements if metatarget is not appropriate
 ifneq ($(filter $(TARGET),$(%(mmake)%(flavour)_ALLTARGETS)),)
@@ -2073,7 +2065,7 @@ ifneq ($(filter $(TARGET),$(%(mmake)%(flavour)_ALLTARGETS)),)
 # suppress makes warning that the Makefile doesnt yet exist
 # on early passes (it will generate the file as needed though)
 # when we include it.
--include $(%(mmake)%(flavour)_OBJDIR)/Makefile.$(%(mmake)%(flavour)_DEFNAME)%(modtype)
+-include $(%(mmake)%(flavour)-makefile)
 
 %(mmake)%(flavour)_DEFMODDIR        := $($(%(mmake)%(flavour)_DEFNAME)_MODDIR)
 ifeq (%(archspecific),yes)
@@ -2102,7 +2094,7 @@ ifeq (%(build_abi),M)
     $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC)
 
 ifneq ($($(%(mmake)%(flavour)_DEFNAME)_INCLUDES),)
-%rule_genmodule_includes modname="%(modname)" modtype="%(modtype)" \
+%rule_genmodule_includes mmake=%(mmake)-includes modname="%(modname)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)_OBJDIR)/include" \
     conffile="%(conffile)" flavour="%(flavour)"
 
@@ -2126,25 +2118,27 @@ endif
 
 endif
 
-%rule_genmodule_genlibdefs modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
+%rule_genmodule_genlibdefs mmake=%(mmake)-genlibdefs modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)/include" \
     conffile="%(conffile)" version="%(version)"
 
 $(%(mmake)%(flavour)_DEFLIBDEFSINC) : FILENAME := $(%(mmake)%(flavour)_LIBDEFSINC)
-$(%(mmake)%(flavour)_DEFLIBDEFSINC) :
+$(%(mmake)%(flavour)_DEFLIBDEFSINC) : $(%(mmake)%(flavour)_LIBDEFSINC)
 	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
 	$(Q)$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
 
 $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC) : | $(%(mmake)%(flavour)_OBJDIR)/include
-%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/include"
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/include" setuptarget=%(mmake)%(flavour)-includes-dirs
 
 ## Extra genmodule src files generation
 ## 
-%rule_genmodule_files modname="%(modname)" modtype="%(modtype)" \
+%rule_genmodule_files mmake=%(mmake)-genmodfiles modname="%(modname)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" stubdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
     conffile="%(conffile)" flavour="%(flavour)"
 
-%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/linklib"
+$(%(mmake)-genmodfiles_GENFILEFLAG) : $(%(mmake)%(flavour)_DEFLIBDEFSINC) $(%(mmake)%(flavour)-makefile)
+
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/linklib" setuptarget=%(mmake)%(flavour)-linklib-setup
 
 ifeq (%(build_abi),M)
 ## Create FD file
@@ -2160,7 +2154,7 @@ endif
 
 $(%(mmake)%(flavour)_FDDIR)/%(modname)_lib.fd : | $(%(mmake)%(flavour)_FDDIR)
 
-%rule_makedirs dirs="$(%(mmake)%(flavour)_FDDIR)"
+%rule_makedirs dirs="$(%(mmake)%(flavour)_FDDIR)" setuptarget=%(mmake)%(flavour)-fd-setup
 endif
 
 ## Compilation
@@ -2370,8 +2364,7 @@ ifneq ($(%(mmake)%(flavour)_LC_MODNAME),$(%(mmake)%(flavour)_LC_LINKLIBNAME))
 %rule_link_linklib mmake=%(mmake) libname="%(modname)$(%(mmake)%(flavour)_LIBSUFFIX)" objs=$(%(mmake)%(flavour)_LINKLIBOBJS) libdir="$(%(mmake)%(flavour)_LIBDIR)"
 endif
 
-$(%(mmake)%(flavour)_LINKLIB) : | $(%(mmake)%(flavour)_LIBDIR)
-%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)"
+%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)" setuptarget=$(%(mmake)%(flavour)_LINKLIB)
 endif
 
 ifneq ($(%(mmake)%(flavour)_RELLINKLIB),)
@@ -2380,8 +2373,7 @@ ifneq ($(%(mmake)%(flavour)_LC_MODNAME),$(%(mmake)%(flavour)_LC_LINKLIBNAME))
 %rule_link_linklib mmake=%(mmake) libname="$(%(mmake)%(flavour)_DEFNAME)_rel$(%(mmake)%(flavour)_LIBSUFFIX)" objs=$(%(mmake)%(flavour)_RELLINKLIBOBJS) libdir="$(%(mmake)%(flavour)_LIBDIR)"
 endif
 
-$(%(mmake)%(flavour)_RELLINKLIB) : | $(%(mmake)%(flavour)_LIBDIR)
-%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)"
+%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)" setuptarget=$(%(mmake)%(flavour)_RELLINKLIB)
 endif
 endif
 
@@ -2412,10 +2404,8 @@ endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick" deps=$(%(mmake)%(flavour)_DEPS)
 
-$(%(mmake)%(flavour)_OBJS) $(%(mmake)%(flavour)_DEPS) : | $(%(mmake)%(flavour)_OBJDIR) $(%(mmake)%(flavour)_OBJDIR)/linklib
-$(%(mmake)%(flavour)_MODULE) : | %(prefix)/$(%(mmake)%(flavour)_MODDIR)
-$(%(mmake)%(flavour)_KOBJ)   : | $(KOBJSDIR)
-%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR) %(prefix)/$(%(mmake)%(flavour)_MODDIR) $(KOBJSDIR)"
+$(%(mmake)%(flavour)_OBJS) $(%(mmake)%(flavour)_DEPS) : | $(%(mmake)%(flavour)_OBJDIR)/linklib
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR) %(prefix)/$(%(mmake)%(flavour)_MODDIR) $(KOBJSDIR)" setuptarget="$(%(mmake)%(flavour)_OBJS) $(%(mmake)%(flavour)_DEPS) $(%(mmake)%(flavour)_MODULE) $(%(mmake)%(flavour)_KOBJ)"
 
 # Some include files need to be generated before the .c can be parsed.
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick),) # Only for this target these deps are wanted
@@ -2431,7 +2421,7 @@ endif
     $(addprefix $(%(mmake)%(flavour)_OBJDIR)/include/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
     $(addprefix $(GENINCDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
     $(addprefix $(%(mmake)%(flavour)_INCDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
-    $(%(mmake)%(flavour)_OBJDIR)/%(modname)_geninc $(%(mmake)%(flavour)_OBJDIR)/%(modname)_incs \
+    $(%(mmake)_OBJDIR)/%(modname)_geninc $(%(mmake)_OBJDIR)/%(modname)_incs \
     $(addsuffix .c,$(%(mmake)%(flavour)_LINKLIBFILES)) $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_LIBDEFSINC) \
     $(%(mmake)%(flavour)_DEFLIBDEFSINC) $(addsuffix .c,$(%(mmake)%(flavour)_STARTFILES) $(%(mmake)%(flavour)_ENDFILES)) \
     $(%(mmake)%(flavour)_ENDOBJS)
@@ -2638,9 +2628,8 @@ endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(%(mmake)_DEPS)
 
-$(%(mmake)_OBJS) $(%(mmake)_DEPS) : | $(%(mmake)_OBJDIR)
-$(%(mmake)_LINKLIB) : | %(libdir)
-%rule_makedirs dirs="$(%(mmake)_OBJDIR) %(libdir)"
+
+%rule_makedirs dirs="$(%(mmake)_OBJDIR) %(libdir)" setuptarget="$(%(mmake)_OBJS) $(%(mmake)_DEPS) $(%(mmake)_LINKLIB)"
 
 %(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_LINKLIB) $(%(mmake)_DEPS)
 #MM
@@ -2688,8 +2677,7 @@ endif
 #MM
 %(mmake) : $(%(mmake)_OBJS) %(source)
 
-$(%(mmake)_OBJS) : | $(%(mmake)_DIRS)
-%rule_makedirs dirs="$(%(mmake)_DIRS)"
+%rule_makedirs dirs="$(%(mmake)_DIRS)" setuptarget=$(%(mmake)_OBJS)
 
 %(dir)/%/%(subdir)/%(name).catalog : %(srcdir)/%.ct $(%(mmake)_DESC).cd
 	$(Q)$(ECHO) "Creating   %(name) catalog for language $*."
@@ -2744,8 +2732,7 @@ else
 
 endif
 
-$(BD_OBJS) : | %(dir)
-%rule_makedirs dirs="%(dir)"
+%rule_makedirs dirs="%(dir)" setuptarget=$(BD_OBJS)
 
 %(mmake)-clean : FILES := $(BD_OBJS)
 #MM
@@ -2844,8 +2831,7 @@ vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 vpath %.S $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
 endif
 
-$(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))"
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))" setuptarget="$(BD_OBJS$(BDID))"
 
 #MM
 %(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
@@ -2983,19 +2969,19 @@ $(error %copy_includes: compiler argument (%(compiler)) has to be host, kernel o
 endif
 
 ifneq (%(dir),)
-TMP_DIR := %(dir)
-$(eval TMP_DIRREMAIN := $$$(TMP_DIR))
-TMP_DIRFIRST := $(subst $(TMP_DIRREMAIN),,$(TMP_DIR))
-BD_INCL_FILES := $(subst %(dir),$(GENINCDIR)/%(path),$(dir %(includes)))
-BD_INCL_FILES := $(addprefix $(GENINCDIR)/%(path)/,$(notdir %(includes)))
+TMP_DIR                := %(dir)
+$(eval TMP_DIRREMAIN   := $$$(TMP_DIR))
+TMP_DIRFIRST           := $(subst $(TMP_DIRREMAIN),,$(TMP_DIR))
+BD_INCL_FILES          := $(subst %(dir),$(GENINCDIR)/%(path),$(dir %(includes)))
+BD_INCL_FILES          := $(addprefix $(GENINCDIR)/%(path)/,$(notdir %(includes)))
 ifeq ($(TMP_DIRFIRST),/)
-BD_INC_PATH := %(dir)/
+BD_INC_PATH            := %(dir)/
 else
-BD_INC_PATH := $(SRCDIR)/$(CURDIR)/%(dir)/
+BD_INC_PATH            := $(SRCDIR)/$(CURDIR)/%(dir)/
 endif
 else
-BD_INCL_FILES := $(addprefix $(GENINCDIR)/%(path)/,%(includes))
-BD_INC_PATH := $(SRCDIR)/$(CURDIR)/
+BD_INCL_FILES          := $(addprefix $(GENINCDIR)/%(path)/,%(includes))
+BD_INC_PATH            := $(SRCDIR)/$(CURDIR)/
 endif
 
 $(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
@@ -3004,13 +2990,13 @@ $(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
 ifeq (%(compiler),target)
 
 ifneq (%(dir),)
-BD_INCL_FILES2 := $(subst %(dir),%(includedir)/%(path),$(dir %(includes)))
-BD_INCL_FILES2 := $(addprefix %(includedir)/%(path)/,$(notdir %(includes)))
+BD_INCL_FILES2         := $(subst %(dir),%(includedir)/%(path),$(dir %(includes)))
+BD_INCL_FILES2         := $(addprefix %(includedir)/%(path)/,$(notdir %(includes)))
 else
-BD_INCL_FILES2 := $(addprefix %(includedir)/%(path)/,%(includes))
+BD_INCL_FILES2         := $(addprefix %(includedir)/%(path)/,%(includes))
 endif
 
-BD_INCL_FILES += $(BD_INCL_FILES2)
+BD_INCL_FILES          += $(BD_INCL_FILES2)
 
 $(BD_INCL_FILES2) : %(includedir)/%(path)/% : $(BD_INC_PATH)%
 	$(Q)$(CP) $< $@
@@ -3021,8 +3007,7 @@ endif
 
 .PHONY: %(mmake)
 
-$(BD_INCL_FILES) : | $(dir $(BD_INCL_FILES))
-%rule_makedirs dirs="$(dir $(BD_INCL_FILES))"
+%rule_makedirs dirs="$(dir $(BD_INCL_FILES))" setuptarget=$(BD_INCL_FILES)
 %end
 #------------------------------------------------------------------------------
 
@@ -3529,58 +3514,58 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
     usecppflags=yes cppflags=$(CPPFLAGS) cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) ldflags=$(LDFLAGS)
 
 ifneq (%(prefix),)
-    %(mmake)-prefix := %(prefix)
+    %(mmake)-prefix          := %(prefix)
 else
-    %(mmake)-prefix := $(AROS_CONTRIB)
+    %(mmake)-prefix          := $(AROS_CONTRIB)
 endif
 
 ifneq (%(aros_prefix),)
-    %(mmake)-aros_prefix := %(aros_prefix)
+    %(mmake)-aros_prefix     := %(aros_prefix)
 else
-    %(mmake)-aros_prefix := $(%(mmake)-prefix)
+    %(mmake)-aros_prefix     := $(%(mmake)-prefix)
 endif
 
 ifeq (%(compiler),host)
-    BD_LDFLAGS   := $(strip -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS))
-    BD_CFLAGS := $(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)
-    BD_CXXFLAGS := $(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)
-    BD_CPPFLAGS := $(HOST_CPPFLAGS)
-    %(mmake)-cmake_opts  := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_DEF_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)"
+    BD_LDFLAGS               := $(strip -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS))
+    BD_CFLAGS                := $(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)
+    BD_CXXFLAGS              := $(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)
+    BD_CPPFLAGS              := $(HOST_CPPFLAGS)
+    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_DEF_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)"
     ifeq (%(usecppflags),yes)
-        %(mmake)-cmake_opts += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
     endif
-    %(mmake)-cmake_opts += -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
+    %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
     ifeq (%(package),)
-        %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
+        %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)
     else
-        %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)/%(package)
+        %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)/%(package)
     endif
 else
-    BD_LDFLAGS   := %(ldflags)
-    BD_CFLAGS := %(cflags) 
-    BD_CXXFLAGS := %(cxxflags)
-    BD_CPPFLAGS := %(cppflags)
-    %(mmake)-cmake_opts  := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    BD_LDFLAGS               := %(ldflags)
+    BD_CFLAGS                := %(cflags) 
+    BD_CXXFLAGS              := %(cxxflags)
+    BD_CPPFLAGS              := %(cppflags)
+    %(mmake)-cmake_opts      := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
     ifeq (%(usecppflags),yes)
-        %(mmake)-cmake_opts += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
     endif
-    %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))" -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
+    %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))" -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
     ifeq (%(package),)
-        %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
+        %(mmake)-pkgdir      := $(GENDIR)/$(CURDIR)
     else
-        %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
+        %(mmake)-pkgdir      := $(GENDIR)/$(CURDIR)/%(package)
     endif
 endif
 ifneq (%(gendir),)
     ifeq (%(package),)
-        %(mmake)-pkgdir := %(gendir)/$(CURDIR)
+        %(mmake)-pkgdir      := %(gendir)/$(CURDIR)
     else
-        %(mmake)-pkgdir := %(gendir)/$(CURDIR)/%(package)
+        %(mmake)-pkgdir      := %(gendir)/$(CURDIR)/%(package)
     endif
 endif
 
-%(mmake)-cmakeflag := $(%(mmake)-pkgdir)/.cmake
-%(mmake)-installflag := $(%(mmake)-pkgdir)/.installed
+%(mmake)-cmakeflag           := $(%(mmake)-pkgdir)/.cmake
+%(mmake)-installflag         := $(%(mmake)-pkgdir)/.installed
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
@@ -3712,9 +3697,9 @@ ifneq (%(excludes),)
 endif
 
 ifneq (%(srcdir),)
-    %(mmake)-srcdir := %(srcdir)
+    %(mmake)-srcdir   := %(srcdir)
 else
-    %(mmake)-srcdir := %(archive)
+    %(mmake)-srcdir   := %(archive)
 endif
 
 #MM- %(mmake) : %(mmake)-diff
@@ -3799,36 +3784,36 @@ endif
 #MM- %(mmake)-create-patch : %(mmake)-%(subpackage)-create-patch
 #MM- %(mmake)-create-patch-quick : %(mmake)-%(subpackage)-create-patch
  
-%(mmake)-archbase  := %(package)-%(version)
+%(mmake)-archbase                        := %(package)-%(version)
 
 ifeq (%(compiler),host)
-    %(mmake)-portdir  := $(HOSTDIR)/Ports/host/%(package)
+    %(mmake)-portdir                     := $(HOSTDIR)/Ports/host/%(package)
 else
-    %(mmake)-portdir  := $(PORTSDIR)/%(package)
+    %(mmake)-portdir                     := $(PORTSDIR)/%(package)
 endif
 
 ifeq (%(prefix),)
-    %(mmake)-prefix := $(CONTRIB_DIR)/%(package)
+    %(mmake)-prefix                      := $(CONTRIB_DIR)/%(package)
 else
-    %(mmake)-prefix := %(prefix)
+    %(mmake)-prefix                      := %(prefix)
 endif
 
 ifneq (%(subpackage),)
-    %(mmake)-%(subpackage)-archbase  := %(package)-%(subpackage)-%(version)
+    %(mmake)-%(subpackage)-archbase      := %(package)-%(subpackage)-%(version)
 else
-    %(mmake)-%(subpackage)-archbase  := %(package)-%(version)
+    %(mmake)-%(subpackage)-archbase      := %(package)-%(version)
 endif
 
 ifneq (%(srcdir),)
-    %(mmake)-%(subpackage)-srcdir  := %(srcdir)
+    %(mmake)-%(subpackage)-srcdir        := %(srcdir)
 else
-    %(mmake)-%(subpackage)-srcdir  := $(%(mmake)-archbase)
+    %(mmake)-%(subpackage)-srcdir        := $(%(mmake)-archbase)
 endif
 
 ifneq (%(builddir),)
-    %(mmake)-%(subpackage)-builddir  := $(%(mmake)-%(subpackage)-srcdir)/%(builddir)
+    %(mmake)-%(subpackage)-builddir      := $(%(mmake)-%(subpackage)-srcdir)/%(builddir)
 else
-    %(mmake)-%(subpackage)-builddir  := $(%(mmake)-%(subpackage)-srcdir)
+    %(mmake)-%(subpackage)-builddir      := $(%(mmake)-%(subpackage)-srcdir)
 endif
 
 ifeq (%(patch),yes)
@@ -3994,12 +3979,12 @@ postinstall-%(package)-delete-la-files:
 %define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
     arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res=
 
-PKG_CLASSES   := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
-PKG_DEVICES   := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
-PKG_HANDLERS  := $(addprefix $(AROS_FS)/,$(addsuffix -handler, %(handlers)))
-PKG_HIDD      := $(addprefix $(AROS_DEVS)/Drivers/,$(addsuffix .hidd, %(hidds)))
-PKG_LIBS      := $(addprefix $(AROS_LIBRARIES)/,$(addsuffix .library, %(libs)))
-PKG_RESOURCES := $(addprefix $(AROS_DEVS)/,$(addsuffix .resource, %(res)))
+PKG_CLASSES        := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
+PKG_DEVICES        := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
+PKG_HANDLERS       := $(addprefix $(AROS_FS)/,$(addsuffix -handler, %(handlers)))
+PKG_HIDD           := $(addprefix $(AROS_DEVS)/Drivers/,$(addsuffix .hidd, %(hidds)))
+PKG_LIBS           := $(addprefix $(AROS_LIBRARIES)/,$(addsuffix .library, %(libs)))
+PKG_RESOURCES      := $(addprefix $(AROS_DEVS)/,$(addsuffix .resource, %(res)))
 
 PKG_CLASSES_ARCH   := $(addprefix $(AROS_CLASSES_ARCH)/,$(addsuffix .class, %(arch_classes)))
 PKG_DEVICES_ARCH   := $(addprefix $(AROS_DEVS_ARCH)/,$(addsuffix .device, %(arch_devs)))
@@ -4008,9 +3993,9 @@ PKG_HIDD_ARCH      := $(addprefix $(AROS_DEVS_ARCH)/Drivers/,$(addsuffix .hidd, 
 PKG_LIBRARIES_ARCH := $(addprefix $(AROS_LIBRARIES_ARCH)/,$(addsuffix .library, %(arch_libs)))
 PKG_RESOURCES_ARCH := $(addprefix $(AROS_DEVS_ARCH)/,$(addsuffix .resource, %(arch_res)))
 
-PKG_FILES := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES) \
+PKG_FILES          := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES) \
     $(PKG_CLASSES_ARCH) $(PKG_DEVICES_ARCH) $(PKG_HANDLERS_ARCH) $(PKG_HIDD_ARCH) $(PKG_LIBRARIES_ARCH) $(PKG_RESOURCES_ARCH)
-PKG_DIR   := $(dir %(file))
+PKG_DIR            := $(dir %(file))
 
 #MM
 %(mmake) : %(file)
@@ -4052,12 +4037,12 @@ PKG_DIR   := $(dir %(file))
 %define link_kickstart mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
     startup= uselibs= ldflags=$(LDFLAGS) map= deps=
 
-KOBJ_CLASSES  := $(addprefix $(KOBJSDIR)/, $(addsuffix _class.o, %(classes)))
-KOBJ_DEVICES  := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, %(devs)))
-KOBJ_HANDLERS := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, %(handlers)))
-KOBJ_HIDD     := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, %(hidds)))
-KOBJ_LIBS     := $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, %(libs)))
-KOBJ_RES      := $(addprefix $(KOBJSDIR)/, $(addsuffix _resource.o, %(res)))
+KOBJ_CLASSES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _class.o, %(classes)))
+KOBJ_DEVICES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, %(devs)))
+KOBJ_HANDLERS    := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, %(handlers)))
+KOBJ_HIDD        := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, %(hidds)))
+KOBJ_LIBS        := $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, %(libs)))
+KOBJ_RES         := $(addprefix $(KOBJSDIR)/, $(addsuffix _resource.o, %(res)))
 
 ifeq (%(startup),)
     KOBJ_STARTUP := $(GENDIR)/$(RESIDENT_BEGIN).o
@@ -4065,30 +4050,28 @@ else
     KOBJ_STARTUP := %(startup)
 endif
 
-KOBJS        := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
+KOBJS            := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
 
-TMP_LDFLAGS := %(ldflags)
+TMP_LDFLAGS      := %(ldflags)
 
 # Make a list of the lib files this program depends on.
 # In LDFLAGS remove white space between -L and directory
-TMP_DIRS := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
+TMP_DIRS         := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
 # Filter out only the libdirs and remove -L
-TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+TMP_DIRS         := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
 # Add trailing /
-TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+TMP_DIRS         := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
-TMP_DIRS += $(AROS_LIB)/
+TMP_DIRS         += $(AROS_LIB)/
 # add lib and .a to static linklib names
-TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs)))
+TMP_LIBS         := $(addprefix lib,$(addsuffix .a,%(uselibs)))
 # search for the linklibs in the given path, ignore ones not found
-TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
-    $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
-)
+TMP_DEPLIBS      := $(foreach lib,$(TMP_LIBS),$(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))))
 
 TMP_DIRS += $(dir %(file))
 ifneq (%(map),)
-    TMP_LDFLAGS += $(GENMAP) %(map)
-    TMP_DIRS    += $(dir %(map))
+    TMP_LDFLAGS  += $(GENMAP) %(map)
+    TMP_DIRS     += $(dir %(map))
 endif
 
 #MM %(mmake) : %(deps)
@@ -4099,10 +4082,10 @@ endif
 #MM
 %(mmake)-quick : %(file)
 
-%(file): KOBJS := $(KOBJS)
-%(file): LDFLAGS := $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
+%(file): KOBJS    := $(KOBJS)
+%(file): LDFLAGS  := $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
                     -static -nosysbase -Wl,-Ur
-%(file): LDLIBS := $(addprefix -l, %(uselibs))
+%(file): LDLIBS   := $(addprefix -l, %(uselibs))
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	$(Q)$(ECHO) "Kickstart  $(subst $(TARGETDIR)/,,$@)..."
 	$(Q)$(TARGET_CC) $(TARGET_SYSROOT) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
