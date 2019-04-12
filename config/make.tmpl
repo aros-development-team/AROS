@@ -3322,7 +3322,7 @@ endif
     %(mmake)-cfg-env += CC_FOR_TARGET="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" \
         CFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracflags))" \
         CXX_FOR_TARGET="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
-        CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags)" \
+        CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags))" \
         LD_FOR_TARGET="$(strip $(TARGET_LD))" \
         LDFLAGS_FOR_TARGET="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         AR="$(strip $(AR_PLAIN))" \
