@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,11 +42,18 @@
 #define ID_NTFS_DISK       (0x4E544653L)
 #endif
 
-static LONG dt[]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
+static LONG dt[] = 
+{
+    ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
     ID_DOS_DISK, ID_FFS_DISK, ID_INTER_DOS_DISK, ID_INTER_FFS_DISK,
-    ID_FASTDIR_DOS_DISK, ID_FASTDIR_FFS_DISK, ID_NOT_REALLY_DOS,
-    ID_KICKSTART_DISK, ID_MSDOS_DISK, ID_SFS_BE_DISK, ID_SFS_LE_DISK,
-    ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK, ID_CDFS_DISK, ID_NTFS_DISK };
+    ID_FASTDIR_DOS_DISK, ID_FASTDIR_FFS_DISK,
+    ID_DOS_muFS_DISK, ID_FFS_muFS_DISK, ID_INTER_DOS_muFS_DISK, ID_INTER_FFS_muFS_DISK,
+    ID_FASTDIR_DOS_muFS_DISK, ID_FASTDIR_FFS_muFS_DISK,
+    ID_SFS_BE_DISK, ID_SFS_LE_DISK,
+    ID_NOT_REALLY_DOS, ID_KICKSTART_DISK,
+    ID_MSDOS_DISK, ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK, ID_NTFS_DISK,
+    ID_CDFS_DISK
+};
 
 /*** Instance data **********************************************************/
 struct DiskInfo_DATA
@@ -110,16 +117,25 @@ Object *DiskInfo__OM_NEW
     "FFS-Intl",
     "OFS-DC",
     "FFS-DC",
+
+    "muFS OFS",
+    "muFS FFS",
+    "muFS OFS-Intl",
+    "muFS FFS-Intl",
+    "muFS OFS-DC",
+    "muFS FFS-DC",
+
+    "SFS BE",
+    "SFS LE",
+
     "Not DOS",
     "KickStart",
     "MSDOS",
-    "SFS0 BE",
-    "SFS0 LE",
     "FAT12",
     "FAT16",
     "FAT32",
-    "CD-ROM",
     "NTFS"
+    "CD-ROM",
     };
 
     /* Parse initial taglist -----------------------------------------------*/
@@ -285,7 +301,7 @@ Object *DiskInfo__OM_NEW
                                     /* TODO: Build this list only when data is realy available, and localise */
                                     (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                                         MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) __(MSG_DOSDEVICE),
+                                        MUIA_Text_Contents, __(MSG_DOSDEVICE),
                                     End,
                                     (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                                         MUIA_Text_PreParse, (IPTR) "\33l",
@@ -293,7 +309,7 @@ Object *DiskInfo__OM_NEW
                                     End,
                                     (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                                         MUIA_Text_PreParse, (IPTR) "\33r",
-                                        MUIA_Text_Contents, (IPTR) __(MSG_DEVICEINFO),
+                                        MUIA_Text_Contents, __(MSG_DEVICEINFO),
                                     End,
                                     (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                                         MUIA_Text_PreParse, (IPTR) "\33l",
@@ -301,7 +317,7 @@ Object *DiskInfo__OM_NEW
                                     End,
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
-                                MUIA_Text_Contents, (IPTR) __(MSG_FILESYSTEM),
+                                MUIA_Text_Contents, __(MSG_FILESYSTEM),
                             End,
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33I[6:24] \33l",
