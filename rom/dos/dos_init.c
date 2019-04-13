@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Header for dos.library
@@ -87,14 +87,13 @@ static void init_fs(struct DosLibrary *DOSBase)
         {
         struct FileSysEntry *fse;
             BPTR defseg = BNULL;
-            const ULONG DosMagic = 0x444f5301; /* DOS\001 */
 
             ForeachNode(&fsr->fsr_FileSysEntries, fse)
             {
                 if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
                 {
                     /* We prefer DOS\001 */
-                if (fse->fse_DosType == DosMagic)
+                if ((fse->fse_DosType == ID_FFS_DISK) || (fse->fse_DosType == ID_FFS_muFS_DISK))
                     {
                         defseg = fse->fse_SegList;
                         break;
@@ -167,7 +166,6 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
         DOSBase->dl_lib.lib_Revision     = REVISION_NUMBER;
         DOSBase->dl_lib.lib_IdString     = (char *)&version[6];
         DOSBase->dl_lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
-        DOSBase->dl_lib.lib_OpenCnt      = 0;
 
         /*
          * These two are allocated together with DOSBase, for reduced fragmentation.
@@ -310,7 +308,7 @@ static void DosExpunge(struct DosLibrary *DOSBase)
          * Someone is holding us... Perhaps some handler started subprocess
          * which didn't quit. Who knows...
          */
-        D(bug("[DosInit] Open count is %d, can't expunge\n", DOSBase->dl_lib.lib_OpenCnt));
+        D(bug("[DosInit] Open count is %d, can't expunge\n"));
         return;
     }
 
