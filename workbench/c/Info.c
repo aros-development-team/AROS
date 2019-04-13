@@ -144,36 +144,48 @@ struct DiskTypeList
 
 struct DiskTypeList dtl[] = 
 {
-    { ID_DOS_DISK,         "OFS" },
-    { ID_FFS_DISK,         "FFS" },
-    { ID_INTER_DOS_DISK,   "OFS-INT" },
-    { ID_INTER_FFS_DISK,   "FFS-INT" },
-    { ID_FASTDIR_DOS_DISK, "OFS-DC" },
-    { ID_FASTDIR_FFS_DISK, "FFS-DC" },
-    { ID_MSDOS_DISK,       "MS-DOS" },
-    { ID_ACD0_DISK,        "CDFS" },
-    { ID_CACHECDFS_DISK,   "CDFS" },
-    { ID_ASIMCDFS_DISK,    "CDFS" },
-    { ID_NOT_REALLY_DOS,   "NO DOS" },
-    { ID_MAC_DISK2,        "MAC" },
-    { ID_MNX1_DISK,        "Minix" },
-    { ID_QL5A_DISK,        "QL720k" },
-    { ID_QL5B_DISK,        "QL1.4M" },
-    { ID_CPM_DISK,         "CP/M" },
-    { ID_ZXS3_DISK,        "+3Dos" },
-    { ID_ZXS0_DISK,        "Disciple " },
-    { ID_ZXS1_DISK,        "UniDos" },
-    { ID_ZXS2_DISK,        "SamDos" },
-    { ID_ZXS4_DISK,        "Opus" },
-    { ID_P2A0_DISK,        "NETWORK" },
-    { ID_FAT12_DISK,       "FAT12" },
-    { ID_FAT16_DISK,       "FAT16" },
-    { ID_FAT32_DISK,       "FAT32" },
-    { ID_SFS_BE_DISK,      "SFS" },
-    { ID_SFS_LE_DISK,      "sfs" },
-    { ID_PFS_DISK,         "PFS" },
-    { ID_EXT2_DISK,        "EXT2" },
-    { 0L, 0L }
+    { ID_DOS_DISK,              "OFS"           },
+    { ID_FFS_DISK,              "FFS"           },
+    { ID_INTER_DOS_DISK,        "OFS-INT"       },
+    { ID_INTER_FFS_DISK,        "FFS-INT"       },
+    { ID_FASTDIR_DOS_DISK,      "OFS-DC"        },
+    { ID_FASTDIR_FFS_DISK,      "FFS-DC"        },
+    
+    { ID_DOS_muFS_DISK,         "muFS OFS"      },
+    { ID_FFS_muFS_DISK,         "muFS FFS"      },
+    { ID_INTER_DOS_muFS_DISK,   "muFS OFS-INT"  },
+    { ID_INTER_FFS_muFS_DISK,   "muFS FFS-INT"  },
+    { ID_FASTDIR_DOS_muFS_DISK, "muFS OFS-DC"   },
+    { ID_FASTDIR_FFS_muFS_DISK, "muFS FFS-DC"   },
+
+    { ID_MSDOS_DISK,            "MS-DOS"        },
+    { ID_ACD0_DISK,             "CDFS"          },
+    { ID_CACHECDFS_DISK,        "CDFS"          },
+    { ID_ASIMCDFS_DISK,         "CDFS"          },
+    { ID_NOT_REALLY_DOS,        "NO DOS"        },
+    { ID_MAC_DISK2,             "MAC"           },
+    { ID_MNX1_DISK,             "Minix"         },
+    { ID_QL5A_DISK,             "QL720k"        },
+    { ID_QL5B_DISK,             "QL1.4M"        },
+    { ID_CPM_DISK,              "CP/M"          },
+    { ID_ZXS3_DISK,             "+3Dos"         },
+    { ID_ZXS0_DISK,             "Disciple"      },
+    { ID_ZXS1_DISK,             "UniDos"        },
+    { ID_ZXS2_DISK,             "SamDos"        },
+    { ID_ZXS4_DISK,             "Opus"          },
+    { ID_P2A0_DISK,             "NETWORK"       },
+
+    { ID_FAT12_DISK,            "FAT12"         },
+    { ID_FAT16_DISK,            "FAT16"         },
+    { ID_FAT32_DISK,            "FAT32"         },
+
+    { ID_SFS_BE_DISK,           "SFS-BE"        },
+    { ID_SFS_LE_DISK,           "SFS-LE"        },
+
+    { ID_PFS_DISK,              "PFS"           },
+
+    { ID_EXT2_DISK,             "EXT2"          },
+    { 0L,                       0L              }
 };
 
 
