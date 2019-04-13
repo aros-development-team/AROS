@@ -3238,21 +3238,21 @@ ifneq ($(DEBUG),yes)
 endif
 
 ifeq (%(usecflags),yes)
-    %(mmake)-HOST_CFLAGS = $(strip %(hostisaflags) $(HOST_CFLAGS))
-    %(mmake)-KERNEL_CFLAGS = $(strip %(kernelisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag))
+    %(mmake)-HOST_CFLAGS=%(hostisaflags) $(HOST_CFLAGS)
+    %(mmake)-KERNEL_CFLAGS=%(kernelisaflags) $(KERNEL_CFLAGS) $$(%(mmake)-s_flag)
 ifeq (%(crossbuild),yes)
-    %(mmake)-TARGET_CFLAGS = $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-s_flag))
+    %(mmake)-TARGET_CFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-s_flag)
 else
-    %(mmake)-TARGET_CFLAGS = $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))
+    %(mmake)-TARGET_CFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)
 endif
 endif
 ifeq (%(usecxxflags),yes)
-    %(mmake)-HOST_CXXFLAGS =  $(strip %(hostisaflags) $(HOST_CXXFLAGS))
-    %(mmake)-KERNEL_CXXFLAGS =  $(strip %(kernelisaflags) $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag))
+    %(mmake)-HOST_CXXFLAGS=%(hostisaflags) $(HOST_CXXFLAGS)
+    %(mmake)-KERNEL_CXXFLAGS=%(kernelisaflags) $(KERNEL_CXXFLAGS) $(%(mmake)-s_flag)
 ifeq (%(crossbuild),yes)
-    %(mmake)-TARGET_CXXFLAGS = $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) $(%(mmake)-s_flag))
+    %(mmake)-TARGET_CXXFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) $(%(mmake)-s_flag)
 else
-    %(mmake)-TARGET_CXXFLAGS = $(strip %(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))
+    %(mmake)-TARGET_CXXFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)
 endif
 endif
 
