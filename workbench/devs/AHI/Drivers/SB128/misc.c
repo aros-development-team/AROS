@@ -57,7 +57,7 @@ void micro_delay(unsigned int val)
   replymp = (struct MsgPort *) CreateMsgPort();
   if (!replymp)
   {
-    DebugPrintF("SB128: Couldn't create reply port\n");
+    DebugPrintF("[SB128] Couldn't create reply port\n");
     return;
   }
 
@@ -65,13 +65,13 @@ void micro_delay(unsigned int val)
 
   if (TimerIO == NULL)
   {
-    DebugPrintF("SB128: Out of memory.\n");
+    DebugPrintF("[SB128] Out of memory.\n");
     return;
   }
 
   if (OpenDevice((CONST_STRPTR) "timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO, 0) != 0)
   {
-    DebugPrintF("SB128: Unable to open 'timer.device'.\n");
+    DebugPrintF("[SB128] Unable to open 'timer.device'.\n");
     return;
   }
   
@@ -103,7 +103,7 @@ unsigned long src_ready(struct SB128_DATA *card)
     //micro_delay(1);
   }  
 
-  DebugPrintF("SB128: SRC Ready timeout.\n");
+  DebugPrintF("[SB128] SRC Ready timeout.\n");
   return 0;
 }
 
@@ -211,7 +211,7 @@ void ak4531_ac97_write(struct SB128_DATA *card, unsigned short reg, unsigned sho
 
       default:
         /* Shouldn't happen */
-        DebugPrintF("SB128: Unsupported Record Input command\n");
+        DebugPrintF("[SB128] Unsupported Record Input command\n");
     }
 
     switch (input_right) {
@@ -257,7 +257,7 @@ void ak4531_ac97_write(struct SB128_DATA *card, unsigned short reg, unsigned sho
 
       default:
         /* Shouldn't happen */
-        DebugPrintF("SB128: Unsupported Record Input command\n");
+        DebugPrintF("[SB128] Unsupported Record Input command\n");
     }
     
     /* Write input values to AK4531 */
@@ -408,7 +408,7 @@ void ak4531_ac97_write(struct SB128_DATA *card, unsigned short reg, unsigned sho
         break;
 
       default:
-        DebugPrintF("SB128: Invalid value for Volume Set\n");
+        DebugPrintF("[SB128] Invalid value for Volume Set\n");
     }
     
     return;
@@ -432,7 +432,7 @@ void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val
         goto es1370_ok1;
       Delay(1);
     }
-    DebugPrintF("SB128: Couldn't write to ak4531!\n");
+    DebugPrintF("[SB128] Couldn't write to ak4531!\n");
     return;
     
     es1370_ok1:
@@ -447,8 +447,9 @@ void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val
     {
   	  if (!(pci_inl(SB128_CODEC, card) & CODEC_WIP ))
   	    goto ok1;
-  	}
-    DebugPrintF("SB128: Couldn't write to ac97! (1)\n");
+          micro_delay(1);
+    }
+    DebugPrintF("[SB128] Couldn't write to ac97! (1)\n");
     //ReleaseSemaphore(&card->sb128_semaphore);
     return;
    
@@ -463,7 +464,7 @@ void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val
     {
       if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00)
         break;
-      //micro_delay(1);
+      micro_delay(1);
     }
  
     /* Now wait for an undocumented bit to be set (and the SRC to be NOT busy) */
@@ -471,7 +472,7 @@ void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val
     {
       if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00010000)
         break;
-      //micro_delay(1);
+      micro_delay(1);
     }
 
     /* Write out the value to the codec now. */
@@ -493,9 +494,10 @@ void codec_write(struct SB128_DATA *card, unsigned short reg, unsigned short val
         //ReleaseSemaphore(&card->sb128_semaphore); 
         return;
       }
+      micro_delay(1);
     }
 
-    DebugPrintF("SB128: Couldn't write to ac97! (2)\n");
+    DebugPrintF("[SB128] Couldn't write to ac97! (2)\n");
   }
 
   //ReleaseSemaphore(&card->sb128_semaphore);
@@ -516,8 +518,9 @@ unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
   for (i = 0; i < 0x1000; i++) {
 	  if (!((pci_inl(SB128_CODEC, card)) & CODEC_WIP ))
 		  goto ok1;
+          micro_delay(1);
 	}
-  DebugPrintF("SB128: Couldn't read from ac97! (1)\n");
+  DebugPrintF("[SB128] Couldn't read from ac97! (1)\n");
 //  ReleaseSemaphore(&card->sb128_semaphore);
   return 0;
    
@@ -535,7 +538,7 @@ unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
   {
     if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00)
       break;
-    //micro_delay(1);    
+    micro_delay(1);
   }
 
  /* Now wait for an undocumented bit to be set (and the SRC to be NOT busy) */
@@ -543,7 +546,7 @@ unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
   {
     if ((pci_inl(SB128_SRC, card) & 0x00870000) == 0x00010000)
       break;
-    //micro_delay(1);
+    micro_delay(1);
   }
 
   /* Write the read request to the chip now */
@@ -560,8 +563,9 @@ unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
   for (i = 0; i < 0x1000; i++) {
     if (!((pci_inl(SB128_CODEC, card)) & CODEC_WIP))
       goto ok2;
+    micro_delay(1);
   }
-  DebugPrintF("SB128: Couldn't read from ac97 (2)!\n");
+  DebugPrintF("[SB128] Couldn't read from ac97 (2)!\n");
 //  ReleaseSemaphore(&card->sb128_semaphore);
   return 0;
     
@@ -572,8 +576,9 @@ unsigned short codec_read(struct SB128_DATA *card, unsigned short reg)
   for (i = 0; i < 0x1000; i++) {
 		if (!((pci_inl(SB128_CODEC, card)) & CODEC_RDY))
 		  goto ok3;
+                micro_delay(1);
 	}
-  DebugPrintF("SB128: Couldn't read from ac97 (3)!\n");
+  DebugPrintF("[SB128] Couldn't read from ac97 (3)!\n");
 //  ReleaseSemaphore(&card->sb128_semaphore);
   return 0;
 
@@ -754,7 +759,7 @@ AllocDriverData( struct PCIDevice *    dev,
   /* Initialize chip */
   if( card_init( card ) < 0 )
   {
-    DebugPrintF("SB128: Unable to initialize Card subsystem.");
+    DebugPrintF("[SB128] Unable to initialize Card subsystem.");
     return NULL;
   }
 
@@ -835,7 +840,7 @@ int card_init(struct SB128_DATA *card)
       /* Enable CODEC access, set DAC sample rate to 44100 */
       pci_outl(CTRL_CDC_EN | (DAC2_SRTODIV(44100) << DAC2_DIV_SHIFT), SB128_CONTROL, card);
       pci_outl(0x00, SB128_SCON, card);
-      DebugPrintF("SB128: Did RATE init\n");
+      DebugPrintF("[SB128] Did RATE init\n");
       
       /* CODEC initialisation */
       codec_write(card, AK4531_RESET,             0x03); /* Enable CODEC */
@@ -877,7 +882,7 @@ int card_init(struct SB128_DATA *card)
       codec_write(card, AK4531_INPUT_MUX_L_2,  0x80);
       codec_write(card, AK4531_INPUT_MUX_R_2,  0x80);
 
-      DebugPrintF("SB128: Did VOLUME init\n");
+      DebugPrintF("[SB128] Did VOLUME init\n");
     }   
     else
     {
@@ -898,7 +903,7 @@ int card_init(struct SB128_DATA *card)
       pci_outl(0x00, SB128_CONTROL, card);
       Delay(1);
 
-      DebugPrintF("SB128: Did AC97 reset.\n");
+      DebugPrintF("[SB128] Did AC97 reset.\n");
 
       /* Disable the Sample Rate Converter (SRC) */
       src_ready(card);
@@ -907,7 +912,7 @@ int card_init(struct SB128_DATA *card)
       for (i = 0; i < 0x80; i++)
         src_write(card, i, 0);
 
-      DebugPrintF("SB128: Did SRC wipe.\n");
+      DebugPrintF("[SB128] Did SRC wipe.\n");
 
       /* Perform basic configuration of the SRC, not well documented! */
       src_write(card, SRC_DAC1 + SRC_TRUNC, 0x100);
@@ -921,7 +926,7 @@ int card_init(struct SB128_DATA *card)
       src_write(card, SRC_VOL_DAC2, 0x1000);
       src_write(card, SRC_VOL_DAC2 + 1, 0x1000);
 
-      DebugPrintF("SB128: Did SRC init.\n");
+      DebugPrintF("[SB128] Did SRC init.\n");
 
       rate_set_adc(card, 44100);
       rate_set_dac2(card, 44100);
@@ -933,7 +938,7 @@ int card_init(struct SB128_DATA *card)
       card->currentPlayFreq = 9;
       card->currentRecFreq = 9;
 
-      DebugPrintF("SB128: Did RATE init.\n");
+      DebugPrintF("[SB128] Did RATE init.\n");
 
       /* Initialise registers of AC97 to default */
       codec_write(card, AC97_RESET, 0x00);
@@ -956,16 +961,16 @@ int card_init(struct SB128_DATA *card)
       codec_write(card, AC97_AUX_VOL,           0x0808 );
       codec_write(card, AC97_PCMOUT_VOL,        0x0808 );
 
-      DebugPrintF("SB128: Did VOLUME init.\n");
+      DebugPrintF("[SB128] Did VOLUME init.\n");
 
       cod = codec_read(card, AC97_RESET);
-      DebugPrintF("SB128: AC97 capabilities = %x\n", cod);
+      DebugPrintF("[SB128] AC97 capabilities = %x\n", cod);
 
       cod = codec_read(card, AC97_VENDOR_ID0);
-      DebugPrintF("SB128: AC97_VENDOR_ID0 = %x\n", cod);
+      DebugPrintF("[SB128] AC97_VENDOR_ID0 = %x\n", cod);
 
       cod = codec_read(card, AC97_VENDOR_ID1);
-      DebugPrintF("SB128: AC97_VENDOR_ID1 = %x\n", cod);
+      DebugPrintF("[SB128] AC97_VENDOR_ID1 = %x\n", cod);
     }
 
     return 0;
