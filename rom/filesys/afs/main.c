@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -159,7 +159,7 @@ static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
 	struct BlockCache *blockbuffer;
 
 	/* D(bug("[afs] Alarm rang.\n")); */
-	if ((volume->dostype == 0x444f5300) && mediumPresent(&volume->ioh))
+	if (((volume->dostype == ID_DOS_DISK) || (volume->dostype == ID_DOS_muFS_DISK)) && mediumPresent(&volume->ioh))
 	{
 	    /* Check if adding volume node needs to be retried */
 	    if (volume->volumenode == NULL)

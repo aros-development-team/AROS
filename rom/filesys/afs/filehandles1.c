@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -159,7 +159,7 @@ STRPTR pos;
 struct BlockCache *blockbuffer;
 UBYTE buffer[32];
 
-	if (dirah->volume->dostype != 0x444F5300)
+        if ((dirah->volume->dostype != ID_DOS_DISK) && (dirah->volume->dostype != ID_DOS_muFS_DISK))
 	{
 		D(bug("[afs] Unknown dostype 0x%08x\n", dirah->volume->dostype));
 		*error = ERROR_NOT_A_DOS_DISK;
