@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,12 +22,12 @@ static const uuid_t GPT_Type_NetBSD_FFS   = MAKE_UUID(0x49F48D5A, 0xB10E, 0x11DC
 const struct TypeMapping PartTypes[] =
 {
     { 0x01, MAKE_ID('F','A','T','\0'), NULL                  }, /* DOS 12-bit FAT */
-    { 0x04, MAKE_ID('F','A','T','\0'), NULL                  }, /* DOS 16-bit FAT (up to 32M) */
-    { 0x06, MAKE_ID('F','A','T','\0'), NULL                  }, /* DOS 16-bit FAT (over 32M) */
+    { 0x04, MAKE_ID('F','A','T','\1'), NULL                  }, /* DOS 16-bit FAT (up to 32M) */
+    { 0x06, MAKE_ID('F','A','T','\1'), NULL                  }, /* DOS 16-bit FAT (over 32M) */
     { 0x07, MAKE_ID('N','T','F','S') , NULL                  }, /* Windows NT NTFS */
-    { 0x0b, MAKE_ID('F','A','T','\0'), NULL                  }, /* W95 FAT32 */
-    { 0x0c, MAKE_ID('F','A','T','\0'), &GPT_Type_EFISystem   }, /* W95 LBA FAT32 */
-    { 0x0e, MAKE_ID('F','A','T','\0'), NULL                  }, /* W95 16-bit LBA FAT */
+    { 0x0b, MAKE_ID('F','A','T','\2'), NULL                  }, /* W95 FAT32 */
+    { 0x0c, MAKE_ID('F','A','T','\2'), &GPT_Type_EFISystem   }, /* W95 LBA FAT32 */
+    { 0x0e, MAKE_ID('F','A','T','\1'), NULL                  }, /* W95 16-bit LBA FAT */
     { 0x2c, MAKE_ID('D','O','S','\0'), NULL                  }, /* AOS OFS */
     { 0x2d, MAKE_ID('D','O','S','\1'), NULL                  }, /* AOS FFS */
     { 0x2e, MAKE_ID('D','O','S','\3'), NULL                  }, /* AOS FFS-I */
