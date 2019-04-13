@@ -2,7 +2,7 @@
 #define OS_UNIX_SUPPORT_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -134,6 +134,7 @@ struct InfoData {
 #define ID_FFS_DISK         MAKE_ID('D','O','S',1)
 #define ID_INTER_DOS_DISK   MAKE_ID('D','O','S',2)
 #define ID_INTER_FFS_DISK   MAKE_ID('D','O','S',3)
+#define ID_DOS_muFS_DISK         MAKE_ID('m','u','F',0)
 #define ID_NOT_REALLY_DOS   MAKE_ID('N','D','O','S')
 
 /* dos/exall.h */

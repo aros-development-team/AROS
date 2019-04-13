@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -76,13 +76,13 @@ UBYTE dosflags;
 		volume->dostype = ID_UNREADABLE_DISK;
 		return ERROR_UNKNOWN;
 	}
-	if (dostype != 0x444F5300)
+	if ((dostype != ID_DOS_DISK) && (dostype != ID_DOS_muFS_DISK))
 	{
 		blockbuffer = getBlock(afsbase, volume, 1);
 		dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 		dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	}
-	if (dostype != 0x444F5300)
+	if ((dostype != ID_DOS_DISK) && (dostype != ID_DOS_muFS_DISK))
 	{
 		D(bug("[afs] newMedium: incorrect DOS type (0x%lx)\n",
 			volume->dostype));
