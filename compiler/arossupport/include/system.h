@@ -2,7 +2,7 @@
 #define AROS_SYSTEM_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Analyse the current kind of system and compiler.
@@ -24,6 +24,11 @@
 #   ifndef AMIGA
 #       define AMIGA
 #   endif
+#endif
+
+/* GCC doesnt support clangs __has_feature built-in */
+#ifndef __has_feature
+#define __has_feature(f) 0
 #endif
 
 #if defined __GNUC__ && defined __GNUC_MINOR__
