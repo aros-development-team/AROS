@@ -26,10 +26,26 @@
 #   endif
 #endif
 
-/* GCC doesnt support clangs __has_feature built-in */
-#ifndef __has_feature
-#define __has_feature(f) 0
+/* handle clangs built-in's */
+#ifndef __has_builtin
+#    define __has_builtin(x) 0
 #endif
+
+#ifndef __has_feature
+#    define __has_feature(x) 0
+#endif
+#ifndef __has_extension
+#    define __has_extension __has_feature
+#endif
+
+#ifndef __has_attribute
+#    define __has_attribute(x) 0
+#endif
+#ifndef __has_c_attribute
+#    define __has_c_attribute(x) 0
+#endif
+
+/* now deal with gcc-ism*/
 
 #if defined __GNUC__ && defined __GNUC_MINOR__
 #    define __GNUC_PREREQ(maj, min) \
