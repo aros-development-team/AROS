@@ -46,7 +46,7 @@ CardInterrupt( struct SB128_DATA* card )
   ULONG intreq;
   LONG  handled = 0;
     
-  D(bug("[CMI8738]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card));
+  D(bug("[SB128]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card));
 
   while (((intreq = (pci_inl(SB128_STATUS, card))) & SB128_INT_PENDING) != 0)
   {
