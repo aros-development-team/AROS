@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2018, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2019, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
@@ -1189,18 +1189,19 @@ static void doreboot(void)
 
 struct BootStruct *bs;
 
-/* AROSBootstrap's ClearCacheE implementations */
-void ClearCacheAmigaOS(APTR address, IPTR length, ULONG caches)
+/* AROSBootstrap's ClearCacheE implementations
+ * This function can either be called from AmigaOS, where
+ * CacheClearE may not be implemented (<v37) or from AROS
+ * where the CPU may be configured .. so we always call it if
+ * the OS version provides it.
+ */
+void ils_ClearCache(APTR address, IPTR length, ULONG caches) 
 {
-    CacheClearE(address, length, caches);
+    if (SysBase->LibNode.lib_Version >= 37)
+    {
+        CacheClearE(address, length, caches);
+    }
 }
-
-void ClearCacheNOP(APTR address, IPTR length, ULONG caches)
-{
-  // Do nothing...
-}
-
-void (*ils_ClearCache)(APTR address, IPTR length, ULONG caches) = ClearCacheNOP;
 
 static void supercode(void)
 {
@@ -1398,45 +1399,6 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
      * stack.
      */
     lowmem = AllocMem(PAGE_SIZE, MEMF_CHIP);
-
-    /*
-     * Determine the version of CacheClearE to use.
-     * This is called from the loadseg support so we check for SysBase's
-     * lib_Version, since this code can be running on AOS 1.4 or lower.
-     */
-    if (SysBase->LibNode.lib_Version >= 37)
-    {
-        ils_ClearCache = ClearCacheAmigaOS;
-    }
-    else
-    {
-        ULONG cpuflags = SysBase->AttnFlags;
-        /*
-          The current used AmigaOS version doesnt implement
-          a usable CacheClearE, so we have to do it ourselves
-         */
-        if ((cpuflags & AFF_68060|AFF_68040|AFF_68020) == 0)
-        {
-            /*
-              AmigaOS may not have detected the CPU type
-              so we may need to detect it ourselves ...
-             */
-        }
-
-        if (cpuflags & AFF_68060) {
-            /* 68060 support */
-            
-        } else if (cpuflags & AFF_68040) {
-            /* 68040 support */
-            
-        } else if (cpuflags & AFF_68020) {
-            /* 68020 support */
-            
-        } else {
-            /* Everybody else (68000, 68010) */
-            
-        }
-    }
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
