@@ -1,4 +1,4 @@
-# Copyright © 2006, The AROS Development Team. All rights reserved.
+# Copyright © 2006-2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -11,7 +11,7 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 #MM  workbench-system-wanderer-tools-diskinfo-catalogs \
 #MM  workbench-system-wanderer-tools-diskinfo-icons
 
-USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-system-wanderer-tools-diskinfo \
     progname=DiskInfo targetdir=$(EXEDIR) \
