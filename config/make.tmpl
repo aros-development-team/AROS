@@ -3545,11 +3545,11 @@ ifeq (%(compiler),host)
     BD_CFLAGS                := $(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)
     BD_CXXFLAGS              := $(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)
     BD_CPPFLAGS              := $(HOST_CPPFLAGS)
-    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(HOST_DEF_CC)" -DCMAKE_C_FLAGS="$(BD_CFLAGS)"
+    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))" -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
     ifeq (%(usecppflags),yes)
-        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
     endif
-    %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(HOST_CXX)" -DCMAKE_CXX_FLAGS="$(BD_CXXFLAGS)"
+    %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))" -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
     ifeq (%(package),)
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)
     else
@@ -3562,7 +3562,7 @@ else
     BD_CPPFLAGS              := %(cppflags)
     %(mmake)-cmake_opts      := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
     ifeq (%(usecppflags),yes)
-        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(BD_CPPFLAGS)"
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
     endif
     %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))" -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
     ifeq (%(package),)
