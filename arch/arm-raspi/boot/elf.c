@@ -350,7 +350,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 			offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
 			offset = (offset ^ 0x8000) - 0x8000;
 
-			/* If MOVT relocation shift the offset 16 bits right */
+			/* If MOVT relocation shift the offset 16 bits left */
 			if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
 				offset <<= 16;
 
