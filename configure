@@ -4202,6 +4202,38 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+# detect the compiler version
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which toolchain family ${CC} belongs to" >&5
+$as_echo_n "checking which toolchain family ${CC} belongs to... " >&6; }
+HOST_COMPILER_VERSION=`"$CC" --version 2>/dev/null`
+if test x"$HOST_COMPILER_VERSION" = "x"; then
+    HOST_COMPILER_VERSION=`"$CC" --qversion 2>/dev/null`
+fi
+if test x"$HOST_COMPILER_VERSION" = "x"; then
+    HOST_COMPILER_VERSION=`"$CC" -V 2>/dev/null`
+fi
+
+IS_SUN_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'Sun C\+\+'`
+if test "$IS_SUN_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_PREFIX=
+    HOST_TOOLCHAIN_FAMILY=sun
+fi
+IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM'`
+if test "$IS_LLVM_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_PREFIX=llvm-
+    HOST_TOOLCHAIN_FAMILY=llvm
+fi
+IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
+if test "$IS_GNU_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_PREFIX=
+    HOST_TOOLCHAIN_FAMILY=gnu
+fi
+if test x"$HOST_TOOLCHAIN_FAMILY" = "x"; then
+    HOST_TOOLCHAIN_FAMILY=unknown
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $HOST_TOOLCHAIN_FAMILY" >&5
+$as_echo "$HOST_TOOLCHAIN_FAMILY" >&6; }
+
 # Check for a compatible awk
 for ac_prog in gawk nawk
 do
