@@ -259,8 +259,42 @@ tools-crosstools-gcc :
 
 #MM tools-crosstools-gcc : crosstools-gcc--fetch crosstools-gcc--configure
 
-#MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch
+#MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch gnu-gcc-autolibs
 #MM- linklibs-gnu-libatomic : tools-crosstools-gcc-libatomic
+
+#MM- gnu-gcc-autolibs :          \
+#MM	linklibs-startup         \
+#MM	linklibs-mui             \
+#MM	linklibs-arossupport     \
+#MM	linklibs-amiga           \
+#MM	linklibs-posixc          \
+#MM	linklibs-stdcio          \
+#MM	linklibs-stdc            \
+#MM	linklibs-codesets        \
+#MM	linklibs-keymap          \
+#MM	linklibs-expansion       \
+#MM	linklibs-commodities     \
+#MM	linklibs-diskfont        \
+#MM	linklibs-asl             \
+#MM	linklibs-muimaster       \
+#MM	linklibs-datatypes       \
+#MM	linklibs-cybergraphics   \
+#MM	linklibs-workbench       \
+#MM	linklibs-icon            \
+#MM	linklibs-intuition       \
+#MM	linklibs-gadtools        \
+#MM	linklibs-layers          \
+#MM	linklibs-aros            \
+#MM	linklibs-partition       \
+#MM	linklibs-iffparse        \
+#MM	linklibs-graphics        \
+#MM	linklibs-locale          \
+#MM	linklibs-dos             \
+#MM	linklibs-utility         \
+#MM	linklibs-oop             \
+#MM	linklibs-exec            \
+#MM	linklibs-autoinit        \
+#MM	linklibs-libinit 
 
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
 	package_repo="$(GCC_REPOSITORY)" suffixes="tar.bz2 tar.gz tar.xz" \
