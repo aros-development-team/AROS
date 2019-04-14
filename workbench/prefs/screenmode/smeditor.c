@@ -290,14 +290,14 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
     if (testPort)
     {
         struct timerequest *timer; 
-        bug("[SMPrefs] testPort @ 0x%p\n", testPort);
+        D(bug("[smeditor] testPort @ 0x%p\n", testPort);)
         timer = (struct timerequest *)CreateIORequest(testPort, sizeof(struct timerequest)); 
         if (timer)
         {
-            bug("[SMPrefs] timer @ 0x%p\n", timer);
+            D(bug("[smeditor] timer @ 0x%p\n", timer);)
             if (!OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *)timer,0))
             {
-                bug("[SMPrefs] timer.device opened\n");
+                D(bug("[smeditor] timer.device opened\n");)
 
                 timer->tr_node.io_Command = TR_ADDREQUEST;
                 timer->tr_time.tv_secs    = 6;
@@ -306,12 +306,11 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                 modeid = XGET(data->properties, MUIA_ScreenModeProperties_DisplayID);
                 width = XGET(data->properties, MUIA_ScreenModeProperties_Width);
                 height = XGET(data->properties, MUIA_ScreenModeProperties_Height);
-                depth = XGET(data->properties, MUIA_ScreenModeProperties_Height);
+                depth = XGET(data->properties, MUIA_ScreenModeProperties_Depth);
 
                 testScreen = OpenScreenTags
                 (
                     NULL,
-            /*        SA_PubName, name,*/
                     SA_Title, "ScreenMode Test",
                     SA_Width, width,
                     SA_Height, height,
