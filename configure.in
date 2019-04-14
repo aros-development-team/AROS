@@ -113,7 +113,11 @@ fi
 # Due to a bug in autoconf check for c++ compiler first.
 # For mor info see, http://osdir.com/ml/bug-autoconf-gnu/2010-05/msg00001.html.
 AC_PROG_CXX([${host_cxx_compilers}])
+CXX_BASE=$CXX
+AC_PATH_PROG(CXX,$CXX)
 AC_PROG_CC([${host_c_compilers}])
+CC_BASE=$CC
+AC_PATH_PROG(CC,$CC)
 aros_host_def_cc="$CC"
 AC_PROG_CC_STDC
 AC_PROG_CPP
@@ -137,7 +141,7 @@ fi
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
     HOST_TOOLCHAIN_PREFIX=llvm-
-    HOST_TOOLCHAIN_SUFFIX="`echo $CC | sed -e \"s|clang||g\"`"
+    HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
     HOST_TOOLCHAIN_FAMILY=llvm
 fi
 IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
@@ -499,10 +503,10 @@ re-running configure])])
 esac
 
 base_ar_name=${HOST_TOOLCHAIN_PREFIX}ar${HOST_TOOLCHAIN_SUFFIX}
-AROS_PROG(aros_host_ar,$base_ar_name,[cr])
+AROS_PATH_PROG(aros_host_ar,$base_ar_name,[cr])
 AROS_REQUIRED(ar,$aros_host_ar)
 base_ranlib_name=${HOST_TOOLCHAIN_PREFIX}ranlib${HOST_TOOLCHAIN_SUFFIX}
-AROS_PROG(aros_host_ranlib,$base_ranlib_name)
+AROS_PATH_PROG(aros_host_ranlib,$base_ranlib_name)
 AROS_REQUIRED(ranlib,$aros_host_ranlib)
 AROS_PROG(aros_host_strip,strip)
 AROS_REQUIRED(strip,$aros_host_strip)

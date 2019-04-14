@@ -25,6 +25,12 @@ dnl
 AC_DEFUN([AROS_PROG],
 [AC_CHECK_PROG([$1],[$2],[$2 $3])])
 
+dnl AROS_PATH_PROG(var,prog,args)
+dnl Like AROS_PROG but gets the full path
+dnl
+AC_DEFUN([AROS_PATH_PROG],
+[AC_PATH_PROG([$1],[$2],[$2 $3])])
+
 dnl AROS_BUILDCMD(var,prog,ext)
 dnl appends the cmd part of prog with ext
 dnl
