@@ -4306,7 +4306,9 @@ fi
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
     HOST_TOOLCHAIN_PREFIX=llvm-
-    HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
+    if test "$CC_BASE" != "gcc"; then
+        HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
+    fi
     HOST_TOOLCHAIN_FAMILY=llvm
 fi
 IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
