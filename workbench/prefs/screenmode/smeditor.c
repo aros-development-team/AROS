@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -247,6 +247,199 @@ static IPTR SMEditor__MUIM_PrefsEditor_ExportFH
     return success;
 }
 
+static IPTR SMEditor__MUIM_PrefsEditor_Export
+(
+    Class *CLASS, Object *self,
+    struct MUIP_PrefsEditor_ExportFH *message
+)
+{
+#if (0)
+    Object *window;
+#endif
+    IPTR retval;
+
+#if (0)
+    window = _win(self);
+
+    SET(window, MUIA_Window_Open, FALSE);
+#endif
+    retval = DoSuperMethodA(CLASS, self, (Msg)message);
+#if (0)
+    if (!retval)
+    {
+        SET(window, MUIA_Window_Open, TRUE);
+    }
+#endif
+    return retval;
+}
+
+static IPTR SMEditor__MUIM_PrefsEditor_Test
+(
+    Class *CLASS, Object *self,
+    struct MUIP_PrefsEditor_ExportFH *message
+)
+{
+    SETUP_INST_DATA;
+    struct MsgPort *testPort;
+    struct Screen *testScreen;
+    ULONG modeid;
+    UWORD width, height;
+    UBYTE depth;
+
+    testPort = CreateMsgPort();
+    if (testPort)
+    {
+        struct timerequest *timer; 
+        bug("[SMPrefs] testPort @ 0x%p\n", testPort);
+        timer = (struct timerequest *)CreateIORequest(testPort, sizeof(struct timerequest)); 
+        if (timer)
+        {
+            bug("[SMPrefs] timer @ 0x%p\n", timer);
+            if (!OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *)timer,0))
+            {
+                bug("[SMPrefs] timer.device opened\n");
+
+                timer->tr_node.io_Command = TR_ADDREQUEST;
+                timer->tr_time.tv_secs    = 6;
+                timer->tr_time.tv_micro   = 0;
+
+                modeid = XGET(data->properties, MUIA_ScreenModeProperties_DisplayID);
+                width = XGET(data->properties, MUIA_ScreenModeProperties_Width);
+                height = XGET(data->properties, MUIA_ScreenModeProperties_Height);
+                depth = XGET(data->properties, MUIA_ScreenModeProperties_Height);
+
+                testScreen = OpenScreenTags
+                (
+                    NULL,
+            /*        SA_PubName, name,*/
+                    SA_Title, "ScreenMode Test",
+                    SA_Width, width,
+                    SA_Height, height,
+                    SA_Depth, depth,
+                    SA_DisplayID, modeid,
+                    TAG_DONE
+                );
+
+                if (testScreen)
+                {
+                    struct RastPort *rp;
+                    int col, colwidth, colheight, rowheight;
+                    LONG colPen;
+                    UBYTE r, g, b;
+
+                    colwidth = width / 7;
+                    colheight = (height / 100) * 70;
+                    rowheight = (height - colheight) / 3;
+
+                    bug("[SMPrefs] testScreen @ 0x%p\n", testScreen);
+
+                    ULONG rgbPens[] = {
+                       0x9F9F9F, // Gray
+                       0xFFFF00, // Yellow
+                       0x00FFFF, // Turqouise
+                       0x00FF00, // Green
+                       0xFF00FF, // Purple
+                       0xFF0000, // Red
+                       0x0000FF, // Blue
+                    };
+
+                    rp = CreateRastPort();
+                    rp->BitMap = testScreen->RastPort.BitMap;
+
+                    bug("[SMPrefs] rp @ 0x%p\n", rp);
+                    bug("[SMPrefs] bm @ 0x%p\n", rp->BitMap);
+
+                    SetRGB32(&testScreen->ViewPort, 0, 0, 0, 0);
+
+                    for (col = 0; col < 7; col ++)
+                    {
+                        r = (rgbPens[col] & 0xFF0000) >> 16;
+                        g = (rgbPens[col] & 0x00FF00) >> 8;
+                        b = rgbPens[col] & 0x0000FF;
+
+                        SetRGB32(&testScreen->ViewPort,
+                            (col + 1),
+                            r + (r<<8) + (r<<16) + (r<<24),
+                            g + (g<<8) + (g<<16) + (g<<24),
+                            b + (b<<8) + (b<<16) + (b<<24));
+
+                        colPen = ObtainBestPen (testScreen->ViewPort.ColorMap,
+                            r + (r<<8) + (r<<16) + (r<<24),
+                            g + (g<<8) + (g<<16) + (g<<24),
+                            b + (b<<8) + (b<<16) + (b<<24),
+                            OBP_FailIfBad, FALSE,
+                            OBP_Precision, PRECISION_GUI,
+                            TAG_END);
+
+                        SetAPen(rp, colPen);
+                        RectFill(rp, col * colwidth, 0, ((col + 1) * colwidth) - 1, colheight);
+                    }
+                    for (col = 0; col < 7; col ++)
+                    {
+                        if (col % 2 == 0)
+                        {
+                            r = (rgbPens[6 - col] & 0xFF0000) >> 16;
+                            g = (rgbPens[6 - col] & 0x00FF00) >> 8;
+                            b = rgbPens[6 - col] & 0x0000FF;
+                        }
+                        else
+                        {
+                            r = 0;
+                            g = 0;
+                            b = 0;
+                        }
+                        colPen = ObtainBestPen (testScreen->ViewPort.ColorMap,
+                            r + (r<<8) + (r<<16) + (r<<24),
+                            g + (g<<8) + (g<<16) + (g<<24),
+                            b + (b<<8) + (b<<16) + (b<<24),
+                            OBP_FailIfBad, FALSE,
+                            OBP_Precision, PRECISION_GUI,
+                            TAG_END);
+
+                        SetAPen(rp, colPen);
+                        RectFill(rp, col * colwidth, colheight, ((col + 1) * colwidth) - 1, colheight + rowheight);
+                    }
+                    /* Draw greyscale */
+                    colwidth = width / 12;
+                    for (col = 0; col < 12; col ++)
+                    {
+                        r = col * (0xFF/12);
+                        g = col * (0xFF/12);
+                        b = col * (0xFF/12);
+
+                        if (col != 0)
+                        {
+                            SetRGB32(&testScreen->ViewPort,
+                                (col + 9),
+                                r + (r<<8) + (r<<16) + (r<<24),
+                                g + (g<<8) + (g<<16) + (g<<24),
+                                b + (b<<8) + (b<<16) + (b<<24));
+                        }
+                        colPen = ObtainBestPen (testScreen->ViewPort.ColorMap,
+                            r + (r<<8) + (r<<16) + (r<<24),
+                            g + (g<<8) + (g<<16) + (g<<24),
+                            b + (b<<8) + (b<<16) + (b<<24),
+                            OBP_FailIfBad, FALSE,
+                            OBP_Precision, PRECISION_GUI,
+                            TAG_END);
+
+                        SetAPen(rp, colPen);
+                        RectFill(rp, col * colwidth, colheight + rowheight, ((col + 1) * colwidth) - 1, colheight + (rowheight << 1));
+                    }
+                    DoIO ((struct IORequest *)timer);
+
+                    CloseScreen(testScreen);
+                }
+                CloseDevice((struct IORequest *)timer);
+            }
+            DeleteIORequest((struct IORequest *)timer);
+        }
+        DeleteMsgPort(testPort); 
+    }
+
+    return TRUE;
+}
+
 static IPTR SMEditor__MUIM_PrefsEditor_SetDefaults
 (
     Class *CLASS, Object *self,
@@ -266,11 +459,13 @@ static IPTR SMEditor__MUIM_PrefsEditor_SetDefaults
     return success;
 }
 
-ZUNE_CUSTOMCLASS_4
+ZUNE_CUSTOMCLASS_6
 (
     SMEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                    struct opSet *,
     MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
+    MUIM_PrefsEditor_Export, struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Test, struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_SetDefaults,     Msg
 );
