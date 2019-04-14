@@ -503,7 +503,9 @@ re-running configure])])
 esac
 
 base_ar_name=${HOST_TOOLCHAIN_PREFIX}ar${HOST_TOOLCHAIN_SUFFIX}
-AROS_PATH_PROG(aros_host_ar,$base_ar_name,[cr])
+AROS_PROG(aros_host_cmd_ar,$base_ar_name,[cr])
+AROS_PATH_PROG(aros_host_full_ar,$aros_host_cmd_ar)
+aros_host_ar=`echo $aros_host_cmd_ar | sed -e "s|$base_ar_name|$aros_host_full_ar|g"`
 AROS_REQUIRED(ar,$aros_host_ar)
 base_ranlib_name=${HOST_TOOLCHAIN_PREFIX}ranlib${HOST_TOOLCHAIN_SUFFIX}
 AROS_PATH_PROG(aros_host_ranlib,$base_ranlib_name)

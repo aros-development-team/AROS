@@ -742,6 +742,7 @@ aros_host_cxxflags
 aros_host_cflags
 aros_host_cppflags
 aros_host_make
+aros_host_ar
 aros_host_cxx
 aros_host_cc
 aros_host_def_cc
@@ -846,7 +847,8 @@ CP
 RM
 aros_host_strip
 aros_host_ranlib
-aros_host_ar
+aros_host_full_ar
+aros_host_cmd_ar
 aros_host_automake
 aros_host_autoheader
 aros_host_autoconf
@@ -5051,12 +5053,49 @@ base_ar_name=${HOST_TOOLCHAIN_PREFIX}ar${HOST_TOOLCHAIN_SUFFIX}
 set dummy $base_ar_name; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_host_ar+:} false; then :
+if ${ac_cv_prog_aros_host_cmd_ar+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  case $aros_host_ar in
+  if test -n "$aros_host_cmd_ar"; then
+  ac_cv_prog_aros_host_cmd_ar="$aros_host_cmd_ar" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_aros_host_cmd_ar="$base_ar_name cr"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+aros_host_cmd_ar=$ac_cv_prog_aros_host_cmd_ar
+if test -n "$aros_host_cmd_ar"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_host_cmd_ar" >&5
+$as_echo "$aros_host_cmd_ar" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+# Extract the first word of "$aros_host_cmd_ar", so it can be a program name with args.
+set dummy $aros_host_cmd_ar; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_host_full_ar+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_host_full_ar in
   [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_host_ar="$aros_host_ar" # Let the user override the test with a path.
+  ac_cv_path_aros_host_full_ar="$aros_host_full_ar" # Let the user override the test with a path.
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -5066,7 +5105,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_aros_host_ar="$as_dir/$ac_word$ac_exec_ext"
+    ac_cv_path_aros_host_full_ar="$as_dir/$ac_word$ac_exec_ext"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -5074,20 +5113,21 @@ done
   done
 IFS=$as_save_IFS
 
-  test -z "$ac_cv_path_aros_host_ar" && ac_cv_path_aros_host_ar="$base_ar_name cr"
+  test -z "$ac_cv_path_aros_host_full_ar" && ac_cv_path_aros_host_full_ar="$aros_host_cmd_ar "
   ;;
 esac
 fi
-aros_host_ar=$ac_cv_path_aros_host_ar
-if test -n "$aros_host_ar"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_host_ar" >&5
-$as_echo "$aros_host_ar" >&6; }
+aros_host_full_ar=$ac_cv_path_aros_host_full_ar
+if test -n "$aros_host_full_ar"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_host_full_ar" >&5
+$as_echo "$aros_host_full_ar" >&6; }
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 
 
+aros_host_ar=`echo $aros_host_cmd_ar | sed -e "s|$base_ar_name|$aros_host_full_ar|g"`
 req_avail=yes
 if test "$aros_host_ar" = ""; then
     req_avail=no
