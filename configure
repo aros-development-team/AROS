@@ -9239,9 +9239,21 @@ if test "$aros_toolchain" = "gnu" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
 $as_echo "$target_gcc_version" >&6; }
 
-    GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
-    GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
-    GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking version string style" >&5
+$as_echo_n "checking version string style... " >&6; }
+    if test "${target_gcc_version#*$'-'}" != "$target_gcc_version" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: snapshot" >&5
+$as_echo "snapshot" >&6; }
+        GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'-' -f1)
+        GCC_VERSION_MINOR=-1
+        GCC_VERSION_PATCH=-1
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: release" >&5
+$as_echo "release" >&6; }
+        GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
+        GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
+        GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    fi
 
     gcc_fix_bitfields="false"
     if test "$GCC_VERSION_MAJOR" -gt "4" ; then

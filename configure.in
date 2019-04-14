@@ -1968,9 +1968,18 @@ fi
 if test "$aros_toolchain" = "gnu" ; then
     AC_MSG_RESULT($target_gcc_version)
 
-    GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
-    GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
-    GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    AC_MSG_CHECKING([version string style])
+    if test "${target_gcc_version#*$'-'}" != "$target_gcc_version" ; then
+        AC_MSG_RESULT(snapshot)
+        GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'-' -f1)
+        GCC_VERSION_MINOR=-1
+        GCC_VERSION_PATCH=-1
+    else
+        AC_MSG_RESULT(release)
+        GCC_VERSION_MAJOR=$(echo $target_gcc_version | cut -d'.' -f1)
+        GCC_VERSION_MINOR=$(echo $target_gcc_version | cut -d'.' -f2)
+        GCC_VERSION_PATCH=$(echo $target_gcc_version | cut -d'.' -f3)
+    fi
 
     gcc_fix_bitfields="false"
     if test "$GCC_VERSION_MAJOR" -gt "4" ; then
