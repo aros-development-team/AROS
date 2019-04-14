@@ -118,6 +118,36 @@ aros_host_def_cc="$CC"
 AC_PROG_CC_STDC
 AC_PROG_CPP
 
+# detect the compiler version
+AC_MSG_CHECKING([which toolchain family ${CC} belongs to])
+HOST_COMPILER_VERSION=`"$CC" --version 2>/dev/null`
+if test x"$HOST_COMPILER_VERSION" = "x"; then
+    HOST_COMPILER_VERSION=`"$CC" --qversion 2>/dev/null`
+fi
+if test x"$HOST_COMPILER_VERSION" = "x"; then
+    HOST_COMPILER_VERSION=`"$CC" -V 2>/dev/null`
+fi
+
+IS_SUN_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'Sun C\+\+'`
+if test "$IS_SUN_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_PREFIX=
+    HOST_TOOLCHAIN_FAMILY=sun
+fi
+IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM'`
+if test "$IS_LLVM_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_PREFIX=llvm-
+    HOST_TOOLCHAIN_FAMILY=llvm
+fi
+IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
+if test "$IS_GNU_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_PREFIX=
+    HOST_TOOLCHAIN_FAMILY=gnu
+fi
+if test x"$HOST_TOOLCHAIN_FAMILY" = "x"; then
+    HOST_TOOLCHAIN_FAMILY=unknown
+fi
+AC_MSG_RESULT($HOST_TOOLCHAIN_FAMILY)
+
 # Check for a compatible awk
 AC_CHECK_PROGS(AWK,[gawk nawk])
 AROS_REQUIRED(gawk,$AWK)
