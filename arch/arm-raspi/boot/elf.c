@@ -284,14 +284,9 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 				SysBase_no:                     s = sym->value;
 			break;
 		default:
-			s = (uint32_t) sh[sym->shindex].addr + sym->value;
+			s = (uint32_t) sh[sym->shindex].addr + sym->value - deltas[sym->shindex];
 		}
 		switch (ELF32_R_TYPE(rel->info)) {
-
-		//		case R_386_32: /* 32bit direct/absolute */
-		//			*p += s + virtoffset;
-		//			break;
-
 		case R_ARM_CALL:
 		case R_ARM_JUMP24:
 		case R_ARM_PC24:
@@ -307,11 +302,11 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 				*/
 				if (shrel->info != sym->shindex)
 				{
-					signed long expected_delta = deltas[sym->shindex] - deltas[shrel->info];
-					signed long actual_delta = sh[sym->shindex].addr - sh[shrel->info].addr;
+					intptr_t expected_delta = deltas[sym->shindex] - deltas[shrel->info];
+					intptr_t actual_delta = sh[sym->shindex].addr - sh[shrel->info].addr;
 
 					/* On ARM the 24 bit offset is shifted by 2 to the right */
-					signed long offset = (AROS_LE2LONG(*p) & 0x00ffffff) << 2;
+					intptr_t offset = (AROS_LE2LONG(*p) & 0x00ffffff) << 2;
 					/* If highest bit set, make offset negative */
 					if (offset & 0x02000000)
 						offset -= 0x04000000;
@@ -346,22 +341,25 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 		case R_ARM_MOVW_ABS_NC:
 		case R_ARM_MOVT_ABS:
 		{
-			signed long offset = AROS_LE2LONG(*p);
+			intptr_t offset = AROS_LE2LONG(*p);
 			offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
-			offset = (offset ^ 0x8000) - 0x8000;
+			//offset = (offset ^ 0x8000) - 0x8000;
 
 			/* If MOVT relocation shift the offset 16 bits left */
 			if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
 				offset <<= 16;
 
+kprintf("movw/movt: offset=%08x, s=%08x, sym->value=%08x, section_orig_addr=%08x, section_addr=%08x\n", offset, s, sym->value,
+	deltas[sym->shindex], sh[sym->shindex].addr + virtoffset);
+
 			if (is_exec)
 			{
 				/* Fix address by difference between actual address and expected address */
-				offset += (signed long)sh[sym->shindex].addr - deltas[sym->shindex] + virtoffset;
+				offset += (intptr_t)sh[sym->shindex].addr - (intptr_t)deltas[sym->shindex] + (intptr_t)virtoffset;
 			}
 			else
 			{
-				offset += s + virtoffset;
+				offset += (intptr_t)(s + virtoffset);
 			}
 
 			/* If MOVT shift the offset back */
@@ -376,7 +374,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 		case R_ARM_ABS32: /* PC relative 32 bit signed */
 			if (is_exec)
 			{
-				*p += (signed long)sh[sym->shindex].addr - deltas[sym->shindex] + virtoffset;
+				*p += (uintptr_t)sh[sym->shindex].addr - (uintptr_t)deltas[sym->shindex] + (uintptr_t)virtoffset;
 			}
 			else
 			{
