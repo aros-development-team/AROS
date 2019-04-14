@@ -153,7 +153,7 @@ $(CROSSTOOLSDIR)/.installflag-crosstools: $(TOP)/config.status $(AROS_TOOLCHAIN_
 crosstools-toolchain: tools $(CROSSTOOLS_BUILDFLAG)
 	@$(NOP)
 
-crosstools : crosstools-toolchain
+crosstools : crosstools-toolchain features
 	@$(MAKE) $(MKARGS) linklibs-libatomic
 
 $(TOP)/config/features.status: $(SRCDIR)/config/features $(CROSSTOOLS_BUILDFLAG)
