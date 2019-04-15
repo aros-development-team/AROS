@@ -3551,10 +3551,10 @@ else
 endif
 
 ifeq (%(compiler),host)
-    BD_LDFLAGS               := $(strip -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags))
-    BD_CFLAGS                := $(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags))
-    BD_CXXFLAGS              := $(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags))
-    BD_CPPFLAGS              := $(strip $(HOST_CPPFLAGS) %(extracppflags))
+    BD_LDFLAGS               := -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)
+    BD_CFLAGS                := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)
+    BD_CXXFLAGS              := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags)
+    BD_CPPFLAGS              := $(HOST_CPPFLAGS) %(extracppflags)
     %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
     ifeq (%(usecflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
@@ -3563,7 +3563,7 @@ ifeq (%(compiler),host)
         %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
     endif
     %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))"
-    ifeq (%(usecflags),yes)
+    ifeq (%(usecxxflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
     endif
     ifeq (%(package),)
@@ -3583,7 +3583,7 @@ else
     ifeq (%(usecppflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
     endif
-    ifeq (%(usecflags),yes)
+    ifeq (%(usecxxflags),yes)
         %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
     endif
     %(mmake)-cmake_opts  += -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
