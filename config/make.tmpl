@@ -3136,7 +3136,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags="$(OPTIMIZATION_CFLAGS)" \
     usecxxflags=yes extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    hostisaflags= \
+    hostisaflags="$(HOST_ISA_CFLAGS)" \
     kernelisaflags="$(TARGET_ISA_CFLAGS)" \
     targetisaflags="$(TARGET_ISA_CFLAGS)" \
     aros_prefix= nix_dir_layout= nix=no compiler=target crossbuild=no \
@@ -3974,7 +3974,7 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags="$(OPTIMIZATION_CFLAGS)" \
     usecxxflags=yes extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    hostisaflags= \
+    hostisaflags="$(HOST_ISA_CFLAGS)" \
     kernelisaflags="$(TARGET_ISA_CFLAGS)" \
     targetisaflags="$(TARGET_ISA_CFLAGS)" \
     use_build_env=no nix=yes gnuflags=yes nlsflag=yes xflag=yes
@@ -4016,7 +4016,7 @@ GNU_REPOSITORY := gnu://
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags="$(OPTIMIZATION_CFLAGS)" \
     usecxxflags=yes extracxxflags="$(OPTIMIZATION_CFLAGS)" \
-    hostisaflags= \
+    hostisaflags="$(HOST_ISA_CFLAGS)" \
     kernelisaflags="$(TARGET_ISA_CFLAGS)" \
     targetisaflags="$(TARGET_ISA_CFLAGS)" \
     use_build_env=no nix=yes gnuflags=yes nlsflag=yes xflag=yes
