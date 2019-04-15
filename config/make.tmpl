@@ -3083,7 +3083,9 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #                         set, so this allows them to be disabled (unless you can provide
 #                         all the options they would need)
 #     - extracppflags      = additional preprocessor flags.
+#     - usecflags      = same meaning as the one for the %build_with_configure macro.
 #     - extracflags     = additional flags to use with the C compiler.
+#     - usecxxflags      = same meaning as the one for the %build_with_configure macro.
 #     - extracxxflags   = additional flags to use with the C++ compiler.
 #     - nix_dir_layout  = if yes the binary will be stored in a bin subdirectory.
 #                         Defaults to the value of the nix argument.
@@ -3519,6 +3521,11 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 #                         set, so this allows them to be disabled (unless you can provide
 #                         all the options they would need)
 #     - cppflags        = preprocessor flags.
+#     - extracppflags      = additional preprocessor flags.
+#     - usecflags      = enable the use of the build systems C flags
+#     - cflags     = additional flags to use with the C compiler.
+#     - usecxxflags      = enable the use of the build systems C flags
+#     - cxxflags   = additional flags to use with the C++ compiler.
 #     - cflags          = flags to use with the C compiler.
 #     - cxxflags        = flags to use with the C++ compiler.
 #     - installoptions    = additional options for the install step.
@@ -3526,7 +3533,10 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
-    usecppflags=yes cppflags=$(CPPFLAGS) cflags=$(CFLAGS) cxxflags=$(CXXFLAGS) ldflags=$(LDFLAGS)
+    usecppflags=yes extracppflags=$(CPPFLAGS) \
+    usecflags=yes extracflags=$(CFLAGS) \
+    usecxxflags=yes extracxxflags=$(CXXFLAGS) \
+    extraldflags=
 
 ifneq (%(prefix),)
     %(mmake)-prefix          := %(prefix)
@@ -3541,30 +3551,42 @@ else
 endif
 
 ifeq (%(compiler),host)
-    BD_LDFLAGS               := $(strip -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS))
-    BD_CFLAGS                := $(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include)
-    BD_CXXFLAGS              := $(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include)
-    BD_CPPFLAGS              := $(HOST_CPPFLAGS)
-    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))" -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    BD_LDFLAGS               := $(strip -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags))
+    BD_CFLAGS                := $(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags))
+    BD_CXXFLAGS              := $(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags))
+    BD_CPPFLAGS              := $(strip $(HOST_CPPFLAGS) %(extracppflags))
+    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
+    ifeq (%(usecflags),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    endif
     ifeq (%(usecppflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
     endif
-    %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))" -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
+    %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))"
+    ifeq (%(usecflags),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
+    endif
     ifeq (%(package),)
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)
     else
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)/%(package)
     endif
 else
-    BD_LDFLAGS               := %(ldflags)
-    BD_CFLAGS                := %(cflags) 
-    BD_CXXFLAGS              := %(cxxflags)
-    BD_CPPFLAGS              := %(cppflags)
-    %(mmake)-cmake_opts      := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    BD_LDFLAGS               := $(strip $(LDFLAGS) %(extraldflags))
+    BD_CFLAGS                := $(strip $(CFLAGS) %(extracflags))
+    BD_CXXFLAGS              := $(strip $(CXXFLAGS) %(extracxxflags))
+    BD_CPPFLAGS              := $(strip $(CPPFLAGS) %(extracppflags))
+    %(mmake)-cmake_opts      := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix)
+    ifeq (%(usecflags),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+    endif
     ifeq (%(usecppflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
     endif
-    %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))" -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
+    ifeq (%(usecflags),yes)
+        %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
+    endif
+    %(mmake)-cmake_opts  += -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
     ifeq (%(package),)
         %(mmake)-pkgdir      := $(GENDIR)/$(CURDIR)
     else
@@ -3789,7 +3811,9 @@ endif
 #    - extraoptions     = same meaning as the one for the %build_with_configure macro.
 #    - usecppflags      = same meaning as the one for the %build_with_configure macro.
 #    - extracppflags    = same meaning as the one for the %build_with_configure macro.
+#    - usecflags      = same meaning as the one for the %build_with_configure macro.
 #    - extracflags      = same meaning as the one for the %build_with_configure macro.
+#    - usecxxflags      = same meaning as the one for the %build_with_configure macro.
 #    - extracxxflags    = same meaning as the one for the %build_with_configure macro.
 #    - preconfigure     = same meaning as the one for the %build_with_configure macro.
 #    - postconfigure    = same meaning as the one for the %build_with_configure macro.
