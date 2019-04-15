@@ -726,6 +726,7 @@ aros_elf_translate=
 aros_warn_flags=
 aros_isa_extra=
 aros_isa_flags=
+aros_kernel_isaflags=
 aros_config_cppflags=
 aros_config_cflags=
 aros_config_cxxflags=
@@ -2446,7 +2447,7 @@ fi
 
 if test "$kernel_tool_prefix" = "none" ; then
     # No kernel tools specified
-    # Assume target tools == kernel tools with ELF wrapper
+    # Assume kernel tools == target tools with ELF wrapper
     aros_kernel_cc=$orig_target_cc
     aros_kernel_cxx=$orig_target_cxx
     aros_kernel_cpp=$orig_target_cpp
@@ -2458,6 +2459,7 @@ if test "$kernel_tool_prefix" = "none" ; then
     aros_kernel_strip=$orig_target_strip
     aros_kernel_objcopy=$orig_target_objcopy
     aros_kernel_objdump=$orig_target_objdump
+    aros_kernel_isa_flags=$aros_isa_flags
     use_kernel_cc_wrapper=yes
 fi
 
@@ -3187,6 +3189,7 @@ AC_SUBST(aros_target_strip_flags)
 AC_SUBST(aros_config_lto)
 AC_SUBST(aros_config_coverage)
 AC_SUBST(aros_optimization_cflags)
+AC_SUBST(aros_kernel_isa_flags)
 AC_SUBST(aros_isa_extra)
 AC_SUBST(aros_isa_flags)
 
@@ -3271,7 +3274,7 @@ AC_SUBST(DO_VIDMODE_SUPPORT)
 AC_SUBST(aros_host_x11_cflags)
 AC_SUBST(aros_host_x11_ldflags)
 
-#X11 related
+#SDL related
 AC_SUBST(aros_host_sdl_cflags)
 AC_SUBST(aros_host_sdl_libs)
 

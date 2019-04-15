@@ -5,33 +5,84 @@
 #
 
 # -------------------------------------------------------------------------- 
-# TARGET SECTION
+# TARGET CONFIG SECTION
 # -------------------------------------------------------------------------- 
+
 FAMILY                        := @aros_target_family@
 FLAVOUR                       := @aros_flavour@
 SHARED_MOD                    := @aros_shared_default@
 
+# MMU flags
+USE_MMU                       := @aros_enable_mmu@
+
+# Defined as 'yes' if we can build our own toolchain.
+# This is a prerequisite for ObjectiveC and C++ support,
+# since they depend on the AROS C Library
+AROS_TARGET_TOOLCHAIN         := @aros_target_toolchain@
+
+# The toolchain family to build
+AROS_TOOLCHAIN                := @aros_toolchain@
+
 TARGET_BINUTILS_VER           := @target_binutils_version@
 TARGET_GCC_VER                := @target_gcc_version@
 
-TARGET_CPP                    := @aros_target_cpp@
+# Bootloader to use on platforms that support it
+AROS_TARGET_BOOTLOADER        := @aros_target_bootloader@
+
+PCI_HIDD_TARGET               := @pci_hidd_target@
+CROSSTOOLS_TARGET             := @crosstools_target@
+OBJC_TARGET                   := @objc_target@
+JAVA_TARGET                   := @java_target@
+@aros_target_options@
+ENABLE_DBUS                   := @ENABLE_DBUS@
+
+# -------------------------------------------------------------------------- 
+# KERNEL TOOLCHAIN SECTION
+# -------------------------------------------------------------------------- 
+
 KERNEL_CPP                    := @aros_kernel_cpp@
-TARGET_CC                     := $(CC_PREFIX) @aros_target_cc@
 KERNEL_CC                     := @aros_kernel_cc@
-TARGET_CXX                    := @aros_target_cxx@
 KERNEL_CXX                    := @aros_target_cxx@
+KERNEL_LD                     := @aros_kernel_ld@
+
+KERNEL_RESCOMP                := @aros_kernel_rescomp@
+
+KERNEL_SYSROOT                = @aros_kernel_sysroot@
+
+KERNEL_CPPFLAGS               = @aros_kernel_cppflags@
+KERNEL_CFLAGS                 = @aros_kernel_cflags@
+KERNEL_OBJCFLAGS              := @aros_kernel_objcflags@
+KERNEL_INCLUDES               := @aros_kernel_includes@
+KERNEL_LDFLAGS                := @aros_kernel_ldflags@
+
+KERNEL_ISA_FLAGS              = @aros_kernel_isa_flags@
+KERNEL_ISA_CFLAGS             = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_CXXFLAGS           = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_OBJCFLAGS          = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_AFLAGS             = $(KERNEL_ISA_FLAGS)
+
+KERNEL_IQUOTE                 = @kernel_cflags_iquote@
+KERNEL_IQUOTE_END             = @kernel_cflags_iquote_end@
+
+KERNEL_AR                     := @aros_kernel_ar@
+KERNEL_RANLIB                 := @aros_kernel_ranlib@
+
+# -------------------------------------------------------------------------- 
+# TARGET TOOLCHAIN SECTION
+# -------------------------------------------------------------------------- 
+
+TARGET_CPP                    := @aros_target_cpp@
+TARGET_CC                     := $(CC_PREFIX) @aros_target_cc@
+TARGET_CXX                    := @aros_target_cxx@
 TARGET_AS                     := @aros_target_as@
 TARGET_LD                     := @aros_target_ld@
 SHARED_LD                     := @aros_shared_ld@
-KERNEL_LD                     := @aros_kernel_ld@
 GENMAP                        := @aros_target_genmap@
 TARGET_OBJCOPY                := @aros_target_objcopy@
 
 TARGET_DEF_STRIP              := @aros_target_strip@ @aros_target_strip_flags@
 
 TARGET_OBJDUMP                := @aros_target_objdump@
-KERNEL_RESCOMP                := @aros_kernel_rescomp@
-
 
 CONFIG_NOWARN_CFLAGS          = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
 CONFIG_WARN_CFLAGS            := @aros_warn_flags@
@@ -39,7 +90,6 @@ CONFIG_NOWARN_CXXFLAGS        = $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@a
 CONFIG_WARN_CXXFLAGS          := $(subst -Werror-implicit-function-declaration,,@aros_warn_flags@)
 
 TARGET_SYSROOT                = $(COMPILER_SYSROOT)
-KERNEL_SYSROOT                = @aros_kernel_sysroot@
 CONFIG_BASE_CFLAGS            = @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS)
 CONFIG_BASE_CXXFLAGS          = @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS)
 CONFIG_BASE_CPPFLAGS          = @aros_config_cppflags@
@@ -51,11 +101,6 @@ CONFIG_LDFLAGS                := @aros_config_ldflags@
 SHARED_CFLAGS                 := @aros_shared_cflags@
 SHARED_AFLAGS                 := @aros_shared_aflags@
 SHARED_LDFLAGS                := @aros_shared_ldflags@
-KERNEL_CPPFLAGS               = @aros_kernel_cppflags@
-KERNEL_CFLAGS                 = @aros_kernel_cflags@
-KERNEL_OBJCFLAGS              := @aros_kernel_objcflags@
-KERNEL_INCLUDES               := @aros_kernel_includes@
-KERNEL_LDFLAGS                := @aros_kernel_ldflags@
 TARGET_CFLAGS                 = $(OPTIMIZATION_CFLAGS) $(CONFIG_CFLAGS) $(USER_CFLAGS)
 TARGET_CXXFLAGS               = $(OPTIMIZATION_CFLAGS) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
 TARGET_CPPFLAGS               = $(USER_INCLUDES) $(CONFIG_CPPFLAGS) $(USER_CPPFLAGS)
@@ -70,6 +115,7 @@ OPTIMIZATION_CFLAGS           := @aros_optimization_cflags@
 
 TARGET_ISA_CFLAGS             = $(ISA_FLAGS)
 TARGET_ISA_CXXFLAGS           = $(ISA_FLAGS)
+TARGET_ISA_OBJCFLAGS          = $(TARGET_ISA_CFLAGS)
 TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
 
 TARGET_LIBATOMIC              = @use_libatomic@
@@ -82,8 +128,6 @@ FUNCINSTR_FLAGS               = $(CFLAGS_INSTR_FUNCTIONS)
 FUNCINSTR_LIBS                = instrfunc
 
 NOSTDINC_CFLAGS               := @aros_target_nostdinc_cflags@
-KERNEL_IQUOTE                 = @kernel_cflags_iquote@
-KERNEL_IQUOTE_END             = @kernel_cflags_iquote_end@
 NOSTARTUP_LDFLAGS             := @aros_target_nostartup_ldflags@
 NIX_LDFLAGS                   := @aros_target_nix_ldflags@
 DETACH_LDFLAGS                := @aros_target_detach_ldflags@
@@ -91,9 +135,7 @@ NOSTDLIB_LDFLAGS              := @aros_target_nostdlib_ldflags@
 
 AR                            := @aros_target_ar@
 AR_PLAIN                      := @aros_plain_ar@
-KERNEL_AR                     := @aros_kernel_ar@
 RANLIB                        := @aros_target_ranlib@
-KERNEL_RANLIB                 := @aros_kernel_ranlib@
 NM                            := @aros_target_nm@
 NM_PLAIN                      := @aros_plain_nm@
 OBJCOPY                       := @aros_target_objcopy@
@@ -114,27 +156,3 @@ CPU                           := $(AROS_TARGET_CPU)
 CPU_MODE                      := $(AROS_TARGET_CPU_MODE)
 CC                            := $(TARGET_CC)
 AS                            := $(TARGET_AS)
-
-# MMU flags
-USE_MMU                       := @aros_enable_mmu@
-
-# --------------------------------------------------------------------------
-# Optional components
-
-# Defined as 'yes' if we can build our own toolchain.
-# This is a prerequisite for ObjectiveC and C++ support,
-# since they depend on the AROS C Library
-AROS_TARGET_TOOLCHAIN         := @aros_target_toolchain@
-
-# The toolchain family to build
-AROS_TOOLCHAIN                := @aros_toolchain@
-
-# Bootloader to use on platforms that support it
-AROS_TARGET_BOOTLOADER        := @aros_target_bootloader@
-
-PCI_HIDD_TARGET               := @pci_hidd_target@
-CROSSTOOLS_TARGET             := @crosstools_target@
-OBJC_TARGET                   := @objc_target@
-JAVA_TARGET                   := @java_target@
-@aros_target_options@
-ENABLE_DBUS                   := @ENABLE_DBUS@
