@@ -24,6 +24,12 @@ HOST_DEBUG               := @aros_host_debug@
 HOST_MKDEP               := @aros_host_mkdep@
 MKARGS                   := @aros_host_mkargs@
 
+HOST_ISA_FLAGS           :=
+HOST_ISA_CFLAGS          := $(HOST_ISA_FLAGS)
+HOST_ISA_CXXFLAGS        := $(HOST_ISA_FLAGS)
+HOST_ISA_OBJCFLAGS       := $(HOST_ISA_FLAGS)
+HOST_ISA_AFLAGS          := $(HOST_ISA_FLAGS)
+
 HOST_IQUOTE              := @host_cflags_iquote@
 HOST_IQUOTE_END          := @host_cflags_iquote_end@
 
