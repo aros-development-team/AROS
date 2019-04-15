@@ -2347,7 +2347,7 @@ else
         AROS_TOOL_KERNEL(aros_kernel_as,as,$aros_kernel_as)
         AROS_REQUIRED(as,$aros_kernel_as)
         if test "x$aros_kernel_ar" = "x"; then
-            aros_kernel_ar=$aros_host_ar
+            aros_kernel_ar=$aros_host_full_ar
         fi
         AROS_TOOL_KERNEL(aros_kernel_ar,ar,$aros_kernel_ar)
         AROS_REQUIRED(ar,$aros_kernel_ar)
