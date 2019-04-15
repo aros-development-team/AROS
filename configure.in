@@ -91,6 +91,12 @@ dnl The idea here is to find out all the information we need about the
 dnl host. This means things like tools for building directory structures,
 dnl copying files around and the like.
 
+HOST_WANTS_X11=
+HOST_WANTS_GLX=
+HOST_WANTS_SDL=
+HOST_WANTS_DBUS=
+HOST_WANTS_DLOPEN=
+
 default_c_compilers="gcc clang cc"
 AC_ARG_WITH(c-compiler,AC_HELP_STRING([--with-c-compiler=VERSION],[Use specified c compiler for building AROS]),use_c_compiler="$withval",use_c_compiler="")
 if test "$use_c_compiler" = ""; then
@@ -792,7 +798,8 @@ case "$aros_toolchain" in
     *llvm*)
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
-        toolchain_cpp_preprocessor="clang -E"
+        toolchain_cpp_preprocessor="clang"
+        toolchain_cpp_opts=" -E"
         toolchain_ld="ld.lld"
         aros_ld="ld"
         toolchain_as="llvm-as"
@@ -807,7 +814,8 @@ case "$aros_toolchain" in
     *gnu*)
         toolchain_c_compiler="gcc"
         toolchain_cxx_compiler="g++"
-        toolchain_cpp_preprocessor="gcc -E"
+        toolchain_cpp_preprocessor="gcc"
+        toolchain_cpp_opts=" -E"
         toolchain_as="as"
         aros_ld="ld"
         if test "$aros_config_lto" != "yes"; then
@@ -831,6 +839,7 @@ case "$aros_toolchain" in
         toolchain_c_compiler="cc"
         toolchain_cxx_compiler="c++"
         toolchain_cpp_preprocessor="cpp"
+        toolchain_cpp_opts=
         toolchain_ld="ld"
         aros_ld="ld"
         toolchain_as="as"
@@ -1133,6 +1142,11 @@ esac
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="linux"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -1344,6 +1358,11 @@ case "$target_os" in
         ;;
 
     freebsd*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="freebsd"
         aros_target_family="unix"
         aros_target_cpu="i386"
@@ -1355,6 +1374,11 @@ case "$target_os" in
         ;;
 
     darwin*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="darwin"
         aros_target_family="unix"
         aros_flavour="emulation"
@@ -1453,6 +1477,11 @@ case "$target_os" in
         ;;
 
     dragonfly*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="dragonfly"
         aros_target_family="unix"
         aros_flavour="emulation"
@@ -1478,6 +1507,11 @@ case "$target_os" in
         ;;
 
     netbsd*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="netbsd"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -1508,6 +1542,11 @@ case "$target_os" in
         ;;   
 
     openbsd*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="openbsd"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -1964,7 +2003,7 @@ fi
 AC_DEFUN([CROSS_GCC_VERSION], [
   target_gcc_version=""
   AC_CACHE_CHECK([gcc version],[ax_cv_gcc_version],[
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor} -dumpversion`"
+    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor} $(toolchain_cpp_opts) -dumpversion`"
     AS_IF([test "x$ax_cv_gcc_version" = "x"],[
       ax_cv_gcc_version=""
     ])
@@ -2404,7 +2443,7 @@ if test "$aros_target_toolchain" = "yes"; then
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
     orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
     orig_target_cxx="${tmp_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}"
-    orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}"
+    orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts}"
     orig_target_ld="${tmp_tool_prefix}${toolchain_ld}"
     orig_target_as="${tmp_tool_prefix}${toolchain_as}"
     orig_target_ar="${tmp_tool_prefix}${toolchain_ar}"
@@ -2421,7 +2460,7 @@ else
 
     AC_MSG_RESULT([$aros_tool_prefix])
     # We are *not* building AROS crosstools - use the AROS or ELF tools
-    AROS_TOOL_TARGET(orig_target_cpp,cpp,${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version})
+    AROS_TOOL_TARGET(orig_target_cpp,cpp,${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}${toolchain_cpp_opts})
     AROS_REQUIRED(cpp,$orig_target_cpp)
     AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}${toolchain_c_compiler}${target_tool_version})
     AROS_REQUIRED(cc,$orig_target_cc)
@@ -2450,7 +2489,7 @@ if test "$kernel_tool_prefix" = "none" ; then
     # Assume kernel tools == target tools with ELF wrapper
     aros_kernel_cc=$orig_target_cc
     aros_kernel_cxx=$orig_target_cxx
-    aros_kernel_cpp=$orig_target_cpp
+    aros_kernel_cpp="$orig_target_cpp"
     aros_kernel_ld=$orig_target_ld
     aros_kernel_as=$orig_target_as
     aros_kernel_ar=$orig_target_ar
@@ -2551,7 +2590,7 @@ else
     fi
     aros_target_cc_path=@aros_target_cc_path@
 fi
-aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}"
+aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts}"
 aros_target_cc="${prefix}${toolchain_c_compiler}"
 aros_target_cxx="${prefix}${toolchain_cxx_compiler}"
 aros_target_as="${prefix}${toolchain_as}"
