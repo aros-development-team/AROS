@@ -97,6 +97,7 @@ if test "$use_c_compiler" = ""; then
     host_c_compilers="$default_c_compilers"
 else
     host_c_compilers="$use_c_compiler"
+    CC=$use_c_compiler
 fi
 
 default_cxx_compilers="g++ clang++ c++"
@@ -105,6 +106,7 @@ if test "$use_cxx_compiler" = ""; then
         host_cxx_compilers="$default_cxx_compilers"
 else
     host_cxx_compilers="$use_cxx_compiler"
+    CXX=$use_cxx_compiler
 fi
 
 
@@ -140,13 +142,15 @@ if test "$IS_SUN_COMPILER" -ne "0"; then
 fi
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
-    HOST_TOOLCHAIN_PREFIX=llvm-
     if test "$CC_BASE" != "gcc"; then
+        HOST_TOOLCHAIN_PREFIX=llvm-
         HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
+        HOST_TOOLCHAIN_FAMILY=llvm
+    else
+        IS_GNU_COMPILER=1
     fi
-    HOST_TOOLCHAIN_FAMILY=llvm
 fi
-IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
+IS_GNU_COMPILER?=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
 if test "$IS_GNU_COMPILER" -ne "0"; then
     HOST_TOOLCHAIN_PREFIX=
     HOST_TOOLCHAIN_SUFFIX=
@@ -169,9 +173,10 @@ aros_build_host=$host
 aros_host_cpp="$CPP"
 aros_host_cc="$CC"
 aros_host_cxx="$CXX"
-base_ld_name=["${HOST_TOOLCHAIN_PREFIX}ld${HOST_TOOLCHAIN_SUFFIX}"]
+base_ld_name=${HOST_TOOLCHAIN_PREFIX}ld${HOST_TOOLCHAIN_SUFFIX}
 if test "$HOST_TOOLCHAIN_FAMILY" = "llvm"; then
-    base_ld_name=["ld.lld${HOST_TOOLCHAIN_SUFFIX}"]
+    AC_CHECK_PROGS(base_lld_name,[$base_ld_name ld.lld${HOST_TOOLCHAIN_SUFFIX} ld64.lld${HOST_TOOLCHAIN_SUFFIX} ld-link${HOST_TOOLCHAIN_SUFFIX}.exe ld${HOST_TOOLCHAIN_SUFFIX}])
+    base_ld_name=$base_lld_name
 fi
 AROS_TOOL_CCPATH(aros_host_ld,ld,$base_ld_name)
 AROS_REQUIRED(ld,$aros_host_ld)
