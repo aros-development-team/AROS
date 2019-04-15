@@ -4291,8 +4291,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 # detect the compiler version
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which toolchain family ${CC} belongs to" >&5
-$as_echo_n "checking which toolchain family ${CC} belongs to... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which toolchain family ${CC_BASE} belongs to" >&5
+$as_echo_n "checking which toolchain family ${CC_BASE} belongs to... " >&6; }
 HOST_COMPILER_VERSION=`"$CC" --version 2>/dev/null`
 if test x"$HOST_COMPILER_VERSION" = "x"; then
     HOST_COMPILER_VERSION=`"$CC" --qversion 2>/dev/null`
@@ -7660,8 +7660,8 @@ rm -f conftest.mmap conftest.txt
 # work on all platforms.
 #
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-stack-protector" >&5
-$as_echo_n "checking whether ${CC} accepts -fno-stack-protector... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC_BASE} accepts -fno-stack-protector" >&5
+$as_echo_n "checking whether ${CC_BASE} accepts -fno-stack-protector... " >&6; }
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-stack-protector"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -7693,8 +7693,8 @@ CFLAGS="$save_cflags"
 # Disable pointer-signedness warnings if the compiler recognises the option
 # (this only works for the host compiler at the moment)
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wno-pointer-sign" >&5
-$as_echo_n "checking whether ${CC} accepts -Wno-pointer-sign... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC_BASE} accepts -Wno-pointer-sign" >&5
+$as_echo_n "checking whether ${CC_BASE} accepts -Wno-pointer-sign... " >&6; }
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -7725,8 +7725,8 @@ CFLAGS="$save_cflags"
 
 # Check if host compiler supports -fgnu89-inline, can be needed for crosstools.
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fgnu89-inline" >&5
-$as_echo_n "checking whether ${CC} accepts -fgnu89-inline... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC_BASE} accepts -fgnu89-inline" >&5
+$as_echo_n "checking whether ${CC_BASE} accepts -fgnu89-inline... " >&6; }
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fgnu89-inline"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -7757,8 +7757,8 @@ CFLAGS="$save_cflags"
 # For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
 # On GCC >= 4.0 -iquote should be used
 #
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -iquote" >&5
-$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC_BASE} accepts -iquote" >&5
+$as_echo_n "checking whether ${CC_BASE} accepts -iquote... " >&6; }
 CFLAGS="$CFLAGS -iquote."
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
