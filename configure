@@ -2886,6 +2886,12 @@ aros_nominal_height=600
 aros_nominal_depth=4
 
 
+HOST_WANTS_X11=
+HOST_WANTS_GLX=
+HOST_WANTS_SDL=
+HOST_WANTS_DBUS=
+HOST_WANTS_DLOPEN=
+
 default_c_compilers="gcc clang cc"
 
 # Check whether --with-c-compiler was given.
@@ -7890,7 +7896,8 @@ case "$aros_toolchain" in
     *llvm*)
         toolchain_c_compiler="clang"
         toolchain_cxx_compiler="clang++"
-        toolchain_cpp_preprocessor="clang -E"
+        toolchain_cpp_preprocessor="clang"
+        toolchain_cpp_opts=" -E"
         toolchain_ld="ld.lld"
         aros_ld="ld"
         toolchain_as="llvm-as"
@@ -7905,7 +7912,8 @@ case "$aros_toolchain" in
     *gnu*)
         toolchain_c_compiler="gcc"
         toolchain_cxx_compiler="g++"
-        toolchain_cpp_preprocessor="gcc -E"
+        toolchain_cpp_preprocessor="gcc"
+        toolchain_cpp_opts=" -E"
         toolchain_as="as"
         aros_ld="ld"
         if test "$aros_config_lto" != "yes"; then
@@ -7930,6 +7938,7 @@ $as_echo "$as_me: WARNING: \"Unknown toolchain family!\"" >&2;}
         toolchain_c_compiler="cc"
         toolchain_cxx_compiler="c++"
         toolchain_cpp_preprocessor="cpp"
+        toolchain_cpp_opts=
         toolchain_ld="ld"
         aros_ld="ld"
         toolchain_as="as"
@@ -8523,6 +8532,11 @@ esac
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="linux"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -8726,6 +8740,11 @@ case "$target_os" in
         ;;
 
     freebsd*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="freebsd"
         aros_target_family="unix"
         aros_target_cpu="i386"
@@ -8737,6 +8756,11 @@ case "$target_os" in
         ;;
 
     darwin*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="darwin"
         aros_target_family="unix"
         aros_flavour="emulation"
@@ -8835,6 +8859,11 @@ case "$target_os" in
         ;;
 
     dragonfly*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="dragonfly"
         aros_target_family="unix"
         aros_flavour="emulation"
@@ -8860,6 +8889,11 @@ case "$target_os" in
         ;;
 
     netbsd*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="netbsd"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -8890,6 +8924,11 @@ case "$target_os" in
         ;;
 
     openbsd*)
+        HOST_WANTS_X11=yes
+        HOST_WANTS_GLX=yes
+        HOST_WANTS_SDL=yes
+        HOST_WANTS_DBUS=yes
+        HOST_WANTS_DLOPEN=yes
         aros_target_arch="openbsd"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -9418,7 +9457,7 @@ if ${ax_cv_gcc_version+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor} -dumpversion`"
+    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor} $(toolchain_cpp_opts) -dumpversion`"
     if test "x$ax_cv_gcc_version" = "x"; then :
 
       ax_cv_gcc_version=""
@@ -12086,7 +12125,7 @@ $as_echo "$msg_result" >&6; }
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
     orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
     orig_target_cxx="${tmp_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}"
-    orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}"
+    orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts}"
     orig_target_ld="${tmp_tool_prefix}${toolchain_ld}"
     orig_target_as="${tmp_tool_prefix}${toolchain_as}"
     orig_target_ar="${tmp_tool_prefix}${toolchain_ar}"
@@ -12105,7 +12144,7 @@ else
 $as_echo "$aros_tool_prefix" >&6; }
     # We are *not* building AROS crosstools - use the AROS or ELF tools
 
-if test "${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}" = ""; then
+if test "${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}${toolchain_cpp_opts}" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${target_tool_prefix}cpp", so it can be a program name with args.
 set dummy ${target_tool_prefix}cpp; ac_word=$2
@@ -12247,9 +12286,9 @@ fi
 
     fi
 else
-    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}" : '[^ ]* \(.*\)'`
-    # Extract the first word of "${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}", so it can be a program name with args.
-set dummy ${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}; ac_word=$2
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}${toolchain_cpp_opts}" : '[^ ]* \(.*\)'`
+    # Extract the first word of "${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}${toolchain_cpp_opts}", so it can be a program name with args.
+set dummy ${aros_tool_prefix}${toolchain_cpp_preprocessor}${target_tool_version}${toolchain_cpp_opts}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_orig_target_cpp+:} false; then :
@@ -14278,7 +14317,7 @@ if test "$kernel_tool_prefix" = "none" ; then
     # Assume kernel tools == target tools with ELF wrapper
     aros_kernel_cc=$orig_target_cc
     aros_kernel_cxx=$orig_target_cxx
-    aros_kernel_cpp=$orig_target_cpp
+    aros_kernel_cpp="$orig_target_cpp"
     aros_kernel_ld=$orig_target_ld
     aros_kernel_as=$orig_target_as
     aros_kernel_ar=$orig_target_ar
@@ -14432,7 +14471,7 @@ else
     fi
     aros_target_cc_path=@aros_target_cc_path@
 fi
-aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}"
+aros_target_cpp="${prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts}"
 aros_target_cc="${prefix}${toolchain_c_compiler}"
 aros_target_cxx="${prefix}${toolchain_cxx_compiler}"
 aros_target_as="${prefix}${toolchain_as}"
