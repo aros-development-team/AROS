@@ -10856,7 +10856,7 @@ if test "$req_avail" = "no"; then
     as_fn_error $? "as is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
         if test "x$aros_kernel_ar" = "x"; then
-            aros_kernel_ar=$aros_host_ar
+            aros_kernel_ar=$aros_host_full_ar
         fi
 
 if test "$aros_kernel_ar" = ""; then
