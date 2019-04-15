@@ -125,7 +125,7 @@ AC_PROG_CC_STDC
 AC_PROG_CPP
 
 # detect the compiler version
-AC_MSG_CHECKING([which toolchain family ${CC} belongs to])
+AC_MSG_CHECKING([which toolchain family ${CC_BASE} belongs to])
 HOST_COMPILER_VERSION=`"$CC" --version 2>/dev/null`
 if test x"$HOST_COMPILER_VERSION" = "x"; then
     HOST_COMPILER_VERSION=`"$CC" --qversion 2>/dev/null`
@@ -651,7 +651,7 @@ AC_FUNC_MMAP
 # work on all platforms.
 #
 
-AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
+AC_MSG_CHECKING([whether ${CC_BASE} accepts -fno-stack-protector])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-stack-protector"
 AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
@@ -666,7 +666,7 @@ CFLAGS="$save_cflags"
 # Disable pointer-signedness warnings if the compiler recognises the option
 # (this only works for the host compiler at the moment)
 
-AC_MSG_CHECKING([whether ${CC} accepts -Wno-pointer-sign])
+AC_MSG_CHECKING([whether ${CC_BASE} accepts -Wno-pointer-sign])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 AC_TRY_COMPILE(,, use_no_sign_warning="yes", use_no_sign_warning="no")
@@ -680,7 +680,7 @@ CFLAGS="$save_cflags"
 
 # Check if host compiler supports -fgnu89-inline, can be needed for crosstools.
 
-AC_MSG_CHECKING([whether ${CC} accepts -fgnu89-inline])
+AC_MSG_CHECKING([whether ${CC_BASE} accepts -fgnu89-inline])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fgnu89-inline"
 AC_TRY_COMPILE(,, use_gnu89_inline="yes", use_gnu89_inline="no")
@@ -694,7 +694,7 @@ CFLAGS="$save_cflags"
 # For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
 # On GCC >= 4.0 -iquote should be used
 #
-AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+AC_MSG_CHECKING([whether ${CC_BASE} accepts -iquote])
 CFLAGS="$CFLAGS -iquote."
 AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
 AC_MSG_RESULT($has_iquote)
