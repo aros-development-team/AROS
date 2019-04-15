@@ -150,7 +150,9 @@ if test "$IS_LLVM_COMPILER" -ne "0"; then
         IS_GNU_COMPILER=1
     fi
 fi
-IS_GNU_COMPILER?=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
+if test "x$IS_GNU_COMPILER" = "x"; then
+    IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
+fi
 if test "$IS_GNU_COMPILER" -ne "0"; then
     HOST_TOOLCHAIN_PREFIX=
     HOST_TOOLCHAIN_SUFFIX=
