@@ -37,8 +37,10 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 # C/ObjC
 #  -fexceptions
 #  -ffast-math
+#  -fassociative-math
 #  -fno-math-errno
 #  -fno-trapping-math
+#  -ftree-vectorize
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -89,6 +91,14 @@ if test "x-$aros_fast_math" = "x-yes" ; then
     aros_cflags_fast_math=-ffast-math
 fi
 
+AC_MSG_CHECKING([whether ${CC} accepts -fassociative-math])
+CFLAGS=-fassociative-math
+AC_TRY_COMPILE(,, aros_associative_math="yes", aros_associative_math="no")
+AC_MSG_RESULT($aros_associative_math)
+if test "x-$aros_associative_math" = "x-yes" ; then
+    aros_cflags_associative_math=-fassociative-math
+fi
+
 AC_MSG_CHECKING([whether ${CC} accepts -fno-math-errno])
 CFLAGS=-fno-math-errno
 AC_TRY_COMPILE(,, aros_no_math_errno="yes", aros_no_math_errno="no")
@@ -103,6 +113,14 @@ AC_TRY_COMPILE(,, aros_no_trapping_math="yes", aros_no_trapping_math="no")
 AC_MSG_RESULT($aros_no_trapping_math)
 if test "x-$aros_no_trapping_math" = "x-yes" ; then
     aros_cflags_no_trapping_math=-fno-trapping-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ftree-vectorize])
+CFLAGS=-ftree-vectorize
+AC_TRY_COMPILE(,, aros_tree_vectorize="yes", aros_tree_vectorize="no")
+AC_MSG_RESULT($aros_tree_vectorize)
+if test "x-$aros_tree_vectorize" = "x-yes" ; then
+    aros_cflags_tree_vectorize=-ftree-vectorize
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -flto])
