@@ -519,8 +519,8 @@ esac
 
 base_ar_name=${HOST_TOOLCHAIN_PREFIX}ar${HOST_TOOLCHAIN_SUFFIX}
 AROS_PROG(aros_host_cmd_ar,$base_ar_name,[cr])
-AROS_PATH_PROG(aros_host_full_ar,$aros_host_cmd_ar)
-aros_host_ar=`echo $aros_host_cmd_ar | sed -e "s|$base_ar_name|$aros_host_full_ar|g"`
+AROS_PATH_PROG(aros_host_plain_ar,$aros_host_cmd_ar)
+aros_host_ar=`echo $aros_host_cmd_ar | sed -e "s|$base_ar_name|$aros_host_plain_ar|g"`
 AROS_REQUIRED(ar,$aros_host_ar)
 base_ranlib_name=${HOST_TOOLCHAIN_PREFIX}ranlib${HOST_TOOLCHAIN_SUFFIX}
 AROS_PATH_PROG(aros_host_ranlib,$base_ranlib_name)
@@ -2009,7 +2009,7 @@ fi
 AC_DEFUN([CROSS_GCC_VERSION], [
   target_gcc_version=""
   AC_CACHE_CHECK([gcc version],[ax_cv_gcc_version],[
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor} $(toolchain_cpp_opts) -dumpversion`"
+    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}$(toolchain_cpp_opts) -dumpversion`"
     AS_IF([test "x$ax_cv_gcc_version" = "x"],[
       ax_cv_gcc_version=""
     ])
@@ -2393,7 +2393,7 @@ else
         AROS_TOOL_KERNEL(aros_kernel_as,as,$aros_kernel_as)
         AROS_REQUIRED(as,$aros_kernel_as)
         if test "x$aros_kernel_ar" = "x"; then
-            aros_kernel_ar=$aros_host_full_ar
+            aros_kernel_ar=$aros_host_plain_ar
         fi
         AROS_TOOL_KERNEL(aros_kernel_ar,ar,$aros_kernel_ar)
         AROS_REQUIRED(ar,$aros_kernel_ar)

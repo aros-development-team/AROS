@@ -848,7 +848,7 @@ CP
 RM
 aros_host_strip
 aros_host_ranlib
-aros_host_full_ar
+aros_host_plain_ar
 aros_host_cmd_ar
 aros_host_automake
 aros_host_autoheader
@@ -5148,12 +5148,12 @@ fi
 set dummy $aros_host_cmd_ar; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_host_full_ar+:} false; then :
+if ${ac_cv_path_aros_host_plain_ar+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  case $aros_host_full_ar in
+  case $aros_host_plain_ar in
   [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_host_full_ar="$aros_host_full_ar" # Let the user override the test with a path.
+  ac_cv_path_aros_host_plain_ar="$aros_host_plain_ar" # Let the user override the test with a path.
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -5163,7 +5163,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_aros_host_full_ar="$as_dir/$ac_word$ac_exec_ext"
+    ac_cv_path_aros_host_plain_ar="$as_dir/$ac_word$ac_exec_ext"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -5171,21 +5171,21 @@ done
   done
 IFS=$as_save_IFS
 
-  test -z "$ac_cv_path_aros_host_full_ar" && ac_cv_path_aros_host_full_ar="$aros_host_cmd_ar "
+  test -z "$ac_cv_path_aros_host_plain_ar" && ac_cv_path_aros_host_plain_ar="$aros_host_cmd_ar "
   ;;
 esac
 fi
-aros_host_full_ar=$ac_cv_path_aros_host_full_ar
-if test -n "$aros_host_full_ar"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_host_full_ar" >&5
-$as_echo "$aros_host_full_ar" >&6; }
+aros_host_plain_ar=$ac_cv_path_aros_host_plain_ar
+if test -n "$aros_host_plain_ar"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_host_plain_ar" >&5
+$as_echo "$aros_host_plain_ar" >&6; }
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 
 
-aros_host_ar=`echo $aros_host_cmd_ar | sed -e "s|$base_ar_name|$aros_host_full_ar|g"`
+aros_host_ar=`echo $aros_host_cmd_ar | sed -e "s|$base_ar_name|$aros_host_plain_ar|g"`
 req_avail=yes
 if test "$aros_host_ar" = ""; then
     req_avail=no
@@ -9463,7 +9463,7 @@ if ${ax_cv_gcc_version+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor} $(toolchain_cpp_opts) -dumpversion`"
+    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}$(toolchain_cpp_opts) -dumpversion`"
     if test "x$ax_cv_gcc_version" = "x"; then :
 
       ax_cv_gcc_version=""
@@ -10903,7 +10903,7 @@ if test "$req_avail" = "no"; then
     as_fn_error $? "as is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
         if test "x$aros_kernel_ar" = "x"; then
-            aros_kernel_ar=$aros_host_full_ar
+            aros_kernel_ar=$aros_host_plain_ar
         fi
 
 if test "$aros_kernel_ar" = ""; then
