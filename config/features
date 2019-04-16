@@ -771,8 +771,10 @@ aros_cflags_loop_block
 aros_cflags_whole_program
 aros_cflags_nolto
 aros_cflags_lto
+aros_cflags_tree_vectorize
 aros_cflags_no_trapping_math
 aros_cflags_no_math_errno
+aros_cflags_associative_math
 aros_cflags_fast_math
 aros_cxxflags_nortti
 aros_cxxflags_rtti
@@ -6191,6 +6193,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
+
 
 
 
