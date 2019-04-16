@@ -2837,8 +2837,10 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 # C/ObjC
 #  -fexceptions
 #  -ffast-math
+#  -fassociative-math
 #  -fno-math-errno
 #  -fno-trapping-math
+#  -ftree-vectorize
 #  -flto
 #  -fwhole-program
 #  -floop-block
@@ -2931,6 +2933,32 @@ if test "x-$aros_fast_math" = "x-yes" ; then
     aros_cflags_fast_math=-ffast-math
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fassociative-math" >&5
+$as_echo_n "checking whether ${CC} accepts -fassociative-math... " >&6; }
+CFLAGS=-fassociative-math
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_associative_math="yes"
+else
+  aros_associative_math="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_associative_math" >&5
+$as_echo "$aros_associative_math" >&6; }
+if test "x-$aros_associative_math" = "x-yes" ; then
+    aros_cflags_associative_math=-fassociative-math
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-math-errno" >&5
 $as_echo_n "checking whether ${CC} accepts -fno-math-errno... " >&6; }
 CFLAGS=-fno-math-errno
@@ -2981,6 +3009,32 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_no_trapping_math" >&6; }
 if test "x-$aros_no_trapping_math" = "x-yes" ; then
     aros_cflags_no_trapping_math=-fno-trapping-math
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ftree-vectorize" >&5
+$as_echo_n "checking whether ${CC} accepts -ftree-vectorize... " >&6; }
+CFLAGS=-ftree-vectorize
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_tree_vectorize="yes"
+else
+  aros_tree_vectorize="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_tree_vectorize" >&5
+$as_echo "$aros_tree_vectorize" >&6; }
+if test "x-$aros_tree_vectorize" = "x-yes" ; then
+    aros_cflags_tree_vectorize=-ftree-vectorize
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -flto" >&5
