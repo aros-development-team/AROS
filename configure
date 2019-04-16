@@ -7908,6 +7908,9 @@ case "$aros_toolchain" in
         toolchain_objcopy="llvm-objcopy"
         toolchain_objdump="llvm-objdump"
         use_libatomic=yes
+        toolchain_def_opt_lvl="-O2"
+        toolchain_debug_opt_lvl="-O0"
+        toolchain_size_opt_lvl="-Os"
         ;;
     *gnu*)
         toolchain_c_compiler="gcc"
@@ -7931,6 +7934,9 @@ case "$aros_toolchain" in
         toolchain_objcopy="objcopy"
         toolchain_objdump="objdump"
         use_libatomic=yes
+        toolchain_def_opt_lvl="-O2"
+        toolchain_debug_opt_lvl="-O0"
+        toolchain_size_opt_lvl="-Os"
         ;;
     *)
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"Unknown toolchain family!\"" >&5
@@ -8198,9 +8204,9 @@ fi
 if test "$optimization_level" = "unknown"; then
         optimization="default"
     if test "$debug" != "none"; then
-        optimization_level="-O0"
+        optimization_level=$toolchain_debug_opt_lvl
     else
-        optimization_level="-O2"
+        optimization_level=$toolchain_def_opt_lvl
     fi
 else
     optimization="$optimization_level"
@@ -9021,7 +9027,7 @@ case "$target_os" in
         aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         if test "$optimization" = "default"; then
-            optimization_level="-Os"
+            optimization_level=$toolchain_size_opt_lvl
         fi
         case "$target_cpu" in
             *armhf*)
@@ -9174,7 +9180,7 @@ fi
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_FREESTANDING) $""(CFLAGS_OMIT_FP) $""(CFLAGS_BUILTIN)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_FREESTANDING) $""(CFLAGS_OMIT_FP) $""(CFLAGS_BUILTIN)"
                 if test "$optimization" = "default"; then
-                    optimization_level="-Os"
+                    optimization_level=$toolchain_size_opt_lvl
                 fi
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
