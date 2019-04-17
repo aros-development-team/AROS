@@ -10,8 +10,7 @@ include $(EGL_PATH)/Makefile.sources
 # EGL                                                                          #
 ################################################################################
 
-##MM workbench-libs-egl : includes workbench-libs-mesa-linklib workbench-libs-vega-linklib \
-##MM     workbench-libs-gallium-linklib
+##MM workbench-libs-egl : includes  mesa3dgl-linklibs linklibs-libatomic
 
 EGL_SOURCES = \
             $(addprefix $(EGL_PATH)/$(filter %.c, $(LIBEGL_C_FILES))) \
