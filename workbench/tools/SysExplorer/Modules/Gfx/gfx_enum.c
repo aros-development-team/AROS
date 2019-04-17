@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, The AROS Development Team.
+    Copyright (C) 2015-2019, The AROS Development Team.
     $Id$
 */
 
@@ -56,7 +56,7 @@ void gfxEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
 
     D(bug("[SysExplorer:Gfx] %s: found '%s'\n", __PRETTY_FUNCTION__, OOP_OCLASS(obj)->ClassNode.ln_Name));
 
-    /* software rasterizer doesnt have an actual "sidplay" */
+    /* software rasterizer doesnt have an actual "display" */
     if (OOP_OCLASS(obj) == OOP_FindClass(CLID_Hidd_Gfx))
         return;
 
