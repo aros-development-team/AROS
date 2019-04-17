@@ -1,0 +1,51 @@
+#   $Id: mmakefile.src -1   $
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+EGL_PATH = $(top_srcdir)/src/egl
+include $(EGL_PATH)/Makefile.sources
+
+################################################################################
+# EGL                                                                          #
+################################################################################
+
+##MM workbench-libs-egl : includes workbench-libs-mesa-linklib workbench-libs-vega-linklib \
+##MM     workbench-libs-gallium-linklib
+
+EGL_SOURCES = \
+            $(addprefix $(EGL_PATH)/$(filter %.c, $(LIBEGL_C_FILES))) \
+            egl_arosmesa
+
+SHARED_LIB_SOURCES = \
+            emul_arosc \
+            tls
+
+LIBRARY_SOURCES = \
+            $(EGL_SOURCES) \
+            $(SHARED_LIB_SOURCES)
+
+USER_INCLUDES += \
+            -I$(EGL_PATH)/main
+
+USER_CPPFLAGS :=  -DFEATURE_GL=1 \
+                -DFEATURE_VG=1 \
+                -D_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_AROS \
+                -D_EGL_OS_AROS=1 \
+                -DHAVE_AROS_BACKEND
+
+USER_LDFLAGS := \
+  -L$(top_libdir) \
+  -lcompiler -lgalliumauxiliary -lmesautil \
+  -lpthread -lposixc -lstdcio -lstdc
+ifneq ($(TARGET_LIBATOMIC),)
+USER_LDFLAGS += $(TARGET_CXX_LIBS)
+endif
+
+#%build_module mmake=workbench-libs-egl \
+#    modname=egl modtype=library linklibname=EGL \
+#    files="$(LIBRARY_SOURCES)" \
+#    uselibs=""
+
+%common
+
