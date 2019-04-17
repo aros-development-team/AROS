@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,11 +37,13 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    if (pscreen)
-    {
-        pscreen->destroy(pscreen);
-    }
-    
+
+    struct pHidd_Gallium_DestroyPipeScreen drmsg = {
+    mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DestroyPipeScreen),
+    screen : pscreen,
+    };
+
+    OOP_DoMethod((OOP_Object *)pipe, (OOP_Msg)&drmsg);
+
     AROS_LIBFUNC_EXIT
 }

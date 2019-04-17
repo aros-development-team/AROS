@@ -9,8 +9,8 @@ include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 # Wbinvd() implementation.
 
 #MM- workbench-hidds-nouveau : hidd-nouveau-$(AROS_TARGET_CPU)
-#MM- hidd-nouveau-i386 : hidd-nouveau
-#MM- hidd-nouveau-x86_64 : hidd-nouveau
+##MM- hidd-nouveau-i386 : hidd-nouveau
+##MM- hidd-nouveau-x86_64 : hidd-nouveau
 #MM hidd-nouveau : hidd-i2c hidd-agp hidd-gallium
 
 GALLIUM_NOUVEAU_SOURCES = \

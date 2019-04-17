@@ -1,59 +1,44 @@
 #   $Id$
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
-#MM- workbench-hidds : hidd-softpipe
+GALLIUM_PATH = $(top_srcdir)/src/gallium
+include $(GALLIUM_PATH)/drivers/softpipe/Makefile.sources
 
-#MM- hidd-softpipe: includes hidd-gallium linklibs-galliumauxiliary
+#MM- workbench-hidds : hidd-softpipe-$(AROS_TARGET_TOOLCHAIN)
+#MM- hidd-softpipe-yes : hidd-softpipe
 
-GALLIUM_SOFTPIPE_SOURCES = \
-            drivers/softpipe/sp_fs_exec \
-            drivers/softpipe/sp_fs_sse \
-            drivers/softpipe/sp_clear \
-            drivers/softpipe/sp_fence \
-            drivers/softpipe/sp_flush \
-            drivers/softpipe/sp_query \
-            drivers/softpipe/sp_context \
-            drivers/softpipe/sp_draw_arrays \
-            drivers/softpipe/sp_prim_vbuf \
-            drivers/softpipe/sp_quad_pipe \
-            drivers/softpipe/sp_quad_blend \
-            drivers/softpipe/sp_quad_depth_test \
-            drivers/softpipe/sp_quad_fs \
-            drivers/softpipe/sp_quad_stipple \
-            drivers/softpipe/sp_screen \
-            drivers/softpipe/sp_setup \
-            drivers/softpipe/sp_surface \
-            drivers/softpipe/sp_state_blend \
-            drivers/softpipe/sp_state_clip \
-            drivers/softpipe/sp_state_derived \
-            drivers/softpipe/sp_state_sampler \
-            drivers/softpipe/sp_state_rasterizer \
-            drivers/softpipe/sp_state_shader \
-            drivers/softpipe/sp_state_so \
-            drivers/softpipe/sp_state_surface \
-            drivers/softpipe/sp_state_vertex \
-            drivers/softpipe/sp_texture \
-            drivers/softpipe/sp_tex_sample \
-            drivers/softpipe/sp_tile_cache \
-            drivers/softpipe/sp_tex_tile_cache \
+#MM- hidd-softpipe: includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic
 
-GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
-
-# WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
+MESA3D_SOFTPIPE_C_SOURCES := $(filter %.c, $(C_SOURCES))
 
 SOFTPIPE_HIDD_SOURCES := \
+            softpipe_init \
             softpipe_galliumclass \
-            init \
             arosc_emul \
-             $(addprefix $(GALLIUM_PATH),$(GALLIUM_SOFTPIPE_SOURCES))\
+             $(addprefix $(GALLIUM_PATH)/drivers/softpipe/,$(MESA3D_SOFTPIPE_C_SOURCES:.c=))
 
 USER_INCLUDES := \
-            -I$(GALLIUM_PATH)/drivers \
-            -I$(AROS_DEVELOPER)/include/gallium \
-            -I$(GALLIUM_PATH)/include \
+            $(USER_INCLUDES) \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(SRCDIR)/$(CURDIR)
+
+NOWARN_CFLAGS := $(NOWARN_MAYBE_UNINITIALIZED)
+USER_CFLAGS += $(NOWARN_CFLAGS)
+USER_CPPFLAGS += -DDEBUG=1
+
+USER_LDFLAGS := \
+  -L$(top_libdir) \
+  -lcompiler -lgalliumauxiliary -lmesautil \
+  -lpthread -lposixc -lstdcio -lstdc
+ifneq ($(TARGET_LIBATOMIC),)
+USER_LDFLAGS += $(TARGET_CXX_LIBS)
+endif
 
 %build_module mmake=hidd-softpipe modname=softpipe modtype=hidd \
-    files="$(SOFTPIPE_HIDD_SOURCES)" uselibs="galliumauxiliary stdcio stdc"
-    
+    files="$(SOFTPIPE_HIDD_SOURCES)" uselibs=""
+
 %common

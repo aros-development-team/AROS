@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,7 @@
 #include <proto/alib.h>
 #include <proto/layers.h>
 #include <proto/graphics.h>
-#include <gallium/pipe/p_state.h>
+#include "pipe/p_state.h"
 #include <aros/debug.h>
 
 #include "gallium_intern.h"
@@ -61,6 +61,9 @@
     struct Rectangle renderableLayerRect;
     BOOL copied = FALSE;
 
+    if (!pipe)
+        return;
+
     if (!IsLayerVisible(L))
         return;
 
@@ -79,12 +82,11 @@
     if (renderableLayerRect.MaxY > L->bounds.MaxY)
         renderableLayerRect.MaxY = L->bounds.MaxY;
 
-    
     /*  Do not clip renderableLayerRect to screen rast port. CRs are already clipped and unclipped 
         layer coords are needed. */
-    
+
     CR = L->ClipRect;
-    
+
     for (;NULL != CR; CR = CR->Next)
     {
         D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
@@ -110,8 +112,9 @@
                 width : result.MaxX - result.MinX + 1, /* width of the rect in source buffer */
                 height : result.MaxY - result.MinY + 1, /* height of the rect in source buffer */
                 };
-                OOP_DoMethod(pipe, (OOP_Msg)&drmsg);
-                
+
+                OOP_DoMethod((OOP_Object *)pipe, (OOP_Msg)&drmsg);
+
                 copied = TRUE;
             }
         }

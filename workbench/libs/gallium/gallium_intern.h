@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,7 +35,7 @@
 #endif
 
 #ifndef P_SCREEN_H
-#   include <gallium/pipe/p_screen.h>
+#   include "pipe/p_screen.h"
 #endif
 
 struct GalliumBase
@@ -53,14 +53,9 @@ struct GalliumBase
     /* methods we use .. */
     OOP_MethodID                galliumMId_UpdateRect;
     OOP_MethodID                galliumMId_DisplayResource;
-
-    struct SignalSemaphore      driversemaphore;
-    struct Library              *drivermodule;
-    OOP_Object                  *driver;
 };
 
-OOP_Object * SelectGalliumDriver(ULONG requestedinterfaceversion, struct Library * GalliumBase);
-BOOL IsVersionMatching(ULONG version, OOP_Object * driver, struct Library * GalliumBase);
+#define GB(lb)  ((struct GalliumBase *)lb)
 
 #define GB(lb)  ((struct GalliumBase *)lb)
 #undef HiddGfxAttrBase

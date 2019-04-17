@@ -1,6 +1,9 @@
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
 
 IGMA_HIDD_SOURCES := \
             intelgma_init \
@@ -13,52 +16,31 @@ IGMA_HIDD_SOURCES := \
             intelgma_galliumclass \
             intelgma_compositorclass
 
-GALLIUM_I915_SOURCES = \
-    drivers/i915/i915_blit \
-    drivers/i915/i915_clear \
-    drivers/i915/i915_context \
-    drivers/i915/i915_debug \
-    drivers/i915/i915_debug_fp \
-    drivers/i915/i915_flush \
-    drivers/i915/i915_fpc_emit \
-    drivers/i915/i915_fpc_translate \
-    drivers/i915/i915_prim_emit \
-    drivers/i915/i915_prim_vbuf \
-    drivers/i915/i915_query \
-    drivers/i915/i915_resource_buffer \
-    drivers/i915/i915_resource \
-    drivers/i915/i915_resource_texture \
-    drivers/i915/i915_screen \
-    drivers/i915/i915_state \
-    drivers/i915/i915_state_derived \
-    drivers/i915/i915_state_dynamic \
-    drivers/i915/i915_state_emit \
-    drivers/i915/i915_state_fpc \
-    drivers/i915/i915_state_immediate \
-    drivers/i915/i915_state_sampler \
-    drivers/i915/i915_state_static \
-    drivers/i915/i915_surface
+IGMA_HIDD_SOURCES += \
+            intelgma_copybox
 
-GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
+USER_INCLUDES += \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary
 
-USER_INCLUDES := \
-                -I$(GALLIUM_PATH)/drivers                   \
-                -I$(AROS_DEVELOPER)/include/gallium       \
-                -I$(GALLIUM_PATH)/include
+USER_LDFLAGS := -static-libstdc++ \
+  -L$(top_libdir) \
+  -lgallium_i915 -lgalliumauxiliary -lmesautil \
+  -lhiddstubs -lpthread -lstdcio -lstdc
 
-USER_CFLAGS := -std=gnu99
-
-FILES := $(IGMA_HIDD_SOURCES) intelgma_winsys 3D_blitter \
-    $(addprefix $(GALLIUM_PATH), $(GALLIUM_I915_SOURCES))
+# disable necessary warnings
+NOWARN_FLAGS := -Wno-unused-value -Wno-unused-variable
+USER_CFLAGS += $(NOWARN_FLAGS)
 
 EXEDIR := $(AROSDIR)/Devs/Monitors
 
 #MM- workbench-devs-monitors: devs-monitors-intelgma
-#MM devs-monitors-intelgma : hidd-i2c hidd-gallium linklibs-galliumauxiliary
+#MM devs-monitors-intelgma : hidd-i2c hidd-gallium intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
 
 %build_prog mmake=devs-monitors-intelgma \
            progname=IntelGMA targetdir=$(EXEDIR) \
-           files=$(FILES) uselibs="hiddstubs galliumauxiliary stdcio stdc"
+           files=$(IGMA_HIDD_SOURCES) uselibs=""
 
 
 %common

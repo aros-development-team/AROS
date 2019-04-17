@@ -1,0 +1,182 @@
+#   $Id$
+#
+#   Build Mesa3DGL private libmesa.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/mesa
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+
+#MM- mesa3dgl-linklibs : mesa3d-linklib-mesa
+
+# disable necessary warnings
+NOWARN_FLAGS := $(MESA_NOWARNFLAGS) $(NOWARN_RETURN_TYPE) $(NOWARN_UNUSED_CONST_VARIABLE) \
+                $(NOWARN_STRICT_ALIASING) $(NOWARN_MAYBE_UNINITIALIZED) $(NOWARN_ARRAY_BOUNDS)
+USER_CPPFLAGS += \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                -DPACKAGE_BUGREPORT=\"https://bugs.freedesktop.org/enter_bug.cgi?product=Mesa\"
+USER_CFLAGS += $(NOWARN_FLAGS)
+USER_CXXFLAGS += $(NOWARN_FLAGS)
+
+USER_INCLUDES += \
+            -iquote $(top_builddir)/$(CUR_MESADIR) \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/main \
+            -iquote $(top_srcdir)/src/mapi \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_srcdir)/compiler/glsl \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -I$(top_srcdir)/$(CUR_MESADIR) \
+            -I$(top_srcdir)/$(CUR_MESADIR)/main \
+            -I$(top_srcdir)/src/gallium/auxiliary \
+            -I$(top_srcdir)/include
+
+MESA_GENERATED_C_SOURCES := \
+            main/api_exec.c \
+            main/enums.c \
+            main/format_pack.c \
+            main/format_unpack.c \
+            program/program_parse.tab.c \
+            program/lex.yy.c
+
+MESA3D_SOURCES := $(filter-out $(MESA_GENERATED_C_SOURCES),$(PROGRAM_FILES) $(PROGRAM_NIR_FILES) $(MESA_GALLIUM_FILES))
+MESA3D_GALLIUM_CXX_SOURCES := $(filter %.cpp, $(MESA3D_SOURCES))
+MESA3D_GALLIUM_C_SOURCES := $(filter %.c, $(MESA3D_SOURCES))
+
+define es-gen
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PRIVATE_SCRIPT) $(1) $(PRIVATE_XML) > $@
+endef
+
+dispatch_deps := \
+	$(wildcard $(glapi)/*.py) \
+	$(wildcard $(glapi)/*.xml)
+
+$(top_builddir)/$(CUR_MESADIR)/main/dispatch.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_table.py
+$(top_builddir)/$(CUR_MESADIR)/main/dispatch.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+
+$(top_builddir)/$(CUR_MESADIR)/main/dispatch.h: $(dispatch_deps)
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(PRIVATE_SCRIPT) -m remap_table $(PRIVATE_XML) > $@
+
+$(top_builddir)/$(CUR_MESADIR)/main/remap_helper.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/remap_helper.py
+$(top_builddir)/$(CUR_MESADIR)/main/remap_helper.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+
+$(top_builddir)/$(CUR_MESADIR)/main/remap_helper.h: $(dispatch_deps)
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(PRIVATE_SCRIPT) $(PRIVATE_XML) > $@
+
+$(top_builddir)/$(CUR_MESADIR)/main/enums.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_enums.py
+$(top_builddir)/$(CUR_MESADIR)/main/enums.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/enums.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_genexec.py
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/api_exec.c: $(dispatch_deps)
+	$(call es-gen)
+
+GET_HASH_GEN := $(top_srcdir)/$(CUR_MESADIR)/main/get_hash_generator.py
+$(top_builddir)/$(CUR_MESADIR)/main/get_hash.h: PRIVATE_SCRIPT :=  $(PYTHON) $(GET_HASH_GEN)
+$(top_builddir)/$(CUR_MESADIR)/main/get_hash.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/get_hash.h: $(glapi)/gl_and_es_API.xml \
+	$(top_srcdir)/$(CUR_MESADIR)/main/get_hash_params.py $(GET_HASH_GEN)
+	$(call es-gen)
+
+FORMAT_INFO := $(top_srcdir)/$(CUR_MESADIR)/main/format_info.py
+format_info_deps := \
+	$(top_srcdir)/$(CUR_MESADIR)/main/formats.csv \
+	$(top_srcdir)/$(CUR_MESADIR)/main/format_parser.py \
+	$(FORMAT_INFO)
+
+$(top_builddir)/$(CUR_MESADIR)/main/format_info.h: PRIVATE_SCRIPT := $(PYTHON) $(FORMAT_INFO)
+$(top_builddir)/$(CUR_MESADIR)/main/format_info.h: PRIVATE_XML :=
+$(top_builddir)/$(CUR_MESADIR)/main/format_info.h: $(format_info_deps)
+	$(call es-gen, $<)
+
+FORMAT_PACK := $(top_srcdir)/$(CUR_MESADIR)/main/format_pack.py
+format_pack_deps := \
+	$(top_srcdir)/$(CUR_MESADIR)/main/formats.csv \
+	$(top_srcdir)/$(CUR_MESADIR)/main/format_parser.py \
+	$(FORMAT_PACK)
+
+$(top_builddir)/$(CUR_MESADIR)/main/format_pack.c: PRIVATE_SCRIPT := $(PYTHON) $(FORMAT_PACK)
+$(top_builddir)/$(CUR_MESADIR)/main/format_pack.c: PRIVATE_XML :=
+$(top_builddir)/$(CUR_MESADIR)/main/format_pack.c: $(format_pack_deps)
+	$(call es-gen, $<)
+
+FORMAT_UNPACK := $(top_srcdir)/$(CUR_MESADIR)/main/format_unpack.py
+format_unpack_deps := \
+	$(top_srcdir)/$(CUR_MESADIR)/main/formats.csv \
+	$(top_srcdir)/$(CUR_MESADIR)/main/format_parser.py \
+	$(FORMAT_UNPACK)
+
+$(top_builddir)/$(CUR_MESADIR)/main/format_unpack.c: PRIVATE_SCRIPT := $(PYTHON) $(FORMAT_UNPACK)
+$(top_builddir)/$(CUR_MESADIR)/main/format_unpack.c: PRIVATE_XML :=
+$(top_builddir)/$(CUR_MESADIR)/main/format_unpack.c: $(format_unpack_deps)
+	$(call es-gen, $<)
+
+$(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp:
+	$(Q)$(IF) $(TEST) -d $(top_srcdir)/.git; then \
+		$(IF) which git > /dev/null; then \
+		    git --git-dir=$(top_srcdir)/.git log -n 1 --oneline | \
+			sed 's/^\([^ ]*\) .*/#define MESA_GIT_SHA1 "git-\1"/' \
+			> $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp ; \
+		fi \
+	else \
+		$(ECHO) "#define MESA_GIT_SHA1 \"\"" > $@ ;\
+	fi
+
+$(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h : $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp
+	$(Q)$(ECHO) "Caching repository version in $(CUR_MESADIR)/main/git_sha1.h"
+	$(Q)$(IF) ! cmp -s $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h; then \
+		mv $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h ;\
+	else \
+		rm $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp ;\
+	fi
+
+$(top_builddir)/$(CUR_MESADIR)/program/lex.yy.c: $(top_srcdir)/$(CUR_MESADIR)/program/program_lexer.l
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(LEX) $(FFLAGS) --never-interactive --outfile=$@ $<
+
+$(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.c $(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.h: $(top_srcdir)/$(CUR_MESADIR)/program/program_parse.y
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(BISON) $(BFLAGS) -p "_mesa_program_" -v -d --output=$(top_builddir)/$(CUR_MESADIR)/program/program_parse.tab.c $<
+
+MESA3DGL_MESA_GENERATED_C_SOURCES := \
+            $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(MESA_GENERATED_C_SOURCES))
+
+MESA3DGL_MESA_GENERATED_C_HEADERS := \
+            $(top_builddir)/$(CUR_MESADIR)/main/dispatch.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/remap_helper.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/get_hash.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h \
+            $(top_builddir)/$(CUR_MESADIR)/main/format_info.h
+
+MESA3DGL_MESA_C_SOURCES := \
+            $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3D_GALLIUM_C_SOURCES))) \
+            $(MESA3DGL_MESA_GENERATED_C_SOURCES)
+
+MESA3DGL_MESA_SOURCES_C := $(MESA3DGL_MESA_C_SOURCES:.c=)
+
+MESA3DGL_MESA_CXX_SOURCES := \
+            $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3D_GALLIUM_CXX_SOURCES)))
+
+MESA3DGL_MESA_SOURCES_CXX := $(MESA3DGL_MESA_CXX_SOURCES:.cpp=)
+
+#MM
+mesa3d-linklib-mesa-generated : $(MESA3DGL_MESA_GENERATED_C_HEADERS) $(MESA3DGL_MESA_GENERATED_C_SOURCES)
+
+#MM mesa3d-linklib-mesa : mesa3d-linklib-mesa-generated
+
+%build_linklib mmake=mesa3d-linklib-mesa libname=mesa libdir="$(top_libdir)" objdir="$(top_builddir)/$(CUR_MESADIR)" files="$(MESA3DGL_MESA_SOURCES_C)" cxxfiles="$(MESA3DGL_MESA_SOURCES_CXX)"
+
+%common

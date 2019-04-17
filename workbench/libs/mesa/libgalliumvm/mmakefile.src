@@ -1,0 +1,40 @@
+#   $Id: mmakefile.src 48628 2013-12-25 15:14:46Z deadwood $
+#
+#   Generate libgalliumvm.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/gallium/auxiliary
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+
+##MM- mesa3dgl-linklibs : mesa3d-linklib-galliumvm
+
+GALLIVM_C_SOURCES := $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,  $(filter %.c, $(GALLIVM_SOURCES))))
+GALLIVM_CXX_SOURCES := $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,  $(filter %.cpp, $(GALLIVM_SOURCES))))
+
+GALLIVM_SOURCES_C := \
+            $(GALLIVM_C_SOURCES:.c=)
+
+GALLIVM_SOURCES_CXX := \
+            $(GALLIVM_CXX_SOURCES:.cpp=)
+
+USER_INCLUDES := \
+            $(USER_INCLUDES) \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_srcdir)/src/gallium/auxiliary \
+            -iquote $(top_srcdir)/src/gallium/auxiliary/util \
+            -iquote $(top_srcdir)/src/gallium/auxiliary/indices \
+
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
+
+##USER_CPPFLAGS += -DHAVE_LLVM=0x0209 -D__STDC_CONSTANT_MACROS
+
+%build_linklib mmake=mesa3d-linklib-galliumvm libname=galliumvm \
+   libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) \
+   files="$(GALLIVM_SOURCES_C)" cxxfiles="$(GALLIVM_SOURCES_CXX)"
+
+%common

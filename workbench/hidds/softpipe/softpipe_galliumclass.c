@@ -1,9 +1,16 @@
 /*
-    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
+    Copyright 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
+
+#include "pipe/p_screen.h"
+#include "softpipe/sp_texture.h"
+#include "softpipe/sp_public.h"
+#include "softpipe/sp_screen.h"
+#include "util/u_format.h"
+#include "util/u_math.h"
 
 #include <proto/oop.h>
 #include <proto/cybergraphics.h>
@@ -15,16 +22,7 @@
 #include <hidd/gallium.h>
 #include <gallium/gallium.h>
 
-#include <gallium/pipe/p_screen.h>
-#include "softpipe/sp_texture.h"
-#include "softpipe/sp_public.h"
-#include "softpipe/sp_screen.h"
-#include "util/u_format.h"
-#include "util/u_math.h"
-#include "state_tracker/sw_winsys.h"
-
 #include "softpipe_intern.h"
-
 
 #if (AROS_BIG_ENDIAN == 1)
 #define AROS_PIXFMT RECTFMT_RAW   /* Big Endian Archs. */
@@ -32,46 +30,58 @@
 #define AROS_PIXFMT RECTFMT_BGRA32   /* Little Endian Archs. */
 #endif
 
-#define CyberGfxBase    (&BASE(cl->UserData)->sd)->SoftpipeCyberGfxBase
+#define CyberGfxBase    (&BASE(cl->UserData)->sd)->CyberGfxBase
+#define UtilityBase    (&BASE(cl->UserData)->sd)->UtilityBase
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->hiddGalliumAB)
 
-struct HiddSoftpipeWinSys
-{
-    struct HIDDT_WinSys base;
-    struct sw_winsys    swws;
-};
-
 /*  Displaytarget support code */
 struct HiddSoftpipeDisplaytarget
 {
+    enum pipe_format fmt;
     APTR data;
 };
 
-struct HiddSoftpipeDisplaytarget * HiddSoftpipeDisplaytarget(struct sw_displaytarget * dt)
+struct HiddSoftpipeDisplaytarget * HiddSoftpipe_Displaytarget(struct sw_displaytarget * dt)
 {
     return (struct HiddSoftpipeDisplaytarget *)dt;
 }
 
+static boolean
+HiddSoftpipe_IsFormatSupported( struct sw_winsys *ws,
+                                          unsigned tex_usage,
+                                          enum pipe_format format )
+{
+   return TRUE;
+}
+
+
 static struct sw_displaytarget *
-HiddSoftpipeCreateDisplaytarget(struct sw_winsys *winsys, unsigned tex_usage,
-    enum pipe_format format, unsigned width, unsigned height,
-    unsigned alignment, unsigned *stride)
+HiddSoftpipe_CreateDisplaytarget( struct sw_winsys *ws,
+                            unsigned tex_usage,
+                            enum pipe_format format,
+                            unsigned width, unsigned height,
+                            unsigned alignment,
+                            const void *front_private,
+                            unsigned *stride )
 {
     struct HiddSoftpipeDisplaytarget * spdt = 
         AllocVec(sizeof(struct HiddSoftpipeDisplaytarget), MEMF_PUBLIC | MEMF_CLEAR);
     
     *stride = align(util_format_get_stride(format, width), alignment);
     spdt->data = AllocVec(*stride * height, MEMF_PUBLIC | MEMF_CLEAR);
-    
+    spdt->fmt = format;
+
+    bug("[SoftPipe] %s: fmt #%d\n", __PRETTY_FUNCTION__, spdt->fmt);
+
     return (struct sw_displaytarget *)spdt;
 }
 
 static void
-HiddSoftpipeDestroyDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
+HiddSoftpipe_DestroyDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
 {
-    struct HiddSoftpipeDisplaytarget * spdt = HiddSoftpipeDisplaytarget(dt);
+    struct HiddSoftpipeDisplaytarget * spdt = HiddSoftpipe_Displaytarget(dt);
     
     if (spdt)
     {
@@ -81,79 +91,67 @@ HiddSoftpipeDestroyDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *
 }
 
 static void *
-HiddSoftpipeMapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt,
+HiddSoftpipe_MapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt,
     unsigned flags)
 {
-    struct HiddSoftpipeDisplaytarget * spdt = HiddSoftpipeDisplaytarget(dt);
+    struct HiddSoftpipeDisplaytarget * spdt = HiddSoftpipe_Displaytarget(dt);
     return spdt->data;
 }
 
 static void
-HiddSoftpipeUnMapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
+HiddSoftpipe_UnMapDisplaytarget(struct sw_winsys *ws, struct sw_displaytarget *dt)
 {
     /* No op */
 }
 
 /*  Displaytarget support code ends */
 
-static struct HiddSoftpipeWinSys *
-HiddSoftpipeCreateSoftpipeWinSys(void)
-{
-    struct HiddSoftpipeWinSys * ws = NULL;
-
-    ws = (struct HiddSoftpipeWinSys *)AllocVec
-        (sizeof(struct HiddSoftpipeWinSys), MEMF_PUBLIC|MEMF_CLEAR);
-
-    /* Fill in this struct with callbacks that pipe will need to
-    * communicate with the window system, buffer manager, etc. 
-    */
-
-    /* Since Mesa 7.9 softpipe no longer uses pipe_winsys - it uses sw_winsys */
-    ws->base.base.buffer_create         = NULL;
-    ws->base.base.user_buffer_create    = NULL;
-    ws->base.base.buffer_map            = NULL;
-    ws->base.base.buffer_unmap          = NULL;
-    ws->base.base.buffer_destroy        = NULL;
-    ws->base.base.surface_buffer_create = NULL;
-    ws->base.base.fence_reference       = NULL;
-    ws->base.base.fence_signalled       = NULL;
-    ws->base.base.fence_finish          = NULL;
-    ws->base.base.flush_frontbuffer     = NULL;
-    ws->base.base.get_name              = NULL;
-    ws->base.base.destroy               = NULL;
-    
-    /* Fill in with functions is displaytarget is ever used*/
-    ws->swws.destroy                            = NULL;
-    ws->swws.is_displaytarget_format_supported  = NULL;
-    ws->swws.displaytarget_create               = HiddSoftpipeCreateDisplaytarget;
-    ws->swws.displaytarget_from_handle          = NULL;
-    ws->swws.displaytarget_get_handle           = NULL;
-    ws->swws.displaytarget_map                  = HiddSoftpipeMapDisplaytarget;
-    ws->swws.displaytarget_unmap                = HiddSoftpipeUnMapDisplaytarget;
-    ws->swws.displaytarget_display              = NULL;
-    ws->swws.displaytarget_destroy              = HiddSoftpipeDestroyDisplaytarget;
-    
-    return ws;
-}
-
-OOP_Object *METHOD(SoftpipeGallium, Root, New)
+OOP_Object *METHOD(HiddSoftpipe, Root, New)
 {
     IPTR interfaceVers;
 
-    D(bug("[softpipe.hidd] %s()\n", __func__));
+    D(bug("[SoftPipe] %s()\n", __PRETTY_FUNCTION__));
 
     interfaceVers = GetTagData(aHidd_Gallium_InterfaceVersion, -1, msg->attrList);
     if (interfaceVers != GALLIUM_INTERFACE_VERSION)
         return NULL;
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (o)
+    {
+        struct HiddGalliumSoftpipeData * HiddSoftpipe_DATA = OOP_INST_DATA(cl, o);
+
+        HiddSoftpipe_DATA->softpipe_obj = o;
+
+        HiddSoftpipe_DATA->softpipe_winsys.destroy                            = NULL;
+        HiddSoftpipe_DATA->softpipe_winsys.is_displaytarget_format_supported  = HiddSoftpipe_IsFormatSupported;
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_create               = HiddSoftpipe_CreateDisplaytarget;
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_from_handle          = NULL;
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_get_handle           = NULL;
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_map                  = HiddSoftpipe_MapDisplaytarget;
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_unmap                = HiddSoftpipe_UnMapDisplaytarget;
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_display              = NULL;
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_destroy              = HiddSoftpipe_DestroyDisplaytarget;
+    }
 
     return o;
 }
 
-VOID METHOD(SoftpipeGallium, Root, Get)
+VOID METHOD(HiddSoftpipe, Root, Dispose)
 {
+    D(bug("[SoftPipe] %s()\n", __PRETTY_FUNCTION__));
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID METHOD(HiddSoftpipe, Root, Get)
+{
+#if (0)
+    struct HiddGalliumSoftpipeData * HiddSoftpipe_DATA = OOP_INST_DATA(cl, o);
+#endif
     ULONG idx;
+
+    D(bug ("[SoftPipe] %s()\n", __PRETTY_FUNCTION__));
 
     if (IS_GALLIUM_ATTR(msg->attrID, idx))
     {
@@ -165,51 +163,41 @@ VOID METHOD(SoftpipeGallium, Root, Get)
                 return;
         }
     }
-    
+
     /* Use parent class for all other properties */
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-APTR METHOD(SoftpipeGallium, Hidd_Gallium, CreatePipeScreen)
+APTR METHOD(HiddSoftpipe, Hidd_Gallium, CreatePipeScreen)
 {
-    struct HiddSoftpipeWinSys * softpipews;
-    struct pipe_screen *screen;
+    struct HiddGalliumSoftpipeData * HiddSoftpipe_DATA = OOP_INST_DATA(cl, o);
+    struct pipe_screen *screen = NULL;
 
-    softpipews = HiddSoftpipeCreateSoftpipeWinSys();
-    if (softpipews == NULL)
-        return NULL;
+    D(bug ("[SoftPipe] %s()\n", __PRETTY_FUNCTION__));
 
-    screen = softpipe_create_screen(&softpipews->swws);
-    if (screen == NULL)
-        goto fail;
+    screen = softpipe_create_screen(&HiddSoftpipe_DATA->softpipe_winsys);
 
-    /* Force a pipe_winsys pointer (Mesa 7.9 or never) */
-    screen->winsys = (struct pipe_winsys *)softpipews;
-
-    /* Preserve pointer to HIDD driver */
-    softpipews->base.driver = o;
+    D(bug ("[SoftPipe] %s: screen @ 0x%p\n", __PRETTY_FUNCTION__, screen));
 
     return screen;
-
-fail:
-    if (softpipews && softpipews->base.base.destroy)
-        softpipews->base.base.destroy((struct pipe_winsys *)softpipews);
-
-    return NULL;
 }
 
-VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplayResource)
+VOID METHOD(HiddSoftpipe, Hidd_Gallium, DisplayResource)
 {
+    struct HiddGalliumSoftpipeData * HiddSoftpipe_DATA = OOP_INST_DATA(cl, o);
     struct softpipe_resource * spr = softpipe_resource(msg->resource);
-    struct sw_winsys * swws = softpipe_screen(spr->base.screen)->winsys;
-    struct RastPort * rp = CreateRastPort();
+    struct RastPort * rp;
     APTR * data = spr->data;
 
+    D(bug ("[SoftPipe] %s()\n", __PRETTY_FUNCTION__));
+
     if ((data == NULL) && (spr->dt != NULL))
-        data = swws->displaytarget_map(swws, spr->dt, 0);
+        data = HiddSoftpipe_DATA->softpipe_winsys.displaytarget_map(&HiddSoftpipe_DATA->softpipe_winsys, spr->dt, 0);
 
     if (data)
     {
+        rp = CreateRastPort();
+
         rp->BitMap = msg->bitmap;
 
         WritePixelArray(
@@ -223,11 +211,10 @@ VOID METHOD(SoftpipeGallium, Hidd_Gallium, DisplayResource)
             msg->width, 
             msg->height, 
             AROS_PIXFMT);
+
+        FreeRastPort(rp);
     }
 
     if ((spr->data == NULL) && (data != NULL))
-        swws->displaytarget_unmap(swws, spr->dt);
-
-    FreeRastPort(rp);
+        HiddSoftpipe_DATA->softpipe_winsys.displaytarget_unmap(&HiddSoftpipe_DATA->softpipe_winsys, spr->dt);
 }
-

@@ -1,0 +1,58 @@
+#   $Id$
+#
+#   Build Mesa3DGL private libglapi.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/mapi
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+
+#MM- mesa3dgl-linklibs : mesa3d-linklib-glapi
+
+USER_INCLUDES += \
+            -I$(top_srcdir)/include \
+            -iquote $(top_builddir)/$(CUR_MESADIR) \
+            -iquote $(top_srcdir)/$(CUR_MESADIR) \
+            -iquote $(top_mesa3dgldir)/src \
+            -iquote $(SRCDIR)/$(CURDIR)/..
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
+
+MAPI_GLAPI_C_FILES  := $(filter %.c, $(MAPI_UTIL_FILES))
+
+MESA3DGL_GLAPI_SOURCES := \
+	glapi/glapi_dispatch \
+	glapi/glapi_entrypoint \
+	glapi/glapi_getproc \
+	glapi/glapi_nop \
+	glapi/glapi \
+	$(MAPI_GLAPI_C_FILES:.c=)
+
+MESA3DGL_GLAPI_SOURCES_C := $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3DGL_GLAPI_SOURCES))
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glapitemp.h: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_apitemp.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glapitable.h: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_table.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glprocs.h: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_procs.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -c -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+#MM
+mesa3d-linklib-glapi-generate : $(top_builddir)/$(CUR_MESADIR)/glapi/glapitable.h $(top_builddir)/$(CUR_MESADIR)/glapi/glapitemp.h $(top_builddir)/$(CUR_MESADIR)/glapi/glprocs.h
+
+#MM mesa3d-linklib-glapi : mesa3d-fetch mesa3d-linklib-glapi-generate
+
+%build_linklib mmake=mesa3d-linklib-glapi libname=glapi libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) files="$(MESA3DGL_GLAPI_SOURCES_C)"
+
+%common

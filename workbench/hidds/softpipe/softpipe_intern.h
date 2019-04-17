@@ -2,24 +2,29 @@
 #define _SOFTPIPE_INTERN_H
 
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include "state_tracker/sw_winsys.h"
 
 #include LC_LIBDEFS_FILE
 
 #define CLID_Hidd_Gallium_Softpipe  "hidd.gallium.softpipe"
 
-struct HIDDGalliumSoftpipeData
+// The object instance data is used as our winsys wrapper
+struct HiddGalliumSoftpipeData
 {
+    struct sw_winsys softpipe_winsys;
+    OOP_Object *softpipe_obj;
 };
 
 struct softpipestaticdata 
 {
     OOP_Class       *galliumclass;
     OOP_AttrBase    hiddGalliumAB;
-    struct Library  *SoftpipeCyberGfxBase;
+    struct Library  *CyberGfxBase;
+    struct Library  *UtilityBase;
 };
 
 LIBBASETYPE 
