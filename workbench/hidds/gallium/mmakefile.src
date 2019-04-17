@@ -7,7 +7,7 @@ GALLIUM_PATH = $(top_srcdir)/src/gallium
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 USER_LDFLAGS := -static
-USER_CPPFLAGS +=-DDEBUG=1
+#USER_CPPFLAGS +=-DDEBUG=1
 
 HIDD_GALLIUM_FILES := gallium_init gallium_class
 
