@@ -1,4 +1,4 @@
-# Copyright © 2016, The AROS Development Team. All rights reserved.
+# Copyright © 2016-2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -40,7 +40,7 @@ EXEDIR := $(AROS_TESTS)/misc
 %build_progs mmake=test-misc \
     files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
 
-USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_progs mmake=test-sh \
     files=$(SHTESTFILES) targetdir=$(EXEDIR) \
