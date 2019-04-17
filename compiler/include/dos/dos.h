@@ -2,7 +2,7 @@
 #define DOS_DOS_H
 
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic DOS structures and constants
@@ -220,6 +220,8 @@ struct InfoData32
 #define ID_INTER_FFS_DISK       AROS_MAKE_ID('D','O','S',3)
 #define ID_FASTDIR_DOS_DISK     AROS_MAKE_ID('D','O','S',4)
 #define ID_FASTDIR_FFS_DISK     AROS_MAKE_ID('D','O','S',5)
+#define ID_LNFS_DOS_DISK        AROS_MAKE_ID('D','O','S',6)
+#define ID_LNFS_FFS_DISK        AROS_MAKE_ID('D','O','S',7)
 #define ID_NOT_REALLY_DOS       AROS_MAKE_ID('N','D','O','S')
 #define ID_KICKSTART_DISK       AROS_MAKE_ID('K','I','C','K')
 #define ID_MSDOS_DISK           AROS_MAKE_ID('M','S','D',0)
