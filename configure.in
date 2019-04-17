@@ -125,6 +125,8 @@ CXX_BASE=$CXX
 AC_PATH_PROG(CXX,$CXX)
 AC_PROG_CC([${host_c_compilers}])
 CC_BASE=$CC
+AC_PROG_CPP
+CPP_BASE=$CPP
 AC_PATH_PROG(CC,$CC)
 aros_host_def_cc="$CC"
 AC_PROG_CC_STDC
@@ -2357,21 +2359,21 @@ else
         # empty, unless specified in the per-arch sections above.
         test_kernel_cc=yes
         if test "x$aros_kernel_cpp" = "x"; then
-            aros_kernel_cpp=${kernel_tool_prefix}${CPP}
+            aros_kernel_cpp=${kernel_tool_prefix}${CPP_BASE}
         fi
         AROS_BUILDCMD(aros_kernel_cpp,$aros_kernel_cpp,${kernel_tool_version})
         AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp)
         AROS_REQUIRED(cpp,$aros_kernel_cpp)
 
         if test "x$aros_kernel_cc" = "x"; then
-            aros_kernel_cc=${kernel_tool_prefix}${CC}
+            aros_kernel_cc=${kernel_tool_prefix}${CC_BASE}
         fi
         AROS_BUILDCMD(aros_kernel_cc,$aros_kernel_cc,${kernel_tool_version})
         AROS_TOOL_KERNEL(aros_kernel_cc,cc,$aros_kernel_cc)
         AROS_REQUIRED(cc,$aros_kernel_cc)
 
         if test "x$aros_kernel_cxx" = "x"; then
-            aros_kernel_cxx=${kernel_tool_prefix}${CXX}
+            aros_kernel_cxx=${kernel_tool_prefix}${CXX_BASE}
         fi
         AROS_BUILDCMD(aros_kernel_cxx,$aros_kernel_cxx,${kernel_tool_version})
         AROS_TOOL_KERNEL(aros_kernel_cxx,cxx,$aros_kernel_cxx)
