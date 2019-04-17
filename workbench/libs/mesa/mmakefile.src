@@ -89,7 +89,7 @@ USER_LDFLAGS := -static-libstdc++ \
   -Wl,--start-group -lglapi -lmesa -lcompiler -lgalliumauxiliary -lgallium -lmesautil \
   -lpthread -lposixc -lstdcio -lstdc
 #USER_LDFLAGS += -Wl,--end-group
-USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG=1
 
 %build_module_library mmake=mesa3dgl-library \
   modname=mesa3dgl modtype=library \
