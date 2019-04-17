@@ -1,0 +1,121 @@
+#   $Id$
+#
+#   Generate mesa3dgl.library
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+include $(SRCDIR)/$(CURDIR)/mesa.cfg
+
+#
+# common mesa3d fetch...
+#
+
+#MM- includes-copy : mesa3d-fetch
+
+%fetch mmake=mesa3d-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/mesa \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.gz" \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=mesa3d-create-patch \
+    archive=$(ARCHBASE) suffixes="tar.gz" \
+    destination=$(PORTSDIR)/mesa
+
+#
+# Real Mesa3DGL.library rules...
+#
+
+#MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)
+#MM- mesa3dgl-library-yes : mesa3dgl-library
+
+#MM mesa3dgl-library : includes workbench-libs-dxtn-includes linklibs-galliumauxiliary workbench-libs-gallium-linklib mesa3dgl-linklibs
+
+##-include $(top_srcdir)/src/mesa/Makefile.sources
+##-include $(top_srcdir)/src/compiler/glsl/Makefile.sources
+##-include $(top_srcdir)/src/mapi/Makefile.sources
+
+SHARED_LIB_SOURCES = \
+            emul_arosc \
+            tls \
+
+MESA3DGL_SOURCES = \
+            mesa3dgl_support \
+            mesa3dgl_gallium \
+            mesa3dgl_init \
+            mesa3dgl_getopenglstatetrackerapi \
+            mesa3dgl_glacreatecontext \
+            mesa3dgl_gladestroycontext \
+            mesa3dgl_glagetconfig \
+            mesa3dgl_glagetcurrentcontext \
+            mesa3dgl_glagetprocaddress \
+            mesa3dgl_glamakecurrent \
+            mesa3dgl_glasetrast \
+            mesa3dgl_glaswapbuffers \
+
+USER_INCLUDES += \
+            -I$(top_srcdir)/src/mesa \
+            -iquote $(top_builddir)/src/mesa \
+            -iquote $(top_builddir)/src/mesa/main \
+            -iquote $(top_builddir)/src/mapi \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_srcdir)/src/mesa/main \
+            -iquote $(top_srcdir)/src/mapi \
+            -iquote $(top_srcdir)/src/compiler/glsl \
+            -iquote $(top_srcdir)/src/compiler/glsl/glcpp \
+            -iquote $(top_srcdir)/src/talloc \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_srcdir)/src/gallium/auxiliary
+
+matypes_deps := \
+	$(top_builddir)/mesa_gen_matypes \
+	$(top_srcdir)/src/mesa/main/mtypes.h \
+	$(top_srcdir)/src/mesa/tnl/t_context.h
+
+##ifeq ($(TARGET_ARCH),x86)
+##USER_CFLAGS += -DUSE_X86_ASM
+##endif
+
+MESAGL_LIBRARY_SOURCES_C := \
+            $(SHARED_LIB_SOURCES) \
+            $(MESA3DGL_SOURCES)
+
+MESAGL_LIBRARY_SOURCES_CXX := \
+            mesa3dgl_
+
+##MM- core-linklibs : linklibs-mesa
+
+USER_LDFLAGS := -static-libstdc++ \
+  -L$(top_libdir) \
+  -Wl,--start-group -lglapi -lmesa -lcompiler -lgalliumauxiliary -lgallium -lmesautil \
+  -lpthread -lposixc -lstdcio -lstdc
+#USER_LDFLAGS += -Wl,--end-group
+USER_CPPFLAGS += -DDEBUG=1
+
+%build_module_library mmake=mesa3dgl-library \
+  modname=mesa3dgl modtype=library \
+  conffile=$(SRCDIR)/workbench/libs/gl/gl.conf \
+  files="$(MESAGL_LIBRARY_SOURCES_C)" \
+  cxxfiles="$(MESAGL_LIBRARY_SOURCES_CXX)" \
+  uselibs=""
+
+#
+# mesa3d includes...
+#
+
+GL_INCLUDE_FILES := gl.h glext.h
+
+%copy_includes path=GL dir=$(top_srcdir)/include/GL includes=$(GL_INCLUDE_FILES)
+
+KHR_INCLUDE_FILES := khrplatform.h
+
+%copy_includes path=KHR dir=$(top_srcdir)/include/KHR includes=$(KHR_INCLUDE_FILES)
+
+GL_INCLUDE_FILES := egl.h eglext.h eglplatform.h eglmesaext.h eglextchromium.h
+
+%copy_includes path=EGL dir=$(top_srcdir)/include/EGL includes=$(GL_INCLUDE_FILES)
+
+VK_INCLUDE_FILES := vulkan.h vulkan_core.h vk_icd.h vk_platform.h
+
+%copy_includes path=vulkan dir=$(top_srcdir)/include/vulkan includes=$(VK_INCLUDE_FILES)
+
+%common

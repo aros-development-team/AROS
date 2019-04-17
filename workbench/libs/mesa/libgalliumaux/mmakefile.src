@@ -1,0 +1,81 @@
+#   $Id: mmakefile.src 48628 2013-12-25 15:14:46Z deadwood $
+#
+#   Generate libgalliumauxiliary.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/gallium/auxiliary
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+
+#MM- mesa3dgl-linklibs : mesa3d-linklib-galliumauxiliary
+#MM mesa3d-linklib-galliumauxiliary : workbench-libs-dxtn-includes mesa3d-linklib-compiler mesa3d-linklib-galliumauxiliary-genobs
+#MM mesa3d-linklib-galliumauxiliary-quick : mesa3d-linklib-galliumauxiliary-genobs
+#MM- mesa3d-linklib-galliumauxiliary-genobs : mesa3d-linklib-galliumauxiliary-generated
+
+MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES := $(filter %.c, $(C_SOURCES) $(NIR_SOURCES))
+
+GALLIUM_AUXILIARY_GENERATED_SOURCES := $(filter %.c, $(GENERATED_SOURCES))
+
+MESA3DGL_GALLIUM_AUXILIARY_SOURCES_C := \
+            $(addprefix $(top_srcdir)/$(CUR_MESADIR)/,$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES:.c=))
+
+USER_INCLUDES += \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_srcdir)/$(CUR_MESADIR) \
+            -iquote $(top_srcdir)/$(CUR_MESADIR)/util \
+            -iquote $(top_srcdir)/$(CUR_MESADIR)/indices \
+            -iquote $(top_builddir)/src/compiler/nir
+
+# disable necessary warnings
+NOWARN_FLAGS := \
+    $(MESA_NOWARNFLAGS) \
+    $(NOWARN_STRICT_ALIASING)\
+    $(NOWARN_UNUSED_VARIABLE) \
+    $(NOWARN_UNUSED_VALUE) \
+    $(NOWARN_RETURN_TYPE) \
+    $(NOWARN_MAYBE_UNINITIALIZED)
+USER_CFLAGS += $(NOWARN_FLAGS)
+USER_CXXFLAGS += $(NOWARN_FLAGS)
+##USER_CPPFLAGS += -DHAVE_LLVM=0x0209
+
+ifeq ($(MESA_DEBUG),)
+# We dont want to build galliumaux with debug .. but we do want the debug functions
+# available  - so we need to add the additional DEBUG define just for the u_debug* files
+GALLAUXDEBUGOFILES := $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(patsubst %.c,%.o,$(filter util/u_debug%,$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES))))
+GALLAUXDEBUGDFILES := $(patsubst %.o,%.d,$(GALLAUXDEBUGOFILES))
+$(GALLAUXDEBUGOFILES) $(GALLAUXDEBUGDFILES): mesa3d-linklib-galliumauxiliary_MC_EXTRA_CPPFLAGS:=-DDEBUG
+endif
+
+$(top_builddir)/$(CUR_MESADIR)/util/u_format_table.c: $(top_srcdir)/$(CUR_MESADIR)/util/u_format_table.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/util/u_format_table.py $(top_srcdir)/$(CUR_MESADIR)/util/u_format.csv > $@
+
+$(top_builddir)/$(CUR_MESADIR)/indices/u_indices_gen.c: $(top_srcdir)/$(CUR_MESADIR)/indices/u_indices_gen.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_indices_gen.py > $@
+
+$(top_builddir)/$(CUR_MESADIR)/indices/u_unfilled_gen.c: $(top_srcdir)/$(CUR_MESADIR)/indices/u_unfilled_gen.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $(top_srcdir)/$(CUR_MESADIR)/indices/u_unfilled_gen.py > $@
+
+#MM
+mesa3d-linklib-galliumauxiliary-generated : $(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES))
+
+# We want to build galliumaux using the source tree layout since there are files
+# with the same name...
+mesa3d-linklib-galliumauxiliary_C_FILES := $(MESA3DGL_GALLIUM_AUXILIARY_SOURCES_C)
+%build_linklib mmake=mesa3d-linklib-galliumauxiliary libname=galliumauxiliary \
+    libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) srcdir=$(top_srcdir)/$(CUR_MESADIR) \
+    files="$(MESA3DGL_GALLIUM_AUXILIARY_C_SOURCES:.c=)" objs="$(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES:.c=.o))" usetree=yes
+
+%rule_compile_multi mmake=mesa3d-linklib-galliumauxiliary-genobs \
+    basenames="$(addprefix $(top_builddir)/$(CUR_MESADIR)/,$(GALLIUM_AUXILIARY_GENERATED_SOURCES:.c=))" targetdir="$(top_builddir)/$(CUR_MESADIR)" \
+    cppflags=$(mesa3d-linklib-galliumauxiliary_CPPFLAGS) cflags=$(mesa3d-linklib-galliumauxiliary_CFLAGS) dflags=$(mesa3d-linklib-galliumauxiliary_DFLAGS) \
+    compiler=target srcdir="$(top_builddir)/$(CUR_MESADIR)" usetree=yes
+
+%common

@@ -1,9 +1,11 @@
 #   $Id$
 #
-#   Generate libGL.a
+#   Generate hostgl.library
 #
 
 include $(SRCDIR)/config/aros.cfg
+MESA3DGL_DIRECTORY :=$(SRCDIR)/workbench/libs/mesa
+include $(MESA3DGL_DIRECTORY)/mesa.cfg
 
 #MM- workbench-libs-complete : workbench-libs-hostgl-$(OPT_HOST_X11_HOSTGL)
 
@@ -11,15 +13,13 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM workbench-libs-hostgl : includes
 
-MESA_BASE_DIRECTORY := $(SRCDIR)/workbench/libs/mesa/src
-MESA_DIRECTORY := $(MESA_BASE_DIRECTORY)/mesa
-MESA_AROS_DIRECTORY := $(MESA_BASE_DIRECTORY)/aros
-MESA_GALLIUM_DIRECTORY := $(MESA_BASE_DIRECTORY)/gallium
+MESA_DIRECTORY := $(top_srcdir)/src/mesa
+MESA_GALLIUM_DIRECTORY := $(top_srcdir)/src/gallium
 MESA_ST_DIRECTORY := $(MESA_GALLIUM_DIRECTORY)/state_trackers/arosmesa
-MESA_MAPI_DIRECTORY := $(MESA_BASE_DIRECTORY)/mapi
+MESA_MAPI_DIRECTORY := $(top_srcdir)/src/mapi
 
 LIBRARY_SOURCES = \
-                $(MESA_AROS_DIRECTORY)/tls \
+                $(MESA3DGL_DIRECTORY)/tls \
                 hostgl_funcs \
                 hostgl_gl_api \
                 hostgl_support \
@@ -36,13 +36,12 @@ LIBRARY_SOURCES = \
                 x11_hostlib \
                 glx_hostlib
 
-USER_INCLUDES :=  \
+USER_INCLUDES +=  \
     -I$(SRCDIR)/$(CURDIR)/../../hidd/x11 \
-    -I$(MESA_AROS_DIRECTORY) \
-    -I$(MESA_ST_DIRECTORY) \
     -I$(MESA_DIRECTORY) \
     -I$(MESA_GALLIUM_DIRECTORY)/include \
     -I$(MESA_MAPI_DIRECTORY) \
+    -I$(MESA3DGL_DIRECTORY) \
     -isystem $(GENINCDIR) \
      $(KERNEL_INCLUDES)
 

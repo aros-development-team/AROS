@@ -1,0 +1,53 @@
+#   $Id$
+#
+#   Build Mesa3DGL private libmesautil.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/util
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+
+#MM- mesa3dgl-linklibs : mesa3d-linklib-mesautil
+
+USER_INCLUDES += \
+            -I$(top_srcdir)/$(CUR_MESADIR) \
+            -iquote $(top_builddir)/$(CUR_MESADIR) \
+            -iquote $(top_srcdir)/src/mesa \
+            -iquote $(top_srcdir)/src/mapi \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_srcdir)/src/gallium/auxiliary
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
+
+$(top_builddir)/$(CUR_MESADIR)/format_srgb.c: $(top_srcdir)/$(CUR_MESADIR)/format_srgb.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON)  $< > $@
+
+MESA_UTIL_C_FILES := $(filter %.c, $(MESA_UTIL_FILES))
+MESA_UTIL_CXX_FILES := $(filter %.cpp, $(MESA_UTIL_FILES))
+
+MESA_UTIL_GENERATED_C_SOURCES := \
+            $(addprefix $(top_builddir)/$(CUR_MESADIR)/, $(MESA_UTIL_GENERATED_FILES))
+
+MESA3DGL_MESAUTIL_C_SOURCES := \
+            $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA_UTIL_C_FILES))) \
+            $(MESA_UTIL_GENERATED_C_SOURCES)
+
+MESA3DGL_MESAUTIL_CXX_SOURCES := $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA_UTIL_CXX_FILES))
+
+MESA3DGL_MESAUTIL_SOURCES_C := $(MESA3DGL_MESAUTIL_C_SOURCES:.c=)
+
+MESA3DGL_MESAUTIL_SOURCES_CXX := $(MESA3DGL_MESAUTIL_CXX_SOURCES:.cpp=)
+
+#MM
+mesa3d-linklib-mesautil-generated : $(MESA3DGL_MESAUTIL_GENERATED_C_SOURCES)
+
+#MM mesa3d-linklib-mesautil : mesa3d-linklib-mesautil-generated
+
+%build_linklib mmake=mesa3d-linklib-mesautil libname=mesautil libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) files="$(MESA3DGL_MESAUTIL_SOURCES_C)" cxxfiles="$(MESA3DGL_MESAUTIL_SOURCES_CXX)"
+
+%common

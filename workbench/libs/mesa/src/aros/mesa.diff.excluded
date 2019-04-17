@@ -1,9 +1,0 @@
-glapi_sparc.S
-glapi_x86.S
-glapi_x86-64.S
-glapitable.h
-glapitemp.h
-glprocs.h
-glapidispatch.h
-remap_helper.h
-glapi_mapi_tmp.h

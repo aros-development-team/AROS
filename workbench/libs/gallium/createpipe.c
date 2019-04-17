@@ -1,9 +1,8 @@
 /*
-    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/utility.h>

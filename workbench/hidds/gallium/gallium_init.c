@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@
 
 #include "gallium_intern.h"
 
-static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
+static int HiddGallium_ExpungeLib(LIBBASETYPEPTR LIBBASE)
 {
     if (LIBBASE->sd.galliumAttrBase)
         OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
@@ -18,7 +18,7 @@ static int GalliumHidd_ExpungeLib(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-static int GalliumHidd_InitLib(LIBBASETYPEPTR LIBBASE)
+static int HiddGallium_InitLib(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->sd.galliumAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
 
@@ -28,6 +28,5 @@ static int GalliumHidd_InitLib(LIBBASETYPEPTR LIBBASE)
     return FALSE;
 }
 
-ADD2INITLIB(GalliumHidd_InitLib, 0)
-ADD2EXPUNGELIB(GalliumHidd_ExpungeLib, 0)
-
+ADD2INITLIB(HiddGallium_InitLib, 0)
+ADD2EXPUNGELIB(HiddGallium_ExpungeLib, 0)

@@ -1,22 +1,29 @@
 #   $Id$
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 USER_LDFLAGS := -static
+USER_CPPFLAGS +=-DDEBUG=1
 
-FILES := gallium_class gallium_init
+HIDD_GALLIUM_FILES := gallium_init gallium_class
 
 #MM includes-copy
 %copy_includes path=hidd dir=include
 
 #MM- workbench-hidds: hidd-gallium
-#MM hidd-gallium : includes
+#MM hidd-gallium : includes mesa3dgl-linklibs
 
-USER_INCLUDES := \
-            -I$(AROS_DEVELOPER)/include/gallium \
+USER_INCLUDES += \
+            -I$(AROS_INCLUDES)/gallium \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/.. \
+            -iquote $(SRCDIR)/$(CURDIR)
 
 %build_module mmake=hidd-gallium modname=gallium modtype=hidd \
-    files="$(FILES)"
-    
+   files="$(HIDD_GALLIUM_FILES)"
+
 %common

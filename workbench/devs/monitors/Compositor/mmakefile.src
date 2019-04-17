@@ -12,7 +12,7 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
 
 %build_prog mmake=devs-monitors-compositor \
            progname=$(EXENAME) targetdir=$(EXEDIR) \
-           files=$(FILES)
+           files="$(FILES)"
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 

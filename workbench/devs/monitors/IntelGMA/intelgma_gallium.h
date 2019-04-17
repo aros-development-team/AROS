@@ -1,22 +1,35 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright Â© 2011-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _I915_GALLIUM_INTERN_H
-#define _I915_GALLIUM_INTERN_H
+#ifndef INTELGMA_GALLIUM_H_
+#define INTELGMA_GALLIUM_H_
 
-#include <exec/lists.h>
+#include "intelgma_winsys.h"
 
-struct HIDDGalliumData
+// The object instance data is used as our winsys wrapper
+struct HiddIntelGMAGalliumData
 {
- ULONG dummy;
+    struct i915_winsys gma_winsys;
+    OOP_Object *gma_obj;
 };
 
 #define CLID_Hidd_Gallium_IntelGMA "hidd.gallium.intelgma"
-#define IID_Hidd_Gallium_IntelGMA "hidd.gallium.ntelgma"
+#define IID_Hidd_Gallium_IntelGMA "hidd.gallium.intelgma"
 
-VOID init_aros_winsys();
+enum
+{
+    aoHidd_Gallium_IntelGMA_GfxHidd = 0,
+
+    num_Hidd_Gallium_IntelGMA_Attrs
+};
+
+#define aHidd_Gallium_IntelGMA_GfxHidd (HiddBitMapIntelGMAAttrBase + aoHidd_Gallium_IntelGMA_GfxHidd)
+
+#define IS_GALLINTELGMA_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddGfxIntelGMAAttrBase) < num_Hidd_Gallium_IntelGMA_Attrs)
+
 BOOL InitGalliumClass();
 
 #endif
