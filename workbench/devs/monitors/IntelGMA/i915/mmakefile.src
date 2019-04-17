@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 48953 2014-04-19 19:26:09Z neil $
+# $Id$
 
 include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
