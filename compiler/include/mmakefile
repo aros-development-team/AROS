@@ -49,8 +49,11 @@ INCSUBDIRS :=	aros				\
 INCLUDES_BASE    := $(foreach d,$(addprefix $(SRCDIR)/$(CURDIR)/,$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)) $(wildcard *.h)
 INCLUDES      := $(subst $(SRCDIR)/$(CURDIR)/,,$(INCLUDES_BASE))
 ARCHINCDIR    := $(SRCDIR)/arch/$(CPU)-$(ARCH)/include/
+ARCHFAMILYINCDIR    := $(SRCDIR)/arch/$(CPU)-$(FAMILY)/include/
 ARCH_INCLUDES := $(subst $(ARCHINCDIR),,$(foreach d,$(addprefix $(ARCHINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
-INCLUDES      := $(filter-out $(ARCH_INCLUDES),$(INCLUDES))
+ARCHFAMILY_INCLUDES := $(subst $(ARCHFAMILYINCDIR),,$(foreach d,$(addprefix $(ARCHFAMILYINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
+# ARCH > FAMILY > GENERIC
+INCLUDES      := $(filter-out $(strip $(ARCH_INCLUDES) $(filter-out $(ARCH_INCLUDES),$(ARCHFAMILY_INCLUDES))),$(INCLUDES))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 INCL_DIRS     := $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(AROS_INCLUDES)/$(dir)) \
@@ -58,14 +61,20 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(AROS_INCLUDES)/$(
 
 #MM- includes : includes-generate
 #MM- includes-generate : includes-generate-deps
-#MM- includes-generate-deps : includes-copy includes-$(ARCH)-$(CPU)
-#MM- includes-copy : compiler-includes includes-copy-$(ARCH)-$(CPU)
+#MM- includes-generate-deps : includes-copy includes-$(ARCH)-$(CPU) includes-$(FAMILY)-$(CPU)
+#MM- includes-copy : compiler-includes includes-copy-$(ARCH)-$(CPU) includes-copy-$(FAMILY)-$(CPU)
 
 #MM- includes-$(ARCH)-$(CPU) : \
 #MM     includes-copy-$(ARCH)-$(CPU) \
 #MM     includes-generate-$(ARCH)-$(CPU)
 #MM- includes-generate-$(ARCH)-$(CPU) : includes-copy-$(ARCH)-$(CPU)
 #MM- includes-copy-$(ARCH)-$(CPU) :
+
+#MM- includes-$(FAMILY)-$(CPU) : \
+#MM     includes-copy-$(FAMILY)-$(CPU) \
+#MM     includes-generate-$(FAMILY)-$(CPU)
+#MM- includes-generate-$(FAMILY)-$(CPU) : includes-copy-$(FAMILY)-$(CPU)
+#MM- includes-copy-$(FAMILY)-$(CPU) :
 
 #MM
 compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES) includes-execbase_h
