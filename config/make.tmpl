@@ -60,6 +60,19 @@ endif
 #-------------------------------------------------------------------------
 
 
+%define strip_q strip=$(STRIP) file=
+	$(Q)$(IF) $(TEST) "%(strip)" != ""; then \
+		$(IF) $(TEST) "$(DEBUG)" = "yes"; then \
+			%(strip) %(file) --only-keep-debug -o %(file).dbg ; \
+		fi ; \
+		%(strip) %(file) ; \
+		$(IF) $(TEST) "$(DEBUG)" = "yes"; then \
+			$(IF) $(TEST) -s %(file).dbg ; then \
+				$(OBJCOPY) --add-gnu-debuglink=%(file).dbg %(file) ; \
+			fi ; \
+		fi ; \
+	fi
+
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
 %define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP) objdir=$(GENDIR)/$(CURDIR) coverageinstr=
@@ -79,16 +92,8 @@ endif
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
 	fi
-	$(Q)$(IF) [ "$(DEBUG)" = "yes" ]; then \
-		%(strip) $(LINKTARGET) --only-keep-debug -o $(LINKTARGET).dbg ; \
-	fi
-	$(Q)%(strip) $(LINKTARGET)
-	$(Q)$(IF) [ "$(DEBUG)" = "yes" ]; then \
-		$(IF) $(TEST) -s $(LINKTARGET).dbg ; then \
-			$(OBJCOPY) --add-gnu-debuglink=$(LINKTARGET).dbg $(LINKTARGET) ; \
-		fi ; \
-	fi
-	$(Q)$(IF) [ "%(coverageinstr)" = "yes" ]; then \
+	%strip_q strip=%(strip) file=$(LINKTARGET)
+	$(Q)$(IF) $(TEST) "%(coverageinstr)" = "yes"; then \
 		LINKBASEFILES="$(strip $(notdir $(basename %(from))))" ; \
 		$(FOR) covext in $(TARGET_COVERAGEINSTR_EXTS) ; do \
 			$(FOR) file in $$LINKBASEFILES ; do \
@@ -107,7 +112,7 @@ endif
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
+%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" err="$(notdir $@).err" strip=$(STRIP) objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	$(Q)$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
 	$(Q)$(IF) %(cmd) $(NOSTARTUP_LDFLAGS) \
 		$(GENMAP) %(objdir)/%(module).map \
@@ -121,15 +126,7 @@ endif
 		exit 1; \
 	fi
 	$(Q)$(IF) $(TEST) ! -s %(objdir)/%(err) ; then $(RM) %(objdir)/%(err) ; fi
-	$(Q)$(IF) [ "$(DEBUG)" = "yes" ]; then \
-		$(STRIP) $@ --only-keep-debug -o $@.dbg; \
-	fi
-	$(Q)$(STRIP) $@
-	$(Q)$(IF) [ "$(DEBUG)" = "yes" ]; then \
-		$(IF) $(TEST) -s $@.dbg ; then \
-			$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@; \
-		fi ; \
-	fi
+        %strip_q strip=%(strip) file=$@
 %end
 #------------------------------------------------------------------------------
 
@@ -4112,7 +4109,7 @@ PKG_DIR            := $(dir %(file))
 # Arguments are similar to make_package
 
 %define link_kickstart mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
-    startup= uselibs= ldflags=$(LDFLAGS) map= deps=
+    startup= uselibs= ldflags=$(LDFLAGS) map= deps= strip=$(STRIP)
 
 KOBJ_CLASSES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _class.o, %(classes)))
 KOBJ_DEVICES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, %(devs)))
@@ -4166,13 +4163,7 @@ endif
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	$(Q)$(ECHO) "Kickstart  $(subst $(TARGETDIR)/,,$@)..."
 	$(Q)$(TARGET_CC) $(TARGET_SYSROOT) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
-ifeq ($(DEBUG),yes)
-	$(Q)$(STRIP) $@ --only-keep-debug -o $@.dbg
-endif
-	$(Q)$(STRIP) $@
-ifeq ($(DEBUG),yes)
-	$(Q)$(OBJCOPY) --add-gnu-debuglink=$@.dbg $@
-endif
+	%strip_q strip=%(strip) file=$@
 
 %compress_file mmake="%(mmake)" file="%(file)"
 
