@@ -12,10 +12,10 @@ AROS_HOST_CPU            := @aros_host_cpu@
 
 HOST_CPP                 := @aros_host_cpp@
 HOST_CPPFLAGS            := @aros_host_cppflags@
-HOST_DEF_CC              := $(CC_PREFIX) @aros_host_def_cc@
-HOST_CC                  := $(CC_PREFIX) @aros_host_cc@
+HOST_DEF_CC              := $(CC_PREFIX)@aros_host_def_cc@
+HOST_CC                  := $(CC_PREFIX)@aros_host_cc@
 HOST_CFLAGS              := @aros_host_cflags@
-HOST_CXX                 := @aros_host_cxx@
+HOST_CXX                 := $(CC_PREFIX)@aros_host_cxx@
 HOST_CXXFLAGS            := @aros_host_cxxflags@
 HOST_LD                  := @aros_host_ld@
 HOST_MAKE                := @aros_host_make@
