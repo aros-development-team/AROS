@@ -2185,7 +2185,7 @@ $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC) : | $(%(mma
 
 $(%(mmake)-genmodfiles_GENFILEFLAG) : $(%(mmake)%(flavour)_DEFLIBDEFSINC) $(%(mmake)%(flavour)-makefile)
 
-%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/linklib" setuptarget=%(mmake)%(flavour)-linklib-setup
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/linklib" setuptarget=$(%(mmake)-genmodfiles_GENFILEFLAG)
 
 ifeq (%(build_abi),M)
 ## Create FD file
