@@ -17,7 +17,7 @@ USER_CFLAGS      := $(NOWARN_FLAGS)
 USER_CPPFLAGS      := -DAROS_USE_OOP \
                     -D__OOP_NOLIBBASE__ -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__ \
                     -D__UTILITY_NOLIBBASE__
-USER_CPPFLAGS += -DDEBUG
+#USER_CPPFLAGS += -DDEBUG
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-hidd-storage \
