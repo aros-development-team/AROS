@@ -121,7 +121,7 @@ struct handlerinfo {
 struct config
 {
     /* members that store filename and paths derived from argv */
-    char *conffile, *gendir, *libgendir, *genincdir;
+    char *conffile, *confoverridefile, *gendir, *libgendir, *genincdir;
 
     /* The name and type of the module */
     char *modulename, *modulenameupper;
