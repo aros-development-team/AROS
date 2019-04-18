@@ -3611,14 +3611,22 @@ ifeq (%(compiler),host)
     ifeq (%(useldlinker),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
     endif
-    %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
+    ifneq ($(CC_PREFIX),)
+        %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(subst $(CC_PREFIX),,$(HOST_DEF_CC)))"
+    else
+        %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
+    endif
     ifeq (%(usecflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
     endif
     ifeq (%(usecppflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
     endif
-    %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))"
+    ifneq ($(CC_PREFIX),)
+        %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(subst $(CC_PREFIX),,$(HOST_CXX)))"
+    else
+        %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))"
+    endif
     ifeq (%(usecxxflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
     endif
