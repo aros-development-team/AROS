@@ -3290,7 +3290,7 @@ endif
 
 ifeq (%(usecflags),yes)
     %(mmake)-HOST_CFLAGS=%(hostisaflags) $(HOST_CFLAGS)
-    %(mmake)-KERNEL_CFLAGS=%(kernelisaflags) $(KERNEL_CFLAGS) $$(%(mmake)-s_flag)
+    %(mmake)-KERNEL_CFLAGS=%(kernelisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)
 ifeq (%(crossbuild),yes)
     %(mmake)-TARGET_CFLAGS=%(targetisaflags) $(USER_INCLUDES) $(BASE_CFLAGS) $(USER_CFLAGS) $(%(mmake)-s_flag)
 else
