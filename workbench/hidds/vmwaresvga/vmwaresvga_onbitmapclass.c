@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for VMWareSVGA hidd.
@@ -22,8 +22,7 @@
 #include <hidd/gfx.h>
 #include <oop/oop.h>
 
-#include "vmwaresvgabitmap.h"
-#include "vmwaresvgaclass.h"
+#include "vmwaresvga_intern.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -52,7 +51,7 @@ static struct OOP_ABDescr attrbases[] =
 #define MNAME_BM(x) VMWareSVGAOnBM__Hidd_BitMap__ ## x
 
 #define OnBitmap 1
-#include "vmwaresvgabitmap_common.c"
+#include "vmwaresvga_bitmap_common.c"
 
 /*********** BitMap::New() *************************************/
 

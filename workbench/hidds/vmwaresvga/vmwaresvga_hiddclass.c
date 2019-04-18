@@ -26,9 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "vmwaresvgaclass.h"
-#include "vmwaresvgabitmap.h"
-#include "vmwaresvgahardware.h"
+#include "vmwaresvga_intern.h"
 
 #include LC_LIBDEFS_FILE
 

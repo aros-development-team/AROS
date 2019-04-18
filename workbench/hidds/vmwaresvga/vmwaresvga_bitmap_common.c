@@ -11,9 +11,8 @@
 
 #include <exec/alerts.h>
 #include <string.h>    // memset() prototype
-#include "svga_reg.h"
-#include "vmwaresvgahardware.h"
-#include "vmwaresvgaclass.h"
+
+#include "vmwaresvga_intern.h"
 
 #ifdef OnBitmap
 /*********  BitMap::Clear()  *************************************/
