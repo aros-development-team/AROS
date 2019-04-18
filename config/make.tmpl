@@ -3585,7 +3585,7 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags= \
     usecxxflags=yes extracxxflags= \
-    extraldflags=
+    extraldflags= useldlinker=no
 
 ifneq (%(prefix),)
     %(mmake)-prefix          := %(prefix)
@@ -3607,9 +3607,11 @@ ifeq (%(compiler),host)
     %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) \
                                 -DCMAKE_BUILD_TYPE=Release \
                                 -DCMAKE_LINKER="$(strip $(HOST_LD))" \
-                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))" \
-                                -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>" \
-                                -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
+                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
+    ifeq (%(useldlinker),yes)
+        %(mmake)-cmake_opts  += -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
+    endif
+    %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
     ifeq (%(usecflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
     endif
