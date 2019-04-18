@@ -1186,7 +1186,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Generate the libdefs.h include file for a module.
-%define rule_genmodule_genlibdefs mmake=TMP modname=/A version= flavour= modtype=/A modsuffix= conffile= targetdir=
+%define rule_genmodule_genlibdefs mmake=TMP modname=/A version= flavour= modtype=/A modsuffix= conffile= confoverride= targetdir=
 
 %(mmake)_OPTS := 
 ifneq (%(flavour),)
@@ -1208,6 +1208,15 @@ ifneq (%(conffile),)
 else
     %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
 endif
 ifneq (%(modsuffix),)
     %(mmake)_OPTS += -s %(modsuffix)
@@ -1231,7 +1240,7 @@ $(%(mmake)_TARGET) : $(%(mmake)_DEPS)
 
 #------------------------------------------------------------------------------
 # Generate the _lib.fd file for a module.
-%define rule_genmodule_fd mmake=TMP modname=/A modtype=/A modsuffix= conffile= targetdir=
+%define rule_genmodule_fd mmake=TMP modname=/A modtype=/A modsuffix= conffile= confoverride= targetdir=
 
 %(mmake)_TARGET := %(modname)_lib.fd
 %(mmake)_DEPS := $(GENMODULE)
@@ -1247,6 +1256,15 @@ ifneq (%(conffile),)
 else
     %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
 endif
 ifneq (%(modsuffix),)
     %(mmake)_OPTS += -s %(modsuffix)
@@ -1268,7 +1286,7 @@ $(%(mmake)_TARGET) : $(%(mmake)_DEPS)
 #------------------------------------------------------------------------------
 # Generate a Makefile.%(modname)%(modtype) with the genmodule program and include this
 # generated file in this Makefile
-%define rule_genmodule_makefile mmake=TMP modname=/A flavour= modtype=/A modsuffix= conffile= \
+%define rule_genmodule_makefile mmake=TMP modname=/A flavour= modtype=/A modsuffix= conffile= confoverride= \
     targetdir=
 
 %(mmake)_OPTS := 
@@ -1292,6 +1310,15 @@ else
     %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
 endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
+endif
 ifneq (%(modsuffix),)
     %(mmake)_OPTS += -s %(modsuffix)
 endif
@@ -1314,7 +1341,7 @@ $(%(mmake)_TARGET) : $(%(mmake)_DEPS)
 # files and source files. This rule has to be preceeded by
 # %rule_genmodule_makefile
 %define rule_genmodule_files mmake=TMP modname=/A flavour= modtype=/A modsuffix= targetdir= stubdir= \
-    conffile=
+    conffile= confoverride=
 
 %(mmake)_OPTS :=
 ifneq (%(flavour),)
@@ -1341,6 +1368,15 @@ ifneq (%(conffile),)
 else
     %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
 endif
 ifneq (%(modsuffix),)
     %(mmake)_OPTS += -s %(modsuffix)
@@ -1392,7 +1428,7 @@ $(%(mmake)_GENFILEFLAG) : $(%(mmake)_DEPS)
 # Generate the support files for compiling a module. This includes include
 # files and source files.
 %define rule_genmodule_includes mmake=TMP modname=/A flavour= modtype=/A modsuffix= \
-    targetdir= conffile=
+    targetdir= conffile= confoverride=
 
 ifneq (%(flavour),)
     %(mmake)_MODNAME := %(modname)_%(flavour)
@@ -1418,6 +1454,15 @@ ifneq (%(conffile),)
 else
     %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
 endif
 ifneq (%(modsuffix),)
     %(mmake)_OPTS += -s %(modsuffix)
@@ -1914,7 +1959,8 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 #------------------------------------------------------------------------------
 # Build a module - core routine
 # Explanation of this macro is done in the developer's manual
-%define build_module_core mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= \
+%define build_module_core mmake=/A modname=/A modtype=/A modsuffix= version= flavour= \
+    conffile=  confoverride= \
     files="$(basename $(call WILDCARD, *.c))" \
     objcfiles= \
     cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
@@ -2056,7 +2102,7 @@ endif
 %rule_genmodule_makefile \
     mmake=%(mmake)-genmakefile modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
-    conffile="%(conffile)"
+    conffile="%(conffile)" confoverride="%(confoverride)"
 
 %rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)" setuptarget=$(%(mmake)%(flavour)-makefile)
 
@@ -2097,7 +2143,7 @@ ifeq (%(build_abi),M)
 ifneq ($($(%(mmake)%(flavour)_DEFNAME)_INCLUDES),)
 %rule_genmodule_includes mmake=%(mmake)-includes modname="%(modname)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)_OBJDIR)/include" \
-    conffile="%(conffile)" flavour="%(flavour)"
+    conffile="%(conffile)" confoverride="%(confoverride)" flavour="%(flavour)"
 
 %rule_copy_diff_multi \
     files=$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES) srcdir="$(%(mmake)_OBJDIR)/include" targetdir=$(GENINCDIR) \
@@ -2121,7 +2167,7 @@ endif
 
 %rule_genmodule_genlibdefs mmake=%(mmake)-genlibdefs modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)/include" \
-    conffile="%(conffile)" version="%(version)"
+    conffile="%(conffile)" confoverride="%(confoverride)" version="%(version)"
 
 $(%(mmake)%(flavour)_DEFLIBDEFSINC) : FILENAME := $(%(mmake)%(flavour)_LIBDEFSINC)
 $(%(mmake)%(flavour)_DEFLIBDEFSINC) : $(%(mmake)%(flavour)_LIBDEFSINC)
@@ -2135,7 +2181,7 @@ $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC) : | $(%(mma
 ## 
 %rule_genmodule_files mmake=%(mmake)-genmodfiles modname="%(modname)" modtype="%(modtype)" \
     modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" stubdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
-    conffile="%(conffile)" flavour="%(flavour)"
+    conffile="%(conffile)" confoverride="%(confoverride)" flavour="%(flavour)"
 
 $(%(mmake)-genmodfiles_GENFILEFLAG) : $(%(mmake)%(flavour)_DEFLIBDEFSINC) $(%(mmake)%(flavour)-makefile)
 
@@ -2151,7 +2197,7 @@ endif
 %(mmake)-fd : $(%(mmake)%(flavour)_FDDIR)/%(modname)_lib.fd
 
 %rule_genmodule_fd modname="%(modname)" modtype="%(modtype)" \
-    modsuffix="%(modsuffix)" targetdir=$(%(mmake)%(flavour)_FDDIR) conffile="%(conffile)"
+    modsuffix="%(modsuffix)" targetdir=$(%(mmake)%(flavour)_FDDIR) conffile="%(conffile)" confoverride="%(confoverride)"
 
 $(%(mmake)%(flavour)_FDDIR)/%(modname)_lib.fd : | $(%(mmake)%(flavour)_FDDIR)
 
@@ -2438,7 +2484,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 #------------------------------------------------------------------------------
 # Build a module - ABI and library
 # Explanation of this macro is done in the developer's manual
-%define build_module mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= \
+%define build_module mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= confoverride= \
   files="$(basename $(call WILDCARD, *.c))" \
   objcfiles= \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
@@ -2449,7 +2495,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   include_set=includes-all includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
-   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" \
+   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
    files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" \
    linklibname="%(linklibname)" \
    linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
@@ -2470,7 +2516,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 # files and the linklibs.
 # This is used when for plugins or classes with the same API, but no actual
 # implementation here.
-%define build_module_abi mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= \
+%define build_module_abi mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= confoverride= \
   linklibfiles= linklibobjs= cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= cxxflags=$(CXXFLAGS) dxxflags= \
   objdir= moduledir= prefix=$(AROSDIR) \
   linklibname= uselibs= usehostlibs= \
@@ -2478,7 +2524,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   include_set=includes-all includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
-  modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" \
+  modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
   linklibname="%(linklibname)" \
   linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
   cflags="%(cflags)" cppflags="%(cppflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
@@ -2494,7 +2540,8 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 #------------------------------------------------------------------------------
 # Build a module library - no includes nor linklibs
 # Explanation of this macro is done in the developer's manual
-%define build_module_library mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= \
+%define build_module_library mmake=/A modname=/A modtype=/A modsuffix= version= flavour= \
+  conffile= confoverride= \
   files="$(basename $(call WILDCARD, *.c))" \
   objcfiles= \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
@@ -2505,7 +2552,8 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   include_set=includes-all includedir= libdir=
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
-   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" \
+   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" \
+   conffile="%(conffile)" confoverride="%(confoverride)" \
    files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" \
    cflags="%(cflags)" cppflags="%(cppflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
