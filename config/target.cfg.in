@@ -41,8 +41,8 @@ ENABLE_DBUS                   := @ENABLE_DBUS@
 # -------------------------------------------------------------------------- 
 
 KERNEL_CPP                    := @aros_kernel_cpp@
-KERNEL_CC                     := @aros_kernel_cc@
-KERNEL_CXX                    := @aros_target_cxx@
+KERNEL_CC                     := $(CC_PREFIX)@aros_kernel_cc@
+KERNEL_CXX                    := $(CC_PREFIX)@aros_target_cxx@
 KERNEL_LD                     := @aros_kernel_ld@
 
 KERNEL_RESCOMP                := @aros_kernel_rescomp@
@@ -72,8 +72,8 @@ KERNEL_RANLIB                 := @aros_kernel_ranlib@
 # -------------------------------------------------------------------------- 
 
 TARGET_CPP                    := @aros_target_cpp@
-TARGET_CC                     := $(CC_PREFIX) @aros_target_cc@
-TARGET_CXX                    := @aros_target_cxx@
+TARGET_CC                     := $(CC_PREFIX)@aros_target_cc@
+TARGET_CXX                    := $(CC_PREFIX)@aros_target_cxx@
 TARGET_AS                     := @aros_target_as@
 TARGET_LD                     := @aros_target_ld@
 SHARED_LD                     := @aros_shared_ld@
