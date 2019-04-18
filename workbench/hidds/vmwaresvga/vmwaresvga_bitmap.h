@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,8 @@
 #define _VMWARESVGA_BITMAP_H
 
 #include <hidd/gfx.h>
-#include "vmwaresvgamouse.h"
+
+#include "vmwaresvga_mouse.h"
 
 /* This attribute interface is common for both vga onscreen and offscreen bitmap
    classes, although they don't have a common superclass */
@@ -57,6 +58,6 @@ struct BitmapData {
 
 /* Only include vmwaresvgahardware.h now so that struct Box is known */
 
-#include "vmwaresvgahardware.h"
+#include "vmwaresvga_hardware.h"
 
 #endif /* _VMWARESVGA_BITMAP_H */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VMWare SVGA Hidd initialisation code
@@ -21,9 +21,7 @@
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
 
-#include "vmwaresvgahardware.h"
-#include "vmwaresvgaclass.h"
-#include "svga_reg.h"
+#include "vmwaresvga_intern.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -109,6 +107,10 @@ static int VMWareSVGA_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct VMWareSVGA_staticdata *xsd = &LIBBASE->vsd;
 
+    xsd->VMWareSVGACyberGfxBase = OpenLibrary((STRPTR)"cybergraphics.library",0);
+    if (xsd->VMWareSVGACyberGfxBase == NULL)
+        goto failure;
+
     if (!OOP_ObtainAttrBases(abd))
         goto failure;
 
@@ -122,6 +124,10 @@ static int VMWareSVGA_Init(LIBBASETYPEPTR LIBBASE)
     if (HiddPCIDeviceAttrBase == 0)
         goto failure;
 
+    xsd->hiddGalliumAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
+    if (xsd->hiddGalliumAB == 0)
+        goto failure;
+
     if (!findCard(xsd))
         goto failure;
 
@@ -130,6 +136,13 @@ static int VMWareSVGA_Init(LIBBASETYPEPTR LIBBASE)
 
 failure:
     D(bug("[VMWareSVGA] Init: No VMWare SVGA Adaptor Found\n"));
+    
+    if (xsd->VMWareSVGACyberGfxBase)
+        CloseLibrary(xsd->VMWareSVGACyberGfxBase);
+
+    if (xsd->hiddGalliumAB)
+        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
+    
     if (HiddPCIDeviceAttrBase != 0)
     {
         OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
@@ -148,3 +161,5 @@ failure:
 }
 
 ADD2INITLIB(VMWareSVGA_Init, 0)
+
+ADD2LIBS((STRPTR)"gallium.hidd", 7, static struct Library *, GalliumHiddBase);

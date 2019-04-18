@@ -1,19 +1,50 @@
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
+
+include $(GALLIUM_PATH)/drivers/svga/Makefile.sources
 
 #MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga
+#MM- hidd-vmwaresvga: includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic
 
-USER_LDFLAGS := -static
+MESA3D_VMWARESVGA_C_SOURCES := $(filter %.c, $(C_SOURCES))
 
 FILES	:=	\
 	vmwaresvga_init \
-	vmwaresvgaclass \
-	vmwaresvgahardware \
-	vmwaresvgaoffbitmap \
-	vmwaresvgaonbitmap
+	vmwaresvga_hiddclass \
+	vmwaresvga_hardware \
+	vmwaresvga_offbitmapclass \
+	vmwaresvga_onbitmapclass \
+	vmwaresvga_galliumclass \
+	arosc_emul \
+	$(addprefix $(GALLIUM_PATH)/drivers/svga/,$(MESA3D_VMWARESVGA_C_SOURCES:.c=))
+
+# disable necessary warnings
+NOWARN_FLAGS := $(NOWARN_UNUSED_VALUE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_STRICT_ALIASING)
+USER_CFLAGS += $(NOWARN_FLAGS)
+
+USER_INCLUDES += \
+            -iquote $(GALLIUM_PATH)/drivers/svga/include \
+            -iquote $(GALLIUM_PATH)/drivers/svga \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/mesa/main
+
+USER_CPPFLAGS += \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\"
+
+USER_LDFLAGS := \
+  -L$(top_libdir) \
+  -lgalliumauxiliary -lmesautil \
+  -lpthread -lposixc -lstdcio -lstdc
 
 %build_module mmake=hidd-vmwaresvga \
   modname=vmwaresvga modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddstubs"
+  uselibs=""
+
+%common
