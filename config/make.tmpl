@@ -3582,9 +3582,9 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
-    usecppflags=yes extracppflags=$(CPPFLAGS) \
-    usecflags=yes extracflags=$(CFLAGS) \
-    usecxxflags=yes extracxxflags=$(CXXFLAGS) \
+    usecppflags=yes extracppflags= \
+    usecflags=yes extracflags= \
+    usecxxflags=yes extracxxflags= \
     extraldflags=
 
 ifneq (%(prefix),)
@@ -3600,11 +3600,16 @@ else
 endif
 
 ifeq (%(compiler),host)
-    BD_LDFLAGS               := -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)
+    BD_LDFLAGS               := $(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)
     BD_CFLAGS                := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)
     BD_CXXFLAGS              := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags)
     BD_CPPFLAGS              := $(HOST_CPPFLAGS) %(extracppflags)
-    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
+    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) \
+                                -DCMAKE_BUILD_TYPE=Release \
+                                -DCMAKE_LINKER="$(strip $(HOST_LD))" \
+                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))" \
+                                -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>" \
+                                -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
     ifeq (%(usecflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
     endif
