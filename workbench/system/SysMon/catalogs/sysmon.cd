@@ -1,3 +1,4 @@
+;	$VER: sysmon.cd 1.2 (19.04.2019)
 ;
 MSG_APP_NAME (//)
 SysMon
@@ -74,8 +75,8 @@ Fast Memory
 MSG_VIDEO_RAM (//)
 Video Memory
 ;
-MSG_GART_APER (//)
-GART Aperture
+MSG_VIDEO_WINDOW_TMPL (//)
+%s Window
 ;
 MSG_CANT_OPEN_TASK_RESOURCE (//)
 Can't open task.resource\n
@@ -100,4 +101,22 @@ MSG_TASK_TOMBSTONE (//)
 ;
 MSG_TASK_UNKNOWN (//)
 <unknown>
+;
+MSG_WINDOW_GART (//)
+GART
+;
+MSG_DISPLAY_MODE (//)
+Display Mode
+;
+MSG_LOAD (//)
+Processor Load
+;
+MSG_GUAGE (//)
+Gauge
+;
+MSG_GRAPH (//)
+Graph
+;
+MSG_GRAPH_PER_PROC (//)
+Graph Per Processor
 ;
