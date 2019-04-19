@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,6 +22,7 @@
 
 struct ScreenModeAttributes_DATA
 {
+    Object * objColGrp;
     Object * objVisibleW;
     Object * objVisibleH;
     Object * objMinimumW;
@@ -35,18 +36,17 @@ struct ScreenModeAttributes_DATA
 Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct ScreenModeAttributes_DATA *data;
-    Object  * objVisibleW, * objVisibleH, * objMinimumW, * objMinimumH, 
+    Object  * objColGrp, * objVisibleW, * objVisibleH, * objMinimumW, * objMinimumH, 
             * objMaximumW, * objMaximumH, * objMaximumColors;
-    
-    
+
     ULONG id;
-    
+
     self = (Object *)DoSuperNewTags
     (
         CLASS, self, NULL,
         MUIA_Group_Horiz, TRUE,
         Child, (IPTR)VGroup,
-            Child, (IPTR)ColGroup(4),
+            Child, (IPTR)(objColGrp = (Object *)ColGroup(4),
                 Child, (IPTR)LLabel1(_(MSG_VISIBLE_SIZE)),
                 Child, (IPTR)(objVisibleW = (Object *)Label1("16368")),
                 Child, (IPTR)Label1("x"),
@@ -66,34 +66,36 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
                 Child, (IPTR)(objMaximumColors = (Object *)LLabel1("16777216")),
                 Child, (IPTR)RectangleObject, End,
                 Child, (IPTR)RectangleObject, End,
-                
-            End,  
+
+            End),  
 
             Child, (IPTR)RectangleObject, End,
 
         End,
-      
+
         TAG_MORE, (IPTR)message->ops_AttrList
     );
-    
+
     if (!self)
         goto err;
-    
+
     D(bug("[smattributes] Created ScreenModeAttributes object 0x%p\n", self));
     data = INST_DATA(CLASS, self);
-    
-    data->objVisibleW       = objVisibleW;
-    data->objVisibleH       = objVisibleH;
-    data->objMinimumW       = objMinimumW;
-    data->objMinimumH       = objMinimumH;
-    data->objMaximumW       = objMaximumW;
-    data->objMaximumH       = objMaximumH;
-    data->objMaximumColors  = objMaximumColors;
+
+    data->objColGrp             = objColGrp;
+
+    data->objVisibleW           = objVisibleW;
+    data->objVisibleH           = objVisibleH;
+    data->objMinimumW           = objMinimumW;
+    data->objMinimumH           = objMinimumH;
+    data->objMaximumW           = objMaximumW;
+    data->objMaximumH           = objMaximumH;
+    data->objMaximumColors      = objMaximumColors;
 
     id = GetTagData(MUIA_ScreenModeAttributes_DisplayID, INVALID_ID, message->ops_AttrList);
     D(bug("[smattributes] Setting initial ModeID 0x%08lX\n", id));
     set(self, MUIA_ScreenModeAttributes_DisplayID, id);
-    
+
     return self;
 
 err:
@@ -124,28 +126,33 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     TEXT buffer[128];
                     ULONG val;
 
-                    val = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
-                    RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
-                    set(data->objVisibleW, MUIA_Text_Contents, buffer);
-                    val = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
-                    RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
-                    set(data->objVisibleH, MUIA_Text_Contents, buffer);
+                    if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
+                    {
+                        val = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
+                        RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
+                        set(data->objVisibleW, MUIA_Text_Contents, buffer);
+                        val = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
+                        RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
+                        set(data->objVisibleH, MUIA_Text_Contents, buffer);
 
-                    RawDoFmt("%d", (RAWARG)&dim.MinRasterWidth, RAWFMTFUNC_STRING, buffer);
-                    set(data->objMinimumW, MUIA_Text_Contents, buffer);
-                    RawDoFmt("%d", (RAWARG)&dim.MinRasterHeight, RAWFMTFUNC_STRING, buffer);
-                    set(data->objMinimumH, MUIA_Text_Contents, buffer);
+                        RawDoFmt("%d", (RAWARG)&dim.MinRasterWidth, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMinimumW, MUIA_Text_Contents, buffer);
+                        RawDoFmt("%d", (RAWARG)&dim.MinRasterHeight, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMinimumH, MUIA_Text_Contents, buffer);
 
-                    RawDoFmt("%d", (RAWARG)&dim.MaxRasterWidth, RAWFMTFUNC_STRING, buffer);
-                    set(data->objMaximumW, MUIA_Text_Contents, buffer);
-                    RawDoFmt("%d", (RAWARG)&dim.MaxRasterHeight, RAWFMTFUNC_STRING, buffer);
-                    set(data->objMaximumH, MUIA_Text_Contents, buffer);
+                        RawDoFmt("%d", (RAWARG)&dim.MaxRasterWidth, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMaximumW, MUIA_Text_Contents, buffer);
+                        RawDoFmt("%d", (RAWARG)&dim.MaxRasterHeight, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMaximumH, MUIA_Text_Contents, buffer);
 
-                    val = 1 << (dim.MaxDepth > 24 ? 24 : dim.MaxDepth);
-                    RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
-                    set(data->objMaximumColors, MUIA_Text_Contents, buffer);
+                        val = 1 << (dim.MaxDepth > 24 ? 24 : dim.MaxDepth);
+                        RawDoFmt("%ld", (RAWARG)&val, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMaximumColors, MUIA_Text_Contents, buffer);
+
+                        DoMethod(data->objColGrp, MUIM_Group_ExitChange);
+                    }
                 }
-                
+
                 SetAttrs(self, MUIA_Disabled, tag->ti_Data == INVALID_ID, TAG_DONE);
 
                 break;
