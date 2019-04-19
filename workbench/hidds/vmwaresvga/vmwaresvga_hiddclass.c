@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VMWare.
@@ -33,17 +33,21 @@
 
 #include LC_LIBDEFS_FILE
 
-static OOP_AttrBase HiddAttrBase; 
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVMWareSVGAAttrBase;
-static OOP_AttrBase HiddVMWareSVGABitMapAttrBase;
+#define DINFO(x)                x
+
+#define DESCRIPTORNAME_LEN      32
+
+static OOP_AttrBase             HiddAttrBase; 
+static OOP_AttrBase             HiddBitMapAttrBase;  
+static OOP_AttrBase             HiddPixFmtAttrBase;
+static OOP_AttrBase             HiddGfxAttrBase;
+static OOP_AttrBase             HiddSyncAttrBase;
+static OOP_AttrBase             HiddVMWareSVGAAttrBase;
+static OOP_AttrBase             HiddVMWareSVGABitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    {IID_Hidd,           &HiddAttrBase             },
+    {IID_Hidd,                  &HiddAttrBase             },
     {IID_Hidd_BitMap,           &HiddBitMapAttrBase             },
     {IID_Hidd_VMWareSVGABitMap, &HiddVMWareSVGABitMapAttrBase   },
     {IID_Hidd_VMWareSVGA,       &HiddVMWareSVGAAttrBase         },
@@ -71,6 +75,7 @@ STATIC ULONG mask_to_shift(ULONG mask)
 OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     unsigned int sync_count, sync_modes, sync_curr, sync_displayid, sync_modeid;
+    ULONG max_width, max_height;
 
     struct TagItem pftags[] =
     {
@@ -108,6 +113,11 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 
     sync_curr = 0;
 
+#if (0)
+    max_width = vmwareReadReg(&XSD(cl)->data, SVGA_REG_MAX_WIDTH);
+    max_height = vmwareReadReg(&XSD(cl)->data, VGA_REG_MAX_HEIGHT);
+#endif
+
     while (sync_curr < sync_count)
     {
         sync_modeid = sync_curr % sync_modes;
@@ -116,9 +126,9 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         ULONG sync_Width =0;
         ULONG sync_Height=0;
 
-        D(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __func__, sync_modeid, sync_displayid));
+        DINFO(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __func__, sync_modeid, sync_displayid));
 
-        char *sync_Description = AllocVec(24 , MEMF_CLEAR);
+        char *sync_Description = AllocVec(DESCRIPTORNAME_LEN, MEMF_CLEAR);
 
         switch (sync_modeid)
         {
@@ -180,7 +190,7 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         {
             sprintf(sync_Description, "VMWareSVGA.%d:%dx%d", sync_displayid, sync_Width, sync_Height);
         }
-        D(bug("[VMWareSVGA] %s: Description '%s'\n", __func__, sync_Description));
+        DINFO(bug("[VMWareSVGA] %s: Description '%s'\n", __func__, sync_Description));
 
         struct TagItem *sync_mode = AllocVec(11 * sizeof(struct TagItem), MEMF_CLEAR);
         
@@ -233,7 +243,7 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     pftags[5].ti_Data = XSD(cl)->data.greenmask;
     pftags[6].ti_Data = XSD(cl)->data.bluemask;
     pftags[7].ti_Data = 0;
-    D(bug("[VMWareSVGA] New: Masks red=%08x<<%d,green=%08x<<%d,blue%08x<<%d\n",
+    DINFO(bug("[VMWareSVGA] New: Masks red=%08x<<%d,green=%08x<<%d,blue%08x<<%d\n",
             pftags[4].ti_Data, pftags[0].ti_Data,
             pftags[5].ti_Data, pftags[1].ti_Data,
             pftags[6].ti_Data, pftags[2].ti_Data));
@@ -258,12 +268,50 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-        D(bug("[VMWareSVGA] Got object from super\n"));
+        DINFO(bug("[VMWareSVGA] %s: object @ 0x%p\n", __func__, o);)
+
         XSD(cl)->vmwaresvgahidd = o;
         XSD(cl)->mouse.shape = NULL;
-        ReturnPtr("[VMWareSVGA] New", OOP_Object *, o);
+        DINFO(
+            bug("[VMWareSVGA] %s: Device capabilities: %08x\n", __func__, XSD(cl)->data.capabilities);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_IRQMASK)
+                bug("[VMWareSVGA] %s:   IRQ Mask\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_EXTENDED_FIFO)
+                bug("[VMWareSVGA] %s:   Extended FIFO\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
+                bug("[VMWareSVGA] %s:   HW Cursor\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_ALPHA_CURSOR)
+                bug("[VMWareSVGA] %s:   Alpha Cursor\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR_BYPASS)
+                bug("[VMWareSVGA] %s:   Cursor-Bypass\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR_BYPASS_2)
+                bug("[VMWareSVGA] %s:   Cursor-Bypass2\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_RECT_COPY)
+                bug("[VMWareSVGA] %s:   Copy Rect\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_8BIT_EMULATION)
+                bug("[VMWareSVGA] %s:   8bit-emu\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_3D)
+                bug("[VMWareSVGA] %s:   3D.\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_MULTIMON)
+                bug("[VMWareSVGA] %s:   Multimon\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_DISPLAY_TOPOLOGY)
+                bug("[VMWareSVGA] %s:   Display Topology\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_PITCHLOCK)
+                bug("[VMWareSVGA] %s:   Pitchlock\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_GMR)
+                bug("[VMWareSVGA] %s:   GMR\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_GMR2)
+                bug("[VMWareSVGA] %s:   GMR2\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_TRACES)
+                bug("[VMWareSVGA] %s:   Traces\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_SCREEN_OBJECT_2)
+                bug("[VMWareSVGA] %s:   Screen-Object2\n", __func__);
+         )
     }
-    ReturnPtr("[VMWareSVGA] New", OOP_Object *, NULL);
+
+    D(bug("[VMWareSVGA] %s: returning 0x%p\n", __func__, o);)
+
+    return o;
 }
 
 VOID VMWareSVGA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -284,6 +332,30 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_Gfx_SupportsHWCursor:
             *msg->storage = (IPTR)TRUE;
             found = TRUE;
+            break;
+        case aoHidd_Gfx_MemoryAttribs:
+            {
+                struct TagItem *matstate = (struct TagItem *)msg->storage;
+                found = TRUE;
+                 if (matstate)
+                {
+                    struct TagItem *matag;
+                    while ((matag = NextTagItem(&matstate)))
+                    {
+                        switch(matag->ti_Tag)
+                        {
+                            case vHidd_Gfx_MemTotal:
+                            case vHidd_Gfx_MemAddressableTotal:
+                                matag->ti_Data = (IPTR)vmwareReadReg(&XSD(cl)->data, SVGA_REG_VRAM_SIZE);
+                                break;
+                            case vHidd_Gfx_MemFree:
+                            case vHidd_Gfx_MemAddressableFree:
+                                matag->ti_Data = 0;
+                                break;
+                        }
+                    }
+                }
+            }
             break;
         }
     }
@@ -361,7 +433,7 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    D(bug("[VMWareSVGA] %s: returning 0x%p", __func__, object);)
+    D(bug("[VMWareSVGA] %s: returning 0x%p\n", __func__, object);)
     return object;
 }
 
@@ -521,7 +593,7 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     VMWareSVGA_Damage_DeltaAdd(hwdata, box);
     ReleaseSemaphore(&hwdata->damage_control);
 
-    D(bug("[VMWareSVGA] %s: done", __func__);)
+    D(bug("[VMWareSVGA] %s: done\n", __func__);)
 }
 
 BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)

@@ -29,24 +29,6 @@ extern OOP_AttrBase HiddGfxNouveauAttrBase;
 
 extern struct SignalSemaphore globalLock;
 
-enum
-{
-    aoHidd_Gfx_Nouveau_VRAMSize,        /* [G..] The amount of total VRAM in bytes */
-    aoHidd_Gfx_Nouveau_GARTSize,        /* [G..] The amount of total GART in bytes */
-    aoHidd_Gfx_Nouveau_VRAMFree,        /* [G..] The amount of free VRAM in bytes */
-    aoHidd_Gfx_Nouveau_GARTFree,        /* [G..] The amount of free GART in bytes */
-    
-    num_Hidd_Gfx_Nouveau_Attrs
-};
-
-#define aHidd_Gfx_Nouveau_VRAMSize      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_VRAMSize)
-#define aHidd_Gfx_Nouveau_GARTSize      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_GARTSize)
-#define aHidd_Gfx_Nouveau_VRAMFree      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_VRAMFree)
-#define aHidd_Gfx_Nouveau_GARTFree      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_GARTFree)
-
-#define IS_GFXNOUVEAU_ATTR(attr, idx) \
-    (((idx) = (attr) - HiddGfxNouveauAttrBase) < num_Hidd_Gfx_Nouveau_Attrs)
-
 struct HIDDNouveauData
 {
     struct nouveau_bo   *cursor;

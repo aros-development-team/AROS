@@ -719,44 +719,52 @@ VOID METHOD(Nouveau, Root, Get)
         case aoHidd_Gfx_HWSpriteTypes:
             *msg->storage = vHidd_SpriteType_DirectColor;
             return;
-	    case aoHidd_Gfx_DriverName:
-    		*msg->storage = (IPTR)"Nouveau";
-    		return;
-        }
-    }
-    
-    if (IS_GFXNOUVEAU_ATTR(msg->attrID, idx))
-    {
-        switch(idx)
-        {
-            case(aoHidd_Gfx_Nouveau_VRAMSize):
+        case aoHidd_Gfx_DriverName:
+            *msg->storage = (IPTR)"Nouveau";
+            return;
+        case aoHidd_Gfx_MemoryAttribs:
             {
-                UQUAD value;
-                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_SIZE, &value);
-                *msg->storage = (IPTR)value;
-                return;
+                struct TagItem *matstate = (struct TagItem *)msg->storage;
+                if (matstate)
+                {
+                    struct TagItem *matag;
+                    while ((matag = NextTagItem(&matstate)))
+                    {
+                        switch(matag->ti_Tag)
+                        {
+                            case vHidd_Gfx_MemTotal:
+                                {
+                                    UQUAD value;
+                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_SIZE, &value);
+                                    matag->ti_Data = (IPTR)value;
+                                }
+                                break;
+                            case vHidd_Gfx_MemAddressableTotal:
+                                {
+                                    UQUAD value;
+                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_SIZE, &value);
+                                    matag->ti_Data = (IPTR)value;
+                                }
+                                break;
+                            case vHidd_Gfx_MemFree:
+                                {
+                                    UQUAD value;
+                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_FREE, &value);
+                                    matag->ti_Data = (IPTR)value;
+                                }
+                                break;
+                            case vHidd_Gfx_MemAddressableFree:
+                                {
+                                    UQUAD value;
+                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_FREE, &value);
+                                    matag->ti_Data = (IPTR)value;
+                                }
+                                break;
+                        }
+                    }
+                }
             }
-            case(aoHidd_Gfx_Nouveau_GARTSize):
-            {
-                UQUAD value;
-                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_SIZE, &value);
-                *msg->storage = (IPTR)value;
-                return;
-            }
-            case(aoHidd_Gfx_Nouveau_VRAMFree):
-            {
-                UQUAD value;
-                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_FREE, &value);
-                *msg->storage = (IPTR)value;
-                return;
-            }
-            case(aoHidd_Gfx_Nouveau_GARTFree):
-            {
-                UQUAD value;
-                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_FREE, &value);
-                *msg->storage = (IPTR)value;
-                return;
-            }
+            return;
         }
     }
 
