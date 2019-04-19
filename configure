@@ -14836,7 +14836,7 @@ $as_echo "$has_iquote" >&6; }
 
     # Check if we can explicitly choose older version of symbol hashing
 
-    CFLAGS="save_cflags -Wl,--hash-style=sysv"
+    CFLAGS="$save_cflags -Wl,--hash-style=sysv"
     CC="$aros_kernel_cc"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wl,--hash-style=sysv" >&5
 $as_echo_n "checking whether ${CC} accepts -Wl,--hash-style=sysv... " >&6; }
