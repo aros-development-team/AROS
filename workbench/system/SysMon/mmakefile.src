@@ -7,6 +7,7 @@ FILES	:= main locale memory video processor processor_gauge processor_graph task
 EXEDIR	:= $(AROSDIR)/System
 
 #MM- workbench-system : workbench-system-sysmon
+#MM  workbench-system-sysmon-quick : workbench-system-sysmon-catalogs
 #MM  workbench-system-sysmon : includes kernel-task-includes linklibs \
 #MM      workbench-system-sysmon-catalogs
 

@@ -1,4 +1,4 @@
-## version $VER: SysMon.catalog 1.2 (25.01.2017)
+## version $VER: SysMon.catalog 1.2 (19.04.2019)
 ## language français
 ## codeset 0
 ;
@@ -79,8 +79,8 @@ Mémoire Fast
 MSG_VIDEO_RAM
 Mémoire Video
 ;
-MSG_GART_APER
-Ouverture GART
+MSG_VIDEO_WINDOW_TMPL
+%s
 ;
 MSG_CANT_OPEN_TASK_RESOURCE
 Ne peut pas ouvrir task.resource\n
@@ -105,4 +105,22 @@ MSG_TASK_TOMBSTONE
 ;
 MSG_TASK_UNKNOWN
 <inconnu>
+;
+MSG_WINDOW_GART
+GART
+;
+MSG_DISPLAY_MODE
+Display Mode
+;
+MSG_LOAD
+Processor Load
+;
+MSG_GUAGE
+Gauge
+;
+MSG_GRAPH
+Graph
+;
+MSG_GRAPH_PER_PROC
+Graph Per Processor
 ;

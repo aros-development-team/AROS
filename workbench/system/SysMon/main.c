@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,11 +13,13 @@
 
 #include <zune/graph.h>
 
+#include <stdio.h>
+
 #include "sysmon_intern.h"
 
 #include "locale.h"
 
-#define VERSION "$VER: SysMon 1.9 (26.02.2017) ©2011-2017 The AROS Development Team"
+#define VERSION "$VER: SysMon 1.10 (19.04.2019) ©2011-2019 The AROS Development Team"
 
 CONST_STRPTR CPU_DEFSTR  = "CPU --\n--.- %";
 
@@ -79,9 +81,9 @@ BOOL CreateApplication(struct SysMonData * smdata)
 
     Object      * cpufreqgroup,
                 * cpufreqcntnr;
-
-    IPTR i;
+    char videowinstr[100];
     ULONG processorcount;
+    IPTR i;
 
     processorcount = GetProcessorCount();
 
@@ -132,11 +134,13 @@ BOOL CreateApplication(struct SysMonData * smdata)
                     End;
     }
 
+    sprintf(videowinstr, _(MSG_VIDEO_WINDOW_TMPL), _(MSG_WINDOW_GART));
+
     smdata->application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
         MUIA_Application_Version, (IPTR) VERSION,
         MUIA_Application_Author, (IPTR) "Krzysztof Smiechowicz",
-        MUIA_Application_Copyright, (IPTR)"©2011-2017, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"©2011-2019, The AROS Development Team",
         MUIA_Application_Base, (IPTR)"SYSMON",
         MUIA_Application_Description, __(MSG_APP_TITLE),
         SubWindow, 
@@ -176,13 +180,13 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                 GroupFrameT(_(MSG_USAGE)), 
                                 MUIA_ContextMenu, (MenustripObject,
                                     MUIA_Family_Child, (MenuObject, 
-                                        MUIA_Menu_Title, (IPTR)"Processor Load", 
+                                        MUIA_Menu_Title, __(MSG_LOAD), 
                                         MUIA_Family_Child, (MenuitemObject, 
-                                            MUIA_Menuitem_Title, (IPTR)"Display Mode", 
-                                            MUIA_Family_Child, (cmenucpugauge = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Gauge", MUIA_Menuitem_Shortcut, (IPTR)"G",End), 
-                                            MUIA_Family_Child, (cmenucpugraph = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Graph", MUIA_Menuitem_Shortcut, (IPTR)"S",End), 
+                                            MUIA_Menuitem_Title, __(MSG_DISPLAY_MODE), 
+                                            MUIA_Family_Child, (cmenucpugauge = MenuitemObject, MUIA_Menuitem_Title, __(MSG_GUAGE), MUIA_Menuitem_Shortcut, (IPTR)"G",End), 
+                                            MUIA_Family_Child, (cmenucpugraph = MenuitemObject, MUIA_Menuitem_Title, __(MSG_GRAPH), MUIA_Menuitem_Shortcut, (IPTR)"S",End), 
                                             (processorcount > 1) ? MUIA_Family_Child : TAG_IGNORE,
-                                                (cmenucpugraphpcpu = MenuitemObject, MUIA_Menuitem_Title, (IPTR)"Graph Per Processor", MUIA_Menuitem_Shortcut, (IPTR)"P",End), 
+                                                (cmenucpugraphpcpu = MenuitemObject, MUIA_Menuitem_Title, __(MSG_GRAPH_PER_PROC), MUIA_Menuitem_Shortcut, (IPTR)"P",End), 
                                         End), 
                                     End),
                                 End),
@@ -230,11 +234,11 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                 Child, VGroup, GroupFrameT(_(MSG_VIDEO_SIZE)),
                                     Child, ColGroup(2), 
                                         Child, Label(_(MSG_VIDEO_RAM)),
-                                        Child, smdata->memorysize[MEMORY_VRAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                        Child, smdata->memorysize[MEMORY_VMEM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
                                                 MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
                                         End,
-                                        Child, Label(_(MSG_GART_APER)),
-                                        Child, smdata->memorysize[MEMORY_GART] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                        Child, Label(videowinstr),
+                                        Child, smdata->memorysize[MEMORY_VMEMWINDOW] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
                                                 MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
                                         End,
                                     End,
@@ -242,11 +246,11 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                 Child, VGroup, GroupFrameT(_(MSG_VIDEO_FREE)),
                                     Child, ColGroup(2), 
                                         Child, Label(_(MSG_VIDEO_RAM)),
-                                        Child, smdata->memoryfree[MEMORY_VRAM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                        Child, smdata->memoryfree[MEMORY_VMEM] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
                                                 MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
                                         End,
-                                        Child, Label(_(MSG_GART_APER)),
-                                        Child, smdata->memoryfree[MEMORY_GART] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
+                                        Child, Label(videowinstr),
+                                        Child, smdata->memoryfree[MEMORY_VMEMWINDOW] = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
                                                 MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"", 
                                         End,
                                     End,

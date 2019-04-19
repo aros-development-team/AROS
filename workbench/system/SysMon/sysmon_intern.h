@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,11 +16,11 @@
 //#define PROCDISPLAY_USEGAUGE
 //#define PROCDISPLAY_SINGLEGRAPH
 
-#define MEMORY_RAM  0
-#define MEMORY_CHIP 1
-#define MEMORY_FAST 2
-#define MEMORY_VRAM 3
-#define MEMORY_GART 4
+#define MEMORY_RAM              0
+#define MEMORY_CHIP             1
+#define MEMORY_FAST             2
+#define MEMORY_VMEM             3
+#define MEMORY_VMEMWINDOW       4
 
 #define SYSMON_TABCOUNT         3
 
