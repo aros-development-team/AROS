@@ -6,6 +6,9 @@
     Lang: English.
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 0
 #include <aros/debug.h>
 

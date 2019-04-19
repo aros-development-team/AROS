@@ -6,6 +6,9 @@
     Lang: English.
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -95,15 +98,15 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     sync_modes = VMWARESVGA_SYNCMODES;
 
     // TODO: We don't really support multiple displays. We'll switch this back on when we can handle it
-	sync_count = sync_modes;// * XSD(cl)->data.displaycount;
+    sync_count = sync_modes;// * XSD(cl)->data.displaycount;
 
-	struct TagItem *modetags = AllocVec((sync_count + 2) * sizeof(struct TagItem), MEMF_CLEAR);
+    struct TagItem *modetags = AllocVec((sync_count + 2) * sizeof(struct TagItem), MEMF_CLEAR);
 
-	modetags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
-	modetags[0].ti_Data = (IPTR)pftags;
-	modetags[sync_count + 1].ti_Tag = TAG_DONE;
+    modetags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
+    modetags[0].ti_Data = (IPTR)pftags;
+    modetags[sync_count + 1].ti_Tag = TAG_DONE;
 
-	sync_curr = 0;
+    sync_curr = 0;
 
     while (sync_curr < sync_count)
     {
@@ -112,7 +115,8 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 
         ULONG sync_Width =0;
         ULONG sync_Height=0;
-D(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __PRETTY_FUNCTION__, sync_modeid, sync_displayid));
+
+        D(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __func__, sync_modeid, sync_displayid));
 
         char *sync_Description = AllocVec(24 , MEMF_CLEAR);
 
@@ -176,7 +180,7 @@ D(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __PRETTY_FUNCTIO
         {
             sprintf(sync_Description, "VMWareSVGA.%d:%dx%d", sync_displayid, sync_Width, sync_Height);
         }
-        D(bug("[VMWareSVGA] %s: Description '%s'\n", __PRETTY_FUNCTION__, sync_Description));
+        D(bug("[VMWareSVGA] %s: Description '%s'\n", __func__, sync_Description));
 
         struct TagItem *sync_mode = AllocVec(11 * sizeof(struct TagItem), MEMF_CLEAR);
         
@@ -250,16 +254,16 @@ D(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __PRETTY_FUNCTIO
     yourmsg.mID = msg->mID;
     yourmsg.attrList = yourtags;
     msg = &yourmsg;
-    EnterFunc(bug("VMWareSVGA::New()\n"));
+    EnterFunc(bug("[VMWareSVGA] New()\n"));
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
         D(bug("[VMWareSVGA] Got object from super\n"));
         XSD(cl)->vmwaresvgahidd = o;
         XSD(cl)->mouse.shape = NULL;
-        ReturnPtr("VMWareSVGA::New", OOP_Object *, o);
+        ReturnPtr("[VMWareSVGA] New", OOP_Object *, o);
     }
-    ReturnPtr("VMWareSVGA::New", OOP_Object *, NULL);
+    ReturnPtr("[VMWareSVGA] New", OOP_Object *, NULL);
 }
 
 VOID VMWareSVGA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -291,7 +295,7 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
 {
     OOP_Object      *object = NULL;
 
-    EnterFunc(bug("VMWareSVGA::CreateObject()\n"));
+    D(bug("[VMWareSVGA] %s()\n", __func__));
 
     if (msg->cl == XSD(cl)->basebm)
     {
@@ -349,10 +353,16 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
 
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&yourmsg);
     }
+    else if (XSD(cl)->basegallium && (msg->cl == XSD(cl)->basegallium))
+    {
+        /* Create the gallium 3d driver object .. */
+        object = OOP_NewObject(NULL, CLID_Hidd_Gallium_VMWareSVGA, msg->attrList);
+    }
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    ReturnPtr("VMWareSVGA::CreateObject", OOP_Object *, object);
+    D(bug("[VMWareSVGA] %s: returning 0x%p", __func__, object);)
+    return object;
 }
 
 VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
@@ -360,12 +370,13 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     UBYTE *src = NULL;
     UBYTE *dst = NULL;
     HIDDT_DrawMode mode;
-	struct HWData *hwdata = &XSD(cl)->data;
-	struct Box box = { msg->srcX, msg->srcY, msg->srcX + msg->width + 1, msg->srcY + msg->height + 1};
+    struct HWData *hwdata = &XSD(cl)->data;
+    struct Box box = { msg->srcX, msg->srcY, msg->srcX + msg->width + 1, msg->srcY + msg->height + 1};
 
-	ObtainSemaphore(&hwdata->damage_control);
+    D(bug("[VMWareSVGA] %s()\n", __func__));
 
-    EnterFunc(bug("VMWareSVGA.BitMap::CopyBox\n"));
+    ObtainSemaphore(&hwdata->damage_control);
+
     mode = GC_DRMD(msg->gc);
     OOP_GetAttr(msg->src, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_VMWareSVGABitMap_Drawable, (IPTR *)&dst);
@@ -381,56 +392,56 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         data = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
         switch (mode)
         {
-			case vHidd_GC_DrawMode_Clear:
-				clearCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_And:
-				andCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_AndReverse:
-				andReverseCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Copy:
-				copyCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_AndInverted:
-				andInvertedCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_NoOp:
-				noOpCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Xor:
-				xorCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Or:
-				orCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Nor:
-				norCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Equiv:
-				equivCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Invert:
-				invertCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_OrReverse:
-				orReverseCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_CopyInverted:
-				copyInvertedCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_OrInverted:
-				orInvertedCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Nand:
-				nandCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			case vHidd_GC_DrawMode_Set:
-				setCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
-			break;
-			default:
-				OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            case vHidd_GC_DrawMode_Clear:
+                    clearCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_And:
+                    andCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_AndReverse:
+                    andReverseCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Copy:
+                    copyCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_AndInverted:
+                    andInvertedCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_NoOp:
+                    noOpCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Xor:
+                    xorCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Or:
+                    orCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Nor:
+                    norCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Equiv:
+                    equivCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Invert:
+                    invertCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_OrReverse:
+                    orReverseCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_CopyInverted:
+                    copyInvertedCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_OrInverted:
+                    orInvertedCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Nand:
+                    nandCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            case vHidd_GC_DrawMode_Set:
+                    setCopyVMWareSVGA(data->data, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height);
+                    break;
+            default:
+                    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     }
     else
@@ -475,24 +486,24 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
         switch (mode)
         {
-	        case vHidd_GC_DrawMode_Copy:
-				while (ycnt--)
-				{
-					xcnt = msg->width;
+            case vHidd_GC_DrawMode_Copy:
+                while (ycnt--)
+                {
+                    xcnt = msg->width;
 
-					// NOTE: this is only valid if the two bitmaps share the same bytes per pixel.
-					//		 we may want to pre-process it (see below in the mouse definition code)
-					CopyMem(sbuffer, dbuffer, xcnt * dstbd->bytesperpix);
+                    // NOTE: this is only valid if the two bitmaps share the same bytes per pixel.
+                    //		 we may want to pre-process it (see below in the mouse definition code)
+                    CopyMem(sbuffer, dbuffer, xcnt * dstbd->bytesperpix);
 
-					sbuffer += xcnt * dstbd->bytesperpix;
-					sbuffer += srestadd;
-					dbuffer += xcnt * dstbd->bytesperpix;
-					dbuffer += drestadd;
-				}
-				break;
-			default:
-				kprintf("[VMWareSVGA] mode = %ld src=%lx dst=%lx\n", mode, src, dst);
-				OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+                    sbuffer += xcnt * dstbd->bytesperpix;
+                    sbuffer += srestadd;
+                    dbuffer += xcnt * dstbd->bytesperpix;
+                    dbuffer += drestadd;
+                }
+                break;
+            default:
+                D(bug("[VMWareSVGA] mode = %ld src=%lx dst=%lx\n", mode, src, dst);)
+                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
 
 //        if (XSD(cl)->mouse.visible == 0)
@@ -502,20 +513,22 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 //        }
     }
 
-	box.x1 = msg->srcX;
-	box.y1 = msg->srcY;
-	box.x2 = box.x1+msg->width+1;
-	box.y2 = box.y1+msg->height+1;
+    box.x1 = msg->srcX;
+    box.y1 = msg->srcY;
+    box.x2 = box.x1+msg->width+1;
+    box.y2 = box.y1+msg->height+1;
 
-	VMWareSVGA_Damage_DeltaAdd(hwdata, box);
-	ReleaseSemaphore(&hwdata->damage_control);
+    VMWareSVGA_Damage_DeltaAdd(hwdata, box);
+    ReleaseSemaphore(&hwdata->damage_control);
 
-	ReturnVoid("VMWareSVGA.BitMap::CopyBox");
+    D(bug("[VMWareSVGA] %s: done", __func__);)
 }
 
 BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
     struct VMWareSVGA_staticdata *data = XSD(cl);
+
+    D(bug("[VMWareSVGA] %s()\n", __func__));
 
     if (msg->shape == NULL)
     {
@@ -523,6 +536,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
         data->mouse.oopshape = NULL;
         FreeVec(data->mouse.shape);
         data->mouse.shape = NULL;
+
         return TRUE;
     }
     else
@@ -531,6 +545,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
         OOP_Object *colmap;
         HIDDT_StdPixFmt pixfmt;
         IPTR tmp;
+
         OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &tmp);
         data->mouse.width = tmp;
         OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &tmp);
@@ -542,12 +557,12 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
 
         /* convert shape to vmware needs */
         FreeVec(data->mouse.shape);
-        ULONG size = data->mouse.width * data->mouse.height;
-        data->mouse.shape = AllocVec(size * 4, MEMF_CLEAR|MEMF_PUBLIC);
+        tmp = data->mouse.width * data->mouse.height;
+        data->mouse.shape = AllocVec(tmp * 4, MEMF_CLEAR|MEMF_PUBLIC);
         if (data->mouse.shape != NULL)
         {
-			UBYTE *shape;
-			shape = data->mouse.shape;
+            UBYTE *shape;
+            shape = data->mouse.shape;
 
             // Get data from the bitmap. Using the ALPHA CURSOR we can now directly pre-process the bitmap to a suitable format
             HIDD_BM_GetImage(msg->shape, (UBYTE *)shape, data->mouse.width * 4, 0, 0, data->mouse.width, data->mouse.height, vHidd_StdPixFmt_BGRA32);
@@ -562,6 +577,8 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
 
 BOOL VMWareSVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
+    D(bug("[VMWareSVGA] %s()\n", __func__));
+
     XSD(cl)->mouse.x = msg->x;
     XSD(cl)->mouse.y = msg->y;
 
@@ -572,6 +589,8 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHi
 
 VOID VMWareSVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
+    D(bug("[VMWareSVGA] %s()\n", __func__));
+
     XSD(cl)->mouse.visible = msg->visible;
     displayCursorVMWareSVGA(&XSD(cl)->data, msg->visible ? 1 : 0);
 }
@@ -579,7 +598,7 @@ VOID VMWareSVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct
 
 static int VMWareSVGA_InitStatic(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("[VMWareSVGA] VMWareSVGA_InitStatic()\n"));
+    D(bug("[VMWareSVGA] %s()\n", __func__));
 
     LIBBASE->vsd.mouse.x=0;
     LIBBASE->vsd.mouse.y=0;
@@ -587,21 +606,24 @@ static int VMWareSVGA_InitStatic(LIBBASETYPEPTR LIBBASE)
 
     if (!OOP_ObtainAttrBases(attrbases))
     {
-        D(bug("[VMWareSVGA] VMWareSVGA_InitStatic: attrbases init failed\n"));
+        D(bug("[VMWareSVGA] %s: attrbases init failed\n", __func__));
         return FALSE;
     }
     
-    D(bug("[VMWareSVGA] VMWareSVGA_InitStatic: ok\n"));
+    D(bug("[VMWareSVGA] %s: initialised\n", __func__));
 
-    ReturnInt("VMWareSVGA_InitStatic", int, TRUE);
+    return TRUE;
 }
 
 static int VMWareSVGA_ExpungeStatic(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("[VMWareSVGA] VMWareSVGA_ExpungeStatic()\n"));
+    D(bug("[VMWareSVGA] %s()\n", __func__));
 
     OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("VMWareSVGA_ExpungeStatic", int, TRUE);
+
+    D(bug("[VMWareSVGA] %s: done\n", __func__));
+
+    return TRUE;
 }
 
 ADD2INITLIB(VMWareSVGA_InitStatic, 0)
