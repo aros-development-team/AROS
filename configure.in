@@ -2777,7 +2777,7 @@ if test "x$test_kernel_cc" != "xno"; then
 
     # Check if we can explicitly choose older version of symbol hashing
 
-    CFLAGS="save_cflags -Wl,--hash-style=sysv"
+    CFLAGS="$save_cflags -Wl,--hash-style=sysv"
     CC="$aros_kernel_cc"
     AC_MSG_CHECKING([whether ${CC} accepts -Wl,--hash-style=sysv])
     AC_TRY_LINK(,, use_hash_style="yes", use_hash_style="no")
