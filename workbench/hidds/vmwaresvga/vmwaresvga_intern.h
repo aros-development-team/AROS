@@ -22,32 +22,36 @@
 #define CLID_Hidd_VMWareSVGA "hidd.gfx.vmwaresvga"
 
 struct VMWareSVGA_staticdata {
-    struct MemHeader mh;
-    struct Library  *VMWareSVGACyberGfxBase;
+    struct MemHeader            mh;
+    struct Library              *VMWareSVGACyberGfxBase;
 
-    OOP_Class *basebm;            /* baseclass for CreateObject */
+    /* Base classes for CreateObject */
+    OOP_Class                   *basebm;
+    OOP_Class                   *basegallium;
 
-    OOP_Class       *galliumclass;
-    OOP_Class *vmwaresvgaclass;
-    OOP_Class *vmwaresvgaonbmclass;
-    OOP_Class *vmwaresvgaoffbmclass;
+    /* VMWareSVGA classes */
+    OOP_Class                   *vmwaresvgaclass;
+    OOP_Class                   *vmwaresvgaonbmclass;
+    OOP_Class                   *vmwaresvgaoffbmclass;
+    OOP_Class                   *galliumclass;
 
-    OOP_Object *vmwaresvgahidd;
-    OOP_Object *card;
-    OOP_Object *pcihidd;
+    /* Private object refrences */
+    OOP_Object                  *vmwaresvgahidd;
+    OOP_Object                  *card;
+    OOP_Object                  *pcihidd;
 
-    OOP_AttrBase    hiddGalliumAB;
+    OOP_AttrBase                hiddGalliumAB;
 
-    struct BitmapData *visible;
+    struct BitmapData           *visible;
     VOID (*activecallback)(APTR, OOP_Object *, BOOL);
-    APTR callbackdata;
-    struct MouseData mouse;
-    struct HWData data;
+    APTR                        callbackdata;
+    struct MouseData            mouse;
+    struct HWData               data;
 };
 
 struct VMWareSVGABase
 {
-    struct Library library;
+    struct Library              library;
     
     struct VMWareSVGA_staticdata vsd;    
 };

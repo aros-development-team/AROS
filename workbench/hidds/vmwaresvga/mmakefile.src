@@ -10,7 +10,7 @@ include $(GALLIUM_PATH)/drivers/svga/Makefile.sources
 #MM- workbench-hidds-vmwaresvga : hidd-vmwaresvga
 #MM- hidd-vmwaresvga: includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic
 
-MESA3D_VMWARESVGA_C_SOURCES := $(filter %.c, $(C_SOURCES))
+MESA3D_VMWARESVGA_C_SOURCES := $(filter %.c,$(C_SOURCES))
 
 FILES	:=	\
 	vmwaresvga_init \
@@ -36,6 +36,7 @@ USER_INCLUDES += \
 
 USER_CPPFLAGS += \
                 -DPACKAGE_VERSION=\"$(MESAGLVERSION)\"
+#USER_CPPFLAGS += -DDEBUG=1
 
 USER_LDFLAGS := \
   -L$(top_libdir) \

@@ -6,6 +6,9 @@
     Lang: English
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 1 /* no SysBase */
 #include <aros/debug.h>
 
@@ -148,23 +151,24 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
     data->vrambase = (APTR)(IPTR)vmwareReadReg(data, SVGA_REG_FB_START);
     data->pseudocolor = vmwareReadReg(data, SVGA_REG_PSEUDOCOLOR);
 
-    D(bug("[VMWareSVGA] Init: VRAM at 0x%08x size %d\n",data->vrambase, data->vramsize));
-    D(bug("[VMWareSVGA] Init: no.displays: %d\n",data->displaycount));
-    D(bug("[VMWareSVGA] Init: caps : 0x%08x\n",data->capabilities));
-    D(bug("[VMWareSVGA] Init: no.displays: %d\n",data->displaycount));
-    D(bug("[VMWareSVGA] Init: depth: %d\n",data->depth));
-    D(bug("[VMWareSVGA] Init: bpp  : %d\n",data->bitsperpixel));
-    D(bug("[VMWareSVGA] Init: maxw: %d\n",data->maxwidth));
-    D(bug("[VMWareSVGA] Init: maxh: %d\n",data->maxheight));
+    D(bug("[VMWareSVGA:HW] %s: VRAM at 0x%08x size %d\n", __func__, data->vrambase, data->vramsize));
+    D(bug("[VMWareSVGA:HW] %s: no.displays: %d\n", __func__, data->displaycount));
+    D(bug("[VMWareSVGA:HW] %s: caps : 0x%08x\n", __func__, data->capabilities));
+    D(bug("[VMWareSVGA:HW] %s: no.displays: %d\n", __func__, data->displaycount));
+    D(bug("[VMWareSVGA:HW] %s: depth: %d\n", __func__, data->depth));
+    D(bug("[VMWareSVGA:HW] %s: bpp  : %d\n", __func__, data->bitsperpixel));
+    D(bug("[VMWareSVGA:HW] %s: maxw: %d\n", __func__, data->maxwidth));
+    D(bug("[VMWareSVGA:HW] %s: maxh: %d\n", __func__, data->maxheight));
 
-	VMWareSVGA_RestartRenderTask(data);
+    VMWareSVGA_RestartRenderTask(data);
 
-	return TRUE;
+    return TRUE;
 }
 
 VOID setModeVMWareSVGA(struct HWData *data, ULONG width, ULONG height)
 {
-    D(bug("[VMWareSVGA] SetMode: %dx%d\n",width,height));
+    D(bug("[VMWareSVGA:HW] %s(%dx%d)\n", __func__, width, height));
+
     vmwareWriteReg(data, SVGA_REG_ENABLE, 0);
 
     vmwareWriteReg(data, SVGA_REG_WIDTH, width);
@@ -237,9 +241,9 @@ VOID defineCursorVMWareSVGA(struct HWData *data, struct MouseData *mouse)
     int i;
     ULONG size = mouse->width * mouse->height;
     // TODO: This is utterly disgusting. Should be moved to either a proper static data area, or dynamic area down to the render task
-	ULONG xorMask[size];
-	ULONG *image = mouse->shape;
-	ULONG *xorBuffer;
+    ULONG xorMask[size];
+    ULONG *image = mouse->shape;
+    ULONG *xorBuffer;
 
     writeVMWareSVGAFIFO(data, SVGA_CMD_DEFINE_ALPHA_CURSOR);
     writeVMWareSVGAFIFO(data, 0); // id
@@ -252,16 +256,16 @@ VOID defineCursorVMWareSVGA(struct HWData *data, struct MouseData *mouse)
 
     for (i = 0; i < size; i++)
     {
-		ULONG pixel = *image ++;
-		*xorBuffer = pixel;
+        ULONG pixel = *image ++;
+        *xorBuffer = pixel;
         xorBuffer++;
     }
 
-	xorBuffer = xorMask;
+    xorBuffer = xorMask;
     for (i = 0; i < size; i++)
-	{
-		writeVMWareSVGAFIFO(data, *xorBuffer++);
-	}
+    {
+        writeVMWareSVGAFIFO(data, *xorBuffer++);
+    }
 
     syncVMWareSVGAFIFO(data);
 }
@@ -296,14 +300,14 @@ VOID moveCursorVMWareSVGA(struct HWData *data, LONG x, LONG y)
 
 VOID VMWareSVGA_Damage_Reset(struct HWData *hwdata)
 {
-	ObtainSemaphore(&hwdata->damage_control);
+    ObtainSemaphore(&hwdata->damage_control);
 
-	hwdata->delta_damage.x1 = INT_MAX;
+    hwdata->delta_damage.x1 = INT_MAX;
     hwdata->delta_damage.y1 = INT_MAX;
     hwdata->delta_damage.x2 = INT_MIN;
     hwdata->delta_damage.y2 = INT_MIN;
 
-	ReleaseSemaphore(&hwdata->damage_control);
+    ReleaseSemaphore(&hwdata->damage_control);
 }
 
 VOID VMWareSVGA_Damage_DeltaAdd(struct HWData *hwdata, struct Box box)
@@ -331,60 +335,60 @@ VOID VMWareSVGA_Damage_DeltaAdd(struct HWData *hwdata, struct Box box)
 
 void VMWareSVGA_RenderTask(struct HWData *hwdata)
 {
-	struct MsgPort render_thread_message_port;
-	struct timerequest *timer_request;
-	struct IORequest *timer_request_as_io_request;
-	ULONG request_size = sizeof(struct timerequest);
-	BYTE running;
+    struct MsgPort render_thread_message_port;
+    struct timerequest *timer_request;
+    struct IORequest *timer_request_as_io_request;
+    ULONG request_size = sizeof(struct timerequest);
+    BYTE running;
 
-	render_thread_message_port.mp_Flags = PA_SIGNAL;
-	render_thread_message_port.mp_Node.ln_Type = NT_MSGPORT;
-	render_thread_message_port.mp_MsgList.lh_TailPred = (struct Node *)&render_thread_message_port.mp_MsgList;
-	render_thread_message_port.mp_MsgList.lh_Tail = 0;
-	render_thread_message_port.mp_MsgList.lh_Head = (struct Node *)&render_thread_message_port.mp_MsgList.lh_Tail;
+    render_thread_message_port.mp_Flags = PA_SIGNAL;
+    render_thread_message_port.mp_Node.ln_Type = NT_MSGPORT;
+    render_thread_message_port.mp_MsgList.lh_TailPred = (struct Node *)&render_thread_message_port.mp_MsgList;
+    render_thread_message_port.mp_MsgList.lh_Tail = 0;
+    render_thread_message_port.mp_MsgList.lh_Head = (struct Node *)&render_thread_message_port.mp_MsgList.lh_Tail;
 
-	render_thread_message_port.mp_SigBit = AllocSignal(-1);
-	render_thread_message_port.mp_SigTask = FindTask(0);
+    render_thread_message_port.mp_SigBit = AllocSignal(-1);
+    render_thread_message_port.mp_SigTask = FindTask(0);
 
-	timer_request = AllocMem(request_size, MEMF_CLEAR | MEMF_PUBLIC);
-	timer_request_as_io_request = (void *)timer_request;
+    timer_request = AllocMem(request_size, MEMF_CLEAR | MEMF_PUBLIC);
+    timer_request_as_io_request = (void *)timer_request;
 
-	timer_request_as_io_request->io_Message.mn_Node.ln_Type 	= NT_MESSAGE;
-	timer_request_as_io_request->io_Message.mn_ReplyPort	  	= &render_thread_message_port;
-	timer_request_as_io_request->io_Message.mn_Length	  		= request_size;
+    timer_request_as_io_request->io_Message.mn_Node.ln_Type 	= NT_MESSAGE;
+    timer_request_as_io_request->io_Message.mn_ReplyPort	  	= &render_thread_message_port;
+    timer_request_as_io_request->io_Message.mn_Length	  		= request_size;
 
-	OpenDevice("timer.device", UNIT_MICROHZ, timer_request_as_io_request, 0);
+    OpenDevice("timer.device", UNIT_MICROHZ, timer_request_as_io_request, 0);
 
-	timer_request->tr_node.io_Command = TR_ADDREQUEST;
-	timer_request->tr_time.tv_secs = 0;
-	timer_request->tr_time.tv_micro = 20000;
-	SendIO(timer_request_as_io_request);
+    timer_request->tr_node.io_Command = TR_ADDREQUEST;
+    timer_request->tr_time.tv_secs = 0;
+    timer_request->tr_time.tv_micro = 20000;
+    SendIO(timer_request_as_io_request);
 
-	running = 1;
+    running = 1;
     while (running) // TODO: If you'll ever implement GFX Driver hot swap, you will want to unlock this condition and let the RenderTask terminate
     {
-		if (!vmwareReadReg(hwdata, SVGA_REG_BUSY))
-		{
-			ObtainSemaphore(&hwdata->damage_control);
-			struct Box damage = hwdata->delta_damage;
-			struct Box all_damage = {0, 0, hwdata->display_width, hwdata->display_height};
+        if (!vmwareReadReg(hwdata, SVGA_REG_BUSY))
+        {
+            ObtainSemaphore(&hwdata->damage_control);
+            struct Box damage = hwdata->delta_damage;
+            struct Box all_damage = {0, 0, hwdata->display_width, hwdata->display_height};
 
             if (damage.x2 > damage.x1 && damage.y2 > damage.y1)
             {
-				refreshAreaVMWareSVGA(hwdata, &all_damage);
-				VMWareSVGA_Damage_Reset(hwdata);
-				vmwareWriteReg(hwdata, SVGA_REG_SYNC, 1);
-			}
-			ReleaseSemaphore(&hwdata->damage_control);
-		}
+                refreshAreaVMWareSVGA(hwdata, &all_damage);
+                VMWareSVGA_Damage_Reset(hwdata);
+                vmwareWriteReg(hwdata, SVGA_REG_SYNC, 1);
+            }
+            ReleaseSemaphore(&hwdata->damage_control);
+        }
 
-		WaitIO(timer_request_as_io_request);
-		GetMsg(&render_thread_message_port); // TODO: Did we have to reply to this? Oh memory ...
+        WaitIO(timer_request_as_io_request);
+        GetMsg(&render_thread_message_port); // TODO: Did we have to reply to this? Oh memory ...
 
-		timer_request->tr_node.io_Command = TR_ADDREQUEST;
-		timer_request->tr_time.tv_secs = 0;
-		timer_request->tr_time.tv_micro = 20000; // TODO: This should be adaptive. We would need to know the CPU load and increase the delay to avoid burning all of the CPU time
-		SendIO(timer_request_as_io_request);
+        timer_request->tr_node.io_Command = TR_ADDREQUEST;
+        timer_request->tr_time.tv_secs = 0;
+        timer_request->tr_time.tv_micro = 20000; // TODO: This should be adaptive. We would need to know the CPU load and increase the delay to avoid burning all of the CPU time
+        SendIO(timer_request_as_io_request);
     }
 
     CloseDevice(timer_request_as_io_request);
@@ -392,13 +396,14 @@ void VMWareSVGA_RenderTask(struct HWData *hwdata)
 
 VOID VMWareSVGA_RestartRenderTask(struct HWData *hwdata)
 {
-	// TODO: CleanUp and add defenses here
+    // TODO: CleanUp and add defenses here
 
-	InitSemaphore(&hwdata->damage_control);
+    InitSemaphore(&hwdata->damage_control);
 
-	hwdata->render_task = NewCreateTask(TASKTAG_PC,		VMWareSVGA_RenderTask,
-										TASKTAG_NAME,	"VMWare Render Task",
-										TASKTAG_PRI,	1,
-										TASKTAG_ARG1,	hwdata,
-										TAG_DONE);
+    hwdata->render_task = NewCreateTask(TASKTAG_PC,
+                                        VMWareSVGA_RenderTask,
+                                        TASKTAG_NAME,	"VMWare Render Task",
+                                        TASKTAG_PRI,	1,
+                                        TASKTAG_ARG1,	hwdata,
+                                        TAG_DONE);
 }
