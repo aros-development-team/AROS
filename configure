@@ -15806,6 +15806,8 @@ if test "$use_libatomic" = "yes" ; then
     aros_cxx_libs="$aros_cxx_libs  -latomic"
 fi
 
+aros_target_options+="$export_newline""# Enable Nouveau Gfx Driver$export_newline""OPT_GFX_NOUVEAU               := no$export_newline"
+
 
 # Generic
 
