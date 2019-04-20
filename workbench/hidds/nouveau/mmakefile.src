@@ -1,6 +1,12 @@
 #   $Id$
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+# WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
+include $(GALLIUM_PATH)/drivers/nouveau/Makefile.sources
 
 include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
@@ -13,77 +19,19 @@ include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 #MM- hidd-nouveau-yes-x86_64 : hidd-nouveau
 #MM hidd-nouveau : hidd-i2c hidd-agp hidd-gallium
 
-GALLIUM_NOUVEAU_SOURCES = \
-            drivers/nouveau/nouveau_screen \
-            drivers/nouveau/nouveau_fence \
-            drivers/nouveau/nouveau_mm \
-            drivers/nouveau/nouveau_buffer \
-            drivers/nvfx/nv04_2d \
-            drivers/nvfx/nvfx_buffer \
-            drivers/nvfx/nvfx_context \
-            drivers/nvfx/nvfx_clear \
-            drivers/nvfx/nvfx_draw \
-            drivers/nvfx/nvfx_fragprog \
-            drivers/nvfx/nvfx_fragtex \
-            drivers/nvfx/nv30_fragtex \
-            drivers/nvfx/nv40_fragtex \
-            drivers/nvfx/nvfx_miptree \
-            drivers/nvfx/nvfx_push \
-            drivers/nvfx/nvfx_query \
-            drivers/nvfx/nvfx_resource \
-            drivers/nvfx/nvfx_screen \
-            drivers/nvfx/nvfx_state \
-            drivers/nvfx/nvfx_state_emit \
-            drivers/nvfx/nvfx_state_fb \
-            drivers/nvfx/nvfx_surface \
-            drivers/nvfx/nvfx_transfer \
-            drivers/nvfx/nvfx_vbo \
-            drivers/nvfx/nvfx_vertprog \
-            drivers/nv50/nv50_context \
-            drivers/nv50/nv50_draw \
-            drivers/nv50/nv50_formats \
-            drivers/nv50/nv50_miptree \
-            drivers/nv50/nv50_resource \
-            drivers/nv50/nv50_screen \
-            drivers/nv50/nv50_state \
-            drivers/nv50/nv50_state_validate \
-            drivers/nv50/nv50_surface \
-            drivers/nv50/nv50_tex \
-            drivers/nv50/nv50_transfer \
-            drivers/nv50/nv50_vbo \
-            drivers/nv50/nv50_program \
-            drivers/nv50/nv50_shader_state \
-            drivers/nv50/nv50_pc \
-            drivers/nv50/nv50_pc_print \
-            drivers/nv50/nv50_pc_emit \
-            drivers/nv50/nv50_tgsi_to_nc \
-            drivers/nv50/nv50_pc_optimize \
-            drivers/nv50/nv50_pc_regalloc \
-            drivers/nv50/nv50_push \
-            drivers/nv50/nv50_query \
-            drivers/nvc0/nvc0_context \
-            drivers/nvc0/nvc0_draw \
-            drivers/nvc0/nvc0_formats \
-            drivers/nvc0/nvc0_miptree \
-            drivers/nvc0/nvc0_resource \
-            drivers/nvc0/nvc0_screen \
-            drivers/nvc0/nvc0_state \
-            drivers/nvc0/nvc0_state_validate \
-            drivers/nvc0/nvc0_surface \
-            drivers/nvc0/nvc0_tex \
-            drivers/nvc0/nvc0_transfer \
-            drivers/nvc0/nvc0_vbo \
-            drivers/nvc0/nvc0_program \
-            drivers/nvc0/nvc0_shader_state \
-            drivers/nvc0/nvc0_pc \
-            drivers/nvc0/nvc0_pc_print \
-            drivers/nvc0/nvc0_pc_emit \
-            drivers/nvc0/nvc0_tgsi_to_nc \
-            drivers/nvc0/nvc0_pc_optimize \
-            drivers/nvc0/nvc0_pc_regalloc \
-            drivers/nvc0/nvc0_push \
-            drivers/nvc0/nvc0_push2 \
-            drivers/nvc0/nvc0_query \
+GALLIUM_NOUVEAU_SOURCES := \
+            	$(C_SOURCES) \
+            	$(NV30_C_SOURCES) \
+            	$(NV50_CODEGEN_SOURCES) \
+            	$(NV50_C_SOURCES) \
+            	$(NVC0_CODEGEN_SOURCES) \
+            	$(NVC0_C_SOURCES)
+
+GALLIUM_NOUVEAU_C_SOURCES := \
+            	$(filter %.c, $(GALLIUM_NOUVEAU_SOURCES))
+
+GALLIUM_NOUVEAU_CXX_SOURCES := \
+            	$(filter %.cpp, $(GALLIUM_NOUVEAU_SOURCES))
 
 XF86_NOUVEAU_SOURCES = \
             nv_accel_common \
@@ -98,14 +46,10 @@ XF86_NOUVEAU_SOURCES = \
             nvc0_exa \
             nv04_exa \
 
-GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
-
-# WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
-
 DRM_PATH = $(SRCDIR)/$(CURDIR)/drm/
 XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
 
-NOUVEAU_HIDD_SOURCES := \
+NOUVEAU_HIDD_C_SOURCES := \
             nouveau_hiddclass \
             nouveau_init \
             nouveau_bitmapclass \
@@ -118,26 +62,37 @@ NOUVEAU_HIDD_SOURCES := \
             $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES))         \
             $(addprefix $(DRM_PATH),$(AROS_LIBDRM_CORE_SOURCES))        \
             $(addprefix $(DRM_PATH),$(AROS_LIBDRM_NVIDIA_SOURCES))      \
-            $(addprefix $(GALLIUM_PATH), $(GALLIUM_NOUVEAU_SOURCES))    \
+            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_C_SOURCES:.c=)) \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
-USER_INCLUDES := \
-                -I$(DRM_PATH)/drm                           \
-                -I$(DRM_PATH)/drm/nouveau                   \
-                -I$(DRM_PATH)/drm-aros                      \
-                -I$(DRM_PATH)/drm-aros/nouveau              \
-                -I$(GALLIUM_PATH)/drivers                   \
-                -I$(AROS_DEVELOPER)/include/gallium       \
-                -I$(GALLIUM_PATH)/include                   \
-                -I$(DRM_PATH)/libdrm                        \
-                -I$(DRM_PATH)/libdrm/nouveau                \
-                -I$(XF86_NOUVEAU_PATH)                      \
+NOUVEAU_HIDD_CXX_SOURCES := \
+            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
+
+USER_INCLUDES += \
+            -I$(DRM_PATH)/drm \
+            -I$(DRM_PATH)/drm/nouveau \
+            -I$(DRM_PATH)/drm-aros \
+            -I$(DRM_PATH)/drm-aros/nouveau \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/drivers/nouveau \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -I$(DRM_PATH)/libdrm \
+            -I$(DRM_PATH)/libdrm/nouveau \
+            -I$(XF86_NOUVEAU_PATH)
+
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
-USER_CFLAGS := $(NOWARN_FLAGS) -std=gnu99
+USER_CFLAGS += $(NOWARN_FLAGS) -std=gnu99
 
-%build_module mmake=hidd-nouveau \
-    modname=nouveau modtype=hidd \
-    files="$(NOUVEAU_HIDD_SOURCES)" \
-    uselibs="hiddstubs galliumauxiliary stdcio stdc"
+USER_LDFLAGS += \
+  -L$(top_libdir) \
+  -lgalliumauxiliary -lmesautil \
+  -lhiddstubs -lstdcio -lstdc
+  
+ %build_module mmake=hidd-nouveau \
+     modname=nouveau modtype=hidd \
+     files="$(NOUVEAU_HIDD_C_SOURCES)" \
+     cxxfiles="$(NOUVEAU_HIDD_CXX_SOURCES)" \
+     uselibs=""
 
