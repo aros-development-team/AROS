@@ -186,9 +186,11 @@ aros_host_cxx="$CXX"
 base_ld_name=${HOST_TOOLCHAIN_PREFIX}ld${HOST_TOOLCHAIN_SUFFIX}
 if test "$HOST_TOOLCHAIN_FAMILY" = "llvm"; then
     AC_CHECK_PROGS(base_lld_name,[$base_ld_name ld.lld${HOST_TOOLCHAIN_SUFFIX} ld64.lld${HOST_TOOLCHAIN_SUFFIX} ld-link${HOST_TOOLCHAIN_SUFFIX}.exe ld${HOST_TOOLCHAIN_SUFFIX}])
-    base_ld_name=$base_lld_name
+    LD_BASE=$base_lld_name
+else
+    AC_CHECK_PROG(LD_BASE,$base_ld_name)
 fi
-AROS_TOOL_CCPATH(aros_host_ld,ld,$base_ld_name)
+AROS_TOOL_CCPATH(aros_host_ld,ld,$LD_BASE)
 AROS_REQUIRED(ld,$aros_host_ld)
 aros_host_make="make"
 aros_host_cflags="$CFLAGS"
@@ -520,12 +522,15 @@ re-running configure])])
 esac
 
 base_ar_name=${HOST_TOOLCHAIN_PREFIX}ar${HOST_TOOLCHAIN_SUFFIX}
-AROS_PROG(aros_host_cmd_ar,$base_ar_name,[cr])
+AROS_PROG(AR_BASE,$base_ar_name)
+aros_host_ar_flags="cr"
+aros_host_cmd_ar="$AR_BASE $aros_host_ar_flags"
 AROS_PATH_PROG(aros_host_plain_ar,$aros_host_cmd_ar)
 aros_host_ar=`echo $aros_host_cmd_ar | sed -e "s|$base_ar_name|$aros_host_plain_ar|g"`
 AROS_REQUIRED(ar,$aros_host_ar)
 base_ranlib_name=${HOST_TOOLCHAIN_PREFIX}ranlib${HOST_TOOLCHAIN_SUFFIX}
-AROS_PATH_PROG(aros_host_ranlib,$base_ranlib_name)
+AROS_PROG(RANLIB_BASE,$base_ranlib_name)
+AROS_PATH_PROG(aros_host_ranlib,$RANLIB_BASE)
 AROS_REQUIRED(ranlib,$aros_host_ranlib)
 AROS_PROG(aros_host_strip,strip)
 AROS_REQUIRED(strip,$aros_host_strip)
@@ -2382,7 +2387,7 @@ else
             AROS_REQUIRED(cxx,$aros_kernel_cxx)
         fi
         if test "x$aros_kernel_ld" = "x"; then
-            aros_kernel_ld=$aros_host_ld
+            aros_kernel_ld=${kernel_tool_prefix}${LD_BASE}
         fi
         AROS_TOOL_KERNEL(aros_kernel_ld,ld,$aros_kernel_ld)
         AROS_REQUIRED(ld,$aros_kernel_ld)
@@ -2394,14 +2399,17 @@ else
         fi
         AROS_TOOL_KERNEL(aros_kernel_as,as,$aros_kernel_as)
         AROS_REQUIRED(as,$aros_kernel_as)
+
         if test "x$aros_kernel_ar" = "x"; then
-            aros_kernel_ar=$aros_host_plain_ar
+            aros_kernel_ar="${kernel_tool_prefix}${AR_BASE} ${aros_kernel_ar_flags}"
         fi
+        AROS_BUILDCMD(aros_kernel_ar,$aros_kernel_ar,${kernel_tool_version})
         AROS_TOOL_KERNEL(aros_kernel_ar,ar,$aros_kernel_ar)
         AROS_REQUIRED(ar,$aros_kernel_ar)
         if test "x$aros_kernel_ranlib" = "x"; then
-            aros_kernel_ranlib=$aros_host_ranlib
+            aros_kernel_ranlib=${kernel_tool_prefix}${RANLIB_BASE}
         fi
+        AROS_BUILDCMD(aros_kernel_ranlib,$aros_kernel_ranlib,${kernel_tool_version})
         AROS_TOOL_KERNEL(aros_kernel_ranlib,ranlib,$aros_kernel_ranlib)
         AROS_REQUIRED(ranlib,$aros_kernel_ranlib)
         if test "x$aros_kernel_nm" = "x"; then
