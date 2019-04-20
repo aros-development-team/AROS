@@ -1,0 +1,177 @@
+## version $VER: sysexplorer.catalog 2.0 (20.04.2019)
+## language polski
+## codeset 5
+;
+;
+MSG_TITLE
+Eksplorator systemu
+; System Explorer
+;
+MSG_WINTITLE
+Eksplorator systemu
+; System Explorer
+;
+MSG_DESCRIPTION
+Informacje o systemie i sprzêcie
+; System and hardware information tool
+;
+MSG_MENU_PROJECT
+Projekt
+; Project
+;
+MSG_MENU_PROPERTIES
+Cechy
+; Properties
+;
+MSG_MENU_EXPANDALL
+Rozwiñ wszystko
+; Expand All
+;
+MSG_MENU_COLLAPSEALL
+Zwiñ wszystko
+; Collapse All
+;
+MSG_MENU_QUIT
+Skoñcz
+; Quit
+;
+MSG_HIDD_TREE
+Hierarchia HIDD
+; HIDD Tree
+;
+MSG_PROPERTIES
+Cechy
+; Properties
+;
+MSG_LABEL_DRIVER
+Nazwa jednostki sterownika
+; Driver instance name
+;
+MSG_LABEL_HW_DESCRIPTION
+Opis sprzêtu
+; Hardware description
+;
+MSG_LABEL_VENDOR
+Informacje o producencie
+; Vendor information
+;
+MSG_SYSTEM_PROPERTIES
+Cechy systemu
+; System properties
+;
+MSG_VERSION
+Wersja
+; Version
+;
+MSG_PROCESSORS
+Procesor(y)
+; Processors
+;
+MSG_HPET
+HPET
+; HPET
+;
+MSG_RAM
+Pamiêæ
+; Memory
+;
+MSG_BOOTLOADER
+Program rozruchowy
+; Boot loader
+;
+MSG_ARGUMENTS
+Argumenty rozruchu
+; Boot Arguments
+;
+MSG_AVAILABLE
+Dostêpny do u¿ytku
+; Available for use
+;
+MSG_GENERAL
+Ogólne
+; General
+;
+MSG_NAME
+Nazwa
+; Name
+;
+MSG_HARDWARE_NAME
+Nazwa sprzêtu
+; Hardware Name
+;
+MSG_PRODUCT_ID
+ID produktu
+; Product ID
+;
+MSG_PRODUCER_NAME
+Nazwa producenta
+; Vendor Name
+;
+MSG_PRODUCER_ID
+ID producenta
+; Vendor ID
+;
+MSG_DEVICE_PROPERTIES
+Cechy urz±dzenia
+; Device properties
+;
+MSG_ATA_PROPERTIES
+Cechy portu IDE
+; IDE bus properties
+;
+MSG_ATA
+Port IDE
+; IDE
+;
+MSG_USE_IOALT
+Wsparcie alternatywnych rejestrów
+; Supports alternate registers
+;
+MSG_USE_32BIT
+Wsparcie 32-bit PIO
+; Supports 32-bit PIO
+;
+MSG_USE_DMA
+Wsparcie DMA
+; Supports DMA
+;
+MSG_USE_80WIRE
+Kabel 80cio-¿ylowy 
+; 80-wire cable
+;
+MSG_ATA_UNIT_PROPERTIES
+Cechy portu IDE
+; IDE device properties
+;
+MSG_UNIT_NUMBER
+Numer jednostki
+; Unit number
+;
+MSG_MODEL
+Model
+; Model
+;
+MSG_REVISION
+Rewizja
+; Revision
+;
+MSG_SERIAL
+Port szeregowy
+; Serial
+;
+MSG_TRANSFER_MODES
+Wspierane tryby
+; Supported modes
+;
+MSG_MULTISECTOR
+Limit wielosektorowy
+; Multisector limit
+;
+MSG_REMOVABLE
+Urz±dzenie wymienne
+; Removable
+;
+MSG_CONFIG_MODES
+Skonfigurowane tryby
+; Configured modes
+;
