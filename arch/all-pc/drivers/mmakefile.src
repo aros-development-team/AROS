@@ -5,8 +5,10 @@
 # These are not needed as part of the kernel - and so get created seperately
 #
 
-#MM- AROS-pc-drivers : \
-#MM    hidd-vmwaresvga \
-#MM    hidd-radeon \
-#MM    hidd-nouveau \
-#MM    hidd-intelG45
+#MM- AROS-pci-gfx-drivers : \
+#MM    workbench-hidds-vmwaresvga \
+#MM    workbench-hidds-radeon \
+#MM    workbench-hidds-nouveau \
+#MM    devs-monitors-intelgma
+
+#MM- AROS-pc-drivers : AROS-pci-gfx-drivers
