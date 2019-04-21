@@ -1,0 +1,166 @@
+## version $VER: SysMon.catalog 1.2 (20.04.2019)
+## language polski
+## codeset 5
+;
+;
+;
+MSG_APP_NAME
+SysMon
+; SysMon
+;
+MSG_APP_TITLE
+Monitor Systemu
+; System Monitor
+;
+MSG_WINDOW_TITLE
+Monitor Systemu
+; System Monitor
+;
+MSG_USAGE
+Utylizacja
+; Usage
+;
+MSG_FREQUENCY
+Czêstotliwo¶æ
+; Frequency
+;
+MSG_TAB_TASKS
+Zadania
+; Tasks
+;
+MSG_TAB_CPU
+Procesor(y)
+; Processors
+;
+MSG_SIMULATED_CPU
+Symulowany AROS procesor
+; Simulated AROS processor
+;
+MSG_PROCESSOR
+Procesor #%id: %s
+; Processor #%id: %s
+;
+MSG_TASK
+Zadanie
+; Task
+;
+MSG_PROCESS
+Proces
+; Process
+;
+MSG_TASK_NAME
+Nazwa
+; Name
+;
+MSG_TASK_PRIORITY
+Priorytet
+; Priority
+;
+MSG_TASK_TYPE
+Typ
+; Type
+;
+MSG_TASK_READY_WAIT_INIT
+- gotowy, - czeka
+; - ready, - waiting
+;
+MSG_TASK_READY_WAIT
+%ld gotowy, %ld czeka
+; %ld ready, %ld waiting
+;
+MSG_TAB_SYSTEM
+System
+; System
+;
+MSG_MEMORY_SIZE
+Pamiêæ Systemu
+; Memory Size
+;
+MSG_MEMORY_FREE
+Wolna Pamiêæ
+; Memory Free
+;
+MSG_VIDEO_SIZE
+Rozmiar Pamiêci Graficznej
+; Video Size
+;
+MSG_VIDEO_FREE
+Wolna Pamiêæ Graficzna
+; Video Free
+;
+MSG_TOTAL_RAM
+Ca³kowity RAM
+; Total Memory
+;
+MSG_CHIP_RAM
+Chip RAM
+; Chip Memory
+;
+MSG_FAST_RAM
+Fast RAM
+; Fast Memory
+;
+MSG_VIDEO_RAM
+Pamiêæ Graficzna
+; Video Memory
+;
+MSG_VIDEO_WINDOW_TMPL
+%s
+; %s Window
+;
+MSG_CANT_OPEN_TASK_RESOURCE
+Nie mo¿na otworzyæ task.resource\n
+; Can't open task.resource\n
+;
+MSG_PROJECT
+Projekt
+; Project
+;
+MSG_REFRESH_SPEED
+Predko¶æ Od¶wierzania
+; Refresh Speed
+;
+MSG_FAST
+Szybko
+; Fast
+;
+MSG_NORMAL
+Normalnie
+; Normal
+;
+MSG_SLOW
+Wolno
+; Slow
+;
+MSG_TASK_TOMBSTONE
+<martwy>
+; <tombstone>
+;
+MSG_TASK_UNKNOWN
+<nieznany>
+; <unknown>
+;
+MSG_WINDOW_GART
+GART
+;GART
+;
+MSG_DISPLAY_MODE
+Tryb Wy¶wietlania
+;Display Mode
+;
+MSG_LOAD
+Utylizacja Procesora
+;Processor Load
+;
+MSG_GUAGE
+Rozmiar
+;Gauge
+;
+MSG_GRAPH
+Wykres
+;Graph
+;
+MSG_GRAPH_PER_PROC
+Wykres per Procesor
+;Graph Per Processor
+;

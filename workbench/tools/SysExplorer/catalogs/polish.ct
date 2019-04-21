@@ -1,14 +1,14 @@
-## version $VER: sysexplorer.catalog 2.0 (20.04.2019)
+## version $VER: sysexplorer.catalog 2.0 (21.04.2019)
 ## language polski
 ## codeset 5
 ;
 ;
 MSG_TITLE
-Eksplorator systemu
+Przegl±d Systemu
 ; System Explorer
 ;
 MSG_WINTITLE
-Eksplorator systemu
+Przegl±d Systemu
 ; System Explorer
 ;
 MSG_DESCRIPTION

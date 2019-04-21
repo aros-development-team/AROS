@@ -1,9 +1,9 @@
-## version $VER: Appearance.catalog 2.0 (06.09.2018)
+## version $VER: Appearance.catalog 2.1 (21.04.2019)
 ## language polski
 ## codeset 5
 ;
 MSG_WINTITLE
-Ustawienia motywów graficznych
+Ustawienia Motywów Graficznych
 ; Appearance Preferences
 ;
 MSG_OK
@@ -11,7 +11,7 @@ Ok
 ; Ok
 ;
 MSG_ENABLETHEMES
-Uaktywnij motywy graficzne
+Uaktywnij Motywy Graficzne
 ; Enable Theme'ing?
 ;
 MSG_PREVIEW
@@ -19,7 +19,7 @@ Podgl±d
 ; Preview
 ;
 MSG_NOPREVIEW
--Podgl±d niedostêpny-
+-Podgl±d Niedostêpny-
 ; -Preview Unavailable-
 ;
 MSG_SELECTEDTHEME
@@ -27,11 +27,11 @@ Motyw
 ; Theme
 ;
 MSG_ENABLEZUNEPREFS
-Przej±æ ustawienia Zune?
+Przej±æ Ustawienia Zune?
 ; Inherit Zune Configuration?
 ;
 MSG_ENABLEWANDPREFS
-Przej±æ ustawienia Wanderera?
+Przej±æ Ustawienia Wanderera?
 ; Inherit Wanderer Configuration?
 ;
 MSG_SEC_THEMING
@@ -43,22 +43,22 @@ Kompozycja
 ; Compositing
 ;
 MSG_ENABLE_SCREEN_COMPOSITION
-Uaktywnij kompozycjê ekranu
+Uaktywnij Komponowanie Ekranu
 ; Enable Screen Composition
 ;
 MSG_COMPOSITE_BELOW
-Nakladaæ poni¿ej
+Nak³adaæ Poni¿ej
 ; Composite Below
 ;
 MSG_COMPOSITE_LEFT
-Nakladaæ po lewej
+Nak³adaæ po Lewej
 ; Composite Left
 ;
 MSG_COMPOSITE_RIGHT
-Nakladaæ po prawej
+Nak³adaæ po Prawej
 ; Composite Right
 ;
 MSG_ENABLE_COMPOSITE_WITH_ALPHA
-Uaktywnij kompozycjê z przezroczysto¶ci±
+Uaktywnij Kompozycjê z Przezroczysto¶ci±
 ; Enable Compositing with Alpha
 ;
