@@ -804,6 +804,7 @@ aros_kernel_ld
 aros_kernel_cxx
 aros_kernel_cc
 aros_kernel_cpp
+target_llvm_version
 target_gcc_version
 ant
 android_tool
@@ -949,6 +950,7 @@ enable_crosstools
 with_aros_toolchain_install
 with_binutils_version
 with_gcc_version
+with_llvm_version
 enable_objc
 enable_java
 with_cpu
@@ -1707,6 +1709,8 @@ Optional Packages:
                           Use binutils-VERSION for building AROS
   --with-gcc-version=VERSION
                           Compile gcc-VERSION for AROS
+  --with-llvm-version=VERSION
+                          Compile llvm-VERSION for AROS
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_default_fpu).
   --with-float=<spec>     Specify floating point ABI
@@ -2824,6 +2828,7 @@ default_toolchain_family=`cat ${srcdir}/config/toolchain_def`
 default_gcc_version=`cat ${srcdir}/config/gcc_def`
 exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_binutils_version=`cat ${srcdir}/config/binutils_def`
+default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version="2.02"
 target_grub2_version=$default_grub2_version
@@ -9742,6 +9747,58 @@ $as_echo "release" >&6; }
     fi
 fi
 
+# Helper to identify llvm version
+
+
+if test "$aros_toolchain" = "llvm" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target llvm version to use" >&5
+$as_echo_n "checking what specific target llvm version to use... " >&6; }
+fi
+
+# Check whether --with-llvm-version was given.
+if test "${with_llvm_version+set}" = set; then :
+  withval=$with_llvm_version; use_llvm_version="$withval"
+else
+  use_llvm_version=""
+fi
+
+if test "$use_llvm_version" = ""; then
+    if test "${crosstools}" = "no"; then
+      if test "x$aros_toolchain_install" != "x"; then
+
+  target_llvm_version=""
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking llvm version" >&5
+$as_echo_n "checking llvm version... " >&6; }
+if ${ax_cv_llvm_version+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    ax_cv_llvm_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}$(toolchain_cpp_opts) -dumpversion`"
+    if test "x$ax_cv_llvm_version" = "x"; then :
+
+      ax_cv_llvm_version=""
+
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_llvm_version" >&5
+$as_echo "$ax_cv_llvm_version" >&6; }
+  target_llvm_version=$ax_cv_llvm_version
+
+
+      fi
+    fi
+    if test "$use_llvm_version" = ""; then
+        target_llvm_version="$default_llvm_version"
+    fi
+else
+    target_llvm_version="$use_llvm_version"
+fi
+if test "$aros_toolchain" = "llvm" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_llvm_version" >&5
+$as_echo "$target_llvm_version" >&6; }
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable Objective-C suppport" >&5
 $as_echo_n "checking whether to enable Objective-C suppport... " >&6; }
 # Check whether --enable-objc was given.
@@ -16129,6 +16186,7 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # C compiler related
+
 
 
 

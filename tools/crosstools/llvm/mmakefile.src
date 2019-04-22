@@ -5,6 +5,12 @@ include $(SRCDIR)/config/aros.cfg
 # LLVM toolchain
 #
 
+ifeq ($(TARGET_LLVM_VER),)
+    LLVM_BUILD_VERSION:=$(LLVM_VERSION)
+else
+    LLVM_BUILD_VERSION:=$(TARGET_LLVM_VER)
+endif
+
 LLVM_REPOSITORY   := http://llvm.org/releases/$(LLVM_VERSION)
 LLVM_ARCHBASE     := llvm-$(LLVM_VERSION).src
 LLVMLLD_ARCHBASE  := lld-$(LLVM_VERSION).src
