@@ -15903,6 +15903,44 @@ fi
 aros_target_options+="$export_newline""# Enable Nouveau Gfx Driver$export_newline""OPT_GFX_NOUVEAU               := no$export_newline"
 
 
+CC=$CC
+CFLAGS=$CFLAGS
+CHMOD=$CHMOD
+CP=$CP
+ECHO=$ECHO
+FLEX=$FLEX
+MV=$MV
+NOP=$NOP
+PATCH=$PATCH
+PNGTOPNM=$PNGTOPNM
+PPMTOILBM=$PPMTOILBM
+SED=$SED
+SORT=$SORT
+TOUCH=$TOUCH
+UNIQ=$UNIQ
+
+aros_config_cflags=$aros_config_cflags
+aros_config_cppflags=$aros_config_cppflags
+aros_config_cxxflags=$aros_config_cxxflags
+
+aros_c_libs=$aros_c_libs
+aros_cxx_libs=$aros_cxx_libs
+
+aros_host_ldflags=$aros_host_ldflags
+aros_host_strip=$aros_host_strip
+aros_host_x11_ldflags=$aros_host_x11_ldflags
+
+aros_kernel_ar=$aros_kernel_ar
+aros_kernel_as=$aros_kernel_as
+aros_kernel_cc=$aros_kernel_cc
+aros_kernel_cflags=$aros_kernel_cflags
+aros_kernel_cppflags=$aros_kernel_cppflags
+aros_kernel_cxx=$aros_kernel_cxx
+aros_kernel_nm=$aros_kernel_nm
+aros_kernel_objcopy=$aros_kernel_objcopy
+aros_kernel_objdump=$aros_kernel_objdump
+aros_kernel_ranlib=$aros_kernel_ranlib
+
 # Generic
 
 

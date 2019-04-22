@@ -3118,6 +3118,45 @@ dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
 
+dnl strip trailing spaces ...
+CC=m4_normalize($CC)
+CFLAGS=m4_normalize($CFLAGS)
+CHMOD=m4_normalize($CHMOD)
+CP=m4_normalize($CP)
+ECHO=m4_normalize($ECHO)
+FLEX=m4_normalize($FLEX)
+MV=m4_normalize($MV)
+NOP=m4_normalize($NOP)
+PATCH=m4_normalize($PATCH)
+PNGTOPNM=m4_normalize($PNGTOPNM)
+PPMTOILBM=m4_normalize($PPMTOILBM)
+SED=m4_normalize($SED)
+SORT=m4_normalize($SORT)
+TOUCH=m4_normalize($TOUCH)
+UNIQ=m4_normalize($UNIQ)
+
+aros_config_cflags=m4_normalize($aros_config_cflags)
+aros_config_cppflags=m4_normalize($aros_config_cppflags)
+aros_config_cxxflags=m4_normalize($aros_config_cxxflags)
+
+aros_c_libs=m4_normalize($aros_c_libs)
+aros_cxx_libs=m4_normalize($aros_cxx_libs)
+
+aros_host_ldflags=m4_normalize($aros_host_ldflags)
+aros_host_strip=m4_normalize($aros_host_strip)
+aros_host_x11_ldflags=m4_normalize($aros_host_x11_ldflags)
+
+aros_kernel_ar=m4_normalize($aros_kernel_ar)
+aros_kernel_as=m4_normalize($aros_kernel_as)
+aros_kernel_cc=m4_normalize($aros_kernel_cc)
+aros_kernel_cflags=m4_normalize($aros_kernel_cflags)
+aros_kernel_cppflags=m4_normalize($aros_kernel_cppflags)
+aros_kernel_cxx=m4_normalize($aros_kernel_cxx)
+aros_kernel_nm=m4_normalize($aros_kernel_nm)
+aros_kernel_objcopy=m4_normalize($aros_kernel_objcopy)
+aros_kernel_objdump=m4_normalize($aros_kernel_objdump)
+aros_kernel_ranlib=m4_normalize($aros_kernel_ranlib)
+
 # Generic
 AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
