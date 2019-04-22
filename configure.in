@@ -2401,7 +2401,7 @@ else
         AROS_REQUIRED(as,$aros_kernel_as)
 
         if test "x$aros_kernel_ar" = "x"; then
-            aros_kernel_ar="${kernel_tool_prefix}${AR_BASE} ${aros_kernel_ar_flags}"
+            aros_kernel_ar="${kernel_tool_prefix}${AR_BASE}"
         fi
         AROS_BUILDCMD(aros_kernel_ar,$aros_kernel_ar,${kernel_tool_version})
         AROS_TOOL_KERNEL(aros_kernel_ar,ar,$aros_kernel_ar)

@@ -11121,7 +11121,7 @@ if test "$req_avail" = "no"; then
 fi
 
         if test "x$aros_kernel_ar" = "x"; then
-            aros_kernel_ar="${kernel_tool_prefix}${AR_BASE} ${aros_kernel_ar_flags}"
+            aros_kernel_ar="${kernel_tool_prefix}${AR_BASE}"
         fi
         if test "${kernel_tool_version}" != ""; then
     if test "$aros_kernel_ar" != ""; then
