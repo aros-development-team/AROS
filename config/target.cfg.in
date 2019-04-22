@@ -25,6 +25,7 @@ AROS_TOOLCHAIN                := @aros_toolchain@
 
 TARGET_BINUTILS_VER           := @target_binutils_version@
 TARGET_GCC_VER                := @target_gcc_version@
+TARGET_LLVM_VER               := @target_llvm_version@
 
 # Bootloader to use on platforms that support it
 AROS_TARGET_BOOTLOADER        := @aros_target_bootloader@
