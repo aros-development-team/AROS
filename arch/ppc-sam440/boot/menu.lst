@@ -54,6 +54,9 @@ title AROS on Sam4x0
     module Devs/shell.resource
     module Devs/shellcommands.resource
     module Devs/Drivers/sm502gfx.hidd
+    module Devs/Drivers/system.hidd
+    module Devs/Drivers/storage.hidd
+    module Devs/Drivers/bus.hidd
     module boot/sam440/Devs/timer.device
     module Devs/usbromstartup.resource
     module Libs/utility.library
@@ -110,6 +113,9 @@ title AROS on Sam4x0 Debug
     module Devs/shell.resource
     module Devs/shellcommands.resource
     module Devs/Drivers/sm502gfx.hidd
+    module Devs/Drivers/system.hidd
+    module Devs/Drivers/storage.hidd
+    module Devs/Drivers/bus.hidd
     module boot/sam440/Devs/timer.device
     module Devs/usbromstartup.resource
     module Libs/utility.library
