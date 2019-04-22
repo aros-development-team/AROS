@@ -17,15 +17,40 @@ LLVM_CMAKETARGET  :=
 LLVM_CMAKEOPTIONS :=  \
     -DDEFAULT_SYSROOT="$(AROS_DEVELOPER)" \
     -DCMAKE_INSTALL_BINDIR="$(CROSSTOOLSDIR)" \
-    -DLLVM_EXTERNAL_LLD_SOURCE_DIR:PATH="$(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE)" \
-    -DLLVM_EXTERNAL_CLANG_SOURCE_DIR:PATH="$(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE)" \
     -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) \
     -DLLVM_DEFAULT_TARGET_TRIPLE=$(AROS_TARGET_CPU)-unknown-aros \
-    -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF
+    -DLLVM_INCLUDE_TESTS=OFF \
+    -DLLVM_INCLUDE_EXAMPLES=OFF
+
 ifeq ($(AROS_HOST_ARCH),linux)
 LLVM_CMAKEOPTIONS += -DBUILD_SHARED_LIBS=ON
 # LLVM_CMAKEOPTIONS += -DLLVM_LINK_LLVM_DYLIB=ON
 endif
+
+#LLVM_CMAKEOPTIONS +=--DLLVM_EXTERNAL_LLD_SOURCE_DIR:PATH="$(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE)"
+#LLVM_CMAKEOPTIONS +=--DLLVM_EXTERNAL_CLANG_SOURCE_DIR:PATH="$(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE)"
+
+#LLVM_CMAKEOPTIONS +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+#MM
+crosstools-llvm-remdirs:
+	$(Q)$(ECHO) "Removing LLVM tool dirs..."
+	$(Q)$(IF) $(TEST) -d $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/lld; then \
+		$(MV) $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/lld $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE) ; \
+	fi
+	$(Q)$(IF) $(TEST) -d $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/clang; then \
+		$(MV) $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/clang $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE) ; \
+	fi
+
+#MM
+crosstools-llvm-adddirs:
+	$(Q)$(ECHO) "Adding LLVM tool dirs..."
+	$(Q)$(IF) $(TEST) -d $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE); then \
+		$(MV) $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE) $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/lld ; \
+	fi
+	$(Q)$(IF) $(TEST) -d $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE); then \
+		$(MV) $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE) $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)/tools/clang ; \
+	fi
 
 %fetch mmake=crosstools-clang-fetch archive=$(CLANG_ARCHBASE)  \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -34,7 +59,7 @@ endif
 
 %create_patch mmake=crosstools-clang-create-patch \
     archive=$(CLANG_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/clang
+    destination=$(HOSTDIR)/Ports/host/clang prediff=crosstools-llvm-remdirs 
 
 %fetch mmake=crosstools-llvm-lld-fetch archive=$(LLVMLLD_ARCHBASE) \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -42,7 +67,7 @@ endif
 
 %create_patch mmake=crosstools-llvm-lld-create-patch \
     archive=$(LLVMLLD_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/llvm-lld
+    destination=$(HOSTDIR)/Ports/host/llvm-lld prediff=crosstools-llvm-remdirs 
 
 %fetch mmake=crosstools-llvm-fetch archive=$(LLVM_ARCHBASE) \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz" \
@@ -51,7 +76,7 @@ endif
 
 %create_patch mmake=crosstools-llvm-create-patch \
     archive=$(LLVM_ARCHBASE) suffixes="tar.xz" \
-    destination=$(HOSTDIR)/Ports/host/llvm
+    destination=$(HOSTDIR)/Ports/host/llvm prediff=crosstools-llvm-remdirs 
 
 #MM crosstools-llvm-fetch : crosstools-clang-fetch crosstools-llvm-lld-fetch
 
@@ -63,5 +88,5 @@ endif
 #MM- crosstools-llvm-quick : setup crosstools-llvm-fetch
 
 %build_with_cmake mmake=crosstools-llvm package=llvm srcdir=$(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) \
-    	prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
-	extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host
+    prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) \
+    extraoptions="$(LLVM_CMAKEOPTIONS)" precmake=crosstools-llvm-adddirs compiler=host
