@@ -3582,6 +3582,7 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
+    precmake=  postcmake= \
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags= \
     usecxxflags=yes extracxxflags= \
@@ -3695,7 +3696,7 @@ $(%(mmake)-touchfileflag):
 endif
 
 #MM
-%(mmake)-cmake : $(%(mmake)-cmakeflag)
+%(mmake)-cmake : %(precmake) $(%(mmake)-cmakeflag) %(postcmake)
 
 $(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
 $(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
@@ -3802,7 +3803,7 @@ endif
 #     - destination = the directory to unpack the archive to.
 #     - excludes    = diff patterns to exclude files or directories from the patch
 
-%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" destination=/A excludes=
+%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" destination=/A excludes= prediff= postdiff=
 
 .PHONY: %(mmake)
 
@@ -3816,8 +3817,8 @@ else
     %(mmake)-srcdir   := %(archive)
 endif
 
-#MM- %(mmake) : %(mmake)-diff
-#MM- %(mmake)-quick : %(mmake)-diff
+#MM- %(mmake) : %(prediff) %(mmake)-diff %(postdiff)
+#MM- %(mmake)-quick : %(prediff) %(mmake)-diff %(postdiff)
 
 #MM
 %(mmake)-diff:
@@ -3827,7 +3828,7 @@ endif
 	$(FOR) f in %(excludes) ; do \
 	    $(ECHO) $$f >> ./exclude.patterns ; \
 	done ; \
-    $(ECHO) "Creating   \`%(archive)-aros-new.diff'" ; \
+	$(ECHO) "Creating   \`%(archive)-aros-new.diff'" ; \
 	diff -ruN $(%(mmake)-exclude) \
 	    $(%(mmake)-srcdir) \
 	    $(%(mmake)-srcdir).aros \
