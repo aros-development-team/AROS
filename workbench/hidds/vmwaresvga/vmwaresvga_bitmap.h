@@ -40,20 +40,20 @@ struct Box
 };
 
 struct HWRegs {
-	UBYTE clt[768];
+    UBYTE clt[768];
 };
 
 struct BitmapData {
-	struct HWRegs       regs;
-	struct HWData       *data;
-	UBYTE               *VideoData;             /* Pointing to video data */
-	ULONG               width;                  /* Width of bitmap */
-	ULONG               height;                 /* Height of bitmap */
-	UBYTE               bytesperpix;
-	ULONG               cmap[16];               /* ColorMap */
-	BYTE                bpp;                    /* 8 -> chunky; planar otherwise */
-	BYTE                disp;                   /* !=0 - displayable */
-	struct MouseData    *mouse;
+    struct HWRegs       regs;
+    struct HWData       *data;
+    UBYTE               *VideoData;             /* Pointing to video data */
+    ULONG               width;                  /* Width of bitmap */
+    ULONG               height;                 /* Height of bitmap */
+    UBYTE               bytesperpix;
+    ULONG               cmap[16];               /* ColorMap */
+    BYTE                bpp;                    /* 8 -> chunky; planar otherwise */
+    BYTE                disp;                   /* !=0 - displayable */
+    struct MouseData    *mouse;
 };
 
 /* Only include vmwaresvgahardware.h now so that struct Box is known */
