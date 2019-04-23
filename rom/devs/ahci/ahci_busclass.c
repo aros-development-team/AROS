@@ -44,7 +44,7 @@ static AROS_INTH1(ahciBus_Reset, struct ahci_Bus *, bus)
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_busclass--
 
     LOCATION
         CLID_Hidd_AHCIBus

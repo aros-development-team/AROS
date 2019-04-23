@@ -35,7 +35,7 @@ static void ahci_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_unitclass--
 
     LOCATION
         IID_Hidd_AHCIUnit
