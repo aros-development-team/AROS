@@ -56,8 +56,8 @@ VOID UpdateVideoStaticInformation(struct SysMonData * smdata)
     TEXT buffer[64] = {0};
     struct TagItem memTags[] =
     {
-        {vHidd_Gfx_MemTotal,            0       },
-        {vHidd_Gfx_MemAddressableTotal, 0       },
+        {tHidd_Gfx_MemTotal,            0       },
+        {tHidd_Gfx_MemAddressableTotal, 0       },
         {TAG_DONE,                      0       }
     };
 
@@ -75,8 +75,8 @@ VOID UpdateVideoInformation(struct SysMonData * smdata)
     TEXT buffer[64] = {0};
     struct TagItem memTags[] =
     {
-        {vHidd_Gfx_MemFree,             0       },
-        {vHidd_Gfx_MemAddressableFree,  0       },
+        {tHidd_Gfx_MemFree,             0       },
+        {tHidd_Gfx_MemAddressableFree,  0       },
         {TAG_DONE,                      0       }
     };
 
