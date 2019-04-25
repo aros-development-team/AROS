@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script for building AROS from the Subversion repository
+# Script for building AROS from the Subversion or GIT repository
 
 # Currently only a limited amount of Linux distros is supported.
 # If you improve this script, send modifications back to me, please.
@@ -8,7 +8,7 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos-v1.sh 1.13 (03.09.2017)
+# $VER: gimmearos-v1.sh 1.14 (25.04.2019)
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -79,9 +79,10 @@ case "$input" in
         install_pkg "apt-get install" liblzo2-dev
         install_pkg "apt-get install" libxxf86vm-dev
         install_pkg "apt-get install" libpng-dev
-        install_pkg "apt-get install" gcc-multilib
         install_pkg "apt-get install" libsdl1.2-dev
         install_pkg "apt-get install" byacc
+        install_pkg "apt-get install" python-mako
+        install_pkg "apt-get install" libxcursor-dev
         ;;
 
     2 ) echo -e "\nInstalling prerequisites with apt-get..."
@@ -106,6 +107,8 @@ case "$input" in
         install_pkg "apt-get install" gcc-multilib
         install_pkg "apt-get install" libsdl1.2-dev
         install_pkg "apt-get install" byacc
+        install_pkg "apt-get install" python-mako
+        install_pkg "apt-get install" libxcursor-dev
 
         install_pkg "apt-get install" libc6-dev-i386
         install_pkg "apt-get install" lib32gcc1
