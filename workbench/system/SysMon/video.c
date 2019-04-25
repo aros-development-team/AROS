@@ -11,11 +11,13 @@
 #include <proto/graphics.h>
 #include <proto/oop.h>
 #include <hidd/gfx.h>
-OOP_Object * gfxhidd;
+
 #undef HiddBitMapAttrBase
 OOP_AttrBase HiddGfxAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;
+
 struct Library * OOPBase = NULL;
+OOP_Object * gfxhidd;
 
 /* Videofunctions */
 static BOOL InitVideo(struct SysMonData *smdata)
@@ -38,7 +40,7 @@ static BOOL InitVideo(struct SysMonData *smdata)
 
     wbscreen = LockPubScreen(NULL);
     OOP_GetAttr(HIDD_BM_OBJ(wbscreen->RastPort.BitMap), aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
-    bug("[SysMon:Video] %s: gfxhidd @ 0x%p\n", __func__, gfxhidd);
+    D(bug("[SysMon:Video] %s: gfxhidd @ 0x%p\n", __func__, gfxhidd);)
     UnlockPubScreen(NULL, wbscreen);
 
     return TRUE;
@@ -61,7 +63,7 @@ VOID UpdateVideoStaticInformation(struct SysMonData * smdata)
         {TAG_DONE,                      0       }
     };
 
-    bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);
+    D(bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);)
     OOP_GetAttr(gfxhidd, aHidd_Gfx_MemoryAttribs, (IPTR *)memTags);
 
     __sprintf(buffer, "%ld kB", (ULONG)(memTags[0].ti_Data / 1024));
@@ -80,7 +82,7 @@ VOID UpdateVideoInformation(struct SysMonData * smdata)
         {TAG_DONE,                      0       }
     };
 
-    bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);
+    D(bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);)
     OOP_GetAttr(gfxhidd, aHidd_Gfx_MemoryAttribs, (IPTR *)memTags);
 
     __sprintf(buffer, "%ld kB", (ULONG)(memTags[0].ti_Data / 1024));
