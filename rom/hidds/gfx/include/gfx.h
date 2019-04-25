@@ -34,10 +34,10 @@ typedef OOP_Object *HIDDT_GC;
 #define vHidd_SpriteType_2Plus1      0x02 /* Color 0 transparrent, 1 undefined, 2-3 visible */
 #define vHidd_SpriteType_DirectColor 0x04 /* Hi- or truecolor image                          */
 
-#define tHidd_GfxMode_BASE              TAG_USER
-#define tHidd_Gfx_QuerModeBASE          (tHidd_GfxMode_BASE + 0x1000)
-#define tHidd_Gfx_CursorBASE            (tHidd_GfxMode_BASE + 0x2000)
-#define tHidd_Gfx_MemAttribBASE         (tHidd_GfxMode_BASE + 0x3000)
+#define tHidd_Gfx_BASE                  TAG_USER
+#define tHidd_Gfx_QuerModeBASE          (tHidd_Gfx_BASE + 0x1000)
+#define tHidd_Gfx_CursorBASE            (tHidd_Gfx_BASE + 0x2000)
+#define tHidd_Gfx_MemAttribBASE         (tHidd_Gfx_BASE + 0x3000)
 
 /* Parameter tags for the QueryModeIDs method */
 enum
