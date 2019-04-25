@@ -534,13 +534,14 @@ enum
 
 #define CLID_Hidd_Gfx IID_Hidd_Gfx
 
+/* Parameter tags for the MemoryAttribs attribute */
 enum
 {
-    vHidd_Gfx_MemTotal,
-    vHidd_Gfx_MemFree,
-    vHidd_Gfx_MemAddressableTotal,                         //
-    vHidd_Gfx_MemAddressableFree,
-    vHidd_Gfx_MemClock,                                         //video card's memory clock in Hz
+    tHidd_Gfx_MemTotal,                         // Total video memory
+    tHidd_Gfx_MemFree,                          // unused video memory
+    tHidd_Gfx_MemAddressableTotal,              // Total addressable video memory
+    tHidd_Gfx_MemAddressableFree,               // unused addressable video memory
+    tHidd_Gfx_MemClock,                         // video card's memory clock in Hz
 };
 
 /* Compatability types */
