@@ -162,6 +162,7 @@ BOOL CreateApplication(struct SysMonData * smdata)
                         End),
                 WindowContents,
                     smdata->pages = RegisterGroup(smdata->tabs),
+                        MUIA_CycleChain, 1,
                         Child, (VGroup,
                             Child, ListviewObject, 
                                 MUIA_Listview_List, (IPTR)smdata->tasklist,
