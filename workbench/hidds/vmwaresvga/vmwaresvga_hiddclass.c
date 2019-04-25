@@ -344,12 +344,12 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                     {
                         switch(matag->ti_Tag)
                         {
-                            case vHidd_Gfx_MemTotal:
-                            case vHidd_Gfx_MemAddressableTotal:
+                            case tHidd_Gfx_MemTotal:
+                            case tHidd_Gfx_MemAddressableTotal:
                                 matag->ti_Data = (IPTR)vmwareReadReg(&XSD(cl)->data, SVGA_REG_VRAM_SIZE);
                                 break;
-                            case vHidd_Gfx_MemFree:
-                            case vHidd_Gfx_MemAddressableFree:
+                            case tHidd_Gfx_MemFree:
+                            case tHidd_Gfx_MemAddressableFree:
                                 matag->ti_Data = 0;
                                 break;
                         }
