@@ -732,28 +732,28 @@ VOID METHOD(Nouveau, Root, Get)
                     {
                         switch(matag->ti_Tag)
                         {
-                            case vHidd_Gfx_MemTotal:
+                            case tHidd_Gfx_MemTotal:
                                 {
                                     UQUAD value;
                                     nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_SIZE, &value);
                                     matag->ti_Data = (IPTR)value;
                                 }
                                 break;
-                            case vHidd_Gfx_MemAddressableTotal:
+                            case tHidd_Gfx_MemAddressableTotal:
                                 {
                                     UQUAD value;
                                     nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_SIZE, &value);
                                     matag->ti_Data = (IPTR)value;
                                 }
                                 break;
-                            case vHidd_Gfx_MemFree:
+                            case tHidd_Gfx_MemFree:
                                 {
                                     UQUAD value;
                                     nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_FREE, &value);
                                     matag->ti_Data = (IPTR)value;
                                 }
                                 break;
-                            case vHidd_Gfx_MemAddressableFree:
+                            case tHidd_Gfx_MemAddressableFree:
                                 {
                                     UQUAD value;
                                     nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_FREE, &value);
