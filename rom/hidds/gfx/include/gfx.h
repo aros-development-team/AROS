@@ -35,14 +35,14 @@ typedef OOP_Object *HIDDT_GC;
 #define vHidd_SpriteType_DirectColor 0x04 /* Hi- or truecolor image                          */
 
 #define tHidd_GfxMode_BASE              TAG_USER
-#define tHidd_GfxMode_QueryBASE         (tHidd_GfxMode_BASE + 0x1000)
-#define tHidd_GfxMode_CursorBASE        (tHidd_GfxMode_BASE + 0x2000)
-#define tHidd_GfxMode_MemAttribBASE     (tHidd_GfxMode_BASE + 0x3000)
+#define tHidd_Gfx_QuerModeBASE          (tHidd_GfxMode_BASE + 0x1000)
+#define tHidd_Gfx_CursorBASE            (tHidd_GfxMode_BASE + 0x2000)
+#define tHidd_Gfx_MemAttribBASE         (tHidd_GfxMode_BASE + 0x3000)
 
 /* Parameter tags for the QueryModeIDs method */
 enum
 {
-    tHidd_GfxMode_MinWidth = tHidd_GfxMode_QueryBASE,
+    tHidd_GfxMode_MinWidth = tHidd_Gfx_QuerModeBASE,
     tHidd_GfxMode_MaxWidth,
     tHidd_GfxMode_MinHeight,
     tHidd_GfxMode_MaxHeight,
@@ -114,7 +114,7 @@ struct HIDD_ViewPortData
 
 enum
 {
-    tHidd_Cursor_BitMap = tHidd_GfxMode_CursorBASE,     /* OOP_Object *, cursor shape bitmap */
+    tHidd_Cursor_BitMap = tHidd_Gfx_CursorBASE,         /* OOP_Object *, cursor shape bitmap */
     tHidd_Cursor_XPos,                                  /* ULONG, cursor x position     */
     tHidd_Cursor_YPos,                                  /* ULONG, cursor Y position */
     tHidd_Cursor_On                                     /* BOOL, cursor on, TRUE, FALSE. */
@@ -542,7 +542,7 @@ enum
 /* Parameter tags for the MemoryAttribs attribute */
 enum
 {
-    tHidd_Gfx_MemTotal = tHidd_GfxMode_MemAttribBASE,   // Total video memory
+    tHidd_Gfx_MemTotal = tHidd_Gfx_MemAttribBASE,       // Total video memory
     tHidd_Gfx_MemFree,                                  // unused video memory
     tHidd_Gfx_MemAddressableTotal,                      // Total addressable video memory
     tHidd_Gfx_MemAddressableFree,                       // unused addressable video memory
