@@ -12,6 +12,8 @@
 #include <proto/oop.h>
 #include <hidd/gfx.h>
 
+#define DVMEM(x)
+
 #undef HiddBitMapAttrBase
 OOP_AttrBase HiddGfxAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;
@@ -63,7 +65,7 @@ VOID UpdateVideoStaticInformation(struct SysMonData * smdata)
         {TAG_DONE,                      0       }
     };
 
-    D(bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);)
+    DVMEM(bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);)
     OOP_GetAttr(gfxhidd, aHidd_Gfx_MemoryAttribs, (IPTR *)memTags);
 
     __sprintf(buffer, "%ld kB", (ULONG)(memTags[0].ti_Data / 1024));
@@ -82,7 +84,7 @@ VOID UpdateVideoInformation(struct SysMonData * smdata)
         {TAG_DONE,                      0       }
     };
 
-    D(bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);)
+    DVMEM(bug("[SysMon:Video] %s: memTags @ 0x%p\n", __func__, memTags);)
     OOP_GetAttr(gfxhidd, aHidd_Gfx_MemoryAttribs, (IPTR *)memTags);
 
     __sprintf(buffer, "%ld kB", (ULONG)(memTags[0].ti_Data / 1024));
