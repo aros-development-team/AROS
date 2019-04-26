@@ -6,12 +6,6 @@
     Lang: English.
 */
 
-#ifdef DEBUG
-#undef DEBUG
-#endif
-#define DEBUG 0
-#include <aros/debug.h>
-
 #define __OOP_NOATTRBASES__
 
 #include <proto/oop.h>
@@ -50,88 +44,105 @@ static struct OOP_ABDescr attrbases[] =
     { NULL,                         NULL                            }
 };
 
+#define DEBUGNAME "[VMWareSVGA:OnBitMap]"
 #define MNAME_ROOT(x) VMWareSVGAOnBM__Root__ ## x
 #define MNAME_BM(x) VMWareSVGAOnBM__Hidd_BitMap__ ## x
 
 #define OnBitmap 1
 #include "vmwaresvga_bitmap_common.c"
 
+/*
+  include our debug overides after bitmap_common incase it sets its own values...
+ */
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*********** BitMap::New() *************************************/
 
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("VMWareSVGA.BitMap::New()\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-        struct BitmapData *data;
+        struct BitmapData *data = OOP_INST_DATA(cl, o);
         LONG multi=1;
         OOP_Object *pf;
         IPTR width, height, depth;
         HIDDT_ModeID modeid;
 
-        data = OOP_INST_DATA(cl, o);
         /* clear all data  */
         memset(data, 0, sizeof(struct BitmapData));
+
         /* Get attr values */
+        
         OOP_GetAttr(o, aHidd_BitMap_Width, &width);
         OOP_GetAttr(o, aHidd_BitMap_Height, &height);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
         ASSERT (width != 0 && height != 0 && depth != 0);
+
         /* 
             We must only create depths that are supported by the friend drawable
             Currently we only support the default depth
         */
 
-        width=(width+15) & ~15;
+        width = (width + 15) & ~15;
         data->width = width;
         data->height = height;
         data->bpp = depth;
         data->disp = -1;
-        if (depth>16)
+        if (depth > 16)
             multi = 4;
-        else if (depth>8)
+        else if (depth > 8)
             multi = 2;
         data->bytesperpix = multi;
+
         data->data = &XSD(cl)->data;
         data->mouse = &XSD(cl)->mouse;
-        data->VideoData = data->data->vrambase;
+
         /* We should be able to get modeID from the bitmap */
         OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-        if (modeid != vHidd_ModeID_Invalid)
-        {
-            /*
-                Because of not defined BitMap_Show method show 
-                bitmap immediately
-            */
-            setModeVMWareSVGA(&XSD(cl)->data, width, height);
-            XSD(cl)->visible = data;	/* Set created object as visible */
-            ReturnPtr("VMWareSVGA.BitMap::New()", OOP_Object *, o);
-        }
+        if (modeid == vHidd_ModeID_Invalid)
         {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
             OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+            o = NULL;
         }
-        o = NULL;
+        else
+        {
+            InitSemaphore(&data->bmsem);
+            data->VideoData = data->data->vrambase;
+            XSD(cl)->visible = o;
+#if !defined(VMWAREGFX_UPDATEFBONSHOWVP)
+            setModeVMWareSVGA(&XSD(cl)->data, XSD(cl)->prefWidth, XSD(cl)->prefHeight);
+#else
+            initDisplayVMWareSVGA(&XSD(cl)->data);
+#endif
+        }
     } /* if created object */
-    ReturnPtr("VMWareSVGA.BitMap::New()", OOP_Object *, o);
+
+    D(bug(DEBUGNAME " %s: returning 0x%p\n", __func__, o));
+    return o;
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    EnterFunc(bug("VMWareSVGA.BitMap::Dispose()\n")); 
+    D(bug(DEBUGNAME " %s()\n", __func__);)
     OOP_DoSuperMethod(cl, o, msg);
-    ReturnVoid("VMWareSVGA.BitMap::Dispose");
 }
 
 /*** init_onbmclass *********************************************************/
 
 static int VMWareSVGAOnBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("VMWareSVGAOnBM_Init\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
 
     ReturnInt("VMWareSVGAOnBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
 }
@@ -140,7 +151,7 @@ static int VMWareSVGAOnBM_Init(LIBBASETYPEPTR LIBBASE)
 
 static int VMWareSVGAOnBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("VMWareSVGAOnBM_Expunge\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
 
     OOP_ReleaseAttrBases(attrbases);
 
