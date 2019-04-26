@@ -80,6 +80,13 @@ VMWareSVGA_WSCtx_SurfaceReloc(struct svga_winsys_context *swc,
                            unsigned flags)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+
+    if (!surface) {
+        *where = SVGA3D_INVALID_ID;
+        if (mobid)
+            *mobid = SVGA3D_INVALID_ID;
+        return;
+    }
 }
 
 static void
@@ -89,7 +96,9 @@ VMWareSVGA_WSCtx_RegionReloc(struct svga_winsys_context *swc,
                           uint32 offset,
                           unsigned flags)
 {
+    struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+    ++hiddwsctx->region.staged;
 }
 
 static void
@@ -126,7 +135,9 @@ VMWareSVGA_WSCtx_ShaderReloc(struct svga_winsys_context *swc,
 			  struct svga_winsys_gb_shader *shader,
                           unsigned flags)
 {
+    struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+    ++hiddwsctx->shader.staged;
 }
 
 static void
@@ -182,16 +193,23 @@ VMWareSVGA_WSCtx_ShaderCreate(struct svga_winsys_context *swc,
                                      const uint32 *bytecode,
                                      uint32 bytecodeLen)
 {
+    struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
+
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
 
-    return NULL;
+    return hiddwsctx->wscsws->shader_create(hiddwsctx->wscsws, shaderType, bytecode,
+                                    bytecodeLen);
 }
 
 static void
 VMWareSVGA_WSCtx_ShaderDestroy(struct svga_winsys_context *swc,
                                       struct svga_winsys_gb_shader *shader)
 {
+    struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
+
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+
+    hiddwsctx->wscsws->shader_destroy(hiddwsctx->wscsws, shader);
 }
 
 static enum pipe_error
