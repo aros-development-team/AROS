@@ -20,6 +20,8 @@
 
 #define CLID_Hidd_Gallium_VMWareSVGA  "hidd.gallium.vmwaresvga"
 
+#define VMW_MAX_DEFAULT_TEXTURE_SIZE   (128 * 1024 * 1024)
+
 #define VMW_COMMAND_SIZE (64*1024)
 #define VMW_SURFACE_RELOCS (1024)
 #define VMW_SHADER_RELOCS (1024)
@@ -59,6 +61,7 @@ struct HIDDGalliumVMWareSVGAData
 struct HIDDGalliumVMWareSVGACtx
 {
     struct svga_winsys_context wscbase;
+    struct svga_winsys_screen *wscsws;
 
     struct {
         UBYTE buffer[VMW_COMMAND_SIZE];
@@ -100,7 +103,13 @@ struct HIDDGalliumVMWareSVGACtx
 
 struct HIDDGalliumVMWareSVGASurf
 {
-    struct VMWareSVGAPBBuf      surfbuf;
+    struct svga_winsys_buffer   *surfbuf;
+    struct pipe_reference       refcnt;
+};
+
+struct HIDDGalliumVMWareSVGAShader
+{
+    struct svga_winsys_buffer   *shaderbuf;
     struct pipe_reference       refcnt;
 };
 
@@ -113,6 +122,12 @@ static inline struct svga_winsys_surface *VMWareSVGA_WSSurf_WinSysSurfFromHiddSu
 static inline struct HIDDGalliumVMWareSVGASurf *VMWareSVGA_WSSurf_HiddSurfFromWinSysSurf(struct svga_winsys_surface *surf)
 {
     return (struct HIDDGalliumVMWareSVGASurf *)surf;
+}
+
+
+static inline struct svga_winsys_gb_shader *VMWareSVGA_WSSurf_WinsysShaderHiddShader(struct HIDDGalliumVMWareSVGAShader *shader)
+{
+   return (struct svga_winsys_gb_shader *)shader;
 }
 
 void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData *);

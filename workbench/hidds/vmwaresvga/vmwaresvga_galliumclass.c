@@ -86,10 +86,11 @@ APTR METHOD(GalliumVMWareSVGA, Hidd_Gallium, CreatePipeScreen)
     D(bug("[VMWareSVGA:Gallium] %s: screen @ 0x%p\n", __func__, screen));
 
     return screen;
-
 }
 
 VOID METHOD(GalliumVMWareSVGA, Hidd_Gallium, DisplayResource)
 {
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
+    D(bug("[VMWareSVGA:Gallium] %s: resource @ 0x%p\n", __func__, msg->resource);)
+    D(bug("[VMWareSVGA:Gallium] %s: bitmap @ 0x%p\n", __func__, msg->bitmap);)
 }

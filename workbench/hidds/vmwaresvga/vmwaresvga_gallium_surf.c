@@ -26,7 +26,7 @@ VMWareSVGA_WSSurf_SurfaceMap(struct svga_winsys_context *swc,
                             unsigned flags, boolean *retry)
 {
     struct HIDDGalliumVMWareSVGASurf *surface = VMWareSVGA_WSSurf_HiddSurfFromWinSysSurf(srf);
-    void *data = (void *)surface->surfbuf.map;
+    void *data = (void *)((struct VMWareSVGAPBBuf *)(surface->surfbuf))->map;
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p, 0x%p)\n", __func__, swc, surface));
     D(bug("[VMWareSVGA:Gallium] %s: returning 0x%p\n", __func__, data));

@@ -228,6 +228,8 @@ struct HWData  {
     UWORD			display_height;
     ULONG			bytes_per_line;
 
+    ULONG			txrmax; 		/* max texture size */
+
     APTR			maskPool;
     APTR  			irq;
     ULONG			hwint;
