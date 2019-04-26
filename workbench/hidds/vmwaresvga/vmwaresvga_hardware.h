@@ -4,6 +4,7 @@
 #include <exec/libraries.h>
 #include <exec/tasks.h>
 #include <hidd/pci.h>
+#include <hidd/gfx.h>
 #include <oop/oop.h>
 
 #include "vmwaresvga_bitmap.h"
@@ -191,35 +192,51 @@
 #define SVGA_CAP_ALPHA_BLEND        0x02000
 
 struct HWData  {
-	UWORD indexReg;
-	UWORD valueReg;
-	ULONG depth;
-	ULONG redmask;
-	ULONG greenmask;
-	ULONG bluemask;
-	ULONG redshift;
-	ULONG greenshift;
-	ULONG blueshift;
-	ULONG bytesperpixel;
-	ULONG bitsperpixel;
-	ULONG bytesperline;
-	ULONG vramsize;
-	APTR vrambase;
-	ULONG maxwidth;
-	ULONG maxheight;
-    ULONG displaycount;
-	ULONG mmiosize;
-	APTR mmiobase;
-	ULONG fboffset; /* last byte in framebuffer of current screen mode */
-	ULONG pseudocolor;
-	ULONG capabilities;
-	UWORD display_width;
-	UWORD display_height;
-	ULONG bytes_per_line;
+    APTR			iobase;
+    APTR			vrambase;
+    APTR			mmiobase;
+    ULONG			vramsize;
+    ULONG			mmiosize;
 
-	struct Box delta_damage;
-	struct Task *render_task;
-	struct SignalSemaphore  damage_control;
+    UWORD			indexReg;
+    UWORD			valueReg;
+
+    ULONG			capabilities;
+    ULONG			fifocapabilities;
+
+    struct HIDD_ViewPortData    *shown;
+
+    ULONG			depth;
+    ULONG			redmask;
+    ULONG			greenmask;
+    ULONG			bluemask;
+    ULONG			redshift;
+    ULONG			greenshift;
+    ULONG			blueshift;
+    ULONG			bytesperpixel;
+    ULONG			bitsperpixel;
+    ULONG			bytesperline;
+
+    ULONG			maxwidth;
+    ULONG			maxheight;
+    ULONG			displaycount;
+
+    ULONG			fboffset;		/* last byte in framebuffer of current screen mode */
+    ULONG			pseudocolor;
+
+    UWORD			display_width;
+    UWORD			display_height;
+    ULONG			bytes_per_line;
+
+    APTR			maskPool;
+    APTR  			irq;
+    ULONG			hwint;
+    ULONG			fifomin;
+    ULONG			fence;
+
+    struct Box			delta_damage;
+    struct Task 		*render_task;
+    struct SignalSemaphore	damage_control;
 };
 
 #define clearCopyVMWareSVGA(d, sx, sy, dx, dy, w, h) \
@@ -288,22 +305,36 @@ struct HWData  {
 #define setFillVMWareSVGA(d, c, x, y, w, h) \
 	ropFillVMWareSVGA(d, c, x, y, w, h, SVGA_ROP_SET)
 
-ULONG vmwareReadReg(struct HWData *data, ULONG reg);
+ULONG vmwareReadReg(struct HWData *, ULONG);
 void vmwareWriteReg(struct HWData *, ULONG, ULONG);
-VOID writeVMWareSVGAFIFO(struct HWData *, ULONG);
-VOID syncVMWareSVGAFIFO(struct HWData *);
+
+VOID enableVMWareSVGA(struct HWData *);
+VOID disableVMWareSVGA(struct HWData *);
+
 BOOL initVMWareSVGAHW(struct HWData *, OOP_Object *);
+VOID initDisplayVMWareSVGA(struct HWData *);
+VOID getModeCfgVMWareSVGA(struct HWData *);
 VOID setModeVMWareSVGA(struct HWData *, ULONG, ULONG);
 VOID refreshAreaVMWareSVGA(struct HWData *, struct Box *);
+
 VOID rectFillVMWareSVGA(struct HWData *, ULONG, LONG, LONG, LONG, LONG);
 VOID ropFillVMWareSVGA(struct HWData *, ULONG, LONG, LONG, LONG, LONG, ULONG);
 VOID ropCopyVMWareSVGA(struct HWData *, LONG, LONG, LONG, LONG, ULONG, ULONG, ULONG);
+
 VOID defineCursorVMWareSVGA(struct HWData *, struct MouseData *);
 VOID displayCursorVMWareSVGA(struct HWData *, LONG);
 VOID moveCursorVMWareSVGA(struct HWData *, LONG, LONG);
 
-VOID VMWareSVGA_Damage_Reset(struct HWData *hwdata);
-VOID VMWareSVGA_Damage_DeltaAdd(struct HWData *hwdata, struct Box box);
-VOID VMWareSVGA_RestartRenderTask(struct HWData *hwdata);
+VOID writeVMWareSVGAFIFO(struct HWData *, ULONG);
+VOID syncVMWareSVGAFIFO(struct HWData *);
+
+ULONG fenceVMWareSVGAFIFO(struct HWData *);
+VOID syncfenceVMWareSVGAFIFO(struct HWData *, ULONG);
+
+VOID vmwareHandlerIRQ(struct HWData *, void *);
+
+VOID VMWareSVGA_Damage_Reset(struct HWData *);
+VOID VMWareSVGA_Damage_DeltaAdd(struct HWData *, struct Box *);
+VOID VMWareSVGA_RestartRenderTask(struct HWData *);
 
 #endif /* _VMWARESVGA_HARDWARE_H */

@@ -29,26 +29,19 @@ struct VMWareSVGAPBBuf
     void *map;
 };
 
-#if (AROS_BIG_ENDIAN == 1)
-#define AROS_PIXFMT RECTFMT_RAW   /* Big Endian Archs. */
-#else
-#define AROS_PIXFMT RECTFMT_BGRA32   /* Little Endian Archs. */
-#endif
-
-
 // ****************************************************************************
 //                                               winsys/support functions
 // ****************************************************************************
 
 static SVGA3dHardwareVersion VMWareSVGA_GetHWVersion(struct svga_winsys_screen *sws)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
 #if (0)
     if (sws->have_gb_objects)
     {
 #endif
-        D(bug("[VMWareSVGA:Gallium] %s: returning SVGA3D_HWVERSION_WS8_B1\n", __func__));
+        D(bug("[VMWareSVGA:Gallium] %s: returning SVGA3D_HWVERSION_WS8_B1\n", __func__);)
         return SVGA3D_HWVERSION_WS8_B1;
 #if (0)
     }
@@ -62,7 +55,7 @@ static boolean VMWareSVGA_GetCap(struct svga_winsys_screen *sws,
               SVGA3dDevCapIndex index,
               SVGA3dDevCapResult *result)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
 #if (0)
     if (index > vws->ioctl.num_cap_3d ||
@@ -101,7 +94,7 @@ static struct svga_winsys_surface *VMWareSVGA_SurfaceCreate(
 {
     struct svga_winsys_surface *surf = NULL;
 
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
 #if (0)
     surf = CALLOC_STRUCT(svga_winsys_surface);
@@ -114,7 +107,7 @@ static struct svga_winsys_surface *VMWareSVGA_SurfaceFromHandle(struct svga_wins
                           struct winsys_handle *whandle,
                           SVGA3dSurfaceFormat *format)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return NULL;
 }
@@ -124,7 +117,7 @@ static boolean VMWareSVGA_SurfaceGetHandle(struct svga_winsys_screen *sws,
                          unsigned stride,
                          struct winsys_handle *whandle)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return FALSE;
 }
@@ -132,7 +125,7 @@ static boolean VMWareSVGA_SurfaceGetHandle(struct svga_winsys_screen *sws,
 static boolean VMWareSVGA_SurfaceIsFlushed(struct svga_winsys_screen *sws,
                          struct svga_winsys_surface *surface)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return TRUE;
 }
@@ -141,7 +134,7 @@ static void VMWareSVGA_SurfaceReference(struct svga_winsys_screen *sws,
 			struct svga_winsys_surface **pdst,
 			struct svga_winsys_surface *src)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 static boolean VMWareSVGA_SurfaceCanCreate(struct svga_winsys_screen *sws,
@@ -151,7 +144,7 @@ static boolean VMWareSVGA_SurfaceCanCreate(struct svga_winsys_screen *sws,
                          uint32 numMipLevels,
                          uint32 numSamples)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return TRUE;
 }
@@ -163,7 +156,7 @@ static struct svga_winsys_buffer *VMWareSVGA_BufferCreate( struct svga_winsys_sc
 {
     struct VMWareSVGAPBBuf *buf;
 
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     buf = CALLOC_STRUCT(VMWareSVGAPBBuf);
 
@@ -174,20 +167,20 @@ static void *VMWareSVGA_BufferMap( struct svga_winsys_screen *sws,
 	          struct svga_winsys_buffer *buf,
 		  unsigned usage )
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
     return ((struct VMWareSVGAPBBuf *)(buf))->map;
 }
    
 static void VMWareSVGA_BufferUnMap( struct svga_winsys_screen *sws, 
                     struct svga_winsys_buffer *buf )
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 static void VMWareSVGA_BufferDestroy( struct svga_winsys_screen *sws,
 	              struct svga_winsys_buffer *buf )
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
     FREE(buf);
 }
 
@@ -195,14 +188,14 @@ static void VMWareSVGA_FenceReference( struct svga_winsys_screen *sws,
                        struct pipe_fence_handle **pdst,
                        struct pipe_fence_handle *src )
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 static int VMWareSVGA_FenceSignalled( struct svga_winsys_screen *sws,
                            struct pipe_fence_handle *fence,
                            unsigned flag )
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return 0;
 }
@@ -212,7 +205,7 @@ static int VMWareSVGA_FenceFinish( struct svga_winsys_screen *sws,
                         uint64_t timeout,
                         unsigned flag )
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return 0;
 }
@@ -224,7 +217,7 @@ static struct svga_winsys_gb_shader *VMWareSVGA_ShaderCreate(struct svga_winsys_
 {
     struct svga_winsys_gb_shader *shader = NULL;
 
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return shader;
 }
@@ -232,14 +225,14 @@ static struct svga_winsys_gb_shader *VMWareSVGA_ShaderCreate(struct svga_winsys_
 static void VMWareSVGA_ShaderDestroy(struct svga_winsys_screen *sws,
 		     struct svga_winsys_gb_shader *shader)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 static struct svga_winsys_gb_query *VMWareSVGA_QueryCreate(struct svga_winsys_screen *sws, uint32 len)
 {
     struct svga_winsys_gb_query *query = NULL;
 
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return query;
 }
@@ -247,7 +240,7 @@ static struct svga_winsys_gb_query *VMWareSVGA_QueryCreate(struct svga_winsys_sc
 static void VMWareSVGA_QueryDestroy(struct svga_winsys_screen *sws,
 		    struct svga_winsys_gb_query *query)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 static int VMWareSVGA_QueryInit(struct svga_winsys_screen *sws,
@@ -255,7 +248,7 @@ static int VMWareSVGA_QueryInit(struct svga_winsys_screen *sws,
                        unsigned offset,
                        SVGA3dQueryState queryState)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     return 0;
 }
@@ -266,25 +259,25 @@ static void VMWareSVGA_QueryGetResult(struct svga_winsys_screen *sws,
                        SVGA3dQueryState *queryState,
                        void *result, uint32 resultLen)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 
 
 static void VMWareSVGA_StatsInc(enum svga_stats_count index)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 static void VMWareSVGA_StatsTimePush(enum svga_stats_time index,
                                 struct svga_winsys_stats_timeframe *tf)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 static void VMWareSVGA_StatsTimePop()
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
 
@@ -296,7 +289,7 @@ OOP_Object *METHOD(GalliumVMWareSVGA, Root, New)
 {
     IPTR interfaceVers;
 
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     interfaceVers = GetTagData(aHidd_Gallium_InterfaceVersion, -1, msg->attrList);
     if (interfaceVers != GALLIUM_INTERFACE_VERSION)
@@ -352,7 +345,7 @@ OOP_Object *METHOD(GalliumVMWareSVGA, Root, New)
 
 VOID METHOD(GalliumVMWareSVGA, Root, Dispose)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -381,7 +374,7 @@ APTR METHOD(GalliumVMWareSVGA, Hidd_Gallium, CreatePipeScreen)
     struct HIDDGalliumVMWareSVGAData * data = OOP_INST_DATA(cl, o);
     struct pipe_screen *screen = NULL;
 
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 
     screen = svga_screen_create(&data->wsi);
 
@@ -393,5 +386,5 @@ APTR METHOD(GalliumVMWareSVGA, Hidd_Gallium, CreatePipeScreen)
 
 VOID METHOD(GalliumVMWareSVGA, Hidd_Gallium, DisplayResource)
 {
-    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }

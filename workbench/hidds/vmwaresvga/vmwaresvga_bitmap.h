@@ -46,6 +46,8 @@ struct HWRegs {
 struct BitmapData {
     struct HWRegs       regs;
     struct HWData       *data;
+    struct SignalSemaphore bmsem;
+
     UBYTE               *VideoData;             /* Pointing to video data */
     ULONG               width;                  /* Width of bitmap */
     ULONG               height;                 /* Height of bitmap */
@@ -55,6 +57,9 @@ struct BitmapData {
     BYTE                disp;                   /* !=0 - displayable */
     struct MouseData    *mouse;
 };
+
+#define LOCK_BITMAP                 { ObtainSemaphore(&data->bmsem); }
+#define UNLOCK_BITMAP               { ReleaseSemaphore(&data->bmsem); }
 
 /* Only include vmwaresvgahardware.h now so that struct Box is known */
 

@@ -6,12 +6,6 @@
     Lang: English.
 */
 
-#ifdef DEBUG
-#undef DEBUG
-#endif
-#define DEBUG 0
-#include <aros/debug.h>
-
 #define __OOP_NOATTRBASES__
 
 #include <proto/oop.h>
@@ -49,37 +43,53 @@ static struct OOP_ABDescr attrbases[] =
     {NULL,                      NULL                            }
 };
 
+#define DEBUGNAME "[VMWareSVGA:OffBitMap]"
 #define MNAME_ROOT(x) VMWareSVGAOffBM__Root__ ## x
 #define MNAME_BM(x) VMWareSVGAOffBM__Hidd_BitMap__ ## x
 
 #include "vmwaresvga_bitmap_common.c"
 
+/*
+  include our debug overides after bitmap_common incase it sets its own values...
+ */
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*********** BitMap::New() *************************************/
 
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("VMWareSVGA.BitMap::New()\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
         struct BitmapData *data;
         LONG multi=1;
         IPTR width, height, depth;
-        OOP_Object *friend, *pf;
+        OOP_Object *bmfriend, *pf;
+
         data = OOP_INST_DATA(cl, o);
+
         /* clear all data  */
         memset(data, 0, sizeof(struct BitmapData));
+
         /* Get attr values */
         OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
         OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
         OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
+
         /* Get the friend bitmap. This should be a displayable bitmap */
-        OOP_GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
+        OOP_GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&bmfriend);
+
         /* If you got a friend bitmap, copy its colormap */
-        if (friend)
+        if (bmfriend)
         {
-            struct BitmapData *src = OOP_INST_DATA(cl, friend);
+            struct BitmapData *src = OOP_INST_DATA(cl, bmfriend);
             CopyMem(&src->cmap, &data->cmap, 4*16);
         }
         ASSERT (width != 0 && height != 0 && depth != 0);
@@ -93,21 +103,26 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         else if (depth>8)
             multi = 2;
         data->bytesperpix = multi;
+
         data->VideoData = AllocVec(width*height*multi, MEMF_PUBLIC | MEMF_CLEAR);
         if (data->VideoData)
         {
+            InitSemaphore(&data->bmsem);
             data->data = &XSD(cl)->data;
             if (XSD(cl)->activecallback)
                 XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
-            ReturnPtr("VMWareSVGA.BitMap::New()", OOP_Object *, o);
         } /* if got data->VideoData */
+        else
         {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
             OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+            o = NULL;
         }
-        o = NULL;
     } /* if created object */
-    ReturnPtr("VMWareSVGA.BitMap::New()", OOP_Object *, o);
+
+    D(bug(DEBUGNAME " %s: returning 0x%p\n", __func__, o));
+
+    return o;
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
@@ -116,7 +131,8 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
-    EnterFunc(bug("VMWareSVGA.BitMap::Dispose()\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
     FreeVec(data->VideoData);
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VMWareSVGA.BitMap::Dispose");
@@ -126,7 +142,7 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 static int VMWareSVGAOffBM_Init(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("VMWareSVGAOffBM_Init\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
 
     ReturnInt("VMWareSVGAOffBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
 }
@@ -135,7 +151,7 @@ static int VMWareSVGAOffBM_Init(LIBBASETYPEPTR LIBBASE)
 
 static int VMWareSVGAOffBM_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("VMWareSVGAOffBM_Expunge\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
 
     OOP_ReleaseAttrBases(attrbases);
 

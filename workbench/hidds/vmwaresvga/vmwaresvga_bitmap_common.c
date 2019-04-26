@@ -1,11 +1,14 @@
 /*
-    Copyright ï¿½ 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: English.
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -20,21 +23,36 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     IPTR    	    	width, height;
+    BOOL done = FALSE;
 
-    D(bug("[VMWareSVGA] Clear()\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
 
+    LOCK_BITMAP
+ 
     /* Get width & height from bitmap */
-
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 
-    writeVMWareSVGAFIFO(data->data, SVGA_CMD_RECT_FILL);
-    writeVMWareSVGAFIFO(data->data, GC_FG(msg->gc));
-    writeVMWareSVGAFIFO(data->data, 0);
-    writeVMWareSVGAFIFO(data->data, 0);
-    writeVMWareSVGAFIFO(data->data, width);
-    writeVMWareSVGAFIFO(data->data, height);
-    syncVMWareSVGAFIFO(data->data);
+    if (VPVISFLAG)
+    {
+        if (data->data->capabilities & SVGA_CAP_RECT_FILL)
+        {
+            rectFillVMWareSVGA(data->data, GC_FG(msg->gc), 0, 0, width, height);
+            done = TRUE;
+        }
+        else
+        if ((data->data->capabilities & (SVGA_CAP_RECT_FILL|SVGA_CAP_RASTER_OP)) == (SVGA_CAP_RECT_FILL|SVGA_CAP_RASTER_OP))
+        {
+            ropFillVMWareSVGA(data->data, GC_FG(msg->gc), 0, 0, width, height, 1);
+            done = TRUE;
+        }
+        if (done)
+            syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+   }
+   if (!done)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    UNLOCK_BITMAP
 }
 #endif
 
@@ -43,7 +61,7 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
 
 HIDDT_Pixel MNAME_BM(MapColor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
 {
-    D(bug("[VMWareSVGA] MapColor()\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
     return i;
 }
 
@@ -51,7 +69,7 @@ HIDDT_Pixel MNAME_BM(MapColor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 
 VOID MNAME_BM(UnMapPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
 {
-    D(bug("[VMWareSVGA] UnMapPixel()\n"));
+    D(bug(DEBUGNAME " %s()\n", __func__);)
 }
 
 #endif
@@ -65,6 +83,8 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
     HIDDT_Pixel blue;
     ULONG xc_i;
     ULONG col_i;
+
+    D(bug(DEBUGNAME " %s()\n", __func__);)
 
     pf = BM_PIXFMT(o);
     if (
@@ -118,13 +138,16 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
     struct Box box;
 #endif
 
+    LOCK_BITMAP
+
     putpixel(data, msg->x, msg->y, msg->pixel);
 #ifdef OnBitmap
     box.x1 = box.x2 = msg->x;
     box.y1 = box.y2 = msg->y;
-    refreshAreaVMWareSVGA(data->data, &box);
+    VMWareSVGA_Damage_DeltaAdd(data->data, &box);
 #endif
-    return;
+
+    UNLOCK_BITMAP
 }
 
 /*********  BitMap::GetPixel()  *********************************/
@@ -174,6 +197,10 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
     LONG xcnt;
     UBYTE *src=(UBYTE *)msg->pixels;
 
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    LOCK_BITMAP
+
     if (msg->pixFmt == vHidd_StdPixFmt_Native32)
     {
 #ifdef OnBitmap
@@ -198,17 +225,23 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
             ycnt--;
         }
 #ifdef OnBitmap
-        box.x1 = msg->x;
-        box.y1 = msg->y;
-        box.x2 = box.x1+msg->width-1;
-        box.y2 = box.y1+msg->height-1;
-      	VMWareSVGA_Damage_DeltaAdd(data->data, box);
+        if (VPVISFLAG)
+        {
+            syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+            box.x1 = msg->x;
+            box.y1 = msg->y;
+            box.x2 = box.x1+msg->width-1;
+            box.y2 = box.y1+msg->height-1;
+            VMWareSVGA_Damage_DeltaAdd(data->data, &box);
+        }
 #endif
     }
     else
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
+
+    UNLOCK_BITMAP
 }
 
 /*********  BitMap::GetImage()  ***************************/
@@ -222,6 +255,10 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
     ULONG ycnt;
     LONG xcnt;
     UBYTE *src=msg->pixels;
+
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    LOCK_BITMAP
 
     if (msg->pixFmt == vHidd_StdPixFmt_Native32)
     {
@@ -251,6 +288,8 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
+
+    UNLOCK_BITMAP
 }
 
 /*********  BitMap::PutImageLUT()  ***************************/
@@ -267,6 +306,10 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
     ULONG ycnt;
     LONG xcnt;
     UBYTE *src=msg->pixels;
+
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    LOCK_BITMAP
 
 #ifdef OnBitmap
     offset = (msg->x*data->bytesperpix)+(msg->y*data->data->bytesperline);
@@ -304,99 +347,127 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
         ycnt--;
     }
 #ifdef OnBitmap
-    box.x1 = msg->x;
-    box.y1 = msg->y;
-    box.x2 = box.x1+msg->width-1;
-    box.y2 = box.y1+msg->height-1;
-    refreshAreaVMWareSVGA(data->data, &box);
+    if (VPVISFLAG)
+    {
+        syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+        box.x1 = msg->x;
+        box.y1 = msg->y;
+        box.x2 = box.x1+msg->width-1;
+        box.y2 = box.y1+msg->height-1;
+        VMWareSVGA_Damage_DeltaAdd(data->data, &box);
+    }
 #endif
+
+    UNLOCK_BITMAP
 }
 
 /*********  BitMap::GetImageLUT()  ***************************/
 
 VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
-    D(bug("[VMWareSVGA] GetImageLUT()\n"));
+    struct BitmapData *data =OOP_INST_DATA(cl, o);
+
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    LOCK_BITMAP
+
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    UNLOCK_BITMAP
 }
 
 /*********  BitMap::FillRect()  ***************************/
 
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
-#ifdef OnBitmap
     struct BitmapData *data =OOP_INST_DATA(cl, o);
+
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    LOCK_BITMAP
+
+#ifdef OnBitmap
     struct HWData *hw;
     HIDDT_Pixel pixel;
     HIDDT_DrawMode mode;
+    BOOL done=FALSE;
 
     pixel = GC_FG(msg->gc);
     mode = GC_DRMD(msg->gc);
     hw = data->data;
-    if (hw->capabilities & SVGA_CAP_RASTER_OP)
+    if ((VPVISFLAG) && (hw->capabilities & SVGA_CAP_RASTER_OP))
     {
+        done = TRUE;
         switch (mode)
         {
         case vHidd_GC_DrawMode_Clear:
-            clearFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            clearFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_And:
-            andFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            andFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_AndReverse:
-            andReverseFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            andReverseFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Copy:
-            copyFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            copyFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_AndInverted:
-            andInvertedFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            andInvertedFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_NoOp:
-            noOpFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            noOpFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Xor:
-            xorFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            xorFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Or:
-            orFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            orFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Nor:
-            norFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            norFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Equiv:
-            equivFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            equivFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Invert:
-            invertFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            invertFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_OrReverse:
-            orReverseFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            orReverseFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_CopyInverted:
-            copyInvertedFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            copyInvertedFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_OrInverted:
-            orInvertedFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            orInvertedFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Nand:
-            nandFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            nandFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         case vHidd_GC_DrawMode_Set:
-            setFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX-msg->minX+1, msg->maxY-msg->minY+1);
+            setFillVMWareSVGA(data->data, pixel, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
             break;
         default:
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            done = FALSE;
             break;
         }
+        if (done)
+        {
+            struct Box box = { msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1};
+            VMWareSVGA_Damage_DeltaAdd(data->data, &box);
+            syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+        }
     }
-    else
+    if (!done)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 #else
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 #endif
+
+    UNLOCK_BITMAP
 }
 
 /*** BitMap::BlitColorExpansion() **********************************************/
@@ -411,6 +482,10 @@ VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     HIDDT_Pixel bg;
     LONG x;
     LONG y;
+
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    LOCK_BITMAP
 
     fg = GC_FG(msg->gc);
     bg = GC_BG(msg->gc);
@@ -439,12 +514,18 @@ VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
         }
     }
 #ifdef OnBitmap
-    box.x1 = msg->destX;
-    box.y1 = msg->destY;
-    box.x2 = msg->destX+msg->width-1;
-    box.y2 = msg->destY+msg->height-1;
-    refreshAreaVMWareSVGA(data->data, &box);
+    if (VPVISFLAG)
+    {
+        syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+        box.x1 = msg->destX;
+        box.y1 = msg->destY;
+        box.x2 = msg->destX+msg->width-1;
+        box.y2 = msg->destY+msg->height-1;
+        VMWareSVGA_Damage_DeltaAdd(data->data, &box);
+    }
 #endif
+
+    UNLOCK_BITMAP
 }
 
 /*** BitMap::Get() *******************************************/
@@ -476,5 +557,7 @@ VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Upda
     struct HWData *pData = &XSD(cl)->data;
     struct Box box = { msg->x, msg->y, msg->x + msg->width + 1, msg->y + msg->height + 1};
 
-	VMWareSVGA_Damage_DeltaAdd(pData, box);
+    D(bug(DEBUGNAME " %s()\n", __func__);)
+
+    VMWareSVGA_Damage_DeltaAdd(pData, &box);
 }
