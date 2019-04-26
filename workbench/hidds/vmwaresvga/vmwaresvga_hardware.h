@@ -317,6 +317,9 @@ VOID getModeCfgVMWareSVGA(struct HWData *);
 VOID setModeVMWareSVGA(struct HWData *, ULONG, ULONG);
 VOID refreshAreaVMWareSVGA(struct HWData *, struct Box *);
 
+APTR VMWareSVGA_MemAlloc(struct HWData *, ULONG);
+VOID VMWareSVGA_MemFree(struct HWData *, APTR, ULONG);
+
 VOID rectFillVMWareSVGA(struct HWData *, ULONG, LONG, LONG, LONG, LONG);
 VOID ropFillVMWareSVGA(struct HWData *, ULONG, LONG, LONG, LONG, LONG, ULONG);
 VOID ropCopyVMWareSVGA(struct HWData *, LONG, LONG, LONG, LONG, ULONG, ULONG, ULONG);

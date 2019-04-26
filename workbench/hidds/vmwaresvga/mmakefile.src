@@ -12,15 +12,21 @@ include $(GALLIUM_PATH)/drivers/svga/Makefile.sources
 
 MESA3D_VMWARESVGA_C_SOURCES := $(filter %.c,$(C_SOURCES))
 
+GALLIUMFILES	:=	\
+	vmwaresvga_galliumclass \
+	vmwaresvga_gallium_screen \
+	vmwaresvga_gallium_surf \
+	vmwaresvga_gallium_ctx \
+	arosc_emul \
+	$(addprefix $(GALLIUM_PATH)/drivers/svga/,$(MESA3D_VMWARESVGA_C_SOURCES:.c=))
+
 FILES	:=	\
 	vmwaresvga_init \
 	vmwaresvga_hiddclass \
 	vmwaresvga_hardware \
 	vmwaresvga_offbitmapclass \
 	vmwaresvga_onbitmapclass \
-	vmwaresvga_galliumclass \
-	arosc_emul \
-	$(addprefix $(GALLIUM_PATH)/drivers/svga/,$(MESA3D_VMWARESVGA_C_SOURCES:.c=))
+	$(GALLIUMFILES)
 
 # disable necessary warnings
 NOWARN_FLAGS := $(NOWARN_UNUSED_VALUE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_STRICT_ALIASING)
@@ -36,7 +42,7 @@ USER_INCLUDES += \
 
 USER_CPPFLAGS += \
                 -DPACKAGE_VERSION=\"$(MESAGLVERSION)\"
-USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG=1
 
 USER_LDFLAGS := \
   -L$(top_libdir) \

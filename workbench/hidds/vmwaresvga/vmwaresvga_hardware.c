@@ -71,6 +71,23 @@ VOID vmwareHandlerIRQ(struct HWData *data, void *unused)
 #undef SysBase
 extern struct ExecBase *SysBase;
 
+
+
+APTR VMWareSVGA_MemAlloc(struct HWData *data, ULONG size)
+{
+    D(bug("[VMWareSVGA:HW] %s(%d)\n", __func__, size);)
+    return AllocMem(size, MEMF_CLEAR|MEMF_ANY);
+}
+
+VOID VMWareSVGA_MemFree(struct HWData *data, APTR addr, ULONG size)
+{
+    D(bug("[VMWareSVGA:HW] %s(0x%p)\n", __func__, addr);)
+    FreeMem(addr, size);
+}
+
+
+/**********/
+
 ULONG getVMWareSVGAID(struct HWData *data)
 {
     ULONG id;
