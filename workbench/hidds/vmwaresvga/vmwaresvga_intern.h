@@ -18,7 +18,7 @@
 //#define VMWARESVGA_USEMULTIMON
 //#define VMWARESVGA_USE8BIT
 //#define VMWAREGFX_IMMEDIATEDRAW
-//#define VMWAREGFX_UPDATEFBONSHOWVP
+#define VMWAREGFX_UPDATEFBONSHOWVP
 /***********************************************************************************************/
 
 #if defined(VMWAREGFX_UPDATEFBONSHOWVP)
