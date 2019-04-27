@@ -192,64 +192,64 @@
 #define SVGA_CAP_ALPHA_BLEND        0x02000
 
 struct VMWareSVGAFIFO {
-    struct SignalSemaphore	fifocmdsema;
-    UBYTE			*buffer;
-    ULONG			size;
-    ULONG			used;
-    ULONG 			reserved;
+    struct SignalSemaphore		fifocmdsema;
+    UBYTE				*buffer;
+    ULONG				size;
+    ULONG				used;
+    ULONG 				reserved;
 };
 
 struct HWData  {
-    APTR			iobase;
-    APTR			vrambase;
-    APTR			mmiobase;
-    ULONG			vramsize;
-    ULONG			mmiosize;
+    APTR				iobase;
+    APTR				vrambase;
+    APTR				mmiobase;
+    ULONG				vramsize;
+    ULONG				mmiosize;
 
-    UWORD			indexReg;
-    UWORD			valueReg;
+    UWORD				indexReg;
+    UWORD				valueReg;
 
-    struct VMWareSVGAFIFO	fifocmdbuf;
-    ULONG			bbused;
+    volatile struct VMWareSVGAFIFO	fifocmdbuf;
+    ULONG				bbused;
 
-    ULONG			capabilities;
-    ULONG			fifocapabilities;
+    ULONG				capabilities;
+    ULONG				fifocapabilities;
 
-    struct HIDD_ViewPortData    *shown;
+    struct HIDD_ViewPortData    	*shown;
 
-    ULONG			depth;
-    ULONG			redmask;
-    ULONG			greenmask;
-    ULONG			bluemask;
-    ULONG			redshift;
-    ULONG			greenshift;
-    ULONG			blueshift;
-    ULONG			bytesperpixel;
-    ULONG			bitsperpixel;
-    ULONG			bytesperline;
+    ULONG				depth;
+    ULONG				redmask;
+    ULONG				greenmask;
+    ULONG				bluemask;
+    ULONG				redshift;
+    ULONG				greenshift;
+    ULONG				blueshift;
+    ULONG				bytesperpixel;
+    ULONG				bitsperpixel;
+    ULONG				bytesperline;
 
-    ULONG			maxwidth;
-    ULONG			maxheight;
-    ULONG			displaycount;
+    ULONG				maxwidth;
+    ULONG				maxheight;
+    ULONG				displaycount;
 
-    ULONG			fboffset;		/* last byte in framebuffer of current screen mode */
-    ULONG			pseudocolor;
+    ULONG				fboffset;		/* last byte in framebuffer of current screen mode */
+    ULONG				pseudocolor;
 
-    UWORD			display_width;
-    UWORD			display_height;
-    ULONG			bytes_per_line;
+    UWORD				display_width;
+    UWORD				display_height;
+    ULONG				bytes_per_line;
 
-    ULONG			txrmax; 		/* max texture size */
+    ULONG				txrmax; 		/* max texture size */
 
-    APTR			maskPool;
-    APTR  			irq;
-    ULONG			hwint;
-    ULONG			fifomin;
-    ULONG			fence;
+    APTR				maskPool;
+    APTR  				irq;
+    ULONG				hwint;
+    ULONG				fifomin;
+    ULONG				fence;
 
-    struct Box			delta_damage;
-    struct Task 		*render_task;
-    struct SignalSemaphore	damage_control;
+    struct Box				delta_damage;
+    struct Task 			*render_task;
+    struct SignalSemaphore		damage_control;
 };
 
 #define clearCopyVMWareSVGA(d, sx, sy, dx, dy, w, h) \
