@@ -63,7 +63,7 @@ struct HIDDGalliumVMWareSVGACtx
     struct svga_winsys_context wscbase;
     struct svga_winsys_screen *wscsws;
 
-    struct VMWareSVGAFIFO *command;
+    volatile struct VMWareSVGAFIFO *command;
 
     struct {
 #if (0)

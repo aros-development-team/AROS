@@ -78,7 +78,7 @@ extern struct ExecBase *SysBase;
 APTR VMWareSVGA_MemAlloc(struct HWData *data, ULONG size)
 {
     D(bug("[VMWareSVGA:HW] %s(%d)\n", __func__, size);)
-    return AllocMem(size, MEMF_CLEAR|MEMF_ANY);
+    return AllocMem(size, MEMF_CLEAR|MEMF_31BIT);
 }
 
 VOID VMWareSVGA_MemFree(struct HWData *data, APTR addr, ULONG size)
@@ -181,7 +181,7 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
     }
     data->fifocmdbuf.buffer = AllocMem(VMW_COMMAND_SIZE, MEMF_CLEAR|MEMF_ANY);
     bug("[VMWareSVGA:HW] %s: FIFO Cmd bounce-buffer @ 0x%p\n", __func__, data->fifocmdbuf.buffer);
-    InitSemaphore(&data->fifocmdbuf.fifocmdsema);
+    InitSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
 }
 
 void waitVMWareSVGAFIFO(struct HWData *data)
@@ -241,7 +241,7 @@ APTR reserveVMWareSVGAFIFO(struct HWData *data, ULONG size)
         return NULL;
     }
 
-    ObtainSemaphore(&data->fifocmdbuf.fifocmdsema);
+    ObtainSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
     data->fifocmdbuf.reserved = size;
 
     while (1) {
@@ -325,7 +325,7 @@ APTR reserveVMWareSVGAFIFO(struct HWData *data, ULONG size)
                 if (canreserve) {
                     fifo[SVGA_FIFO_RESERVED] = size;
                 }
-                ReleaseSemaphore(&data->fifocmdbuf.fifocmdsema);
+                ReleaseSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
                 return cmdNext + (UBYTE *)fifo;
             } else {
                 /*
@@ -343,7 +343,7 @@ APTR reserveVMWareSVGAFIFO(struct HWData *data, ULONG size)
          */
         if (needBounce) {
             data->bbused = TRUE;
-            ReleaseSemaphore(&data->fifocmdbuf.fifocmdsema);
+            ReleaseSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
             return data->fifocmdbuf.buffer;
         }
     } /* while (1) */    
@@ -369,6 +369,8 @@ VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
         bug("[VMWareSVGA:HW] %s: COMMIT called before RESERVE!!\n", __func__);
         return;
     }
+
+    ObtainSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
 
     data->fifocmdbuf.used += data->fifocmdbuf.reserved;
     data->fifocmdbuf.reserved = 0;
@@ -396,17 +398,20 @@ VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
                 chunkSize = max - cmdNext;
             else
                 chunkSize = size;
+            bug("[VMWareSVGA:HW] %s: chunk size %d, size %d\n", __func__, chunkSize, size);
             fifo[SVGA_FIFO_RESERVED] = size;
             memcpy(cmdNext + (UBYTE *) fifo, buffer, chunkSize);
             memcpy(min + (UBYTE *) fifo, buffer + chunkSize, size - chunkSize);
         } else {
             /*
-             * Slowest path: copy one dword at a time, updating NEXT_CMD as
+             * Slowest path: copy one ULONG at a time, updating NEXT_CMD as
              * we go, so that we bound how much data the guest has written
              * and the host doesn't know to checkpoint.
              */
 
             ULONG *dword = (ULONG *)buffer;
+
+            bug("[VMWareSVGA:HW] %s: copying %dbytes\n", __func__, size);
 
             while (size > 0) {
                 fifo[cmdNext >> VMWFIFO_CMD_SIZESHIFT] = *dword++;
@@ -437,6 +442,7 @@ VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
     if (canreserve) {
         fifo[SVGA_FIFO_RESERVED] = 0;
     }
+    ReleaseSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
 }
 
 VOID flushVMWareSVGAFIFO(struct HWData *data, ULONG *fence)
