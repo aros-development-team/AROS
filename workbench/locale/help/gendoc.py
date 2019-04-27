@@ -19,7 +19,7 @@ import sys
 import datetime
 
 # Regex for whole autodoc block (without surrounding comments)
-ad_regx = re.compile(r"""
+AD_REGX = re.compile(r"""
 ^/\*{6,}
 (
 .*?
@@ -30,7 +30,7 @@ ad_regx = re.compile(r"""
 """, re.VERBOSE | re.MULTILINE | re.DOTALL)
 
 # Regex for a title
-titles_regx = re.compile(r"""
+TITLES_REGX = re.compile(r"""
 ^\s{4,4}
 (NAME|FORMAT|SYNOPSIS|LOCATION|FUNCTION|INPUTS|TAGS|RESULT|EXAMPLE|NOTES|BUGS|SEE\ ALSO|INTERNALS|HISTORY|TEMPLATE)$
 """, re.VERBOSE)
@@ -41,17 +41,17 @@ def parsedoc(filename, targetdir):
     blocks = {}
     filehandle = open(filename)
     content = filehandle.read()
-    doc = ad_regx.search(content)
+    doc = AD_REGX.search(content)
     current_title = None
     if doc:
         for line in doc.group(1).splitlines():
-            match = titles_regx.match(line)
+            match = TITLES_REGX.match(line)
             if match:
                 current_title = match.group(1)
                 blocks[current_title] = ""
             elif current_title:
                 blocks[current_title] += line.expandtabs()[4:] + "\n"
-        
+
         # check for empty chapters, because we don't want to print them
         for title, content in blocks.iteritems():
             if content.strip() == "":
@@ -70,8 +70,8 @@ def parsedoc(filename, targetdir):
         filehandle = open(os.path.join(targetdir, docfilename), "w")
 
         # The titles we want to printed
-        shell_titles = ("Name","Format","Template","Synopsis","Location","Function",
-            "Inputs","Tags","Result","Example","Notes","Bugs","See also")  
+        shell_titles = ("Name", "Format", "Template", "Synopsis", "Location", "Function",
+                        "Inputs", "Tags", "Result", "Example", "Notes", "Bugs", "See also")
 
         filehandle.write("@DATABASE %s\n\n" % (docfilename))
         filehandle.write("@$VER: %s 1.0 (%d.%d.%d)\n" % (docfilename, today.day, today.month, today.year))
@@ -93,17 +93,22 @@ def parsedoc(filename, targetdir):
 
 ###############################################################################
 
-sourcedir = sys.argv[1]
-targetdir = sys.argv[2]
+def main():
+    sourcedir = sys.argv[1]
+    targetdir = sys.argv[2]
 
-print "gendoc sourcedir " + sourcedir + " targetdir " + targetdir
+    print "gendoc sourcedir " + sourcedir + " targetdir " + targetdir
 
-if not os.path.exists(targetdir):
-    os.mkdir(targetdir)
+    if not os.path.exists(targetdir):
+        os.mkdir(targetdir)
 
-for root, dirs, files in os.walk(sourcedir):
-    for filename in files:
-        if len(filename) > 2 and filename[-2:] == ".c":
-            parsedoc(os.path.join(root, filename), targetdir)
-    if '.svn' in dirs:
-        dirs.remove('.svn')
+    for root, dirs, files in os.walk(sourcedir):
+        for filename in files:
+            if len(filename) > 2 and filename[-2:] == ".c":
+                parsedoc(os.path.join(root, filename), targetdir)
+        if '.svn' in dirs:
+            dirs.remove('.svn')
+
+
+if __name__ == "__main__":
+    main()
