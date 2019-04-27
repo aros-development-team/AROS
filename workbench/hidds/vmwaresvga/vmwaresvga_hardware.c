@@ -26,6 +26,7 @@
 #define DDMG(x)
 #define DFIFO(x)
 #define DFIFOINF(x)                     x
+#define DFIFOBUF(x)                     x
 #define DFENCE(x)                       x
 #define DREFRESH(x)
 #define DCURSOR(x)
@@ -34,6 +35,7 @@
 #define DDMG(x)
 #define DFIFO(x)
 #define DFIFOINF(x)
+#define DFIFOBUF(x)
 #define DFENCE(x)
 #define DREFRESH(x)
 #define DCURSOR(x)
@@ -174,9 +176,43 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
 
     if (hasCapVMWareSVGAFIFO(data, SVGA_FIFO_GUEST_3D_HWVERSION))
     {
-        DFIFOINF(bug("[VMWareSVGA:HW] %s: Setting GUEST_3D_HWVERSION = %d\n", __func__, SVGA3D_HWVERSION_CURRENT));
+        DFIFOINF(bug("[VMWareSVGA:HW] %s: Setting GUEST_3D_HWVERSION = %d\n", __func__, SVGA3D_HWVERSION_CURRENT);)
         fifo[SVGA_FIFO_GUEST_3D_HWVERSION] = SVGA3D_HWVERSION_CURRENT;
     }
+    data->fifocmdbuf.buffer = AllocMem(VMW_COMMAND_SIZE, MEMF_CLEAR|MEMF_ANY);
+    bug("[VMWareSVGA:HW] %s: FIFO Cmd bounce-buffer @ 0x%p\n", __func__, data->fifocmdbuf.buffer);
+    InitSemaphore(&data->fifocmdbuf.fifocmdsema);
+}
+
+void waitVMWareSVGAFIFO(struct HWData *data)
+{
+    bug("[VMWareSVGA:HW] %s()\n", __func__);
+    if (hasCapVMWareSVGAFIFO(data, SVGA_FIFO_FENCE_GOAL) &&
+       (data->capabilities & SVGA_CAP_IRQMASK)) {
+#if (0)
+        /*
+         * On hosts which support interrupts, we can sleep until the
+         * FIFO_PROGRESS interrupt occurs. This is the most efficient
+         * thing to do when the FIFO fills up.
+         *
+         * As with the IRQ-based SVGA_SyncToFence(), this will only work
+         * on Workstation 6.5 virtual machines and later.
+         */
+
+        vmwareWriteReg(data, SVGA_REG_IRQMASK, SVGA_IRQFLAG_FIFO_PROGRESS);
+        // TODO: wait for the irq...
+        vmwareWriteReg(data, SVGA_REG_IRQMASK, 0);
+#endif
+    } else {
+        /*
+         * Fallback implementation: Perform one iteration of the
+         * legacy-style sync. This synchronously processes FIFO commands
+         * for an arbitrary amount of time, then returns control back to
+         * the guest CPU.
+         */
+        syncVMWareSVGAFIFO(data);
+        vmwareReadReg(data, SVGA_REG_BUSY);
+   }
 }
 
 APTR reserveVMWareSVGAFIFO(struct HWData *data, ULONG size)
@@ -185,9 +221,132 @@ APTR reserveVMWareSVGAFIFO(struct HWData *data, ULONG size)
     ULONG max = fifo[SVGA_FIFO_MAX];
     ULONG min = fifo[SVGA_FIFO_MIN];
     ULONG cmdNext = fifo[SVGA_FIFO_NEXT_CMD];
+    BOOL canreserve = FALSE;
+
+    DFIFOBUF(bug("[VMWareSVGA:HW] %s(%d)\n", __func__, size);)
+
+    if (data->fifocapabilities & SVGA_FIFO_CAP_RESERVE)
+    {
+        DFIFOBUF(bug("[VMWareSVGA:HW] %s: reserve supported\n", __func__);)
+        canreserve = TRUE;
+    }
+
+    if (size > VMW_COMMAND_SIZE || (size > (max - min))) {
+        bug("[VMWareSVGA:HW] %s: FIFO command too large", __func__);
+        return NULL;
+    }
+
     if (size % VMWFIFO_CMD_SIZE) {
-       DFIFOINF(bug("[VMWareSVGA:HW] %s: size of %d not 32bit-aligned!!\n", __func__, size);)
-   }
+        bug("[VMWareSVGA:HW] %s: size of %d not 32bit-aligned!!\n", __func__, size);
+        return NULL;
+    }
+
+    ObtainSemaphore(&data->fifocmdbuf.fifocmdsema);
+    data->fifocmdbuf.reserved = size;
+
+    while (1) {
+        ULONG stop = fifo[SVGA_FIFO_STOP];
+        BOOL reserveInPlace = FALSE;
+        BOOL needBounce = FALSE;
+
+        /*
+         * Find a strategy for dealing with "size" of data:
+         * - reserve in place, if there's room and the FIFO supports it
+         * - reserve in bounce buffer, if there's room in FIFO but not
+         *   contiguous or FIFO can't safely handle reservations
+         * - otherwise, sync the FIFO and try again.
+         */
+
+        if (cmdNext >= stop) {
+            /* There is no valid FIFO data between cmdNext and max */
+
+            if (cmdNext + size < max ||
+                (cmdNext + size == max && stop > min)) {
+                /*
+                 * Fastest path 1: There is already enough contiguous space
+                 * between cmdNext and max (the end of the buffer).
+                 *
+                 * Note the edge case: If the "<" path succeeds, we can
+                 * quickly return without performing any other tests. If
+                 * we end up on the "==" path, we're writing exactly up to
+                 * the top of the FIFO and we still need to make sure that
+                 * there is at least one unused DWORD at the bottom, in
+                 * order to be sure we don't fill the FIFO entirely.
+                 *
+                 * If the "==" test succeeds, but stop <= min (the FIFO
+                 * would be completely full if we were to reserve this
+                 * much space) we'll end up hitting the FIFOFull path below.
+                 */
+                reserveInPlace = TRUE;
+            } else if ((max - cmdNext) + (stop - min) <= size) {
+                /*
+                 * We have to split the FIFO command into two pieces,
+                 * but there still isn't enough total free space in
+                 * the FIFO to store it.
+                 *
+                 * Note the "<=". We need to keep at least one DWORD
+                 * of the FIFO free at all times, or we won't be able
+                 * to tell the difference between full and empty.
+                 */
+                waitVMWareSVGAFIFO(data);
+            } else {
+                /*
+                 * Data fits in FIFO but only if we split it.
+                 * Need to bounce to guarantee contiguous buffer.
+                 */
+                needBounce = TRUE;
+            }
+
+        } else {
+         /* There is FIFO data between cmdNext and max */
+
+            if (cmdNext + size < stop) {
+                /*
+                 * Fastest path 2: There is already enough contiguous space
+                 * between cmdNext and stop.
+                 */
+                reserveInPlace = TRUE;
+            } else {
+                /*
+                 * There isn't enough room between cmdNext and stop.
+                 * The FIFO is too full to accept this command.
+                 */
+                waitVMWareSVGAFIFO(data);
+            }
+        }
+
+        /*
+         * If we decided we can write directly to the FIFO, make sure
+         * the VMX can safely support this.
+         */
+        if (reserveInPlace) {
+            if (canreserve || size <= sizeof(ULONG)) {
+                data->bbused = FALSE;
+                if (canreserve) {
+                    fifo[SVGA_FIFO_RESERVED] = size;
+                }
+                ReleaseSemaphore(&data->fifocmdbuf.fifocmdsema);
+                return cmdNext + (UBYTE *)fifo;
+            } else {
+                /*
+                 * Need to bounce because we can't trust the VMX to safely
+                 * handle uncommitted data in FIFO.
+                 */
+                needBounce = TRUE;
+            }
+        }
+
+        /*
+         * If we reach here, either we found a full FIFO, called
+         * waitVMWareSVGAFIFO to make more room, and want to try again, or we
+         * decided to use a bounce buffer instead.
+         */
+        if (needBounce) {
+            data->bbused = TRUE;
+            ReleaseSemaphore(&data->fifocmdbuf.fifocmdsema);
+            return data->fifocmdbuf.buffer;
+        }
+    } /* while (1) */    
 }
 
 VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
@@ -196,6 +355,99 @@ VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
     ULONG max = fifo[SVGA_FIFO_MAX];
     ULONG min = fifo[SVGA_FIFO_MIN];
     ULONG cmdNext = fifo[SVGA_FIFO_NEXT_CMD];
+    BOOL canreserve = FALSE;
+
+    DFIFOBUF(bug("[VMWareSVGA:HW] %s(%d)\n", __func__, size);)
+
+    if (data->fifocapabilities & SVGA_FIFO_CAP_RESERVE)
+    {
+        DFIFOBUF(bug("[VMWareSVGA:HW] %s: reserve supported\n", __func__);)
+        canreserve = TRUE;
+    }
+
+    if (data->fifocmdbuf.reserved == 0) {
+        bug("[VMWareSVGA:HW] %s: COMMIT called before RESERVE!!\n", __func__);
+        return;
+    }
+
+    data->fifocmdbuf.used += data->fifocmdbuf.reserved;
+    data->fifocmdbuf.reserved = 0;
+
+    if (data->bbused) {
+        /*
+        * Slow paths: copy out of a bounce buffer.
+        */
+        UBYTE *buffer = data->fifocmdbuf.buffer;
+
+        if (canreserve) {
+            /*
+             * Slow path: bulk copy out of a bounce buffer in two chunks.
+             *
+             * Note that the second chunk may be zero-length if the reserved
+             * size was large enough to wrap around but the commit size was
+             * small enough that everything fit contiguously into the FIFO.
+             *
+             * Note also that we didn't need to tell the FIFO about the
+             * reservation in the bounce buffer, but we do need to tell it
+             * about the data we're bouncing from there into the FIFO.
+             */
+            ULONG chunkSize;
+            if (size > (max - cmdNext))
+                chunkSize = max - cmdNext;
+            else
+                chunkSize = size;
+            fifo[SVGA_FIFO_RESERVED] = size;
+            memcpy(cmdNext + (UBYTE *) fifo, buffer, chunkSize);
+            memcpy(min + (UBYTE *) fifo, buffer + chunkSize, size - chunkSize);
+        } else {
+            /*
+             * Slowest path: copy one dword at a time, updating NEXT_CMD as
+             * we go, so that we bound how much data the guest has written
+             * and the host doesn't know to checkpoint.
+             */
+
+            ULONG *dword = (ULONG *)buffer;
+
+            while (size > 0) {
+                fifo[cmdNext >> VMWFIFO_CMD_SIZESHIFT] = *dword++;
+                cmdNext += VMWFIFO_CMD_SIZE;
+                if (cmdNext == max) {
+                    cmdNext = min;
+                }
+                fifo[SVGA_FIFO_NEXT_CMD] = cmdNext;
+                size -= VMWFIFO_CMD_SIZE;
+            }
+        }
+    }
+
+    /*
+     * Atomically update NEXT_CMD, if we didn't already
+     */
+    if (!data->bbused || canreserve) {
+        cmdNext += size;
+        if (cmdNext >= max) {
+            cmdNext -= max - min;
+        }
+        fifo[SVGA_FIFO_NEXT_CMD] = cmdNext;
+    }
+
+    /*
+     * Clear the reservation in the FIFO.
+     */
+    if (canreserve) {
+        fifo[SVGA_FIFO_RESERVED] = 0;
+    }
+}
+
+VOID flushVMWareSVGAFIFO(struct HWData *data, ULONG *fence)
+{
+    DFIFOBUF(bug("[VMWareSVGA:HW] %s()\n", __func__);)
+
+    if (data->fifocmdbuf.reserved)
+    {
+        *fence = fenceVMWareSVGAFIFO(data);
+        commitVMWareSVGAFIFO(data, data->fifocmdbuf.reserved);
+    }
 }
 
 ULONG fenceVMWareSVGAFIFO(struct HWData *data)

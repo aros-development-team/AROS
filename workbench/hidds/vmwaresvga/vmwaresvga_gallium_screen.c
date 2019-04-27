@@ -26,11 +26,6 @@
 //                      winsys screen support functions
 // ****************************************************************************
 
-static struct HIDDGalliumVMWareSVGAData *VMWareSVGA_WSScr_HiddDataFromWinSys(struct svga_winsys_screen *sws)
-{
-    return (struct HIDDGalliumVMWareSVGAData *)sws;
-}
-
 static SVGA3dHardwareVersion VMWareSVGA_WSScr_GetHWVersion(struct svga_winsys_screen *sws)
 {
     struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(sws);
@@ -222,6 +217,9 @@ static struct svga_winsys_context *VMWareSVGA_WSScr_ContextCreate(struct svga_wi
 
     D(bug("[VMWareSVGA:Gallium] %s: svga_winsys_context @ 0x%p\n", __func__, wsctx));
 
+    hiddwsctx->command = &data->hwdata->fifocmdbuf;
+    D(bug("[VMWareSVGA:Gallium] %s: FIFO Reserve @ 0x%p, buffer @ 0x%p\n", __func__, hiddwsctx->command, hiddwsctx->command->buffer));
+
     VMWareSVGA_WSCtx_WinSysInit(data, hiddwsctx);
     
     return wsctx;
@@ -411,7 +409,17 @@ static struct svga_winsys_gb_shader *VMWareSVGA_WSScr_ShaderCreate(struct svga_w
     VMWareSVGA_WSScr_BufferUnMap(sws, shader->shaderbuf);
 
     if (!sws->have_vgpu10) {
-
+       switch (shaderType) {
+       case SVGA3D_SHADERTYPE_VS:
+          D(bug("[VMWareSVGA:Gallium] %s: vertex shader", __func__);)
+          break;
+       case SVGA3D_SHADERTYPE_PS:
+          D(bug("[VMWareSVGA:Gallium] %s: pixel shader", __func__);)
+          break;
+       default:
+          bug("[VMWareSVGA:Gallium] %s: Invalid shader type.", __func__, shaderType);
+          break;
+       }
     }
 
     return VMWareSVGA_WSSurf_WinsysShaderHiddShader(shader);
@@ -519,6 +527,10 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
     data->wssbase.have_gb_objects = FALSE;
     data->wssbase.have_gb_dma = FALSE;
     data->wssbase.need_to_rebind_resources = FALSE;
+
+    data->wssbase.have_vgpu10 = FALSE;
+    data->wssbase.have_sm4_1 = FALSE;
+    data->wssbase.have_intra_surface_copy = FALSE;
 
     if (data->use_gbobjects)
     {

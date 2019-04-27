@@ -36,11 +36,17 @@ static void *
 VMWareSVGA_WSCtx_Reserve(struct svga_winsys_context *swc,
                 uint32_t nr_bytes, uint32_t nr_relocs )
 {
+    void *retval;
+
     D(bug("[VMWareSVGA:Gallium] %s(0x%p, %d, %d)\n", __func__, swc, nr_bytes, nr_relocs));
 
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
+    struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(hiddwsctx->wscsws);
 
-    if(hiddwsctx->command.used + nr_bytes > hiddwsctx->command.size ||
+    if(nr_bytes > hiddwsctx->command->size)
+        return NULL;
+
+    if(hiddwsctx->command->used + nr_bytes > hiddwsctx->command->size ||
       hiddwsctx->surface.used + nr_relocs > hiddwsctx->surface.size ||
       hiddwsctx->shader.used + nr_relocs > hiddwsctx->shader.size ||
       hiddwsctx->region.used + nr_relocs > hiddwsctx->region.size) {
@@ -48,7 +54,6 @@ VMWareSVGA_WSCtx_Reserve(struct svga_winsys_context *swc,
         return NULL;
     }
 
-    hiddwsctx->command.reserved = nr_bytes;
     hiddwsctx->surface.reserved = nr_relocs;
     hiddwsctx->surface.staged = 0;
     hiddwsctx->shader.reserved = nr_relocs;
@@ -56,9 +61,10 @@ VMWareSVGA_WSCtx_Reserve(struct svga_winsys_context *swc,
     hiddwsctx->region.reserved = nr_relocs;
     hiddwsctx->region.staged = 0;
 
-    D(bug("[VMWareSVGA:Gallium] %s: returning 0x%p\n", __func__, (hiddwsctx->command.buffer + hiddwsctx->command.used)));
+    retval = reserveVMWareSVGAFIFO(data->hwdata, nr_bytes);
+    D(bug("[VMWareSVGA:Gallium] %s: returning 0x%p\n", __func__, retval));
 
-    return hiddwsctx->command.buffer + hiddwsctx->command.used;
+    return retval;
 }
 
 static unsigned
@@ -68,8 +74,8 @@ VMWareSVGA_WSCtx_GetCmdBuffSize(struct svga_winsys_context *swc)
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
 
-    D(bug("[VMWareSVGA:Gallium] %s: returning %d\n", __func__, hiddwsctx->command.used));
-    return hiddwsctx->command.used;
+    D(bug("[VMWareSVGA:Gallium] %s: returning %d\n", __func__, hiddwsctx->command->used));
+    return hiddwsctx->command->used;
 }
 
 static void
@@ -109,7 +115,12 @@ VMWareSVGA_WSCtx_MObReloc(struct svga_winsys_context *swc,
 		       uint32 offset,
 		       unsigned flags)
 {
+    struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+
+    if (id) {
+        ++hiddwsctx->region.staged;
+    }
 }
 
 static void
@@ -118,6 +129,11 @@ VMWareSVGA_WSCtx_QueryReloc(struct svga_winsys_context *swc,
                          struct svga_winsys_gb_query *query)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+#if (0)
+   /* Queries are backed by one big MOB */
+   VMWareSVGA_WSCtx_MObReloc(swc, id, NULL, query->buf, 0,
+                          SVGA_RELOC_READ | SVGA_RELOC_WRITE);
+#endif
 }
 
 static void
@@ -144,11 +160,9 @@ static void
 VMWareSVGA_WSCtx_Commit(struct svga_winsys_context *swc)
 {
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
+    struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(hiddwsctx->wscsws);
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
-
-    hiddwsctx->command.used += hiddwsctx->command.reserved;
-    hiddwsctx->command.reserved = 0;
 
     hiddwsctx->surface.used += hiddwsctx->surface.staged;
     hiddwsctx->surface.staged = 0;
@@ -161,6 +175,8 @@ VMWareSVGA_WSCtx_Commit(struct svga_winsys_context *swc)
     hiddwsctx->region.used += hiddwsctx->region.staged;
     hiddwsctx->region.staged = 0;
     hiddwsctx->region.reserved = 0;
+    
+    commitVMWareSVGAFIFO(data->hwdata, hiddwsctx->command->reserved);
 }
 
 static enum pipe_error
@@ -168,11 +184,19 @@ VMWareSVGA_WSCtx_Flush(struct svga_winsys_context *swc,
               struct pipe_fence_handle **pfence)
 {
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
+    struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(hiddwsctx->wscsws);
+    struct pipe_fence_handle *fence = NULL;
+    enum pipe_error ret;
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
 
-    hiddwsctx->command.used = 0;
-    hiddwsctx->command.reserved = 0;
+
+    if (hiddwsctx->command->used || pfence != NULL)
+        flushVMWareSVGAFIFO(data->hwdata, (ULONG *)(IPTR)&fence);
+
+    syncfenceVMWareSVGAFIFO(data->hwdata, (ULONG)(IPTR)fence);
+
+    hiddwsctx->command->used = 0;
 
     hiddwsctx->surface.used = 0;
     hiddwsctx->surface.reserved = 0;
@@ -220,6 +244,16 @@ VMWareSVGA_WSCtx_RebindResource(struct svga_winsys_context *swc,
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
 
+   if (!VMWareSVGA_WSCtx_Reserve(swc, 0, 1))
+      return PIPE_ERROR_OUT_OF_MEMORY;
+
+    if (surface)
+        VMWareSVGA_WSCtx_SurfaceReloc(swc, NULL, NULL, surface, flags);
+    else if (shader)
+        VMWareSVGA_WSCtx_ShaderReloc(swc, NULL, NULL, NULL, shader, flags);
+
+    VMWareSVGA_WSCtx_Commit(swc);
+
     return PIPE_OK;
 }
 
@@ -259,7 +293,7 @@ void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData * data, struct
 
    wsctx->have_gb_objects = data->wssbase.have_gb_objects;
 
-   hiddwsctx->command.size = VMW_COMMAND_SIZE;
+   hiddwsctx->command->size = VMW_COMMAND_SIZE;
    hiddwsctx->surface.size = VMW_SURFACE_RELOCS;
    hiddwsctx->shader.size = VMW_SHADER_RELOCS;
    hiddwsctx->region.size = VMW_REGION_RELOCS;
