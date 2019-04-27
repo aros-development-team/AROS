@@ -63,12 +63,7 @@ struct HIDDGalliumVMWareSVGACtx
     struct svga_winsys_context wscbase;
     struct svga_winsys_screen *wscsws;
 
-    struct {
-        UBYTE buffer[VMW_COMMAND_SIZE];
-        ULONG size;
-        ULONG used;
-        ULONG reserved;
-    } command;
+    struct VMWareSVGAFIFO *command;
 
     struct {
 #if (0)
@@ -124,10 +119,14 @@ static inline struct HIDDGalliumVMWareSVGASurf *VMWareSVGA_WSSurf_HiddSurfFromWi
     return (struct HIDDGalliumVMWareSVGASurf *)surf;
 }
 
-
 static inline struct svga_winsys_gb_shader *VMWareSVGA_WSSurf_WinsysShaderHiddShader(struct HIDDGalliumVMWareSVGAShader *shader)
 {
    return (struct svga_winsys_gb_shader *)shader;
+}
+
+static inline struct HIDDGalliumVMWareSVGAData *VMWareSVGA_WSScr_HiddDataFromWinSys(struct svga_winsys_screen *sws)
+{
+    return (struct HIDDGalliumVMWareSVGAData *)sws;
 }
 
 void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData *);

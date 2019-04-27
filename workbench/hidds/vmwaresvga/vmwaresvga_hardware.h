@@ -191,6 +191,14 @@
 #define SVGA_CAP_OFFSCREEN_1        0x01000
 #define SVGA_CAP_ALPHA_BLEND        0x02000
 
+struct VMWareSVGAFIFO {
+    struct SignalSemaphore	fifocmdsema;
+    UBYTE			*buffer;
+    ULONG			size;
+    ULONG			used;
+    ULONG 			reserved;
+};
+
 struct HWData  {
     APTR			iobase;
     APTR			vrambase;
@@ -200,6 +208,9 @@ struct HWData  {
 
     UWORD			indexReg;
     UWORD			valueReg;
+
+    struct VMWareSVGAFIFO	fifocmdbuf;
+    ULONG			bbused;
 
     ULONG			capabilities;
     ULONG			fifocapabilities;
@@ -330,6 +341,10 @@ VOID defineCursorVMWareSVGA(struct HWData *, struct MouseData *);
 VOID displayCursorVMWareSVGA(struct HWData *, LONG);
 VOID moveCursorVMWareSVGA(struct HWData *, LONG, LONG);
 
+void waitVMWareSVGAFIFO(struct HWData *);
+APTR reserveVMWareSVGAFIFO(struct HWData *, ULONG);
+VOID commitVMWareSVGAFIFO(struct HWData *, ULONG);
+VOID flushVMWareSVGAFIFO(struct HWData *, ULONG *);
 VOID writeVMWareSVGAFIFO(struct HWData *, ULONG);
 VOID syncVMWareSVGAFIFO(struct HWData *);
 
