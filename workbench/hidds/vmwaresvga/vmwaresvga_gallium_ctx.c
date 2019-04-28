@@ -257,7 +257,32 @@ VMWareSVGA_WSCtx_RebindResource(struct svga_winsys_context *swc,
     return PIPE_OK;
 }
 
-void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData * data, struct HIDDGalliumVMWareSVGACtx *hiddwsctx)
+ULONG VMWareSVGA_DefineContext(struct HIDDGalliumVMWareSVGAData *data, struct svga_winsys_context *wsctx)
+{
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+
+    wsctx->cid = ++data->ctxcnt;
+    if ((SVGA3D_DefineContext(wsctx)) != PIPE_OK)
+        wsctx->cid = -1;
+
+    D(bug("[VMWareSVGA:Gallium] %s: returning %d\n", __func__, wsctx->cid));
+
+    return wsctx->cid;
+}
+
+ULONG VMWareSVGA_DefineExtContext(struct HIDDGalliumVMWareSVGAData *data, struct svga_winsys_context *wsctx, BOOL hasvgpu10)
+{
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+
+    wsctx->cid = ++data->ctxcnt;
+    if ((SVGA3D_DefineContext(wsctx)) != PIPE_OK)
+        wsctx->cid = -1;
+
+    D(bug("[VMWareSVGA:Gallium] %s: returning %d\n", __func__, wsctx->cid));
+    return wsctx->cid;
+}
+
+void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData *data, struct HIDDGalliumVMWareSVGACtx *hiddwsctx)
 {
     struct svga_winsys_context          *wsctx;
 
@@ -287,14 +312,18 @@ void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData * data, struct
     wsctx->shader_create = VMWareSVGA_WSCtx_ShaderCreate;
     wsctx->shader_destroy = VMWareSVGA_WSCtx_ShaderDestroy;
 
-   wsctx->resource_rebind = VMWareSVGA_WSCtx_RebindResource;
+    wsctx->resource_rebind = VMWareSVGA_WSCtx_RebindResource;
 
-   wsctx->imported_fence_fd = -1;
+    if (data->wssbase.have_vgpu10)
+        wsctx->cid = VMWareSVGA_DefineExtContext(data, wsctx, data->wssbase.have_vgpu10);
+   else
+        wsctx->cid = VMWareSVGA_DefineContext(data, wsctx);
 
-   wsctx->have_gb_objects = data->wssbase.have_gb_objects;
+    wsctx->imported_fence_fd = -1;
 
-   hiddwsctx->command->size = VMW_COMMAND_SIZE;
-   hiddwsctx->surface.size = VMW_SURFACE_RELOCS;
-   hiddwsctx->shader.size = VMW_SHADER_RELOCS;
-   hiddwsctx->region.size = VMW_REGION_RELOCS;
+    wsctx->have_gb_objects = data->wssbase.have_gb_objects;
+
+    hiddwsctx->surface.size = VMW_SURFACE_RELOCS;
+    hiddwsctx->shader.size = VMW_SHADER_RELOCS;
+    hiddwsctx->region.size = VMW_REGION_RELOCS;
 }

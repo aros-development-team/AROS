@@ -17,6 +17,7 @@
 #include "pipebuffer/pb_buffer.h"
 
 #include "svga3d_caps.h"
+#include "svga_cmd.h"
 
 #define CLID_Hidd_Gallium_VMWareSVGA  "hidd.gallium.vmwaresvga"
 
@@ -51,6 +52,9 @@ struct HIDDGalliumVMWareSVGAData
     struct svga_winsys_screen   wssbase;
     OOP_Object                  *wsgo;
     struct HWData               *hwdata;
+
+    ULONG                       ctxcnt;
+    ULONG                       srfcnt;
 
     ULONG                       use_gbobjects;
 
@@ -100,6 +104,7 @@ struct HIDDGalliumVMWareSVGASurf
 {
     struct svga_winsys_buffer   *surfbuf;
     struct pipe_reference       refcnt;
+    ULONG                       sid;                                    // Hardware surface ID
 };
 
 struct HIDDGalliumVMWareSVGAShader

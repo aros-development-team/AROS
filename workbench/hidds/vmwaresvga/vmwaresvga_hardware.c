@@ -174,14 +174,22 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
 
     vmwareWriteReg(data, SVGA_REG_CONFIG_DONE, 1);
 
+    data->fifocmdbuf.buffer = AllocMem(VMW_COMMAND_SIZE, MEMF_CLEAR|MEMF_ANY);
+    InitSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
+    data->fifocmdbuf.size = VMW_COMMAND_SIZE;
+    data->fifocmdbuf.used =0;
+    data->fifocmdbuf.reserved = 0;
+    DFIFOINF(
+      bug("[VMWareSVGA:HW] %s: FIFO Cmd @ 0x%p initialised\n", __func__, &data->fifocmdbuf);
+      bug("[VMWareSVGA:HW] %s:      Cmd bounce-buffer @ 0x%p\n", __func__, data->fifocmdbuf.buffer);
+     )
+
     if (hasCapVMWareSVGAFIFO(data, SVGA_FIFO_GUEST_3D_HWVERSION))
     {
         DFIFOINF(bug("[VMWareSVGA:HW] %s: Setting GUEST_3D_HWVERSION = %d\n", __func__, SVGA3D_HWVERSION_CURRENT);)
         fifo[SVGA_FIFO_GUEST_3D_HWVERSION] = SVGA3D_HWVERSION_CURRENT;
     }
-    data->fifocmdbuf.buffer = AllocMem(VMW_COMMAND_SIZE, MEMF_CLEAR|MEMF_ANY);
-    bug("[VMWareSVGA:HW] %s: FIFO Cmd bounce-buffer @ 0x%p\n", __func__, data->fifocmdbuf.buffer);
-    InitSemaphore((struct SignalSemaphore *)&data->fifocmdbuf.fifocmdsema);
+
 }
 
 void waitVMWareSVGAFIFO(struct HWData *data)
@@ -411,7 +419,10 @@ VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
 
             ULONG *dword = (ULONG *)buffer;
 
-            bug("[VMWareSVGA:HW] %s: copying %dbytes\n", __func__, size);
+            DFIFOBUF(
+              SVGA3dCmdHeader *header = (SVGA3dCmdHeader *)buffer;
+              bug("[VMWareSVGA:HW] %s: copying %dbytes (cmd %d, size %d)\n", __func__, size, header->id, header->size);
+             )
 
             while (size > 0) {
                 fifo[cmdNext >> VMWFIFO_CMD_SIZESHIFT] = *dword++;
@@ -540,7 +551,7 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
     if (data->capabilities & SVGA_CAP_8BIT_EMULATION)
     {
         data->bitsperpixel = vmwareReadReg(data, SVGA_REG_HOST_BITS_PER_PIXEL);
-        vmwareWriteReg(data,SVGA_REG_BITS_PER_PIXEL, data->bitsperpixel);
+        vmwareWriteReg(data, SVGA_REG_BITS_PER_PIXEL, data->bitsperpixel);
     }
     data->bitsperpixel = vmwareReadReg(data, SVGA_REG_BITS_PER_PIXEL);
 
@@ -601,12 +612,12 @@ VOID getModeCfgVMWareSVGA(struct HWData *data)
 
 VOID enableVMWareSVGA(struct HWData *data)
 {
-    vmwareWriteReg(data, SVGA_REG_ENABLE, 1);
+    vmwareWriteReg(data, SVGA_REG_ENABLE, SVGA_REG_ENABLE_ENABLE);
 }
 
 VOID disableVMWareSVGA(struct HWData *data)
 {
-    vmwareWriteReg(data, SVGA_REG_ENABLE, 0);
+    vmwareWriteReg(data, SVGA_REG_ENABLE, (SVGA_REG_ENABLE_HIDE|SVGA_REG_ENABLE_ENABLE));
 }
 
 VOID initDisplayVMWareSVGA(struct HWData *data)

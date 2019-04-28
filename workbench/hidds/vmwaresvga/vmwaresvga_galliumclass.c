@@ -39,6 +39,8 @@ OOP_Object *METHOD(GalliumVMWareSVGA, Root, New)
     {
         struct HIDDGalliumVMWareSVGAData * data = OOP_INST_DATA(cl, o);
 
+        memset(data, 0, sizeof(struct HIDDGalliumVMWareSVGAData));
+
         data->wsgo                              = o;
         data->hwdata                            = &XSD(cl)->data;
 
@@ -90,7 +92,14 @@ APTR METHOD(GalliumVMWareSVGA, Hidd_Gallium, CreatePipeScreen)
 
 VOID METHOD(GalliumVMWareSVGA, Hidd_Gallium, DisplayResource)
 {
+    struct pipe_resource *res = (struct pipe_resource *)msg->resource;
+    struct pipe_screen *resScreen;
+
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
     D(bug("[VMWareSVGA:Gallium] %s: resource @ 0x%p\n", __func__, msg->resource);)
     D(bug("[VMWareSVGA:Gallium] %s: bitmap @ 0x%p\n", __func__, msg->bitmap);)
+
+    resScreen = res->screen;
+
+    D(bug("[VMWareSVGA:Gallium] %s: resource screen @ 0x%p\n", __func__, resScreen);)
 }

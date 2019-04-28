@@ -221,8 +221,55 @@ static struct svga_winsys_context *VMWareSVGA_WSScr_ContextCreate(struct svga_wi
     D(bug("[VMWareSVGA:Gallium] %s: FIFO Reserve @ 0x%p, buffer @ 0x%p\n", __func__, hiddwsctx->command, hiddwsctx->command->buffer));
 
     VMWareSVGA_WSCtx_WinSysInit(data, hiddwsctx);
-    
+    if (wsctx->cid == -1)
+    {
+        D(bug("[VMWareSVGA:Gallium] %s: Failed to allocate a hardware context!!\n", __func__));
+        FREE(hiddwsctx);
+        return NULL;
+    }
     return wsctx;
+}
+
+ULONG VMWareSVGA_DefineSurface(struct HIDDGalliumVMWareSVGAData *data, struct svga_winsys_surface *srf, SVGA3dSize size, SVGA3dSurfaceAllFlags flags, SVGA3dSurfaceFormat format, uint32 numMipLevels)
+{
+    ULONG sid = ++data->srfcnt;
+    SVGA3dCmdHeader *header;
+    SVGA3dCmdDefineSurface *cmd;
+    SVGA3dSize *mipSizes;
+    SVGA3dSurfaceFace *faces;
+    int i;
+
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
+
+    header = reserveVMWareSVGAFIFO(data->hwdata, sizeof *header + sizeof *cmd +
+                            sizeof *mipSizes * numMipLevels);
+
+    header->id = SVGA_3D_CMD_SURFACE_DEFINE;
+    header->size = sizeof *cmd;
+    cmd = (SVGA3dCmdDefineSurface *)&header[1];
+
+    cmd->sid = sid;
+    cmd->surfaceFlags = flags;
+    cmd->format = format;
+
+    faces = &cmd->face[0];
+    mipSizes = (SVGA3dSize*) &cmd[1];
+    memset(faces, 0, sizeof *faces * SVGA3D_MAX_SURFACE_FACES);
+    memset(mipSizes, 0, sizeof *mipSizes * numMipLevels);
+
+    faces[0].numMipLevels = numMipLevels;
+
+    for (i = 0; i < numMipLevels; i++)
+    {
+        mipSizes[i].width = size.width;
+        mipSizes[i].height = size.height;
+        mipSizes[i].depth = size.depth;
+    }
+    commitVMWareSVGAFIFO(data->hwdata, data->hwdata->fifocmdbuf.reserved);
+
+    D(bug("[VMWareSVGA:Gallium] %s: returning %d\n", __func__, sid));
+
+    return sid;
 }
 
 static struct svga_winsys_surface *VMWareSVGA_WSScr_SurfaceCreate(
@@ -267,6 +314,11 @@ static struct svga_winsys_surface *VMWareSVGA_WSScr_SurfaceCreate(
         surface->surfbuf = VMWareSVGA_WSScr_BufferCreate(sws, 4096,
                                                    0,
                                                    buffer_size);
+
+        surface->sid =  VMWareSVGA_DefineSurface(data,
+                                                   VMWareSVGA_WSSurf_WinSysSurfFromHiddSurf(surface),
+                                                   size,
+                                                   flags, format, numMipLevels);
 
         D(bug("[VMWareSVGA:Gallium] %s: surface buffer @ 0x%p (allocated @ 0x%p, %d bytes)\n", __func__, ((struct VMWareSVGAPBBuf *)(surface->surfbuf))->map, ((struct VMWareSVGAPBBuf *)(surface->surfbuf))->allocated_map, ((struct VMWareSVGAPBBuf *)(surface->surfbuf))->allocated_size));
     }
@@ -361,6 +413,8 @@ static void VMWareSVGA_WSScr_FenceReference( struct svga_winsys_screen *sws,
                        struct pipe_fence_handle *src )
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
+    D(bug("[VMWareSVGA:Gallium] %s: src = 0x%p\n", __func__, src));
+    D(bug("[VMWareSVGA:Gallium] %s: dst storage @ 0x%p\n", __func__, pdst));
 
     *pdst = src;
 }
@@ -522,7 +576,7 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
     data->wssbase.stats_time_push               = VMWareSVGA_WSScr_StatsTimePush;
     data->wssbase.stats_time_pop                = VMWareSVGA_WSScr_StatsTimePop;
 
-    data->use_gbobjects = TRUE;
+    data->use_gbobjects = TRUE;                 // use Guest-backed objects...
 
     data->wssbase.have_gb_objects = FALSE;
     data->wssbase.have_gb_dma = FALSE;
