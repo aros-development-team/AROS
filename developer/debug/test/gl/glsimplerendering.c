@@ -496,7 +496,7 @@ int main(void)
         if (currmicrosecs - fpsmicrosecs > 1000000)
         {
             /* FPS counting is naive! */
-            sprintf(title, "GLSimpleRendering, FPS: %d", (int)framecnt);
+            sprintf(title, "GLSimpleRendering, FPS: %d", (int)((framecnt * 1000000)/(currmicrosecs - fpsmicrosecs)));
             fpsmicrosecs = currmicrosecs;
             framecnt = 0;
 
