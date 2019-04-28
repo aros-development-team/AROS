@@ -3,12 +3,12 @@
 include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
-# WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
-
 GALLIUM_PATH = $(top_srcdir)/src/gallium
-include $(GALLIUM_PATH)/drivers/nouveau/Makefile.sources
 
+include $(GALLIUM_PATH)/drivers/nouveau/Makefile.sources
 include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
+
+# WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
 
 # Currently only built for x86, because nouveau.hidd uses agp.hidd
 # which fails to build on architectures due to because of missing
