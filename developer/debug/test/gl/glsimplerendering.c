@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,13 +36,12 @@ struct timerequest  timereq;
 struct MsgPort      timeport;
 #endif
 struct Library *    CyberGfxBase = NULL;
-BOOL                fullscreen = FALSE;
-    
+BOOL                fullscreen = FALSE, trace = FALSE;
+#define DOTRACE(x)      ({ if (trace) { x } });
 GLuint              fragmentShader = 0;
 GLuint              vertexShader = 0;
 GLuint              shaderProgram = 0;
 GLint               angleLocation = 0;
-
 
 PFNGLCREATESHADERPROC       glCreateShader          = NULL;
 PFNGLSHADERSOURCEPROC       glShaderSource          = NULL;
@@ -58,6 +57,8 @@ PFNGLDELETESHADERPROC       glDeleteShader          = NULL;
 PFNGLDELETEPROGRAMPROC      glDeleteProgram         = NULL;
 PFNGLUNIFORM1FPROC          glUniform1f             = NULL;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation    = NULL;
+
+CONST_STRPTR version = "$VER: glsimplerendering 1.0 (28.04.2019) ©2010-2019 The AROS Development Team";
 
 const GLchar * fragmentShaderSource =
 "uniform float angle;"
@@ -88,7 +89,7 @@ void prepare_shader_program()
     char buffer[BUFFER_LEN] = {0};
     int len;
 
-    D(bug("\n[GLSimpeRend] Loading Shader Programs ...\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Loading Shader Programs ...\n");)
 
     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
@@ -109,14 +110,14 @@ void prepare_shader_program()
     glGetProgramInfoLog(shaderProgram, BUFFER_LEN, &len, buffer);
     printf("Shader program compile output: %s\n", buffer);
 
-    D(bug("\n[GLSimpeRend] Loading finished\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Loading finished\n");)
 
 #undef BUFFER_LEN    
 }
 
 void cleanup_shader_program()
 {
-    D(bug("\n[GLSimpeRend] Cleanup Shader Programs ...\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Cleanup Shader Programs ...\n");)
 
     glUseProgram(0);
     glDetachShader(shaderProgram, fragmentShader);
@@ -125,12 +126,12 @@ void cleanup_shader_program()
     glDeleteShader(vertexShader);
     glDeleteProgram(shaderProgram);
 
-    D(bug("\n[GLSimpeRend] Cleanup Shaders finished\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Cleanup Shaders finished\n");)
 }
 
 void render_face()
 {
-    D(bug("\n[GLSimpeRend] Render Face ...\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render Face ...\n");)
 
     glBegin(GL_QUADS);
         glColor4f(RAND_COL , 0.0, RAND_COL, 0.3);
@@ -143,12 +144,12 @@ void render_face()
         glVertex3f(0.25, -0.25, 0.0);
     glEnd();
 
-    D(bug("\n[GLSimpeRend] Render Face finished\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render Face finished\n");)
 }
 
 void render_cube()
 {
-    D(bug("\n[GLSimpeRend] Render Cube ...\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render Cube ...\n");)
 
     glPushMatrix();
     glRotatef(0.0, 0.0, 1.0, 0.0);
@@ -187,12 +188,12 @@ void render_cube()
     render_face();
     glPopMatrix();
 
-    D(bug("\n[GLSimpeRend] Render Cube finished\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render Cube finished\n");)
 }
 
 void render_triangle()
 {
-    D(bug("\n[GLSimpeRend] Render Triangle ...\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render Triangle ...\n");)
    
     glBegin(GL_TRIANGLES);
         glColor4f(1.0, 0.0, 0.0, 1.0);
@@ -203,12 +204,12 @@ void render_triangle()
         glVertex3f( 0.25,  0.25, 0.0);
     glEnd();
 
-    D(bug("\n[GLSimpeRend] Render Triangle finished\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render Triangle finished\n");)
 }
 
 void render()
 {
-    D(bug("\n[GLSimpeRend] Render ...\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render ...\n");)
 
     glLoadIdentity();
     glClearColor(0.3, 0.3, 0.3, 1.0);
@@ -237,7 +238,7 @@ void render()
 
     glASwapBuffers(glcont);
 
-    D(bug("\n[GLSimpeRend] Render finished\n"));
+    DOTRACE(bug("\n[GLSimpeRend] Render finished\n");)
 }    
 
 #define VISIBLE_WIDTH 300
@@ -377,11 +378,11 @@ void HandleIntuiMessages(void)
     }
 }
 
-
 #define ARG_FULLSCREEN  0
-#define NUM_ARGS        1
+#define ARG_TRACE       1
+#define NUM_ARGS        2
 
-STATIC CONST_STRPTR   TEMPLATE=(CONST_STRPTR) "FULLSCREEN/S";
+STATIC CONST_STRPTR   TEMPLATE=(CONST_STRPTR) "FULLSCREEN/S,TRACE/S";
 static struct RDArgs  *myargs;
 static IPTR           args[NUM_ARGS];
 
@@ -389,7 +390,14 @@ void get_arguments(void)
 {
     if((myargs = ReadArgs(TEMPLATE, args, NULL)))
     {
-        fullscreen = (BOOL)args[ARG_FULLSCREEN];
+        if ((BOOL)args[ARG_FULLSCREEN])
+        {
+            fullscreen = TRUE;
+        }
+        if ((BOOL)args[ARG_TRACE])
+        {
+            trace = TRUE;
+        }
         FreeArgs(myargs);
     }
 }
@@ -476,14 +484,14 @@ int main(void)
 //    finished = TRUE;
     while(!finished)
     {
-        D(bug("\n[GLSimpeRend] In Render Loop...\n"));
+        DOTRACE(bug("\n[GLSimpeRend] In Render Loop...\n");)
 
 #if defined(SHOW_FPS)
         GetSysTime(&tv);
         currmicrosecs = tv.tv_secs * 1000000 + tv.tv_micro;
 
-        D(bug("\n[GLSimpeRend] currmicrosecs = %ld\n", currmicrosecs));
-        D(bug("\n[GLSimpeRend] fpsmicrosecs = %ld\n", fpsmicrosecs));
+        DOTRACE(bug("\n[GLSimpeRend] currmicrosecs = %ld\n", currmicrosecs);)
+        DOTRACE(bug("\n[GLSimpeRend] fpsmicrosecs = %ld\n", fpsmicrosecs);)
 
         if (currmicrosecs - fpsmicrosecs > 1000000)
         {
@@ -492,7 +500,7 @@ int main(void)
             fpsmicrosecs = currmicrosecs;
             fps = 0;
 
-            D(bug("\n[GLSimpeRend] updating title (%s)\n", title));
+            DOTRACE(bug("\n[GLSimpeRend] updating title (%s)\n", title);)
             SetWindowTitles(win, title, (UBYTE *)~0L);
         }
 
