@@ -407,7 +407,7 @@ void get_arguments(void)
 */
 int main(void)
 {
-    ULONG fps = 0;
+    ULONG framecnt = 0;
 //    ULONG exitcounter = 0;
     TEXT title[100];
     struct Screen * pubscreen = NULL;
@@ -496,9 +496,9 @@ int main(void)
         if (currmicrosecs - fpsmicrosecs > 1000000)
         {
             /* FPS counting is naive! */
-            sprintf(title, "GLSimpleRendering, FPS: %d", (int)fps);
+            sprintf(title, "GLSimpleRendering, FPS: %d", (int)framecnt);
             fpsmicrosecs = currmicrosecs;
-            fps = 0;
+            framecnt = 0;
 
             DOTRACE(bug("\n[GLSimpeRend] updating title (%s)\n", title);)
             SetWindowTitles(win, title, (UBYTE *)~0L);
@@ -507,7 +507,7 @@ int main(void)
         angle_inc = ((double)(currmicrosecs - lastmicrosecs) / 1000000.0) * DEGREES_PER_SECOND;
         lastmicrosecs = currmicrosecs;
         
-        fps++; 
+        framecnt++; 
 #endif
         render();
         HandleIntuiMessages();
