@@ -472,6 +472,21 @@ static void readconfig(struct config *cfg)
         exitfileerror(20, "Syntax error");
 
     fileclose();
+    
+    if (cfg->confoverridefile)
+    {
+        if (!fileopen(cfg->confoverridefile))
+        {
+            fprintf(stderr, "In readconfig: Could not open %s\n", cfg->confoverridefile);
+            exit(20);
+        }
+
+        /* Read all sections and see that we are at the end of the file */
+        if (readsections(cfg, mainclass, NULL, 0, 1) != NULL)
+            exitfileerror(20, "Syntax error");
+
+        fileclose();
+    }
 }
 
 /* readsections will scan through all the sections in the config file.
