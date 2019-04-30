@@ -25,6 +25,7 @@
 #include <exec/alerts.h>
 
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <string.h>
 

@@ -26,6 +26,7 @@
 
 #include <proto/utility.h>
 #include <proto/processor.h>
+#include <clib/alib_protos.h>
 
 #include <stdio.h>
 #include <string.h>
