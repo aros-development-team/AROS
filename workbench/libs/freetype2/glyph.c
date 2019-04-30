@@ -10,6 +10,7 @@
 #include <diskfont/oterrors.h>
 #include <diskfont/glyph.h>
 #include <exec/memory.h>
+#include <clib/alib_protos.h>
 
 /* convert freetype FT_F26Dot6 to Amiga FIXED */
 #define F266toFX(x)  (((x)<<10))
