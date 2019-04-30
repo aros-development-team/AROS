@@ -121,7 +121,7 @@ endif
 	$(Q)$(IF) %(cmd) $(NOSTARTUP_LDFLAGS) \
 		$(GENMAP) %(objdir)/%(module).map \
 		%(objs) %(libs) %(ldflags) %(endtag) \
-		-o $@ 2>&1 > %(objdir)/%(err); \
+		-o $@ 2>&1 > %(objdir)/%(err) 2>&1 ; \
 	then \
 		cat %(objdir)/%(err); \
 	else \
