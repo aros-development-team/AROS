@@ -26,6 +26,7 @@
 #include <devices/timer.h>
 #include <dos/dosextens.h>
 #include <resources/filesysres.h>
+#include <clib/alib_protos.h>
 
 #include <proto/exec.h>
 #include <proto/expansion.h>
