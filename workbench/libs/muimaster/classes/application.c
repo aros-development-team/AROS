@@ -892,7 +892,7 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
      */
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-        IPTR *addr;
+        IPTR addr;
         switch (tag->ti_Tag)
         {
 
@@ -901,8 +901,9 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
             break;
 
         case MUIA_Application_CopyWinPosToApp:
-            addr = (IPTR *) tag->ti_Data;
-            CopyMem((CONST_APTR) tag->ti_Data, &data->winposused, *(addr));
+            addr = tag->ti_Data;
+            /* First element is storing size and is a 32-bit integer, even on 64-bit systems */
+            CopyMem((CONST_APTR) tag->ti_Data, &data->winposused, *(LONG *)(addr));
             break;
 
         case MUIA_Application_SetWinPos:
