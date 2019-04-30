@@ -575,6 +575,23 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
                 fputs(BaseName, fpout);
                 break;
 
+              case 'B':
+                {
+                  char *basenamestr = BaseName;
+                  int i;
+                  for (i = 0; i < strlen(BaseName); i++)
+                  {
+                    c = *basenamestr++;
+                    if (c >= '0' && c <= '9')
+                      putc(c, fpout);
+                    else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                      putc(c & 0x5F, fpout);
+                    else
+                      putc('_', fpout);
+                  }
+                  break;
+                }
+
               case 'n':
                 fprintf(fpout, "%d", NumStrings);
                 break;
