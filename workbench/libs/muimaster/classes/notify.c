@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -219,8 +219,6 @@ IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return FALSE;
     }
 
-    InitSemaphore(&data->mnd_Lock);
-
     while ((tag = NextTagItem(&tags)) != NULL)
     {
         switch (tag->ti_Tag)
@@ -257,17 +255,17 @@ IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     mui_free(data->mnd_Attributes);
 
-    ObtainSemaphore(&data->mnd_Lock);
     if (data->mnd_NotifyList)
     {
-        ForeachNodeSafe(data->mnd_NotifyList, node, tmp)
+        for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
+            node = tmp)
         {
+            tmp = node->mln_Succ;
             DeleteNNode(data, (struct NotifyNode *)node);
         }
         mui_free(data->mnd_NotifyList);
     }
-    ReleaseSemaphore(&data->mnd_Lock);
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -401,9 +399,9 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
     struct TagItem *tags = msg->ops_AttrList;
+    BOOL no_notify = FALSE;
     struct TagItem *tag;
     struct MinNode *node;
-    BOOL no_notify = FALSE;
 
     /* There are many ways to find out what tag items provided by set()
      ** we do know. The best way should be using NextTagItem() and simply
@@ -443,12 +441,8 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     /*
      * check for notifications
      */
-    ObtainSemaphoreShared(&data->mnd_Lock);
     if (!data->mnd_NotifyList || no_notify)
-    {
-        ReleaseSemaphore(&data->mnd_Lock);
         return 0;
-    }
 
     tags = msg->ops_AttrList;
     while ((tag = NextTagItem(&tags)))
@@ -458,7 +452,6 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             check_notify((NNode) node, obj, tag);
         }
     }
-    ReleaseSemaphore(&data->mnd_Lock);
 
     return 0;
 }
@@ -588,28 +581,23 @@ IPTR Notify__MUIM_KillNotify(struct IClass *cl, Object *obj,
     struct MUIP_KillNotify *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
-    struct MinNode *node, *tmp;
+    struct MinNode *node;
     struct NotifyNode *nnode;
 
-    ObtainSemaphore(&data->mnd_Lock);
     if (!data->mnd_NotifyList)
-    {
-        ReleaseSemaphore(&data->mnd_Lock);
         return 0;
-    }
 
-    ForeachNodeSafe(data->mnd_NotifyList, node, tmp)
+    for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
+        node = node->mln_Succ)
     {
         nnode = (NNode) node;
         if (msg->TrigAttr == nnode->nn_TrigAttr)
         {
             Remove((struct Node *)node);
             DeleteNNode(data, nnode);
-            ReleaseSemaphore(&data->mnd_Lock);
             return 1;
         }
     }
-    ReleaseSemaphore(&data->mnd_Lock);
     return 0;
 }
 
@@ -622,14 +610,14 @@ IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj,
     struct MUIP_KillNotifyObj *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
-    struct MinNode *node, *tmp;
+    struct MinNode *node;
     struct NotifyNode *nnode;
 
-    ObtainSemaphore(&data->mnd_Lock);
     if (!data->mnd_NotifyList)
         return 0;
 
-    ForeachNodeSafe(data->mnd_NotifyList, node, tmp)
+    for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
+        node = node->mln_Succ)
     {
         nnode = (NNode) node;
         if ((msg->TrigAttr == nnode->nn_TrigAttr)
@@ -637,11 +625,9 @@ IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj,
         {
             Remove((struct Node *)node);
             DeleteNNode(data, nnode);
-            ReleaseSemaphore(&data->mnd_Lock);
             return 1;
         }
     }
-    ReleaseSemaphore(&data->mnd_Lock);
     return 0;
 }
 
@@ -686,23 +672,16 @@ IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj,
 
     if (data->mnd_NotifyList == NULL)
     {
-        ObtainSemaphore(&data->mnd_Lock);
         if (!(data->mnd_NotifyList = mui_alloc_struct(struct MinList)))
-        {
-            ReleaseSemaphore(&data->mnd_Lock);
-            return FALSE;
-        }
+              return FALSE;
         NewList((struct List *)data->mnd_NotifyList);
-        ReleaseSemaphore(&data->mnd_Lock);
     }
 
     nnode = CreateNNode(data, msg);
     if (NULL == nnode)
         return FALSE;
 
-    ObtainSemaphore(&data->mnd_Lock);
     AddTail((struct List *)data->mnd_NotifyList, (struct Node *)nnode);
-    ReleaseSemaphore(&data->mnd_Lock);
     return TRUE;
 }
 
