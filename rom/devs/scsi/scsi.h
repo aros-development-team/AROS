@@ -1,11 +1,11 @@
-#ifndef _ATA_H
-#define _ATA_H
+#ifndef _SCSI_H
+#define _SCSI_H
 
 /*
-    Copyright © 2004-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2019, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ata.device main private include file
+    Desc: scsi.device main private include file
     Lang: English
 */
 
@@ -28,10 +28,10 @@
 #include <devices/newstyle.h>
 #include <devices/timer.h>
 #include <devices/cd.h>
-#include <hardware/ata.h>
-#include <hidd/ata.h>
+#include <hardware/scsi.h>
+#include <hidd/scsi.h>
 
-#include <devices/scsicmds.h>
+#include "include/devices/scsicmds.h"
 
 #define MAX_DEVICEBUSES         2
 #define MAX_BUSUNITS            2
@@ -44,47 +44,47 @@
 
    Please note, that all structures here are more or less chained together.
    The aim is, every single function in ata.device, no matter whether it takes
-   ata_Unit or ata_Bus or God knows what else, would have access to ata device
+   scsi_Unit or scsi_Bus or God knows what else, would have access to ata device
    base and through it, to all other device structures.
 
-   I just wanted to avoid passing ataBase everywhere. :-D
+   I just wanted to avoid passing scsiBase everywhere. :-D
    */
 
 /* structure forward declarations */
-struct ata_Unit;
-struct ata_Bus;
+struct scsi_Unit;
+struct scsi_Bus;
 
 /* ata.device base */
-struct ataBase
+struct scsiBase
 {
-    struct Device           	ata_Device;    			/* Exec device structure                */
-    struct Task            	*ata_Daemon;    		/* master task pointer                  */
+    struct Device           	scsi_Device;    			/* Exec device structure                */
+    struct Task            	*scsi_Daemon;    		/* master task pointer                  */
     struct MsgPort         	*DaemonPort;    		/* Daemon's message port                */
     struct MinList          	Daemon_ios;    			/* Daemon's IORequests                  */
     struct SignalSemaphore  	DaemonSem;
     struct Task            	*daemonParent;  		/* Who sends control requests to daemon */
-    int                     	ata__buscount; 			/* Number of all buses                  */
+    int                     	scsi__buscount; 			/* Number of all buses                  */
     struct SignalSemaphore  	DetectionSem;  			/* Device detection semaphore           */
 
     /* Arguments and flags */
-    UBYTE                   	ata_32bit;
-    UBYTE                   	ata_NoMulti;
-    UBYTE                   	ata_NoDMA;
-    UBYTE                   	ata_Poll;
+    UBYTE                   	scsi_32bit;
+    UBYTE                   	scsi_NoMulti;
+    UBYTE                   	scsi_NoDMA;
+    UBYTE                   	scsi_Poll;
 
     /*
      * memory pool
      */
-    APTR                    	ata_MemPool;
+    APTR                    	scsi_MemPool;
 
-    ULONG                   	ata_ItersPer100ns;
+    ULONG                   	scsi_ItersPer100ns;
 
-    struct Library         	*ata_OOPBase;
-    struct Library         	*ata_UtilityBase;
-    BPTR                    	ata_SegList;
+    struct Library         	*scsi_OOPBase;
+    struct Library         	*scsi_UtilityBase;
+    BPTR                    	scsi_SegList;
 
     /* Bus HIDD classes */
-    OOP_Class              	*ataClass;
+    OOP_Class              	*scsiClass;
     OOP_Class              	*busClass;
     OOP_Class              	*unitClass;
 
@@ -92,7 +92,7 @@ struct ataBase
     OOP_AttrBase                unitAttrBase;
     OOP_AttrBase                hwAttrBase;
     OOP_AttrBase                busAttrBase;
-    OOP_AttrBase                atabusAttrBase;
+    OOP_AttrBase                sbusAttrBase;
     OOP_AttrBase                sunitAttrBase;
 #endif
 #if defined(__OOP_NOMETHODBASES__)
@@ -101,50 +101,50 @@ struct ataBase
     OOP_MethodID                HiddSCMethodBase;
 #endif
 
-    struct List                 ata_Controllers;
+    struct List                 scsi_Controllers;
 };
 
 #if defined(__OOP_NOATTRBASES__)
 #undef HWAttrBase
 #undef HiddBusAB
-#undef HiddATABusAB
-#undef HiddATAUnitAB
+#undef HiddSCSIBusAB
+#undef HiddSCSIUnitAB
 #undef HiddStorageUnitAB
-#define HWAttrBase                      (ATABase->hwAttrBase)
-#define HiddBusAB                       (ATABase->busAttrBase)
-#define HiddATABusAB                    (ATABase->atabusAttrBase)
-#define HiddATAUnitAB                   (ATABase->unitAttrBase)
-#define HiddStorageUnitAB               (ATABase->sunitAttrBase)
+#define HWAttrBase                      (SCSIBase->hwAttrBase)
+#define HiddBusAB                       (SCSIBase->busAttrBase)
+#define HiddSCSIBusAB                   (SCSIBase->sbusAttrBase)
+#define HiddSCSIUnitAB                  (SCSIBase->unitAttrBase)
+#define HiddStorageUnitAB               (SCSIBase->sunitAttrBase)
 #endif
 
 #if defined(__OOP_NOMETHODBASES__)
 #undef HWBase
-#undef HiddATABusBase
-#define HWBase                          (ATABase->hwMethodBase)
-#define HiddATABusBase                  (ATABase->busMethodBase)
-#define HiddStorageControllerBase       (ATABase->HiddSCMethodBase)
+#undef HiddSCSIBusBase
+#define HWBase                          (SCSIBase->hwMethodBase)
+#define HiddSCSIBusBase                 (SCSIBase->busMethodBase)
+#define HiddStorageControllerBase       (SCSIBase->HiddSCMethodBase)
 #endif
 
-#define OOPBase                         (ATABase->ata_OOPBase)
-#define UtilityBase                     (ATABase->ata_UtilityBase)
+#define OOPBase                         (SCSIBase->scsi_OOPBase)
+#define UtilityBase                     (SCSIBase->scsi_UtilityBase)
 
-struct ata_Controller
+struct scsi_Controller
 {
-    struct Node         	ac_Node;
-    OOP_Class           	*ac_Class;
-    OOP_Object          	*ac_Object;
+    struct Node         	sc_Node;
+    OOP_Class           	*sc_Class;
+    OOP_Object          	*sc_Object;
 };
 
 /*
    A single IDE bus (channel)
    */
-struct ata_Bus
+struct scsi_Bus
 {
-   struct ataBase          	*ab_Base;  			/* device self */
+   struct scsiBase          	*sb_Base;  			/* device self */
 
    /** Bus object data **/
-   struct ATA_BusInterface	*busVectors;     		/* Control vector table     */
-   struct ATA_PIOInterface	*pioVectors;     		/* PIO vector table         */
+   struct SCSI_BusInterface	*busVectors;     		/* Control vector table     */
+   struct SCSI_PIOInterface	*pioVectors;     		/* PIO vector table         */
    APTR                    	*dmaVectors;     		/* DMA vector table         */
    ULONG                   	pioDataSize;     		/* PIO interface data size  */
    ULONG                   	dmaDataSize;     		/* DMA interface data size  */
@@ -153,28 +153,28 @@ struct ata_Bus
    BOOL                    	keepEmpty;       		/* Whether we should keep empty bus object */
    BOOL                    	haveAltIO;
 
-   volatile UBYTE          	ab_Dev[MAX_BUSUNITS];		/* Master/Slave type, see below */
-   UBYTE                   	ab_Flags;   			/* Bus flags similar to unit flags */
-   BYTE                    	ab_SleepySignal; 		/* Signal used to wake the task up, when it's waiting */
+   volatile UBYTE          	sb_Dev[MAX_BUSUNITS];		/* Master/Slave type, see below */
+   UBYTE                   	sb_Flags;   			/* Bus flags similar to unit flags */
+   BYTE                    	sb_SleepySignal; 		/* Signal used to wake the task up, when it's waiting */
 
    /** Data Requests/DMA **/
-   UBYTE                   	ab_BusNum;  			/* bus id - used to calculate device id */
+   UBYTE                   	sb_BusNum;  			/* bus id - used to calculate device id */
 
-   OOP_Object        		*ab_Units[MAX_BUSUNITS];   	/* Units on the bus */
-   struct ata_Unit         	*ab_SelectedUnit;    		/* Currently selected unit */
+   OOP_Object        		*sb_Units[MAX_BUSUNITS];   	/* Units on the bus */
+   struct scsi_Unit         	*sb_SelectedUnit;    		/* Currently selected unit */
 
-   ULONG                   	ab_IntCnt;
+   ULONG                   	sb_IntCnt;
 
-   struct Task             	*ab_Task;       		/* Bus task handling all not-immediate transactions */
-   struct MsgPort          	*ab_MsgPort;    		/* Task's message port */
-   struct IORequest        	*ab_Timer;      		/* timer stuff */
+   struct Task             	*sb_Task;       		/* Bus task handling all not-immediate transactions */
+   struct MsgPort          	*sb_MsgPort;    		/* Task's message port */
+   struct IORequest        	*sb_Timer;      		/* timer stuff */
 
-   struct Interrupt        	ab_ResetInt;
+   struct Interrupt        	sb_ResetInt;
 
-   APTR                    	ab_BounceBufferPool;
+   APTR                    	sb_BounceBufferPool;
 
    /** functions go here **/
-   void                   	(*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
+   void                   	(*sb_HandleIRQ)(struct scsi_Unit* unit, UBYTE status);
 };
 
 /* Device types */
@@ -227,8 +227,8 @@ struct DriveIdent {
    UWORD       pad8[6];                // 69-74
    UWORD       id_QueueDepth;          // 75
    UWORD       pad9[4];                // 76-79
-   UWORD       id_ATAVersion;          // 80
-   UWORD       id_ATARevision;         // 81
+   UWORD       id_SCSIVersion;          // 80
+   UWORD       id_SCSIRevision;         // 81
    UWORD       id_Commands1;           // 82
    UWORD       id_Commands2;           // 83
    UWORD       id_Commands3;           // 84
@@ -264,7 +264,7 @@ struct DriveIdent {
 
 typedef struct
 {
-   UBYTE command;       // current ATA command
+   UBYTE command;       // current SCSI command
    UBYTE feature;       // FF to indicate no feature
    UBYTE secmul;        // for read multiple - multiplier. default 1
    UBYTE pad;
@@ -289,7 +289,7 @@ typedef struct
       CT_LBA28,
       CT_LBA48,
    } type;
-} ata_CommandBlock;
+} scsi_CommandBlock;
 
 struct DaemonIO
 {
@@ -301,24 +301,24 @@ struct DaemonIO
    Unit structure describing given device on the bus. It contains all the
    necessary information unit/device may need.
    */
-struct ata_Unit
+struct scsi_Unit
 {
-   struct Unit         au_Unit;        /* exec's unit */
-   struct DriveIdent  *au_Drive;       /* Drive Ident after IDENTIFY command */
-   struct ata_Bus     *au_Bus;         /* Bus on which this unit is */
+   struct Unit         su_Unit;        /* exec's unit */
+   struct DriveIdent  *su_Drive;       /* Drive Ident after IDENTIFY command */
+   struct scsi_Bus     *su_Bus;         /* Bus on which this unit is */
    struct IOStdReq    *DaemonReq;      /* Disk change monitoring request */
 
-   ULONG               au_XferModes;   /* available transfer modes */
-   ULONG               au_UseModes;    /* Used transfer modes */
+   ULONG               su_XferModes;   /* available transfer modes */
+   ULONG               su_UseModes;    /* Used transfer modes */
 
-   ULONG               au_Capacity;    /* Highest sector accessible through LBA28 */
-   UQUAD               au_Capacity48;  /* Highest sector accessible through LBA48 */
-   ULONG               au_Cylinders;
-   UBYTE               au_Heads;
-   UBYTE               au_Sectors;
-   UBYTE               au_Model[41];
-   UBYTE               au_FirmwareRev[9];
-   UBYTE               au_SerialNumber[21];
+   ULONG               su_Capacity;    /* Highest sector accessible through LBA28 */
+   UQUAD               su_Capacity48;  /* Highest sector accessible through LBA48 */
+   ULONG               su_Cylinders;
+   UBYTE               su_Heads;
+   UBYTE               su_Sectors;
+   UBYTE               su_Model[41];
+   UBYTE               su_FirmwareRev[9];
+   UBYTE               su_SerialNumber[21];
 
    /*
       Here are stored pointers to functions responsible for handling this
@@ -327,34 +327,34 @@ struct ata_Unit
       in PIO mode reading single sectors, using multisector PIO, or
       multiword DMA.
       */
-   BYTE                (*au_Read32    )(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-   BYTE                (*au_Write32   )(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-   BYTE                (*au_Read64    )(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-   BYTE                (*au_Write64   )(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-   BYTE                (*au_Eject     )(struct ata_Unit *);
-   BYTE                (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
-   BYTE                (*au_Identify  )(struct ata_Unit *);
-   VOID                (*au_ins       )(APTR, APTR, ULONG);
-   VOID                (*au_outs      )(APTR, APTR, ULONG);
+   BYTE                (*su_Read32    )(struct scsi_Unit *, ULONG, ULONG, APTR, ULONG *);
+   BYTE                (*su_Write32   )(struct scsi_Unit *, ULONG, ULONG, APTR, ULONG *);
+   BYTE                (*su_Read64    )(struct scsi_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   BYTE                (*su_Write64   )(struct scsi_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   BYTE                (*su_Eject     )(struct scsi_Unit *);
+   BYTE                (*su_DirectSCSI)(struct scsi_Unit *, struct SCSICmd*);
+   BYTE                (*su_Identify  )(struct scsi_Unit *);
+   VOID                (*su_ins       )(APTR, APTR, ULONG);
+   VOID                (*su_outs      )(APTR, APTR, ULONG);
    void                *pioInterface;  /* PIO interface object, cached for performance */
 
-   ULONG               au_UnitNum;     /* Unit number as coded by device */
-   ULONG               au_Flags;       /* Unit flags, see below */
-   ULONG               au_ChangeNum;   /* Number of disc changes */
+   ULONG               su_UnitNum;     /* Unit number as coded by device */
+   ULONG               su_Flags;       /* Unit flags, see below */
+   ULONG               su_ChangeNum;   /* Number of disc changes */
 
-   struct Interrupt   *au_RemoveInt;   /* Raise this interrupt on a disc change */
-   struct List         au_SoftList;    /* Raise even more interrupts from this list on disc change */
+   struct Interrupt   *su_RemoveInt;   /* Raise this interrupt on a disc change */
+   struct List         su_SoftList;    /* Raise even more interrupts from this list on disc change */
 
-   UBYTE               au_SectorShift; /* Sector shift. 9 here is 512 bytes sector */
-   UBYTE               au_DevMask;     /* device mask used to simplify device number coding */
-   UBYTE               au_SenseKey;    /* Sense key from ATAPI devices */
-   UBYTE               au_DevType;
+   UBYTE               su_SectorShift; /* Sector shift. 9 here is 512 bytes sector */
+   UBYTE               su_DevMask;     /* device mask used to simplify device number coding */
+   UBYTE               su_SenseKey;    /* Sense key from ATAPI devices */
+   UBYTE               su_DevType;
 
    /******* PIO IO ********/
-   APTR                au_cmd_data;
-   ULONG               au_cmd_length;
-   ULONG               au_cmd_total;
-   ULONG               au_cmd_error;
+   APTR                su_cmd_data;
+   ULONG               su_cmd_length;
+   ULONG               su_cmd_total;
+   ULONG               su_cmd_error;
 };
 
 #define AF_XFER_DMA_MASK (AF_XFER_MDMA(0)|AF_XFER_MDMA(1)|AF_XFER_MDMA(2)|                 \
@@ -374,30 +374,25 @@ struct ata_Unit
 #define AF_DMA                  (1 << AB_DMA)
 #define AF_CHSOnly              (1 << AB_CHSOnly)
 
-#define Unit(io) ((struct ata_Unit *)(io)->io_Unit)
+#define Unit(io) ((struct scsi_Unit *)(io)->io_Unit)
 #define IOStdReq(io) ((struct IOStdReq *)io)
 
 /* Function prototypes */
 
-BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase);
-AROS_UFP3(BOOL, Hidd_ATABus_Open,
+BOOL Hidd_SCSIBus_Start(OOP_Object *o, struct scsiBase *SCSIBase);
+AROS_UFP3(BOOL, Hidd_SCSIBus_Open,
           AROS_UFPA(struct Hook *, h, A0),
           AROS_UFPA(OOP_Object *, obj, A2),
           AROS_UFPA(IPTR, reqUnit, A1));
 
-void ata_InitBus(struct ata_Bus *);
-int atapi_TestUnitOK(struct ata_Unit *);
-BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit);
-void ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u);
+void scsi_InitBus(struct scsi_Bus *);
+int atapi_TestUnitOK(struct scsi_Unit *);
+BOOL scsi_setup_unit(struct scsi_Bus *bus, struct scsi_Unit *unit);
+void scsi_init_unit(struct scsi_Bus *bus, struct scsi_Unit *unit, UBYTE u);
 
-BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
-void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase);
-void DaemonCode(struct ataBase *LIBBASE);
-
-BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
-
-void ata_SMARTCmd(struct IOStdReq *io);
-void ata_TRIMCmd(struct IOStdReq *io);
+BOOL scsi_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct scsi_Unit *unit);
+void BusTaskCode(struct scsi_Bus *bus, struct scsiBase *SCSIBase);
+void DaemonCode(struct scsiBase *LIBBASE);
 
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03
@@ -411,5 +406,5 @@ struct atapi_StartStop
     UBYTE   pad2[7];
 };
 
-#endif // _ATA_H
+#endif // _SCSI_H
 
