@@ -2,11 +2,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- kernel-ata-includes : kernel-scsi-includes
+#MM- kernel-ata-kobj-includes : kernel-scsi--kobj-includes
+
 USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
 #USER_CPPFLAGS += -DDEBUG
-
-INCLUDE_FILES := $(call WILDCARD, include/devices/*.h)
-%copy_includes path=devices dir=include/devices
 
 INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
 %copy_includes path=hardware dir=include/hardware
