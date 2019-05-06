@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,6 +55,18 @@ struct TaskListEntry
 {
     struct Node                 tle_Node;
     struct Task                 *tle_Task;
+    struct List                 tle_HookTypes;
+};
+
+struct TaskListHookEntry
+{
+    struct Node                 tlhe_Node;
+    struct List                 tlhe_Hooks;
+};
+
+struct TaskListHookNode
+{
+    struct Hook                 *tln_Hook;
 };
 
 #ifdef TASKRES_ENABLE
@@ -80,5 +92,7 @@ struct TaskListPrivate
 #define KernelBase TaskResBase->trb_KernelBase
 
 void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase);
+struct TaskListHookEntry *GetHookTypeEntry(struct List *htList, ULONG thType, BOOL create);
+struct TaskListEntry *GetTaskEntry(struct Task *thisTask, struct TaskResBase *TaskResBase);
 
 #endif /* TASKRES_INTERN_H */
