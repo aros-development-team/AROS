@@ -1,4 +1,4 @@
-# Copyright © 2015, The AROS Development Team. All rights reserved.
+# Copyright © 2015-2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -12,10 +12,13 @@ USER_LDFLAGS := -static
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
 
 TASKRES_FUNCS :=		\
-	    LockTaskList	\
-	    UnLockTaskList	\
-	    NextTaskEntry	\
-	    QueryTaskTagList
+	    LockTaskList        \
+	    UnLockTaskList      \
+	    NextTaskEntry       \
+	    QueryTaskTagList    \
+	    InitTaskHooks       \
+	    AddTaskHook         \
+	    RunTaskHooks
 
 TASKRES_FILES :=		\
 	    task_init		\

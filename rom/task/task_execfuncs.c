@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,6 +20,7 @@ void TaskResAddTask(struct TaskResBase *TaskResBase, struct Task *task)
     {
         D(bug("[TaskRes] TaskResAddTask: taskentry @ 0x%p for '%s'\n", newEntry, task->tc_Node.ln_Name));
         newEntry->tle_Task = task;
+        NEWLIST(&newEntry->tle_HookTypes);
         if (IsListEmpty(&TaskResBase->trb_LockedLists))
             AddTail(&TaskResBase->trb_TaskList, &newEntry->tle_Node);
         else

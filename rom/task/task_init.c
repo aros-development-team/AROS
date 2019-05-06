@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -68,6 +68,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
             if ((taskEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
             {
                 D(bug("[TaskRes] 0x%p [R  ] %02d %s\n", curTask, GetIntETask(curTask)->iet_CpuNumber, curTask->tc_Node.ln_Name));
+                NEWLIST(&taskEntry->tle_HookTypes);
                 taskEntry->tle_Task = curTask;
                 AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
             }
