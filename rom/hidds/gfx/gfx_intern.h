@@ -256,6 +256,19 @@ struct HIDDBitMapData
 #endif
 };
 
+struct BMHistEntry
+{
+    struct BMHistEntry *next;
+    ULONG count;
+    ULONG *entries;
+};
+
+struct HiddBMHistogramData
+{
+    ULONG       size;
+    struct BMHistEntry *hist;
+};
+
 #define NUM_ATTRBASES   11
 #define NUM_METHODBASES 5
 
@@ -274,6 +287,7 @@ struct class_static_data
     OOP_Class            *gfxhwclass;                   /* graphics hw enumerator class         */
     OOP_Class            *gfxhiddclass; /* graphics hidd class    */
     OOP_Class            *bitmapclass;  /* bitmap class           */
+    OOP_Class            *bmhistogramclass;
     OOP_Class            *gcclass;      /* graphics context class */
     OOP_Class		 *colormapclass; /* colormap class	  */
     
