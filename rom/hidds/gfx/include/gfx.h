@@ -308,6 +308,11 @@ typedef ULONG (*HIDDT_RGBConversionFunction)(APTR srcPixels, ULONG srcMod, HIDDT
 #define IS_BITMAP_ATTR(attr, idx) \
         ( ( ( idx ) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 
+/**** BitMap Histogram ********************************************************/
+
+#include <interface/Hidd_BMHistogram.h>
+
+#define CLID_Hidd_BMHistogram IID_Hidd_BMHistogram
 
 /**** Graphics context definitions ********************************************/
 

@@ -12,6 +12,7 @@ FILES       := \
                 gfx_hwclass \
                 gfx_hiddclass \
                 gfx_bitmapclass \
+                gfx_histogramclass \
                 gfx_colormapclass \
                 gfx_gcclass \
                 gfx_planarbitmapclass \
