@@ -54,50 +54,187 @@ static APTR getromaddr(struct ExpansionBase *ExpansionBase, APTR romaddr)
     return romaddr;
 }
 
+static BOOL romisinregion(APTR romstart, APTR romend, APTR regstart, APTR regend, BOOL rev)
+{
+    if (rev)
+    {
+        if (((romend < regstart) && (romend > regend)) && 
+            ((romstart > regend ) && (romstart < regstart)))
+            return TRUE;
+    }
+    else
+    {
+        if (((romend > regstart) && (romend < regend)) && 
+            ((romstart < regend ) && (romstart > regstart)))
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static BOOL romatregionstart(APTR romend, APTR regstart, APTR regend, BOOL rev)
+{
+    if (rev)
+    {
+        if ((romend < regstart) && (romend > regend))
+            return TRUE;
+    }
+    else
+    {
+        if ((romend > regstart) && (romend < regend))
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static BOOL romatregionend(APTR romstart, APTR regstart, APTR regend, BOOL rev)
+{
+    if (rev)
+    {
+        if ((romstart > regend) && (romstart < regstart))
+            return TRUE;
+    }
+    else
+    {
+        if ((romstart < regend) && (romstart > regstart))
+            return TRUE;
+    }
+    return FALSE;
+}
+
 static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *end, LONG step, BYTE prio)
 {
-    APTR romstart, romend;
+    APTR romstart, romend, tmpstart, tmpend;
     LONG ret;
 
-    D(bug("[expansion:am68k] %s(%08x:%08x)\n", __func__, *start, *end));
+    D(
+      bug("[expansion:am68k] %s(", __func__);
+      if (step < 0)
+      {    
+          bug("%08x:%08x)\n", *start - 1, *end);
+      }
+      else
+      {
+          bug("%08x:%08x)\n", *start, *end - 1);
+      }
+     )
 
-    /* check against normal rom */
+    /* split the region around the system rom *******************************************/
     romstart = getromaddr(ExpansionBase, (APTR)0xF80000);
     romend = romstart + ROMIMG_SIZE - 1;
     D(bug("[expansion:am68k] %s: rom @ %08x-> %08x\n", __func__, romstart, romend));
-    if (((romend > *start) && (romend < *end)) && 
-        ((romstart < *end ) && (romstart > *start)))
+    if (romisinregion(romstart, romend, *start, *end, (step < 0) ? TRUE : FALSE))
     {
-        ret = scanmbram(ExpansionBase, start, &romstart, step, prio);
-        if (ret >= 0)
-            ret = scanmbram(ExpansionBase, &romend, end, step, prio);
+        if (step < 0)
+        {
+            tmpstart = romstart;
+            tmpend = romend + 1;
+            ret = scanmbram(ExpansionBase, start, &tmpend, step, prio);
+            if (ret >= 0)
+                ret = scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
+        else
+        {
+            tmpend = romstart;
+            tmpstart = romend + 1;
+            ret = scanmbram(ExpansionBase, start, &tmpend, step, prio);
+            if (ret >= 0)
+                ret = scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
         return ret;
     }
-    else if ((romend > *start) && (romend < *end))
-        return scanmbram(ExpansionBase, &romend, end, step, prio);
-    else if ((romstart < *end ) && (romstart > *start))
-        return scanmbram(ExpansionBase, start, &romstart, step, prio);
+    else if (romatregionstart(romend, *start, *end, (step < 0) ? TRUE : FALSE))
+    {
+        if (step < 0)
+        {
+            tmpstart = romstart;
+            return scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
+        else
+        {
+            tmpstart = romend + 1;
+            return scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
+    }
+    else if (romatregionend(romstart, *start, *end, (step < 0) ? TRUE : FALSE))
+    {
+        if (step < 0)
+        {
+            tmpend = romend + 1;
+            return scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        }
+        else
+        {
+            tmpend = romstart;
+            return scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        }
+    }
+    /* end splitting the region around the system rom ***********************************/
 
-    /* check against extended rom (cd32/aros/etc) */
+    /* split the region around the extended rom (cd32/aros/etc) *************************/
     romstart = getromaddr(ExpansionBase, (APTR)0xE00000);
     romend = romstart + ROMIMG_SIZE - 1;
     D(bug("[expansion:am68k] %s: ext-rom @ %08x-> %08x\n", __func__, romstart, romend));
-    if (((romend > *start) && (romend < *end)) && 
-        ((romstart < *end ) && (romstart > *start)))
+    if (romisinregion(romstart, romend, *start, *end, (step < 0) ? TRUE : FALSE))
     {
-        ret = scanmbram(ExpansionBase, start, &romstart, step, prio);
-        if (ret >= 0)
-            ret = scanmbram(ExpansionBase, &romend, end, step, prio);
+        if (step < 0)
+        {
+            tmpstart = romstart;
+            tmpend = romend + 1;
+            ret = scanmbram(ExpansionBase, start, &tmpend, step, prio);
+            if (ret >= 0)
+                ret = scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
+        else
+        {
+            tmpend = romstart;
+            tmpstart = romend + 1;
+            ret = scanmbram(ExpansionBase, start, &tmpend, step, prio);
+            if (ret >= 0)
+                ret = scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
         return ret;
     }
-    else if ((romend > *start) && (romend < *end))
-        return scanmbram(ExpansionBase, &romend, end, step, prio);
-    else if ((romstart < *end ) && (romstart > *start))
-        return scanmbram(ExpansionBase, start, &romstart, step, prio);
+    else if (romatregionstart(romend, *start, *end, (step < 0) ? TRUE : FALSE))
+    {
+        if (step < 0)
+        {
+            tmpstart = romstart;
+            return scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
+        else
+        {
+            tmpstart = romend + 1;
+            return scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        }
+    }
+    else if (romatregionend(romstart, *start, *end, (step < 0) ? TRUE : FALSE))
+    {
+        if (step < 0)
+        {
+            tmpend = romend + 1;
+            return scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        }
+        else
+        {
+            tmpend = romstart;
+            return scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        }
+    }
+    /* end splitting the region around the extended rom *********************************/
 
     APTR mbramstart = *start, mbramend;
 
-    D(bug("[expansion:am68k] %s: performing test on region %08x:%08x\n", __func__, *start, *end));
+    D(
+      bug("[expansion:am68k] %s: performing test on region ", __func__);
+      if (step < 0)
+      {
+          bug("%08x:%08x (-)\n", *end, *start - 1);
+      }
+      else
+      {
+          bug("%08x:%08x\n", *start, *end - 1);
+      }    
+     )
 
     for (;;)
     {
@@ -132,7 +269,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
                     mbramend = *end;
             }
 
-            D(bug("[expansion:am68k] %s:     testing range %08x -> %08x\n", __func__, mbramstart, mbramend));
+            D(bug("[expansion:am68k] %s:     testing range %08x -> %08x\n", __func__, mbramstart, mbramend - 1));
             LONG tret = AROS_UFC3(LONG, MemoryTest,
                         AROS_UFCA(APTR, mbramstart, A0),
                         AROS_UFCA(APTR, mbramend, A1),
