@@ -2,8 +2,21 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES=dispatch schedule schedulecpu switch m68k_exception kernel_cpu kernel_intr \
-      platform_init setprotection mapglobal mmu bushandler #kernel_gdb
+FILES := \
+        dispatch \
+        schedule \
+        schedulecpu \
+        switch \
+        m68k_exception \
+        kernel_cpu \
+        kernel_intr \
+        platform_init \
+        setprotection \
+        mapglobal \
+        mmu \
+        virtualtophysical \
+        bushandler
+#kernel_gdb
 
 AFILES=issuper fpusavecontext fpurestorecontext buserror
 
