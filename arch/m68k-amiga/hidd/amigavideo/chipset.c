@@ -144,17 +144,16 @@ static void setpalntsc(struct amigavideo_staticdata *csd, ULONG modeid)
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
 
     csd->palmode = (GfxBase->DisplayFlags & NTSC) == 0;
+
     if (!csd->ecs_agnus)	
         return;
+
     if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID) {
-        custom->beamcon0 = 0x0020;
         csd->palmode = TRUE;
     } else if ((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID) {
-        custom->beamcon0 = 0x0000;
         csd->palmode = FALSE;
-    } else {
-        custom->beamcon0 = (GfxBase->DisplayFlags & NTSC) ? 0x0000 : 0x0020;
     }
+    custom->beamcon0 = (csd->palmode) ? 0x0020 : 0x0000;
 }
 
 void resetmode(struct amigavideo_staticdata *csd)
@@ -317,7 +316,7 @@ static UWORD get_copper_list_length(struct amigavideo_staticdata *csd, UBYTE dep
 static void createcopperlist(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struct copper2data *c2d, BOOL lace)
 {
     struct GfxBase *GfxBase = (struct GfxBase *)csd->cs_GfxBase;
-    volatile WORD *system_bplcon0 = (volatile WORD *)&GfxBase->system_bplcon0;
+    volatile UWORD *system_bplcon0 = (volatile UWORD *)&GfxBase->system_bplcon0;
     UWORD *c;
     UWORD i;
     UWORD bplcon0, bplcon0_res;
