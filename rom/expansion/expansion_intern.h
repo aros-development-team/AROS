@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for expansion.library
@@ -42,8 +42,9 @@ struct IntExpansionBase
     struct SignalSemaphore  BindSemaphore;
     struct SignalSemaphore  BootSemaphore;
     ULONG                   BootFlags;
+    APTR                    kernelBase;
 };
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))
-
+#define KernelBase      (IntExpBase(ExpansionBase)->kernelBase)
 #endif /* _EXPANSION_INTERN_H */
