@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Expansion Resident and initialization.
@@ -30,6 +30,8 @@ static int ExpansionInit(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(&LIBBASE->BindSemaphore);
     InitSemaphore(&LIBBASE->BootSemaphore);
+
+    LIBBASE->kernelBase = OpenResource("kernel.resource");
 
     /* See what expansion hardware we can detect. */
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
