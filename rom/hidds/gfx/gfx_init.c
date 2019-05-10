@@ -210,6 +210,7 @@ static BOOL create_std_pixfmts(struct class_static_data *csd)
 static const CONST_STRPTR interfaces[NUM_ATTRBASES] =
 {
     IID_Hidd_BitMap,
+    IID_Hidd_BMHistogram,
     IID_Hidd_Gfx,
     IID_Hidd_GC,
     IID_Hidd_ColorMap,
