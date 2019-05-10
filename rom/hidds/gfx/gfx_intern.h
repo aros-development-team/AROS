@@ -17,7 +17,6 @@
 #include <graphics/gfxbase.h>
 #include <graphics/monitor.h>
 
-
 #define USE_FAST_GETPIXEL		1
 #define USE_FAST_PUTPIXEL		1
 #define OPTIMIZE_DRAWPIXEL_FOR_COPY	1
@@ -30,11 +29,17 @@
 #define USE_FAST_MAPCOLOR               1
 #define COPYBOX_CHECK_FOR_ALIKE_PIXFMT	1
 
+#define USE_FAST_BMHGETPIXEL            1
+#define USE_FAST_BMHUNMAPPIXEL          1
+#define USE_FAST_BMHFINDCOLOR           1
+#define USE_FAST_BMHADDCOLOR            1
+
 struct HWGfxData
 {
 };
 
 #define HBM(x) ((struct HIDDBitMapData *)x)
+#define HBMH(x) ((struct HiddBMHistogramData *)x)
 
 #define GOT_PF_ATTR(code)	GOT_ATTR(code, aoHidd_PixFmt, pixfmt)
 #define FOUND_PF_ATTR(code)	FOUND_ATTR(code, aoHidd_PixFmt, pixfmt);
@@ -258,19 +263,39 @@ struct HIDDBitMapData
 
 struct BMHistEntry
 {
-    struct BMHistEntry *next;
-    ULONG count;
-    ULONG *entries;
+    struct BMHistEntry  *next;
+    HIDDT_Color         color;
+    ULONG               count;
 };
 
 struct HiddBMHistogramData
 {
-    ULONG       size;
-    struct BMHistEntry *hist;
+    struct SignalSemaphore sema;
+    APTR                hpool;
+    ULONG               size;
+    struct BMHistEntry  *hist;
+
+    /* Optimize these method calls */
+#if USE_FAST_BMHGETPIXEL
+    OOP_MethodFunc         getpixel;
+    OOP_Class 	          *getpixel_Class;
+#endif
+#if USE_FAST_BMHUNMAPPIXEL
+    OOP_MethodFunc         unmappixel;
+    OOP_Class	          *unmappixel_Class;
+#endif
+#if USE_FAST_BMHFINDCOLOR
+    OOP_MethodFunc         findcolorentry;
+    OOP_Class             *findcolorentry_Class;
+#endif
+#if USE_FAST_BMHADDCOLOR
+    OOP_MethodFunc         addcolorentry;
+    OOP_Class             *addcolorentry_Class;
+#endif
 };
 
-#define NUM_ATTRBASES   11
-#define NUM_METHODBASES 5
+#define NUM_ATTRBASES   12
+#define NUM_METHODBASES 6
 
 struct class_static_data
 {
@@ -317,27 +342,30 @@ struct class_static_data
 };
 
 #define __IHidd_BitMap	    (csd->attrBases[0])
-#define __IHidd_Gfx 	    (csd->attrBases[1])
-#define __IHidd_GC  	    (csd->attrBases[2])
-#define __IHidd_ColorMap    (csd->attrBases[3])
-#define __IHW 	            (csd->attrBases[4])
-#define __IHidd             (csd->attrBases[5])
-#define __IHidd_Overlay	    (csd->attrBases[6])
-#define __IHidd_Sync	    (csd->attrBases[7])
-#define __IHidd_PixFmt      (csd->attrBases[8])
-#define __IHidd_PlanarBM    (csd->attrBases[9])
-#define __IHidd_ChunkyBM    (csd->attrBases[10])
+#define __IHidd_BMHistogram (csd->attrBases[1])
+#define __IHidd_Gfx 	    (csd->attrBases[2])
+#define __IHidd_GC  	    (csd->attrBases[3])
+#define __IHidd_ColorMap    (csd->attrBases[4])
+#define __IHW 	            (csd->attrBases[5])
+#define __IHidd             (csd->attrBases[6])
+#define __IHidd_Overlay	    (csd->attrBases[7])
+#define __IHidd_Sync	    (csd->attrBases[8])
+#define __IHidd_PixFmt      (csd->attrBases[9])
+#define __IHidd_PlanarBM    (csd->attrBases[10])
+#define __IHidd_ChunkyBM    (csd->attrBases[11])
 
-#undef HiddGfxBase
 #undef HiddBitMapBase
-#undef HiddColorMapBase
+#undef HiddBMHistogramBase
+#undef HiddGfxBase
 #undef HiddGCBase
+#undef HiddColorMapBase
 #undef HWBase
 #define HiddBitMapBase	    (csd->methodBases[0])
-#define HiddGfxBase	    (csd->methodBases[1])
-#define HiddGCBase	    (csd->methodBases[2])
-#define HiddColorMapBase    (csd->methodBases[3])
-#define HWBase              (csd->methodBases[4])
+#define HiddBMHistogramBase (csd->methodBases[1])
+#define HiddGfxBase	    (csd->methodBases[2])
+#define HiddGCBase	    (csd->methodBases[3])
+#define HiddColorMapBase    (csd->methodBases[4])
+#define HWBase              (csd->methodBases[5])
 
 /* Library base */
 
@@ -537,6 +565,67 @@ static inline HIDDT_Pixel MAPCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *co
 }
 #else
 #define MAPCOLOR(cl, obj, color) HIDD_BM_MapColor(obj, color)
+#endif
+
+/* BMHistograms operations ... */
+#if USE_FAST_BMHGETPIXEL
+static inline HIDDT_Pixel BMHGETPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y)
+{
+    struct pHidd_BitMap_GetPixel getp_p;
+
+    getp_p.mID          = HiddBitMapBase + moHidd_BitMap_GetPixel;
+    getp_p.x            = x;
+    getp_p.y            = y;
+
+    return (HIDDT_Pixel)HBM(o)->getpixel(HBM(o)->getpixel_Class, o, &getp_p.mID);
+}
+#else
+#define BMHGETPIXEL(cl, obj, x, y) HIDD_BM_GetPixel(obj, x, y)
+#endif
+
+#if USE_FAST_BMHUNMAPPIXEL
+static inline void BMHUNMAPPIXEL(OOP_Class *cl, OOP_Object *o, HIDDT_Pixel pixel, HIDDT_Color *color)
+{
+    struct pHidd_BitMap_UnmapPixel ump_p;
+
+    ump_p.mID           = HiddBitMapBase + moHidd_BitMap_UnmapPixel;
+    ump_p.pixel         = pixel;
+    ump_p.color         = color;
+
+    HBM(o)->unmappixel(HBM(o)->unmappixel_Class, o, &ump_p.mID);
+}
+#else
+#define BMHUNMAPPIXEL(cl, obj, pixel, color) HIDD_BM_UnmapPixel(obj, pixel, color)
+#endif
+
+#if USE_FAST_BMHFINDCOLOR
+static inline IPTR BMHFINDCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color, APTR *colentry)
+{
+    struct pHidd_BMHistogram_FindColorEntry fce_p;
+
+    fce_p.mID           = HiddBMHistogramBase + moHidd_BMHistogram_FindColorEntry;
+    fce_p.color         = color;
+    fce_p.colentry      = colentry;
+
+    return (IPTR)HBMH(o)->findcolorentry(HBMH(o)->findcolorentry_Class, o, &fce_p.mID);
+}
+#else
+#define BMHFINDCOLOR(cl, obj, color, colentry) HIDD_BMHISTOGRAM_FindColorEntry(obj, color, colentry)
+#endif
+
+#if USE_FAST_BMHADDCOLOR
+static inline APTR BMHADDCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color, ULONG count)
+{
+    struct pHidd_BMHistogram_AddColorEntry ace_p;
+
+    ace_p.mID           = HiddBMHistogramBase + moHidd_BMHistogram_AddColorEntry;
+    ace_p.color         = color;
+    ace_p.count         = count;
+
+    return (APTR)HBMH(o)->addcolorentry(HBMH(o)->addcolorentry_Class, o, &ace_p.mID);
+}
+#else
+#define BMHADDCOLOR(cl, obj, color, count) HIDD_BMHISTOGRAM_AddColorEntry(obj, color, count)
 #endif
 
 #endif /* GFX_HIDD_INTERN_H */

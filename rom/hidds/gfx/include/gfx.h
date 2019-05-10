@@ -38,6 +38,7 @@ typedef OOP_Object *HIDDT_GC;
 #define tHidd_Gfx_QuerModeBASE          (tHidd_Gfx_BASE + 0x1000)
 #define tHidd_Gfx_CursorBASE            (tHidd_Gfx_BASE + 0x2000)
 #define tHidd_Gfx_MemAttribBASE         (tHidd_Gfx_BASE + 0x3000)
+#define tHidd_Gfx_BMHistBASE            (tHidd_Gfx_BASE + 0x4000)
 
 /* Parameter tags for the QueryModeIDs method */
 enum
@@ -308,13 +309,26 @@ typedef ULONG (*HIDDT_RGBConversionFunction)(APTR srcPixels, ULONG srcMod, HIDDT
 #define IS_BITMAP_ATTR(attr, idx) \
         ( ( ( idx ) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 
-/**** BitMap Histogram ********************************************************/
+/**** BitMap Histogram ******************************************************************/
 
 #include <interface/Hidd_BMHistogram.h>
 
 #define CLID_Hidd_BMHistogram IID_Hidd_BMHistogram
 
-/**** Graphics context definitions ********************************************/
+enum
+{
+    tHidd_BMHistogram_Sort = tHidd_Gfx_BMHistBASE,      /* Sort Mode                    */
+};
+
+
+enum
+{
+    vBMHistogram_NextEntry      = -1,           /* FindColorEntry special value ...     */
+    vBMHistogram_Sort_Frequency = (1 << 0),     /* Sort mode values                     */
+    vBMHistogram_Sort_Intensity = (1 << 1),     /* Sort mode values                     */
+};
+
+/**** Graphics context definitions ******************************************************/
 
 #include <interface/Hidd_GC.h>
 
@@ -341,7 +355,7 @@ typedef ULONG (*HIDDT_RGBConversionFunction)(APTR srcPixels, ULONG srcMod, HIDDT
 #define vHidd_GC_ColExp_Transparent     (1 << 0)
 #define vHidd_GC_ColExp_Opaque          (1 << 1)
 
-/*******************************************************/
+/****************************************************************************************/
 /**  PROTECTED DATA 
         !! These structures are at the top of the gfx hidd baseclasses.
         DO NEVER ATTEMPT TO ACCESS THESE FROM OUTSIDE OF SUBCLASSES.
