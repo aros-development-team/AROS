@@ -37,3 +37,6 @@ extern void enable_mmu(struct KernelBase *kb);
 extern void disable_mmu(struct KernelBase *kb);
 extern BOOL init_mmu(struct KernelBase *kb);
 
+extern void *getphysaddr_mmu030(void *virt);
+extern void *getphysaddr_mmu040(void *virt);
+extern void *getphysaddr_mmu060(void *virt);
