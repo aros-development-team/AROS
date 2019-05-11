@@ -2,8 +2,19 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES=cause cli sti kernel_debug kernel_timer maygetchar amiga_irq \
-      getbootinfo kernel_globals obtaininput releaseinput
+FILES := \
+        cause \
+        cli \
+        sti \
+        kernel_debug \
+        kernel_timer \
+        maygetchar \
+        amiga_irq \
+        getbootinfo \
+        kernel_globals \
+        obtaininput \
+        releaseinput \
+        romsupport
 
 AFILES=
 
