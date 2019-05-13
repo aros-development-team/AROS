@@ -19,6 +19,8 @@
 #include <exec/resident.h>
 
 #define ROMIMG_SIZE                     0x80000
+#define PROBEMEM_QUITAFTERADD
+
 
 AROS_UFP3(ULONG, MemoryTest,
     AROS_UFPA(APTR, startaddr, A0),
@@ -277,9 +279,13 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
         {
             D(bug("[expansion:am68k] %s: Adding %08x;%08x (size=%08x) to the expansion memlist\n", __func__, rangestart, rangestart + ret, ret));
             AddMemList(ret, MEMF_KICK | MEMF_LOCAL | MEMF_FAST | MEMF_PUBLIC, prio, rangestart, "expansion.memory");
+#if defined(PROBEMEM_QUITAFTERADD)
+            break;
+#else
             if (((step >= 0) && ((rangestart + ret) == *end)) ||
                 ((step < 0 ) && (rangestart == *end)))
                 break;
+#endif
         }
         if (step >= 0)
             mbramstart += step;
