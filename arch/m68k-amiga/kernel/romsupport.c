@@ -47,19 +47,19 @@ static int RomSupport_Init(struct KernelBase *KernelBase)
 
     if (!matchROMwords((APTR)0xA80000, (APTR)0xF80000))
     {
-        D(bug("[Kernel:Am68k] %s: 2MiB ROM detected\n", __func__);)
+        bug("ROMInfo: 2MiB ROM detected\n");
         romsize = ROMSIZE2MB;
         imgcnt = 4;
     }
     else if (!matchROMwords((APTR)0xE00000, (APTR)0xF80000))
     {
-        D(bug("[Kernel:Am68k] %s: 1MiB ROM detected\n", __func__);)
+        bug("ROMInfo: 1MiB ROM detected\n");
         romsize = ROMSIZE1MB;
         imgcnt = 2;
     }
     else
     {
-        D(bug("[Kernel:Am68k] %s: 512KiB ROM detected\n", __func__);)
+        bug("ROMInfo: 512KiB ROM detected\n");
         romsize = ROMSIZE512;
         imgcnt = 2;
     }
@@ -131,6 +131,40 @@ static int RomSupport_Init(struct KernelBase *KernelBase)
         }
     }
 
+    APTR physaddr;
+    bug("ROMInfo: ROM region(s)\n");
+    switch (romsize)
+    {
+        case ROMSIZE2MB:
+            {
+                physaddr = KrnVirtualToPhysical((APTR)0xA80000);
+                bug("ROMInfo:     %08x - %08x", 0xA80000, 0xA80000 + (romsize / imgcnt));
+                if (physaddr != 0xA80000)
+                    bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                bug("\n");
+                physaddr = KrnVirtualToPhysical((APTR)0xB00000);
+                bug("ROMInfo:     %08x - %08x\n", 0xB00000, 0xB00000 + (romsize / imgcnt));
+                if (physaddr != 0xB00000)
+                    bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                bug("\n");
+            }
+        case ROMSIZE1MB:
+            {
+                physaddr = KrnVirtualToPhysical((APTR)0xE00000);
+                bug("ROMInfo:     %08x - %08x\n", 0xE00000, 0xE00000 + (romsize / imgcnt));
+                if (physaddr != 0xE00000)
+                    bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                bug("\n");
+            }
+        case ROMSIZE512:
+            {
+                physaddr = KrnVirtualToPhysical((APTR)0xF80000);
+                bug("ROMInfo:     %08x - %08x\n", 0xF80000, 0xF80000 + (romsize / imgcnt));
+                if (physaddr != 0xF80000)
+                    bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                bug("\n");
+            }
+    }
     return TRUE;
 }
 
