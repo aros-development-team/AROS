@@ -38,6 +38,7 @@ AROS_LH1(void *, KrnVirtualToPhysical,
             curr_rom = &curr_rom[2];
         }
     }
+
     return virtual;
 
     AROS_LIBFUNC_EXIT

@@ -132,13 +132,10 @@ void *getphysaddr_mmu030(void *virt)
         : "a4", "a6");
 
     mmusr = temp;
-    bug("%s: mmusr = %04x\n", __func__, mmusr);
 
     /* did the mmu return a valid descriptor ? */
     if (mmusr & 1)
     {
-        bug("%s: desc for 0x%p @ 0x%p (%08x)\n", __func__, virt, addrdesc, *addrdesc);
-
         /* check the descriptor is valid and that it is a page descriptor ... */
         if (((*addrdesc & 3) != 0) && (*addrdesc & 1))
             return (APTR)(((IPTR)virt & page_mask) | (*addrdesc & ~page_mask));
