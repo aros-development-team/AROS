@@ -139,12 +139,12 @@ static int RomSupport_Init(struct KernelBase *KernelBase)
             {
                 physaddr = KrnVirtualToPhysical((APTR)0xA80000);
                 bug("ROMInfo:     %08x - %08x", 0xA80000, 0xA80000 + (romsize / imgcnt));
-                if (physaddr != 0xA80000)
+                if (physaddr != (APTR)0xA80000)
                     bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
                 bug("\n");
                 physaddr = KrnVirtualToPhysical((APTR)0xB00000);
                 bug("ROMInfo:     %08x - %08x\n", 0xB00000, 0xB00000 + (romsize / imgcnt));
-                if (physaddr != 0xB00000)
+                if (physaddr != (APTR)0xB00000)
                     bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
                 bug("\n");
             }
@@ -152,7 +152,7 @@ static int RomSupport_Init(struct KernelBase *KernelBase)
             {
                 physaddr = KrnVirtualToPhysical((APTR)0xE00000);
                 bug("ROMInfo:     %08x - %08x\n", 0xE00000, 0xE00000 + (romsize / imgcnt));
-                if (physaddr != 0xE00000)
+                if (physaddr != (APTR)0xE00000)
                     bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
                 bug("\n");
             }
@@ -160,7 +160,7 @@ static int RomSupport_Init(struct KernelBase *KernelBase)
             {
                 physaddr = KrnVirtualToPhysical((APTR)0xF80000);
                 bug("ROMInfo:     %08x - %08x\n", 0xF80000, 0xF80000 + (romsize / imgcnt));
-                if (physaddr != 0xF80000)
+                if (physaddr != (APTR)0xF80000)
                     bug("@  %08x - %08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
                 bug("\n");
             }
