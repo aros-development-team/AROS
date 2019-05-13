@@ -112,7 +112,6 @@ static int RomSupport_Init(struct KernelBase *KernelBase)
                         rommappings[i + 1] = (ULONG)physaddr;
                         i += 2;
                     }
-                    /* FLASH ROM */
                     physaddr = getphysaddr((APTR)0xA80000);
                     if (physaddr != (APTR)0xA80000)
                     {
