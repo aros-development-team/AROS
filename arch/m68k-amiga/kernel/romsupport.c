@@ -10,6 +10,7 @@
 #include <asm/cpu.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <inttypes.h>
 
