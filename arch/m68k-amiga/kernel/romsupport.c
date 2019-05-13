@@ -147,30 +147,30 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
         case ROMSIZE2MB:
             {
                 physaddr = KrnVirtualToPhysical((APTR)0xA80000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xA80000, 0xA80000 + (romsize / imgcnt));
+                bug("ROMInfo:     0x%08x - 0x%08x", 0xA80000, 0xA80000 + (romsize / imgcnt) - 1);
                 if (physaddr != (APTR)0xA80000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
                 bug("\n");
                 physaddr = KrnVirtualToPhysical((APTR)0xB00000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xB00000, 0xB00000 + (romsize / imgcnt));
+                bug("ROMInfo:     0x%08x - 0x%08x", 0xB00000, 0xB00000 + (romsize / imgcnt) - 1);
                 if (physaddr != (APTR)0xB00000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
                 bug("\n");
             }
         case ROMSIZE1MB:
             {
                 physaddr = KrnVirtualToPhysical((APTR)0xE00000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xE00000, 0xE00000 + (romsize / imgcnt));
+                bug("ROMInfo:     0x%08x - 0x%08x", 0xE00000, 0xE00000 + (romsize / imgcnt) - 1);
                 if (physaddr != (APTR)0xE00000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
                 bug("\n");
             }
         case ROMSIZE512:
             {
                 physaddr = KrnVirtualToPhysical((APTR)0xF80000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xF80000, 0xF80000 + (romsize / imgcnt));
+                bug("ROMInfo:     0x%08x - 0x%08x", 0xF80000, 0xF80000 + (romsize / imgcnt) - 1);
                 if (physaddr != (APTR)0xF80000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt));
+                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
                 bug("\n");
             }
     }
