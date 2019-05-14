@@ -136,6 +136,8 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
         {
             pd->romimg = AllocMem(sizeof(ULONG) * (i + 2), MEMF_ANY);
             CopyMem(rommappings, pd->romimg, sizeof(ULONG) * i);
+            pd->romimg[i] = NULL;
+            pd->romimg[i + 1] = NULL;
             pd->romsize = romsize / imgcnt;
         }
     }
