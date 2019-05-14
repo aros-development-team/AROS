@@ -96,8 +96,6 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
             physaddr = getphysaddr((APTR)0xF80000);
             if (physaddr != (APTR)0xF80000)
             {
-                D(bug("[Kernel:Am68k] %s: mmutype = %d\n", __func__, pd->mmu_type);)
-
                 rommappings[i] = 0xF80000;
                 rommappings[i + 1] = (ULONG)physaddr;
                 i += 2;
