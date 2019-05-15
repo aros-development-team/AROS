@@ -49,10 +49,12 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
 {
     struct PlatformData *pd = KernelBase->kb_PlatformData;
     ULONG romsize, imgcnt;
+    UBYTE id;
 
     D(bug("[Kernel:Am68k] %s: platformdata @ 0x%p\n", __func__, pd);)
 
-    if (ReadGayle() &&
+    id = (UBYTE)ReadGayle();
+    if ((id > 0) &&
         AMiGAROM_IsValid((APTR)0xA80000) &&
         !AMiGAROM_MatchWords((APTR)0xA80000, (APTR)0xF80000))
     {
