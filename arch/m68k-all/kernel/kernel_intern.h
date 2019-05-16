@@ -12,10 +12,11 @@
 struct PlatformData
 {
     ULONG *MMU_Level_A;
-    UBYTE mmu_type;
     UBYTE *page_ptr;
     ULONG page_free;
     UBYTE *zeropagedescriptor;
+
+    UBYTE mmu_type;
     UBYTE cachemodestore; /* CachePreDMA()/CachePostDMA() */
 
     /*
