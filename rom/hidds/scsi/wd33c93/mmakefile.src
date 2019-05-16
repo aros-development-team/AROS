@@ -2,7 +2,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := probe wd33c93_busclass wd33c93
+FILES := \
+        wd33c93_init \
+        wd33c93_probe \
+        wd33c93_busclass \
+        wd33c93
 
 USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
 #USER_CPPFLAGS += -DDEBUG
