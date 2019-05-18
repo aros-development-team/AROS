@@ -1,0 +1,34 @@
+# C/C++ with GCC
+# Build your C/C++ project with GCC using make.
+# Add steps that publish test results, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/c-cpp/gcc
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  AROSBUILDTARGET: 'pc-x86_64'
+  AROSBUILDVARIANT: 'smp'
+  AROSBUILDGCCVERS: '9.1.0'
+  AROSBUILDTOOLCHAINDIR:  '$(AZBUILDPATH)/toolchain' # Location builds are done in
+  AROSPORTSSRCSDIR:  '$(AZBUILDPATH)/portssources' #
+  AROSBUILDSDIR:  '$(AZBUILDPATH)/builds' # Location builds are done in
+  AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(AROSBUILDTARGET)' # Actual build directory
+  AZBUILDPATH: '$(system.defaultWorkingDirectory)' # workspace path
+  #modulePath: '$(AZBUILDPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
+
+steps:
+- script: |
+    mkdir -p '$(AROSBUILDSDIR)'
+    mkdir -p '$(AROSBUILDDIR)'
+    mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+  displayName: 'Setup workspace'
+
+- script:
+    ../../configure --target=$(AROSBUILDTARGET) --enable-target-variant=$(AROSBUILDVARIANT) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS)  --with-portssources=$(AROSPORTSSRCSDIR)
+    make
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'build $(AROSBUILDTARGET)'
