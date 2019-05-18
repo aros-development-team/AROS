@@ -12,17 +12,17 @@ strategy:
   matrix:
     pc-i386:
       arosbuild.target: 'pc-i386'
-      arosbuild.name: '$(arosbuild.target)'
+      arosbuild.name: $(arosbuild.target)
     pc-x86_64:
       arosbuild.target: 'pc-x86_64'
-      arosbuild.name: '$(arosbuild.target)'
+      arosbuild.name: $(arosbuild.target)
     pc-x86_64-smp:
       arosbuild.target: 'pc-x86_64'
       arosbuild.variant: 'smp'
-      arosbuild.name: '$(arosbuild.target)-$(arosbuild.variant)'
+      arosbuild.name: $(arosbuild.target)'-'$(arosbuild.variant)
     amiga-m68k:
       arosbuild.target: 'amiga-m68k'
-      arosbuild.name: '$(arosbuild.target)'
+      arosbuild.name: $(arosbuild.target)
 
 variables:
   AROSBUILDGCCVERS: '9.1.0'
