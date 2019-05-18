@@ -6,9 +6,6 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'ubuntu-latest'
-
 variables:
   AROSBUILDGCCVERS: '9.1.0'
   AROSBUILDTOOLCHAINDIR:  '$(AZBUILDPATH)/toolchain' # Location builds are done in
@@ -19,6 +16,8 @@ variables:
 
 jobs:
 - job: Setup
+  pool:
+    vmImage: 'ubuntu-latest'
   steps:
   - script: |
       mkdir -p '$(AROSBUILDSDIR)'
@@ -30,6 +29,7 @@ jobs:
     displayName: 'Setup workspace'
 
 - job: Build
+  dependsOn: Setup
   strategy:
     matrix:
       pc-i386:
@@ -45,10 +45,8 @@ jobs:
       amiga-m68k:
         arosbuild.target: 'amiga-m68k'
         arosbuild.name: $(arosbuild.target)
-  
   variables:
     AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(arosbuild.target)' # Actual build directory
-  
   steps:
   - script: |
       mkdir -p '$(AROSBUILDDIR)'
