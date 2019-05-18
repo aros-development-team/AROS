@@ -25,9 +25,12 @@ steps:
     mkdir -p '$(AROSBUILDSDIR)'
     mkdir -p '$(AROSBUILDDIR)'
     mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+    echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
+    echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
+    echo '##vso[task.prependpath]$(AROSBUILDDIR)'
   displayName: 'Setup workspace'
 
-- script:
+- script: |
     ../../configure --target=$(AROSBUILDTARGET) --enable-target-variant=$(AROSBUILDVARIANT) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS)  --with-portssources=$(AROSPORTSSRCSDIR)
     make
   workingDirectory: '$(AROSBUILDDIR)'
