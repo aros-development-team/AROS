@@ -1,8 +1,3 @@
-#cloud-config
-package_upgrade: true
-packages:
-- bison python-mako gperf cmake netpbm
-
 # C/C++ with GCC
 # Build your C/C++ project with GCC using make.
 # Add steps that publish test results, save build artifacts, deploy, and more:
@@ -13,15 +8,28 @@ trigger:
 
 pool:
   vmImage: 'ubuntu-latest'
+strategy:
+  matrix:
+    pc-i386:
+      arosbuild.target: 'pc-i386'
+      arosbuild.name: '$(arosbuild.target)'
+    pc-x86_64:
+      arosbuild.target: 'pc-x86_64'
+      arosbuild.name: '$(arosbuild.target)'
+    pc-x86_64-smp:
+      arosbuild.target: 'pc-x86_64'
+      arosbuild.variant: 'smp'
+      arosbuild.name: '$(arosbuild.target)-$(arosbuild.variant)'
+    amiga-m68k:
+      arosbuild.target: 'amiga-m68k'
+      arosbuild.name: '$(arosbuild.target)'
 
 variables:
-  AROSBUILDTARGET: 'pc-x86_64'
-  AROSBUILDVARIANT: 'smp'
   AROSBUILDGCCVERS: '9.1.0'
   AROSBUILDTOOLCHAINDIR:  '$(AZBUILDPATH)/toolchain' # Location builds are done in
   AROSPORTSSRCSDIR:  '$(AZBUILDPATH)/portssources' #
   AROSBUILDSDIR:  '$(AZBUILDPATH)/builds' # Location builds are done in
-  AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(AROSBUILDTARGET)' # Actual build directory
+  AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(arosbuild.target)' # Actual build directory
   AZBUILDPATH: '$(system.defaultWorkingDirectory)' # workspace path
   #modulePath: '$(AZBUILDPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
 
@@ -36,7 +44,7 @@ steps:
   displayName: 'Setup workspace'
 
 - script: |
-    ../../configure --target=$(AROSBUILDTARGET) --enable-target-variant=$(AROSBUILDVARIANT) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS)  --with-portssources=$(AROSPORTSSRCSDIR)
+    ../../configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS)  --with-portssources=$(AROSPORTSSRCSDIR)
     make
   workingDirectory: '$(AROSBUILDDIR)'
-  displayName: 'build $(AROSBUILDTARGET)'
+  displayName: 'build $(arosbuild.name)'
