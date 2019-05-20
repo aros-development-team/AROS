@@ -148,7 +148,7 @@ AROS_LH5(BOOL, RegisterClassHandler,
     BOOL add = TRUE;
     if ((newClass = FindClassHandler(classid, &SysexpBase->sesb_ClassHandlers)))
     {
-        if (newClass->enumFunc != hwEnum)
+        if ((newClass->enumFunc) && (newClass->enumFunc != hwEnum))
             return FALSE;
 
         D(bug("[sysexp.library] %s: Updating '%s'..\n", __func__, classid));
@@ -169,8 +169,9 @@ AROS_LH5(BOOL, RegisterClassHandler,
         newClass->enumFunc = enumfunc;
         newClass->validFunc = validfunc;
 
-        if (add)
-            Enqueue(&SysexpBase->sesb_ClassHandlers, &newClass->ch_Node);
+        if (!add)
+            Remove(&newClass->ch_Node);
+        Enqueue(&SysexpBase->sesb_ClassHandlers, &newClass->ch_Node);
 
         return TRUE;
     }
@@ -275,7 +276,9 @@ void sysexp_initlib(struct SysexpBase **SysexpBasePtr)
         RegisterBase(computerwindowclass_name, ComputerWindow_CLASS);
 
         RegisterClassHandler(CLID_Hidd_Storage, 90, NULL, hwEnum, NULL);
-        RegisterClassHandler(CLID_Hidd_Gfx, 60, NULL, hwEnum, NULL);
+        RegisterClassHandler(CLID_Hidd_StorageController, 90, GenericWindow_CLASS, NULL, NULL);
+        RegisterClassHandler(CLID_HW_Gfx, 60, NULL,  hwEnum, NULL);
+        RegisterClassHandler(CLID_Hidd_Gfx, 60, GenericWindow_CLASS, hwEnum, NULL);
         RegisterClassHandler(CLID_Hidd_System, 30, NULL, hwEnum, NULL);
         RegisterClassHandler(CLID_HW_Root, 0, ComputerWindow_CLASS,  hwEnum, NULL);
         RegisterClassHandler(CLID_HW, -30, NULL, hwEnum, NULL);

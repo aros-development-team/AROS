@@ -136,13 +136,15 @@ struct ExecBase
 #define AFB_PRIVATE     15                      /* FPU presence - See below */
 #define AFF_PRIVATE     (1L<<AFB_PRIVATE)
 /*
- * AFB_PRIVATE is actually FPU presence flag with architecture-specific meaning:
- * m68k   - Set if any FPU type detected. AmigaOS-compatible, however considered private.
+ * AFB_PRIVATE and AFB_PRIVATEB are actually FPU/MMU presence flags with architecture-specific meaning:
+ * m68k   - Set if any FPU/MMU types are detected. AmigaOS-compatible, however considered private.
  * ARM    - Set if VFP is present. Considered public.
  * Others - not used.
  */
 #define AFB_FPU     AFB_PRIVATE
 #define AFF_FPU     AFF_PRIVATE
+#define AFB_MMU     AFB_PRIVATEB
+#define AFF_MMU     AFF_PRIVATEB
 
 /* SysFlags. Private and AROS-specific. */
 #define SFF_SoftInt         (1L<<5)  /* There is a software interrupt pending */

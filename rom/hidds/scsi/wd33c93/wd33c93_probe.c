@@ -43,12 +43,13 @@
 
 CONST_STRPTR scsiWD33c93Name = "scsi_wd33c93.hidd";
 CONST_STRPTR WD33c93ControllerName = "WD33C93 SCSI Controller";
-CONST_STRPTR A2091ControllerName = "A2091 WD33C93 SCSI Controller";
+CONST_STRPTR A2091ControllerName = "CBM A2091 WD33C93 SCSI Controller";
 
 static int wd33c93Probe(struct scsiwd33c93Base *base)
 {
     APTR BootLoaderBase;
     struct wd33c93ProbedBus *probedbus;
+    BOOL ctrllrfound = FALSE;
 
     D(bug("[SCSI:WD33C93] %s()\n", __PRETTY_FUNCTION__));
 
@@ -110,7 +111,10 @@ static int wd33c93Probe(struct scsiwd33c93Base *base)
                     scsiA2091 = HW_AddDriver(base->storageRoot, base->scsiClass, scsi_tags);
                     if (scsiA2091)
                     {
+                        cd->cd_Flags &= ~CDF_CONFIGME;
+                        cd->cd_Driver = base;
                         D(bug("[SCSI:WD33C93] %s: A2091 (%04x:%04x) controller @ 0x%p\n", __func__, 514, cd->cd_Rom.er_Product, scsiA2091);)
+                        ctrllrfound = TRUE;
                     }
                 }
             }
@@ -120,7 +124,7 @@ static int wd33c93Probe(struct scsiwd33c93Base *base)
 #endif
     D(bug("[SCSI:WD33C93] %s: Finished..\n", __func__);)
 
-    return TRUE;
+    return ctrllrfound;
 }
 
 ADD2INITLIB(wd33c93Probe, 30)
