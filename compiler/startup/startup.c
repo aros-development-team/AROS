@@ -1,6 +1,6 @@
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common startup code
@@ -13,13 +13,17 @@
 #include <exec/memory.h>
 #include <workbench/startup.h>
 #include <proto/exec.h>
+#include <proto/task.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
+#include <resources/task.h>
 
-struct DosLibrary *DOSBase;
+struct DosLibrary       *DOSBase;
+APTR                    TaskResBase;
+
 extern const LONG __aros_libreq_DOSBase __attribute__((weak));
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(PROGRAM_ENTRIES)
@@ -55,12 +59,18 @@ asm(".set __importnoinitexitsets, __noinitexitsets");
 
 extern void __startup_entries_init(void);
 
+static int __startup_latehook_dispatcher(struct Hook *_latehook);
+
 /* Guarantee that __startup_entry is placed at the beginning of the binary */
 __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
 {
     AROS_PROCFUNC_INIT
 
-    D(bug("Entering __startup_entry(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
+    D(bug("%s(\"%s\", %d, %x)\n", __func__, argstr, argsize, SysBase));
+
+    TaskResBase = OpenResource("task.resource");
+    if (TaskResBase)
+        InitTaskHooks(__startup_latehook_dispatcher, TASKHOOK_TYPE_LATEINIT, THF_IAR);
 
     /*
         No one program will be able to do anything useful without the dos.library,
@@ -80,23 +90,32 @@ __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
 
     CloseLibrary((struct Library *)DOSBase);
 
-    D(bug("Leaving __startup_entry\n"));
+    D(bug("%s: returning %d\n", __func__, __startup_error));
 
     return __startup_error;
 
     AROS_PROCFUNC_EXIT
 } /* entry */
 
+static int __startup_latehook_dispatcher(struct Hook *_latehook)
+{
+    bug("%s: hook @ 0x%p\n", __func__, _latehook);
+    return (int)CallHookA(_latehook, NULL, NULL);
+}
 
 static void __startup_main(struct ExecBase *SysBase)
 {
-    D(bug("Entering __startup_main\n"));
+    D(bug("%s: entering main ...\n", __func__));
+
+    /* run the late init hooks if we have task.resource */
+    if (TaskResBase)
+        RunTaskHooks(__startup_latehook_dispatcher, TASKHOOK_TYPE_LATEINIT);
 
     /* Invoke the main function. A weak symbol is used as function name so that
        it can be overridden (for *nix stuff, for instance).  */
     __startup_error = (*__main_function_ptr) (__argc, __argv);
 
-    D(bug("Leaving __startup_main\n"));
+    D(bug("%s: returned\n", __func__));
 }
 
 ADD2SET(__startup_main, PROGRAM_ENTRIES, 127);
