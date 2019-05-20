@@ -1,14 +1,12 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <aros/debug.h>
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -20,7 +18,7 @@
 	AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 6, Security)
+	struct SecurityBase *, secBase, 6, Security)
 
 /*  FUNCTION
 
@@ -48,9 +46,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secLoginA()\n") );;
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
-    return NULL;
+    return 0;
 
     AROS_LIBFUNC_EXIT
 

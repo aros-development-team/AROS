@@ -1,19 +1,17 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <aros/debug.h>
 #include <stdio.h>
 
 #include "security_intern.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(struct muPrivGroupInfo *, secPasswd,
+	AROS_LH2(struct secPrivGroupInfo *, secPasswd,
 
 /*  SYNOPSIS */
 	/* (oldpwd, newpwd) */
@@ -21,7 +19,7 @@
 	AROS_LHA(STRPTR, newpwd, A1),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 8, Security)
+	struct SecurityBase *, secBase, 8, Security)
 
 /*  FUNCTION
 
@@ -49,7 +47,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secPasswd()\n") );;
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
     return NULL;
 

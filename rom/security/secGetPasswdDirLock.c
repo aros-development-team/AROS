@@ -1,14 +1,14 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
 
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
+#include "security_server.h"
 
 /*****************************************************************************
 
@@ -19,9 +19,10 @@
 	/* void */
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 19, Security)
+	struct SecurityBase *, secBase, 19, Security)
 
 /*  FUNCTION
+            Get a Shared Lock on the Directory of the Password File
 
     INPUTS
 
@@ -47,9 +48,15 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secGetPasswdDirLock()\n") );;
+    BPTR dirLock;
 
-    return NULL;
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+
+    dirLock = ((BPTR)SendServerPacket(
+            secBase, secSAction_PasswdDirLock,
+            (SIPTR)NULL, (SIPTR)NULL, (SIPTR)NULL, (SIPTR)NULL));
+
+    return dirLock;
 
     AROS_LIBFUNC_EXIT
 
