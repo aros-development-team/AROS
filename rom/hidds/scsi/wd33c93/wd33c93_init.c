@@ -69,7 +69,7 @@ static int wd33c93_HiddInit(struct scsiwd33c93Base *base)
     }
     D(
       bug("[SCSI:WD33C93] %s: Base %s Class @ 0x%p\n", __PRETTY_FUNCTION__, CLID_Hidd_SCSI, base->scsiClass);
-      bug("[SCSI:WD33C93] %s: PCI %s Class @ 0x%p\n", __PRETTY_FUNCTION__, CLID_Hidd_SCSIBus, base->busClass);
+      bug("[SCSI:WD33C93] %s: WD33C93 %s Class @ 0x%p\n", __PRETTY_FUNCTION__, CLID_Hidd_SCSIBus, base->busClass);
     )
 
 #if defined(__OOP_NOMETHODBASES__)
