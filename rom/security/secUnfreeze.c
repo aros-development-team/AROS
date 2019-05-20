@@ -1,14 +1,16 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
+
+#include <proto/security.h>
 
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
+#include "security_task.h"
 
 /*****************************************************************************
 
@@ -20,9 +22,10 @@
 	AROS_LHA(struct Task *, task, A0),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 32, Security)
+	struct SecurityBase *, secBase, 32, Security)
 
 /*  FUNCTION
+           Unfreeze a task or process
 
     INPUTS
 
@@ -31,7 +34,7 @@
 
 
     NOTES
-
+            This function may be called by root only!
 
     EXAMPLE
 
@@ -48,9 +51,32 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secUnfreeze()\n") );;
+    BOOL res = FALSE;
+    struct secExtOwner *xowner;
 
-    return NULL;
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+
+    xowner = GetTaskExtOwner(secBase, FindTask(NULL));
+    if (task && (secGetRelationshipA(xowner, 0, NULL) & secRelF_ROOT_UID)) {
+            Disable();
+            switch (task->tc_Node.ln_Type) {
+                    case NT_TASK:
+                    case NT_PROCESS:
+                            if (task->tc_State >= 7) {
+                                    Remove((struct Node*)task);
+                                    if ((task->tc_State -= 7) == TS_READY)
+                                            Enqueue((struct List*)&SysBase->TaskReady, (struct Node*)task);
+                                    else
+                                            Enqueue((struct List*)&SysBase->TaskWait, (struct Node*)task);
+                                    res = TRUE;
+                            }
+                            break;
+            }
+            Enable();
+    }
+    secFreeExtOwner(xowner);
+
+    return res;
 
     AROS_LIBFUNC_EXIT
 

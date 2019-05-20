@@ -1,14 +1,13 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <aros/debug.h>
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
+#include "security_memory.h"
 
 /*****************************************************************************
 
@@ -17,12 +16,13 @@
 
 /*  SYNOPSIS */
 	/* void */
-	AROS_LHA(struct secExtOwner *, info, A0),
+	AROS_LHA(struct secExtOwner *, owner, A0),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 22, Security)
+	struct SecurityBase *, secBase, 22, Security)
 
 /*  FUNCTION
+	Free an Extended Owner structure
 
     INPUTS
 
@@ -48,9 +48,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secFreeExtOwner()\n") );;
+    ULONG size;
 
-    return NULL;
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+
+    if (owner) {
+        size = sizeof(struct secExtOwner)+owner->NumSecGroups*sizeof(UWORD);
+        Free(owner, size);
+    }
 
     AROS_LIBFUNC_EXIT
 
