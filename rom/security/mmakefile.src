@@ -1,12 +1,10 @@
 #   $Id$
 #
-#   Makefile to make MultiUserFS security library.
+#   Makefile to make MultiUserFS compatable security.library.
 
-include $(SRCDIR)/config/aros-contrib.cfg
+include $(SRCDIR)/config/aros.cfg
 
-TOPLEVEL=$(shell pwd)
-
-FUNCS= 	\
+FUNCS := \
 	secAccess_Control \
 	secAddMonitor \
 	secAllocGroupInfo \
@@ -58,13 +56,11 @@ FUNCS= 	\
 	secsetreuid \
 	secsetuid
 
-EXEDIR := $(AROSDIR)/MuFS
-
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../Include
 
-##MM workbench-libs-security : includes linklibs
+##MM kernel-security : includes linklibs
 
-#%build_module mmake=workbench-libs-security modname=security \
+#%build_module mmake=kernel-security modname=security \
   modtype=library files=$(FUNCS)
 
 %common
