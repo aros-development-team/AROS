@@ -1,27 +1,28 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
 
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
+#include "security_groupinfo.h"
+#include "security_server.h"
 
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(struct muGroupInfo *, secGetGroupInfo,
+	AROS_LH2(struct secGroupInfo *, secGetGroupInfo,
 
 /*  SYNOPSIS */
 	/* (info, keytype) */
-	AROS_LHA(struct muGroupInfo *, info, A0),
+	AROS_LHA(struct secGroupInfo *, info, A0),
 	AROS_LHA(ULONG, keytype, D0),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 27, Security)
+	struct SecurityBase *, secBase, 27, Security)
 
 /*  FUNCTION
 
@@ -49,9 +50,15 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secGetGroupInfo()\n") );;
+    struct secGroupInfo *groupInfo;
 
-    return NULL;
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
+
+    groupInfo = ((struct secGroupInfo *)SendServerPacket(
+            secBase, secSAction_GetGroupInfo,
+            (SIPTR)info, keytype, (SIPTR)NULL, (SIPTR)NULL));
+
+    return groupInfo;
 
     AROS_LIBFUNC_EXIT
 

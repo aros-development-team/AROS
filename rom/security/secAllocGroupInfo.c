@@ -1,25 +1,25 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <aros/debug.h>
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
+#include "security_groupinfo.h"
+#include "security_memory.h"
 
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(struct muGroupInfo *, secAllocGroupInfo,
+	AROS_LH0(struct secGroupInfo *, secAllocGroupInfo,
 
 /*  SYNOPSIS */
 	/* void */
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 25, Security)
+	struct SecurityBase *, secBase, 25, Security)
 
 /*  FUNCTION
 
@@ -47,9 +47,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secAllocGroupInfo()\n") );
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
-    return NULL;
+    return (MAlloc(sizeof(struct secPrivGroupInfo)));
 
     AROS_LIBFUNC_EXIT
 

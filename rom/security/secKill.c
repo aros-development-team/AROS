@@ -1,14 +1,16 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
+
+#include <proto/security.h>
 
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
+#include "security_task.h"
 
 /*****************************************************************************
 
@@ -20,7 +22,7 @@
 	AROS_LHA(struct Task *, task, D0),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 30, Security)
+	struct SecurityBase *, secBase, 30, Security)
 
 /*  FUNCTION
 
@@ -48,9 +50,56 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secKill()\n") );;
+    BOOL res = FALSE;
+    UBYTE *sp;
+    struct secExtOwner *xowner;
+    
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
-    return NULL;
+    xowner = GetTaskExtOwner(secBase, FindTask(NULL));
+    if (task && (task != FindTask(NULL)) && 
+                    (task != (struct Task*)secBase->Server) &&
+             (secGetRelationshipA(xowner, 0, NULL) & secRelF_ROOT_UID)) {
+        Disable();
+        switch (task->tc_Node.ln_Type) {
+            case NT_TASK:
+                    RemTask(task);
+                    res = TRUE;
+                    break;
+
+            case NT_PROCESS:
+                    Remove((struct Node*)task);
+                    task->tc_State = TS_READY;
+                    sp = task->tc_SPReg;
+#if (0)
+                    if (SysBase->AttnFlags & AFF_68881) {
+                        ULONG size;
+                        if ((size = *(ULONG *)sp)!=NULL) {
+                            sp += 110;
+
+                            if (size == 0x90)
+                                sp += 12;
+
+                            if ((SysBase->LibNode.lib_Version > 37) ||
+                                 ((SysBase->LibNode.lib_Version == 37) &&
+                                 (SysBase->LibNode.lib_Revision >= 132)))
+                                sp += 2;
+
+                            size = sp[1];
+                            sp += size;
+                        }
+                        sp += 4;
+                    }
+#endif
+                    *(IPTR *)sp = (IPTR)CleanUpBody;
+                    AddHead((struct List*)&SysBase->TaskReady, (struct Node*)task);
+                    res = TRUE;
+                    break;
+        }
+        Enable();
+    }
+    secFreeExtOwner(xowner);
+    return(res);
 
     AROS_LIBFUNC_EXIT
 

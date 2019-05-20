@@ -1,14 +1,13 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <aros/debug.h>
 #include <stdio.h>
 
 #include "security_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
+#include "security_plugins.h"
 
 /*****************************************************************************
 
@@ -23,7 +22,7 @@
 	AROS_LHA(ULONG, size, D1),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 52, Security)
+	struct SecurityBase *, secBase, 52, Security)
 
 /*  FUNCTION
 
@@ -51,11 +50,20 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secContextLocate()\n") );
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
-    return NULL;
+    APTR res = NULL;
+    struct secTaskNode * node;
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    node = FindContextOwner(secBase, caller);
+    res = FindContext(node, module, id);
+    if (res == NULL)
+            res = AllocateContext(node, module, id, size);
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    return res;
 
     AROS_LIBFUNC_EXIT
 
 } /* secContextLocate */
-

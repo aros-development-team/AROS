@@ -1,14 +1,16 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
 
 #include <stdio.h>
 
 #include "security_intern.h"
+#include "security_packetio.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
+#include <libraries/mufs.h>
 
 /*****************************************************************************
 
@@ -20,7 +22,7 @@
 	AROS_LHA(struct DosPacket *, pkt, A1),
 
 /*  LOCATION */
-	struct Library *, SecurityBase, 35, Security)
+	struct SecurityBase *, secBase, 35, Security)
 
 /*  FUNCTION
 
@@ -48,9 +50,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    D(bug( DEBUG_NAME_STR "secGetPktDefProtection()\n") );;
+    D(bug( DEBUG_NAME_STR " %s()\n", __func__);)
 
-    return NULL;
+    return pkt == NULL ? DEFPROTECTION : GetPktDefProtection(secBase, pkt);
 
     AROS_LIBFUNC_EXIT
 
