@@ -17,6 +17,7 @@ struct SysexpStorageBase
     /**/
     struct List                 sesb_HandlerList;
     /**/
+    struct MUI_CustomClass      *sesb_GenericWindowCLASS;
     struct MUI_CustomClass      *sesb_DevicePageCLASS;
 };
 

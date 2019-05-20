@@ -45,6 +45,10 @@ extern OOP_MethodID HiddStorageUnitBase;
 CONST_STRPTR storagebuswindowclass_name = "StorageBusWindow.Class";
 CONST_STRPTR storageunitwindowclass_name = "StorageUnitWindow.Class";
 
+CONST_STRPTR storageenumfunc_name = "StorageEnum.Func";
+CONST_STRPTR devicepageclass_name = "DevicePage.Class";
+CONST_STRPTR genericwindowclass_name = "GenericWindow.Class";
+
 AROS_UFH3S(BOOL, storageenumFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(OOP_Object*, obj, A2),
@@ -426,12 +430,15 @@ void StorageStartup(struct SysexpBase *SysexpBase)
     privatehookdata.ed_sysexpbase = SysexpBase;
     privatehookdata.ed_list = &StorageBase->sesb_HandlerList;
 
-    StorageBase->sesb_DevicePageCLASS = GetBase("DevicePage.Class");
+    StorageBase->sesb_GenericWindowCLASS = GetBase(genericwindowclass_name);
+    StorageBase->sesb_DevicePageCLASS = GetBase(devicepageclass_name);
     StorageBusWindow_CLASS->mcc_Class->cl_UserData = (IPTR)StorageBase;
 
+    RegisterBase(storageenumfunc_name, storageHWEnum);
     RegisterBase(storagebuswindowclass_name, StorageBusWindow_CLASS);
     RegisterBase(storageunitwindowclass_name, StorageUnitWindow_CLASS);
 
     RegisterClassHandler(CLID_Hidd_Storage, 90, NULL, storageHWEnum, NULL);
+    RegisterClassHandler(CLID_Hidd_StorageController, 90, StorageBase->sesb_GenericWindowCLASS, storageHWEnum, NULL);
     RegisterStorageBusHandler(CLID_Hidd_StorageBus, 0, StorageBusWindow_CLASS, NULL, NULL);
 }
