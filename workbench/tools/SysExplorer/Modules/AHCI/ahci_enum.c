@@ -46,6 +46,10 @@ extern OOP_AttrBase HiddAHCIUnitAB;
 
 struct MUI_CustomClass *DevicePage_CLASS;
 
+CONST_STRPTR ahcienumfunc_name = "AHCIBusEnum.Func";
+CONST_STRPTR devicepageclass_name = "DevicePage.Class";
+CONST_STRPTR genericwindowclass_name = "GenericWindow.Class";
+
 AROS_UFH3S(BOOL, ahciunitenumFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(OOP_Object*, unit, A2),
@@ -119,8 +123,10 @@ void AHCIStartup(struct SysexpBase *SysexpBase)
 
     privatehookdata.ed_sysexpbase = SysexpBase;
 
-    AhciBase->seab_DevicePageCLASS = GetBase("DevicePage.Class");
-    AhciBase->seab_GenericWindowCLASS = GetBase("GenericWindow.Class");
+    AhciBase->seab_DevicePageCLASS = GetBase(devicepageclass_name);
+    AhciBase->seab_GenericWindowCLASS = GetBase(genericwindowclass_name);
+
+    RegisterBase(ahcienumfunc_name, ahciBusEnum);
 
     AHCIBusWindow_Initialize(SysexpBase);
     AHCIUnitWindow_Initialize(SysexpBase);
