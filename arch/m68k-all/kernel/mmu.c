@@ -127,7 +127,7 @@ void *getphysaddr_mmu030(void *virt)
         "rte\n"
         "0:\n"
         "move.l %%a4,%%a5\n"
-        : "=a&" (addrdesc), "=r" (temp)
+        : "=a&" (addrdesc), "=Q" (temp)
         : "a" (virt)
         : "a4", "a6");
 
