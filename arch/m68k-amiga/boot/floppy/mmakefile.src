@@ -95,7 +95,7 @@ $(BOOT_DEST_DIR).info: $(SRCDIR)/$(CURDIR)/Emergency-Boot.info.src $(SRCDIR)/$(C
 	@$(ILBMTOICON) $^ $@
 
 $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.hunk.gz : $(BOOT_SRC_DIR)/$(AROS_DIR_ARCH)/aros.elf | $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)
-	@$(ELF2HUNK) $< - | gzip -c - >$@
+	@$(ELF2HUNK) $< - | gzip -c -9 - >$@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
 	echo $(GENDIR)/$(CURDIR)
