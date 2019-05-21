@@ -134,7 +134,7 @@ void *getphysaddr_mmu030(void *virt)
     mmusr = temp;
 
     /* did the mmu return a valid descriptor ? */
-    if (mmusr & (1 << 10))
+    if (!(mmusr & (1 << 10)))
     {
         /* check the descriptor is valid and that it is a page descriptor ... */
         if (((*addrdesc & 3) != 0) && (*addrdesc & 1))
