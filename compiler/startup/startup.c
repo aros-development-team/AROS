@@ -99,7 +99,7 @@ __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
 
 static int __startup_latehook_dispatcher(struct Hook *_latehook)
 {
-    bug("%s: hook @ 0x%p\n", __func__, _latehook);
+    D(bug("%s: hook @ 0x%p\n", __func__, _latehook);)
     return (int)CallHookA(_latehook, NULL, NULL);
 }
 
