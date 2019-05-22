@@ -1,0 +1,90 @@
+#   $Id$
+#
+#   Makefile to make MultiUserFS compatible security.library.
+
+include $(SRCDIR)/config/aros.cfg
+
+PUBLICFUNCS := \
+	secAccess_Control \
+	secAddMonitor \
+	secAllocGroupInfo \
+	secAllocUserInfo \
+	secCheckPasswd \
+	secContextLocate \
+	secEnumChildren \
+	secFreeExtOwner \
+	secFreeGroupInfo \
+	secFreeUserInfo \
+	secFreeze \
+	secGetConfigDirLock \
+	secGetDefProtection \
+	secGetGroupInfo \
+	secGetPasswdDirLock \
+	secGetPktDefProtection \
+	secGetPktOwner \
+	secGetRelationshipA \
+	secGetTaskExtOwner \
+	secGetTaskOwner \
+	secGetUserInfo \
+	secKill \
+	secLimitDOSSetProtection \
+	secLocksecBase \
+	secLoginA \
+	secLogout \
+	secPasswd \
+	secRemMonitor \
+	secSetDefProtectionA \
+	secSetProtection \
+	secUnfreeze \
+	secUnlocksecBase \
+	secUserInfo2ExtOwner
+
+CRTPUBLICFUNCS := \
+	secgetgid \
+	secgetpgid \
+	secgetuid \
+	secsetegid \
+	secseteuid \
+	secsetgid \
+	secsetreuid \
+	secsetuid
+
+PRIVATEFUNCS := \
+	secFSRendezVous \
+	secLoadPlugin \
+	secUnloadPlugin \
+	secRegisterHandler \
+	secUnRegisterHandler \
+	secPluginOperationComplete
+
+SECURITYFILES := \
+	security_config \
+	security_execfuncs \
+	security_dosfuncs \
+	security_locale \
+	security_volumes \
+	security_memory \
+	security_plugins \
+	security_crypto \
+	security_monitor \
+	security_packetio \
+	security_enforce \
+	security_task \
+	security_server \
+	security_segment \
+	security_support
+
+EXEDIR := $(AROSDIR)/MuFS
+
+#USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../Include
+USER_CPPFLAGS := -DDEBUG
+USER_LDFLAGS := -static
+
+#MM kernel-security : includes linklibs kernel-security-catalogs
+%subtarget parentmmake=workbench-libs mmake=kernel-security
+
+%build_module mmake=kernel-security modname=security \
+  modtype=library files="security_init $(PUBLICFUNCS) $(CRTPUBLICFUNCS) $(PRIVATEFUNCS) $(SECURITYFILES)" \
+  uselibs=""
+
+%common
