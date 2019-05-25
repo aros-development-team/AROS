@@ -5,10 +5,11 @@
 
 ## Nightly Test Builds
 
-* Builds are currently not downloadable (TODO), and only done to check if the targets compile.
-* Builds are configured to use gcc 9.1.0
+* All builds are scheduled to run at 00:00 UTC.
+* The builds are made using the azure-pipelines.yml file found in the azure-pipelines branch. Further details can be found in that file.
+* Currently all builds are configured to use gcc 9.1.0.
 * The main AROS target and distfiles are built for each arch.
-* Builds are made using the azure-pipelines.yml file found in the azure-pipelines branch. Further details can be found in that file.
+* The builds are currently not downloadable, and only done to check if the targets compile.
 
 | BUILD Arch | Status |
 | --- | --- |
