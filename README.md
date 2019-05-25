@@ -1,9 +1,15 @@
 # AROS Git Repository
-=====================
 
-> Main AROS repository for active development of the AROS Operating System.
-> Contains the main Operating System components, and Build System.
+> This is the main repository for active development of the AROS Operating System.
+> The repository contains the main Operating System components, SDK and Build System.
 
+## Nightly Test Builds
+
+* All builds are scheduled to run at 00:00 UTC.
+* The builds are made using the azure-pipelines.yml file found in the azure-pipelines branch. Further details can be found in that file.
+* Currently all builds are configured to use gcc 9.1.0.
+* The main AROS target and distfiles are built for each arch.
+* The builds are currently not downloadable, and only done to check if the targets compile.
 
 | BUILD Arch | Status |
 | --- | --- |
@@ -15,4 +21,12 @@
 | amiga-m68k | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
 | raspi-armhf | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-raspi-armhf?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
 | sam440-ppc | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-sam440-ppc?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
+
+## License
+
+This project is licensed under the APL License - see the [LICENSE](LICENSE) file for details
+
+## Acknowledgments
+
+AROS contains parts built upon external components - see the [ACKNOWLEDGEMENTS](ACKNOWLEDGEMENTS) file for details
 
