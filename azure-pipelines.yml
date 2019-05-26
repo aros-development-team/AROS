@@ -66,6 +66,7 @@ jobs:
       cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
       cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
       cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
+      echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
       if [[ "$(arosbuild.packagefmt)" = "zip" ]]
       then
         zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
@@ -82,4 +83,4 @@ jobs:
       fi
       md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
     workingDirectory: '$(AROSBUILDSDIR)'
-    displayName: 'Creating package $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)'
+    displayName: 'Creating $(arosbuild.name) $(arosbuild.package) package'
