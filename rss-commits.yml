@@ -12,7 +12,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-    AROSWEBDIR:  '/home/aros/project-web' # Location builds are done in
+    AROSWEBDIR:  '/home/project-web/aros' # Location builds are done in
     AZBUILDPATH: '$(Build.BinariesDirectory)' # workspace path
     AROSDOCSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
 
