@@ -46,9 +46,9 @@ jobs:
 
   - script: |
       mkdir -p '$(AROSBUILDDIR)'
-#      mkdir -p '$(AROSPACKAGEDIR)'
+      #mkdir -p '$(AROSPACKAGEDIR)'
       echo '##vso[task.prependpath]$(AROSBUILDDIR)'
-#      echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
+      #echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
     displayName: 'Setup $(arosbuild.name) workspace'
 
   - script: |
