@@ -4,6 +4,9 @@
 #    arosbuild.name
 #    arosbuild.target
 #    arosbuild.variant
+#    arosbuild.package  - "system" "boot-iso"
+#    arosbuild.packagefmt - "lha" "zip" "tar.bz2"
+#
 
 trigger:
 - master
@@ -23,7 +26,7 @@ jobs:
     AROSDISTFILESDIR:  '$(AZBUILDPATH)/distfiles' # Location built binaries are copied to.
     AZBUILDPATH: '$(Build.BinariesDirectory)' # workspace path
     AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)' # current builds directory
-#    AROSPACKAGEDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)-$(arosbuild.package)' # package generation directory
+    AROSPACKAGEDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)-$(arosbuild.package)' # package generation directory
     AROSSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
 
   steps:
@@ -46,9 +49,9 @@ jobs:
 
   - script: |
       mkdir -p '$(AROSBUILDDIR)'
-      #mkdir -p '$(AROSPACKAGEDIR)'
+      mkdir -p '$(AROSPACKAGEDIR)'
       echo '##vso[task.prependpath]$(AROSBUILDDIR)'
-      #echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
+      echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
     displayName: 'Setup $(arosbuild.name) workspace'
 
   - script: |
@@ -57,24 +60,24 @@ jobs:
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name)'
 
-#  - script: |
-#      cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
-#      cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
-#      cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
-#      if [[ "$(arosbuild.packagefmt)" = "zip" ]]
-#      then
-#        zip -r9 $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
-#      else
-#        if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
-#        then
-#          tar cjvf $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git $(arosbuild.name)-$(arosbuild.package)
-#        else
-#          if [[ "$(arosbuild.packagefmt)" = "lha" ]]
-#          then
-#            lha -a -x=\*/.git/\* $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package)
-#          fi
-#        fi
-#      fi
-#      md5sum $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
-#    workingDirectory: '$(AROSBUILDSDIR)'
-#    displayName: 'Creating package $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)'
+  - script: |
+      cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
+      cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
+      cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
+      if [[ "$(arosbuild.packagefmt)" = "zip" ]]
+      then
+        zip -r9 $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
+      else
+        if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
+        then
+          tar cjvf $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git $(arosbuild.name)-$(arosbuild.package)
+        else
+          if [[ "$(arosbuild.packagefmt)" = "lha" ]]
+          then
+            lha -a -x=\*/.git/\* $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package)
+          fi
+        fi
+      fi
+      md5sum $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+    workingDirectory: '$(AROSBUILDSDIR)'
+    displayName: 'Creating package $(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)'
