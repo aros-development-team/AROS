@@ -6,21 +6,21 @@
 ## Nightly Test Builds
 
 * All builds are scheduled to run at 00:00 UTC.
-* The builds are made using the azure-pipelines.yml file found in the azure-pipelines branch. Further details can be found in that file.
+* The builds are made using the scripts/azure-pipelines.yml file. Further details can be found in that file.
 * Currently all builds are configured to use gcc 9.1.0.
 * The main AROS target and distfiles are built for each arch.
 * The builds are currently not downloadable, and only done to check if the targets compile.
 
 | BUILD Arch | Status |
 | --- | --- |
-| linux-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-i386?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
-| linux-x86_64 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-x86_64?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
-| pc-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-i386?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
-| pc-x86_64 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
-| pc-x86_64-smp | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-smp?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=7&branchName=azure-pipelines) |
-| amiga-m68k | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
-| raspi-armhf | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-raspi-armhf?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
-| sam440-ppc | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-sam440-ppc?branchName=azure-pipelines)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=azure-pipelines) |
+| linux-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=master) |
+| linux-x86_64 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-x86_64?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=master) |
+| pc-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=master) |
+| pc-x86_64 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=master) |
+| pc-x86_64-smp | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-smp?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=7&branchName=master) |
+| amiga-m68k | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=master) |
+| raspi-armhf | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-raspi-armhf?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=master) |
+| sam440-ppc | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-sam440-ppc?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=1&branchName=master) |
 
 ## License
 
