@@ -238,7 +238,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
             else
             {
                 tstep = step;
-                if ((mbramstart + step) > *end)
+                if ((mbramstart += step) > *end)
                 {
                     ret = 0;
                     break;
