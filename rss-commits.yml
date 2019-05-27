@@ -1,0 +1,43 @@
+
+# Build & Deploy the commits.php file for the website
+# to use, you must define the following secret variables
+# in the pipeline settings -:
+#    SF_RSYNC_USER - sourceforge user to upload as
+#    SF_RSYNC_PASSWORD - ...
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+    AROSWEBDIR:  '/home/project-web/aros' # Location builds are done in
+    AZBUILDPATH: '$(Build.BinariesDirectory)' # workspace path
+    AROSDOCSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
+
+steps:
+- script: |
+    sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
+    sudo apt-get update
+    sudo apt-get install -y sshpass
+  displayName: 'Installing AROS build dependencies'
+
+- script: |
+    sudo mkdir -p '$(AROSWEBDIR)/htdocs'
+    echo '##vso[task.prependpath]$(AROSWEBDIR)/htdocs'
+  displayName: 'Setup workspace'
+
+- script: |
+    $(AROSDOCSRCDIR)/scripts/updatecommits
+  displayName: 'Updating commit RSS feed'
+
+- script: |
+    mv $(AROSWEBDIR)/htdocs/commits.php $(AROSWEBDIR)/htdocs/github-commits.php
+    mkdir -p ~/.ssh
+    ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+    sshpass -p "$MAPPED_PASS" rsync -rciv --rsh=ssh $(AROSWEBDIR)/htdocs/ $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/htdocs/
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+    MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+  displayName: 'Deploying website'

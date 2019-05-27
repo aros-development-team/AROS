@@ -1,0 +1,86 @@
+# AROS Build pipeline
+# Builds a single target defined in the pipeline variables.
+# set -:
+#    arosbuild.name
+#    arosbuild.target
+#    arosbuild.variant
+#    arosbuild.package  - "system" "boot-iso"
+#    arosbuild.packagefmt - "lha" "zip" "tar.bz2"
+#
+
+trigger:
+- master
+
+jobs:
+- job: Build
+  timeoutInMinutes: 240
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  variables:
+    AROSBUILDGCCVERS: '9.1.0'
+    AROSBUILDTOOLCHAINDIR:  '$(AZBUILDPATH)/toolchain' # Location toolchains are installed in
+    AROSPORTSSRCSDIR:  '$(AZBUILDPATH)/portssources' # Location external sources are downloaded to.
+    AROSBUILDSDIR:  '$(AZBUILDPATH)/builds' # Location builds are done in
+    AROSLOGSDIR:  '$(AZBUILDPATH)/logs' # Location logs are stored in.
+    AROSDISTFILESDIR:  '$(AZBUILDPATH)/distfiles' # Location built binaries are copied to.
+    AZBUILDPATH: '$(Build.BinariesDirectory)' # workspace path
+    AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)' # current builds directory
+    AROSPACKAGEDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)-$(arosbuild.package)' # package generation directory
+    AROSSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
+
+  steps:
+  - script: |
+      sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
+      sudo apt-get update
+      sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
+      sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage
+      sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
+    displayName: 'Installing AROS build dependencies'
+
+  - script: |
+      mkdir -p '$(AROSBUILDSDIR)'
+      mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+      mkdir -p '$(AROSPORTSSRCSDIR)'
+      echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
+      echo '##vso[task.prependpath]$(AROSBUILDSDIR)'
+      echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
+      BUILDDATE=`date -u +"%Y%m%d"`
+      echo '##vso[task.setvariable variable=arosbuildid]AROS-$BUILDDATE'
+    displayName: 'Setup common workspace'
+
+  - script: |
+      mkdir -p '$(AROSBUILDDIR)'
+      mkdir -p '$(AROSPACKAGEDIR)'
+      echo '##vso[task.prependpath]$(AROSBUILDDIR)'
+      echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
+    displayName: 'Setup $(arosbuild.name) workspace'
+
+  - script: |
+      $(AROSSRCDIR)/configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR) &&
+      make -j 2 && make -j 2 distfiles
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name)'
+
+  - script: |
+      cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
+      cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
+      cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
+      echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
+      if [[ "$(arosbuild.packagefmt)" = "zip" ]]
+      then
+        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
+      else
+        if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
+        then
+          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git $(arosbuild.name)-$(arosbuild.package)
+        else
+          if [[ "$(arosbuild.packagefmt)" = "lha" ]]
+          then
+            lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package)
+          fi
+        fi
+      fi
+      md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+    workingDirectory: '$(AROSBUILDSDIR)'
+    displayName: 'Creating $(arosbuild.name) $(arosbuild.package) package'
