@@ -15,7 +15,7 @@ jobs:
 - job: Build
   timeoutInMinutes: 240
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: '$(arosbuild.vmimage)'
 
   variables:
     AROSBUILDGCCVERS: '9.1.0'
