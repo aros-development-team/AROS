@@ -12,8 +12,8 @@ trigger:
 - master
 
 jobs:
-parameters:
-  vmImage: '$(arosbuild.vmimage)'
+  parameters:
+    vmImage: '$(arosbuild.vmimage)'
 - job: Build
   timeoutInMinutes: 240
   pool:
