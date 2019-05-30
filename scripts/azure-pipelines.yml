@@ -41,7 +41,11 @@ jobs:
 
   - script: |
       ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
-      brew install gawk autoconf automake wget cmake
+      brew list gawk &>/dev/null || brew install gawk
+      brew list autoconf &>/dev/null || brew install autoconf
+      brew list automake &>/dev/null || brew install automake
+      brew list wget &>/dev/null || brew install wget
+      brew list cmake &>/dev/null || brew install cmake
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: 'Installing AROS build dependencies for MacOS'
 
