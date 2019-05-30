@@ -12,12 +12,10 @@ trigger:
 - master
 
 jobs:
-  parameters:
-    vmImage: $(arosbuild.vmimage)
 - job: Build
   timeoutInMinutes: 240
   pool:
-    vmImage: ${{ parameters.vmImage }}
+    vmImage: '$(arosbuild.vmimage)'
 
   variables:
     AROSBUILDGCCVERS: '9.1.0'
@@ -32,17 +30,17 @@ jobs:
     AROSSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
 
   steps:
-  - ${{ if eq(parameters.vmImage, 'ubuntu-latest') }}:
   - script: |
       sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
       sudo apt-get update
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage
       sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
+    condition: eq( variables['Agent.OS'], 'Linux' )
     displayName: 'Installing AROS build dependencies for Ubuntu'
 
-  - ${{ if eq(parameters.vmImage, 'macos-latest') }}:
   - script: |
+    condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: 'Installing AROS build dependencies for MacOS'
 
   - script: |
