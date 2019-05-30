@@ -40,9 +40,9 @@ jobs:
     displayName: 'Installing AROS build dependencies for Ubuntu'
 
   - script: |
-    condition: eq( variables['Agent.OS'], 'Darwin' )
       ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
       brew install gawk
+    condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: 'Installing AROS build dependencies for MacOS'
 
   - script: |
