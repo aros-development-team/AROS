@@ -58,7 +58,7 @@ jobs:
       echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
       echo '##vso[task.prependpath]$(AROSBUILDSDIR)'
       echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
-      BUILDDATE=`date -u +"%Y%m%d"`
+      BUILDDATE=$(date -u +'%Y%m%d')
       echo '##vso[task.setvariable variable=arosbuildid]AROS-$BUILDDATE'
     displayName: 'Setup common workspace'
 
