@@ -42,6 +42,7 @@ jobs:
   - script: |
       ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
       brew list gawk &>/dev/null || brew install gawk
+      brew list gnu-sed &>/dev/null || brew install gnu-sed
       brew list autoconf &>/dev/null || brew install autoconf
       brew list automake &>/dev/null || brew install automake
       brew list wget &>/dev/null || brew install wget
