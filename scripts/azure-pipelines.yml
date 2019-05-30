@@ -46,6 +46,7 @@ jobs:
       brew list automake &>/dev/null || brew install automake
       brew list wget &>/dev/null || brew install wget
       brew list cmake &>/dev/null || brew install cmake
+      brew list netpbm &>/dev/null || brew install netpbm
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: 'Installing AROS build dependencies for MacOS'
 
