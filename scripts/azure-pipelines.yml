@@ -26,7 +26,6 @@ jobs:
     AROSDISTFILESDIR:  '$(AZBUILDPATH)/distfiles' # Location built binaries are copied to.
     AZBUILDPATH: '$(Build.BinariesDirectory)' # workspace path
     AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)' # current builds directory
-    AROSPACKAGEDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)-$(arosbuild.package)' # package generation directory
     AROSSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
 
   steps:
@@ -60,6 +59,10 @@ jobs:
       echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
       BUILDDATE=$(date -u +'%Y%m%d')
       echo "##vso[task.setvariable variable=arosbuildid]AROS-$BUILDDATE"
+      echo "##vso[task.setvariable variable=AROSPACKAGEDIR]$(AROSBUILDSDIR)/]AROS-$BUILDDATE-$(arosbuild.name)-$(arosbuild.package)"
+      echo "Common BUILD dir \'$(AROSBUILDSDIR)\'"
+      echo "Common TOOLCHAIN dir \'$(AROSBUILDTOOLCHAINDIR)\'"
+      echo "Common PORTSSOURCES dir \'$(AROSPORTSSRCSDIR)\'"
     displayName: 'Setup common workspace'
 
   - script: |
@@ -67,6 +70,8 @@ jobs:
       mkdir -p '$(AROSPACKAGEDIR)'
       echo '##vso[task.prependpath]$(AROSBUILDDIR)'
       echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
+      echo "Target BUILD dir \'$(AROSBUILDDIR)\'"
+      echo "Target PACKAGE dir \'$(AROSPACKAGEDIR)\'"
     displayName: 'Setup $(arosbuild.name) workspace'
 
   - script: |
