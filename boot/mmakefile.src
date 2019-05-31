@@ -16,7 +16,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM
 distfiles-system:
 	@$(ECHO) Copying system distfiles...
-	@$(CP) -R $(AROSDIR) $(DISTDIR)/
+	@$(CP) -R $(AROSDIR)/* $(DISTDIR)/
 
 AROSBOOTSIGFILE := AROS.boot
 
