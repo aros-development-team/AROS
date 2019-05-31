@@ -87,15 +87,15 @@ jobs:
       echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
       if [[ "$(arosbuild.packagefmt)" = "zip" ]]
       then
-        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
+        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)  $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
       else
         if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
         then
-          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git $(arosbuild.name)-$(arosbuild.package)
+          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git  $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
         else
           if [[ "$(arosbuild.packagefmt)" = "lha" ]]
           then
-            lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(arosbuild.name)-$(arosbuild.package)
+            lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)  $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
           fi
         fi
       fi
