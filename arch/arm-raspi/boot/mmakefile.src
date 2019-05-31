@@ -16,21 +16,14 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM- distfiles-raspi-armhf : distfiles-raspi
 #MM- distfiles-raspi-arm : distfiles-raspi
 #MM- distfiles-raspi-armeb : distfiles-raspi-be
-#MM- distfiles-quick-raspi-armeb : distfiles-raspi-be-quick
 
-#MM- distfiles-raspi-quick : \
-#MM kernel-raspi-arm-quick \
-#MM kernel-package-raspi-arm-quick \
-#MM distfiles-raspi-fw
+#MM- distfiles-quick-raspi-armhf : distfiles-raspi
+#MM- distfiles-quick-raspi-arm : distfiles-raspi
+#MM- distfiles-quick-raspi-armeb : distfiles-raspi-be
 
 #MM distfiles-raspi : \
 #MM kernel-raspi-arm \
 #MM kernel-package-raspi-arm \
-#MM distfiles-raspi-fw
-
-#MM- distfiles-raspi-be-quick : \
-#MM kernel-raspi-arm-quick \
-#MM kernel-package-raspi-arm-quick \
 #MM distfiles-raspi-fw
 
 #MM distfiles-raspi-be : \
@@ -190,23 +183,15 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
 	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
 
-distfiles-raspi-be: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2
-distfiles-raspi-be-quick: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2
+#MM
+distfiles-raspi-be : $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+	@$(ECHO) Copying RasPi-BE distfiles...
+	@$(CP) -R $(AROSDIR) $(DISTDIR)/
 
-distfiles-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-arm.tar.bz2
-distfiles-raspi-quick: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-arm.tar.bz2
-
-$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armeb.tar.bz2: $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
-	%mkdirs_q $(AROSDIR)/S
-	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
-	@$(MKDIR) -p "$(DISTDIR)"
-	cd $(AROSDIR) && tar -cjf  $@ ./
-
-$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-arm.tar.bz2: $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
-	%mkdirs_q $(AROSDIR)/S
-	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
-	@$(MKDIR) -p "$(DISTDIR)"
-	cd $(AROSDIR) && tar -cjf  $@ ./
+#MM
+distfiles-raspi : $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+	@$(ECHO) Copying RasPi distfiles...
+	@$(CP) -R $(AROSDIR) $(DISTDIR)/
 
 #MM
 clean ::

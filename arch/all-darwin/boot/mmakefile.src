@@ -1,0 +1,6 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- distfiles-darwin-$(AROS_TARGET_CPU) : distfiles-system
+#MM- distfiles-quick-darwin-$(AROS_TARGET_CPU) : distfiles-system

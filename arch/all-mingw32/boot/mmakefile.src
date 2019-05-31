@@ -2,6 +2,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- distfiles-mingw32-$(AROS_TARGET_CPU) : distfiles-system
+#MM- distfiles-quick-mingw32-$(AROS_TARGET_CPU) : distfiles-system
+
 EXEDIR := $(AROSARCHDIR)
 
 # Board support package (basic drivers set)
