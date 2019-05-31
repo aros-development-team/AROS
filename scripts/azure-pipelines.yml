@@ -75,8 +75,10 @@ jobs:
     displayName: 'Setup $(arosbuild.name) workspace'
 
   - script: |
-      $(AROSSRCDIR)/configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR) &&
-      make -j 2 && make -j 2 distfiles
+      {
+        $(AROSSRCDIR)/configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR) &&
+        make -j 2 && make -j 2 distfiles
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name)'
 
