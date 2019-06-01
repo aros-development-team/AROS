@@ -123,18 +123,17 @@ jobs:
     workingDirectory: '$(AROSBUILDSDIR)'
     displayName: 'Creating $(arosbuild.name) $(arosbuild.package) package'
 
-- script: |
-    mkdir -p ~/.ssh
-    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
-    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs'
-    cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
-    cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
-    cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/
-    cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/
-    ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-    sshpass -p "$MAPPED_PASS" rsync -rciv --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/uploads/nightly2/
-  env:
-    MAPPED_USER: $(SF_RSYNC_USER)
-    MAPPED_PASS: $(SF_RSYNC_PASSWORD)
-  displayName: 'Deploying build'
-  
+  - script: |
+      mkdir -p ~/.ssh
+      mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
+      mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs'
+      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+      cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/
+      cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/
+      ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+      sshpass -p "$MAPPED_PASS" rsync -rciv --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/uploads/nightly2/
+    env:
+      MAPPED_USER: $(SF_RSYNC_USER)
+      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    displayName: 'Deploying build'
