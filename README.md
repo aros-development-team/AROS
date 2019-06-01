@@ -11,7 +11,7 @@
 * The builds are made using the scripts/azure-pipelines.yml file. Further details can be found in that file.
 * Currently all builds are configured to use gcc 9.1.0.
 * The main AROS target and distfiles are built for each arch.
-* The builds are currently not downloadable, and only done to check if the targets compile.
+* The builds are downloadable via http://www.aros.org/nightly1.php.
 
 
 | BUILD Arch | Status |
