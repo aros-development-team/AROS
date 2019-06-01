@@ -44,7 +44,7 @@ delete  $PACKAGE/distfiles/$ISOFILE
 move    $PACKAGE AROS
 
 printi "Creating AROS/"$BUILDTARGET" bootiso package..."
-PACKAGE=$BASENAME-$BUILDTARGET-bootiso
+PACKAGE=$BASENAME-$BUILDTARGET-boot-iso
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
 
 makedir $PACKAGE
