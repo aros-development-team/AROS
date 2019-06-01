@@ -116,5 +116,8 @@ jobs:
         fi
       fi
       md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+      cd $(AROSLOGSDIR)
+      bzip2 $(arosbuild.package)-$(arosbuild.name).log
+      md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
     workingDirectory: '$(AROSBUILDSDIR)'
     displayName: 'Creating $(arosbuild.name) $(arosbuild.package) package'
