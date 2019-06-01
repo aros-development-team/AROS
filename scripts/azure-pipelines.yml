@@ -80,6 +80,7 @@ jobs:
   - script: |
       function execute {
         {
+          echo '>>>' $*
           $*
           if [ $? != 0 ]; then
             touch /tmp/_aros_build_failed
