@@ -54,15 +54,18 @@ jobs:
       mkdir -p '$(AROSBUILDSDIR)'
       mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
       mkdir -p '$(AROSPORTSSRCSDIR)'
+      mkdir -p '$(AROSLOGSDIR)'
       echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
       echo '##vso[task.prependpath]$(AROSBUILDSDIR)'
       echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
+      echo '##vso[task.prependpath]$(AROSLOGSDIR)'
       BUILDDATE=$(date -u +'%Y%m%d')
       echo "##vso[task.setvariable variable=arosbuildid]AROS-$BUILDDATE"
       echo "##vso[task.setvariable variable=AROSPACKAGEDIR]$(AROSBUILDSDIR)/AROS-$BUILDDATE-$(arosbuild.name)-$(arosbuild.package)"
       echo "Common BUILD dir '$(AROSBUILDSDIR)'"
       echo "Common TOOLCHAIN dir '$(AROSBUILDTOOLCHAINDIR)'"
       echo "Common PORTSSOURCES dir '$(AROSPORTSSRCSDIR)'"
+      echo "Common LOG dir '$(AROSLOGSDIR)'"
     displayName: 'Setup common workspace'
 
   - script: |
@@ -75,10 +78,20 @@ jobs:
     displayName: 'Setup $(arosbuild.name) workspace'
 
   - script: |
-      {
-        $(AROSSRCDIR)/configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR) &&
-        make -j 2 && make -j 2 distfiles
-      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      function execute {
+        {
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute $(AROSSRCDIR)/configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)
+      execute make -j 2
+      execute make -j 2 distfiles
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name)'
 
