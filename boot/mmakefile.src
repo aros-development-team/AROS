@@ -15,6 +15,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM
 distfiles-system:
+	%mkdir_q dir="$(DISTDIR)"
 	@$(ECHO) Copying system distfiles...
 	@$(CP) -R $(AROSDIR)/* $(DISTDIR)/
 
