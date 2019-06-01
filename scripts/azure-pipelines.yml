@@ -33,7 +33,7 @@ jobs:
       sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
       sudo apt-get update
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
-      sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage
+      sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
       sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
     condition: eq( variables['Agent.OS'], 'Linux' )
     displayName: 'Installing AROS build dependencies for Ubuntu'
@@ -60,6 +60,7 @@ jobs:
       echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
       echo '##vso[task.prependpath]$(AROSLOGSDIR)'
       BUILDDATE=$(date -u +'%Y%m%d')
+      echo "##vso[task.setvariable variable=arosbuilddate]$BUILDDATE"
       echo "##vso[task.setvariable variable=arosbuildid]AROS-$BUILDDATE"
       echo "##vso[task.setvariable variable=AROSPACKAGEDIR]$(AROSBUILDSDIR)/AROS-$BUILDDATE-$(arosbuild.name)-$(arosbuild.package)"
       echo "Common BUILD dir '$(AROSBUILDSDIR)'"
@@ -121,3 +122,19 @@ jobs:
       md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
     workingDirectory: '$(AROSBUILDSDIR)'
     displayName: 'Creating $(arosbuild.name) $(arosbuild.package) package'
+
+- script: |
+    mkdir -p ~/.ssh
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs'
+    cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+    cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+    cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/
+    cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/
+    ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+    sshpass -p "$MAPPED_PASS" rsync -rciv --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/uploads/nightly2/
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+    MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+  displayName: 'Deploying build'
+  
