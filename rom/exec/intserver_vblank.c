@@ -23,7 +23,7 @@ AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
     D(bug("[Exec] %s()\n", __func__));
 
     /* First decrease Elapsed time for current task */
-    if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
+    if (SCHEDELAPSED_GET && (--SCHEDELAPSED_GET == 0))
     {
         FLAG_SCHEDQUANTUM_SET;
         FLAG_SCHEDSWITCH_SET;

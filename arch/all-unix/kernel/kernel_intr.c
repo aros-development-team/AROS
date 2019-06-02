@@ -38,7 +38,7 @@ void core_ExitInterrupt(regs_t *regs)
         core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
 
     /* If task switching is disabled, do nothing */
-    if (SysBase->TDNestCnt < 0)
+    if (TDNESTCOUNT_GET < 0)
     {
         /*
          * Do not disturb task if it's not necessary. 
@@ -72,7 +72,7 @@ void core_ExitInterrupt(regs_t *regs)
 void core_SysCall(int sig, regs_t *regs)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    struct Task *task = SysBase->ThisTask;
+    struct Task *task = GET_THIS_TASK;
 
     D(bug("[KRN] %s()\n", __func__));
 
