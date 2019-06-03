@@ -115,10 +115,59 @@ jobs:
         fi
       }
       execute $(AROSSRCDIR)/configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Configuring $(arosbuild.name)'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
       execute make -j 2
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name) core system'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute make -j 2 boot-distfiles
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name) boot distfiles'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
       execute make -j 2 distfiles
     workingDirectory: '$(AROSBUILDDIR)'
-    displayName: 'Build $(arosbuild.name)'
+    displayName: 'Build $(arosbuild.name) main distfiles'
 
   - script: |
       cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
