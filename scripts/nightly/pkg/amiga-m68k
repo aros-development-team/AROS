@@ -27,7 +27,7 @@ make
 if [ -d $BUILD_BASE/AROS/local/NDK_3.1 ]; then
     make    sdk-test
 fi
-make    distfiles
+make    boot-distfiles distfiles
 
 cd      $BUILD_BASE/AROS/bin/amiga-m68k
 move    AROS $PACKAGE
