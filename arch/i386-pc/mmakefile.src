@@ -1,4 +1,6 @@
 # $Id$
 
+#MM- boot-distfiles-pc-i386 : bootdisk systemdisk
+#MM- boot-distfiles-quick-pc-i386 : bootdisk-quick systemdisk-quick
 #MM- distfiles-pc-i386 : bootiso
 #MM- distfiles-quick-pc-i386 : bootiso-quick
