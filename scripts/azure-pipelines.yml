@@ -149,6 +149,9 @@ jobs:
         fi
       }
       execute make -j 2 boot-distfiles
+      if [ -d "distfiles" ]; then 
+        mv distfiles distfiles-boot
+      fi
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) boot distfiles'
 
