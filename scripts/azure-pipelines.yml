@@ -173,21 +173,44 @@ jobs:
     displayName: 'Build $(arosbuild.name) main distfiles'
 
   - script: |
+      if [ -d "distfiles-boot" ]; then
+        mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+        cp -r $(AROSBUILDDIR)/distfiles-boot/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)"
+        if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]
+        then
+          zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage) -x \*/.git/\*
+        else
+          if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]
+          then
+            tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) --exclude=.git $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+          else
+            if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]
+            then
+              lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+            fi
+          fi
+        fi
+        md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5
+        rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+      fi
       cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
       cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
       cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
       echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
       if [[ "$(arosbuild.packagefmt)" = "zip" ]]
       then
-        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)  $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
+        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
       else
         if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
         then
-          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git  $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
         else
           if [[ "$(arosbuild.packagefmt)" = "lha" ]]
           then
-            lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)  $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+            lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
           fi
         fi
       fi
@@ -195,15 +218,15 @@ jobs:
       cd $(AROSLOGSDIR)
       bzip2 $(arosbuild.package)-$(arosbuild.name).log
       md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
+      rm -Rf $(AROSPACKAGEDIR)
     workingDirectory: '$(AROSBUILDSDIR)'
-    displayName: 'Creating $(arosbuild.name) $(arosbuild.package) package'
+    displayName: 'Creating $(arosbuild.name) package(s)'
 
   - script: |
       mkdir -p ~/.ssh
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure'
-      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
-      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
       cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
       cp $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
       ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
