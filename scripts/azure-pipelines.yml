@@ -30,18 +30,23 @@ jobs:
 
   steps:
   - script: |
+      CONFIGOPTS="--target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant)"
       sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
       sudo apt-get update
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
       sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
-      if [ "$(arosbuild.target)" = "mingw32-i386" ] ]; then 
+      if [ "$(arosbuild.target)" = "mingw32-i386" ] ]; then
         sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
+        CONFIGOPTS="$(CONFIGOPTS) --with-kernel-toolchain-prefix=i686-w64-mingw32-"
       fi
+      CONFIGOPTS="$(CONFIGOPTS) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
+      echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
     condition: eq( variables['Agent.OS'], 'Linux' )
     displayName: 'Installing AROS build dependencies for Ubuntu'
 
   - script: |
+      CONFIGOPTS="--target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant)"
       ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
       brew list gawk &>/dev/null || brew install gawk
       brew list gnu-sed &>/dev/null || brew install gnu-sed
@@ -50,6 +55,8 @@ jobs:
       brew list wget &>/dev/null || brew install wget
       brew list cmake &>/dev/null || brew install cmake
       brew list netpbm &>/dev/null || brew install netpbm
+      CONFIGOPTS="$(CONFIGOPTS) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
+      echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: 'Installing AROS build dependencies for MacOS'
 
@@ -117,7 +124,7 @@ jobs:
           exit 5
         fi
       }
-      execute $(AROSSRCDIR)/configure --target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant) --enable-ccache --with-gcc-version=$(AROSBUILDGCCVERS) --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)
+      execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS)
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Configuring $(arosbuild.name)'
 
