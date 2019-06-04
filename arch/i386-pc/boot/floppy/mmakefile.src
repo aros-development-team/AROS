@@ -45,8 +45,6 @@ BOOT_TAR_EXECUTABLES := \
     Classes/DataTypes/ilbm.datatype \
     Classes/DataTypes/png.datatype \
     Classes/Zune/AboutWindow.mcc \
-    Classes/Zune/Calendar.mcc \
-    Classes/Zune/Clock.mcc \
     Classes/Zune/IconDrawerList.mui \
     Classes/Zune/IconImage.mcc \
     Classes/Zune/IconList.mui \
@@ -64,8 +62,6 @@ BOOT_TAR_EXECUTABLES := \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
     Libs/icon.library Libs/kms.library Libs/workbench.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
-    Prefs/Font \
-    Prefs/Time \
     System/About System/FixFonts \
     System/Wanderer/Wanderer \
     System/Wanderer/Tools/DiskInfo \
@@ -73,31 +69,37 @@ BOOT_TAR_EXECUTABLES := \
     System/Wanderer/Tools/ExecuteStartup \
     System/Wanderer/Tools/Info System/Wanderer/Tools/WBNewDrawer \
     System/Wanderer/Tools/WBRename \
-    Tools/HDToolBox \
-    Developer/Debug/sashimi \
     Utilities/MultiView
 
+EXTRA_TAR_EXECUTABLES:= \
+    Classes/Zune/Calendar.mcc \
+    Classes/Zune/Clock.mcc \
+    Developer/Debug/sashimi \
+    Tools/HDToolBox \
+    Prefs/Font \
+    Prefs/Time
 
 BOOT_TAR_ICONS := \
     Devs.info \
     Fonts.info \
     Locale.info \
-    Prefs.info \
-    Prefs/Font.info \
-    Prefs/Time.info \
     System.info \
     System/FixFonts.info \
     System/Wanderer/Wanderer.info \
     System/Wanderer/Tools/DiskInfo.info \
     System/Wanderer/Tools/ExecuteCommand.info System/Wanderer/Tools/Info.info \
     System/Wanderer/Tools/WBNewDrawer.info System/Wanderer/Tools/WBRename.info \
-    Tools.info \
-    Tools/HDToolBox.info \
+    Utilities.info
+
+EXTRA_TAR_ICONS:= \
     Developer.info \
     Developer/Debug.info \
     Developer/Debug/Sashimi.info \
-    Utilities.info
-
+    Prefs.info \
+    Prefs/Font.info \
+    Prefs/Time.info \
+    Tools.info \
+    Tools/HDToolBox.info
 
 BOOT_TAR_MISC := \
     Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM \
@@ -115,7 +117,6 @@ BOOT_TAR_MISC := \
     Prefs/Presets/Themes/Mason \
     Prefs/Presets/Themes/$(AROS_GUI_THEME) \
     S
-
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/boot/bootdisk
