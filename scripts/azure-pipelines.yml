@@ -31,7 +31,7 @@ jobs:
   steps:
   - script: |
       CONFIGOPTS="--target=$(arosbuild.target)"
-      if [ "$(arosbuild.variant)" != "" ] ]; then
+      if [ "$AROSBUILD_VARIANT" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
       fi
       sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
@@ -39,7 +39,7 @@ jobs:
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
       sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
-      if [ "$(arosbuild.target)" = "mingw32-i386" ] ]; then
+      if [ "$AROSBUILD_TARGET" = "mingw32-i386" ]; then
         sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
         CONFIGOPTS="$CONFIGOPTS --with-kernel-toolchain-prefix=i686-w64-mingw32-"
       fi
@@ -50,7 +50,7 @@ jobs:
 
   - script: |
       CONFIGOPTS="--target=$(arosbuild.target)"
-      if [ "$(arosbuild.variant)" != "" ] ]; then
+      if [ "$AROSBUILD_VARIANT" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
       fi
       ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
