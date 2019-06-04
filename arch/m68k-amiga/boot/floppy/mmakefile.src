@@ -2,13 +2,13 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-.PHONY: $(DISTDIR)/system-amiga-m68k.adf
+.PHONY: $(DISTDIR)/system-amiga-m68k.adf $(GENDIR)/boot/system-amiga-m68k.adf
 
-#MM bootdisk-amiga-m68k : \
+#MM bootdisk-amiga-m68k-gen : \
 #MM           kernel-link-amiga-m68k \
 #MM           workbench-c-m68k
-#MM bootdisk-amiga-m68k-quick : bootdisk-amiga-m68k-quick
-
+#MM- bootdisk-amiga-m68k-quick : bootdisk-amiga-m68k
+#MM bootdisk-amiga-m68k : bootdisk-amiga-m68k-gen
 
 ELF2HUNK_FILES := \
     $(AROS_DIR_ARCH)/AROSBootstrap \
@@ -58,28 +58,29 @@ BOOT_DEST_FILES := $(ELF2HUNK_DEST_FILES) $(OTHER_DEST_FILES)
 
 # Create directories
 BOOT_DEST_DIRS := $(dir $(BOOT_DEST_FILES))
-GLOB_MKDIRS += $(BOOT_DEST_DIRS) $(DISTDIR)
+GLOB_MKDIRS += $(BOOT_DEST_DIRS) $(DISTDIR) $(GENDIR)/boot
 
 #MM
 bootdisk-amiga-m68k-clean:
-	$(RM) $(BOOT_DEST_DIR) $(DISTDIR)/bootdisk-amiga-m68k.adf
+	$(RM) $(BOOT_DEST_DIR) $(DISTDIR)/bootdisk-amiga-m68k.adf $(GENDIR)/boot/bootdisk-amiga-m68k.adf
 
 #MM
 bootdisk-amiga-m68k: $(DISTDIR)/bootdisk-amiga-m68k.adf
 
-.PHONY: bootdisk-amiga-m68k-quick
-
 #MM
-bootdisk-amiga-m68k-quick : bootdisk-amiga-m68k
+bootdisk-amiga-m68k-gen: $(GENDIR)/boot/bootdisk-amiga-m68k.adf
 
-$(DISTDIR)/bootdisk-amiga-m68k.adf: \
+$(GENDIR)/boot/bootdisk-amiga-m68k.adf: \
 	    $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
 	    $(BOOT_DEST_DIR).info \
 	    $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) \
-	    | $(DISTDIR)
+	    | $(GENDIR)/boot
 	$(RM) $@
 	$(COPYTOAFS) $@ --type OFS --name "AROS Kickstart" --size 1760 $(BOOT_DEST_DIR)
 	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
+
+$(DISTDIR)/bootdisk-amiga-m68k.adf: $(GENDIR)/boot/bootdisk-amiga-m68k.adf | $(DISTDIR)
+	@$(CP) $< $@
 
 $(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot | $(BOOT_DEST_DIR)/S
 	@$(CP) $< $@

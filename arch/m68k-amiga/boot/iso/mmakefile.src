@@ -13,7 +13,7 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 #MM			kernel-package-amiga-m68k	\
 #MM			kernel-bootstrap-amiga-m68k	\
 #MM			AROS-amiga-m68k-drivers \
-#MM			bootdisk-amiga-m68k
+#MM			bootdisk-amiga-m68k-gen
 
 #MM deviso-amiga-m68k :	AROS-complete		\
 #MM			kernel-aros \
@@ -21,7 +21,7 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 #MM			kernel-package-amiga-m68k	\
 #MM			kernel-bootstrap-amiga-m68k	\
 #MM			AROS-amiga-m68k-drivers \
-#MM			bootdisk-amiga-m68k
+#MM			bootdisk-amiga-m68k-gen
 
 TAR ?= tar
 Q ?= @
@@ -29,7 +29,7 @@ Q ?= @
 $(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
 		@$(CP) $< $@
 
-$(AROSDIR)/Emergency-Boot.adf: $(DISTDIR)/bootdisk-amiga-m68k.adf
+$(AROSDIR)/Emergency-Boot.adf: $(GENDIR)/boot/bootdisk-amiga-m68k.adf
 		@$(CP) $< $@
 
 $(AROSDIR)/Sources: FORCE $(AROSDIR)/Sources.info $(AROSDIR)/Sources/README.txt.info
