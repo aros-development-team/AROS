@@ -149,7 +149,7 @@ jobs:
         fi
       }
       execute make -j 2 boot-distfiles
-      if [ -d "distfiles" ]; then 
+      if [ -d "$(AROSBUILDDIR)/distfiles" ]; then 
         mv distfiles distfiles-boot
       fi
     workingDirectory: '$(AROSBUILDDIR)'
@@ -173,7 +173,7 @@ jobs:
     displayName: 'Build $(arosbuild.name) main distfiles'
 
   - script: |
-      if [ -d "distfiles-boot" ]; then
+      if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
         mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
         cp -r $(AROSBUILDDIR)/distfiles-boot/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
         cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
