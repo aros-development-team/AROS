@@ -30,7 +30,10 @@ jobs:
 
   steps:
   - script: |
-      CONFIGOPTS="--target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant)"
+      CONFIGOPTS="--target=$(arosbuild.target)"
+      if [ "$(arosbuild.variant)" != "" ] ]; then
+        CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
+      fi
       sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
       sudo apt-get update
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
@@ -46,7 +49,10 @@ jobs:
     displayName: 'Installing AROS build dependencies for Ubuntu'
 
   - script: |
-      CONFIGOPTS="--target=$(arosbuild.target) --enable-target-variant=$(arosbuild.variant)"
+      CONFIGOPTS="--target=$(arosbuild.target)"
+      if [ "$(arosbuild.variant)" != "" ] ]; then
+        CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
+      fi
       ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
       brew list gawk &>/dev/null || brew install gawk
       brew list gnu-sed &>/dev/null || brew install gnu-sed
