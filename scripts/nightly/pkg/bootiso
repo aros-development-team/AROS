@@ -18,7 +18,7 @@ setl   bootiso-$BOOTLOADER-$BUILDTARGET.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 
-printi "Creating AROS/$BUILDTARGET bootiso binary packages (with $BOOTLOADER)..."
+printi "Creating AROS/$BUILDTARGET boot iso binary packages (with $BOOTLOADER)..."
 
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS

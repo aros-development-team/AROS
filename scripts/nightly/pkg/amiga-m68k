@@ -43,7 +43,7 @@ delete  $PACKAGE/distfiles/$ISOFILE
 #archive $ARCHIVE $PACKAGE
 move    $PACKAGE AROS
 
-printi "Creating AROS/"$BUILDTARGET" bootiso package..."
+printi "Creating AROS/"$BUILDTARGET" boot iso package..."
 PACKAGE=$BASENAME-$BUILDTARGET-boot-iso
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
 
@@ -55,8 +55,8 @@ ziparc  $ARCHIVE $PACKAGE
 
 delete  $PACKAGE
 
-printi "Creating AROS/"$BUILDTARGET" boot package..."
-PACKAGE=$BASENAME-$BUILDTARGET-boot
+printi "Creating AROS/"$BUILDTARGET" boot floppy package..."
+PACKAGE=$BASENAME-$BUILDTARGET-boot-floppy
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.lha
 
 move    $BUILD_BASE/AROS/distfiles $PACKAGE
