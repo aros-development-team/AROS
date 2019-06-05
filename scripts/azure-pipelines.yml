@@ -203,6 +203,27 @@ jobs:
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) main distfiles'
 
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      }
+      mv $(AROSCONTRIBSRCDIR) $(AROSSRCDIR)/contrib
+      execute make -j 2 contrib
+      mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    workingDirectory: '$(AROSBUILDDIR)'
+    condition: eq( variables['AROSBUILD_WITHCONTRIB'], 'yes' )
+    displayName: 'Build $(arosbuild.name) contrib'
+
   - script: |
       if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
         mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
@@ -246,6 +267,14 @@ jobs:
         fi
       fi
       md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+      if [ "$AROSBUILD_WITHCONTRIB" = "yes" ]; then
+        mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
+        cp -r $(AROSBUILDDIR)/$(arosbuild.name)/AROS/Extras/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+        cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+        cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+        tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
+        md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
+      fi
       cd $(AROSLOGSDIR)
       bzip2 $(arosbuild.package)-$(arosbuild.name).log
       md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
