@@ -176,13 +176,15 @@ jobs:
             touch /tmp/_aros_build_failed
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
-        if [ -f /tmp/_aros_build_failed ]; then
-          exit 5
-        fi
       }
       execute make -j 2 boot-distfiles
-      if [ -d "$(AROSBUILDDIR)/distfiles" ]; then 
-        mv distfiles distfiles-boot
+      if [ -f /tmp/_aros_build_failed ]; then
+        touch /tmp/_aros_boot_build_failed
+        rm /tmp/_aros_build_failed
+      else
+        if [ -d "$(AROSBUILDDIR)/distfiles" ]; then 
+          mv distfiles distfiles-boot
+        fi
       fi
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) boot distfiles'
@@ -196,11 +198,13 @@ jobs:
             touch /tmp/_aros_build_failed
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
-        if [ -f /tmp/_aros_build_failed ]; then
-          exit 5
-        fi
       }
       execute make -j 2 distfiles
+      if [ -f /tmp/_aros_build_failed ]; then
+        touch /tmp/_aros_distfiles_build_failed
+        rm /tmp/_aros_build_failed
+        rm -Rf $(AROSBUILDDIR)/distfiles
+      fi
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) main distfiles'
 
@@ -219,7 +223,9 @@ jobs:
       execute make -j 2 contrib
       mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
       if [ -f /tmp/_aros_build_failed ]; then
-        exit 5
+        touch /tmp/_aros_contrib_build_failed
+        rm /tmp/_aros_build_failed
+        rm -Rf 
       fi
     workingDirectory: '$(AROSBUILDDIR)'
     condition: eq( variables['arosbuild.withcontrib'], 'yes' )
@@ -227,54 +233,60 @@ jobs:
 
   - script: |
       if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
-        mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
-        cp -r $(AROSBUILDDIR)/distfiles-boot/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
-        cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
-        cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
-        echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)"
-        if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]
-        then
-          zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
-        else
-          if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]
+        if [ ! -f /tmp/_aros_boot_build_failed ]; then
+          mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+          cp -r $(AROSBUILDDIR)/distfiles-boot/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+          cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+          cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+         echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)"
+          if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]
           then
-            tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+            zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
           else
-            if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]
+            if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]
             then
-              lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+              tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+            else
+              if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]
+              then
+                lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+              fi
+            fi
+          fi
+          md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5
+          rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+        fi
+      fi
+      if [ ! -f /tmp/_aros_distfiles_build_failed ]; then
+        cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
+        cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
+        cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
+        echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
+        if [[ "$(arosbuild.packagefmt)" = "zip" ]]
+        then
+          zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+        else
+          if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
+          then
+            tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+          else
+            if [[ "$(arosbuild.packagefmt)" = "lha" ]]
+            then
+              lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
             fi
           fi
         fi
-        md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5
-        rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+        md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
       fi
-      cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
-      cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
-      cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
-      echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
-      if [[ "$(arosbuild.packagefmt)" = "zip" ]]
-      then
-        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
-      else
-        if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
-        then
-          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
-        else
-          if [[ "$(arosbuild.packagefmt)" = "lha" ]]
-          then
-            lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
-          fi
-        fi
-      fi
-      md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
       if [ "$AROSBUILD_WITHCONTRIB" = "yes" ]; then
-        mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
-        cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/Extras/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
-        cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
-        cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
-        tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
-        md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
+        if [ ! -f /tmp/_aros_contrib_build_failed ]; then
+          mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
+          cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/Extras/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+          cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+          cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
+          md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
+        fi
       fi
       cd $(AROSLOGSDIR)
       bzip2 $(arosbuild.package)-$(arosbuild.name).log
