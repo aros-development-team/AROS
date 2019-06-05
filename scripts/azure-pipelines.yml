@@ -198,15 +198,15 @@ jobs:
         echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)"
         if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]
         then
-          zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage) -x \*/.git/\*
+          zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
         else
           if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]
           then
-            tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) --exclude=.git $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+            tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
           else
             if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]
             then
-              lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+              lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
             fi
           fi
         fi
@@ -219,15 +219,15 @@ jobs:
       echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
       if [[ "$(arosbuild.packagefmt)" = "zip" ]]
       then
-        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package) -x \*/.git/\*
+        zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
       else
         if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
         then
-          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) --exclude=.git $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
         else
           if [[ "$(arosbuild.packagefmt)" = "lha" ]]
           then
-            lha -a -x=\*/.git/\* $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+            lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
           fi
         fi
       fi
