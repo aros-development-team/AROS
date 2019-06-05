@@ -114,9 +114,9 @@ __open(const char *name, int mode, ...)
       int cmode;
 
       va_start(va, mode);
-
       cmode = va_arg(va, int) & ~getumask();
-      
+      va_end(va);
+
       chmod((char *)name, cmode); /* hope this doesn't fail :-) */
     }
   }
