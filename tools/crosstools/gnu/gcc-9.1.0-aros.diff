@@ -342,8 +342,8 @@ diff -ruN gcc-9.1.0/gcc/config/aros-stdint.h gcc-9.1.0.aros/gcc/config/aros-stdi
 +#define UINTPTR_TYPE      (LONG_TYPE_SIZE == 64 ? UINT64_TYPE : UINT32_TYPE)
 diff -ruN gcc-9.1.0/gcc/config/aros.h gcc-9.1.0.aros/gcc/config/aros.h
 --- gcc-9.1.0/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-9.1.0.aros/gcc/config/aros.h	2019-05-21 17:44:41.624247600 +0100
-@@ -0,0 +1,112 @@
++++ gcc-9.1.0.aros/gcc/config/aros.h	2019-06-05 03:14:22.164059400 +0100
+@@ -0,0 +1,115 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -441,6 +441,9 @@ diff -ruN gcc-9.1.0/gcc/config/aros.h gcc-9.1.0.aros/gcc/config/aros.h
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
 +  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
++
++#undef  GNU_USER_TARGET_LIB_SPEC
++#define GNU_USER_TARGET_LIB_SPEC LIB_SPEC 
 +
 +#undef	LIBSTDCXX_STATIC
 +#define LIBSTDCXX_STATIC "pthread"
@@ -881,7 +884,7 @@ diff -ruN gcc-9.1.0/gcc/config.build gcc-9.1.0.aros/gcc/config.build
      build_install_headers_dir=install-headers-cpio
 diff -ruN gcc-9.1.0/gcc/config.gcc gcc-9.1.0.aros/gcc/config.gcc
 --- gcc-9.1.0/gcc/config.gcc	2019-04-15 09:05:03.000000000 +0100
-+++ gcc-9.1.0.aros/gcc/config.gcc	2019-06-05 01:45:58.427323000 +0100
++++ gcc-9.1.0.aros/gcc/config.gcc	2019-06-05 03:15:41.529174300 +0100
 @@ -851,6 +851,16 @@
    default_use_cxa_atexit=yes
    target_has_targetdm=yes
@@ -977,7 +980,7 @@ diff -ruN gcc-9.1.0/gcc/config.gcc gcc-9.1.0.aros/gcc/config.gcc
  	tmake_file="${tmake_file} rs6000/t-fprules rs6000/t-rtems rs6000/t-ppccomm"
  	;;
 +powerpc-*-aros*)
-+ 	tm_file="${tm_file} ${aros_tm_file} dbxelf.h elfos.h gnu-user.h freebsd-spec.h rs6000/sysv4.h aros.h"
++ 	tm_file="${tm_file} ${aros_tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h"
 + 	extra_options="${extra_options} rs6000/sysv4.opt"
 + 	tm_file="${tm_file} rs6000/aros.h"
 + 	xm_file=xm-aros.h
