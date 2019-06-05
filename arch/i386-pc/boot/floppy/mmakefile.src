@@ -80,9 +80,6 @@ EXTRA_TAR_EXECUTABLES:= \
     Prefs/Time
 
 BOOT_TAR_ICONS := \
-    Devs.info \
-    Fonts.info \
-    Locale.info \
     System.info \
     System/FixFonts.info \
     System/Wanderer/Wanderer.info \
@@ -92,6 +89,9 @@ BOOT_TAR_ICONS := \
     Utilities.info
 
 EXTRA_TAR_ICONS:= \
+    Devs.info \
+    Fonts.info \
+    Locale.info \
     Developer.info \
     Developer/Debug.info \
     Developer/Debug/Sashimi.info \
