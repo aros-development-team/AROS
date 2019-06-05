@@ -269,7 +269,7 @@ jobs:
       md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
       if [ "$AROSBUILD_WITHCONTRIB" = "yes" ]; then
         mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
-        cp -r $(AROSBUILDDIR)/$(arosbuild.name)/AROS/Extras/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+        cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/Extras/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
         cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
         cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
         tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
