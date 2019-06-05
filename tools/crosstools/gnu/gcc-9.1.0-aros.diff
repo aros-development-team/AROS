@@ -342,8 +342,8 @@ diff -ruN gcc-9.1.0/gcc/config/aros-stdint.h gcc-9.1.0.aros/gcc/config/aros-stdi
 +#define UINTPTR_TYPE      (LONG_TYPE_SIZE == 64 ? UINT64_TYPE : UINT32_TYPE)
 diff -ruN gcc-9.1.0/gcc/config/aros.h gcc-9.1.0.aros/gcc/config/aros.h
 --- gcc-9.1.0/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-9.1.0.aros/gcc/config/aros.h	2019-06-05 03:14:22.164059400 +0100
-@@ -0,0 +1,115 @@
++++ gcc-9.1.0.aros/gcc/config/aros.h	2019-05-21 17:44:41.624247600 +0100
+@@ -0,0 +1,112 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -881,7 +881,7 @@ diff -ruN gcc-9.1.0/gcc/config.build gcc-9.1.0.aros/gcc/config.build
      build_install_headers_dir=install-headers-cpio
 diff -ruN gcc-9.1.0/gcc/config.gcc gcc-9.1.0.aros/gcc/config.gcc
 --- gcc-9.1.0/gcc/config.gcc	2019-04-15 09:05:03.000000000 +0100
-+++ gcc-9.1.0.aros/gcc/config.gcc	2019-06-05 03:15:41.529174300 +0100
++++ gcc-9.1.0.aros/gcc/config.gcc	2019-06-05 01:45:58.427323000 +0100
 @@ -851,6 +851,16 @@
    default_use_cxa_atexit=yes
    target_has_targetdm=yes
