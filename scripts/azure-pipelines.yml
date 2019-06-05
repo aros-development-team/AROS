@@ -27,6 +27,7 @@ jobs:
     AZBUILDPATH: '$(Build.BinariesDirectory)' # workspace path
     AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)' # current builds directory
     AROSSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
+    AROSCONTRIBSRCDIR: '$(Agent.BuildDirectory)/s-contrib' # Path to the contrib source code
 
   steps:
   - script: |
@@ -68,6 +69,9 @@ jobs:
     displayName: 'Installing AROS build dependencies for MacOS'
 
   - script: |
+      mkdir -p '$(AROSCONTRIBSRCDIR)'
+      echo '##vso[task.prependpath]$(AROSCONTRIBSRCDIR)'
+      git clone --depth 1 https://github.com/aros-development-team/contrib.git $(AROSCONTRIBSRCDIR)/
       mkdir -p '$(AROSBUILDSDIR)'
       mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
       mkdir -p '$(AROSPORTSSRCSDIR)'
@@ -97,17 +101,27 @@ jobs:
     displayName: 'Creating AROS source package'
 
   - script: |
+      mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source'
+      cp -r $(AROSCONTRIBSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source/
+      echo "Creating $(AROSBUILDID)-source.tar.bz2"
+      tar cjvf $(AROSBUILDID)-contrib-source.tar.bz2 --exclude=.git $(AROSBUILDID)-contrib-source
+      md5sum $(AROSBUILDID)-contrib-source.tar.bz2 >$(AROSBUILDID)-contrib-source.tar.bz2.md5
+      rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source
+    workingDirectory: '$(AROSBUILDSDIR)'
+    displayName: 'Creating contrib source package'
+
+  - script: |
       mkdir -p ~/.ssh
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources'
-      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
-      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-*source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+      cp $(AROSBUILDSDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
       ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
       sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
       rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
-    displayName: 'Deploying AROS source package'
+    displayName: 'Deploying source package(s)'
 
   - script: |
       mkdir -p '$(AROSBUILDDIR)'
