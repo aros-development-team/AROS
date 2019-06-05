@@ -181,6 +181,8 @@ jobs:
       if [ -f /tmp/_aros_build_failed ]; then
         touch /tmp/_aros_boot_build_failed
         rm /tmp/_aros_build_failed
+        rm -Rf $(AROSBUILDDIR)/distfiles
+        echo '##vso[task.complete result=SucceededWithIssues;]DONE'
       else
         if [ -d "$(AROSBUILDDIR)/distfiles" ]; then 
           mv distfiles distfiles-boot
@@ -204,6 +206,7 @@ jobs:
         touch /tmp/_aros_distfiles_build_failed
         rm /tmp/_aros_build_failed
         rm -Rf $(AROSBUILDDIR)/distfiles
+        echo '##vso[task.complete result=SucceededWithIssues;]DONE'
       fi
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) main distfiles'
@@ -225,7 +228,7 @@ jobs:
       if [ -f /tmp/_aros_build_failed ]; then
         touch /tmp/_aros_contrib_build_failed
         rm /tmp/_aros_build_failed
-        rm -Rf 
+        echo '##vso[task.complete result=SucceededWithIssues;]DONE'
       fi
     workingDirectory: '$(AROSBUILDDIR)'
     condition: eq( variables['arosbuild.withcontrib'], 'yes' )
