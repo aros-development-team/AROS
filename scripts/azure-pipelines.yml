@@ -221,7 +221,7 @@ jobs:
         exit 5
       fi
     workingDirectory: '$(AROSBUILDDIR)'
-    condition: eq( variables['AROSBUILD_WITHCONTRIB'], 'yes' )
+    condition: eq( variables['arosbuild.withcontrib'], 'yes' )
     displayName: 'Build $(arosbuild.name) contrib'
 
   - script: |
