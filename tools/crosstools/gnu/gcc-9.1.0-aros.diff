@@ -442,9 +442,6 @@ diff -ruN gcc-9.1.0/gcc/config/aros.h gcc-9.1.0.aros/gcc/config/aros.h
 +#define LIB_SPEC \
 +  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
 +
-+#undef  GNU_USER_TARGET_LIB_SPEC
-+#define GNU_USER_TARGET_LIB_SPEC LIB_SPEC 
-+
 +#undef	LIBSTDCXX_STATIC
 +#define LIBSTDCXX_STATIC "pthread"
 +
@@ -980,7 +977,7 @@ diff -ruN gcc-9.1.0/gcc/config.gcc gcc-9.1.0.aros/gcc/config.gcc
  	tmake_file="${tmake_file} rs6000/t-fprules rs6000/t-rtems rs6000/t-ppccomm"
  	;;
 +powerpc-*-aros*)
-+ 	tm_file="${tm_file} ${aros_tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h"
++ 	tm_file="${tm_file} ${aros_tm_file} dbxelf.h elfos.h gnu-user.h freebsd-spec.h rs6000/sysv4.h aros.h"
 + 	extra_options="${extra_options} rs6000/sysv4.opt"
 + 	tm_file="${tm_file} rs6000/aros.h"
 + 	xm_file=xm-aros.h
