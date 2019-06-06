@@ -146,7 +146,41 @@ jobs:
           exit 5
         fi
       }
-      execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS)
+      execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Configuring $(arosbuild.name) Toolchain'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute make -j 2 crosstools
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name) Toolchain'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Configuring $(arosbuild.name)'
 
