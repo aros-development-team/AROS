@@ -280,12 +280,12 @@ jobs:
           if [ -d "$e" ]; then
             (copycontribrecursive $e)
           fi
-  	      if [ -e "$e" ]; then
-	          file=`echo $e | sed "s|$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/||g"`
+          if [ -e "$e" ]; then
+            file=`echo $e | sed "s|$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/||g"`
             if [ ! -e "$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib/$file" ]; then
               cp $e $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file
             fi
-	        fi
+          fi
         done
       }
 
