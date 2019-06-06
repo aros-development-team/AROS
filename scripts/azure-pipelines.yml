@@ -18,7 +18,6 @@ jobs:
     vmImage: '$(arosbuild.vmimage)'
 
   variables:
-    AROSBUILDGCCVERS: '9.1.0'
     AROSBUILDTOOLCHAINDIR:  '$(AZBUILDPATH)/toolchain' # Location toolchains are installed in
     AROSPORTSSRCSDIR:  '$(AZBUILDPATH)/portssources' # Location external sources are downloaded to.
     AROSBUILDSDIR:  '$(AZBUILDPATH)/builds' # Location builds are done in
