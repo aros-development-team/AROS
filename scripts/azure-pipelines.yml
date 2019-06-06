@@ -283,6 +283,7 @@ jobs:
           if [ -e "$e" ]; then
             file=`echo $e | sed "s|$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/||g"`
             if [ ! -e "$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib/$file" ]; then
+              mkdir -p `dirname $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file`
               cp $e $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file
             fi
           fi
