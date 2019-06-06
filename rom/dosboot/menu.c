@@ -1,10 +1,12 @@
 /*
-   Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Main bootmenu code
    Lang: english
 */
+
+#define __OOP_NOLIBBASE__
 
 #include <aros/config.h>
 #include <aros/debug.h>
@@ -61,18 +63,21 @@ static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootB
     D(bug("[BootMenu] init_gfx('%s')\n", gfxclassname));
     
     GfxBase = (void *)OpenLibrary("graphics.library", 41);
-    if (!GfxBase)
-        return FALSE;
-
-    gfxclass = OOP_FindClass(gfxclassname);
-    if (gfxclass)
+    if (GfxBase)
     {
-        if (!AddDisplayDriver(gfxclass, NULL, DDRV_BootMode, bootmode, TAG_DONE))
-            success = TRUE;
+        struct Library *OOPBase = OpenLibrary("oop.library", 0);
+        if (OOPBase)
+        {
+            gfxclass = OOP_FindClass(gfxclassname);
+            if (gfxclass)
+            {
+                if (!AddDisplayDriver(gfxclass, NULL, DDRV_BootMode, bootmode, TAG_DONE))
+                    success = TRUE;
+            }
+            CloseLibrary(OOPBase);
+        }
+        CloseLibrary(&GfxBase->LibNode);
     }
-
-    CloseLibrary(&GfxBase->LibNode);
-
     ReturnBool ("init_gfxhidd", success);
 }
 
