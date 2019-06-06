@@ -75,22 +75,44 @@ jobs:
     displayName: 'Installing AROS build dependencies for MacOS'
 
   - script: |
-      mkdir -p '$(AZBUILDPATH)/host/gcc-x86'
-      mkdir -p '$(AZBUILDPATH)/host/gcc-ppc'
+      mkdir -p '$(AZBUILDPATH)/host/x86'
       wget https://ftp.gnu.org/gnu/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz -P $(AZBUILDPATH)/host
+      wget https://ftp.gnu.org/gnu/gmp/gmp-4.2.4.tar.gz -P $(AZBUILDPATH)/host
+      wget https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz -P $(AZBUILDPATH)/host
+      wget https://ftp.gnu.org/gnu/mpfr/mpfr-4.0.1/mpfr-4.0.1.tar.gz -P $(AZBUILDPATH)/host
       cd $(AZBUILDPATH)/host
-      tar xvzf gcc-8.3.0.tar.gz
+      tar xzf gcc-8.3.0.tar.gz
+      tar xzf gmp-4.2.4.tar.gz
+      tar xzf mpc-1.1.0.tar.gz
+      tar xzf mpfr-4.0.1.tar.gz
       echo 'Building darwin x86 toolchain'
-      cd $(AZBUILDPATH)/host/gcc-x86
-      $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2
-      make -j $(sysctl -n hw.ncpu)
+      mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
+      cd $(AZBUILDPATH)/host/x86/gmp
+      $(AZBUILDPATH)/host/gmp-4.2.4/configure --disable-shared --enable-static --prefix=/opt/gcc/x86
+      make -j 2
+      sudo make install
+      mkdir -p '$(AZBUILDPATH)/host/x86/mpfr'
+      cd $(AZBUILDPATH)/host/x86/mpfr
+      $(AZBUILDPATH)/host/mpfr-4.0.1/configure --disable-shared --enable-static --prefix=/opt/gcc/x86 --with-gmp=/opt/gcc/x86
+      make -j 2
+      sudo make install
+      mkdir -p '$(AZBUILDPATH)/host/x86/mpc'
+      cd $(AZBUILDPATH)/host/x86/mpc
+      $(AZBUILDPATH)/host/mpc-1.1.0/configure --disable-shared --enable-static --prefix=/opt/gcc/x86 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x86
+      make -j 2
+      sudo make install
+      mkdir -p '$(AZBUILDPATH)/host/x86/gcc'
+      cd $(AZBUILDPATH)/host/x86/gcc
+      $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=/opt/gcc/x86
+      make -j 2
       sudo make install
       sudo find /opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
       echo "##vso[task.setvariable variable=CC]/opt/gcc/x86/8/bin/gcc"
       echo "##vso[task.setvariable variable=CXX]/opt/gcc/x86/8/bin/g++"
       if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
         echo 'Building darwin PPC toolchain'
-        cd $(AZBUILDPATH)/host/gcc-ppc
+        mkdir -p '$(AZBUILDPATH)/host/ppc/gcc'
+        cd $(AZBUILDPATH)/host/ppc/gcc
         PATH="/dir/containing/dsymutil/from/xcode6:$PATH"
         export MACOSX_PPC_DEPLOYMENT_TARGET=10.4
         CC=/opt/gcc/x86/8/bin/gcc CXX=/opt/gcc/x86/8/bin/g++ $(AZBUILDPATH)/host/gcc-8.3.0/configure \
@@ -99,10 +121,12 @@ jobs:
           CFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2" \
           LDFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4" \
           CXXFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2"
-        make -j $(sysctl -n hw.ncpu)
+        make -j 2
         sudo make install
         sudo find /opt/gcc/ppc/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
         echo "##vso[task.setvariable variable=MACOSX_PPC_DEPLOYMENT_TARGET]$MACOSX_PPC_DEPLOYMENT_TARGET"
+        CONFIGOPTS="$CONFIGOPTS --with-kernel-toolchain-prefix=powerpc-apple-darwin10.8.0-"
+        echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
       fi
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: 'Build native toolchains for MacOS'
