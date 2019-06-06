@@ -9,7 +9,7 @@
 
 * All builds are scheduled to run at 00:00 UTC.
 * The builds are made using the scripts/azure-pipelines.yml file. Further details can be found in that file.
-* Currently all builds are configured to use gcc 9.1.0.
+* Currently all builds are configured using default toolchain settings, except the pc-x86_64-smp target which uses the experimental gcc 9.1.0 patch.
 * The main AROS target and distfiles are built for each arch.
 * The builds are downloadable via http://www.aros.org/nightly1.php [![Download AROS Research Operating System](https://img.shields.io/sourceforge/dt/aros.svg)](https://sourceforge.net/projects/aros/files/nightly2/).
 
