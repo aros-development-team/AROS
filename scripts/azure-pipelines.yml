@@ -261,6 +261,7 @@ jobs:
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
       }
+      cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib
       mv $(AROSCONTRIBSRCDIR) $(AROSSRCDIR)/contrib
       execute make -j 2 contrib
       mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
@@ -274,6 +275,20 @@ jobs:
     displayName: 'Build $(arosbuild.name) contrib'
 
   - script: |
+      function copycontribrecursive() {
+        for e in $*/*; do
+          if [ -d "$e" ]; then
+            (copycontribrecursive $e)
+          fi
+  	      if [ -e "$e" ]; then
+	          file=`echo $e | sed "s|$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/||g"`
+            if [ ! -e "$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib/$file" ]; then
+              cp $e $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file
+            fi
+	        fi
+        done
+      }
+
       if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
         if [ ! -f /tmp/_aros_boot_build_failed ]; then
           mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
@@ -323,7 +338,7 @@ jobs:
       if [ "$AROSBUILD_WITHCONTRIB" = "yes" ]; then
         if [ ! -f /tmp/_aros_contrib_build_failed ]; then
           mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
-          cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/Extras/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+          copycontribrecursive $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS
           cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
