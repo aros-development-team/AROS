@@ -69,6 +69,8 @@ jobs:
       brew list wget &>/dev/null || brew install wget
       brew list cmake &>/dev/null || brew install cmake
       brew list netpbm &>/dev/null || brew install netpbm
+      sudo easy_install pip
+      pip install Mako
       CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
       echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
     condition: eq( variables['Agent.OS'], 'Darwin' )
@@ -85,9 +87,6 @@ jobs:
       tar xzf gmp-4.2.4.tar.gz
       tar xzf mpc-1.1.0.tar.gz
       tar xzf mpfr-4.0.1.tar.gz
-      echo 'installing mako templates for darwin'
-      sudo easy_install pip
-      pip install Mako
       echo 'Building darwin x86 toolchain'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
       cd $(AZBUILDPATH)/host/x86/gmp
