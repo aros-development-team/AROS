@@ -85,6 +85,9 @@ jobs:
       tar xzf gmp-4.2.4.tar.gz
       tar xzf mpc-1.1.0.tar.gz
       tar xzf mpfr-4.0.1.tar.gz
+      echo 'installing mako templates for darwin'
+      sudo easy_install pip
+      pip install Mako
       echo 'Building darwin x86 toolchain'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
       cd $(AZBUILDPATH)/host/x86/gmp
