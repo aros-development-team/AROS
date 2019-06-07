@@ -2548,7 +2548,7 @@ if test "$kernel_tool_prefix" = "none" ; then
     aros_kernel_strip=$orig_target_strip
     aros_kernel_objcopy=$orig_target_objcopy
     aros_kernel_objdump=$orig_target_objdump
-    aros_kernel_isa_flags=$aros_isa_flags
+    aros_kernel_isa_flags="$""(ISA_FLAGS)"
     use_kernel_cc_wrapper=yes
 fi
 
