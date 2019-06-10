@@ -1,0 +1,1 @@
+USER_LDFLAGS  += -static-libstdc++ -static-libgcc
