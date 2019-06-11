@@ -57,8 +57,6 @@ GCC_COMMON_OPTS := --target=$(AROS_TARGET_CPU)-aros
 # ARM requires additional flags to determine CPU type and FP model
 ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
-GCC_COMMON_OPTS += --with-float=$(GCC_DEFAULT_FLOAT_ABI)
-GCC_COMMON_OPTS += --with-fpu=$(GCC_DEFAULT_FPU)
 GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_COMMON_OPTS += --disable-libunwind-exceptions
 else
