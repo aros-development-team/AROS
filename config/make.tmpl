@@ -2581,13 +2581,14 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 #   given with full absolute path and the .o suffix.
 # - objdir is where the .o are generated. Defaults to $(GENDIR)/$(CURDIR)
 # - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
-# - cflags are the flags to compile the source (default $(CFLAGS))
+# - cflags are the flags to compile the source. if none are specified the defaults
+#   for the chosen (host/kernel/target) compiler are used.
 # - dflags are the flags used during makedepend (default equal to cflags)
 # - aflags are the flags used during assembling (default $(AFLAGS))
 %define build_linklib mmake=/A libname=/A files= objcfiles= cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
   includedir= srcdir= \
-  cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= cxxflags=$(CXXFLAGS) dxxflags= \
+  cppflags=$(CPPFLAGS) cflags= dflags= cxxflags= dxxflags= \
   aflags=$(AFLAGS) compiler=target lto=$(TARGET_LTO) usetree=no
 
 # assign and generate the local variables used in this macro
@@ -2625,8 +2626,35 @@ endif
 ifneq (%(includedir),)
     %(mmake)_CPPFLAGS      += -I%(includedir)
 endif
+
+ifeq ("%(cflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CFLAGS            := $(CFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_CFLAGS            := $(HOST_CFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CFLAGS            := $(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+endif
+else
 %(mmake)_CFLAGS            := %(cflags)
+endif
+
+ifeq ("%(cxxflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CXXFLAGS            := $(CXXFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_CXXFLAGS            := $(HOST_CXXFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CXXFLAGS            := $(strip $(KERNEL_ISA_CXXFLAGS) $(KERNEL_CXXFLAGS))
+endif
+else
 %(mmake)_CXXFLAGS          := %(cxxflags)
+endif
+
 ifeq (%(lto),yes)
 ifeq (%(compiler),target)
         %(mmake)_CFLAGS    := $(strip $(LTO_CFLAGS) $(%(mmake)_CFLAGS))
@@ -2813,7 +2841,7 @@ endif
 #   specify the name here matching the original module. this insures multiple modules
 #   built from the same makefile will not pollute each other.
 %define build_archspecific files= cxxfiles= asmfiles= linklibfiles= linklibobjs= mainmmake=/A maindir=/A arch=/A \
- cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) compiler=target objdir= modname=
+ cppflags=$(CPPFLAGS) cflags= dflags= aflags=$(AFLAGS) compiler=target objdir= modname=
 
 ifeq (%(files) %(linklibfiles) %(linklibobjs) %(asmfiles),)
     $(error no files or asmfiles given)
@@ -2871,7 +2899,6 @@ else
     BD_TARGET := %(mainmmake)-%(arch)
 endif
 
-
 ifeq ($(TARGET),$(BD_TARGET))
 TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(files)))
@@ -2891,28 +2918,42 @@ endif
 ifeq ($(findstring %(compiler),host kernel target),)
     $(error unknown compiler %(compiler))
 endif
+
 ifneq (%(modname),)
 $(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip %(cppflags) -I$(BD_OBJROOT$(BDID)) $(BD_DEFLIBDEFSINC$(BDID)))
 else
 $(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=%(cppflags)
 endif
-$(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
+
 ifeq (%(compiler),target)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(TMP_CFLAGS) $(SAFETY_CFLAGS))
+ifeq ("%(cflags)","")
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(CFLAGS) $(SAFETY_CFLAGS))
+else
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip %(cflags) $(SAFETY_CFLAGS))
+endif
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
+ifeq ("%(cflags)","")
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(HOST_CFLAGS))
+else
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip %(cflags))
+endif
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(HOST_IQUOTE)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
-$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(TMP_CFLAGS))
+ifeq ("%(cflags)","")
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+else
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip %(cflags))
+endif
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
 $(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
