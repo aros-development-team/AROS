@@ -75,7 +75,7 @@ jobs:
       sudo easy_install pip
       pip install Mako
       brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
-      ln -s /opt/X11/include/X11 /usr/local/include/X11
+      ln -s /opt/X11/include/X11 /usr/include/X11
       CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
       echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
     condition: eq( variables['Agent.OS'], 'Darwin' )
@@ -146,6 +146,12 @@ jobs:
       mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
       mkdir -p '$(AROSPORTSSRCSDIR)'
       mkdir -p '$(AROSLOGSDIR)'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/sources'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/toolchain'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/sdk'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/distfiles'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/contrib'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/logs'
       echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
       echo '##vso[task.prependpath]$(AROSBUILDSDIR)'
       echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
@@ -173,13 +179,7 @@ jobs:
   - task: CopyFiles@2
     inputs:
       contents: '$(AROSBUILDSDIR)/$(AROSBUILDID)-source**'
-      targetFolder: $(Build.ArtifactStagingDirectory)/publish/aros
-
-  - task: PublishBuildArtifacts@1
-    displayName: Publish AROS source tarball build artifacts
-    inputs:
-      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/aros
-      artifactName: AROS source
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/sources
 
   - script: |
       mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source'
@@ -194,13 +194,13 @@ jobs:
   - task: CopyFiles@2
     inputs:
       contents: '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source**'
-      targetFolder: $(Build.ArtifactStagingDirectory)/publish/contrib
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/sources
 
   - task: PublishBuildArtifacts@1
-    displayName: Publish contrib source tarball build artifacts
+    displayName: Publish source tarball build artifacts
     inputs:
-      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/contrib
-      artifactName: contrib source
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/sources
+      artifactName: sources
 
   - script: |
       mkdir -p ~/.ssh
