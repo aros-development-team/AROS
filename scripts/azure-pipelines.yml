@@ -146,6 +146,7 @@ jobs:
       mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
       mkdir -p '$(AROSPORTSSRCSDIR)'
       mkdir -p '$(AROSLOGSDIR)'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/config'
       mkdir -p '$(Build.ArtifactStagingDirectory)/publish/sources'
       mkdir -p '$(Build.ArtifactStagingDirectory)/publish/toolchain'
       mkdir -p '$(Build.ArtifactStagingDirectory)/publish/sdk'
@@ -257,6 +258,7 @@ jobs:
         fi
       }
       execute make -j 2 crosstools
+      rm * -Rf
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) Toolchain'
 
@@ -276,6 +278,18 @@ jobs:
       execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Configuring $(arosbuild.name)'
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDDIR)'
+      contents: '**/*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/config
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish configuration build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/config
+      artifactName: $(arosbuild.name) config
 
   - script: |
       function execute {
@@ -440,6 +454,42 @@ jobs:
       rm -Rf $(AROSPACKAGEDIR)
     workingDirectory: '$(AROSBUILDSDIR)'
     displayName: 'Creating $(arosbuild.name) package(s)'
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDSDIR)'
+      contents: '$(AROSBUILDID)-$(arosbuild.name)-!(contrib*)'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/distfiles
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish distfiles build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/distfiles
+      artifactName: $(arosbuild.name) distfiles
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDSDIR)'
+      contents: '$(AROSBUILDID)-$(arosbuild.name)-contrib*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/contrib
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish contrib build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/contrib
+      artifactName: $(arosbuild.name) contrib
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDSDIR)'
+      contents: '$(arosbuild.package)-$(arosbuild.name).log.*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/logs
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish log build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/logs
+      artifactName: $(arosbuild.name) logs
 
   - script: |
       mkdir -p ~/.ssh
