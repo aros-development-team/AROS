@@ -70,6 +70,8 @@ jobs:
       brew list cmake &>/dev/null || brew install cmake
       brew list netpbm &>/dev/null || brew install netpbm
       brew list md5sha1sum &>/dev/null || brew install md5sha1sum
+      brew install caskroom/cask/brew-cask 2> /dev/null
+      brew cask install xquartz
       sudo easy_install pip
       pip install Mako
       brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
