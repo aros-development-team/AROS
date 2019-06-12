@@ -29,7 +29,7 @@
 | mingw32-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=23&branchName=master) |
 
 
-## Acknowledgments
+## Contributing
 
 Please see the [CONTRIBUTING](CONTRIBUTING) file for details on joining the GitHub organization, and guidelines on contributing to the AROS project.
 
