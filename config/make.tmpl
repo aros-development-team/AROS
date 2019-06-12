@@ -1546,7 +1546,7 @@ BDID := $(BDTARGETID)
 %define build_prog mmake=/A progname=/A files= cxxfiles= \
     objcfiles= \
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
-    cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= cxxflags=$(CXXFLAGS) dxxflags= ldflags=$(LDFLAGS) \
+    cppflags=$(CPPFLAGS) cflags= dflags= cxxflags= dxxflags= ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
     includedir= libdir= \
     compiler=target linker= \
@@ -1590,8 +1590,35 @@ TMP_FILES := $(%(mmake)_C_NARCHFILES) $(%(mmake)_CXX_NARCHFILES) $(%(mmake)_ASMF
 ifneq (%(includedir),)
 %(mmake)_CPPFLAGS    += -I%(includedir)
 endif
-%(mmake)_CFLAGS    := %(cflags)
-%(mmake)_CXXFLAGS := %(cxxflags)
+
+ifeq ("%(cflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CFLAGS            := $(CFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_CFLAGS            := $(HOST_CFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CFLAGS            := $(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+endif
+else
+%(mmake)_CFLAGS            := %(cflags)
+endif
+
+ifeq ("%(cxxflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CXXFLAGS            := $(CXXFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_CXXFLAGS            := $(HOST_CXXFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CXXFLAGS            := $(strip $(KERNEL_ISA_CXXFLAGS) $(KERNEL_CXXFLAGS))
+endif
+else
+%(mmake)_CXXFLAGS          := %(cxxflags)
+endif
+
 %(mmake)_COVERAGE := no
 ifeq (%(compiler),target)
 ifeq (%(usestartup),yes)
