@@ -44,8 +44,6 @@ TARGET_LTO                := @aros_config_lto@
 # binary to the targets file format - otherwise the elf will be copied
 TARGET_TRANSLATEELF       = @aros_elf_translate@
 
-KERNEL_CXXFLAGS   := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(KERNEL_CFLAGS)))
-
 # Kernel private includes, in order of precedence:
 ifneq (,$(findstring $(ARCH),raspi))
 TARGET_KERNEL_INCLUDES    := -I$(SRCDIR)/arch/arm-native/kernel

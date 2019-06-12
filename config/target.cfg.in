@@ -50,8 +50,9 @@ KERNEL_RESCOMP                := @aros_kernel_rescomp@
 
 KERNEL_SYSROOT                = @aros_kernel_sysroot@
 
-KERNEL_CPPFLAGS               = @aros_kernel_cppflags@
-KERNEL_CFLAGS                 = @aros_kernel_cflags@
+KERNEL_CPPFLAGS               = @aros_kernel_cppflags@ $(USER_CPPFLAGS)
+KERNEL_CFLAGS                 = @aros_kernel_cflags@ $(USER_CFLAGS)
+KERNEL_CXXFLAGS               = $(USER_CXXFLAGS)
 KERNEL_OBJCFLAGS              := @aros_kernel_objcflags@
 KERNEL_INCLUDES               := @aros_kernel_includes@
 KERNEL_LDFLAGS                := @aros_kernel_ldflags@
