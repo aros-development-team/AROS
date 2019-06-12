@@ -482,7 +482,7 @@ jobs:
 
   - task: CopyFiles@2
     inputs:
-      SourceFolder: '$(AROSBUILDSDIR)'
+      SourceFolder: '$(AROSLOGSDIR)'
       contents: '$(arosbuild.package)-$(arosbuild.name).log.*'
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/logs
 
