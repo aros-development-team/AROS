@@ -170,6 +170,17 @@ jobs:
     workingDirectory: '$(AROSBUILDSDIR)'
     displayName: 'Creating AROS source package'
 
+  - task: CopyFiles@2
+    inputs:
+      contents: '$(AROSBUILDSDIR)/$(AROSBUILDID)-source**'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/aros
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish AROS source tarball build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/aros
+      artifactName: AROS source
+
   - script: |
       mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source'
       cp -r $(AROSCONTRIBSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source/
@@ -179,6 +190,17 @@ jobs:
       rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source
     workingDirectory: '$(AROSBUILDSDIR)'
     displayName: 'Creating contrib source package'
+
+  - task: CopyFiles@2
+    inputs:
+      contents: '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source**'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/contrib
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish contrib source tarball build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/contrib
+      artifactName: contrib source
 
   - script: |
       mkdir -p ~/.ssh
