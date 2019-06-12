@@ -67,6 +67,7 @@ jobs:
       brew list autoconf &>/dev/null || brew install autoconf
       brew list automake &>/dev/null || brew install automake
       brew list wget &>/dev/null || brew install wget
+      brew list ccache &>/dev/null || brew install ccache
       brew list cmake &>/dev/null || brew install cmake
       brew list netpbm &>/dev/null || brew install netpbm
       brew list md5sha1sum &>/dev/null || brew install md5sha1sum
