@@ -8751,7 +8751,7 @@ case "$target_cpu" in
         ;;
     *x86_64* | *i?86*)
         x86_isa_extra="ISA_X86_FLAGS                 = -m32 -march=i486"
-        x86_64_isa_extra="ISA_X8664_FLAGS               = -mcmodel=large"
+        x86_64_isa_extra="ISA_X8664_FLAGS               = -m64 -mcmodel=large"
         ;;
     *powerpc*)
         ;;
@@ -8784,6 +8784,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
+                aros_kernel_isa_flags="$""(ISA_X86_FLAGS)"
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_nominal_depth=8
@@ -8799,6 +8800,7 @@ case "$target_os" in
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
                 aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                aros_kernel_isa_flags="-m64"
                 x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_RED_ZONE)"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
@@ -8998,6 +9000,7 @@ case "$target_os" in
                 aros_target_cpu="i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
+                aros_kernel_isa_flags="-m32"
                 aros_kernel_ldflags=""
                 aros_macosx_version="10.4"
                 aros_nominal_depth=8
@@ -9015,7 +9018,7 @@ case "$target_os" in
                 aros_macosx_version="10.6"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
-                aros_kernel_cflags="-m64"
+                aros_kernel_isa_flags="-m64"
                 aros_kernel_ldflags="-m64"
                 aros_nominal_depth=8
                 aros_kernel_rs="$toolchain_ar"
