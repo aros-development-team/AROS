@@ -31,7 +31,7 @@
 
 ## Contributing
 
-Please see the [CONTRIBUTING](CONTRIBUTING) file for details on joining the GitHub organization, and guidelines on contributing to the AROS project.
+Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for details on joining the GitHub organization, and guidelines on contributing to the AROS project.
 
 ## License
 
