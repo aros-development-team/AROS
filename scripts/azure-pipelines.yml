@@ -73,6 +73,7 @@ jobs:
       sudo easy_install pip
       pip install Mako
       brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
+      ln -s /opt/X11/include/X11 /usr/local/include/X11
       CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
       echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
     condition: eq( variables['Agent.OS'], 'Darwin' )
