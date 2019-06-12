@@ -178,7 +178,8 @@ jobs:
 
   - task: CopyFiles@2
     inputs:
-      contents: '$(AROSBUILDSDIR)/$(AROSBUILDID)-source**'
+      SourceFolder: '$(AROSBUILDSDIR)'
+      contents: '$(AROSBUILDID)-source*'
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/sources
 
   - script: |
@@ -193,7 +194,8 @@ jobs:
 
   - task: CopyFiles@2
     inputs:
-      contents: '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source**'
+      SourceFolder: '$(AROSBUILDSDIR)'
+      contents: '$(AROSBUILDID)-contrib-source*'
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/sources
 
   - task: PublishBuildArtifacts@1
