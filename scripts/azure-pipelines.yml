@@ -461,10 +461,14 @@ jobs:
   - task: CopyFiles@2
     inputs:
       SourceFolder: '$(AROSBUILDSDIR)'
-      contents: |
-        *
-        $(AROSBUILDID)-$(arosbuild.name)-*
-        $(AROSBUILDID)-$(arosbuild.name)-!(contrib)*
+      contents: '$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/distfiles
+
+  - task: CopyFiles@2
+    condition: ne( variables['arosbuild.bootpackage'], '' )
+    inputs:
+      SourceFolder: '$(AROSBUILDSDIR)'
+      contents: '$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).*'
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/distfiles
 
   - task: PublishBuildArtifacts@1
