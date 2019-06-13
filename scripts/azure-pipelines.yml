@@ -259,7 +259,7 @@ jobs:
         fi
       }
       execute make -j 2 crosstools
-      rm * -Rf
+      rm -Rf $(AROSBUILDDIR)/*
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) Toolchain'
 
@@ -438,6 +438,7 @@ jobs:
           fi
         fi
         md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+        rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)'
       fi
       if [ "$AROSBUILD_WITHCONTRIB" = "yes" ]; then
         if [ ! -f /tmp/_aros_contrib_build_failed ]; then
@@ -447,6 +448,7 @@ jobs:
           cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
           md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
+          rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib
         fi
       fi
       cd $(AROSLOGSDIR)
@@ -459,7 +461,9 @@ jobs:
   - task: CopyFiles@2
     inputs:
       SourceFolder: '$(AROSBUILDSDIR)'
-      contents: '$(AROSBUILDID)-$(arosbuild.name)-!(contrib*)'
+      contents: |
+        $(AROSBUILDID)-$(arosbuild.name)-*
+        $(AROSBUILDID)-$(arosbuild.name)-!(contrib)*
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/distfiles
 
   - task: PublishBuildArtifacts@1
