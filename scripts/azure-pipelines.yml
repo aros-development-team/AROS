@@ -462,6 +462,7 @@ jobs:
     inputs:
       SourceFolder: '$(AROSBUILDSDIR)'
       contents: |
+        *
         $(AROSBUILDID)-$(arosbuild.name)-*
         $(AROSBUILDID)-$(arosbuild.name)-!(contrib)*
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/distfiles
