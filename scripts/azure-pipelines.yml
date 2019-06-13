@@ -448,7 +448,7 @@ jobs:
           cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
           md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
-          rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib
+          rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
         fi
       fi
       cd $(AROSLOGSDIR)
