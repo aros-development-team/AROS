@@ -215,8 +215,8 @@ jobs:
   - script: |
       mkdir -p ~/.ssh
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources'
-      mv (AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
-      mv (AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
       ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
       sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
       rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
