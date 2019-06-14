@@ -516,7 +516,7 @@ jobs:
       mkdir -p ~/.ssh
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure'
-      mv (AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
       mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
       mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
       ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
