@@ -175,8 +175,8 @@ jobs:
       cp -r $(AROSSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-source/
       echo "Creating $(AROSBUILDID)-source.tar.bz2"
       tar cjvf $(AROSBUILDID)-source.tar.bz2 --exclude=.git $(AROSBUILDID)-source
-      mv $(AROSBUILDID)-source.tar.bz2 $(AROSBUILDBINDIR)/
       md5sum $(AROSBUILDID)-source.tar.bz2 >$(AROSBUILDID)-source.tar.bz2.md5
+      mv $(AROSBUILDID)-source.tar.bz2 $(AROSBUILDBINDIR)/
       mv $(AROSBUILDID)-source.tar.bz2.md5 $(AROSBUILDBINDIR)/
       rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-source
     workingDirectory: '$(AROSBUILDSDIR)'
@@ -193,8 +193,8 @@ jobs:
       cp -r $(AROSCONTRIBSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source/
       echo "Creating $(AROSBUILDID)-source.tar.bz2"
       tar cjvf $(AROSBUILDID)-contrib-source.tar.bz2 --exclude=.git $(AROSBUILDID)-contrib-source
-      mv $(AROSBUILDID)-contrib-source.tar.bz2 $(AROSBUILDBINDIR)/
       md5sum $(AROSBUILDID)-contrib-source.tar.bz2 >$(AROSBUILDID)-contrib-source.tar.bz2.md5
+      mv $(AROSBUILDID)-contrib-source.tar.bz2 $(AROSBUILDBINDIR)/
       mv $(AROSBUILDID)-contrib-source.tar.bz2.md5 $(AROSBUILDBINDIR)/
       rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source
     workingDirectory: '$(AROSBUILDSDIR)'
@@ -419,8 +419,8 @@ jobs:
               fi
             fi
           fi
-          mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDBINDIR)/
           md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5
+          mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDBINDIR)/
           mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5 $(AROSBUILDBINDIR)/
           rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
         fi
@@ -444,8 +444,8 @@ jobs:
             fi
           fi
         fi
-        mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)/
         md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+        mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)/
         mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(AROSBUILDBINDIR)/
         rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)'
       fi
@@ -456,8 +456,8 @@ jobs:
           cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
-          mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDBINDIR)/
           md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
+          mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDBINDIR)/
           mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5 $(AROSBUILDBINDIR)/
           rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
         fi
