@@ -636,12 +636,14 @@ USER_CPPFLAGS := -DSTDC_STATIC -Dlint
 %build_linklib mmake=linklibs-romhack \
     objdir=$(GENDIR)/$(CURDIR)/stdc libname=romhack files="setjmp longjmp"
 
-CFLAGS32 := $(filter-out -mcmodel=large,$(CFLAGS))
+# pc-x86_64 needs a 32bit version stdc.static
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    ISA_FLAGS := $(ISA_X86_FLAGS)
+endif
+USER_CPPFLAGS +=  -DSTDC_LIB32
 
-# x86_64 needs a 32bit version stdc.static
 %build_linklib mmake=linklibs-stdc-static32 \
     libname=stdc.static files="$(STDC_STATIC)" objs=$(ROM_COMMON_OBJ32) \
-    cflags="-m32 $(CFLAGS32) -DSTDC_LIB32 -DSTDC_STATIC" \
     objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
 
 # A dummy libm.a is provided so that -lm link option does not produce an error

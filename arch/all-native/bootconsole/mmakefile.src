@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Generate the amiga.lib library (normally called libamiga.a).
+#   Generate the bootconsole link library
 #
 
 include $(SRCDIR)/config/aros.cfg
@@ -20,9 +20,12 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 
 %build_linklib mmake=linklibs-bootconsole libname=bootconsole files="$(FILES)" libdir=$(GENDIR)/lib
 
-CFLAGS32 := $(filter-out -mcmodel=large,$(CFLAGS))
+# pc-x86_64 needs a 32bit version of bootconsole.a
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    ISA_FLAGS := $(ISA_X86_FLAGS)
+endif
 
 %build_linklib mmake=linklibs-bootconsole32 libname=bootconsole files="$(FILES)" \
-	       cflags="-m32 $(CFLAGS32)" objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+	       objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
 
 %common
