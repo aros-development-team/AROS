@@ -636,6 +636,11 @@ USER_CPPFLAGS := -DSTDC_STATIC -Dlint
 %build_linklib mmake=linklibs-romhack \
     objdir=$(GENDIR)/$(CURDIR)/stdc libname=romhack files="setjmp longjmp"
 
+# A dummy libm.a is provided so that -lm link option does not produce an error
+# objdir is provided to avoid that arch specific files end up in libm.a
+%build_linklib mmake=linklibs-libm \
+    libname=m files=empty objdir=$(GENDIR)/$(CURDIR)/libm
+
 # pc-x86_64 needs a 32bit version stdc.static
 ifeq ($(AROS_TARGET_CPU),x86_64)
     ISA_FLAGS := $(ISA_X86_FLAGS)
@@ -645,8 +650,3 @@ USER_CPPFLAGS +=  -DSTDC_LIB32
 %build_linklib mmake=linklibs-stdc-static32 \
     libname=stdc.static files="$(STDC_STATIC)" objs=$(ROM_COMMON_OBJ32) \
     objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
-
-# A dummy libm.a is provided so that -lm link option does not produce an error
-# objdir is provided to avoid that arch specific files end up in libm.a
-%build_linklib mmake=linklibs-libm \
-    libname=m files=empty objdir=$(GENDIR)/$(CURDIR)/libm
