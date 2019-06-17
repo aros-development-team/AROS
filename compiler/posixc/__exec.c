@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Support functions for POSIX exec*() functions.
@@ -572,12 +572,12 @@ char *const *__exec_valist2array(const char *arg1, va_list list)
     char *argit;
     
     assert(PosixCBase->exec_tmparray == NULL);
-    
-    va_copy(list2, list);
-    
+
     if (arg1 == NULL)
         return no_arg;
-    
+
+    va_copy(list2, list);
+
     for (argit = va_arg(list, char *), argc = 1;
          argit != NULL;
          argit = va_arg(list, char *)
