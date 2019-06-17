@@ -33,7 +33,7 @@ AROS_LH1(void *, KrnVirtualToPhysical,
 
         while (*curr_rom)
         {
-            if ((curr_rom[0] <= virtual) && (curr_rom[0] + KernelBase->kb_PlatformData->romsize >= virtual))
+            if (curr_rom[0] <= virtual && virtual < curr_rom[0] + KernelBase->kb_PlatformData->romsize)
                 return curr_rom[1] + (virtual - curr_rom[0]);
             curr_rom = &curr_rom[2];
         }
