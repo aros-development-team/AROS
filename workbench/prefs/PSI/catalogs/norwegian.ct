@@ -1,0 +1,580 @@
+## version $VER: PSI.catalog 19.1 (26.09.2010)
+## language norwegian
+## codeset 0
+;
+MSG_MENU_PROJECT
+Prosjekt
+; Project
+;
+MSG_MENU_PROJECT_OPEN
+Åpne...
+; Open...
+;
+MSG_MENU_PROJECT_APPEND
+Legg til...
+; Append...
+;
+MSG_MENU_PROJECT_SAVEAS
+Lagre som...
+; Save As...
+;
+MSG_MENU_PROJECT_ABOUT
+Om...
+; About...
+;
+MSG_MENU_PROJECT_QUIT
+Avslutt
+; Quit
+;
+MSG_MENU_EDIT
+Rediger
+; Edit
+;
+MSG_MENU_EDIT_LASTSAVED
+Sist lagret
+; Last Saved
+;
+MSG_MENU_EDIT_RESTORE
+Gjenopprett
+; Restore
+;
+MSG_MENU_SETTINGS
+Innstillinger
+; Settings
+;
+MSG_MENU_SETTINGS_MUI
+MUI...
+; MUI...
+;
+MSG_MENU_COLORS
+Farger
+; Colors
+;
+MSG_MENU_COLORS_PRESETS
+Standardverdier
+; Presets
+;
+MSG_MENU_COLORS_PRESETS_2COL
+Monokrominnstillinger
+; Monochrome Settings
+;
+MSG_MENU_COLORS_PRESETS_4COL
+4-Fargers innstillinger
+; 4-Color Settings
+;
+MSG_MENU_COLORS_PRESETS_8COL
+MagicWB innstillinger
+; MagicWB Settings
+;
+MSG_BUTTON_OK
+_OK
+; _OK
+;
+MSG_BUTTON_CANCEL
+Avbryt
+; Cancel
+;
+MSG_BUTTON_SAVE
+_Lagre
+; Save
+;
+MSG_BUTTON_USE
+Bruk
+; Use
+;
+MSG_BUTTON_NEW
+_Ny
+; _New
+;
+MSG_BUTTON_COPY
+_Kopier
+; _Copy
+;
+MSG_BUTTON_DELETE
+_Slett
+; _Delete
+;
+MSG_BUTTON_EDIT
+_Editer...
+; _Edit...
+;
+MSG_BUTTON_OPEN
+_Åpne
+; _Open
+;
+MSG_BUTTON_CLOSE
+_Lukke
+; _Close
+;
+MSG_BUTTON_JUMP
+_Gå til
+; _Jump
+;
+MSG_BUTTON_KILL
+Drep
+; Kill
+;
+MSG_TITLE_PUBSCREENWINDOW
+Rediger skjerm:
+; Edit Screen:
+;
+MSG_TITLE_SAVE
+Lagre offentlig skjermfil
+; Save PublicScreen File
+;
+MSG_TITLE_OPEN
+Les offentlig skjermfil
+; Load PublicScreen File
+;
+MSG_TITLE_APPEND
+Legg til offentlig skjermfil
+; Append PublicScreen File
+;
+MSG_LIST_SCREENNAME
+Navn
+; Name
+;
+MSG_LIST_SCREENMODE
+Visningsmodus
+; Display Mode
+;
+MSG_LIST_UNKNOWNMODE
+(ukjent)
+; (unknown)
+;
+MSG_LIST_FOREIGNSCREEN
+(fremmed)
+; (foreign)
+;
+MSG_LABEL_PUBLICNAME
+Offentlig _navn:
+; Public _Name:
+;
+MSG_LABEL_SCREENTITLE
+Skjermtittel:
+; Screen _Title:
+;
+MSG_LABEL_DISPLAYMODE
+_Visningsmodus:
+; _Display Mode:
+;
+MSG_LABEL_DEFAULTFONT
+Standard _skrifttype:
+; Default _Font:
+;
+MSG_LABEL_BACKGROUND
+_Bakgrunn:
+; _Background:
+;
+MSG_LABEL_PUBLICFLAGS
+Flagg:
+; Flags:
+;
+MSG_LABEL_AUTOSCROLL
+_Automatisk scrolling
+; _Autoscroll
+;
+MSG_LABEL_NODRAG
+Ingen B_eveglighet
+; No D_rag
+;
+MSG_LABEL_EXCLUSIVE
+_Eksklusiv
+; _Exclusive
+;
+MSG_LABEL_INTERLEAVED
+_Flettet
+; _Interleaved
+;
+MSG_LABEL_OPENBEHIND
+Åpne b_ak
+; Open Be_hind
+;
+MSG_LABEL_SYSTEMDEFAULT
+System standard
+; S_ystem Default
+;
+MSG_LABEL_AUTOCLOSE
+Automatisk lukking
+; Auto Close
+;
+MSG_LABEL_CLOSEGADGET
+Lukkeikon
+; Close Gadget
+;
+MSG_LABEL_OVERSCAN
+O_verscan:
+; O_verscan:
+;
+MSG_LABEL_SIZE
+Stø_rrelse:
+; _Size:
+;
+MSG_LABEL_CROSS
+_x
+; _x
+;
+MSG_LABEL_DEPTH
+_Dybde
+; _Depth:
+;
+MSG_LABEL_VISIBLE
+Synlig_
+; Visible:
+;
+MSG_LABEL_MINIMUM
+Minimum:
+; Minimum:
+;
+MSG_LABEL_MAXIMUM
+Maksimum:
+; Maximum:
+;
+MSG_LABEL_BITSPERGUN
+Bits/Gun:
+; Bits/Gun:
+;
+MSG_LABEL_SCANRATE
+Scanrate:
+; Scanrate:
+;
+MSG_LABEL_SCANLINE
+Scanline:
+; Scanline:
+;
+MSG_CLI_SCREENOPENED
+Skjerm åpnet (0).\n
+; Screen opened (0).\n
+;
+MSG_CLI_SCREENOPENFAILED
+Klarte ikke åpne skjerm (5).\n
+; Failed to open screen (5).\n
+;
+MSG_CLI_SCREENCLOSED
+Skjerm lukket (0).\n
+; Screen closed (0).\n
+;
+MSG_CLI_SCREENCLOSEFAILED
+Klarte ikke lukke skjerm (5).\n
+; Failed to close screen (5).\n
+;
+MSG_CLI_SYNTAXERROR
+Syntaksfeil på kommandolinje (10).\n
+; Syntax Error in command line (10).\n
+;
+MSG_CLI_SCREENNOTFOUND
+Fant ikke skjermen (5).\
+; Screen not found (5).\n
+;
+MSG_CLI_OUTOFMEMORY
+Tom for minne (20).\n
+; Out of memory (20).\n
+;
+MSG_CLI_NOAPPLICATION
+Klarte ikke opprette applikasjonen (20).\n
+; Failed to create application (20).\n
+;
+MSG_CLI_NOMUIMASTER
+Klarte ikke åpne muimaster.library V11 (20).\n
+; Failed to open muimaster.library V11 (20).\n
+;
+MSG_ABOUT_NUMBEROFSCREENS
+Antall skjermer:
+; Number of screens:
+;
+MSG_TEXT_UNKNOWNMODE
+Ukjent skjermmodus
+; Unknown Display Mode
+;
+MSG_TEXT_FOREIGNSCREEN
+Fremmed offentlig skjerm
+; Foreign public screen
+;
+MSG_PALETTE_TITLE
+Palette
+; Palette
+;
+MSG_PALETTE_FIRST
+Første 4 farger
+; First 4 colors
+;
+MSG_PALETTE_LAST
+Siste 4 farger
+; Last 4 colors
+;
+MSG_SYSPENS_TITLE
+Systemfarger
+; System Pens
+;
+MSG_SYSPEN_DETAIL
+Detalj
+; Detail
+;
+MSG_SYSPEN_BLOCK
+Blokk
+; Block
+;
+MSG_SYSPEN_TEXT
+Tekst
+; Text
+;
+MSG_SYSPEN_SHINE
+Gjennskinn
+; Shine
+;
+MSG_SYSPEN_SHADOW
+Skygge
+; Shadow
+;
+MSG_SYSPEN_FILL
+Fyll
+; Fill
+;
+MSG_SYSPEN_FILLTEXT
+Fylltekst
+; Filltext
+;
+MSG_SYSPEN_BACKGROUND
+Bakgrunn
+; Background
+;
+MSG_SYSPEN_HIGHLIGHT
+Opplys
+; Highlight
+;
+MSG_SYSPEN_BARDETAIL
+Menydetalj
+; Bardetail
+;
+MSG_SYSPEN_BARBLOCK
+Menyblokk
+; Barblock
+;
+MSG_SYSPEN_BARTRIM
+Menytrim
+; Bartrim
+;
+MSG_PALPRES_TITLE
+Standardfarger
+; Color Presets
+;
+MSG_PALPRES_STANDARD
+0\0Standard
+; 0\0Standard
+;
+MSG_PALPRES_TINT
+1\0Fargetone
+; 1\0Tint
+;
+MSG_PALPRES_PHARAO
+2\0Farao
+; 2\0Pharao
+;
+MSG_PALPRES_SUNSET
+3\0Solnedgang
+; 3\0Sunset
+;
+MSG_PALPRES_OCEAN
+4\0Hav
+; 4\0Ocean
+;
+MSG_PALPRES_STEEL
+5\0Stål
+; 5\0Steel
+;
+MSG_PALPRES_CHOCOLATE
+6\0Sjokolade
+; 6\0Chocolate
+;
+MSG_PALPRES_PEWTER
+7\0Tinn
+; 7\0Pewter
+;
+MSG_PALPRES_WINE
+8\0Vin
+; 8\0Wine
+;
+MSG_PALPRES_MAGICWB
+9\0MagicWB
+; 9\0MagicWB
+;
+MSG_PALPRES_CLONEWB
+Klon workbench
+; Clone WB
+;
+MSG_OVERSCAN_TEXT
+Tekst
+; Text
+;
+MSG_OVERSCAN_GRAPHICS
+Grafikk
+; Graphics
+;
+MSG_OVERSCAN_EXTREME
+Ekstrem
+; Extreme
+;
+MSG_OVERSCAN_MAXIMUM
+Maksimum
+; Maximum
+;
+MSG_EDITPAGE_ATTRIBUTES
+Attributter
+; Attributes
+;
+MSG_EDITPAGE_DISPLAY
+Visning
+; Display
+;
+MSG_EDITPAGE_COLORS
+Farger
+; Colors
+;
+MSG_HELP_WHEEL
+Juster farge for\ngruppen med penner.
+; Adjust color for\ngroup of pens.
+;
+MSG_HELP_INFO
+Informasjon om\nmodus og størrelse.
+; Information about\nmode & size.
+;
+MSG_HELP_NAME
+Navn på offentlig skjerm.\nWildcard er gyldig for\nfremmede skjermer.
+; Name of Public Screen.\nWildcards allowed for\nforeign screens.
+;
+MSG_HELP_TITLE
+Tekst som vises på\nskjermens tittellinje.
+; Text that appears in\nthe screen's title bar.
+;
+MSG_HELP_FONT
+Standard skriftype\nfor vinduet.
+; Default font\nfor the screen.
+;
+MSG_HELP_BACKGROUND
+Bilde datatype brukt\nsom bakgrunnsm?nster.
+; Datatype picture used\nas background pattern.
+;
+MSG_HELP_AUTOSCROLL
+Skjermen skroller når\nmusepekeren treffer kanten på skjermen.
+; The screen scrolls when\nthe mouse hits its borders.
+;
+MSG_HELP_NODRAG
+Skjermen kan\nikke dras.
+; The screen\nis undraggable.
+;
+MSG_HELP_EXCLUSIVE
+Skjermen kan ikke dele\nvisningen sin med andre.
+; The screen cannot share\nits display with others.
+;
+MSG_HELP_INTERLEAVED
+Bitmappen til skjermen er allokert\ni flettet modus.
+; The screen's bitmap is allocated\nin interleaved mode.
+;
+MSG_HELP_BEHIND
+Skjermen åpnes bak\nalle andre skjermer.
+; The screen opens behind\nall other screens.
+;
+MSG_HELP_SYSTEMDEFAULT
+Skjermen blir\nsystemets standardskjerm.
+; The screen becomes the\nsystem's default screen.
+;
+MSG_HELP_AUTOCLOSE
+Skjermen lukkes når\ndet siste vinduet lukkes.
+; The screen closes when\nthe last window is closed.
+;
+MSG_HELP_CLOSEGADGET
+Skjermen får\n et lukkeikon.
+; The screen gets\na close gadget.
+;
+MSG_HELP_MODELIST
+Liste over tilgjengelige\nvisningsmoduser.
+; List of available\ndisplay modes.
+;
+MSG_HELP_MODEINFO
+Informansjon om nåværende\nvisningsmodus.
+; Information about the\ncurrent display mode.
+;
+MSG_HELP_OVERSCAN
+Justering av overscan størrelsen.
+; Overscan size adjustment.
+;
+MSG_HELP_WIDTH
+Bredden på skjermen\nmålt i piksler.
+; Width of screen,\nmeasured in pixels.
+;
+MSG_HELP_HEIGHT
+Høyden på skjermen\nmålt i piksler.
+; Height of screen,\nmeasured in pixels.
+;
+MSG_HELP_DEPTH
+Dybden på skjermen\nmålt i plan.
+; Depth of screen,\nmeasured in planes.
+;
+MSG_HELP_PENLIST
+Systempenner, flyttbare\ntil forskjellige farge pott.
+; System pens, draggable\nto different color pot.
+;
+MSG_HELP_COLORFIELD
+Nåværende farge. Trykk\npå feltet for å endre den.
+; Current color, click\non field to change it.
+;
+MSG_HELP_KILLCOLOR
+Fjern denne fargen\nfra gruppen.
+; Remove this color\nfrom the group.
+;
+MSG_HELP_NEWCOLOR
+Legg til en ny farge\ntil gruppen.
+; Add a new color\nto the group.
+;
+MSG_HELP_EDITOK
+Avslutt og husk\nendringene for denne skjermen.
+; Exit and remember\nchanges for this screen.
+;
+MSG_HELP_EDITCANCEL
+Avslutt og \33bglem\33n\nendringene for denne skjermen.
+; Exit and \33bdiscard\33n\nchanges for this screen.
+;
+MSG_HELP_SCREENLIST
+Vis alle definerte\noffentlige skjermer.
+; List of defined\npublic screens.
+;
+MSG_HELP_NEWSCREEN
+Opprette en ny\noffentlig skjerm.
+; Create a new\npublic screen.
+;
+MSG_HELP_COPYSCREEN
+Opprett en kopi av\nnåværende skjerm.
+; Create a copy\nof current screen.
+;
+MSG_HELP_DELETESCREEN
+Slette nåværende\noffentlige skjerm.
+; Delete current\npublic screen.
+;
+MSG_HELP_EDITSCREEN
+Editer nåværende\noffentlige skjerm.
+; Edit current\npublic screen.
+;
+MSG_HELP_OPENSCREEN
+Åpne nåværende\noffentlige skjerm.
+; Open current\npublic screen.
+;
+MSG_HELP_CLOSESCREEN
+Lukk nåværende\noffentlige skjerm.
+; Close current\npublic screen.
+;
+MSG_HELP_JUMPSCREEN
+Hopp til nåværende\noffentlige skjerm.
+; Jump to current\npublic screen.
+;
+MSG_HELP_SAVE
+Avslutt og lagre\nendringene til disk.
+; Exit and save\nchanges to disk.
+;
+MSG_HELP_USE
+Avslutt og lagre endringene\nfor nåværende sesjon.
+; Exit and save changes\nfor current session.
+;
+MSG_HELP_CANCEL
+Avslutt og \n\33bglem\33n endringene.
+; Exit and\n\33bdiscard\33n changes.
+;

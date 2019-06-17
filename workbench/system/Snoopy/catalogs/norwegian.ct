@@ -1,0 +1,187 @@
+## version $VER: snoopy.catalog 2.0 (05.08.2019)
+## language norwegian
+## codeset 0
+;
+;
+MSG_TITLE
+Snoopy
+; Snoopy
+;
+MSG_COPYRIGHT
+© 2006-2008, The AROS Development Team
+; \xa9 2006-2008, The AROS Development Team
+;
+MSG_AUTHOR
+The AROS Development Team
+; The AROS Development Team
+;
+MSG_PORTNAME
+SNOOPY
+; SNOOPY
+;
+MSG_DESCRIPTION
+Enkel systemmonitor
+; Simple system monitor
+;
+MSG_SETTINGS
+Innstillinger
+; Settings
+;
+MSG_SHOW_FAILS
+Vis kun feil
+; Only show fails
+;
+MSG_CLI_NUMBER
+Vis CLI nummer
+; Show CLI number
+;
+MSG_FULL_PATH
+Vis full sti
+; Show full paths
+;
+MSG_DEVICE
+Bruk enhetsnavn
+; Use device names
+;
+MSG_IGNORE_WB
+Ignorer Workbench/Shell
+; Ignore Workbench/Shell
+;
+MSG_BREAKPOINT
+Sett avbruddspunkt
+; Set breakpoint
+;
+MSG_MATCH
+Match navn
+; Match name
+;
+MSG_SYSTEM_FUNC
+Systemfunksjoner
+; System Functions
+;
+MSG_DOS_FUNC
+AmigaDOS-funksjoner
+; AmigaDOS Functions
+;
+MSG_SAVE
+Lagre
+; Save
+;
+MSG_OPEN
+Åpne
+; Open
+;
+MSG_USE
+Bruk
+; Use
+;
+MSG_UNDO
+Angre
+; Undo
+;
+MSG_RESET
+Tilbakestill
+; Reset
+;
+MSG_CANCEL
+Avbryt
+; Cancel
+;
+MSG_OUTPUT_FIELD
+Feltbredde i resultatet
+; Output Field Width
+;
+MSG_NAME
+Navn
+; Name
+;
+MSG_ACTION
+Handling
+; Action
+;
+MSG_TARGET
+Mål
+; Target
+;
+MSG_OPTION
+Valg
+; Option
+;
+MSG_OK
+OK
+; OK
+;
+MSG_FAIL
+Feil
+; Fail
+;
+MSG_ERROR_SAVE
+En feil oppstod under lagring til %s
+; An error happened when saving to %s
+;
+MSG_ERROR_LOAD
+En feil oppstod under lasting av %s
+; An error happened when loading from %s
+;
+MSG_RESET_PATCHES
+Tilbakestill oppdatering|Avbryt
+; Reset Patches|Cancel
+;
+MSG_ASK_RESET
+Ønsker du virkelig å tilbakestille oppdateringene til deres opprinnelige funksjoner?
+; Do you really want to reset the patches to their original functions?
+;
+MSG_REMOVE_SNOOP
+Fjern|Behold
+; Remove|Keep
+;
+MSG_ASK_REMOVE
+Ønsker du virkelig å fjerne Snoopy prosessen?\n\
+Dette kan være farlig hvis en annen prosess hare endret Snoopy sine endringer..
+; Do you really want to remove the Snoopy process?\n\
+; This can be quite dangerous when another task has patched Snoopy's patches.
+;
+MSG_GLOBAL
+Global
+; Global
+;
+MSG_LOCAL
+Lokal
+; Local
+;
+MSG_ALIAS
+Alias
+; Alias
+;
+MSG_UNKNOWN
+Ukjent
+; Unknown
+;
+MSG_ANY
+Alle
+; Any
+;
+MSG_READ
+Les
+; Read
+;
+MSG_WRITE
+Skriv
+; Write
+;
+MSG_READ_ASK
+Les???
+; Read???
+;
+MSG_MODIFY
+Endre
+; Modify
+;
+MSG_VERSION
+Versjon %ld
+; Version %ld
+;
+MSG_SIZE
+Størrelse %d
+; Size %d
+;

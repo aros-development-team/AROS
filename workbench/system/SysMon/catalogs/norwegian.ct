@@ -1,0 +1,126 @@
+## version $VER: SysMon.catalog 1.2 (07.10.2019)
+## language norwegian
+## codeset 0
+;
+;
+;
+MSG_APP_NAME
+SysMon
+;
+MSG_APP_TITLE
+System monitor
+;
+MSG_WINDOW_TITLE
+System monitor
+;
+MSG_USAGE
+Bruk
+;
+MSG_FREQUENCY
+Frekvens
+;
+MSG_TAB_TASKS
+Oppgaver
+;
+MSG_TAB_CPU
+Prosessorer
+;
+MSG_SIMULATED_CPU
+Prosessorer simulert av AROS
+;
+MSG_PROCESSOR
+Prosessor #%id: %s
+;
+MSG_TASK
+Oppgave
+;
+MSG_PROCESS
+Prosess
+;
+MSG_TASK_NAME
+Navn
+;
+MSG_TASK_PRIORITY
+Prioritet
+;
+MSG_TASK_TYPE
+Type
+;
+MSG_TASK_READY_WAIT_INIT
+- klare, - ventende
+;
+MSG_TASK_READY_WAIT
+%ld klare, %ld ventende
+;
+MSG_TAB_SYSTEM
+System
+;
+MSG_MEMORY_SIZE
+Minnestørrelse
+;
+MSG_MEMORY_FREE
+Ledig minne
+;
+MSG_VIDEO_SIZE
+Grafikkminnestørrelse
+;
+MSG_VIDEO_FREE
+Ledig grafikkminne
+;
+MSG_TOTAL_RAM
+Totalt minne
+;
+MSG_CHIP_RAM
+Chip minne
+;
+MSG_FAST_RAM
+Fast minne
+;
+MSG_VIDEO_RAM
+Grafikk minne
+;
+MSG_VIDEO_WINDOW_TMPL
+%s
+;
+MSG_CANT_OPEN_TASK_RESOURCE
+ task.resource\n
+;
+MSG_PROJECT
+Prosjekt
+;
+MSG_REFRESH_SPEED
+Oppdateringshastighet
+;
+MSG_FAST
+Hurtig
+;
+MSG_NORMAL
+Normal
+;
+MSG_SLOW
+Sakte
+;
+MSG_TASK_TOMBSTONE
+<død>
+;
+MSG_TASK_UNKNOWN
+<ukjent>
+;
+MSG_WINDOW_GART
+GART minne
+;
+MSG_DISPLAY_MODE
+Visningsmodus
+;
+MSG_LOAD
+Prosessorlast
+;
+MSG_GUAGE
+Mengde
+;
+MSG_GRAPH
+Graf
+;
+MSG_GRAPH_PER_PROC
+Graf per prosessor
+;

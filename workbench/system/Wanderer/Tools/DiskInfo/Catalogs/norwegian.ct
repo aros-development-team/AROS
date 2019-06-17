@@ -1,0 +1,117 @@
+## version $VER: diskinfo.catalog 2.0 (08.10.2019)
+## language norwegian
+## codeset 0
+;
+;
+MSG_TITLE
+Disk Informasjon
+; Disk Info
+;
+MSG_ERROR_HEADER
+Feil
+; ERROR
+;
+MSG_ERROR_OK
+_Ok
+; _OK
+;
+MSG_ERROR_LOCALE
+Klarte ikke initialisiere språkinnstillingene.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Klarte ikke initialisiere "Custom" klassen.
+; Can't initialize custom classes.
+;
+MSG_DESCRIPTION
+Diskikon informajon
+; Disk Icon Informations
+;
+MSG_PERCENTFULL
+%ld %% full
+; %ld %% Full
+;
+MSG_FORMAT
+Format
+; Format
+;
+MSG_UNKNOWN
+Ukjent
+; Unknown
+;
+MSG_AUTHOR
+Olivier Adam
+; Olivier Adam
+;
+MSG_COPYRIGHT
+Copyright (C) AROS Dev Team
+; \xa92006-2009 AROS Dev Team
+;
+MSG_USED
+Plass brukt
+; Used space
+;
+MSG_FREE
+Ledig plass
+; Free space
+;
+MSG_SIZE
+Kapasitet
+; Capacity
+;
+MSG_BLOCK_SIZE
+Blokkstørrelse
+; Block size
+;
+MSG_BLOCKS
+Blokker
+; blocks
+;
+MSG_BYTES
+Byte
+; bytes
+;
+MSG_STATUS
+Status
+; Status
+;
+MSG_READABLE
+Lesbar
+; Readable
+;
+MSG_READABLE_WRITABLE
+Lesbar/skrivbar
+; Readable/writable
+;
+MSG_VALIDATING
+Validerer
+; Validating
+;
+MSG_NAME
+Volumnavn
+; Volume Name
+;
+MSG_UNIT
+enhet
+; unit
+;
+MSG_DOSDEVICE
+DOS-enhet:
+; DOS Device:
+;
+MSG_DEVICEINFO
+Tilkoblet på:
+; Connected on:
+;
+MSG_FILESYSTEM
+Filsystem:
+; FileSystem:
+;
+MSG_PACKETDEVICE
+Pakke-stil enhet
+; Packet Style device
+;
+MSG_IOFSDEVICE
+IOFS-stil enhet
+; IOFS Style device
+;

@@ -1,9 +1,9 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS:=croatian czech danish german polish portuguese russian french
+CATALOGS:=croatian czech danish german polish portuguese russian french norwegian
 # other catalogs need update to version 2
 
 %build_catalogs mmake=workbench-utilities-clock-catalogs \

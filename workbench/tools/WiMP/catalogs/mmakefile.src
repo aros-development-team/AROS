@@ -1,9 +1,9 @@
-# Copyright © 20168, The AROS Development Team. All rights reserved.
+# Copyright ï¿½ 20168, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS:=czech french
+CATALOGS:=czech french norwegian
 
 %build_catalogs mmake=workbench-tools-wimp-catalogs \
     catalogs=$(CATALOGS) \

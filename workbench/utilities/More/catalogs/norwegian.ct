@@ -1,6 +1,6 @@
-## version $VER: more.catalog 1.0 (12.12.2001)
+## version $VER: more.catalog 1.0 (21.07.2019)
 ## codeset 0
-## language norsk
+## language norwegian
 ;
 MSG_CANT_OPEN_LIB
 Kan ikke åpne %s V%1d!
@@ -18,16 +18,22 @@ MSG_CANT_GET_VI
 Kan ikke hente VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Kan ikke lage SYSICLASS-bilder!
+Kan ikke opprette SYSICLASS-bilder!
 ;
 MSG_CANT_CREATE_GADGET
-Kan ikke lage knapper!
+Kan ikke opprette knapper!
 ;
 MSG_CANT_CREATE_MENUS
-Kan ikke lage menyer!
+Kan ikke opprette menyer!
 ;
 MSG_CANT_CREATE_WIN
-Kan ikke åpne vindu!
+Kan ikke opprette vindu!
+;
+MSG_CANT_CREATE_MSGPORT
+Kan ikke opprette meldingsport!
+;
+MSG_CANT_ADD_APPWINDOW
+Kabn ikke omvandle vinduet til et applikasjons vindu!
 ;
 MSG_MEN_PROJECT
 Fil
@@ -90,7 +96,7 @@ MSG_CANCEL
 Avbryt
 ;
 MSG_WIN_TITLE
-More: %s (%ld Linjer - %ld Bytes)
+More: %s (%ld Linjer - %ld Byte)
 ;
 MSG_SHORTCUT_TOP
 T
@@ -109,4 +115,7 @@ N
 ;
 MSG_SHORTCUT_PREV
 P
+;
+MSG_SHORTCUT_EDITOR
+E
 ;

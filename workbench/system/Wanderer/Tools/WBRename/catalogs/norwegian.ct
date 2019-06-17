@@ -1,0 +1,72 @@
+## version $VER: deutsch.catalog 2.0 (10.10.2019)
+## language norwegian
+## codeset 0
+;
+;
+MSG_TITLE
+WBRename
+; WBRename
+;
+MSG_DESCRIPTION
+Endre navn på filer og skuffer
+; Renames files and drawers
+;
+MSG_COPYRIGHT
+Copyright (C) AROS Dev Team
+; \xa92012, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Endre navn
+; Rename
+;
+MSG_LINE
+Skriv inn nytt navn for: '%s'
+; Enter a new name for: '%s'
+;
+MSG_NAME
+\33bNytt navn:\33n
+; \33bNew name: \33n
+;
+MSG_OK
+_OK
+; _OK
+;
+MSG_CANCEL
+_Avbryt
+; Ca_ncel
+;
+MSG_ERROR_TITLE
+Feil
+; Error
+;
+MSG_ALREADY_EXIST
+'%s' exsisterer allerde!
+; '%s' already exists!
+;
+MSG_FAILED
+Navnebytte for '%s' feilet med feilmeldingen:\n%s!
+; Rename of '%s' failed with error:\n'%s'!
+;
+MSG_ILLEGAL_CHARS
+'%s' inneholder ulovlige tegn!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Trenger 2 argumenter!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Ugyldig kataloglås!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Kan ikke startes fra shell!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Klarte ikke opprette applikasjonen!
+; Failed to create Application!
+;
+MSG_OUTOFMEMORY
+Klarer ikke allokere nok minne!
+; Can't allocate RAM!

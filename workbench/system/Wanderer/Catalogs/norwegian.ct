@@ -1,0 +1,473 @@
+## version $VER: wanderer.catalog 3.1 (07.10.2019)
+## language norwegian
+## codeset 0
+;
+;
+MSG_TITLE
+Wanderer
+; Wanderer
+;
+MSG_DESCRIPTION
+Filutforsker
+; File manager
+;
+MSG_SCREENTITLE
+Wanderer %s grafikkminne %s annet minne
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+B
+; B
+;
+MSG_MEM_K
+K
+; K
+;
+MSG_MEM_M
+M
+; M
+;
+MSG_MEM_G
+G
+; G
+;
+MSG_MEN_WANDERER
+Wanderer
+; Wanderer
+;
+MSG_MEN_BACKDROP
+Bakgrunnsvindu
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+W
+; B
+;
+MSG_MEN_EXECUTE
+Utfør kommando...
+; Execute...
+;
+MSG_MEN_SC_EXECUTE
+U
+; E
+;
+MSG_MEN_SHELL
+Åpne shell
+; Shell
+;
+MSG_MEN_SC_SHELL
+K
+; W
+;
+MSG_MEN_GUISET
+Brukergrensesnittinnstillinger...
+; GUI settings...
+;
+MSG_MEN_ABOUT
+Om...
+; About...
+;
+MSG_MEN_QUIT
+Avslutt...
+; Quit...
+;
+MSG_MEN_SC_QUIT
+Q
+; Q
+;
+MSG_MEN_WINDOW
+Vindu
+; Window
+;
+MSG_MEN_NEWDRAW
+Ny skuff...
+; New drawer...
+;
+MSG_MEN_SC_NEWDRAW
+S
+; N
+;
+MSG_MEN_OPENPAR
+Åpne skuffen over
+; Open parent
+;
+MSG_MEN_CLOSE
+Lukke
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+; K
+;
+MSG_MEN_UPDATE
+Oppdater
+; Update
+;
+MSG_MEN_CONTENTS
+Velg innhold
+; Select contents
+;
+MSG_MEN_SC_CONTENTS
+J
+; A
+;
+MSG_MEN_CLRSEL
+Fjern valg
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+X
+; Z
+;
+MSG_MEN_SNAPSHT
+Huske plassering
+; Snapshot
+;
+MSG_MEN_ALL
+Allt
+; All
+;
+MSG_MEN_VIEW
+Vis
+; View
+;
+MSG_MEN_ICVIEW
+Kun ikoner
+; Icon view
+;
+MSG_MEN_DCVIEW
+Detaljvisning
+; Detail view
+;
+MSG_MEN_ALLFIL
+Alle filer
+; All files
+;
+MSG_MEN_SORTIC
+Sorter
+; Sort
+;
+MSG_MEN_CLNUP
+Rydd opp
+; Clean up
+;
+MSG_MEN_SC_CLNUP
+R
+; .
+;
+MSG_MEN_BYNAME
+etter navn
+; By name
+;
+MSG_MEN_BYDATE
+etter dato
+; By date
+;
+MSG_MEN_BYSIZE
+etter størrelse
+; By size
+;
+MSG_MEN_BYTYPE
+etter type
+; By type
+;
+MSG_MEN_REVERSE
+Reverser
+; Reverse
+;
+MSG_MEN_DRWFRST
+Skuffer først
+; Drawers first
+;
+MSG_MEN_ICON
+Ikon
+; Icon
+;
+MSG_MEN_FIND
+Søk...
+; Find...
+;
+MSG_MEN_SC_FIND
+F
+; F
+;
+MSG_MEN_OPEN
+Åpne
+; Open
+;
+MSG_MEN_SC_OPEN
+Å
+; O
+;
+MSG_MEN_RENAME
+Endre navn ...
+; Rename...
+;
+MSG_MEN_SC_RENAME
+N
+; R
+;
+MSG_MEN_INFO
+Informasjon ...
+; Information...
+;
+MSG_MEN_SC_INFO
+I
+; I
+;
+MSG_MEN_DELETE
+Slett ...
+; Delete...
+;
+MSG_MEN_TOOLS
+Verktøy
+; Tools
+;
+MSG_MEN_ICONSORTING
+Aktiver automatisk sortering av ikoner
+; Enable Automatic Icon Sorting
+;
+MSG_MEN_GROUPICONS
+Grupper ikoner
+; Group Icons
+;
+MSG_MEN_ICONSCLOSE
+Lukk
+; Close
+;
+MSG_REALLYQUIT
+Ønsker du virkelig å avlutten Wanderer?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Ja|Nei
+; *Yes|No
+;
+MSG_DUMMY
+DUMMY
+; DUMMY
+; DUMMY :)
+MSG_USERSCREENTITLE
+Wanderer %pc Grafikkminne %pf annet minne
+; Wanderer %pc graphics mem %pf other mem
+;
+MSG_MEN_FORMAT
+Formater disk ...
+; Format disk...
+;
+MSG_MEN_SHUTDOWN
+Slå av ...
+; Shut down...
+;
+MSG_SHUTDOWN_TITLE
+Slå av maskinen
+; System shutdown
+;
+MSG_SHUTDOWN_BODY
+Hva ønsker du å gjøre?
+; What would you like to do?
+;
+MSG_SHUTDOWN_BUTTONS
+Skru av maskinen|Start maskinen på nytt|Start AROS på nytt|*Avbryte
+; Power Off|Restart Computer|Restart AROS|*Cancel
+;
+MSG_ACTION_NOT_SUPPORTED
+Valgt handling er ikke støttet av din maskin
+; The selected action is not supported by your system.
+;
+MSG_OK
+*OK
+; *OK
+;
+MSG_EMPTY_TRASH
+Tøm søppelkassen
+; Empty trash
+;
+MSG_MEN_PUT_AWAY
+Legg tilbake
+; Put away
+;
+MSG_MEN_SC_PUT_AWAY
+T
+; P
+;
+MSG_MEN_LEAVE_OUT
+Legg ut
+; Leave out
+;
+MSG_MEN_SC_LEAVE_OUT
+Y
+; L
+;
+MSG_MEN_UNSNAPSHOT
+Glem plassering
+; Unsnapshot
+;
+MSG_MEN_SC_UNSNAPSHOT
+G
+; U
+;
+MSG_MEN_SNAPSHOT
+Husk plassering
+; Snapshot
+;
+MSG_MEN_SC_SNAPSHOT
+H
+; S
+;
+MSG_REQU_DELETE
+Slett fil ...
+; Delete file...
+;
+MSG_REQU_DELETE_YESNO
+_Ja|Ja, _alle|_nein|Nei _til alle
+; _Yes|Yes to _all|_No|No _to all
+;
+MSG_REQU_DELETE_DRAWER_S
+Ønsker du virkelig å slette skuffen
+; Really delete drawer
+;
+MSG_REQU_DELETE_DRAWER_E
+?
+; ?
+;
+MSG_REQU_DELETE_FILE_S
+Ønsker du virkelig å slette filen
+; Really delete file
+;
+MSG_REQU_DELETE_FILE_M
+i
+; located in
+;
+MSG_REQU_DELETE_FILE_E
+?
+; ?
+;
+MSG_REQU_OVERWRITE
+Overskriv fil ...
+; Overwrite file...
+;
+MSG_REQU_OVERWRITE_S
+Ønsker du virkelig å overskrive filen
+; Really overwrite file
+;
+MSG_REQU_OVERWRITE_M
+i
+; located in
+;
+MSG_REQU_OVERWRITE_E
+?
+; ?
+;
+MSG_REQU_OVERWRITE_YESNO
+_Overksrive|Overksrive _alle|_Nei|Nei _til alle
+; _Overwrite|Overwrite _all|_No|No _to all
+;
+MSG_REQU_OVERWRITE_SKIPABORT
+_Hopp over|_Avbryt
+; _Skip|_Abort
+;
+MSG_REQU_PROTECTION
+Fil beskyttelse
+; File Protection
+;
+MSG_REQU_PROTECTION_UNPROTECT
+_Fjern beskyttelse|Fjern beskyttelse fra _alle|_Nei|Nein _til alle
+; _Unprotect|Unprotect _All|_No|No _to ALL
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
+Ønsker du virkelig å fjerne skrivebeskyttelsen av skuffen
+; Do you wish to unprotect drawer
+;
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
+?
+; ?
+;
+MSG_NOFILEACCESS_S
+Klarer ikke aksessere filen
+; Can't access file
+;
+MSG_NOFILEACCESS_M
+i
+; located in
+;
+MSG_NOFILEACCESS_E
+ingen tilgang til filen
+;  
+;
+MSG_NODRAWERACCESS_S
+Klarer ikke aksessere skuffen
+; Can't access drawer
+;
+MSG_NODRAWERACCESS_E
+ingen tilgang til skuffen 
+;  
+;
+MSG_REQU_FILEUNPROTECT_S
+Ønsker du virkelig å fjerne filbeskyttelsen av filen
+; Do you wish to unprotect file
+;
+MSG_REQU_FILEUNPROTECT_M
+i
+; located in
+;
+MSG_REQU_FILEUNPROTECT_E
+?
+; ?
+;
+MSG_WANDERER_FILEACCESS
+Wanderer filrettigheter
+; Wanderer file access
+;
+MSG_WANDERER_FILEACCESS_PROCESSING
+Prosesserer ...
+; Processing...
+;
+MSG_WANDERER_FILEACCESS_STOP
+Avbryt
+; Stop
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM
+Flytt fra
+; Move from
+;
+MSG_WANDERER_FILEACCESS_MOVETO
+Flytt til
+; Move to
+;
+MSG_WANDERER_FILEACCESS_COPYFROM
+Kopier fra
+; Copy from
+;
+MSG_WANDERER_FILEACCESS_COPYTO
+Kopier til
+; Copy to
+;
+MSG_WANDERER_FILEACCESS_FILE
+Fil
+; File
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC
+Overføringshastighet
+; Data transfer rate
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM
+Slett fra skuff
+; Delete from drawer
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE
+Fil som skal slettes
+; File to delete
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES
+Prosesserte filer:
+; Processed files:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL
+Størrelse på gjeldende fil:
+; Size of current file:
+;
+MSG_WANDERER_FILEACCESS_TOTAL
+Totalstørrelse:
+; Overall size:
+;
