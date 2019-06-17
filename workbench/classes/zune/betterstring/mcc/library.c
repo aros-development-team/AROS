@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@
 
 #define INSTDATA      InstData
 
-#define USERLIBID     CLASS " " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT
+#define USERLIBID     CLASS " " LIB_REV_STRING " (" LIB_DATE ") " LIB_COPYRIGHT " [" SYSTEMSHORT "/" CPU "]"
 #define MASTERVERSION 19
 
 #define CLASSINIT
@@ -63,12 +63,14 @@ struct Library *DiskfontBase = NULL;
 struct Library *KeymapBase = NULL;
 struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
+struct Library *CyberGfxBase = NULL;
 
 #if defined(__amigaos4__)
 struct DiskfontIFace *IDiskfont = NULL;
 struct KeymapIFace *IKeymap = NULL;
 struct LayersIFace *ILayers = NULL;
 struct LocaleIFace *ILocale = NULL;
+struct CyberGfxIFace *ICyberGfx = NULL;
 #endif
 
 /******************************************************************************/
@@ -99,6 +101,11 @@ static BOOL ClassInit(UNUSED struct Library *base)
         if((DiskfontBase = OpenLibrary("diskfont.library", 38)) &&
            GETINTERFACE(IDiskfont, struct DiskfontIFace *, DiskfontBase))
         {
+          // cybergraphics.library is allowed to fail
+          if((CyberGfxBase = OpenLibrary("cybergraphics.library", 41)) &&
+             GETINTERFACE(ICyberGfx, struct CyberGfxIFace *, CyberGfxBase))
+          { }
+
           if(CreateSharedPool() == TRUE)
           {
             if(StartClipboardServer() == TRUE)
@@ -139,6 +146,13 @@ static VOID ClassExpunge(UNUSED struct Library *base)
 
   DeleteSharedPool();
 
+  if(CyberGfxBase)
+  {
+    DROPINTERFACE(ICyberGfx);
+    CloseLibrary(CyberGfxBase);
+    CyberGfxBase = NULL;
+  }
+
   if(DiskfontBase)
   {
     DROPINTERFACE(IDiskfont);
@@ -167,4 +181,3 @@ static VOID ClassExpunge(UNUSED struct Library *base)
     LocaleBase = NULL;
   }
 }
-

@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -20,15 +20,22 @@
 
 ***************************************************************************/
 
-#if !defined(__MORPHOS__) && !defined(__AROS__)
+#include <stdint.h>
+
+#if !defined(__MORPHOS__)
 // uncompressed ARGB data
-extern const unsigned long icon32[];
-#define ICON32_WIDTH  24
-#define ICON32_HEIGHT 20
-#define ICON32_DEPTH  32
+#if defined(__AROS__)
+extern const uint8_t icon32[];
+#else
+extern const uint32_t icon32[];
+#endif
+
+#define ICON32_WIDTH       24
+#define ICON32_HEIGHT      20
+#define ICON32_DEPTH       32
 #else
 // bzip2 compressed ARGB data
-extern const unsigned char icon32[];
+extern const uint8_t icon32[];
 #endif
 
 #ifdef USE_ICON8_COLORS

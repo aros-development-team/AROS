@@ -1,5 +1,5 @@
 # Translation catalog description file (pot-style)
-# $Id: spanish.po 427 2014-04-04 19:48:48Z damato $
+# $Id$
 # 
 # version 2
 # Translators:
@@ -11,7 +11,7 @@ msgstr ""
 "POT-Creation-Date: 2014-02-18 15:35+0100\n"
 "PO-Revision-Date: 2014-03-18 13:31+0000\n"
 "Last-Translator: Javier Rivas <jabierdlr@gmail.com>\n"
-"Language-Team: Spanish (http://www.transifex.com/projects/p/bstring-mcc/language/es/)\n"
+"Language-Team: Spanish (http://www.transifex.com/ato/bstring-mcc/language/es/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"

@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,11 @@
 
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#if defined(__AROS__) || defined(__MORPHOS__)
+#define MySPrintf(buf, fmt, ...) \
+ ({ IPTR __args[] = { SDI_VACAST(__VA_ARGS__) }; \
+     RawDoFmt(fmt, __args, NULL, (STRPTR)buf); })
+#elif defined(__amigaos4__)
 static int VARARGS68K MySPrintf(char *buf, const char *fmt, ...)
 {
   VA_LIST args;
@@ -51,8 +55,6 @@ static int VARARGS68K MySPrintf(char *buf, const char *fmt, ...)
 
   return(strlen(buf));
 }
-#elif defined(__AROS__)
-#define MySPrintf __sprintf /* from amiga lib */
 #else
 static int STDARGS MySPrintf(char *buf, const char *fmt, ...)
 {
@@ -1293,10 +1295,9 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           // forget the pressed mouse button
           clearFlag(data->Flags, FLG_MouseButtonDown);
 
-          if(isAnyFlagSet(data->ehnode.ehn_Events, /*IDCMP_MOUSEMOVE|*/IDCMP_INTUITICKS))
+          if(isFlagSet(data->ehnode.ehn_Events, IDCMP_INTUITICKS))
           {
             DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-         // clearFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
             clearFlag(data->ehnode.ehn_Events, IDCMP_INTUITICKS);
             DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
           }
@@ -1428,10 +1429,12 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
             data->BlockStop = data->BufferPos;
             setFlag(data->Flags, FLG_BlockEnabled);
 
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-         // setFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
-            setFlag(data->ehnode.ehn_Events, IDCMP_INTUITICKS);
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
+            if(isFlagClear(data->ehnode.ehn_Events, IDCMP_INTUITICKS))
+            {
+              DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
+              setFlag(data->ehnode.ehn_Events, IDCMP_INTUITICKS);
+              DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
+            }
 
             if(isFlagSet(data->Flags, FLG_Active))
               MUI_Redraw(obj, MADF_DRAWUPDATE);
@@ -1454,10 +1457,6 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 #ifdef ALLOW_OUTSIDE_MARKING
               D(DBF_STARTUP, "Clicked outside gadget");
               setFlag(data->Flags, FLG_DragOutside);
-
-           // DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-           // data->ehnode.ehn_Events |= IDCMP_MOUSEMOVE;
-           // DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
 #else
               set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 #endif
@@ -1474,7 +1473,7 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           D(DBF_STARTUP, "Detected drag");
         }
 #endif
-        if((/*msg->imsg->Class == IDCMP_MOUSEMOVE ||*/ msg->imsg->Class == IDCMP_INTUITICKS) && isFlagSet(data->Flags, FLG_Active))
+        if(msg->imsg->Class == IDCMP_INTUITICKS && isFlagSet(data->Flags, FLG_Active))
         {
           WORD x, width, mousex;
           struct TextExtent tExtend;
@@ -1511,12 +1510,14 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                 }
                 else
                 {
-                    WORD offset = mousex - x;
+                  WORD offset = mousex - x;
 
-/*                  if(offset < 0)
+                  /*
+                  if(offset < 0)
                     data->BufferPos = 0;
                   else
-*/                  data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
+                  */
+                    data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
                 }
               }
               data->BlockStop = data->BufferPos;
@@ -1543,7 +1544,7 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
               if(newpos >= data->BlockStart)
               {
-                while(IsAlNum(data->locale, (UBYTE)*(data->Contents+newpos)))
+                while(IsAlNum(data->locale, (UBYTE)*(data->Contents+newpos)) && *(data->Contents+newpos) != '\0')
                   newpos++;
               }
               else
@@ -1578,11 +1579,10 @@ IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_BetterString_Insert *ms
 
   switch(msg->pos)
   {
-/*
+    default:
     case MUIV_BetterString_Insert_StartOfString:
-      pos = 0;
+      pos = msg->pos;
     break;
-*/
 
     case MUIV_BetterString_Insert_EndOfString:
       pos = strlen(data->Contents);
@@ -1590,10 +1590,6 @@ IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_BetterString_Insert *ms
 
     case MUIV_BetterString_Insert_BufferPos:
       pos = data->BufferPos;
-    break;
-
-    default:
-      pos = msg->pos;
     break;
   }
 

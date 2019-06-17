@@ -3,52 +3,53 @@
 # 
 # version 2
 # Translators:
+# İbrahim Alper Sönmez <amithlondestek@gmail.com>, 2014
 msgid ""
 msgstr ""
 "Project-Id-Version: MCC BetterString\n"
 "Report-Msgid-Bugs-To: http://sf.net/p/bstring-mcc/\n"
 "POT-Creation-Date: 2014-02-18 15:35+0100\n"
-"PO-Revision-Date: 2014-02-18 14:54+0000\n"
-"Last-Translator: Jens Maus <mail@jens-maus.de>\n"
-"Language-Team: Swedish (http://www.transifex.com/ato/bstring-mcc/language/sv/)\n"
+"PO-Revision-Date: 2014-05-27 06:30+0000\n"
+"Last-Translator: İbrahim Alper Sönmez <amithlondestek@gmail.com>\n"
+"Language-Team: Turkish (http://www.transifex.com/ato/bstring-mcc/language/tr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Catalog-Name: BetterString_mcp\n"
-"Language: sv\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: tr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 msgctxt "MSG_Label_Active (0//)"
 msgid "Active:"
-msgstr "Aktiv:"
+msgstr "Etkin:"
 
 msgctxt "MSG_Label_Background (1//)"
 msgid "Background"
-msgstr "Bakgrund"
+msgstr "Art Alan"
 
 msgctxt "MSG_Label_Cursor (2//)"
 msgid "Cursor:"
-msgstr "Markör:"
+msgstr "İmleç:"
 
 msgctxt "MSG_Label_Inactive (5//)"
 msgid "Inactive:"
-msgstr "Inaktiv:"
+msgstr "Etkin Olmayan:"
 
 msgctxt "MSG_Label_Marked (6//)"
 msgid "Marked:"
-msgstr "Markerad:"
+msgstr "İşaretli:"
 
 msgctxt "MSG_Label_Text (7//)"
 msgid "Text"
-msgstr "Text"
+msgstr "Metin"
 
 msgctxt "MSG_String_TestString (8//)"
 msgid "Test the power of BetterString here!"
-msgstr "Testa BetterStrings styrka här!"
+msgstr "BetterString'in gücünü burada sınayın!"
 
 msgctxt "MSG_Help_Copy (9//)"
 msgid "Copy all or marked text"
-msgstr "Kopiera allt eller markerad text"
+msgstr "Tüm veya işaretlenmiş metni kopyala"
 
 msgctxt "MSG_Help_Copy_Shortcut (10//)"
 msgid "Amiga + c"
@@ -56,7 +57,7 @@ msgstr "Amiga + c"
 
 msgctxt "MSG_Help_Cut (11//)"
 msgid "Cut all or marked text"
-msgstr "Klipp ut allt eller markerad text"
+msgstr "Tüm veya işaretlenmiş metni kes"
 
 msgctxt "MSG_Help_Cut_Shortcut (12//)"
 msgid "Amiga + x"
@@ -64,7 +65,7 @@ msgstr "Amiga + x"
 
 msgctxt "MSG_Help_Paste (13//)"
 msgid "Paste"
-msgstr "Klistra in"
+msgstr "Yapıştır"
 
 msgctxt "MSG_Help_Paste_Shortcut (14//)"
 msgid "Amiga + v"
@@ -72,7 +73,7 @@ msgstr "Amiga + v"
 
 msgctxt "MSG_Help_Undo (15//)"
 msgid "Undo last deletion"
-msgstr "Ångra senaste radering"
+msgstr "Son silineni geri al"
 
 msgctxt "MSG_Help_Undo_Shortcut (16//)"
 msgid "Amiga + z"
@@ -80,7 +81,7 @@ msgstr "Amiga + z"
 
 msgctxt "MSG_Help_Redo (17//)"
 msgid "Redo last deletion"
-msgstr "Gör om senaste radering"
+msgstr "Son silmeyi yeniden yap"
 
 msgctxt "MSG_Help_Redo_Shortcut (18//)"
 msgid "Amiga + Z"
@@ -88,7 +89,7 @@ msgstr "Amiga + Z"
 
 msgctxt "MSG_Help_ToggleBuffer (19//)"
 msgid "Toggle between original and modified buffer"
-msgstr "Växla mellan original och modifierad buffer"
+msgstr "Özgün veya değiştirilmiş tampon arasında geçiş yap"
 
 msgctxt "MSG_Help_ToggleBuffer_Shortcut (20//)"
 msgid "Amiga + q"
@@ -96,7 +97,7 @@ msgstr "Amiga + q"
 
 msgctxt "MSG_Help_ToggleCaseChar (21//)"
 msgid "Toggle case on character"
-msgstr "Växla mellan stor och liten bokstav"
+msgstr "Büyük harf/küçük harf değiştir"
 
 msgctxt "MSG_Help_ToggleCaseChar_Shortcut (22//)"
 msgid "Amiga + g"
@@ -104,7 +105,7 @@ msgstr "Amiga + g"
 
 msgctxt "MSG_Help_ToggleCaseWord (23//)"
 msgid "Toggle case on word"
-msgstr "Växla mellan stor och liten bokstav på ord"
+msgstr "Sözcüğü büyük/küçük harf değiştir"
 
 msgctxt "MSG_Help_ToggleCaseWord_Shortcut (24//)"
 msgid "Amiga + G"
@@ -112,7 +113,7 @@ msgstr "Amiga + G"
 
 msgctxt "MSG_Help_IncreaseNumber (25//)"
 msgid "Increase number"
-msgstr "Öka nummer"
+msgstr "Sayı arttır"
 
 msgctxt "MSG_Help_IncreaseNumber_Shortcut (26//)"
 msgid "Amiga + i"
@@ -120,7 +121,7 @@ msgstr "Amiga + i"
 
 msgctxt "MSG_Help_DecreaseNumber (27//)"
 msgid "Decrease number"
-msgstr "Minska nummer"
+msgstr "Sayı azalt"
 
 msgctxt "MSG_Help_DecreaseNumber_Shortcut (28//)"
 msgid "Amiga + d"
@@ -128,7 +129,7 @@ msgstr "Amiga + d"
 
 msgctxt "MSG_Help_HexToDecimal (29//)"
 msgid "Hex to Decimal"
-msgstr "Hex till decimal"
+msgstr "16'lığı, ondalık sayıya dönüştür."
 
 msgctxt "MSG_Help_HexToDecimal_Shortcut (30//)"
 msgid "Amiga + #"
@@ -136,7 +137,7 @@ msgstr "Amiga + #"
 
 msgctxt "MSG_Help_DecimalToHex (31//)"
 msgid "Decimal to Hex"
-msgstr "Decimal till hex"
+msgstr "Ondalığı 16'lığa dönüştür."
 
 msgctxt "MSG_Help_DecimalToHex_Shortcut (32//)"
 msgid "Amiga + $"
@@ -144,69 +145,69 @@ msgstr "Amiga + $"
 
 msgctxt "MSG_Help_FilenameCompletition (33//)"
 msgid "Filenamecompletion (use SHIFT to cycle back)"
-msgstr "Filnamnskomplettering (använd SHIFT för att gå bakåt)"
+msgstr "Dosya adı tamamlama (geri sekmek için BÜYÜKHARF tuşu kullanın)"
 
 msgctxt "MSG_Help_FilenameCompletition_Shortcut (34//)"
 msgid "Amiga + TAB"
-msgstr "Amiga + TAB"
+msgstr "Aimiga + TAB"
 
 msgctxt "MSG_Help_Mark (35//)"
 msgid "Mark"
-msgstr "Markera"
+msgstr "İşaretle"
 
 msgctxt "MSG_Help_Mark_Shortcut (36//)"
 msgid "CTRL + cursor"
-msgstr "CTRL + markör"
+msgstr "CTRL + yön tuşu"
 
 msgctxt "MSG_Help_GotoToStartEndOfLine (37//)"
 msgid "Goto to start/end of line"
-msgstr "Gå till början/slutet av rad"
+msgstr "Satırın başına/sonuna git"
 
 msgctxt "MSG_Help_GotoToStartEndOfLine_Shortcut (38//)"
 msgid "SHIFT + cursor"
-msgstr "SHIFT + markör"
+msgstr "BÜYÜKHARF + yön tuşu"
 
 msgctxt "MSG_Help_DeleteToStartEndOfLine (39//)"
 msgid "Delete to start/end of line"
-msgstr "Radera till början/slutet av rad"
+msgstr "Satırın başına/sonuna kadar sil"
 
 msgctxt "MSG_Help_DeleteToStartEndOfLine_Shortcut (40//)"
 msgid "SHIFT + BACKSPACE/DELETE"
-msgstr "SHIFT + BACKSPACE/DELETE"
+msgstr "BÜYÜKHARF + GERİ/SİL"
 
 msgctxt "MSG_Help_GotoToPrevNextWord (41//)"
 msgid "Goto to previous/next word"
-msgstr "Gå till föregående/nästa ord"
+msgstr "Önceki/sonraki sözcük"
 
 msgctxt "MSG_Help_GotoToPrevNextWord_Shortcut (42//)"
 msgid "ALT + cursor"
-msgstr "ALT + markör"
+msgstr "ALT + yön tuşu"
 
 msgctxt "MSG_Help_DeleteToPrevNextWord (43//)"
 msgid "Delete previous/next word"
-msgstr "Radera föregående/nästa ord"
+msgstr "Önceki/sonraki sözcüğü sil"
 
 msgctxt "MSG_Help_DeleteToPrevNextWord_Shortcut (44//)"
 msgid "ALT + BACKSPACE/DELETE"
-msgstr "ALT + BACKSPACE/DELETE"
+msgstr "ALT + GERİTUŞU/SİL"
 
 msgctxt "MSG_SelectOnActive (45//)"
 msgid "Select on Active"
-msgstr "Markera när aktiv"
+msgstr "Etkinleşirken Tümünü Seç"
 
 msgctxt "MSG_HELP_SelectOnActive (46//)"
 msgid ""
 "Automatically select all text when a\n"
 "BetterString object gets activated\n"
 "via TAB cycling or mouse activation."
-msgstr "Markera automatiskt all text när ett\nBetterString objekt blir aktivt, via\nTAB cykling eller mus aktivering."
+msgstr "Bir BetterString nesnesi fare veya sekme\ntuşu ile etkinleştirildiğinde, otomatik\nolarak içerdiği tüm metin seçilir."
 
 msgctxt "MSG_SelectPointer (47//)"
 msgid "Selection Pointer"
-msgstr "Markeringspekare"
+msgstr "Seçim İşaretçisi"
 
 msgctxt "MSG_HELP_SelectPointer (48//)"
 msgid ""
 "If enabled, a custom selection pointer will appear\n"
 "when the mouse pointer is above a betterstring gadget."
-msgstr "Om vald, kommer en specialpekare att visas\nnär muspekaren är ovanför ett betterstring objekt."
+msgstr "Etkinleştirilirse, fare bir BetterString nesnesi üzerinde\nolduğunda özel seçim işaretçisi görüntülenecektir."

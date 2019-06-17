@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -36,15 +36,16 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   ENTER();
 
-  if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)) != NULL)
+  if((obj = (Object *)DoSuperNew(cl, obj,
+    MUIA_FillArea, FALSE,
+    MUIA_PointerType, MUIV_PointerType_Text,
+    TAG_MORE, msg->ops_AttrList)) != NULL)
   {
     struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
     if((data->Contents = AllocContentString(40)) != NULL)
     {
       struct TagItem *tag;
-
-      set(obj, MUIA_FillArea, FALSE);
 
       // muimaster V20 is MUI 3.9
       data->mui39 = LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 0);
@@ -71,7 +72,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
   }
 
   RETURN(obj);
-  return((IPTR)obj);
+  return (IPTR)obj;
 }
 
 static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
@@ -256,12 +257,17 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 
   ENTER();
 
+  if(GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH) > 8)
+    setFlag(data->Flags, FLG_Truecolor);
+  else
+    clearFlag(data->Flags, FLG_Truecolor);
+
   InitConfig(obj, data);
 
   if(DoSuperMethodA(cl, obj, (Msg)rinfo))
   {
     // tell MUI we know how to indicate the active state
-    _flags(obj) |= (1<<7);
+    _flags(obj) |= MADF_KNOWSACTIVE;
 
     // remember that we went through MUIM_Setup
     setFlag(data->Flags, FLG_Setup);
@@ -272,8 +278,9 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
     data->ehnode.ehn_Class    = cl;
     data->ehnode.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
 
-    // setup the selection pointer
-    if(data->SelectPointer == TRUE)
+    // setup the selection pointer if this is requested and MUI doesn't already
+    // handle this for us
+    if(data->SelectPointer == TRUE && xget(obj, MUIA_PointerType) == MUIV_PointerType_Normal)
     {
       data->ehnode.ehn_Events |= IDCMP_MOUSEMOVE;
       SetupSelectPointer(data);

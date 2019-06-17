@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@ struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
 struct Library *UtilityBase = NULL;
 struct Library *KeymapBase = NULL;
+struct Library *CyberGfxBase = NULL;
 #elif defined(__MORPHOS__)
 struct Library *DiskfontBase = NULL;
 struct Library *GfxBase = NULL;
@@ -49,6 +50,7 @@ struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
 struct Library *UtilityBase = NULL;
 struct Library *KeymapBase = NULL;
+struct Library *CyberGfxBase = NULL;
 #else
 struct Library *DiskfontBase = NULL;
 struct Library *GfxBase = NULL;
@@ -56,12 +58,13 @@ struct IntuitionBase *IntuitionBase = NULL;
 struct Library *MUIMasterBase = NULL;
 struct Library *LayersBase = NULL;
 struct Library *LocaleBase = NULL;
-#if defined(__AROS__)
+#if defined(__AROS__) || defined(__amigaos3__)
 struct UtilityBase *UtilityBase = NULL;
 #else
 struct Library *UtilityBase = NULL;
 #endif
 struct Library *KeymapBase = NULL;
+struct Library *CyberGfxBase = NULL;
 #endif
 
 #if defined(__amigaos4__)
@@ -73,6 +76,7 @@ struct LayersIFace *ILayers = NULL;
 struct LocaleIFace *ILocale = NULL;
 struct UtilityIFace *IUtility = NULL;
 struct KeymapIFace *IKeymap = NULL;
+struct CyberGfxIFace *ICyberGfx = NULL;
 #endif
 
 DISPATCHERPROTO(_Dispatcher);
@@ -95,6 +99,8 @@ int main(void)
     GETINTERFACE(IUtility, UtilityBase))
   if((MUIMasterBase = OpenLibrary("muimaster.library", MUIMASTER_VMIN)) &&
     GETINTERFACE(IMUIMaster, MUIMasterBase))
+  if((CyberGfxBase = OpenLibrary("cybergraphics.library", 41)) &&
+    GETINTERFACE(ICyberGfx, CyberGfxBase))
   if(StartClipboardServer() == TRUE)
   if(CreateSharedPool() == TRUE)
   {
@@ -109,9 +115,9 @@ int main(void)
     mcc = MUI_CreateCustomClass(NULL, "Area.mui", NULL, sizeof(struct InstData), ENTRY(_Dispatcher));
 
     app =  ApplicationObject,
-          MUIA_Application_Author,      "BetterString.mcc Open Source Team",
-          MUIA_Application_Base,        "BetterString-Test",
-          MUIA_Application_Copyright,    "(C) 2005-2013 by BetterString.mcc Open Source Team",
+          MUIA_Application_Author,       "BetterString.mcc Open Source Team",
+          MUIA_Application_Base,         "BetterString-Test",
+          MUIA_Application_Copyright,    "Copyright (C) 2005-2018 BetterString.mcc Open Source Team",
           MUIA_Application_Description,  "BetterString.mcc demonstration program",
           MUIA_Application_Title,        "BetterString-Test",
           MUIA_Application_Version,      "$VER: BetterString-Demo V1.0 (18.05.2007)",
@@ -303,6 +309,13 @@ int main(void)
 
   DeleteSharedPool();
   ShutdownClipboardServer();
+
+  if(CyberGfxBase)
+  {
+    DROPINTERFACE(ICyberGfx);
+    CloseLibrary(CyberGfxBase);
+    CyberGfxBase = NULL;
+  }
 
   if(UtilityBase)
   {

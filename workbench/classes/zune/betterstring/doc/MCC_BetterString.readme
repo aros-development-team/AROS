@@ -1,9 +1,9 @@
-Short:        BetterString custom class for MUI, V11.28
+Short:        BetterString custom class for MUI
 Author:       BetterString.mcc Open Source Team
 Uploader:     Jens Maus <mail@jens-maus.de>
 Type:         dev/mui
-Version:      11.28
-Replaces:     dev/mui/mcc_betterstring-11.27.lha
+Version:      11.33
+Replaces:     dev/mui/mcc_betterstring-11.32.lha
 Requires:     AmigaOS 3.0+ or MorphOS, MUI 3.8+, 68020+/PPC604e+
 Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
@@ -27,7 +27,7 @@ maintained and Copyright (c) by the BetterString.mcc Open Source Team.
 It was released under the GNU Lesser Public License in July 2005 and its
 development is hosted at:
 
-http://www.sourceforge.net/projects/bstring-mcc/
+https://github.com/amiga-mui/betterstring
 
 Please consult the included "COPYING" file for a more detailed information
 on the licensing of the gadget and its source code.
@@ -36,8 +36,8 @@ Please refer to the included ChangeLog in the archive for a detailed information
 on the changes since the last version release.
 
 Enjoy this release and if you find any bugs or have suggestions please always
-prefer to go to the project homepage http://www.sf.net/projects/bstring-mcc/ and
-use the Bug/Feature Trackers there to report anything to the authors!
+prefer to go to the project homepage https://github.com/amiga-mui/betterstring
+and use the Bug/Feature Trackers there to report anything to the authors!
 
 Have phun,
 

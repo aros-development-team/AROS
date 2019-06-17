@@ -4,7 +4,7 @@
 #
 # BetterString.mcc - A better String gadget MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+# Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ for language in `ls mcp/locale/*.catalog`; do
 done
 
 cp -a -R dist/* "release/"
-cp -a AUTHORS ChangeLog COPYING "release/MCC_BetterString/"
+cp -a ChangeLog COPYING "release/MCC_BetterString/"
 cp -a doc/MCC_BetterString.readme "release/MCC_BetterString/ReadMe"
 cp -a doc/MCC_BetterString.doc "release/MCC_BetterString/Developer/Autodocs/MCC/"
 cp -a doc/MCC_HotkeyString.doc "release/MCC_BetterString/Developer/Autodocs/MCC/"

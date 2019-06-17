@@ -1,4 +1,4 @@
-==id $Id: mccclass_lib.sfd 6 2005-04-21 20:52:04Z damato $
+==id $Id$
 ==base _MCCClassBase
 ==basetype struct Library *
 ==libname mccclass.library

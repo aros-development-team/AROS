@@ -2,8 +2,77 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 427 2014-04-04 19:48:48Z damato $
-$URL: svn://svn.code.sf.net/p/bstring-mcc/code/releases/11.28/ChangeLog $
+#### v11.33 RELEASE ###########################################################
+
+2018-10-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * PrintString.c: integrated the display of transparent text for AmigaOS3 as
+    known from MUI5 for AmigaOS. Now the alternative text can be displayed with
+    50% transparency on AmigaOS3, too.
+
+2018-10-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * PrintString.c: the inactive contents are displayed with 50% transparency in
+    case the system and the screen support this effect. Otherwise the usual
+    italic style is used.
+
+#### v11.32 RELEASE ###########################################################
+
+#### v11.31 RELEASE (special MUI 5.0-2017R3 release) ##########################
+
+2016-09-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: added DoSuperNew() to be able to specify additional tags
+    directly during OM_NEW instead of having to use SetAttrs() afterwards.
+  * mcc/PrintString.c: added one more check for non-input objects to avoid
+    drawing a cursor when none is desired.
+
+2016-09-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library.c: moved the system and CPU description behind the copyright part.
+
+2016-08-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * all/Debug.c: declare inlined _INDENT() function as static to avoid warnings
+    of GCC5.
+
+2016-08-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/Makefile: generate ISO8859-1 encoded catalogs instead of UTF8 encoded
+    ones.
+
+#### v11.30 RELEASE ###########################################################
+
+2016-08-06 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 11.30 release preparations
+  * mcc/HandleInput.c: updated MySPrintf() function to use a inline macros for
+    AROS and MORPHOS builds instead.
+  * include: updated SDI headers.
+
+#### v11.29 RELEASE ###########################################################
+
+2015-03-21 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 11.29 release preparations
+
+2014-08-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/turkish.po: added turkish translation.
+
+2014-04-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: added a missing end of string check when double/tripple
+    clicking the contents. This might have caused BetterString.mcc to enter an
+    endless loop. Thanks to Mikhail Malyshev for the hint. Please note however
+    that the used russian locale was the component which triggered this bug in
+    the first place.
+
+2014-04-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c, mcp/CreatePrefsGroup.c: disable the custom selection
+    pointer if MUI already handles this. The selection pointer can then be
+    globally enabled/disabled in MUI prefs (AmigaOS only).
 
 #### v11.28 RELEASE ###########################################################
 
