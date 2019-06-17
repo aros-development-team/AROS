@@ -28,8 +28,8 @@
 #define STR2(x) #x
 
 // for setting all necessary version information
-#define LIB_VERSION    11
-#define LIB_REVISION   33
+#define LIB_VERSION    12
+#define LIB_REVISION   28
 #define LIB_DATE       "29.10.2018"
 #define LIB_COPYRIGHT  "Copyright (C) 2005-2018 BetterString.mcc Open Source Team"
 

@@ -40,7 +40,7 @@
 
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
-#if defined(__AROS__) || defined(__MORPHOS__)
+#if defined(__MORPHOS__)
 #define MySPrintf(buf, fmt, ...) \
  ({ IPTR __args[] = { SDI_VACAST(__VA_ARGS__) }; \
      RawDoFmt(fmt, __args, NULL, (STRPTR)buf); })
@@ -65,7 +65,7 @@ static int STDARGS MySPrintf(char *buf, const char *fmt, ...)
   va_list args;
 
   va_start(args, fmt);
-  RawDoFmt(fmt, args, (void (*)(void))PutCharProc, (STRPTR)buf);
+  RawDoFmt(fmt, (RAWARG)args, (void (*)(void))PutCharProc, (STRPTR)buf);
   va_end(args);
 
   return(strlen(buf));

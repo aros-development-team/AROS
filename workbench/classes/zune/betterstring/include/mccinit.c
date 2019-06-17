@@ -194,10 +194,6 @@
 
 #ifdef __AROS__
 #include <aros/libcall.h>
-#include <utility/utility.h>
-#ifdef AROS_ABI_V1
-#include <aros/config.h>
-#endif
 #endif
 
 #include "SDI_compiler.h"

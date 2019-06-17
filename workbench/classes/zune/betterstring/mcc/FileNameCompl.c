@@ -34,10 +34,6 @@
 #include <dos/obsolete.h>
 #endif
 
-#ifdef AROS_ABI_V1
-#include <aros/config.h>
-#endif
-
 #include "private.h"
 
 #include "Debug.h"
