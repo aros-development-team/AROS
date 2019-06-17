@@ -2843,13 +2843,26 @@ target_grub2_version=$default_grub2_version
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for AROS style target" >&5
 $as_echo_n "checking for AROS style target... " >&6; }
 
+target_use_host=
 if test "$target" = "NONE" ; then
-    target=$host_os-$host_cpu
+    target_use_host=true
 else
     if test "$target" = "" ; then
-        target=$host_os-$host_cpu
+        target_use_host=true
     fi
 fi
+
+if test "$target_use_host" = "true" ; then
+    case "$host_os" in
+        darwin*)
+            host_os=darwin
+            ;;
+        *)
+            ;;
+    esac
+    target=$host_os-$host_cpu
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target" >&5
 $as_echo "$target" >&6; }
 

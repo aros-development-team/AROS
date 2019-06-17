@@ -41,13 +41,26 @@ target_grub2_version=$default_grub2_version
 
 AC_MSG_CHECKING([for AROS style target])
 
+target_use_host=
 if test "$target" = "NONE" ; then
-    target=$host_os-$host_cpu
+    target_use_host=true
 else
     if test "$target" = "" ; then
-        target=$host_os-$host_cpu
+        target_use_host=true
     fi
 fi
+
+if test "$target_use_host" = "true" ; then
+    case "$host_os" in
+        darwin*)
+            host_os=darwin
+            ;;
+        *)
+            ;;
+    esac
+    target=$host_os-$host_cpu
+fi
+
 AC_MSG_RESULT($target)
 
 if test "$host_os" = "mingw32" ; then
