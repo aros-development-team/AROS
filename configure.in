@@ -41,26 +41,13 @@ target_grub2_version=$default_grub2_version
 
 AC_MSG_CHECKING([for AROS style target])
 
-target_use_host=
 if test "$target" = "NONE" ; then
-    target_use_host=true
+    target=$host_os-$host_cpu
 else
     if test "$target" = "" ; then
-        target_use_host=true
+        target=$host_os-$host_cpu
     fi
 fi
-
-if test "$target_use_host" = "true" ; then
-    case "$host_os" in
-        darwin*)
-            host_os=darwin
-            ;;
-        *)
-            ;;
-    esac
-    target=$host_os-$host_cpu
-fi
-
 AC_MSG_RESULT($target)
 
 if test "$host_os" = "mingw32" ; then
@@ -1188,6 +1175,7 @@ case "$target_os" in
                 gcc_target_cpu="mc68000"
                 ;;
             *i?86*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_flavour="emulation"
@@ -1204,6 +1192,7 @@ case "$target_os" in
                 android_ndk_arch="x86"
                 ;;
             *x86_64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_flavour="emulation"
@@ -1237,6 +1226,7 @@ case "$target_os" in
                 gcc_target_cpu="ppc"
                 ;;
             *aarch64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="aarch64"
                 target_cpu="aarch64"
                 aros_object_format="aarch64elf_aros"
@@ -1251,6 +1241,7 @@ case "$target_os" in
                 kernel_tool_prefix="aarch64-linux-gnueabihf-"
                 ;;
             *armhf*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
                 target_cpu="arm"
                 aros_object_format="armelf_aros"
@@ -1268,6 +1259,7 @@ case "$target_os" in
                 kernel_tool_prefix="arm-linux-gnueabihf-"
                 ;;
             *arm*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
                 aros_object_format="armelf_aros"
                 aros_flavour="emulation"
@@ -1326,6 +1318,7 @@ case "$target_os" in
         target_bootloader="grub2"
         case "$target_cpu" in
             *i?86*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="i386"
 
                 dnl If somebody hasn't already set the target object
@@ -1387,6 +1380,7 @@ case "$target_os" in
         ;;
 
     freebsd*)
+        PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
         HOST_WANTS_X11=yes
         HOST_WANTS_GLX=yes
         HOST_WANTS_SDL=yes
@@ -1413,6 +1407,7 @@ case "$target_os" in
         aros_flavour="emulation"
         case "$target_cpu" in
             *i?86*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_ios_platform="iPhoneSimulator"
                 aros_target_cpu="i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
@@ -1428,6 +1423,7 @@ case "$target_os" in
                 kernel_tool_flags="-m32"
                 ;;
             *x86_64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
@@ -1465,6 +1461,7 @@ case "$target_os" in
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 ;;
             *arm*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_ios_platform="iPhoneOS"
                 aros_target_cpu="arm"
                 aros_object_format="armelf_aros"
@@ -1517,12 +1514,14 @@ case "$target_os" in
         aros_flavour="emulation"
         case "$target_cpu" in
             *i?86*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__DragonFly__"
                 aros_isa_flags="$""(ISA_X86_FLAGS)"
                 ;;
             *x86_64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_target_cpu="x86_64"
@@ -1554,6 +1553,7 @@ case "$target_os" in
                 gcc_target_cpu="mc68000"
                 ;;
             *i?86*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_flavour="emulation"
@@ -1581,6 +1581,7 @@ case "$target_os" in
         aros_target_family="unix"
         case "$target_cpu" in
             *i?86*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_flavour="emulation"
@@ -1602,6 +1603,7 @@ case "$target_os" in
         aros_target_family="unix"
         case "$target_cpu" in
            *i?86*)
+               PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                aros_target_cpu="i386"
                aros_object_format="elf_i386"
                aros_flavour="emulation"
@@ -1673,11 +1675,13 @@ case "$target_os" in
         fi
         case "$target_cpu" in
             *armhf*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 gcc_default_float_abi="hard"
                 target_cpu=arm
                 aros_target_cpu=arm
                 ;;
             *arm*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 gcc_default_float_abi="softfp"
                 ;;
             *)
@@ -1719,11 +1723,13 @@ case "$target_os" in
         
         case "$target_cpu" in
             *aarch64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="aarch64"
                 gcc_default_cpu="aarch64"
                 aros_object_format="aarch64elf_aros"
                 ;;
             *armhf*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
                 gcc_default_cpu="armv6zk"
                 gcc_default_cpu_tune="arm1176jzf-s"
@@ -1737,6 +1743,7 @@ case "$target_os" in
                 aros_c_libs="$aros_c_libs -laeabi"
                 ;;
             *armeb*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_flavour="standcompat"
                 aros_target_cpu="armeb"
                 gcc_default_float_abi="hard"
@@ -1752,6 +1759,7 @@ case "$target_os" in
                 aros_c_libs="$aros_c_libs -laeabi"
                 ;;
             *arm*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
                 gcc_default_cpu="armv6zk"
                 gcc_default_cpu_tune="arm1176jzf-s"
@@ -1847,6 +1855,7 @@ case "$target_os" in
         rescomp="windres"
         case "$target_cpu" in
             *i?86*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="i386"
                 aros_object_format="elf_i386"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
@@ -1857,6 +1866,7 @@ case "$target_os" in
                 kernel_tool_prefix="i386-mingw32-"
                 ;;
             *x86_64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
@@ -1867,6 +1877,7 @@ case "$target_os" in
                 kernel_tool_prefix="x86_64-w64-mingw32-"
                 ;;
             *arm*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
                 aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
