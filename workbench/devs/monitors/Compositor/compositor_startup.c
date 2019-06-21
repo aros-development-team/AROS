@@ -20,7 +20,7 @@ OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddGCAttrBase;
 OOP_AttrBase HiddCompositorAttrBase;
 
-const TEXT version[] = "$VER: Compositor 41.1 (8.10.2013)\n";
+const TEXT version[] = "$VER: Compositor 41.2 (22.06.2019)\n";
 
 static OOP_Class *InitClass(void)
 {
@@ -85,8 +85,8 @@ int main(void)
                     if (cl)
                     {
                         /*
-                         * Yes, composer is not a real display driver. It has totally different API.
-                         * AddDisplayDriverA() knows this.
+                         * Compositor is not a real display driver and has totally different API,
+                         * which AddDisplayDriverA() is aware of.
                          */
                         ULONG err = AddDisplayDriverA(cl, NULL, NULL);
 
@@ -104,14 +104,14 @@ int main(void)
                             else
                                 me->pr_SegList = BNULL;
 
-                            /* Don't close our libraries and release attrbases. The HIDD needs them. */
+                            /* Don't close our libraries or release attrbases. The HIDD needs them. */
 
                             return RETURN_OK;
                         }
                     }
                 }
+                OOP_ReleaseAttrBases(attrbases);
             }
-            OOP_ReleaseAttrBases(attrbases);
             CloseLibrary(OOPBase);
         }
         CloseLibrary(UtilityBase);
