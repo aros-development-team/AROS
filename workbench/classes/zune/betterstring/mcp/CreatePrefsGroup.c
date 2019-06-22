@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -82,6 +82,7 @@ MakeStaticHook(DisplayHook, DisplayCode);
 
 Object *CreatePrefsGroup(struct InstData_MCP *data)
 {
+  Object *example;
   Object **objs = data->Objects;
   Object *group;
   static const char *key01[2];
@@ -142,7 +143,7 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
   group = VGroup,
 
     Child, PopobjectObject,
-      MUIA_Popstring_String,  BetterStringObject, StringFrame,
+      MUIA_Popstring_String,  example = BetterStringObject, StringFrame,
         MUIA_String_Contents,  GetStr(MSG_String_TestString),
         MUIA_String_Format,    MUIV_String_Format_Center,
         MUIA_CycleChain,      TRUE,
@@ -287,8 +288,14 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
   if(objs[SelectOnActive] != NULL)
     set(objs[SelectOnActive], MUIA_ShortHelp, GetStr(MSG_HELP_SelectOnActive));
 
+  // disable the pointer checkmark in case MUI already handles custom pointer types
   if(objs[SelectPointer] != NULL)
-    set(objs[SelectPointer], MUIA_ShortHelp, GetStr(MSG_HELP_SelectPointer));
+  {
+    SetAttrs(objs[SelectPointer],
+      MUIA_ShortHelp, GetStr(MSG_HELP_SelectPointer),
+      MUIA_Disabled, xget(example, MUIA_PointerType) != MUIV_PointerType_Normal,
+      TAG_DONE);
+  }
 
   return group;
 }

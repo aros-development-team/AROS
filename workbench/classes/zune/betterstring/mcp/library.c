@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@
 
 #define INSTDATAP     InstData_MCP
 
-#define USERLIBID     CLASS " " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT
+#define USERLIBID     CLASS " " LIB_REV_STRING " (" LIB_DATE ") " LIB_COPYRIGHT " [" SYSTEMSHORT "/" CPU "]"
 #define MASTERVERSION 19
 
 #define CLASSINIT
@@ -72,7 +72,7 @@ struct LocaleBase *LocaleBase = NULL;
 struct LocaleIFace *ILocale = NULL;
 #endif
 
-#if !defined(__MORPHOS__) && !defined(__AROS__)
+#if !defined(__MORPHOS__)
 static BOOL nbitmapCanHandleRawData;
 #endif
 
@@ -90,7 +90,7 @@ static VOID ClassExpunge(UNUSED struct Library *base);
 
 #include "icon.h"
 
-#if defined(__MORPHOS__) || defined(__AROS__)
+#if defined(__MORPHOS__)
 #include <mui/Rawimage_mcc.h>
 #else
 #include <mui/NBitmap_mcc.h>
@@ -100,7 +100,7 @@ static Object *get_prefs_image(void)
 {
   Object *obj;
 
-  #if !defined(__MORPHOS__) && !defined(__AROS__)
+  #if !defined(__MORPHOS__)
   if(nbitmapCanHandleRawData == TRUE)
   {
     obj = NBitmapObject,
@@ -158,7 +158,7 @@ static BOOL ClassInit(UNUSED struct Library *base)
     // open the TextEditor.mcp catalog
     OpenCat();
 
-    #if !defined(__MORPHOS__) && ! defined(__AROS__)
+    #if !defined(__MORPHOS__)
     {
       struct Library *nbitmapMcc;
 

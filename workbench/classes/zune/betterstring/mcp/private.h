@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -73,5 +73,22 @@ IPTR xget(Object *obj, const IPTR attr);
   #define xget(OBJ, ATTR) ({IPTR b=0; GetAttr(ATTR, OBJ, &b); b;})
 #endif
 ///
+
+#ifndef MUIA_PointerType
+#define MUIA_PointerType        0x8042b467 /* V20 isg LONG              */
+#endif
+
+#ifndef MUIM_WhichPointerType
+#define MUIM_WhichPointerType   0x8042e212 /* V20 */
+struct  MUIP_WhichPointerType   { ULONG MethodID; LONG mx; LONG my; };
+#endif
+
+#ifndef MUIV_PointerType_Normal
+#define MUIV_PointerType_Normal 0
+#endif
+
+#ifndef MUIV_PointerType_Text
+#define MUIV_PointerType_Text   30
+#endif
 
 #endif /* BETTERSTRING_MCP_PRIV_H */

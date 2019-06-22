@@ -1,5 +1,5 @@
 # Translation catalog description file (pot-style)
-# $Id: french.po 427 2014-04-04 19:48:48Z damato $
+# $Id$
 # 
 # version 2
 # Translators:
@@ -9,8 +9,8 @@ msgstr ""
 "Report-Msgid-Bugs-To: http://sf.net/p/bstring-mcc/\n"
 "POT-Creation-Date: 2014-02-18 15:35+0100\n"
 "PO-Revision-Date: 2014-02-18 14:54+0000\n"
-"Last-Translator: damato <mail@jens-maus.de>\n"
-"Language-Team: French (http://www.transifex.com/projects/p/bstring-mcc/language/fr/)\n"
+"Last-Translator: Jens Maus <mail@jens-maus.de>\n"
+"Language-Team: French (http://www.transifex.com/ato/bstring-mcc/language/fr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"

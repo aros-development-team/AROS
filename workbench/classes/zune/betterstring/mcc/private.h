@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -134,6 +134,7 @@ struct InstData
 #define FLG_Setup                  (1L << 21) // successful MUIM_Setup
 #define FLG_WindowSleepNotifyAdded (1L << 22) // notify for MUIA_Window_Sleep was added
 #define FLG_DummyNotifyAdded       (1L << 23) // dummy notify was added
+#define FLG_Truecolor              (1L << 24) // we live on a truecolor screen
 
 // private attributes
 #define MUIA_BetterString_InternalSelectOnActive   0xad002000UL
@@ -295,36 +296,71 @@ IPTR xget(Object *obj, const IPTR attr);
 #endif
 ///
 
+#ifndef MADF_KNOWSACTIVE
+#define MADF_KNOWSACTIVE        (1<< 7)
+#endif
+
 #ifndef MUIKEY_CUT
-#define MUIKEY_CUT 22
+#define MUIKEY_CUT              22
 #endif
 
 #ifndef MUIKEY_COPY
-#define MUIKEY_COPY 23
+#define MUIKEY_COPY             23
 #endif
 
 #ifndef MUIKEY_PASTE
-#define MUIKEY_PASTE 24
+#define MUIKEY_PASTE            24
 #endif
 
 #ifndef MUIKEY_UNDO
-#define MUIKEY_UNDO 25
+#define MUIKEY_UNDO             25
 #endif
 
 #ifndef MUIKEY_REDO
-#define MUIKEY_REDO 26
+#define MUIKEY_REDO             26
 #endif
 
 #ifndef MUIA_String_Popup
-#define MUIA_String_Popup 0x80420d71
+#define MUIA_String_Popup       0x80420d71
 #endif
 
 #ifndef MUII_StringBack
-#define MUII_StringBack        49
+#define MUII_StringBack         49
 #endif
 
 #ifndef MUII_StringActiveBack
-#define MUII_StringActiveBack  50
+#define MUII_StringActiveBack   50
 #endif
+
+#ifndef MUIA_PointerType
+#define MUIA_PointerType        0x8042b467 /* V20 isg LONG              */
+#endif
+
+#ifndef MUIM_WhichPointerType
+#define MUIM_WhichPointerType   0x8042e212 /* V20 */
+struct  MUIP_WhichPointerType   { ULONG MethodID; LONG mx; LONG my; };
+#endif
+
+#ifndef MUIV_PointerType_Normal
+#define MUIV_PointerType_Normal 0
+#endif
+
+#ifndef MUIV_PointerType_Text
+#define MUIV_PointerType_Text   30
+#endif
+
+#if defined(__amigaos3__)
+#ifndef RPTAG_PenMode
+#define RPTAG_PenMode         0x80000080
+#endif
+
+#ifndef RPTAG_FgColor
+#define RPTAG_FgColor         0x80000081
+#endif
+
+#ifndef RPTAG_BgColor
+#define RPTAG_BgColor         0x80000082
+#endif
+#endif // __amigaos3__
 
 #endif /* BETTERSTRING_MCC_PRIV_H */
