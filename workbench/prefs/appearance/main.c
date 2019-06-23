@@ -62,9 +62,6 @@ int main(int argc, char **argv)
                 End),
             End;
 
-            if (pScreen)
-                UnlockPubScreen(NULL, pScreen);
-
             if (application != NULL)
             {
                 SET(window, MUIA_Window_Open, TRUE);
@@ -72,6 +69,9 @@ int main(int argc, char **argv)
 
                 MUI_DisposeObject(application);
             }
+
+            if (pScreen)
+                UnlockPubScreen(NULL, pScreen);
         }
         FreeArguments();
     }

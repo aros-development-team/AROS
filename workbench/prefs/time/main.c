@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -428,10 +428,12 @@ static void RestoreFunc(struct Hook *hook, Object *obj, APTR msg)
 
 /*********************************************************************************************/
 
-static void MakeGUI(void)
+static struct Screen *MakeGUI(void)
 {
     extern struct NewMenu nm;
     
+    struct Screen *pScreen = NULL;
+
     Object *menu, *yearaddobj, *yearsubobj, *timeaddobj, *timesubobj;
     Object *saveobj, *useobj, *cancelobj;
         
@@ -471,6 +473,9 @@ static void MakeGUI(void)
     
     menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
         	
+    if (args[ARG_PUBSCREEN])
+        pScreen = LockPubScreen((CONST_STRPTR)args[ARG_PUBSCREEN]);
+
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)"Time",
         MUIA_Application_Version, (IPTR)VERSIONSTR,
@@ -483,6 +488,7 @@ static void MakeGUI(void)
         
         SubWindow, wnd = WindowObject,
             MUIA_Window_Title, (IPTR)MSG(MSG_WINTITLE),
+            MUIA_Window_Screen, (IPTR)pScreen,
             MUIA_Window_ID, MAKE_ID('T','W','I','N'),
             MUIA_Window_CloseGadget, FALSE,
             
@@ -646,6 +652,8 @@ static void MakeGUI(void)
     set(yearobj, MUIA_String_Integer, clockdata.year);
     
     CallHook(&clockhook, clockobj, 0);
+
+    return pScreen;
 }
 
 /*********************************************************************************************/
@@ -657,13 +665,16 @@ static void KillGUI(void)
 
 /*********************************************************************************************/
 
-static void HandleAll(void)
+static void HandleAll(struct Screen *pScreen)
 {
     ULONG sigs = 0;
     LONG returnid;
     
     set (wnd, MUIA_Window_Open, TRUE);
     
+    if (pScreen)
+        UnlockPubScreen(NULL, pScreen);
+
     for(;;)
     {
     	returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs);
@@ -735,8 +746,8 @@ int main(int argc, char **argv)
     OpenBattClockRes();
     GetArguments(argc, argv);
     InitPrefs((args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
-    MakeGUI();
-    HandleAll();
+    struct Screen *pScreen = MakeGUI();
+    HandleAll(pScreen);
     Cleanup(NULL);
     
     return 0;
