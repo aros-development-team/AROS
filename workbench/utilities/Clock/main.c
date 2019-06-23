@@ -121,7 +121,7 @@ static void GetArguments(int argc, char **argv)
 	if (args[ARG_TOP])    optionTop    = *(LONG*)args[ARG_TOP];
 	if (args[ARG_WIDTH])  optionWidth  = *(LONG*)args[ARG_WIDTH];
 	if (args[ARG_HEIGHT]) optionHeight = *(LONG*)args[ARG_HEIGHT];
-	if (args[ARG_HEIGHT]) optionPubscr = StrDup((STRPTR)args[ARG_PUBSCREEN]);
+	if (args[ARG_PUBSCREEN]) optionPubscr = StrDup((STRPTR)args[ARG_PUBSCREEN]);
 
 	FreeArgs(rdargs);
 #       undef TMPSIZE
