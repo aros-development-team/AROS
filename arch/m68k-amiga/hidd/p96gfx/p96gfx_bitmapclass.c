@@ -787,21 +787,21 @@ VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 
     LOCK_HW
     WaitBlitter(cid);
-#if (0)
+
     if (data->invram) {
         struct RenderInfo ri;
         struct Line renderLine;
         P96GFXRTG__MakeRenderInfo(csd, cid, &ri, data);
-        renderline.FgPen = GC_FG(msg->gc);
-        renderline.BgPen = GC_BG(msg->gc);
-        renderline.LinePtrn = GC_LINEPAT(gc);
-        renderline.X = msg->x1;
-        renderline.Y = msg->y1;
-        renderline.dX = msg->x2;
-        renderline.dY = msg->y2;
+        renderLine.FgPen = GC_FG(msg->gc);
+        renderLine.BgPen = GC_BG(msg->gc);
+        renderLine.LinePtrn = GC_LINEPAT(msg->gc);
+        renderLine.X = msg->x1;
+        renderLine.Y = msg->y1;
+        renderLine.dX = msg->x2;
+        renderLine.dY = msg->y2;
         v = DrawLine(cid, &ri, &renderLine, data->rgbformat);
     }
-#endif
+
     UNLOCK_HW
 
     if (!v) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
