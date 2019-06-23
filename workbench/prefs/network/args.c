@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,7 @@
 #include "args.h"
 
 /*** Global Variables *******************************************************/
-STATIC CONST_STRPTR TEMPLATE = "FROM,USE/S,SAVE/S";
+STATIC CONST_STRPTR TEMPLATE = "FROM,USE/S,SAVE/S,PUBSCREEN/K";
 STATIC IPTR args[COUNT];
 STATIC struct RDArgs *rdargs;
 

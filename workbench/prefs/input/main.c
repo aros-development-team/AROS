@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2017, The AROS Development Team. All rights reserved.
+    Copyright  2003-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,6 +48,11 @@ int main(int argc, char **argv)
             mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
             if (mempool != 0)
             {
+                struct Screen *pScreen = NULL;
+
+                if (ARG(PUBSCREEN))
+                    pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+
                 Prefs_ScanDirectory("DEVS:Keymaps/#?_~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));
 
                 application = ApplicationObject,
@@ -57,6 +62,7 @@ int main(int argc, char **argv)
                     MUIA_Application_SingleTask, TRUE,
                     MUIA_Application_Base, (IPTR) "INPUTPREF",
                     SubWindow, (IPTR) (window = SystemPrefsWindowObject,
+                        MUIA_Window_Screen, (IPTR)pScreen,
                         MUIA_Window_ID, MAKE_ID('I','W','I','N'),
                         WindowContents, (IPTR) IPEditorObject,
                         TAG_DONE),
@@ -71,6 +77,9 @@ int main(int argc, char **argv)
 
                     MUI_DisposeObject(application);
                 }
+
+                if (pScreen)
+                    UnlockPubScreen(NULL, pScreen);
 
                 DeletePool((APTR)mempool);
             }

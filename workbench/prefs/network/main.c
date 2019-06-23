@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,6 +34,11 @@ int main(int argc, char **argv)
     /* Show application unless SAVE or USE parameters were used */
     if (!((BOOL)ARG(SAVE)) && !((BOOL)ARG(USE)))
     {
+        struct Screen *pScreen = NULL;
+
+        if (ARG(PUBSCREEN))
+            pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+
         application = (Object *)ApplicationObject,
             MUIA_Application_Title,  __(MSG_NAME),
             MUIA_Application_Version, (IPTR)VERSION,
@@ -41,6 +46,7 @@ int main(int argc, char **argv)
             MUIA_Application_SingleTask, TRUE,
             MUIA_Application_Base, (IPTR)"NETPREF",
             SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
+                MUIA_Window_Screen, (IPTR)pScreen,
                 MUIA_Window_ID, MAKE_ID('N', 'E', 'T', 'P'),
                 WindowContents, (IPTR)NetPEditorObject,
                 End,
@@ -55,6 +61,8 @@ int main(int argc, char **argv)
 
             MUI_DisposeObject(application);
         }
+        if (pScreen)
+            UnlockPubScreen(NULL, pScreen);
     }
 
     FreeArguments();

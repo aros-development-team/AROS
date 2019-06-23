@@ -2,7 +2,7 @@
 #define _ARGS_H_
 
 /*
-    Copyright © 2009-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,6 +12,7 @@
 enum Argument {
     FROM,
     SAVE,
+    PUBSCREEN,
     COUNT /* Number of arguments */
 };
 
