@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,6 +33,11 @@ int main(int argc, char **argv)
         }
         else
         {
+            struct Screen *pScreen = NULL;
+
+            if (ARG(PUBSCREEN))
+                pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+
             application = (Object *)ApplicationObject,
                 MUIA_Application_Title,  __(MSG_NAME),
                 MUIA_Application_Version, (IPTR) VERSION,
@@ -40,6 +45,7 @@ int main(int argc, char **argv)
                 MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "FONTPREF",
                 SubWindow, (IPTR) (window = (Object *)SystemPrefsWindowObject,
+                    MUIA_Window_Screen, (IPTR)pScreen,
                     MUIA_Window_ID, MAKE_ID('F','W','I','N'),
                     WindowContents, (IPTR) FPEditorObject,
                     End,
@@ -54,6 +60,8 @@ int main(int argc, char **argv)
 
                 MUI_DisposeObject(application);
             }
+            if (pScreen)
+                UnlockPubScreen(NULL, pScreen);
         }
         FreeArguments();
     }

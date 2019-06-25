@@ -1,7 +1,7 @@
 ;
 ; $VER: Install-MCC 1.5 (21.5.2012)
 ;
-; $Id: Install-MCC 381 2012-12-20 14:05:18Z damato $
+; $Id$
 ;
 ; History:
 ;
@@ -18,6 +18,7 @@
 ;                     necessary to be able to use the just installed version.
 ;   1.5   21.05.2012: fixed the wrong selection of the builtin language.
 ;   1.6   20.12.2013: changed MorphOS desription to include 3.x
+;   1.7   03.02.2017: added support for slovak language
 
 ;----------------------------------------------------------------------------
 ; /// language bit definition, do not change these!!
@@ -37,8 +38,9 @@
 (set #lang_turkish             13)
 (set #lang_russian             14)
 (set #lang_czech               15)
-(set #lang_english_british     16)
-(set #lang_maximum             17)
+(set #lang_slovak              16)
+(set #lang_english_british     17)
+(set #lang_maximum             18)
 ; ///
 
 ;----------------------------------------------------------------------------
@@ -53,7 +55,7 @@
 )
 
 (set #i 0)
-(set #defaultLanguages %1000000000000000)
+(set #defaultLanguages %10000000000000000)
 (while (<> #language (select #i "czech" "russian" "türkçe" "greek" "magyar" "suomi" "polski" "svenska" "norsk" "nederlands" "italiano" "dansk" "español" "français" "deutsch" #language))
     (
         (set #i (+ #i 1))
@@ -64,10 +66,10 @@
 (set #defaultLanguages (bitor #defaultLanguages (shiftleft 1 #lang_english)))
 
 ; scan the Locale/Catalogs directory for supported languages
-(set #supportedLanguages %0000000000000000)
+(set #supportedLanguages %00000000000000000)
 (foreach "Locale/Catalogs" "#?"
     (set #i 0)
-    (while (<> @each-name (select #i "english" "german" "french" "spanish" "danish" "italian" "dutch" "norwegian" "swedish" "polish" "finnish" "hungarian" "greek" "turkish" "russian" "czech" @each-name))
+    (while (<> @each-name (select #i "english" "german" "french" "spanish" "danish" "italian" "dutch" "norwegian" "swedish" "polish" "finnish" "hungarian" "greek" "turkish" "russian" "czech" "slovak" @each-name))
         (set #i (+ #i 1))
     )
     (if (<> #lang_maximum #i)
@@ -173,6 +175,7 @@
         (set #cat_name_turkish               "turkish")
         (set #cat_name_russian               "russian")
         (set #cat_name_czech                 "czech")
+        (set #cat_name_slovak                "slovak")
         (set #cat_name_english_british       "english-british")
     )
     ; all other systems use localized locale names
@@ -193,6 +196,7 @@
         (set #cat_name_turkish               "türkçe")
         (set #cat_name_russian               "russian")
         (set #cat_name_czech                 "czech")
+        (set #cat_name_slovak                "slovak")
         (set #cat_name_english_british       "english-british")
     )
 )
@@ -306,6 +310,10 @@
             )
             (if (in #supportedLanguages #lang_czech)
                 (cat #prop "Czech")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_slovak)
+                (cat #prop "Slovak")
                 ("")
             )
             (if (and (in #supportedLanguages #lang_english_british) (= #detectedSystem "os4"))
@@ -565,6 +573,21 @@
                     (copyfiles
                         (source (tackon "Locale/Catalogs/czech" @each-name))
                         (dest (tackon "LOCALE:Catalogs" #cat_name_czech))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; slovak catalog file
+        (if (in catalog_lang #lang_slovak)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_slovak))
+
+                (foreach "Locale/Catalogs/slovak" "#?_mcp.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/slovak" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_slovak))
                         (help @copyfiles-help)
                     )
                 )

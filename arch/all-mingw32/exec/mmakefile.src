@@ -7,6 +7,9 @@ CFILES := cachecleare coldreboot platform_init \
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 
+#MM kernel-exec-mingw32 : \
+#MM     kernel-kernel-includes
+
 %build_archspecific \
 	mainmmake=kernel-exec modname=exec maindir=rom/exec arch=mingw32 \
 	files=$(CFILES)

@@ -2,7 +2,7 @@
 #
 # BetterString.mcc - A better String gadget MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+# Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -223,8 +223,8 @@ ifeq ($(OS), os3)
 
   # Compiler/Linker flags
   CPU     = -m68020-60 -msoft-float
-  CFLAGS  += -noixemul -DNO_INLINE_STDARG -D__amigaos3__
-  LDFLAGS += -noixemul
+  CFLAGS  += -mcrt=clib2 -DNO_INLINE_STDARG -D__amigaos3__
+  LDFLAGS += -mcrt=clib2
   LDLIBS  += -ldebug -lmui
 
   # additional object files required

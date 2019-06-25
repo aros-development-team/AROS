@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -853,13 +853,14 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
         }
     }
 
-    D(bug("HUNK_HEADER: \"%s\", hunks=%d, first=%d, last=%d\n", libname, hunks, 0, hunks-1));
-
     wlong(hunk_fd, HUNK_HEADER);
     if (libname == NULL) {
+        D(bug("HUNK_HEADER: hunks=%d, first=%d, last=%d\n", hunks, 0, hunks-1));
     	wlong(hunk_fd, 0);	/* No name */
     } else {
-    	int lsize = (strlen(libname) + 4) / 4;
+        int lsize;
+        D(bug("HUNK_HEADER: \"%s\", hunks=%d, first=%d, last=%d\n", libname, hunks, 0, hunks-1));
+    	lsize = (strlen(libname) + 4) / 4;
     	wlong(hunk_fd, lsize);
     	err = write(hunk_fd, libname, lsize * 4);
     	if (err < 0)

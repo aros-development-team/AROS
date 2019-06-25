@@ -120,36 +120,27 @@ extern struct InputEvent *cxIHandler();
     
     if (myerr == CBERR_OK)
     {
-	if ((co = CreateCxObj(CX_BROKER, (IPTR)nb, (IPTR)NULL)) != NULL)
-	{
-	    if (co->co_Ext.co_BExt->bext_MsgPort != NULL)
-	    {
-		if (!GPB(CxBase)->cx_Running)
-		{
-		    if (SetupIHandler((struct CommoditiesBase *)CxBase) == FALSE)
-		    {
-			goto sysErr;
-		    }
-		    else
-		    {
-			GPB(CxBase)->cx_Running = TRUE;
-		    }
-		}
-		else
-		{
-		    BrokerCommand(NULL, CXCMD_LIST_CHG);
-		}
-		
-		Enqueue(&GPB(CxBase)->cx_BrokerList, (struct Node *)co);
-		co->co_Flags |= COF_VALID;
-	    }
-	    else
-	    {
-		// Don't set error because Garshneblanker creates a broker
-		// with nb->nb_Port set to NULL
-		// myerr = CBERR_VERSION;
-	    }
-	}
+        if ((co = CreateCxObj(CX_BROKER, (IPTR)nb, (IPTR)NULL)) != NULL)
+        {
+          if (!GPB(CxBase)->cx_Running)
+            {
+              if (SetupIHandler((struct CommoditiesBase *)CxBase) == FALSE)
+                {
+                  goto sysErr;
+                }
+              else
+                {
+                  GPB(CxBase)->cx_Running = TRUE;
+                }
+            }
+          else
+                {
+                  BrokerCommand(NULL, CXCMD_LIST_CHG);
+                }
+
+          Enqueue(&GPB(CxBase)->cx_BrokerList, (struct Node *)co);
+          co->co_Flags |= COF_VALID;
+        }
 	else
 	{
 	sysErr:

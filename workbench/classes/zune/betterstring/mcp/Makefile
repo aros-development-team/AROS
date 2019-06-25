@@ -2,7 +2,7 @@
 #
 # BetterString.mcc - A better String gadget MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+# Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 # # to explicitly compile for AmigaOS3
 # > make OS=os3
 #
-# # to compile for AmigaOS4 but with debugging
+# # to compile for AmigaOS4 but without debugging
 # > make OS=os4 DEBUG=
 #
 
@@ -229,8 +229,8 @@ ifeq ($(OS), os3)
 
   # Compiler/Linker flags
   CPU     = -m68020-60 -msoft-float
-  CFLAGS  += -noixemul -DNO_INLINE_STDARG -D__amigaos3__
-  LDFLAGS += -noixemul
+  CFLAGS  += -mcrt=clib2 -DNO_INLINE_STDARG -D__amigaos3__
+  LDFLAGS += -mcrt=clib2
   LDLIBS  += -ldebug -lmui
 
   # additional object files required
@@ -286,7 +286,7 @@ ifeq ($(OS), aros-ppc)
 
   # Compiler/Linker flags
   OPTFLAGS = -O2 -fomit-frame-pointer
-  CFLAGS += -Wno-pointer-sign
+  CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
 else
@@ -303,7 +303,7 @@ ifeq ($(OS), aros-x86_64)
 
   # Compiler/Linker flags
   OPTFLAGS = -O2 -fomit-frame-pointer
-  CFLAGS += -Wno-pointer-sign
+  CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
 endif
@@ -381,13 +381,13 @@ $(TESTTARGET): $(TESTOBJS)
 locale.h: locale.c
 locale.c: $(LOCALE)/BetterString_mcp.pot C_h.sd C_c.sd
 	@echo "  MK $@"
-	@$(FC) $(LOCALE)/BetterString_mcp.pot locale.h=C_h.sd locale.c=C_c.sd
+	@$(FC) $(LOCALE)/BetterString_mcp.pot locale.h=C_h.sd locale.c=C_c.sd CODESET ISO-8859-1
 
 ## CATALOG GENERATION #################
 
 $(LOCALE)/%.catalog: $(LOCALE)/%.po
 	@echo "  MK $@"
-	@$(FC) POFILE $< CATALOG $@
+	@$(FC) REVISION $(shell git rev-list --all --count $<) POFILE $< CATALOG $@
 
 .IGNORE: $(CATALOGS)
 

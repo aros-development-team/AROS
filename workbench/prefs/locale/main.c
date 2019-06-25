@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -49,6 +49,11 @@ int main(int argc, char **argv)
             }
             else
             {
+                struct Screen *pScreen = NULL;
+
+                if (ARG(PUBSCREEN))
+                    pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+
                 application = (Object *)ApplicationObject,
                     MUIA_Application_Title, __(MSG_WINTITLE),
                     MUIA_Application_Version, (IPTR) VERSION,
@@ -56,6 +61,7 @@ int main(int argc, char **argv)
                     MUIA_Application_SingleTask, TRUE,
                     MUIA_Application_Base, (IPTR) "LOCALEPREF",
                     SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
+                        MUIA_Window_Screen, (IPTR)pScreen,
                         MUIA_Window_ID, ID_LCLE,
                         WindowContents, (IPTR) LocaleRegisterObject,
                         End,
@@ -69,6 +75,10 @@ int main(int argc, char **argv)
 
                     MUI_DisposeObject(application);
                 }
+
+                if (pScreen)
+                    UnlockPubScreen(NULL, pScreen);
+
             }
             FreeArguments();
         }

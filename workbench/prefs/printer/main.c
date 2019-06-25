@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -46,6 +46,11 @@ int main(int argc, char **argv)
         }
         else
         {
+            struct Screen *pScreen = NULL;
+
+            if (ARG(PUBSCREEN))
+                pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+
             application = (Object *)ApplicationObject,
                 MUIA_Application_Author, (IPTR)"Jason McMullan <jason.mcmullan@gmail.com>",
                 MUIA_Application_Copyright, (IPTR)"2012, AROS Team",
@@ -56,6 +61,7 @@ int main(int argc, char **argv)
                 MUIA_Application_Base, (IPTR) "PRINTERPREF",
                 SubWindow, (IPTR)(window =
                     SystemPrefsWindowObject,
+                        MUIA_Window_Screen, (IPTR)pScreen,
                         MUIA_Window_ID, ID_PTXT,
                         WindowContents, (IPTR)
                                 PrinterEditorObject,
@@ -70,6 +76,8 @@ int main(int argc, char **argv)
 
                 MUI_DisposeObject(application);
             }
+            if (pScreen)
+                UnlockPubScreen(NULL, pScreen);
         }
         FreeArguments();
     }

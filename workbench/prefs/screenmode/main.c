@@ -41,6 +41,11 @@ int main(int argc, char **argv)
         }
         else
         {
+            struct Screen *pScreen = NULL;
+
+            if (ARG(PUBSCREEN))
+                pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+
             app = (Object *) ApplicationObject,
                 MUIA_Application_Title, (IPTR) __(MSG_NAME),
                 MUIA_Application_Version, (IPTR) vers,
@@ -50,7 +55,8 @@ int main(int argc, char **argv)
                 MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "SCREENMODEPREF",
                 SubWindow, (IPTR)(win = (Object *) SystemPrefsWindowObject,
-                MUIA_Window_ID, MAKE_ID('S','W','I','N'),
+                  MUIA_Window_Screen, (IPTR)pScreen,
+                  MUIA_Window_ID, MAKE_ID('S','W','I','N'),
                     WindowContents, (IPTR) SMEditorObject,
                     End,
                 End),
@@ -64,6 +70,8 @@ int main(int argc, char **argv)
             
                 MUI_DisposeObject(app);
             }
+            if (pScreen)
+                UnlockPubScreen(NULL, pScreen);
         }
         FreeArguments();
     }

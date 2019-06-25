@@ -10,6 +10,9 @@
 AROS_HOST_ARCH           := @aros_host_arch@
 AROS_HOST_CPU            := @aros_host_cpu@
 
+# The used host toolchain family
+HOST_TOOLCHAIN           := @HOST_TOOLCHAIN_FAMILY@
+
 HOST_CPP                 := @aros_host_cpp@
 HOST_CPPFLAGS            := @aros_host_cppflags@
 HOST_DEF_CC              := $(CC_PREFIX)@aros_host_def_cc@

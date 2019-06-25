@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -63,6 +63,11 @@ int main(int argc, char **argv)
         }
         else
         {
+            struct Screen *pScreen = NULL;
+
+            if (ARG(PUBSCREEN))
+                pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+
             application = (Object *)ApplicationObject,
                 MUIA_Application_Title, __(MSG_TITLE),
                 MUIA_Application_Version, (IPTR) VERSION,
@@ -71,6 +76,7 @@ int main(int argc, char **argv)
                 MUIA_Application_Base, (IPTR) "BIBPREF",
                 MUIA_Application_DiskObject, (IPTR)disko,
                 SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
+                    MUIA_Window_Screen, (IPTR)pScreen,
                     MUIA_Window_ID, MAKE_ID('B','I','P','8'),
                     WindowContents, (IPTR) BibEditorObject,
                     End,
@@ -84,6 +90,9 @@ int main(int argc, char **argv)
 
                 MUI_DisposeObject(application);
             }
+
+            if (pScreen)
+                UnlockPubScreen(NULL, pScreen);
         }
         FreeArguments();
     }

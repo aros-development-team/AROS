@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -43,7 +43,7 @@ struct Library *KeymapBase = NULL;
 #else
 struct IntuitionBase *IntuitionBase = NULL;
 struct Library *MUIMasterBase = NULL;
-#if defined(__AROS__)
+#if defined(__AROS__) || defined(__amigaos3__)
 struct UtilityBase *UtilityBase = NULL;
 #else
 struct Library *UtilityBase = NULL;

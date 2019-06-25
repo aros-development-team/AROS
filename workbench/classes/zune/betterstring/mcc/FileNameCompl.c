@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -32,10 +32,6 @@
 
 #if defined(__amigaos4__)
 #include <dos/obsolete.h>
-#endif
-
-#ifdef AROS_ABI_V1
-#include <aros/config.h>
 #endif
 
 #include "private.h"
@@ -308,7 +304,7 @@ BOOL FileNameComplete(Object *obj, BOOL backwards, struct InstData *data)
 
             if((control = (struct ExAllControl *)AllocDosObject(DOS_EXALLCONTROL, NULL)))
             {
-              char tokenized[sizeof(pattern) * 2 + 2];
+              TEXT tokenized[sizeof(pattern) * 2 + 2];
 
               if(ParsePatternNoCase(pattern, tokenized, sizeof(tokenized)) != -1)
                 control->eac_MatchString = tokenized;

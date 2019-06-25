@@ -194,10 +194,6 @@
 
 #ifdef __AROS__
 #include <aros/libcall.h>
-#include <utility/utility.h>
-#ifdef AROS_ABI_V1
-#include <aros/config.h>
-#endif
 #endif
 
 #include "SDI_compiler.h"
@@ -222,7 +218,7 @@ struct Interface *INewlib = NULL;
 #else
 struct Library        *MUIMasterBase = NULL;
 struct ExecBase       *SysBase       = NULL;
-#if defined(__AROS__)
+#if defined(__AROS__) || defined(__amigaos3__)
 struct UtilityBase    *UtilityBase   = NULL;
 #else
 struct Library        *UtilityBase   = NULL;

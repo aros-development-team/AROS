@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,7 @@
 #include "misc.h"
 
 /*** Global Variables *******************************************************/
-STATIC CONST_STRPTR   TEMPLATE = "FROM,USE/S,SAVE/S";
+STATIC CONST_STRPTR   TEMPLATE = "FROM,USE/S,SAVE/S,PUBSCREEN/K";
 STATIC IPTR           args[COUNT];
 STATIC struct RDArgs *rdargs;
 STATIC BPTR           olddir = (BPTR)-1;

@@ -28,6 +28,11 @@
 | darwin-ppc | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-ppc?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=25&branchName=master) |
 | mingw32-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=23&branchName=master) |
 
+
+## Contributing
+
+Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for details on joining the GitHub organization, and guidelines on contributing to the AROS project.
+
 ## License
 
 This project is licensed under the APL License - see the [LICENSE](LICENSE) file for details
