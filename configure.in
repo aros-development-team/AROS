@@ -3236,6 +3236,7 @@ AC_SUBST(AROS_PORTSSRCDIR)
 AC_SUBST(aros_amigaos_compliance)
 
 # Host Related ###########################
+AC_SUBST(HOST_TOOLCHAIN_FAMILY)
 AC_SUBST(host_stat_h__unused_used)
 AC_SUBST(ax_cv_flex_version)
 AC_SUBST(host_extra_cfg)
