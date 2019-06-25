@@ -1,1 +1,4 @@
-USER_LDFLAGS  += -static-libstdc++ -static-libgcc
+USER_LDFLAGS  += -static-libstdc++
+ifeq ("$(HOST_TOOLCHAIN)","gnu")
+    USER_LDFLAGS  += -static-libgcc
+endif
