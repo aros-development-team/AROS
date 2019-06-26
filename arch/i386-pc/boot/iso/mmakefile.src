@@ -9,7 +9,8 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 #MM bootiso-pc-i386 :	AROS-complete		\
 #MM			kernel-package-pc-i386		\
 #MM			AROS-pc-drivers		\
-#MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
+#MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386 \
+#MM         iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd
 
 bootiso-pc-i386: $(AROSDIR)/.backdrop $(TARGET_ISO)
 

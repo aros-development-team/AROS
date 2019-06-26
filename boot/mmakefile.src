@@ -13,6 +13,8 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM boot : boot-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) boot-$(ARCH)-$(CPU) boot-$(ARCH) boot-$(FAMILY)
 
+#MM distfiles-system : iconset-$(AROS_TARGET_ICONSET)-icons-aros-$(AROS_TARGET_ARCH)-system
+
 #MM
 distfiles-system:
 	%mkdir_q dir="$(DISTDIR)"

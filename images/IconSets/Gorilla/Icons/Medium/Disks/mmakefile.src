@@ -9,3 +9,21 @@ ICONS := CDROM_Amiga Harddisk_Amiga Harddisk_Linux Harddisk_MacOS Harddisk_Windo
 #MM- themes-gorilla-icons : themes-gorilla-icons-disks
 %build_icons mmake=themes-gorilla-icons-disks icons=$(ICONS) \
              dir=$(AROS_CONTRIB)/Icons/Gorilla/Disks
+
+#MM
+iconset-Gorilla-icons-aros-livecd :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/CDROM_AROS.info.src $(SRCDIR)/$(CURDIR)/CDROM_AROS.png $(AROSDIR)/disk.info
+
+#MM
+iconset-Gorilla-icons-aros-linux-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_Linux.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_Linux.png $(AROSDIR)/disk.info
+
+#MM
+iconset-Gorilla-icons-aros-windows-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_Windows.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_Windows.png $(AROSDIR)/disk.info
+
+#MM
+iconset-Gorilla-icons-aros-darwin-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_MacOS.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_MacOS.png $(AROSDIR)/disk.info
+
+
