@@ -754,6 +754,7 @@ aros_cc_pre
 host_extra_cfg
 ax_cv_flex_version
 host_stat_h__unused_used
+HOST_TOOLCHAIN_FAMILY
 aros_amigaos_compliance
 AROS_PORTSSRCDIR
 AROS_CROSSTOOLSDIR
@@ -16043,6 +16044,7 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Host Related ###########################
+
 
 
 
