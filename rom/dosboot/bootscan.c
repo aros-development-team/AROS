@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Discover all mountable partitions
@@ -295,10 +295,10 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
         }
     }
 
+    Remove(&bn->bn_Node);
     if (!res)
     {
         /* If no partitions were found for the DeviceNode, put it back */
-        Remove(&bn->bn_Node);
         Enqueue(&ExpansionBase->MountList, &bn->bn_Node);
     }
 }
