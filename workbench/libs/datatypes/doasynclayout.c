@@ -53,15 +53,12 @@ void AsyncLayouter(void)
     
     while (!done)
     {
+        dtsi->si_Flags &= ~DTSIF_NEWSIZE;
 	DoMethodA(object, (Msg)&lm->lm_gplayout);
 	
         ObtainSemaphore(&(GPB(dtb)->dtb_Semaphores[SEM_ASYNC]));
         if (dtsi->si_Flags & DTSIF_NEWSIZE)
         {
-            /* Ensure the method is only called once more unless there's
-               another request to restart it */
-            dtsi->si_Flags &= ~DTSIF_NEWSIZE;
-
             /* Ensure Ctrl-C is cleared in case it was set again after the
                method saw it, or the method finished without seeing it */
             CheckSignal(SIGBREAKF_CTRL_C);
