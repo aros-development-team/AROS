@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -28,19 +28,25 @@
         nameBuffer - A buffer of length MAXPUBSCREENNAME
 
     RESULT
-        None.
+        Pointer to the default public screen or NULL, if there is none.
 
     NOTES
         Only Public Screen Manager utilities want to use this function
         since it is easy to open a window on the default public screen
         without specifying a name.
 
+        The returned Screen pointer can become invalid any time, if the screen
+        gets closed after the return of GetDefaultPubScreen(). This function
+        does not lock the screen.
+
+        Better use LockPubScreen(NULL).
+
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-        SetDefaultPubScreen(), OpenWindow()
+        SetDefaultPubScreen(), OpenWindow(), LockPubScreen()
 
     INTERNALS
 
@@ -51,7 +57,7 @@
     struct Screen *defscreen;
     STRPTR  	   name;
 
-    DEBUG_GETDEFAULTPUBSCREEN(dprintf("GetDefaultPubScreen(%s)\n",nameBuffer));
+    DEBUG_GETDEFAULTPUBSCREEN(dprintf("GetDefaultPubScreen()\n"));
 
     LockPubScreenList();
 
