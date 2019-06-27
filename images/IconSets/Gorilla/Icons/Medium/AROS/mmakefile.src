@@ -14,7 +14,6 @@ ADDITIONALICONS := Demos \
 #MM- iconset-Gorilla-wbench-icons-clean : iconset-Gorilla-wbench-icons-aros-clean iconset-Gorilla-additional-icons-aros-clean
 #MM- iconset-Gorilla-wbench-icons : iconset-Gorilla-wbench-icons-aros
 #MM- iconset-Gorilla-wbench-icons : iconset-Gorilla-additional-icons-aros
-#MM iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-livecd
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-aros icons=$(BASEICONS) dir=$(AROSDIR)
 

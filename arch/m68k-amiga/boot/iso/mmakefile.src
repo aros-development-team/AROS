@@ -13,7 +13,8 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 #MM			kernel-package-amiga-m68k	\
 #MM			kernel-bootstrap-amiga-m68k	\
 #MM			AROS-amiga-m68k-drivers \
-#MM			bootdisk-amiga-m68k-gen
+#MM			bootdisk-amiga-m68k-gen \
+#MM         iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd
 
 #MM deviso-amiga-m68k :	AROS-complete		\
 #MM			kernel-aros \
@@ -21,7 +22,8 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 #MM			kernel-package-amiga-m68k	\
 #MM			kernel-bootstrap-amiga-m68k	\
 #MM			AROS-amiga-m68k-drivers \
-#MM			bootdisk-amiga-m68k-gen
+#MM			bootdisk-amiga-m68k-gen \
+#MM         iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd
 
 TAR ?= tar
 Q ?= @
