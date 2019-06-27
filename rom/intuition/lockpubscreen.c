@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
 #include <string.h>
+#include <proto/dos.h>
+#include <dos/dos.h>
 #include "intuition_intern.h"
 
 static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
@@ -32,6 +34,10 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
         If you try to lock the Workbench screen or the default public screen
         and there isn't any, the Workbench screen will be automatically opened
         and locked.
+
+        The local variable PUBSCREEN can be used to override the name of the 
+        default public screen to use ("set PUBSCREEN mypubscreen").
+        If the screen does not exist, the PUBSCREEN content is ignored.
 
     INPUTS
         name - Name of the public screen or NULL for the default public
@@ -84,6 +90,44 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
     list = LockPubScreenList();
 
+
+    /* Check, if PUBSCREEN variable is set */
+    if(!name)
+    {
+        struct DosLibrary *DOSBase = GetPrivIBase(IntuitionBase)->DOSBase;
+
+        /* Open dos.library only once, when first needed */
+        if (!DOSBase)
+        {
+            GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+        }
+
+        if (DOSBase)
+        {
+            /* Only a Process can call dos */
+            struct Process *me = (struct Process *) FindTask(NULL);
+            if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+            {
+                struct LocalVar *var = FindVar("PUBSCREEN", 0);
+                if(var) 
+                {
+                    DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: found PUBSCREEN variable: %s\n", var->lv_Value));
+                    /* Only use var, if screen really exists and is not in private state. */
+                    struct PubScreenNode *psn;
+                    psn = findcasename(list, (UBYTE *)var->lv_Value);
+                    if(psn != NULL) 
+                    {
+                        ASSERT_VALID_PTR(psn);
+                        if( !(psn->psn_Flags & PSNF_PRIVATE) ) 
+                        {
+                            name=var->lv_Value;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if( !name )
     {
 
@@ -99,10 +143,10 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
         {
             ASSERT_VALID_PTR(screen);
             GetPrivScreen(screen)->pubScrNode->psn_VisitorCount++;
-            DEBUG_VISITOR(dprintf("LockPubScreen: 1 screen %p count %ld Task <%s>\n",
+            DEBUG_VISITOR(dprintf("LockPubScreen: 1 screen %p visitor count %ld Task <%s>\n",
                                   screen, GetPrivScreen(screen)->pubScrNode->psn_VisitorCount,
                                   FindTask(NULL)->tc_Node.ln_Name));
-            DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: screen %p count %d\n",
+            DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: screen %p visitor count %d\n",
                                         screen, GetPrivScreen(screen)->pubScrNode->psn_VisitorCount));
         }
 
@@ -124,10 +168,10 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
                 /* Increment screen lock count */
                 psn->psn_VisitorCount++;
                 screen = psn->psn_Screen;
-                DEBUG_VISITOR(dprintf("LockPubScreen: 2 node %p screen %p count %ld <%s>\n",
+                DEBUG_VISITOR(dprintf("LockPubScreen: 2 node %p screen %p visitor count %ld <%s>\n",
                                       psn, screen, psn->psn_VisitorCount,
                                       FindTask(NULL)->tc_Node.ln_Name));
-                DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: node %p screen %p count %d\n",
+                DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: node %p screen %p visitor count %d\n",
                                             psn, screen, psn->psn_VisitorCount));
                 ASSERT_VALID_PTR(screen);
             }
@@ -165,11 +209,11 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
         {
             ASSERT_VALID_PTR(screen);
             GetPrivScreen(screen)->pubScrNode->psn_VisitorCount++;
-            DEBUG_VISITOR(dprintf("LockPubScreen: 3 screen %p count %d <%s>\n",
+            DEBUG_VISITOR(dprintf("LockPubScreen: 3 screen %p visitor count %d <%s>\n",
                                   screen, GetPrivScreen(screen)->pubScrNode->psn_VisitorCount,
                                   FindTask(NULL)->tc_Node.ln_Name));
 
-            DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: screen %p count %d\n",
+            DEBUG_LOCKPUBSCREEN(dprintf("LockPubScreen: screen %p visitor count %d\n",
                                         screen, GetPrivScreen(screen)->pubScrNode->psn_VisitorCount));
         }
 
