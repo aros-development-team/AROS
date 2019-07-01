@@ -6,7 +6,7 @@
 
 #include "intuition_intern.h"
 
-static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
+extern struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
 /*****************************************************************************
 
@@ -113,20 +113,3 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
     AROS_LIBFUNC_EXIT
 } /* UnlockPubScreen */
-
-
-/* case insensitive FindName() */
-static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name)
-{
-    struct Node *node;
-
-    for (node = GetHead(list); node; node = GetSucc(node))
-    {
-        if(node->ln_Name)
-        {
-            if (!strcasecmp (node->ln_Name, name))
-                break;
-        }
-    }
-    return (struct PubScreenNode *)node;
-}

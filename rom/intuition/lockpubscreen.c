@@ -9,7 +9,7 @@
 #include <dos/dos.h>
 #include "intuition_intern.h"
 
-static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
+extern struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
 /*****************************************************************************
 
@@ -241,7 +241,7 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
 
 /* case insensitive FindName() */
-static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name)
+struct PubScreenNode *findcasename(struct List *list, const UBYTE *name)
 {
     struct Node *node;
 
