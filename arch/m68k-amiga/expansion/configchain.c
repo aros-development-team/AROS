@@ -221,7 +221,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
         APTR rangestart = mbramstart;
         ret = 0;
         for (;;)
-        {   
+        {
             LONG tstep;
             
             if (step < 0)
@@ -238,7 +238,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
             else
             {
                 tstep = step;
-                if ((mbramstart += step) > *end)
+                if (mbramstart > *end)
                 {
                     ret = 0;
                     break;
@@ -267,6 +267,9 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
                 break;
             }
             ret += tret;
+            if (step > 0)
+                mbramstart += step;
+
             D(bug("[expansion:am68k] %s:     ret = %d\n", __func__, ret));
         }
 
