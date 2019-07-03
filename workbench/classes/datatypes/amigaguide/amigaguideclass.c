@@ -642,8 +642,7 @@ IPTR gm_render(Class *cl, Object *obj, struct gpRender *msg)
       data->ag_Flags.Redraw = TRUE;
       return rv;
    }
-
-   if(!AttemptSemaphore(&si->si_Lock))
+   if(!AttemptSemaphoreShared(&si->si_Lock))
    {
       DB(("gm_render(): lock failed\n"));
    } else
@@ -751,7 +750,7 @@ IPTR gm_input(Class *cl, Object *obj, struct gpInput *msg)
    if(si->si_Flags & DTSIF_LAYOUT)
    {
       rv = GMR_NOREUSE;
-   } else if(!AttemptSemaphore(&si->si_Lock))
+   } else if(!AttemptSemaphoreShared(&si->si_Lock))
    {
       rv = GMR_NOREUSE;
    } else
