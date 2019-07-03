@@ -264,6 +264,7 @@ struct AmigaGuideData
       ULONG InitialLayout : 1; /* layout sub-object initially */
       ULONG Secure : 1;     /* In secure mode don't launch any program or script. */
       ULONG GotoLine : 1;
+      ULONG ClearArea : 1;
    } ag_Flags;
 
    struct SignalSemaphore ag_ASyncLayout;

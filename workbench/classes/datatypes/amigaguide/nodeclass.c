@@ -41,6 +41,7 @@ struct NodeData
    {
       ULONG SmartWrap : 1;
       ULONG WordWrap  : 1;
+      ULONG ClearArea : 1;
    } n_Flags;
 
    UWORD n_TabWidth;
@@ -1591,16 +1592,7 @@ IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
 
       if(clear)
       {
-         struct RastPort *rp;
-
-         rp = ObtainGIRPort(msg->gpl_GInfo);
-         if(rp != NULL)
-         {
-            EraseRect(rp, domain->Left, domain->Top,
-                          domain->Left+domain->Width-1,
-                          domain->Top+domain->Height-1);
-            ReleaseGIRPort(rp);
-         }
+	 data->n_Flags.ClearArea = TRUE;
       }
    }
 
@@ -1688,6 +1680,24 @@ SDISPATCHER(nodeclass_dispatcher)
    case DTM_TRIGGER:
       rv = dtm_trigger(cl, obj, (struct dtTrigger *) msg);
       break;
+   case GM_RENDER:
+     {
+       INSTDATA;
+       struct IBox *domain;
+       if (   data->n_Flags.ClearArea
+           && GetDTAttrs(obj,
+                         DTA_Domain, (IPTR) &domain,
+                         TAG_DONE) == 1)
+       {
+         /* layout says we need to clear the area first */
+         data->n_Flags.ClearArea = FALSE;
+         EraseRect(((struct gpRender*)msg)->gpr_RPort,
+                   domain->Left, domain->Top,
+                   domain->Left+domain->Width-1,
+                   domain->Top+domain->Height-1);
+       }
+     }
+     /* fall through and do super method */
    default:
       rv = DoSuperMethodA(cl,obj,msg);
    }

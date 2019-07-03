@@ -648,6 +648,16 @@ IPTR gm_render(Class *cl, Object *obj, struct gpRender *msg)
       DB(("gm_render(): lock failed\n"));
    } else
    {
+      if (data->ag_Flags.ClearArea)
+      {
+         DB(("do EraseRect in amigaguide %lx\n", (long) data));
+         data->ag_Flags.ClearArea = FALSE;
+         struct IBox *domain = &data->ag_SubObjDomain;
+         EraseRect(((struct gpRender*)msg)->gpr_RPort,
+                 domain->Left, domain->Top,
+                 domain->Left+domain->Width-1,
+                 domain->Top+domain->Height-1);
+      }
       /* first draw navigator gadget */
       Object *nav = CAST_OBJ(data->ag_Gadget);
       if(nav != NULL)
@@ -1225,19 +1235,7 @@ void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
    UpdateNavigator(cl, obj, ginfo);
 
    /* clear object domain */
-   {
-      struct RastPort *rp;
-
-      domain = &data->ag_SubObjDomain;
-      rp = ObtainGIRPort(ginfo);
-      if(rp != NULL)
-      {
-         EraseRect(rp, domain->Left, domain->Top,
-                       domain->Left+domain->Width-1,
-                       domain->Top+domain->Height-1);
-         ReleaseGIRPort(rp);
-      }
-   }
+   data->ag_Flags.ClearArea = TRUE;
 
    /* now lets layout our and its sub object. */
    layout.MethodID    = GM_LAYOUT;
