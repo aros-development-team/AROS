@@ -56,9 +56,10 @@ GCC_COMMON_OPTS := --target=$(AROS_TARGET_CPU)-aros
 
 # ARM requires additional flags to determine CPU type and FP model
 ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
-GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
-GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
+#GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
+#GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_COMMON_OPTS += --disable-libunwind-exceptions
+GCC_COMMON_OPTS += --with-multilib
 else
 # If we are building GCC >= 5, for x86 targets, enable libmpx
 # ifeq ($(shell test $(GCC_VERSION_MAJOR) -gt 4; echo $$?),0)
