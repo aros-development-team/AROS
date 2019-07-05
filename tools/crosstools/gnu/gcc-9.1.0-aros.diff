@@ -245,7 +245,7 @@ diff -ruN gcc-9.1.0/gcc/config/arm/aros.h gcc-9.1.0.aros/gcc/config/arm/aros.h
 diff -ruN gcc-9.1.0/gcc/config/arm/t-aros gcc-9.1.0.aros/gcc/config/arm/t-aros
 --- gcc-9.1.0/gcc/config/arm/t-aros	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-9.1.0.aros/gcc/config/arm/t-aros	2019-05-21 17:44:41.624247600 +0100
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,55 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
 +#
@@ -267,16 +267,37 @@ diff -ruN gcc-9.1.0/gcc/config/arm/t-aros gcc-9.1.0.aros/gcc/config/arm/t-aros
 +
 +# Enumeration of multilibs
 +
-+MULTILIB_OPTIONS     = marm march=armv6/march=armv7-a/march=armv7-a+simd
-+MULTILIB_DIRNAMES    = arm armv6 armv7-a armv7-a+simd
-+MULTILIB_EXCEPTIONS	=
-+MULTILIB_MATCHES	=
-+MULTILIB_REUSE		=
-+MULTILIB_REQUIRED	=
++do_fpus := vfp vfpv2 vfpv3 vfpv3-fp16 vfpv3-d16 vfpv3-d16-fp16 neon neon-vfpv3 \
++           neon-fp16 vfpv4 neon-vfpv4 vfpv4-d16 fpv5-d16 fp-armv8 neon-fp-armv8 \
++           crypto-neon-fp-armv8 vfp3
 +
-+MULTILIB_OPTIONS	+= mfloat-abi=hard/mfloat-abi=soft
-+MULTILIB_DIRNAMES	+= fpu soft
-+MULTILIB_MATCHES	+= mfloat-abi?hard=mhard-float mfloat-abi?soft=msoft-float
++v7a_fpus := vfpv3 vfpv3-d16 vfpv4 simd neon-fp16 neon-vfpv4
++v7ve_fpus := vfpv3-d16 vfpv3 vfpv3-d16-fp16 vfpv3-fp16 vfpv4 neon neon-fp16 simd
++all_v7_a_r := armv7-a armv7ve armv7-r
++
++MULTILIB_OPTIONS     = marm mfpu=auto march=armv6+fp/march=armv7-a+fp
++MULTILIB_DIRNAMES    = arm autofp v6 v7
++MULTILIB_EXCEPTIONS  =
++MULTILIB_MATCHES     =
++MULTILIB_REUSE       =
++MULTILIB_REQUIRED    =
++
++MULTILIB_OPTIONS	+= mfloat-abi=hard
++MULTILIB_DIRNAMES	+= fpu
++MULTILIB_REQUIRED	+= marm/mfpu=auto/march=armv6+fp/mfloat-abi=hard marm/mfpu=auto/march=armv7-a+fp/mfloat-abi=hard
++
++MULTILIB_MATCHES	+= $(foreach FPU,$(do_fpus), mfpu?auto=mfpu?$(FPU))
++MULTILIB_MATCHES	+= march?armv6+fp=march?armv6 march?armv7-a+fp=march?armv7
++MULTILIB_MATCHES	+= $(foreach FP,$(v7a_fpus), march?armv7-a+fp=march?armv7-a+$(FP))
++MULTILIB_MATCHES	+= $(foreach FP,$(v7ve_fpus), march?armv7-a+fp=march?armv7ve+$(FP))
++MULTILIB_MATCHES	+= $(foreach AV7A,$(all_v7_a_r), march?armv7-a+fp=march?$(AV7A) march?armv7-a+fp=march?$(AV7A)+fp)
++
++MULTILIB_REUSE		+= marm/mfpu.auto/march.armv6+fp/mfloat-abi.hard=marm/march.armv6+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mfpu.auto/march.armv6+fp/mfloat-abi.hard=march.armv6+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mfpu.auto/march.armv6+fp/mfloat-abi.hard=mfpu.auto/march.armv6+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mfpu.auto/march.armv7-a+fp/mfloat-abi.hard=marm/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mfpu.auto/march.armv7-a+fp/mfloat-abi.hard=march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mfpu.auto/march.armv7-a+fp/mfloat-abi.hard=mfpu.auto/march.armv7-a+fp/mfloat-abi.hard
 +
 +MULTILIB_OPTIONS	+= mbig-endian
 +MULTILIB_DIRNAMES	+= eb
