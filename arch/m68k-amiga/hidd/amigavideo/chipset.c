@@ -995,9 +995,9 @@ void initcustom(struct amigavideo_staticdata *csd)
     csd->startx = 0x81;
     csd->starty = 0x28;
 
-    vposr = custom->vposr & 0x7f00;
-    csd->aga = vposr >= 0x2200;
-    csd->ecs_agnus = vposr >= 0x2000;
+    vposr = custom->vposr;
+    csd->aga = (vposr & 0x0f00) == 0x0300;
+    csd->ecs_agnus = (vposr & 0x2000) == 0x2000;
     val = custom->deniseid;
     custom->deniseid = custom->dmaconr;;
     if (val == custom->deniseid) {
