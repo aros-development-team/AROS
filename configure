@@ -9347,7 +9347,7 @@ case "$target_os" in
                 gcc_default_cpu="armv7ve"
                 gcc_default_cpu_tune="cortex-a7"
                 aros_object_format="armelfb_aros"
-                aros_isa_flags="$aros_isa_flags -marm"
+                aros_isa_flags="$aros_isa_flags -marm -mfloat-abi=hard"
                 aros_config_cflags="$aros_config_cflags"
                 aros_config_cxxflags="$aros_config_cxxflags"
                 aros_config_aflags="$aros_config_aflags -marm"
