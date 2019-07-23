@@ -29,21 +29,40 @@ AROS_LH0(ULONG, ReadBattClock,
     struct ClockData cd;
     UBYTE reg;
     ULONG t;
+    UBYTE retry;
 
     D(bug("ReadBattClock\n"));
     if (!p)
     	return 0;
-    reg = 0;
-    cd.sec = getbcd(p, reg);
-    cd.min = getbcd(p, reg + 2);
-    cd.hour = getbcd(p, reg + 4);
-    if (BattClockBase->clocktype == MSM6242B)
-    	reg = 6;
-    else
-    	reg = 7;
-    cd.mday = getbcd(p, reg);
-    cd.month = getbcd(p, reg + 2);
-    cd.year = getbcd(p, reg + 4) + 1900;
+    
+    /* 
+       Repeat reading for the second time if the number of seconds read
+       at the beginning and at the end of RTC access differs. Do it at most twice
+       in order to avoid situatuions where RTC was missing and number of seconds
+       receives just noise.
+    */
+
+    Disable();
+    for (retry = 0; retry < 2; ++retry)
+    {
+        reg = 0;
+        cd.sec = getbcd(p, reg);
+        cd.min = getbcd(p, reg + 2);
+        cd.hour = getbcd(p, reg + 4);
+        if (BattClockBase->clocktype == MSM6242B)
+            reg = 6;
+        else
+            reg = 7;
+        cd.mday = getbcd(p, reg);
+        cd.month = getbcd(p, reg + 2);
+        cd.year = getbcd(p, reg + 4) + 1900;
+        
+        /* If number of seconds didn't change since last read then break the loop */
+        if (cd.sec == getbcd(p, 0))
+            break;
+    }
+    Enable();
+
     if (cd.year < 1978)
     	cd.year += 100;
     cd.wday = 0;
