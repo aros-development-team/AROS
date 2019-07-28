@@ -1655,7 +1655,15 @@ ifneq (%(dxxflags),)
 else
     %(mmake)_DXXFLAGS     := $(%(mmake)_CXXFLAGS)
 endif
-%(mmake)_LDFLAGS   := %(ldflags)
+ifeq (%(compiler),target)
+%(mmake)_LDFLAGS           := %(ldflags) $(TARGET_ISA_OBJCFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LDFLAGS           := %(ldflags) $(HOST_ISA_OBJCFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LDFLAGS           := %(ldflags) $(KERNEL_ISA_OBJCFLAGS)
+endif
 ifneq (%(libdir),)
 %(mmake)_LDFLAGS   += -L%(libdir)
 endif
@@ -1759,7 +1767,15 @@ ifneq (%(dflags),)
 else
     %(mmake)_DFLAGS := $(%(mmake)_CFLAGS)
 endif
-%(mmake)_LDFLAGS   := %(ldflags)
+ifeq (%(compiler),target)
+%(mmake)_LDFLAGS           := %(ldflags) $(TARGET_ISA_OBJCFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LDFLAGS           := %(ldflags) $(HOST_ISA_OBJCFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LDFLAGS           := %(ldflags) $(KERNEL_ISA_OBJCFLAGS)
+endif
 ifneq (%(libdir),)
     %(mmake)_LDFLAGS += -L%(libdir)
 endif
@@ -2379,6 +2395,16 @@ else
 %(mmake)%(flavour)_SUFFIX           := %(modsuffix)
 endif
 
+ifeq (%(compiler),target)
+%(mmake)%(flavour)_ISA_LDFLAGS           := $(TARGET_ISA_OBJCFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)%(flavour)_ISA_LDFLAGS           := $(HOST_ISA_OBJCFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)%(flavour)_ISA_LDFLAGS           := $(KERNEL_ISA_OBJCFLAGS)
+endif
+
 ifeq (%(build_library),M)
 # Handlers use dash instead of dot in their names
 ifeq ($(%(mmake)%(flavour)_SUFFIX),handler)
@@ -2424,7 +2450,7 @@ ifeq (%(build_library),M)
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(%(mmake)%(flavour)_MODULE) objs="$(%(mmake)%(flavour)_STARTOBJS) $(%(mmake)%(flavour)_OBJS) $(USER_OBJS)" \
 		 endobj=$(%(mmake)%(flavour)_ENDOBJS) err=$(%(mmake)%(flavour)_ERR) objdir="$(%(mmake)%(flavour)_OBJDIR)" \
-		 cmd=$(%(mmake)%(flavour)_LINK) ldflags="$(LDFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_LDFLAGS)" \
+		 cmd=$(%(mmake)%(flavour)_LINK) ldflags="$(LDFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_LDFLAGS) $(%(mmake)%(flavour)_ISA_LDFLAGS)" \
 		 uselibs="$(%(mmake)%(flavour)_LIBS) $($(%(mmake)%(flavour)_DEFNAME)_LIBS)" usehostlibs="%(usehostlibs)"
 endif
 
