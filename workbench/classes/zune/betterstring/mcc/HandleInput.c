@@ -40,7 +40,7 @@
 
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 #define MySPrintf(buf, fmt, ...) \
  ({ IPTR __args[] = { SDI_VACAST(__VA_ARGS__) }; \
      RawDoFmt(fmt, __args, NULL, (STRPTR)buf); })
