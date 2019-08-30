@@ -14,7 +14,7 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 #MM- includes-copy : mesa3d-fetch
 
 %fetch mmake=mesa3d-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/mesa \
-    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.gz" \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="tar.xz tar.gz" \
     patches_specs=$(PATCHSPEC)
 
 %create_patch mmake=mesa3d-create-patch \
