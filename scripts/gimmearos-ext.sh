@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script for building AROS from the Subversion or GIT repository
+# Script for building AROS from the GIT repository
 
 # Currently only a limited amount of Linux distros is supported.
 # If you improve this script, send modifications back to me, please.
@@ -8,14 +8,17 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos-v1.sh 1.14 (25.04.2019)
+# In contrast to gimmearos.sh this script creates the toolchain
+# in external directories.
+
+# $VER: gimmearos-ext.sh 1.15 (01.09.2019)
 
 curdir="`pwd`"
 srcdir="aros-src"
 portsdir="$HOME/aros-ports-src"
 tooldir="$HOME/aros-toolchain"
 makeopts="-j3 -s"
-configopts="--with-binutils-version=2.25 --with-gcc-version=6.3.0 --disable-sdl-hidd --with-portssources="$portsdir""
+configopts="--enable-ccache --with-portssources=$portsdir"
 
 install_pkg()
 {
@@ -61,11 +64,11 @@ echo -e "\nEnter number and press <Enter>:"
 read input
 case "$input" in
     1 ) echo -e "\nInstalling prerequisites with apt-get..."
-        install_pkg "apt-get install" subversion
         install_pkg "apt-get install" git-core
         install_pkg "apt-get install" gcc
         install_pkg "apt-get install" g++
         install_pkg "apt-get install" make
+        install_pkg "apt-get install" cmake
         install_pkg "apt-get install" gawk
         install_pkg "apt-get install" bison
         install_pkg "apt-get install" flex
@@ -86,11 +89,11 @@ case "$input" in
         ;;
 
     2 ) echo -e "\nInstalling prerequisites with apt-get..."
-        install_pkg "apt-get install" subversion
         install_pkg "apt-get install" git-core
         install_pkg "apt-get install" gcc
         install_pkg "apt-get install" g++
         install_pkg "apt-get install" make
+        install_pkg "apt-get install" cmake
         install_pkg "apt-get install" gawk
         install_pkg "apt-get install" bison
         install_pkg "apt-get install" flex
@@ -112,11 +115,9 @@ case "$input" in
 
         install_pkg "apt-get install" libc6-dev-i386
         install_pkg "apt-get install" lib32gcc1
-        install_pkg "apt-get install" ia32-libs
         ;;
 
     3 ) echo -e "\nInstalling prerequisites with yum..."
-        install_pkg "yum install" subversion
         install_pkg "yum install" git-core
         install_pkg "yum install" gcc
         install_pkg "yum install" gawk
@@ -135,7 +136,6 @@ case "$input" in
         echo -e "\nUpdating the List of software"
         echo -e "\nEnter sudo password"
         sudo pacman -Sy
-        install_pkg "pacman --needed --noconfirm -S" subversion
         install_pkg "pacman --needed --noconfirm -S" git-core
         install_pkg "pacman --needed --noconfirm -S" gcc
         install_pkg "pacman --needed --noconfirm -S" gawk
@@ -150,7 +150,6 @@ case "$input" in
 
     5 ) echo -e "\nInstalling prerequisites with zypper..."
         # tools
-        install_pkg "zypper --non-interactive install" subversion
         install_pkg "zypper --non-interactive install" git-core
         install_pkg "zypper --non-interactive install" gcc
         install_pkg "zypper --non-interactive install" gcc-c++
@@ -181,7 +180,6 @@ case "$input" in
 
     6 ) echo -e "\nInstalling prerequisites with zypper..."
         # tools
-        install_pkg "zypper --non-interactive install" subversion
         install_pkg "zypper --non-interactive install" git-core
         install_pkg "zypper --non-interactive install" gcc
         install_pkg "zypper --non-interactive install" gcc-c++
@@ -227,51 +225,35 @@ input=""
 until [ "$input" = "99" ]
 do
     echo -e "\n\n\n\n\n"
-    echo -e "***********************************************"
-    echo -e "* Step 2: get the sources from the repository *"
-    echo -e "***********************************************"
-    echo -e "\nYou can either use Subversion or Git. Git doesn't require"
-    echo -e   "a password, but you'll get only read-only access."
-    echo -e   "The repositories will be checked out into the current directory."
-    echo -e "\nABI V1 with | ABI V1   |"
-    echo -e   "Subversion  | with GIT |       Content"
-    echo -e   "------------+----------+--------------------------"
-    echo -e   "     1      |    21    | Get AROS core (required)"
-    echo -e   "     2      |    22    | Get contrib (optional)"
-    echo -e "\n     3      |    23    | Get ports source (optional, needs contrib)"
-    echo -e "\n     4      |    ---   | Get documentation source (optional)"
-    echo -e   "     5      |    ---   | Get binaries (wallpapers, logos etc.) (optional)"
+    echo -e "******************************************************"
+    echo -e "* Step 2: get the sources from the GITHUB repository *"
+    echo -e "******************************************************"
+    echo -e   "1 .. Get AROS core (required)"
+    echo -e   "2 .. Get contrib (optional)"
+    echo -e   "3 .. Get ports source (optional, needs contrib)"
+    echo -e   "4 .. Get documentation source (optional)"
+    echo -e   "5 .. Get binaries (wallpapers, logos etc.) (optional)"
     echo -e "\n99 .. Go to next step"
-    echo -e   "0  .. Exit"
+    echo -e   "0 .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
 
     read input
     case "$input" in
-        1 ) echo -e "\nGetting AROS V1 core with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/AROS "$srcdir"
+        1 ) echo -e "\nGetting AROS V1 core with Git...\n"
+            git clone https://github.com/aros-development-team/AROS.git "$srcdir"
             ;;
-        2 ) echo -e "\nGetting contrib V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/contrib "$srcdir/contrib"
+        2 ) echo -e "\nGetting contrib V1 with Git...\n"
+            git clone https://github.com/aros-development-team/contrib.git "$srcdir/contrib"
             ;;
-        3 ) echo -e "\nGetting ports V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/ports "$srcdir/ports"
+        3 ) echo -e "\nGetting ports V1 with Git...\n"
+            git clone https://github.com/aros-development-team/ports.git "$srcdir/ports"
             ;;
-        4 ) echo -e "\nGetting documentation V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/documentation "$srcdir/documentation"
+        4 ) echo -e "\nGetting documentation V1 with Git...\n"
+            git clone https://github.com/aros-development-team/documentation.git "$srcdir/documentation"
             ;;
-        5 ) echo -e "\nGetting binaries V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/binaries "$srcdir/binaries"
-            ;;
-
-        21 ) echo -e "\nGetting AROS V1 core with Git...\n"
-            git clone git://repo.or.cz/AROS.git "$srcdir"
-            ;;
-        22 ) echo -e "\nGetting contrib V1 with Git...\n"
-            git clone git://repo.or.cz/AROS-Contrib.git "$srcdir/contrib"
-            ;;
-        23 ) echo -e "\nGetting ports V1 with Git...\n"
-            git clone git://repo.or.cz/AROS-Ports.git "$srcdir/ports"
+        5 ) echo -e "\nGetting binaries V1 with Git...\n"
+            git clone https://github.com/aros-development-team/binaries.git "$srcdir/binaries"
             ;;
 
         0 ) exit 0
@@ -348,8 +330,8 @@ do
     echo -e   "   2   | x86_64 (64-bit)"
     echo -e   "   3   | m68k   (32-bit)"
     echo -e   "   4   | armhf  (32-bit)"
-    echo -e "\n9 .. Go to next step"
-    echo -e   "0 .. Exit"
+    echo -e "\n99 .. Go to next step"
+    echo -e   "0  .. Exit"
     echo -e "\nEnter number and press <Enter>:"
 
     read input
@@ -480,7 +462,7 @@ until [ "$input" = "99" ]
 do
     cd "$curdir"
 
-	echo -e "\n\n\n\n\n"
+    echo -e "\n\n\n\n\n"
     echo -e "*****************"
     echo -e "* Step 6: build *"
     echo -e "*****************"

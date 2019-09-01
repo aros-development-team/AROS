@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script for building AROS from the Subversion or GIT repository
+# Script for building AROS from the GIT repository
 
 # Currently only a limited amount of Linux distros is supported.
 # If you improve this script, send modifications back to me, please.
@@ -8,13 +8,13 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos.sh 1.14 (25.04.2019)
+# $VER: gimmearos.sh 1.15 (01.09.2019)
 
 curdir="`pwd`"
 srcdir="aros-src"
-srcdir_v0="aros-src-v0"
 portsdir="$HOME/aros-ports-src"
-makeopts="-j2 -s"
+makeopts="-j3 -s"
+configopts="--enable-ccache --with-portssources=$portsdir"
 
 install_pkg()
 {
@@ -60,11 +60,11 @@ echo -e "\nEnter number and press <Enter>:"
 read input
 case "$input" in
     1 ) echo -e "\nInstalling prerequisites with apt-get..."
-        install_pkg "apt-get install" subversion
         install_pkg "apt-get install" git-core
         install_pkg "apt-get install" gcc
         install_pkg "apt-get install" g++
         install_pkg "apt-get install" make
+        install_pkg "apt-get install" cmake
         install_pkg "apt-get install" gawk
         install_pkg "apt-get install" bison
         install_pkg "apt-get install" flex
@@ -85,11 +85,11 @@ case "$input" in
         ;;
 
     2 ) echo -e "\nInstalling prerequisites with apt-get..."
-        install_pkg "apt-get install" subversion
         install_pkg "apt-get install" git-core
         install_pkg "apt-get install" gcc
         install_pkg "apt-get install" g++
         install_pkg "apt-get install" make
+        install_pkg "apt-get install" cmake
         install_pkg "apt-get install" gawk
         install_pkg "apt-get install" bison
         install_pkg "apt-get install" flex
@@ -111,11 +111,10 @@ case "$input" in
 
         install_pkg "apt-get install" libc6-dev-i386
         install_pkg "apt-get install" lib32gcc1
-        install_pkg "apt-get install" ia32-libs
+	install_pkg "apt-get install" libxcursor1:i386
         ;;
 
     3 ) echo -e "\nInstalling prerequisites with yum..."
-        install_pkg "yum install" subversion
         install_pkg "yum install" git-core
         install_pkg "yum install" gcc
         install_pkg "yum install" gawk
@@ -134,7 +133,6 @@ case "$input" in
         echo -e "\nUpdating the List of software"
         echo -e "\nEnter sudo password"
         sudo pacman -Sy
-        install_pkg "pacman --needed --noconfirm -S" subversion
         install_pkg "pacman --needed --noconfirm -S" git-core
         install_pkg "pacman --needed --noconfirm -S" gcc
         install_pkg "pacman --needed --noconfirm -S" gawk
@@ -149,7 +147,6 @@ case "$input" in
 
     5 ) echo -e "\nInstalling prerequisites with zypper..."
         # tools
-        install_pkg "zypper --non-interactive install" subversion
         install_pkg "zypper --non-interactive install" git-core
         install_pkg "zypper --non-interactive install" gcc
         install_pkg "zypper --non-interactive install" gcc-c++
@@ -178,7 +175,6 @@ case "$input" in
 
     6 ) echo -e "\nInstalling prerequisites with zypper..."
         # tools
-        install_pkg "zypper --non-interactive install" subversion
         install_pkg "zypper --non-interactive install" git-core
         install_pkg "zypper --non-interactive install" gcc
         install_pkg "zypper --non-interactive install" gcc-c++
@@ -220,23 +216,15 @@ cd "$curdir"
 input=""
 until [ "$input" = "9" ]
 do
-	echo -e "\n\n\n\n\n"
-    echo -e "***********************************************"
-    echo -e "* Step 2: get the sources from the repository *"
-    echo -e "***********************************************"
-    echo -e "\nYou can either use Subversion or Git. Git doesn't require"
-    echo -e   "a password, but you'll get only read-only access."
-    echo -e   "The repositories will be checked out into the current directory."
-    echo -e "\nABI V1 is the current development version which is no longer"
-    echo -e   "binary compatible with V0."
-    echo -e "\nABI V1 with | ABI V0 with | ABI V1   |"
-    echo -e   "Subversion  | Subversion  | with GIT |       Content"
-    echo -e   "------------+-------------+----------+--------------------------"
-    echo -e   "     1      |      11     |    21    | Get AROS core (required)"
-    echo -e   "     2      |      12     |    22    | Get contrib (optional)"
-    echo -e "\n     3      |      13     |    23    | Get ports source (optional, needs contrib)"
-    echo -e "\n     4      |      14     |    ---   | Get documentation source (optional)"
-    echo -e   "     5      |      15     |    ---   | Get binaries (wallpapers, logos etc.) (optional)"
+    echo -e "\n\n\n\n\n"
+    echo -e "******************************************************"
+    echo -e "* Step 2: get the sources from the GITHUB repository *"
+    echo -e "******************************************************"
+    echo -e   "1 .. Get AROS core (required)"
+    echo -e   "2 .. Get contrib (optional)"
+    echo -e   "3 .. Get ports source (optional, needs contrib)"
+    echo -e   "4 .. Get documentation source (optional)"
+    echo -e   "5 .. Get binaries (wallpapers, logos etc.) (optional)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
@@ -244,46 +232,20 @@ do
 
     read input
     case "$input" in
-        1 ) echo -e "\nGetting AROS V1 core with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/AROS "$srcdir"
+        1 ) echo -e "\nGetting AROS V1 core with Git...\n"
+            git clone https://github.com/aros-development-team/AROS.git "$srcdir"
             ;;
-        2 ) echo -e "\nGetting contrib V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/contrib "$srcdir/contrib"
+        2 ) echo -e "\nGetting contrib V1 with Git...\n"
+            git clone https://github.com/aros-development-team/contrib.git "$srcdir/contrib"
             ;;
-        3 ) echo -e "\nGetting ports V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/ports "$srcdir/ports"
+        3 ) echo -e "\nGetting ports V1 with Git...\n"
+            git clone https://github.com/aros-development-team/ports.git "$srcdir/ports"
             ;;
-        4 ) echo -e "\nGetting documentation V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/documentation "$srcdir/documentation"
+        4 ) echo -e "\nGetting documentation V1 with Git...\n"
+            git clone https://github.com/aros-development-team/documentation.git "$srcdir/documentation"
             ;;
-        5 ) echo -e "\nGetting binaries V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/trunk/binaries "$srcdir/binaries"
-            ;;
-
-        11 ) echo -e "\nGetting AROS V0 core with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/branches/ABI_V0/AROS "$srcdir_v0"
-            ;;
-        12 ) echo -e "\nGetting contrib V0 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/branches/ABI_V0/contrib "$srcdir_v0/contrib"
-            ;;
-        13 ) echo -e "\nGetting ports V0 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/branches/ABI_V0/ports "$srcdir_v0/ports"
-            ;;
-        14 ) echo -e "\nGetting documentation V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/branches/ABI_V0/documentation "$srcdir_v0/documentation"
-            ;;
-        15 ) echo -e "\nGetting binaries V1 with Subversion...\n"
-            svn checkout https://svn.aros.org/svn/aros/branches/ABI_V0/binaries "$srcdir_v0/binaries"
-            ;;
-
-        21 ) echo -e "\nGetting AROS V1 core with Git...\n"
-            git clone git://repo.or.cz/AROS.git "$srcdir"
-            ;;
-        22 ) echo -e "\nGetting contrib V1 with Git...\n"
-            git clone git://repo.or.cz/AROS-Contrib.git "$srcdir/contrib"
-            ;;
-        23 ) echo -e "\nGetting ports V1 with Git...\n"
-            git clone git://repo.or.cz/AROS-Ports.git "$srcdir/ports"
+        5 ) echo -e "\nGetting binaries V1 with Git...\n"
+            git clone https://github.com/aros-development-team/binaries.git "$srcdir/binaries"
             ;;
 
         0 ) exit 0
@@ -299,20 +261,18 @@ until [ "$input" = "9" ]
 do
     cd "$curdir"
 
-	echo -e "\n\n\n\n\n"
+    echo -e "\n\n\n\n\n"
     echo -e "*********************"
     echo -e "* Step 3: configure *"
     echo -e "*********************"
-    echo -e "\nABI V1 | ABI V0 |"
-    echo -e   "-------+--------+----------------------------"
-    echo -e   "  1    |   11   | linux-i386   (32-bit) debug"
-    echo -e   "  2    |   12   | linux-i386   (32-bit)"
-    echo -e   "  3    |        | linux-x86_64 (64-bit) debug"
-    echo -e   "  4    |        | linux-x86_64 (64-bit)"
-    echo -e   "  5    |   15   | pc-i386      (32-bit)"
-    echo -e   "  6    |        | pc-x86_64    (64-bit)"
-    echo -e   "  7    |        | amiga-m68k   (32-bit)"
-    echo -e   "  8    |        | raspi-armhf  (32-bit)"
+    echo -e   "1 .. linux-i386   (32-bit) debug"
+    echo -e   "2 .. linux-i386   (32-bit)"
+    echo -e   "3 .. linux-x86_64 (64-bit) debug"
+    echo -e   "4 .. linux-x86_64 (64-bit)"
+    echo -e   "5 .. pc-i386      (32-bit)"
+    echo -e   "6 .. pc-x86_64    (64-bit)"
+    echo -e   "7 .. amiga-m68k   (32-bit)"
+    echo -e   "8 .. raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
@@ -324,68 +284,49 @@ do
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386-dbg
             cd aros-linux-i386-dbg
-            "../$srcdir/configure" --target=linux-i386 --enable-debug=all --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=linux-i386 --enable-debug=all $configopts
             ;;
         2 ) echo -e "\nConfiguring linux-i386 V1 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386
             cd aros-linux-i386
-            "../$srcdir/configure" --target=linux-i386 --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=linux-i386 $configopts
             ;;
         3 ) echo -e "\nConfiguring linux-x86_64 V1 with full debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64-dbg
             cd aros-linux-x86_64-dbg
-            "../$srcdir/configure" --target=linux-x86_64 --enable-debug=all --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=linux-x86_64 --enable-debug=all $configopts
             ;;
         4 ) echo -e "\nConfiguring linux-x86_64 V1 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64
             cd aros-linux-x86_64
-            "../$srcdir/configure" --target=linux-x86_64 --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=linux-x86_64 $configopts
             ;;
         5 ) echo -e "\nConfiguring pc-i386 V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-i386
             cd aros-pc-i386
-            "../$srcdir/configure" --target=pc-i386 --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=pc-i386 $configopts
             ;;
         6 ) echo -e "\nConfiguring pc-x86_64 V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-x86_64
             cd aros-pc-x86_64
-            "../$srcdir/configure" --target=pc-x86_64 --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=pc-x86_64 $configopts
             ;;
         7 ) echo -e "\nConfiguring amiga-m68k V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-amiga-m68k
             cd aros-amiga-m68k
-            "../$srcdir/configure" --target=amiga-m68k --with-serial-debug=yes --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=amiga-m68k --with-serial-debug=yes $configopts
             ;;
         8 ) echo -e "\nConfiguring raspi-armhf V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-raspi-armhf
             cd aros-raspi-armhf
-            "../$srcdir/configure" --target=raspi-armhf --with-portssources="$portsdir"
-            ;;
-
-        11 ) echo -e "\nConfiguring linux-i386 V0 with full debug...\n"
-            mkdir -p "$portsdir"
-            mkdir -p aros-linux-i386-v0-dbg
-            cd aros-linux-i386-v0-dbg
-            "../$srcdir_v0/configure" --target=linux-i386 --enable-debug=all --with-portssources="$portsdir"
-            ;;
-        12 ) echo -e "\nConfiguring linux-i386 V0 without debug...\n"
-            mkdir -p "$portsdir"
-            mkdir -p aros-linux-i386-v0
-            cd aros-linux-i386-v0
-            "../$srcdir_v0/configure" --target=linux-i386 --with-portssources="$portsdir"
-            ;;
-        15 ) echo -e "\nConfiguring pc-i386 V0...\n"
-            mkdir -p "$portsdir"
-            mkdir -p aros-pc-i386-v0
-            cd aros-pc-i386-v0
-            "../$srcdir_v0/configure" --target=pc-i386 --with-portssources="$portsdir"
+            "../$srcdir/configure" --target=raspi-armhf $configopts
             ;;
 
         0 ) exit 0
@@ -401,21 +342,19 @@ until [ "$input" = "9" ]
 do
     cd "$curdir"
 
-	echo -e "\n\n\n\n\n"
+    echo -e "\n\n\n\n\n"
     echo -e "*****************"
     echo -e "* Step 4: build *"
     echo -e "*****************"
     echo -e "\nYou can only build what you've already configured."
-    echo -e "\nABI V1 | ABI V0 |"
-    echo -e   "-------+--------+----------------------------"
-    echo -e   "   1   |   11   | linux-i386   (32-bit) debug"
-    echo -e   "   2   |   12   | linux-i386   (32-bit)"
-    echo -e   "   3   |        | linux-x86_64 (64-bit) debug"
-    echo -e   "   4   |        | linux-x86_64 (64-bit)"
-    echo -e   "   5   |   15   | pc-i386      (32-bit)"
-    echo -e   "   6   |        | pc-x86_64    (64-bit)"
-    echo -e   "   7   |        | amiga-m68k   (32-bit)"
-    echo -e   "   8   |        | raspi-armhf  (32-bit)"
+    echo -e   "1 .. linux-i386   (32-bit) debug"
+    echo -e   "2 .. linux-i386   (32-bit)"
+    echo -e   "3 .. linux-x86_64 (64-bit) debug"
+    echo -e   "4 .. linux-x86_64 (64-bit)"
+    echo -e   "5 .. pc-i386      (32-bit)"
+    echo -e   "6 .. pc-x86_64    (64-bit)"
+    echo -e   "7 .. amiga-m68k   (32-bit)"
+    echo -e   "8 .. raspi-armhf  (32-bit)"
     echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
@@ -489,32 +428,6 @@ do
             make $makeopts distfiles
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-raspi-armhf/distfiles"
-            ;;
-
-        11 ) echo -e "\nBuilding linux-i386 V0 with full debug...\n"
-            cd aros-linux-i386-v0-dbg
-            make $makeopts
-            make $makeopts contrib
-            make $makeopts ports
-            echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-linux-i386-v0-dbg/bin/<target>/AROS"
-            ;;
-        12 ) echo -e "\nBuilding linux-i386 V0 without debug...\n"
-            cd aros-linux-i386-v0
-            make $makeopts
-            make $makeopts contrib
-            make $makeopts ports
-            echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-linux-i386-v0/bin/<target>/AROS"
-            ;;
-        15 ) echo -e "\nBuilding pc-i386 V0...\n"
-            cd aros-pc-i386-v0
-            make $makeopts
-            make $makeopts contrib
-            make $makeopts ports
-            make $makeopts distfiles
-            echo -e "\nIf everything went well AROS will be available"
-            echo -e "in the directory aros-pc-i386-v0/distfiles"
             ;;
 
         0 ) exit 0
