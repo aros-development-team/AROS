@@ -39,6 +39,8 @@ MESA_GENERATED_C_SOURCES := \
             main/enums.c \
             main/format_pack.c \
             main/format_unpack.c \
+            main/format_fallback.c \
+            main/marshal_generated.c \
             program/program_parse.tab.c \
             program/lex.yy.c
 
@@ -82,6 +84,18 @@ $(top_builddir)/$(CUR_MESADIR)/main/api_exec.c: PRIVATE_XML := -f $(glapi)/gl_an
 $(top_builddir)/$(CUR_MESADIR)/main/api_exec.c: $(dispatch_deps)
 	$(call es-gen)
 
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal_h.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c: PRIVATE_SCRIPT := $(PYTHON) $(glapi)/gl_marshal.py
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c: $(dispatch_deps)
+	$(call es-gen)
+
+$(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.c : $(top_builddir)/$(CUR_MESADIR)/main/marshal_generated.h
+
 GET_HASH_GEN := $(top_srcdir)/$(CUR_MESADIR)/main/get_hash_generator.py
 $(top_builddir)/$(CUR_MESADIR)/main/get_hash.h: PRIVATE_SCRIPT :=  $(PYTHON) $(GET_HASH_GEN)
 $(top_builddir)/$(CUR_MESADIR)/main/get_hash.h: PRIVATE_XML := -f $(glapi)/gl_and_es_API.xml
@@ -99,6 +113,17 @@ $(top_builddir)/$(CUR_MESADIR)/main/format_info.h: PRIVATE_SCRIPT := $(PYTHON) $
 $(top_builddir)/$(CUR_MESADIR)/main/format_info.h: PRIVATE_XML :=
 $(top_builddir)/$(CUR_MESADIR)/main/format_info.h: $(format_info_deps)
 	$(call es-gen, $<)
+
+FORMAT_FALLBACK := $(top_srcdir)/$(CUR_MESADIR)/main/format_fallback.py
+format_fallback_deps := \
+	$(top_srcdir)/$(CUR_MESADIR)/main/formats.csv \
+	$(top_srcdir)/$(CUR_MESADIR)/main/format_parser.py \
+	$(FORMAT_FALLBACK)
+
+$(top_builddir)/$(CUR_MESADIR)/main/format_fallback.c: PRIVATE_SCRIPT := $(PYTHON) $(FORMAT_FALLBACK)
+$(top_builddir)/$(CUR_MESADIR)/main/format_fallback.c: PRIVATE_XML :=
+$(top_builddir)/$(CUR_MESADIR)/main/format_fallback.c: $(format_fallback_deps)
+	$(call es-gen, $< /dev/stdout)
 
 FORMAT_PACK := $(top_srcdir)/$(CUR_MESADIR)/main/format_pack.py
 format_pack_deps := \

@@ -18,7 +18,7 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
     patches_specs=$(PATCHSPEC)
 
 %create_patch mmake=mesa3d-create-patch \
-    archive=$(ARCHBASE) suffixes="tar.gz" \
+    archive=$(ARCHBASE) suffixes="tar.xz tar.gz" \
     destination=$(PORTSDIR)/mesa
 
 #
@@ -29,10 +29,6 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 #MM- mesa3dgl-library-yes : mesa3dgl-library
 
 #MM mesa3dgl-library : includes workbench-libs-dxtn-includes linklibs-galliumauxiliary workbench-libs-gallium-linklib mesa3dgl-linklibs
-
-##-include $(top_srcdir)/src/mesa/Makefile.sources
-##-include $(top_srcdir)/src/compiler/glsl/Makefile.sources
-##-include $(top_srcdir)/src/mapi/Makefile.sources
 
 SHARED_LIB_SOURCES = \
             emul_arosc \
@@ -66,11 +62,6 @@ USER_INCLUDES += \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary
 
-matypes_deps := \
-	$(top_builddir)/mesa_gen_matypes \
-	$(top_srcdir)/src/mesa/main/mtypes.h \
-	$(top_srcdir)/src/mesa/tnl/t_context.h
-
 ##ifeq ($(TARGET_ARCH),x86)
 ##USER_CFLAGS += -DUSE_X86_ASM
 ##endif
@@ -81,8 +72,6 @@ MESAGL_LIBRARY_SOURCES_C := \
 
 MESAGL_LIBRARY_SOURCES_CXX := \
             mesa3dgl_
-
-##MM- core-linklibs : linklibs-mesa
 
 USER_LDFLAGS := -static-libstdc++ \
   -L$(top_libdir) \

@@ -15,6 +15,7 @@ USER_INCLUDES += \
             -I$(top_srcdir)/include \
             -iquote $(top_builddir)/$(CUR_MESADIR) \
             -iquote $(top_srcdir)/$(CUR_MESADIR) \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/glapi \
             -iquote $(top_mesa3dgldir)/src \
             -iquote $(SRCDIR)/$(CURDIR)/..
 
