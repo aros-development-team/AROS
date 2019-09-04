@@ -212,9 +212,9 @@ LIBCOMPILER_C_SOURCES := $(LIBCOMPILER_C_FILES:.c=)
 LIBCOMPILER_CXX_SOURCES := $(LIBCOMPILER_CXX_FILES:.cpp=)
 
 #MM
-mesa3d-linklib-compiler-generate : $(MESA3DGL_GLSL_GENERATED_FILES) $(MESA3DGL_GLCPP_GENERATED_FILES) $(MESA3DGL_NIR_GENERATED_FILES) $(MESA3DGL_SPIRV_GENERATED_FILES)
+mesa3d-linklib-compiler-generated : $(MESA3DGL_GLSL_GENERATED_FILES) $(MESA3DGL_GLCPP_GENERATED_FILES) $(MESA3DGL_NIR_GENERATED_FILES) $(MESA3DGL_SPIRV_GENERATED_FILES)
 
-#MM mesa3d-linklib-compiler : mesa3d-linklib-compiler-generate
+#MM mesa3d-linklib-compiler : mesa3d-linklib-compiler-generated
 
 %build_linklib mmake=mesa3d-linklib-compiler libname=compiler libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) files="$(MESA3DGL_GLSL_SOURCES_C) $(MESA3DGL_GLCPP_SOURCES_C) $(LIBCOMPILER_C_SOURCES)" cxxfiles="$(MESA3DGL_GLSL_SOURCES_CXX) $(LIBCOMPILER_CXX_SOURCES)"
 
