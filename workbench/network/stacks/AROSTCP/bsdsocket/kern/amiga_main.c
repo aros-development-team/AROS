@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2010 The AROS Dev Team
+ * Copyright (C) 2005 - 2019 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -486,15 +486,13 @@ D(bug("[AROSTCP](amiga_main.c) deinit_all()\n"));
 /*
  * Notification function for taskname
  */ 
-int taskname_changed(void *p, IPTR new)
+int taskname_changed(void *p, IPTR newname)
 {
-  UBYTE *newname = (UBYTE *)new;
-
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_main.c) taskname_changed()\n"));
 #endif
   
-  AROSTCP_Task->tc_Node.ln_Name = newname;
+  AROSTCP_Task->tc_Node.ln_Name = (UBYTE *)newname;
   if (initialized)
     printf("New task name %s\n", newname);
 
