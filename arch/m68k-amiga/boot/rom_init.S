@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, The AROS Development Team
+ * Copyright (C) 2013-2019, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -129,7 +129,13 @@ arosbootstrap_init:
 	
 	/* chip ram */
 	sub.l	%a0,%a0
+	btst	#10,%d6		/* AttnFlags AFB_68080? */
+	beq.s	.sndrdchip
+	move.l	#0x00B80000,%a1
+	bra	.chiptest
+.sndrdchip:
 	move.l	#0x00200000,%a1
+.chiptest:
 	move.l	#0x00040000,%d0
 	jsr	__MemoryTest
 	beq	chipfault
