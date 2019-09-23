@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
@@ -104,6 +104,9 @@ AROS_LH1(void, GetCPUInfo,
             break;
         case(GCIT_FrontsideSpeed):
             *((UQUAD *)passedTag->ti_Data) = 0;
+            break;
+        case(GCIT_Vendor):
+            *((ULONG *)passedTag->ti_Data) = VENDOR_UNKNOWN;
             break;
         }
         }

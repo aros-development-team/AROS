@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -43,21 +43,36 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     info->L1InstructionCacheSize = 0;
     info->L1DataCacheSize = 0;
 
+    info->CPUFrequency = 0; /* TODO: Implement */
     pcr = 0;
 
     if (SysBase->AttnFlags & (AFF_68060 | AFF_68080)) {
 	pcr = Supervisor(ReadPCR);
     }
 
-    if (SysBase->AttnFlags & AFF_68080)
+    if ((SysBase->AttnFlags & AFF_68080) && ((pcr & 0xFFF00000) == 0x04400000))
     {
+        UWORD vampID = *(volatile UWORD *)0xDFF3FC;      /* VREG_BOARD */
+        UBYTE vampRev = ((pcr & 0x000F0000) >> 16);
+
         info->CPUModel = CPUMODEL_68080;
         // info->FPUModel = FPUMODEL_UNKNOWN;
-        __sprintf(info->ModelStringBuffer, "%s", "Apollo Core 68080");
- 
-        if (pcr & 0x04400000) {
-            info->L1InstructionCacheSize = 16384;
-            info->L1DataCacheSize = 32768;
+        __sprintf(info->ModelStringBuffer, "%s (x%02d)", "Apollo Core 68080", (vampID & 0xFF));
+        info->CPUFrequency = (vampID & 0xFF) * SysBase->PowerSupplyFrequency;
+
+        if ((vampID >> 8) == 5)
+        {
+            /* v4 */
+            info->L1InstructionCacheSize = (1024 << 5); /* 32 KB */
+            info->L1DataCacheSize = (1024 << 6); /* 64 KB */
+            //info->L1InstructionCacheSize = (1024 << 5); /* 32 KB */
+            //info->L1DataCacheSize = (1024 << 7); /* 128 KB */
+        }
+        else
+        {
+            /* v1 is unsupported so we use v2 values */
+            info->L1InstructionCacheSize = (1024 << 4); /* 16 KB */
+            info->L1DataCacheSize = (1024 << 5); /* 32 KB */
         }
     }
     else if (SysBase->AttnFlags & AFF_68060)
@@ -76,8 +91,8 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
                 __sprintf(info->ModelStringBuffer, "%s", "68EC060");
             }
         }
-        info->L1InstructionCacheSize = 8192;
-        info->L1DataCacheSize = 8192;
+        info->L1InstructionCacheSize = (1024 << 3);
+        info->L1DataCacheSize = (1024 << 3);
     }
     else if (SysBase->AttnFlags & AFF_68040)
     {
@@ -95,8 +110,8 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
                 __sprintf(info->ModelStringBuffer, "%s", "68EC040");
             }
         }
-        info->L1InstructionCacheSize = 4096;
-        info->L1DataCacheSize = 4096;
+        info->L1InstructionCacheSize = (1024 << 2);
+        info->L1DataCacheSize = (1024 << 2);
     }
     else if (SysBase->AttnFlags & AFF_68030)
     {
@@ -148,7 +163,6 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
         else
             info->FPUModel = FPUMODEL_NONE;
     }
-    info->CPUFrequency = 0; /* TODO: Implement */
 }
 
 LONG Processor_Init(struct ProcessorBase * ProcessorBase)
