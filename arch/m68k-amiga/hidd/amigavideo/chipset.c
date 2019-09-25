@@ -481,6 +481,8 @@ static void createcopperlist(struct amigavideo_staticdata *csd, struct amigabm_d
 
 BOOL setbitmap(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
 {
+    D(bug("[AmigaVideo] %s()\n", __func__));
+
     csd->width = bm->width;
     csd->height = csd->interlace ? (bm->height + 1) / 2 : bm->height;
     csd->modulo = bm->bytesperrow - csd->modulopre / (4 >> csd->res);
@@ -489,8 +491,8 @@ BOOL setbitmap(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     csd->depth = bm->depth;
     setcopperscroll(csd, bm);
 
-    D(bug("setbitmap bm=%x mode=%08x w=%d h=%d d=%d bpr=%d\n",
-        bm, csd->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow));
+    D(bug("[AmigaVideo] %s: bm=%x mode=%08x w=%d h=%d d=%d bpr=%d\n",
+        __func__, bm, csd->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow));
         return TRUE;
 }
 
@@ -502,6 +504,8 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     UBYTE fetchunit, maxplanes;
     UWORD bplwidth, viewwidth;
     UBYTE i;
+
+    D(bug("[AmigaVideo] %s()\n", __func__));
 
     if (csd->disp == bm)
         return TRUE;
@@ -519,8 +523,8 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     fetchunit = fetchunits[csd->fmode_bpl * 4 + csd->res];
     maxplanes = fm_maxplanes[csd->fmode_bpl * 4 + csd->res];
 
-    D(bug("res %d fmode %d depth %d maxplanes %d aga %d agae %d\n",
-        csd->res, csd->fmode_bpl, bm->depth, maxplanes, csd->aga, csd->aga_enabled));
+    D(bug("[AmigaVideo] %s: res %d fmode %d depth %d maxplanes %d aga %d agae %d\n",
+        __func__, csd->res, csd->fmode_bpl, bm->depth, maxplanes, csd->aga, csd->aga_enabled));
 
     if (bm->depth > (1 << maxplanes)) {
         if (csd->aga && !csd->aga_enabled) {
@@ -543,8 +547,8 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     if ((viewwidth << csd->res) > 320)
         viewwidth = 320 << csd->res;
 
-    D(bug("setmode bm=%x mode=%08x w=%d h=%d d=%d bpr=%d fu=%d\n",
-        bm, csd->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit));
+        D(bug("[AmigaVideo] %s:  bm=%x mode=%08x w=%d h=%d d=%d bpr=%d fu=%d\n",
+        __func__, bm, csd->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit));
     
     bplwidth = viewwidth >> (csd->res + 1);
     ddfstrt = (csd->startx / 2) & ~((1 << fetchunit) - 1);
@@ -580,9 +584,9 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
 
     setbitmap(csd, bm);
 
-        GfxBase->LOFlist = csd->copper2.copper2;
-        GfxBase->SHFlist = csd->interlace ? csd->copper2i.copper2 : csd->copper2.copper2;
-        custom->dmacon = 0x8100;
+    GfxBase->LOFlist = csd->copper2.copper2;
+    GfxBase->SHFlist = csd->interlace ? csd->copper2i.copper2 : csd->copper2.copper2;
+    custom->dmacon = 0x8100;
 
     setcoppercolors(csd);
     setspritepos(csd, csd->spritex, csd->spritey);
@@ -610,6 +614,8 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
     UWORD bitmapwidth = width;
     UWORD y, *p;
 
+    D(bug("[AmigaVideo] %s()\n", __func__));
+
     OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR*)&bmPFObj);
     OOP_GetAttr(bmPFObj, aHidd_PixFmt_ColorModel, &bmcmod);
     if (bmcmod == vHidd_ColorModel_TrueColor)
@@ -622,6 +628,7 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
         csd->fmode_spr = 2;
     else
         csd->fmode_spr = 0;
+    D(bug("[AmigaVideo] %s: fmode_spr = %x\n", __func__, csd->fmode_spr));
     fetchsize = 2 << csd->fmode_spr;
     width = 16 << csd->fmode_spr;
 
@@ -699,6 +706,8 @@ void setspritepos(struct amigavideo_staticdata *csd, WORD x, WORD y)
 
 void setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
 {
+    D(bug("[AmigaVideo] %s()\n", __func__));
+
     csd->cursorvisible = visible;
     if (visible) {
         if (csd->copper1_spritept) {
@@ -1035,6 +1044,5 @@ void initcustom(struct amigavideo_staticdata *csd)
     
     GfxBase->copinit = (struct copinit*)csd->copper1;
 
-    D(bug("Copperlist0 %p\n", csd->copper1));
-
+    D(bug("[AmigaVideo] %s: Copperlist0 %p\n", __func__, csd->copper1));
 }
