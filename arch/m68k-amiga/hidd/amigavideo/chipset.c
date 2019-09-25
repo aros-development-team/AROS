@@ -20,7 +20,8 @@
 
 #include <aros/debug.h>
 
-#define BPLCONMASK 0x8a55
+#define BPLCONMASKFULL  0xFA55
+#define BPLCONMASK      0x8A55
 
 static const UBYTE fetchunits[] = { 3,3,3,0, 4,3,3,0, 5,4,3,0 };
 static const UBYTE fm_maxplanes[] = { 3,2,1,0, 3,3,2,0, 3,3,3,0 };
@@ -36,7 +37,7 @@ void resetcustom(struct amigavideo_staticdata *csd)
       bug("[AmigaVideo] %s: GfxBase @ 0x%p\n", __func__, GfxBase);
      )
 
-    GfxBase->system_bplcon0 &= ~BPLCONMASK;
+    GfxBase->system_bplcon0 &= ~BPLCONMASKFULL;
     GfxBase->system_bplcon0 |= 0x0200;
     D(bug("[AmigaVideo] %s: bplcon0 = %04x\n", __func__, GfxBase->system_bplcon0));
 
