@@ -93,12 +93,12 @@ static void init_fs(struct DosLibrary *DOSBase)
             if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
             {
                 /* We prefer DOS\001 */
-            if ((fse->fse_DosType == ID_FFS_DISK) || (fse->fse_DosType == ID_FFS_muFS_DISK))
+                if ((fse->fse_DosType == ID_FFS_DISK) || (fse->fse_DosType == ID_FFS_muFS_DISK))
                 {
                     defseg = fse->fse_SegList;
                     break;
                 }
-            /* This will remember the first defined seglist */
+                /* This will remember the first defined seglist */
                 if (!defseg)
                     defseg = fse->fse_SegList;
             }
@@ -107,14 +107,14 @@ static void init_fs(struct DosLibrary *DOSBase)
         /* Add all that have both Handler and SegList defined to the Resident list */
         ForeachNode(&fsr->fsr_FileSysEntries, fse)
         {
-                if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
-                    (fse->fse_PatchFlags & FSEF_SEGLIST) &&
-                    (fse->fse_Handler != BNULL) &&
-                    (fse->fse_SegList != BNULL))
-                {
-                    D(bug("[DosInit] Adding \"%b\" (%p) at %p to the resident list\n",
-                        fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
-                    AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
+            if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
+                (fse->fse_PatchFlags & FSEF_SEGLIST) &&
+                (fse->fse_Handler != BNULL) &&
+                (fse->fse_SegList != BNULL))
+            {
+                D(bug("[DosInit] Adding \"%b\" (%p) at %p to the resident list\n",
+                    fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
+                AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
             }
         }
     }
@@ -142,7 +142,7 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
 
     if (!set_call_funcs(SETNAME(INIT), 1, 1))
         return NULL;
-    
+
     DOSBase = (struct DosLibrary *)FindName(&SysBase->LibList, "dos.library");
 
     D(bug("[DosInit] DOSBase 0x%p\n", DOSBase));
@@ -257,12 +257,12 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
         /* Initialization finished */
         AddLibrary(&DOSBase->dl_lib);
 
-    init_fs(DOSBase);
-   }
+        init_fs(DOSBase);
+    }
 
-   /* Try to boot */
-   if (CliInit(NULL) == RETURN_OK)
-   {
+    /* Try to boot */
+    if (CliInit(NULL) == RETURN_OK)
+    {
         /*
          * We now restart the multitasking - this is done
          * automatically by RemTask() when it switches.
@@ -357,7 +357,7 @@ static void DosExpunge(struct DosLibrary *DOSBase)
     FreeMem((char *)DOSBase - DOSBase->dl_lib.lib_NegSize, DOSBase->dl_lib.lib_NegSize + DOSBase->dl_lib.lib_PosSize);
 
     set_call_funcs(SETNAME(EXIT), -1, 0);
-    
+
     D(bug("%s: Expunged.\n", __func__));
 }
 
