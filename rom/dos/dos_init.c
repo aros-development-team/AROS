@@ -77,32 +77,32 @@ static void init_fs(struct DosLibrary *DOSBase)
         CloseLibrary(PartitionBase);
     }
 
-        /*
-         * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
-         * if it's been loaded. Otherwise, use the first handler
-         * on the FileSystemResource list that has fse_PatchFlags
-         * set to mark it with a valid SegList
-         */
-        if ((fsr = OpenResource("FileSystem.resource")))
-        {
+    /*
+     * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
+     * if it's been loaded. Otherwise, use the first handler
+     * on the FileSystemResource list that has fse_PatchFlags
+     * set to mark it with a valid SegList
+     */
+    if ((fsr = OpenResource("FileSystem.resource")))
+    {
         struct FileSysEntry *fse;
-            BPTR defseg = BNULL;
+        BPTR defseg = BNULL;
 
-            ForeachNode(&fsr->fsr_FileSysEntries, fse)
+        ForeachNode(&fsr->fsr_FileSysEntries, fse)
+        {
+            if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
             {
-                if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
+                /* We prefer DOS\001 */
+            if ((fse->fse_DosType == ID_FFS_DISK) || (fse->fse_DosType == ID_FFS_muFS_DISK))
                 {
-                    /* We prefer DOS\001 */
-                if ((fse->fse_DosType == ID_FFS_DISK) || (fse->fse_DosType == ID_FFS_muFS_DISK))
-                    {
-                        defseg = fse->fse_SegList;
-                        break;
-                    }
-                /* This will remember the first defined seglist */
-                    if (!defseg)
-                        defseg = fse->fse_SegList;
+                    defseg = fse->fse_SegList;
+                    break;
                 }
+            /* This will remember the first defined seglist */
+                if (!defseg)
+                    defseg = fse->fse_SegList;
             }
+        }
         DOSBase->dl_Root->rn_FileHandlerSegment = defseg;
         /* Add all that have both Handler and SegList defined to the Resident list */
         ForeachNode(&fsr->fsr_FileSysEntries, fse)
