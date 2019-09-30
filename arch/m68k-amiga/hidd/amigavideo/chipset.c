@@ -654,10 +654,10 @@ BOOL setsprite(OOP_Class *cl, OOP_Object *o, WORD width, WORD height, struct pHi
                 if (xx + x < bitmapwidth)
                 {
                     if (bmcmod != vHidd_ColorModel_TrueColor)
-                        c = HIDD_BM_GetPixel(msg->shape, x, y);
+                        c = HIDD_BM_GetPixel(msg->shape, xx + x, y);
                     else
                     {
-                        HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, x, y);
+                        HIDDT_Pixel pix = HIDD_BM_GetPixel(msg->shape, xx + x, y);
                         c = 0;
                         if ((ALPHA_COMP(pix, bmPF) & 0xFF00) == 0xFF00)
                             c = av__PickPen(csd, ((RED_COMP(pix, bmPF) & 0xFF00) << 8) | (GREEN_COMP(pix, bmPF) & 0xFF00) | ((BLUE_COMP(pix, bmPF) >> 8) & 0xFF));
