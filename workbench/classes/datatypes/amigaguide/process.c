@@ -295,7 +295,17 @@ RegCall GetA4 void asyncmethodfunc(void)
                                     TAG_DONE);
                         data->ag_Flags.GotoLine = FALSE;
                      }
+                     BOOL redraw = data->ag_Flags.Redraw;
                      ReleaseSemaphore(&si->si_Lock);
+                     if (redraw)
+                     {
+                         /* If the renderer has skipped drawing while we owned
+                            the lock, give it a chance to synchronize */
+                         NotifyAttrs(obj, &msg->agm_GInfo, 0,
+                                     GA_ID,    CAST_GAD(obj)->GadgetID,
+                                     DTA_Sync, TRUE,
+                                     TAG_DONE);
+                     }
                   }
                   break;
 	       }

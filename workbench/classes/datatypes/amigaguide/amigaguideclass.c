@@ -640,14 +640,24 @@ IPTR gm_render(Class *cl, Object *obj, struct gpRender *msg)
    {
       DB(("gm_render(): in layout\n"));
       data->ag_Flags.Redraw = TRUE;
-      return rv;
    }
-
-   if(!AttemptSemaphore(&si->si_Lock))
+   else if(!AttemptSemaphoreShared(&si->si_Lock))
    {
       DB(("gm_render(): lock failed\n"));
-   } else
+      data->ag_Flags.Redraw = TRUE;
+   }
+   else
    {
+      if (data->ag_Flags.ClearArea)
+      {
+         DB(("do EraseRect in amigaguide %lx\n", (long) data));
+         data->ag_Flags.ClearArea = FALSE;
+         struct IBox *domain = &data->ag_SubObjDomain;
+         EraseRect(((struct gpRender*)msg)->gpr_RPort,
+                 domain->Left, domain->Top,
+                 domain->Left+domain->Width-1,
+                 domain->Top+domain->Height-1);
+      }
       /* first draw navigator gadget */
       Object *nav = CAST_OBJ(data->ag_Gadget);
       if(nav != NULL)
@@ -741,7 +751,7 @@ IPTR gm_input(Class *cl, Object *obj, struct gpInput *msg)
    if(si->si_Flags & DTSIF_LAYOUT)
    {
       rv = GMR_NOREUSE;
-   } else if(!AttemptSemaphore(&si->si_Lock))
+   } else if(!AttemptSemaphoreShared(&si->si_Lock))
    {
       rv = GMR_NOREUSE;
    } else
@@ -901,33 +911,35 @@ IPTR dtm_asynclayout(Class *cl, Object *obj, struct gpLayout *msg)
       si->si_TotVert  = totv;
       si->si_TotHoriz = toth;
 #endif
-
-      DB(("before async notify...\n"));
-
-      NotifyAttrs(obj, msg->gpl_GInfo, 0,
-		       GA_ID,          CAST_GAD(obj)->GadgetID,
-
-		       DTA_TopVert,    topv,
-		       DTA_TotalVert,  totv,
-		       DTA_VertUnit,   unitv,
-		       DTA_VisibleVert,si->si_VisVert,
-
-		       DTA_TopHoriz,   toph,
-		       DTA_TotalHoriz, toth,
-		       DTA_HorizUnit,  unith,
-		       DTA_VisibleHoriz,si->si_VisHoriz,
-
-		       DTA_Title,      title,
-
-		       DTA_Busy,       FALSE,
-		       DTA_Sync,       TRUE,
-		       TAG_DONE);
    }
 
    /* layout done... */
    sosi->si_Flags &= ~DTSIF_LAYOUT;
 
    ReleaseSemaphore(&si->si_Lock);
+
+   DB(("before async notify...\n"));
+
+   /* Notify after we are done with status set to not doing layout and
+      after having released the exclusive lock. */
+   NotifyAttrs(obj, msg->gpl_GInfo, 0,
+               GA_ID,          CAST_GAD(obj)->GadgetID,
+
+               DTA_TopVert,    topv,
+               DTA_TotalVert,  totv,
+               DTA_VertUnit,   unitv,
+               DTA_VisibleVert,si->si_VisVert,
+
+               DTA_TopHoriz,   toph,
+               DTA_TotalHoriz, toth,
+               DTA_HorizUnit,  unith,
+               DTA_VisibleHoriz,si->si_VisHoriz,
+
+               DTA_Title,      title,
+
+               DTA_Busy,       FALSE,
+               DTA_Sync,       TRUE,
+               TAG_DONE);
 
    return totv;
 }
@@ -1225,19 +1237,7 @@ void ActivateAGObject(Class *cl, Object *obj, struct GadgetInfo *ginfo,
    UpdateNavigator(cl, obj, ginfo);
 
    /* clear object domain */
-   {
-      struct RastPort *rp;
-
-      domain = &data->ag_SubObjDomain;
-      rp = ObtainGIRPort(ginfo);
-      if(rp != NULL)
-      {
-         EraseRect(rp, domain->Left, domain->Top,
-                       domain->Left+domain->Width-1,
-                       domain->Top+domain->Height-1);
-         ReleaseGIRPort(rp);
-      }
-   }
+   data->ag_Flags.ClearArea = TRUE;
 
    /* now lets layout our and its sub object. */
    layout.MethodID    = GM_LAYOUT;

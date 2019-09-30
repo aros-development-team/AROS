@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -570,7 +570,7 @@ void AddDTOToWin(void)
                                  TAG_DONE);
 
     AddDTObject(win, NULL, dto, -1);
-    RefreshDTObjects(dto, win, NULL, 0); // seems to be needed by text datatype to render more than first line at start...
+    RefreshDTObjects(dto, win, NULL, TAG_DONE); // seems to be needed by text datatype to render more than first line at start...
 }
 
 /*********************************************************************************************/
@@ -1165,7 +1165,7 @@ static void HandleAll(void)
                         case 13: /* RETURN */
                             if (dto_supports_activate_field) DoTrigger(STM_ACTIVATE_FIELD);
                             else if (dto_supports_search) DoTrigger(STM_SEARCH);
-                            RefreshDTObjects (dto, win, NULL, (IPTR) NULL);
+                            RefreshDTObjects (dto, win, NULL, TAG_DONE);
                             break;
                             
                         case 9: /* TAB */
@@ -1518,7 +1518,7 @@ static void HandleAll(void)
                             case DTA_Title:
                                 SetWindowTitles(win, (UBYTE *)tidata, (UBYTE *)~0);
                                 break;
-                                
+
                             /* Error message */
                             case DTA_ErrorLevel:
 /*                              if (tidata)
@@ -1530,22 +1530,23 @@ static void HandleAll(void)
 
                             /* Time to refresh */
                             case DTA_Sync:
-                                /* Refresh the DataType object */
+                                /* Refresh the DataType object,
+                                   unless we wait for initial rendering */
                                 D(bug("Multiview: DTA_SYNC\n"));
-                                RefreshDTObjects (dto, win, NULL, (IPTR) NULL);
+                                RefreshDTObjects (dto, win, NULL, TAG_DONE);
                                 break;
 
                         } /* switch (tag->ti_Tag) */
-                        
+
                     } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
                     break;
-                
+
             } /* switch (msg->Class) */
-            
+
             ReplyMsg((struct Message *)msg);
-            
+
         } /* while((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
-        
+
     } /* while (!quitme) */
 }
 
