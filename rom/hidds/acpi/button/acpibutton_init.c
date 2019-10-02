@@ -205,7 +205,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    LIBBASE->library.lib_OpenCnt += 1;
+    LIBBASE->hsi_LibNode.lib_OpenCnt += 1;
 
     root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
     if (!root)
@@ -342,7 +342,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
         retVal = TRUE;
     else
     {
-        LIBBASE->library.lib_OpenCnt -= 1;
+        LIBBASE->hsi_LibNode.lib_OpenCnt -= 1;
         CloseLibrary(_csd->cs_UtilityBase);
         CloseLibrary(_csd->cs_ACPICABase);
     }
