@@ -25,5 +25,5 @@ RUN /work/configure --target=$BUILD_EXT $BUILD_CONFIGUREEXTRAS --enable-ccache -
 # --with-portssources=/externalsources
 
 RUN make -j8 default-x11keymaptable
-# RUN make -j8 contrib
+RUN make -j8 contrib
 RUN make distfiles
