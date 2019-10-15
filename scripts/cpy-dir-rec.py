@@ -32,7 +32,8 @@ def copy_tree(src, dst, ignore):
     # directories like Locale/Help/Español on non-western systems, where locale
     # is different from Latin-1 (e. g. russian).
     # See http://docs.python.org/2/howto/unicode.html#unicode-filenames
-    names = os.listdir(unicode(src))
+    src_u = unicode(src, "utf-8").encode("utf-8")
+    names = os.listdir(src_u)
 
     if not os.path.exists(dst):
         os.makedirs(dst)
