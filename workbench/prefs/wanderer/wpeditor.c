@@ -246,7 +246,6 @@ struct TagItem32 * FindTag32Item(ULONG tagValue, const struct TagItem32 *tagList
     }
 
     return NULL;
-
 }
 
 IPTR GetTag32Data(ULONG tagValue, ULONG defaultVal, const struct TagItem32 *tagList)
@@ -2104,7 +2103,16 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Freeing old ViewSetting Ta
         if (_viewSettings_Node->wpedbo_Options)
         {
 D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Allocated new Tag storage @ 0x%p [%d bytes] \n", _viewSettings_Node->wpedbo_Options, chunk_size - _viewSettings_TagOffset));
+             
             CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpedbo_Options, tag_count * sizeof(struct TagItem32));
+
+#if AROS_BIG_ENDIAN            
+            BYTE num = 0;
+            do {
+                _viewSettings_Node->wpedbo_Options[num].ti_Tag = AROS_LE2LONG(_viewSettings_Node->wpedbo_Options[num].ti_Tag);
+                _viewSettings_Node->wpedbo_Options[num].ti_Data = AROS_LE2LONG(_viewSettings_Node->wpedbo_Options[num].ti_Data);
+            } while(++num < tag_count);
+#endif        
             _viewSettings_Node->wpedbo_Options[tag_count].ti_Tag = TAG_DONE;
         }
     }
@@ -2182,11 +2190,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: End of header chunk ..\n"
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context 0x%p\n", context));
 
-                                error = ReadChunkBytes(
-                                                    handle, 
-                                            chunk_buffer, 
-                                            this_chunk_size
-                                               );
+                                error = ReadChunkBytes(handle, chunk_buffer, this_chunk_size);
                                     
                                 if (error == this_chunk_size)
                                 {
@@ -2280,8 +2284,8 @@ D(bug("[WPEditor] Failed to open stream!, returncode %ld!\n", error));
 }
 
 #define SAVEVIEWSETTINGSTAG(tag, defvalue)                                                                                                  \
-    _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(tag);                                                               \
-    _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(tag, defvalue, _viewSettings_Node->wpedbo_Options));  \
+    _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = tag;                                                               \
+    _viewSettings_TagList[_viewSettings_TagCount].ti_Data = GetTag32Data(tag, defvalue, _viewSettings_Node->wpedbo_Options);  \
     _viewSettings_TagCount += 1;
 
 
@@ -2351,12 +2355,12 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
                         /* helper to convert to little endian */
             STACKED IPTR           ti_Data = 0;
 
-                        // save navigation bahaviour
-                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_WindowNavigationMethod);
-                        GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
-                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+            // save navigation bahaviour
+            _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_WindowNavigationMethod);
+            GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
+            _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindow_WindowNavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
-                        _wp_GlobalTagCounter += 1;
+            _wp_GlobalTagCounter += 1;
 
 #if defined(DEBUG_SHOWUSERFILES)
             _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_UserFiles_ShowFilesFolder);
@@ -2564,7 +2568,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Stri
                                         case MUIA_IconWindowExt_ImageBackFill_BGTileMode:
                                         case MUIA_IconWindowExt_ImageBackFill_BGXOffset:
                                         case MUIA_IconWindowExt_ImageBackFill_BGYOffset:
-                                            _viewSettings_TagList[_viewSettings_TagCount].ti_Tag   = tag->ti_Tag;
+                                            _viewSettings_TagList[_viewSettings_TagCount].ti_Tag  = tag->ti_Tag;
                                             _viewSettings_TagList[_viewSettings_TagCount].ti_Data = tag->ti_Data;
                                             _viewSettings_TagCount += 1;
                                             break;
