@@ -3769,7 +3769,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                     if (((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
                         && (yrect.MinY < (_mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight)))
                     {
-                            xrect.MinY = data->icld_LVMAttribs->lmva_HeaderHeight;
+                            yrect.MinY = data->icld_LVMAttribs->lmva_HeaderHeight;
                     }
                     yrect.MaxX = _mright(obj);
                     yrect.MaxY = _mbottom(obj);
@@ -3782,12 +3782,13 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                 {
                     yrect.MinX = _mleft(obj);
                     yrect.MinY = _mtop(obj);
-                    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
-                    {
-                        xrect.MinY += data->icld_LVMAttribs->lmva_HeaderHeight;
-                    }
                     yrect.MaxX = _mright(obj);
                     yrect.MaxY = _mtop(obj) - data->update_scrolldy;
+                    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+                    {
+                        yrect.MinY += data->icld_LVMAttribs->lmva_HeaderHeight;
+                        yrect.MaxY += data->icld_LVMAttribs->lmva_HeaderHeight;
+                    }
 
                     OrRectRegion(region, &yrect);
                     
