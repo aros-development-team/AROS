@@ -4910,7 +4910,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
         switch (message->imsg->Class)
         {
             case IDCMP_NEWSIZE:
-                bug("[IconList] %s: IDCMP_NEWSIZE\n", __PRETTY_FUNCTION__);
+                D(bug("[IconList] %s: IDCMP_NEWSIZE\n", __PRETTY_FUNCTION__));
                 break;
 
             case IDCMP_RAWKEY:
