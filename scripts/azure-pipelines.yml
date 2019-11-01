@@ -40,7 +40,7 @@ jobs:
       fi
       sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
       sudo apt-get update -y
-      sudo apt-get upgrade -y
+      sudo ACCEPT_EULA=Y apt-get upgrade -y
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
       sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
