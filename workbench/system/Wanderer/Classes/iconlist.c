@@ -3769,7 +3769,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                     if (((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
                         && (yrect.MinY < (_mtop(obj) + data->icld_LVMAttribs->lmva_HeaderHeight)))
                     {
-                            xrect.MinY = data->icld_LVMAttribs->lmva_HeaderHeight;
+                            yrect.MinY = data->icld_LVMAttribs->lmva_HeaderHeight;
                     }
                     yrect.MaxX = _mright(obj);
                     yrect.MaxY = _mbottom(obj);
@@ -3782,12 +3782,13 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                 {
                     yrect.MinX = _mleft(obj);
                     yrect.MinY = _mtop(obj);
-                    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
-                    {
-                        xrect.MinY += data->icld_LVMAttribs->lmva_HeaderHeight;
-                    }
                     yrect.MaxX = _mright(obj);
                     yrect.MaxY = _mtop(obj) - data->update_scrolldy;
+                    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+                    {
+                        yrect.MinY += data->icld_LVMAttribs->lmva_HeaderHeight;
+                        yrect.MaxY += data->icld_LVMAttribs->lmva_HeaderHeight;
+                    }
 
                     OrRectRegion(region, &yrect);
                     
@@ -4909,7 +4910,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
         switch (message->imsg->Class)
         {
             case IDCMP_NEWSIZE:
-                bug("[IconList] %s: IDCMP_NEWSIZE\n", __PRETTY_FUNCTION__);
+                D(bug("[IconList] %s: IDCMP_NEWSIZE\n", __PRETTY_FUNCTION__));
                 break;
 
             case IDCMP_RAWKEY:
