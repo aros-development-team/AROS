@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Screen opening test
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 		        tags[1].ti_Data = *args.height;
 		    if (args.depth)
 		        tags[2].ti_Data = *args.depth;
-		    printf("Opening screen, size: %lux%lu, depth: %lu\n", tags[0].ti_Data, tags[1].ti_Data, tags[3].ti_Data);
+		    printf("Opening screen, size: %lux%lu, depth: %lu\n", tags[0].ti_Data, tags[1].ti_Data, tags[2].ti_Data);
 		    if (args.mode) {
 		        tags[3].ti_Tag  = SA_DisplayID;
 			tags[3].ti_Data = strtoul(args.mode, NULL, 16);
