@@ -35,7 +35,7 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     ULONG ReadPCR[2] = { 0x4E7A0808, 0x4E730000 };
     register ULONG pcr asm("d0");
 
-    __sprintf(info->ModelStringBuffer, "%s", "68000");
+    __sprintf(info->ModelStringBuffer, "%s", "MC68000");
     info->ModelString = info->ModelStringBuffer;
 
     info->CPUModel = CPUMODEL_68000;
@@ -77,20 +77,23 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     }
     else if (SysBase->AttnFlags & AFF_68060)
     {
+        int revoffs = 7;
         info->CPUModel = CPUMODEL_68060;
         if (SysBase->AttnFlags & AFF_FPU40) {
             info->FPUModel = FPUMODEL_INTERNAL;
-            __sprintf(info->ModelStringBuffer, "%s", "68060");
+            __sprintf(info->ModelStringBuffer, "%s", "MC68060");
         } else {
+            revoffs += 2;
             if (SysBase->AttnFlags  & AFB_PRIVATEB)
             {
-                __sprintf(info->ModelStringBuffer, "%s", "68LC060");
+                __sprintf(info->ModelStringBuffer, "%s", "MC68LC060");
             }
             else
             {
-                __sprintf(info->ModelStringBuffer, "%s", "68EC060");
+                __sprintf(info->ModelStringBuffer, "%s", "MC68EC060");
             }
         }
+        __sprintf(&info->ModelStringBuffer[revoffs], " (Rev. #%d)", (pcr >> 8) & 0xFF);
         info->L1InstructionCacheSize = (1024 << 3);
         info->L1DataCacheSize = (1024 << 3);
     }
@@ -99,15 +102,15 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
         info->CPUModel = CPUMODEL_68040;
         if (SysBase->AttnFlags & AFF_FPU40) {
             info->FPUModel = FPUMODEL_INTERNAL;
-            __sprintf(info->ModelStringBuffer, "%s", "68040");
+            __sprintf(info->ModelStringBuffer, "%s", "MC68040");
         } else {
             if (SysBase->AttnFlags  & AFB_PRIVATEB)
             {
-                __sprintf(info->ModelStringBuffer, "%s", "68LC040");
+                __sprintf(info->ModelStringBuffer, "%s", "MC68LC040");
             }
             else
             {
-                __sprintf(info->ModelStringBuffer, "%s", "68EC040");
+                __sprintf(info->ModelStringBuffer, "%s", "MC68EC040");
             }
         }
         info->L1InstructionCacheSize = (1024 << 2);
@@ -118,11 +121,11 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
         info->CPUModel = CPUMODEL_68030;
         if (SysBase->AttnFlags  & AFB_PRIVATEB)
         {
-            __sprintf(info->ModelStringBuffer, "%s", "68030");
+            __sprintf(info->ModelStringBuffer, "%s", "MC68030");
         }
         else
         {
-            __sprintf(info->ModelStringBuffer, "%s", "68EC030");
+            __sprintf(info->ModelStringBuffer, "%s", "MC68EC030");
         }
         info->L1InstructionCacheSize = 256;
         info->L1DataCacheSize = 256;
@@ -132,18 +135,18 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
         info->CPUModel = CPUMODEL_68020;
         if (SysBase->AttnFlags & AFF_ADDR32)
         {
-            __sprintf(info->ModelStringBuffer, "%s", "68020");
+            __sprintf(info->ModelStringBuffer, "%s", "MC68020");
         }
         else
         {
-            __sprintf(info->ModelStringBuffer, "%s", "68EC020");
+            __sprintf(info->ModelStringBuffer, "%s", "MC68EC020");
         }
         info->L1InstructionCacheSize = 256;
     }
     else if (SysBase->AttnFlags & AFF_68010)
     {
         info->CPUModel = CPUMODEL_68010;
-        __sprintf(info->ModelStringBuffer, "%s", "68010");
+        __sprintf(info->ModelStringBuffer, "%s", "MC68010");
     }
 
     if (info->FPUModel != FPUMODEL_INTERNAL) {
@@ -153,12 +156,12 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
         if (SysBase->AttnFlags & AFF_68882)
         {
             info->FPUModel = FPUMODEL_68882;
-            __sprintf(s, "%s", "/68882");
+            __sprintf(s, "%s", "/MC68882");
         }
         else if (SysBase->AttnFlags & AFF_68881)
         {
             info->FPUModel = FPUMODEL_68881;
-            __sprintf(s, "%s", "/68881");
+            __sprintf(s, "%s", "/MC68881");
         }
         else
             info->FPUModel = FPUMODEL_NONE;
