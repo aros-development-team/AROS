@@ -105,7 +105,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_ARCH)/aros.hunk.gz" "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)"
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs"
 	@$(CP) "$(AROSDIR).HUNK/README.txt" "$(DISTDIR)/README"
-	@$(CP) -fv "$(AROSDIR).HUNK/boot/*/*.bin" "$(DISTDIR)/"
+#	@$(CP) -fv "$(AROSDIR).HUNK/boot/*/*.bin" "$(DISTDIR)/"
 	@mkisofs -f \
 		-o $@ \
 		-allow-leading-dots \
