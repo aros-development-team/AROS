@@ -25,10 +25,12 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 # Real Mesa3DGL.library rules...
 #
 
+ifeq ($(AROS_TARGET_CPU),m68k)
 #MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)
 #MM- mesa3dgl-library-yes : mesa3dgl-library
 
 #MM mesa3dgl-library : includes workbench-libs-dxtn-includes linklibs-galliumauxiliary workbench-libs-gallium-linklib mesa3dgl-linklibs
+endif
 
 SHARED_LIB_SOURCES = \
             emul_arosc \
