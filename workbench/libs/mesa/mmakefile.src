@@ -25,7 +25,7 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 # Real Mesa3DGL.library rules...
 #
 
-ifeq ($(AROS_TARGET_CPU),m68k)
+ifneq ($(AROS_TARGET_CPU),m68k)
 #MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)
 #MM- mesa3dgl-library-yes : mesa3dgl-library
 
