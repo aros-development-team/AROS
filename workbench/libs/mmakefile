@@ -95,7 +95,7 @@ endif
 #MM     workbench-libs-jpeg-includes \
 #MM     workbench-libs-png-includes \
 #MM     workbench-libs-lcms2-includes \
-ifeq ($(AROS_TARGET_CPU),m68k)
+ifneq ($(AROS_TARGET_CPU),m68k)
 #MM     workbench-libs-gallium-includes \
 #MM     workbench-libs-vega-includes \
 #MM     workbench-libs-mesa-includes \
