@@ -48,12 +48,11 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-z \
 #MM     workbench-libs-jpeg \
 #MM     workbench-libs-png \
-#MM     workbench-libs-lcms2 \
-ifneq ($(AROS_TARGET_CPU),m68k)
-#MM     workbench-libs-gallium \
-#MM     workbench-libs-vega \
-#MM     workbench-libs-egl
-endif
+#MM     workbench-libs-lcms2
+# \
+# #MM     workbench-libs-gallium \
+# #MM     workbench-libs-vega \
+# #MM     workbench-libs-egl
 
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
@@ -94,11 +93,10 @@ endif
 #MM     workbench-libs-z-includes \
 #MM     workbench-libs-jpeg-includes \
 #MM     workbench-libs-png-includes \
-#MM     workbench-libs-lcms2-includes \
-ifneq ($(AROS_TARGET_CPU),m68k)
-#MM     workbench-libs-gallium-includes \
-#MM     workbench-libs-vega-includes \
-#MM     workbench-libs-mesa-includes \
-#MM     workbench-libs-glu-includes \
-#MM     workbench-libs-egl-includes
-endif
+#MM     workbench-libs-lcms2-includes
+# \
+# #MM     workbench-libs-gallium-includes \
+# #MM     workbench-libs-vega-includes \
+# #MM     workbench-libs-mesa-includes \
+# #MM     workbench-libs-glu-includes \
+# #MM     workbench-libs-egl-includes
