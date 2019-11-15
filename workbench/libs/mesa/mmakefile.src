@@ -3,8 +3,6 @@
 #   Generate mesa3dgl.library
 #
 
-ifneq ($(AROS_TARGET_CPU),m68k)
-
 include $(SRCDIR)/config/aros.cfg
 
 include $(SRCDIR)/$(CURDIR)/mesa.cfg
@@ -27,11 +25,11 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 # Real Mesa3DGL.library rules...
 #
 
-#MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)
-#MM- mesa3dgl-library-yes : mesa3dgl-library
+#MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)-$(AROS_TARGET_CPU)
+#MM- mesa3dgl-library-yes-x86_64 : mesa3dgl-library
+#MM- mesa3dgl-library-yes-i386 : mesa3dgl-library
 
 #MM mesa3dgl-library : includes workbench-libs-dxtn-includes linklibs-galliumauxiliary workbench-libs-gallium-linklib mesa3dgl-linklibs
-
 
 SHARED_LIB_SOURCES = \
             emul_arosc \
@@ -110,7 +108,5 @@ GL_INCLUDE_FILES := egl.h eglext.h eglplatform.h eglmesaext.h eglextchromium.h
 VK_INCLUDE_FILES := vulkan.h vulkan_core.h vk_icd.h vk_platform.h
 
 %copy_includes path=vulkan dir=$(top_srcdir)/include/vulkan includes=$(VK_INCLUDE_FILES)
-
-endif
 
 %common

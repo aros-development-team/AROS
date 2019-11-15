@@ -6,8 +6,9 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 GALLIUM_PATH = $(top_srcdir)/src/gallium
 include $(GALLIUM_PATH)/drivers/softpipe/Makefile.sources
 
-#MM- workbench-hidds : hidd-softpipe-$(AROS_TARGET_TOOLCHAIN)
-#MM- hidd-softpipe-yes : hidd-softpipe
+#MM- workbench-hidds : hidd-softpipe-$(AROS_TARGET_TOOLCHAIN)-$(AROS_TARGET_CPU)
+#MM- hidd-softpipe-yes-x86_64 : hidd-softpipe
+#MM- hidd-softpipe-yes-i386 : hidd-softpipe
 
 #MM- hidd-softpipe: includes hidd-gallium mesa3dgl-linklibs linklibs-libatomic
 
