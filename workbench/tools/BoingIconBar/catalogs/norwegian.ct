@@ -1,0 +1,24 @@
+## version $VER: boingiconbar.catalog 2.0 (21.07.2019)
+## language norwegian
+## codeset 0
+;
+MSG_CX_NAME
+BoingIconBar
+; BoingIconBar
+;
+MSG_CX_TITLE
+Ikonverktøylinje
+; Icon Toolbar
+;
+MSG_CX_DESC
+Start program fra verktøylinjen
+; Start Programs from Toolbar
+;
+MSG_MENU_SETTINGS
+Innstillinger
+; Settings
+;
+MSG_MENU_QUIT
+Avslutt
+; Quit
+;

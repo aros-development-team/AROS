@@ -1,0 +1,145 @@
+## version $VER: About.catalog 2.0 (08.07.2019)
+## language norwegian
+## codeset 0
+;
+;
+MSG_TITLE
+Om AROS
+; About AROS
+;
+MSG_PERSONAL_BUILD
+Personlig %s bygg
+; Personal %s Build
+;
+MSG_NIGHTLY_BUILD
+Daglig %s bygg
+; Nightly %s Build
+;
+MSG_SNAPSHOT
+Snapshot
+; Snapshot
+;
+MSG_MILESTONE
+Milepæl
+; Milestone
+;
+MSG_RELEASE
+Utgave
+; Release
+;
+MSG_COPYRIGHT
+Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+; Copyright \xa9 1995-2019, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Utgitt under følgende lisensbetingelser
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Public License
+; AROS Public License
+;
+MSG_LICENSE_3
+, Version 1.1.
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Besøk http://www.aros.org/de/ for mer informasjon.
+; Please visit http://www.aros.org for more information.
+;
+MSG_PAGE_AUTHORS
+Forfattere
+; Authors
+;
+MSG_PAGE_SPONSORS
+Sponsorer
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Erkjennelser
+; Acknowledgements
+;
+MSG_SECTION_COORDINATION
+Koordinator
+; Coordination
+;
+MSG_SECTION_EVANGELISM
+Evangelister
+; Evangelism
+;
+MSG_SECTION_HIDD
+HIDD-Subsystem
+; HIDD subsystem
+;
+MSG_SECTION_INTUITION
+Intuition
+; Intuition
+;
+MSG_SECTION_GRAPHICS
+Grafikk
+; Graphics
+;
+MSG_SECTION_SHELL_COMMANDS
+Shellkommandoer
+; Shell Commands
+;
+MSG_SECTION_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_SECTION_TOOLS
+Verktøy
+; Tools
+;
+MSG_SECTION_PREFERENCES
+Innstillinger
+; Preferences
+;
+MSG_SECTION_BGUI
+BGUI
+; BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+; Zune
+;
+MSG_SECTION_KERNEL
+Kjerne
+; Kernel
+;
+MSG_SECTION_DOS
+DOS
+; DOS
+;
+MSG_SECTION_NETWORK
+Nettverkskomponenter
+; Networking Components
+;
+MSG_SECTION_LIBC_POSIX
+C Link bibliotek og POSIX lag
+; C link library and POSIX layer
+;
+MSG_SECTION_DOCUMENTATION
+Dokumentasjon
+; Documentation
+;
+MSG_SECTION_TRANSLATION
+Oversettelse
+; Translation
+;
+MSG_SECTION_ARTISTRY
+Kunstnerisk
+; Artistry
+;
+MSG_SECTION_WEBSITE
+Webside
+; Website
+;
+MSG_SECTION_DATATYPES
+Datatyper
+; Datatypes
+;
+MSG_SECTION_TESTING
+Testing
+; Testing
+;

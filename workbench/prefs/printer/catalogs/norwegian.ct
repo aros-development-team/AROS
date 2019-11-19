@@ -1,0 +1,218 @@
+## version $VER: Printer.catalog 2.0 (20.05.2019)
+## language norwegian
+## codeset 0
+;
+;
+MSG_WINTITLE
+Skriverinnstillinger
+;Printer Preferences
+;
+MSG_OK
+Ok
+;Ok
+;
+MSG_PRINTER_DRIVER
+Driver
+; Driver
+;
+MSG_PRINTER_SETTINGS
+Innstillinger
+; Settings
+;
+MSG_PRINTER_SELECT_DRIVER
+Velg driver:
+; Select Driver:
+;
+MSG_PRINTER_NAME
+Navn:
+; Name:
+;
+MSG_PRINTER_UNIT
+Skriverenhet:
+; Printer Unit:
+;
+MSG_PRINTER_PS_UNIT
+Enhet:
+; Unit:
+;
+MSG_PRINTER_CUSTOM_DEVICE
+Tilpasset enhet:
+; Custom device:
+;
+MSG_PRINTER_DEVICE_UNIT
+Enhet %d
+; Unit %d
+;
+MSG_PRINTER_PARALLEL
+Parallell
+; Parallel
+;
+MSG_PRINTER_SERIAL
+Seriell
+; Serial
+;
+MSG_PRINTER_TO_FILE
+Skriv til fil
+; Print to file
+;
+MSG_PRINTER_USB
+USB Skriver
+; USB Printer
+;
+MSG_TISK_PAPER_TYPE
+Papirtype:
+; Paper Type:
+;
+MSG_TISK_PAPER_SIZE
+Papirstørrelse:
+; Paper Size:
+;
+MSG_TISK_QUALITY
+Kvalitet:
+; Quality:
+;
+MSG_TISK_PITCH
+Punkt:
+; Pitch:
+;
+MSG_TISK_SPACING
+Avstand:
+; Spacing:
+;
+MSG_TISK_LEFT_MARGIN
+Venstremargin:
+; Left Margin:
+;
+MSG_TISK_RIGHT_MARGIN
+Høyremargin:
+; Right Margin:
+;
+MSG_TISK_LINE_PER_PAGE
+Linjer per side:
+; Lines per Page:
+;
+MSG_TISK_DENSITY
+Tetthet:
+; Density:
+;
+MSG_TISK_ASPECT
+Aspekt:
+; Aspect:
+;
+MSG_TISK_SHADE
+Skygge:
+; Shade:
+;
+MSG_TISK_IMAGE
+Bilde:
+; Image:
+;
+MSG_TISK_TRESHOLD
+Grenseverdi:
+; Threshold:
+;
+MSG_TISK_DITHERING
+Utjevning:
+; Dithering:
+;
+MSG_TISK_DIMENSION
+Dimensjoner:
+; Dimensions:
+;
+MSG_TISK_PAPER_OFFSET
+Forskyvning (
+; Offset (
+;
+MSG_TISK_CENTER_IMAGE
+Midtsill bilde:
+; Center Image:
+;
+MSG_TISK_ANTIALIAS
+Antialias:
+; AntiAlias:
+;
+MSG_TISK_INTEGER_SCALING
+Heltalls skalering:
+; Integer Scaling:
+;
+MSG_TISK_FANFOLD
+Liste
+; Fanfold
+;
+MSG_TISK_SINGLE
+Enkel
+; Single
+;
+MSG_TISK_DRAFT
+Draft (72 dpi)
+; Draft (72 dpi)
+;
+MSG_TISK_LETTER
+Letter (240 dpi)
+; Letter (240 dpi)
+;
+MSG_TISK_PORTRAIT
+Portrett
+; Portrait
+;
+MSG_TISK_LANDSCAPE
+Landskap
+; Landscape
+;
+MSG_TISK_BW
+Svart og hvit
+; Black & White
+;
+MSG_TISK_GRAY
+Gråskala
+; Greyscape
+;
+MSG_TISK_COLOR
+Farge
+; Color
+;
+MSG_TISK_GRAY2
+Gråskala 2
+; Greyscape 2
+;
+MSG_TISK_POSITIVE
+Positiv
+; Positive
+;
+MSG_TISK_NEGATIVE
+Negativ
+; Negative
+;
+MSG_TISK_IGNORE
+Ignorer
+; Ignore
+;
+MSG_TISK_BOUNDED
+Avgrenset
+; Bounded
+;
+MSG_TISK_ABSOLUTE
+Absolutt
+; Absolute
+;
+MSG_TISK_PIXEL
+Pixel
+; Pixel
+;
+MSG_TISK_MULTIPLY
+Multipliser
+; Multiply
+;
+MSG_TISK_ORDERED
+Sortert
+; Ordered
+;
+MSG_TISK_HALFTONE
+Halvtone
+; Halftone
+;
+MSG_TISK_FLOYDSTEINBERG
+Floyd-Steinberg
+; Floyd-Steinberg
+;
+;

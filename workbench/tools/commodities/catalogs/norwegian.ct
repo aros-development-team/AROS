@@ -1,15 +1,13 @@
-## version $VER: Commodities.catalog 1.0 (12.08.2006)
-## language norsk
+## version $VER: Commodities.catalog 3.0 (20.05.2019)
+## language norwegian
 ## codeset 0
-;
-; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
 Kan ikke åpne %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
-
+Kan ikke åpne 'input.device'
 ; Can't open 'input.device'
 ;
 ; ***NEW***
@@ -43,15 +41,15 @@ Kan ikke allokere programminne!\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
-Kan ikke lage meldingsport!\n
+Kan ikke opprette meldingsport!\n
 ; Can't create message port!\n
 ;
 MSG_CANT_CREATE_BROKER
-Kan ikke lage CxBroker-objekt!\n
+Kan ikke opprette CxBroker-objekt!\n
 ; Can't create CxBroker object!\n
 ;
 MSG_CANT_CREATE_CUSTOM
-Kan ikke lage CxCustom-objekt!\n
+Kan ikke opprette CxCustom-objekt!\n
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
@@ -63,17 +61,11 @@ Prosjekt
 ; Project
 ;
 MSG_MEN_PROJECT_HIDE
-
+Gjem
 ; H\0Hide
-;
-; ***NEW***
-;
 MSG_MEN_PROJECT_ICONIFY
-
+Minimer
 ; I\0Iconify
-;
-; ***NEW***
-;
 MSG_MEN_PROJECT_QUIT
 Q\0Avslutt
 ; Q\0Quit
@@ -114,7 +106,7 @@ Gjem
 ; Hide
 ;
 MSG_EXCHANGE_GAD_REMOVE
-Ta bort
+Fjern
 ; Remove
 ;
 MSG_EXCHANGE_CYCLE_ACTIVE
@@ -148,7 +140,7 @@ ClickToFront
 ; ClickToFront
 ;
 MSG_CLICK2FNT_CXTITLE
-Klikk til Front-verktøy
+Klikk til front-verktøy
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
@@ -159,11 +151,11 @@ Løfter vinduer til forgrunnen
 ; OPAQUE
 ;
 MSG_OPAQUE_CXNAME
-Opaque
+Ugjennomsiktig
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
-Solide vinduer
+Ensfargede vinduer
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
@@ -208,97 +200,90 @@ FKey
 ; FKey
 ;
 MSG_FKEY_CXTITLE
-Function To Keys:
+Funksjon:
 ; Function To Keys:
 ;
 MSG_FKEY_CXDESCR
-Attach Special Functions To Keys
+Fest spesialfunksjoner til taster
 ; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
-FKey: Hot Key = <%s>
+FKey: Hurtigtast = <%s>
 ; FKey: Hot Key = <%s>
 ;
 MSG_FKEY_DEFINED_KEYS
-Defined Keys
+Definerte taster
 ; Defined Keys
 ;
 MSG_FKEY_NEW_KEY
-_New Key
+_Ny tast
 ; _New Key
 ;
 MSG_FKEY_DELETE_KEY
-_Delete Key
+_Slett tast
 ; _Delete Key
 ;
 MSG_FKEY_SAVE_KEY
-
+Lagre definerte taster
 ; Save Defined Keys
 ;
-; ***NEW***
-;
 MSG_FKEY_COMMAND
-Command
+Kommando
 ; Command
 ;
 MSG_FKEY_COMMAND_PARAMS
-Command Parameters
+Kommandoparametre
 ; Command Parameters
 ;
 MSG_FKEY_CMD_CYCLE_WIN
-Cycle Windows
+Bytt mellom vinduer
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
-Cycle Screens
+Bytt mellom skjermer
 ; Cycle Screens
 ;
 MSG_FKEY_CMD_ENLARGE_WIN
-Enlarge Window
+Forstørr vindu
 ; Enlarge Window
 ;
 MSG_FKEY_CMD_SHRINK_WIN
-Shrink Window
+Krymp vindu
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Toggle Window Size
+Velg vindusstørrelse
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_RESCUE_WIN
-
+Redd vindu
 ; Rescue Window
 ;
-; ***NEW***
-;
 MSG_FKEY_CMD_INSERT_TEXT
-Insert Text
+Sett inn tekst
 ; Insert Text
 ;
 MSG_FKEY_CMD_RUN_PROG
-Run Program
+Kjør program
 ; Run Program
 ;
 MSG_FKEY_CMD_RUN_AREXX
-Run Arexx Script
+Kjør Arexx script
 ; Run Arexx Script
 ;
 MSG_FKEY_MEN_PROJECT_SAVE
-S\0Save Defined Keys
+S\0Lagre definerte taster
 ; S\0Save Defined Keys
 ;
-; ===============================================
-; NOCAPSLOCK
-;
 MSG_NOCAPSLOCK_CXNAME
-NoCapsLock
+Ingen CapsLock
 ; NoCapsLock
 ;
 MSG_NOCAPSLOCK_CXTITLE
-NoCapsLock:
+Ingen CapsLock:
 ; NoCapsLock:
 ;
 MSG_NOCAPSLOCK_CXDESCR
-Renders the CAPS LOCK key ineffective
+Gjør CAPS LOCK tasten virkningsløs
 ; Renders the CAPS LOCK key ineffective
 ;

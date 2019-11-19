@@ -31,11 +31,11 @@ feil antall argumenter
 ; wrong number of arguments
 ;
 MSG_ERROR_UNMATCHED_QUOTES
-ikke matchende anførselstegn
+ikke samsvarende anførselstegn
 ; unmatched quotes
 ;
 MSG_ERROR_LINE_TOO_LONG
-argumentlinjen er ugyldig eller for lang
+linjen med argumenter er ugyldig eller for lang
 ; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
@@ -47,7 +47,7 @@ ugyldig resident bibliotek
 ; invalid resident library
 ;
 MSG_ERROR_NO_DEFAULT_DIR
-feil 201
+ingen standard katalog
 ; no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE
@@ -67,7 +67,7 @@ objektet finnes ikke
 ; object not found
 ;
 MSG_ERROR_BAD_STREAM_NAME
-ugyldig vindubeskrivelse
+ugyldig vindusbeskrivelse
 ; invalid window description
 ;
 MSG_ERROR_OBJECT_TOO_LARGE
@@ -127,7 +127,7 @@ disken er full
 ; disk is full
 ;
 MSG_ERROR_DELETE_PROTECTED
-objektet er beskyttet fra sletting
+objektet er beskyttet for sletting
 ; object is protected from deletion
 ;
 MSG_ERROR_WRITE_PROTECTED
@@ -147,7 +147,7 @@ ingen disk i enheten
 ; no disk in drive
 ;
 MSG_ERROR_NO_MORE_ENTRIES
-ingen flere poster i mappen
+ingen flere elementer i mappen
 ; no more entries in directory
 ;
 MSG_ERROR_IS_SOFT_LINK
@@ -167,19 +167,19 @@ funksjonen er ikke implementert
 ; function not implemented
 ;
 MSG_ERROR_RECORD_NOT_LOCKED
-ulåst resultat
+ulåst oppføring
 ; record not locked
 ;
 MSG_ERROR_LOCK_COLLISION
-låskonflikt i resultat
+låskonflikt i oppføring
 ; record lock collision
 ;
 MSG_ERROR_LOCK_TIMEOUT
-timeout av resultatslås
+timeout av oppføringslås
 ; record lock timeout
 ;
 MSG_ERROR_UNLOCK_ERROR
-opplåsingsfeil i resultat
+opplåsingsfeil i oppføring
 ; record unlock error
 ;
 MSG_ERROR_BUFFER_OVERFLOW
@@ -195,43 +195,43 @@ filen er ikke kjørbar
 ; file not executable
 ;
 MSG_STRING_DISK_NOT_VALIDATED
-Volume "%s" is not validated
+Volume "%s" er ikke validert
 ; Volume "%s" is not validated
 ;
 MSG_STRING_DISK_WRITE_PROTECTED
-Volume "%s" is write protected
+Volume "%s" er skrivebeskyttet
 ; Volume "%s" is write protected
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
-Please insert volume "%s" in any drive
+Vennligst sett inn volum "%s" i en stasjon
 ; Please insert volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
-Please replace volume "%s" in any drive
+Vennligst bytt ut volum "%s" i hvilken som helst stasjon
 ; Please replace volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
-Please replace volume "%s" in "%s"
+Vennligst bytt ut volum "%s" i "%s"
 ; Please replace volume "%s" in "%s"
 ;
 MSG_STRING_DISK_FULL
-Volume "%s" is full
+Volume "%s" er fullt
 ; Volume "%s" is full
 ;
 MSG_STRING_NOT_A_DOS_DISK
-Not a DOS disk in "%s"
+Ingen DOS disk i "%s"
 ; Not a DOS disk in "%s"
 ;
 MSG_STRING_NO_DISK
-No disk present in "%s"
+Ingen disk i "%s"
 ; No disk present in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-You MUST replace volume "%s" in "%s"!
+Du MÅ byttet ut volum "%s" i "%s"!
 ; You MUST replace volume "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
-Volume "%s" has a read/write error
+Volum "%s" har lese-/skrivefeil
 ; Volume "%s" has a read/write error
 ;
 MSG_STRING_RETRY

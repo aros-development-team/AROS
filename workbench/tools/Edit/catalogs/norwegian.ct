@@ -1,7 +1,7 @@
 ;
 ; JanoEditor.catalog
 ;
-## version $VER: JanoEditor.catalog 1.1 (17.03.2017).
+## version $VER: JanoEditor.catalog 1.1 (20.05.2019).
 ## codeset 0
 ## language norsk
 ;
@@ -120,7 +120,7 @@ MSG_GOTOLINE
 Gå til linje...
 ;
 MSG_FINDBRACKET
-Matchende parentes
+Matchende parenteser
 ;
 MSG_LASTMODIF
 Siste modifikasjon
@@ -151,7 +151,7 @@ Gjenta makro...
 ; Environnement menu
 ;
 MSG_ENVTITLE
-Instillinger
+Innstillinger
 ;
 MSG_SCRMODE
 Oppløsning...
@@ -160,13 +160,13 @@ MSG_FONTS
 Skrifttyper...
 ;
 MSG_PREFS
-Generelle instillinger...
+Generelle innstillinger...
 ;
 MSG_LOADPREFS
-Hent instillinger...
+Hent innstillinger...
 ;
 MSG_SAVEPREFS
-Lagre instillinger
+Lagre innstillinger
 ;
 MSG_SAVEPREFSAS
 Lagre innstillinger som...
@@ -175,52 +175,52 @@ ERR_BADOS
 Krever OS v2.0 eller høyere.
 ;
 ERR_NOASLREQ
-Kan ikke åpne ASL-forespørsel!
+Kan ikke åpne ASL-anmoder!
 ;
 ERR_NOMEM
 Ikke nok minne!
 ;
 ERR_NOGUI
-Kunne ikke åpne hovedgrensesnitt!
+Klarte ikke åpne brukergrensesnittet!
 ;
 ERR_NONAME
 Uten navn
 ;
 ERR_WRITECLIP
-Kunne ikke skrive til clipboard!
+Klarte ikke skrive til utklippstavle!
 ;
 ERR_OPENCLIP
-Kunne ikke åpne clipboard!
+Klarte ikke åpne utklippstavle!
 ;
 ERR_LOADFILE
-Kunne ikke åpne fil!
+Klarte ikke åpne fil!
 ;
 ERR_NOTXTINCLIP
-Clipboard inneholder ingen tekst
+Utklippstavlen inneholder ingen tekst
 ;
 ERR_WRONG_TYPE
 Objektet er av feil type!
 ;
 ERR_READCLIP
-Kunne ikke lese fil på grunn av for lite minne!
+Klarte ikke lese fil på grunn av for lite minne!
 ;
 ERR_NOBRACKET
-Ingen parentes under cursor!
+Ingen parentes under markøren!
 ;
 ERR_NOT_FOUND
-Kunne ikke finne mønsteret '%s'
+Klarte ikke finne mønsteret '%s'
 ;
 ERR_LOADFONT
-Kunne ikke åpne font!
+Klarte ikke åpne skrifttypen!
 ;
 ERR_NOPREFEDITOR
-Kunne ikke finne innstillings-editoren!
+Klarte ikke finne innstillingseditoren!
 ;
 ERR_BADPREFSFILE
-Feil instillings-filformat.
+Feil filformat på innstillingsfilen.
 ;
 ERR_FILEMODIFIED
-%s er forandret.\nEr du sikker på at du vil lukke?
+%s er endret.\nEr du sikker på at du vil lukke?
 ;
 ERR_SLC
 Lagre|Lukk|Avbryt
@@ -252,7 +252,7 @@ MSG_ABOUT
 Om
 ;
 MSG_FORMATINFO
-%s\nProgram av T.Pierron and C.Guillaume © 2000\n\nRedigert fil: %s\nLengde: %iu %s, %iu %s.
+%s\nProgram av T.Pierron and C.Guillaume ? 2000\n\nRedigert fil: %s\nLengde: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Fortsett
@@ -261,7 +261,7 @@ MSG_BYTE
 Byte
 ;
 MSG_BYTES
-Bytes
+Byte
 ;
 MSG_LINE
 Linje

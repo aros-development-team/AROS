@@ -1,0 +1,66 @@
+## version $VER: Appearance.catalog 2.1 (15.6.2017)
+## language norwegian
+## codeset 0
+;
+;
+MSG_WINTITLE
+Utseendeinnstillinger
+; Appearance Preferences
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_ENABLETHEMES
+Aktiver dekorering?
+; Enable theming?
+;
+MSG_PREVIEW
+Forhåndsvis
+; Preview
+;
+MSG_NOPREVIEW
+-Forhåndsvisning ikke tilgjengelig-
+; -Preview Unavailable-
+;
+MSG_SELECTEDTHEME
+Dekorasjon
+; Theme
+;
+MSG_ENABLEZUNEPREFS
+Kopier konfigurasjon fra Zune?
+; Inherit Zune Configuration?
+;
+MSG_ENABLEWANDPREFS
+Kopier konfigurasjon fra Wanderer?
+; Inherit Wanderer Configuration?
+;
+MSG_SEC_THEMING
+Dekorering
+; Theming
+;
+MSG_SEC_COMPOSITING
+Sammensetting
+; Compositing
+;
+MSG_ENABLE_SCREEN_COMPOSITION
+Aktiver skjermsammensetting
+; Enable Screen Composition
+;
+MSG_COMPOSITE_BELOW
+Sammensetting under
+; Composite Below
+;
+MSG_COMPOSITE_LEFT
+Sammensetting til venstre
+; Composite Left
+;
+MSG_COMPOSITE_RIGHT
+Sammensetting til høyre
+; Composite Right
+;
+MSG_ENABLE_COMPOSITE_WITH_ALPHA
+Aktiver sammensetting med alpha
+; Enable Compositing with Alpha
+;
+;

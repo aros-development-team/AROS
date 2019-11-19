@@ -1,0 +1,702 @@
+## version $VER: Zune.catalog 2.0 (04.06.2019)
+## language norwegian
+## codeset 0
+;
+; buttonsp.c
+;-----------
+MSG_GENERAL 
+Generelt
+;
+MSG_BACKGROUND_COLON 
+Bakgrunn:
+;
+MSG_BACKGROUND_PRESSED 
+Bakgrunn i\nvalgt tilstand:
+;
+MSG_TEXT_BUTTONS 
+Tekstknapper
+;
+MSG_FRAME_COLON 
+Ramme:
+;
+MSG_FONT 
+Skrifttype:
+;
+MSG_IMAGE_BUTTONS 
+Bildeknapper
+;
+MSG_ADJUST_FRAME 
+Juster ramme
+;
+MSG_CHECKMARKS 
+Haker
+;
+MSG_LOOK_COLON 
+Utseende:
+;
+MSG_CHECKMARK 
+Hake
+;
+MSG_RADIO_BUTTONS 
+Radioknapper
+;
+MSG_RADIOBUTTON 
+Radioknapp
+;
+MSG_LOOK 
+Utseende
+;
+MSG_H 
+H
+;
+MSG_V 
+V
+;
+MSG_SPACING 
+Mellomrom
+;
+;=============================
+; cyclesp.c
+;----------
+MSG_BELOW 
+Under
+;
+MSG_ON_ACTIVE 
+Når aktiv
+;
+MSG_CYCLE_GADGET_DESIGN 
+Syklus gadget design
+;
+MSG_CYCLE 
+Syklus
+;
+MSG_POPUP_MENU_CONTROL 
+Popupmeny kontroll
+;
+MSG_POSITION 
+Posisjon:
+;
+MSG_LEVEL 
+Nivå:
+;
+MSG_SPEED 
+Hastighet:
+;
+MSG_POPUP_MENU_DESIGN 
+Popupmeny design
+;
+MSG_FRAME 
+Ramme
+;
+MSG_ADJUST_BACKGROUND 
+Juster bakgrunn
+;
+MSG_BACKGROUND 
+Bakgrunn
+;
+MSG_RECESSED_ENTRIES 
+Nedsenkede tittler:
+;
+;=============================
+; groupsp.c
+;__________
+MSG_ABOVE 
+Over
+;
+MSG_CENTERED 
+Midtstilt
+;
+MSG_STANDARD 
+Standard
+;
+MSG_HILITE 
+Opplyst
+;
+MSG_3D 
+3D
+;
+MSG_OUTLINE 
+Uthevet
+;
+MSG_TITLE 
+Tittel
+;
+MSG_COLOR 
+Farge:
+;
+MSG_HORIZONTAL 
+Horisontalt:
+;
+MSG_VERTICAL 
+Vertikalt:
+;
+MSG_REGISTER 
+Register
+;
+MSG_DEFAULT_SIZE_TRUNCATE_TITLES 
+Standard størrelse for sammentrukne tittler:
+;
+MSG_NORMAL 
+Normal
+;
+MSG_VIRTUAL 
+Virtuell
+;
+MSG_FRAMED 
+Innrammede
+;
+MSG_PAGE 
+Side
+;
+;=============================
+; listviewsp.c
+;-------------
+MSG_SHIFTED 
+Forflyttet
+;
+MSG_ALWAYS 
+Alltid
+;
+MSG_LINEAR 
+Bineær
+;
+MSG_MIXED 
+Blandede
+;
+MSG_CONTROL 
+Kontroll
+;
+MSG_MULTI 
+Multi:
+;
+MSG_REFRESH 
+Oppdater:
+;
+MSG_SMOOTH 
+Jevn:
+;
+MSG_FONTS 
+Skrifttyper
+;
+MSG_NORMAL_COLON 
+Normal:
+;
+MSG_FIXED 
+Fast:
+;
+MSG_LEADING 
+Ledende
+;
+MSG_DESIGN 
+Design
+;
+MSG_INPUT_LISTS 
+Input \nlister:
+;
+MSG_READONLY_LISTS 
+Låste \nlister:
+;
+MSG_CURSOR 
+Markør
+;
+MSG_ACTIVE 
+Aktiv:
+;
+MSG_ACTIVE_SELECTED 
+Aktiv og valgt:
+;
+MSG_SELECTED 
+Valgt:
+;
+;=============================
+; navigationp.c
+;______________
+MSG_ALWAYS_SOLID 
+Alltid ugjennomsiktig
+;
+MSG_GHOSTED_ON_BOX 
+Skyggelagt på boksen
+;
+MSG_GHOSTED_OUTSIDE_BOX 
+Skyggelagt på utsiden av boksen
+;
+MSG_ALWAYS_GHOSTED 
+Alltid skyggelagt
+;
+MSG_SHOW_FRAMES 
+Vis rammer
+;
+MSG_SHOW_OBJECTS 
+Vis objekter
+;
+MSG_KL_PRESS 
+Press:
+;
+MSG_KL_TOGGLE 
+Veksle:
+;
+MSG_KL_UP 
+Opp:
+;
+MSG_KL_DOWN 
+Ned:
+;
+MSG_KL_PAGE_UP 
+Side opp:
+;
+MSG_KL_PAGE_DOWN 
+Side ned:
+;
+MSG_KL_TOP 
+Topp:
+;
+MSG_KL_BOTTOM 
+Bunn:
+;
+MSG_KL_LEFT 
+Venstre:
+;
+MSG_KL_RIGHT 
+Høyre:
+;
+MSG_KL_WORD_LEFT 
+Ord til venstre:
+;
+MSG_KL_WORD_RIGHT 
+Ord til høyre:
+;
+MSG_KL_LINE_START 
+Starten på linje:
+;
+MSG_KL_LINE_END 
+Slutten av linje:
+;
+MSG_KL_NEXT_GADGET 
+Neste gadget:
+;
+MSG_KL_PREV_GADGET 
+Forrige gadget:
+;
+MSG_KL_GADGET_OFF 
+Skru av gadget:
+;
+MSG_KL_CLOSE_WINDOW 
+Lukk vindu:
+;
+MSG_KL_NEXT_WINDOW 
+Neste vindu:
+;
+MSG_KL_PREV_WINDOW 
+Forrige vindu:
+;
+MSG_KL_HELP 
+Hjelp:
+;
+MSG_KL_POPUP 
+Sprettopp:
+;
+MSG_DRAG_DROP 
+Dra og slipp
+;
+MSG_LEFT_BUTTON 
+Venstre knapp:
+;
+MSG_MIDDLE_BUTTON 
+Midtre knapp:
+;
+MSG_AUTOSTART 
+Autostart:
+;
+MSG_PIXEL 
+%ld pixel
+;
+MSG_BALANCING_GROUPS 
+Balanserende grupper
+;
+MSG_EXAMPLE 
+Eksempel:
+;
+MSG_TRY_WITH 
+Prøv med
+;
+MSG_SHIFT 
+shift
+;
+MSG_TOO 
+også!
+;
+MSG_KEYBOARD_CONTROL 
+Tastaturkontroll
+;
+MSG_COLOR_ACTIVE_OBJ 
+Farge på aktive objekter:
+;
+MSG_NEWLOOK 
+Newlook
+;
+MSG_CUSTOM 
+Egendefinert
+;
+MSG_ARROWS 
+Piler
+;
+MSG_UP 
+opp
+;
+MSG_ARROW_UP 
+Pil opp
+;
+MSG_ARROW_DOWN 
+Pil ned
+;
+MSG_DOWN 
+ned
+;
+MSG_LEFT 
+venstre
+;
+MSG_ARROW_LEFT 
+Pil venstre
+;
+MSG_ARROW_RIGHT 
+Pil høyre
+;
+MSG_RIGHT 
+høyre
+;
+MSG_BAR 
+Stolpe
+;
+MSG_GADGET_TYPE 
+Gadget type:
+;
+MSG_SCROLLER 
+Scroller
+;
+MSG_KNOB 
+Knapp
+;
+MSG_ARRANGEMENT 
+Arrangement
+;
+;=============================
+; slidersp.c
+;-----------
+MSG_CONTAINER_DESIGN 
+Konteinerdesign
+;
+MSG_KNOB_DESIGN 
+Bryterdesign
+;
+MSG_EXAMPLE_SLIDERS 
+Glidebryter eksempel
+;
+;=============================
+; specialp.c
+;-----------
+MSG_TEXT_FIELDS 
+Skrivefelt
+;
+MSG_EXAMPLE_TEXTFIELD 
+Skrivefelt eksempel
+;
+MSG_PROGRESS_INDICATOR 
+Framdriftsviser
+;
+MSG_DEVICE_IMAGES 
+Enhetsbilder
+;
+MSG_DRAWER 
+Skuff
+;
+MSG_HARDDISK 
+Harddisk
+;
+MSG_DISK 
+Disk
+;
+MSG_RAM 
+RAM
+;
+MSG_VOLUME 
+Volum
+;
+MSG_NETWORK 
+Nettverk
+;
+MSG_ASSIGN 
+Tildele
+;
+MSG_TAPE_IMAGES 
+Tape image
+;
+MSG_TAPE_PLAY 
+Spill tape
+;
+MSG_TAPE_PLAYBACK 
+Spill av tape
+;
+MSG_TAPE_PAUSE 
+Pause tape
+;
+MSG_TAPE_STOP 
+Stoppe tape
+;
+MSG_TAPE_RECORD 
+Ta opp på tape
+;
+MSG_TAPE_UP 
+Tape opp
+;
+MSG_TAPE_DOWN 
+Tape ned
+;
+;=============================
+; stringsp.c
+;-----------
+MSG_STRING_FRAME 
+Tekstramme
+;
+MSG_SPECIAL_POPUP_BUTTONS 
+Spesielle sprettoppknapper
+;
+MSG_POPUP 
+Sprettopp
+;
+MSG_DEFAULT 
+Standard
+;
+MSG_FILE 
+Fil
+;
+MSG_POPUP_FILE 
+Sprettopp filer
+;
+MSG_POPUP_DRAWER 
+Sprettopp skuff
+;
+MSG_INACTIVE_STRING_COLORS 
+Inaktive farger
+;
+MSG_TEXT 
+Tekst
+;
+MSG_ACTIVE_STRING_COLORS 
+Aktive farger
+;
+MSG_MARKED_STRING_COLORS 
+Markerte farger
+;
+MSG_EXAMPLE_STRING_GADGET 
+Strengfelt eksempel
+;
+;=============================
+; windowp.c
+;----------
+MSG_FORGET_ON_EXIT 
+Glem ved avslutt
+;
+MSG_REMEMBER_ON_EXIT 
+Husk ved avslutt
+;
+MSG_SAVE_ON_EXIT 
+Lagre ved avsutt
+;
+MSG_SMART 
+smart
+;
+MSG_SIMPLE 
+enkel
+;
+MSG_WITHOUT_CLEAR 
+Uten rens
+;
+MSG_WITH_CLEAR 
+Med rens
+;
+MSG_POSITIONS 
+Posisjon:
+;
+MSG_REDRAW 
+Tegn på nytt:
+;
+MSG_TINY 
+Liten:
+;
+MSG_BIG 
+Stor:
+;
+MSG_WINDOW 
+Vindu
+;
+MSG_REQUESTER 
+Forespørsler
+;
+MSG_L 
+L
+;
+MSG_T 
+T
+;
+MSG_R 
+R
+;
+MSG_B 
+B
+;
+MSG_BUTTONS 
+Knapper
+;
+;=============================
+; zune.c
+;-------
+MSG_WINTITLE1 
+Zune - Globale innstillinger
+;
+MSG_WINTITLE2 
+Zune - Innstillinger for: %s
+;
+MSG_MEN_PROJECT 
+Prosjekt
+;
+MSG_MEN_OPEN 
+Åpne ...
+;
+MSG_MEN_OPEN_SC 
+O
+;
+MSG_MEN_APPEND 
+Legg til ...
+;
+MSG_MEN_SAVEAS 
+Lagre som ...
+;
+MSG_MEN_SAVEAS_SC 
+S
+;
+MSG_MEN_ABOUT 
+Om Zune ...
+;
+MSG_MEN_ABOUT_SC 
+?
+;
+MSG_MEN_QUIT 
+Avslutt
+;
+MSG_MEN_QUIT_SC 
+Q
+;
+MSG_FRAME_CLIPBOARD 
+Utklippstavle ramme
+;
+MSG_IMAGE_CLIPBOARD 
+Utklippstavle bilde
+;
+MSG_GAD_TEST 
+_Test
+;
+MSG_GAD_SAVE 
+_Lagre
+;
+MSG_GAD_USE 
+_Bruk
+;
+MSG_GAD_CANCEL 
+_Avbryt
+;
+MSG_DSC_SYSTEM 
+System
+;
+MSG_DSC_WINDOWS 
+Vinduer
+;
+MSG_DSC_GROUPS 
+Grupper
+;
+MSG_DSC_BUTTONS 
+Knapper
+;
+MSG_DSC_CYCLES 
+Sykluser
+;
+MSG_DSC_SLIDERS 
+Glidebryter
+;
+MSG_DSC_SCROLLBARS 
+Rullefelt
+;
+MSG_DSC_LISTVIEWS 
+Listevisninger
+;
+MSG_DSC_STRINGS 
+Strenger
+;
+MSG_DSC_NAVIGATION 
+Navigasjon
+;
+MSG_DSC_SPECIAL 
+Spesiell
+;
+MSG_DSC_FRAMES 
+Rammer
+;
+;=============================
+; zunestuff.c
+;------------
+MSG_ADJUST_PEN 
+Juster penn
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES 
+Egendefinerte rammer
+;
+;=============================
+; systemp.c
+;----------
+MSG_PUBLIC_SCREEN 
+Offentlig skjerm
+;
+MSG_NAME 
+Navn:
+;
+MSG_CALL_INSPECTOR 
+Åpne PSI inspektør
+;
+MSG_POP_TO_FRONT 
+Sprett forran:
+;
+MSG_ICONIFICATION 
+Minimer
+;
+MSG_HOTKEY 
+Hurtigtast:
+;
+MSG_SHOW 
+Vis:
+;
+MSG_ICON 
+Ikon
+;
+MSG_MENU 
+Meny
+;
+MSG_ON_STARTUP 
+Ved oppstart:
+;
+MSG_INTERFACES 
+Grensesnitt
+;
+MSG_AREXX 
+ARexx:
+;
+MSG_BUBBLE_HELP 
+Hjelpbobbler
+;
+MSG_FIRST_BUBBLE 
+Første bobble:
+;
+MSG_NEXT_BUBBLE 
+Neste bobble:
+;
