@@ -9,7 +9,9 @@ CUR_MESADIR := src/mesa
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
-#MM- mesa3dgl-linklibs : mesa3d-linklib-mesa
+#MM- mesa3dgl-linklibs : mesa3dgl-linklibs-$(AROS_TARGET_CPU)
+#MM- mesa3dgl-linklibs-x86_64 : mesa3d-linklib-mesa
+#MM- mesa3dgl-linklibs-i386 : mesa3d-linklib-mesa
 
 # disable necessary warnings
 NOWARN_FLAGS := $(MESA_NOWARNFLAGS) $(NOWARN_RETURN_TYPE) $(NOWARN_UNUSED_CONST_VARIABLE) \

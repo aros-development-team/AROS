@@ -35,7 +35,9 @@ USER_CFLAGS += $(NOWARN_FLAGS)
 
 EXEDIR := $(AROSDIR)/Devs/Monitors
 
-#MM- workbench-devs-monitors: devs-monitors-intelgma
+#MM- workbench-devs-monitors : devs-monitors-intelgma-$(AROS_TARGET_CPU)
+#MM- devs-monitors-intelgma-x86_64 : devs-monitors-intelgma
+#MM- devs-monitors-intelgma-i386 : devs-monitors-intelgma
 #MM devs-monitors-intelgma : hidd-i2c hidd-gallium intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
 
 %build_prog mmake=devs-monitors-intelgma \

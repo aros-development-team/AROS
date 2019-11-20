@@ -9,7 +9,9 @@ CUR_MESADIR := src/mapi
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
-#MM- mesa3dgl-linklibs : mesa3d-linklib-glapi
+#MM- mesa3dgl-linklibs : mesa3dgl-linklibs-$(AROS_TARGET_CPU)
+#MM- mesa3dgl-linklibs-x86_64 : mesa3d-linklib-glapi
+#MM- mesa3dgl-linklibs-i386 : mesa3d-linklib-glapi
 
 USER_INCLUDES += \
             -I$(top_srcdir)/include \

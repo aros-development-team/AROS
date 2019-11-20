@@ -9,7 +9,10 @@ CUR_MESADIR := src/gallium/auxiliary
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
-#MM- mesa3dgl-linklibs : mesa3d-linklib-galliumauxiliary
+#MM- mesa3dgl-linklibs : mesa3dgl-linklibs-$(AROS_TARGET_CPU)
+#MM- mesa3dgl-linklibs-x86_64 : mesa3d-linklib-galliumauxiliary
+#MM- mesa3dgl-linklibs-i386 : mesa3d-linklib-galliumauxiliary
+
 #MM mesa3d-linklib-galliumauxiliary : workbench-libs-dxtn-includes mesa3d-linklib-compiler mesa3d-linklib-galliumauxiliary-genobs
 #MM mesa3d-linklib-galliumauxiliary-quick : mesa3d-linklib-galliumauxiliary-genobs
 #MM- mesa3d-linklib-galliumauxiliary-genobs : mesa3d-linklib-galliumauxiliary-generated
