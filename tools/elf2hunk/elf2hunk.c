@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -74,6 +74,7 @@ typedef char *   STRPTR;
 #define HUNK_SYMBOL	1008
 #define HUNK_END	1010
 #define HUNK_HEADER	1011
+#define HUNK_RELRELOC32 1021
 
 #define SHT_PROGBITS    1
 #define SHT_SYMTAB      2
@@ -205,7 +206,7 @@ struct pheader
     ULONG type;
     ULONG offset;
     IPTR  vaddr;
-    IPTR  paddr;                
+    IPTR  paddr;
     ULONG filesz;
     ULONG memsz;
     ULONG flags;
@@ -448,12 +449,13 @@ struct hunkheader {
     ULONG size;	/* Size in ULONGs */
     void *data;
     ULONG relocs;
+    ULONG relrelocs;
     int   hunk;	/* Allocatable hunk ID */
     struct hunkreloc {
     	ULONG shid;	/* ELF hunk base to add to... */
     	ULONG offset;	/* offset in this hunk. */
     	const char *symbol;
-    } *reloc;
+    } *reloc, *relreloc;
 };
 
 static int relocate
@@ -483,12 +485,14 @@ static int relocate
 
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
-    ULONG hrels;
+    ULONG hrels, hrelrels;
 
     hrels = h->relocs;
-    h->relocs += numrel;
-    h->reloc = realloc(h->reloc, h->relocs * sizeof(struct hunkreloc));
+    hrelrels = h->relrelocs;
+    h->reloc = realloc(h->reloc, (h->relocs + numrel) * sizeof(struct hunkreloc));
+    h->relreloc = realloc(h->relreloc, (h->relrelocs + numrel) * sizeof(struct hunkreloc));
     struct hunkreloc *hrel = &h->reloc[hrels];
+    struct hunkreloc *hrelrel = &h->relreloc[hrelrels];
 
     for (i=0; i<numrel; i++, rel++)
     {
@@ -544,7 +548,7 @@ static int relocate
             case SHN_COMMON:
                 bug("[ELF2HUNK] SHN_COMMON symbol '%s' unsupported\n", symname);
                       set_error(EINVAL);
-		      
+
                 return 0;
 
             case SHN_ABS:
@@ -564,7 +568,7 @@ static int relocate
                 break;
 
             case R_68K_PC32:
-                value += rel->addend - offset; 
+                value += rel->addend - offset;
                 break;
 
             case R_68K_PC16:
@@ -587,14 +591,32 @@ static int relocate
 
 	D(bug("[ELF2HUNK]   shid %d, offset 0x%x: base 0x%x\n", (int)shid, (int)offset, (int)value));
         *(ULONG *)(h->data + offset) = htonl(value + ntohl(*(ULONG *)(h->data + offset)));
+
         if (shid == ~0) {
-    	    h->relocs--;
     	    continue;
         }
-        hrel->shid = shid;
-        hrel->offset = offset;
-        hrel->symbol = symname;
-        hrel++;
+
+        switch (ELF_R_TYPE(rel->info))
+        {
+            case R_68K_32:
+                hrel->shid = shid;
+                hrel->offset = offset;
+                hrel->symbol = symname;
+                h->relocs++;
+                hrel++;
+                break;
+
+            case R_68K_PC32:
+                hrelrel->shid = shid;
+                hrelrel->offset = offset;
+                hrelrel->symbol = symname;
+                h->relrelocs++;
+                hrelrel++;
+                break;
+
+            default:
+                break;
+        }
     }
 
     return 1;
@@ -634,7 +656,7 @@ int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, 
     	struct symbol s;
     	const char *name;
     	int lsize;
-    	
+
     	s = sym[i];
     	sym_fixup(&s);
 
@@ -654,7 +676,7 @@ int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, 
 
     return 1;
 }
- 
+
 static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
 {
     int i;
@@ -664,6 +686,7 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
 
     /* Sort the relocations by reference hunk id */
     qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
+    qsort(hh[h]->relreloc, hh[h]->relrelocs, sizeof(hh[h]->relreloc[0]), reloc_cmp);
 
     wlong(hunk_fd, HUNK_RELOC32);
     D(bug("\tHUNK_RELOC32: %d relocations\n", (int)hh[h]->relocs));
@@ -682,6 +705,27 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     	for (; count > 0; i++, count--) {
     	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->reloc[i].offset, hh[h]->reloc[i].symbol));
     	    wlong(hunk_fd, hh[h]->reloc[i].offset);
+    	}
+    }
+    wlong(hunk_fd, 0);
+
+    wlong(hunk_fd, HUNK_RELRELOC32);
+    D(bug("\tHUNK_RELRELOC32: %d relocations\n", (int)hh[h]->relrelocs));
+
+    for (i = 0; i < hh[h]->relrelocs; ) {
+    	int count;
+    	int shid = hh[h]->relreloc[i].shid;
+    	for (count = i; count < hh[h]->relrelocs; count++)
+    	    if (hh[h]->relreloc[count].shid != shid)
+    	    	break;
+    	count -= i;
+    	wlong(hunk_fd, count);
+    	D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
+    	/* Convert from ELF hunk ID to AOS hunk ID */
+    	wlong(hunk_fd, hh[shid]->hunk);
+    	for (; count > 0; i++, count--) {
+    	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
+    	    wlong(hunk_fd, hh[h]->relreloc[i].offset);
     	}
     }
     wlong(hunk_fd, 0);
@@ -735,7 +779,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
         lseek(file, 0, SEEK_SET);
         return (copy_to(file, hunk_fd) == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
-    
+
     D(bug("Read SHNum\n"));
     int_shnum = read_shnum(file, &eh);
     if (!int_shnum)
@@ -748,7 +792,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
 
     sh_fixup(sh, int_shnum);
 
-    /* Looks like we have a valid executable. Generate a 
+    /* Looks like we have a valid executable. Generate a
      * HUNK header set. Not all may be filled in.
      */
     hh = calloc(sizeof(*hh), int_shnum);
@@ -761,7 +805,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
             break;
         }
     }
- 
+
     /* Iterate over the section headers in order to do some stuff... */
     D(bug("Look for symbol tables\n"));
     for (i = 0; i < int_shnum; i++)
@@ -780,6 +824,8 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
             hh[i] = calloc(sizeof(struct hunkheader), 1);
             hh[i]->type = (sh[i].type == SHT_SYMTAB) ? HUNK_SYMBOL : 0;
             hh[i]->memflags = 0;
+            hh[i]->relocs = 0;
+            hh[i]->relrelocs = 0;
             hh[i]->hunk = -1;
             hh[i]->data = load_block(file, sh[i].offset, sh[i].size);
             if (!hh[i]->data)
@@ -845,7 +891,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
         	&& hh[sh[i].info]->data)
         {
 	    void *reloc = load_block(file, sh[i].offset, sh[i].size);
-	    
+
 	    if (!relocate(&eh, sh, i, symtab_shndx, reloc, hh))
 	    	    return EXIT_FAILURE;
 
@@ -1041,7 +1087,7 @@ static int copy(const char *src, const char *dst, int flags)
     } else {
         mode = 0755;
     }
-    
+
     if (S_ISDIR(mode)) {
         unlink(dst);
         mkdir(dst, mode);
