@@ -649,7 +649,6 @@ int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, 
     	return 1;
 
     wlong(hunk_fd, HUNK_SYMBOL);
-    wlong(hunk_fd, syms);
 
     /* Dump symbols for this hunk */
     for (i = 0; i < syms ; i++) {
