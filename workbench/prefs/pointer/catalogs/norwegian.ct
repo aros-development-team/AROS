@@ -1,0 +1,40 @@
+## version $VER: pointer.catalog 2.0 (20.05.2019)
+## language norwegian
+## codeset 0
+;
+MSG_WINTITLE
+Pekerinnstillinger
+; Pointer Preferences
+;
+MSG_OK
+OK
+; OK
+;
+MSG_HOTSPOT
+Aktivt punkt
+;  Hotspot
+;
+MSG_ALPHA
+Alfa
+; Alpha
+;
+MSG_FILENAME
+Filnavn
+; Filename
+;
+MSG_TYPE
+Type
+; Type
+;
+MSG_TYPE_NORMAL
+Normal
+; Normal
+;
+MSG_TYPE_BUSY
+Opptatt
+; Busy
+;
+MSG_SETVIEW
+Sett / Vis
+; Set / View
+;

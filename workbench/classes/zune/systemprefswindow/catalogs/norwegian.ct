@@ -1,0 +1,52 @@
+## version $VER: SystemPrefsWindow.catalog 2.0 (05.09.2010)
+## language deutsch
+## codeset 0
+;
+;
+MSG_MENU_PREFS
+Innstillinger
+; Preferences
+;
+MSG_MENU_PREFS_IMPORT
+I\0Importer...
+; I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Eksporter...
+; E\0Export...
+;
+MSG_MENU_PREFS_TEST
+T\0Test
+; T\0Test
+;
+MSG_MENU_PREFS_REVERT
+R\0Tilbakestill
+; R\0Revert
+;
+MSG_MENU_PREFS_SAVE
+S\0Lagre
+; S\0Save
+;
+MSG_MENU_PREFS_USE
+B\0Bruk
+; U\0Use
+;
+MSG_MENU_PREFS_CANCEL
+A\0Avbryt
+; C\0Cancel
+;
+MSG_MENU_PREFS_EXPORT_WITH_ICON
+0Eksporter med ikon...
+; Export with Icon...
+;
+MSG_MENU_RESET_TO_DEFAULTS
+Tilbakestill til standardinnstillinger
+; Reset to Defaults
+;
+MSG_FILEREQ_EXPORT_TITLE
+Eksporter
+; Export
+;
+MSG_FILEREQ_IMPORT_TITLE
+Importer
+; Import

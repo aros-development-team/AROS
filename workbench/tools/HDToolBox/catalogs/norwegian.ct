@@ -1,0 +1,177 @@
+## version $VER: HDToolBox.catalog 2.0 (20.05.2019)
+## language norwegian
+## codeset 5
+;
+;
+WORD_Active
+Aktiver
+; Active
+;
+WORD_AddEntry
+Legg til
+; Add Entry
+;
+WORD_All
+Alle
+; All
+;
+WORD_Automount
+Monter automatisk
+; Automount
+;
+WORD_Bootable
+Oppstartsbar
+; Bootable
+;
+WORD_BootPri
+Oppstartsprioritet
+; Boot Priority
+;
+WORD_Cancel
+Avbryt
+; Cancel
+;
+WORD_Changed
+Endre
+; Changed
+;
+WORD_Change_Type
+Endringstype
+; Change Type
+;
+WORD_Create_Table
+Opprett tabell
+; Create Table
+;
+WORD_Devices
+Enheter
+; Devices
+;
+WORD_DosEnvec
+DosEnvec
+; DosEnvec
+;
+WORD_Exit
+Avslutt
+; Exit
+;
+WORD_Geometry
+Geometri
+; Geometry
+;
+WORD_Name
+Navn
+; Name
+;
+WORD_Switches
+Brytere
+; Switches
+;
+WORD_Ok
+Ok
+; Ok
+;
+WORD_Parent
+Opphav
+; Parent
+;
+WORD_Partitions
+Partisjoner
+; Partitions
+;
+WORD_Partition_Table
+Partisjonstabell
+; Partition Table
+;
+WORD_Partition_Table_Type
+Partisjonstabelltype
+; Partition Table Type
+;
+WORD_Partition_Type
+Partisjonstype
+; Partition Type
+;
+WORD_RemoveEntry
+Fjern oppføring
+; Remove Entry
+;
+WORD_Rename
+Endre navn
+; Rename
+;
+WORD_Resize_Move
+Endre størrelse/flytt
+; Resize/Move
+;
+WORD_Save_Changes
+Large endringer
+; Save Changes
+;
+WORD_Size
+Størrelse
+; Size
+;
+WORD_Unit
+Enhet
+; Unit
+;
+WORD_Units
+Enheter
+; Units
+;
+WORD_Unknown
+Ukjent
+; Unknown
+;
+WORD_MENU_Project
+Prosjekt
+; Project
+;
+WORD_MENU_About
+Om
+; About
+;
+WORD_MENU_Quit
+Avslutt
+; Quit
+;
+MSG_ASK_SAVE
+All date på de modifiserte partisjonene vil bli slettet!\nEr du sikker på at du ønsker å lagre endringene på partisjonstabell '%s'?
+; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
+;
+MSG_NO_MEMORY
+Ikke nok minne
+; Not enough memory
+;
+MSG_PARTITION_TABLE_FULL
+Partisjonstabellen er full
+; Partition table full
+;
+MSG_Select_Empty_Area
+Velg et tomt område
+; Select empty area
+;
+MSG_Select_Partition_Resize_Move
+Velg en partisjon og endre størrelsen/flytt den
+; Select a partition and resize/move it
+;
+MSG_Welcome
+Velkommen til partisjoneringsverktøyet
+; Welcome to the partitioning tool
+;
+MSG_WriteTableError
+Lagring av partisjonstabellen feilet
+; Error while writing partition table
+;
+MSG_CreateTableError
+Opprettelsen av partisjonstabellen feilet
+; Error while creating partition table
+;
+WORD_MENU_Partition
+Partisjon
+; Partition
+;
+WORD_MENU_CreateMountlist
+Opprett monteringsliste
+; Create mountlist...
+;

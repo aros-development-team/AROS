@@ -4,13 +4,13 @@
 ; Authors: Kim Roar Utsi, Daniel Holmen
 ;
 MSG_WINDOW_TITLE
-ReqTools-Innstillinger
+ReqTools innstillinger
 ;
 MSG_GENERAL
 Generelt
 ;
 MSG_FILEREQUESTER
-Fil-forespørsel
+Filforespørsel
 ;
 MSG_SIZE
 Størrelse (% av synlig høyde):
@@ -19,7 +19,7 @@ MSG_OK
 Ok
 ;
 MSG_POPSCREEN
-Roter skjerm til front
+Flytt skjerm til front
 ;
 MSG_IMMEDIATESORT
 Sorter umiddelbart

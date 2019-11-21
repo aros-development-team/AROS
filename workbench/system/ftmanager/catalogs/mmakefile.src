@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CATALOGS:=french
+CATALOGS:=french norwegian
 
 %build_catalogs mmake=workbench-system-ftmanager-catalogs \
     catalogs=$(CATALOGS) \

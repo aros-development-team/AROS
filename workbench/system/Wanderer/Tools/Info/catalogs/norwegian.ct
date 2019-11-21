@@ -1,0 +1,192 @@
+## version $VER: info.catalog 1.4 (08.10.2019)
+## language norwegian
+## codeset 0
+;
+;
+MSG_TITLE
+Informasjon
+; Informations
+;
+MSG_DESCRIPTION
+Ikoninformasjon
+; Icon informations
+;
+MSG_COPYRIGHT
+Ikoninformasjon\n© AROS Development Team
+; Icon informations\n©AROS Dev Team
+;
+MSG_ICON
+Ikon
+; Icon
+;
+MSG_NAME
+Navn
+; Name
+;
+MSG_COMMENT
+Kommentar
+; Comment
+;
+MSG_STACK
+Stack
+; Stack
+;
+MSG_DEFTOOL
+Standardprogram
+; Tool
+;
+MSG_ICONTYPE
+Ikontype
+; Icon type
+;
+MSG_DISK
+Disk
+; Disk
+;
+MSG_DRAWER
+Skuff
+; Drawer
+;
+MSG_TOOL
+Verktøy
+; Tool
+;
+MSG_PROJECT
+Prosjekt
+; Project
+;
+MSG_GARBAGE
+Søppel
+; Garbage
+;
+MSG_DEVICE
+Enhet
+; Device
+;
+MSG_KICK
+Kickstart
+; Kick
+; FIXME: ?bersetzung?
+;
+MSG_APPICON
+AppIkon
+; AppIcon
+; FIXME: ?bersetzung?
+;
+MSG_INFORMATION
+Informasjon
+; Information
+;
+MSG_PROTECTION
+Beskyttelse
+; Protection
+;
+MSG_TOOLTYPES
+Verktøytype
+; Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Feil: Kan ikke bli startet fra shell
+; Error: Cannot be started from shell
+;
+MSG_ABOUT
+Om...
+; About...
+;
+MSG_QUIT
+Avslutt
+; Quit
+;
+MSG_READ
+Lesbar
+; Read
+;
+MSG_WRITE
+Skrivbar
+; Write
+;
+MSG_EXECUTE
+Utfør
+; Execute
+;
+MSG_DELETE
+Slett
+; Delete
+;
+MSG_SCRIPT
+Skript
+; Script
+;
+MSG_PURE
+Ren
+; Pure
+;
+MSG_ARCHIVED
+Arkivert
+; Archived
+;
+MSG_STICKY
+Låst fast
+; Sticky
+; FIXME: ?bersetzung?
+;
+MSG_SIZE
+Størrelse
+; Size
+;
+MSG_VERSION
+Versjon
+; Version
+;
+MSG_OWNERID
+Eier ID
+; Owner ID
+;
+MSG_GROUPID
+Gruppe ID
+; Group ID
+;
+MSG_OWNERNAME
+Eier
+; Owner
+;
+MSG_GROUPNAME
+Gruppe
+; Group
+;
+MSG_TYPE
+Type
+; Type
+;
+MSG_DATE
+Dato
+; Date
+;
+MSG_NEW_KEY
+Ny nøkkel
+; New key
+;
+MSG_DELETE_KEY
+Slettetast
+; Delete key
+;
+MSG_SAVE
+_Lagre
+; _Save
+;
+MSG_CANCEL
+_Avbryt
+; _Cancel
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_PATH
+Filsti
+; Path
+;
+MSG_BTNPATH
+Åpne filsti...
+; Open path...
+;

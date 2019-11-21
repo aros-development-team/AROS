@@ -1,0 +1,120 @@
+## version $VER: KeyShow.catalog 1.0 (21.07.219)
+## language norwegian
+## codeset 0
+;
+MSG_AppDescription
+Vis tastaturoppsett
+; Show Keyboard Layout
+;
+MSG_AppCopyright
+Copyright © 2012 The AROS Development Team
+; Copyright \xa9 2012 The AROS Development Team
+;
+MSG_WI_TITLE
+KeyShow
+; KeyShow
+;
+MSG_OK
+OK
+; _OK
+;
+; Error messages
+;
+MSG_ERR
+Feil
+; Error
+;
+MSG_ERR_NO_APPLICATION
+Klarte ikke opprette applikasjonen
+; Can't create application
+;
+MSG_ERR_NO_MEM
+Tom for minne
+; Out of memory
+;
+; Key descriptions
+;
+MSG_KEY_SHIFT
+Skift
+; Shift
+;
+MSG_KEY_CTRL
+Kontroll
+; Ctrl
+;
+MSG_KEY_ALT
+Alt
+; Alt
+;
+MSG_KEY_LOCK
+Lås
+; Lock
+;
+MSG_KEY_HELP
+Hjelp
+; Help
+;
+MSG_KEY_A
+A
+; A
+;
+MSG_KEY_INSERT
+Sett inn
+; Insert
+;
+MSG_KEY_HOME
+Hjem
+; Home
+;
+MSG_KEY_PAGEUP
+Side ^
+; Page ^
+;
+MSG_KEY_DELETE
+Slette
+; Delete
+;
+MSG_KEY_END
+Slutt
+; End
+;
+MSG_KEY_PAGEDOWN
+Side v
+; Page v
+;
+MSG_KEY_NUM
+Num
+; Num
+;
+MSG_KEY_RETURN
+^M
+; ^M
+;
+MSG_KEY_BACKSP
+^H
+; ^H
+;
+MSG_KEY_TAB
+^I
+; ^I
+;
+MSG_KEY_ESC
+^[
+; ^[
+;
+MSG_KEY_NUM_ENTER
+^M
+; ^M
+;
+MSG_KEY_PRTSCREEN
+Skriv
+; Print
+;
+MSG_KEY_SCRLOCK
+ScrLock
+; ScrLock
+;
+MSG_KEY_PAUSE
+Pause
+; Pause
+;

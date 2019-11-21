@@ -1,0 +1,25 @@
+## version $VER: clock.catalog 2.0 (30.03.2016)
+## language deutsch
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Klarte ikke opprette applikasjonsobjektet.
+; Error: Can't create application object.
+;
+MSG_WINDOW_TITLE
+Klokke
+; Clock
+;
+MSG_DESCRIPTION
+Wanderer klokke
+; Wanderer Clock
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_ERROR_DISKOBJECT
+Klarte ikke opprettet diskobjektet
+; Error: Can't create diskobject
+;

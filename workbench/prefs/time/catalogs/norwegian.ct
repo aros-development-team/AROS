@@ -1,0 +1,48 @@
+## version $VER: timeprefs.catalog 1.0 (20.05.2019)
+## codeset 0
+## language norwegian
+;
+MSG_CANT_OPEN_LIB
+Klarte ikke åpne %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Klarte ikke opprette applikasjonsobjektet!
+; Can't create application object!
+;
+MSG_WINTITLE
+Dato- og tidsinnstillinger (Time)
+; Time Preferences
+;
+MSG_MEN_PROJECT
+Prosjekt
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Avslutt
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Rediger
+; Edit
+;
+MSG_MEN_EDIT_RESTORE
+R\0Gjennopprett
+; R\0Restore
+;
+MSG_OK
+Ok
+; Ok
+;
+MSG_GAD_SAVE
+Lagre
+; Save
+;
+MSG_GAD_USE
+Bruk
+; Use
+;
+MSG_GAD_CANCEL
+Avbryt
+; Cancel
+;
