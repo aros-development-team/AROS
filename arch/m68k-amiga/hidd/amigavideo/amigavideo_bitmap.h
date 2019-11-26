@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,10 +11,13 @@
 enum
 {
     aoHidd_BitMap_AmigaVideo_Drawable,
+    aoHidd_BitMap_AmigaVideo_Compositor,
+
     num_Hidd_BitMap_AmigaVideo_Attrs
 };
 
-#define aHidd_BitMap_AmigaVideo_Drawable	(__IHidd_BitMap_AmigaVideo + aoHidd_BitMap_AmigaVideo_Drawable)
+#define aHidd_BitMap_AmigaVideo_Drawable    (__IHidd_BitMap_AmigaVideo + aoHidd_BitMap_AmigaVideo_Drawable)
+#define aHidd_BitMap_AmigaVideo_Compositor  (__IHidd_BitMap_AmigaVideo + aoHidd_BitMap_AmigaVideo_Compositor)
 
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - __IHidd_Attr) < num_Hidd_BitMap_Attrs)
 #define IS_AmigaVideoBM_ATTR(attr, idx) ( ( (idx) = (attr) - __IHidd_BitMap_AmigaVideo) < num_Hidd_BitMap_AmigaVideo_Attrs)
@@ -25,22 +28,24 @@ enum
 
 struct amigabm_data
 {
-    struct MinNode node;
-    struct BitMap *pbm;
-    WORD width;
-    WORD height;
-    WORD bytesperrow;
-    UBYTE depth;
-    UBYTE planebuf_size;
-    WORD topedge, leftedge;
-    BOOL disp;
-    WORD align;
-    WORD displaywidth;
-    WORD displayheight;
+    struct MinNode      node;
+    struct BitMap       *pbm;
+    UBYTE               *palette;
+    OOP_Object          *compositor;
+    WORD                width;
+    WORD                height;
+    WORD                bytesperrow;
+    UBYTE               depth;
+    UBYTE               planebuf_size;
+    WORD                topedge, leftedge;
+    BOOL                disp;
+    WORD                align;
+    WORD                displaywidth;
+    WORD                displayheight;
     /* pixel read/write cache */
-    ULONG pixelcacheoffset;
-    UBYTE pixelcache[32];
-    ULONG writemask;
+    ULONG               pixelcacheoffset;
+    UBYTE               pixelcache[32];
+    ULONG               writemask;
 };
 
 #include "chipset.h"

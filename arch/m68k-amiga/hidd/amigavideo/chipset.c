@@ -93,10 +93,18 @@ static void setfmode(struct amigavideo_staticdata *csd)
 
 static void setcoppercolors(struct amigavideo_staticdata *csd)
 {
-    UWORD i;
- 
+    D(bug("[AmigaVideo] %s()\n", __func__));
+
+    if (!(csd->palette))
+    {
+        D(bug("[AmigaVideo] %s: missing palette data!\n", __func__));
+        return;
+    }
     if (!csd->copper2.copper2_palette)
         return;
+
+    UWORD i;
+ 
     if (csd->aga && csd->aga_enabled) {
         UWORD off = 1;
         for (i = 0; i < csd->use_colors; i++) {
@@ -363,6 +371,7 @@ static void createcopperlist(struct amigavideo_staticdata *csd, struct amigabm_d
     }
 
     csd->use_colors = 1 << bm->depth;
+
     // need to update sprite colors
     if (csd->use_colors < 16 + 4)
         csd->use_colors = 16 + 4;
@@ -505,7 +514,7 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     UWORD bplwidth, viewwidth;
     UBYTE i;
 
-    D(bug("[AmigaVideo] %s()\n", __func__));
+    D(bug("[AmigaVideo] %s(0x%p)\n", __func__, bm));
 
     if (csd->disp == bm)
         return TRUE;
@@ -547,8 +556,8 @@ BOOL setmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     if ((viewwidth << csd->res) > 320)
         viewwidth = 320 << csd->res;
 
-        D(bug("[AmigaVideo] %s:  bm=%x mode=%08x w=%d h=%d d=%d bpr=%d fu=%d\n",
-        __func__, bm, csd->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit));
+        D(bug("[AmigaVideo] %s:  mode %08x (%dx%dx%d) bpr=%d fu=%d\n",
+        __func__, csd->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit));
     
     bplwidth = viewwidth >> (csd->res + 1);
     ddfstrt = (csd->startx / 2) & ~((1 << fetchunit) - 1);
@@ -723,10 +732,22 @@ void setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
 
 BOOL setcolors(struct amigavideo_staticdata *csd, struct pHidd_BitMap_SetColors *msg, BOOL visible)
 {
-    UWORD i, j;
-    if (msg->firstColor + msg->numColors > csd->max_colors)
+    D(bug("[AmigaVideo] %s()\n", __func__));
+
+    if (!(csd->palette))
+    {
+        D(bug("[AmigaVideo] %s: missing palette data!\n", __func__));
         return FALSE;
-    j = 0;
+    }
+
+    if (msg->firstColor + msg->numColors > csd->max_colors)
+    {
+        D(bug("[AmigaVideo] %s: too many colors specified!\n", __func__));
+        return FALSE;
+    }
+
+    UWORD i, j = 0;
+
     for (i = msg->firstColor; j < msg->numColors; i++, j++) {
         UBYTE red, green, blue;
         red   = msg->colors[j].red   >> 8;
@@ -741,6 +762,7 @@ BOOL setcolors(struct amigavideo_staticdata *csd, struct pHidd_BitMap_SetColors 
         setcoppercolors(csd);
     return TRUE;
 }
+
 void setscroll(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
 {
     csd->updatescroll = bm;
