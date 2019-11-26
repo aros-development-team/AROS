@@ -6,5 +6,5 @@
 
 struct AmigaVideoBase
 {
-    struct Library library;	/* Common library header */
+    struct Library              library;	/* Common library header */
 };
