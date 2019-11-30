@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2012, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -982,34 +982,30 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
     SetDrMd(rp, JAM1);
     SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
     CheckRectFill(rp, left + 1, 1, right - 1, window->BorderTop - 2, IntuitionBase);
-        
+
     if (right - left > 6)
     {
-        ULONG               textlen, titlelen;
-        struct TextExtent     te;
+        ULONG textlen, titlelen;
+        struct TextExtent te;
+        struct TextFont *tf;
 
-        SetFont(rp, DRI(msg->wdp_Dri)->dri_Font);
+        tf = DRI(msg->wdp_Dri)->dri_Font;
+
+        SetFont(rp, tf);
 
         titlelen = strlen(window->Title);
-        textlen = TextFit(rp
-                          , window->Title
-                          , titlelen
-                          , &te
-                          , NULL
-                          , 1
-                          , right - left - 6
-                          , window->BorderTop - 2);
+        textlen = TextFit(rp, window->Title, titlelen, &te, NULL, 1, right - left - 6, window->BorderTop - 2);
         if (textlen)
-    {
-        left = left + 3;
-        
+        {
+            left = left + 3;
+
             SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
 
-        Move(rp, left, DRI(msg->wdp_Dri)->dri_Font->tf_Baseline + 2);
+            Move(rp, left, tf->tf_Baseline + ((window->BorderTop - tf->tf_YSize) >> 1) + 1);
             Text(rp, window->Title, textlen);
+        }
     }
-    }
-    
+
     return TRUE;
 }
 
