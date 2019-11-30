@@ -110,29 +110,31 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
 
         for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
         {
-            IPTR val;
             D(bug("[AmigaVideo:Compositor] %s: Screen bitmap @ 0x%p for viewport 0x%p\n", __func__, vpdata->Bitmap, vpdata);)
 
             if (vpdata->Bitmap)
             {
-                OOP_GetAttr(vpdata->Bitmap, aHidd_BitMap_LeftEdge, &val);
-                D(bug("[AmigaVideo:Compositor] %s:    x = %d\n", __func__, (LONG)val);)
-                OOP_GetAttr(vpdata->Bitmap, aHidd_BitMap_TopEdge, &val);
-                D(bug("[AmigaVideo:Compositor] %s:    y = %d\n", __func__, (LONG)val);)
-                if ((LONG)val < (LONG)screen_finish)
-                    screen_finish = val;
-                else
-                {
-                    D(bug("[AmigaVideo:Compositor] %s: # screen is obscured - skipping...\n", __func__);)
-                    continue;
-                }
-
                 if (OOP_OCLASS(vpdata->Bitmap) == csd->amigabmclass)
                 {
                     struct Node *next;
 
                     D(bug("[AmigaVideo:Compositor] %s:    ** valid amigavideo bitmap\n", __func__);)
                     bmdata = OOP_INST_DATA(OOP_OCLASS(vpdata->Bitmap), vpdata->Bitmap);
+
+                    D(
+                      bug("[AmigaVideo:Compositor] %s:    x = %d\n", __func__, (LONG)bmdata->leftedge);
+                      bug("[AmigaVideo:Compositor] %s:    y = %d\n", __func__, (LONG)bmdata->topedge);
+                     )
+
+                    if ((LONG)bmdata->topedge < (LONG)screen_finish)
+                        screen_finish = bmdata->topedge;
+                    else
+                    {
+                        D(bug("[AmigaVideo:Compositor] %s: # screen is obscured - skipping...\n", __func__);)
+                        continue;
+                    }
+
+
                     if ((csd->ecs_agnus) && ((bmdata->modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)) {
                         csd->palmode = TRUE;
                     }
@@ -141,7 +143,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
                     bmdata->node.ln_Name = (char *)vpdata;
                     ForeachNode(&compdata->bitmapstack, bmdatprev)
                     {
-                        if ((LONG)val < bmdatprev->topedge)
+                        if (bmdata->topedge < bmdatprev->topedge)
                             break;
                     }
                     bmdata->node.ln_Pred	            = bmdatprev->node.ln_Pred;
