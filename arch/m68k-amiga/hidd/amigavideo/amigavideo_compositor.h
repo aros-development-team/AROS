@@ -10,11 +10,6 @@
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 
-struct StackBitMapNode
-{
-   struct Node                 n; // NB:   n.ln_Name = (OOP_Object *)bm;
-};
-
 struct amigacomposit_data
 {
    struct List                 bitmapstack;
