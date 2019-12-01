@@ -6,6 +6,8 @@
 #ifndef _AMIGABITMAP_H
 #define _AMIGABITMAP_H
 
+#include "amigavideo_intern.h"
+
 #define IID_Hidd_BitMap_AmigaVideo "hidd.bitmap.amigavideo"
 
 enum
@@ -28,24 +30,40 @@ enum
 
 struct amigabm_data
 {
-    struct MinNode      node;
-    struct BitMap       *pbm;
-    UBYTE               *palette;
-    OOP_Object          *compositor;
-    WORD                width;
-    WORD                height;
-    WORD                bytesperrow;
-    UBYTE               depth;
-    UBYTE               planebuf_size;
-    WORD                topedge, leftedge;
-    BOOL                disp;
-    WORD                align;
-    WORD                displaywidth;
-    WORD                displayheight;
+    /* display composition data ... */
+    struct Node                 node;
+    struct copper2data          copper2;
+    struct copper2data          copper2i;
+    IPTR                        modeid;
+    
+    UBYTE                       res; // 0 = lores, 1 = hires, 2 = shres
+    UBYTE                       interlace;
+    WORD                        modulopre, modulo;
+    UWORD                       ddfstrt, ddfstop;
+    UWORD                       use_colors;
+
+    UBYTE                       *palette;
+    OOP_Object                  *compositor;
+    UBYTE                       bploffsets[8];
+
+    /* old stuff.. */
+    struct BitMap               *pbm;
+    WORD                        width;
+    WORD                        height;
+    WORD                        bytesperrow;
+    UBYTE                       depth;
+    UBYTE                       planebuf_size;
+    WORD                        topedge, leftedge;
+    WORD                        align;
+    WORD                        displaywidth;
+    WORD                        displayheight;
     /* pixel read/write cache */
-    ULONG               pixelcacheoffset;
-    UBYTE               pixelcache[32];
-    ULONG               writemask;
+    ULONG                       pixelcacheoffset;
+    UBYTE                       pixelcache[32];
+    ULONG                       writemask;
+    /* flags */
+    BOOL                        disp;               /* displayable ? */
+    BOOL                        vis;                /* visible ? */
 };
 
 #include "chipset.h"

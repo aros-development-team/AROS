@@ -847,12 +847,29 @@ BOOL AmigaVideoCl__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, ULONG Type, ULONG *
     *Height = *Width * 2;
     return TRUE;
 }
+
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    setspritepos(csd, msg->x, msg->y);
+    UBYTE res = 0;
+    BOOL interlace = FALSE;
+
+    struct amigabm_data *bm;
+    ForeachNode(csd->compositedbms, bm)
+    {
+        if (((bm->interlace) && ((msg->y >> 1) < (bm->topedge + bm->displayheight))) ||
+            ((!bm->interlace) && (msg->y < (bm->topedge + bm->displayheight))))
+        {
+            res = bm->res;
+            interlace = bm->interlace;
+            break;
+        }
+    }
+
+    setspritepos(csd, msg->x, msg->y, res, interlace);
     return TRUE;
 }
+
 VOID AmigaVideoCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);

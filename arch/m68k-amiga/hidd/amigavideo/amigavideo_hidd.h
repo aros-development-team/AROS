@@ -9,17 +9,6 @@
 
 #include "amigavideo_intern.h"
 
-struct copper2data
-{
-    UWORD                       *copper2;
-    UWORD                       *copper2_palette;
-    UWORD                       *copper2_palette_aga_lo;
-    UWORD                       *copper2_scroll;
-    UWORD                       *copper2_bplcon0;
-    UWORD                       *copper2_bpl;
-    UWORD                       *copper2_fmode;
-};
-
 struct NativeChipsetMode
 {
     struct Node                 node;
@@ -50,17 +39,14 @@ struct amigavideo_staticdata
     OOP_AttrBase                hiddColorMapAttrBase;
 
     struct List                 nativemodelist;
-    BOOL                        superforward;
+    struct List                 *compositedbms;
 
-    struct amigabm_data         *disp;
-    ULONG                       modeid;
     struct Interrupt            inter;
     volatile UWORD              framecounter;
     struct amigabm_data         *updatescroll;
 
     WORD                        width_alignment;
     WORD                        startx, starty;
-    WORD                        width, height;
 
     UWORD                       *copper1;
     UWORD                       *copper1_pt2;
@@ -75,42 +61,34 @@ struct amigavideo_staticdata
     BYTE                        sprite_offset_x, sprite_offset_y;
     BYTE                        sprite_res;
     UWORD                       bplcon0_null, bplcon3;
+
     UBYTE                       fmode_bpl, fmode_spr;
-    UWORD                       ddfstrt, ddfstop;
-    WORD                        modulopre, modulo;
-    struct copper2data          copper2;
-    struct copper2data          copper2i;
+    UBYTE                       initialized;
 
     UWORD                       max_colors;
-    UWORD                       use_colors;
-    UBYTE                       *palette;
-
-    UBYTE                       depth;
-    UBYTE                       res; // 0 = lores, 1 = hires, 2 = shres
-    UBYTE                       interlace;
-    UBYTE                       extralines;
-    BOOL                        ecs_agnus, ecs_denise, aga;
-    BOOL                        aga_enabled;
-    BOOL                        cursorvisible;
-    BOOL                        palmode;
-
-    UBYTE                       initialized;
-    UBYTE                       bploffsets[8];
 
     void                        (*acb)(void *data, void *bm);
     APTR                        acbdata;
 
     BPTR                        cs_SegList;
+
     struct Library              *cs_OOPBase;
     struct Library              *cs_GfxBase;
     struct Library              *cs_UtilityBase;
 
     OOP_MethodID                cs_HiddGfxBase;
     OOP_MethodID                cs_HiddBitMapBase;
-    
+
     OOP_MethodID                mid_BitMapPositionChanged;
     OOP_MethodID                mid_BitMapRectChanged;
     OOP_MethodID                mid_ValidateBitMapPositionChange;
+
+    /* flags */
+    BOOL                        superforward;
+    BOOL                        ecs_agnus, ecs_denise, aga;
+    BOOL                        aga_enabled;
+    BOOL                        cursorvisible;
+    BOOL                        palmode;
 };
 
 struct amigavideoclbase
