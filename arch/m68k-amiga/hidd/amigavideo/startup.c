@@ -43,10 +43,10 @@ static int AmigaVideo_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->library.lib_OpenCnt = 1;
 
     err = AddDisplayDriver(LIBBASE->csd.amigagfxclass, NULL,
-			   DDRV_KeepBootMode, TRUE,
-			   DDRV_MonitorID   , 0,
-			   DDRV_IDMask      , 0xF0000000,
-			   TAG_DONE);
+                           DDRV_KeepBootMode, TRUE,
+                           DDRV_MonitorID   , 0,
+                           DDRV_IDMask      , 0xF0000000,
+                           TAG_DONE);
 
     D(bug("[AmigaVideo] %s: AddDisplayDriver() result: %u\n", __func__, err);)
 

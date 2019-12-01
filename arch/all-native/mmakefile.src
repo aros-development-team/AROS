@@ -3,17 +3,29 @@ include $(SRCDIR)/config/aros.cfg
 # 'fs' package includes necessary filesystems and partition.
 # These include filesystems and dos starter
 
-#MM kernel-package-fs:		\
+#MM- kernel-fs-core:		\
 #MM	kernel-fs-afs		\
 #MM	kernel-fs-cdvdfs	\
-#MM	kernel-fs-sfs		\
-#MM	kernel-fs-fat		\
 #MM	kernel-partition
 
+#MM- kernel-fs-core-kobj:		\
+#MM	kernel-fs-afs-kobj		\
+#MM	kernel-fs-cdvdfs-kobj	\
+#MM	kernel-partition-kobj
+
+#MM- kernel-fs-xtra:		\
+#MM	kernel-fs-sfs		\
+#MM	kernel-fs-fat
+
+#MM kernel-package-fs:		\
+#MM	kernel-fs-xtra	\
+#MM	kernel-fs-core
+
 FS_LIBS     := partition
-FS_HANDLERS := afs cdrom sfs fat
+FS_CORE_HANDLERS := afs cdrom
+FS_XTRA_HANDLERS := sfs fat
 
 %make_package mmake=kernel-package-fs file=$(AROS_BOOT)/aros-fs.pkg \
-	      handlers=$(FS_HANDLERS) libs=$(FS_LIBS)
+	      handlers="$(FS_CORE_HANDLERS) $(FS_XTRA_HANDLERS)" libs=$(FS_LIBS)
 
 %common
