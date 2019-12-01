@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -416,8 +416,8 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     {
         SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
         SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
-
-        Move(rp, msg->sdp_Screen->BarHBorder, msg->sdp_Screen->BarVBorder + rp->TxBaseline);
+        
+        Move(rp, msg->sdp_Screen->BarHBorder, msg->sdp_Screen->BarVBorder + rp->TxBaseline + ((msg->sdp_Screen->BarHeight - rp->TxHeight) >> 1));
 
         D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title Text @ %p\n", msg->sdp_Screen->Title));
         D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title '%s'\n", msg->sdp_Screen->Title));
