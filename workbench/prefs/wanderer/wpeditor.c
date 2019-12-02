@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2018, The AROS Development Team. All rights reserved.
+    Copyright  2004-2019, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
     
@@ -1039,6 +1039,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object    *_WP_AdvancedViewWindow = NULL,
             *_WP_AdvancedViewPageGroupObj = NULL,
             *_WP_AdvancedViewWindowVGrp = NULL,
+            *_WP_AdvancedViewContentsGrp = NULL,
             *_WP_AdvancedViewBackgroundGrpObj = NULL,
             *_WP_AdvancedViewRenderModeGrpObj = NULL,
             *_WP_AdvancedViewRenderModeObj = NULL,
@@ -1317,7 +1318,12 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     _WP_AdvancedViewWindow = (Object *)WindowObject,
                     MUIA_Window_CloseGadget, FALSE,
                     MUIA_Window_Title, (IPTR)_(MSG_ADVANCEDOPTIONS),
-                    WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = (Object *)VGroup, End),
+                    WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = (Object *)VGroup,
+                        Child, (IPTR)(ScrollgroupObject,
+                            MUIA_Scrollgroup_Contents, (IPTR) (_WP_AdvancedViewContentsGrp = (Object *)VirtgroupObject,
+                            End),
+                        End),
+                    End),
                 End;
 
     /*_WP_AdvancedViewPageGroupObj = Object for handling multi (3) page groups---------*/
@@ -1598,7 +1604,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedView_IconRenderGrpObj);
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedView_LabelRenderGrpObj);
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedViewBackgroundGrpObj);
-    DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedViewPageGroupObj);/*add pagesGroup to view*/
+    DoMethod(_WP_AdvancedViewContentsGrp, OM_ADDMEMBER,_WP_AdvancedViewPageGroupObj);/*add pagesGroup to view*/
     DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_ButtonGrpObj);
 
 /*END Add advanced view objects to AdvancedViewWindow object-----------------*/
