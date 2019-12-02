@@ -621,6 +621,7 @@ ac_includes_default="\
 
 ac_header_list=
 ac_subst_vars='LTLIBOBJS
+config_prefs_set
 aros_usb30_code
 aros_host_sdl_libs
 aros_host_sdl_cflags
@@ -923,6 +924,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_aros_prefs
 with_c_compiler
 with_cxx_compiler
 enable_libpng_config
@@ -1666,6 +1668,11 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-aros-prefs=PREFSSET
+                          Use the preferences from the set defined by PREFSSET
+                          (defaults to AROS normal config, 'classic' provides
+                          a config more like traditional workbench - and
+                          better suited to weaker systems)
   --with-c-compiler=VERSION
                           Use specified c compiler for building AROS
   --with-cxx-compiler=VERSION
@@ -2888,6 +2895,25 @@ $as_echo "$target_os" >&6; }
 $as_echo_n "checking for target cpu (debug output)... " >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_cpu" >&5
 $as_echo "$target_cpu" >&6; }
+
+#-----------------------------------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which prefs set to use" >&5
+$as_echo_n "checking which prefs set to use... " >&6; }
+
+# Check whether --with-aros-prefs was given.
+if test "${with_aros_prefs+set}" = set; then :
+  withval=$with_aros_prefs; config_prefs_set="$withval"
+else
+  config_prefs_set=""
+fi
+
+if test "$config_prefs_set" != "" ; then
+    msg_result=$config_prefs_set
+else
+    msg_result="default"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
+$as_echo "$msg_result" >&6; }
 
 aros_nominal_width=800
 aros_nominal_height=600
@@ -8725,10 +8751,10 @@ case "$target_cpu" in
     *aarch64*)
         ;;
     *armeb*)
-        arm_isa_extra="ISA_ARM_FLAGS = -marm -mfloat-abi=hard -mbig-endian"
+        arm_isa_extra="ISA_ARM_FLAGS                = -marm -mfloat-abi=hard -mbig-endian"
         ;;
     *arm*)
-        arm_isa_extra="ISA_ARM_FLAGS = -marm -mfloat-abi=hard"
+        arm_isa_extra="ISA_ARM_FLAGS                = -marm -mfloat-abi=hard"
         ;;
     *m68k*)
         m68k_isa_extra="ISA_MC68000_FLAGS             = -march=68000"
@@ -9884,7 +9910,7 @@ case "$aros_target_cpu" in
                 spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
         ;;
     arm*)
-        aros_isa_extra="$export_newline$arm_isa_extra$export_newline"
+                aros_isa_extra="$export_newline$arm_isa_extra$export_newline"
         if test "$gcc_default_cpu" = ""; then
             gcc_default_cpu="armv6"
         fi
@@ -16251,6 +16277,9 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # USB3.0 code
+
+
+# The preference set option(s)..
 
 
 case "$aros_flavour" in

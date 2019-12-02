@@ -77,6 +77,16 @@ AC_MSG_RESULT($target_os)
 AC_MSG_CHECKING([for target cpu (debug output)])
 AC_MSG_RESULT($target_cpu)
 
+#-----------------------------------------------------------------------------
+AC_MSG_CHECKING([which prefs set to use])
+AC_ARG_WITH(aros-prefs,AC_HELP_STRING([--with-aros-prefs=PREFSSET],[Use the preferences from the set defined by PREFSSET (defaults to AROS normal config, 'classic' provides a config more like traditional workbench - and better suited to weaker systems)]),config_prefs_set="$withval",config_prefs_set="")
+if test "$config_prefs_set" != "" ; then
+    msg_result=$config_prefs_set
+else
+    msg_result="default"
+fi
+AC_MSG_RESULT($msg_result)
+
 dnl --------------------------------------------------------------------
 dnl Set the default Workbench resolution
 dnl --------------------------------------------------------------------
@@ -3444,6 +3454,9 @@ AC_SUBST(aros_host_sdl_libs)
 
 # USB3.0 code
 AC_SUBST(aros_usb30_code)
+
+# The preference set option(s)..
+AC_SUBST(config_prefs_set)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
