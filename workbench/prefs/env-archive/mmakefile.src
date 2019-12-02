@@ -30,10 +30,13 @@ $(AROS_ENVARC)/% : $(CONFIGSET)/%
 #MM
 workbench-prefs-envarc-copyfiles : $(BASEFILES:%=$(AROS_ENVARC)/%) $(CONFIGFILES:$(CONFIGSET)/%=$(AROS_ENVARC)/%)
 
-$(AROS_ENVARC)/SYS/theme.var : $(SRCDIR)/$(CURDIR)/mmakefile.src
-	@$(ECHO) "THEMES:$(AROS_GUI_THEME)" > $(AROS_ENVARC)/SYS/theme.var
+# If AROS is configured with the classic prefs-set, dont use a theme but still define the default.
+$(AROS_ENVARC)/SYS/theme.default : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@if [ ! "$(AROS_PREFS_SET)" = "classic" ]; then\
+        $(ECHO) "THEMES:$(AROS_GUI_THEME)" > $(AROS_ENVARC)/SYS/theme.var ;\
+    fi
 	@$(MKDIR) $(AROS_PREFS)/Presets
 	@$(ECHO) "THEMES:$(AROS_GUI_THEME)" > $(AROS_PREFS)/Presets/theme.default
 
 #MM
-workbench-prefs-envarc-theme: $(AROS_ENVARC)/SYS/theme.var
+workbench-prefs-envarc-theme: $(AROS_ENVARC)/SYS/theme.default
