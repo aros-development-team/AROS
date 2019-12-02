@@ -4,7 +4,6 @@
     $Id$
 */
 
-
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
@@ -983,29 +982,35 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
     SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
     CheckRectFill(rp, left + 1, 1, right - 1, window->BorderTop - 2, IntuitionBase);
 
-    if (right - left > 6)
+    if (right - left > (window->BorderLeft + window->BorderRight))
     {
-        ULONG textlen, titlelen;
-        struct TextExtent te;
-        struct TextFont *tf;
+        ULONG                   textlen, titlelen;
+        struct TextFont         *tf;
+        struct TextExtent       te;
 
         tf = DRI(msg->wdp_Dri)->dri_Font;
-
         SetFont(rp, tf);
 
         titlelen = strlen(window->Title);
-        textlen = TextFit(rp, window->Title, titlelen, &te, NULL, 1, right - left - 6, window->BorderTop - 2);
+        textlen = TextFit(rp
+                          , window->Title
+                          , titlelen
+                          , &te
+                          , NULL
+                          , 1
+                          , right - left - (window->BorderLeft + window->BorderRight)
+                          , window->BorderTop - 2);
         if (textlen)
         {
             left = left + 3;
 
             SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
 
-            Move(rp, left, tf->tf_Baseline + ((window->BorderTop - tf->tf_YSize) >> 1) + 1);
+            Move(rp, left, tf->tf_Baseline + ((window->BorderTop - tf->tf_YSize) >> 1));
             Text(rp, window->Title, textlen);
         }
     }
-
+    
     return TRUE;
 }
 
