@@ -1,22 +1,34 @@
-# Copyright © 2004, 2013, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2019, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
 SUBDIRS := Zune SYS SYS/Certificates SYS/Packages DiskImage
-FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(call WILDCARD, $(dir)/*)))
+BASEFILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(call WILDCARD, $(dir)/*)))
+ifneq ($(AROS_PREFS_SET),)
+CONFIGSET=$(AROS_PREFS_SET)
+else
+CONFIGSET=default
+endif
+CONFIGFILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(CONFIGSET)/$(dir)/CVS, $(call WILDCARD, $(CONFIGSET)/$(dir)/*)))
 
 #MM- workbench-prefs : workbench-prefs-envarc
 #MM- workbench-prefs-envarc : workbench-prefs-envarc-copyfiles workbench-prefs-envarc-theme
-#MM  workbench-prefs-envarc-copyfiles
-
-workbench-prefs-envarc-copyfiles : $(FILES:%=$(AROS_ENVARC)/%)
 
 $(AROS_ENVARC)/% : %
 	@if [ -f $< ]; then      \
             $(MKDIR) $(dir $@) ; \
             $(CP) $< $@ ;        \
         fi
+
+$(AROS_ENVARC)/% : $(CONFIGSET)/%
+	@if [ -f $< ]; then      \
+            $(MKDIR) $(dir $@) ; \
+            $(CP) $< $@ ;        \
+        fi
+
+#MM
+workbench-prefs-envarc-copyfiles : $(BASEFILES:%=$(AROS_ENVARC)/%) $(CONFIGFILES:$(CONFIGSET)/%=$(AROS_ENVARC)/%)
 
 $(AROS_ENVARC)/SYS/theme.var : $(SRCDIR)/$(CURDIR)/mmakefile.src
 	@$(ECHO) "THEMES:$(AROS_GUI_THEME)" > $(AROS_ENVARC)/SYS/theme.var
