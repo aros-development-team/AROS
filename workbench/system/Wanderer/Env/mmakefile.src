@@ -9,16 +9,22 @@ workbench-system-wanderer-env: \
         $(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs \
         $(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs
 
-$(AROS_ENVARC)/SYS/Wanderer/global.prefs: global.prefs
+ifneq ($(AROS_PREFS_SET),)
+CONFIGSET=$(AROS_PREFS_SET)
+else
+CONFIGSET=default
+endif
+
+$(AROS_ENVARC)/SYS/Wanderer/global.prefs: $(CONFIGSET)/global.prefs
 		@$(CP) $< $@
 
-$(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs: toolbar.prefs
+$(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs: $(CONFIGSET)/toolbar.prefs
 		@$(CP) $< $@
 
-$(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs: statusbar.prefs
+$(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs: $(CONFIGSET)/statusbar.prefs
 		@$(CP) $< $@
 
-$(AROS_ENVARC)/SYS/Wanderer/backdrop.prefs: backdrop.prefs
+$(AROS_ENVARC)/SYS/Wanderer/backdrop.prefs: $(CONFIGSET)/backdrop.prefs
 		@$(CP) $< $@
 
 #MM
