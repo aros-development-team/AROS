@@ -39,7 +39,11 @@ struct amigavideo_staticdata
     OOP_AttrBase                hiddColorMapAttrBase;
 
     struct List                 nativemodelist;
+
     struct List                 *compositedbms;
+    struct List                 *obscuredbms;
+    struct MinList              c2fragments;
+    struct MinList              c2ifragments;
 
     struct Interrupt            inter;
     volatile UWORD              framecounter;
@@ -79,6 +83,7 @@ struct amigavideo_staticdata
     OOP_MethodID                cs_HiddGfxBase;
     OOP_MethodID                cs_HiddBitMapBase;
 
+    OOP_MethodID                mid_BitMapStackChanged;
     OOP_MethodID                mid_BitMapPositionChanged;
     OOP_MethodID                mid_BitMapRectChanged;
     OOP_MethodID                mid_ValidateBitMapPositionChange;
@@ -89,6 +94,7 @@ struct amigavideo_staticdata
     BOOL                        aga_enabled;
     BOOL                        cursorvisible;
     BOOL                        palmode;
+    BOOL                        interlaced;
 };
 
 struct amigavideoclbase
@@ -118,6 +124,10 @@ struct amigagfx_data
 {
     struct MinList              bitmaps;		/* Currently shown bitmap objects       */
     OOP_Object                  *compositor;
+#if USE_FAST_BMSTACKCHANGE
+    OOP_MethodFunc         bmstackchange;
+    OOP_Class 	          *bmstackchange_Class;
+#endif
 };
 
 #endif /* AMIGAVIDEO_HIDD_H */

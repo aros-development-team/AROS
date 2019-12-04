@@ -3,9 +3,13 @@
 
 /* Private definitions for AmigaVideo class */
 
-#define AMIGAVIDEO_LIBNAME "amigavideo.hidd"
+#define USE_FAST_BMSTACKCHANGE		1
+#define USE_FAST_BMPOSCHANGE		1
+//#define USE_ALIEN_DISPLAYMODES		1
 
-#define CLID_Hidd_Gfx_AmigaVideo "hidd.gfx.amigavideo"
+#define AMIGAVIDEO_LIBNAME          "amigavideo.hidd"
+
+#define CLID_Hidd_Gfx_AmigaVideo    "hidd.gfx.amigavideo"
 
 struct AmigaVideoBase
 {
@@ -14,7 +18,8 @@ struct AmigaVideoBase
 
 struct copper2data
 {
-    UWORD                       *copper2;
+    struct MinNode            cnode;
+
     UWORD                       *copper2_palette;
     UWORD                       *copper2_palette_aga_lo;
     UWORD                       *copper2_scroll;
