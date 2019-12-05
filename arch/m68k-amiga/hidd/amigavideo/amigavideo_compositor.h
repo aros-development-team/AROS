@@ -12,7 +12,8 @@
 
 struct amigacomposit_data
 {
-   struct List                 bitmapstack;
+   struct List                 visbmstack;
+   struct List                 obscuredbmstack;
 
    struct SignalSemaphore      semaphore;
 

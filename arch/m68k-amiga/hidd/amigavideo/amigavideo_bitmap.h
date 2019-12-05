@@ -32,8 +32,9 @@ struct amigabm_data
 {
     /* display composition data ... */
     struct Node                 node;
-    struct copper2data          copper2;
-    struct copper2data          copper2i;
+    struct CopList              *bmcl;
+    struct copper2data          copld;
+    struct copper2data          copsd;
     IPTR                        modeid;
     
     UBYTE                       res; // 0 = lores, 1 = hires, 2 = shres
@@ -42,9 +43,16 @@ struct amigabm_data
     UWORD                       ddfstrt, ddfstop;
     UWORD                       use_colors;
 
+    UWORD                       bplcon3;
+
     UBYTE                       *palette;
     OOP_Object                  *compositor;
     UBYTE                       bploffsets[8];
+
+#if USE_FAST_BMPOSCHANGE
+    OOP_MethodFunc         bmposchange;
+    OOP_Class 	          *bmposchange_Class;
+#endif
 
     /* old stuff.. */
     struct BitMap               *pbm;
@@ -54,6 +62,7 @@ struct amigabm_data
     UBYTE                       depth;
     UBYTE                       planebuf_size;
     WORD                        topedge, leftedge;
+    WORD                        updtop, updleft;
     WORD                        align;
     WORD                        displaywidth;
     WORD                        displayheight;
@@ -65,6 +74,9 @@ struct amigabm_data
     BOOL                        disp;               /* displayable ? */
     BOOL                        vis;                /* visible ? */
 };
+
+#define BMDATFROMCOPLD(x)    ((struct amigabm_data *)((IPTR)x - (offsetof(struct amigabm_data,copld))))
+#define BMDATFROMCOPSD(x)    ((struct amigabm_data *)((IPTR)x - (offsetof(struct amigabm_data,copsd))))
 
 #include "chipset.h"
 

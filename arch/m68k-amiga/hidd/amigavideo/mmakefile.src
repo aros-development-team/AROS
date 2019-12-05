@@ -4,8 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 
 AMIGAVIDEO_C_SOURCES := \
             startup \
-            chipset \
-            blitter \
+            amigavideo_chipset \
+            amigavideo_blitter \
             amigavideo_hiddclass \
             amigavideo_compositorclass \
             amigavideo_bitmapclass

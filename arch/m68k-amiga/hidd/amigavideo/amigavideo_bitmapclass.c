@@ -55,7 +55,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *UtilityBase = csd->cs_UtilityBase;
     struct Library *OOPBase = csd->cs_OOPBase;
-    IPTR width, height, depth, disp, modeid, coppersize;
+    IPTR width, height, depth, disp, modeid;
     BOOL ok = TRUE;      
     struct amigabm_data *data;
     struct BitMap *pbm = NULL;
@@ -105,6 +105,9 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
         if (data->compositor)
         {
+#if USE_FAST_BMPOSCHANGE
+            data->bmposchange = OOP_GetMethod(data->compositor, CSD(cl)->mid_BitMapPositionChanged, &data->bmposchange_Class);
+#endif
             data->palette = AllocVec(csd->max_colors * 3, MEMF_CLEAR);
             D(bug("[AmigaVideo:Bitmap] %s: palette data @ 0x%p\n", __func__, data->palette);)
 
@@ -117,16 +120,6 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
                 data->res = 1;
             data->interlace = (data->modeid & LORESLACE_KEY) ? 1 : 0;
 
-            coppersize = get_copper_list_length(csd, data->depth);
-
-            data->copper2.copper2 = AllocVec(coppersize, MEMF_CLEAR | MEMF_CHIP);
-            D(bug("[AmigaVideo:Bitmap] %s: allocated %d bytes for copperlist data @ 0x%p\n", __func__, coppersize, data->copper2.copper2);)
-
-            if (data->interlace)
-            {
-                data->copper2i.copper2 = AllocVec(coppersize, MEMF_CLEAR | MEMF_CHIP);
-                D(bug("[AmigaVideo:Bitmap] %s: interlaced copperlist data @ 0x%p\n", __func__, data->copper2i.copper2);)
-            }
             setmode(csd, data);
         }
         else
@@ -166,8 +159,6 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     {
         D(bug("[AmigaVideo:Bitmap] %s: destroying displayable bitmap\n", __func__);)
         FreeVec(data->palette);
-        FreeVec(data->copper2.copper2);
-        FreeVec(data->copper2i.copper2);
     }
 
     OOP_DoSuperMethod(cl, o, msg);
@@ -238,7 +229,11 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
         };
         data->leftedge = newxoffset;
         data->topedge = newyoffset;
-        OOP_DoMethod(data->compositor, (OOP_Msg)&bpcmsg);
+#if USE_FAST_BMPOSCHANGE
+        data->bmposchange(data->bmposchange_Class, data->compositor, (OOP_Msg)&bpcmsg.mID);
+#else
+        OOP_DoMethod(data->compositor, (OOP_Msg)&bpcmsg.mID);
+#endif
     }
 
     DB2(bug("[AmigaVideo:Bitmap] %s: Exit\n", __func__));
@@ -399,7 +394,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    bit;
     
     data = OOP_INST_DATA(cl, o);
-    
+
     offset = msg->x / 8 + msg->y * data->bytesperrow;  
     if ((offset & ~3) != data->pixelcacheoffset) {
         CLEARCACHE;
