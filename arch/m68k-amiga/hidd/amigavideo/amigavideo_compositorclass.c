@@ -235,13 +235,14 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
 
                 /* copy adjusted pointers ... */
                 bmdata->copsd.copper2_palette = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_palette - bmvp->DspIns->CopLStart);
-                bmdata->copsd.copper2_palette_aga_lo = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_palette_aga_lo - bmvp->DspIns->CopLStart);
                 bmdata->copsd.copper2_scroll = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_scroll - bmvp->DspIns->CopLStart);
-                bmdata->copsd.copper2_bplcon0 = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_bplcon0 - bmvp->DspIns->CopLStart);
                 bmdata->copsd.copper2_bpl = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_bpl - bmvp->DspIns->CopLStart);
-                bmdata->copsd.copper2_fmode = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_fmode - bmvp->DspIns->CopLStart);
                 bmdata->copsd.copper2_tail = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_tail - bmvp->DspIns->CopLStart);
                 bmdata->copsd.extralines = bmdata->copld.extralines;
+                if (bmdata->copld.copper2_palette_aga_lo)
+                    bmdata->copsd.copper2_palette_aga_lo = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_palette_aga_lo - bmvp->DspIns->CopLStart);
+                if (bmdata->copld.copper2_fmode)
+                    bmdata->copsd.copper2_fmode = bmvp->DspIns->CopSStart + (bmdata->copld.copper2_fmode - bmvp->DspIns->CopLStart);
 
                 AddTail(&csd->c2ifragments, &bmdata->copsd.cnode);
             }
@@ -262,8 +263,24 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
             }
             bmdata->displayheight = limitheight(csd, (screen_finish - screen_start) + 1, bmdata->interlace, FALSE);
             D(bug("[AmigaVideo:Compositor] %s:  -- screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bmdata->displayheight);)
-            setcopperscroll(csd, bmdata, csd->interlaced | bmdata->interlace);
+            setcopperscroll(csd, bmdata, ((csd->interlaced == TRUE) || (bmdata->interlace == TRUE)));
 
+            if ((bmdata->bmucl) && !(bmdata->bmucl->Flags & (1<<15)))
+            {
+                D(bug("[AmigaVideo:Compositor] %s:  -- copying user-copperlist data ...\n", __func__);)
+                CopyMemQuick(bmdata->bmucl->CopLStart, bmdata->copld.copper2_tail, bmdata->bmuclsize);
+                bmdata->copld.copper2_tail = (APTR)((IPTR)bmdata->copld.copper2_tail + bmdata->bmuclsize);
+                if ((bmdata->interlace) || (csd->interlaced))
+                {
+                    if (bmdata->bmucl->CopSStart)
+                        CopyMemQuick(bmdata->bmucl->CopSStart, bmdata->copsd.copper2_tail, bmdata->bmuclsize);
+                    else
+                        CopyMemQuick(bmdata->bmucl->CopLStart, bmdata->copsd.copper2_tail, bmdata->bmuclsize);
+                    bmdata->copsd.copper2_tail = (APTR)((IPTR)bmdata->copsd.copper2_tail + bmdata->bmuclsize);
+                }
+                bmdata->bmucl->Flags |= (1<<15);
+            }
+            
             /* link the copperlist fragments */
             if (bmdata->copld.cnode.mln_Pred && bmdata->copld.cnode.mln_Pred->mln_Pred)
             {
@@ -323,9 +340,9 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
 
         /* make sure GfxBase points to the first copperlist in the chain ...*/
         GfxBase->LOFlist = bmdatprev->bmcl->CopLStart;
-        
+
         /* set GfxBase Modes to its bcplcon0 value */
-        GfxBase->Modes = clfirst->copper2_bplcon0[1];
+        GfxBase->Modes = clfirst->copper2_scroll[3];
         D(bug("[AmigaVideo:Compositor] %s: Gfxbase->Modes = %04x\n", __func__, GfxBase->Modes);)
 
         if (IsListEmpty(&csd->c2ifragments))
