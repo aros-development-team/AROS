@@ -10,6 +10,8 @@
 
 #include <graphics/videocontrol.h>
 
+#include <stdio.h>
+
 struct GfxBase *GfxBase;
 struct IntuitionBase *IntuitionBase;
 
@@ -18,11 +20,12 @@ struct copargs
     IPTR usercopper;
     LONG *userclip;
     LONG *bblank;
+	char *pubscr;
 };
 
 int main(int argc, char **argv)
 {
-    struct copargs args = {0, NULL, NULL};
+    struct copargs args = {0, NULL, NULL, NULL};
     struct RDArgs *rda;
 	struct Screen *pubscreen;
 	struct TagItem vcTags[] = 
@@ -36,25 +39,44 @@ int main(int argc, char **argv)
     {
 		if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
 		{
-			rda = ReadArgs("USERCOPPER/S,USERCLIP/K/N,BORDERBLANK/K/N", (IPTR *)&args, NULL);
+			char *scrnname = NULL;
+
+			rda = ReadArgs("USERCOPPER/S,USERCLIP/K/N,BORDERBLANK/K/N,PUBSCREEN/K", (IPTR *)&args, NULL);
 			if (rda) {
 				if (args.userclip)
 				{
 					if (*args.userclip != 0)
+					{
+						printf("Enabling USERCLIP\n");
 						vcTags[0].ti_Tag = VTAG_USERCLIP_SET;
+					}
 					else
+					{
+						printf("Disabling USERCLIP\n");
 						vcTags[0].ti_Tag = VTAG_USERCLIP_CLR;
+					}
 				}
 				if (args.bblank)
 				{
 					if (*args.bblank != 0)
+					{
+						printf("Enabling BORDERBLANK\n");
 						vcTags[1].ti_Tag = VTAG_BORDERBLANK_SET;
+					}
 					else
+					{
+						printf("Disabling BORDERBLANK\n");
 						vcTags[1].ti_Tag = VTAG_BORDERBLANK_CLR;
+					}
+				}
+				if (args.pubscr)
+				{
+					scrnname = args.pubscr;
+					printf("Using Public Screen '%s'\n", scrnname);
 				}
 			}
 
-			if ((pubscreen = LockPubScreen(NULL)) != NULL)
+			if ((pubscreen = LockPubScreen(scrnname)) != NULL)
 			{
 				struct UCopList *uCop;
 
@@ -62,6 +84,7 @@ int main(int argc, char **argv)
 				{
 					if ((uCop = AllocMem(sizeof(struct UCopList), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 					{
+						printf("Preparing User Copperlist...\n");
 						UCopperListInit(uCop, 6 + 1);
 						
 						CWait(uCop, (pubscreen->Height >> 2),0);
@@ -86,15 +109,20 @@ int main(int argc, char **argv)
 
 				Forbid();
 				/* make sure there is nothing currently attached .. */
+				printf("Clearing ViewPorts Copperlist...\n");
 				FreeVPortCopLists(&pubscreen->ViewPort);
 				if (uCop)
+				{
+					printf("Setting User Copperlist...\n");
 					pubscreen->ViewPort.UCopIns = uCop;
+				}
 				Permit();
 
 				VideoControl( pubscreen->ViewPort.ColorMap, vcTags);
 				UnlockPubScreen(NULL, pubscreen);
 				MakeScreen(pubscreen);
 				RethinkDisplay();
+				printf("Done\n");
 			}
 			CloseLibrary(GfxBase);
 		}
