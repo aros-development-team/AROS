@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 
 			if ((pubscreen = LockPubScreen(scrnname)) != NULL)
 			{
-				struct UCopList *uCop;
+				struct UCopList *uCop = NULL;
 
 				if (args.usercopper)
 				{
