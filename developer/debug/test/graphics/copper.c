@@ -15,20 +15,20 @@ struct IntuitionBase *IntuitionBase;
 
 struct copargs
 {
+    IPTR usercopper;
     LONG *userclip;
     LONG *bblank;
-    LONG *usercopper;
 };
 
 int main(int argc, char **argv)
 {
-    struct copargs args = {NULL};
+    struct copargs args = {0, NULL, NULL};
     struct RDArgs *rda;
 	struct Screen *pubscreen;
 	struct TagItem vcTags[] = 
 	{
-		VTAG_USERCLIP_SET, 0,
-		VTAG_BORDERBLANK_SET, 0,
+		VTAG_USERCLIP_GET, 0,
+		VTAG_BORDERBLANK_GET, 0,
 		VTAG_END_CM, 0
 	};
 
@@ -36,12 +36,22 @@ int main(int argc, char **argv)
     {
 		if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
 		{
-			rda = ReadArgs("USERCLIP/K/N,BORDERBLANK/K/N,USERCOPPER/K/N", (IPTR *)&args, NULL);
+			rda = ReadArgs("USERCOPPER/S,USERCLIP/K/N,BORDERBLANK/K/N", (IPTR *)&args, NULL);
 			if (rda) {
 				if (args.userclip)
-					vcTags[0].ti_Data = 1;
+				{
+					if (*args.userclip != 0)
+						vcTags[0].ti_Tag = VTAG_USERCLIP_SET;
+					else
+						vcTags[0].ti_Tag = VTAG_USERCLIP_CLR;
+				}
 				if (args.bblank)
-					vcTags[1].ti_Data = 1;
+				{
+					if (*args.bblank != 0)
+						vcTags[1].ti_Tag = VTAG_BORDERBLANK_SET;
+					else
+						vcTags[1].ti_Tag = VTAG_BORDERBLANK_CLR;
+				}
 			}
 
 			if ((pubscreen = LockPubScreen(NULL)) != NULL)
@@ -90,6 +100,8 @@ int main(int argc, char **argv)
 				MakeScreen(pubscreen);
 				RethinkDisplay();
 			}
+			CloseLibrary(GfxBase);
 		}
+		CloseLibrary(IntuitionBase);
 	}
 }
