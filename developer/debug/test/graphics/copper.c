@@ -91,8 +91,7 @@ int main(int argc, char **argv)
 				else
 				{
 					Forbid();
-					uCop = pubscreen->ViewPort.UCopIns;
-					pubscreen->ViewPort.UCopIns = NULL;
+					FreeVPortCopLists(&pubscreen->ViewPort);
 					Permit();
 				}
 				VideoControl( pubscreen->ViewPort.ColorMap, vcTags);
