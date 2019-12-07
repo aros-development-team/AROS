@@ -81,19 +81,16 @@ int main(int argc, char **argv)
 
 						CWait(uCop, 10000, 0xFF);
 						CBump(uCop);
-						
-						Forbid();
-						pubscreen->ViewPort.UCopIns = uCop;
-						Permit();
-
 					}
 				}
-				else
-				{
-					Forbid();
-					FreeVPortCopLists(&pubscreen->ViewPort);
-					Permit();
-				}
+
+				Forbid();
+				/* make sure there is nothing currently attached .. */
+				FreeVPortCopLists(&pubscreen->ViewPort);
+				if (uCop)
+					pubscreen->ViewPort.UCopIns = uCop;
+				Permit();
+
 				VideoControl( pubscreen->ViewPort.ColorMap, vcTags);
 				UnlockPubScreen(NULL, pubscreen);
 				MakeScreen(pubscreen);
