@@ -8,6 +8,7 @@ FILES := \
     areatest2 \
     blttemplatealpha \
     CGXTest \
+    copper \
     getcybermapattr \
     gfx \
     gfxinfo \

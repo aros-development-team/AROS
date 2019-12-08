@@ -33,11 +33,14 @@ struct amigabm_data
     /* display composition data ... */
     struct Node                 node;
     struct CopList              *bmcl;
+    struct CopList              *bmucl;
     struct copper2data          copld;
     struct copper2data          copsd;
     IPTR                        modeid;
-    
+    ULONG                       bmuclsize; /* user copperlist total size in bytes */
+
     UBYTE                       res; // 0 = lores, 1 = hires, 2 = shres
+    BYTE                        sprite_res;
     UBYTE                       interlace;
     WORD                        modulopre, modulo;
     UWORD                       ddfstrt, ddfstop;
