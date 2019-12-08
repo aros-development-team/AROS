@@ -6,6 +6,7 @@
 #define USE_FAST_BMSTACKCHANGE		1
 #define USE_FAST_BMPOSCHANGE		1
 //#define USE_ALIEN_DISPLAYMODES		1
+#define USE_UCOP_DIRECT             1
 
 #define AMIGAVIDEO_LIBNAME          "amigavideo.hidd"
 
@@ -84,7 +85,6 @@ struct amigavideo_staticdata
     UWORD                       *sprite;
     WORD                        spritex, spritey;
     BYTE                        sprite_offset_x, sprite_offset_y;
-    BYTE                        sprite_res;
     UWORD                       bplcon0_null,
                                 bplcon1, bplcon2, bplcon3, bplcon4;
 

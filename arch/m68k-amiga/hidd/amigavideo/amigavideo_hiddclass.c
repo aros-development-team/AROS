@@ -856,7 +856,10 @@ BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct
     if (width > maxw || height > maxh)
         return FALSE;
 
-    return setsprite(cl, o, width, height, msg);
+    if (!setsprite(cl, o, width, height, msg))
+        return FALSE;
+
+    return TRUE;
 }
 
 BOOL AmigaVideoCl__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, ULONG Type, ULONG *Width, ULONG *Height)
@@ -917,6 +920,34 @@ ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct 
         bmdata->bmcl->_ViewPort = vpd->vpe->ViewPort;
         bmdata->bmcl->MaxCount = get_copper_list_length(csd, bmdata->depth) >> 2;
         D(bug("[AmigaVideo:Hidd] %s: DspIns->MaxCount = %d\n", __func__, bmdata->bmcl->MaxCount));
+
+        bmdata->bplcon3 &= ~((1 << 5)|(1 << 1));
+        if (vpd->vpe->ViewPort->ColorMap)
+        {
+            struct ColorMap *vpcm = vpd->vpe->ViewPort->ColorMap;
+            if (vpcm->Flags & BORDER_BLANKING)
+                bmdata->bplcon3 |= (1 << 5);
+            if (vpcm->Flags & BORDERSPRITES)
+                bmdata->bplcon3 |= (1 << 1);
+            switch (vpcm->SpriteResolution)
+            {
+                case SPRITERESN_35NS:
+                    if (csd->aga && csd->aga_enabled)
+                    {
+                        bmdata->sprite_res = 2;
+                        break;
+                    }
+                case SPRITERESN_70NS:
+                    bmdata->sprite_res = 1;
+                    break;
+
+                case SPRITERESN_140NS:
+                case SPRITERESN_ECS:
+                case SPRITERESN_DEFAULT:
+                    bmdata->sprite_res = 0;
+                    break;
+            }
+        }
     }
 
     return retval;
@@ -937,6 +968,17 @@ void AmigaVideoCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct 
 
     if (vp->UCopIns)
     {
+        struct CopList  *usercopl = vp->UCopIns->FirstCopList;
+        while (usercopl)
+        {
+#if !USE_UCOP_DIRECT
+            FreeVec(usercopl->CopLStart);
+            FreeVec(usercopl->CopSStart);
+#endif
+            usercopl->CopLStart;
+            usercopl->CopSStart;
+            usercopl = usercopl->Next;
+        }
         FreeCopList(vp->UCopIns->FirstCopList);
         FreeMem(vp->UCopIns, sizeof(struct UCopList));
     }
@@ -948,17 +990,18 @@ void AmigaVideoCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct 
     vp->UCopIns = NULL;
 }
 
-static void parse_UserCopperlist(struct amigabm_data *bmdata, struct UCopList *usercopper)
+void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigabm_data *bmdata, struct CopList  *copFirst)
 {
-    struct CopList  *usercopl = usercopper->FirstCopList;
+    struct CopList  *usercopl = copFirst;
 
-    D(bug("[AmigaVideo:Hidd] %s: UCopIns = 0x%p\n", __func__, usercopper);)
-    D(bug("[AmigaVideo:Hidd] %s: UCopIns->FirstCopList = 0x%p\n", __func__, usercopl);)
+    D(bug("[AmigaVideo:Hidd] %s: FirstCopList = 0x%p\n", __func__, usercopl);)
+
     if (usercopl->Count > 0)
     {
         struct CopIns *copIns = usercopl->CopIns;
         UWORD *copl, *cops = NULL;
         WORD count = 0;
+        BOOL ucend=FALSE, passed = FALSE;
 
         usercopl->Flags &= ~(1<<15);
         while (usercopl)
@@ -967,12 +1010,12 @@ static void parse_UserCopperlist(struct amigabm_data *bmdata, struct UCopList *u
             usercopl = usercopl->Next;
         }
         D(bug("[AmigaVideo:Hidd] %s: %d instructions total\n", __func__, count);)
-        bmdata->bmuclsize = count << 2;
-        usercopl = usercopper->FirstCopList;
+        bmdata->bmuclsize = (count << 2);
+        usercopl = copFirst;
 
         if (!usercopl->CopLStart)
         {
-            usercopl->CopLStart = AllocVec((count << 2), MEMF_CLEAR | MEMF_CHIP);
+            usercopl->CopLStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_CHIP);
         }
         copl = usercopl->CopLStart;
         D(bug("[AmigaVideo:Hidd] %s:   CopList->CopLStart = 0x%p\n", __func__, copl);)
@@ -980,16 +1023,20 @@ static void parse_UserCopperlist(struct amigabm_data *bmdata, struct UCopList *u
         {
             if (!usercopl->CopSStart)
             {
-                usercopl->CopSStart = AllocVec((count << 2), MEMF_CLEAR | MEMF_CHIP);
+                usercopl->CopSStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_CHIP);
             }
             cops = usercopl->CopSStart;
             D(bug("[AmigaVideo:Hidd] %s:   CopList->CopList = 0x%p\n", __func__, cops);)
         }
         
-        while (count-- > 0)
+        while ((!ucend) && (count-- > 0))
         {
             switch (copIns->OpCode)
             {
+                case CPRNXTBUF:
+                    D(bug("[AmigaVideo:Hidd] %s:     CPRNXTBUF\n", __func__);)
+                    copIns = copIns->u3.nxtlist->CopIns;
+                    continue;
                 case COPPER_MOVE:
                     D(bug("[AmigaVideo:Hidd] %s:     CMOVE\n", __func__);)
                     COPPEROUT(copl, copIns->u3.u4.u1.DestAddr, copIns->u3.u4.u2.DestData)
@@ -999,23 +1046,53 @@ static void parse_UserCopperlist(struct amigabm_data *bmdata, struct UCopList *u
                     }
                     break;
                 case COPPER_WAIT:
-                    D(bug("[AmigaVideo:Hidd] %s:     CWAIT\n", __func__);)
-                    COPPEROUT(copl, (copIns->u3.u4.u1.VWaitPos << 8) | (copIns->u3.u4.u2.HWaitPos << 1) | 0x1, 0xFFFE)
-                    if (cops)
                     {
-                        COPPEROUT(copl, (copIns->u3.u4.u1.VWaitPos << 8) | (copIns->u3.u4.u2.HWaitPos << 1) | 0x1, 0xFFFE)
+                        D(bug("[AmigaVideo:Hidd] %s:     CWAIT\n", __func__);)
+                        UWORD   movey = csd->starty + copIns->u3.u4.u1.VWaitPos + (bmdata->topedge >> bmdata->interlace),
+                                movex = csd->startx + copIns->u3.u4.u2.HWaitPos;
+
+                        /* If its the end of the user copperlist, or the displayheight of the bitmap,  bail out.. */
+                        if (!((copIns->u3.u4.u1.VWaitPos == 1000) && (copIns->u3.u4.u2.HWaitPos == 0xFF)) &&
+                            (copIns->u3.u4.u1.VWaitPos < bmdata->displayheight))
+                        {
+                            if (!passed && (movey > 256))
+                            {
+                                COPPEROUT(copl, 0xFFDF, 0xFFFE)
+                                passed = TRUE;
+                            }
+                            COPPEROUT(copl, (movey << 8) | (movex << 1) | 0x1, 0xFFFE)
+                            if (cops)
+                            {
+                                if (!passed && (movey > 256))
+                                {
+                                    COPPEROUT(cops, 0xFFDF, 0xFFFE)
+                                }
+                                COPPEROUT(cops, (movey << 8) | (movex << 1) | 0x1, 0xFFFE)
+                            }
+                            if (!passed && (movey > 256))
+                            {
+                                passed = TRUE;
+                            }
+                            break;
+                        }
                     }
-                    break;
-                case CPRNXTBUF:
-                    D(bug("[AmigaVideo:Hidd] %s:     CPRNXTBUF\n", __func__);)
-                    copIns = copIns->u3.nxtlist->CopIns;
-                    continue;
                 default:
-                    D(bug("[AmigaVideo:Hidd] %s:     ?\n", __func__);)
+                    ucend = TRUE;
                     break;
             }
             copIns++;
         }
+        if (count > 0)
+        {
+            /* adjust to reflect the actual used size .. */
+            bmdata->bmuclsize -= (count << 2);
+        }
+#if USE_UCOP_DIRECT
+        if (bmdata->copld.copper2_tail == copFirst->CopLStart)
+            bmdata->copld.copper2_tail = (APTR)((IPTR)bmdata->copld.copper2_tail + bmdata->bmuclsize);
+        if ((cops) && (bmdata->copsd.copper2_tail == copFirst->CopSStart))
+            bmdata->copsd.copper2_tail = (APTR)((IPTR)bmdata->copsd.copper2_tail + bmdata->bmuclsize);
+#endif
         bmdata->bmucl = usercopl;
     }
 }
@@ -1066,8 +1143,15 @@ ULONG AmigaVideoCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, str
             setcoppercolors(csd, bmdata, bmdata->palette);
 
             /* handle the viewports 'struct UCopList *' */
-            if (vpd->vpe->ViewPort->UCopIns)
-                parse_UserCopperlist(bmdata, vpd->vpe->ViewPort->UCopIns);
+            if (vpd->vpe->ViewPort->UCopIns && vpd->vpe->ViewPort->UCopIns->FirstCopList)
+            {
+#if USE_UCOP_DIRECT
+                vpd->vpe->ViewPort->UCopIns->FirstCopList->CopLStart = bmdata->copld.copper2_tail;
+                if (bmdata->interlace)
+                    vpd->vpe->ViewPort->UCopIns->FirstCopList->CopSStart = bmdata->copsd.copper2_tail;
+#endif
+                AmigaVideo_ParseCopperlist(csd, bmdata, vpd->vpe->ViewPort->UCopIns->FirstCopList);
+            }
         }
     }
 
@@ -1085,7 +1169,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct
     };
     bscmsg.data = msg->Data;
 
-    D(bug("[AmigaVideo:Hidd] %s: TopLevelBM 0x%p\n", __func__, (msg->Data ? (msg->Data->Bitmap) : NULL)));
+    D(bug("[AmigaVideo:Hidd] %s: first ViewPort @ 0x%p\n", __func__, msg->Data));
 
 #if USE_FAST_BMSTACKCHANGE
         data->bmstackchange(data->bmstackchange_Class, data->compositor, (OOP_Msg)&bscmsg.mID);
