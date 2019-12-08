@@ -40,6 +40,7 @@ struct amigabm_data
     ULONG                       bmuclsize; /* user copperlist total size in bytes */
 
     UBYTE                       res; // 0 = lores, 1 = hires, 2 = shres
+    BYTE                        sprite_res;
     UBYTE                       interlace;
     WORD                        modulopre, modulo;
     UWORD                       ddfstrt, ddfstop;

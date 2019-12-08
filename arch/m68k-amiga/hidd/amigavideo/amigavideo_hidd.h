@@ -6,6 +6,7 @@
 #include <exec/semaphores.h>
 #include <exec/interrupts.h>
 #include <graphics/gfxbase.h>
+#include <graphics/copper.h>
 
 #include "amigavideo_intern.h"
 
@@ -19,5 +20,7 @@ struct amigagfx_data
     OOP_Class 	          *bmstackchange_Class;
 #endif
 };
+
+void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *, struct amigabm_data *, struct CopList  *);
 
 #endif /* AMIGAVIDEO_HIDD_H */
