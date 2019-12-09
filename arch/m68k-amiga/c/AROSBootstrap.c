@@ -126,6 +126,17 @@ static BOOL debug_enabled = FALSE;
 
 static struct BootMemHeader *bmh;
 
+#define ALLOCTMPL "%s to allocate %N bytes of type %X8\n"
+
+#ifdef AROS_FAST_BSTR
+static const char *alloctmpl =  ALLOCTMPL;
+#define alloctmpl_bstr ((BSTR)MKBADDR(alloctmpl))
+#else
+static const struct { UBYTE len; UBYTE str[sizeof(ALLOCTMPL)]; }
+    const alloctmpl __attribute__((__aligned__(4)))= { .len = sizeof(ALLOCTMPL)-1, .str = ALLOCTMPL };
+#define alloctmpl_bstr (BSTR)MKBADDR(&alloctmpl)
+#endif
+
 /* KS 1.3 (and earlier) don't have a dos.library with
  * niceties such as VFPrintf nor ReadArgs.
  *
@@ -470,7 +481,7 @@ void *malloc(int size)
 
     vec = AllocMem(size, MEMF_ANY);
     if (vec == NULL) {
-        WriteF("libz: Failed to allocate %N bytes of type %X8\n", size, MEMF_ANY);
+        _WriteF(alloctmpl_bstr, "libz: Failed", size, MEMF_ANY);
         return NULL;
     }
 
@@ -576,7 +587,7 @@ static APTR aosAllocMem(ULONG size, ULONG flags, const char *name, BOOL resscan,
     size += 2 * ALLOCATION_EXTRA;
     mem = AllocMem(size, flags | MEMF_CLEAR);
     if (mem == NULL) {
-        WriteF("AOS: Failed to allocate %N bytes of type %X8\n", size, flags);
+        _WriteF(alloctmpl_bstr, "AOS: Failed", size, flags);
         meminfo();
         return NULL;
     }
@@ -657,7 +668,7 @@ static APTR specialAlloc(ULONG size, ULONG flags, const char *name, BOOL resscan
 {
     APTR mem;
 
-    D(DWriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
+    D(_DWriteF(alloctmpl_bstr, "ELF: Attempt", size, flags));
     /* Since we don't know if we need to wrap the memory
      * with the KickMem wrapper until after allocation,
      * we always adjust the size as if we have to.
@@ -697,7 +708,7 @@ static APTR specialAlloc(ULONG size, ULONG flags, const char *name, BOOL resscan
         flags |= MEMF_REVERSE;
     }
 
-    D(DWriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
+    D(_DWriteF(alloctmpl_bstr, "ELF: Attempt", size, flags));
     mem = AllocPageAligned(&size, flags | MEMF_CLEAR);
     if (mem == NULL) {
         if ((flags & (MEMF_KICK | MEMF_FAST)) == (MEMF_KICK | MEMF_FAST)) {
@@ -705,7 +716,7 @@ static APTR specialAlloc(ULONG size, ULONG flags, const char *name, BOOL resscan
             mem = AllocPageAligned(&size, (flags & MEMF_REVERSE) | MEMF_CLEAR);
         }
         if (mem == NULL) {
-            D(DWriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
+            D(_DWriteF(alloctmpl_bstr, "ELF: Failed", size, flags));
             meminfo();
             return NULL;
         }
