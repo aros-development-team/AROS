@@ -1317,515 +1317,510 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     case IECODE_NOBUTTON: /* MOUSEMOVE */
     {
         struct Screen *scr;
-    UWORD DWidth, DHeight;
+        UWORD DWidth, DHeight;
 
-    if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
-        //ULONG Thresh;
+        if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
+            //ULONG Thresh;
 
-        /* Add delta information lost in previous mousemove event. See below. */            
-        iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
-        iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
+            /* Add delta information lost in previous mousemove event. See below. */            
+            iihdata->DeltaMouseX = ie->ie_X + iihdata->DeltaMouseX_Correction;
+            iihdata->DeltaMouseY = ie->ie_Y + iihdata->DeltaMouseY_Correction;
 
 #define ACCELERATOR_THRESH      2
 #define ACCELERATOR_MULTI       2
 
-        if (GetPrivIBase(IntuitionBase)->ActivePreferences.EnableCLI & MOUSE_ACCEL)
-        {
-        /* Acceleration */
-        if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
-            iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
-        if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
-            iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
-        }
-        
-        switch (GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks)
-        {
-        case 0:
-        iihdata->DeltaMouseX_Correction = 0;
-        iihdata->DeltaMouseX_Correction = 0;
-        break;
-            
-        default:
-        /* Remember the delta information which gets lost because of division by PointerTicks.
-           Will be added to prescaled deltas of next mousemove event. If this is not done, moving
-           the mouse very slowly would cause it to not move at all */
-           
-        iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
-        iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
-        
-        iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
-        iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
-        break;
-        }
-
-
-        ie->ie_X = iihdata->DeltaMouseX + IntuitionBase->MouseX;
-        ie->ie_Y = iihdata->DeltaMouseY + IntuitionBase->MouseY;
-    } else {
-        DEBUG_MOUSE(bug("[Inputhandler] Last mouse position: (%d, %d), new mouse position: (%d, %d)\n",
-                IntuitionBase->MouseX, IntuitionBase->MouseY, ie->ie_X, ie->ie_Y));
-        iihdata->DeltaMouseX = ie->ie_X - IntuitionBase->MouseX;
-        iihdata->DeltaMouseY = ie->ie_Y - IntuitionBase->MouseY;
-        DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
-    }
-
-    /* Calculate current display size.
-       It's determined by the first screen on this monitor.
-       TODO: perhaps we should just ask display driver about its current display mode? */
-    scr = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
-    if (scr)
-    {
-        DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
-        DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
-    }
-    else
-    {
-        /* If there's no active screen, we take 160x160 as a limit */
-        DWidth = 160;
-        DHeight = 160;
-    }
-
-    scr = iihdata->ScreenDrag;
-    if (scr) {
-        WORD dx = iihdata->DeltaMouseX;
-        WORD dy = iihdata->DeltaMouseY;
-        WORD min, max, val;
-        UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
-        UWORD DragMode = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0];
-
-        DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
-
-        /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
-        if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
-        /* Calculate limits */
-        if (scr->Width > DWidth) {
-            min = DWidth - scr->Width;
-            max = 0;
-        } else {
-            min = 0;
-            max = DWidth - scr->Width;
-        }
-        /* The purpose of the following complex check is to prevent jumping if the
-           screen was positioned out of user drag limits by the program itself using
-           ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
-           on the dragging direction.
-           Maybe the user should also be able to drag the screen back off-display in such
-           a case?
-           Calculate the position we would go to */
-        val = scr->LeftEdge + dx;
-        /* Determine the direction */
-        if ((dx < 0) && ((!(spFlags & SF_ComposeRight)) || (DragMode & ICVDM_LBOUND))) {
-            /* Can we move at all in this direction ? */
-            if (scr->LeftEdge > min) {
-            /* If too far, restrict it */
-            if (val < min)
-                dx = min - scr->LeftEdge;
-            } else
-            /* Just don't move if we can't */
-            dx = 0;
-        } else if ((!(spFlags & SF_ComposeLeft)) || (DragMode & ICVDM_RBOUND)) {
-            if (scr->LeftEdge < max) {
-            if (val > max)
-                dx = max - scr->LeftEdge;
-            } else
-            dx = 0;
-        }
-        }
-        if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
-        DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
-        DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, DHeight));
-        if (scr->Height > DHeight) {
-            min = DHeight - scr->Height;
-            max = 0;
-        } else {
-            min = 0;
-            max = DHeight - scr->Height;
-        }
-        DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
-        val = scr->TopEdge + dy;
-        DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
-        if ((dy < 0)  && ((!(spFlags & SF_ComposeBelow)) || (DragMode & ICVDM_TBOUND))) {
-            if (scr->TopEdge > min) {
-            if (val < min)
-                dy = min - scr->TopEdge;
-            } else
-            dy = 0;
-        } else if ((!(spFlags & SF_ComposeAbove)) || (DragMode & ICVDM_BBOUND)) {
-            if (scr->TopEdge < max) {
-            if (val > max)
-                dy = max - scr->TopEdge;
-            } else
-            dy = 0;
-        }
-        DEBUG_DRAG(bug("[Inputhandler] Restricted delta will be %d\n", dy));
-        }
-        ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
-    }
-
-    /* Autoscroll the active screen */
-    scr = IntuitionBase->ActiveScreen;
-    if (scr && (scr->Flags & AUTOSCROLL) &&
-       (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
-    {
-        WORD xval = scr->LeftEdge;
-        WORD yval = scr->TopEdge;
-        WORD min;
-
-        DEBUG_AUTOSCROLL(bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
-                     scr, ie->ie_X, ie->ie_Y));
-
-        if ((ie->ie_X < 0) || (ie->ie_X >= DWidth)) {
-        DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
-        xval -= iihdata->DeltaMouseX;
-
-        if (ie->ie_X < 0) {
-            if (xval > 0)
-            xval = 0;
-        } else if (ie->ie_X >= DWidth) {
-            min = DWidth - scr->Width;
-            if (xval < min)
-            xval = min;
-        }
-        }
-
-        if ((ie->ie_Y < 0) || (ie->ie_Y >= DHeight)) {
-            yval -= iihdata->DeltaMouseY;
-
-            if (ie->ie_Y < 0) {
-                /* If screen is dragged down and user touched upper screen
-                   boundary, do nothing */
-                if (scr->TopEdge >= 0)
-                    yval = scr->TopEdge;
-                else
-                    /* If scrolled down screen is being scrolled up, make sure it
-                       does not go over 0 */
-                    if (yval > 0)
-                        yval = 0;
-            } else if (ie->ie_Y >= DHeight) {
-                min = DHeight - scr->Height;
-                if (yval < min)
-                    yval = min;
-            }
-        }
-
-        if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
-        ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
-    }
-
-    /* Restrict mouse coordinates to the physical display area */
-    if (ie->ie_X >= DWidth) ie->ie_X = DWidth - 1;
-    if (ie->ie_Y >= DHeight) ie->ie_Y = DHeight - 1;
-    if (ie->ie_X < 0) ie->ie_X = 0;
-    if (ie->ie_Y < 0) ie->ie_Y = 0;
-
-#ifdef SKINS
-    if (gadget == iihdata->MasterDragGadget) {
-        struct gpInput gpi;
-        ULONG            retval;
-
-        gpi.MethodID     = GM_MOVETEST;
-        gpi.gpi_GInfo     = gi;
-        gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
-        gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
-        gpi.gpi_IEvent  = ie;
-
-        retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
-        if (retval == MOVETEST_ADJUSTPOS)
-        {
-            ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
-            ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
-        }
-
-    }
-#endif
-    /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
-    if (iihdata->MouseBoundsActiveFlag) {            
-        if (ie->ie_X < iihdata->MouseBoundsLeft)
-        ie->ie_X = iihdata->MouseBoundsLeft;
-        else if (ie->ie_X > iihdata->MouseBoundsRight)
-        ie->ie_X = iihdata->MouseBoundsRight;
-        
-        if (ie->ie_Y < iihdata->MouseBoundsTop)
-        ie->ie_Y = iihdata->MouseBoundsTop;
-        else if (ie->ie_Y > iihdata->MouseBoundsBottom)
-        ie->ie_Y = iihdata->MouseBoundsBottom;
-    }
-
-    /* Prevent mouse going above all screens */
-    scr = FindHighestScreen(IntuitionBase);
-    if (scr) {
-        if (ie->ie_Y < scr->TopEdge)
-            ie->ie_Y = scr->TopEdge;
-    }
-
-    /* Store new mouse coords. If a screen is being dragged, lock drag point */
-    scr = iihdata->ScreenDrag;
-    if (scr) {
-        IntuitionBase->MouseX = scr->LeftEdge + iihdata->ScreenDragPointX;
-        IntuitionBase->MouseY = scr->TopEdge + iihdata->ScreenDragPointY;
-    } else {
-        IntuitionBase->MouseX = ie->ie_X;
-        IntuitionBase->MouseY = ie->ie_Y;
-    }
-    notify_mousemove_screensandwindows(IntuitionBase);
-#if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-    SetActiveMonPointerPos(IntuitionBase);
-#else
-    *call_setpointerpos = TRUE;
-#endif
-
-    screen = FindActiveScreen(IntuitionBase); /* The mouse was moved, so current screen may have changed */
-
-#ifdef SKINS
-    if (!gadget) {
-        if (iihdata->TitlebarOnTop)
-        {
-            if (screen->MouseY > screen->BarHeight && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar)
+            if (GetPrivIBase(IntuitionBase)->ActivePreferences.EnableCLI & MOUSE_ACCEL)
             {
-            iihdata->TitlebarOnTop = FALSE;
-            iihdata->TitlebarAppearTime = 0;
-
-            LOCK_REFRESH(screen);
-
-            MoveLayer(0, screen->BarLayer, 0, -(screen->BarHeight + 1));
-            CheckLayers(screen, IntuitionBase);
-
-            UNLOCK_REFRESH(screen);
+                /* Acceleration */
+                if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
+                    iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
+                if (ABS(iihdata->DeltaMouseY) > ACCELERATOR_THRESH)
+                    iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
             }
+
+            switch (GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks)
+            {
+            case 0:
+                iihdata->DeltaMouseX_Correction = 0;
+                iihdata->DeltaMouseX_Correction = 0;
+                break;
+
+            default:
+                /* Remember the delta information which gets lost because of division by PointerTicks.
+                   Will be added to prescaled deltas of next mousemove event. If this is not done, moving
+                   the mouse very slowly would cause it to not move at all */
+
+                iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
+                iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
+
+                iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
+                iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
+                break;
+            }
+
+            ie->ie_X = iihdata->DeltaMouseX + IntuitionBase->MouseX;
+            ie->ie_Y = iihdata->DeltaMouseY + IntuitionBase->MouseY;
+        } else {
+            DEBUG_MOUSE(bug("[Inputhandler] Last mouse position: (%d, %d), new mouse position: (%d, %d)\n",
+                    IntuitionBase->MouseX, IntuitionBase->MouseY, ie->ie_X, ie->ie_Y));
+            iihdata->DeltaMouseX = ie->ie_X - IntuitionBase->MouseX;
+            iihdata->DeltaMouseY = ie->ie_Y - IntuitionBase->MouseY;
+            DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
+        }
+
+        /* Calculate current display size.
+           It's determined by the first screen on this monitor.
+           TODO: perhaps we should just ask display driver about its current display mode? */
+        scr = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
+        if (scr)
+        {
+            DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
+            DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
         }
         else
         {
-            if (screen->MouseY == 0 && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar && !MENUS_ACTIVE && !(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))
-            {
-            if (!(iihdata->TitlebarAppearTime))
-            {
-                iihdata->TitlebarAppearTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                iihdata->TitlebarAppearTime += ie->ie_TimeStamp.tv_micro / 20000;
+            /* If there's no active screen, we take 160x160 as a limit */
+            DWidth = 160;
+            DHeight = 160;
+        }
+
+        scr = iihdata->ScreenDrag;
+        if (scr) {
+            WORD dx = iihdata->DeltaMouseX;
+            WORD dy = iihdata->DeltaMouseY;
+            WORD min, max, val;
+            UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
+            UWORD DragMode = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0];
+
+            DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
+
+            /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
+            if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
+                /* Calculate limits */
+                if (scr->Width > DWidth) {
+                    min = DWidth - scr->Width;
+                    max = 0;
+                } else {
+                    min = 0;
+                    max = DWidth - scr->Width;
+                }
+                /* The purpose of the following complex check is to prevent jumping if the
+                   screen was positioned out of user drag limits by the program itself using
+                   ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
+                   on the dragging direction.
+                   Maybe the user should also be able to drag the screen back off-display in such
+                   a case?
+                   Calculate the position we would go to */
+                val = scr->LeftEdge + dx;
+                /* Determine the direction */
+                if ((dx < 0) && ((!(spFlags & SF_ComposeRight)) || (DragMode & ICVDM_LBOUND))) {
+                    /* Can we move at all in this direction ? */
+                    if (scr->LeftEdge > min) {
+                        /* If too far, restrict it */
+                        if (val < min)
+                            dx = min - scr->LeftEdge;
+                    } else
+                        dx = 0; /* Just don't move if we can't */
+                } else if ((!(spFlags & SF_ComposeLeft)) || (DragMode & ICVDM_RBOUND)) {
+                    if (scr->LeftEdge < max) {
+                        if (val > max)
+                            dx = max - scr->LeftEdge;
+                    } else
+                        dx = 0;
+                }
             }
+            if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
+                DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
+                DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, DHeight));
+                if (scr->Height > DHeight) {
+                    min = DHeight - scr->Height;
+                    max = 0;
+                } else {
+                    min = 0;
+                    max = DHeight - scr->Height;
+                }
+                DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
+                val = scr->TopEdge + dy;
+                DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
+                if ((dy < 0)  && ((!(spFlags & SF_ComposeBelow)) || (DragMode & ICVDM_TBOUND))) {
+                    if (scr->TopEdge > min) {
+                        if (val < min)
+                            dy = min - scr->TopEdge;
+                    } else
+                        dy = 0;
+                } else if ((!(spFlags & SF_ComposeAbove)) || (DragMode & ICVDM_BBOUND)) {
+                    if (scr->TopEdge < max) {
+                        if (val > max)
+                            dy = max - scr->TopEdge;
+                    } else
+                        dy = 0;
+                }
+                DEBUG_DRAG(bug("[Inputhandler] Restricted delta will be %d\n", dy));
+            }
+            ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
+        }
+
+        /* Autoscroll the active screen */
+        scr = IntuitionBase->ActiveScreen;
+        if (scr && (scr->Flags & AUTOSCROLL) &&
+           (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
+        {
+            WORD xval = scr->LeftEdge;
+            WORD yval = scr->TopEdge;
+            WORD min;
+
+            DEBUG_AUTOSCROLL(bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
+                         scr, ie->ie_X, ie->ie_Y));
+
+            if ((ie->ie_X < 0) || (ie->ie_X >= DWidth)) {
+                DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
+                xval -= iihdata->DeltaMouseX;
+
+                if (ie->ie_X < 0) {
+                    if (xval > 0)
+                        xval = 0;
+                } else if (ie->ie_X >= DWidth) {
+                    min = DWidth - scr->Width;
+                    if (xval < min)
+                        xval = min;
+                }
+            }
+
+            if ((ie->ie_Y < 0) || (ie->ie_Y >= DHeight)) {
+                yval -= iihdata->DeltaMouseY;
+
+                if (ie->ie_Y < 0) {
+                    /* If screen is dragged down and user touched upper screen
+                       boundary, do nothing */
+                    if (scr->TopEdge >= 0)
+                        yval = scr->TopEdge;
+                    else
+                        /* If scrolled down screen is being scrolled up, make sure it
+                           does not go over 0 */
+                        if (yval > 0)
+                            yval = 0;
+                } else if (ie->ie_Y >= DHeight) {
+                    min = DHeight - scr->Height;
+                    if (yval < min)
+                        yval = min;
+                }
+            }
+
+            if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
+                ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
+        }
+
+        /* Restrict mouse coordinates to the physical display area */
+        if (ie->ie_X >= DWidth) ie->ie_X = DWidth - 1;
+        if (ie->ie_Y >= DHeight) ie->ie_Y = DHeight - 1;
+        if (ie->ie_X < 0) ie->ie_X = 0;
+        if (ie->ie_Y < 0) ie->ie_Y = 0;
+
+#ifdef SKINS
+        if (gadget == iihdata->MasterDragGadget) {
+            struct gpInput gpi;
+            ULONG            retval;
+
+            gpi.MethodID     = GM_MOVETEST;
+            gpi.gpi_GInfo     = gi;
+            gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
+            gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
+            gpi.gpi_IEvent  = ie;
+
+            retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
+            if (retval == MOVETEST_ADJUSTPOS)
+            {
+                ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
+                ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
+            }
+        }
+#endif
+        /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
+        if (iihdata->MouseBoundsActiveFlag) {            
+            if (ie->ie_X < iihdata->MouseBoundsLeft)
+                ie->ie_X = iihdata->MouseBoundsLeft;
+            else if (ie->ie_X > iihdata->MouseBoundsRight)
+                ie->ie_X = iihdata->MouseBoundsRight;
+            
+            if (ie->ie_Y < iihdata->MouseBoundsTop)
+                ie->ie_Y = iihdata->MouseBoundsTop;
+            else if (ie->ie_Y > iihdata->MouseBoundsBottom)
+                ie->ie_Y = iihdata->MouseBoundsBottom;
+        }
+
+        /* Prevent mouse going above all screens */
+        scr = FindHighestScreen(IntuitionBase);
+        if (scr) {
+            if (ie->ie_Y < scr->TopEdge)
+                ie->ie_Y = scr->TopEdge;
+        }
+
+        /* Store new mouse coords. If a screen is being dragged, lock drag point */
+        scr = iihdata->ScreenDrag;
+        if (scr) {
+            IntuitionBase->MouseX = scr->LeftEdge + iihdata->ScreenDragPointX;
+            IntuitionBase->MouseY = scr->TopEdge + iihdata->ScreenDragPointY;
+        } else {
+            IntuitionBase->MouseX = ie->ie_X;
+            IntuitionBase->MouseY = ie->ie_Y;
+        }
+        notify_mousemove_screensandwindows(IntuitionBase);
+#if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+        SetActiveMonPointerPos(IntuitionBase);
+#else
+        *call_setpointerpos = TRUE;
+#endif
+
+        screen = FindActiveScreen(IntuitionBase); /* The mouse was moved, so current screen may have changed */
+
+#ifdef SKINS
+        if (!gadget) {
+            if (iihdata->TitlebarOnTop)
+            {
+                if (screen->MouseY > screen->BarHeight && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar)
+                {
+                    iihdata->TitlebarOnTop = FALSE;
+                    iihdata->TitlebarAppearTime = 0;
+
+                    LOCK_REFRESH(screen);
+
+                    MoveLayer(0, screen->BarLayer, 0, -(screen->BarHeight + 1));
+                    CheckLayers(screen, IntuitionBase);
+
+                    UNLOCK_REFRESH(screen);
+                }
             }
             else
             {
-            iihdata->TitlebarAppearTime = 0;
+                if (screen->MouseY == 0 && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar && !MENUS_ACTIVE && !(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))
+                {
+                    if (!(iihdata->TitlebarAppearTime))
+                    {
+                        iihdata->TitlebarAppearTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
+                        iihdata->TitlebarAppearTime += ie->ie_TimeStamp.tv_micro / 20000;
+                    }
+                }
+                else
+                {
+                    iihdata->TitlebarAppearTime = 0;
+                }
             }
         }
-    }
 #endif
-    if (MENUS_ACTIVE) {
-        FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-        *keep_event = FALSE;
-        break;
-    }
+        if (MENUS_ACTIVE) {
+            FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+            *keep_event = FALSE;
+            break;
+        }
 
-    if (gadget) {
-        *keep_event = FALSE;
+        if (gadget) {
+            *keep_event = FALSE;
 
-        switch (gadget->GadgetType & GTYP_GTYPEMASK)
-        {
-        case GTYP_BOOLGADGET:
-        case 0: //fallback for sucky gadgets
-            /* Must be a RELVERIFY gadget */
+            switch (gadget->GadgetType & GTYP_GTYPEMASK)
             {
-            BOOL inside;
+            case GTYP_BOOLGADGET:
+            case 0: //fallback for sucky gadgets
+                /* Must be a RELVERIFY gadget */
+                {
+                    BOOL inside;
 
-            inside = InsideGadget(gi->gi_Screen,
-                          gi->gi_Window,
-                          gi->gi_Requester,
-                          gadget,
-                          gi->gi_Screen->MouseX,
-                          gi->gi_Screen->MouseY);
+                    inside = InsideGadget(gi->gi_Screen,
+                                  gi->gi_Window,
+                                  gi->gi_Requester,
+                                  gadget,
+                                  gi->gi_Screen->MouseX,
+                                  gi->gi_Screen->MouseY);
 
-            if  (inside != iihdata->MouseWasInsideBoolGadget) {
-                iihdata->MouseWasInsideBoolGadget = inside;
+                    if  (inside != iihdata->MouseWasInsideBoolGadget) {
+                        iihdata->MouseWasInsideBoolGadget = inside;
 
-                gadget->Flags ^= GFLG_SELECTED;
-                RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
-            }
-            }
+                        gadget->Flags ^= GFLG_SELECTED;
+                        RefreshBoolGadgetState(gadget, w, req, IntuitionBase);
+                    }
+                }
+                break;
+
+            case GTYP_PROPGADGET:
+                HandlePropMouseMove(gadget,
+                        w,
+                        req,
+                        w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+                        w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+                        IntuitionBase);
+
+                break;
+
+            case GTYP_CUSTOMGADGET:
+                gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, reuse_event, IntuitionBase);
+                break;
+
+            } /* switch GadgetType */
+
+        } /* if (a gadget is currently active) */
+
+        *keep_event = FALSE;
+
+        if (!w)
             break;
 
-        case GTYP_PROPGADGET:
-            HandlePropMouseMove(gadget,
-                    w,
-                    req,
-                    w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-                    w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
-                    IntuitionBase);
-
-            break;
-
-        case GTYP_CUSTOMGADGET:
-            gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, reuse_event, IntuitionBase);
-            break;
-
-        } /* switch GadgetType */
-
-    } /* if (a gadget is currently active) */
-
-    *keep_event = FALSE;
-
-    if (!w)
-        break;
-
-    if (IW(w)->helpflags & HELPF_GADGETHELP && (!(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON)))) {
-        struct Window *hw;
-        struct Gadget *g;
-
-        hw = FindActiveWindow(ie, screen, 0, IntuitionBase);
-
-        if (hw != w &&
-            (!hw || !(IW(w)->helpflags & HELPF_ISHELPGROUP) ||
-             !(IW(hw)->helpflags & HELPF_ISHELPGROUP) ||
-             IW(w)->helpgroup != IW(hw)->helpgroup))
+        if (IW(w)->helpflags & HELPF_GADGETHELP &&
+            (!(PeekQualifier() & (IEQUALIFIER_LEFTBUTTON|IEQUALIFIER_RBUTTON|IEQUALIFIER_MIDBUTTON))))
         {
+            struct Window *hw;
+            struct Gadget *g;
 
-            if (iihdata->LastHelpWindow)
+            hw = FindActiveWindow(ie, screen, 0, IntuitionBase);
+
+            if (hw != w &&
+                (!hw || !(IW(w)->helpflags & HELPF_ISHELPGROUP) ||
+                 !(IW(hw)->helpflags & HELPF_ISHELPGROUP) ||
+                 IW(w)->helpgroup != IW(hw)->helpgroup))
             {
-            fire_intuimessage(w,
-                      IDCMP_GADGETHELP,
-                      0,
-                      NULL,
-                      IntuitionBase);
+                if (iihdata->LastHelpWindow)
+                {
+                    fire_intuimessage(w,
+                              IDCMP_GADGETHELP,
+                              0,
+                              NULL,
+                              IntuitionBase);
 
+                    iihdata->LastHelpGadget = NULL;
+                    iihdata->LastHelpWindow = NULL;
+                    iihdata->HelpGadgetFindTime = 0;
+                }
+            }
+            else
+            {
+                g = FindHelpGadget (hw,
+                        IntuitionBase->ActiveScreen->MouseX,
+                        IntuitionBase->ActiveScreen->MouseY,
+                        IntuitionBase);
+                if (g && g != iihdata->LastHelpGadget)
+                {
+                    if (!iihdata->LastHelpGadget)
+                    {
+                        iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
+                        iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
+                    } else {
+                        if (hw == iihdata->LastHelpWindow)
+                        {
+                            iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
+                            iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
+                            iihdata->HelpGadgetFindTime += 25;//smaller delay
+                        }
+                    }
+                }
+                else if (g != iihdata->LastHelpGadget ||
+                    hw != iihdata->LastHelpWindow)
+                {
+                    fire_intuimessage(hw,
+                              IDCMP_GADGETHELP,
+                              0, /* Don't know what it should be */
+                              hw,
+                              IntuitionBase);
+                }
+                iihdata->LastHelpGadget = g;
+                iihdata->LastHelpWindow = hw;
+            }
+        } else {
             iihdata->LastHelpGadget = NULL;
             iihdata->LastHelpWindow = NULL;
             iihdata->HelpGadgetFindTime = 0;
-            }
         }
-        else
-        {
-            g = FindHelpGadget (hw,
-                    IntuitionBase->ActiveScreen->MouseX,
-                    IntuitionBase->ActiveScreen->MouseY,
-                    IntuitionBase);
-            if (g && g != iihdata->LastHelpGadget)
+
+        if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE))
+            break;
+
+        /* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
+           and/or active gadget has GACT_FOLLOWMOUSE set */
+
+        /* jDc: do NOT send when sizegad is pressed */
+        if (!(w->Flags & WFLG_REPORTMOUSE)) {
+            if (!gadget)
+                break;
+            if (!(gadget->Activation & GACT_FOLLOWMOUSE))
+                break;
+        } else {
+            if (gadget && (gadget->GadgetType & (GTYP_SIZING|GTYP_WDRAGGING)))
+                break;
+        }
+
+        orig_ie->ie_Class = IECLASS_RAWMOUSE;
+
+        /* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
+           note that this comes after handling gadgets, because gadgets should get all events.
+        */
+        if (IW(w)->num_mouseevents >= IW(w)->mousequeue) {
+            BOOL old_msg_found = FALSE;
+
+            /* Mouse Queue is full, so try looking for a not
+               yet GetMsg()ed IntuiMessage in w->UserPort
+               trying to modify that. */
+
+            Forbid();
+            if (w->UserPort)
             {
-            if (!iihdata->LastHelpGadget)
-            {
-                iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-            } else {
-                if (hw == iihdata->LastHelpWindow)
+                struct IntuiMessage *im;
+#if defined(__AROSEXEC_SMP__)
+                struct ExecLockBase *ExecLockBase = GetPrivIBase(IntuitionBase)->ExecLockBase;
+                if (ExecLockBase) ObtainLock(&w->UserPort->mp_SpinLock, SPINLOCK_MODE_READ, 0);
+#endif
+                for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
+                    im->ExecMessage.mn_Node.ln_Pred;
+                    im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)
                 {
-                iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-                iihdata->HelpGadgetFindTime += 25;//smaller delay
+                    if ((im->Class == IDCMP_MOUSEMOVE) &&
+                        (im->IDCMPWindow == w))
+                    {
+                        im->Qualifier = iihdata->ActQualifier;
+
+                        if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+                        {
+                            im->MouseX = iihdata->DeltaMouseX;
+                            im->MouseY = iihdata->DeltaMouseY;
+                        }
+                        else
+                        {
+                            im->MouseX = w->MouseX;
+                            im->MouseY = w->MouseY;
+                        }
+                        CurrentTime(&im->Seconds, &im->Micros);
+
+                        old_msg_found = TRUE;
+                        break;
+                    }
                 }
-            }
-            }
-            else if (g != iihdata->LastHelpGadget ||
-             hw != iihdata->LastHelpWindow)
-            {
-            fire_intuimessage(hw,
-                      IDCMP_GADGETHELP,
-                      0, /* Don't know what it should be */
-                      hw,
-                      IntuitionBase);
-            }
+#if defined(__AROSEXEC_SMP__)
+                if (ExecLockBase) ReleaseLock(&w->UserPort->mp_SpinLock, 0);
+#endif
+            } /* if (w->UserPort) */
+            Permit();
 
-            iihdata->LastHelpGadget = g;
-            iihdata->LastHelpWindow = hw;
+            /* no need to send a new message if we modified
+               an existing one ... */
+
+            if (old_msg_found) break;
+
+            /* ... otherwise we are in a strange situation. The mouse
+               queue is full, but we did not find an existing MOUSEMOVE
+               imsg in w->UserPort. So the app probably has removed
+               an imsg from the UserPort with GetMsg but we did not get
+               the ReplyMsg, yet. In this case we do send a new message */
+
+            HandleIntuiReplyPort(iihdata, IntuitionBase);
         }
-    } else {
-        iihdata->LastHelpGadget = NULL;
-        iihdata->LastHelpWindow = NULL;
-        iihdata->HelpGadgetFindTime = 0;
-    }
 
-    if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE))
+        /* MouseQueue is not full, so we can send a message. We increase
+           IntWindow->num_mouseevents which will later be decreased after
+           the Intuition InputHandler gets the ReplyMessage from the app
+           and handles it in HandleIntuiReplyPort() */
+
+        if (ih_fire_intuimessage(w, IDCMP_MOUSEMOVE, IECODE_NOBUTTON, w, IntuitionBase))
+            IW(w)->num_mouseevents++;
+
         break;
 
-    /* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
-       and/or active gadget has GACT_FOLLOWMOUSE set */
-
-    /* jDc: do NOT send when sizegad is pressed */
-    if (!(w->Flags & WFLG_REPORTMOUSE)) {
-        if (!gadget)
-            break;
-        if (!(gadget->Activation & GACT_FOLLOWMOUSE))
-            break;
-    } else {
-        if (gadget && (gadget->GadgetType & (GTYP_SIZING|GTYP_WDRAGGING)))
-            break;
-    }
-
-    orig_ie->ie_Class = IECLASS_RAWMOUSE;
-
-    /* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
-       note that this comes after handling gadgets, because gadgets should get all events.
-    */
-
-    if (IW(w)->num_mouseevents >= IW(w)->mousequeue) {
-        BOOL old_msg_found = FALSE;
-
-        /* Mouse Queue is full, so try looking for a not
-           yet GetMsg()ed IntuiMessage in w->UserPort
-           trying to modify that. */
-
-        Forbid();
-        if (w->UserPort)
-        {
-            struct IntuiMessage *im;
-#if defined(__AROSEXEC_SMP__)
-            struct ExecLockBase *ExecLockBase = GetPrivIBase(IntuitionBase)->ExecLockBase;
-            if (ExecLockBase) ObtainLock(&w->UserPort->mp_SpinLock, SPINLOCK_MODE_READ, 0);
-#endif
-            for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
-            im->ExecMessage.mn_Node.ln_Pred;
-            im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)
-            {
-                if ((im->Class == IDCMP_MOUSEMOVE) &&
-                    (im->IDCMPWindow == w))
-                {
-                    im->Qualifier = iihdata->ActQualifier;
-
-                    if (w->IDCMPFlags & IDCMP_DELTAMOVE)
-                    {
-                    im->MouseX = iihdata->DeltaMouseX;
-                    im->MouseY = iihdata->DeltaMouseY;
-                    }
-                    else
-                    {
-                    im->MouseX = w->MouseX;
-                    im->MouseY = w->MouseY;
-                    }
-                    CurrentTime(&im->Seconds, &im->Micros);
-
-                    old_msg_found = TRUE;
-                    break;
-                }
-            }
-#if defined(__AROSEXEC_SMP__)
-            if (ExecLockBase) ReleaseLock(&w->UserPort->mp_SpinLock, 0);
-#endif
-        } /* if (w->UserPort) */
-        Permit();
-
-        /* no need to send a new message if we modified
-           an existing one ... */
-
-        if (old_msg_found) break;
-
-        /* ... otherwise we are in a strange situation. The mouse
-           queue is full, but we did not find an existing MOUSEMOVE
-           imsg in w->UserPort. So the app probably has removed
-           an imsg from the UserPort with GetMsg but we did not get
-           the ReplyMsg, yet. In this case we do send a new message */
-
-        HandleIntuiReplyPort(iihdata, IntuitionBase);
-
-    }
-
-    /* MouseQueue is not full, so we can send a message. We increase
-       IntWindow->num_mouseevents which will later be decreased after
-       the Intuition InputHandler gets the ReplyMessage from the app
-       and handles it in HandleIntuiReplyPort() */
-
-    if (ih_fire_intuimessage(w, IDCMP_MOUSEMOVE, IECODE_NOBUTTON, w, IntuitionBase))
-        IW(w)->num_mouseevents++;
-
-    break;
-
-    } /* case IECODE_NOBUTTON */
+        } /* case IECODE_NOBUTTON */
     } /* switch (ie->ie_Code)  (what button was pressed ?) */
     
     return gadget;
@@ -1895,17 +1890,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         struct Window   *old_w;
         BOOL             keep_event = TRUE;
         BOOL             new_active_window = FALSE;
-    Object *newmonitor = GetPrivIBase(IntuitionBase)->NewMonitor;
+        Object *newmonitor = GetPrivIBase(IntuitionBase)->NewMonitor;
 
-    /* Process hosted display activation event (if any).
-       This is experimental. If this works badly, we'll possibly have to put it into
-       input events queue */
-    if (newmonitor) {
-        DEBUG_MONITOR(bug("[Inputhandler] Activating monitor 0x%p\n", newmonitor));
-        GetPrivIBase(IntuitionBase)->NewMonitor = NULL;
-        ActivateMonitor(newmonitor, -1, -1, IntuitionBase);
-        iihdata->SwitchedMonitor = TRUE;
-    }
+        /* Process hosted display activation event (if any).
+           This is experimental. If this works badly, we'll possibly have to put it into
+           input events queue */
+        if (newmonitor) {
+            DEBUG_MONITOR(bug("[Inputhandler] Activating monitor 0x%p\n", newmonitor));
+            GetPrivIBase(IntuitionBase)->NewMonitor = NULL;
+            ActivateMonitor(newmonitor, -1, -1, IntuitionBase);
+            iihdata->SwitchedMonitor = TRUE;
+        }
 
         if (!reuse_event)
         {
@@ -1918,18 +1913,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
         reuse_event = FALSE;
 
-    /* If the monitor has been changed, this possibly happened because of mouse click in
-       its display window. In such a case we have to update current mouse coordinates
-       from the first absolute mouse event. Otherwise input will misbehave. */
-    if (iihdata->SwitchedMonitor && (ie->ie_Class == IECLASS_RAWMOUSE)) {
-        iihdata->SwitchedMonitor = FALSE;
-         if (!(ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE)) {
-        DEBUG_MONITOR(bug("[Inputhandler] Adjusting coordinates to (%d, %d)\n", ie->ie_X, ie->ie_Y));
-        IntuitionBase->MouseX = ie->ie_X;
-        IntuitionBase->MouseY = ie->ie_Y;
-        notify_mousemove_screensandwindows(IntuitionBase);
+        /* If the monitor has been changed, this possibly happened because of mouse click in
+           its display window. In such a case we have to update current mouse coordinates
+           from the first absolute mouse event. Otherwise input will misbehave. */
+        if (iihdata->SwitchedMonitor && (ie->ie_Class == IECLASS_RAWMOUSE)) {
+            iihdata->SwitchedMonitor = FALSE;
+             if (!(ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE)) {
+                DEBUG_MONITOR(bug("[Inputhandler] Adjusting coordinates to (%d, %d)\n", ie->ie_X, ie->ie_Y));
+                IntuitionBase->MouseX = ie->ie_X;
+                IntuitionBase->MouseY = ie->ie_Y;
+                notify_mousemove_screensandwindows(IntuitionBase);
+            }
         }
-    }
 
         /* new event, we need to reset this */
         screen = FindActiveScreen(IntuitionBase);
@@ -1952,13 +1947,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             switch (ie->ie_Class) {
 
             case IECLASS_RAWMOUSE:
-            boxgadget = Process_RawMouse(ie, iihdata, screen, toolbox, boxgadget, boxgi, 0, FALSE, TRUE,
+                boxgadget = Process_RawMouse(ie, iihdata, screen, toolbox, boxgadget, boxgi, 0, FALSE, TRUE,
                          orig_ie, &keep_event, &reuse_event,
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
                          &call_setpointerpos,
 #endif
                          IntuitionBase);
-        break;
+                break;
 
             } /* switch (ie->ie_Class) */
         } /* if (toolbox) */
@@ -1977,19 +1972,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 DEBUG_CLICK(bug("iih:New active window: %p\n", w));
             }
 
-
             if ( w != old_w )
             {
-                if (w)
-                {
-                    DEBUG_WINDOW(bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>"));
-
-                    DEBUG_WINDOW(bug("Window activated\n"));
-                }
-                else
-                {
-                    DEBUG_WINDOW(bug("Making active window inactive. Now there's no active window\n"));
-                }
+                DEBUG_WINDOW(
+                    if (w)
+                    {
+                        bug("Activating new window (title %s)\n", w->Title ? w->Title : "<noname>");
+                        bug("Window activated\n");
+                    }
+                    else
+                    {
+                        bug("Making active window inactive. Now there's no active window\n");
+                    })
                 new_active_window = TRUE;
                 iihdata->NewActWindow = w;
             }
@@ -2004,7 +1998,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 {
                     switch (gadget->GadgetType & GTYP_GTYPEMASK)
                     {
-
                     case GTYP_CUSTOMGADGET:
                         {
                             struct gpGoInactive gpgi;
@@ -2029,18 +2022,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             /* The gadget must be a RELVERIFY one */
                             if (!(gadget->Activation & GACT_TOGGLESELECT))
                             {
-                            BOOL inside;
+                                BOOL inside;
 
-                            inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
-                                              gi->gi_Requester, gadget,
-                                              gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+                                inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
+                                                  gi->gi_Requester, gadget,
+                                                  gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
 
-                            if (inside)
-                            {
+                                if (inside)
+                                {
                                     gadget->Flags &= ~GFLG_SELECTED;
                                     RefreshBoolGadgetState(gadget, gi->gi_Window,
-                                                       gi->gi_Requester, IntuitionBase);
-                            }
+                                                           gi->gi_Requester, IntuitionBase);
+                                }
                             }
                             break;
 
@@ -2052,7 +2045,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
                             if (gadget->Activation & GACT_RELVERIFY)
                             {
-                            ih_fire_intuimessage(gi->gi_Window,
+                                ih_fire_intuimessage(gi->gi_Window,
                                                  IDCMP_GADGETUP,
                                                  0,
                                                  gadget,
@@ -2076,13 +2069,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 {
                     ActivateWindow(w);
                 }
-        else
-        {
+                else
+                {
                     w = IntuitionBase->ActiveWindow;
                     new_active_window = FALSE;
                     ie->ie_Class = IECLASS_NULL; //lose the event, otherwise the gadget will get activated again ;)
                 }
-
                 iihdata->NewActWindow = 0;
 
             } /* if (new_active_window) */
@@ -2150,13 +2142,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             /* fall through */
 
         case IECLASS_RAWMOUSE:
-        gadget = Process_RawMouse(ie, iihdata, screen, w, gadget, gi, stitlebarhit, new_active_window, FALSE,
+            gadget = Process_RawMouse(ie, iihdata, screen, w, gadget, gi, stitlebarhit, new_active_window, FALSE,
                       orig_ie, &keep_event, &reuse_event,
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
                       &call_setpointerpos,
 #endif
                       IntuitionBase);
-        keep_event = TRUE;
+            keep_event = TRUE;
             break;
 
         case IECLASS_RAWKEY:
@@ -2282,13 +2274,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 if ((result = RunHotkeys(ie,IntuitionBase)))
                 {
                     if (result == RUNHOTREUSE)
-                    {
                         reuse_event = TRUE;
-                    }
-            else
-            {
+                    else
                         keep_event = FALSE;
-                    }
                     break;
                 }
                 w = IntuitionBase->ActiveWindow;
@@ -2561,14 +2549,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             break; /* case IECLASS_RAWKEY */
 
         case IECLASS_TIMER:
-        if (iihdata->MouseBoundsKillTimer)
-        {
-        iihdata->MouseBoundsKillTimer--;
-        if (iihdata->MouseBoundsKillTimer == 0)
-        {
-            iihdata->MouseBoundsActiveFlag = FALSE;
-        }
-        }
+            if (iihdata->MouseBoundsKillTimer)
+            {
+                iihdata->MouseBoundsKillTimer--;
+                if (iihdata->MouseBoundsKillTimer == 0)
+                {
+                    iihdata->MouseBoundsActiveFlag = FALSE;
+                }
+            }
 
             if (GetPrivIBase(IntuitionBase)->PointerDelay)
             {
@@ -2702,10 +2690,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             
             {
                 UQUAD currenttime = (((UQUAD)ie->ie_TimeStamp.tv_secs) * 50) + (UQUAD)(ie->ie_TimeStamp.tv_micro / 20000);
-                #define SECONDS(x) (x*50)
+#define SECONDS(x) (x*50)
                 if (iihdata->HelpGadgetFindTime && (currenttime >= iihdata->HelpGadgetFindTime + SECONDS(1)))
                 {
-            struct Gadget *lhg = iihdata->LastHelpGadget;
+                    struct Gadget *lhg = iihdata->LastHelpGadget;
                     fire_intuimessage(iihdata->LastHelpWindow,
                                       IDCMP_GADGETHELP,
                                       lhg ? lhg->GadgetID : 0, /* Don't know what it should be */
@@ -2725,7 +2713,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             } /* if (gadget) */
 
 #if USE_NEWDISPLAYBEEP
-
             if (GetPrivIBase(IntuitionBase)->BeepingScreens)
             {
                 ULONG lock;
@@ -2767,10 +2754,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             }
 #endif /* USE_NEWDISPLAYBEEP */
 
-            if (!w) break;
-
             /* Send INTUITICK msg only if app already replied the last INTUITICK msg */
-            if (w->Flags & WFLG_WINDOWTICKED) break;
+            if ((!w) || (w->Flags & WFLG_WINDOWTICKED))
+                break;
 
             if (w->IDCMPFlags & IDCMP_INTUITICKS)
             {
@@ -2815,7 +2801,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                  ie->ie_Code,
                                  (struct Window *)ie->ie_EventAddress,
                                  IntuitionBase);
-
             }
             break;
 
@@ -2832,11 +2817,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 case IECLASS_DISKINSERTED:
                     idcmp = IDCMP_DISKINSERTED;
                     break;
-            
+
                 case IECLASS_DISKREMOVED:
                     idcmp = IDCMP_DISKREMOVED;
                     break;
-            
+
                 default:
                     idcmp = IDCMP_NEWPREFS;
                     /*
@@ -2851,14 +2836,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen)
                 {
                     struct Window *win;
-            
+
                     for (win = scr->FirstWindow; win; win = win->NextWindow)
                     {
-                /* stegerg:
-               CHECKME, really use fire_intuimessage() here,
-               instead of ih_fireintuimessage? Same for
-               IDCMP_GADGETHELP above, BTW. */
-               
+                        /* stegerg:
+                       CHECKME, really use fire_intuimessage() here,
+                       instead of ih_fireintuimessage? Same for
+                       IDCMP_GADGETHELP above, BTW. */
+
                         fire_intuimessage(win,
                                   idcmp,
                                   0,
@@ -2924,7 +2909,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 "[Intui] InputHandler: Unknown IEClass: addr = %x  class = %d (origclass = %d)\n",
                 orig_ie, ie->ie_Class,orig_ie->ie_Class
             );
-            
             break;
         } /* switch (ie->ie_Class) */
 
@@ -2942,7 +2926,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             orig_ie->ie_NextEvent = iihdata->FreeInputEvents;
             iihdata->FreeInputEvents = orig_ie;
         }
-
     } /* for (each event in the chain) */
 
     iihdata->ActiveGadget = gadget;
@@ -2979,4 +2962,3 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 }
 
 /****************************************************************************************/
-
