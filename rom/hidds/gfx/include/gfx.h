@@ -31,7 +31,25 @@ typedef OOP_Object *HIDDT_GC;
 
 /* typedefs for the callbacks used by gfx.hidd drivers */
 typedef void (*Gfx_ActiveCallBack_t)(void *, OOP_Object *);
-typedef void (*Gfx_DisplayChangeCallBack_t)(void *, void *);
+typedef void (*Gfx_DisplayChangeCallBack_t)(void *, IPTR, void *);
+
+/* DisplayChange callback types */
+typedef enum
+{
+    vHidd_Gfx_DisplayChange_State,
+    vHidd_Gfx_DisplayChange_Characteristics
+    
+} HIDDT_DisplayChangeType;
+
+/* A structure passed to Gfx_DisplayChangeCallBack_t callbacks */
+struct HIDD_DisplayStateData
+{
+};
+
+/* A structure passed to Gfx_DisplayChangeCallBack_t callbacks */
+struct HIDD_DisplayCharacteristicData
+{
+};
 
 /* Sprite types */
 #define vHidd_SpriteType_3Plus1      0x01 /* Color 0 transparent, 1-3 visible                */
