@@ -62,6 +62,25 @@
 
 /**************************************************************************************************/
 
+static inline getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize)
+{
+    switch (FRAME_SIZE(IntuitionBase))
+    {
+        case FRAMESIZE_THICK:
+            *xsize = 2;
+            *ysize = 2;
+            break;
+        case FRAMESIZE_MEDRES:
+            *xsize = 2;
+            *ysize = 1;
+            break;
+        default:    /* FRAMESIZE_THIN */
+            *xsize = 1;
+            *ysize = 1;
+            break;
+    }
+}
+
 static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase)
@@ -71,6 +90,10 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
     WORD bottom = top + height - 1;
     BOOL leftedgegodown = FALSE;
     BOOL topedgegoright = FALSE;
+    UWORD frameh;
+    UWORD framev;
+        
+    getintframesizes(IntuitionBase, &frameh, &framev);
 
     switch(which)
     {
@@ -117,26 +140,26 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
     /* left edge */
     RectFill(rp, left,
              top,
-             left,
-             bottom - (leftedgegodown ? 0 : 1));
+             left + (frameh - 1),
+             bottom - (leftedgegodown ? 0 : framev));
 
     /* top edge */
     RectFill(rp, left + 1,
              top,
-             right - (topedgegoright ? 0 : 1),
-             top);
+             right - (topedgegoright ? 0 : frameh),
+             top + (framev - 1));
 
     SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
 
     /* right edge */
-    RectFill(rp, right,
-             top + (topedgegoright ? 1 : 0),
+    RectFill(rp, right - (frameh - 1),
+             top + (topedgegoright ? frameh : 0),
              right,
              bottom);
 
     /* bottom edge */
-    RectFill(rp, left + (leftedgegodown ? 1 : 0),
-             bottom,
+    RectFill(rp, left + (leftedgegodown ? framev : 0),
+             bottom - (framev - 1),
              right - 1,
              bottom);
 }
@@ -353,21 +376,24 @@ IPTR WinDecorClass__WDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct wdpGe
 
 IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct RastPort      *rp = msg->wdp_RPort;
-    UWORD                *pens = DRI(msg->wdp_Dri)->dri_Pens;
-    LONG                  state = msg->wdp_State;
-    LONG                   left = msg->wdp_X;
-    LONG                   top = msg->wdp_Y;
-    LONG                 width = msg->wdp_Width;
-    LONG                 height = msg->wdp_Height;
-    LONG                  right = left + width - 1;
-    LONG                  bottom = top + height - 1;
-    LONG                  h_spacing, v_spacing;
-    
+    struct IntuitionBase        *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase              *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct RastPort             *rp = msg->wdp_RPort;
+    UWORD                       *pens = DRI(msg->wdp_Dri)->dri_Pens;
+    LONG                        state = msg->wdp_State;
+    LONG                        left = msg->wdp_X;
+    LONG                        top = msg->wdp_Y;
+    LONG                        width = msg->wdp_Width;
+    LONG                        height = msg->wdp_Height;
+    LONG                        right = left + width - 1;
+    LONG                        bottom = top + height - 1;
+    LONG                        h_spacing, v_spacing;
+    UWORD                       frameh, framev;
+
+    getintframesizes(IntuitionBase, &frameh, &framev);
+
     SetDrMd(rp, JAM1);
-    
+
     switch(msg->wdp_Which)
     {
 
@@ -393,8 +419,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
                          left, top, width, height, IntuitionBase);
         left++;
         top++;
-        width -= 2;
-        height -= 2;
+        width -= (frameh << 1);
+        height -= (framev << 1);
 
         right = left + width - 1;
         bottom = top + height - 1 ;
@@ -442,8 +468,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
         renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
         left++;
         top++;
-        width -= 2;
-        height -= 2;
+        width -= (frameh << 1);
+        height -= (framev << 1);
         
         right = left + width - 1;
         bottom = top + height - 1;
@@ -482,8 +508,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
                              left, top, width, height, IntuitionBase);
             left++;
             top++;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
  
             right = left + width - 1;
             bottom = top + height - 1 ;
@@ -539,8 +565,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
             top++;
             right--;
             bottom--;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
  
             h_spacing = width / 6;
             v_spacing = height / 6;
@@ -618,8 +644,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
             top++;
             right--;
             bottom--;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
 
             h_spacing = width  / 5;
             v_spacing = height / 5;
@@ -696,8 +722,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
             top++;
             right--;
             bottom--;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
 
             SetAPen(rp, getbgpen(state, pens));
             RectFill(rp, left, top, right, bottom);
@@ -762,8 +788,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
             top++;
             right--;
             bottom--;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
 
             SetAPen(rp, getbgpen(state, pens));
             RectFill(rp, left, top, right, bottom);
@@ -829,8 +855,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
             top++;
             right--;
             bottom--;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
 
 
             SetAPen(rp, getbgpen(state, pens));
@@ -896,8 +922,8 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
             top++;
             right--;
             bottom--;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
 
             SetAPen(rp, getbgpen(state, pens));
             RectFill(rp, left, top, right, bottom);
@@ -987,12 +1013,9 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
         ULONG                   textlen, titlelen;
         struct TextFont         *tf;
         struct TextExtent       te;
-        UWORD ypad;
+        UWORD                   xunused, ypad;
 
-        if (FRAME_SIZE(IntuitionBase) == FRAMESIZE_THICK)
-            ypad = 2;
-        else
-            ypad = 1;
+        getintframesizes(IntuitionBase, &xunused, &ypad);
 
         tf = DRI(msg->wdp_Dri)->dri_Font;
         SetFont(rp, tf);
