@@ -130,9 +130,24 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
         OOP_SetAttrs(bitmap, tags);
 }
 
-static void DisplayChangeHandler(Object *mon, OOP_Object *bitmap)
+static void DisplayChangeHandler(Object *mon, IPTR changetype, void *changedata)
 {
     bug("[Monitor] %s()\n", __func__);
+    switch (changetype)
+    {
+        case vHidd_Gfx_DisplayChange_State:
+            {
+                struct HIDD_DisplayStateData *dstate = (struct HIDD_DisplayStateData *)changedata;
+                bug("[Monitor] %s: state data @ 0x%p\n", __func__, dstate);
+            }
+            break;
+        case vHidd_Gfx_DisplayChange_Characteristics:
+            {
+                struct HIDD_DisplayCharacteristicData *dchardata = (struct HIDD_DisplayCharacteristicData *)changedata;
+                bug("[Monitor] %s: characteristic data @ 0x%p\n", __func__, dchardata);
+            }
+            break;
+    }
 }
 
 /*i**************************************************************************/
@@ -1112,8 +1127,8 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
             D(bug("[Monitor] %s: no visible screens - using fallback bounds.\n", __func__));
             msg->Bounds->MinX = 0;
             msg->Bounds->MinY = 0;
-            msg->Bounds->MaxX = 160;
-            msg->Bounds->MaxY = 160;  
+            msg->Bounds->MaxX = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
+            msg->Bounds->MaxY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height - 1;
         }
     }
     else
