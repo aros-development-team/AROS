@@ -130,6 +130,11 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
         OOP_SetAttrs(bitmap, tags);
 }
 
+static void DisplayChangeHandler(Object *mon, OOP_Object *bitmap)
+{
+    bug("[Monitor] %s()\n", __func__);
+}
+
 /*i**************************************************************************/
 
 static void ResetGamma(struct IMonitorNode *data)
@@ -157,9 +162,11 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
        pointer. */
     struct TagItem tags[] =
     {
-        {aHidd_Gfx_ActiveCallBackData, 0                      },
-        {aHidd_Gfx_ActiveCallBack    , (IPTR)ActivationHandler},
-        {TAG_DONE                    , 0                      }
+        {aHidd_Gfx_ActiveCallBackData,      0                           },
+        {aHidd_Gfx_ActiveCallBack,          (IPTR)ActivationHandler     },
+        {aHidd_Gfx_DisplayChangeData,       0                           },
+        {aHidd_Gfx_DisplayChangeCallBack,   (IPTR)DisplayChangeHandler  },
+        {TAG_DONE,                          0                           }
     };
 
     D(bug("[Monitor] %s()\n", __func__));
@@ -217,8 +224,11 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     OOP_GetAttr(handle->gfxhidd, aHidd_Name, (IPTR *)&data->MonitorName);
     OOP_GetAttr(handle->gfxhidd, aHidd_Gfx_HWSpriteTypes, (IPTR *)&data->SpriteType);
     D(bug("[Monitor] %s: SpriteType = %08x\n", __func__, data->SpriteType));
+    OOP_GetAttr(handle->gfxhidd, aHidd_Gfx_FrameBufferType, (IPTR *)&data->FrameBufferType);
+    D(bug("[Monitor] %s: FrameBufferType = %08x\n", __func__, data->FrameBufferType));
 
     tags[0].ti_Data = (IPTR)o;
+    tags[2].ti_Data = (IPTR)o;
     OOP_SetAttrs(handle->gfxhidd, tags);
 
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
@@ -1038,6 +1048,79 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
         FreeMem(data->gamma, 256 * 3);
 
     return DoSuperMethodA(cl, o, msg);
+}
+
+/*i***************************************************************************
+
+    NAME
+        MM_GetDisplayBounds
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, struct Rectangle *Bounds);
+
+        DoMethodA(Object *obj, struct msGetDisplayBounds *msg);
+
+    LOCATION
+
+    FUNCTION
+        This method returns the bounds for the display on the monitor.
+
+    INPUTS
+        obj         - A monitor object
+        MethodID    - MM_GetDisplayBounds
+        Bounds      - A struct Rectangle where the bounds will be stored.
+
+    RESULT
+        Undefined.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+
+void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDisplayBounds *msg)
+{
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct IMonitorNode *data = INST_DATA(cl, obj);
+
+    D(bug("[Monitor] %s()\n", __func__));
+
+    if (data->FrameBufferType != vHidd_FrameBuffer_None)
+    {
+        struct Screen *scr;
+
+        D(bug("[Monitor] %s: FrameBuffer type %08x\n", __func__, data->FrameBufferType));
+
+        scr = FindFirstScreen(obj, IntuitionBase);
+        if (scr)
+        {
+            D(bug("[Monitor] %s: first Screen @ 0x%p\n", __func__, scr));
+            msg->Bounds.MinX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
+            msg->Bounds.MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+            msg->Bounds.MaxX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX;
+            msg->Bounds.MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
+        }
+        else
+        {
+            D(bug("[Monitor] %s: no visible screens - using fallback bounds.\n", __func__));
+            msg->Bounds.MinX = 0;
+            msg->Bounds.MinY = 0;
+            msg->Bounds.MaxX = 160;
+            msg->Bounds.MaxY = 160;  
+        }
+    }
+    else
+    {
+        /* */
+    }
+    D(bug("[Monitor] %s:   bounds %d,%d -> %d,%d\n", __func__, msg->Bounds.MinX, msg->Bounds.MinY, msg->Bounds.MaxX, msg->Bounds.MaxY));
 }
 
 /*i***************************************************************************
