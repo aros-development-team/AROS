@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gfx Hidd driver class implementation.
@@ -4109,7 +4109,7 @@ ULONG GFXHIDD__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     INPUTS
 	gfxHidd - A display driver object.
-	data    - a pointer to a HIDD_ViewPortDats structure.
+	data    - a pointer to a HIDD_ViewPortData structure.
 
     RESULT
 	The same code as used as return value for graphics.library/MakeVPort().
