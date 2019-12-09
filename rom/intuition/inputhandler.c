@@ -1569,7 +1569,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     }
     notify_mousemove_screensandwindows(IntuitionBase);
 #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
-    MySetPointerPos(IntuitionBase);
+    SetActiveMonPointerPos(IntuitionBase);
 #else
     *call_setpointerpos = TRUE;
 #endif
@@ -2951,7 +2951,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     if (call_setpointerpos)
-        MySetPointerPos(IntuitionBase);
+        SetActiveMonPointerPos(IntuitionBase);
 #endif
 
     /* Terminate the event chain. */
