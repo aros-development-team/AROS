@@ -135,7 +135,7 @@ static void DisplayChangeHandler(Object *mon, IPTR changetype, void *changedata)
     Class *cl = OCLASS(mon);
     struct IMonitorNode *data = INST_DATA(cl, mon);
 
-    Dbug("[Monitor] %s()\n", __func__);)
+    D(bug("[Monitor] %s()\n", __func__);)
 
     switch (changetype)
     {
