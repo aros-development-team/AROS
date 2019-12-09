@@ -135,20 +135,20 @@ static void DisplayChangeHandler(Object *mon, IPTR changetype, void *changedata)
     Class *cl = OCLASS(mon);
     struct IMonitorNode *data = INST_DATA(cl, mon);
 
-    bug("[Monitor] %s()\n", __func__);
+    Dbug("[Monitor] %s()\n", __func__);)
 
     switch (changetype)
     {
         case vHidd_Gfx_DisplayChange_State:
             {
                 struct HIDD_DisplayStateData *dstate = (struct HIDD_DisplayStateData *)changedata;
-                bug("[Monitor] %s: state data @ 0x%p\n", __func__, dstate);
+                D(bug("[Monitor] %s: state data @ 0x%p\n", __func__, dstate);)
             }
             break;
         case vHidd_Gfx_DisplayChange_Characteristics:
             {
                 struct HIDD_DisplayCharacteristicData *dchardata = (struct HIDD_DisplayCharacteristicData *)changedata;
-                bug("[Monitor] %s: characteristic data @ 0x%p\n", __func__, dchardata);
+                D(bug("[Monitor] %s: characteristic data @ 0x%p\n", __func__, dchardata);)
                 if ((data->FBBounds.MinX != dchardata->dBounds.MinX) ||
                     (data->FBBounds.MaxX != dchardata->dBounds.MaxX) ||
                     (data->FBBounds.MinY != dchardata->dBounds.MinY) ||
@@ -158,7 +158,7 @@ static void DisplayChangeHandler(Object *mon, IPTR changetype, void *changedata)
                     data->FBBounds.MaxX = dchardata->dBounds.MaxX;
                     data->FBBounds.MinY = dchardata->dBounds.MinY;
                     data->FBBounds.MaxY = dchardata->dBounds.MaxY;
-                    bug("[Monitor] %s: display bounds adjusted\n", __func__);
+                    D(bug("[Monitor] %s: display bounds adjusted\n", __func__);)
                 }
             }
             break;
