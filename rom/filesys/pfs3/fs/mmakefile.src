@@ -67,7 +67,7 @@ USER_CPPFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
-USER_LDFLAGS += -static -nosysbase -Wl,--defsym -Wl,SysBase=0x4
+USER_LDFLAGS += --static -nosysbase -Wl,--defsym -Wl,SysBase=0x4
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
