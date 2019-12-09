@@ -417,7 +417,7 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
         SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
         SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
 
-        Move(rp, msg->sdp_Screen->BarHBorder, rp->TxBaseline + ((msg->sdp_Screen->BarHeight - rp->TxHeight) >> 1));
+        Move(rp, msg->sdp_Screen->BarHBorder, FRAME_SIZE(IntuitionBase) + rp->TxBaseline + ((msg->sdp_Screen->BarHeight - rp->TxHeight) >> 1));
 
         D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title Text @ %p\n", msg->sdp_Screen->Title));
         D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title '%s'\n", msg->sdp_Screen->Title));

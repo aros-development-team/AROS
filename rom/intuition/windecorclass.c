@@ -999,14 +999,16 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
                           , NULL
                           , 1
                           , right - left - (window->BorderLeft + window->BorderRight)
-                          , window->BorderTop - 2);
+                          , window->BorderTop - (FRAME_SIZE(IntuitionBase) << 1));
+
         if (textlen)
         {
-            left = left + 3;
+#define WINTITLEPAD 3
+            left = left + WINTITLEPAD;
 
             SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
 
-            Move(rp, left, tf->tf_Baseline + ((window->BorderTop - tf->tf_YSize) >> 1));
+            Move(rp, left, tf->tf_Baseline + ((window->BorderTop - tf->tf_YSize) >> 1) + FRAME_SIZE(IntuitionBase));
             Text(rp, window->Title, textlen);
         }
     }
