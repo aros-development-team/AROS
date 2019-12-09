@@ -162,11 +162,11 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
        pointer. */
     struct TagItem tags[] =
     {
-        {aHidd_Gfx_ActiveCallBackData,      0                           },
-        {aHidd_Gfx_ActiveCallBack,          (IPTR)ActivationHandler     },
-        {aHidd_Gfx_DisplayChangeData,       0                           },
-        {aHidd_Gfx_DisplayChangeCallBack,   (IPTR)DisplayChangeHandler  },
-        {TAG_DONE,                          0                           }
+        {aHidd_Gfx_ActiveCallBackData,          0                           },
+        {aHidd_Gfx_ActiveCallBack,              (IPTR)ActivationHandler     },
+        {aHidd_Gfx_DisplayChangeCallBackData,   0                           },
+        {aHidd_Gfx_DisplayChangeCallBack,       (IPTR)DisplayChangeHandler  },
+        {TAG_DONE,                              0                           }
     };
 
     D(bug("[Monitor] %s()\n", __func__));
@@ -1102,25 +1102,25 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
         if (scr)
         {
             D(bug("[Monitor] %s: first Screen @ 0x%p\n", __func__, scr));
-            msg->Bounds.MinX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
-            msg->Bounds.MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
-            msg->Bounds.MaxX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX;
-            msg->Bounds.MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
+            msg->Bounds->MinX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
+            msg->Bounds->MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+            msg->Bounds->MaxX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX;
+            msg->Bounds->MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
         }
         else
         {
             D(bug("[Monitor] %s: no visible screens - using fallback bounds.\n", __func__));
-            msg->Bounds.MinX = 0;
-            msg->Bounds.MinY = 0;
-            msg->Bounds.MaxX = 160;
-            msg->Bounds.MaxY = 160;  
+            msg->Bounds->MinX = 0;
+            msg->Bounds->MinY = 0;
+            msg->Bounds->MaxX = 160;
+            msg->Bounds->MaxY = 160;  
         }
     }
     else
     {
         /* */
     }
-    D(bug("[Monitor] %s:   bounds %d,%d -> %d,%d\n", __func__, msg->Bounds.MinX, msg->Bounds.MinY, msg->Bounds.MaxX, msg->Bounds.MaxY));
+    D(bug("[Monitor] %s:   bounds %d,%d -> %d,%d\n", __func__, msg->Bounds->MinX, msg->Bounds->MinY, msg->Bounds->MaxX, msg->Bounds->MaxY));
 }
 
 /*i***************************************************************************
