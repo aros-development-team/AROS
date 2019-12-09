@@ -987,6 +987,12 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
         ULONG                   textlen, titlelen;
         struct TextFont         *tf;
         struct TextExtent       te;
+        UWORD ypad;
+
+        if (FRAME_SIZE(IntuitionBase) == FRAMESIZE_THICK)
+            ypad = 2;
+        else
+            ypad = 1;
 
         tf = DRI(msg->wdp_Dri)->dri_Font;
         SetFont(rp, tf);
@@ -999,7 +1005,7 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
                           , NULL
                           , 1
                           , right - left - (window->BorderLeft + window->BorderRight)
-                          , window->BorderTop - (FRAME_SIZE(IntuitionBase) << 1));
+                          , window->BorderTop - (ypad << 1));
 
         if (textlen)
         {
@@ -1008,11 +1014,11 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
 
             SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
 
-            Move(rp, left, tf->tf_Baseline + ((window->BorderTop - tf->tf_YSize) >> 1) + FRAME_SIZE(IntuitionBase));
+            Move(rp, left, ypad + tf->tf_Baseline + ((window->BorderTop - tf->tf_YSize) >> 1));
             Text(rp, window->Title, textlen);
         }
     }
-    
+
     return TRUE;
 }
 
