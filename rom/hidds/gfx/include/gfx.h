@@ -29,28 +29,6 @@ typedef OOP_Object *HIDDT_GC;
 #define __Hidd_PlanarBM_NOMETHODBASE__
 #endif
 
-/* typedefs for the callbacks used by gfx.hidd drivers */
-typedef void (*Gfx_ActiveCallBack_t)(void *, OOP_Object *);
-typedef void (*Gfx_DisplayChangeCallBack_t)(void *, IPTR, void *);
-
-/* DisplayChange callback types */
-typedef enum
-{
-    vHidd_Gfx_DisplayChange_State,
-    vHidd_Gfx_DisplayChange_Characteristics
-    
-} HIDDT_DisplayChangeType;
-
-/* A structure passed to Gfx_DisplayChangeCallBack_t callbacks */
-struct HIDD_DisplayStateData
-{
-};
-
-/* A structure passed to Gfx_DisplayChangeCallBack_t callbacks */
-struct HIDD_DisplayCharacteristicData
-{
-};
-
 /* Sprite types */
 #define vHidd_SpriteType_3Plus1      0x01 /* Color 0 transparent, 1-3 visible                */
 #define vHidd_SpriteType_2Plus1      0x02 /* Color 0 transparrent, 1 undefined, 2-3 visible */
@@ -80,6 +58,32 @@ typedef enum
     vHidd_Gfx_DPMSLevel_Off
     
 } HIDDT_DPMSLevel;
+
+/* typedefs for the callbacks used by gfx.hidd drivers */
+typedef void (*Gfx_ActiveCallBack_t)(void *, OOP_Object *);
+typedef void (*Gfx_DisplayChangeCallBack_t)(void *, IPTR, void *);
+
+/* DisplayChange callback types */
+typedef enum
+{
+    vHidd_Gfx_DisplayChange_State,
+    vHidd_Gfx_DisplayChange_Characteristics
+    
+} HIDDT_DisplayChangeType;
+
+/* A structure passed to Gfx_DisplayChangeCallBack_t callbacks */
+struct HIDD_DisplayStateData
+{
+    ULONG               dFlags;
+    HIDDT_DPMSLevel     dDPMS;
+};
+
+/* A structure passed to Gfx_DisplayChangeCallBack_t callbacks */
+struct HIDD_DisplayCharacteristicData
+{
+    APTR                dReserved;
+    struct Rectangle    dBounds;
+};
 
 typedef IPTR HIDDT_StdPixFmt;
 typedef IPTR HIDDT_ModeID;
