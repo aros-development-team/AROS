@@ -132,7 +132,11 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
 
 static void DisplayChangeHandler(Object *mon, IPTR changetype, void *changedata)
 {
+    Class *cl = OCLASS(mon);
+    struct IMonitorNode *data = INST_DATA(cl, mon);
+
     bug("[Monitor] %s()\n", __func__);
+
     switch (changetype)
     {
         case vHidd_Gfx_DisplayChange_State:
@@ -145,6 +149,17 @@ static void DisplayChangeHandler(Object *mon, IPTR changetype, void *changedata)
             {
                 struct HIDD_DisplayCharacteristicData *dchardata = (struct HIDD_DisplayCharacteristicData *)changedata;
                 bug("[Monitor] %s: characteristic data @ 0x%p\n", __func__, dchardata);
+                if ((data->FBBounds.MinX != dchardata->dBounds.MinX) ||
+                    (data->FBBounds.MaxX != dchardata->dBounds.MaxX) ||
+                    (data->FBBounds.MinY != dchardata->dBounds.MinY) ||
+                    (data->FBBounds.MaxY != dchardata->dBounds.MaxY))
+                {
+                    data->FBBounds.MinX = dchardata->dBounds.MinX;
+                    data->FBBounds.MaxX = dchardata->dBounds.MaxX;
+                    data->FBBounds.MinY = dchardata->dBounds.MinY;
+                    data->FBBounds.MaxY = dchardata->dBounds.MaxY;
+                    bug("[Monitor] %s: display bounds adjusted\n", __func__);
+                }
             }
             break;
     }
@@ -1117,24 +1132,26 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
         if (scr)
         {
             D(bug("[Monitor] %s: first Screen @ 0x%p\n", __func__, scr));
-            msg->Bounds->MinX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
-            msg->Bounds->MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
-            msg->Bounds->MaxX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX;
-            msg->Bounds->MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
+            data->FBBounds.MinX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
+            data->FBBounds.MaxX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX;
+            data->FBBounds.MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+            data->FBBounds.MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
         }
         else
         {
             D(bug("[Monitor] %s: no visible screens - using fallback bounds.\n", __func__));
-            msg->Bounds->MinX = 0;
-            msg->Bounds->MinY = 0;
-            msg->Bounds->MaxX = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
-            msg->Bounds->MaxY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height - 1;
+            data->FBBounds.MinX = 0;
+            data->FBBounds.MaxX = 0;
+            data->FBBounds.MinY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
+            data->FBBounds.MaxY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height - 1;
         }
     }
-    else
-    {
-        /* */
-    }
+
+    msg->Bounds->MinX = data->FBBounds.MinX;
+    msg->Bounds->MinY = data->FBBounds.MinY;
+    msg->Bounds->MaxX = data->FBBounds.MaxX;
+    msg->Bounds->MaxY = data->FBBounds.MaxY;
+
     D(bug("[Monitor] %s:   bounds %d,%d -> %d,%d\n", __func__, msg->Bounds->MinX, msg->Bounds->MinY, msg->Bounds->MaxX, msg->Bounds->MaxY));
 }
 

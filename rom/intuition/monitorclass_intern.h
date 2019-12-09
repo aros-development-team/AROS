@@ -18,6 +18,7 @@ struct IMonitorNode
     ULONG                       pixelformats[MONITOR_MAXPIXELFORMATS];
     OOP_Object                  *pfobjects[MONITOR_MAXPIXELFORMATS];
     IPTR                        FrameBufferType;
+    struct Rectangle            FBBounds;
 
     /* xxx */
     Object                      *topleft;
