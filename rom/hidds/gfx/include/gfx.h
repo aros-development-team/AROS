@@ -14,6 +14,10 @@
 #include <oop/oop.h>
 #include <utility/utility.h>
 
+/**** Graphics definitions ****************************************************/
+
+#define CLID_HW_Gfx      "hw.gfx"
+
 typedef OOP_Object *HIDDT_BitMap;
 typedef OOP_Object *HIDDT_GC;
 
@@ -25,9 +29,9 @@ typedef OOP_Object *HIDDT_GC;
 #define __Hidd_PlanarBM_NOMETHODBASE__
 #endif
 
-/**** Graphics definitions ****************************************************/
-
-#define CLID_HW_Gfx      "hw.gfx"
+/* typedefs for the callbacks used by gfx.hidd drivers */
+typedef void (*Gfx_ActiveCallBack_t)(void *, OOP_Object *);
+typedef void (*Gfx_DisplayChangeCallBack_t)(void *, void *);
 
 /* Sprite types */
 #define vHidd_SpriteType_3Plus1      0x01 /* Color 0 transparent, 1-3 visible                */
