@@ -95,7 +95,7 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
     BOOL topedgegoright = FALSE;
     UWORD frameh;
     UWORD framev;
-        
+
     getintframesizes(IntuitionBase, &frameh, &framev);
 
     if (left == 0) leftedgegodown = TRUE;
@@ -139,12 +139,12 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 
     switch (state)
     {
-	case IDS_NORMAL:
-	case IDS_SELECTED:
+        case IDS_NORMAL:
+        case IDS_SELECTED:
             bg = pens[FILLPEN];
             break;
 
-	default:
+        default:
             bg = pens[BACKGROUNDPEN];
             break;
     }
@@ -166,10 +166,10 @@ IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
-    	data = INST_DATA(cl, obj);
+        data = INST_DATA(cl, obj);
 
-	data->userbuffersize = (ULONG) GetTagData(SDA_UserBuffer, 0, msg->ops_AttrList);
-	
+        data->userbuffersize = (ULONG) GetTagData(SDA_UserBuffer, 0, msg->ops_AttrList);
+        
     }
     
     return (IPTR)obj;
@@ -185,16 +185,16 @@ IPTR ScrDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    	case SDA_UserBuffer:
-	    *msg->opg_Storage = (IPTR) data->userbuffersize;
-	    break;
+        case SDA_UserBuffer:
+            *msg->opg_Storage = (IPTR) data->userbuffersize;
+            break;
 
-	case SDA_TrueColorOnly:
-	    *msg->opg_Storage = FALSE;
-	    break;
-	    
-	default:
-	    return DoSuperMethodA(cl, obj, (Msg)msg);
+        case SDA_TrueColorOnly:
+            *msg->opg_Storage = FALSE;
+            break;
+            
+        default:
+            return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     
     return 1;    
@@ -213,38 +213,38 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
 
     switch(msg->sdp_Which)
     {
-	case SDEPTHIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
+        case SDEPTHIMAGE:
+        #if USE_AROS_DEFSIZE
+            def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+            def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+        #else
             def_low_width = 17;
             def_med_width = 23;
             def_high_width = 23;
-	#endif
+        #endif
             break;
-	    
-	default:
-	    return FALSE;
+            
+        default:
+            return FALSE;
     }
     
     switch(msg->sdp_SysiSize)
     {
-    	case SYSISIZE_LOWRES:
-	    *msg->sdp_Width = def_low_width;
-	    *msg->sdp_Height = def_low_height;
-	    break;
+        case SYSISIZE_LOWRES:
+            *msg->sdp_Width = def_low_width;
+            *msg->sdp_Height = def_low_height;
+            break;
 
-	case SYSISIZE_MEDRES:
-	    *msg->sdp_Width = def_med_width;
-	    *msg->sdp_Height = def_med_height;
-	    break;
-    	    
-    	case SYSISIZE_HIRES:
-    	default:
-	    *msg->sdp_Width = def_high_width;
-	    *msg->sdp_Height = def_high_height;
-	    break;	    	
+        case SYSISIZE_MEDRES:
+            *msg->sdp_Width = def_med_width;
+            *msg->sdp_Height = def_med_height;
+            break;
+            
+        case SYSISIZE_HIRES:
+        default:
+            *msg->sdp_Width = def_high_width;
+            *msg->sdp_Height = def_high_height;
+            break;	    	
     }
     
     return TRUE;
@@ -254,28 +254,28 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
 
 IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct RastPort 	 *rp = msg->sdp_RPort;
-    UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
-    LONG    	    	  state = msg->sdp_State;
-    LONG    	     	  left = msg->sdp_X;
-    LONG    	     	  top = msg->sdp_Y;
-    LONG   	          width = msg->sdp_Width;
-    LONG   	    	  height = msg->sdp_Height;
-    LONG    	    	  right = left + width - 1;
-    LONG    	    	  bottom = top + height - 1;
-    UWORD               frameh, framev;
+    struct IntuitionBase        *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase              *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct RastPort 	        *rp = msg->sdp_RPort;
+    UWORD   	    	        *pens = DRI(msg->sdp_Dri)->dri_Pens;
+    LONG    	    	        state = msg->sdp_State;
+    LONG    	     	        left = msg->sdp_X;
+    LONG    	     	        top = msg->sdp_Y;
+    LONG   	                width = msg->sdp_Width;
+    LONG   	    	        height = msg->sdp_Height;
+    LONG    	    	        right = left + width - 1;
+    LONG    	    	        bottom = top + height - 1;
+    UWORD                       frameh, framev;
 
     D(bug("[SCRDECOR] %s()\n", __func__));
 
     getintframesizes(IntuitionBase, &frameh, &framev);
 
     SetDrMd(rp, JAM1);
-    
+
     switch(msg->sdp_Which)
     {
-    	case SDEPTHIMAGE:
+        case SDEPTHIMAGE:
         {
             UWORD  bg;
             WORD   h_spacing;
@@ -324,22 +324,21 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
             /* Fill bottom right window (inside of the frame above) */
             SetAPen(rp, pens[SHINEPEN]);
             RectFill(rp, left + (width / 3) + 1, top + (height / 3) + 1,
-	    	    	    right - 1, bottom - 1);
+                            right - 1, bottom - 1);
 
             if (state == IDS_SELECTED)
             {
                 /* Re-Render top left window  */
-
                 SetAPen(rp, pens[SHADOWPEN]);
                 drawrect(rp, left, top, right - (width / 3 ), bottom - (height / 3), IntuitionBase);
             }
             break;
         }
 
-	default:
-	    return FALSE;
+        default:
+            return FALSE;
     }
-    
+
     return TRUE;
 }
 
@@ -351,7 +350,7 @@ static void findtitlearea(struct Screen *scr, LONG *left, LONG *right)
 
     *left = 0;
     *right = scr->Width - 1;
-    
+
     for (g = scr->FirstGadget; g; g = g->NextGadget)
     {
         if (!(g->Flags & GFLG_RELRIGHT))
