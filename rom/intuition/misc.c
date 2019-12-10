@@ -19,7 +19,7 @@
 #include "inputhandler_support.h"
 #include "monitorclass_private.h"
 
-void MySetPointerPos(struct IntuitionBase *IntuitionBase)
+void SetActiveMonPointerPos(struct IntuitionBase *IntuitionBase)
 {
     struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
     Object *mon = _intuitionBase->ActiveMonitor;
@@ -103,7 +103,7 @@ void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *I
         IntuitionBase->MouseY = y;
 
         SetAttrs(newmonitor, MA_PointerVisible, TRUE, TAG_DONE);
-        MySetPointerPos(IntuitionBase);
+        SetActiveMonPointerPos(IntuitionBase);
         notify_mousemove_screensandwindows(IntuitionBase);
     }
     D(bug("[ActivateMonitor] Done\n"));
