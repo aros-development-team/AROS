@@ -9,6 +9,7 @@
 #include <proto/intuition.h>
 
 #include <graphics/videocontrol.h>
+#include <graphics/modeid.h>
 
 #include <stdio.h>
 
@@ -84,20 +85,24 @@ int main(int argc, char **argv)
 				{
 					if ((uCop = AllocMem(sizeof(struct UCopList), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 					{
+						UWORD top = pubscreen->Height;
+						if (pubscreen->ViewPort.ColorMap->VPModeID & LORESLACE_KEY)
+							top >>= 1;
+
 						printf("Preparing User Copperlist...\n");
 						UCopperListInit(uCop, 6 + 1);
 						
-						CWait(uCop, (pubscreen->Height >> 2),0);
+						CWait(uCop, (top >> 2),0);
 						CBump(uCop);
 						CMove(uCop, 0x0180, 0xF00);
 						CBump(uCop);
 
-						CWait(uCop, (pubscreen->Height >> 1),0);
+						CWait(uCop, (top >> 1),0);
 						CBump(uCop);
 						CMove(uCop, 0x0180, 0xF0);
 						CBump(uCop);
 
-						CWait(uCop, (pubscreen->Height >> 1) +  (pubscreen->Height >> 2),0);
+						CWait(uCop, (top >> 1) +  (top >> 2),0);
 						CBump(uCop);
 						CMove(uCop, 0x0180, 0xF);
 						CBump(uCop);
