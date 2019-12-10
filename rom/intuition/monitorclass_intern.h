@@ -1,3 +1,4 @@
+#define USE_FAST_DISPLAYTOBMCOORDS 1
 
 struct IMonitorNode
 {
@@ -19,6 +20,11 @@ struct IMonitorNode
     OOP_Object                  *pfobjects[MONITOR_MAXPIXELFORMATS];
     IPTR                        FrameBufferType;
     struct Rectangle            FBBounds;
+
+#if USE_FAST_DISPLAYTOBMCOORDS
+    OOP_MethodFunc         displaytobmcoords;
+    OOP_Class 	          *displaytobmcoords_Class;
+#endif
 
     /* xxx */
     Object                      *topleft;
