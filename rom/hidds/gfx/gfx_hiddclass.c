@@ -947,6 +947,44 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /*****************************************************************************************
 
     NAME
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisplayToBMCoords *msg);
+
+	OOP_Object *HIDD_Gfx_DisplayToBMCoords(OOP_Object *Target, UWORD DispX, UWORD DispY, UWORD *TargetX, UWORD *TargetY);
+
+    LOCATION
+	hidd.gfx.driver
+
+    FUNCTION
+
+    INPUTS
+	Target - The BitMap Object to transform the Display co-ordinates to.
+	DispX,DispY - The Display co-ordinates to transform.
+	TargetX,TargetY - Where to store the transformed co-ordinates.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+VOID GFXHIDD__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisplayToBMCoords *msg)
+{
+	*msg->TargetX = msg->DispX;
+	*msg->TargetY = msg->DispY;
+}
+
+/*****************************************************************************************
+
+    NAME
 	moHidd_Gfx_NominalDimensions
 
     SYNOPSIS
