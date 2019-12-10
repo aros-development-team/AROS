@@ -91,13 +91,16 @@
  * prototypes
  */
 
-
+#define MIN_BUFFERS 10
+#define MAX_BUFFERS 600
+#define NEW_LRU_ENTRIES 5
 
 /* Allocate LRU queue
 */
 BOOL InitLRU (globaldata *g, UWORD reserved_blksize)
 {
-  int i;
+  int i, j;
+  BOOL warned = FALSE;
   UBYTE *array;
 
 	ENTER("InitLRU");
@@ -124,23 +127,37 @@ BOOL InitLRU (globaldata *g, UWORD reserved_blksize)
 	g->uip = FALSE;
 	g->locknr = 1;
 
-	if (!(g->glob_lrudata.LRUarray = AllocVec((sizeof(struct lru_cachedblock) + reserved_blksize) * g->glob_lrudata.poolsize,
-		g->dosenvec->de_BufMemType | MEMF_CLEAR)))
+	g->glob_lrudata.LRUarray = AllocVec(sizeof(struct lru_cachedblock*) * g->glob_lrudata.poolsize, 0);
+	if (!g->glob_lrudata.LRUarray)
 		return FALSE;
-
-	/* check memory against mask */
-	if (((SIPTR)g->glob_lrudata.LRUarray) & ~g->dosenvec->de_Mask)
-		ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
+	for(j = 0; j < g->glob_lrudata.poolsize; j++) {
+		g->glob_lrudata.LRUarray[j] = AllocVec((sizeof(struct lru_cachedblock) + reserved_blksize), g->dosenvec->de_BufMemType | MEMF_CLEAR);
+		if (!g->glob_lrudata.LRUarray[j]) {
+			DeallocLRU(g);
+			return FALSE;
+		}
+		/* check memory against mask */
+		if (!warned && (((ULONG)g->glob_lrudata.LRUarray) & ~g->dosenvec->de_Mask)) {
+			ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
+			warned = TRUE;
+		}
+	}
 
 	array = (UBYTE *)g->glob_lrudata.LRUarray;
-	for(i=0;i<g->glob_lrudata.poolsize;i++)
-		MinAddHead(&g->glob_lrudata.LRUpool, array + i * (sizeof(struct lru_cachedblock) + reserved_blksize));
+	for(i=0;i<g->glob_lrudata.poolsize;i++) {
+		MinAddHead(&g->glob_lrudata.LRUpool, g->glob_lrudata.LRUarray[i]);
+	}
 
 	return TRUE;
 }
 
 void DeallocLRU(globaldata *g)
 {
+	int j;
+	if (g->glob_lrudata.LRUarray) {
+		for(j = 0; j < g->glob_lrudata.poolsize; j++)
+			FreeVec(g->glob_lrudata.LRUarray[j]);
+	}
 	FreeVec (g->glob_lrudata.LRUarray);
 	g->glob_lrudata.LRUarray = NULL;
 }
@@ -153,7 +170,10 @@ void DeallocLRU(globaldata *g)
 struct cachedblock *AllocLRU (globaldata *g)
 {
   struct lru_cachedblock *lrunode;
+  struct lru_cachedblock **nlru;
   ULONG error;
+  int retries = 0;
+  int j;
 
 	ENTER("AllocLRU");
 
@@ -163,7 +183,7 @@ struct cachedblock *AllocLRU (globaldata *g)
 	/* Use free block from pool or flush lru unused
 	** block (there MUST be one!)
 	*/
-//  retry:
+retry:
 	if (IsMinListEmpty(&g->glob_lrudata.LRUpool))
 	{
 		for (lrunode = (struct lru_cachedblock *)g->glob_lrudata.LRUqueue.mlh_TailPred; lrunode->prev; lrunode = lrunode->prev)
@@ -179,7 +199,9 @@ struct cachedblock *AllocLRU (globaldata *g)
 				UpdateDatestamp(&lrunode->cblk, g);
 				error = RawWrite ((UBYTE *)&lrunode->cblk.data, RESCLUSTER, lrunode->cblk.blocknr, g);
 				if (error) {
-					ULONG args[2] = { lrunode->cblk.blocknr, error };
+					ULONG args[2];
+					args[0] = lrunode->cblk.blocknr;
+					args[1] = error;
 					ErrorMsg (AFS_ERROR_LRU_UPDATE_FAIL, args, g);
 				}
 			}
@@ -194,11 +216,39 @@ struct cachedblock *AllocLRU (globaldata *g)
 		goto ready;
 	}
 
-	/* No suitable block found -> we are in trouble */
-	NormalErrorMsg (AFS_ERROR_OUT_OF_BUFFERS, NULL, 1);
-	return NULL;
+	/* Attempt to allocate new entries */
+	nlru = AllocVec(sizeof(struct lru_cachedblock*) * (g->glob_lrudata.poolsize + NEW_LRU_ENTRIES), MEMF_CLEAR);
+	for (j = 0; j < NEW_LRU_ENTRIES; j++) {
+		if (!nlru)
+			break;
+		nlru[j + g->glob_lrudata.poolsize] = AllocVec((sizeof(struct lru_cachedblock) + SIZEOF_RESBLOCK), g->dosenvec->de_BufMemType | MEMF_CLEAR);
+		if (!nlru[j + g->glob_lrudata.poolsize]) {
+			while (j >= 0) {
+				FreeVec(nlru[j + g->glob_lrudata.poolsize]);
+				j--;
+			}
+			FreeVec(nlru);
+			nlru = NULL;
+		}
+	}
+	if (!nlru) {
+		/* No suitable block found -> we are in trouble */
+		NormalErrorMsg (AFS_ERROR_OUT_OF_BUFFERS, NULL, 1);
+		retries++;
+		if (retries > 3)
+			return NULL;
+		goto retry;
+	}
+	CopyMem(g->glob_lrudata.LRUarray, nlru, sizeof(struct lru_cachedblock*) * g->glob_lrudata.poolsize);
+	FreeVec(g->glob_lrudata.LRUarray);
+	g->glob_lrudata.LRUarray = nlru;
+	for (j = 0; j < NEW_LRU_ENTRIES; j++, g->glob_lrudata.poolsize++) {
+		MinAddHead(&g->glob_lrudata.LRUpool, g->glob_lrudata.LRUarray[g->glob_lrudata.poolsize]);
+	}
+	g->dosenvec->de_NumBuffers = g->glob_lrudata.poolsize;
+	goto retry;
 
-  ready:
+ready:
 	MinRemove(lrunode);
 	MinAddHead(&g->glob_lrudata.LRUqueue, lrunode);
 
