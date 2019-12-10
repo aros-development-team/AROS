@@ -19,10 +19,10 @@
 #include "amigavideo_bitmap.h"
 #include "chipset.h"
 
-#include <aros/debug.h>
+#define BPLCONMASKFULL          0xFA55
+#define BPLCONMASK              0x8A55
 
-#define BPLCONMASKFULL  0xFA55
-#define BPLCONMASK      0x8A55
+#define DEFAULT_BORDER_GRAY     0x0AAA
 
 static const UBYTE fetchunits[] = { 3,3,3,0, 4,3,3,0, 5,4,3,0 };
 static const UBYTE fm_maxplanes[] = { 3,2,1,0, 3,3,2,0, 3,3,3,0 };
@@ -54,7 +54,7 @@ VOID resetcustom(struct amigavideo_staticdata *csd)
     csd->bplcon4 = 0x0011;          /* set OSPRM7 to default */
     custom->bplcon4 = csd->bplcon4;
     custom->vposw = 0x8000;
-    custom->color[0] = 0x0444;
+    custom->color[0] = DEFAULT_BORDER_GRAY;
 
     // Use AGA modes and create AGA copperlists only if AGA is "enabled"
     csd->aga_enabled = csd->aga && GfxBase->ChipRevBits0 == SETCHIPREV_AA;
@@ -95,7 +95,6 @@ VOID setfmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
         if (bm->interlace)
             *bm->copsd.copper2_fmode = fmode;
     }
-    csd->copper1[15] = fmode;
 }
 
 VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, UBYTE *palette)
@@ -285,7 +284,7 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
     if (copptr[0] != 0x0084)
     {
         /* adjust the screen end wait's ... */
-        yend = y + bm->displayheight + yscroll;
+        yend = y + (bm->displayheight >> bm->interlace) + yscroll;
         yend = limitheight(csd, yend, FALSE, TRUE);
         copptr[2] = (yend << 8) | 0x05;
         if (yend < 256 || ystart >= 256) {
@@ -520,7 +519,6 @@ BOOL setbitmap(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     bm->modulo = bm->bytesperrow - bm->modulopre / (4 >> bm->res);
     bm->modulo &= ~((2 << csd->fmode_bpl) - 1);
 
-    csd->updatescroll = bm;
     setcopperscroll(csd, bm, ((csd->interlaced == TRUE) || (bm->interlace == TRUE)));
 
     D(bug("[AmigaVideo] %s: bm=%x mode=%08x w=%d h=%d d=%d bpr=%d\n",
@@ -725,8 +723,7 @@ VOID setspritevisible(struct amigavideo_staticdata *csd, BOOL visible)
             struct amigabm_data *bm;
             ForeachNode(csd->compositedbms, bm)
             {
-                if (((bm->interlace) && ((csd->spritey >> 1) < (bm->topedge + bm->displayheight))) ||
-                    ((!bm->interlace) && (csd->spritey < (bm->topedge + bm->displayheight))))
+                if (csd->spritey < ((bm->topedge + bm->displayheight) >> bm->interlace))
                 {
                     setfmode(csd, bm);
                     break;
@@ -915,44 +912,268 @@ static AROS_INTH1(gfx_beamsync, struct amigavideo_staticdata*, csd)
     AROS_INTFUNC_EXIT
 }
 
-static BOOL gfx_vblank_attachbm(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
+/* update the copper1 data to reflect the requested bm */
+static void updatecopper1frombm(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
 {
     D(bug("[AmigaVideo] %s(0x%p)\n", __func__, bm));
 
-    return FALSE;
+    csd->copper1[5] = csd->bplcon3 | bm->bplcon3 | ((bm->sprite_res + 1) << 6);
+    csd->copper1[9] = csd->bplcon3 | bm->bplcon3 | (1 << 9) | ((bm->sprite_res + 1) << 6);
+    csd->copper1[13] = csd->bplcon3 | bm->bplcon3 | ((bm->sprite_res + 1) << 6);
+    csd->copper1[27] = csd->bplcon2 | ((csd->aga && !(bm->modeid & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
+    if (bm->copld.copper2_palette)
+    {
+        if (csd->aga && csd->aga_enabled)
+        {
+            csd->copper1[7] = bm->copld.copper2_palette[3];
+            csd->copper1[11] = bm->copld.copper2_palette[3];
+        }
+        else
+        {
+            csd->copper1[7] = bm->copld.copper2_palette[1];
+            csd->copper1[11] = bm->copld.copper2_palette[1];
+        }
+    }
+    else
+    {
+        csd->copper1[7] = DEFAULT_BORDER_GRAY;
+        csd->copper1[11] = DEFAULT_BORDER_GRAY;
+    }
+    if (bm->copld.copper2_fmode)
+        csd->copper1[15] = *bm->copld.copper2_fmode;
+    else
+        csd->copper1[15] = 0;
 }
 
+/* attach a hidden screen to the visible copperlist chains */
+static BOOL gfx_vblank_attachbm(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struct amigabm_data *bmpred)
+{
+    struct HIDD_ViewPortData *vpdata = (struct HIDD_ViewPortData *)bm->node.ln_Name;
+    struct ViewPort  *bmvp = vpdata->vpe->ViewPort;
+    struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
+    struct amigabm_data *bmtmp;
+    LONG screen_start, screen_finish = (STANDARD_DENISE_MAX << 1);
+
+    D(bug("[AmigaVideo] %s(0x%p)\n", __func__, bm));
+
+    if (!csd->interlaced && bm->interlace)
+    {
+        /*
+        Signal the support task to force a rethink of the display
+        */
+        D(bug("[AmigaVideo] %s: display rebuild needed\n", __func__));
+        if (csd->svcTask)
+            Signal(csd->svcTask, SIGBREAKF_CTRL_F);
+        return FALSE;
+    }
+
+    /* calculate and adjust the screens visible region */
+    screen_start = bm->topedge;
+    if (!bmpred || (((bmtmp = (struct amigabm_data *)bmpred->node.ln_Succ) == NULL) ||
+        (bmtmp->node.ln_Succ == NULL)))
+    {
+        bmtmp = (struct amigabm_data *)GetHead(csd->compositedbms);
+    }
+
+    if (bmtmp)
+    {
+        screen_finish = bmtmp->topedge - (bmtmp->copld.extralines + 1);
+        if ((bm->interlace) && (!bmtmp->interlace))
+            screen_finish <<= 1;
+        else if ((!bm->interlace) && (bmtmp->interlace))
+            screen_finish >>= 1;
+    }
+    else
+    {
+        screen_finish = bm->height - 1;
+    }
+    bm->displayheight = limitheight(csd, (screen_finish - screen_start) + 1, bm->interlace, FALSE);
+    D(bug("[AmigaVideo] %s: screen range = %d -> %d (%d rows)\n", __func__, screen_start, screen_finish, bm->displayheight);)
+    /* sanity check .. */
+    if (bm->displayheight <= 1)
+    {
+        /*
+         * either not enough of the screen is visible,
+         * or it is obscured by the next screens copperlist pre-amble
+         */
+        return FALSE;
+    }
+
+    if (bmpred)
+        Insert(&csd->c2fragments, &bm->copld.cnode, &bmpred->copld.cnode);
+    else
+        AddHead(&csd->c2fragments, &bm->copld.cnode);
+
+    if (bm->interlace)
+    {
+        if (bmpred)
+            Insert(&csd->c2ifragments, &bm->copsd.cnode, &bmpred->copsd.cnode);
+        else
+            AddHead(&csd->c2ifragments, &bm->copsd.cnode);
+    }
+    else if (csd->interlaced)
+    {
+        initvpicopper(bmvp,bm,"[AmigaVideo] %s:  allocated dummy CopSStart @ 0x%p\n", __func__);
+
+        if (bmpred)
+            Insert(&csd->c2ifragments, &bm->copsd.cnode, &bmpred->copsd.cnode);
+        else
+            AddHead(&csd->c2ifragments, &bm->copsd.cnode);
+    }
+
+    D(
+        if (!bmpred)    
+            bug("[AmigaVideo] %s: * new topmost bitmap\n", __func__);
+      )
+
+    setcopperscroll(csd, bm, ((csd->interlaced == TRUE) || (bm->interlace == TRUE)));
+
+    if (bm->bmucl)
+    {
+        AmigaVideo_ParseCopperlist(csd, bm, bmvp->UCopIns->FirstCopList);
+#if !USE_UCOP_DIRECT
+        D(bug("[AmigaVideo] %s:  -- copying user-copperlist data ...\n", __func__);)
+        CopyMemQuick(bm->bmucl->CopLStart, bm->copld.copper2_tail, bm->bmuclsize);
+        bm->copld.copper2_tail = (APTR)((IPTR)bm->copld.copper2_tail + bm->bmuclsize);
+        if ((bm->interlace) || (csd->interlaced))
+        {
+            if (bm->bmucl->CopSStart)
+                CopyMemQuick(bm->bmucl->CopSStart, bm->copsd.copper2_tail, bm->bmuclsize);
+            else
+                CopyMemQuick(bm->bmucl->CopLStart, bm->copsd.copper2_tail, bm->bmuclsize);
+            bm->copsd.copper2_tail = (APTR)((IPTR)bm->copsd.copper2_tail + bm->bmuclsize);
+        }
+        bm->bmucl->Flags |= (1<<15);
+#endif
+    }
+
+    /* link the copperlist fragments */
+    if (bm->copld.cnode.mln_Pred && bm->copld.cnode.mln_Pred->mln_Pred)
+    {
+        bmtmp = BMDATFROMCOPLD(bm->copld.cnode.mln_Pred);
+        setcopperlisttail(csd, bmtmp->copld.copper2_tail, bm->bmcl->CopLStart, TRUE);                                           // PREV CopL >> THIS CopL
+        D(bug("[AmigaVideo] %s:     CopL @ 0x%p jmp to CopL @ 0x%p\n", __func__, &bmtmp->copld, &bm->copld);)
+    }
+    else
+    {
+        /* update the copper1 data to reflect the topmost screen */
+        updatecopper1frombm(csd, bm);
+    }
+
+    if (bm->copld.cnode.mln_Succ && bm->copld.cnode.mln_Succ->mln_Succ)
+    {
+        bmtmp = BMDATFROMCOPLD(bm->copld.cnode.mln_Succ);
+        setcopperlisttail(csd, bm->copld.copper2_tail, bmtmp->bmcl->CopLStart, TRUE);                                           // THIS CopL >> NEXT CopL
+        D(bug("[AmigaVideo] %s:     CopL @ 0x%p jmp to CopL @ 0x%p\n", __func__, &bm->copld, &bmtmp->copld);)
+    }
+
+    if ((bm->interlace) || (csd->interlaced))
+    {
+        if (bm->copsd.cnode.mln_Pred && bm->copsd.cnode.mln_Pred->mln_Pred)
+        {
+            bmtmp = BMDATFROMCOPSD(bm->copsd.cnode.mln_Pred);
+            setcopperlisttail(csd, bmtmp->copsd.copper2_tail, bm->bmcl->CopSStart, TRUE);                                       // PREV CopS >> THIS CopS
+            D(bug("[AmigaVideo] %s:     CopS @ 0x%p jmp to CopS @ 0x%p\n", __func__, &bmtmp->copsd, &bm->copsd);)
+        }
+        if (bm->copsd.cnode.mln_Succ && bm->copsd.cnode.mln_Succ->mln_Succ)
+        {
+            bmtmp = BMDATFROMCOPSD(bm->copsd.cnode.mln_Succ);
+            setcopperlisttail(csd, bm->copsd.copper2_tail, bmtmp->bmcl->CopSStart, TRUE);                                       // THIS CopS >> NEXT CopS
+            D(bug("[AmigaVideo] %s:     CopS @ 0x%p jmp to CopS @ 0x%p\n", __func__, &bm->copsd, &bmtmp->copsd);)
+        }
+        else
+        {
+            bmtmp = BMDATFROMCOPLD(GetHead(&csd->c2fragments));
+            setcopperlisttail(csd, bm->copsd.copper2_tail, bmtmp->bmcl->CopLStart, FALSE);                                      // THIS CopS -> FIRST CopL
+            D(bug("[AmigaVideo] %s:     CopS @ 0x%p point to CopL @ 0x%p\n", __func__, &bm->copsd, &bmtmp->copld);)
+        }
+    }
+    else
+    {
+        if (!(bm->copld.cnode.mln_Succ && bm->copld.cnode.mln_Succ->mln_Succ))
+        {
+            if (!IsListEmpty(&csd->c2ifragments))
+            {
+                bmtmp = BMDATFROMCOPSD(GetHead(&csd->c2ifragments));
+                D(bug("[AmigaVideo] %s:     CopL @ 0x%p point to CopS @ 0x%p\n", __func__, &bm->copld, &bmtmp->copsd);)
+                setcopperlisttail(csd, bm->copld.copper2_tail, bmtmp->bmcl->CopSStart, FALSE);                              // THIS CopL -> FIRST CopS
+            }
+            else
+            {
+                bmtmp = BMDATFROMCOPLD(GetHead(&csd->c2fragments));
+                D(bug("[AmigaVideo] %s:     CopL @ 0x%p point to CopL @ 0x%p\n", __func__, &bm->copld, &bmtmp->copld);)
+                setcopperlisttail(csd, bm->copld.copper2_tail, bmtmp->bmcl->CopLStart, FALSE);                              // THIS CopL -> FIRST CopL
+            }
+        }
+    }
+
+    if (!bmpred)
+    {
+        GfxBase->LOFlist = bm->bmcl->CopLStart;
+        if ((bm->interlace) || (csd->interlaced))
+            GfxBase->SHFlist = bm->bmcl->CopSStart;
+        else
+            GfxBase->SHFlist = bm->bmcl->CopLStart;
+    }
+    return TRUE;
+}
+
+/* remove a visible screen from the copperlist chains */
 static VOID gfx_vblank_detachbm(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
 {
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
-    struct copper2data *c2dp, *c2ds, *c2dip, *c2dis;
+    struct copper2data *c2dp = NULL, *c2ds = NULL, *c2dip = NULL, *c2dis = NULL;
     struct amigabm_data *bmtmp;
 
     D(bug("[AmigaVideo] %s(0x%p)\n", __func__, bm));
 
-    c2dp = (struct copper2data *)bm->copld.cnode.mln_Pred;
-    c2ds = (struct copper2data *)bm->copld.cnode.mln_Succ;
+    if (bm->copld.cnode.mln_Pred && bm->copld.cnode.mln_Pred->mln_Pred)
+        c2dp = (struct copper2data *)bm->copld.cnode.mln_Pred;
+    if (bm->copld.cnode.mln_Succ && bm->copld.cnode.mln_Succ->mln_Succ)
+        c2ds = (struct copper2data *)bm->copld.cnode.mln_Succ;
     Remove(&bm->copld.cnode);
     D(bug("[AmigaVideo] %s:   removed bm->copld node\n", __func__);)
 
     if (csd->interlaced || bm->interlace)
     {
-        c2dip = (struct copper2data *)bm->copsd.cnode.mln_Pred;
-        c2dis = (struct copper2data *)bm->copsd.cnode.mln_Succ;
+        if (bm->copsd.cnode.mln_Pred && bm->copsd.cnode.mln_Pred->mln_Pred)
+            c2dip = (struct copper2data *)bm->copsd.cnode.mln_Pred;
+        if (bm->copsd.cnode.mln_Succ && bm->copsd.cnode.mln_Succ->mln_Succ)
+            c2dis = (struct copper2data *)bm->copsd.cnode.mln_Succ;
         Remove(&bm->copsd.cnode);
         D(bug("[AmigaVideo] %s:   removed bm->copsd node\n", __func__);)
     }
 
     if (c2dp && c2dp->cnode.mln_Pred)
     {
-        bmtmp = BMDATFROMCOPLD(c2ds);
-        setcopperlisttail(csd, c2dp->copper2_tail, bmtmp->bmcl->CopLStart, TRUE);
-        D(bug("[AmigaVideo] %s: CopL @ 0x%p point to CopL @ 0x%p\n", __func__, c2dp, c2ds);)
+        if (c2ds)
+        {
+            bmtmp = BMDATFROMCOPLD(c2ds);
+            setcopperlisttail(csd, c2dp->copper2_tail, bmtmp->bmcl->CopLStart, TRUE);
+            D(bug("[AmigaVideo] %s: CopL @ 0x%p jmp to CopL @ 0x%p\n", __func__, c2dp, c2ds);)
+        }
+        else
+        {
+            D(bug("[AmigaVideo] %s: No screens follow us\n", __func__);)
+            bmtmp = BMDATFROMCOPLD(GetHead(&csd->c2fragments));
+            setcopperlisttail(csd, c2dp->copper2_tail, bmtmp->bmcl->CopLStart, FALSE);
+            D(bug("[AmigaVideo] %s: CopL @ 0x%p point to CopL @ 0x%p\n", __func__, c2dp, &bmtmp->copld);)
+        }
+
         if (csd->interlaced || bm->interlace)
         {
-            bmtmp = BMDATFROMCOPSD(c2dis);
-            setcopperlisttail(csd, c2dip->copper2_tail, bmtmp->bmcl->CopSStart, TRUE);
-            D(bug("[AmigaVideo] %s: CopS @ 0x%p point to CopS @ 0x%p\n", __func__, c2dip, c2dis);)
+            if (c2dis)
+            {
+                bmtmp = BMDATFROMCOPSD(c2dis);
+                setcopperlisttail(csd, c2dip->copper2_tail, bmtmp->bmcl->CopSStart, TRUE);
+                D(bug("[AmigaVideo] %s: CopS @ 0x%p jmp to CopS @ 0x%p\n", __func__, c2dip, c2dis);)
+            }
+            else
+            {
+                bmtmp = BMDATFROMCOPLD(GetHead(&csd->c2fragments));
+                setcopperlisttail(csd, c2dip->copper2_tail, bmtmp->bmcl->CopLStart, FALSE);
+                D(bug("[AmigaVideo] %s: CopS @ 0x%p point to CopL @ 0x%p\n", __func__, c2dip, &bmtmp->copld);)
+            }
         }
     }
     else
@@ -961,40 +1182,246 @@ static VOID gfx_vblank_detachbm(struct amigavideo_staticdata *csd, struct amigab
         UWORD *copstart;
 
         D(bug("[AmigaVideo] %s: screen-bitmap was first on copperlist chain\n", __func__);)
-        bmtmp = BMDATFROMCOPLD(c2ds);
-
-        /* first, replace any tail refrence ... */
-        if (!IsListEmpty(&csd->c2ifragments))
+        if (c2ds)
         {
-            c2t = (struct copper2data *)GetTail(&csd->c2ifragments);
-            setcopperlisttail(csd, c2t->copper2_tail, bmtmp->bmcl->CopLStart, FALSE);
-            D(bug("[AmigaVideo] %s: CopS @ 0x%p point to CopL @ 0x%p\n", __func__, c2t, c2ds);)
-        }
+            bmtmp = BMDATFROMCOPLD(c2ds);
 
-        c2t = (struct copper2data *)GetTail(&csd->c2fragments);
-        if (!IsListEmpty(&csd->c2ifragments))
-        {
-            setcopperlisttail(csd, c2t->copper2_tail, bmtmp->bmcl->CopSStart, FALSE);
-            D(bug("[AmigaVideo] %s: CopL @ 0x%p point to CopS @ 0x%p\n", __func__, c2t, &bmtmp->copsd);)
+            /* first, replace any tail refrence ... */
+            if (!IsListEmpty(&csd->c2ifragments))
+            {
+                c2t = (struct copper2data *)GetTail(&csd->c2ifragments);
+                setcopperlisttail(csd, c2t->copper2_tail, bmtmp->bmcl->CopLStart, FALSE);
+                D(bug("[AmigaVideo] %s: CopS @ 0x%p point to CopL @ 0x%p\n", __func__, c2t, &bmtmp->copsd);)
+            }
+
+            c2t = (struct copper2data *)GetTail(&csd->c2fragments);
+            if (!IsListEmpty(&csd->c2ifragments))
+            {
+                setcopperlisttail(csd, c2t->copper2_tail, bmtmp->bmcl->CopSStart, FALSE);
+                D(bug("[AmigaVideo] %s: CopL @ 0x%p point to CopS @ 0x%p\n", __func__, c2t, &bmtmp->copsd);)
+            }
+            else
+            {
+                setcopperlisttail(csd, c2t->copper2_tail, bmtmp->bmcl->CopLStart, FALSE);
+                D(bug("[AmigaVideo] %s: CopL @ 0x%p point to CopL @ 0x%p\n", __func__, c2t, &bmtmp->copld);)
+            }
+
+            /* update the copper1 data to reflect the topmost screen */
+            csd->copper1[5] = csd->bplcon3 | bmtmp->bplcon3 | ((bmtmp->sprite_res + 1) << 6);
+            csd->copper1[9] = csd->bplcon3 | bmtmp->bplcon3 | (1 << 9) | ((bmtmp->sprite_res + 1) << 6);
+            csd->copper1[13] = csd->bplcon3 | bmtmp->bplcon3 | ((bmtmp->sprite_res + 1) << 6);
+            csd->copper1[27] = csd->bplcon2 | ((csd->aga && !(bmtmp->modeid & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
+            if (csd->aga && csd->aga_enabled)
+            {
+                csd->copper1[7] = bmtmp->copld.copper2_palette[3];
+                csd->copper1[11] = bmtmp->copld.copper2_palette[3];
+            }
+            else
+            {
+                csd->copper1[7] = bmtmp->copld.copper2_palette[1];
+                csd->copper1[11] = bmtmp->copld.copper2_palette[1];
+            }
+
+            /* now adjust the list(s) ... */
+            GfxBase->LOFlist = bmtmp->bmcl->CopLStart;
+            if (!IsListEmpty(&csd->c2ifragments))
+            {
+                bmtmp = BMDATFROMCOPSD(GetHead(&csd->c2ifragments));
+                GfxBase->SHFlist = bmtmp->bmcl->CopSStart;
+            }
+            else
+                GfxBase->SHFlist = bmtmp->bmcl->CopLStart;
         }
         else
         {
-            setcopperlisttail(csd, c2t->copper2_tail, bmtmp->bmcl->CopLStart, FALSE);
-            D(bug("[AmigaVideo] %s: CopL @ 0x%p point to CopL @ 0x%p\n", __func__, c2t, c2ds);)
-        }
+            D(bug("[AmigaVideo] %s: Nothing left to display!\n", __func__);)
 
-        /* now adjust the list(s) ... */
-        GfxBase->LOFlist = bmtmp->bmcl->CopLStart;
-        if (!IsListEmpty(&csd->c2ifragments))
-        {
-            bmtmp = BMDATFROMCOPSD(GetHead(&csd->c2ifragments));
-            GfxBase->SHFlist = bmtmp->bmcl->CopSStart;
+            /* for our safety load the backup copperlist... */
+            GfxBase->LOFlist = csd->copper2_backup;
+            GfxBase->SHFlist = GfxBase->LOFlist;
         }
-        else
-            GfxBase->SHFlist = bmtmp->bmcl->CopLStart;
     }
 }
 
+VOID gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
+{
+    struct amigabm_data *bm, *bmsafe, *bmtmp;
+
+    ForeachNodeSafe(csd->compositedbms, bm, bmsafe)
+    {
+        UWORD bmend;
+        if (bm->node.ln_Succ && bm->node.ln_Succ->ln_Succ && (bm->node.ln_Succ == (struct Node *)csd->updatescroll))
+        {
+            UWORD olddisplayheight = bm->displayheight;
+
+            /* adjust the screen situated above the moved screen-bitmap */
+            bmend = csd->updatescroll->topedge - (csd->updatescroll->copld.extralines + 1);
+            if ((bm->interlace) && (!csd->updatescroll->interlace))
+                bmend <<= 1;
+            else if ((!bm->interlace) && (csd->updatescroll->interlace))
+                bmend >>= 1;
+
+            bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
+
+            /* only adjust if enough is visible - otherwise it will be obscured, and hidden in the next case... */
+            if ((bm->displayheight != olddisplayheight) && (bm->displayheight > 1))
+            {
+                setcopperscroll(csd, bm, ((csd->interlaced == TRUE) || (bm->interlace == TRUE)));
+                if (bm->bmucl)
+                {
+
+                    AmigaVideo_ParseCopperlist(csd, bm, bm->bmucl);
+#if !USE_UCOP_DIRECT
+                    D(bug("[AmigaVideo] %s:  -- copying user-copperlist data ...\n", __func__);)
+                    CopyMemQuick(bm->bmucl->CopLStart, bm->copld.copper2_tail, bm->bmuclsize);
+                    bm->copld.copper2_tail = (APTR)((IPTR)bm->copld.copper2_tail + bm->bmuclsize);
+                    if ((bm->interlace) || (csd->interlaced))
+                    {
+                        if (bm->bmucl->CopSStart)
+                            CopyMemQuick(bm->bmucl->CopSStart, bm->copsd.copper2_tail, bm->bmuclsize);
+                        else
+                            CopyMemQuick(bm->bmucl->CopLStart, bm->copsd.copper2_tail, bm->bmuclsize);
+                        bm->copsd.copper2_tail = (APTR)((IPTR)bm->copsd.copper2_tail + bm->bmuclsize);
+                    }
+                    bm->bmucl->Flags |= (1<<15);
+#endif
+                }
+            }
+        }
+        else if (bm == csd->updatescroll)
+        {
+            UWORD toptmp; 
+
+            if (bm->updtop < bm->topedge)
+            {
+                struct Node *tmpnode, *lastpred = &bm->node;
+                UWORD adjust, topvis = bm->topedge - (bm->copld.extralines + 2);
+
+                /* check if any of the obscured screens have become visible .. */
+                ForeachNodeSafe(csd->obscuredbms, bmtmp, tmpnode)
+                {
+                    if (bmtmp->node.ln_Pri > bm->node.ln_Pri)
+                    {
+                        toptmp = bmtmp->topedge;
+                        if ((bm->interlace) && (!bmtmp->interlace))
+                        {
+                            toptmp <<= 1;
+                            adjust = (bmtmp->copld.extralines + 2) << 1;
+                        }
+                        else if ((!bm->interlace) && (bmtmp->interlace))
+                        {
+                            toptmp >>= 1;
+                            adjust = (bmtmp->copld.extralines + 2) >> 1;
+                        }
+
+                        if (toptmp < topvis)
+                        {
+                            struct amigabm_data *bmpred = NULL;
+
+                            if (lastpred->ln_Pred && lastpred->ln_Pred->ln_Pred)
+                                bmpred = (struct amigabm_data *)lastpred->ln_Pred;
+
+                            D(bug("[AmigaVideo] %s: attempt to make screen-bitmap with bmdata @ 0x%p visible\n", __func__, bmtmp, bmtmp->node.ln_Pri);)
+
+                            if (gfx_vblank_attachbm(csd, bmtmp, bmpred))
+                            {
+                                D(bug("[AmigaVideo] %s: screen-bitmap became visible\n", __func__);)
+
+                                topvis = toptmp - adjust;
+                                Remove(&bmtmp->node);
+                                Insert(csd->compositedbms, &bmtmp->node, lastpred);
+                                lastpred = &bmtmp->node;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                /* check if we have obscured any screens .. */
+                struct amigabm_data *bmtmp2;
+                bmtmp = bm;
+                while ((bmtmp = (struct amigabm_data *)GetPred(&bmtmp->node)))
+                {
+                    toptmp = bmtmp->topedge;
+                    if ((bm->interlace) && (!bmtmp->interlace))
+                        toptmp <<= 1;
+                    else if ((!bm->interlace) && (bmtmp->interlace))
+                        toptmp >>= 1;
+
+                    if (toptmp >= bm->topedge - (bm->copld.extralines + 2))
+                    {
+                        bmtmp2 = (struct amigabm_data *)bmtmp->node.ln_Succ;
+
+                        gfx_vblank_detachbm(csd, bmtmp);
+
+                        D(bug("[AmigaVideo] %s: screen bitmap with bmdata @ 0x%p and depth %d is now obscured\n", __func__, bmtmp, bmtmp->node.ln_Pri);)
+
+                        /* Remove the bitmap node and add it to the obscured list ... */
+                        Remove(&bmtmp->node);
+                        Enqueue(csd->obscuredbms, &bmtmp->node);
+                        D(bug("[AmigaVideo] %s: * obscured bitmap has been moved from display lists\n", __func__);)
+
+                        bmtmp = bmtmp2;
+                    }
+                }
+            }
+
+            /* adjust the moved screen-bitmap */
+            if (bm->node.ln_Succ && bm->node.ln_Succ->ln_Succ)
+            {
+                bmtmp = (struct amigabm_data *)bm->node.ln_Succ;
+                bmend = bmtmp->topedge - (bmtmp->copld.extralines + 1);
+                if ((bm->interlace) && (!bmtmp->interlace))
+                    bmend <<= 1;
+                else if ((!bm->interlace) && (bmtmp->interlace))
+                    bmend >>= 1;
+
+                bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);                    
+            }
+            else
+                bm->displayheight = limitheight(csd, (bm->height - bm->topedge), bm->interlace, FALSE);
+            if (bm->displayheight > 1)
+            {
+                setcopperscroll(csd, csd->updatescroll, ((csd->interlaced == TRUE) || (csd->updatescroll->interlace == TRUE)));
+                if (bm->bmucl)
+                {
+                    AmigaVideo_ParseCopperlist(csd, bm, bm->bmucl);
+#if !USE_UCOP_DIRECT
+                    D(bug("[AmigaVideo] %s:  -- copying user-copperlist data ...\n", __func__);)
+                    CopyMemQuick(bm->bmucl->CopLStart, bm->copld.copper2_tail, bm->bmuclsize);
+                    bm->copld.copper2_tail = (APTR)((IPTR)bm->copld.copper2_tail + bm->bmuclsize);
+                    if ((bm->interlace) || (csd->interlaced))
+                    {
+                        if (bm->bmucl->CopSStart)
+                            CopyMemQuick(bm->bmucl->CopSStart, bm->copsd.copper2_tail, bm->bmuclsize);
+                        else
+                            CopyMemQuick(bm->bmucl->CopLStart, bm->copsd.copper2_tail, bm->bmuclsize);
+                        bm->copsd.copper2_tail = (APTR)((IPTR)bm->copsd.copper2_tail + bm->bmuclsize);
+                    }
+                    bm->bmucl->Flags |= (1<<15);
+#endif
+                }
+            }
+            else
+            {
+                /* This screen has become obscured ... */
+                gfx_vblank_detachbm(csd, bm);
+
+                D(bug("[AmigaVideo] %s: active screen bitmap with bmdata @ 0x%p and depth %d is now obscured\n", __func__, bm, bm->node.ln_Pri);)
+
+                /* Remove the bitmap node and add it to the obscured list ... */
+                Remove(&bm->node);
+                Enqueue(csd->obscuredbms, &bm->node);
+                D(bug("[AmigaVideo] %s: * obscured bitmap for active screen has been moved from display lists\n", __func__);)
+            }
+            bm->updtop = bm->topedge;
+            bm->updleft = bm->leftedge;
+        }
+    }
+    D(bug("[AmigaVideo] %s: updatescroll processed\n", __func__);)
+    csd->updatescroll = NULL;
+}
 static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
 { 
     AROS_INTFUNC_INIT
@@ -1002,6 +1429,21 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     BOOL lof = (custom->vposr & 0x8000) != 0;
+
+    /* handle updatescroll first, since it may change the LOFlist/SHFlist pointers */
+    if (csd->updatescroll) {
+        D(bug("[AmigaVideo] %s: handling updatescroll\n", __func__);)
+
+        if (IsListEmpty(csd->compositedbms))
+        {
+            /* triggered for an obscured screen with no other screens */
+        }
+        else
+        {
+            /* process the display chain */
+            gfx_vblank_doupdatescroll(csd);
+        }
+    }
 
     /* is any displayed screen interlaced? */
     if (GfxBase->LOFlist != GfxBase->SHFlist) {
@@ -1018,170 +1460,6 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
         UWORD *p = csd->sprite;
         p[0] = csd->spritepos;
         p[1 << csd->fmode_spr] = csd->spritectl;
-    }
-
-    if (csd->updatescroll) {
-        struct amigabm_data *bm, *bmsafe, *bmtmp;
-
-        ForeachNodeSafe(csd->compositedbms, bm, bmsafe)
-        {
-            UWORD bmend;
-            if (bm->node.ln_Succ && bm->node.ln_Succ->ln_Succ && (bm->node.ln_Succ == (struct Node *)csd->updatescroll))
-            {
-                UWORD olddisplayheight = bm->displayheight;
-
-                /* adjust the screen situated above the moved screen-bitmap */
-                bmend = csd->updatescroll->topedge - (csd->updatescroll->copld.extralines + 1);
-                if ((bm->interlace) && (!csd->updatescroll->interlace))
-                    bmend <<= 1;
-                else if ((!bm->interlace) && (csd->updatescroll->interlace))
-                    bmend >>= 1;
-
-                bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);
-
-                /* only adjust if enough is visible - otherwise it will be obscured, and hidden in the next case... */
-                if ((bm->displayheight != olddisplayheight) && (bm->displayheight > 1))
-                {
-                    setcopperscroll(csd, bm, ((csd->interlaced == TRUE) || (bm->interlace == TRUE)));
-                    if (bm->bmucl)
-                    {
-                        AmigaVideo_ParseCopperlist(csd, bm, bm->bmucl);
-#if !USE_UCOP_DIRECT
-                        D(bug("[AmigaVideo] %s:  -- copying user-copperlist data ...\n", __func__);)
-                        CopyMemQuick(bm->bmucl->CopLStart, bm->copld.copper2_tail, bm->bmuclsize);
-                        bm->copld.copper2_tail = (APTR)((IPTR)bm->copld.copper2_tail + bm->bmuclsize);
-                        if ((bm->interlace) || (csd->interlaced))
-                        {
-                            if (bm->bmucl->CopSStart)
-                                CopyMemQuick(bm->bmucl->CopSStart, bm->copsd.copper2_tail, bm->bmuclsize);
-                            else
-                                CopyMemQuick(bm->bmucl->CopLStart, bm->copsd.copper2_tail, bm->bmuclsize);
-                            bm->copsd.copper2_tail = (APTR)((IPTR)bm->copsd.copper2_tail + bm->bmuclsize);
-                        }
-                        bm->bmucl->Flags |= (1<<15);
-#endif
-                    }
-                }
-            }
-            else if (bm == csd->updatescroll)
-            {
-                UWORD toptmp; 
-
-                if (bm->updtop < bm->topedge)
-                {
-                    struct Node *tmpnode, *lastpred = &bm->node;
-                    UWORD topvis = bm->topedge; 
-
-                    /* check if any of the obscured screens have become visible .. */
-                    ForeachNodeSafe(csd->obscuredbms, bmtmp, tmpnode)
-                    {
-                        if (bmtmp->node.ln_Pri > bm->node.ln_Pri)
-                        {
-                            toptmp = bmtmp->topedge;
-                            if ((bm->interlace) && (!bmtmp->interlace))
-                                toptmp <<= 1;
-                            else if ((!bm->interlace) && (bmtmp->interlace))
-                                toptmp >>= 1;
-
-                            if (toptmp < topvis)
-                            {
-                                D(bug("[AmigaVideo] %s: screen-bitmap with bmdata @ 0x%p and depth %d became visible\n", __func__, bmtmp, bmtmp->node.ln_Pri);)
-                                if (gfx_vblank_attachbm(csd, bmtmp))
-                                {
-                                    topvis = toptmp;
-                                    Remove(&bmtmp->node);
-                                    Insert(csd->compositedbms, &bmtmp->node, lastpred);
-                                    lastpred = &bmtmp->node;
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    /* check if we have obscured any screens .. */
-                    struct amigabm_data *bmtmp2;
-                    bmtmp = bm;
-                    while ((bmtmp = (struct amigabm_data *)GetPred(&bmtmp->node)))
-                    {
-                        toptmp = bmtmp->topedge;
-                        if ((bm->interlace) && (!bmtmp->interlace))
-                            toptmp <<= 1;
-                        else if ((!bm->interlace) && (bmtmp->interlace))
-                            toptmp >>= 1;
-
-                        if (toptmp >= bm->topedge - (bm->copld.extralines + 2))
-                        {
-                            bmtmp2 = (struct amigabm_data *)bmtmp->node.ln_Succ;
-
-                            gfx_vblank_detachbm(csd, bmtmp);
-
-                            D(bug("[AmigaVideo] %s: screen bitmap with bmdata @ 0x%p and depth %d is now obscured\n", __func__, bmtmp, bmtmp->node.ln_Pri);)
-
-                            /* Remove the bitmap node and add it to the obscured list ... */
-                            Remove(&bmtmp->node);
-                            Enqueue(csd->obscuredbms, &bmtmp->node);
-                            D(bug("[AmigaVideo] %s: * obscured bitmap has been moved from display lists\n", __func__);)
-
-                            bmtmp = bmtmp2;
-                        }
-                    }
-                }
-
-                /* adjust the moved screen-bitmap */
-                if (bm->node.ln_Succ && bm->node.ln_Succ->ln_Succ)
-                {
-                    bmtmp = (struct amigabm_data *)bm->node.ln_Succ;
-                    bmend = bmtmp->topedge - (bmtmp->copld.extralines + 1);
-                    if ((bm->interlace) && (!bmtmp->interlace))
-                        bmend <<= 1;
-                    else if ((!bm->interlace) && (bmtmp->interlace))
-                        bmend >>= 1;
-
-                    bm->displayheight = limitheight(csd, (bmend - bm->topedge), bm->interlace, FALSE);                    
-                }
-                else
-                    bm->displayheight = limitheight(csd, (bm->height - bm->topedge), bm->interlace, FALSE);
-                if (bm->displayheight > 1)
-                {
-                    setcopperscroll(csd, csd->updatescroll, ((csd->interlaced == TRUE) || (csd->updatescroll->interlace == TRUE)));
-                    if (bm->bmucl)
-                    {
-                        AmigaVideo_ParseCopperlist(csd, bm, bm->bmucl);
-#if !USE_UCOP_DIRECT
-                        D(bug("[AmigaVideo] %s:  -- copying user-copperlist data ...\n", __func__);)
-                        CopyMemQuick(bm->bmucl->CopLStart, bm->copld.copper2_tail, bm->bmuclsize);
-                        bm->copld.copper2_tail = (APTR)((IPTR)bm->copld.copper2_tail + bm->bmuclsize);
-                        if ((bm->interlace) || (csd->interlaced))
-                        {
-                            if (bm->bmucl->CopSStart)
-                                CopyMemQuick(bm->bmucl->CopSStart, bm->copsd.copper2_tail, bm->bmuclsize);
-                            else
-                                CopyMemQuick(bm->bmucl->CopLStart, bm->copsd.copper2_tail, bm->bmuclsize);
-                            bm->copsd.copper2_tail = (APTR)((IPTR)bm->copsd.copper2_tail + bm->bmuclsize);
-                        }
-                        bm->bmucl->Flags |= (1<<15);
-#endif
-                    }
-                }
-                else
-                {
-                    /* This screen has become obscured ... */
-                    gfx_vblank_detachbm(csd, bm);
-
-                    D(bug("[AmigaVideo] %s: active screen bitmap with bmdata @ 0x%p and depth %d is now obscured\n", __func__, bm, bm->node.ln_Pri);)
-
-                    /* Remove the bitmap node and add it to the obscured list ... */
-                    Remove(&bm->node);
-                    Enqueue(csd->obscuredbms, &bm->node);
-                    D(bug("[AmigaVideo] %s: * obscured bitmap for active screen has been moved from display lists\n", __func__);)
-                }
-                bm->updtop = bm->topedge;
-                bm->updleft = bm->leftedge;
-
-            }
-        }
-        csd->updatescroll = NULL;
     }
 
     if (bqvar & BQ_BEAMSYNC)
@@ -1281,8 +1559,8 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     GfxBase->MaxDisplayColumn = 640;
     GfxBase->MaxDisplayRow = (GfxBase->DisplayFlags & NTSC) ? 200 : 256;
 
-    csd->startx = 0x81;
-    csd->starty = 0x28;
+    csd->startx = STANDARD_VIEW_X;
+    csd->starty = STANDARD_VIEW_Y;
 
     vposr = custom->vposr;
     csd->aga = (vposr & 0x0f00) == 0x0300;
@@ -1298,26 +1576,26 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     }
     csd->max_colors = csd->aga ? 256 : 32;
 
-    csd->sprite_null = AllocMem(2 << 3, MEMF_CLEAR | MEMF_CHIP);
-    csd->copper1 = AllocVec(46 * (sizeof(WORD) << 1), MEMF_CLEAR | MEMF_CHIP);
+    csd->sprite_null = AllocMem((2 << 3) + (46 * (sizeof(WORD) << 1)), MEMF_CLEAR | MEMF_CHIP);
+    csd->copper1 = (APTR)((IPTR)csd->sprite_null + (2 << 3));
     c = csd->copper1;
 
-	COPPEROUT(c, 0x00e0, 0)
-	COPPEROUT(c, 0x0100, csd->bplcon0_null)
+        COPPEROUT(c, 0x00e0, 0)
+        COPPEROUT(c, 0x0100, csd->bplcon0_null)
 
-	COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 (ecs sprites)
-	COPPEROUT(c, 0x0180, 0x0444)							    // Pen = 0
-	COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 9) | (1 << 6))    // Push subsequent color palette bplcon3 
-	COPPEROUT(c, 0x0180, 0x0444)							    // Pen = 0
-	COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 again
+        COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 (ecs sprites)
+        COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)							    // Pen = 0
+        COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 9) | (1 << 6))    // Push subsequent color palette bplcon3 
+        COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)							    // Pen = 0
+        COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 again
 
-	COPPEROUT(c, 0x01fc, 0)									    // Push fmode
-	COPPEROUT(c, 0x008e, (1 << 8) | 0x81)					    // Push (DIWSTRT) Display window start
-	COPPEROUT(c, 0x0090, (2 << 8) | 0x81)					    // Push (DIWSTOP) Display window stop
-	COPPEROUT(c, 0x01e4, 0)									    // Push (DIWHIGH) Display window
-	COPPEROUT(c, 0x0092, 0)									    // Push (DDFSTRT) Display bitplane data fetch start
-	COPPEROUT(c, 0x0094, 0)									    // Push (DDFSTOP) Display bitplane data fetch stop
-	COPPEROUT(c, 0x0104, csd->bplcon2)                          // Push the screens bplcon2
+        COPPEROUT(c, 0x01fc, 0)									    // Push fmode
+        COPPEROUT(c, 0x008e, (1 << 8) | 0x81)					    // Push (DIWSTRT) Display window start
+        COPPEROUT(c, 0x0090, (2 << 8) | 0x81)					    // Push (DIWSTOP) Display window stop
+        COPPEROUT(c, 0x01e4, 0)									    // Push (DIWHIGH) Display window
+        COPPEROUT(c, 0x0092, 0)									    // Push (DDFSTRT) Display bitplane data fetch start
+        COPPEROUT(c, 0x0094, 0)									    // Push (DDFSTOP) Display bitplane data fetch stop
+        COPPEROUT(c, 0x0104, csd->bplcon2)                          // Push the screens bplcon2
 
     /* initialize SPRxPOS */
     COPPEROUT(c, 0x0140, 0)
@@ -1351,5 +1629,5 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     
     GfxBase->copinit = (struct copinit*)csd->copper1;
 
-    D(bug("[AmigaVideo] %s: Copperlist0 %p\n", __func__, csd->copper1));
+    D(bug("[AmigaVideo] %s: Copperlist0 %p (%d bytes)\n", __func__, csd->copper1, 46 * (sizeof(WORD) << 1)));
 }

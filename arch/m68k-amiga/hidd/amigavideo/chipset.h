@@ -2,6 +2,12 @@
 #ifndef _AMIGACHIPSETBITMAP_H
 #define _AMIGACHIPSETBITMAP_H
 
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+#ifndef GRAPHICS_VIEW_H
+#   include <graphics/view.h>
+#endif
 #include <hidd/gfx.h>
 
 /* Use nominal screen height. Overscan is not supported yet. */
@@ -33,6 +39,29 @@ static inline VOID setpalntsc(struct amigavideo_staticdata *csd)
         return;
 
     custom->beamcon0 = (csd->palmode) ? 0x0020 : 0x0000;
+}
+
+static inline VOID initvpicopper(struct ViewPort  *vp, struct amigabm_data *bm, const char *dbstr, const char *__parentfunc)
+{
+    if (!(vp->DspIns->CopSStart))
+        vp->DspIns->CopSStart = AllocVec((vp->DspIns->MaxCount << 2), MEMF_CLEAR | MEMF_CHIP);
+
+    D(bug(dbstr, __parentfunc, vp->DspIns->CopSStart);)
+
+    /* copy the copperlist data ... */
+    CopyMemQuick(vp->DspIns->CopLStart, vp->DspIns->CopSStart, (vp->DspIns->MaxCount << 2));
+
+    /* copy adjusted pointers ... */
+    bm->copsd.copper2_palette = vp->DspIns->CopSStart + (bm->copld.copper2_palette - vp->DspIns->CopLStart);
+    bm->copsd.copper2_scroll = vp->DspIns->CopSStart + (bm->copld.copper2_scroll - vp->DspIns->CopLStart);
+    bm->copsd.copper2_bpl = vp->DspIns->CopSStart + (bm->copld.copper2_bpl - vp->DspIns->CopLStart);
+    bm->copsd.copper2_tail = vp->DspIns->CopSStart + (bm->copld.copper2_tail - vp->DspIns->CopLStart);
+    bm->copsd.extralines = bm->copld.extralines;
+
+    if (bm->copld.copper2_palette_aga_lo)
+        bm->copsd.copper2_palette_aga_lo = vp->DspIns->CopSStart + (bm->copld.copper2_palette_aga_lo - vp->DspIns->CopLStart);
+    if (bm->copld.copper2_fmode)
+        bm->copsd.copper2_fmode = vp->DspIns->CopSStart + (bm->copld.copper2_fmode - vp->DspIns->CopLStart);
 }
 
 VOID resetmode(struct amigavideo_staticdata *);
