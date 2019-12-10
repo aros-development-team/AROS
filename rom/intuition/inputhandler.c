@@ -514,7 +514,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
             *keep_event = FALSE;
-        break;
+            break;
         }
 
 #ifdef SKINS
@@ -522,103 +522,101 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 #endif
         if (MENUS_ACTIVE)
         {
-        FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-        *keep_event = FALSE;
-        break;
+            FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+            *keep_event = FALSE;
+            break;
         }
 
 #ifdef SKINS
         if (!gadget && w)
         {
-        struct Gadget * draggadget = 0;
+            struct Gadget * draggadget = 0;
 
-        if ((!(w->FirstRequest)) && (w->Flags & WFLG_DRAGBAR) && MatchHotkey(ie,IA_ACTIVEWINDOWMOVE,IntuitionBase))
-        {
-            if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
+            if ((!(w->FirstRequest)) && (w->Flags & WFLG_DRAGBAR) && MatchHotkey(ie,IA_ACTIVEWINDOWMOVE,IntuitionBase))
             {
-            for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
-            {
-                if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING)
+                if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
                 {
-                gadget = draggadget;
-                new_gadget = TRUE;
-                break;
+                    for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
+                    {
+                        if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING)
+                        {
+                            gadget = draggadget;
+                            new_gadget = TRUE;
+                            break;
+                        }
+                    }
                 }
             }
-            }
-        }
 
-        if ((!(w->FirstRequest)) && (w->Flags & WFLG_SIZEGADGET) && MatchHotkey(ie,IA_ACTIVEWINDOWSIZE,IntuitionBase))
-        {
-            if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
+            if ((!(w->FirstRequest)) && (w->Flags & WFLG_SIZEGADGET) && MatchHotkey(ie,IA_ACTIVEWINDOWSIZE,IntuitionBase))
             {
-            for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
-            {
-                if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING)
+                if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
                 {
-                gadget = draggadget;
-                new_gadget = TRUE;
-                break;
+                    for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
+                    {
+                        if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING)
+                        {
+                            gadget = draggadget;
+                            new_gadget = TRUE;
+                            break;
+                        }
+                    }
                 }
             }
-            }
-        }
         }
 #endif
 
-        if (!gadget)
+        if ((!gadget) && (screen))
         {
-        /* use the *current* screen rather than active one when searching
-           for sdepth gadget! */
-        if (screen)
+            /* use the *current* screen rather than active one when searching
+               for sdepth gadget! */
             gadget = FindGadget (screen, stitlebarhit ? NULL : w, stitlebarhit ? NULL : req,
                      screen->MouseX, screen->MouseY, gi, FALSE, IntuitionBase);
-        DEBUG_CLICK(bug("Click on gadget %p\n", gadget));
-        new_gadget = TRUE;
-
+            DEBUG_CLICK(bug("Click on gadget %p\n", gadget));
+            new_gadget = TRUE;
         } /* if (!gadget) */
 
         /* If we clicked screen titlebar outside of any gadget, enter drag mode */
         if ((!gadget) && stitlebarhit) {
-        DEBUG_CLICK(bug("[Inputhandler] Entering drag state for screen 0x%p\n", screen));
+            DEBUG_CLICK(bug("[Inputhandler] Entering drag state for screen 0x%p\n", screen));
             iihdata->ScreenDrag = screen;
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
             *keep_event = FALSE;
-        break;
+            break;
         }
 
         if (!IsToolbox) {
             if (!gadget && stitlebarhit)
             {
-            struct Window *ww = 0;
-        
-            ww = FindDesktopWindow(screen, IntuitionBase);
-            DEBUG_CLICK(bug("[Inputhandler] Clicked on backdrop window 0x%p\n", ww));
-            if (ww) {
-                ActivateWindow(ww);
-                w = ww;
-            }
+                struct Window *ww = 0;
+            
+                ww = FindDesktopWindow(screen, IntuitionBase);
+                DEBUG_CLICK(bug("[Inputhandler] Clicked on backdrop window 0x%p\n", ww));
+                if (ww) {
+                    ActivateWindow(ww);
+                    w = ww;
+                }
             }
 
             if (!stitlebarhit && !new_active_window && DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
                                         ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
             {
-            if (GetPrivIBase(IntuitionBase)->DoubleClickButton != SELECTDOWN)
+                if (GetPrivIBase(IntuitionBase)->DoubleClickButton != SELECTDOWN)
+                {
+                    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+                    GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
+                }
+                else
+                {
+                    GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
+                }
+            }
+            else
             {
-                GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+                DEBUG_CLICK(bug("[Inputhandler] Resetting doubleclick counter\n"));
                 GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-            }
-            else
-            {
-                GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-            }
-            }
-            else
-            {
-            DEBUG_CLICK(bug("[Inputhandler] Resetting doubleclick counter\n"));
-            GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-            GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+                GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
             }
 
             /* update last click time for doubleclicktofront */
@@ -628,21 +626,21 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 #ifdef SKINS
             if (!stitlebarhit)
             {
-            ULONG result;
-        
-            if (!(gadget && ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH)))
-            if ((result = RunHotkeys(ie,IntuitionBase)))
-            {
-                //gadget = NULL;
-                if (result == RUNHOTREUSE)
+                ULONG result;
+            
+                if (!(gadget && ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH)))
+                if ((result = RunHotkeys(ie,IntuitionBase)))
                 {
-                *reuse_event = TRUE;
+                    //gadget = NULL;
+                    if (result == RUNHOTREUSE)
+                    {
+                        *reuse_event = TRUE;
+                    }
+                    else
+                    {
+                        *keep_event = FALSE;
+                    }
                 }
-                else
-                {
-                *keep_event = FALSE;
-                }
-            }
             }
 #endif
         }
@@ -1318,6 +1316,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     {
         struct Screen *scr;
         UWORD DWidth, DHeight;
+        struct Rectangle DBounds;
 
         if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
             //ULONG Thresh;
@@ -1368,20 +1367,17 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
         }
 
-        /* Calculate current display size.
-           It's determined by the first screen on this monitor.
-           TODO: perhaps we should just ask display driver about its current display mode? */
-        scr = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
-        if (scr)
+        if (GetPrivIBase(IntuitionBase)->ActiveMonitor)
         {
-            DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
-            DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
+            DoMethod(GetPrivIBase(IntuitionBase)->ActiveMonitor, MM_GetDisplayBounds, &DBounds);
+            DWidth = (DBounds.MaxX - DBounds.MinX) + 1;
+            DHeight = (DBounds.MaxY - DBounds.MinY) + 1;
         }
         else
         {
-            /* If there's no active screen, we take 160x160 as a limit */
-            DWidth = 160;
-            DHeight = 160;
+            /* If there's no active display, we take the prefs defined dimensions... */
+            DWidth = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width;
+            DHeight = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height;
         }
 
         scr = iihdata->ScreenDrag;
@@ -1826,6 +1822,12 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     return gadget;
 }
 
+
+
+
+
+/****************************************************************************************/
+/*                                                                                      */
 /****************************************************************************************/
 
 AROS_UFH2(struct InputEvent *, IntuiInputHandler,
