@@ -473,7 +473,7 @@ static SIPTR dd_Parent(struct DosPacket *pkt, globaldata * g)
 	{
 		FreeListEntry(parentfe, g);
 		pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
-		//NormalErrorMsg("ßE Parent failed", NULL);
+		//NormalErrorMsg("\DFE Parent failed", NULL);
 		return (0);
 	}
 
@@ -1519,7 +1519,7 @@ static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 
 	if (pkt->dp_Arg1 != DOSFALSE)   /* don't check for DOSTRUE (Holger Kruse!) */
 	{
-		while (g->currentvolume)    /* inefficiënt.. */
+		while (g->currentvolume)    /* inefficient.. */
 			DiskRemoveSequence(g);
 		g->inhibitcount++;
 		g->timeron = FALSE;
@@ -2170,7 +2170,7 @@ static void dd_ChangeFileSize64(struct DosPacket *pkt, globaldata *g)
 {
 	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	LONG error;
+	SIPTR error;
 	SFSIZE pos;
 
 	listentry = InitOS464(pkt, g, FALSE);
@@ -2189,7 +2189,7 @@ static void dd_GetFilePosition64(struct DosPacket *pkt, globaldata *g)
 {
 	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	LONG error;
+	SIPTR error;
 	SFSIZE pos;
 
 	listentry = InitOS464(pkt, g, TRUE);
@@ -2208,7 +2208,7 @@ static void dd_ChangeFilePosition64(struct DosPacket *pkt, globaldata *g)
 {
 	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	LONG error;
+	SIPTR error;
 	SFSIZE pos;
 
 	listentry = InitOS464(pkt, g, FALSE);
