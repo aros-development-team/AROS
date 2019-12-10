@@ -517,14 +517,18 @@ struct lru_cachedblock
 //#ifdef BETAVERSION
 //#define ID_PFS_DISK		(0x42455441L)	/*	'BETA'	*/
 //#else
+#ifndef ID_PFS_DISK
 #define ID_PFS_DISK		(0x50465301L)	/*  'PFS\1' */
+#endif
 //#endif
 #define ID_BUSY			(0x42555359L)	/*	'BUSY'  */
 
 #define ID_MUAF_DISK	(0x6d754146L)	/*	'muAF'	*/
 #define ID_MUPFS_DISK	(0x6d755046L)	/*	'muPF'	*/
 #define ID_AFS_DISK		(0x41465301L)	/*	'AFS\1' */
+#ifndef ID_PFS2_DISK
 #define ID_PFS2_DISK	(0x50465302L)	/*	'PFS\2'	*/
+#endif
 #define ID_AFS_USER_TEST (0x41465355L)	/*	'AFSU'	*/
 
 /* block id's		*/
