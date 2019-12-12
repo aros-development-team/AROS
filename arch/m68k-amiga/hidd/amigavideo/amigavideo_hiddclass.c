@@ -1218,6 +1218,49 @@ VOID AmigaVideoCl__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, str
     D(bug("[AmigaVideo:Hidd] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->TargetX, *msg->TargetY));
 }
 
+VOID AmigaVideoCl__Hidd_Gfx__BMToDisplayCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_BMToDisplayCoords *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigabm_data *tbmdata;
+
+    D(bug("[AmigaVideo:Hidd] %s: Target BitMap Object @ 0x%p\n", __func__, msg->Target));
+
+    tbmdata = OOP_INST_DATA(OOP_OCLASS(msg->Target), msg->Target);
+    if ((csd->interlaced && (tbmdata->interlace != 0)) ||
+        (!csd->interlaced && (tbmdata->interlace == 0)))
+    {
+        *msg->DispY = msg->TargetY;
+    }
+    else if (csd->interlaced && (tbmdata->interlace == 0))
+    {
+        *msg->DispY = msg->TargetY << 1;
+    }
+    else
+        *msg->DispY = msg->TargetY >> 1;
+
+    switch (tbmdata->res)
+    {
+        case 2:
+            *msg->DispX = msg->TargetX;
+            break;
+        
+        case 1:
+            if (csd->displaywidth > 640)
+                *msg->DispX = msg->TargetX << 1;
+            break;
+
+        default:
+            if (csd->displaywidth > 640)
+                *msg->DispX = msg->TargetX << 2;
+            if (csd->displaywidth > 320)
+                *msg->DispX = msg->TargetX << 1;
+            else
+                *msg->DispX = msg->TargetX;
+            break;
+    }
+    D(bug("[AmigaVideo:Hidd] %s: %d,%d -> %d,%d\n", __func__, msg->TargetX, msg->TargetY, *msg->DispX, *msg->DispY));
+}
+
 static void freeattrbases(struct amigavideo_staticdata *csd)
 {
     struct Library *OOPBase = csd->cs_OOPBase;
