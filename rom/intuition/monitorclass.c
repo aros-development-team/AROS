@@ -1200,10 +1200,7 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
 void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDisplayToScreenCoords *msg)
 {
     struct IMonitorNode *data = INST_DATA(cl, obj);
-    UWORD scrX = msg->DispX;
-    UWORD scrY = msg->DispY;
-
-    D(bug("[Monitor] %s()\n", __func__));
+    D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
 
     if ((data->FrameBufferType == vHidd_FrameBuffer_None) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
@@ -1215,8 +1212,8 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
             Target : HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
             DispX : msg->DispX,
             DispY : msg->DispY,
-            TargetX : &scrX,
-            TargetY : &scrY
+            TargetX : msg->ScrX,
+            TargetY : msg->ScrY
         };
         /* call the gfx driver to transform the co-ords */
 #if USE_FAST_DISPLAYTOBMCOORDS
@@ -1225,10 +1222,12 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
         OOP_DoMethod(data->handle->gfxhidd, (OOP_Msg)&dtbmcmsg.mID);
 #endif
     }
-    *msg->ScrX = scrX;
-    *msg->ScrY = scrY;
-
-    D(bug("[Monitor] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->ScrX, *msg->ScrY));
+    else
+    {
+        *msg->ScrX = msg->DispX;
+        *msg->ScrY = msg->DispY;
+    }
+    D(bug("[Monitor] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->ScrX, *msg->ScrY);)
 }
 
 

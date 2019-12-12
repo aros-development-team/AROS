@@ -1369,189 +1369,230 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
         if (GetPrivIBase(IntuitionBase)->ActiveMonitor)
         {
+            struct msDisplayToScreenCoords coordmsg =
+            {
+                MethodID : MM_DisplayToScreenCoords,
+            };
             DoMethod(GetPrivIBase(IntuitionBase)->ActiveMonitor, MM_GetDisplayBounds, &DBounds);
             DWidth = (DBounds.MaxX - DBounds.MinX) + 1;
             DHeight = (DBounds.MaxY - DBounds.MinY) + 1;
+            DEBUG_MONITOR(bug("[InputHandler] Display Dimensions: %dx%d\n", DWidth, DHeight);)
+
+            scr = iihdata->ScreenDrag;
+            if (scr) {
+                UWORD DragMode = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0];
+                UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
+                UWORD DSWidth, DSHeight;
+                WORD dx = iihdata->DeltaMouseX;
+                WORD dy = iihdata->DeltaMouseY;
+                WORD min, max, val;
+
+                coordmsg.Screen = scr;
+                coordmsg.DispX = DWidth;
+                coordmsg.DispY = DHeight;
+                coordmsg.ScrX = &DSWidth;
+                coordmsg.ScrY = &DSHeight;
+
+                DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
+
+                DEBUG_DRAG(
+                  bug("[InputHandler] = %dx%d in screen co-ords\n", DSWidth, DSHeight);
+                  bug("[InputHandler] Screen drag, delta = %d, %d\n", dx, dy);
+                )
+
+                /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
+                if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
+                    DEBUG_DRAG(bug("[Inputhandler] Restricting horizontal drag\n"));
+                    /* Calculate limits */
+                    if (scr->Width > DSWidth) {
+                        min = DSWidth - scr->Width;
+                        max = 0;
+                    } else {
+                        min = 0;
+                        max = DSWidth - scr->Width;
+                    }
+                    /* The purpose of the following complex check is to prevent jumping if the
+                       screen was positioned out of user drag limits by the program itself using
+                       ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
+                       on the dragging direction.
+                       Maybe the user should also be able to drag the screen back off-display in such
+                       a case?
+                       Calculate the position we would go to */
+                    val = scr->LeftEdge + dx;
+                    /* Determine the direction */
+                    if ((dx < 0) && ((!(spFlags & SF_ComposeRight)) || (DragMode & ICVDM_LBOUND))) {
+                        /* Can we move at all in this direction ? */
+                        if (scr->LeftEdge > min) {
+                            /* If too far, restrict it */
+                            if (val < min)
+                                dx = min - scr->LeftEdge;
+                        } else
+                            dx = 0; /* Just don't move if we can't */
+                    } else if ((!(spFlags & SF_ComposeLeft)) || (DragMode & ICVDM_RBOUND)) {
+                        if (scr->LeftEdge < max) {
+                            if (val > max)
+                                dx = max - scr->LeftEdge;
+                        } else
+                            dx = 0;
+                    }
+                    DEBUG_DRAG(bug("[Inputhandler] Restricted X delta will be %d\n", dx));
+                }
+                if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
+                    DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
+                    if (scr->Height > DSHeight) {
+                        min = DSHeight - scr->Height;
+                        max = 0;
+                    } else {
+                        min = 0;
+                        max = DSHeight - scr->Height;
+                    }
+                    DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
+                    val = scr->TopEdge + dy;
+                    DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
+                    if ((dy < 0)  && ((!(spFlags & SF_ComposeBelow)) || (DragMode & ICVDM_TBOUND))) {
+                        if (scr->TopEdge > min) {
+                            if (val < min)
+                                dy = min - scr->TopEdge;
+                        } else
+                            dy = 0;
+                    } else if ((!(spFlags & SF_ComposeAbove)) || (DragMode & ICVDM_BBOUND)) {
+                        if (scr->TopEdge < max) {
+                            if (val > max)
+                                dy = max - scr->TopEdge;
+                        } else
+                            dy = 0;
+                    }
+                    DEBUG_DRAG(bug("[Inputhandler] Restricted Y delta will be %d\n", dy));
+                }
+                if ((scr->TopEdge + dy) > DSHeight - (scr->BarHeight + scr->BarHBorder))
+                {
+                    DEBUG_DRAG(bug("[Inputhandler] Restricting to titlebar bounds\n");)
+
+                    dy = DSHeight - (scr->BarHeight + scr->BarHBorder) - scr->TopEdge;
+                    DEBUG_DRAG(bug("[Inputhandler] Title Restricted Y delta will be %d\n", dy);)
+                }
+                ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
+            }
+
+            /* Autoscroll the active screen */
+            scr = IntuitionBase->ActiveScreen;
+            if (scr && (scr->Flags & AUTOSCROLL) &&
+               (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
+            {
+                UWORD DSWidth, DSHeight;
+                WORD xval = scr->LeftEdge;
+                WORD yval = scr->TopEdge;
+                WORD min;
+
+                coordmsg.Screen = scr;
+                coordmsg.DispX = DWidth;
+                coordmsg.DispY = DHeight;
+                coordmsg.ScrX = &DSWidth;
+                coordmsg.ScrY = &DSHeight;
+
+                DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
+
+                DEBUG_AUTOSCROLL(
+                  bug("[InputHandler] = %dx%d in screen co-ords\n", DSWidth, DSHeight);
+                  bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
+                             scr, ie->ie_X, ie->ie_Y);
+                )
+
+                if ((ie->ie_X < 0) || (ie->ie_X >= DSWidth)) {
+                    DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
+                    xval -= iihdata->DeltaMouseX;
+
+                    if (ie->ie_X < 0) {
+                        if (xval > 0)
+                            xval = 0;
+                    } else if (ie->ie_X >= DSWidth) {
+                        min = DSWidth - scr->Width;
+                        if (xval < min)
+                            xval = min;
+                    }
+                }
+
+                if ((ie->ie_Y < 0) || (ie->ie_Y >= DSHeight)) {
+                    yval -= iihdata->DeltaMouseY;
+
+                    if (ie->ie_Y < 0) {
+                        /* If screen is dragged down and user touched upper screen
+                           boundary, do nothing */
+                        if (scr->TopEdge >= 0)
+                            yval = scr->TopEdge;
+                        else
+                            /* If scrolled down screen is being scrolled up, make sure it
+                               does not go over 0 */
+                            if (yval > 0)
+                                yval = 0;
+                    } else if (ie->ie_Y >= DSHeight) {
+                        min = DSHeight - scr->Height;
+                        if (yval < min)
+                            yval = min;
+                    }
+                }
+
+                if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
+                    ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
+            }
+
+            /* Restrict mouse coordinates to the physical display area */
+            if (ie->ie_X >= DWidth) ie->ie_X = DWidth - 1;
+            if (ie->ie_Y >= DHeight) ie->ie_Y = DHeight - 1;
+            if (ie->ie_X < 0) ie->ie_X = 0;
+            if (ie->ie_Y < 0) ie->ie_Y = 0;
+
+#ifdef SKINS
+            if (gadget == iihdata->MasterDragGadget) {
+                struct gpInput gpi;
+                ULONG            retval;
+
+                gpi.MethodID     = GM_MOVETEST;
+                gpi.gpi_GInfo     = gi;
+                gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
+                gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
+                gpi.gpi_IEvent  = ie;
+
+                retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
+                if (retval == MOVETEST_ADJUSTPOS)
+                {
+                    ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
+                    ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
+                }
+            }
+#endif
+            /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
+            if (iihdata->MouseBoundsActiveFlag) {            
+                if (ie->ie_X < iihdata->MouseBoundsLeft)
+                    ie->ie_X = iihdata->MouseBoundsLeft;
+                else if (ie->ie_X > iihdata->MouseBoundsRight)
+                    ie->ie_X = iihdata->MouseBoundsRight;
+                
+                if (ie->ie_Y < iihdata->MouseBoundsTop)
+                    ie->ie_Y = iihdata->MouseBoundsTop;
+                else if (ie->ie_Y > iihdata->MouseBoundsBottom)
+                    ie->ie_Y = iihdata->MouseBoundsBottom;
+            }
+
+            /* Prevent mouse going above all screens */
+            scr = FindHighestScreen(IntuitionBase);
+            if (scr) {
+                if (ie->ie_Y < scr->TopEdge)
+                    ie->ie_Y = scr->TopEdge;
+            }
         }
-        else
+        else /* !GetPrivIBase(IntuitionBase)->ActiveMonitor */
         {
-            /* If there's no active display, we take the prefs defined dimensions... */
+            /*
+             * If there's no active display, we take the prefs defined dimensions...
+             */
             DWidth = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width;
             DHeight = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height;
         }
 
-        scr = iihdata->ScreenDrag;
-        if (scr) {
-            WORD dx = iihdata->DeltaMouseX;
-            WORD dy = iihdata->DeltaMouseY;
-            WORD min, max, val;
-            UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
-            UWORD DragMode = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0];
-
-            DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
-
-            /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
-            if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
-                /* Calculate limits */
-                if (scr->Width > DWidth) {
-                    min = DWidth - scr->Width;
-                    max = 0;
-                } else {
-                    min = 0;
-                    max = DWidth - scr->Width;
-                }
-                /* The purpose of the following complex check is to prevent jumping if the
-                   screen was positioned out of user drag limits by the program itself using
-                   ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
-                   on the dragging direction.
-                   Maybe the user should also be able to drag the screen back off-display in such
-                   a case?
-                   Calculate the position we would go to */
-                val = scr->LeftEdge + dx;
-                /* Determine the direction */
-                if ((dx < 0) && ((!(spFlags & SF_ComposeRight)) || (DragMode & ICVDM_LBOUND))) {
-                    /* Can we move at all in this direction ? */
-                    if (scr->LeftEdge > min) {
-                        /* If too far, restrict it */
-                        if (val < min)
-                            dx = min - scr->LeftEdge;
-                    } else
-                        dx = 0; /* Just don't move if we can't */
-                } else if ((!(spFlags & SF_ComposeLeft)) || (DragMode & ICVDM_RBOUND)) {
-                    if (scr->LeftEdge < max) {
-                        if (val > max)
-                            dx = max - scr->LeftEdge;
-                    } else
-                        dx = 0;
-                }
-            }
-            if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
-                DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
-                DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, DHeight));
-                if (scr->Height > DHeight) {
-                    min = DHeight - scr->Height;
-                    max = 0;
-                } else {
-                    min = 0;
-                    max = DHeight - scr->Height;
-                }
-                DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
-                val = scr->TopEdge + dy;
-                DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
-                if ((dy < 0)  && ((!(spFlags & SF_ComposeBelow)) || (DragMode & ICVDM_TBOUND))) {
-                    if (scr->TopEdge > min) {
-                        if (val < min)
-                            dy = min - scr->TopEdge;
-                    } else
-                        dy = 0;
-                } else if ((!(spFlags & SF_ComposeAbove)) || (DragMode & ICVDM_BBOUND)) {
-                    if (scr->TopEdge < max) {
-                        if (val > max)
-                            dy = max - scr->TopEdge;
-                    } else
-                        dy = 0;
-                }
-                DEBUG_DRAG(bug("[Inputhandler] Restricted delta will be %d\n", dy));
-            }
-            ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
-        }
-
-        /* Autoscroll the active screen */
-        scr = IntuitionBase->ActiveScreen;
-        if (scr && (scr->Flags & AUTOSCROLL) &&
-           (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
-        {
-            WORD xval = scr->LeftEdge;
-            WORD yval = scr->TopEdge;
-            WORD min;
-
-            DEBUG_AUTOSCROLL(bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
-                         scr, ie->ie_X, ie->ie_Y));
-
-            if ((ie->ie_X < 0) || (ie->ie_X >= DWidth)) {
-                DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
-                xval -= iihdata->DeltaMouseX;
-
-                if (ie->ie_X < 0) {
-                    if (xval > 0)
-                        xval = 0;
-                } else if (ie->ie_X >= DWidth) {
-                    min = DWidth - scr->Width;
-                    if (xval < min)
-                        xval = min;
-                }
-            }
-
-            if ((ie->ie_Y < 0) || (ie->ie_Y >= DHeight)) {
-                yval -= iihdata->DeltaMouseY;
-
-                if (ie->ie_Y < 0) {
-                    /* If screen is dragged down and user touched upper screen
-                       boundary, do nothing */
-                    if (scr->TopEdge >= 0)
-                        yval = scr->TopEdge;
-                    else
-                        /* If scrolled down screen is being scrolled up, make sure it
-                           does not go over 0 */
-                        if (yval > 0)
-                            yval = 0;
-                } else if (ie->ie_Y >= DHeight) {
-                    min = DHeight - scr->Height;
-                    if (yval < min)
-                        yval = min;
-                }
-            }
-
-            if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
-                ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
-        }
-
-        /* Restrict mouse coordinates to the physical display area */
-        if (ie->ie_X >= DWidth) ie->ie_X = DWidth - 1;
-        if (ie->ie_Y >= DHeight) ie->ie_Y = DHeight - 1;
-        if (ie->ie_X < 0) ie->ie_X = 0;
-        if (ie->ie_Y < 0) ie->ie_Y = 0;
-
-#ifdef SKINS
-        if (gadget == iihdata->MasterDragGadget) {
-            struct gpInput gpi;
-            ULONG            retval;
-
-            gpi.MethodID     = GM_MOVETEST;
-            gpi.gpi_GInfo     = gi;
-            gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
-            gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
-            gpi.gpi_IEvent  = ie;
-
-            retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
-            if (retval == MOVETEST_ADJUSTPOS)
-            {
-                ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
-                ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
-            }
-        }
-#endif
-        /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
-        if (iihdata->MouseBoundsActiveFlag) {            
-            if (ie->ie_X < iihdata->MouseBoundsLeft)
-                ie->ie_X = iihdata->MouseBoundsLeft;
-            else if (ie->ie_X > iihdata->MouseBoundsRight)
-                ie->ie_X = iihdata->MouseBoundsRight;
-            
-            if (ie->ie_Y < iihdata->MouseBoundsTop)
-                ie->ie_Y = iihdata->MouseBoundsTop;
-            else if (ie->ie_Y > iihdata->MouseBoundsBottom)
-                ie->ie_Y = iihdata->MouseBoundsBottom;
-        }
-
-        /* Prevent mouse going above all screens */
-        scr = FindHighestScreen(IntuitionBase);
-        if (scr) {
-            if (ie->ie_Y < scr->TopEdge)
-                ie->ie_Y = scr->TopEdge;
-        }
-
-        /* Store new mouse coords. If a screen is being dragged, lock drag point */
+        /*
+         * Store new mouse coords. If a screen is being dragged, lock drag point
+         */
         scr = iihdata->ScreenDrag;
         if (scr) {
             IntuitionBase->MouseX = scr->LeftEdge + iihdata->ScreenDragPointX;
