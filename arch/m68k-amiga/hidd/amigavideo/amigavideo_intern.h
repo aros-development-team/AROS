@@ -68,6 +68,9 @@ struct amigavideo_staticdata
     struct MinList              c2fragments;
     struct MinList              c2ifragments;
 
+    UWORD                        displaywidth;
+    UWORD                        displayheight;
+
     struct Interrupt            inter;
     volatile UWORD              framecounter;
     struct amigabm_data         *updatescroll;

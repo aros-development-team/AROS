@@ -1243,9 +1243,10 @@ static VOID gfx_vblank_detachbm(struct amigavideo_staticdata *csd, struct amigab
     }
 }
 
-VOID gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
+static BOOL gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
 {
     struct amigabm_data *bm, *bmsafe, *bmtmp;
+    BOOL retval = FALSE;
 
     ForeachNodeSafe(csd->compositedbms, bm, bmsafe)
     {
@@ -1291,6 +1292,7 @@ VOID gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
         else if (bm == csd->updatescroll)
         {
             UWORD toptmp; 
+            retval = TRUE;
 
             if (bm->updtop < bm->topedge)
             {
@@ -1420,7 +1422,7 @@ VOID gfx_vblank_doupdatescroll(struct amigavideo_staticdata *csd)
         }
     }
     D(bug("[AmigaVideo] %s: updatescroll processed\n", __func__);)
-    csd->updatescroll = NULL;
+    return retval;
 }
 static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
 { 
@@ -1434,15 +1436,12 @@ static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, csd)
     if (csd->updatescroll) {
         D(bug("[AmigaVideo] %s: handling updatescroll\n", __func__);)
 
-        if (IsListEmpty(csd->compositedbms))
+        if ((IsListEmpty(csd->compositedbms)) || (!gfx_vblank_doupdatescroll(csd)))
         {
-            /* triggered for an obscured screen with no other screens */
+            /* obscurred dragging bitmap has become visible */
+            D(bug("[AmigaVideo] %s: re-displaying 0x%p\n", __func__, csd->updatescroll);)
         }
-        else
-        {
-            /* process the display chain */
-            gfx_vblank_doupdatescroll(csd);
-        }
+        csd->updatescroll = NULL;
     }
 
     /* is any displayed screen interlaced? */

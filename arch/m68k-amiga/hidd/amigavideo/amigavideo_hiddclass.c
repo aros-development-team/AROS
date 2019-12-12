@@ -850,16 +850,19 @@ BOOL AmigaVideoCl__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, ULONG Type, ULONG *
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    UBYTE res = 0;
+    UBYTE res = 0, cursy;
     BOOL interlace = FALSE;
 
     struct amigabm_data *bm;
     ForeachNode(csd->compositedbms, bm)
     {
-        if ((msg->y >> csd->interlaced) < ((bm->topedge + bm->displayheight) >> bm->interlace))
+        cursy = msg->y;
+        if (csd->interlaced)
+            cursy >>= 1;
+        if (cursy < ((bm->topedge + bm->displayheight) >> bm->interlace))
         {
             res = bm->res;
-            interlace = bm->interlace;
+            interlace = (bm->interlace != 0);
             break;
         }
     }
@@ -998,7 +1001,7 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
 #endif
         copl = usercopl->CopLStart;
         D(bug("[AmigaVideo:Hidd] %s:   CopList->CopLStart = 0x%p\n", __func__, copl);)
-        if (bmdata->interlace)
+        if (bmdata->interlace != 0)
         {
 #if !USE_UCOP_DIRECT
             if (!usercopl->CopSStart)
@@ -1113,7 +1116,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, str
             D(bug("[AmigaVideo:Hidd] %s:    copperlist data @ 0x%p\n", __func__, bmdata->bmcl->CopLStart);)
             bmdata->bmcl->Count = ((IPTR)populatebmcopperlist(csd, bmdata, &bmdata->copld, bmdata->bmcl->CopLStart, FALSE) - (IPTR)bmdata->bmcl->CopLStart) >> 2;
 
-            if (bmdata->interlace)
+            if (bmdata->interlace != 0)
             {
                 if (!(bmdata->bmcl->CopSStart))
                 {
@@ -1137,7 +1140,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, str
             {
 #if USE_UCOP_DIRECT
                 vpd->vpe->ViewPort->UCopIns->FirstCopList->CopLStart = bmdata->copld.copper2_tail;
-                if (bmdata->interlace)
+                if (bmdata->interlace != 0)
                     vpd->vpe->ViewPort->UCopIns->FirstCopList->CopSStart = bmdata->copsd.copper2_tail;
 #endif
                 AmigaVideo_ParseCopperlist(csd, bmdata, vpd->vpe->ViewPort->UCopIns->FirstCopList);
@@ -1168,6 +1171,51 @@ ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct
 #endif
 
     return TRUE;
+}
+
+VOID AmigaVideoCl__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisplayToBMCoords *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigabm_data *tbmdata;
+
+    D(bug("[AmigaVideo:Hidd] %s: Target BitMap Object @ 0x%p\n", __func__, msg->Target));
+
+    tbmdata = OOP_INST_DATA(OOP_OCLASS(msg->Target), msg->Target);
+    if ((csd->interlaced && (tbmdata->interlace != 0)) ||
+        (!csd->interlaced && (tbmdata->interlace == 0)))
+    {
+        *msg->TargetY = msg->DispY;
+    }
+    else if (csd->interlaced && (tbmdata->interlace == 0))
+    {
+        *msg->TargetY = msg->DispY >> 1;
+    }
+    else
+        *msg->TargetY = msg->DispY << 1;
+
+    switch (tbmdata->res)
+    {
+        case 2:
+            *msg->TargetX = msg->DispX;
+            break;
+        
+        case 1:
+            if (csd->displaywidth > 640)
+                *msg->TargetX = msg->DispX >> 1;
+            else
+                *msg->TargetX = msg->DispX;
+            break;
+
+        default:
+            if (csd->displaywidth > 640)
+                *msg->TargetX = msg->DispX >> 2;
+            if (csd->displaywidth > 320)
+                *msg->TargetX = msg->DispX >> 1;
+            else
+                *msg->TargetX = msg->DispX;
+            break;
+    }
+    D(bug("[AmigaVideo:Hidd] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->TargetX, *msg->TargetY));
 }
 
 static void freeattrbases(struct amigavideo_staticdata *csd)

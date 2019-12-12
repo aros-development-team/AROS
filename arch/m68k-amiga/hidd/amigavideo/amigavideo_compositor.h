@@ -17,9 +17,6 @@ struct amigacomposit_data
 
    struct SignalSemaphore      semaphore;
 
-   UWORD                        displaywidth;
-   UWORD                        displayheight;
-
    OOP_Object                  *gfx;           /* GFX driver object */
    struct Task                 *housekeeper;
 };
