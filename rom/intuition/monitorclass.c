@@ -1145,8 +1145,8 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
         {
             D(bug("[Monitor] %s: no visible screens - using fallback bounds.\n", __func__));
             data->FBBounds.MinX = 0;
-            data->FBBounds.MaxX = 0;
-            data->FBBounds.MinY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
+            data->FBBounds.MaxX = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
+            data->FBBounds.MinY = 0;
             data->FBBounds.MaxY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height - 1;
         }
     }
@@ -1227,7 +1227,7 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
     }
     *msg->ScrX = scrX;
     *msg->ScrY = scrY;
-    
+
     D(bug("[Monitor] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->ScrX, *msg->ScrY));
 }
 
