@@ -1290,7 +1290,7 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
         };
         /* call the gfx driver to transform the co-ords */
 #if USE_FAST_BMTODISPLAYCOORDS
-        data->bttodisplaycoords(data->bmtodisplaycoords_Class, data->handle->gfxhidd, (OOP_Msg)&bmtdcmsg.mID);
+        data->bmtodisplaycoords(data->bmtodisplaycoords_Class, data->handle->gfxhidd, (OOP_Msg)&bmtdcmsg.mID);
 #else
         OOP_DoMethod(data->handle->gfxhidd, (OOP_Msg)&bmtdcmsg.mID);
 #endif
