@@ -19,6 +19,7 @@
 #define MM_Calc3dCapability         0x2407 /* Calculate 3D capability index                         */
 #define MM_GetDisplayBounds         0x2408 /*                                                       */
 #define MM_DisplayToScreenCoords    0x2409 /*                                                       */
+#define MM_ScreenToDisplayCoords    0x240A /*                                                       */
 
 struct msGetDisplayBounds
 {
@@ -34,6 +35,16 @@ struct msDisplayToScreenCoords
     STACKED UWORD                   DispY;
     STACKED UWORD                   *ScrX;
     STACKED UWORD                   *ScrY;
+};
+
+struct msScreenToDisplayCoords
+{
+    STACKED ULONG                   MethodID;
+    STACKED struct Screen           *Screen;
+    STACKED UWORD                   ScrX;
+    STACKED UWORD                   ScrY;
+    STACKED UWORD                   *DispX;
+    STACKED UWORD                   *DispY;
 };
 
 struct msGetCompositionFlags
