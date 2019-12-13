@@ -14,7 +14,6 @@
 #include <graphics/displayinfo.h>
 #include <aros/libcall.h>
 #include <proto/alib.h>
-#include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/kernel.h>
 #include <proto/oop.h>
@@ -22,17 +21,12 @@
 #include <oop/oop.h>
 
 #include <hidd/hidd.h>
-#ifndef GRAPHICS_VIEW_H
-#   include <graphics/view.h>
-#endif
 #include <aros/symbolsets.h>
 
 #include LC_LIBDEFS_FILE
 
 #include "chipset.h"
 #include "blitter.h"
-
-#include <aros/debug.h>
 
 #define SPECIALMODES 3
 #define NATIVEMODES (3 * 4 * SPECIALMODES)
@@ -211,34 +205,41 @@ BOOL AmigaVideoCl__Hidd_Gfx__GetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 #define ADDTAG(tag,data) { *tagptr++ = tag; *tagptr++ = data; }
 
-
 static void makemodename(ULONG modeid, UBYTE *bufptr)
 {
+    char tmpl[] = "%s:%s%s%s%s%s%s";
+    IPTR modeargs[7];
     BOOL special = FALSE;
-    
+    int count = 0;
+
     special = (modeid & SPECIAL_MODE_MASK) != 0;
-    bufptr[0] = 0;
+
     if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)
-        strcat(bufptr, "PAL");
+        modeargs[0] = (IPTR)"PAL";
     else if ((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID)
-        strcat (bufptr, "NTSC");
-    strcat(bufptr, ":");
+        modeargs[0] = (IPTR)"NTSC";
+
     if ((modeid & (HIRES_KEY | SUPER_KEY)) == LORES_KEY)
-        strcat(bufptr, special ? "LowRes" : "Low Res");
+        modeargs[1] = special ? (IPTR)"LowRes" : (IPTR)"Low Res";
     else if ((modeid & (HIRES_KEY | SUPER_KEY)) == HIRES_KEY)
-        strcat(bufptr, special ? "HighRes" : "High Res");
+        modeargs[1] = special ? (IPTR)"HighRes" : (IPTR)"High Res";
     else
-        strcat(bufptr, special ? "SuperHighRes" : "Super-High Res");
+        modeargs[1] = special ? (IPTR)"SuperHighRes" : (IPTR)"Super-High Res";
+
     if (modeid & HAM_KEY)
-        strcat(bufptr, " HAM");
+        modeargs[2 + count++] = (IPTR)" HAM";
     if (modeid & EXTRAHALFBRITE_KEY)
-        strcat(bufptr, " EHB");
+        modeargs[2 + count++] = (IPTR)" EHB";
     if ((modeid & LORESDPF2_KEY) == LORESDPF_KEY)
-        strcat(bufptr, " DualPF");
+        modeargs[2 + count++] = (IPTR)" DualPF";
     if ((modeid & LORESDPF2_KEY) == LORESDPF2_KEY)
-        strcat(bufptr, " DualPF2");
+        modeargs[2 + count++] = (IPTR)" DualPF2";
     if (modeid & LORESLACE_KEY)
-        strcat(bufptr, special ? " Interlace" : " Laced");
+        modeargs[2 + count++] = special ? (IPTR)" Interlace" : (IPTR)" Laced";
+
+    tmpl[5 + (count << 1)] = '\0';
+    RawDoFmt(tmpl, (RAWARG)modeargs, RAWFMTFUNC_STRING, bufptr);
+
     DB2(bug("[AmigaVideo:Hidd] %s: %08x '%s'\n", __func__, modeid, bufptr));
 }
 
@@ -266,11 +267,11 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     struct Library *OOPBase = csd->cs_OOPBase;
     struct TagItem mytags[] =
     {
-        { aHidd_Gfx_ModeTags    , (IPTR)NULL   },
-        { aHidd_Name            , (IPTR)"amigavideo.hidd"     },
-        { aHidd_HardwareName    , (IPTR)"Amiga Native Display Hardware"   },
-        { aHidd_ProducerName    , (IPTR)"Commodore International"  },
-        { TAG_MORE              , (IPTR)msg->attrList       }
+        { aHidd_Gfx_ModeTags,   (IPTR)NULL              },
+        { aHidd_Name,           (IPTR)"amigavideo.hidd" },
+        { aHidd_HardwareName,   0                       },
+        { aHidd_ProducerName,   (IPTR)"Commodore"       },
+        { TAG_MORE,             (IPTR)msg->attrList     }
     };
     struct pRoot_New mymsg;
     ULONG allocsize = 3000, allocsizebuf = 1000;
@@ -286,6 +287,26 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
     if (csd->initialized)
         return NULL;
+
+    /* construct the hardware name .. */
+    {
+        IPTR rdfargs[2];
+
+        if (csd->aga)
+            rdfargs[0] = (IPTR)"AGA";
+        else if ((csd->ecs_agnus) || (csd->ecs_denise))
+            rdfargs[0] = (IPTR)"ECS";        
+        else
+            rdfargs[0] = (IPTR)"OCS";
+        if (GfxBase->DisplayFlags & NTSC)
+            rdfargs[1] = (IPTR)"NTSC";
+        else
+            rdfargs[1] = (IPTR)"PAL";
+
+        mytags[2].ti_Data = (IPTR)AllocVec(strlen((char *)rdfargs[0]) + strlen((char *)rdfargs[1]) + 32, MEMF_PUBLIC);
+        RawDoFmt("Amiga %s Chipset %s Display Hardware", (RAWARG)rdfargs, RAWFMTFUNC_STRING, mytags[2].ti_Data);
+        D(bug("[AmigaVideo:Hidd] %s: Hardware = '%s'\n", __func__, mytags[2].ti_Data));
+    }
 
     NewList(&csd->nativemodelist);
     tags = tagptr = AllocVec(allocsize, MEMF_PUBLIC | MEMF_REVERSE);
@@ -384,23 +405,10 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         ADDTAG(TAG_DONE, 0);
         
         pftags_aga[1] = tagptr;
-        ADDTAG(aHidd_PixFmt_RedShift,		 8);
-        ADDTAG(aHidd_PixFmt_GreenShift, 	16);
-        ADDTAG(aHidd_PixFmt_BlueShift,		24);
-        ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
-        ADDTAG(aHidd_PixFmt_RedMask,		0x00FF0000);
-        ADDTAG(aHidd_PixFmt_GreenMask,		0x0000FF00);
-        ADDTAG(aHidd_PixFmt_BlueMask,		0x000000FF);
-        ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
-        ADDTAG(aHidd_PixFmt_CLUTMask,		0x000000FF);
-        ADDTAG(aHidd_PixFmt_CLUTShift,		0);
-        ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
-        ADDTAG(aHidd_PixFmt_Depth,		6);
-        ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
-        ADDTAG(aHidd_PixFmt_BitsPerPixel,	6);
-        ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
-        ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
-        ADDTAG(TAG_DONE, 0);
+        CopyMemQuick(pftags_aga[0], pftags_aga[1], (17 << 3));
+        tagptr[23] = 6;
+        tagptr[27] = 6;
+        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
 
         pftags_aga[2] = NULL;
 
@@ -449,61 +457,22 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         ADDTAG(TAG_DONE, 0);
 
         pftags_ecs_hires = tagptr;
-        ADDTAG(aHidd_PixFmt_RedShift,		20);
-        ADDTAG(aHidd_PixFmt_GreenShift, 	24);
-        ADDTAG(aHidd_PixFmt_BlueShift,		28);
-        ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
-        ADDTAG(aHidd_PixFmt_RedMask,		0x00000F00);
-        ADDTAG(aHidd_PixFmt_GreenMask,		0x000000F0);
-        ADDTAG(aHidd_PixFmt_BlueMask,		0x0000000F);
-        ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
-        ADDTAG(aHidd_PixFmt_CLUTMask,		0x0000001F);
-        ADDTAG(aHidd_PixFmt_CLUTShift,		0);
-        ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
-        ADDTAG(aHidd_PixFmt_Depth,		4);
-        ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
-        ADDTAG(aHidd_PixFmt_BitsPerPixel,	4);
-        ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
-        ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
-        ADDTAG(TAG_DONE, 0);
+        CopyMemQuick(pftags_ecs_lores, pftags_ecs_hires, (17 << 3));
+        tagptr[23] = 4;
+        tagptr[27] = 4;
+        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
 
         pftags_ecs_shres = tagptr;
-        ADDTAG(aHidd_PixFmt_RedShift,		20);
-        ADDTAG(aHidd_PixFmt_GreenShift, 	24);
-        ADDTAG(aHidd_PixFmt_BlueShift,		28);
-        ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
-        ADDTAG(aHidd_PixFmt_RedMask,		0x00000F00);
-        ADDTAG(aHidd_PixFmt_GreenMask,		0x000000F0);
-        ADDTAG(aHidd_PixFmt_BlueMask,		0x0000000F);
-        ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
-        ADDTAG(aHidd_PixFmt_CLUTMask,		0x0000001F);
-        ADDTAG(aHidd_PixFmt_CLUTShift,		0);
-        ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
-        ADDTAG(aHidd_PixFmt_Depth,		2);
-        ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
-        ADDTAG(aHidd_PixFmt_BitsPerPixel,	2);
-        ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
-        ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
-        ADDTAG(TAG_DONE, 0);
+        CopyMemQuick(pftags_ecs_lores, pftags_ecs_shres, (17 << 3));
+        tagptr[23] = 2;
+        tagptr[27] = 2;
+        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
 
         pftags_ecs_6 = tagptr;
-        ADDTAG(aHidd_PixFmt_RedShift,		20);
-        ADDTAG(aHidd_PixFmt_GreenShift, 	24);
-        ADDTAG(aHidd_PixFmt_BlueShift,		28);
-        ADDTAG(aHidd_PixFmt_AlphaShift,		 0);
-        ADDTAG(aHidd_PixFmt_RedMask,		0x00000F00);
-        ADDTAG(aHidd_PixFmt_GreenMask,		0x000000F0);
-        ADDTAG(aHidd_PixFmt_BlueMask,		0x0000000F);
-        ADDTAG(aHidd_PixFmt_AlphaMask,		0x00000000);
-        ADDTAG(aHidd_PixFmt_CLUTMask,		0x0000001F);
-        ADDTAG(aHidd_PixFmt_CLUTShift,		0);
-        ADDTAG(aHidd_PixFmt_ColorModel,		vHidd_ColorModel_Palette);
-        ADDTAG(aHidd_PixFmt_Depth,		6);
-        ADDTAG(aHidd_PixFmt_BytesPerPixel,	1);
-        ADDTAG(aHidd_PixFmt_BitsPerPixel,	6);
-        ADDTAG(aHidd_PixFmt_StdPixFmt,		vHidd_StdPixFmt_Plane);
-        ADDTAG(aHidd_PixFmt_BitMapType,		vHidd_BitMapType_Planar);
-        ADDTAG(TAG_DONE, 0);
+        CopyMemQuick(pftags_ecs_lores, pftags_ecs_6, (17 << 3));
+        tagptr[23] = 6;
+        tagptr[27] = 6;
+        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
 
         mode_tags_ecs = tagptr;
         ADDTAG(aHidd_Sync_HMin,		112);
@@ -561,8 +530,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     EnterFunc(bug("[AmigaVideo:Hidd] %s()\n", __func__));
 
     D(
-      bug("[AmigaVideo:Hidd] %s: alloc=%d alloced=%d\n", __func__, allocsize, (ULONG)tagptr - (ULONG)tags);
-      bug("[AmigaVideo:Hidd] %s: allocbuf=%d allocedbuf=%d\n", __func__, allocsizebuf, bufptr - buf);
+      bug("[AmigaVideo:Hidd] %s: tags @ 0x%p, alloc=%d used=%d\n", __func__, tags, allocsize, (ULONG)tagptr - (ULONG)tags);
+      bug("[AmigaVideo:Hidd] %s: buf @ 0x%p, alloc=%d used=%d\n", __func__, buf, allocsizebuf, bufptr - buf);
      )
 
     mymsg.mID	= msg->mID;
@@ -787,6 +756,14 @@ VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *m
             D(bug("[AmigaVideo:Hidd] %s: ->%d\n", __func__, idx));
             switch(idx)
             {
+            case aoHidd_Gfx_DisplayChangeCallBack:
+                csd->ccb = (void *)tag->ti_Data;
+                break;
+
+            case aoHidd_Gfx_DisplayChangeCallBackData:
+                csd->ccbdata = (APTR)tag->ti_Data;
+                break;
+
             case aoHidd_Gfx_ActiveCallBack:
                 csd->acb = (void *)tag->ti_Data;
                 break;
@@ -873,17 +850,19 @@ BOOL AmigaVideoCl__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, ULONG Type, ULONG *
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    UBYTE res = 0;
+    UBYTE res = 0, cursy;
     BOOL interlace = FALSE;
 
     struct amigabm_data *bm;
     ForeachNode(csd->compositedbms, bm)
     {
-        if (((bm->interlace) && ((msg->y >> 1) < (bm->topedge + bm->displayheight))) ||
-            ((!bm->interlace) && (msg->y < (bm->topedge + bm->displayheight))))
+        cursy = msg->y;
+        if (csd->interlaced)
+            cursy >>= 1;
+        if (cursy < ((bm->topedge + bm->displayheight) >> bm->interlace))
         {
             res = bm->res;
-            interlace = bm->interlace;
+            interlace = (bm->interlace != 0);
             break;
         }
     }
@@ -908,7 +887,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct 
     D(bug("[AmigaVideo:Hidd] %s: initial ViewPort->DspIns=0x%p\n", __func__, vpd->vpe->ViewPort->DspIns));
 
     /* Allocate copperlist storage */
-    if ((vpd->vpe->ViewPort->DspIns = AllocMem(sizeof(struct CopList), MEMF_CLEAR)) == NULL)
+    if ((vpd->vpe->ViewPort->DspIns = AllocMem(sizeof(struct CopList), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
         retval = MVP_NO_MEM;
     else
     {
@@ -1013,22 +992,27 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
         bmdata->bmuclsize = (count << 2);
         usercopl = copFirst;
 
+#if !USE_UCOP_DIRECT
         if (!usercopl->CopLStart)
         {
-            usercopl->CopLStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_CHIP);
+            /* user copperlist is allocated in any memory, since it is copied into the actual copperlist.. */
+            usercopl->CopLStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_PUBLIC);
         }
+#endif
         copl = usercopl->CopLStart;
         D(bug("[AmigaVideo:Hidd] %s:   CopList->CopLStart = 0x%p\n", __func__, copl);)
-        if (bmdata->interlace)
+        if (bmdata->interlace != 0)
         {
+#if !USE_UCOP_DIRECT
             if (!usercopl->CopSStart)
             {
-                usercopl->CopSStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_CHIP);
+                usercopl->CopSStart = AllocVec(((count + 2) << 2), MEMF_CLEAR | MEMF_PUBLIC);
             }
+#endif
             cops = usercopl->CopSStart;
             D(bug("[AmigaVideo:Hidd] %s:   CopList->CopList = 0x%p\n", __func__, cops);)
         }
-        
+
         while ((!ucend) && (count-- > 0))
         {
             switch (copIns->OpCode)
@@ -1038,7 +1022,7 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
                     copIns = copIns->u3.nxtlist->CopIns;
                     continue;
                 case COPPER_MOVE:
-                    D(bug("[AmigaVideo:Hidd] %s:     CMOVE\n", __func__);)
+                    D(bug("[AmigaVideo:Hidd] %s:     CMOVE *(%04x) = %04x\n", __func__, copIns->u3.u4.u1.DestAddr, copIns->u3.u4.u2.DestData);)
                     COPPEROUT(copl, copIns->u3.u4.u1.DestAddr, copIns->u3.u4.u2.DestData)
                     if (cops)
                     {
@@ -1047,18 +1031,17 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
                     break;
                 case COPPER_WAIT:
                     {
-                        D(bug("[AmigaVideo:Hidd] %s:     CWAIT\n", __func__);)
+                        D(bug("[AmigaVideo:Hidd] %s:     CWAIT v0x%02x,h0x%02x\n", __func__, copIns->u3.u4.u1.VWaitPos, copIns->u3.u4.u2.HWaitPos);)
                         UWORD   movey = csd->starty + copIns->u3.u4.u1.VWaitPos + (bmdata->topedge >> bmdata->interlace),
                                 movex = csd->startx + copIns->u3.u4.u2.HWaitPos;
 
                         /* If its the end of the user copperlist, or the displayheight of the bitmap,  bail out.. */
                         if (!((copIns->u3.u4.u1.VWaitPos == 1000) && (copIns->u3.u4.u2.HWaitPos == 0xFF)) &&
-                            (copIns->u3.u4.u1.VWaitPos < bmdata->displayheight))
+                            (copIns->u3.u4.u1.VWaitPos < (bmdata->displayheight >> bmdata->interlace)))
                         {
                             if (!passed && (movey > 256))
                             {
                                 COPPEROUT(copl, 0xFFDF, 0xFFFE)
-                                passed = TRUE;
                             }
                             COPPEROUT(copl, (movey << 8) | (movex << 1) | 0x1, 0xFFFE)
                             if (cops)
@@ -1085,13 +1068,23 @@ void AmigaVideo_ParseCopperlist(struct amigavideo_staticdata *csd, struct amigab
         if (count > 0)
         {
             /* adjust to reflect the actual used size .. */
+            D(bug("[AmigaVideo:Hidd] %s: adjusting for %d unused instructions\n", __func__, count);)
             bmdata->bmuclsize -= (count << 2);
+#if defined(USE_COPPER_NOP_FILL)
+            while (count-- > 0)
+            {
+                COPPEROUT(copl, 0x01fe, 0xfffe)
+                if (cops)
+                {
+                    COPPEROUT(cops, 0x01fe, 0xfffe)
+                }
+            }
+#endif
         }
 #if USE_UCOP_DIRECT
-        if (bmdata->copld.copper2_tail == copFirst->CopLStart)
-            bmdata->copld.copper2_tail = (APTR)((IPTR)bmdata->copld.copper2_tail + bmdata->bmuclsize);
-        if ((cops) && (bmdata->copsd.copper2_tail == copFirst->CopSStart))
-            bmdata->copsd.copper2_tail = (APTR)((IPTR)bmdata->copsd.copper2_tail + bmdata->bmuclsize);
+        bmdata->copld.copper2_tail = (APTR)((IPTR)usercopl->CopLStart + bmdata->bmuclsize);
+        if (cops)
+            bmdata->copsd.copper2_tail = (APTR)((IPTR)usercopl->CopSStart + bmdata->bmuclsize);
 #endif
         bmdata->bmucl = usercopl;
     }
@@ -1123,7 +1116,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, str
             D(bug("[AmigaVideo:Hidd] %s:    copperlist data @ 0x%p\n", __func__, bmdata->bmcl->CopLStart);)
             bmdata->bmcl->Count = ((IPTR)populatebmcopperlist(csd, bmdata, &bmdata->copld, bmdata->bmcl->CopLStart, FALSE) - (IPTR)bmdata->bmcl->CopLStart) >> 2;
 
-            if (bmdata->interlace)
+            if (bmdata->interlace != 0)
             {
                 if (!(bmdata->bmcl->CopSStart))
                 {
@@ -1147,7 +1140,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, str
             {
 #if USE_UCOP_DIRECT
                 vpd->vpe->ViewPort->UCopIns->FirstCopList->CopLStart = bmdata->copld.copper2_tail;
-                if (bmdata->interlace)
+                if (bmdata->interlace != 0)
                     vpd->vpe->ViewPort->UCopIns->FirstCopList->CopSStart = bmdata->copsd.copper2_tail;
 #endif
                 AmigaVideo_ParseCopperlist(csd, bmdata, vpd->vpe->ViewPort->UCopIns->FirstCopList);
@@ -1178,6 +1171,94 @@ ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct
 #endif
 
     return TRUE;
+}
+
+VOID AmigaVideoCl__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisplayToBMCoords *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigabm_data *tbmdata;
+
+    D(bug("[AmigaVideo:Hidd] %s: Target BitMap Object @ 0x%p\n", __func__, msg->Target));
+
+    tbmdata = OOP_INST_DATA(OOP_OCLASS(msg->Target), msg->Target);
+    if ((csd->interlaced && (tbmdata->interlace != 0)) ||
+        (!csd->interlaced && (tbmdata->interlace == 0)))
+    {
+        *msg->TargetY = msg->DispY;
+    }
+    else if (csd->interlaced && (tbmdata->interlace == 0))
+    {
+        *msg->TargetY = msg->DispY >> 1;
+    }
+    else
+        *msg->TargetY = msg->DispY << 1;
+
+    switch (tbmdata->res)
+    {
+        case 2:
+            *msg->TargetX = msg->DispX;
+            break;
+        
+        case 1:
+            if (csd->displaywidth > 640)
+                *msg->TargetX = msg->DispX >> 1;
+            else
+                *msg->TargetX = msg->DispX;
+            break;
+
+        default:
+            if (csd->displaywidth > 640)
+                *msg->TargetX = msg->DispX >> 2;
+            if (csd->displaywidth > 320)
+                *msg->TargetX = msg->DispX >> 1;
+            else
+                *msg->TargetX = msg->DispX;
+            break;
+    }
+    D(bug("[AmigaVideo:Hidd] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->TargetX, *msg->TargetY));
+}
+
+VOID AmigaVideoCl__Hidd_Gfx__BMToDisplayCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_BMToDisplayCoords *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct amigabm_data *tbmdata;
+
+    D(bug("[AmigaVideo:Hidd] %s: Target BitMap Object @ 0x%p\n", __func__, msg->Target));
+
+    tbmdata = OOP_INST_DATA(OOP_OCLASS(msg->Target), msg->Target);
+    if ((csd->interlaced && (tbmdata->interlace != 0)) ||
+        (!csd->interlaced && (tbmdata->interlace == 0)))
+    {
+        *msg->DispY = msg->TargetY;
+    }
+    else if (csd->interlaced && (tbmdata->interlace == 0))
+    {
+        *msg->DispY = msg->TargetY << 1;
+    }
+    else
+        *msg->DispY = msg->TargetY >> 1;
+
+    switch (tbmdata->res)
+    {
+        case 2:
+            *msg->DispX = msg->TargetX;
+            break;
+        
+        case 1:
+            if (csd->displaywidth > 640)
+                *msg->DispX = msg->TargetX << 1;
+            break;
+
+        default:
+            if (csd->displaywidth > 640)
+                *msg->DispX = msg->TargetX << 2;
+            if (csd->displaywidth > 320)
+                *msg->DispX = msg->TargetX << 1;
+            else
+                *msg->DispX = msg->TargetX;
+            break;
+    }
+    D(bug("[AmigaVideo:Hidd] %s: %d,%d -> %d,%d\n", __func__, msg->TargetX, msg->TargetY, *msg->DispX, *msg->DispY));
 }
 
 static void freeattrbases(struct amigavideo_staticdata *csd)

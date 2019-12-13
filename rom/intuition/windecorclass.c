@@ -62,7 +62,7 @@
 
 /**************************************************************************************************/
 
-static inline getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize)
+static inline VOID getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize)
 {
     switch (FRAME_SIZE(IntuitionBase))
     {

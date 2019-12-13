@@ -514,7 +514,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
             *keep_event = FALSE;
-        break;
+            break;
         }
 
 #ifdef SKINS
@@ -522,103 +522,101 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 #endif
         if (MENUS_ACTIVE)
         {
-        FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
-        *keep_event = FALSE;
-        break;
+            FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
+            *keep_event = FALSE;
+            break;
         }
 
 #ifdef SKINS
         if (!gadget && w)
         {
-        struct Gadget * draggadget = 0;
+            struct Gadget * draggadget = 0;
 
-        if ((!(w->FirstRequest)) && (w->Flags & WFLG_DRAGBAR) && MatchHotkey(ie,IA_ACTIVEWINDOWMOVE,IntuitionBase))
-        {
-            if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
+            if ((!(w->FirstRequest)) && (w->Flags & WFLG_DRAGBAR) && MatchHotkey(ie,IA_ACTIVEWINDOWMOVE,IntuitionBase))
             {
-            for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
-            {
-                if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING)
+                if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
                 {
-                gadget = draggadget;
-                new_gadget = TRUE;
-                break;
+                    for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
+                    {
+                        if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING)
+                        {
+                            gadget = draggadget;
+                            new_gadget = TRUE;
+                            break;
+                        }
+                    }
                 }
             }
-            }
-        }
 
-        if ((!(w->FirstRequest)) && (w->Flags & WFLG_SIZEGADGET) && MatchHotkey(ie,IA_ACTIVEWINDOWSIZE,IntuitionBase))
-        {
-            if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
+            if ((!(w->FirstRequest)) && (w->Flags & WFLG_SIZEGADGET) && MatchHotkey(ie,IA_ACTIVEWINDOWSIZE,IntuitionBase))
             {
-            for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
-            {
-                if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING)
+                if (w->MouseX < IW(w)->sizeimage_width || w->MouseX > w->Width - IW(w)->sizeimage_width - 1 || w->MouseY < ((IW(w)->sizeimage_height > w->BorderTop) ? IW(w)->sizeimage_height : w->BorderTop) || w->MouseY > w->Height - IW(w)->sizeimage_height - 1)
                 {
-                gadget = draggadget;
-                new_gadget = TRUE;
-                break;
+                    for (draggadget = w->FirstGadget; draggadget; draggadget = draggadget->NextGadget)
+                    {
+                        if ((draggadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_SIZING)
+                        {
+                            gadget = draggadget;
+                            new_gadget = TRUE;
+                            break;
+                        }
+                    }
                 }
             }
-            }
-        }
         }
 #endif
 
-        if (!gadget)
+        if ((!gadget) && (screen))
         {
-        /* use the *current* screen rather than active one when searching
-           for sdepth gadget! */
-        if (screen)
+            /* use the *current* screen rather than active one when searching
+               for sdepth gadget! */
             gadget = FindGadget (screen, stitlebarhit ? NULL : w, stitlebarhit ? NULL : req,
                      screen->MouseX, screen->MouseY, gi, FALSE, IntuitionBase);
-        DEBUG_CLICK(bug("Click on gadget %p\n", gadget));
-        new_gadget = TRUE;
-
+            DEBUG_CLICK(bug("Click on gadget %p\n", gadget));
+            new_gadget = TRUE;
         } /* if (!gadget) */
 
         /* If we clicked screen titlebar outside of any gadget, enter drag mode */
         if ((!gadget) && stitlebarhit) {
-        DEBUG_CLICK(bug("[Inputhandler] Entering drag state for screen 0x%p\n", screen));
+            DEBUG_CLICK(bug("[Inputhandler] Entering drag state for screen 0x%p\n", screen));
             iihdata->ScreenDrag = screen;
             iihdata->ScreenDragPointX = screen->MouseX;
             iihdata->ScreenDragPointY = screen->MouseY;
             *keep_event = FALSE;
-        break;
+            break;
         }
 
         if (!IsToolbox) {
             if (!gadget && stitlebarhit)
             {
-            struct Window *ww = 0;
-        
-            ww = FindDesktopWindow(screen, IntuitionBase);
-            DEBUG_CLICK(bug("[Inputhandler] Clicked on backdrop window 0x%p\n", ww));
-            if (ww) {
-                ActivateWindow(ww);
-                w = ww;
-            }
+                struct Window *ww = 0;
+            
+                ww = FindDesktopWindow(screen, IntuitionBase);
+                DEBUG_CLICK(bug("[Inputhandler] Clicked on backdrop window 0x%p\n", ww));
+                if (ww) {
+                    ActivateWindow(ww);
+                    w = ww;
+                }
             }
 
             if (!stitlebarhit && !new_active_window && DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
                                         ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
             {
-            if (GetPrivIBase(IntuitionBase)->DoubleClickButton != SELECTDOWN)
+                if (GetPrivIBase(IntuitionBase)->DoubleClickButton != SELECTDOWN)
+                {
+                    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+                    GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
+                }
+                else
+                {
+                    GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
+                }
+            }
+            else
             {
-                GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+                DEBUG_CLICK(bug("[Inputhandler] Resetting doubleclick counter\n"));
                 GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-            }
-            else
-            {
-                GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-            }
-            }
-            else
-            {
-            DEBUG_CLICK(bug("[Inputhandler] Resetting doubleclick counter\n"));
-            GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-            GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+                GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
             }
 
             /* update last click time for doubleclicktofront */
@@ -628,21 +626,21 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 #ifdef SKINS
             if (!stitlebarhit)
             {
-            ULONG result;
-        
-            if (!(gadget && ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH)))
-            if ((result = RunHotkeys(ie,IntuitionBase)))
-            {
-                //gadget = NULL;
-                if (result == RUNHOTREUSE)
+                ULONG result;
+            
+                if (!(gadget && ((gadget->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDEPTH)))
+                if ((result = RunHotkeys(ie,IntuitionBase)))
                 {
-                *reuse_event = TRUE;
+                    //gadget = NULL;
+                    if (result == RUNHOTREUSE)
+                    {
+                        *reuse_event = TRUE;
+                    }
+                    else
+                    {
+                        *keep_event = FALSE;
+                    }
                 }
-                else
-                {
-                *keep_event = FALSE;
-                }
-            }
             }
 #endif
         }
@@ -1318,6 +1316,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     {
         struct Screen *scr;
         UWORD DWidth, DHeight;
+        struct Rectangle DBounds;
 
         if (ie->ie_Qualifier & IEQUALIFIER_RELATIVEMOUSE) {
             //ULONG Thresh;
@@ -1368,194 +1367,232 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             DEBUG_MOUSE(bug("[InputHandler] Delta is (%d, %d)\n", iihdata->DeltaMouseX, iihdata->DeltaMouseY));
         }
 
-        /* Calculate current display size.
-           It's determined by the first screen on this monitor.
-           TODO: perhaps we should just ask display driver about its current display mode? */
-        scr = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
-        if (scr)
+        if (GetPrivIBase(IntuitionBase)->ActiveMonitor)
         {
-            DWidth = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX + 1;
-            DHeight = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY - scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY + 1;
-        }
-        else
-        {
-            /* If there's no active screen, we take 160x160 as a limit */
-            DWidth = 160;
-            DHeight = 160;
-        }
+            struct msDisplayToScreenCoords coordmsg =
+            {
+                MethodID : MM_DisplayToScreenCoords,
+            };
+            DoMethod(GetPrivIBase(IntuitionBase)->ActiveMonitor, MM_GetDisplayBounds, &DBounds);
+            DWidth = (DBounds.MaxX - DBounds.MinX) + 1;
+            DHeight = (DBounds.MaxY - DBounds.MinY) + 1;
+            DEBUG_MONITOR(bug("[InputHandler] Display Dimensions: %dx%d\n", DWidth, DHeight);)
 
-        scr = iihdata->ScreenDrag;
-        if (scr) {
-            WORD dx = iihdata->DeltaMouseX;
-            WORD dy = iihdata->DeltaMouseY;
-            WORD min, max, val;
-            UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
-            UWORD DragMode = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0];
+            scr = iihdata->ScreenDrag;
+            if (scr) {
+                UWORD DragMode = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_VDragModes[0];
+                UWORD spFlags = GetPrivScreen(scr)->SpecialFlags;
+                UWORD DSWidth, DSHeight;
+                WORD dx = iihdata->DeltaMouseX;
+                WORD dy = iihdata->DeltaMouseY;
+                WORD min, max, val;
 
-            DEBUG_DRAG(bug("[InputHandler] Screen drag, delta is (%d, %d)\n", dx, dy));
+                coordmsg.Screen = scr;
+                coordmsg.DispX = DWidth;
+                coordmsg.DispY = DHeight;
+                coordmsg.ScrX = &DSWidth;
+                coordmsg.ScrY = &DSHeight;
 
-            /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
-            if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
-                /* Calculate limits */
-                if (scr->Width > DWidth) {
-                    min = DWidth - scr->Width;
-                    max = 0;
-                } else {
-                    min = 0;
-                    max = DWidth - scr->Width;
+                DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
+
+                DEBUG_DRAG(
+                  bug("[InputHandler] = %dx%d in screen co-ords\n", DSWidth, DSHeight);
+                  bug("[InputHandler] Screen drag, delta = %d, %d\n", dx, dy);
+                )
+
+                /* Restrict dragging to a physical display area if the driver does not allow composition or if the user wants it*/
+                if (((spFlags & SF_HorCompose) != SF_HorCompose) || (DragMode & ICVDM_HBOUND)) {
+                    DEBUG_DRAG(bug("[Inputhandler] Restricting horizontal drag\n"));
+                    /* Calculate limits */
+                    if (scr->Width > DSWidth) {
+                        min = DSWidth - scr->Width;
+                        max = 0;
+                    } else {
+                        min = 0;
+                        max = DSWidth - scr->Width;
+                    }
+                    /* The purpose of the following complex check is to prevent jumping if the
+                       screen was positioned out of user drag limits by the program itself using
+                       ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
+                       on the dragging direction.
+                       Maybe the user should also be able to drag the screen back off-display in such
+                       a case?
+                       Calculate the position we would go to */
+                    val = scr->LeftEdge + dx;
+                    /* Determine the direction */
+                    if ((dx < 0) && ((!(spFlags & SF_ComposeRight)) || (DragMode & ICVDM_LBOUND))) {
+                        /* Can we move at all in this direction ? */
+                        if (scr->LeftEdge > min) {
+                            /* If too far, restrict it */
+                            if (val < min)
+                                dx = min - scr->LeftEdge;
+                        } else
+                            dx = 0; /* Just don't move if we can't */
+                    } else if ((!(spFlags & SF_ComposeLeft)) || (DragMode & ICVDM_RBOUND)) {
+                        if (scr->LeftEdge < max) {
+                            if (val > max)
+                                dx = max - scr->LeftEdge;
+                        } else
+                            dx = 0;
+                    }
+                    DEBUG_DRAG(bug("[Inputhandler] Restricted X delta will be %d\n", dx));
                 }
-                /* The purpose of the following complex check is to prevent jumping if the
-                   screen was positioned out of user drag limits by the program itself using
-                   ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
-                   on the dragging direction.
-                   Maybe the user should also be able to drag the screen back off-display in such
-                   a case?
-                   Calculate the position we would go to */
-                val = scr->LeftEdge + dx;
-                /* Determine the direction */
-                if ((dx < 0) && ((!(spFlags & SF_ComposeRight)) || (DragMode & ICVDM_LBOUND))) {
-                    /* Can we move at all in this direction ? */
-                    if (scr->LeftEdge > min) {
-                        /* If too far, restrict it */
-                        if (val < min)
-                            dx = min - scr->LeftEdge;
-                    } else
-                        dx = 0; /* Just don't move if we can't */
-                } else if ((!(spFlags & SF_ComposeLeft)) || (DragMode & ICVDM_RBOUND)) {
-                    if (scr->LeftEdge < max) {
-                        if (val > max)
-                            dx = max - scr->LeftEdge;
-                    } else
-                        dx = 0;
+                if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
+                    DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
+                    if (scr->Height > DSHeight) {
+                        min = DSHeight - scr->Height;
+                        max = 0;
+                    } else {
+                        min = 0;
+                        max = DSHeight - scr->Height;
+                    }
+                    DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
+                    val = scr->TopEdge + dy;
+                    DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
+                    if ((dy < 0)  && ((!(spFlags & SF_ComposeBelow)) || (DragMode & ICVDM_TBOUND))) {
+                        if (scr->TopEdge > min) {
+                            if (val < min)
+                                dy = min - scr->TopEdge;
+                        } else
+                            dy = 0;
+                    } else if ((!(spFlags & SF_ComposeAbove)) || (DragMode & ICVDM_BBOUND)) {
+                        if (scr->TopEdge < max) {
+                            if (val > max)
+                                dy = max - scr->TopEdge;
+                        } else
+                            dy = 0;
+                    }
+                    DEBUG_DRAG(bug("[Inputhandler] Restricted Y delta will be %d\n", dy));
                 }
-            }
-            if (((spFlags & SF_VertCompose) != SF_VertCompose) || (DragMode & ICVDM_VBOUND)) {
-                DEBUG_DRAG(bug("[Inputhandler] Restricting vertical drag\n"));
-                DEBUG_DRAG(bug("[Inputhandler] Screen size: %d, display size: %d\n", scr->Height, DHeight));
-                if (scr->Height > DHeight) {
-                    min = DHeight - scr->Height;
-                    max = 0;
-                } else {
-                    min = 0;
-                    max = DHeight - scr->Height;
+                if ((scr->TopEdge + dy) > DSHeight - (scr->BarHeight + scr->BarHBorder))
+                {
+                    DEBUG_DRAG(bug("[Inputhandler] Restricting to titlebar bounds\n");)
+
+                    dy = DSHeight - (scr->BarHeight + scr->BarHBorder) - scr->TopEdge;
+                    DEBUG_DRAG(bug("[Inputhandler] Title Restricted Y delta will be %d\n", dy);)
                 }
-                DEBUG_DRAG(bug("[Inputhandler] Limits: min %d max %d\n", min, max));
-                val = scr->TopEdge + dy;
-                DEBUG_DRAG(bug("[Inputhandler] New position would be %d\n", val));
-                if ((dy < 0)  && ((!(spFlags & SF_ComposeBelow)) || (DragMode & ICVDM_TBOUND))) {
-                    if (scr->TopEdge > min) {
-                        if (val < min)
-                            dy = min - scr->TopEdge;
-                    } else
-                        dy = 0;
-                } else if ((!(spFlags & SF_ComposeAbove)) || (DragMode & ICVDM_BBOUND)) {
-                    if (scr->TopEdge < max) {
-                        if (val > max)
-                            dy = max - scr->TopEdge;
-                    } else
-                        dy = 0;
-                }
-                DEBUG_DRAG(bug("[Inputhandler] Restricted delta will be %d\n", dy));
-            }
-            ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
-        }
-
-        /* Autoscroll the active screen */
-        scr = IntuitionBase->ActiveScreen;
-        if (scr && (scr->Flags & AUTOSCROLL) &&
-           (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
-        {
-            WORD xval = scr->LeftEdge;
-            WORD yval = scr->TopEdge;
-            WORD min;
-
-            DEBUG_AUTOSCROLL(bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
-                         scr, ie->ie_X, ie->ie_Y));
-
-            if ((ie->ie_X < 0) || (ie->ie_X >= DWidth)) {
-                DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
-                xval -= iihdata->DeltaMouseX;
-
-                if (ie->ie_X < 0) {
-                    if (xval > 0)
-                        xval = 0;
-                } else if (ie->ie_X >= DWidth) {
-                    min = DWidth - scr->Width;
-                    if (xval < min)
-                        xval = min;
-                }
+                ScreenPosition(scr, SPOS_RELATIVE, dx, dy, 0, 0);
             }
 
-            if ((ie->ie_Y < 0) || (ie->ie_Y >= DHeight)) {
-                yval -= iihdata->DeltaMouseY;
+            /* Autoscroll the active screen */
+            scr = IntuitionBase->ActiveScreen;
+            if (scr && (scr->Flags & AUTOSCROLL) &&
+               (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
+            {
+                UWORD DSWidth, DSHeight;
+                WORD xval = scr->LeftEdge;
+                WORD yval = scr->TopEdge;
+                WORD min;
 
-                if (ie->ie_Y < 0) {
-                    /* If screen is dragged down and user touched upper screen
-                       boundary, do nothing */
-                    if (scr->TopEdge >= 0)
-                        yval = scr->TopEdge;
-                    else
-                        /* If scrolled down screen is being scrolled up, make sure it
-                           does not go over 0 */
-                        if (yval > 0)
-                            yval = 0;
-                } else if (ie->ie_Y >= DHeight) {
-                    min = DHeight - scr->Height;
-                    if (yval < min)
-                        yval = min;
+                coordmsg.Screen = scr;
+                coordmsg.DispX = DWidth;
+                coordmsg.DispY = DHeight;
+                coordmsg.ScrX = &DSWidth;
+                coordmsg.ScrY = &DSHeight;
+
+                DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, (Msg)&coordmsg);
+
+                DEBUG_AUTOSCROLL(
+                  bug("[InputHandler] = %dx%d in screen co-ords\n", DSWidth, DSHeight);
+                  bug("[Inputhandler] Autoscroll screen 0x%p, event at (%d, %d)\n",
+                             scr, ie->ie_X, ie->ie_Y);
+                )
+
+                if ((ie->ie_X < 0) || (ie->ie_X >= DSWidth)) {
+                    DEBUG_AUTOSCROLL(bug("[InputHandler] X delta: %d pixels\n", iihdata->DeltaMouseX));
+                    xval -= iihdata->DeltaMouseX;
+
+                    if (ie->ie_X < 0) {
+                        if (xval > 0)
+                            xval = 0;
+                    } else if (ie->ie_X >= DSWidth) {
+                        min = DSWidth - scr->Width;
+                        if (xval < min)
+                            xval = min;
+                    }
                 }
+
+                if ((ie->ie_Y < 0) || (ie->ie_Y >= DSHeight)) {
+                    yval -= iihdata->DeltaMouseY;
+
+                    if (ie->ie_Y < 0) {
+                        /* If screen is dragged down and user touched upper screen
+                           boundary, do nothing */
+                        if (scr->TopEdge >= 0)
+                            yval = scr->TopEdge;
+                        else
+                            /* If scrolled down screen is being scrolled up, make sure it
+                               does not go over 0 */
+                            if (yval > 0)
+                                yval = 0;
+                    } else if (ie->ie_Y >= DSHeight) {
+                        min = DSHeight - scr->Height;
+                        if (yval < min)
+                            yval = min;
+                    }
+                }
+
+                if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
+                    ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
             }
 
-            if ((xval != scr->LeftEdge) || (yval != scr->TopEdge))
-                ScreenPosition(scr, SPOS_ABSOLUTE, xval, yval, 0, 0);
-        }
-
-        /* Restrict mouse coordinates to the physical display area */
-        if (ie->ie_X >= DWidth) ie->ie_X = DWidth - 1;
-        if (ie->ie_Y >= DHeight) ie->ie_Y = DHeight - 1;
-        if (ie->ie_X < 0) ie->ie_X = 0;
-        if (ie->ie_Y < 0) ie->ie_Y = 0;
+            /* Restrict mouse coordinates to the physical display area */
+            if (ie->ie_X >= DWidth) ie->ie_X = DWidth - 1;
+            if (ie->ie_Y >= DHeight) ie->ie_Y = DHeight - 1;
+            if (ie->ie_X < 0) ie->ie_X = 0;
+            if (ie->ie_Y < 0) ie->ie_Y = 0;
 
 #ifdef SKINS
-        if (gadget == iihdata->MasterDragGadget) {
-            struct gpInput gpi;
-            ULONG            retval;
+            if (gadget == iihdata->MasterDragGadget) {
+                struct gpInput gpi;
+                ULONG            retval;
 
-            gpi.MethodID     = GM_MOVETEST;
-            gpi.gpi_GInfo     = gi;
-            gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
-            gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
-            gpi.gpi_IEvent  = ie;
+                gpi.MethodID     = GM_MOVETEST;
+                gpi.gpi_GInfo     = gi;
+                gpi.gpi_Mouse.X = ie->ie_X - gi->gi_Window->WScreen->LeftEdge;
+                gpi.gpi_Mouse.Y = ie->ie_Y - gi->gi_Window->WScreen->TopEdge;
+                gpi.gpi_IEvent  = ie;
 
-            retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
-            if (retval == MOVETEST_ADJUSTPOS)
-            {
-                ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
-                ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
+                retval = Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpi, IntuitionBase);
+                if (retval == MOVETEST_ADJUSTPOS)
+                {
+                    ie->ie_X = gpi.gpi_Mouse.X + gi->gi_Window->WScreen->LeftEdge;
+                    ie->ie_Y = gpi.gpi_Mouse.Y + gi->gi_Window->WScreen->TopEdge;
+                }
+            }
+#endif
+            /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
+            if (iihdata->MouseBoundsActiveFlag) {            
+                if (ie->ie_X < iihdata->MouseBoundsLeft)
+                    ie->ie_X = iihdata->MouseBoundsLeft;
+                else if (ie->ie_X > iihdata->MouseBoundsRight)
+                    ie->ie_X = iihdata->MouseBoundsRight;
+                
+                if (ie->ie_Y < iihdata->MouseBoundsTop)
+                    ie->ie_Y = iihdata->MouseBoundsTop;
+                else if (ie->ie_Y > iihdata->MouseBoundsBottom)
+                    ie->ie_Y = iihdata->MouseBoundsBottom;
+            }
+
+            /* Prevent mouse going above all screens */
+            scr = FindHighestScreen(IntuitionBase);
+            if (scr) {
+                if (ie->ie_Y < scr->TopEdge)
+                    ie->ie_Y = scr->TopEdge;
             }
         }
-#endif
-        /* Do Mouse Bounding - mouse will be most restrictive of screen size or mouse bounds */
-        if (iihdata->MouseBoundsActiveFlag) {            
-            if (ie->ie_X < iihdata->MouseBoundsLeft)
-                ie->ie_X = iihdata->MouseBoundsLeft;
-            else if (ie->ie_X > iihdata->MouseBoundsRight)
-                ie->ie_X = iihdata->MouseBoundsRight;
-            
-            if (ie->ie_Y < iihdata->MouseBoundsTop)
-                ie->ie_Y = iihdata->MouseBoundsTop;
-            else if (ie->ie_Y > iihdata->MouseBoundsBottom)
-                ie->ie_Y = iihdata->MouseBoundsBottom;
+        else /* !GetPrivIBase(IntuitionBase)->ActiveMonitor */
+        {
+            /*
+             * If there's no active display, we take the prefs defined dimensions...
+             */
+            DWidth = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width;
+            DHeight = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height;
         }
 
-        /* Prevent mouse going above all screens */
-        scr = FindHighestScreen(IntuitionBase);
-        if (scr) {
-            if (ie->ie_Y < scr->TopEdge)
-                ie->ie_Y = scr->TopEdge;
-        }
-
-        /* Store new mouse coords. If a screen is being dragged, lock drag point */
+        /*
+         * Store new mouse coords. If a screen is being dragged, lock drag point
+         */
         scr = iihdata->ScreenDrag;
         if (scr) {
             IntuitionBase->MouseX = scr->LeftEdge + iihdata->ScreenDragPointX;
@@ -1826,6 +1863,12 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     return gadget;
 }
 
+
+
+
+
+/****************************************************************************************/
+/*                                                                                      */
 /****************************************************************************************/
 
 AROS_UFH2(struct InputEvent *, IntuiInputHandler,
