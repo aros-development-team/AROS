@@ -917,6 +917,7 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	*msg->storage = data->mdb.num_syncs;
 	return;
 
+    case aoHidd_Gfx_SupportsDisplayChange:
     case aoHidd_Gfx_IsWindowed:
     case aoHidd_Gfx_SupportsHWCursor:
     case aoHidd_Gfx_SupportsGamma:
