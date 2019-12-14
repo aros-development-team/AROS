@@ -1627,7 +1627,7 @@ ifeq (%(compiler),host)
 %(mmake)_LDFLAGS            := $(HOST_LDFLAGS)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LDFLAGS            := $(KERNEL_LDFLAGS)
+%(mmake)_LDFLAGS            := $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 endif
 else
 %(mmake)_LDFLAGS          := %(ldflags)
