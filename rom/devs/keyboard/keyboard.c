@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keyboard device
@@ -106,7 +106,7 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode);
+VOID keyCallback(struct KeyboardBase *KBBase, KbdIrqData_t keyData);
 AROS_INTP(kbdSendQueuedEvents);
 static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
@@ -144,31 +144,34 @@ static int GM_UNIQUENAME(Open)
 	return FALSE;
     }
     
-    if(KBBase->kb_keyBuffer == NULL)
+    if(KBBase->kb_keyEventBuffer == NULL)
     {
-	KBBase->kb_keyBuffer = AllocMem(sizeof(UWORD)*KB_BUFFERSIZE, MEMF_ANY);
+	KBBase->kb_keyEventBuffer = AllocMem(sizeof(KbdIrqData_t) * KB_BUFFERSIZE, MEMF_ANY);
     }
 
     /* No memory for key buffer? */
-    if(KBBase->kb_keyBuffer == NULL)
+    if(KBBase->kb_keyEventBuffer == NULL)
     {
+        D(bug("keyboard.device: failed to allocate keyboard event buffer storage\n"));
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return FALSE;
     }
 
     if((ioreq->io_Unit = AllocMem(sizeof(KBUnit), MEMF_CLEAR)) == NULL)
     {
+        D(bug("keyboard.device: failed to allocate unit data\n"));
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return FALSE;
     }
 
-/* nlorentz: Some extra stuff that must be inited */
+    /* nlorentz: Some extra stuff that must be initialised */
     if (NULL == KBBase->kb_Matrix)
     {
         KBBase->kb_Matrix = AllocMem(KB_MATRIXSIZE, MEMF_ANY|MEMF_CLEAR);
 
 	if (NULL == KBBase->kb_Matrix)
 	{
+	    D(bug("keyboard.device: failed to allocated keyboard matrix buffer\n"));
 	    ioreq->io_Error = IOERR_OPENFAIL;
 	    return FALSE;
 	}
@@ -180,7 +183,7 @@ static int GM_UNIQUENAME(Open)
 	if (!HiddKbdAB)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
-	    D(bug("keyboard.device: Could not get attrbase\n"));
+	    D(bug("keyboard.device: failed to obtain attrbase for '%s'\n", IID_Hidd_Kbd));
 	    return FALSE;
 	}
     }
@@ -394,10 +397,11 @@ AROS_LH1(void, beginio,
 
 static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 {
-    int    nEvents;             /* Number of struct InputEvent:s that there is
-				   room for in memory pointed to by io_Data */
-    UWORD  code;                /* Value of current keycode */
-    UWORD  trueCode;            /* Code without possible keypress addition */
+    int    nEvents;             /* # of InputEvent structures there is room
+				   for in the memory pointed to by io_Data */
+    UWORD  keFlags;             /* flags set by the event source */
+    UWORD  code;                /* current keycode value of the event */
+    UWORD  trueCode;            /* keycode without possible keypress addition */
     int    i;			/* Loop variable */
     struct InputEvent *event;   /* Temporary variable */
     BOOL   moreevents = TRUE;
@@ -426,45 +430,49 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
     
     for(i = 0; i < nEvents; i++)
     {
-	/* Update eventpointer -- this must be done here as I must set
-	   ie_NextEvent to NULL if there are no more keys in the buffer. */
+	/* Update eventpointer -- this must be done here as ie_NextEvent
+            must be set to NULL if there are no more keys in the buffer. */
 	if(i != 0)
 	    event = event->ie_NextEvent;
 
-	code = KBBase->kb_keyBuffer[kbUn->kbu_readPos++];
-	
+        ULONG eventData = KBBase->kb_keyEventBuffer[kbUn->kbu_readPos++];
+        keFlags = (eventData >> 16) & 0xFFFF;
+        code = eventData & 0xFFFF;
+
 	if(kbUn->kbu_readPos == KB_BUFFERSIZE)
 	    kbUn->kbu_readPos = 0;
-	
+
 	trueCode = code & AMIGAKEYMASK;
 
 	if(isQualifier(code) == TRUE)
 	{
-	    
+	    D(bug("[keyboard] handling qualifier (keFlags=%04x)\n", keFlags);)
 	    /* Key released ? ... */
 	    if(code & KEYUPMASK)
 	    {
-    	    #if 1
-    	    	/* stegerg: on PC keyboards caps lock also generates up events */
-    	    	if (trueCode != AKC_CAPS_LOCK)
-    	    #endif
-		kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
+		if ((keFlags & KBD_KEYTOGGLE) || (trueCode != AKC_CAPS_LOCK))
+		{
+		    D(bug("[keyboard] clearing qualifier\n");)
+		    kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
+		}
 	    }
 	    else  /* ... or pressed? */
 	    {
-    	    	if (trueCode == AKC_CAPS_LOCK)
+		if (!(keFlags & KBD_KEYTOGGLE) && (trueCode == AKC_CAPS_LOCK))
 		{
+		    D(bug("[keyboard] toggling qualifier\n");)
 		    kbUn->kbu_Qualifiers ^= IEQUALIFIER_CAPSLOCK;
 		}
 		else
 		{
-		    kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST); 
+		    D(bug("[keyboard] setting qualifier\n");)
+		    kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST);
 		}
 	    }
 	}
-	
-	D(bug("kbd: Adding event of code %d\n", code));
-	
+
+	D(bug("[keyboard] Adding key event %p code %d (qual=%04x)\n", event, code, kbUn->kbu_Qualifiers);)
+
 	event->ie_Class 		= IECLASS_RAWKEY;
 	event->ie_SubClass 		= 0;
 	event->ie_Code 			= code;
@@ -552,6 +560,7 @@ AROS_LH1(LONG, abortio,
 #define  CORRECT(x)        (((x) & AMIGAKEYMASK) | (((x) & NOTAMIGAKEYMASK) >> 1))
 #define  BVBITCLEAR(x, y)  ((y)[(x) / (sizeof(UBYTE)*8)] &= ~(1 << ((x) & (sizeof(UBYTE)*8 - 1))))
 #define  BVBITSET(x, y)    ((y)[(x) / (sizeof(UBYTE)*8)] |=  (1 << ((x) & (sizeof(UBYTE)*8 - 1))))
+#define  BVBITISSET(x, y)  ((y)[(x) / (sizeof(UBYTE)*8)] & (1 << ((x) & (sizeof(UBYTE)*8 - 1))))
 
 /****************************************************************************************/
 
@@ -599,43 +608,39 @@ BOOL HIDDM_initKeyboard(struct KeyboardHIDD *kh)
 
 /****************************************************************************************/
 
-VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
+VOID keyCallback(struct KeyboardBase *KBBase, KbdIrqData_t keyData)
 {
-    D(bug("keyCallBack(KBBase=%p, keyCode=%d)\n"
-    		, KBBase, keyCode));
-		
-    Disable();
-    
-    KBBase->kb_keyBuffer[(KBBase->kb_writePos)++] = keyCode;
+    UWORD keFlags = ((keyData >> 16) & 0xFFFF);
+    UWORD keyCode = (keyData & 0xFFFF);
 
-    D(bug("Wrote to buffer\n"));
-    
+    D(bug("[keyboard] %s(KBBase=%p, keyCode=%d)\n"
+    		, __func__, KBBase, keyCode));
+
+    Disable();
+
+    KBBase->kb_keyEventBuffer[(KBBase->kb_writePos)++] = keyData;
+
+    D(bug("[keyboard] %s: event buffered\n", __func__));
+
     if(KBBase->kb_writePos == KB_BUFFERSIZE)
 	KBBase->kb_writePos = 0;
 
     if (CORRECT(keyCode) < KB_MAXKEYS)
     {
-	if(keyCode & KEYUPMASK)
-	    BVBITCLEAR(CORRECT(keyCode), KBBase->kb_Matrix);
-	else
-	    BVBITSET(CORRECT(keyCode), KBBase->kb_Matrix);
-    	D(bug("Wrote to matrix\n"));
+        if(keyCode & KEYUPMASK)
+            BVBITCLEAR(CORRECT(keyCode), KBBase->kb_Matrix);
+        else
+            BVBITSET(CORRECT(keyCode), KBBase->kb_Matrix);
+        D(bug("[keyboard] %s: matrix updated\n", __func__));
     }
     else
     {
-    	D(bug("Keycode value too high. Is %d. Should be < %d\n", CORRECT(keyCode), KB_MAXKEYS));
+    	D(bug("[keyboard] %s: keycode value out of bounds (%d > %d)\n", __func__, CORRECT(keyCode), KB_MAXKEYS));
     }
-    
+
     if(!IsListEmpty(&KBBase->kb_PendingQueue))
-    {    
-#if 0
-	D(bug("doing software irq\n"));
-	Cause(&KBBase->kb_Interrupt);
-#else
-    AROS_INTC1(kbdSendQueuedEvents, KBBase);
-#endif
-    }
-    
+        AROS_INTC1(kbdSendQueuedEvents, KBBase);
+
     Enable();
 }
 
@@ -659,13 +664,13 @@ AROS_INTH1(kbdSendQueuedEvents, struct KeyboardBase *, KBBase)
     struct IORequest *ioreq, *nextnode;
     struct List *pendingList = (struct List *)&KBBase->kb_PendingQueue;
     
-    D(bug("Inside software irq\n"));
+    D(bug("[keyboard] %s()\n", __func__));
 
     ForeachNodeSafe(pendingList, ioreq, nextnode)
     {
         BOOL moreevents;
 	
-        D(bug("Replying msg: R: %i W: %i\n", kbUn->kbu_readPos,
+        D(bug("[keyboard] %s: replying msg (R=%i, W=%i)\n", __func__, kbUn->kbu_readPos,
 	      KBBase->kb_writePos));
 	
 	moreevents = writeEvents(ioreq, KBBase);
@@ -676,7 +681,8 @@ AROS_INTH1(kbdSendQueuedEvents, struct KeyboardBase *, KBBase)
 	if (!moreevents) break;
     }
 
-    if (IsListEmpty(pendingList)) kbUn->kbu_flags &= ~KBUF_PENDING;
+    if (IsListEmpty(pendingList))
+        kbUn->kbu_flags &= ~KBUF_PENDING;
 
     return FALSE;
 
