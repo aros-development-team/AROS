@@ -2818,6 +2818,8 @@ endif
 %(mmake)_OBJS := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, $(%(mmake)_LNGS)))
 %(mmake)_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, $(%(mmake)_LNGS))) $(dir %(source))
 
+#MM- %(mmake)-quick : %(mmake)
+
 #MM
 %(mmake) : $(%(mmake)_OBJS) %(source)
 
