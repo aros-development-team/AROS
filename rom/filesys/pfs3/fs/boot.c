@@ -159,7 +159,7 @@ BOOL debug=FALSE;
 
 /* protos */
 // extern void __saveds EntryWithNewStack(void);
-LONG EntryPoint(struct ExecBase *);
+void __saveds EntryPoint(void);
 void NormalCommands(struct DosPacket *, globaldata *);
 void HandleSleepMsg (globaldata *g);
 void ReturnPacket(struct DosPacket *, struct MsgPort *, globaldata *);
@@ -174,10 +174,12 @@ CONST UBYTE version[] = "$VER: PFS-III " REVISION " BETA (" REVDATE ") "
 CONST UBYTE version[] = "$VER: " "Professional-File-System-III " REVISION " MULTIUSER-VERSION (" REVDATE ") "
 	 "written by Michiel Pelt and copyright (c) 1994-2012 Peltin BV";
 #else
-CONST UBYTE version[] = "$VER: " "Professional-File-System-III " REVISION " PROFESSIONAL-VERSION (" REVDATE ") "
+CONST UBYTE version[] = "$VER: " "Professional-File-System-III " REVISION " PFS3AIO-VERSION (" REVDATE ") "
 	 "written by Michiel Pelt and copyright (c) 1994-2012 Peltin BV";
 #endif
 #endif
+
+CONST UBYTE shortname[] = "pfs3aio";
 
 #if MULTIUSER
 CONST struct muExtOwner NOBODY = {0,0,0};
@@ -216,22 +218,26 @@ static UBYTE debugbuf[120];
 /*                                MAIN                                */
 /*                                MAIN                                */
 /**********************************************************************/
-#undef SysBase
 
-LONG EntryPoint(struct ExecBase *SysBase)
+void __saveds EntryPoint (void)
 {
 	/* globals */
 	struct globaldata *g;
 	struct MsgPort *msgport;
 	struct DosPacket *pkt;
+	struct DosPacket *diepkt = NULL;
 	struct DeviceNode *devnode;
 	struct FileSysStartupMsg *fssm;
 	struct Message *msg;
 	UBYTE *mountname;
 	ULONG signal, dossig, timesig, notifysig, sleepsig, waitmask;
+#undef SysBase
+	struct ExecBase *SysBase;
+
+	SysBase =  *((struct ExecBase **)4);
 
 	/* init globaldata */
-	g = AllocMem (sizeof(struct globaldata), MEMF_CLEAR);
+	g = AllocMem(sizeof(struct globaldata), MEMF_CLEAR);
 	if (!g)
 	{
 		Alert (AG_NoMemory);
@@ -241,15 +247,12 @@ LONG EntryPoint(struct ExecBase *SysBase)
 
 	/* open libs */
 	IntuitionBase = (APTR)OpenLibrary ("intuition.library", MIN_LIB_VERSION);
-#ifndef KS13WRAPPER
-	UtilityBase = OpenLibrary ("utility.library",0L);
-#endif
 	DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION);
+	UtilityBase = OpenLibrary ("utility.library",0L);
 	msgport = &((struct Process *)FindTask (NULL))->pr_MsgPort;
 
-	if (
-		!IntuitionBase ||
-#ifndef KS13WRAPPER
+	if (!IntuitionBase ||
+#ifndef KSWRAPPER
 		!UtilityBase ||
 #endif
 		!DOSBase)
@@ -259,9 +262,7 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	}
 
 	//DebugMsg("Requester debug enabled");
-#if KS13WRAPPER_DEBUG
-	DebugPutStr("Waiting for Start-up packet..\n");
-#endif
+
 	/* get startpacket */
 	WaitPort (msgport);
 	msg = GetMsg (msgport);
@@ -273,9 +274,11 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	 * ARG2 = Value from dn_Startup
 	 * ARG3 = BPTR to DeviceNode
 	 */
-#ifdef KS13WRAPPER
+
+#ifdef KSWRAPPER
 	FixStartupPacket(pkt, g);
 #endif
+
 	mountname = (UBYTE *)BADDR(pkt->dp_Arg1);
 	fssm = (struct FileSysStartupMsg *)BADDR(pkt->dp_Arg2);
 	devnode = (struct DeviceNode *)BADDR(pkt->dp_Arg3);
@@ -285,25 +288,15 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	 */
 	devnode->dn_Task = msgport;
 
-#if KS13WRAPPER_DEBUG
-	DebugPutStr("Mounting..\n");
-#endif
 	DB(Trace(1,"boot","g=%lx\n",g));
 	if (!Initialize ((DSTR)mountname, fssm, devnode, g))
 	{
 		NormalErrorMsg (AFS_ERROR_INIT_FAILED, NULL, 1);
-		if (g->mountname) FreeVec (g->mountname);
-		if (g->geom) FreeMemP (g->geom, g);
-		RES2(pkt) = ERROR_NOT_A_DOS_DISK;
 		RES1(pkt) = DOSFALSE;
+		RES2(pkt) = 0;
 		ReturnPacket (pkt, msgport, g);
-		FreeVec (g);
-		return RETURN_FAIL;
+		goto terminate;
 	}
-
-#if KS13WRAPPER_DEBUG
-	DebugPutStr("Mount done..\n");
-#endif
 
 	g->DoCommand = NormalCommands;  //%4.5
 	g->inhibitcount = 0;
@@ -328,6 +321,8 @@ LONG EntryPoint(struct ExecBase *SysBase)
 #if MULTIUSER
 	g->muFS_ready = FALSE;
 #endif
+
+#define SysBase g->g_SysBase
 
 	while (1)
 	{
@@ -423,10 +418,15 @@ LONG EntryPoint(struct ExecBase *SysBase)
 					g->timeron = TRUE;
 				}
 
+				if (g->dieing) {
+					CheckUpdate (RTBF_CHECK_TH, g);
+					if (pkt->dp_Type == ACTION_DIE)
+						diepkt = pkt;
+					goto terminate;
+				}
+	
 				ReturnPacket (pkt, msgport, g);
 				CheckUpdate (RTBF_CHECK_TH, g);
-				if (g->dieing)
-					goto terminate;
 			}
 		}
 
@@ -467,22 +467,33 @@ LONG EntryPoint(struct ExecBase *SysBase)
 			}
 
 			/* Make sure any disk buffers have been flushed to disk */
-			g->request->iotd_Req.io_Command = CMD_UPDATE;
-			DoIO((struct IORequest *)g->request);
+			UpdateAndMotorOff(g);
 
 			/* Mark the reset handler as done (system might reboot right after) */
 			HandshakeResetHandler(g);
 		}
 	}
 
-	terminate:
+terminate:
 
 	Quit (g);
 
-	return RETURN_OK;
-}
+	g->devnode->dn_Task = NULL;
+	
+	if (diepkt)
+		ReturnPacket (diepkt, msgport, g);
 
-#define SysBase g->g_SysBase
+#if MULTIUSER
+	if (muBase)
+		CloseLibrary((struct Library *) muBase);
+#endif
+	if (UtilityBase)
+		CloseLibrary(UtilityBase);
+	CloseLibrary((struct Library *) DOSBase);
+	CloseLibrary((struct Library *) IntuitionBase);
+
+	FreeMem(g, sizeof(struct globaldata));
+}
 
 void ReturnPacket (struct DosPacket *packet, struct MsgPort *sender, globaldata *g)
 {
@@ -518,7 +529,8 @@ static BOOL FindInLibraryList (CONST_STRPTR name, globaldata *g)
 }
 #endif
 
-/* When does this routine get called? NOT with 'assign dismount'! */
+/* ACTION_DIE */
+
 static void Quit (globaldata *g)
 {
   struct volumedata *volume;
@@ -536,27 +548,23 @@ static void Quit (globaldata *g)
 		return;
 #endif
 
-	//DebugPutStr("Removing volume..\n");
 	/* 'remove' disk */
 	volume = g->currentvolume;
 	if (volume)
 		DiskRemoveSequence(g);
 
-	//DebugPutStr("Uninstalling ResetHandler..\n");
 	UninstallResetHandler(g);
 
-	//DebugPutStr("Uninstalling DiskChangeHandler..\n");
 	/* remove diskchangehandler */
 	UninstallDiskChangeHandler(g);
 
-#if 0
+#if UNSAFEQUIT
 	/* wait for wb to return locks */
 	Delay(50);
 #endif
 
-	//DebugPutStr("Answering queued packets\n");
 	/* check if packets queued */
-	while ((msg = GetMsg(g->msgport)))
+	while (g->msgport && (msg = GetMsg(g->msgport)))
 	{
 		g->action = (struct DosPacket *)msg->mn_Node.ln_Name;
 		g->action->dp_Res1 = DOSFALSE;
@@ -564,9 +572,8 @@ static void Quit (globaldata *g)
 		ReturnPacket (g->action, g->msgport, g);
 	}
 
-	//DebugPutStr("Answering queued notifications\n");
 	/* check if notifypackets queued */
-	while ((nmsg = (struct NotifyMessage *)GetMsg (g->notifyport)))
+	while (g->notifyport && (nmsg = (struct NotifyMessage *)GetMsg (g->notifyport)))
 	{
 		nr = nmsg->nm_NReq;
 		if (nr->nr_Flags & NRF_MAGIC)
@@ -581,40 +588,38 @@ static void Quit (globaldata *g)
 		}
 	}
 
-	//DebugPutStr("Forbid()..\n");
-
 	Forbid ();
 
 	/* remove devicenode */
-	RemDosEntry ((struct DosList *)g->devnode);
-//  FreeDosEntry ((struct DosList *)g->devnode);
+	if (g->devnode)
+		RemDosEntry ((struct DosList *)g->devnode);
 
-	//DebugPutStr("Freeing timer request\n");
 	/* cleanup timer device (OK) */
 	/* FreeSignal wil even niet..(signalnr!) */
-	if(!(CheckIO((struct IORequest *)g->trequest)))
-		AbortIO((struct IORequest *)g->trequest);
-	WaitIO((struct IORequest *)g->trequest);
-	CloseDevice((struct IORequest *)g->trequest);
+	if (g->trequest) {
+		if(!(CheckIO((struct IORequest *)g->trequest)))
+			AbortIO((struct IORequest *)g->trequest);
+		WaitIO((struct IORequest *)g->trequest);
+		CloseDevice((struct IORequest *)g->trequest);
+	}
 	DeleteIORequest((struct IORequest *)g->trequest);
 	DeleteMsgPort(g->timeport);
 
-	//DebugPutStr("Freeing device request\n");
 	/* clean up device */
-	if(!(CheckIO((struct IORequest *)g->request)))
-		AbortIO((struct IORequest *)g->request);
-	WaitIO((struct IORequest *)g->request);
-	CloseDevice((struct IORequest *)g->request);
+	if (g->request) {
+		if(!(CheckIO((struct IORequest *)g->request)))
+			AbortIO((struct IORequest *)g->request);
+		WaitIO((struct IORequest *)g->request);
+		CloseDevice((struct IORequest *)g->request);
+	}
 	DeleteIORequest((struct IORequest *)g->request);
 	DeleteMsgPort(g->port);
 
-	//DebugPutStr("Freeing ports\n");
 	DeleteMsgPort(g->notifyport);
 #if EXTRAPACKETS
 	DeleteMsgPort(g->sleepport);
 #endif
 
-	//DebugPutStr("Freeing misc structures\n");
 	FreeVec (g->mountname);
 	FreeMemP (g->geom, g);
 	FreeVec (g->dc.ref);
@@ -623,7 +628,6 @@ static void Quit (globaldata *g)
 	if (alloc_data.reservedtobefreed)
 		FreeMem (alloc_data.reservedtobefreed, sizeof(*alloc_data.reservedtobefreed) * alloc_data.rtbf_size);
 
-	//DebugPutStr("Permit()\n");
 	Permit ();
 
 #if UNSAFEQUIT
@@ -632,7 +636,6 @@ static void Quit (globaldata *g)
 	{
 		listentry_t *listentry;
 
-		//DebugPutStr("Locks still remaining... Waiting..\n");
 		Wait (1 << g->msgport->mp_SigBit);
 		msg = GetMsg (g->msgport);
 		g->action = (struct DosPacket *)msg->mn_Node.ln_Name;
@@ -658,9 +661,8 @@ static void Quit (globaldata *g)
 
 		ReturnPacket (g->action, g->msgport, g);
 	}
-	//DebugPutStr("All locks freed.\n");
-	//Delay (5);
-	g->devnode->dn_Task = NULL;
+
+	Delay (5);
 #endif
 
 	LibDeletePool (g->bufferPool);
@@ -670,9 +672,7 @@ static void Quit (globaldata *g)
 	if (muBase)
 		CloseLibrary((struct Library *) muBase);
 #endif
-#ifndef KS13WRAPPER
 	CloseLibrary(UtilityBase);
-#endif
 	CloseLibrary((struct Library *) DOSBase);
 	CloseLibrary((struct Library *) IntuitionBase);
 
@@ -687,14 +687,7 @@ static void Quit (globaldata *g)
 #ifdef __AROS__
 LONG AROSEntryPoint(struct ExecBase *SysBase)
 {
-#ifdef KS13WRAPPER
-#if KS13WRAPPER_DEBUG
-	DebugPutStr("PFS3 starting..\n");
-#endif
-	return wrapper_stackswap(EntryPoint, SysBase);
-#else
-        return EntryPoint(SysBase);
-#endif
+    return (LONG)EntryPoint;
 }
 #else
 LONG __saveds __startup Main(void)
