@@ -51,6 +51,10 @@ MSG_SCREENS
 Obrazovky
 ; Screens
 ;
+MSG_PUBLIC_SCREENS (//)
+Veøejné Obrazovky
+; Public Screens
+;
 MSG_FRONTMOST_DEFAULT
 Nastavit aktivní obrazovku jako výchozí
 ; Frontmost set as default public screen:
@@ -62,6 +66,14 @@ Umo¾ní vysunování oken mimo viditelnou\nplochu obrazovky
 MSG_FRONTMOST_DEFAULT_DESC
 Pøiøadí právì aktivní obrazovce funkci\nvýchozí veøejné obrazovky
 ; Make the frontmost public screen\nthe default public screen
+;
+MSG_DRAG
+Screen Dragging
+; Screen Dragging
+;
+MSG_DRAG_BOUNDS
+Limit dragging to Displays bounds...
+; Limit dragging to Displays bounds...
 ;
 MSG_BOUND_LEFT_DRAG
 Zakázat pøesouvání obrazovky doleva

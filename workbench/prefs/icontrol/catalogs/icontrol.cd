@@ -35,8 +35,11 @@ Offscreen move:
 MSG_SCREENS (//)
 Screens
 ;
+MSG_PUBLIC_SCREENS (//)
+Public Screens
+;
 MSG_FRONTMOST_DEFAULT (//)
-Frontmost set as default public screen:
+Set Frontmost as default
 ;
 MSG_OFFSCREEN_DESC (//)
 Allow windows to be moved out of\nthe visible area
@@ -44,20 +47,26 @@ Allow windows to be moved out of\nthe visible area
 MSG_FRONTMOST_DEFAULT_DESC (//)
 Make the frontmost public screen\nthe default public screen
 ;
+MSG_DRAG (//)
+Screen Dragging
+;
+MSG_DRAG_BOUNDS (//)
+Limit dragging to Displays bounds...
+;
 MSG_BOUND_LEFT_DRAG (//)
-Bound drag in left direction
+on the left
 ;
 MSG_BOUND_RIGHT_DRAG (//)
-Bound drag in right direction
+on the right
 ;
 MSG_BOUND_TOP_DRAG (//)
-Bound drag in top direction
+at the top
 ;
 MSG_BOUND_BOTTOM_DRAG (//)
-Bound drag in bottom direction
+at the bottom
 ;
 MSG_META_DRAG (//)
-Drag keys
+Drag control key(s)
 ;
 MSG_MENUS_STICKY (//)
 Sticky

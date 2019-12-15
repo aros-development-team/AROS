@@ -51,9 +51,13 @@ MSG_SCREENS
 Schermi
 ; Screens
 ;
+MSG_PUBLIC_SCREENS
+Schermi Pubblico
+; Public Screens
+;
 MSG_FRONTMOST_DEFAULT
-Rendi schermo in primo piano pubblico di default
-; Frontmost set as default public screen:
+Rendi schermo in primo di default
+; Set Frontmost as default:
 ;
 MSG_OFFSCREEN_DESC
 Consenti di trascinare le finestre\noltre l'area visibile
@@ -62,6 +66,14 @@ Consenti di trascinare le finestre\noltre l'area visibile
 MSG_FRONTMOST_DEFAULT_DESC
 Trasforma lo schermo in primo piano\nnello schermo pubblico di default
 ; Make the frontmost public screen\nthe default public screen
+;
+MSG_DRAG
+Screen Dragging
+; Screen Dragging
+;
+MSG_DRAG_BOUNDS
+Limit dragging to Displays bounds...
+; Limit dragging to Displays bounds...
 ;
 MSG_BOUND_LEFT_DRAG
 Blocca trascinamento a sinistra
