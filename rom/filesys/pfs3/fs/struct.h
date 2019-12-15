@@ -199,23 +199,32 @@ typedef CONST unsigned char *CONST_STRPTR;
 #define RemHead(l)     REMHEAD(l)
 #undef RemTail
 #define RemTail(l)     REMTAIL(l)
-#define memcpy(d,s,n)  CopyMem(s,d,n)
 #endif
 
 /****************************************************************************/
-/* AROS specific global headers                                          */
+/* AROS specific global headers                                             */
 /****************************************************************************/
 
 #ifdef __AROS__
 #include <proto/alib.h>
 #include <clib/macros.h>
-#define min(a,b)       MIN(a,b)
-#define max(a,b)       MAX(a,b)
 #undef IsMinListEmpty
 #define __saveds
 #define COUNT UWORD
 #define UCOUNT WORD
 #endif
+
+/****************************************************************************/
+/* Generic GCC headers                                                      */
+/****************************************************************************/
+
+#if __GNUC__
+#define max(a,b) (((a)>(b))?(a):(b))
+#define min(a,b) (((a)<(b))?(a):(b))
+int stcu_d(char *out, unsigned int val);
+#define memcpy(d,s,n)  CopyMem(s,d,n)
+#endif
+
 
 /****************************************************************************/
 /* New actions (packets)                                                    */
@@ -1024,28 +1033,6 @@ typedef struct lockentry
 #define ACTION_EXAMINE_OBJECT64	26408
 #define ACTION_EXAMINE_NEXT64	26409
 #define ACTION_EXAMINE_FH64		26410
-#endif
-
-struct ExAllDataEXT
-{
-    struct ExAllDataEXT *ed_Next;
-    UBYTE *ed_Name;
-    LONG ed_Type;
-    ULONG ed_Size;
-    ULONG ed_Prot;
-    ULONG ed_Days;
-    ULONG ed_Mins;
-    ULONG ed_Ticks;
-    UBYTE *ed_Comment;
-    UWORD ed_OwnerUID;
-    UWORD ed_OwnerGID;
-#if EXTENDED_PACKETS_MORPHOS
-    QUAD ed_Size64;
-#endif
-};
-
-#ifndef ED_SIZE64
-#define ED_SIZE64 (ED_OWNER + 1)
 #endif
 
 /*
