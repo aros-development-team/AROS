@@ -586,6 +586,26 @@ struct volumedata *MakeVolumeData (struct rootblock *rootblock, globaldata *g)
 	volume->bytesperblock   = g->geom->dg_SectorSize;
 	volume->rescluster      = rootblock->reserved_blksize / volume->bytesperblock;
 
+	/* Calculate minimum fake block size that keeps total block count less than 16M.
+	 * Workaround for programs (including WB) that calculate free space using
+	 * "in use * 100 / total" formula that overflows if in use is block count is larger
+	 * than 16M blocks with 512 block size. Used only in ACTION_INFO.
+	 */
+	g->infoblockshift = 0;
+	if (DOSBase->dl_lib.lib_Version < 50) {
+		UWORD blockshift = 0;
+		ULONG bpb = volume->bytesperblock;
+		while (bpb > 512) {
+			blockshift++;
+			bpb >>= 1;
+		}
+		// Calculate smallest safe fake block size, up to max 32k. (512=0,1024=1,..32768=6)
+		while ((volume->numblocks >> blockshift) >= 0x02000000 && g->infoblockshift < 6) {
+			g->infoblockshift++;
+			blockshift++;	
+		}
+	}
+
 	/* load rootblock extension (if it is present) */
 	if (rootblock->extension && (rootblock->options & MODE_EXTENSION))
 	{
@@ -1011,7 +1031,11 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 				/* check size and read all rootblock blocks */
 				// 17.10: with 1024 byte blocks rblsize can be 1!
 				rblsize = (*rootblock)->rblkcluster;
-				if (rblsize < 1 || rblsize > 512)
+				if (rblsize < 1 || rblsize > 521)
+					goto nrd_error;
+
+				// original PFS_DISK with PFS2_DISK features -> don't mount
+				if ((*rootblock)->disktype == ID_PFS_DISK && (((*rootblock)->options & MODE_LARGEFILE) || ((*rootblock)->reserved_blksize > 1024)))
 					goto nrd_error;
 
 				if (!InitLRU(g, (*rootblock)->reserved_blksize))
@@ -1070,37 +1094,46 @@ void GetDriveGeometry(globaldata *g)
 {
   IPTR *env = (IPTR *)g->dosenvec;
   struct DriveGeometry *geom = g->geom;
-  UBYTE error = 1;
+  BOOL forceDS = (env[DE_INTERLEAVE] & DEF_SCSIDIRECT) != 0;
+  BOOL SuperFloppy = (env[DE_INTERLEAVE] & DEF_SUPERFLOPPY) != 0;
 
 #ifdef TRACKDISK
-  struct IOExtTD *request = g->request;
-
 	if(g->trackdisk)
 	{
+	  struct IOExtTD *request = g->request;
 		request->iotd_Req.io_Data = geom;
 		request->iotd_Req.io_Command = TD_GETGEOMETRY;
 		request->iotd_Req.io_Length = sizeof(struct DriveGeometry);
-		if(!(error = DoIO((struct IORequest *)request)))
-			UpdateDosEnvec(g);
+		if(!DoIO((struct IORequest *)request)) {
+			SuperFloppy = TRUE;
+			goto gotgeom;
+		}
 	}
 #endif
 
-	if(error || !g->trackdisk)
-	{
-		geom->dg_SectorSize     = env[DE_SIZEBLOCK] << 2;
-		geom->dg_Cylinders      = env[DE_UPPERCYL] - env[DE_LOWCYL] + 1;
-		geom->dg_CylSectors     = env[DE_NUMHEADS] * env[DE_BLKSPERTRACK];
-		geom->dg_TotalSectors   = g->geom->dg_Cylinders * 
-									  g->geom->dg_CylSectors;
-		geom->dg_Heads          = env[DE_NUMHEADS];
-		geom->dg_TrackSectors   = env[DE_BLKSPERTRACK];
-		geom->dg_BufMemType     = env[DE_MEMBUFTYPE];
-		geom->dg_DeviceType     = DG_UNKNOWN;
-		geom->dg_Flags          = 0;
+	if (forceDS && SuperFloppy) {
+		if (get_scsi_geometry(g))
+			goto gotgeom;
 	}
+
+	geom->dg_SectorSize     = env[DE_SIZEBLOCK] << 2;
+	geom->dg_Cylinders      = env[DE_UPPERCYL] - env[DE_LOWCYL] + 1;
+	geom->dg_CylSectors     = env[DE_NUMHEADS] * env[DE_BLKSPERTRACK];
+	geom->dg_TotalSectors   = g->geom->dg_Cylinders * g->geom->dg_CylSectors;
+	geom->dg_Heads          = env[DE_NUMHEADS];
+	geom->dg_TrackSectors   = env[DE_BLKSPERTRACK];
+	geom->dg_BufMemType     = env[DE_MEMBUFTYPE];
+	geom->dg_DeviceType     = DG_UNKNOWN;
+	geom->dg_Flags          = 0;
+
+gotgeom:
+
+	if (SuperFloppy)
+		UpdateDosEnvec(g);
 
 	g->firstblock = g->dosenvec->de_LowCyl * geom->dg_CylSectors;
 	g->lastblock = (g->dosenvec->de_HighCyl + 1) *  geom->dg_CylSectors - 1;
+	g->maxtransfermax = 0x7ffffffe;
 #if LIMIT_MAXTRANSFER
 	if (g->scsidevice) {
 		struct Library *d;
