@@ -286,7 +286,7 @@ void NewVolume (BOOL FORCE, globaldata *g)
 		g->currentvolume = NULL;    /* @XL */
 	}
 
-	MotorOff (g);
+	UpdateAndMotorOff(g);
 	EXIT("NewVolume");
 }
 
@@ -992,11 +992,9 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 	g->ErrorMsg = NoErrorMsg;   // prevent readerrormsg
 
 #if ACCESS_DETECT
-	/* detect best access mode, td32, td64, nsd or directscsi */
-	if (g->tdmode == ACCESS_UNDETECTED) {
-		if (!detectaccessmode((UBYTE*)*rootblock, g))
-			goto nrd_error;
-	}
+	/* Detect best access mode, TD32, TD64, NSD or DirectSCSI */
+	if (!detectaccessmode((UBYTE*)*rootblock, g))
+		goto nrd_error;
 #endif
 
 	error = RawRead((UBYTE *)*rootblock, 1, BOOTBLOCK1, g);
@@ -1104,12 +1102,18 @@ void GetDriveGeometry(globaldata *g)
 	g->firstblock = g->dosenvec->de_LowCyl * geom->dg_CylSectors;
 	g->lastblock = (g->dosenvec->de_HighCyl + 1) *  geom->dg_CylSectors - 1;
 #if LIMIT_MAXTRANSFER
-	/* A600/A1200/A4000 ROM scsi.device ATA spec max transfer bug workaround */
-	g->maxtransfer = min(g->dosenvec->de_MaxTransfer, LIMIT_MAXTRANSFER);
-#else
-	g->maxtransfer = g->dosenvec->de_MaxTransfer;
+	if (g->scsidevice) {
+		struct Library *d;
+		Forbid();
+		d = (struct Library*)FindName(&SysBase->DeviceList, "scsi.device");
+		if (d && d->lib_Version >= 36 && d->lib_Version < 50) {
+			/* A600/A1200/A4000 ROM scsi.device ATA spec max transfer bug workaround */
+			g->maxtransfermax = LIMIT_MAXTRANSFER;
+		}
+		Permit();
+	}
 #endif
-	DB(Trace(1,"GetDriveGeometry","firstblk %ld lastblk %ld\n",g->firstblock,g->lastblock));
+	DB(Trace(1,"GetDriveGeometry","firstblk %lu lastblk %lu\n",g->firstblock,g->lastblock));
 }
 
 

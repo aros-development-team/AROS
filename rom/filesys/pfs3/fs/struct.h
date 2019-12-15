@@ -122,7 +122,14 @@
 #include <devices/scsidisk.h>
 #endif
 
-
+#ifndef DEF_SCSIDIRECT
+// Always choose SCSI Direct. Never use TD_GETGEOMETRY.
+#define DEF_SCSIDIRECT (1 << 16)
+// Removable, trackdisk.device like
+#define DEF_SUPERFLOPPY (1 << 17)
+// Never use NSD
+#define DEF_DISABLENSD (1 << 18)
+#endif
 
 /****************************************************************************/
 /* Useful macros to handle various compiler dependecies                     */
@@ -458,7 +465,7 @@ struct reftable
 };
 
 #define DATACACHELEN 32
-#define DATACACHEMASK 0x1f
+#define DATACACHEMASK (DATACACHELEN - 1)
 
 #define MarkDataDirty(i) (g->dc.ref[i].dirty = 1)
 
@@ -502,7 +509,9 @@ struct globaldata
 	/* partition info (volume dependent) %7 */
 	ULONG firstblock;                   /* first and last block of partition    */
 	ULONG lastblock;
-	ULONG maxtransfer;
+	ULONG maxtransfermax;
+	UWORD infoblockshift;
+	UWORD dummy_1;
 	struct diskcache dc;                /* cache to make '196 byte mode' faster */
 
 	/* LRU stuff */
@@ -537,6 +546,7 @@ struct globaldata
 	BOOL postpone;                      /* repeat timer when finished           */
 	BOOL removable;                     /* Is volume removable?                 */
 	BOOL trackdisk;                     /* Is the device trackdisk?             */
+	BOOL scsidevice;                    /* Is the device scsi.device?           */
 	LONG (*ErrorMsg)(CONST_STRPTR, APTR, ULONG, struct globaldata *);    /* The error message routine        */
 
 	struct rootblock *rootblock;        /* shortcut of currentvolume->rootblk   */
@@ -546,7 +556,7 @@ struct globaldata
 	UBYTE deldirenabled;                /* flag: deldir enabled?                */
 	UBYTE sleepmode;                    /* flag: sleepmode?                     */
 	UBYTE supermode;					/* flag: supermode? (104 bmi blocks)	*/
-	UBYTE tdmode;						/* ACCESS_x mode                        */
+	UBYTE tdmode;						/* ACCESS_x mode					*/
 	UBYTE largefile;					/* >4G file size support                */
 	ULONG blocksize;                    /* g->dosenvec->de_SizeBlock << 2       */
 	UWORD blockshift;                   /* 2 log van block size                 */
@@ -992,6 +1002,7 @@ typedef struct lockentry
 #define FirstReserved   (g->currentvolume->rootblk->firstreserved)
 #define InPartition(blk)  ((blk)>=g->firstblock && (blk)<=g->lastblock)
 #define BLOCKSIZE (g->blocksize)
+#define BLOCKSIZEMASK (g->blocksize - 1)
 #define BLOCKSHIFT (g->blockshift)
 #define DIRECTSIZE (g->directsize)
 
@@ -1046,7 +1057,6 @@ struct ExAllDataEXT
 #define TD_SEEK64	26
 #define TD_FORMAT64	27
 #endif
-
 
 /* NSD support */
 #ifndef NSCMD_DEVICEQUERY

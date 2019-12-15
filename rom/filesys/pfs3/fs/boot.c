@@ -377,9 +377,7 @@ LONG EntryPoint(struct ExecBase *SysBase)
 						}
 						else
 						{
-							g->request->iotd_Req.io_Command = CMD_UPDATE;
-							DoIO((struct IORequest *)g->request);
-							MotorOff(g);
+							UpdateAndMotorOff(g);
 							g->timeron = FALSE;
 							for (idle = HeadOf(&g->idlelist); idle->next; idle = idle->next)
 								Signal (idle->task, 1L<<idle->cleansignal);

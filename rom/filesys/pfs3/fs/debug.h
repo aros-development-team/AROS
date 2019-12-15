@@ -31,7 +31,6 @@ extern void Trace(ULONG id, const UBYTE *title, const UBYTE *format, ...);
 #define DB(x)
 #define ENTER(x)
 #define EXIT(x)
-
 #endif
 
 #else
@@ -44,6 +43,10 @@ extern void Trace(ULONG id, const UBYTE *title, const UBYTE *format, ...);
 #define EXIT(x)
 #endif
 
+#endif
+
+#ifndef DBERR
+#define DBERR(x)
 #endif
 
 #endif /* DEBUG_H */
