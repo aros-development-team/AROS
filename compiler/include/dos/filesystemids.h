@@ -51,24 +51,24 @@
 
 #define ID_NTFS_DISK 		        AROS_MAKE_ID('N','T','F','S')
 
-#define ID_MAC_DISK2                    (0x4d414300L)                           /* MAC\0 - xfs mac disk                         */
-#define ID_MNX1_DISK                    (0x4d4e5801L)                           /* MNX\1 - xfs minix disk                       */
-#define ID_MNX2_DISK                    (0x4d4e5802L)                           /* MNX\2 - xfs minix disk                       */
-#define ID_QL5A_DISK                    (0x514c3541L)                           /* QL5A - xfs ql 720k / ed disk                 */
-#define ID_QL5B_DISK                    (0x514c3542L)                           /* QL5B - xfs ql 1440k disk                     */
-#define ID_ZXS0_DISK                    (0x5a585300L)                           /* Spectrum Disciple - xfs                      */
-#define ID_ZXS1_DISK                    (0x5a585301L)                           /* Spectrum UniDos - xfs                        */
-#define ID_ZXS2_DISK                    (0x5a585302L)                           /* Spectrum SamDos - xfs                        */
-#define ID_ZXS4_DISK                    (0x5a585304L)                           /* Spectrum Opus 180k - xfs                     */
-#define ID_ARME_DISK                    (0x41524d44L)                           /* Archimedes - xfs                             */
-#define ID_ARMD_DISK                    (0x41524d43L)                           /* Archimedes - xfs                             */
-#define ID_CPM_DISK                     (0x43505c4dL)                           /* CP/M - xfs                                   */
-#define ID_ZXS3_DISK                    (0x5a585303L)                           /* ZXS\3 - Plus3Dos xfs                         */
-#define ID_1541_DISK                    (0x31353431L)                           /* 1541 - xfs                                   */
-#define ID_1581_DISK                    (0x31353831L)                           /* 1581 - xfs                                   */
-#define ID_MAC_DISK                     (0x4d534800L)                           /* MSH\0 - CrossDos MACDisk ?!                  */
-#define ID_P2A0_DISK                    (0x50324130L)
+#define ID_MAC_DISK                     AROS_MAKE_ID('M','S','H',0)             /* MSH\0 - CrossDos MACDisk ?!                  */
+#define ID_MAC_DISK2                    AROS_MAKE_ID('M','A','C',0)             /* MAC\0 - xfs mac disk                         */
+#define ID_MNX1_DISK                    AROS_MAKE_ID('M','N','X',1)             /* MNX\1 - xfs minix disk                       */
+#define ID_MNX2_DISK                    AROS_MAKE_ID('M','N','X',2)             /* MNX\2 - xfs minix disk                       */
+#define ID_QL5A_DISK                    AROS_MAKE_ID('Q','L','5','A')           /* QL5A - xfs ql 720k / ed disk                 */
+#define ID_QL5B_DISK                    AROS_MAKE_ID('Q','L','5','B')           /* QL5B - xfs ql 1440k disk                     */
+#define ID_ZXS0_DISK                    AROS_MAKE_ID('Z','X','S',0)             /* Spectrum Disciple - xfs                      */
+#define ID_ZXS1_DISK                    AROS_MAKE_ID('Z','X','S',1)             /* Spectrum UniDos - xfs                        */
+#define ID_ZXS2_DISK                    AROS_MAKE_ID('Z','X','S',2)             /* Spectrum SamDos - xfs                        */
+#define ID_ZXS3_DISK                    AROS_MAKE_ID('Z','X','S',3)             /* ZXS\3 - Plus3Dos xfs                         */
+#define ID_ZXS4_DISK                    AROS_MAKE_ID('Z','X','S',4)             /* Spectrum Opus 180k - xfs                     */
+#define ID_ARME_DISK                    AROS_MAKE_ID('A','R','M','E')           /* Archimedes - xfs                             */
+#define ID_ARMD_DISK                    AROS_MAKE_ID('A','R','M','D')           /* Archimedes - xfs                             */
+#define ID_CPM_DISK                     AROS_MAKE_ID('C','P','\\','M')          /* CP\M - xfs                                   */
+#define ID_1541_DISK                    AROS_MAKE_ID('1','5','4','1')           /* 1541 - xfs                                   */
+#define ID_1581_DISK                    AROS_MAKE_ID('1','5','8','1')           /* 1581 - xfs                                   */
+#define ID_P2A0_DISK                    AROS_MAKE_ID('P','2','A','0')
 
-#define ID_EXT2_DISK                    (0x45585432L)                           /* Extended 2 - Linux                           */
+#define ID_EXT2_DISK                    AROS_MAKE_ID('E','X','T','2')           /* Extended 2 - Linux                           */
 
 #endif /* DOS_FILESYSTEMIDS_H */
