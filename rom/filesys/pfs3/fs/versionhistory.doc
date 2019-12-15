@@ -12,7 +12,6 @@
 ** -------
 **     A filesystem for the C= Amiga.
 **
-**
 ** Revision V19.0
 ** --------------
 ** Added support for larger files and volumes
@@ -838,12 +837,18 @@
 **	   1.0: Initial release
 **
 *********************************************************************************/
-#define REVISION "19.0"
+#define REVISION "19.2"
+#ifndef REVDATE
+#define REVDATE  "10.02.2018"
+#endif
+#ifndef REVTIME
+#define REVTIME  "18:02:53"
+#endif
 #define AUTHOR   "Michiel Pelt"
 #define VERNUM   19
-#define REVNUM   0
+#define REVNUM   2
 
-#define RELNUM  "5.5"
+#define RELNUM  "6.2"
 
 #if MULTIUSER
 #define E1 "mu"
