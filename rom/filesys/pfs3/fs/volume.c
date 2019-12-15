@@ -431,7 +431,7 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 			*/
 			TakeOverLocks((struct FileLock *)locklist, g);
 			devlist = (struct DeviceList *)doslist;
-			devlist->dl_LockList = BNULL;
+			devlist->dl_LockList = 0;
 			devlist->dl_Task = g->msgport;
 
 		}
@@ -458,7 +458,7 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 			devlist->dl_VolumeDate.ds_Days   = rootblock->creationday;
 			devlist->dl_VolumeDate.ds_Minute = rootblock->creationminute;
 			devlist->dl_VolumeDate.ds_Tick   = rootblock->creationtick;
-			devlist->dl_LockList    = BNULL; // no locks open yet
+			devlist->dl_LockList    = 0; // no locks open yet
 			devlist->dl_DiskType    = rootblock->disktype;
 			added = AddDosEntry((struct DosList *)devlist);
 		}

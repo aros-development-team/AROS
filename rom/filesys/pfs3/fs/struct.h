@@ -816,8 +816,9 @@ struct idlehandle
 
 #if LARGE_FILE_SIZE
 /* >4G file size support */
-typedef QUAD FSIZE;
-typedef QUAD SFSIZE;
+typedef signed long long QUAD;
+typedef signed long long FSIZE;
+typedef signed long long SFSIZE;
 /* Limit to useful sane size, not real max for now */
 #define MAX_FILE_SIZE 0x7fffffffff
 #else
