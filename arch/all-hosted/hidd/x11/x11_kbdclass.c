@@ -6,7 +6,6 @@
     Lang: English.
 */
 
-#define DEBUG 1
 #include "x11_debug.h"
 
 #define __OOP_NOATTRBASES__
