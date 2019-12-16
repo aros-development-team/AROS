@@ -19,7 +19,8 @@ FILES := \
 	messages \
 	boot \
 	assroutines \
-	resethandler
+	resethandler \
+	fsresource
 
 PFS3_CFLAGS := \
 	-DEXTRAPACKETS=1 \

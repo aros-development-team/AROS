@@ -130,31 +130,33 @@
 
 /* external globals
  */
-extern CONST UBYTE *version;
 #if defined(__SASC)
 extern void __asm ResetHandler(void);
 #elif defined(__AROS__)
 extern AROS_INTP(DiskChangeHandler);
 extern AROS_INTP(ResetHandler);
 #else
+extern void DiskChangeHandler(void);
 extern void ResetHandler(void);
 #endif
 
 /* prototypes
  */
-static BOOL OpenDiskDevice(struct FileSysStartupMsg * , struct MsgPort ** , struct IOExtTD **, BOOL *, globaldata *);
+static BOOL OpenDiskDevice(struct FileSysStartupMsg * , struct MsgPort ** , struct IOExtTD **, BOOL *, BOOL *, globaldata *);
 static BOOL init_device_unit_sema(struct FileSysStartupMsg *, globaldata *);
 static BOOL OpenTimerDevice(struct MsgPort ** , struct timerequest ** , ULONG, globaldata * );
 static BOOL TestRemovability(globaldata *);
 static void InstallDiskChangeHandler(globaldata *);
 static void InstallResetHandler(struct globaldata *);
-#if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
-/* MorphOS ROM build uses other means to add the filesystem.resource entry */
-static BOOL AddToFSResource(ULONG, BPTR, struct globaldata *);
-#endif
 #if VERSION23
 static void DoPostponed (struct volumedata *volume, globaldata *g);
 #endif
+
+#if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
+/* MorphOS ROM build uses other means to add the filesystem.resource entry */
+void AddToFSResource(ULONG, BPTR, struct ExecBase*);
+#endif
+
 
 /**********************************************************************/
 /*                             INITIALIZE                             */
@@ -250,9 +252,7 @@ Removed because of problems with Phase 5 boards
 	g->blockshift = i;
 	g->directsize = 16*1024>>i;
 
-#if ACCESS_DETECT
-	g->tdmode = ACCESS_UNDETECTED;
-#else
+#if ACCESS_DETECT == 0
 #define DE(x) g->dosenvec->de_##x
 	g->tdmode = ACCESS_STD;
 	if ((DE(HighCyl)+1)*DE(BlocksPerTrack)*DE(Surfaces) >= (1UL << (32-BLOCKSHIFT))) {
@@ -273,7 +273,7 @@ Removed because of problems with Phase 5 boards
 	NewList((struct List *)&g->volumes);    /* %9.1 */
 	NewList((struct List *)&g->idlelist);
 
-	if (!OpenDiskDevice(fssm, &g->port, &g->request, &g->trackdisk, g) )
+	if (!OpenDiskDevice(fssm, &g->port, &g->request, &g->trackdisk, &g->scsidevice, g) )
 		return FALSE;
 
 	DB(Trace(4,"Init","result = %ld",(ULONG)g->trackdisk));
@@ -307,7 +307,7 @@ Removed because of problems with Phase 5 boards
 	InstallResetHandler(g);
 
 #if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
-	AddToFSResource (g->dosenvec->de_DosType, ((struct DosList *)devnode)->dol_misc.dol_handler.dol_SegList, g);
+	AddToFSResource (g->dosenvec->de_DosType, ((struct DosList *)devnode)->dol_misc.dol_handler.dol_SegList, SysBase);
 #endif
 
 #if EXTRAPACKETS
@@ -323,7 +323,7 @@ Removed because of problems with Phase 5 boards
 /* added from HDVersion7.0B 11-4-94 */
 static BOOL TestRemovability(globaldata *g)
 {
-#if 0
+#ifdef TRACKDISK
 
   struct DriveGeometry *geom = g->geom;
   struct IOExtTD *request = g->request;
@@ -344,7 +344,7 @@ static BOOL TestRemovability(globaldata *g)
 	{
 	  struct DosEnvec *env = g->dosenvec;
 
-		if( (env->de_Surfaces <= 2) && (env->de_LowCyl == 0) )
+		if(((env->de_Surfaces <= 2) && (env->de_LowCyl == 0)) || (env->de_Interleave & DEF_SUPERFLOPPY))
 			result = 1;     /* to accomodate things like the diskspare.device */
 		else
 			result = 0;     /* disk is assumed to be NOT removable by default */
@@ -363,7 +363,7 @@ static void InstallDiskChangeHandler(struct globaldata *g)
   struct IOExtTD *request;
   struct Interrupt *di;
   UBYTE *intname;
-  static const UBYTE *intext = "_interrupt";
+  static const UBYTE *const intext = "_interrupt";
 
 	intname = AllocMemR (g->mountname[0]+strlen(intext)+1, MEMF_PUBLIC, g);
 	CopyMem(g->mountname+1,intname,g->mountname[0]);
@@ -394,8 +394,8 @@ void UninstallDiskChangeHandler(struct globaldata *g)
 {
 	struct IOExtTD *request = g->handlrequest;
 
-    if (!g->diskinterrupt)
-    	return;
+	if (!g->diskinterrupt)
+		return;
 	request->iotd_Req.io_Length  = sizeof(struct Interrupt);
 	request->iotd_Req.io_Data    = (APTR)g->diskinterrupt;
 	request->iotd_Req.io_Command = TD_REMCHANGEINT;
@@ -417,7 +417,7 @@ static void InstallResetHandler(struct globaldata *g)
 		if (sigbit != -1)
 		{
 			ri->is_Node.ln_Type = NT_INTERRUPT;
-			ri->is_Node.ln_Pri  = -32; /* Lowest possible priority, after everything else */
+			ri->is_Node.ln_Pri  = -32; /* Lowest possible software interrupt priority, after everything else */
 			ri->is_Node.ln_Name = (char *) (ri + 1);
 			ri->is_Data = (APTR) g;
 			ri->is_Code = (void (*)(void)) ResetHandler;
@@ -434,7 +434,7 @@ static void InstallResetHandler(struct globaldata *g)
 			{
 			struct MsgPort mp;
 			struct IOStdReq *ioreq;
-                        memset(&mp, 0, sizeof(mp));
+			memset(&mp, 0, sizeof(mp));
 			mp.mp_Node.ln_Type = NT_MSGPORT;
 			mp.mp_Flags = PA_SIGNAL;
 			mp.mp_SigBit = sigbit;
@@ -483,7 +483,7 @@ void HandshakeResetHandler(struct globaldata *g)
 		struct IOStdReq *ioreq = g->resethandlerioreq;
 		struct MsgPort mp;
 
-                memset(&mp, 0, sizeof(mp));
+		memset(&mp, 0, sizeof(mp));
 		mp.mp_Node.ln_Type = NT_MSGPORT;
 		mp.mp_Flags = PA_SIGNAL;
 		mp.mp_SigBit = g->resethandlersigbit;
@@ -513,7 +513,7 @@ void UninstallResetHandler(struct globaldata *g)
 #else
 		struct IOStdReq *ioreq = g->resethandlerioreq;
 		struct MsgPort mp;
-                memset(&mp, 0, sizeof(mp));
+		memset(&mp, 0, sizeof(mp));
 		mp.mp_Node.ln_Type = NT_MSGPORT;
 		mp.mp_Flags = PA_SIGNAL;
 		mp.mp_SigBit = g->resethandlersigbit;
@@ -546,7 +546,7 @@ void UninstallResetHandler(struct globaldata *g)
 ** out port, request, trackdisk
 */
 static BOOL OpenDiskDevice(struct FileSysStartupMsg *startup, struct MsgPort **port,
-		struct IOExtTD **request, BOOL *trackdisk, globaldata *g)
+		struct IOExtTD **request, BOOL *trackdisk, BOOL *scsidevice, globaldata *g)
 {
   UBYTE name[FNSIZE];
 
@@ -558,15 +558,8 @@ static BOOL OpenDiskDevice(struct FileSysStartupMsg *startup, struct MsgPort **p
 		{
 			BCPLtoCString(name, (UBYTE *)BADDR(startup->fssm_Device));
 			*trackdisk = (strcmp(name, "trackdisk.device") == 0) || (strcmp(name, "diskspare.device") == 0);
-
-#if KS13WRAPPER_DEBUG
-	DebugPutStr("Opening device..\n");
-	DebugPutStr(name);
-	DebugPutStr("\n");
-#endif
-
-			if(OpenDevice(name, startup->fssm_Unit, (struct IORequest *)*request,
-				startup->fssm_Flags) == 0)
+			*scsidevice = strcmp(name, "scsi.device") == 0;
+			if(OpenDevice(name, startup->fssm_Unit, (struct IORequest *)*request, startup->fssm_Flags) == 0)
 				return TRUE;
 			DeleteIORequest(*request);
 			*request = 0;
@@ -604,6 +597,7 @@ static BOOL init_device_unit_sema(struct FileSysStartupMsg *startup, globaldata 
 			sema->ss.ss_Link.ln_Name = sema->name;
 			sema->ss.ss_Link.ln_Pri  = -128;
 			sema->ss.ss_Link.ln_Type = NT_SIGNALSEM;
+			// Pre-2.x AddSemaphore() is broken.
 			if (g->g_SysBase->LibNode.lib_Version < 36) {
 				Enqueue(&g->g_SysBase->SemaphoreList, &sema->ss);
 			}  else {
@@ -651,55 +645,6 @@ static BOOL OpenTimerDevice(struct MsgPort **port, struct timerequest **request,
 	return(FALSE);
 }
 
-#if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
-/* AddToFSResource
-**
-** function supplied by Nicola Salmoria
-*/
-static BOOL AddToFSResource(ULONG dostype, BPTR seglist, struct globaldata *g)
-{
-  struct FileSysResource *FileSysResBase;
-
-	FileSysResBase = (struct FileSysResource *)OpenResource(FSRNAME);
-	if (FileSysResBase)
-	{
-	  struct FileSysEntry *fse,*nfse;
-
-		Forbid();
-
-		fse = (struct FileSysEntry *)FileSysResBase->fsr_FileSysEntries.lh_Head;
-		while ((nfse = (struct FileSysEntry *)fse->fse_Node.ln_Succ))
-		{
-			/* if filesystem already in resource, return */
-			if (fse->fse_DosType == dostype)
-			{
-				DB(Trace(4,"ADDTORESOURCE","Already there\n"));    
-				break;
-			}
-
-			fse = nfse;
-		}
-
-		if (!nfse && (fse = AllocMem(sizeof(struct FileSysEntry), MEMF_PUBLIC | MEMF_CLEAR)))
-		{
-			fse->fse_Node.ln_Name = (UBYTE *)&version[6];
-			fse->fse_DosType = dostype;
-			fse->fse_Version = ((LONG)VERNUM) << 16 | REVNUM;
-			fse->fse_PatchFlags = 0x180;
-			fse->fse_SegList = seglist;
-			fse->fse_GlobalVec = (BPTR)(SIPTR)-1;
-
-			AddHead(&FileSysResBase->fsr_FileSysEntries,&fse->fse_Node);
-		}
-
-		Permit();
-	}
-
-	return TRUE;
-}
-#endif
-
-
 /* Reconfigure the filesystem from a rootblock
 ** GetDriveGeometry already called by GetCurrentRoot, which does
 ** g->firstblock and g->lastblock.
@@ -716,7 +661,7 @@ void InitModules (struct volumedata *volume, BOOL formatting, globaldata *g)
 	g->dirextension = (rootblock->options & MODE_DIR_EXTENSION) != 0;
 #if DELDIR
 	g->deldirenabled = (rootblock->options & MODE_DELDIR) && 
-		g->dirextension && (volume->rblkextension->blk.deldirsize > 0);
+	g->dirextension && (volume->rblkextension->blk.deldirsize > 0);
 #endif
 	g->supermode = (rootblock->options & MODE_SUPERINDEX) != 0;
 	g->fnsize = (volume->rblkextension) ? (volume->rblkextension->blk.fnsize) : 32;
