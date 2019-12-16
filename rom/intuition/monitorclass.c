@@ -263,6 +263,10 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     D(bug("[Monitor] %s: SpriteType = %08x\n", __func__, data->SpriteType));
     OOP_GetAttr(handle->gfxhidd, aHidd_Gfx_FrameBufferType, (IPTR *)&data->FrameBufferType);
     D(bug("[Monitor] %s: FrameBufferType = %08x\n", __func__, data->FrameBufferType));
+    if (OOP_GET(handle->gfxhidd, aHidd_Gfx_SupportsDisplayChange))
+        data->dcsupported = TRUE;
+    else
+        data->dcsupported = FALSE;
 
     tags[0].ti_Data = (IPTR)o;
     tags[2].ti_Data = (IPTR)o;
@@ -1129,7 +1133,7 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
 
     D(bug("[Monitor] %s()\n", __func__));
 
-    if (data->FrameBufferType != vHidd_FrameBuffer_None)
+    if (!data->dcsupported)
     {
         struct Screen *scr;
 
@@ -1205,7 +1209,7 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
     struct IMonitorNode *data = INST_DATA(cl, obj);
     D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
 
-    if ((data->FrameBufferType == vHidd_FrameBuffer_None) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
@@ -1275,7 +1279,7 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
     struct IMonitorNode *data = INST_DATA(cl, obj);
     D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
 
-    if ((data->FrameBufferType == vHidd_FrameBuffer_None) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;

@@ -2,7 +2,7 @@
 #define HIDD_KBD_H
 
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
@@ -26,6 +26,8 @@
 #endif
 
 #include <dos/bptr.h>
+
+#include <hidd/keyboard.h>
 
 /****************************************************************************************/
 
@@ -83,7 +85,7 @@ struct kbdbase
 
 struct kbd_data
 {
-    VOID    (*kbd_callback)(APTR, UWORD);
+    KbdIrqCallBack_t kbd_callback;
     APTR    callbackdata;
     struct Library *TimerBase;
     UBYTE resetstate;

@@ -726,6 +726,7 @@ VOID AmigaVideoCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
             case aoHidd_Gfx_HWSpriteTypes:
                 *msg->storage = vHidd_SpriteType_3Plus1;
             return;
+            case aoHidd_Gfx_SupportsDisplayChange:
             case aoHidd_Gfx_SupportsHWCursor:
             case aoHidd_Gfx_NoFrameBuffer:
                 *msg->storage = TRUE;

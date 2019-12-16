@@ -14,6 +14,13 @@ USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\"" \
 USER_LDFLAGS  := -L$(GENDIR)/lib
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
 
+# Make sure the debug info is always present since we need it for
+# gdb to work,
+ifneq ($(DEBUG),yes)
+USER_CFLAGS+=$(HOST_DEBUG)
+USER_LDFLAGS+=$(HOST_DEBUG)
+endif
+
 # Allow to add host-specific options
 -include $(SRCDIR)/arch/all-$(FAMILY)/bootstrap/make.opts
 -include $(SRCDIR)/arch/all-$(ARCH)/bootstrap/make.opts

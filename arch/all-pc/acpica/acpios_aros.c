@@ -750,6 +750,8 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
         return FALSE;
     }
 
+    ACPICABase->ab_Flags |= ACPICAF_INITIALISED;
+
     if (AcpiGetTable("MCFG", 1, (ACPI_TABLE_HEADER **)&mcfg) == AE_OK) {
         ACPICABase->ab_PCIs = (mcfg->Header.Length - sizeof(*mcfg)) / sizeof(ACPI_MCFG_ALLOCATION);
         ACPICABase->ab_PCI = (ACPI_MCFG_ALLOCATION *)&mcfg[1];
@@ -765,7 +767,7 @@ int ACPICA_expunge(struct ACPICABase *ACPICABase)
 {
     D(bug("[ACPI] %s()\n", __func__));
 
-    if ((ACPICABase->ab_Flags & ACPICAF_ENABLED) != 0)
+    if ((ACPICABase->ab_Flags & (ACPICAF_ENABLED|ACPICAF_INITIALISED)) == (ACPICAF_ENABLED|ACPICAF_INITIALISED))
         AcpiTerminate();
 
     return TRUE;

@@ -23,12 +23,12 @@ struct IMonitorNode
     struct Rectangle            FBBounds;
 
 #if USE_FAST_DISPLAYTOBMCOORDS
-    OOP_MethodFunc         displaytobmcoords;
-    OOP_Class 	          *displaytobmcoords_Class;
+    OOP_MethodFunc              displaytobmcoords;
+    OOP_Class 	                *displaytobmcoords_Class;
 #endif
 #if USE_FAST_BMTODISPLAYCOORDS
-    OOP_MethodFunc         bmtodisplaycoords;
-    OOP_Class 	          *bmtodisplaycoords_Class;
+    OOP_MethodFunc              bmtodisplaycoords;
+    OOP_Class 	                *bmtodisplaycoords_Class;
 #endif
 
     /* xxx */
@@ -53,6 +53,8 @@ struct IMonitorNode
     UBYTE                       *active_b;
     UBYTE                       *active_g;
     UBYTE                       screenGamma;
+
+    BOOL                        dcsupported;
 };
 
 /* Offsets for gamma table */

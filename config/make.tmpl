@@ -362,7 +362,7 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -454,7 +454,7 @@ $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
 KERNEL_CXX ?= $(KERNEL_CC)
-%(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+%(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
@@ -557,7 +557,7 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -679,7 +679,7 @@ $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -784,7 +784,7 @@ ifeq (%(compiler),target)
 endif
 ifeq (%(compiler),kernel)
   KERNEL_CXX ?= $(KERNEL_CC)
-  %(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+  %(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
   %(mmake)_STRIP ?= $(ECHO) >/dev/null
   %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
   %(mmake)_CXXCMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
@@ -907,7 +907,7 @@ ifeq (%(compiler),host)
 endif
 ifeq (%(compiler),kernel)
   KERNEL_OBJC ?= $(KERNEL_CC)
-  %(mmake)_LINK ?= $(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT) $(KERNEL_LDFLAGS))
+  %(mmake)_LINK ?= $(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
   %(mmake)_STRIP ?= $(ECHO) >/dev/null
   %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : CMD:=$(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
@@ -1546,7 +1546,7 @@ BDID := $(BDTARGETID)
 %define build_prog mmake=/A progname=/A files= cxxfiles= \
     objcfiles= \
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
-    cppflags=$(CPPFLAGS) cflags= dflags= cxxflags= dxxflags= ldflags=$(LDFLAGS) \
+    cppflags=$(CPPFLAGS) cflags= dflags= cxxflags= dxxflags= ldflags= \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
     includedir= libdir= \
     compiler=target linker= \
@@ -1619,6 +1619,20 @@ else
 %(mmake)_CXXFLAGS          := %(cxxflags)
 endif
 
+ifeq ("%(ldflags)","")
+ifeq (%(compiler),target)
+%(mmake)_LDFLAGS            := $(LDFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LDFLAGS            := $(HOST_LDFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LDFLAGS            := $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+endif
+else
+%(mmake)_LDFLAGS          := %(ldflags)
+endif
+
 %(mmake)_COVERAGE := no
 ifeq (%(compiler),target)
 ifeq (%(usestartup),yes)
@@ -1656,13 +1670,13 @@ else
     %(mmake)_DXXFLAGS     := $(%(mmake)_CXXFLAGS)
 endif
 ifeq (%(compiler),target)
-%(mmake)_LDFLAGS           := %(ldflags) $(TARGET_ISA_OBJCFLAGS)
+%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS) $(TARGET_ISA_OBJCFLAGS)
 endif
 ifeq (%(compiler),host)
-%(mmake)_LDFLAGS           := %(ldflags) $(HOST_ISA_OBJCFLAGS)
+%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS) $(HOST_ISA_OBJCFLAGS)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LDFLAGS           := %(ldflags) $(KERNEL_ISA_OBJCFLAGS)
+%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS) $(KERNEL_ISA_OBJCFLAGS)
 endif
 ifneq (%(libdir),)
 %(mmake)_LDFLAGS   += -L%(libdir)
@@ -2803,6 +2817,8 @@ endif
 
 %(mmake)_OBJS := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, $(%(mmake)_LNGS)))
 %(mmake)_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, $(%(mmake)_LNGS))) $(dir %(source))
+
+#MM- %(mmake)-quick : %(mmake)
 
 #MM
 %(mmake) : $(%(mmake)_OBJS) %(source)

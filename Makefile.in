@@ -41,6 +41,13 @@ endif
 # Rules for Configure generated files ...
 #
 
+$(TOP)/config.status: $(SRCDIR)/configure
+	@echo "****"
+	@echo "**** The configure script must be executed before running '$(MAKE)'."
+	@echo "****               Please run \"./configure\"."
+	@echo "****"
+	@exit 1
+
 #$(TOP)/Makefile: $(SRCDIR)/Makefile.in $(TOP)/config.status
 #	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
 #	@$(TOP)/config.status --silent --file=$@:$<
