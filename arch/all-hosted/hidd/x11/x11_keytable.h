@@ -15,6 +15,7 @@
 struct _keytable
 {
     KeySym keysym;
+    WORD   hiddqual;
     WORD   hiddcode;
 };
 

@@ -6,6 +6,7 @@
     Lang: English.
 */
 
+#define DEBUG 1
 #include "x11_debug.h"
 
 #define __OOP_NOATTRBASES__
@@ -46,7 +47,7 @@ static struct OOP_ABDescr attrbases[] =
 #define KEYTABLE_NAME builtin_keytable
 
 #ifndef KEYTABLE_DEFAULT
-#  define KEYTABLE_DEFAULT "x11_keytable_english.c"
+#  define KEYTABLE_DEFAULT "x11_keytable-en_gb.c"
 #endif
 #include KEYTABLE_DEFAULT
 
