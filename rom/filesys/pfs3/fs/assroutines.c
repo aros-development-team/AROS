@@ -1,8 +1,8 @@
+
 #include <exec/types.h>
 
 #include "blocks.h"
 #include "struct.h"
-
 
 /* StackSwap is not used (or required) for NG systems (at least not MorphOS), thus dummy */
 void AfsDie(void)

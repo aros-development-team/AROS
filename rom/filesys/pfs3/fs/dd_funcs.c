@@ -179,12 +179,12 @@ static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
 	if (!pkt->dp_Arg1)
 	{
 		if (g->currentvolume)
-			return (SIPTR)MKBADDR(g->currentvolume->devlist);
+			return MKBADDR(g->currentvolume->devlist);
 		else
-			return (SIPTR)BNULL;
+			return 0;
 	}
 	else
-		return (SIPTR)MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
+		return MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
 }
 
 
@@ -270,7 +270,7 @@ static SIPTR dd_Lock(struct DosPacket *pkt, globaldata * g)
 
 	DB(Trace(1, "Lock", "adres: %lx\n", filefe));
 	pkt->dp_Res2 = 0;
-	return (SIPTR)MKBADDR(&filefe->lock);
+	return MKBADDR(&filefe->lock);
 }
 
 static SIPTR dd_Unlock(struct DosPacket *pkt, globaldata * g)
@@ -363,7 +363,7 @@ static SIPTR dd_DupLock(struct DosPacket *pkt, globaldata * g)
 	}
 
 	DB(Trace(1, "DupLock", "of %lx adres: %lx\n", srcfe, dstfe));
-	return (SIPTR)MKBADDR(&dstfe->le.lock);
+	return MKBADDR(&dstfe->le.lock);
 }
 
 static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
@@ -413,7 +413,7 @@ static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
 	if (newdirle)
 	{
 		PFSDoNotify(&newdirle->le.info.file, TRUE, g);
-		return (SIPTR)MKBADDR(&newdirle->le.lock);
+		return MKBADDR(&newdirle->le.lock);
 	}
 	else
 		return DOSFALSE;
@@ -477,7 +477,7 @@ static SIPTR dd_Parent(struct DosPacket *pkt, globaldata * g)
 		return (0);
 	}
 
-	return (SIPTR)MKBADDR(&parentfe->lock);
+	return MKBADDR(&parentfe->lock);
 }
 
 

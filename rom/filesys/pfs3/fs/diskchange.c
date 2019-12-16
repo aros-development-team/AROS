@@ -42,6 +42,15 @@ AROS_UFH2(ULONG, DiskChangeHandler,
 	AROS_USERFUNC_EXIT
 }
 
+#elif __GNUC__
+
+ULONG DiskChangeHandler(register struct globaldata *g asm("a1"))
+{
+	Signal(&g->myproc->pr_Task, g->diskchangesignal);
+	return 0;
+}
+
+
 #else
 
 #warning "Add the implementation for your platform"

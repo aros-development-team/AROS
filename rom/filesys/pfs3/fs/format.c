@@ -161,6 +161,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
   struct rootblock *rootblock;
   struct volumedata *volume;
   struct crootblockextension *rext;
+  ULONG err;
   ULONG i;
 
 	ENTER("FDSFormat");
@@ -170,8 +171,10 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
 #endif
 
 	/* remove error-induced soft protect */
-	if (g->softprotect < 0)
+	if (g->softprotect < 0) {
+		*error = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
+	}
 
 	if (g->softprotect && g->protectkey == ~0)
 		g->softprotect = g->protectkey = 0;
@@ -181,21 +184,30 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
 	ShowVersion (g);
 
 	/* issue 00118: disk cannot exceed MAX_DISK_SIZE */
-	if (g->geom->dg_TotalSectors > MAXDISKSIZE)
+	if (g->geom->dg_TotalSectors > MAXDISKSIZE) {
+		*error = ERROR_OBJECT_TOO_LARGE;
 		return DOSFALSE;
+	}
 
-	if (MakeBootBlock (g) != 0)
-		return DOSFALSE;
+	err = MakeBootBlock (g);
+	if (err != 0) {
+		*error = err;
+ 		return DOSFALSE;
+	}
 
-	if (!(rootblock = MakeRootBlock (diskname, g)))
+	if (!(rootblock = MakeRootBlock (diskname, g))) {
+		*error = ERROR_NO_FREE_STORE;
 		return DOSFALSE;
+	}
 
 	/*  make volumedata BEFORE rext ! (bug 00135) */
 	g->currentvolume = volume = MakeVolumeData (rootblock, g);
 
 	/* add extension */
-	if (!(rext = MakeFormatRBlkExtension (rootblock, g)))
+	if (!(rext = MakeFormatRBlkExtension (rootblock, g))) {
+		*error = ERROR_NO_FREE_STORE;
 		return DOSFALSE;			// rootblock extension could not be created
+	}
 
 	volume->rblkextension = rext;
 	rootblock->options |= MODE_EXTENSION;
@@ -230,12 +242,12 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
 static void ShowVersion (globaldata *g)
 {
   /* data needed for requester */
-  struct EasyStruct req =
+  static const struct EasyStruct req =
   {
 	sizeof(struct EasyStruct),
 	0,
 	"Professional File System 3 V" RELEASE,
-	NULL,
+	(STRPTR)FORMAT_MESSAGE,
 	"OK"
   };
 
@@ -244,10 +256,10 @@ static void ShowVersion (globaldata *g)
   struct Window	*window;
   ULONG rec_idcmp, retval, tick;
 
-  if (SysBase->LibNode.lib_Version < 37)
-    return;
-
-	req.es_TextFormat = (STRPTR)FORMAT_MESSAGE;
+#ifdef KSWRAPPER
+	if (!g->v37DOS)
+		return;
+#endif
 
 	/*
 	 * Show  copyright message
@@ -287,6 +299,11 @@ static ULONG MakeBootBlock (globaldata *g)
 	if (!(bbl = AllocBufmem (2 * BLOCKSIZE, g)))
 		return ERROR_NO_FREE_STORE;
 
+#if ACCESS_DETECT
+	if (!detectaccessmode((UBYTE*)bbl, g))
+		return ERROR_OBJECT_TOO_LARGE;
+#endif
+
 	memset (bbl, 0, 2*BLOCKSIZE);
 	bbl->disktype = ID_PFS_DISK;
 	error = RawWrite ((UBYTE *)bbl, 2, BOOTBLOCK1, g);
@@ -305,6 +322,7 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
   struct DateStamp time;
   ULONG numreserved;
   ULONG rescluster;
+  ULONG resblocksize;
 
 	/* allocate max size possible */
 	if (!(rbl = AllocBufmem (BLOCKSIZE, g)))
@@ -325,17 +343,18 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 #endif
 
 	// determine reserved blocksize
-	ULONG resblocksize = 1024;
+	resblocksize = 1024;
 	if (g->geom->dg_TotalSectors > MAXSMALLDISK)
 	{
 		rbl->options |= MODE_SUPERINDEX;
 		g->supermode = 1;
 		if (g->geom->dg_TotalSectors > MAXDISKSIZE1K) {
-			rbl->disktype = ID_PFS2_DISK;
 			resblocksize = 2048;
 			if (g->geom->dg_TotalSectors > MAXDISKSIZE2K) {
 				resblocksize = 4096;
 			}
+			rbl->disktype = ID_PFS2_DISK;
+			NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_DISK, NULL, 1);
 		}
 	}
 
@@ -350,6 +369,7 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 #if LARGE_FILE_SIZE
 	rbl->options |= MODE_LARGEFILE;
 	rbl->disktype = ID_PFS2_DISK;
+	NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_FILE, NULL, 1);
 #endif
 
 	rbl->datestamp = 1;
@@ -438,7 +458,6 @@ static void MakeRootDir (globaldata *g)
 	blocknr = AllocReservedBlock (g);
 	anodenr = AllocAnode (0, g);
 	blk = MakeDirBlock (blocknr, anodenr, anodenr, 0, g);
-	(void)blk; // Unused
 }
 
 static const ULONG schijf[][2] =
@@ -452,6 +471,7 @@ static const ULONG schijf[][2] =
 };
 
 // returns number of reserved blocks needed
+// TODO: this method is 2T limited
 static ULONG CalcNumReserved (globaldata *g, ULONG resblocksize)
 {
   ULONG temp, taken, i;
