@@ -6,6 +6,7 @@
     Lang: English.
 */
 
+#define DEBUG 1
 #include "x11_debug.h"
 
 #define __OOP_NOATTRBASES__
@@ -20,7 +21,7 @@
 
 /****************************************************************************************/
 
-long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
+ULONG xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
 static OOP_AttrBase HiddKbdAB;
 
@@ -141,7 +142,7 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
 {
     struct x11kbd_data  *data;    
     XKeyEvent 	    	*xk;
-    long   	    	 keycode;
+    ULONG   	    	 keycode;
 
     EnterFunc(bug("x11kbd_handleevent()\n"));
 
@@ -149,20 +150,35 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
     xk = &(msg->event->xkey);
 
     keycode = xkey2hidd(xk, XSD(cl));
-    if (keycode == -1)
+    if ((keycode & 0xFFFF) == (WORD)-1)
     {
         ReturnVoid("X11Kbd::HandleEvent: Unknown key!");
     }
 
     if (msg->event->type == KeyRelease)
     {
-	keycode |= IECODE_UP_PREFIX;    	
+        if ((keycode >=  0x60) && (keycode <= 0x67))
+            data->qual = 0;
+	keycode |= IECODE_UP_PREFIX;
     }
+    else if ((keycode >=  0x60) && (keycode <= 0x67))
+            data->qual = keycode;
 
     if (keycode != data->prev_keycode)
     {
-        KbdIrqData_t keydata = keycode;
+        KbdIrqData_t keydata;
+        if (((keycode & IECODE_UP_PREFIX) == 0) && ((keycode & 0xFFFF0000) != 0))
+        {
+            keydata = ((keycode & 0xFFFF0000) >> 16);
+            data->kbd_callback(data->callbackdata, keydata);
+        }
+        keydata = keycode;
     	data->kbd_callback(data->callbackdata, keydata);
+        if ((keycode & IECODE_UP_PREFIX) && ((keycode & 0xFFFF0000) != 0))
+        {
+            keydata = ((keycode & 0xFFFF0000) >> 16) | IECODE_UP_PREFIX;
+            data->kbd_callback(data->callbackdata, keydata);
+        }
 	data->prev_keycode = keycode;
     }
 
@@ -176,7 +192,7 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
 
 /****************************************************************************************/
 
-WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
+WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable, WORD *qual)
 {
     short t;
     WORD  result = -1;
@@ -186,6 +202,7 @@ WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
 	if (*ks == keytable[t].keysym)
 	{
 	    D(bug("xktac: found in key table\n"));
+            *qual = keytable[t].hiddqual;
 	    result = keytable[t].hiddcode;
 	    break;
 	}
@@ -196,15 +213,15 @@ WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
 
 /****************************************************************************************/
 
-long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
+ULONG xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 {
     char    buffer[10];
     KeySym  ks;
     D(int     count;)
-    long    result;
+    WORD    result, qual;
 
     D(bug("xkey2hidd\n"));
-   
+
     if (xsd->havetable)
     {
         result = -1;
@@ -216,19 +233,18 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 	
 	return result;
     }
-    
+
     LOCK_X11
-    xk->state = 0;
     D(count =) XCALL(XLookupString, xk, buffer, 10, &ks, NULL);
     UNLOCK_X11
-    
+
     D(bug("xk2h: Code %d (0x%x). Event was decoded into %d chars: %d (0x%x)\n",xk->keycode, xk->keycode, count,ks,ks));
-    
-    result = lookup_keytable(&ks, keytable);
-    if (result == -1) result = lookup_keytable(&ks, builtin_keytable);
-    
-    ReturnInt ("xk2h", long, result);
-    
+
+    result = lookup_keytable(&ks, keytable, &qual);
+    if (result == -1) result = lookup_keytable(&ks, builtin_keytable, &qual);
+
+    ReturnInt ("xk2h", ULONG, ((qual << 16) | result));
+
 } /* XKeyToAmigaCode */
 
 

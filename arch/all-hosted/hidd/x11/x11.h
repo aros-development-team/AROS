@@ -72,6 +72,7 @@ struct x11kbd_data
     KbdIrqCallBack_t  kbd_callback;
     APTR    callbackdata;
     UWORD   prev_keycode;
+    UWORD   qual;
 };
 
 /* IDs */
