@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -61,7 +61,7 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
     keycode = ~((keycode >> 1) | (keycode << 7));
     keyData = keycode;
 
-    bug("[kbd:am68k] keyData=%x\n", keyData);
+    D(bug("[kbd:am68k] keyData=%x\n", keyData);)
     
     if (keycode == 0x78) { // reset warning
         kbddata->resetstate++;
