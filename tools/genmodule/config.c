@@ -977,7 +977,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                         case 12:
                             cfg->options |= OPTION_NOOPENCLOSE;
                             break;
-                        case 13: /* noresautoinit */
+                        case 13: /* selfinit */
                                 if (cfg->options & OPTION_RESAUTOINIT)
                                         exitfileerror(20, "option resautoinit and selfinit are incompatible\n");
                             cfg->options |= OPTION_SELFINIT;
