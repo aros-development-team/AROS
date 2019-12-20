@@ -229,20 +229,14 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
                 tstep = -step;
                 mbramend = mbramstart;
                 if ((mbramstart += step) < *end)
-                {
-                    ret = 0;
                     break;
-                }
                 rangestart = mbramstart;
             }
             else
             {
                 tstep = step;
                 if (mbramstart > *end)
-                {
-                    ret = 0;
                     break;
-                }
                 if (step < (*end - mbramstart))
                     mbramend = mbramstart + step;
                 else
@@ -309,14 +303,14 @@ static void findmbram(struct ExpansionBase *ExpansionBase)
 
     /* High MBRAM */
     step =  (LONG)0x00100000;
-    start = (APTR)0x08000000;
-    end =   (APTR)0x7f000000;
+    start = (APTR)0x08000000; // 128MB mark
+    end =   (APTR)0x7f000000; // 2GB mark
     ret = scanmbram(ExpansionBase, &start, &end, step, 40);
 
     /* Low MBRAM, reversed detection needed */
     step =  -step;
-    start = (APTR)0x08000000;
-    end =   (APTR)0x01000000;
+    start = (APTR)0x08000000; // 128MB mark
+    end =   (APTR)0x01000000; // 16MB mark
     ret = scanmbram(ExpansionBase, &start, &end, step, 30);
 }
 
