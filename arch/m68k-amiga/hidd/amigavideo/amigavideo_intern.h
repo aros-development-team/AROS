@@ -43,6 +43,7 @@ struct NativeChipsetMode
 
 struct amigavideo_staticdata
 {
+    struct Task                 *svcTask;
     OOP_Class 	    	        *cs_basebm;           /* baseclass for CreateObject */
 
     OOP_Class 	    	        *amigagfxclass;
@@ -66,6 +67,9 @@ struct amigavideo_staticdata
     struct List                 *obscuredbms;
     struct MinList              c2fragments;
     struct MinList              c2ifragments;
+
+    UWORD                        displaywidth;
+    UWORD                        displayheight;
 
     struct Interrupt            inter;
     volatile UWORD              framecounter;
@@ -93,8 +97,10 @@ struct amigavideo_staticdata
 
     UWORD                       max_colors;
 
-    void                        (*acb)(void *data, void *bm);
+    Gfx_ActiveCallBack_t        acb;
     APTR                        acbdata;
+    Gfx_DisplayChangeCallBack_t ccb;
+    APTR                        ccbdata;
 
     BPTR                        cs_SegList;
 

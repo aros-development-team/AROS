@@ -18,6 +18,7 @@ struct amigacomposit_data
    struct SignalSemaphore      semaphore;
 
    OOP_Object                  *gfx;           /* GFX driver object */
+   struct Task                 *housekeeper;
 };
 
 #define LOCK_COMPOSITOR_READ       { ObtainSemaphoreShared(&compdata->semaphore); }

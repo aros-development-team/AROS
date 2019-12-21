@@ -1,12 +1,11 @@
 /*
-    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
 #include <oop/oop.h>
 #include <hidd/hidd.h>
-#include <hidd/keyboard.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/oop.h>

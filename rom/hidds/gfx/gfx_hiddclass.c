@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gfx Hidd driver class implementation.
@@ -917,6 +917,7 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	*msg->storage = data->mdb.num_syncs;
 	return;
 
+    case aoHidd_Gfx_SupportsDisplayChange:
     case aoHidd_Gfx_IsWindowed:
     case aoHidd_Gfx_SupportsHWCursor:
     case aoHidd_Gfx_SupportsGamma:
@@ -942,6 +943,82 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/*****************************************************************************************
+
+    NAME
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisplayToBMCoords *msg);
+
+	OOP_Object *HIDD_Gfx_DisplayToBMCoords(OOP_Object *Target, UWORD DispX, UWORD DispY, UWORD *TargetX, UWORD *TargetY);
+
+    LOCATION
+	hidd.gfx.driver
+
+    FUNCTION
+
+    INPUTS
+	Target - The BitMap Object to transform the Display co-ordinates to.
+	DispX,DispY - The Display co-ordinates to transform.
+	TargetX,TargetY - Where to store the transformed co-ordinates.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+VOID GFXHIDD__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisplayToBMCoords *msg)
+{
+	*msg->TargetX = msg->DispX;
+	*msg->TargetY = msg->DispY;
+}
+
+/*****************************************************************************************
+
+    NAME
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_BMToDisplayCoords *msg);
+
+	OOP_Object *HIDD_Gfx_BMToDisplayCoords(OOP_Object *Target, UWORD TargetX, UWORD TargetY, UWORD *DispX, UWORD *DispY);
+
+    LOCATION
+	hidd.gfx.driver
+
+    FUNCTION
+
+    INPUTS
+	Target - The BitMap Object to transform the co-ordinates from.
+	TargetX,TargetY - The BitMap co-ordinates to transform.
+	DispX,DispY - Where to store the transformed co-ordinates.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+VOID GFXHIDD__Hidd_Gfx__BMToDisplayCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_BMToDisplayCoords *msg)
+{
+	*msg->DispX = msg->TargetX;
+	*msg->DispY = msg->TargetY;
 }
 
 /*****************************************************************************************
@@ -4109,7 +4186,7 @@ ULONG GFXHIDD__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     INPUTS
 	gfxHidd - A display driver object.
-	data    - a pointer to a HIDD_ViewPortDats structure.
+	data    - a pointer to a HIDD_ViewPortData structure.
 
     RESULT
 	The same code as used as return value for graphics.library/MakeVPort().

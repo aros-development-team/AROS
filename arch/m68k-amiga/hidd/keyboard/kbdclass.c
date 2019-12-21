@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -21,7 +21,6 @@
 #include <exec/memory.h>
 
 #include <hidd/hidd.h>
-#include <hidd/keyboard.h>
 
 #include <aros/system.h>
 #include <aros/symbolsets.h>
@@ -46,6 +45,7 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
     volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
     struct Library *TimerBase = kbddata->TimerBase;
     struct EClockVal eclock1, eclock2;
+    KbdIrqData_t keyData;
     UBYTE keycode;
 
     if (kbddata->resetstate == 2) {
@@ -59,21 +59,29 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
     ReadEClock(&eclock1);
 
     keycode = ~((keycode >> 1) | (keycode << 7));
+    keyData = keycode;
 
+    D(bug("[kbd:am68k] keyData=%x\n", keyData);)
+    
     if (keycode == 0x78) { // reset warning
         kbddata->resetstate++;
         if (kbddata->resetstate == 2) {
-            kbddata->kbd_callback(kbddata->callbackdata, keycode);
+            kbddata->kbd_callback(kbddata->callbackdata, keyData);
             // second reset warning, no handshake = starts 10s delay before forced reset
             return 0;
         }
         // first reset warning, handle it normally
     } else {
-        kbddata->kbd_callback(kbddata->callbackdata, keycode);
+        if ((keycode & ~0x80) == 0x62)
+            keyData |= (KBD_KEYTOGGLE << 16);
+        kbddata->kbd_callback(kbddata->callbackdata, keyData);
     }
     /* "release" UAE mouse wheel up/down key codes */
     if (keycode == 0x7a || keycode == 0x7b)
-	kbddata->kbd_callback(kbddata->callbackdata, 0x80 | keycode);
+    {
+        keyData |= 0x80;
+        kbddata->kbd_callback(kbddata->callbackdata, keyData);
+    }
 
     // busy wait until handshake pulse has been long enough
     for (;;) {
@@ -92,27 +100,27 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
 OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     /* Add some descriptional tags to our attributes */
-    struct TagItem kbd_tags[] =
+    struct TagItem      kbd_tags[] =
     {
-	{aHidd_Name        , (IPTR)"AmigaKbd"                     },
-	{aHidd_HardwareName, (IPTR)"Amiga(tm) Keyboard"},
-	{TAG_MORE          , (IPTR)msg->attrList               }
+        {aHidd_Name        , (IPTR)"AmigaKbd"           },
+        {aHidd_HardwareName, (IPTR)"MOS 6570-036 Keyboard Controller" },
+        {TAG_MORE          , (IPTR)msg->attrList        }
     };
-    struct pRoot_New new_msg =
+    struct pRoot_New    new_msg =
     {
-	.mID = msg->mID,
-	.attrList = kbd_tags
+        .mID = msg->mID,
+        .attrList = kbd_tags
     };
-    struct TagItem *tag, *tstate;
-    APTR    	    callback = NULL;
-    APTR    	    callbackdata = NULL;
-    BOOL has_kbd_hidd = FALSE;
-    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-    
-    EnterFunc(bug("Kbd::New()\n"));
+    struct TagItem      *tag, *tstate;
+    KbdIrqCallBack_t    callback = NULL;
+    APTR    	        callbackdata = NULL;
+    BOOL                has_kbd_hidd = FALSE;
+    struct Library      *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+
+    EnterFunc(bug("[kbd:am68k]:New()\n"));
 
     if (!UtilityBase)
-    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("[kbd:am68k]:New", OOP_Object *, NULL); /* Should have some error code here */
 
     ObtainSemaphoreShared( &XSD(cl)->sema);
 
@@ -123,17 +131,17 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
  
     if (has_kbd_hidd) { /* Cannot open twice */
         CloseLibrary(UtilityBase);
-    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("[kbd:am68k]:New", OOP_Object *, NULL); /* Should have some error code here */
     }
 
     tstate = msg->attrList;
-    D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
+    D(bug("[kbd:am68k] tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
     
     while ((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
 	
-        D(bug("Kbd: Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
+        D(bug("[kbd:am68k] Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
 	    
         if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
         {
@@ -156,7 +164,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     CloseLibrary(UtilityBase);
 
     if (NULL == callback)
-    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+    	ReturnPtr("[kbd:am68k]:New", OOP_Object *, NULL); /* Should have some error code here */
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
 
@@ -165,7 +173,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	struct Interrupt *inter = &XSD(cl)->kbint;
         struct kbd_data *data = OOP_INST_DATA(cl, o);
         
-        data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
+        data->kbd_callback   = callback;
         data->callbackdata   = callbackdata;
 	
 	XSD(cl)->timerio = (struct timerequest*)AllocMem(sizeof(struct timerequest), MEMF_CLEAR | MEMF_PUBLIC);
@@ -187,7 +195,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	    Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);	
     }
  
-    ReturnPtr("Kbd::New", OOP_Object *, o);
+    ReturnPtr("[kbd:am68k]:New", OOP_Object *, o);
 }
 
 VOID AmigaKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)

@@ -10,7 +10,6 @@
 #include <proto/oop.h>
 
 #include <hidd/hidd.h>
-#include <hidd/keyboard.h>
 
 #include "kbd.h"
 

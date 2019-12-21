@@ -1,5 +1,5 @@
-## version $VER: icontrolprefs.catalog 2.1 (30.03.2016)
-## language deutsch
+## version $VER: icontrolprefs.catalog 2.1 (15.12.2019)
+## language norwegian
 ## codeset 0
 ;
 ;
@@ -44,16 +44,20 @@ Vindu
 ; Windows
 ;
 MSG_OFFSCREEN_MOVE
-Tillatt å flytte vinduer utenfor kanten på skjermen:
+Tillat å flytte vinduer utenfor kanten på skjermen:
 ; Offscreen move:
 ;
 MSG_SCREENS
 Skjermer
 ; Screens
 ;
+MSG_PUBLIC_SCREENS
+Offentlige skjermer
+; Public Screens
+;
 MSG_FRONTMOST_DEFAULT
-Fremste vindu satt som standard offentlig skjerm:
-; Frontmost set as default public screen:
+Sett fremste vindu som standard
+; Set Frontmost as default
 ;
 MSG_OFFSCREEN_DESC
 Tillat vinduer å bli flyttet på utsiden\nav det synlige område
@@ -63,24 +67,32 @@ MSG_FRONTMOST_DEFAULT_DESC
 Sett det fremste vinduet til å være\nstandard offentlig skjerm
 ; Make the frontmost public screen\nthe default public screen
 ;
+MSG_DRAG
+Skjermflytting
+; Screen Dragging
+;
+MSG_DRAG_BOUNDS
+Begrengs skjermflytting til skjermens grenser ...
+; Limit dragging to Displays bounds...
+;
 MSG_BOUND_LEFT_DRAG
-Kun dra til venstre
+Kun flytt til venstre
 ; Bound drag in left direction
 ;
 MSG_BOUND_RIGHT_DRAG
-Kun dra til høyre
+Kun flytt til høyre
 ; Bound drag in right direction
 ;
 MSG_BOUND_TOP_DRAG
-Kun dra oppover
+Kun flytt oppover
 ; Bound drag in top direction
 ;
 MSG_BOUND_BOTTOM_DRAG
-Kun dra nedover
+Kun flytt nedover
 ; Bound drag in bottom direction
 ;
 MSG_META_DRAG
-Hurtigtast for å dra
+Hurtigtast for å flytte
 ; Drag keys
 ;
 MSG_MENUS_STICKY

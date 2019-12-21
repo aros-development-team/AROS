@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -13,6 +13,7 @@
 
 #include <oop/oop.h>
 #include <proto/exec.h>
+#include <hidd/keyboard.h>
 
 #ifndef X11_TYPES_H
 /* Note: x11_types.h is not included intentionally to resolve compilation
@@ -68,7 +69,7 @@ VOID Hidd_Mouse_X11_HandleEvent(OOP_Object *o, XEvent *event);
 /* Private data */
 struct x11kbd_data
 {
-    VOID  (*kbd_callback)(APTR, UWORD);
+    KbdIrqCallBack_t  kbd_callback;
     APTR    callbackdata;
     UWORD   prev_keycode;
 };

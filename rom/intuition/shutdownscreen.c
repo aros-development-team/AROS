@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
    $Id$
 */
 
@@ -42,7 +42,10 @@ static VOID ShowShutdownScreen()
     struct IntuitionBase *IntuitionBase =
         (void *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
 
-    struct Screen *scr = OpenFinalScreen(4, TRUE, IntuitionBase);
+    struct Screen *scr = NULL;
+
+    if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->MonitorList))
+        scr = OpenFinalScreen(4, TRUE, IntuitionBase);
 
     if (scr != NULL)
         ShowPic(scr, IntuitionBase);

@@ -130,6 +130,41 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
         OOP_SetAttrs(bitmap, tags);
 }
 
+static void DisplayChangeHandler(Object *mon, IPTR changetype, void *changedata)
+{
+    Class *cl = OCLASS(mon);
+    struct IMonitorNode *data = INST_DATA(cl, mon);
+
+    D(bug("[Monitor] %s()\n", __func__);)
+
+    switch (changetype)
+    {
+        case vHidd_Gfx_DisplayChange_State:
+            {
+                struct HIDD_DisplayStateData *dstate = (struct HIDD_DisplayStateData *)changedata;
+                D(bug("[Monitor] %s: state data @ 0x%p\n", __func__, dstate);)
+            }
+            break;
+        case vHidd_Gfx_DisplayChange_Characteristics:
+            {
+                struct HIDD_DisplayCharacteristicData *dchardata = (struct HIDD_DisplayCharacteristicData *)changedata;
+                D(bug("[Monitor] %s: characteristic data @ 0x%p\n", __func__, dchardata);)
+                if ((data->FBBounds.MinX != dchardata->dBounds.MinX) ||
+                    (data->FBBounds.MaxX != dchardata->dBounds.MaxX) ||
+                    (data->FBBounds.MinY != dchardata->dBounds.MinY) ||
+                    (data->FBBounds.MaxY != dchardata->dBounds.MaxY))
+                {
+                    data->FBBounds.MinX = dchardata->dBounds.MinX;
+                    data->FBBounds.MaxX = dchardata->dBounds.MaxX;
+                    data->FBBounds.MinY = dchardata->dBounds.MinY;
+                    data->FBBounds.MaxY = dchardata->dBounds.MaxY;
+                    D(bug("[Monitor] %s: display bounds adjusted\n", __func__);)
+                }
+            }
+            break;
+    }
+}
+
 /*i**************************************************************************/
 
 static void ResetGamma(struct IMonitorNode *data)
@@ -157,9 +192,11 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
        pointer. */
     struct TagItem tags[] =
     {
-        {aHidd_Gfx_ActiveCallBackData, 0                      },
-        {aHidd_Gfx_ActiveCallBack    , (IPTR)ActivationHandler},
-        {TAG_DONE                    , 0                      }
+        {aHidd_Gfx_ActiveCallBackData,          0                           },
+        {aHidd_Gfx_ActiveCallBack,              (IPTR)ActivationHandler     },
+        {aHidd_Gfx_DisplayChangeCallBackData,   0                           },
+        {aHidd_Gfx_DisplayChangeCallBack,       (IPTR)DisplayChangeHandler  },
+        {TAG_DONE,                              0                           }
     };
 
     D(bug("[Monitor] %s()\n", __func__));
@@ -174,6 +211,13 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     data = INST_DATA(cl, o);
 
     data->handle = handle;
+
+#if USE_FAST_DISPLAYTOBMCOORDS
+    data->displaytobmcoords = OOP_GetMethod(handle->gfxhidd, HiddGfxBase + moHidd_Gfx_DisplayToBMCoords, &data->displaytobmcoords_Class);
+#endif
+#if USE_FAST_BMTODISPLAYCOORDS
+    data->bmtodisplaycoords = OOP_GetMethod(handle->gfxhidd, HiddGfxBase + moHidd_Gfx_BMToDisplayCoords, &data->bmtodisplaycoords_Class);
+#endif
 
     /* We can't list driver's pixelformats, we can list only modes. This does not harm however,
        just some pixelformats will be processed more than once */
@@ -217,8 +261,15 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     OOP_GetAttr(handle->gfxhidd, aHidd_Name, (IPTR *)&data->MonitorName);
     OOP_GetAttr(handle->gfxhidd, aHidd_Gfx_HWSpriteTypes, (IPTR *)&data->SpriteType);
     D(bug("[Monitor] %s: SpriteType = %08x\n", __func__, data->SpriteType));
+    OOP_GetAttr(handle->gfxhidd, aHidd_Gfx_FrameBufferType, (IPTR *)&data->FrameBufferType);
+    D(bug("[Monitor] %s: FrameBufferType = %08x\n", __func__, data->FrameBufferType));
+    if (OOP_GET(handle->gfxhidd, aHidd_Gfx_SupportsDisplayChange))
+        data->dcsupported = TRUE;
+    else
+        data->dcsupported = FALSE;
 
     tags[0].ti_Data = (IPTR)o;
+    tags[2].ti_Data = (IPTR)o;
     OOP_SetAttrs(handle->gfxhidd, tags);
 
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
@@ -1038,6 +1089,222 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
         FreeMem(data->gamma, 256 * 3);
 
     return DoSuperMethodA(cl, o, msg);
+}
+
+/*i***************************************************************************
+
+    NAME
+        MM_GetDisplayBounds
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, struct Rectangle *Bounds);
+
+        DoMethodA(Object *obj, struct msGetDisplayBounds *msg);
+
+    LOCATION
+
+    FUNCTION
+        This method returns the bounds for the display on the monitor.
+
+    INPUTS
+        obj         - A monitor object
+        MethodID    - MM_GetDisplayBounds
+        Bounds      - A struct Rectangle where the bounds will be stored.
+
+    RESULT
+        Undefined.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+
+void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDisplayBounds *msg)
+{
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct IMonitorNode *data = INST_DATA(cl, obj);
+
+    D(bug("[Monitor] %s()\n", __func__));
+
+    if (!data->dcsupported)
+    {
+        struct Screen *scr;
+
+        D(bug("[Monitor] %s: FrameBuffer type %08x\n", __func__, data->FrameBufferType));
+
+        scr = FindFirstScreen(obj, IntuitionBase);
+        if (scr)
+        {
+            D(bug("[Monitor] %s: first Screen @ 0x%p\n", __func__, scr));
+            data->FBBounds.MinX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinX;
+            data->FBBounds.MaxX = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxX;
+            data->FBBounds.MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
+            data->FBBounds.MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
+        }
+        else
+        {
+            D(bug("[Monitor] %s: no visible screens - using fallback bounds.\n", __func__));
+            data->FBBounds.MinX = 0;
+            data->FBBounds.MaxX = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
+            data->FBBounds.MinY = 0;
+            data->FBBounds.MaxY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height - 1;
+        }
+    }
+
+    msg->Bounds->MinX = data->FBBounds.MinX;
+    msg->Bounds->MinY = data->FBBounds.MinY;
+    msg->Bounds->MaxX = data->FBBounds.MaxX;
+    msg->Bounds->MaxY = data->FBBounds.MaxY;
+
+    D(bug("[Monitor] %s:   bounds %d,%d -> %d,%d\n", __func__, msg->Bounds->MinX, msg->Bounds->MinY, msg->Bounds->MaxX, msg->Bounds->MaxY));
+}
+
+
+/*i***************************************************************************
+
+    NAME
+        DisplayToScreenCoords
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, struct Screen *Screen, UWORD DispX, UWORD DispY, UWORD *ScrX, UWORD *ScrY);
+
+        DoMethodA(Object *obj, struct msDisplayToScreenCoords *msg);
+
+    LOCATION
+
+    FUNCTION
+        This method translates the co-ords from the monitors display, to a screens space.
+
+    INPUTS
+        obj                   - A monitor object
+        MethodID      - MM_DisplayToScreenCoords
+        Screen            - The screen to have the co-ords transformed to.
+        DispX,DispY - The co-ords in display space.
+        ScrX,ScrY      - Storage for the transformed co-ords.
+
+    RESULT
+        Undefined.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+
+void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDisplayToScreenCoords *msg)
+{
+    struct IMonitorNode *data = INST_DATA(cl, obj);
+    D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
+
+    if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    {
+        struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+        OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+        struct pHidd_Gfx_DisplayToBMCoords dtbmcmsg =
+        {
+            mID : HiddGfxBase + moHidd_Gfx_DisplayToBMCoords,
+            Target : HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
+            DispX : msg->DispX,
+            DispY : msg->DispY,
+            TargetX : msg->ScrX,
+            TargetY : msg->ScrY
+        };
+        /* call the gfx driver to transform the co-ords */
+#if USE_FAST_DISPLAYTOBMCOORDS
+        data->displaytobmcoords(data->displaytobmcoords_Class, data->handle->gfxhidd, (OOP_Msg)&dtbmcmsg.mID);
+#else
+        OOP_DoMethod(data->handle->gfxhidd, (OOP_Msg)&dtbmcmsg.mID);
+#endif
+    }
+    else
+    {
+        *msg->ScrX = msg->DispX;
+        *msg->ScrY = msg->DispY;
+    }
+    D(bug("[Monitor] %s: %d,%d -> %d,%d\n", __func__, msg->DispX, msg->DispY, *msg->ScrX, *msg->ScrY);)
+}
+
+/*i***************************************************************************
+
+    NAME
+        ScreenToDisplayCoords
+
+    SYNOPSIS
+        DoMethod(Object *obj, ULONG MethodID, struct Screen *Screen, UWORD ScrX, UWORD ScrY, UWORD *DispX, UWORD *DispY);
+
+        DoMethodA(Object *obj, struct msScreenToDisplayCoords *msg);
+
+    LOCATION
+
+    FUNCTION
+        This method translates the co-ords from the monitors display, to a screens space.
+
+    INPUTS
+        obj                   - A monitor object
+        MethodID      - MM_ScreenToDisplayCoords
+        Screen            - The screen to have the co-ords transformed from.
+        ScrX,ScrY      - The co-ords in screen space.
+        DispX,DispY - Storage for the transformed co-ords.
+
+    RESULT
+        Undefined.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+
+void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScreenToDisplayCoords *msg)
+{
+    struct IMonitorNode *data = INST_DATA(cl, obj);
+    D(bug("[Monitor] %s(0x%p, %d, %d)\n", __func__, msg->Screen, msg->DispX, msg->DispY);)
+
+    if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
+    {
+        struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+        OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+        struct pHidd_Gfx_BMToDisplayCoords bmtdcmsg =
+        {
+            mID : HiddGfxBase + moHidd_Gfx_BMToDisplayCoords,
+            Target : HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
+            TargetX : msg->ScrX,
+            TargetY : msg->ScrY,
+            DispX : msg->DispX,
+            DispY : msg->DispY
+        };
+        /* call the gfx driver to transform the co-ords */
+#if USE_FAST_BMTODISPLAYCOORDS
+        data->bmtodisplaycoords(data->bmtodisplaycoords_Class, data->handle->gfxhidd, (OOP_Msg)&bmtdcmsg.mID);
+#else
+        OOP_DoMethod(data->handle->gfxhidd, (OOP_Msg)&bmtdcmsg.mID);
+#endif
+    }
+    else
+    {
+        *msg->DispX = msg->ScrX;
+        *msg->DispY = msg->ScrY;
+    }
+    D(bug("[Monitor] %s: %d,%d -> %d,%d\n", __func__, msg->ScrX, msg->ScrY, *msg->DispX, *msg->DispY);)
 }
 
 /*i***************************************************************************

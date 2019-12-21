@@ -57,7 +57,7 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
 
         info->CPUModel = CPUMODEL_68080;
         // info->FPUModel = FPUMODEL_UNKNOWN;
-        __sprintf(info->ModelStringBuffer, "%s (x%02d)", "Apollo Core 68080", (vampID & 0xFF));
+        __sprintf(info->ModelStringBuffer, "Apollo Core 68080 (x%d)", (vampID & 0xFF));
         info->CPUFrequency = (vampID & 0xFF) * SysBase->PowerSupplyFrequency;
 
         if ((vampID >> 8) == 5)

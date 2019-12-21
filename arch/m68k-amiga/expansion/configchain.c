@@ -18,14 +18,25 @@
 #include <proto/exec.h>
 #include <exec/resident.h>
 
-#define ROMIMG_SIZE                     0x80000
-#define PROBEMEM_QUITAFTERADD
+#define ROMIMG_SIZE             0x80000
 
+struct mbChunkNode
+{
+    struct MinNode              bmc_Node;
+    const char                  *bmc_TypeStr;
+    ULONG                       bmc_TypeFlags;
+    APTR                        *bmc_Start;
+    ULONG                       bmc_Size;
+    BYTE                        bmc_Prio;
+};
 
 AROS_UFP3(ULONG, MemoryTest,
     AROS_UFPA(APTR, startaddr, A0),
     AROS_UFPA(APTR, endaddr, A1),
     AROS_UFPA(ULONG, block, D0));
+
+const char strMemTypeExp[]      = "expansion.memory";
+const char strMemTypeFast[]     = "Fast Memory";
 
 static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
 {
@@ -103,7 +114,7 @@ static BOOL romatregionend(APTR romstart, APTR regstart, APTR regend, BOOL rev)
     return FALSE;
 }
 
-static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *end, LONG step, BYTE prio)
+static LONG scanmbregion(struct ExpansionBase *ExpansionBase, struct MinList *mbchunks, APTR *start, APTR *end, LONG step, BYTE prio)
 {
     APTR romstart, romend, tmpstart, tmpend;
     LONG ret;
@@ -136,9 +147,9 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
             tmpend = romstart;
             tmpstart = romend + 1;
         }
-        ret = scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        ret = scanmbregion(ExpansionBase, mbchunks, start, &tmpend, step, prio);
         if (ret >= 0)
-            ret = scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+            ret = scanmbregion(ExpansionBase, mbchunks, &tmpstart, end, step, prio);
         return ret;
     }
     else if (romatregionstart(romend, *start, *end, (step < 0) ? TRUE : FALSE))
@@ -148,7 +159,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
         else
             tmpstart = romend + 1;
         
-        return scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        return scanmbregion(ExpansionBase, mbchunks, &tmpstart, end, step, prio);
     }
     else if (romatregionend(romstart, *start, *end, (step < 0) ? TRUE : FALSE))
     {
@@ -157,7 +168,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
         else
             tmpend = romstart;
 
-        return scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        return scanmbregion(ExpansionBase, mbchunks, start, &tmpend, step, prio);
     }
     /* end splitting the region around the system rom ***********************************/
 
@@ -177,9 +188,9 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
             tmpend = romstart;
             tmpstart = romend + 1;
         }
-        ret = scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        ret = scanmbregion(ExpansionBase, mbchunks, start, &tmpend, step, prio);
         if (ret >= 0)
-            ret = scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+            ret = scanmbregion(ExpansionBase, mbchunks, &tmpstart, end, step, prio);
         return ret;
     }
     else if (romatregionstart(romend, *start, *end, (step < 0) ? TRUE : FALSE))
@@ -189,7 +200,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
         else
             tmpstart = romend + 1;
 
-        return scanmbram(ExpansionBase, &tmpstart, end, step, prio);
+        return scanmbregion(ExpansionBase, mbchunks, &tmpstart, end, step, prio);
     }
     else if (romatregionend(romstart, *start, *end, (step < 0) ? TRUE : FALSE))
     {
@@ -198,7 +209,7 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
         else
             tmpend = romstart;
 
-        return scanmbram(ExpansionBase, start, &tmpend, step, prio);
+        return scanmbregion(ExpansionBase, mbchunks, start, &tmpend, step, prio);
     }
     /* end splitting the region around the extended rom *********************************/
 
@@ -229,20 +240,14 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
                 tstep = -step;
                 mbramend = mbramstart;
                 if ((mbramstart += step) < *end)
-                {
-                    ret = 0;
                     break;
-                }
                 rangestart = mbramstart;
             }
             else
             {
                 tstep = step;
                 if (mbramstart > *end)
-                {
-                    ret = 0;
                     break;
-                }
                 if (step < (*end - mbramstart))
                     mbramend = mbramstart + step;
                 else
@@ -280,15 +285,35 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
 
         if (ret > 0)
         {
-            D(bug("[expansion:am68k] %s: Adding %08x;%08x (size=%08x) to the expansion memlist\n", __func__, rangestart, rangestart + ret, ret));
-            AddMemList(ret, MEMF_KICK | MEMF_LOCAL | MEMF_FAST | MEMF_PUBLIC, prio, rangestart, "expansion.memory");
-#if defined(PROBEMEM_QUITAFTERADD)
-            break;
-#else
-            if (((step >= 0) && ((rangestart + ret) == *end)) ||
-                ((step < 0 ) && (rangestart == *end)))
+            struct mbChunkNode *memChunk;
+
+            /* allocate the node in chip.. */
+            if ((memChunk = (struct mbChunkNode *)AllocMem(sizeof(struct mbChunkNode), MEMF_CHIP)) != NULL)
+            {
+                struct mbChunkNode *nxtChunk;
+                D(bug("[expansion:am68k] %s: mboard chunk 0x%p:0x%p (size=%08x) suitable for use\n", __func__, rangestart, rangestart + ret, ret));
+
+                memChunk->bmc_TypeStr = strMemTypeExp;
+                memChunk->bmc_TypeFlags = MEMF_KICK | MEMF_LOCAL | MEMF_FAST | MEMF_PUBLIC;
+                memChunk->bmc_Start = rangestart;
+                memChunk->bmc_Size = ret;
+                memChunk->bmc_Prio = prio;
+                ForeachNode(mbchunks, nxtChunk)
+                {
+                    if (memChunk->bmc_Start < nxtChunk->bmc_Start)
+                        break;
+                }
+                if (nxtChunk)
+                {
+                    memChunk->bmc_Node.mln_Pred	                = nxtChunk->bmc_Node.mln_Pred;
+                    memChunk->bmc_Node.mln_Succ	                = &nxtChunk->bmc_Node;
+                    nxtChunk->bmc_Node.mln_Pred->mln_Succ       = &memChunk->bmc_Node;
+                    nxtChunk->bmc_Node.mln_Pred	                = &memChunk->bmc_Node;
+                }
+                else
+                    AddTail(mbchunks, &memChunk->bmc_Node);
                 break;
-#endif
+            }
         }
         if (step >= 0)
             mbramstart += step;
@@ -296,38 +321,83 @@ static LONG scanmbram(struct ExpansionBase *ExpansionBase, APTR *start, APTR *en
     return ret;
 }
 
+static void addmergedchunks(struct MinList *chunkList)
+{
+    struct mbChunkNode *currChunk, *tmpChunk;
+
+    D(bug("[expansion:am68k] %s()\n", __func__));
+
+    /* Merge detected chunks that can be merged ... */
+    ForeachNodeSafe(chunkList, currChunk, tmpChunk)
+    {
+        if (currChunk->bmc_Node.mln_Succ && currChunk->bmc_Node.mln_Succ->mln_Succ)
+        {
+            if ((((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_Start == (currChunk->bmc_Start + currChunk->bmc_Size)) &&
+                (((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_Prio == currChunk->bmc_Prio) &&
+                (((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_TypeFlags == currChunk->bmc_TypeFlags))
+            {
+                D(bug("[expansion:am68k] %s: merging 0x%p:0x%p with 0x%p:0x%p\n", __func__, currChunk->bmc_Start,
+                                                                                   (IPTR)currChunk->bmc_Start + currChunk->bmc_Size,
+                                                                                   ((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_Start,
+                                                                                   (IPTR)((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_Start + ((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_Size));
+                ((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_Start = currChunk->bmc_Start;
+                ((struct mbChunkNode *)currChunk->bmc_Node.mln_Succ)->bmc_Size = currChunk->bmc_Size;
+                Remove(&currChunk->bmc_Node);
+                FreeMem(currChunk, sizeof(struct mbChunkNode));
+            }
+        }
+    }
+
+    /* Now register what has been found in the system ... */
+    ForeachNodeSafe(chunkList, currChunk, tmpChunk)
+    {
+        Remove(&currChunk->bmc_Node);
+        D(bug("[expansion:am68k] %s: adding 0x%p:0x%p (size=%08x) to the expansion memlist\n", __func__, currChunk->bmc_Start, ((IPTR)currChunk->bmc_Start + currChunk->bmc_Size), currChunk->bmc_Size));
+        AddMemList(currChunk->bmc_Size, currChunk->bmc_TypeFlags, currChunk->bmc_Prio, currChunk->bmc_Start, currChunk->bmc_TypeStr);
+        FreeMem(currChunk, sizeof(struct mbChunkNode));
+    }
+}
+
 static void findmbram(struct ExpansionBase *ExpansionBase)
 {
-    LONG ret;
-    LONG step;
-    APTR start, end;
+    D(bug("[expansion:am68k] %s()\n", __func__));
 
     if (!(SysBase->AttnFlags & AFF_68020))
         return;
     if ((SysBase->AttnFlags & AFF_68020) && !(SysBase->AttnFlags & AFF_ADDR32))
         return;
 
-    /* High MBRAM */
-    step =  (LONG)0x00100000;
-    start = (APTR)0x08000000;
-    end =   (APTR)0x7f000000;
-    ret = scanmbram(ExpansionBase, &start, &end, step, 40);
+    LONG ret;
+    LONG step;
+    APTR start, end;
+    struct MinList mbchunks;
 
-    /* Low MBRAM, reversed detection needed */
+    NEWLIST(&mbchunks);
+
+    /* Scan High MBRAM */
+    step =  (LONG)0x00100000;
+    start = (APTR)0x08000000; // 128MB mark
+    end =   (APTR)0x7f000000; // 2GB mark
+    ret = scanmbregion(ExpansionBase, &mbchunks, &start, &end, step, 40);
+
+    /* Scan Low MBRAM, reversed detection needed */
     step =  -step;
-    start = (APTR)0x08000000;
-    end =   (APTR)0x01000000;
-    ret = scanmbram(ExpansionBase, &start, &end, step, 30);
+    start = (APTR)0x08000000; // 128MB mark
+    end =   (APTR)0x01000000; // 16MB mark
+    ret = scanmbregion(ExpansionBase, &mbchunks, &start, &end, step, 30);
+
+    addmergedchunks(&mbchunks);
 }
 
-static void allocram(struct ExpansionBase *ExpansionBase)
+static void detectexpram(struct ExpansionBase *ExpansionBase)
 {
-    struct Node *node;
-    
     findmbram(ExpansionBase);
 
-    // we should merge address spaces, later..
     D(bug("[expansion:am68k] %s: adding ram boards\n", __func__));
+
+    struct Node *node;
+    struct List boardChunks;
+    NEWLIST(&boardChunks);
 
     ForeachNode(&ExpansionBase->BoardList, node) {
         struct ConfigDev *configDev = (struct ConfigDev*)node;
@@ -343,12 +413,41 @@ static void allocram(struct ExpansionBase *ExpansionBase)
                 size = autosize(ExpansionBase, configDev);
             }
             if (size && size <= configDev->cd_BoardSize) {
-                D(bug("[expansion:am68k] %s: ram board at %08x, size %08x attr %08x\n", __func__, addr, size, attr));
-                AddMemList(size, attr, pri, addr, "Fast Memory");
+                struct mbChunkNode *memChunk;
+                /* allocate the node in chip.. */
+                if ((memChunk = (struct mbChunkNode *)AllocMem(sizeof(struct mbChunkNode), MEMF_CHIP)) != NULL)
+                {
+                    struct mbChunkNode *nxtChunk;
+                    D(bug("[expansion:am68k] %s: ram board chunk 0x%p:0x%p (size=%08x) suitable for use\n", __func__, rangestart, rangestart + ret, ret));
+
+                    memChunk->bmc_TypeStr = strMemTypeFast;
+                    memChunk->bmc_TypeFlags = attr;
+                    memChunk->bmc_Start = addr;
+                    memChunk->bmc_Size = size;
+                    memChunk->bmc_Prio = pri;
+                    ForeachNode(&boardChunks, nxtChunk)
+                    {
+                        if (memChunk->bmc_Start < nxtChunk->bmc_Start)
+                            break;
+                    }
+                    if (nxtChunk)
+                    {
+                        memChunk->bmc_Node.mln_Pred             = nxtChunk->bmc_Node.mln_Pred;
+                        memChunk->bmc_Node.mln_Succ             = &nxtChunk->bmc_Node;
+                        nxtChunk->bmc_Node.mln_Pred->mln_Succ   = &memChunk->bmc_Node;
+                        nxtChunk->bmc_Node.mln_Pred             = &memChunk->bmc_Node;
+                    }
+                    else
+                        AddTail(&boardChunks, &memChunk->bmc_Node);
+                    break;
+                }
             }
             configDev->cd_Flags |= CDF_PROCESSED;
         }
     }
+
+    addmergedchunks(&boardChunks);
+
     D(bug("[expansion:am68k] %s: ram boards done\n", __func__));
 }
         
@@ -393,7 +492,7 @@ AROS_LH1(void, ConfigChain,
     }
     D(bug("[expansion:am68k] %s: configchain done\n", __func__));
 
-    allocram(ExpansionBase);
+    detectexpram(ExpansionBase);
 
     AROS_LIBFUNC_EXIT
 } /* ConfigChain */

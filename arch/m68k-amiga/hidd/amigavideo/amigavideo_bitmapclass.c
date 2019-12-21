@@ -29,7 +29,6 @@
 #define CMDDEBUGUNIMP(x)
 #define CMDDEBUGPIXEL(x)
 #define DEBUG_TEXT(x)
-#include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -55,7 +54,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *UtilityBase = csd->cs_UtilityBase;
     struct Library *OOPBase = csd->cs_OOPBase;
-    IPTR width, height, depth, disp, modeid;
+    IPTR width, height, depth, disp, modeid = 0;
     BOOL ok = TRUE;      
     struct amigabm_data *data;
     struct BitMap *pbm = NULL;
@@ -65,13 +64,34 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         { TAG_MORE, (IPTR) msg->attrList },
         { TAG_END, 0 }
     };
+    BOOL hamFlag = FALSE;
 
     D(bug("[AmigaVideo:Bitmap] %s()\n", __func__));
 
+    struct TagItem *modeidtag = FindTagItem(aHidd_BitMap_ModeID, msg->attrList);
+    if (modeidtag)
+    {
+        modeid = modeidtag->ti_Data;
+        if (modeid & HAM_KEY)
+        {
+            bug("[AmigaVideo:Bitmap] %s: HAM mode requested\n", __func__);
+            hamFlag = TRUE;
+        }
+    }
     mymsg.attrList = tags;
     o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL == o)
+    {
+        struct TagItem  *tag, *tstate;
+        bug("[AmigaVideo:Bitmap] %s: superclass failed to instantiate a suitable bitmap...!!\n", __func__);
+        bug("[AmigaVideo:Bitmap] %s: tags @ 0x%p\n", __func__, msg->attrList);
+        tstate = msg->attrList;
+        while((tag = NextTagItem(&tstate)))
+        {
+            bug("[AmigaVideo:Bitmap] %s:     %08x - %p\n", __func__, tag->ti_Tag, tag->ti_Data);
+        }
         return NULL;
+    }
 
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof  (*data));
@@ -84,7 +104,8 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(o, aHidd_BitMap_Depth, &depth);
     OOP_GetAttr(o, aHidd_BitMap_Displayable, &disp);
     OOP_GetAttr(o, aHidd_PlanarBM_BitMap, &pbm);
-    OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
+    if (!modeid)
+        OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
 
     D(bug("[AmigaVideo:Bitmap] %s: %dx%dx%d\n", __func__, width, height, depth));
 
@@ -108,7 +129,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 #if USE_FAST_BMPOSCHANGE
             data->bmposchange = OOP_GetMethod(data->compositor, CSD(cl)->mid_BitMapPositionChanged, &data->bmposchange_Class);
 #endif
-            data->palette = AllocVec(csd->max_colors * 3, MEMF_CLEAR);
+            data->palette = AllocVec(csd->max_colors * 3, MEMF_PUBLIC | MEMF_CLEAR);
             D(bug("[AmigaVideo:Bitmap] %s: palette data @ 0x%p\n", __func__, data->palette);)
 
             data->modeid = modeid;

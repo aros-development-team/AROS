@@ -51,9 +51,13 @@ MSG_SCREENS
 Ekrany
 ; Screens
 ;
+MSG_PUBLIC_SCREENS
+Ekrany Publiczny
+; Public Screens
+;
 MSG_FRONTMOST_DEFAULT
-Aktywny ekran jako domy¶lny publiczny
-; Frontmost set as DefaultPubScreen:
+Aktywny ekran jako domy¶lny
+; Set Frontmost set as default
 ;
 MSG_OFFSCREEN_DESC
 Pozwala przesuwaæ okna poza\n\
@@ -63,6 +67,14 @@ widzialny obszar ekranu
 MSG_FRONTMOST_DEFAULT_DESC
 Aktywny ekran jako domy¶lny publiczny
 ; Make the frontmost public screen\nthe default public screen
+;
+MSG_DRAG
+Screen Dragging
+; Screen Dragging
+;
+MSG_DRAG_BOUNDS
+Limit dragging to Displays bounds...
+; Limit dragging to Displays bounds...
 ;
 MSG_BOUND_LEFT_DRAG
 Przeci±ganie w lewo

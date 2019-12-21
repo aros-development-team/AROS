@@ -65,6 +65,25 @@
 
 /**************************************************************************************************/
 
+static inline VOID getintframesizes(struct IntuitionBase *IntuitionBase, WORD *xsize, WORD *ysize)
+{
+    switch (FRAME_SIZE(IntuitionBase))
+    {
+        case FRAMESIZE_THICK:
+            *xsize = 2;
+            *ysize = 2;
+            break;
+        case FRAMESIZE_MEDRES:
+            *xsize = 2;
+            *ysize = 1;
+            break;
+        default:    /* FRAMESIZE_THIN */
+            *xsize = 1;
+            *ysize = 1;
+            break;
+    }
+}
+
 static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase)
@@ -74,6 +93,10 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
     WORD bottom = top + height - 1;
     BOOL leftedgegodown = FALSE;
     BOOL topedgegoright = FALSE;
+    UWORD frameh;
+    UWORD framev;
+
+    getintframesizes(IntuitionBase, &frameh, &framev);
 
     if (left == 0) leftedgegodown = TRUE;
     if (top == 0) topedgegoright = TRUE;
@@ -83,26 +106,26 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
     /* left edge */
     RectFill(rp, left,
              top,
-             left,
-             bottom - (leftedgegodown ? 0 : 1));
+             left + (frameh - 1),
+             bottom - (leftedgegodown ? 0 : framev));
 
     /* top edge */
     RectFill(rp, left + 1,
              top,
-             right - (topedgegoright ? 0 : 1),
-             top);
+             right - (topedgegoright ? 0 : frameh),
+             top + (framev - 1));
 
     SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
 
     /* right edge */
-    RectFill(rp, right,
-             top + (topedgegoright ? 1 : 0),
+    RectFill(rp, right - (frameh - 1),
+             top + (topedgegoright ? frameh : 0),
              right,
              bottom);
 
     /* bottom edge */
-    RectFill(rp, left + (leftedgegodown ? 1 : 0),
-             bottom,
+    RectFill(rp, left + (leftedgegodown ? framev : 0),
+             bottom - (framev - 1),
              right - 1,
              bottom);
 }
@@ -116,12 +139,12 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 
     switch (state)
     {
-	case IDS_NORMAL:
-	case IDS_SELECTED:
+        case IDS_NORMAL:
+        case IDS_SELECTED:
             bg = pens[FILLPEN];
             break;
 
-	default:
+        default:
             bg = pens[BACKGROUNDPEN];
             break;
     }
@@ -138,15 +161,15 @@ IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct scrdecor_data *data;
 
-    D(bug("[SCRDECOR] ScrDecorClass__OM_NEW()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
-    	data = INST_DATA(cl, obj);
+        data = INST_DATA(cl, obj);
 
-	data->userbuffersize = (ULONG) GetTagData(SDA_UserBuffer, 0, msg->ops_AttrList);
-	
+        data->userbuffersize = (ULONG) GetTagData(SDA_UserBuffer, 0, msg->ops_AttrList);
+        
     }
     
     return (IPTR)obj;
@@ -158,20 +181,20 @@ IPTR ScrDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
 
-    D(bug("[SCRDECOR] ScrDecorClass__OM_GET()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
 
     switch(msg->opg_AttrID)
     {
-    	case SDA_UserBuffer:
-	    *msg->opg_Storage = (IPTR) data->userbuffersize;
-	    break;
+        case SDA_UserBuffer:
+            *msg->opg_Storage = (IPTR) data->userbuffersize;
+            break;
 
-	case SDA_TrueColorOnly:
-	    *msg->opg_Storage = FALSE;
-	    break;
-	    
-	default:
-	    return DoSuperMethodA(cl, obj, (Msg)msg);
+        case SDA_TrueColorOnly:
+            *msg->opg_Storage = FALSE;
+            break;
+            
+        default:
+            return DoSuperMethodA(cl, obj, (Msg)msg);
     }
     
     return 1;    
@@ -186,42 +209,42 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
     ULONG def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
     ULONG def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
 
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
 
     switch(msg->sdp_Which)
     {
-	case SDEPTHIMAGE:
-	#if USE_AROS_DEFSIZE
-    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-	#else
+        case SDEPTHIMAGE:
+        #if USE_AROS_DEFSIZE
+            def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+            def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+        #else
             def_low_width = 17;
             def_med_width = 23;
             def_high_width = 23;
-	#endif
+        #endif
             break;
-	    
-	default:
-	    return FALSE;
+            
+        default:
+            return FALSE;
     }
     
     switch(msg->sdp_SysiSize)
     {
-    	case SYSISIZE_LOWRES:
-	    *msg->sdp_Width = def_low_width;
-	    *msg->sdp_Height = def_low_height;
-	    break;
+        case SYSISIZE_LOWRES:
+            *msg->sdp_Width = def_low_width;
+            *msg->sdp_Height = def_low_height;
+            break;
 
-	case SYSISIZE_MEDRES:
-	    *msg->sdp_Width = def_med_width;
-	    *msg->sdp_Height = def_med_height;
-	    break;
-    	    
-    	case SYSISIZE_HIRES:
-    	default:
-	    *msg->sdp_Width = def_high_width;
-	    *msg->sdp_Height = def_high_height;
-	    break;	    	
+        case SYSISIZE_MEDRES:
+            *msg->sdp_Width = def_med_width;
+            *msg->sdp_Height = def_med_height;
+            break;
+            
+        case SYSISIZE_HIRES:
+        default:
+            *msg->sdp_Width = def_high_width;
+            *msg->sdp_Height = def_high_height;
+            break;	    	
     }
     
     return TRUE;
@@ -231,25 +254,28 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
 
 IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct RastPort 	 *rp = msg->sdp_RPort;
-    UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
-    LONG    	    	  state = msg->sdp_State;
-    LONG    	     	  left = msg->sdp_X;
-    LONG    	     	  top = msg->sdp_Y;
-    LONG   	          width = msg->sdp_Width;
-    LONG   	    	  height = msg->sdp_Height;
-    LONG    	    	  right = left + width - 1;
-    LONG    	    	  bottom = top + height - 1;
+    struct IntuitionBase        *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase              *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct RastPort 	        *rp = msg->sdp_RPort;
+    UWORD   	    	        *pens = DRI(msg->sdp_Dri)->dri_Pens;
+    LONG    	    	        state = msg->sdp_State;
+    LONG    	     	        left = msg->sdp_X;
+    LONG    	     	        top = msg->sdp_Y;
+    LONG   	                width = msg->sdp_Width;
+    LONG   	    	        height = msg->sdp_Height;
+    LONG    	    	        right = left + width - 1;
+    LONG    	    	        bottom = top + height - 1;
+    UWORD                       frameh, framev;
 
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SYSIMAGE()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
+
+    getintframesizes(IntuitionBase, &frameh, &framev);
 
     SetDrMd(rp, JAM1);
-    
+
     switch(msg->sdp_Which)
     {
-    	case SDEPTHIMAGE:
+        case SDEPTHIMAGE:
         {
             UWORD  bg;
             WORD   h_spacing;
@@ -261,8 +287,8 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
             top++;
             right--;
             bottom--;
-            width -= 2;
-            height -= 2;
+            width -= (frameh << 1);
+            height -= (framev << 1);
 
             h_spacing = width / 6;
             v_spacing = height / 6;
@@ -273,8 +299,10 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
             SetAPen(rp, bg);
             RectFill(rp, left, top, right, bottom);
 
-            /* Draw a image of two partly overlapped tiny windows,
-            */
+            /*
+             * render an image of two partially
+             * overlapping window frames.
+             */
 
             left += h_spacing;
             top  += v_spacing;
@@ -286,7 +314,6 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
             bottom = top  + height - 1;
 
             /* Render top left window  */
-
             SetAPen(rp, pens[SHADOWPEN]);
             drawrect(rp, left, top, right - (width / 3 ), bottom - (height / 3), IntuitionBase);
 
@@ -297,23 +324,21 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
             /* Fill bottom right window (inside of the frame above) */
             SetAPen(rp, pens[SHINEPEN]);
             RectFill(rp, left + (width / 3) + 1, top + (height / 3) + 1,
-	    	    	    right - 1, bottom - 1);
-
+                            right - 1, bottom - 1);
 
             if (state == IDS_SELECTED)
             {
                 /* Re-Render top left window  */
-
                 SetAPen(rp, pens[SHADOWPEN]);
                 drawrect(rp, left, top, right - (width / 3 ), bottom - (height / 3), IntuitionBase);
             }
             break;
         }
 
-	default:
-	    return FALSE;
+        default:
+            return FALSE;
     }
-    
+
     return TRUE;
 }
 
@@ -325,7 +350,7 @@ static void findtitlearea(struct Screen *scr, LONG *left, LONG *right)
 
     *left = 0;
     *right = scr->Width - 1;
-    
+
     for (g = scr->FirstGadget; g; g = g->NextGadget)
     {
         if (!(g->Flags & GFLG_RELRIGHT))
@@ -386,7 +411,7 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
     LONG    	    	  right, left;
     BOOL    	    	  beeping = FALSE;
 
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
 
 #if USE_NEWDISPLAYBEEP
     beeping = msg->sdp_Screen->Flags & BEEPING;
@@ -394,36 +419,40 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 
     findtitlearea(msg->sdp_Screen, &left, &right);
 
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title_Left = %d, Title_Right = %d\n", left, right));
+    D(bug("[SCRDECOR] %s: Title_Left = %d, Title_Right = %d\n", __func__, left, right));
 
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: RastPort @  %p, Screen @ %p\n", rp, msg->sdp_Screen));
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Screen Dimensions  %dx%d\n", msg->sdp_Screen->Width, msg->sdp_Screen->Height));
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Bar Height  %d\n", msg->sdp_Screen->BarHeight));
+    D(bug("[SCRDECOR] %s: RastPort @  %p, Screen @ %p\n", __func__, rp, msg->sdp_Screen));
+    D(bug("[SCRDECOR] %s: Screen Dimensions  %dx%d\n", __func__, msg->sdp_Screen->Width, msg->sdp_Screen->Height));
+    D(bug("[SCRDECOR] %s: Bar Height  %d\n", __func__, msg->sdp_Screen->BarHeight));
 
     SetDrMd(rp, JAM1);
 
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
     RectFill(rp, left + 1, 0, right - 1, msg->sdp_Screen->BarHeight - 1);
 
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Filled Bar Area\n"));
+    D(bug("[SCRDECOR] %s: Filled Bar Area\n", __func__));
 
     SetAPen(rp, pens[beeping ? BARDETAILPEN : BARTRIMPEN]);
     RectFill(rp, 0, msg->sdp_Screen->BarHeight, msg->sdp_Screen->Width - 1, msg->sdp_Screen->BarHeight);
 
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Filled Bar Area\n"));
+    D(bug("[SCRDECOR] %s: Filled Bar Area\n", __func__));
 
     if (msg->sdp_Screen->Title)
     {
+        UWORD ypad, xunused;
+
+        getintframesizes(IntuitionBase, &xunused, &ypad);
+
         SetAPen(rp, pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
         SetBPen(rp, pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
 
-        Move(rp, msg->sdp_Screen->BarHBorder, rp->TxBaseline + ((msg->sdp_Screen->BarHeight - rp->TxHeight) >> 1));
+        Move(rp, msg->sdp_Screen->BarHBorder, ypad + rp->TxBaseline + ((msg->sdp_Screen->BarHeight - rp->TxHeight) >> 1));
 
-        D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title Text @ %p\n", msg->sdp_Screen->Title));
-        D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Title '%s'\n", msg->sdp_Screen->Title));
+        D(bug("[SCRDECOR] %s: Title Text @ %p\n", __func__, msg->sdp_Screen->Title));
+        D(bug("[SCRDECOR] %s: Title '%s'\n", __func__, msg->sdp_Screen->Title));
         Text(rp, msg->sdp_Screen->Title, strlen(msg->sdp_Screen->Title));
 
-        D(bug("[SCRDECOR] ScrDecorClass__SDM_DRAW_SCREENBAR: Text Rendered\n"));
+        D(bug("[SCRDECOR] %s: Text Rendered\n", __func__));
     }
     return TRUE;
 }
@@ -432,7 +461,7 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 
 IPTR ScrDecorClass__SDM_LAYOUT_SCREENGADGETS(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
 {
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_LAYOUT_SCREENGADGETS()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
 
     /*
      * Nothing to do here any more.
@@ -445,14 +474,14 @@ IPTR ScrDecorClass__SDM_LAYOUT_SCREENGADGETS(Class *cl, Object *obj, struct sdpL
 
 IPTR ScrDecorClass__SDM_INITSCREEN(Class *cl, Object *obj, struct sdpInitScreen *msg)
 {
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_INITSCREEN()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
 
     return TRUE;
 }
 
 IPTR ScrDecorClass__SDM_EXITSCREEN(Class *cl, Object *obj, struct sdpExitScreen *msg)
 {
-    D(bug("[SCRDECOR] ScrDecorClass__SDM_EXITSCREEN()\n"));
+    D(bug("[SCRDECOR] %s()\n", __func__));
 
     return TRUE;
 }
