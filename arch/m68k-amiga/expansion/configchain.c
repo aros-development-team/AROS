@@ -399,7 +399,7 @@ static void detectexpram(struct ExpansionBase *ExpansionBase)
     D(bug("[expansion:am68k] %s: adding ram boards\n", __func__));
 
     struct Node *node;
-    struct List boardChunks;
+    struct MinList boardChunks;
     NEWLIST(&boardChunks);
 
     ForeachNode(&ExpansionBase->BoardList, node) {
