@@ -45,6 +45,13 @@ AROS_LH1(void, GetCPUInfo,
         {
             switch(passedTag->ti_Tag)
             {
+            case(GCIT_SupportsAMMX):
+            case(GCIT_SupportsHTT):
+                if (SysBase->AttnFlags & AFF_68080)
+                    *((BOOL *)passedTag->ti_Data) = TRUE;
+                else
+                    *((BOOL *)passedTag->ti_Data) = FALSE;
+                break;
             case(GCIT_SupportsFPU):
                 *((BOOL *)passedTag->ti_Data) = (BOOL)(
                     (processor->FPUModel == FPUMODEL_68881) || 
@@ -110,13 +117,6 @@ AROS_LH1(void, GetCPUInfo,
                 break;
             case(GCIT_Vendor):
                 *((ULONG *)passedTag->ti_Data) = VENDOR_UNKNOWN;
-                break;
-            case(GCIT_SupportsAMMX):
-            case(GCIT_SupportsHTT):
-                if (SysBase->AttnFlags & AFF_68080)
-                    *((ULONG *)passedTag->ti_Data) = TRUE;
-                else
-                    *((ULONG *)passedTag->ti_Data) = FALSE;
                 break;
             }
         }
