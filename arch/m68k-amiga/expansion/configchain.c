@@ -351,9 +351,12 @@ static void addmergedchunks(struct MinList *chunkList)
     /* Now register what has been found in the system ... */
     ForeachNodeSafe(chunkList, currChunk, tmpChunk)
     {
+        BYTE usePrio = currChunk->bmc_Prio;
         Remove(&currChunk->bmc_Node);
         D(bug("[expansion:am68k] %s: adding 0x%p:0x%p (size=%08x) to the expansion memlist\n", __func__, currChunk->bmc_Start, ((IPTR)currChunk->bmc_Start + currChunk->bmc_Size), currChunk->bmc_Size));
-        AddMemList(currChunk->bmc_Size, currChunk->bmc_TypeFlags, currChunk->bmc_Prio, currChunk->bmc_Start, currChunk->bmc_TypeStr);
+        if (((IPTR)currChunk->bmc_Start + currChunk->bmc_Size) < 0x08000000)
+            usePrio = 30;
+        AddMemList(currChunk->bmc_Size, currChunk->bmc_TypeFlags, usePrio, currChunk->bmc_Start, currChunk->bmc_TypeStr);
         FreeMem(currChunk, sizeof(struct mbChunkNode));
     }
 }
@@ -384,7 +387,7 @@ static void findmbram(struct ExpansionBase *ExpansionBase)
     step =  -step;
     start = (APTR)0x08000000; // 128MB mark
     end =   (APTR)0x01000000; // 16MB mark
-    ret = scanmbregion(ExpansionBase, &mbchunks, &start, &end, step, 30);
+    ret = scanmbregion(ExpansionBase, &mbchunks, &start, &end, step, 40);
 
     addmergedchunks(&mbchunks);
 }
@@ -396,7 +399,7 @@ static void detectexpram(struct ExpansionBase *ExpansionBase)
     D(bug("[expansion:am68k] %s: adding ram boards\n", __func__));
 
     struct Node *node;
-    struct List boardChunks;
+    struct MinList boardChunks;
     NEWLIST(&boardChunks);
 
     ForeachNode(&ExpansionBase->BoardList, node) {
