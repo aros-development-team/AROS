@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fopen().
@@ -77,7 +77,7 @@
     int fd;
     int openmode = __smode2oflags(mode);
 
-    if (openmode != -1)
+    if (pathname && (strlen(pathname) > 0) && openmode != -1)
     {
         fd = open(pathname, openmode, 644);
         if (fd == -1)
