@@ -96,11 +96,11 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	    Child, (IPTR) VGroup,
     		GroupFrameT(_(MSG_REGISTER)),
     		Child, (IPTR) VSpace(0),
-    		Child, (IPTR) HGroup,
-    		    Child, (IPTR) HSpace(0),
+    		Child, (IPTR) VGroup,
+    		    Child, (IPTR) VSpace(0),
     		    Child, (IPTR) Label1(_(MSG_DEFAULT_SIZE_TRUNCATE_TITLES)),
     		    Child, (IPTR) (d.truncate_titles_checkmark = MakeCheck(NULL)),
-    		End, /* HGroup recessed CM */
+    		End, /* Register */
     		Child, (IPTR) VSpace(0),
     	    End,
 	End,

@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 0.1 (22.02.2006)
+## version $VER: Zune.catalog 0.2 (23.12.2019)
 ## language italiano
 ## codeset 0
 ;
@@ -176,8 +176,8 @@ Registro
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Troncare i titoli:
-; Default size truncate titles:
+Troncare i titoli
+; Default size truncate titles
 ;
 MSG_NORMAL
 Normale

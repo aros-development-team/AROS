@@ -131,7 +131,7 @@ MSG_REGISTER (//)
 Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES (//)
-Default size truncate titles:
+Default size truncate titles
 ;
 MSG_NORMAL (//)
 Normal
