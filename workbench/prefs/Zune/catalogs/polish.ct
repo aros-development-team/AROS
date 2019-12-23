@@ -1,4 +1,4 @@
-## version $VER: zune.catalog 2.0 (30.03.2016)
+## version $VER: zune.catalog 2.1 (23.12.2019)
 ## language polski
 ## codeset 5
 ;
@@ -167,8 +167,8 @@ Zarejestruj
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Domy¶lna wielko¶æ przyciêtych nazw:
-; Default size truncate titles:
+Skracaj nag³ówki\ndo doomy¶lnej szeroko¶ci
+; Default size truncate titles
 ;
 MSG_NORMAL
 Normalny

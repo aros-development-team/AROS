@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 2.0 (04.06.2019)
+## version $VER: Zune.catalog 2.1 (23.12.2019)
 ## language norwegian
 ## codeset 0
 ;
@@ -134,7 +134,7 @@ MSG_REGISTER
 Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES 
-Standard størrelse for sammentrukne tittler:
+Standard størrelse\nfor sammentrukne tittler
 ;
 MSG_NORMAL 
 Normal

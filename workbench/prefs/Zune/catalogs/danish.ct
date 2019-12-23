@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 2.0 (30.03.2016)
+## version $VER: Zune.catalog 2.1 (23.12.2019)
 ## language dansk
 ## codeset 0
 ;
@@ -177,8 +177,8 @@ Register
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Standardstørrelse for afkortning af titler:
-; Default size truncate titles:
+Standardstørrelse\nfor afkortning af titler
+; Default size truncate titles
 ;
 MSG_NORMAL
 Normal
