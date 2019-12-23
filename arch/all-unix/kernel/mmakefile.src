@@ -14,7 +14,7 @@ endif
 
 FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
 	 obtaininput releaseinput getpagesize allockernelbase
-FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
+FILES := kernel_startup kernel kernel_cpu kernel_cpusupport kernel_intr cpu_$(CPU)
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \
