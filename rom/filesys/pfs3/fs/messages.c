@@ -34,8 +34,6 @@
  * */
 
 #include <exec/types.h>
-#include "blocks.h"
-#include "struct.h"
 #include "versionhistory.doc"
 
 CONST UBYTE AFS_WARNING_MEMORY_MASK[]         = "WARNING:\nAllocated memory doesn't match memorymask";
