@@ -3,8 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 MAINDIR	    := rom/kernel
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENDIR)/$(MAINDIR)/include \
-	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES)
 USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
@@ -14,7 +13,17 @@ endif
 
 FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
 	 obtaininput releaseinput getpagesize allockernelbase
-FILES := kernel_startup kernel kernel_cpu kernel_cpusupport kernel_intr cpu_$(CPU)
+FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
+SUPPORTFILES := kernel_cpusupport
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  arch=unix-support files="$(SUPPORTFILES)" modname=kernel
+
+#MM kernel-kernel-unix : kernel-kernel-unix-support
+
+USER_INCLUDES += -I$(GENDIR)/$(MAINDIR)/include \
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel \
