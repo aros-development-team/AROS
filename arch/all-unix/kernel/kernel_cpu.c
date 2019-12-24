@@ -124,7 +124,7 @@ void cpu_Dispatch(regs_t *regs)
     D(bug("[KRN] cpu_Dispatch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
 
     HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &timeSpec);
-    setIETPriv1(task, ((timeSpec.tv_sec << 32) | timeSpec.tv_nsec));
+    setIETPriv1(task, (((UQUAD)timeSpec.tv_sec << 32) | timeSpec.tv_nsec));
 
     cpu_DispatchContext(task, regs, pd);
 }
