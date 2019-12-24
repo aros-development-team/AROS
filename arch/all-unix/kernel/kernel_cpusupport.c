@@ -5,6 +5,7 @@
 
 #include <exec/tasks.h>
 
+#include "exec_intern.h"
 #include "etask.h"
 
 #define BILLION 1000000000L
