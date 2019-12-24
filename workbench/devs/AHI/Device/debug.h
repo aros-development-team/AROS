@@ -52,7 +52,6 @@ KPrintFArgs( UBYTE* fmt,
 #define KPrintF DebugPrintF
 #endif
 
-#define DEBUG 1
 #if defined(__AROS__) && (DEBUG > 0)
 #define ahibug(...)  KPrintF(__VA_ARGS__)
 #else
