@@ -2413,14 +2413,42 @@ LONG ReadSoftLink(union objectinfo *linkfi, const char *prefix, char *buffer, UL
 	}
 
 	/* If link destination is absolute, ignore prefix */
-	prefixlen = index(softblock, ':') ? 0 : strlen(prefix);
+	if (strchr(softblock, ':'))
+	{
+		prefixlen = 0;
+
+		/* ...Unless if the link target begins with ':' and the original
+		 * name has a volume/device/assign specifier. If so, the specifier
+		 * needs to be used as a prefix. If this is not done links pointing
+		 * to root of a volume/device/assign would point to different
+		 * targets depending on the user's current directory. That'd be
+		 * horribly wrong.
+		 */
+		if (softblock[0] == ':')
+		{
+			char *colonpos = strchr(prefix, ':');
+			/* Note: if colon is at the beginning then prefixlen == 0
+			 * which is correct.
+			 */
+			if (colonpos)
+				prefixlen = colonpos - prefix;
+		}
+	}
+	else
+	{
+		prefixlen = strlen(prefix);
+	}
+
 	postfixlen = g->unparsed ? strlen(g->unparsed) : 0;
 
-	/* if link desination ends in a /, skip the postfix / if any */
+	/* if link destination ends in a /, skip the postfix / if any */
 	if (linkfi->file.direntry->fsize > 0 && softblock[linkfi->file.direntry->fsize - 1] == '/')
 	{
 		if (postfixlen)
-			g->unparsed++;
+			{
+				g->unparsed++;
+				postfixlen--;
+			}
 	}
 	else
 	{

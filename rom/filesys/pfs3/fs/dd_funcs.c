@@ -919,11 +919,8 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	// ARG1 = BSTR new disk name
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 
-	UBYTE newlabel[FNSIZE];
-	BOOL added;
-	struct volumedata *volume;
-	struct DeviceList *devlist;
-	listentry_t *fe;
+	UBYTE newlabel[FNSIZE], *newname;
+	UBYTE newnamelen;
 
 #if MULTIUSER
 	if (g->user->uid != muROOT_UID)
@@ -934,52 +931,34 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 #endif
 
 	BCPLtoCString(newlabel, (DSTR)BARG1(pkt));
-	volume = g->currentvolume;
 
-	if (!CheckVolume(volume, 1, &pkt->dp_Res2, g))
+	if (!CheckVolume(g->currentvolume, 1, &pkt->dp_Res2, g))
 		return DOSFALSE;
 
-	/* make new doslist entry COPY VAN DISKINSERTSEQUENCE */
-	devlist = (struct DeviceList *)MakeDosEntry(newlabel, DLT_VOLUME);
-	if (devlist)
-	{
+	newnamelen = strlen(newlabel) + 2;
+	newname = AllocMem(newnamelen, MEMF_CLEAR | MEMF_PUBLIC);
+	if (newname) {
 		/* change rootblock */
 		if (RenameDisk(newlabel, g))
 		{
-			/* free old devlist */
-//          LockDosList (LDF_VOLUMES|LDF_READ);
-			Forbid();
-			RemDosEntry((struct DosList *)volume->devlist);
-			FreeDosEntry((struct DosList *)volume->devlist);
-//          UnLockDosList (LDF_VOLUMES|LDF_READ);
-			Permit();
-
-			/* fill in new. Diskname NIET */
-			g->currentvolume->devlist = devlist;
-			devlist->dl_Task = g->msgport;
-			devlist->dl_VolumeDate.ds_Days = volume->rootblk->creationday;
-			devlist->dl_VolumeDate.ds_Minute = volume->rootblk->creationminute;
-			devlist->dl_VolumeDate.ds_Tick = volume->rootblk->creationtick;
-			devlist->dl_LockList = 0;    // disk still inserted
-			devlist->dl_DiskType = volume->rootblk->disktype;
-
-			/* toevoegen */
-			added = AddDosEntry((struct DosList *)devlist);
-			volume->devlist = (struct DeviceList *)devlist;
-
-			/* alle locks veranderen */
-			for (fe = HeadOf(&volume->fileentries); fe->next; fe = fe->next)
-				fe->lock.fl_Volume = MKBADDR(devlist);
+				// change volume name
+				struct DeviceList *devlist = g->currentvolume->devlist;
+				UBYTE *oldname = BADDR(devlist->dl_Name);
+				strcpy(newname + 1, newlabel);
+				newname[0] = newnamelen;
+				devlist->dl_Name = MKBADDR(newname);
+				FreeMem(oldname, oldname[0] + 2);
 		}
 		else
 		{
+			FreeMem(newname, newnamelen);
 			pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME;
 			return DOSFALSE;
 		}
 	}
 	else
 	{
-		pkt->dp_Res2 = ERROR_NO_FREE_STORE;     // ??
+		pkt->dp_Res2 = ERROR_NO_FREE_STORE;
 		return DOSFALSE;
 	}
 
@@ -1603,13 +1582,16 @@ static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 
 	if (pkt->dp_Arg1 != DOSFALSE)   /* don't check for DOSTRUE (Holger Kruse!) */
 	{
-		while (g->currentvolume)    /* inefficient.. */
-			DiskRemoveSequence(g);
+		if (!SafeDiskRemoveSequence(g)) {
+			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+			return DOSFALSE;
+		}
 		g->inhibitcount++;
 		g->timeron = FALSE;
 		g->timeout = 0;
 		g->DoCommand = InhibitedCommands;
 		g->disktype = ID_BUSY;
+		g->newvolumepending = FALSE;
 	}
 
 	/* else ->already uninhibited */
@@ -1639,7 +1621,7 @@ static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 
 			g->DoCommand = NormalCommands;
 			g->timeron = FALSE;
-			NewVolume(TRUE, g);
+			g->newvolumepending = TRUE;
 		}
 	}
 
@@ -1668,9 +1650,10 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	if (g->inhibitcount == 0)
 	{
 		g->dirty = FALSE;
-		while (g->currentvolume)
-			DiskRemoveSequence(g);  // should always succeed now
-
+		if (!SafeDiskRemoveSequence(g)) {
+			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+			return DOSFALSE;
+		}
 	}
 
 	/* format disk */
@@ -1728,13 +1711,17 @@ static SIPTR dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 			no->unparsed++;     /* make it a cstring!! */
 		}
 		else
+		{
+			FreeMemP (no->objectname, g);
+			FreeMemP (no, g);
 			return DOSFALSE;
+		}
 	}
 	else
 	{
 		/* try to locate object */
 		found = FindObject (&oi, no->objectname+1, &filefi, &pkt->dp_Res2, g);
-		if (found)
+		if (found && (IsVolume(filefi) || (ULONG)filefi.file.direntry > 2))
 		{
 			no->anodenr = IsVolume(filefi) ? ANODE_ROOTDIR : filefi.file.direntry->anode;
 		}
@@ -1744,6 +1731,8 @@ static SIPTR dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 	if (IsDelDir (oi))
 	{
 		pkt->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
+		FreeMemP (no->objectname, g);
+		FreeMemP (no, g);
 		return DOSFALSE;
 	}
 #endif

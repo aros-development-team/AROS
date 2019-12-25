@@ -164,6 +164,7 @@
 #include "format_protos.h"
 
 static VOID CreateInputEvent(BOOL inserted, globaldata *g);
+static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g);
 
 /**********************************************************************/
 /*                               DEBUG                                */
@@ -243,6 +244,8 @@ static UBYTE debugbuf[120];
 static BOOL SameDisk(struct rootblock *, struct rootblock *);
 static BOOL SameDiskDL(struct rootblock *, struct DeviceList *);
 static void TakeOverLocks(struct FileLock *, globaldata *);
+static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g);
+static void DiskRemoveSequence(globaldata *g);
 
 void NewVolume (BOOL FORCE, globaldata *g)
 {
@@ -252,6 +255,9 @@ void NewVolume (BOOL FORCE, globaldata *g)
 	/* check if something changed */
 	changed = UpdateChangeCount (g);
 	if (!FORCE && !changed)
+		return;
+	
+	if (!AttemptLockDosList(LDF_VOLUMES | LDF_WRITE))
 		return;
 
 	ENTER("NewVolume");
@@ -286,6 +292,8 @@ void NewVolume (BOOL FORCE, globaldata *g)
 		g->currentvolume = NULL;    /* @XL */
 	}
 
+	UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+
 	UpdateAndMotorOff(g);
 	EXIT("NewVolume");
 }
@@ -298,7 +306,7 @@ void NewVolume (BOOL FORCE, globaldata *g)
 ** return waarde = currentdisk back in drive?
 ** used by NewVolume and ACTION_INHIBIT
 */
-void DiskRemoveSequence(globaldata *g)
+static void DiskRemoveSequence(globaldata *g)
 {
   struct volumedata *oldvolume = g->currentvolume;
 
@@ -325,7 +333,6 @@ void DiskRemoveSequence(globaldata *g)
 	** lockentries: link to doslist...
 	** fileentries: link them too...
 	*/
-	Forbid();   /* LockDosList(LDF_VOLUMES|LDF_READ); */
 	if(!IsMinListEmpty(&oldvolume->fileentries))
 	{
 		DB(Trace(1, "DiskRemoveSequence", "there are locks\n"));
@@ -341,7 +348,6 @@ void DiskRemoveSequence(globaldata *g)
 		MinRemove(oldvolume);
 		FreeVolumeResources(oldvolume, g);
 	}
-	Permit();   /* UnLockDosList(LDF_VOLUMES|LDF_READ); */
 
 #ifdef TRACKDISK
 	if(g->trackdisk)
@@ -359,9 +365,22 @@ void DiskRemoveSequence(globaldata *g)
 
 	EXIT("DiskRemoveSequence");
 	return;
-}   
+}
 
-void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
+BOOL SafeDiskRemoveSequence(globaldata *g)
+{
+	while (g->currentvolume) {    /* inefficient.. */
+		if (AttemptLockDosList(LDF_VOLUMES | LDF_WRITE)) {
+			DiskRemoveSequence(g);
+			UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+		} else {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 {
   struct DosList *doslist;
   struct DosInfo *di;
@@ -375,8 +394,6 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 	/* -I- Search new disk in volumelist */
 
 	BCPLtoCString(diskname, rootblock->diskname);
-//  doslist = LockDosList(LDF_VOLUMES|LDF_READ);
-	Forbid();
 	di = BADDR(((struct RootNode *)DOSBase->dl_Root)->rn_Info);
 	doslist = BADDR(di->di_DevInfo);
 	
@@ -442,8 +459,6 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 			found = FALSE;      // an empty doslistentry is useless to us
 		}
 	}
-//  UnLockDosList(LDF_VOLUMES|LDF_READ);
-	Permit();
 
 	if(!found)
 	{
@@ -507,9 +522,11 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 				if (ddblk->blk.id == DELDIRID)
 				{
 					for (i=0; i<31; i++)
+					{
 						nr = ddblk->blk.entries[i].anodenr;
 						if (nr)
 							FreeAnodesInChain(nr, g);
+					}
 				}
 			}
 			FreeLRU ((struct cachedblock *)ddblk);
@@ -947,7 +964,7 @@ static LONG NoErrorMsg(CONST_STRPTR melding, APTR arg, ULONG dummy, globaldata *
 static void UpdateDosEnvec(globaldata *g);
 #endif
 
-BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
+static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 {
   BOOL changestate;
   ULONG error;

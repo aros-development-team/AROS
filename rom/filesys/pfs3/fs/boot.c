@@ -305,8 +305,6 @@ void __saveds EntryPoint (void)
 	RES1(pkt) = DOSTRUE;
 	ReturnPacket (pkt, msgport, g);
 
-	/* assuming disk present.. */
-	NewVolume (TRUE, g);
 	dossig = 1 << msgport->mp_SigBit;
 	timesig = 1 << g->timeport->mp_SigBit;
 	notifysig = 1 << g->notifyport->mp_SigBit;
@@ -317,6 +315,8 @@ void __saveds EntryPoint (void)
 	waitmask = dossig | timesig | notifysig | g->diskchangesignal | g->resethandlersignal;
 #endif
 	g->timeout = 0;
+	// Set to no disk. Mount below can get delayed if dos list is locked.
+	g->disktype = ID_NO_DISK_PRESENT;
 
 #if MULTIUSER
 	g->muFS_ready = FALSE;
@@ -324,10 +324,33 @@ void __saveds EntryPoint (void)
 
 #define SysBase g->g_SysBase
 
+	g->newvolumepending = TRUE; // initial new volume mount
+
 	while (1)
 	{
-		signal = Wait (waitmask);
+		if (g->newvolumepending) {
+			signal = dossig;
+		} else {
+			signal = Wait(waitmask);
+		}
 
+		// Handle this here because dos list could be locked which would
+		// cause deadlock. Process any pending packet(s) and retry.
+		if (((signal & g->diskchangesignal) && g->inhibitcount<=0) || g->newvolumepending)
+		{
+			//DebugMsg("DISKCHANGE SIGNAL!!");
+			DB(Trace(1, "boot", "DiskChange\n"));
+			if (AttemptLockDosList(LDF_VOLUMES | LDF_WRITE)) {
+				NewVolume(TRUE, g);     /* %10 set to TRUE */
+				g->newvolumepending = FALSE;
+				UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+			} else {
+				// list was locked, process pending packet(s) without waiting and try again
+				g->newvolumepending = TRUE;
+				Delay(5);
+			}
+		}
+		
 #if MULTIUSER
 		if (!g->muFS_ready)
 		{
@@ -339,13 +362,6 @@ void __saveds EntryPoint (void)
 			}
 		}
 #endif
-
-		if (signal & g->diskchangesignal && g->inhibitcount<=0 )
-		{
-			//DebugMsg("DISKCHANGE SIGNAL!!");
-			DB(Trace(1, "boot", "DiskChange\n"));
-			NewVolume(TRUE, g);     /* %10 set to TRUE */
-		}
 
 		if (signal & timesig)
 		{
@@ -533,10 +549,13 @@ static BOOL FindInLibraryList (CONST_STRPTR name, globaldata *g)
 
 static void Quit (globaldata *g)
 {
-  struct volumedata *volume;
+  struct volumedata *volume = NULL;
   struct NotifyMessage *nmsg;
   struct NotifyRequest *nr;
   struct Message *msg;
+#if UNSAFEQUIT
+	BOOL waited = FALSE;
+#endif
 
 	// DebugMsg("ACTION_DIE");
 	ENTER("dd_Quit");
@@ -548,28 +567,38 @@ static void Quit (globaldata *g)
 		return;
 #endif
 
-	/* 'remove' disk */
-	volume = g->currentvolume;
-	if (volume)
-		DiskRemoveSequence(g);
-
 	UninstallResetHandler(g);
 
 	/* remove diskchangehandler */
 	UninstallDiskChangeHandler(g);
 
+	for (;;) {
+		struct volumedata *v = g->currentvolume;
+		if (v) {
+			/* 'remove' disk */
+			if (SafeDiskRemoveSequence(g)) {
+				volume = v;
+			} else {
+				Delay(5);
+			}
+		}
 #if UNSAFEQUIT
-	/* wait for wb to return locks */
-	Delay(50);
+		/* wait for wb to return locks */
+		if (!waited) {
+			Delay(50);
+			waited = TRUE;
+		}
 #endif
-
-	/* check if packets queued */
-	while (g->msgport && (msg = GetMsg(g->msgport)))
-	{
-		g->action = (struct DosPacket *)msg->mn_Node.ln_Name;
-		g->action->dp_Res1 = DOSFALSE;
-		g->action->dp_Res2 = ERROR_DEVICE_NOT_MOUNTED;
-		ReturnPacket (g->action, g->msgport, g);
+		/* check if packets queued */
+		while (g->msgport && (msg = GetMsg(g->msgport)))
+		{
+			g->action = (struct DosPacket *)msg->mn_Node.ln_Name;
+			g->action->dp_Res1 = DOSFALSE;
+			g->action->dp_Res2 = ERROR_DEVICE_NOT_MOUNTED;
+			ReturnPacket (g->action, g->msgport, g);
+		}
+		if (!g->currentvolume)
+			break;
 	}
 
 	/* check if notifypackets queued */
@@ -636,8 +665,10 @@ static void Quit (globaldata *g)
 	{
 		listentry_t *listentry;
 
-		Wait (1 << g->msgport->mp_SigBit);
 		msg = GetMsg (g->msgport);
+		if (!msg) {
+			Wait (1 << g->msgport->mp_SigBit);
+		}
 		g->action = (struct DosPacket *)msg->mn_Node.ln_Name;
 		if (g->action->dp_Type == ACTION_FREE_LOCK)
 		{
@@ -661,8 +692,6 @@ static void Quit (globaldata *g)
 
 		ReturnPacket (g->action, g->msgport, g);
 	}
-
-	Delay (5);
 #endif
 
 	LibDeletePool (g->bufferPool);

@@ -550,6 +550,7 @@ struct globaldata
 	ULONG protectkey;                   /* key to unprotect                     */
 										/* ~0 als protected wegens error		*/
 	UWORD timeout;                      /* DosToHandlerInterface timeout value  */
+	BOOL newvolumepending;              /* Pending NewValue(TRUE, g);           */
 	BOOL dirty;                         /* Global dirty flag                    */
 	BOOL timeron;                       /* change is being timed                */
 	BOOL postpone;                      /* repeat timer when finished           */
