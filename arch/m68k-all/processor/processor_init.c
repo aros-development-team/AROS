@@ -43,7 +43,8 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     info->L1InstructionCacheSize = 0;
     info->L1DataCacheSize = 0;
 
-    info->CPUFrequency = 0; /* TODO: Implement */
+    info->CPUFrequency = 0;
+    info->BusFrequency = 0;
     pcr = 0;
 
     if (SysBase->AttnFlags & (AFF_68060 | AFF_68080)) {
@@ -53,12 +54,13 @@ static VOID ReadProcessorInformation(struct M68KProcessorInformation * info)
     if ((SysBase->AttnFlags & AFF_68080) && ((pcr & 0xFFF00000) == 0x04400000))
     {
         UWORD vampID = *(volatile UWORD *)0xDFF3FC;      /* VREG_BOARD */
-        UBYTE vampRev = ((pcr & 0x000F0000) >> 16);
+        UBYTE acRev = ((pcr & 0x000F0000) >> 16);
 
         info->CPUModel = CPUMODEL_68080;
         // info->FPUModel = FPUMODEL_UNKNOWN;
-        __sprintf(info->ModelStringBuffer, "Apollo Core 68080 (x%d)", (vampID & 0xFF));
-        info->CPUFrequency = (vampID & 0xFF) * SysBase->PowerSupplyFrequency;
+        __sprintf(info->ModelStringBuffer, "AC68080 rev%d (x%d)", acRev, (vampID & 0xFF));
+        info->CPUFrequency = (vampID & 0xFF) * (SysBase->ex_EClockFrequency * 10);
+        info->BusFrequency = info->CPUFrequency << 3;
 
         if ((vampID >> 8) == 5)
         {

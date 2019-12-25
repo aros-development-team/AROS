@@ -10,7 +10,6 @@ The Original Code is written by Davy Wentzler.
 */
 
 #ifdef __AROS__
-#define DEBUG 1
 #include <aros/debug.h>
 #endif
 

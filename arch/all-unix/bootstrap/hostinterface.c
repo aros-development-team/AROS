@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,6 +48,7 @@ static struct HostInterface _HostIFace =
     Host_HostLib_Close,
     Host_HostLib_GetPointer,
     KPutC,
+    Host_HostLib_GetTime,
 #if AROS_MODULES_DEBUG
     &Debug_ModList,
 #else

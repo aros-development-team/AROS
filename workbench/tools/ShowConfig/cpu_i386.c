@@ -7,7 +7,7 @@
 
 #ifdef __x86__
 
-#define FLAGS_NUM 14
+#define FLAGS_NUM 15
 
 static const char *features[] =
 {
@@ -24,7 +24,8 @@ static const char *features[] =
     "SSE4.2",
     "SSE4A",
     "NoExecute",
-    "64Bit"
+    "64Bit",
+    "Hyperthreading"
 };
 
 void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
@@ -48,6 +49,7 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
         {GCIT_SupportsSSE4A	    , (IPTR)&flags[11]},
         {GCIT_SupportsNoExecutionBit, (IPTR)&flags[12]},
         {GCIT_Supports64BitMode     , (IPTR)&flags[13]},
+        {GCIT_SupportsHTT           , (IPTR)&flags[14]},
         {TAG_DONE                   , 0               }
     };
 

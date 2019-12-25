@@ -18,8 +18,6 @@
 #include "misc.h"
 #include "pci_wrapper.h"
 
-//#define DEBUG 1
-
 #ifdef __AROS__
 #include <asm/io.h>
 #include <aros/debug.h>

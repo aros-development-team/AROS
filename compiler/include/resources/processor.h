@@ -2,7 +2,7 @@
 #define RESOURCES_PROCESSOR_H
 
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
         
     Tags and defines for processors information queries
 */
@@ -89,6 +89,7 @@
 #define GCIT_SupportsThumbEE        (GCIT_FeaturesBase +  37)
 #define GCIT_SupportsBranchPred     (GCIT_FeaturesBase +  38)
 #define GCIT_SupportsSecurityExt    (GCIT_FeaturesBase +  39)
+#define GCIT_SupportsAMMX           (GCIT_FeaturesBase +  40)
 #define GCIT_FeaturesLast           (TAG_USER + 499)
 
 /* Processor family defines */
@@ -136,6 +137,7 @@
 #define VECTORTYPE_VFP              120
 #define VECTORTYPE_VFPv3            121
 #define VECTORTYPE_NEON             122
+#define VECTORTYPE_AMMX             200
 
 /* Processor architecture defines */
 #define PROCESSORARCH_UNKNOWN         0

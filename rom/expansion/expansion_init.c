@@ -60,7 +60,7 @@ DEFINESET(CLOSELIB)
 
 static void initExpBase(LIBBASETYPEPTR LIBBASE, BPTR segList)
 {
-    bug("[expansion] %s(0x%p)\n", __func__, LIBBASE);
+    D(bug("[expansion] %s(0x%p)\n", __func__, LIBBASE);)
 
     /* initialize our header */
     LIBBASE->LibNode.lib_Node.ln_Name = MOD_NAME_STRING;

@@ -5,7 +5,7 @@
 #include "DriverData.h"
 
 #define AHI_AROSQUIET
-#define DEBUG 1
+
 #include <aros/debug.h>
 
 struct DosLibrary *DOSBase = NULL;

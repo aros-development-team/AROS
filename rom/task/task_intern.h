@@ -61,7 +61,7 @@ struct TaskListEntry
 struct TaskListHookEntry
 {
     struct Node                 tlhe_Node;
-    struct List                 tlhe_Hooks;
+    struct MinList              tlhe_Hooks;
 };
 
 struct TaskListHookNode
