@@ -232,6 +232,18 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         if (!icon) icon = HVSpace;
     #endif
 
+        /* 
+            Prepare the pattern for MUIA_DirList_RejectPattern
+            If ParsePatternNoCase() fails we keep the value NULL which
+            means nothing to reject
+        */
+        TEXT reject_pattern_buffer[20];
+        STRPTR reject_pattern = NULL;
+        if (ParsePatternNoCase("#?.dbg", reject_pattern_buffer, sizeof reject_pattern_buffer) > 0)
+        {
+            reject_pattern = reject_pattern_buffer;
+        }
+
         data->child =
         VGroup,
             /* Unit selection */
@@ -261,7 +273,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_List_Format, (IPTR) "COL=0",
                                 MUIA_List_AdjustWidth, TRUE,
                                 MUIA_Dirlist_Directory, (IPTR)"DEVS:Printers",
-								MUIA_Dirlist_RejectPattern, (IPTR)"#?.dbg",
+								MUIA_Dirlist_RejectPattern, (IPTR)reject_pattern,
                                 MUIA_Dirlist_FilesOnly, TRUE,
                                 MUIA_Dirlist_RejectIcons, TRUE,
                             End),
