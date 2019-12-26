@@ -72,6 +72,7 @@ struct DiskInfo_DATA
     LONG                        dki_Aspect;
     struct MUI_InputHandlerNode dki_NotifyIHN;
     struct NotifyRequest        dki_FSNotifyRequest;
+    STRPTR                      dki_WindowTitle;
 };
 
 /*** Methods ****************************************************************/
@@ -276,7 +277,6 @@ Object *DiskInfo__OM_NEW
         MUIA_Application_Description, __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "DISKINFO",
         SubWindow, (IPTR) (window = (Object *)WindowObject,
-            MUIA_Window_Title, (IPTR) volname,
             MUIA_Window_Activate,    TRUE,
             MUIA_Window_NoMenus,     TRUE,
             MUIA_Window_CloseGadget, TRUE,
@@ -456,6 +456,13 @@ Object *DiskInfo__OM_NEW
     data->dki_FileSys = filesystem;
     data->dki_Aspect        = aspect;
 
+    /*
+        the window class doesn't copy the title so we must
+        create a copy by ourselves to avoid corrupt window title
+    */
+    data->dki_WindowTitle = StrDup(volname);
+    SET(data->dki_Window, MUIA_Window_Title, data->dki_WindowTitle);
+
     /* Setup notifications -------------------------------------------------*/
     DoMethod( window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
         (IPTR) self, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -505,6 +512,7 @@ IPTR DiskInfo__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
     FreeVec(data->dki_DOSDev);
     FreeVec(data->dki_DOSDevInfo);
     FreeVec(data->dki_FileSys);
+    FreeVec(data->dki_WindowTitle);
 
     return DoSuperMethodA(CLASS, self, message);
 }

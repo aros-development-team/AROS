@@ -29,6 +29,7 @@ EXECPUBLICFILES :=		\
     stackswap 		\
     signaltest		\
     supertest		\
+    tasklist		\
     taskstorage \
     tasktest		\
     timeport \
