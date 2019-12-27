@@ -2857,7 +2857,7 @@ endif
 # - srcdir is where *.png and *.info.src are sought
 #-----------------------------------------------------------------------------
 
-%define build_icons mmake=/A icons=/A dir=/A srcdir=$(SRCDIR)/$(CURDIR) image=
+%define build_icons mmake=/A icons=/A fmt=png dir=/A srcdir=$(SRCDIR)/$(CURDIR) image=
 
 BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
@@ -2866,7 +2866,7 @@ BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
 ifeq (%(image),)
 
-%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.png
+%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.%(fmt)
 	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
 	$(Q)$(ILBMTOICON) $+ $@
 
@@ -2901,14 +2901,14 @@ endif
 # - srcdir is where *.png and *.info.src are sought
 #-----------------------------------------------------------------------------
 
-%define build_dualicon mmake=/A icon=/A normal=/A selected=/A dir=/A srcdir=$(SRCDIR)/$(CURDIR)
+%define build_dualicon mmake=/A icon=/A normal=/A selected=/A fmt=png dir=/A srcdir=$(SRCDIR)/$(CURDIR)
 
 BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 
 #MM
 %(mmake) : $(BD_OBJ)
 
-%(dir)/%(icon).info : %(srcdir)/%(icon).info.src %(srcdir)/%(normal).png %(srcdir)/%(selected).png
+%(dir)/%(icon).info : %(srcdir)/%(icon).info.src %(srcdir)/%(normal).%(fmt) %(srcdir)/%(selected).%(fmt)
 	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
 	$(Q)$(ILBMTOICON) $+ $@
 
