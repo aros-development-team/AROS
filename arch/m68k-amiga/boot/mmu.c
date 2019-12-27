@@ -106,7 +106,7 @@ static void swapvbr(APTR vbr)
 	"newvbr:\n"
 	"movec	%%d0,%%vbr\n"
 	"rte\n"
-	"0:\n"
+	"0:\n.chip 68k\n"
 	: : "m" (vbr) : "d0", "d1", "a5", "a6");
 }
 
