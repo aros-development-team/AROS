@@ -2883,7 +2883,7 @@ endif
 %(mmake)-clean : FILES := $(BD_OBJS)
 #MM
 %(mmake)-clean ::
-	$(Q)$(RM) $(BD_OBJS)
+	$(Q)$(RM) $(FILES)
 
 .PHONY: %(mmake) %(mmake)-clean
 
@@ -2908,7 +2908,7 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 #MM
 %(mmake) : $(BD_OBJ)
 
-%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%(normal).png %(srcdir)/%(selected).png
+%(dir)/%(icon).info : %(srcdir)/%(icon).info.src %(srcdir)/%(normal).png %(srcdir)/%(selected).png
 	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
 	$(Q)$(ILBMTOICON) $+ $@
 
@@ -2917,7 +2917,7 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 %(mmake)-clean : FILES := $(BD_OBJ)
 #MM
 %(mmake)-clean ::
-	$(Q)$(RM) $(BD_OBJ)
+	$(Q)$(RM) $(FILES)
 
 .PHONY: %(mmake) %(mmake)-clean
 
