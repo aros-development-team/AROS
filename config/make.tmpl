@@ -2883,7 +2883,41 @@ endif
 %(mmake)-clean : FILES := $(BD_OBJS)
 #MM
 %(mmake)-clean ::
-	$(Q)$(RM) $(FILES)
+	$(Q)$(RM) $(BD_OBJS)
+
+.PHONY: %(mmake) %(mmake)-clean
+
+%end
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+# Build dual state icon.
+# - mmake is the mmaketarget
+# - icon is the icon base name (i.e. without the .info suffix)
+# - normal is the unselected state image name (i.e. without the .png suffix)
+# - selected is the selected state image name (i.e. without the .png suffix)
+# - dir is the destination directory
+# - srcdir is where *.png and *.info.src are sought
+#-----------------------------------------------------------------------------
+
+%define build_dualicon mmake=/A icon=/A normal=/A selected=/A dir=/A srcdir=$(SRCDIR)/$(CURDIR)
+
+BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
+
+#MM
+%(mmake) : $(BD_OBJ)
+
+%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%(normal).png %(srcdir)/%(selected).png
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(ILBMTOICON) $+ $@
+
+%rule_makedirs dirs="%(dir)" setuptarget=$(BD_OBJ)
+
+%(mmake)-clean : FILES := $(BD_OBJ)
+#MM
+%(mmake)-clean ::
+	$(Q)$(RM) $(BD_OBJ)
 
 .PHONY: %(mmake) %(mmake)-clean
 
