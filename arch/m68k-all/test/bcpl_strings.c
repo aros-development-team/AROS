@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2012-2019, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -52,9 +52,12 @@ __startup int _main(void)
     STRPTR cp = &buff[128], val;
     BSTR bval;
     int total = 0, passed = 0;
+    BOOL success = FALSE;
 
     if ((DOSBase = OpenLibrary("dos.library", 0))) {
         Printf("Testing BCPL string functions:\n");
+
+        success = TRUE;
 
         /* toCStr Testing */
         Printf("toCStr: ");
@@ -91,9 +94,11 @@ __startup int _main(void)
             );
 
         Printf("%ld/%ld\n", passed, total);
+        if (passed != total)
+            success = FALSE;
 
         /* toBSTR Testing */
-        passed = failed = 0;
+        passed = total = 0;
         Printf("toBSTR: ");
 
         VERIFY(
@@ -140,11 +145,13 @@ __startup int _main(void)
             );
 
         Printf("%ld/%ld\n", passed, total);
+        if (passed != total)
+            success = FALSE;
 
         CloseLibrary(DOSBase);
     }
 
-    return (passed == total) ? RETURN_OK : RETURN_FAIL;
+    return (success) ? RETURN_OK : RETURN_FAIL;
 }
 
 
