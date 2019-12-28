@@ -42,6 +42,8 @@ EXEDIR := $(AROS_TESTS)/misc
 
 #MM  test-sh : includes linklibs
 
+#MM test-misc : workbench-libs-version-includes
+
 %build_progs mmake=test-misc \
     files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
 
