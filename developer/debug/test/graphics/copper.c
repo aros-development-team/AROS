@@ -129,8 +129,8 @@ int main(int argc, char **argv)
 				RethinkDisplay();
 				printf("Done\n");
 			}
-			CloseLibrary(GfxBase);
+			CloseLibrary((struct Library *)GfxBase);
 		}
-		CloseLibrary(IntuitionBase);
+		CloseLibrary((struct Library *)IntuitionBase);
 	}
 }

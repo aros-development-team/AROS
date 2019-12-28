@@ -6,6 +6,7 @@
 */
 
 #include <fcntl.h>
+#include <string.h>
 #include "__stdio.h"
 
 
