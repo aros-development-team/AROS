@@ -17,4 +17,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM- includes-linux: includes-unix
 #MM- linklibs-linux: linklibs-unix
 
+#MM- test-linux: test-unix
+
 %common
