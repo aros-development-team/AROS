@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile for AROS Test
+#   Makefile for AROS Test binaries & scripts.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -12,10 +12,19 @@ EXEDIR := $(AROS_TESTS)
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-#MM- test : test-common test-clib test-kernel test-intuition \
-#MM  test-layers test-zune workbench-libs-version test-$(AROS_TARGET_ARCH) test-miscfiles
+#MM- test : test-common \
+#MM  test-clib \
+#MM  test-kernel \
+#MM  test-intuition \
+#MM  test-layers \
+#MM  test-zune \
+#MM  test-miscfiles
 
-#MM  test-common : includes workbench-libs-version linklibs
+#MM- test : test-$(AROS_TARGET_ARCH) \
+#MM  test-$(AROS_TARGET_CPU) \
+#MM  test-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM  test-common : includes linklibs
 
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR)
