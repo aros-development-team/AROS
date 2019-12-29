@@ -1,4 +1,4 @@
-## version $VER: deutsch.catalog 2.0 (30.03.2016)
+## version $VER: deutsch.catalog 2.1 (23.12.2019)
 ## language deutsch
 ## codeset 0
 ;
@@ -176,8 +176,8 @@ Register
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Voreingestellte Größe schneidet Titel ab:
-; Default size truncate titles:
+Kürze Titel\nauf voreingestellte Breite
+; Default size truncate titles
 ;
 MSG_NORMAL
 Normal
