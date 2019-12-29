@@ -22,6 +22,8 @@ struct IMonitorNode
     IPTR                        FrameBufferType;
     struct Rectangle            FBBounds;
 
+    struct BitMap               *tmpPtr;
+
 #if USE_FAST_DISPLAYTOBMCOORDS
     OOP_MethodFunc              displaytobmcoords;
     OOP_Class 	                *displaytobmcoords_Class;

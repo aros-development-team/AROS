@@ -14,18 +14,17 @@
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
 #include <intuition/monitorclass.h>
+
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 
 #include "intuition_intern.h"
 #include "monitorclass_intern.h"
 #include "monitorclass_private.h"
-
-#define DACTIVATE(x)
-#define DPOINTER(x)
 
 /*i***************************************************************************
 
@@ -86,7 +85,7 @@ static void SetPointerPos(struct IMonitorNode *data, struct IntuitionBase *Intui
     ULONG x = data->mouseX;
     ULONG y = data->mouseY;
 
-    DPOINTER(
+    DEBUG_POINTER(
       bug("[Monitor] %s(%d, %d)\n", __func__, x, y);
       bug("[Monitor] %s: pointer @ 0x%p\n", __func__, data->pointer);
      )
@@ -97,7 +96,7 @@ static void SetPointerPos(struct IMonitorNode *data, struct IntuitionBase *Intui
         data->pointer->sprite->es_SimpleSprite.y = y;
     }
 
-    DPOINTER(bug("[Monitor] %s: Physical co-ordinates %d,%d\n", __func__, x, y);)
+    DEBUG_POINTER(bug("[Monitor] %s: Physical co-ordinates %d,%d\n", __func__, x, y);)
 
     HIDD_Gfx_SetCursorPos(data->handle->gfxhidd, x, y);
 }
@@ -116,7 +115,7 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
         {TAG_DONE,              0                      }
     };
 
-    DACTIVATE(
+    DEBUG_ACTIVATESCREEN(
       bug("[Monitor] %s()\n", __func__);
       bug("[Monitor] %s: IntuitionBase @ 0x%p\n", __func__, IntuitionBase);
       bug("[Monitor] %s: OOPBase @ 0x%p\n", __func__, OOPBase);
@@ -1890,12 +1889,13 @@ IPTR MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFla
 IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointerShape *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct BitMap *bm;
     BOOL res;
 
-    DPOINTER(
+    DEBUG_POINTER(
       bug("[Monitor] %s(0x%p)\n", __func__, msg->pointer);
       bug("[Monitor] %s: old pointer 0x%p\n", __func__, data->pointer);
      )
@@ -1903,18 +1903,30 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
     if (data->pointer == msg->pointer)
         return TRUE;
 
-    DPOINTER(bug("[Monitor] %s: Display SpriteType = %08x\n", __func__, data->SpriteType);)
+    DEBUG_POINTER(bug("[Monitor] %s: Display SpriteType = %08x\n", __func__, data->SpriteType);)
 
     bm = msg->pointer->sprite->es_BitMap;
-    /* Currently we don't work with non-hidd sprites */
     if (!IS_HIDD_BM(bm))
-        return FALSE;
+    {
+        ULONG bmwid, bmhigh;
+
+        /* Create a temporary hidd bitmap to use */
+        if (data->tmpPtr)
+            FreeBitMap(data->tmpPtr);
+        bmwid = GetBitMapAttr(bm, BMA_WIDTH);
+        bmhigh = GetBitMapAttr(bm, BMA_HEIGHT);
+        DEBUG_POINTER(bug("[Monitor] %s: %dx%d\n", __func__, bmwid, bmhigh);)
+        data->tmpPtr = AllocBitMap(bmwid, bmhigh,
+                                                GetBitMapAttr(bm, BMA_DEPTH), BMF_DISPLAYABLE, NULL);
+        BltBitMap(bm, 0, 0, data->tmpPtr, 0, 0, bmwid, bmhigh, 0xC0, ~0L, NULL);
+        bm = data->tmpPtr;
+    }
 
     res = HIDD_Gfx_SetCursorShape(data->handle->gfxhidd, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
-    DPOINTER(bug("[Monitor] %s: SetCursorShape() returned %d\n", __func__, res));
+    DEBUG_POINTER(bug("[Monitor] %s: SetCursorShape() returned %d\n", __func__, res));
     if (res) {
         data->pointer = msg->pointer;
-        /* This will fix up sprite position if hotspot changed */
+        /* Fix up sprite position incase the hotspot changed */
         SetPointerPos(data, IntuitionBase);
     }
 
