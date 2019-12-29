@@ -2,7 +2,7 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
@@ -305,7 +305,6 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
 
 /* Inline versions of varargs functions */
 #if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
-
 #    define SetSuperAttrsA(cl, object, attrs)          	  \
      ({                                                   \
          struct opSet __ops;                              \
@@ -316,11 +315,7 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
                                                           \
          DoSuperMethodA((cl), (object), (Msg) &__ops.MethodID); \
      })
-#    define SetSuperAttrs(cl, object, args...)                         \
-     ({                                                                \
-         IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(args) };         \
-         SetSuperAttrsA((cl), (object), (struct TagItem *) __args);    \
-     })
+
 #    define DoMethodA(object, message)                                 \
      ({                                                                \
          (object) != NULL ?                                            \
@@ -334,12 +329,7 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
              0                                                         \
          ;                                                             \
     })
-#   define DoMethod(object, methodid, args...)                        \
-    ({                                                                \
-        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
-        DoMethodA((object), __args);                                  \
-    })
-            
+
 #   define DoSuperMethodA(cl, object, message)                        \
     ({                                                                \
         ((cl) != NULL && (object) != NULL) ?                          \
@@ -352,12 +342,7 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
             0                                                         \
         ;                                                             \
     })
-#   define DoSuperMethod(cl, object, methodid, args...)               \
-    ({                                                                \
-        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
-        DoSuperMethodA((cl), (object), __args);                       \
-    })
-            
+
 #   define CoerceMethodA(cl, object, message)                         \
     ({                                                                \
         ((cl) != NULL && (object) != NULL) ?                          \
@@ -366,11 +351,7 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
             0                                                         \
         ;                                                             \
     })
-#   define CoerceMethod(cl, object, methodid, args...)                 \
-    ({                                                                 \
-         IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
-         CoerceMethodA((cl), (object), __args);                        \
-    })  
+
 #   define DoSuperNewTagList(cl, object, gadgetinfo, tags)                 \
     ({                                                                     \
         struct opSet __ops;                                                \
@@ -385,6 +366,34 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
             0                                                              \
         ;                                                                  \
     })
+#endif
+
+#ifdef AROS_SLOWSTACKMETHODS
+#if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
+#    define SetSuperAttrs(cl, object, args...)                         \
+     ({                                                                \
+         IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(args) };         \
+         SetSuperAttrsA((cl), (object), (struct TagItem *) __args);    \
+     })
+
+#   define DoMethod(object, methodid, args...)                        \
+    ({                                                                \
+        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
+        DoMethodA((object), __args);                                  \
+    })
+
+#   define DoSuperMethod(cl, object, methodid, args...)               \
+    ({                                                                \
+        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
+        DoSuperMethodA((cl), (object), __args);                       \
+    })
+
+#   define CoerceMethod(cl, object, methodid, args...)                 \
+    ({                                                                 \
+         IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
+         CoerceMethodA((cl), (object), __args);                        \
+    })
+
 #   define DoSuperNewTags(cl, object, gadgetinfo, args...)                 \
     ({                                                                     \
         IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};                \
@@ -393,7 +402,11 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
             (cl), (object), (gadgetinfo), (struct TagItem *) __args        \
         );                                                                 \
     })
+#endif
+#endif
 
+#ifdef AROS_SLOWSTACKHOOKS
+#if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
 #define CallHook(hook, object, args...)					\
     ({									\
     	IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};		\
@@ -401,6 +414,7 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
     })
 
 #endif /* !ALIB_NO_INLINE_STDARG && !NO_INLINE_STDARG */
+#endif
 
 __END_DECLS
 
