@@ -17,11 +17,13 @@ include $(SRCDIR)/config/aros.cfg
 EXEDIR := $(AROSDIR)
 
 NOWARN_FLAGS := $(NOWARN_POINTER_SIGN)
-AHI_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN_FLOOR) $(OPTIMIZATION_CFLAGS)
+USER_CPPFLAGS := $(NOWARN_FLAGS)
 AHI_OPTIONS=--with-os-includedir=$(AROS_INCLUDES)
 
-# AHI's configure will not set its needed preprocessor flags if we already provide them (even if empty)
-# so we disable their use in build_with_configure.
+# AHI's configure script will not set the needed preprocessor
+# flags if cppflags is already defined, so we disable its use in
+# build_with_configure, and append the flags to the CFLAGS directly.
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN_FLOOR) $(TARGET_CPPFLAGS)
+
 %build_with_configure mmake=workbench-devs-AHI-subsystem prefix=$(EXEDIR) \
-    extraoptions="$(AHI_OPTIONS)" \
-    extracflags="$(AHI_CFLAGS)" usecppflags=no gnuflags=no
+    extraoptions="$(AHI_OPTIONS)" usecppflags=no gnuflags=no
