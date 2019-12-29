@@ -1,14 +1,14 @@
-#! @PYTHON@
+#!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
-# Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2008, The AROS Development Team. All rights reserved.
 
 import sys, re, os, errno
 
 if not len(sys.argv) in [2, 3, 4, 5] :
-    print "Usage:",sys.argv[0],"tmplfile [inputfile outputfile]"
-    print "Usage:",sys.argv[0],"tmplfile --usetmp [inputfile outputfile]"
-    print "Usage:",sys.argv[0],"tmplfile --listfile filename"
-    print "Usage:",sys.argv[0],"tmplfile --usetmp --listfile filename"
+    print("Usage:",sys.argv[0],"tmplfile [inputfile outputfile]")
+    print("Usage:",sys.argv[0],"tmplfile --usetmp [inputfile outputfile]")
+    print("Usage:",sys.argv[0],"tmplfile --listfile filename")
+    print("Usage:",sys.argv[0],"tmplfile --usetmp --listfile filename")
 
 # A regular expression for the start of a template instantiation (ex. %build_module)
 re_tmplinst = re.compile('%([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:\s|$))')
@@ -47,7 +47,7 @@ def generate_templrefs(lines, templates):
             continue
         
         m = re_tmplinst.search(line)
-        if m and templates.has_key(m.group(1)) and not (m.start() > 0 and line[m.start()-1] == "#"):
+        if m and m.group(1) in templates and not (m.start() > 0 and line[m.start()-1] == "#"):
             templrefs.append((lineno, m))
 
     return templrefs
@@ -79,7 +79,7 @@ def writelines(lines, templrefs, templates, outfile):
     
         try:
             templates[m.group(1)].write(outfile, m.group(1), line[m.end():].lstrip(), templates)
-        except GenmfException, ge:
+        except GenmfException as ge:
             raise GenmfException(("In instantiation of %s, line %d\n" % (m.group(1), lineno+1))+ge.s)
         
     if start < len(lines):
@@ -159,7 +159,7 @@ class template:
         self.linerefs = None
         self.templrefs = None
         
-        for argname, argbody in args.items():
+        for argname, argbody in list(args.items()):
             if argbody.ismulti:
                 if self.multiarg:
                     sys.exit('A template can have only one main (/M) argument')
@@ -176,7 +176,7 @@ class template:
         while lineno < len(self.body):
             argrefs = []
             for m in template.re_arginst.finditer(self.body[lineno]):
-                if self.args.has_key(m.group(2)):
+                if m.group(2) in self.args:
                     argbody = self.args[m.group(2)]
                     argrefs.append((argbody, m.start(), m.end(),m.group(1),m.group(3)))
                     argbody.used = 1
@@ -187,7 +187,7 @@ class template:
             lineno = lineno+1
         self.linerefs = linerefs
         
-        for argname, argbody in self.args.items():
+        for argname, argbody in list(self.args.items()):
             if not argbody.used:
                 sys.stderr.write("Warning: template '%s': unused argument '%s'\n" % (self.name, argname))
 
@@ -202,7 +202,7 @@ class template:
         argno = 0
         while len(line) > 0:
             m = re_arg.match(line)
-            if m and self.args.has_key(m.group(1)):
+            if m and m.group(1) in self.args:
                 value = m.group(2)
                 if value == None:
                     #sys.stderr.write("Arg:"+m.group(1)+" Value: None Line:"+line+"\n")
@@ -223,13 +223,13 @@ class template:
             self.generate_linerefs()
             self.templrefs = generate_templrefs(self.body, templates)
     
-        for argname, argbody in self.args.items():
+        for argname, argbody in list(self.args.items()):
             if argbody.isneeded and argbody.value == None:
                 raise GenmfException('Arg "%s" not specified but should have been' % argname)
         
         text = self.body[:]
     
-        for lineno, argrefs in self.linerefs.items():
+        for lineno, argrefs in list(self.linerefs.items()):
             line = text[lineno]
     
             pos=0
@@ -261,7 +261,7 @@ class template:
         writelines(text, self.templrefs, templates, outfile)
         #outfile.write('\n')
         
-        for argname, argbody in self.args.items():
+        for argname, argbody in list(self.args.items()):
             argbody.value = None
         self.used = 0
 
@@ -273,7 +273,7 @@ def read_templates(filename):
     try:
         infile = open(filename)
     except:
-        print "Error reading template file: "+filename
+        print("Error reading template file: "+filename)
 
     re_name = re.compile('[a-zA-Z0-9][a-zA-Z0-9_]*(?=(?:\s|$))')
     re_openstring = re.compile('[^\s"]*"[^"]*$')
@@ -311,7 +311,7 @@ def read_templates(filename):
             lineno = lineno+1
             line = lines[lineno]
             bodystart = lineno
-            while lineno < len(lines) and line[0:4] <> "%end":
+            while lineno < len(lines) and line[0:4] != "%end":
                 lineno = lineno+1
                 line = lines[lineno]
     
@@ -372,7 +372,7 @@ if listfile == None:
     
     try:
         writelines(lines, generate_templrefs(lines, templates), templates, outfile)
-    except GenmfException, ge:
+    except GenmfException as ge:
         s = ge.s
         if len(sys.argv) == argin + 2:
             s = sys.argv[argin + 1]+":"+s
@@ -381,7 +381,7 @@ if listfile == None:
     # If %common was not present in the file write it out at the end of the file
     if not template.hascommon:
         outfile.write("\n")
-        if templates.has_key("common"):
+        if "common" in templates:
             templates["common"].write(outfile, "common", "", templates)
     
     if closeout:
@@ -403,7 +403,7 @@ else:
     
     for fileno in range(len(filelist)):
         files = filelist[fileno].split()
-        if len(files) <> 2:
+        if len(files) != 2:
             sys.exit('%s:%d: Syntax error: %s' % (listfile, fileno+1, filelist[fileno]))
         
         progcount = progcount + 1
@@ -412,14 +412,14 @@ else:
             sys.stderr.write('.')
             sys.stderr.flush()
         
-        infile = open(files[0], "r")
+        infile = open(files[0], "r", encoding = "iso-8859-1")
         lines = infile.readlines()
         infile.close()
         
         try:
             # os.makedirs will also create all the parent directories
             os.makedirs(os.path.dirname(files[1]))
-        except OSError, err:
+        except OSError as err:
             # Do nothing ..
             s = err.errno
         
@@ -432,7 +432,7 @@ else:
         
         try:
             writelines(lines, generate_templrefs(lines, templates), templates, outfile)
-        except GenmfException, ge:
+        except GenmfException as ge:
             s = ge.s
             if len(sys.argv) == argin + 2:
                 s = files[0]+":"+s
@@ -440,7 +440,7 @@ else:
         
         if not template.hascommon:
             outfile.write("\n")
-            if templates.has_key("common"):
+            if "common" in templates:
                 templates["common"].write(outfile, "common", "", templates)
         
         outfile.close()

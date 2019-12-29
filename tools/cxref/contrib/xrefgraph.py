@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
 
 # This program reads the output of cxref:
 # http://www.gedanken.demon.co.uk/cxref/
@@ -67,12 +67,12 @@ try:
 	if opt == '-k':
 	    knownflag = 1
 	if opt == '-t':
-	    if papertypes.has_key(arg):
+	    if arg in papertypes:
 		paperdef = papertypes[arg]
 	    else:
-		raise getopt.error, "unknown paper type '%s'" % arg
+		raise getopt.error("unknown paper type '%s'" % arg)
 
-except getopt.error, msg:
+except getopt.error as msg:
     sys.stderr.write("%s: %s\n" % (__scriptname, msg))
     printusage()
     sys.exit(1)
@@ -96,7 +96,7 @@ for line in profile:
     l = sp.split(string.strip(line))
     node = l[1]
     nodelist.append(node)
-    if filename.has_key(node) or calls.has_key(node):
+    if node in filename or node in calls:
 	sys.stderr.write("duplicate function '%s', ignoring previous definition\n" % node)
     filename[node] = l[0]
     calls[node] = []
@@ -105,16 +105,16 @@ for line in profile:
 
 # Output the graph.
 
-print 'digraph call {'
-print 'page = "%(page)s"; %(rotate)s size = "%(size)s"' % paperdef
-print 'ratio = fill; center = 1'
+print('digraph call {')
+print('page = "%(page)s"; %(rotate)s size = "%(size)s"' % paperdef)
+print('ratio = fill; center = 1')
 
 for node in nodelist:
     if nodeflag:
 	label = '%s\\n%s' % (node, filename[node])
-	print '%s [label = "%s"]' % (node, label)
+	print('%s [label = "%s"]' % (node, label))
     for n in calls[node]:
 	if not knownflag or n in nodelist:
-	    print node, '->', n
+	    print(node, '->', n)
 
-print '}'
+print('}')

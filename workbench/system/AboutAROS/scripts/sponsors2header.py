@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python3
 # -*- coding: iso-8859-15 -*-
 
 import sys
@@ -20,11 +20,14 @@ struct TagItem *SPONSORS = TAGLIST
     (
         SID_NONE''')
 
-for line in sys.stdin:
+file = open(sys.argv[1], "r", encoding="iso-8859-15")
+for line in file:
     sys.stdout.write(',\n        NAME("%s")' % line.strip())
     
-print '''\n    ),
+print('''\n    ),
     TAG_DONE
 );
 
-#endif /* _SPONSORS_H_ */'''
+#endif /* _SPONSORS_H_ */''')
+
+file.close()

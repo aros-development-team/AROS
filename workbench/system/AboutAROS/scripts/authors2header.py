@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: iso-8859-15 -*-
 # Copyright © 2002-2008, The AROS Development Team. All rights reserved.
 # $Id$
@@ -36,22 +37,23 @@ def parse(file):
         line = line.strip()
 
         if ':' in line:
-	    if len(names) > 0:
-	        credits.append([area, names])
+            if len(names) > 0:
+                credits.append([area, names])
 
-	    area = line[:-1]
+            area = line[:-1]
 
-	    names = []
+            names = []
 
         elif line != '':
-	    names.append(line)
+            names.append(line)
 
     if len(names) > 0:
         credits.append([area, names])
 
     return credits
 
-credits = parse(sys.stdin)
+file = open(sys.argv[1], "r", encoding="iso-8859-15")
+credits = parse(file)
 
 sys.stdout.write('''#ifndef _AUTHORS_H_
 #define _AUTHORS_H_
@@ -98,9 +100,11 @@ for area in credits:
     for name in area[1]:
         sys.stdout.write(',\n        NAME("%s")' % name.replace('"', '\\"'))
     
-    print '\n    ),'
+    print('\n    ),')
     
-print '''    TAG_DONE
+print('''    TAG_DONE
 );
 
-#endif /* _AUTHORS_H_ */'''
+#endif /* _AUTHORS_H_ */''')
+
+file.close()

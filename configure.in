@@ -584,7 +584,8 @@ AROS_REQUIRED(chmod,$CHMOD)
 AROS_PROG(PATCH,[patch])
 AROS_REQUIRED(patch,$PATCH)
 
-AM_PATH_PYTHON(2.5)
+dnl TODO it might be necessary to use a higher version of Python 3
+AM_PATH_PYTHON(3.0)
 
 AC_ARG_ENABLE([libpng-config], [--disable-libpng-config    disable libpng-config test and configuration])
 if test "$enable_libpng_config" != "no"; then
