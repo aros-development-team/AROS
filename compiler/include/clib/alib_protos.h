@@ -305,17 +305,6 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
 
 /* Inline versions of varargs functions */
 #if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
-#    define SetSuperAttrsA(cl, object, attrs)          	  \
-     ({                                                   \
-         struct opSet __ops;                              \
-                                                          \
-         __ops.MethodID     = OM_SET;                     \
-         __ops.ops_AttrList = (attrs);                    \
-         __ops.ops_GInfo    = NULL;                       \
-                                                          \
-         DoSuperMethodA((cl), (object), (Msg) &__ops.MethodID); \
-     })
-
 #    define DoMethodA(object, message)                                 \
      ({                                                                \
          (object) != NULL ?                                            \
@@ -366,16 +355,27 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
             0                                                              \
         ;                                                                  \
     })
-#endif
 
-#ifdef AROS_SLOWSTACKMETHODS
-#if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
+#    define SetSuperAttrsA(cl, object, attrs)          	  \
+     ({                                                   \
+         struct opSet __ops;                              \
+                                                          \
+         __ops.MethodID     = OM_SET;                     \
+         __ops.ops_AttrList = (attrs);                    \
+         __ops.ops_GInfo    = NULL;                       \
+                                                          \
+         DoSuperMethodA((cl), (object), (Msg) &__ops.MethodID); \
+     })
+
 #    define SetSuperAttrs(cl, object, args...)                         \
      ({                                                                \
          IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(args) };         \
          SetSuperAttrsA((cl), (object), (struct TagItem *) __args);    \
      })
+#endif
 
+#ifdef AROS_SLOWSTACKMETHODS
+#if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
 #   define DoMethod(object, methodid, args...)                        \
     ({                                                                \
         IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
