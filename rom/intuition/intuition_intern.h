@@ -702,11 +702,11 @@ struct IntDrawInfo
 
 struct GammaControl
 {
-    BOOL   UseGammaControl;
-    BOOL   Active;
     UBYTE *GammaTableR;
     UBYTE *GammaTableG;
     UBYTE *GammaTableB;
+    BOOL   UseGammaControl;
+    BOOL   Active;
 };
 
 struct IntScreen
@@ -735,8 +735,6 @@ struct IntScreen
 #endif
     Object		    *IMonitorNode;
     struct SharedPointer    *Pointer;
-    BOOL                     ShowPointer;
-    BOOL                     SysFont;
     struct Window           *MenuVerifyActiveWindow;
     int                      MenuVerifyTimeOut;
     int                      MenuVerifyMsgCount;
@@ -762,12 +760,14 @@ struct IntScreen
     ULONG                    TitlebarWinActive;
 #endif
     struct GammaControl      GammaControl;
-    BOOL                     frontmost;
-
-    BOOL                     WindowLock;
 #if USE_NEWDISPLAYBEEP
     UBYTE                    BeepingCounter;
 #endif
+    BOOL                     ShowPointer;
+    BOOL                     SysFont;
+    BOOL                     frontmost;
+
+    BOOL                     WindowLock;
 };
 
 void UpdateScreenBitMap(struct Screen *s, struct IntuitionBase *IntuitionBase);
@@ -1174,6 +1174,7 @@ AROS_UFPA(APTR  , args      , A1));
 
 #define DEBUG_ACTIVATEGADGET(x)     	;
 #define DEBUG_ACTIVATEWINDOW(x)     	;
+#define DEBUG_ACTIVATESCREEN(x)     	;
 #define DEBUG_ADDCLASS(x)           	;
 #define DEBUG_ADDGADGET(x)          	;
 #define DEBUG_ADDGLIST(x)           	;
@@ -1222,7 +1223,7 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_OPENWINDOW(x)         	;
 #define DEBUG_OPENWINDOWTAGLIST(x)  	;
 #define DEBUG_OPENWORKBENCH(x)      	;
-#define DEBUG_POINTER(x)            	;
+#define DEBUG_POINTER(x)            	x;
 #define DEBUG_PRINTITEXT(x)         	;
 #define DEBUG_QUERYOVERSCAN(x)      	;
 #define DEBUG_REFRESH(x)            	;
@@ -1235,7 +1236,7 @@ AROS_UFPA(APTR  , args      , A1));
 #define DEBUG_SENDINTUIMESSAGE(x)   	;
 #define DEBUG_SETATTRS(x)           	;
 #define DEBUG_SETGADGETATTRS(x)     	;
-#define DEBUG_SETPOINTER(x)         	;
+#define DEBUG_SETPOINTER(x)         	x;
 #define DEBUG_SHOWWINDOW(x)         	;
 #define DEBUG_UNLOCKPUBSCREEN(x)    	;
 #define DEBUG_WINDOWLIMITS(x)       	;
