@@ -293,13 +293,13 @@ static BOOL IsDelfileValid(struct deldirentry *dde, struct cdeldirblock *ddblk, 
 static BOOL BlockTaken(struct canode *anode, globaldata *g);
 static void FillDelfileFib(struct deldirentry *dde, ULONG slotnr, struct FileInfoBlock *fib, globaldata *g);
 static struct deldirentry *GetDeldirEntry(IPTR *nr, globaldata *g);
-static ULONG FillInDDEData(struct ExAllDataEXT *buffer, LONG type, struct deldirentry *dde, ULONG ddenr, ULONG spaceleft, globaldata *g);
+static ULONG FillInDDEData(struct ExAllData *buffer, LONG type, struct deldirentry *dde, ULONG ddenr, ULONG spaceleft, globaldata *g);
 static struct cdeldirblock *GetDeldirBlock(UWORD seqnr, globaldata *g);
 #endif
 static void GetFirstEntry(lockentry_t *, globaldata *);
 static ULONG GetFirstNonEmptyDE(ULONG anodenr, struct fileinfo *, globaldata *);
 static void RemakeNextEntry(lockentry_t *, struct FileInfoBlock *, globaldata *);
-static ULONG FillInData(struct ExAllDataEXT *, LONG, struct direntry *, ULONG, globaldata *);
+static ULONG FillInData(struct ExAllData *, LONG, struct direntry *, ULONG, globaldata *);
 static BOOL DeleteDir(union objectinfo *, SIPTR *, globaldata *);
 static BOOL DirIsEmpty(ULONG, globaldata *);
 static BOOL MakeDirEntry(BYTE type, UBYTE *name, UBYTE *entrybuffer, globaldata * g);
@@ -403,7 +403,16 @@ UBYTE *GetFullPath(union objectinfo *basispath, STRPTR filename,
 
 			case '/':
 				if (*pathpart == 0x0)
+				{
+					// if already at root, fail with an error
+					if (IsVolume(*fullpath))
+					{
+						*error = ERROR_OBJECT_NOT_FOUND;
+						success = FALSE;
+						break;
+					}
 					success = GetParentOf(fullpath, error, g);
+				}
 				else
 					success = GetDir(pathpart, fullpath, error, g);
 				break;
@@ -576,7 +585,7 @@ BOOL FindObject(union objectinfo *directory, STRPTR objectname,
 
 	if (!filename)
 	{
-		DB(Trace(2, "FindObject", "!filename %s\n", objectname));
+		DB(Trace(2, "FindObject !filename %s\n", objectname));
 		return DOSFALSE;
 	}
 
@@ -1136,7 +1145,7 @@ void GetNextEntry(lockentry_t *file, globaldata * g)
  *
  * Note: +- 2000 stack needed
  */
-static ULONG FillInData(struct ExAllDataEXT *buffer, LONG type,
+static ULONG FillInData(struct ExAllData *buffer, LONG type,
 						struct direntry *direntry, ULONG spaceleft, globaldata *g)
 {
 	UWORD nameoffset, commentoffset = 0;
@@ -1148,41 +1157,41 @@ static ULONG FillInData(struct ExAllDataEXT *buffer, LONG type,
 	switch (type)
 	{
 		case ED_NAME:
-			size = offsetof(struct ExAllDataEXT, ed_Type);
+			size = offsetof(struct ExAllData, ed_Type);
 			break;
 
 		case ED_TYPE:
-			size = offsetof(struct ExAllDataEXT, ed_Size);
+			size = offsetof(struct ExAllData, ed_Size);
 			break;
 
 		case ED_SIZE:
-			size = offsetof(struct ExAllDataEXT, ed_Prot);
+			size = offsetof(struct ExAllData, ed_Prot);
 			break;
 
 		case ED_PROTECTION:
-			size = offsetof(struct ExAllDataEXT, ed_Days);
+			size = offsetof(struct ExAllData, ed_Days);
 			break;
 
 		case ED_DATE:
-			size = offsetof(struct ExAllDataEXT, ed_Comment);
+			size = offsetof(struct ExAllData, ed_Comment);
 			break;
 
 		case ED_COMMENT:
-			size = offsetof(struct ExAllDataEXT, ed_OwnerUID);
+			size = offsetof(struct ExAllData, ed_OwnerUID);
 			break;
 
 		case ED_OWNER:
-#if EXTENDED_PACKETS_MORPHOS
-			size = offsetof(struct ExAllDataEXT, ed_Size64);
+#if defined(__MORPHOS__)
+			size = offsetof(struct ExAllData, ed_Size64);
 			break;
 
 		case ED_SIZE64:
 #endif
-			size = sizeof(struct ExAllDataEXT);
+			size = sizeof(struct ExAllData);
 			break;
 
 		default:
-			size = offsetof(struct ExAllDataEXT, ed_Type);
+			size = offsetof(struct ExAllData, ed_Type);
 			break;
 	}
 
@@ -1211,7 +1220,7 @@ static ULONG FillInData(struct ExAllDataEXT *buffer, LONG type,
 	buffer->ed_Next = NULL;
 	switch (type)
 	{
-#if EXTENDED_PACKETS_MORPHOS
+#if defined(__MORPHOS__)
 		case ED_SIZE64:
 #if ROLLOVER
 			if (direntry->type == ST_ROLLOVERFILE)
@@ -1265,7 +1274,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 		  LONG type, struct ExAllControl * ctrl, SIPTR *error, globaldata * g)
 {
 	struct direntry *direntry;
-	struct ExAllDataEXT *lasteaentry = NULL;
+	struct ExAllData *lasteaentry = NULL;
 	ULONG spaceleft, size;
 	UWORD j;
 	BOOL eod;
@@ -1283,7 +1292,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 	}
 
 	/* check type field */
-#if EXTENDED_PACKETS_MORPHOS
+#if defined(__MORPHOS__)
 	if (type > ED_SIZE64 || type < ED_NAME)
 #else
 	if (type > ED_OWNER || type < ED_NAME)
@@ -1305,7 +1314,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 		{
 			BOOL wanted;
 
-			size = FillInDDEData((struct ExAllDataEXT *)buffer, type, dde, ctrl->eac_LastKey,
+			size = FillInDDEData((struct ExAllData *)buffer, type, dde, ctrl->eac_LastKey,
 									spaceleft, g);
 			if (size)
 			{
@@ -1314,7 +1323,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 					wanted = CallHookPkt(ctrl->eac_MatchFunc, &type, buffer);
 				else if (ctrl->eac_MatchString)
 					wanted = MatchPatternNoCase(ctrl->eac_MatchString,
-									   ((struct ExAllDataEXT *)buffer)->ed_Name);
+									   ((struct ExAllData *)buffer)->ed_Name);
 				else
 					wanted = TRUE;
 
@@ -1322,9 +1331,9 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 				if (wanted)
 				{
 					if (lasteaentry)
-						lasteaentry->ed_Next = (struct ExAllDataEXT *)buffer;
+						lasteaentry->ed_Next = (struct ExAllData *)buffer;
 
-					lasteaentry = (struct ExAllDataEXT *)buffer;
+					lasteaentry = (struct ExAllData *)buffer;
 					buffer += size;
 					spaceleft -= size;
 					j++;
@@ -1370,7 +1379,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 		else
 			break;
 
-		size = FillInData((struct ExAllDataEXT *)buffer, type, direntry,
+		size = FillInData((struct ExAllData *)buffer, type, direntry,
 							spaceleft, g);
 		if (size)
 		{
@@ -1380,7 +1389,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 				wanted = CallHookPkt(ctrl->eac_MatchFunc, &type, buffer);
 			else if (ctrl->eac_MatchString)
 				wanted = MatchPatternNoCase(ctrl->eac_MatchString,
-									   ((struct ExAllDataEXT *)buffer)->ed_Name);
+									   ((struct ExAllData *)buffer)->ed_Name);
 			else
 				wanted = TRUE;
 
@@ -1388,9 +1397,9 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 			if (wanted)
 			{
 				if (lasteaentry)
-					lasteaentry->ed_Next = (struct ExAllDataEXT *)buffer;
+					lasteaentry->ed_Next = (struct ExAllData *)buffer;
 
-				lasteaentry = (struct ExAllDataEXT *)buffer;
+				lasteaentry = (struct ExAllData *)buffer;
 				buffer += size;
 				spaceleft -= size;
 				j++;
@@ -1689,7 +1698,6 @@ lockentry_t *NewDir(union objectinfo *parent, STRPTR dirname, SIPTR *error, glob
 
 	blk = MakeDirBlock(blocknr, info.file.direntry->anode,
 					   info.file.direntry->anode, parentnr, g);
-	(void)blk; // Unused
 
 	return (lockentry_t *)fileentry;
 }
@@ -2365,10 +2373,14 @@ BOOL SetOwnerID(struct fileinfo * file, ULONG owner, SIPTR *error, globaldata * 
 	return DOSTRUE;
 }
 
-LONG ReadSoftLink(union objectinfo *linkfi, char *buffer, ULONG size, SIPTR *error, globaldata * g)
+LONG ReadSoftLink(union objectinfo *linkfi, const char *prefix, char *buffer, ULONG size, SIPTR *error, globaldata * g)
 {
 	struct canode anode;
-	UBYTE softblock[1024];
+	UBYTE *softblock;
+	ULONG rc;
+	ULONG prefixlen;
+	ULONG postfixlen;
+	char *ptr = buffer;
 
 	ENTER("ReadSoftLink");
 	if (!linkfi || IsVolume(*linkfi))
@@ -2377,17 +2389,94 @@ LONG ReadSoftLink(union objectinfo *linkfi, char *buffer, ULONG size, SIPTR *err
 		return -1;
 	}
 
-	if (linkfi->file.direntry->fsize + (g->unparsed ? strlen(g->unparsed) : 0) > size)
-		return -2;
+	softblock = AllocVec(1024, 0);
+	if (!softblock) {
+		*error = ERROR_NO_FREE_STORE;
+		return -1;
+	}
+
+	/*
+	* TODO: It might be a good idea to try to compress the resulting
+	* path. For example "foo/bar/bleh///meh" should become "foo/meh".
+	* FFS2 does this sort of thing for instance.
+	*
+	* Not doing this could lead to problems easily as many callers use
+	* maximum buffer of around 256 bytes. - Piru
+	*/
 
 	GetAnode(&anode, linkfi->file.direntry->anode, g);
-	DiskRead(softblock, 1, anode.blocknr, g);
-	strcpy(buffer, softblock);
+	if ((rc = DiskRead(softblock, 1, anode.blocknr, g)))
+	{
+		FreeVec(softblock);
+		*error = rc;
+		return -1;
+	}
 
-	if (g->unparsed)
-		strcat(buffer, g->unparsed);
+	/* If link destination is absolute, ignore prefix */
+	if (strchr(softblock, ':'))
+	{
+		prefixlen = 0;
 
-	return (LONG)strlen(buffer);
+		/* ...Unless if the link target begins with ':' and the original
+		 * name has a volume/device/assign specifier. If so, the specifier
+		 * needs to be used as a prefix. If this is not done links pointing
+		 * to root of a volume/device/assign would point to different
+		 * targets depending on the user's current directory. That'd be
+		 * horribly wrong.
+		 */
+		if (softblock[0] == ':')
+		{
+			char *colonpos = strchr(prefix, ':');
+			/* Note: if colon is at the beginning then prefixlen == 0
+			 * which is correct.
+			 */
+			if (colonpos)
+				prefixlen = colonpos - prefix;
+		}
+	}
+	else
+	{
+		prefixlen = strlen(prefix);
+	}
+
+	postfixlen = g->unparsed ? strlen(g->unparsed) : 0;
+
+	/* if link destination ends in a /, skip the postfix / if any */
+	if (linkfi->file.direntry->fsize > 0 && softblock[linkfi->file.direntry->fsize - 1] == '/')
+	{
+		if (postfixlen)
+			{
+				g->unparsed++;
+				postfixlen--;
+			}
+	}
+	else
+	{
+		/* Else remove a lone trailing '/' in the postfix, if any */
+		/* "/" becomes "" */
+		/* "foo/" becomes "foo" */
+		/* "foo//" becomes "foo//" */
+		if (postfixlen > 0 && g->unparsed[postfixlen - 1] == '/' &&
+		    (postfixlen == 1 || g->unparsed[postfixlen - 2] != '/'))
+			postfixlen--;
+	}
+
+	if (prefixlen + linkfi->file.direntry->fsize + postfixlen + 1 > size) {
+		FreeVec(softblock);
+		return -2;
+	}
+
+	memcpy(ptr, (void*)prefix, prefixlen);
+	ptr += prefixlen;
+	memcpy(ptr, softblock, linkfi->file.direntry->fsize);
+	ptr += linkfi->file.direntry->fsize;
+	memcpy(ptr, g->unparsed, postfixlen);
+	ptr += postfixlen;
+	*ptr = '\0';
+
+	FreeVec(softblock);
+
+	return (LONG) (ptr - buffer);
 }
 
 BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
@@ -2396,7 +2485,7 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 	ULONG anodenr;
 	UBYTE entrybuffer[MAX_ENTRYSIZE];
 	struct direntry *de;
-	UBYTE softblock[1024];
+	UBYTE *softblock = NULL;
 	struct canode anode;
 	size_t l;
 
@@ -2445,12 +2534,18 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 		return DOSFALSE;
 	}
 
+	softblock = AllocVec(1024, MEMF_CLEAR);
+	if (!softblock) {
+		*error = ERROR_NO_FREE_STORE;
+		return DOSFALSE;
+	}
+
 	/* make directory entry 
 	 * the anode allocated is the link list element
 	 */
 	de = (struct direntry *)entrybuffer;
 	if (!MakeDirEntry(ST_SOFTLINK, linkname, entrybuffer, g))
-		return DOSFALSE;
+		goto error0;
 
 	/* store directoryentry */
 	if (!AddDirectoryEntry(linkdir, (struct direntry *)entrybuffer, &newlink->file, g))
@@ -2464,10 +2559,10 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 	}
 
 	GetAnode(&anode, de->anode, g);
-	memset(softblock, 0, 1024);
 	strcpy(softblock, softlink);
 	DiskWrite(softblock, 1, anode.blocknr, g);
 	newlink->file.direntry->fsize = strlen(softblock);
+	FreeVec(softblock);
 	return DOSTRUE;
 
 	/* errors */
@@ -2475,6 +2570,9 @@ BOOL CreateSoftLink(union objectinfo *linkdir, STRPTR linkname, STRPTR softlink,
 	RemoveDirEntry(newlink->file, g);
   error1:
 	FreeAnode(de->anode, g);
+  error0:
+  	FreeVec(softblock);
+
 	return DOSFALSE;
 }
 
@@ -2816,7 +2914,7 @@ ULONG SetRollover(fileentry_t *rollfile, struct rolloverinfo *roinfo, globaldata
 	{
 		if (roinfo->realsize)
 		{
-			realsize = roinfo->realsize & ~(BLOCKSIZE-1);
+			realsize = roinfo->realsize & ~BLOCKSIZEMASK;
 			if (!realsize) realsize = BLOCKSIZE;
 		}
 		else
@@ -4035,7 +4133,7 @@ struct deldirentry *GetDeldirEntryQuick(ULONG ddnr, globaldata *g)
 	return &ddblk->blk.entries[ddnr%DELENTRIES_PER_BLOCK];
 }
 
-static ULONG FillInDDEData(struct ExAllDataEXT *buffer, LONG type,
+static ULONG FillInDDEData(struct ExAllData *buffer, LONG type,
 		struct deldirentry *dde, ULONG ddenr, ULONG spaceleft, globaldata *g)
 {
 	UWORD nameoffset, commentoffset = 0;
@@ -4048,33 +4146,33 @@ static ULONG FillInDDEData(struct ExAllDataEXT *buffer, LONG type,
 	switch (type)
 	{
 		case ED_NAME:
-			size = offsetof(struct ExAllDataEXT, ed_Type);
+			size = offsetof(struct ExAllData, ed_Type);
 			break;
 		case ED_TYPE:
-			size = offsetof(struct ExAllDataEXT, ed_Size);
+			size = offsetof(struct ExAllData, ed_Size);
 			break;
 		case ED_SIZE:
-			size = offsetof(struct ExAllDataEXT, ed_Prot);
+			size = offsetof(struct ExAllData, ed_Prot);
 			break;
 		case ED_PROTECTION:
-			size = offsetof(struct ExAllDataEXT, ed_Days);
+			size = offsetof(struct ExAllData, ed_Days);
 			break;
 		case ED_DATE:
-			size = offsetof(struct ExAllDataEXT, ed_Comment);
+			size = offsetof(struct ExAllData, ed_Comment);
 			break;
 		case ED_COMMENT:
-			size = offsetof(struct ExAllDataEXT, ed_OwnerUID);
+			size = offsetof(struct ExAllData, ed_OwnerUID);
 			break;
 		case ED_OWNER:
-#if EXTENDED_PACKETS_MORPHOS
-			size = offsetof(struct ExAllDataEXT, ed_Size64);
+#if defined(__MORPHOS__)
+			size = offsetof(struct ExAllData, ed_Size64);
 			break;
 		case ED_SIZE64:
 #endif
-			size = sizeof(struct ExAllDataEXT);
+			size = sizeof(struct ExAllData);
 			break;
 		default:
-			size = offsetof(struct ExAllDataEXT, ed_Type);
+			size = offsetof(struct ExAllData, ed_Type);
 			break;
 	}
 
@@ -4098,7 +4196,7 @@ static ULONG FillInDDEData(struct ExAllDataEXT *buffer, LONG type,
 	buffer->ed_Next = NULL;
 	switch (type)
 	{
-#if EXTENDED_PACKETS_MORPHOS
+#if defined(__MORPHOS__)
 		case ED_SIZE64:
 			buffer->ed_Size64 = GetDDFileSize(dde, g);
 #endif

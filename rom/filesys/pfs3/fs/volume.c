@@ -164,6 +164,7 @@
 #include "format_protos.h"
 
 static VOID CreateInputEvent(BOOL inserted, globaldata *g);
+static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g);
 
 /**********************************************************************/
 /*                               DEBUG                                */
@@ -243,6 +244,8 @@ static UBYTE debugbuf[120];
 static BOOL SameDisk(struct rootblock *, struct rootblock *);
 static BOOL SameDiskDL(struct rootblock *, struct DeviceList *);
 static void TakeOverLocks(struct FileLock *, globaldata *);
+static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g);
+static void DiskRemoveSequence(globaldata *g);
 
 void NewVolume (BOOL FORCE, globaldata *g)
 {
@@ -252,6 +255,9 @@ void NewVolume (BOOL FORCE, globaldata *g)
 	/* check if something changed */
 	changed = UpdateChangeCount (g);
 	if (!FORCE && !changed)
+		return;
+	
+	if (!AttemptLockDosList(LDF_VOLUMES | LDF_WRITE))
 		return;
 
 	ENTER("NewVolume");
@@ -286,7 +292,9 @@ void NewVolume (BOOL FORCE, globaldata *g)
 		g->currentvolume = NULL;    /* @XL */
 	}
 
-	MotorOff (g);
+	UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+
+	UpdateAndMotorOff(g);
 	EXIT("NewVolume");
 }
 
@@ -298,7 +306,7 @@ void NewVolume (BOOL FORCE, globaldata *g)
 ** return waarde = currentdisk back in drive?
 ** used by NewVolume and ACTION_INHIBIT
 */
-void DiskRemoveSequence(globaldata *g)
+static void DiskRemoveSequence(globaldata *g)
 {
   struct volumedata *oldvolume = g->currentvolume;
 
@@ -325,7 +333,6 @@ void DiskRemoveSequence(globaldata *g)
 	** lockentries: link to doslist...
 	** fileentries: link them too...
 	*/
-	Forbid();   /* LockDosList(LDF_VOLUMES|LDF_READ); */
 	if(!IsMinListEmpty(&oldvolume->fileentries))
 	{
 		DB(Trace(1, "DiskRemoveSequence", "there are locks\n"));
@@ -341,7 +348,6 @@ void DiskRemoveSequence(globaldata *g)
 		MinRemove(oldvolume);
 		FreeVolumeResources(oldvolume, g);
 	}
-	Permit();   /* UnLockDosList(LDF_VOLUMES|LDF_READ); */
 
 #ifdef TRACKDISK
 	if(g->trackdisk)
@@ -359,9 +365,22 @@ void DiskRemoveSequence(globaldata *g)
 
 	EXIT("DiskRemoveSequence");
 	return;
-}   
+}
 
-void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
+BOOL SafeDiskRemoveSequence(globaldata *g)
+{
+	while (g->currentvolume) {    /* inefficient.. */
+		if (AttemptLockDosList(LDF_VOLUMES | LDF_WRITE)) {
+			DiskRemoveSequence(g);
+			UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+		} else {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+static void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 {
   struct DosList *doslist;
   struct DosInfo *di;
@@ -375,8 +394,6 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 	/* -I- Search new disk in volumelist */
 
 	BCPLtoCString(diskname, rootblock->diskname);
-//  doslist = LockDosList(LDF_VOLUMES|LDF_READ);
-	Forbid();
 	di = BADDR(((struct RootNode *)DOSBase->dl_Root)->rn_Info);
 	doslist = BADDR(di->di_DevInfo);
 	
@@ -431,7 +448,7 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 			*/
 			TakeOverLocks((struct FileLock *)locklist, g);
 			devlist = (struct DeviceList *)doslist;
-			devlist->dl_LockList = BNULL;
+			devlist->dl_LockList = 0;
 			devlist->dl_Task = g->msgport;
 
 		}
@@ -442,8 +459,6 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 			found = FALSE;      // an empty doslistentry is useless to us
 		}
 	}
-//  UnLockDosList(LDF_VOLUMES|LDF_READ);
-	Permit();
 
 	if(!found)
 	{
@@ -458,7 +473,7 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 			devlist->dl_VolumeDate.ds_Days   = rootblock->creationday;
 			devlist->dl_VolumeDate.ds_Minute = rootblock->creationminute;
 			devlist->dl_VolumeDate.ds_Tick   = rootblock->creationtick;
-			devlist->dl_LockList    = BNULL; // no locks open yet
+			devlist->dl_LockList    = 0; // no locks open yet
 			devlist->dl_DiskType    = rootblock->disktype;
 			added = AddDosEntry((struct DosList *)devlist);
 		}
@@ -507,9 +522,11 @@ void DiskInsertSequence(struct rootblock *rootblock, globaldata *g)
 				if (ddblk->blk.id == DELDIRID)
 				{
 					for (i=0; i<31; i++)
+					{
 						nr = ddblk->blk.entries[i].anodenr;
 						if (nr)
 							FreeAnodesInChain(nr, g);
+					}
 				}
 			}
 			FreeLRU ((struct cachedblock *)ddblk);
@@ -585,6 +602,26 @@ struct volumedata *MakeVolumeData (struct rootblock *rootblock, globaldata *g)
 	volume->numblocks       = g->geom->dg_TotalSectors;
 	volume->bytesperblock   = g->geom->dg_SectorSize;
 	volume->rescluster      = rootblock->reserved_blksize / volume->bytesperblock;
+
+	/* Calculate minimum fake block size that keeps total block count less than 16M.
+	 * Workaround for programs (including WB) that calculate free space using
+	 * "in use * 100 / total" formula that overflows if in use is block count is larger
+	 * than 16M blocks with 512 block size. Used only in ACTION_INFO.
+	 */
+	g->infoblockshift = 0;
+	if (DOSBase->dl_lib.lib_Version < 50) {
+		UWORD blockshift = 0;
+		ULONG bpb = volume->bytesperblock;
+		while (bpb > 512) {
+			blockshift++;
+			bpb >>= 1;
+		}
+		// Calculate smallest safe fake block size, up to max 32k. (512=0,1024=1,..32768=6)
+		while ((volume->numblocks >> blockshift) >= 0x02000000 && g->infoblockshift < 6) {
+			g->infoblockshift++;
+			blockshift++;	
+		}
+	}
 
 	/* load rootblock extension (if it is present) */
 	if (rootblock->extension && (rootblock->options & MODE_EXTENSION))
@@ -927,7 +964,7 @@ static LONG NoErrorMsg(CONST_STRPTR melding, APTR arg, ULONG dummy, globaldata *
 static void UpdateDosEnvec(globaldata *g);
 #endif
 
-BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
+static BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 {
   BOOL changestate;
   ULONG error;
@@ -992,11 +1029,9 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 	g->ErrorMsg = NoErrorMsg;   // prevent readerrormsg
 
 #if ACCESS_DETECT
-	/* detect best access mode, td32, td64, nsd or directscsi */
-	if (g->tdmode == ACCESS_UNDETECTED) {
-		if (!detectaccessmode((UBYTE*)*rootblock, g))
-			goto nrd_error;
-	}
+	/* Detect best access mode, TD32, TD64, NSD or DirectSCSI */
+	if (!detectaccessmode((UBYTE*)*rootblock, g))
+		goto nrd_error;
 #endif
 
 	error = RawRead((UBYTE *)*rootblock, 1, BOOTBLOCK1, g);
@@ -1013,7 +1048,11 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 				/* check size and read all rootblock blocks */
 				// 17.10: with 1024 byte blocks rblsize can be 1!
 				rblsize = (*rootblock)->rblkcluster;
-				if (rblsize < 1 || rblsize > 512)
+				if (rblsize < 1 || rblsize > 521)
+					goto nrd_error;
+
+				// original PFS_DISK with PFS2_DISK features -> don't mount
+				if ((*rootblock)->disktype == ID_PFS_DISK && (((*rootblock)->options & MODE_LARGEFILE) || ((*rootblock)->reserved_blksize > 1024)))
 					goto nrd_error;
 
 				if (!InitLRU(g, (*rootblock)->reserved_blksize))
@@ -1072,44 +1111,59 @@ void GetDriveGeometry(globaldata *g)
 {
   IPTR *env = (IPTR *)g->dosenvec;
   struct DriveGeometry *geom = g->geom;
-  UBYTE error = 1;
+  BOOL forceDS = (env[DE_INTERLEAVE] & DEF_SCSIDIRECT) != 0;
+  BOOL SuperFloppy = (env[DE_INTERLEAVE] & DEF_SUPERFLOPPY) != 0;
 
 #ifdef TRACKDISK
-  struct IOExtTD *request = g->request;
-
 	if(g->trackdisk)
 	{
+	  struct IOExtTD *request = g->request;
 		request->iotd_Req.io_Data = geom;
 		request->iotd_Req.io_Command = TD_GETGEOMETRY;
 		request->iotd_Req.io_Length = sizeof(struct DriveGeometry);
-		if(!(error = DoIO((struct IORequest *)request)))
-			UpdateDosEnvec(g);
+		if(!DoIO((struct IORequest *)request)) {
+			SuperFloppy = TRUE;
+			goto gotgeom;
+		}
 	}
 #endif
 
-	if(error || !g->trackdisk)
-	{
-		geom->dg_SectorSize     = env[DE_SIZEBLOCK] << 2;
-		geom->dg_Cylinders      = env[DE_UPPERCYL] - env[DE_LOWCYL] + 1;
-		geom->dg_CylSectors     = env[DE_NUMHEADS] * env[DE_BLKSPERTRACK];
-		geom->dg_TotalSectors   = g->geom->dg_Cylinders * 
-									  g->geom->dg_CylSectors;
-		geom->dg_Heads          = env[DE_NUMHEADS];
-		geom->dg_TrackSectors   = env[DE_BLKSPERTRACK];
-		geom->dg_BufMemType     = env[DE_MEMBUFTYPE];
-		geom->dg_DeviceType     = DG_UNKNOWN;
-		geom->dg_Flags          = 0;
+	if (forceDS && SuperFloppy) {
+		if (get_scsi_geometry(g))
+			goto gotgeom;
 	}
+
+	geom->dg_SectorSize     = env[DE_SIZEBLOCK] << 2;
+	geom->dg_Cylinders      = env[DE_UPPERCYL] - env[DE_LOWCYL] + 1;
+	geom->dg_CylSectors     = env[DE_NUMHEADS] * env[DE_BLKSPERTRACK];
+	geom->dg_TotalSectors   = g->geom->dg_Cylinders * g->geom->dg_CylSectors;
+	geom->dg_Heads          = env[DE_NUMHEADS];
+	geom->dg_TrackSectors   = env[DE_BLKSPERTRACK];
+	geom->dg_BufMemType     = env[DE_MEMBUFTYPE];
+	geom->dg_DeviceType     = DG_UNKNOWN;
+	geom->dg_Flags          = 0;
+
+gotgeom:
+
+	if (SuperFloppy)
+		UpdateDosEnvec(g);
 
 	g->firstblock = g->dosenvec->de_LowCyl * geom->dg_CylSectors;
 	g->lastblock = (g->dosenvec->de_HighCyl + 1) *  geom->dg_CylSectors - 1;
+	g->maxtransfermax = 0x7ffffffe;
 #if LIMIT_MAXTRANSFER
-	/* A600/A1200/A4000 ROM scsi.device ATA spec max transfer bug workaround */
-	g->maxtransfer = min(g->dosenvec->de_MaxTransfer, LIMIT_MAXTRANSFER);
-#else
-	g->maxtransfer = g->dosenvec->de_MaxTransfer;
+	if (g->scsidevice) {
+		struct Library *d;
+		Forbid();
+		d = (struct Library*)FindName(&SysBase->DeviceList, "scsi.device");
+		if (d && d->lib_Version >= 36 && d->lib_Version < 50) {
+			/* A600/A1200/A4000 ROM scsi.device ATA spec max transfer bug workaround */
+			g->maxtransfermax = LIMIT_MAXTRANSFER;
+		}
+		Permit();
+	}
 #endif
-	DB(Trace(1,"GetDriveGeometry","firstblk %ld lastblk %ld\n",g->firstblock,g->lastblock));
+	DB(Trace(1,"GetDriveGeometry","firstblk %lu lastblk %lu\n",g->firstblock,g->lastblock));
 }
 
 

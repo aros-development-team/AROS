@@ -311,8 +311,9 @@ void GetAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 	else
 	{
 		anode->clustersize = anode->next = 0;
-		anode->blocknr     = ~0;
+		anode->blocknr     = ~0UL;
 		// ErrorMsg (AFS_ERROR_DNV_ALLOC_INFO, NULL);
+		DBERR(ErrorTrace(5,"GetAnode","ERR: anode = 0x%lx\n",anodenr));
 	}
 }
 
@@ -351,7 +352,7 @@ void SaveAnode (struct canode *anode, ULONG anodenr, globaldata *g)
 	}
 	else
 	{
-		DB(Trace(5,"SaveAnode","ERR: anode = 0x%lx\n",anodenr));
+		DBERR(ErrorTrace(5,"SaveAnode","ERR: anode = 0x%lx\n",anodenr));
 		// ErrorMsg (AFS_ERROR_DNV_ALLOC_BLOCK, NULL);
 	}
 }
@@ -385,6 +386,10 @@ ULONG AllocAnode (ULONG connect, globaldata *g)
 	{
 		for (i = andata.curranseqnr/32; i < andata.maxanseqnr/32 + 1; i++)
 		{
+			
+			DBERR(if (i >= andata.anblkbitmapsize / 4 || i < 0)
+				ErrorTrace(5, "AllocAnode","ERR: anblkbitmap out of bounds %lu >= %lu\n", i, andata.anblkbitmapsize / 4));
+			
 			field = andata.anblkbitmap[i];
 			if (field)
 			{
@@ -479,7 +484,7 @@ void FreeAnode (ULONG anodenr, globaldata *g)
 	}
 
 	SaveAnode (&anode, anodenr, g);
-	andata.anblkbitmap[(anodenr>>16)/32] |= 1 << (31 - (anodenr>>16)%32);
+	andata.anblkbitmap[(anodenr>>16)/32] |= 1 << (31 - ((anodenr>>16)%32));
 }
 
 
@@ -505,14 +510,14 @@ static struct canodeblock *big_GetAnodeBlock (UWORD seqnr, globaldata *g)
 	/* get the indexblock */
 	if (!(indexblock = GetIndexBlock (temp /*& 0xffff*/, g)))
 	{
-		DB(Trace(5, "GetAnodeBlock","ERR: index not found\n"));
+		DBERR(ErrorTrace(5, "GetAnodeBlock","ERR: index not found. %lu %lu %08lx\n", seqnr, andata.indexperblock, temp));
 		return NULL;
 	}
 
 	/* get blocknr */
 	if (!(blocknr = indexblock->blk.index[temp >> 16]))
 	{
-		DB(Trace(5,"GetAnodeBlock","ERR: index zero\n"));
+		DBERR(ErrorTrace(5,"GetAnodeBlock","ERR: index zero %lu %lu %08lx\n", seqnr, andata.indexperblock, temp));
 		return NULL;
 	}
 
@@ -523,16 +528,16 @@ static struct canodeblock *big_GetAnodeBlock (UWORD seqnr, globaldata *g)
 
 	if (!(ablock = (struct canodeblock *)AllocLRU(g)))
 	{
-		DB(Trace(5,"GetAnodeBlock","ERR: alloclru failed\n"));
+		DBERR(ErrorTrace(5,"GetAnodeBlock","ERR: alloclru failed\n"));
 		return NULL;
 	}
 
-	DB(Trace(10,"GetAnodeBlock", "seqnr = %ld blocknr = %lx\n", seqnr, blocknr));
+	DBERR(ErrorTrace(10,"GetAnodeBlock", "seqnr = %lu blocknr = %lu\n", seqnr, blocknr));
 
 	/* read it */
 	if (RawRead ((UBYTE*)&ablock->blk, RESCLUSTER, blocknr, g) != 0)
 	{
-		DB(Trace(5,"GetAnodeBlock","Read ERR: seqnr = %d blocknr = %lx\n", seqnr, blocknr));
+		DB(Trace(5,"GetAnodeBlock","Read ERR: seqnr = %lu blocknr = %lx\n", seqnr, blocknr));
 		FreeLRU ((struct cachedblock *)ablock);
 		return NULL;
 	}
@@ -570,20 +575,25 @@ static struct canodeblock *big_NewAnodeBlock (UWORD seqnr, globaldata *g)
   LONG blocknr;
   UWORD indexoffset, oldlock;
 
-	DB(Trace(10, "NewAnodeBlock", "seqnr = %ld\n", seqnr));
-
 	/* get indexblock */
 	indexblnr = seqnr/andata.indexperblock;
 	indexoffset = seqnr%andata.indexperblock;
-	if (!(indexblock = GetIndexBlock(indexblnr, g)))
-		if (!(indexblock = NewIndexBlock(indexblnr, g)))
+	if (!(indexblock = GetIndexBlock(indexblnr, g))) {
+		if (!(indexblock = NewIndexBlock(indexblnr, g))) {
+			DBERR(ErrorTrace(10,"big_NewAnodeBlock","ERR: NewIndexBlock %lu %lu %lu %lu\n", seqnr, indexblnr, indexoffset, andata.indexperblock));
 			return NULL;
+		}
+	}
 
 	oldlock = indexblock->used;
 	LOCK(indexblock);
-	if (!(blok = (struct canodeblock *)AllocLRU(g)) ||
-		!(blocknr = AllocReservedBlock(g)) )
+	if (!(blok = (struct canodeblock *)AllocLRU(g)) || !(blocknr = AllocReservedBlock(g)) ) {
+		DBERR(ErrorTrace(10,"big_NewAnodeBlock","ERR: AllocLRU/AllocReservedBlock %lu %lu %lu\n", seqnr, indexblnr, indexoffset));
+		indexblock->used = oldlock;         // unlock block
 		return NULL;
+	}
+
+	DBERR(ErrorTrace(10,"big_NewAnodeBlock", "seqnr = %lu block = %lu\n", seqnr, blocknr));
 
 	indexblock->blk.index[indexoffset] = blocknr;
 
@@ -609,7 +619,7 @@ static struct canodeblock *big_NewAnodeBlock (UWORD seqnr, globaldata *g)
 
 /*
  * get indexblock nr
- * returns 0 if failure
+ * returns NULL if failure
  */
 struct cindexblock *GetIndexBlock (UWORD nr, globaldata *g)
 {
@@ -637,13 +647,13 @@ struct cindexblock *GetIndexBlock (UWORD nr, globaldata *g)
 		temp = divide(nr, andata.indexperblock);
 		if (!(superblk = GetSuperBlock (temp, g)))
 		{
-			DB(Trace(5, "GetIndexBlock", "ERR: superblock not found\n"));
+			DBERR(ErrorTrace(5, "GetIndexBlock", "ERR: superblock not found. %lu %lu %08lx\n", nr, andata.indexperblock, temp));
 			return NULL;
 		}
 
 		if (!(blocknr = superblk->blk.index[temp>>16]))
 		{
-			DB(Trace(5, "GetIndexBlock", "ERR: super zero\n"));
+			DBERR(ErrorTrace(5, "GetIndexBlock", "ERR: super zero. %lu %lu %08lx\n", nr, andata.indexperblock, temp));
 			return NULL;
 		}
 	}
@@ -654,10 +664,12 @@ struct cindexblock *GetIndexBlock (UWORD nr, globaldata *g)
 	}
 
 	/* allocate space from cache */
-	if (!(indexblk = (struct cindexblock *)AllocLRU(g)))
+	if (!(indexblk = (struct cindexblock *)AllocLRU(g))) {
+		DBERR(ErrorTrace(5, "GetIndexBlock", "ERR: AllocLRU. %lu %lu %08lx %lu\n", nr, andata.indexperblock, temp, blocknr));
 		return NULL;
+	}
 
-	DB(Trace(10,"GetIndexBlock","seqnr = %d\n, blocknr = %lx\n", nr, blocknr));
+	DBERR(ErrorTrace(10,"GetIndexBlock","seqnr = %lu blocknr = %lu\n", nr, blocknr));
 
 	if (RawRead ((UBYTE*)&indexblk->blk, RESCLUSTER, blocknr, g) != 0) {
 		FreeLRU ((struct cachedblock *)indexblk);
@@ -674,7 +686,12 @@ struct cindexblock *GetIndexBlock (UWORD nr, globaldata *g)
 	}
 	else
 	{
-		ULONG args[5] = { indexblk->blk.id, IBLKID, blocknr, nr, andata.indexperblock };
+		ULONG args[5];
+		args[0] = indexblk->blk.id;
+		args[1] = IBLKID;
+		args[2] = blocknr;
+		args[3] = nr;
+		args[4] = andata.indexperblock;
 		FreeLRU ((struct cachedblock *)indexblk);
 		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, args, g);
 		return NULL;
@@ -689,19 +706,21 @@ static struct cindexblock *NewIndexBlock (UWORD seqnr, globaldata *g)
   struct cindexblock *blok;
   struct cindexblock *superblok = NULL;
   struct volumedata *volume = g->currentvolume;
-  ULONG  superblnr;
+  ULONG superblnr = 0;
   LONG blocknr;
-  UWORD	 superoffset = 0;
-
-	DB(Trace(10,"NewIndexBlock", "seqnr = %ld\n", seqnr));
+  UWORD superoffset = 0;
 
 	if (g->supermode)
 	{
 		superblnr = seqnr/andata.indexperblock;
 		superoffset = seqnr%andata.indexperblock;
 		if (!(superblok = GetSuperBlock (superblnr, g)))
-			if (!(superblok = NewSuperBlock (superblnr, g)))
+			if (!(superblok = NewSuperBlock (superblnr, g))) {
+				DBERR(ErrorTrace(1, "NewIndexBlock", "ERR: Super not found. %lu %lu %lu %lu\n", seqnr, andata.indexperblock, superblnr, superoffset));
 				return NULL;
+			} else {
+				DBERR(ErrorTrace(1, "NewIndexBlock", "OK. %lu %lu %lu %lu\n", seqnr, andata.indexperblock, superblnr, superoffset));		
+			}
 
 		LOCK(superblok);
 	}
@@ -712,14 +731,18 @@ static struct cindexblock *NewIndexBlock (UWORD seqnr, globaldata *g)
 	if (!(blok = (struct cindexblock *)AllocLRU(g)) ||
 		!(blocknr = AllocReservedBlock(g)) )
 	{
+		DBERR(ErrorTrace(1, "NewIndexBlock", "ERR: AllocLRU/AllocReservedBlock. %lu %lu %lu %lu\n", seqnr, blocknr, superblnr, superoffset));
 		if (blok)
 			FreeLRU((struct cachedblock *)blok);
 		return NULL;
 	}
 
-	if (g->supermode)
+	DBERR(ErrorTrace(10,"NewIndexBlock", "seqnr = %lu block = %lu\n", seqnr, blocknr));
+
+	if (g->supermode) {
 		superblok->blk.index[superoffset] = blocknr;
-	else {
+		MakeBlockDirty((struct cachedblock *)superblok, g);
+	} else {
 		volume->rootblk->idx.small.indexblocks[seqnr] = blocknr;
 		volume->rootblockchangeflag = TRUE;
 	}
@@ -741,9 +764,11 @@ struct cindexblock *GetSuperBlock (UWORD nr, globaldata *g)
   struct cindexblock *superblk;
   struct volumedata *volume = g->currentvolume;
 
+	DBERR(blocknr = 0xffdddddd);
+
 	/* check supermode */
 	if (!g->supermode) {
-		DB(Trace(1, "GetSuperBlock", "ERR: Illegaly entered\n"));
+		DBERR(ErrorTrace(1, "GetSuperBlock", "ERR: Illegally entered\n"));
 		return NULL;
 	}
 
@@ -760,16 +785,21 @@ struct cindexblock *GetSuperBlock (UWORD nr, globaldata *g)
 	/* not in cache, put it in
 	 * first, get blocknr
 	 */
-	if ((nr>MAXSUPER) || !(blocknr = volume->rblkextension->blk.superindex[nr])) 
+	if ((nr>MAXSUPER) || !(blocknr = volume->rblkextension->blk.superindex[nr])) {
+		DBERR(ErrorTrace(1, "GetSuperBlock", "ERR: out of bounds. %lu %lu\n", nr, blocknr));
 		return NULL;
+	}
 
 	/* allocate space from cache */
-	if (!(superblk = (struct cindexblock *)AllocLRU(g)))
+	if (!(superblk = (struct cindexblock *)AllocLRU(g))) {
+		DBERR(ErrorTrace(1, "GetSuperBlock", "ERR: AllocLRU error. %lu %lu\n", nr, blocknr));
 		return NULL;
+	}
 
-	DB(Trace(10,"GetSuperBlock","seqnr = %d\n, blocknr = %lx\n", nr, blocknr));
+	DBERR(ErrorTrace(10,"GetSuperBlock","seqnr = %lu blocknr = %lu\n", nr, blocknr));
 
 	if (RawRead ((UBYTE*)&superblk->blk, RESCLUSTER, blocknr, g) != 0) {
+		DBERR(ErrorTrace(1, "GetSuperBlock", "ERR: read error. %lu %lu\n", nr, blocknr));
 		FreeLRU ((struct cachedblock *)superblk);
 		return NULL;
 	}
@@ -784,7 +814,12 @@ struct cindexblock *GetSuperBlock (UWORD nr, globaldata *g)
 	}
 	else
 	{
-		ULONG args[5] = { superblk->blk.id, SBLKID, blocknr, nr, 0 };
+		ULONG args[5];
+		args[0] = superblk->blk.id;
+		args[1] = SBLKID;
+		args[2] = blocknr;
+		args[3] = nr;
+		args[4] = 0;
 		FreeLRU ((struct cachedblock *)superblk);
 		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, args, g);
 		return NULL;
@@ -798,18 +833,23 @@ static struct cindexblock *NewSuperBlock (UWORD seqnr, globaldata *g)
   struct cindexblock *blok;
   struct volumedata *volume = g->currentvolume;
 
-	DB(Trace(10,"NewSuperBlock", "seqnr = %ld\n", seqnr));
+	DBERR(blok = NULL;)
 
 	if ((seqnr > MAXSUPER) ||
-		!(blok = (struct cindexblock *)AllocLRU(g)) )
+		!(blok = (struct cindexblock *)AllocLRU(g)) ) {
+		DBERR(ErrorTrace(1, "NewSuperBlock", "ERR: out of bounds or LRU error. %lu %p\n", seqnr, blok));
 		return NULL;
+	}
 
 	if (!(volume->rblkextension->blk.superindex[seqnr] = AllocReservedBlock(g)))
 	{
+		DBERR(ErrorTrace(1, "NewSuperBlock", "ERR: AllocReservedBlock. %lu %p\n", seqnr, blok));
 		FreeLRU((struct cachedblock *)blok);
 		return NULL;
 	}
  
+	DBERR(ErrorTrace(10,"NewSuperBlock", "seqnr = %lu block = %lu\n", seqnr, volume->rblkextension->blk.superindex[seqnr]));
+
 	volume->rblkextension->changeflag = TRUE;
 
 	blok->volume     = volume;
@@ -877,12 +917,9 @@ void InitAnodes (struct volumedata *volume, BOOL formatting, globaldata *g)
 	{
 		g->getanodeblock = big_GetAnodeBlock;
 
-		andata.curranseqnr = volume->rblkextension ?
-							 volume->rblkextension->blk.curranseqnr : 0;
-		andata.anodesperblock = (volume->rootblk->reserved_blksize - sizeof(anodeblock_t)) /
-								sizeof(anode_t);
-		andata.indexperblock = (volume->rootblk->reserved_blksize - sizeof(indexblock_t)) /
-							   sizeof(LONG);
+		andata.curranseqnr = volume->rblkextension ? volume->rblkextension->blk.curranseqnr : 0;
+		andata.anodesperblock = (volume->rootblk->reserved_blksize - sizeof(anodeblock_t)) / sizeof(anode_t);
+		andata.indexperblock = (volume->rootblk->reserved_blksize - sizeof(indexblock_t)) / sizeof(LONG);
 		andata.maxanodeseqnr = g->supermode ?
 				((MAXSUPER+1) * andata.indexperblock * andata.indexperblock * andata.anodesperblock - 1) :
 				(MAXSMALLINDEXNR * andata.indexperblock - 1);
@@ -929,6 +966,9 @@ static void MakeAnodeBitmap (BOOL formatting, globaldata *g)
 				goto error;
 				
 			sblk = GetSuperBlock (s, g);
+
+			DBERR(if (!sblk) ErrorTrace(1, "MakeAnodeBitmap", "ERR: GetSuperBlock returned NULL!. %ld\n", s));
+
 			for (i=andata.indexperblock - 1; i >= 0 && !sblk->blk.index[i]; i--);
 		}
 		else
@@ -939,13 +979,15 @@ static void MakeAnodeBitmap (BOOL formatting, globaldata *g)
 		if (i < 0)
 			goto error;
 		iblk = GetIndexBlock (s * andata.indexperblock + i, g);
+
+		DBERR(if (!iblk) ErrorTrace(1, "MakeAnodeBitmap", "ERR: GetIndexBlock returned NULL!. %ld %ld\n", s, i));
+
 		for (j=andata.indexperblock - 1; j >= 0 && !iblk->blk.index[j]; j--);
 	}
 
 	if (g->supermode)
 	{
-		andata.maxanseqnr = s * andata.indexperblock * andata.indexperblock
-			+ i * andata.indexperblock + j;
+		andata.maxanseqnr = s * andata.indexperblock * andata.indexperblock + i * andata.indexperblock + j;
 		size = ((s * andata.indexperblock + i + 1) * andata.indexperblock + 7) / 8;
 	}
 	else
@@ -953,7 +995,7 @@ static void MakeAnodeBitmap (BOOL formatting, globaldata *g)
 		andata.maxanseqnr = i * andata.indexperblock + j;
 		size = ((i+1) * andata.indexperblock + 7) / 8;
 	}
-	andata.anblkbitmapsize = (size + 3) & 0xfffffffc;
+	andata.anblkbitmapsize = (size + 3) & ~3;
 	andata.anblkbitmap = AllocMemP (andata.anblkbitmapsize, g);
 
 	for (i = 0; i < andata.anblkbitmapsize/4; i++)
@@ -975,11 +1017,10 @@ static void ReallocAnodeBitmap (ULONG newseqnr, globaldata *g)
 	if (newseqnr > andata.maxanseqnr)
 	{
 		andata.maxanseqnr = newseqnr;
-		newsize = ((newseqnr/andata.indexperblock + 1)
-					* andata.indexperblock + 7) / 8;
+		newsize = ((newseqnr/andata.indexperblock + 1) * andata.indexperblock + 7) / 8;
 		if (newsize > andata.anblkbitmapsize)
 		{
-			newsize = (newsize + 3) & 0xfffffffc;   /* longwords */
+			newsize = (newsize + 3) & ~3;   /* longwords */
 			newbitmap = AllocMemP (newsize, g);
 			for (t=0; t < newsize/4; t++)
 				newbitmap[t] = 0xffffffff;

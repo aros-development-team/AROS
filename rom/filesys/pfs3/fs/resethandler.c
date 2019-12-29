@@ -10,7 +10,7 @@
 
 #if defined(__SASC)
 
-ULONG __asm __interrupt ResetHandler(register __a1 struct globaldata *g)
+ULONG __asm ResetHandler(register __a1 struct globaldata *g)
 {
 	Signal(&g->myproc->pr_Task, g->resethandlersignal);
 	return 0;
@@ -47,6 +47,14 @@ AROS_UFH2(ULONG, ResetHandler,
 	return 0;
 
 	AROS_USERFUNC_EXIT
+}
+
+#elif __GNUC__
+
+ULONG ResetHandler(register struct globaldata *g asm("a1"))
+{
+	Signal(&g->myproc->pr_Task, g->resethandlersignal);
+	return 0;
 }
 
 #else
