@@ -191,7 +191,8 @@
                 _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, msg); \
         })
     #endif
-    
+
+#if (AROS_SLOWSTACKMETHODS)
     #ifndef CoerceMethod
         #define CoerceMethod(cl, o, msg...) \
         ({ \
@@ -214,7 +215,6 @@
                 _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
         })
     #endif
-    
     #ifndef DoMethod
         #define DoMethod(o, msg...) \
         ({ \
@@ -226,7 +226,7 @@
                 _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
         })
     #endif
-    
+#endif
     #ifndef NotifyAttrs
         /* Var-args stub for the OM_NOTIFY method */
         #define NotifyAttrs(o, gi, flags, attrs...) \
