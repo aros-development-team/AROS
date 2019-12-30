@@ -139,45 +139,45 @@ AROS_UFP3(IPTR, HookEntry,
     Msg  GetMsgFromStack  (IPTR MethodID, va_list args);
     void FreeMsgFromStack (Msg msg);
 
-#   define AROS_NR_SLOWSTACKMETHODS_PRE(arg)    \
-    va_list args;				\
-    Msg     msg;				\
-						\
-    va_start (args, arg);                       \
-						\
-    if ((msg = GetMsgFromStack (arg, args)))    \
+#   define AROS_NR_SLOWSTACKMETHODS_PRE(arg)                                            \
+    va_list args;				                                        \
+    Msg     msg;				                                        \
+                                                                                        \
+    va_start (args, arg);                                                               \
+                                                                                        \
+    if ((msg = GetMsgFromStack (arg, args)))                                            \
     {
 
-#   define AROS_SLOWSTACKMETHODS_PRE_AS(arg, type) \
-    type retval;				\
-						\
-    va_list args;				\
-    Msg     msg;				\
-						\
-    va_start (args, arg);                       \
-						\
-    if ((msg = GetMsgFromStack (arg, args)))    \
+#   define AROS_SLOWSTACKMETHODS_PRE_AS(arg, type)                                      \
+    type retval;				                                        \
+                                                                                        \
+    va_list args;				                                        \
+    Msg     msg;				                                        \
+                                                                                        \
+    va_start (args, arg);                                                               \
+                                                                                        \
+    if ((msg = GetMsgFromStack (arg, args)))                                            \
     {
 
-#   define AROS_SLOWSTACKMETHODS_PRE(arg)       \
+#   define AROS_SLOWSTACKMETHODS_PRE(arg)                                               \
 	AROS_SLOWSTACKMETHODS_PRE_AS(arg, AROS_METHODRETURNTYPE)
 
 #   define AROS_SLOWSTACKMETHODS_ARG(arg) msg
 
-#   define AROS_SLOWSTACKMETHODS_POST		\
-	FreeMsgFromStack (msg);                 \
-    }						\
-    else					\
-	retval = (AROS_METHODRETURNTYPE)0L;     \
-						\
-    va_end (args);                              \
-						\
+#   define AROS_SLOWSTACKMETHODS_POST		                                        \
+	FreeMsgFromStack (msg);                                                         \
+    }						                                        \
+    else					                                        \
+	retval = (AROS_METHODRETURNTYPE)0L;                                             \
+                                                                                        \
+    va_end (args);                                                                      \
+                                                                                        \
     return retval;
 
-#   define AROS_NR_SLOWSTACKMETHODS_POST	\
-	FreeMsgFromStack (msg);                 \
-    }						\
-						\
+#   define AROS_NR_SLOWSTACKMETHODS_POST	                                        \
+	FreeMsgFromStack (msg);                                                         \
+    }						                                        \
+                                                                                        \
     va_end (args);
 #else
 #   define AROS_NR_SLOWSTACKMETHODS_PRE(arg)
@@ -201,48 +201,48 @@ AROS_UFP3(IPTR, HookEntry,
     APTR  GetParamsFromStack  (va_list args);
     void FreeParamsFromStack (APTR params);
 
-#   define AROS_NR_SLOWSTACKHOOKS_PRE(arg)    \
-    va_list args;				\
-    APTR     params;				\
-						\
-    va_start (args, arg);                       \
-						\
-    if ((params = GetParamsFromStack (args)))    \
+#   define AROS_NR_SLOWSTACKHOOKS_PRE(arg)                                              \
+    va_list args;				                                        \
+    APTR     params;				                                        \
+                                                                                        \
+    va_start (args, arg);                                                               \
+                                                                                        \
+    if ((params = GetParamsFromStack (args)))                                           \
     {
 
-#   define AROS_SLOWSTACKHOOKS_PRE(arg)       \
-    AROS_HOOKRETURNTYPE retval;		\
-						\
-    va_list args;				\
-    APTR     params;				\
-						\
-    va_start (args, arg);                       \
-						\
-    if ((params = GetParamsFromStack (args)))    \
+#   define AROS_SLOWSTACKHOOKS_PRE(arg)                                                 \
+    AROS_HOOKRETURNTYPE retval;		                                                \
+                                                                                        \
+    va_list args;				                                        \
+    APTR     params;				                                        \
+                                                                                        \
+    va_start (args, arg);                                                               \
+                                                                                        \
+    if ((params = GetParamsFromStack (args)))                                           \
     {
 
 #   define AROS_SLOWSTACKHOOKS_ARG(arg) params
 
-#   define AROS_SLOWSTACKHOOKS_POST		\
-	FreeParamsFromStack (params);                 \
-    }						\
-    else					\
-	retval = (AROS_HOOKRETURNTYPE)0L;     \
-						\
-    va_end (args);                              \
-						\
+#   define AROS_SLOWSTACKHOOKS_POST		                                        \
+	FreeParamsFromStack (params);                                                   \
+    }						                                        \
+    else					                                        \
+	retval = (AROS_HOOKRETURNTYPE)0L;                                               \
+						                                        \
+    va_end (args);                                                                      \
+						                                        \
     return retval;
 
-#   define AROS_NR_SLOWSTACKHOOKS_POST	\
-	FreeParamsFromStack (params);                 \
-    }						\
-						\
+#   define AROS_NR_SLOWSTACKHOOKS_POST	                                                \
+	FreeParamsFromStack (params);                                                   \
+    }						                                        \
+						                                        \
     va_end (args);
 #else
 #   define AROS_NR_SLOWSTACKHOOKS_PRE(arg)
-#   define AROS_SLOWSTACKHOOKS_PRE(arg)   AROS_HOOKRETURNTYPE retval;
-#   define AROS_SLOWSTACKHOOKS_ARG(arg)   ((IPTR*)&(arg)+1)
-#   define AROS_SLOWSTACKHOOKS_POST	    return retval;
+#   define AROS_SLOWSTACKHOOKS_PRE(arg)         AROS_HOOKRETURNTYPE retval;
+#   define AROS_SLOWSTACKHOOKS_ARG(arg)         ((IPTR*)&(arg)+1)
+#   define AROS_SLOWSTACKHOOKS_POST             return retval;
 #   define AROS_NR_SLOWSTACKHOOKS_POST
 #endif /* AROS_SLOWSTACKHOOKS */
 
@@ -255,26 +255,26 @@ void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
 #ifdef AROS_SLOWSTACKFORMAT
 #include <aros/posixc/alloca.h>
 
-#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {                            \
-    va_list _args;                      	                                     \
-    RAWARG  _data;  				                                     \
-    ULONG  _datasize = 0;                                                            \
-    ULONG * _index; 				                                     \
-    ULONG  _indexsize = 0;                                                           \
-					                                             \
-    va_start(_args, last);                                                           \
-    GetDataStreamFromFormat (format, _args, NULL, NULL, NULL, &_indexsize);          \
-    _index = (ULONG *)alloca(_indexsize);                                            \
-    GetDataStreamFromFormat (format, _args, NULL, &_datasize, _index, &_indexsize);  \
-    _data = (RAWARG)alloca(_datasize);                                               \
-    GetDataStreamFromFormat (format, _args, _data, &_datasize, _index, &_indexsize); \
+#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {                               \
+    va_list _args;                      	                                        \
+    RAWARG  _data;  				                                        \
+    ULONG  _datasize = 0;                                                               \
+    ULONG * _index; 				                                        \
+    ULONG  _indexsize = 0;                                                              \
+					                                                \
+    va_start(_args, last);                                                              \
+    GetDataStreamFromFormat (format, _args, NULL, NULL, NULL, &_indexsize);             \
+    _index = (ULONG *)alloca(_indexsize);                                               \
+    GetDataStreamFromFormat (format, _args, NULL, &_datasize, _index, &_indexsize);     \
+    _data = (RAWARG)alloca(_datasize);                                                  \
+    GetDataStreamFromFormat (format, _args, _data, &_datasize, _index, &_indexsize);    \
     va_end (_args);
 
-#   define AROS_SLOWSTACKFORMAT_PRE(format)                                          \
+#   define AROS_SLOWSTACKFORMAT_PRE(format)                                             \
         AROS_SLOWSTACKFORMAT_PRE_USING(format, format)
-#   define AROS_SLOWSTACKFORMAT_ARG(format)                                          \
+#   define AROS_SLOWSTACKFORMAT_ARG(format)                                             \
         _data
-#   define AROS_SLOWSTACKFORMAT_POST(format)		                             \
+#   define AROS_SLOWSTACKFORMAT_POST(format)		                                \
     }
 #else
 /* We 'mark' functions that use these macros as non-inlineable
@@ -284,16 +284,16 @@ void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
  * trick to access the datastream after the last argument.
  */
 #include <stdarg.h>
-#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) { \
-        va_list _list; \
-        RAWARG _data = (RAWARG)(&(last)+1); \
+#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {                               \
+        va_list _list;                                                                  \
+        RAWARG _data = (RAWARG)(&(last)+1);                                             \
         va_start(_list, last);
-#   define AROS_SLOWSTACKFORMAT_PRE(format) \
+#   define AROS_SLOWSTACKFORMAT_PRE(format)                                             \
         AROS_SLOWSTACKFORMAT_PRE_USING(format, format)
-#   define AROS_SLOWSTACKFORMAT_ARG(format) \
+#   define AROS_SLOWSTACKFORMAT_ARG(format)                                             \
         _data
-#   define AROS_SLOWSTACKFORMAT_POST(format) \
-        va_end(_list); \
+#   define AROS_SLOWSTACKFORMAT_POST(format)                                            \
+        va_end(_list);                                                                  \
         }
 #endif /* AROS_SLOWSTACKFORMAT */
 
@@ -305,116 +305,111 @@ LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
 
 /* Inline versions of varargs functions */
 #if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
-#    define DoMethodA(object, message)                                 \
-     ({                                                                \
-         (object) != NULL ?                                            \
-         ({                                                            \
-             CALLHOOKPKT                                               \
-             (                                                         \
-                 (struct Hook *) OCLASS((object)), (object), (message) \
-             );                                                        \
-         })                                                            \
-         :                                                             \
-             0                                                         \
-         ;                                                             \
+#    define DoMethodA(object, message)                                                  \
+     ({                                                                                 \
+         (object) != NULL ?                                                             \
+         ({                                                                             \
+             CALLHOOKPKT                                                                \
+             (                                                                          \
+                 (struct Hook *) OCLASS((object)), (object), (message)                  \
+             );                                                                         \
+         })                                                                             \
+         :                                                                              \
+             0                                                                          \
+         ;                                                                              \
     })
 
-#   define DoSuperMethodA(cl, object, message)                        \
-    ({                                                                \
-        ((cl) != NULL && (object) != NULL) ?                          \
-            CALLHOOKPKT                                               \
-            (                                                         \
-                (struct Hook *) ((Class *) (cl))->cl_Super,           \
-                (object), (message)                                   \
-            )                                                         \
-        :                                                             \
-            0                                                         \
-        ;                                                             \
+#   define DoSuperMethodA(cl, object, message)                                          \
+    ({                                                                                  \
+        ((cl) != NULL && (object) != NULL) ?                                            \
+            CALLHOOKPKT                                                                 \
+            (                                                                           \
+                (struct Hook *) ((Class *) (cl))->cl_Super,                             \
+                (object), (message)                                                     \
+            )                                                                           \
+        :                                                                               \
+            0                                                                           \
+        ;                                                                               \
     })
 
-#   define CoerceMethodA(cl, object, message)                         \
-    ({                                                                \
-        ((cl) != NULL && (object) != NULL) ?                          \
-            CALLHOOKPKT((struct Hook *) (cl), (object), (message))    \
-        :                                                             \
-            0                                                         \
-        ;                                                             \
+#   define CoerceMethodA(cl, object, message)                                           \
+    ({                                                                                  \
+        ((cl) != NULL && (object) != NULL) ?                                            \
+            CALLHOOKPKT((struct Hook *) (cl), (object), (message))                      \
+        :                                                                               \
+            0                                                                           \
+        ;                                                                               \
     })
 
-#   define DoSuperNewTagList(cl, object, gadgetinfo, tags)                 \
-    ({                                                                     \
-        struct opSet __ops;                                                \
-                                                                           \
-        __ops.MethodID     = OM_NEW;                                       \
-        __ops.ops_AttrList = (tags);                                       \
-        __ops.ops_GInfo    = (gadgetinfo);                                 \
-                                                                           \
-        (cl) != NULL && (object) != NULL ?                                 \
-            DoSuperMethodA((cl), (object), (Msg)&__ops.MethodID)           \
-        :                                                                  \
-            0                                                              \
-        ;                                                                  \
+#   define DoSuperNewTagList(cl, object, gadgetinfo, tags)                              \
+    ({                                                                                  \
+        struct opSet __ops;                                                             \
+                                                                                        \
+        __ops.MethodID     = OM_NEW;                                                    \
+        __ops.ops_AttrList = (tags);                                                    \
+        __ops.ops_GInfo    = (gadgetinfo);                                              \
+                                                                                        \
+        (cl) != NULL && (object) != NULL ?                                              \
+            DoSuperMethodA((cl), (object), (Msg)&__ops.MethodID)                        \
+        :                                                                               \
+            0                                                                           \
+        ;                                                                               \
     })
 
-#    define SetSuperAttrsA(cl, object, attrs)          	  \
-     ({                                                   \
-         struct opSet __ops;                              \
-                                                          \
-         __ops.MethodID     = OM_SET;                     \
-         __ops.ops_AttrList = (attrs);                    \
-         __ops.ops_GInfo    = NULL;                       \
-                                                          \
-         DoSuperMethodA((cl), (object), (Msg) &__ops.MethodID); \
+#    define SetSuperAttrsA(cl, object, attrs)          	                                \
+     ({                                                                                 \
+         struct opSet __ops;                                                            \
+                                                                                        \
+         __ops.MethodID     = OM_SET;                                                   \
+         __ops.ops_AttrList = (attrs);                                                  \
+         __ops.ops_GInfo    = NULL;                                                     \
+                                                                                        \
+         DoSuperMethodA((cl), (object), (Msg) &__ops.MethodID);                         \
      })
 
-#    define SetSuperAttrs(cl, object, args...)                         \
-     ({                                                                \
-         IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(args) };         \
-         SetSuperAttrsA((cl), (object), (struct TagItem *) __args);    \
+#    define SetSuperAttrs(cl, object, args...)                                          \
+     ({                                                                                 \
+         IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(args) };                          \
+         SetSuperAttrsA((cl), (object), (struct TagItem *) __args);                     \
      })
-#endif
 
 #ifdef AROS_SLOWSTACKMETHODS
-#if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
-#   define DoMethod(object, methodid, args...)                        \
-    ({                                                                \
-        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
-        DoMethodA((object), __args);                                  \
+#   define DoMethod(object, methodid, args...)                                          \
+    ({                                                                                  \
+        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)};                   \
+        DoMethodA((object), __args);                                                    \
     })
 
-#   define DoSuperMethod(cl, object, methodid, args...)               \
-    ({                                                                \
-        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
-        DoSuperMethodA((cl), (object), __args);                       \
+#   define DoSuperMethod(cl, object, methodid, args...)                                 \
+    ({                                                                                  \
+        IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)};                   \
+        DoSuperMethodA((cl), (object), __args);                                         \
     })
 
-#   define CoerceMethod(cl, object, methodid, args...)                 \
-    ({                                                                 \
-         IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)}; \
-         CoerceMethodA((cl), (object), __args);                        \
+#   define CoerceMethod(cl, object, methodid, args...)                                  \
+    ({                                                                                  \
+         IPTR __args[] = {methodid, AROS_PP_VARIADIC_CAST2IPTR(args)};                  \
+         CoerceMethodA((cl), (object), __args);                                         \
     })
 
-#   define DoSuperNewTags(cl, object, gadgetinfo, args...)                 \
-    ({                                                                     \
-        IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};                \
-        DoSuperNewTagList                                                  \
-        (                                                                  \
-            (cl), (object), (gadgetinfo), (struct TagItem *) __args        \
-        );                                                                 \
+#   define DoSuperNewTags(cl, object, gadgetinfo, args...)                              \
+    ({                                                                                  \
+        IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};                             \
+        DoSuperNewTagList                                                               \
+        (                                                                               \
+            (cl), (object), (gadgetinfo), (struct TagItem *) __args                     \
+        );                                                                              \
     })
-#endif
 #endif
 
 #ifdef AROS_SLOWSTACKHOOKS
-#if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)
-#define CallHook(hook, object, args...)					\
-    ({									\
-    	IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};		\
-    	CallHookA((hook), (object), __args);				\
+#define CallHook(hook, object, args...)					                \
+    ({									                \
+    	IPTR __args[] = {AROS_PP_VARIADIC_CAST2IPTR(args)};		                \
+    	CallHookA((hook), (object), __args);				                \
     })
-
-#endif /* !ALIB_NO_INLINE_STDARG && !NO_INLINE_STDARG */
 #endif
+#endif /* !ALIB_NO_INLINE_STDARG && !NO_INLINE_STDARG */
 
 __END_DECLS
 
