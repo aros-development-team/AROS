@@ -43,7 +43,7 @@ jobs:
       sudo ACCEPT_EULA=Y apt-get upgrade -y
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
-      sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
+      sudo apt-get install -y python3-mako libswitch-perl gperf gcc-multilib g++ ccache
       sudo apt-get install -y jlha-utils wget
       if [ "$AROSBUILD_TARGET" = "mingw32-i386" ]; then
         sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
