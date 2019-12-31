@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -259,10 +259,10 @@ IPTR Palette__OM_GET(struct IClass * cl, Object * obj, struct opGet * msg)
     switch (msg->opg_AttrID)
     {
     case MUIA_Palette_Entries:
-        *store = (IPTR) & data->entries;
+        *store = (IPTR) data->entries;
         return TRUE;
     case MUIA_Palette_Names:
-        *store = (IPTR) & data->names;
+        *store = (IPTR) data->names;
         return TRUE;
 
     case MUIA_Coloradjust_Red:
