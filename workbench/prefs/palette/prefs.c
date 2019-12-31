@@ -58,7 +58,7 @@ struct FilePrefHeader
     UBYTE ph_Version;
     UBYTE ph_Type;
     UBYTE ph_Flags[4];
-};
+} __packed;
 
 /*********************************************************************************************/
 
