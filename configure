@@ -6358,13 +6358,13 @@ fi
 
         if test -n "$PYTHON"; then
       # If the user set $PYTHON, use it and don't search something else.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $PYTHON version is >= 2.5" >&5
-$as_echo_n "checking whether $PYTHON version is >= 2.5... " >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $PYTHON version is >= 3.0" >&5
+$as_echo_n "checking whether $PYTHON version is >= 3.0... " >&6; }
       prog="import sys
 # split strings by '.' and convert to numeric.  Append some zeros
 # because we need at least 4 digits for the hex conversion.
 # map returns an iterator in Python 3.0 and a list in 2.x
-minver = list(map(int, '2.5'.split('.'))) + [0, 0, 0]
+minver = list(map(int, '3.0'.split('.'))) + [0, 0, 0]
 minverhex = 0
 # xrange is not present in Python 3.0 and range returns an iterator
 for i in list(range(0, 4)): minverhex = (minverhex << 8) + minver[i]
@@ -6385,8 +6385,8 @@ fi
     else
       # Otherwise, try each interpreter until we find one that satisfies
       # VERSION.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a Python interpreter with version >= 2.5" >&5
-$as_echo_n "checking for a Python interpreter with version >= 2.5... " >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a Python interpreter with version >= 3.0" >&5
+$as_echo_n "checking for a Python interpreter with version >= 3.0... " >&6; }
 if ${am_cv_pathless_PYTHON+:} false; then :
   $as_echo_n "(cached) " >&6
 else
@@ -6397,7 +6397,7 @@ else
 # split strings by '.' and convert to numeric.  Append some zeros
 # because we need at least 4 digits for the hex conversion.
 # map returns an iterator in Python 3.0 and a list in 2.x
-minver = list(map(int, '2.5'.split('.'))) + [0, 0, 0]
+minver = list(map(int, '3.0'.split('.'))) + [0, 0, 0]
 minverhex = 0
 # xrange is not present in Python 3.0 and range returns an iterator
 for i in list(range(0, 4)): minverhex = (minverhex << 8) + minver[i]
@@ -9451,7 +9451,7 @@ fi
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
-                aros_isa_flags="$""(ISA_MC68000_FLAGS)"
+                aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
                 aros_nowarn_flags="$aros_nowarn_flags NOWARN_VOLATILE_REGISTER_VAR"
                 aros_config_cppflags="$aros_config_cppflags -DNOLIBINLINE"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_FREESTANDING) $""(CFLAGS_OMIT_FP) $""(CFLAGS_BUILTIN)"
@@ -9897,6 +9897,7 @@ spec_obj_format="-m $aros_object_format"
 # as well as floating-point ABI.
 case "$aros_target_cpu" in
     *m68k*)
+        gcc_default_cpu="68000"
         aros_isa_targets="M68K_ISA_TARGETS              :=MC68020 MC68040"
         aros_isa_extra="$aros_isa_extra$export_newline$aros_isa_targets$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_isa_extra$export_newline$m68k_020_isa_extra$export_newline$m68k_030_isa_extra$export_newline$m68k_040_isa_extra$export_newline$m68k_060_isa_extra$export_newline$m68k_ac080_isa_extra$export_newline"
@@ -9904,6 +9905,21 @@ case "$aros_target_cpu" in
         aros_isa_extra="$aros_isa_extra$m68k_020_cflags$export_newline$m68k_030_cflags$export_newline$m68k_040_cflags$export_newline$m68k_060_cflags$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_ldflags$export_newline$m68k_030_ldflags$export_newline$m68k_040_ldflags$export_newline$m68k_060_ldflags$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum CPU to use" >&5
+$as_echo_n "checking Which minimum CPU to use... " >&6; }
+
+# Check whether --with-cpu was given.
+if test "${with_cpu+set}" = set; then :
+  withval=$with_cpu; aros_gcc_cpu="$withval"
+else
+  aros_gcc_cpu=$gcc_default_cpu
+fi
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
+$as_echo "$aros_gcc_cpu" >&6; }
+
+        aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
         ;;
     *x86_64*)
         aros_isa_extra="$export_newline$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"

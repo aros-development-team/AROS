@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import re, os, sys
 
 class Module:
@@ -27,7 +29,7 @@ def loadsymbolinformation():
                 # New module is needed
                 if (modname != lastmodname):
                     if (module):
-                        print "%s %x %x" % (module.name, module.minaddr, module.maxaddr)
+                        print("%s %x %x" % (module.name, module.minaddr, module.maxaddr))
                     module = Module()
                     module.name = modname
                     modules.append(module)
@@ -71,7 +73,7 @@ def main():
 
     addmodulespec.nextmoduleid = 1000
 
-    print "Processing..."
+    print("Processing...")
 
     reg = r'([c]*fn=\(\d*\) )0x([a-f0-9]*)'
     output = open(sys.argv[1] + ".processed", "w")

@@ -584,7 +584,8 @@ AROS_REQUIRED(chmod,$CHMOD)
 AROS_PROG(PATCH,[patch])
 AROS_REQUIRED(patch,$PATCH)
 
-AM_PATH_PYTHON(2.5)
+dnl TODO it might be necessary to use a higher version of Python 3
+AM_PATH_PYTHON(3.0)
 
 AC_ARG_ENABLE([libpng-config], [--disable-libpng-config    disable libpng-config test and configuration])
 if test "$enable_libpng_config" != "no"; then
@@ -1834,7 +1835,7 @@ case "$target_os" in
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
-                aros_isa_flags="$""(ISA_MC68000_FLAGS)"
+                aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
                 aros_nowarn_flags="$aros_nowarn_flags NOWARN_VOLATILE_REGISTER_VAR"
                 aros_config_cppflags="$aros_config_cppflags -DNOLIBINLINE"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_STRICT_ALIASING) $""(CFLAGS_FREESTANDING) $""(CFLAGS_OMIT_FP) $""(CFLAGS_BUILTIN)"
@@ -2178,6 +2179,7 @@ spec_obj_format="-m $aros_object_format"
 # as well as floating-point ABI.
 case "$aros_target_cpu" in
     *m68k*)
+        gcc_default_cpu="68000"
         aros_isa_targets="M68K_ISA_TARGETS              :=MC68020 MC68040"
         aros_isa_extra="$aros_isa_extra$export_newline$aros_isa_targets$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_isa_extra$export_newline$m68k_020_isa_extra$export_newline$m68k_030_isa_extra$export_newline$m68k_040_isa_extra$export_newline$m68k_060_isa_extra$export_newline$m68k_ac080_isa_extra$export_newline"
@@ -2185,6 +2187,12 @@ case "$aros_target_cpu" in
         aros_isa_extra="$aros_isa_extra$m68k_020_cflags$export_newline$m68k_030_cflags$export_newline$m68k_040_cflags$export_newline$m68k_060_cflags$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_ldflags$export_newline$m68k_030_ldflags$export_newline$m68k_040_ldflags$export_newline$m68k_060_ldflags$export_newline"
         aros_isa_extra="$aros_isa_extra$m68k_020_ext$export_newline$m68k_030_ext$export_newline$m68k_040_ext$export_newline$m68k_060_ext$export_newline"
+        
+        AC_MSG_CHECKING([Which minimum CPU to use])
+        AC_ARG_WITH(cpu,AC_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
+        AC_MSG_RESULT($aros_gcc_cpu)
+        
+        aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
         ;;
     *x86_64*)
         aros_isa_extra="$export_newline$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"

@@ -1,5 +1,5 @@
 /*
-   Copyright © 2003-2016, The AROS Development Team. All rights reserved.
+   Copyright © 2003-2019, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -427,7 +427,7 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Language_DATA *data;
     struct TagItem *tstate, *tag;
-    struct Object *avail_list, *pref_list;
+    Object *avail_list, *pref_list;
 
     D(bug("[LocalePrefs-LanguageClass] Language Class New\n"));
 
@@ -468,19 +468,19 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->clear = MUI_MakeObject(MUIO_Button, __(MSG_GAD_CLEAR_LANGUAGES));
 
-    data->available = ListviewObject, MUIA_Listview_List,
-        avail_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
-            InputListFrame,
-            MUIA_List_SourceArray, data->strings_available,
-            TAG_DONE),
+    data->available = ListviewObject,
+        MUIA_Listview_List, (IPTR)(avail_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
+                InputListFrame,
+                MUIA_List_SourceArray, (IPTR) data->strings_available,
+                TAG_DONE)),
         MUIA_Listview_DragType, MUIV_Listview_DragType_Immediate,
     End;
 
-    data->preferred = ListviewObject, MUIA_Listview_List,
-        pref_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
-            InputListFrame,
-            MUIA_List_SourceArray, data->strings_preferred,
-            TAG_DONE),
+    data->preferred = ListviewObject,
+        MUIA_Listview_List, (IPTR)(pref_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
+                InputListFrame,
+                MUIA_List_SourceArray, (IPTR) data->strings_preferred,
+                TAG_DONE)),
         MUIA_Listview_DragType, MUIV_Listview_DragType_Immediate,
     End;
 
@@ -496,7 +496,7 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_Frame, MUIV_Frame_InputList,
         MUIA_Background, MUII_ListBack,
         MUIA_List_AutoVisible, TRUE,
-        MUIA_List_SourceArray, data->strings_charsets,
+        MUIA_List_SourceArray, (IPTR) data->strings_charsets,
     End;
 
     data->cslistview = ListviewObject,
@@ -506,11 +506,11 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     charset_popup_to_string_hook.h_Data = data->prefs;
 
     data->popup = PopobjectObject,
-        MUIA_Popobject_Object, data->cslistview,
-        MUIA_Popobject_StrObjHook, &charset_string_to_popup_hook,
-        MUIA_Popobject_ObjStrHook, &charset_popup_to_string_hook,
-        MUIA_Popstring_Button, PopButton(MUII_PopUp),
-        MUIA_Popstring_String, data->charset,
+        MUIA_Popobject_Object, (IPTR) data->cslistview,
+        MUIA_Popobject_StrObjHook, (IPTR) &charset_string_to_popup_hook,
+        MUIA_Popobject_ObjStrHook, (IPTR) &charset_popup_to_string_hook,
+        MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
+        MUIA_Popstring_String, (IPTR) data->charset,
     End;
 
     if(!data->clear || !data->available || !data->preferred || !data->charset || !data->cslist ||
@@ -545,23 +545,27 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(obj, OM_ADDMEMBER, data->child);
 
     /* setup hooks */
-    DoMethod(data->cslistview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, data->popup, 2, MUIM_Popstring_Close, TRUE);
+    DoMethod
+    (
+        data->cslistview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
+        (IPTR) data->popup, 2, MUIM_Popstring_Close, TRUE
+    );
 
     /* move hooks */
     hook_available.h_Entry    = (HOOKFUNC) hook_func_available;
     hook_available.h_Data     = data ;
     DoMethod
     (
-        data->available, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime, data->available,
-        2, MUIM_CallHook, (IPTR) &hook_available
+        data->available, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+        (IPTR) data->available, 2, MUIM_CallHook, (IPTR) &hook_available
     );
 
     hook_preferred.h_Entry    = (HOOKFUNC) hook_func_preferred;
     hook_preferred.h_Data     = data ;
     DoMethod
     (
-        data->preferred, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime, data->preferred,
-        2, MUIM_CallHook, (IPTR) &hook_preferred
+        data->preferred, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+        (IPTR) data->preferred, 2, MUIM_CallHook, (IPTR) &hook_preferred
     );
 
     /* clear hook */
@@ -569,8 +573,8 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     hook_clear.h_Data     = data ;
     DoMethod
     (
-        data->clear, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, data->preferred,
-        2, MUIM_CallHook, (IPTR) &hook_clear
+        data->clear, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) data->preferred, 2, MUIM_CallHook, (IPTR) &hook_clear
     );
 
     /* changed hooks */

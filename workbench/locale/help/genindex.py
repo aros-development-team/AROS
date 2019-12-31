@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
 # Copyright (C) 2013, The AROS Development Team. All rights reserved.
 # $Id$
@@ -31,7 +32,7 @@ def write_section(helpdir, filehandle, section):
 
 def main():
     helpdir = sys.argv[1]
-    print "genindex helpdir " + helpdir
+    print("genindex helpdir " + helpdir)
 
     sections = (
         ("Commands", "C:"),
@@ -40,7 +41,7 @@ def main():
 
     today = datetime.date.today()
 
-    filehandle = open(os.path.join(helpdir, "Index.guide"), "w")
+    filehandle = open(os.path.join(helpdir, "Index.guide"), "w", encoding="ISO-8859-15")
     filehandle.write("@DATABASE Index.guide\n\n")
     filehandle.write("@$VER: Index.guide 1.0 (%d.%d.%d)\n" % (today.day, today.month, today.year))
     filehandle.write("@(C) Copyright (C) %d, The AROS Development Team. All rights reserved.\n\n" % (today.year))

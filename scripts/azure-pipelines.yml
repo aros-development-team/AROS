@@ -43,7 +43,7 @@ jobs:
       sudo ACCEPT_EULA=Y apt-get upgrade -y
       sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
       sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
-      sudo apt-get install -y python-mako libswitch-perl gperf gcc-multilib g++ ccache
+      sudo apt-get install -y python3-mako libswitch-perl gperf gcc-multilib g++ ccache
       sudo apt-get install -y jlha-utils wget
       if [ "$AROSBUILD_TARGET" = "mingw32-i386" ]; then
         sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
@@ -74,8 +74,8 @@ jobs:
       brew list md5sha1sum &>/dev/null || brew install md5sha1sum
       brew install caskroom/cask/brew-cask 2> /dev/null
       brew cask install xquartz
-      sudo easy_install pip
-      pip install Mako
+      sudo easy_install pip3
+      pip3 install Mako
       brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
       ln -s /opt/X11/include/X11 /usr/include/X11
       CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"

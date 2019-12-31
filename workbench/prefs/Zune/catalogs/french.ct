@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 2.0 (03.01.2018)
+## version $VER: Zune.catalog 2.1 (23.12.2019)
 ## language français
 ## codeset 0
 ;
@@ -176,8 +176,8 @@ Entourage
 ;Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Tronquer les titres :
-;Default size truncate titles:
+Tronquer les titres
+;Default size truncate titles
 ;
 MSG_NORMAL
 Normal

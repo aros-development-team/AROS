@@ -23,8 +23,10 @@ FILES := \
  partition \
  pthreadtest \
  simplepng \
- unixio \
  versionlib
+
+UNIXFILES := \
+ unixio
 
 SHTESTFILES=\
     pcilist \
@@ -35,10 +37,18 @@ EXEDIR := $(AROS_TESTS)/misc
 #MM- test : test-misc test-sh
 #MM- test-quick : test-misc-quick test-sh-quick
 
+#MM- test-unix : test-misc-unix
+#MM- test-unix-quick : test-misc-unix-quick
+
 #MM  test-sh : includes linklibs
+
+#MM test-misc : workbench-libs-version-includes
 
 %build_progs mmake=test-misc \
     files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
+
+%build_progs mmake=test-misc-unix \
+    files=$(UNIXFILES) targetdir=$(EXEDIR) uselibs="pthread"
 
 USER_CPPFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 

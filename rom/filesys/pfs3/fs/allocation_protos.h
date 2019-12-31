@@ -14,5 +14,5 @@ ULONG AllocReservedBlockSave(globaldata * );
 void FreeReservedBlock(ULONG , globaldata * );
 
 cindexblock_t * GetBitmapIndex(UWORD , globaldata * );
-struct cbitmapblock * NewBitmapBlock(UWORD , globaldata * );
-struct cbitmapblock *GetBitmapBlock (UWORD seqnr, globaldata *g);
+struct cbitmapblock * NewBitmapBlock(ULONG seqnr , globaldata * );
+struct cbitmapblock *GetBitmapBlock (ULONG seqnr, globaldata *g);

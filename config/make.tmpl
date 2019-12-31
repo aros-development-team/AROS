@@ -2857,7 +2857,7 @@ endif
 # - srcdir is where *.png and *.info.src are sought
 #-----------------------------------------------------------------------------
 
-%define build_icons mmake=/A icons=/A dir=/A srcdir=$(SRCDIR)/$(CURDIR) image=
+%define build_icons mmake=/A icons=/A fmt=png dir=/A srcdir=$(SRCDIR)/$(CURDIR) image=
 
 BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
@@ -2866,7 +2866,7 @@ BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
 ifeq (%(image),)
 
-%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.png
+%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.%(fmt)
 	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
 	$(Q)$(ILBMTOICON) $+ $@
 
@@ -2881,6 +2881,40 @@ endif
 %rule_makedirs dirs="%(dir)" setuptarget=$(BD_OBJS)
 
 %(mmake)-clean : FILES := $(BD_OBJS)
+#MM
+%(mmake)-clean ::
+	$(Q)$(RM) $(FILES)
+
+.PHONY: %(mmake) %(mmake)-clean
+
+%end
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+# Build dual state icon.
+# - mmake is the mmaketarget
+# - icon is the icon base name (i.e. without the .info suffix)
+# - normal is the unselected state image name (i.e. without the .png suffix)
+# - selected is the selected state image name (i.e. without the .png suffix)
+# - dir is the destination directory
+# - srcdir is where *.png and *.info.src are sought
+#-----------------------------------------------------------------------------
+
+%define build_dualicon mmake=/A icon=/A normal=/A selected=/A fmt=png dir=/A srcdir=$(SRCDIR)/$(CURDIR)
+
+BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
+
+#MM
+%(mmake) : $(BD_OBJ)
+
+%(dir)/%(icon).info : %(srcdir)/%(icon).info.src %(srcdir)/%(normal).%(fmt) %(srcdir)/%(selected).%(fmt)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(ILBMTOICON) $+ $@
+
+%rule_makedirs dirs="%(dir)" setuptarget=$(BD_OBJ)
+
+%(mmake)-clean : FILES := $(BD_OBJ)
 #MM
 %(mmake)-clean ::
 	$(Q)$(RM) $(FILES)

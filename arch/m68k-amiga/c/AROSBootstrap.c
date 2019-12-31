@@ -1062,13 +1062,14 @@ static void setcpu(void)
 	".long	0xf0100800\n"
 	"bra.s cpudone\n"
 "zero:	.long	0,0\n"
-"cpudone:\n"
+"cpudone:\n.chip 68k\n"
     );
 }
 
 /* This is needed because KS clears ColdCapture before calling it
  * causing checksum mismatch in AROS exec check
  */
+
 void coldcapturecode(void)
 {
     asm(
@@ -1174,6 +1175,7 @@ void coldcapturecode(void)
 	"move.w #0x000,0xdff180\n"
 	"bra.s exception\n"
 	"end:\n"
+	".chip 68k\n"
     );
 }
 

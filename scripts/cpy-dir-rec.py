@@ -1,5 +1,7 @@
+#!/usr/bin/env python3
+
 # -*- coding: iso-8859-1 -*-
-# Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+# Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
 
 # Copy directory 'src' recursively to 'dst' while ignoring
 # all files given by 'ignore' parameter. Only files younger
@@ -29,12 +31,17 @@ def in_ignore_list(name, ignore):
 def copy_tree(src, dst, ignore):
     # Conversion to Unicode is needed in order to yield Unicode file names.
     # This can be important on Windows. Without this the script fails to access
-    # directories like Locale/Help/Español on non-western systems, where locale
+    # directories like Locale/Help/Espanol on non-western systems, where locale
     # is different from Latin-1 (e. g. russian).
     # See http://docs.python.org/2/howto/unicode.html#unicode-filenames
-    src_u = unicode(src, "utf-8").encode("utf-8")
-    names = os.listdir(src_u)
+    
+    # TODO: the following didn't work anymore with Python 3
+    
+    #src_u = str(src, "utf-8").encode("utf-8")
+    #names = os.listdir(src_u)
 
+    names = os.listdir(src)
+    
     if not os.path.exists(dst):
         os.makedirs(dst)
 
@@ -71,9 +78,9 @@ for arg in sys.argv:
     elif arg == "-e":
         state = st_exclude
     elif arg == "-h":
-        print "Usage: python cpy-dir-rec.py -s <souredir> -d <target directories> [-e <files to exclude>]"
+        print("Usage: python cpy-dir-rec.py -s <souredir> -d <target directories> [-e <files to exclude>]")
     elif arg[0] == "-":
-        print "cpy-dir-rec: unknown argument %s" % arg
+        print("cpy-dir-rec: unknown argument %s" % arg)
         sys.exit(1)
     else:
         if state == st_source:
@@ -84,5 +91,5 @@ for arg in sys.argv:
             ignore.append(arg)
 
 for destdir in destdirs:
-    print "Copying    directory '%s' to '%s', ignore '%s'" % (sourcedir, destdir, ignore)
+    print("Copying    directory '%s' to '%s', ignore '%s'" % (sourcedir, destdir, ignore))
     copy_tree(sourcedir, destdir, ignore)

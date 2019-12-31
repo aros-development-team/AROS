@@ -52,6 +52,7 @@ asm (
     "addq.l #4,%sp\n"
     "rte\n"
     ".endfunc\n"
+    ".chip 68k\n"
 );
 
 APTR getvbr(void);
@@ -64,6 +65,7 @@ asm (
     "movec %vbr,%d0\n"
     "rte\n"
     ".endfunc\n"
+    ".chip 68k\n"
 );
 
 static void setvbr(APTR vbr)
@@ -81,6 +83,7 @@ static void setvbr(APTR vbr)
     "movec %%d0,%%vbr\n"
     "rte\n"
     "0:\n"
+    ".chip 68k\n"
     : : "m" (vbr)
     );
 }
