@@ -2,7 +2,7 @@
 #define PREFS_PALETTE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Palette prefs definitions
@@ -21,9 +21,7 @@
 #   include <intuition/intuition.h>
 #endif
 
-
 #define ID_PALT MAKE_ID('P','A','L','T')
-
 
 struct PalettePrefs
 {
@@ -31,6 +29,6 @@ struct PalettePrefs
     UWORD	     pap_4ColorPens[32];
     UWORD	     pap_8ColorPens[32];
     struct ColorSpec pap_Colors[32];
-};
+} __packed;
 
 #endif /* PREFS_PALETTE_H */
