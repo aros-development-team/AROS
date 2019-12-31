@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -33,8 +33,6 @@
 #define PREFS_PATH_ENV    "ENV:SYS/palette.prefs"
 
 /*********************************************************************************************/
-
-#define MAXPENS       8
 
 STATIC UWORD defaultpen[MAXPENS * 4] =
 {
@@ -98,28 +96,28 @@ BOOL Prefs_ImportFH(BPTR fh)
 
         if (!OpenIFF(iff, IFFF_READ))
         {
-            D(bug("Prefs_ImportFH: OpenIFF okay.\n"));
+            D(bug("[Palette] %s:  OpenIFF okay.\n", __func__));
 
             if (!StopChunk(iff, ID_PREF, ID_PALT))
             {
                 struct PalettePrefs loadprefs;
-                D(bug("Prefs_ImportFH: ID_PREF->ID_PALT\n"));
+                D(bug("[Palette] %s:  ID_PREF->ID_PALT\n", __func__));
 
                 if (!ParseIFF(iff, IFFPARSE_SCAN))
                 {
                     struct ContextNode *cn;
 
-                    D(bug("Prefs_ImportFH: ParseIFF okay.\n"));
+                    D(bug("[Palette] %s:  ParseIFF okay.\n", __func__));
 
                     cn = CurrentChunk(iff);
 
                     if (cn->cn_Size == sizeof(struct PalettePrefs))
                     {
-                        D(bug("Prefs_ImportFH: ID_PALT chunk size okay.\n"));
+                        D(bug("[Palette] %s:  ID_PALT chunk size okay.\n", __func__));
 
                         if (ReadChunkBytes(iff, &loadprefs, sizeof(struct PalettePrefs)) == sizeof(struct PalettePrefs))
                         {
-                            D(bug("Prefs_ImportFH: Reading chunk successful.\n"));
+                            D(bug("[Palette] %s:  Reading chunk successful.\n", __func__));
 
 #if (AROS_BIG_ENDIAN == 0)
                             CopyMem(loadprefs.pap_Reserved, paletteprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
@@ -139,10 +137,11 @@ BOOL Prefs_ImportFH(BPTR fh)
 #endif
                             for (i = 0; i < MAXPENS; i++)
                             {
+                                D(bug("[Palette] %s: #%02d r:%04x g:%04x b:%04x\n", __func__, i, paletteprefs.pap_Colors[i].Red, paletteprefs.pap_Colors[i].Green, paletteprefs.pap_Colors[i].Blue);)
                                 if (paletteprefs.pap_8ColorPens[i] >= PEN_C3)
                                     paletteprefs.pap_8ColorPens[i] -= (PEN_C3 - 4);
                             }
-                            D(bug("Prefs_ImportFH: Everything okay :-)\n"));
+                            D(bug("[Palette] %s:  Everything okay :-)\n", __func__));
 
                             retval = TRUE;
                         }
@@ -152,7 +151,7 @@ BOOL Prefs_ImportFH(BPTR fh)
             else if (!StopChunk(iff, ID_ILBM, ID_CMAP))
             {
                 struct ColorRegister colreg;
-                D(bug("Prefs_ImportFH: ID_ILBM->ID_CMAP\n"));
+                D(bug("[Palette] %s:  ID_ILBM->ID_CMAP\n", __func__));
 
                 for (i = 0; i < MAXPENS; i++)
                 {
@@ -213,12 +212,12 @@ BOOL Prefs_ExportFH(BPTR fh)
     }
 #endif
 
-    D(bug("Prefs_ExportFH: fh: %lx\n", fh));
+    D(bug("[Palette] %s: fh: %lx\n", __func__, fh));
 
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = (IPTR) fh;
-        D(bug("Prefs_ExportFH: stream opened.\n"));
+        D(bug("[Palette] %s: stream opened.\n", __func__));
 
 #if defined(DELETEONERROR)
         delete_if_error = TRUE;
@@ -228,17 +227,17 @@ BOOL Prefs_ExportFH(BPTR fh)
 
         if (!OpenIFF(iff, IFFF_WRITE))
         {
-            D(bug("Prefs_ExportFH: OpenIFF okay.\n"));
+            D(bug("[Palette] %s: OpenIFF okay.\n", __func__));
 
             if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
             {
-                D(bug("Prefs_ExportFH: PushChunk(FORM) okay.\n"));
+                D(bug("[Palette] %s: PushChunk(FORM) okay.\n", __func__));
 
                 if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
                 {
                     struct FilePrefHeader head;
 
-                    D(bug("Prefs_ExportFH: PushChunk(PRHD) okay.\n"));
+                    D(bug("[Palette] %s: PushChunk(PRHD) okay.\n", __func__));
 
                     head.ph_Version  = PHV_CURRENT;
                     head.ph_Type     = 0;
@@ -249,18 +248,20 @@ BOOL Prefs_ExportFH(BPTR fh)
 
                     if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
                     {
-                        D(bug("Prefs_ExportFH: WriteChunkBytes(PRHD) okay.\n"));
+                        D(bug("[Palette] %s: WriteChunkBytes(PRHD) okay.\n", __func__));
 
                         PopChunk(iff);
 
                         if (!PushChunk(iff, ID_PREF, ID_PALT, sizeof(struct PalettePrefs)))
                         {
-                            D(bug("Prefs_ExportFH: PushChunk(LCLE) okay.\n"));
+                            D(bug("[Palette] %s: PushChunk(LCLE) okay.\n", __func__));
 
                             if (WriteChunkBytes(iff, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
                             {
-                                D(bug("Prefs_ExportFH: WriteChunkBytes(PALT) okay.\n"));
-                                D(bug("Prefs_ExportFH: Everything okay :-)\n"));
+                                D(
+                                    bug("[Palette] %s: WriteChunkBytes(PALT) okay.\n", __func__);
+                                    bug("[Palette] %s: Everything okay :-)\n", __func__);
+                                )
 
                                 retval = TRUE;
                             }

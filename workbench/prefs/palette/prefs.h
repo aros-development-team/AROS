@@ -14,6 +14,10 @@
 
 /*********************************************************************************************/
 
+#define MAXPENS       8
+
+/*********************************************************************************************/
+
 BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save);
 BOOL Prefs_ImportFH(BPTR fh);
 BOOL Prefs_ExportFH(BPTR fh);
