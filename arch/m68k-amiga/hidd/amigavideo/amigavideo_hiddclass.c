@@ -378,7 +378,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
                 ADDTAG(aHidd_Sync_HDisp, w);
                 ADDTAG(aHidd_Sync_VDisp, h);
                 ADDTAG(aHidd_Sync_Flags, h >= 400 ? vHidd_Sync_Interlaced : 0);
-                ADDTAG(aHidd_Sync_PixelClock, 1000000000 / (280 >> res));
+                ADDTAG(aHidd_Sync_PixelClock, 1000000000 / (280 >> (res + 1)));
                 ADDTAG(TAG_DONE, 0);
             }
         }
