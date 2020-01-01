@@ -39,9 +39,10 @@ static void ata_outsw(struct pio_data *data, APTR address, ULONG count)
 
     asm volatile(
 "1:     move.w (%[address])+,(%[port])  \n"
-"       subq.l #2,%[count]              \n"
-"       bgtb 1b                         \n"
-        ::[count]"d"(count),[address]"a"(address),[port]"a"(addr));
+"       move.w (%[address])+,(%[port])  \n"
+"       subq.l #1,%[count]              \n"
+"       bnes 1b                         \n"
+        ::[count]"d"(count >> 2),[address]"a"(address),[port]"a"(addr));
 }
 
 static void ata_outsl(struct pio_data *data, APTR address, ULONG count)
@@ -52,9 +53,10 @@ static void ata_outsl(struct pio_data *data, APTR address, ULONG count)
 
     asm volatile(
 "1:     move.l (%[address])+,(%[port])  \n"
-"       subq.l #4,%[count]              \n"
-"       bgtb 1b                         \n"
-        ::[count]"d"(count),[address]"a"(address),[port]"a"(addr));
+"       move.l (%[address])+,(%[port])  \n"
+"       subq.l #1,%[count]              \n"
+"       bnes 1b                         \n"
+        ::[count]"d"(count >> 3),[address]"a"(address),[port]"a"(addr));
 }
 
 static void ata_insw(struct pio_data *data, APTR address, ULONG count)
@@ -65,9 +67,10 @@ static void ata_insw(struct pio_data *data, APTR address, ULONG count)
 
     asm volatile(
 "1:     move.w (%[port]),(%[address])+  \n"
-"       subq.l #2,%[count]              \n"
-"       bgtb 1b                         \n"
-        ::[count]"d"(count),[address]"a"(address),[port]"a"(addr));
+"       move.w (%[port]),(%[address])+  \n"
+"       subq.l #1,%[count]              \n"
+"       bnes 1b                         \n"
+        ::[count]"d"(count >> 2),[address]"a"(address),[port]"a"(addr));
 }
 
 static void ata_insl(struct pio_data *data, APTR address, ULONG count)
@@ -78,9 +81,10 @@ static void ata_insl(struct pio_data *data, APTR address, ULONG count)
 
     asm volatile(
 "1:     move.l (%[port]),(%[address])+  \n"
-"       subq.l #4,%[count]              \n"
-"       bgtb 1b                         \n"
-        ::[count]"d"(count),[address]"a"(address),[port]"a"(addr));
+"       move.l (%[port]),(%[address])+  \n"
+"       subq.l #1,%[count]              \n"
+"       bnes 1b                         \n"
+        ::[count]"d"(count >> 3),[address]"a"(address),[port]"a"(addr));
 }
 
 const APTR bus_FuncTable[] =
