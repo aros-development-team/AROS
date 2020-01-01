@@ -133,7 +133,6 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
                     End,
                 End),
                 Child, (IPTR)RectangleObject,
-                    MUIA_FixHeightTxt, (IPTR)str_empty,
                 End,
             End,
             Child, (IPTR)(objFeaturesGrp = ScrollgroupObject,
