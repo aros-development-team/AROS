@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,9 +30,26 @@
 
 #define SPECIALMODES 3
 #define NATIVEMODES (3 * 4 * SPECIALMODES)
-static const UWORD widthtable[] = { 320, 640, 1280, 0 };
-static const UWORD heighttable[] = { 200, 256, 400, 512, 0 };
-static const ULONG specialmask_aga[] = { 0, EXTRAHALFBRITE_KEY, HAM_KEY, 0xffffffff };
+
+static const UWORD widthtable[] = {
+    REZ_X_MIN,
+    (REZ_X_MIN << 1),
+    (REZ_X_MIN << 2),
+    0
+};
+static const UWORD heighttable[] = {
+    REZ_Y_MIN,
+    (REZ_Y_MIN + REZ_PAL_LINES),
+    (REZ_Y_MIN << 1),
+    ((REZ_Y_MIN + REZ_PAL_LINES) << 1),
+    0
+};
+static const ULONG specialmask_aga[] = {
+    0,
+    EXTRAHALFBRITE_KEY,
+    HAM_KEY,
+    0xffffffff
+};
 
 #define SPECIAL_MODE_MASK (EXTRAHALFBRITE_KEY | HAM_KEY)
 
@@ -319,12 +336,12 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 #if !defined(USE_ALIEN_DISPLAYMODES)
         if (GfxBase->DisplayFlags & NTSC)
         {
-            if (h != 200 && h != 400)
+            if (h != REZ_Y_MIN && h != (REZ_Y_MIN << 1))
                 continue;
         }
         else
         {
-            if (h == 200 || h == 400)
+            if (h == REZ_Y_MIN || h == (REZ_Y_MIN << 1))
                 continue;
         }
 #endif
@@ -334,14 +351,14 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
             ULONG modeid;
             
             modeid = 0;
-            if (w == 1280) {
+            if (w == (REZ_X_MIN << 2)) {
                 res = 2;
                 modeid |= SUPER_KEY;
                 if (!csd->aga && !csd->ecs_denise)
                     continue;
                 d = csd->aga ? 8 : 2;
             }
-            else if (w == 640) {
+            else if (w == (REZ_X_MIN << 1)) {
                 res = 1;
                 modeid |= HIRES_KEY;
                 d = csd->aga ? 8 : 4;
@@ -349,15 +366,15 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
                 res = 0;
                 d = csd->aga ? 8 : 5;
             }
-            if (h >= 400)
+            if (h >= (REZ_Y_MIN << 1))
                 modeid |= LORESLACE_KEY;
-            if (h == 200 || h == 400)
+            if (h == REZ_Y_MIN || h == (REZ_Y_MIN << 1))
                 modeid |= NTSC_MONITOR_ID;
             else
                 modeid |= PAL_MONITOR_ID;		
 
             for (i = 0; i < SPECIALMODES; i++) {
-                ULONG mid = modeid;
+                ULONG mid = modeid, pclock, syncstrt, synctot;
                 UWORD d2 = d;
                 if (i == 1) {
                     if (!csd->aga && (modeid & SUPER_KEY))
@@ -375,10 +392,32 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
                 modetags[cnt] = tagptr;
                 modeids[cnt++] = mid;
 
+                ADDTAG(aHidd_Sync_HMin,	(16 << res));
+
                 ADDTAG(aHidd_Sync_HDisp, w);
                 ADDTAG(aHidd_Sync_VDisp, h);
-                ADDTAG(aHidd_Sync_Flags, h >= 400 ? vHidd_Sync_Interlaced : 0);
-                ADDTAG(aHidd_Sync_PixelClock, 1000000000 / (280 >> res));
+                ADDTAG(aHidd_Sync_HDispMax, w + (48 << res));
+                ADDTAG(aHidd_Sync_Flags, (modeid & LORESLACE_KEY) ? vHidd_Sync_Interlaced : 0);
+
+                pclock = 1000000000 / (280 >> (res + 1));
+                D(bug("[AmigaVideo:Hidd] %s: pclock = %d\n", __func__, pclock));
+                ADDTAG(aHidd_Sync_PixelClock, pclock);
+
+                if (modeid & PAL_MONITOR_ID)
+                {
+                    ADDTAG(aHidd_Sync_VDispMax, (modeid & LORESLACE_KEY) ? ((STANDARD_PAL_ROWS - MIN_PAL_ROW) << 1) : (STANDARD_PAL_ROWS - MIN_PAL_ROW));
+                }
+                else
+                {
+                    ADDTAG(aHidd_Sync_VDispMax, (modeid & LORESLACE_KEY) ? ((STANDARD_NTSC_ROWS - MIN_NTSC_ROW) << 1) : (STANDARD_NTSC_ROWS - MIN_NTSC_ROW));
+                }
+                ADDTAG(aHidd_Sync_VSyncStart, STANDARD_VBSTRT);
+                ADDTAG(aHidd_Sync_VSyncEnd, STANDARD_VBSTOP);
+                ADDTAG(aHidd_Sync_VTotal, (modeid & PAL_MONITOR_ID) ? STANDARD_PAL_ROWS : STANDARD_NTSC_ROWS);
+
+                ADDTAG(aHidd_Sync_HSyncStart, STANDARD_HBSTRT);
+                ADDTAG(aHidd_Sync_HSyncEnd, STANDARD_HBSTOP);
+                ADDTAG(aHidd_Sync_HTotal, pclock / (100000000 / STANDARD_COLORCLOCKS / 28));
                 ADDTAG(TAG_DONE, 0);
             }
         }
@@ -413,8 +452,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         pftags_aga[2] = NULL;
 
         mode_tags_aga = tagptr;
-        ADDTAG(aHidd_Sync_HMin,		112);
-        ADDTAG(aHidd_Sync_VMin,		112);
+
+        ADDTAG(aHidd_Sync_VMin,		1);
         ADDTAG(aHidd_Sync_HMax,		16384);
         ADDTAG(aHidd_Sync_VMax,		16384);
 
@@ -475,8 +514,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         tagptr = (APTR)((IPTR)tagptr + (17 << 3));
 
         mode_tags_ecs = tagptr;
-        ADDTAG(aHidd_Sync_HMin,		112);
-        ADDTAG(aHidd_Sync_VMin,		112);
+
+        ADDTAG(aHidd_Sync_VMin,		1);
         ADDTAG(aHidd_Sync_HMax,		csd->ecs_agnus ? 16384 : 1008);
         ADDTAG(aHidd_Sync_VMax,		csd->ecs_agnus ? 16384 : 1008);
 
@@ -1201,16 +1240,16 @@ VOID AmigaVideoCl__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, str
             break;
         
         case 1:
-            if (csd->displaywidth > 640)
+            if (csd->displaywidth > (REZ_X_MIN << 1))
                 *msg->TargetX = msg->DispX >> 1;
             else
                 *msg->TargetX = msg->DispX;
             break;
 
         default:
-            if (csd->displaywidth > 640)
+            if (csd->displaywidth > (REZ_X_MIN << 1))
                 *msg->TargetX = msg->DispX >> 2;
-            if (csd->displaywidth > 320)
+            if (csd->displaywidth > REZ_X_MIN)
                 *msg->TargetX = msg->DispX >> 1;
             else
                 *msg->TargetX = msg->DispX;
@@ -1246,14 +1285,14 @@ VOID AmigaVideoCl__Hidd_Gfx__BMToDisplayCoords(OOP_Class *cl, OOP_Object *o, str
             break;
         
         case 1:
-            if (csd->displaywidth > 640)
+            if (csd->displaywidth > (REZ_X_MIN << 1))
                 *msg->DispX = msg->TargetX << 1;
             break;
 
         default:
-            if (csd->displaywidth > 640)
+            if (csd->displaywidth > (REZ_X_MIN << 1))
                 *msg->DispX = msg->TargetX << 2;
-            if (csd->displaywidth > 320)
+            if (csd->displaywidth > REZ_X_MIN)
                 *msg->DispX = msg->TargetX << 1;
             else
                 *msg->DispX = msg->TargetX;

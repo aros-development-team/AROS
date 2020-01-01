@@ -229,7 +229,12 @@ APTR GAYLEATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Ms
     {
         pio->port = data->bus->port;
         pio->altport  = data->bus->altport;
-        pio->dataport = (UBYTE*)(((ULONG)pio->port) & ~3);
+        /* 
+            Data port is in a shadow bank of gayle (offset of 0x2000).
+            This shadow bank is for 16/32-bit data transfers, while the
+            other one is much slower due to 8-bit transfers, only.
+        */
+        pio->dataport = (UBYTE*)((((ULONG)pio->port) & ~3) + 0x2000);
     }
 
     return pio;

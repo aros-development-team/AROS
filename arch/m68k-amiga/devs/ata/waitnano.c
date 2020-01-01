@@ -34,7 +34,14 @@ static void busywait(UWORD cnt)
 /* Single CIA access = 1 E-clock */
 void ata_WaitNano(ULONG ns, struct ataBase *base)
 {
-    ns /= 2;
+    /*
+        We really need to review this code. The WaitNano is supposed to wait given number of *nanoseconds*
+        Each CIA access takes one E-clock which equals 1400 nanoseconds. It means, on Amiga hardware it is
+        hardly impossible to do a delay shorter than 1.4 microseconds.
+        
+        For how we will shift the nanosecond count by 10 bits, effectively dividing it by 1024.
+    */
+    ns /= 1024;
     if (!(SysBase->AttnFlags & AFF_68020))
     	ns /= 2;
     while (ns >= 65536 * 4) {

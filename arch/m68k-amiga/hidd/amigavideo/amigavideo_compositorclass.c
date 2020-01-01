@@ -1,5 +1,5 @@
 /*
-    Copyright © 2019, The AROS Development Team. All rights reserved.
+    Copyright © 2019-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -114,7 +114,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
     struct HIDD_ViewPortData * vpdata;
     OOP_Object *bm = NULL;
     struct amigabm_data *bmdata, *bmdatprev;
-	UWORD visdwidth, visdheight;
+        UWORD visdwidth, visdheight;
 
     D(bug("[AmigaVideo:Compositor] %s()\n", __func__));
 
@@ -178,7 +178,7 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
             if (vpdata->Bitmap && (OOP_OCLASS(vpdata->Bitmap) == csd->amigabmclass))
             {
                 struct Node *next;
-				UWORD modeheight = 200;
+                                UWORD modeheight = 200;
 
                 bmdata = OOP_INST_DATA(OOP_OCLASS(vpdata->Bitmap), vpdata->Bitmap);
                 bmdata->node.ln_Pri = scdepth++;
@@ -200,28 +200,28 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
                 }
 
                 if ((csd->ecs_agnus) && ((bmdata->modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)) {
-					modeheight += 56;
+                    modeheight += 56;
                     csd->palmode = TRUE;
                 }
 
                 if (bmdata->interlace != 0)
-				{
-					modeheight <<= bmdata->interlace;
+                {
+                    modeheight <<= bmdata->interlace;
                     csd->interlaced = TRUE;
-				}
-				if (visdheight < modeheight)
-					visdheight = modeheight;
-				switch (bmdata->res)
-				{
-				case 2:
-					if (visdwidth < 1280)
-						visdwidth = 1280;
-					break;
-				case 1:
-					if (visdwidth < 640)
-						visdwidth = 640;
-					break;
-				}
+                }
+                if (visdheight < modeheight)
+                        visdheight = modeheight;
+                switch (bmdata->res)
+                {
+                case 2:
+                        if (visdwidth < 1280)
+                                visdwidth = 1280;
+                        break;
+                case 1:
+                        if (visdwidth < 640)
+                                visdwidth = 640;
+                        break;
+                }
                 /*
                  * enqueue the bitmap based on its Y co-ord, so
                  * that the list can be iterated over chaining the copperlist's ..
@@ -231,10 +231,15 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
                     if (bmdata->topedge < bmdatprev->topedge)
                         break;
                 }
-                bmdata->node.ln_Pred	            = bmdatprev->node.ln_Pred;
-                bmdata->node.ln_Succ	            = &bmdatprev->node;
-                bmdatprev->node.ln_Pred->ln_Succ    = &bmdata->node;
-                bmdatprev->node.ln_Pred	            = &bmdata->node;
+                if (bmdatprev)
+                {
+                    bmdata->node.ln_Pred                = bmdatprev->node.ln_Pred;
+                    bmdata->node.ln_Succ                = &bmdatprev->node;
+                    bmdatprev->node.ln_Pred->ln_Succ    = &bmdata->node;
+                    bmdatprev->node.ln_Pred	        = &bmdata->node;
+                }
+                else
+                    AddTail(&compdata->visbmstack, &bmdata->node);
             }
         }
 
@@ -399,20 +404,20 @@ VOID METHOD(AmigaVideoCompositor, Hidd_Compositor, BitMapStackChanged)
         custom->dmacon = 0x8100;
 
         if ((csd->displaywidth != visdwidth) || (csd->displayheight != visdheight))
-		{
-			csd->displaywidth = visdwidth;
-			csd->displayheight = visdheight;
-			if (csd->ccb)
-			{
-				struct HIDD_DisplayCharacteristicData dchardata;
-				dchardata.dBounds.MaxX = csd->displaywidth - 1;
-				dchardata.dBounds.MinX = 0;
-				dchardata.dBounds.MaxY = csd->displayheight - 1;
-				dchardata.dBounds.MinY = 0;
+                {
+                        csd->displaywidth = visdwidth;
+                        csd->displayheight = visdheight;
+                        if (csd->ccb)
+                        {
+                                struct HIDD_DisplayCharacteristicData dchardata;
+                                dchardata.dBounds.MaxX = csd->displaywidth - 1;
+                                dchardata.dBounds.MinX = 0;
+                                dchardata.dBounds.MaxY = csd->displayheight - 1;
+                                dchardata.dBounds.MinY = 0;
                 D(bug("[AmigaVideo:Compositor] %s: Notifying DisplayChange %dx%d\n", __func__,  csd->displaywidth, csd->displayheight);)
-				csd->ccb(csd->acbdata, vHidd_Gfx_DisplayChange_Characteristics, &dchardata);
-			}
-		}
+                                csd->ccb(csd->acbdata, vHidd_Gfx_DisplayChange_Characteristics, &dchardata);
+                        }
+                }
 
         if (csd->acb)
              csd->acb(csd->acbdata, bm);
@@ -469,7 +474,7 @@ static void DisplayServiceTask(OOP_Object *displayCompositor)
 
     D(bug("[AmigaVideo:Compositor] %s(0x%p)\n", __func__, displayCompositor));
     D(bug("[AmigaVideo:Compositor] %s: starting up, ThisTask = 0x%p\n", __func__, thisTask));
-	if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
+        if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
     {
         D(bug("[AmigaVideo:Compositor] %s: IntuitionBase = 0x%p\n", __func__, IntuitionBase));
         csd->svcTask = thisTask;

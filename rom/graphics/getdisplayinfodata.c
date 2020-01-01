@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetDisplayInfoData()
@@ -143,6 +143,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
     OOP_Object      	*gfxhidd, *sync, *pf;
     HIDDT_ModeID    	hiddmode;
     struct HIDD_ModeProperties HIDDProps = {0};
+    IPTR maxdwidth, maxdheight;
 
     if (NULL == handle)
     {
@@ -192,6 +193,9 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 
     qh->Length	  = (structsize + (DLONGSZ - 1)) / DLONGSZ;
 
+    OOP_GetAttr(sync, aHidd_Sync_HDispMax,   &maxdwidth);
+    OOP_GetAttr(sync, aHidd_Sync_VDispMax,   &maxdheight);
+
     switch (tagID)
     {
     	case DTAG_DISP:
@@ -240,18 +244,16 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	    OOP_GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
 	    OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,  &bluemask);
 
-	    /* Use gcc builtin function */
-	    /* weissms: do not use, can cause undefined symbol _GLOBAL_OFFSET_TABLE_
-	     * should work if we use a real cross compiler with static libgcc
+#ifdef HAVE_BUILTIN_POPCOUNT
+	    /* Use builtin popcount function */
 	    di->RedBits   = __builtin_popcount(redmask);
 	    di->GreenBits = __builtin_popcount(greenmask);
 	    di->BlueBits  = __builtin_popcount(bluemask);
-	    */
-
+#else
 	    di->RedBits   = popcount(redmask);
 	    di->GreenBits = popcount(greenmask);
 	    di->BlueBits  = popcount(bluemask);
-
+#endif
 	    /*
 	     * If number of colors is too large, PaletteRange is set to 65535.
 	     * This is the behavior of original AmigaOS(tm).
@@ -292,8 +294,8 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	{
 	    struct DimensionInfo *di;
 	    IPTR depth, width, height;
-	    IPTR minwidth, minheight;
 	    IPTR maxwidth, maxheight;
+	    IPTR minwidth, minheight;
 	    
 	    OOP_GetAttr(pf,   aHidd_PixFmt_Depth, &depth);
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp,   &width);
@@ -316,32 +318,26 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	    di->Nominal.MaxX	= width  - 1;
 	    di->Nominal.MaxY	= height - 1;
 
-	    di->MaxOScan	= di->Nominal;
-	    di->VideoOScan	= di->Nominal;
 	    di->TxtOScan	= di->Nominal;
 	    di->StdOScan	= di->Nominal;
-/*
- * FIXME: our graphics subsystem does not have overscan API.
-	    di->MaxOScan.MinX	= di->Nominal.MinX;
-	    di->MaxOScan.MinY	= di->Nominal.MinY;
-	    di->MaxOScan.MaxX	= di->Nominal.MaxX;
-	    di->MaxOScan.MaxY	= di->Nominal.MaxY;
+	    
+	    if ((width == maxdwidth) && (height == maxdheight))
+	    {
+		di->MaxOScan	= di->Nominal;
+		di->VideoOScan	= di->Nominal;
+	    }
+	    else
+	    {	
+		di->MaxOScan.MinX	= di->Nominal.MinX;
+		di->MaxOScan.MinY	= di->Nominal.MinY;
+		di->MaxOScan.MaxX	= di->Nominal.MinX + maxdwidth - 1;
+		di->MaxOScan.MaxY	= di->Nominal.MinY + maxdheight - 1;
 
-	    di->VideoOScan.MinX	= di->Nominal.MinX;
-	    di->VideoOScan.MinY	= di->Nominal.MinY;
-	    di->VideoOScan.MaxX	= di->Nominal.MaxX;
-	    di->VideoOScan.MaxY	= di->Nominal.MaxY;
-
-	    di->TxtOScan.MinX	= di->Nominal.MinX;
-	    di->TxtOScan.MinY	= di->Nominal.MinY;
-	    di->TxtOScan.MaxX	= di->Nominal.MaxX;
-	    di->TxtOScan.MaxY	= di->Nominal.MaxY;
-
-	    di->StdOScan.MinX	= di->Nominal.MinX;
-	    di->StdOScan.MinY	= di->Nominal.MinY;
-	    di->StdOScan.MaxX	= di->Nominal.MaxX;
-	    di->StdOScan.MaxY	= di->Nominal.MaxY;
-*/
+		di->VideoOScan.MinX	= di->Nominal.MinX;
+		di->VideoOScan.MinY	= di->Nominal.MinY;
+		di->VideoOScan.MaxX	= di->Nominal.MinX + maxdwidth - 1;
+		di->VideoOScan.MaxY	= di->Nominal.MinY + maxdheight - 1;
+	    }
 
 	    /*
 	     * reserved[0] is HIDD composition flags for intuition.library/OpenScreen().
@@ -370,13 +366,13 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	case DTAG_MNTR:
 	{
 	    struct MonitorInfo *mi = (struct MonitorInfo *)qh;
+	    IPTR tmpval;
 
 	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&mi->Mspc);
-
+	    OOP_GetAttr(sync, aHidd_Sync_Flags, &tmpval);
 	    /*
 	    mi->ViewPosition.X = ?;
 	    mi->ViewPosition.Y = ?;
-	    mi->MinRow = ?;
 	    mi->MouseTicks.X = ?;
 	    mi->MouseTicks.Y = ?;
 	    mi->DefaultViewPosition.X = ?;
@@ -387,6 +383,10 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
             CalcScreenResolution(&mi->ViewResolution, mi->Mspc, sync, GfxBase);
 
             mi->TotalRows         = mi->Mspc->total_rows;
+	    if (tmpval & vHidd_Sync_Interlaced)
+		mi->MinRow = mi->Mspc->total_rows - (maxdheight >> 1);
+	    else
+		mi->MinRow = mi->Mspc->total_rows - maxdheight;
             mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
             mi->ViewPositionRange = mi->Mspc->ms_LegalView;
 

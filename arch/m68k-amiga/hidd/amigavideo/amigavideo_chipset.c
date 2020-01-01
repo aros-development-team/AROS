@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -274,7 +274,7 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
 
     /* adjust start wait */
     copptr = c2;
-    if (ystart >= 256)
+    if (ystart >= (REZ_Y_MIN + REZ_PAL_LINES))
         copptr[0] = 0xffdf;
     else
         copptr[0] = 0x01fe;  // NOP
@@ -287,7 +287,7 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
         yend = y + (bm->displayheight >> bm->interlace) + yscroll;
         yend = limitheight(csd, yend, FALSE, TRUE);
         copptr[2] = (yend << 8) | 0x05;
-        if (yend < 256 || ystart >= 256) {
+        if (yend < (REZ_Y_MIN + REZ_PAL_LINES) || ystart >= (REZ_Y_MIN + REZ_PAL_LINES)) {
             copptr[0] = 0x00df;
             copptr[1] = 0x00fe;
         } else {
@@ -1554,9 +1554,9 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     Enable();
 
     GfxBase->NormalDisplayColumns = 640;
-    GfxBase->NormalDisplayRows = (GfxBase->DisplayFlags & NTSC) ? 200 : 256;
+    GfxBase->NormalDisplayRows = (GfxBase->DisplayFlags & NTSC) ? REZ_Y_MIN : (REZ_Y_MIN + REZ_PAL_LINES);
     GfxBase->MaxDisplayColumn = 640;
-    GfxBase->MaxDisplayRow = (GfxBase->DisplayFlags & NTSC) ? 200 : 256;
+    GfxBase->MaxDisplayRow = (GfxBase->DisplayFlags & NTSC) ? REZ_Y_MIN : (REZ_Y_MIN + REZ_PAL_LINES);
 
     csd->startx = STANDARD_VIEW_X;
     csd->starty = STANDARD_VIEW_Y;
@@ -1579,22 +1579,22 @@ VOID initcustom(struct amigavideo_staticdata *csd)
     csd->copper1 = (APTR)((IPTR)csd->sprite_null + (2 << 3));
     c = csd->copper1;
 
-        COPPEROUT(c, 0x00e0, 0)
-        COPPEROUT(c, 0x0100, csd->bplcon0_null)
+    COPPEROUT(c, 0x00e0, 0)
+    COPPEROUT(c, 0x0100, csd->bplcon0_null)
 
-        COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 (ecs sprites)
-        COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)							    // Pen = 0
-        COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 9) | (1 << 6))    // Push subsequent color palette bplcon3 
-        COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)							    // Pen = 0
-        COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 again
+    COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 (ecs sprites)
+    COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)			// Pen = 0
+    COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 9) | (1 << 6))    // Push subsequent color palette bplcon3 
+    COPPEROUT(c, 0x0180, DEFAULT_BORDER_GRAY)			// Pen = 0
+    COPPEROUT(c, 0x0106, csd->bplcon3 | (1 << 6))               // Push the default display bplcon3 again
 
-        COPPEROUT(c, 0x01fc, 0)									    // Push fmode
-        COPPEROUT(c, 0x008e, (1 << 8) | 0x81)					    // Push (DIWSTRT) Display window start
-        COPPEROUT(c, 0x0090, (2 << 8) | 0x81)					    // Push (DIWSTOP) Display window stop
-        COPPEROUT(c, 0x01e4, 0)									    // Push (DIWHIGH) Display window
-        COPPEROUT(c, 0x0092, 0)									    // Push (DDFSTRT) Display bitplane data fetch start
-        COPPEROUT(c, 0x0094, 0)									    // Push (DDFSTOP) Display bitplane data fetch stop
-        COPPEROUT(c, 0x0104, csd->bplcon2)                          // Push the screens bplcon2
+    COPPEROUT(c, 0x01fc, 0)					// Push fmode
+    COPPEROUT(c, 0x008e, (1 << 8) | 0x81)			// Push (DIWSTRT) Display window start
+    COPPEROUT(c, 0x0090, (2 << 8) | 0x81)			// Push (DIWSTOP) Display window stop
+    COPPEROUT(c, 0x01e4, 0)					// Push (DIWHIGH) Display window
+    COPPEROUT(c, 0x0092, 0)					// Push (DDFSTRT) Display bitplane data fetch start
+    COPPEROUT(c, 0x0094, 0)					// Push (DDFSTOP) Display bitplane data fetch stop
+    COPPEROUT(c, 0x0104, csd->bplcon2)                          // Push the screens bplcon2
 
     /* initialize SPRxPOS */
     COPPEROUT(c, 0x0140, 0)
