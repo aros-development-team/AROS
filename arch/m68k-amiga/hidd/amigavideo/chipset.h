@@ -10,6 +10,10 @@
 #endif
 #include <hidd/gfx.h>
 
+#define REZ_X_MIN               320
+#define REZ_Y_MIN               200
+#define REZ_PAL_LINES           56
+
 /* Use nominal screen height. Overscan is not supported yet. */
 static inline WORD limitheight(struct amigavideo_staticdata *csd, WORD y, BOOL lace, BOOL maxlimit)
 {
