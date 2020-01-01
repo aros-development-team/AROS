@@ -729,12 +729,7 @@ static BOOL parse_sync_tags(struct class_static_data *csd, struct sync_data *dat
     {
         if (data->pixelclock)
 	{
-	    bug("[graphics:sync] %s: calculating colorclocks ..\n", __func__);
-	    bug("[graphics:sync] %s: pixelclock = %d\n", __func__, data->pixelclock);
-	    bug("[graphics:sync] %s: htotal = %d\n", __func__, data->htotal);
-	    bug("[graphics:sync] %s: pixelcock/htotal*28 = %d\n", __func__, (data->pixelclock / data->htotal * 28));
             data->mspc->total_colorclocks = 100000000 / (data->pixelclock / data->htotal * 28);
-	    bug("[graphics:sync] %s: = %d\n", __func__, data->mspc->total_colorclocks);
 	}
 	else
 	{
