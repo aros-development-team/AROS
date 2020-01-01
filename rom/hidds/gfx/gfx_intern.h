@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -89,6 +89,8 @@ struct sync_data
 
     ULONG pixelclock;		/* pixel time in Hz */
 
+    ULONG hdispmax;
+    ULONG vdispmax;
     ULONG hdisp;		/* Data missing from MonitorSpec */
     ULONG htotal;
     ULONG vdisp;
