@@ -30,14 +30,38 @@ MSG_MODE_ATTRIBUTES (//)
 Mode Attributes
 ;
 MSG_VISIBLE_SIZE (//)
-Visible Size:
+Visible Size
 ;
 MSG_MINIMUM_SIZE (//)
-Minimum Size:
+Minimum Size
 ;
 MSG_MAXIMUM_SIZE (//)
-Maximum Size:
+Maximum Size
 ;
 MSG_MAXIMUM_COLORS (//)
-Maximum Colors:
+Maximum Colors
+;
+MSG_FREQUENCY (//)
+Frequency
+;
+MSG_INTERLACED (//)
+Interlaced\n
+;
+MSG_WANTS_ECS (//)
+Requires ECS\n
+;
+MSG_DUALP (//)
+Dual playfields\n
+;
+MSG_GENLOCK (//)
+Supports genlock\n
+;
+MSG_DRAGGABLE (//)
+Draggable\n
+;
+MSG_PANELLED (//)
+Panelled for scan conversion\n
+;
+MSG_BEAM_SYNC (//)
+Supports beam synchronization\n
 ;
