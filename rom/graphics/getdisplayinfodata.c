@@ -383,7 +383,6 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
             CalcScreenResolution(&mi->ViewResolution, mi->Mspc, sync, GfxBase);
 
             mi->TotalRows         = mi->Mspc->total_rows;
-	    mi->MinRow = tmpval; // mi->Mspc->total_rows - ()
 	    if (tmpval & vHidd_Sync_Interlaced)
 		mi->MinRow = mi->Mspc->total_rows - (maxdheight >> 1);
 	    else
