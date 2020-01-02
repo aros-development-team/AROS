@@ -5,15 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <exec/types.h>
-#include <utility/tagitem.h>
-#include <libraries/asl.h>
-#include <libraries/mui.h>
-#include <prefs/palette.h>
-#include <prefs/prefhdr.h>
-/* #define DEBUG 1 */
-#include <zune/customclasses.h>
-#include <zune/prefseditor.h>
+#include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -24,11 +16,18 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
+#include <exec/types.h>
+#include <utility/tagitem.h>
+#include <libraries/asl.h>
+#include <libraries/mui.h>
+#include <prefs/palette.h>
+#include <prefs/prefhdr.h>
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <aros/debug.h>
 
 #include "locale.h"
 #include "paleditor.h"
@@ -184,6 +183,8 @@ IPTR PalEditor__MUIM_PrefsEditor_ImportFH
     SETUP_INST_DATA;
     BOOL success = TRUE;
 
+    D(bug("[PaletteEditor] %s(0x%p)\n", __func__, message->fh));
+
     success = Prefs_ImportFH(message->fh);
     if (success) PalPrefs2Gadgets(data);
 
@@ -199,9 +200,11 @@ IPTR PalEditor__MUIM_PrefsEditor_ExportFH
     SETUP_INST_DATA;
     BOOL success = TRUE;
 
+    D(bug("[PaletteEditor] %s(0x%p)\n", __func__, message->fh));
+
     Gadgets2PalPrefs(data);
     success = Prefs_ExportFH(message->fh);
-    if (success)
+    if ((success) && (data->origcols) && (data->count > 0))
     {
         UWORD i;
 
@@ -243,15 +246,17 @@ IPTR PalEditor__MUIM_Setup
     /* Backup the original colors used by the screen */
     data->count = _screen(self)->ViewPort.ColorMap->Count;
 
-    D(bug("[PaletteEditor] %s: backing up %d entries ...\n", __func__, data->count);)
-
-    data->origcols = AllocVec(sizeof(UWORD) * data->count, MEMF_CLEAR);
-    data->restore = TRUE;
-    for (i = 0; i < data->count; i++)
+    if (data->count > 0)
     {
-        data->origcols[i] = GetRGB4(_screen(self)->ViewPort.ColorMap, i);
-    }
+        D(bug("[PaletteEditor] %s: backing up %d entries ...\n", __func__, data->count);)
 
+        data->origcols = AllocVec(sizeof(UWORD) * data->count, MEMF_CLEAR);
+        data->restore = TRUE;
+        for (i = 0; i < data->count; i++)
+        {
+            data->origcols[i] = GetRGB4(_screen(self)->ViewPort.ColorMap, i);
+        }
+    }
     return 1;
 }
 
@@ -263,7 +268,7 @@ IPTR PalEditor__MUIM_Cleanup
 {
     SETUP_INST_DATA;
 
-    if (data->origcols)
+    if ((data->origcols) && (data->count > 0))
     {
         if (data->restore)
         {
