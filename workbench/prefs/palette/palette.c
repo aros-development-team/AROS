@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <clib/alib_protos.h>
 
 #include <proto/exec.h>
@@ -112,6 +114,8 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
         return 0;
     if (mode == 1)
     {
+        D(bug("[PaletteEditor:Palette] %s: pen = %d\n", __func__, entry);)
+
         if (data->numentries > 0)
         {
             struct MUIP_PalNotifyMsg changepenmsg;
@@ -124,17 +128,25 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
     }
     else if (mode == 2)
     {
+        D(bug("[PaletteEditor:Palette] %s: colorindex = %d\n", __func__, data->penmap[entry]);)
+
         data->entries[data->penmap[entry]].mpe_Red =
             XGET(data->coloradjust, MUIA_Coloradjust_Red);
         data->entries[data->penmap[entry]].mpe_Green =
             XGET(data->coloradjust, MUIA_Coloradjust_Green);
         data->entries[data->penmap[entry]].mpe_Blue =
             XGET(data->coloradjust, MUIA_Coloradjust_Blue);
-        SetRGB4CM(_screen(self)->ViewPort.ColorMap,
+
+        SetRGB32(&_screen(self)->ViewPort,
             data->penmap[entry],
             data->entries[data->penmap[entry]].mpe_Red,
             data->entries[data->penmap[entry]].mpe_Green,
             data->entries[data->penmap[entry]].mpe_Blue);
+        if (GetBitMapAttr(_rp(self)->BitMap, BMA_DEPTH) > 8)
+        {
+            Object *winObj = _win(self);
+            MUI_Redraw((Object *)XGET(winObj, MUIA_Window_RootObject), MADF_DRAWOBJECT);
+        }
     }
     else if (mode == 3)
     {
@@ -143,6 +155,8 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
         ULONG b;
 
         data->penmap[entry] = val;
+
+        D(bug("[PaletteEditor:Palette] %s: pen %d = colorindex %d\n", __func__, entry, val);)
 
         r = data->entries[val].mpe_Red;
         g = data->entries[val].mpe_Green;

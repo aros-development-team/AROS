@@ -149,8 +149,6 @@ IPTR CLUTColor__MUIM_Draw(struct IClass *cl, Object *obj,
     RectFill(_rp(obj), _mleft(obj), _mtop(obj), _mright(obj),
         _mbottom(obj));
 
-    SetAfPt(_rp(obj), NULL, 0);
-
     return 0;
 }
 
