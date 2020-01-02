@@ -339,10 +339,10 @@ IPTR PEPalette__OM_GET(Class *CLASS, Object *self, struct opGet * msg)
     switch (msg->opg_AttrID)
     {
     case MUIA_Palette_Entries:
-        *store = (IPTR) & data->entries;
+        *store = (IPTR) data->entries;
         return TRUE;
     case MUIA_Palette_Names:
-        *store = (IPTR) & data->names;
+        *store = (IPTR) data->names;
         return TRUE;
 
     case MUIA_Coloradjust_Red:
