@@ -350,8 +350,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
                 for(j = 0; j < realmode; j++)
                 {
                     if(matchModes(&resolution[j * XVIDMODETAGS], modes[i]))
-                    {
-                        /* Found a matching resolution. Don't insert ! */
+                    { /* Found a matching resolution. Don't insert ! */
                         insert = FALSE;
                     }
                 }
@@ -362,10 +361,10 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
                     resolution[realmode * XVIDMODETAGS + 0].ti_Data = modes[i]->dotclock;
 
                     resolution[realmode * XVIDMODETAGS + 1].ti_Tag = aHidd_Sync_HTotal;
-                    resolution[realmode * XVIDMODETAGS + 1].ti_Tag = modes[i]->htotal;
+                    resolution[realmode * XVIDMODETAGS + 1].ti_Data = modes[i]->htotal;
 
                     resolution[realmode * XVIDMODETAGS + 2].ti_Tag = aHidd_Sync_VTotal;
-                    resolution[realmode * XVIDMODETAGS + 2].ti_Tag = modes[i]->vtotal;
+                    resolution[realmode * XVIDMODETAGS + 2].ti_Data = modes[i]->vtotal;
 
                     resolution[realmode * XVIDMODETAGS + 3].ti_Tag = aHidd_Sync_HDisp;
                     resolution[realmode * XVIDMODETAGS + 3].ti_Data = modes[i]->hdisplay;
