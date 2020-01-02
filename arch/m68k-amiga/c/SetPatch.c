@@ -193,7 +193,11 @@ AROS_SH5H(SetPatch, 41.4, "AROS SetPatch (m68k)",
         BOOL x68040 = FALSE, x68060 = FALSE;
 
         GfxBase = (struct GfxBase*)OpenLibrary("graphics.library", 0);
-        if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
+
+        if (SysBase->AttnFlags & AFF_68080) {
+            SysBase->AttnFlags |= AFF_68881 | AFF_68882;
+        }
+        else if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
             BOOL ox68040 = FALSE, ox68060 = FALSE;
 
             Forbid();
