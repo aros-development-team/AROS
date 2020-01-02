@@ -128,8 +128,12 @@ static int M680x0Init(struct M680x0Base *M680x0Base)
     if (!(SysBase->AttnFlags & AFF_FPU40))
     	return FALSE; /* no FPU, don't bother with missing instruction emulation */
 
-    /* initialize emulation here */
-    sp060_init();
+    /* 
+        initialize emulation here, unless 68080 core is detected. In that case 
+        no emulation is necessary, only the fake library is required.
+    */
+    if (!(SysBase->AttnFlags & AFF_68080))
+        sp060_init();
 
     /* Create fake 68040/060.library, stops C:SetPatch from attempting to load
      * incompatible 68040/060 libraries.

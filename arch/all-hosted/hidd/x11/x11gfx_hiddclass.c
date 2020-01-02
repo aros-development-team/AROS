@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -11,6 +11,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <proto/utility.h>
+#include <graphics/monitor.h>
 
 #include <X11/cursorfont.h>
 #include <signal.h>
@@ -55,6 +56,21 @@ static ULONG mask_to_shift(ULONG mask);
 
 /****************************************************************************************/
 
+static inline ULONG fakeCLOCK(ULONG width, ULONG height)
+{
+    ULONG retval;
+    retval = (1000000000 / STANDARD_COLORCLOCKS);
+    return retval;
+}
+static inline ULONG fakeHTOTAL(ULONG width, ULONG height)
+{
+    ULONG retval;
+    retval = (fakeCLOCK(width, height) / (100000000 / STANDARD_COLORCLOCKS / 22));
+    return retval;
+}
+
+/****************************************************************************************/
+
 OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem pftags[] =
@@ -80,54 +96,68 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem tags_160_160[] =
     {
-        { aHidd_Sync_HDisp      , 160                     },
-        { aHidd_Sync_VDisp      , 160                     },
-        { aHidd_Sync_Description, (IPTR)"X11:160x160"     },
-        { TAG_DONE              , 0UL                     }
+        { aHidd_Sync_PixelClock , fakeCLOCK(160,160)    },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(160,160)   },
+        { aHidd_Sync_HDisp      , 160                   },
+        { aHidd_Sync_VDisp      , 160                   },
+        { aHidd_Sync_Description, (IPTR)"X11:160x160"   },
+        { TAG_DONE              , 0UL                   }
     };
     
     struct TagItem tags_240_320[] =
     {
-        { aHidd_Sync_HDisp      , 240                     },
-        { aHidd_Sync_VDisp      , 320                     },
-        { aHidd_Sync_Description, (IPTR)"X11:240x320"     },
-        { TAG_DONE              , 0UL                     }
+        { aHidd_Sync_PixelClock , fakeCLOCK(240,320)    },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(240,320)   },
+        { aHidd_Sync_HDisp      , 240                   },
+        { aHidd_Sync_VDisp      , 320                   },
+        { aHidd_Sync_Description, (IPTR)"X11:240x320"   },
+        { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem tags_320_240[] = 
     {
-        { aHidd_Sync_HDisp      , 320                     },
-        { aHidd_Sync_VDisp      , 240                     },
-        { aHidd_Sync_Description, (IPTR)"X11:320x240"     },
-        { TAG_DONE              , 0UL                     }
+        { aHidd_Sync_PixelClock , fakeCLOCK(320,240)    },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(320,240)   },
+        { aHidd_Sync_HDisp      , 320                   },
+        { aHidd_Sync_VDisp      , 240                   },
+        { aHidd_Sync_Description, (IPTR)"X11:320x240"   },
+        { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem tags_512_384[] = 
     {
-        { aHidd_Sync_HDisp      , 512                     },
-        { aHidd_Sync_VDisp      , 384                     },
-        { aHidd_Sync_Description, (IPTR)"X11:512x384"     },
-        { TAG_DONE              , 0UL                     }
+        { aHidd_Sync_PixelClock , fakeCLOCK(512,384)    },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(512,384)   },
+        { aHidd_Sync_HDisp      , 512                   },
+        { aHidd_Sync_VDisp      , 384                   },
+        { aHidd_Sync_Description, (IPTR)"X11:512x384"   },
+        { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem tags_640_480[] = 
     {
-        { aHidd_Sync_HDisp      , 640                     },
-        { aHidd_Sync_VDisp      , 480                     },
-        { aHidd_Sync_Description, (IPTR)"X11:640x480"     },
-        { TAG_DONE              , 0UL                     }
+        { aHidd_Sync_PixelClock , fakeCLOCK(640,480)    },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(640,480)   },
+        { aHidd_Sync_HDisp      , 640                   },
+        { aHidd_Sync_VDisp      , 480                   },
+        { aHidd_Sync_Description, (IPTR)"X11:640x480"   },
+        { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem tags_800_600[] = 
     {
-        { aHidd_Sync_HDisp      , 800                     },
-        { aHidd_Sync_VDisp      , 600                     },
-        { aHidd_Sync_Description, (IPTR)"X11:800x600"     },
-        { TAG_DONE              , 0UL                     }
+        { aHidd_Sync_PixelClock , fakeCLOCK(800,600)    },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(800,600)   },
+        { aHidd_Sync_HDisp      , 800                   },
+        { aHidd_Sync_VDisp      , 600                   },
+        { aHidd_Sync_Description, (IPTR)"X11:800x600"   },
+        { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem tags_1024_768[] = 
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1024,768)   },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1024,768)  },
         { aHidd_Sync_HDisp      , 1024                  },
         { aHidd_Sync_VDisp      , 768                   },
         { aHidd_Sync_Description, (IPTR)"X11:1024x768"  },
@@ -136,6 +166,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     struct TagItem tags_1152_864[] = 
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1152,864)   },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1152,864)  },
         { aHidd_Sync_HDisp      , 1152                  },
         { aHidd_Sync_VDisp      , 864                   },
         { aHidd_Sync_Description, (IPTR)"X11:1152x864"  },
@@ -144,6 +176,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     struct TagItem tags_1280_800[] =
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1280,800)   },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1280,800)  },
         { aHidd_Sync_HDisp      , 1280                  },
         { aHidd_Sync_VDisp      , 800                   },
         { aHidd_Sync_Description, (IPTR)"X11:1280x800"  },
@@ -152,6 +186,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem tags_1280_960[] = 
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1280,960)   },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1280,960)  },
         { aHidd_Sync_HDisp      , 1280                  },
         { aHidd_Sync_VDisp      , 960                   },
         { aHidd_Sync_Description, (IPTR)"X11:1280x960"  },
@@ -160,6 +196,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     struct TagItem tags_1280_1024[] =
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1280,1024)  },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1280,1024) },
         { aHidd_Sync_HDisp      , 1280                  },
         { aHidd_Sync_VDisp      , 1024                  },
         { aHidd_Sync_Description, (IPTR)"X11:1280x1024" },
@@ -168,14 +206,18 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem tags_1400_1050[] = 
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1400,1050)  },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1400,1050) },
         { aHidd_Sync_HDisp      , 1400                  },
-        { aHidd_Sync_VDisp      , 1050                   },
-        { aHidd_Sync_Description, (IPTR)"X11:1400x1050"  },
+        { aHidd_Sync_VDisp      , 1050                  },
+        { aHidd_Sync_Description, (IPTR)"X11:1400x1050" },
         { TAG_DONE              , 0UL                   }
     };
     
     struct TagItem tags_1600_1200[] = 
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1600,1200)  },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1600,1200) },
         { aHidd_Sync_HDisp      , 1600                  },
         { aHidd_Sync_VDisp      , 1200                  },
         { aHidd_Sync_Description, (IPTR)"X11:1600x1200" },
@@ -184,6 +226,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     struct TagItem tags_1680_1050[] =
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1680,1050)  },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1680,1050) },
         { aHidd_Sync_HDisp      , 1680                  },
         { aHidd_Sync_VDisp      , 1050                  },
         { aHidd_Sync_Description, (IPTR)"X11:1680x1050" },
@@ -192,6 +236,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem tags_1920_1080[] =
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1920,1080)  },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1920,1080) },
         { aHidd_Sync_HDisp      , 1920                  },
         { aHidd_Sync_VDisp      , 1080                  },
         { aHidd_Sync_Description, (IPTR)"X11:1920x1080" },
@@ -200,6 +246,8 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem tags_1920_1200[] =
     {
+        { aHidd_Sync_PixelClock , fakeCLOCK(1920,1200)  },
+        { aHidd_Sync_HTotal     , fakeHTOTAL(1920,1200) },
         { aHidd_Sync_HDisp      , 1920                  },
         { aHidd_Sync_VDisp      , 1200                  },
         { aHidd_Sync_Description, (IPTR)"X11:1920x1200" },
@@ -233,11 +281,11 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     struct TagItem mytags[] =
     {
-        { aHidd_Gfx_ModeTags    , (IPTR)default_mode_tags   },
-        { aHidd_Name            , (IPTR)"X11"     },
-        { aHidd_HardwareName    , (IPTR)"X Window Gfx Host"   },
-        { aHidd_ProducerName    , (IPTR)"X.Org Foundation"  },
-        { TAG_MORE              , (IPTR)msg->attrList       }
+        { aHidd_Gfx_ModeTags    , (IPTR)default_mode_tags       },
+        { aHidd_Name            , (IPTR)"X11"                   },
+        { aHidd_HardwareName    , (IPTR)"X Window Gfx Host"     },
+        { aHidd_ProducerName    , (IPTR)"X.Org Foundation"      },
+        { TAG_MORE              , (IPTR)msg->attrList           }
     };
  
     struct pRoot_New mymsg = { msg->mID, mytags };

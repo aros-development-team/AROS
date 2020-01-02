@@ -23,6 +23,22 @@
 
 #include "smattributes.h"
 
+struct SMFloattext_DATA
+{
+};
+
+IPTR SMFloattext__MUIM_DrawBackground(Class *CLASS, Object *self, struct MUIP_DrawBackground *message)
+{
+    DoMethod(_parent(self), MUIM_DrawBackground, message->left, message->top, message->width, message->height, message->xoffset, message->yoffset, message->flags);
+}
+
+ZUNE_CUSTOMCLASS_1
+(
+    SMFloattext, NULL, MUIC_NFloattext, NULL,   
+    MUIM_DrawBackground,     struct MUIP_DrawBackground *
+);
+
+
 struct ScreenModeAttributes_DATA
 {
     Object * objColGrp;
@@ -137,12 +153,11 @@ Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *m
             End,
             Child, (IPTR)(objFeaturesGrp = ScrollgroupObject,
                 NoFrame,
-                MUIA_Scrollgroup_Contents, (IPTR)(objFeatures = NFloattextObject,
+                MUIA_Scrollgroup_Contents, (IPTR)(objFeatures = NewObject(SMFloattext_CLASS->mcc_Class, NULL,
                     NoFrame,
-                    MUIA_Background, MUII_BACKGROUND,
                     MUIA_CycleChain, 1,
                     MUIA_Floattext_Text, (IPTR)str_empty,
-                End),
+                TAG_DONE)),
             End),
         End,
 
