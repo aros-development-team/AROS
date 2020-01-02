@@ -321,7 +321,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         if (modeNum)
         {
             /* Got XF86VidMode data, use it */
-            if ((resolution = AllocMem(modeNum * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
+            if ((resolution = AllocMem(modeNum * sizeof(struct TagItem) * 6, MEMF_PUBLIC)) == NULL)
             {
                 D(bug("[X11] failed to allocate memory for %d modes: %d !!!\n", modeNum, XSD(cl)->vi->class));
 
@@ -340,7 +340,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
                 /* avoid duplicated resolution */
                 for(j = 0; j < realmode; j++)
                 {
-                    if(resolution[j * 4].ti_Data == modes[i]->hdisplay && resolution[j * 4 + 1].ti_Data == modes[i]->vdisplay)
+                    if(resolution[j * 4 + 2].ti_Data == modes[i]->hdisplay && resolution[j * 4 + 3].ti_Data == modes[i]->vdisplay)
                     { /* Found a matching resolution. Don't insert ! */
                         insert = FALSE;
                     }
@@ -348,17 +348,23 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
                 if(insert)
                 {
-                    resolution[realmode * 4 + 0].ti_Tag = aHidd_Sync_HDisp;
-                    resolution[realmode * 4 + 0].ti_Data = modes[i]->hdisplay;
+                    resolution[realmode * 4 + 0].ti_Tag = aHidd_Sync_PixelClock;
+                    resolution[realmode * 4 + 0].ti_Data = fakeCLOCK(modes[i]->hdisplay,modes[i]->vdisplay);
 
-                    resolution[realmode * 4 + 1].ti_Tag = aHidd_Sync_VDisp;
-                    resolution[realmode * 4 + 1].ti_Data = modes[i]->vdisplay;
+                    resolution[realmode * 4 + 1].ti_Tag = aHidd_Sync_HTotal;
+                    resolution[realmode * 4 + 1].ti_Tag = fakeHTOTAL(modes[i]->hdisplay,modes[i]->vdisplay);
 
-                    resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
-                    resolution[realmode * 4 + 2].ti_Data = (IPTR)"X11: %hx%v";
+                    resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_HDisp;
+                    resolution[realmode * 4 + 2].ti_Data = modes[i]->hdisplay;
 
-                    resolution[realmode * 4 + 3].ti_Tag = TAG_DONE;
-                    resolution[realmode * 4 + 3].ti_Data = 0UL;
+                    resolution[realmode * 4 + 3].ti_Tag = aHidd_Sync_VDisp;
+                    resolution[realmode * 4 + 3].ti_Data = modes[i]->vdisplay;
+
+                    resolution[realmode * 4 + 4].ti_Tag = aHidd_Sync_Description;
+                    resolution[realmode * 4 + 4].ti_Data = (IPTR)"X11: %hx%v";
+
+                    resolution[realmode * 4 + 5].ti_Tag = TAG_DONE;
+                    resolution[realmode * 4 + 5].ti_Data = 0UL;
 
                     realmode++;
                 }
@@ -382,7 +388,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             for(i=0; i < realmode; i++)
             {
                 mode_tags[1 + i].ti_Tag = aHidd_Gfx_SyncTags;
-                mode_tags[1 + i].ti_Data = (IPTR)(resolution + i*4);
+                mode_tags[1 + i].ti_Data = (IPTR)(resolution + i * 4);
             }
 
             mode_tags[1 + i].ti_Tag = TAG_DONE;
