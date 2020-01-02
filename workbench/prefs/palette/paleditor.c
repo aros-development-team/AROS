@@ -17,6 +17,7 @@
 
 #include <proto/alib.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
@@ -58,6 +59,9 @@ struct PalEditor_DATA
 {
     Object                      *palpe_palette;
     struct MUI_Palette_Entry    *pens;
+    UWORD                       *origcols;
+    UWORD                       count;
+    BOOL                        restore;
 };
 
 STATIC VOID PalPrefs2Gadgets(struct PalEditor_DATA *data);
@@ -197,7 +201,16 @@ IPTR PalEditor__MUIM_PrefsEditor_ExportFH
 
     Gadgets2PalPrefs(data);
     success = Prefs_ExportFH(message->fh);
+    if (success)
+    {
+        UWORD i;
 
+        D(bug("[PaletteEditor] %s: updating %d entries ...\n", __func__, data->count);)
+        for (i = 0; i < data->count; i++)
+        {
+            data->origcols[i] = GetRGB4(_screen(self)->ViewPort.ColorMap, i);
+        }
+    }
     return success;
 }
 
@@ -215,12 +228,64 @@ IPTR PalEditor__MUIM_PrefsEditor_SetDefaults
     return success;
 }
 
+
+IPTR PalEditor__MUIM_Setup
+(
+    Class *CLASS, Object *self, struct MUIP_Setup *message
+)
+{
+    SETUP_INST_DATA;
+    UWORD i;
+
+    if (!(DoSuperMethodA(CLASS, self, (Msg) message)))
+        return 0;
+
+    /* Backup the original colors used by the screen */
+    data->count = _screen(self)->ViewPort.ColorMap->Count;
+
+    D(bug("[PaletteEditor] %s: backing up %d entries ...\n", __func__, data->count);)
+
+    data->origcols = AllocVec(sizeof(UWORD) * data->count, MEMF_CLEAR);
+    data->restore = TRUE;
+    for (i = 0; i < data->count; i++)
+    {
+        data->origcols[i] = GetRGB4(_screen(self)->ViewPort.ColorMap, i);
+    }
+
+    return 1;
+}
+
+
+IPTR PalEditor__MUIM_Cleanup
+(
+    Class *CLASS, Object *self, struct MUIP_Cleanup *message
+)
+{
+    SETUP_INST_DATA;
+
+    if (data->origcols)
+    {
+        if (data->restore)
+        {
+            D(bug("[PaletteEditor] %s: restoring %d entries ...\n", __func__, data->count);)
+            LoadRGB4(&_screen(self)->ViewPort, data->origcols, data->count);   
+        }
+        data->restore = FALSE;
+        data->count = 0;
+        FreeVec(data->origcols);
+        data->origcols = NULL;
+    }
+    return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_7
 (
     PalEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                       struct opSet *,
     OM_DISPOSE,                   Msg,
+    MUIM_Setup,                 struct MUIP_Setup *,
+    MUIM_Cleanup,               struct MUIP_Cleanup *,
     MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_SetDefaults, Msg

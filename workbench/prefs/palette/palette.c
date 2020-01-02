@@ -41,6 +41,7 @@ struct PEPalette_DATA
     ULONG                       numentries;
     Object                      *colorfiledgrp;
     Object                      **colorfieldentries;
+    ULONG                       *penmap;
     ULONG                       lastindex;
     ULONG                       group;
     ULONG                       rgb[3];
@@ -113,32 +114,39 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
     {
         if (data->numentries > 0)
         {
-            ULONG r = data->entries[entry].mpe_Red;
-            ULONG g = data->entries[entry].mpe_Green;
-            ULONG b = data->entries[entry].mpe_Blue;
-            NNSET(data->coloradjust, MUIA_Coloradjust_Red, r);
-            NNSET(data->coloradjust, MUIA_Coloradjust_Green, g);
-            NNSET(data->coloradjust, MUIA_Coloradjust_Blue, b);
-            data->rgb[0] = r;
-            data->rgb[1] = g;
-            data->rgb[2] = b;
-            NotifyGun(data->coloradjust, data, val);
+            struct MUIP_PalNotifyMsg changepenmsg;
+
+            changepenmsg.palData = data;
+            changepenmsg.palMode = 3;
+            changepenmsg.palVal = data->penmap[entry];
+            setcolor_func(hook, self, &changepenmsg);
         }
     }
     else if (mode == 2)
     {
-        data->entries[entry].mpe_Red =
+        data->entries[data->penmap[entry]].mpe_Red =
             XGET(data->coloradjust, MUIA_Coloradjust_Red);
-        data->entries[entry].mpe_Green =
+        data->entries[data->penmap[entry]].mpe_Green =
             XGET(data->coloradjust, MUIA_Coloradjust_Green);
-        data->entries[entry].mpe_Blue =
+        data->entries[data->penmap[entry]].mpe_Blue =
             XGET(data->coloradjust, MUIA_Coloradjust_Blue);
+        SetRGB4CM(_screen(self)->ViewPort.ColorMap,
+            data->penmap[entry],
+            data->entries[data->penmap[entry]].mpe_Red,
+            data->entries[data->penmap[entry]].mpe_Green,
+            data->entries[data->penmap[entry]].mpe_Blue);
     }
     else if (mode == 3)
     {
-        ULONG r = data->entries[val].mpe_Red;
-        ULONG g = data->entries[val].mpe_Green;
-        ULONG b = data->entries[val].mpe_Blue;
+        ULONG r;
+        ULONG g;
+        ULONG b;
+
+        data->penmap[entry] = val;
+
+        r = data->entries[val].mpe_Red;
+        g = data->entries[val].mpe_Green;
+        b = data->entries[val].mpe_Blue;
 
         NNSET(data->coloradjust, MUIA_Coloradjust_Red, r);
         NNSET(data->coloradjust, MUIA_Coloradjust_Green, g);
@@ -261,6 +269,7 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     if (data->numentries > 0)
     {
+        data->penmap = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
         data->colorfieldentries = AllocMem(data->numentries * sizeof(Object *), MEMF_ANY);
         CopyMem(clutcObjs, data->colorfieldentries, data->numentries * sizeof(Object *));
         for (i = 0; i < data->numentries; i++)
@@ -271,6 +280,7 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
                 (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
                 (IPTR) data, 3, i);
             D(bug("[PaletteEditor:Palette] %s: id #%d\n", __func__, data->entries[i].mpe_ID);)
+            data->penmap[data->entries[i].mpe_ID] = i;
         }
 
         NNSET(data->coloradjust, MUIA_Coloradjust_Red,
