@@ -358,7 +358,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
                 if(insert)
                 {
                     resolution[realmode * XVIDMODETAGS + 0].ti_Tag = aHidd_Sync_PixelClock;
-                    resolution[realmode * XVIDMODETAGS + 0].ti_Data = modes[i]->dotclock;
+                    resolution[realmode * XVIDMODETAGS + 0].ti_Data = (modes[i]->dotclock * 1000);
 
                     resolution[realmode * XVIDMODETAGS + 1].ti_Tag = aHidd_Sync_HTotal;
                     resolution[realmode * XVIDMODETAGS + 1].ti_Data = modes[i]->htotal;
