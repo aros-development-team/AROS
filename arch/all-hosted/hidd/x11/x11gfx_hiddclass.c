@@ -374,7 +374,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             {
                 D(bug("[X11] failed to allocate memory for mode tag's: %d !!!\n", XSD(cl)->vi->class));
 
-                FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
+                FreeMem(resolution, modeNum * sizeof(struct TagItem) * 6);
                 XCALL(XCloseDisplay, disp);
                 cleanupx11stuff(XSD(cl));
 
@@ -388,7 +388,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             for(i=0; i < realmode; i++)
             {
                 mode_tags[1 + i].ti_Tag = aHidd_Gfx_SyncTags;
-                mode_tags[1 + i].ti_Data = (IPTR)(resolution + i * 4);
+                mode_tags[1 + i].ti_Data = (IPTR)(resolution + i * 6);
             }
 
             mode_tags[1 + i].ti_Tag = TAG_DONE;
