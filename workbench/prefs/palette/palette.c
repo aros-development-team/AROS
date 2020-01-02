@@ -39,7 +39,9 @@ struct PEPalette_DATA
     struct  MUI_Palette_Entry   *entries;
     Object                      *list, *coloradjust;
     ULONG                       numentries;
+    Object                      *colorfiledgrp;
     Object                      **colorfieldentries;
+    ULONG                       lastindex;
     ULONG                       group;
     ULONG                       rgb[3];
     struct Hook                 display_hook;
@@ -134,20 +136,30 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
     }
     else if (mode == 3)
     {
-        bug("[PaletteEditor:Palette] %s: colour #%d\n", __func__, val);
+        ULONG r = data->entries[val].mpe_Red;
+        ULONG g = data->entries[val].mpe_Green;
+        ULONG b = data->entries[val].mpe_Blue;
 
-            ULONG r = data->entries[val].mpe_Red;
-            ULONG g = data->entries[val].mpe_Green;
-            ULONG b = data->entries[val].mpe_Blue;
-            NNSET(data->coloradjust, MUIA_Coloradjust_Red, r);
-            NNSET(data->coloradjust, MUIA_Coloradjust_Green, g);
-            NNSET(data->coloradjust, MUIA_Coloradjust_Blue, b);
-            data->rgb[0] = r;
-            data->rgb[1] = g;
-            data->rgb[2] = b;
-            NotifyGun(data->coloradjust, data, 0);
-            NotifyGun(data->coloradjust, data, 1);
-            NotifyGun(data->coloradjust, data, 2);
+        NNSET(data->coloradjust, MUIA_Coloradjust_Red, r);
+        NNSET(data->coloradjust, MUIA_Coloradjust_Green, g);
+        NNSET(data->coloradjust, MUIA_Coloradjust_Blue, b);
+        data->rgb[0] = r;
+        data->rgb[1] = g;
+        data->rgb[2] = b;
+        NotifyGun(data->coloradjust, data, 0);
+        NotifyGun(data->coloradjust, data, 1);
+        NotifyGun(data->coloradjust, data, 2);
+
+        if (DoMethod(data->colorfiledgrp, MUIM_Group_InitChange))
+        {
+            if (data->lastindex != val)
+            {
+                SET(data->colorfieldentries[data->lastindex], MUIA_Frame, MUIV_Frame_None);
+            }
+            SET(data->colorfieldentries[val], MUIA_Frame, MUIV_Frame_ReadList);
+            DoMethod(data->colorfiledgrp, MUIM_Group_ExitChange);
+        }
+        data->lastindex = val;
     }
     return 0;
 }
@@ -172,12 +184,12 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
         }
     }
 
-    bug("[PaletteEditor:Palette] %s: count = %d\n", __func__, c);
+    D(bug("[PaletteEditor:Palette] %s: count = %d\n", __func__, c);)
 
     collcount = 4;
     rowcount = c / 4;
 
-    bug("[PaletteEditor:Palette] %s: %d rows, %d colls\n", __func__, rowcount, collcount);
+    D(bug("[PaletteEditor:Palette] %s: %d rows, %d colls\n", __func__, rowcount, collcount);)
 
     Object *clutcObjs[c];
 
@@ -188,7 +200,7 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
                 MUIA_Weight, 20,
             End,
 
-    bug("[PaletteEditor:Palette] %s: grp obj @ 0x%p\n", __func__, clutcGrpObj);
+    D(bug("[PaletteEditor:Palette] %s: grp obj @ 0x%p\n", __func__, clutcGrpObj);)
 
     self = (Object *) DoSuperNewTags(CLASS, self, NULL,
         GroupFrame,
@@ -212,6 +224,7 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     data->list = list;
     data->coloradjust = coloradjust;
+    data->colorfiledgrp = clutcGrpObj;
 
     data->display_hook.h_Entry = HookEntry;
     data->display_hook.h_SubEntry = (HOOKFUNC) display_func;
@@ -223,13 +236,13 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
     NNSET(list, MUIA_List_DisplayHook, (IPTR) & data->display_hook);
 
     /* create the clut colorfield objects ...*/
-    bug("[PaletteEditor:Palette] %s: creating clut objects ...\n", __func__);
+    D(bug("[PaletteEditor:Palette] %s: creating clut objects ...\n", __func__);)
     for (i = 0; i < rowcount; i++)
     {
         for(c = 0; c < collcount; c++)
         {
             clutcObjs[(i * collcount) + c] = NewObject(CLUTColor_CLASS->mcc_Class, NULL,
-                    MUIA_Frame, MUIV_Frame_None,
+                    MUIA_Frame, (c + i == 0) ? MUIV_Frame_ReadList : MUIV_Frame_None,
                     MUIA_CLUTColor_Index, (i * collcount) + c,
                     MUIA_InputMode, MUIV_InputMode_RelVerify,
                 TAG_DONE);
@@ -248,6 +261,8 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     if (data->numentries > 0)
     {
+        data->colorfieldentries = AllocMem(data->numentries * sizeof(Object *), MEMF_ANY);
+        CopyMem(clutcObjs, data->colorfieldentries, data->numentries * sizeof(Object *));
         for (i = 0; i < data->numentries; i++)
         {
             DoMethod(data->list, MUIM_List_InsertSingle, &data->entries[i],
@@ -255,7 +270,7 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
             DoMethod(clutcObjs[i], MUIM_Notify, MUIA_Pressed, FALSE,
                 (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
                 (IPTR) data, 3, i);
-            bug("[PaletteEditor:Palette] %s: id #%d\n", __func__, data->entries[i].mpe_ID);
+            D(bug("[PaletteEditor:Palette] %s: id #%d\n", __func__, data->entries[i].mpe_ID);)
         }
 
         NNSET(data->coloradjust, MUIA_Coloradjust_Red,
