@@ -34,6 +34,16 @@
 
 #define ColorWheelBase data->colorwheelbase
 
+#define COLUMNCOUNT     4
+
+#define MUIM_PEPalette_Init    (TAG_USER | 0x1001)
+
+CONST_STRPTR PEModeStrings[] =
+{
+    NULL,
+    NULL,
+};
+
 /*** Instance data **********************************************************/
 struct PEPalette_DATA
 {
@@ -43,7 +53,11 @@ struct PEPalette_DATA
     ULONG                       numentries;
     Object                      *colorfiledgrp;
     Object                      **colorfieldentries;
+    Object                      *palgrp;
+    Object                      *palmode;
     ULONG                       *penmap;
+    ULONG                       *penmap4;
+    ULONG                       *penmap8;
     ULONG                       lastindex;
     ULONG                       group;
     ULONG                       rgb[3];
@@ -157,7 +171,7 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
         data->penmap[entry] = val;
 
         D(bug("[PaletteEditor:Palette] %s: pen %d = colorindex %d\n", __func__, entry, val);)
-
+        
         r = data->entries[val].mpe_Red;
         g = data->entries[val].mpe_Green;
         b = data->entries[val].mpe_Blue;
@@ -183,40 +197,61 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
         }
         data->lastindex = val;
     }
+    else if (mode == 4)
+    {
+        IPTR penmode = 0;
+
+        D(bug("[PaletteEditor:Palette] %s: cycle gadget\n", __func__);)
+        GET(data->palmode, MUIA_Cycle_Active, &penmode);
+        if (DoMethod(data->colorfiledgrp, MUIM_Group_InitChange))
+        {
+            SET(data->colorfieldentries[4], MUIA_ShowMe, (penmode == 0) ? FALSE : TRUE );
+            SET(data->colorfieldentries[5], MUIA_ShowMe, (penmode == 0) ? FALSE : TRUE );
+            SET(data->colorfieldentries[6], MUIA_ShowMe, (penmode == 0) ? FALSE : TRUE );
+            SET(data->colorfieldentries[7], MUIA_ShowMe, (penmode == 0) ? FALSE : TRUE );
+            DoMethod(data->colorfiledgrp, MUIM_Group_ExitChange);
+        }
+        data->penmap = (penmode == 0) ? data->penmap4 : data->penmap8;
+    }
     return 0;
+}
+
+VOID initPenMap(ULONG *penmap, ULONG size)
+{
+    int i;
+    for (i = 0; i < size; i ++)
+    {
+        if (i == 5)
+            penmap[i] = 3;
+        else if (i == 1 || i == 7)
+            penmap[i] = 0;
+        else if (i == 3 || i == 8 || i == 10 || i == 12)
+            penmap[i] = 2;            
+        else
+            penmap[i] = 1;
+    }
 }
 
 IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 {
     struct PEPalette_DATA *data;
-    //struct TagItem                  *tag, *tags;
     struct MUI_Palette_Entry *e = (struct MUI_Palette_Entry *)GetTagData(MUIA_Palette_Entries, 0, msg->ops_AttrList);
-    Object *list, *coloradjust;
+    Object *list, *coloradjust, *palgrp;
     int i, c = 0;
 
-    int collcount, rowcount;
+
     Object *clutcGrpObj;
 
     if (e)
     {
-        while (e->mpe_ID != MUIV_Palette_Entry_End)
-        {
+        while (e[c].mpe_ID != MUIV_Palette_Entry_End)
             c++;
-            e++;
-        }
     }
-
-    D(bug("[PaletteEditor:Palette] %s: count = %d\n", __func__, c);)
-
-    collcount = 4;
-    rowcount = c / 4;
-
-    D(bug("[PaletteEditor:Palette] %s: %d rows, %d colls\n", __func__, rowcount, collcount);)
 
     Object *clutcObjs[c];
 
     clutcGrpObj = GroupObject,
-                MUIA_Group_Columns, collcount,
+                MUIA_Group_Columns, COLUMNCOUNT,
                 TextFrame,
                 MUIA_Group_Spacing, 1,
                 MUIA_Weight, 20,
@@ -232,21 +267,26 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
                 MUIA_Listview_List, (IPTR)(list = ListObject,
             End),
         End),
-        Child, VGroup,
-            Child, (IPTR)clutcGrpObj,
-            Child, (IPTR)(coloradjust = ColoradjustObject,
-            End),
-        End,
+        Child, (IPTR)(palgrp = VGroup,
+        End),
         TAG_MORE, (IPTR) msg->ops_AttrList);
 
     if (self == NULL)
         return (IPTR) NULL;
+
+    PEModeStrings[0] = _(MSG_4COLOR);
+    PEModeStrings[1] = _(MSG_MULTICOLOR);
+
+    coloradjust = ColoradjustObject,
+            End;
 
     data = INST_DATA(CLASS, self);
 
     data->list = list;
     data->coloradjust = coloradjust;
     data->colorfiledgrp = clutcGrpObj;
+
+    data->palgrp = palgrp;
 
     data->display_hook.h_Entry = HookEntry;
     data->display_hook.h_SubEntry = (HOOKFUNC) display_func;
@@ -257,24 +297,8 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     NNSET(list, MUIA_List_DisplayHook, (IPTR) & data->display_hook);
 
-    /* create the clut colorfield objects ...*/
-    D(bug("[PaletteEditor:Palette] %s: creating clut objects ...\n", __func__);)
-    for (i = 0; i < rowcount; i++)
-    {
-        for(c = 0; c < collcount; c++)
-        {
-            clutcObjs[(i * collcount) + c] = NewObject(CLUTColor_CLASS->mcc_Class, NULL,
-                    MUIA_Frame, (c + i == 0) ? MUIV_Frame_ReadList : MUIV_Frame_None,
-                    MUIA_CLUTColor_Index, (i * collcount) + c,
-                    MUIA_InputMode, MUIV_InputMode_RelVerify,
-                TAG_DONE);
-            D(bug("[PaletteEditor:Palette] %s: ca obj #%d @ 0x%p\n", __func__, (i * collcount) + c, clutcObjs[(i * collcount) + c]);)
-            DoMethod(clutcGrpObj, OM_ADDMEMBER, clutcObjs[(i * collcount) + c]);
-        }
-    }
-
     data->numentries = sizeof(clutcObjs) / sizeof(Object *);
-    D(bug("[PaletteEditor:Palette] %s: %d clut entries\n", __func__, data->numentries);)
+    D(bug("[PaletteEditor:Palette] %s: %d pen entries\n", __func__, data->numentries);)
 
     data->entries = e;
     data->names =
@@ -283,46 +307,25 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     if (data->numentries > 0)
     {
-        data->penmap = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
+        data->penmap4 = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
+        data->penmap8 = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
         data->colorfieldentries = AllocMem(data->numentries * sizeof(Object *), MEMF_ANY);
-        CopyMem(clutcObjs, data->colorfieldentries, data->numentries * sizeof(Object *));
-        for (i = 0; i < data->numentries; i++)
+        initPenMap(data->penmap4, 4);
+        initPenMap(data->penmap8, 8);
+
+        for (i = 0; (i < data->numentries) && (data->entries[i].mpe_ID != MUIV_Palette_Entry_End); i++)
         {
             DoMethod(data->list, MUIM_List_InsertSingle, &data->entries[i],
                 MUIV_List_Insert_Bottom);
-            DoMethod(clutcObjs[i], MUIM_Notify, MUIA_Pressed, FALSE,
-                (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-                (IPTR) data, 3, i);
-            D(bug("[PaletteEditor:Palette] %s: id #%d\n", __func__, data->entries[i].mpe_ID);)
-            data->penmap[data->entries[i].mpe_ID] = i;
+
+            D(bug("[PaletteEditor:Palette] %s: pen #%d ID = %d\n", __func__, i, data->entries[i].mpe_ID);)
         }
-
-        NNSET(data->coloradjust, MUIA_Coloradjust_Red,
-            data->entries[0].mpe_Red);
-        NNSET(data->coloradjust, MUIA_Coloradjust_Green,
-            data->entries[0].mpe_Green);
-        NNSET(data->coloradjust, MUIA_Coloradjust_Blue,
-            data->entries[0].mpe_Blue);
         NNSET(data->list, MUIA_List_Active, 0);
-
-        data->rgb[0] = data->entries[0].mpe_Red;
-        data->rgb[1] = data->entries[0].mpe_Green;
-        data->rgb[2] = data->entries[0].mpe_Blue;
     }
 
     DoMethod(data->list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
         (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
         (IPTR) data, 1, 0);
-
-    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Red, MUIV_EveryTime,
-        (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-        (IPTR) data, 2, 0);
-    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Green, MUIV_EveryTime,
-        (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-        (IPTR) data, 2, 1);
-    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Blue, MUIV_EveryTime,
-        (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-        (IPTR) data, 2, 2);
 
     return (IPTR) self;
 }
@@ -393,11 +396,146 @@ IPTR PEPalette__OM_DISPOSE(Class *CLASS, Object *self, Msg msg)
     return DoSuperMethodA(CLASS, self, msg);
 }
 
-ZUNE_CUSTOMCLASS_4
+IPTR PEPalette__MUIM_Setup
+(
+    Class *CLASS, Object *self, struct MUIP_Setup *message
+)
+{
+    struct PEPalette_DATA *data = INST_DATA(CLASS, self);
+
+    ULONG c;
+    UWORD i;
+    int rowcount;
+
+    if (!(DoSuperMethodA(CLASS, self, (Msg) message)))
+        return 0;
+
+    D(
+        bug("[PaletteEditor:Palette] %s: screen @ 0x%p\n", __func__, _screen(self));
+        bug("[PaletteEditor:Palette] %s: screen bitmap @ 0x%p\n", __func__, _screen(self)->RastPort.BitMap);
+    )
+
+    c = GetBitMapAttr(_screen(self)->RastPort.BitMap, BMA_DEPTH);
+    D(bug("[PaletteEditor:Palette] %s: c == %d\n", __func__, c);)
+    c = (1 << c);
+    if (c > 4)
+    {
+        data->palmode = CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)PEModeStrings,
+                    MUIA_Cycle_Active, 1,
+                End;
+        c = 8;
+        data->penmap = data->penmap8;
+    }
+    else
+        data->penmap = data->penmap4;
+
+    rowcount = c >> 2;
+    D(bug("[PaletteEditor:Palette] %s: %d rows, %d colls\n", __func__, rowcount, COLUMNCOUNT);)
+
+    /* create the clut colorfield objects ...*/
+    D(bug("[PaletteEditor:Palette] %s: creating clut cf objects ...\n", __func__);)
+    for (i = 0; i < rowcount; i++)
+    {
+        for(c = 0; c < COLUMNCOUNT; c++)
+        {
+            data->colorfieldentries[(i * COLUMNCOUNT) + c] = NewObject(CLUTColor_CLASS->mcc_Class, NULL,
+                    MUIA_Frame, (c + i == 0) ? MUIV_Frame_ReadList : MUIV_Frame_None,
+                    MUIA_CLUTColor_Index, (i * COLUMNCOUNT) + c,
+                    MUIA_InputMode, MUIV_InputMode_RelVerify,
+                TAG_DONE);
+            D(bug("[PaletteEditor:Palette] %s: cf obj #%d @ 0x%p\n", __func__, (i * COLUMNCOUNT) + c, data->colorfieldentries[(i * COLUMNCOUNT) + c]);)
+            DoMethod(data->colorfiledgrp, OM_ADDMEMBER, data->colorfieldentries[(i * COLUMNCOUNT) + c]);
+        }
+    }
+
+    DoMethod(_app(self), MUIM_Application_PushMethod, self, 1, MUIM_PEPalette_Init);
+
+    return 1;
+}
+
+
+IPTR PEPalette__MUIM_Cleanup
+(
+    Class *CLASS, Object *self, struct MUIP_Cleanup *message
+)
+{
+    struct PEPalette_DATA *data = INST_DATA(CLASS, self);
+
+    return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+
+
+IPTR PEPalette__MUIM_PEPalette_Init
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct PEPalette_DATA *data = INST_DATA(CLASS, self);
+    int i;
+
+    D(bug("[PaletteEditor:Palette] %s: registering objects ...\n", __func__);)
+
+    if (DoMethod(data->palgrp, MUIM_Group_InitChange))
+    {
+        if (data->palmode)
+        {
+            DoMethod(data->palgrp, OM_ADDMEMBER, (IPTR)data->palmode);
+        }
+        DoMethod(data->palgrp, OM_ADDMEMBER, (IPTR)data->colorfiledgrp);
+        DoMethod(data->palgrp, OM_ADDMEMBER, (IPTR)data->coloradjust);
+        DoMethod(data->palgrp, MUIM_Group_ExitChange);
+    }
+
+    if (data->palmode)
+    {
+        DoMethod(data->palmode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+            (IPTR) data, 4, 0);
+        i = 8;
+    }
+    else
+        i = 4;
+
+    for (; i > 0; i--)
+    {
+        DoMethod(data->colorfieldentries[i - 1], MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+            (IPTR) data, 3, i - 1);
+    }
+    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Red, MUIV_EveryTime,
+        (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+        (IPTR) data, 2, 0);
+    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Green, MUIV_EveryTime,
+        (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+        (IPTR) data, 2, 1);
+    DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Blue, MUIV_EveryTime,
+        (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
+        (IPTR) data, 2, 2);
+
+    D(bug("[PaletteEditor:Palette] %s: adjusting current colors..\n", __func__);)
+
+    data->rgb[0] = data->entries[data->penmap[0]].mpe_Red;
+    data->rgb[1] = data->entries[data->penmap[0]].mpe_Green;
+    data->rgb[2] = data->entries[data->penmap[0]].mpe_Blue;
+
+    NNSET(data->coloradjust, MUIA_Coloradjust_Red, data->rgb[0]);
+    NNSET(data->coloradjust, MUIA_Coloradjust_Green, data->rgb[1]);
+    NNSET(data->coloradjust, MUIA_Coloradjust_Blue, data->rgb[2]);
+
+    D(bug("[PaletteEditor:Palette] %s: finished..\n", __func__);)
+
+    return 1;
+}
+
+ZUNE_CUSTOMCLASS_7
 (
     PEPalette, NULL, MUIC_Group, NULL,
     OM_NEW,                     struct opSet *,
     OM_DISPOSE,                 Msg,
     OM_SET,                     struct opSet *,
-    OM_GET,                     struct opGet *
+    OM_GET,                     struct opGet *,
+    MUIM_Setup,                 struct MUIP_Setup *,
+    MUIM_Cleanup,               struct MUIP_Cleanup *,
+    MUIM_PEPalette_Init,        Msg
 );

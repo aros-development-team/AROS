@@ -40,3 +40,9 @@ Bar Block Pen
 MSG_PEN11 (//)
 Bar Trim Pen
 ;
+MSG_4COLOR (//)
+4 Color Settings
+;
+MSG_MULTICOLOR (//)
+Multicolor Settings
+;

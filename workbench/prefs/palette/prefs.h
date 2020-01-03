@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -9,12 +9,13 @@
 #ifndef _PREFS_H_
 #define _PREFS_H_
 
+#include <intuition/screens.h>
 #include <prefs/palette.h>
 #include <dos/dos.h>
 
 /*********************************************************************************************/
 
-#define MAXPENS       8
+#define MAXPENS       NUMDRIPENS
 
 /*********************************************************************************************/
 
