@@ -301,6 +301,7 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     }
                 }
 
+                featstr = (char *)str_empty;
                 if (dflags != 0)
                 {
                     int offset = 0;
@@ -323,8 +324,6 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     if (offset > 0)
                         featstr = buffer;
                 }
-                else
-                    featstr = (char *)str_empty;
 
                 if (DoMethod(data->objFeaturesGrp, MUIM_Group_InitChange))
                 {
