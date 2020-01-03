@@ -5,29 +5,29 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <exec/types.h>
-#include <utility/tagitem.h>
-#include <libraries/asl.h>
-#include <libraries/mui.h>
-#include <prefs/palette.h>
-#include <prefs/prefhdr.h>
-/* #define DEBUG 1 */
-#include <zune/customclasses.h>
-#include <zune/prefseditor.h>
+#include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
+#include <exec/types.h>
+#include <utility/tagitem.h>
+#include <libraries/asl.h>
+#include <libraries/mui.h>
+#include <prefs/palette.h>
+#include <prefs/prefhdr.h>
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <aros/debug.h>
 
 #include "locale.h"
 #include "paleditor.h"
@@ -40,17 +40,24 @@ STATIC CONST_STRPTR pennames[MAXPENS + 1];
     without this initial palette we can't later set MUIA_Palette_Entries.
     This is probably a bug in Zune.
 */
+
 STATIC const struct MUI_Palette_Entry initialpens[MAXPENS + 1] =
 {
-    {0, 0, 0, 0, 0},
-    {1, 0, 0, 0, 0},
-    {2, 0, 0, 0, 0},
-    {3, 0, 0, 0, 0},
-    {4, 0, 0, 0, 0},
-    {5, 0, 0, 0, 0},
-    {6, 0, 0, 0, 0},
-    {7, 0, 0, 0, 0},
-    {MUIV_Palette_Entry_End, 0, 0, 0, 0}
+    {DETAILPEN,                 0, 0, 0, MSG_PEN0},
+    {BLOCKPEN,                  0, 0, 0, MSG_PEN1},
+    {TEXTPEN,                   0, 0, 0, MSG_PEN2},
+    {SHINEPEN,                  0, 0, 0, MSG_PEN3},
+    {SHADOWPEN,                 0, 0, 0, MSG_PEN4},
+    {FILLPEN,                   0, 0, 0, MSG_PEN5},
+    {FILLTEXTPEN,               0, 0, 0, MSG_PEN6},
+    {BACKGROUNDPEN,             0, 0, 0, MSG_PEN7},
+    {HIGHLIGHTTEXTPEN,          0, 0, 0, MSG_PEN8},
+#if (MAXPENS > 8)
+    {BARDETAILPEN,              0, 0, 0, MSG_PEN9},
+    {BARBLOCKPEN,               0, 0, 0, MSG_PEN10},
+    {BARTRIMPEN,                0, 0, 0, MSG_PEN11},
+#endif
+    {MUIV_Palette_Entry_End,    0, 0, 0, 0}
 };
 
 /*** Instance Data **********************************************************/
@@ -58,6 +65,9 @@ struct PalEditor_DATA
 {
     Object                      *palpe_palette;
     struct MUI_Palette_Entry    *pens;
+    UWORD                       *origcols;
+    UWORD                       count;
+    BOOL                        restore;
 };
 
 STATIC VOID PalPrefs2Gadgets(struct PalEditor_DATA *data);
@@ -71,23 +81,19 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object *pale = NULL, *palpe_palette;
     struct MUI_Palette_Entry *pens;
+    int i;
 
-    pennames[0] = _(MSG_PEN0);
-    pennames[1] = _(MSG_PEN1);
-    pennames[2] = _(MSG_PEN2);
-    pennames[3] = _(MSG_PEN3);
-    pennames[4] = _(MSG_PEN4);
-    pennames[5] = _(MSG_PEN5);
-    pennames[6] = _(MSG_PEN6);
-    pennames[7] = _(MSG_PEN7);
-    pennames[8] = NULL;
-
-    pens = AllocMem(sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1), MEMF_CLEAR);
+    /* Initialise the palette information .. */
+    pens = AllocMem(sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1), MEMF_ANY);
     D(bug("[PaletteEditor] %s: pens @ 0x%p\n", __func__, pens);)
     if (!pens)
         return NULL;
-
     CopyMem(initialpens, pens, sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1));
+    for (i = 0; i < MAXPENS; i++)
+    {
+        pennames[i] = _(pens[i].mpe_Group);
+    }
+    pennames[MAXPENS] = NULL;
 
     self = (Object *) DoSuperNewTags
     (
@@ -180,6 +186,8 @@ IPTR PalEditor__MUIM_PrefsEditor_ImportFH
     SETUP_INST_DATA;
     BOOL success = TRUE;
 
+    D(bug("[PaletteEditor] %s(0x%p)\n", __func__, message->fh));
+
     success = Prefs_ImportFH(message->fh);
     if (success) PalPrefs2Gadgets(data);
 
@@ -195,9 +203,20 @@ IPTR PalEditor__MUIM_PrefsEditor_ExportFH
     SETUP_INST_DATA;
     BOOL success = TRUE;
 
+    D(bug("[PaletteEditor] %s(0x%p)\n", __func__, message->fh));
+
     Gadgets2PalPrefs(data);
     success = Prefs_ExportFH(message->fh);
+    if ((success) && (data->origcols) && (data->count > 0))
+    {
+        UWORD i;
 
+        D(bug("[PaletteEditor] %s: updating %d entries ...\n", __func__, data->count);)
+        for (i = 0; i < data->count; i++)
+        {
+            data->origcols[i] = GetRGB4(_screen(self)->ViewPort.ColorMap, i);
+        }
+    }
     return success;
 }
 
@@ -215,12 +234,67 @@ IPTR PalEditor__MUIM_PrefsEditor_SetDefaults
     return success;
 }
 
+
+IPTR PalEditor__MUIM_Setup
+(
+    Class *CLASS, Object *self, struct MUIP_Setup *message
+)
+{
+    SETUP_INST_DATA;
+    UWORD i;
+
+    if (!(DoSuperMethodA(CLASS, self, (Msg) message)))
+        return 0;
+
+    /* Backup the original colors used by the screen */
+    data->count = _screen(self)->ViewPort.ColorMap->Count;
+
+    D(bug("[PaletteEditor] %s: screen @ 0x%p\n", __func__, _screen(self));)
+    if (data->count > 0)
+    {
+        D(bug("[PaletteEditor] %s: backing up %d entries ...\n", __func__, data->count);)
+
+        data->origcols = AllocVec(sizeof(UWORD) * data->count, MEMF_CLEAR);
+        data->restore = TRUE;
+        for (i = 0; i < data->count; i++)
+        {
+            data->origcols[i] = GetRGB4(_screen(self)->ViewPort.ColorMap, i);
+        }
+    }
+    return 1;
+}
+
+
+IPTR PalEditor__MUIM_Cleanup
+(
+    Class *CLASS, Object *self, struct MUIP_Cleanup *message
+)
+{
+    SETUP_INST_DATA;
+
+    if ((data->origcols) && (data->count > 0))
+    {
+        if (data->restore)
+        {
+            D(bug("[PaletteEditor] %s: restoring %d entries ...\n", __func__, data->count);)
+            LoadRGB4(&_screen(self)->ViewPort, data->origcols, data->count);   
+        }
+        data->restore = FALSE;
+        data->count = 0;
+        FreeVec(data->origcols);
+        data->origcols = NULL;
+    }
+    return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_7
 (
     PalEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                       struct opSet *,
     OM_DISPOSE,                   Msg,
+    MUIM_Setup,                 struct MUIP_Setup *,
+    MUIM_Cleanup,               struct MUIP_Cleanup *,
     MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_SetDefaults, Msg

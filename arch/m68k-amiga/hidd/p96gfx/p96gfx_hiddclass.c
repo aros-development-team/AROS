@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: P96 rtg card Gfx Hidd wrapper.
@@ -42,7 +42,7 @@
 #define DEXTRA(x)
 #include <aros/debug.h>
 
-#define SIZE_RESLIST            5
+#define SIZE_RESLIST            11
 #define SIZE_PFLIST             19
 #define SIZE_MODELIST           (5 + RGBFB_MaxFormats)
 
@@ -344,14 +344,37 @@ OOP_Object *P96GFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     ForeachNode(cid->boardinfo + PSSO_BoardInfo_ResolutionsList, r) {
         reslist[i * SIZE_RESLIST + 0].ti_Tag = aHidd_Sync_HDisp;
         reslist[i * SIZE_RESLIST + 0].ti_Data = r->Width;
+
         reslist[i * SIZE_RESLIST + 1].ti_Tag = aHidd_Sync_VDisp;
         reslist[i * SIZE_RESLIST + 1].ti_Data = r->Height;
+
         reslist[i * SIZE_RESLIST + 2].ti_Tag = aHidd_Sync_Description;
         reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)cid->p96gfx_HWResTmplt;
+
         reslist[i * SIZE_RESLIST + 3].ti_Tag = aHidd_Sync_PixelClock;
         reslist[i * SIZE_RESLIST + 3].ti_Data = r->Modes[CHUNKY]->PixelClock;
-        reslist[i * SIZE_RESLIST + 4].ti_Tag = TAG_DONE;
-        reslist[i * SIZE_RESLIST + 4].ti_Data = 0;
+
+        reslist[i * SIZE_RESLIST + 4].ti_Tag = aHidd_Sync_HTotal;
+        reslist[i * SIZE_RESLIST + 4].ti_Data = r->Modes[CHUNKY]->HorTotal;
+
+        reslist[i * SIZE_RESLIST + 5].ti_Tag = aHidd_Sync_VTotal;
+        reslist[i * SIZE_RESLIST + 5].ti_Data = r->Modes[CHUNKY]->VerTotal;
+
+        reslist[i * SIZE_RESLIST + 6].ti_Tag = aHidd_Sync_HSyncStart;
+        reslist[i * SIZE_RESLIST + 6].ti_Data = r->Modes[CHUNKY]->HorSyncStart;
+
+        reslist[i * SIZE_RESLIST + 7].ti_Tag = aHidd_Sync_HSyncEnd;
+        reslist[i * SIZE_RESLIST + 7].ti_Data = (r->Modes[CHUNKY]->HorSyncStart + r->Modes[CHUNKY]->HorSyncSize);
+
+        reslist[i * SIZE_RESLIST + 8].ti_Tag = aHidd_Sync_VSyncStart;
+        reslist[i * SIZE_RESLIST + 8].ti_Data = r->Modes[CHUNKY]->VerSyncStart;
+
+        reslist[i * SIZE_RESLIST + 9].ti_Tag = aHidd_Sync_VSyncEnd;
+        reslist[i * SIZE_RESLIST + 9].ti_Data = (r->Modes[CHUNKY]->VerSyncStart + r->Modes[CHUNKY]->VerSyncSize);
+
+        reslist[i * SIZE_RESLIST + 10].ti_Tag = TAG_DONE;
+        reslist[i * SIZE_RESLIST + 10].ti_Data = 0;
+
         D(bug("[P96Gfx] %s:     %08x %d*%d\n", __func__, r, r->Width, r->Height);)
         restags[i].ti_Tag = aHidd_Gfx_SyncTags;
         restags[i].ti_Data = (IPTR)&reslist[i * SIZE_RESLIST];

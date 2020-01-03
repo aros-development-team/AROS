@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,13 +12,13 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/colorwheel.h>
+
 #include <utility/hooks.h>
-#include "gadgets/colorwheel.h"
+#include <gadgets/colorwheel.h>
 #include <gadgets/gradientslider.h>
-#include "intuition/icclass.h"
-#include "intuition/gadgetclass.h"
-#include <string.h>
-#include <stdio.h>
+#include <intuition/icclass.h>
+#include <intuition/gadgetclass.h>
+#include <exec/rawfmt.h>
 
 #include "debug.h"
 
@@ -56,8 +56,8 @@ static LONG display_func(struct Hook *hook, char **array,
     }
     else
     {
-        /* if no, show default color names */
-        sprintf(data->buf, "Color %ld", (long)(array[-1] + 1));
+        IPTR colorargs = (IPTR)(long)(array[-1] + 1);
+        RawDoFmt("Color %ld", (RAWARG)&colorargs, RAWFMTFUNC_STRING, data->buf);
         *array++ = data->buf;
     }
     return 0;

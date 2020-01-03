@@ -1,4 +1,4 @@
-## version $VER: screenmode.catalog 2.0 (11.09.2018)
+## version $VER: screenmode.catalog 2.1 (03.01.2020)
 ## codeset 5
 ## language polski
 ;
@@ -39,22 +39,54 @@ Opis
 ; Description
 ;
 MSG_MODE_ATTRIBUTES
-Informace o trybie
+Informacje o trybie
 ; Mode Attributes
 ;
 MSG_VISIBLE_SIZE
-Wielko¶æ widoczna:
-; Visible Size:
+Wielko¶æ widoczna
+; Visible Size
 ;
 MSG_MINIMUM_SIZE
-Wielko¶æ minimalna:
-; Minimum Size:
+Wielko¶æ minimalna
+; Minimum Size
 ;
 MSG_MAXIMUM_SIZE
-Wielko¶æ maksymalna:
-; Maximum Size:
+Wielko¶æ maksymalna
+; Maximum Size
 ;
 MSG_MAXIMUM_COLORS
-Maksymalna g³êbia barw:
-; Maximum Colors:
+Maksymalna g³êbia barw
+; Maximum Colors
+;
+MSG_FREQUENCY
+Czêstotliwo¶æ
+; Frequency
+;
+MSG_INTERLACED
+Z przeplotem\n
+; Interlaced\n
+;
+MSG_WANTS_ECS
+Wymaga ECS\n
+; Requires ECS\n
+;
+MSG_DUALP
+Dual Playfields
+; Dual playfields\n
+;
+MSG_GENLOCK
+Obs³uguje Genlock\n
+; Supports genlock\n
+;
+MSG_DRAGGABLE
+Przeci±galny\n
+; Draggable\n
+;
+MSG_PANELLED
+Dzielony dla konwersji skanów\n
+; Panelled for scan conversion\n
+;
+MSG_BEAM_SYNC
+Obs³uguje synchronizacjê wi±zki\n
+; Supports beam synchronization\n
 ;

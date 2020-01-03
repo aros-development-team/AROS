@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -36,7 +36,7 @@
 /* #define DEBUG 1 */
 #include <aros/debug.h>
 
-#define VERSION "$VER: Palette 1.2 (31.12.2019) AROS Dev Team"
+#define VERSION "$VER: Palette 1.3 (03.01.2020) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)

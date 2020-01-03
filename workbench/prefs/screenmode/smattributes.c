@@ -214,6 +214,7 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 struct DimensionInfo dim;
                 struct MonitorInfo mi;
                 TEXT buffer[1024];
+                char *featstr;
                 ULONG pclock = (ULONG)-1;
 
                 D(bug("[smattributes] Set DisplayID = 0x%08lx\n", tag->ti_Data));
@@ -300,6 +301,7 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     }
                 }
 
+                featstr = (char *)str_empty;
                 if (dflags != 0)
                 {
                     int offset = 0;
@@ -319,19 +321,14 @@ IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     if (dflags & DIPF_IS_BEAMSYNC)
                         offset += sprintf(&buffer[offset], _(MSG_BEAM_SYNC));
 
-                    if ((offset > 0) && DoMethod(data->objFeaturesGrp, MUIM_Group_InitChange))
-                    {
-                        set(data->objFeatures, MUIA_Floattext_Text, buffer);
-                        DoMethod(data->objFeaturesGrp, MUIM_Group_ExitChange);
-                    }
+                    if (offset > 0)
+                        featstr = buffer;
                 }
-                else
+
+                if (DoMethod(data->objFeaturesGrp, MUIM_Group_InitChange))
                 {
-                    if (DoMethod(data->objFeaturesGrp, MUIM_Group_InitChange))
-                    {
-                        set(data->objFeatures, MUIA_Floattext_Text, (IPTR)str_empty);
-                        DoMethod(data->objFeaturesGrp, MUIM_Group_ExitChange);
-                    }
+                    set(data->objFeatures, MUIA_Floattext_Text, (IPTR)featstr);
+                    DoMethod(data->objFeaturesGrp, MUIM_Group_ExitChange);
                 }
                 SetAttrs(self, MUIA_Disabled, tag->ti_Data == INVALID_ID, TAG_DONE);
 
