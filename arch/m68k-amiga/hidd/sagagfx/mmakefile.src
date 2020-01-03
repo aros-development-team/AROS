@@ -1,0 +1,19 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM hidd-m68k-sagagfx : kernel-hidd-gfx-includes devs-monitors-wrapper
+
+USER_LDFLAGS := -static
+
+SAGA_HIDD_SOURCES := \
+        sagagfx_init \
+        sagagfx_hw \
+        sagagfx_hiddclass \
+        sagagfx_onbitmap
+
+# USER_CFLAGS += -m68020
+
+%build_module mmake=hidd-m68k-sagagfx \
+  modname=sagagfx modtype=hidd \
+  files=$(SAGA_HIDD_SOURCES)
