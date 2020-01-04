@@ -3,18 +3,21 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES   := ia_main
+FILES   := ia_main ia_bootloader ia_packages ia_diskio ia_class ia_env ia_locale
 EXEDIR  := $(AROS_TOOLS)
-USER_CFLAGS := -w
 
 #MM- workbench-tools : workbench-tools-installaros
+#MM workbench-tools-installaros : workbench-tools-installaros-catalogs
 
+USER_CPPFLAGS := -DARCHBOOTDIR=\"$(AROS_DIR_ARCH)\"
 ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub)
-USER_CFLAGS := -DGRUB=1
+USER_CPPFLAGS += -DGRUB=1
 endif
 ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub2)
-USER_CFLAGS := -DGRUB=2
+USER_CPPFLAGS += -DGRUB=2
 endif
+USER_CPPFLAGS += -DDEBUG
+USER_CFLAGS := -w
 
 %build_prog mmake=workbench-tools-installaros \
     progname=InstallAROS targetdir=$(EXEDIR) \
