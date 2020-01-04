@@ -1,0 +1,3 @@
+[submodule "submodules/installerlg/installerlg"]
+	path = submodules/installerlg/installerlg
+	url = https://github.com/sodero/InstallerLG
