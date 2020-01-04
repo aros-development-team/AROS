@@ -11,10 +11,12 @@
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <proto/alib.h>
+#include <proto/graphics.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-#include <proto/utility.h>
-#include <proto/dos.h>
+
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -36,7 +38,7 @@
 /* #define DEBUG 1 */
 #include <aros/debug.h>
 
-#define VERSION "$VER: Palette 1.3 (03.01.2020) AROS Dev Team"
+#define VERSION "$VER: Palette 1.4 (04.01.2020) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)
@@ -55,10 +57,25 @@ int main(int argc, char **argv)
         }
         else
         {
-            struct Screen *pScreen = NULL;
+            struct Screen *pScreen = NULL, *appScreen = NULL;
 
             if (ARG(PUBSCREEN))
+            {
                 pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
+                if (pScreen && (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4))
+                    appScreen = pScreen;
+            }
+
+            if (!appScreen)
+            {
+                appScreen = OpenScreenTags( NULL,
+                    SA_Depth, 5,
+                    SA_Width, 320,
+                    SA_Height, 200,
+                    SA_ShowTitle, TRUE,
+                    SA_Title, "",
+                    TAG_END);
+            }                
 
             application = (Object *)ApplicationObject,
                 MUIA_Application_Title, __(MSG_WINTITLE),
@@ -67,7 +84,7 @@ int main(int argc, char **argv)
                 MUIA_Application_SingleTask, TRUE,
                 MUIA_Application_Base, (IPTR) "PALETTEPREF",
                 SubWindow, (IPTR)(window = (Object *)SystemPrefsWindowObject,
-                    MUIA_Window_Screen, (IPTR)pScreen,
+                    MUIA_Window_Screen, (IPTR)appScreen,
                     MUIA_Window_ID, ID_PALT,
                     WindowContents, (IPTR) PalEditorObject,
                     End,
@@ -82,7 +99,12 @@ int main(int argc, char **argv)
                 MUI_DisposeObject(application);
             }
             if (pScreen)
+            {
                 UnlockPubScreen(NULL, pScreen);
+                pScreen = appScreen = NULL;
+            }
+            if (appScreen)
+                CloseScreen(appScreen);
         }
         FreeArguments();
     }
