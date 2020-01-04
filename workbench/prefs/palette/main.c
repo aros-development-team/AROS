@@ -58,12 +58,21 @@ int main(int argc, char **argv)
         else
         {
             struct Screen *pScreen = NULL, *appScreen = NULL;
+            char *pubname = NULL;
 
             if (ARG(PUBSCREEN))
+                pubname = (char *)ARG(PUBSCREEN);
+
+            pScreen = LockPubScreen(pubname);
+            if (pScreen)
             {
-                pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
-                if (pScreen && (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4))
+                if (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4))
                     appScreen = pScreen;
+                else
+                {
+                    UnlockPubScreen(NULL, pScreen);
+                    pScreen = NULL;
+                }
             }
 
             if (!appScreen)
