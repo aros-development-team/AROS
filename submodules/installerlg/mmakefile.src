@@ -41,7 +41,7 @@ USER_CFLAGS   := $(NOWARN_FLAGS) -DAMIGA -D__AMIGADATE__="\"$(DATE)\""
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/installerlg/src
 USER_LDFLAGS  := 
 
-#MM- workbench-utilities : submodules-installerlg : includes linklibs
+#MM- workbench-utilities : submodules-installerlg
 #MM  submodules-installerlg : includes linklibs
 
 %build_prog mmake=submodules-installerlg \
