@@ -1,0 +1,271 @@
+;
+MSG_TITLE (//)
+AROS Installer
+;
+MSG_DESCRIPTION (//)
+Installs AROS on to a Drive.
+;
+MSG_WELCOME (//)
+\033b\nWelcome to the AROS Research OS installer.\n\n\033nThis program allows you to install AROS\non your computer's hard disk or an attached USB drive.\n\nPlease be aware that the stability of this software\ncannot be guaranteed.\nIt is possible that \033bloss of data\033n may occur\non any drive in your system, including those\nused by other operating systems.\n
+;
+MSG_INSTALLOPTIONS (//)
+\nPlease choose your installation options.\n\n
+;
+MSG_DESTOPTIONS (//)
+\nPlease choose where to install AROS.\n\nIf you are unsure, then use the defaults
+;
+MSG_ACCEPT (//)
+Accept License Agreement?
+;
+MSG_DRIVE (//)
+\033bDrive:\033n
+;
+MSG_TYPE (//)
+Type:
+;
+MSG_DEVICE (//)
+Device:
+;
+MSG_UNIT (//)
+Unit:
+;
+MSG_NAME (//)
+Name:
+;
+MSG_FILESYSTEM (//)
+Filesystem:
+;
+MSG_SIZE (//)
+Size:
+;
+MSG_MENUMODE (//)
+Menu Mode:
+;
+MSG_CREATE (//)
+Create
+;
+MSG_SPECIFYSIZE (//)
+Specify Size
+;
+MSG_DESTVOLUME (//)
+Destination Partition
+;
+MSG_WORKVOLUME (//)
+Work Partition
+;
+MSG_CHOOSELANG (//)
+Choose Language Options
+;
+MSG_INSTALLCORE (//)
+Install AROS Core System
+;
+MSG_INSTALLEXTRA (//)
+Install Extra Software
+;
+MSG_INSTALLDEVEL (//)
+Install Debugging tools and Developer Software
+;
+MSG_INSTALLBOOT (//)
+Install Bootloader
+;
+MSG_FORMATPART (//)
+Format Partition
+;
+MSG_USEWORK (//)
+Use 'Work' Partition
+;
+MSG_USEWORKFOR (//)
+Use 'Work' Partition for Extras and Developer Files
+;
+MSG_BEGINWITHPARTITION (//)
+OK, we are ready to begin.\n\nSince you've chosen to format at least one partition,\nyou will no longer be able to undo changes\nafter this point.\n\nSelect Proceed to begin installation.
+;
+MSG_BEGINWITHOUTPARTITION (//)
+OK, we are ready to begin...\n\nWe have collected enough information\nto begin installation on this computer.\n\n\nSelect Proceed to begin installation.
+;
+MSG_PARTITIONOPTIONS (//)
+We will now create AROS partitions on the destination drive.\n\nPlease select how you would like to proceed.\n
+;
+MSG_DESTPARTITION (//)
+\033bSystem Partition:\033n
+;
+MSG_WORKPARTITION (//)
+\033bWork Partition:\033n
+;
+MSG_USEFREE (//)
+Only use free space
+;
+MSG_WIPEDISK (//)
+Wipe disk
+;
+MSG_USEEXISTING (//)
+Use existing AROS partitions (on any drive)
+;
+MSG_PARTITIONTOOBIG (//)
+The partition sizes you have requested are too large.\nThe maximum size of an SFS partition is %ld GB (%ld MB),\nwhile the maximum size of an FFS partition is %ld GB (%ld MB).\nPlease reduce the size of the affected partitions.\n
+;
+MSG_GRUBOPTIONS (//)
+AROS uses the GRUB bootloader.\n\nIn most cases, GRUB's bootblock should\nbe installed on the first drive in your system.\nIf the Installer detects a Microsoft Windows installation,\nit will be included as a choice in GRUB's boot menu.\n
+;
+MSG_GRUBDRIVE (//)
+Drive to install Bootloader's bootblock on:
+;
+MSG_GRUBGOPTIONS (//)
+GRUB Settings
+;
+MSG_GRUBGRUB (//)
+Path to GRUB files:
+;
+MSG_NOGRUBDEVICE (//)
+Please enter the device name and unit number for\nthe drive GRUB's bootblock should be installed on.\n
+;
+MSG_PARTITIONING (//)
+Partitioning your drives...\n\n
+;
+MSG_FORMATTING (//)
+Formatting '%s'...
+;
+MSG_INSTALL (//)
+Copying files to the destination drive.\n\nThis may take some time...\n
+;
+MSG_COPYCORE (//)
+Copying Core System files...
+;
+MSG_COPYEXTRA (//)
+Copying Extra Software...
+;
+MSG_COPYDEVEL (//)
+Copying Developer Files...
+;
+MSG_COPYBOOT (//)
+Copying BOOT files...
+;
+MSG_BOOTLOADER (//)
+Copying the bootloader to your\ndestination drive, and installing...\n
+;
+MSG_POSTINSTALL (//)
+Running post-install script...
+;
+MSG_POSTINSTALL2 (//)
+Running the external post-install\nscript. Please wait.\n
+;
+MSG_DONEREBOOT (//)
+AROS partitions have now been created!\nTo continue installation, you must\nreboot AROS, and re-run\nthis installer application\n\nSelect Proceed to finish\n
+;
+MSG_DONEUSB (//)
+AROS partitions have now been created!\nTo continue installation, you must remove\nand re-attach your USB drive, and re-run\nthis installer application\n\nSelect Proceed to finish\n
+;
+MSG_INSTALLING (//)
+Installing AROS...
+;
+MSG_INSTALLINGBOOT (//)
+Installing Bootloader...
+;
+MSG_DONE (//)
+Congratulations, you now have AROS installed!\n\nTo boot AROS from the destination drive,\nremove the installation media and\nrestart your computer using the\npower switch or reset button.\n\nSelect Proceed to finish\n
+;
+MSG_CANCELOK (//)
+Are you sure you wish to cancel\nthis installation?\n
+;
+MSG_CANCELDANGER (//)
+Irreversible changes have been made\nto your system.\n\nCancelling now may leave your PC in an\nunbootable state\n\nAre you sure you wish to cancel\nthis installation?\n
+;
+MSG_BACK (//)
+<< _Back...
+;
+MSG_PROCEED (//)
+_Proceed
+;
+MSG_NOTALLFILESCOPIED (//)
+Not all files in '%s'\nwere copied.\nShould the installation continue?\n
+;
+MSG_PARTITIONINGFAILED (//)
+Partitioning of disk failed. InstallAROS\nwill now quit.
+;
+MSG_GRUBNONFFSWARNING (//)
+You have selected a filesystem different\nthan FFS-Intl for the system partition. Since\nthis distribution of AROS is compiled with the\noriginal GRUB bootloader, you will not be able to\nboot the system after installation.\n\nShould the partitioning continue?\n
+;
+MSG_CANCELINSTALL (//)
+Cancel Installation...
+;
+MSG_CONTINUECANCELINST (//)
+*Continue Install|Cancel Install
+;
+MSG_CONTINUECANCELPART (//)
+Continue Partitioning|*Cancel Partitionin
+;
+MSG_CONTINUEQUIT (//)
+Continue|*Quit
+;
+MSG_EXISTSRETRY (//)
+File Already Exists\nReplace %s?
+;
+MSG_RETRY (//)
+Retry
+;
+MSG_SCANRETRY (//)
+Error scanning %s\nRetry?
+;
+MSG_FINDRETRY (//)
+Could not find %s\nRetry?
+;
+MSG_COULDNTOPEN (//)
+Couldn't Open %s
+;
+MSG_COULDNTWRITE (//)
+Couldn't Write to %s
+;
+MSG_DISKFULL (//)
+Couldn't Write to %s\nDisk Full!
+;
+MSG_TEXT (//)
+Text
+;
+MSG_GFX (//)
+Graphics
+;
+MSG_YES (//)
+Yes
+;
+MSG_YESALWAYS (//)
+Yes [Always]
+;
+MSG_NO (//)
+No
+;
+MSG_SKIP (//)
+Skip
+;
+MSG_OK (//)
+OK
+;
+MSG_CANCEL (//)
+Cancel
+;
+MSG_CANCEL2 (//)
+_Cancel
+;
+MSG_QUIT (//)
+Quit
+;
+MSG_QUIT2 (//)
+QUIT
+;
+MSG_ERROR (//)
+Error
+;
+MSG_WARNING (//)
+Warning
+;
+MSG_REBOOT (//)
+Reboot AROS now
+;
+MSG_IOERROR (//)
+IO Error has occured
+;
+MSG_NOTFILESYSTEM (//)
+device '%s' doesn't contain a file system\n
+;
+MSG_NOTDEVICE (//)
+'%s' doesn't contain a device name\n
+;

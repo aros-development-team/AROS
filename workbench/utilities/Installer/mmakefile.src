@@ -9,7 +9,8 @@ FILES := main misc procedure parse variables gui_zune locale execute cleanup
 
 EXEDIR := $(AROSDIR)/Utilities
 
-#MM- workbench-utilities : workbench-utilities-installer
+# disabled in favour of submodules/installerlg
+# #MM- workbench-utilities : workbench-utilities-installer
 #MM workbench-utilities-installer : includes linklibs \
 #MM workbench-utilities-installer-script \
 #MM workbench-utilities-installer-catalogs

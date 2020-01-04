@@ -1,0 +1,51 @@
+# Copyright © 2020 The AROS Development Team. All rights reserved.
+
+# Makefile to make installerlg.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROSDIR)/Utilities
+
+FILES := \
+	installerlg/build/lexer \
+	installerlg/build/parser \
+	installerlg/src/media \
+	installerlg/src/wb \
+	installerlg/src/prompt \
+	installerlg/src/init \
+	installerlg/src/arithmetic \
+	installerlg/src/strop \
+	installerlg/src/information \
+	installerlg/src/file \
+	installerlg/src/resource \
+	installerlg/src/probe \
+	installerlg/src/exit \
+	installerlg/src/external \
+	installerlg/src/control \
+	installerlg/src/alloc \
+	installerlg/src/strcasestr \
+	installerlg/src/args \
+	installerlg/src/symbol \
+	installerlg/src/comparison \
+	installerlg/src/logic \
+	installerlg/src/gui \
+	installerlg/src/procedure \
+	installerlg/src/util \
+	installerlg/src/error \
+	installerlg/src/eval
+
+
+DATE          := $(shell date +%d.%m.%Y)
+NOWARN_FLAGS  :=
+USER_CFLAGS   := $(NOWARN_FLAGS) -DAMIGA -D__AMIGADATE__="\"$(DATE)\""
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/installerlg/src
+USER_LDFLAGS  := 
+
+#MM- workbench-utilities : submodules-installerlg
+#MM  submodules-installerlg : includes linklibs
+
+%build_prog mmake=submodules-installerlg \
+    progname=Installer targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="debug"
+
+%common
