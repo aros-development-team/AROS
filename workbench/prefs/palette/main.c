@@ -66,7 +66,7 @@ int main(int argc, char **argv)
             pScreen = LockPubScreen(pubname);
             if (pScreen)
             {
-                if (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4))
+                if (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4)
                     appScreen = pScreen;
                 else
                 {
