@@ -15,6 +15,7 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <devices/inputevent.h>
 #include <exec/alerts.h>
@@ -25,6 +26,7 @@
 #include <oop/oop.h>
 #include <clib/alib_protos.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "sagagfx_hidd.h"
 #include "sagagfx_bitmap.h"
@@ -45,8 +47,127 @@
         { aHidd_Sync_Description,       (IPTR)descr},   \
         { TAG_DONE, 0UL }}
 
+enum {
+    ML_PIXCLK,
+    ML_HPIXEL,
+    ML_HSSTRT,
+    ML_HSSTOP,
+    ML_HTOTAL,
+    ML_VPIXEL,
+    ML_VSSTRT,
+    ML_VSSTOP,
+    ML_VTOTAL,
+    ML_HVSYNC,
+    ML_COUNT
+};
+
+struct TagItem * LoadExternalSyncs(OOP_Class *cl)
+{
+    struct Process *pr = NULL;
+    struct TagItem *retVal = NULL;
+    struct TagItem *lastTag = NULL;
+
+    pr = (struct Process *)FindTask(NULL);
+
+    if (pr->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    {
+        struct DOSBase *DOSBase;
+
+        APTR winptr = pr->pr_WindowPtr;
+        pr->pr_WindowPtr = (APTR)-1;
+
+        DOSBase = (struct DOSBase *)OpenLibrary("dos.library", 0UL);
+
+        if (DOSBase)
+        {
+            BPTR fp = Open("DEVS:modelines.txt", MODE_OLDFILE);
+
+            if (fp)
+            {
+                TEXT buf[512];
+
+                while (FGets(fp, buf, 512))
+                {
+                    char *p = buf;
+                    ULONG i, Modeline[ML_COUNT];
+
+                    if(p[0] != '#')
+                    {
+                        for(i = 0; i < ML_COUNT; i++)
+                        {
+                            LONG n = StrToLong(p, (LONG *)&Modeline[i]);
+                            if(n == -1 || Modeline[i] == 0 || (i != ML_PIXCLK && Modeline[i] > 4000))
+                                break;
+                            p += n;
+                        }
+
+                        if(i == ML_COUNT)
+                        {
+                            struct TagItem *tags = AllocVecPooled(XSD(cl)->mempool, sizeof(struct TagItem)*14);
+                            char *desc = AllocVecPooled(XSD(cl)->mempool, 32);
+
+                            if (lastTag != NULL) {
+                                lastTag[1].ti_Tag = TAG_MORE;
+                                lastTag[1].ti_Data = (IPTR)tags;
+                            }
+
+                            snprintf(desc, 32, "SAGA(User):%dx%d", Modeline[ML_HPIXEL], Modeline[ML_VPIXEL]);
+                            tags[0].ti_Tag = aHidd_Gfx_SyncTags;
+                            tags[0].ti_Data = (IPTR)&tags[2];
+                            tags[1].ti_Tag = TAG_DONE;
+                            tags[1].ti_Data = 0;
+
+                            tags[2].ti_Tag = aHidd_Sync_PixelClock;
+                            tags[2].ti_Data = Modeline[ML_PIXCLK] *1000;
+                            tags[3].ti_Tag = aHidd_Sync_HDisp;
+                            tags[3].ti_Data = Modeline[ML_HPIXEL];
+                            tags[4].ti_Tag = aHidd_Sync_HSyncStart;
+                            tags[4].ti_Data = Modeline[ML_HSSTRT];
+                            tags[5].ti_Tag = aHidd_Sync_HSyncEnd;
+                            tags[5].ti_Data = Modeline[ML_HSSTOP];
+                            tags[6].ti_Tag = aHidd_Sync_HTotal;
+                            tags[6].ti_Data = Modeline[ML_HTOTAL];
+
+                            tags[7].ti_Tag = aHidd_Sync_VDisp;
+                            tags[7].ti_Data = Modeline[ML_VPIXEL];
+                            tags[8].ti_Tag = aHidd_Sync_VSyncStart;
+                            tags[8].ti_Data = Modeline[ML_VSSTRT];
+                            tags[9].ti_Tag = aHidd_Sync_VSyncEnd;
+                            tags[9].ti_Data = Modeline[ML_VSSTOP];
+                            tags[10].ti_Tag = aHidd_Sync_VTotal;
+                            tags[10].ti_Data = Modeline[ML_VTOTAL];
+
+                            tags[11].ti_Tag = aHidd_Sync_Flags;
+                            tags[11].ti_Data = Modeline[ML_HVSYNC];
+
+                            tags[12].ti_Tag = aHidd_Sync_Description;
+                            tags[12].ti_Data = (IPTR)desc;
+
+                            tags[13].ti_Tag = TAG_DONE;
+                            tags[13].ti_Data = 0UL;
+
+                            lastTag = tags;
+                            if (retVal == 0)
+                                retVal = tags;
+                        }
+                    }
+                }
+                Close(fp);
+            }
+
+            CloseLibrary((struct Library *)DOSBase);
+        }
+
+        pr->pr_WindowPtr = winptr;
+    }
+
+    return retVal;
+}
+
 OOP_Object *METHOD(SAGAGfx, Root, New)
 {
+    struct TagItem *userSyncs = NULL;
+
     MAKE_SYNC(320x240, 25180, 320, 656, 752, 800, 240, 490, 492 , 524, 0, "SAGA:320x240");
     MAKE_SYNC(640x360, 28375, 640, 896, 984, 1088, 360, 504, 508, 518, 1, "SAGA:640x360");
     MAKE_SYNC(640x480, 25180, 640, 656, 752, 800, 480, 490, 492, 525, 0, "SAGA:640x480");
@@ -167,6 +288,13 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     msg = &newmsg;
 
     D(bug("[SAGA] Root::New() called\n"));
+
+    userSyncs = LoadExternalSyncs(cl);
+
+    if (userSyncs) {
+        syncs[6].ti_Tag = TAG_MORE;
+        syncs[6].ti_Data = (IPTR)userSyncs;
+    }
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
