@@ -262,6 +262,7 @@ void WriteBytesB_Uint16(WORD val, unsigned char **byteBuffer, int offset)
 }
 
 /**************************************************************************************************/
+
 static BOOL LoadBMP(struct IClass *cl, Object *o)
 {
     BMPHandleType           *BMPhandle;
@@ -271,9 +272,10 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     ULONG                   biSize, biWidth, biHeight, biCompression;
     ULONG                   biClrUsed, biClrImportant;
     UWORD                   biPlanes, biBitCount;
-    ULONG                   alignwidth, alignbytes, pixelfmt;
+    ULONG                   alignwidth, alignedwidth, alignbytes, alignedbytes, pixelfmt;
     long                    x, y;
     int                     cont, byte;
+    int 		    numcolors;
     struct BitMapHeader     *bmhd;
     struct ColorRegister    *colormap;
     ULONG                   *colorregs;
@@ -371,31 +373,43 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     }
 
     /* check color mode */
+    numcolors = 0; 
     pixelfmt = PBPAFMT_LUT8;
     switch (biBitCount)
     {
 	case 1:
 	    alignwidth = (biWidth + 31) & ~31UL;
 	    alignbytes = alignwidth / 8;
+            numcolors = 2;
 	    break;
 	case 4:
 	    alignwidth = (biWidth + 7) & ~7UL;
 	    alignbytes = alignwidth / 2;
+            numcolors = 16;
 	    break;
 	case 8:
 	    alignwidth = (biWidth + 3) & ~3UL;          
 	    alignbytes = alignwidth;
+            numcolors = 256;
 	    break;
 	case 24:
 	    alignbytes = (biWidth + 3) & ~3UL;
-	    alignwidth = alignbytes * 3;
+	    alignwidth = alignbytes * 3; //2376 
+        //Or Use Correction Factor
+        alignedwidth = ((width * 3) + 3) & ~3UL; //Not Modulus 4
+		//alignedbytes = ((int)(alignwidth / 3)) + 3;
+        if(alignwidth != alignedwidth)
+        {
+            alignwidth = alignedwidth;
+            //alignbytes = alignedbytes;
+        }
 	    pixelfmt = PBPAFMT_RGB;
 	    break;
       case 32:
 	    alignbytes = biWidth;
 	    alignwidth = alignbytes * 4;
 	    //pixelfmt = PBPAFMT_RGBA;
-        pixelfmt = PBPAFMT_ARGB;
+            pixelfmt = PBPAFMT_ARGB;
 	    break;
 	default:
 	    D(bug("BMP.datatype/LoadBMP() --- unsupported color depth\n"));
@@ -422,7 +436,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	    BMP_Exit(BMPhandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
 	}
-	if( !LoadBMP_Colormap(BMPhandle, biClrUsed, colormap, colorregs) )
+	if( !LoadBMP_Colormap(BMPhandle, numcolors, colormap, colorregs) )
 	{
 	    BMP_Exit(BMPhandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
@@ -430,7 +444,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     }
     
     /* skip offset */
-    bfOffBits = bfOffBits - 14 - 40 - biClrUsed*4;
+    bfOffBits = bfOffBits - 14 - 40 - numcolors*4;
     D(bug("BMP.datatype/LoadBMP() --- remaining offset %ld\n", bfOffBits));
     if ( bfOffBits < 0 ||
 	( (BMPhandle->filebufbytes -= bfOffBits ) < 0 && !LoadBMP_FillBuf(BMPhandle, bfOffBits) ) )
@@ -443,7 +457,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 
     /* Pass attributes to picture.datatype */
     GetDTAttrs( o, DTA_Name, (IPTR)&name, TAG_DONE );
-    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, biClrUsed,
+    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors,
 			      DTA_NominalHoriz, biWidth,
 			      DTA_NominalVert , biHeight,
 			      DTA_ObjName     , (IPTR)name,
