@@ -1,0 +1,32 @@
+# Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := \
+    def_Busydisk def_BusyCDROM def_Busyharddisk \
+    def_NDOSdisk def_NDOSCDROM def_NDOSharddisk \
+    def_CDROM def_Disk def_Drawer def_Harddisk def_RAM \
+    def_Project def_Picture def_Text def_Document def_Tool def_Authors \
+    def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_Instrument def_PDF def_Patch \
+    def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
+    def_XCF def_Sound def_Keymap def_DVD def_DataType def_RAD def_Installer \
+    def_AudioMode def_Zune def_TrueType def_Otag def_A68K def_ADF def_Catalog \
+    def_Country def_Home def_MP3ID3 def_MP3 def_SFS def_Lua def_AmiLua \
+    def_Archive def_Python def_REXX def_NetworkHost def_UserHome def_Trashcan \
+    def_PLS def_M3U def_DT64 def_Pref def_FAT def_MSD def_USB def_MSI def_CDXL def_FLAC \
+    def_ELF_EXE_Linux def_PFS def_KickDisk def_KickROM def_Wireless def_LHA \
+    def_ANIM def_GIFAnim
+
+IMGS := def_AppIcon1.png def_AppIcon2.png
+APPI := def_AppIcon
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-prefs-envarc-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-prefs-envarc \
+#MM  iconset-GorillaSmall-wbench-icons-aros-prefs-envarc-appicon
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-prefs-envarc icons=$(ICONS) \
+             dir=$(AROS_ENVARC)/SYS
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-prefs-envarc-appicon icons=$(APPI) \
+             dir=$(AROS_ENVARC)/SYS  image=$(IMGS)

@@ -1,0 +1,11 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Amiga Downloads-2 Downloads Linux Windows
+
+#MM- themes-GorillaSmall-icons-clean : themes-GorillaSmall-icons-drawers-clean
+#MM- themes-GorillaSmall-icons : themes-GorillaSmall-icons-drawers
+%build_icons mmake=themes-GorillaSmall-icons-drawers icons=$(ICONS) \
+             dir=$(AROS_CONTRIB)/Icons/Gorilla/Drawers

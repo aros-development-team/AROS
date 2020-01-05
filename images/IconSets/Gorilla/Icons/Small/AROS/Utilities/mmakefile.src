@@ -1,0 +1,11 @@
+# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := Clock Help Installer More MultiView
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-utilities-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-utilities
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-utilities icons=$(BASEICONS) \
+             dir=$(AROS_UTILITIES)

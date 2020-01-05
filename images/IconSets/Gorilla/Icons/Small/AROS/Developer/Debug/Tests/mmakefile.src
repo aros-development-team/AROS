@@ -1,0 +1,13 @@
+# Copyright © 2008, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := DualPNG
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-debug-tests-clean
+
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-debug-tests
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-debug-tests icons=$(ICONS) \
+             dir=$(AROS_TESTS)/Icon
