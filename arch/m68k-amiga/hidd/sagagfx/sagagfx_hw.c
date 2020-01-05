@@ -29,7 +29,7 @@ void SAGA_SetPLL(ULONG clock)
     /* Make sure we are not interrupted when setting PLL */
     Disable();
     /* DAC OFF */
-    WRITE16(SAGA_VIDEO_MODE, 0xffff);
+    WRITE16(SAGA_VIDEO_MODE, 0x8000);
     /* PLL CTS */
     WRITE32(SAGA_VIDEO_PLLV4, pll);
     Enable();
