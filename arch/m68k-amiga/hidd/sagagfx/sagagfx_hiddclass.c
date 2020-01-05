@@ -8,7 +8,7 @@
 
 #define __OOP_NOATTRBASES__
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/asmcall.h>
@@ -201,16 +201,22 @@ VOID METHOD(SAGAGfx, Root, Get)
                 found = TRUE;
                 *msg->storage = TRUE;
                 break;
-#if 0
-            case aoHidd_Gfx_SupportsHWCursor:
-                found = TRUE;
-                *msg->storage = TRUE;
-                break;
 
             case aoHidd_Gfx_HWSpriteTypes:
                 found = TRUE;
                 *msg->storage = vHidd_SpriteType_3Plus1;
-                return;
+                break;
+
+#if 0 /* Not implemented yet */
+            case aoHidd_Gfx_MaxHWSpriteWidth:
+                found = TRUE;
+                *msg->storage = 16;
+                break;
+
+            case aoHidd_Gfx_MaxHWSpriteHeight:
+                found = TRUE;
+                *msg->storage = 16;
+                break;
 #endif
         }
     }
@@ -224,8 +230,8 @@ BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorPos)
     D(bug("[SAGA] SetCursorPos(%d, %d)\n", msg->x, msg->y));
     XSD(cl)->cursorX = msg->x;
     XSD(cl)->cursorY = msg->y;
-    WRITE16(SAGA_VIDEO_SPRITEX, msg->x);
-    WRITE16(SAGA_VIDEO_SPRITEY, msg->y);
+    WRITE16(SAGA_VIDEO_SPRITEX, msg->x + SAGA_MOUSE_DELTAX);
+    WRITE16(SAGA_VIDEO_SPRITEY, msg->y + SAGA_MOUSE_DELTAY);
 
     return TRUE;
 }
@@ -248,7 +254,91 @@ VOID METHOD(SAGAGfx, Hidd_Gfx, SetCursorVisible)
 
 BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorShape)
 {
-    D(bug("[SAGA] SetCursorShape()\n"));
+    IPTR width, height, depth;
+    OOP_Object *cmap = NULL;
+    IPTR num_colors = 0;
+    IPTR ptr;
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Depth, &depth);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, &cmap);
+
+    if (cmap) {
+        OOP_GetAttr(cmap, aHidd_ColorMap_NumEntries, &num_colors);
+        if (num_colors > 4)
+            num_colors = 4;
+
+        D(bug("[SAGA] number of colors: %d\n", num_colors));
+
+        for (int i=0; i < num_colors; i++) {
+            HIDDT_Color c;
+            HIDD_CM_GetColor(cmap, i, &c);
+
+            XSD(cl)->cursor_pal[i] =
+                ((c.red >> 12) & 15) << 8 |
+                ((c.green >> 12) & 15) << 4 |
+                ((c.blue >> 12) & 15) << 0;
+
+            D(bug("[SAGA] c%02x: %x %x %x %x %08x\n", i, c.red, c.green, c.blue, c.alpha, c.pixval));
+        }
+    }
+
+    D(bug("[SAGA] SetCursorShape(%p, %d, %d, %d)\n", msg->shape, width, height, depth));
+
+    if (width > 16)
+        width = 16;
+
+    if (height > 16)
+        height = 16;
+
+    if (width != 16 || height != 16)
+    {
+        for (UWORD i=0; i < 16*16; i++)
+            XSD(cl)->cursor_clut[i] = 0;
+    }
+
+    HIDD_BM_GetImageLUT(msg->shape, XSD(cl)->cursor_clut, 16, 0, 0, width, height, NULL);
+
+    bug("Shape:\n");
+    ptr = 0xdff800;
+
+    for (int y = 0; y < 16; y++)
+    {
+        ULONG pix = 0x80008000;
+        ULONG val = 0;
+
+        for (int x = 0; x < 16; x++)
+        {
+            bug("%d ", XSD(cl)->cursor_clut[y *16 + x]);
+            switch (XSD(cl)->cursor_clut[y*16 + x])
+            {
+                case 1:
+                    val |= pix & 0xffff;
+                    break;
+                case 2:
+                    val |= pix & 0xffff0000;
+                    break;
+                case 3:
+                    val |= pix;
+                    break;
+                default:
+                    break;
+            }
+            pix >>= 1;
+        }
+        WRITE32(ptr, val);
+        ptr += 4;
+        bug("\n");
+    }
+
+    for (int i=1; i < 4; i++) {
+        WRITE16(0xdff3a0 + (i << 1), XSD(cl)->cursor_pal[i]);
+    }
+
+    XSD(cl)->hotX = msg->xoffset;
+    XSD(cl)->hotY = msg->yoffset;
+
     return TRUE;
 }
 
