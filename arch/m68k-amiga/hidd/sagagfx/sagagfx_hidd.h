@@ -17,7 +17,7 @@
 #include <oop/oop.h>
 #include <hidd/gfx.h>
 
-#define ATTRBASES_NUM 6
+#define ATTRBASES_NUM 7
 
 #define CLID_Hidd_Gfx_SAGA "hidd.gfx.saga"
 
@@ -35,8 +35,13 @@ struct SAGAGfx_staticdata
     OOP_Object *    visible;        /* Currently visible bitmap */
     OOP_AttrBase    attrBases[ATTRBASES_NUM];
 
+    UBYTE           cursor_clut[16*16];
+    UWORD           cursor_pal[4];
+
     WORD            cursorX;
     WORD            cursorY;
+    UBYTE           hotX;
+    UBYTE           hotY;
     APTR            mempool;
 
 //    struct SignalSemaphore  framebufferlock;
@@ -56,6 +61,7 @@ struct SAGAGfxBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddAttrBase
+#undef HiddColorMapAttrBase
 
 /* These must stay in the same order as interfaces[] array in sm502gfx_init.c */
 #define HiddChunkyBMAttrBase  XSD(cl)->attrBases[0]
@@ -64,6 +70,7 @@ struct SAGAGfxBase
 #define HiddPixFmtAttrBase    XSD(cl)->attrBases[3]
 #define HiddSyncAttrBase      XSD(cl)->attrBases[4]
 #define HiddAttrBase          XSD(cl)->attrBases[5]
+#define HiddColorMapAttrBase  XSD(cl)->attrBases[6]
 
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
