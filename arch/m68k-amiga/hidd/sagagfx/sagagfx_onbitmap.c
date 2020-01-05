@@ -188,7 +188,7 @@ BOOL METHOD(SAGABitMap, Hidd_BitMap, SetColors)
     D(bug("[SAGABitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
 
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
-        D(bug("[SM502Gfx:BitMap] DoSuperMethod() failed\n"));
+        D(bug("[SAGAGfx:BitMap] DoSuperMethod() failed\n"));
         return FALSE;
     }
 
