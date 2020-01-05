@@ -104,7 +104,7 @@ OOP_Object *METHOD(SAGABitMap, Root, New)
 
         if (OOP_GET(data->pixfmtobj, aHidd_PixFmt_ColorModel) == vHidd_ColorModel_Palette)
         {
-            data->CLUT = AllocVecPooled(XSD(cl)->mempool, 768);
+            data->CLUT = AllocVecPooled(XSD(cl)->mempool, 256 * sizeof(ULONG));
             data->hwregs.video_mode = SAGA_VIDEO_FORMAT_CLUT8;
 
             D(bug("[SAGABitMap] CLUT at %p\n", data->CLUT));
@@ -176,4 +176,44 @@ VOID METHOD(SAGABitMap, Root, Get)
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+BOOL METHOD(SAGABitMap, Hidd_BitMap, SetColors)
+{
+    struct SAGAGfxBitmapData *data = OOP_INST_DATA(cl, o);
+    ULONG xc_i, col_i;
+    UBYTE p_shift;
+    UWORD red, green, blue;
+
+    D(bug("[SAGABitMap] SetColors(%u, %u)\n", msg->firstColor, msg->numColors));
+
+    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) {
+        D(bug("[SM502Gfx:BitMap] DoSuperMethod() failed\n"));
+        return FALSE;
+    }
+
+    if ((msg->firstColor + msg->numColors) > 256)
+        return FALSE;
+
+    if (data->CLUT)
+    {
+        for (xc_i = msg->firstColor, col_i = 0;
+             col_i < msg->numColors;
+             xc_i ++, col_i ++)
+        {
+            red   = msg->colors[col_i].red   >> 8;
+            green = msg->colors[col_i].green >> 8;
+            blue  = msg->colors[col_i].blue  >> 8;
+
+            D(bug("[SAGABitMap] clut %d, r=%d, g=%d, b=%d\n", xc_i, red, green, blue));
+
+            /* Update DAC registers */
+            data->CLUT[xc_i] = (red << 16) | (green << 8) | blue;
+        }
+
+        /* Upload palette to the DAC if the current bitmap is on display */
+        if (XSD(cl)->visible == o)
+            SAGA_LoadCLUT(data->CLUT, msg->firstColor, msg->numColors);
+    }
+    return TRUE;
 }

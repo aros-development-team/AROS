@@ -35,6 +35,23 @@ void SAGA_SetPLL(ULONG clock)
     Enable();
 }
 
+void SAGA_LoadCLUT(ULONG *palette, UWORD startIndex, UWORD count)
+{
+    if (palette)
+    {
+        if(startIndex > 255)
+            return;
+
+        if(startIndex + count > 256)
+            count = 256 - startIndex;
+
+        for (int i=0; i < count; i++)
+        {
+            WRITE32(SAGA_VIDEO_CLUT(startIndex + i), palette[startIndex + i]);
+        }
+    }
+}
+
 /* Attempts to detect SAGA. */
 BOOL SAGA_Init()
 {

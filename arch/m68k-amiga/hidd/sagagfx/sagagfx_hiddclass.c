@@ -48,32 +48,36 @@
 OOP_Object *METHOD(SAGAGfx, Root, New)
 {
     MAKE_SYNC(320x240, 25180, 320, 656, 752, 800, 240, 490, 492 , 524, 0, "SAGA:320x240");
+    MAKE_SYNC(640x360, 28375, 640, 896, 984, 1088, 360, 504, 508, 518, 1, "SAGA:640x360");
     MAKE_SYNC(640x480, 25180, 640, 656, 752, 800, 480, 490, 492, 525, 0, "SAGA:640x480");
     MAKE_SYNC(720x400, 28320, 720, 738, 846, 900, 400, 412, 414, 449, 2, "SAGA:720x400");
     MAKE_SYNC(720x576, 28375, 720, 753, 817, 908, 576, 582, 586, 624, 1, "SAGA:720x576");
+    MAKE_SYNC(800x600, 28375, 800, 848, 880, 960, 600, 603, 607, 615, 1, "SAGA:800x600");
 
     struct TagItem syncs[] = {
         { aHidd_Gfx_SyncTags,       (IPTR)sync_320x240 },
+        { aHidd_Gfx_SyncTags,       (IPTR)sync_640x360 },
         { aHidd_Gfx_SyncTags,       (IPTR)sync_640x480 },
         { aHidd_Gfx_SyncTags,       (IPTR)sync_720x400 },
         { aHidd_Gfx_SyncTags,       (IPTR)sync_720x576 },
+        { aHidd_Gfx_SyncTags,       (IPTR)sync_800x600 },
         { TAG_DONE, 0UL }
     };
 
     struct TagItem pftags_32bpp[] = {
-        { aHidd_PixFmt_RedShift,    0   }, /* 0 */
-        { aHidd_PixFmt_GreenShift,  8  }, /* 1 */
-        { aHidd_PixFmt_BlueShift,  	16  }, /* 2 */
-        { aHidd_PixFmt_AlphaShift,  24   }, /* 3 */
-        { aHidd_PixFmt_RedMask,     0xff000000 }, /* 4 */
-        { aHidd_PixFmt_GreenMask,   0x00ff0000 }, /* 5 */
-        { aHidd_PixFmt_BlueMask,    0x0000ff00 }, /* 6 */
-        { aHidd_PixFmt_AlphaMask,   0x000000ff }, /* 7 */
+        { aHidd_PixFmt_RedShift,    8   }, /* 0 */
+        { aHidd_PixFmt_GreenShift,  16  }, /* 1 */
+        { aHidd_PixFmt_BlueShift,  	24  }, /* 2 */
+        { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
+        { aHidd_PixFmt_RedMask,     0x00ff0000 }, /* 4 */
+        { aHidd_PixFmt_GreenMask,   0x0000ff00 }, /* 5 */
+        { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
+        { aHidd_PixFmt_AlphaMask,   0xff000000 }, /* 7 */
         { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
         { aHidd_PixFmt_Depth,       32	}, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,4	}, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,32	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGRA32 }, /* 12 Native */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
@@ -91,7 +95,7 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
         { aHidd_PixFmt_Depth,       24	}, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,3	}, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,24	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR032 }, /* 12 Native */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
@@ -109,15 +113,36 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
         { aHidd_PixFmt_Depth,		16	}, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,	2	}, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,	16	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_RGB16_LE }, /* 12 */
+        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_Native }, /* 12 */
+        { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
+        { TAG_DONE, 0UL }
+    };
+
+    struct TagItem pftags_8bpp[] = {
+        { aHidd_PixFmt_RedShift,    8   }, /* 0 */
+        { aHidd_PixFmt_GreenShift,  16  }, /* 1 */
+        { aHidd_PixFmt_BlueShift,  	24  }, /* 2 */
+        { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
+        { aHidd_PixFmt_RedMask,     0x00ff0000 }, /* 4 */
+        { aHidd_PixFmt_GreenMask,   0x0000ff00 }, /* 5 */
+        { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
+        { aHidd_PixFmt_AlphaMask,	0x00000000 }, /* 7 */
+        { aHidd_PixFmt_ColorModel,	vHidd_ColorModel_Palette }, /* 8 */
+        { aHidd_PixFmt_CLUTMask,    0x000000ff },
+        { aHidd_PixFmt_CLUTShift,   0x00000000 },
+        { aHidd_PixFmt_Depth,		8	}, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,	1	}, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,	8	}, /* 11 */
+        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_LUT8 }, /* 12 */
         { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
 
     struct TagItem modetags[] = {
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_32bpp	},
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
+        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_32bpp  },
+        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp  },
+        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_8bpp   },
         { TAG_MORE,             (IPTR)syncs },
         { TAG_DONE, 0UL }
     };
@@ -176,7 +201,7 @@ VOID METHOD(SAGAGfx, Root, Get)
                 found = TRUE;
                 *msg->storage = TRUE;
                 break;
-
+#if 0
             case aoHidd_Gfx_SupportsHWCursor:
                 found = TRUE;
                 *msg->storage = TRUE;
@@ -186,6 +211,7 @@ VOID METHOD(SAGAGfx, Root, Get)
                 found = TRUE;
                 *msg->storage = vHidd_SpriteType_3Plus1;
                 return;
+#endif
         }
     }
 
@@ -328,6 +354,9 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
         WRITE16(SAGA_VIDEO_HVSYNC, bmdata->hwregs.hvsync);
 
         SAGA_SetPLL(bmdata->hwregs.pixelclock);
+
+        if (bmdata->CLUT)
+            SAGA_LoadCLUT(bmdata->CLUT, 0, 256);
 
         WRITE16(SAGA_VIDEO_MODE, bmdata->hwregs.video_mode);
 
