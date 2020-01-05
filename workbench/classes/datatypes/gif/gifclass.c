@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -151,7 +151,7 @@ static BOOL LoadGIF_Colormap(GifHandleType *gifhandle, int havecolmap, int *numc
 	    colregs[j++] = ((ULONG)colormap[i].blue)<<24;
 //          D(if (i<5) bug("gif r %02lx g %02lx b %02lx\n", colormap[i].red, colormap[i].green, colormap[i].blue));
 	}
-	D(bug("gif.datatype/LoadGIF_Colormap() --- %d colors loaded\n", numcolors));
+	D(bug("gif.datatype/LoadGIF_Colormap() --- %d colors loaded\n", *numcolors));
     }
     else
     {
