@@ -1,4 +1,4 @@
-## version $VER: palette.catalog 2.0 (06.09.2018)
+## version $VER: palette.catalog 2.1 (03.01.2020)
 ## codeset 5
 ## language polski
 ;
@@ -57,4 +57,12 @@ Pisak wype³nienia belki
 MSG_PEN11
 Pisak krawêdzi belki
 ; Bar Trim Pen
+;
+MSG_4COLOR
+Ustawienia w 4 kolorach
+; 4 Color Settings
+;
+MSG_MULTICOLOR
+Ustawienia wielokolorowe
+; Multicolor Settings
 ;
