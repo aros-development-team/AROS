@@ -514,8 +514,9 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
     GifHandleType           *gifhandle;
     UBYTE                   *filebuf;
-    unsigned int            width, height, widthxheight, numplanes, numcolors;
+    unsigned int            width, height, widthxheight, numplanes;
     struct BitMapHeader     *bmhd;
+    IPTR                numcolors;
     long                    *colorregs;
     int                     i, ret;
 #if LEGACY
