@@ -367,7 +367,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                 Child, (IPTR)(ColGroup(2),
                     GroupFrame,
                     MUIA_FrameTitle, (IPTR)"Boot Config",
-                    Child, (IPTR)Label("Loader"),
+                    Child, (IPTR)Label(_(MSG_BOOTLOADER)),
                     Child, (IPTR)(TextObject,
                         TextFrame,
                         MUIA_Background, MUII_TextBack,
