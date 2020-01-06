@@ -21,6 +21,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "volumelist_private.h"
+#include "locale.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -111,10 +112,10 @@ AROS_UFH3S(LONG, display_func,
     else
     {
         *array++ = "";
-        *array++ = "Name";
-        *array++ = "full";
-        *array++ = "free";
-        *array = "used";
+        *array++ = _(MSG_VOLUMELIST_NAME);
+        *array++ = _(MSG_VOLUMELIST_FULL);
+        *array++ = _(MSG_VOLUMELIST_FREE);
+        *array = _(MSG_VOLUMELIST_USED);
     }
 
     return 0;

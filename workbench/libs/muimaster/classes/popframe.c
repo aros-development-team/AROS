@@ -19,6 +19,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "popframe_private.h"
+#include "locale.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -125,11 +126,11 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj,
                 Child, (IPTR)HGroup,
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR)(ok_button =
-                        MUI_MakeObject(MUIO_Button, (IPTR)"_Ok")),
+                        MUI_MakeObject(MUIO_Button, (IPTR)_(MSG_OK))),
                     Child, (IPTR)HVSpace,
                     Child, (IPTR)HVSpace,
                     Child, (IPTR)(cancel_button =
-                        MUI_MakeObject(MUIO_Button, (IPTR)"_Cancel")),
+                        MUI_MakeObject(MUIO_Button, (IPTR)_(MSG_CANCEL))),
                     End,
                 End,
             End);
