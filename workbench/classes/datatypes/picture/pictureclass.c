@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -461,18 +461,18 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    break;
 
 	case PDTA_ColorRegisters:
-	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorRegisters: 0x%lx\n", (long)&pd->ColMap));
-	    *(msg->opg_Storage)=(IPTR) &pd->ColMap;
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorRegisters: 0x%lx\n", (long)pd->ColMap));
+	    *(msg->opg_Storage)=(IPTR) pd->ColMap;
 	    break;
 
 	case PDTA_CRegs:
-	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_CRegs: 0x%lx\n", (long)&pd->SrcColRegs));
-	    *(msg->opg_Storage)=(IPTR) &pd->SrcColRegs;
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_CRegs: 0x%lx\n", (long)pd->SrcColRegs));
+	    *(msg->opg_Storage)=(IPTR) pd->SrcColRegs;
 	    break;
 
 	case PDTA_GRegs:
-	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_GRegs: 0x%lx\n", (long)&pd->DestColRegs));
-	    *(msg->opg_Storage)=(IPTR) &pd->DestColRegs;
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_GRegs: 0x%lx\n", (long)pd->DestColRegs));
+	    *(msg->opg_Storage)=(IPTR) pd->DestColRegs;
 	    break;
 
 	case PDTA_AllocatedPens:
@@ -480,8 +480,8 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	case PDTA_ColorTable2:
 	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable2: Handled by PDTA_ColorTable\n"));
 	case PDTA_ColorTable:
-	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable: 0x%lx\n", (long)&pd->ColTable));
-	    *(msg->opg_Storage)=(IPTR) &pd->ColTable;
+	    DGS(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable: 0x%lx\n", (long)pd->ColTable));
+	    *(msg->opg_Storage)=(IPTR) pd->ColTable;
 	    break;
 
 	case PDTA_NumColors:
