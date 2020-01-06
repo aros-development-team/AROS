@@ -1,0 +1,68 @@
+## version $VER: palette.catalog 2.0 (05.01.2020)
+## language deutsch
+## codeset 0
+;
+MSG_WINTITLE
+Paletteneinstellungen
+; Palette Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_PEN0
+Detailstift
+; Detail Pen
+;
+MSG_PEN1
+Blockstift
+; Block Pen
+;
+MSG_PEN2
+Textstift
+; Text Pen
+;
+MSG_PEN3
+Leuchtstift
+; Shine Pen
+;
+MSG_PEN4
+Schattenstift
+; Shadow Pen
+;
+MSG_PEN5
+Füllstift
+; Fill Pen
+;
+MSG_PEN6
+Fülltextstift
+; Fill Text Pen
+;
+MSG_PEN7
+Hintergrundstift
+; Background Pen
+;
+MSG_PEN8
+Texthervorhebstift
+; Highlight Text Pen
+;
+MSG_PEN9
+Barrendetailstift
+; Bar Detail Pen
+;
+MSG_PEN10
+Barrenblockstift
+; Bar Block Pen
+;
+MSG_PEN11
+Barrenabschneidstift
+; Bar Trim Pen
+;
+MSG_4COLOR
+4-Farb-Einstellungen
+; 4 Color Settings
+;
+MSG_MULTICOLOR
+Vielfarbeinstellungen
+; Multicolor Settings
+;

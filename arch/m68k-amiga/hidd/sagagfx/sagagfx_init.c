@@ -8,7 +8,7 @@
 
 #define __OOP_NOATTRBASES__
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -68,7 +68,8 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_Gfx,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
-    IID_Hidd
+    IID_Hidd,
+    IID_Hidd_ColorMap
 };
 
 static int SAGAGfx_Init(LIBBASETYPEPTR LIBBASE)

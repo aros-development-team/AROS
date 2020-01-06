@@ -1,0 +1,172 @@
+; Generic
+;
+MSG_OK (//)
+_Ok
+;
+MSG_CANCEL (//)
+_Cancel
+;
+; -------------------------------------------------
+; Aboutmui class
+MSG_ABOUTMUI_WINDOW_TITLE (//)
+About Zune
+;
+MSG_ABOUTMUI_STRING (//)
+Zune, a MUI clone\n\n\
+Compiled on %s\n\
+Copyright (C) 2002-2020, The AROS Development Team.
+;
+; -------------------------------------------------
+; Coloradjust class
+MSG_COLORADJUST_RED (//)
+Red:
+;
+; Coloradjust class
+MSG_COLORADJUST_GREEN (//)
+Green:
+;
+; Coloradjust class
+MSG_COLORADJUST_BLUE (//)
+Blue:
+;
+; -------------------------------------------------
+; Dirlist class
+MSG_DIRLIST_NAME (//)
+Name
+;
+MSG_DIRLIST_SIZE (//)
+Size
+;
+MSG_DIRLIST_DATE (//)
+Date
+;
+MSG_DIRLIST_TIME (//)
+Time
+;
+MSG_DIRLIST_FLAGS (//)
+Flags
+;
+MSG_DIRLIST_COMMENT (//)
+Comment
+;
+; -------------------------------------------------
+; Frameadjust class
+MSG_FRAMEADJUST_INNER_SPACING (//)
+Inner Spacing:
+;
+MSG_FRAMEADJUST_LEFT (//)
+Left
+;
+MSG_FRAMEADJUST_TOP (//)
+Top
+;
+MSG_FRAMEADJUST_RIGHT (//)
+Right
+;
+MSG_FRAMEADJUST_BOTTOM (//)
+Bottom
+;
+; -------------------------------------------------
+; Imageadjust class
+MSG_IMAGEADJUST_PATTERN (//)
+Pattern
+;
+MSG_IMAGEADJUST_VECTOR (//)
+Vector
+;
+MSG_IMAGEADJUST_COLOR (//)
+Color
+;
+MSG_IMAGEADJUST_EXTERNAL (//)
+External
+;
+MSG_IMAGEADJUST_BITMAP (//)
+Bitmap
+;
+MSG_IMAGEADJUST_GRADIENT (//)
+Gradient
+;
+MSG_IMAGEADJUST_SCALED (//)
+Scaled
+;
+MSG_IMAGEADJUST_TILED (//)
+Tiled
+;
+MSG_IMAGEADJUST_TYPE (//)
+Type:
+;
+MSG_IMAGEADJUST_ANGLE (//)
+Angle:
+;
+MSG_IMAGEADJUST_VERTICAL (//)
+Vertical
+;
+MSG_IMAGEADJUST_HORIZONTAL (//)
+Horizontal
+;
+MSG_IMAGEADJUST_COLORS (//)
+Colors:
+;
+MSG_IMAGEADJUST_START_PEN (//)
+Start pen
+;
+MSG_IMAGEADJUST_END_PEN (//)
+End pen
+;
+MSG_IMAGEADJUST_PREVIEW (//)
+Preview:
+;
+; -------------------------------------------------
+; Palette class
+MSG_PALETTE_COLOR (//)
+Color %ld
+;
+; -------------------------------------------------
+; Penadjust class
+MSG_PENADJUST_MUI (//)
+MUI
+;
+MSG_PENADJUST_COLORMAP (//)
+Colormap
+;
+MSG_PENADJUST_RGB (//)
+RGB
+;
+MSG_PENADJUST_SHINE (//)
+Shine
+;
+MSG_PENADJUST_HALFSHINE (//)
+Halfshine
+;
+MSG_PENADJUST_BACKGROUND (//)
+Background
+;
+MSG_PENADJUST_HALFSHADOW (//)
+Halfshadow
+;
+MSG_PENADJUST_SHADOW (//)
+Shadow
+;
+MSG_PENADJUST_TEXT (//)
+Text
+;
+MSG_PENADJUST_FILL (//)
+Fill
+;
+MSG_PENADJUST_MARK (//)
+Mark
+;
+; -------------------------------------------------
+; Volumelist class
+MSG_VOLUMELIST_NAME (//)
+Name
+;
+MSG_VOLUMELIST_FULL (//)
+Full
+;
+MSG_VOLUMELIST_FREE (//)
+Free
+;
+MSG_VOLUMELIST_USED (//)
+Used
+;

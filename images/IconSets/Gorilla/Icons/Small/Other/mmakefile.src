@@ -1,0 +1,11 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Mouse Pointer
+
+#MM- themes-GorillaSmall-icons-clean : themes-GorillaSmall-icons-other-clean
+#MM- themes-GorillaSmall-icons : themes-GorillaSmall-icons-other
+%build_icons mmake=themes-GorillaSmall-icons-other icons=$(ICONS) \
+             dir=$(AROS_CONTRIB)/Icons/Gorilla/Other

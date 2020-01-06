@@ -14,11 +14,14 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
+#include <stdio.h>
+
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
 #include "aboutmui_private.h"
+#include "locale.h"
 
 #if ZUNE_BUILTIN_ABOUTMUI
 #   define USE_INTERNAL_IMAGE 0
@@ -903,9 +906,9 @@ IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Aboutmui_DATA   *data;
     struct TagItem *tag, *tags;
-    static const char about_text[] = "Zune, a MUI clone\n"
-	"\nCompiled on " __DATE__
-	"\nCopyright (C) 2002-2016, The AROS Development Team.";
+    static char about_text[100];
+
+    snprintf(about_text, sizeof (about_text), _(MSG_ABOUTMUI_STRING), __DATE__);
 
     obj = (Object *) DoSuperNewTags
     (

@@ -1,0 +1,16 @@
+# Copyright © 2012-2017, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+STORAGEICONS := ICD0 ICD1 IDF0 IDF1 ISO0 PC0
+DEVSICONS    := PAR PIPE PRT SER SER0 SER1
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-devs-dosdrivers-clean iconset-GorillaSmall-wbench-icons-storage-dosdrivers-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-devs-dosdrivers iconset-GorillaSmall-wbench-icons-storage-dosdrivers
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-devs-dosdrivers icons=$(DEVSICONS) \
+             dir=$(AROS_DEVS)/DOSDrivers
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-storage-dosdrivers icons=$(STORAGEICONS) \
+             dir=$(AROSDIR)/Storage/DOSDrivers

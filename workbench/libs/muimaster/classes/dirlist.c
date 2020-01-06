@@ -23,6 +23,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "dirlist_private.h"
+#include "locale.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -116,12 +117,12 @@ AROS_UFH3S(LONG, display_func,
     }
     else
     {
-        *array++ = "Name";
-        *array++ = "Size";
-        *array++ = "Date";
-        *array++ = "Time";
-        *array++ = "Flags";
-        *array = "Comment";
+        *array++ = _(MSG_DIRLIST_NAME);
+        *array++ = _(MSG_DIRLIST_SIZE);
+        *array++ = _(MSG_DIRLIST_DATE);
+        *array++ = _(MSG_DIRLIST_TIME);
+        *array++ = _(MSG_DIRLIST_FLAGS);
+        *array = _(MSG_DIRLIST_COMMENT);
     }
 
     return 0;

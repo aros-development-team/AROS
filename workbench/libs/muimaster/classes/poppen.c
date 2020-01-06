@@ -17,6 +17,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "poppen_private.h"
+#include "locale.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -94,9 +95,9 @@ IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj,
                     End),
                 Child, (IPTR)HGroup,
                     Child, (IPTR)(ok_button =
-                        MUI_MakeObject(MUIO_Button,(IPTR)"_Ok")),
+                        MUI_MakeObject(MUIO_Button,(IPTR)_(MSG_OK))),
                     Child, (IPTR)(cancel_button =
-                        MUI_MakeObject(MUIO_Button,(IPTR)"_Cancel")),
+                        MUI_MakeObject(MUIO_Button,(IPTR)_(MSG_CANCEL))),
                     End,
                 End,
             End);

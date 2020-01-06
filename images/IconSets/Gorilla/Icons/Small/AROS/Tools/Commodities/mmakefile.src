@@ -1,0 +1,12 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := AltKeyQ ASCIITable AutoPoint Blanker ClickToFront DepthMenu Exchange \
+         FKey NoCapsLock Opaque  
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-tools-commodities-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-tools-commodities
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-tools-commodities icons=$(ICONS) \
+             dir=$(AROS_TOOLS)/Commodities

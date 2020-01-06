@@ -1,0 +1,12 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Amiga Linux Networked_Amiga Networked_Linux Networked_Windows Generic \
+         MacOS Networked_Generic Networked_MacOS Windows
+
+#MM- themes-GorillaSmall-icons-clean : themes-GorillaSmall-icons-computers-clean
+#MM- themes-GorillaSmall-icons : themes-GorillaSmall-icons-computers
+%build_icons mmake=themes-GorillaSmall-icons-computers icons=$(ICONS) \
+             dir=$(AROS_CONTRIB)/Icons/Gorilla/Computers

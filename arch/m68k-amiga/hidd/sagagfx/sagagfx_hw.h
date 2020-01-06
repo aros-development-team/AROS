@@ -9,12 +9,13 @@
     Lang: English.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <exec/types.h>
 
 BOOL SAGA_Init();
 void SAGA_SetPLL(ULONG clock);
+void SAGA_LoadCLUT(ULONG *palette, UWORD startIndex, UWORD count);
 
 static inline __attribute__((always_inline)) UWORD READ16(IPTR a) { return (*(volatile UWORD*)a); }
 static inline __attribute__((always_inline)) ULONG READ32(IPTR a) { return (*(volatile ULONG*)a); }
@@ -56,7 +57,7 @@ static inline __attribute__((always_inline)) void WRITE32(IPTR a, ULONG b) { D(b
 #define SAGA_VIDEO_VTOTAL           0xDFF30E
 #define SAGA_VIDEO_HVSYNC           0xDFF310
 #define SAGA_VIDEO_PLLV4            0xDFF3F8
-#define SAGA_VIDEO_CLUT(x)          0xDFF400 + (((x) & 0xFF) << 2))
+#define SAGA_VIDEO_CLUT(x)          (0xDFF400 + (((x) & 0xFF) << 2))
 
 #define SAGA_VIDEO_FORMAT_AMIGA     0x0000
 #define SAGA_VIDEO_FORMAT_CLUT8     0x0001

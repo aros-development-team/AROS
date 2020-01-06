@@ -8,13 +8,14 @@
 
 #define __OOP_NOATTRBASES__
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <devices/inputevent.h>
 #include <exec/alerts.h>
@@ -25,6 +26,7 @@
 #include <oop/oop.h>
 #include <clib/alib_protos.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "sagagfx_hidd.h"
 #include "sagagfx_bitmap.h"
@@ -45,30 +47,153 @@
         { aHidd_Sync_Description,       (IPTR)descr},   \
         { TAG_DONE, 0UL }}
 
+enum {
+    ML_PIXCLK,
+    ML_HPIXEL,
+    ML_HSSTRT,
+    ML_HSSTOP,
+    ML_HTOTAL,
+    ML_VPIXEL,
+    ML_VSSTRT,
+    ML_VSSTOP,
+    ML_VTOTAL,
+    ML_HVSYNC,
+    ML_COUNT
+};
+
+struct TagItem * LoadExternalSyncs(OOP_Class *cl)
+{
+    struct Process *pr = NULL;
+    struct TagItem *retVal = NULL;
+    struct TagItem *lastTag = NULL;
+
+    pr = (struct Process *)FindTask(NULL);
+
+    if (pr->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    {
+        struct DOSBase *DOSBase;
+
+        APTR winptr = pr->pr_WindowPtr;
+        pr->pr_WindowPtr = (APTR)-1;
+
+        DOSBase = (struct DOSBase *)OpenLibrary("dos.library", 0UL);
+
+        if (DOSBase)
+        {
+            BPTR fp = Open("DEVS:modelines.txt", MODE_OLDFILE);
+
+            if (fp)
+            {
+                TEXT buf[512];
+
+                while (FGets(fp, buf, 512))
+                {
+                    char *p = buf;
+                    ULONG i, Modeline[ML_COUNT];
+
+                    if(p[0] != '#')
+                    {
+                        for(i = 0; i < ML_COUNT; i++)
+                        {
+                            LONG n = StrToLong(p, (LONG *)&Modeline[i]);
+                            if(n == -1 || Modeline[i] == 0 || (i != ML_PIXCLK && Modeline[i] > 4000))
+                                break;
+                            p += n;
+                        }
+
+                        if(i == ML_COUNT)
+                        {
+                            struct TagItem *tags = AllocVecPooled(XSD(cl)->mempool, sizeof(struct TagItem)*14);
+                            char *desc = AllocVecPooled(XSD(cl)->mempool, 32);
+
+                            if (lastTag != NULL) {
+                                lastTag[1].ti_Tag = TAG_MORE;
+                                lastTag[1].ti_Data = (IPTR)tags;
+                            }
+
+                            snprintf(desc, 32, "SAGA(User):%dx%d", Modeline[ML_HPIXEL], Modeline[ML_VPIXEL]);
+                            tags[0].ti_Tag = aHidd_Gfx_SyncTags;
+                            tags[0].ti_Data = (IPTR)&tags[2];
+                            tags[1].ti_Tag = TAG_DONE;
+                            tags[1].ti_Data = 0;
+
+                            tags[2].ti_Tag = aHidd_Sync_PixelClock;
+                            tags[2].ti_Data = Modeline[ML_PIXCLK] *1000;
+                            tags[3].ti_Tag = aHidd_Sync_HDisp;
+                            tags[3].ti_Data = Modeline[ML_HPIXEL];
+                            tags[4].ti_Tag = aHidd_Sync_HSyncStart;
+                            tags[4].ti_Data = Modeline[ML_HSSTRT];
+                            tags[5].ti_Tag = aHidd_Sync_HSyncEnd;
+                            tags[5].ti_Data = Modeline[ML_HSSTOP];
+                            tags[6].ti_Tag = aHidd_Sync_HTotal;
+                            tags[6].ti_Data = Modeline[ML_HTOTAL];
+
+                            tags[7].ti_Tag = aHidd_Sync_VDisp;
+                            tags[7].ti_Data = Modeline[ML_VPIXEL];
+                            tags[8].ti_Tag = aHidd_Sync_VSyncStart;
+                            tags[8].ti_Data = Modeline[ML_VSSTRT];
+                            tags[9].ti_Tag = aHidd_Sync_VSyncEnd;
+                            tags[9].ti_Data = Modeline[ML_VSSTOP];
+                            tags[10].ti_Tag = aHidd_Sync_VTotal;
+                            tags[10].ti_Data = Modeline[ML_VTOTAL];
+
+                            tags[11].ti_Tag = aHidd_Sync_Flags;
+                            tags[11].ti_Data = Modeline[ML_HVSYNC];
+
+                            tags[12].ti_Tag = aHidd_Sync_Description;
+                            tags[12].ti_Data = (IPTR)desc;
+
+                            tags[13].ti_Tag = TAG_DONE;
+                            tags[13].ti_Data = 0UL;
+
+                            lastTag = tags;
+                            if (retVal == 0)
+                                retVal = tags;
+                        }
+                    }
+                }
+                Close(fp);
+            }
+
+            CloseLibrary((struct Library *)DOSBase);
+        }
+
+        pr->pr_WindowPtr = winptr;
+    }
+
+    return retVal;
+}
+
 OOP_Object *METHOD(SAGAGfx, Root, New)
 {
+    struct TagItem *userSyncs = NULL;
+
     MAKE_SYNC(320x240, 25180, 320, 656, 752, 800, 240, 490, 492 , 524, 0, "SAGA:320x240");
+    MAKE_SYNC(640x360, 28375, 640, 896, 984, 1088, 360, 504, 508, 518, 1, "SAGA:640x360");
     MAKE_SYNC(640x480, 25180, 640, 656, 752, 800, 480, 490, 492, 525, 0, "SAGA:640x480");
     MAKE_SYNC(720x400, 28320, 720, 738, 846, 900, 400, 412, 414, 449, 2, "SAGA:720x400");
     MAKE_SYNC(720x576, 28375, 720, 753, 817, 908, 576, 582, 586, 624, 1, "SAGA:720x576");
+    MAKE_SYNC(800x600, 28375, 800, 848, 880, 960, 600, 603, 607, 615, 1, "SAGA:800x600");
 
     struct TagItem syncs[] = {
         { aHidd_Gfx_SyncTags,       (IPTR)sync_320x240 },
+        { aHidd_Gfx_SyncTags,       (IPTR)sync_640x360 },
         { aHidd_Gfx_SyncTags,       (IPTR)sync_640x480 },
         { aHidd_Gfx_SyncTags,       (IPTR)sync_720x400 },
         { aHidd_Gfx_SyncTags,       (IPTR)sync_720x576 },
+        { aHidd_Gfx_SyncTags,       (IPTR)sync_800x600 },
         { TAG_DONE, 0UL }
     };
 
     struct TagItem pftags_32bpp[] = {
-        { aHidd_PixFmt_RedShift,    0   }, /* 0 */
-        { aHidd_PixFmt_GreenShift,  8  }, /* 1 */
-        { aHidd_PixFmt_BlueShift,  	16  }, /* 2 */
-        { aHidd_PixFmt_AlphaShift,  24   }, /* 3 */
-        { aHidd_PixFmt_RedMask,     0xff000000 }, /* 4 */
-        { aHidd_PixFmt_GreenMask,   0x00ff0000 }, /* 5 */
-        { aHidd_PixFmt_BlueMask,    0x0000ff00 }, /* 6 */
-        { aHidd_PixFmt_AlphaMask,   0x000000ff }, /* 7 */
+        { aHidd_PixFmt_RedShift,    8   }, /* 0 */
+        { aHidd_PixFmt_GreenShift,  16  }, /* 1 */
+        { aHidd_PixFmt_BlueShift,  	24  }, /* 2 */
+        { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
+        { aHidd_PixFmt_RedMask,     0x00ff0000 }, /* 4 */
+        { aHidd_PixFmt_GreenMask,   0x0000ff00 }, /* 5 */
+        { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
+        { aHidd_PixFmt_AlphaMask,   0xff000000 }, /* 7 */
         { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
         { aHidd_PixFmt_Depth,       32	}, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,4	}, /* 10 */
@@ -109,15 +234,36 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
         { aHidd_PixFmt_Depth,		16	}, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,	2	}, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,	16	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_RGB16_LE }, /* 12 */
+        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_RGB16 }, /* 12 */
+        { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
+        { TAG_DONE, 0UL }
+    };
+
+    struct TagItem pftags_8bpp[] = {
+        { aHidd_PixFmt_RedShift,    8   }, /* 0 */
+        { aHidd_PixFmt_GreenShift,  16  }, /* 1 */
+        { aHidd_PixFmt_BlueShift,  	24  }, /* 2 */
+        { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
+        { aHidd_PixFmt_RedMask,     0x00ff0000 }, /* 4 */
+        { aHidd_PixFmt_GreenMask,   0x0000ff00 }, /* 5 */
+        { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
+        { aHidd_PixFmt_AlphaMask,	0x00000000 }, /* 7 */
+        { aHidd_PixFmt_ColorModel,	vHidd_ColorModel_Palette }, /* 8 */
+        { aHidd_PixFmt_CLUTMask,    0x000000ff },
+        { aHidd_PixFmt_CLUTShift,   0x00000000 },
+        { aHidd_PixFmt_Depth,		8	}, /* 9 */
+        { aHidd_PixFmt_BytesPerPixel,	1	}, /* 10 */
+        { aHidd_PixFmt_BitsPerPixel,	8	}, /* 11 */
+        { aHidd_PixFmt_StdPixFmt,	vHidd_StdPixFmt_LUT8 }, /* 12 */
         { aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
 
     struct TagItem modetags[] = {
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_32bpp	},
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
-        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
+        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_32bpp  },
+        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp  },
+        { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_8bpp   },
         { TAG_MORE,             (IPTR)syncs },
         { TAG_DONE, 0UL }
     };
@@ -142,6 +288,13 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     msg = &newmsg;
 
     D(bug("[SAGA] Root::New() called\n"));
+
+    userSyncs = LoadExternalSyncs(cl);
+
+    if (userSyncs) {
+        syncs[6].ti_Tag = TAG_MORE;
+        syncs[6].ti_Data = (IPTR)userSyncs;
+    }
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
@@ -177,15 +330,22 @@ VOID METHOD(SAGAGfx, Root, Get)
                 *msg->storage = TRUE;
                 break;
 
-            case aoHidd_Gfx_SupportsHWCursor:
-                found = TRUE;
-                *msg->storage = TRUE;
-                break;
-
             case aoHidd_Gfx_HWSpriteTypes:
                 found = TRUE;
                 *msg->storage = vHidd_SpriteType_3Plus1;
-                return;
+                break;
+
+#if 0 /* Not implemented yet */
+            case aoHidd_Gfx_MaxHWSpriteWidth:
+                found = TRUE;
+                *msg->storage = 16;
+                break;
+
+            case aoHidd_Gfx_MaxHWSpriteHeight:
+                found = TRUE;
+                *msg->storage = 16;
+                break;
+#endif
         }
     }
 
@@ -198,8 +358,8 @@ BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorPos)
     D(bug("[SAGA] SetCursorPos(%d, %d)\n", msg->x, msg->y));
     XSD(cl)->cursorX = msg->x;
     XSD(cl)->cursorY = msg->y;
-    WRITE16(SAGA_VIDEO_SPRITEX, msg->x);
-    WRITE16(SAGA_VIDEO_SPRITEY, msg->y);
+    WRITE16(SAGA_VIDEO_SPRITEX, msg->x + SAGA_MOUSE_DELTAX);
+    WRITE16(SAGA_VIDEO_SPRITEY, msg->y + SAGA_MOUSE_DELTAY);
 
     return TRUE;
 }
@@ -222,7 +382,91 @@ VOID METHOD(SAGAGfx, Hidd_Gfx, SetCursorVisible)
 
 BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorShape)
 {
-    D(bug("[SAGA] SetCursorShape()\n"));
+    IPTR width, height, depth;
+    OOP_Object *cmap = NULL;
+    IPTR num_colors = 0;
+    IPTR ptr;
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Depth, &depth);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, &cmap);
+
+    if (cmap) {
+        OOP_GetAttr(cmap, aHidd_ColorMap_NumEntries, &num_colors);
+        if (num_colors > 4)
+            num_colors = 4;
+
+        D(bug("[SAGA] number of colors: %d\n", num_colors));
+
+        for (int i=0; i < num_colors; i++) {
+            HIDDT_Color c;
+            HIDD_CM_GetColor(cmap, i, &c);
+
+            XSD(cl)->cursor_pal[i] =
+                ((c.red >> 12) & 15) << 8 |
+                ((c.green >> 12) & 15) << 4 |
+                ((c.blue >> 12) & 15) << 0;
+
+            D(bug("[SAGA] c%02x: %x %x %x %x %08x\n", i, c.red, c.green, c.blue, c.alpha, c.pixval));
+        }
+    }
+
+    D(bug("[SAGA] SetCursorShape(%p, %d, %d, %d)\n", msg->shape, width, height, depth));
+
+    if (width > 16)
+        width = 16;
+
+    if (height > 16)
+        height = 16;
+
+    if (width != 16 || height != 16)
+    {
+        for (UWORD i=0; i < 16*16; i++)
+            XSD(cl)->cursor_clut[i] = 0;
+    }
+
+    HIDD_BM_GetImageLUT(msg->shape, XSD(cl)->cursor_clut, 16, 0, 0, width, height, NULL);
+
+    bug("Shape:\n");
+    ptr = 0xdff800;
+
+    for (int y = 0; y < 16; y++)
+    {
+        ULONG pix = 0x80008000;
+        ULONG val = 0;
+
+        for (int x = 0; x < 16; x++)
+        {
+            bug("%d ", XSD(cl)->cursor_clut[y *16 + x]);
+            switch (XSD(cl)->cursor_clut[y*16 + x])
+            {
+                case 1:
+                    val |= pix & 0xffff;
+                    break;
+                case 2:
+                    val |= pix & 0xffff0000;
+                    break;
+                case 3:
+                    val |= pix;
+                    break;
+                default:
+                    break;
+            }
+            pix >>= 1;
+        }
+        WRITE32(ptr, val);
+        ptr += 4;
+        bug("\n");
+    }
+
+    for (int i=1; i < 4; i++) {
+        WRITE16(0xdff3a0 + (i << 1), XSD(cl)->cursor_pal[i]);
+    }
+
+    XSD(cl)->hotX = msg->xoffset;
+    XSD(cl)->hotY = msg->yoffset;
+
     return TRUE;
 }
 
@@ -328,6 +572,9 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
         WRITE16(SAGA_VIDEO_HVSYNC, bmdata->hwregs.hvsync);
 
         SAGA_SetPLL(bmdata->hwregs.pixelclock);
+
+        if (bmdata->CLUT)
+            SAGA_LoadCLUT(bmdata->CLUT, 0, 256);
 
         WRITE16(SAGA_VIDEO_MODE, bmdata->hwregs.video_mode);
 

@@ -29,6 +29,7 @@
 #include "prefs.h"
 #include "palette.h"
 #include "palette_private.h"
+#include "../locale.h"
 
 #define ColorWheelBase data->colorwheelbase
 
@@ -57,7 +58,7 @@ static LONG display_func(struct Hook *hook, char **array,
     else
     {
         IPTR colorargs = (IPTR)(long)(array[-1] + 1);
-        RawDoFmt("Color %ld", (RAWARG)&colorargs, RAWFMTFUNC_STRING, data->buf);
+        RawDoFmt(_(MSG_PALETTE_COLOR), (RAWARG)&colorargs, RAWFMTFUNC_STRING, data->buf);
         *array++ = data->buf;
     }
     return 0;

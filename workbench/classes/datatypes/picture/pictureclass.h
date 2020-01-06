@@ -1,5 +1,5 @@
 /*
-    Copyright ©	1995-2003, The AROS Development	Team. All rights reserved.
+    Copyright ©	1995-2020, The AROS Development	Team. All rights reserved.
     $Id$
 */
 
@@ -18,10 +18,10 @@ struct Picture_Data
     ULONG		  ModeID;
     struct BitMapHeader	  bmhd;
     struct BitMap	 *SrcBM; /* PDTA_BitMap	and PDTA_ClassBM */
-    ULONG		  SrcColRegs[768]; /* PDTA_CRegs */
+    ULONG		  SrcColRegs[256 * 3]; /* PDTA_CRegs */
     struct BitMap	 *DestBM;
     UBYTE		 *MaskPlane;
-    ULONG		  DestColRegs[768]; /* PDTA_GRegs */
+    ULONG		  DestColRegs[256 * 3]; /* PDTA_GRegs */
     struct Screen	 *DestScreen;
     struct ColorRegister  ColMap[256];
     UBYTE		  ColTable[256];
