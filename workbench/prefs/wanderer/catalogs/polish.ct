@@ -185,19 +185,19 @@ Wysoko¶æ ramki etykiety
 ; Label Frame Height
 ;
 MSG_TILED
-powielanie
+Powielanie
 ; Tiled
 ;
 MSG_SCALED
-skalowanie
+Skalowanie
 ; Scaled
 ;
 MSG_FLOATING
-p³ynne
+P³ynne
 ; Floating
 ;
 MSG_FIXED
-uszeregowane
+Uszeregowane
 ; Fixed
 ;
 MSG_LABELLINELENGTH

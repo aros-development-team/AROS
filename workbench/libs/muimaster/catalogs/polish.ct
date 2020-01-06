@@ -1,6 +1,6 @@
-## version $VER: muimaster.catalog 1.0 (05.01.2020)
-## language deutsch
-## codeset 0
+## version $VER: muimaster.catalog 1.0 (06.01.2020)
+## language polski
+## codeset 5
 ;
 ; Generic
 ;
@@ -9,18 +9,18 @@ _OK
 ; _Ok
 ;
 MSG_CANCEL
-_Abbrechen
+Ponie_chaj
 ; _Cancel
 ;
 ; -------------------------------------------------
 ; Aboutmui class
 MSG_ABOUTMUI_WINDOW_TITLE
-Über Zune
+O Zune
 ; About Zune
 ;
 MSG_ABOUTMUI_STRING
-Zune, ein MUI-Klon\n\n\
-Kompiliert am %s\n\
+Zune, klon MUI\n\n\
+Kompilowany %s\n\
 Copyright (C) 2002-2020, The AROS Development Team.
 ; Zune, a MUI clone\n\n\
 ; Compiled on %s\n\
@@ -29,83 +29,83 @@ Copyright (C) 2002-2020, The AROS Development Team.
 ; -------------------------------------------------
 ; Coloradjust class
 MSG_COLORADJUST_RED
-Rot:
+Czerwony:
 ; Red:
 ;
 ; Coloradjust class
 MSG_COLORADJUST_GREEN
-Grün:
+Zielony:
 ; Green:
 ;
 ; Coloradjust class
 MSG_COLORADJUST_BLUE
-Blau:
+Niebieski:
 ; Blue:
 ;
 ; -------------------------------------------------
 ; Dirlist class
 MSG_DIRLIST_NAME
-Name
+Nazwa
 ; Name
 ;
 MSG_DIRLIST_SIZE
-Größe
+Wielko¶æ
 ; Size
 ;
 MSG_DIRLIST_DATE
-Datum
+Data
 ; Date
 ;
 MSG_DIRLIST_TIME
-Zeit
+Czas
 ; Time
 ;
 MSG_DIRLIST_FLAGS
-Optionen
+Opcje
 ; Flags
 ;
 MSG_DIRLIST_COMMENT
-Kommentar
+Komentarz
 ; Comment
 ;
 ; -------------------------------------------------
 ; Frameadjust class
 MSG_FRAMEADJUST_INNER_SPACING
-Innerer Abstand:
+Odstêp wewnêtrzny:
 ; Inner Spacing:
 ;
 MSG_FRAMEADJUST_LEFT
-Links
+Lewo
 ; Left
 ;
 MSG_FRAMEADJUST_TOP
-Oben
+Góra
 ; Top
 ;
 MSG_FRAMEADJUST_RIGHT
-Rechts
+Prawo
 ; Right
 ;
 MSG_FRAMEADJUST_BOTTOM
-Unten
+Dól
 ; Bottom
 ;
 ; -------------------------------------------------
 ; Imageadjust class
 MSG_IMAGEADJUST_PATTERN
-Muster
+Wzór
 ; Pattern
 ;
 MSG_IMAGEADJUST_VECTOR
-Vektor
+Wektor
 ; Vector
 ;
 MSG_IMAGEADJUST_COLOR
-Farbe
+Kolor
 ; Color
 ;
 MSG_IMAGEADJUST_EXTERNAL
-Extern
+Zewnêtrzne
 ; External
 ;
 MSG_IMAGEADJUST_BITMAP
@@ -113,15 +113,15 @@ Bitmap
 ; Bitmap
 ;
 MSG_IMAGEADJUST_GRADIENT
-Verlauf
+Gradient
 ; Gradient
 ;
 MSG_IMAGEADJUST_SCALED
-Skaliert
+Skalowane
 ; Scaled
 ;
 MSG_IMAGEADJUST_TILED
-Gekachelt
+Powielane
 ; Tiled
 ;
 MSG_IMAGEADJUST_TYPE
@@ -129,37 +129,37 @@ Typ:
 ; Type:
 ;
 MSG_IMAGEADJUST_ANGLE
-Winkel:
+K±t:
 ; Angle:
 ;
 MSG_IMAGEADJUST_VERTICAL
-Senkrecht
+Pionowo
 ; Vertical
 ;
 MSG_IMAGEADJUST_HORIZONTAL
-Waagrecht
+Poziomo
 ; Horizontal
 ;
 MSG_IMAGEADJUST_COLORS
-Farben:
+Kolory:
 ; Colors:
 ;
 MSG_IMAGEADJUST_START_PEN
-Startstift
+Pierwszy pisak
 ; Start pen
 ;
 MSG_IMAGEADJUST_END_PEN
-Endstift
+Ostatni pisak
 ; End pen
 ;
 MSG_IMAGEADJUST_PREVIEW
-Vorschau:
+Podgl±d:
 ; Preview:
 ;
 ; -------------------------------------------------
 ; Palette class
 MSG_PALETTE_COLOR
-Farbe %ld
+Kolor %ld
 ; Color %ld
 ;
 ; -------------------------------------------------
@@ -177,52 +177,52 @@ RGB
 ; RGB
 ;
 MSG_PENADJUST_SHINE
-Leucht
+Jasne
 ; Shine
 ;
 MSG_PENADJUST_HALFSHINE
-Halbleucht
+Rozja¶nione
 ; Halfshine
 ;
 MSG_PENADJUST_BACKGROUND
-Hintergrund
+T³o
 ; Background
 ;
 MSG_PENADJUST_HALFSHADOW
-Halbschatten
+Przyciemnione
 ; Halfshadow
 ;
 MSG_PENADJUST_SHADOW
-Schatten
+Ciemne
 ; Shadow
 ;
 MSG_PENADJUST_TEXT
-Text
+Tekst
 ; Text
 ;
 MSG_PENADJUST_FILL
-Füllen
+Wype³nij
 ; Fill
 ;
 MSG_PENADJUST_MARK
-Markieren
+Zaznacz
 ; Mark
 ;
 ; -------------------------------------------------
 ; Volumelist class
 MSG_VOLUMELIST_NAME
-Name
+Nazwa
 ; Name
 ;
 MSG_VOLUMELIST_FULL
-Voll
+Pe³ne
 ; Full
 ;
 MSG_VOLUMELIST_FREE
-Frei
+Wolne
 ; Free
 ;
 MSG_VOLUMELIST_USED
-Verwendet
+Wykorzystane
 ; Used
 ;
