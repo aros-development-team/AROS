@@ -4,7 +4,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 STORAGEICONS := Wrapper
-DEVSICONS    := ATI IntelGMA NVidia VMWare
+DEVSICONS    := ATI IntelGMA NVidia VMWare SAGA
 
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-devs-monitors-clean iconset-Gorilla-wbench-icons-storage-monitors-clean
 #MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-devs-monitors iconset-Gorilla-wbench-icons-storage-monitors
