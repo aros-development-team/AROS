@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2019, The AROS Development Team.
+    Copyright (C) 2013-2020, The AROS Development Team.
     $Id$
 */
 
@@ -40,7 +40,7 @@
 #include "enums.h"
 
 #define APPNAME "SysExplorer"
-#define VERSION "SysExplorer 0.5"
+#define VERSION "SysExplorer 0.6"
 #define SysexpModuleDir	"PROGDIR:SysExpModules"
 
 int __nocommandline = 1;
@@ -49,7 +49,7 @@ const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
 extern void sysexp_initlib(struct SysexpBase **SysexpBasePtr);
 
-static Object *app, *main_window, *property_window;
+static Object *app, *main_window;
 static Object *property_menu, *expand_menu, *collapse_menu, *quit_menu;
 
 OOP_AttrBase HiddAttrBase;
@@ -346,11 +346,6 @@ static BOOL GUIinit(struct SysexpBase *SysexpBase)
         DoMethod(main_window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
                  app, 2, 
                  MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
-        DoMethod(property_window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-                 property_window, 3, 
-                 MUIM_Set, MUIA_Window_Open, FALSE);
-
 
         DoMethod(property_menu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
                  app, 3,
