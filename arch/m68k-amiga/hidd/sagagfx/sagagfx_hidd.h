@@ -44,6 +44,7 @@ struct SAGAGfx_staticdata
     UBYTE           hotY;
     APTR            mempool;
 
+    BOOL            useHWSprite;
 //    struct SignalSemaphore  framebufferlock;
 };
 

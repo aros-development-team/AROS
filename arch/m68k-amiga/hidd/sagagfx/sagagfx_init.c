@@ -76,6 +76,7 @@ static int SAGAGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct SAGAGfx_staticdata *xsd = &LIBBASE->vsd;
     struct GfxBase *GfxBase;
+    struct Library *IconBase;
     ULONG err;
     int res = FALSE;
 
@@ -90,6 +91,39 @@ static int SAGAGfx_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
 
     xsd->visible = NULL;
+
+#if 0
+    IconBase = OpenLibrary("icon.library", 0);
+    xsd->useHWSprite = FALSE;
+
+    if (IconBase)
+    {
+        struct DiskObject *icon;
+        STRPTR myName = FindTask(NULL)->tc_Node.ln_Name;
+
+        bug("[SAGA] IconBase = %p\n", IconBase);
+        bug("[SAGA] MyName='%s'\n", myName);
+
+        icon = GetDiskObject(myName);
+
+        bug("[SAGA] DiskObject: %p\n", icon);
+        if (icon)
+        {
+            STRPTR hwSprite = FindToolType(icon->do_ToolTypes, "HWSPRITE");
+            bug("[SAGA] hwSprite='%s'\n", hwSprite);
+            if (hwSprite)
+            {
+                if (MatchToolValue(hwSprite, "Yes"))
+                {
+                    xsd->useHWSprite = TRUE;
+                }
+            }
+            FreeDiskObject(icon);
+        }
+
+        CloseLibrary(IconBase);
+    }
+#endif
 
     /* Initialize lock */
 //    InitSemaphore(&xsd->framebufferlock);
@@ -114,22 +148,9 @@ static int SAGAGfx_Init(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->vsd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
-    /*
-     * It is unknown (and no way to know) what hardware part this driver uses.
-     * In order to avoid conflicts with disk-based native-mode hardware
-     * drivers it needs to be removed from the system when some other driver
-     * is installed.
-     * This is done by graphics.library if DDRV_BootMode is set to TRUE.
-     */
-    err = AddDisplayDriver(LIBBASE->vsd.sagagfxclass, NULL, DDRV_BootMode, TRUE, TAG_DONE);
-
-    D(bug("[SAGA] AddDisplayDriver() result: %u\n", err));
-    if (!err)
-    {
-        /* We use ourselves, and no one else does */
-        LIBBASE->library.lib_OpenCnt = 1;
-        res = TRUE;
-    }
+    /* We use ourselves, and no one else does */
+    LIBBASE->library.lib_OpenCnt = 1;
+    res = TRUE;
 
     CloseLibrary(&GfxBase->LibNode);
 

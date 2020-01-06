@@ -16,6 +16,7 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
+#include <proto/icon.h>
 #include <aros/symbolsets.h>
 #include <devices/inputevent.h>
 #include <exec/alerts.h>
@@ -283,6 +284,53 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
     if (XSD(cl)->sagagfxhidd)
         return NULL;
 
+    /*
+        The instance of driver object is created by the wrapper from
+        DEVS:Monitory through a call to AddDisplayDriver(). The wrapper
+        has set the current directory properly and we can extract its name.
+
+        We use this knowledge to eventually open the corresponding Icon and
+        read the driver specific tooltypes. Eventually we parse those needed.
+    */
+
+    struct Library *IconBase = OpenLibrary("icon.library", 0);
+    XSD(cl)->useHWSprite = FALSE;
+
+    if (IconBase)
+    {
+        struct DiskObject *icon;
+        STRPTR myName = FindTask(NULL)->tc_Node.ln_Name;
+
+        /* We have icon.library and our (wrapper) name. Open icon now */
+        icon = GetDiskObject(myName);
+
+        if (icon)
+        {
+            /* Check our driver specific parameter */
+            STRPTR hwSprite = FindToolType(icon->do_ToolTypes, "HWSPRITE");
+
+            /* Found? Is it set to Yes? */
+            if (hwSprite)
+            {
+                if (MatchToolValue(hwSprite, "Yes"))
+                {
+                    /* Use hardware sprite */
+                    XSD(cl)->useHWSprite = TRUE;
+                }
+            }
+            FreeDiskObject(icon);
+        }
+
+        CloseLibrary(IconBase);
+    }
+
+    /*
+        Hide HW Sprite now - it will be either shown later or not used at all,
+        depending on the tooltype.
+    */
+    WRITE16(SAGA_VIDEO_SPRITEX, SAGA_VIDEO_MAXHV - 1);
+    WRITE16(SAGA_VIDEO_SPRITEY, SAGA_VIDEO_MAXVV - 1);
+
     newmsg.mID = msg->mID;
     newmsg.attrList = saganewtags;
     msg = &newmsg;
@@ -332,7 +380,7 @@ VOID METHOD(SAGAGfx, Root, Get)
 
             case aoHidd_Gfx_HWSpriteTypes:
                 found = TRUE;
-                *msg->storage = vHidd_SpriteType_3Plus1;
+                *msg->storage = XSD(cl)->useHWSprite ? vHidd_SpriteType_3Plus1 : 0;
                 break;
 
 #if 0 /* Not implemented yet */
