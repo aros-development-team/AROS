@@ -4,15 +4,15 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Nelze otev¯Ìt knihovnu %s V%ld!\n
+Nelze otev≈ô√≠t knihovnu %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-Nelze vytvo¯it objekt application!
+Nelze vytvo≈ôit objekt application!
 ; Can't create application object!
 ;
 MSG_WINTITLE
-Datum a Ëas (editor Time)
+Datum a ƒças (editor Time)
 ; Time Preferences
 ;
 MSG_MEN_PROJECT
@@ -20,15 +20,15 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0UkonËit
+Q\0Ukonƒçit
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
-⁄pravy
+√öpravy
 ; Edit
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Obnovit p¯edchozÌ
+R\0Obnovit p≈ôedchoz√≠
 ; R\0Restore
 ;
 MSG_OK
@@ -36,14 +36,14 @@ OK
 ; Ok
 ;
 MSG_GAD_SAVE
-Uloæit
+Ulo≈æit
 ; Save
 ;
 MSG_GAD_USE
-PouæÌt
+Pou≈æ√≠t
 ; Use
 ;
 MSG_GAD_CANCEL
-Zruπit
+Zru≈°it
 ; Cancel
 ;

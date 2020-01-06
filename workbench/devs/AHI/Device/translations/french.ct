@@ -1,5 +1,5 @@
 ## version $VER: ahi.catalog 4.3 (31.3.2019)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;    AHI - Hardware independent audio subsystem
@@ -23,16 +23,16 @@
 ; Input and Output connector name
 ;
 msgDefault
-Défaut
+DÃ©faut
 ; Default
 ;
 ; The requesters menu
 msgMenuControl
-\000\000Contrôle
+\000\000ContrÃ´le
 ; \000\000Control
 ;
 msgMenuLastMode
-D\000Mode précédent
+D\000Mode prÃ©cÃ©dent
 ; L\000Last Mode
 ;
 msgMenuNextMode
@@ -40,11 +40,11 @@ P\000Mode suivant
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\000Liste des Propriétés...
+?\000Liste des PropriÃ©tÃ©s...
 ; ?\000Property List...
 ;
 msgMenuRestore
-R\000Rétablir
+R\000RÃ©tablir
 ; R\000Restore
 ;
 msgMenuOK
@@ -72,19 +72,19 @@ Annuler
 ; Cancel
 ;
 msgReqFrequency
-Fréquence
+FrÃ©quence
 ; Frequency
 ;
 ; Name of default mode in requester
 ;
 msgDefaultMode
-Mode audio par défaut
+Mode audio par dÃ©faut
 ; Default audio mode
 ;
 ; The requester's info-window
 ;
 msgReqInfoTitle
-Mode propriétés
+Mode propriÃ©tÃ©s
 ; Mode Properties
 ;
 msgReqInfoAudioID
@@ -92,7 +92,7 @@ Mode audio ID : 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Résolution : %ld bit %s
+RÃ©solution : %ld bit %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
@@ -100,11 +100,11 @@ mono
 ; mono
 ;
 msgReqInfoStereo
-stéréo
+stÃ©rÃ©o
 ; stereo
 ;
 msgReqInfoStereoPan
-stéréo avec effet panoramique
+stÃ©rÃ©o avec effet panoramique
 ; stereo with panning
 ;
 msgReqInfoChannels
@@ -116,7 +116,7 @@ Niveau de mixage : %ld-%ld Hz
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
-Mélange HiFi
+MÃ©lange HiFi
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf
@@ -124,7 +124,7 @@ Enregistrement en semi-duplex
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-Enregistrement en duplex intégral
+Enregistrement en duplex intÃ©gral
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel

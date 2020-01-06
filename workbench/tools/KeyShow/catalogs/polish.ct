@@ -3,7 +3,7 @@
 ## codeset 5
 ;
 MSG_AppDescription
-Poka¿ uk³ad klawiatury
+PokaÅ¼ ukÅ‚ad klawiatury
 ; Show Keyboard Layout
 ;
 MSG_AppCopyright
@@ -21,15 +21,15 @@ OK
 ; Error messages
 ;
 MSG_ERR
-B³±d
+BÅ‚Ä…d
 ; Error
 ;
 MSG_ERR_NO_APPLICATION
-Nie mo¿na utworzyc aplikacji
+Nie moÅ¼na utworzyc aplikacji
 ; Can't create application
 ;
 MSG_ERR_NO_MEM
-Brak pamiêci
+Brak pamiÄ™ci
 ; Out of memory
 ;
 ; Key descriptions

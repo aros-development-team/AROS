@@ -4,54 +4,54 @@
 ;
 ;
 MSG_WINDOW_TITLE
-KÈplopÛ
+K√©plop√≥
 ; ScreenGrabber
 ;
 MSG_REFRESH
-FrissÌtÈs lista
+Friss√≠t√©s lista
 ; Refresh list
 ;
 MSG_SCREEN_INFO
-KÈpernyı inform·ciÛ
+K√©perny≈ë inform√°ci√≥
 ; Screen info
 ;
 MSG_SIZE
-MÈret
+M√©ret
 ; Size
 ;
 MSG_TITLE
-FejlÈc
+Fejl√©c
 ; Title
 ;
 MSG_DEFAULT_TITLE
-Alap fejlÈc
+Alap fejl√©c
 ; Default title
 ;
 MSG_GRABBING_OPTIONS
-KÈplop·s opciÛk
+K√©plop√°s opci√≥k
 ; Grabbing options
 ;
 MSG_DELAY
-KÈsleltetÈs (mp)
+K√©sleltet√©s (mp)
 ; Delay (s)
 ;
 MSG_HIDE
-KÈplopÛ ablak elrejtÈse
+K√©plop√≥ ablak elrejt√©se
 ; Hide the grabber window
 ;
 MSG_SAVE_OPTIONS
-MentÈsi be·llÌt·sok
+Ment√©si be√°ll√≠t√°sok
 ; Save options
 ;
 MSG_SAVE_FILE
-F·jl
+F√°jl
 ; Save file
 ;
 MSG_SCREENSHOT
-KÈpernyıkÈp
+K√©perny≈ëk√©p
 ; Screenshot
 ;
 MSG_SCREEN_PARM
-%d x %d, szÌnek=%d
+%d x %d, sz√≠nek=%d
 ; %d x %d, depth=%d
 ;

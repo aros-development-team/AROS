@@ -1,5 +1,5 @@
 ## version $VER: About.catalog 1.0 (18.8.2003)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 MSG_TITLE
@@ -27,11 +27,11 @@ Sobre AROS
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2020, The AROS Development Team. Todos derechos reservados.
-; Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+Copyright Â© 1995-2020, The AROS Development Team. Todos derechos reservados.
+; Copyright Â© 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
-Lanzado por los términos de la
+Lanzado por los tÃ©rminos de la
 ; Released under the terms of the
 ;
 MSG_LICENSE_2
@@ -39,11 +39,11 @@ AROS Public License
 ; AROS Public License
 ;
 MSG_LICENSE_3
-, versión 1.1.
+, versiÃ³n 1.1.
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Por favor, visite http://www.aros.org/es/ para mas información.
+Por favor, visite http://www.aros.org/es/ para mas informaciÃ³n.
 ; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS

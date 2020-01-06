@@ -1,5 +1,5 @@
 ## version $VER: format.catalog 2.1 (31.3.2019)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 MSG_OK
@@ -14,7 +14,7 @@ Annuler
 ; cli.c
 ;
 MSG_INSERT_DISK
-Insérer le disque à formater dans le périphérique %s\n\ Appuyer sur Retour pour démarrer le formatage ou CTRL+C pour arrêter : 
+InsÃ©rer le disque Ã  formater dans le pÃ©riphÃ©rique %s\n\ Appuyer sur Retour pour dÃ©marrer le formatage ou CTRL+C pour arrÃªter : 
 ; Insert disk to be formatted in device %s\n\
 ; Press RETURN to begin formatting or CTRL-C to abort: 
 ;
@@ -23,7 +23,7 @@ MSG_FORMATTING
 ; \rFormatting cylinder %lu, %lu to go 
 ;
 MSG_VERIFYING
-\rVérification 
+\rVÃ©rification 
 ; \rVerifying 
 ;
 MSG_INITIALIZING
@@ -34,7 +34,7 @@ Initialisation du disque...\n
 ; gui.c
 ;
 MSG_SELECTDEVICE
-Choisissez un périphérique\nà formater
+Choisissez un pÃ©riphÃ©rique\nÃ  formater
 ; Select Device To Format
 ;
 ; ***NEW***
@@ -48,11 +48,11 @@ Initialisation du disque...
 ; Initializing Disk...
 ;
 MSG_IN_DEVICE
-dans le périphérique %s
+dans le pÃ©riphÃ©rique %s
 ; in device %s
 ;
 MSG_FORMAT_REQUEST_TITLE
-Requête de formatage
+RequÃªte de formatage
 ; Format Request
 ;
 MSG_FORMAT_REQUEST_GADGETS
@@ -60,7 +60,7 @@ Formater|Annuler
 ; Format|Cancel
 ;
 MSG_FORMAT_REQUEST_TEXT
-Voulez vous vraiment formater le volume %s?\n\nAttention !\n\nToutes les données seront perdues !\n\(%s)
+Voulez vous vraiment formater le volume %s?\n\nAttention !\n\nToutes les donnÃ©es seront perdues !\n\(%s)
 ; OK to format volume\n\
 ; %s?\n\n\
 ; WARNING!\n\n\
@@ -73,15 +73,15 @@ KMGTPE
 ; Kilo, Mega ...
 ;
 MSG_CAPACITY_USED
-Capacité de %lu%lc, %lu%% utilisé
+CapacitÃ© de %lu%lc, %lu%% utilisÃ©
 ; %lu%lc capacity, %lu%% used
 ;
 MSG_CAPACITY
-Capacité de %lu%lc
+CapacitÃ© de %lu%lc
 ; %lu%lc capacity
 ;
 MSG_ERROR_WANDERER
-Doit être exécuté depuis Wanderer avec une icône sélectionnée.
+Doit Ãªtre exÃ©cutÃ© depuis Wanderer avec une icÃ´ne sÃ©lectionnÃ©e.
 ; Must be started from Wanderer with a selected icon\n
 ;
 MSG_WINDOW_TITLE
@@ -89,7 +89,7 @@ Formater - %s
 ; Format - %s
 ;
 MSG_DEVICE
-Périphérique %s
+PÃ©riphÃ©rique %s
 ; Device '%s'
 ;
 MSG_VOLUME
@@ -105,11 +105,11 @@ Outil de formatage de disque
 ; Disk Formatting Utility
 ;
 MSG_COPYRIGHT
-Copyright \xa9 1999 Ben Hutchings, 2008 Pavel Fedin, 2008-2019 l'équipe de développement d'AROS
-; Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+Copyright \xa9 1999 Ben Hutchings, 2008 Pavel Fedin, 2008-2019 l'Ã©quipe de dÃ©veloppement d'AROS
+; Copyright Â© 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
 ;
 MSG_AUTHOR
-Ben Hutchings, Pavel Fedin, l'équipe de développement d'AROS
+Ben Hutchings, Pavel Fedin, l'Ã©quipe de dÃ©veloppement d'AROS
 ; Ben Hutchings, Pavel Fedin, The AROS Development Team
 ;
 MSG_LABEL_CURRENT_INFORMATION
@@ -137,7 +137,7 @@ Mode international :
 ; International Mode:
 ;
 MSG_LABEL_CACHE
-Cache de répertoire :
+Cache de rÃ©pertoire :
 ; Directory Cache:
 ;
 MSG_BTN_FORMAT
@@ -153,15 +153,15 @@ Annuler
 ; Cancel
 ;
 MSG_BTN_STOP
-Arrêter
+ArrÃªter
 ; Stop
 ;
 MSG_ERROR_NO_APPLICATION
-Impossible de créer l'application\n
+Impossible de crÃ©er l'application\n
 ; Can't create application\n
 ;
 MSG_ERROR_NO_WINDOW
-Impossible d'ouvrir la fenêtre\n
+Impossible d'ouvrir la fenÃªtre\n
 ; Can't open window\n
 ;
 MSG_REQ_ERROR_TITLE
@@ -180,7 +180,7 @@ Erreur
 ; Error
 ;
 MSG_ERRORS_FAILURE
-Échec
+Ã‰chec
 ; Failure
 ;
 MSG_FORMAT
@@ -188,39 +188,39 @@ Format
 ; Format 
 ;
 MSG_ERROR_INVALID_DOSTYPE
-Spécification du type Dos invalide
+SpÃ©cification du type Dos invalide
 ; Invalid DosType specification
 ;
 MSG_ERROR_TOO_LARGE_1
-Ce périphérique est d'une taille supérieure à 4 Go. Le système de fichier ne peut manipuler un périphérique aussi large.
+Ce pÃ©riphÃ©rique est d'une taille supÃ©rieure Ã  4Â Go. Le systÃ¨me de fichier ne peut manipuler un pÃ©riphÃ©rique aussi large.
 ; This device is larger than 4 gigabytes in size. The\
 ;  Amiga file-system cannot handle a device this large.
 ;
 MSG_ERROR_TOO_LARGE_2
-Ce périphérique s'étend au delà des 4 premiers Go du disque. Vous devez installer la version 43 ou supérieure du système de gestion de fichier Amiga.
+Ce pÃ©riphÃ©rique s'Ã©tend au delÃ  des 4 premiers Go du disque. Vous devez installer la version 43 ou supÃ©rieure du systÃ¨me de gestion de fichier Amiga.
 ; This device extends beyond the first 4 gigabytes of the\
 ;  disk it is on.  In order to use it, you must install\
 ;  version 43 or later of the Amiga file-system.
 ;
 MSG_ERROR_TOO_LARGE_3
-Ce périphérique est d'une taille supérieure à 2 Go. Vous devez installer la version 40 ou supérieure du système de gestion de fichier Amiga.
+Ce pÃ©riphÃ©rique est d'une taille supÃ©rieure Ã  2Â Go. Vous devez installer la version 40 ou supÃ©rieure du systÃ¨me de gestion de fichier Amiga.
 ; This device is larger than 2 gigabytes in size. In order to\
 ;  use it, you must install version 40 or later of the Amiga\
 ;  file-system.
 ;
 MSG_ERROR_TOO_LARGE_4
-Ce périphérique est configuré pour utiliser de la mémoire qui ne sera peut être pas « publique ». Ceci peut causer une chute du système si vous utilisez un gestionnaire de mémoire virtuel. Vous devriez ajouter 1 au réglage BufMemType pour éviter ce comportement.
+Ce pÃ©riphÃ©rique est configurÃ© pour utiliser de la mÃ©moire qui ne sera peut Ãªtre pas Â«Â publiqueÂ Â». Ceci peut causer une chute du systÃ¨me si vous utilisez un gestionnaire de mÃ©moire virtuel. Vous devriez ajouter 1 au rÃ©glage BufMemType pour Ã©viter ce comportement.
 ; This device is set to use buffers in memory that may not be\
 ;  \"public\". This can cause your computer to crash if you use a\
 ;  virtual memory system. You should add 1 to the BufMemType\
 ;  setting for this device to avoid this.
 ;
 MSG_ERROR_DEVICE
-L'ouverture du périphérique a retourné l'erreur %ld.
+L'ouverture du pÃ©riphÃ©rique a retournÃ© l'erreur %ld.
 ; Device open returned error %ld
 ;
 MSG_ERROR_IDE
-Ce périphérique apparait être un disque IDE utilisant un vieux pilote IDE Commodore. Ce pilote peut tenter de réaliser des transferts longs de données que certains disques IDE ne supportent pas. Pour éviter ce risque, vous devriez régler le maxtransfert à 0x10000.
+Ce pÃ©riphÃ©rique apparait Ãªtre un disque IDE utilisant un vieux pilote IDE Commodore. Ce pilote peut tenter de rÃ©aliser des transferts longs de donnÃ©es que certains disques IDE ne supportent pas. Pour Ã©viter ce risque, vous devriez rÃ©gler le maxtransfert Ã  0x10000.
 ; This device appears to be on an IDE drive\
 ;  using an old Commodore IDE driver.  This driver may\
 ;  attempt to perform long data transfers that some IDE\
@@ -229,18 +229,18 @@ Ce périphérique apparait être un disque IDE utilisant un vieux pilote IDE Commod
 ;  MaxTransfer setting to 0x10000.
 ;
 MSG_ERROR_DEVICE_QUERY
-La requête sur périphérique (NSCMD_DEVICEQUERY) a retourné l'erreur %ld.
+La requÃªte sur pÃ©riphÃ©rique (NSCMD_DEVICEQUERY) a retournÃ© l'erreur %ld.
 ; Device query (NSCMD_DEVICEQUERY) returned error %ld
 ;
 MSG_ERROR_64BIT
-Ce périphérique s'étend au delà des 4 premiers Go du disque. Pour utiliser ce périphérique, vous devez soit utiliser un pilote qui supporte les commandes NSD 64 bits, soit installer et exécuter la commande NSDPatch.
+Ce pÃ©riphÃ©rique s'Ã©tend au delÃ  des 4 premiers Go du disque. Pour utiliser ce pÃ©riphÃ©rique, vous devez soit utiliser un pilote qui supporte les commandes NSD 64Â bits, soit installer et exÃ©cuter la commande NSDPatch.
 ; This device extends beyond the first 4 gigabytes of the disk.\
 ;  In order to use this device, you must either use a driver\
 ;  that supports the NSD 64-bit commands or install and run the\
 ;  NSDPatch program.
 ;
 MSG_ERROR_DEVICE_RETURN
-Le périphérique %s a retourné l'erreur %ld.
+Le pÃ©riphÃ©rique %s a retournÃ© l'erreur %ld.
 ; Device %s returned error %ld
 ;
 MSG_ERROR_FLUSH
@@ -252,7 +252,7 @@ Invalidate (CMD_CLEAR)
 ; invalidate (CMD_CLEAR)
 ;
 MSG_ERROR_VERIFY
-Erreur de vérification
+Erreur de vÃ©rification
 ; Verify error
 ;
 MSG_COMMAND_FORMAT64
@@ -272,10 +272,10 @@ read (CMD_READ)
 ; read (CMD_READ)
 ;
 MSG_ERROR_TRASHCAN
-Impossible de créer la corbeille\nsur le volume %s.
+Impossible de crÃ©er la corbeille\nsur le volume %s.
 ; Couldn't create trashcan on volume\n%s
 ;
 MSG_ERROR_ICON
-Impossible de créer l'icône du disque\nsur le volume %s.
+Impossible de crÃ©er l'icÃ´ne du disque\nsur le volume %s.
 ; Couldn't create disk icon on volume\n%s
 ;

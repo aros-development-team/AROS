@@ -7,19 +7,19 @@ WBRename
 ; WBRename
 ;
 MSG_DESCRIPTION
-Zmienia nazwy plików i katalogów
+Zmienia nazwy plikÃ³w i katalogÃ³w
 ; Renames files and drawers
 ;
 MSG_COPYRIGHT
 (C)2006, AROS dev Team
-; ©2006, AROS Dev Team
+; Å 2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Zmiana nazwy
 ; Rename
 ;
 MSG_LINE
-Wprowad¼ now± nazwê
+WprowadÅº nowÄ… nazwÄ™
 ; Enter a new name
 ;
 MSG_NAME
@@ -35,15 +35,15 @@ Ponie_chaj
 ; Ca_ncel
 ;
 MSG_ERROR_TITLE
-B³±d
+BÅ‚Ä…d
 ; Error
 ;
 MSG_ALREADY_EXIST
-\"%s\" ju¿ istnieje!
+\"%s\" juÅ¼ istnieje!
 ; '%s' already exists!
 ;
 MSG_FAILED
-Zmiana nazwy elementu \"%s\" nie powiod³a siê, zakoñczono b³êdem:\n\
+Zmiana nazwy elementu \"%s\" nie powiodÅ‚a siÄ™, zakoÅ„czono bÅ‚Ä™dem:\n\
 \"%s\"!
 ; Rename of '%s' failed with error:\n'%s'!
 ;
@@ -56,18 +56,18 @@ Wymagane 2 argumenty!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Niew³a¶ciwe zablokowanie katalogu!
+NiewÅ‚aÅ›ciwe zablokowanie katalogu!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
-Nie mo¿na uruchomiæ z linii poleceñ!\n
+Nie moÅ¼na uruchomiÄ‡ z linii poleceÅ„!\n
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-Nie mo¿na utworzyæ aplikacji!
+Nie moÅ¼na utworzyÄ‡ aplikacji!
 ; Failed to create Application!
 ;
 MSG_OUTOFMEMORY
-Nie mo¿na zaalokowaæ pamiêci RAM!
+Nie moÅ¼na zaalokowaÄ‡ pamiÄ™ci RAM!
 ; Can't allocate RAM!
 ;

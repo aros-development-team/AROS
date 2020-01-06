@@ -27,7 +27,7 @@ Voller Pfad
 ; Full Path
 ;
 MSG_LST_SIZE
-Größe
+GrÃ¶ÃŸe
 ; Size
 ;
 MSG_LST_ATTRIBUTES
@@ -67,7 +67,7 @@ Anhalten
 ; Stop
 ;
 MSG_BTN_OPEN
-Öffnen
+Ã–ffnen
 ; Open
 ;
 MSG_BTN_VIEW
@@ -97,7 +97,7 @@ Fehler:\nKann Speicher nicht anfordern.
 ; Error:\nCan't allocate memory.
 ;
 MSG_ERR_NO_WINDOW
-Fehler:\nKann Fenster nicht öffnen.
+Fehler:\nKann Fenster nicht Ã¶ffnen.
 ; Error:\nCan't open window.
 ;
 MSG_ERR_DOS
@@ -105,13 +105,13 @@ DOS Fehler:\n%s
 ; DOS Error:\n%s
 ;
 MSG_ERR_NO_FILE
-Fehler:\nKann Datei\n\"%s\"\nnicht öffnen.
+Fehler:\nKann Datei\n\"%s\"\nnicht Ã¶ffnen.
 ; Error:\nCan't open file\n\"%s\".
 ;
 MSG_ERR_NO_DIR
-Fehler:\nKann Schublade\n\"%s\"\nnicht öffnen.
+Fehler:\nKann Schublade\n\"%s\"\nnicht Ã¶ffnen.
 ; Error:\nCan't open directory\n\"%s\".
 ;
 MSG_ERR_PATTERN
-Fehler:\nKann Muster nicht übersetzen.
+Fehler:\nKann Muster nicht Ã¼bersetzen.
 ; Error:\nCan't parse pattern.

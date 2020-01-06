@@ -21,7 +21,7 @@ MSG_SAVEFILE
 Tallenna
 ;
 MSG_SAVEFILEAS
-Tallenna nimell‰...
+Tallenna nimell√§...
 ;
 MSG_SAVECHANGES
 Tallenna muutokset
@@ -48,7 +48,7 @@ MSG_COPY
 Kopioi
 ;
 MSG_PASTE
-Liit‰
+Liit√§
 ;
 MSG_MARK
 Merkitse
@@ -63,10 +63,10 @@ MSG_DELLINE
 Poista rivi
 ;
 MSG_SUBTOOLS
-Tyˆkalut
+Ty√∂kalut
 ;
 MSG_INDENT
-Sisenn‰
+Sisenn√§
 ;
 MSG_UNINDENT
 Poista sisennys
@@ -81,7 +81,7 @@ MSG_TOGGLECASE
 Vaihda kirjain kokoa
 ;
 MSG_INSERTFILE
-Sis‰llyt‰ tiedosto...
+Sis√§llyt√§ tiedosto...
 ;
 MSG_UNDO
 Peru
@@ -151,10 +151,10 @@ Toista makro...
 ; Environnement menu
 ;
 MSG_ENVTITLE
-Ymp‰ristˆ
+Ymp√§rist√∂
 ;
 MSG_SCRMODE
-N‰yttˆtila...
+N√§ytt√∂tila...
 ;
 MSG_FONTS
 Kirjasimet...
@@ -169,52 +169,52 @@ MSG_SAVEPREFS
 Tallenna asetukset
 ;
 MSG_SAVEPREFSAS
-Tallenna asetukset nimell‰...
+Tallenna asetukset nimell√§...
 ;
 ERR_BADOS
-Wanha k‰yttis! Asenna v2.0 tai uudempi.
+Wanha k√§yttis! Asenna v2.0 tai uudempi.
 ;
 ERR_NOASLREQ
-En voi varata ASL-kysely‰!
+En voi varata ASL-kysely√§!
 ;
 ERR_NOMEM
 Muisti lopussa!
 ;
 ERR_NOGUI
-P‰‰k‰yttˆliittym‰ ei avaudu!
+P√§√§k√§ytt√∂liittym√§ ei avaudu!
 ;
 ERR_NONAME
-Ei nime‰
+Ei nime√§
 ;
 ERR_WRITECLIP
-Kirjoitusvirhe leikepˆyt‰laitteeseen
+Kirjoitusvirhe leikep√∂yt√§laitteeseen
 ;
 ERR_OPENCLIP
-Leikepˆyt‰‰ ei voi avata!
+Leikep√∂yt√§√§ ei voi avata!
 ;
 ERR_LOADFILE
 Haluttua tiedostoa ei voi avata!
 ;
 ERR_NOTXTINCLIP
-Ei teksti‰ leikepˆyd‰ll‰
+Ei teksti√§ leikep√∂yd√§ll√§
 ;
 ERR_WRONG_TYPE
 Objekti on hakemisto!
 ;
 ERR_READCLIP
-Lukutoiminto ep‰t‰ydellinen mahdollisen muistin puutteen vuoksi
+Lukutoiminto ep√§t√§ydellinen mahdollisen muistin puutteen vuoksi
 ;
 ERR_NOBRACKET
 Ei sulkua kursorin alla!
 ;
 ERR_NOT_FOUND
-Kuviota '%s' ei lˆydy
+Kuviota '%s' ei l√∂ydy
 ;
 ERR_LOADFONT
 Haluttua kirjasinta ei voi ladata!
 ;
 ERR_NOPREFEDITOR
-Asetusmuokkainta ei lˆydy!
+Asetusmuokkainta ei l√∂ydy!
 ;
 ERR_BADPREFSFILE
 Asetustiedoston muoto virheellinen.
@@ -226,13 +226,13 @@ ERR_SLC
 Tallenna|Sulje|Peru
 ;
 ERR_NOSEARCHTEXT
-Ei teksti‰ jota etsi‰!
+Ei teksti√§ jota etsi√§!
 ;
 ERR_FILEEXISTS
 Tiedosto on jo olemassa. Kirjoitetaanko sen yli?
 ;
 ERR_OC
-Kyll‰|EI!
+Kyll√§|EI!
 ;
 WARN_RECORD
 Aloita makron tallennus
@@ -252,7 +252,7 @@ MSG_ABOUT
 Tietoa
 ;
 MSG_FORMATINFO
-%s\nSuunnittelu: T.Pierron ja C.Guillaume © 2000\n\nTiedosto muokattavana: %s\nKoko: %iu %s, %iu %s.
+%s\nSuunnittelu: T.Pierron ja C.Guillaume ¬© 2000\n\nTiedosto muokattavana: %s\nKoko: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Jatka
@@ -267,7 +267,7 @@ MSG_LINE
 rivi
 ;
 MSG_LINES
-rivej‰
+rivej√§
 ;
 ;
 ; *************************
@@ -275,7 +275,7 @@ rivej‰
 ; *************************
 ;
 MSG_SEARCHWINDOW
-Etsint‰kuvio
+Etsint√§kuvio
 ;
 MSG_REPLACEWINDOW
 Etsi ja korvaa
@@ -305,17 +305,17 @@ MSG_NEXTSEARCH
 _Seuraava
 ;
 MSG_USESEARCH
-_K‰yt‰
+_K√§yt√§
 ;
 MSG_CANCELSEARCH
 _Peru
 ;
 MSG_REPLACEALL
-%iu %s '%s':sta/‰ korvattu
+%iu %s '%s':sta/√§ korvattu
 ;
 MSG_OCCURENCY
-esiintym‰
+esiintym√§
 ;
 MSG_OCCURENCIES
-esiintym‰‰
+esiintym√§√§
 ;

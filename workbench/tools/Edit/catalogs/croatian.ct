@@ -60,11 +60,11 @@ Izlaz
 ; Edit Menu
 ;
 MSG_EDITTITLE
-Ureivanje
+Ureƒëivanje
 ; Edit
 ;
 MSG_CUT
-Izreæi
+Izre≈æi
 ; Cut
 ;
 MSG_COPY
@@ -76,11 +76,11 @@ Zalijepi
 ; Paste
 ;
 MSG_MARK
-OznaËi
+Oznaƒçi
 ; Mark
 ;
 MSG_MARKCOLUMN
-OznaËi kolumnu
+Oznaƒçi kolumnu
 ; Mark column
 ;
 MSG_SELECTALL
@@ -88,7 +88,7 @@ Izaberi sve
 ; Select all
 ;
 MSG_DELLINE
-Izbriπi liniju
+Izbri≈°i liniju
 ; Delete line
 ;
 MSG_SUBTOOLS
@@ -120,21 +120,21 @@ Ubaci datoteku...
 ; Insert file...
 ;
 MSG_UNDO
-Poniπti
+Poni≈°ti
 ; Undo
 ;
 MSG_REDO
-Ponovo uËini
+Ponovo uƒçini
 ; Redo
 ;
 ; Search Menu
 ;
 MSG_SEARCHTITLE
-Pretraæivanje
+Pretra≈æivanje
 ; Search
 ;
 MSG_FIND
-Pronai...
+Pronaƒëi...
 ; Find...
 ;
 MSG_REPLACE
@@ -142,7 +142,7 @@ Zamjeni...
 ; Replace...
 ;
 MSG_SUBFIND
-Traæi
+Tra≈æi
 ; Find
 ;
 MSG_NEXTFIND
@@ -170,7 +170,7 @@ Idi na liniju...
 ; Goto line...
 ;
 MSG_FINDBRACKET
-OdgovarajuËa zagrada
+Odgovarajuƒça zagrada
 ; Matching bracket
 ;
 MSG_LASTMODIF
@@ -178,7 +178,7 @@ Zadnja promjena
 ; Last modification
 ;
 MSG_BEGOFLINE
-PoËetak linije
+Poƒçetak linije
 ; Start of line
 ;
 MSG_ENDOFLINE
@@ -192,7 +192,7 @@ Makroi
 ; Macro
 ;
 MSG_STARTRECORD
-ZapoËni snimanje
+Zapoƒçni snimanje
 ; Start recording
 ;
 MSG_STOPRECORD
@@ -210,7 +210,7 @@ Ponovi makro...
 ; Environment Menu
 ;
 MSG_ENVTITLE
-Okruæje
+Okru≈æje
 ; Environment
 ;
 MSG_SCRMODE
@@ -222,11 +222,11 @@ Slova...
 ; Fonts...
 ;
 MSG_PREFS
-OpÊe postavke...
+Opƒáe postavke...
 ; General preferences...
 ;
 MSG_LOADPREFS
-UËitaj postavke...
+Uƒçitaj postavke...
 ; Load preferences..
 ;
 MSG_SAVEPREFS
@@ -248,7 +248,7 @@ Obsolete OS. Install v2.0 or better.
 ; Obsolete OS. Install v2.0 or better.
 ;
 ERR_NOASLREQ
-Greπka pri otvaranju ASL requester-a!
+Gre≈°ka pri otvaranju ASL requester-a!
 ; Cannot alloc ASL requester!
 ;
 ERR_NOMEM
@@ -256,7 +256,7 @@ Nedovoljno memorije!
 ; Out of memory!
 ;
 ERR_NOGUI
-Greπka pri otvaranju glavnog suËelja!
+Gre≈°ka pri otvaranju glavnog suƒçelja!
 ; Main interface failed to open!
 ;
 ERR_NONAME
@@ -265,19 +265,19 @@ Bez naslova
 ; Not really an error but simplify translation
 ;
 ERR_WRITECLIP
-Greπka pri zapisivanju u meuspremnik
+Gre≈°ka pri zapisivanju u meƒëuspremnik
 ; Write error into clipboard device
 ;
 ERR_OPENCLIP
-Greπka pri otvaranju meuspremnika!
+Gre≈°ka pri otvaranju meƒëuspremnika!
 ; Unable to open clipboard!
 ;
 ERR_LOADFILE
-Greπka pri uËitavanju datoteke
+Gre≈°ka pri uƒçitavanju datoteke
 ; Unable to load requested file
 ;
 ERR_NOTXTINCLIP
-Nema teksta u meuspremniku
+Nema teksta u meƒëuspremniku
 ; No text in clipboard
 ;
 ERR_WRONG_TYPE
@@ -285,7 +285,7 @@ Objekt je mapa!
 ; Object is a directory!
 ;
 ERR_READCLIP
-Nepotpuna operacije Ëitanja
+Nepotpuna operacije ƒçitanja
 ; Read operation incomplete
 ;
 ERR_NOBRACKET
@@ -293,7 +293,7 @@ Nema umetka pod kursorom!
 ; No parenthesis under cursor!
 ;
 ERR_NOT_FOUND
-Uzorak `%s' nije pronaen
+Uzorak `%s' nije pronaƒëen
 ; Pattern `%s' not found
 ;
 ERR_LOADFONT
@@ -309,7 +309,7 @@ Nesipravan format datoteke postavki.
 ; Bad preference file format.
 ;
 ERR_FILEMODIFIED
-%s je izmjenjen.\nSigurno æelite zatvoriti?
+%s je izmjenjen.\nSigurno ≈æelite zatvoriti?
 ; %s has been modified.\nAre you sure want to close it?
 ;
 ERR_SLC
@@ -321,7 +321,7 @@ Nema teksa za pretragu!
 ; No text to search for!
 ;
 ERR_FILEEXISTS
-Ova datoteka veÊ postoji. Æelite li prepisat?
+Ova datoteka veƒá postoji. ≈Ωelite li prepisat?
 ; This file already exists. Overwrite it?
 ;
 ERR_OC
@@ -350,8 +350,8 @@ Informacije
 ; Information
 ;
 MSG_FORMATINFO
-%s\nDesigned by T.Pierron and C.Guillaume å 2000\n\nDatoteka ureena: %s\nDuæina: %iu %s, %iu %s.
-; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
+%s\nDesigned by T.Pierron and C.Guillaume ¬å 2000\n\nDatoteka ureƒëena: %s\nDu≈æina: %iu %s, %iu %s.
+; %s\nDesigned by T.Pierron and C.Guillaume ≈† 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Nastavi
@@ -379,15 +379,15 @@ linije
 ; *************************
 ;
 MSG_SEARCHWINDOW
-Traæi uzorak
+Tra≈æi uzorak
 ; Search pattern
 ;
 MSG_REPLACEWINDOW
-Traæi & Zamjeni
+Tra≈æi & Zamjeni
 ; Search & Replace
 ;
 MSG_SEARCHSTRING
-Pronai:
+Pronaƒëi:
 ; Locate:
 ;
 MSG_REPLACESTRING
@@ -399,7 +399,7 @@ Mala/velika slova
 ; Match case
 ;
 MSG_OPTWORDS
-Cijele rijeËi
+Cijele rijeƒçi
 ; Whole words
 ;
 MSG_BUTTONREPLACE
@@ -411,7 +411,7 @@ Zamjeni Sve
 ; Replace _All
 ;
 MSG_BUTTONSEARCH
-Traæi
+Tra≈æi
 ; Search
 ;
 MSG_NEXTSEARCH

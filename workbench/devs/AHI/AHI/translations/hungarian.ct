@@ -2,7 +2,7 @@
 ## language magyar
 ## codeset 0
 ;
-## chunk AUTH DÛsa M·rton (dm_@freemail.hu)
+## chunk AUTH D√≥sa M√°rton (dm_@freemail.hu)
 ;#language english
 ;#version 4
 ;
@@ -31,85 +31,85 @@ msgMenuProject
 ; \000Project
 ;
 msgItemOpen
-O\000Megnyit·s...
+O\000Megnyit√°s...
 ; O\000Open...
 ;
 msgItemSaveAs
-A\000MentÈs mint...
+A\000Ment√©s mint...
 ; A\000Save As...
 ;
 msgItemAbout
-?\000NÈvjegy...
+?\000N√©vjegy...
 ; ?\000About...
 ;
 msgItemQuit
-Q\000KilÈpÈs
+Q\000Kil√©p√©s
 ; Q\000Quit
 ;
 msgMenuEdit
-\000SzerkesztÈs
+\000Szerkeszt√©s
 ; \000Edit
 ;
 msgItemDefaults
-D\000AlapÈrtelmezettek vissza·llÌt·sa
+D\000Alap√©rtelmezettek vissza√°ll√≠t√°sa
 ; D\000Reset To Defaults
 ;
 msgItemLastSaved
-L\000Utolj·ra mentett
+L\000Utolj√°ra mentett
 ; L\000Last Saved
 ;
 msgItemRestore
-R\000Vissza·llÌt·s
+R\000Vissza√°ll√≠t√°s
 ; R\000Restore
 ;
 msgMenuSettings
-\000Be·llÌt·sok
+\000Be√°ll√≠t√°sok
 ; \000Settings
 ;
 msgItemCreateIcons
-I\000Ikonok lÈtrehoz·sa?
+I\000Ikonok l√©trehoz√°sa?
 ; I\000Create Icons?
 ;
 msgMenuHelp
-\000SegÌtsÈg
+\000Seg√≠ts√©g
 ; \000Help
 ;
 msgItemHelp
-Help\000SegÌtsÈg...
+Help\000Seg√≠ts√©g...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-H\000AHI felhaszn·lÛi segÈdlet...
+H\000AHI felhaszn√°l√≥i seg√©dlet...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
-\000Elgondol·s index...
+\000Elgondol√°s index...
 ; \000Concept Index...
 ;
 ; *** The pages ***
 ;
 msgPageMode
-MÛdbe·llÌt·sok
+M√≥dbe√°ll√≠t√°sok
 ; Mode settings
 ;
 msgPageAdvanced
-HaladÛ be·llÌt·sok
+Halad√≥ be√°ll√≠t√°sok
 ; Advanced settings
 ;
 ; *** The units ***
 ;
 msgUnitDevice
-%ld. egysÈg
+%ld. egys√©g
 ; Unit %ld
 ;
 msgUnitMusic
-Zene egysÈg
+Zene egys√©g
 ; Music unit
 ;
 ; *** Properties box ***
 ;
 msgProperties
-MÛd ID\nFelvÈtel\nSzerzı\nCopyright\nMeghajtÛprogram\nVerziÛ\nAnnotation
+M√≥d ID\nFelv√©tel\nSzerz≈ë\nCopyright\nMeghajt√≥program\nVerzi√≥\nAnnotation
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
@@ -117,7 +117,7 @@ Duplex
 ; Full duplex
 ;
 msgPropRecordHalf
-FÈl duplex
+F√©l duplex
 ; Half duplex
 ;
 msgPropRecordNone
@@ -127,7 +127,7 @@ Nem
 ; *** Options ***
 ;
 msgOptions
-OpciÛk
+Opci√≥k
 ; Options
 ;
 msgOptFrequency
@@ -135,7 +135,7 @@ _Frekvencia
 ; _Frequency
 ;
 msgOptChannels
-Csatorn·k
+Csatorn√°k
 ; C_hannels
 ;
 msgOptNoChannels
@@ -143,7 +143,7 @@ msgOptNoChannels
 ; 
 ;
 msgOptVolume
-Hangerı
+Hanger≈ë
 ; _Volume
 ;
 msgOptMonitor
@@ -155,7 +155,7 @@ _Gain
 ; _Gain
 ;
 msgOptMuted
-NÈmÌtva
+N√©m√≠tva
 ; Muted
 ;
 msgOptInput
@@ -178,11 +178,11 @@ Nincsenek kimenetek
 ; *** Global Options ***
 ;
 msgGlobalOptions
-Glob·lis opciÛk
+Glob√°lis opci√≥k
 ; Global options
 ;
 msgGlobOptDebugLevel
-HibakeresÈs szintje
+Hibakeres√©s szintje
 ; _Debug level
 ;
 msgGlobOptEcho
@@ -190,11 +190,11 @@ Visszhang
 ; _Echo
 ;
 msgGlobOptSurround
-TÈrhat·s a "Gyors" mÛdokban
+T√©rhat√°s a "Gyors" m√≥dokban
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-CPU haszn·lati hat·r
+CPU haszn√°lati hat√°r
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
@@ -246,64 +246,64 @@ Ment_sd
 ; _Save
 ;
 msgButtonUse
-Haszn·ld
+Haszn√°ld
 ; _Use
 ;
 msgButtonCancel
-MÈgse
+M√©gse
 ; _Cancel
 ;
 msgButtonOK
-OkÈ
+Ok√©
 ; OK
 ;
 ; *** Texts ***
 ;
 msgTextProgramName
-AHI be·llÌt·sok
+AHI be√°ll√≠t√°sok
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright ≈†%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s
-; %s%s\nCopyright ©%s
+%s%s\nCopyright ≈†%s
+; %s%s\nCopyright ≈†%s
 ;
 msgTextNoWindow
 Nem tudok ablakot nyitni.
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Nem tudok f·jlkÈrdezıt lefoglalni.
+Nem tudok f√°jlk√©rdez≈ët lefoglalni.
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-Nem tal·lom: '%s'!
+Nem tal√°lom: '%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Nem tudom megnyitni: '%s' %ld verziÛ.
-; Unable to open `%s¥ version %ld.
+Nem tudom megnyitni: '%s' %ld verzi√≥.
+; Unable to open `%s¬¥ version %ld.
 ;
 ; *** Additions
 ;
 msgGlobOptMasterVol
-_Mester hangerı
+_Mester hanger≈ë
 ; _Master volume
 ;
 msgMVNoClip
-V·g·s nÈlk¸l
+V√°g√°s n√©lk√ºl
 ; Without clipping
 ;
 msgMVClip
-V·g·ssal
+V√°g√°ssal
 ; With clipping
 ;
 msgGlobOptACTime
-Alap anti-klikk idı
+Alap anti-klikk id≈ë
 ; Default anti-click time
 ;
 msgButtonPlay
-Teszthang lej·tsz·sa
+Teszthang lej√°tsz√°sa
 ; _Play a test sound
 ;
 msgOptScalemode

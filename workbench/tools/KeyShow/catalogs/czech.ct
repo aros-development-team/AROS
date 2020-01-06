@@ -3,7 +3,7 @@
 ## codeset 5
 ;
 MSG_AppDescription
-Zobrazení nalo¾ení kláves
+ZobrazenÃ­ naloÅ¾enÃ­ klÃ¡ves
 ; Show Keyboard Layout
 ;
 MSG_AppCopyright
@@ -25,11 +25,11 @@ Chyba
 ; Error
 ;
 MSG_ERR_NO_APPLICATION
-Nelze vytvoøit aplikaci
+Nelze vytvoÅ™it aplikaci
 ; Can't create application
 ;
 MSG_ERR_NO_MEM
-Nedostatek pamìti
+Nedostatek pamÄ›ti
 ; Out of memory
 ;
 ; Key descriptions

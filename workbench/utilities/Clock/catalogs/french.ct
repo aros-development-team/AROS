@@ -1,9 +1,9 @@
 ## version $VER: clock.catalog 2.0 (03.01.2018)
 ## codeset 0
-## language français
+## language franÃ§ais
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
-Erreur: Impossible de créer l'objet de l'application.
+Erreur: Impossible de crÃ©er l'objet de l'application.
 ;Error: Can't create application object.
 ;
 MSG_WINDOW_TITLE
@@ -19,6 +19,6 @@ Ok
 ; Ok
 ;
 MSG_ERROR_DISKOBJECT
-Erreur: Impossible de créer l'objet disque.
+Erreur: Impossible de crÃ©er l'objet disque.
 ;Error: Can't create diskobject
 ;

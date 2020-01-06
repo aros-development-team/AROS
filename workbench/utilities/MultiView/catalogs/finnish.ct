@@ -9,7 +9,7 @@ MSG_CANT_CREATE_IC
 En voi luoda yhteysobjekteja!
 ;
 MSG_CANT_LOCK_SCR
-En voi lukita julkista n‰yttˆ‰!
+En voi lukita julkista n√§ytt√∂√§!
 ;
 MSG_CANT_GET_DRI
 En saa DrawInfo:a!
@@ -30,7 +30,7 @@ MSG_CANT_CREATE_WIN
 En voi luoda ikkunaa!
 ;
 MSG_SAVE_FAILED 
-Tiedostoon tallennus ep‰onnistui!
+Tiedostoon tallennus ep√§onnistui!
 ;
 MSG_MEN_PROJECT 
 Projekti
@@ -39,10 +39,10 @@ MSG_MEN_PROJECT_OPEN
 O\0Avaa...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Tallenna nimell‰...
+A\0Tallenna nimell√§...
 ;
 MSG_MEN_PROJECT_SAVEAS_IFF 
-I\OTallenna IFF:n‰...
+I\OTallenna IFF:n√§...
 MSG_MEN_PROJECT_PRINT 
 P\0Tulosta
 ;
@@ -71,10 +71,10 @@ MSG_MEN_WINDOW
 Ikkuna
 ;
 MSG_MEN_WINDOW_SEPSCREEN
- \0K‰yt‰ erillist‰ n‰yttˆ‰?
+ \0K√§yt√§ erillist√§ n√§ytt√∂√§?
 ;
 MSG_MEN_WINDOW_MINIMIZE
- \0Pienenn‰
+ \0Pienenn√§
 ;
 MSG_MEN_WINDOW_NORMAL 
  \0Normaali
@@ -92,7 +92,7 @@ MSG_MEN_PICT
 Kuva
 ;
 MSG_MEN_PICT_ZOOM_IN 
- \0L‰henn‰
+ \0L√§henn√§
 ;
 MSG_MEN_PICT_ZOOM_OUT 
  \0Loitonna
@@ -104,7 +104,7 @@ MSG_MEN_PICT_FIT_WIN
  \0Mahduta ikkunaan
 ;
 MSG_MEN_PICT_KEEP_ASPECT 
- \0Pid‰ muoto
+ \0Pid√§ muoto
 ;
 MSG_MEN_PICT_FORCE_MAP 
  \0Pakota paletin kartoitus
@@ -140,5 +140,5 @@ MSG_CONTINUE
 Jatka
 ;
 MSG_OK 
-Selv‰
+Selv√§
 ;

@@ -9,7 +9,7 @@ MSG_NO_MEM
 Muisti lopussa!
 ;
 MSG_CANT_LOCK_SCR 
-En voi lukita n‰yttˆ‰!
+En voi lukita n√§ytt√∂√§!
 ;
 MSG_CANT_GET_DRI 
 En saa DrawInfo:a!
@@ -36,7 +36,7 @@ MSG_MEN_PROJECT_OPEN
 O\0Avaa...
 ;
 MSG_MEN_PROJECT_SAVEAS 
-A\0Tallenna nimell‰...
+A\0Tallenna nimell√§...
 ;
 MSG_MEN_PROJECT_PRINT 
 P\0Tulosta
@@ -60,7 +60,7 @@ MSG_MEN_NAVIGATION_FIND_PREV
 ,\0Etsi edellinen
 ;
 MSG_MEN_NAVIGATION_JUMP 
-J\0Hypp‰‰...
+J\0Hypp√§√§...
 ;
 MSG_ASL_OPEN_TITLE 
 Valitse avattava tiedosto
@@ -69,7 +69,7 @@ MSG_ASL_SAVE_TITLE
 Valitse tallennustiedosto
 ;
 MSG_ABOUT 
-More V%ld.%ld\n (%s)\nCopyright © %s av %s
+More V%ld.%ld\n (%s)\nCopyright ¬© %s av %s
 ;
 MSG_ABOUT_TITLE 
 More
@@ -84,13 +84,13 @@ MSG_FIND_TITLE
 Etsi
 ;
 MSG_OK 
-Selv‰
+Selv√§
 ;
 MSG_CANCEL 
 Peru
 ;
 MSG_WIN_TITLE 
-More: %s (%ld rivi‰ - %ld tavua)
+More: %s (%ld rivi√§ - %ld tavua)
 ;
 MSG_SHORTCUT_TOP 
 T

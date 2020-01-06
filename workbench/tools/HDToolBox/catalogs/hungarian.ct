@@ -3,10 +3,10 @@
 ## codeset 5
 ;
 WORD_Active
-Aktív
+AktÃ­v
 ;
 WORD_AddEntry
-Hozzáadás
+HozzÃ¡adÃ¡s
 ;
 WORD_All
 Mind
@@ -15,79 +15,79 @@ WORD_Automount
 Automount
 ;
 WORD_Bootable
-Bootolható
+BootolhatÃ³
 ;
 WORD_BootPri
-Bootprioritás
+BootprioritÃ¡s
 ;
 WORD_Cancel
-Mégsem
+MÃ©gsem
 ;
 WORD_Changed
-Megváltoztatva
+MegvÃ¡ltoztatva
 ;
 WORD_Change_Type
-Típus csere
+TÃ­pus csere
 ;
 WORD_Create_Table
-Táblázat létrehozása
+TÃ¡blÃ¡zat lÃ©trehozÃ¡sa
 ;
 WORD_Devices
-Eszközök
+EszkÃ¶zÃ¶k
 ;
 WORD_DosEnvec
 DosEnvec
 ;
 WORD_Exit
-Kilépés
+KilÃ©pÃ©s
 ;
 WORD_Geometry
-Méret
+MÃ©ret
 ;
 WORD_Name
-Név
+NÃ©v
 ;
 WORD_Switches
-Kapcsolók
+KapcsolÃ³k
 ;
 WORD_Parent
-Szülõ
+SzÃ¼lÅ‘
 ;
 WORD_Ok
 Ok
 ;
 WORD_Partitions
-Partíciók
+PartÃ­ciÃ³k
 ;
 WORD_Partition_Table
-Partíciós tábla
+PartÃ­ciÃ³s tÃ¡bla
 ;
 WORD_Partition_Table_Type
-Partíciós tábla típusa
+PartÃ­ciÃ³s tÃ¡bla tÃ­pusa
 ;
 WORD_Partition_Type
-Partíció típusa
+PartÃ­ciÃ³ tÃ­pusa
 ;
 WORD_RemoveEntry
-Eltávolítás
+EltÃ¡volÃ­tÃ¡s
 ;
 WORD_Rename
-Átnevezés
+ÃtnevezÃ©s
 ;
 WORD_Resize_Move
-Átméretez/Mozgat
+ÃtmÃ©retez/Mozgat
 ;
 WORD_Save_Changes
-Változtatások elmentése
+VÃ¡ltoztatÃ¡sok elmentÃ©se
 ;
 WORD_Size
-Méret
+MÃ©ret
 ;
 WORD_Unit
-Egység
+EgysÃ©g
 ;
 WORD_Units
-Egységek
+EgysÃ©gek
 ;
 WORD_Unknown
 Ismeretlen
@@ -99,29 +99,29 @@ WORD_MENU_About
 About
 ;
 WORD_MENU_Quit
-Kilépés
+KilÃ©pÃ©s
 ;
 MSG_ASK_SAVE
-A módosított partíción minden adat törlõdik!\nBiztos, hogy írni akarja a '%s' partíciós táblázatát?
+A mÃ³dosÃ­tott partÃ­ciÃ³n minden adat tÃ¶rlÅ‘dik!\nBiztos, hogy Ã­rni akarja a '%s' partÃ­ciÃ³s tÃ¡blÃ¡zatÃ¡t?
 ;
 MSG_NO_MEMORY
-Nincs elég memória a mûvelet végrehajtásához
+Nincs elÃ©g memÃ³ria a mÅ±velet vÃ©grehajtÃ¡sÃ¡hoz
 ;
 MSG_PARTITION_TABLE_FULL
-A partíció megtelt
+A partÃ­ciÃ³ megtelt
 ;
 MSG_Select_Empty_Area
-Válasszon szabad területet
+VÃ¡lasszon szabad terÃ¼letet
 ;
 MSG_Select_Partition_Resize_Move
-Válasszon egy partíciót az átméretezéshez vagy mozgatáshoz
+VÃ¡lasszon egy partÃ­ciÃ³t az Ã¡tmÃ©retezÃ©shez vagy mozgatÃ¡shoz
 ;
 MSG_Welcome
-Üdvözöljük a Partíciószerkesztõben
+ÃœdvÃ¶zÃ¶ljÃ¼k a PartÃ­ciÃ³szerkesztÅ‘ben
 ;
 MSG_WriteTableError
-Hiba a partíciós tábla írásakor
+Hiba a partÃ­ciÃ³s tÃ¡bla Ã­rÃ¡sakor
 ;
 MSG_CreateTableError
-Hiaba a partíciós tábla létrehozásakor
+Hiaba a partÃ­ciÃ³s tÃ¡bla lÃ©trehozÃ¡sakor
 ;

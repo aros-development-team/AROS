@@ -3,7 +3,7 @@
 ## language deutsch
 ;
 MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
+Kann %s V%ld nicht Ã¶ffnen!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP

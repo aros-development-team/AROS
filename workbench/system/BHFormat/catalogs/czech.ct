@@ -7,21 +7,21 @@ OK
 ; OK
 ;
 MSG_CANCEL
-Zru¹it
+ZruÅ¡it
 ; Cancel
 ;
 ; ===========================================================
 ; cli.c
 ;
 MSG_INSERT_DISK
-Vlo¾te disk k formátování do zaøízení %s\n\
-Klávesou ENTER spustíte formátování (pomocí\n\
-CTRL-C formátování pøeru¹íte): 
+VloÅ¾te disk k formÃ¡tovÃ¡nÃ­ do zaÅ™Ã­zenÃ­ %s\n\
+KlÃ¡vesou ENTER spustÃ­te formÃ¡tovÃ¡nÃ­ (pomocÃ­\n\
+CTRL-C formÃ¡tovÃ¡nÃ­ pÅ™eruÅ¡Ã­te): 
 ; Insert disk to be formatted in device %s\n\
 ; Press RETURN to begin formatting or CTRL-C to abort: 
 ;
 MSG_FORMATTING
-\rFormátování cylindru %lu, zbıvá %lu 
+\rFormÃ¡tovÃ¡nÃ­ cylindru %lu, zbÃ½vÃ¡ %lu 
 ; \rFormatting cylinder %lu, %lu to go 
 ;
 MSG_VERIFYING
@@ -36,11 +36,11 @@ Inicializace disku...\n
 ; gui.c
 ;
 MSG_SELECTDEVICE
-Vyberte zaøízení, které chcete zformátovat.
+Vyberte zaÅ™Ã­zenÃ­, kterÃ© chcete zformÃ¡tovat.
 ; Select Device To Format
 ;
 MSG_GUI_FORMATTING
-Formátování disku...
+FormÃ¡tovÃ¡nÃ­ disku...
 ; Formatting Disk...
 ;
 MSG_GUI_INITIALIZING
@@ -48,21 +48,21 @@ Inicializace disku...
 ; Initializing Disk...
 ;
 MSG_IN_DEVICE
-do zaøízení %s
+do zaÅ™Ã­zenÃ­ %s
 ; in device %s
 ;
 MSG_FORMAT_REQUEST_TITLE
-Formátování - ¾ádost
+FormÃ¡tovÃ¡nÃ­ - Å¾Ã¡dost
 ; Format Request
 ;
 MSG_FORMAT_REQUEST_GADGETS
-Zformátovat|Zru¹it
+ZformÃ¡tovat|ZruÅ¡it
 ; Format|Cancel
 ;
 MSG_FORMAT_REQUEST_TEXT
-Opravdu chcete zformátovat\n\
-médium %s?\n\n\
-V¹echna data budou ztracena!\n(%s)
+Opravdu chcete zformÃ¡tovat\n\
+mÃ©dium %s?\n\n\
+VÅ¡echna data budou ztracena!\n(%s)
 ; OK to format volume\n\
 ; %s?\n\n\
 ; WARNING!\n\n\
@@ -75,7 +75,7 @@ KMGTPE
 ; Kilo, Mega ...
 ;
 MSG_CAPACITY_USED
-velikost - %lu %lcB, zaplnìno - %lu %%
+velikost - %lu %lcB, zaplnÄ›no - %lu %%
 ; %lu%lc capacity, %lu%% used
 ;
 MSG_CAPACITY
@@ -83,19 +83,19 @@ velikost - %lu %lc
 ; %lu%lc capacity
 ;
 MSG_ERROR_WANDERER
-Tento program musí bıt spu¹tìn kliknutím na ikonu.\n
+Tento program musÃ­ bÃ½t spuÅ¡tÄ›n kliknutÃ­m na ikonu.\n
 ; Must be started from Wanderer with a selected icon\n
 ;
 MSG_WINDOW_TITLE
-Formátování - %s
+FormÃ¡tovÃ¡nÃ­ - %s
 ; Format - %s
 ;
 MSG_DEVICE
-zaøízení - %s
+zaÅ™Ã­zenÃ­ - %s
 ; Device '%s'
 ;
 MSG_VOLUME
-název - %b
+nÃ¡zev - %b
 ; Volume '%b'
 ;
 MSG_APPLICATION_TITLE
@@ -103,7 +103,7 @@ Format
 ; Format
 ;
 MSG_DESCRIPTION
-Formátování diskù
+FormÃ¡tovÃ¡nÃ­ diskÅ¯
 ; Disk Formatting Utility
 ;
 MSG_COPYRIGHT
@@ -115,19 +115,19 @@ Ben Hutchings, Pavel Fedin, The AROS Development Team
 ; Ben Hutchings, Pavel Fedin, The AROS Development Team
 ;
 MSG_LABEL_CURRENT_INFORMATION
-Pøehled informací:
+PÅ™ehled informacÃ­:
 ; Current Information:
 ;
 MSG_LABEL_NEW_VOLUME_NAME
-Novı název:
+NovÃ½ nÃ¡zev:
 ; New Volume Name:
 ;
 MSG_DEFAULT_VOLUME_NAME
-prázdnı
+prÃ¡zdnÃ½
 ; Empty
 ;
 MSG_LABEL_PUT_TRASHCAN
-Vlo¾it ko¹:
+VloÅ¾it koÅ¡:
 ; Put Trashcan:
 ;
 MSG_LABEL_FFS
@@ -135,35 +135,35 @@ Fast File System:
 ; Fast File System:
 ;
 MSG_LABEL_INTL
-Øazení dle lokalizace:
+Å˜azenÃ­ dle lokalizace:
 ; International Mode:
 ;
 MSG_LABEL_CACHE
-Zrychlené naèítání:
+ZrychlenÃ© naÄÃ­tÃ¡nÃ­:
 ; Directory Cache:
 ;
 MSG_BTN_FORMAT
-Formátovat
+FormÃ¡tovat
 ; Format
 ;
 MSG_BTN_QFORMAT
-Formátovat zrychl.
+FormÃ¡tovat zrychl.
 ; Quick Format
 ;
 MSG_BTN_CANCEL
-Zru¹it
+ZruÅ¡it
 ; Cancel
 ;
 MSG_BTN_STOP
-Pøeru¹it
+PÅ™eruÅ¡it
 ; Stop
 ;
 MSG_ERROR_NO_APPLICATION
-Nelze vytvoøit objekt application.\n
+Nelze vytvoÅ™it objekt application.\n
 ; Can't create application\n
 ;
 MSG_ERROR_NO_WINDOW
-Nelze otevøít okno.\n
+Nelze otevÅ™Ã­t okno.\n
 ; Can't open window\n
 ;
 MSG_REQ_ERROR_TITLE
@@ -174,7 +174,7 @@ Chyba
 ; main.c
 ;
 MSG_ERRORS_WARNING
-- upozornìní
+- upozornÄ›nÃ­
 ; Warning
 ;
 MSG_ERRORS_ERROR
@@ -182,57 +182,57 @@ MSG_ERRORS_ERROR
 ; Error
 ;
 MSG_ERRORS_FAILURE
-- záva¾ná chyba
+- zÃ¡vaÅ¾nÃ¡ chyba
 ; Failure
 ;
 MSG_FORMAT
-Formátování 
+FormÃ¡tovÃ¡nÃ­ 
 ; Format 
 ;
 MSG_ERROR_INVALID_DOSTYPE
-Neplatnı DosType
+NeplatnÃ½ DosType
 ; Invalid DosType specification
 ;
 MSG_ERROR_TOO_LARGE_1
-Velikost vybraného zaøízení pøesahuje 4 GB. Standardní \
-souborovı systém nelze pro takovı disk pou¾ít.
+Velikost vybranÃ©ho zaÅ™Ã­zenÃ­ pÅ™esahuje 4 GB. StandardnÃ­ \
+souborovÃ½ systÃ©m nelze pro takovÃ½ disk pouÅ¾Ã­t.
 ; This device is larger than 4 gigabytes in size. The\
 ;  Amiga file-system cannot handle a device this large.
 ;
 MSG_ERROR_TOO_LARGE_2
-Vybrané zaøízení je vìt¹í nebo obsahuje oddíly za hranicí \
-4 GB. Pro tento pøípad musíte nainstalovat souborovı systém \
-v43 nebo novìj¹í.
+VybranÃ© zaÅ™Ã­zenÃ­ je vÄ›tÅ¡Ã­ nebo obsahuje oddÃ­ly za hranicÃ­ \
+4 GB. Pro tento pÅ™Ã­pad musÃ­te nainstalovat souborovÃ½ systÃ©m \
+v43 nebo novÄ›jÅ¡Ã­.
 ; This device extends beyond the first 4 gigabytes of the\
 ;  disk it is on.  In order to use it, you must install\
 ;  version 43 or later of the Amiga file-system.
 ;
 MSG_ERROR_TOO_LARGE_3
-Velikost vybraného zaøízení pøesahuje 2 GB. Pro tento \
-pøípad musíte nainstalovat souborovı systém v40 nebo novìj¹í.
+Velikost vybranÃ©ho zaÅ™Ã­zenÃ­ pÅ™esahuje 2 GB. Pro tento \
+pÅ™Ã­pad musÃ­te nainstalovat souborovÃ½ systÃ©m v40 nebo novÄ›jÅ¡Ã­.
 ; This device is larger than 2 gigabytes in size. In order to\
 ;  use it, you must install version 40 or later of the Amiga\
 ;  file-system.
 ;
 MSG_ERROR_TOO_LARGE_4
-Vybrané zaøízení mù¾e vyu¾ívat i pamì», která není oznaèena \
-pøíznakem \"public\". Tato vlastnost mù¾e pùsobit problémy \
-v pøípadì nasazení virtuální pamìti. Do souboru s definicí \
-zaøízení proto zadejte parametr BufMemType = 1.
+VybranÃ© zaÅ™Ã­zenÃ­ mÅ¯Å¾e vyuÅ¾Ã­vat i pamÄ›Å¥, kterÃ¡ nenÃ­ oznaÄena \
+pÅ™Ã­znakem \"public\". Tato vlastnost mÅ¯Å¾e pÅ¯sobit problÃ©my \
+v pÅ™Ã­padÄ› nasazenÃ­ virtuÃ¡lnÃ­ pamÄ›ti. Do souboru s definicÃ­ \
+zaÅ™Ã­zenÃ­ proto zadejte parametr BufMemType = 1.
 ; This device is set to use buffers in memory that may not be\
 ;  \"public\". This can cause your computer to crash if you use a\
 ;  virtual memory system. You should add 1 to the BufMemType\
 ;  setting for this device to avoid this.
 ;
 MSG_ERROR_DEVICE
-Chyba pøi otevírání zaøízení: %ld
+Chyba pÅ™i otevÃ­rÃ¡nÃ­ zaÅ™Ã­zenÃ­: %ld
 ; Device open returned error %ld
 ;
 MSG_ERROR_IDE
-Vybrané zaøízení je pravdìpodobnì pøipojeno na pùvodní \
-zastaralé rozhraní IDE firmy Commodore, které ve spojení \
-s urèitımi disky zpùsobuje chyby pøi ètení vìt¹ích \
-objemù dat. Doporuèujeme proto zmìnit parametr MaxTransfer \
+VybranÃ© zaÅ™Ã­zenÃ­ je pravdÄ›podobnÄ› pÅ™ipojeno na pÅ¯vodnÃ­ \
+zastaralÃ© rozhranÃ­ IDE firmy Commodore, kterÃ© ve spojenÃ­ \
+s urÄitÃ½mi disky zpÅ¯sobuje chyby pÅ™i ÄtenÃ­ vÄ›tÅ¡Ã­ch \
+objemÅ¯ dat. DoporuÄujeme proto zmÄ›nit parametr MaxTransfer \
 na hodnotu 0x10000.
 ; This device appears to be on an IDE drive\
 ;  using an old Commodore IDE driver.  This driver may\
@@ -242,13 +242,13 @@ na hodnotu 0x10000.
 ;  MaxTransfer setting to 0x10000.
 ;
 MSG_ERROR_DEVICE_QUERY
-Chyba pøi zji¹»ování informací o zaøízení: %ld
+Chyba pÅ™i zjiÅ¡Å¥ovÃ¡nÃ­ informacÃ­ o zaÅ™Ã­zenÃ­: %ld
 ; Device query (NSCMD_DEVICEQUERY) returned error %ld
 ;
 MSG_ERROR_64BIT
-Vybrané zaøízení je vìt¹í nebo obsahuje oddíly za hranicí \
-4 GB. Pro tento pøípad musíte nainstalovat ovladaè, kterı \
-podporuje pøíkazy dle specifikace NSD, nebo program \
+VybranÃ© zaÅ™Ã­zenÃ­ je vÄ›tÅ¡Ã­ nebo obsahuje oddÃ­ly za hranicÃ­ \
+4 GB. Pro tento pÅ™Ã­pad musÃ­te nainstalovat ovladaÄ, kterÃ½ \
+podporuje pÅ™Ã­kazy dle specifikace NSD, nebo program \
 NSDPatch.
 ; This device extends beyond the first 4 gigabytes of the disk.\
 ;  In order to use this device, you must either use a driver\
@@ -256,7 +256,7 @@ NSDPatch.
 ;  NSDPatch program.
 ;
 MSG_ERROR_DEVICE_RETURN
-Chyba zaøízení %s: %ld
+Chyba zaÅ™Ã­zenÃ­ %s: %ld
 ; Device %s returned error %ld
 ;
 MSG_ERROR_FLUSH
@@ -268,7 +268,7 @@ invalidate (CMD_CLEAR)
 ; invalidate (CMD_CLEAR)
 ;
 MSG_ERROR_VERIFY
-Chyba pøi verifikaci
+Chyba pÅ™i verifikaci
 ; Verify error
 ;
 MSG_COMMAND_FORMAT64
@@ -288,10 +288,10 @@ read (CMD_READ)
 ; read (CMD_READ)
 ;
 MSG_ERROR_TRASHCAN
-Na médiu %s\nnelze vytvoøit ko¹.
+Na mÃ©diu %s\nnelze vytvoÅ™it koÅ¡.
 ; Couldn't create trashcan on volume\n%s
 ;
 MSG_ERROR_ICON
-Na médium %s\nnelze zapsat ikonu disku.
+Na mÃ©dium %s\nnelze zapsat ikonu disku.
 ; Couldn't create disk icon on volume\n%s
 ;

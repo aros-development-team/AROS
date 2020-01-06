@@ -6,7 +6,7 @@ MSG_CANT_OPEN_LIB
 Impossibile aprire %s V%ld !
 ;
 MSG_NO_MEM
-Non c'è abbastanza memoria!
+Non c'Ã¨ abbastanza memoria!
 ;
 MSG_CANT_LOCK_SCR
 Impossibile accedere allo schermo pubblico!
@@ -69,7 +69,7 @@ MSG_ASL_SAVE_TITLE
 Salva file
 ;
 MSG_ABOUT
-More V%ld.%ld\n (%s)\nCopyright © %s by %s
+More V%ld.%ld\n (%s)\nCopyright Â© %s by %s
 ;
 MSG_ABOUT_TITLE
 Info su More

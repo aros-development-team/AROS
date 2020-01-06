@@ -1,5 +1,5 @@
 ## version $VER: ReqTools.catalog 3.0 (30.6.2017)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 MSG_WINDOW_TITLE
@@ -12,7 +12,7 @@ MSG_FILEREQUESTER
 Requerimiento de ficheros
 ;
 MSG_SIZE
-Tamaño
+TamaÃ±o
 ;
 MSG_OK
 Ok
@@ -21,7 +21,7 @@ MSG_POPSCREEN
 Llevar pantalla al frente
 ;
 MSG_IMMEDIATESORT
-Ordenación inmediata
+OrdenaciÃ³n inmediata
 ;
 MSG_DRAWERSFIRST
 Mostrar primero cajones
@@ -63,10 +63,10 @@ MSG_OTHERREQ
 Otros
 ;
 MSG_POSITION
-Posición:
+PosiciÃ³n:
 ;
 MSG_POINTER
-Puntero de ratón
+Puntero de ratÃ³n
 ;
 MSG_CENTERWIN
 Centrar en la ventana
@@ -84,11 +84,11 @@ MSG_OFFSET
 \33bDesplaz.
 ;
 MSG_NR_OF_ENTRIES
-\33bNúmero de entradas visibles
+\33bNÃºmero de entradas visibles
 ;
 MSG_MIN
-Mínimo:
+MÃ­nimo:
 ;
 MSG_MAX
-Máximo:
+MÃ¡ximo:
 ;

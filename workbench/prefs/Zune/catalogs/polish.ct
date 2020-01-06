@@ -3,15 +3,15 @@
 ## codeset 5
 ;
 MSG_GENERAL
-G³ówne
+GÅ‚Ã³wne
 ; General
 ;
 MSG_BACKGROUND_COLON
-T³o:
+TÅ‚o:
 ; Background:
 ;
 MSG_BACKGROUND_PRESSED
-T³o wci¶niête:
+TÅ‚o wciÅ›niÄ™te:
 ; Background in\npressed state:
 ;
 MSG_TEXT_BUTTONS
@@ -31,7 +31,7 @@ Przyciski graficzne
 ; Image Buttons
 ;
 MSG_ADJUST_FRAME
-Dostosuj ramkê
+Dostosuj ramkÄ™
 ; Adjust Frame
 ;
 MSG_CHECKMARKS
@@ -39,7 +39,7 @@ Znaczniki
 ; Checkmarks
 ;
 MSG_LOOK_COLON
-Wygl±d:
+WyglÄ…d:
 ; Look:
 ;
 MSG_CHECKMARK
@@ -55,7 +55,7 @@ Przycisk radiowy
 ; Radiobutton
 ;
 MSG_LOOK
-Wygl±d
+WyglÄ…d
 ; Look
 ;
 MSG_H
@@ -67,11 +67,11 @@ Pionowe
 ; V
 ;
 MSG_SPACING
-Odstêpy
+OdstÄ™py
 ; Spacing
 ;
 MSG_BELOW
-poni¿ej
+poniÅ¼ej
 ; below
 ;
 MSG_ON_ACTIVE
@@ -79,15 +79,15 @@ na aktywnym
 ; on active
 ;
 MSG_CYCLE_GADGET_DESIGN
-Wygl±d przycisku cyklicznego
+WyglÄ…d przycisku cyklicznego
 ; Cycle Gadget Design
 ;
 MSG_CYCLE
-Gad¿et cykliczny
+GadÅ¼et cykliczny
 ; Cycle
 ;
 MSG_POPUP_MENU_CONTROL
-Kontrola menu podrêcznego
+Kontrola menu podrÄ™cznego
 ; Popup Menu Control
 ;
 MSG_POSITION
@@ -99,11 +99,11 @@ Poziom:
 ; Level:
 ;
 MSG_SPEED
-Szybko¶æ:
+SzybkoÅ›Ä‡:
 ; Speed:
 ;
 MSG_POPUP_MENU_DESIGN
-Wygl±d menu podrêcznego
+WyglÄ…d menu podrÄ™cznego
 ; Popup Menu Design
 ;
 MSG_FRAME
@@ -111,19 +111,19 @@ Ramka
 ; Frame
 ;
 MSG_ADJUST_BACKGROUND
-Dostosuj t³o
+Dostosuj tÅ‚o
 ; Adjust Background
 ;
 MSG_BACKGROUND
-T³o
+TÅ‚o
 ; Background
 ;
 MSG_RECESSED_ENTRIES
-Elementy wci¶niête:
+Elementy wciÅ›niÄ™te:
 ; Recessed Entries:
 ;
 MSG_ABOVE
-powy¿ej
+powyÅ¼ej
 ; above
 ;
 MSG_CENTERED
@@ -131,11 +131,11 @@ wycentrowane
 ; centered
 ;
 MSG_STANDARD
-domy¶lne
+domyÅ›lne
 ; standard
 ;
 MSG_HILITE
-pod¶wietlone
+podÅ›wietlone
 ; hilite
 ;
 MSG_3D
@@ -167,7 +167,7 @@ Zarejestruj
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Skracaj nag³ówki\ndo doomy¶lnej szeroko¶ci
+Skracaj nagÅ‚Ã³wki\ndo doomyÅ›lnej szerokoÅ›ci
 ; Default size truncate titles
 ;
 MSG_NORMAL
@@ -187,7 +187,7 @@ Strona
 ; Page
 ;
 MSG_SHIFTED
-przesuniête
+przesuniÄ™te
 ; shifted
 ;
 MSG_ALWAYS
@@ -211,11 +211,11 @@ Wiele:
 ; Multi:
 ;
 MSG_REFRESH
-Od¶wie¿anie:
+OdÅ›wieÅ¼anie:
 ; Refresh:
 ;
 MSG_SMOOTH
-Wyg³adzanie:
+WygÅ‚adzanie:
 ; Smooth:
 ;
 MSG_FONTS
@@ -231,11 +231,11 @@ Nieproporcjonalne:
 ; Fixed:
 ;
 MSG_LEADING
-Odstêpy
+OdstÄ™py
 ; Leading
 ;
 MSG_DESIGN
-Wygl±d
+WyglÄ…d
 ; Design
 ;
 MSG_INPUT_LISTS
@@ -263,7 +263,7 @@ Zaznaczone:
 ; Selected:
 ;
 MSG_ALWAYS_SOLID
-zawsze wype³niony
+zawsze wypeÅ‚niony
 ; always solid
 ;
 MSG_GHOSTED_ON_BOX
@@ -287,31 +287,31 @@ pokazuj obiekty
 ; show objects
 ;
 MSG_KL_PRESS
-Wci¶niêcie:
+WciÅ›niÄ™cie:
 ; Press:
 ;
 MSG_KL_TOGGLE
-Prze³±czenie:
+PrzeÅ‚Ä…czenie:
 ; Toggle:
 ;
 MSG_KL_UP
-Kursor w górê:
+Kursor w gÃ³rÄ™:
 ; Up:
 ;
 MSG_KL_DOWN
-Kursor w dó³:
+Kursor w dÃ³Å‚:
 ; Down:
 ;
 MSG_KL_PAGE_UP
-Strona w górê:
+Strona w gÃ³rÄ™:
 ; Page up:
 ;
 MSG_KL_PAGE_DOWN
-Strona w dó³:
+Strona w dÃ³Å‚:
 ; Page down:
 ;
 MSG_KL_TOP
-Pocz±tek pliku:
+PoczÄ…tek pliku:
 ; Top:
 ;
 MSG_KL_BOTTOM
@@ -327,15 +327,15 @@ Kursor w prawo:
 ; Right:
 ;
 MSG_KL_WORD_LEFT
-Poprzednie s³owo:
+Poprzednie sÅ‚owo:
 ; Word left:
 ;
 MSG_KL_WORD_RIGHT
-Nastêpne s³owo:
+NastÄ™pne sÅ‚owo:
 ; Word right:
 ;
 MSG_KL_LINE_START
-Pocz±tek linii:
+PoczÄ…tek linii:
 ; Line start:
 ;
 MSG_KL_LINE_END
@@ -343,23 +343,23 @@ Koniec linii:
 ; Line end:
 ;
 MSG_KL_NEXT_GADGET
-Nastêpny gad¿et:
+NastÄ™pny gadÅ¼et:
 ; Next gadget:
 ;
 MSG_KL_PREV_GADGET
-Poprzedni gad¿et:
+Poprzedni gadÅ¼et:
 ; Prev. gadget:
 ;
 MSG_KL_GADGET_OFF
-Wy³±czenie gad¿etu:
+WyÅ‚Ä…czenie gadÅ¼etu:
 ; Gadget off:
 ;
 MSG_KL_CLOSE_WINDOW
-Zamkniêcie okna:
+ZamkniÄ™cie okna:
 ; Close window:
 ;
 MSG_KL_NEXT_WINDOW
-Nastêpne okno:
+NastÄ™pne okno:
 ; Next window:
 ;
 MSG_KL_PREV_WINDOW
@@ -371,11 +371,11 @@ Pomoc:
 ; Help:
 ;
 MSG_KL_POPUP
-Lista podrêczna:
+Lista podrÄ™czna:
 ; Popup:
 ;
 MSG_DRAG_DROP
-Przeci±ganie i upuszczanie
+PrzeciÄ…ganie i upuszczanie
 ; Drag & Drop
 ;
 MSG_LEFT_BUTTON
@@ -383,11 +383,11 @@ Lewy przycisk:
 ; Left Button:
 ;
 MSG_MIDDLE_BUTTON
-¦rodkowy przycisk:
+Åšrodkowy przycisk:
 ; Middle Button:
 ;
 MSG_AUTOSTART
-Automatyczne rozpoczêcie:
+Automatyczne rozpoczÄ™cie:
 ; Autostart:
 ;
 MSG_PIXEL
@@ -399,11 +399,11 @@ Grupy regulowane
 ; Balancing Groups
 ;
 MSG_EXAMPLE
-Przyk³ad:
+PrzykÅ‚ad:
 ; Example:
 ;
 MSG_TRY_WITH
-Spróbuj równie¿
+SprÃ³buj rÃ³wnieÅ¼
 ; Try with
 ;
 MSG_SHIFT
@@ -415,7 +415,7 @@ shift!
 ; too!
 ;
 MSG_KEYBOARD_CONTROL
-Sterowanie klawiatur±
+Sterowanie klawiaturÄ…
 ; Keyboard Control
 ;
 MSG_COLOR_ACTIVE_OBJ
@@ -427,27 +427,27 @@ newlook
 ; newlook
 ;
 MSG_CUSTOM
-w³asny
+wÅ‚asny
 ; custom
 ;
 MSG_ARROWS
-Strza³ki
+StrzaÅ‚ki
 ; Arrows
 ;
 MSG_UP
-góra
+gÃ³ra
 ; up
 ;
 MSG_ARROW_UP
-Strza³ka w górê
+StrzaÅ‚ka w gÃ³rÄ™
 ; Arrow up
 ;
 MSG_ARROW_DOWN
-Strza³ka w dó³
+StrzaÅ‚ka w dÃ³Å‚
 ; Arrow down
 ;
 MSG_DOWN
-dó³
+dÃ³Å‚
 ; down
 ;
 MSG_LEFT
@@ -455,11 +455,11 @@ lewo
 ; left
 ;
 MSG_ARROW_LEFT
-Strza³ka w lewo
+StrzaÅ‚ka w lewo
 ; Arrow left
 ;
 MSG_ARROW_RIGHT
-Strza³ka w prawo
+StrzaÅ‚ka w prawo
 ; Arrow right
 ;
 MSG_RIGHT
@@ -471,7 +471,7 @@ Belka
 ; Bar
 ;
 MSG_GADGET_TYPE
-Typ gad¿etu:
+Typ gadÅ¼etu:
 ; Gadget Type:
 ;
 MSG_SCROLLER
@@ -479,23 +479,23 @@ Suwak
 ; Scroller
 ;
 MSG_KNOB
-Ga³ka
+GaÅ‚ka
 ; Knob
 ;
 MSG_ARRANGEMENT
-Roz³o¿enie
+RozÅ‚oÅ¼enie
 ; Arrangement
 ;
 MSG_CONTAINER_DESIGN
-Wygl±d kontenera
+WyglÄ…d kontenera
 ; Container Design
 ;
 MSG_KNOB_DESIGN
-Wygl±d ga³ki
+WyglÄ…d gaÅ‚ki
 ; Knob Design
 ;
 MSG_EXAMPLE_SLIDERS
-Przyk³adowe suwaki
+PrzykÅ‚adowe suwaki
 ; Example Sliders
 ;
 MSG_TEXT_FIELDS
@@ -503,15 +503,15 @@ Pola tekstowe
 ; Text fields
 ;
 MSG_EXAMPLE_TEXTFIELD
-Przyk³adowe pole tekstowe
+PrzykÅ‚adowe pole tekstowe
 ; Example Textfield
 ;
 MSG_PROGRESS_INDICATOR
-Pasek postêpu
+Pasek postÄ™pu
 ; Progress Indicator
 ;
 MSG_DEVICE_IMAGES
-Obrazki urz±dzeñ
+Obrazki urzÄ…dzeÅ„
 ; Device Images
 ;
 MSG_DRAWER
@@ -535,7 +535,7 @@ Wolumen
 ; Volume
 ;
 MSG_NETWORK
-Sieæ
+SieÄ‡
 ; Network
 ;
 MSG_ASSIGN
@@ -567,27 +567,27 @@ Nagrywaj
 ; Tape record
 ;
 MSG_TAPE_UP
-W górê
+W gÃ³rÄ™
 ; Tape up
 ;
 MSG_TAPE_DOWN
-W dó³
+W dÃ³Å‚
 ; Tape down
 ;
 MSG_STRING_FRAME
-Ramka ci±gu
+Ramka ciÄ…gu
 ; String Frame
 ;
 MSG_SPECIAL_POPUP_BUTTONS
-Specjalne przyciski podrêczne
+Specjalne przyciski podrÄ™czne
 ; Special Popup Buttons
 ;
 MSG_POPUP
-Podrêczne
+PodrÄ™czne
 ; Popup
 ;
 MSG_DEFAULT
-Domy¶lne
+DomyÅ›lne
 ; Default
 ;
 MSG_FILE
@@ -595,15 +595,15 @@ Plik
 ; File
 ;
 MSG_POPUP_FILE
-Plik podrêczny
+Plik podrÄ™czny
 ; Popup file
 ;
 MSG_POPUP_DRAWER
-Katalog podrêczny
+Katalog podrÄ™czny
 ; Popup drawer
 ;
 MSG_INACTIVE_STRING_COLORS
-Kolory nieaktywnego ci±gu
+Kolory nieaktywnego ciÄ…gu
 ; Inactive String Colors
 ;
 MSG_TEXT
@@ -611,31 +611,31 @@ Tekst
 ; Text
 ;
 MSG_ACTIVE_STRING_COLORS
-Kolory aktywnego ci±gu
+Kolory aktywnego ciÄ…gu
 ; Active String Colors
 ;
 MSG_MARKED_STRING_COLORS
-Kolory zaznaczonego ci±gu
+Kolory zaznaczonego ciÄ…gu
 ; Marked String Colors
 ;
 MSG_EXAMPLE_STRING_GADGET
-Przyk³adowy gad¿et ci±gu
+PrzykÅ‚adowy gadÅ¼et ciÄ…gu
 ; Example String Gadget
 ;
 MSG_FORGET_ON_EXIT
-zapomnij przy wyj¶ciu
+zapomnij przy wyjÅ›ciu
 ; forget on exit
 ;
 MSG_REMEMBER_ON_EXIT
-zapamiêtaj przy wyj¶ciu
+zapamiÄ™taj przy wyjÅ›ciu
 ; remember on exit
 ;
 MSG_SAVE_ON_EXIT
-zapisz przy wyj¶ciu
+zapisz przy wyjÅ›ciu
 ; save on exit
 ;
 MSG_SMART
-oszczêdne
+oszczÄ™dne
 ; smart
 ;
 MSG_SIMPLE
@@ -659,11 +659,11 @@ Odrysowywanie:
 ; Redraw:
 ;
 MSG_TINY
-Ma³a:
+MaÅ‚a:
 ; Tiny:
 ;
 MSG_BIG
-Du¿a:
+DuÅ¼a:
 ; Big:
 ;
 MSG_WINDOW
@@ -707,7 +707,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_OPEN
-Otwórz...
+OtwÃ³rz...
 ; Open ...
 ;
 MSG_MEN_OPEN_SC
@@ -715,7 +715,7 @@ O
 ; O
 ;
 MSG_MEN_APPEND
-Do³±cz...
+DoÅ‚Ä…cz...
 ; Append ...
 ;
 MSG_MEN_SAVEAS
@@ -735,7 +735,7 @@ MSG_MEN_ABOUT_SC
 ; ?
 ;
 MSG_MEN_QUIT
-Skoñcz
+SkoÅ„cz
 ; Quit
 ;
 MSG_MEN_QUIT_SC
@@ -747,7 +747,7 @@ Schowek ramek
 ; Frame Clipboard
 ;
 MSG_IMAGE_CLIPBOARD
-Schowek obrazków
+Schowek obrazkÃ³w
 ; Image Clipboard
 ;
 MSG_GAD_TEST
@@ -759,7 +759,7 @@ Zapi_sz
 ; _Save
 ;
 MSG_GAD_USE
-_U¿yj
+_UÅ¼yj
 ; _Use
 ;
 MSG_GAD_CANCEL
@@ -783,7 +783,7 @@ Przyciski
 ; Buttons
 ;
 MSG_DSC_CYCLES
-Gad¿ety cykliczne
+GadÅ¼ety cykliczne
 ; Cycles
 ;
 MSG_DSC_SLIDERS
@@ -799,7 +799,7 @@ Listy
 ; Listviews
 ;
 MSG_DSC_STRINGS
-Ci±gi
+CiÄ…gi
 ; Strings
 ;
 MSG_DSC_NAVIGATION
@@ -819,7 +819,7 @@ Dostosuj pisak
 ; Adjust Pen
 ;
 MSG_CUSTOMFRAMES
-W³asne ramki
+WÅ‚asne ramki
 ; Customframes
 ;
 MSG_PUBLIC_SCREEN
@@ -831,11 +831,11 @@ Nazwa:
 ; Name:
 ;
 MSG_CALL_INSPECTOR
-Przywo³aj inspektora
+PrzywoÅ‚aj inspektora
 ; Call Inspector
 ;
 MSG_POP_TO_FRONT
-Przerzuæ na wierzch:
+PrzerzuÄ‡ na wierzch:
 ; Pop to front:
 ;
 MSG_ICONIFICATION
@@ -847,11 +847,11 @@ Klawisz:
 ; Hotkey:
 ;
 MSG_SHOW
-Poka¿:
+PokaÅ¼:
 ; Show:
 ;
 MSG_ICON
-ikonkê
+ikonkÄ™
 ; Icon
 ;
 MSG_MENU
@@ -879,6 +879,6 @@ Pierwszy dymek:
 ; First Bubble:
 ;
 MSG_NEXT_BUBBLE
-Nastêpny dymek:
+NastÄ™pny dymek:
 ; Next Bubble:
 ;

@@ -1,34 +1,34 @@
 ## version $VER: wbnewdrawer.catalog 2.0 (30.03.2016)
-## language espaÒol
+## language espa√±ol
 ## codeset 0
 ;
 ; Translated by ahg
 ;
 MSG_TITLE
 WBNewDrawer
-;WBNuevoCajÛn
+;WBNuevoCaj√≥n
 ;
 MSG_DESCRIPTION
-Crea un cajÛn con un Ìcono optativo
+Crea un caj√≥n con un √≠cono optativo
 ;Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT
-©2006, AROS Dev Team
+¬©2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
-Crear un cajÛn
+Crear un caj√≥n
 ;Create new drawer
 ;
 MSG_LINE
-Escriba el nombre del nuevo cajÛn
+Escriba el nombre del nuevo caj√≥n
 ;Enter the name of the new drawer
 ;
 MSG_NAME
-Nombre del cajÛn:
+Nombre del caj√≥n:
 ;New drawer name:
 ;
 MSG_ICON
-Õcono
+√çcono
 ;Icon
 ;
 MSG_OK
@@ -39,45 +39,45 @@ MSG_CANCEL
 Ca_ncel
 ;
 MSG_BASENAME
-RenÛmbrame
+Ren√≥mbrame
 ;Rename_Me
 ;
 MSG_ERROR_TITLE
-WBNuevoCajÛn: Error
+WBNuevoCaj√≥n: Error
 ;WBNewDrawer: Error
 ;
 MSG_ALREADY_EXIST
-°'%s' ya existe!
+¬°'%s' ya existe!
 ;'%s' already exists!
 ;
 MSG_CANT_CREATE
-°No se pudo crear el cajÛn '%s'!
+¬°No se pudo crear el caj√≥n '%s'!
 ;Can't create drawer '%s'!
 ;
 MSG_INFO_ALREADY
-°'%s'.info ya existe!
+¬°'%s'.info ya existe!
 ;'%s'.info already exists!
 ;
 MSG_ILLEGAL_CHARS
-°'%s' contiene caracteres ilegales!
+¬°'%s' contiene caracteres ilegales!
 ;'%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
-°Se necesitan dos argumentos!
+¬°Se necesitan dos argumentos!
 ;Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-°Bloqueo inv·lido del directorio!
+¬°Bloqueo inv√°lido del directorio!
 ;Invalid directory lock!
 ;
 MSG_WB_ONLY
-°No se pudo iniciar desde el shell!\n
+¬°No se pudo iniciar desde el shell!\n
 ;Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-°FallÛ la creaciÛn de la AplicaciÛn!
+¬°Fall√≥ la creaci√≥n de la Aplicaci√≥n!
 ;Failed to create Application!
 ;
 MSG_WRONG_ICON_TYPE
-°El archivo de Ìcono '%s'.info no es del tipo del CajÛn!
+¬°El archivo de √≠cono '%s'.info no es del tipo del Caj√≥n!
 ;The existing icon file '%s'.info isn't of type Drawer!

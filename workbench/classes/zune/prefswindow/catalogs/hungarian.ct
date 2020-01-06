@@ -2,7 +2,7 @@
 ## language magyar
 ## codeset 0
 ;
-; Translated by MiklÛs NÈmeth
+; Translated by Mikl√≥s N√©meth
 ;
 ;
 ;
@@ -11,7 +11,7 @@ _Teszt
 ; _Test
 ;
 MSG_REVERT
-_Vissza·llÌt
+_Vissza√°ll√≠t
 ; _Revert
 ;
 MSG_SAVE
@@ -19,10 +19,10 @@ _Ment
 ; _Save
 ;
 MSG_USE
-_Haszn·l
+_Haszn√°l
 ; _Use
 ;
 MSG_CANCEL
-MÈ_gsem
+M√©_gsem
 ; _Cancel
 ;

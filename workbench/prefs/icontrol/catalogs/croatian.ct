@@ -13,7 +13,7 @@ Ne mogu stvoriti objekt aplikacije!
 ; Can't create application object!
 ;
 MSG_CANT_CREATE_CUSTOM_CLASS
-Ne mogu stvoriti prilagoenu preferenceswindow klasu
+Ne mogu stvoriti prilagoƒëenu preferenceswindow klasu
 ; Can't create custom preferenceswindow class
 ;
 MSG_WINTITLE
@@ -41,7 +41,7 @@ Uredi
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Resetiraj na Predloæeno
+D\0Resetiraj na Predlo≈æeno
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -53,7 +53,7 @@ R\0Povrati
 ; R\0Restore
 ;
 MSG_MEN_SETTINGS
-Podeπavanja
+Pode≈°avanja
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
@@ -61,7 +61,7 @@ I\0Napravi Ikone?
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-UËitaj IControl Postavke
+Uƒçitaj IControl Postavke
 ; Load IControl Preferences
 ;
 MSG_ASL_SAVE_TITLE
@@ -81,11 +81,11 @@ Tip
 ; Type
 ;
 MSG_MENUS_TYPE_PULLDOWN
-PadajuÊi
+Padajuƒái
 ; Pull-Down
 ;
 MSG_MENUS_TYPE_POPUP
-SkoËni
+Skoƒçni
 ; Pop-Up
 ;
 MSG_MENUS_LOOK
@@ -93,7 +93,7 @@ Izgled
 ; Look
 ;
 MSG_MENUS_LOOK_CLASSIC
-KlasiËni
+Klasiƒçni
 ; Classic
 ;
 MSG_MENUS_LOOK_3D
@@ -117,10 +117,10 @@ Prvi kao DefaultPubScreen:
 ; Frontmost set as DefaultPubScreen:
 ;
 MSG_OFFSCREEN_DESC
-Dozvoli prozorima premjeπtanje \n izvan vidljivog djela
+Dozvoli prozorima premje≈°tanje \n izvan vidljivog djela
 ; Allow windows to be moved out of\nthe visible area
 ;
 MSG_FRONTMOST_DEFAULT_DESC
-  Postavi prvi public screen\n kao predloæeni public screen
+  Postavi prvi public screen\n kao predlo≈æeni public screen
 ; Make the frontmost public screen\nthe default public screen
 ;

@@ -1,6 +1,6 @@
 ## version $VER: hdtoolbox.catalog 1.0 (13.08.2006))
 ## codeset 0
-## language español
+## language espaÃ±ol
 ;
 ; Translated by ahg - (30.09.2007)
 ;
@@ -18,7 +18,7 @@ Todo
 ;All
 ;
 WORD_Automount
-Montaje automático
+Montaje automÃ¡tico
 ;Automontaje
 ;Automount
 ;
@@ -48,7 +48,7 @@ Crear Tabla
 ;
 WORD_Devices
 Dispositivos
-;Periféricos
+;PerifÃ©ricos
 ;Unidades
 ;Devices
 ;
@@ -60,7 +60,7 @@ Salir
 ;Exit
 ;
 WORD_Geometry
-Geometría
+GeometrÃ­a
 ;Geometry
 ;
 WORD_Name
@@ -75,7 +75,7 @@ Aceptar
 ;Ok
 ;
 WORD_Parent
-Atrás
+AtrÃ¡s
 ;Volver
 ;Nivel previo
 ;Parent
@@ -85,7 +85,7 @@ Particiones
 ;Partitions
 ;
 WORD_Partition_Table
-Tabla de Partición
+Tabla de ParticiÃ³n
 ;Partition Table
 ;
 WORD_Partition_Table_Type
@@ -93,7 +93,7 @@ Tipo de Tabla
 ;Partition Table Type
 ;
 WORD_Partition_Type
-Tipo de Partición
+Tipo de ParticiÃ³n
 ;Partition Type
 ;
 WORD_RemoveEntry
@@ -113,7 +113,7 @@ Grabar los Cambios
 ;Save Changes
 ;
 WORD_Size
-Tamaño
+TamaÃ±o
 ;Size
 ;
 WORD_Unit
@@ -141,7 +141,7 @@ Salir
 ;Quit
 ;
 MSG_ASK_SAVE
-¡Todos los datos en las particiones modificadas\nse borrarán! ¿Estás seguro en escribir los cambios\n a la tabla de partición '%s'?
+Â¡Todos los datos en las particiones modificadas\nse borrarÃ¡n! Â¿EstÃ¡s seguro en escribir los cambios\n a la tabla de particiÃ³n '%s'?
 ;All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
 ;
 MSG_NO_MEMORY
@@ -149,26 +149,26 @@ No hay memoria suficiente
 ;Not enough memory
 ;
 MSG_PARTITION_TABLE_FULL
-Tabla de partición llena
+Tabla de particiÃ³n llena
 ;Partition table full
 ;
 MSG_Select_Empty_Area
-Elige un área vacía
+Elige un Ã¡rea vacÃ­a
 ;Select empty area
 ;
 MSG_Select_Partition_Resize_Move
-Elige una partición y ajusta su tamaño o muévela
+Elige una particiÃ³n y ajusta su tamaÃ±o o muÃ©vela
 ;Select a partition and resize/move it
 ;
 MSG_Welcome
-¡Bienvenido a la herramienta para particiones!
+Â¡Bienvenido a la herramienta para particiones!
 ;Welcome to the partitioning tool
 ;
 MSG_WriteTableError
-Error al escribir en la tabla de partición
+Error al escribir en la tabla de particiÃ³n
 ;Error while writing partition table
 ;
 MSG_CreateTableError
-Error al crear la tabla de partición
+Error al crear la tabla de particiÃ³n
 ;Error while creating partition table
 ;

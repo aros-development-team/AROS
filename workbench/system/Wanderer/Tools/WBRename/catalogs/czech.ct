@@ -8,7 +8,7 @@ WBRename
 ; WBRename
 ;
 MSG_DESCRIPTION
-Pøejmenuje vybraný objekt
+PÅ™ejmenuje vybranÃ½ objekt
 ; Renames files and drawers
 ;
 MSG_COPYRIGHT
@@ -16,15 +16,15 @@ Copyright (C) AROS Dev Team
 ; \xa92012, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
-Pøejmenování objektu
+PÅ™ejmenovÃ¡nÃ­ objektu
 ; Rename
 ;
 MSG_LINE
-Zadejte nový název: '%s'
+Zadejte novÃ½ nÃ¡zev: '%s'
 ; Enter a new name for: '%s'
 ;
 MSG_NAME
-\33bNázev:\33n
+\33bNÃ¡zev:\33n
 ; \33bNew name: \33n
 ;
 MSG_OK
@@ -32,7 +32,7 @@ _Potvrdit
 ; _OK
 ;
 MSG_CANCEL
-_Zru¹it
+_ZruÅ¡it
 ; Ca_ncel
 ;
 MSG_ERROR_TITLE
@@ -40,33 +40,33 @@ Chyba
 ; Error
 ;
 MSG_ALREADY_EXIST
-Objekt s názvem "%s" ji¾ existuje!
+Objekt s nÃ¡zvem "%s" jiÅ¾ existuje!
 ; '%s' already exists!
 ;
 MSG_FAILED
-Chyba pøi pøejmenování objektu "%s".\n%s
+Chyba pÅ™i pÅ™ejmenovÃ¡nÃ­ objektu "%s".\n%s
 ; Rename of '%s' failed with error:\n'%s'!
 ;
 MSG_ILLEGAL_CHARS
-Název "%s" obsahuje neplatné znaky!
+NÃ¡zev "%s" obsahuje neplatnÃ© znaky!
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
-Program vy¾aduje 2 argumenty!
+Program vyÅ¾aduje 2 argumenty!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Vybraný adresáø nelze zamknout!
+VybranÃ½ adresÃ¡Å™ nelze zamknout!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
-Tento program nelze spustit z pøíkazového øádku!\n
+Tento program nelze spustit z pÅ™Ã­kazovÃ©ho Å™Ã¡dku!\n
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-Nelze vytvoøit objekt application!
+Nelze vytvoÅ™it objekt application!
 ; Failed to create Application!
 ;
 MSG_OUTOFMEMORY
-Není dostatek volné pamìti!
+NenÃ­ dostatek volnÃ© pamÄ›ti!
 ; Can't allocate RAM!

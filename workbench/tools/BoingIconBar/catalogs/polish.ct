@@ -7,11 +7,11 @@ BoingIconBar
 ; BoingIconBar
 ;
 MSG_CX_TITLE
-Ikona paska narzêdzi
+Ikona paska narzÄ™dzi
 ; Icon Toolbar
 ;
 MSG_CX_DESC
-Uruchamiaj programy z paska narzêdzi
+Uruchamiaj programy z paska narzÄ™dzi
 ; Start Programs from Toolbar
 ;
 MSG_MENU_SETTINGS
@@ -19,6 +19,6 @@ Ustawienia
 ; Settings
 ;
 MSG_MENU_QUIT
-Zakoñcz
+ZakoÅ„cz
 ; Quit
 ;

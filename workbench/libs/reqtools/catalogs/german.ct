@@ -49,7 +49,7 @@ MSG_TOO_SMALL
 Zu klein!
 ;
 MSG_TOO_BIG
-Zu groß!
+Zu groÃŸ!
 ;
 ; *** Palette Requester ***
 ;
@@ -60,7 +60,7 @@ MSG_RED
 _Rot:
 ;
 MSG_GREEN
-_Grün:
+_GrÃ¼n:
 ;
 MSG_BLUE
 _Blau:
@@ -75,7 +75,7 @@ MSG_SPREAD
 _Verlauf
 ;
 MSG_UNDO
-Rü_ckgängig
+RÃ¼_ckgÃ¤ngig
 ;
 ; ** 2.5 **
 ;
@@ -115,10 +115,10 @@ MSG_CLEAR
 _Keine
 ;
 MSG_VOLUMES
-_Datenträger
+_DatentrÃ¤ger
 ;
 MSG_PARENT
-_Übergeordnet
+_Ãœbergeordnet
 ;
 MSG_PATTERN
 Mus_ter:
@@ -130,7 +130,7 @@ MSG_DOT_INFO
 ._info
 ;
 MSG_SELECTED
-Ausgewählt:
+AusgewÃ¤hlt:
 ;
 MSG_FULL
 %ld%% voll
@@ -138,7 +138,7 @@ MSG_FULL
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-Zeichensatz konnte nicht geöffnet werden!
+Zeichensatz konnte nicht geÃ¶ffnet werden!
 ;
 MSG_BOLD
 _Fett
@@ -179,7 +179,7 @@ MSG_WIDTH
 _Breite:
 ;
 MSG_HEIGHT
-_Höhe:
+_HÃ¶he:
 ;
 ;
 MSG_DEFAULT

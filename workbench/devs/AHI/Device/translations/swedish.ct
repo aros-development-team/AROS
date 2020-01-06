@@ -36,11 +36,11 @@ msgMenuControl
 ; \000\000Control
 ;
 msgMenuLastMode
-S\000Senaste ljudinst‰llning
+S\000Senaste ljudinst√§llning
 ; L\000Last Mode
 ;
 msgMenuNextMode
-N\000N‰sta ljudinst‰llning
+N\000N√§sta ljudinst√§llning
 ; N\000Next Mode
 ;
 msgMenuPropertyList
@@ -48,7 +48,7 @@ msgMenuPropertyList
 ; ?\000Property List...
 ;
 msgMenuRestore
-≈\000≈terst‰ll
+√Ö\000√Öterst√§ll
 ; R\000Restore
 ;
 msgMenuOK
@@ -62,7 +62,7 @@ A\000Avbryt
 ; Mode name in requester whose driver cannot be opened
 ;
 msgUnknown
-OKƒND:Ljudl‰ge 0x%08lx
+OK√ÑND:Ljudl√§ge 0x%08lx
 ; UNKNOWN:Audio ID 0x%08lx
 ;
 ; The requester gadgets
@@ -82,21 +82,21 @@ Frekvens
 ; Name of default mode in requester
 ;
 msgDefaultMode
-Fˆrvalt ljudl‰ge
+F√∂rvalt ljudl√§ge
 ; Default audio mode
 ;
 ; The requester's info-winodow
 ;
 msgReqInfoTitle
-Ljudl‰gets egenskaper
+Ljudl√§gets egenskaper
 ; Mode Properties
 ;
 msgReqInfoAudioID
-Ljudl‰ges-id: 0x%08lx
+Ljudl√§ges-id: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Upplˆsning: %ld bitar i %s
+Uppl√∂sning: %ld bitar i %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono

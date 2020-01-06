@@ -17,21 +17,21 @@ MSG_OK
 ;  _Ok
 ;
 MSG_CANCEL
-_Zruπit
+_Zru≈°it
 ; _Cancel
 ;
 ; *** EZRequester ***
 ;
 MSG_OK_BAR_CANCEL
- _OK |_Zruπit
+ _OK |_Zru≈°it
 ;  _Ok |_Cancel
 ;
 MSG_LAST_BAR_CANCEL
-_PoslednÌ|_Zruπit
+_Posledn√≠|_Zru≈°it
 ; _Last|_Cancel
 ;
 MSG_REQUEST
-Æ·dost
+≈Ω√°dost
 ; Request
 ;
 MSG_INFORMATION
@@ -54,11 +54,11 @@ MSG_MIN_MAX_FMT
 ;  Min: %ld, Max: %ld
 ;
 MSG_TOO_SMALL
-P¯Ìliπ malÈ!
+P≈ô√≠li≈° mal√©!
 ; Too small!
 ;
 MSG_TOO_BIG
-P¯Ìliπ velkÈ!
+P≈ô√≠li≈° velk√©!
 ; Too big!
 ;
 ; *** Palette Requester ***
@@ -68,19 +68,19 @@ _Paleta barev:
 ; _Palette Colors:
 ;
 MSG_RED
-»erven· _R:
+ƒåerven√° _R:
 ; _Red:
 ;
 MSG_GREEN
-Zelen· _G:
+Zelen√° _G:
 ; _Green:
 ;
 MSG_BLUE
-Modr· _B:
+Modr√° _B:
 ; _Blue:
 ;
 MSG_COPY
-Z_kopÌrovat
+Z_kop√≠rovat
 ; Cop_y
 ;
 MSG_SWAP
@@ -88,17 +88,17 @@ Pro_hodit
 ; _Swap
 ;
 MSG_SPREAD
-Roz_et¯Ìt
+Roz_et≈ô√≠t
 ; Spr_ead
 ;
 MSG_UNDO
-ZpÏ_t
+Zpƒõ_t
 ; _Undo
 ;
 ; ** 2.5 **
 ;
 MSG_COPY_TITLE
-ZkopÌrovat do...
+Zkop√≠rovat do...
 ; Copy to...
 ;
 MSG_SWAP_TITLE
@@ -106,33 +106,33 @@ Prohodit s...
 ; Swap with...
 ;
 MSG_SPREAD_TITLE
-Rozet¯Ìt kam...
+Rozet≈ô√≠t kam...
 ; Spread to...
 ;
 ; *** File Requester ***
 ;
 MSG_CREATE_DRAWER
-Adres·¯ "%s" neexistuje.\nChcete ho vytvo¯it?
+Adres√°≈ô "%s" neexistuje.\nChcete ho vytvo≈ôit?
 ; Drawer '%s' does\nnot exist. Create it?
 ;
 MSG_DIR_ERROR
-Nespr·vn˝ adres·¯!
+Nespr√°vn√Ω adres√°≈ô!
 ; Directory error!
 ;
 MSG_MATCH_WINTITLE
-Zad·nÌ masky...
+Zad√°n√≠ masky...
 ; Match...
 ;
 MSG_DRAWER
-adres·¯
+adres√°≈ô
 ; Drawer
 ;
 MSG_ASSIGN
-p¯i¯azenÌ
+p≈ôi≈ôazen√≠
 ; Assign
 ;
 MSG_ALL
-Vπ_e
+V≈°_e
 ; _All
 ;
 MSG_MATCH
@@ -144,11 +144,11 @@ N_ic
 ; C_lear
 ;
 MSG_VOLUMES
-Z_a¯ÌzenÌ
+Z_a≈ô√≠zen√≠
 ; _Volumes
 ;
 MSG_PARENT
-V_yππÌ
+V_y≈°≈°√≠
 ; _Parent
 ;
 MSG_PATTERN
@@ -156,7 +156,7 @@ _Maska
 ; Pa_ttern:
 ;
 MSG_GET
-_Nov˝
+_Nov√Ω
 ; _Get
 ;
 MSG_DOT_INFO
@@ -164,59 +164,59 @@ MSG_DOT_INFO
 ; ._info
 ;
 MSG_SELECTED
-Vybr·no:
+Vybr√°no:
 ; Selected:
 ;
 MSG_FULL
-ZaplnÏno z %ld %%
+Zaplnƒõno z %ld %%
 ; %ld%% full
 ;
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-PoæadovanÈ pÌsmo nelze otev¯Ìt!
+Po≈æadovan√© p√≠smo nelze otev≈ô√≠t!
 ; Couldn't open font!
 ;
 MSG_BOLD
-_TuËn˝
+_Tuƒçn√Ω
 ; _Bold
 ;
 MSG_ITALIC
-_KurzÌva
+_Kurz√≠va
 ; _Italic
 ;
 MSG_UNDERLINE
-_Podtræen˝
+_Podtr≈æen√Ω
 ; _Underline
 ;
 ; *** ScreenMode Requester ***
 ;
 MSG_DASH_INTERLACED
--prokl·dan˝
+-prokl√°dan√Ω
 ; -Interlaced
 ;
 MSG_DASH_HAM
--reæim HAM
+-re≈æim HAM
 ; -HAM
 ;
 MSG_DASH_EHB
--reæim EHB
+-re≈æim EHB
 ; -EHB
 ;
 MSG_REGULAR_SIZE
-StandardnÌ velikost
+Standardn√≠ velikost
 ; Regular Size
 ;
 MSG_TEXT_SIZE
-Textov˝ reæim
+Textov√Ω re≈æim
 ; Text Size
 ;
 MSG_GFX_SIZE
-Grafick˝ reæim
+Grafick√Ω re≈æim
 ; Graphics Size
 ;
 MSG_MAX_SIZE
-ZobrazitelnÈ maximum
+Zobraziteln√© maximum
 ; Maximum Size
 ;
 MSG_OVERSCAN
@@ -224,20 +224,20 @@ O_verscan:
 ; O_verscan:
 ;
 MSG_WIDTH
-©Ì¯k_a:
+≈†√≠≈ôk_a:
 ; _Width:
 ;
 MSG_HEIGHT
-V˝π_ka:
+V√Ω≈°_ka:
 ; _Height:
 ;
 ;
 MSG_DEFAULT
-V˝chozÌ
+V√Ωchoz√≠
 ; Default
 ;
 MSG_COLORS
-PoËet _barev:
+Poƒçet _barev:
 ; Co_lors:
 ;
 MSG_MAX
@@ -245,6 +245,6 @@ Max:
 ; Max:
 ;
 MSG_AUTOSCROLL
-_Rolov·nÌ:
+_Rolov√°n√≠:
 ; _AutoScroll:
 ;

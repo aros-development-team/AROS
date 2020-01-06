@@ -52,7 +52,7 @@ Hardware-Beschreibung
 ; Hardware description
 ;
 MSG_LABEL_VENDOR
-Häerstellerinformation
+HÃ¤erstellerinformation
 ; Vendor information
 ;
 MSG_SYSTEM_PROPERTIES
@@ -84,7 +84,7 @@ Bootparameter
 ; Boot Arguments
 ;
 MSG_AVAILABLE
-Verfügbar zur Anwendung
+VerfÃ¼gbar zur Anwendung
 ; Available for use
 ;
 MSG_GENERAL
@@ -112,7 +112,7 @@ Hersteller-ID
 ; Vendor ID
 ;
 MSG_DEVICE_PROPERTIES
-Geräteeigenschaften
+GerÃ¤teeigenschaften
 ; Device properties
 ;
 MSG_ATA_PROPERTIES
@@ -124,15 +124,15 @@ IDE
 ; IDE
 ;
 MSG_USE_IOALT
-Unterstützt alternative Register
+UnterstÃ¼tzt alternative Register
 ; Supports alternate registers
 ;
 MSG_USE_32BIT
-Unterstützt 32-Bit PIO
+UnterstÃ¼tzt 32-Bit PIO
 ; Supports 32-bit PIO
 ;
 MSG_USE_DMA
-Unterstützt DMA
+UnterstÃ¼tzt DMA
 ; Supports DMA
 ;
 MSG_USE_80WIRE
@@ -140,11 +140,11 @@ MSG_USE_80WIRE
 ; 80-wire cable
 ;
 MSG_ATA_UNIT_PROPERTIES
-IDE-Geräteeigenschaften
+IDE-GerÃ¤teeigenschaften
 ; IDE device properties
 ;
 MSG_UNIT_NUMBER
-Gerätenummer
+GerÃ¤tenummer
 ; Unit number
 ;
 MSG_MODEL
@@ -160,7 +160,7 @@ Seriell
 ; Serial
 ;
 MSG_TRANSFER_MODES
-Unterstützte Modi
+UnterstÃ¼tzte Modi
 ; Supported modes
 ;
 MSG_MULTISECTOR

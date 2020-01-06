@@ -18,7 +18,7 @@ WORD_Bootable
 Avviabile
 ;
 WORD_BootPri
-Priorit‡ d'avvio
+Priorit√† d'avvio
 ;
 WORD_Cancel
 Annulla
@@ -33,7 +33,7 @@ WORD_Create_Table
 Crea tavola
 ;
 WORD_Devices
-Unit‡
+Unit√†
 ;
 WORD_DosEnvec
 DosEnvec
@@ -48,7 +48,7 @@ WORD_Name
 Nome
 ;
 WORD_Switches
-Propriet‡
+Propriet√†
 ;
 WORD_Parent
 Indietro
@@ -84,10 +84,10 @@ WORD_Size
 Dimensioni
 ;
 WORD_Unit
-Unit‡
+Unit√†
 ;
 WORD_Units
-Unit‡
+Unit√†
 ;
 WORD_Unknown
 Sconosciuta
@@ -102,24 +102,24 @@ WORD_MENU_Quit
 Esci
 ;
 MSG_ASK_SAVE
-Il contenuto delle partizioni verr‡ aliminato\n Siete sicuri di voler apportare le modifiche alle partizioni '%s' ?
-;Alle Daten auf modifizierten Partitionen werden zerstˆrt!\nBist du dir sicher die ƒnderungen der Partitionstabelle '%s' zu speichern?
+Il contenuto delle partizioni verr√† aliminato\n Siete sicuri di voler apportare le modifiche alle partizioni '%s' ?
+;Alle Daten auf modifizierten Partitionen werden zerst√∂rt!\nBist du dir sicher die √Ñnderungen der Partitionstabelle '%s' zu speichern?
 ;
 MSG_NO_MEMORY
-Non c'Ë abbastanza memoria
+Non c'√® abbastanza memoria
 ;Nicht genug Speicher vorhanden
 ;
 MSG_PARTITION_TABLE_FULL
-La tavola delle partizioni Ë piena
+La tavola delle partizioni √® piena
 ;Partitionstabelle voll
 ;
 MSG_Select_Empty_Area
 Scegliere un'area vuota
-;W‰hle eine freien Bereich
+;W√§hle eine freien Bereich
 ;
 MSG_Select_Partition_Resize_Move
 Scegliere la partizione da ridimensionare o spostare
-;W‰hle eine Partition und ‰ndere die Grˆﬂe bzw. bewege sie
+;W√§hle eine Partition und √§ndere die Gr√∂√üe bzw. bewege sie
 ;
 MSG_Welcome
 Benvenuti nel programma di partizionamento

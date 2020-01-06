@@ -11,7 +11,7 @@ OK
 ; Ok
 ;
 MSG_PEN0
-Pisak szczeg蟪體
+Pisak szczeg贸艂贸w
 ; Detail Pen
 ;
 MSG_PEN1
@@ -23,7 +23,7 @@ Pisak tekstu
 ; Text Pen
 ;
 MSG_PEN3
-Pisak rozja秐ienia
+Pisak rozja艣nienia
 ; Shine Pen
 ;
 MSG_PEN4
@@ -31,31 +31,31 @@ Pisak cienia
 ; Shadow Pen
 ;
 MSG_PEN5
-Pisak wype硁ienia
+Pisak wype艂nienia
 ; Fill Pen
 ;
 MSG_PEN6
-Pisak wype硁ienia tekstu
+Pisak wype艂nienia tekstu
 ; Fill Text Pen
 ;
 MSG_PEN7
-Pisak t砤
+Pisak t艂a
 ; Background Pen
 ;
 MSG_PEN8
-Pisak pod秝ietlenia tekstu
+Pisak pod艣wietlenia tekstu
 ; Highlight Text Pen
 ;
 MSG_PEN9
-Pisak szczeg蟪體 belki
+Pisak szczeg贸艂贸w belki
 ; Bar Detail Pen
 ;
 MSG_PEN10
-Pisak wype硁ienia belki
+Pisak wype艂nienia belki
 ; Bar Block Pen
 ;
 MSG_PEN11
-Pisak kraw阣zi belki
+Pisak kraw臋dzi belki
 ; Bar Trim Pen
 ;
 MSG_4COLOR

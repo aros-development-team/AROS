@@ -1,5 +1,5 @@
 ## version $VER: Find.catalog 1.0 (03.01.2018)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 MSG_APP_TITLE
@@ -59,11 +59,11 @@ Contenu :
 ; Contents
 ;
 MSG_BTN_START
-Débuter
+DÃ©buter
 ; Start
 ;
 MSG_BTN_STOP
-Arrêter
+ArrÃªter
 ; Stop
 ;
 MSG_BTN_OPEN
@@ -75,7 +75,7 @@ Voir
 ; View
 ;
 MSG_BTN_DRAWER
-Répertoire
+RÃ©pertoire
 ; Drawer
 ;
 ; Error messages
@@ -85,7 +85,7 @@ Erreur
 ; Error
 ;
 MSG_ERR_NO_APPLICATION
-Impossible de créer l'application.
+Impossible de crÃ©er l'application.
 ; Can't create application.
 ;
 MSG_ERR_READARGS
@@ -93,11 +93,11 @@ Impossible de lire les arguments de la ligne de commande.
 ; Can't read commandline arguments.
 ;
 MSG_ERR_NO_MEM
-Impossible d'allouer la mémoire.
+Impossible d'allouer la mÃ©moire.
 ; Error:\nCan't allocate memory.
 ;
 MSG_ERR_NO_WINDOW
-Impossible d'ouvrir la fenêtre.
+Impossible d'ouvrir la fenÃªtre.
 ; Error:\nCan't open window.
 ;
 MSG_ERR_DOS
@@ -109,7 +109,7 @@ Impossible d'ouvrir le fichier\n\"%s\".
 ; Error:\nCan't open file\n\"%s\".
 ;
 MSG_ERR_NO_DIR
-Impossible d'ouvrir le répertoire\n\"%s\".
+Impossible d'ouvrir le rÃ©pertoire\n\"%s\".
 ; Error:\nCan't open directory\n\"%s\".
 ;
 MSG_ERR_PATTERN

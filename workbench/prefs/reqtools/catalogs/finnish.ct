@@ -6,25 +6,25 @@ MSG_WINDOW_TITLE
 ReqToolsin asetukset
 ;
 MSG_GENERAL
-Yleist‰
+Yleist√§
 ;
 MSG_FILEREQUESTER
 Tiedostonvalitsija
 ;
 MSG_SIZE
-Koko (% n‰kyv‰st‰ korkeudesta):
+Koko (% n√§kyv√§st√§ korkeudesta):
 ;
 MSG_OK
 Ok
 ;
 MSG_POPSCREEN
-Tuo n‰yttˆ eteen
+Tuo n√§ytt√∂ eteen
 ;
 MSG_IMMEDIATESORT
-J‰rjest‰ heti
+J√§rjest√§ heti
 ;
 MSG_DRAWERSFIRST
-N‰yt‰ hakemistot ensin
+N√§yt√§ hakemistot ensin
 ;
 MSG_DRAWERSMIXED
 Sekoita tiedostot ja hakemistot
@@ -33,16 +33,16 @@ MSG_LED
 Levyn toimintavalo
 ;
 MSG_DEFAULTFONT
-K‰yt‰ j‰rjestelm‰n oletusfonttia
+K√§yt√§ j√§rjestelm√§n oletusfonttia
 ;
 MSG_FKEYS
-K‰yt‰ funktion‰pp‰imi‰
+K√§yt√§ funktion√§pp√§imi√§
 ;
 MSG_DOWHEEL
-V‰ripyˆr‰:
+V√§ripy√∂r√§:
 ;
 MSG_WHEEL_NONE
-Ei mit‰‰n
+Ei mit√§√§n
 ;None
 ;
 MSG_WHEEL_SIMPLE
@@ -73,7 +73,7 @@ MSG_PALETTEREQ
 Palet
 ;
 MSG_SCRMODEREQ
-N‰yttˆtilan
+N√§ytt√∂tilan
 ;
 MSG_VOLUMEREQ
 Levyn
@@ -88,22 +88,22 @@ MSG_POINTER
 Hiiren osoitin
 ;
 MSG_CENTERWIN
-Keskit‰ ikkunaan
+Keskit√§ ikkunaan
 ;
 MSG_CENTERSCR
-Keskit‰ n‰yttˆˆn
+Keskit√§ n√§ytt√∂√∂n
 ;
 MSG_TOPLEFTWIN
-Ikkunan vasen yl‰nurkka
+Ikkunan vasen yl√§nurkka
 ;
 MSG_TOPLEFTSCR
-N‰ytˆn vasen yl‰nurkka
+N√§yt√∂n vasen yl√§nurkka
 ;
 MSG_OFFSET
 \33bSiirto
 ;
 MSG_NR_OF_ENTRIES
-\33bN‰kyvien rivien m‰‰r‰
+\33bN√§kyvien rivien m√§√§r√§
 ;
 MSG_MIN
 Minimi:

@@ -1,5 +1,5 @@
 ## version $VER: Commodities.catalog 3.1 (04.11.2011)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -16,7 +16,7 @@ Impossible d'ouvrir 'clipboard.device'
 ; Can't open 'clipboard.device'
 ;
 MSG_CANT_LOCK_SCR
-Impossible de verrouiller l'écran public !\n
+Impossible de verrouiller l'Ã©cran public !\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
@@ -24,11 +24,11 @@ Impossible d'obtenir la structure VisualInfo !\n
 ; Can't get VisualInfo!\n
 ;
 MSG_CANT_CREATE_GADGET
-Impossible de créer les Gadgets !\n
+Impossible de crÃ©er les Gadgets !\n
 ; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
-Impossible de créer les Menus !\n
+Impossible de crÃ©er les Menus !\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
@@ -36,15 +36,15 @@ Impossible de dessiner les Menus !\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
-Impossible de créer la fenêtre !\n
+Impossible de crÃ©er la fenÃªtre !\n
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
-Impossible d'allouer de la mémoire !\n
+Impossible d'allouer de la mÃ©moire !\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
-Impossible de créer un port de message !\n
+Impossible de crÃ©er un port de message !\n
 ; Can't create message port!\n
 ;
 MSG_CANT_ALLOCATE_SIGNAL
@@ -52,11 +52,11 @@ Impossible d'allouer un signal !\n
 ; Can't allocate signal!\n
 ;
 MSG_CANT_CREATE_BROKER
-Impossible de créer un objet CxBroker !\n
+Impossible de crÃ©er un objet CxBroker !\n
 ; Can't create CxBroker object!\n
 ;
 MSG_CANT_CREATE_CUSTOM
-Impossible de créer un objet CxCustom !\n
+Impossible de crÃ©er un objet CxCustom !\n
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
@@ -91,7 +91,7 @@ Commodities Exchange
 ; Commodities Exchange
 ;
 MSG_EXCHANGE_CXDESCR
-Contrôle les Utilités système
+ContrÃ´le les UtilitÃ©s systÃ¨me
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
@@ -99,7 +99,7 @@ Exchange: Hot Key = <%s>
 ; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
-Utilités disponibles
+UtilitÃ©s disponibles
 ; Available commodities
 ;
 MSG_EXCHANGE_INFO
@@ -134,11 +134,11 @@ Blanker
 ; Blanker
 ;
 MSG_BLANKER_CXTITLE
-Economiseur d'écran système
+Economiseur d'Ã©cran systÃ¨me
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-Eteind l'écran si inactif
+Eteind l'Ã©cran si inactif
 ; Blanks screen when system inactive
 ;
 ; ===============================================
@@ -153,7 +153,7 @@ Cliquer en avant
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
-Cliquer amène la fenêtre devant
+Cliquer amÃ¨ne la fenÃªtre devant
 ; Click windows to front
 ;
 ; ===============================================
@@ -164,11 +164,11 @@ Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
-Fenêtres opaques
+FenÃªtres opaques
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
-Rend opaque le fond des fenêtres
+Rend opaque le fond des fenÃªtres
 ; Realtime moving of windows
 ;
 ; ===============================================
@@ -183,7 +183,7 @@ Auto-focus
 ; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
-Active la fenêtre sous la souris
+Active la fenÃªtre sous la souris
 ; Activates the window under the mouse
 ;
 ; ===============================================
@@ -194,7 +194,7 @@ StartMenu
 ; StartMenu
 ;
 MSG_STARTMENU_CXTITLE
-Lanceur d'application système
+Lanceur d'application systÃ¨me
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
@@ -221,7 +221,7 @@ FKey: Touche = <%s>
 ; FKey: Hot Key = <%s>
 ;
 MSG_FKEY_DEFINED_KEYS
-Touches définies
+Touches dÃ©finies
 ; Defined Keys
 ;
 MSG_FKEY_NEW_KEY
@@ -233,7 +233,7 @@ _Effacer la touche
 ; _Delete Key
 ;
 MSG_FKEY_SAVE_KEY
-Sauver les touches définies
+Sauver les touches dÃ©finies
 ; Save Defined Keys
 ;
 MSG_FKEY_COMMAND
@@ -241,35 +241,35 @@ Commande
 ; Command
 ;
 MSG_FKEY_COMMAND_PARAMS
-Paramètres de la commande
+ParamÃ¨tres de la commande
 ; Command Parameters
 ;
 MSG_FKEY_CMD_CYCLE_WIN
-Cycler les fenêtres
+Cycler les fenÃªtres
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
-Cycler les écrans
+Cycler les Ã©crans
 ; Cycle Screens
 ;
 MSG_FKEY_CMD_ENLARGE_WIN
-Aggrandir la fenêtre
+Aggrandir la fenÃªtre
 ; Enlarge Window
 ;
 MSG_FKEY_CMD_SHRINK_WIN
-Rétrécir la fenêtre
+RÃ©trÃ©cir la fenÃªtre
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Alterner la taille de fenêtre
+Alterner la taille de fenÃªtre
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_RESCUE_WIN
-Restaurer la fenêtre
+Restaurer la fenÃªtre
 ; Rescue Window
 ;
 MSG_FKEY_CMD_INSERT_TEXT
-Insérer un texte
+InsÃ©rer un texte
 ; Insert Text
 ;
 MSG_FKEY_CMD_RUN_PROG
@@ -281,7 +281,7 @@ Lancer un script Arexx
 ; Run Arexx Script
 ;
 MSG_FKEY_MEN_PROJECT_SAVE
-S\0Sauver les touches définies
+S\0Sauver les touches dÃ©finies
 ; S\0Save Defined Keys
 ;
 ; ===============================================
@@ -311,7 +311,7 @@ DepthMenu :
 ; DepthMenu:
 ;
 MSG_DEPTHMENU_CXDESCR
-Menu popup pour la profondeur d'écran
+Menu popup pour la profondeur d'Ã©cran
 ; Popup menu for depth gadgets
 ;
 ; ===============================================
@@ -322,7 +322,7 @@ AltKeyQ
 ; AltKeyQ
 ;
 MSG_ALTKEYQ_CXTITLE
-Insertion de caractères
+Insertion de caractÃ¨res
 ; Character input by number
 ;
 MSG_ALTKEYQ_CXDESCR

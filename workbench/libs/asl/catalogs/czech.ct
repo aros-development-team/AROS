@@ -3,7 +3,7 @@
 ## codeset 0
 ;
 MSG_FILEREQ_TITLE
-V˝bÏr souboru
+V√Ωbƒõr souboru
 ; Select File
 ;
 MSG_FILEREQ_POSITIVE_GAD
@@ -11,15 +11,15 @@ OK
 ; Ok
 ;
 MSG_FILEREQ_NEGATIVE_GAD
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 MSG_FILEREQ_VOLUMES_GAD
-MÈdia
+M√©dia
 ; Volumes
 ;
 MSG_FILEREQ_PARENT_GAD
-VyππÌ
+Vy≈°≈°√≠
 ; Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
@@ -27,7 +27,7 @@ Maska
 ; Pattern
 ;
 MSG_FILEREQ_DRAWER_LABEL
-Adres·¯
+Adres√°≈ô
 ; Drawer
 ;
 MSG_FILEREQ_FILE_LABEL
@@ -35,33 +35,33 @@ Soubor
 ; File
 ;
 MSG_FILEREQ_LV_DRAWER
-Adres·¯
+Adres√°≈ô
 ; Drawer
 ;
 MSG_FILEREQ_LV_ASSIGN
-P¯i¯azenÌ
+P≈ôi≈ôazen√≠
 ; Assign
 ;
 MSG_FILEREQ_DELETE_TITLE
-Smaz·nÌ objektu
+Smaz√°n√≠ objektu
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-UpozornÏnÌ: Opravdu chcete smazat vybran˝ objekt\n\%s?
+Upozornƒõn√≠: Opravdu chcete smazat vybran√Ω objekt\n\%s?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
-Smazat|Zruπit
+Smazat|Zru≈°it
 ; Delete|Cancel
 ;
 MSG_FILEREQ_FOREIGNER_TITLE
-Ikony z nÏkolika r˘zn˝ch adres·¯˘
+Ikony z nƒõkolika r≈Øzn√Ωch adres√°≈ô≈Ø
 ; Icons dropped from different drawers
 ;
 MSG_FILEREQ_FOREIGNER_MSG
-UpozornÏnÌ: VybranÈ ikony nepoch·zejÌ z jednoho\n\
-adres·¯e.\n\
-N·sledujÌcÌ soubory nelze zpracovat:\n\
+Upozornƒõn√≠: Vybran√© ikony nepoch√°zej√≠ z jednoho\n\
+adres√°≈ôe.\n\
+N√°sleduj√≠c√≠ soubory nelze zpracovat:\n\
 %s
 ; Warning: The icons that have just been dropped\n\
 ; do not all come from the same drawer.\n\
@@ -73,35 +73,35 @@ OK
 ; OK
 ;
 MSG_FILEREQ_RENAME_TITLE
-P¯ejmenov·nÌ objektu
+P≈ôejmenov√°n√≠ objektu
 ; Rename
 ;
 MSG_FILEREQ_RENAME_OK
-P¯ejmenovat
+P≈ôejmenovat
 ; Rename
 ;
 MSG_FILEREQ_RENAME_CANCEL
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_TITLE
-Nov˝ adres·¯
+Nov√Ω adres√°≈ô
 ; Create Drawer
 ;
 MSG_FILEREQ_CREATEDRAWER_OK
-Vytvo¯it
+Vytvo≈ôit
 ; Create
 ;
 MSG_FILEREQ_CREATEDRAWER_CANCEL
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_DEFNAME
-nov˝_adres·¯
+nov√Ω_adres√°≈ô
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-V˝bÏr pomocÌ masky
+V√Ωbƒõr pomoc√≠ masky
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
@@ -109,7 +109,7 @@ Vybrat
 ; Select
 ;
 MSG_FILEREQ_SELECT_CANCEL
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 MSG_FILEREQ_MEN_CONTROL
@@ -117,23 +117,23 @@ Projekt
 ; Control
 ;
 MSG_FILEREQ_MEN_CONTROL_LASTNAME
-L\0P¯edchozÌ poloæka
+L\0P≈ôedchoz√≠ polo≈æka
 ; L\0Last Name
 ;
 MSG_FILEREQ_MEN_CONTROL_NEXTNAME
-N\0N·sledujÌcÌ poloæka
+N\0N√°sleduj√≠c√≠ polo≈æka
 ; N\0Next Name
 ;
 MSG_FILEREQ_MEN_CONTROL_RESTORE
-R\0Obnovit p¯edchozÌ
+R\0Obnovit p≈ôedchoz√≠
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-P\0Adres·¯ o ˙roveÚ v˝π
+P\0Adres√°≈ô o √∫rove≈à v√Ω≈°
 ; P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
-V\0Seznam mÈdiÌ
+V\0Seznam m√©di√≠
 ; V\0Volumes
 ;
 MSG_FILEREQ_MEN_CONTROL_UPDATE
@@ -145,15 +145,15 @@ D\0Smazat
 ; D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
-T\0Vytvo¯it nov˝ adres·¯...
+T\0Vytvo≈ôit nov√Ω adres√°≈ô...
 ; T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
-E\0P¯ejmenovat...
+E\0P≈ôejmenovat...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
-#\0Vybrat poloæky...
+#\0Vybrat polo≈æky...
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
@@ -161,47 +161,47 @@ O\0Potvrdit
 ; O\0Ok
 ;
 MSG_FILEREQ_MEN_CONTROL_CANCEL
-C\0Zruπit
+C\0Zru≈°it
 ; C\0Cancel
 ;
 MSG_FILEREQ_MEN_FILELIST
-V˝pis
+V√Ωpis
 ; File list
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTNAME
-1\0ÿadit dle n·zvu
+1\0≈òadit dle n√°zvu
 ; 1\0Sort by name
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDATE
-2\0ÿadit dle data
+2\0≈òadit dle data
 ; 2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0ÿadit dle velikosti
+3\0≈òadit dle velikosti
 ; 3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
-+\0ÿadit vzestupnÏ
++\0≈òadit vzestupnƒõ
 ; +\0Ascending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDOWN
--\0ÿadit sestupnÏ
+-\0≈òadit sestupnƒõ
 ; -\0Descending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
-4\0Adres·¯e jako prvnÌ
+4\0Adres√°≈ôe jako prvn√≠
 ; 4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
-5\0Adres·¯e i soubory dohromady
+5\0Adres√°≈ôe i soubory dohromady
 ; 5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
-6\0Adres·¯e jako poslednÌ
+6\0Adres√°≈ôe jako posledn√≠
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-V˝bÏr rozliπenÌ obrazovky
+V√Ωbƒõr rozli≈°en√≠ obrazovky
 ; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
@@ -209,7 +209,7 @@ Potvrdit
 ; Ok
 ;
 MSG_MODEREQ_NEGATIVE_GAD
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 MSG_MODEREQ_OVERSCAN_LABEL
@@ -217,35 +217,35 @@ Overscan
 ; Overscan
 ;
 MSG_MODEREQ_OVERSCAN_TEXT
-Textov˝ reæim
+Textov√Ω re≈æim
 ; Text Size
 ;
 MSG_MODEREQ_OVERSCAN_GRAPHICS
-Grafick˝ reæim
+Grafick√Ω re≈æim
 ; Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
-ZpracovatelnÈ maximum
+Zpracovateln√© maximum
 ; Extreme Size
 ;
 MSG_MODEREQ_OVERSCAN_MAXIMUM
-ZobrazitelnÈ maximum
+Zobraziteln√© maximum
 ; Maximum Size
 ;
 MSG_MODEREQ_WIDTH_LABEL
-©Ì¯ka
+≈†√≠≈ôka
 ; Width
 ;
 MSG_MODEREQ_HEIGHT_LABEL
-V˝πka
+V√Ω≈°ka
 ; Height
 ;
 MSG_MODEREQ_COLORS_LABEL
-PoËet barev
+Poƒçet barev
 ; Colors
 ;
 MSG_MODEREQ_AUTOSCROLL_LABEL
-Rolov·nÌ obrazovky
+Rolov√°n√≠ obrazovky
 ; AutoScroll
 ;
 MSG_MODEREQ_AUTOSCROLL_OFF
@@ -257,7 +257,7 @@ zap
 ; ON
 ;
 MSG_MODEREQ_PROPERTIES_TITLE
-P¯ehled vlastnostÌ
+P≈ôehled vlastnost√≠
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
@@ -269,23 +269,23 @@ Nepodporuje genlock
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
-Nelze p¯esouvat
+Nelze p≈ôesouvat
 ; Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
-Reæim HAM
+Re≈æim HAM
 ; Hold & Modify
 ;
 MSG_MODEREQ_PROPERTIES_EHB
-Reæim EHB
+Re≈æim EHB
 ; Extra-HalfBright
 ;
 MSG_MODEREQ_PROPERTIES_LACE
-Prokl·dan˝
+Prokl√°dan√Ω
 ; Interlaced
 ;
 MSG_MODEREQ_PROPERTIES_ECS
-Vyæaduje ECS
+Vy≈æaduje ECS
 ; Requires ECS
 ;
 MSG_MODEREQ_PROPERTIES_WB
@@ -297,7 +297,7 @@ Podporuje genlock
 ; Supports genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
-Lze p¯esouvat
+Lze p≈ôesouvat
 ; Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
@@ -313,19 +313,19 @@ Projekt
 ; Control
 ;
 MSG_MODEREQ_MEN_CONTROL_LASTMODE
-L\0P¯edchozÌ poloæka
+L\0P≈ôedchoz√≠ polo≈æka
 ; L\0Last Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_NEXTMODE
-N\0N·sledujÌcÌ poloæka
+N\0N√°sleduj√≠c√≠ polo≈æka
 ; N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
-?\0P¯ehled vlastnostÌ...
+?\0P≈ôehled vlastnost√≠...
 ; ?\0Property List...
 ;
 MSG_MODEREQ_MEN_CONTROL_RESTORE
-R\0Obnovit p¯edchozÌ
+R\0Obnovit p≈ôedchoz√≠
 ; R\0Restore
 ;
 MSG_MODEREQ_MEN_CONTROL_OK
@@ -333,11 +333,11 @@ O\0Potvrdit
 ; O\0Ok
 ;
 MSG_MODEREQ_MEN_CONTROL_CANCEL
-C\0Zruπit
+C\0Zru≈°it
 ; C\0Cancel
 ;
 MSG_FONTREQ_TITLE
-V˝bÏr pÌsma
+V√Ωbƒõr p√≠sma
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
@@ -345,7 +345,7 @@ Potvrdit
 ; Ok
 ;
 MSG_FONTREQ_NEGATIVE_GAD
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 MSG_FONTREQ_MEN_CONTROL
@@ -353,15 +353,15 @@ Projekt
 ; Control
 ;
 MSG_FONTREQ_MEN_CONTROL_LASTFONT
-L\0P¯edchozÌ poloæka
+L\0P≈ôedchoz√≠ polo≈æka
 ; L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
-N\0N·sledujÌcÌ poloæka
+N\0N√°sleduj√≠c√≠ polo≈æka
 ; N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE
-R\0Obnovit p¯edchozÌ
+R\0Obnovit p≈ôedchoz√≠
 ; R\0Restore
 ;
 MSG_FONTREQ_MEN_CONTROL_RESCAN
@@ -373,11 +373,11 @@ O\0Potvrdit
 ; O\0Ok
 ;
 MSG_FONTREQ_MEN_CONTROL_CANCEL
-C\0Zruπit
+C\0Zru≈°it
 ; C\0Cancel
 ;
 MSG_FONTREQ_MODE_LABEL
-Reæim
+Re≈æim
 ; Mode
 ;
 MSG_FONTREQ_MODE_TEXT
@@ -385,15 +385,15 @@ Text
 ; Text
 ;
 MSG_FONTREQ_MODE_TEXTANDFIELD
-Text s pozadÌm
+Text s pozad√≠m
 ; Text+Field
 ;
 MSG_FONTREQ_MODE_COMPLEMENT
-Komplement·rnÌ
+Komplement√°rn√≠
 ; Complement
 ;
 MSG_FONTREQ_STYLE_LABEL
-ÿez pÌsma
+≈òez p√≠sma
 ; Style
 ;
 MSG_FONTREQ_STYLE_BOLD
@@ -413,7 +413,7 @@ Barva
 ; Color
 ;
 MSG_FONTREQ_COLOR_LABEL_BG
-Barva pozadÌ
+Barva pozad√≠
 ; BG Color
 ;
 MSG_FONTREQ_COLOR_LABEL_FGBG

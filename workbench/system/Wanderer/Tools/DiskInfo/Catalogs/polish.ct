@@ -7,7 +7,7 @@ Disk Info
 ; Disk Info
 ;
 MSG_ERROR_HEADER
-B£°D
+B≈ÅƒÑD
 ; ERROR
 ;
 MSG_ERROR_OK
@@ -15,11 +15,11 @@ _OK
 ; _OK
 ;
 MSG_ERROR_LOCALE
-Nie moøna zainicjalizowaÊ systemu lokalizacji.
+Nie mo≈ºna zainicjalizowaƒá systemu lokalizacji.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
-Nie moøna zainicjalizowaÊ klas w≥asnych.
+Nie mo≈ºna zainicjalizowaƒá klas w≈Çasnych.
 ; Can't initialize custom classes.
 ;
 MSG_DESCRIPTION
@@ -27,7 +27,7 @@ Informacje o ikonce dysku
 ; Disk Icon Informations
 ;
 MSG_PERCENTFULL
-ZajÍte %ld %%
+Zajƒôte %ld %%
 ; %ld %% Full
 ;
 MSG_FORMAT
@@ -44,10 +44,10 @@ Olivier Adam
 ;
 MSG_COPYRIGHT
 (c) 2006-2010 AROS Dev Team
-; ©2006-2009 AROS Dev Team
+; ≈†2006-2009 AROS Dev Team
 ;
 MSG_USED
-ZajÍte
+Zajƒôte
 ; Used space
 ;
 MSG_FREE
@@ -55,19 +55,19 @@ Wolne
 ; Free space
 ;
 MSG_SIZE
-Pojemno∂Ê
+Pojemno≈õƒá
 ; Capacity
 ;
 MSG_BLOCK_SIZE
-Wielko∂Ê bloku
+Wielko≈õƒá bloku
 ; Block size
 ;
 MSG_BLOCKS
-blokÛw
+blok√≥w
 ; blocks
 ;
 MSG_BYTES
-bajtÛw
+bajt√≥w
 ; bytes
 ;
 MSG_STATUS
@@ -99,18 +99,18 @@ Sterownik DOS-u:
 ; DOS Device:
 ;
 MSG_DEVICEINFO
-Pod≥±czony na:
+Pod≈ÇƒÖczony na:
 ; Connected on:
 ;
 MSG_FILESYSTEM
-System plikÛw:
+System plik√≥w:
 ; FileSystem:
 ;
 MSG_PACKETDEVICE
-Urz±dzenie pakietowe
+UrzƒÖdzenie pakietowe
 ; Packet Style device
 ;
 MSG_IOFSDEVICE
-Urz±dzenie we/wy
+UrzƒÖdzenie we/wy
 ; IOFS Style device
 ;

@@ -15,7 +15,7 @@ MSG_CANT_OPEN_INPUTDEVICE
 ; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
-En voi lukita n‰yttˆ‰!\n
+En voi lukita n√§ytt√∂√§!\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
@@ -55,7 +55,7 @@ En voi luoda CxCustom-objektia!\n
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
-Selv‰
+Selv√§
 ; Ok
 ;
 MSG_MEN_PROJECT
@@ -90,7 +90,7 @@ Commodities Exchange
 ; Commodities Exchange
 ;
 MSG_EXCHANGE_CXDESCR
-Hallintaj‰rjestelm‰n commodities
+Hallintaj√§rjestelm√§n commodities
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
@@ -106,7 +106,7 @@ Tiedot
 ; Information
 ;
 MSG_EXCHANGE_GAD_SHOW
-N‰yt‰
+N√§yt√§
 ; Show
 ;
 MSG_EXCHANGE_GAD_HIDE
@@ -122,7 +122,7 @@ Aktiivinen
 ; Active
 ;
 MSG_EXCHANGE_CYCLE_INACTIVE
-Ep‰aktiivinen
+Ep√§aktiivinen
 ; Inactive
 ;
 ; ===============================================
@@ -133,11 +133,11 @@ Blanker
 ; Blanker
 ;
 MSG_BLANKER_CXTITLE
-J‰rjestelm‰n n‰ytˆn tyhjennin
+J√§rjestelm√§n n√§yt√∂n tyhjennin
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-Tyhjent‰‰ n‰ytˆn kun j‰rjestelm‰ ei ole aktiivinen
+Tyhjent√§√§ n√§yt√∂n kun j√§rjestelm√§ ei ole aktiivinen
 ; Blanks screen when system inactive
 ;
 ; ===============================================
@@ -148,7 +148,7 @@ ClickToFront
 ; ClickToFront
 ;
 MSG_CLICK2FNT_CXTITLE
-"Klikkauksella eteen"-tyˆkalu
+"Klikkauksella eteen"-ty√∂kalu
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
@@ -159,15 +159,15 @@ Klikkaa ikkunat eteen
 ; OPAQUE
 ;
 MSG_OPAQUE_CXNAME
-L‰pin‰kym‰tˆn
+L√§pin√§kym√§t√∂n
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
-L‰pin‰kym‰ttˆm‰t ikkunat
+L√§pin√§kym√§tt√∂m√§t ikkunat
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
-Ikkunoiden reaaliaikainen n‰yttˆ
+Ikkunoiden reaaliaikainen n√§ytt√∂
 ; Realtime moving of windows
 ;
 ; ===============================================
@@ -193,11 +193,11 @@ StartMenu
 ; StartMenu
 ;
 MSG_STARTMENU_CXTITLE
-J‰rjestelm‰n ohjelmak‰ynnistin
+J√§rjestelm√§n ohjelmak√§ynnistin
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Ohjelmien k‰ynnistin
+Ohjelmien k√§ynnistin
 ; Program launch commodity
 ;
 ; ===============================================
@@ -208,11 +208,11 @@ FKey
 ; FKey
 ;
 MSG_FKEY_CXTITLE
-Toiminto n‰pp‰imille:
+Toiminto n√§pp√§imille:
 ; Function To Keys:
 ;
 MSG_FKEY_CXDESCR
-Asettaa erityistoimintoja n‰pp‰imille
+Asettaa erityistoimintoja n√§pp√§imille
 ; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
@@ -220,15 +220,15 @@ FKey: Hot Key = <%s>
 ; FKey: Hot Key = <%s>
 ;
 MSG_FKEY_DEFINED_KEYS
-M‰‰ritetyt n‰pp‰imet
+M√§√§ritetyt n√§pp√§imet
 ; Defined Keys
 ;
 MSG_FKEY_NEW_KEY
-_Uusi n‰pp‰in
+_Uusi n√§pp√§in
 ; _New Key
 ;
 MSG_FKEY_DELETE_KEY
-_Poista n‰pp‰in
+_Poista n√§pp√§in
 ; _Delete Key
 ;
 MSG_FKEY_SAVE_KEY
@@ -246,11 +246,11 @@ Komennon parametrit
 ; Command Parameters
 ;
 MSG_FKEY_CMD_CYCLE_WIN
-Kierr‰t‰ ikkunoita
+Kierr√§t√§ ikkunoita
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
-Kierr‰t‰ n‰yttˆj‰
+Kierr√§t√§ n√§ytt√∂j√§
 ; Cycle Screens
 ;
 MSG_FKEY_CMD_ENLARGE_WIN
@@ -272,7 +272,7 @@ MSG_FKEY_CMD_RESCUE_WIN
 ; ***NEW***
 ;
 MSG_FKEY_CMD_INSERT_TEXT
-Lis‰‰ teksti‰
+Lis√§√§ teksti√§
 ; Insert Text
 ;
 MSG_FKEY_CMD_RUN_PROG
@@ -284,7 +284,7 @@ Aja Arexx -skripti
 ; Run Arexx Script
 ;
 MSG_FKEY_MEN_PROJECT_SAVE
-S\0Tallenna m‰‰ritetyt n‰pp‰imet
+S\0Tallenna m√§√§ritetyt n√§pp√§imet
 ; S\0Save Defined Keys
 ;
 ; ===============================================
@@ -299,6 +299,6 @@ NoCapsLock:
 ; NoCapsLock:
 ;
 MSG_NOCAPSLOCK_CXDESCR
-Poistaa CAPS LOCK-n‰pp‰imen k‰ytˆst‰
+Poistaa CAPS LOCK-n√§pp√§imen k√§yt√∂st√§
 ; Renders the CAPS LOCK key ineffective
 ;

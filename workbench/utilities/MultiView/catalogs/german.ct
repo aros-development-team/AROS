@@ -4,7 +4,7 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
+Kann %s V%ld nicht Ã¶ffnen!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC
@@ -44,7 +44,7 @@ Kann Message-Port nicht erzeugen!
 ; Can't create message port!
 ;
 MSG_CANT_ADD_APPWINDOW
-Kann Fenster nicht zum AppWindow befördern!
+Kann Fenster nicht zum AppWindow befÃ¶rdern!
 ; Can't promote window as an AppWindow!
 ;
 MSG_SAVE_FAILED
@@ -56,7 +56,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Öffnen ...
+O\0Ã–ffnen ...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -72,7 +72,7 @@ P\0Drucken
 ; P\0Print
 ;
 MSG_MEN_PROJECT_ABOUT
-?\0Über ...
+?\0Ãœber ...
 ; ?\0About...
 ;
 MSG_MEN_PROJECT_QUIT
@@ -92,11 +92,11 @@ C\0Kopieren
 ; C\0Copy
 ;
 MSG_MEN_EDIT_SELECTALL
-L\0Alles auswählen
+L\0Alles auswÃ¤hlen
 ; [\0Select All
 ;
 MSG_MEN_EDIT_CLEARSELECTED
-H\0Auswahl löschen
+H\0Auswahl lÃ¶schen
 ; ]\0Clear Selected
 ;
 MSG_MEN_WINDOW
@@ -104,7 +104,7 @@ Fenster
 ; Window
 ;
 MSG_MEN_WINDOW_SEPSCREEN
- \0Eigenen Schirm öffnen
+ \0Eigenen Schirm Ã¶ffnen
 ;  \0Use Separate Screen
 ;
 MSG_MEN_WINDOW_MINIMIZE
@@ -140,15 +140,15 @@ MSG_MEN_PICT_ZOOM_OUT
 ;  \0Zoom out
 ;
 MSG_MEN_PICT_RESET
- \0Orginalgröße
+ \0OrginalgrÃ¶ÃŸe
 ;  \0Reset Size
 ;
 MSG_MEN_PICT_FIT_WIN
- \0Auf Fenstergröße
+ \0Auf FenstergrÃ¶ÃŸe
 ;  \0Fit to Window
 ;
 MSG_MEN_PICT_KEEP_ASPECT
- \0Festes Seitenverhältnis
+ \0Festes SeitenverhÃ¤ltnis
 ;  \0Keep Aspect Ratio
 ;
 MSG_MEN_PICT_FORCE_MAP
@@ -176,15 +176,15 @@ MSG_MEN_TEXT_SEARCH_PREV
 ;  \0Search for previous
 ;
 MSG_MEN_TEXT_SEARCH_NEXT
- \0Nächstes suchen
+ \0NÃ¤chstes suchen
 ;  \0Search for next
 ;
 MSG_ASL_OPEN_TITLE
-Eingabedatei auswählen
+Eingabedatei auswÃ¤hlen
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-Ausgabedatei auswählen
+Ausgabedatei auswÃ¤hlen
 ; Select File to Save to
 ;
 MSG_ABOUT

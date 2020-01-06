@@ -3,7 +3,7 @@
 ## codeset 0
 ;
 MSG_FILEREQ_TITLE
-Välj fil
+VÃ¤lj fil
 ; Select File
 ;
 MSG_FILEREQ_POSITIVE_GAD
@@ -23,11 +23,11 @@ Moder
 ; Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
-Mönster
+MÃ¶nster
 ; Pattern
 ;
 MSG_FILEREQ_DRAWER_LABEL
-Låda
+LÃ¥da
 ; Drawer
 ;
 MSG_FILEREQ_FILE_LABEL
@@ -35,7 +35,7 @@ Fil
 ; File
 ;
 MSG_FILEREQ_LV_DRAWER
-Låda
+LÃ¥da
 ; Drawer
 ;
 MSG_FILEREQ_LV_ASSIGN
@@ -47,7 +47,7 @@ Radera fil
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Varning: du kan inte få\tillbaka det du raderar! OK att radera\n\%s?
+Varning: du kan inte fÃ¥\tillbaka det du raderar! OK att radera\n\%s?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
@@ -67,7 +67,7 @@ Avbryt
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_TITLE
-Skapa låda
+Skapa lÃ¥da
 ; Create Drawer
 ;
 MSG_FILEREQ_CREATEDRAWER_OK
@@ -83,11 +83,11 @@ Byt_Mitt_Namn
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Välj via mönster
+VÃ¤lj via mÃ¶nster
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
-Välj
+VÃ¤lj
 ; Select
 ;
 MSG_FILEREQ_SELECT_CANCEL
@@ -99,15 +99,15 @@ Kontroll
 ; Control
 ;
 MSG_FILEREQ_MEN_CONTROL_LASTNAME
-L\0Föregående namn
+L\0FÃ¶regÃ¥ende namn
 ; L\0Last Name
 ;
 MSG_FILEREQ_MEN_CONTROL_NEXTNAME
-N\0Nästa namn
+N\0NÃ¤sta namn
 ; N\0Next Name
 ;
 MSG_FILEREQ_MEN_CONTROL_RESTORE
-R\0Återställ
+R\0Ã…terstÃ¤ll
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
@@ -127,7 +127,7 @@ D\0Radera
 ; D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
-T\0Skapa ny låda...
+T\0Skapa ny lÃ¥da...
 ; T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
@@ -135,7 +135,7 @@ E\0Byt namn...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
-#\0Välj...
+#\0VÃ¤lj...
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
@@ -171,19 +171,19 @@ MSG_FILEREQ_MEN_FILELIST_SORTDOWN
 ; -\0Descending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
-4\0Visa lådor först
+4\0Visa lÃ¥dor fÃ¶rst
 ; 4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
-5\0Visa lådor med filer
+5\0Visa lÃ¥dor med filer
 ; 5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
-6\0Visa lådor sist
+6\0Visa lÃ¥dor sist
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Välj skärmläge
+VÃ¤lj skÃ¤rmlÃ¤ge
 ; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
@@ -219,11 +219,11 @@ Bredd
 ; Width
 ;
 MSG_MODEREQ_HEIGHT_LABEL
-Höjd
+HÃ¶jd
 ; Height
 ;
 MSG_MODEREQ_COLORS_LABEL
-Färger
+FÃ¤rger
 ; Colors
 ;
 MSG_MODEREQ_AUTOSCROLL_LABEL
@@ -235,19 +235,19 @@ AV
 ; OFF
 ;
 MSG_MODEREQ_AUTOSCROLL_ON
-PÅ
+PÃ…
 ; ON
 ;
 MSG_MODEREQ_PROPERTIES_TITLE
-Lägesegenskaper
+LÃ¤gesegenskaper
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
-Stödjer inte Workbench
+StÃ¶djer inte Workbench
 ; Does not support Workbench
 ;
 MSG_MODEREQ_PROPERTIES_NOTGENLOCK
-Stödjer inte genlock
+StÃ¶djer inte genlock
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
@@ -267,15 +267,15 @@ Interlace
 ; Interlaced
 ;
 MSG_MODEREQ_PROPERTIES_ECS
-Kräver ECS
+KrÃ¤ver ECS
 ; Requires ECS
 ;
 MSG_MODEREQ_PROPERTIES_WB
-Stödjer Workbench
+StÃ¶djer Workbench
 ; Supports Workbench
 ;
 MSG_MODEREQ_PROPERTIES_GENLOCK
-Stödjer genlock
+StÃ¶djer genlock
 ; Supports genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
@@ -295,11 +295,11 @@ Kontroll
 ; Control
 ;
 MSG_MODEREQ_MEN_CONTROL_LASTMODE
-L\0Föregående läge
+L\0FÃ¶regÃ¥ende lÃ¤ge
 ; L\0Last Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_NEXTMODE
-N\0Nästa läge
+N\0NÃ¤sta lÃ¤ge
 ; N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
@@ -307,7 +307,7 @@ MSG_MODEREQ_MEN_CONTROL_PROPERTIES
 ; ?\0Property List...
 ;
 MSG_MODEREQ_MEN_CONTROL_RESTORE
-R\0Återställ
+R\0Ã…terstÃ¤ll
 ; R\0Restore
 ;
 MSG_MODEREQ_MEN_CONTROL_OK
@@ -319,7 +319,7 @@ C\0Avbryt
 ; C\0Cancel
 ;
 MSG_FONTREQ_TITLE
-Välj typsnitt
+VÃ¤lj typsnitt
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
@@ -335,15 +335,15 @@ Kontroll
 ; Control
 ;
 MSG_FONTREQ_MEN_CONTROL_LASTFONT
-L\0Föregående typsnitt
+L\0FÃ¶regÃ¥ende typsnitt
 ; L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
-N\0Nästa typsnitt
+N\0NÃ¤sta typsnitt
 ; N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE
-R\0Återställ
+R\0Ã…terstÃ¤ll
 ; R\0Restore
 ;
 MSG_FONTREQ_MEN_CONTROL_RESCAN

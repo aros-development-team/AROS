@@ -32,15 +32,15 @@ WiMP - Program pro manipulaci s okny
 ; WiMP - The Window Manipulation Program
 ;
 MSG_INFO_TITLE
-WiMP - InformaËnÌ okno
+WiMP - Informaƒçn√≠ okno
 ; WiMP - InfoWindow
 ;
 MSG_CLOSE_SCREEN
-Opravdu si p¯ejete zav¯Ìt vybranou obrazovku?
+Opravdu si p≈ôejete zav≈ô√≠t vybranou obrazovku?
 ; Do you really want to Close the selected Screen?
 ;
 MSG_CLOSE_WINDOW
-Opravdu si p¯ejete zav¯Ìt vybranÈ okno?
+Opravdu si p≈ôejete zav≈ô√≠t vybran√© okno?
 ; Do you really want to Close the selected Window?
 ;
 MSG_YES_NO
@@ -48,7 +48,7 @@ Ano|Ne!
 ; Yes.|No!
 ;
 MSG_CONTINUE
-PokraËovat
+Pokraƒçovat
 ; Continue
 ;
 MSG_BTN_KILL
@@ -56,7 +56,7 @@ MSG_BTN_KILL
 ; \033iKill
 ;
 MSG_BTN_FRONT
-_Dop¯edu
+_Dop≈ôedu
 ; To _Front
 ;
 MSG_BTN_BACK
@@ -64,7 +64,7 @@ Dozadu
 ; To _Back
 ;
 MSG_BTN_MOVE
-_Uk·zat origin·l
+_Uk√°zat origin√°l
 ; Move to _Origin
 ;
 MSG_BTN_ACTIVATE
@@ -72,11 +72,11 @@ _Aktivovat
 ; _Activate
 ;
 MSG_BTN_ZIP
-Zmenπit
+Zmen≈°it
 ; _Zip
 ;
 MSG_BTN_HIDE
-_Skr˝t
+_Skr√Ωt
 ; _Hide
 ;
 MSG_BTN_SHOW
@@ -88,15 +88,15 @@ Aktual. seznam
 ; _Update List
 ;
 MSG_BTN_RESCUE_ALL
-Zachr·nit veπker· okna
+Zachr√°nit ve≈°ker√° okna
 ; _Rescue all Windows
 ;
 MSG_BTN_SHOW_ALL
-Zobrazit veπker· okna
+Zobrazit ve≈°ker√° okna
 ; Show all Windows
 ;
 MSG_BTN_RETHING
-P¯ehodnotit displej
+P≈ôehodnotit displej
 ; Rethink Display
 ;
 MSG_BTN_ABOUT
@@ -116,7 +116,7 @@ O programu...
 ; About...
 ;
 MSG_MENU_QUIT
-UkonËit
+Ukonƒçit
 ; Quit
 ;
 MSG_MENU_WIN_LIST
@@ -132,7 +132,7 @@ Odstranit
 ; Kill
 ;
 MSG_MENU_TO_FRONT
-Dop¯edu
+Dop≈ôedu
 ; To Front
 ;
 MSG_MENU_TO_BACK
@@ -140,7 +140,7 @@ Dozadu
 ; To Back
 ;
 MSG_MENU_TO_ORIGIN
-K origin·lu
+K origin√°lu
 ; To Origin
 ;
 MSG_MENU_ACTIVATE
@@ -148,11 +148,11 @@ Aktivovat
 ; Activate
 ;
 MSG_MENU_ZIP
-Zmenπit
+Zmen≈°it
 ; Zip
 ;
 MSG_MENU_HIDE
-Skr˝t
+Skr√Ωt
 ; Hide
 ;
 MSG_MENU_SHOW
@@ -164,19 +164,19 @@ Informace
 ; Info
 ;
 MSG_MENU_GENERIC
-ObecnÈ
+Obecn√©
 ; Generic
 ;
 MSG_MENU_RESCUE_ALL
-Zachr·nit vπe
+Zachr√°nit v≈°e
 ; Rescue All
 ;
 MSG_MENU_SHOW_ALL
-Zobrazit vπe
+Zobrazit v≈°e
 ; Show All
 ;
 MSG_MENU_RETHINGDISPLAY
-P¯ehodnotit displej
+P≈ôehodnotit displej
 ; RethinkDisplay
 ;
 MSG_ARRAY_WINDOW
@@ -208,7 +208,7 @@ Status
 ; Status
 ;
 MSG_ARRAY_5_TITLE
-N·zev
+N√°zev
 ; Title
 ;
 MSG_COL_SCREEN
@@ -220,35 +220,35 @@ Adresa
 ; Address
 ;
 MSG_COL_SCR_LEFTEDGE
-Lev· hrana
+Lev√° hrana
 ; LeftEdge
 ;
 MSG_COL_SCR_TOPEDGE
-VrchnÌ hrana
+Vrchn√≠ hrana
 ; TopEdge
 ;
 MSG_COL_SCR_WIDTH
-©Ì¯ka
+≈†√≠≈ôka
 ; Width
 ;
 MSG_COL_SCR_HEIGHT
-V˝πka
+V√Ω≈°ka
 ; Height
 ;
 MSG_COL_SCR_FLAGS
-P¯Ìznak
+P≈ô√≠znak
 ; Flags
 ;
 MSG_COL_SCR_TITLE
-N·zev
+N√°zev
 ; Title
 ;
 MSG_COL_SCR_DEFAULTIT
-Obecn˝ n·zev
+Obecn√Ω n√°zev
 ; DefaultTitle
 ;
 MSG_COL_SCR_FRSTWIN
-PrvnÌ okno
+Prvn√≠ okno
 ; FirstWindow
 ;
 MSG_COL_WIDOW
@@ -260,51 +260,51 @@ Adresa
 ; Address
 ;
 MSG_COL_WIN_NEXTWIN
-DalπÌ okno
+Dal≈°√≠ okno
 ; NextWindow
 ;
 MSG_COL_WIN_LEFTEDGE
-Lev· hrana
+Lev√° hrana
 ; LeftEdge
 ;
 MSG_COL_WIN_TOPEDGE
-VrchnÌ hrana
+Vrchn√≠ hrana
 ; TopEdge
 ;
 MSG_COL_WIN_WIDTH
-©Ì¯ka
+≈†√≠≈ôka
 ; Width
 ;
 MSG_COL_WIN_HEIGHT
-V˝πka
+V√Ω≈°ka
 ; Height
 ;
 MSG_COL_WIN_MINWIDTH
-Min. πÌ¯ka
+Min. ≈°√≠≈ôka
 ; MinWidth
 ;
 MSG_COL_WIN_MINHEIGHT
-Min. v˝πka
+Min. v√Ω≈°ka
 ; MinHeight
 ;
 MSG_COL_WIN_MAXWIDTH
-Max. πÌ¯ka
+Max. ≈°√≠≈ôka
 ; MaxWidth
 ;
 MSG_COL_WIN_MAXHEIGHT
-Max. v˝πka
+Max. v√Ω≈°ka
 ; MaxHeight
 ;
 MSG_COL_WIN_FLAGS
-p¯Ìznaky
+p≈ô√≠znaky
 ; Flags
 ;
 MSG_COL_WIN_IDCMPFLAGS
-P¯Ìznaky IDCMP
+P≈ô√≠znaky IDCMP
 ; IDCMPFlags
 ;
 MSG_COL_WIN_TITLE
-N·zev
+N√°zev
 ; Title
 ;
 MSG_COL_WIN_REQCOUNT
@@ -316,31 +316,31 @@ WScreen
 ; WScreen
 ;
 MSG_COL_WIN_BORDERLEFT
-Lev˝ okraj
+Lev√Ω okraj
 ; BorderLeft
 ;
 MSG_COL_WIN_BORDERTOP
-VrchnÌ okraj
+Vrchn√≠ okraj
 ; BorderTop
 ;
 MSG_COL_WIN_BORDERRIGHT
-Prav˝ okraj
+Prav√Ω okraj
 ; BorderRight
 ;
 MSG_COL_WIN_BORDERBOTTOM
-SpodnÌ okraj
+Spodn√≠ okraj
 ; BoderBottom
 ;
 MSG_COL_WIN_PARENTWIN
-Okno (rodiË)
+Okno (rodiƒç)
 ; Parent Window
 ;
 MSG_COL_WIN_FIRSTCHILD
-PrvnÌ potomek
+Prvn√≠ potomek
 ; First Child
 ;
 MSG_COL_WIN_PARENT
-RodiË
+Rodiƒç
 ; Parent
 ;
 MSG_COL_WIN_DESCENDANT

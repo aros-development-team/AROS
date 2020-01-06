@@ -30,11 +30,11 @@ msgMenuProject
 ; \000Project
 ;
 msgItemOpen
-O\000Otevøít...
+O\000OtevÅ™Ã­t...
 ; O\000Open...
 ;
 msgItemSaveAs
-A\000Ulo¾it jako...
+A\000UloÅ¾it jako...
 ; A\000Save As...
 ;
 msgItemAbout
@@ -42,57 +42,57 @@ msgItemAbout
 ; ?\000About...
 ;
 msgItemQuit
-Q\000Ukonèit
+Q\000UkonÄit
 ; Q\000Quit
 ;
 msgMenuEdit
-\000Úpravy
+\000Ãšpravy
 ; \000Edit
 ;
 msgItemDefaults
-D\000Vıchozí stav
+D\000VÃ½chozÃ­ stav
 ; D\000Reset To Defaults
 ;
 msgItemLastSaved
-L\000Naposledy ulo¾ené
+L\000Naposledy uloÅ¾enÃ©
 ; L\000Last Saved
 ;
 msgItemRestore
-R\000Obnovit pøedchozí
+R\000Obnovit pÅ™edchozÃ­
 ; R\000Restore
 ;
 msgMenuSettings
-\000Nastavení
+\000NastavenÃ­
 ; \000Settings
 ;
 msgItemCreateIcons
-I\000Vytváøet ikony?
+I\000VytvÃ¡Å™et ikony?
 ; I\000Create Icons?
 ;
 msgMenuHelp
-\000Nápovìda
+\000NÃ¡povÄ›da
 ; \000Help
 ;
 msgItemHelp
-Help\000Nápovìda...
+Help\000NÃ¡povÄ›da...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-H\000Manuál systému AHI...
+H\000ManuÃ¡l systÃ©mu AHI...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
-\000Rejstøík pojmù...
+\000RejstÅ™Ã­k pojmÅ¯...
 ; \000Concept Index...
 ;
 ; *** The pages ***
 ;
 msgPageMode
-Nastavení re¾imu
+NastavenÃ­ reÅ¾imu
 ; Mode settings
 ;
 msgPageAdvanced
-Pro pokroèilé
+Pro pokroÄilÃ©
 ; Advanced settings
 ;
 ; *** The units ***
@@ -102,21 +102,21 @@ Jednotka %ld
 ; Unit %ld
 ;
 msgUnitMusic
-Hudební jednotka
+HudebnÃ­ jednotka
 ; Music unit
 ;
 ; *** Properties box ***
 ;
 msgProperties
-ID re¾imu\nZáznam\nAutor\nCopyright\nOvladaè\nVerze\nPoznámky
+ID reÅ¾imu\nZÃ¡znam\nAutor\nCopyright\nOvladaÄ\nVerze\nPoznÃ¡mky
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
-Plnı duplex
+PlnÃ½ duplex
 ; Full duplex
 ;
 msgPropRecordHalf
-Polovièní duplex
+PoloviÄnÃ­ duplex
 ; Half duplex
 ;
 msgPropRecordNone
@@ -126,7 +126,7 @@ Nelze
 ; *** Options ***
 ;
 msgOptions
-Mo¾nosti
+MoÅ¾nosti
 ; Options
 ;
 msgOptFrequency
@@ -134,7 +134,7 @@ _Frekvence
 ; _Frequency
 ;
 msgOptChannels
-Poèet _kanálù
+PoÄet _kanÃ¡lÅ¯
 ; C_hannels
 ;
 msgOptNoChannels
@@ -146,11 +146,11 @@ _Hlasitost
 ; _Volume
 ;
 msgOptMonitor
-Pøíposl_ech
+PÅ™Ã­posl_ech
 ; _Monitor
 ;
 msgOptGain
-Zesíle_ní
+ZesÃ­le_nÃ­
 ; _Gain
 ;
 msgOptMuted
@@ -166,34 +166,34 @@ Bez vstupu
 ; No inputs
 ;
 msgOptOutput
-Vı_stup
+VÃ½_stup
 ; _Output
 ;
 msgOptNoOutputs
-Bez vıstupu
+Bez vÃ½stupu
 ; No outputs
 ;
 ;
 ; *** Global Options ***
 ;
 msgGlobalOptions
-Globální mo¾nosti
+GlobÃ¡lnÃ­ moÅ¾nosti
 ; Global options
 ;
 msgGlobOptDebugLevel
-Úroveò la_dìní
+ÃšroveÅˆ la_dÄ›nÃ­
 ; _Debug level
 ;
 msgGlobOptEcho
-_Ozvìna
+_OzvÄ›na
 ; _Echo
 ;
 msgGlobOptSurround
-Surround (pro '_rychlé' re¾imy)
+Surround (pro '_rychlÃ©' reÅ¾imy)
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-_Limit vytí¾ení procesoru
+_Limit vytÃ­Å¾enÃ­ procesoru
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
@@ -203,15 +203,15 @@ Vypnuto
 ; None
 ;
 msgDebugLow
-Nízké
+NÃ­zkÃ©
 ; Low
 ;
 msgDebugHigh
-Vysoké
+VysokÃ©
 ; High
 ;
 msgDebugFull
-Plné
+PlnÃ©
 ; Full
 ;
 ; *** Echo ***
@@ -221,7 +221,7 @@ Zapnuto
 ; Enabled
 ;
 msgEchoFast
-Rychlá
+RychlÃ¡
 ; Fast
 ;
 msgEchoDisabled
@@ -241,15 +241,15 @@ Vypnuto
 ; *** Buttons ***
 ;
 msgButtonSave
-_Ulo¾it
+_UloÅ¾it
 ; _Save
 ;
 msgButtonUse
-_Pou¾ít
+_PouÅ¾Ã­t
 ; _Use
 ;
 msgButtonCancel
-_Zru¹it
+_ZruÅ¡it
 ; _Cancel
 ;
 msgButtonOK
@@ -259,66 +259,66 @@ OK
 ; *** Texts ***
 ;
 msgTextProgramName
-Nastavení zvukového systému AHI
+NastavenÃ­ zvukovÃ©ho systÃ©mu AHI
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright Å %s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright (C)%s\nPøeklad do èe¹tiny: Ondøej Zima
-; %s%s\nCopyright ©%s
+%s%s\nCopyright (C)%s\nPÅ™eklad do ÄeÅ¡tiny: OndÅ™ej Zima
+; %s%s\nCopyright Å %s
 ;
 msgTextNoWindow
-Nelze otevøít okno.
+Nelze otevÅ™Ã­t okno.
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Nelze alokovat souborovı requester.
+Nelze alokovat souborovÃ½ requester.
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-Nelze nalézt '%s'!
+Nelze nalÃ©zt '%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Nelze otevøít %s V%ld nebo vy¹¹í
-; Unable to open `%s´ version %ld.
+Nelze otevÅ™Ã­t %s V%ld nebo vyÅ¡Å¡Ã­
+; Unable to open `%sÂ´ version %ld.
 ;
 ; *** Additions
 ;
 msgGlobOptMasterVol
-_Globální hlasitost
+_GlobÃ¡lnÃ­ hlasitost
 ; _Master volume
 ;
 msgMVNoClip
-Bez omezovaèe
+Bez omezovaÄe
 ; Without clipping
 ;
 msgMVClip
-S omezovaèem
+S omezovaÄem
 ; With clipping
 ;
 msgGlobOptACTime
-Rozsah potlaèení lupání
+Rozsah potlaÄenÃ­ lupÃ¡nÃ­
 ; Default anti-click time
 ;
 msgButtonPlay
-Pø_ehrát zku¹ební zvuk
+PÅ™_ehrÃ¡t zkuÅ¡ebnÃ­ zvuk
 ; _Play a test sound
 ;
 msgOptScalemode
-Úpr_ava hlasitosti
+Ãšpr_ava hlasitosti
 ; Volume sc_aling
 ;
 msgSMFixedSafe
-Bezpeènì
+BezpeÄnÄ›
 ; Safe
 ;
 msgSMDynSafe
-Bezpeènì, dynamicky
+BezpeÄnÄ›, dynamicky
 ; Safe, dynamic
 ;
 msgSM0dB
-Bez omezení
+Bez omezenÃ­
 ; Full volume
 ;
 msgSM3dB

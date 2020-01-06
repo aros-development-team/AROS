@@ -3,16 +3,16 @@
 ## language svenska
 ;
 MSG_CANT_OPEN_LIB 
-Kan inte ˆppna %s v%ld!\n
+Kan inte √∂ppna %s v%ld!\n
 ;
 MSG_CANT_LOCK_SCR 
-Kan inte lÂsa publik sk‰rm!
+Kan inte l√•sa publik sk√§rm!
 ;
 MSG_CANT_GET_DRI 
-Kan inte l‰sa DrawInfo!
+Kan inte l√§sa DrawInfo!
 ;
 MSG_CANT_GET_VI 
-Kan inte l‰sa VisualInfo!
+Kan inte l√§sa VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET 
 Kan inte skapa knappar!
@@ -21,16 +21,16 @@ MSG_CANT_CREATE_MENUS
 Kan inte skapa menyer!
 ;
 MSG_CANT_CREATE_WIN 
-Kan inte skapa fˆnster!
+Kan inte skapa f√∂nster!
 ;
 MSG_WINTITLE 
-Serieportsinst‰llningar
+Serieportsinst√§llningar
 ;
 MSG_MEN_PROJECT 
 Projekt
 ;
 MSG_MEN_PROJECT_OPEN 
-O\0÷ppna...
+O\0√ñppna...
 ;
 MSG_MEN_PROJECT_SAVEAS 
 A\0Spara som...
@@ -42,25 +42,25 @@ MSG_MEN_EDIT
 Redigera
 ;
 MSG_MEN_EDIT_DEFAULT 
-F\0Fˆrinst‰llda v‰rden
+F\0F√∂rinst√§llda v√§rden
 ;
 MSG_MEN_EDIT_LASTSAVED
 E\0Senast sparade
 ;
 MSG_MEN_EDIT_RESTORE
-≈\0≈terst‰ll
+√Ö\0√Öterst√§ll
 ;
 MSG_MEN_SETTINGS
-Inst‰llningar
+Inst√§llningar
 ;
 MSG_MEN_SETTINGS_CREATEICONS
 I\0Skapa symboler?
 ;
 MSG_ASL_OPEN_TITLE
-Ladda serieportsinst‰llningar
+Ladda serieportsinst√§llningar
 ;
 MSG_ASL_SAVE_TITLE
-Spara serieportsinst‰llningar
+Spara serieportsinst√§llningar
 ;
 MSG_OK 
 Ok
@@ -69,7 +69,7 @@ MSG_GAD_SAVE
 Spara
 ;
 MSG_GAD_USE 
-Anv‰nd
+Anv√§nd
 ;
 MSG_GAD_CANCEL 
 Avbryt
@@ -96,13 +96,13 @@ MSG_PARITY_NONE
 Ingen
 ;
 MSG_PARITY_EVEN 
-J‰mn
+J√§mn
 ;
 MSG_PARITY_ODD 
 Udda
 ;
 MSG_PARITY_MARK 
-Bit pÂ
+Bit p√•
 ;
 MSG_PARITY_SPACE
 Bit av

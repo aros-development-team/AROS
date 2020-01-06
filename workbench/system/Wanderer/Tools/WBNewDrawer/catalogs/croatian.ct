@@ -12,8 +12,8 @@ Stvara novu mapu sa ikonom po izboru
 ; Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT
-Œ2006, AROS Dev Team
-; ©2006, AROS Dev Team
+ÂŒ2006, AROS Dev Team
+; Å 2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Stvori novu mapu
@@ -44,15 +44,15 @@ Nova_Mapa
 ; Rename_Me
 ;
 MSG_ERROR_TITLE
-Pogre¹ka
+PogreÅ¡ka
 ; Error
 ;
 MSG_ALREADY_EXIST
-'%s' veæ postoji!
+'%s' veÄ‡ postoji!
 ; '%s' already exists!
 ;
 MSG_CANT_CREATE
-Mapu '%s' nije moguæe stvoriti!
+Mapu '%s' nije moguÄ‡e stvoriti!
 ; Can't create drawer '%s'!
 ;
 MSG_INFO_ALREADY
@@ -60,7 +60,7 @@ MSG_INFO_ALREADY
 ; '%s'.info already exists!
 ;
 MSG_ILLEGAL_CHARS
-'%s' sadr¾i simbole koji nisu podr¾ani!
+'%s' sadrÅ¾i simbole koji nisu podrÅ¾ani!
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
@@ -72,13 +72,13 @@ Neispravan directory lock!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
-Alat nije moguæe pokrenuti iz konzole!\n
+Alat nije moguÄ‡e pokrenuti iz konzole!\n
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-Gre¹ka pri stvaranju aplikacije!
+GreÅ¡ka pri stvaranju aplikacije!
 ; Failed to create Application!
 ;
 MSG_WRONG_ICON_TYPE
-Postojeæa datoteka ikone '%s'.info nije tipa Mapa!
+PostojeÄ‡a datoteka ikone '%s'.info nije tipa Mapa!
 ; The existing icon file '%s'.info isn't of type Drawer!

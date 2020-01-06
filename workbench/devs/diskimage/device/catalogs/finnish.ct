@@ -1,4 +1,4 @@
-;## chunk AUTH Janne Per‰aho
+;## chunk AUTH Janne Per√§aho
 ## language finnish
 ## codeset 0
 ## version $VER: diskimagedevice.ct 52.38 (24.4.2008)
@@ -31,7 +31,7 @@ tarvitaan salasana
 ;#DEF password required
 ;#SET (/1/48)
 MSG_WRONGPASSWD
-v‰‰r‰ salasana
+v√§√§r√§ salasana
 ;#DEF wrong password
 ;#SET (/1/48)
 MSG_ZLIBERR
@@ -51,19 +51,19 @@ virhe xadmaster.library -kirjastossa
 ;#DEF xadmaster.library error
 ;#SET (/1/48)
 MSG_UNKNDISKIMGTYPE
-levykuvan tyyppi‰/muotoa ei tueta
+levykuvan tyyppi√§/muotoa ei tueta
 ;#DEF unsupported disk image type/format
 ;#SET (/1/64)
 MSG_UNKNCOMPMETHOD
-pakkausmenetelm‰‰ ei tueta
+pakkausmenetelm√§√§ ei tueta
 ;#DEF unsupported compression method
 ;#SET (/1/64)
 MSG_EOF
-tiedosto p‰‰ttyi odottamatta
+tiedosto p√§√§ttyi odottamatta
 ;#DEF unexpected end of file
 ;#SET (/1/48)
 MSG_BADDATA
-tiedoston sis‰ltˆ on vahingoittunut
+tiedoston sis√§lt√∂ on vahingoittunut
 ;#DEF file contains bad data
 ;#SET (/1/48)
 MSG_BADCRC
@@ -83,6 +83,6 @@ tarvitaan %s versio %ld tai uudempi
 ;#DEF %s v%ld or newer required
 ;#SET (/1/48)
 MSG_WRONGDAA
-v‰‰r‰ DAA-tiedosto (moniosainen DAA-tiedosto)
+v√§√§r√§ DAA-tiedosto (moniosainen DAA-tiedosto)
 ;#DEF wrong DAA file (multi-file DAA)
 ;#SET (/1/64)

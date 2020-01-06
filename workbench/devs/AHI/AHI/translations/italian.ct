@@ -99,11 +99,11 @@ Opzioni avanzate
 ; *** The units ***
 ;
 msgUnitDevice
-Unità %ld
+UnitÃ  %ld
 ; Unit %ld
 ;
 msgUnitMusic
-Unità Musica
+UnitÃ  Musica
 ; Music unit
 ;
 ; *** Properties box ***
@@ -263,10 +263,10 @@ msgTextProgramName
 Configurazione AHI
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright Â©%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s\nTraduzione italiana di Bernardo Innocenti\nRevisione di Paolo Besser
-; %s%s\nCopyright ©%s
+%s%s\nCopyright Â©%s\nTraduzione italiana di Bernardo Innocenti\nRevisione di Paolo Besser
+; %s%s\nCopyright Â©%s
 ;
 msgTextNoWindow
 Non posso aprire la finestra.
@@ -282,7 +282,7 @@ Non trovo `%s'!
 ;
 msgTextNoOpen
 Non posso aprire `%s' versione %ld.
-; Unable to open `%s´ version %ld.
+; Unable to open `%sÅ½ version %ld.
 ;
 ; *** Additions
 ;

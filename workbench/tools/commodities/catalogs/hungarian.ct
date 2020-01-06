@@ -15,7 +15,7 @@ MSG_CANT_OPEN_INPUTDEVICE
 ; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
-Nem lehet a megnyitott ablakot bez·rni!\n
+Nem lehet a megnyitott ablakot bez√°rni!\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
@@ -23,35 +23,35 @@ Nem lehet a VisualInfo-t felvenni!\n
 ; Can't get VisualInfo!\n
 ;
 MSG_CANT_CREATE_GADGET
-Nem lehet lÈtrehozni a gadget-eket!\n
+Nem lehet l√©trehozni a gadget-eket!\n
 ; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
-Nem lehet lÈtrehozni a men¸ket!\n
+Nem lehet l√©trehozni a men√ºket!\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-Nem lehet a men¸ket elrendezni!\n
+Nem lehet a men√ºket elrendezni!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
-Nem lehet az ablakot lÈtrehozni!\n
+Nem lehet az ablakot l√©trehozni!\n
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
-Nem lehet memÛri·t kiosztani az alkalmaz·shoz!\n
+Nem lehet mem√≥ri√°t kiosztani az alkalmaz√°shoz!\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
-Nem lehet a MessagePort-ot lÈtrehozni!\n
+Nem lehet a MessagePort-ot l√©trehozni!\n
 ; Can't create message port!\n
 ;
 MSG_CANT_CREATE_BROKER
-Nem lehet a CxBroker objektet lÈtrehozni!\n
+Nem lehet a CxBroker objektet l√©trehozni!\n
 ; Can't create CxBroker object!\n
 ;
 MSG_CANT_CREATE_CUSTOM
-Nem lehet a CxCustom objektet lÈtrehozni!\n
+Nem lehet a CxCustom objektet l√©trehozni!\n
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
@@ -75,7 +75,7 @@ MSG_MEN_PROJECT_ICONIFY
 ; ***NEW***
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0KilÈp
+Q\0Kil√©p
 ; Q\0Quit
 ;
 ; ===============================================
@@ -90,7 +90,7 @@ Commoditie csere
 ; Commodities Exchange
 ;
 MSG_EXCHANGE_CXDESCR
-A irnyÌtÛ commodities-ek be·llÌt·sa
+A irny√≠t√≥ commodities-ek be√°ll√≠t√°sa
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
@@ -98,11 +98,11 @@ Csere
 ; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
-ElÈrhetÙ Commodities-ek
+El√©rhet√¥ Commodities-ek
 ; Available commodities
 ;
 MSG_EXCHANGE_INFO
-Inform·ciÛ
+Inform√°ci√≥
 ; Information
 ;
 MSG_EXCHANGE_GAD_SHOW
@@ -114,15 +114,15 @@ Rejt
 ; Hide
 ;
 MSG_EXCHANGE_GAD_REMOVE
-Elt·volÌt
+Elt√°vol√≠t
 ; Remove
 ;
 MSG_EXCHANGE_CYCLE_ACTIVE
-AktÌv
+Akt√≠v
 ; Active
 ;
 MSG_EXCHANGE_CYCLE_INACTIVE
-InaktÌv
+Inakt√≠v
 ; Inactive
 ;
 ; ===============================================
@@ -133,11 +133,11 @@ Blanker
 ; Blanker
 ;
 MSG_BLANKER_CXTITLE
-KÈpernyÙpihentetÙ
+K√©perny√¥pihentet√¥
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-ElsˆtÈti a monitort ha nincs haszn·lva a rendszer
+Els√∂t√©ti a monitort ha nincs haszn√°lva a rendszer
 ; Blanks screen when system inactive
 ;
 ; ===============================================
@@ -152,7 +152,7 @@ ClickToFront
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
-Ablak elÙrehoz·s klikkelÈssel
+Ablak el√¥rehoz√°s klikkel√©ssel
 ; Click windows to front
 ;
 ; ===============================================
@@ -167,7 +167,7 @@ Opaque Ablakok
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
-Ablakok valÛs idej˚ mozgat·sa
+Ablakok val√≥s idej≈± mozgat√°sa
 ; Realtime moving of windows
 ;
 ; ===============================================
@@ -178,11 +178,11 @@ AutoPoint
 ; AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
-AutofÛkusz
+Autof√≥kusz
 ; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
-AktÌv·lja az egÈrpointer alatti ablakot
+Akt√≠v√°lja az eg√©rpointer alatti ablakot
 ; Activates the window under the mouse
 ;
 ; ===============================================
@@ -193,11 +193,11 @@ StartMenu
 ; StartMenu
 ;
 MSG_STARTMENU_CXTITLE
-Rendszer Program IndÌtÛ
+Rendszer Program Ind√≠t√≥
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Program indÌt·s men¸bıl
+Program ind√≠t√°s men√ºb≈ël
 ; Program launch commodity
 ;
 ; ===============================================

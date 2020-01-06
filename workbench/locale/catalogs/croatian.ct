@@ -22,7 +22,7 @@ Sigurnosna Prijava
 ;Security Login Request
 ;
 MSG_LOGINPROMPT_GUI
-\33cDobrodošli u AROS Research OS\nAROS Verzija: %s\n\nMolimo vas unesite korisnièke detalje %s.
+\33cDobrodoÂšli u AROS Research OS\nAROS Verzija: %s\n\nMolimo vas unesite korisniÄke detalje %s.
 ;\33cWelcome to the AROS Research OS\nAROS Version: %s\n\nPlease fill in your user details\nto log onto %s.
 ;
 MSG_LOGINREQ_CON
@@ -33,7 +33,7 @@ MSG_LOGINPROMPT_CON
 ;\n\nLogin    :
 ;
 MSG_PASSWDPROMPT_GUI
-Unesite vašu Zaporku
+Unesite vaÂšu Zaporku
 ;Enter your Password
 ;
 MSG_PASSWDPROMPT_CON
@@ -63,33 +63,33 @@ Morate imati barem jednu particiju u AFFS formatu
 ;You must have at least one partition with the AFFS FileSystem
 ;
 MSG_NOCONFIGFILE
-;Konfiguracijsku datoteku nije moguæe uèitati\nSustav koristi zadanu konfiguraciju
+;Konfiguracijsku datoteku nije moguÄ‡e uÄitati\nSustav koristi zadanu konfiguraciju
 Couldn't load the configuration file\nUsing the default configuration
 ;
 MSG_BADKEYFILE
-;Sigurnost je narušena: Pronağen neispravan ili neusklağen kljuè(evi)
+;Sigurnost je naruÂšena: PronaÄ‘en neispravan ili neusklaÄ‘en kljuÄ(evi)
 Security violation: Bad or inconsistent keyfile(s) found
 ;
 MSG_BADENTRY_PASSWD
-;Neispravan unos pronağen na liniji %ld datoteke zaporke\nOva linija æe biti ignorirana 
+;Neispravan unos pronaÄ‘en na liniji %ld datoteke zaporke\nOva linija Ä‡e biti ignorirana 
 Bad entry found on line %ld of the password file\nThis line will be ignored
 ;
 MSG_BADENTRY_GROUP
-;Neispravan unos pronağen na liniji %ld datoteke grupe\nOva linija æe biti ignorirana 
+;Neispravan unos pronaÄ‘en na liniji %ld datoteke grupe\nOva linija Ä‡e biti ignorirana 
 Bad entry found on line %ld of the group file\nThis line will be ignored
 ;
 MSG_BADVALUE_CONFIG
-;Neispravan vrijednost pronağena na liniji %ld konfiguracijske datoteke\nOva vrijednost æe biti ignorirana 
+;Neispravan vrijednost pronaÄ‘ena na liniji %ld konfiguracijske datoteke\nOva vrijednost Ä‡e biti ignorirana 
 Bad value(s) found on line %ld of the configuration file\n\
 This value will be ignored
 ;
 MSG_BADOPTION_CONFIG
-;Neispravan opcija pronağena na liniji %ld konfiguracijske datoteke\nOva vrijednost æe biti ignorirana 
+;Neispravan opcija pronaÄ‘ena na liniji %ld konfiguracijske datoteke\nOva vrijednost Ä‡e biti ignorirana 
 Bad option found on line %ld of the configuration file\nThis line will be ignored
 ;
 MSG_TOOMANYSECGROUPS
-Korisnik sa uid %ld ima previše sporednih grupa\n\
-Linija %ld datoteke grupe æe biti zanemarena
+Korisnik sa uid %ld ima previÂše sporednih grupa\n\
+Linija %ld datoteke grupe Ä‡e biti zanemarena
 ;Too many secondary groups for user with uid %ld\n\
 ;Line %ld of the group file will be ignored
 ;

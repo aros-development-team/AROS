@@ -2,7 +2,7 @@
 ## language polski
 ## codeset 5
 ;
-## chunk AUTH Translated by Marcin Or³owski <carlos@inet.com.pl>
+## chunk AUTH Translated by Marcin OrÅ‚owski <carlos@inet.com.pl>
 ;#language english
 ;#version 4
 ;
@@ -27,7 +27,7 @@
 ; Input and Output connector name
 ;
 msgDefault
-Domyôlny
+DomyÃ´lny
 ; Default
 ;
 ; The requesters menu
@@ -40,15 +40,15 @@ L\0Poprzedni tryb
 ; L\000Last Mode
 ;
 msgMenuNextMode
-N\0Nastëpny tryb
+N\0NastÃ«pny tryb
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\0W³aôciwoôci trybu...
+?\0WÅ‚aÃ´ciwoÃ´ci trybu...
 ; ?\000Property List...
 ;
 msgMenuRestore
-R\0Anuluj zmiany ustawieï
+R\0Anuluj zmiany ustawieÄ
 ; R\000Restore
 ;
 msgMenuOK
@@ -76,19 +76,19 @@ Poniechaj
 ; Cancel
 ;
 msgReqFrequency
-Czëstotliwoôê
+CzÃ«stotliwoÃ´Ä™
 ; Frequency
 ;
 ; Name of default mode in requester
 ;
 msgDefaultMode
-Domyôlny tryb audio
+DomyÃ´lny tryb audio
 ; Default audio mode
 ;
 ; The requester's info-winodow
 ;
 msgReqInfoTitle
-W³aôciwoôci trybu
+WÅ‚aÃ´ciwoÃ´ci trybu
 ; Mode Properties
 ;
 msgReqInfoAudioID
@@ -96,7 +96,7 @@ ID trybu audio: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Rozdzielczoôê: %ld bitów %s
+RozdzielczoÃ´Ä™: %ld bitÃ³w %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
@@ -112,11 +112,11 @@ stereo z panningiem
 ; stereo with panning
 ;
 msgReqInfoChannels
-Kana³y: %ld
+KanaÅ‚y: %ld
 ; Channels: %ld
 ;
 msgReqInfoMixrate
-Czëstotliwoôê remiksu: %ld-%ld Hz
+CzÃ«stotliwoÃ´Ä™ remiksu: %ld-%ld Hz
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
@@ -124,15 +124,15 @@ Miksowanie HiFi
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf
-Nagrywanie z póî dupleksem
+Nagrywanie z pÃ³Ã® dupleksem
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-Nagrywanie z pe³nym dupleksem
+Nagrywanie z peÅ‚nym dupleksem
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel
-7.1 wielokana³owy
+7.1 wielokanaÅ‚owy
 ; 7.1 multichannel
 ;
 msgFreqFmt

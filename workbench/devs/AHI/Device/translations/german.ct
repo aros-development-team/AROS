@@ -40,7 +40,7 @@ V\000Vorheriger Modus
 ; L\000Last Mode
 ;
 msgMenuNextMode
-N\000Nächster Modus
+N\000NÃ¤chster Modus
 ; N\000Next Mode
 ;
 msgMenuPropertyList
@@ -48,7 +48,7 @@ msgMenuPropertyList
 ; ?\000Property List...
 ;
 msgMenuRestore
-Z\000Zurück
+Z\000ZurÃ¼ck
 ; R\000Restore
 ;
 msgMenuOK
@@ -96,7 +96,7 @@ Audio Modus ID: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Auflösung: %ld bit %s
+AuflÃ¶sung: %ld bit %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
@@ -112,7 +112,7 @@ stereo mit panning
 ; stereo with panning
 ;
 msgReqInfoChannels
-Kanäle: %ld
+KanÃ¤le: %ld
 ; Channels: %ld
 ;
 msgReqInfoMixrate

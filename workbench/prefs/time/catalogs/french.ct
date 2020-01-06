@@ -1,6 +1,6 @@
 ## version $VER: timeprefs.catalog 1.0 (02.07.2009)
 ## codeset 0
-## language français
+## language franÃ§ais
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -8,11 +8,11 @@ Impossible d'ouvrir %s V%ld !\n
 ;Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-Impossible de créer l'application !
+Impossible de crÃ©er l'application !
 ;Can't create application object!
 ;
 MSG_WINTITLE
-Préférences de l'horloge
+PrÃ©fÃ©rences de l'horloge
 ;Time Preferences
 ;
 MSG_MEN_PROJECT
@@ -28,7 +28,7 @@ Modifier
 ;Edit
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Revenir à l'initial
+R\0Revenir Ã  l'initial
 ;R\0Restore
 ;
 MSG_OK

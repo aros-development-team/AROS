@@ -44,7 +44,7 @@ S\000Successivo
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\000Lista Propriet‡...
+?\000Lista Propriet√†...
 ; ?\000Property List...
 ;
 msgMenuRestore
@@ -88,7 +88,7 @@ Modo audio predefinito
 ; The requester's info-winodow
 ;
 msgReqInfoTitle
-Propriet‡ modo
+Propriet√† modo
 ; Mode Properties
 ;
 msgReqInfoAudioID
@@ -120,7 +120,7 @@ Frequenza di mix: %ld-%ld Hz
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
-Mix ad alta fedelt‡
+Mix ad alta fedelt√†
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf

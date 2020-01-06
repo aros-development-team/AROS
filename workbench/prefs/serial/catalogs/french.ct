@@ -1,5 +1,5 @@
 ## version $VER: serialprefs.catalog 1.1 (02.07.2009)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -8,7 +8,7 @@ Impossible d'ouvrir %s V%ld !\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Impossible de verrouiller l'écran public !
+Impossible de verrouiller l'Ã©cran public !
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -20,19 +20,19 @@ Impossible d'obtenir la structure VisualInfo !
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
-Impossible de créer les gadgets !
+Impossible de crÃ©er les gadgets !
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Impossible de créer les menus !
+Impossible de crÃ©er les menus !
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Impossible de créer la fenêtre !
+Impossible de crÃ©er la fenÃªtre !
 ; Can't create window!
 ;
 MSG_WINTITLE
-Préférences des ports séries
+PrÃ©fÃ©rences des ports sÃ©ries
 ; Serial Preferences
 ;
 MSG_MEN_PROJECT
@@ -56,31 +56,31 @@ Modifier
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Configuration par défaut
+D\0Configuration par dÃ©faut
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
-L\0Dernière sauvegarde
+L\0DerniÃ¨re sauvegarde
 ; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Revenir à l'initial
+R\0Revenir Ã  l'initial
 ; R\0Restore
 ;
 MSG_MEN_SETTINGS
-Préférences
+PrÃ©fÃ©rences
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Créer des icônes ?
+I\0CrÃ©er des icÃ´nes ?
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-Charger les préférences
+Charger les prÃ©fÃ©rences
 ; Load Serial Preferences
 ;
 MSG_ASL_SAVE_TITLE
-Sauver les préférences
+Sauver les prÃ©fÃ©rences
 ; Save Serial Preferences
 ;
 MSG_OK
@@ -104,19 +104,19 @@ Vitesse
 ; Baudrate
 ;
 MSG_GAD_PARITY
-Parité
+ParitÃ©
 ; Parity
 ;
 MSG_GAD_STOPBITS
-Bits d'arrêt
+Bits d'arrÃªt
 ; Stop Bits
 ;
 MSG_GAD_DATABITS
-Bits de données
+Bits de donnÃ©es
 ; Data Bits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Taille du tampon d'entrée
+Taille du tampon d'entrÃ©e
 ; Input Buffer Size
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
@@ -136,10 +136,10 @@ Impaire
 ; Odd
 ;
 MSG_PARITY_MARK
-Marquée
+MarquÃ©e
 ; Mark
 ;
 MSG_PARITY_SPACE
-Espacée
+EspacÃ©e
 ; Space
 ;

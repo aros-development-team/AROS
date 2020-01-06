@@ -4,10 +4,10 @@
 ;
 ;
 MSG_ERROR_OPEN_LIBRARY
-Kann Library %s nicht öffnen.
+Kann Library %s nicht Ã¶ffnen.
 ; Couldn't open library %s.
 ;
 MSG_ERROR_OPEN_DEVICE
-Kann Device %s nicht öffnen.
+Kann Device %s nicht Ã¶ffnen.
 ; Couldn't open device %s.
 ;

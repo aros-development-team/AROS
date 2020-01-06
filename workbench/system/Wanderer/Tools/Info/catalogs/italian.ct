@@ -12,8 +12,8 @@ Informazioni sull'icona
 ; Icon informations
 ;
 MSG_COPYRIGHT
-Icon informations\n©AROS Dev Team
-; Icon informations\n©AROS Dev Team
+Icon informations\nÂ©AROS Dev Team
+; Icon informations\nÂ©AROS Dev Team
 ;
 MSG_ICON
 Icona
@@ -84,7 +84,7 @@ Tooltypes
 ; Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-Errore: non si può avviare da shell
+Errore: non si puÃ² avviare da shell
 ; Error: Cannot be started from shell
 ;
 MSG_ABOUT

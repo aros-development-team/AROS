@@ -1,15 +1,15 @@
 ## version $VER: Serialpref.catalog 1.0 (02.10.2007)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 ; Translated by ahg
 ;
 MSG_CANT_OPEN_LIB
-¡Imposible abrir %s V%ld!\n
+Â¡Imposible abrir %s V%ld!\n
 ;Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-¡Imposible abrir la pantalla pública!
+Â¡Imposible abrir la pantalla pÃºblica!
 ;Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -19,15 +19,15 @@ MSG_CANT_GET_VI
 Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
-¡No se pueden crear los gadgets!
+Â¡No se pueden crear los gadgets!
 ;Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-¡No se pueden crear los menús!
+Â¡No se pueden crear los menÃºs!
 ;Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-¡No se puede crear la ventana!
+Â¡No se puede crear la ventana!
 ;Can't create window!
 ;
 MSG_WINTITLE
@@ -55,7 +55,7 @@ Editar
 ;Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Valores de fábrica
+D\0Valores de fÃ¡brica
 ;D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -71,7 +71,7 @@ Configuraciones
 ;Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0¿Crear íconos?
+I\0Â¿Crear Ã­conos?
 ;I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
@@ -115,13 +115,13 @@ Bits de datos
 ;Data Bits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Tamaño del búfer de entrada
+TamaÃ±o del bÃºfer de entrada
 ;Dimensioni buffer d'ingresso
-;Taille du tampon d'entrée
+;Taille du tampon d'entrÃ©e
 ;Input Buffer Size
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
-Tamaño del búfer de salida
+TamaÃ±o del bÃºfer de salida
 ;Dimensioni buffer d'uscita
 ;Taille du tampon de sorti
 ;Output Buffer Size

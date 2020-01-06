@@ -36,7 +36,7 @@ O\000Avaa...
 ; O\000Open...
 ;
 msgItemSaveAs
-T\000Tallenna nimell‰...
+T\000Tallenna nimell√§...
 ; A\000Save As...
 ;
 msgItemAbout
@@ -80,11 +80,11 @@ Help\000Opastus...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-K\000AHI K‰ytt‰j‰n opasteet...
+K\000AHI K√§ytt√§j√§n opasteet...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
-\000Opasteen sis‰ltˆ...
+\000Opasteen sis√§lt√∂...
 ; \000Concept Index...
 ;
 ; *** The pages ***
@@ -100,17 +100,17 @@ Edistyneet asetukset
 ; *** The units ***
 ;
 msgUnitDevice
-Yksikkˆ %ld
+Yksikk√∂ %ld
 ; Unit %ld
 ;
 msgUnitMusic
-Musiikkiyksikkˆ
+Musiikkiyksikk√∂
 ; Music unit
 ;
 ; *** Properties box ***
 ;
 msgProperties
-Tilan ID\nƒ‰nitys\nTekij‰\nCopyright\nAjuri\nVersio\nAnnotation
+Tilan ID\n√Ñ√§nitys\nTekij√§\nCopyright\nAjuri\nVersio\nAnnotation
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
@@ -144,7 +144,7 @@ msgOptNoChannels
 ; 
 ;
 msgOptVolume
-_ƒ‰nenvoimakkuus
+_√Ñ√§nenvoimakkuus
 ; _Volume
 ;
 msgOptMonitor
@@ -160,11 +160,11 @@ Mykistetty
 ; Muted
 ;
 msgOptInput
-_Sis‰‰ntulo
+_Sis√§√§ntulo
 ; _Input
 ;
 msgOptNoInputs
-Ei sis‰‰ntuloja
+Ei sis√§√§ntuloja
 ; No inputs
 ;
 msgOptOutput
@@ -195,13 +195,13 @@ Surround "_Nopea"-tilassa
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-CPU:n k‰yttˆ_raja
+CPU:n k√§ytt√∂_raja
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
 ;
 msgDebugNone
-Ei mit‰‰n
+Ei mit√§√§n
 ; None
 ;
 msgDebugLow
@@ -213,13 +213,13 @@ Korkea
 ; High
 ;
 msgDebugFull
-T‰ysi
+T√§ysi
 ; Full
 ;
 ; *** Echo ***
 ;
 msgEchoEnabled
-P‰‰ll‰
+P√§√§ll√§
 ; Enabled
 ;
 msgEchoFast
@@ -227,17 +227,17 @@ Nopea
 ; Fast
 ;
 msgEchoDisabled
-Pois p‰‰lt‰
+Pois p√§√§lt√§
 ; Disabled
 ;
 ; *** Surround ***
 ;
 msgSurroundEnabled
-P‰‰ll‰
+P√§√§ll√§
 ; Enabled
 ;
 msgSurroundDisabled
-Pois p‰‰lt‰
+Pois p√§√§lt√§
 ; Disabled
 ;
 ; *** Buttons ***
@@ -247,7 +247,7 @@ _Tallenna
 ; _Save
 ;
 msgButtonUse
-_K‰yt‰
+_K√§yt√§
 ; _Use
 ;
 msgButtonCancel
@@ -255,7 +255,7 @@ _Peru
 ; _Cancel
 ;
 msgButtonOK
-Hyv‰ksy
+Hyv√§ksy
 ; OK
 ;
 ; *** Texts ***
@@ -264,26 +264,26 @@ msgTextProgramName
 AHI-asetukset
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright ¬©%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s.\nSuomennoksen tekij‰ Pauli Porkka.
-; %s%s\nCopyright ©%s
+%s%s\nCopyright ¬©%s.\nSuomennoksen tekij√§ Pauli Porkka.
+; %s%s\nCopyright ¬©%s
 ;
 msgTextNoWindow
-Ikkunan avaaminen ep‰onnistui.
+Ikkunan avaaminen ep√§onnistui.
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Tiedostovalitsimen varaaminen ep‰onnistui.
+Tiedostovalitsimen varaaminen ep√§onnistui.
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-'%s' ei lˆydy!
+'%s' ei l√∂ydy!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-'%s' version %ld avaaminen ep‰onnistui.
-; Unable to open `%s¥ version %ld.
+'%s' version %ld avaaminen ep√§onnistui.
+; Unable to open `%s≈Ω version %ld.
 ;
 ; *** Additions
 ;

@@ -16,11 +16,11 @@ _OK
 ; _OK
 ;
 MSG_ERROR_LOCALE
-Nelze inicializovat systÈm lokalizace.
+Nelze inicializovat syst√©m lokalizace.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
-Nelze inicializovat vlastnÌ t¯Ìdy objektu.
+Nelze inicializovat vlastn√≠ t≈ô√≠dy objektu.
 ; Can't initialize custom classes.
 ;
 MSG_DESCRIPTION
@@ -28,15 +28,15 @@ Informace o disku
 ; Disk Icon Informations
 ;
 MSG_PERCENTFULL
-ZaplnÏno z %ld %%
+Zaplnƒõno z %ld %%
 ; %ld %% Full
 ;
 MSG_FORMAT
-Form·t
+Form√°t
 ; Format
 ;
 MSG_UNKNOWN
-nezn·m˝
+nezn√°m√Ω
 ; Unknown
 ;
 MSG_AUTHOR
@@ -45,14 +45,14 @@ Olivier Adam
 ;
 MSG_COPYRIGHT
 Copyright (C) AROS Dev Team
-; ©2006-2009 AROS Dev Team
+; ≈†2006-2009 AROS Dev Team
 ;
 MSG_USED
-ObsazenÈ mÌsto
+Obsazen√© m√≠sto
 ; Used space
 ;
 MSG_FREE
-VolnÈ mÌsto
+Voln√© m√≠sto
 ; Free space
 ;
 MSG_SIZE
@@ -64,11 +64,11 @@ Velikost bloku
 ; Block size
 ;
 MSG_BLOCKS
-blok˘
+blok≈Ø
 ; blocks
 ;
 MSG_BYTES
-bajt˘
+bajt≈Ø
 ; bytes
 ;
 MSG_STATUS
@@ -76,19 +76,19 @@ Stav disku
 ; Status
 ;
 MSG_READABLE
-ke ËtenÌ
+ke ƒçten√≠
 ; Readable
 ;
 MSG_READABLE_WRITABLE
-ke ËtenÌ i z·pisu
+ke ƒçten√≠ i z√°pisu
 ; Readable/writable
 ;
 MSG_VALIDATING
-probÌh· ˙dræba
+prob√≠h√° √∫dr≈æba
 ; Validating
 ;
 MSG_NAME
-N·zev
+N√°zev
 ; Volume Name
 ;
 MSG_UNIT
@@ -96,15 +96,15 @@ jedn.
 ; unit
 ;
 MSG_DOSDEVICE
-Za¯ÌzenÌ:
+Za≈ô√≠zen√≠:
 ; DOS Device:
 ;
 MSG_DEVICEINFO
-Pouæit˝ ovladaË:
+Pou≈æit√Ω ovladaƒç:
 ; Connected on:
 ;
 MSG_FILESYSTEM
-Souborov˝ systÈm:
+Souborov√Ω syst√©m:
 ; FileSystem:
 ;
 MSG_PACKETDEVICE

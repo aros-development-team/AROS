@@ -4,23 +4,23 @@
 ;
 ;
 MSG_APP
-BIBNastavení
+BIBNastavenÃ­
 ; BIBPrefs
 ;
 MSG_DESCRIPTION
-BoingIconBar (nastavení)
+BoingIconBar (nastavenÃ­)
 ; BoingIconBar Preferences
 ;
 MSG_TITLE
-BoingIconBar (nastavení)
+BoingIconBar (nastavenÃ­)
 ; BoingIconBar Preferences
 ;
 MSG_DOCK
-\33cLi¹ta
+\33cLiÅ¡ta
 ; \33cDock
 ;
 MSG_ADD_DOCK
-Pøidat
+PÅ™idat
 ; Add
 ;
 MSG_DEL_DOCK
@@ -28,7 +28,7 @@ Odebrat
 ; Delete
 ;
 MSG_SAVE
-Ulo¾it
+UloÅ¾it
 ; Save
 ;
 MSG_PROGRAMS
@@ -36,7 +36,7 @@ MSG_PROGRAMS
 ; \33cPrograms
 ;
 MSG_ADD_P
-Pøidat program
+PÅ™idat program
 ; Add program
 ;
 MSG_DEL_P

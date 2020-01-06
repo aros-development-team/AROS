@@ -7,11 +7,11 @@ Nem tudtam megnyitni: %s v%ld\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-Nem tudtam létrehozni az alkalmazást!
+Nem tudtam lĂŠtrehozni az alkalmazĂĄst!
 ; Can't create application object!
 ;
 MSG_WINTITLE
-Idõ beállítások
+IdĂľ beĂĄllĂ­tĂĄsok
 ; Time Preferences
 ;
 MSG_MEN_PROJECT
@@ -19,15 +19,15 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_QUIT
-K\0Kilép
+K\0KilĂŠp
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
-Szerkesztés
+SzerkesztĂŠs
 ; Edit
 ;
 MSG_MEN_EDIT_RESTORE
-V\0Visszaállít
+V\0VisszaĂĄllĂ­t
 ; R\0Restore
 ;
 MSG_OK
@@ -39,10 +39,10 @@ Ment
 ; Save
 ;
 MSG_GAD_USE
-Használ
+HasznĂĄl
 ; Use
 ;
 MSG_GAD_CANCEL
-Mégsem
+MĂŠgsem
 ; Cancel
 ;

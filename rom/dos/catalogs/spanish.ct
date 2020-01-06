@@ -1,5 +1,5 @@
 ## version $VER: dos.catalog 1.1 (28.09.2007)
-## language espaÒol
+## language espa√±ol
 ## codeset 0
 ;
 MSG_ERROR_NO_FREE_STORE
@@ -15,7 +15,7 @@ plantilla incorrecta
 ; bad template
 ;
 MSG_ERROR_BAD_NUMBER
-n˙mero incorrecto
+n√∫mero incorrecto
 ; bad number
 ;
 MSG_ERROR_REQUIRED_ARG_MISSING
@@ -23,7 +23,7 @@ falta un argumento requerido
 ; required argument missing
 ;
 MSG_ERROR_KEY_NEEDS_ARG
-falta el valor despuÈs de la palabra clave
+falta el valor despu√©s de la palabra clave
 ; value after keyword missing
 ;
 MSG_ERROR_TOO_MANY_ARGS
@@ -35,7 +35,7 @@ comillas faltantes
 ; unmatched quotes
 ;
 MSG_ERROR_LINE_TOO_LONG
-renglÛn de argumento inv·lido o demasiado largo
+rengl√≥n de argumento inv√°lido o demasiado largo
 ; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
@@ -43,7 +43,7 @@ el archivo no es ejecutable
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
-biblioteca residente inv·lida
+biblioteca residente inv√°lida
 ; invalid resident library
 ;
 MSG_ERROR_NO_DEFAULT_DIR
@@ -51,7 +51,7 @@ error 201
 ; no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE
-el objeto est· en uso
+el objeto est√° en uso
 ; object is in use
 ;
 MSG_ERROR_OBJECT_EXISTS
@@ -59,15 +59,15 @@ el objeto ya existe
 ; object already exists
 ;
 MSG_ERROR_DIR_NOT_FOUND
-no se hallÛ al directorio
+no se hall√≥ al directorio
 ; directory not found
 ;
 MSG_ERROR_OBJECT_NOT_FOUND
-no se hallÛ al objeto
+no se hall√≥ al objeto
 ; object not found
 ;
 MSG_ERROR_BAD_STREAM_NAME
-descripciÛn de ventana inv·lida
+descripci√≥n de ventana inv√°lida
 ; invalid window description
 ;
 MSG_ERROR_OBJECT_TOO_LARGE
@@ -75,15 +75,15 @@ el objeto es demasiado grande
 ; object too large
 ;
 MSG_ERROR_ACTION_NOT_KNOWN
-tipo de acciÛn del sistema de archivos desconocido
+tipo de acci√≥n del sistema de archivos desconocido
 ; filesystem action type unknown
 ;
 MSG_ERROR_INVALID_COMPONENT_NAME
-nombre de objeto inv·lido
+nombre de objeto inv√°lido
 ; object name invalid
 ;
 MSG_ERROR_INVALID_LOCK
-bloqueo de objeto inv·lido
+bloqueo de objeto inv√°lido
 ; invalid object lock
 ;
 MSG_ERROR_OBJECT_WRONG_TYPE
@@ -91,19 +91,19 @@ el objeto no es del tipo requerido
 ; object is not of required type
 ;
 MSG_ERROR_DISK_NOT_VALIDATED
-el disco no est· validado
+el disco no est√° validado
 ; disk not validated
 ;
 MSG_ERROR_DISK_WRITE_PROTECTED
-el disco est· protegido contra escritura
+el disco est√° protegido contra escritura
 ; disk is write-protected
 ;
 MSG_ERROR_RENAME_ACROSS_DEVICES
-se intentÛ renombrar los dispositivos
+se intent√≥ renombrar los dispositivos
 ; rename across devices attempted
 ;
 MSG_ERROR_DIRECTORY_NOT_EMPTY
-el directorio no est· vacÌo
+el directorio no est√° vac√≠o
 ; directory not empty
 ;
 MSG_ERROR_TOO_MANY_LEVELS
@@ -111,11 +111,11 @@ son demasiados niveles
 ; too many levels
 ;
 MSG_ERROR_DEVICE_NOT_MOUNTED
-el dispositivo (o volumen) no est· montado
+el dispositivo (o volumen) no est√° montado
 ; device (or volume) is not mounted
 ;
 MSG_ERROR_SEEK_ERROR
-ocurriÛ una falla en la b˙squeda
+ocurri√≥ una falla en la b√∫squeda
 ; seek failure
 ;
 MSG_ERROR_COMMENT_TOO_BIG
@@ -123,23 +123,23 @@ el comentario es demasiado largo
 ; comment is too long
 ;
 MSG_ERROR_DISK_FULL
-el disco est· lleno
+el disco est√° lleno
 ; disk is full
 ;
 MSG_ERROR_DELETE_PROTECTED
-el objeto est· protegido de ser borrado
+el objeto est√° protegido de ser borrado
 ; object is protected from deletion
 ;
 MSG_ERROR_WRITE_PROTECTED
-el archivo est· protegido contra la escritura
+el archivo est√° protegido contra la escritura
 ; file is write protected
 ;
 MSG_ERROR_READ_PROTECTED
-el archivo est· protegido contra la lectura
+el archivo est√° protegido contra la lectura
 ; file is read protected
 ;
 MSG_ERROR_NOT_A_DOS_DISK
-no es un disco DOS v·lido
+no es un disco DOS v√°lido
 ; not a valid DOS disk
 ;
 MSG_ERROR_NO_DISK
@@ -147,7 +147,7 @@ no hay un disco en la unidad
 ; no disk in drive
 ;
 MSG_ERROR_NO_MORE_ENTRIES
-no hay m·s entradas en el directorio
+no hay m√°s entradas en el directorio
 ; no more entries in directory
 ;
 MSG_ERROR_IS_SOFT_LINK
@@ -155,7 +155,7 @@ el objeto es un softlink
 ; object is soft link
 ;
 MSG_ERROR_OBJECT_LINKED
-el objeto est· enlazado
+el objeto est√° enlazado
 ; object is linked
 ;
 MSG_ERROR_BAD_HUNK
@@ -163,15 +163,15 @@ bad loadfile hunk
 ; bad loadfile hunk
 ;
 MSG_ERROR_NOT_IMPLEMENTED
-la funciÛn no est· implementada
+la funci√≥n no est√° implementada
 ; function not implemented
 ;
 MSG_ERROR_RECORD_NOT_LOCKED
-el registro no est· bloqueado
+el registro no est√° bloqueado
 ; record not locked
 ;
 MSG_ERROR_LOCK_COLLISION
-colisiÛn en el bloqueo del registro
+colisi√≥n en el bloqueo del registro
 ; record lock collision
 ;
 MSG_ERROR_LOCK_TIMEOUT
@@ -183,7 +183,7 @@ error al desbloquear el registro
 ; record unlock error
 ;
 MSG_ERROR_BUFFER_OVERFLOW
-desbordamiento del b˙fer
+desbordamiento del b√∫fer
 ; buffer overflow
 ;
 MSG_ERROR_BREAK
@@ -195,11 +195,11 @@ el archivo no es ejecutable
 ; file not executable
 ;
 MSG_STRING_DISK_NOT_VALIDATED
-El volumen "%s" no est· validado
+El volumen "%s" no est√° validado
 ; Volume "%s" is not validated
 ;
 MSG_STRING_DISK_WRITE_PROTECTED
-El volumen "%s" est· protegido contra la escritura
+El volumen "%s" est√° protegido contra la escritura
 ; Volume "%s" is write protected
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
@@ -215,11 +215,11 @@ Por favor reemplace al volumen "%s" en "%s"
 ; Please replace volume "%s" in "%s"
 ;
 MSG_STRING_DISK_FULL
-El volumen "%s" est· lleno
+El volumen "%s" est√° lleno
 ; Volume "%s" is full
 ;
 MSG_STRING_NOT_A_DOS_DISK
-No es un disco DOS el que est· en "%s"
+No es un disco DOS el que est√° en "%s"
 ; Not a DOS disk in "%s"
 ;
 MSG_STRING_NO_DISK
@@ -227,7 +227,7 @@ No hay un disco en "%s"
 ; No disk present in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-°DEBES reemplazar el volumen "%s" en "%s"!
+¬°DEBES reemplazar el volumen "%s" en "%s"!
 ; You MUST replace volume "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR

@@ -12,8 +12,8 @@ Informacije Ikone
 ; Icon informations
 ;
 MSG_COPYRIGHT
-Informacije Ikone\nåAROS Dev Team
-; Icon informations\n©AROS Dev Team
+Informacije Ikone\n¬åAROS Dev Team
+; Icon informations\n≈†AROS Dev Team
 ;
 MSG_ICON
 Ikona
@@ -56,11 +56,11 @@ Projekt
 ; Project
 ;
 MSG_GARBAGE
-Kanta za SmeÊe
+Kanta za Smeƒáe
 ; Garbage
 ;
 MSG_DEVICE
-Ureaj
+Ureƒëaj
 ; Device
 ;
 MSG_KICK
@@ -76,7 +76,7 @@ Informacija
 ; Information
 ;
 MSG_PROTECTION
-Zaπtita
+Za≈°tita
 ; Protection
 ;
 MSG_TOOLTYPES
@@ -84,7 +84,7 @@ Tooltypes
 ; Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-Pogreπka: Nije moguÊe pokrenuti iz konzole
+Pogre≈°ka: Nije moguƒáe pokrenuti iz konzole
 ; Error: Cannot be started from shell
 ;
 MSG_ABOUT
@@ -96,19 +96,19 @@ Izlaz
 ; Quit
 ;
 MSG_READ
-»itaj
+ƒåitaj
 ; Read
 ;
 MSG_WRITE
-Piπi
+Pi≈°i
 ; Write
 ;
 MSG_EXECUTE
-Izvrπi
+Izvr≈°i
 ; Execute
 ;
 MSG_DELETE
-Izbriπi
+Izbri≈°i
 ; Delete
 ;
 MSG_SCRIPT
@@ -116,7 +116,7 @@ Skripta
 ; Script
 ;
 MSG_PURE
-»ist
+ƒåist
 ; Pure
 ;
 MSG_ARCHIVED
@@ -128,7 +128,7 @@ Priljepljivo
 ; Sticky
 ;
 MSG_SIZE
-VeliËina
+Veliƒçina
 ; Size
 ;
 MSG_VERSION
@@ -160,11 +160,11 @@ Datum
 ; Date
 ;
 MSG_NEW_KEY
-Novi KljuË
+Novi Kljuƒç
 ; New key
 ;
 MSG_DELETE_KEY
-Izbriπi KljuË
+Izbri≈°i Kljuƒç
 ; Delete key
 ;
 MSG_SAVE

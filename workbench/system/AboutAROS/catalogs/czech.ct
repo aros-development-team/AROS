@@ -4,35 +4,35 @@
 ;
 ;
 MSG_TITLE
-O systÈmu AROS
+O syst√©mu AROS
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-OsobnÌ sestavenÌ (%s)
+Osobn√≠ sestaven√≠ (%s)
 ; Personal %s Build
 ;
 MSG_NIGHTLY_BUILD
-NoËnÌ sestavenÌ (%s)
+Noƒçn√≠ sestaven√≠ (%s)
 ; Nightly %s Build
 ;
 MSG_SNAPSHOT
-SestavenÌ
+Sestaven√≠
 ; Snapshot
 ;
 MSG_MILESTONE
-MilnÌk
+Miln√≠k
 ; Milestone
 ;
 MSG_RELEASE
-Vyd·nÌ
+Vyd√°n√≠
 ; Release
 ;
 MSG_COPYRIGHT
 Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
-; Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+; Copyright ≈† 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
-Vyd·no na z·kladÏ licence
+Vyd√°no na z√°kladƒõ licence
 ; Released under the terms of the
 ;
 MSG_LICENSE_2
@@ -44,19 +44,19 @@ MSG_LICENSE_3
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-DalπÌ informace najdete na str·nk·ch http://www.aros.org/cs/ .
+Dal≈°√≠ informace najdete na str√°nk√°ch http://www.aros.org/cs/ .
 ; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
-Auto¯i
+Auto≈ôi
 ; Authors
 ;
 MSG_PAGE_SPONSORS
-Sponzo¯i
+Sponzo≈ôi
 ; Sponsors
 ;
 MSG_PAGE_ACKNOWLEDGEMENTS
-PodÏkov·nÌ
+Podƒõkov√°n√≠
 ; Acknowledgements
 ;
 MSG_SECTION_COORDINATION
@@ -68,19 +68,19 @@ Propagace
 ; Evangelism
 ;
 MSG_SECTION_HIDD
-SystÈm HIDD
+Syst√©m HIDD
 ; HIDD subsystem
 ;
 MSG_SECTION_INTUITION
-SystÈm Intuition
+Syst√©m Intuition
 ; Intuition
 ;
 MSG_SECTION_GRAPHICS
-Grafick˝ systÈm
+Grafick√Ω syst√©m
 ; Graphics
 ;
 MSG_SECTION_SHELL_COMMANDS
-P¯Ìkazy pro shell
+P≈ô√≠kazy pro shell
 ; Shell Commands
 ;
 MSG_SECTION_WORKBENCH
@@ -88,19 +88,19 @@ Workbench
 ; Workbench
 ;
 MSG_SECTION_TOOLS
-PomocnÈ programy
+Pomocn√© programy
 ; Tools
 ;
 MSG_SECTION_PREFERENCES
-Editory nastavenÌ
+Editory nastaven√≠
 ; Preferences
 ;
 MSG_SECTION_BGUI
-RozhranÌ BGUI
+Rozhran√≠ BGUI
 ; BGUI
 ;
 MSG_SECTION_ZUNE
-RozhranÌ Zune
+Rozhran√≠ Zune
 ; Zune
 ;
 MSG_SECTION_KERNEL
@@ -112,7 +112,7 @@ DOS
 ; DOS
 ;
 MSG_SECTION_NETWORK
-SÌªov· Ë·st
+S√≠≈•ov√° ƒç√°st
 ; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
@@ -124,7 +124,7 @@ Dokumentace
 ; Documentation
 ;
 MSG_SECTION_TRANSLATION
-P¯eklad
+P≈ôeklad
 ; Translation
 ;
 MSG_SECTION_ARTISTRY
@@ -132,15 +132,15 @@ Design
 ; Artistry
 ;
 MSG_SECTION_WEBSITE
-WebovÈ str·nky
+Webov√© str√°nky
 ; Website
 ;
 MSG_SECTION_DATATYPES
-DatovÈ typy
+Datov√© typy
 ; Datatypes
 ;
 MSG_SECTION_TESTING
-Testov·nÌ
+Testov√°n√≠
 ; Testing
 ;
 ;

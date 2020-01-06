@@ -3,7 +3,7 @@
 ;
 ## version $VER: ReqTools.catalog 39 (31.03.2016)
 ## codeset 0
-## language français
+## language franÃ§ais
 ;
 MSG_OK
 _Okay
@@ -22,7 +22,7 @@ _Dernier|_Annuler
 ; _Last|_Cancel
 ;
 MSG_REQUEST
-Requête
+RequÃªte
 ; Request
 ;
 MSG_INFORMATION
@@ -78,7 +78,7 @@ E_tendre
 ; Spr_ead
 ;
 MSG_UNDO
-_Défaire
+_DÃ©faire
 ; _Undo
 ;
 ; ** 2.5 **
@@ -90,10 +90,10 @@ MSG_SWAP_TITLE
 Echanger avec...
 ;
 MSG_SPREAD_TITLE
-Etendre à...
+Etendre Ã ...
 ;
 MSG_CREATE_DRAWER
-Le tiroir '%s' n'existe pas.\nFaut-il le créer ?
+Le tiroir '%s' n'existe pas.\nFaut-il le crÃ©er ?
 ; Drawer '%s' does\nnot exist. Create it?
 ;
 MSG_DIR_ERROR
@@ -144,11 +144,11 @@ _Relire
 ; _Get
 ;
 MSG_DOT_INFO
-_Icônes
+_IcÃ´nes
 ; ._info
 ;
 MSG_SELECTED
-Sélectionnés :
+SÃ©lectionnÃ©s :
 ; Selected:
 ;
 MSG_FULL
@@ -168,11 +168,11 @@ _Italique
 ; _Italic
 ;
 MSG_UNDERLINE
-_Souligné
+_SoulignÃ©
 ; _Underline
 ;
 MSG_DASH_INTERLACED
--Entrelacée
+-EntrelacÃ©e
 ; -Interlaced
 ;
 MSG_DASH_HAM
@@ -184,7 +184,7 @@ MSG_DASH_EHB
 ; -EHB
 ;
 MSG_REGULAR_SIZE
-Taille régulière
+Taille rÃ©guliÃ¨re
 ; Regular Size
 ;
 MSG_TEXT_SIZE
@@ -212,7 +212,7 @@ _Hauteur :
 ; _Height:
 ;
 MSG_DEFAULT
-Défaut
+DÃ©faut
 ; Default
 ;
 MSG_COLORS
@@ -224,6 +224,6 @@ Max :
 ; Max:
 ;
 MSG_AUTOSCROLL
-Défil. a_uto :
+DÃ©fil. a_uto :
 ; _AutoScroll:
 ;

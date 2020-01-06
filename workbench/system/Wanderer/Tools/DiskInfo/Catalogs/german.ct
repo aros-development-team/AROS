@@ -16,7 +16,7 @@ _Ok
 ; _OK
 ;
 MSG_ERROR_LOCALE
-Die Spracheinstellungen kˆnnen nicht initialisiert werden.
+Die Spracheinstellungen k√∂nnen nicht initialisiert werden.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
@@ -56,15 +56,15 @@ Frei
 ; Free space
 ;
 MSG_SIZE
-Grˆﬂe
+Gr√∂√üe
 ; Capacity
 ;
 MSG_BLOCK_SIZE
-Blockgrˆﬂe
+Blockgr√∂√üe
 ; Block size
 ;
 MSG_BLOCKS
-Blˆcke
+Bl√∂cke
 ; blocks
 ;
 MSG_BYTES
@@ -88,15 +88,15 @@ Evauliere
 ; Validating
 ;
 MSG_NAME
-Datentr‰gername
+Datentr√§gername
 ; Volume Name
 ;
 MSG_UNIT
-Ger‰teeinheit
+Ger√§teeinheit
 ; unit
 ;
 MSG_DOSDEVICE
-DOS Ger‰t:
+DOS Ger√§t:
 ; DOS Device:
 ;
 MSG_DEVICEINFO
@@ -108,10 +108,10 @@ Dateisystem:
 ; FileSystem:
 ;
 MSG_PACKETDEVICE
-Packet-style Ger‰te
+Packet-style Ger√§te
 ; Packet Style device
 ;
 MSG_IOFSDEVICE
-IOFS-style Ger‰t
+IOFS-style Ger√§t
 ; IOFS Style device
 ;

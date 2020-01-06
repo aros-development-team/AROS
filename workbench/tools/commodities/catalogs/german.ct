@@ -4,15 +4,15 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
+Kann %s V%ld nicht Ã¶ffnen!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
-Kann 'input.device' nicht öffnen
+Kann 'input.device' nicht Ã¶ffnen
 ; Can't open 'input.device'
 ;
 MSG_CANT_OPEN_CLIPDEVICE
-Kann 'clipboard.device' nicht öffnen
+Kann 'clipboard.device' nicht Ã¶ffnen
 ; Can't open 'clipboard.device'
 ;
 MSG_CANT_LOCK_SCR
@@ -28,11 +28,11 @@ Kann Gadgets nicht erzeugen!\n
 ; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
-Kann Menüs nicht erzeugen!\n
+Kann MenÃ¼s nicht erzeugen!\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-Kann Menüs nicht layouten!\n
+Kann MenÃ¼s nicht layouten!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
@@ -99,7 +99,7 @@ Exchange: Tastenbefehl = <%s>
 ; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
-Verfügbare Commodities
+VerfÃ¼gbare Commodities
 ; Available commodities
 ;
 MSG_EXCHANGE_INFO
@@ -138,7 +138,7 @@ System Bildschirmschoner
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-Schwärzt Bildschirm wenn System inaktiv
+SchwÃ¤rzt Bildschirm wenn System inaktiv
 ; Blanks screen when system inactive
 ;
 ; ===============================================
@@ -198,7 +198,7 @@ System Programm Starter
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Startet Programme von Menü
+Startet Programme von MenÃ¼
 ; Program launch commodity
 ;
 ; ===============================================
@@ -229,7 +229,7 @@ _Neue Taste
 ; _New Key
 ;
 MSG_FKEY_DELETE_KEY
-Taste _löschen
+Taste _lÃ¶schen
 ; _Delete Key
 ;
 MSG_FKEY_SAVE_KEY
@@ -245,15 +245,15 @@ Befehlsargumente
 ; Command Parameters
 ;
 MSG_FKEY_CMD_CYCLE_WIN
-Durch Fenster blättern
+Durch Fenster blÃ¤ttern
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
-Durch Schirme blättern
+Durch Schirme blÃ¤ttern
 ; Cycle Screens
 ;
 MSG_FKEY_CMD_ENLARGE_WIN
-Fenster vergrößern
+Fenster vergrÃ¶ÃŸern
 ; Enlarge Window
 ;
 MSG_FKEY_CMD_SHRINK_WIN
@@ -261,7 +261,7 @@ Fenster verkleinern
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Fenstergröße umschalten
+FenstergrÃ¶ÃŸe umschalten
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_RESCUE_WIN
@@ -269,7 +269,7 @@ Fenster retten
 ; Rescue Window
 ;
 MSG_FKEY_CMD_INSERT_TEXT
-Text einfügen
+Text einfÃ¼gen
 ; Insert Text
 ;
 MSG_FKEY_CMD_RUN_PROG
@@ -311,7 +311,7 @@ DepthMenu:
 ; DepthMenu:
 ;
 MSG_DEPTHMENU_CXDESCR
-Popup-Menü für Tiefengadgets
+Popup-MenÃ¼ fÃ¼r Tiefengadgets
 ; Popup menu for depth gadgets
 ;
 ; ===============================================
@@ -341,7 +341,7 @@ ASCIITable:
 ; ASCIITable:
 ;
 MSG_ASCIITABLE_CXDESCR
-Zeichen über GUI eingeben
+Zeichen Ã¼ber GUI eingeben
 ; Select keys from a GUI
 ;
 MSG_ASCIITABLE_WINTITLE
@@ -353,6 +353,6 @@ Kopieren
 ; Copy
 ;
 MSG_ASCIITABLE_GAD_CLEAR
-Löschen
+LÃ¶schen
 ; Clear
 ;

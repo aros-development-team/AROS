@@ -1,5 +1,5 @@
 ## version $VER: KeyShow.catalog 1.1 (26.02.2012)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 MSG_AppDescription
@@ -7,7 +7,7 @@ Disposition du clavier
 ;Show Keyboard Layout
 ;
 MSG_AppCopyright
-Copyright © 2012 The AROS Development Team
+Copyright Â© 2012 The AROS Development Team
 ;
 MSG_WI_TITLE
 KeyShow
@@ -22,11 +22,11 @@ Erreur
 ;Error
 ;
 MSG_ERR_NO_APPLICATION
-Impossible de créer l'application
+Impossible de crÃ©er l'application
 ;Can't create application
 ;
 MSG_ERR_NO_MEM
-Plus de mémoire
+Plus de mÃ©moire
 ;Out of memory
 ;
 ; Key descriptions
@@ -50,7 +50,7 @@ MSG_KEY_A
 A
 ;
 MSG_KEY_INSERT
-Insérer
+InsÃ©rer
 ;
 MSG_KEY_HOME
 Home
@@ -86,10 +86,10 @@ MSG_KEY_NUM_ENTER
 ^M
 ;
 MSG_KEY_PRTSCREEN
-Imp écr
+Imp Ã©cr
 ;
 MSG_KEY_SCRLOCK
-arr déf
+arr dÃ©f
 ;
 MSG_KEY_PAUSE
 Pause

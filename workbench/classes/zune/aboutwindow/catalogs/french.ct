@@ -1,6 +1,6 @@
 ## version $VER: AboutWindow.catalog 1.0 (19.02.2004)
 ## codeset 0
-## language français
+## language franÃ§ais
 ;
 ;
 MSG_ABOUT
@@ -12,7 +12,7 @@ Auteurs
 ;Authors
 ;
 MSG_SPONSORS
-Mécènes
+MÃ©cÃ¨nes
 ;Sponsors
 ;
 MSG_SECTION_PROGRAMMING

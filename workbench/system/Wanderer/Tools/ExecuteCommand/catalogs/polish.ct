@@ -23,11 +23,11 @@ Ponie_chaj
 ; _Cancel
 ;
 MSG_CONSOLE_TITLE
-Wyj∂cie komendy
+Wyj≈õcie komendy
 ; Command Output
 ;
 MSG_ERROR_HEADER
-B£°D
+B≈ÅƒÑD
 ; ERROR
 ;
 MSG_ERROR_OK
@@ -35,18 +35,18 @@ MSG_ERROR_OK
 ; *OK
 ;
 MSG_ERROR_LOCALE
-Nie moøna zainiciowaÊ systemu lokalizacji.
+Nie mo≈ºna zainiciowaƒá systemu lokalizacji.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
-Nie moøna zainiciowaÊ klas w≥asnych.
+Nie mo≈ºna zainiciowaƒá klas w≈Çasnych.
 ; Can't initialize custom classes.
 ;
 MSG_ERROR_OPEN_CONSOLE
-Nie moøna otworzyÊ okna konsoli.
+Nie mo≈ºna otworzyƒá okna konsoli.
 ; Can't open console window.
 ;
 MSG_ERROR_EXECUTE
-Nie moøna wykonaÊ polecenia.
+Nie mo≈ºna wykonaƒá polecenia.
 ; Can't execute command.
 ;

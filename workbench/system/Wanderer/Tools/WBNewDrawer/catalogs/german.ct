@@ -12,7 +12,7 @@ Erzeugt neue Schublade mit optionalem Piktogramm
 ; Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT
-©2006, AROS Dev Team
+Â©2006, AROS Dev Team
 ; \xa92006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
@@ -60,7 +60,7 @@ MSG_INFO_ALREADY
 ; '%s'.info already exists!
 ;
 MSG_ILLEGAL_CHARS
-'%s' enthält unerlaubte Zeichen!
+'%s' enthÃ¤lt unerlaubte Zeichen!
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
@@ -68,7 +68,7 @@ Brauche 2 Argumente!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Ungültiger Verzeichnis-Lock!
+UngÃ¼ltiger Verzeichnis-Lock!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY

@@ -8,11 +8,11 @@ Spustit
 ; Execute
 ;
 MSG_DESCRIPTION
-Spu¹tìní pøíkazu
+SpuÅ¡tÄ›nÃ­ pÅ™Ã­kazu
 ; Execute Command
 ;
 MSG_LABEL_COMMANDLINE
-Pøíkazový øádek:
+PÅ™Ã­kazovÃ½ Å™Ã¡dek:
 ; Command and arguments:
 ;
 MSG_BUTTON_EXECUTE
@@ -20,11 +20,11 @@ _Spustit
 ; _Execute
 ;
 MSG_BUTTON_CANCEL
-_Zru¹it
+_ZruÅ¡it
 ; _Cancel
 ;
 MSG_CONSOLE_TITLE
-Výstupní informace pøíkazu
+VÃ½stupnÃ­ informace pÅ™Ã­kazu
 ; Command Output
 ;
 MSG_ERROR_HEADER
@@ -36,18 +36,18 @@ MSG_ERROR_OK
 ; *OK
 ;
 MSG_ERROR_LOCALE
-Nelze inicializovat systém lokalizace.
+Nelze inicializovat systÃ©m lokalizace.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
-Nelze inicializovat vlastní tøídy objektu.
+Nelze inicializovat vlastnÃ­ tÅ™Ã­dy objektu.
 ; Can't initialize custom classes.
 ;
 MSG_ERROR_OPEN_CONSOLE
-Nelze otevøít konzolové okno.
+Nelze otevÅ™Ã­t konzolovÃ© okno.
 ; Can't open console window.
 ;
 MSG_ERROR_EXECUTE
-Zadaný pøíkaz nelze spustit.
+ZadanÃ½ pÅ™Ã­kaz nelze spustit.
 ; Can't execute command.
 ;

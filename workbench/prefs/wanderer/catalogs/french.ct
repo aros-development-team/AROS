@@ -1,14 +1,14 @@
 ## version $VER: wanderer.catalog 3.0 (30.03.2016)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
 MSG_NAME
-Préférences de Wanderer
+PrÃ©fÃ©rences de Wanderer
 ; Wanderer Prefs
 ;
 MSG_DESCRIPTION
-Préférences du Wanderer
+PrÃ©fÃ©rences du Wanderer
 ; Wanderer preferences
 ;
 MSG_BACKGROUNDS
@@ -20,7 +20,7 @@ Workbench
 ; Workbench
 ;
 MSG_BACKGROUND_DRAWERS
-Répertoires
+RÃ©pertoires
 ; Drawers
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
@@ -28,11 +28,11 @@ Choisir un fond pour le Workbench
 ; Select Workbench Background
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-Choisr un fond pour les répertoires
+Choisr un fond pour les rÃ©pertoires
 ; Select Drawer Background
 ;
 MSG_GENERAL
-Général
+GÃ©nÃ©ral
 ; General
 ;
 MSG_APPEARANCE
@@ -48,7 +48,7 @@ Classique
 ; Classic
 ;
 MSG_ENHANCED
-Améliorée
+AmÃ©liorÃ©e
 ; Enhanced
 ;
 MSG_NAVIGATION
@@ -56,7 +56,7 @@ Navigation
 ; Navigation
 ;
 MSG_METHOD
-Méthode
+MÃ©thode
 ; Method
 ;
 MSG_OBJECTS
@@ -64,7 +64,7 @@ Objets
 ; Objects
 ;
 MSG_PREVIEW
-Prévisualisation
+PrÃ©visualisation
 ; Preview
 ;
 MSG_TOOLBAR_ENABLED
@@ -72,15 +72,15 @@ Barre d'outils
 ; Toolbar Enabled
 ;
 MSG_ICONSPREFS
-Icônes
+IcÃ´nes
 ; Icons look and feel
 ;
 MSG_ICONLISTMODE
-Liste d'Icônes
+Liste d'IcÃ´nes
 ; Icon listmode
 ;
 MSG_ICONLISTMODE_PLAIN
-Liste complète
+Liste complÃ¨te
 ; List icons plainly
 ;
 MSG_ICONLISTMODE_GRID
@@ -92,7 +92,7 @@ Mode de texte
 ; Icons text drawmode
 ;
 MSG_ICONTEXTMODE_OUTLINE
-Détourage
+DÃ©tourage
 ; Outline
 ;
 MSG_ICONTEXTMODE_PLAIN
@@ -104,11 +104,11 @@ Ombre
 ; Drop shadow
 ;
 MSG_ICONTEXTLENGTH
-Longueur maximale des textes d'icônes
+Longueur maximale des textes d'icÃ´nes
 ; Max icon textlength
 ;
 MSG_DOUBLEBUFFERED
-Mémoire écran double
+MÃ©moire Ã©cran double
 ; double buffering
 ;
 MSG_MISC
@@ -116,12 +116,12 @@ Divers
 ; misc
 ;
 MSG_BUBBLESCREENTITLE
-%pc = Mémoire graphique libre\n\
-%pf = Autre mémoire libre\n\
-%pt = Mémoire libre totale\n\
-%PC = Mémoire graphique\n\
-%PF = Autre mémoire\n\
-%PT = Mémoire totale\n\
+%pc = MÃ©moire graphique libre\n\
+%pf = Autre mÃ©moire libre\n\
+%pt = MÃ©moire libre totale\n\
+%PC = MÃ©moire graphique\n\
+%PF = Autre mÃ©moire\n\
+%PT = MÃ©moire totale\n\
 %os = Version d'AROS\n\
 %wb = Version de Wanderer\n\
 %ov = Version exacte d'AROS\n\
@@ -138,15 +138,15 @@ MSG_BUBBLESCREENTITLE
 ; %wv = Exact workbench.library version
 ;
 MSG_TILEMODE
-Grille d'icône
+Grille d'icÃ´ne
 ; Tile mode :
 ;
 MSG_XOFFSET
-Décalage X :
+DÃ©calage X :
 ; X Offset :
 ;
 MSG_YOFFSET
-Décalage Y :
+DÃ©calage Y :
 ; Y Offset :
 ;
 MSG_ICONLABELFONT
@@ -190,7 +190,7 @@ Mosaique
 ; Tiled
 ;
 MSG_SCALED
-A l'échelle
+A l'Ã©chelle
 ; Scaled
 ;
 MSG_FLOATING
@@ -214,7 +214,7 @@ Ne montrer que l'icone active
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
-Nombre de lignes à afficher...
+Nombre de lignes Ã  afficher...
 ; No. of lines to display...
 ;
 MSG_TILEMODEOPTIONS
@@ -222,11 +222,11 @@ Options de grille...
 ; Tile Mode Options...
 ;
 MSG_SCALEMODEOPTIONS
-Options de mise à l'échelle...
+Options de mise Ã  l'Ã©chelle...
 ; Scale Mode Options...
 ;
 MSG_ADVANCEDOPTIONS
-Options avancées...
+Options avancÃ©es...
 ; Advanced Options...
 ;
 MSG_BACKGROUNDOPTIONS
@@ -242,19 +242,19 @@ Fichier utilisateur sur le Workbench
 ; User Files Folder on Workbench
 ;
 MSG_NETWORKONWB
-Navigateur de réseau sur le Workbench
+Navigateur de rÃ©seau sur le Workbench
 ; Network Browser on Workbench
 ;
 MSG_VIEWSETTINGS
-Réglages des vues
+RÃ©glages des vues
 ; View Settings
 ;
 MSG_WANDERERSCREENTITLE
-Titre de l'écran Wanderer
+Titre de l'Ã©cran Wanderer
 ; Wanderer ScreenTitle
 ;
 MSG_ADVANCED
-Réglages avancés
+RÃ©glages avancÃ©s
 ; Advanced
 ;
 MSG_USE
@@ -274,7 +274,7 @@ Fond
 ; Background
 ;
 MSG_ADVANCEDICONS
-Icônes
+IcÃ´nes
 ; Icons
 ;
 MSG_ADVANCEDLABELS
@@ -294,11 +294,11 @@ Par taille
 ; By size
 ;
 MSG_DEFAULT_ICONSORTMODE
-Ordre de tri par défaut
+Ordre de tri par dÃ©faut
 ; Default sort order
 ;
 MSG_ICON_AUTOSORT_ENABLED
-Tri automatique activé
+Tri automatique activÃ©
 ; Autosorting enabled
 ;
 MSG_ICON_DRAG_TRANSPARENT
@@ -306,7 +306,7 @@ Utiliser la transparence lors du d&d
 ; Use transparency when draging icons
 ;
 MSG_DEFAULT_ICONVIEWMODE
-Vue par défaut
+Vue par dÃ©faut
 ; Default view mode
 ;
 MSG_ICONVIEWMODE_ALL
@@ -314,6 +314,6 @@ Tous les fichiers
 ; All files
 ;
 MSG_ICONVIEWMODE_ICONS
-Icônes seulement
+IcÃ´nes seulement
 ; Icons only
 ;

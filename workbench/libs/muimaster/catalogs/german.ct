@@ -15,7 +15,7 @@ _Abbrechen
 ; -------------------------------------------------
 ; Aboutmui class
 MSG_ABOUTMUI_WINDOW_TITLE
-Über Zune
+Ãœber Zune
 ; About Zune
 ;
 MSG_ABOUTMUI_STRING
@@ -34,7 +34,7 @@ Rot:
 ;
 ; Coloradjust class
 MSG_COLORADJUST_GREEN
-Grün:
+GrÃ¼n:
 ; Green:
 ;
 ; Coloradjust class
@@ -49,7 +49,7 @@ Name
 ; Name
 ;
 MSG_DIRLIST_SIZE
-Größe
+GrÃ¶ÃŸe
 ; Size
 ;
 MSG_DIRLIST_DATE
@@ -201,7 +201,7 @@ Text
 ; Text
 ;
 MSG_PENADJUST_FILL
-Füllen
+FÃ¼llen
 ; Fill
 ;
 MSG_PENADJUST_MARK

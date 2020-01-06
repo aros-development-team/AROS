@@ -25,7 +25,7 @@ O\0Avaa...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Tallenna nimell‰...
+A\0Tallenna nimell√§...
 ; A\0Save As...
 ;
 MSG_MEN_PROJECT_QUIT
@@ -65,7 +65,7 @@ Tallenna IControl asetukset
 ; Save IControl Preferences
 ;
 MSG_OK
-Selv‰
+Selv√§
 ; Ok
 ;
 ;
@@ -86,7 +86,7 @@ Hyppy
 ; Pop-Up
 ;
 MSG_MENUS_LOOK
-Ulkon‰kˆ
+Ulkon√§k√∂
 ; Look
 ;
 MSG_MENUS_LOOK_CLASSIC

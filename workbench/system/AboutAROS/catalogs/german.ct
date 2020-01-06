@@ -4,7 +4,7 @@
 ;
 ;
 MSG_TITLE
-Über AROS
+Ãœber AROS
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
@@ -28,11 +28,11 @@ Ausgabe
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2020, The AROS Development Team. Alle Rechte vorbehalten.
+Copyright Â© 1995-2020, The AROS Development Team. Alle Rechte vorbehalten.
 ; Copyright \xa9 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
-Veröffentlicht gemäß den Richtlinien der
+VerÃ¶ffentlicht gemÃ¤ÃŸ den Richtlinien der
 ; Released under the terms of the
 ;
 MSG_LICENSE_2
@@ -44,7 +44,7 @@ MSG_LICENSE_3
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Besuchen Sie http://www.aros.org/de/ für mehr Informationen.
+Besuchen Sie http://www.aros.org/de/ fÃ¼r mehr Informationen.
 ; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
@@ -124,11 +124,11 @@ Dokumentation
 ; Documentation
 ;
 MSG_SECTION_TRANSLATION
-Übersetzung
+Ãœbersetzung
 ; Translation
 ;
 MSG_SECTION_ARTISTRY
-Künstlerische Gestaltung
+KÃ¼nstlerische Gestaltung
 ; Artistry
 ;
 MSG_SECTION_WEBSITE

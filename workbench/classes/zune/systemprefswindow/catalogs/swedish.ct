@@ -5,7 +5,7 @@
 ; TODO: update me and set version to 2
 ;
 MSG_MENU_PREFS
-Inst‰llningar
+Inst√§llningar
 ; Preferences
 ;
 MSG_MENU_PREFS_IMPORT
@@ -21,7 +21,7 @@ T\0Testa
 ; T\0Test
 ;
 MSG_MENU_PREFS_REVERT
-≈\0≈terst‰ll
+√Ö\0√Öterst√§ll
 ; R\0Revert
 ;
 MSG_MENU_PREFS_SAVE
@@ -29,7 +29,7 @@ S\0Spara
 ; S\0Save
 ;
 MSG_MENU_PREFS_USE
-A\0Anv‰nd
+A\0Anv√§nd
 ; U\0Use
 ;
 MSG_MENU_PREFS_CANCEL

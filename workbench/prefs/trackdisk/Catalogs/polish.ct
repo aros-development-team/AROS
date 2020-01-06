@@ -7,7 +7,7 @@ Trackdisk
 ; Trackdisk
 ;
 MSG_TITLE
-Ustawienia stacji dysków
+Ustawienia stacji dyskÃ³w
 ; Trackdisk prefs
 ;
 MSG_SAVE
@@ -15,7 +15,7 @@ Zapisz
 ; Save
 ;
 MSG_USE
-U¿yj
+UÅ¼yj
 ; Use
 ;
 MSG_CANCEL
@@ -27,11 +27,11 @@ Edytor preferencji trackdisk.device
 ; trackdisk.device preferences editor
 ;
 MSG_WINDOW_TITLE
-Preferencje stacji dysków
+Preferencje stacji dyskÃ³w
 ; trackdisk.device preferences
 ;
 MSG_DRIVE
-Napêd %u
+NapÄ™d %u
 ; Drive %u
 ;
 MSG_NOCLICK
@@ -39,6 +39,6 @@ Bez klikania:
 ; No click:
 ;
 MSG_RETRIES
-Ponowieñ:
+PonowieÅ„:
 ; Retries:
 ;

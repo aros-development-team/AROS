@@ -16,7 +16,7 @@ PCI Abfrage und Management Tool
 ; PCI querying and managment
 ;
 MSG_ERROR_LOCALE
-Kann locale nicht ˆffnen
+Kann locale nicht √∂ffnen
 ; Can't open locale
 ;
 MSG_ERROR_OK
@@ -44,7 +44,7 @@ Hardware Information:
 ; Hardware info:
 ;
 MSG_PCI_DEVICE_INFO
-PCI-Ger‰te Information
+PCI-Ger√§te Information
 ; PCI device info
 ;
 MSG_DEVICE_DESCRIPTION
@@ -96,11 +96,11 @@ ROM Basis:
 ; ROM Base:
 ;
 MSG_ROM_SIZE
-ROM Grˆﬂe:
+ROM Gr√∂√üe:
 ; ROM Size:
 ;
 MSG_BRIDGE
-Bridge f¸r Bus %d (ISA %saktiv, VGA %saktiv)
+Bridge f√ºr Bus %d (ISA %saktiv, VGA %saktiv)
 ; Bridge handles bus %d (ISA %senabled, VGA %senabled)
 ;
 MSG_MEMORY_RANGE
@@ -148,19 +148,19 @@ in
 ; not
 ;
 MSG_SIZE4
-%s bei 0x%04x (Grˆﬂe 0x%04x)
+%s bei 0x%04x (Gr√∂√üe 0x%04x)
 ; %s at 0x%04x (size 0x%04x)
 ;
 MSG_SIZE8
-%s bei 0x%08x (Grˆﬂe 0x%08x)
+%s bei 0x%08x (Gr√∂√üe 0x%08x)
 ; %s at 0x%08x (size 0x%08x)
 ;
 MSG_SAVETORAMDISK
-Speichere Ger‰te Informationen nach RAM Disk
+Speichere Ger√§te Informationen nach RAM Disk
 ; Save Device Information to RAM Disk
 ;
 MSG_SAVEALLTORAMDISK
-Speichere alle Ger‰teinformationen nach RAM Disk
+Speichere alle Ger√§teinformationen nach RAM Disk
 ; Save complete PCI Information to RAM Disk
 ;
 MSG_UNUSED
@@ -176,7 +176,7 @@ Benutzt von:
 ; Used by:
 ;
 MSG_PCIE_DEVICE_INFO
-PCIe-Ger‰te Information
+PCIe-Ger√§te Information
 ; PCIe device info
 ;
 MSG_PCIE_SERIAL_NUMBER

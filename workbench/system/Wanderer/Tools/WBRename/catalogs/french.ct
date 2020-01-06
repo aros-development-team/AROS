@@ -1,5 +1,5 @@
 ## version $VER: WBRename.catalog 2.0 (05.01.2012)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -8,12 +8,12 @@ WBRename
 ; WBRename
 ;
 MSG_DESCRIPTION
-Renomme fichiers et répertoires
+Renomme fichiers et rÃ©pertoires
 ; Renames files and drawers
 ;
 MSG_COPYRIGHT
 @2012, AROS Dev Team
-; ©2012, AROS Dev Team
+; Â©2012, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Renommer
@@ -40,23 +40,23 @@ Erreur
 ; Error
 ;
 MSG_ALREADY_EXIST
-'%s' existe déjà !
+'%s' existe dÃ©jÃ  !
 ; '%s' already exists!
 ;
 MSG_FAILED
-Le renommage de '%s' a échoué avec l'erreur :\n'%s' !
+Le renommage de '%s' a Ã©chouÃ© avec l'erreur :\n'%s' !
 ; Rename of '%s' failed with error:\n'%s'!
 ;
 MSG_ILLEGAL_CHARS
-'%s' contient des caractères interdits !
+'%s' contient des caractÃ¨res interdits !
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
-Cette application nécessite deux arguments !
+Cette application nÃ©cessite deux arguments !
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Verrou invalide sur le répertoire !
+Verrou invalide sur le rÃ©pertoire !
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
@@ -64,9 +64,9 @@ Cette application ne fonctionne que depuis le Workbench !
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-Impossible de créer l'application !
+Impossible de crÃ©er l'application !
 ; Failed to create Application!
 ;
 MSG_OUTOFMEMORY
-Impossible d'allouer de la mémoire !
+Impossible d'allouer de la mÃ©moire !
 ; Can't allocate RAM!

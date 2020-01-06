@@ -45,8 +45,8 @@ Olivier Adam
 ; Olivier Adam
 ;
 MSG_COPYRIGHT
-©2006 AROS Dev Team
-; ©2006-2009 AROS Dev Team
+Â©2006 AROS Dev Team
+; Â©2006-2009 AROS Dev Team
 ;
 MSG_USED
 Spazio utilizzato
@@ -57,7 +57,7 @@ Spazio libero
 ; Free space
 ;
 MSG_SIZE
-Capacità
+CapacitÃ 
 ; Capacity
 ;
 MSG_BLOCK_SIZE
@@ -93,7 +93,7 @@ Nome volume
 ; Volume Name
 ;
 MSG_UNIT
-unità
+unitÃ 
 ; unit
 ;
 MSG_DOSDEVICE

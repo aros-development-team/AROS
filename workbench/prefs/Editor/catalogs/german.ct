@@ -34,16 +34,16 @@ MSG_SCRFONT
 Hauptschrift:
 ;
 MSG_PUBSCREEN
-Bildschirmauflösung:
+BildschirmauflÃ¶sung:
 ;
 MSG_BACKDROP
 Editorfenster als Hintergrund
 ;
 MSG_LEFTMARGIN
-Linksbündig
+LinksbÃ¼ndig
 ;
 MSG_AUTOINDENT
-Automatisch einrücken
+Automatisch einrÃ¼cken
 ;
 MSG_EXTEND
 Erweiterter Ziffernblock
@@ -61,7 +61,7 @@ MSG_USEDEF
 Voreinstellung benutzen
 ;
 MSG_CHOOSEIT
-Auswählen...
+AuswÃ¤hlen...
 ;
 MSG_CLONEPARENT
 Klone vorhergehendes
@@ -76,7 +76,7 @@ MSG_COLOR_FILLTXT
 Selected fill text
 ;
 MSG_COLOR_FILLSEL
-Ausgewählter Text
+AusgewÃ¤hlter Text
 ;
 MSG_COLOR_MARGINBACK
 Margin background

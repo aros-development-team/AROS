@@ -3,11 +3,11 @@
 ## codeset 5
 ;
 MSG_CANT_OPEN_LIB
-Nie mo¿na otworzyæ %s w wersji %ld!\n
+Nie moÅ¼na otworzyÄ‡ %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-Nie mo¿na uworzyæ obiektu aplikacji!
+Nie moÅ¼na uworzyÄ‡ obiektu aplikacji!
 ; Can't create application object!
 ;
 MSG_WINTITLE
@@ -19,7 +19,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Skoñcz
+Q\0SkoÅ„cz
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
@@ -27,7 +27,7 @@ Edycja
 ; Edit
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Przywróæ
+R\0PrzywrÃ³Ä‡
 ; R\0Restore
 ;
 MSG_OK
@@ -39,7 +39,7 @@ Zapisz
 ; Save
 ;
 MSG_GAD_USE
-U¿yj
+UÅ¼yj
 ; Use
 ;
 MSG_GAD_CANCEL

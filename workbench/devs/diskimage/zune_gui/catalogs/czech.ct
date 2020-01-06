@@ -7,11 +7,11 @@ Jednotka
 ; Unit
 ;
 MSG_DEVICE_LBL
-Za¯ÌzenÌ
+Za≈ô√≠zen√≠
 ; Device
 ;
 MSG_FILENAME_LBL
-n·zev obrazu (souboru)
+n√°zev obrazu (souboru)
 ; Disk Image
 ;
 MSG_WRITEPROTECT_LBL
@@ -19,11 +19,11 @@ WP
 ; WP
 ;
 MSG_NO_DISK
-Disk nenÌ dostupn˝
+Disk nen√≠ dostupn√Ω
 ; No disk present
 ;
 MSG_APPDESCRIPTION
-Ovl·dacÌ panel pro diskimage.device
+Ovl√°dac√≠ panel pro diskimage.device
 ; Control GUI for diskimage.device
 ;
 MSG_PRIORITY_LBL
@@ -35,7 +35,7 @@ Moduly
 ; Plugin
 ;
 MSG_PLUGIN_GAD
-PouæitÈ
+Pou≈æit√©
 ; Use plugin
 ;
 MSG_AUTO_LBL
@@ -51,7 +51,7 @@ O...
 ; About...
 ;
 MSG_PROJECT_HIDE
-Skr˝t
+Skr√Ωt
 ; Hide
 ;
 MSG_PROJECT_ICONIFY
@@ -63,19 +63,19 @@ Snapshot
 ; Snapshot
 ;
 MSG_PROJECT_QUIT
-UkonËit
+Ukonƒçit
 ; Quit
 ;
 MSG_SETTINGS_MENU
-NastavenÌ
+Nastaven√≠
 ; Settings
 ;
 MSG_SETTINGS_CHANGETEMPDIR
-ZmÏnit temp. cestu...
+Zmƒõnit temp. cestu...
 ; Change temp directory...
 ;
 MSG_SETTINGS_SAVE
-Uloæit nastavenÌ
+Ulo≈æit nastaven√≠
 ; Save settings
 ;
 MSG_SETTINGS_PLUGINS
@@ -83,7 +83,7 @@ Moduly...
 ; Plugins...
 ;
 MSG_PROJECT_CLOSE
-Zav¯Ìt
+Zav≈ô√≠t
 ; Close
 ;
 MSG_OK_GAD
@@ -107,40 +107,40 @@ Chyba
 ; Error
 ;
 MSG_NOAISS_REQ
-Nem·te nainstalov·n AISS.\n\
-nebo nenÌ dostupn· cesta AISS:\n\n\
-StahnÏte a nainstalujte poslednÌ verzi\n\
+Nem√°te nainstalov√°n AISS.\n\
+nebo nen√≠ dostupn√° cesta AISS:\n\n\
+Stahnƒõte a nainstalujte posledn√≠ verzi\n\
 z : http://masonicons.de
 ; AISS assign not found.\n\n\
 ; Download and install the latest version\n\
 ; from here: http://masonicons.de
 ;
 MSG_OLDAISS_REQ
-Podpora pro AISS v%ld.%ld nebo novÏjπÌ.\n\n\
-StahnÏte a nainstalujte poslednÌ verzi\n\
+Podpora pro AISS v%ld.%ld nebo novƒõj≈°√≠.\n\n\
+Stahnƒõte a nainstalujte posledn√≠ verzi\n\
 z: http://masonicons.de
 ; AISS v%ld.%ld or newer required.\n\n\
 ; Download and install the latest version\n\
 ; from here: http://masonicons.de
 ;
 MSG_IMAGENOTFOUND_REQ
-Obraz souboru '%s' nenÌ dostupn˝.
+Obraz souboru '%s' nen√≠ dostupn√Ω.
 ; Image file '%s' not found.
 ;
 MSG_CANCEL_GAD
-_ZpÏt
+_Zpƒõt
 ; _Cancel
 ;
 MSG_SAVE_GAD
-_Uloæit
+_Ulo≈æit
 ; _Save
 ;
 MSG_USE_GAD
-_pouæÌt
+_pou≈æ√≠t
 ; _Use
 ;
 MSG_INSERT_GAD
-Vloæit
+Vlo≈æit
 ; Insert
 ;
 MSG_EJECT_GAD
@@ -148,7 +148,7 @@ Vysunout
 ; Eject
 ;
 MSG_WRITEPROTECT_GAD
-Chr·nÏno proti z·pisu
+Chr√°nƒõno proti z√°pisu
 ; Write Protect
 ;
 MSG_REFRESH_GAD
@@ -160,7 +160,7 @@ Moduly
 ; Plugins
 ;
 MSG_MAIN_WND
-%s: zk. kl·vesa = <%s>
+%s: zk. kl√°vesa = <%s>
 ; %s: Hot Key = <%s>
 ;
 MSG_ABOUT_WND
@@ -172,19 +172,19 @@ Chyba - %s
 ; Error - %s
 ;
 MSG_SETDEVICETYPE_GAD
-Nastavit typ za¯ÌzenÌ
+Nastavit typ za≈ô√≠zen√≠
 ; Set Device Type
 ;
 MSG_SETDEVICETYPE_WND
-Jednotka: %ld - typ za¯ÌzenÌ
+Jednotka: %ld - typ za≈ô√≠zen√≠
 ; Unit: %ld - Device Type
 ;
 MSG_DEVICETYPE_GAD
-Typ za¯ÌzenÌ
+Typ za≈ô√≠zen√≠
 ; Device Type
 ;
 MSG_DEVICETYPE_DIRECT_ACCESS
-P¯Ìm˝ p¯Ìstup (z·kladnÌ nast.)
+P≈ô√≠m√Ω p≈ô√≠stup (z√°kladn√≠ nast.)
 ; Direct Access (Default setting)
 ;
 MSG_DEVICETYPE_CDROM
@@ -192,6 +192,6 @@ CD-ROM
 ; CD-ROM
 ;
 MSG_DEVICETYPE_OPTICAL_DISK
-Optick˝ disk
+Optick√Ω disk
 ; Optical Disk
 ;

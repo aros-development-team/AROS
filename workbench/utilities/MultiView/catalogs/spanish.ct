@@ -1,6 +1,6 @@
 ## version $VER: multiview.catalog 1.0 (13.08.2006)
 ## codeset 0
-## language español
+## language espaÃ±ol
 ;
 ; Translated by ahg - (30.09.2007)
 ;
@@ -8,15 +8,15 @@
 ;         forcemapping
 ;
 MSG_CANT_OPEN_LIB
-¡No se pudo abrir %s V%ld!\n
+Â¡No se pudo abrir %s V%ld!\n
 ;Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC
-¡No se pudieron crear los objetos de interconexión!
+Â¡No se pudieron crear los objetos de interconexiÃ³n!
 ;Can't create interconnection objects!
 ;
 MSG_CANT_LOCK_SCR
-¡No se pudo bloquear la pantalla pública!
+Â¡No se pudo bloquear la pantalla pÃºblica!
 ;Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -26,23 +26,23 @@ MSG_CANT_GET_VI
 Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-¡No se pudieron crear las imágenes SYSICLASS!
+Â¡No se pudieron crear las imÃ¡genes SYSICLASS!
 ;Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-¡No se pudieron crear los gadgets!
+Â¡No se pudieron crear los gadgets!
 ;Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-¡No se pudieron crear los menús!
+Â¡No se pudieron crear los menÃºs!
 ;Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-¡No se pudo crear la ventana!
+Â¡No se pudo crear la ventana!
 ;Can't create window!
 ;
 MSG_SAVE_FAILED
-¡El guardar falló!
+Â¡El guardar fallÃ³!
 ;Saving to file failed!
 ;
 MSG_MEN_PROJECT
@@ -90,7 +90,7 @@ MSG_MEN_EDIT_SELECTALL
 ;[\0Select All
 ;
 MSG_MEN_EDIT_CLEARSELECTED
-]\0Quitar la selección
+]\0Quitar la selecciÃ³n
 ;]\0Clear Selected
 ;
 MSG_MEN_WINDOW
@@ -134,7 +134,7 @@ MSG_MEN_PICT_ZOOM_OUT
 ; \0Zoom out
 ;
 MSG_MEN_PICT_RESET
- \0Al Tamaño Original
+ \0Al TamaÃ±o Original
 ; \0Reset Size
 ;
 MSG_MEN_PICT_FIT_WIN
@@ -146,7 +146,7 @@ MSG_MEN_PICT_KEEP_ASPECT
 ; \0Keep Aspect Ratio
 ;
 MSG_MEN_PICT_FORCE_MAP
- \0Conversión de colores forzada
+ \0ConversiÃ³n de colores forzada
 ; \0Force Palette Mapping
 ;
 MSG_MEN_PICT_DITHER
@@ -178,7 +178,7 @@ Elegir el Archivo para Abrir
 ;Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-Elegir el Archivo dónde Guardar
+Elegir el Archivo dÃ³nde Guardar
 ;Select File to Save to
 ;
 MSG_ABOUT

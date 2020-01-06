@@ -6,7 +6,7 @@
 ; buttonsp.c
 ;-----------
 MSG_GENERAL
-Opæenito
+OpÄ‡enito
 ; General
 ;
 MSG_BACKGROUND_COLON
@@ -38,7 +38,7 @@ Podesi Okvir
 ; Adjust Frame
 ;
 MSG_CHECKMARKS
-Knaèice
+KnaÄice
 ; Checkmarks
 ;
 MSG_LOOK_COLON
@@ -46,7 +46,7 @@ Izgled:
 ; Look:
 ;
 MSG_CHECKMARK
-Kvaèica
+KvaÄica
 ; Checkmark
 ;
 MSG_RADIO_BUTTONS
@@ -125,7 +125,7 @@ Podloga
 ; Background
 ;
 MSG_RECESSED_ENTRIES
-Raspu¹ten Natuknice:
+RaspuÅ¡ten Natuknice:
 ; Recessed Entries:
 ;
 ;=============================
@@ -176,7 +176,7 @@ Registracija
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Postavljena velièina\nskraèeni naslova
+Postavljena veliÄina\nskraÄeni naslova
 ; Default size truncate titles
 ;
 MSG_NORMAL
@@ -211,7 +211,7 @@ pravocrtan
 ; linear
 ;
 MSG_MIXED
-mje¹ano
+mjeÅ¡ano
 ; mixed
 ;
 MSG_CONTROL
@@ -227,7 +227,7 @@ Obnovi:
 ; Refresh:
 ;
 MSG_SMOOTH
-Uglağeno:
+UglaÄ‘eno:
 ; Smooth:
 ;
 MSG_FONTS
@@ -243,7 +243,7 @@ Fiksirano:
 ; Fixed:
 ;
 MSG_LEADING
-Vodeæi
+VodeÄ‡i
 ; Leading
 ;
 MSG_DESIGN
@@ -259,7 +259,7 @@ Readonly \nListe:
 ; Readonly \nLists:
 ;
 MSG_CURSOR
-Pokazivaè
+PokazivaÄ
 ; Cursor
 ;
 MSG_ACTIVE
@@ -294,11 +294,11 @@ uvijek prividno
 ; always ghosted
 ;
 MSG_SHOW_FRAMES
-prika¾i okvire
+prikaÅ¾i okvire
 ; show frames
 ;
 MSG_SHOW_OBJECTS
-prika¾i objekte
+prikaÅ¾i objekte
 ; show objects
 ;
 MSG_KL_PRESS
@@ -342,15 +342,15 @@ Desno:
 ; Right:
 ;
 MSG_KL_WORD_LEFT
-Rijeè lijevo:
+RijeÄ lijevo:
 ; Word left:
 ;
 MSG_KL_WORD_RIGHT
-Rijeè desno:
+RijeÄ desno:
 ; Word right:
 ;
 MSG_KL_LINE_START
-Poèetak linije:
+PoÄetak linije:
 ; Line start:
 ;
 MSG_KL_LINE_END
@@ -358,15 +358,15 @@ Kraj linije:
 ; Line end:
 ;
 MSG_KL_NEXT_GADGET
-Slijedeæi gadget:
+SlijedeÄ‡i gadget:
 ; Next gadget:
 ;
 MSG_KL_PREV_GADGET
-Pro¹li gadget:
+ProÅ¡li gadget:
 ; Prev. gadget:
 ;
 MSG_KL_GADGET_OFF
-Iskljuæen gadget:
+IskljuÄ‡en gadget:
 ; Gadget off:
 ;
 MSG_KL_CLOSE_WINDOW
@@ -374,15 +374,15 @@ Zatvori prozor:
 ; Close window:
 ;
 MSG_KL_NEXT_WINDOW
-Slijedeæi prozor:
+SlijedeÄ‡i prozor:
 ; Next window:
 ;
 MSG_KL_PREV_WINDOW
-Pro¹li prozor:
+ProÅ¡li prozor:
 ; Prev. window:
 ;
 MSG_KL_HELP
-Pomoæ:
+PomoÄ‡:
 ; Help:
 ;
 MSG_KL_POPUP
@@ -410,7 +410,7 @@ MSG_PIXEL
 ; %ld pixel
 ;
 MSG_BALANCING_GROUPS
-Balansirajuèe Grupe
+BalansirajuÄe Grupe
 ; Balancing Groups
 ;
 MSG_EXAMPLE
@@ -418,7 +418,7 @@ Prijemer:
 ; Example:
 ;
 MSG_TRY_WITH
-Poku¹aj sa
+PokuÅ¡aj sa
 ; Try with
 ;
 MSG_SHIFT
@@ -532,7 +532,7 @@ Indikator Progresa
 ; Progress Indicator
 ;
 MSG_DEVICE_IMAGES
-Slike Ureğaja
+Slike UreÄ‘aja
 ; Device Images
 ;
 MSG_DRAWER
@@ -639,7 +639,7 @@ Boja Aktivnog Niza
 ; Active String Colors
 ;
 MSG_MARKED_STRING_COLORS
-Oznaèene Boje niza
+OznaÄene Boje niza
 ; Marked String Colors
 ;
 MSG_EXAMPLE_STRING_GADGET
@@ -670,11 +670,11 @@ jednostavno
 ; simple
 ;
 MSG_WITHOUT_CLEAR
-sa èi¹èenjem
+sa ÄiÅ¡Äenjem
 ; without clear
 ;
 MSG_WITH_CLEAR
-bez èi¹èenja
+bez ÄiÅ¡Äenja
 ; with clear
 ;
 MSG_POSITIONS
@@ -698,7 +698,7 @@ Prozor
 ; Window
 ;
 MSG_REQUESTER
-Biraè
+BiraÄ
 ; Requester
 ;
 MSG_L
@@ -725,7 +725,7 @@ Dugma
 ; zune.c
 ;-------
 MSG_WINTITLE1
-Zune - Opæe Postavke
+Zune - OpÄ‡e Postavke
 ; Zune - Global Prefs
 ;
 MSG_WINTITLE2
@@ -773,11 +773,11 @@ Q
 ; Q
 ;
 MSG_FRAME_CLIPBOARD
-Okvir meğuspremnika
+Okvir meÄ‘uspremnika
 ; Frame Clipboard
 ;
 MSG_IMAGE_CLIPBOARD
-Slika meğuspremnika
+Slika meÄ‘uspremnika
 ; Image Clipboard
 ;
 MSG_GAD_TEST
@@ -817,7 +817,7 @@ Slijedovi
 ; Cycles
 ;
 MSG_DSC_SLIDERS
-Klizaèi
+KlizaÄi
 ; Sliders
 ;
 MSG_DSC_SCROLLBARS
@@ -886,7 +886,7 @@ Hotkey:
 ; Hotkey:
 ;
 MSG_SHOW
-Prika¾i:
+PrikaÅ¾i:
 ; Show:
 ;
 MSG_ICON
@@ -902,7 +902,7 @@ Na Startup-u:
 ; On Startup:
 ;
 MSG_INTERFACES
-Suèelja
+SuÄelja
 ; Interfaces
 ;
 MSG_AREXX
@@ -910,14 +910,14 @@ ARexx:
 ; ARexx:
 ;
 MSG_BUBBLE_HELP
-Mjehuriæ Pomoæi
+MjehuriÄ‡ PomoÄ‡i
 ; Bubble Help
 ;
 MSG_FIRST_BUBBLE
-Prvi Mjehuriæ:
+Prvi MjehuriÄ‡:
 ; First Bubble:
 ;
 MSG_NEXT_BUBBLE
-Slijedeæi Mjehuriæ:
+SlijedeÄ‡i MjehuriÄ‡:
 ; Next Bubble:
 ;

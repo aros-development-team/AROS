@@ -1,10 +1,10 @@
 ## version $VER: Input.catalog 3.1 (13.6.2017)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
 MSG_NAME
-Préférences clavier et souris
+PrÃ©fÃ©rences clavier et souris
 ; Input Preferences
 ;
 MSG_OK
@@ -24,19 +24,19 @@ Vitesse de la souris
 ; Mouse Speed
 ;
 MSG_GAD_MOUSE_ACCELERATED
-Accélération
+AccÃ©lÃ©ration
 ; Accelerated
 ;
 MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
-Délai du double clic
+DÃ©lai du double clic
 ; Double-Click Delay
 ;
 MSG_GAD_KEY_REPEAT_DELAY
-Délai de répétition du clavier
+DÃ©lai de rÃ©pÃ©tition du clavier
 ; Key Repeat Delay
 ;
 MSG_GAD_KEY_REPEAT_RATE
-Vitesse de répétition du clavier
+Vitesse de rÃ©pÃ©tition du clavier
 ; Key Repeat Rate
 ;
 MSG_GAD_KEY_TEST
@@ -44,7 +44,7 @@ Test
 ; Test
 ;
 MSG_GAD_KEY_TYPE
-Modèle de clavier
+ModÃ¨le de clavier
 ; Type
 ;
 MSG_GAD_MOUSE_BUTTON_SETTINGS
@@ -68,7 +68,7 @@ Rapide
 ; Fast
 ;
 MSG_GAD_KEY_DEF
-Défaut
+DÃ©faut
 ;Default
 ;
 MSG_GAD_KEY_ALT
@@ -84,7 +84,7 @@ Bascule disposition optionnelle
 ;Layout switching
 ;
 MSG_GAD_KEY_SWITCH_ENABLE
-Activée
+ActivÃ©e
 ;Enabled
 ;
 MSG_GAD_KEY_SWITCH_KEY

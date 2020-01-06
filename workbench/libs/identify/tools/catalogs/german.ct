@@ -8,17 +8,17 @@
 ;*                                                              *
 ;****************************************************************
 ;*
-;*      (C) 1996-97  Richard Körber  -- All Rights Reserved
+;*      (C) 1996-97  Richard KÃ¶rber  -- All Rights Reserved
 ;*
 ;****************************************************************
 ;
 ;   ** IMPORTANT NOTES FOR TRANSLATORS **
 ;
-;       · Nr. 0 must always be preserved
-;       · Do NOT change the sequence of '%' parameters
-;       · Do NOT change the order of the entries
-;       · Obey the minimum and maximum length
-;       · Note that some lines have trailing spaces
+;       Â· Nr. 0 must always be preserved
+;       Â· Do NOT change the sequence of '%' parameters
+;       Â· Do NOT change the order of the entries
+;       Â· Obey the minimum and maximum length
+;       Â· Note that some lines have trailing spaces
 ;
 ;
 ;================================================================
@@ -26,7 +26,7 @@
 ;================================================================
 ;
 MSG_NOIDENTIFY
-Benötigt identify.library V%ld oder höher!\n\
+BenÃ¶tigt identify.library V%ld oder hÃ¶her!\n\
 
 ; Needs identify.library V%ld or higher!\n
 ;
@@ -38,7 +38,7 @@ Benötigt identify.library V%ld oder höher!\n\
 ;
 MSG_LISTEXP_HAIL
 -- ListExp V%s -- Richard Koerber <%s>\n\
- (ListExp gehört zum Identify-Paket, siehe AmiNet util/libs)\n\n
+ (ListExp gehÃ¶rt zum Identify-Paket, siehe AmiNet util/libs)\n\n
 ; -- ListExp V%s -- Richard Koerber <%s>\n\
 ;  (ListExp is a part of the Identify package, see AmiNet util/libs)\n\n
 ;
@@ -46,10 +46,10 @@ MSG_LISTEXP_HELP
 Format:\n\
 \n\
   FULL/S\t\talle Commodities auflisten\n\
-  MID=MANUFID/K/N\tInformation über den Hersteller\n\
+  MID=MANUFID/K/N\tInformation Ã¼ber den Hersteller\n\
   PID=PRODID/K/N\tund sein Produkt\n\
 \n\
-Bitte lesen Sie die Anleitung für weitere Details.\n\
+Bitte lesen Sie die Anleitung fÃ¼r weitere Details.\n\
 
 ; Template:\n\n\
 ;   FULL/S\t\tlist all current commodities\n\
@@ -120,7 +120,7 @@ Memory:\t\t   CHIP\t   FAST\t  TOTAL\tROM = %s\tSLOW = %s\n\
 MSG_LISTEXP_LISTTITLE
 ** ERWEITERUNGEN **\n\
 \n\
-Nr ID      Adresse  Größe Hersteller           Produkt\n\
+Nr ID      Adresse  GrÃ¶ÃŸe Hersteller           Produkt\n\
 ----------------------------------------------------------------------------\n\
 
 ; ** EXPANSIONS **\n\n\
@@ -173,7 +173,7 @@ Format:\n\
   GURU\t\tzu analysierender Guru-Code\n\
   LASTALERT/S\tLetzten System-Alert analysieren\n\
 \n\
-Bitte lesen Sie die Anleitung für weitere Details.\n\
+Bitte lesen Sie die Anleitung fÃ¼r weitere Details.\n\
 
 ; Template:\n\n\
 ;   GURU\t\tguru code to be analyzed\n\
@@ -181,7 +181,7 @@ Bitte lesen Sie die Anleitung für weitere Details.\n\
 ; Please read the doc file for further details.\n
 ;
 MSG_GURU_BADCODE
-Dies ist kein gültiger GURU-Code...\n\
+Dies ist kein gÃ¼ltiger GURU-Code...\n\
 \n\
 
 ; This is not a valid Guru code...\n\n
@@ -222,7 +222,7 @@ Format:\n\
   LN=LIBNAME/A\tName der Library\n\
   O=OFFSET/N/A\tFunktionsoffset\n\
 \n\
-Bitte lesen Sie die Anleitung für weitere Details.\n\
+Bitte lesen Sie die Anleitung fÃ¼r weitere Details.\n\
 
 ; Template:\n\n\
 ;   LN=LIBNAME/A\tname of the library\n\

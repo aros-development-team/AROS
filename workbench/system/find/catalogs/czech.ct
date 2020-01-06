@@ -7,7 +7,7 @@ Find
 ; Find
 ;
 MSG_APP_DESCRIPTION
-Vyhled·vacÌ n·stroj
+Vyhled√°vac√≠ n√°stroj
 ; File search tool
 ;
 MSG_APP_COPYRIGHT
@@ -15,7 +15,7 @@ Copyright \xa9 2016 The AROS Development Team
 ; Copyright \xa9 2016 The AROS Development Team
 ;
 MSG_WI_TITLE
-Vyhled·vacÌ n·stroj
+Vyhled√°vac√≠ n√°stroj
 ; Find
 ;
 MSG_OK
@@ -39,11 +39,11 @@ Datum
 ; Date
 ;
 MSG_LST_TIME
-»as
+ƒåas
 ; Time
 ;
 MSG_LST_COMMENT
-Koment·¯
+Koment√°≈ô
 ; Comment
 ;
 MSG_LBL_PATH
@@ -67,7 +67,7 @@ Stop
 ; Stop
 ;
 MSG_BTN_OPEN
-Otev¯Ìt
+Otev≈ô√≠t
 ; Open
 ;
 MSG_BTN_VIEW
@@ -75,7 +75,7 @@ Zobrazit
 ; View
 ;
 MSG_BTN_DRAWER
-Sloæka
+Slo≈æka
 ; Drawer
 ;
 ; Error messages
@@ -85,19 +85,19 @@ Chyba
 ; Error
 ;
 MSG_ERR_NO_APPLICATION
-Nelze vytvo¯it aplikaci.
+Nelze vytvo≈ôit aplikaci.
 ; Can't create application.
 ;
 MSG_ERR_READARGS
-Nelze p¯eËÌst argument(y) z p¯ÌkazovÈ ¯·dky.
+Nelze p≈ôeƒç√≠st argument(y) z p≈ô√≠kazov√© ≈ô√°dky.
 ; Can't read commandline arguments.
 ;
 MSG_ERR_NO_MEM
-Chyba:\nNelze alokovat pamÏª.
+Chyba:\nNelze alokovat pamƒõ≈•.
 ; Error:\nCan't allocate memory.
 ;
 MSG_ERR_NO_WINDOW
-Chyba:\nNelze otev¯Ìt okno.
+Chyba:\nNelze otev≈ô√≠t okno.
 ; Error:\nCan't open window.
 ;
 MSG_ERR_DOS
@@ -105,13 +105,13 @@ Chyba DOS:\n%s
 ; DOS Error:\n%s
 ;
 MSG_ERR_NO_FILE
-Chyba:\nNelze otev¯Ìt soubor\n\"%s\".
+Chyba:\nNelze otev≈ô√≠t soubor\n\"%s\".
 ; Error:\nCan't open file\n\"%s\".
 ;
 MSG_ERR_NO_DIR
-Chyba:\nNelze otev¯Ìt sloæku\n\"%s\".
+Chyba:\nNelze otev≈ô√≠t slo≈æku\n\"%s\".
 ; Error:\nCan't open directory\n\"%s\".
 ;
 MSG_ERR_PATTERN
-Chyba:\nNelze pouæÌt vzor pro t¯ÌdÏnÌ.
+Chyba:\nNelze pou≈æ√≠t vzor pro t≈ô√≠dƒõn√≠.
 ; Error:\nCan't parse pattern.

@@ -11,7 +11,7 @@ Jednostka
 ; Unit
 ;
 MSG_DEVICE_LBL
-Urz±dzenie
+UrzÄ…dzenie
 ; Device
 ;
 MSG_FILENAME_LBL
@@ -43,7 +43,7 @@ Plugin
 ; Plugin
 ;
 MSG_PLUGIN_GAD
-U¿yj Pluginu
+UÅ¼yj Pluginu
 ; Use plugin
 ;
 MSG_AUTO_LBL
@@ -75,7 +75,7 @@ Utrwal okno
 ; Snapshot
 ;
 MSG_PROJECT_QUIT
-Zakoñcz
+ZakoÅ„cz
 ; Quit
 ;
 MSG_SETTINGS_MENU
@@ -107,25 +107,25 @@ Ok
 ; Ok
 ;
 MSG_ABOUT_REQ
-%s Wersja %ld.%ld\n%s Wersja %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebseite: http://a500.org\nE-Mail: fredrik@a500.org
-; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik@a500.org
+%s Wersja %ld.%ld\n%s Wersja %ld.%ld\n\nCopyright Å  2007-2010 Fredrik Wikstrom\nWebseite: http://a500.org\nE-Mail: fredrik@a500.org
+; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright Å  2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik@a500.org
 ;
 MSG_ERROR
-B³±d
+BÅ‚Ä…d
 ; Error
 ;
 MSG_NOAISS_REQ
 Nie znalleziono przypisania AISS.\n\n\
-Zainstaluj najnowsza wersjê\n\
-st±d: http://masonicons.de
+Zainstaluj najnowsza wersjÄ™\n\
+stÄ…d: http://masonicons.de
 ; AISS assign not found.\n\n\
 ; Download and install the latest version\n\
 ; from here: http://masonicons.de
 ;
 MSG_OLDAISS_REQ
 Wymagany AISS V%ld.%ld albo nowszy.\n\n\
-Zainstaluj najnowsza wersjê\n\
-st±d: http://masonicons.de
+Zainstaluj najnowsza wersjÄ™\n\
+stÄ…d: http://masonicons.de
 ; AISS v%ld.%ld or newer required.\n\n\
 ; Download and install the latest version\n\
 ; from here: http://masonicons.de
@@ -147,15 +147,15 @@ _Zapisz
 ; _Save
 ;
 MSG_USE_GAD
-_U¿yj
+_UÅ¼yj
 ; _Use
 ;
 MSG_INSERT_GAD
-Wló¿
+WlÃ³Å¼
 ; Insert
 ;
 MSG_EJECT_GAD
-Wyrzuæ
+WyrzuÄ‡
 ; Eject
 ;
 MSG_WRITEPROTECT_GAD
@@ -183,23 +183,23 @@ O - %s
 ; About - %s
 ;
 MSG_ERROR_WND
-B³±d - %s
+BÅ‚Ä…d - %s
 ; Error - %s
 ;
 MSG_SETDEVICETYPE_GAD
-Wybierz typ urz±dzenia
+Wybierz typ urzÄ…dzenia
 ; Set Device Type
 ;
 MSG_SETDEVICETYPE_WND
-Jednostka : %ld - Gerätetyp
+Jednostka : %ld - GerÃ¤tetyp
 ; Unit: %ld - Device Type
 ;
 MSG_DEVICETYPE_GAD
-Typ urz±dzenia
+Typ urzÄ…dzenia
 ; Device Type
 ;
 MSG_DEVICETYPE_DIRECT_ACCESS
-Dostêp bezpo¶redni (ustawienie standardowe)
+DostÄ™p bezpoÅ›redni (ustawienie standardowe)
 ; Direct Access (Default setting)
 ;
 MSG_DEVICETYPE_CDROM

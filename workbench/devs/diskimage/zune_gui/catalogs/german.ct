@@ -11,7 +11,7 @@ Einheit
 ; Unit
 ;
 MSG_DEVICE_LBL
-Gerät
+GerÃ¤t
 ; Device
 ;
 MSG_FILENAME_LBL
@@ -19,7 +19,7 @@ Disk Image
 ; Disk Image
 ;
 MSG_WRITEPROTECT_LBL
-Schreibgeschützt
+SchreibgeschÃ¼tzt
 ; WP
 ;
 MSG_NO_DISK
@@ -27,7 +27,7 @@ Keine Disk eingelegt
 ; No disk present
 ;
 MSG_APPDESCRIPTION
-GUI für diskimage.device
+GUI fÃ¼r diskimage.device
 ; Control GUI for diskimage.device
 ;
 ; ******************
@@ -59,7 +59,7 @@ Beschreibbar
 ; *****************
 ;
 MSG_PROJECT_ABOUT
-Über...
+Ãœber...
 ; About...
 ;
 MSG_PROJECT_HIDE
@@ -83,7 +83,7 @@ Einstellungen
 ; Settings
 ;
 MSG_SETTINGS_CHANGETEMPDIR
-Temp. Verzeichnis ändern...
+Temp. Verzeichnis Ã¤ndern...
 ; Change temp directory...
 ;
 MSG_SETTINGS_SAVE
@@ -107,8 +107,8 @@ Ok
 ; Ok
 ;
 MSG_ABOUT_REQ
-%s Version %ld.%ld\n%s Version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebseite: http://a500.org\nE-Mail: fredrik@a500.org
-; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik@a500.org
+%s Version %ld.%ld\n%s Version %ld.%ld\n\nCopyright Â© 2007-2010 Fredrik Wikstrom\nWebseite: http://a500.org\nE-Mail: fredrik@a500.org
+; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright Â© 2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik@a500.org
 ;
 MSG_ERROR
 Fehler
@@ -123,7 +123,7 @@ von hier: http://masonicons.de
 ; from here: http://masonicons.de
 ;
 MSG_OLDAISS_REQ
-AISS V%ld.%ld oder neuer wird benötigt.\n\n\
+AISS V%ld.%ld oder neuer wird benÃ¶tigt.\n\n\
 Lade und installiere die neuste Version\n\
 von hier: http://masonicons.de
 ; AISS v%ld.%ld or newer required.\n\n\
@@ -159,7 +159,7 @@ Auswerfen
 ; Eject
 ;
 MSG_WRITEPROTECT_GAD
-Schreibgeschützt
+SchreibgeschÃ¼tzt
 ; Write Protect
 ;
 MSG_REFRESH_GAD
@@ -179,7 +179,7 @@ MSG_MAIN_WND
 ; %s: Hot Key = <%s>
 ;
 MSG_ABOUT_WND
-Über - %s
+Ãœber - %s
 ; About - %s
 ;
 MSG_ERROR_WND
@@ -187,15 +187,15 @@ Fehler - %s
 ; Error - %s
 ;
 MSG_SETDEVICETYPE_GAD
-Wähle Gerätetyp
+WÃ¤hle GerÃ¤tetyp
 ; Set Device Type
 ;
 MSG_SETDEVICETYPE_WND
-Einheit : %ld - Gerätetyp
+Einheit : %ld - GerÃ¤tetyp
 ; Unit: %ld - Device Type
 ;
 MSG_DEVICETYPE_GAD
-Gerätetyp
+GerÃ¤tetyp
 ; Device Type
 ;
 MSG_DEVICETYPE_DIRECT_ACCESS

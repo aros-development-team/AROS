@@ -13,7 +13,7 @@ MSG_PERSONAL_BUILD
 ;
 MSG_NIGHTLY_BUILD
 
-; NoÊni %s Build
+; Noƒáni %s Build
 ;
 MSG_SNAPSHOT
 Snapshot
@@ -28,8 +28,8 @@ Izdanje
 ; Release
 ;
 MSG_COPYRIGHT
-Autorsko Pravo å 1995-2020, The AROS Development Team. Sva prava zadræana.
-; Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+Autorsko Pravo ¬å 1995-2020, The AROS Development Team. Sva prava zadr≈æana.
+; Copyright ≈† 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Izdano pod licencom
@@ -44,7 +44,7 @@ verzija 1.1.
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Posjetite http://www.aros.org za viπe informacija. 
+Posjetite http://www.aros.org za vi≈°e informacija. 
 ; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
@@ -112,7 +112,7 @@ DOS
 ; DOS
 ;
 MSG_SECTION_NETWORK
-Mreæne Komponente
+Mre≈æne Komponente
 ; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
@@ -128,7 +128,7 @@ Prijevod
 ; Translation
 ;
 MSG_SECTION_ARTISTRY
-GrafiËki djelovi
+Grafiƒçki djelovi
 ; Artistry
 ;
 MSG_SECTION_WEBSITE

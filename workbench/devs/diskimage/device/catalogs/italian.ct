@@ -18,11 +18,11 @@ Inserisci password:
 ; Enter password:
 ;
 MSG_NOZLIB
-La libreria z.library Ë necessaria
+La libreria z.library √® necessaria
 ; z.library required
 ;
 MSG_NOCAPSDEV
-Il file capsimage.device Ë necessario
+Il file capsimage.device √® necessario
 ; capsimage.device required
 ;
 MSG_CANCELED
@@ -58,7 +58,7 @@ Formato/tipo di immagine del disco non supportato
 ; unsupported disk image type/format
 ;
 MSG_UNKNCOMPMETHOD
-Modalit‡ di compressione non supportata
+Modalit√† di compressione non supportata
 ; unsupported compression method
 ;
 MSG_EOF
@@ -98,6 +98,6 @@ Errore nella libreria bz2.library
 ; bz2.library error
 ;
 MSG_UNKNENCRMETHOD
-Modalit‡ di criptazione dati non supportata
+Modalit√† di criptazione dati non supportata
 ; unsupported encryption method
 ;

@@ -8,11 +8,11 @@ Wanderer
 ; Wanderer
 ;
 MSG_DESCRIPTION
-Spr·vce soubor˘
+Spr√°vce soubor≈Ø
 ; File manager
 ;
 MSG_SCREENTITLE
-Wanderer   %s grafickÈ pamÏti  %s ostatnÌ pamÏti
+Wanderer   %s grafick√© pamƒõti  %s ostatn√≠ pamƒõti
 ; Wanderer %s graphics mem %s other mem
 ;
 MSG_MEM_B
@@ -36,7 +36,7 @@ Wanderer
 ; Wanderer
 ;
 MSG_MEN_BACKDROP
-PozadÌ
+Pozad√≠
 ; Backdrop
 ;
 MSG_MEN_SC_BACKDROP
@@ -60,7 +60,7 @@ W
 ; W
 ;
 MSG_MEN_GUISET
-Vzhled systÈmu...
+Vzhled syst√©mu...
 ; GUI settings...
 ;
 MSG_MEN_ABOUT
@@ -68,7 +68,7 @@ O programu...
 ; About...
 ;
 MSG_MEN_QUIT
-UkonËit...
+Ukonƒçit...
 ; Quit...
 ;
 MSG_MEN_SC_QUIT
@@ -80,7 +80,7 @@ Okno
 ; Window
 ;
 MSG_MEN_NEWDRAW
-Nov˝ adres·¯...
+Nov√Ω adres√°≈ô...
 ; New drawer...
 ;
 MSG_MEN_SC_NEWDRAW
@@ -88,11 +88,11 @@ N
 ; N
 ;
 MSG_MEN_OPENPAR
-Nad¯azen˝ adres·¯
+Nad≈ôazen√Ω adres√°≈ô
 ; Open parent
 ;
 MSG_MEN_CLOSE
-Zav¯Ìt
+Zav≈ô√≠t
 ; Close
 ;
 MSG_MEN_SC_CLOSE
@@ -104,7 +104,7 @@ Aktualizovat
 ; Update
 ;
 MSG_MEN_CONTENTS
-Vybrat vπe
+Vybrat v≈°e
 ; Select contents
 ;
 MSG_MEN_SC_CONTENTS
@@ -112,7 +112,7 @@ A
 ; A
 ;
 MSG_MEN_CLRSEL
-Zruπit v˝bÏr
+Zru≈°it v√Ωbƒõr
 ; Clear selection
 ;
 MSG_MEN_SC_CLRSEL
@@ -120,11 +120,11 @@ Z
 ; Z
 ;
 MSG_MEN_SNAPSHT
-Uloæit pozici
+Ulo≈æit pozici
 ; Snapshot
 ;
 MSG_MEN_ALL
-Vπe
+V≈°e
 ; All
 ;
 MSG_MEN_VIEW
@@ -140,11 +140,11 @@ Podrobnosti
 ; Detail view
 ;
 MSG_MEN_ALLFIL
-Vπechny objekty
+V≈°echny objekty
 ; All files
 ;
 MSG_MEN_SORTIC
-Se¯adit
+Se≈ôadit
 ; Sort
 ;
 MSG_MEN_CLNUP
@@ -156,7 +156,7 @@ MSG_MEN_SC_CLNUP
 ; .
 ;
 MSG_MEN_BYNAME
-Dle n·zvu
+Dle n√°zvu
 ; By name
 ;
 MSG_MEN_BYDATE
@@ -172,11 +172,11 @@ Dle druhu
 ; By type
 ;
 MSG_MEN_REVERSE
-Obr·cenÏ
+Obr√°cenƒõ
 ; Reverse
 ;
 MSG_MEN_DRWFRST
-Adres·¯e jako prvnÌ
+Adres√°≈ôe jako prvn√≠
 ; Drawers first
 ;
 MSG_MEN_ICON
@@ -192,7 +192,7 @@ F
 ; F
 ;
 MSG_MEN_OPEN
-Otev¯Ìt
+Otev≈ô√≠t
 ; Open
 ;
 MSG_MEN_SC_OPEN
@@ -200,7 +200,7 @@ O
 ; O
 ;
 MSG_MEN_RENAME
-P¯ejmenovat...
+P≈ôejmenovat...
 ; Rename...
 ;
 MSG_MEN_SC_RENAME
@@ -220,11 +220,11 @@ Smazat...
 ; Delete...
 ;
 MSG_MEN_TOOLS
-N·stroje
+N√°stroje
 ; Tools
 ;
 MSG_MEN_ICONSORTING
-Povolit ¯azenÌ
+Povolit ≈ôazen√≠
 ; Enable Automatic Icon Sorting
 ;
 MSG_MEN_GROUPICONS
@@ -232,11 +232,11 @@ Seskupit ikony
 ; Group Icons
 ;
 MSG_MEN_ICONSCLOSE
-Zav¯Ìt
+Zav≈ô√≠t
 ; Close
 ;
 MSG_REALLYQUIT
-Opravdu chcete ukonËit spr·vce soubor˘?
+Opravdu chcete ukonƒçit spr√°vce soubor≈Ø?
 ; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
@@ -248,31 +248,31 @@ DUMMY
 ; DUMMY
 ; DUMMY :)
 MSG_USERSCREENTITLE
-Wanderer   %pc grafickÈ pamÏti  %pf ostatnÌ pamÏti
+Wanderer   %pc grafick√© pamƒõti  %pf ostatn√≠ pamƒõti
 ; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT
-Zform·tovat disk...
+Zform√°tovat disk...
 ; Format disk...
 ;
 MSG_MEN_SHUTDOWN
-Vypnout systÈm...
+Vypnout syst√©m...
 ; Shut down...
 ;
 MSG_SHUTDOWN_TITLE
-VypnutÌ systÈmu
+Vypnut√≠ syst√©mu
 ; System shutdown
 ;
 MSG_SHUTDOWN_BODY
-Vyberte prosÌm poæadovanou akci.
+Vyberte pros√≠m po≈æadovanou akci.
 ; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
-Vypnout|Restartovat hardware|Restartovat systÈm|*Zruπit
+Vypnout|Restartovat hardware|Restartovat syst√©m|*Zru≈°it
 ; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-Poæadovanou akci nelze provÈst.
+Po≈æadovanou akci nelze prov√©st.
 ; The selected action is not supported by your system.
 ;
 MSG_OK
@@ -280,7 +280,7 @@ MSG_OK
 ; *OK
 ;
 MSG_EMPTY_TRASH
-Vypr·zdnit koπ
+Vypr√°zdnit ko≈°
 ; Empty trash
 ;
 MSG_MEN_PUT_AWAY
@@ -292,7 +292,7 @@ P
 ; P
 ;
 MSG_MEN_LEAVE_OUT
-UmÌstit na plochu
+Um√≠stit na plochu
 ; Leave out
 ;
 MSG_MEN_SC_LEAVE_OUT
@@ -300,7 +300,7 @@ L
 ; L
 ;
 MSG_MEN_UNSNAPSHOT
-Zruπit umÌstÏnÌ
+Zru≈°it um√≠stƒõn√≠
 ; Unsnapshot
 ;
 MSG_MEN_SC_UNSNAPSHOT
@@ -308,7 +308,7 @@ U
 ; U
 ;
 MSG_MEN_SNAPSHOT
-Zapsat umÌstÏnÌ
+Zapsat um√≠stƒõn√≠
 ; Snapshot
 ;
 MSG_MEN_SC_SNAPSHOT
@@ -320,11 +320,11 @@ Smazat soubor
 ; Delete file...
 ;
 MSG_REQU_DELETE_YESNO
-_Smazat|Smaz_at vπe|_Nemazat|P¯_eruπit
+_Smazat|Smaz_at v≈°e|_Nemazat|P≈ô_eru≈°it
 ; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
-Opravdu chcete smazat adres·¯
+Opravdu chcete smazat adres√°≈ô
 ; Really delete drawer
 ;
 MSG_REQU_DELETE_DRAWER_E
@@ -336,7 +336,7 @@ Opravdu chcete smazat soubor
 ; Really delete file
 ;
 MSG_REQU_DELETE_FILE_M
-umÌstÏn˝ v adres·¯i
+um√≠stƒõn√Ω v adres√°≈ôi
 ; located in
 ;
 MSG_REQU_DELETE_FILE_E
@@ -344,15 +344,15 @@ MSG_REQU_DELETE_FILE_E
 ; ?
 ;
 MSG_REQU_OVERWRITE
-P¯epsat soubor
+P≈ôepsat soubor
 ; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S
-Opravdu chcete p¯epsat soubor
+Opravdu chcete p≈ôepsat soubor
 ; Really overwrite file
 ;
 MSG_REQU_OVERWRITE_M
-umÌstÏn˝ v adres·¯i
+um√≠stƒõn√Ω v adres√°≈ôi
 ; located in
 ;
 MSG_REQU_OVERWRITE_E
@@ -360,23 +360,23 @@ MSG_REQU_OVERWRITE_E
 ; ?
 ;
 MSG_REQU_OVERWRITE_YESNO
-_P¯epsat|P¯eps_at vπe|_Nemazat|P¯_eruπit
+_P≈ôepsat|P≈ôeps_at v≈°e|_Nemazat|P≈ô_eru≈°it
 ; _Overwrite|Overwrite _all|_No|No _to all
 ;
 MSG_REQU_OVERWRITE_SKIPABORT
-P¯e_skoËit|P¯_eruπit
+P≈ôe_skoƒçit|P≈ô_eru≈°it
 ; _Skip|_Abort
 ;
 MSG_REQU_PROTECTION
-Ochrana proti smaz·nÌ
+Ochrana proti smaz√°n√≠
 ; File Protection
 ;
 MSG_REQU_PROTECTION_UNPROTECT
-_Odebrat|Odebr_at vπem|_NemÏnit|P¯_eruπit
+_Odebrat|Odebr_at v≈°em|_Nemƒõnit|P≈ô_eru≈°it
 ; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
-Chcete odebrat ochranu proti smaz·nÌ u adres·¯e
+Chcete odebrat ochranu proti smaz√°n√≠ u adres√°≈ôe
 ; Do you wish to unprotect drawer
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
@@ -384,11 +384,11 @@ MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
 ; ?
 ;
 MSG_NOFILEACCESS_S
-Chyba p¯i zamyk·nÌ souboru
+Chyba p≈ôi zamyk√°n√≠ souboru
 ; Can't access file
 ;
 MSG_NOFILEACCESS_M
-umÌstÏn˝ v adres·¯i
+um√≠stƒõn√Ω v adres√°≈ôi
 ; located in
 ;
 MSG_NOFILEACCESS_E
@@ -396,7 +396,7 @@ MSG_NOFILEACCESS_E
 ;  
 ;
 MSG_NODRAWERACCESS_S
-Chyba p¯i zamyk·nÌ adres·¯e
+Chyba p≈ôi zamyk√°n√≠ adres√°≈ôe
 ; Can't access drawer
 ;
 MSG_NODRAWERACCESS_E
@@ -404,11 +404,11 @@ MSG_NODRAWERACCESS_E
 ;  
 ;
 MSG_REQU_FILEUNPROTECT_S
-Chcete odebrat ochranu proti smaz·nÌ u souboru
+Chcete odebrat ochranu proti smaz√°n√≠ u souboru
 ; Do you wish to unprotect file
 ;
 MSG_REQU_FILEUNPROTECT_M
-umÌstÏnÈho v adres·¯i
+um√≠stƒõn√©ho v adres√°≈ôi
 ; located in
 ;
 MSG_REQU_FILEUNPROTECT_E
@@ -416,31 +416,31 @@ MSG_REQU_FILEUNPROTECT_E
 ; ?
 ;
 MSG_WANDERER_FILEACCESS
-Pr·ce se soubory
+Pr√°ce se soubory
 ; Wanderer file access
 ;
 MSG_WANDERER_FILEACCESS_PROCESSING
-Zpracov·nÌ dat...
+Zpracov√°n√≠ dat...
 ; Processing...
 ;
 MSG_WANDERER_FILEACCESS_STOP
-P¯eruπit
+P≈ôeru≈°it
 ; Stop
 ;
 MSG_WANDERER_FILEACCESS_MOVEFROM
-P¯esunout z
+P≈ôesunout z
 ; Move from
 ;
 MSG_WANDERER_FILEACCESS_MOVETO
-P¯esunout do
+P≈ôesunout do
 ; Move to
 ;
 MSG_WANDERER_FILEACCESS_COPYFROM
-ZkopÌrovat z
+Zkop√≠rovat z
 ; Copy from
 ;
 MSG_WANDERER_FILEACCESS_COPYTO
-ZkopÌrovat do
+Zkop√≠rovat do
 ; Copy to
 ;
 MSG_WANDERER_FILEACCESS_FILE
@@ -448,11 +448,11 @@ Soubor
 ; File
 ;
 MSG_WANDERER_FILEACCESS_TRAFFIC
-P¯enosov· rychlost
+P≈ôenosov√° rychlost
 ; Data transfer rate
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM
-Smazat z adres·¯e
+Smazat z adres√°≈ôe
 ; Delete from drawer
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE
@@ -460,14 +460,14 @@ Smazat soubor
 ; File to delete
 ;
 MSG_WANDERER_FILEACCESS_NOOFFILES
-Zpracovan˝ch soubor˘:
+Zpracovan√Ωch soubor≈Ø:
 ; Processed files:
 ;
 MSG_WANDERER_FILEACCESS_ACTUAL
-Aktu·lnÌ soubor:
+Aktu√°ln√≠ soubor:
 ; Size of current file:
 ;
 MSG_WANDERER_FILEACCESS_TOTAL
-Celkov· velikost:
+Celkov√° velikost:
 ; Overall size:
 ;

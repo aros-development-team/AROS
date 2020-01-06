@@ -1,6 +1,6 @@
 ## version $VER: Locale.catalog 1.0 (30.09.2007)
 ## codeset 0
-## language espaÒol
+## language espa√±ol
 ;
 ; Translated by ahg
 ;
@@ -9,7 +9,7 @@ No se pudo abrir %s V%ld!\n
 ;Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-No se pudo bloquer la pantalla p˙blica!
+No se pudo bloquer la pantalla p√∫blica!
 ;Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -23,7 +23,7 @@ No se pudieron crear los gadgets!
 ;Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-No se pudieron crear los men˙s!
+No se pudieron crear los men√∫s!
 ;Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
@@ -55,13 +55,13 @@ Editar
 ;Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Valores de f·brica
+D\0Valores de f√°brica
 ;E\0Restaurar valores
 ;D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
 L\0Valores previos
-;U\0⁄ltimos guardados
+;U\0√öltimos guardados
 ;L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
@@ -73,7 +73,7 @@ Configuraciones
 ;Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Crear Õconos?
+I\0Crear √çconos?
 ;I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
@@ -117,7 +117,7 @@ Idioma
 ;Language
 ;
 MSG_GAD_TAB_REGION
-PaÌs
+Pa√≠s
 ;Country
 ;
 MSG_GAD_TAB_TIMEZONE

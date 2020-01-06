@@ -1,10 +1,10 @@
 ## version $VER: SystemPrefsWindow.catalog 2.0 (19.02.2004)
 ## codeset 0
-## language français
+## language franÃ§ais
 ;
 ;
 MSG_MENU_PREFS
-Préférences
+PrÃ©fÃ©rences
 ;Preferences
 ;
 MSG_MENU_PREFS_IMPORT
@@ -31,10 +31,10 @@ MSG_MENU_PREFS_CANCEL
 N\0Annuler
 ;
 MSG_MENU_PREFS_EXPORT_WITH_ICON
-Exporter avec l'icône...
+Exporter avec l'icÃ´ne...
 ;
 MSG_MENU_RESET_TO_DEFAULTS
-Revenir à l'initial
+Revenir Ã  l'initial
 ;
 MSG_FILEREQ_EXPORT_TITLE
 Exporter

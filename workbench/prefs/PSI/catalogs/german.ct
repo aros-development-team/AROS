@@ -7,11 +7,11 @@ Projekt
 ; Project
 ;
 MSG_MENU_PROJECT_OPEN
-Öffnen...
+Ã–ffnen...
 ; Open...
 ;
 MSG_MENU_PROJECT_APPEND
-Anfügen...
+AnfÃ¼gen...
 ; Append...
 ;
 MSG_MENU_PROJECT_SAVEAS
@@ -19,7 +19,7 @@ Speichern unter...
 ; Save As...
 ;
 MSG_MENU_PROJECT_ABOUT
-Über...
+Ãœber...
 ; About...
 ;
 MSG_MENU_PROJECT_QUIT
@@ -91,7 +91,7 @@ _Kopieren
 ; _Copy
 ;
 MSG_BUTTON_DELETE
-_Löschen
+_LÃ¶schen
 ; _Delete
 ;
 MSG_BUTTON_EDIT
@@ -99,11 +99,11 @@ _Bearbeiten...
 ; _Edit...
 ;
 MSG_BUTTON_OPEN
-_Öffnen
+_Ã–ffnen
 ; _Open
 ;
 MSG_BUTTON_CLOSE
-Schließen
+SchlieÃŸen
 ; _Close
 ;
 MSG_BUTTON_JUMP
@@ -123,11 +123,11 @@ PublicScreen Datei speichern
 ; Save PublicScreen File
 ;
 MSG_TITLE_OPEN
-PublicScreen Datei öffnen
+PublicScreen Datei Ã¶ffnen
 ; Load PublicScreen File
 ;
 MSG_TITLE_APPEND
-PublicScreen Datei anfügen
+PublicScreen Datei anfÃ¼gen
 ; Append PublicScreen File
 ;
 MSG_LIST_SCREENNAME
@@ -147,7 +147,7 @@ MSG_LIST_FOREIGNSCREEN
 ; (foreign)
 ;
 MSG_LABEL_PUBLICNAME
-Öffentlicher Name:
+Ã–ffentlicher Name:
 ; Public _Name:
 ;
 MSG_LABEL_SCREENTITLE
@@ -187,7 +187,7 @@ _Interleaved
 ; _Interleaved
 ;
 MSG_LABEL_OPENBEHIND
-Hinter allen anderen öffnen
+Hinter allen anderen Ã¶ffnen
 ; Open Be_hind
 ;
 MSG_LABEL_SYSTEMDEFAULT
@@ -195,7 +195,7 @@ System Standardwerte
 ; S_ystem Default
 ;
 MSG_LABEL_AUTOCLOSE
-Automatisch schließen
+Automatisch schlieÃŸen
 ; Auto Close
 ;
 MSG_LABEL_CLOSEGADGET
@@ -207,7 +207,7 @@ O_verscan:
 ; O_verscan:
 ;
 MSG_LABEL_SIZE
-G_röße
+G_rÃ¶ÃŸe
 ; _Size:
 ;
 MSG_LABEL_CROSS
@@ -243,11 +243,11 @@ Scanline:
 ; Scanline:
 ;
 MSG_CLI_SCREENOPENED
-Schirm geöffnet (0).\n
+Schirm geÃ¶ffnet (0).\n
 ; Screen opened (0).\n
 ;
 MSG_CLI_SCREENOPENFAILED
-Schirm konnte nicht geöffnet werden (5).\n
+Schirm konnte nicht geÃ¶ffnet werden (5).\n
 ; Failed to open screen (5).\n
 ;
 MSG_CLI_SCREENCLOSED
@@ -275,7 +275,7 @@ Applikation konnte nicht erzeugt werden (20).\n
 ; Failed to create application (20).\n
 ;
 MSG_CLI_NOMUIMASTER
-muimaster.library V11 konnte nicht geöffnet werden (20).\n
+muimaster.library V11 konnte nicht geÃ¶ffnet werden (20).\n
 ; Failed to open muimaster.library V11 (20).\n
 ;
 MSG_ABOUT_NUMBEROFSCREENS
@@ -287,7 +287,7 @@ Unbekannter Anzeigemodus
 ; Unknown Display Mode
 ;
 MSG_TEXT_FOREIGNSCREEN
-Fremder Öffentlicher Schirm
+Fremder Ã–ffentlicher Schirm
 ; Foreign public screen
 ;
 MSG_PALETTE_TITLE
@@ -327,11 +327,11 @@ Schatten
 ; Shadow
 ;
 MSG_SYSPEN_FILL
-Gefüllt
+GefÃ¼llt
 ; Fill
 ;
 MSG_SYSPEN_FILLTEXT
-Fülltext
+FÃ¼lltext
 ; Filltext
 ;
 MSG_SYSPEN_BACKGROUND
@@ -431,15 +431,15 @@ Farben
 ; Colors
 ;
 MSG_HELP_WHEEL
-Farbe für eine\nGruppe anpassen
+Farbe fÃ¼r eine\nGruppe anpassen
 ; Adjust color for\ngroup of pens.
 ;
 MSG_HELP_INFO
-Information über\nAnzeigemodus & Größe
+Information Ã¼ber\nAnzeigemodus & GrÃ¶ÃŸe
 ; Information about\nmode & size.
 ;
 MSG_HELP_NAME
-Name des öffentlichen Schirms.\nPlatzhalter sind nur\nfür fremde Schirme möglich.
+Name des Ã¶ffentlichen Schirms.\nPlatzhalter sind nur\nfÃ¼r fremde Schirme mÃ¶glich.
 ; Name of Public Screen.\nWildcards allowed for\nforeign screens.
 ;
 MSG_HELP_TITLE
@@ -447,7 +447,7 @@ Text der in der\nTitelzeile erscheint
 ; Text that appears in\nthe screen's title bar.
 ;
 MSG_HELP_FONT
-Standard Zeichensatz\nfür den Schirm.
+Standard Zeichensatz\nfÃ¼r den Schirm.
 ; Default font\nfor the screen.
 ;
 MSG_HELP_BACKGROUND
@@ -455,7 +455,7 @@ Datatype Grafik, die\nals Hintergrundmuster verwendet wird.
 ; Datatype picture used\nas background pattern.
 ;
 MSG_HELP_AUTOSCROLL
-Der Schirm scrollt,\nsobald die Maus den Rand berührt.
+Der Schirm scrollt,\nsobald die Maus den Rand berÃ¼hrt.
 ; The screen scrolls when\nthe mouse hits its borders.
 ;
 MSG_HELP_NODRAG
@@ -471,7 +471,7 @@ Die Bitmap des Schirms wird\nim interleaved Modus allokiert.
 ; The screen's bitmap is allocated\nin interleaved mode.
 ;
 MSG_HELP_BEHIND
-Der Schirm wird hinter\nallen anderen Schirmen geöffnet.
+Der Schirm wird hinter\nallen anderen Schirmen geÃ¶ffnet.
 ; The screen opens behind\nall other screens.
 ;
 MSG_HELP_SYSTEMDEFAULT
@@ -483,19 +483,19 @@ Der Schirm wird geschlossen,\nsobald das letzte Fenster geschlossen wurde.
 ; The screen closes when\nthe last window is closed.
 ;
 MSG_HELP_CLOSEGADGET
-Der Schirm erhält eine Schaltfläche zum Schließen.
+Der Schirm erhÃ¤lt eine SchaltflÃ¤che zum SchlieÃŸen.
 ; The screen gets\na close gadget.
 ;
 MSG_HELP_MODELIST
-Liste aller verfügbaren Anzeigemodi.
+Liste aller verfÃ¼gbaren Anzeigemodi.
 ; List of available\ndisplay modes.
 ;
 MSG_HELP_MODEINFO
-Information über den aktuellen Anzeigemodus.
+Information Ã¼ber den aktuellen Anzeigemodus.
 ; Information about the\ncurrent display mode.
 ;
 MSG_HELP_OVERSCAN
-Anpassung der Overscan Größe.
+Anpassung der Overscan GrÃ¶ÃŸe.
 ; Overscan size adjustment.
 ;
 MSG_HELP_WIDTH
@@ -503,7 +503,7 @@ Breite des Schirms in Pixel.
 ; Width of screen,\nmeasured in pixels.
 ;
 MSG_HELP_HEIGHT
-Höhe des Schirms in Pixel.
+HÃ¶he des Schirms in Pixel.
 ; Height of screen,\nmeasured in pixels.
 ;
 MSG_HELP_DEPTH
@@ -511,11 +511,11 @@ Farbtiefe des Schirms in Bitplanes.
 ; Depth of screen,\nmeasured in planes.
 ;
 MSG_HELP_PENLIST
-Systemfarben können in\nunterschiedliche Farbtöpfe gezogen werden.
+Systemfarben kÃ¶nnen in\nunterschiedliche FarbtÃ¶pfe gezogen werden.
 ; System pens, draggable\nto different color pot.
 ;
 MSG_HELP_COLORFIELD
-Die Aktuelle Farbe.\n Sie kann durch Anklicken geändert werden.
+Die Aktuelle Farbe.\n Sie kann durch Anklicken geÃ¤ndert werden.
 ; Current color, click\non field to change it.
 ;
 MSG_HELP_KILLCOLOR
@@ -523,23 +523,23 @@ Entfernt diese Farbe\naus der Gruppe.
 ; Remove this color\nfrom the group.
 ;
 MSG_HELP_NEWCOLOR
-Fügt eine neue Farbe\nzur Gruppe hinzu.
+FÃ¼gt eine neue Farbe\nzur Gruppe hinzu.
 ; Add a new color\nto the group.
 ;
 MSG_HELP_EDITOK
-Beenden und Änderungen des Schirms\nvorübergehend behalten.
+Beenden und Ã„nderungen des Schirms\nvorÃ¼bergehend behalten.
 ; Exit and remember\nchanges for this screen.
 ;
 MSG_HELP_EDITCANCEL
-Beenden und Änderungen des Schirms verwerfen.
+Beenden und Ã„nderungen des Schirms verwerfen.
 ; Exit and \33bdiscard\33n\nchanges for this screen.
 ;
 MSG_HELP_SCREENLIST
-Liste aller definierten öffentlichen Schirme.
+Liste aller definierten Ã¶ffentlichen Schirme.
 ; List of defined\npublic screens.
 ;
 MSG_HELP_NEWSCREEN
-Neuen öffentlichen\nSchirm erzeugen.
+Neuen Ã¶ffentlichen\nSchirm erzeugen.
 ; Create a new\npublic screen.
 ;
 MSG_HELP_COPYSCREEN
@@ -547,34 +547,34 @@ Kopie des aktuellen\Schirms erzeugen.
 ; Create a copy\nof current screen.
 ;
 MSG_HELP_DELETESCREEN
-Aktuellen Schirm löschen.
+Aktuellen Schirm lÃ¶schen.
 ; Delete current\npublic screen.
 ;
 MSG_HELP_EDITSCREEN
-Aktuellen öffentlichen Schirm bearbeiten.
+Aktuellen Ã¶ffentlichen Schirm bearbeiten.
 ; Edit current\npublic screen.
 ;
 MSG_HELP_OPENSCREEN
-Aktuellen öffentlichen Schirm öffnen.
+Aktuellen Ã¶ffentlichen Schirm Ã¶ffnen.
 ; Open current\npublic screen.
 ;
 MSG_HELP_CLOSESCREEN
-Aktuellen öffentlichen Schirm schließen.
+Aktuellen Ã¶ffentlichen Schirm schlieÃŸen.
 ; Close current\npublic screen.
 ;
 MSG_HELP_JUMPSCREEN
-Gehe zum aktuellen öffentlichen Schirm.
+Gehe zum aktuellen Ã¶ffentlichen Schirm.
 ; Jump to current\npublic screen.
 ;
 MSG_HELP_SAVE
-Beenden und Änderungen speichern.
+Beenden und Ã„nderungen speichern.
 ; Exit and save\nchanges to disk.
 ;
 MSG_HELP_USE
-Beenden und Änderungen für diese Sitzung speichern.
+Beenden und Ã„nderungen fÃ¼r diese Sitzung speichern.
 ; Exit and save changes\nfor current session.
 ;
 MSG_HELP_CANCEL
-Beenden und Änderungen verwerfen.
+Beenden und Ã„nderungen verwerfen.
 ; Exit and\n\33bdiscard\33n changes.
 ;

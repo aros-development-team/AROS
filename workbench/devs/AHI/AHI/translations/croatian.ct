@@ -2,7 +2,7 @@
 ## language hrvatski
 ## codeset 0
 ;
-## chunk AUTH Translated by Sini¹a Loliæ <vegi@usa.net>
+## chunk AUTH Translated by SiniÅ¡a LoliÄ‡ <vegi@usa.net>
 ;#language english
 ;#version 4
 ;
@@ -31,7 +31,7 @@ msgMenuProject
 ; \000Project
 ;
 msgItemOpen
-U\000Uèitaj...
+U\000UÄitaj...
 ; O\000Open...
 ;
 msgItemSaveAs
@@ -71,15 +71,15 @@ D\000Dodaj ikone?
 ; I\000Create Icons?
 ;
 msgMenuHelp
-\000Pomoæ
+\000PomoÄ‡
 ; \000Help
 ;
 msgItemHelp
-Help\000Pomoæ...
+Help\000PomoÄ‡...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-H\000AHI priruènik...
+H\000AHI priruÄnik...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
@@ -89,7 +89,7 @@ msgItemConceptIndex
 ; *** The pages ***
 ;
 msgPageMode
-Postavke naèina
+Postavke naÄina
 ; Mode settings
 ;
 msgPageAdvanced
@@ -109,7 +109,7 @@ Glazbena jedinica
 ; *** Properties box ***
 ;
 msgProperties
-ID naèina\nSnimanje\nAutor\nAutorko pravo\nDriver\nVerzija\nAnnotation
+ID naÄina\nSnimanje\nAutor\nAutorko pravo\nDriver\nVerzija\nAnnotation
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
@@ -143,7 +143,7 @@ msgOptNoChannels
 ; 
 ;
 msgOptVolume
-G_lasnoæa
+G_lasnoÄ‡a
 ; _Volume
 ;
 msgOptMonitor
@@ -178,7 +178,7 @@ Bez izlaza
 ; *** Global Options ***
 ;
 msgGlobalOptions
-Opæe opcije
+OpÄ‡e opcije
 ; Global options
 ;
 msgGlobOptDebugLevel
@@ -190,17 +190,17 @@ _Eho
 ; _Echo
 ;
 msgGlobOptSurround
-Surround u "_Brzim" naèinima
+Surround u "_Brzim" naÄinima
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-G_ranica kori¹tenja CPUa
+G_ranica koriÅ¡tenja CPUa
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
 ;
 msgDebugNone
-Iskljuèen
+IskljuÄen
 ; None
 ;
 msgDebugLow
@@ -218,7 +218,7 @@ Potpun
 ; *** Echo ***
 ;
 msgEchoEnabled
-Ukljuèen
+UkljuÄen
 ; Enabled
 ;
 msgEchoFast
@@ -226,17 +226,17 @@ Brz
 ; Fast
 ;
 msgEchoDisabled
-Iskljuèen
+IskljuÄen
 ; Disabled
 ;
 ; *** Surround ***
 ;
 msgSurroundEnabled
-Ukljuèen
+UkljuÄen
 ; Enabled
 ;
 msgSurroundDisabled
-Iskljuèen
+IskljuÄen
 ; Disabled
 ;
 ; *** Buttons ***
@@ -263,11 +263,11 @@ msgTextProgramName
 AHI postavke
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright Å %s\nEnglish translation by Your Name" here...
 msgTextCopyright
 %s%s\n\
-Autorsko pravo ©%s\nPreveo na hrvatski Sini¹a Loliæ
-; %s%s\nCopyright ©%s
+Autorsko pravo Å %s\nPreveo na hrvatski SiniÅ¡a LoliÄ‡
+; %s%s\nCopyright Å %s
 ;
 msgTextNoWindow
 Ne mogu otvoriti prozor
@@ -278,17 +278,17 @@ Ne mogu dodijeliti requester datoteka
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-Ne mogu naæi `%s'!
+Ne mogu naÄ‡i `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Ne mogu otvoriti `%s´ verziju %ld.
-; Unable to open `%s´ version %ld.
+Ne mogu otvoriti `%sÂ´ verziju %ld.
+; Unable to open `%sÂ´ version %ld.
 ;
 ; *** Additions
 ;
 msgGlobOptMasterVol
-_Glasnoæa svega
+_GlasnoÄ‡a svega
 ; _Master volume
 ;
 msgMVNoClip

@@ -1,6 +1,6 @@
 ##version $VER: JanoPrefs.catalog 1.0 (30.09.2007).
 ##codeset 0
-##language espa駉l
+##language espa帽ol
 ;
 ; Translated by ahg
 ;
@@ -16,14 +16,14 @@
 ; Edit Menu
 ;
 MSG_RESETDEFAULT
-Valores de f醔rica
+Valores de f谩brica
 ;Valores predeterminados
 ;Default values
 ;
 MSG_LASTSAVED
 Valores previos
 ;Valores guardados
-;趌timos valores guardados
+;脷ltimos valores guardados
 ;Last saved values
 ;
 ; *******************
@@ -31,12 +31,12 @@ Valores previos
 ; *******************
 ;
 MSG_TITLEWIN
-Configuraci髇 global
-;Configuraci髇 principal
+Configuraci贸n global
+;Configuraci贸n principal
 ;Main setup
 ;
 MSG_TAB
-Tabulaci髇:
+Tabulaci贸n:
 ;Tabulation:
 ;
 MSG_SEPARATORS
@@ -56,7 +56,7 @@ Modo de la pantalla:
 ;Screen mode:
 ;
 MSG_BACKDROP
-Tel髇 de fondo
+Tel贸n de fondo
 ;Backdrop
 ;
 MSG_LEFTMARGIN
@@ -64,11 +64,11 @@ Margen izquierdo
 ;Left margin
 ;
 MSG_AUTOINDENT
-Sangr韆 autom醫ica
+Sangr铆a autom谩tica
 ;Auto indent
 ;
 MSG_EXTEND
-Teclado num閞ico extendido
+Teclado num茅rico extendido
 ;Tastierino numerico esteso
 ;Extended numeric pad
 ;
@@ -85,7 +85,7 @@ Cancelar
 ;Cancel
 ;
 MSG_USEDEF
-Usar el de f醔rica
+Usar el de f谩brica
 ;Usar el predeterminado
 ;Uso predeterminado
 ;Use Default
@@ -104,7 +104,7 @@ Fondo
 ;Background
 ;
 MSG_COLOR_TEXT
-Texto com鷑
+Texto com煤n
 ;Texto normal
 ;Standard text
 ;
@@ -144,7 +144,7 @@ Texto del panel
 ;Panel text
 ;
 MSG_COLOR_GLYPH
-Decoraci髇 del panel
+Decoraci贸n del panel
 ;Panel glyph
 ;
 MSG_COLOR_MARKEDLINES

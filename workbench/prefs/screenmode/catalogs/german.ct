@@ -16,7 +16,7 @@ MSG_DEFAULT
 ; \33l_default
 ;
 MSG_HEIGHT
-\33lHöhe:
+\33lHÃ¶he:
 ; \33lHeight:
 ;
 MSG_DEPTH
@@ -44,19 +44,19 @@ Eigenschaften
 ; Mode Attributes
 ;
 MSG_VISIBLE_SIZE
-Sichtbare Größe
+Sichtbare GrÃ¶ÃŸe
 ; Visible Size
 ;
 MSG_MINIMUM_SIZE
-Kleinste Größe
+Kleinste GrÃ¶ÃŸe
 ; Minimum Size
 ;
 MSG_MAXIMUM_SIZE
-Maximale Größe
+Maximale GrÃ¶ÃŸe
 ; Maximum Size
 ;
 MSG_MAXIMUM_COLORS
-Höchste Farbanzahl
+HÃ¶chste Farbanzahl
 ; Maximum Colors
 ;
 MSG_FREQUENCY
@@ -76,7 +76,7 @@ Dual Playfields
 ; Dual playfields\n
 ;
 MSG_GENLOCK
-Unterstützt Genlock\n
+UnterstÃ¼tzt Genlock\n
 ; Supports genlock\n
 ;
 MSG_DRAGGABLE
@@ -84,10 +84,10 @@ Verschiebbar\n
 ; Draggable\n
 ;
 MSG_PANELLED
-Aufgeteilt für Scan-Konvertierung\n
+Aufgeteilt fÃ¼r Scan-Konvertierung\n
 ; Panelled for scan conversion\n
 ;
 MSG_BEAM_SYNC
-Unterstützt Strahlsynchronisation\n
+UnterstÃ¼tzt Strahlsynchronisation\n
 ; Supports beam synchronization\n
 ;

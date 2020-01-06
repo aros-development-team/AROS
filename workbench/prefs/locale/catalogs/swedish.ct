@@ -4,19 +4,19 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Kan inte ˆppna %s V%ld!\n
+Kan inte √∂ppna %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Kan inte lÂsa allm‰n sk‰rm!
+Kan inte l√•sa allm√§n sk√§rm!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Kan inte l‰sa DrawInfo!
+Kan inte l√§sa DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Kan inte l‰sa VisualInfo!
+Kan inte l√§sa VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
@@ -28,11 +28,11 @@ Kan inte skapa menyer!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Kan inte skapa fˆnster!
+Kan inte skapa f√∂nster!
 ; Can't create window!
 ;
 MSG_WINTITLE
-Lokalinst‰llningar
+Lokalinst√§llningar
 ; Locale Preferences
 ;
 MSG_MEN_PROJECT
@@ -40,7 +40,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0÷ppna...
+O\0√ñppna...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -56,7 +56,7 @@ Redigera
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Fˆrinst‰llda v‰rden
+D\0F√∂rinst√§llda v√§rden
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -64,11 +64,11 @@ L\0Senast sparade
 ; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
-R\0≈terst‰ll
+R\0√Öterst√§ll
 ; R\0Restore
 ;
 MSG_MEN_SETTINGS
-Inst‰llningar
+Inst√§llningar
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
@@ -76,11 +76,11 @@ I\0Skapa symboler?
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-Ladda lokalinst‰llningar
+Ladda lokalinst√§llningar
 ; Load Locale Preferences
 ;
 MSG_ASL_SAVE_TITLE
-Spara lokalinst‰llningar
+Spara lokalinst√§llningar
 ; Save Locale Preferences
 ;
 MSG_OK
@@ -88,15 +88,15 @@ OK
 ; Ok
 ;
 MSG_GAD_AVAIL_LANGUAGES
-Tillg‰ngliga sprÂk
+Tillg√§ngliga spr√•k
 ; Available Languages
 ;
 MSG_GAD_PREF_LANGUAGES
-Valda sprÂk
+Valda spr√•k
 ; Preferred Languages
 ;
 MSG_GAD_CLEAR_LANGUAGES
-Rensa valda sprÂk
+Rensa valda spr√•k
 ; Clear Languages
 ;
 MSG_GAD_SAVE
@@ -104,7 +104,7 @@ Spara
 ; Save
 ;
 MSG_GAD_USE
-Anv‰nd
+Anv√§nd
 ; Use
 ;
 MSG_GAD_CANCEL
@@ -112,7 +112,7 @@ Avbryt
 ; Cancel
 ;
 MSG_GAD_TAB_LANGUAGE
-SprÂk
+Spr√•k
 ; Language
 ;
 MSG_GAD_TAB_REGION
@@ -124,14 +124,14 @@ Tidszon
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Tidszon: 1 timme frÂn UTC
+Tidszon: 1 timme fr√•n UTC
 ; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Tidszon: %ld timmar frÂn UTC
+Tidszon: %ld timmar fr√•n UTC
 ; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Tidszon: %ld timmar, %ld minuter frÂn UTC
+Tidszon: %ld timmar, %ld minuter fr√•n UTC
 ; Time Zone: %ld Hours, %ld Minutes from UTC
 ;

@@ -1,5 +1,5 @@
 ## version $VER: Wanderer.catalog 3.0 (8.6.2017)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -12,7 +12,7 @@ Gestionnaire de fichier
 ; File manager
 ;
 MSG_SCREENTITLE
-Wanderer %s mémoire graphique %s autre mémoire
+Wanderer %s mÃ©moire graphique %s autre mÃ©moire
 ; Wanderer %s graphics mem %s other mem
 ;
 MSG_MEM_B
@@ -36,7 +36,7 @@ Wanderer
 ; Wanderer
 ;
 MSG_MEN_BACKDROP
-Fond d'écran
+Fond d'Ã©cran
 ; Backdrop
 ;
 MSG_MEN_SC_BACKDROP
@@ -44,7 +44,7 @@ B
 ; B
 ;
 MSG_MEN_EXECUTE
-Exécuter...
+ExÃ©cuter...
 ; Execute...
 ;
 MSG_MEN_SC_EXECUTE
@@ -60,7 +60,7 @@ W
 ; W
 ;
 MSG_MEN_GUISET
-Réglages de l'interface graphique...
+RÃ©glages de l'interface graphique...
 ; GUI settings...
 ;
 MSG_MEN_ABOUT
@@ -76,7 +76,7 @@ Q
 ; Q
 ;
 MSG_MEN_WINDOW
-Fenêtre
+FenÃªtre
 ; Window
 ;
 MSG_MEN_NEWDRAW
@@ -100,11 +100,11 @@ K
 ; K
 ;
 MSG_MEN_UPDATE
-Rafraîchir
+RafraÃ®chir
 ; Update
 ;
 MSG_MEN_CONTENTS
-Tout sélectionner
+Tout sÃ©lectionner
 ; Select contents
 ;
 MSG_MEN_SC_CONTENTS
@@ -112,7 +112,7 @@ A
 ; A
 ;
 MSG_MEN_CLRSEL
-Ne rien sélectionner
+Ne rien sÃ©lectionner
 ; Clear selection
 ;
 MSG_MEN_SC_CLRSEL
@@ -128,15 +128,15 @@ Tout
 ; All
 ;
 MSG_MEN_VIEW
-Fenêtre
+FenÃªtre
 ; View
 ;
 MSG_MEN_ICVIEW
-Vue des icônes
+Vue des icÃ´nes
 ; Icon view
 ;
 MSG_MEN_DCVIEW
-Vue détaillée
+Vue dÃ©taillÃ©e
 ; Detail view
 ;
 MSG_MEN_ALLFIL
@@ -180,7 +180,7 @@ Dossiers en premier
 ; Drawers first
 ;
 MSG_MEN_ICON
-Icône
+IcÃ´ne
 ; Icon
 ;
 MSG_MEN_FIND
@@ -224,11 +224,11 @@ Outils
 ; Tools
 ;
 MSG_MEN_ICONSORTING
-Activer le tri des icônes
+Activer le tri des icÃ´nes
 ; Enable Automatic Icon Sorting
 ;
 MSG_MEN_GROUPICONS
-Groupe d'icônes
+Groupe d'icÃ´nes
 ; Group Icons
 ;
 MSG_MEN_ICONSCLOSE
@@ -236,7 +236,7 @@ Fermer
 ; Close
 ;
 MSG_REALLYQUIT
-Voulez vous réellement quitter Wanderer ?
+Voulez vous rÃ©ellement quitter Wanderer ?
 ; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
@@ -248,7 +248,7 @@ DUMMY
 ; DUMMY
 ; DUMMY :)
 MSG_USERSCREENTITLE
-Wanderer %pc mémoire graphique %pf mémoire autre
+Wanderer %pc mÃ©moire graphique %pf mÃ©moire autre
 ; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT
@@ -260,15 +260,15 @@ Eteindre...
 ; Shut down...
 ;
 MSG_SHUTDOWN_TITLE
-Arrêt du système
+ArrÃªt du systÃ¨me
 ; System shutdown
 ;
 MSG_SHUTDOWN_BODY
-Que désirez vous faire ?
+Que dÃ©sirez vous faire ?
 ; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
-Eteindre|Redémarrer l'ordinateur|Redémarrer AROS|*Annuler
+Eteindre|RedÃ©marrer l'ordinateur|RedÃ©marrer AROS|*Annuler
 ; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
@@ -300,7 +300,7 @@ L
 ; L
 ;
 MSG_MEN_UNSNAPSHOT
-Défiger
+DÃ©figer
 ; Unsnapshot
 ;
 MSG_MEN_SC_UNSNAPSHOT
@@ -320,11 +320,11 @@ Suppression du fichier...
 ; Delete file...
 ;
 MSG_REQU_DELETE_YESNO
-_Oui|Oui à tou_s|_Non|Non à _tous
+_Oui|Oui Ã  tou_s|_Non|Non Ã  _tous
 ; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
-Voulez vous réellement supprimer le dossier
+Voulez vous rÃ©ellement supprimer le dossier
 ; Really delete drawer
 ;
 MSG_REQU_DELETE_DRAWER_E
@@ -332,11 +332,11 @@ MSG_REQU_DELETE_DRAWER_E
 ; ?
 ;
 MSG_REQU_DELETE_FILE_S
-Voulez vous réellement supprimer le fichier
+Voulez vous rÃ©ellement supprimer le fichier
 ; Really delete file
 ;
 MSG_REQU_DELETE_FILE_M
-situé dans
+situÃ© dans
 ; located in
 ;
 MSG_REQU_DELETE_FILE_E
@@ -348,11 +348,11 @@ Remplacer le fichier...
 ; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S
-Désirez vous réellement remplacer le fichier
+DÃ©sirez vous rÃ©ellement remplacer le fichier
 ; Really overwrite file
 ;
 MSG_REQU_OVERWRITE_M
-situé dans
+situÃ© dans
 ; located in
 ;
 MSG_REQU_OVERWRITE_E
@@ -360,11 +360,11 @@ MSG_REQU_OVERWRITE_E
 ; ?
 ;
 MSG_REQU_OVERWRITE_YESNO
-_Remplacer|Remplacer _tout|_Non|Non à tou_s
+_Remplacer|Remplacer _tout|_Non|Non Ã  tou_s
 ; _Overwrite|Overwrite _all|_No|No _to all
 ;
 MSG_REQU_OVERWRITE_SKIPABORT
-_Passer|_Arrêter
+_Passer|_ArrÃªter
 ; _Skip|_Abort
 ;
 MSG_REQU_PROTECTION
@@ -372,11 +372,11 @@ Protection du fichier
 ; File Protection
 ;
 MSG_REQU_PROTECTION_UNPROTECT
-_Déprotéger|Déprotéger _tous|_Non|_Non à tou_s
+_DÃ©protÃ©ger|DÃ©protÃ©ger _tous|_Non|_Non Ã  tou_s
 ; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
-Désirez vous déprotéger le dossier
+DÃ©sirez vous dÃ©protÃ©ger le dossier
 ; Do you wish to unprotect drawer
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
@@ -384,11 +384,11 @@ MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
 ; ?
 ;
 MSG_NOFILEACCESS_S
-Impossible d'accéder au fichier
+Impossible d'accÃ©der au fichier
 ; Can't access file
 ;
 MSG_NOFILEACCESS_M
-situé dans
+situÃ© dans
 ; located in
 ;
 MSG_NOFILEACCESS_E
@@ -396,7 +396,7 @@ MSG_NOFILEACCESS_E
 ;  
 ;
 MSG_NODRAWERACCESS_S
-Impossible d'accéder au dossier
+Impossible d'accÃ©der au dossier
 ; Can't access drawer
 ;
 MSG_NODRAWERACCESS_E
@@ -404,11 +404,11 @@ MSG_NODRAWERACCESS_E
 ;  
 ;
 MSG_REQU_FILEUNPROTECT_S
-Désirez vous déprotéger le fichier
+DÃ©sirez vous dÃ©protÃ©ger le fichier
 ; Do you wish to unprotect file
 ;
 MSG_REQU_FILEUNPROTECT_M
-situé dans
+situÃ© dans
 ; located in
 ;
 MSG_REQU_FILEUNPROTECT_E
@@ -416,23 +416,23 @@ MSG_REQU_FILEUNPROTECT_E
 ; ?
 ;
 MSG_WANDERER_FILEACCESS
-Accès au fichier Wanderer
+AccÃ¨s au fichier Wanderer
 ; Wanderer file access
 ;
 MSG_WANDERER_FILEACCESS_PROCESSING
-En activité fichier...
+En activitÃ© fichier...
 ; Processing...
 ;
 MSG_WANDERER_FILEACCESS_STOP
-Arrêt
+ArrÃªt
 ; Stop
 ;
 MSG_WANDERER_FILEACCESS_MOVEFROM
-Déplacer de
+DÃ©placer de
 ; Move from
 ;
 MSG_WANDERER_FILEACCESS_MOVETO
-Déplacer vers
+DÃ©placer vers
 ; Move to
 ;
 MSG_WANDERER_FILEACCESS_COPYFROM
@@ -456,11 +456,11 @@ Supprimer du dossier
 ; Delete from drawer
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE
-Fichier à supprimer
+Fichier Ã  supprimer
 ; File to delete
 ;
 MSG_WANDERER_FILEACCESS_NOOFFILES
-Fichiers traités :
+Fichiers traitÃ©s :
 ; Processed files:
 ;
 MSG_WANDERER_FILEACCESS_ACTUAL

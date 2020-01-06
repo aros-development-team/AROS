@@ -44,49 +44,18 @@ Attributter
 ; Mode Attributes
 ;
 MSG_VISIBLE_SIZE
-Synlig størrelse
-; Visible Size
+Synlig størrelse:
+; Visible Size:
 ;
 MSG_MINIMUM_SIZE
-Minimum størrelse
-; Minimum Size
+Minimum størrelse:
+; Minimum Size:
 ;
 MSG_MAXIMUM_SIZE
-Maksimum størrelse
-; Maximum Size
+Maksimum størrelse:
+; Maximum Size:
 ;
 MSG_MAXIMUM_COLORS
-Maksimum antall farger
-; Maximum Colors
-;
-MSG_FREQUENCY
-Frekvens
-; Frequency
-;
-MSG_INTERLACED
-Linjeflettet\n
-; Interlaced\n
-;
-MSG_WANTS_ECS
-Krever ECS\n
-; Requires ECS\n
-;
-MSG_DUALP
-Dobble playfields\n
-; Dual playfields\n
-;
-MSG_GENLOCK
-Støtter genlock\n
-; Supports genlock\n
-;
-MSG_DRAGGABLE
-Kan dras\n
-; Draggable\n
-;
-MSG_PANELLED
-Panelt for skann konvertering\n
-; Panelled for scan conversion\n
-MSG_BEAM_SYNC
-Støtter elektronstråle synkronisering\n
-; Supports beam synchronization\n
+Maksimum antall farger:
+; Maximum Colors:
 ;

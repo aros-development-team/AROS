@@ -1,10 +1,10 @@
 ## version $VER: Appearance.catalog 2.1 (03.01.2018)
-## language fran√ßais
+## language fran√É¬ßais
 ## codeset 0
 ;
 ;
 MSG_WINTITLE
-PrÈfÈrences d'apparence
+Pr√©f√©rences d'apparence
 ; Appearance Preferences
 ;
 MSG_OK
@@ -12,31 +12,31 @@ Ok
 ; Ok
 ;
 MSG_ENABLETHEMES
-Activer les thËmes ?
+Activer les th√®mes ?
 ; Enable theming?
 ;
 MSG_PREVIEW
-PrÈvisualisation
+Pr√©visualisation
 ; Preview
 ;
 MSG_NOPREVIEW
--PrÈvisualisation non disponible-
+-Pr√©visualisation non disponible-
 ; -Preview Unavailable-
 ;
 MSG_SELECTEDTHEME
-ThËme
+Th√®me
 ; Theme
 ;
 MSG_ENABLEZUNEPREFS
-HÈriter de la configuration de Zune ?
+H√©riter de la configuration de Zune ?
 ; Inherit Zune Configuration?
 ;
 MSG_ENABLEWANDPREFS
-HÈriter de la configuration de Wanderer ?
+H√©riter de la configuration de Wanderer ?
 ; Inherit Wanderer Configuration?
 ;
 MSG_SEC_THEMING
-DÈcoration
+D√©coration
 ; Theming
 ;
 MSG_SEC_COMPOSITING
@@ -44,7 +44,7 @@ Composition
 ; Compositing
 ;
 MSG_ENABLE_SCREEN_COMPOSITION
-Activer la composition de l'Ècran
+Activer la composition de l'√©cran
 ; Enable Screen Composition
 ;
 MSG_COMPOSITE_BELOW
@@ -52,11 +52,11 @@ Composition en dessous
 ; Composite Below
 ;
 MSG_COMPOSITE_LEFT
-Composition ‡ gauche
+Composition √† gauche
 ; Composite Left
 ;
 MSG_COMPOSITE_RIGHT
-Composition ‡ droite
+Composition √† droite
 ; Composite Right
 ;
 MSG_ENABLE_COMPOSITE_WITH_ALPHA

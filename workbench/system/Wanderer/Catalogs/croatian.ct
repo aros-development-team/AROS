@@ -12,7 +12,7 @@ Upravitelj datoteka
 ; File manager
 ;
 MSG_SCREENTITLE
-Wanderer %s grafiËke mem %s druge mem
+Wanderer %s grafiƒçke mem %s druge mem
 ; Wanderer %s graphics mem %s other mem
 ;
 MSG_MEM_B
@@ -44,7 +44,7 @@ B
 ; B
 ;
 MSG_MEN_EXECUTE
-Izvrπi Naredbu...
+Izvr≈°i Naredbu...
 ; Execute...
 ;
 MSG_MEN_SC_EXECUTE
@@ -104,7 +104,7 @@ Obnovi
 ; Update
 ;
 MSG_MEN_CONTENTS
-Izaberi Sadræaj
+Izaberi Sadr≈æaj
 ; Select contents
 ;
 MSG_MEN_SC_CONTENTS
@@ -120,7 +120,7 @@ Z
 ; Z
 ;
 MSG_MEN_SNAPSHT
-Zapamti Poloæaj
+Zapamti Polo≈æaj
 ; Snapshot
 ;
 MSG_MEN_ALL
@@ -164,7 +164,7 @@ Po Datumu
 ; By date
 ;
 MSG_MEN_BYSIZE
-Po VeliËini
+Po Veliƒçini
 ; By size
 ;
 MSG_MEN_BYTYPE
@@ -184,7 +184,7 @@ Ikona
 ; Icon
 ;
 MSG_MEN_FIND
-Pronai...
+Pronaƒëi...
 ; Find...
 ;
 MSG_MEN_SC_FIND
@@ -216,7 +216,7 @@ I
 ; I
 ;
 MSG_MEN_DELETE
-Izbriπi
+Izbri≈°i
 ; Delete...
 ;
 MSG_MEN_TOOLS
@@ -224,7 +224,7 @@ Alati
 ; Tools
 ;
 MSG_MEN_ICONSORTING
-OmoguÊi Razvrstavanje Ikona
+Omoguƒái Razvrstavanje Ikona
 ; Enable Icon Sorting
 ;
 MSG_MEN_GROUPICONS
@@ -236,7 +236,7 @@ Zatvori
 ; Close
 ;
 MSG_REALLYQUIT
-Æelite li izaÊi iz Wanderer-a?
+≈Ωelite li izaƒái iz Wanderer-a?
 ; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
@@ -248,7 +248,7 @@ DUMMY
 ; DUMMY
 ; DUMMY :)
 MSG_USERSCREENTITLE
-Wanderer %pc grafiËke mem %pf druge mem
+Wanderer %pc grafiƒçke mem %pf druge mem
 ; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT
@@ -256,23 +256,23 @@ Formatiraj Disk...
 ; Format disk...
 ;
 MSG_MEN_SHUTDOWN
-IskljuËiti...
+Iskljuƒçiti...
 ; Shut down...
 ;
 MSG_SHUTDOWN_TITLE
-IskljuËiti Sustav
+Iskljuƒçiti Sustav
 ; System shutdown
 ;
 MSG_SHUTDOWN_BODY
-©to æelite uËiniti?
+≈†to ≈æelite uƒçiniti?
 ; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
-IskljuËiti|Resetiraj raËunalo|Resetiraj AROS|*Odustani
+Iskljuƒçiti|Resetiraj raƒçunalo|Resetiraj AROS|*Odustani
 ; Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-Akcija koju ste izabrali nije podræana od strane vaπeg sustava.
+Akcija koju ste izabrali nije podr≈æana od strane va≈°eg sustava.
 ; The selected action is not supported by your system.
 ;
 MSG_OK
@@ -280,7 +280,7 @@ MSG_OK
 ; *OK
 ;
 MSG_EMPTY_TRASH
-Isprazni Kantu za SmeÊe
+Isprazni Kantu za Smeƒáe
 ; Empty trash
 ;
 MSG_MEN_PUT_AWAY
@@ -292,15 +292,15 @@ Izbaci Van
 ; Leave out
 ;
 MSG_MEN_UNSNAPSHOT
-Zaboravi Poloæaj
+Zaboravi Polo≈æaj
 ; Unsnapshot
 ;
 MSG_MEN_SNAPSHOT
-Zapamti Poloæaj
+Zapamti Polo≈æaj
 ; Snapshot
 ;
 MSG_REQU_DELETE
-Izbriπi Datoteku...
+Izbri≈°i Datoteku...
 ; Delete file...
 ;
 MSG_REQU_DELETE_YESNO
@@ -308,7 +308,7 @@ Da|Da za Sve|_Ne|Ne za Sve
 ; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
-Dali ste sigurni da æelite izbrisati Mapu
+Dali ste sigurni da ≈æelite izbrisati Mapu
 ; Really delete drawer
 ;
 MSG_REQU_DELETE_DRAWER_E
@@ -316,7 +316,7 @@ MSG_REQU_DELETE_DRAWER_E
 ; ?
 ;
 MSG_REQU_DELETE_FILE_S
-Dali ste sigurni da æelite izbrisati Datoteku
+Dali ste sigurni da ≈æelite izbrisati Datoteku
 ; Really delete file
 ;
 MSG_REQU_DELETE_FILE_M
@@ -328,11 +328,11 @@ MSG_REQU_DELETE_FILE_E
 ; ?
 ;
 MSG_REQU_OVERWRITE
-Spremi preko postojeÊe datoteke...
+Spremi preko postojeƒáe datoteke...
 ; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S
-Dali ste sigurni da æelite spremiti preko postojeÊe datoteke
+Dali ste sigurni da ≈æelite spremiti preko postojeƒáe datoteke
 ; Really overwrite file
 ;
 MSG_REQU_OVERWRITE_M
@@ -352,15 +352,15 @@ Izo_stavi|
 ; _Skip|Obust_avi
 ;
 MSG_REQU_PROTECTION
-Zaπtita Datoteka
+Za≈°tita Datoteka
 ; File Protection
 ;
 MSG_REQU_PROTECTION_UNPROTECT
-_Ukloni zaπtitu|Ukloni z_aπtitu za Sve|_Ne|Ne za Sve
+_Ukloni za≈°titu|Ukloni z_a≈°titu za Sve|_Ne|Ne za Sve
 ; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
-Æelite li ukloniti zaπtitu sa mape
+≈Ωelite li ukloniti za≈°titu sa mape
 ; Do you wish to unprotect drawer
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
@@ -388,7 +388,7 @@ MSG_NODRAWERACCESS_E
 ;  
 ;
 MSG_REQU_FILEUNPROTECT_S
-Æelite li ukloniti zaπtitu sa datoteke
+≈Ωelite li ukloniti za≈°titu sa datoteke
 ; Do you wish to unprotect file
 ;
 MSG_REQU_FILEUNPROTECT_M
@@ -436,7 +436,7 @@ Omjer prijenosa podataka
 ; Data transfer rate
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM
-Izbriπi iz mape
+Izbri≈°i iz mape
 ; Delete from drawer
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE
@@ -444,14 +444,14 @@ Datoteka za brisanje
 ; File to delete
 ;
 MSG_WANDERER_FILEACCESS_NOOFFILES
-Obraenih datoteka:
+Obraƒëenih datoteka:
 ; Processed files:
 ;
 MSG_WANDERER_FILEACCESS_ACTUAL
-VeliËina trenutne datoteke:
+Veliƒçina trenutne datoteke:
 ; Size of current file:
 ;
 MSG_WANDERER_FILEACCESS_TOTAL
-Sveukupna veliËina:
+Sveukupna veliƒçina:
 ; Overall size:
 ;

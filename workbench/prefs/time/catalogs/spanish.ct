@@ -1,15 +1,15 @@
 ## version $VER: timeprefs.catalog 1.0 (29.09.2007)
 ## codeset 0
-## language español
+## language espaÃ±ol
 ;
 ; Translated by ahg
 ;
 MSG_CANT_OPEN_LIB
-¡Imposible abrir %s V%ld!\n
+Â¡Imposible abrir %s V%ld!\n
 ;Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-¡No se puede crear la aplicación!
+Â¡No se puede crear la aplicaciÃ³n!
 ;Can't create application object!
 ;
 MSG_WINTITLE

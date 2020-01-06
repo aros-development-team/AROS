@@ -7,7 +7,7 @@ Valitse tiedosto
 ; Select File
 ;
 MSG_FILEREQ_POSITIVE_GAD
-Selv‰
+Selv√§
 ; Ok
 ;
 MSG_FILEREQ_NEGATIVE_GAD
@@ -19,7 +19,7 @@ Asemat
 ; Volumes
 ;
 MSG_FILEREQ_PARENT_GAD
-Edelt‰j‰
+Edelt√§j√§
 ; Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
@@ -47,7 +47,7 @@ Poista tiedosto
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Varoitus: et saa takaisin mink‰ poistat!\nPoistetaanko varmasti\n%s?
+Varoitus: et saa takaisin mink√§ poistat!\nPoistetaanko varmasti\n%s?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
@@ -55,11 +55,11 @@ Poista|Peru
 ; Delete|Cancel
 ;
 MSG_FILEREQ_RENAME_TITLE
-Nime‰ uudelleen
+Nime√§ uudelleen
 ; Rename
 ;
 MSG_FILEREQ_RENAME_OK
-Nime‰
+Nime√§
 ; Rename
 ;
 MSG_FILEREQ_RENAME_CANCEL
@@ -79,7 +79,7 @@ Peru
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_DEFNAME
-Nime‰_minut
+Nime√§_minut
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
@@ -111,7 +111,7 @@ R\0Palauta
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-P\0Edelt‰j‰
+P\0Edelt√§j√§
 ; P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
@@ -119,7 +119,7 @@ V\0Asemat
 ; V\0Volumes
 ;
 MSG_FILEREQ_MEN_CONTROL_UPDATE
-U\0P‰ivit‰
+U\0P√§ivit√§
 ; U\0Update
 ;
 MSG_FILEREQ_MEN_CONTROL_DELETE
@@ -131,7 +131,7 @@ T\0Luo uusi hakemisto...
 ; T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
-E\0Nime‰ uudelleen...
+E\0Nime√§ uudelleen...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
@@ -139,7 +139,7 @@ MSG_FILEREQ_MEN_CONTROL_SELECT
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
-O\0Selv‰
+O\0Selv√§
 ; O\0Ok
 ;
 MSG_FILEREQ_MEN_CONTROL_CANCEL
@@ -151,27 +151,27 @@ Tiedostolista
 ; File list
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTNAME
-1\0J‰rjest‰ nimen mukaan
+1\0J√§rjest√§ nimen mukaan
 ; 1\0Sort by name
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDATE
-2\0J‰rjest‰ p‰iv‰m‰‰ritt‰in
+2\0J√§rjest√§ p√§iv√§m√§√§ritt√§in
 ; 2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0J‰rjest‰ koon mukaan
+3\0J√§rjest√§ koon mukaan
 ; 3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
-+\0Nouseva j‰rjestys
++\0Nouseva j√§rjestys
 ; +\0Ascending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDOWN
--\0Laskeva j‰rjestys
+-\0Laskeva j√§rjestys
 ; -\0Descending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
-4\0N‰yt‰ hakemistot ensimm‰isen‰
+4\0N√§yt√§ hakemistot ensimm√§isen√§
 ; 4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
@@ -179,15 +179,15 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
 ; 5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
-6\0N‰yt‰ hakemistot lopussa
+6\0N√§yt√§ hakemistot lopussa
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Valitse n‰yttˆtila
+Valitse n√§ytt√∂tila
 ; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
-Selv‰
+Selv√§
 ; Ok
 ;
 MSG_MODEREQ_NEGATIVE_GAD
@@ -207,7 +207,7 @@ Grafiikan koko
 ; Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
-ƒ‰rimm‰inen koko
+√Ñ√§rimm√§inen koko
 ; Extreme Size
 ;
 MSG_MODEREQ_OVERSCAN_MAXIMUM
@@ -223,7 +223,7 @@ Korkeus
 ; Height
 ;
 MSG_MODEREQ_COLORS_LABEL
-V‰rit
+V√§rit
 ; Colors
 ;
 MSG_MODEREQ_AUTOSCROLL_LABEL
@@ -235,7 +235,7 @@ POIS
 ; OFF
 ;
 MSG_MODEREQ_AUTOSCROLL_ON
-PƒƒLLƒ
+P√Ñ√ÑLL√Ñ
 ; ON
 ;
 MSG_MODEREQ_PROPERTIES_TITLE
@@ -243,7 +243,7 @@ Tilan ominaisuudet
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
-Ei tue tyˆpˆyt‰‰
+Ei tue ty√∂p√∂yt√§√§
 ; Does not support Workbench
 ;
 MSG_MODEREQ_PROPERTIES_NOTGENLOCK
@@ -271,7 +271,7 @@ Vaatii ECS:n
 ; Requires ECS
 ;
 MSG_MODEREQ_PROPERTIES_WB
-Tukee tyˆpˆyt‰‰
+Tukee ty√∂p√∂yt√§√§
 ; Supports Workbench
 ;
 MSG_MODEREQ_PROPERTIES_GENLOCK
@@ -311,7 +311,7 @@ R\0Palauta
 ; R\0Restore
 ;
 MSG_MODEREQ_MEN_CONTROL_OK
-O\0Selv‰
+O\0Selv√§
 ; O\0Ok
 ;
 MSG_MODEREQ_MEN_CONTROL_CANCEL
@@ -323,7 +323,7 @@ Valitse kirjasin
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
-Selv‰
+Selv√§
 ; Ok
 ;
 MSG_FONTREQ_NEGATIVE_GAD
@@ -351,7 +351,7 @@ D\0Tutki levy uudelleen
 ; D\0Rescan Disk
 ;
 MSG_FONTREQ_MEN_CONTROL_OK
-O\0Selv‰
+O\0Selv√§
 ; O\0Ok
 ;
 MSG_FONTREQ_MEN_CONTROL_CANCEL
@@ -367,11 +367,11 @@ Teksti
 ; Text
 ;
 MSG_FONTREQ_MODE_TEXTANDFIELD
-Teksti+kentt‰
+Teksti+kentt√§
 ; Text+Field
 ;
 MSG_FONTREQ_MODE_COMPLEMENT
-K‰‰nteinen
+K√§√§nteinen
 ; Complement
 ;
 MSG_FONTREQ_STYLE_LABEL
@@ -391,14 +391,14 @@ U
 ; U
 ;
 MSG_FONTREQ_COLOR_LABEL_FG
-V‰ri
+V√§ri
 ; Color
 ;
 MSG_FONTREQ_COLOR_LABEL_BG
-Taustav‰ri
+Taustav√§ri
 ; BG Color
 ;
 MSG_FONTREQ_COLOR_LABEL_FGBG
-V‰rit
+V√§rit
 ; Colors
 ;

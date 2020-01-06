@@ -13,7 +13,7 @@
 ; Edit Menu
 ;
 MSG_RESETDEFAULT
-Predložene vrijednosti
+PredloĹžene vrijednosti
 ; Default values
 ;
 MSG_LASTSAVED
@@ -33,7 +33,7 @@ Tabeliranje
 ; Tabulation:
 ;
 MSG_SEPARATORS
-Razdvajač
+RazdvajaÄ
 ; Separators:
 ;
 MSG_TXTFONT
@@ -61,7 +61,7 @@ Auto razmak
 ; Auto indent
 ;
 MSG_EXTEND
-Proširi numeričku tipkovnicu
+ProĹĄiri numeriÄku tipkovnicu
 ; Extended numeric pad
 ;
 MSG_PREFSSAVE
@@ -77,7 +77,7 @@ Odustani
 ; Cancel
 ;
 MSG_USEDEF
-Koristi predloženo
+Koristi predloĹženo
 ; Use Default
 ;
 MSG_CHOOSEIT
@@ -93,7 +93,7 @@ Podloga
 ; Background
 ;
 MSG_COLOR_TEXT
-Uobičajeni tekst
+UobiÄajeni tekst
 ; Standard text
 ;
 MSG_COLOR_FILLTXT

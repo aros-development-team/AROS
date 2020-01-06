@@ -1,38 +1,38 @@
 ## version $VER: About.catalog 2.0 (30.3.2016)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
 MSG_TITLE
-À propos d'AROS
+Ã€ propos d'AROS
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-Moutûre %s personelle
+MoutÃ»re %s personelle
 ; Personal %s Build
 ;
 MSG_NIGHTLY_BUILD
-Moutûre %s quotidienne
+MoutÃ»re %s quotidienne
 ; Nightly %s Build
 ;
 MSG_SNAPSHOT
-Instantané
+InstantanÃ©
 ; Snapshot
 ;
 MSG_MILESTONE
-Étape
+Ã‰tape
 ; Milestone
 ;
 MSG_RELEASE
-Édition
+Ã‰dition
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2020, The AROS Development Team. Tous droits réservés.
-; Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+Copyright Â© 1995-2020, The AROS Development Team. Tous droits rÃ©servÃ©s.
+; Copyright Â© 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
-Publié sous les termes de la
+PubliÃ© sous les termes de la
 ; Released under the terms of the
 ;
 MSG_LICENSE_2
@@ -68,7 +68,7 @@ Evangelisme
 ; Evangelism
 ;
 MSG_SECTION_HIDD
-Modèle HIDD
+ModÃ¨le HIDD
 ; HIDD subsystem
 ;
 MSG_SECTION_INTUITION
@@ -92,7 +92,7 @@ Outils
 ; Tools
 ;
 MSG_SECTION_PREFERENCES
-Préférences
+PrÃ©fÃ©rences
 ; Preferences
 ;
 MSG_SECTION_BGUI
@@ -112,11 +112,11 @@ DOS
 ; DOS
 ;
 MSG_SECTION_NETWORK
-Composants Réseau
+Composants RÃ©seau
 ; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
-Bibliothèque C et couche POSIX
+BibliothÃ¨que C et couche POSIX
 ; C link library and POSIX layer
 ;
 MSG_SECTION_DOCUMENTATION
@@ -136,7 +136,7 @@ Site Web
 ; Website
 ;
 MSG_SECTION_DATATYPES
-Modules de types de données
+Modules de types de donnÃ©es
 ; Datatypes
 ;
 MSG_SECTION_TESTING

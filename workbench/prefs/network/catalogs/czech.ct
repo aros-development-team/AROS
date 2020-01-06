@@ -3,23 +3,23 @@
 ## codeset 5
 ;
 MSG_NAME
-Pøipojení k síti (editor Network)
+PÅ™ipojenÃ­ k sÃ­ti (editor Network)
 ; Network Preferences
 ;
 MSG_DESCRIPTION
-Nastavení pøipojení k síti
+NastavenÃ­ pÅ™ipojenÃ­ k sÃ­ti
 ; Network preferences
 ;
 MSG_IFNAME
-Název
+NÃ¡zev
 ; Name
 ;
 MSG_UP
-Aktivní
+AktivnÃ­
 ; Active
 ;
 MSG_DEVICE
-Ovladaè
+OvladaÄ
 ; Device
 ;
 MSG_UNIT
@@ -27,7 +27,7 @@ Jednotka
 ; Unit
 ;
 MSG_IP_MODE
-Pøidìlování adresy
+PÅ™idÄ›lovÃ¡nÃ­ adresy
 ; IP Mode
 ;
 MSG_IP
@@ -39,31 +39,31 @@ Maska
 ; Net Mask
 ;
 MSG_GATE
-Brána
+BrÃ¡na
 ; Gateway
 ;
 MSG_DNS1
-Primární DNS
+PrimÃ¡rnÃ­ DNS
 ; Primary DNS
 ;
 MSG_DNS2
-Sekundární DNS
+SekundÃ¡rnÃ­ DNS
 ; Secondary DNS
 ;
 MSG_HOST_NAME
-Název hostitele
+NÃ¡zev hostitele
 ; Host Name
 ;
 MSG_HOST_NAMES
-Název hostitele (pøezdívka)
+NÃ¡zev hostitele (pÅ™ezdÃ­vka)
 ; Host Name and Aliases
 ;
 MSG_DOMAIN_NAME
-Název domény
+NÃ¡zev domÃ©ny
 ; Domain/Workgroup
 ;
 MSG_SERIAL_DEVICE
-Sériové zaøízení
+SÃ©riovÃ© zaÅ™Ã­zenÃ­
 ; Serial Device
 ;
 MSG_UNIT_NUMBER
@@ -71,7 +71,7 @@ Jednotka
 ; Unit
 ;
 MSG_IP_MODE_MANUAL
-Ruèním zadáním
+RuÄnÃ­m zadÃ¡nÃ­m
 ; Manual
 ;
 MSG_IP_MODE_DHCP
@@ -95,27 +95,27 @@ Heslo
 ; Passphrase
 ;
 MSG_KEY_HEX
-Hexadecimální
+HexadecimÃ¡lnÃ­
 ; Hexadecimal
 ;
 MSG_SSID
-Název
+NÃ¡zev
 ; Network Name
 ;
 MSG_ENCTYPE
-©ifrování
+Å ifrovÃ¡nÃ­
 ; Encryption
 ;
 MSG_KEYTYPE
-Druh klíèe
+Druh klÃ­Äe
 ; Key Type
 ;
 MSG_KEY
-Klíè
+KlÃ­Ä
 ; Key
 ;
 MSG_HIDDEN
-Skrytá
+SkrytÃ¡
 ; Hidden
 ;
 MSG_ADHOC
@@ -127,39 +127,39 @@ Konfigurace TCP/IP
 ; IPv4 Configuration
 ;
 MSG_TAB_COMPUTER_NAMES
-Polo¾ka hostitele
+PoloÅ¾ka hostitele
 ; Local Host Entries
 ;
 MSG_TAB_WIRELESS
-Bezdrátové pøipojení
+BezdrÃ¡tovÃ© pÅ™ipojenÃ­
 ; Wireless Networks
 ;
 MSG_TAB_MOBILE
-Mobilní pøipojení
+MobilnÃ­ pÅ™ipojenÃ­
 ; Mobile Broadband
 ;
 MSG_TAB_SERVERS
-Pøipojené slo¾ky
+PÅ™ipojenÃ© sloÅ¾ky
 ; Mounted Shares
 ;
 MSG_AUTOSTART_STACK
-Pøi startu pøipojit k síti
+PÅ™i startu pÅ™ipojit k sÃ­ti
 ; Start networking during system boot
 ;
 MSG_ERR_UNKNOWN_ERROR
-Neznámá chyba
+NeznÃ¡mÃ¡ chyba
 ; Unknown error
 ;
 MSG_ERR_NOT_RESTARTED_STACK
-Chyba pøi restartu sí»ovıch slu¾eb.
+Chyba pÅ™i restartu sÃ­Å¥ovÃ½ch sluÅ¾eb.
 ; Failed to restart network stack
 ;
 MSG_ERR_NOT_RESTARTED_WIRELESS
-Chyba pøi restartu bezdrátového pøipojení.
+Chyba pÅ™i restartu bezdrÃ¡tovÃ©ho pÅ™ipojenÃ­.
 ; Failed to restart wireless networking
 ;
 MSG_ERR_NOT_RESTARTED_MOBILE
-Chyba pøi restartu správce modemù.
+Chyba pÅ™i restartu sprÃ¡vce modemÅ¯.
 ; Failed to restart ModemManager
 ;
 MSG_BUTTON_OK
@@ -167,7 +167,7 @@ OK
 ; Ok
 ;
 MSG_BUTTON_ADD
-Pøidat
+PÅ™idat
 ; Add
 ;
 MSG_BUTTON_EDIT
@@ -179,11 +179,11 @@ Odebrat
 ; Remove
 ;
 MSG_BUTTON_APPLY
-Pou¾ít
+PouÅ¾Ã­t
 ; Apply
 ;
 MSG_BUTTON_CLOSE
-Zavøít
+ZavÅ™Ã­t
 ; Close
 ;
 MSG_ERROR_TITLE
@@ -191,19 +191,19 @@ Chyba
 ; Error
 ;
 MSG_WARNING_TITLE
-Upozornìní
+UpozornÄ›nÃ­
 ; Warning
 ;
 MSG_ERR_NOT_SAVED_PREFS
-Nelze ulo¾it konfiguraèní soubory.\n(cesta: %s).
+Nelze uloÅ¾it konfiguraÄnÃ­ soubory.\n(cesta: %s).
 ; Network preferences not saved to %s
 ;
 MSG_ERR_NOT_COPIED_FILES
-Nelze zkopírovat potøebné soubory.\n(cesta: %s).
+Nelze zkopÃ­rovat potÅ™ebnÃ© soubory.\n(cesta: %s).
 ; Additional files not copied to %s
 ;
 MSG_WARN_MULTIPLE_IFACES
-DHCP funguje spolehlivì pouze s jedním rozhraním.
+DHCP funguje spolehlivÄ› pouze s jednÃ­m rozhranÃ­m.
 ; DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE
@@ -211,27 +211,27 @@ Informace
 ; Information
 ;
 MSG_PREFS_SAVED_RESTART
-Konfiguraèní soubory byly úspì¹nì ulo¾eny.\n(cesta: %s)\nProvedené zmìny vy¾adují restart systému.
+KonfiguraÄnÃ­ soubory byly ÃºspÄ›Å¡nÄ› uloÅ¾eny.\n(cesta: %s)\nProvedenÃ© zmÄ›ny vyÅ¾adujÃ­ restart systÃ©mu.
 ; Preferences have been saved to %s.\nRestart AROS for them to take effect.
 ;
 MSG_IFWINDOW_TITLE
-Rozhraní
+RozhranÃ­
 ; Interface
 ;
 MSG_HOSTWINDOW_TITLE
-Jméno hosta
+JmÃ©no hosta
 ; Host Name(s)
 ;
 MSG_NETWINDOW_TITLE
-Bezdrátová sí»
+BezdrÃ¡tovÃ¡ sÃ­Å¥
 ; Wireless Network
 ;
 MSG_SERVERWINDOW_TITLE
-Pøipojená slo¾ka
+PÅ™ipojenÃ¡ sloÅ¾ka
 ; Mount Share
 ;
 MSG_USERNAME
-Jméno
+JmÃ©no
 ; Username
 ;
 MSG_PASSWORD
@@ -239,11 +239,11 @@ Heslo
 ; Password
 ;
 MSG_WORKGROUP
-Doména/Pracovní skupina
+DomÃ©na/PracovnÃ­ skupina
 ; Domain/Workgroup
 ;
 MSG_SERVICE
-Sdílené jméno
+SdÃ­lenÃ© jmÃ©no
 ; Share Name
 ;
 MSG_SERVICE_TYPES

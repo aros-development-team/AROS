@@ -19,7 +19,7 @@ Abilita composizione
 ; Enable composition
 ;
 MSG_GFX_TYPE
-Modalit‡:
+Modalit√†:
 ; Type:
 ;
 MSG_GFX_TYPE_AUTO
@@ -39,7 +39,7 @@ VGA
 ; VGA
 ;
 MSG_GFX_VESAMODE
-Modalit‡ VESA
+Modalit√† VESA
 ; VESA Mode
 ;
 MSG_GFX_WIDTH
@@ -51,7 +51,7 @@ Altezza:
 ; Height:
 ;
 MSG_GFX_DEPTH
-Profondit‡ di colore:
+Profondit√† di colore:
 ; Colour Depth:
 ;
 MSG_GFX_DEPTH_TRUE
@@ -67,7 +67,7 @@ MSG_GFX_DEPTH_LOW
 ; 256 Colours
 ;
 MSG_GFX_REFRESH
-Velocit‡ refresh:
+Velocit√† refresh:
 ; Refresh Rate:
 ;
 MSG_GFX_HERTZ
@@ -123,7 +123,7 @@ Abilita trasferimento dati multisettore
 ; Enable Multisector Data Transfers
 ;
 MSG_ATA_AHCI
-Abilita modalit‡ AHCI nativa
+Abilita modalit√† AHCI nativa
 ; Enable Native AHCI
 ;
 MSG_DEBUG

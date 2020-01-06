@@ -1,6 +1,6 @@
 ## version $VER: asl.catalog 1.0 (29.09.2007)
 ## codeset 0
-## language español
+## language espaÃ±ol
 ;
 ; Translated by ahg
 ;
@@ -17,19 +17,19 @@ Cancelar
 ;Cancel
 ;
 MSG_FILEREQ_VOLUMES_GAD
-Volúmenes
+VolÃºmenes
 ;Volumes
 ;
 MSG_FILEREQ_PARENT_GAD
-Atrás
+AtrÃ¡s
 ;Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
-Patrón
+PatrÃ³n
 ;Pattern
 ;
 MSG_FILEREQ_DRAWER_LABEL
-Cajón
+CajÃ³n
 ;Drawer
 ;
 MSG_FILEREQ_FILE_LABEL
@@ -37,7 +37,7 @@ Archivo
 ;File
 ;
 MSG_FILEREQ_LV_DRAWER
-Cajón
+CajÃ³n
 ;Drawer
 ;
 MSG_FILEREQ_LV_ASSIGN
@@ -49,7 +49,7 @@ Borrar un archivo
 ;Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Aviso: ¡No podrás recuperar\nlo que borraste! ¿Seguro de borrar\n%s?
+Aviso: Â¡No podrÃ¡s recuperar\nlo que borraste! Â¿Seguro de borrar\n%s?
 ;Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
@@ -69,7 +69,7 @@ Cancelar
 ;Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_TITLE
-Crear un cajón
+Crear un cajÃ³n
 ;Create Drawer
 ;
 MSG_FILEREQ_CREATEDRAWER_OK
@@ -81,11 +81,11 @@ Cancelar
 ;Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_DEFNAME
-Renómbra_me
+RenÃ³mbra_me
 ;Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Elegir según el patrón
+Elegir segÃºn el patrÃ³n
 ;Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
@@ -113,11 +113,11 @@ R\0Restaurar
 ;R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-T\0Atrás
+T\0AtrÃ¡s
 ;P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
-V\0Volúmenes
+V\0VolÃºmenes
 ;V\0Volumes
 ;
 MSG_FILEREQ_MEN_CONTROL_UPDATE
@@ -129,7 +129,7 @@ B\0Borrar
 ;D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
-J\0Crear un nuevo cajón...
+J\0Crear un nuevo cajÃ³n...
 ;T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
@@ -161,7 +161,7 @@ MSG_FILEREQ_MEN_FILELIST_SORTDATE
 ;2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0Ordenar por tamaño
+3\0Ordenar por tamaÃ±o
 ;3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
@@ -203,19 +203,19 @@ MSG_MODEREQ_OVERSCAN_LABEL
 Overscan
 ;
 MSG_MODEREQ_OVERSCAN_TEXT
-Tamaño del texto
+TamaÃ±o del texto
 ;Text Size
 ;
 MSG_MODEREQ_OVERSCAN_GRAPHICS
-Tamaño de los gráficos
+TamaÃ±o de los grÃ¡ficos
 ;Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
-Tamaño extremo
+TamaÃ±o extremo
 ;Extreme Size
 ;
 MSG_MODEREQ_OVERSCAN_MAXIMUM
-Tamaño máximo
+TamaÃ±o mÃ¡ximo
 ;Maximum Size
 ;
 MSG_MODEREQ_WIDTH_LABEL

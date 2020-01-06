@@ -53,7 +53,7 @@ A\000Palauta
 ; R\000Restore
 ;
 msgMenuOK
-H\000Hyv‰ksy
+H\000Hyv√§ksy
 ; O\000OK
 ;
 msgMenuCancel
@@ -63,13 +63,13 @@ P\000Peru
 ; Mode name in requester whose driver cannot be opened
 ;
 msgUnknown
-Tuntematon ‰‰nitila: 0x%8lx
+Tuntematon √§√§nitila: 0x%8lx
 ; UNKNOWN:Audio ID 0x%08lx
 ;
 ; The requester gadgets
 ;
 msgReqOK
-Hyv‰ksy
+Hyv√§ksy
 ; OK
 ;
 msgReqCancel
@@ -83,7 +83,7 @@ Taajuus
 ; Name of default mode in requester
 ;
 msgDefaultMode
-Oletus‰‰nitila
+Oletus√§√§nitila
 ; Default audio mode
 ;
 ; The requester's info-winodow
@@ -93,7 +93,7 @@ Tilan ominaisuudet
 ; Mode Properties
 ;
 msgReqInfoAudioID
-ƒ‰nitilan ID: 0x%08lx
+√Ñ√§nitilan ID: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
@@ -125,11 +125,11 @@ HiFi-miksaus
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf
-ƒ‰nit‰ vuorosuuntaisesti
+√Ñ√§nit√§ vuorosuuntaisesti
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-ƒ‰nit‰ kaksisuuntaisesti
+√Ñ√§nit√§ kaksisuuntaisesti
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel

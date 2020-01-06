@@ -3,47 +3,47 @@
 ## codeset 5
 ;
 MSG_CANT_OPEN_LIB
-Nie mo¿na otworzyæ %s w wersji %ld!
+Nie moÅ¼na otworzyÄ‡ %s w wersji %ld!
 ; Can't open %s V%ld!
 ;
 MSG_NO_MEM
-Brak pamiêci!
+Brak pamiÄ™ci!
 ; Out of memory!
 ;
 MSG_CANT_LOCK_SCR
-Nie mo¿na uzyskaæ dostêpu do ekranu!
+Nie moÅ¼na uzyskaÄ‡ dostÄ™pu do ekranu!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nie mo¿na pobraæ DrawInfo!
+Nie moÅ¼na pobraÄ‡ DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nie mo¿na pobraæ VisualInfo!
+Nie moÅ¼na pobraÄ‡ VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Nie mo¿na utowrzyæ obrazów SYSICLASS!
+Nie moÅ¼na utowrzyÄ‡ obrazÃ³w SYSICLASS!
 ; Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Nie mo¿na utworzyæ gad¿etów!
+Nie moÅ¼na utworzyÄ‡ gadÅ¼etÃ³w!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nie mo¿na utowrzyæ menu!
+Nie moÅ¼na utowrzyÄ‡ menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nie mo¿na utworzyæ okna!
+Nie moÅ¼na utworzyÄ‡ okna!
 ; Can't create window!
 ;
 MSG_CANT_CREATE_MSGPORT
-Nie mo¿na utworzyæ portu wiadomo¶ci
+Nie moÅ¼na utworzyÄ‡ portu wiadomoÅ›ci
 ; Can't create message port!
 ;
 MSG_CANT_ADD_APPWINDOW
-Nie mo¿na przekszta³ciæ okna w okno AppWindow!
+Nie moÅ¼na przeksztaÅ‚ciÄ‡ okna w okno AppWindow!
 ; Can't turn the window into an AppWindow!
 ;
 MSG_MEN_PROJECT
@@ -51,7 +51,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Otwórz...
+O\0OtwÃ³rz...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -67,7 +67,7 @@ MSG_MEN_PROJECT_ABOUT
 ; ?\0About...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Skoñcz
+Q\0SkoÅ„cz
 ; Q\0Quit
 ;
 MSG_MEN_NAVIGATION
@@ -75,11 +75,11 @@ Nawigacja
 ; Navigation
 ;
 MSG_MEN_NAVIGATION_FIND
-F\0Znajd¼...
+F\0ZnajdÅº...
 ; F\0Find...
 ;
 MSG_MEN_NAVIGATION_FIND_NEXT
-.\0Nastêpny
+.\0NastÄ™pny
 ; .\0Find Next
 ;
 MSG_MEN_NAVIGATION_FIND_PREV
@@ -100,7 +100,7 @@ Wybierz plik do zapisania
 ;
 MSG_ABOUT
 More V%ld.%ld\n (%s)\nCopyright (c) %s by %s
-; More V%ld.%ld\n (%s)\nCopyright © %s by %s
+; More V%ld.%ld\n (%s)\nCopyright Å  %s by %s
 ;
 MSG_ABOUT_TITLE
 More
@@ -127,7 +127,7 @@ Poniechaj
 ; Cancel
 ;
 MSG_WIN_TITLE
-More: %s (%ld Linii - %ld Bajtów)
+More: %s (%ld Linii - %ld BajtÃ³w)
 ; More: %s (%ld Lines - %ld Bytes)
 ;
 MSG_SHORTCUT_TOP

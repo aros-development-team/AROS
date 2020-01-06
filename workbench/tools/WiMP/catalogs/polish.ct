@@ -36,11 +36,11 @@ WiMP - Okno informacyjne
 ; WiMP - InfoWindow
 ;
 MSG_CLOSE_SCREEN
-Czy rzeczywi¶cie chcesz zamkn±æ wybrany ekran?
+Czy rzeczywiÅ›cie chcesz zamknÄ…Ä‡ wybrany ekran?
 ; Do you really want to Close the selected Screen?
 ;
 MSG_CLOSE_WINDOW
-Czy rzeczywi¶cie chcesz zamkn±æ wybrane okno?
+Czy rzeczywiÅ›cie chcesz zamknÄ…Ä‡ wybrane okno?
 ; Do you really want to Close the selected Window?
 ;
 MSG_YES_NO
@@ -64,7 +64,7 @@ Do tylu
 ; To _Back
 ;
 MSG_BTN_MOVE
-Pwróæ do _oryginal³u
+PwrÃ³Ä‡ do _oryginalÅ‚u
 ; Move to _Origin
 ;
 MSG_BTN_ACTIVATE
@@ -80,11 +80,11 @@ Ukryj
 ; _Hide
 ;
 MSG_BTN_SHOW
-Poka¿
+PokaÅ¼
 ; _Show
 ;
 MSG_BTN_UPDATE_LIST
-Zaktualiz_uj listê
+Zaktualiz_uj listÄ™
 ; _Update List
 ;
 MSG_BTN_RESCUE_ALL
@@ -92,11 +92,11 @@ Zachowaj wszystkie okna
 ; _Rescue all Windows
 ;
 MSG_BTN_SHOW_ALL
-Poka¿ wszystkie okna
+PokaÅ¼ wszystkie okna
 ; Show all Windows
 ;
 MSG_BTN_RETHING
-Przemy¶l Uk³ad
+PrzemyÅ›l UkÅ‚ad
 ; Rethink Display
 ;
 MSG_BTN_ABOUT
@@ -104,7 +104,7 @@ O programie
 ; About
 ;
 MSG_SCREEN_WINDOW_LIST
-Lista ekranów i okien
+Lista ekranÃ³w i okien
 ; Screen/Window List
 ;
 MSG_MENU_PROJECT
@@ -116,7 +116,7 @@ Przy okazji...
 ; About...
 ;
 MSG_MENU_QUIT
-Zakoñcz
+ZakoÅ„cz
 ; Quit
 ;
 MSG_MENU_WIN_LIST
@@ -124,7 +124,7 @@ Lista okien
 ; Window List
 ;
 MSG_MENU_UPDATE_LIST
-Zaktualizuj listê
+Zaktualizuj listÄ™
 ; Update List
 ;
 MSG_MENU_KILL
@@ -132,15 +132,15 @@ Zamknij
 ; Kill
 ;
 MSG_MENU_TO_FRONT
-Na przód
+Na przÃ³d
 ; To Front
 ;
 MSG_MENU_TO_BACK
-Do ty³u
+Do tyÅ‚u
 ; To Back
 ;
 MSG_MENU_TO_ORIGIN
-Wróc
+WrÃ³c
 ; To Origin
 ;
 MSG_MENU_ACTIVATE
@@ -156,7 +156,7 @@ Ukryj
 ; Hide
 ;
 MSG_MENU_SHOW
-Poka¿
+PokaÅ¼
 ; Show
 ;
 MSG_MENU_INFO
@@ -172,7 +172,7 @@ Zachowaj wszystko
 ; Rescue All
 ;
 MSG_MENU_SHOW_ALL
-Poka¿ wszystko
+PokaÅ¼ wszystko
 ; Show All
 ;
 MSG_MENU_RETHINGDISPLAY
@@ -208,7 +208,7 @@ Status
 ; Status
 ;
 MSG_ARRAY_5_TITLE
-Tytu³
+TytuÅ‚
 ; Title
 ;
 MSG_COL_SCREEN
@@ -224,15 +224,15 @@ Lewy brzeg
 ; LeftEdge
 ;
 MSG_COL_SCR_TOPEDGE
-Górny brzeg
+GÃ³rny brzeg
 ; TopEdge
 ;
 MSG_COL_SCR_WIDTH
-Szerokos¶æ
+SzerokosÅ›Ä‡
 ; Width
 ;
 MSG_COL_SCR_HEIGHT
-Wysoko¶æ
+WysokoÅ›Ä‡
 ; Height
 ;
 MSG_COL_SCR_FLAGS
@@ -240,11 +240,11 @@ Atrybuty
 ; Flags
 ;
 MSG_COL_SCR_TITLE
-Tytu³
+TytuÅ‚
 ; Title
 ;
 MSG_COL_SCR_DEFAULTIT
-Tytu³ défaut
+TytuÅ‚ dÃ©faut
 ; DefaultTitle
 ;
 MSG_COL_SCR_FRSTWIN
@@ -260,7 +260,7 @@ Adres
 ; Address
 ;
 MSG_COL_WIN_NEXTWIN
-Nastêpne okno
+NastÄ™pne okno
 ; NextWindow
 ;
 MSG_COL_WIN_LEFTEDGE
@@ -268,31 +268,31 @@ Lewy brzeg
 ; LeftEdge
 ;
 MSG_COL_WIN_TOPEDGE
-Górny brzeg
+GÃ³rny brzeg
 ; TopEdge
 ;
 MSG_COL_WIN_WIDTH
-Szeroko¶æ
+SzerokoÅ›Ä‡
 ; Width
 ;
 MSG_COL_WIN_HEIGHT
-Wysoko¶æ
+WysokoÅ›Ä‡
 ; Height
 ;
 MSG_COL_WIN_MINWIDTH
-Minimalna szeroko¶æ
+Minimalna szerokoÅ›Ä‡
 ; MinWidth
 ;
 MSG_COL_WIN_MINHEIGHT
-Minimalna wysoko¶æ
+Minimalna wysokoÅ›Ä‡
 ; MinHeight
 ;
 MSG_COL_WIN_MAXWIDTH
-Maksymalna szeroko¶æ
+Maksymalna szerokoÅ›Ä‡
 ; MaxWidth
 ;
 MSG_COL_WIN_MAXHEIGHT
-Maksymalna wysoko¶æ
+Maksymalna wysokoÅ›Ä‡
 ; MaxHeight
 ;
 MSG_COL_WIN_FLAGS
@@ -304,7 +304,7 @@ Atrybuty IDCMP
 ; IDCMPFlags
 ;
 MSG_COL_WIN_TITLE
-Tytu³
+TytuÅ‚
 ; Title
 ;
 MSG_COL_WIN_REQCOUNT
@@ -320,7 +320,7 @@ Lewy brzeg
 ; BorderLeft
 ;
 MSG_COL_WIN_BORDERTOP
-Górny brzeg
+GÃ³rny brzeg
 ; BorderTop
 ;
 MSG_COL_WIN_BORDERRIGHT
@@ -332,7 +332,7 @@ Dolny brzeg
 ; BoderBottom
 ;
 MSG_COL_WIN_PARENTWIN
-Nadrzêdne okno
+NadrzÄ™dne okno
 ; Parent Window
 ;
 MSG_COL_WIN_FIRSTCHILD
@@ -340,10 +340,10 @@ Pierwsze okno
 ; First Child
 ;
 MSG_COL_WIN_PARENT
-Nadrzêdne
+NadrzÄ™dne
 ; Parent
 ;
 MSG_COL_WIN_DESCENDANT
-Podrzêdne
+PodrzÄ™dne
 ; Descendant
 ;

@@ -39,15 +39,15 @@ MSG_MIN_MAX_FMT
 ;  Min: %ld, Max: %ld
 ;
 MSG_TOO_SMALL
-Za ma³o!
+Za maÅ‚o!
 ; Too small!
 ;
 MSG_TOO_BIG
-Za du¿o!
+Za duÅ¼o!
 ; Too big!
 ;
 MSG_PALETTE_COLORS
-_Paleta kolorów:
+_Paleta kolorÃ³w:
 ; _Palette Colors:
 ;
 MSG_RED
@@ -67,11 +67,11 @@ Sko_piuj
 ; Cop_y
 ;
 MSG_SWAP
-Z_amieñ
+Z_amieÅ„
 ; _Swap
 ;
 MSG_SPREAD
-Ro_z³ó¿
+Ro_zÅ‚Ã³Å¼
 ; Spr_ead
 ;
 MSG_UNDO
@@ -83,20 +83,20 @@ Skopiuj do...
 ; Copy to...
 ;
 MSG_SWAP_TITLE
-Zamieñ z...
+ZamieÅ„ z...
 ; Swap with...
 ;
 MSG_SPREAD_TITLE
-Roz³ó¿ do...
+RozÅ‚Ã³Å¼ do...
 ; Spread to...
 ;
 MSG_CREATE_DRAWER
 Katalog \"%s\"\n\
-nie istnieje. Czy mam go utworzyæ?
+nie istnieje. Czy mam go utworzyÄ‡?
 ; Drawer '%s' does\nnot exist. Create it?
 ;
 MSG_DIR_ERROR
-B³êdna nazwa katalogu!
+BÅ‚Ä™dna nazwa katalogu!
 ; Directory error!
 ;
 MSG_MATCH_WINTITLE
@@ -116,7 +116,7 @@ Wszy_stko
 ; _All
 ;
 MSG_MATCH
-Wzó_r...
+WzÃ³_r...
 ; _Match..
 ;
 MSG_CLEAR
@@ -128,7 +128,7 @@ _Wolumeny
 ; _Volumes
 ;
 MSG_PARENT
-_Nadrzêdny
+_NadrzÄ™dny
 ; _Parent
 ;
 MSG_PATTERN
@@ -148,11 +148,11 @@ Zaznaczonych:
 ; Selected:
 ;
 MSG_FULL
-%ld%% zajête
+%ld%% zajÄ™te
 ; %ld%% full
 ;
 MSG_COULDNT_OPEN_FONT
-Nie mog¿na odnale¼æ czcionki!
+Nie mogÅ¼na odnaleÅºÄ‡ czcionki!
 ; Couldn't open font!
 ;
 MSG_BOLD
@@ -164,7 +164,7 @@ Pochy_lona
 ; _Italic
 ;
 MSG_UNDERLINE
-Po_dkre¶lona
+Po_dkreÅ›lona
 ; _Underline
 ;
 MSG_DASH_INTERLACED
@@ -180,19 +180,19 @@ MSG_DASH_EHB
 ; -EHB
 ;
 MSG_REGULAR_SIZE
-Wielko¶æ normalna
+WielkoÅ›Ä‡ normalna
 ; Regular Size
 ;
 MSG_TEXT_SIZE
-Wielko¶æ tekstu
+WielkoÅ›Ä‡ tekstu
 ; Text Size
 ;
 MSG_GFX_SIZE
-Wielko¶æ grafiki
+WielkoÅ›Ä‡ grafiki
 ; Graphics Size
 ;
 MSG_MAX_SIZE
-Maksymalna wielko¶æ
+Maksymalna wielkoÅ›Ä‡
 ; Maximum Size
 ;
 MSG_OVERSCAN
@@ -200,19 +200,19 @@ O_verscan:
 ; O_verscan:
 ;
 MSG_WIDTH
-_Szeroko¶æ:
+_SzerokoÅ›Ä‡:
 ; _Width:
 ;
 MSG_HEIGHT
-_Wysoko¶æ:
+_WysokoÅ›Ä‡:
 ; _Height:
 ;
 MSG_DEFAULT
-domy¶lna
+domyÅ›lna
 ; Default
 ;
 MSG_COLORS
-_Kolorów:
+_KolorÃ³w:
 ; Co_lors:
 ;
 MSG_MAX

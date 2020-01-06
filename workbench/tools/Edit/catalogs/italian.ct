@@ -162,7 +162,7 @@ MSG_ENVTITLE
 Ambiente
 ;
 MSG_SCRMODE
-Modalità schermo...
+ModalitÃ  schermo...
 ;
 MSG_FONTS
 Font...
@@ -192,7 +192,7 @@ ERR_NOASLREQ
 Impossibile aprire finestra dialogo file!
 ;
 ERR_NOMEM
-Non c'è abbastanza memoria!
+Non c'Ã¨ abbastanza memoria!
 ;
 ERR_NOGUI
 Impossibile aprire l'interfaccia utente!
@@ -211,10 +211,10 @@ ERR_LOADFILE
 Impossibile accedere al file!
 ;
 ERR_NOTXTINCLIP
-Il documento è vuoto!
+Il documento Ã¨ vuoto!
 ;
 ERR_WRONG_TYPE
-L'oggetto è una directory!
+L'oggetto Ã¨ una directory!
 ;
 ERR_READCLIP
 Lettura incompleta del docuemnto. Forse manca la memoria.
@@ -235,19 +235,19 @@ ERR_BADPREFSFILE
 File preferenze invalido.
 ;
 ERR_FILEMODIFIED
-%s è stato modificato.\nChiudere lo stesso il documento?
+%s Ã¨ stato modificato.\nChiudere lo stesso il documento?
 ;
 ERR_SLC
 Salva|Chiudi|Annulla
 ;
 ERR_NOSEARCHTEXT
-Non c'è nessun testo da cercare!
+Non c'Ã¨ nessun testo da cercare!
 ;
 ERR_FILEEXISTS
-Questo file esiste già. Sovrascrivere il documento?
+Questo file esiste giÃ . Sovrascrivere il documento?
 ;
 ERR_OC
-Sì|No!
+SÃ¬|No!
 ;
 WARN_RECORD
 Registrazione della macro in corso
@@ -267,7 +267,7 @@ MSG_ABOUT
 Informazioni
 ;
 MSG_FORMATINFO
-%s\nConçu di T.Pierron et C.Guillaume © 2000\n\nDocumento attuale: %s\nLunghezza: %iu %s, %iu %s.
+%s\nConÃ§u di T.Pierron et C.Guillaume Â© 2000\n\nDocumento attuale: %s\nLunghezza: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Continua
