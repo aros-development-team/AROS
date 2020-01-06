@@ -288,6 +288,10 @@ char *SplitBootArgs(struct TagItem *bootinfo, char *buffer, LONG bufsize)
                 buffer[i] = rawargs[i];
         }
     }
+    else
+    {
+        *buffer = '\0';
+    }
     return buffer;
 }
 
