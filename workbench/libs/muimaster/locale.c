@@ -30,7 +30,7 @@ CONST_STRPTR _(ULONG id)
 }
 
 /* Setup ********************************************************************/
-VOID Locale_Initialize(VOID)
+BOOL Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
@@ -43,6 +43,7 @@ VOID Locale_Initialize(VOID)
     {
         catalog = NULL;
     }
+    return TRUE;
 }
 
 VOID Locale_Deinitialize(VOID)
