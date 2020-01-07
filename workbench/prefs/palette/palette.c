@@ -297,6 +297,8 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
                 MUIA_Listview_List, (IPTR)(list = ListObject,
             End),
         End),
+        Child, (IPTR)(BalanceObject,
+        End),
         Child, (IPTR)(palgrp = VGroup,
         End),
         TAG_MORE, (IPTR) msg->ops_AttrList);
