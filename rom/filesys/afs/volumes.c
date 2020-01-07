@@ -174,6 +174,7 @@ struct Volume *initVolume
 	volume = AllocMem(sizeof(struct Volume) + strlen(blockdevice) + 1,MEMF_PUBLIC | MEMF_CLEAR);
 	if (volume != NULL)
 	{
+		volume->FNameMax = MAX_NAME_LENGTH;
 		volume->device = device;
 		volume->ioh.blockdevice = (STRPTR)(&volume[1]); /* Data after the volume alloc */
 		strcpy(volume->ioh.blockdevice, blockdevice);

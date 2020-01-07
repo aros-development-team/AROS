@@ -15,10 +15,13 @@ struct Volume {
 	struct Device *device;       /* the handler this volume uses */
 	struct DeviceList devicelist __attribute__((aligned(4))); /* BPTR compatible */
 	struct DosList *volumenode;
+
 	ULONG SizeBlock;             /* Block size in words */
 	ULONG blocksectors;          /* nr of sectors per block */
 	ULONG sectorsize;            /* nr of bytes per sector */
-	
+
+        ULONG FNameMax;
+
 	struct AfsHandle *locklist;
 	struct AfsHandle ah;         /* root handle (unfilled except header_block) */
 	ULONG unit;
