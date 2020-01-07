@@ -183,10 +183,11 @@
         case IPREFS_TYPE_PALETTE_V37:
         DEBUG_SETIPREFS(bug("[Intuition] %s: IP_PALETTE_V%d %p %d\n", __func__, type == IPREFS_TYPE_PALETTE_V39 ? 39 : 37, data, length));
         {
-            struct ColorSpec *pp = data;
-            struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
-            BOOL update_pointer = FALSE;
+            BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
             struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
+            struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
+            struct ColorSpec *pp = data;
+            BOOL update_pointer = FALSE;
 
             DEBUG_SETIPREFS(bug("[Intuition] %s: Intuition Color32 Table 0x%p\n", __func__, p));
 
@@ -250,6 +251,10 @@
                                 p[idx].red,
                                 p[idx].green,
                                 p[idx].blue));
+                    if (!closed)
+                    {
+                        SetRGB32(&GetPrivIBase(IntuitionBase)->WorkBench->ViewPort, idx, p[idx].red, p[idx].green, p[idx].blue);
+                    }
                 }
                 pp++;
             }
