@@ -39,6 +39,7 @@
 #include "globals.h"
 #include "createcatsrc.h"
 #include "openlibs.h"
+#include "translators.h"
 
 /// isParam
 int isParam(char *input_string)
@@ -331,6 +332,11 @@ int main(int argc, char *argv[])
     {
       // just swallow some no longer supported options to
       // keep old scripts alive and happy
+    }
+    else if(Stricmp(argv[i], "iso88592toamigapl") == 0)
+    {
+      // convert iso 8859-2 to AmigaPL
+      TranslateString = iso88592toamigapl;
     }
     else if(cdfile == NULL)
     {

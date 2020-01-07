@@ -115,6 +115,9 @@ int vasprintf(char **ptr, const char * format, va_list ap);
 // in fact, these definitions are borrowed from
 // the OS4 SDK and we bring them onto all the
 // other OSs as well....
+
+typedef void (*translatestring)(char *);
+
 #if !defined(__amigaos4__)
 #include <stdint.h>
 typedef uint8_t uint8;

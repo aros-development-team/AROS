@@ -434,6 +434,7 @@ OBJS = main.o \
        scanpo.o \
        showfuncs.o \
        swapfuncs.o \
+       translators.o \
        utils.o \
        $(SYSDEPOBJS)
 
