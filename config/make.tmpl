@@ -2829,6 +2829,8 @@ endif
 	$(Q)$(ECHO) "Creating   %(name) catalog for language $*."
 	$(Q)$(IF) $(TEST) "$*" = "polish"; then \
 	    $(FLEXCAT) iso88592toamigapl $(%(mmake)_DESC).cd $< CATALOG="%(dir)/$*/%(subdir)/%(name).catalog" || [ $$? -lt 10 ] ; \
+	elif $(TEST) "$*" = "russian"; then \
+	    $(FLEXCAT) win1251toamiga1251 $(%(mmake)_DESC).cd $< CATALOG="%(dir)/$*/%(subdir)/%(name).catalog" || [ $$? -lt 10 ] ; \
 	else \
 	    $(FLEXCAT) $(%(mmake)_DESC).cd $< CATALOG="%(dir)/$*/%(subdir)/%(name).catalog" || [ $$? -lt 10 ] ; \
 	fi
