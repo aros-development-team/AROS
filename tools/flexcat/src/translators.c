@@ -46,3 +46,15 @@ void iso88592toamigapl(char *str)
     }
 }
 
+/* convert Windows-1251 strings to Amiga-1251 */
+void win1251toamiga1251(char *str)
+{
+    int i, len = strlen(str);
+    for (i = 0; i < len; i ++)
+    {
+        if (str[i] == 0x88)
+            str[i] = 0xA4;
+        else if (str[i] == 0xB9)
+            str[i] = 0xAA;
+    }
+}
