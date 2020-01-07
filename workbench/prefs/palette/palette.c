@@ -188,8 +188,14 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
 
             if (GetBitMapAttr(_rp(self)->BitMap, BMA_DEPTH) > 8)
             {
-                Object *winObj = _win(self);
-                MUI_Redraw((Object *)XGET(winObj, MUIA_Window_RootObject), MADF_DRAWOBJECT);
+                Object *redrawObj;
+#if (0)
+                redrawObj = _win(self);
+                redrawObj = (Object *)XGET(redrawObj, MUIA_Window_RootObject);
+#else
+                redrawObj = data->colorfiledgrp;
+#endif
+                MUI_Redraw(redrawObj, MADF_DRAWOBJECT);
             }
         }
         else if (mode == 3)
