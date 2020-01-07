@@ -5,11 +5,11 @@
 ; TODO: update me and set version to 2
 ;
 MSG_NAME
-Настройки Wanderer
+РќР°СЃС‚СЂРѕР№РєРё Wanderer
 ; Wanderer Preferences
 ;
 MSG_BACKGROUNDS
-Фон
+Р¤РѕРЅ
 ; Backgrounds
 ;
 MSG_BACKGROUND_WORKBENCH
@@ -17,85 +17,85 @@ Workbench
 ; Workbench
 ;
 MSG_BACKGROUND_DRAWERS
-Папки
+РџР°РїРєРё
 ; Drawers
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
-Выберите фон Workbench
+Р’С‹Р±РµСЂРёС‚Рµ С„РѕРЅ Workbench
 ; Select Workbench Background
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-Выберите фон папки
+Р’С‹Р±РµСЂРёС‚Рµ С„РѕРЅ РїР°РїРєРё
 ; Select Drawer Background
 ;
 MSG_GENERAL
-Общие
+РћР±С‰РёРµ
 ;
 MSG_APPEARANCE
-Вид
+Р’РёРґ
 ;
 MSG_TOOLBAR
-Инструментарий
+РРЅСЃС‚СЂСѓРјРµРЅС‚Р°СЂРёР№
 ;
 MSG_CLASSIC
-Обычный
+РћР±С‹С‡РЅС‹Р№
 ;
 MSG_ENHANCED
-Расширенный
+Р Р°СЃС€РёСЂРµРЅРЅС‹Р№
 ;
 MSG_NAVIGATION
-Навигация
+РќР°РІРёРіР°С†РёСЏ
 ;
 MSG_METHOD
-Метод
+РњРµС‚РѕРґ
 ;
 MSG_OBJECTS
-Объекты
+РћР±СЉРµРєС‚С‹
 ;
 MSG_PREVIEW
-Просмотр
+РџСЂРѕСЃРјРѕС‚СЂ
 ;
 MSG_TOOLBAR_ENABLED
-Включить Инструментарий
+Р’РєР»СЋС‡РёС‚СЊ РРЅСЃС‚СЂСѓРјРµРЅС‚Р°СЂРёР№
 ;
 MSG_ICONSPREFS
-Вид иконок
+Р’РёРґ РёРєРѕРЅРѕРє
 ;
 MSG_ICONLISTMODE
-Расстановка иконок
+Р Р°СЃСЃС‚Р°РЅРѕРІРєР° РёРєРѕРЅРѕРє
 ;
 MSG_ICONLISTMODE_PLAIN
-Расставить в ряд
+Р Р°СЃСЃС‚Р°РІРёС‚СЊ РІ СЂСЏРґ
 ;
 MSG_ICONLISTMODE_GRID
-Расставить по сетке
+Р Р°СЃСЃС‚Р°РІРёС‚СЊ РїРѕ СЃРµС‚РєРµ
 ;
 MSG_ICONTEXTMODE
-Вид текста иконок
+Р’РёРґ С‚РµРєСЃС‚Р° РёРєРѕРЅРѕРє
 ;
 MSG_ICONTEXTMODE_OUTLINE
-С обводкой
+РЎ РѕР±РІРѕРґРєРѕР№
 ;
 MSG_ICONTEXTMODE_PLAIN
-Простой
+РџСЂРѕСЃС‚РѕР№
 ;
 MSG_ICONTEXTLENGTH
-Макс. длина текста иконок
+РњР°РєСЃ. РґР»РёРЅР° С‚РµРєСЃС‚Р° РёРєРѕРЅРѕРє
 ;
 MSG_DOUBLEBUFFERED
-Двойная буферизация
+Р”РІРѕР№РЅР°СЏ Р±СѓС„РµСЂРёР·Р°С†РёСЏ
 ;
 MSG_MISC
-Прочее
+РџСЂРѕС‡РµРµ
 ;
 MSG_BUBBLESCREENTITLE
 %pc = Chip Ram free\n\
 %pf = Fast Ram free\n\
-%pt = Памяти свободно\n\
+%pt = РџР°РјСЏС‚Рё СЃРІРѕР±РѕРґРЅРѕ\n\
 %PC = Chip Ram\n\
 %PF = Fast Ram\n\
-%PT = Всего памяти\n\
-%os = Версия AROS\n\
-%wb = Версия Wanderer\n\
-%ov = Точная версия AROS\n\
-%wv = Точная версия workbench.library
+%PT = Р’СЃРµРіРѕ РїР°РјСЏС‚Рё\n\
+%os = Р’РµСЂСЃРёСЏ AROS\n\
+%wb = Р’РµСЂСЃРёСЏ Wanderer\n\
+%ov = РўРѕС‡РЅР°СЏ РІРµСЂСЃРёСЏ AROS\n\
+%wv = РўРѕС‡РЅР°СЏ РІРµСЂСЃРёСЏ workbench.library

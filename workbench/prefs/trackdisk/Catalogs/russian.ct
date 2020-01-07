@@ -7,29 +7,29 @@ MSG_NAME
 Trackdisk
 ;
 MSG_TITLE
-Свойства Trackdisk
+РЎРІРѕР№СЃС‚РІР° Trackdisk
 ;
 MSG_SAVE
-Сохранить
+РЎРѕС…СЂР°РЅРёС‚СЊ
 ;
 MSG_USE
-Применить
+РџСЂРёРјРµРЅРёС‚СЊ
 ;
 MSG_CANCEL
-Отменить
+РћС‚РјРµРЅРёС‚СЊ
 ;
 MSG_DESCRIPTION
-Редактор свойств trackdisk.device
+Р РµРґР°РєС‚РѕСЂ СЃРІРѕР№СЃС‚РІ trackdisk.device
 ;
 MSG_WINDOW_TITLE
-Свойства trackdisk.device
+РЎРІРѕР№СЃС‚РІР° trackdisk.device
 ;
 MSG_DRIVE
-Накопитель %u
+РќР°РєРѕРїРёС‚РµР»СЊ %u
 ;
 MSG_NOCLICK
-Тихий:
+РўРёС…РёР№:
 ;
 MSG_RETRIES
-Повторы:
+РџРѕРІС‚РѕСЂС‹:
 ;

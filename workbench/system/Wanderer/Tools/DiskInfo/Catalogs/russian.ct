@@ -4,11 +4,11 @@
 ;
 ;
 MSG_TITLE
-Сведения о диске
+РЎРІРµРґРµРЅРёСЏ Рѕ РґРёСЃРєРµ
 ; Disk Info
 ;
 MSG_ERROR_HEADER
-Ошибка
+РћС€РёР±РєР°
 ; ERROR
 ;
 MSG_ERROR_OK
@@ -16,27 +16,27 @@ _OK
 ; _OK
 ;
 MSG_ERROR_LOCALE
-Невозможно инициализацировать локаль.
+РќРµРІРѕР·РјРѕР¶РЅРѕ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЂРѕРІР°С‚СЊ Р»РѕРєР°Р»СЊ.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
-Невозможно инициализировать специальные классы.
+РќРµРІРѕР·РјРѕР¶РЅРѕ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ СЃРїРµС†РёР°Р»СЊРЅС‹Рµ РєР»Р°СЃСЃС‹.
 ; Can't initialize custom classes.
 ;
 MSG_DESCRIPTION
-Сведения о диске
+РЎРІРµРґРµРЅРёСЏ Рѕ РґРёСЃРєРµ
 ; Disk Icon Informations
 ;
 MSG_PERCENTFULL
-Занято %ld %%
+Р—Р°РЅСЏС‚Рѕ %ld %%
 ; %ld %% Full
 ;
 MSG_FORMAT
-Формат
+Р¤РѕСЂРјР°С‚
 ; Format
 ;
 MSG_UNKNOWN
-Неизвестный
+РќРµРёР·РІРµСЃС‚РЅС‹Р№
 ; Unknown
 ;
 MSG_AUTHOR
@@ -45,73 +45,73 @@ Olivier Adam
 ;
 MSG_COPYRIGHT
 Copyright 2006-2009 AROS Dev Team
-; ©2006 AROS Dev Team
+; В©2006 AROS Dev Team
 ;
 MSG_USED
-Занято
+Р—Р°РЅСЏС‚Рѕ
 ;Used space
 ;
 MSG_FREE
-Свободно
+РЎРІРѕР±РѕРґРЅРѕ
 ;Free space
 ;
 MSG_SIZE
-Объём
+РћР±СЉС‘Рј
 ;Capacity
 ;
 MSG_BLOCK_SIZE
-Размер блока
+Р Р°Р·РјРµСЂ Р±Р»РѕРєР°
 ;Block size
 ;
 MSG_BLOCKS
-блоков
+Р±Р»РѕРєРѕРІ
 ;blocks
 ;
 MSG_BYTES
-байт
+Р±Р°Р№С‚
 ;bytes
 ;
 MSG_STATUS
-Состояние
+РЎРѕСЃС‚РѕСЏРЅРёРµ
 ;Status
 ;
 MSG_READABLE
-Чтение
+Р§С‚РµРЅРёРµ
 ;Readable
 ;
 MSG_READABLE_WRITABLE
-Чтение/запись
+Р§С‚РµРЅРёРµ/Р·Р°РїРёСЃСЊ
 ;Readable/writable
 ;
 MSG_VALIDATING
-Проверка
+РџСЂРѕРІРµСЂРєР°
 ;Validating
 ;
 MSG_NAME
-Имя тома
+РРјСЏ С‚РѕРјР°
 ;Volume Name
 ;
 MSG_UNIT
-Устройство
+РЈСЃС‚СЂРѕР№СЃС‚РІРѕ
 ;unit
 ;
 MSG_DOSDEVICE
-DOS имя:
+DOS РёРјСЏ:
 ;DOS Device:
 ;
 MSG_DEVICEINFO
-Подключен к:
+РџРѕРґРєР»СЋС‡РµРЅ Рє:
 ;Connected on:
 ;
 MSG_FILESYSTEM
-Файловая система:
+Р¤Р°Р№Р»РѕРІР°СЏ СЃРёСЃС‚РµРјР°:
 ;FileSystem:
 ;
 MSG_PACKETDEVICE
-Packet-устройство
+Packet-СѓСЃС‚СЂРѕР№СЃС‚РІРѕ
 ;Packet Style device
 ;
 MSG_IOFSDEVICE
-IOFS-устройство
+IOFS-СѓСЃС‚СЂРѕР№СЃС‚РІРѕ
 ;IOFS Style device
 ;

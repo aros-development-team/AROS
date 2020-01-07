@@ -5,74 +5,74 @@
 ; TODO: update me and set version to 2
 ;
 MSG_NAME
-Настройки сети
+РќР°СЃС‚СЂРѕР№РєРё СЃРµС‚Рё
 ;Network Preferences
 MSG_DESCRIPTION
-Настройки протокола TCP/IP
+РќР°СЃС‚СЂРѕР№РєРё РїСЂРѕС‚РѕРєРѕР»Р° TCP/IP
 ;TCP/IP Network preferences
 MSG_DEVICE
-Устройство
+РЈСЃС‚СЂРѕР№СЃС‚РІРѕ
 ;Device
 MSG_IP_MODE
-Режим IP
+Р РµР¶РёРј IP
 ;IP Mode
 MSG_IP
 IP
 ;
 MSG_MASK
-Маска
+РњР°СЃРєР°
 ;Mask
 MSG_GATE
-Шлюз
+РЁР»СЋР·
 ;Gate
 MSG_DNS1
-Первичный DNS
+РџРµСЂРІРёС‡РЅС‹Р№ DNS
 ;Primary DNS
 MSG_DNS2
-Вторичный DNS
+Р’С‚РѕСЂРёС‡РЅС‹Р№ DNS
 ;Secondary DNS
 MSG_HOST_NAME
-Имя узла
+РРјСЏ СѓР·Р»Р°
 ;Host Name
 MSG_DOMAIN_NAME
-Домен
+Р”РѕРјРµРЅ
 ;Domain Name
 MSG_IP_MODE_MANUAL
-Вручную
+Р’СЂСѓС‡РЅСѓСЋ
 ;Manual
 MSG_IP_MODE_DHCP
-Получить дрес автоматически
+РџРѕР»СѓС‡РёС‚СЊ РґСЂРµСЃ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё
 ;Get address from DHCP
 MSG_TAB_IP_CONFIGURATION
-Настройка IP
+РќР°СЃС‚СЂРѕР№РєР° IP
 ;IP Configuration
 MSG_TAB_COMPUTER_NAME
-Имя компьютера
+РРјСЏ РєРѕРјРїСЊСЋС‚РµСЂР°
 ;Computer Name
 MSG_AUTOSTART_STACK
-Запускать при загрузке
+Р—Р°РїСѓСЃРєР°С‚СЊ РїСЂРё Р·Р°РіСЂСѓР·РєРµ
 ;Autostart
 MSG_ERR_UNKNOWN_ERROR
-Неизвестная ошибка
+РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°
 ;Unknown error
 MSG_ERR_NOT_RESTARTED_STACK
-Не удалось перезапустить сетевой стэк
+РќРµ СѓРґР°Р»РѕСЃСЊ РїРµСЂРµР·Р°РїСѓСЃС‚РёС‚СЊ СЃРµС‚РµРІРѕР№ СЃС‚СЌРє
 ;Failed to restart network stack
 MSG_BUTTON_OK
 Ok
 ;
 MSG_ERROR_TITLE
-Ошибка
+РћС€РёР±РєР°
 ;Error
 MSG_ERR_NOT_SAVED_PREFS
-Настройки сети НЕ БЫЛИ сохранены в %s
+РќР°СЃС‚СЂРѕР№РєРё СЃРµС‚Рё РќР• Р‘Р«Р›Р СЃРѕС…СЂР°РЅРµРЅС‹ РІ %s
 ;Network preferences not saved to %s
 MSG_ERR_NOT_COPIED_FILES
-Дополнительные файлы НЕ СКОПИРОВАНЫ в %s
+Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ С„Р°Р№Р»С‹ РќР• РЎРљРћРџРР РћР’РђРќР« РІ %s
 ;Additional files not copied to %s
 MSG_INFO_TITLE
-Сведения
+РЎРІРµРґРµРЅРёСЏ
 ;Information
 MSG_PREFS_SAVED_RESTART
-Настройки сохранены в %s.\n. Нужен перезапуск AROS для принятия изменений.
+РќР°СЃС‚СЂРѕР№РєРё СЃРѕС…СЂР°РЅРµРЅС‹ РІ %s.\n. РќСѓР¶РµРЅ РїРµСЂРµР·Р°РїСѓСЃРє AROS РґР»СЏ РїСЂРёРЅСЏС‚РёСЏ РёР·РјРµРЅРµРЅРёР№.
 ;Preferences have been saved to %s.\nRestart AROS for them to take effect.

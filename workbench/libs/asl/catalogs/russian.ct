@@ -5,7 +5,7 @@
 ; Translated by Sergey Mineychev aka Keen
 ;
 MSG_FILEREQ_TITLE
-Выберите файл
+Р’С‹Р±РµСЂРёС‚Рµ С„Р°Р№Р»
 ; Select File
 ;
 MSG_FILEREQ_POSITIVE_GAD
@@ -13,134 +13,134 @@ Ok
 ; Ok
 ;
 MSG_FILEREQ_NEGATIVE_GAD
-Отмена
+РћС‚РјРµРЅР°
 ; Cancel
 ;
 MSG_FILEREQ_VOLUMES_GAD
-Тома
+РўРѕРјР°
 ; Volumes
 ;
 MSG_FILEREQ_PARENT_GAD
-Выше
+Р’С‹С€Рµ
 ; Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
-Шаблон
+РЁР°Р±Р»РѕРЅ
 ; Pattern
 ;
 MSG_FILEREQ_DRAWER_LABEL
-Каталог
+РљР°С‚Р°Р»РѕРі
 ; Drawer
 ;
 MSG_FILEREQ_FILE_LABEL
-Файл
+Р¤Р°Р№Р»
 ; File
 ;
 MSG_FILEREQ_LV_DRAWER
-Каталог
+РљР°С‚Р°Р»РѕРі
 ; Drawer
 ;
 MSG_FILEREQ_LV_ASSIGN
-Назначить
+РќР°Р·РЅР°С‡РёС‚СЊ
 ; Assign
 ;
 MSG_FILEREQ_DELETE_TITLE
-Удалить файл
+РЈРґР°Р»РёС‚СЊ С„Р°Р№Р»
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Внимание: после удаления\n\
-информация будет утеряна\n\
-ТОЧНО удалять\n\
+Р’РЅРёРјР°РЅРёРµ: РїРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ\n\
+РёРЅС„РѕСЂРјР°С†РёСЏ Р±СѓРґРµС‚ СѓС‚РµСЂСЏРЅР°\n\
+РўРћР§РќРћ СѓРґР°Р»СЏС‚СЊ\n\
 %s?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
-Удалить|Отменить
+РЈРґР°Р»РёС‚СЊ|РћС‚РјРµРЅРёС‚СЊ
 ; Delete|Cancel
 ;
 MSG_FILEREQ_RENAME_TITLE
-Переименование
+РџРµСЂРµРёРјРµРЅРѕРІР°РЅРёРµ
 ; Rename
 ;
 MSG_FILEREQ_RENAME_OK
-Переименовать
+РџРµСЂРµРёРјРµРЅРѕРІР°С‚СЊ
 ; Rename
 ;
 MSG_FILEREQ_RENAME_CANCEL
-Отмена
+РћС‚РјРµРЅР°
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_TITLE
-Создание каталога
+РЎРѕР·РґР°РЅРёРµ РєР°С‚Р°Р»РѕРіР°
 ; Create Drawer
 ;
 MSG_FILEREQ_CREATEDRAWER_OK
-Создать
+РЎРѕР·РґР°С‚СЊ
 ; Create
 ;
 MSG_FILEREQ_CREATEDRAWER_CANCEL
-Отмена
+РћС‚РјРµРЅР°
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_DEFNAME
-Назови_Меня
+РќР°Р·РѕРІРё_РњРµРЅСЏ
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Выбор по шаблону
+Р’С‹Р±РѕСЂ РїРѕ С€Р°Р±Р»РѕРЅСѓ
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
-Выбрать
+Р’С‹Р±СЂР°С‚СЊ
 ; Select
 ;
 MSG_FILEREQ_SELECT_CANCEL
-Отменить
+РћС‚РјРµРЅРёС‚СЊ
 ; Cancel
 ;
 MSG_FILEREQ_MEN_CONTROL
-Управление
+РЈРїСЂР°РІР»РµРЅРёРµ
 ; Control
 ;
 MSG_FILEREQ_MEN_CONTROL_LASTNAME
-П\0Предыдущий
+Рџ\0РџСЂРµРґС‹РґСѓС‰РёР№
 ; L\0Last Name
 ;
 MSG_FILEREQ_MEN_CONTROL_NEXTNAME
-С\0Следующий
+РЎ\0РЎР»РµРґСѓСЋС‰РёР№
 ; N\0Next Name
 ;
 MSG_FILEREQ_MEN_CONTROL_RESTORE
-R\0Вернуть
+R\0Р’РµСЂРЅСѓС‚СЊ
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-У\0Назад
+РЈ\0РќР°Р·Р°Рґ
 ; P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
-Т\0Тома
+Рў\0РўРѕРјР°
 ; V\0Volumes
 ;
 MSG_FILEREQ_MEN_CONTROL_UPDATE
-A\0Обновить
+A\0РћР±РЅРѕРІРёС‚СЊ
 ; U\0Update
 ;
 MSG_FILEREQ_MEN_CONTROL_DELETE
-D\0Удалить
+D\0РЈРґР°Р»РёС‚СЊ
 ; D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
-T\0Создать каталог...
+T\0РЎРѕР·РґР°С‚СЊ РєР°С‚Р°Р»РѕРі...
 ; T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
-E\0Переименовать...
+E\0РџРµСЂРµРёРјРµРЅРѕРІР°С‚СЊ...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
-#\0Выбрать...
+#\0Р’С‹Р±СЂР°С‚СЊ...
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
@@ -148,54 +148,54 @@ O\0Ok
 ; O\0Ok
 ;
 MSG_FILEREQ_MEN_CONTROL_CANCEL
-C\0Отмена
+C\0РћС‚РјРµРЅР°
 ; C\0Cancel
 ;
 MSG_FILEREQ_MEN_FILELIST
-Список файлов
+РЎРїРёСЃРѕРє С„Р°Р№Р»РѕРІ
 ; File list
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTNAME
-1\0Сортировать по имени
+1\0РЎРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ РёРјРµРЅРё
 ; 1\0Sort by name
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDATE
-2\0Сортировать по дате
+2\0РЎРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ РґР°С‚Рµ
 ; 2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0Сортировать по размеру
+3\0РЎРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ СЂР°Р·РјРµСЂСѓ
 ; 3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
-+\0По возрастанию
++\0РџРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ
 ; +\0Ascending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDOWN
--\0По убыванию
+-\0РџРѕ СѓР±С‹РІР°РЅРёСЋ
 ; -\0Descending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
-4\0Показать каталоги первыми
+4\0РџРѕРєР°Р·Р°С‚СЊ РєР°С‚Р°Р»РѕРіРё РїРµСЂРІС‹РјРё
 ; 4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
-5\0Показать каталоги с файлами
+5\0РџРѕРєР°Р·Р°С‚СЊ РєР°С‚Р°Р»РѕРіРё СЃ С„Р°Р№Р»Р°РјРё
 ; 5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
-6\0Показать каталоги последними
+6\0РџРѕРєР°Р·Р°С‚СЊ РєР°С‚Р°Р»РѕРіРё РїРѕСЃР»РµРґРЅРёРјРё
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Выбор разрешения экрана
+Р’С‹Р±РѕСЂ СЂР°Р·СЂРµС€РµРЅРёСЏ СЌРєСЂР°РЅР°
 ;
 MSG_MODEREQ_POSITIVE_GAD
 Ok
 ; Ok
 ;
 MSG_MODEREQ_NEGATIVE_GAD
-Отмена
+РћС‚РјРµРЅР°
 ; Cancel
 ;
 MSG_MODEREQ_OVERSCAN_LABEL
@@ -203,59 +203,59 @@ Overscan
 ; Overscan
 ;
 MSG_MODEREQ_OVERSCAN_TEXT
-Размер текста
+Р Р°Р·РјРµСЂ С‚РµРєСЃС‚Р°
 ; Text Size
 ;
 MSG_MODEREQ_OVERSCAN_GRAPHICS
-Размер графики
+Р Р°Р·РјРµСЂ РіСЂР°С„РёРєРё
 ; Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
-Экстремальный размер
+Р­РєСЃС‚СЂРµРјР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ
 ; Extreme Size
 ;
 MSG_MODEREQ_OVERSCAN_MAXIMUM
-Максимальный размер
+РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ
 ; Maximum Size
 ;
 MSG_MODEREQ_WIDTH_LABEL
-Ширина
+РЁРёСЂРёРЅР°
 ; Width
 ;
 MSG_MODEREQ_HEIGHT_LABEL
-Высота
+Р’С‹СЃРѕС‚Р°
 ; Height
 ;
 MSG_MODEREQ_COLORS_LABEL
-Цвета
+Р¦РІРµС‚Р°
 ; Colors
 ;
 MSG_MODEREQ_AUTOSCROLL_LABEL
-Автопромотка
+РђРІС‚РѕРїСЂРѕРјРѕС‚РєР°
 ; AutoScroll
 ;
 MSG_MODEREQ_AUTOSCROLL_OFF
-Выкл
+Р’С‹РєР»
 ; OFF
 ;
 MSG_MODEREQ_AUTOSCROLL_ON
-Вкл
+Р’РєР»
 ; ON
 ;
 MSG_MODEREQ_PROPERTIES_TITLE
-Свойства режима
+РЎРІРѕР№СЃС‚РІР° СЂРµР¶РёРјР°
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
-Не поддерживает Workbench
+РќРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ Workbench
 ; Does not support Workbench
 ;
 MSG_MODEREQ_PROPERTIES_NOTGENLOCK
-Не поддерживает Genlock
+РќРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ Genlock
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
-Неперемещаемое
+РќРµРїРµСЂРµРјРµС‰Р°РµРјРѕРµ
 ; Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
@@ -267,51 +267,51 @@ Extra-Halfbright
 ; Extra-HalfBright
 ;
 MSG_MODEREQ_PROPERTIES_LACE
-Чересстрочная
+Р§РµСЂРµСЃСЃС‚СЂРѕС‡РЅР°СЏ
 ; Interlaced
 ;
 MSG_MODEREQ_PROPERTIES_ECS
-Нужен ECS
+РќСѓР¶РµРЅ ECS
 ; Requires ECS
 ;
 MSG_MODEREQ_PROPERTIES_WB
-Поддерживает Workbench
+РџРѕРґРґРµСЂР¶РёРІР°РµС‚ Workbench
 ; Supports Workbench
 ;
 MSG_MODEREQ_PROPERTIES_GENLOCK
-Поддерживает Genlock
+РџРѕРґРґРµСЂР¶РёРІР°РµС‚ Genlock
 ; Supports genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
-Перемещаемое
+РџРµСЂРµРјРµС‰Р°РµРјРѕРµ
 ; Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
-Приоритет DualPlayfield = 2
+РџСЂРёРѕСЂРёС‚РµС‚ DualPlayfield = 2
 ; DualPlayfield Priority 2
 ;
 MSG_MODEREQ_PROPERTIES_REFRESHRATE
-%ldГц, %ld,%ldкГц
+%ldР“С†, %ld,%ldРєР“С†
 ; %ldHz, %ld,%ldkHz
 ;
 MSG_MODEREQ_MEN_CONTROL
-Настройка
+РќР°СЃС‚СЂРѕР№РєР°
 ; Control
 ;
 MSG_MODEREQ_MEN_CONTROL_LASTMODE
-L\0Последний режим
+L\0РџРѕСЃР»РµРґРЅРёР№ СЂРµР¶РёРј
 ; L\0Last Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_NEXTMODE
-N\0Следующий режим
+N\0РЎР»РµРґСѓСЋС‰РёР№ СЂРµР¶РёРј
 ; N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
-?\0Список свойств...
+?\0РЎРїРёСЃРѕРє СЃРІРѕР№СЃС‚РІ...
 ; ?\0Property List...
 ;
 MSG_MODEREQ_MEN_CONTROL_RESTORE
-R\0Вернуть
+R\0Р’РµСЂРЅСѓС‚СЊ
 ; R\0Restore
 ;
 MSG_MODEREQ_MEN_CONTROL_OK
@@ -319,11 +319,11 @@ O\0Ok
 ; O\0Ok
 ;
 MSG_MODEREQ_MEN_CONTROL_CANCEL
-C\0Отмена
+C\0РћС‚РјРµРЅР°
 ; C\0Cancel
 ;
 MSG_FONTREQ_TITLE
-Выбрать шрифт
+Р’С‹Р±СЂР°С‚СЊ С€СЂРёС„С‚
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
@@ -331,27 +331,27 @@ Ok
 ; Ok
 ;
 MSG_FONTREQ_NEGATIVE_GAD
-Отмена
+РћС‚РјРµРЅР°
 ; Cancel
 ;
 MSG_FONTREQ_MEN_CONTROL
-Управление
+РЈРїСЂР°РІР»РµРЅРёРµ
 ; Control
 ;
 MSG_FONTREQ_MEN_CONTROL_LASTFONT
-L\0Последний шрифт
+L\0РџРѕСЃР»РµРґРЅРёР№ С€СЂРёС„С‚
 ; L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
-N\0Следующий шрифт
+N\0РЎР»РµРґСѓСЋС‰РёР№ С€СЂРёС„С‚
 ; N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE
-R\0Вернуть
+R\0Р’РµСЂРЅСѓС‚СЊ
 ; R\0Restore
 ;
 MSG_FONTREQ_MEN_CONTROL_RESCAN
-D\0Пересмотреть диск
+D\0РџРµСЂРµСЃРјРѕС‚СЂРµС‚СЊ РґРёСЃРє
 ; D\0Rescan Disk
 ;
 MSG_FONTREQ_MEN_CONTROL_OK
@@ -359,27 +359,27 @@ O\0Ok
 ; O\0Ok
 ;
 MSG_FONTREQ_MEN_CONTROL_CANCEL
-C\0Отмена
+C\0РћС‚РјРµРЅР°
 ; C\0Cancel
 ;
 MSG_FONTREQ_MODE_LABEL
-Режим
+Р РµР¶РёРј
 ; Mode
 ;
 MSG_FONTREQ_MODE_TEXT
-Текст
+РўРµРєСЃС‚
 ; Text
 ;
 MSG_FONTREQ_MODE_TEXTANDFIELD
-Текст+Поле
+РўРµРєСЃС‚+РџРѕР»Рµ
 ; Text+Field
 ;
 MSG_FONTREQ_MODE_COMPLEMENT
-Дополнение
+Р”РѕРїРѕР»РЅРµРЅРёРµ
 ; Complement
 ;
 MSG_FONTREQ_STYLE_LABEL
-Стиль
+РЎС‚РёР»СЊ
 ; Style
 ;
 MSG_FONTREQ_STYLE_BOLD
@@ -395,14 +395,14 @@ U
 ; U
 ;
 MSG_FONTREQ_COLOR_LABEL_FG
-Цвет FG
+Р¦РІРµС‚ FG
 ; Color
 ;
 MSG_FONTREQ_COLOR_LABEL_BG
-Цвет BG
+Р¦РІРµС‚ BG
 ; BG Color
 ;
 MSG_FONTREQ_COLOR_LABEL_FGBG
-Цвета BG+FG
+Р¦РІРµС‚Р° BG+FG
 ; Colors
 ;

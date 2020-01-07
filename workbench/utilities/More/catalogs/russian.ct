@@ -3,100 +3,100 @@
 ## language russian
 ;
 MSG_CANT_OPEN_LIB
-Не могу открыть %s V%ld!
+РќРµ РјРѕРіСѓ РѕС‚РєСЂС‹С‚СЊ %s V%ld!
 ;
 MSG_NO_MEM
-Мало памяти!
+РњР°Р»Рѕ РїР°РјСЏС‚Рё!
 ;
 MSG_CANT_LOCK_SCR
-Не могу занять общий экран!
+РќРµ РјРѕРіСѓ Р·Р°РЅСЏС‚СЊ РѕР±С‰РёР№ СЌРєСЂР°РЅ!
 ;
 MSG_CANT_GET_DRI
-Не могу получить DrawInfo !
+РќРµ РјРѕРіСѓ РїРѕР»СѓС‡РёС‚СЊ DrawInfo !
 ;
 MSG_CANT_GET_VI
-Не могу получить VisualInfo !
+РќРµ РјРѕРіСѓ РїРѕР»СѓС‡РёС‚СЊ VisualInfo !
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Не могу создать изображения SYSICLASS!
+РќРµ РјРѕРіСѓ СЃРѕР·РґР°С‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ SYSICLASS!
 ;
 MSG_CANT_CREATE_GADGET
-Не могу создать гр. элементы!
+РќРµ РјРѕРіСѓ СЃРѕР·РґР°С‚СЊ РіСЂ. СЌР»РµРјРµРЅС‚С‹!
 ;
 MSG_CANT_CREATE_MENUS
-Не могу создать меню!
+РќРµ РјРѕРіСѓ СЃРѕР·РґР°С‚СЊ РјРµРЅСЋ!
 ;
 MSG_CANT_CREATE_WIN
-Не могу создать окно!
+РќРµ РјРѕРіСѓ СЃРѕР·РґР°С‚СЊ РѕРєРЅРѕ!
 ;
 MSG_MEN_PROJECT
-Проект
+РџСЂРѕРµРєС‚
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Открыть ...
+O\0РћС‚РєСЂС‹С‚СЊ ...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Сохранить как ...
+A\0РЎРѕС…СЂР°РЅРёС‚СЊ РєР°Рє ...
 ;
 MSG_MEN_PROJECT_PRINT
-P\0Печать
+P\0РџРµС‡Р°С‚СЊ
 ;
 MSG_MEN_PROJECT_ABOUT
-?\0О программе ...
+?\0Рћ РїСЂРѕРіСЂР°РјРјРµ ...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Выход
+Q\0Р’С‹С…РѕРґ
 ;
 MSG_MEN_NAVIGATION
-Навигация
+РќР°РІРёРіР°С†РёСЏ
 ;
 MSG_MEN_NAVIGATION_FIND
-F\0Найти ...
+F\0РќР°Р№С‚Рё ...
 ;
 MSG_MEN_NAVIGATION_FIND_NEXT
-.\0Найти следущее
+.\0РќР°Р№С‚Рё СЃР»РµРґСѓС‰РµРµ
 ;
 MSG_MEN_NAVIGATION_FIND_PREV
-,\0Найти предыдущее
+,\0РќР°Р№С‚Рё РїСЂРµРґС‹РґСѓС‰РµРµ
 ;
 MSG_MEN_NAVIGATION_JUMP
-G\0Перейти  ...
+G\0РџРµСЂРµР№С‚Рё  ...
 ;
 MSG_ASL_OPEN_TITLE
-Выберите файл для открытия
+Р’С‹Р±РµСЂРёС‚Рµ С„Р°Р№Р» РґР»СЏ РѕС‚РєСЂС‹С‚РёСЏ
 ;
 MSG_ASL_SAVE_TITLE
-Выберите файл для сохранения
+Р’С‹Р±РµСЂРёС‚Рµ С„Р°Р№Р» РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ
 ;
 MSG_ABOUT
-More V%ld.%ld\n (%s)\nCopyright щ %s by %s
+More V%ld.%ld\n (%s)\nCopyright С‰ %s by %s
 ;
 MSG_ABOUT_TITLE
-More - Просмотр теста
+More - РџСЂРѕСЃРјРѕС‚СЂ С‚РµСЃС‚Р°
 ;
 MSG_CONTINUE
 Weiter
 ;
 MSG_JUMP_TITLE
-Перейти к строке ...
+РџРµСЂРµР№С‚Рё Рє СЃС‚СЂРѕРєРµ ...
 ;
 MSG_FIND_TITLE
-Поиск
+РџРѕРёСЃРє
 ;
 MSG_OK
 Ok
 ;
 MSG_CANCEL
-Отмена
+РћС‚РјРµРЅР°
 ;
 MSG_WIN_TITLE
-More: %s (%ld строк - %ld Байт)
+More: %s (%ld СЃС‚СЂРѕРє - %ld Р‘Р°Р№С‚)
 ;
 MSG_SHORTCUT_TOP
-В
+Р’
 ;
 MSG_SHORTCUT_BOTTOM
-Н
+Рќ
 ;
 MSG_SHORTCUT_JUMP
 GJ
@@ -105,8 +105,8 @@ MSG_SHORTCUT_FIND
 FS
 ;
 MSG_SHORTCUT_NEXT
-С
+РЎ
 ;
 MSG_SHORTCUT_PREV
-П
+Рџ
 ;
