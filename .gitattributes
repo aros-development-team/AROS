@@ -25,3 +25,6 @@ icelandic.ct         text working-tree-encoding=ISO-8859-15
 italian.ct           text working-tree-encoding=ISO-8859-15
 spanish.ct           text working-tree-encoding=ISO-8859-15
 swedish.ct           text working-tree-encoding=ISO-8859-15
+
+# ISO-8859-15
+russian.ct           text working-tree-encoding=WINDOWS-1251
