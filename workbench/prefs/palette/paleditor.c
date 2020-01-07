@@ -66,6 +66,8 @@ STATIC const struct MUI_Palette_Entry initialpens[MAXPENS + 1] =
 struct PalEditor_DATA
 {
     Object                      *palpe_palette;
+    ULONG                       *penmap4;
+    ULONG                       *penmap8;
     struct MUI_Palette_Entry    *pens;
     UWORD                       *origcols;
     UWORD                       count;
@@ -162,6 +164,7 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     penarray_t *penarray = (penarray_t *)GetTagData(MUIA_UserData, 0, message->ops_AttrList);
     Object *pale = NULL, *palpe_palette;
     struct MUI_Palette_Entry *pens;
+    ULONG *pen4, *pen8;
     int i;
 
     DPENS(
@@ -174,12 +177,27 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     D(bug("[PaletteEditor] %s: pens @ 0x%p\n", __func__, pens);)
     if (!pens)
         return NULL;
+
     CopyMem(initialpens, pens, sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1));
     for (i = 0; i < MAXPENS; i++)
     {
         pennames[i] = _(pens[i].mpe_Group);
     }
     pennames[MAXPENS] = NULL;
+
+    pen4 = AllocMem(sizeof(ULONG) * MAXPENS, MEMF_CLEAR);
+    if (!pen4)
+    {
+        FreeMem(pens, sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1));
+        return NULL;
+    }
+    pen8 = AllocMem(sizeof(ULONG) * MAXPENS, MEMF_CLEAR);
+    if (!pen8)
+    {
+        FreeMem(pen4, sizeof(ULONG) * MAXPENS);
+        FreeMem(pens, sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1));
+        return NULL;
+    }
 
     if (!usepens)
     {
@@ -200,7 +218,9 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Palette",
         Child, HGroup,
             Child, (IPTR)(palpe_palette = (Object *)PEPaletteObject,
-               (usepens) ? MUIA_PEPalette_Pens : TAG_IGNORE,
+                MUIA_PEPalette_Penmap4, (IPTR)pen4,
+                MUIA_PEPalette_Penmap8, (IPTR)pen8,
+                (usepens) ? MUIA_PEPalette_Pens : TAG_IGNORE,
                 (IPTR)usepens,
                 MUIA_Palette_Entries, (IPTR)pens,
                 MUIA_Palette_Names, (IPTR)pennames,
@@ -212,6 +232,9 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     if (self)
     {
         SETUP_INST_DATA;
+
+        data->penmap4 = pen4;
+        data->penmap8 = pen8;
 
         data->palpe_palette = palpe_palette;
         data->pens = pens;
@@ -247,6 +270,9 @@ STATIC VOID Gadgets2PalPrefs (struct PalEditor_DATA *data)
 
     for (i = 0; i < MAXPENS; i++)
     {
+        paletteprefs.pap_4ColorPens[i] = data->penmap4[i];
+        paletteprefs.pap_8ColorPens[i] = data->penmap8[i];
+
         paletteprefs.pap_Colors[i].ColorIndex = pallpens[i].mpe_ID;
         paletteprefs.pap_Colors[i].Red = pallpens[i].mpe_Red >> 16;
         paletteprefs.pap_Colors[i].Green = pallpens[i].mpe_Green >> 16;
@@ -265,6 +291,9 @@ STATIC VOID PalPrefs2Gadgets(struct PalEditor_DATA *data)
         D(bug("[PaletteEditor] %s: pens @ 0x%p\n", __func__, prefpens);)
         for (i = 0; i < MAXPENS; i++)
         {
+            data->penmap4[i] = paletteprefs.pap_4ColorPens[i];
+            data->penmap8[i] = paletteprefs.pap_8ColorPens[i];
+            
             prefpens[i].mpe_ID = paletteprefs.pap_Colors[i].ColorIndex;
             prefpens[i].mpe_Red = paletteprefs.pap_Colors[i].Red << 16 | paletteprefs.pap_Colors[i].Red;
             prefpens[i].mpe_Green = paletteprefs.pap_Colors[i].Green << 16 | paletteprefs.pap_Colors[i].Green;

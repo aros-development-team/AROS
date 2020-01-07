@@ -36,7 +36,7 @@
 #include "args.h"
 #include "prefs.h"
 
-#define VERSION "$VER: Palette 1.5 (07.01.2020) AROS Dev Team"
+#define VERSION "$VER: Palette 1.6 (07.01.2020) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)

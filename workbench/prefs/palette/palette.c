@@ -338,8 +338,9 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     if (data->numentries > 0)
     {
-        data->penmap4 = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
-        data->penmap8 = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
+        data->penmap4 = (ULONG *)GetTagData(MUIA_PEPalette_Penmap4, 0, msg->ops_AttrList);
+        data->penmap8 = (ULONG *)GetTagData(MUIA_PEPalette_Penmap8, 0, msg->ops_AttrList);
+
         data->colorfieldentries = AllocMem(data->numentries * sizeof(Object *), MEMF_ANY);
         initPenMap(data->penmap4, 4);
         initPenMap(data->penmap8, 8);
