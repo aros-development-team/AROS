@@ -154,8 +154,8 @@ IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_Colorfield_Pen:
-            data->pen = (UBYTE) tag->ti_Data;
-            data->flags |= FLAG_FIXED_PEN;
+            if ((data->pen = (UBYTE) tag->ti_Data) != -1)
+                data->flags |= FLAG_FIXED_PEN;
             break;
 
         }
@@ -214,13 +214,16 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
             break;
 
         case MUIA_Colorfield_Pen:
-            if (data->flags & FLAG_PEN_ALLOCATED)
+            if ((data->flags & FLAG_PEN_ALLOCATED) && (data->cm))
             {
-                ReleasePen(_screen(obj)->ViewPort.ColorMap, data->pen);
+                ULONG disposepen = data->pen;
+                struct ColorMap *cm = data->cm;
                 data->flags &= ~(FLAG_PEN_ALLOCATED | FLAG_NO_PEN);
+                data->cm = NULL;
+                ReleasePen(cm, disposepen);
             }
-            data->pen = (UBYTE) tag->ti_Data;
-            data->flags |= FLAG_FIXED_PEN;
+            if ((data->pen = (UBYTE) tag->ti_Data) != -1)
+                data->flags |= FLAG_FIXED_PEN;
             newcol = TRUE;
             break;
 
@@ -241,12 +244,15 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
     if (newcol && (_flags(obj) & MADF_SETUP)
         && !(data->flags & FLAG_NO_PEN))
     {
-        SetRGB32(&_screen(obj)->ViewPort, data->pen, data->rgb[0],
-            data->rgb[1], data->rgb[2]);
-
-        if (GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH) > 8)
+        if (_screen(obj))
         {
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            SetRGB32(&_screen(obj)->ViewPort, data->pen, data->rgb[0],
+                data->rgb[1], data->rgb[2]);
+
+            if (GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH) > 8)
+            {
+                MUI_Redraw(obj, MADF_DRAWUPDATE);
+            }
         }
     }
 
@@ -288,13 +294,9 @@ IPTR Colorfield__OM_GET(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-IPTR Colorfield__MUIM_Setup(struct IClass *cl, Object *obj,
-    struct MUIP_Setup *msg)
+void Colorfield_SetupPen(Object *obj, struct Colorfield_DATA *data)
 {
-    struct Colorfield_DATA *data = INST_DATA(cl, obj);
-
-    if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
-        return 0;
+    data->cm = _screen(obj)->ViewPort.ColorMap;
 
     if (data->flags & FLAG_FIXED_PEN)
     {
@@ -305,21 +307,35 @@ IPTR Colorfield__MUIM_Setup(struct IClass *cl, Object *obj,
     {
         LONG pen;
 
-        pen = ObtainPen(_screen(obj)->ViewPort.ColorMap,
+        pen = ObtainPen(data->cm,
             (ULONG) -1,
             data->rgb[0], data->rgb[1], data->rgb[2], PENF_EXCLUSIVE);
 
         if (pen == -1)
         {
             data->flags |= FLAG_NO_PEN;
-            data->pen = 0;
+            data->pen = -1;
         }
         else
         {
             data->pen = (UBYTE) pen;
             data->flags |= FLAG_PEN_ALLOCATED;
-        }
+        }    
     }
+}
+
+IPTR Colorfield__MUIM_Setup(struct IClass *cl, Object *obj,
+    struct MUIP_Setup *msg)
+{
+    struct Colorfield_DATA *data = INST_DATA(cl, obj);
+
+    if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
+        return 0;
+
+    if (!_screen(obj))
+        return 1;
+
+    Colorfield_SetupPen(obj, data);
 
     return 1;
 }
@@ -331,9 +347,12 @@ IPTR Colorfield__MUIM_Cleanup(struct IClass *cl, Object *obj,
 
     if (data->flags & FLAG_PEN_ALLOCATED)
     {
-        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->pen);
+        ULONG disposepen = data->pen;
+        struct ColorMap *cm = data->cm;
         data->flags &= ~FLAG_PEN_ALLOCATED;
-        data->pen = 0;
+        data->cm = NULL;
+        data->pen = -1;
+        ReleasePen(cm, disposepen);
     }
     data->flags &= ~FLAG_NO_PEN;
 
@@ -365,6 +384,9 @@ IPTR Colorfield__MUIM_Draw(struct IClass *cl, Object *obj,
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
         return FALSE;
 
+    if (!_rp(obj))
+        return TRUE;
+
     if (data->flags & FLAG_NO_PEN)
     {
         static UWORD pat[] = { 0x1111, 0x2222, 0x4444, 0x8888 };
@@ -372,7 +394,6 @@ IPTR Colorfield__MUIM_Draw(struct IClass *cl, Object *obj,
         SetAfPt(_rp(obj), pat, 2);
         SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_SHADOW],
             _pens(obj)[MPEN_BACKGROUND], JAM2);
-
     }
     else
     {
@@ -386,6 +407,22 @@ IPTR Colorfield__MUIM_Draw(struct IClass *cl, Object *obj,
 
     return 0;
 }
+
+IPTR Colorfield__MUIM_ConnectParent(struct IClass *cl, Object *obj,
+    struct MUIP_ConnectParent *msg)
+{
+    struct Colorfield_DATA *data = INST_DATA(cl, obj);
+    IPTR retval;
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if ((_flags(obj) & MADF_SETUP) && !(data->cm))
+    {
+        Colorfield_SetupPen(obj, data);
+    }
+    return retval;
+}
+
 
 #if ZUNE_BUILTIN_COLORFIELD
 BOOPSI_DISPATCHER(IPTR, Colorfield_Dispatcher, cl, obj, msg)
@@ -403,6 +440,9 @@ BOOPSI_DISPATCHER(IPTR, Colorfield_Dispatcher, cl, obj, msg)
     case MUIM_Cleanup:
         return Colorfield__MUIM_Cleanup(cl, obj,
             (struct MUIP_Cleanup *)msg);
+    case MUIM_ConnectParent:
+        return Colorfield__MUIM_ConnectParent(cl, obj,
+            (struct MUIP_ConnectParent *)msg);
     case MUIM_AskMinMax:
         return Colorfield__MUIM_AskMinMax(cl, obj,
             (struct MUIP_AskMinMax *)msg);
