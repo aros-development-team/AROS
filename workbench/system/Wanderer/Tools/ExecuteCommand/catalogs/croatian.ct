@@ -4,11 +4,11 @@
 ;
 ;
 MSG_TITLE
-Izvrπi Komandu
+Izvr≈°i Komandu
 ; Execute
 ;
 MSG_DESCRIPTION
-Izvrπi Program ili Komandu
+Izvr≈°i Program ili Komandu
 ; Execute Command
 ;
 MSG_LABEL_COMMANDLINE
@@ -28,7 +28,7 @@ Dobiveni Rezulat
 ; Command Output
 ;
 MSG_ERROR_HEADER
-POGRE©KA
+POGRE≈†KA
 ; ERROR
 ;
 MSG_ERROR_OK
@@ -48,6 +48,6 @@ Ne mogu otvoriti prozor konzole.
 ; Can't open console window.
 ;
 MSG_ERROR_EXECUTE
-Komandu nije moguÊe izvrπiti.
+Komandu nije moguƒáe izvr≈°iti.
 ; Can't execute command.
 ;

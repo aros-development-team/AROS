@@ -8,8 +8,8 @@ Snoopy
 ; Snoopy
 ;
 MSG_COPYRIGHT
-© 2006-2008, The AROS Development Team
-; © 2006-2008, The AROS Development Team
+Â© 2006-2008, The AROS Development Team
+; Â© 2006-2008, The AROS Development Team
 ;
 MSG_AUTHOR
 The AROS Development Team
@@ -137,7 +137,7 @@ Riporta|Mantieni
 ;
 MSG_ASK_REMOVE
 Vuoi davvero chiudere il processo di Snoopy?\n\
-Può rendere il sistema instabile se un altro processo modifica le patch di Snoopy.
+PuÃ² rendere il sistema instabile se un altro processo modifica le patch di Snoopy.
 ; Do you really want to remove the Snoopy process?\n\
 ; This can be quite dangerous when another task has patched Snoopy's patches.
 ;

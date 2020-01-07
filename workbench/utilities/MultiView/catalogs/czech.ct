@@ -4,43 +4,43 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Nelze otev¯Ìt knihovnu %s V%ld!\n
+Nelze otev≈ô√≠t knihovnu %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC
-Nelze vytvo¯it poæadovanÈ objekty!
+Nelze vytvo≈ôit po≈æadovan√© objekty!
 ; Can't create interconnection objects!
 ;
 MSG_CANT_LOCK_SCR
-Nelze zamknout ve¯ejnou obrazovku!
+Nelze zamknout ve≈ôejnou obrazovku!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nelze naËÌst strukturu DrawInfo!
+Nelze naƒç√≠st strukturu DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nelze naËÌst strukturu VisualInfo!
+Nelze naƒç√≠st strukturu VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Nelze vytvo¯it obr·zky t¯Ìdy SysIClass!
+Nelze vytvo≈ôit obr√°zky t≈ô√≠dy SysIClass!
 ; Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Nelze vytvo¯it tlaËÌtka!
+Nelze vytvo≈ôit tlaƒç√≠tka!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nelze vytvo¯it menu!
+Nelze vytvo≈ôit menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nelze vytvo¯it okno!
+Nelze vytvo≈ôit okno!
 ; Can't create window!
 ;
 MSG_CANT_CREATE_MSGPORT
-Nelze vytvo¯it message port!
+Nelze vytvo≈ôit message port!
 ; Can't create message port!
 ;
 MSG_CANT_ADD_APPWINDOW
@@ -48,7 +48,7 @@ Nelze nastavit okno typu AppWindow!
 ; Can't promote window as an AppWindow!
 ;
 MSG_SAVE_FAILED
-Chyba p¯i ukl·d·nÌ souboru!
+Chyba p≈ôi ukl√°d√°n√≠ souboru!
 ; Saving to file failed!
 ;
 MSG_MEN_PROJECT
@@ -56,15 +56,15 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Otev¯Ìt...
+O\0Otev≈ô√≠t...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Uloæit jako...
+A\0Ulo≈æit jako...
 ; A\0Save as...
 ;
 MSG_MEN_PROJECT_SAVEAS_IFF
-I\0Uloæit jako IFF...
+I\0Ulo≈æit jako IFF...
 ; I\0Save as IFF...
 ;
 MSG_MEN_PROJECT_PRINT
@@ -76,27 +76,27 @@ MSG_MEN_PROJECT_ABOUT
 ; ?\0About...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0UkonËit
+Q\0Ukonƒçit
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
-⁄pravy
+√öpravy
 ; Edit
 ;
 MSG_MEN_EDIT_MARK
-B\0OznaËit
+B\0Oznaƒçit
 ; B\0Mark
 ;
 MSG_MEN_EDIT_COPY
-C\0ZkopÌrovat
+C\0Zkop√≠rovat
 ; C\0Copy
 ;
 MSG_MEN_EDIT_SELECTALL
-[\0OznaËit vπe
+[\0Oznaƒçit v≈°e
 ; [\0Select All
 ;
 MSG_MEN_EDIT_CLEARSELECTED
-]\0Zruπit oznaËenÌ
+]\0Zru≈°it oznaƒçen√≠
 ; ]\0Clear Selected
 ;
 MSG_MEN_WINDOW
@@ -104,7 +104,7 @@ Okno
 ; Window
 ;
 MSG_MEN_WINDOW_SEPSCREEN
- \0PouæÌt vlastnÌ obrazovku
+ \0Pou≈æ√≠t vlastn√≠ obrazovku
 ;  \0Use Separate Screen
 ;
 MSG_MEN_WINDOW_MINIMIZE
@@ -112,7 +112,7 @@ MSG_MEN_WINDOW_MINIMIZE
 ;  \0Minimize
 ;
 MSG_MEN_WINDOW_NORMAL
- \0Norm·lnÌ velikost
+ \0Norm√°ln√≠ velikost
 ;  \0Normal
 ;
 MSG_MEN_WINDOW_MAXIMIZE
@@ -120,27 +120,27 @@ MSG_MEN_WINDOW_MAXIMIZE
 ;  \0Maximize
 ;
 MSG_MEN_SETTINGS
-NastavenÌ
+Nastaven√≠
 ; Settings
 ;
 MSG_MEN_SETTINGS_SAVEDEF
-D\0Uloæit jako v˝chozÌ
+D\0Ulo≈æit jako v√Ωchoz√≠
 ; D\0Save As Defaults
 ;
 MSG_MEN_PICT
-Obr·zek
+Obr√°zek
 ; Picture
 ;
 MSG_MEN_PICT_ZOOM_IN
- \0ZvÏtπit
+ \0Zvƒõt≈°it
 ;  \0Zoom in
 ;
 MSG_MEN_PICT_ZOOM_OUT
- \0Zmenπit
+ \0Zmen≈°it
 ;  \0Zoom out
 ;
 MSG_MEN_PICT_RESET
- \0V˝chozÌ velikost
+ \0V√Ωchoz√≠ velikost
 ;  \0Reset Size
 ;
 MSG_MEN_PICT_FIT_WIN
@@ -148,15 +148,15 @@ MSG_MEN_PICT_FIT_WIN
 ;  \0Fit to Window
 ;
 MSG_MEN_PICT_KEEP_ASPECT
- \0Dodræet pomÏr stran
+ \0Dodr≈æet pomƒõr stran
 ;  \0Keep Aspect Ratio
 ;
 MSG_MEN_PICT_FORCE_MAP
- \0Upravit v r·mci palety
+ \0Upravit v r√°mci palety
 ;  \0Force Palette Mapping
 ;
 MSG_MEN_PICT_DITHER
- \0Vylepπit p¯echody barev
+ \0Vylep≈°it p≈ôechody barev
 ;  \0Dithering
 ;
 MSG_MEN_TEXT
@@ -164,7 +164,7 @@ Text
 ; Text
 ;
 MSG_MEN_TEXT_WORDWRAP
- \0Zapnout zalomenÌ textu
+ \0Zapnout zalomen√≠ textu
 ;  \0Enable Word Wrap
 ;
 MSG_MEN_TEXT_SEARCH
@@ -172,19 +172,19 @@ MSG_MEN_TEXT_SEARCH
 ;  \0Search for...
 ;
 MSG_MEN_TEXT_SEARCH_PREV
- \0Hledat p¯edchozÌ
+ \0Hledat p≈ôedchoz√≠
 ;  \0Search for previous
 ;
 MSG_MEN_TEXT_SEARCH_NEXT
- \0Hledat dalπÌ
+ \0Hledat dal≈°√≠
 ;  \0Search for next
 ;
 MSG_ASL_OPEN_TITLE
-Otev¯enÌ souboru
+Otev≈ôen√≠ souboru
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-UloæenÌ souboru
+Ulo≈æen√≠ souboru
 ; Select File to Save to
 ;
 MSG_ABOUT

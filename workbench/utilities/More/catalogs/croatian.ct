@@ -12,7 +12,7 @@ Nedovoljno memorije!
 ; Out of memory!
 ;
 MSG_CANT_LOCK_SCR
-Ne mogu zakljuËat javni ekran!
+Ne mogu zakljuƒçat javni ekran!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -76,15 +76,15 @@ Navigacija
 ; Navigation
 ;
 MSG_MEN_NAVIGATION_FIND
-F\0Traæi...
+F\0Tra≈æi...
 ; F\0Find...
 ;
 MSG_MEN_NAVIGATION_FIND_NEXT
-.\0Traæi Dalje
+.\0Tra≈æi Dalje
 ; .\0Find Next
 ;
 MSG_MEN_NAVIGATION_FIND_PREV
-,\0Traæi Nazad
+,\0Tra≈æi Nazad
 ; ,\0Find Prev
 ;
 MSG_MEN_NAVIGATION_JUMP
@@ -92,19 +92,19 @@ J\0Idi Na...
 ; J\0Jump...
 ;
 MSG_ASL_OPEN_TITLE
-Izaberite Datoteku koju Æelite Otvoriti
+Izaberite Datoteku koju ≈Ωelite Otvoriti
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-Izaberite Datoteku u koju Æelite Spremiti
+Izaberite Datoteku u koju ≈Ωelite Spremiti
 ; Select File to Save to
 ;
 MSG_ABOUT
-»itaË V%ld.%ld\n (%s)\nCopyright å %s by %s
-; More V%ld.%ld\n (%s)\nCopyright © %s by %s
+ƒåitaƒç V%ld.%ld\n (%s)\nCopyright ¬å %s by %s
+; More V%ld.%ld\n (%s)\nCopyright ≈† %s by %s
 ;
 MSG_ABOUT_TITLE
-»itaË
+ƒåitaƒç
 ; More
 ;
 MSG_CONTINUE
@@ -116,7 +116,7 @@ Idi na Liniju...
 ; Go to Line ...
 ;
 MSG_FIND_TITLE
-Traæi
+Tra≈æi
 ; Search
 ;
 MSG_OK
@@ -128,7 +128,7 @@ Odustani
 ; Cancel
 ;
 MSG_WIN_TITLE
-»itaË: %s (%ld Linija - %ld Bajtova)
+ƒåitaƒç: %s (%ld Linija - %ld Bajtova)
 ; More: %s (%ld Lines - %ld Bytes)
 ;
 MSG_SHORTCUT_TOP

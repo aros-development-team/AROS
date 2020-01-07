@@ -47,7 +47,7 @@ Breite:
 ; Width:
 ;
 MSG_GFX_HEIGHT
-Höhe:
+HÃ¶he:
 ; Height:
 ;
 MSG_GFX_DEPTH
@@ -79,7 +79,7 @@ Verwende Standard-Bildwiederholrate
 ; Use Default Refresh Rate
 ;
 MSG_GFX_BESTRES
-Verwende höchste verfügbare Auflösung
+Verwende hÃ¶chste verfÃ¼gbare AuflÃ¶sung
 ; Use Highest Available Resolution
 ;
 MSG_ATA
@@ -107,11 +107,11 @@ Kein
 ; None
 ;
 MSG_ATA_DMA
-Aktiviere DMA-Datenübertragungen
+Aktiviere DMA-DatenÃ¼bertragungen
 ; Enable DMA Data Transfers
 ;
 MSG_ATA_32BIT
-Aktiviere 32-Bit-Datenübertragungen
+Aktiviere 32-Bit-DatenÃ¼bertragungen
 ; Enable 32-bit Data Transfers
 ;
 MSG_ATA_POLL
@@ -119,7 +119,7 @@ Verwende Polling zum Erkennen des Endes des Besetztzustandes
 ; Use Polling to Detect End of Busy State
 ;
 MSG_ATA_MULTI
-Aktiviere Multisektor-Datenübertragungen
+Aktiviere Multisektor-DatenÃ¼bertragungen
 ; Enable Multisector Data Transfers
 ;
 MSG_ATA_AHCI
@@ -171,15 +171,15 @@ Aktiviere Diskettenlaufwerk
 ; Enable Floppy Disk Drive
 ;
 MSG_DEVICE
-Boot-Gerät
+Boot-GerÃ¤t
 ; Boot Device
 ;
 MSG_DEVICE_NAME
-DOS-Gerät:
+DOS-GerÃ¤t:
 ; DOS Device:
 ;
 MSG_DEVICE_DELAY
-Boot-Verzögerung:
+Boot-VerzÃ¶gerung:
 ; Boot Delay:
 ;
 MSG_DEVICE_SECONDS
@@ -187,7 +187,7 @@ Sekunden
 ; seconds
 ;
 MSG_DEVICE_DEFAULTDELAY
-Verwende Standard-Boot-Verzögerung
+Verwende Standard-Boot-VerzÃ¶gerung
 ; Use Default Boot Delay
 ;
 MSG_OPTIONS
@@ -207,7 +207,7 @@ Pfad
 ; Path
 ;
 MSG_ADD
-Hinzufügen
+HinzufÃ¼gen
 ; Add
 ;
 MSG_REMOVE

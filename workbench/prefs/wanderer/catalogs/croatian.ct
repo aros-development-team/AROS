@@ -32,7 +32,7 @@ Izaberi Podlogu Prozora
 ; Select Drawer Background
 ;
 MSG_GENERAL
-OpÊenito
+Opƒáenito
 ; General
 ;
 MSG_APPEARANCE
@@ -44,7 +44,7 @@ Alatna Traka
 ; Toolbar
 ;
 MSG_CLASSIC
-KlasiËno
+Klasiƒçno
 ; Classic
 ;
 MSG_ENHANCED
@@ -68,11 +68,11 @@ Predpregled
 ; Preview
 ;
 MSG_TOOLBAR_ENABLED
-Alatna Traka OmoguËena
+Alatna Traka Omoguƒçena
 ; Toolbar Enabled
 ;
 MSG_ICONSPREFS
-Izgled i Ponaπanje Ikona
+Izgled i Pona≈°anje Ikona
 ; Icons look and feel
 ;
 MSG_ICONLISTMODE
@@ -80,11 +80,11 @@ Ikone lista
 ; Icon listmode
 ;
 MSG_ICONLISTMODE_PLAIN
-Posloæi ikone obiËno
+Poslo≈æi ikone obiƒçno
 ; List icons plainly
 ;
 MSG_ICONLISTMODE_GRID
-Posloæi ikone sa mreæom
+Poslo≈æi ikone sa mre≈æom
 ; List icons by grid
 ;
 MSG_ICONTEXTMODE
@@ -96,7 +96,7 @@ Vanjski Obris
 ; Outline
 ;
 MSG_ICONTEXTMODE_PLAIN
-ObiËno
+Obiƒçno
 ; Plain
 ;
 MSG_ICONTEXTMODE_SHADOW
@@ -104,7 +104,7 @@ Sjena
 ; Drop shadow
 ;
 MSG_ICONTEXTLENGTH
-Maksimalna duæina teksta
+Maksimalna du≈æina teksta
 ; Max icon textlength
 ;
 MSG_DOUBLEBUFFERED
@@ -158,27 +158,27 @@ Slovo Ikon Info-a...
 ; Icon Info Font...
 ;
 MSG_HORIZSPACINGICON
-Horizontalni razmak izmeu ikona
+Horizontalni razmak izmeƒëu ikona
 ; Horizontal spacing between icons
 ;
 MSG_VERTSPACINGICON
-Vertikalni razmak izmeu ikona
+Vertikalni razmak izmeƒëu ikona
 ; Vertical spacing between icons
 ;
 MSG_PADDINGICONIMAGELABEL
-Razmak izmeu ikone i teksta
+Razmak izmeƒëu ikone i teksta
 ; Padding between Icon Image and Label
 ;
 MSG_HORIZPADDINGLABELTEXT
-Horizontalni razmak izmeu okvira i teksta
+Horizontalni razmak izmeƒëu okvira i teksta
 ; Horizontal Padding between Label Frame and Text
 ;
 MSG_VERTPADDINGLABELTEXT
-Vertikalni razmak izmeu okvira i teksta
+Vertikalni razmak izmeƒëu okvira i teksta
 ; Vertical Padding between Label Frame and Text
 ;
 MSG_FRAMEWIDTH
-©irina Okvira
+≈†irina Okvira
 ; Label Frame Width
 ;
 MSG_FRAMEHEIGHT
@@ -194,7 +194,7 @@ Skalirano
 ; Scaled
 ;
 MSG_FLOATING
-PlutajuÊe
+Plutajuƒáe
 ; Floating
 ;
 MSG_FIXED
@@ -202,15 +202,15 @@ Fiksirano
 ; Fixed
 ;
 MSG_LABELLINELENGTH
-Maksimalna duæina linije...
+Maksimalna du≈æina linije...
 ; Max. Label line length...
 ;
 MSG_USEMULTILINELABELS
-Koristi viπe redaka
+Koristi vi≈°e redaka
 ; Use MultiLine Labels
 ;
 MSG_SHOWFOCUSEDICON
-Prikaæi samo za Fokusirane Ikone
+Prika≈æi samo za Fokusirane Ikone
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
@@ -234,7 +234,7 @@ Opcije Podloge...
 ; Background Options...
 ;
 MSG_DRAWMODE
-NaËin Iscrtavanja
+Naƒçin Iscrtavanja
 ; Draw mode :
 ;
 MSG_USERFILEONWB
@@ -242,7 +242,7 @@ Korisnikove Mape i Datoteke na Desktopu
 ; User Files Folder on Workbench
 ;
 MSG_NETWORKONWB
-Internet PretraæivaË na Desktopu
+Internet Pretra≈æivaƒç na Desktopu
 ; Network Browser on Workbench
 ;
 MSG_VIEWSETTINGS

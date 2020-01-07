@@ -3,51 +3,51 @@
 ## codeset 5
 ;
 MSG_CANT_OPEN_LIB
-Nie mo¿na otworzyæ %s w wersji %ld!\n
+Nie moÅ¼na otworzyÄ‡ %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC
-Nie mo¿na utworzyæ po³±czonych wewnêtrznie obiektów!
+Nie moÅ¼na utworzyÄ‡ poÅ‚Ä…czonych wewnÄ™trznie obiektÃ³w!
 ; Can't create interconnection objects!
 ;
 MSG_CANT_LOCK_SCR
-Nie mo¿na uzyskaæ dostêpu do ekranu!
+Nie moÅ¼na uzyskaÄ‡ dostÄ™pu do ekranu!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nie mo¿na pobraæ DrawInfo!
+Nie moÅ¼na pobraÄ‡ DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nie mo¿na pobraæ VisualInfo!
+Nie moÅ¼na pobraÄ‡ VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Nie mo¿na utowrzyæ obrazów SYSICLASS!
+Nie moÅ¼na utowrzyÄ‡ obrazÃ³w SYSICLASS!
 ; Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Nie mo¿na utworzyæ gad¿etów!
+Nie moÅ¼na utworzyÄ‡ gadÅ¼etÃ³w!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nie mo¿na utowrzyæ menu!
+Nie moÅ¼na utowrzyÄ‡ menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nie mo¿na utworzyæ okna!
+Nie moÅ¼na utworzyÄ‡ okna!
 ; Can't create window!
 ;
 MSG_CANT_CREATE_MSGPORT
-Nie mo¿na utworzyæ portu wiadomo¶ci!
+Nie moÅ¼na utworzyÄ‡ portu wiadomoÅ›ci!
 ; Can't create message port!
 ;
 MSG_CANT_ADD_APPWINDOW
-Nie mo¿na wypromowaæ okna jako okno AppWindow!
+Nie moÅ¼na wypromowaÄ‡ okna jako okno AppWindow!
 ; Can't promote window as an AppWindow!
 ;
 MSG_SAVE_FAILED
-Zapis pliku zakoñczony b³êdem!
+Zapis pliku zakoÅ„czony bÅ‚Ä™dem!
 ; Saving to file failed!
 ;
 MSG_MEN_PROJECT
@@ -55,7 +55,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Otwórz...
+O\0OtwÃ³rz...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -75,7 +75,7 @@ MSG_MEN_PROJECT_ABOUT
 ; ?\0About...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Skoñcz
+Q\0SkoÅ„cz
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
@@ -95,7 +95,7 @@ MSG_MEN_EDIT_SELECTALL
 ; [\0Select All
 ;
 MSG_MEN_EDIT_CLEARSELECTED
-]\0Usuñ zaznaczenie
+]\0UsuÅ„ zaznaczenie
 ; ]\0Clear Selected
 ;
 MSG_MEN_WINDOW
@@ -103,7 +103,7 @@ Okno
 ; Window
 ;
 MSG_MEN_WINDOW_SEPSCREEN
- \0U¿yj osobnego ekranu
+ \0UÅ¼yj osobnego ekranu
 ;  \0Use Separate Screen
 ;
 MSG_MEN_WINDOW_MINIMIZE
@@ -123,7 +123,7 @@ Ustawienia
 ; Settings
 ;
 MSG_MEN_SETTINGS_SAVEDEF
-D\0Zapisz jako domy¶lne
+D\0Zapisz jako domyÅ›lne
 ; D\0Save As Defaults
 ;
 MSG_MEN_PICT
@@ -131,7 +131,7 @@ Obrazek
 ; Picture
 ;
 MSG_MEN_PICT_ZOOM_IN
- \0Powiêksz
+ \0PowiÄ™ksz
 ;  \0Zoom in
 ;
 MSG_MEN_PICT_ZOOM_OUT
@@ -139,7 +139,7 @@ MSG_MEN_PICT_ZOOM_OUT
 ;  \0Zoom out
 ;
 MSG_MEN_PICT_RESET
- \0Przywróæ rozmiar
+ \0PrzywrÃ³Ä‡ rozmiar
 ;  \0Reset Size
 ;
 MSG_MEN_PICT_FIT_WIN
@@ -175,7 +175,7 @@ MSG_MEN_TEXT_SEARCH_PREV
 ;  \0Search for previous
 ;
 MSG_MEN_TEXT_SEARCH_NEXT
- \0Wyszukaj nastêpne
+ \0Wyszukaj nastÄ™pne
 ;  \0Search for next
 ;
 MSG_ASL_OPEN_TITLE

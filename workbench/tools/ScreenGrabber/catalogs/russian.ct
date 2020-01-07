@@ -4,11 +4,11 @@
 ;
 ;
 MSG_WINDOW_TITLE
-Снимок экрана
+РЎРЅРёРјРѕРє СЌРєСЂР°РЅР°
 ; ScreenGrabber
 ;
 MSG_REFRESH
-Обновить список
+РћР±РЅРѕРІРёС‚СЊ СЃРїРёСЃРѕРє
 ; Refresh list
 ;
 MSG_SCREEN_INFO
@@ -16,39 +16,39 @@ Screen Info
 ; Screen info
 ;
 MSG_SIZE
-Размер
+Р Р°Р·РјРµСЂ
 ; Size
 ;
 MSG_TITLE
-Заголовок
+Р—Р°РіРѕР»РѕРІРѕРє
 ; Title
 ;
 MSG_DEFAULT_TITLE
-Заголовок по умолчанию
+Р—Р°РіРѕР»РѕРІРѕРє РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
 ; Default title
 ;
 MSG_GRABBING_OPTIONS
-Настройки снимков
+РќР°СЃС‚СЂРѕР№РєРё СЃРЅРёРјРєРѕРІ
 ; Grabbing options
 ;
 MSG_DELAY
-Задержка (с.) (s)
+Р—Р°РґРµСЂР¶РєР° (СЃ.) (s)
 ; Delay (s)
 ;
 MSG_HIDE
-Спрятать окно
+РЎРїСЂСЏС‚Р°С‚СЊ РѕРєРЅРѕ
 ; Hide the grabber window
 ;
 MSG_SAVE_OPTIONS
-Сохранить настройки
+РЎРѕС…СЂР°РЅРёС‚СЊ РЅР°СЃС‚СЂРѕР№РєРё
 ; Save options
 ;
 MSG_SAVE_FILE
-Сохранить снимок
+РЎРѕС…СЂР°РЅРёС‚СЊ СЃРЅРёРјРѕРє
 ; Save file
 ;
 MSG_SCREENSHOT
-Снимок
+РЎРЅРёРјРѕРє
 ; Screenshot
 ;
 MSG_SCREEN_PARM
@@ -56,11 +56,11 @@ MSG_SCREEN_PARM
 ; %d x %d, depth=%d
 ;
 MSG_OVERWRITE
-Файл '%s' уже существует.\nПерезаписать его?
+Р¤Р°Р№Р» '%s' СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚.\nРџРµСЂРµР·Р°РїРёСЃР°С‚СЊ РµРіРѕ?
 ; File '%s' already exists.\nDo you really want to overwrite it?
 ;
 MSG_ERROR_TITLE
-Ошибка при съёмке
+РћС€РёР±РєР° РїСЂРё СЃСЉС‘РјРєРµ
 ; Screengrabber Error
 ;
 MSG_GAD_OK
@@ -68,26 +68,26 @@ _OK
 ; _OK
 ;
 MSG_GAD_YESNO
-Да|Нет
+Р”Р°|РќРµС‚
 ; YES|NO
 ;
 MSG_ERR_DATATYPE
-Не могу создать объект данных!
+РќРµ РјРѕРіСѓ СЃРѕР·РґР°С‚СЊ РѕР±СЉРµРєС‚ РґР°РЅРЅС‹С…!
 ; Can't create datatype object!
 ;
 MSG_NORAM
-Не могу выделить память!
+РќРµ РјРѕРіСѓ РІС‹РґРµР»РёС‚СЊ РїР°РјСЏС‚СЊ!
 ; Can't allocate RAM!
 ;
 MSG_ERR_DATATYPEIO
-Запись файла '%s' невозможна из-за ошибки ввода-вывода %ld!
+Р—Р°РїРёСЃСЊ С„Р°Р№Р»Р° '%s' РЅРµРІРѕР·РјРѕР¶РЅР° РёР·-Р·Р° РѕС€РёР±РєРё РІРІРѕРґР°-РІС‹РІРѕРґР° %ld!
 ; Writing of '%s' failed with IO Error %ld!
 ;
 MSG_ERR_OPENFILE
-Не могу открыть файл  '%s' для записи!
+РќРµ РјРѕРіСѓ РѕС‚РєСЂС‹С‚СЊ С„Р°Р№Р»  '%s' РґР»СЏ Р·Р°РїРёСЃРё!
 ; Can't open file '%s' for output!
 ;
 MSG_ERR_APP
-Ошибка создания объекта приложения!
+РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РѕР±СЉРµРєС‚Р° РїСЂРёР»РѕР¶РµРЅРёСЏ!
 ; Can't create application object!
 ;

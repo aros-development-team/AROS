@@ -16,7 +16,7 @@ Ne mogu otvoriti 'clipboard.device'
 ; Can't open 'clipboard.device'
 ;
 MSG_CANT_LOCK_SCR
-Ne mogu zakljuËati javni zaslon!\n
+Ne mogu zakljuƒçati javni zaslon!\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
@@ -32,7 +32,7 @@ Ne mogu stvoriti izbornike!\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-Ne mogu posloæiti izbornike!\n
+Ne mogu poslo≈æiti izbornike!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
@@ -95,7 +95,7 @@ Upravlja Komoditijima
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
-Razmjena: TipkovniËki PreËac = <%s>
+Razmjena: Tipkovniƒçki Preƒçac = <%s>
 ; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
@@ -107,7 +107,7 @@ Informacija
 ; Information
 ;
 MSG_EXCHANGE_GAD_SHOW
-Prikaæi
+Prika≈æi
 ; Show
 ;
 MSG_EXCHANGE_GAD_HIDE
@@ -130,11 +130,11 @@ Deaktiviaj
 ; BLANKER
 ;
 MSG_BLANKER_CXNAME
-Zaπtitnik Zaslona
+Za≈°titnik Zaslona
 ; Blanker
 ;
 MSG_BLANKER_CXTITLE
-Zaπtitnik Zaslona Sustava
+Za≈°titnik Zaslona Sustava
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
@@ -183,7 +183,7 @@ Autopointer
 ; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
-Aktivira prozor pod miπem
+Aktivira prozor pod mi≈°em
 ; Activates the window under the mouse
 ;
 ; ===============================================
@@ -198,7 +198,7 @@ System Program Starter
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-PokretaË programa
+Pokretaƒç programa
 ; Program launch commodity
 ;
 ; ===============================================
@@ -217,23 +217,23 @@ Dodaj posebne funkcije tipkama
 ; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
-FKey: TipkovniËki PreËac = <%s>
+FKey: Tipkovniƒçki Preƒçac = <%s>
 ; FKey: Hot Key = <%s>
 ;
 MSG_FKEY_DEFINED_KEYS
-Definiraj KljuËeve
+Definiraj Kljuƒçeve
 ; Defined Keys
 ;
 MSG_FKEY_NEW_KEY
-_Novi KljuË 
+_Novi Kljuƒç 
 ; _New Key
 ;
 MSG_FKEY_DELETE_KEY
-Obriπi KljuË
+Obri≈°i Kljuƒç
 ; _Delete Key
 ;
 MSG_FKEY_SAVE_KEY
-Spremi Definirane KljuËeve
+Spremi Definirane Kljuƒçeve
 ; Save Defined Keys
 ;
 MSG_FKEY_COMMAND
@@ -245,15 +245,15 @@ Parametri
 ; Command Parameters
 ;
 MSG_FKEY_CMD_CYCLE_WIN
-Kruæi Prozorima
+Kru≈æi Prozorima
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
-Kruæi Zaslonima
+Kru≈æi Zaslonima
 ; Cycle Screens
 ;
 MSG_FKEY_CMD_ENLARGE_WIN
-PoveËaj Prozor
+Poveƒçaj Prozor
 ; Enlarge Window
 ;
 MSG_FKEY_CMD_SHRINK_WIN
@@ -261,7 +261,7 @@ Smanji Prozor
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Mjenjaj VeliËinu Prozora
+Mjenjaj Veliƒçinu Prozora
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_RESCUE_WIN
@@ -281,7 +281,7 @@ Dodaj ARexx Skriptu
 ; Run Arexx Script
 ;
 MSG_FKEY_MEN_PROJECT_SAVE
-S\0Spremi Definirane KljuËeve
+S\0Spremi Definirane Kljuƒçeve
 ; S\0Save Defined Keys
 ;
 ; ===============================================
@@ -296,7 +296,7 @@ BezCapsLock:
 ; NoCapsLock:
 ;
 MSG_NOCAPSLOCK_CXDESCR
-IskljuËuje CAPS LOCK 
+Iskljuƒçuje CAPS LOCK 
 ; Renders the CAPS LOCK key ineffective
 ;
 ; ===============================================
@@ -341,11 +341,11 @@ ASCIITable:
 ; ASCIITable:
 ;
 MSG_ASCIITABLE_CXDESCR
-Izaberi kljuË iz GUI-a
+Izaberi kljuƒç iz GUI-a
 ; Select keys from a GUI
 ;
 MSG_ASCIITABLE_WINTITLE
-ASCIITable: TipkovniËki PreËac =  <%s>
+ASCIITable: Tipkovniƒçki Preƒçac =  <%s>
 ; ASCIITable: Hot Key = <%s>
 ;
 MSG_ASCIITABLE_GAD_COPY

@@ -4,7 +4,7 @@
 ;
 ;
 MSG_NAME
-Kl·vesnice a myπ
+Kl√°vesnice a my≈°
 ; Input Preferences
 ;
 MSG_OK
@@ -12,31 +12,31 @@ OK
 ; Ok
 ;
 MSG_GAD_TAB_MOUSE
-Myπ
+My≈°
 ; Mouse
 ;
 MSG_GAD_TAB_KEYBOARD
-Kl·vesnice
+Kl√°vesnice
 ; Keyboard
 ;
 MSG_GAD_MOUSE_SPEED
-Rychlost myπi
+Rychlost my≈°i
 ; Mouse Speed
 ;
 MSG_GAD_MOUSE_ACCELERATED
-Zapnout zrychlenÌ
+Zapnout zrychlen√≠
 ; Accelerated
 ;
 MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
-»as mezi dvojÌm kliknutÌm
+ƒåas mezi dvoj√≠m kliknut√≠m
 ; Double-Click Delay
 ;
 MSG_GAD_KEY_REPEAT_DELAY
-»as p¯ed opakov·nÌm znaku
+ƒåas p≈ôed opakov√°n√≠m znaku
 ; Key Repeat Delay
 ;
 MSG_GAD_KEY_REPEAT_RATE
-Rychlost opakov·nÌ znaku
+Rychlost opakov√°n√≠ znaku
 ; Key Repeat Rate
 ;
 MSG_GAD_KEY_TEST
@@ -48,31 +48,31 @@ Druh
 ; Type
 ;
 MSG_GAD_MOUSE_BUTTON_SETTINGS
-TlaËÌtka myπi
+Tlaƒç√≠tka my≈°i
 ; Mouse buttons
 ;
 MSG_GAD_LEFT_HANDED_MOUSE
-Pro levorukÈ
+Pro levoruk√©
 ; Left-handed mouse
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
-NÌzk·
+N√≠zk√°
 ; Slow
 ;
 MSG_GAD_MOUSE_SPEED_NORMAL
-St¯ednÌ
+St≈ôedn√≠
 ; Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST
-Vysok·
+Vysok√°
 ; Fast
 ;
 MSG_GAD_KEY_DEF
-V˝chozÌ
+V√Ωchoz√≠
 ; Default
 ;
 MSG_GAD_KEY_ALT
-Sekund·rnÌ
+Sekund√°rn√≠
 ; Alternate
 ;
 MSG_GAD_KEY_SET
@@ -80,7 +80,7 @@ Nastavit
 ; Set
 ;
 MSG_GAD_KEY_SWITCH
-P¯epÌn·nÌ kl·vesnic
+P≈ôep√≠n√°n√≠ kl√°vesnic
 ; Layout switching
 ;
 MSG_GAD_KEY_SWITCH_ENABLE
@@ -88,6 +88,6 @@ Povolit
 ; Enabled
 ;
 MSG_GAD_KEY_SWITCH_KEY
-Kl·vesov· zkratka
+Kl√°vesov√° zkratka
 ; Hotkey
 ;

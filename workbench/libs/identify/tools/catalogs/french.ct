@@ -3,14 +3,14 @@
 ;
 ## version $VER: IdentifyTools.catalog 1.0 (31.03.2016)
 ## codeset 0
-## language Français
+## language FranÃ§ais
 ;
 ;================================================================
 ;       COMMON STRINGS (1..)
 ;================================================================
 ;
 MSG_NOIDENTIFY
-Requiert identify.library V%ld ou supérieure !\n
+Requiert identify.library V%ld ou supÃ©rieure !\n
 ;
 ;
 ;
@@ -23,11 +23,11 @@ MSG_LISTEXP_HAIL
  (ListExp est une partiedu package Identify, voir AmiNet util/libs)\n\n
 ;
 MSG_LISTEXP_HELP
-Modèle : \n\n\
-  FULL/S\t\tliste toutes les commodités courantes\n\
+ModÃ¨le : \n\n\
+  FULL/S\t\tliste toutes les commoditÃ©s courantes\n\
   MID=MANUFID/K/N\tinformation sur le constructeur\n\
   PID=PRODID/K/N\tet ses produits\n\n\
-SVP lisez les docs. pour plus de détails.\n
+SVP lisez les docs. pour plus de dÃ©tails.\n
 ;
 MSG_LISTEXP_OVERFLOW
 Mauvais interval ! (ManufID=0..65535 ProdID=0..255)\n\n
@@ -40,11 +40,11 @@ MSG_LISTEXP_SPECBOARD
 MSG_LISTEXP_HARDWARE
 ** MATERIEL **\n\
 \n\
-Système : %s\n\
+SystÃ¨me : %s\n\
 CPU :     %s/%s (Rev %s), FPU=%s/%s, MMU=%s\n
 ;
 MSG_LISTEXP_POWERPC
-PowerPC: %s/%s (démarré %s)\n
+PowerPC: %s/%s (dÃ©marrÃ© %s)\n
 ;
 MSG_LISTEXP_HARDWARE2
 Chipset: %s (RAMSEY %s, GARY %s, CHUNKY %s) VBR=%s\n\
@@ -54,9 +54,9 @@ AmigaOS: %s (%s, BoingBag %s, SetPatch %s)\n\
          Exec %s   Workbench %s\n\
 Support : GraphicOS : %s, AudioOS : %s, TCP/IP : %s\n\
 Horloge :   Power %s, VBlank %s, E-Clock %s\n\
-RAM:     Carte mère %s bits, %s, %s CAS, %sx Bande passante\n\
+RAM:     Carte mÃ¨re %s bits, %s, %s CAS, %sx Bande passante\n\
 \n\
-Mémoire :\t\t   CHIP\t   FAST\t  TOTAL\tROM = %s\tSLOW = %s\n\
+MÃ©moire :\t\t   CHIP\t   FAST\t  TOTAL\tROM = %s\tSLOW = %s\n\
 \tUNIE\t%7s\t%7s\t%7s\n\
 \tVIRTUELLE\t%7s\t%7s\t%7s\n\
 \t  TOTALE\t%7s\t%7s\t%7s\n\n\n
@@ -78,9 +78,9 @@ MSG_LISTEXP_CXLINE
 %-24s %-40s\n
 ;
 MSG_LISTEXP_EMULATED
-         -- système émulé détecté  --\n\
+         -- systÃ¨me Ã©mulÃ© dÃ©tectÃ©  --\n\
 AmigaXL : Version %s\n\
-Hôte :    OS : %s (Version %s), %s\n\
+HÃ´te :    OS : %s (Version %s), %s\n\
          CPU : %s/%s\n
 ;
 ;
@@ -93,10 +93,10 @@ MSG_GURU_HAIL
 -- Guru V%s -- Richard Koerber <%s>\n\n
 ;
 MSG_GURU_HELP
-Modèle :\n\n\
-  GURU\t\tguru code analysé\n\
-  LASTALERT/S\tanalyse la dernière alerte système\n\n\
-SVP lisez les docs. pour plus de détails.\n
+ModÃ¨le :\n\n\
+  GURU\t\tguru code analysÃ©\n\
+  LASTALERT/S\tanalyse la derniÃ¨re alerte systÃ¨me\n\n\
+SVP lisez les docs. pour plus de dÃ©tails.\n
 ;
 MSG_GURU_BADCODE
 Guru code invalide...\n\n
@@ -104,9 +104,9 @@ Guru code invalide...\n\n
 MSG_GURU_RESULT
  Alerte : %08lx\n\
  Type :       %s\n\
- Sous système :  %s\n\
- Général :    %s\n\
- Spécifique :  %s\n\n
+ Sous systÃ¨me :  %s\n\
+ GÃ©nÃ©ral :    %s\n\
+ SpÃ©cifique :  %s\n\n
 ;
 MSG_GURU_NOLAST
 Pas de Guru pour l'instant...\n\n
@@ -121,14 +121,14 @@ MSG_FUNC_HAIL
 -- Fonction V%s -- Richard Koerber <%s>\n\n
 ;
 MSG_FUNC_HELP
-Modèle :\n\n\
-  LN=LIBNAME/A\tnom de la bibliothèque\n\
-  O=OFFSET/N/A\tdécalage de la fonction\n\n\
-SVP lisez les docs. pour plus de détails.\n
+ModÃ¨le :\n\n\
+  LN=LIBNAME/A\tnom de la bibliothÃ¨que\n\
+  O=OFFSET/N/A\tdÃ©calage de la fonction\n\n\
+SVP lisez les docs. pour plus de dÃ©tails.\n
 ;
 MSG_FUNC_RESULT
- Bibliothèque :    %s\n\
- Décalage :     %ld\n\
+ BibliothÃ¨que :    %s\n\
+ DÃ©calage :     %ld\n\
  Fonction :   %s\n\n
 ;
 ;================================================================

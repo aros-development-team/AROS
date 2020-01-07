@@ -12,14 +12,14 @@ Tworzy nowe katalogi z opcjonalnymi ikonkami
 ;
 MSG_COPYRIGHT
 (C)2006, AROS Dev Team
-; ©2006, AROS Dev Team
+; Å 2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Tworzenie nowego katalogu
 ; Create new drawer
 ;
 MSG_LINE
-Podaj nazwê nowego katalogu
+Podaj nazwÄ™ nowego katalogu
 ; Enter the name of the new drawer
 ;
 MSG_NAME
@@ -43,19 +43,19 @@ zmien_nazwe
 ; Rename_Me
 ;
 MSG_ERROR_TITLE
-B³±d
+BÅ‚Ä…d
 ; Error
 ;
 MSG_ALREADY_EXIST
-\"%s\" ju¿ istnieje!
+\"%s\" juÅ¼ istnieje!
 ; '%s' already exists!
 ;
 MSG_CANT_CREATE
-Nie mo¿na utworzyæ katalogu \"%s\"!
+Nie moÅ¼na utworzyÄ‡ katalogu \"%s\"!
 ; Can't create drawer '%s'!
 ;
 MSG_INFO_ALREADY
-Plik \"%s.info\" ju¿ istnieje!
+Plik \"%s.info\" juÅ¼ istnieje!
 ; '%s'.info already exists!
 ;
 MSG_ILLEGAL_CHARS
@@ -67,18 +67,18 @@ Wymagane 2 argumenty!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Niew³a¶ciwe zablokowanie katalogu!
+NiewÅ‚aÅ›ciwe zablokowanie katalogu!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
-Nie mo¿na uruchomiæ z linii poleceñ!\n
+Nie moÅ¼na uruchomiÄ‡ z linii poleceÅ„!\n
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-Nie mo¿na utworzyæ aplikacji!
+Nie moÅ¼na utworzyÄ‡ aplikacji!
 ; Failed to create Application!
 ;
 MSG_WRONG_ICON_TYPE
-Istniej±cy plik ikonki \"%s.info\" nie jest plikiem ikonki katalogu!
+IstniejÄ…cy plik ikonki \"%s.info\" nie jest plikiem ikonki katalogu!
 ; The existing icon file '%s'.info isn't of type Drawer!
 ;

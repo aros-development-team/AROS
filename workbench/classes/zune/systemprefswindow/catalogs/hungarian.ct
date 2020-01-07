@@ -4,18 +4,18 @@
 ;
 ; TODO: update me and set version to 2
 ;
-; Translated by MiklÛs NÈmeth
+; Translated by Mikl√≥s N√©meth
 ;
 MSG_MENU_PREFS
-Be·llÌt·sok
+Be√°ll√≠t√°sok
 ; Preferences
 ;
 MSG_MENU_PREFS_IMPORT
-I\0Import·l...
+I\0Import√°l...
 ; I\0Import...
 ;
 MSG_MENU_PREFS_EXPORT
-E\0Export·l...
+E\0Export√°l...
 ; E\0Export...
 ;
 MSG_MENU_PREFS_TEST
@@ -23,7 +23,7 @@ T\0Teszt...
 ; T\0Test
 ;
 MSG_MENU_PREFS_REVERT
-V\Vissza·llÌt
+V\Vissza√°ll√≠t
 ; R\0Revert
 ;
 MSG_MENU_PREFS_SAVE
@@ -31,10 +31,10 @@ M\0Ment
 ; S\0Save
 ;
 MSG_MENU_PREFS_USE
-H\0Haszn·l
+H\0Haszn√°l
 ; U\0Use
 ;
 MSG_MENU_PREFS_CANCEL
-MÈgsem
+M√©gsem
 ; C\0Cancel
 ;

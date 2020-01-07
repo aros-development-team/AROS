@@ -7,15 +7,15 @@ Projekt
 ; Project
 ;
 MSG_MENU_PROJECT_OPEN
-Otevøít...
+OtevÅ™Ã­t...
 ; Open...
 ;
 MSG_MENU_PROJECT_APPEND
-Pøipojit...
+PÅ™ipojit...
 ; Append...
 ;
 MSG_MENU_PROJECT_SAVEAS
-Ulo¾it jako...
+UloÅ¾it jako...
 ; Save As...
 ;
 MSG_MENU_PROJECT_ABOUT
@@ -23,27 +23,27 @@ O programu...
 ; About...
 ;
 MSG_MENU_PROJECT_QUIT
-Ukonèit
+UkonÄit
 ; Quit
 ;
 MSG_MENU_EDIT
-Úpravy
+Ãšpravy
 ; Edit
 ;
 MSG_MENU_EDIT_LASTSAVED
-Naposledy ulo¾ené
+Naposledy uloÅ¾enÃ©
 ; Last Saved
 ;
 MSG_MENU_EDIT_RESTORE
-Obnovit pøedchozí
+Obnovit pÅ™edchozÃ­
 ; Restore
 ;
 MSG_MENU_SETTINGS
-Nastavení
+NastavenÃ­
 ; Settings
 ;
 MSG_MENU_SETTINGS_MUI
-U¾ivatelské rozhraní...
+UÅ¾ivatelskÃ© rozhranÃ­...
 ; MUI...
 ;
 MSG_MENU_COLORS
@@ -51,15 +51,15 @@ Barvy
 ; Colors
 ;
 MSG_MENU_COLORS_PRESETS
-Pøedvolby
+PÅ™edvolby
 ; Presets
 ;
 MSG_MENU_COLORS_PRESETS_2COL
-Dvoubarevné
+DvoubarevnÃ©
 ; Monochrome Settings
 ;
 MSG_MENU_COLORS_PRESETS_4COL
-Ètyøbarevné
+ÄŒtyÅ™barevnÃ©
 ; 4-Color Settings
 ;
 MSG_MENU_COLORS_PRESETS_8COL
@@ -71,23 +71,23 @@ _OK
 ; _OK
 ;
 MSG_BUTTON_CANCEL
-Zru¹it
+ZruÅ¡it
 ; Cancel
 ;
 MSG_BUTTON_SAVE
-Ulo¾it
+UloÅ¾it
 ; Save
 ;
 MSG_BUTTON_USE
-Pou¾ít
+PouÅ¾Ã­t
 ; Use
 ;
 MSG_BUTTON_NEW
-_Nová
+_NovÃ¡
 ; _New
 ;
 MSG_BUTTON_COPY
-Z_kopírovat
+Z_kopÃ­rovat
 ; _Copy
 ;
 MSG_BUTTON_DELETE
@@ -99,15 +99,15 @@ U_pravit...
 ; _Edit...
 ;
 MSG_BUTTON_OPEN
-_Otevøít
+_OtevÅ™Ã­t
 ; _Open
 ;
 MSG_BUTTON_CLOSE
-_Zavøít
+_ZavÅ™Ã­t
 ; _Close
 ;
 MSG_BUTTON_JUMP
-Pøe_jít na
+PÅ™e_jÃ­t na
 ; _Jump
 ;
 MSG_BUTTON_KILL
@@ -115,39 +115,39 @@ Uvolnit
 ; Kill
 ;
 MSG_TITLE_PUBSCREENWINDOW
-Úprava obrazovky:
+Ãšprava obrazovky:
 ; Edit Screen:
 ;
 MSG_TITLE_SAVE
-Ulo¾it soubor
+UloÅ¾it soubor
 ; Save PublicScreen File
 ;
 MSG_TITLE_OPEN
-Otevøít soubor
+OtevÅ™Ã­t soubor
 ; Load PublicScreen File
 ;
 MSG_TITLE_APPEND
-Pøipojit soubor
+PÅ™ipojit soubor
 ; Append PublicScreen File
 ;
 MSG_LIST_SCREENNAME
-Název
+NÃ¡zev
 ; Name
 ;
 MSG_LIST_SCREENMODE
-Zobrazovací mód
+ZobrazovacÃ­ mÃ³d
 ; Display Mode
 ;
 MSG_LIST_UNKNOWNMODE
-(neznámá)
+(neznÃ¡mÃ¡)
 ; (unknown)
 ;
 MSG_LIST_FOREIGNSCREEN
-(cizí)
+(cizÃ­)
 ; (foreign)
 ;
 MSG_LABEL_PUBLICNAME
-Veøejnı _název:
+VeÅ™ejnÃ½ _nÃ¡zev:
 ; Public _Name:
 ;
 MSG_LABEL_SCREENTITLE
@@ -155,15 +155,15 @@ _Titulek obrazovky:
 ; Screen _Title:
 ;
 MSG_LABEL_DISPLAYMODE
-Zobrazovací mó_d:
+ZobrazovacÃ­ mÃ³_d:
 ; _Display Mode:
 ;
 MSG_LABEL_DEFAULTFONT
-_Vıchozí písmo:
+_VÃ½chozÃ­ pÃ­smo:
 ; Default _Font:
 ;
 MSG_LABEL_BACKGROUND
-Pozadí o_brazovky:
+PozadÃ­ o_brazovky:
 ; _Background:
 ;
 MSG_LABEL_PUBLICFLAGS
@@ -171,35 +171,35 @@ Atributy:
 ; Flags:
 ;
 MSG_LABEL_AUTOSCROLL
-_Rolování
+_RolovÃ¡nÃ­
 ; _Autoscroll
 ;
 MSG_LABEL_NODRAG
-Nesta_hovatelná
+Nesta_hovatelnÃ¡
 ; No D_rag
 ;
 MSG_LABEL_EXCLUSIVE
-_Exkluzivní
+_ExkluzivnÃ­
 ; _Exclusive
 ;
 MSG_LABEL_INTERLEAVED
-Pro_kládaná
+Pro_klÃ¡danÃ¡
 ; _Interleaved
 ;
 MSG_LABEL_OPENBEHIND
-Otevøít vza_du
+OtevÅ™Ã­t vza_du
 ; Open Be_hind
 ;
 MSG_LABEL_SYSTEMDEFAULT
-Vıchozí pro s_ystém
+VÃ½chozÃ­ pro s_ystÃ©m
 ; S_ystem Default
 ;
 MSG_LABEL_AUTOCLOSE
-Automaticky zavøít
+Automaticky zavÅ™Ã­t
 ; Auto Close
 ;
 MSG_LABEL_CLOSEGADGET
-Zavírací tlaèítko
+ZavÃ­racÃ­ tlaÄÃ­tko
 ; Close Gadget
 ;
 MSG_LABEL_OVERSCAN
@@ -219,47 +219,47 @@ _Hloubka:
 ; _Depth:
 ;
 MSG_LABEL_VISIBLE
-Viditelnı rozmìr:
+ViditelnÃ½ rozmÄ›r:
 ; Visible:
 ;
 MSG_LABEL_MINIMUM
-Nejmen¹í rozmìr:
+NejmenÅ¡Ã­ rozmÄ›r:
 ; Minimum:
 ;
 MSG_LABEL_MAXIMUM
-Nejvìt¹í rozmìr:
+NejvÄ›tÅ¡Ã­ rozmÄ›r:
 ; Maximum:
 ;
 MSG_LABEL_BITSPERGUN
-Bitù/slo¾ka:
+BitÅ¯/sloÅ¾ka:
 ; Bits/Gun:
 ;
 MSG_LABEL_SCANRATE
-Snímk. frekvence:
+SnÃ­mk. frekvence:
 ; Scanrate:
 ;
 MSG_LABEL_SCANLINE
-Øádk. frekvence:
+Å˜Ã¡dk. frekvence:
 ; Scanline:
 ;
 MSG_CLI_SCREENOPENED
-Obrazovka otevøena (0).\n
+Obrazovka otevÅ™ena (0).\n
 ; Screen opened (0).\n
 ;
 MSG_CLI_SCREENOPENFAILED
-Chyba pøi otvírání obrazovky (5).\n
+Chyba pÅ™i otvÃ­rÃ¡nÃ­ obrazovky (5).\n
 ; Failed to open screen (5).\n
 ;
 MSG_CLI_SCREENCLOSED
-Obrazovka zavøena (0).\n
+Obrazovka zavÅ™ena (0).\n
 ; Screen closed (0).\n
 ;
 MSG_CLI_SCREENCLOSEFAILED
-Chyba pøi zavírání obrazovky (5).\n
+Chyba pÅ™i zavÃ­rÃ¡nÃ­ obrazovky (5).\n
 ; Failed to close screen (5).\n
 ;
 MSG_CLI_SYNTAXERROR
-Chyba syntaxe v pøíkazovém øádku (10).\n
+Chyba syntaxe v pÅ™Ã­kazovÃ©m Å™Ã¡dku (10).\n
 ; Syntax Error in command line (10).\n
 ;
 MSG_CLI_SCREENNOTFOUND
@@ -267,27 +267,27 @@ Obrazovka nebyla nalezena (5).\n
 ; Screen not found (5).\n
 ;
 MSG_CLI_OUTOFMEMORY
-Není dostatek volné pamìti (20).\n
+NenÃ­ dostatek volnÃ© pamÄ›ti (20).\n
 ; Out of memory (20).\n
 ;
 MSG_CLI_NOAPPLICATION
-Chyba pøi vytváøení programu (20).\n
+Chyba pÅ™i vytvÃ¡Å™enÃ­ programu (20).\n
 ; Failed to create application (20).\n
 ;
 MSG_CLI_NOMUIMASTER
-Nelze otevøít knihovnu muimaster.library V11 (20).\n
+Nelze otevÅ™Ã­t knihovnu muimaster.library V11 (20).\n
 ; Failed to open muimaster.library V11 (20).\n
 ;
 MSG_ABOUT_NUMBEROFSCREENS
-Poèet obrazovek:
+PoÄet obrazovek:
 ; Number of screens:
 ;
 MSG_TEXT_UNKNOWNMODE
-Neznámı zobrazovací mód
+NeznÃ¡mÃ½ zobrazovacÃ­ mÃ³d
 ; Unknown Display Mode
 ;
 MSG_TEXT_FOREIGNSCREEN
-Cizí veøejná obrazovka
+CizÃ­ veÅ™ejnÃ¡ obrazovka
 ; Foreign public screen
 ;
 MSG_PALETTE_TITLE
@@ -295,15 +295,15 @@ Paleta
 ; Palette
 ;
 MSG_PALETTE_FIRST
-První 4 barvy
+PrvnÃ­ 4 barvy
 ; First 4 colors
 ;
 MSG_PALETTE_LAST
-Poslední 4 barvy
+PoslednÃ­ 4 barvy
 ; Last 4 colors
 ;
 MSG_SYSPENS_TITLE
-Systémové barvy
+SystÃ©movÃ© barvy
 ; System Pens
 ;
 MSG_SYSPEN_DETAIL
@@ -319,79 +319,79 @@ Text
 ; Text
 ;
 MSG_SYSPEN_SHINE
-Svìtlá
+SvÄ›tlÃ¡
 ; Shine
 ;
 MSG_SYSPEN_SHADOW
-Stínovaná
+StÃ­novanÃ¡
 ; Shadow
 ;
 MSG_SYSPEN_FILL
-Vıplòová
+VÃ½plÅˆovÃ¡
 ; Fill
 ;
 MSG_SYSPEN_FILLTEXT
-Vıplòová, text
+VÃ½plÅˆovÃ¡, text
 ; Filltext
 ;
 MSG_SYSPEN_BACKGROUND
-Pozadí
+PozadÃ­
 ; Background
 ;
 MSG_SYSPEN_HIGHLIGHT
-Zvırazòovací
+ZvÃ½razÅˆovacÃ­
 ; Highlight
 ;
 MSG_SYSPEN_BARDETAIL
-Úzkı pruh
+ÃšzkÃ½ pruh
 ; Bardetail
 ;
 MSG_SYSPEN_BARBLOCK
-©irokı pruh
+Å irokÃ½ pruh
 ; Barblock
 ;
 MSG_SYSPEN_BARTRIM
-Elegantní pruh
+ElegantnÃ­ pruh
 ; Bartrim
 ;
 MSG_PALPRES_TITLE
-Pøedvolby barev
+PÅ™edvolby barev
 ; Color Presets
 ;
 MSG_PALPRES_STANDARD
-0\0Standardní
+0\0StandardnÃ­
 ; 0\0Standard
 ;
 MSG_PALPRES_TINT
-1\0Inkoustová
+1\0InkoustovÃ¡
 ; 1\0Tint
 ;
 MSG_PALPRES_PHARAO
-2\0Faraón
+2\0FaraÃ³n
 ; 2\0Pharao
 ;
 MSG_PALPRES_SUNSET
-3\0Západ slunce
+3\0ZÃ¡pad slunce
 ; 3\0Sunset
 ;
 MSG_PALPRES_OCEAN
-4\0Oceán
+4\0OceÃ¡n
 ; 4\0Ocean
 ;
 MSG_PALPRES_STEEL
-5\0Ocelová
+5\0OcelovÃ¡
 ; 5\0Steel
 ;
 MSG_PALPRES_CHOCOLATE
-6\0Èokoládová
+6\0ÄŒokolÃ¡dovÃ¡
 ; 6\0Chocolate
 ;
 MSG_PALPRES_PEWTER
-7\0Cínová
+7\0CÃ­novÃ¡
 ; 7\0Pewter
 ;
 MSG_PALPRES_WINE
-8\0Vínová
+8\0VÃ­novÃ¡
 ; 8\0Wine
 ;
 MSG_PALPRES_MAGICWB
@@ -399,23 +399,23 @@ MSG_PALPRES_MAGICWB
 ; 9\0MagicWB
 ;
 MSG_PALPRES_CLONEWB
-Pøevzít ze systému
+PÅ™evzÃ­t ze systÃ©mu
 ; Clone WB
 ;
 MSG_OVERSCAN_TEXT
-Textovı
+TextovÃ½
 ; Text
 ;
 MSG_OVERSCAN_GRAPHICS
-Grafickı
+GrafickÃ½
 ; Graphics
 ;
 MSG_OVERSCAN_EXTREME
-Extrémní
+ExtrÃ©mnÃ­
 ; Extreme
 ;
 MSG_OVERSCAN_MAXIMUM
-Maximální
+MaximÃ¡lnÃ­
 ; Maximum
 ;
 MSG_EDITPAGE_ATTRIBUTES
@@ -423,7 +423,7 @@ Atributy
 ; Attributes
 ;
 MSG_EDITPAGE_DISPLAY
-Zobrazovací mód
+ZobrazovacÃ­ mÃ³d
 ; Display
 ;
 MSG_EDITPAGE_COLORS
@@ -431,79 +431,79 @@ Barvy
 ; Colors
 ;
 MSG_HELP_WHEEL
-Nastavení barvy pro skupinu vybranıch polo¾ek.
+NastavenÃ­ barvy pro skupinu vybranÃ½ch poloÅ¾ek.
 ; Adjust color for\ngroup of pens.
 ;
 MSG_HELP_INFO
-Informace o módu a rozmìrech obrazovky.
+Informace o mÃ³du a rozmÄ›rech obrazovky.
 ; Information about\nmode & size.
 ;
 MSG_HELP_NAME
-Definuje název veøejné obrazovky.\nLze zadat i masku pro cizí obrazovky.
+Definuje nÃ¡zev veÅ™ejnÃ© obrazovky.\nLze zadat i masku pro cizÃ­ obrazovky.
 ; Name of Public Screen.\nWildcards allowed for\nforeign screens.
 ;
 MSG_HELP_TITLE
-Definuje text, zobrazenı na horní li¹tì obrazovky.
+Definuje text, zobrazenÃ½ na hornÃ­ liÅ¡tÄ› obrazovky.
 ; Text that appears in\nthe screen's title bar.
 ;
 MSG_HELP_FONT
-Definuje vıchozí písmo pro obrazovku.
+Definuje vÃ½chozÃ­ pÃ­smo pro obrazovku.
 ; Default font\nfor the screen.
 ;
 MSG_HELP_BACKGROUND
-Definuje obrázek pro vıplò plochy pozadí.
+Definuje obrÃ¡zek pro vÃ½plÅˆ plochy pozadÃ­.
 ; Datatype picture used\nas background pattern.
 ;
 MSG_HELP_AUTOSCROLL
-Pøejedete-li my¹í pøes okraje obrazovky, ta zaène rolovat.
+PÅ™ejedete-li myÅ¡Ã­ pÅ™es okraje obrazovky, ta zaÄne rolovat.
 ; The screen scrolls when\nthe mouse hits its borders.
 ;
 MSG_HELP_NODRAG
-Vypne mo¾nost uchopení obrazovky za li¹tu a stáhnutí.
+Vypne moÅ¾nost uchopenÃ­ obrazovky za liÅ¡tu a stÃ¡hnutÃ­.
 ; The screen\nis undraggable.
 ;
 MSG_HELP_EXCLUSIVE
-Vypne mo¾nost sdílení obrazovky mezi programy.
+Vypne moÅ¾nost sdÃ­lenÃ­ obrazovky mezi programy.
 ; The screen cannot share\nits display with others.
 ;
 MSG_HELP_INTERLEAVED
-Vytvoøí obrazovku v prokládaném re¾imu.
+VytvoÅ™Ã­ obrazovku v proklÃ¡danÃ©m reÅ¾imu.
 ; The screen's bitmap is allocated\nin interleaved mode.
 ;
 MSG_HELP_BEHIND
-Otevøe obrazovku na pozadí, za v¹emi ostatními obrazovkami.
+OtevÅ™e obrazovku na pozadÃ­, za vÅ¡emi ostatnÃ­mi obrazovkami.
 ; The screen opens behind\nall other screens.
 ;
 MSG_HELP_SYSTEMDEFAULT
-Nastaví obrazovku jako vıchozí systémovou.
+NastavÃ­ obrazovku jako vÃ½chozÃ­ systÃ©movou.
 ; The screen becomes the\nsystem's default screen.
 ;
 MSG_HELP_AUTOCLOSE
-Zavøe obrazovku automaticky po uzavøení posledního okna.
+ZavÅ™e obrazovku automaticky po uzavÅ™enÃ­ poslednÃ­ho okna.
 ; The screen closes when\nthe last window is closed.
 ;
 MSG_HELP_CLOSEGADGET
-Pøidá na obrazovku tlaèítko pro zavøení.
+PÅ™idÃ¡ na obrazovku tlaÄÃ­tko pro zavÅ™enÃ­.
 ; The screen gets\na close gadget.
 ;
 MSG_HELP_MODELIST
-Seznam zobrazovacích módù obrazovky.
+Seznam zobrazovacÃ­ch mÃ³dÅ¯ obrazovky.
 ; List of available\ndisplay modes.
 ;
 MSG_HELP_MODEINFO
-Informace o vybraném zobrazovacím módu.
+Informace o vybranÃ©m zobrazovacÃ­m mÃ³du.
 ; Information about the\ncurrent display mode.
 ;
 MSG_HELP_OVERSCAN
-Nastavení okrajovıch rozmìrù obrazovky.
+NastavenÃ­ okrajovÃ½ch rozmÄ›rÅ¯ obrazovky.
 ; Overscan size adjustment.
 ;
 MSG_HELP_WIDTH
-Definuje ¹íøku obrazovky v bodech.
+Definuje Å¡Ã­Å™ku obrazovky v bodech.
 ; Width of screen,\nmeasured in pixels.
 ;
 MSG_HELP_HEIGHT
-Definuje vı¹ku obrazovky v bodech.
+Definuje vÃ½Å¡ku obrazovky v bodech.
 ; Height of screen,\nmeasured in pixels.
 ;
 MSG_HELP_DEPTH
@@ -511,70 +511,70 @@ Definuje barevnou hloubku obrazovky.
 ; Depth of screen,\nmeasured in planes.
 ;
 MSG_HELP_PENLIST
-Seznam systémovıch barev; lze pøetáhnout jednu na druhou.
+Seznam systÃ©movÃ½ch barev; lze pÅ™etÃ¡hnout jednu na druhou.
 ; System pens, draggable\nto different color pot.
 ;
 MSG_HELP_COLORFIELD
-Ukazuje aktuální barvu; lze zmìnit kliknutím.
+Ukazuje aktuÃ¡lnÃ­ barvu; lze zmÄ›nit kliknutÃ­m.
 ; Current color, click\non field to change it.
 ;
 MSG_HELP_KILLCOLOR
-Umo¾ní odstranit barvu ze skupiny.
+UmoÅ¾nÃ­ odstranit barvu ze skupiny.
 ; Remove this color\nfrom the group.
 ;
 MSG_HELP_NEWCOLOR
-Umo¾ní pøidat novou barvu do skupiny.
+UmoÅ¾nÃ­ pÅ™idat novou barvu do skupiny.
 ; Add a new color\nto the group.
 ;
 MSG_HELP_EDITOK
-Ukonèí a zapamatuje si zmìny pro tuto obrazovku.
+UkonÄÃ­ a zapamatuje si zmÄ›ny pro tuto obrazovku.
 ; Exit and remember\nchanges for this screen.
 ;
 MSG_HELP_EDITCANCEL
-Ukonèí a \33bzru¹í\33n zmìny provedené na této obrazovce.
+UkonÄÃ­ a \33bzruÅ¡Ã­\33n zmÄ›ny provedenÃ© na tÃ©to obrazovce.
 ; Exit and \33bdiscard\33n\nchanges for this screen.
 ;
 MSG_HELP_SCREENLIST
-Seznam definovanıch veøejnıch obrazovek.
+Seznam definovanÃ½ch veÅ™ejnÃ½ch obrazovek.
 ; List of defined\npublic screens.
 ;
 MSG_HELP_NEWSCREEN
-Vytvoøí novou veøejnou obrazovku.
+VytvoÅ™Ã­ novou veÅ™ejnou obrazovku.
 ; Create a new\npublic screen.
 ;
 MSG_HELP_COPYSCREEN
-Vytvoøí kopii vybrané veøejné obrazovky.
+VytvoÅ™Ã­ kopii vybranÃ© veÅ™ejnÃ© obrazovky.
 ; Create a copy\nof current screen.
 ;
 MSG_HELP_DELETESCREEN
-Odstraní vybranou veøejnou obrazovku.
+OdstranÃ­ vybranou veÅ™ejnou obrazovku.
 ; Delete current\npublic screen.
 ;
 MSG_HELP_EDITSCREEN
-Upraví vybranou veøejnou obrazovku.
+UpravÃ­ vybranou veÅ™ejnou obrazovku.
 ; Edit current\npublic screen.
 ;
 MSG_HELP_OPENSCREEN
-Otevøe vybranou veøejnou obrazovku.
+OtevÅ™e vybranou veÅ™ejnou obrazovku.
 ; Open current\npublic screen.
 ;
 MSG_HELP_CLOSESCREEN
-Zavøe vybranou veøejnou obrazovku.
+ZavÅ™e vybranou veÅ™ejnou obrazovku.
 ; Close current\npublic screen.
 ;
 MSG_HELP_JUMPSCREEN
-Pøejde na vybranou veøejnou obrazovku.
+PÅ™ejde na vybranou veÅ™ejnou obrazovku.
 ; Jump to current\npublic screen.
 ;
 MSG_HELP_SAVE
-Ukonèí a trvale ulo¾í ve¹keré zmìny na disk.
+UkonÄÃ­ a trvale uloÅ¾Ã­ veÅ¡kerÃ© zmÄ›ny na disk.
 ; Exit and save\nchanges to disk.
 ;
 MSG_HELP_USE
-Ukonèí a pro tuto relaci ulo¾í provedené zmìny.
+UkonÄÃ­ a pro tuto relaci uloÅ¾Ã­ provedenÃ© zmÄ›ny.
 ; Exit and save changes\nfor current session.
 ;
 MSG_HELP_CANCEL
-Ukonèí a \33bzru¹í\33n provedené zmìny.
+UkonÄÃ­ a \33bzruÅ¡Ã­\33n provedenÃ© zmÄ›ny.
 ; Exit and\n\33bdiscard\33n changes.
 ;

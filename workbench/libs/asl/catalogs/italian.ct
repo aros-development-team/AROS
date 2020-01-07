@@ -184,7 +184,7 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Modalit‡ dei file
+Modalit√† dei file
 ;
 MSG_MODEREQ_POSITIVE_GAD
 Ok
@@ -239,7 +239,7 @@ ON
 ; ON
 ;
 MSG_MODEREQ_PROPERTIES_TITLE
-Modalit‡
+Modalit√†
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
@@ -251,7 +251,7 @@ Non supporta il Genlock
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
-Non si puÚ disegnare
+Non si pu√≤ disegnare
 ; Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
@@ -283,7 +283,7 @@ Disegnabile
 ; Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
-DualPlayfield di priorit‡ 2
+DualPlayfield di priorit√† 2
 ; DualPlayfield Priority 2
 ;
 MSG_MODEREQ_PROPERTIES_REFRESHRATE
@@ -303,7 +303,7 @@ N\0Modo successivo
 ; N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
-?\0Lista delle propriet‡ ...
+?\0Lista delle propriet√† ...
 ; ?\0Property List...
 ;
 MSG_MODEREQ_MEN_CONTROL_RESTORE

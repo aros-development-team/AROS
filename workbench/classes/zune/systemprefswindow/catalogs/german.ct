@@ -20,7 +20,7 @@ T\0Testen
 ; T\0Test
 ;
 MSG_MENU_PREFS_REVERT
-R\0Rückgängig
+R\0RÃ¼ckgÃ¤ngig
 ; R\0Revert
 ;
 MSG_MENU_PREFS_SAVE
@@ -40,7 +40,7 @@ Exportieren mit Piktogramm...
 ; Export with Icon...
 ;
 MSG_MENU_RESET_TO_DEFAULTS
-Zurücksetzen auf Voreinstellungen
+ZurÃ¼cksetzen auf Voreinstellungen
 ; Reset to Defaults
 ;
 MSG_FILEREQ_EXPORT_TITLE

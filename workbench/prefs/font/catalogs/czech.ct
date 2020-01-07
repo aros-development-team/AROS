@@ -4,7 +4,7 @@
 ;
 ;
 MSG_CANT_OPEN_STREAM
-Nelze otev¯Ìt data form·tu IFF!
+Nelze otev≈ô√≠t data form√°tu IFF!
 ; Can't open IFF stream!
 ;
 MSG_CANT_ALLOCATE_IFFPTR
@@ -12,7 +12,7 @@ Nelze alokovat strukturu IFF!
 ; Can't allocate IFF handle!
 ;
 MSG_NAME
-PÌsma (editor Font)
+P√≠sma (editor Font)
 ; Font Preferences
 ;
 MSG_OK
@@ -24,7 +24,7 @@ Ikony:
 ; Icons:
 ;
 MSG_SYSTEM
-SystÈm:
+Syst√©m:
 ; System:
 ;
 MSG_SCREEN

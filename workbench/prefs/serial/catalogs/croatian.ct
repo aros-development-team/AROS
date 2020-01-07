@@ -8,7 +8,7 @@ Ne mogu otvoriti  %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Ne mogu zakljuËati javni zaslon!
+Ne mogu zakljuƒçati javni zaslon!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -56,7 +56,7 @@ Uredi
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Resetiraj na Predloæene Postavke
+D\0Resetiraj na Predlo≈æene Postavke
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -76,7 +76,7 @@ I\0Napravi Ikone?
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-UËitaj Postavke Serijskog porta
+Uƒçitaj Postavke Serijskog porta
 ; Load Serial Preferences
 ;
 MSG_ASL_SAVE_TITLE
@@ -116,11 +116,11 @@ Data Bits
 ; Data Bits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Ulazna VeliËina Spremnika
+Ulazna Veliƒçina Spremnika
 ; Input Buffer Size
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
-Izlazna VeliËina Spremnika
+Izlazna Veliƒçina Spremnika
 ; Output Buffer Size
 ;
 MSG_PARITY_NONE

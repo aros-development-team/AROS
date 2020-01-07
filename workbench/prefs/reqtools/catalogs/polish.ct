@@ -11,11 +11,11 @@ Podstawowe
 ; General
 ;
 MSG_FILEREQUESTER
-Okno wyboru plik體
+Okno wyboru plik贸w
 ; File Requester
 ;
 MSG_SIZE
-Wielko舵 (% wysoko禼i ekranu):
+Wielko艣膰 (% wysoko艣ci ekranu):
 ; Size (% of visible height):
 ;
 MSG_OK
@@ -23,7 +23,7 @@ Ok
 ;  Ok
 ;
 MSG_POPSCREEN
-Umie舵 ekran na wierzchu
+Umie艣膰 ekran na wierzchu
 ; Pop screen to front
 ;
 MSG_IMMEDIATESORT
@@ -31,7 +31,7 @@ Sortuj natychmiast
 ; Immediate sort
 ;
 MSG_DRAWERSFIRST
-Wy秝ietl katalogi na pocz眛ku
+Wy艣wietl katalogi na pocz膮tku
 ; Display drawers first
 ;
 MSG_DRAWERSMIXED
@@ -39,23 +39,23 @@ Pliki i katalogi wymieszane
 ; Mix files and drawers
 ;
 MSG_LED
-Wska糿ik aktywno禼i dysku
+Wska藕nik aktywno艣ci dysku
 ; Disk activity LED
 ;
 MSG_DEFAULTFONT
-U縴j czcionki systemowej
+U偶yj czcionki systemowej
 ; Use system default font
 ;
 MSG_FKEYS
-U縴j klawiszy funkcyjnych
+U偶yj klawiszy funkcyjnych
 ; Use function keys
 ;
 MSG_DOWHEEL
-Ko硂 kolor體:
+Ko艂o kolor贸w:
 ; Color wheel:
 ;
 MSG_WHEEL_NONE
-Wy潮czony
+Wy艂膮czony
 ; None
 ;
 MSG_WHEEL_SIMPLE
@@ -67,7 +67,7 @@ wybajerzone
 ; Fancy
 ;
 MSG_MMB_PARENT
-odkowy przycisk myszki = nadrz阣ny
+艢rodkowy przycisk myszki = nadrz臋dny
 ; MMB gives parent
 ;
 MSG_DEFAULTS
@@ -87,19 +87,19 @@ Czcionka
 ; Font
 ;
 MSG_PALETTEREQ
-Palety kolor體
+Palety kolor贸w
 ; Palette
 ;
 MSG_SCRMODEREQ
-Tryb體 ekranu
+Tryb贸w ekranu
 ; Screen Mode
 ;
 MSG_VOLUMEREQ
-Wolumen體
+Wolumen贸w
 ; Volume
 ;
 MSG_OTHERREQ
-pozosta硑ch
+pozosta艂ych
 ; Other
 ;
 MSG_POSITION
@@ -107,31 +107,31 @@ Pozycja:
 ; Position:
 ;
 MSG_POINTER
-w/g wska糿ika myszki
+w/g wska藕nika myszki
 ; Mouse pointer
 ;
 MSG_CENTERWIN
-秗odek okna
+艣rodek okna
 ; Center in window
 ;
 MSG_CENTERSCR
-秗odek ekranu
+艣rodek ekranu
 ; Center on screen
 ;
 MSG_TOPLEFTWIN
-lewy g髍ny r骻 okna
+lewy g贸rny r贸g okna
 ; Top left of window
 ;
 MSG_TOPLEFTSCR
-lewy g髍ny r骻 ekranu
+lewy g贸rny r贸g ekranu
 ; Top left of screen
 ;
 MSG_OFFSET
-\33bPrzesuni阠ie
+\33bPrzesuni臋cie
 ; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-\33bLiczba widocznych element體
+\33bLiczba widocznych element贸w
 ; \33bNumber of visible entries
 ;
 MSG_MIN

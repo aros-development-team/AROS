@@ -1,5 +1,5 @@
 ## version $VER: pcitool.catalog 1.1 (30.09.2007)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 ; Translated by ahg
@@ -13,7 +13,7 @@ La Herramienta PCI
 ;PCI Tool
 ;
 MSG_DESCRIPTION
-Inspección y gestión del bus PCI
+InspecciÃ³n y gestiÃ³n del bus PCI
 ;PCI querying and managment
 ;
 MSG_ERROR_LOCALE
@@ -28,7 +28,7 @@ MSG_ERROR_HEADER
 ERROR
 ;
 MSG_DRIVER_INFO
-Información del controlador
+InformaciÃ³n del controlador
 ;Driver info
 ;
 MSG_DRIVER_NAME
@@ -44,11 +44,11 @@ Hardware:
 ;Hardware info:
 ;
 MSG_PCI_DEVICE_INFO
-Información del dispositivo PCI
+InformaciÃ³n del dispositivo PCI
 ;PCI device info
 ;
 MSG_DEVICE_DESCRIPTION
-Descripción:
+DescripciÃ³n:
 ;Description:
 ;
 MSG_VENDORNAME
@@ -72,7 +72,7 @@ ID-Prod.:
 ;ProductID:
 ;
 MSG_REVISIONID
-ID-revisión:
+ID-revisiÃ³n:
 ;RevisionID:
 ;
 MSG_INTERFACE
@@ -95,7 +95,7 @@ Direcc-ROM:
 ;ROM Base:
 ;
 MSG_ROM_SIZE
-Tamaño-ROM:
+TamaÃ±o-ROM:
 ;ROM Size:
 ;
 MSG_BRIDGE
@@ -131,7 +131,7 @@ Memoria prefetchable
 ;Prefetchable Memory
 ;
 MSG_YES
-sí
+sÃ­
 ;yes
 ;
 MSG_NO
@@ -145,11 +145,11 @@ no
 ;not
 ;
 MSG_SIZE4
-%s en 0x%04x (tamaño 0x%04x)
+%s en 0x%04x (tamaÃ±o 0x%04x)
 ;%s at 0x%04x (size 0x%04x)
 ;
 MSG_SIZE8
-%s en 0x%08x (tamaño 0x%08x)
+%s en 0x%08x (tamaÃ±o 0x%08x)
 ;%s at 0x%08x (size 0x%08x)
 ;
 MSG_UNUSED

@@ -1,5 +1,5 @@
 ## version $VER: diskinfo.catalog 1.0 (21.02.2004)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 MSG_TITLE
@@ -30,16 +30,16 @@ MSG_AUTHOR
 Olivier Adam
 ;
 MSG_COPYRIGHT
-©2006 AROS Dev Team
+Â©2006 AROS Dev Team
 ;
 MSG_USED
-Occupé
+OccupÃ©
 ;
 MSG_FREE
 Disponible
 ;
 MSG_SIZE
-Capacité
+CapacitÃ©
 ;
 MSG_BLOCK_SIZE
 Taille bloc
@@ -51,7 +51,7 @@ MSG_BYTES
 octets
 ;
 MSG_STATUS
-État
+Ã‰tat
 ;
 MSG_READABLE
 Lisible
@@ -66,16 +66,16 @@ MSG_NAME
 Nom du volume
 ;
 MSG_UNIT
-unité
+unitÃ©
 ;
 MSG_DOSDEVICE
 Pilote DOS :
 ;
 MSG_DEVICEINFO
-Connecté en :
+ConnectÃ© en :
 ;
 MSG_FILESYSTEM
-Système de fichiers :
+SystÃ¨me de fichiers :
 ;
 MSG_PACKETDEVICE
 Packet Style device

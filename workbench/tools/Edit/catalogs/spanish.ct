@@ -1,6 +1,6 @@
 ## version $VER: JanoEditor.catalog 1.1 (17.03.2017).
 ## codeset 0
-## language español
+## language espaÃ±ol
 ;
 ; Translated by ahg
 ;
@@ -47,7 +47,7 @@ Imprimir
 ;Print
 ;
 MSG_INFORMATION
-Información...
+InformaciÃ³n...
 ;Information...
 ;
 MSG_CLOSE
@@ -77,7 +77,7 @@ Pegar
 ;Paste
 ;
 MSG_MARK
-Marcar un párrafo
+Marcar un pÃ¡rrafo
 ;Mark
 ;
 MSG_MARKCOLUMN
@@ -90,7 +90,7 @@ Seleccionar todo
 ;Select all
 ;
 MSG_DELLINE
-Borrar el renglón
+Borrar el renglÃ³n
 ;Del line
 ;
 MSG_SUBTOOLS
@@ -98,19 +98,19 @@ Herramientas
 ;Tools
 ;
 MSG_INDENT
-Poner sangría
+Poner sangrÃ­a
 ;Indent
 ;
 MSG_UNINDENT
-Quitar sangría
+Quitar sangrÃ­a
 ;Unindent
 ;
 MSG_UPPERCASE
-Mayúsculas
+MayÃºsculas
 ;Upper case
 ;
 MSG_LOWERCASE
-Minúsculas
+MinÃºsculas
 ;Lower case
 ;
 MSG_TOGGLECASE
@@ -160,15 +160,15 @@ Reemplazar
 ;Replace
 ;
 MSG_PREVPAGE
-Pág. previa
+PÃ¡g. previa
 ;Prev page
 ;
 MSG_NEXTPAGE
-Sig. pág.
+Sig. pÃ¡g.
 ;Next page
 ;
 MSG_GOTOLINE
-Ir al renglón...
+Ir al renglÃ³n...
 ;Goto line...
 ;
 MSG_FINDBRACKET
@@ -180,11 +180,11 @@ Cambio reciente
 ;Last modification
 ;
 MSG_BEGOFLINE
-Inicio de renglón
+Inicio de renglÃ³n
 ;Start of line
 ;
 MSG_ENDOFLINE
-Fin de renglón
+Fin de renglÃ³n
 ;End of line
 ;
 ; Macro Menu
@@ -249,19 +249,19 @@ OS obsoleto. Instale la v2.0 o superior.
 ;Obsolete OS. Install v2.0 or better.
 ;
 ERR_NOASLREQ
-¡No se puede asignar el requester ASL!
+Â¡No se puede asignar el requester ASL!
 ;Cannot alloc ASL requester!
 ;
 ERR_NOMEM
-¡No hay memoria!
+Â¡No hay memoria!
 ;Out of memory!
 ;
 ERR_NOGUI
-¡La interfaz principal no se abre!
+Â¡La interfaz principal no se abre!
 ;Main interface failed to open!
 ;
 ERR_NONAME
-Sin descripción
+Sin descripciÃ³n
 ;No title
 ; Not really an error but simplify translation
 ;
@@ -270,7 +270,7 @@ Error al escribir al dispositivo clipboard
 ;Write error into clipboard device
 ;
 ERR_OPENCLIP
-¡No se puede abrir el clipboard!
+Â¡No se puede abrir el clipboard!
 ;Unable to open clipboard!
 ;
 ERR_LOADFILE
@@ -282,27 +282,27 @@ No hay texto en el clipboard
 ;No text in clipboard
 ;
 ERR_WRONG_TYPE
-¡El objeto es un directorio!
+Â¡El objeto es un directorio!
 ;Object is a directory!
 ;
 ERR_READCLIP
-Lectura incompleta quizás por falta de memoria
+Lectura incompleta quizÃ¡s por falta de memoria
 ;Read operation incomplete due to probably a lack of memory
 ;
 ERR_NOBRACKET
-¡No hay un paréntesis en el cursor!
+Â¡No hay un parÃ©ntesis en el cursor!
 ;No parenthesis under cursor!
 ;
 ERR_NOT_FOUND
-El patrón '%s' no se halla
+El patrÃ³n '%s' no se halla
 ;Pattern `%s' not found
 ;
 ERR_LOADFONT
-¡No se puede abrir la fuente deseada!
+Â¡No se puede abrir la fuente deseada!
 ;Can't open desired font!
 ;
 ERR_NOPREFEDITOR
-¡No se halla al editor de prefs.!
+Â¡No se halla al editor de prefs.!
 ;Can't find preference editor!
 ;
 ERR_BADPREFSFILE
@@ -310,7 +310,7 @@ Mal formato del archivo de prefs.
 ;Bad preference file format.
 ;
 ERR_FILEMODIFIED
-%s ha cambiado.\n¿Estás seguro de cerrarlo?
+%s ha cambiado.\nÂ¿EstÃ¡s seguro de cerrarlo?
 ;%s has been modified.\nAre you sure want to close it?
 ;
 ERR_SLC
@@ -318,19 +318,19 @@ Grabar|Cerrar|Cancelar
 ;Save|Close|Cancel
 ;
 ERR_NOSEARCHTEXT
-¡No texto para buscar!
+Â¡No texto para buscar!
 ;No text to search for!
 ;
 ERR_FILEEXISTS
-El archivo ya existe. ¿Sobrescribirlo?
+El archivo ya existe. Â¿Sobrescribirlo?
 ;This file already exists. Overwrite it?
 ;
 ERR_OC
-Sí|¡No!
+SÃ­|Â¡No!
 ;Yes|No!
 ;
 WARN_RECORD
-Empieza la grabación
+Empieza la grabaciÃ³n
 ;Start recording macro
 ;
 WARN_RECORDED
@@ -347,12 +347,12 @@ WARN_REC
 ; *************************************
 ;
 MSG_ABOUT
-Información
+InformaciÃ³n
 ;Information
 ;
 MSG_FORMATINFO
-%s\nDiseñado por T.Pierron y C.Guillaume © 2000\n\nArchivo editdo: %s\nLongitud: %iu %s, %iu %s.
-;%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
+%s\nDiseÃ±ado por T.Pierron y C.Guillaume Â© 2000\n\nArchivo editdo: %s\nLongitud: %iu %s, %iu %s.
+;%s\nDesigned by T.Pierron and C.Guillaume Â© 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Seguir
@@ -367,7 +367,7 @@ caracteres
 ;bytes
 ;
 MSG_LINE
-renglón
+renglÃ³n
 ;line
 ;
 MSG_LINES
@@ -380,7 +380,7 @@ renglones
 ; *************************
 ;
 MSG_SEARCHWINDOW
-Buscar el patrón
+Buscar el patrÃ³n
 ;Search pattern
 ;
 MSG_REPLACEWINDOW

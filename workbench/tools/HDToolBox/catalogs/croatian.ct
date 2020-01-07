@@ -20,7 +20,7 @@ Automount
 ; Automount
 ;
 WORD_Bootable
-Moguèe Podizanje Sustava
+MoguÄe Podizanje Sustava
 ; Bootable
 ;
 WORD_BootPri
@@ -44,7 +44,7 @@ Stvori Table
 ; Create Table
 ;
 WORD_Devices
-Ureðaji
+UreÄ‘aji
 ; Devices
 ;
 WORD_DosEnvec
@@ -64,7 +64,7 @@ Ime
 ; Name
 ;
 WORD_Switches
-Prekidaèi
+PrekidaÄi
 ; Switches
 ;
 WORD_Ok
@@ -100,7 +100,7 @@ Preimenuj
 ; Rename
 ;
 WORD_Resize_Move
-Promjeni velièinu/Pomakni
+Promjeni veliÄinu/Pomakni
 ; Resize/Move
 ;
 WORD_Save_Changes
@@ -108,7 +108,7 @@ Spremi Promjene
 ; Save Changes
 ;
 WORD_Size
-Velièina
+VeliÄina
 ; Size
 ;
 WORD_Unit
@@ -136,7 +136,7 @@ Izlaz
 ; Quit
 ;
 MSG_ASK_SAVE
-Svi podatci da izmijenjenim particijama æe bit uni¹teni!\nSigurno ¾elite spremiti promjene particijske table '%s'?
+Svi podatci da izmijenjenim particijama Ä‡e bit uniÅ¡teni!\nSigurno Å¾elite spremiti promjene particijske table '%s'?
 ; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
 ;
 MSG_NO_MEMORY
@@ -152,18 +152,18 @@ Izaberite prazni dio
 ; Select empty area
 ;
 MSG_Select_Partition_Resize_Move
-Izaberite particiju i promjenite velièinu/prebacite ju
+Izaberite particiju i promjenite veliÄinu/prebacite ju
 ; Select a partition and resize/move it
 ;
 MSG_Welcome
-Dobrodo¹li u particijski alat
+DobrodoÅ¡li u particijski alat
 ; Welcome to the partitioning tool
 ;
 MSG_WriteTableError
-Gre¹ka pri zapisivanju particijske table
+GreÅ¡ka pri zapisivanju particijske table
 ; Error while writing partition table
 ;
 MSG_CreateTableError
-Gre¹ka pri stvaranju particijske table
+GreÅ¡ka pri stvaranju particijske table
 ; Error while creating partition table
 ;

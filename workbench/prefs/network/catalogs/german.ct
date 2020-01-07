@@ -19,7 +19,7 @@ Aktiv
 ; Active
 ;
 MSG_DEVICE
-Ger‰t
+Ger√§t
 ; Device
 ;
 MSG_UNIT
@@ -43,11 +43,11 @@ Gateway
 ; Gateway
 ;
 MSG_DNS1
-Prim‰rer DNS
+Prim√§rer DNS
 ; Primary DNS
 ;
 MSG_DNS2
-Sekund‰rer DNS
+Sekund√§rer DNS
 ; Secondary DNS
 ;
 MSG_HOST_NAME
@@ -59,11 +59,11 @@ Hostnamen
 ; Host Name and Aliases
 ;
 MSG_DOMAIN_NAME
-Dom‰nenname
+Dom√§nenname
 ; Domain/Workgroup
 ;
 MSG_SERIAL_DEVICE
-Serielles Ger‰t
+Serielles Ger√§t
 ; Serial Device
 ;
 MSG_UNIT_NUMBER
@@ -103,15 +103,15 @@ Netzwerkname
 ; Network Name
 ;
 MSG_ENCTYPE
-Verschl¸sselung
+Verschl√ºsselung
 ; Encryption
 ;
 MSG_KEYTYPE
-Schl¸sseltyp
+Schl√ºsseltyp
 ; Key Type
 ;
 MSG_KEY
-Schl¸ssel
+Schl√ºssel
 ; Key
 ;
 MSG_HIDDEN
@@ -167,11 +167,11 @@ OK
 ; Ok
 ;
 MSG_BUTTON_ADD
-Hinzuf¸gen
+Hinzuf√ºgen
 ; Add
 ;
 MSG_BUTTON_EDIT
-ƒndern
+√Ñndern
 ; Edit
 ;
 MSG_BUTTON_REMOVE
@@ -183,7 +183,7 @@ Anwenden
 ; Apply
 ;
 MSG_BUTTON_CLOSE
-Schlieﬂen
+Schlie√üen
 ; Close
 ;
 MSG_ERROR_TITLE
@@ -199,11 +199,11 @@ Netzwerk-Voreinstellungen konnten\nnicht in %s gespeichert werden
 ; Network preferences not saved to %s
 ;
 MSG_ERR_NOT_COPIED_FILES
-Zus‰tzliche Dateien konnten nicht\nnach %s kopiert werden
+Zus√§tzliche Dateien konnten nicht\nnach %s kopiert werden
 ; Additional files not copied to %s
 ;
 MSG_WARN_MULTIPLE_IFACES
-DHCP arbeitet nicht zuverl‰ssig, wenn mehrere Schnittstellen eingestellt wurden
+DHCP arbeitet nicht zuverl√§ssig, wenn mehrere Schnittstellen eingestellt wurden
 ; DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE
@@ -239,7 +239,7 @@ Passwort
 ; Password
 ;
 MSG_WORKGROUP
-Dom‰ne/Arbeitsgruppe
+Dom√§ne/Arbeitsgruppe
 ; Domain/Workgroup
 ;
 MSG_SERVICE

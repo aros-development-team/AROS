@@ -8,15 +8,15 @@ Ei voitu avata %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Kan inte lÂsa allm‰n sk‰rm!
+Kan inte l√•sa allm√§n sk√§rm!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Kan inte l‰sa DrawInfo!
+Kan inte l√§sa DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Kan inte l‰sa VisualInfo!
+Kan inte l√§sa VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
@@ -44,7 +44,7 @@ O\0Avaa...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Tallenna nimell‰...
+A\0Tallenna nimell√§...
 ; A\0Save As...
 ;
 MSG_MEN_PROJECT_QUIT
@@ -88,7 +88,7 @@ OK
 ; Ok
 ;
 MSG_GAD_AVAIL_LANGUAGES
-K‰ytett‰viss‰ olevat kielet
+K√§ytett√§viss√§ olevat kielet
 ; Available Languages
 ;
 MSG_GAD_PREF_LANGUAGES
@@ -96,7 +96,7 @@ Suositeltavat kielet
 ; Preferred Languages
 ;
 MSG_GAD_CLEAR_LANGUAGES
-Rensa valda sprÂk
+Rensa valda spr√•k
 ; Clear Languages
 ;
 MSG_GAD_SAVE
@@ -104,7 +104,7 @@ Tallenna
 ; Save
 ;
 MSG_GAD_USE
-K‰yt‰
+K√§yt√§
 ; Use
 ;
 MSG_GAD_CANCEL
@@ -120,18 +120,18 @@ Maa
 ; Country
 ;
 MSG_GAD_TAB_TIMEZONE
-Aikavyˆhyke
+Aikavy√∂hyke
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Aikavyˆhyke: Tunti UTC:sta
+Aikavy√∂hyke: Tunti UTC:sta
 ; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Aikavyˆhyke: %ld tuntia UTC:sta
+Aikavy√∂hyke: %ld tuntia UTC:sta
 ; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Aikavyˆhyke: %ld tuntia, %ld minuuttia UTC:sta
+Aikavy√∂hyke: %ld tuntia, %ld minuuttia UTC:sta
 ; Time Zone: %ld Hours, %ld Minutes from UTC
 ;

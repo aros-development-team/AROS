@@ -1,6 +1,6 @@
 ## version $VER: serialprefs.catalog 1.0 (23.02.2001)
 ## codeset 0
-## language franÁais
+## language fran√ßais
 ;
 MSG_CANT_OPEN_LIB
 Impossibile aprire %s V%ld !\n
@@ -76,10 +76,10 @@ Annulla
 ;
 ;
 MSG_GAD_BAUDRATE
-Velocit‡
+Velocit√†
 ;
 MSG_GAD_PARITY
-Controllo parit‡
+Controllo parit√†
 ;
 MSG_GAD_STOPBITS
 Bit di stop

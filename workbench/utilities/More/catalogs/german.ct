@@ -3,7 +3,7 @@
 ## language deutsch
 ;
 MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!
+Kann %s V%ld nicht Ã¶ffnen!
 ;
 MSG_NO_MEM
 Speichermangel!
@@ -39,7 +39,7 @@ MSG_MEN_PROJECT
 Projekt
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Öffnen ...
+O\0Ã–ffnen ...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Speichern als ...
@@ -48,7 +48,7 @@ MSG_MEN_PROJECT_PRINT
 P\0Drucken
 ;
 MSG_MEN_PROJECT_ABOUT
-?\0Über ...
+?\0Ãœber ...
 ;
 MSG_MEN_PROJECT_QUIT
 Q\0Beenden
@@ -60,7 +60,7 @@ MSG_MEN_NAVIGATION_FIND
 F\0Finden ...
 ;
 MSG_MEN_NAVIGATION_FIND_NEXT
-.\0Finde nächsten
+.\0Finde nÃ¤chsten
 ;
 MSG_MEN_NAVIGATION_FIND_PREV
 ,\0Finde vorherigen
@@ -69,13 +69,13 @@ MSG_MEN_NAVIGATION_JUMP
 G\0Gehe zu Zeile ...
 ;
 MSG_ASL_OPEN_TITLE
-Eingabedatei auswählen
+Eingabedatei auswÃ¤hlen
 ;
 MSG_ASL_SAVE_TITLE
-Ausgabedatei auswählen
+Ausgabedatei auswÃ¤hlen
 ;
 MSG_ABOUT
-More V%ld.%ld\n (%s)\nCopyright © %s by %s
+More V%ld.%ld\n (%s)\nCopyright Â© %s by %s
 ;
 MSG_ABOUT_TITLE
 More - Textanzeiger

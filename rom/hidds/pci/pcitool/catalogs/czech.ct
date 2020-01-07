@@ -12,11 +12,11 @@ PCI Tool
 ; PCI Tool
 ;
 MSG_DESCRIPTION
-P¯ehled stavu sbÏrnice PCI
+P≈ôehled stavu sbƒõrnice PCI
 ; PCI querying and managment
 ;
 MSG_ERROR_LOCALE
-Nelze inicializovat systÈm lokalizace.
+Nelze inicializovat syst√©m lokalizace.
 ; Can't open locale
 ;
 MSG_ERROR_OK
@@ -28,15 +28,15 @@ Chyba
 ; ERROR
 ;
 MSG_DRIVER_INFO
-Informace o ovladaËi
+Informace o ovladaƒçi
 ; Driver info
 ;
 MSG_DRIVER_NAME
-N·zev:
+N√°zev:
 ; Driver name:
 ;
 MSG_DIRECT_BUS
-P¯Ìm˝ p¯Ìstup:
+P≈ô√≠m√Ω p≈ô√≠stup:
 ; Direct bus:
 ;
 MSG_HARDWARE_INFO
@@ -44,7 +44,7 @@ Hardware:
 ; Hardware info:
 ;
 MSG_PCI_DEVICE_INFO
-Informace o za¯ÌzenÌ
+Informace o za≈ô√≠zen√≠
 ; PCI device info
 ;
 MSG_DEVICE_DESCRIPTION
@@ -52,15 +52,15 @@ Popis:
 ; Description:
 ;
 MSG_VENDORNAME
-V˝robce:
+V√Ωrobce:
 ; Vendor Name:
 ;
 MSG_PRODUCTNAME
-N·zev:
+N√°zev:
 ; Product Name:
 ;
 MSG_SUBSYSTEM
-PodsystÈm:
+Podsyst√©m:
 ; Subsystem:
 ;
 MSG_VENDORID
@@ -76,15 +76,15 @@ RevisionID:
 ; RevisionID:
 ;
 MSG_INTERFACE
-RozhranÌ:
+Rozhran√≠:
 ; Interface:
 ;
 MSG_CLASS
-T¯Ìda:
+T≈ô√≠da:
 ; Class:
 ;
 MSG_SUBCLASS
-Podt¯Ìda:
+Podt≈ô√≠da:
 ; Subclass:
 ;
 MSG_IRQ
@@ -100,15 +100,15 @@ Velikost ROM:
 ; ROM Size:
 ;
 MSG_BRIDGE
-Bridge pro sbÏrnici %d (ISA %saktivnÌ, VGA %saktivnÌ)
+Bridge pro sbƒõrnici %d (ISA %saktivn√≠, VGA %saktivn√≠)
 ; Bridge handles bus %d (ISA %senabled, VGA %senabled)
 ;
 MSG_MEMORY_RANGE
-Rozsah pamÏti: %08x - %08x
+Rozsah pamƒõti: %08x - %08x
 ; Memory ranges from %08x to %08x
 ;
 MSG_PREFETCHABLE_MEMORY
-Rozsah vyrovn·vacÌ pamÏti: %08x - %08x
+Rozsah vyrovn√°vac√≠ pamƒõti: %08x - %08x
 ; Prefetchable ranges memory from %08x to %08x
 ;
 MSG_IO_RANGE
@@ -116,7 +116,7 @@ Rozsah IO: %04x - %04x
 ; IO ranges from %04x to %04x
 ;
 MSG_IO_MSG
-IO: %s, PamÏª: %s, Master: %s, PaletteSnoop: %s, 66 MHz: %s
+IO: %s, Pamƒõ≈•: %s, Master: %s, PaletteSnoop: %s, 66 MHz: %s
 ; IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
 ;
 MSG_IO
@@ -124,11 +124,11 @@ I/O
 ; I/O
 ;
 MSG_MEMORY
-PamÏª
+Pamƒõ≈•
 ; Memory
 ;
 MSG_PREFETCHABLE
-Vyrovn·vacÌ pamÏª
+Vyrovn√°vac√≠ pamƒõ≈•
 ; Prefetchable Memory
 ;
 MSG_YES
@@ -156,14 +156,14 @@ MSG_SIZE8
 ; %s at 0x%08x (size 0x%08x)
 ;
 MSG_SAVETORAMDISK
-Uloæit informace o vybranÈm za¯ÌzenÌ
+Ulo≈æit informace o vybran√©m za≈ô√≠zen√≠
 ; Save Device Information to RAM Disk
 ;
 MSG_SAVEALLTORAMDISK
-Uloæit veπkerÈ zobrazenÈ informace
+Ulo≈æit ve≈°ker√© zobrazen√© informace
 ; Save complete PCI Information to RAM Disk
 ;
 MSG_UNUSED
--nepouæito-
+-nepou≈æito-
 ; --unused--
 ;

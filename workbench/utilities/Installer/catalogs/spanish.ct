@@ -1,5 +1,5 @@
 ## version $VER: Installer.catalog 1.0 (14.9.2003)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 MSG_OK
@@ -16,7 +16,7 @@ MSG_PROMPT
 Pregunta
 ;
 MSG_YES
-Sí
+SÃ­
 ;
 MSG_NO
 No

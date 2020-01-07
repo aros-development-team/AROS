@@ -1,14 +1,14 @@
 ## version $VER: executecommand.catalog 2.0 (30.03.2016)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
 MSG_TITLE
-Exécuter
+ExÃ©cuter
 ; Execute
 ;
 MSG_DESCRIPTION
-Exécuter une commande
+ExÃ©cuter une commande
 ; Execute Command
 ;
 MSG_LABEL_COMMANDLINE
@@ -16,7 +16,7 @@ Commande et arguments :
 ; Command and arguments:
 ;
 MSG_BUTTON_EXECUTE
-_Exécuter
+_ExÃ©cuter
 ; _Execute
 ;
 MSG_BUTTON_CANCEL
@@ -44,10 +44,10 @@ Impossible d'initialiser les classes.
 ; Can't initialize classes.
 ;
 MSG_ERROR_OPEN_CONSOLE
-Impossible de créer la fenêtre.
+Impossible de crÃ©er la fenÃªtre.
 ; Can't open console window.
 ;
 MSG_ERROR_EXECUTE
-Impossible d'exécuter la commande.
+Impossible d'exÃ©cuter la commande.
 ; Can't execute command.
 ;

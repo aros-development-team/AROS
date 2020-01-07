@@ -1,12 +1,12 @@
 ## version $VER: hdtoolbox.catalog 1.0 (19.02.2004)
 ## codeset 0
-## language français
+## language franÃ§ais
 ;
 WORD_Active
 Active
 ;
 WORD_AddEntry
-Ajouter une entrée
+Ajouter une entrÃ©e
 ;
 WORD_All
 Tout
@@ -15,25 +15,25 @@ WORD_Automount
 Montage automatique
 ;
 WORD_Bootable
-Démarrable
+DÃ©marrable
 ;
 WORD_BootPri
-Priorité au démarrage
+PrioritÃ© au dÃ©marrage
 ;
 WORD_Cancel
 Annuler
 ;
 WORD_Changed
-Modifié
+ModifiÃ©
 ;
 WORD_Change_Type
 Modifier le type
 ;
 WORD_Create_Table
-Créer une table
+CrÃ©er une table
 ;
 WORD_Devices
-Périphériques
+PÃ©riphÃ©riques
 ;
 WORD_DosEnvec
 DosEnvec
@@ -42,16 +42,16 @@ WORD_Exit
 Quitter
 ;
 WORD_Geometry
-Géométrie
+GÃ©omÃ©trie
 ;
 WORD_Name
 Nom
 ;
 WORD_Switches
-Échanger
+Ã‰changer
 ;
 WORD_Parent
-Répertoire parent
+RÃ©pertoire parent
 ;
 WORD_Ok
 Ok
@@ -69,13 +69,13 @@ WORD_Partition_Type
 Type de partition
 ;
 WORD_RemoveEntry
-Retirer l'entrée
+Retirer l'entrÃ©e
 ;
 WORD_Rename
 Renommer
 ;
 WORD_Resize_Move
-Retailler/Déplacer
+Retailler/DÃ©placer
 ;
 WORD_Save_Changes
 Sauver les modifications
@@ -84,10 +84,10 @@ WORD_Size
 Taille
 ;
 WORD_Unit
-Unité
+UnitÃ©
 ;
 WORD_Units
-Unités
+UnitÃ©s
 ;
 WORD_Unknown
 Inconnu
@@ -96,40 +96,40 @@ WORD_MENU_Project
 Projet
 ;
 WORD_MENU_About
-À propos
+Ã€ propos
 ;
 WORD_MENU_Quit
 Quitter
 ;
 MSG_ASK_SAVE
-Toutes les données des partitions modifiées seront perdues\n Etes-vous sûr de vouloir sauvegarder la table de partition '%s' ?
-;Alle Daten auf modifizierten Partitionen werden zerstört!\nBist du dir sicher die Änderungen der Partitionstabelle '%s' zu speichern?
+Toutes les donnÃ©es des partitions modifiÃ©es seront perdues\n Etes-vous sÃ»r de vouloir sauvegarder la table de partition '%s' ?
+;Alle Daten auf modifizierten Partitionen werden zerstÃ¶rt!\nBist du dir sicher die Ã„nderungen der Partitionstabelle '%s' zu speichern?
 ;
 MSG_NO_MEMORY
-Pas assez de mémoire disponible
+Pas assez de mÃ©moire disponible
 ;Nicht genug Speicher vorhanden
 ;
 MSG_PARTITION_TABLE_FULL
-Table de partition complète
+Table de partition complÃ¨te
 ;Partitionstabelle voll
 ;
 MSG_Select_Empty_Area
-Choisir une région vide
-;Wähle eine freien Bereich
+Choisir une rÃ©gion vide
+;WÃ¤hle eine freien Bereich
 ;
 MSG_Select_Partition_Resize_Move
-Choisir une partition à retailler ou déplacer
-;Wähle eine Partition und ändere die Größe bzw. bewege sie
+Choisir une partition Ã  retailler ou dÃ©placer
+;WÃ¤hle eine Partition und Ã¤ndere die GrÃ¶ÃŸe bzw. bewege sie
 ;
 MSG_Welcome
-Bienvenue à l'outil de partitionnement
+Bienvenue Ã  l'outil de partitionnement
 ;Willkommen zum Partitionierungswerkzeug
 ;
 MSG_WriteTableError
-Erreur d'écriture sur la table de partition
+Erreur d'Ã©criture sur la table de partition
 ;Fehler beim Schreiben der Partitionstabelle
 ;
 MSG_CreateTableError
-Erreur lors de la création d'une table de partition
+Erreur lors de la crÃ©ation d'une table de partition
 ;Fehler beim Erstellen der Partitionstabelle
 ;

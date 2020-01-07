@@ -19,7 +19,7 @@ Snaphot
 ; Snapshot
 ;
 MSG_MILESTONE
-Kamieñ milowy
+KamieÅ„ milowy
 ; Milestone
 ;
 MSG_RELEASE
@@ -27,8 +27,8 @@ Wydanie
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright (c) 1995-2020, The AROS Development Team. Wszystkie prawa zastrze¿one.
-; Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+Copyright (c) 1995-2020, The AROS Development Team. Wszystkie prawa zastrzeÅ¼one.
+; Copyright Å  1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Wydany zgodnie z postanowieniami
@@ -43,7 +43,7 @@ MSG_LICENSE_3
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Wiêcej informacji znajdziesz na stronie http://www.aros.org/pl/ .
+WiÄ™cej informacji znajdziesz na stronie http://www.aros.org/pl/ .
 ; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
@@ -55,7 +55,7 @@ Sponsorzy
 ; Sponsors
 ;
 MSG_PAGE_ACKNOWLEDGEMENTS
-Podziêkowania
+PodziÄ™kowania
 ; Acknowledgements
 ;
 MSG_SECTION_COORDINATION
@@ -87,7 +87,7 @@ Workbench
 ; Workbench
 ;
 MSG_SECTION_TOOLS
-Narzêdzia
+NarzÄ™dzia
 ; Tools
 ;
 MSG_SECTION_PREFERENCES
@@ -123,7 +123,7 @@ Dokumentacja
 ; Documentation
 ;
 MSG_SECTION_TRANSLATION
-T³umaczenia
+TÅ‚umaczenia
 ; Translation
 ;
 MSG_SECTION_ARTISTRY

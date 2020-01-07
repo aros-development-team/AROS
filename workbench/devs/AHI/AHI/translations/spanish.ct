@@ -1,5 +1,5 @@
 ## version $VER: ahiprefs.catalog 4.6 (4.8.2004) por Samuel Aguilera <slyguy92@arrakis.es>
-## language espaÒol
+## language espa√±ol
 ## codeset 0
 ;
 ## chunk AUTH Translated by Samuel Aguilera <slyguy92@arrakis.es>
@@ -55,7 +55,7 @@ D\000Valores por Defecto
 ; D\000Reset To Defaults
 ;
 msgItemLastSaved
-L\000⁄ltimos Grabados
+L\000√öltimos Grabados
 ; L\000Last Saved
 ;
 msgItemRestore
@@ -67,7 +67,7 @@ msgMenuSettings
 ; \000Settings
 ;
 msgItemCreateIcons
-I\000øCrear Iconos?
+I\000¬øCrear Iconos?
 ; I\000Create Icons?
 ;
 msgMenuHelp
@@ -79,11 +79,11 @@ Help\000Ayuda...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-H\000GuÌa del Usuario AHI...
+H\000Gu√≠a del Usuario AHI...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
-\000Õndice de Conceptos...
+\000√çndice de Conceptos...
 ; \000Concept Index...
 ;
 ; *** The pages ***
@@ -109,15 +109,15 @@ Unidad Musical
 ; *** Properties box ***
 ;
 msgProperties
-ID de Modo\nGrabaciÛn\nAutor\nCopyright\nControlador\nVersiÛn\nAnnotation
+ID de Modo\nGrabaci√≥n\nAutor\nCopyright\nControlador\nVersi√≥n\nAnnotation
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
-D˙plex Completo
+D√∫plex Completo
 ; Full duplex
 ;
 msgPropRecordHalf
-Semi D˙plex
+Semi D√∫plex
 ; Half duplex
 ;
 msgPropRecordNone
@@ -182,7 +182,7 @@ Opciones Globales
 ; Global options
 ;
 msgGlobOptDebugLevel
-Nivel _de DepuraciÛn
+Nivel _de Depuraci√≥n
 ; _Debug level
 ;
 msgGlobOptEcho
@@ -190,11 +190,11 @@ _Eco
 ; _Echo
 ;
 msgGlobOptSurround
-Surround en modos "_R·pidos"
+Surround en modos "_R√°pidos"
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-_LÌmite de uso de CPU
+_L√≠mite de uso de CPU
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
@@ -222,7 +222,7 @@ Conectado
 ; Enabled
 ;
 msgEchoFast
-R·pido
+R√°pido
 ; Fast
 ;
 msgEchoDisabled
@@ -263,10 +263,10 @@ msgTextProgramName
 Preferencias AHI
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright ¬©%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s\nTraducciÛn al EspaÒol por:\nSamuel Aguilera <slyguy92@arrakis.es>
-; %s%s\nCopyright ©%s
+%s%s\nCopyright ¬©%s\nTraducci√≥n al Espa√±ol por:\nSamuel Aguilera <slyguy92@arrakis.es>
+; %s%s\nCopyright ¬©%s
 ;
 msgTextNoWindow
 Imposible abrir ventana.
@@ -277,12 +277,12 @@ Imposible reservar el\nrequester de ficheros.
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-°Imposible encontrar `%s'!
+¬°Imposible encontrar `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Imposible abrir `%s' versiÛn %ld.
-; Unable to open `%s¥ version %ld.
+Imposible abrir `%s' versi√≥n %ld.
+; Unable to open `%s≈Ω version %ld.
 ;
 ; *** Additions
 ;

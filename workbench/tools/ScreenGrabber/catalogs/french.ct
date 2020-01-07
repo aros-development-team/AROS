@@ -1,15 +1,15 @@
 ## version $VER: ScreenGrabber.catalog 2.0 (30.03.2016)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 MSG_WINDOW_TITLE
-Capture d'écran
+Capture d'Ã©cran
 ; ScreenGrabber
 MSG_REFRESH
-Rafraîchir
+RafraÃ®chir
 ;
 MSG_SCREEN_INFO
-Écran
+Ã‰cran
 ; Screen info
 MSG_SIZE
 Taille
@@ -18,7 +18,7 @@ MSG_TITLE
 Titre
 ; Title
 MSG_DEFAULT_TITLE
-Écran par défaut
+Ã‰cran par dÃ©faut
 ; Default title
 MSG_GRABBING_OPTIONS
 Options de capture
@@ -27,7 +27,7 @@ MSG_DELAY
 Delai (s)
 ; Delay (s)
 MSG_HIDE
-Cacher la fenêtre de capture
+Cacher la fenÃªtre de capture
 ;Hide the grabber window
 MSG_SAVE_OPTIONS
 Sauvegarde
@@ -45,7 +45,7 @@ MSG_SCREEN_PARM
 ;%d x %d, depth=%d
 ;
 MSG_OVERWRITE
-Le fichier %s existe déjà.\nVoulez-vous vraiment l'écraser ?
+Le fichier %s existe dÃ©jÃ .\nVoulez-vous vraiment l'Ã©craser ?
 ;File '%s' already exists.\nDo you really want to overwrite it?
 ;
 MSG_ERROR_TITLE
@@ -61,15 +61,15 @@ OUI|NON
 ;YES|NO
 ;
 MSG_ERR_DATATYPE
-Impossible de créer le datatype objet !
+Impossible de crÃ©er le datatype objet !
 ;Can't create datatype object!
 ;
 MSG_NORAM
-Impossible d'allouer de la mémoire !
+Impossible d'allouer de la mÃ©moire !
 ;Can't allocate RAM!
 ;
 MSG_ERR_DATATYPEIO
-L'écriture de '%s' a échoué avec une erreur d'entrée sortie %ld !
+L'Ã©criture de '%s' a Ã©chouÃ© avec une erreur d'entrÃ©e sortie %ld !
 ;Writing of '%s' failed with IO Error %ld!
 ;
 MSG_ERR_OPENFILE
@@ -77,6 +77,6 @@ Impossible d'ouvrir le fichier '%s' en sortie !
 ;Can't open file '%s' for output!
 ;
 MSG_ERR_APP
-Impossible de créer l'objet application !
+Impossible de crÃ©er l'objet application !
 ;Can't create application object!
 ;

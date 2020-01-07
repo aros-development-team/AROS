@@ -11,7 +11,7 @@ Nowy
 ; New
 ;
 MSG_OPENNEWFILE
-Otwórz...
+OtwÃ³rz...
 ; Open file...
 ;
 MSG_LOADINPRJ
@@ -43,7 +43,7 @@ Zamknij
 ; Close
 ;
 MSG_QUIT
-Skoñcz
+SkoÅ„cz
 ; Quit
 ;
 MSG_EDITTITLE
@@ -67,7 +67,7 @@ Zaznacz
 ; Mark
 ;
 MSG_MARKCOLUMN
-Zaznacz kolumnê
+Zaznacz kolumnÄ™
 ; Mark column
 ;
 MSG_SELECTALL
@@ -75,19 +75,19 @@ Zaznacz wszystko
 ; Select all
 ;
 MSG_DELLINE
-Usuñ liniê
+UsuÅ„ liniÄ™
 ; Delete line
 ;
 MSG_SUBTOOLS
-Narzêdzia
+NarzÄ™dzia
 ; Tools
 ;
 MSG_INDENT
-Wciêcie
+WciÄ™cie
 ; Indent
 ;
 MSG_UNINDENT
-Cofnij wciêcie
+Cofnij wciÄ™cie
 ; Unindent
 ;
 MSG_UPPERCASE
@@ -95,11 +95,11 @@ Wielkie litery
 ; Upper case
 ;
 MSG_LOWERCASE
-Ma³e litery
+MaÅ‚e litery
 ; Lower case
 ;
 MSG_TOGGLECASE
-Zamieñ wielko¶æ liter
+ZamieÅ„ wielkoÅ›Ä‡ liter
 ; Toggle case
 ;
 MSG_INSERTFILE
@@ -111,7 +111,7 @@ Cofnij
 ; Undo
 ;
 MSG_REDO
-Przywróæ
+PrzywrÃ³Ä‡
 ; Redo
 ;
 MSG_SEARCHTITLE
@@ -119,19 +119,19 @@ Szukaj
 ; Search
 ;
 MSG_FIND
-Znajd¼...
+ZnajdÅº...
 ; Find...
 ;
 MSG_REPLACE
-Zast±p...
+ZastÄ…p...
 ; Replace...
 ;
 MSG_SUBFIND
-Znajd¼
+ZnajdÅº
 ; Find
 ;
 MSG_NEXTFIND
-Nastêpny
+NastÄ™pny
 ; Next
 ;
 MSG_PREVFIND
@@ -139,7 +139,7 @@ Poprzedni
 ; Previous
 ;
 MSG_NEXTREPLACE
-Zast±p
+ZastÄ…p
 ; Replace
 ;
 MSG_PREVPAGE
@@ -147,15 +147,15 @@ Poprzednia strona
 ; Previous page
 ;
 MSG_NEXTPAGE
-Nastêpna strona
+NastÄ™pna strona
 ; Next page
 ;
 MSG_GOTOLINE
-Przejd¼ do linii...
+PrzejdÅº do linii...
 ; Goto line...
 ;
 MSG_FINDBRACKET
-Pasuj±ce nawiasy
+PasujÄ…ce nawiasy
 ; Matching bracket
 ;
 MSG_LASTMODIF
@@ -163,7 +163,7 @@ Ostatnia zmiana
 ; Last modification
 ;
 MSG_BEGOFLINE
-Pocz±tek linii
+PoczÄ…tek linii
 ; Start of line
 ;
 MSG_ENDOFLINE
@@ -175,11 +175,11 @@ Makro
 ; Macro
 ;
 MSG_STARTRECORD
-Rozpocznij rejestracjê
+Rozpocznij rejestracjÄ™
 ; Start recording
 ;
 MSG_STOPRECORD
-Zatrzymaj rejestracjê
+Zatrzymaj rejestracjÄ™
 ; Stop recording
 ;
 MSG_PLAYMACRO
@@ -187,15 +187,15 @@ Uruchom makro
 ; Execute macro
 ;
 MSG_REPEATMACRO
-Powtórz makro...
+PowtÃ³rz makro...
 ; Repeat macro...
 ;
 MSG_ENVTITLE
-¦rodowisko
+Åšrodowisko
 ; Environment
 ;
 MSG_SCRMODE
-Tryb wy¶wietlania...
+Tryb wyÅ›wietlania...
 ; Screen mode...
 ;
 MSG_FONTS
@@ -203,7 +203,7 @@ Czcionki...
 ; Fonts...
 ;
 MSG_PREFS
-G³ówne...
+GÅ‚Ã³wne...
 ; General preferences...
 ;
 MSG_LOADPREFS
@@ -219,19 +219,19 @@ Zapisz preferencje jako...
 ; Save preferences as...
 ;
 ERR_BADOS
-Przestarza³a wersja systemu. Zainstaluj wersjê v2.0 lub nowsz±.
+PrzestarzaÅ‚a wersja systemu. Zainstaluj wersjÄ™ v2.0 lub nowszÄ….
 ; Obsolete OS. Install v2.0 or better.
 ;
 ERR_NOASLREQ
-Nie mo¿na zaalokowaæ komunikatu ASL!
+Nie moÅ¼na zaalokowaÄ‡ komunikatu ASL!
 ; Cannot alloc ASL requester!
 ;
 ERR_NOMEM
-Brak pamiêci!
+Brak pamiÄ™ci!
 ; Out of memory!
 ;
 ERR_NOGUI
-Nie mo¿na otworzyæ interfejsu programu!
+Nie moÅ¼na otworzyÄ‡ interfejsu programu!
 ; Main interface failed to open!
 ;
 ERR_NONAME
@@ -239,15 +239,15 @@ brak nazwy
 ; No title
 ;
 ERR_WRITECLIP
-B³±d zapisu do schowka.
+BÅ‚Ä…d zapisu do schowka.
 ; Write error into clipboard device
 ;
 ERR_OPENCLIP
-Nie mo¿na otworzyæ schowka!
+Nie moÅ¼na otworzyÄ‡ schowka!
 ; Unable to open clipboard!
 ;
 ERR_LOADFILE
-Nie mo¿na otworzyæ pliku.
+Nie moÅ¼na otworzyÄ‡ pliku.
 ; Unable to load requested file
 ;
 ERR_NOTXTINCLIP
@@ -259,7 +259,7 @@ Obiekt jest katalogiem!
 ; Object is a directory!
 ;
 ERR_READCLIP
-Operacja odczytu zakoñczona niepowodzeniem.
+Operacja odczytu zakoÅ„czona niepowodzeniem.
 ; Read operation incomplete
 ;
 ERR_NOBRACKET
@@ -267,23 +267,23 @@ Brak nawiasu pod kursorem!
 ; No parenthesis under cursor!
 ;
 ERR_NOT_FOUND
-Wzorzec \"%s\" nie zosta³ znaleziony.
+Wzorzec \"%s\" nie zostaÅ‚ znaleziony.
 ; Pattern `%s' not found
 ;
 ERR_LOADFONT
-Nie mo¿na otworzyæ czcionki!
+Nie moÅ¼na otworzyÄ‡ czcionki!
 ; Can't open desired font!
 ;
 ERR_NOPREFEDITOR
-Nie mo¿na odnale¼æ edytora preferencji!
+Nie moÅ¼na odnaleÅºÄ‡ edytora preferencji!
 ; Can't find preference editor!
 ;
 ERR_BADPREFSFILE
-Z³y format pliku preferencji.
+ZÅ‚y format pliku preferencji.
 ; Bad preference file format.
 ;
 ERR_FILEMODIFIED
-Plik %s zosta³ zmieniony.\nCzy rzeczywi¶cie chcesz go zamkn±æ?
+Plik %s zostaÅ‚ zmieniony.\nCzy rzeczywiÅ›cie chcesz go zamknÄ…Ä‡?
 ; %s has been modified.\nAre you sure want to close it?
 ;
 ERR_SLC
@@ -295,7 +295,7 @@ Nie podano tekstu do wyszukania!
 ; No text to search for!
 ;
 ERR_FILEEXISTS
-Plik istnieje. Nadpisaæ?
+Plik istnieje. NadpisaÄ‡?
 ; This file already exists. Overwrite it?
 ;
 ERR_OC
@@ -303,7 +303,7 @@ Tak|Nie
 ; Yes|No!
 ;
 WARN_RECORD
-Pocz±tek rejestracji makra
+PoczÄ…tek rejestracji makra
 ; Start recording macro
 ;
 WARN_RECORDED
@@ -319,8 +319,8 @@ Informacja
 ; Information
 ;
 MSG_FORMATINFO
-%s\nAutorzy: T.Pierron i C.Guillaume\nCopyright (C) 2000\n\nEdytowany plik: %s\Wielko¶æ: %iu %s, %iu %s.
-; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
+%s\nAutorzy: T.Pierron i C.Guillaume\nCopyright (C) 2000\n\nEdytowany plik: %s\WielkoÅ›Ä‡: %iu %s, %iu %s.
+; %s\nDesigned by T.Pierron and C.Guillaume Å  2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Kontynuuj
@@ -331,7 +331,7 @@ bajt
 ; byte
 ;
 MSG_BYTES
-bajtów
+bajtÃ³w
 ; bytes
 ;
 MSG_LINE
@@ -347,35 +347,35 @@ Wzorzec szukania
 ; Search pattern
 ;
 MSG_REPLACEWINDOW
-Znajd¼ i zamieñ
+ZnajdÅº i zamieÅ„
 ; Search & Replace
 ;
 MSG_SEARCHSTRING
-Znajd¼:
+ZnajdÅº:
 ; Locate:
 ;
 MSG_REPLACESTRING
-Zamieñ:
+ZamieÅ„:
 ; Replace:
 ;
 MSG_OPTCASE
-Rozró¿niaj wielko¶æ znaków
+RozrÃ³Å¼niaj wielkoÅ›Ä‡ znakÃ³w
 ; Match case
 ;
 MSG_OPTWORDS
-Ca³e s³owa
+CaÅ‚e sÅ‚owa
 ; Whole words
 ;
 MSG_BUTTONREPLACE
-_Zamieñ
+_ZamieÅ„
 ; _Replace
 ;
 MSG_BUTTONREPALL
-Z_amieñ wszystkie
+Z_amieÅ„ wszystkie
 ; Replace _All
 ;
 MSG_BUTTONSEARCH
-Znajd¼
+ZnajdÅº
 ; Search
 ;
 MSG_NEXTSEARCH
@@ -383,7 +383,7 @@ _Poprzedni
 ; _Previous
 ;
 MSG_USESEARCH
-_U¿yj
+_UÅ¼yj
 ; _Use
 ;
 MSG_CANCELSEARCH
@@ -395,10 +395,10 @@ Zmieniono %iu %s tekstu \"%s\".
 ; %iu %s of `%s' replaced
 ;
 MSG_OCCURENCY
-wyst±pienie
+wystÄ…pienie
 ; occurency
 ;
 MSG_OCCURENCIES
-wyst±pienia
+wystÄ…pienia
 ; occurencies
 ;

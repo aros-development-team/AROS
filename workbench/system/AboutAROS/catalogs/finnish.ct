@@ -7,22 +7,22 @@ Tietoa AROS:ista
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-Henkilˆkohtainen %s k‰‰nnˆs
+Henkil√∂kohtainen %s k√§√§nn√∂s
 ;
 MSG_NIGHTLY_BUILD
-÷inen %s k‰‰nnˆs
+√ñinen %s k√§√§nn√∂s
 ;
 MSG_SNAPSHOT
 Snapshot
 ;
 MSG_MILESTONE
-Virstanpylv‰s
+Virstanpylv√§s
 ;
 MSG_RELEASE
 Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+Copyright ¬© 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Julkaistu seuraavan lisenssin alaisena:
@@ -34,10 +34,10 @@ MSG_LICENSE_3
 , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Vieraile sivustolla http://www.aros.org/fi/ lis‰tietoja varten.
+Vieraile sivustolla http://www.aros.org/fi/ lis√§tietoja varten.
 ;
 MSG_PAGE_AUTHORS
-Tekij‰t
+Tekij√§t
 ;
 MSG_PAGE_SPONSORS
 Tukijat
@@ -52,7 +52,7 @@ MSG_SECTION_EVANGELISM
 Evangelismi
 ;
 MSG_SECTION_HIDD
-HIDD alij‰rjestelm‰
+HIDD alij√§rjestelm√§
 ;
 MSG_SECTION_INTUITION
 Intuition
@@ -67,7 +67,7 @@ MSG_SECTION_WORKBENCH
 Workbench
 ;
 MSG_SECTION_TOOLS
-Tyˆkalut
+Ty√∂kalut
 ;
 MSG_SECTION_PREFERENCES
 Preferences
@@ -95,7 +95,7 @@ MSG_SECTION_DOCUMENTATION
 Dokumentaatio
 ;
 MSG_SECTION_TRANSLATION
-K‰‰nnˆkset
+K√§√§nn√∂kset
 ;
 MSG_SECTION_ARTISTRY
 Taide

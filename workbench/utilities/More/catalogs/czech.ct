@@ -4,43 +4,43 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Nelze otevøít knihovnu %s V%ld!
+Nelze otevÅ™Ã­t knihovnu %s V%ld!
 ; Can't open %s V%ld!
 ;
 MSG_NO_MEM
-Není dostatek volné pamìti!
+NenÃ­ dostatek volnÃ© pamÄ›ti!
 ; Out of memory!
 ;
 MSG_CANT_LOCK_SCR
-Nelze zamknout veøejnou obrazovku!
+Nelze zamknout veÅ™ejnou obrazovku!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nelze naèíst strukturu DrawInfo!
+Nelze naÄÃ­st strukturu DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nelze naèíst strukturu VisualInfo!
+Nelze naÄÃ­st strukturu VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Nelze vytvoøit obrázky tøídy SysIClass!
+Nelze vytvoÅ™it obrÃ¡zky tÅ™Ã­dy SysIClass!
 ; Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Nelze vytvoøit tlaèítka!
+Nelze vytvoÅ™it tlaÄÃ­tka!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nelze vytvoøit menu!
+Nelze vytvoÅ™it menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nelze vytvoøit okno!
+Nelze vytvoÅ™it okno!
 ; Can't create window!
 ;
 MSG_CANT_CREATE_MSGPORT
-Nelze vytvoøit message port!
+Nelze vytvoÅ™it message port!
 ; Can't create message port!
 ;
 MSG_CANT_ADD_APPWINDOW
@@ -52,11 +52,11 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Otevøít...
+O\0OtevÅ™Ã­t...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Ulo¾it jako...
+A\0UloÅ¾it jako...
 ; A\0Save as...
 ;
 MSG_MEN_PROJECT_PRINT
@@ -68,51 +68,51 @@ MSG_MEN_PROJECT_ABOUT
 ; ?\0About...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Ukonèit
+Q\0UkonÄit
 ; Q\0Quit
 ;
 MSG_MEN_NAVIGATION
-Hledání
+HledÃ¡nÃ­
 ; Navigation
 ;
 MSG_MEN_NAVIGATION_FIND
-F\0Najít...
+F\0NajÃ­t...
 ; F\0Find...
 ;
 MSG_MEN_NAVIGATION_FIND_NEXT
-.\0Najít dal¹í
+.\0NajÃ­t dalÅ¡Ã­
 ; .\0Find Next
 ;
 MSG_MEN_NAVIGATION_FIND_PREV
-,\0Najít pøedchozí
+,\0NajÃ­t pÅ™edchozÃ­
 ; ,\0Find Prev
 ;
 MSG_MEN_NAVIGATION_JUMP
-J\0Pøejít na øádek...
+J\0PÅ™ejÃ­t na Å™Ã¡dek...
 ; J\0Jump...
 ;
 MSG_ASL_OPEN_TITLE
-Otevøení souboru
+OtevÅ™enÃ­ souboru
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-Ulo¾ení souboru
+UloÅ¾enÃ­ souboru
 ; Select File to Save to
 ;
 MSG_ABOUT
 More V%ld.%ld\n (%s)\nCopyright (C) %s %s
-; More V%ld.%ld\n (%s)\nCopyright © %s by %s
+; More V%ld.%ld\n (%s)\nCopyright Å  %s by %s
 ;
 MSG_ABOUT_TITLE
 More
 ; More
 ;
 MSG_CONTINUE
-Pokraèovat
+PokraÄovat
 ; Continue
 ;
 MSG_JUMP_TITLE
-Pøejít na øádek...
+PÅ™ejÃ­t na Å™Ã¡dek...
 ; Go to Line ...
 ;
 MSG_FIND_TITLE
@@ -124,11 +124,11 @@ OK
 ; Ok
 ;
 MSG_CANCEL
-Zru¹it
+ZruÅ¡it
 ; Cancel
 ;
 MSG_WIN_TITLE
-More: %s (øádkù: %ld, velikost: %ld B)
+More: %s (Å™Ã¡dkÅ¯: %ld, velikost: %ld B)
 ; More: %s (%ld Lines - %ld Bytes)
 ;
 MSG_SHORTCUT_TOP

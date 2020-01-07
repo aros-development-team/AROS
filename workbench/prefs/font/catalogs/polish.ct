@@ -4,11 +4,11 @@
 ;
 ;
 MSG_CANT_OPEN_STREAM
-Nie mo¿na otworzyæ danych w formacie IFF!
+Nie moÅ¼na otworzyÄ‡ danych w formacie IFF!
 ; Can't open IFF stream!
 ;
 MSG_CANT_ALLOCATE_IFFPTR
-Nie mo¿na zaalokowaæ struktury IFF!
+Nie moÅ¼na zaalokowaÄ‡ struktury IFF!
 ; Can't allocate IFF handle!
 ;
 MSG_NAME

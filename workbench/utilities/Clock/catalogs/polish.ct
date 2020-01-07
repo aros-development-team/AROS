@@ -3,7 +3,7 @@
 ## codeset 5
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
-B³±d: Nie mo¿na utworzyæ aplikacji.
+BÅ‚Ä…d: Nie moÅ¼na utworzyÄ‡ aplikacji.
 ; Error: Can't create application object.
 ;
 MSG_WINDOW_TITLE
@@ -19,6 +19,6 @@ OK
 ; Ok
 ;
 MSG_ERROR_DISKOBJECT
-B³±d: nie mo¿na utworzyæ tarczy zegara
+BÅ‚Ä…d: nie moÅ¼na utworzyÄ‡ tarczy zegara
 ; Error: Can't create diskobject
 ;

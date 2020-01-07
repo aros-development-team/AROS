@@ -1,0 +1,6 @@
+TYPE  = TOOL
+STACK = 8192
+TOOLTYPE = "CLASS=hidd.gfx.saga"
+TOOLTYPE = "LIBRARY=sagagfx.hidd"
+TOOLTYPE = "STARTPRI=-1"
+TOOLTYPE = "HWSPRITE=Yes"

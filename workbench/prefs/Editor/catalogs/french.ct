@@ -1,6 +1,6 @@
 ##version $VER: JanoPrefs.catalog 1.0 (02.07.2009).
 ##codeset 0
-##language français
+##language franÃ§ais
 ;
 ;
 ; *****************************
@@ -10,44 +10,44 @@
 ; Edit Menu
 ;
 MSG_RESETDEFAULT
-Valeurs par défaut
+Valeurs par dÃ©faut
 ;
 MSG_LASTSAVED
-Dernières valeurs sauvées
+DerniÃ¨res valeurs sauvÃ©es
 ;
 ; *********************
 ;   Preference window 
 ; *********************
 ;
 MSG_TITLEWIN
-Paramétrage général
+ParamÃ©trage gÃ©nÃ©ral
 ;
 MSG_TAB
 Tabulations :
 ;
 MSG_SEPARATORS
-Séparateurs :
+SÃ©parateurs :
 ;
 MSG_TXTFONT
 Police texte :
 ;
 MSG_SCRFONT
-Police d'écran :
+Police d'Ã©cran :
 ;
 MSG_PUBSCREEN
-Mode d'écran :
+Mode d'Ã©cran :
 ;
 MSG_BACKDROP
-Arrière plan
+ArriÃ¨re plan
 ;
 MSG_LEFTMARGIN
-Marge à gauche
+Marge Ã  gauche
 ;
 MSG_AUTOINDENT
 Indentation automatique
 ;
 MSG_EXTEND
-Pavé numérique étendu
+PavÃ© numÃ©rique Ã©tendu
 ;
 MSG_PREFSSAVE
 Sauver
@@ -59,7 +59,7 @@ MSG_DISCARDPREFS
 Annuler
 ;
 MSG_USEDEF
-Par défaut
+Par dÃ©faut
 ;
 MSG_CHOOSEIT
 Choisir ...
@@ -68,37 +68,37 @@ MSG_CLONEPARENT
 Cloner parent
 ;
 MSG_COLOR_BACK
-Arrière plan
+ArriÃ¨re plan
 ;
 MSG_COLOR_TEXT
 Texte normal
 ;
 MSG_COLOR_FILLTXT
-Arrière plan sélectionné
+ArriÃ¨re plan sÃ©lectionnÃ©
 ;
 MSG_COLOR_FILLSEL
-Texte sélectionné
+Texte sÃ©lectionnÃ©
 ;
 MSG_COLOR_MARGINBACK
-Arrière plan de la marge
+ArriÃ¨re plan de la marge
 ;
 MSG_COLOR_MARGINTXT
 Texte dans la marge
 ;
 MSG_COLOR_SHINE
-Arête brillante
+ArÃªte brillante
 ;
 MSG_COLOR_SHADE
-Arête ombrée
+ArÃªte ombrÃ©e
 ;
 MSG_COLOR_PANELBACK
-Arrière plan des onglets
+ArriÃ¨re plan des onglets
 ;
 MSG_COLOR_PANELTEXT
 Texte des onglets
 ;
 MSG_COLOR_GLYPH
-Décoration
+DÃ©coration
 ;
 MSG_COLOR_MARKEDLINES
 Onglet actif

@@ -16,7 +16,7 @@ STORAGEDIR := $(AROSDIR)/Storage/Monitors
 
 #MM
 devs-monitors-wrapper-copy: $(DEVSDIR)/ATI \
-			    $(DEVSDIR)/NVidia $(DEVSDIR)/VMWare
+			    $(DEVSDIR)/NVidia $(DEVSDIR)/VMWare $(DEVSDIR)/SAGA
 
 $(DEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
 	@$(ECHO) "Creating   $@..."
@@ -27,6 +27,10 @@ $(DEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
 	@$(CP) -f $< $@
 
 $(DEVSDIR)/VMWare: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
+	@$(ECHO) "Creating   $@..."
+	@$(CP) -f $< $@
+
+$(DEVSDIR)/SAGA: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
 	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 

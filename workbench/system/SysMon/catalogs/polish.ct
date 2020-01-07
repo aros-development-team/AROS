@@ -21,7 +21,7 @@ Utylizacja
 ; Usage
 ;
 MSG_FREQUENCY
-Czêstotliwo¶æ
+CzÄ™stotliwoÅ›Ä‡
 ; Frequency
 ;
 MSG_TAB_TASKS
@@ -73,23 +73,23 @@ System
 ; System
 ;
 MSG_MEMORY_SIZE
-Pamiêæ Systemu
+PamiÄ™Ä‡ Systemu
 ; Memory Size
 ;
 MSG_MEMORY_FREE
-Wolna Pamiêæ
+Wolna PamiÄ™Ä‡
 ; Memory Free
 ;
 MSG_VIDEO_SIZE
-Rozmiar Pamiêci Graficznej
+Rozmiar PamiÄ™ci Graficznej
 ; Video Size
 ;
 MSG_VIDEO_FREE
-Wolna Pamiêæ Graficzna
+Wolna PamiÄ™Ä‡ Graficzna
 ; Video Free
 ;
 MSG_TOTAL_RAM
-Ca³kowity RAM
+CaÅ‚kowity RAM
 ; Total Memory
 ;
 MSG_CHIP_RAM
@@ -101,7 +101,7 @@ Fast RAM
 ; Fast Memory
 ;
 MSG_VIDEO_RAM
-Pamiêæ Graficzna
+PamiÄ™Ä‡ Graficzna
 ; Video Memory
 ;
 MSG_VIDEO_WINDOW_TMPL
@@ -109,7 +109,7 @@ MSG_VIDEO_WINDOW_TMPL
 ; %s Window
 ;
 MSG_CANT_OPEN_TASK_RESOURCE
-Nie mo¿na otworzyæ task.resource\n
+Nie moÅ¼na otworzyÄ‡ task.resource\n
 ; Can't open task.resource\n
 ;
 MSG_PROJECT
@@ -117,7 +117,7 @@ Projekt
 ; Project
 ;
 MSG_REFRESH_SPEED
-Predko¶æ Od¶wierzania
+PredkoÅ›Ä‡ OdÅ›wierzania
 ; Refresh Speed
 ;
 MSG_FAST
@@ -145,7 +145,7 @@ GART
 ;GART
 ;
 MSG_DISPLAY_MODE
-Tryb Wy¶wietlania
+Tryb WyÅ›wietlania
 ;Display Mode
 ;
 MSG_LOAD

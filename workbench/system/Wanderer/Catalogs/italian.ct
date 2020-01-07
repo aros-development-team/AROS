@@ -240,7 +240,7 @@ Vuoi davvero chiudere Wanderer?
 ; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
-*SÏ|No
+*S√¨|No
 ; *Yes|No
 ;
 MSG_DUMMY
@@ -272,7 +272,7 @@ Spegni|Riavvia Computer|Riavvia AROS|*Annulla
 ; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-L'opzione richiesta non Ë supportata da questo computer.
+L'opzione richiesta non √® supportata da questo computer.
 ; The selected action is not supported by your system.
 ;
 MSG_OK
@@ -320,7 +320,7 @@ Elimina file ...
 ; Delete file...
 ;
 MSG_REQU_DELETE_YESNO
-_SÏ|Elimina _Tutti|_No|No _Per Tutti
+_S√¨|Elimina _Tutti|_No|No _Per Tutti
 ; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
@@ -448,7 +448,7 @@ File
 ; File
 ;
 MSG_WANDERER_FILEACCESS_TRAFFIC
-Velocit‡ di trasferimento
+Velocit√† di trasferimento
 ; Data transfer rate
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM

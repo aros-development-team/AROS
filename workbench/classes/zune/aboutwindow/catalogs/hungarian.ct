@@ -2,15 +2,15 @@
 ## language magyar
 ## codeset 0
 ;
-; Translated by MiklÛs NÈmeth
+; Translated by Mikl√≥s N√©meth
 ;
 ;
 MSG_ABOUT
-NÈvjegy
+N√©vjegy
 ; About
 ;
 MSG_AUTHORS
-KÈszÌtık
+K√©sz√≠t≈ëk
 ; Authors
 ;
 MSG_SPONSORS
@@ -18,10 +18,10 @@ Szponzorok
 ; Sponsors
 ;
 MSG_SECTION_PROGRAMMING
-Programoz·s
+Programoz√°s
 ; Programming
 ;
 MSG_SECTION_TRANSLATING
-FordÌt·s
+Ford√≠t√°s
 ; Translating
 ;

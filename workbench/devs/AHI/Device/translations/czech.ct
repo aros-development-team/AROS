@@ -26,7 +26,7 @@
 ; Input and Output connector name
 ;
 msgDefault
-V˝chozÌ
+V√Ωchoz√≠
 ; Default
 ;
 ; The requesters menu
@@ -35,19 +35,19 @@ msgMenuControl
 ; \000\000Control
 ;
 msgMenuLastMode
-L\000P¯edchozÌ reæim
+L\000P≈ôedchoz√≠ re≈æim
 ; L\000Last Mode
 ;
 msgMenuNextMode
-N\000N·sledujÌcÌ reæim
+N\000N√°sleduj√≠c√≠ re≈æim
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\000Seznam vlastnostÌ...
+?\000Seznam vlastnost√≠...
 ; ?\000Property List...
 ;
 msgMenuRestore
-R\000Obnovit p¯edchozÌ
+R\000Obnovit p≈ôedchoz√≠
 ; R\000Restore
 ;
 msgMenuOK
@@ -55,13 +55,13 @@ O\000OK
 ; O\000OK
 ;
 msgMenuCancel
-C\000Zruπit
+C\000Zru≈°it
 ; C\000Cancel
 ;
 ; Mode name in requester whose driver cannot be opened
 ;
 msgUnknown
-NEZN¡M›:Audio ID 0x%08lx
+NEZN√ÅM√ù:Audio ID 0x%08lx
 ; UNKNOWN:Audio ID 0x%08lx
 ;
 ; The requester gadgets
@@ -71,7 +71,7 @@ OK
 ; OK
 ;
 msgReqCancel
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 msgReqFrequency
@@ -81,21 +81,21 @@ Frekvence
 ; Name of default mode in requester
 ;
 msgDefaultMode
-V˝chozÌ reæim
+V√Ωchoz√≠ re≈æim
 ; Default audio mode
 ;
 ; The requester's info-winodow
 ;
 msgReqInfoTitle
-Vlastnosti reæimu
+Vlastnosti re≈æimu
 ; Mode Properties
 ;
 msgReqInfoAudioID
-»Ìslo reæimu: 0x%08lx
+ƒå√≠slo re≈æimu: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-RozliπenÌ: %ld bit˘ %s
+Rozli≈°en√≠: %ld bit≈Ø %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
@@ -107,31 +107,31 @@ stereo
 ; stereo
 ;
 msgReqInfoStereoPan
-rozπÌ¯enÈ stereo
+roz≈°√≠≈ôen√© stereo
 ; stereo with panning
 ;
 msgReqInfoChannels
-PoËet kan·l˘: %ld
+Poƒçet kan√°l≈Ø: %ld
 ; Channels: %ld
 ;
 msgReqInfoMixrate
-MixovacÌ frekvence: %ld-%ld Hz
+Mixovac√≠ frekvence: %ld-%ld Hz
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
-HiFi mixov·nÌ
+HiFi mixov√°n√≠
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf
-PoloduplexnÌ z·znam
+Poloduplexn√≠ z√°znam
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-PlnÏ duplexnÌ z·znam
+Plnƒõ duplexn√≠ z√°znam
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel
-VÌcekan·lov˝ reæim (7.1)
+V√≠cekan√°lov√Ω re≈æim (7.1)
 ; 7.1 multichannel
 ;
 msgFreqFmt

@@ -8,8 +8,8 @@ Snoopy
 ; Snoopy
 ;
 MSG_COPYRIGHT
-å 2006-2008, The AROS Development Team
-; © 2006-2008, The AROS Development Team
+¬å 2006-2008, The AROS Development Team
+; ≈† 2006-2008, The AROS Development Team
 ;
 MSG_AUTHOR
 The AROS Development Team
@@ -28,19 +28,19 @@ Opcije
 ; Settings
 ;
 MSG_SHOW_FAILS
-Prikaæi samo neuspjehe
+Prika≈æi samo neuspjehe
 ; Only show fails
 ;
 MSG_CLI_NUMBER
-Prikaæi CLI broj
+Prika≈æi CLI broj
 ; Show CLI number
 ;
 MSG_FULL_PATH
-Prikaæi cijele puteve
+Prika≈æi cijele puteve
 ; Show full paths
 ;
 MSG_DEVICE
-Koristi ime ureaja
+Koristi ime ureƒëaja
 ; Use device names
 ;
 MSG_IGNORE_WB
@@ -48,11 +48,11 @@ Ignoriraj Workbench/Konzolu
 ; Ignore Workbench/Shell
 ;
 MSG_BREAKPOINT
-Postavi prijelomnu toËku
+Postavi prijelomnu toƒçku
 ; Set breakpoint
 ;
 MSG_MATCH
-PodudarajuËe ime
+Podudarajuƒçe ime
 ; Match name
 ;
 MSG_SYSTEM_FUNC
@@ -76,11 +76,11 @@ Koristi
 ; Use
 ;
 MSG_UNDO
-Poniπti
+Poni≈°ti
 ; Undo
 ;
 MSG_RESET
-PoËetno stanje
+Poƒçetno stanje
 ; Reset
 ;
 MSG_CANCEL
@@ -88,7 +88,7 @@ Odustani
 ; Cancel
 ;
 MSG_OUTPUT_FIELD
-©irina Izlaznog Polja
+≈†irina Izlaznog Polja
 ; Output Field Width
 ;
 MSG_NAME
@@ -116,28 +116,28 @@ Neuspjeh
 ; Fail
 ;
 MSG_ERROR_SAVE
-Greπka pri spremanju u %s
+Gre≈°ka pri spremanju u %s
 ; An error happened when saving to %s
 ;
 MSG_ERROR_LOAD
-Greπka pri uËitavanju %s
+Gre≈°ka pri uƒçitavanju %s
 ; An error happened when loading from %s
 ;
 MSG_RESET_PATCHES
-PoËetno stanje Zakrpa|Odustani
+Poƒçetno stanje Zakrpa|Odustani
 ; Reset Patches|Cancel
 ;
 MSG_ASK_RESET
-Vrati zakrpe u poÊetno stanje njihovih orginalnih funkcija?
+Vrati zakrpe u poƒáetno stanje njihovih orginalnih funkcija?
 ; Do you really want to reset the patches to their original functions?
 ;
 MSG_REMOVE_SNOOP
-Ukloni|zadræi
+Ukloni|zadr≈æi
 ; Remove|Keep
 ;
 MSG_ASK_REMOVE
 Ukloni Snoopy proces?\n\
-Ovo moæe biti opasno za sustav ukoliko je drugi zadatak zakrpan Snoopy-jem.
+Ovo mo≈æe biti opasno za sustav ukoliko je drugi zadatak zakrpan Snoopy-jem.
 ; Do you really want to remove the Snoopy process?\n\
 ; This can be quite dangerous when another task has patched Snoopy's patches.
 ;
@@ -162,15 +162,15 @@ Bilo koji
 ; Any
 ;
 MSG_READ
-»itaj
+ƒåitaj
 ; Read
 ;
 MSG_WRITE
-Piπi
+Pi≈°i
 ; Write
 ;
 MSG_READ_ASK
-»itaj???
+ƒåitaj???
 ; Read???
 ;
 MSG_MODIFY
@@ -182,6 +182,6 @@ Verzija %ld
 ; Version %ld
 ;
 MSG_SIZE
-VeliËina %d
+Veliƒçina %d
 ; Size %d
 ;

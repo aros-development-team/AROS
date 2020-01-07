@@ -1,18 +1,18 @@
 ## version $VER: ReqTools.catalog 3.1 (30.6.2017)
-## language français
+## language franÃ§ais
 ## codeset 0
 ; Authors: Georges 'Melkor' Goncalves
 ;
 MSG_WINDOW_TITLE
-Préférences: ReqTools
+PrÃ©fÃ©rences: ReqTools
 ; ReqTools Preferences
 ;
 MSG_GENERAL
-Généralités
+GÃ©nÃ©ralitÃ©s
 ; General
 ;
 MSG_FILEREQUESTER
-Requête de fichiers
+RequÃªte de fichiers
 ; File Requester
 ;
 MSG_SIZE
@@ -24,11 +24,11 @@ Valider
 ;  Ok
 ;
 MSG_POPSCREEN
-Passer l'écran en avant
+Passer l'Ã©cran en avant
 ; Pop screen to front
 ;
 MSG_IMMEDIATESORT
-Tri immédiat
+Tri immÃ©diat
 ; Immediate sort
 ;
 MSG_DRAWERSFIRST
@@ -36,15 +36,15 @@ Montrer d'abord les tiroirs
 ; Display drawers first
 ;
 MSG_DRAWERSMIXED
-Mélanger fichiers et tiroirs
+MÃ©langer fichiers et tiroirs
 ; Mix files and drawers
 ;
 MSG_LED
-LED d'activité disque
+LED d'activitÃ© disque
 ; Disk activity LED
 ;
 MSG_DEFAULTFONT
-Utiliser la police systême
+Utiliser la police systÃªme
 ; Use system default font
 ;
 MSG_FKEYS
@@ -52,7 +52,7 @@ Utiliser touches de fonction
 ; Use function keys
 ;
 MSG_DOWHEEL
-Roue colorée:
+Roue colorÃ©e:
 ; Color wheel:
 ;
 MSG_WHEEL_NONE
@@ -64,19 +64,19 @@ Simple
 ; Simple
 ;
 MSG_WHEEL_FANCY
-Complète
+ComplÃ¨te
 ; Fancy
 ;
 MSG_MMB_PARENT
-MMB retourne le répertoire parent
+MMB retourne le rÃ©pertoire parent
 ; MMB gives parent
 ;
 MSG_DEFAULTS
-Défauts
+DÃ©fauts
 ; Defaults
 ;
 MSG_REQUESTER
-\33bRequête:
+\33bRequÃªte:
 ; \33bRequester:
 ;
 MSG_FILEREQ
@@ -92,7 +92,7 @@ Palette
 ; Palette
 ;
 MSG_SCRMODEREQ
-Mode écran
+Mode Ã©cran
 ; Screen Mode
 ;
 MSG_VOLUMEREQ
@@ -112,27 +112,27 @@ Pointeur de la souris
 ; Mouse pointer
 ;
 MSG_CENTERWIN
-Centre dans la fenêtre
+Centre dans la fenÃªtre
 ; Center in window
 ;
 MSG_CENTERSCR
-Centre à l'écran
+Centre Ã  l'Ã©cran
 ; Center on screen
 ;
 MSG_TOPLEFTWIN
-Coin gauche de la fenêtre
+Coin gauche de la fenÃªtre
 ; Top left of window
 ;
 MSG_TOPLEFTSCR
-Coin gauche de l'écran
+Coin gauche de l'Ã©cran
 ; Top left of screen
 ;
 MSG_OFFSET
-\33bDécalage
+\33bDÃ©calage
 ; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-\33bNombre d'entrées visibles
+\33bNombre d'entrÃ©es visibles
 ; \33bNumber of visible entries
 ;
 MSG_MIN

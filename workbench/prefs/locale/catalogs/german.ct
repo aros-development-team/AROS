@@ -4,7 +4,7 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
+Kann %s V%ld nicht Ã¶ffnen!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
@@ -40,7 +40,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Öffnen ...
+O\0Ã–ffnen ...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -56,7 +56,7 @@ Vorgaben
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Auf Vorgaben zurücksetzen
+D\0Auf Vorgaben zurÃ¼cksetzen
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -88,7 +88,7 @@ Ok
 ; Ok
 ;
 MSG_GAD_AVAIL_LANGUAGES
-Verfügbare Sprachen
+VerfÃ¼gbare Sprachen
 ; Available Languages
 ;
 MSG_GAD_PREF_LANGUAGES
@@ -96,7 +96,7 @@ Bevorzugte Sprachen
 ; Preferred Languages
 ;
 MSG_GAD_CLEAR_LANGUAGES
-Sprachen löschen
+Sprachen lÃ¶schen
 ; Clear Languages
 ;
 MSG_GAD_SAVE

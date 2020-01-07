@@ -7,11 +7,11 @@ Wanderer
 ; Wanderer
 ;
 MSG_DESCRIPTION
-Mened¿er plików
+MenedÅ¼er plikÃ³w
 ; File manager
 ;
 MSG_SCREENTITLE
-Wanderer %s pamiêci graficznej %s pamiêci pozosta³ej
+Wanderer %s pamiÄ™ci graficznej %s pamiÄ™ci pozostaÅ‚ej
 ; Wanderer %s graphics mem %s other mem
 ;
 MSG_MEM_B
@@ -35,7 +35,7 @@ Wanderer
 ; Wanderer
 ;
 MSG_MEN_BACKDROP
-Wanderer jako t³o
+Wanderer jako tÅ‚o
 ; Backdrop
 ;
 MSG_MEN_SC_BACKDROP
@@ -67,7 +67,7 @@ O programie...
 ; About...
 ;
 MSG_MEN_QUIT
-Skoñcz...
+SkoÅ„cz...
 ; Quit...
 ;
 MSG_MEN_SC_QUIT
@@ -87,7 +87,7 @@ N
 ; N
 ;
 MSG_MEN_OPENPAR
-Otwórz nadrzêdny
+OtwÃ³rz nadrzÄ™dny
 ; Open parent
 ;
 MSG_MEN_CLOSE
@@ -99,7 +99,7 @@ K
 ; K
 ;
 MSG_MEN_UPDATE
-Zaktualizuj zawarto¶æ
+Zaktualizuj zawartoÅ›Ä‡
 ; Update
 ;
 MSG_MEN_CONTENTS
@@ -119,7 +119,7 @@ Z
 ; Z
 ;
 MSG_MEN_SNAPSHT
-Utrwal pozycjê
+Utrwal pozycjÄ™
 ; Snapshot
 ;
 MSG_MEN_ALL
@@ -127,7 +127,7 @@ wszystko
 ; All
 ;
 MSG_MEN_VIEW
-Wy¶wietl
+WyÅ›wietl
 ; View
 ;
 MSG_MEN_ICVIEW
@@ -135,7 +135,7 @@ ikonki
 ; Icon view
 ;
 MSG_MEN_DCVIEW
-Poka¿ szczegó³y
+PokaÅ¼ szczegÃ³Å‚y
 ; Detail view
 ;
 MSG_MEN_ALLFIL
@@ -143,11 +143,11 @@ Wszystkie pliki
 ; All files
 ;
 MSG_MEN_SORTIC
-Sortuj zawarto¶æ
+Sortuj zawartoÅ›Ä‡
 ; Sort
 ;
 MSG_MEN_CLNUP
-Uporz±dkuj
+UporzÄ…dkuj
 ; Clean up
 ;
 MSG_MEN_SC_CLNUP
@@ -163,7 +163,7 @@ wg daty
 ; By date
 ;
 MSG_MEN_BYSIZE
-wg wielko¶ci
+wg wielkoÅ›ci
 ; By size
 ;
 MSG_MEN_BYTYPE
@@ -171,7 +171,7 @@ wg typu
 ; By type
 ;
 MSG_MEN_REVERSE
-Kolejno¶æ odwrotna
+KolejnoÅ›Ä‡ odwrotna
 ; Reverse
 ;
 MSG_MEN_DRWFRST
@@ -183,7 +183,7 @@ Ikonka
 ; Icon
 ;
 MSG_MEN_FIND
-Znajd¼...
+ZnajdÅº...
 ; Find...
 ;
 MSG_MEN_SC_FIND
@@ -191,7 +191,7 @@ F
 ; F
 ;
 MSG_MEN_OPEN
-Otwórz
+OtwÃ³rz
 ; Open
 ;
 MSG_MEN_SC_OPEN
@@ -199,7 +199,7 @@ O
 ; O
 ;
 MSG_MEN_RENAME
-Zmieñ nazwê...
+ZmieÅ„ nazwÄ™...
 ; Rename...
 ;
 MSG_MEN_SC_RENAME
@@ -219,7 +219,7 @@ Skasuj...
 ; Delete...
 ;
 MSG_MEN_TOOLS
-Narzêdzia
+NarzÄ™dzia
 ; Tools
 ;
 MSG_MEN_ICONSORTING
@@ -235,7 +235,7 @@ Zamknij
 ; Close
 ;
 MSG_REALLYQUIT
-Czy naprawdê chcesz zamkn±æ Wanderera?
+Czy naprawdÄ™ chcesz zamknÄ…Ä‡ Wanderera?
 ; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
@@ -247,7 +247,7 @@ DUMMY
 ; DUMMY
 ;
 MSG_USERSCREENTITLE
-Wanderer %pc pamiêci graficznej %pf pamiêci pozosta³ej
+Wanderer %pc pamiÄ™ci graficznej %pf pamiÄ™ci pozostaÅ‚ej
 ; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT
@@ -255,23 +255,23 @@ Sformatuj dysk...
 ; Format disk...
 ;
 MSG_MEN_SHUTDOWN
-Wy³±cz...
+WyÅ‚Ä…cz...
 ; Shut down...
 ;
 MSG_SHUTDOWN_TITLE
-Wy³±czanie systemu
+WyÅ‚Ä…czanie systemu
 ; System shutdown
 ;
 MSG_SHUTDOWN_BODY
-Co chcesz zrobiæ?
+Co chcesz zrobiÄ‡?
 ; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
-Wy³±cz|Uruchom ponownie komputer|Uruchom ponownie system|*Poniechaj
+WyÅ‚Ä…cz|Uruchom ponownie komputer|Uruchom ponownie system|*Poniechaj
 ; Power off|Restart computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
-Wybrana opcja nie jest obs³ugiwana przez Twój system.
+Wybrana opcja nie jest obsÅ‚ugiwana przez TwÃ³j system.
 ; The selected action is not supported by your system.
 ;
 MSG_OK
@@ -279,7 +279,7 @@ MSG_OK
 ; *OK
 ;
 MSG_EMPTY_TRASH
-Opró¿nij ¶mietnik
+OprÃ³Å¼nij Å›mietnik
 ; Empty trash
 ;
 MSG_MEN_PUT_AWAY
@@ -291,11 +291,11 @@ Wyjmij na blat
 ; Leave out
 ;
 MSG_MEN_UNSNAPSHOT
-Uwolnij pozycjê
+Uwolnij pozycjÄ™
 ; Unsnapshot
 ;
 MSG_MEN_SNAPSHOT
-Utrwal pozycjê
+Utrwal pozycjÄ™
 ; Snapshot
 ;
 MSG_REQU_DELETE
@@ -303,7 +303,7 @@ Skasuj...
 ; Delete file...
 ;
 MSG_REQU_DELETE_YESNO
-_Tak|Tak, _wszystkie|_Nie|Nie, _pomiñ wszystkie
+_Tak|Tak, _wszystkie|_Nie|Nie, _pomiÅ„ wszystkie
 ; _Yes|Yes to _all|_No|No _to all
 ;
 MSG_REQU_DELETE_DRAWER_S
@@ -311,7 +311,7 @@ Czy katalog
 ; Really delete drawer
 ;
 MSG_REQU_DELETE_DRAWER_E
-ma rzeczywi¶cie zostaæ skasowany?
+ma rzeczywiÅ›cie zostaÄ‡ skasowany?
 ; ?
 ;
 MSG_REQU_DELETE_FILE_S
@@ -323,11 +323,11 @@ w katalogu
 ; located in
 ;
 MSG_REQU_DELETE_FILE_E
-ma zostaæ skasowany?
+ma zostaÄ‡ skasowany?
 ; ?
 ;
 MSG_REQU_OVERWRITE
-Nadpisaæ plik...
+NadpisaÄ‡ plik...
 ; Overwrite file...
 ;
 MSG_REQU_OVERWRITE_S
@@ -339,15 +339,15 @@ w katalogu
 ; located in
 ;
 MSG_REQU_OVERWRITE_E
-ma zostaæ nadpisany?
+ma zostaÄ‡ nadpisany?
 ; ?
 ;
 MSG_REQU_OVERWRITE_YESNO
-_Tak, nadpisaæ|_Wszystkie|_Nie|Nie, _pomiñ wszystkie
+_Tak, nadpisaÄ‡|_Wszystkie|_Nie|Nie, _pomiÅ„ wszystkie
 ; _Overwrite|Overwrite _all|_No|No _to all
 ;
 MSG_REQU_OVERWRITE_SKIPABORT
-_Pomiñ|P_rzerwij
+_PomiÅ„|P_rzerwij
 ; _Skip|_Abort
 ;
 MSG_REQU_PROTECTION
@@ -355,7 +355,7 @@ Zabezpieczenie pliku
 ; File Protection
 ;
 MSG_REQU_PROTECTION_UNPROTECT
-_Odbezpiecz|Odbezpiecz _wszystkie|_Nie|Nie, nie odbezpieczaj _plików
+_Odbezpiecz|Odbezpiecz _wszystkie|_Nie|Nie, nie odbezpieczaj _plikÃ³w
 ; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
@@ -363,11 +363,11 @@ Czy katalog
 ; Do you wish to unprotect drawer
 ;
 MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
-ma zostaæ odbezpieczony?
+ma zostaÄ‡ odbezpieczony?
 ; ?
 ;
 MSG_NOFILEACCESS_S
-Dostêp do pliku
+DostÄ™p do pliku
 ; Can't access file
 ;
 MSG_NOFILEACCESS_M
@@ -375,15 +375,15 @@ w katalogu
 ; located in
 ;
 MSG_NOFILEACCESS_E
-niemo¿liwy
+niemoÅ¼liwy
 ;  
 ;
 MSG_NODRAWERACCESS_S
-Dostêp do katalogu  
+DostÄ™p do katalogu  
 ; Can't access drawer
 ;
 MSG_NODRAWERACCESS_E
-niemo¿liwy
+niemoÅ¼liwy
 ;  
 ;
 MSG_REQU_FILEUNPROTECT_S
@@ -395,11 +395,11 @@ w katalogu
 ; located in
 ;
 MSG_REQU_FILEUNPROTECT_E
-ma zostaæ odbezpieczony?
+ma zostaÄ‡ odbezpieczony?
 ; ?
 ;
 MSG_WANDERER_FILEACCESS
-Dostêp do pliku
+DostÄ™p do pliku
 ; Wanderer file access
 ;
 MSG_WANDERER_FILEACCESS_PROCESSING
@@ -411,11 +411,11 @@ Przerwij
 ; Stop
 ;
 MSG_WANDERER_FILEACCESS_MOVEFROM
-Przenie¶ z
+PrzenieÅ› z
 ; Move from
 ;
 MSG_WANDERER_FILEACCESS_MOVETO
-Przenie¶ do
+PrzenieÅ› do
 ; Move to
 ;
 MSG_WANDERER_FILEACCESS_COPYFROM
@@ -431,7 +431,7 @@ plik
 ; File
 ;
 MSG_WANDERER_FILEACCESS_TRAFFIC
-szybko¶æ transmisji danych
+szybkoÅ›Ä‡ transmisji danych
 ; Data transfer rate
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM
@@ -447,10 +447,10 @@ Przetwarzane pliki:
 ; Processed files:
 ;
 MSG_WANDERER_FILEACCESS_ACTUAL
-Wielko¶æ bie¿±cego pliku:
+WielkoÅ›Ä‡ bieÅ¼Ä…cego pliku:
 ; Size of current file:
 ;
 MSG_WANDERER_FILEACCESS_TOTAL
-Wielko¶æ ³±czna:
+WielkoÅ›Ä‡ Å‚Ä…czna:
 ; Overall size:
 ;

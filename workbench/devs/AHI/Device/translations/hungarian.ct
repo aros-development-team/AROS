@@ -2,7 +2,7 @@
 ## language magyar
 ## codeset 5
 ;
-## chunk AUTH DÛsa M·rton (dm_@freemail.hu)
+## chunk AUTH D√≥sa M√°rton (dm_@freemail.hu)
 ;#language english
 ;#version 4
 ;
@@ -27,52 +27,52 @@
 ; Input and Output connector name
 ;
 msgDefault
-AlapÈrtelmezett
+Alap√©rtelmezett
 ; Default
 ;
 ; The requesters menu
 msgMenuControl
-\000\000VezÈrlÈs
+\000\000Vez√©rl√©s
 ; \000\000Control
 ;
 msgMenuLastMode
-L\000Elızı mÛd
+L\000El≈ëz≈ë m√≥d
 ; L\000Last Mode
 ;
 msgMenuNextMode
-N\000Kˆvetkezı mÛd
+N\000K√∂vetkez≈ë m√≥d
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\000Tulajdons·gok...
+?\000Tulajdons√°gok...
 ; ?\000Property List...
 ;
 msgMenuRestore
-R\000Vissza·llÌt·s
+R\000Vissza√°ll√≠t√°s
 ; R\000Restore
 ;
 msgMenuOK
-O\000OkÈ
+O\000Ok√©
 ; O\000OK
 ;
 msgMenuCancel
-C\000MÈgse
+C\000M√©gse
 ; C\000Cancel
 ;
 ; Mode name in requester whose driver cannot be opened
 ;
 msgUnknown
-ISMERETLEN:AudiÛ ID 0x%08lx
+ISMERETLEN:Audi√≥ ID 0x%08lx
 ; UNKNOWN:Audio ID 0x%08lx
 ;
 ; The requester gadgets
 ;
 msgReqOK
-OkÈ
+Ok√©
 ; OK
 ;
 msgReqCancel
-MÈgse
+M√©gse
 ; Cancel
 ;
 msgReqFrequency
@@ -82,53 +82,53 @@ Frekvencia
 ; Name of default mode in requester
 ;
 msgDefaultMode
-Alap audiÛ mÛd
+Alap audi√≥ m√≥d
 ; Default audio mode
 ;
 ; The requester's info-winodow
 ;
 msgReqInfoTitle
-MÛd tulajdons·gai
+M√≥d tulajdons√°gai
 ; Mode Properties
 ;
 msgReqInfoAudioID
-AudiÛ mÛd ID: 0x%08lx
+Audi√≥ m√≥d ID: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Felbont·s: %ld bit %s
+Felbont√°s: %ld bit %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
-monÛ
+mon√≥
 ; mono
 ;
 msgReqInfoStereo
-sztereÛ
+sztere√≥
 ; stereo
 ;
 msgReqInfoStereoPan
-sztereÛ panor·m·z·ssal
+sztere√≥ panor√°m√°z√°ssal
 ; stereo with panning
 ;
 msgReqInfoChannels
-Csatorn·k: %ld
+Csatorn√°k: %ld
 ; Channels: %ld
 ;
 msgReqInfoMixrate
-KeverÈsi szintek: %ld-%ld Hz
+Kever√©si szintek: %ld-%ld Hz
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
-HiFi keverÈs
+HiFi kever√©s
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf
-FelvÈtel fÈl duplexben
+Felv√©tel f√©l duplexben
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-FelvÈtel duplexben
+Felv√©tel duplexben
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel

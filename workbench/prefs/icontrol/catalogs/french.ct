@@ -1,10 +1,10 @@
 ## version $VER: icontrolprefs.catalog 2.0 (8.9.2010)
 ## codeset 0
-## language français
+## language franÃ§ais
 ;
 ;
 MSG_WINTITLE
-Préférences IControl
+PrÃ©fÃ©rences IControl
 ; IControl Preferences
 ;
 MSG_OK
@@ -20,7 +20,7 @@ Type
 ; Type
 ;
 MSG_MENUS_TYPE_PULLDOWN
-Attachés à la barre de menus
+AttachÃ©s Ã  la barre de menus
 ; Pull-Down
 ;
 MSG_MENUS_TYPE_POPUP
@@ -40,31 +40,31 @@ MSG_MENUS_LOOK_3D
 ; 3D
 ;
 MSG_WINDOWS
-Fenêtres
+FenÃªtres
 ; Windows
 ;
 MSG_OFFSCREEN_MOVE
-Libres de sortir de l'écran :
+Libres de sortir de l'Ã©cran :
 ; Offscreen move:
 ;
 MSG_SCREENS
-Écrans
+Ã‰crans
 ; Screens
 ;
 MSG_PUBLIC_SCREENS
-Écrans Public
+Ã‰crans Public
 ; Public Screens
 ;
 MSG_FRONTMOST_DEFAULT
-L'écran à l'avant-plan est par défaut
+L'Ã©cran Ã  l'avant-plan est par dÃ©faut
 ; Set Frontmost as default
 ;
 MSG_OFFSCREEN_DESC
-Ne pas bloquer les fenêtres\ndans les limites de l'écran
+Ne pas bloquer les fenÃªtres\ndans les limites de l'Ã©cran
 ; Allow windows to be moved out of\nthe visible area
 ;
 MSG_FRONTMOST_DEFAULT_DESC
-Les nouvelles fenêtres pourront\ns'ouvrir sur l'écran à l'avant-plan
+Les nouvelles fenÃªtres pourront\ns'ouvrir sur l'Ã©cran Ã  l'avant-plan
 ; Make the frontmost public screen\nthe default public screen
 ;
 MSG_DRAG
@@ -76,23 +76,23 @@ Limit dragging to Displays bounds...
 ; Limit dragging to Displays bounds...
 ;
 MSG_BOUND_LEFT_DRAG
-Ne pas découvrir à gauche
+Ne pas dÃ©couvrir Ã  gauche
 ; Bound drag in left direction
 ;
 MSG_BOUND_RIGHT_DRAG
-Ne pas découvrir à droite
+Ne pas dÃ©couvrir Ã  droite
 ; Bound drag in right direction
 ;
 MSG_BOUND_TOP_DRAG
-Ne pas découvrir en haut
+Ne pas dÃ©couvrir en haut
 ; Bound drag in top direction
 ;
 MSG_BOUND_BOTTOM_DRAG
-Ne pas découvrir en bas
+Ne pas dÃ©couvrir en bas
 ; Bound drag in bottom direction
 ;
 MSG_META_DRAG
-Combinaison de touches pour déplacer l'écran
+Combinaison de touches pour dÃ©placer l'Ã©cran
 ; Drag keys
 ;
 MSG_MENUS_STICKY
@@ -100,6 +100,6 @@ Menus collants
 ; Sticky
 ;
 MSG_MENUS_TITLEPOPUP
-Tirez sur le titre de l'écran
+Tirez sur le titre de l'Ã©cran
 ;Pull-Down on Screen Title
 ;

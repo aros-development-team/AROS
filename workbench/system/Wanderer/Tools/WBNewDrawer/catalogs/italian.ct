@@ -12,8 +12,8 @@ Crea una nuovo cassetto con icona opzionale
 ; Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT
-©2006, AROS Dev Team
-; ©2006, AROS Dev Team
+Â©2006, AROS Dev Team
+; Â©2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Crea nuovo cassetto
@@ -48,7 +48,7 @@ Errore
 ; Error
 ;
 MSG_ALREADY_EXIST
-'%s' esiste già!
+'%s' esiste giÃ !
 ; '%s' already exists!
 ;
 MSG_CANT_CREATE
@@ -56,7 +56,7 @@ Impossibile creare cassetto '%s'!
 ; Can't create drawer '%s'!
 ;
 MSG_INFO_ALREADY
-'%s'.info esiste già!
+'%s'.info esiste giÃ !
 ; '%s'.info already exists!
 ;
 MSG_ILLEGAL_CHARS
@@ -80,5 +80,5 @@ Impossibile creare l'applicazione!
 ; Failed to create Application!
 ;
 MSG_WRONG_ICON_TYPE
-L'icona '%s'.info non è associata a un cassetto!
+L'icona '%s'.info non Ã¨ associata a un cassetto!
 ; The existing icon file '%s'.info isn't of type Drawer!

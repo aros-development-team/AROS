@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,10 +55,14 @@ LONG checkValid(struct AFSBase *afs, struct Volume *vol)
     	return 0;
 
     blockbuffer = getBlock(afs, vol, vol->rootblock);
-    UBYTE  n[MAX_NAME_LENGTH];
-    STRPTR name;
-    name=(STRPTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(vol)*4));
-    StrCpyFromBstr(name, n);
+
+    UBYTE  n[vol->FNameMax + 1];
+    CONST_FSBSTR name;
+
+    memset(n, 0, sizeof(n));
+    name=(CONST_FSBSTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(vol)*4));
+    StrCpyFromBstr(name, n, sizeof(n) - 1);
+
 	while (vol->state == ID_WRITE_PROTECTED
               && showError(afs, ERR_WRITEPROTECT, n));
 

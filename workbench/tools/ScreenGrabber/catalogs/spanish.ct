@@ -1,5 +1,5 @@
 ## version $VER: ScreenGrabber.catalog 2.0 (30.03.2016)
-## language espaÒol
+## language espa√±ol
 ## codeset 0
 ;
 ; Translated by ahg - (30.09.2007)
@@ -13,23 +13,23 @@ Rehacer la lista
 ;Refresh list
 ;
 MSG_SCREEN_INFO
-InformaciÛn de la Pantalla
+Informaci√≥n de la Pantalla
 ;Info. de la pantalla
 ;Screen info
 ;
 MSG_SIZE
-TamaÒo
+Tama√±o
 ;Dimensiones
 ;Talla
 ;Size
 ;
 MSG_TITLE
-TÌtulo
+T√≠tulo
 ;Title
 ;
 MSG_DEFAULT_TITLE
-TÌtulo inicial
-;TÌtulo predefinido
+T√≠tulo inicial
+;T√≠tulo predefinido
 ;Default title
 ;
 MSG_GRABBING_OPTIONS
@@ -61,7 +61,7 @@ MSG_SCREEN_PARM
 %d x %d, depth=%d
 ;
 MSG_OVERWRITE
-El archivo '%s' ya existe.\nøQuieres sobrescribirlo?
+El archivo '%s' ya existe.\n¬øQuieres sobrescribirlo?
 ;File '%s' already exists.\nDo you really want to overwrite it?
 ;
 MSG_ERROR_TITLE
@@ -74,27 +74,27 @@ _Aceptar
 ;_OK
 ;
 MSG_GAD_YESNO
-SÕ|NO
+S√ç|NO
 ;YES|NO
 ;
 MSG_ERR_DATATYPE
-°No se puede crear el objeto datatype!
+¬°No se puede crear el objeto datatype!
 ;Can't create datatype object!
 ;
 MSG_NORAM
-°No se puede asignar RAM!
+¬°No se puede asignar RAM!
 ;Can't allocate RAM!
 ;
 MSG_ERR_DATATYPEIO
-Escribir '%s' fallÛ con\n\
+Escribir '%s' fall√≥ con\n\
 el Error de E/S %ld!
 ;Writing of '%s' failed with IO Error %ld!
 ;
 MSG_ERR_OPENFILE
-°El archivo '%s' no se puede abrir para salida!
+¬°El archivo '%s' no se puede abrir para salida!
 ;Can't open file '%s' for output!
 ;
 MSG_ERR_APP
-°No se puede crear la aplicaciÛn!
+¬°No se puede crear la aplicaci√≥n!
 ;Can't create application object!
 ;

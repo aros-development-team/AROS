@@ -20,7 +20,7 @@ Umbenennen
 ; Rename
 ;
 MSG_LINE
-Geben Sie einen neuen Namen für '%s' ein
+Geben Sie einen neuen Namen fÃ¼r '%s' ein
 ; Enter a new name for: '%s'
 ;
 MSG_NAME
@@ -48,7 +48,7 @@ Beim Umbenennen von '%s' trat der Fehler\n%s auf!
 ; Rename of '%s' failed with error:\n'%s'!
 ;
 MSG_ILLEGAL_CHARS
-'%s' enthält unerlaubte Zeichen!
+'%s' enthÃ¤lt unerlaubte Zeichen!
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
@@ -56,7 +56,7 @@ Brauche 2 Argumente!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Ungültiger Verzeichnis-Lock!
+UngÃ¼ltiger Verzeichnis-Lock!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
@@ -68,5 +68,5 @@ Kann Application-Objekt nicht erzeugen!
 ; Failed to create Application!
 ;
 MSG_OUTOFMEMORY
-Kein RAM Speicher verfügbar!
+Kein RAM Speicher verfÃ¼gbar!
 ; Can't allocate RAM!

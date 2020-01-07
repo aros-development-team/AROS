@@ -3,7 +3,7 @@
 ## codeset 5
 ;
 MSG_WINTITLE
-Ustawienia Motywów Graficznych
+Ustawienia MotywÃ³w Graficznych
 ; Appearance Preferences
 ;
 MSG_OK
@@ -15,11 +15,11 @@ Uaktywnij Motywy Graficzne
 ; Enable Theme'ing?
 ;
 MSG_PREVIEW
-Podgl±d
+PodglÄ…d
 ; Preview
 ;
 MSG_NOPREVIEW
--Podgl±d Niedostêpny-
+-PodglÄ…d NiedostÄ™pny-
 ; -Preview Unavailable-
 ;
 MSG_SELECTEDTHEME
@@ -27,11 +27,11 @@ Motyw
 ; Theme
 ;
 MSG_ENABLEZUNEPREFS
-Przej±æ Ustawienia Zune?
+PrzejÄ…Ä‡ Ustawienia Zune?
 ; Inherit Zune Configuration?
 ;
 MSG_ENABLEWANDPREFS
-Przej±æ Ustawienia Wanderera?
+PrzejÄ…Ä‡ Ustawienia Wanderera?
 ; Inherit Wanderer Configuration?
 ;
 MSG_SEC_THEMING
@@ -47,18 +47,18 @@ Uaktywnij Komponowanie Ekranu
 ; Enable Screen Composition
 ;
 MSG_COMPOSITE_BELOW
-Nak³adaæ Poni¿ej
+NakÅ‚adaÄ‡ PoniÅ¼ej
 ; Composite Below
 ;
 MSG_COMPOSITE_LEFT
-Nak³adaæ po Lewej
+NakÅ‚adaÄ‡ po Lewej
 ; Composite Left
 ;
 MSG_COMPOSITE_RIGHT
-Nak³adaæ po Prawej
+NakÅ‚adaÄ‡ po Prawej
 ; Composite Right
 ;
 MSG_ENABLE_COMPOSITE_WITH_ALPHA
-Uaktywnij Kompozycjê z Przezroczysto¶ci±
+Uaktywnij KompozycjÄ™ z PrzezroczystoÅ›ciÄ…
 ; Enable Compositing with Alpha
 ;

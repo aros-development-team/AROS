@@ -4,35 +4,35 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Nelze otevøít knihovnu %s V%ld!
+Nelze otevÅ™Ã­t knihovnu %s V%ld!
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Nelze zamknout veøejnou obrazovku!
+Nelze zamknout veÅ™ejnou obrazovku!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nelze naèíst strukturu DrawInfo!
+Nelze naÄÃ­st strukturu DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nelze naèíst strukturu VisualInfo!
+Nelze naÄÃ­st strukturu VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
-Nelze vytvoøit tlaèítka!
+Nelze vytvoÅ™it tlaÄÃ­tka!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nelze vytvoøit menu!
+Nelze vytvoÅ™it menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nelze vytvoøit okno!
+Nelze vytvoÅ™it okno!
 ; Can't create window!
 ;
 MSG_WINTITLE
-Sériovı port (editor Serial)
+SÃ©riovÃ½ port (editor Serial)
 ; Serial Preferences
 ;
 MSG_MEN_PROJECT
@@ -40,47 +40,47 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Otevøít...
+O\0OtevÅ™Ã­t...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
-A\0Ulo¾it jako...
+A\0UloÅ¾it jako...
 ; A\0Save as...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Ukonèit
+Q\0UkonÄit
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
-Úpravy
+Ãšpravy
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Obnovit vıchozí
+D\0Obnovit vÃ½chozÃ­
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
-L\0Naposledy ulo¾ené
+L\0Naposledy uloÅ¾enÃ©
 ; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Obnovit pøedchozí
+R\0Obnovit pÅ™edchozÃ­
 ; R\0Restore
 ;
 MSG_MEN_SETTINGS
-Nastavení
+NastavenÃ­
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Vytváøet ikony?
+I\0VytvÃ¡Å™et ikony?
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
-Naètení nastavení
+NaÄtenÃ­ nastavenÃ­
 ; Load Serial Preferences
 ;
 MSG_ASL_SAVE_TITLE
-Ulo¾ení nastavení
+UloÅ¾enÃ­ nastavenÃ­
 ; Save Serial Preferences
 ;
 MSG_OK
@@ -88,15 +88,15 @@ OK
 ; Ok
 ;
 MSG_GAD_SAVE
-Ulo¾it
+UloÅ¾it
 ; Save
 ;
 MSG_GAD_USE
-Pou¾ít
+PouÅ¾Ã­t
 ; Use
 ;
 MSG_GAD_CANCEL
-Zru¹it
+ZruÅ¡it
 ; Cancel
 ;
 MSG_GAD_BAUDRATE
@@ -108,19 +108,19 @@ Parita:
 ; Parity
 ;
 MSG_GAD_STOPBITS
-Poèet tzv. stop bitù:
+PoÄet tzv. stop bitÅ¯:
 ; Stop Bits
 ;
 MSG_GAD_DATABITS
-Poèet datovıch bitù:
+PoÄet datovÃ½ch bitÅ¯:
 ; Data Bits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Vstupní vyrovnávací pamì»:
+VstupnÃ­ vyrovnÃ¡vacÃ­ pamÄ›Å¥:
 ; Input Buffer Size
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
-Vıstupní vyrovnávací pamì»:
+VÃ½stupnÃ­ vyrovnÃ¡vacÃ­ pamÄ›Å¥:
 ; Output Buffer Size
 ;
 MSG_PARITY_NONE
@@ -128,15 +128,15 @@ MSG_PARITY_NONE
 ; None
 ;
 MSG_PARITY_EVEN
-Sudá
+SudÃ¡
 ; Even
 ;
 MSG_PARITY_ODD
-Lichá
+LichÃ¡
 ; Odd
 ;
 MSG_PARITY_MARK
-Znaèka
+ZnaÄka
 ; Mark
 ;
 MSG_PARITY_SPACE

@@ -8,31 +8,31 @@ Trackdisk
 ; Trackdisk
 ;
 MSG_TITLE
-NastavenÌ disket
+Nastaven√≠ disket
 ; Trackdisk prefs
 ;
 MSG_SAVE
-Uloæit
+Ulo≈æit
 ; Save
 ;
 MSG_USE
-PouæÌt
+Pou≈æ√≠t
 ; Use
 ;
 MSG_CANCEL
-Zruπit
+Zru≈°it
 ; Cancel
 ;
 MSG_DESCRIPTION
-Editor nastavenÌ disket
+Editor nastaven√≠ disket
 ; trackdisk.device preferences editor
 ;
 MSG_WINDOW_TITLE
-NastavenÌ disket
+Nastaven√≠ disket
 ; trackdisk.device preferences
 ;
 MSG_DRIVE
-Za¯ÌzenÌ %u
+Za≈ô√≠zen√≠ %u
 ; Drive %u
 ;
 MSG_NOCLICK
@@ -40,6 +40,6 @@ Potichu:
 ; No click:
 ;
 MSG_RETRIES
-Opakov·nÌ:
+Opakov√°n√≠:
 ; Retries:
 ;

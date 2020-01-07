@@ -39,7 +39,7 @@ linea degli argomenti non valida o troppo lunga
 ; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
-il file non Ë eseguibile
+il file non √® eseguibile
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
@@ -51,11 +51,11 @@ errore 201
 ; no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE
-l'oggetto Ë in uso
+l'oggetto √® in uso
 ; object is in use
 ;
 MSG_ERROR_OBJECT_EXISTS
-l'oggetto esiste gi‡
+l'oggetto esiste gi√†
 ; object already exists
 ;
 MSG_ERROR_DIR_NOT_FOUND
@@ -87,7 +87,7 @@ blocco dell'oggetto invalido
 ; invalid object lock
 ;
 MSG_ERROR_OBJECT_WRONG_TYPE
-L'oggetto non Ë della tipologia richiesta
+L'oggetto non √® della tipologia richiesta
 ; object is not of required type
 ;
 MSG_ERROR_DISK_NOT_VALIDATED
@@ -103,7 +103,7 @@ tentativo di rinominazione invalida
 ; rename across devices attempted
 ;
 MSG_ERROR_DIRECTORY_NOT_EMPTY
-la directory non Ë vuota
+la directory non √® vuota
 ; directory not empty
 ;
 MSG_ERROR_TOO_MANY_LEVELS
@@ -123,7 +123,7 @@ commento troppo lungo
 ; comment is too long
 ;
 MSG_ERROR_DISK_FULL
-il disco Ë pieno
+il disco √® pieno
 ; disk is full
 ;
 MSG_ERROR_DELETE_PROTECTED
@@ -147,15 +147,15 @@ manca il disco
 ; no disk in drive
 ;
 MSG_ERROR_NO_MORE_ENTRIES
-la directory Ë piena
+la directory √® piena
 ; no more entries in directory
 ;
 MSG_ERROR_IS_SOFT_LINK
-l'oggetto Ë un collegamento semplice
+l'oggetto √® un collegamento semplice
 ; object is soft link
 ;
 MSG_ERROR_OBJECT_LINKED
-l'oggetto Ë collegato
+l'oggetto √® collegato
 ; object is linked
 ;
 MSG_ERROR_BAD_HUNK
@@ -203,11 +203,11 @@ Volume "%s" protetto da scrittura
 ; Volume "%s" is write protected
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
-Prego inserire il volume "%s" in qualsiasi unit‡
+Prego inserire il volume "%s" in qualsiasi unit√†
 ; Please insert volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
-Prego reinserire il volume "%s" in qualsiasi unit‡
+Prego reinserire il volume "%s" in qualsiasi unit√†
 ; Please replace volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
@@ -227,7 +227,7 @@ manca il disco in "%s"
 ; No disk present in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-» assolutamente necessario reinserire "%s" in "%s"!
+√à assolutamente necessario reinserire "%s" in "%s"!
 ; You MUST replace volume "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
@@ -251,7 +251,7 @@ manca corrispettivo Else o EndIf
 ; no matching Else or EndIf
 ;
 MSG_ERROR_SCRIPT_ONLY
-questo comando puÚ essere usato solo in file di comando
+questo comando pu√≤ essere usato solo in file di comando
 ; this command is supposed to be used in command files only
 ;
 MSG_ERROR_UNKNOWN

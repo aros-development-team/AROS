@@ -12,7 +12,7 @@ Wanderer-Voreinsteller
 ; Wanderer preferences
 ;
 MSG_BACKGROUNDS
-Hintergründe
+HintergrÃ¼nde
 ; Backgrounds
 ;
 MSG_BACKGROUND_WORKBENCH
@@ -24,11 +24,11 @@ Verzeichnisse
 ; Drawers
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
-Wähle Workbench Hintergrund
+WÃ¤hle Workbench Hintergrund
 ; Select Workbench Background
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-Wähle Verzeichnis Hintergrund
+WÃ¤hle Verzeichnis Hintergrund
 ; Select Drawer Background
 ;
 MSG_GENERAL
@@ -104,7 +104,7 @@ Schatten
 ; Drop shadow
 ;
 MSG_ICONTEXTLENGTH
-Max. Icon Textlänge
+Max. Icon TextlÃ¤nge
 ; Max icon textlength
 ;
 MSG_DOUBLEBUFFERED
@@ -116,9 +116,9 @@ Sonstiges
 ; misc
 ;
 MSG_BUBBLESCREENTITLE
-%pc = Verfügbares Chip Ram\n\
-%pf = Verfügbares Fast Ram\n\
-%pt = Gesamter verfügbarer RAM\n\
+%pc = VerfÃ¼gbares Chip Ram\n\
+%pf = VerfÃ¼gbares Fast Ram\n\
+%pt = Gesamter verfÃ¼gbarer RAM\n\
 %PC = Chip Ram\n\
 %PF = Fast Ram\n\
 %PT = Gesamter RAM\n\
@@ -182,7 +182,7 @@ Textrahmen Breite
 ; Label Frame Width
 ;
 MSG_FRAMEHEIGHT
-Textrahmen Höhe
+Textrahmen HÃ¶he
 ; Label Frame Height
 ;
 MSG_TILED
@@ -202,7 +202,7 @@ Fixiert
 ; Fixed
 ;
 MSG_LABELLINELENGTH
-Max. Textzeilen Länge...
+Max. Textzeilen LÃ¤nge...
 ; Max. Label line length...
 ;
 MSG_USEMULTILINELABELS
@@ -210,7 +210,7 @@ Mehzeiligen Icontext verwenden
 ; Use MultiLine Labels
 ;
 MSG_SHOWFOCUSEDICON
-Nur für fokusierte Icons anzeigen
+Nur fÃ¼r fokusierte Icons anzeigen
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
@@ -290,7 +290,7 @@ Nach Datum
 ; By date
 ;
 MSG_ICONSORTMODE_BYSIZE
-Nach Größe
+Nach GrÃ¶ÃŸe
 ; By size
 ;
 MSG_DEFAULT_ICONSORTMODE

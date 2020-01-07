@@ -7,12 +7,12 @@ Informacje
 ; Information
 ;
 MSG_DESCRIPTION
-W³a¶ciwo¶ci ikonki
+WÅ‚aÅ›ciwoÅ›ci ikonki
 ; Display Icon information
 ;
 MSG_COPYRIGHT
-W³a¶ciwo¶ci ikonkiy\n(c) 2003-2010 The AROS Dev Team
-; Icon information\n© 2003-2010 The AROS Dev Team
+WÅ‚aÅ›ciwoÅ›ci ikonkiy\n(c) 2003-2010 The AROS Dev Team
+; Icon information\nÅ  2003-2010 The AROS Dev Team
 ;
 MSG_ICON
 Ikonka
@@ -31,7 +31,7 @@ Stos
 ; Stack
 ;
 MSG_DEFTOOL
-Narzêdzie
+NarzÄ™dzie
 ; Tool
 ;
 MSG_ICONTYPE
@@ -47,7 +47,7 @@ Katalog
 ; Drawer
 ;
 MSG_TOOL
-Narzêdzie
+NarzÄ™dzie
 ; Tool
 ;
 MSG_PROJECT
@@ -55,11 +55,11 @@ Projekt
 ; Project
 ;
 MSG_GARBAGE
-¦mietnik
+Åšmietnik
 ; Garbage
 ;
 MSG_DEVICE
-Urz±dzenie
+UrzÄ…dzenie
 ; Device
 ;
 MSG_KICK
@@ -83,7 +83,7 @@ Parametry
 ; Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-B³±d: nie mo¿na uruchomiæ z poziomu konsoli
+BÅ‚Ä…d: nie moÅ¼na uruchomiÄ‡ z poziomu konsoli
 ; Error: Cannot be started from shell
 ;
 MSG_ABOUT
@@ -91,7 +91,7 @@ O programie...
 ; About...
 ;
 MSG_QUIT
-Skoñcz
+SkoÅ„cz
 ; Quit
 ;
 MSG_READ
@@ -127,7 +127,7 @@ Przyklejony
 ; Sticky
 ;
 MSG_SIZE
-Wielko¶æ
+WielkoÅ›Ä‡
 ; Size
 ;
 MSG_VERSION
@@ -135,7 +135,7 @@ Wersja
 ; Version
 ;
 MSG_OWNERID
-ID w³a¶ciciela
+ID wÅ‚aÅ›ciciela
 ; Owner ID
 ;
 MSG_GROUPID
@@ -143,7 +143,7 @@ ID grupy
 ; Group ID
 ;
 MSG_OWNERNAME
-W³a¶ciciel
+WÅ‚aÅ›ciciel
 ; Owner
 ;
 MSG_GROUPNAME
@@ -163,7 +163,7 @@ Nowy klucz
 ; New key
 ;
 MSG_DELETE_KEY
-Usuñ klucz
+UsuÅ„ klucz
 ; Delete key
 ;
 MSG_SAVE
@@ -179,10 +179,10 @@ OK
 ; Ok
 ;
 MSG_PATH
-¦cie¿ka
+ÅšcieÅ¼ka
 ; Path
 ;
 MSG_BTNPATH
-Otwórz ¶cie¿kê dostepu...
+OtwÃ³rz Å›cieÅ¼kÄ™ dostepu...
 ; Open path...
 ;

@@ -7,7 +7,7 @@ ScreenGrabber
 ; ScreenGrabber
 ;
 MSG_REFRESH
-Od¶wie¿ listê
+OdÅ›wieÅ¼ listÄ™
 ; Refresh list
 ;
 MSG_SCREEN_INFO
@@ -15,7 +15,7 @@ Informacje o ekranie
 ; Screen info
 ;
 MSG_SIZE
-Wielko¶æ
+WielkoÅ›Ä‡
 ; Size
 ;
 MSG_TITLE
@@ -23,7 +23,7 @@ Nazwa
 ; Title
 ;
 MSG_DEFAULT_TITLE
-Domy¶lna nazwa
+DomyÅ›lna nazwa
 ; Default title
 ;
 MSG_GRABBING_OPTIONS
@@ -31,7 +31,7 @@ Opcje zrzucania
 ; Grabbing options
 ;
 MSG_DELAY
-Opó¼nienie (s)
+OpÃ³Åºnienie (s)
 ; Delay (s)
 ;
 MSG_HIDE
@@ -51,16 +51,16 @@ Zrzut ekranu
 ; Screenshot
 ;
 MSG_SCREEN_PARM
-%d x %d, g³êbia=%d
+%d x %d, gÅ‚Ä™bia=%d
 ; %d x %d, depth=%d
 ;
 MSG_OVERWRITE
-Plik \"%s\" ju¿ istnieje.\n\
-Czy na pewno chcesz go nadpisaæ?
+Plik \"%s\" juÅ¼ istnieje.\n\
+Czy na pewno chcesz go nadpisaÄ‡?
 ; File '%s' already exists.\nDo you really want to overwrite it?
 ;
 MSG_ERROR_TITLE
-B³±d programu ScreenGrabber
+BÅ‚Ä…d programu ScreenGrabber
 ; Screengrabber Error
 ;
 MSG_GAD_OK
@@ -72,22 +72,22 @@ TAK|NIE
 ; YES|NO
 ;
 MSG_ERR_DATATYPE
-Nie mo¿na utworzyæ obiektu datatype!
+Nie moÅ¼na utworzyÄ‡ obiektu datatype!
 ; Can't create datatype object!
 ;
 MSG_NORAM
-Nie mo¿na przydzieliæ pamiêci RAM!
+Nie moÅ¼na przydzieliÄ‡ pamiÄ™ci RAM!
 ; Can't allocate RAM!
 ;
 MSG_ERR_DATATYPEIO
-Zapisywanie \"%s\" zakoñczone b³êdem we/wy %ld!
+Zapisywanie \"%s\" zakoÅ„czone bÅ‚Ä™dem we/wy %ld!
 ; Writing of '%s' failed with IO Error %ld!
 ;
 MSG_ERR_OPENFILE
-Nie mo¿na otworzyæ pliku \"%s\" do zapisu!
+Nie moÅ¼na otworzyÄ‡ pliku \"%s\" do zapisu!
 ; Can't open file '%s' for output!
 ;
 MSG_ERR_APP
-Nie mo¿na utworzyæ obiektu aplikacji!
+Nie moÅ¼na utworzyÄ‡ obiektu aplikacji!
 ; Can't create application object!
 ;

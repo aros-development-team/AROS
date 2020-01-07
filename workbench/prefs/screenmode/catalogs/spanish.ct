@@ -1,6 +1,6 @@
 ## version $VER: screenmodeprefs.catalog 1.0 (29.09.2007)
 ## codeset 0
-## language espaÒol
+## language espa√±ol
 ;
 ; Translated by ahg
 ;
@@ -25,6 +25,6 @@ MSG_DEPTH
 ;\33lDepth:
 ;
 MSG_AUTOSCROLL
-\33lDesplazamiento autom·tico
+\33lDesplazamiento autom√°tico
 ;\33lAutoscroll
 ;

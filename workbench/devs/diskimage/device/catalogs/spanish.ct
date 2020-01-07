@@ -12,7 +12,7 @@ _Cancelar
 ; _Cancel
 ;
 MSG_PASSWORD_REQ
-Contrase馻:
+Contrase帽a:
 ; Enter password:
 ;
 MSG_NOZLIB
@@ -24,15 +24,15 @@ Requiere 'capsimage.device'.
 ; capsimage.device required
 ;
 MSG_CANCELED
-operaci髇 cancelada
+operaci贸n cancelada
 ; operation canceled
 ;
 MSG_NOPASSWD
-contrase馻 requerida
+contrase帽a requerida
 ; password required
 ;
 MSG_WRONGPASSWD
-contrase馻 incorrecta
+contrase帽a incorrecta
 ; wrong password
 ;
 MSG_ZLIBERR
@@ -56,7 +56,7 @@ Tipo/formato de imagen no soportada
 ; unsupported disk image type/format
 ;
 MSG_UNKNCOMPMETHOD
-M閠odo de compresi髇 no soportado
+M茅todo de compresi贸n no soportado
 ; unsupported compression method
 ;
 MSG_EOF
@@ -64,15 +64,15 @@ Fin de fichero inesperado
 ; unexpected end of file
 ;
 MSG_BADDATA
-Fichero contiene datos err髇eos
+Fichero contiene datos err贸neos
 ; file contains bad data
 ;
 MSG_BADCRC
-Comprobaci髇 CRC en datos fallida
+Comprobaci贸n CRC en datos fallida
 ; CRC check on file data failed
 ;
 MSG_BADCHECKSUM
-Error de suma de comprobaci髇
+Error de suma de comprobaci贸n
 ; checksum error
 ;
 MSG_REQ
@@ -84,6 +84,6 @@ Requiere '%s' V%ld o superior.
 ; %s v%ld or newer required
 ;
 MSG_WRONGDAA
-Fichero DAA err髇eo (fichero m鷏tiple)
+Fichero DAA err贸neo (fichero m煤ltiple)
 ; wrong DAA file (multi-file DAA)
 ;

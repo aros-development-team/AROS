@@ -11,11 +11,11 @@ PCI Tool
 ; PCI Tool
 ;
 MSG_DESCRIPTION
-Odpytywanie i zarz±dzanie urz±dzeniami PCI
+Odpytywanie i zarzÄ…dzanie urzÄ…dzeniami PCI
 ; PCI querying and managment
 ;
 MSG_ERROR_LOCALE
-Nie mo¿na otworzyæ lokalizacji
+Nie moÅ¼na otworzyÄ‡ lokalizacji
 ; Can't open locale
 ;
 MSG_ERROR_OK
@@ -23,7 +23,7 @@ OK
 ; Ok
 ;
 MSG_ERROR_HEADER
-B£¡D
+BÅÄ„D
 ; ERROR
 ;
 MSG_DRIVER_INFO
@@ -35,15 +35,15 @@ Nazwa sterownika:
 ; Driver name:
 ;
 MSG_DIRECT_BUS
-Szyna bezpo¶rednia:
+Szyna bezpoÅ›rednia:
 ; Direct bus:
 ;
 MSG_HARDWARE_INFO
-Informacje o sprzêcie:
+Informacje o sprzÄ™cie:
 ; Hardware info:
 ;
 MSG_PCI_DEVICE_INFO
-Informacje o urz±dzeniach PCI
+Informacje o urzÄ…dzeniach PCI
 ; PCI device info
 ;
 MSG_DEVICE_DESCRIPTION
@@ -91,43 +91,43 @@ Przerwanie:
 ; IRQ:
 ;
 MSG_ROM_BASE
-Adres pamiêci ROM:
+Adres pamiÄ™ci ROM:
 ; ROM Base:
 ;
 MSG_ROM_SIZE
-Wielko¶æ pamiêci ROM:
+WielkoÅ›Ä‡ pamiÄ™ci ROM:
 ; ROM Size:
 ;
 MSG_BRIDGE
-Mostek obs³uguje szynê %d (szyna ISA %sw³±czona, VGA %sw³±czone)
+Mostek obsÅ‚uguje szynÄ™ %d (szyna ISA %swÅ‚Ä…czona, VGA %swÅ‚Ä…czone)
 ; Bridge handles bus %d (ISA %senabled, VGA %senabled)
 ;
 MSG_MEMORY_RANGE
-Zakres pamiêci od %08x do %08x
+Zakres pamiÄ™ci od %08x do %08x
 ; Memory ranges from %08x to %08x
 ;
 MSG_PREFETCHABLE_MEMORY
-Zakres pamiêci buforowalnej od %08x do %08x
+Zakres pamiÄ™ci buforowalnej od %08x do %08x
 ; Prefetchable ranges memory from %08x to %08x
 ;
 MSG_IO_RANGE
-Zakres adresów we/wy od %04x do %04x
+Zakres adresÃ³w we/wy od %04x do %04x
 ; IO ranges from %04x to %04x
 ;
 MSG_IO_MSG
-We/wy: %s, pamiêæ: %s, g³ówny: %s, przeszukiwanie palety: %s, obs³uga 66MHz: %s
+We/wy: %s, pamiÄ™Ä‡: %s, gÅ‚Ã³wny: %s, przeszukiwanie palety: %s, obsÅ‚uga 66MHz: %s
 ; IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
 ;
 MSG_IO
-Urz±dzenie wej¶cia/wyj¶cia
+UrzÄ…dzenie wejÅ›cia/wyjÅ›cia
 ; I/O
 ;
 MSG_MEMORY
-Pamiêæ
+PamiÄ™Ä‡
 ; Memory
 ;
 MSG_PREFETCHABLE
-Pamiêæ buforowalna
+PamiÄ™Ä‡ buforowalna
 ; Prefetchable Memory
 ;
 MSG_YES
@@ -139,7 +139,7 @@ nie
 ; no
 ;
 MSG_NA
-niedostêpny
+niedostÄ™pny
 ; N/A
 ;
 MSG_NOT
@@ -147,22 +147,22 @@ nie
 ; not
 ;
 MSG_SIZE4
-%s pod adresem 0x%04x (wielko¶æ 0x%04x)
+%s pod adresem 0x%04x (wielkoÅ›Ä‡ 0x%04x)
 ; %s at 0x%04x (size 0x%04x)
 ;
 MSG_SIZE8
-%s pod adresem 0x%08x (wielko¶æ 0x%08x)
+%s pod adresem 0x%08x (wielkoÅ›Ä‡ 0x%08x)
 ; %s at 0x%08x (size 0x%08x)
 ;
 MSG_SAVETORAMDISK
-Zapisz informacje o urz±dzeniu do RAM dysku
+Zapisz informacje o urzÄ…dzeniu do RAM dysku
 ; Save Device Information to RAM Disk
 ;
 MSG_SAVEALLTORAMDISK
-Zapisz kompletne informacje o urz±dzeniach PCI do RAM dysku
+Zapisz kompletne informacje o urzÄ…dzeniach PCI do RAM dysku
 ; Save complete PCI Information to RAM Disk
 ;
 MSG_UNUSED
--- nieu¿ywane ---
+-- nieuÅ¼ywane ---
 ; --unused--
 ;

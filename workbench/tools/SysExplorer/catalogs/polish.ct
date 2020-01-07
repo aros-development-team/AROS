@@ -4,15 +4,15 @@
 ;
 ;
 MSG_TITLE
-Przegl±d Systemu
+PrzeglÄ…d Systemu
 ; System Explorer
 ;
 MSG_WINTITLE
-Przegl±d Systemu
+PrzeglÄ…d Systemu
 ; System Explorer
 ;
 MSG_DESCRIPTION
-Informacje o systemie i sprzêcie
+Informacje o systemie i sprzÄ™cie
 ; System and hardware information tool
 ;
 MSG_MENU_PROJECT
@@ -24,15 +24,15 @@ Cechy
 ; Properties
 ;
 MSG_MENU_EXPANDALL
-Rozwiñ wszystko
+RozwiÅ„ wszystko
 ; Expand All
 ;
 MSG_MENU_COLLAPSEALL
-Zwiñ wszystko
+ZwiÅ„ wszystko
 ; Collapse All
 ;
 MSG_MENU_QUIT
-Skoñcz
+SkoÅ„cz
 ; Quit
 ;
 MSG_HIDD_TREE
@@ -48,7 +48,7 @@ Nazwa jednostki sterownika
 ; Driver instance name
 ;
 MSG_LABEL_HW_DESCRIPTION
-Opis sprzêtu
+Opis sprzÄ™tu
 ; Hardware description
 ;
 MSG_LABEL_VENDOR
@@ -72,7 +72,7 @@ HPET
 ; HPET
 ;
 MSG_RAM
-Pamiêæ
+PamiÄ™Ä‡
 ; Memory
 ;
 MSG_BOOTLOADER
@@ -84,11 +84,11 @@ Argumenty rozruchu
 ; Boot Arguments
 ;
 MSG_AVAILABLE
-Dostêpny do u¿ytku
+DostÄ™pny do uÅ¼ytku
 ; Available for use
 ;
 MSG_GENERAL
-Ogólne
+OgÃ³lne
 ; General
 ;
 MSG_NAME
@@ -96,7 +96,7 @@ Nazwa
 ; Name
 ;
 MSG_HARDWARE_NAME
-Nazwa sprzêtu
+Nazwa sprzÄ™tu
 ; Hardware Name
 ;
 MSG_PRODUCT_ID
@@ -112,7 +112,7 @@ ID producenta
 ; Vendor ID
 ;
 MSG_DEVICE_PROPERTIES
-Cechy urz±dzenia
+Cechy urzÄ…dzenia
 ; Device properties
 ;
 MSG_ATA_PROPERTIES
@@ -124,7 +124,7 @@ Port IDE
 ; IDE
 ;
 MSG_USE_IOALT
-Wsparcie alternatywnych rejestrów
+Wsparcie alternatywnych rejestrÃ³w
 ; Supports alternate registers
 ;
 MSG_USE_32BIT
@@ -136,7 +136,7 @@ Wsparcie DMA
 ; Supports DMA
 ;
 MSG_USE_80WIRE
-Kabel 80cio-¿ylowy 
+Kabel 80cio-Å¼ylowy 
 ; 80-wire cable
 ;
 MSG_ATA_UNIT_PROPERTIES
@@ -168,7 +168,7 @@ Limit wielosektorowy
 ; Multisector limit
 ;
 MSG_REMOVABLE
-Urz±dzenie wymienne
+UrzÄ…dzenie wymienne
 ; Removable
 ;
 MSG_CONFIG_MODES

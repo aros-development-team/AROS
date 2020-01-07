@@ -1,5 +1,5 @@
 ## version $VER: snoopy.catalog 1.0 (06.09.2006)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 ; TODO: update translation and set version to 2
@@ -10,7 +10,7 @@ MSG_TITLE
 Snoopy
 ;
 MSG_COPYRIGHT
-© 2006, The AROS Development Team
+Â© 2006, The AROS Development Team
 ;
 MSG_AUTHOR
 The AROS Development Team
@@ -27,13 +27,13 @@ Configuraciones
 ;Settings
 ;
 MSG_SHOW_FAILS
-Ver sólo las fallas
-;Mostrar sólo las fallas
+Ver sÃ³lo las fallas
+;Mostrar sÃ³lo las fallas
 ;Only show fails
 ;
 MSG_CLI_NUMBER
-Ver el nº de CLI
-;Mostrar el número de CLI
+Ver el nÂº de CLI
+;Mostrar el nÃºmero de CLI
 ;Show CLI number
 ;
 MSG_FULL_PATH
@@ -90,7 +90,7 @@ Nombre
 ;Name
 ;
 MSG_ACTION
-Acción
+AcciÃ³n
 ;Action
 ;
 MSG_TARGET
@@ -98,7 +98,7 @@ Blanco
 ;Target
 ;
 MSG_OPTION
-Opción
+OpciÃ³n
 ;Option
 ;
 MSG_OK
@@ -122,8 +122,8 @@ Restaurar Parches|Cancelar
 ;Reset Patches|Cancel
 ;
 MSG_ASK_RESET
-¿Quieres restaurar los parches \na sus funciones originales?
-;¿Quieres regresar los parches a sus funciones originales?
+Â¿Quieres restaurar los parches \na sus funciones originales?
+;Â¿Quieres regresar los parches a sus funciones originales?
 ;Do you really want to reset the patches to their original functions?
 ;
 MSG_REMOVE_SNOOP
@@ -132,7 +132,7 @@ Quitar|Dejar
 ;Remove|Keep
 ;
 MSG_ASK_REMOVE
-¿Quieres quitar el proceso Snoopy?\nEsto puede ser peligroso si otra tarea \ntambién parchó a Snoopy.
+Â¿Quieres quitar el proceso Snoopy?\nEsto puede ser peligroso si otra tarea \ntambiÃ©n parchÃ³ a Snoopy.
 ;Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
 ;
 MSG_GLOBAL
@@ -161,7 +161,7 @@ Escribir
 ;Write
 ;
 MSG_READ_ASK
-¿Leer?
+Â¿Leer?
 ;Read???
 ;
 MSG_MODIFY
@@ -169,10 +169,10 @@ Modificar
 ;Modify
 ;
 MSG_VERSION
-Versión %ld
+VersiÃ³n %ld
 ;Version %ld
 ;
 MSG_SIZE
-Tamaño %d
+TamaÃ±o %d
 ;Size %d
 ;

@@ -4,15 +4,15 @@
 ;
 ;
 MSG_CANT_OPEN_STREAM
-Nem tudtam megnyitni az IFF ·ramot!
+Nem tudtam megnyitni az IFF √°ramot!
 ; Can't open IFF stream!
 ;
 MSG_CANT_ALLOCATE_IFFPTR
-Nem tudtam lefoglalni az IFF kezelıt!
+Nem tudtam lefoglalni az IFF kezel≈ët!
 ; Can't allocate IFF handle!
 ;
 MSG_NAME
-Bet˚tÌpus be·llÌt·sok
+Bet≈±t√≠pus be√°ll√≠t√°sok
 ; Font Preferences
 ;
 MSG_OK
@@ -28,6 +28,6 @@ Rendszer:
 ;System:
 ;
 MSG_SCREEN
-KÈpernyı:
+K√©perny≈ë:
 ; Screen:
 ;

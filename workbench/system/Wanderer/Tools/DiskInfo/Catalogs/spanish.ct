@@ -1,11 +1,11 @@
 ## version $VER: diskinfo.catalog 1.0 (30.09.2007)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 ; Translated by ahg
 ;
 MSG_TITLE
-Información del Disco
+InformaciÃ³n del Disco
 ;Info. del Disco
 ;Disk Info
 ;
@@ -25,7 +25,7 @@ No se pueden inicializar las clases propias.
 ;Can't initialize custom classes.
 ;
 MSG_DESCRIPTION
-Información del Disco
+InformaciÃ³n del Disco
 ;Disk Icon Informations
 ;
 MSG_PERCENTFULL
@@ -44,5 +44,5 @@ MSG_AUTHOR
 Olivier Adam
 ;
 MSG_COPYRIGHT
-©2006 AROS Dev Team
+Â©2006 AROS Dev Team
 ;

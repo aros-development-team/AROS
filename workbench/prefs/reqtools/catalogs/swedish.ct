@@ -3,32 +3,32 @@
 ## codeset 0
 ;
 MSG_WINDOW_TITLE
-ReqToolsinst‰llningar
+ReqToolsinst√§llningar
 ;
 MSG_GENERAL
 Diverse
 ;
 MSG_FILEREQUESTER
-Filv‰ljare
+Filv√§ljare
 ;
 MSG_SIZE
-Storlek (% av synlig hˆjd):
+Storlek (% av synlig h√∂jd):
 ;
 MSG_OK
 Ok
 ;
 ;
 MSG_POPSCREEN
-Flytta fram sk‰rm
+Flytta fram sk√§rm
 ;
 MSG_IMMEDIATESORT
 Sortera omedelbart
 ;
 MSG_DRAWERSFIRST
-Visa lÂdor fˆrst
+Visa l√•dor f√∂rst
 ;
 MSG_DRAWERSMIXED
-Blanda filer och lÂdor
+Blanda filer och l√•dor
 ;
 MSG_LED
 LED
@@ -37,11 +37,11 @@ MSG_DEFAULTFONT
 Systemteckensnitt
 ;
 MSG_FKEYS
-Anv‰nd f-tangenter
+Anv√§nd f-tangenter
 ;
-; Hrm. Inte sÂ bra kanske.. ;)
+; Hrm. Inte s√• bra kanske.. ;)
 MSG_DOWHEEL
-F‰rghjul:
+F√§rghjul:
 ;
 MSG_WHEEL_NONE
 Ingen
@@ -53,10 +53,10 @@ MSG_WHEEL_FANCY
 Fint
 ;
 MSG_MMB_PARENT
-MMK ger moderlÂda
+MMK ger moderl√•da
 ;
 MSG_DEFAULTS
-Fˆrinst‰llt
+F√∂rinst√§llt
 ;
 MSG_REQUESTER
 \33bDialog:
@@ -68,10 +68,10 @@ MSG_FONTREQ
 Teckensnitts
 ;
 MSG_PALETTEREQ
-F‰rginst
+F√§rginst
 ;
 MSG_SCRMODEREQ
-Sk‰rml‰gesinst
+Sk√§rml√§gesinst
 ;
 MSG_VOLUMEREQ
 Volym
@@ -80,22 +80,22 @@ MSG_OTHERREQ
 Andra
 ;
 MSG_POSITION
-L‰ge:
+L√§ge:
 ;
 MSG_POINTER
 Muspekare
 ;
 MSG_CENTERWIN
-Centrerad i fˆnstret
+Centrerad i f√∂nstret
 ;
 MSG_CENTERSCR
-Centrerat pÂ sk‰rmen
+Centrerat p√• sk√§rmen
 ;
 MSG_TOPLEFTWIN
-÷vre v‰nster hˆrn i fˆnster
+√ñvre v√§nster h√∂rn i f√∂nster
 ;
 MSG_TOPLEFTSCR
-÷vre v‰nster hˆrn pÂ sk‰rm
+√ñvre v√§nster h√∂rn p√• sk√§rm
 ;
 MSG_OFFSET
 \33bOffset

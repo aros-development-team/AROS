@@ -1,0 +1,30 @@
+# AROS repository git attributes.
+#
+
+#
+# Localised files
+#
+
+# ISO-8859-2
+bosnian.ct           text working-tree-encoding=ISO-8859-2
+croatian.ct          text working-tree-encoding=ISO-8859-2
+czech.ct             text working-tree-encoding=ISO-8859-2
+hungarian.ct         text working-tree-encoding=ISO-8859-2
+polish.ct            text working-tree-encoding=ISO-8859-2
+slovak.ct            text working-tree-encoding=ISO-8859-2
+slovene.ct           text working-tree-encoding=ISO-8859-2
+
+# ISO-8859-15
+albanian.ct          text working-tree-encoding=ISO-8859-15
+catalan.ct           text working-tree-encoding=ISO-8859-15
+faroese.ct           text working-tree-encoding=ISO-8859-15
+finnish.ct           text working-tree-encoding=ISO-8859-15
+french.ct            text working-tree-encoding=ISO-8859-15
+german.ct            text working-tree-encoding=ISO-8859-15
+icelandic.ct         text working-tree-encoding=ISO-8859-15
+italian.ct           text working-tree-encoding=ISO-8859-15
+spanish.ct           text working-tree-encoding=ISO-8859-15
+swedish.ct           text working-tree-encoding=ISO-8859-15
+
+# ISO-8859-15
+russian.ct           text working-tree-encoding=WINDOWS-1251

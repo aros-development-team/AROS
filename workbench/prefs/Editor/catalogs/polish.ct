@@ -3,7 +3,7 @@
 ## codeset 5
 ;
 MSG_RESETDEFAULT
-Ustawienia domy¶lne
+Ustawienia domyÅ›lne
 ; Default values
 ;
 MSG_LASTSAVED
@@ -31,11 +31,11 @@ Czcionka ekranu:
 ; Screen font:
 ;
 MSG_PUBSCREEN
-Tryb wy¶wietlania:
+Tryb wyÅ›wietlania:
 ; Screen mode:
 ;
 MSG_BACKDROP
-T³o
+TÅ‚o
 ; Backdrop
 ;
 MSG_LEFTMARGIN
@@ -43,7 +43,7 @@ Lewy margines
 ; Left margin
 ;
 MSG_AUTOINDENT
-Automatyczne wciêcia
+Automatyczne wciÄ™cia
 ; Auto indent
 ;
 MSG_EXTEND
@@ -55,7 +55,7 @@ Zapisz
 ; Save
 ;
 MSG_USEPREFS
-U¿yj
+UÅ¼yj
 ; Use
 ;
 MSG_DISCARDPREFS
@@ -63,7 +63,7 @@ Poniechaj
 ; Cancel
 ;
 MSG_USEDEF
-U¿yj domy¶lnych
+UÅ¼yj domyÅ›lnych
 ; Use Default
 ;
 MSG_CHOOSEIT
@@ -71,11 +71,11 @@ Wybierz...
 ; Choose one...
 ;
 MSG_CLONEPARENT
-Klonuj nadrzêdne
+Klonuj nadrzÄ™dne
 ; Clone parent
 ;
 MSG_COLOR_BACK
-T³o
+TÅ‚o
 ; Background
 ;
 MSG_COLOR_TEXT
@@ -83,7 +83,7 @@ Tekst
 ; Standard text
 ;
 MSG_COLOR_FILLTXT
-T³o zaznaczonego tekstu
+TÅ‚o zaznaczonego tekstu
 ; Selected fill text
 ;
 MSG_COLOR_FILLSEL
@@ -91,7 +91,7 @@ Zaznaczony tekst
 ; Selected text
 ;
 MSG_COLOR_MARGINBACK
-T³o marginesu
+TÅ‚o marginesu
 ; Margin background
 ;
 MSG_COLOR_MARGINTXT
@@ -99,15 +99,15 @@ Tekst na marginesie
 ; Margin text
 ;
 MSG_COLOR_SHINE
-Jasne krawêdzie
+Jasne krawÄ™dzie
 ; Panel shine
 ;
 MSG_COLOR_SHADE
-Ciemne krawêdzie
+Ciemne krawÄ™dzie
 ; Panel shade
 ;
 MSG_COLOR_PANELBACK
-T³o panelu
+TÅ‚o panelu
 ; Panel back
 ;
 MSG_COLOR_PANELTEXT

@@ -1,5 +1,5 @@
 ## version $VER: BIBPrefs.catalog 2.0 (30.03.2016)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -8,11 +8,11 @@ BIBPrefs
 ;BIBPrefs
 ;
 MSG_DESCRIPTION
-Préférences de BoingIconBar
+PrÃ©fÃ©rences de BoingIconBar
 ;BoingIconBar Preferences
 ;
 MSG_TITLE
-Préférences BoingIconBar
+PrÃ©fÃ©rences BoingIconBar
 ;BoingIconBar Preferences
 ;
 MSG_DOCK

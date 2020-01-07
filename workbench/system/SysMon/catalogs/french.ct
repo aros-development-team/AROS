@@ -1,5 +1,5 @@
 ## version $VER: SysMon.catalog 1.2 (19.04.2019)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -8,31 +8,31 @@ MSG_APP_NAME
 SysMon
 ;
 MSG_APP_TITLE
-Moniteur Système
+Moniteur SystÃ¨me
 ;
 MSG_WINDOW_TITLE
-Moniteur Système
+Moniteur SystÃ¨me
 ;
 MSG_USAGE
 Usage
 ;
 MSG_FREQUENCY
-Fréquence
+FrÃ©quence
 ;
 MSG_TAB_TASKS
-Tâches
+TÃ¢ches
 ;
 MSG_TAB_CPU
 Processeurs
 ;
 MSG_SIMULATED_CPU
-Processeur simulé par AROS
+Processeur simulÃ© par AROS
 ;
 MSG_PROCESSOR
 Processeur #%id: %s
 ;
 MSG_TASK
-Tâche
+TÃ¢che
 ;
 MSG_PROCESS
 Processus
@@ -41,25 +41,25 @@ MSG_TASK_NAME
 Nom
 ;
 MSG_TASK_PRIORITY
-Priorité
+PrioritÃ©
 ;
 MSG_TASK_TYPE
 Type
 ;
 MSG_TASK_READY_WAIT_INIT
-- prêt, - attendre
+- prÃªt, - attendre
 ;
 MSG_TASK_READY_WAIT
-%ld prêt, %ld attendre
+%ld prÃªt, %ld attendre
 ;
 MSG_TAB_SYSTEM
-Système
+SystÃ¨me
 ;
 MSG_MEMORY_SIZE
-Taille mémoire
+Taille mÃ©moire
 ;
 MSG_MEMORY_FREE
-Mémoire libre
+MÃ©moire libre
 ;
 MSG_VIDEO_SIZE
 Taille video
@@ -68,16 +68,16 @@ MSG_VIDEO_FREE
 Video libre
 ;
 MSG_TOTAL_RAM
-Mémoire totale
+MÃ©moire totale
 ;
 MSG_CHIP_RAM
-Mémoire Chip
+MÃ©moire Chip
 ;
 MSG_FAST_RAM
-Mémoire Fast
+MÃ©moire Fast
 ;
 MSG_VIDEO_RAM
-Mémoire Video
+MÃ©moire Video
 ;
 MSG_VIDEO_WINDOW_TMPL
 %s
@@ -89,7 +89,7 @@ MSG_PROJECT
 Projet
 ;
 MSG_REFRESH_SPEED
-Vitesse de rafraîchissement
+Vitesse de rafraÃ®chissement
 ;
 MSG_FAST
 Vite

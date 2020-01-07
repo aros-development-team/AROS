@@ -19,7 +19,7 @@ Wolumeny
 ; Volumes
 ;
 MSG_FILEREQ_PARENT_GAD
-NadrzÍdny
+Nadrzƒôdny
 ; Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
@@ -47,9 +47,9 @@ Skasuj plik
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Ostrzeøenie: nie bÍdziesz mÛg≥\n\
+Ostrze≈ºenie: nie bƒôdziesz m√≥g≈Ç\n\
 tego, co skasujesz!\n\
-Na pewno skasowaÊ\n\
+Na pewno skasowaƒá\n\
 %s?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
@@ -58,11 +58,11 @@ Skasuj|Poniechaj
 ; Delete|Cancel
 ;
 MSG_FILEREQ_RENAME_TITLE
-ZmieÒ nazwÍ
+Zmie≈Ñ nazwƒô
 ; Rename
 ;
 MSG_FILEREQ_RENAME_OK
-ZmieÒ nazwÍ
+Zmie≈Ñ nazwƒô
 ; Rename
 ;
 MSG_FILEREQ_RENAME_CANCEL
@@ -70,11 +70,11 @@ Poniechaj
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_TITLE
-UtwÛrz katalog
+Utw√≥rz katalog
 ; Create Drawer
 ;
 MSG_FILEREQ_CREATEDRAWER_OK
-UtwÛrz
+Utw√≥rz
 ; Create
 ;
 MSG_FILEREQ_CREATEDRAWER_CANCEL
@@ -106,15 +106,15 @@ L\0Poprzedni
 ; L\0Last Name
 ;
 MSG_FILEREQ_MEN_CONTROL_NEXTNAME
-M\0NastÍpny
+M\0Nastƒôpny
 ; N\0Next Name
 ;
 MSG_FILEREQ_MEN_CONTROL_RESTORE
-R\0PrzywrÛÊ
+R\0Przywr√≥ƒá
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-P\0NadrzÍdny
+P\0Nadrzƒôdny
 ; P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
@@ -130,11 +130,11 @@ D\0Skasuj
 ; D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
- \0UtwÛrz nowy katalog...
+ \0Utw√≥rz nowy katalog...
 ; T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
-M\0ZmieÒ nazwÍ...
+M\0Zmie≈Ñ nazwƒô...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
@@ -150,7 +150,7 @@ C\0Poniechaj
 ; C\0Cancel
 ;
 MSG_FILEREQ_MEN_FILELIST
-Lista plikÛw
+Lista plik√≥w
 ; File list
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTNAME
@@ -162,19 +162,19 @@ MSG_FILEREQ_MEN_FILELIST_SORTDATE
 ; 2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0Sortuj wg wielko∂ci
+3\0Sortuj wg wielko≈õci
 ; 3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
-+\0Rosn±co
++\0RosnƒÖco
 ; +\0Ascending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDOWN
--\0Malej±co
+-\0MalejƒÖco
 ; -\0Descending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
-4\0Katalogi na pocz±tku
+4\0Katalogi na poczƒÖtku
 ; 4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
@@ -182,11 +182,11 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
 ; 5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
-6\0Katalogi na koÒcu
+6\0Katalogi na ko≈Ñcu
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-WybÛr trybu wy∂wietlania
+Wyb√≥r trybu wy≈õwietlania
 ; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
@@ -218,11 +218,11 @@ Obszar maksymalny
 ; Maximum Size
 ;
 MSG_MODEREQ_WIDTH_LABEL
-Szeroko∂Ê
+Szeroko≈õƒá
 ; Width
 ;
 MSG_MODEREQ_HEIGHT_LABEL
-Wysoko∂Ê
+Wysoko≈õƒá
 ; Height
 ;
 MSG_MODEREQ_COLORS_LABEL
@@ -234,15 +234,15 @@ Automatyczne przewijanie
 ; AutoScroll
 ;
 MSG_MODEREQ_AUTOSCROLL_OFF
-WY£.
+WY≈Å.
 ; OFF
 ;
 MSG_MODEREQ_AUTOSCROLL_ON
-W£.
+W≈Å.
 ; ON
 ;
 MSG_MODEREQ_PROPERTIES_TITLE
-W≥a∂ciwo∂ci trybu
+W≈Ça≈õciwo≈õci trybu
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
@@ -254,7 +254,7 @@ Nie wspiera genlocka
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
-Nie moøna przeci±gaÊ
+Nie mo≈ºna przeciƒÖgaƒá
 ; Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
@@ -282,7 +282,7 @@ Wspiera genlocka
 ; Supports genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
-Moøna przeci±gaÊ
+Mo≈ºna przeciƒÖgaƒá
 ; Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
@@ -302,15 +302,15 @@ L\0Poprzedni tryb
 ; L\0Last Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_NEXTMODE
-N\0NastÍpny tryb
+N\0Nastƒôpny tryb
 ; N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
-?\0W≥a∂ciwo∂ci...
+?\0W≈Ça≈õciwo≈õci...
 ; ?\0Property List...
 ;
 MSG_MODEREQ_MEN_CONTROL_RESTORE
-R\0PrzywrÛÊ
+R\0Przywr√≥ƒá
 ; R\0Restore
 ;
 MSG_MODEREQ_MEN_CONTROL_OK
@@ -322,7 +322,7 @@ C\0Poniechaj
 ; C\0Cancel
 ;
 MSG_FONTREQ_TITLE
-Wybierz czcionkÍ
+Wybierz czcionkƒô
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
@@ -342,11 +342,11 @@ L\0Poprzednia czcionka
 ; L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
-N\0NastÍpna czcionka
+N\0Nastƒôpna czcionka
 ; N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE
-R\0PrzywrÛÊ
+R\0Przywr√≥ƒá
 ; R\0Restore
 ;
 MSG_FONTREQ_MEN_CONTROL_RESCAN
@@ -370,11 +370,11 @@ Tekst
 ; Text
 ;
 MSG_FONTREQ_MODE_TEXTANDFIELD
-Tekst + t≥o
+Tekst + t≈Ço
 ; Text+Field
 ;
 MSG_FONTREQ_MODE_COMPLEMENT
-Dope≥nienie
+Dope≈Çnienie
 ; Complement
 ;
 MSG_FONTREQ_STYLE_LABEL
@@ -398,7 +398,7 @@ Kolor
 ; Color
 ;
 MSG_FONTREQ_COLOR_LABEL_BG
-Kolor t≥a
+Kolor t≈Ça
 ; BG Color
 ;
 MSG_FONTREQ_COLOR_LABEL_FGBG

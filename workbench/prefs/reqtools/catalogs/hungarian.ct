@@ -1,22 +1,22 @@
 ## version $VER: ReqTools.catalog 3.0 (30.6.2017)
 ## language magyar
 ## codeset 5
-; Authors: Kertai G·bor
+; Authors: Kertai G√°bor
 ;
 MSG_WINDOW_TITLE
-ReqTools be·llÌt·sok
+ReqTools be√°ll√≠t√°sok
 ; ReqTools Preferences
 ;
 MSG_GENERAL
-¡ltal·nos
+√Åltal√°nos
 ; General
 ;
 MSG_FILEREQUESTER
-¡llom·ny-requester
+√Ållom√°ny-requester
 ; File Requester
 ;
 MSG_SIZE
-MÈret (l·thatÛ magass·g %%-a)
+M√©ret (l√°that√≥ magass√°g %%-a)
 ; Size (% of visible height):
 ;
 MSG_OK
@@ -24,23 +24,23 @@ Rendben
 ;  Ok
 ;
 MSG_POPSCREEN
-KÈpernyı elıre
+K√©perny≈ë el≈ëre
 ; Pop screen to front
 ;
 MSG_IMMEDIATESORT
-Folytonos rendezÈs
+Folytonos rendez√©s
 ; Immediate sort
 ;
 MSG_DRAWERSFIRST
-FiÛkok elıre
+Fi√≥kok el≈ëre
 ; Display drawers first
 ;
 MSG_DRAWERSMIXED
-FiÛk/·llom·ny vegyesen
+Fi√≥k/√°llom√°ny vegyesen
 ; Mix files and drawers
 ;
 MSG_LED
-Aktivit·sjelzı LED
+Aktivit√°sjelz≈ë LED
 ; Disk activity LED
 ;
 MSG_DEFAULTFONT
@@ -48,7 +48,7 @@ Rendszerfont
 ; Use system default font
 ;
 MSG_FKEYS
-FunkciÛbillenty˚k
+Funkci√≥billenty≈±k
 ; Use function keys
 ;
 MSG_DOWHEEL
@@ -67,7 +67,7 @@ Fancy
 ; Fancy
 ;
 MSG_DEFAULTS
-AlapÈrtelmezÈsek
+Alap√©rtelmez√©sek
 ; Defaults
 ;
 MSG_REQUESTER
@@ -75,7 +75,7 @@ MSG_REQUESTER
 ; \33bRequester:
 ;
 MSG_FILEREQ
-¡llom·ny
+√Ållom√°ny
 ; File
 ;
 MSG_FONTREQ
@@ -87,51 +87,51 @@ Paletta
 ; Palette
 ;
 MSG_SCRMODEREQ
-KÈpernyımÛd
+K√©perny≈ëm√≥d
 ; Screen Mode
 ;
 MSG_VOLUMEREQ
-EgysÈg
+Egys√©g
 ; Volume
 ;
 MSG_OTHERREQ
-EgyÈb
+Egy√©b
 ; Other
 ;
 MSG_POSITION
-PozÌciÛ:
+Poz√≠ci√≥:
 ; Position:
 ;
 MSG_POINTER
-EgÈrmutatÛ al·
+Eg√©rmutat√≥ al√°
 ; Mouse pointer
 ;
 MSG_CENTERWIN
-Ablakban kˆzÈpre
+Ablakban k√∂z√©pre
 ; Center in window
 ;
 MSG_CENTERSCR
-KÈpernyın kˆzÈpre
+K√©perny≈ën k√∂z√©pre
 ; Center on screen
 ;
 MSG_TOPLEFTWIN
-Ablakban bal fel¸lre
+Ablakban bal fel√ºlre
 ; Top left of window
 ;
 MSG_TOPLEFTSCR
-KÈpernyın bal fel¸lre
+K√©perny≈ën bal fel√ºlre
 ; Top left of screen
 ;
 MSG_OFFSET
-\33bT·vols·g
+\33bT√°vols√°g
 ; \33bOffset
 ;
 MSG_NR_OF_ENTRIES
-\33bL·thatÛ bejegyzÈsek sz·ma
+\33bL√°that√≥ bejegyz√©sek sz√°ma
 ; \33bNumber of visible entries
 ;
 MSG_MIN
-Legal·bb:
+Legal√°bb:
 ; Minimum
 ;
 MSG_MAX

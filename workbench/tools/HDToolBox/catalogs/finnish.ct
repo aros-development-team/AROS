@@ -6,7 +6,7 @@ WORD_Active
 Aktiivinen
 ;
 WORD_AddEntry
-Lis‰‰ kohta
+Lis√§√§ kohta
 ;
 WORD_All
 Kaikki
@@ -27,7 +27,7 @@ WORD_Changed
 Muutettu
 ;
 WORD_Change_Type
-Muuta tyyppi‰
+Muuta tyyppi√§
 ;
 WORD_Create_Table
 Luo taulukko
@@ -51,10 +51,10 @@ WORD_Switches
 Kytkimet
 ;
 WORD_Ok
-Selv‰
+Selv√§
 ;
 WORD_Parent
-Edelt‰j‰
+Edelt√§j√§
 ;
 WORD_Partitions
 Osiot
@@ -72,10 +72,10 @@ WORD_RemoveEntry
 Poista kohta
 ;
 WORD_Rename
-Nime‰ uudelleen
+Nime√§ uudelleen
 ;
 WORD_Resize_Move
-Muuta kokoa/siirr‰
+Muuta kokoa/siirr√§
 ;
 WORD_Save_Changes
 Tallenna muutokset
@@ -102,22 +102,22 @@ WORD_MENU_Quit
 Lopeta
 ;
 MSG_ASK_SAVE
-Kaikki tieto muokatuilla osioilla tuhoutuu!\nOletko varma ett‰ tahdot osiotaulun '%s' muutokset kirjoitettavan levylle?
+Kaikki tieto muokatuilla osioilla tuhoutuu!\nOletko varma ett√§ tahdot osiotaulun '%s' muutokset kirjoitettavan levylle?
 ;
 MSG_NO_MEMORY
 Muisti lopussa
 ;
 MSG_PARTITION_TABLE_FULL
-Osiotaulu t‰ynn‰
+Osiotaulu t√§ynn√§
 ;
 MSG_Select_Empty_Area
-Valitse tyhj‰ alue
+Valitse tyhj√§ alue
 ;
 MSG_Select_Partition_Resize_Move
-Valitse osio ja muuta sen kokoa/siirr‰ sit‰
+Valitse osio ja muuta sen kokoa/siirr√§ sit√§
 ;
 MSG_Welcome
-Tervetuloa osiointityˆkaluun
+Tervetuloa osiointity√∂kaluun
 ;
 MSG_WriteTableError
 Virhe osiotaulua tallennettaessa

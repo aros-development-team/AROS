@@ -3,7 +3,7 @@
 ## language deutsch
 ;
 MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
+Kann %s V%ld nicht Ã¶ffnen!\n
 ;
 MSG_CANT_LOCK_SCR
 Kann public Screen nicht locken!
@@ -30,7 +30,7 @@ MSG_MEN_PROJECT
 Projekt
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Öffnen ...
+O\0Ã–ffnen ...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Speichern als ...
@@ -42,7 +42,7 @@ MSG_MEN_EDIT
 Vorgaben
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Auf Vorgaben zurücksetzen
+D\0Auf Vorgaben zurÃ¼cksetzen
 ;
 MSG_MEN_EDIT_LASTSAVED
 L\0Auf zuletzt gespeichertes
@@ -78,7 +78,7 @@ MSG_GAD_BAUDRATE
 Baudrate
 ;
 MSG_GAD_PARITY
-Parität
+ParitÃ¤t
 ;
 MSG_GAD_STOPBITS
 Stopbits
@@ -87,10 +87,10 @@ MSG_GAD_DATABITS
 Datenbits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Eingabepuffergröße
+EingabepuffergrÃ¶ÃŸe
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
-Ausgabepuffergröße
+AusgabepuffergrÃ¶ÃŸe
 ;
 MSG_PARITY_NONE
 Keine

@@ -1,5 +1,5 @@
 ## version $VER: ahiprefs.catalog 4.8 (31.3.2019)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;    AHI - Hardware independent audio subsystem
@@ -35,7 +35,7 @@ S\000Sauver sous...
 ; A\000Save As...
 ;
 msgItemAbout
-?\000À propos...
+?\000Ã€ propos...
 ; ?\000About...
 ;
 msgItemQuit
@@ -43,27 +43,27 @@ Q\000Quitter
 ; Q\000Quit
 ;
 msgMenuEdit
-\000Éditer
+\000Ã‰diter
 ; \000Edit
 ;
 msgItemDefaults
-D\000Réinitialiser aux valeurs par défaut
+D\000RÃ©initialiser aux valeurs par dÃ©faut
 ; D\000Reset To Defaults
 ;
 msgItemLastSaved
-L\000Rétablir les dernières valeurs sauvées
+L\000RÃ©tablir les derniÃ¨res valeurs sauvÃ©es
 ; L\000Last Saved
 ;
 msgItemRestore
-R\000Rétablir les valeurs à l'ouverture
+R\000RÃ©tablir les valeurs Ã  l'ouverture
 ; R\000Restore
 ;
 msgMenuSettings
-\000Préférences
+\000PrÃ©fÃ©rences
 ; \000Settings
 ;
 msgItemCreateIcons
-I\000Créer des Icônes ?
+I\000CrÃ©er des IcÃ´nes ?
 ; I\000Create Icons?
 ;
 msgMenuHelp
@@ -85,31 +85,31 @@ msgItemConceptIndex
 ; *** The pages ***
 ;
 msgPageMode
-Réglages de base
+RÃ©glages de base
 ; Mode settings
 ;
 msgPageAdvanced
-Réglages avancés
+RÃ©glages avancÃ©s
 ; Advanced settings
 ;
 ; *** The units ***
 ;
 msgUnitDevice
-Unité %ld
+UnitÃ© %ld
 ; Unit %ld
 ;
 msgUnitMusic
-Unité musicale
+UnitÃ© musicale
 ; Music unit
 ;
 ; *** Properties box ***
 ;
 msgProperties
-Mode ID\nEnregistrement\nAuteur\nCopyright\nContrôleur\nVersion\nAnnotation
+Mode ID\nEnregistrement\nAuteur\nCopyright\nContrÃ´leur\nVersion\nAnnotation
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
-Duplex intégral
+Duplex intÃ©gral
 ; Full duplex
 ;
 msgPropRecordHalf
@@ -127,7 +127,7 @@ Options
 ; Options
 ;
 msgOptFrequency
-_Fréquence
+_FrÃ©quence
 ; _Frequency
 ;
 msgOptChannels
@@ -155,11 +155,11 @@ Muet
 ; Muted
 ;
 msgOptInput
-_Entrée
+_EntrÃ©e
 ; _Input
 ;
 msgOptNoInputs
-Pas d'entrée
+Pas d'entrÃ©e
 ; No inputs
 ;
 msgOptOutput
@@ -178,15 +178,15 @@ Options globales
 ; Global options
 ;
 msgGlobOptDebugLevel
-Niveau de _déboggage
+Niveau de _dÃ©boggage
 ; _Debug level
 ;
 msgGlobOptEcho
-_Écho
+_Ã‰cho
 ; _Echo
 ;
 msgGlobOptSurround
-Surround en mode « écho _rapide »
+Surround en mode Â« Ã©cho _rapide Â»
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
@@ -204,7 +204,7 @@ Bas
 ; Low
 ;
 msgDebugHigh
-Élevé
+Ã‰levÃ©
 ; High
 ;
 msgDebugFull
@@ -214,7 +214,7 @@ Maximum
 ; *** Echo ***
 ;
 msgEchoEnabled
-Activé
+ActivÃ©
 ; Enabled
 ;
 msgEchoFast
@@ -222,17 +222,17 @@ Rapide
 ; Fast
 ;
 msgEchoDisabled
-Désactivé
+DÃ©sactivÃ©
 ; Disabled
 ;
 ; *** Surround ***
 ;
 msgSurroundEnabled
-Activé
+ActivÃ©
 ; Enabled
 ;
 msgSurroundDisabled
-Désactivé
+DÃ©sactivÃ©
 ; Disabled
 ;
 ; *** Buttons ***
@@ -256,20 +256,20 @@ OK
 ; *** Texts ***
 ;
 msgTextProgramName
-Préférences AHI
+PrÃ©fÃ©rences AHI
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright Â©%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s
-; %s%s\nCopyright ©%s
+%s%s\nCopyright Â©%s
+; %s%s\nCopyright Â©%s
 ;
 msgTextNoWindow
-Impossible d'ouvrir la fenêtre
+Impossible d'ouvrir la fenÃªtre
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Impossible d'allouer la fenêtre de requête de fichiers
+Impossible d'allouer la fenÃªtre de requÃªte de fichiers
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
@@ -277,25 +277,25 @@ Impossible de trouver `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Impossible d'ouvrir `%s´ version %ld.
-; Unable to open `%s´ version %ld.
+Impossible d'ouvrir `%sÅ½ version %ld.
+; Unable to open `%sÅ½ version %ld.
 ;
 ; *** Additions
 ;
 msgGlobOptMasterVol
-Volu_me général
+Volu_me gÃ©nÃ©ral
 ; _Master volume
 ;
 msgMVNoClip
-Sans écrêtage
+Sans Ã©crÃªtage
 ; Without clipping
 ;
 msgMVClip
-Avec écrêtage
+Avec Ã©crÃªtage
 ; With clipping
 ;
 msgGlobOptACTime
-Délai anti-_clic par défaut
+DÃ©lai anti-_clic par dÃ©faut
 ; Default anti-click time
 ;
 msgButtonPlay
@@ -307,11 +307,11 @@ Limitation du _volume
 ; Volume sc_aling
 ;
 msgSMFixedSafe
-Sûr
+SÃ»r
 ; Safe
 ;
 msgSMDynSafe
-Sûr, dynamique
+SÃ»r, dynamique
 ; Safe, dynamic
 ;
 msgSM0dB

@@ -27,8 +27,8 @@ Om AROS
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2020, The AROS Development Team. Alla rättigheter förbehållna.
-; Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+Copyright Â© 1995-2020, The AROS Development Team. Alla rÃ¤ttigheter fÃ¶rbehÃ¥llna.
+; Copyright Â© 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Publicerat enligt villkoren i
@@ -43,11 +43,11 @@ MSG_LICENSE_3
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Besök http://www.aros.org/sv/ för mer information.
+BesÃ¶k http://www.aros.org/sv/ fÃ¶r mer information.
 ; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
-Upphovsmän
+UpphovsmÃ¤n
 ; Authors
 ;
 MSG_PAGE_SPONSORS
@@ -55,7 +55,7 @@ Sponsorer
 ; Sponsors
 ;
 MSG_PAGE_ACKNOWLEDGEMENTS
-Erkännanden
+ErkÃ¤nnanden
 ; Acknowledgements
 ;
 MSG_SECTION_TOOLS

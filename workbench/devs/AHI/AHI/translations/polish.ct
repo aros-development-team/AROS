@@ -1,8 +1,8 @@
-## version $VER: ahiprefs.catalog 4.8 (14.4.2010) C Marcin Or³owski <carlos@wfmh.man.szczecin.pl> mod. Tomasz Paul<forest@aros.org>
+## version $VER: ahiprefs.catalog 4.8 (14.4.2010) C Marcin OrÅ‚owski <carlos@wfmh.man.szczecin.pl> mod. Tomasz Paul<forest@aros.org>
 ## language polski
 ## codeset 0
 ;
-## chunk AUTH Translated by Marcin Or³owski <carlos@inet.com.pl>
+## chunk AUTH Translated by Marcin OrÅ‚owski <carlos@inet.com.pl>
 ;#language english
 ;#version 4
 ;
@@ -31,7 +31,7 @@ msgMenuProject
 ; \000Project
 ;
 msgItemOpen
-O\000Otwórz...
+O\000OtwÃ³rz...
 ; O\000Open...
 ;
 msgItemSaveAs
@@ -43,7 +43,7 @@ msgItemAbout
 ; ?\000About...
 ;
 msgItemQuit
-Q\0Skoñcz
+Q\0SkoÅ„cz
 ; Q\000Quit
 ;
 msgMenuEdit
@@ -59,7 +59,7 @@ L\0Ustawienia ostatnio zapisane
 ; L\000Last Saved
 ;
 msgItemRestore
-R\0Anuluj zmiany ustawieñ
+R\0Anuluj zmiany ustawieÅ„
 ; R\000Restore
 ;
 msgMenuSettings
@@ -79,7 +79,7 @@ Help\0Pomoc...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-H\0Przewodnik u¿ytkownika...
+H\0Przewodnik uÅ¼ytkownika...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
@@ -89,7 +89,7 @@ msgItemConceptIndex
 ; *** The pages ***
 ;
 msgPageMode
-Ustawienia trybów
+Ustawienia trybÃ³w
 ; Mode settings
 ;
 msgPageAdvanced
@@ -119,11 +119,11 @@ Opis
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
-Pe³en dupleks
+PeÅ‚en dupleks
 ; Full duplex
 ;
 msgPropRecordHalf
-Pó³ dupleks
+PÃ³Å‚ dupleks
 ; Half duplex
 ;
 msgPropRecordNone
@@ -137,11 +137,11 @@ Opcje
 ; Options
 ;
 msgOptFrequency
-Czês_totliwo¶æ
+CzÄ™s_totliwoÅ›Ä‡
 ; _Frequency
 ;
 msgOptChannels
-_Kana³y
+_KanaÅ‚y
 ; C_hannels
 ;
 msgOptNoChannels
@@ -149,7 +149,7 @@ msgOptNoChannels
 ; 
 ;
 msgOptVolume
-_G³o¶no¶æ
+_GÅ‚oÅ›noÅ›Ä‡
 ; _Volume
 ;
 msgOptMonitor
@@ -165,19 +165,19 @@ Wyciszony
 ; Muted
 ;
 msgOptInput
-_Wej¶cie
+_WejÅ›cie
 ; _Input
 ;
 msgOptNoInputs
-Brak wej¶æ
+Brak wejÅ›Ä‡
 ; No inputs
 ;
 msgOptOutput
-W_yj¶cie
+W_yjÅ›cie
 ; _Output
 ;
 msgOptNoOutputs
-Brak wyj¶æ
+Brak wyjÅ›Ä‡
 ; No outputs
 ;
 ;
@@ -200,13 +200,13 @@ Surround w trybach "_Fast"
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-_Limit zajêto¶ci procesora
+_Limit zajÄ™toÅ›ci procesora
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
 ;
 msgDebugNone
-Wy³±czony
+WyÅ‚Ä…czony
 ; None
 ;
 msgDebugLow
@@ -218,13 +218,13 @@ Wysoki
 ; High
 ;
 msgDebugFull
-Pe³en
+PeÅ‚en
 ; Full
 ;
 ; *** Echo ***
 ;
 msgEchoEnabled
-W³±czone
+WÅ‚Ä…czone
 ; Enabled
 ;
 msgEchoFast
@@ -232,17 +232,17 @@ Szybkie
 ; Fast
 ;
 msgEchoDisabled
-Wy³±czone
+WyÅ‚Ä…czone
 ; Disabled
 ;
 ; *** Surround ***
 ;
 msgSurroundEnabled
-W³±czony
+WÅ‚Ä…czony
 ; Enabled
 ;
 msgSurroundDisabled
-Wy³±czony
+WyÅ‚Ä…czony
 ; Disabled
 ;
 ; *** Buttons ***
@@ -252,7 +252,7 @@ Zapi_sz
 ; _Save
 ;
 msgButtonUse
-_U¿yj
+_UÅ¼yj
 ; _Use
 ;
 msgButtonCancel
@@ -269,34 +269,34 @@ msgTextProgramName
 Preferencje AHI
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright Å %s\nEnglish translation by Your Name" here...
 msgTextCopyright
 %s%s\nCopyright (C) %s\n\
-Polska wersja jêzykowa\n\
-Marcin Or³owski\n\
+Polska wersja jÄ™zykowa\n\
+Marcin OrÅ‚owski\n\
 <carlos@inet.com.pl>
-; %s%s\nCopyright ©%s
+; %s%s\nCopyright Å %s
 ;
 msgTextNoWindow
-Nie mogê otworzyæ okna.
+Nie mogÄ™ otworzyÄ‡ okna.
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Nie mogê zaalokowaæ requestera wyboru plików.
+Nie mogÄ™ zaalokowaÄ‡ requestera wyboru plikÃ³w.
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-Nie mogê znale¼æ \"%s\"!
+Nie mogÄ™ znaleÅºÄ‡ \"%s\"!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Nie mogê otworzyæ \"%s\" w wersji %ld.
-; Unable to open `%s´ version %ld.
+Nie mogÄ™ otworzyÄ‡ \"%s\" w wersji %ld.
+; Unable to open `%sÂ´ version %ld.
 ;
 ; *** Additions
 ;
 msgGlobOptMasterVol
-G³o¶no¶æ g³ó_wna
+GÅ‚oÅ›noÅ›Ä‡ gÅ‚Ã³_wna
 ; _Master volume
 ;
 msgMVNoClip
@@ -308,15 +308,15 @@ Z obcinaniem
 ; With clipping
 ;
 msgGlobOptACTime
-Domy¶lny czas anti-click
+DomyÅ›lny czas anti-click
 ; Default anti-click time
 ;
 msgButtonPlay
-Graj d¼wiêk testowy
+Graj dÅºwiÄ™k testowy
 ; _Play a test sound
 ;
 msgOptScalemode
-Regulacja g³o¶no¶ci
+Regulacja gÅ‚oÅ›noÅ›ci
 ; Volume sc_aling
 ;
 msgSMFixedSafe
@@ -328,7 +328,7 @@ Bezpieczne, dynamiczne
 ; Safe, dynamic
 ;
 msgSM0dB
-Pe³na g³o¶no¶æ
+PeÅ‚na gÅ‚oÅ›noÅ›Ä‡
 ; Full volume
 ;
 msgSM3dB

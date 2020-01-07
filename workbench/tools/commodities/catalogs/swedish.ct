@@ -5,7 +5,7 @@
 ; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
-Kan inte öppna %s V%ld!\n
+Kan inte Ã¶ppna %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
@@ -15,11 +15,11 @@ MSG_CANT_OPEN_INPUTDEVICE
 ; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
-Kan inte låsa allmän skärm!\n
+Kan inte lÃ¥sa allmÃ¤n skÃ¤rm!\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
-Kan inte läsa VisualInfo!\n
+Kan inte lÃ¤sa VisualInfo!\n
 ; Can't get VisualInfo!\n
 ;
 MSG_CANT_CREATE_GADGET
@@ -35,7 +35,7 @@ Kan inte placera menyer!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
-Kan inte skapa fönster!\n
+Kan inte skapa fÃ¶nster!\n
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
@@ -98,7 +98,7 @@ Exchange
 ; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
-Tillgängliga commodities
+TillgÃ¤ngliga commodities
 ; Available commodities
 ;
 MSG_EXCHANGE_INFO
@@ -110,7 +110,7 @@ Visa
 ; Show
 ;
 MSG_EXCHANGE_GAD_HIDE
-Göm
+GÃ¶m
 ; Hide
 ;
 MSG_EXCHANGE_GAD_REMOVE
@@ -133,11 +133,11 @@ Blanker
 ; Blanker
 ;
 MSG_BLANKER_CXTITLE
-Systemets skärmsläckare
+Systemets skÃ¤rmslÃ¤ckare
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-Släcker skärmen vid inaktivitet
+SlÃ¤cker skÃ¤rmen vid inaktivitet
 ; Blanks screen when system inactive
 ;
 ; ===============================================
@@ -148,11 +148,11 @@ ClickToFront
 ; ClickToFront
 ;
 MSG_CLICK2FNT_CXTITLE
-Fönsterlyftare
+FÃ¶nsterlyftare
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
-Lyfter fönster längst fram
+Lyfter fÃ¶nster lÃ¤ngst fram
 ; Click windows to front
 ;
 ; ===============================================
@@ -163,11 +163,11 @@ Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
-Solida fönster
+Solida fÃ¶nster
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
-Realtids fönsterförflyttning
+Realtids fÃ¶nsterfÃ¶rflyttning
 ; Realtime moving of windows
 ;
 ; ===============================================
@@ -182,7 +182,7 @@ Autopekare
 ; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
-Aktiverar fönstret under muspilen
+Aktiverar fÃ¶nstret under muspilen
 ; Activates the window under the mouse
 ;
 ; ===============================================
@@ -197,7 +197,7 @@ Systemets programstartare
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Startar program från meny
+Startar program frÃ¥n meny
 ; Program launch commodity
 ;
 ; ===============================================

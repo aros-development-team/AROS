@@ -14,11 +14,11 @@ Hintergrund
 ; Background:
 ;
 MSG_BACKGROUND_PRESSED
-Hintergrund im\ngedrückten Zustand:
+Hintergrund im\ngedrÃ¼ckten Zustand:
 ; Background in\npressed state:
 ;
 MSG_TEXT_BUTTONS
-Textknöpfe
+TextknÃ¶pfe
 ; Text Buttons
 ;
 MSG_FRAME_COLON
@@ -30,7 +30,7 @@ Zeichensatz
 ; Font:
 ;
 MSG_IMAGE_BUTTONS
-Bildknöpfe
+BildknÃ¶pfe
 ; Image Buttons
 ;
 MSG_ADJUST_FRAME
@@ -38,7 +38,7 @@ Rahmeneinstellung
 ; Adjust Frame
 ;
 MSG_CHECKMARKS
-An-/Aus-Knöpfe
+An-/Aus-KnÃ¶pfe
 ; Checkmarks
 ;
 MSG_LOOK_COLON
@@ -50,7 +50,7 @@ An-/Aus-Knopf
 ; Checkmark
 ;
 MSG_RADIO_BUTTONS
-Radio-Knöpfe
+Radio-KnÃ¶pfe
 ; Radio Buttons
 ;
 MSG_RADIOBUTTON
@@ -93,7 +93,7 @@ Cycle
 ; Cycle
 ;
 MSG_POPUP_MENU_CONTROL
-Popup-Menü Steuerung
+Popup-MenÃ¼ Steuerung
 ; Popup Menu Control
 ;
 MSG_POSITION
@@ -109,7 +109,7 @@ Geschwindigkeit:
 ; Speed:
 ;
 MSG_POPUP_MENU_DESIGN
-Popup-Menü Design
+Popup-MenÃ¼ Design
 ; Popup Menu Design
 ;
 MSG_FRAME
@@ -125,7 +125,7 @@ Hintergrund
 ; Background
 ;
 MSG_RECESSED_ENTRIES
-Vertiefte Einträge:
+Vertiefte EintrÃ¤ge:
 ; Recessed Entries:
 ;
 ;=============================
@@ -176,7 +176,7 @@ Register
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-Kürze Titel\nauf voreingestellte Breite
+KÃ¼rze Titel\nauf voreingestellte Breite
 ; Default size truncate titles
 ;
 MSG_NORMAL
@@ -231,7 +231,7 @@ Weich:
 ; Smooth:
 ;
 MSG_FONTS
-Zeichensätze
+ZeichensÃ¤tze
 ; Fonts
 ;
 MSG_NORMAL_COLON
@@ -267,11 +267,11 @@ Aktiv:
 ; Active:
 ;
 MSG_ACTIVE_SELECTED
-Aktiv &\ngewählt
+Aktiv &\ngewÃ¤hlt
 ; Active &\nSelected:
 ;
 MSG_SELECTED
-Gewählt:
+GewÃ¤hlt:
 ; Selected:
 ;
 ;=============================
@@ -282,7 +282,7 @@ immer komplett
 ; always solid
 ;
 MSG_GHOSTED_ON_BOX
-durchsichtig über Box
+durchsichtig Ã¼ber Box
 ; ghosted on box
 ;
 MSG_GHOSTED_OUTSIDE_BOX
@@ -302,7 +302,7 @@ Objekte zeigen
 ; show objects
 ;
 MSG_KL_PRESS
-Drücken:
+DrÃ¼cken:
 ; Press:
 ;
 MSG_KL_TOGGLE
@@ -362,7 +362,7 @@ Gadget vor:
 ; Next gadget:
 ;
 MSG_KL_PREV_GADGET
-Gadget zurück:
+Gadget zurÃ¼ck:
 ; Prev. gadget:
 ;
 MSG_KL_GADGET_OFF
@@ -378,7 +378,7 @@ Fenster vor:
 ; Next window:
 ;
 MSG_KL_PREV_WINDOW
-Fenster zurück:
+Fenster zurÃ¼ck:
 ; Prev. window:
 ;
 MSG_KL_HELP
@@ -505,7 +505,7 @@ Anordnung
 ; slidersp.c
 ;-----------
 MSG_CONTAINER_DESIGN
-Behälter-Design
+BehÃ¤lter-Design
 ; Container Design
 ;
 MSG_KNOB_DESIGN
@@ -532,7 +532,7 @@ Fortschrittsanzeige
 ; Progress Indicator
 ;
 MSG_DEVICE_IMAGES
-Geräte-Bilder
+GerÃ¤te-Bilder
 ; Device Images
 ;
 MSG_DRAWER
@@ -552,7 +552,7 @@ RAM
 ; RAM
 ;
 MSG_VOLUME
-Datenträger
+DatentrÃ¤ger
 ; Volume
 ;
 MSG_NETWORK
@@ -603,7 +603,7 @@ String Rahmen
 ; String Frame
 ;
 MSG_SPECIAL_POPUP_BUTTONS
-Spezialle Popup-Knöpfe
+Spezialle Popup-KnÃ¶pfe
 ; Special Popup Buttons
 ;
 MSG_POPUP
@@ -670,11 +670,11 @@ simpel
 ; simple
 ;
 MSG_WITHOUT_CLEAR
-ohne löschen
+ohne lÃ¶schen
 ; without clear
 ;
 MSG_WITH_CLEAR
-mit löschen
+mit lÃ¶schen
 ; with clear
 ;
 MSG_POSITIONS
@@ -690,7 +690,7 @@ Klein:
 ; Tiny:
 ;
 MSG_BIG
-Groß
+GroÃŸ
 ; Big:
 ;
 MSG_WINDOW
@@ -718,7 +718,7 @@ U
 ; B
 ;
 MSG_BUTTONS
-Knöpfe
+KnÃ¶pfe
 ; Buttons
 ;
 ;=============================
@@ -729,7 +729,7 @@ Zune-Einstellungen
 ; Zune - Global Prefs
 ;
 MSG_WINTITLE2
-Zune - Einstellungen für : %s
+Zune - Einstellungen fÃ¼r : %s
 ; Zune - Prefs for : %s
 ;
 MSG_MEN_PROJECT
@@ -737,7 +737,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_OPEN
-Öffnen ...
+Ã–ffnen ...
 ; Open ...
 ;
 MSG_MEN_OPEN_SC
@@ -745,7 +745,7 @@ O
 ; O
 ;
 MSG_MEN_APPEND
-Anhängen ...
+AnhÃ¤ngen ...
 ; Append ...
 ;
 MSG_MEN_SAVEAS
@@ -757,7 +757,7 @@ A
 ; A
 ;
 MSG_MEN_ABOUT
-Über Zune ...
+Ãœber Zune ...
 ; About Zune ...
 ;
 MSG_MEN_ABOUT_SC
@@ -809,7 +809,7 @@ Gruppen
 ; Groups
 ;
 MSG_DSC_BUTTONS
-Knöpfe
+KnÃ¶pfe
 ; Buttons
 ;
 MSG_DSC_CYCLES
@@ -862,7 +862,7 @@ Spezieller Rahmen
 ; systemp.c
 ;----------
 MSG_PUBLIC_SCREEN
-Öffentlicher Schirm
+Ã–ffentlicher Schirm
 ; Public Screen
 ;
 MSG_NAME
@@ -894,7 +894,7 @@ Icon
 ; Icon
 ;
 MSG_MENU
-Menü
+MenÃ¼
 ; Menu
 ;
 MSG_ON_STARTUP
@@ -918,6 +918,6 @@ Erster Hinweis:
 ; First Bubble:
 ;
 MSG_NEXT_BUBBLE
-Nächster Hinweis:
+NÃ¤chster Hinweis:
 ; Next Bubble:
 ;

@@ -3,31 +3,31 @@
 ## codeset 5
 ;
 MSG_CANT_OPEN_LIB
-Nie mo¿na otworzyæ %s w wersji %ld!\n
+Nie moÅ¼na otworzyÄ‡ %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Nie mo¿na uzyskaæ dostêpu do ekranu!
+Nie moÅ¼na uzyskaÄ‡ dostÄ™pu do ekranu!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nie mo¿na pobraæ DrawInfo!
+Nie moÅ¼na pobraÄ‡ DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nie mo¿na pobraæ VisualInfo!
+Nie moÅ¼na pobraÄ‡ VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
-Nie mo¿na utworzyæ gad¿etów!
+Nie moÅ¼na utworzyÄ‡ gadÅ¼etÃ³w!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nie mo¿na utworzyæ menu!
+Nie moÅ¼na utworzyÄ‡ menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nie mo¿na utworzyæ okna!
+Nie moÅ¼na utworzyÄ‡ okna!
 ; Can't create window!
 ;
 MSG_WINTITLE
@@ -39,7 +39,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Otwórz...
+O\0OtwÃ³rz...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -47,7 +47,7 @@ A\0Zapisz jako...
 ; A\0Save As...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Skoñcz
+Q\0SkoÅ„cz
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
@@ -55,7 +55,7 @@ Edycja
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Przywróæ ustawienia domy¶lne
+D\0PrzywrÃ³Ä‡ ustawienia domyÅ›lne
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -63,7 +63,7 @@ L\0Ostatnio zapisane
 ; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Przywróæ
+R\0PrzywrÃ³Ä‡
 ; R\0Restore
 ;
 MSG_MEN_SETTINGS
@@ -71,7 +71,7 @@ Ustawienia
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Twórz ikony
+I\0TwÃ³rz ikony
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
@@ -87,15 +87,15 @@ OK
 ; Ok
 ;
 MSG_GAD_AVAIL_LANGUAGES
-Dostêpne jêzyki
+DostÄ™pne jÄ™zyki
 ; Available Languages
 ;
 MSG_GAD_PREF_LANGUAGES
-Preferowane jêzyki
+Preferowane jÄ™zyki
 ; Preferred Languages
 ;
 MSG_GAD_CLEAR_LANGUAGES
-Wyczy¶æ jêzyki
+WyczyÅ›Ä‡ jÄ™zyki
 ; Clear Languages
 ;
 MSG_GAD_SAVE
@@ -103,7 +103,7 @@ Zapisz
 ; Save
 ;
 MSG_GAD_USE
-U¿yj
+UÅ¼yj
 ; Use
 ;
 MSG_GAD_CANCEL
@@ -111,7 +111,7 @@ Poniechaj
 ; Cancel
 ;
 MSG_GAD_TAB_LANGUAGE
-Jêzyk
+JÄ™zyk
 ; Language
 ;
 MSG_GAD_TAB_REGION
@@ -135,14 +135,14 @@ Strefa czasowa: %ld godzin, %ld minut od UTC
 ; Time Zone: %ld Hours, %ld Minutes from UTC
 ;
 MSG_CHARACTER_SET
-Domy¶lny zestaw znaków
+DomyÅ›lny zestaw znakÃ³w
 ; Default character set
 ;
 MSG_NOT_SPECIFIED
-nieokre¶lony
+nieokreÅ›lony
 ; Not specified
 ;
 MSG_GMT_CLOCK
-Sprzêtowy zegar zachowa UTC
+SprzÄ™towy zegar zachowa UTC
 ; Hardware clock stores UTC
 ;

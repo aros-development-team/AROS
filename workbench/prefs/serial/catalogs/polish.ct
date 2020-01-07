@@ -3,31 +3,31 @@
 ## language polski
 ;
 MSG_CANT_OPEN_LIB
-Nie mo¿na otworzyæ %s w wersji %ld!\n
+Nie moÅ¼na otworzyÄ‡ %s w wersji %ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-Nie mo¿na przydzieliæ ekranu publicznego!
+Nie moÅ¼na przydzieliÄ‡ ekranu publicznego!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Nie mo¿na pobraæ DrawInfo!
+Nie moÅ¼na pobraÄ‡ DrawInfo!
 ; Can't get DrawInfo!
 ;
 MSG_CANT_GET_VI
-Nie mo¿na pobraæ VisualInfo!
+Nie moÅ¼na pobraÄ‡ VisualInfo!
 ; Can't get VisualInfo!
 ;
 MSG_CANT_CREATE_GADGET
-Nie mo¿na utworzyæ gad¿etów!
+Nie moÅ¼na utworzyÄ‡ gadÅ¼etÃ³w!
 ; Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Nie mo¿na utworzyæ menu!
+Nie moÅ¼na utworzyÄ‡ menu!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Nie mo¿na utworzyæ okna!
+Nie moÅ¼na utworzyÄ‡ okna!
 ; Can't create window!
 ;
 MSG_WINTITLE
@@ -39,7 +39,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Otwórz...
+O\0OtwÃ³rz...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -47,7 +47,7 @@ A\0Zapisz jako...
 ; A\0Save As...
 ;
 MSG_MEN_PROJECT_QUIT
-Q\0Skoñcz
+Q\0SkoÅ„cz
 ; Q\0Quit
 ;
 MSG_MEN_EDIT
@@ -55,7 +55,7 @@ Edycja
 ; Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-D\0Przywróæ domy¶lne ustawienia
+D\0PrzywrÃ³Ä‡ domyÅ›lne ustawienia
 ; D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
@@ -63,7 +63,7 @@ L\0Ostatnio zapisane
 ; L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
-R\0Odtwórz
+R\0OdtwÃ³rz
 ; R\0Restore
 ;
 MSG_MEN_SETTINGS
@@ -71,7 +71,7 @@ Ustawienia
 ; Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0Twórz ikony
+I\0TwÃ³rz ikony
 ; I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
@@ -91,7 +91,7 @@ Zapisz
 ; Save
 ;
 MSG_GAD_USE
-U¿yj
+UÅ¼yj
 ; Use
 ;
 MSG_GAD_CANCEL
@@ -99,11 +99,11 @@ Poniechaj
 ; Cancel
 ;
 MSG_GAD_BAUDRATE
-Prêdko¶æ transmisji
+PrÄ™dkoÅ›Ä‡ transmisji
 ; Baudrate
 ;
 MSG_GAD_PARITY
-Parzysto¶æ
+ParzystoÅ›Ä‡
 ; Parity
 ;
 MSG_GAD_STOPBITS
@@ -115,11 +115,11 @@ Bity danych
 ; Data Bits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Wielko¶æ bufora wej¶cia
+WielkoÅ›Ä‡ bufora wejÅ›cia
 ; Input Buffer Size
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
-Wielko¶æ bufora wyj¶cia
+WielkoÅ›Ä‡ bufora wyjÅ›cia
 ; Output Buffer Size
 ;
 MSG_PARITY_NONE
@@ -139,6 +139,6 @@ znacznik
 ; Mark
 ;
 MSG_PARITY_SPACE
-odstêp
+odstÄ™p
 ; Space
 ;

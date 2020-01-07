@@ -7,11 +7,11 @@ Projekt
 ; Project
 ;
 MSG_MENU_PROJECT_OPEN
-Otwórz...
+OtwÃ³rz...
 ; Open...
 ;
 MSG_MENU_PROJECT_APPEND
-Do³±cz...
+DoÅ‚Ä…cz...
 ; Append...
 ;
 MSG_MENU_PROJECT_SAVEAS
@@ -23,7 +23,7 @@ O programie...
 ; About...
 ;
 MSG_MENU_PROJECT_QUIT
-Skoñcz
+SkoÅ„cz
 ; Quit
 ;
 MSG_MENU_EDIT
@@ -35,7 +35,7 @@ Ostatnio zapisane
 ; Last Saved
 ;
 MSG_MENU_EDIT_RESTORE
-Przywróæ
+PrzywrÃ³Ä‡
 ; Restore
 ;
 MSG_MENU_SETTINGS
@@ -79,7 +79,7 @@ Zapisz
 ; Save
 ;
 MSG_BUTTON_USE
-U¿yj
+UÅ¼yj
 ; Use
 ;
 MSG_BUTTON_NEW
@@ -99,7 +99,7 @@ _Edytuj...
 ; _Edit...
 ;
 MSG_BUTTON_OPEN
-_Otwórz
+_OtwÃ³rz
 ; _Open
 ;
 MSG_BUTTON_CLOSE
@@ -107,7 +107,7 @@ _Zamknij
 ; _Close
 ;
 MSG_BUTTON_JUMP
-Prze_jd¼ na
+Prze_jdÅº na
 ; _Jump
 ;
 MSG_BUTTON_KILL
@@ -127,7 +127,7 @@ Wczytaj plik ekranu publicznego
 ; Load PublicScreen File
 ;
 MSG_TITLE_APPEND
-Do³±cz plik ekranu publicznego
+DoÅ‚Ä…cz plik ekranu publicznego
 ; Append PublicScreen File
 ;
 MSG_LIST_SCREENNAME
@@ -135,7 +135,7 @@ Nazwa
 ; Name
 ;
 MSG_LIST_SCREENMODE
-Tryb wy¶wietlania
+Tryb wyÅ›wietlania
 ; Display Mode
 ;
 MSG_LIST_UNKNOWNMODE
@@ -143,7 +143,7 @@ MSG_LIST_UNKNOWNMODE
 ; (unknown)
 ;
 MSG_LIST_FOREIGNSCREEN
-(zewnêtrzny)
+(zewnÄ™trzny)
 ; (foreign)
 ;
 MSG_LABEL_PUBLICNAME
@@ -151,19 +151,19 @@ _Nazwa publiczna:
 ; Public _Name:
 ;
 MSG_LABEL_SCREENTITLE
-_Tytu³ ekranu:
+_TytuÅ‚ ekranu:
 ; Screen _Title:
 ;
 MSG_LABEL_DISPLAYMODE
-Try_b wy¶wietlania:
+Try_b wyÅ›wietlania:
 ; _Display Mode:
 ;
 MSG_LABEL_DEFAULTFONT
-Czcionka _domy¶lna:
+Czcionka _domyÅ›lna:
 ; Default _Font:
 ;
 MSG_LABEL_BACKGROUND
-T³o:
+TÅ‚o:
 ; _Background:
 ;
 MSG_LABEL_PUBLICFLAGS
@@ -175,11 +175,11 @@ _Automatyczne przewijanie
 ; _Autoscroll
 ;
 MSG_LABEL_NODRAG
-Bez p_rzeci±gania
+Bez p_rzeciÄ…gania
 ; No D_rag
 ;
 MSG_LABEL_EXCLUSIVE
-_Wy³±czny
+_WyÅ‚Ä…czny
 ; _Exclusive
 ;
 MSG_LABEL_INTERLEAVED
@@ -187,11 +187,11 @@ Tryb _przeplatany
 ; _Interleaved
 ;
 MSG_LABEL_OPENBEHIND
-Otwórz pod spode_m
+OtwÃ³rz pod spode_m
 ; Open Be_hind
 ;
 MSG_LABEL_SYSTEMDEFAULT
-Dom_y¶lny ekran publiczny
+Dom_yÅ›lny ekran publiczny
 ; S_ystem Default
 ;
 MSG_LABEL_AUTOCLOSE
@@ -199,7 +199,7 @@ Zamykany automatycznie
 ; Auto Close
 ;
 MSG_LABEL_CLOSEGADGET
-Gad¿et zamykania
+GadÅ¼et zamykania
 ; Close Gadget
 ;
 MSG_LABEL_OVERSCAN
@@ -207,7 +207,7 @@ O_bszar ekranu:
 ; O_verscan:
 ;
 MSG_LABEL_SIZE
-_Wielko¶æ:
+_WielkoÅ›Ä‡:
 ; _Size:
 ;
 MSG_LABEL_CROSS
@@ -215,7 +215,7 @@ _x
 ; _x
 ;
 MSG_LABEL_DEPTH
-_G³êbia:
+_GÅ‚Ä™bia:
 ; _Depth:
 ;
 MSG_LABEL_VISIBLE
@@ -231,15 +231,15 @@ Maksymalna:
 ; Maximum:
 ;
 MSG_LABEL_BITSPERGUN
-Bitów/dzia³o:
+BitÃ³w/dziaÅ‚o:
 ; Bits/Gun:
 ;
 MSG_LABEL_SCANRATE
-Czêstotliwo¶æ od¶wie¿ania pionowego:
+CzÄ™stotliwoÅ›Ä‡ odÅ›wieÅ¼ania pionowego:
 ; Scanrate:
 ;
 MSG_LABEL_SCANLINE
-Czêstotliwo¶æ od¶wie¿ania poziomego:
+CzÄ™stotliwoÅ›Ä‡ odÅ›wieÅ¼ania poziomego:
 ; Scanline:
 ;
 MSG_CLI_SCREENOPENED
@@ -247,19 +247,19 @@ Otworzono ekran (0).\n
 ; Screen opened (0).\n
 ;
 MSG_CLI_SCREENOPENFAILED
-Nie uda³o siê otworzyæ ekranu (5).\n
+Nie udaÅ‚o siÄ™ otworzyÄ‡ ekranu (5).\n
 ; Failed to open screen (5).\n
 ;
 MSG_CLI_SCREENCLOSED
-Zamkniêto ekran (0).\n
+ZamkniÄ™to ekran (0).\n
 ; Screen closed (0).\n
 ;
 MSG_CLI_SCREENCLOSEFAILED
-Nie uda³o siê zamkn±æ ekranu (5).\n
+Nie udaÅ‚o siÄ™ zamknÄ…Ä‡ ekranu (5).\n
 ; Failed to close screen (5).\n
 ;
 MSG_CLI_SYNTAXERROR
-B³±d sk³adni w linii poleceñ (10).\n
+BÅ‚Ä…d skÅ‚adni w linii poleceÅ„ (10).\n
 ; Syntax Error in command line (10).\n
 ;
 MSG_CLI_SCREENNOTFOUND
@@ -267,27 +267,27 @@ Nie odnaleziono ekranu (5).\n
 ; Screen not found (5).\n
 ;
 MSG_CLI_OUTOFMEMORY
-Brak pamiêci (20).\n
+Brak pamiÄ™ci (20).\n
 ; Out of memory (20).\n
 ;
 MSG_CLI_NOAPPLICATION
-Nie uda³o siê utworzyæ aplikacji (20).\n
+Nie udaÅ‚o siÄ™ utworzyÄ‡ aplikacji (20).\n
 ; Failed to create application (20).\n
 ;
 MSG_CLI_NOMUIMASTER
-Nie uda³o siê otworzyæ biblioteki muimaster.library v11 (20).\n
+Nie udaÅ‚o siÄ™ otworzyÄ‡ biblioteki muimaster.library v11 (20).\n
 ; Failed to open muimaster.library V11 (20).\n
 ;
 MSG_ABOUT_NUMBEROFSCREENS
-Ilo¶æ ekranów:
+IloÅ›Ä‡ ekranÃ³w:
 ; Number of screens:
 ;
 MSG_TEXT_UNKNOWNMODE
-Nieznany tryb wy¶wietlania
+Nieznany tryb wyÅ›wietlania
 ; Unknown Display Mode
 ;
 MSG_TEXT_FOREIGNSCREEN
-Zewnêtrzny ekran publiczny
+ZewnÄ™trzny ekran publiczny
 ; Foreign public screen
 ;
 MSG_PALETTE_TITLE
@@ -307,7 +307,7 @@ Pisaki systemowe
 ; System Pens
 ;
 MSG_SYSPEN_DETAIL
-Szczegó³y
+SzczegÃ³Å‚y
 ; Detail
 ;
 MSG_SYSPEN_BLOCK
@@ -319,31 +319,31 @@ Tekst
 ; Text
 ;
 MSG_SYSPEN_SHINE
-Jasne krawêdzie
+Jasne krawÄ™dzie
 ; Shine
 ;
 MSG_SYSPEN_SHADOW
-Ciemne krawêdzie
+Ciemne krawÄ™dzie
 ; Shadow
 ;
 MSG_SYSPEN_FILL
-Wype³nienie
+WypeÅ‚nienie
 ; Fill
 ;
 MSG_SYSPEN_FILLTEXT
-Tekst wype³nienia
+Tekst wypeÅ‚nienia
 ; Filltext
 ;
 MSG_SYSPEN_BACKGROUND
-T³o
+TÅ‚o
 ; Background
 ;
 MSG_SYSPEN_HIGHLIGHT
-Pod¶wietlenie
+PodÅ›wietlenie
 ; Highlight
 ;
 MSG_SYSPEN_BARDETAIL
-Szczegó³y belki ekranu
+SzczegÃ³Å‚y belki ekranu
 ; Bardetail
 ;
 MSG_SYSPEN_BARBLOCK
@@ -351,11 +351,11 @@ Belka ekranu
 ; Barblock
 ;
 MSG_SYSPEN_BARTRIM
-Podkre¶lenie belki ekranu
+PodkreÅ›lenie belki ekranu
 ; Bartrim
 ;
 MSG_PALPRES_TITLE
-Zestaw kolorów
+Zestaw kolorÃ³w
 ; Color Presets
 ;
 MSG_PALPRES_STANDARD
@@ -371,7 +371,7 @@ MSG_PALPRES_PHARAO
 ; 2\0Pharao
 ;
 MSG_PALPRES_SUNSET
-3\0wschód s³oñca
+3\0wschÃ³d sÅ‚oÅ„ca
 ; 3\0Sunset
 ;
 MSG_PALPRES_OCEAN
@@ -399,7 +399,7 @@ MSG_PALPRES_MAGICWB
 ; 9\0MagicWB
 ;
 MSG_PALPRES_CLONEWB
-klonuj paletê WB
+klonuj paletÄ™ WB
 ; Clone WB
 ;
 MSG_OVERSCAN_TEXT
@@ -423,7 +423,7 @@ Atrybuty
 ; Attributes
 ;
 MSG_EDITPAGE_DISPLAY
-Wy¶wietlanie
+WyÅ›wietlanie
 ; Display
 ;
 MSG_EDITPAGE_COLORS
@@ -432,83 +432,83 @@ Kolory
 ;
 MSG_HELP_WHEEL
 Ustala kolor\n\
-dla grupy pisaków.
+dla grupy pisakÃ³w.
 ; Adjust color for\ngroup of pens.
 ;
 MSG_HELP_INFO
 Informacje o trybie\n\
-i wielko¶ci.
+i wielkoÅ›ci.
 ; Information about\nmode & size.
 ;
 MSG_HELP_NAME
 Nazwa ekranu publicznego.\n\
-Dozwolone s± znaki wieloznaczne\n\
-dla ekranów zewnêtrznych.
+Dozwolone sÄ… znaki wieloznaczne\n\
+dla ekranÃ³w zewnÄ™trznych.
 ; Name of Public Screen.\nWildcards allowed for\nforeign screens.
 ;
 MSG_HELP_TITLE
-Tekst wy¶wietlany\n\
-na belce tytu³owej ekranu.
+Tekst wyÅ›wietlany\n\
+na belce tytuÅ‚owej ekranu.
 ; Text that appears in\nthe screen's title bar.
 ;
 MSG_HELP_FONT
-Domy¶lna czcionka\n\
+DomyÅ›lna czcionka\n\
 ekranu.
 ; Default font\nfor the screen.
 ;
 MSG_HELP_BACKGROUND
-Obrazek u¿ywany\n\
-jako t³o ekranu.
+Obrazek uÅ¼ywany\n\
+jako tÅ‚o ekranu.
 ; Datatype picture used\nas background pattern.
 ;
 MSG_HELP_AUTOSCROLL
 Przewijanie ekranu gdy\n\
-wska¼nik myszki dotknie jego krawêdzi.
+wskaÅºnik myszki dotknie jego krawÄ™dzi.
 ; The screen scrolls when\nthe mouse hits its borders.
 ;
 MSG_HELP_NODRAG
 Ekran jest\n\
-nieprzeci±galny.
+nieprzeciÄ…galny.
 ; The screen\nis undraggable.
 ;
 MSG_HELP_EXCLUSIVE
-Ekran nie mo¿e udostêpniaæ\n\
-swojej zawarto¶ci.
+Ekran nie moÅ¼e udostÄ™pniaÄ‡\n\
+swojej zawartoÅ›ci.
 ; The screen cannot share\nits display with others.
 ;
 MSG_HELP_INTERLEAVED
-Mapa bitowa ekranu bêdzie alokowana\n\
+Mapa bitowa ekranu bÄ™dzie alokowana\n\
 w trybie przeplatanym.
 ; The screen's bitmap is allocated\nin interleaved mode.
 ;
 MSG_HELP_BEHIND
-Ekran bêdzie otwierany pod\n\
+Ekran bÄ™dzie otwierany pod\n\
 wszystkimi innymi ekranami.
 ; The screen opens behind\nall other screens.
 ;
 MSG_HELP_SYSTEMDEFAULT
-Ekran stanie siê systemowym\n\
-domy¶lnym ekranem publicznym.
+Ekran stanie siÄ™ systemowym\n\
+domyÅ›lnym ekranem publicznym.
 ; The screen becomes the\nsystem's default screen.
 ;
 MSG_HELP_AUTOCLOSE
-Ekran zostanie zamkniêty\n\
-po zamkniêciu ostatniego otwartego okna.
+Ekran zostanie zamkniÄ™ty\n\
+po zamkniÄ™ciu ostatniego otwartego okna.
 ; The screen closes when\nthe last window is closed.
 ;
 MSG_HELP_CLOSEGADGET
-Ekran bêdzie posiada³\n\
-gad¿et zamykania.
+Ekran bÄ™dzie posiadaÅ‚\n\
+gadÅ¼et zamykania.
 ; The screen gets\na close gadget.
 ;
 MSG_HELP_MODELIST
-Lista dostêpnych\n\
-trybów wy¶wietlania.
+Lista dostÄ™pnych\n\
+trybÃ³w wyÅ›wietlania.
 ; List of available\ndisplay modes.
 ;
 MSG_HELP_MODEINFO
 Informacje o wybranym\n\
-trybie wy¶wietlania.
+trybie wyÅ›wietlania.
 ; Information about the\ncurrent display mode.
 ;
 MSG_HELP_OVERSCAN
@@ -516,28 +516,28 @@ Ustawienia obszaru ekranu.
 ; Overscan size adjustment.
 ;
 MSG_HELP_WIDTH
-Szeroko¶æ ekranu\n\
+SzerokoÅ›Ä‡ ekranu\n\
 mierzona w pikselach.
 ; Width of screen,\nmeasured in pixels.
 ;
 MSG_HELP_HEIGHT
-Wysoko¶æ ekranu\n\
+WysokoÅ›Ä‡ ekranu\n\
 mierzona w pikselach.
 ; Height of screen,\nmeasured in pixels.
 ;
 MSG_HELP_DEPTH
-G³êbia ekranu\n\
+GÅ‚Ä™bia ekranu\n\
 mierzona w bitplanach.
 ; Depth of screen,\nmeasured in planes.
 ;
 MSG_HELP_PENLIST
-Pisaki systemowe, mo¿na je\n\
-przeci±gaæ na inne pola.
+Pisaki systemowe, moÅ¼na je\n\
+przeciÄ…gaÄ‡ na inne pola.
 ; System pens, draggable\nto different color pot.
 ;
 MSG_HELP_COLORFIELD
 Wybrany kolor, kliknij\n\
-na polu by go zmieniæ.
+na polu by go zmieniÄ‡.
 ; Current color, click\non field to change it.
 ;
 MSG_HELP_KILLCOLOR
@@ -551,7 +551,7 @@ do grupy.
 ; Add a new color\nto the group.
 ;
 MSG_HELP_EDITOK
-Wychodzi i zapamiêtuje\n\
+Wychodzi i zapamiÄ™tuje\n\
 zmiany dla tego ekranu.
 ; Exit and remember\nchanges for this screen.
 ;
@@ -562,7 +562,7 @@ zmiany dla tego ekranu.
 ;
 MSG_HELP_SCREENLIST
 Lista zdefiniowanych\n\
-ekranów publicznych.
+ekranÃ³w publicznych.
 ; List of defined\npublic screens.
 ;
 MSG_HELP_NEWSCREEN
@@ -571,7 +571,7 @@ ekran publiczny.
 ; Create a new\npublic screen.
 ;
 MSG_HELP_COPYSCREEN
-Tworzy kopiê\n\
+Tworzy kopiÄ™\n\
 wybranego ekranu publicznego.
 ; Create a copy\nof current screen.
 ;

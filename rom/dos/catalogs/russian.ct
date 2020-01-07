@@ -3,258 +3,258 @@
 ## codeset 0
 ;
 MSG_ERROR_NO_FREE_STORE
-Недостаточно свободной памяти
+РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЃРІРѕР±РѕРґРЅРѕР№ РїР°РјСЏС‚Рё
 ; not enough memory available
 ;
 MSG_ERROR_TASK_TABLE_FULL
-Переполнена таблица процессов
+РџРµСЂРµРїРѕР»РЅРµРЅР° С‚Р°Р±Р»РёС†Р° РїСЂРѕС†РµСЃСЃРѕРІ
 ; process table full
 ;
 MSG_ERROR_BAD_TEMPLATE
-Неверный шаблон
+РќРµРІРµСЂРЅС‹Р№ С€Р°Р±Р»РѕРЅ
 ; bad template
 ;
 MSG_ERROR_BAD_NUMBER
-Неверный номер
+РќРµРІРµСЂРЅС‹Р№ РЅРѕРјРµСЂ
 ; bad number
 ;
 MSG_ERROR_REQUIRED_ARG_MISSING
-Отсутствует необходимый параметр
+РћС‚СЃСѓС‚СЃС‚РІСѓРµС‚ РЅРµРѕР±С…РѕРґРёРјС‹Р№ РїР°СЂР°РјРµС‚СЂ
 ; required argument missing
 ;
 MSG_ERROR_KEY_NEEDS_ARG
-Отсутствует значение указанного параметра
+РћС‚СЃСѓС‚СЃС‚РІСѓРµС‚ Р·РЅР°С‡РµРЅРёРµ СѓРєР°Р·Р°РЅРЅРѕРіРѕ РїР°СЂР°РјРµС‚СЂР°
 ; value after keyword missing
 ;
 MSG_ERROR_TOO_MANY_ARGS
-Неверное число аргументов
+РќРµРІРµСЂРЅРѕРµ С‡РёСЃР»Рѕ Р°СЂРіСѓРјРµРЅС‚РѕРІ
 ; wrong number of arguments
 ;
 MSG_ERROR_UNMATCHED_QUOTES
-Не закрыты кавычки
+РќРµ Р·Р°РєСЂС‹С‚С‹ РєР°РІС‹С‡РєРё
 ; unmatched quotes
 ;
 MSG_ERROR_LINE_TOO_LONG
-Список аргументов неверен или переполнен
+РЎРїРёСЃРѕРє Р°СЂРіСѓРјРµРЅС‚РѕРІ РЅРµРІРµСЂРµРЅ РёР»Рё РїРµСЂРµРїРѕР»РЅРµРЅ
 ; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
-Файл не является исполняемым
+Р¤Р°Р№Р» РЅРµ СЏРІР»СЏРµС‚СЃСЏ РёСЃРїРѕР»РЅСЏРµРјС‹Рј
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
-Ошибка в резидентной библиотеке
+РћС€РёР±РєР° РІ СЂРµР·РёРґРµРЅС‚РЅРѕР№ Р±РёР±Р»РёРѕС‚РµРєРµ
 ; invalid resident library
 ;
 MSG_ERROR_NO_DEFAULT_DIR
-Ошибка 201
+РћС€РёР±РєР° 201
 ; no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE
-Обьект занят
+РћР±СЊРµРєС‚ Р·Р°РЅСЏС‚
 ; object is in use
 ;
 MSG_ERROR_OBJECT_EXISTS
-Обьект уже существует
+РћР±СЊРµРєС‚ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
 ; object already exists
 ;
 MSG_ERROR_DIR_NOT_FOUND
-Каталог не найден
+РљР°С‚Р°Р»РѕРі РЅРµ РЅР°Р№РґРµРЅ
 ; directory not found
 ;
 MSG_ERROR_OBJECT_NOT_FOUND
-Объект не найден
+РћР±СЉРµРєС‚ РЅРµ РЅР°Р№РґРµРЅ
 ; object not found
 ;
 MSG_ERROR_BAD_STREAM_NAME
-Ошибка в описании окна
+РћС€РёР±РєР° РІ РѕРїРёСЃР°РЅРёРё РѕРєРЅР°
 ; invalid window description
 ;
 MSG_ERROR_OBJECT_TOO_LARGE
-Объект слишком велик
+РћР±СЉРµРєС‚ СЃР»РёС€РєРѕРј РІРµР»РёРє
 ; object too large
 ;
 MSG_ERROR_ACTION_NOT_KNOWN
-Неизвестный тип файловой системы
+РќРµРёР·РІРµСЃС‚РЅС‹Р№ С‚РёРї С„Р°Р№Р»РѕРІРѕР№ СЃРёСЃС‚РµРјС‹
 ; filesystem action type unknown
 ;
 MSG_ERROR_INVALID_COMPONENT_NAME
-Ошибка в имени объекта
+РћС€РёР±РєР° РІ РёРјРµРЅРё РѕР±СЉРµРєС‚Р°
 ; object name invalid
 ;
 MSG_ERROR_INVALID_LOCK
-Ошибка блокировки объекта
+РћС€РёР±РєР° Р±Р»РѕРєРёСЂРѕРІРєРё РѕР±СЉРµРєС‚Р°
 ; invalid object lock
 ;
 MSG_ERROR_OBJECT_WRONG_TYPE
-Объект неподходящего типа
+РћР±СЉРµРєС‚ РЅРµРїРѕРґС…РѕРґСЏС‰РµРіРѕ С‚РёРїР°
 ; object is not of required type
 ;
 MSG_ERROR_DISK_NOT_VALIDATED
-Диск не прошёл проверку
+Р”РёСЃРє РЅРµ РїСЂРѕС€С‘Р» РїСЂРѕРІРµСЂРєСѓ
 ; disk not validated
 ;
 MSG_ERROR_DISK_WRITE_PROTECTED
-Диск защищён от записи
+Р”РёСЃРє Р·Р°С‰РёС‰С‘РЅ РѕС‚ Р·Р°РїРёСЃРё
 ; disk is write-protected
 ;
 MSG_ERROR_RENAME_ACROSS_DEVICES
-Попытка переименования между устройствами
+РџРѕРїС‹С‚РєР° РїРµСЂРµРёРјРµРЅРѕРІР°РЅРёСЏ РјРµР¶РґСѓ СѓСЃС‚СЂРѕР№СЃС‚РІР°РјРё
 ; rename across devices attempted
 ;
 MSG_ERROR_DIRECTORY_NOT_EMPTY
-Каталог не пуст
+РљР°С‚Р°Р»РѕРі РЅРµ РїСѓСЃС‚
 ; directory not empty
 ;
 MSG_ERROR_TOO_MANY_LEVELS
-Превышено число вложенных уровней
+РџСЂРµРІС‹С€РµРЅРѕ С‡РёСЃР»Рѕ РІР»РѕР¶РµРЅРЅС‹С… СѓСЂРѕРІРЅРµР№
 ; too many levels
 ;
 MSG_ERROR_DEVICE_NOT_MOUNTED
-Устройство (том) не смонтировано
+РЈСЃС‚СЂРѕР№СЃС‚РІРѕ (С‚РѕРј) РЅРµ СЃРјРѕРЅС‚РёСЂРѕРІР°РЅРѕ
 ; device (or volume) is not mounted
 ;
 MSG_ERROR_SEEK_ERROR
-Ошибка чтения
+РћС€РёР±РєР° С‡С‚РµРЅРёСЏ
 ; seek failure
 ;
 MSG_ERROR_COMMENT_TOO_BIG
-Превышена длина комментария
+РџСЂРµРІС‹С€РµРЅР° РґР»РёРЅР° РєРѕРјРјРµРЅС‚Р°СЂРёСЏ
 ; comment is too long
 ;
 MSG_ERROR_DISK_FULL
-Диск переполнен
+Р”РёСЃРє РїРµСЂРµРїРѕР»РЅРµРЅ
 ; disk is full
 ;
 MSG_ERROR_DELETE_PROTECTED
-Объект защищён от удаления
+РћР±СЉРµРєС‚ Р·Р°С‰РёС‰С‘РЅ РѕС‚ СѓРґР°Р»РµРЅРёСЏ
 ; object is protected from deletion
 ;
 MSG_ERROR_WRITE_PROTECTED
-Файл защищён от записи
+Р¤Р°Р№Р» Р·Р°С‰РёС‰С‘РЅ РѕС‚ Р·Р°РїРёСЃРё
 ; file is write protected
 ;
 MSG_ERROR_READ_PROTECTED
-Файл защищен от чтения
+Р¤Р°Р№Р» Р·Р°С‰РёС‰РµРЅ РѕС‚ С‡С‚РµРЅРёСЏ
 ; file is read protected
 ;
 MSG_ERROR_NOT_A_DOS_DISK
-Неверный диск DOS
+РќРµРІРµСЂРЅС‹Р№ РґРёСЃРє DOS
 ; not a valid DOS disk
 ;
 MSG_ERROR_NO_DISK
-Нет диска в приводе
+РќРµС‚ РґРёСЃРєР° РІ РїСЂРёРІРѕРґРµ
 ; no disk in drive
 ;
 MSG_ERROR_NO_MORE_ENTRIES
-Превышено число объектов в каталоге
+РџСЂРµРІС‹С€РµРЅРѕ С‡РёСЃР»Рѕ РѕР±СЉРµРєС‚РѕРІ РІ РєР°С‚Р°Р»РѕРіРµ
 ; no more entries in directory
 ;
 MSG_ERROR_IS_SOFT_LINK
-Объект является "мягкой" ссылкой
+РћР±СЉРµРєС‚ СЏРІР»СЏРµС‚СЃСЏ "РјСЏРіРєРѕР№" СЃСЃС‹Р»РєРѕР№
 ; object is soft link
 ;
 MSG_ERROR_OBJECT_LINKED
-Объект имеет ссылки
+РћР±СЉРµРєС‚ РёРјРµРµС‚ СЃСЃС‹Р»РєРё
 ; object is linked
 ;
 MSG_ERROR_BAD_HUNK
-Ошибка в заголовке
+РћС€РёР±РєР° РІ Р·Р°РіРѕР»РѕРІРєРµ
 ; bad loadfile hunk
 ;
 MSG_ERROR_NOT_IMPLEMENTED
-Функция ещё не внедрена
+Р¤СѓРЅРєС†РёСЏ РµС‰С‘ РЅРµ РІРЅРµРґСЂРµРЅР°
 ; function not implemented
 ;
 MSG_ERROR_RECORD_NOT_LOCKED
-Запись не заблокирована
+Р—Р°РїРёСЃСЊ РЅРµ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР°
 ; record not locked
 ;
 MSG_ERROR_LOCK_COLLISION
-Запись уже заблокирована
+Р—Р°РїРёСЃСЊ СѓР¶Рµ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР°
 ; record lock collision
 ;
 MSG_ERROR_LOCK_TIMEOUT
-Истек срок защиты записи
+РСЃС‚РµРє СЃСЂРѕРє Р·Р°С‰РёС‚С‹ Р·Р°РїРёСЃРё
 ; record lock timeout
 ;
 MSG_ERROR_UNLOCK_ERROR
-Ошибка при разблокировании записи
+РћС€РёР±РєР° РїСЂРё СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅРёРё Р·Р°РїРёСЃРё
 ; record unlock error
 ;
 MSG_ERROR_BUFFER_OVERFLOW
-Переполнение буфера
+РџРµСЂРµРїРѕР»РЅРµРЅРёРµ Р±СѓС„РµСЂР°
 ; buffer overflow
 ;
 MSG_ERROR_BREAK
-*** Останов
+*** РћСЃС‚Р°РЅРѕРІ
 ; ***Break
 ;
 MSG_ERROR_NOT_EXECUTABLE
-Файл не является исполняемым
+Р¤Р°Р№Р» РЅРµ СЏРІР»СЏРµС‚СЃСЏ РёСЃРїРѕР»РЅСЏРµРјС‹Рј
 ; file not executable
 ;
 MSG_STRING_DISK_NOT_VALIDATED
-Том "%s" не прошёл проверку
+РўРѕРј "%s" РЅРµ РїСЂРѕС€С‘Р» РїСЂРѕРІРµСЂРєСѓ
 ; Volume "%s" is not validated
 ;
 MSG_STRING_DISK_WRITE_PROTECTED
-Том "%s" защищён от записи
+РўРѕРј "%s" Р·Р°С‰РёС‰С‘РЅ РѕС‚ Р·Р°РїРёСЃРё
 ; Volume "%s" is write protected
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
-Пожалуйста, вставьте том "%s" в любой привод
+РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІСЃС‚Р°РІСЊС‚Рµ С‚РѕРј "%s" РІ Р»СЋР±РѕР№ РїСЂРёРІРѕРґ
 ; Please insert volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
-Пожалуйста, замените том "%s" в любом приводе
+РџРѕР¶Р°Р»СѓР№СЃС‚Р°, Р·Р°РјРµРЅРёС‚Рµ С‚РѕРј "%s" РІ Р»СЋР±РѕРј РїСЂРёРІРѕРґРµ
 ; Please replace volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
-Пожалуйста, замените том "%s" на "%s"
+РџРѕР¶Р°Р»СѓР№СЃС‚Р°, Р·Р°РјРµРЅРёС‚Рµ С‚РѕРј "%s" РЅР° "%s"
 ; Please replace volume "%s" in "%s"
 ;
 MSG_STRING_DISK_FULL
-Том "%s" переполнен
+РўРѕРј "%s" РїРµСЂРµРїРѕР»РЅРµРЅ
 ; Volume "%s" is full
 ;
 MSG_STRING_NOT_A_DOS_DISK
-Неверный диск DOS в "%s"
+РќРµРІРµСЂРЅС‹Р№ РґРёСЃРє DOS РІ "%s"
 ; Not a DOS disk in "%s"
 ;
 MSG_STRING_NO_DISK
-Нет диска в "%s"
+РќРµС‚ РґРёСЃРєР° РІ "%s"
 ; No disk present in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-НЕОБХОДИМО заменить том "%s" в "%s"!
+РќР•РћР‘РҐРћР”РРњРћ Р·Р°РјРµРЅРёС‚СЊ С‚РѕРј "%s" РІ "%s"!
 ; You MUST replace volume "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
-Том "%s" имеет ошибки чтения/записи
+РўРѕРј "%s" РёРјРµРµС‚ РѕС€РёР±РєРё С‡С‚РµРЅРёСЏ/Р·Р°РїРёСЃРё
 ; Volume "%s" has a read/write error
 ;
 MSG_STRING_RETRY
-Повторить
+РџРѕРІС‚РѕСЂРёС‚СЊ
 ; Retry
 ;
 MSG_STRING_CANCEL
-Отменить
+РћС‚РјРµРЅРёС‚СЊ
 ; Cancel
 ;
 MSG_STRING_REQUESTTITLE
-Диалог запроса
+Р”РёР°Р»РѕРі Р·Р°РїСЂРѕСЃР°
 ; System requester
 ;
 MSG_ERROR_NO_MATCHING_ELSEENDIF
-Не найден замыкающий оператор ELSE или ENDIF
+РќРµ РЅР°Р№РґРµРЅ Р·Р°РјС‹РєР°СЋС‰РёР№ РѕРїРµСЂР°С‚РѕСЂ ELSE РёР»Рё ENDIF
 ; no matching Else or EndIf
 ;
 MSG_ERROR_SCRIPT_ONLY
-Эта команда должна применяться только в скриптах
+Р­С‚Р° РєРѕРјР°РЅРґР° РґРѕР»Р¶РЅР° РїСЂРёРјРµРЅСЏС‚СЊСЃСЏ С‚РѕР»СЊРєРѕ РІ СЃРєСЂРёРїС‚Р°С…
 ; this command is supposed to be used in command files only
 ;
 MSG_ERROR_UNKNOWN
-Неизвестная ошибка
+РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°
 ; undefined error
 ;

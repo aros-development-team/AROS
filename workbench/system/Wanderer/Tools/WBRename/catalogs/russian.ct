@@ -8,23 +8,23 @@ WBRename
 ; WBRename
 ;
 MSG_DESCRIPTION
-Переименовывает файлы и директории
+РџРµСЂРµРёРјРµРЅРѕРІС‹РІР°РµС‚ С„Р°Р№Р»С‹ Рё РґРёСЂРµРєС‚РѕСЂРёРё
 ; Renames files and drawers
 ;
 MSG_COPYRIGHT
 c2006, AROS Dev Team
-; й2006, AROS Dev Team
+; Р№2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
-Переименование
+РџРµСЂРµРёРјРµРЅРѕРІР°РЅРёРµ
 ; Rename
 ;
 MSG_LINE
-Введите новое имя
+Р’РІРµРґРёС‚Рµ РЅРѕРІРѕРµ РёРјСЏ
 ; Enter a new name
 ;
 MSG_NAME
-Новое имя:
+РќРѕРІРѕРµ РёРјСЏ:
 ; New name:
 ;
 MSG_OK
@@ -32,41 +32,41 @@ _OK
 ; _OK
 ;
 MSG_CANCEL
-О_тмена
+Рћ_С‚РјРµРЅР°
 ; Ca_ncel
 ;
 MSG_ERROR_TITLE
-WBRename: Ошибка
+WBRename: РћС€РёР±РєР°
 ; WBRename: Error
 ;
 MSG_ALREADY_EXIST
-'%s' уже существует!
+'%s' СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚!
 ; '%s' already exists!
 ;
 MSG_FAILED
-Переименование '%s' завершилось\nс ошибкой '%ld'
+РџРµСЂРµРёРјРµРЅРѕРІР°РЅРёРµ '%s' Р·Р°РІРµСЂС€РёР»РѕСЃСЊ\nСЃ РѕС€РёР±РєРѕР№ '%ld'
 ; Rename of '%s' failed with error '%ld'!
 ;
 MSG_ILLEGAL_CHARS
-'%s' содержит недопустимые символы!
+'%s' СЃРѕРґРµСЂР¶РёС‚ РЅРµРґРѕРїСѓСЃС‚РёРјС‹Рµ СЃРёРјРІРѕР»С‹!
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
-Требуется 2 аргумента
+РўСЂРµР±СѓРµС‚СЃСЏ 2 Р°СЂРіСѓРјРµРЅС‚Р°
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Ошибка занятия директории
+РћС€РёР±РєР° Р·Р°РЅСЏС‚РёСЏ РґРёСЂРµРєС‚РѕСЂРёРё
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
-Данное приложение не может быть запущено из командной строки\n
+Р”Р°РЅРЅРѕРµ РїСЂРёР»РѕР¶РµРЅРёРµ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ Р·Р°РїСѓС‰РµРЅРѕ РёР· РєРѕРјР°РЅРґРЅРѕР№ СЃС‚СЂРѕРєРё\n
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-Ошибка создания приложения
+РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ
 ; Failed to create Application!
 ;
 MSG_OUTOFMEMORY
-Не могу занять память
+РќРµ РјРѕРіСѓ Р·Р°РЅСЏС‚СЊ РїР°РјСЏС‚СЊ
 ; Can't allocate RAM!

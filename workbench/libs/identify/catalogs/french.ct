@@ -1,5 +1,5 @@
 ## version $VER: Identify.catalog 1.0 (19.10.2011)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -30,14 +30,14 @@ accelerateur
 MSG_EXP_TURBORAM
 accelerateur RAM
 MSG_EXP_TURBOHD
-accelerateur contrôleur Disque
+accelerateur contrÃ´leur Disque
 MSG_EXP_TURBOIDE
-accelerateur contrôleur IDE
+accelerateur contrÃ´leur IDE
 MSG_EXP_TURBOSCSIHD
-accelerateur contrôleur SCSI
+accelerateur contrÃ´leur SCSI
 ;
 MSG_EXP_NET
-réseau
+rÃ©seau
 MSG_EXP_ARCNET
 ArcNet
 MSG_EXP_ETHERNET
@@ -46,9 +46,9 @@ Ethernet
 MSG_EXP_AUDIO
 audio
 MSG_EXP_VIDEO
-vidéo
+vidÃ©o
 MSG_EXP_MULTIMEDIA
-multimédia
+multimÃ©dia
 MSG_EXP_DSP
 DSP
 ;
@@ -58,11 +58,11 @@ MSG_EXP_BRIDGE
 pont PC
 ;
 MSG_EXP_EMULATOR
-émulateur
+Ã©mulateur
 MSG_EXP_MACEMU
-émulateur Macintosh
+Ã©mulateur Macintosh
 MSG_EXP_ATARIEMU
-émulateur Atari
+Ã©mulateur Atari
 ;
 MSG_EXP_GFX
 graphique
@@ -70,17 +70,17 @@ MSG_EXP_GFXRAM
 RAM graphique
 ;
 MSG_EXP_HD
-contrôleur disque
+contrÃ´leur disque
 MSG_EXP_HDRAM
-RAM du contrôleur disque
+RAM du contrÃ´leur disque
 MSG_EXP_IDEHD
-contrôleur IDE
+contrÃ´leur IDE
 MSG_EXP_IDEHDRAM
-RAM du contrôleur IDE
+RAM du contrÃ´leur IDE
 MSG_EXP_SCSIHD
-contrôleur SCSI
+contrÃ´leur SCSI
 MSG_EXP_RAMSCSIHD
-RAM du contrôleur SCSI
+RAM du contrÃ´leur SCSI
 MSG_EXP_CDROM
 interface CD-ROM
 ;
@@ -94,7 +94,7 @@ multi E/S
 MSG_EXP_SERIAL
 multi serie
 MSG_EXP_PARALLEL
-multi parallèle
+multi parallÃ¨le
 MSG_EXP_SCANIF
 interface scanner
 MSG_EXP_TABLET
@@ -106,12 +106,12 @@ MSG_EXP_FLASHROM
 ROM flash
 ;
 MSG_EXP_SCSIIDE
-contrôleur SCSI/IDE
+contrÃ´leur SCSI/IDE
 MSG_EXP_RAMFPU
 extension RAM / FPU
 ;
 MSG_EXP_GUESS
-(prévu)
+(prÃ©vu)
 MSG_EXP_KICKSTART
 KickStart
 ;
@@ -120,11 +120,11 @@ extension RAM 32bit
 MSG_EXP_TURBOANDRAM
 accelerateur / ext. RAM
 MSG_EXP_ACCESS
-contrôle d'accès
+contrÃ´le d'accÃ¨s
 MSG_EXP_INTERFACE
 interface
 MSG_EXP_MFMHD
-contrôleur disque MFM
+contrÃ´leur disque MFM
 MSG_EXP_FLOPPY
 interface disquette
 ;
@@ -133,43 +133,43 @@ interface disquette
 ;================================================================
 ;
 MSG_ALERT_RECOVERY
-Récupérable
+RÃ©cupÃ©rable
 MSG_ALERT_DEADEND
-Non récupérable
+Non rÃ©cupÃ©rable
 MSG_ALERT_UNKNOWN
 Inconnue
 ;
 MSG_AG_BADPARM
-Paramètres incorrects
+ParamÃ¨tres incorrects
 MSG_AG_CLOSEDEV
-Impossible fermer périph.
+Impossible fermer pÃ©riph.
 MSG_AG_CLOSELIB
 Impossible fermer librairie
 MSG_AG_GENERAL
-Erreur générale
+Erreur gÃ©nÃ©rale
 MSG_AG_IOERROR
 Erreur E/S
 MSG_AG_MAKELIB
-Imppossible créer librairie
+Imppossible crÃ©er librairie
 MSG_AG_NOMEMORY
-Pas de mémoire
+Pas de mÃ©moire
 MSG_AG_NOSIGNAL
 Pas de signal
 MSG_AG_OPENDEV
-Impossible d'ouvrir le périph.
+Impossible d'ouvrir le pÃ©riph.
 MSG_AG_OPENLIB
 Impossible d'ouvrir librairie
 MSG_AG_OPENRES
 Impossible d'ouvrir ressource
 MSG_AG_PROCCREATE
-Création processus échoué
+CrÃ©ation processus Ã©chouÃ©
 ;
 ;================================================================
 ;       ALERT ERROR (2048..)
 ;================================================================
 ;
 MSG_ACPU_ADDRESSERR
-Accès mémoire illégal
+AccÃ¨s mÃ©moire illÃ©gal
 MSG_ACPU_AUTOVEC1
 AutoVector Level 1 erreur interruption
 MSG_ACPU_AUTOVEC2
@@ -185,79 +185,79 @@ AutoVector Level 6 erreur interruption
 MSG_ACPU_AUTOVEC7
 AutoVector Level 7 erreur interruption
 MSG_ACPU_BUSERR
-Erreur d'accès au bus
+Erreur d'accÃ¨s au bus
 MSG_ACPU_CHK
 Erreur d'instruction de test
 MSG_ACPU_COPRVIOL
 Violation de protocole coprocesseur
 MSG_ACPU_DIVZERO
-Division par zéro
+Division par zÃ©ro
 MSG_ACPU_FORMAT
 Stack frame erreur de format
 MSG_ACPU_FPCPBRANCH
 FPCP branch or set on unordered condition
 MSG_ACPU_FPCPDIVZERO
-FPCP division par zéro
+FPCP division par zÃ©ro
 MSG_ACPU_FPCPINEXACT
-FPCP résultat inexact
+FPCP rÃ©sultat inexact
 MSG_ACPU_FPCPOPERROR
-FPCP erreur d'opérande
+FPCP erreur d'opÃ©rande
 MSG_ACPU_FPCPOVER
 FPCP overflow
 MSG_ACPU_FPCPUNDER
 FPCP underflow
 MSG_ACPU_UNIMPLDTYPE
-FPCP type de donnée non implémentée
+FPCP type de donnÃ©e non implÃ©mentÃ©e
 MSG_ACPU_INSTERR
-Instruction illégale
+Instruction illÃ©gale
 MSG_ACPU_LINEA
-Line 1010 erreur d'émulation
+Line 1010 erreur d'Ã©mulation
 MSG_ACPU_LINEF
-Line 1111 erreur d'émulation
+Line 1111 erreur d'Ã©mulation
 MSG_ACPU_MMUACCVIOL
-PMMU violation d'accès
+PMMU violation d'accÃ¨s
 MSG_ACPU_MMUCONFIG
 PMMU configuration
 MSG_ACPU_MMUILLEGAL
-PMMU configuration ilégale
+PMMU configuration ilÃ©gale
 MSG_ACPU_NAN
 FPCP signal NAN
 MSG_ACPU_PRIVERR
-Erreur de violation de privilège
+Erreur de violation de privilÃ¨ge
 MSG_ACPU_SPURIOUS
 Erreur d'interruption suspecte
 MSG_ACPU_TRACE
-Erreur de traçage
+Erreur de traÃ§age
 MSG_ACPU_TRAPV
 TrapV erreur d'instruction
 MSG_AN_ADDSWGADGET
 Ajout SW gadgets, pas de mem.
 MSG_AN_ASYNCPKT
-Paquet reçu non prévu
+Paquet reÃ§u non prÃ©vu
 MSG_AN_AUDIODEV
-problème de périph. audio
+problÃ¨me de pÃ©riph. audio
 MSG_AN_BADCHKSUM
 Somme invalide
 MSG_AN_BADEXPANSIONFREE
-Région libérée deux fois
+RÃ©gion libÃ©rÃ©e deux fois
 MSG_AN_BADFREEADDR
-En-tête mémoire non trouvée
+En-tÃªte mÃ©moire non trouvÃ©e
 MSG_AN_BADGADGET
-Récupération de AN_GadgetType
+RÃ©cupÃ©ration de AN_GadgetType
 MSG_AN_BADINITFUNC
 Paquet invalide cli/shell
 MSG_AN_BADMESSAGE
-Mauvais msg reçu par IDCMP
+Mauvais msg reÃ§u par IDCMP
 MSG_AN_BADOVERLAY
 Mauvais overlay
 MSG_AN_BADQUICKINT
 Interruption incorrecte
 MSG_AN_BADSEGLIST
-Overlays illégaux
+Overlays illÃ©gaux
 MSG_AN_BADSEMAPHORE
-Tentative d'utiliser un sémaphore éronné
+Tentative d'utiliser un sÃ©maphore Ã©ronnÃ©
 MSG_AN_BADSTATE
-Intuition entre dans un état  instable
+Intuition entre dans un Ã©tat  instable
 MSG_AN_BASECHKSUM
 Somme Execbase incorrecte
 MSG_AN_BITMAP
@@ -265,57 +265,57 @@ Bitmap corrompu
 MSG_AN_BLTBITMAP
 BltBitMap, pas de mem.
 MSG_AN_BOGUSEXCPT
-Exception 68k illégale
+Exception 68k illÃ©gale
 MSG_AN_BOOTERROR
-Boot code a retourné une erreur
+Boot code a retournÃ© une erreur
 MSG_AN_BOOTSTRAP
-problème Bootstrap
+problÃ¨me Bootstrap
 MSG_AN_CIARSRC
-problème cia.resource
+problÃ¨me cia.resource
 MSG_AN_CONSOLEDEV
-problème console.device
+problÃ¨me console.device
 MSG_AN_CREATEPORT
 Creation port, pas de mem.
 MSG_AN_DISKBLKSEQ
 Erreur de sequence disque
 MSG_AN_DISKCOPY
-problème DiskCopy
+problÃ¨me DiskCopy
 MSG_AN_DISKERROR
 Erreur disque
 MSG_AN_DISKFONTLIB
-problème diskfont.library
+problÃ¨me diskfont.library
 MSG_AN_DISKRSRC
-problème disk.resource
+problÃ¨me disk.resource
 MSG_AN_DOSLIB
-problème dos.library
+problÃ¨me dos.library
 MSG_AN_DRHASDISK
-Get unit: possède déjà un disque
+Get unit: possÃ¨de dÃ©jÃ  un disque
 MSG_AN_DRINTNOACT
-Interruption : pas d'unité active
+Interruption : pas d'unitÃ© active
 MSG_AN_ENDTASK
 Erreur EndTask
 MSG_AN_EXCPTVECT
 68000 vecteur d'execption de somme
 MSG_AN_EXECLIB
-problème exec.library
+problÃ¨me exec.library
 MSG_AN_EXPANSIONLIB
-problème expansion.library
+problÃ¨me expansion.library
 MSG_AN_FILERECLOSED
-Un filehandle a été clos plusieurs fois
+Un filehandle a Ã©tÃ© clos plusieurs fois
 MSG_AN_FREETWICE
-Libéré mem. déjà libre
+LibÃ©rÃ© mem. dÃ©jÃ  libre
 MSG_AN_FREEVEC
-Échec Freevec
+Ã‰chec Freevec
 MSG_AN_GADGETTYPE
 Gadget inconnu
 MSG_AN_GADTOOLS
-problème gadtools.library
+problÃ¨me gadtools.library
 MSG_AN_GAMEPORTDEV
-problème gameport.device
+problÃ¨me gameport.device
 MSG_AN_GFXFREEERROR
-Erreur en libérant les graphismes
+Erreur en libÃ©rant les graphismes
 MSG_AN_GFXNEWERROR
-Erreur création graphismes
+Erreur crÃ©ation graphismes
 MSG_AN_GFXNOLCM
 Mem. d'urgence non disponible
 MSG_AN_GFXNOMEM
@@ -323,129 +323,129 @@ Graphismes hors limite mem.
 MSG_AN_GFXNOMEMMSPC
 MonitorSpec alloc, pas de mem.
 MSG_AN_GRAPHICSLIB
-problème graphics.library
+problÃ¨me graphics.library
 MSG_AN_ICONLIB
-problème icon.library
+problÃ¨me icon.library
 MSG_AN_INITAPTR
 InitStruct() erreur d'un APTR
 MSG_AN_INTRMEM
 Pas de mem. pour serveur d'interruption
 MSG_AN_INTUITION
-problème intuition.library
+problÃ¨me intuition.library
 MSG_AN_IOAFTERCLOSE
 Tentative d'E/S sur IORequest close
 MSG_AN_IOUSEDTWICE
-Tentative de réutiliser une IORequest active
+Tentative de rÃ©utiliser une IORequest active
 MSG_AN_ISEMORDER
-Intuition : ordre incorrect dans les sémaphores
+Intuition : ordre incorrect dans les sÃ©maphores
 MSG_AN_ITEMALLOC
 Item plane alloc, pas de mem.
 MSG_AN_ITEMBOXTOP
 Item box top < RelZero
 MSG_AN_KEYBOARDDEV
-problème keyboard.device
+problÃ¨me keyboard.device
 MSG_AN_KEYFREE
-Key déjà libérée
+Key dÃ©jÃ  libÃ©rÃ©e
 MSG_AN_KEYRANGE
 Key hors limite
 MSG_AN_LAYERSLIB
-problème layers.library
+problÃ¨me layers.library
 MSG_AN_LAYERSNOMEM
 Couches en dehors de la mem.
 MSG_AN_LIBCHKSUM
-Échec somme librairie
+Ã‰chec somme librairie
 MSG_AN_LONGFRAME
 Plage longue, pas de mem.
 MSG_AN_MAKEVPORT
 MakeVPort, pas de mem.
 MSG_AN_MATHLIB
-problème math.library
+problÃ¨me math.library
 MSG_AN_MEMCORRUPT
-Liste mémoire corrompue
+Liste mÃ©moire corrompue
 MSG_AN_MEMORYINSANE
-Test de mémoire a échoué
+Test de mÃ©moire a Ã©chouÃ©
 MSG_AN_MISCRSRC
-problème misc.resource
+problÃ¨me misc.resource
 MSG_AN_NOCONSOLE
 Impossible d'ouvrir la console
 MSG_AN_NOFONTS
 Pas de fonte disponible
 MSG_AN_NOISEM
-Intuition a échoué à la création d'un sémaphore
+Intuition a Ã©chouÃ© Ã  la crÃ©ation d'un sÃ©maphore
 MSG_AN_NOWINDOW
-la console ne peut ouvrir de fenêtre
+la console ne peut ouvrir de fenÃªtre
 MSG_AN_OBSOLETEFONT
-Description de fonte obsolète
+Description de fonte obsolÃ¨te
 MSG_AN_OPENSCREEN
-Ouverture d'écran, pas de mem.
+Ouverture d'Ã©cran, pas de mem.
 MSG_AN_OPENSCRNRAST
-Ouverture d'écran, alloc. raster, pas de mem.
+Ouverture d'Ã©cran, alloc. raster, pas de mem.
 MSG_AN_OPENWINDOW
-Ouverture fenêtre, pas de mem.
+Ouverture fenÃªtre, pas de mem.
 MSG_AN_PLANEALLOC
 Allocation "plane", pas de mem.
 MSG_AN_QPKTFAIL
-échec Qpkt
+Ã©chec Qpkt
 MSG_AN_RAMLIB
-problème ramlib
+problÃ¨me ramlib
 MSG_AN_REGIONMEMORY
-mémoire non accessible
+mÃ©moire non accessible
 MSG_AN_SEMCORRUPT
-Sémaphore dans un état illégal
+SÃ©maphore dans un Ã©tat illÃ©gal
 MSG_AN_SHORTFRAME
 plage courte, pas de mem.
 MSG_AN_STACKPROBE
-La pile s'étend trop
+La pile s'Ã©tend trop
 MSG_AN_STARTMEM
-Pas de mémoire au démarrage
+Pas de mÃ©moire au dÃ©marrage
 MSG_AN_SUBALLOC
 Sub-allocation, pas de mem.
 MSG_AN_SYSSCRNTYPE
-ouverture d'écran de type inconnu
+ouverture d'Ã©cran de type inconnu
 MSG_AN_TDCALIBSEEK
 Calibrage: erreurseek
 MSG_AN_TDDELAY
-Délai : erreur de timer
+DÃ©lai : erreur de timer
 MSG_AN_TEXTTMPRAS
 Texte, pas de mem. pour TmpRas
 MSG_AN_TIMERDEV
-problème timer.device
+problÃ¨me timer.device
 MSG_AN_TMBADREQ
-Mauvaise requête
+Mauvaise requÃªte
 MSG_AN_TMBADSUPPLY
 Alimentation -- pas de 50/60hz
 MSG_AN_TRACKDISKDEV
-problème trackdisk.device
+problÃ¨me trackdisk.device
 MSG_AN_UTILITYLIB
-problème utility.library
+problÃ¨me utility.library
 MSG_AN_WBBADIOMSG
 Mauvais msg E/S message (hacker code?)
 MSG_AN_WBBADSTARTUPMSG2
 Mauvais message startup 2
 MSG_AN_WBRELAYOUTTOOLMENU
-GadTools cassé ?
+GadTools cassÃ© ?
 MSG_AN_WEIRDECHO
-Écho entraînant incompréhension
+Ã‰cho entraÃ®nant incomprÃ©hension
 MSG_AN_WORKBENCH
-problème Workbench
+problÃ¨me Workbench
 MSG_AN_LAWBREAKER
 Alerte LawBreaker
 MSG_AN_AROS
-problème AROS
+problÃ¨me AROS
 MSG_AN_OOP
-problème OOP
+problÃ¨me OOP
 MSG_AN_HIDD
-problème HIDD
+problÃ¨me HIDD
 MSG_AN_HIDDNOROOT
-Impossible de créer le périph. racine
+Impossible de crÃ©er le pÃ©riph. racine
 MSG_AN_NOALERT
 Pas d'alerte
 MSG_ACPU_EMUINTR
-Interruption émulateur
+Interruption Ã©mulateur
 MSG_ACPU_UNIMPLEA
-Adresse effective non implémentée
+Adresse effective non implÃ©mentÃ©e
 MSG_ACPU_UNIMPLII
-Instruction non implémentée
+Instruction non implÃ©mentÃ©e
 ;
 ;================================================================
 ;       HARDWARE STRINGS (4096..)
@@ -458,7 +458,7 @@ N/A
 MSG_HW_NONE
 Aucun
 MSG_HW_FOUND
-Trouvé
+TrouvÃ©
 ;
 MSG_HW_AMIGA1000
 Amiga 1000
@@ -575,7 +575,7 @@ MSG_HW_OS_45
 MSG_HW_NORMAL
 Normal
 MSG_HW_ENHANCED
-Amélioré
+AmÃ©liorÃ©
 ;
 ;RAMSEY
 MSG_HW_REVD
@@ -595,7 +595,7 @@ MSG_HW_NECS
 Presque ECS
 ;
 MSG_HW_PPCFOUND
-Trouvé
+TrouvÃ©
 MSG_HW_602
 602
 MSG_HW_603

@@ -54,21 +54,21 @@ MSG_BADKEYFILE(//)
 Violazione di sicurezza: Trovato un file di accesso inutilizzabile.
 ;
 MSG_BADENTRY_PASSWD(//)
-Dati corrotti nella riga %ld del file delle password\nQuesta riga verr‡ ignorata.
+Dati corrotti nella riga %ld del file delle password\nQuesta riga verr√† ignorata.
 ;
 MSG_BADENTRY_GROUP(//)
-Dati corrotti nella riga %ld del file dei gruppi\nQuesta riga verr‡ ignorata.
+Dati corrotti nella riga %ld del file dei gruppi\nQuesta riga verr√† ignorata.
 ;
 MSG_BADVALUE_CONFIG(//)
 Valore/i errato/i alla riga %ld del file di configurazione\n\
-Quanto non valido sar‡ ignorato.
+Quanto non valido sar√† ignorato.
 ;
 MSG_BADOPTION_CONFIG(//)
-Opzione non valida alla riga %ld del file di configurazione\nQuesta riga sar‡ ignorata.
+Opzione non valida alla riga %ld del file di configurazione\nQuesta riga sar√† ignorata.
 ;
 MSG_TOOMANYSECGROUPS(//)
 Troppi gruppi secondari per l'utente con uid %ld\n\
-La riga %ld del gruppo sar‡ ignorata.
+La riga %ld del gruppo sar√† ignorata.
 ;
 ; logfile strings
 ;

@@ -23,11 +23,11 @@ Device
 ; Device
 ;
 MSG_UNIT
-Unit‡
+Unit√†
 ; Unit
 ;
 MSG_IP_MODE
-Modalit‡ IP
+Modalit√† IP
 ; IP Mode
 ;
 MSG_IP
@@ -67,7 +67,7 @@ Dispositivo seriale
 ; Serial Device
 ;
 MSG_UNIT_NUMBER
-Unit‡
+Unit√†
 ; Unit
 ;
 MSG_IP_MODE_MANUAL
@@ -203,7 +203,7 @@ File aggiuntivi non copiati su %s
 ; Additional files not copied to %s
 ;
 MSG_WARN_MULTIPLE_IFACES
-La modalit‡ DHCP non funziona correttamente se pi˘ interfacce sono attive
+La modalit√† DHCP non funziona correttamente se pi√π interfacce sono attive
 ; DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE
@@ -211,7 +211,7 @@ Informazioni
 ; Information
 ;
 MSG_PREFS_SAVED_RESTART
-Le preferenze sono state salvate su %s.\nRiavviare AROS perchÈ abbiano effetto.
+Le preferenze sono state salvate su %s.\nRiavviare AROS perch√© abbiano effetto.
 ; Preferences have been saved to %s.\nRestart AROS for them to take effect.
 ;
 MSG_IFWINDOW_TITLE

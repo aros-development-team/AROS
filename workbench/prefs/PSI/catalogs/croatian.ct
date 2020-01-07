@@ -51,7 +51,7 @@ Boje
 ; Colors
 ;
 MSG_MENU_COLORS_PRESETS
-Predloπci
+Predlo≈°ci
 ; Presets
 ;
 MSG_MENU_COLORS_PRESETS_2COL
@@ -59,7 +59,7 @@ Opcije za Dvobojni Zaslon
 ; Monochrome Settings
 ;
 MSG_MENU_COLORS_PRESETS_4COL
-Opcije za Ëetverobojni Zaslon
+Opcije za ƒçetverobojni Zaslon
 ; 4-Color Settings
 ;
 MSG_MENU_COLORS_PRESETS_8COL
@@ -91,7 +91,7 @@ Kopiraj
 ; _Copy
 ;
 MSG_BUTTON_DELETE
-Izbriπi
+Izbri≈°i
 ; _Delete
 ;
 MSG_BUTTON_EDIT
@@ -123,7 +123,7 @@ Spremi PublicScreen Datoteku
 ; Save PublicScreen File
 ;
 MSG_TITLE_OPEN
-UËitaj PublicScreen Datoteku
+Uƒçitaj PublicScreen Datoteku
 ; Load PublicScreen File
 ;
 MSG_TITLE_APPEND
@@ -207,7 +207,7 @@ Overscan:
 ; O_verscan:
 ;
 MSG_LABEL_SIZE
-VeliËina:
+Veliƒçina:
 ; _Size:
 ;
 MSG_LABEL_CROSS
@@ -247,7 +247,7 @@ Zaslon otvoren (0).\n
 ; Screen opened (0).\n
 ;
 MSG_CLI_SCREENOPENFAILED
-Greπka pri otvaranju zaslona (5).\n
+Gre≈°ka pri otvaranju zaslona (5).\n
 ; Failed to open screen (5).\n
 ;
 MSG_CLI_SCREENCLOSED
@@ -255,15 +255,15 @@ Zaslon zatvoren (0).\n
 ; Screen closed (0).\n
 ;
 MSG_CLI_SCREENCLOSEFAILED
-Greπka pri zatvaranju zaslona (5).\n
+Gre≈°ka pri zatvaranju zaslona (5).\n
 ; Failed to close screen (5).\n
 ;
 MSG_CLI_SYNTAXERROR
-Greπka u komandnoj liniji (10).\n
+Gre≈°ka u komandnoj liniji (10).\n
 ; Syntax Error in command line (10).\n
 ;
 MSG_CLI_SCREENNOTFOUND
-Zaslon nije pronaen (5).\n
+Zaslon nije pronaƒëen (5).\n
 ; Screen not found (5).\n
 ;
 MSG_CLI_OUTOFMEMORY
@@ -271,11 +271,11 @@ Nedovoljno memorije (20).\n
 ; Out of memory (20).\n
 ;
 MSG_CLI_NOAPPLICATION
-Greπka pri stvaranju aplikacije (20).\n
+Gre≈°ka pri stvaranju aplikacije (20).\n
 ; Failed to create application (20).\n
 ;
 MSG_CLI_NOMUIMASTER
-Greπka pri otvaranju muimaster.library V11 (20).\n
+Gre≈°ka pri otvaranju muimaster.library V11 (20).\n
 ; Failed to open muimaster.library V11 (20).\n
 ;
 MSG_ABOUT_NUMBEROFSCREENS
@@ -355,7 +355,7 @@ Bartrim
 ; Bartrim
 ;
 MSG_PALPRES_TITLE
-Predloπci Boja
+Predlo≈°ci Boja
 ; Color Presets
 ;
 MSG_PALPRES_STANDARD
@@ -435,11 +435,11 @@ Podesi boje za\ngrupu.
 ; Adjust color for\ngroup of pens.
 ;
 MSG_HELP_INFO
-Informacije o\nmodu i veliËini.
+Informacije o\nmodu i veliƒçini.
 ; Information about\nmode & size.
 ;
 MSG_HELP_NAME
-Ime Javnog Zaslona.\nViπeznaËnici dozvoljeni\nza strane zaslone.
+Ime Javnog Zaslona.\nVi≈°eznaƒçnici dozvoljeni\nza strane zaslone.
 ; Name of Public Screen.\nWildcards allowed for\nforeign screens.
 ;
 MSG_HELP_TITLE
@@ -451,19 +451,19 @@ Postavljeno slovo/nza zaslon.
 ; Default font\nfor the screen.
 ;
 MSG_HELP_BACKGROUND
-Datatype slika koriπtena\nkao pozadinska slika.
+Datatype slika kori≈°tena\nkao pozadinska slika.
 ; Datatype picture used\nas background pattern.
 ;
 MSG_HELP_AUTOSCROLL
-Pomicanje zaslona kad\nmiπ dotakne okvir zaslona.
+Pomicanje zaslona kad\nmi≈° dotakne okvir zaslona.
 ; The screen scrolls when\nthe mouse hits its borders.
 ;
 MSG_HELP_NODRAG
-Zaslon nije moguÊe povuÊi.
+Zaslon nije moguƒáe povuƒái.
 ; The screen\nis undraggable.
 ;
 MSG_HELP_EXCLUSIVE
-Zaslon ne moæe djeliti\nprikaz sa drugima.
+Zaslon ne mo≈æe djeliti\nprikaz sa drugima.
 ; The screen cannot share\nits display with others.
 ;
 MSG_HELP_INTERLEAVED
@@ -495,11 +495,11 @@ Informacije o trenutnom\nmodu prikaza.
 ; Information about the\ncurrent display mode.
 ;
 MSG_HELP_OVERSCAN
-Podeπavanje Overscan veliËine
+Pode≈°avanje Overscan veliƒçine
 ; Overscan size adjustment.
 ;
 MSG_HELP_WIDTH
-©irina zaslona,\nmjereno u pikselima.
+≈†irina zaslona,\nmjereno u pikselima.
 ; Width of screen,\nmeasured in pixels.
 ;
 MSG_HELP_HEIGHT
@@ -527,11 +527,11 @@ Dodaj novu boju\nu grupu.
 ; Add a new color\nto the group.
 ;
 MSG_HELP_EDITOK
-Izai i zapamti\npromjene za ovaj zaslon.
+Izaƒëi i zapamti\npromjene za ovaj zaslon.
 ; Exit and remember\nchanges for this screen.
 ;
 MSG_HELP_EDITCANCEL
-Izai i \33bodbaci\33n\npromjene za ovaj zaslon.
+Izaƒëi i \33bodbaci\33n\npromjene za ovaj zaslon.
 ; Exit and \33bdiscard\33n\nchanges for this screen.
 ;
 MSG_HELP_SCREENLIST
@@ -547,7 +547,7 @@ Kloniraj trenutni zaslon.
 ; Create a copy\nof current screen.
 ;
 MSG_HELP_DELETESCREEN
-izbriπi trenutni javni zaslon.
+izbri≈°i trenutni javni zaslon.
 ; Delete current\npublic screen.
 ;
 MSG_HELP_EDITSCREEN
@@ -567,14 +567,14 @@ Skok na trenutni javni zaslon.
 ; Jump to current\npublic screen.
 ;
 MSG_HELP_SAVE
-Izai i spremi\npromjene na disk.
+Izaƒëi i spremi\npromjene na disk.
 ; Exit and save\nchanges to disk.
 ;
 MSG_HELP_USE
-Izai i spremi\npromjene za trenutnu
+Izaƒëi i spremi\npromjene za trenutnu
 ; Exit and save changes\nfor current seansu.
 ;
 MSG_HELP_CANCEL
-Izai i\n\33bodbaci\33n promjene.
+Izaƒëi i\n\33bodbaci\33n promjene.
 ; Exit and\n\33bdiscard\33n changes.
 ;

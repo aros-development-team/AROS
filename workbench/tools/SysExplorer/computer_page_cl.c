@@ -278,8 +278,8 @@ char *SplitBootArgs(struct TagItem *bootinfo, char *buffer, LONG bufsize)
     {
         D(bug("[SysExplorer] %s: splitting '%s'\n", __func__, rawargs));
         count = strlen(rawargs);
-        if (count > bufsize)
-            count = bufsize;
+        if (count > bufsize - 1)
+            count = bufsize - 1;
         for (i = 0; i < count ; i++)
         {
             if (rawargs[i] == ' ')
@@ -287,6 +287,11 @@ char *SplitBootArgs(struct TagItem *bootinfo, char *buffer, LONG bufsize)
             else
                 buffer[i] = rawargs[i];
         }
+        buffer[i] = '\0';
+    }
+    else
+    {
+        *buffer = '\0';
     }
     return buffer;
 }

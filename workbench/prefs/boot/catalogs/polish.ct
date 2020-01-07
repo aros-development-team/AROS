@@ -15,7 +15,7 @@ Grafika
 ; Graphics
 ;
 MSG_GFX_COMPOSITION
-Uaktywnij kompozycjê
+Uaktywnij kompozycjÄ™
 ; Enable composition
 ;
 MSG_GFX_TYPE
@@ -43,15 +43,15 @@ VESA modus
 ; VESA Mode
 ;
 MSG_GFX_WIDTH
-Szeroko¶æ:
+SzerokoÅ›Ä‡:
 ; Width:
 ;
 MSG_GFX_HEIGHT
-Wysoko¶æ:
+WysokoÅ›Ä‡:
 ; Height:
 ;
 MSG_GFX_DEPTH
-G³êbia barw:
+GÅ‚Ä™bia barw:
 ; Colour Depth:
 ;
 MSG_GFX_DEPTH_TRUE
@@ -59,7 +59,7 @@ Miliony barw
 ; True Colour
 ;
 MSG_GFX_DEPTH_HIGH
-Tysi±ce barw
+TysiÄ…ce barw
 ; High Colour
 ;
 MSG_GFX_DEPTH_LOW
@@ -67,7 +67,7 @@ MSG_GFX_DEPTH_LOW
 ; 256 Colours
 ;
 MSG_GFX_REFRESH
-Czêstotliwo¶æ powtarzania obrazu:
+CzÄ™stotliwoÅ›Ä‡ powtarzania obrazu:
 ; Refresh Rate:
 ;
 MSG_GFX_HERTZ
@@ -75,11 +75,11 @@ Hz
 ; Hz
 ;
 MSG_GFX_DEFAULTREFRESH
-U¿yj domy¶lnej czêstotliwo¶ci
+UÅ¼yj domyÅ›lnej czÄ™stotliwoÅ›ci
 ; Use Default Refresh Rate
 ;
 MSG_GFX_BESTRES
-U¿yj najwy¿szej dostêpnej rozdzielczos¶ci
+UÅ¼yj najwyÅ¼szej dostÄ™pnej rozdzielczosÅ›ci
 ; Use Highest Available Resolution
 ;
 MSG_ATA
@@ -103,7 +103,7 @@ Wszystkie
 ; All
 ;
 MSG_ATA_BUS_NONE
-®adne
+Å½adne
 ; None
 ;
 MSG_ATA_DMA
@@ -115,7 +115,7 @@ Uaktywnij 32-bitowy przekaz danych
 ; Enable 32-bit Data Transfers
 ;
 MSG_ATA_POLL
-U¿yj pollingu do wykrycia koñca hibernacji
+UÅ¼yj pollingu do wykrycia koÅ„ca hibernacji
 ; Use Polling to Detect End of Busy State
 ;
 MSG_ATA_MULTI
@@ -131,15 +131,15 @@ Debugowanie
 ; Debugging
 ;
 MSG_DEBUG_OUTPUT
-Wyj¶cie:
+WyjÅ›cie:
 ; Output:
 ;
 MSG_DEBUG_OUTPUT_NONE
-®aden
+Å½aden
 ; None
 ;
 MSG_DEBUG_OUTPUT_MEMORY
-Bufor pamiêci
+Bufor pamiÄ™ci
 ; Memory Buffer
 ;
 MSG_DEBUG_OUTPUT_SERIAL
@@ -155,7 +155,7 @@ Debug USB
 ; Debug USB
 ;
 MSG_MISC
-Ró¿ne
+RÃ³Å¼ne
 ; Miscellaneous
 ;
 MSG_USB_ENABLE
@@ -167,19 +167,19 @@ Uaktywnij ACPI
 ; Enable ACPI
 ;
 MSG_FLOPPY_ENABLE
-Uaktywnij napêd dyskietek
+Uaktywnij napÄ™d dyskietek
 ; Enable Floppy Disk Drive
 ;
 MSG_DEVICE
-Urz±dzenie startowe
+UrzÄ…dzenie startowe
 ; Boot Device
 ;
 MSG_DEVICE_NAME
-Urz±dzenie DOS:
+UrzÄ…dzenie DOS:
 ; DOS Device:
 ;
 MSG_DEVICE_DELAY
-Opóznienie startu
+OpÃ³znienie startu
 ; Boot Delay:
 ;
 MSG_DEVICE_SECONDS
@@ -187,7 +187,7 @@ sekundy
 ; seconds
 ;
 MSG_DEVICE_DEFAULTDELAY
-U¿yj domy¶lnego opóznienia startu
+UÅ¼yj domyÅ›lnego opÃ³znienia startu
 ; Use Default Boot Delay
 ;
 MSG_OPTIONS
@@ -195,7 +195,7 @@ Opcje
 ;Options
 ;
 MSG_MODULES
-Modu³y
+ModuÅ‚y
 ;Modules
 ;
 MSG_ACTIVE
@@ -203,7 +203,7 @@ Aktywne
 ;Active
 ;
 MSG_PATH
-¶cie¿ka
+Å›cieÅ¼ka
 ;Path
 ;
 MSG_ADD
@@ -211,7 +211,7 @@ Dodaj
 ;Add
 ;
 MSG_REMOVE
-Usuñ
+UsuÅ„
 ;Remove
 ;
 MSG_OK
@@ -223,6 +223,6 @@ Poniechaj
 ;Cancel
 ;
 MSG_BAD_MODULE
-Z³a ¶cie¿ka modu³u "%s"
+ZÅ‚a Å›cieÅ¼ka moduÅ‚u "%s"
 ;Bad module path "%s"
 ;

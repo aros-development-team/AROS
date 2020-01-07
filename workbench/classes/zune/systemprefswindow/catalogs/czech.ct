@@ -16,23 +16,23 @@ E\0Exportovat...
 ; E\0Export...
 ;
 MSG_MENU_PREFS_TEST
-T\0Vyzkouπet
+T\0Vyzkou≈°et
 ; T\0Test
 ;
 MSG_MENU_PREFS_REVERT
-R\0Obnovit p¯edchozÌ
+R\0Obnovit p≈ôedchoz√≠
 ; R\0Revert
 ;
 MSG_MENU_PREFS_SAVE
-S\0Uloæit
+S\0Ulo≈æit
 ; S\0Save
 ;
 MSG_MENU_PREFS_USE
-U\0PouæÌt
+U\0Pou≈æ√≠t
 ; U\0Use
 ;
 MSG_MENU_PREFS_CANCEL
-C\0Zruπit
+C\0Zru≈°it
 ; C\0Cancel
 ;
 MSG_MENU_PREFS_EXPORT_WITH_ICON
@@ -40,13 +40,13 @@ Exportovat s ikonou...
 ; Export with Icon...
 ;
 MSG_MENU_RESET_TO_DEFAULTS
-Obnovit v˝chozÌ
+Obnovit v√Ωchoz√≠
 ; Reset to Defaults
 ;
 MSG_FILEREQ_EXPORT_TITLE
-Exportovat nastavenÌ
+Exportovat nastaven√≠
 ; Export
 ;
 MSG_FILEREQ_IMPORT_TITLE
-Importovat nastavenÌ
+Importovat nastaven√≠
 ; Import

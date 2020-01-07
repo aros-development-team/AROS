@@ -16,7 +16,7 @@ Screen Info
 ; Screen info
 ;
 MSG_SIZE
-Größe
+GrÃ¶ÃŸe
 ; Size
 ;
 MSG_TITLE
@@ -32,7 +32,7 @@ Abbildungs-Optionen
 ; Grabbing options
 ;
 MSG_DELAY
-Zeitverzögerung (s)
+ZeitverzÃ¶gerung (s)
 ; Delay (s)
 ;
 MSG_HIDE
@@ -56,7 +56,7 @@ MSG_SCREEN_PARM
 ; %d x %d, depth=%d
 ;
 MSG_OVERWRITE
-Datei '%s' existiert bereits.\nWollen Sie sie wirklich überschreiben?
+Datei '%s' existiert bereits.\nWollen Sie sie wirklich Ã¼berschreiben?
 ; File '%s' already exists.\nDo you really want to overwrite it?
 ;
 MSG_ERROR_TITLE
@@ -84,7 +84,7 @@ Schreiben von '%s' schlug fehl mit IO Fehler %ld!
 ; Writing of '%s' failed with IO Error %ld!
 ;
 MSG_ERR_OPENFILE
-Kann Datei '%s' nicht für Ausgabe öffnen!
+Kann Datei '%s' nicht fÃ¼r Ausgabe Ã¶ffnen!
 ; Can't open file '%s' for output!
 ;
 MSG_ERR_APP

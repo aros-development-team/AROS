@@ -28,7 +28,7 @@ MSG_LAST_BAR_CANCEL
 _Viimeinen|_Peru
 ;
 MSG_REQUEST
-Pyyntˆ
+Pyynt√∂
 ;
 MSG_INFORMATION
 Tietoa
@@ -54,13 +54,13 @@ Liian suuri!
 ; *** Palette Requester ***
 ;
 MSG_PALETTE_COLORS
-P_aletin v‰rit:
+P_aletin v√§rit:
 ;
 MSG_RED
 _Punainen:
 ;
 MSG_GREEN
-_Vihre‰:
+_Vihre√§:
 ;
 MSG_BLUE
 _Sininen:
@@ -72,7 +72,7 @@ MSG_SWAP
 _Vaihda
 ;
 MSG_SPREAD
-L_evit‰
+L_evit√§
 ;
 MSG_UNDO
 K_umoa
@@ -86,7 +86,7 @@ MSG_SWAP_TITLE
 Vaihdan...
 ;
 MSG_SPREAD_TITLE
-Levit‰n...
+Levit√§n...
 ;
 ; *** File Requester ***
 ;
@@ -113,7 +113,7 @@ MSG_MATCH
 Va_litse...
 ;
 MSG_CLEAR
-T_yhjenn‰
+T_yhjenn√§
 ;
 MSG_VOLUMES
 Le_vyt
@@ -134,7 +134,7 @@ MSG_SELECTED
 Valittu:
 ;
 MSG_FULL
-%ld%% t‰ynn‰
+%ld%% t√§ynn√§
 ;
 ; *** Font Requester ***
 ;
@@ -174,7 +174,7 @@ MSG_MAX_SIZE
 Suurin koko
 ;
 MSG_OVERSCAN
-_N‰ytˆn koko:
+_N√§yt√∂n koko:
 ;
 MSG_WIDTH
 _Leveys:
@@ -186,7 +186,7 @@ MSG_DEFAULT
 Oletusarvo
 ;
 MSG_COLORS
-V‰rit:
+V√§rit:
 ;
 MSG_MAX
 Maksimi:

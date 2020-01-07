@@ -7,16 +7,16 @@ MSG_OK(//)
 OK
 ;
 MSG_RESUME(//)
-Продолжить
+РџСЂРѕРґРѕР»Р¶РёС‚СЊ
 ;
 MSG_WARNING_GUI(//)
 Security Warning
 ;
 MSG_LOGINREQ_GUI(//)
-Запрос логина
+Р—Р°РїСЂРѕСЃ Р»РѕРіРёРЅР°
 ;
 MSG_LOGINPROMPT_GUI(//)
-\33cДобро пожаловать в AROS Research OS\nВерсия AROS: %s\n\nПожалуйста, введите ваши данные\nдля входа в %s.
+\33cР”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ РІ AROS Research OS\nР’РµСЂСЃРёСЏ AROS: %s\n\nРџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ РІР°С€Рё РґР°РЅРЅС‹Рµ\nРґР»СЏ РІС…РѕРґР° РІ %s.
 ;
 MSG_LOGINREQ_CON(//)
 \033[0;0H\033[J\n\n\n     AROS %s at %s\n
@@ -25,10 +25,10 @@ MSG_LOGINPROMPT_CON(//)
 \n\nLogin    :
 ;
 MSG_PASSWDPROMPT_GUI(//)
-Введите Ваш пароль
+Р’РІРµРґРёС‚Рµ Р’Р°С€ РїР°СЂРѕР»СЊ
 ;
 MSG_PASSWDPROMPT_CON(//)
-Пароль :
+РџР°СЂРѕР»СЊ :
 ;
 MSG_LOGINFAIL_GUI(//)
 Login Incorrect
@@ -45,16 +45,16 @@ Logged in on %s, %s at %s.\n\nNever logged in before.
 ; warning strings
 ;
 MSG_NOMUFS(100//)
-У Вас должен быть хотя бы один раздел с файловой системой AFFS
+РЈ Р’Р°СЃ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ СЂР°Р·РґРµР» СЃ С„Р°Р№Р»РѕРІРѕР№ СЃРёСЃС‚РµРјРѕР№ AFFS
 ;
 MSG_NOCONFIGFILE(//)
-Ошибка загрузки конфигурационного файла\nИспользуются параметры по умолчанию
+РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РєРѕРЅС„РёРіСѓСЂР°С†РёРѕРЅРЅРѕРіРѕ С„Р°Р№Р»Р°\nРСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ РїР°СЂР°РјРµС‚СЂС‹ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
 ;
 MSG_BADKEYFILE(//)
 Security violation: Bad or inconsistent keyfile(s) found
 ;
 MSG_BADENTRY_PASSWD(//)
-Найдено неверное значение на строке %ld файла паролей\nЭта линия будет игнорироваться
+РќР°Р№РґРµРЅРѕ РЅРµРІРµСЂРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РЅР° СЃС‚СЂРѕРєРµ %ld С„Р°Р№Р»Р° РїР°СЂРѕР»РµР№\nР­С‚Р° Р»РёРЅРёСЏ Р±СѓРґРµС‚ РёРіРЅРѕСЂРёСЂРѕРІР°С‚СЊСЃСЏ
 ;
 MSG_BADENTRY_GROUP(//)
 Bad entry found on line %ld of the group file\nThis line will be ignored
@@ -85,7 +85,7 @@ MSG_LOG_PASSWD(//)
 Passwd for %ld
 ;
 MSG_LOG_PASSWDFAIL(//)
-Неверный пароль для %ld
+РќРµРІРµСЂРЅС‹Р№ РїР°СЂРѕР»СЊ РґР»СЏ %ld
 ;
 MSG_LOG_CHECKPASSWD(//)
 CheckPasswd for %ld

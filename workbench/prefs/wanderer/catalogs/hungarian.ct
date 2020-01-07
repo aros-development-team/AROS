@@ -2,16 +2,16 @@
 ## language magyar
 ## codeset 5
 ;
-; Translated by MiklÛs NÈmeth
+; Translated by Mikl√≥s N√©meth
 ;
 ; TODO: update me and set version to 2
 ;
 MSG_NAME
-Wanderer be·llÌt·sok
+Wanderer be√°ll√≠t√°sok
 ; Wanderer Preferences
 ;
 MSG_BACKGROUNDS
-H·tterek
+H√°tterek
 ; Backgrounds
 ;
 MSG_BACKGROUND_WORKBENCH
@@ -19,14 +19,14 @@ Workbench
 ; Workbench
 ;
 MSG_BACKGROUND_DRAWERS
-FiÛkok
+Fi√≥kok
 ; Drawers
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
-V·laszd ki a Workbench h·tterÈt
+V√°laszd ki a Workbench h√°tter√©t
 ; Select Workbench Background
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-V·laszd ki a fiÛk h·tterÈt
+V√°laszd ki a fi√≥k h√°tter√©t
 ; Select Drawer Background
 ;

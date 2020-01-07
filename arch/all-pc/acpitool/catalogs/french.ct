@@ -1,5 +1,5 @@
 ## version $VER: acpitool.catalog 2.0 (31.3.2019)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -23,7 +23,7 @@ MSG_ERROR_HEADER
 ERREUR
 ;
 MSG_ERROR_NO_ACPI
-Cette machine n'a pas d'ACPI, ou le support de l'ACPI est désactivé
+Cette machine n'a pas d'ACPI, ou le support de l'ACPI est dÃ©sactivÃ©
 ;
 MSG_UNKNOWN
 Inconnu
@@ -32,7 +32,7 @@ MSG_TABLE_SIGNATURE
 Signature de table
 ;
 MSG_REVISION
-Révision
+RÃ©vision
 ;
 MSG_OEM_ID
 Revendeur
@@ -44,25 +44,25 @@ MSG_CREATOR_ID
 Constructeur
 ;
 MSG_PM_PROFILE
-Profil système préféré
+Profil systÃ¨me prÃ©fÃ©rÃ©
 ;
 MSG_SCI_INT
-Interruption de contrôle du système (SCI)
+Interruption de contrÃ´le du systÃ¨me (SCI)
 ;
 MSG_SMI_CMD
-Registre de commande SMI (interruptions de gestion du système)
+Registre de commande SMI (interruptions de gestion du systÃ¨me)
 ;
 MSG_ACPI_ENABLE
 Commande d'activation ACPI
 ;
 MSG_ACPI_DISABLE
-Commande de désactivation ACPI
+Commande de dÃ©sactivation ACPI
 ;
 MSG_S4BIOS
-Commande d'entrée dans l'état S4BIOS
+Commande d'entrÃ©e dans l'Ã©tat S4BIOS
 ;
 MSG_PSTATE
-Commande d'état des performances du processeur
+Commande d'Ã©tat des performances du processeur
 ;Processor performance state command
 ;
 MSG_FLUSH_SIZE
@@ -74,23 +74,23 @@ Pas du cache CPU
 ;CPU Cache flush stride
 ;
 MSG_RTC_DAY_ALARM
-Décalage quotidien de l'horloge temps réel
+DÃ©calage quotidien de l'horloge temps rÃ©el
 ;RTC alarm day offset
 ;
 MSG_RTC_MON_ALARM
-Décalage mensuel de l'horloge temps réel
+DÃ©calage mensuel de l'horloge temps rÃ©el
 ;RTC alarm month offset
 ;
 MSG_RTC_CENTURY
-Décalage sur un siècle de l'horloge temps réel
+DÃ©calage sur un siÃ¨cle de l'horloge temps rÃ©el
 ;RTC century offset
 ;
 MSG_RESET_REG
-Adresse du registre de réinitialisation
+Adresse du registre de rÃ©initialisation
 ;Reset register address
 ;
 MSG_RESET_VAL
-Valeur de réinitialisation
+Valeur de rÃ©initialisation
 ;Reset value
 ;
 MSG_UNKNOWN_SIZE
@@ -98,7 +98,7 @@ Taille inconnue
 ;Unknown size
 ;
 MSG_AT
-à
+Ã 
 ;at
 ;
 MSG_BITS
@@ -106,7 +106,7 @@ bits
 ;bits
 ;
 MSG_SPACE_FIXED
-Matériel fixe
+MatÃ©riel fixe
 ;Fixed hardware
 ;
 MSG_SPACE_OEM
@@ -137,7 +137,7 @@ MSG_PC_FLAGS
 Drapeaux architecture PC
 ;
 MSG_FF_FLAGS
-Drapeaux fonctionnalités fixes
+Drapeaux fonctionnalitÃ©s fixes
 ;Fixed Feature flags
 ;
 MSG_LAPIC_ADDR
@@ -161,7 +161,7 @@ Identificateur de l'APIC locale
 ;Local APIC ID
 ;
 MSG_ENABLED
-Activé
+ActivÃ©
 ;Enabled
 ;
 MSG_IOAPIC
@@ -175,7 +175,7 @@ MSG_ADDRESS
 Adresse
 ;
 MSG_IRQ_BASE
-Base d'interruptions matérielles (IRQ) globale du système
+Base d'interruptions matÃ©rielles (IRQ) globale du systÃ¨me
 ;Global system IRQ base
 ;
 MSG_INT_SRC_OVR
@@ -186,13 +186,13 @@ MSG_BUS
   Bus
 ;
 MSG_BUS_IRQ
-Bus d'interruptions matérielles (IRQ)
+Bus d'interruptions matÃ©rielles (IRQ)
 ;
 MSG_GLOBAL_IRQ
-Interruption matérielle (IRQ) système globale
+Interruption matÃ©rielle (IRQ) systÃ¨me globale
 ;
 MSG_POLARITY
-  Polarité
+  PolaritÃ©
 ;
 MSG_TRIGGER
   Bascule
@@ -210,7 +210,7 @@ MSG_ALL
 Tout
 ;
 MSG_LINT
-Entrée d'interruption locale
+EntrÃ©e d'interruption locale
 ;Local interrupt input
 ;
 MSG_LAPIC_ADDR_OVR
@@ -271,22 +271,22 @@ NMI X2APIC
 ;X2APIC NMI
 ;
 MSG_UNKNOWN_ENTRY
-Entrée inconnue (%u), %u octets
+EntrÃ©e inconnue (%u), %u octets
 ;Unknown entry (%u), %u bytes
 ;
 MSG_RSDP_ADDR
 Adresse RSDP
 ;
 MSG_SYSTEM_OEM_ID
-ID système revendeur
+ID systÃ¨me revendeur
 ;System OEM ID
 ;
 MSG_ACPI_REVISION
-Révision ACPI
+RÃ©vision ACPI
 ;ACPI Revision
 ;
 MSG_HW_REVISION
-Révision matérielle
+RÃ©vision matÃ©rielle
 ;Hardware Revision
 ;
 MSG_NUM_COMPARATORS
@@ -298,8 +298,8 @@ Compteur 64 bits
 ;64-bit counter
 ;
 MSG_LEGACY_REPLACEMENT
-Compatibilité ascendante
-;Capable d'héritage
+CompatibilitÃ© ascendante
+;Capable d'hÃ©ritage
 ;
 MSG_PCI_VENDOR
 ID PCI Vendeur
@@ -314,7 +314,7 @@ Nombre
 ;Number
 ;
 MSG_MIN_TICK
-Fréquence minimale de l'horloge
+FrÃ©quence minimale de l'horloge
 ;Minimum clock tick
 ;
 MSG_PAGE_PROTECT
@@ -330,7 +330,7 @@ Afficher :
 ;Show:
 ;
 MSG_SAVE_DATA
-Sauver les données
+Sauver les donnÃ©es
 ;Save data
 ;
 MSG_MENU_PROJECT
@@ -341,11 +341,11 @@ MSG_MENU_QUIT
 Quitter
 ;
 MSG_MENU_DUMP
-Copie complète
+Copie complÃ¨te
 ;Full dump
 ;
 MSG_MENU_DUMP_PARSED
-Données lues
+DonnÃ©es lues
 ;Parsed data
 ;
 MSG_MENU_DUMP_RAW
@@ -368,11 +368,11 @@ MSG_MWH
 mWh
 ;
 MSG_CMD_REG
-Registre de commande, d'état
+Registre de commande, d'Ã©tat
 ;Command/status register
 ;
 MSG_DATA_REG
-Registre de données
+Registre de donnÃ©es
 ;Data register
 ;
 MSG_UID
@@ -392,14 +392,14 @@ Adresse de base
 ;Base address
 ;
 MSG_MCFG_SEGMENT
-Numéro de groupe du segment PCI
+NumÃ©ro de groupe du segment PCI
 ;PCI segment group number
 ;
 MSG_MCFG_START_BUS_NUMBER
-Numéro du premier bus PCI
+NumÃ©ro du premier bus PCI
 ;Starting PCI Bus number
 ;
 MSG_MCFG_END_BUS_NUMBER
-Numéro du dernier bus PCI
+NumÃ©ro du dernier bus PCI
 ;Final PCI Bus number
 ;

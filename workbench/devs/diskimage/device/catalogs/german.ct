@@ -15,11 +15,11 @@ Passwort eingeben:
 ; Enter password:
 ;
 MSG_NOZLIB
-Die z.library wird benötigt
+Die z.library wird benÃ¶tigt
 ; z.library required
 ;
 MSG_NOCAPSDEV
-Das capsimage.device wird benötigt
+Das capsimage.device wird benÃ¶tigt
 ; capsimage.device required
 ;
 MSG_CANCELED
@@ -27,7 +27,7 @@ Operation abgebrochen
 ; operation canceled
 ;
 MSG_NOPASSWD
-Passwort benötigt
+Passwort benÃ¶tigt
 ; password required
 ;
 MSG_WRONGPASSWD
@@ -51,11 +51,11 @@ xadmaster.library Fehler
 ; xadmaster.library error
 ;
 MSG_UNKNDISKIMGTYPE
-Nicht unterstützter/s Diskimage Typ/Format
+Nicht unterstÃ¼tzter/s Diskimage Typ/Format
 ; unsupported disk image type/format
 ;
 MSG_UNKNCOMPMETHOD
-Nicht unterstützte Kompressionsmethode
+Nicht unterstÃ¼tzte Kompressionsmethode
 ; unsupported compression method
 ;
 MSG_EOF
@@ -63,23 +63,23 @@ Unerwartetes Ende der Datei
 ; unexpected end of file
 ;
 MSG_BADDATA
-Datei enthält fehlerhafte Daten
+Datei enthÃ¤lt fehlerhafte Daten
 ; file contains bad data
 ;
 MSG_BADCRC
-CRC Überprüfung der Dateidaten fehlgeschlagen
+CRC ÃœberprÃ¼fung der Dateidaten fehlgeschlagen
 ; CRC check on file data failed
 ;
 MSG_BADCHECKSUM
-Prüfsummenfehler
+PrÃ¼fsummenfehler
 ; checksum error
 ;
 MSG_REQ
-%s benötigt
+%s benÃ¶tigt
 ; %s required
 ;
 MSG_REQVER
-%s V%ld oder neuer benötigt
+%s V%ld oder neuer benÃ¶tigt
 ; %s v%ld or newer required
 ;
 MSG_WRONGDAA
@@ -95,6 +95,6 @@ bz2.library Fehler
 ; bz2.library error
 ;
 MSG_UNKNENCRMETHOD
-nicht  unterstützte Verschlüsselungsmethode
+nicht  unterstÃ¼tzte VerschlÃ¼sselungsmethode
 ; unsupported encryption method
 ;

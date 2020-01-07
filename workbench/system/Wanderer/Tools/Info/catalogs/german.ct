@@ -12,8 +12,8 @@ Piktogramm Informationen
 ; Icon informations
 ;
 MSG_COPYRIGHT
-Piktogramm Informationen\n© AROS Development Team
-; Icon informations\n©AROS Dev Team
+Piktogramm Informationen\nÂ© AROS Development Team
+; Icon informations\nÂ©AROS Dev Team
 ;
 MSG_ICON
 Piktogramm
@@ -28,7 +28,7 @@ Kommentar
 ; Comment
 ;
 MSG_STACK
-Stapelgröße
+StapelgrÃ¶ÃŸe
 ; Stack
 ;
 MSG_DEFTOOL
@@ -40,7 +40,7 @@ Piktogrammtyp
 ; Icon type
 ;
 MSG_DISK
-Datenträger
+DatentrÃ¤ger
 ; Disk
 ;
 MSG_DRAWER
@@ -60,18 +60,18 @@ Papierkorb
 ; Garbage
 ;
 MSG_DEVICE
-Gerät
+GerÃ¤t
 ; Device
 ;
 MSG_KICK
 Kickstart
 ; Kick
-; FIXME: Übersetzung?
+; FIXME: Ãœbersetzung?
 ;
 MSG_APPICON
 AppIcon
 ; AppIcon
-; FIXME: Übersetzung?
+; FIXME: Ãœbersetzung?
 ;
 MSG_INFORMATION
 Information
@@ -90,7 +90,7 @@ Fehler: Kann nicht von der Shell gestartet werden
 ; Error: Cannot be started from shell
 ;
 MSG_ABOUT
-Über ...
+Ãœber ...
 ; About...
 ;
 MSG_QUIT
@@ -106,11 +106,11 @@ Schreibbar
 ; Write
 ;
 MSG_EXECUTE
-Ausführbar
+AusfÃ¼hrbar
 ; Execute
 ;
 MSG_DELETE
-Löschbar
+LÃ¶schbar
 ; Delete
 ;
 MSG_SCRIPT
@@ -128,10 +128,10 @@ Archiviert
 MSG_STICKY
 Sticky
 ; Sticky
-; FIXME: Übersetzung?
+; FIXME: Ãœbersetzung?
 ;
 MSG_SIZE
-Größe
+GrÃ¶ÃŸe
 ; Size
 ;
 MSG_VERSION
@@ -167,7 +167,7 @@ Neues Merkmal
 ; New key
 ;
 MSG_DELETE_KEY
-Merkmal löschen
+Merkmal lÃ¶schen
 ; Delete key
 ;
 MSG_SAVE
@@ -187,6 +187,6 @@ Pfad
 ; Path
 ;
 MSG_BTNPATH
-Pfad öffnen...
+Pfad Ã¶ffnen...
 ; Open path...
 ;

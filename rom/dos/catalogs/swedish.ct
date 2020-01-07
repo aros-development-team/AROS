@@ -3,11 +3,11 @@
 ## codeset 0
 ;
 MSG_ERROR_NO_FREE_STORE
-otillräckligt minne
+otillrÃ¤ckligt minne
 ; not enough memory available
 ;
 MSG_ERROR_TASK_TABLE_FULL
-processtabellen är full
+processtabellen Ã¤r full
 ; process table full
 ;
 MSG_ERROR_BAD_TEMPLATE
@@ -19,11 +19,11 @@ ogiltigt nummer
 ; bad number
 ;
 MSG_ERROR_REQUIRED_ARG_MISSING
-nödvändigt argument saknas
+nÃ¶dvÃ¤ndigt argument saknas
 ; required argument missing
 ;
 MSG_ERROR_KEY_NEEDS_ARG
-värde efter nyckelord saknas
+vÃ¤rde efter nyckelord saknas
 ; value after keyword missing
 ;
 MSG_ERROR_TOO_MANY_ARGS
@@ -35,11 +35,11 @@ icke matchande citationstecken
 ; unmatched quotes
 ;
 MSG_ERROR_LINE_TOO_LONG
-argumentet ogiltigt eller för långt
+argumentet ogiltigt eller fÃ¶r lÃ¥ngt
 ; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
-filen kan inte köras
+filen kan inte kÃ¶ras
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
@@ -51,7 +51,7 @@ fel 201
 ; no default directory
 ;
 MSG_ERROR_OBJECT_IN_USE
-objektet används
+objektet anvÃ¤nds
 ; object is in use
 ;
 MSG_ERROR_OBJECT_EXISTS
@@ -59,7 +59,7 @@ objektet finns redan
 ; object already exists
 ;
 MSG_ERROR_DIR_NOT_FOUND
-lådan kan ej hittas
+lÃ¥dan kan ej hittas
 ; directory not found
 ;
 MSG_ERROR_OBJECT_NOT_FOUND
@@ -67,15 +67,15 @@ objektet kan ej hittas
 ; object not found
 ;
 MSG_ERROR_BAD_STREAM_NAME
-ogiltig fönsterbeskrivning
+ogiltig fÃ¶nsterbeskrivning
 ; invalid window description
 ;
 MSG_ERROR_OBJECT_TOO_LARGE
-objektet är för stort
+objektet Ã¤r fÃ¶r stort
 ; object too large
 ;
 MSG_ERROR_ACTION_NOT_KNOWN
-okänd typ av filsystemsåtgärd
+okÃ¤nd typ av filsystemsÃ¥tgÃ¤rd
 ; filesystem action type unknown
 ;
 MSG_ERROR_INVALID_COMPONENT_NAME
@@ -83,59 +83,59 @@ ogiltigt objektnamn
 ; object name invalid
 ;
 MSG_ERROR_INVALID_LOCK
-ogiltigt objektlås
+ogiltigt objektlÃ¥s
 ; invalid object lock
 ;
 MSG_ERROR_OBJECT_WRONG_TYPE
-objektet är ej av nödvändigt slag
+objektet Ã¤r ej av nÃ¶dvÃ¤ndigt slag
 ; object is not of required type
 ;
 MSG_ERROR_DISK_NOT_VALIDATED
-disken är ej validerad
+disken Ã¤r ej validerad
 ; disk not validated
 ;
 MSG_ERROR_DISK_WRITE_PROTECTED
-disken är skrivskyddad
+disken Ã¤r skrivskyddad
 ; disk is write-protected
 ;
 MSG_ERROR_RENAME_ACROSS_DEVICES
-försök av namnbyte över enheter
+fÃ¶rsÃ¶k av namnbyte Ã¶ver enheter
 ; rename across devices attempted
 ;
 MSG_ERROR_DIRECTORY_NOT_EMPTY
-lådan är ej tom
+lÃ¥dan Ã¤r ej tom
 ; directory not empty
 ;
 MSG_ERROR_TOO_MANY_LEVELS
-för många nivåer
+fÃ¶r mÃ¥nga nivÃ¥er
 ; too many levels
 ;
 MSG_ERROR_DEVICE_NOT_MOUNTED
-enhet (eller volym) är ej monterad
+enhet (eller volym) Ã¤r ej monterad
 ; device (or volume) is not mounted
 ;
 MSG_ERROR_SEEK_ERROR
-sökfel
+sÃ¶kfel
 ; seek failure
 ;
 MSG_ERROR_COMMENT_TOO_BIG
-för lång kommentar
+fÃ¶r lÃ¥ng kommentar
 ; comment is too long
 ;
 MSG_ERROR_DISK_FULL
-disken är full
+disken Ã¤r full
 ; disk is full
 ;
 MSG_ERROR_DELETE_PROTECTED
-objektet är raderingsskyddat
+objektet Ã¤r raderingsskyddat
 ; object is protected from deletion
 ;
 MSG_ERROR_WRITE_PROTECTED
-filen är skrivskyddad
+filen Ã¤r skrivskyddad
 ; file is write protected
 ;
 MSG_ERROR_READ_PROTECTED
-filen är lässkyddad
+filen Ã¤r lÃ¤sskyddad
 ; file is read protected
 ;
 MSG_ERROR_NOT_A_DOS_DISK
@@ -147,15 +147,15 @@ ingen disk i enheten
 ; no disk in drive
 ;
 MSG_ERROR_NO_MORE_ENTRIES
-inga fler poster i lådan
+inga fler poster i lÃ¥dan
 ; no more entries in directory
 ;
 MSG_ERROR_IS_SOFT_LINK
-objektet är en mjuk länk
+objektet Ã¤r en mjuk lÃ¤nk
 ; object is soft link
 ;
 MSG_ERROR_OBJECT_LINKED
-objektet är länkat
+objektet Ã¤r lÃ¤nkat
 ; object is linked
 ;
 MSG_ERROR_BAD_HUNK
@@ -167,23 +167,23 @@ ej implementerad funktion
 ; function not implemented
 ;
 MSG_ERROR_RECORD_NOT_LOCKED
-olåst resultat
+olÃ¥st resultat
 ; record not locked
 ;
 MSG_ERROR_LOCK_COLLISION
-låskonflikt i resultat
+lÃ¥skonflikt i resultat
 ; record lock collision
 ;
 MSG_ERROR_LOCK_TIMEOUT
-timeout av resultatslås
+timeout av resultatslÃ¥s
 ; record lock timeout
 ;
 MSG_ERROR_UNLOCK_ERROR
-upplåsningsfel i resultat
+upplÃ¥sningsfel i resultat
 ; record unlock error
 ;
 MSG_ERROR_BUFFER_OVERFLOW
-överflöde i buffer
+Ã¶verflÃ¶de i buffer
 ; buffer overflow
 ;
 MSG_ERROR_BREAK
@@ -191,7 +191,7 @@ MSG_ERROR_BREAK
 ; ***Break
 ;
 MSG_ERROR_NOT_EXECUTABLE
-filen kan ej köras
+filen kan ej kÃ¶ras
 ; file not executable
 ;
 MSG_STRING_DISK_NOT_VALIDATED
@@ -235,7 +235,7 @@ Volume "%s" has a read/write error
 ; Volume "%s" has a read/write error
 ;
 MSG_STRING_RETRY
-Försök igen
+FÃ¶rsÃ¶k igen
 ; Retry
 ;
 MSG_STRING_CANCEL
@@ -251,7 +251,7 @@ icke matchande Else eller EndIf
 ; no matching Else or EndIf
 ;
 MSG_ERROR_SCRIPT_ONLY
-det här kommandot är bara tänkt att användas i skriptfiler
+det hÃ¤r kommandot Ã¤r bara tÃ¤nkt att anvÃ¤ndas i skriptfiler
 ; this command is supposed to be used in command files only
 ;
 MSG_ERROR_UNKNOWN

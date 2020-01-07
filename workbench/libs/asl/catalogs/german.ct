@@ -3,7 +3,7 @@
 ## codeset 0
 ;
 MSG_FILEREQ_TITLE
-Datei auswählen
+Datei auswÃ¤hlen
 ; Select File
 ;
 MSG_FILEREQ_POSITIVE_GAD
@@ -43,18 +43,18 @@ Assign
 ; Assign
 ;
 MSG_FILEREQ_DELETE_TITLE
-Datei löschen
+Datei lÃ¶schen
 ; Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Achtung: Gelöschte Dateien sind\n\
+Achtung: GelÃ¶schte Dateien sind\n\
 unwiederbringlich verloren!\n\
-Ok zum Löschen von\n\
+Ok zum LÃ¶schen von\n\
 %s ?
 ; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
-Löschen|Abbrechen
+LÃ¶schen|Abbrechen
 ; Delete|Cancel
 ;
 MSG_FILEREQ_FOREIGNER_TITLE
@@ -104,11 +104,11 @@ Bitte_umbenennen
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Nach Namensmuster auswählen
+Nach Namensmuster auswÃ¤hlen
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
-Auswählen
+AuswÃ¤hlen
 ; Select
 ;
 MSG_FILEREQ_SELECT_CANCEL
@@ -124,19 +124,19 @@ L\0Letzter Name
 ; L\0Last Name
 ;
 MSG_FILEREQ_MEN_CONTROL_NEXTNAME
-M\0Nächster Name
+M\0NÃ¤chster Name
 ; N\0Next Name
 ;
 MSG_FILEREQ_MEN_CONTROL_RESTORE
-R\0Zurück auf Vorgabe
+R\0ZurÃ¼ck auf Vorgabe
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-P\0Übergeordnet
+P\0Ãœbergeordnet
 ; P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
-V\0Datenträger
+V\0DatentrÃ¤ger
 ; V\0Volumes
 ;
 MSG_FILEREQ_MEN_CONTROL_UPDATE
@@ -144,7 +144,7 @@ A\0Aktualisieren
 ; U\0Update
 ;
 MSG_FILEREQ_MEN_CONTROL_DELETE
-D\0Löschen
+D\0LÃ¶schen
 ; D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
@@ -156,7 +156,7 @@ M\0Umbenennen...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
-#\0Auswählen...
+#\0AuswÃ¤hlen...
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
@@ -180,7 +180,7 @@ MSG_FILEREQ_MEN_FILELIST_SORTDATE
 ; 2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0Nach Größe sortieren
+3\0Nach GrÃ¶ÃŸe sortieren
 ; 3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
@@ -204,7 +204,7 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Bildschirmmodus auswählen
+Bildschirmmodus auswÃ¤hlen
 ; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
@@ -240,7 +240,7 @@ Breite
 ; Width
 ;
 MSG_MODEREQ_HEIGHT_LABEL
-Höhe
+HÃ¶he
 ; Height
 ;
 MSG_MODEREQ_COLORS_LABEL
@@ -264,11 +264,11 @@ Modus-Eigenschaften
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
-Unterstützt Workbench nicht
+UnterstÃ¼tzt Workbench nicht
 ; Does not support Workbench
 ;
 MSG_MODEREQ_PROPERTIES_NOTGENLOCK
-Unterstützt kein Genlock
+UnterstÃ¼tzt kein Genlock
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
@@ -288,15 +288,15 @@ Zeilensprung
 ; Interlaced
 ;
 MSG_MODEREQ_PROPERTIES_ECS
-Benötigt ECS
+BenÃ¶tigt ECS
 ; Requires ECS
 ;
 MSG_MODEREQ_PROPERTIES_WB
-Unterstützt Workbench
+UnterstÃ¼tzt Workbench
 ; Supports Workbench
 ;
 MSG_MODEREQ_PROPERTIES_GENLOCK
-Unterstützt Genlock
+UnterstÃ¼tzt Genlock
 ; Supports genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
@@ -304,7 +304,7 @@ Ziehbarer Schirm
 ; Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
-DualPlayfield Priorität 2
+DualPlayfield PrioritÃ¤t 2
 ; DualPlayfield Priority 2
 ;
 MSG_MODEREQ_PROPERTIES_REFRESHRATE
@@ -320,7 +320,7 @@ L\0Letzter Modus
 ; L\0Last Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_NEXTMODE
-N\0Nächster Modus
+N\0NÃ¤chster Modus
 ; N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
@@ -328,7 +328,7 @@ MSG_MODEREQ_MEN_CONTROL_PROPERTIES
 ; ?\0Property List...
 ;
 MSG_MODEREQ_MEN_CONTROL_RESTORE
-R\0Zurück auf Vorgabe
+R\0ZurÃ¼ck auf Vorgabe
 ; R\0Restore
 ;
 MSG_MODEREQ_MEN_CONTROL_OK
@@ -340,7 +340,7 @@ C\0Abbrechen
 ; C\0Cancel
 ;
 MSG_FONTREQ_TITLE
-Zeichensatz auswählen
+Zeichensatz auswÃ¤hlen
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
@@ -360,11 +360,11 @@ L\0Letzter Zeichensatz
 ; L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
-N\0Nächster Zeichensatz
+N\0NÃ¤chster Zeichensatz
 ; N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE
-R\0Zurück auf Vorgabe
+R\0ZurÃ¼ck auf Vorgabe
 ; R\0Restore
 ;
 MSG_FONTREQ_MEN_CONTROL_RESCAN

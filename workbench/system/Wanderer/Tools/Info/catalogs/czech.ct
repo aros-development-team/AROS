@@ -13,26 +13,26 @@ Informace o objektu
 ;
 MSG_COPYRIGHT
 Informace o objektu\nCopyright (C) AROS Dev Team
-; Icon information\n© 2003-2010 The AROS Dev Team
+; Icon information\n≈† 2003-2010 The AROS Dev Team
 ;
 MSG_ICON
 Ikona
 ; Icon
 ;
 MSG_NAME
-N·zev
+N√°zev
 ; Name
 ;
 MSG_COMMENT
-Koment·¯
+Koment√°≈ô
 ; Comment
 ;
 MSG_STACK
-Z·sobnÌk
+Z√°sobn√≠k
 ; Stack
 ;
 MSG_DEFTOOL
-V˝chozÌ program
+V√Ωchoz√≠ program
 ; Tool
 ;
 MSG_ICONTYPE
@@ -44,7 +44,7 @@ Disk
 ; Disk
 ;
 MSG_DRAWER
-Adres·¯
+Adres√°≈ô
 ; Drawer
 ;
 MSG_TOOL
@@ -56,11 +56,11 @@ Projekt
 ; Project
 ;
 MSG_GARBAGE
-Koπ
+Ko≈°
 ; Garbage
 ;
 MSG_DEVICE
-Za¯ÌzenÌ
+Za≈ô√≠zen√≠
 ; Device
 ;
 MSG_KICK
@@ -68,7 +68,7 @@ Kickstart
 ; Kick
 ;
 MSG_APPICON
-AplikaËnÌ ikona
+Aplikaƒçn√≠ ikona
 ; AppIcon
 ;
 MSG_INFORMATION
@@ -76,7 +76,7 @@ Informace
 ; Information
 ;
 MSG_PROTECTION
-P¯Ìznaky
+P≈ô√≠znaky
 ; Protection
 ;
 MSG_TOOLTYPES
@@ -84,7 +84,7 @@ Argumenty
 ; Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-Tento program nelze spustit z p¯ÌkazovÈho ¯·dku.
+Tento program nelze spustit z p≈ô√≠kazov√©ho ≈ô√°dku.
 ; Error: Cannot be started from shell
 ;
 MSG_ABOUT
@@ -92,11 +92,11 @@ O programu...
 ; About...
 ;
 MSG_QUIT
-UkonËit
+Ukonƒçit
 ; Quit
 ;
 MSG_READ
-Lze ËÌst
+Lze ƒç√≠st
 ; Read
 ;
 MSG_WRITE
@@ -116,15 +116,15 @@ Skript
 ; Script
 ;
 MSG_PURE
-ReentrantnÌ
+Reentrantn√≠
 ; Pure
 ;
 MSG_ARCHIVED
-Archivovan˝
+Archivovan√Ω
 ; Archived
 ;
 MSG_STICKY
-DÏdÏn˝
+Dƒõdƒõn√Ω
 ; Sticky
 ;
 MSG_SIZE
@@ -136,7 +136,7 @@ Verze
 ; Version
 ;
 MSG_OWNERID
-VlastnÌk ID
+Vlastn√≠k ID
 ; Owner ID
 ;
 MSG_GROUPID
@@ -144,7 +144,7 @@ Skupina ID
 ; Group ID
 ;
 MSG_OWNERNAME
-VlastnÌk
+Vlastn√≠k
 ; Owner
 ;
 MSG_GROUPNAME
@@ -160,19 +160,19 @@ Datum
 ; Date
 ;
 MSG_NEW_KEY
-P¯idat kl·vesu
+P≈ôidat kl√°vesu
 ; New key
 ;
 MSG_DELETE_KEY
-Odebrat kl·vesu
+Odebrat kl√°vesu
 ; Delete key
 ;
 MSG_SAVE
-_Uloæit
+_Ulo≈æit
 ; _Save
 ;
 MSG_CANCEL
-_Zruπit
+_Zru≈°it
 ; _Cancel
 ;
 MSG_OK
@@ -184,6 +184,6 @@ Cesta
 ; Path
 ;
 MSG_BTNPATH
-Otev¯Ìt...
+Otev≈ô√≠t...
 ; Open path...
 ;

@@ -1,13 +1,13 @@
 ## version $VER: Commodities.catalog 1.2 (29.09.2007)
-## language español
+## language espaÃ±ol
 ## codeset 0
 ;
 ; FIXME: This file requires updating. When done, bump version to 3
-; FIXME: Aún faltan unos renglones y hacer concordar las personas (ahg)
+; FIXME: AÃºn faltan unos renglones y hacer concordar las personas (ahg)
 ;
 ;
 MSG_CANT_OPEN_LIB
-¡No puedo abrir %s V%ld!\n
+Â¡No puedo abrir %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
@@ -17,45 +17,45 @@ No puedo abrir 'input.device'
 ; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
-¡No puedo fijar la pantalla publica!\n
+Â¡No puedo fijar la pantalla publica!\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
-¡No puedo tomar la información visual!\n
+Â¡No puedo tomar la informaciÃ³n visual!\n
 ; Can't get VisualInfo!\n
 ;
 MSG_CANT_CREATE_GADGET
-¡No puedo crear los gadgets!\n
+Â¡No puedo crear los gadgets!\n
 ; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
-¡No puedo crear los menús!\n
+Â¡No puedo crear los menÃºs!\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-¡No puedo acomodar los menús!\n
-;!No puedo layout los menús!\n
+Â¡No puedo acomodar los menÃºs!\n
+;!No puedo layout los menÃºs!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
-¡No puedo abrir la ventana!\n
+Â¡No puedo abrir la ventana!\n
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
-¡No puedo reservar memoria para la aplicación\n
-;¡No puedo reservar memory para la aplicación\n
+Â¡No puedo reservar memoria para la aplicaciÃ³n\n
+;Â¡No puedo reservar memory para la aplicaciÃ³n\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
-¡No puedo crear el puerto de mensajes!\n
+Â¡No puedo crear el puerto de mensajes!\n
 ; Can't create message port!\n
 ;
 MSG_CANT_CREATE_BROKER
-¡No puedo crear el objeto CxBroker!\n
+Â¡No puedo crear el objeto CxBroker!\n
 ; Can't create CxBroker object!\n
 ;
 MSG_CANT_CREATE_CUSTOM
-¡No puedo crear el objeto CxCustom!\n
+Â¡No puedo crear el objeto CxCustom!\n
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
@@ -74,7 +74,7 @@ O\0Ocultar
 ; ***NEW***
 ;
 MSG_MEN_PROJECT_ICONIFY
-I\0Convertir en ícono
+I\0Convertir en Ã­cono
 ; I\0Iconify
 ;
 ; ***NEW***
@@ -108,7 +108,7 @@ Commodities disponibles
 ; Available commodities
 ;
 MSG_EXCHANGE_INFO
-Información
+InformaciÃ³n
 ; Information
 ;
 MSG_EXCHANGE_GAD_SHOW
@@ -189,12 +189,12 @@ AutoPoint
 ; AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
-Enfoque automático
+Enfoque automÃ¡tico
 ;Foco automatico
 ; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
-Activa la ventana debajo del ratón
+Activa la ventana debajo del ratÃ³n
 ;Activa la ventana debajo de la mouse
 ; Activates the window under the mouse
 ;
@@ -202,8 +202,8 @@ Activa la ventana debajo del ratón
 ; STARTMENU
 ;
 MSG_STARTMENU_CXNAME
-Menú Iniciar
-;StartMenú
+MenÃº Iniciar
+;StartMenÃº
 ; StartMenu
 ;
 MSG_STARTMENU_CXTITLE
@@ -212,8 +212,8 @@ Iniciador de Programas
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Lanza programas desde el menú
-;Lanza programas del menú
+Lanza programas desde el menÃº
+;Lanza programas del menÃº
 ; Program launch commodity
 ;
 ; ===============================================
@@ -276,11 +276,11 @@ Agrandar ventana
 ;
 MSG_FKEY_CMD_SHRINK_WIN
 Encoger ventana
-;Empqueñecer ventana
+;EmpqueÃ±ecer ventana
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Conmutar dimensión de la ventana
+Conmutar dimensiÃ³n de la ventana
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_RESCUE_WIN
@@ -299,7 +299,7 @@ Lanza programa
 ; Run Program
 ;
 MSG_FKEY_CMD_RUN_AREXX
-Lanza un Guión ARexx
+Lanza un GuiÃ³n ARexx
 ;Lanza ARexx-Script
 ; Run Arexx Script
 ;
@@ -311,19 +311,19 @@ G\0Grabar teclas
 ; NOCAPSLOCK
 ;
 MSG_NOCAPSLOCK_CXNAME
-Sin bloqueo en mayúsculas
+Sin bloqueo en mayÃºsculas
 ; NoCapsLock
 ;
 ; ***NEW***
 ;
 MSG_NOCAPSLOCK_CXTITLE
-Sin bloqueo en mayúsculas
+Sin bloqueo en mayÃºsculas
 ; NoCapsLock:
 ;
 ; ***NEW***
 ;
 MSG_NOCAPSLOCK_CXDESCR
-Desactiva la tecla BLOQ-MAYÚS
+Desactiva la tecla BLOQ-MAYÃšS
 ; Renders the CAPS LOCK key ineffective
 ;
 ; ***NEW***
@@ -332,14 +332,14 @@ Desactiva la tecla BLOQ-MAYÚS
 ; DepthMenu
 ;
 MSG_DEPTHMENU_CXNAME
-Menú Profundidad
+MenÃº Profundidad
 ;DepthMenu
 ;
 MSG_DEPTHMENU_CXTITLE
-Menú Profundidad:
+MenÃº Profundidad:
 ;DepthMenu:
 ;
 MSG_DEPTHMENU_CXDESCR
-Menú de los gadgets profundidad
+MenÃº de los gadgets profundidad
 ;Popup menu for depth gadgets
 ;

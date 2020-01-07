@@ -1,17 +1,17 @@
 ## version $VER: icontrolprefs.catalog 1.1 (30.09.2007)
 ## codeset 0
-## language espaÒol
+## language espa√±ol
 ;
 ; TODO: update me and set version to 2
 ;
 ; Traslated by ahg
 ;
 MSG_CANT_OPEN_LIB
-°No se puede abrir %s V%ld!\n
+¬°No se puede abrir %s V%ld!\n
 ;Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_APP
-°No se puede crear la aplicaciÛn!
+¬°No se puede crear la aplicaci√≥n!
 ;Can't create application object!
 ;
 MSG_CANT_CREATE_CUSTOM_CLASS
@@ -42,26 +42,26 @@ S\0Salir
 MSG_MEN_EDIT
 Editar
 ;Modifica (italiano)
-;Modifier (francÈs)
+;Modifier (franc√©s)
 ;Edit
 ;
 MSG_MEN_EDIT_DEFAULT
-F\0Valores de f·brica
+F\0Valores de f√°brica
 ;D\0Rirpistina valori iniziali (italiano)
-;D\0Configuration par dÈfaut (francÈs)
+;D\0Configuration par d√©faut (franc√©s)
 ;D\0Reset to Defaults
 ;
 MSG_MEN_EDIT_LASTSAVED
 L\0Valores previos
-;L\0A los ˙ltimos grabados
+;L\0A los √∫ltimos grabados
 ;L\0Ultima versione salvata (italiano)
-;L\0DerniËre sauvegarde (francÈs)
+;L\0Derni√®re sauvegarde (franc√©s)
 ;L\0Last Saved
 ;
 MSG_MEN_EDIT_RESTORE
 R\0Restaurar
 ;R\0Ripristina (italiano)
-;R\0Revenir ‡ l'initial (francÈs)
+;R\0Revenir √† l'initial (franc√©s)
 ;R\0Restore
 ;
 MSG_MEN_SETTINGS
@@ -69,7 +69,7 @@ Configuraciones
 ;Settings
 ;
 MSG_MEN_SETTINGS_CREATEICONS
-I\0øCrear Õconos?
+I\0¬øCrear √çconos?
 ;I\0Create Icons?
 ;
 MSG_ASL_OPEN_TITLE
@@ -85,7 +85,7 @@ Aceptar
 ;Ok
 ;
 MSG_MENUS_GROUP
-Men˙s
+Men√∫s
 ;Menus
 ;
 MSG_MENUS_TYPE
@@ -105,7 +105,7 @@ Aspecto
 ;Look
 ;
 MSG_MENUS_LOOK_CLASSIC
-Cl·sico
+Cl√°sico
 ;Classic
 ;
 MSG_MENUS_LOOK_3D
@@ -124,14 +124,14 @@ Pantallas
 ;Screens
 ;
 MSG_FRONTMOST_DEFAULT
-La del frente es la pant. p˙bl. predet.:
+La del frente es la pant. p√∫bl. predet.:
 ;Frontmost set as DefaultPubScreen:
 ;
 MSG_OFFSCREEN_DESC
-Dejar que las ventanas salgan\ndel ·rea visible
+Dejar que las ventanas salgan\ndel √°rea visible
 ;Allow windows to be moved out of\nthe visible area
 ;
 MSG_FRONTMOST_DEFAULT_DESC
-Que la pant. p˙bl. del frente\nsea la pant. p˙bl. predet.
+Que la pant. p√∫bl. del frente\nsea la pant. p√∫bl. predet.
 ;Make the frontmost public screen\nthe default public screen
 ;

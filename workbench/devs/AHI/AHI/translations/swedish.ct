@@ -31,7 +31,7 @@ msgMenuProject
 ; \000Project
 ;
 msgItemOpen
-O\000Öppna...
+O\000Ã–ppna...
 ; O\000Open...
 ;
 msgItemSaveAs
@@ -51,7 +51,7 @@ msgMenuEdit
 ; \000Edit
 ;
 msgItemDefaults
-F\000Förinställda värden
+F\000FÃ¶rinstÃ¤llda vÃ¤rden
 ; D\000Reset To Defaults
 ;
 msgItemLastSaved
@@ -59,7 +59,7 @@ E\000Senast sparade
 ; L\000Last Saved
 ;
 msgItemRestore
-Å\000Återställ
+Ã…\000Ã…terstÃ¤ll
 ; R\000Restore
 ;
 msgMenuSettings
@@ -71,15 +71,15 @@ I\000Skapa symboler?
 ; I\000Create Icons?
 ;
 msgMenuHelp
-\000Hjälp
+\000HjÃ¤lp
 ; \000Help
 ;
 msgItemHelp
-Help\000Hjälp...
+Help\000HjÃ¤lp...
 ; Help\000Help...
 ;
 msgItemUsersGuide
-H\000AHI Användarmanual...
+H\000AHI AnvÃ¤ndarmanual...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
@@ -89,11 +89,11 @@ msgItemConceptIndex
 ; *** The pages ***
 ;
 msgPageMode
-Lägesinställningar
+LÃ¤gesinstÃ¤llningar
 ; Mode settings
 ;
 msgPageAdvanced
-Avancerade inställningar
+Avancerade instÃ¤llningar
 ; Advanced settings
 ;
 ; *** The units ***
@@ -109,7 +109,7 @@ Musikenhet
 ; *** Properties box ***
 ;
 msgProperties
-Ljudläge\nInspelning\nUpphovsman\nCopyright\nDrivrutin\nVersion\nKommentar
+LjudlÃ¤ge\nInspelning\nUpphovsman\nCopyright\nDrivrutin\nVersion\nKommentar
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
@@ -151,27 +151,27 @@ Av_lyssning
 ; _Monitor
 ;
 msgOptGain
-F_örstärkning
+F_Ã¶rstÃ¤rkning
 ; _Gain
 ;
 msgOptMuted
-Avstängd
+AvstÃ¤ngd
 ; Muted
 ;
 msgOptInput
-_Ingång
+_IngÃ¥ng
 ; _Input
 ;
 msgOptNoInputs
-Inga ingångar
+Inga ingÃ¥ngar
 ; No inputs
 ;
 msgOptOutput
-_Utgång
+_UtgÃ¥ng
 ; _Output
 ;
 msgOptNoOutputs
-Inga utgångar
+Inga utgÃ¥ngar
 ; No outputs
 ;
 ;
@@ -182,7 +182,7 @@ Globala tillval
 ; Global options
 ;
 msgGlobOptDebugLevel
-Avlusnings_nivå
+Avlusnings_nivÃ¥
 ; _Debug level
 ;
 msgGlobOptEcho
@@ -190,11 +190,11 @@ _Eko
 ; _Echo
 ;
 msgGlobOptSurround
-Surround i "Snabba" _lägen
+Surround i "Snabba" _lÃ¤gen
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
-CPU-_begränsning
+CPU-_begrÃ¤nsning
 ; CPU usage _limit
 ;
 ; *** Debug levels ***
@@ -204,11 +204,11 @@ Ingen
 ; None
 ;
 msgDebugLow
-Låg
+LÃ¥g
 ; Low
 ;
 msgDebugHigh
-Hög
+HÃ¶g
 ; High
 ;
 msgDebugFull
@@ -218,7 +218,7 @@ Full
 ; *** Echo ***
 ;
 msgEchoEnabled
-Påslaget
+PÃ¥slaget
 ; Enabled
 ;
 msgEchoFast
@@ -232,7 +232,7 @@ Avslaget
 ; *** Surround ***
 ;
 msgSurroundEnabled
-Påslaget
+PÃ¥slaget
 ; Enabled
 ;
 msgSurroundDisabled
@@ -246,7 +246,7 @@ _Spara
 ; _Save
 ;
 msgButtonUse
-_Använd
+_AnvÃ¤nd
 ; _Use
 ;
 msgButtonCancel
@@ -260,20 +260,20 @@ OK
 ; *** Texts ***
 ;
 msgTextProgramName
-AHI inställningar
+AHI instÃ¤llningar
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright Â©%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s
-; %s%s\nCopyright ©%s
+%s%s\nCopyright Â©%s
+; %s%s\nCopyright Â©%s
 ;
 msgTextNoWindow
-Kan inte öppna fönstret.
+Kan inte Ã¶ppna fÃ¶nstret.
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Kan inte öppna filväljaren.
+Kan inte Ã¶ppna filvÃ¤ljaren.
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
@@ -281,8 +281,8 @@ Kan inte hitta `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Kan inte öppna `%s', version %ld.
-; Unable to open `%s´ version %ld.
+Kan inte Ã¶ppna `%s', version %ld.
+; Unable to open `%sÅ½ version %ld.
 ;
 ; *** Additions
 ;
@@ -299,7 +299,7 @@ Med klippning
 ; With clipping
 ;
 msgGlobOptACTime
-Maximal antiklick-fördröjning
+Maximal antiklick-fÃ¶rdrÃ¶jning
 ; Default anti-click time
 ;
 msgButtonPlay
@@ -311,11 +311,11 @@ Volym_justering
 ; Volume sc_aling
 ;
 msgSMFixedSafe
-Fast säker skalning
+Fast sÃ¤ker skalning
 ; Safe
 ;
 msgSMDynSafe
-Dynamisk säker skalning
+Dynamisk sÃ¤ker skalning
 ; Safe, dynamic
 ;
 msgSM0dB

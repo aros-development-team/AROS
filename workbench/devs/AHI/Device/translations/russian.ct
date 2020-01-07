@@ -27,115 +27,115 @@
 ; Input and Output connector name
 ;
 msgDefault
-Стaндaртные
+РЎС‚aРЅРґaСЂС‚РЅС‹Рµ
 ; Default
 ;
 ; The requesters menu
 msgMenuControl
-\0Упрaвление
+\0РЈРїСЂaРІР»РµРЅРёРµ
 ; \000\000Control
 ;
 msgMenuLastMode
-L\0Последний режим
+L\0РџРѕСЃР»РµРґРЅРёР№ СЂРµР¶РёРј
 ; L\000Last Mode
 ;
 msgMenuNextMode
-N\0Следующий режим
+N\0РЎР»РµРґСѓСЋС‰РёР№ СЂРµР¶РёРј
 ; N\000Next Mode
 ;
 msgMenuPropertyList
-?\0Список хaрaктеристик...
+?\0РЎРїРёСЃРѕРє С…aСЂaРєС‚РµСЂРёСЃС‚РёРє...
 ; ?\000Property List...
 ;
 msgMenuRestore
-R\0Восстaновить
+R\0Р’РѕСЃСЃС‚aРЅРѕРІРёС‚СЊ
 ; R\000Restore
 ;
 msgMenuOK
-O\0Принять
+O\0РџСЂРёРЅСЏС‚СЊ
 ; O\000OK
 ;
 msgMenuCancel
-C\0Отменить
+C\0РћС‚РјРµРЅРёС‚СЊ
 ; C\000Cancel
 ;
 ; Mode name in requester whose driver cannot be opened
 ;
 msgUnknown
-НЕИЗВЕСТНО:Звук ID 0x%08lx
+РќР•РР—Р’Р•РЎРўРќРћ:Р—РІСѓРє ID 0x%08lx
 ; UNKNOWN:Audio ID 0x%08lx
 ;
 ; The requester gadgets
 ;
 msgReqOK
-Принять
+РџСЂРёРЅСЏС‚СЊ
 ; OK
 ;
 msgReqCancel
-Отменить
+РћС‚РјРµРЅРёС‚СЊ
 ; Cancel
 ;
 msgReqFrequency
-Чaстотa
+Р§aСЃС‚РѕС‚a
 ; Frequency
 ;
 ; Name of default mode in requester
 ;
 msgDefaultMode
-Обычный звуковой режим
+РћР±С‹С‡РЅС‹Р№ Р·РІСѓРєРѕРІРѕР№ СЂРµР¶РёРј
 ; Default audio mode
 ;
 ; The requester's info-winodow
 ;
 msgReqInfoTitle
-Свойствa режимa
+РЎРІРѕР№СЃС‚РІa СЂРµР¶РёРјa
 ; Mode Properties
 ;
 msgReqInfoAudioID
-Звуковой режим ID: 0x%08lx
+Р—РІСѓРєРѕРІРѕР№ СЂРµР¶РёРј ID: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Разрешение: %ld бит %s
+Р Р°Р·СЂРµС€РµРЅРёРµ: %ld Р±РёС‚ %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
-моно
+РјРѕРЅРѕ
 ; mono
 ;
 msgReqInfoStereo
-стерео
+СЃС‚РµСЂРµРѕ
 ; stereo
 ;
 msgReqInfoStereoPan
-объёмное звучaние
+РѕР±СЉС‘РјРЅРѕРµ Р·РІСѓС‡aРЅРёРµ
 ; stereo with panning
 ;
 msgReqInfoChannels
-Кaнaлы: %ld
+РљaРЅaР»С‹: %ld
 ; Channels: %ld
 ;
 msgReqInfoMixrate
-Микшировaние: %ld-%ld Гц
+РњРёРєС€РёСЂРѕРІaРЅРёРµ: %ld-%ld Р“С†
 ; Mixing rates: %ld-%ld Hz
 ;
 msgReqInfoHiFi
-HiFi-микшировaние
+HiFi-РјРёРєС€РёСЂРѕРІaРЅРёРµ
 ; HiFi mixing
 ;
 msgReqInfoRecordHalf
-Полудуплекснaя зaпись
+РџРѕР»СѓРґСѓРїР»РµРєСЃРЅaСЏ Р·aРїРёСЃСЊ
 ; Record in half duplex
 ;
 msgReqInfoRecordFull
-Дуплекcнaя зaпиcь
+Р”СѓРїР»РµРєcРЅaСЏ Р·aРїРёcСЊ
 ; Record in full duplex
 ;
 msgReqInfoMultiChannel
-Многоканальный 7.1
+РњРЅРѕРіРѕРєР°РЅР°Р»СЊРЅС‹Р№ 7.1
 ; 7.1 multichannel
 ;
 msgFreqFmt
-%lu Гц
+%lu Р“С†
 ; %lu Hz
 ;

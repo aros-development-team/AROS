@@ -1,5 +1,5 @@
 ## version $VER: Input.catalog 3.0 (13.6.2017)
-## language espa駉l
+## language espa帽ol
 ## codeset 0
 ; 
 ; Translated by ahg
@@ -13,7 +13,7 @@ Aceptar
 ;Ok
 ;
 MSG_GAD_TAB_MOUSE
-Rat髇
+Rat贸n
 ;Mouse
 ;
 MSG_GAD_TAB_KEYBOARD
@@ -21,8 +21,8 @@ Teclado
 ;Keyboard
 ;
 MSG_GAD_MOUSE_SPEED
-Rapidez del rat髇
-;Velocidad del rat髇
+Rapidez del rat贸n
+;Velocidad del rat贸n
 ;Mouse Speed
 ;
 MSG_GAD_MOUSE_ACCELERATED
@@ -34,13 +34,13 @@ Retardo del doble-click
 ;Double-Click Delay
 ;
 MSG_GAD_KEY_REPEAT_DELAY
-Retardo de la repetici髇
+Retardo de la repetici贸n
 ;Key Repeat Delay
 ;
 MSG_GAD_KEY_REPEAT_RATE
-Rapidez de la repetici髇
-;Velocidad de la repetici髇
-;Frecuencia de la repetici髇
+Rapidez de la repetici贸n
+;Velocidad de la repetici贸n
+;Frecuencia de la repetici贸n
 ;Key Repeat Rate
 ;
 MSG_GAD_KEY_TEST
@@ -67,7 +67,7 @@ MSG_GAD_MOUSE_SPEED_NORMAL
 Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST
-R醦ido
+R谩pido
 ;Fast
 ;
 MSG_GAD_KEY_DEF  
