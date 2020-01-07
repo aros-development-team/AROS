@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES   := main locale paleditor palette clutcolor prefs args misc
+FILES   := main locale paleditor palette prefs args misc
 EXEDIR  := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-palette

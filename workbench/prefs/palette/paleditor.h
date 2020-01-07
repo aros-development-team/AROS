@@ -2,7 +2,7 @@
 #define _PALEDITOR_H_
 
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,8 @@
 
 /*** Identifier base ********************************************************/
 #define MUIB_PalEditor                  (TAG_USER | 0x10000000)
+
+#define MUIA_PalEditor_Pens             (MUIB_PalEditor + 1)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *PalEditor_CLASS;

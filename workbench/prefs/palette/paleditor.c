@@ -79,11 +79,14 @@ STATIC VOID Gadgets2PalPrefs(struct PalEditor_DATA *data);
 /*** Methods ****************************************************************/
 Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+    ULONG *penarray = (ULONG *)GetTagData(MUIA_PalEditor_Pens, 0, message->ops_AttrList);
     Object *pale = NULL, *palpe_palette;
     struct MUI_Palette_Entry *pens;
     int i;
 
-    /* Initialise the palette information .. */
+    D(bug("[PaletteEditor] %s: penarray @ 0x%p\n", __func__, penarray);)
+
+    /* Initialise the pen information .. */
     pens = AllocMem(sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1), MEMF_ANY);
     D(bug("[PaletteEditor] %s: pens @ 0x%p\n", __func__, pens);)
     if (!pens)
@@ -103,6 +106,8 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Palette",
         Child, HGroup,
             Child, (IPTR)(palpe_palette = (Object *)PEPaletteObject,
+               (penarray) ? MUIA_PEPalette_Pens : TAG_IGNORE,
+                (IPTR)penarray,
                 MUIA_Palette_Entries, (IPTR)pens,
                 MUIA_Palette_Names, (IPTR)pennames,
             End),

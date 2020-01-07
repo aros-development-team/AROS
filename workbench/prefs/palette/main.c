@@ -10,13 +10,14 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/debug.h>
+
 #include <proto/alib.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -35,16 +36,60 @@
 #include "args.h"
 #include "prefs.h"
 
-/* #define DEBUG 1 */
-#include <aros/debug.h>
-
-#define VERSION "$VER: Palette 1.4 (04.01.2020) AROS Dev Team"
+#define VERSION "$VER: Palette 1.5 (07.01.2020) AROS Dev Team"
 /*********************************************************************************************/
+
+BOOL allocPens(struct ColorMap *cm, ULONG * pens)
+{
+    if ((pens[0] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+    {
+        D(bug("[PaletteEditor] %s: pen #0 = %d\n", __func__, pens[0]);)
+        if ((pens[1] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+        {
+            D(bug("[PaletteEditor] %s: pen #1 = %d\n", __func__, pens[1]);)
+            if ((pens[2] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+            {
+                D(bug("[PaletteEditor] %s: pen #2 = %d\n", __func__, pens[2]);)
+                if ((pens[3] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                {
+                    D(bug("[PaletteEditor] %s: pen #3 = %d\n", __func__, pens[3]);)
+                    if ((pens[4] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                    {
+                        D(bug("[PaletteEditor] %s: pen #4 = %d\n", __func__, pens[4]);)
+                        if ((pens[5] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                        {
+                            D(bug("[PaletteEditor] %s: pen #5 = %d\n", __func__, pens[5]);)
+                            if ((pens[6] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                            {
+                                D(bug("[PaletteEditor] %s: pen #6 = %d\n", __func__, pens[6]);)
+                                if ((pens[7] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                                {
+                                    D(bug("[PaletteEditor] %s: pen #7 = %d\n", __func__, pens[7]);)
+                                    return TRUE;
+                                }
+                                ReleasePen(cm, pens[6]);
+                            }
+                            ReleasePen(cm, pens[5]);
+                        }
+                        ReleasePen(cm, pens[4]);
+                    }
+                    ReleasePen(cm, pens[3]);
+                }
+                ReleasePen(cm, pens[2]);
+            }
+            ReleasePen(cm, pens[1]);
+        }
+        ReleasePen(cm, pens[0]);
+    }
+    return FALSE;                            
+}
 
 int main(int argc, char **argv)
 {
     Object *application;
     Object *window;
+    ULONG pens[8] = { -1 };
+    ULONG *usepens = NULL;
 
     Locale_Initialize();
 
@@ -67,7 +112,13 @@ int main(int argc, char **argv)
             if (pScreen)
             {
                 if (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4)
-                    appScreen = pScreen;
+                {
+                    if (allocPens(pScreen->ViewPort.ColorMap, pens))
+                    {
+                        usepens = pens;
+                        appScreen = pScreen;
+                    }
+                }
                 else
                 {
                     UnlockPubScreen(NULL, pScreen);
@@ -96,6 +147,8 @@ int main(int argc, char **argv)
                     MUIA_Window_Screen, (IPTR)appScreen,
                     MUIA_Window_ID, ID_PALT,
                     WindowContents, (IPTR) PalEditorObject,
+                        (usepens) ? MUIA_PalEditor_Pens : TAG_IGNORE,
+                        (IPTR)usepens,
                     End,
                 End),
             End;
