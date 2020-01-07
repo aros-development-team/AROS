@@ -9,6 +9,11 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
+/* support functions and definitions ... */
+typedef struct penarray {struct ColorMap *cm; ULONG pen[8]; } penarray_t;
+extern BOOL allocPens(struct ColorMap *, penarray_t *);
+extern void releasePens(penarray_t *);
+
 /*** Identifier base ********************************************************/
 #define MUIB_PalEditor                  (TAG_USER | 0x10000000)
 

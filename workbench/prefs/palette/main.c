@@ -39,57 +39,12 @@
 #define VERSION "$VER: Palette 1.5 (07.01.2020) AROS Dev Team"
 /*********************************************************************************************/
 
-BOOL allocPens(struct ColorMap *cm, ULONG * pens)
-{
-    if ((pens[0] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-    {
-        D(bug("[PaletteEditor] %s: pen #0 = %d\n", __func__, pens[0]);)
-        if ((pens[1] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-        {
-            D(bug("[PaletteEditor] %s: pen #1 = %d\n", __func__, pens[1]);)
-            if ((pens[2] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-            {
-                D(bug("[PaletteEditor] %s: pen #2 = %d\n", __func__, pens[2]);)
-                if ((pens[3] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-                {
-                    D(bug("[PaletteEditor] %s: pen #3 = %d\n", __func__, pens[3]);)
-                    if ((pens[4] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-                    {
-                        D(bug("[PaletteEditor] %s: pen #4 = %d\n", __func__, pens[4]);)
-                        if ((pens[5] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-                        {
-                            D(bug("[PaletteEditor] %s: pen #5 = %d\n", __func__, pens[5]);)
-                            if ((pens[6] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-                            {
-                                D(bug("[PaletteEditor] %s: pen #6 = %d\n", __func__, pens[6]);)
-                                if ((pens[7] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
-                                {
-                                    D(bug("[PaletteEditor] %s: pen #7 = %d\n", __func__, pens[7]);)
-                                    return TRUE;
-                                }
-                                ReleasePen(cm, pens[6]);
-                            }
-                            ReleasePen(cm, pens[5]);
-                        }
-                        ReleasePen(cm, pens[4]);
-                    }
-                    ReleasePen(cm, pens[3]);
-                }
-                ReleasePen(cm, pens[2]);
-            }
-            ReleasePen(cm, pens[1]);
-        }
-        ReleasePen(cm, pens[0]);
-    }
-    return FALSE;                            
-}
-
 int main(int argc, char **argv)
 {
     Object *application;
     Object *window;
-    ULONG pens[8] = { -1 };
-    ULONG *usepens = NULL;
+    penarray_t pens = { NULL, -1 };
+    APTR usepens = NULL;
 
     Locale_Initialize();
 
@@ -113,9 +68,9 @@ int main(int argc, char **argv)
             {
                 if (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4)
                 {
-                    if (allocPens(pScreen->ViewPort.ColorMap, pens))
+                    if (allocPens(pScreen->ViewPort.ColorMap, &pens))
                     {
-                        usepens = pens;
+                        usepens = &pens.pen[0];
                         appScreen = pScreen;
                     }
                 }
@@ -133,6 +88,7 @@ int main(int argc, char **argv)
                     SA_Width, 320,
                     SA_Height, 200,
                     SA_ShowTitle, TRUE,
+                    SA_SharePens, TRUE,
                     SA_Title, "",
                     TAG_END);
             }                
@@ -149,6 +105,8 @@ int main(int argc, char **argv)
                     WindowContents, (IPTR) PalEditorObject,
                         (usepens) ? MUIA_PalEditor_Pens : TAG_IGNORE,
                         (IPTR)usepens,
+                        MUIA_UserData, (IPTR)&pens,
+                        MUIA_Window_Screen, (IPTR)appScreen,
                     End,
                 End),
             End;
@@ -160,10 +118,13 @@ int main(int argc, char **argv)
 
                 MUI_DisposeObject(application);
             }
+            releasePens(&pens);
             if (pScreen)
             {
                 UnlockPubScreen(NULL, pScreen);
-                pScreen = appScreen = NULL;
+                if (pScreen == appScreen)
+                    appScreen = NULL;
+                pScreen = NULL;
             }
             if (appScreen)
                 CloseScreen(appScreen);
