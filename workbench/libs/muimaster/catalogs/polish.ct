@@ -49,7 +49,7 @@ Nazwa
 ; Name
 ;
 MSG_DIRLIST_SIZE
-Wielko¶æ
+WysokoÅ›Ä‡
 ; Size
 ;
 MSG_DIRLIST_DATE
@@ -71,7 +71,7 @@ Komentarz
 ; -------------------------------------------------
 ; Frameadjust class
 MSG_FRAMEADJUST_INNER_SPACING
-Odstêp wewnêtrzny:
+OdstÄ™p wewnÄ™trzny:
 ; Inner Spacing:
 ;
 MSG_FRAMEADJUST_LEFT
@@ -79,7 +79,7 @@ Lewo
 ; Left
 ;
 MSG_FRAMEADJUST_TOP
-Góra
+GÃ³ra
 ; Top
 ;
 MSG_FRAMEADJUST_RIGHT
@@ -87,13 +87,13 @@ Prawo
 ; Right
 ;
 MSG_FRAMEADJUST_BOTTOM
-Dól
+DÃ³Å‚
 ; Bottom
 ;
 ; -------------------------------------------------
 ; Imageadjust class
 MSG_IMAGEADJUST_PATTERN
-Wzór
+WzÃ³r
 ; Pattern
 ;
 MSG_IMAGEADJUST_VECTOR
@@ -105,7 +105,7 @@ Kolor
 ; Color
 ;
 MSG_IMAGEADJUST_EXTERNAL
-Zewnêtrzne
+ZewnÄ™trzne
 ; External
 ;
 MSG_IMAGEADJUST_BITMAP
@@ -129,7 +129,7 @@ Typ:
 ; Type:
 ;
 MSG_IMAGEADJUST_ANGLE
-K±t:
+KÄ…t:
 ; Angle:
 ;
 MSG_IMAGEADJUST_VERTICAL
@@ -153,7 +153,7 @@ Ostatni pisak
 ; End pen
 ;
 MSG_IMAGEADJUST_PREVIEW
-Podgl±d:
+PodglÄ…d:
 ; Preview:
 ;
 ; -------------------------------------------------
@@ -181,11 +181,11 @@ Jasne
 ; Shine
 ;
 MSG_PENADJUST_HALFSHINE
-Rozja¶nione
+RozjaÅ›nione
 ; Halfshine
 ;
 MSG_PENADJUST_BACKGROUND
-T³o
+TÅ‚o
 ; Background
 ;
 MSG_PENADJUST_HALFSHADOW
@@ -201,7 +201,7 @@ Tekst
 ; Text
 ;
 MSG_PENADJUST_FILL
-Wype³nij
+WypeÅ‚nij
 ; Fill
 ;
 MSG_PENADJUST_MARK
@@ -215,7 +215,7 @@ Nazwa
 ; Name
 ;
 MSG_VOLUMELIST_FULL
-Pe³ne
+PeÅ‚ne
 ; Full
 ;
 MSG_VOLUMELIST_FREE
