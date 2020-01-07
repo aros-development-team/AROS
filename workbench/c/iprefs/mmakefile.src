@@ -4,9 +4,22 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := main vars patches misc \
-	 localeprefs fontprefs screenmodeprefs serialprefs inputprefs \
-	 icontrolprefs pointerprefs wbpatternprefs trackdiskprefs printerprefs
+FILES := \
+        main \
+        vars \
+        patches \
+        misc \
+        fontprefs \
+        icontrolprefs \
+        inputprefs \
+        localeprefs \
+        paletteprefs \
+        pointerprefs \
+        printerprefs \
+        screenmodeprefs \
+        serialprefs \
+        trackdiskprefs \
+        wbpatternprefs
 
 EXEDIR := $(AROS_C)
 
