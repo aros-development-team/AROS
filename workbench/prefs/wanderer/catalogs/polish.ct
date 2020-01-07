@@ -11,7 +11,7 @@ Ustawienia Wanderera
 ; Wanderer preferences
 ;
 MSG_BACKGROUNDS
-T³a
+TÅ‚a
 ; Backgrounds
 ;
 MSG_BACKGROUND_WORKBENCH
@@ -23,31 +23,31 @@ Katalogi
 ; Drawers
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
-Wybierz t³o pulpitu
+Wybierz tÅ‚o pulpitu
 ; Select Workbench Background
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-Wybierz t³o katalogów
+Wybierz tÅ‚o katalogÃ³w
 ; Select Drawer Background
 ;
 MSG_GENERAL
-Ogólne
+OgÃ³lne
 ; General
 ;
 MSG_APPEARANCE
-Wygl±d
+WyglÄ…d
 ; Appearance
 ;
 MSG_TOOLBAR
-Pasek narzêdzi
+Pasek narzÄ™dzi
 ; Toolbar
 ;
 MSG_CLASSIC
-klasyczna
+Klasyczna
 ; Classic
 ;
 MSG_ENHANCED
-rozszerzona
+Rozszerzona
 ; Enhanced
 ;
 MSG_NAVIGATION
@@ -63,27 +63,27 @@ Obiekty
 ; Objects
 ;
 MSG_PREVIEW
-Podgl±d
+PodglÄ…d
 ; Preview
 ;
 MSG_TOOLBAR_ENABLED
-W³±cz pasek narzêdzi
+WÅ‚Ä…cz pasek narzÄ™dzi
 ; Toolbar Enabled
 ;
 MSG_ICONSPREFS
-Wygl±d ikon
+WyglÄ…d ikon
 ; Icons look and feel
 ;
 MSG_ICONLISTMODE
-Tryb wy¶wietlania ikon
+Tryb wyÅ›wietlania ikon
 ; Icon listmode
 ;
 MSG_ICONLISTMODE_PLAIN
-p³ynne
+PÅ‚ynne
 ; List icons plainly
 ;
 MSG_ICONLISTMODE_GRID
-uszeregowane
+Uszeregowane
 ; List icons by grid
 ;
 MSG_ICONTEXTMODE
@@ -91,40 +91,40 @@ Tryb pisma etykiet
 ; Icons text drawmode
 ;
 MSG_ICONTEXTMODE_OUTLINE
-kontur
+Kontur
 ; Outline
 ;
 MSG_ICONTEXTMODE_PLAIN
-zwyk³y
+ZwykÅ‚y
 ; Plain
 ;
 MSG_ICONTEXTMODE_SHADOW
-cieñ
+CieÅ„
 ; Drop shadow
 ;
 MSG_ICONTEXTLENGTH
-Maksymalna d³ugo¶æ tekstu
+Maksymalna dÅ‚ugoÅ›Ä‡ tekstu
 ; Max icon textlength
 ;
 MSG_DOUBLEBUFFERED
-podwójne buforowanie
+podwÃ³jne buforowanie
 ; double buffering
 ;
 MSG_MISC
-ró¿ne
+roÅ¼ne
 ; misc
 ;
 MSG_BUBBLESCREENTITLE
-%pc = wolna pamiêæ graficzna\n\
-%pf = wolna pamiêæ pozosta³a\n\
-%pt = wolna pamiêæ ca³kowita\n\
-%PC = pamiêæ graficzna\n\
-%PF = pamiêæ pozosta³a\n\
-%PT = pamiêæ ca³kowita\n\
+%pc = wolna pamiÄ™Ä‡ graficzna\n\
+%pf = wolna pamiÄ™Ä‡ pozostaÅ‚a\n\
+%pt = wolna pamiÄ™Ä‡ caÅ‚kowita\n\
+%PC = pamiÄ™Ä‡ graficzna\n\
+%PF = pamiÄ™Ä‡ pozostaÅ‚a\n\
+%PT = pamiÄ™Ä‡ caÅ‚kowita\n\
 %os = wersja AROS-a\n\
 %wb = wersja Wanderera\n\
-%ov = dok³adna wersja AROS-a\n\
-%wv = dok³adna wersja workbench.library
+%ov = dokÅ‚adna wersja AROS-a\n\
+%wv = dokÅ‚adna wersja workbench.library
 ; %pc = Chip Ram free\n\
 ; %pf = Fast Ram free\n\
 ; %pt = Total Ram free\n\
@@ -141,11 +141,11 @@ Tryb powielania:
 ; Tile mode :
 ;
 MSG_XOFFSET
-Odstêpy poziome:
+OdstÄ™py poziome:
 ; X Offset :
 ;
 MSG_YOFFSET
-Odstêpy pionowe:
+OdstÄ™py pionowe:
 ; Y Offset :
 ;
 MSG_ICONLABELFONT
@@ -157,15 +157,15 @@ Czcionka informacji ikon...
 ; Icon Info Font...
 ;
 MSG_HORIZSPACINGICON
-Poziomy odstêp pomiêdzy ikonami
+Poziomy odstÄ™p pomiÄ™dzy ikonami
 ; Horizontal spacing between icons
 ;
 MSG_VERTSPACINGICON
-Pionowy odstêp pomiêdzy ikonami
+Pionowy odstÄ™p pomiÄ™dzy ikonami
 ; Vertical spacing between icons
 ;
 MSG_PADDINGICONIMAGELABEL
-Odstêp ikon od etykiet
+OdstÄ™p ikon od etykiet
 ; Padding between Icon Image and Label
 ;
 MSG_HORIZPADDINGLABELTEXT
@@ -177,11 +177,11 @@ Pionowy margines etykiety
 ; Vertical Padding between Label Frame and Text
 ;
 MSG_FRAMEWIDTH
-Szeroko¶æ ramki etykiety
+SzerokoÅ›Ä‡ ramki etykiety
 ; Label Frame Width
 ;
 MSG_FRAMEHEIGHT
-Wysoko¶æ ramki etykiety
+WysokoÅ›Ä‡ ramki etykiety
 ; Label Frame Height
 ;
 MSG_TILED
@@ -193,7 +193,7 @@ Skalowanie
 ; Scaled
 ;
 MSG_FLOATING
-P³ynne
+PÅ‚ynne
 ; Floating
 ;
 MSG_FIXED
@@ -201,11 +201,11 @@ Uszeregowane
 ; Fixed
 ;
 MSG_LABELLINELENGTH
-Maksymalna d³ugo¶æ wiersza etykiety...
+Maks. dÅ‚ugoÅ›Ä‡ wiersza etykiety...
 ; Max. Label line length...
 ;
 MSG_USEMULTILINELABELS
-U¿yj wielu wierszy
+UÅ¼yj wielu wierszy
 ; Use MultiLine Labels
 ;
 MSG_SHOWFOCUSEDICON
@@ -213,7 +213,7 @@ Tylko dla zaznaczonych ikon
 ; Only show for Focus(ed) Icon
 ;
 MSG_NDISPLAYLINES
-Ilo¶æ widocznych wierszy...
+IloÅ›Ä‡ widocznych wierszy...
 ; No. of lines to display...
 ;
 MSG_TILEMODEOPTIONS
@@ -229,7 +229,7 @@ Opcje zaawansowane...
 ; Advanced Options...
 ;
 MSG_BACKGROUNDOPTIONS
-Opcje t³a...
+Opcje tÅ‚a...
 ; Background Options...
 ;
 MSG_DRAWMODE
@@ -237,27 +237,27 @@ Tryb rysowania:
 ; Draw mode :
 ;
 MSG_USERFILEONWB
-Katalog u¿ytkownika na pulpicie
+Katalog uÅ¼ytkownika na pulpicie
 ; User Files Folder on Workbench
 ;
 MSG_NETWORKONWB
-Przegl±darka na pulpicie
+PrzeglÄ…darka na pulpicie
 ; Network Browser on Workbench
 ;
 MSG_VIEWSETTINGS
-Poka¿ ustawienia
+PokaÅ¼ ustawienia
 ; View Settings
 ;
 MSG_WANDERERSCREENTITLE
-Tytu³ ekranu Wanderera
+TytuÅ‚ ekranu Wanderera
 ; Wanderer ScreenTitle
 ;
 MSG_ADVANCED
-zaawansowane
+Zaawansowane
 ; Advanced
 ;
 MSG_USE
-_U¿yj
+_UÅ¼yj
 ; _Use
 ;
 MSG_CANCEL
@@ -265,11 +265,11 @@ Ponie_chaj
 ; C_ancel
 ;
 MSG_LABELSPREFS
-Wygl±d etykiet
+WyglÄ…d etykiet
 ; Labels look and feel
 ;
 MSG_ADVANCEDBACKGROUND
-T³o
+TÅ‚o
 ; Background
 ;
 MSG_ADVANCEDICONS
@@ -281,19 +281,19 @@ Etykiety
 ; Labels
 ;
 MSG_ICONSORTMODE_BYNAME
-alfabetycznie
+Alfabetycznie
 ; By name
 ;
 MSG_ICONSORTMODE_BYDATE
-wed³ug daty
+WedÅ‚ug daty
 ; By date
 ;
 MSG_ICONSORTMODE_BYSIZE
-wed³ug wielko¶ci
+WedÅ‚ug wielkoÅ›ci
 ; By size
 ;
 MSG_DEFAULT_ICONSORTMODE
-Porz±dek domy¶lny
+PorzÄ…dek domyÅ›lny
 ; Default sort order
 ;
 MSG_ICON_AUTOSORT_ENABLED
@@ -301,18 +301,18 @@ Sortowanie automayczne
 ; Autosorting enabled
 ;
 MSG_ICON_DRAG_TRANSPARENT
-U¿yj przezroczysto¶ci przeci±gaj±c ikony
+UÅ¼yj przezroczystoÅ›ci przeciÄ…gajÄ…c ikony
 ; Use transparency when draging icons
 ;
 MSG_DEFAULT_ICONVIEWMODE
-Tryb domy¶lny
+Tryb domyÅ›lny
 ; Default view mode
 ;
 MSG_ICONVIEWMODE_ALL
-wszystkie pliki
+Wszystkie pliki
 ; All files
 ;
 MSG_ICONVIEWMODE_ICONS
-tylko ikony
+Tylko ikony
 ; Icons only
 ;
