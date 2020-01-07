@@ -9,7 +9,6 @@
 void iso88592toamigapl(char *str)
 {
     int i, len = strlen(str);
-    printf("[FlexCat] Translating '%s' ->", str);
     for (i = 0; i < len; i ++)
     {
         if (str[i] == 161)
@@ -45,6 +44,5 @@ void iso88592toamigapl(char *str)
         else if (str[i] == 241)
             str[i] = 239;
     }
-    printf(" '%s'\n", str);
 }
 
