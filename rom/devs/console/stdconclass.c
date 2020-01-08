@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for CONU_STANDARD console units.
@@ -28,6 +28,9 @@ struct stdcondata
     WORD rendercursorcount;
     BOOL cursorvisible;
 
+    UWORD pens[CONUNIT_PEN_MAX];
+    UWORD *penmap[CONUNIT_PEN_MAX];
+
     /* Libraries */
     struct Library *scd_GfxBase;
 };
@@ -46,10 +49,17 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
     {
         struct stdcondata *data = INST_DATA(cl, o);
         ULONG dispmid = OM_DISPOSE;
+        int i;
+
         /* Clear for checking inside dispose() whether stuff was allocated.
            Basically this is bug-prevention.
          */
         memset(data, 0, sizeof(struct stdcondata));
+        for (i = 0; i < CONUNIT_PEN_MAX; i ++)
+        {
+            data->pens[i] = i;
+            data->penmap[i] = &data->pens[i];
+        }
 
         data->scd_GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
         if (data->scd_GfxBase)
@@ -57,8 +67,11 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
             data->dri = GetScreenDrawInfo(CU(o)->cu_Window->WScreen);
             if (data->dri)
             {
-                CU(o)->cu_BgPen = data->dri->dri_Pens[BACKGROUNDPEN];
-                CU(o)->cu_FgPen = data->dri->dri_Pens[TEXTPEN];
+                data->penmap[0] = &data->dri->dri_Pens[BACKGROUNDPEN];
+                data->penmap[1] = &data->dri->dri_Pens[TEXTPEN];
+
+                CU(o)->cu_BgPen = (BYTE)*(data->penmap[0]);
+                CU(o)->cu_FgPen = (BYTE)*(data->penmap[1]);
 
                 data->cursorvisible = TRUE;
                 Console_RenderCursor(o);
@@ -740,7 +753,12 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o,
     return;
 }
 
-
+IPTR stdcon_getpencolor(Class *cl, Object *o, struct P_Console_GetColorPen *msg)
+{
+    struct stdcondata *data = INST_DATA(cl, o);
+    *msg->PenPtr = (BYTE)*(data->penmap[msg->ColorIdx]);
+    return TRUE;
+}
 
 AROS_UFH3S(IPTR, dispatch_stdconclass,
     AROS_UFHA(Class *, cl, A0),
@@ -752,6 +770,10 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
 
     switch (msg->MethodID)
     {
+    case M_Console_GetColorPen:
+        retval = (IPTR) stdcon_getpencolor(cl, o, (struct P_Console_GetColorPen *)msg);
+        break;
+
     case OM_NEW:
         retval = (IPTR) stdcon_new(cl, o, (struct opSet *)msg);
         break;

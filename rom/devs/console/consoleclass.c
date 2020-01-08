@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base class for console units
@@ -76,6 +76,10 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
         unit = (struct ConUnit *)data;
 
         memset(data, 0, sizeof(struct consoledata));
+        for (i = 0; i < CONUNIT_PEN_MAX; i ++)
+        {
+            data->intunit.pens[i] = i;
+        }
 
         /* Initialize the unit fields */
         unit->cu_Window = win;
@@ -326,8 +330,8 @@ static VOID console_docommand(Class *cl, Object *o,
                 switch (param)
                 {
                 case 0:
-                    CU(o)->cu_FgPen = 1;
-                    CU(o)->cu_BgPen = 0;
+                    Console_GetColorPen(o, 0, &CU(o)->cu_BgPen);
+                    Console_GetColorPen(o, 1, &CU(o)->cu_FgPen);
                     CU(o)->cu_TxFlags = 0;
                     break;
                 case 1:
@@ -371,10 +375,10 @@ static VOID console_docommand(Class *cl, Object *o,
                 case 35:
                 case 36:
                 case 37:
-                    CU(o)->cu_FgPen = param - 30;
+                    Console_GetColorPen(o, param - 30, &CU(o)->cu_FgPen);
                     break;
                 case 39:
-                    CU(o)->cu_FgPen = 1;
+                    Console_GetColorPen(o, 1, &CU(o)->cu_FgPen);
                     break;
 
                 case 40:
@@ -385,11 +389,11 @@ static VOID console_docommand(Class *cl, Object *o,
                 case 45:
                 case 46:
                 case 47:
-                    CU(o)->cu_BgPen = param - 40;
+                    Console_GetColorPen(o, param - 40, &CU(o)->cu_BgPen);
                     break;
 
                 case 49:
-                    CU(o)->cu_BgPen = 1;
+                    Console_GetColorPen(o, 0, &CU(o)->cu_BgPen);
                     break;
                 } /* switch(param) */
             } /* for(i = 0; i < msg->NumParams; i++) */
@@ -530,7 +534,12 @@ static VOID console_newwindowsize(Class *cl, Object *o,
     return;
 }
 
-
+IPTR console_getpencolor(Class *cl, Object *o, struct P_Console_GetColorPen *msg)
+{
+    struct consoledata *data = INST_DATA(cl, o);
+    *msg->PenPtr = (UBYTE)data->intunit.pens[msg->ColorIdx];
+    return TRUE;
+}
 
 /********* Console class dispatcher **********************************/
 AROS_UFH3S(IPTR, dispatch_consoleclass,
@@ -543,6 +552,10 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
 
     switch (msg->MethodID)
     {
+    case M_Console_GetColorPen:
+        retval = (IPTR) console_getpencolor(cl, o, (struct P_Console_GetColorPen *)msg);
+        break;
+
     case OM_NEW:
         retval = (IPTR) console_new(cl, o, (struct opSet *)msg);
         break;
