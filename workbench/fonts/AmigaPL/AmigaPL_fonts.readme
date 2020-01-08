@@ -1,0 +1,16 @@
+Short:    Polish fonts in AmigaPL charset
+Author:   Andrzej "Apis" Podgórski (apisvideo@wp.pl)
+
+A set of proportionate and disproportionate fonts
+designed to display polish diacritics correctly
+when using AmigaPL encoding.
+
+
+Brief characteristics:
+
+SystemFont and SystemFontP - uniform font typeface for system and screen
+ISOTopazPL - much more pleasing to the eye ;-)
+ISOCourierPL, ISOArialPL, ISOHelveticaPL, ISOTimesPL - for internet and desktop
+
+Permission is granted to include these fonts along with AROS sources
+and distributions under the terms of AROS Public License.
