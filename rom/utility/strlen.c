@@ -38,6 +38,15 @@
 {
     AROS_LIBFUNC_INIT
 
+    if (string)
+    {
+        CONST_STRPTR str_start = (CONST_STRPTR)string;
+
+        while (*string++);
+
+        return (ULONG)(((IPTR)string) - ((IPTR)str_start));
+    }
+    return 0;
 
     AROS_LIBFUNC_EXIT
 } /* Strlen */
