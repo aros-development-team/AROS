@@ -34,10 +34,11 @@
 
 /*********************************************************************************************/
 
-STATIC UWORD defaultpen[MAXPENS * 4] =
-{
-    0, 1, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1, 65535
-};
+#if (NUMDRIPENS > 12)
+STATIC CONST UWORD defaultpen8[NUMDRIPENS + 1] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1 , 2 , 1, -1};
+#else
+STATIC CONST UWORD defaultpen8[NUMDRIPENS + 1] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1, -1};
+#endif
 
 STATIC struct ColorSpec defaultcolor[MAXPENS * 4] =
 {
@@ -369,13 +370,23 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
+    UWORD pen = 0;
+    int i;
+
     paletteprefs.pap_Reserved[0] = 0;
     paletteprefs.pap_Reserved[1] = 0;
     paletteprefs.pap_Reserved[2] = 0;
     paletteprefs.pap_Reserved[3] = 0;
 
-    CopyMem(defaultpen, paletteprefs.pap_4ColorPens, sizeof paletteprefs.pap_4ColorPens);
-    CopyMem(defaultpen, paletteprefs.pap_8ColorPens, sizeof paletteprefs.pap_8ColorPens);
+    for (i = 0; i < (sizeof(paletteprefs.pap_4ColorPens) >> 1); i++)
+    {
+        if (i >= NUMDRIPENS)
+            pen = (UWORD)-1;
+        if (pen != (UWORD)-1)
+            pen = defaultpen8[i];
+        paletteprefs.pap_4ColorPens[i] = pen;
+        paletteprefs.pap_8ColorPens[i] = pen;
+    }
     CopyMem(defaultcolor, paletteprefs.pap_Colors, sizeof paletteprefs.pap_Colors);
 
     return TRUE;
