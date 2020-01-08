@@ -56,18 +56,23 @@ void PalettePrefs_Handler(STRPTR filename)
                     if (ReadChunkBytes(iff, &loadprefs, sizeof(struct PalettePrefs)) == sizeof(struct PalettePrefs))
                     {
                         struct ColorSpec palette[32];
+                        struct IOldPenPrefs penmap4 = { 0 };
+                        struct IOldPenPrefs penmap8 = { 0 };
+                        penmap8.Type = 1;
 
                         D(bug("[IPrefs:Palette]  %s:  Reading chunk successful.\n", __func__));
 
-                       for (i = 0; i < 32; i++)
+                        for (i = 0; i < 32; i++)
                         {
                             if (i < NUMDRIPENS)
                             {
-                                paletteprefs.pap_4ColorPens[i] = AROS_BE2WORD(loadprefs.pap_4ColorPens[i]);
+                                penmap4.PenTable[i] = AROS_BE2WORD(loadprefs.pap_4ColorPens[i]);
+                                penmap4.Count++;
 
-                                paletteprefs.pap_8ColorPens[i] = AROS_BE2WORD(loadprefs.pap_8ColorPens[i]);
-                                if (paletteprefs.pap_8ColorPens[i] >= PEN_C3)
-                                    paletteprefs.pap_8ColorPens[i] -= (PEN_C3 - 4);
+                                penmap8.PenTable[i] = AROS_BE2WORD(loadprefs.pap_8ColorPens[i]);
+                                penmap8.Count++;
+                                if (penmap8.PenTable[i] >= PEN_C3)
+                                    penmap8.PenTable[i] -= (PEN_C3 - 4);
                             }
                             palette[i].ColorIndex   = AROS_BE2WORD(loadprefs.pap_Colors[i].ColorIndex);
                             palette[i].Red          = AROS_BE2WORD(loadprefs.pap_Colors[i].Red);
@@ -77,11 +82,10 @@ void PalettePrefs_Handler(STRPTR filename)
 
                         /* load the palette in .. */
                         SetIPrefs(&palette[0], sizeof(struct ColorSpec) * 32, IPREFS_TYPE_PALETTE_V39);
-#if (0)                        
+
                         /* load the pen mappings in .. */
-                        struct IOldPenPrefs *fp;
-                        SetIPrefs(&fp, sizeof(struct IOldPenPrefs), IPREFS_TYPE_PENS_V39);
-#endif
+                        SetIPrefs(&penmap4, sizeof(struct IOldPenPrefs), IPREFS_TYPE_PENS_V39);
+                        SetIPrefs(&penmap8, sizeof(struct IOldPenPrefs), IPREFS_TYPE_PENS_V39);
 
                         D(bug("[IPrefs:Palette]  %s:  ID_PALT chunk parsed.\n", __func__));
                     }
