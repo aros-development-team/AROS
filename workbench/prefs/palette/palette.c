@@ -23,13 +23,14 @@
 
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
+#include <zune/prefseditor.h>
 
 #include <string.h>
 #include <stdio.h>
 
 #include "locale.h"
 #include "paleditor.h"
-#include "clutcolor.h"
+#include "palette.h"
 #include "prefs.h"
 
 #define ColorWheelBase data->colorwheelbase
@@ -55,9 +56,13 @@ struct PEPalette_DATA
     Object                      **colorfieldentries;
     Object                      *palgrp;
     Object                      *palmode;
+
+    ULONG                       *pens;
+    
     ULONG                       *penmap;
     ULONG                       *penmap4;
     ULONG                       *penmap8;
+
     ULONG                       lastindex;
     ULONG                       group;
     ULONG                       rgb[3];
@@ -72,6 +77,7 @@ struct MUIP_PalNotifyMsg
     STACKED struct PEPalette_DATA *palData;
     STACKED ULONG palMode;
     STACKED ULONG palVal;
+    STACKED ULONG palIgnore;
 };
 
 static LONG display_func(struct Hook *hook, char **array,
@@ -137,65 +143,9 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
             changepenmsg.palData = data;
             changepenmsg.palMode = 3;
             changepenmsg.palVal = data->penmap[entry];
+            changepenmsg.palIgnore = 1;
             setcolor_func(hook, self, &changepenmsg);
         }
-    }
-    else if (mode == 2)
-    {
-        D(bug("[PaletteEditor:Palette] %s: colorindex = %d\n", __func__, data->penmap[entry]);)
-
-        data->entries[data->penmap[entry]].mpe_Red =
-            XGET(data->coloradjust, MUIA_Coloradjust_Red);
-        data->entries[data->penmap[entry]].mpe_Green =
-            XGET(data->coloradjust, MUIA_Coloradjust_Green);
-        data->entries[data->penmap[entry]].mpe_Blue =
-            XGET(data->coloradjust, MUIA_Coloradjust_Blue);
-
-        SetRGB32(&_screen(self)->ViewPort,
-            data->penmap[entry],
-            data->entries[data->penmap[entry]].mpe_Red,
-            data->entries[data->penmap[entry]].mpe_Green,
-            data->entries[data->penmap[entry]].mpe_Blue);
-        if (GetBitMapAttr(_rp(self)->BitMap, BMA_DEPTH) > 8)
-        {
-            Object *winObj = _win(self);
-            MUI_Redraw((Object *)XGET(winObj, MUIA_Window_RootObject), MADF_DRAWOBJECT);
-        }
-    }
-    else if (mode == 3)
-    {
-        ULONG r;
-        ULONG g;
-        ULONG b;
-
-        data->penmap[entry] = val;
-
-        D(bug("[PaletteEditor:Palette] %s: pen %d = colorindex %d\n", __func__, entry, val);)
-        
-        r = data->entries[val].mpe_Red;
-        g = data->entries[val].mpe_Green;
-        b = data->entries[val].mpe_Blue;
-
-        NNSET(data->coloradjust, MUIA_Coloradjust_Red, r);
-        NNSET(data->coloradjust, MUIA_Coloradjust_Green, g);
-        NNSET(data->coloradjust, MUIA_Coloradjust_Blue, b);
-        data->rgb[0] = r;
-        data->rgb[1] = g;
-        data->rgb[2] = b;
-        NotifyGun(data->coloradjust, data, 0);
-        NotifyGun(data->coloradjust, data, 1);
-        NotifyGun(data->coloradjust, data, 2);
-
-        if (DoMethod(data->colorfiledgrp, MUIM_Group_InitChange))
-        {
-            if (data->lastindex != val)
-            {
-                SET(data->colorfieldentries[data->lastindex], MUIA_Frame, MUIV_Frame_None);
-            }
-            SET(data->colorfieldentries[val], MUIA_Frame, MUIV_Frame_ReadList);
-            DoMethod(data->colorfiledgrp, MUIM_Group_ExitChange);
-        }
-        data->lastindex = val;
     }
     else if (mode == 4)
     {
@@ -212,6 +162,85 @@ static LONG setcolor_func(struct Hook *hook, APTR * self, struct MUIP_PalNotifyM
             DoMethod(data->colorfiledgrp, MUIM_Group_ExitChange);
         }
         data->penmap = (penmode == 0) ? data->penmap4 : data->penmap8;
+    }
+    else
+    {
+        if (mode == 2)
+        {
+            ULONG pen = data->penmap[entry];
+            D(bug("[PaletteEditor:Palette] %s: colorindex = %d\n", __func__, data->penmap[entry]);)
+
+            data->entries[data->penmap[entry]].mpe_Red =
+                XGET(data->coloradjust, MUIA_Coloradjust_Red);
+            data->entries[data->penmap[entry]].mpe_Green =
+                XGET(data->coloradjust, MUIA_Coloradjust_Green);
+            data->entries[data->penmap[entry]].mpe_Blue =
+                XGET(data->coloradjust, MUIA_Coloradjust_Blue);
+
+            if (data->pens)
+                pen = data->pens[pen];
+
+            SetRGB32(&_screen(self)->ViewPort,
+                pen,
+                data->entries[data->penmap[entry]].mpe_Red,
+                data->entries[data->penmap[entry]].mpe_Green,
+                data->entries[data->penmap[entry]].mpe_Blue);
+
+            if (GetBitMapAttr(_rp(self)->BitMap, BMA_DEPTH) > 8)
+            {
+                Object *redrawObj;
+#if (0)
+                redrawObj = _win(self);
+                redrawObj = (Object *)XGET(redrawObj, MUIA_Window_RootObject);
+#else
+                redrawObj = data->colorfiledgrp;
+#endif
+                MUI_Redraw(redrawObj, MADF_DRAWOBJECT);
+            }
+        }
+        else if (mode == 3)
+        {
+            ULONG r;
+            ULONG g;
+            ULONG b;
+
+            data->penmap[entry] = val;
+
+            D(
+                bug("[PaletteEditor:Palette] %s: pen %d = colorindex %d\n", __func__, entry, val);
+                bug("[PaletteEditor:Palette] %s: lastindex %d\n", __func__, data->lastindex);
+            )
+            r = data->entries[val].mpe_Red;
+            g = data->entries[val].mpe_Green;
+            b = data->entries[val].mpe_Blue;
+
+            NNSET(data->coloradjust, MUIA_Coloradjust_Red, r);
+            NNSET(data->coloradjust, MUIA_Coloradjust_Green, g);
+            NNSET(data->coloradjust, MUIA_Coloradjust_Blue, b);
+            data->rgb[0] = r;
+            data->rgb[1] = g;
+            data->rgb[2] = b;
+            NotifyGun(data->coloradjust, data, 0);
+            NotifyGun(data->coloradjust, data, 1);
+            NotifyGun(data->coloradjust, data, 2);
+
+            if (DoMethod(data->colorfiledgrp, MUIM_Group_InitChange))
+            {
+                if (data->lastindex != val)
+                {
+                    SET(data->colorfieldentries[data->lastindex], MUIA_Frame, MUIV_Frame_None);
+                }
+                SET(data->colorfieldentries[val], MUIA_Frame, MUIV_Frame_ReadList);
+                DoMethod(data->colorfiledgrp, MUIM_Group_ExitChange);
+            }
+            data->lastindex = val;
+        }
+
+        if (!msg->palIgnore)
+        {
+            Object *editor = (Object *)XGET(_win(data->list), MUIA_Window_RootObject);
+            SET( editor, MUIA_PrefsEditor_Changed, TRUE);
+        }
     }
     return 0;
 }
@@ -236,11 +265,12 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 {
     struct PEPalette_DATA *data;
     struct MUI_Palette_Entry *e = (struct MUI_Palette_Entry *)GetTagData(MUIA_Palette_Entries, 0, msg->ops_AttrList);
+    ULONG *penarray = (ULONG *)GetTagData(MUIA_PEPalette_Pens, 0, msg->ops_AttrList);
     Object *list, *coloradjust, *palgrp;
+    Object *clutcGrpObj;
     int i, c = 0;
 
-
-    Object *clutcGrpObj;
+    D(bug("[PaletteEditor:Palette] %s: penarray @ 0x%p\n", __func__, penarray);)
 
     if (e)
     {
@@ -267,6 +297,8 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
                 MUIA_Listview_List, (IPTR)(list = ListObject,
             End),
         End),
+        Child, (IPTR)(BalanceObject,
+        End),
         Child, (IPTR)(palgrp = VGroup,
         End),
         TAG_MORE, (IPTR) msg->ops_AttrList);
@@ -287,6 +319,7 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
     data->colorfiledgrp = clutcGrpObj;
 
     data->palgrp = palgrp;
+    data->pens = penarray;
 
     data->display_hook.h_Entry = HookEntry;
     data->display_hook.h_SubEntry = (HOOKFUNC) display_func;
@@ -307,8 +340,9 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     if (data->numentries > 0)
     {
-        data->penmap4 = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
-        data->penmap8 = AllocMem(data->numentries * sizeof(ULONG), MEMF_CLEAR);
+        data->penmap4 = (ULONG *)GetTagData(MUIA_PEPalette_Penmap4, 0, msg->ops_AttrList);
+        data->penmap8 = (ULONG *)GetTagData(MUIA_PEPalette_Penmap8, 0, msg->ops_AttrList);
+
         data->colorfieldentries = AllocMem(data->numentries * sizeof(Object *), MEMF_ANY);
         initPenMap(data->penmap4, 4);
         initPenMap(data->penmap8, 8);
@@ -325,7 +359,7 @@ IPTR PEPalette__OM_NEW(Class *CLASS, Object *self, struct opSet * msg)
 
     DoMethod(data->list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
         (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-        (IPTR) data, 1, 0);
+        (IPTR) data, 1, 0, 0);
 
     return (IPTR) self;
 }
@@ -342,7 +376,34 @@ IPTR PEPalette__OM_SET(Class *CLASS, Object *self, struct opSet * msg)
         switch (tag->ti_Tag)
         {
         case MUIA_Palette_Entries:
-            data->entries = (struct MUI_Palette_Entry *)tag->ti_Data;
+            if ((data->entries = (struct MUI_Palette_Entry *)tag->ti_Data) != NULL)
+            {
+                LONG entry, max = data->numentries;
+
+                /* update the palette entries.. */
+                if (max > 8)
+                    max = 8;
+                for (entry = 0; entry < max; entry++)
+                {
+                    D(bug("[PaletteEditor:Palette] %s: entry #%d\n", __func__, entry);)
+                    NNSET(data->colorfieldentries[entry], MUIA_Colorfield_Red, data->entries[entry].mpe_Red);
+                    NNSET(data->colorfieldentries[entry], MUIA_Colorfield_Green, data->entries[entry].mpe_Green);
+                    NNSET(data->colorfieldentries[entry], MUIA_Colorfield_Blue, data->entries[entry].mpe_Blue);
+                }
+
+                /* now update the "current" selection */
+                entry = XGET(data->list, MUIA_List_Active);
+                if ((entry >= 0) && (entry < data->numentries))
+                {
+                    data->rgb[0] = data->entries[data->penmap[entry]].mpe_Red;
+                    data->rgb[1] = data->entries[data->penmap[entry]].mpe_Green;
+                    data->rgb[2] = data->entries[data->penmap[entry]].mpe_Blue;
+
+                    NNSET(data->coloradjust, MUIA_Coloradjust_Red, data->rgb[entry]);
+                    NNSET(data->coloradjust, MUIA_Coloradjust_Green, data->rgb[entry]);
+                    NNSET(data->coloradjust, MUIA_Coloradjust_Blue, data->rgb[entry]);
+                }
+            }
             break;
 
         case MUIA_Palette_Names:
@@ -403,7 +464,7 @@ IPTR PEPalette__MUIM_Setup
 {
     struct PEPalette_DATA *data = INST_DATA(CLASS, self);
 
-    ULONG c;
+    LONG c, active;
     UWORD i;
     int rowcount;
 
@@ -434,18 +495,37 @@ IPTR PEPalette__MUIM_Setup
     D(bug("[PaletteEditor:Palette] %s: %d rows, %d colls\n", __func__, rowcount, COLUMNCOUNT);)
 
     /* create the clut colorfield objects ...*/
-    D(bug("[PaletteEditor:Palette] %s: creating clut cf objects ...\n", __func__);)
+    active = XGET(data->list, MUIA_List_Active);
+    if ((active < 0) || (active >= data->numentries))
+        active = 0;
+
+    D(bug("[PaletteEditor:Palette] %s: creating clut cf objects ... (active = %d)\n", __func__, active);)
     for (i = 0; i < rowcount; i++)
     {
         for(c = 0; c < COLUMNCOUNT; c++)
         {
-            data->colorfieldentries[(i * COLUMNCOUNT) + c] = NewObject(CLUTColor_CLASS->mcc_Class, NULL,
-                    MUIA_Frame, (c + i == 0) ? MUIV_Frame_ReadList : MUIV_Frame_None,
-                    MUIA_CLUTColor_Index, (i * COLUMNCOUNT) + c,
+            ULONG usepen = -1, entry = (i * COLUMNCOUNT) + c, frame = MUIV_Frame_None;
+
+            if (data->pens)
+                usepen = data->pens[entry];
+
+            if (((i * 4) + c) == data->penmap[active])
+            {
+                data->lastindex = ((i * 4) + c);
+                frame = MUIV_Frame_ReadList;
+            }
+
+            data->colorfieldentries[entry] = ColorfieldObject,
+                    MUIA_Frame,  frame,
+                    (data->pens) ? MUIA_Colorfield_Pen : TAG_IGNORE,
+                    usepen,
+                    MUIA_Colorfield_Red, data->entries[entry].mpe_Red,
+                    MUIA_Colorfield_Green, data->entries[entry].mpe_Green,
+                    MUIA_Colorfield_Blue, data->entries[entry].mpe_Blue,
                     MUIA_InputMode, MUIV_InputMode_RelVerify,
-                TAG_DONE);
-            D(bug("[PaletteEditor:Palette] %s: cf obj #%d @ 0x%p\n", __func__, (i * COLUMNCOUNT) + c, data->colorfieldentries[(i * COLUMNCOUNT) + c]);)
-            DoMethod(data->colorfiledgrp, OM_ADDMEMBER, data->colorfieldentries[(i * COLUMNCOUNT) + c]);
+                End;
+            D(bug("[PaletteEditor:Palette] %s: cf obj #%d @ 0x%p\n", __func__, entry, data->colorfieldentries[entry]);)
+            DoMethod(data->colorfiledgrp, OM_ADDMEMBER, data->colorfieldentries[entry]);
         }
     }
 
@@ -491,7 +571,7 @@ IPTR PEPalette__MUIM_PEPalette_Init
     {
         DoMethod(data->palmode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-            (IPTR) data, 4, 0);
+            (IPTR) data, 4, 0, 0);
         i = 8;
     }
     else
@@ -501,17 +581,17 @@ IPTR PEPalette__MUIM_PEPalette_Init
     {
         DoMethod(data->colorfieldentries[i - 1], MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-            (IPTR) data, 3, i - 1);
+            (IPTR) data, 3, i - 1, 0);
     }
     DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Red, MUIV_EveryTime,
         (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-        (IPTR) data, 2, 0);
+        (IPTR) data, 2, 0, 0);
     DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Green, MUIV_EveryTime,
         (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-        (IPTR) data, 2, 1);
+        (IPTR) data, 2, 1, 0);
     DoMethod(data->coloradjust, MUIM_Notify, MUIA_Coloradjust_Blue, MUIV_EveryTime,
         (IPTR) self, 5, MUIM_CallHook, (IPTR) &data->setcolor_hook,
-        (IPTR) data, 2, 2);
+        (IPTR) data, 2, 2, 0);
 
     D(bug("[PaletteEditor:Palette] %s: adjusting current colors..\n", __func__);)
 

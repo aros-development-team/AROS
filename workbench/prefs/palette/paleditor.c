@@ -34,6 +34,8 @@
 #include "palette.h"
 #include "prefs.h"
 
+#define DPENS(x)
+
 STATIC CONST_STRPTR pennames[MAXPENS + 1];
 
 /*
@@ -64,6 +66,8 @@ STATIC const struct MUI_Palette_Entry initialpens[MAXPENS + 1] =
 struct PalEditor_DATA
 {
     Object                      *palpe_palette;
+    ULONG                       *penmap4;
+    ULONG                       *penmap8;
     struct MUI_Palette_Entry    *pens;
     UWORD                       *origcols;
     UWORD                       count;
@@ -76,24 +80,135 @@ STATIC VOID Gadgets2PalPrefs(struct PalEditor_DATA *data);
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct PalEditor_DATA *data = INST_DATA(CLASS, self)
 
+/*** support functions ******************************************************/
+BOOL allocPens(struct ColorMap *cm, penarray_t *pens)
+{
+    DPENS(bug("[PaletteEditor] %s(0x%p, 0x%p)\n", __func__, cm, pens);)
+
+    pens->cm = NULL;
+
+    if ((pens->pen[0] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+    {
+        DPENS(bug("[PaletteEditor] %s: pen #0 = %d\n", __func__, pens->pen[0]);)
+        if ((pens->pen[1] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+        {
+            DPENS(bug("[PaletteEditor] %s: pen #1 = %d\n", __func__, pens->pen[1]);)
+            if ((pens->pen[2] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+            {
+                DPENS(bug("[PaletteEditor] %s: pen #2 = %d\n", __func__, pens->pen[2]);)
+                if ((pens->pen[3] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                {
+                    DPENS(bug("[PaletteEditor] %s: pen #3 = %d\n", __func__, pens->pen[3]);)
+                    if ((pens->pen[4] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                    {
+                        DPENS(bug("[PaletteEditor] %s: pen #4 = %d\n", __func__, pens->pen[4]);)
+                        if ((pens->pen[5] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                        {
+                            DPENS(bug("[PaletteEditor] %s: pen #5 = %d\n", __func__, pens->pen[5]);)
+                            if ((pens->pen[6] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                            {
+                                DPENS(bug("[PaletteEditor] %s: pen #6 = %d\n", __func__, pens->pen[6]);)
+                                if ((pens->pen[7] = ObtainPen(cm, -1, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR)) != -1)
+                                {
+                                    DPENS(bug("[PaletteEditor] %s: pen #7 = %d\n", __func__, pens->pen[7]);)
+                                    pens->cm = cm;
+                                    return TRUE;
+                                }
+                                ReleasePen(cm, pens->pen[6]);
+                                pens->pen[6] = -1;
+                            }
+                            ReleasePen(cm, pens->pen[5]);
+                            pens->pen[5] = -1;
+                        }
+                        ReleasePen(cm, pens->pen[4]);
+                        pens->pen[4] = -1;
+                    }
+                    ReleasePen(cm, pens->pen[3]);
+                    pens->pen[3] = -1;
+                }
+                ReleasePen(cm, pens->pen[2]);
+                pens->pen[2] = -1;
+            }
+            ReleasePen(cm, pens->pen[1]);
+            pens->pen[1] = -1;
+        }
+        ReleasePen(cm, pens->pen[0]);
+        pens->pen[0] = -1;
+    }
+
+    return FALSE;                            
+}
+
+void releasePens(penarray_t *pens)
+{
+    DPENS(bug("[PaletteEditor] %s(0x%p)\n", __func__, pens);)
+
+    if (pens->cm)
+    {
+        int i;
+        for (i = 0; i < 8; i ++)
+        {
+            if (pens->pen[i] != -1)
+            {
+                ReleasePen(pens->cm, pens->pen[i]);
+                pens->pen[i] = -1;
+            }
+        }
+    }
+}
+
 /*** Methods ****************************************************************/
 Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+    APTR usepens = (APTR)GetTagData(MUIA_PalEditor_Pens, 0, message->ops_AttrList);
+    penarray_t *penarray = (penarray_t *)GetTagData(MUIA_UserData, 0, message->ops_AttrList);
     Object *pale = NULL, *palpe_palette;
     struct MUI_Palette_Entry *pens;
+    ULONG *pen4, *pen8;
     int i;
 
-    /* Initialise the palette information .. */
+    DPENS(
+        bug("[PaletteEditor] %s: penarray @ 0x%p\n", __func__, usepens);
+        bug("[PaletteEditor] %s: master penarray @ 0x%p\n", __func__, penarray);
+    )
+
+    /* Initialise the pen information .. */
     pens = AllocMem(sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1), MEMF_ANY);
     D(bug("[PaletteEditor] %s: pens @ 0x%p\n", __func__, pens);)
     if (!pens)
         return NULL;
+
     CopyMem(initialpens, pens, sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1));
     for (i = 0; i < MAXPENS; i++)
     {
         pennames[i] = _(pens[i].mpe_Group);
     }
     pennames[MAXPENS] = NULL;
+
+    pen4 = AllocMem(sizeof(ULONG) * MAXPENS, MEMF_CLEAR);
+    if (!pen4)
+    {
+        FreeMem(pens, sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1));
+        return NULL;
+    }
+    pen8 = AllocMem(sizeof(ULONG) * MAXPENS, MEMF_CLEAR);
+    if (!pen8)
+    {
+        FreeMem(pen4, sizeof(ULONG) * MAXPENS);
+        FreeMem(pens, sizeof(struct MUI_Palette_Entry) * (MAXPENS + 1));
+        return NULL;
+    }
+
+    if (!usepens)
+    {
+        struct Screen *pubScreen = (struct Screen *)GetTagData(MUIA_Window_Screen, 0, message->ops_AttrList);
+        DPENS(bug("[PaletteEditor] %s: window_screen @ 0x%p\n", __func__, pubScreen);)
+        if ((pubScreen) && (allocPens(pubScreen->ViewPort.ColorMap, penarray)))
+        {
+            DPENS(bug("[PaletteEditor] %s: using penarray @ 0x%p\n", __func__, penarray);)
+            usepens = &penarray->pen[0];
+        }
+    }
 
     self = (Object *) DoSuperNewTags
     (
@@ -103,6 +218,10 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Palette",
         Child, HGroup,
             Child, (IPTR)(palpe_palette = (Object *)PEPaletteObject,
+                MUIA_PEPalette_Penmap4, (IPTR)pen4,
+                MUIA_PEPalette_Penmap8, (IPTR)pen8,
+                (usepens) ? MUIA_PEPalette_Pens : TAG_IGNORE,
+                (IPTR)usepens,
                 MUIA_Palette_Entries, (IPTR)pens,
                 MUIA_Palette_Names, (IPTR)pennames,
             End),
@@ -113,6 +232,9 @@ Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     if (self)
     {
         SETUP_INST_DATA;
+
+        data->penmap4 = pen4;
+        data->penmap8 = pen8;
 
         data->palpe_palette = palpe_palette;
         data->pens = pens;
@@ -148,6 +270,9 @@ STATIC VOID Gadgets2PalPrefs (struct PalEditor_DATA *data)
 
     for (i = 0; i < MAXPENS; i++)
     {
+        paletteprefs.pap_4ColorPens[i] = data->penmap4[i];
+        paletteprefs.pap_8ColorPens[i] = data->penmap8[i];
+
         paletteprefs.pap_Colors[i].ColorIndex = pallpens[i].mpe_ID;
         paletteprefs.pap_Colors[i].Red = pallpens[i].mpe_Red >> 16;
         paletteprefs.pap_Colors[i].Green = pallpens[i].mpe_Green >> 16;
@@ -166,6 +291,9 @@ STATIC VOID PalPrefs2Gadgets(struct PalEditor_DATA *data)
         D(bug("[PaletteEditor] %s: pens @ 0x%p\n", __func__, prefpens);)
         for (i = 0; i < MAXPENS; i++)
         {
+            data->penmap4[i] = paletteprefs.pap_4ColorPens[i];
+            data->penmap8[i] = paletteprefs.pap_8ColorPens[i];
+            
             prefpens[i].mpe_ID = paletteprefs.pap_Colors[i].ColorIndex;
             prefpens[i].mpe_Red = paletteprefs.pap_Colors[i].Red << 16 | paletteprefs.pap_Colors[i].Red;
             prefpens[i].mpe_Green = paletteprefs.pap_Colors[i].Green << 16 | paletteprefs.pap_Colors[i].Green;

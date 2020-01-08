@@ -34,21 +34,22 @@
 
 /*********************************************************************************************/
 
-STATIC UWORD defaultpen[MAXPENS * 4] =
-{
-    0, 1, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1, 65535
-};
+#if (NUMDRIPENS > 12)
+STATIC CONST UWORD defaultpen8[NUMDRIPENS + 1] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1 , 2 , 1, -1};
+#else
+STATIC CONST UWORD defaultpen8[NUMDRIPENS + 1] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1, -1};
+#endif
 
 STATIC struct ColorSpec defaultcolor[MAXPENS * 4] =
 {
-    {0, 43690,  43690,  43690   },
-    {1, 0,      0,      0       },
-    {2, 65535,  65535,  65535   },
-    {3, 21845,  30583,  43690   },
-    {4, 26214,  26214,  26214   },
-    {5, 61166,  61166,  61166   },
-    {6, 56797,  30583,  17476   },
-    {7, 65535,  61166,  4369    },
+    {0, 0xAAAA, 0xAAAA, 0xAAAA  },
+    {1, 0x0000, 0x0000, 0x0000  },
+    {2, 0xFFFF, 0xFFFF, 0xFFFF  },
+    {3, 0x6666, 0x8888, 0xBBBB  },
+    {4, 0xEEEE, 0x4444, 0x4444  },
+    {5, 0x5555, 0xDDDD, 0x5555  },
+    {6, 0x0000, 0x4444, 0xDDDD  },
+    {7, 0xEEEE, 0x9999, 0x0000  },
     {65535                      }
 };
 
@@ -369,13 +370,23 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
+    UWORD pen = 0;
+    int i;
+
     paletteprefs.pap_Reserved[0] = 0;
     paletteprefs.pap_Reserved[1] = 0;
     paletteprefs.pap_Reserved[2] = 0;
     paletteprefs.pap_Reserved[3] = 0;
 
-    CopyMem(defaultpen, paletteprefs.pap_4ColorPens, sizeof paletteprefs.pap_4ColorPens);
-    CopyMem(defaultpen, paletteprefs.pap_8ColorPens, sizeof paletteprefs.pap_8ColorPens);
+    for (i = 0; i < (sizeof(paletteprefs.pap_4ColorPens) >> 1); i++)
+    {
+        if (i >= NUMDRIPENS)
+            pen = (UWORD)-1;
+        if (pen != (UWORD)-1)
+            pen = defaultpen8[i];
+        paletteprefs.pap_4ColorPens[i] = pen;
+        paletteprefs.pap_8ColorPens[i] = pen;
+    }
     CopyMem(defaultcolor, paletteprefs.pap_Colors, sizeof paletteprefs.pap_Colors);
 
     return TRUE;

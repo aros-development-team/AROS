@@ -10,13 +10,14 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/debug.h>
+
 #include <proto/alib.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -35,16 +36,15 @@
 #include "args.h"
 #include "prefs.h"
 
-/* #define DEBUG 1 */
-#include <aros/debug.h>
-
-#define VERSION "$VER: Palette 1.4 (04.01.2020) AROS Dev Team"
+#define VERSION "$VER: Palette 1.6 (07.01.2020) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)
 {
     Object *application;
     Object *window;
+    penarray_t pens = { NULL, -1 };
+    APTR usepens = NULL;
 
     Locale_Initialize();
 
@@ -67,7 +67,13 @@ int main(int argc, char **argv)
             if (pScreen)
             {
                 if (GetBitMapAttr(pScreen->RastPort.BitMap, BMA_DEPTH) > 4)
-                    appScreen = pScreen;
+                {
+                    if (allocPens(pScreen->ViewPort.ColorMap, &pens))
+                    {
+                        usepens = &pens.pen[0];
+                        appScreen = pScreen;
+                    }
+                }
                 else
                 {
                     UnlockPubScreen(NULL, pScreen);
@@ -82,6 +88,7 @@ int main(int argc, char **argv)
                     SA_Width, 320,
                     SA_Height, 200,
                     SA_ShowTitle, TRUE,
+                    SA_SharePens, TRUE,
                     SA_Title, "",
                     TAG_END);
             }                
@@ -96,6 +103,10 @@ int main(int argc, char **argv)
                     MUIA_Window_Screen, (IPTR)appScreen,
                     MUIA_Window_ID, ID_PALT,
                     WindowContents, (IPTR) PalEditorObject,
+                        (usepens) ? MUIA_PalEditor_Pens : TAG_IGNORE,
+                        (IPTR)usepens,
+                        MUIA_UserData, (IPTR)&pens,
+                        MUIA_Window_Screen, (IPTR)appScreen,
                     End,
                 End),
             End;
@@ -107,10 +118,13 @@ int main(int argc, char **argv)
 
                 MUI_DisposeObject(application);
             }
+            releasePens(&pens);
             if (pScreen)
             {
                 UnlockPubScreen(NULL, pScreen);
-                pScreen = appScreen = NULL;
+                if (pScreen == appScreen)
+                    appScreen = NULL;
+                pScreen = NULL;
             }
             if (appScreen)
                 CloseScreen(appScreen);
