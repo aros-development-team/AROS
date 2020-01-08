@@ -119,7 +119,6 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->ib_HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
     LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
-    LIBBASE->ib_HiddColorMapBase = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
 
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;
