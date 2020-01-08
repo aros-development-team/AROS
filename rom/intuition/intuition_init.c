@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -62,7 +62,7 @@ AROS_UFP3(ULONG, rootDispatcher,
 
 const ULONG coltab[] =
 {
-    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70     */
+    0XAAAAAAAA, 0XAAAAAAAA, 0XAAAAAAAA, /* Grey       */
     0x00000000, 0x00000000, 0x00000000, /* Black      */
     0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White      */
     0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue */
@@ -117,8 +117,9 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
     LIBBASE->ib_HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    LIBBASE->ib_HiddColorMapBase = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
 
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;
