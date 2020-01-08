@@ -47,7 +47,8 @@ FUNCTIONS := \
 	udivmod32 \
 	umult32 \
 	umult64 \
-	unpackstructuretags
+	unpackstructuretags \
+	vsnprintf
 
 USER_LDFLAGS := -static
 
