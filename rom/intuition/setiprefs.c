@@ -280,8 +280,9 @@
         case IPREFS_TYPE_PENS_V39:
         DEBUG_SETIPREFS(bug("[Intuition] %s: IP_PENS_V39\n", __func__));
         {
+            BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
             struct IOldPenPrefs *fp = data;
-            UWORD *dataptr;
+            UWORD *defpenptr, *srcpenptr = NULL;
             int i;
             DEBUG_SETIPREFS(bug("[Intuition] %s: Count %ld Type %ld\n",
                         __func__,
@@ -290,13 +291,33 @@
 
             if (fp->Type==0)
             {
-                dataptr = &GetPrivIBase(IntuitionBase)->DriPens4[0];
+                defpenptr = &GetPrivIBase(IntuitionBase)->DriPens4[0];
                 DEBUG_SETIPREFS(bug("[Intuition] %s: Pens4[]\n", __func__));
+                if (!closed)
+                {
+                    UBYTE wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+                    struct IntDrawInfo      *dri;
+                    if ((wbdepth < 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
+                    {
+                        DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
+                        srcpenptr = dri->dri_Pens;
+                    }
+                }
             }
             else
             {
-                dataptr = &GetPrivIBase(IntuitionBase)->DriPens8[0];
+                defpenptr = &GetPrivIBase(IntuitionBase)->DriPens8[0];
                 DEBUG_SETIPREFS(bug("[Intuition] %s: Pens8[]\n", __func__));
+                if (!closed)
+                {
+                    UBYTE wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+                    struct IntDrawInfo      *dri;
+                    if ((wbdepth >= 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
+                    {
+                        DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
+                        srcpenptr = dri->dri_Pens;
+                    }
+                }
             }
             for (i=0;i<NUMDRIPENS;i++)
             {
@@ -314,7 +335,9 @@
                                 __func__,
                                 (LONG) i,
                                 (LONG) fp->PenTable[i]));
-                    dataptr[i] = fp->PenTable[i];
+                    defpenptr[i] = fp->PenTable[i];
+                    if (srcpenptr)
+                        srcpenptr[i] = fp->PenTable[i];
                 }
             }
         }
