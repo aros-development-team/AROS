@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2020, The AROS Development Team. All rights reserved.
     $Id: BMPclass.c 30902 2009-03-14 13:38:20Z mazze $ 2020-01-04 miker.
 */
 
@@ -396,7 +396,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	    alignbytes = (biWidth + 3) & ~3UL;
 	    alignwidth = alignbytes * 3; //2376 
         //Or Use Correction Factor
-        alignedwidth = ((width * 3) + 3) & ~3UL; //Not Modulus 4
+        alignedwidth = ((biWidth * 3) + 3) & ~3UL; //Not Modulus 4
 		//alignedbytes = ((int)(alignwidth / 3)) + 3;
         if(alignwidth != alignedwidth)
         {
