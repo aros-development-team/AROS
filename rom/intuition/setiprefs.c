@@ -282,7 +282,7 @@
         {
             BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
             struct IOldPenPrefs *fp = data;
-            UWORD *defpenptr, *srcpenptr = NULL;
+            UWORD *defpenptr, *scrpenptr = NULL;
             int i;
             DEBUG_SETIPREFS(bug("[Intuition] %s: Count %ld Type %ld\n",
                         __func__,
@@ -300,7 +300,7 @@
                     if ((wbdepth < 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
                     {
                         DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
-                        srcpenptr = dri->dri_Pens;
+                        scrpenptr = dri->dri_Pens;
                     }
                 }
             }
@@ -315,7 +315,7 @@
                     if ((wbdepth >= 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
                     {
                         DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
-                        srcpenptr = dri->dri_Pens;
+                        scrpenptr = dri->dri_Pens;
                     }
                 }
             }
@@ -336,8 +336,8 @@
                                 (LONG) i,
                                 (LONG) fp->PenTable[i]));
                     defpenptr[i] = fp->PenTable[i];
-                    if (srcpenptr)
-                        srcpenptr[i] = fp->PenTable[i];
+                    if (scrpenptr)
+                        scrpenptr[i] = fp->PenTable[i];
                 }
             }
         }
