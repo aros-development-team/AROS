@@ -9,8 +9,8 @@ when using AmigaPL encoding.
 Brief characteristics:
 
 SystemFont and SystemFontP - uniform font typeface for system and screen
-ISO-topazPL - much more pleasing to the eye ;-)
-ISO-Courier(Arial,Helvetica,Times)EN- Internet and tabletop
+ISOTopazPL - much more pleasing to the eye ;-)
+ISOCourierPL, ISOArialPL, ISOHelveticaPL, ISOTimesPL - for internet and desktop
 
 Permission is granted to include these fonts along with AROS sources
 and distributions under the terms of AROS Public License.
