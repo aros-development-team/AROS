@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -252,7 +252,7 @@
                                 p[idx].green,
                                 p[idx].blue));
 
-                    /* update the wokrbench displays pens ... */
+                    /* update the wokrbench displays palette ... */
                     if (!closed)
                     {
                         UBYTE wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
