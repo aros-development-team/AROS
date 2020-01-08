@@ -282,8 +282,11 @@
         {
             BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
             struct IOldPenPrefs *fp = data;
-            UWORD *defpenptr, *scrpenptr = NULL;
+            UWORD *defpenptr, *scrppenptr, *scrpenptr = NULL;
+            struct IntScreen      *wbsint;
+            UBYTE wbdepth;
             int i;
+
             DEBUG_SETIPREFS(bug("[Intuition] %s: Count %ld Type %ld\n",
                         __func__,
                         (LONG) fp->Count,
@@ -295,12 +298,16 @@
                 DEBUG_SETIPREFS(bug("[Intuition] %s: Pens4[]\n", __func__));
                 if (!closed)
                 {
-                    UBYTE wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
                     struct IntDrawInfo      *dri;
+
+                    wbsint = GetPrivScreen(GetPrivIBase(IntuitionBase)->WorkBench);
+                    wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+                    
                     if ((wbdepth < 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
                     {
                         DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
                         scrpenptr = dri->dri_Pens;
+                        scrppenptr = wbsint->Pens;
                     }
                 }
             }
@@ -310,12 +317,16 @@
                 DEBUG_SETIPREFS(bug("[Intuition] %s: Pens8[]\n", __func__));
                 if (!closed)
                 {
-                    UBYTE wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
                     struct IntDrawInfo      *dri;
+
+                    wbsint = GetPrivScreen(GetPrivIBase(IntuitionBase)->WorkBench);
+                    wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+
                     if ((wbdepth >= 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
                     {
                         DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
                         scrpenptr = dri->dri_Pens;
+                        scrppenptr = wbsint->Pens;
                     }
                 }
             }
@@ -335,9 +346,22 @@
                                 __func__,
                                 (LONG) i,
                                 (LONG) fp->PenTable[i]));
+
                     defpenptr[i] = fp->PenTable[i];
+
                     if (scrpenptr)
-                        scrpenptr[i] = fp->PenTable[i];
+                    {
+                        UWORD penval = fp->PenTable[i];
+#if (0)
+                        if ((penval > 3) && (wbdepth >= 3))
+                        {
+                            ULONG lastpen = ((wbdepth > 8) ? 252 : (1 << wbdepth)) - 8;
+                            penval += lastpen;
+                        }
+#endif
+                        scrpenptr[i] = penval;
+                        scrppenptr[i] = penval;
+                    }
                 }
             }
         }
