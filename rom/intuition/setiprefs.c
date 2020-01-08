@@ -251,9 +251,20 @@
                                 p[idx].red,
                                 p[idx].green,
                                 p[idx].blue));
+
+                    /* update the wokrbench displays pens ... */
                     if (!closed)
                     {
-                        SetRGB32(&GetPrivIBase(IntuitionBase)->WorkBench->ViewPort, idx, p[idx].red, p[idx].green, p[idx].blue);
+                        UBYTE wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+
+                        if (idx < 4)
+                            SetRGB32(&GetPrivIBase(IntuitionBase)->WorkBench->ViewPort, idx, p[idx].red, p[idx].green, p[idx].blue);
+                        else if ((idx < 8) && (wbdepth >= 3))
+                        {
+                            ULONG lastcol = ((wbdepth > 8) ? 256 : (1 << wbdepth)) - 4;
+
+                            SetRGB32(&GetPrivIBase(IntuitionBase)->WorkBench->ViewPort, lastcol + idx, p[idx].red, p[idx].green, p[idx].blue);
+                        }
                     }
                 }
                 pp++;
