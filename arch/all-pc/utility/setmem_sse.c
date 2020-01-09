@@ -69,10 +69,11 @@ static VOID __smallsetmem(APTR destination, UBYTE c, ULONG length)
 
     if (length > 15)
     {
-        ULONG presize = ((IPTR) destination) % 16;
-        ULONG ssefillcount = (length - presize) / 16;
-        postsize = length - ssefillcount * 16 - presize;
+        ULONG presize, ssefillcount;
 
+        presize = (((((IPTR) destination + 16 ) & ~0xF) - (IPTR)destination) % 16);
+        ssefillcount = (length - presize) / 16;
+        postsize = length - ssefillcount * 16 - presize;
 
         /* setup sse value .. */
         __m128i c16 = _mm_set_epi8(val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val);
