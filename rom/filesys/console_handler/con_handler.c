@@ -1,9 +1,20 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#undef SDEBUG
+#undef DEBUG
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+#include <proto/workbench.h>
+
 #include <exec/libraries.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
@@ -14,9 +25,6 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <intuition/intuition.h>
-#include <proto/dos.h>
-#include <proto/intuition.h>
-#include <proto/workbench.h>
 #include <workbench/startup.h>
 #include <devices/conunit.h>
 
@@ -25,12 +33,6 @@
 
 #include "con_handler_intern.h"
 #include "support.h"
-
-#undef SDEBUG
-#undef DEBUG
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
 
 #if defined(__AROSPLATFORM_SMP__)
 #include <aros/types/spinlock_s.h>
@@ -319,7 +321,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     fh->conreadmp = AllocVec(sizeof(struct MsgPort) * 2, MEMF_PUBLIC | MEMF_CLEAR);
     if (fh->conreadmp)
     {
-        memset( fh->conreadmp, 0, sizeof( *fh->conreadmp ) );
+        SetMem( fh->conreadmp, 0, sizeof( *fh->conreadmp ) );
         fh->conreadmp->mp_Node.ln_Type = NT_MSGPORT;
         fh->conreadmp->mp_Flags = PA_SIGNAL;
         fh->conreadmp->mp_SigBit = AllocSignal(-1);
@@ -328,7 +330,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 
         fh->conwritemp = fh->conreadmp + 1;
 
-        memset( fh->conwritemp, 0, sizeof( *fh->conwritemp ) );
+        SetMem( fh->conwritemp, 0, sizeof( *fh->conwritemp ) );
         fh->conwritemp->mp_Node.ln_Type = NT_MSGPORT;
         fh->conwritemp->mp_Flags = PA_SIGNAL;
         fh->conwritemp->mp_SigBit = AllocSignal(-1);
@@ -736,7 +738,7 @@ LONG CONMain(struct ExecBase *SysBase)
             {
                 /* strange console handler features */
                 struct InfoData *id = BADDR(dp->dp_Arg1);
-                memset(id, 0, sizeof(struct InfoData));
+                SetMem(id, 0, sizeof(struct InfoData));
                 id->id_DiskType =
                         (fh->flags & FHFLG_RAW) ? AROS_MAKE_ID('R', 'A', 'W', 0) : AROS_MAKE_ID('C', 'O', 'N', 0);
                 id->id_VolumeNode = (BPTR) fh->window;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Console.device
@@ -8,12 +8,15 @@
 
 /*****************************************************************************/
 
-#include <string.h>
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/console.h>
 #include <proto/intuition.h>
 #include <proto/keymap.h>
+
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
@@ -34,10 +37,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
-
+#include <string.h>
 /*****************************************************************************/
 
 #define NEWSTYLE_DEVICE 1
@@ -62,11 +62,18 @@ static const UWORD SupportedCommands[] = {
 
 static int GM_UNIQUENAME(Init) (LIBBASETYPEPTR ConsoleDevice)
 {
+    ConsoleDevice->cb_UtilityBase =
+        TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!ConsoleDevice->cb_UtilityBase)
+        return FALSE;
+
     ConsoleDevice->cb_IntuitionBase =
         TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     if (!ConsoleDevice->cb_IntuitionBase)
         return FALSE;
-    ConsoleDevice->cb_KeymapBase = TaggedOpenLibrary(TAGGEDOPEN_KEYMAP);
+
+    ConsoleDevice->cb_KeymapBase =
+        TaggedOpenLibrary(TAGGEDOPEN_KEYMAP);
     if (!ConsoleDevice->cb_KeymapBase)
     {
         CloseLibrary(ConsoleDevice->cb_IntuitionBase);

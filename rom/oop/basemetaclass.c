@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP base metaclass
@@ -445,7 +445,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	D(bug("instoffset: %ld\n", cl->InstOffset));
 	
 	/* Clear instdata, so we in Dispose() can see what's been allocated */
-	memset(data, 0, sizeof (struct metadata));
+	SetMem(data, 0, sizeof (struct metadata));
 	
 	D(bug("superptr=%p\n", superptr));
 

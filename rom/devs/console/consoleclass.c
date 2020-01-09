@@ -6,23 +6,22 @@
     Lang: english
 */
 
-#include <string.h>
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <proto/intuition.h>
 #include <proto/utility.h>
+
 #include <aros/asmcall.h>
 #include <devices/conunit.h>
 #include <intuition/classes.h>
 #include <intuition/intuition.h>
 
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
+#include <string.h>
 
 #include "consoleif.h"
 #include "console_gcc.h"
-
-
 
 VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr);
 
@@ -37,7 +36,6 @@ struct consoledata
     struct intConUnit intunit;
 };
 
-
 #undef ConsoleDevice
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
@@ -48,16 +46,11 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 {
     struct Window *win;
     EnterFunc(bug("Console::New()\n"));
-    struct Library *UtilityBase;
-
-    UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-    if (!UtilityBase)
-        ReturnPtr("Console::New", Object *, NULL);
 
     /* Get console window */
     win =
         (struct Window *)GetTagData(A_Console_Window, 0, msg->ops_AttrList);
-    CloseLibrary(UtilityBase);
+
     if (!win)
     {
         ReturnPtr("Console::New", Object *, NULL);
@@ -75,7 +68,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 
         unit = (struct ConUnit *)data;
 
-        memset(data, 0, sizeof(struct consoledata));
+        SetMem(data, 0, sizeof(struct consoledata));
         for (i = 0; i < CONUNIT_PEN_MAX; i ++)
         {
             data->intunit.pens[i] = i;

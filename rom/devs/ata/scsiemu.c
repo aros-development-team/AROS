@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team. All rights reserved
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved
     $Id$
 
     Desc: Simple HD_SCSICMD emulator.
@@ -9,12 +9,15 @@
 #include <aros/debug.h>
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include <exec/types.h>
 #include <exec/exec.h>
 #include <devices/scsidisk.h>
 
 #include "ata.h"
+
+#undef UtilityBase
 
 static void wl(UBYTE *p, ULONG v)
 {
@@ -47,6 +50,7 @@ static UBYTE scsi_write32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG 
 
 static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *outlen)
 {
+    struct Library *UtilityBase = unit->au_Bus->ab_Base->ata_UtilityBase;
     UBYTE *cmdbuf = cmd->scsi_Command;
     UBYTE *out = (UBYTE*)cmd->scsi_Data;
     UBYTE len;
@@ -61,7 +65,7 @@ static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *out
     out[4] = 32; /* additional length */
     out[7] = 0x20; /* 16 bit bus */
     *outlen = len < 36 ? len : 36;
-    memset(out + 8, ' ', 8 + 16 + 4);
+    SetMem(out + 8, ' ', 8 + 16 + 4);
     CopyMem(unit->au_Model, out + 8, strlen(unit->au_Model) > 16 + 8 ? 16 + 8 : strlen(unit->au_Model));
     CopyMem(unit->au_FirmwareRev, out + 8 + 16, strlen(unit->au_FirmwareRev) > 4 ? 4 : strlen(unit->au_FirmwareRev));
     return 0;
@@ -150,6 +154,7 @@ static UBYTE scsi_readcapacity(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG
 
 BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
+    struct Library *UtilityBase = unit->au_Bus->ab_Base->ata_UtilityBase;
     ULONG len, offset;
     ULONG scsi_len;
     UWORD scsi_sense_len = (cmd->scsi_Flags & (1 << SCSIB_OLDAUTOSENSE)) ? 4 :
@@ -209,7 +214,7 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
 	case 0x37: /* READ DEFECT DATA */
 	status = 2;
 	senselen = 32;
-	memset(sense, 0, senselen);
+	SetMem(sense, 0, senselen);
 	sense[0] = 0x70;
 	sense[2] = 0x00;
 	sense[12] = 0x1c;
@@ -237,7 +242,7 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
     if (err == 0xff) {
 	status = 2; /* CHECK CONDITION */
 	senselen = 32;
-	memset(sense, 0, senselen);
+	SetMem(sense, 0, senselen);
 	sense[0] = 0x70;
 	sense[2] = 5; /* ILLEGAL REQUEST */
 	sense[12] = 0x24; /* ILLEGAL FIELD IN CDB */

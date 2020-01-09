@@ -60,6 +60,17 @@
 #include <proto/utility.h>
 #endif
 
+#if (1)
+static inline ULONG Strlen(CONST_STRPTR string)
+{
+    CONST_STRPTR str_start = (CONST_STRPTR)string;
+
+    while (*string++);
+
+    return (ULONG)(((IPTR)string) - ((IPTR)str_start));
+}
+#endif
+
 /* Definition of a utility namespace, needed here for the library base. */
 
 struct NameSpace

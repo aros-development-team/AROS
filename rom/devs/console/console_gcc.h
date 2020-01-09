@@ -317,6 +317,7 @@ struct ConsoleBase
 
     struct Library *cb_IntuitionBase;
     struct Library *cb_KeymapBase;
+    struct Library *cb_UtilityBase;
 };
 
 #undef CB
@@ -327,5 +328,8 @@ struct ConsoleBase
 
 #undef KeymapBase
 #define KeymapBase (((const struct ConsoleBase *)ConsoleDevice)->cb_KeymapBase)
+
+#undef UtilityBase
+#define UtilityBase (((const struct ConsoleBase *)ConsoleDevice)->cb_UtilityBase)
 
 #endif /* CONSOLE_GCC_H */

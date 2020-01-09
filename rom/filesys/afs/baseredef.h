@@ -10,5 +10,9 @@
 #	undef DOSBase
 #endif
 #define DOSBase afsbase->dosbase
-#endif
 
+#ifdef UtilityBase
+#	undef UtilityBase
+#endif
+#define UtilityBase afsbase->utilitybase
+#endif

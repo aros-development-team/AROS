@@ -449,7 +449,7 @@ void ReadFSTab(struct SecurityBase *secBase)
                 rdargs->RDA_BufSiz = 0;
                 rdargs->RDA_ExtHelp = NULL;
                 rdargs->RDA_Flags = RDAF_NOPROMPT;
-                memset(argarray, 0, sizeof(argarray));
+                SetMem(argarray, 0, sizeof(argarray));
 
                 if (ReadArgs(FSTAB_TEMPLATE, (SIPTR*)argarray, rdargs)) {
                     if (argarray[argVOLNAME]) {

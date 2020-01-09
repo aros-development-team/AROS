@@ -15,6 +15,7 @@ struct AFSBase
     BPTR   ab_SegList;		/* Pointer to SegList trampoline */
     struct Volume *volume;
     struct DosLibrary *dosbase;
+    struct Library *utilitybase;
     struct MsgPort *timer_mp;
     struct MsgPort port;	/* sigtask and sigbit for changeint */
     struct List device_list;	/* list of mounted devices (struct Volume) */

@@ -1,14 +1,18 @@
 /*
-    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for CONU_CHARMAP console units.
     Lang: english
 */
 
-#include "charmap.h"
 #include <proto/exec.h>
+#include <proto/utility.h>
+
 #include <string.h>
+
+#include "console_gcc.h"
+#include "charmap.h"
 
 struct charmap_line *charmap_dispose_line(struct charmap_line *line)
 {
@@ -58,7 +62,7 @@ struct charmap_line *charmap_newline(struct charmap_line *next,
 
 // FIXME: **much** faster if add capacity to charmap_line and allocate
 // a few characters at a time
-VOID charmap_resize(struct charmap_line *line, ULONG newsize)
+VOID charmap_resize(struct ConsoleBase *ConsoleDevice, struct charmap_line *line, ULONG newsize)
 {
     char *text = line->text;
     BYTE *fgpen = line->fgpen;
@@ -70,16 +74,16 @@ VOID charmap_resize(struct charmap_line *line, ULONG newsize)
     {
         line->text = (char *)AllocMem(newsize, MEMF_ANY);
         if (line->text)
-            memset(line->text, 0, newsize);
+            SetMem(line->text, 0, newsize);
         line->fgpen = (BYTE *) AllocMem(newsize, MEMF_ANY);
         if (line->fgpen)
-            memset(line->fgpen, 0, newsize);
+            SetMem(line->fgpen, 0, newsize);
         line->bgpen = (BYTE *) AllocMem(newsize, MEMF_ANY);
         if (line->bgpen)
-            memset(line->bgpen, 0, newsize);
+            SetMem(line->bgpen, 0, newsize);
         line->flags = (BYTE *) AllocMem(newsize, MEMF_ANY);
         if (line->flags)
-            memset(line->flags, 0, newsize);
+            SetMem(line->flags, 0, newsize);
         line->size = newsize;
     }
     else

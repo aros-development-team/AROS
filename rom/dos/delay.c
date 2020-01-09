@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -51,7 +51,7 @@
     struct timerequest  timerio;
     struct MsgPort      timermp;
 
-    memset(&timermp, 0, sizeof(timermp));
+    SetMem(&timermp, 0, sizeof(timermp));
     
     timermp.mp_Node.ln_Type = NT_MSGPORT;
     timermp.mp_Flags        = PA_SIGNAL;

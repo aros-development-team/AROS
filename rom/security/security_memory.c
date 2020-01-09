@@ -81,7 +81,7 @@ APTR MAlloc(ULONG size)
 
     ObtainSemaphore(&Semaphore);
     if ((block = AllocPooled(Pool, size)))
-        memset(block, 0, size);
+        SetMem(block, 0, size);
     ReleaseSemaphore(&Semaphore);
     D(
         if (block==NULL)	{
@@ -124,7 +124,7 @@ APTR MAllocV(ULONG size)
     ObtainSemaphore(&Semaphore);
     if ((block = AllocPooled(Pool, size + sizeof(IPTR)))) {
         *(block++) = size + sizeof(IPTR);
-        memset(block, 0, size);
+        SetMem(block, 0, size);
     }
     ReleaseSemaphore(&Semaphore);
     D(

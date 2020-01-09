@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: Graphics function InitRastPort()
@@ -59,7 +59,7 @@
     AROS_LIBFUNC_INIT
 
     /* Zero out everything, then set some valid defaults */
-    memset(rp, 0, sizeof(struct RastPort));
+    SetMem(rp, 0, sizeof(struct RastPort));
 
     rp->Mask     = 0xFF;
     rp->FgPen    = -1;

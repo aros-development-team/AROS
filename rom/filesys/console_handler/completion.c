@@ -1,10 +1,13 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
     Lang: english
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <exec/memory.h>
 #include <dos/dos.h>
@@ -29,9 +32,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /****************************************************************************************/
 
@@ -775,7 +775,7 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                     backspaces = ci->fh->inputpos - ci->wordstart;
 
                     memmove(ci->match + backspaces, ci->match, sizeof(ci->match) - backspaces);
-                    memset(ci->match, 8, backspaces);
+                    SetMem(ci->match, 8, backspaces);
 
                     c = ci->match[strlen(ci->match) - 1];
                     if ((c != '/') && (c != ':'))

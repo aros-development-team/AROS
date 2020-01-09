@@ -50,6 +50,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG Result = TRUE;
     ULONG lock = LockIBase(0);
@@ -166,7 +167,7 @@
 
             if (size > POINTERSIZE)
                 size = POINTERSIZE;
-            memset(ActivePrefs->PointerMatrix, 0, POINTERSIZE * sizeof (UWORD));
+            SetMem(ActivePrefs->PointerMatrix, 0, POINTERSIZE * sizeof (UWORD));
             CopyMem(fp->data, ActivePrefs->PointerMatrix, size * sizeof (UWORD));
             ActivePrefs->XOffset = fp->XOffset;
             ActivePrefs->YOffset = fp->YOffset;
