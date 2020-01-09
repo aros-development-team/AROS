@@ -73,6 +73,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-workbook-kobj \
 #MM     kernel-workbench-devs-amiga-m68k \
+#MM     kernel-vampire-amiga-m68k \
 #MM     workbench-libs-gadtools-kobj \
 #MM     workbench-libs-icon-kobj \
 #MM     workbench-libs-lowlevel-kobj \
@@ -125,7 +126,7 @@ KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass keyboard mouse p96gfx
-KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
+KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader vampire
 KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
@@ -314,7 +315,7 @@ KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
 KHNDLRS := cdrom con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass keyboard mouse storage system p96gfx
 KRSRCS  := battclock processor task lddemon dosboot cia potgo disk \
-           misc shell shellcommands workbook wbtag card FileSystem
+           misc shell shellcommands workbook wbtag card FileSystem vampire
 KHOOKS  := alert romboot
 
 KOBJS_any := \
