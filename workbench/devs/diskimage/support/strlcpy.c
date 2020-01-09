@@ -24,8 +24,9 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "support.h"
 #include <string.h>
+
+#include "support.h"
 
 void Strlcpy (STRPTR dst, CONST_STRPTR src, int size) {
 	if (!dst || size <= 0) {

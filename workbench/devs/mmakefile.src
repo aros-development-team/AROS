@@ -2,12 +2,21 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-devs-complete : workbench-devs
+#MM- workbench-complete : \
+#MM    workbench-devs
 
-#MM- workbench-devs : includes linklibs workbench-devs-common \
+#MM- workbench-devs : \
+#MM    includes \
+#MM    linklibs \
+#MM    workbench-devs-common \
+#MM    workbench-devs-$(AROS_TARGET_ARCH) \
+#MM    workbench-devs-$(AROS_TARGET_CPU) \
 #MM    workbench-devs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
-#MM- workbench-devs-quick : workbench-devs-common-quick \
+#MM- workbench-devs-quick : \
+#MM    workbench-devs-common-quick \
+#MM    workbench-devs-$(AROS_TARGET_ARCH)-quick \
+#MM    workbench-devs-$(AROS_TARGET_CPU)-quick \
 #MM    workbench-devs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
 
 #MM- workbench-devs-common : \
@@ -16,17 +25,15 @@ include $(SRCDIR)/config/aros.cfg
 #MM    workbench-devs-monitors \
 #MM    workbench-devs-mountlist \
 #MM    workbench-devs-networks \
-#MM    workbench-devs-AHI \
-#MM    workbench-devs-diskimage
+#MM    workbench-devs-AHI
 
-#MM- workbench-devs-quick : \
+#MM- workbench-devs-common-quick : \
 #MM    workbench-devs-fdsk-quick \
 #MM    workbench-devs-ramdrive-quick \
 #MM    workbench-devs-monitors \
 #MM    workbench-devs-mountlist \
 #MM    workbench-devs-networks \
-#MM    workbench-devs-AHI-quick \
-#MM    workbench-devs-diskimage-quick
+#MM    workbench-devs-AHI-quick
 
 #MM- includes-generate : \
 #MM      workbench-devs-input-includes

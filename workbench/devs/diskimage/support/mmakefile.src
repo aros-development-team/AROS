@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 CFILES := aros/asprintf aros/asprintfpooled checkbptr \
 	checklib copystringbstrtoc deletelibrary dos64 \
 	envvar getcurrentdir hooks lists messages \
-	mutexes paths ports semaphores strlcpy \
+	mutexes paths ports semaphores \
 	swab2 tooltypes istext trimstr diskimagedevice \
 	localeinfo translatefuncs reallocbuf setprocwindow
 

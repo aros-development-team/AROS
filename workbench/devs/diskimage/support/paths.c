@@ -24,10 +24,13 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "support.h"
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/dos.h>
+
 #include <string.h>
+
+#include "support.h"
 
 STRPTR CombinePaths(CONST_STRPTR p1, CONST_STRPTR p2) {
 	STRPTR path;
