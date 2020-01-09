@@ -32,7 +32,8 @@ OBJS   := $(patsubst %, $(OBJDIR)/%.o, $(FILES))
 DEPS   := $(patsubst %, $(OBJDIR)/%.d, $(FILES))
 
 INCLUDES := -I$(AFSSRCDIR) -I$(OBJDIR)
-HOST_CFLAGS := $(HOST_CFLAGS) $(DEBUG_OPTS) -Wall -Werror-implicit-function-declaration $(INCLUDES) -O2
+HOST_CFLAGS := $(HOST_CFLAGS) $(DEBUG_OPTS) -Wall -Werror-implicit-function-declaration -O2
+HOST_CPPFLAGS := $(INCLUDES) -DSetMem=memset
 
 ifeq ($(SILENT),yes)
 	ECHO := true
@@ -52,11 +53,11 @@ $(OBJDIR)/config.h: $(OBJDIR) myconf.aros
 
 $(OBJDIR)/%.o: $(AFSSRCDIR)/%.c $(OBJDIR)/config.h
 	@$(ECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) -o $@ -c $<
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.d: $(AFSSRCDIR)/%.c $(OBJDIR)/config.h
 	@$(ECHO) "Finding dependencies for $<..."
-	@$(HOST_CC) $(HOST_CFLAGS) -M -MT '$(patsubst %.d,%.o,$@)' $< > $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -M -MT '$(patsubst %.d,%.o,$@)' $< > $@
 
 $(OBJDIR):
 	@$(MKDIR) $(OBJDIR)
