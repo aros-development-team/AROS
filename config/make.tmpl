@@ -2931,6 +2931,12 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 #-----------------------------------------------------------------------------
 
 
+%define gen_archfamilyrules mainmmake=/A family=/A arch=/A
+#MM- %(mainmmake)-%(arch) : %(mainmmake)-%(family)
+#MM- %(mainmmake)-%(arch)-quick : %(mainmmake)-%(family)-quick
+#MM- %(mainmmake)-%(arch)-includes : %(mainmmake)-%(family)-includes
+%end
+
 #------------------------------------------------------------------------------
 # Compile files for an arch-specific replacement of code for a module
 # - files: the basenames of the C files to compile.
@@ -2962,21 +2968,41 @@ endif
 
 %buildid targets="%(mainmmake)-%(arch)"
 
-#MM- %(mainmmake) : 	    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-kobj :    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-kobj-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-quick \
-#MM			    %(mainmmake)-$(FAMILY)-quick %(mainmmake)-$(CPU)-quick
-#MM- %(mainmmake)-quick :   %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-quick \
-#MM			    %(mainmmake)-$(FAMILY)-quick %(mainmmake)-$(CPU)-quick
+#MM- %(mainmmake) : \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU) \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) \
+#MM			    %(mainmmake)-$(ARCH) \
+#MM			    %(mainmmake)-$(FAMILY) \
+#MM			    %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-linklib : \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU) \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) \
+#MM			    %(mainmmake)-$(ARCH) \
+#MM			    %(mainmmake)-$(FAMILY) \
+#MM			    %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-kobj : \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU) \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) \
+#MM			    %(mainmmake)-$(ARCH) \
+#MM			    %(mainmmake)-$(FAMILY) \
+#MM			    %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-kobj-quick : \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-quick \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick \
+#MM			    %(mainmmake)-$(ARCH)-quick \
+#MM			    %(mainmmake)-$(FAMILY)-quick \
+#MM			    %(mainmmake)-$(CPU)-quick
+#MM- %(mainmmake)-quick : \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick \
+#MM			    %(mainmmake)-$(ARCH)-$(CPU)-quick \
+#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick \
+#MM			    %(mainmmake)-$(ARCH)-quick \
+#MM			    %(mainmmake)-$(FAMILY)-quick \
+#MM			    %(mainmmake)-$(CPU)-quick
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-includes
 
