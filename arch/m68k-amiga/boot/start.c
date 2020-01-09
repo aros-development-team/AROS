@@ -38,9 +38,9 @@
  */
  #ifndef DEFKRN_CMDLINE
 #if AROS_SERIAL_DEBUG
-#define DEFKRN_CMDLINE      "nomonitors sysdebug=InitCode"
+#define DEFKRN_CMDLINE      "sysdebug=InitCode"
 #else
-#define DEFKRN_CMDLINE      "nomonitors"
+#define DEFKRN_CMDLINE      ""
 #endif
 #endif
 
