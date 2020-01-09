@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2020, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -11,11 +11,7 @@
 #define __NOLIBBASE__
 
 #include <aros/atomic.h>
-
-#include <proto/oop.h>
-
 #include <hidd/pci.h>
-
 #include <devices/timer.h>
 
 #include "ahci.h"
