@@ -8,7 +8,8 @@ FILES := \
     callhooktest \
     date2amiga \
     smult \
-    vartags
+    vartags \
+    utility50
 
 EXEDIR := $(AROS_TESTS)/utility
 
