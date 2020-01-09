@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -134,7 +134,7 @@ static int pix_written;
      */
      
     D(bug("Clearing tmpras\n"));
-    memset(tmpras->RasPtr, 0,  needed_size);
+    SetMem(tmpras->RasPtr, 0,  needed_size);
     
     if (mode == 0)
     {

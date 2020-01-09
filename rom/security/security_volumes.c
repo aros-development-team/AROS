@@ -101,7 +101,7 @@ BOOL InitVolumes(struct Library *_Base)
     ReadFSTab(secBase);
 
     CurrentDir(secBase->_pwdLock);		
-    memset(&secBase->PasswdNotifyReq, 0, sizeof(secBase->PasswdNotifyReq));
+    SetMem(&secBase->PasswdNotifyReq, 0, sizeof(secBase->PasswdNotifyReq));
     secBase->PasswdNotifyReq.nr_Name = (char *)PasswdFileName;
     secBase->PasswdNotifyReq.nr_Flags = NRF_SEND_SIGNAL;
     secBase->PasswdNotifyReq.nr_stuff.nr_Signal.nr_Task = FindTask(NULL);
@@ -109,7 +109,7 @@ BOOL InitVolumes(struct Library *_Base)
     StartNotify(&secBase->PasswdNotifyReq);
 
     CurrentDir(secBase->_cfgLock);		
-    memset(&secBase->GroupNotifyReq, 0, sizeof(secBase->GroupNotifyReq));
+    SetMem(&secBase->GroupNotifyReq, 0, sizeof(secBase->GroupNotifyReq));
     secBase->GroupNotifyReq.nr_Name = (char *)GroupFileName;
     secBase->GroupNotifyReq.nr_Flags = NRF_SEND_SIGNAL;
     secBase->GroupNotifyReq.nr_stuff.nr_Signal.nr_Task = secBase->PasswdNotifyReq.nr_stuff.nr_Signal.nr_Task;

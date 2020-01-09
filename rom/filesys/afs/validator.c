@@ -35,6 +35,7 @@
 #include <aros/debug.h>
 #include "misc.h"
 #include "extstrings.h"
+#include "baseredef.h"
 #endif
 
 /*******************************************
@@ -46,7 +47,7 @@
  Output: 0 for unvalidated disc, 1 otherwise
  Author: Tomasz Wiszkowski
 ********************************************/
-LONG checkValid(struct AFSBase *afs, struct Volume *vol)
+LONG checkValid(struct AFSBase *afsbase, struct Volume *vol)
 {
 #ifdef __AROS__
     struct BlockCache *blockbuffer;
@@ -54,23 +55,23 @@ LONG checkValid(struct AFSBase *afs, struct Volume *vol)
     if (vol == NULL)
     	return 0;
 
-    blockbuffer = getBlock(afs, vol, vol->rootblock);
+    blockbuffer = getBlock(afsbase, vol, vol->rootblock);
 
     UBYTE  n[vol->FNameMax + 1];
     CONST_FSBSTR name;
 
-    memset(n, 0, sizeof(n));
+    SetMem(n, 0, sizeof(n));
     name=(CONST_FSBSTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(vol)*4));
     StrCpyFromBstr(name, n, sizeof(n) - 1);
 
 	while (vol->state == ID_WRITE_PROTECTED
-              && showError(afs, ERR_WRITEPROTECT, n));
+              && showError(afsbase, ERR_WRITEPROTECT, n));
 
 	if (vol->state == ID_VALIDATING)
 	{
-		if (showError(afs, ERR_DISKNOTVALID))
+		if (showError(afsbase, ERR_DISKNOTVALID))
 		{
-			if (vr_OK == launchValidator(afs, vol))
+			if (vr_OK == launchValidator(afsbase, vol))
 				return 1;
 		}
 		return 0;
@@ -115,7 +116,7 @@ LONG launchValidator(struct AFSBase *afsbase, struct Volume *volume)
  ****************************************/
 #ifdef __AROS__
 
-LONG validate(struct AFSBase *afs, struct Volume *vol)
+LONG validate(struct AFSBase *afsbase, struct Volume *vol)
 {
 	DiskStructure     ds;
 	ValidationResult  res = vr_OK;
@@ -124,7 +125,7 @@ LONG validate(struct AFSBase *afs, struct Volume *vol)
 	 * fill in diskstructure. we will need it for the sake of validation.
 	 */
 	ds.vol = vol;
-	ds.afs = afs;
+	ds.afs = afsbase;
 	ds.flags = 0;
 
 	/*
@@ -132,9 +133,9 @@ LONG validate(struct AFSBase *afs, struct Volume *vol)
 	 */
 	if (0 == bm_allocate_bitmap(&ds))
 	{
-		inhibit(afs, vol, 1);
+		inhibit(afsbase, vol, 1);
 		res = start_superblock(&ds);
-		inhibit(afs, vol, 0);
+		inhibit(afsbase, vol, 0);
 	}
 	bm_free_bitmap(&ds);
 
@@ -173,7 +174,7 @@ LONG validate(struct AFSBase *afs, struct Volume *vol)
 	}
 
 	{
-		struct BlockCache *bc = getBlock(afs, vol, vol->rootblock);
+		struct BlockCache *bc = getBlock(afsbase, vol, vol->rootblock);
 		ULONG* mem = bc->buffer;
 
 		if (res != vr_OK)

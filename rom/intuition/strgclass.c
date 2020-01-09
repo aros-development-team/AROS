@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -268,7 +268,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
         /*
 
           The instance object is cleared memory!
-          memset(data, 0, sizeof (struct StrGData));
+          SetMem(data, 0, sizeof (struct StrGData));
         */
 
         /* Set some defaults */

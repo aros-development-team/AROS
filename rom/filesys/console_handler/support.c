@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for console handler. 
@@ -12,7 +12,16 @@
 
 /****************************************************************************************/
 
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/input.h>
+
 #include <exec/libraries.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
@@ -24,14 +33,7 @@
 #include <dos/dosasl.h>
 #include <intuition/intuition.h>
 #include <intuition/sghooks.h>
-#include <proto/dos.h>
-#include <proto/intuition.h>
-#include <proto/input.h>
 #include <devices/conunit.h>
-
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -760,7 +762,7 @@ static void do_paste(struct filehandle * fh)
 
     D(bug("PASTE REQUEST!\n"));
 
-    memset( &replyport, 0, sizeof( replyport ) );
+    SetMem( &replyport, 0, sizeof( replyport ) );
     replyport.mp_Node.ln_Type = NT_MSGPORT;
     replyport.mp_Flags = PA_SIGNAL;
     replyport.mp_SigBit = SIGB_SINGLE;

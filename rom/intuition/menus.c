@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -75,11 +75,12 @@ void ReplyMenuMessage(struct MenuMessage *msg, struct IntuitionBase *IntuitionBa
 
 void MH2Int_MakeMenusInactive(struct Window *win, UWORD menupick, struct IntuitionBase *IntuitionBase)
 {
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct InputEvent ie;
     struct IOStdReq   ior;
     struct MsgPort    replyport;
 
-    memset( &replyport, 0, sizeof( replyport ) );
+    SetMem( &replyport, 0, sizeof( replyport ) );
 
     ie.ie_NextEvent     = 0;
     ie.ie_Class         = IECLASS_MENU;

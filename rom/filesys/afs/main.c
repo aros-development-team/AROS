@@ -51,28 +51,31 @@ static struct AFSBase *AFS_alloc(void)
     if (handler == NULL)
     	return NULL;
 
-    handler->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",0);
-    if (handler->dosbase != NULL) {
+    handler->utilitybase = OpenLibrary("utility.library",0);
+    if (handler->utilitybase != NULL) {
+	handler->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",0);
+	if (handler->dosbase != NULL) {
 
-	/* changeint task and sigbit */
-	handler->port.mp_SigTask = FindTask(0);
-	handler->port.mp_SigBit = SIGBREAKB_CTRL_F;
+	    /* changeint task and sigbit */
+	    handler->port.mp_SigTask = FindTask(0);
+	    handler->port.mp_SigBit = SIGBREAKB_CTRL_F;
 
-    	/* Port for device commands */
-    	handler->timer_mp = CreateMsgPort();
-	/* Open timer */
-	handler->timer_request = (struct timerequest *)
-	    CreateIORequest(handler->timer_mp, sizeof(struct timerequest));
-	if (handler->timer_request != NULL) {
-	    if (OpenDevice("timer.device", UNIT_VBLANK,
-			(APTR)handler->timer_request, 0) == 0) {
-		return handler;
+	    /* Port for device commands */
+	    handler->timer_mp = CreateMsgPort();
+	    /* Open timer */
+	    handler->timer_request = (struct timerequest *)
+		CreateIORequest(handler->timer_mp, sizeof(struct timerequest));
+	    if (handler->timer_request != NULL) {
+		if (OpenDevice("timer.device", UNIT_VBLANK,
+			    (APTR)handler->timer_request, 0) == 0) {
+		    return handler;
+		}
+		DeleteIORequest((struct IORequest *)handler->timer_request);
 	    }
-	    DeleteIORequest((struct IORequest *)handler->timer_request);
+	    CloseLibrary((struct Library *)handler->dosbase);
 	}
-	CloseLibrary((struct Library *)handler->dosbase);
+	CloseLibrary((struct Library *)handler->utilitybase);
     }
-
     return NULL;
 }
 
@@ -85,6 +88,7 @@ static void AFS_free(struct AFSBase *handler)
     CloseDevice((struct IORequest *)handler->timer_request);
     DeleteIORequest((struct IORequest *)handler->timer_request);
     CloseLibrary((struct Library *)handler->dosbase);
+    CloseLibrary((struct Library *)handler->utilitybase);
     FreeMem(handler, sizeof(*handler));
 }
 

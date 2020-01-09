@@ -1,8 +1,8 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
+ * Copyright © 2007-2020 The AROS Development Team
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2019 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -12,11 +12,13 @@
 
 #define AROS_ALMOST_COMPATIBLE
 
+#include <proto/exec.h>
+#include <proto/utility.h>
+
 #include <aros/macros.h>
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/notify.h>
-#include <proto/exec.h>
 
 #include "fat_fs.h"
 #include "fat_protos.h"
@@ -745,7 +747,7 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
      * directory) */
     for (i = 2; GetDirEntry(&sdh, i, &sde, glob) == 0; i++)
     {
-        memset(&sde.e.entry, 0, sizeof(struct FATDirEntry));
+        SetMem(&sde.e.entry, 0, sizeof(struct FATDirEntry));
         UpdateDirEntry(&sde, glob);
     }
 

@@ -62,14 +62,14 @@ STRPTR Crypt(struct SecurityBase *secBase, STRPTR buffer, STRPTR key, STRPTR set
         return(ACrypt(buffer, key, setting));
     }
     /* If the pwd is zero length, zero out the buffer */
-    return(memset(buffer, '\0', MaxPwdLen(secBase)));
+    return(SetMem(buffer, '\0', MaxPwdLen(secBase)));
 }
 
 STRPTR Encrypt(STRPTR buffer, STRPTR pwd, STRPTR userid)
 {
     if (strlen(pwd))
         return ACrypt(buffer, pwd, userid);
-    return memset(buffer, 0, 12);
+    return SetMem(buffer, 0, 12);
 }
 
 ULONG MaxPwdLen(struct SecurityBase *secBase)

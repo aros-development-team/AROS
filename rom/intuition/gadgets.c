@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -685,12 +685,13 @@ ULONG GetGadgetState(struct Window *window, struct Gadget *gadget)
 void SetupGInfo(struct GadgetInfo *gi, struct Window *win, struct Requester *req,
                 struct Gadget *gad, struct IntuitionBase *IntuitionBase)
 {
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct Window *tw = 0;
 
     DEBUG_SETUPGINFO(dprintf("SetupGInfo: gi %p win %p req %p gadget %p (Type 0x%x)\n",
                              gi, win, req, gad, gad->GadgetType));
 
-    memset(gi, 0, sizeof(*gi));
+    SetMem(gi, 0, sizeof(*gi));
 
     if (req)
     {

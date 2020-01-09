@@ -5,22 +5,24 @@
     Desc: Code for CONU_STANDARD console units.
     Lang: english
 */
-#include <string.h>
-
-#include <proto/graphics.h>
-#include <proto/intuition.h>
-#include <intuition/intuition.h>
-#include <graphics/rastport.h>
-#include <exec/rawfmt.h>
-#include <aros/asmcall.h>
 
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <proto/utility.h>
+
+#include <intuition/intuition.h>
+#include <graphics/rastport.h>
+#include <exec/rawfmt.h>
+#include <aros/asmcall.h>
+
+#include <string.h>
+
 #include "console_gcc.h"
 #include "consoleif.h"
-
 
 struct stdcondata
 {
@@ -54,7 +56,7 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
         /* Clear for checking inside dispose() whether stuff was allocated.
            Basically this is bug-prevention.
          */
-        memset(data, 0, sizeof(struct stdcondata));
+        SetMem(data, 0, sizeof(struct stdcondata));
         for (i = 0; i < CONUNIT_PEN_MAX; i ++)
         {
             data->pens[i] = i;

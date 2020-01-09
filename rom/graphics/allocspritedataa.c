@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function AllocSpriteDataA()
@@ -138,7 +138,7 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
         struct BitScaleArgs bsa;
         LONG xrep = 0, yrep = 0;
 
-        memset(&bsa, 0, sizeof(bsa));
+        SetMem(&bsa, 0, sizeof(bsa));
     
         while (NULL != (tag = NextTagItem(&tstate))) {
             switch (tag->ti_Tag) {

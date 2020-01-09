@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -252,7 +252,7 @@ struct MBR *mbr;
         {
             ph->table->data = mbr;
 
-            memset(mbr->pcpt, 0, sizeof(mbr->pcpt));
+            SetMem(mbr->pcpt, 0, sizeof(mbr->pcpt));
             mbr->magic = AROS_WORD2LE(0xAA55);
 
             NEWLIST(&ph->table->list);
@@ -385,7 +385,7 @@ static struct PartitionHandle *PartitionMBRAddPartition(struct Library *Partitio
             if (ph != NULL)
                 Enqueue(&root->table->list, &ph->ln);
             else
-                memset(entry, 0, sizeof(struct PCPartitionTable));
+                SetMem(entry, 0, sizeof(struct PCPartitionTable));
 
             return ph;
         }
@@ -397,7 +397,7 @@ static void PartitionMBRDeletePartition(struct Library *PartitionBase, struct Pa
 {
     struct MBRData *data = (struct MBRData *)ph->data;
 
-    memset(data->entry, 0, sizeof(struct PCPartitionTable));
+    SetMem(data->entry, 0, sizeof(struct PCPartitionTable));
 
     Remove(&ph->ln);
     PartitionMBRFreeHandle(PartitionBase, ph);
@@ -489,7 +489,7 @@ static LONG PartitionMBRSetPartitionAttrs(struct Library *PartitionBase, struct 
                 data->position = tag->ti_Data;
                 entry = &((struct MBR *)ph->root->table->data)->pcpt[data->position];
                 CopyMem(data->entry, entry, sizeof(struct PCPartitionTable));
-                memset(data->entry, 0, sizeof(struct PCPartitionTable));
+                SetMem(data->entry, 0, sizeof(struct PCPartitionTable));
                 data->entry = entry;
                 ph->ln.ln_Pri = MBR_MAX_PARTITIONS-1-data->position;
                 Remove(&ph->ln);
@@ -534,7 +534,7 @@ ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase,
 {
     struct MBR *mbr = root->table->data;
 
-    memset(mbr->pcpt, 0, sizeof(mbr->pcpt));
+    SetMem(mbr->pcpt, 0, sizeof(mbr->pcpt));
     /* deleting the magic value will invalidate the
      * partition table so it cannot be opened again
      */

@@ -24,10 +24,13 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "support.h"
-#include <exec/rawfmt.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
+
+#include <exec/rawfmt.h>
 #include <SDI_stdarg.h>
+
+#include "support.h"
 
 typedef struct {
 	STRPTR Target;
@@ -64,10 +67,12 @@ VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...) {
 	return res;
 }
 
+#if (0)
 void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, VA_LIST args) {
 	SNPrintfStream s = { buf, len };
 	VNewRawDoFmt(fmt, (VOID_FUNC)SNPrintfPutCh, &s, args);
 }
+#endif
 
 STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args) {
 	STRPTR buf;

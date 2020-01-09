@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -16,6 +16,10 @@
 /* We want all other bases obtained from our base */
 #define __NOLIBBASE__
 
+#include <proto/timer.h>
+#include <proto/bootloader.h>
+#include <proto/expansion.h>
+
 #include <aros/atomic.h>
 #include <aros/symbolsets.h>
 #include <exec/exec.h>
@@ -31,11 +35,6 @@
 #include <dos/bptr.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
-
-#include <proto/timer.h>
-#include <proto/bootloader.h>
-#include <proto/expansion.h>
-#include <proto/oop.h>
 
 #include <hidd/pci.h>
 
@@ -168,7 +167,7 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 */
 AROS_LH1(void, BeginIO,
     AROS_LHA(struct IORequest *, io, A1),
-    LIBBASETYPEPTR, LIBBASE, 5, ahci)
+    struct AHCIBase *, AHCIBase, 5, ahci)
 {
     AROS_LIBFUNC_INIT
 
@@ -268,7 +267,7 @@ AROS_LH1(void, BeginIO,
             goto bad_cmd;
 
         geom = data;
-        memset(geom, 0, len);
+        SetMem(geom, 0, len);
         if (ap->ap_type == ATA_PORT_T_DISK) {
             geom->dg_SectorSize   = at->at_identify.sector_size;
             geom->dg_TotalSectors = 0;
@@ -381,7 +380,7 @@ bad_address:
 
 AROS_LH1(LONG, AbortIO,
     AROS_LHA(struct IORequest *, io, A1),
-    LIBBASETYPEPTR, LIBBASE, 6, ahci)
+    struct AHCIBase *, AHCIBase, 6, ahci)
 {
     AROS_LIBFUNC_INIT
 

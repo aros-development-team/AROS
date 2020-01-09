@@ -26,6 +26,7 @@
 #endif
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/oop.h>
 
 #include <hidd/pci.h>

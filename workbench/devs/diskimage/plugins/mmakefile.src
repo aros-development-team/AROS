@@ -13,20 +13,34 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
 #MM  workbench-devs-diskimage-ccd \
 #MM  workbench-devs-diskimage-ciso \
 #MM  workbench-devs-diskimage-cpc \
-#MM  workbench-devs-diskimage-daa \
+##MM  workbench-devs-diskimage-daa \
 #MM  workbench-devs-diskimage-dax \
 #MM  workbench-devs-diskimage-dmg \
 #MM  workbench-devs-diskimage-dms \
-#MM  workbench-devs-diskimage-gi \
+##MM  workbench-devs-diskimage-gi \
 #MM  workbench-devs-diskimage-mds \
 #MM  workbench-devs-diskimage-nrg \
 #MM  workbench-devs-diskimage-uif
 
 # CUE needs things from contrib
-# #MM   workbench-devs-diskimage-cue
-
+##MM   workbench-devs-diskimage-cue
 # FID has GPL license, so we don't build it by default
-# #MM   workbench-devs-diskimage-fdi 
+##MM   workbench-devs-diskimage-fdi 
+
+#MM- workbench-devs-diskimage-plugins-quick : \
+#MM  workbench-devs-diskimage-ccd-quick \
+#MM  workbench-devs-diskimage-ciso-quick \
+#MM  workbench-devs-diskimage-cpc-quick \
+##MM  workbench-devs-diskimage-daa-quick \
+#MM  workbench-devs-diskimage-dax-quick \
+#MM  workbench-devs-diskimage-dmg-quick \
+#MM  workbench-devs-diskimage-dms-quick \
+##MM  workbench-devs-diskimage-gi-quick \
+#MM  workbench-devs-diskimage-mds-quick \
+#MM  workbench-devs-diskimage-nrg-quick \
+#MM  workbench-devs-diskimage-uif-quick
+##MM   workbench-devs-diskimage-cue-quick
+##MM   workbench-devs-diskimage-fdi-quick
 
 #MM workbench-devs-diskimage-ccd : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-cpc : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
@@ -39,19 +53,11 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
 #MM workbench-devs-diskimage-xad : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-xpk : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 
-#MM- workbench-devs-diskimage-plugins-quick : \
-#MM  workbench-devs-diskimage-ccd-quick \
-#MM  workbench-devs-diskimage-cpc-quick \
-#MM  workbench-devs-diskimage-dms-quick \
-#MM  workbench-devs-diskimage-gi-quick \
-#MM  workbench-devs-diskimage-mds-quick \
-#MM  workbench-devs-diskimage-nrg-quick
-
 #MM- workbench-devs-diskimage-plugins-clean : \
 #MM  workbench-devs-diskimage-ccd-clean \
 #MM  workbench-devs-diskimage-cpc-clean \
 #MM  workbench-devs-diskimage-cue-clean \
-#MM  workbench-devs-diskimage-daa-clean \
+##MM  workbench-devs-diskimage-daa-clean \
 #MM  workbench-devs-diskimage-dax-clean \
 #MM  workbench-devs-diskimage-dmg-clean \
 #MM  workbench-devs-diskimage-dms-clean \

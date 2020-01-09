@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -299,7 +299,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	return NULL;
 
     data = OOP_INST_DATA(cl, o);
-    memset(data, 0, sizeof (*data));
+    SetMem(data, 0, sizeof (*data));
     InitSemaphore(&data->fbsema);
 
     data->basegc = OOP_FindClass(CLID_Hidd_GC);

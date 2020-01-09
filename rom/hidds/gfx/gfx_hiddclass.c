@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gfx Hidd driver class implementation.
@@ -1464,6 +1464,7 @@ OOP_Object *GFXHIDD__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct
 static inline BOOL alloc_mode_bm(struct mode_bm *bm, ULONG numsyncs, ULONG numpfs,
     	    	    	    	 OOP_Class *cl)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     bm->bpr = WIDTH_TO_BYTES(numpfs);
     
     bm->bm = AllocVec(bm->bpr * numsyncs, MEMF_CLEAR);
@@ -1471,7 +1472,7 @@ static inline BOOL alloc_mode_bm(struct mode_bm *bm, ULONG numsyncs, ULONG numpf
 	return FALSE;
 	
     /* We initialize the mode bitmap to all modes valid */
-    memset(bm->bm, 0xFF, bm->bpr * numsyncs);
+    SetMem(bm->bm, 0xFF, bm->bpr * numsyncs);
     
     return TRUE;
 }
@@ -1729,7 +1730,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     mdb = &data->mdb;
     InitSemaphore(&mdb->sema);
 
-    memset(&pixfmt_data, 0, sizeof (pixfmt_data));
+    SetMem(&pixfmt_data, 0, sizeof (pixfmt_data));
 
     init_def_tags(def_sync_tags,	num_Hidd_Sync_Attrs);
     init_def_tags(def_pixfmt_tags,	num_Hidd_PixFmt_Attrs);
@@ -3468,12 +3469,13 @@ VOID GFXHIDD__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *obj, OOP_Ms
 
 OOP_Object *GFXHIDD__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     HIDDT_PixelFormat 	    cmp_pf;
     struct class_static_data *data;
     struct pixfmt_data 	    *retpf = NULL;
 
-    memset(&cmp_pf, 0, sizeof(cmp_pf));
+    SetMem(&cmp_pf, 0, sizeof(cmp_pf));
 
     data = CSD(cl);
     if (!parse_pixfmt_tags(pixFmtTags, &cmp_pf, 0, CSD(cl)))

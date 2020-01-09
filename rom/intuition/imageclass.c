@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -131,7 +131,7 @@ IPTR ImageClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	     */
 	    /*
 	     * The instance object is contains cleared memory!
-	     * memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
+	     * SetMem ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
 	     */
 	    im->Width = 80;
 	    im->Height = 40;

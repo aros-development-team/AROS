@@ -1,8 +1,8 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
+ * Copyright © 2007-2020 The AROS Development Team
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2015 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,14 +10,16 @@
  * $Id$
  */
 
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
+#include <proto/timer.h>
+
 #include <exec/types.h>
 #include <devices/inputevent.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/timer.h>
 #include <clib/alib_protos.h>
 
 #include <clib/macros.h>
@@ -321,7 +323,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
             if (block_ref != NULL)
             {
                 /* FIXME: Handle IO errors on cache read! */
-                memset(fat_block, 0, bsize);
+                SetMem(fat_block, 0, bsize);
                 if (i == 0)
                 {
                     /* The first two entries are special */
@@ -354,7 +356,7 @@ LONG ReadFATSuper(struct FSSuper *sb)
         for (i = 0; err == 0 && GetDirEntry(&dh, i, &dir_entry, glob) == 0;
             i++)
         {
-            memset(&dir_entry.e.entry, 0, sizeof(struct FATDirEntry));
+            SetMem(&dir_entry.e.entry, 0, sizeof(struct FATDirEntry));
             err = UpdateDirEntry(&dir_entry, glob);
         }
 
@@ -691,7 +693,7 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
         }
 
         fsinfo = (APTR) boot;
-        memset(fsinfo, 0, bsize);
+        SetMem(fsinfo, 0, bsize);
 
         fsinfo->lead_sig = AROS_LONG2LE(FSI_LEAD_SIG);
         fsinfo->struct_sig = AROS_LONG2LE(FSI_STRUCT_SIG);
@@ -907,7 +909,7 @@ void DoDiskInsert(struct Globals *glob)
     if (glob->sb == NULL
         && (sb = AllocVecPooled(glob->mempool, sizeof(struct FSSuper))))
     {
-        memset(sb, 0, sizeof(struct FSSuper));
+        SetMem(sb, 0, sizeof(struct FSSuper));
 
         sb->glob = glob;
         err = ReadFATSuper(sb);
