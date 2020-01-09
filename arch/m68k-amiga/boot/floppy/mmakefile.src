@@ -7,7 +7,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM bootdisk-amiga-m68k-gen : \
 #MM           kernel-link-amiga-m68k \
 #MM           workbench-c \
-#MM           workbench-libs-version
+#MM           workbench-devs \
+#MM           workbench-libs-version \
+#MM           workbench-s
 
 #MM- bootdisk-amiga-m68k-quick : bootdisk-amiga-m68k
 #MM bootdisk-amiga-m68k : bootdisk-amiga-m68k-gen
