@@ -202,14 +202,14 @@ typedef struct UtilityBase *UtilityBase_t;
 #ifdef AROS_FAST_BPTR
 #define BSTR_EXTRA 1
 #define BSTR_OFFSET 0
-#define bstrcpy(dest, src, len) Strlcpy((dest), (src), sizeof(dest))
+#define bstrcpy(dest, src, len) Strlcpy((dest), (src), len + 1)
 #else
 #define BSTR_EXTRA 2
 #define BSTR_OFFSET 1
 #define bstrcpy(dest, src, len) \
 { \
 	dest[0] = (len); \
-	Strlcpy(&dest[1], (src), sizeof(dest) - 1); \
+	Strlcpy(&dest[1], (src), len + 1); \
 }
 #endif
 
@@ -300,7 +300,7 @@ int main(void)
                     DEBUG_MOUNT(KPrintF("Mount: search for devname <%s>\n",
                                        (IPTR)*MyDevPtr));
 
-		    Strlcpy(dirname, *MyDevPtr, sizeof(dirname));
+		    Strlcpy(dirname, *MyDevPtr, 512);
 		    dirname[len-1] = '\0';
 
                     if ((error=CheckDevice(dirname))!=RETURN_OK)
@@ -333,9 +333,9 @@ int main(void)
                           }
 
                           slen = strlen(*SearchPtr);
-			  Strlcpy(dirname, *SearchPtr, sizeof(dirname));
+			  Strlcpy(dirname, *SearchPtr, 512);
 			  dirname[slen]	= '\0';
-                          Strlcat(dirname, *MyDevPtr, sizeof(dirname));
+                          Strlcat(dirname, *MyDevPtr, 512);
 			  dirname[slen+len-1] =	'\0';
 			  DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n", (IPTR)dirname));
 
@@ -348,7 +348,7 @@ int main(void)
                         {
                           DEBUG_MOUNT(KPrintF("Mount: try from mountlist\n"));
 			  dirname[0] = '\0';
-                          Strlcat(dirname, *MyDevPtr, sizeof(dirname));
+                          Strlcat(dirname, *MyDevPtr, 512);
 			  dirname[len-1] = '\0';
 			  error=readmountlist(params, dirname, MOUNTLIST);
 			  DEBUG_MOUNT(KPrintF("Mount: readmountlist(default) returned %ld\n", error));
@@ -724,7 +724,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	    FreeVec(DeviceString);
 	
 	if ((DeviceString = AllocVec(len+1,MEMF_PUBLIC|MEMF_CLEAR)))
-	    Strlcpy(DeviceString, (STRPTR)args[ARG_DEVICE], sizeof(DeviceString));
+	    Strlcpy(DeviceString, (STRPTR)args[ARG_DEVICE], len);
     }
 
     if (args[ARG_UNIT] != 0)
@@ -743,7 +743,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	    if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 	    {
-		Strlcpy(UnitString, (STRPTR)args[ARG_UNIT], sizeof(UnitString));
+		Strlcpy(UnitString, (STRPTR)args[ARG_UNIT], len);
 		params[2] = (IPTR)UnitString;
 		DEBUG_MOUNT(KPrintF("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
 	    }
@@ -775,7 +775,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	    if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 	    {
-		Strlcpy(FlagsString, (STRPTR)args[ARG_FLAGS], sizeof(FlagsString));
+		Strlcpy(FlagsString, (STRPTR)args[ARG_FLAGS], len);
 		params[3] = (IPTR) FlagsString;
 		DEBUG_MOUNT(KPrintF("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
 	    }
@@ -889,7 +889,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	    DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
 
 	    if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
-		Strlcpy(StartupString,(STRPTR)args[ARG_STARTUP], sizeof(StartupString));
+		Strlcpy(StartupString,(STRPTR)args[ARG_STARTUP], len);
 	    else
 	    {
 		result = ERROR_NO_FREE_STORE;
@@ -1005,8 +1005,7 @@ char			name[256+1];
     if (name[0] == '\0')
     {
       nameptr		=	FilePart(filename);
-      Strlcpy(name,
-             nameptr, sizeof(name));
+      Strlcpy(name, nameptr, 256);
     }
   }
 
@@ -1814,7 +1813,7 @@ LONG mount(IPTR	*params, STRPTR	name)
 		    }
 		    if (Activate)
 		    {
-			Strlcat(name, ":", sizeof(name));
+			Strlcat(name, ":", 512);
 			DEBUG_MOUNT(KPrintF("Activating \"%s\"\n", (IPTR)name));
 			DeviceProc(name);
 		    }
@@ -1884,7 +1883,7 @@ void _snprintf(STRPTR buffer, LONG buffer_size, CONST_STRPTR format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
-	VSNPrintf(buffer, buffer_size, format, ap);
+	VSNPrintf(buffer, buffer_size, format, (RAWARG)ap);
 	va_end(ap);
 }
 
@@ -1895,7 +1894,7 @@ void ShowFault(LONG code, const char *s, ...)
 	int l;
 
 	va_start(ap, s);
-	l = VSNPrintf(buf, sizeof(buf) - 2, s, ap);
+	l = VSNPrintf(buf, sizeof(buf) - 2, s, (RAWARG)ap);
 	va_end(ap);
 	Strlcpy(&buf[l], ": ", sizeof(buf) - l);
 	l += 2;
