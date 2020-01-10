@@ -2,7 +2,7 @@
 #define OS_UNIX_SUPPORT_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -218,6 +218,9 @@ struct DosEnvec {
 
 /* (aros/machine.h) */
 #define OS_PTRALIGN (sizeof(APTR))
+
+/* proto/utility.h */
+APTR SetMem(APTR, ULONG, LONG);
 
 /* proto/exec.h */
 APTR AllocMem(ULONG, ULONG);
