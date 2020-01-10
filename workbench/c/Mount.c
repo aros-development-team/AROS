@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2018 The AROS Development Team
+    (C) 1995-2020 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -202,19 +202,19 @@ typedef struct UtilityBase *UtilityBase_t;
 #ifdef AROS_FAST_BPTR
 #define BSTR_EXTRA 1
 #define BSTR_OFFSET 0
-#define bstrcpy(dest, src, len) strcpy(dest, src)
+#define bstrcpy(dest, src, len) Strlcpy((dest), (src), sizeof(dest))
 #else
 #define BSTR_EXTRA 2
 #define BSTR_OFFSET 1
 #define bstrcpy(dest, src, len) \
 { \
-	dest[0] = len; \
-	strcpy(&dest[1], src); \
+	dest[0] = (len); \
+	Strlcpy(&dest[1], (src), sizeof(dest) - 1); \
 }
 #endif
 
 static const int __nocommandline __attribute__((used));
-const TEXT version[] = "\0$VER: " PROGNAME " 50.14 (" ADATE ")";
+const TEXT version[] = "\0$VER: " PROGNAME " 50.15 (" ADATE ")";
 
 ULONG CheckDevice(char *name);
 void  InitParams(IPTR *params);
@@ -263,12 +263,12 @@ int main(void)
   {
     if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",37)))
     {
-	memset(&flagargs, 0, sizeof(flagargs));
+	SetMem(&flagargs, 0, sizeof(flagargs));
 	IsEHandler = TRUE;
 	IsFilesystem = TRUE;
 	if (!_WBenchMsg)
         {
-          memset(args,0,sizeof(args));
+          SetMem(args,0,sizeof(args));
           if ((rda = ReadArgs("DEVICE/M,FROM/K", args, NULL)))
           {
             STRPTR	*MyDevPtr;
@@ -300,7 +300,7 @@ int main(void)
                     DEBUG_MOUNT(KPrintF("Mount: search for devname <%s>\n",
                                        (IPTR)*MyDevPtr));
 
-		    strcpy(dirname, *MyDevPtr);
+		    Strlcpy(dirname, *MyDevPtr, sizeof(dirname));
 		    dirname[len-1] = '\0';
 
                     if ((error=CheckDevice(dirname))!=RETURN_OK)
@@ -333,9 +333,9 @@ int main(void)
                           }
 
                           slen = strlen(*SearchPtr);
-			  strcpy(dirname, *SearchPtr);
+			  Strlcpy(dirname, *SearchPtr, sizeof(dirname));
 			  dirname[slen]	= '\0';
-                          strcat(dirname, *MyDevPtr);
+                          Strlcat(dirname, *MyDevPtr, sizeof(dirname));
 			  dirname[slen+len-1] =	'\0';
 			  DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n", (IPTR)dirname));
 
@@ -348,7 +348,7 @@ int main(void)
                         {
                           DEBUG_MOUNT(KPrintF("Mount: try from mountlist\n"));
 			  dirname[0] = '\0';
-                          strcat(dirname, *MyDevPtr);
+                          Strlcat(dirname, *MyDevPtr, sizeof(dirname));
 			  dirname[len-1] = '\0';
 			  error=readmountlist(params, dirname, MOUNTLIST);
 			  DEBUG_MOUNT(KPrintF("Mount: readmountlist(default) returned %ld\n", error));
@@ -367,7 +367,7 @@ int main(void)
 
                     DEBUG_MOUNT(KPrintF("Mount: search for mountfile <%s>\n", *MyDevPtr));
 
-                    memset(MyAp,0,sizeof(struct AnchorPath));
+                    SetMem(MyAp,0,sizeof(struct AnchorPath));
 
                     dirname[0]	=	'\0';
                     for (err = MatchFirst(*MyDevPtr,MyAp);
@@ -418,7 +418,7 @@ int main(void)
                         DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n",
                                            (IPTR)dirname));
 
-                        memset(&flagargs, 0, sizeof(flagargs));
+                        SetMem(&flagargs, 0, sizeof(flagargs));
 			IsEHandler = TRUE;
 			IsFilesystem = TRUE;
 			error=readmountfile(params, dirname);
@@ -543,7 +543,7 @@ void InitParams(IPTR *params)
 {
   struct DosEnvec *vec;
 
-  memset(params,0, PARAMSLENGTH);
+  SetMem(params,0, PARAMSLENGTH);
 
   vec = (struct DosEnvec *)&params[4];
 
@@ -649,7 +649,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
     DEBUG_MOUNT(KPrintF("ReadMountArgs:\n%s\n\n", (IPTR)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
 
-    memset(&args, 0, sizeof(args));
+    SetMem(&args, 0, sizeof(args));
 
     if (!(MyRDA = ReadArgs((STRPTR)options, &args[0], rda)))
     {
@@ -724,7 +724,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	    FreeVec(DeviceString);
 	
 	if ((DeviceString = AllocVec(len+1,MEMF_PUBLIC|MEMF_CLEAR)))
-	    strcpy(DeviceString, (STRPTR)args[ARG_DEVICE]);
+	    Strlcpy(DeviceString, (STRPTR)args[ARG_DEVICE], sizeof(DeviceString));
     }
 
     if (args[ARG_UNIT] != 0)
@@ -743,7 +743,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	    if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 	    {
-		strcpy(UnitString, (STRPTR)args[ARG_UNIT]);
+		Strlcpy(UnitString, (STRPTR)args[ARG_UNIT], sizeof(UnitString));
 		params[2] = (IPTR)UnitString;
 		DEBUG_MOUNT(KPrintF("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
 	    }
@@ -775,7 +775,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	    if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 	    {
-		strcpy(FlagsString, (STRPTR)args[ARG_FLAGS]);
+		Strlcpy(FlagsString, (STRPTR)args[ARG_FLAGS], sizeof(FlagsString));
 		params[3] = (IPTR) FlagsString;
 		DEBUG_MOUNT(KPrintF("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
 	    }
@@ -889,7 +889,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	    DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
 
 	    if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
-		strcpy(StartupString,(STRPTR)args[ARG_STARTUP]);
+		Strlcpy(StartupString,(STRPTR)args[ARG_STARTUP], sizeof(StartupString));
 	    else
 	    {
 		result = ERROR_NO_FREE_STORE;
@@ -1005,8 +1005,8 @@ char			name[256+1];
     if (name[0] == '\0')
     {
       nameptr		=	FilePart(filename);
-      strcpy(name,
-             nameptr);
+      Strlcpy(name,
+             nameptr, sizeof(name));
     }
   }
 
@@ -1073,10 +1073,10 @@ char			name[256+1];
               toollen	=	strlen(ToolPtr);
               if ((ToolString = AllocVec(toollen + 2,MEMF_ANY)))
               {
-                memcpy(ToolString,ToolPtr,toollen);
+                CopyMem(ToolPtr,ToolString,toollen);
                 ToolString[toollen]	=	'\n';
                 ToolString[toollen+1]	=	'\0';
-                memset(&rda,0,sizeof(struct RDArgs));
+                SetMem(&rda,0,sizeof(struct RDArgs));
 		rda.RDA_Source.CS_Buffer = ToolString;
 		rda.RDA_Source.CS_Length = toollen+1;
 		rda.RDA_Source.CS_CurChr = 0;
@@ -1302,7 +1302,7 @@ struct FileSysEntry *GetFileSysEntry(ULONG DosType)
     while (CurrentFileSysEntry->fse_Node.ln_Succ)
     {
       if (HandlerString != NULL)
-        Matched = strcmp(HandlerString + BSTR_OFFSET,
+        Matched = Stricmp(HandlerString + BSTR_OFFSET,
           AROS_BSTR_ADDR(CurrentFileSysEntry->fse_Handler)) == 0;
       else
         Matched = CurrentFileSysEntry->fse_DosType == DosType;
@@ -1525,8 +1525,8 @@ struct RDArgs rda;
 
     DEBUG_MOUNT(KPrintF("ParseMountFile:\n"));
 
-    memset(&args, 0, sizeof(args));
-    memset(&rda,0,sizeof(struct RDArgs));
+    SetMem(&args, 0, sizeof(args));
+    SetMem(&rda,0,sizeof(struct RDArgs));
 
     rda.RDA_Source.CS_Buffer = buf;
     rda.RDA_Source.CS_Length = size;
@@ -1562,8 +1562,8 @@ struct RDArgs rda;
 
     DEBUG_MOUNT(KPrintF("ParseMountList: <%s>\n", (IPTR)name));
 
-    memset(&args,0,sizeof(args));
-    memset(&rda,0,sizeof(struct RDArgs));
+    SetMem(&args,0,sizeof(args));
+    SetMem(&rda,0,sizeof(struct RDArgs));
 
     rda.RDA_Source.CS_Buffer = buf;
     rda.RDA_Source.CS_Length = end - buf;
@@ -1614,7 +1614,7 @@ struct RDArgs rda;
 	    DEBUG_MOUNT(KPrintF("ParseMountList: found\n"));
 
 	    /* Copy the string so we get proper case - Piru */
-	    memcpy(name, buffer, s2 - buffer);
+	    CopyMem(buffer, name, s2 - buffer);
 	    name[s2 - buffer] = '\0';
 
 	    ptr = name;
@@ -1814,7 +1814,7 @@ LONG mount(IPTR	*params, STRPTR	name)
 		    }
 		    if (Activate)
 		    {
-			strcat(name, ":");
+			Strlcat(name, ":", sizeof(name));
 			DEBUG_MOUNT(KPrintF("Activating \"%s\"\n", (IPTR)name));
 			DeviceProc(name);
 		    }
@@ -1879,6 +1879,15 @@ void ShowError(STRPTR name, const char *s, ...)
     AROS_SLOWSTACKFORMAT_POST(s);
 }
 
+
+void _snprintf(STRPTR buffer, LONG buffer_size, CONST_STRPTR format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	VSNPrintf(buffer, buffer_size, format, ap);
+	va_end(ap);
+}
+
 void ShowFault(LONG code, const char *s, ...)
 {
 	char buf[256];
@@ -1886,13 +1895,13 @@ void ShowFault(LONG code, const char *s, ...)
 	int l;
 
 	va_start(ap, s);
-	l = vsnprintf(buf, sizeof(buf) - 2, s, ap);
+	l = VSNPrintf(buf, sizeof(buf) - 2, s, ap);
 	va_end(ap);
-	strcpy(&buf[l], ": ");
+	Strlcpy(&buf[l], ": ", sizeof(buf) - l);
 	l += 2;
 	Fault(code, NULL, &buf[l], sizeof(buf) - l);
 	if (buf[l] == 0)
-	    snprintf(&buf[l], sizeof(buf) - l, "%ld", (long)code);
+	    _snprintf(&buf[l], sizeof(buf) - l, "%ld", (long)code);
 	buf[sizeof(buf)-1] = 0;
 	if (IsCli)
 	{
