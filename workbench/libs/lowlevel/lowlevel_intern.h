@@ -8,13 +8,13 @@
 #ifndef __LOWLEVEL_INTERN_H__
 #define __LOWLEVEL_INTERN_H__
 
+#include <proto/exec.h>
+
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
 #include <exec/semaphores.h>
-
-#include <proto/exec.h>
 
 #include <aros/debug.h>
 
@@ -38,6 +38,12 @@ struct LowLevelBase
     struct Interrupt            ll_VBlank;
     BPTR                        ll_SegList;
 
+    struct Library              *ll_InputBase;
+    struct Interrupt        	*ll_InputHandler;
+    struct MsgPort          	*ll_InputMP;
+    struct IOStdReq         	*ll_InputIO;
+
+    ULONG                       ll_LastKey;        
 #if (1)
     /*
      * Variables used by amiga-m68k
