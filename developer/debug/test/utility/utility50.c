@@ -4,6 +4,10 @@
 
 // Test for the V50 functions of utility.library
 
+#ifndef Strlen
+#define Strlen strlen
+#endif
+
 int main(void)
 {
     TEXT buffer[12];
@@ -15,17 +19,14 @@ int main(void)
     // strlen must always be 11
     
     LONG count = VSNPrintf(buffer, sizeof buffer, "ab%scd%ldef", (RAWARG)args);
-    printf("buffer %s len %d count %d\n", buffer, strlen(buffer), count);
-    
-    SetMem(buffer + 2, 'o', 4);
-    printf("buffer %s len %d\n", buffer, strlen(buffer));
-    
+    printf("buffer %s len %d count %d\n", buffer, Strlen(buffer), count);
+
     Strlcpy(buffer, "12345678901234567890", sizeof buffer);
-    printf("buffer %s len %d\n", buffer, strlen(buffer));
+    printf("buffer %s len %d\n", buffer, Strlen(buffer));
 
     Strlcpy(buffer, "12345678", sizeof buffer);
     Strlcat(buffer, "abcdefghijklmnopqr", sizeof buffer);
-    printf("buffer %s len %d\n", buffer, strlen(buffer));
+    printf("buffer %s len %d\n", buffer, Strlen(buffer));
     
     return 0;
 }

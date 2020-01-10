@@ -1,4 +1,4 @@
-# Copyright © 2003-2018, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -7,9 +7,10 @@ FILES := \
     amiga2date \
     callhooktest \
     date2amiga \
+    setmem \
     smult \
+    utility50 \
     vartags \
-    utility50
 
 EXEDIR := $(AROS_TESTS)/utility
 
