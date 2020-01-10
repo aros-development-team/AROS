@@ -8,7 +8,7 @@
 
 #define __OOP_NOATTRBASES__
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <aros/asmcall.h>
@@ -403,12 +403,32 @@ VOID METHOD(SAGAGfx, Root, Get)
 
 BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorPos)
 {
-    D(bug("[SAGA] SetCursorPos(%d, %d)\n", msg->x, msg->y));
-    XSD(cl)->cursorX = msg->x;
-    XSD(cl)->cursorY = msg->y;
-    WRITE16(SAGA_VIDEO_SPRITEX, msg->x + SAGA_MOUSE_DELTAX);
-    WRITE16(SAGA_VIDEO_SPRITEY, msg->y + SAGA_MOUSE_DELTAY);
+    if (XSD(cl)->visible)
+    {
+        struct SAGAGfxBitmapData *bmdata = OOP_INST_DATA(XSD(cl)->bmclass, XSD(cl)->visible);
 
+        D(bug("[SAGA] SetCursorPos(%d, %d)\n", msg->x, msg->y));
+        WORD x = msg->x;
+        WORD y = msg->y;
+
+        if (bmdata->hwregs.video_mode & SAGA_VIDEO_MODE_DBLSCN(SAGA_VIDEO_DBLSCAN_X))
+        {
+            x <<= 1;
+        }
+
+        if (bmdata->hwregs.video_mode & SAGA_VIDEO_MODE_DBLSCN(SAGA_VIDEO_DBLSCAN_Y))
+        {
+            y <<= 1;
+        }
+
+        x += SAGA_MOUSE_DELTAX;
+        y += SAGA_MOUSE_DELTAY;
+
+        XSD(cl)->cursorX = x;
+        XSD(cl)->cursorY = y;
+        WRITE16(SAGA_VIDEO_SPRITEX, x);
+        WRITE16(SAGA_VIDEO_SPRITEY, y);
+    }
     return TRUE;
 }
 
@@ -605,7 +625,7 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
         tags[0].ti_Data = TRUE;
 //        OOP_SetAttrs(msg->bitMap, tags);
 
-        WRITE16(SAGA_VIDEO_MODE, SAGA_VIDEO_FORMAT_AMIGA);
+        WRITE16(SAGA_VIDEO_MODE, SAGA_VIDEO_FORMAT_OFF);
 
         WRITE16(SAGA_VIDEO_HPIXEL, bmdata->hwregs.hpixel);
         WRITE16(SAGA_VIDEO_HSSTRT, bmdata->hwregs.hsstart);
