@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -107,7 +107,9 @@ ULONG sectorSize(struct AFSBase *afsbase, struct IOHandle *ioh)
 }
 
 void check64BitSupport(struct AFSBase *afsbase, struct Volume *volume) {
-        printf("%s: We just support 64Bit (or not ...)\n", __FUNCTION__);
+       /*
+         * This is a NOP, since we just access the image as a block device
+         */
 }
 
 struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh) {
@@ -134,27 +136,35 @@ BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
         return DOSFALSE;
 }
 
+/****************************************************************************
+ * The following 4 functions are used to prepare structures for adding the volume
+ * to the system, and for exposing it - however this is not used on hosted
+ * so the functions are no-ops.
+ ****************************************************************************/
+
 LONG attemptAddDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
-        printf("%s: Don't know what to do here\n", __FUNCTION__);
         return 0;
 }
-
 LONG osMediumInit(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
-        printf("%s: Don't know what to do here\n", __FUNCTION__);
         return 0;
 }
-
 void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
-        printf("%s: Don't know what to do here\n", __FUNCTION__);
+}
+void remDosNode(struct AFSBase *afsbase, struct DosList *dl){
 }
 
-void remDosNode(struct AFSBase *afsbase, struct DosList *dl)
+/****************************************************************************
+/********************************* OS Functions *****************************
+ * The following functions replicate those from AmigaOS
+ ****************************************************************************/
+
+/* utility.library */
+APTR SetMem(APTR destination, ULONG c, LONG length)
 {
-        printf("%s: Don't know what to do here\n", __FUNCTION__);
+        return memset(destination, c, length);
 }
 
-/********************************* OS Functions *****************************/
-/* exec */
+/* exec.library */
 void *AllocMem(ULONG size, ULONG flags) {
 void *mem;
 
@@ -181,7 +191,7 @@ void CopyMem(const void *src, APTR dst, ULONG size) {
         memcpy(dst, src, size);
 }
 
-/* dos */
+/* dos.library */
 struct DateStamp *DateStamp(struct DateStamp *ds) {
 time_t current;
 time_t diff;

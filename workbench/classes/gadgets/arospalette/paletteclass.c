@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS Palette gadget for use in gadtools.
@@ -143,6 +143,11 @@ STATIC IPTR _OM_SET(Class *cl, Object *o, struct opSet *msg, BOOL render)
         
     if (relayout)
     {
+        struct gpLayout lMsg =
+        {
+            GM_LAYOUT, msg->ops_GInfo, FALSE
+        };
+
     	/* Check if the old selected fits into the new depth */
     	if (data->pd_Color > data->pd_NumColors - 1)
     	{
@@ -151,7 +156,7 @@ STATIC IPTR _OM_SET(Class *cl, Object *o, struct opSet *msg, BOOL render)
     	}
 
     	/* Relayout the gadget */
-    	DoMethod(o, GM_LAYOUT, (IPTR)msg->ops_GInfo, FALSE);
+    	DoMethodA(o, &lMsg);
     }
     
     if ( render )
@@ -163,14 +168,14 @@ STATIC IPTR _OM_SET(Class *cl, Object *o, struct opSet *msg, BOOL render)
 	    struct RastPort *rp = ObtainGIRPort(gi);
 
 	    if (rp)
-	    {		        
-		DoMethod(o, 
-			 GM_RENDER,
-			 (IPTR)gi,
-			 (IPTR)rp,
+	    {
+                struct gpRender rMsg =
+                {
+			 GM_RENDER, gi, rp,
 			 FindTagItem(GA_Disabled, ((struct opSet *)msg)->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE
-		);
-				 
+                };
+		DoMethodA(o, &rMsg);
+
 		ReleaseGIRPort(rp);
 	    }
 	}
@@ -422,7 +427,11 @@ IPTR AROSPalette__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
     	
     	    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
     	    	{
-	    	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
+                    struct gpRender rMsg =
+                    {
+                             GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE
+                    };
+                    DoMethodA(o, &rMsg);
 	    
 	    	    ReleaseGIRPort(rp);
 	    	}
@@ -487,7 +496,11 @@ IPTR AROSPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 
     	    	    if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
     	    	    {
-    	    	     	DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+                        struct gpRender rMsg =
+                        {
+                                 GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE
+                        };
+                        DoMethodA(o, &rMsg);
     	    	     	    
     	    	     	ReleaseGIRPort(rp);
     	    	    }
@@ -525,7 +538,11 @@ IPTR AROSPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
     	    	    	data->pd_Color = over_color;
     	    	    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
     	    	    	{
-	    	    	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
+                            struct gpRender rMsg =
+                            {
+                                     GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE
+                            };
+                            DoMethodA(o, &rMsg);
 	    
 	    	    	    ReleaseGIRPort(rp);
 	    	    	}
@@ -549,7 +566,11 @@ IPTR AROSPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 
     	    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
     	    	{
-    	    	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
+                    struct gpRender rMsg =
+                    {
+                             GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE
+                    };
+                    DoMethodA(o, &rMsg);
     	    	     	    
     	    	    ReleaseGIRPort(rp);
     	    	}

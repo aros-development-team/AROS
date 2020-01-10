@@ -69,9 +69,10 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
 #MM  workbench-devs-diskimage-xad-clean \
 #MM  workbench-devs-diskimage-xpk-clean
 
-
 %build_prog mmake=workbench-devs-diskimage-ccd progname=CCD files="stub_aros ccd" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
+
+#MM workbench-devs-diskimage-ciso : workbench-libs-z-linklib
 
 %build_prog mmake=workbench-devs-diskimage-ciso progname=CISO files="stub_aros ciso" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
@@ -86,11 +87,17 @@ CFILES := cue/cue cue/flac cue/wavpack audio/aiff audio/flac \
 %build_prog mmake=workbench-devs-diskimage-cue progname=CUE files="stub_aros $(CFILES)" \
     targetdir=$(TARGETDIR) uselibs="mpg123 FLAC wavpack vorbisfile vorbis ogg diskimagesupport" usestartup=no
 
+#MM workbench-devs-diskimage-daa : workbench-libs-z-linklib
+
 %build_prog mmake=workbench-devs-diskimage-daa progname=DAA files="stub_aros daa" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
 
+#MM workbench-devs-diskimage-dax : workbench-libs-z-linklib
+
 %build_prog mmake=workbench-devs-diskimage-dax progname=DAX files="stub_aros dax" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
+
+#MM workbench-devs-diskimage-dmg : workbench-libs-z-linklib
 
 CFILES := dmg/dmg dmg/base64 dmg/adc
 
@@ -114,6 +121,8 @@ CFILES := ../dms/crc_csum ../dms/getbits ../dms/tables ../dms/maketbl ../dms/u_i
 
 %build_prog mmake=workbench-devs-diskimage-nrg progname=NRG files="stub_aros nrg" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
+
+#MM workbench-devs-diskimage-uif : workbench-libs-z-linklib
 
 %build_prog mmake=workbench-devs-diskimage-uif progname=UIF files="stub_aros uif" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no

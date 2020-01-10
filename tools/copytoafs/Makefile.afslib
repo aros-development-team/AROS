@@ -33,7 +33,7 @@ DEPS   := $(patsubst %, $(OBJDIR)/%.d, $(FILES))
 
 INCLUDES := -I$(AFSSRCDIR) -I$(OBJDIR)
 HOST_CFLAGS := $(HOST_CFLAGS) $(DEBUG_OPTS) -Wall -Werror-implicit-function-declaration -O2
-HOST_CPPFLAGS := $(INCLUDES) -DSetMem=memset
+HOST_CPPFLAGS := $(INCLUDES)
 
 ifeq ($(SILENT),yes)
 	ECHO := true

@@ -1,7 +1,9 @@
 /*
-    Copyright © <year>, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright © 2020, The AROS Development Team. All rights reserved.
 */
+
+#include <proto/exec.h>
+#include <exec/rawfmt.h>
 
 /*****************************************************************************
 
@@ -14,7 +16,7 @@
         AROS_LHA(STRPTR, buffer, A0),
         AROS_LHA(LONG, buffer_size, D0),
         AROS_LHA(CONST_STRPTR, format, A1),
-        AROS_LHA(APTR, args, A2),
+        AROS_LHA(RAWARG, args, A2),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 52, Utility)
@@ -41,6 +43,20 @@
 {
     AROS_LIBFUNC_INIT
 
+    LONG required_size = 0;
+    STRPTR temp_buffer;
+    
+    RawDoFmt(format, args, RAWFMTFUNC_COUNT, &required_size);
+    // required_size already contains trailing zero
+    temp_buffer = AllocMem(required_size, MEMF_ANY);
+    if (temp_buffer)
+    {
+        RawDoFmt(format, args, RAWFMTFUNC_STRING, temp_buffer);
+        Strlcpy(buffer, temp_buffer, buffer_size);
+        FreeMem(temp_buffer, required_size);
+    }
+    return required_size;
+    
     AROS_LIBFUNC_EXIT
 }
 
