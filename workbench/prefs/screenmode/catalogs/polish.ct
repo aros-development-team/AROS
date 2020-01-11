@@ -1,4 +1,4 @@
-## version $VER: screenmode.catalog 2.1 (03.01.2020)
+## version $VER: screenmode.catalog 2.2 (11.01.2020)
 ## codeset 5
 ## language polski
 ;
@@ -55,7 +55,7 @@ Wielkość maksymalna
 ; Maximum Size
 ;
 MSG_MAXIMUM_COLORS
-Głębia barw
+Ilość barw
 ; Maximum Colors
 ;
 MSG_FREQUENCY
