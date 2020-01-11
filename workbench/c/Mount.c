@@ -228,6 +228,7 @@ LONG mount(IPTR	*params, STRPTR	name);
 void ShowError(STRPTR name, const char *s, ...);
 void ShowFault(LONG code, const char *s, ...);
 
+struct DosLibrary *DOSBase;
 struct IntuitionBase *IntuitionBase;
 UtilityBase_t UtilityBase;
 struct Process *MyProcess;
@@ -258,248 +259,252 @@ int main(void)
   struct RDArgs	*rda;
   char dirname[512];
 
-if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",37)))
-{
-    SetMem(&flagargs, 0, sizeof(flagargs));
-    IsEHandler = TRUE;
-    IsFilesystem = TRUE;
-    if (!_WBenchMsg)
+  if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
+  {
+    if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",37)))
     {
-      SetMem(args,0,sizeof(args));
-      if ((rda = ReadArgs("DEVICE/M,FROM/K", args, NULL)))
-      {
-	STRPTR	*MyDevPtr;
-	int		len;
+	SetMem(&flagargs, 0, sizeof(flagargs));
+	IsEHandler = TRUE;
+	IsFilesystem = TRUE;
+	if (!_WBenchMsg)
+        {
+          SetMem(args,0,sizeof(args));
+          if ((rda = ReadArgs("DEVICE/M,FROM/K", args, NULL)))
+          {
+            STRPTR	*MyDevPtr;
+            int		len;
 
-	error = 0;
+            error = 0;
 
-	MyDevPtr	=(STRPTR *)args[0];
-	if (MyDevPtr)
-	{
-	  while (*MyDevPtr)
-	  {
-	    DEBUG_MOUNT(KPrintF("Mount: Current DevName <%s>\n",
-			       (IPTR)*MyDevPtr));
+            MyDevPtr	=(STRPTR *)args[0];
+            if (MyDevPtr)
+            {
+              while (*MyDevPtr)
+              {
+                DEBUG_MOUNT(KPrintF("Mount: Current DevName <%s>\n",
+                                   (IPTR)*MyDevPtr));
 
-	    if ((params = AllocVec(PARAMSLENGTH, MEMF_PUBLIC | MEMF_CLEAR)))
-	    {
-	      StackSize	= 8192;
-	      Priority	= 5;
-	      GlobalVec	= -1;
-	      HandlerString	= NULL;
-	      DeviceString	= NULL;
-	      StartupString	= NULL;
+		if ((params = AllocVec(PARAMSLENGTH, MEMF_PUBLIC | MEMF_CLEAR)))
+                {
+		  StackSize	= 8192;
+		  Priority	= 5;
+		  GlobalVec	= -1;
+		  HandlerString	= NULL;
+		  DeviceString	= NULL;
+		  StartupString	= NULL;
 
-	      len = strlen(*MyDevPtr);
-	      if ((*MyDevPtr)[len-1] == ':')
-	      {
-		/* search for a devicename */
-		DEBUG_MOUNT(KPrintF("Mount: search for devname <%s>\n",
-				   (IPTR)*MyDevPtr));
+                  len = strlen(*MyDevPtr);
+                  if ((*MyDevPtr)[len-1] == ':')
+                  {
+                    /* search for a devicename */
+                    DEBUG_MOUNT(KPrintF("Mount: search for devname <%s>\n",
+                                       (IPTR)*MyDevPtr));
 
-		Strlcpy(dirname, *MyDevPtr, 512);
-		dirname[len-1] = '\0';
+		    Strlcpy(dirname, *MyDevPtr, 512);
+		    dirname[len-1] = '\0';
 
-		if ((error=CheckDevice(dirname))!=RETURN_OK)
-		{
-		  DEBUG_MOUNT(KPrintF("Mount: is already mounted..stop\n"));
-		}
-		else
-		{
-		  if (args[1])
-		  {
-		    error=readmountlist(params, dirname, (STRPTR)(args[1]));
-		    DEBUG_MOUNT(KPrintF("Mount: readmountlist(%s) returned %ld\n", args[1], error));
-		  }
-		  else
-		  {
-		    char	**SearchPtr;
-		    ULONG	slen;
+                    if ((error=CheckDevice(dirname))!=RETURN_OK)
+                    {
+                      DEBUG_MOUNT(KPrintF("Mount: is already mounted..stop\n"));
+                    }
+                    else
+                    {
+                      if (args[1])
+                      {
+			error=readmountlist(params, dirname, (STRPTR)(args[1]));
+			DEBUG_MOUNT(KPrintF("Mount: readmountlist(%s) returned %ld\n", args[1], error));
+                      }
+                      else
+                      {
+                        char	**SearchPtr;
+                        ULONG	slen;
 
-		    DEBUG_MOUNT(KPrintF("Mount: search device definition <%s>\n",
-				       (IPTR)*MyDevPtr));
-		    for (SearchPtr=(char**) SearchTable;
-			 *SearchPtr;
-			 SearchPtr++)
-		    {
-		      if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-		      {
-			error = RETURN_FAIL;
-			SetIoErr(ERROR_BREAK);
-			break;
-		      }
+                        DEBUG_MOUNT(KPrintF("Mount: search device definition <%s>\n",
+                                           (IPTR)*MyDevPtr));
+                        for (SearchPtr=(char**) SearchTable;
+                             *SearchPtr;
+                             SearchPtr++)
+                        {
+                          if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                          {
+                            error = RETURN_FAIL;
+                            SetIoErr(ERROR_BREAK);
+                            break;
+                          }
 
-		      slen = strlen(*SearchPtr);
-		      Strlcpy(dirname, *SearchPtr, 512);
-		      dirname[slen]	= '\0';
-		      Strlcat(dirname, *MyDevPtr, 512);
-		      dirname[slen+len-1] =	'\0';
-		      DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n", (IPTR)dirname));
+                          slen = strlen(*SearchPtr);
+			  Strlcpy(dirname, *SearchPtr, 512);
+			  dirname[slen]	= '\0';
+                          Strlcat(dirname, *MyDevPtr, 512);
+			  dirname[slen+len-1] =	'\0';
+			  DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n", (IPTR)dirname));
 
-		      error=readmountfile(params, dirname);
-		      DEBUG_MOUNT(KPrintF("Mount: readmountfile returned %ld\n", error));
-		      if (error != ERROR_OBJECT_NOT_FOUND)
-			break;
-		    }
-		    if (error == ERROR_OBJECT_NOT_FOUND)
-		    {
-		      DEBUG_MOUNT(KPrintF("Mount: try from mountlist\n"));
-		      dirname[0] = '\0';
-		      Strlcat(dirname, *MyDevPtr, 512);
-		      dirname[len-1] = '\0';
-		      error=readmountlist(params, dirname, MOUNTLIST);
-		      DEBUG_MOUNT(KPrintF("Mount: readmountlist(default) returned %ld\n", error));
-		    }
-		  }
-		}
-	      }
-	      else
-	      {
-		/* search for a filename */
+			  error=readmountfile(params, dirname);
+			  DEBUG_MOUNT(KPrintF("Mount: readmountfile returned %ld\n", error));
+			  if (error != ERROR_OBJECT_NOT_FOUND)
+			    break;
+                        }
+			if (error == ERROR_OBJECT_NOT_FOUND)
+                        {
+                          DEBUG_MOUNT(KPrintF("Mount: try from mountlist\n"));
+			  dirname[0] = '\0';
+                          Strlcat(dirname, *MyDevPtr, 512);
+			  dirname[len-1] = '\0';
+			  error=readmountlist(params, dirname, MOUNTLIST);
+			  DEBUG_MOUNT(KPrintF("Mount: readmountlist(default) returned %ld\n", error));
+                        }
+                      }
+                    }
+                  }
+                  else
+                  {
+                    /* search for a filename */
 
-		LONG err;
+                    LONG err;
 
-		UBYTE stack_ap[sizeof(struct AnchorPath) + 3];
-		struct AnchorPath	*MyAp = (struct AnchorPath *) (((IPTR) stack_ap + 3) & ~3);
+                    UBYTE stack_ap[sizeof(struct AnchorPath) + 3];
+                    struct AnchorPath	*MyAp = (struct AnchorPath *) (((IPTR) stack_ap + 3) & ~3);
 
-		DEBUG_MOUNT(KPrintF("Mount: search for mountfile <%s>\n", *MyDevPtr));
+                    DEBUG_MOUNT(KPrintF("Mount: search for mountfile <%s>\n", *MyDevPtr));
 
-		SetMem(MyAp,0,sizeof(struct AnchorPath));
+                    SetMem(MyAp,0,sizeof(struct AnchorPath));
 
-		dirname[0]	=	'\0';
-		for (err = MatchFirst(*MyDevPtr,MyAp);
-		     err == 0;
-		     err = MatchNext(MyAp))
-		{
-		  if (MyAp->ap_Flags & APF_DirChanged)
-		  {
-		    DEBUG_MOUNT(KPrintF("Mount: Changed directories...\n"));
-		  }
+                    dirname[0]	=	'\0';
+                    for (err = MatchFirst(*MyDevPtr,MyAp);
+                         err == 0;
+                         err = MatchNext(MyAp))
+                    {
+                      if (MyAp->ap_Flags & APF_DirChanged)
+                      {
+                        DEBUG_MOUNT(KPrintF("Mount: Changed directories...\n"));
+                      }
 
-		  DEBUG_MOUNT(KPrintF("Mount: NameFromLock(0x%p)...\n", MyAp->ap_Current->an_Lock));
-		  if (NameFromLock(MyAp->ap_Current->an_Lock,
-				   dirname,
-				   sizeof(dirname)) == FALSE)
-		  {
-		    ShowFault(IoErr(), "Error on NameFromLock");
-		    break;
-		  }
-		  
-		  DEBUG_MOUNT(KPrintF("Mount: ...Dir name: %s\n", dirname));
-		  if (AddPart(dirname,
-			      &(MyAp->ap_Info.fib_FileName[0]),
-			      sizeof(dirname)) == FALSE)
-		  {
-		    ShowFault(IoErr(), "Error on AddPart");
-		    break;
-		  }
-		  if (MyAp->ap_Info.fib_DirEntryType > 0)
-		  {
-		    if (MyAp->ap_Flags & APF_DIDDIR)
-		    {
-		      DEBUG_MOUNT(KPrintF("Mount: Ascending from directory %s\n",
-				    (IPTR)dirname));
-		    }
-		    else
-		    {
-		      DEBUG_MOUNT(KPrintF("Mount: The next dir is  ... %s\n", (IPTR)dirname));
-		    }
-		    /* clear the completed directory flag */
-		    MyAp->ap_Flags     &=      ~APF_DIDDIR;
+		      DEBUG_MOUNT(KPrintF("Mount: NameFromLock(0x%p)...\n", MyAp->ap_Current->an_Lock));
+                      if (NameFromLock(MyAp->ap_Current->an_Lock,
+                                       dirname,
+                                       sizeof(dirname)) == FALSE)
+                      {
+			ShowFault(IoErr(), "Error on NameFromLock");
+                        break;
+                      }
+                      
+                      DEBUG_MOUNT(KPrintF("Mount: ...Dir name: %s\n", dirname));
+                      if (AddPart(dirname,
+                                  &(MyAp->ap_Info.fib_FileName[0]),
+                                  sizeof(dirname)) == FALSE)
+                      {
+			ShowFault(IoErr(), "Error on AddPart");
+                        break;
+                      }
+                      if (MyAp->ap_Info.fib_DirEntryType > 0)
+                      {
+                        if (MyAp->ap_Flags & APF_DIDDIR)
+                        {
+                          DEBUG_MOUNT(KPrintF("Mount: Ascending from directory %s\n",
+                                        (IPTR)dirname));
+                        }
+                        else
+                        {
+                          DEBUG_MOUNT(KPrintF("Mount: The next dir is  ... %s\n", (IPTR)dirname));
+                        }
+                        /* clear the completed directory flag */
+                        MyAp->ap_Flags     &=      ~APF_DIDDIR;
 
-		  }
-		  else
-		  {
-		    /* Here is code for handling each particular file */
+                      }
+                      else
+                      {
+                        /* Here is code for handling each particular file */
 
-		    DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n",
-				       (IPTR)dirname));
+                        DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n",
+                                           (IPTR)dirname));
 
-		    SetMem(&flagargs, 0, sizeof(flagargs));
-		    IsEHandler = TRUE;
-		    IsFilesystem = TRUE;
-		    error=readmountfile(params, dirname);
-		    DEBUG_MOUNT(KPrintF("Mount: readmount file returned %ld\n", error));
-		  }
-		}
-		/* This absolutely, positively must be called, all of the time. */
-		MatchEnd(MyAp);
+                        SetMem(&flagargs, 0, sizeof(flagargs));
+			IsEHandler = TRUE;
+			IsFilesystem = TRUE;
+			error=readmountfile(params, dirname);
+			DEBUG_MOUNT(KPrintF("Mount: readmount file returned %ld\n", error));
+                      }
+                    }
+                    /* This absolutely, positively must be called, all of the time. */
+                    MatchEnd(MyAp);
 
-		if (err == ERROR_NO_MORE_ENTRIES)
-		{
-		  SetIoErr(0);
-		}
-		else
-		{
-		  /* if it was real error promote it - Piru */
-		  error = err;
-		}
-	      }
-	      FreeVec(params);
-	    }
-	    else
-	    {
-	      error = ERROR_NO_FREE_STORE;
-	      break;
-	    }
-	    MyDevPtr++;
-	  }
-	}
-	FreeArgs(rda);
-      } /* if (rda != NULL) */
-      else
-      {
-	error = IoErr();
-      }
+                    if (err == ERROR_NO_MORE_ENTRIES)
+                    {
+                      SetIoErr(0);
+                    }
+                    else
+                    {
+                      /* if it was real error promote it - Piru */
+                      error = err;
+                    }
+                  }
+                  FreeVec(params);
+                }
+                else
+                {
+                  error = ERROR_NO_FREE_STORE;
+                  break;
+                }
+                MyDevPtr++;
+              }
+            }
+            FreeArgs(rda);
+          } /* if (rda != NULL) */
+          else
+          {
+            error = IoErr();
+          }
 
-      if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
-      {
-	ShowFault(error, "ERROR");
+          if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
+          {
+	    ShowFault(error, "ERROR");
 
-	error = RETURN_FAIL;
-      }
-      else
-      {
-	error = error < ERR_SPECIAL ? RETURN_OK : RETURN_FAIL;
-      }
+            error = RETURN_FAIL;
+          }
+          else
+          {
+            error = error < ERR_SPECIAL ? RETURN_OK : RETURN_FAIL;
+          }
 
+        }
+        else
+        {
+          /* wb startup */
+	  if (_WBenchMsg->sm_NumArgs >= 2)
+          {
+            if ((params = AllocVec(PARAMSLENGTH,
+                                   MEMF_PUBLIC | MEMF_CLEAR)))
+            {
+              int i;
+
+	      for (i = 1; i < _WBenchMsg->sm_NumArgs; i++)
+              {
+                BPTR olddir;
+
+                DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n",
+				   (IPTR) _WBenchMsg->sm_ArgList[i].wa_Name));
+
+		olddir = CurrentDir(_WBenchMsg->sm_ArgList[i].wa_Lock);
+
+		error=readmountfile(params, _WBenchMsg->sm_ArgList[i].wa_Name);
+		DEBUG_MOUNT(KPrintF("Mount: readmountfile returned %ld\n", error));
+                if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
+	          ShowFault(error, "ERROR");
+
+                (void) CurrentDir(olddir);
+              }
+
+              FreeVec(params);
+            }
+            else
+            {
+              error = ERROR_NO_FREE_STORE;
+            }
+          }
+        }
+        CloseLibrary((struct Library *)UtilityBase);
     }
-    else
-    {
-      /* wb startup */
-      if (_WBenchMsg->sm_NumArgs >= 2)
-      {
-	if ((params = AllocVec(PARAMSLENGTH,
-			       MEMF_PUBLIC | MEMF_CLEAR)))
-	{
-	  int i;
-
-	  for (i = 1; i < _WBenchMsg->sm_NumArgs; i++)
-	  {
-	    BPTR olddir;
-
-	    DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n",
-			       (IPTR) _WBenchMsg->sm_ArgList[i].wa_Name));
-
-	    olddir = CurrentDir(_WBenchMsg->sm_ArgList[i].wa_Lock);
-
-	    error=readmountfile(params, _WBenchMsg->sm_ArgList[i].wa_Name);
-	    DEBUG_MOUNT(KPrintF("Mount: readmountfile returned %ld\n", error));
-	    if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
-	      ShowFault(error, "ERROR");
-
-	    (void) CurrentDir(olddir);
-	  }
-
-	  FreeVec(params);
-	}
-	else
-	{
-	  error = ERROR_NO_FREE_STORE;
-	}
-      }
-    }
-    CloseLibrary((struct Library *)UtilityBase);
+    CloseLibrary((struct Library *)DOSBase);
   }
 
   return error;
