@@ -22,18 +22,36 @@
         struct UtilityBase *, UtilityBase, 52, Utility)
 
 /*  FUNCTION
+        Formatted output to a buffer. Maximal buffer_size characters
+        are written including the trainling zero. The string will be
+        null-terminated.
 
     INPUTS
+        buffer      - where the string will be written. Might be NULL. In
+                      that case the required size will still be returnend.
+        
+        buffer_size - the size of the buffer. Must be at least 1.
+        format      - the format specification
+        args        - the arguments which will be filled in
 
     RESULT
+        The number of characters which would have been written without
+        the buffer_size limitation. The trailing zero is included.
 
     NOTES
+        The same rules as for RawDoFmt() are valid for format and args.
 
     EXAMPLE
+        TEXT buffer[12];
+        IPTR args[2];
+        args[0] = (IPTR)"XYZ";
+        args[1] = 12345;
+        LONG count = VSNPrintf(buffer, sizeof buffer, "ab%scd%ldef", (RAWARG)args);
 
     BUGS
 
     SEE ALSO
+        exec.library/RawDoFmt()
 
     INTERNALS
 
