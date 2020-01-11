@@ -124,6 +124,20 @@ BOOL LowLevelInputInit(LIBBASETYPEPTR LowLevelBase)
     return TRUE;
 }
 
+VOID LowLevelInputClose(LIBBASETYPEPTR LowLevelBase)
+{
+    D(bug("[lowlevel] %s()\n", __func__);)
+    if (LowLevelBase->ll_InputBase)
+    {
+        CloseDevice((struct IORequest *)LowLevelBase->ll_InputIO);
+        LowLevelBase->ll_InputBase = NULL;
+        DeleteIORequest((struct IORequest *)LowLevelBase->ll_InputIO);
+        LowLevelBase->ll_InputIO = NULL;
+        DeleteMsgPort(LowLevelBase->ll_InputMP);
+        LowLevelBase->ll_InputMP = NULL;
+    }
+}
+
 BOOL LowLevelTimerInit(LIBBASETYPEPTR LowLevelBase)
 {
     D(bug("[lowlevel] %s()\n", __func__);)
@@ -141,11 +155,41 @@ BOOL LowLevelTimerInit(LIBBASETYPEPTR LowLevelBase)
                 LowLevelBase->ll_TimerBase = (struct Library *)LowLevelBase->ll_TimerIO->io_Device;
 
                 D(bug("[lowlevel] %s: TimerBase @ %p\n", __func__, LowLevelBase->ll_TimerBase));
-                return TRUE;
+            }
+            else
+            {
+                D(bug("[lowlevel] %s: failed to open 'timer.device'\n", __func__);)
+                return FALSE;
             }
         }
+        else
+        {
+            D(bug("[lowlevel] %s: failed to create timer iorequest\n", __func__);)
+            return FALSE;
+        }
     }
-    return FALSE;
+    else
+    {
+        D(bug("[lowlevel] %s: failed to create timer msgport\n", __func__);)
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+VOID LowLevelTimerClose(LIBBASETYPEPTR LowLevelBase)
+{
+    D(bug("[lowlevel] %s()\n", __func__);)
+    if (LowLevelBase->ll_TimerBase)
+    {
+        CloseDevice((struct IORequest *)LowLevelBase->ll_TimerIO);
+        LowLevelBase->ll_TimerBase = NULL;
+        DeleteIORequest((struct IORequest *)LowLevelBase->ll_TimerIO);
+        LowLevelBase->ll_TimerIO = NULL;
+        DeleteMsgPort(LowLevelBase->ll_TimerMP);
+        LowLevelBase->ll_TimerMP = NULL;
+
+    }
 }
 
 static int Init(LIBBASETYPEPTR LowLevelBase)
@@ -162,12 +206,16 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
     {
         if (!LowLevelTimerInit(LowLevelBase))
         {
+            D(bug("[lowlevel] %s: failed to initialise timer device\n", __func__);)
+
+            LowLevelInputClose(LowLevelBase);
+
             return FALSE;
         }
     }
     else
     {
-        D(bug("[lowlevel] %s: failed to create input msgport\n", __func__);)
+        D(bug("[lowlevel] %s: failed to initialise input device\n", __func__);)
         return FALSE;
     }
 
@@ -178,4 +226,12 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
     return TRUE;
 }
 
+static int Expunge(LIBBASETYPEPTR LowLevelBase)
+{
+    D(bug("[lowlevel] %s()\n", __func__);)
+    LowLevelTimerClose(LowLevelBase);
+    LowLevelInputClose(LowLevelBase);
+}
+
 ADD2INITLIB(Init, 0);
+ADD2EXPUNGELIB(Expunge, 0);
