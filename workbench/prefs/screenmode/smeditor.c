@@ -323,15 +323,17 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                 {
                     struct RastPort *rp;
                     int col, colwidth, colheight, rowheight;
+                    UWORD areawidth = ((width << 1) /3);
+                    UWORD areaheight = ((height << 1) /3);
                     UBYTE r, g, b, maxcolor;
-                    char display_string[256];
+                    char *display_string;
 
-                    colwidth = width / 7;
-                    colheight = (height / 100) * 70;
-                    rowheight = (height - colheight) / 3;
+                    colwidth = areawidth / 7;
+                    colheight = (areaheight / 100) * 70;
+                    rowheight = (areaheight - colheight) / 3;
 
                     D(bug("[SMPrefs] testScreen @ 0x%p\n", testScreen);)
-                    sprintf(display_string, "%dx%dx%d", width, height, depth);
+                    GET(data->selector, MUIA_ScreenModeSelector_Mode, (IPTR *)&display_string);
 
                     ULONG rgbPens[] = {
                        0x9F9F9F, // Gray
@@ -352,11 +354,28 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                     )
 
                     SetRGB32(&testScreen->ViewPort, 0, 0, 0, 0);
+                    SetRGB32(&testScreen->ViewPort, 1, 0XFFFFFFFF, 0XFFFFFFFF, 0XFFFFFFFF);
 
                     if (depth > 2)
                         maxcolor = 7;
                     else
                         maxcolor = (1 << depth);
+
+                    SetAPen(rp, 0);
+                    SetBPen(rp, 0);
+                    RectFill(rp, 0, 0, width - 1, height -1);
+                    SetAPen(rp, 1);
+                    for (col = 0; col < (width / 10); col ++)
+                    {
+                        Move(rp, (col * (width / 10)), 0);
+                        Draw(rp, (col * (width / 10)), height - 1);
+                    }
+                    for (col = 0; col < (height / 10); col ++)
+                    {
+                        Move(rp, 0, (col * (height / 10)));
+                        Draw(rp, width - 1, (col * (height / 10)));
+                    }
+                    DrawEllipse(rp, (width >> 1), (height >> 1), (width >> 1), (height >> 1));
 
                     for (col = 0; col < 7; col ++)
                     {
@@ -364,16 +383,16 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                         g = (rgbPens[col % maxcolor] & 0x00FF00) >> 8;
                         b = rgbPens[col % maxcolor] & 0x0000FF;
 
-                        if (col + 1 < maxcolor)
+                        if (col + 2 < maxcolor)
                         {
                             SetRGB32(&testScreen->ViewPort,
-                                (col + 1) % maxcolor,
-                                r + (r<<8) + (r<<16) + (r<<24),
-                                g + (g<<8) + (g<<16) + (g<<24),
-                                b + (b<<8) + (b<<16) + (b<<24));
+                                (col + 2),
+                                r + (r << 8) + (r << 16) + (r << 24),
+                                g + (g << 8) + (g << 16) + (g << 24),
+                                b + (b << 8) + (b << 16) + (b << 24));
                         }
-                        SetAPen(rp, (col + 1) % maxcolor);
-                        RectFill(rp, col * colwidth, 0, ((col + 1) * colwidth) - 1, colheight);
+                        SetAPen(rp, (col + 2) % maxcolor);
+                        RectFill(rp, (areawidth >> 2) + (col * colwidth), (areaheight >> 2), (areawidth >> 2) + ((col + 1) * colwidth) - 1, (areaheight >> 2) + colheight);
                     }
                     for (col = 0; col < 7; col ++)
                     {
@@ -390,13 +409,13 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                             b = 0;
                         }
 
-                        SetAPen(rp, (col + 1) % maxcolor);
-                        RectFill(rp, col * colwidth, colheight, ((col + 1) * colwidth) - 1, colheight + rowheight);
+                        SetAPen(rp, (col + 2) % maxcolor);
+                        RectFill(rp, (areawidth >> 2) + (col * colwidth), (areaheight >> 2) + colheight, (areawidth >> 2) + ((col + 1) * colwidth) - 1, (areaheight >> 2) + colheight + rowheight);
                     }
                     if (depth > 4)
                     {
                         /* Draw greyscale */
-                        colwidth = width / 12;
+                        colwidth = areawidth / 12;
                         for (col = 0; col < 12; col ++)
                         {
                             r = col * (0xFF/12);
@@ -406,13 +425,13 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                             if (col != 0)
                             {
                                 SetRGB32(&testScreen->ViewPort,
-                                    (col + 9),
-                                    r + (r<<8) + (r<<16) + (r<<24),
-                                    g + (g<<8) + (g<<16) + (g<<24),
-                                    b + (b<<8) + (b<<16) + (b<<24));
+                                    (col + 10),
+                                    r + (r << 8) + (r << 16) + (r << 24),
+                                    g + (g << 8) + (g << 16) + (g << 24),
+                                    b + (b << 8) + (b << 16) + (b << 24));
                             }
                             SetAPen(rp, col + 9);
-                            RectFill(rp, col * colwidth, colheight + rowheight, ((col + 1) * colwidth) - 1, colheight + (rowheight << 1));
+                            RectFill(rp, (areawidth >> 2) + (col * colwidth), (areaheight >> 2) + colheight + rowheight, (areawidth >> 2) + ((col + 1) * colwidth) - 1, (areaheight >> 2) + colheight + (rowheight << 1));
                         }
                     }
 
@@ -430,9 +449,13 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
 
                         SetAPen(rp, 0);
                         RectFill(rp, infobox.MinX, infobox.MinY, infobox.MaxX, infobox.MaxY);
+                        SetAPen(rp, 1);
+                        RectFill(rp, infobox.MinX + 1, infobox.MinY + 1, infobox.MaxX - 1, infobox.MinY + 2);
+                        RectFill(rp, infobox.MinX + 1, infobox.MinY + 2, infobox.MinX + 2, infobox.MaxY - 1);
+                        RectFill(rp, infobox.MaxX - 1, infobox.MinY + 2, infobox.MaxX - 1, infobox.MaxY - 1);
+                        RectFill(rp, infobox.MinX + 2, infobox.MaxY - 2, infobox.MaxX - 2, infobox.MaxY - 1);
                         if ( fit > 0 )
                         {
-                            SetAPen(rp, 1);
                             Move(rp, (width >> 1) - (textExtent.te_Width >> 1), (height >> 1) + (textExtent.te_Height >> 1));
                             Text(rp, display_string, fit);
                         }

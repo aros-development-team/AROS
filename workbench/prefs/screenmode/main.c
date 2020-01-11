@@ -20,7 +20,7 @@
 #include "prefs.h"
 #include "smeditor.h"
 
-#define VERSION "ScreenMode Preferences 1.10 (01.01.2020)"
+#define VERSION "ScreenMode Preferences 1.11 (11.01.2020)"
 #define COPYRIGHT "Copyright © 1995-2020, The AROS Development Team"
 
 static const char vers[] = VERSION;
