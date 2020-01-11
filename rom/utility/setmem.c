@@ -1,6 +1,5 @@
 /*
     Copyright © 2020, The AROS Development Team. All rights reserved.
-    $Id$
 */
 
 /*****************************************************************************
@@ -19,21 +18,28 @@
         struct UtilityBase *, UtilityBase, 66, Utility)
 
 /*  FUNCTION
+        Fill a memory block with a Byte.
 
     INPUTS
+        destination - address where the filling starts
+        c           - value to be filled in
+        length      - number of Bytes to be filled in
 
     RESULT
+        The destination address
 
     NOTES
 
     EXAMPLE
+        SetMem(addr, 10, 100);
 
     BUGS
 
     SEE ALSO
 
     INTERNALS
-
+        There are platform dependent variants of this function.
+        
     HISTORY
 
 *****************************************************************************/
