@@ -323,14 +323,15 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                 {
                     struct RastPort *rp;
                     int col, colwidth, colheight, rowheight;
-                    LONG colPen;
-                    UBYTE r, g, b;
+                    UBYTE r, g, b, maxcolor;
+                    char display_string[256];
 
                     colwidth = width / 7;
                     colheight = (height / 100) * 70;
                     rowheight = (height - colheight) / 3;
 
-                    bug("[SMPrefs] testScreen @ 0x%p\n", testScreen);
+                    D(bug("[SMPrefs] testScreen @ 0x%p\n", testScreen);)
+                    sprintf(display_string, "%dx%dx%d", width, height, depth);
 
                     ULONG rgbPens[] = {
                        0x9F9F9F, // Gray
@@ -345,41 +346,42 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                     rp = CreateRastPort();
                     rp->BitMap = testScreen->RastPort.BitMap;
 
-                    bug("[SMPrefs] rp @ 0x%p\n", rp);
-                    bug("[SMPrefs] bm @ 0x%p\n", rp->BitMap);
+                    D(
+                        bug("[SMPrefs] rp @ 0x%p\n", rp);
+                        bug("[SMPrefs] bm @ 0x%p\n", rp->BitMap);
+                    )
 
                     SetRGB32(&testScreen->ViewPort, 0, 0, 0, 0);
 
+                    if (depth > 2)
+                        maxcolor = 7;
+                    else
+                        maxcolor = (1 << depth);
+
                     for (col = 0; col < 7; col ++)
                     {
-                        r = (rgbPens[col] & 0xFF0000) >> 16;
-                        g = (rgbPens[col] & 0x00FF00) >> 8;
-                        b = rgbPens[col] & 0x0000FF;
+                        r = (rgbPens[col % maxcolor] & 0xFF0000) >> 16;
+                        g = (rgbPens[col % maxcolor] & 0x00FF00) >> 8;
+                        b = rgbPens[col % maxcolor] & 0x0000FF;
 
-                        SetRGB32(&testScreen->ViewPort,
-                            (col + 1),
-                            r + (r<<8) + (r<<16) + (r<<24),
-                            g + (g<<8) + (g<<16) + (g<<24),
-                            b + (b<<8) + (b<<16) + (b<<24));
-
-                        colPen = ObtainBestPen (testScreen->ViewPort.ColorMap,
-                            r + (r<<8) + (r<<16) + (r<<24),
-                            g + (g<<8) + (g<<16) + (g<<24),
-                            b + (b<<8) + (b<<16) + (b<<24),
-                            OBP_FailIfBad, FALSE,
-                            OBP_Precision, PRECISION_GUI,
-                            TAG_END);
-
-                        SetAPen(rp, colPen);
+                        if (col + 1 < maxcolor)
+                        {
+                            SetRGB32(&testScreen->ViewPort,
+                                (col + 1) % maxcolor,
+                                r + (r<<8) + (r<<16) + (r<<24),
+                                g + (g<<8) + (g<<16) + (g<<24),
+                                b + (b<<8) + (b<<16) + (b<<24));
+                        }
+                        SetAPen(rp, (col + 1) % maxcolor);
                         RectFill(rp, col * colwidth, 0, ((col + 1) * colwidth) - 1, colheight);
                     }
                     for (col = 0; col < 7; col ++)
                     {
                         if (col % 2 == 0)
                         {
-                            r = (rgbPens[6 - col] & 0xFF0000) >> 16;
-                            g = (rgbPens[6 - col] & 0x00FF00) >> 8;
-                            b = rgbPens[6 - col] & 0x0000FF;
+                            r = (rgbPens[6 - col % maxcolor] & 0xFF0000) >> 16;
+                            g = (rgbPens[6 - col % maxcolor] & 0x00FF00) >> 8;
+                            b = rgbPens[6 - col % maxcolor] & 0x0000FF;
                         }
                         else
                         {
@@ -387,44 +389,55 @@ static IPTR SMEditor__MUIM_PrefsEditor_Test
                             g = 0;
                             b = 0;
                         }
-                        colPen = ObtainBestPen (testScreen->ViewPort.ColorMap,
-                            r + (r<<8) + (r<<16) + (r<<24),
-                            g + (g<<8) + (g<<16) + (g<<24),
-                            b + (b<<8) + (b<<16) + (b<<24),
-                            OBP_FailIfBad, FALSE,
-                            OBP_Precision, PRECISION_GUI,
-                            TAG_END);
 
-                        SetAPen(rp, colPen);
+                        SetAPen(rp, (col + 1) % maxcolor);
                         RectFill(rp, col * colwidth, colheight, ((col + 1) * colwidth) - 1, colheight + rowheight);
                     }
-                    /* Draw greyscale */
-                    colwidth = width / 12;
-                    for (col = 0; col < 12; col ++)
+                    if (depth > 4)
                     {
-                        r = col * (0xFF/12);
-                        g = col * (0xFF/12);
-                        b = col * (0xFF/12);
-
-                        if (col != 0)
+                        /* Draw greyscale */
+                        colwidth = width / 12;
+                        for (col = 0; col < 12; col ++)
                         {
-                            SetRGB32(&testScreen->ViewPort,
-                                (col + 9),
-                                r + (r<<8) + (r<<16) + (r<<24),
-                                g + (g<<8) + (g<<16) + (g<<24),
-                                b + (b<<8) + (b<<16) + (b<<24));
-                        }
-                        colPen = ObtainBestPen (testScreen->ViewPort.ColorMap,
-                            r + (r<<8) + (r<<16) + (r<<24),
-                            g + (g<<8) + (g<<16) + (g<<24),
-                            b + (b<<8) + (b<<16) + (b<<24),
-                            OBP_FailIfBad, FALSE,
-                            OBP_Precision, PRECISION_GUI,
-                            TAG_END);
+                            r = col * (0xFF/12);
+                            g = col * (0xFF/12);
+                            b = col * (0xFF/12);
 
-                        SetAPen(rp, colPen);
-                        RectFill(rp, col * colwidth, colheight + rowheight, ((col + 1) * colwidth) - 1, colheight + (rowheight << 1));
+                            if (col != 0)
+                            {
+                                SetRGB32(&testScreen->ViewPort,
+                                    (col + 9),
+                                    r + (r<<8) + (r<<16) + (r<<24),
+                                    g + (g<<8) + (g<<16) + (g<<24),
+                                    b + (b<<8) + (b<<16) + (b<<24));
+                            }
+                            SetAPen(rp, col + 9);
+                            RectFill(rp, col * colwidth, colheight + rowheight, ((col + 1) * colwidth) - 1, colheight + (rowheight << 1));
+                        }
                     }
+
+                    {
+                        struct Rectangle infobox;
+                        struct TextExtent textExtent;
+                        LONG fit;
+
+                        infobox.MinX = (width >> 2);
+                        infobox.MinY = (height >> 1) - rp->TxHeight - 1;
+                        infobox.MaxX = (width >> 1) + (width >> 2);
+                        infobox.MaxY = (height >> 1) + rp->TxHeight + 1;
+
+                        fit = TextFit(rp, display_string, strlen(display_string), &textExtent, NULL, 1, infobox.MaxX - infobox.MinX + 1, rp->TxHeight + 1);
+
+                        SetAPen(rp, 0);
+                        RectFill(rp, infobox.MinX, infobox.MinY, infobox.MaxX, infobox.MaxY);
+                        if ( fit > 0 )
+                        {
+                            SetAPen(rp, 1);
+                            Move(rp, (width >> 1) - (textExtent.te_Width >> 1), (height >> 1) + (textExtent.te_Height >> 1));
+                            Text(rp, display_string, fit);
+                        }
+                    }
+
                     DoIO ((struct IORequest *)timer);
 
                     CloseScreen(testScreen);
