@@ -27,7 +27,7 @@ struct llCIATimer
 
 struct llKBInterrupt
 {
-    struct Interrupt        	*llkbi_Interrupt;
+    struct Interrupt        	llkbi_Interrupt;
     ULONG                       llkbi_KeyData;
     APTR                        llkbi_Data;
     VOID                        (* llkbi_Code)();
@@ -46,6 +46,7 @@ struct LowLevelBase
     struct Interrupt            ll_VBlank;
     BPTR                        ll_SegList;
 
+    /* Input event handling ... */
     struct Library              *ll_InputBase;
     struct Interrupt        	*ll_InputHandler;
     struct MsgPort          	*ll_InputMP;
@@ -53,6 +54,11 @@ struct LowLevelBase
 
     ULONG                       ll_LastKey;
     struct List                 ll_KBInterrupts;
+
+    /* Timer handling ... */
+    struct Library              *ll_TimerBase;
+    struct MsgPort          	*ll_TimerMP;
+    struct IOStdReq         	*ll_TimerIO;
 
 #if (1)
     /*

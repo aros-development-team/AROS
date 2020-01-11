@@ -59,7 +59,7 @@ AROS_UFH2(struct InputEvent *, LowLevelInputHandler,
                 ForeachNode(&LowLevelBase->ll_KBInterrupts, kbInt)
                 {
                     kbInt->llkbi_KeyData = LowLevelBase->ll_LastKey;
-                    Cause(kbInt);
+                    Cause(&kbInt->llkbi_Interrupt);
                 }
             }
             break;
@@ -70,20 +70,21 @@ AROS_UFH2(struct InputEvent *, LowLevelInputHandler,
     AROS_USERFUNC_EXIT
 }
 
-static int Init(LIBBASETYPEPTR LowLevelBase)
+BOOL LowLevelInputInit(LIBBASETYPEPTR LowLevelBase)
 {
-    D(
-        bug("[lowlevel] %s()\n", __func__);
-        bug("[lowlevel] %s: LowLevelBase @ 0x%p\n", __func__, LowLevelBase);
-    )
+    D(bug("[lowlevel] %s()\n", __func__);)
 
     NEWLIST(&LowLevelBase->ll_KBInterrupts);
     LowLevelBase->ll_LastKey = 0xFF;
 
     if ((LowLevelBase->ll_InputMP = CreateMsgPort()))
     {
+        D(bug("[lowlevel] %s: Input MsgPort @ 0x%p\n", __func__, LowLevelBase->ll_InputMP);)
+
         if ((LowLevelBase->ll_InputIO = (struct IOStdReq *)CreateIORequest(LowLevelBase->ll_InputMP, sizeof (struct IOStdReq))))
         {
+            D(bug("[lowlevel] %s: Input IO Request @ 0x%p\n", __func__, LowLevelBase->ll_InputIO);)
+
             if (!OpenDevice("input.device", -1, (struct IORequest *)LowLevelBase->ll_InputIO, 0))
             {
                 LowLevelBase->ll_InputBase = (struct Library *)LowLevelBase->ll_InputIO->io_Device;
@@ -112,6 +113,55 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
         else
         {
             D(bug("[lowlevel] %s: failed to create input iorequest\n", __func__);)
+            return FALSE;
+        }
+    }
+    else
+    {
+        D(bug("[lowlevel] %s: failed to create input msgport\n", __func__);)
+        return FALSE;
+    }
+    return TRUE;
+}
+
+BOOL LowLevelTimerInit(LIBBASETYPEPTR LowLevelBase)
+{
+    D(bug("[lowlevel] %s()\n", __func__);)
+
+    if ((LowLevelBase->ll_TimerMP = CreateMsgPort()))
+    {
+        D(bug("[lowlevel] %s: Timer MsgPort @ 0x%p\n", __func__, LowLevelBase->ll_TimerMP);)
+
+        if ((LowLevelBase->ll_TimerIO = (struct IOStdReq *)CreateIORequest(LowLevelBase->ll_TimerMP, sizeof (struct IOStdReq))))
+        {
+            D(bug("[lowlevel] %s: Timer IO Request @ 0x%p\n", __func__, LowLevelBase->ll_TimerIO);)
+
+            if (!OpenDevice("timer.device", UNIT_ECLOCK, (struct IORequest *)LowLevelBase->ll_TimerIO, 0))
+            {
+                LowLevelBase->ll_TimerBase = (struct Library *)LowLevelBase->ll_TimerIO->io_Device;
+
+                D(bug("[lowlevel] %s: TimerBase @ %p\n", __func__, LowLevelBase->ll_TimerBase));
+                return TRUE;
+            }
+        }
+    }
+    return FALSE;
+}
+
+static int Init(LIBBASETYPEPTR LowLevelBase)
+{
+    D(
+        bug("[lowlevel] %s()\n", __func__);
+        bug("[lowlevel] %s: LowLevelBase @ 0x%p\n", __func__, LowLevelBase);
+    )
+
+    NEWLIST(&LowLevelBase->ll_KBInterrupts);
+    LowLevelBase->ll_LastKey = 0xFF;
+
+    if (LowLevelInputInit(LowLevelBase))
+    {
+        if (!LowLevelTimerInit(LowLevelBase))
+        {
             return FALSE;
         }
     }

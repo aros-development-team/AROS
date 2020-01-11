@@ -70,11 +70,11 @@ AROS_UFH1(void, KBEventWrapper,
     struct llKBInterrupt *kbInt = (struct llKBInterrupt *)AllocVec(sizeof(struct llKBInterrupt), MEMF_CLEAR);
     if (kbInt)
     {
-        kbInt->llkbi_Interrupt->is_Code = KBEventWrapper;
+        kbInt->llkbi_Interrupt.is_Code = KBEventWrapper;
         kbInt->llkbi_Code = intRoutine;
         kbInt->llkbi_Data = intData;
-        kbInt->llkbi_Interrupt->is_Data = kbInt;
-        AddTail(&LowLevelBase->ll_KBInterrupts, &kbInt->llkbi_Interrupt->is_Node);
+        kbInt->llkbi_Interrupt.is_Data = kbInt;
+        AddTail(&LowLevelBase->ll_KBInterrupts, &kbInt->llkbi_Interrupt.is_Node);
         return kbInt;
     }
 
