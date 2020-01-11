@@ -68,7 +68,7 @@ def parsedoc(filename, targetdir):
 
         docfilename = docname + ".guide"
         today = datetime.date.today()
-        filehandle = open(os.path.join(targetdir, docfilename), "w")
+        filehandle = open(os.path.join(targetdir, docfilename), "w", encoding="ISO-8859-15")
 
         # The titles we want to printed
         shell_titles = ("Name", "Format", "Template", "Synopsis", "Location", "Function",
