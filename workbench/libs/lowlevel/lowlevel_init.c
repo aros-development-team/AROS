@@ -67,6 +67,8 @@ AROS_UFH2(struct InputEvent *, LowLevelInputHandler,
         next_ie = next_ie->ie_NextEvent;
     }
 
+    return oldchain;
+
     AROS_USERFUNC_EXIT
 }
 
