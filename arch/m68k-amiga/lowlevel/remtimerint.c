@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,11 +18,11 @@ AROS_LH1(VOID, RemTimerInt,
 {
   AROS_LIBFUNC_INIT
 
-    if (LowLevelBase->ll_CIA.llciat_Base && intHandle)
+    if (LowLevelBase->ll_Arch.llad_CIA.llciat_Base && intHandle)
     {
-        RemICRVector(LowLevelBase->ll_CIA.llciat_Base, LowLevelBase->ll_CIA.llciat_iCRBit, intHandle);
-        LowLevelBase->ll_CIA.llciat_Int.is_Code = NULL;
-        LowLevelBase->ll_CIA.llciat_iCRBit = -1;
+        RemICRVector(LowLevelBase->ll_Arch.llad_CIA.llciat_Base, LowLevelBase->ll_Arch.llad_CIA.llciat_iCRBit, intHandle);
+        LowLevelBase->ll_Arch.llad_CIA.llciat_Int.is_Code = NULL;
+        LowLevelBase->ll_Arch.llad_CIA.llciat_iCRBit = -1;
     }
 
     return;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,14 +17,14 @@
 /* Attempt to open the specified cia resource, and add the timer interrupt ... */
 WORD FindFreeTimer(char *timeres, struct LowLevelBase *LowLevelBase)
 {
-    if ((LowLevelBase->ll_CIA.llciat_Base = OpenResource(timeres)) != NULL)
+    if ((LowLevelBase->ll_Arch.llad_CIA.llciat_Base = OpenResource(timeres)) != NULL)
     {
-        if (!(AddICRVector(LowLevelBase->ll_CIA.llciat_Base, CIAICRB_TA, &LowLevelBase->ll_CIA.llciat_Int)))
+        if (!(AddICRVector(LowLevelBase->ll_Arch.llad_CIA.llciat_Base, CIAICRB_TA, &LowLevelBase->ll_Arch.llad_CIA.llciat_Int)))
             return CIAICRB_TA;
-        else if (!(AddICRVector(LowLevelBase->ll_CIA.llciat_Base, CIAICRB_TB, &LowLevelBase->ll_CIA.llciat_Int)))
+        else if (!(AddICRVector(LowLevelBase->ll_Arch.llad_CIA.llciat_Base, CIAICRB_TB, &LowLevelBase->ll_Arch.llad_CIA.llciat_Int)))
             return CIAICRB_TB;
     }
-    LowLevelBase->ll_CIA.llciat_Base = NULL;
+    LowLevelBase->ll_Arch.llad_CIA.llciat_Base = NULL;
     return -1;
 }
 
@@ -42,18 +42,18 @@ AROS_LH2(APTR, AddTimerInt,
     {
         ObtainSemaphore(&LowLevelBase->ll_Lock);
 
-        if (LowLevelBase->ll_CIA.llciat_Int.is_Code == NULL)
+        if (LowLevelBase->ll_Arch.llad_CIA.llciat_Int.is_Code == NULL)
         {
-            LowLevelBase->ll_CIA.llciat_Int.is_Code = intRoutine;
-            LowLevelBase->ll_CIA.llciat_Int.is_Data = intData;
-            if ((LowLevelBase->ll_CIA.llciat_iCRBit = FindFreeTimer(CIAANAME, LowLevelBase)) == -1)
+            LowLevelBase->ll_Arch.llad_CIA.llciat_Int.is_Code = intRoutine;
+            LowLevelBase->ll_Arch.llad_CIA.llciat_Int.is_Data = intData;
+            if ((LowLevelBase->ll_Arch.llad_CIA.llciat_iCRBit = FindFreeTimer(CIAANAME, LowLevelBase)) == -1)
             {
-                LowLevelBase->ll_CIA.llciat_iCRBit = FindFreeTimer(CIABNAME, LowLevelBase);
+                LowLevelBase->ll_Arch.llad_CIA.llciat_iCRBit = FindFreeTimer(CIABNAME, LowLevelBase);
             }
-            if (LowLevelBase->ll_CIA.llciat_Base && (LowLevelBase->ll_CIA.llciat_iCRBit != -1))
-                result = (APTR)&LowLevelBase->ll_CIA.llciat_Int;
+            if (LowLevelBase->ll_Arch.llad_CIA.llciat_Base && (LowLevelBase->ll_Arch.llad_CIA.llciat_iCRBit != -1))
+                result = (APTR)&LowLevelBase->ll_Arch.llad_CIA.llciat_Int;
             else
-                LowLevelBase->ll_CIA.llciat_Int.is_Code = NULL;
+                LowLevelBase->ll_Arch.llad_CIA.llciat_Int.is_Code = NULL;
         }
 
         ReleaseSemaphore(&LowLevelBase->ll_Lock);

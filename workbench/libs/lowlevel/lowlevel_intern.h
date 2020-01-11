@@ -18,12 +18,14 @@
 
 #include <aros/debug.h>
 
-struct llCIATimer
+#if defined(LOWLEVEL_ARCHDATA)
+#include "lowlevel_arch.h"
+#else
+struct llArchData
 {
-    struct Library              *llciat_Base;
-    struct Interrupt            llciat_Int;
-    WORD                        llciat_iCRBit;
+    
 };
+#endif
 
 struct llKBInterrupt
 {
@@ -60,17 +62,7 @@ struct LowLevelBase
     struct MsgPort          	*ll_TimerMP;
     struct IOStdReq         	*ll_TimerIO;
 
-#if (1)
-    /*
-     * Variables used by amiga-m68k
-     * TODO: these should be handled in an arch specific manner ..
-     * see kernelbase.
-     */
-    ULONG                       ll_PortType[2];
-    struct Library              *ll_PotgoBase;
-    struct llCIATimer           ll_CIA;
-    WORD                        ll_EClockMult;
-#endif
+    struct llArchData           ll_Arch;
 };
 
 /*
