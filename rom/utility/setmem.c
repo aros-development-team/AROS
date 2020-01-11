@@ -1,5 +1,6 @@
 /*
     Copyright © 2020, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 /*****************************************************************************
@@ -40,39 +41,48 @@
     INTERNALS
         There are platform dependent variants of this function.
         
+
     HISTORY
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    UBYTE * ptr = destination;
+    register UBYTE *ptr;
+    ULONG postsize;
 
-    while (((IPTR)ptr)&(AROS_LONGALIGN-1) && length)
+    ptr = destination;
+
+    if (length > AROS_LONGALIGN)
     {
-        *ptr ++ = c;
-        length --;
-    }
+        BYTE prefill = (((IPTR)ptr + AROS_LONGALIGN) & ~(AROS_LONGALIGN-1)) % AROS_LONGALIGN;
+        WORD longfill = (length - prefill) / AROS_LONGALIGN;
+        postsize = length - longfill * AROS_LONGALIGN - prefill;
 
-    if (length > sizeof(ULONG))
-    {
-        ULONG * ulptr = (ULONG *)ptr;
-        ULONG fill;
+        while (prefill--)
+            *ptr ++ = c;
 
-        fill = (ULONG)(c & 0xFF);
-        fill = (fill <<  8) | fill;
-        fill = (fill << 16) | fill;
-
-        while (length > sizeof(ULONG))
+        if (longfill > 0)
         {
-            *ulptr ++ = fill;
-            length -= sizeof(ULONG);
+            ULONG * ulptr = (ULONG *)ptr;
+            ULONG fill = ((c & 0xFF) <<  8) | (c & 0xFF);
+            fill = (fill << 16) | fill;
+            while ((longfill > 1) && ((longfill -= 2) > 0))
+            {
+                *ulptr ++ = fill;
+                *ulptr ++ = fill;
+            }
+
+            while (longfill--)
+                *ulptr ++ = fill;
+
+            ptr = (UBYTE *)ulptr;
         }
-
-        ptr = (UBYTE *)ulptr;
     }
+    else
+        postsize = length;
 
-    while (length --)
+    while (postsize--)
         *ptr ++ = c;
 
     return destination;
