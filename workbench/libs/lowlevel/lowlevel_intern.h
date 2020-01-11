@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for lowlevel library
@@ -25,6 +25,14 @@ struct llCIATimer
     WORD                        llciat_iCRBit;
 };
 
+struct llKBInterrupt
+{
+    struct Interrupt        	*llkbi_Interrupt;
+    ULONG                       llkbi_KeyData;
+    APTR                        llkbi_Data;
+    VOID                        (* llkbi_Code)();
+};
+
 /*
     This is the LowLevelBase structure. It is documented here because 
     it is completely private. Applications should treat it as a struct 
@@ -43,7 +51,9 @@ struct LowLevelBase
     struct MsgPort          	*ll_InputMP;
     struct IOStdReq         	*ll_InputIO;
 
-    ULONG                       ll_LastKey;        
+    ULONG                       ll_LastKey;
+    struct List                 ll_KBInterrupts;
+
 #if (1)
     /*
      * Variables used by amiga-m68k

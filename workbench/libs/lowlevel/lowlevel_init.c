@@ -46,13 +46,22 @@ AROS_UFH2(struct InputEvent *, LowLevelInputHandler,
         case IECLASS_RAWMOUSE:
             break;
         case IECLASS_RAWKEY:
-            D(bug("[lowlevel] %s: IECLASS_RAWKEY\n", __func__));
-            if (!(next_ie->ie_Code & IECODE_UP_PREFIX))
             {
-                LowLevelBase->ll_LastKey = ((next_ie->ie_Qualifier & 0xFF) << 16) | next_ie->ie_Code;
+                struct llKBInterrupt *kbInt;
+
+                D(bug("[lowlevel] %s: IECLASS_RAWKEY\n", __func__));
+                if (!(next_ie->ie_Code & IECODE_UP_PREFIX))
+                {
+                    LowLevelBase->ll_LastKey = ((next_ie->ie_Qualifier & 0xFF) << 16) | next_ie->ie_Code;
+                }
+                else
+                    LowLevelBase->ll_LastKey = 0xFF;
+                ForeachNode(&LowLevelBase->ll_KBInterrupts, kbInt)
+                {
+                    kbInt->llkbi_KeyData = LowLevelBase->ll_LastKey;
+                    Cause(kbInt);
+                }
             }
-            else
-                LowLevelBase->ll_LastKey = 0xFF;
             break;
         }
         next_ie = next_ie->ie_NextEvent;
@@ -68,6 +77,7 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
         bug("[lowlevel] %s: LowLevelBase @ 0x%p\n", __func__, LowLevelBase);
     )
 
+    NEWLIST(&LowLevelBase->ll_KBInterrupts);
     LowLevelBase->ll_LastKey = 0xFF;
 
     if ((LowLevelBase->ll_InputMP = CreateMsgPort()))

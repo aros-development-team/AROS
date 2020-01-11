@@ -24,23 +24,24 @@
       struct LowLevelBase *, LowLevelBase, 11, LowLevel)
 
 /*  FUNCTION
- 
+           remove a keyboard interrupt previously registerd
+           with addkbint.
+
     INPUTS
  
     RESULT
  
     BUGS
-        This function is unimplemented.
 
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
 
-    /* TODO: Write lowlevel/RemKBInt() */
-    aros_print_not_implemented ("lowlevel/RemKBInt");
-
     if (intHandle)
     {
+        struct Interrupt *kbInt = (struct Interrupt *)intHandle;
+        Remove(&kbInt->is_Node);
+        FreeVec(kbInt);
     }
 
     return;
