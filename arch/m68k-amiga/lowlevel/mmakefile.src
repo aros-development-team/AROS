@@ -1,6 +1,7 @@
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/$(CURDIR)/make.opts
 
 FILES := \
 	addtimerint \

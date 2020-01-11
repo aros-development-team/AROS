@@ -12,6 +12,7 @@
 
 #include <aros/m68k/cpucontext.h>
 #include <aros/m68k/fpucontext.h>
+#include <aros/m68k/ammxcontext.h>
 
 /* Number of exceptions supported by the CPU. Needed by kernel_base.h */
 #define EXCEPTIONS_COUNT 256
@@ -21,6 +22,7 @@ struct AROSCPUContext
 {
 	struct ExceptionContext cpu;
 	struct FpuContext fpu;
+    struct AMMXContext ammx;
 };
 
 typedef struct ExceptionContext regs_t;

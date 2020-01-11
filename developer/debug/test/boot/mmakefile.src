@@ -5,7 +5,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES  := testboot
-EXEDIR := $(AROSDIR)/boot
+EXEDIR := $(AROS_TESTS)/boot
 
 USER_CFLAGS  := -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 USER_LDFLAGS := -L $(GENDIR)/lib

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -24,13 +24,26 @@
       struct LowLevelBase *, LowLevelBase, 8, LowLevel)
 
 /*  FUNCTION
- 
+        returns the currently pressed 'qualifier' and 'key' combination.
+
     INPUTS
- 
+        none
+
     RESULT
- 
+        0xFF if no key is pressed otherwise it returns the actual key in the low word,
+        and qualifier in the high word -:
+        
+        'qualifier'     key equivalent
+	LLKB_LSHIFT     Left Shift
+	LLKB_RSHIFT     Rigt Shift
+	LLKB_CAPSLOCK   Caps Lock
+	LLKB_CONTROL    Control
+	LLKB_LALT       Left Alt
+	LLKB_RALT       Right Alt
+	LLKB_LAMIGA     Left Amiga
+	LLKB_RAMIGA     Right Amiga
+
     BUGS
-        This function is unimplemented.
 
     INTERNALS
 
@@ -38,12 +51,9 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-    /* TODO: Write lowlevel/GetKey() */
-    aros_print_not_implemented ("lowlevel/GetKey");
+    return LowLevelBase->ll_LastKey;
 
-    return 0xFF; // return "no key pressed" until implemented
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetKey */

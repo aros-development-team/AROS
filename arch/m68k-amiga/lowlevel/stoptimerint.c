@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,9 +22,9 @@ AROS_LH1(VOID, StopTimerInt,
 {
     AROS_LIBFUNC_INIT
 
-    struct CIABase *CiaBase = (struct CIABase *)LowLevelBase->ll_CIA.llciat_Base;
+    struct CIABase *CiaBase = (struct CIABase *)LowLevelBase->ll_Arch.llad_CIA.llciat_Base;
 
-    if (LowLevelBase->ll_CIA.llciat_iCRBit == CIAICRB_TA)
+    if (LowLevelBase->ll_Arch.llad_CIA.llciat_iCRBit == CIAICRB_TA)
     {
         CiaBase->hw->ciacra &= CIASTOP_A;
     }

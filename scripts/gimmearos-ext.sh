@@ -261,7 +261,6 @@ do
     esac
 done
 
-cd "$curdir"
 
 input=""
 until [ "$input" = "99" ]
@@ -314,8 +313,6 @@ do
 done
 
 
-cd "$curdir"
-
 input=""
 until [ "$input" = "99" ]
 do
@@ -339,26 +336,18 @@ do
         1 ) echo -e "\nBuilding i386 Toolchain...\n"
             cd aros-i386-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-i386-toolchain-builddir
             ;;
         2 ) echo -e "\nBuilding x86_64 Toolchain...\n"
             cd aros-x86_64-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-x86_64-toolchain-builddir
             ;;
         3 ) echo -e "\nBuilding m68k Toolchain...\n"
             cd aros-m68k-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-m68k-toolchain-builddir
             ;;
         4 ) echo -e "\nBuilding armhf Toolchain...\n"
             cd aros-armhf-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-armhf-toolchain-builddir
             ;;
 
         0 ) exit 0
@@ -366,8 +355,6 @@ do
     esac
 done
 
-
-cd "$curdir"
 
 input=""
 until [ "$input" = "99" ]
@@ -454,8 +441,6 @@ do
     esac
 done
 
-
-cd "$curdir"
 
 input=""
 until [ "$input" = "99" ]
@@ -564,7 +549,5 @@ do
             ;;
     esac
 done
-
-cd "$curdir"
 
 exit 0

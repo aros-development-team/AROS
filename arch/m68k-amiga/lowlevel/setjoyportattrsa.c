@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -21,7 +21,12 @@ AROS_LH2(BOOL, SetJoyPortAttrsA,
     struct TagItem *ti;
 
     while ((ti = LibNextTagItem(&tagList)) != NULL) {
-        D(bug("%s: Tag %d = %p\n", __func__, ti->ti_Tag, (APTR)ti->ti_Data));
+        switch (ti->ti_Tag)
+        {
+        default:
+            D(bug("%s: Tag %d = %p\n", __func__, ti->ti_Tag, (APTR)ti->ti_Data));
+            break;
+        }
     }
     return FALSE;
     

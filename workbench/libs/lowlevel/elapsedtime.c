@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
     Lang: english
 */
+
+#include <proto/timer.h>
 
 #include "lowlevel_intern.h"
 
@@ -40,10 +42,16 @@
 {
   AROS_LIBFUNC_INIT
 
-    /* TODO: Write lowlevel/ElapsedTime() */
-    aros_print_not_implemented ("lowlevel/ElapsedTime");
+    struct Library *TimerBase = LowLevelBase->ll_TimerBase;
+    struct timeval *tlast = (struct timeval *)context;
+    struct timeval a, b;
 
-    return 0L;
+    GetSysTime(&a);
+    b = a;
+    SubTime(&b, tlast);
+    *tlast = a;
 
-  AROS_LIBFUNC_EXIT
+    return b.tv_secs*1000 + b.tv_micro/1000;
+
+    AROS_LIBFUNC_EXIT
 } /* ElapsedTime */

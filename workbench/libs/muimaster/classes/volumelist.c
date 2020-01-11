@@ -112,10 +112,10 @@ AROS_UFH3S(LONG, display_func,
     else
     {
         *array++ = "";
-        *array++ = _(MSG_VOLUMELIST_NAME);
-        *array++ = _(MSG_VOLUMELIST_FULL);
-        *array++ = _(MSG_VOLUMELIST_FREE);
-        *array = _(MSG_VOLUMELIST_USED);
+        *array++ = (char *)_(MSG_VOLUMELIST_NAME);
+        *array++ = (char *)_(MSG_VOLUMELIST_FULL);
+        *array++ = (char *)_(MSG_VOLUMELIST_FREE);
+        *array = (char *)_(MSG_VOLUMELIST_USED);
     }
 
     return 0;

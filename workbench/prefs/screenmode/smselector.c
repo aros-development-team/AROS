@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -255,10 +255,16 @@ IPTR ScreenModeSelector__OM_GET(Class *CLASS, Object *self, struct opGet *messag
     
     switch (message->opg_AttrID)
     {
+        case MUIA_ScreenModeSelector_Mode:
+            *message->opg_Storage =
+                (IPTR)data->modes_array[XGET(data->mode_list, MUIA_List_Active)];
+            break;
+
         case MUIA_ScreenModeSelector_Active:
             *message->opg_Storage =
                 data->ids_array[XGET(data->mode_list, MUIA_List_Active)];
             break;
+
         default:
             return DoSuperMethodA(CLASS, self, (Msg)message);
     }

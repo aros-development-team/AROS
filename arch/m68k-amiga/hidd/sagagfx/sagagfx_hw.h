@@ -66,7 +66,7 @@ static inline __attribute__((always_inline)) void WRITE32(IPTR a, ULONG b) { D(b
 #define SAGA_VIDEO_FORMAT_RGB24     0x0004
 #define SAGA_VIDEO_FORMAT_RGB32     0x0005
 #define SAGA_VIDEO_FORMAT_YUV422    0x0006
-#define SAGA_VIDEO_FORMAT_OFF       0xffff
+#define SAGA_VIDEO_FORMAT_OFF       0x8000
 
 #define SAGA_VIDEO_DBLSCAN_OFF      0
 #define SAGA_VIDEO_DBLSCAN_X        1

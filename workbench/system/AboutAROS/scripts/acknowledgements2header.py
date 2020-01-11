@@ -3,7 +3,9 @@
 
 import sys
 
-print('''#ifndef _ACKNOWLEDGEMENTS_H_
+outfile = open(sys.argv[2], "w", encoding="iso-8859-15")
+
+outfile.write('''#ifndef _ACKNOWLEDGEMENTS_H_
 #define _ACKNOWLEDGEMENTS_H_
 
 /*
@@ -18,10 +20,10 @@ const char * const ACKNOWLEDGEMENTS[] =
 count = 0
 file = open(sys.argv[1], "r", encoding="iso-8859-15")
 for line in file:
-    print('    "%s",' % line.strip())
+    outfile.write('    "%s",\n' % line.strip())
     count += 1
     
-print('''};
+outfile.write('''};
 
 #define ACKNOWLEDGEMENTS_SIZE (%d)
 
@@ -29,3 +31,4 @@ print('''};
 ''' % count)
 
 file.close()
+outfile.close()

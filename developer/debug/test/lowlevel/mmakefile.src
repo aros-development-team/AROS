@@ -1,0 +1,18 @@
+#   $Id$
+#
+#   Makefile to make test lowlevel module.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := lowlevel
+EXEDIR := $(AROS_TESTS)/lowlevel
+
+USER_INCLUDES  := -I $(SRCDIR)/$(CURDIR)/includes
+
+#MM test-lowlevel : linklibs-bootconsole
+
+%build_prog mmake=test-lowlevel \
+    progname=lowlevel targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

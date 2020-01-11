@@ -53,9 +53,10 @@ def parse(file):
     return credits
 
 file = open(sys.argv[1], "r", encoding="iso-8859-15")
+outfile = open(sys.argv[2], "w", encoding="iso-8859-15")
 credits = parse(file)
 
-sys.stdout.write('''#ifndef _AUTHORS_H_
+outfile.write('''#ifndef _AUTHORS_H_
 #define _AUTHORS_H_
 
 /*
@@ -93,18 +94,20 @@ struct TagItem *AUTHORS = TAGLIST
 ''')
 
 for area in credits:
-    sys.stdout.write('''    SECTION
+    outfile.write('''    SECTION
     (
         %s''' % labels2sids[area[0]])
             
     for name in area[1]:
-        sys.stdout.write(',\n        NAME("%s")' % name.replace('"', '\\"'))
+        outfile.write(',\n        NAME("%s")' % name.replace('"', '\\"'))
     
-    print('\n    ),')
+    outfile.write('\n    ),\n')
     
-print('''    TAG_DONE
+outfile.write('''    TAG_DONE
 );
 
-#endif /* _AUTHORS_H_ */''')
+#endif /* _AUTHORS_H_ */
+''')
 
 file.close()
+outfile.close()

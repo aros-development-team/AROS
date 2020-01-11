@@ -34,15 +34,15 @@ $(GENDIR)/$(CURDIR)/aboutaros.o: $(GENERATED)
 
 $(TOP)/$(CURDIR)/authors.h : $(SRCDIR)/$(CURDIR)/db/credits $(SRCDIR)/$(CURDIR)/scripts/authors2header.py
 	@$(ECHO) Generating $@
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/authors2header.py $< >$@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/authors2header.py $< $@
 
 $(TOP)/$(CURDIR)/sponsors.h : $(SRCDIR)/$(CURDIR)/db/sponsors $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py
 	@$(ECHO) Generating $@
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py $< >$@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py $< $@
 
 $(TOP)/$(CURDIR)/acknowledgements.h : $(SRCDIR)/ACKNOWLEDGEMENTS $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py
 	@$(ECHO) Generating $@
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py $< >$@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py $< $@
 
 #MM
 aboutaros-clean :

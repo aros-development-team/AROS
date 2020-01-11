@@ -30,6 +30,7 @@
 #include <workbench/startup.h>
 #include <devices/diskimage.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/dos.h>
 #include <proto/icon.h>
 #include <proto/diskimage.h>

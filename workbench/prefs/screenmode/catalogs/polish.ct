@@ -1,9 +1,9 @@
-## version $VER: screenmode.catalog 2.1 (03.01.2020)
+## version $VER: screenmode.catalog 2.2 (11.01.2020)
 ## codeset 5
 ## language polski
 ;
 MSG_NAME
-Ustawienia rozdzielczosci ekranu
+Ustawienia rozdzielczości ekranu
 ; ScreenMode Preferences
 ;
 MSG_WIDTH
@@ -23,7 +23,7 @@ MSG_DEPTH
 ; \33lDepth:
 ;
 MSG_AUTOSCROLL
-\33lAutomatyczne przewijanie
+\33lAuto przewijanie
 ; \33lAutoscroll
 ;
 MSG_DISPLAY_MODE
@@ -55,7 +55,7 @@ Wielkość maksymalna
 ; Maximum Size
 ;
 MSG_MAXIMUM_COLORS
-Maksymalna głębia barw
+Ilość barw
 ; Maximum Colors
 ;
 MSG_FREQUENCY
@@ -75,7 +75,7 @@ Dual Playfields
 ; Dual playfields\n
 ;
 MSG_GENLOCK
-Obsługuje Genlock\n
+Obsługuje genlock\n
 ; Supports genlock\n
 ;
 MSG_DRAGGABLE

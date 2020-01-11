@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
-# Copyright (C) 2003-2008, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2020, The AROS Development Team. All rights reserved.
 
 import sys, re, os, errno
 
@@ -21,7 +21,7 @@ re_arg = re.compile('([a-zA-Z0-9][a-zA-Z0-9_]*)=([^\s"]+|".*?")?')
 ##################################
 
 # Exception used throughout this program
-class GenmfException:
+class GenmfException(BaseException):
     def __init__(self, s):
         self.s = s
     def __str__(self):
@@ -412,7 +412,7 @@ else:
             sys.stderr.write('.')
             sys.stderr.flush()
         
-        infile = open(files[0], "r", encoding = "iso-8859-1")
+        infile = open(files[0], "r", encoding = "iso-8859-15")
         lines = infile.readlines()
         infile.close()
         
@@ -424,9 +424,9 @@ else:
             s = err.errno
         
         if usetemp:
-            outfile = open(files[1]+"tmp", "w")
+            outfile = open(files[1]+"tmp", "w", encoding = "iso-8859-15")
         else:
-            outfile = open(files[1], "w")
+            outfile = open(files[1], "w", encoding = "iso-8859-15")
         
         template.hascommon = 0
         

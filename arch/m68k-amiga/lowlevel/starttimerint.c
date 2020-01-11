@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,7 @@ AROS_LH3(VOID, StartTimerInt,
 {
     AROS_LIBFUNC_INIT
 
-    struct CIABase *CiaBase = (struct CIABase *)LowLevelBase->ll_CIA.llciat_Base;
+    struct CIABase *CiaBase = (struct CIABase *)LowLevelBase->ll_Arch.llad_CIA.llciat_Base;
     UBYTE volatile *ciacr_ptr;
     UBYTE crflags;
     long long ecv;
@@ -36,7 +36,7 @@ AROS_LH3(VOID, StartTimerInt,
         StopTimerInt(intHandle);
 
         /* convert to EClock's */
-        ecv = ((long long)timeInterval * LowLevelBase->ll_EClockMult) >> 15;
+        ecv = ((long long)timeInterval * LowLevelBase->ll_Arch.llad_EClockMult) >> 15;
         if ((ecv & 0xFFFF) == 0)
             ecv = 1;
 
@@ -44,7 +44,7 @@ AROS_LH3(VOID, StartTimerInt,
          * Set the requested interval, and Choose appropriate flags
          * for the used CIA timer...
          */
-        if (LowLevelBase->ll_CIA.llciat_iCRBit == CIAICRB_TA)
+        if (LowLevelBase->ll_Arch.llad_CIA.llciat_iCRBit == CIAICRB_TA)
         {
             CiaBase->hw->ciatalo = (ecv & 0xFF);
             CiaBase->hw->ciatahi = ((ecv >> 8) & 0xFF);

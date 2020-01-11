@@ -25,6 +25,7 @@
 */
 
 #include "diskimagegui.h"
+#include <proto/utility.h>
 #include <proto/dos.h>
 #include <proto/muimaster.h>
 

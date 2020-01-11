@@ -117,12 +117,12 @@ AROS_UFH3S(LONG, display_func,
     }
     else
     {
-        *array++ = _(MSG_DIRLIST_NAME);
-        *array++ = _(MSG_DIRLIST_SIZE);
-        *array++ = _(MSG_DIRLIST_DATE);
-        *array++ = _(MSG_DIRLIST_TIME);
-        *array++ = _(MSG_DIRLIST_FLAGS);
-        *array = _(MSG_DIRLIST_COMMENT);
+        *array++ = (char *)_(MSG_DIRLIST_NAME);
+        *array++ = (char *)_(MSG_DIRLIST_SIZE);
+        *array++ = (char *)_(MSG_DIRLIST_DATE);
+        *array++ = (char *)_(MSG_DIRLIST_TIME);
+        *array++ = (char *)_(MSG_DIRLIST_FLAGS);
+        *array = (char *)_(MSG_DIRLIST_COMMENT);
     }
 
     return 0;

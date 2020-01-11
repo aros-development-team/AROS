@@ -54,7 +54,7 @@ SNPrintfStream *SNPrintfPutCh(SNPrintfStream * s, UBYTE c)
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...) {
 	VA_LIST args;
 	VA_START(args, fmt);
-	VSNPrintf(buf, len, fmt, args);
+	VSNPrintf(buf, len, fmt, (RAWARG)args);
 	VA_END(args);
 }
 
