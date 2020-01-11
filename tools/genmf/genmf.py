@@ -21,7 +21,7 @@ re_arg = re.compile('([a-zA-Z0-9][a-zA-Z0-9_]*)=([^\s"]+|".*?")?')
 ##################################
 
 # Exception used throughout this program
-class GenmfException:
+class GenmfException(BaseException):
     def __init__(self, s):
         self.s = s
     def __str__(self):
