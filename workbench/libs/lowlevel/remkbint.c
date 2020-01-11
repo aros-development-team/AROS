@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -40,7 +40,9 @@
     if (intHandle)
     {
         struct Interrupt *kbInt = (struct Interrupt *)intHandle;
+        ObtainSemaphore(&LowLevelBase->ll_Lock);
         Remove(&kbInt->is_Node);
+        ReleaseSemaphore(&LowLevelBase->ll_Lock);
         FreeVec(kbInt);
     }
 
