@@ -1,6 +1,6 @@
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common startup code
@@ -21,10 +21,15 @@
 #include <aros/startup.h>
 #include <resources/task.h>
 
-struct DosLibrary       *DOSBase;
-APTR                    TaskResBase;
-
+/*
+ * the following symbols may be replaced by versions in 
+ * external code, so need to be declared weak
+ */
 extern const LONG __aros_libreq_DOSBase __attribute__((weak));
+struct DosLibrary       *DOSBase __attribute__((weak));
+
+APTR                    _TaskResBase;
+
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(PROGRAM_ENTRIES)
 
@@ -64,12 +69,13 @@ static int __startup_latehook_dispatcher(struct Hook *_latehook);
 /* Guarantee that __startup_entry is placed at the beginning of the binary */
 __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
 {
+    APTR TaskResBase;
     AROS_PROCFUNC_INIT
 
     D(bug("%s(\"%s\", %d, %x)\n", __func__, argstr, argsize, SysBase));
 
-    TaskResBase = OpenResource("task.resource");
-    if (TaskResBase)
+    _TaskResBase = OpenResource("task.resource");
+    if ((TaskResBase = _TaskResBase) != NULL)
         InitTaskHooks(__startup_latehook_dispatcher, TASKHOOK_TYPE_LATEINIT, THF_IAR);
 
     /*
@@ -89,6 +95,7 @@ __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
     __startup_entries_next();
 
     CloseLibrary((struct Library *)DOSBase);
+    DOSBase = NULL;
 
     D(bug("%s: returning %d\n", __func__, __startup_error));
 
@@ -105,6 +112,8 @@ static int __startup_latehook_dispatcher(struct Hook *_latehook)
 
 static void __startup_main(struct ExecBase *SysBase)
 {
+    APTR TaskResBase = _TaskResBase;
+
     D(bug("%s: entering main ...\n", __func__));
 
     /* run the late init hooks if we have task.resource */
