@@ -47,13 +47,16 @@
     STRPTR temp_buffer;
     
     RawDoFmt(format, args, RAWFMTFUNC_COUNT, &required_size);
-    // required_size already contains trailing zero
-    temp_buffer = AllocMem(required_size, MEMF_ANY);
-    if (temp_buffer)
+    if (buffer)
     {
-        RawDoFmt(format, args, RAWFMTFUNC_STRING, temp_buffer);
-        Strlcpy(buffer, temp_buffer, buffer_size);
-        FreeMem(temp_buffer, required_size);
+        // required_size already contains trailing zero
+        temp_buffer = AllocMem(required_size, MEMF_ANY);
+        if (temp_buffer)
+        {
+            RawDoFmt(format, args, RAWFMTFUNC_STRING, temp_buffer);
+            Strlcpy(buffer, temp_buffer, buffer_size);
+            FreeMem(temp_buffer, required_size);
+        }
     }
     return required_size;
     
