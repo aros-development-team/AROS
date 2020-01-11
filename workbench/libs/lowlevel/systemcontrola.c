@@ -1,17 +1,18 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
     Lang: english
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <proto/arossupport.h>
 
 #include <aros/libcall.h>
 #include <exec/types.h>
+#include <dos/dosextens.h>
 #include <libraries/lowlevel.h>
 
 #include "lowlevel_intern.h"
@@ -36,7 +37,7 @@
     RESULT
  
     BUGS
-        This function is unimplemented.
+        This functions implementation is incomplete.
 
     INTERNALS
 
@@ -45,15 +46,44 @@
     AROS_LIBFUNC_INIT
 
     struct TagItem *tag, *tagp = tags;;
+    Tag failtag = 0;
 
-    aros_print_not_implemented ("lowlevel/SystemControlA");
+    D(bug("[lowlevel] %s()\n", __func__);)
 
     /* For now, dump all tags in debug mode */
     while ((tag = LibNextTagItem(&tagp))) {
-        D(bug("%s: Tag SCON_Dummy+%d, Data %p\n", __func__, tag->ti_Tag - SCON_Dummy, (APTR)tag->ti_Data));
+        switch (tag->ti_Tag)
+        {
+        case SCON_TakeOverSys:
+                if (tag->ti_Data)
+                    Forbid();
+                else
+                    Permit();
+                break;
+        case SCON_KillReq:
+                {
+                    struct Process *thisProc = (struct Process *)FindTask(NULL);
+                    if (thisProc->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+                    {
+                        if (tag->ti_Data)
+                            thisProc->pr_WindowPtr = (APTR)-1;
+                        else
+                            thisProc->pr_WindowPtr = (APTR)0;
+                    }
+                }
+                break;
+
+        case SCON_CDReboot:
+        case SCON_StopInput:
+        case SCON_RemCreateKeys:
+        default:
+                D(bug("%s: Tag SCON_Dummy+%d, Data %p\n", __func__, tag->ti_Tag - SCON_Dummy, (APTR)tag->ti_Data));
+                failtag = tag->ti_Tag;
+                break;
+        }
     }
 
-    return (tags ? tags->ti_Tag : 0);
+    return failtag;
 
     AROS_LIBFUNC_EXIT
 } /* SystemControlA */
