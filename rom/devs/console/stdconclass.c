@@ -50,7 +50,7 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
     if (o)
     {
         struct stdcondata *data = INST_DATA(cl, o);
-        ULONG dispmid = OM_DISPOSE;
+        STACKULONG dispmid = OM_DISPOSE;
         int i;
 
         /* Clear for checking inside dispose() whether stuff was allocated.
