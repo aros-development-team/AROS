@@ -80,6 +80,8 @@ BOOL LowLevelInputInit(LIBBASETYPEPTR LowLevelBase)
     if ((LowLevelBase->ll_InputMP = CreateMsgPort()))
     {
         D(bug("[lowlevel] %s: Input MsgPort @ 0x%p\n", __func__, LowLevelBase->ll_InputMP);)
+        FreeSignal(LowLevelBase->ll_InputMP->mp_SigBit);
+        LowLevelBase->ll_InputMP->mp_SigBit = -1;
 
         if ((LowLevelBase->ll_InputIO = (struct IOStdReq *)CreateIORequest(LowLevelBase->ll_InputMP, sizeof (struct IOStdReq))))
         {
@@ -145,6 +147,8 @@ BOOL LowLevelTimerInit(LIBBASETYPEPTR LowLevelBase)
     if ((LowLevelBase->ll_TimerMP = CreateMsgPort()))
     {
         D(bug("[lowlevel] %s: Timer MsgPort @ 0x%p\n", __func__, LowLevelBase->ll_TimerMP);)
+        FreeSignal(LowLevelBase->ll_TimerMP->mp_SigBit);
+        LowLevelBase->ll_TimerMP->mp_SigBit = -1;
 
         if ((LowLevelBase->ll_TimerIO = (struct IOStdReq *)CreateIORequest(LowLevelBase->ll_TimerMP, sizeof (struct IOStdReq))))
         {
