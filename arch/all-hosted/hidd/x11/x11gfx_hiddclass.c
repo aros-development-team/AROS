@@ -457,7 +457,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         D(bug("[X11Gfx] unsupported color model: %d\n", XSD(cl)->vi->class));
         if (resolution)
         {
-            FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
+            FreeMem(resolution, modeNum * sizeof(struct TagItem) * XVIDMODETAGS);
             FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 2));
         }
         XCALL(XCloseDisplay, disp);
@@ -482,7 +482,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
     D(bug("Super method returned\n"));
 
-    FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
+    FreeMem(resolution, modeNum * sizeof(struct TagItem) * XVIDMODETAGS);
     FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 2));
     XCALL(XCloseDisplay, disp);
 
