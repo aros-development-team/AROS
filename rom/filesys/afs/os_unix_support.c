@@ -153,7 +153,7 @@ void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
 void remDosNode(struct AFSBase *afsbase, struct DosList *dl){
 }
 
-/****************************************************************************
+/****************************************************************************/
 /********************************* OS Functions *****************************
  * The following functions replicate those from AmigaOS
  ****************************************************************************/
