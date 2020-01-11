@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -51,24 +53,31 @@
     register UBYTE *ptr;
     ULONG postsize;
 
+    D(bug("[utility:pc] %s(0x%p, %02x, %d)\n", __func__, destination, c, length);)
+
     ptr = destination;
 
     if (length > AROS_LONGALIGN)
     {
         BYTE prefill = (((IPTR)ptr + AROS_LONGALIGN) & ~(AROS_LONGALIGN-1)) % AROS_LONGALIGN;
-        WORD longfill = (length - prefill) / AROS_LONGALIGN;
-        postsize = length - longfill * AROS_LONGALIGN - prefill;
+        WORD longfill = (length - prefill) / (AROS_LONGALIGN << 1);
+        postsize = length - (longfill * (AROS_LONGALIGN << 1)) - prefill;
+
+        D(bug("[utility:pc] %s: 0x%p, %d\n", __func__, ptr, prefill);)
 
         while (prefill--)
             *ptr ++ = c;
+
+        D(bug("[utility:pc] %s: 0x%p, %d x4\n", __func__, ptr, longfill);)
 
         if (longfill > 0)
         {
             ULONG * ulptr = (ULONG *)ptr;
             ULONG fill = ((c & 0xFF) <<  8) | (c & 0xFF);
             fill = (fill << 16) | fill;
-            while ((longfill > 1) && ((longfill -= 2) > 0))
+            while (longfill > 1)
             {
+                longfill -= 2;
                 *ulptr ++ = fill;
                 *ulptr ++ = fill;
             }
@@ -81,6 +90,8 @@
     }
     else
         postsize = length;
+
+    D(bug("[utility:pc] %s: 0x%p, %d\n", __func__, ptr, postsize);)
 
     while (postsize--)
         *ptr ++ = c;
