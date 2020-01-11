@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common startup code
@@ -40,9 +40,17 @@
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
 
-int             __detached_manages_detach;
+/*
+ * the following symbols may be replaced by versions in 
+ * external code, so need to be declared weak
+ */
+STRPTR          __detached_name __attribute__((weak));
+int             __detached_manages_detach __attribute__((weak));
+
+/*
+ * global symbols used in this code
+ */
 int             __detacher_go_away;
-STRPTR          __detached_name;
 LONG            __detached_return_value;
 struct Process *__detacher_process;
 
