@@ -76,6 +76,6 @@ extern BPTR destdir;
 extern UWORD codepage[256];
 
 BOOL IsDefaultCodePage(void);
-FT_Library ftlibrary;
+extern FT_Library ftlibrary;
 
 #endif

@@ -12,7 +12,7 @@
 #define MUIM_FontInfo_SetOTags		(FONTINFO_MBASE + 2)
 #define MUIM_FontInfo_WriteFiles	(FONTINFO_MBASE + 3)
 
-struct MUI_CustomClass *FontInfoClass;
+extern struct MUI_CustomClass *FontInfoClass;
 
 #define FontInfoObject	NewObject(FontInfoClass->mcc_Class, NULL //)
 

@@ -121,9 +121,9 @@ AROS_UFH3(LONG, flCompareFunc,
     AROS_USERFUNC_EXIT
 }
 
-
 struct Hook flCompareHook = {{NULL, NULL}, UFHN(flCompareFunc) };
 
+struct MUI_CustomClass *FontListClass = NULL;
 
 IPTR flNew(Class *cl, Object *o, struct opSet *msg)
 {
