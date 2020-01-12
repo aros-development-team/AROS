@@ -95,7 +95,6 @@ __startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
     __startup_entries_next();
 
     CloseLibrary((struct Library *)DOSBase);
-    DOSBase = NULL;
 
     D(bug("%s: returning %d\n", __func__, __startup_error));
 
