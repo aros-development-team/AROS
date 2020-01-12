@@ -1,7 +1,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../includes
-USER_CPPFLAGS := -DHMAC_MD5 -DMINIRES_LIB \
+USER_CPPFLAGS := \
+        -DHMAC_MD5 \
+        -DMINIRES_LIB \
         -D__BSD_VISIBLE=1
 
 FILES :=	ns_date ns_name	ns_parse ns_samedomain ns_sign 		\
