@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -24,7 +24,7 @@ struct MUIP_EditPanel_GetScreen { STACKED ULONG MethodID; STACKED struct MUI_Pub
 struct MUIP_EditPanel_Update    { STACKED ULONG MethodID; STACKED LONG level; };
 struct MUIP_EditPanel_DefColors { STACKED ULONG MethodID; STACKED LONG nr; };
 
-struct MUI_CustomClass *CL_EditPanel;
+extern struct MUI_CustomClass *CL_EditPanel;
 
 VOID EditPanel_Init(VOID);
 VOID EditPanel_Exit(VOID);

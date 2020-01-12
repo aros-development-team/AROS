@@ -3,7 +3,7 @@
 
 #include "psi.h"
 
-struct MUI_CustomClass *CL_SysPenField;
+extern struct MUI_CustomClass *CL_SysPenField;
 
 Object *MakeMUIPen(int nr,Object **adr);
 Object *MakeSysPen(int nr,Object **adr);

@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -26,7 +26,7 @@
 
 struct MUIP_ScreenPanel_Finish { STACKED ULONG MethodID; Object *win; LONG ok; };
 
-struct MUI_CustomClass *CL_ScreenPanel ;
+extern struct MUI_CustomClass *CL_ScreenPanel ;
 
 VOID ScreenPanel_Init(VOID);
 VOID ScreenPanel_Exit(VOID);

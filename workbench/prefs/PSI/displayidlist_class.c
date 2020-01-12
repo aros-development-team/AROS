@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -19,6 +19,8 @@
 #include <string.h>
 
 #include "displayidlist_class.h"
+
+struct MUI_CustomClass *CL_DispIDlist = NULL;
 
 /****************************************************************************************/
 
