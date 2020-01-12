@@ -54,7 +54,7 @@ void cpu_Switch(regs_t *regs)
                             AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
 
     /* IF we have AMMX (68080) *and* if AMMX bit in SR is set, save AMMX context */
-    if ((SysBase->AttnFlags & AFF_68080) && (ctx->cpu.sr & 0x800))
+    if (SysBase->AttnFlags & AFF_68080) // && (ctx->cpu.sr & 0x800))
         AROS_UFC1NR(void, AMMXSaveContext,
                             AROS_UFCA(struct AMMXContext *, &ctx->ammx, A0));
 
@@ -135,7 +135,7 @@ void cpu_Dispatch(regs_t *regs)
                             AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
 
     /* IF we have AMMX (68080) *and* if AMMX bit in SR is set, save AMMX context */
-    if ((SysBase->AttnFlags & AFF_68080) && (ctx->cpu.sr & 0x800))
+    if (SysBase->AttnFlags & AFF_68080) // && (ctx->cpu.sr & 0x800))
             AROS_UFC1NR(void, AMMXRestoreContext,
                             AROS_UFCA(struct AMMXContext *, &ctx->ammx, A0));
 
