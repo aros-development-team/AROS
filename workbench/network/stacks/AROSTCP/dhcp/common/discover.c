@@ -43,8 +43,8 @@ static char copyright[] =
 struct interface_info *interfaces, *dummy_interfaces, *fallback_interface;
 int interfaces_invalidated;
 int quiet_interface_discovery;
-u_int16_t local_port;
-u_int16_t remote_port;
+extern u_int16_t local_port;
+extern u_int16_t remote_port;
 int (*dhcp_interface_setup_hook) (struct interface_info *, struct iaddr *);
 int (*dhcp_interface_discovery_hook) (struct interface_info *);
 isc_result_t (*dhcp_interface_startup_hook) (struct interface_info *);
@@ -58,7 +58,7 @@ void (*bootp_packet_handler) PROTO ((struct interface_info *,
 				     unsigned int,
 				     struct iaddr, struct hardware *));
 
-omapi_object_type_t *dhcp_type_interface;
+extern omapi_object_type_t *dhcp_type_interface;
 #if defined (TRACING)
 trace_type_t *interface_trace;
 trace_type_t *inpacket_trace;
