@@ -9,6 +9,7 @@ AROS_BUILD_HOST         ?= @aros_build_host@
 AROS_HOST_CPU           ?= @aros_host_cpu@
 AROS_HOST_ARCH          ?= @aros_host_arch@
 AROS_TARGET_CPU         ?= @aros_target_cpu@
+AROS_TARGET_CPU_TYPE    ?= @aros_gcc_cpu@
 AROS_TARGET_CPU_MODE    ?= @aros_target_cpu_mode@
 AROS_TARGET_ARCH        ?= @aros_target_arch@
 AROS_TARGET_VARIANT     ?= @aros_target_variant@
