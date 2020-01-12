@@ -25,6 +25,8 @@ struct FontBitmapData
 
 typedef struct FontBitmapData FontBitmapData;
 
+struct MUI_CustomClass *FontBitmapClass = NULL;
+
 IPTR fbNew(Class *cl, Object *o, struct opSet *msg)
 {
     struct opSet method;

@@ -1,6 +1,9 @@
 /*
     Copyright © 2020, The AROS Development Team. All rights reserved.
+    $Id$
 */
+
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -40,39 +43,57 @@
     INTERNALS
         There are platform dependent variants of this function.
         
+
     HISTORY
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    UBYTE * ptr = destination;
+    register UBYTE *ptr;
+    ULONG postsize;
 
-    while (((IPTR)ptr)&(AROS_LONGALIGN-1) && length)
+    D(bug("[utility:pc] %s(0x%p, %02x, %d)\n", __func__, destination, c, length);)
+
+    ptr = destination;
+
+    if (length > AROS_LONGALIGN)
     {
-        *ptr ++ = c;
-        length --;
-    }
+        BYTE prefill = (((IPTR)ptr + AROS_LONGALIGN) & ~(AROS_LONGALIGN-1)) % AROS_LONGALIGN;
+        WORD longfill = (length - prefill) / (AROS_LONGALIGN << 1);
+        postsize = length - (longfill * (AROS_LONGALIGN << 1)) - prefill;
 
-    if (length > sizeof(ULONG))
-    {
-        ULONG * ulptr = (ULONG *)ptr;
-        ULONG fill;
+        D(bug("[utility:pc] %s: 0x%p, %d\n", __func__, ptr, prefill);)
 
-        fill = (ULONG)(c & 0xFF);
-        fill = (fill <<  8) | fill;
-        fill = (fill << 16) | fill;
+        while (prefill--)
+            *ptr ++ = c;
 
-        while (length > sizeof(ULONG))
+        D(bug("[utility:pc] %s: 0x%p, %d x4\n", __func__, ptr, longfill);)
+
+        if (longfill > 0)
         {
-            *ulptr ++ = fill;
-            length -= sizeof(ULONG);
+            ULONG * ulptr = (ULONG *)ptr;
+            ULONG fill = ((c & 0xFF) <<  8) | (c & 0xFF);
+            fill = (fill << 16) | fill;
+            while (longfill > 1)
+            {
+                longfill -= 2;
+                *ulptr ++ = fill;
+                *ulptr ++ = fill;
+            }
+
+            while (longfill--)
+                *ulptr ++ = fill;
+
+            ptr = (UBYTE *)ulptr;
         }
-
-        ptr = (UBYTE *)ulptr;
     }
+    else
+        postsize = length;
 
-    while (length --)
+    D(bug("[utility:pc] %s: 0x%p, %d\n", __func__, ptr, postsize);)
+
+    while (postsize--)
         *ptr ++ = c;
 
     return destination;

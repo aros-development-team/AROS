@@ -29,7 +29,7 @@ static struct InputEvent   ie = {0,IECLASS_RAWKEY}; /* Keyboard translation map 
 extern struct IntuiMessage msgbuf;
 extern Project edit;
 
-struct FileRequester *fr;
+static struct FileRequester *fr;
 
 UBYTE record = 0;
 

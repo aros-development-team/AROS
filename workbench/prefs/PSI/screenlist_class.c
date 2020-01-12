@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2011, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -36,6 +36,8 @@
 #define USE_PSI_SCREENCF_BODY
 #include "psi_screencf.bh"
 */
+
+struct MUI_CustomClass *CL_ScreenList = NULL;
 
 /****************************************************************************************/
 

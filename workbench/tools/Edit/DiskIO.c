@@ -25,7 +25,7 @@
 extern struct Library *AslBase;
 
 extern struct Screen *Scr;
-struct FileRequester *fr=NULL;
+static struct FileRequester *fr=NULL;
 
 /* ASL load or save requester tags */
 static IPTR tags[] = {

@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -21,7 +21,7 @@ struct MUIP_MainWindow_Finish  { STACKED ULONG MethodID; STACKED LONG level; };
 struct MUIP_MainWindow_Restore { STACKED ULONG MethodID; STACKED LONG envarc; };
 struct MUIP_MainWindow_Open    { STACKED ULONG MethodID; STACKED LONG append; };
 
-struct MUI_CustomClass *CL_MainWindow;
+extern struct MUI_CustomClass *CL_MainWindow;
 
 VOID MainWindow_Init(VOID);
 VOID MainWindow_Exit(VOID);

@@ -74,7 +74,9 @@ AROS_UFH1(void, KBEventWrapper,
         kbInt->llkbi_Code = intRoutine;
         kbInt->llkbi_Data = intData;
         kbInt->llkbi_Interrupt.is_Data = kbInt;
+        ObtainSemaphore(&LowLevelBase->ll_Lock);
         AddTail(&LowLevelBase->ll_KBInterrupts, &kbInt->llkbi_Interrupt.is_Node);
+        ReleaseSemaphore(&LowLevelBase->ll_Lock);
         return kbInt;
     }
 

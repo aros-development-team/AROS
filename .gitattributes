@@ -4,27 +4,55 @@
 #
 # Localised files
 #
+# These languages traditionally use  ISO-8859-1 in AmigaOS
+# do not change them, and do not use symbols in their catalogs
+# that cannot be displayed by ISO-8859-1
+#
+albanian.ct          text working-tree-encoding=ISO-8859-1
+catalan.ct           text working-tree-encoding=ISO-8859-1
+danish.ct            text working-tree-encoding=ISO-8859-1
+dutch.ct             text working-tree-encoding=ISO-8859-1
+faroese.ct           text working-tree-encoding=ISO-8859-1
+finnish.ct           text working-tree-encoding=ISO-8859-1
+french.ct            text working-tree-encoding=ISO-8859-1
+german.ct            text working-tree-encoding=ISO-8859-1
+irish.ct             text working-tree-encoding=ISO-8859-1
+icelandic.ct         text working-tree-encoding=ISO-8859-1
+italian.ct           text working-tree-encoding=ISO-8859-1
+norwegian.ct         text working-tree-encoding=ISO-8859-1
+portuguese.ct        text working-tree-encoding=ISO-8859-1
+spanish.ct           text working-tree-encoding=ISO-8859-1
+swedish.ct           text working-tree-encoding=ISO-8859-1
 
 # ISO-8859-2
+#
 bosnian.ct           text working-tree-encoding=ISO-8859-2
 croatian.ct          text working-tree-encoding=ISO-8859-2
 czech.ct             text working-tree-encoding=ISO-8859-2
 hungarian.ct         text working-tree-encoding=ISO-8859-2
-polish.ct            text working-tree-encoding=ISO-8859-2
+rumanian.ct          text working-tree-encoding=ISO-8859-2
 slovak.ct            text working-tree-encoding=ISO-8859-2
 slovene.ct           text working-tree-encoding=ISO-8859-2
+# Polish is stored as ISO-8859-2 but used as AmigaPL
+polish.ct            text working-tree-encoding=ISO-8859-2
 
-# ISO-8859-15
-albanian.ct          text working-tree-encoding=ISO-8859-15
-catalan.ct           text working-tree-encoding=ISO-8859-15
-faroese.ct           text working-tree-encoding=ISO-8859-15
-finnish.ct           text working-tree-encoding=ISO-8859-15
-french.ct            text working-tree-encoding=ISO-8859-15
-german.ct            text working-tree-encoding=ISO-8859-15
-icelandic.ct         text working-tree-encoding=ISO-8859-15
-italian.ct           text working-tree-encoding=ISO-8859-15
-spanish.ct           text working-tree-encoding=ISO-8859-15
-swedish.ct           text working-tree-encoding=ISO-8859-15
+# ISO-8859-3
+#
+maltese.ct           text working-tree-encoding=ISO-8859-3
+turkish.ct           text working-tree-encoding=ISO-8859-3
 
-# ISO-8859-15
+# ISO-8859-4
+#
+estonian.ct          text working-tree-encoding=ISO-8859-4
+latvian.ct           text working-tree-encoding=ISO-8859-4
+lithuanian.ct        text working-tree-encoding=ISO-8859-4
+
+# ISO-8859-5
+#
+bulgarian.ct         text working-tree-encoding=ISO-8859-5
+macedonian.ct        text working-tree-encoding=ISO-8859-5
+serbian.ct           text working-tree-encoding=ISO-8859-5
+ukrainian.ct         text working-tree-encoding=ISO-8859-5
+
+# Russian is stored as WINDOWS-1251 but used as Amiga-1251
 russian.ct           text working-tree-encoding=WINDOWS-1251

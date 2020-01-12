@@ -132,11 +132,7 @@ UWORD __chip fakePointerData[]={0,0,0,0,0};
 struct IFFHandle *iff=NULL;   /*IFF handle*/
 BPTR pL=BNULL;                /*Playlist file pointer*/
 BOOL masking,print,toFront,printPics;
-#ifdef __AROS__
-struct WBStartup *WBenchMsg = NULL;
-#else
 extern struct WBStartup *WBenchMsg;
-#endif
 
 char *playListFilename=NULL;
 

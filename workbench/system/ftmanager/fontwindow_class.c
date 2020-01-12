@@ -37,6 +37,8 @@ AROS_UFH3(void, CloseWinFunc,
 
 struct Hook CloseWinHook = {{NULL, NULL}, UFHN(CloseWinFunc) };
 
+struct MUI_CustomClass *FontWindowClass = NULL;
+
 IPTR fwNew(Class *cl, Object *o, struct opSet *msg)
 {
     struct opSet method;

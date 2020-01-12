@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -19,7 +19,7 @@ struct MUIP_ScreenList_Save { STACKED ULONG MethodID; STACKED char *name; };
 struct MUIP_ScreenList_Load { STACKED ULONG MethodID; STACKED char *name; STACKED LONG clear; };
 struct MUIP_ScreenList_Find { STACKED ULONG MethodID; STACKED char *name; STACKED struct MUI_PubScreenDesc **desc; };
 
-struct MUI_CustomClass *CL_ScreenList;
+extern struct MUI_CustomClass *CL_ScreenList;
 
 VOID ScreenList_Init(VOID);
 VOID ScreenList_Exit(VOID);

@@ -8,7 +8,7 @@
 #define MUIA_FontBitmap_String		(FONTBITMAP_BASE + 4)
 #define MUIA_FontBitmap_Gray		(FONTBITMAP_BASE + 5)
 
-struct MUI_CustomClass *FontBitmapClass;
+extern struct MUI_CustomClass *FontBitmapClass;
 
 #define FontBitmapObject	NewObject(FontBitmapClass->mcc_Class, NULL //)
 
