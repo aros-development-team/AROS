@@ -3244,6 +3244,7 @@ aros_kernel_ranlib=m4_normalize($aros_kernel_ranlib)
 # Generic
 AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
+AC_SUBST(aros_gcc_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(aros_target_toolchain)
