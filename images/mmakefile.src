@@ -1,10 +1,24 @@
-# Copyright © 2008, The AROS Development Team. All rights reserved.
+# Copyright © 2008-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-complete : workbench-images workbench-images-themes
+#MM- workbench-complete : workbench-images
+#MM- workbench-images : workbench-images-copylogo workbench-images-themes
 
-%copy_files_q mmake=workbench-images files="$(call WILDCARD, *.png *.jpg)" dst=$(AROS_IMAGES)
+ifneq ($(AROS_PREFS_SET),classic)
+AROSLOGOFILE:=AROS_600x300.png
+else
+AROSLOGOFILE:=AROS_300x150.png
+endif
+
+$(AROS_IMAGES)/Logos/AROS.logo : $(SRCDIR)/$(CURDIR)/$(AROSLOGOFILE)
+	@if [ -f $< ]; then      \
+            $(MKDIR) $(dir $@) ; \
+            $(CP) $< $@ ;        \
+        fi
+
+#MM
+workbench-images-copylogo : $(AROS_IMAGES)/Logos/AROS.logo
 
 %copy_dir_recursive mmake=workbench-images-themes src=$(SRCDIR)/images/Themes dst=$(AROS_THEMES)

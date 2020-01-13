@@ -7,11 +7,11 @@ include $(SRCDIR)/config/aros.cfg
 MESA3DGL_DIRECTORY :=$(SRCDIR)/workbench/libs/mesa
 include $(MESA3DGL_DIRECTORY)/mesa.cfg
 
-#MM- workbench-libs-complete : workbench-libs-hostgl-$(OPT_HOST_X11_HOSTGL)
+#MM- workbench-libs-complete : hosted-libs-hostgl-$(OPT_HOST_X11_HOSTGL)
 
-#MM- workbench-libs-hostgl-yes : workbench-libs-hostgl
+#MM- hosted-libs-hostgl-yes : hosted-libs-hostgl
 
-#MM workbench-libs-hostgl : includes
+#MM hosted-libs-hostgl : includes
 
 MESA_DIRECTORY := $(top_srcdir)/src/mesa
 MESA_GALLIUM_DIRECTORY := $(top_srcdir)/src/gallium
@@ -45,10 +45,13 @@ USER_INCLUDES +=  \
     -isystem $(GENINCDIR) \
      $(KERNEL_INCLUDES)
 
-USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DAROSMESA_TYPES='"hostgl_types.h"'
+USER_CPPFLAGS := \
+        -D__HOSTLIB_NOLIBBASE__ \
+        -DHOST_OS_$(ARCH) \
+        -DAROSMESA_TYPES='"hostgl_types.h"'
 USER_CFLAGS := $(HOST_X11_CFLAGS)
 
-%build_module_library mmake=workbench-libs-hostgl \
+%build_module_library mmake=hosted-libs-hostgl \
     modname=hostgl modtype=library conffile=$(SRCDIR)/workbench/libs/gl/gl.conf \
     files="$(LIBRARY_SOURCES)" \
     uselibs="stdcio stdc"

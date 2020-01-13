@@ -1,5 +1,5 @@
 /*
-     Copyright 2010, The AROS Development Team. All rights reserved.
+     Copyright 2010-202, The AROS Development Team. All rights reserved.
      $Id$
  */
 
@@ -88,8 +88,8 @@ struct EmaSys
 };
 typedef struct EmaSys ESYS;
 
-ESYS emasys0;
-ESYS *emasys;
+extern ESYS emasys0;
+extern ESYS *emasys;
 
 struct TaskSys
 {
@@ -100,8 +100,8 @@ struct TaskSys
 };
 typedef struct TaskSys TSYS;
 
-TSYS ematsys0;
-TSYS *ematsys;
+extern TSYS ematsys0;
+extern TSYS *ematsys;
 
 // Some extra commands.
 #define		CMD_ABORTIO		1000			// This is my cmd for ioaborting.
@@ -195,7 +195,7 @@ typedef struct etask ETASK;
 EUNIT *init_EUnit(ETASK *estruct, UBYTE channel, struct MsgPort *myport);
 VOID free_EUnit(ETASK *estruct, EUNIT *unit);
 
-ETASK *global_eta; // For now this is used by the device to find the etask structure.
+extern ETASK *global_eta; // For now this is used by the device to find the etask structure.
 
 
 // Protos of commands which are called form the slave process.

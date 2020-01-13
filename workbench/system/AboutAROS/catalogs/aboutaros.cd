@@ -104,3 +104,6 @@ Datatypes
 MSG_SECTION_TESTING (//)
 Testing
 ;
+MSG_BUILD_CPU (//)
+This version of AROS has been built for %s processors.
+;
