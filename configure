@@ -767,7 +767,7 @@ aros_toolchain_ld
 aros_target_toolchain
 aros_flavour_uc
 aros_flavour
-aros_gcc_cpu
+aros_target_cpu_extra
 aros_cpu
 aros_arch
 SDL_LIBS
@@ -9919,7 +9919,9 @@ fi
 
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_cpu" >&5
 $as_echo "$aros_gcc_cpu" >&6; }
-
+        if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
+            aros_target_cpu_extra=$aros_gcc_cpu
+        fi
         aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
         ;;
     *x86_64*)

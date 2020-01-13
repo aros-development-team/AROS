@@ -2191,7 +2191,9 @@ case "$aros_target_cpu" in
         AC_MSG_CHECKING([Which minimum CPU to use])
         AC_ARG_WITH(cpu,AC_HELP_STRING([--with-cpu=<spec>],[Specify minumum CPU (default=$gcc_default_cpu).]),aros_gcc_cpu="$withval",aros_gcc_cpu=$gcc_default_cpu)
         AC_MSG_RESULT($aros_gcc_cpu)
-        
+        if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
+            aros_target_cpu_extra=$aros_gcc_cpu
+        fi
         aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
         ;;
     *x86_64*)
@@ -3244,7 +3246,7 @@ aros_kernel_ranlib=m4_normalize($aros_kernel_ranlib)
 # Generic
 AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
-AC_SUBST(aros_gcc_cpu)
+AC_SUBST(aros_target_cpu_extra)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(aros_target_toolchain)
