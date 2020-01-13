@@ -5,7 +5,6 @@ include $(SRCDIR)/config/aros.cfg
 FONTSDIRPL  := $(AROSDIR)/Storage/Fonts/AmigaPL
 EXCLUDEFILES := \
         mmakefile.src \
-        mmakefile \
         AmigaPL_fonts.readme
 
 #MM- workbench-fonts : workbench-fontsPL
