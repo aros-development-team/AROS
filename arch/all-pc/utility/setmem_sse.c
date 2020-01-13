@@ -71,7 +71,7 @@ static VOID __smallsetmem(APTR destination, UBYTE c, ULONG length)
     {
         ULONG presize, ssefillcount;
 
-        presize = (((((IPTR) destination + 16 ) & ~0xF) - (IPTR)destination) % 16);
+        presize = (((IPTR) destination + 15 ) & ~15) - (IPTR)destination;
         ssefillcount = (length - presize) / 16;
         postsize = length - ssefillcount * 16 - presize;
 
