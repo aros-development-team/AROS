@@ -11,7 +11,10 @@ REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(REPODIR))
 REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(REPODIR))
 REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(REPODIR))
 
-USER_CPPFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\"" -DBUILDCPU=\"$(AROS_TARGET_CPU_TYPE)\"
+USER_CPPFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+ifneq ($(AROS_TARGET_CPU_TYPE),)
+    USER_CPPFLAGS  += -DBUILDCPU=\"$(AROS_TARGET_CPU_TYPE)\"
+endif
 ifneq ($(REPOTYPE),)
     USER_CPPFLAGS  += -DREPOTYPE=\"$(REPOTYPE)\" -DREPOREVISION=\"$(REPOREVISION)\" -DREPOID=\"$(REPOID)\"
 endif
