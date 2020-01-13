@@ -1,12 +1,11 @@
 /*
-    Copyright © 2013-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: A600/A1200/A4000 ATA HIDD
     Lang: English
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <hardware/ata.h>

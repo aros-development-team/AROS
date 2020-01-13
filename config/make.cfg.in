@@ -187,9 +187,14 @@ AROS_LD                       := $(TARGET_LD)
 
 STRIP                         := $(TARGET_STRIP)
 
-CALL                          := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) AROS_HOST_CPU=$(AROS_HOST_CPU) \
-                                     AROS_TARGET_ARCH=$(AROS_TARGET_ARCH) AROS_TARGET_CPU=$(AROS_TARGET_CPU) AROS_TARGET_CPU_MODE=$(AROS_TARGET_CPU_MODE) \
-                                     AROS_TARGET_VARIANT=$(AROS_TARGET_VARIANT) AROS_TARGET_SUFFIX=$(AROS_TARGET_SUFFIX)
+CALL                          := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) \
+                                     AROS_HOST_CPU=$(AROS_HOST_CPU) \
+                                     AROS_TARGET_ARCH=$(AROS_TARGET_ARCH) \
+                                     AROS_TARGET_CPU=$(AROS_TARGET_CPU) \
+                                     AROS_TARGET_CPU_TYPE=$(AROS_TARGET_CPU_TYPE) \
+                                     AROS_TARGET_CPU_MODE=$(AROS_TARGET_CPU_MODE) \
+                                     AROS_TARGET_VARIANT=$(AROS_TARGET_VARIANT) \
+                                     AROS_TARGET_SUFFIX=$(AROS_TARGET_SUFFIX)
 
 # At the moment we have two copies of the includes...
 # This is the AROS includes, minus clib/mlib.

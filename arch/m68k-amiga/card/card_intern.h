@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for card.resource
@@ -27,7 +27,7 @@
 
 #include <aros/debug.h>
 
-#define CARDDEBUG(x) x
+#define CARDDEBUG(x)
 
 #define ISMINE (handle == CardResource->ownedcard && !CardResource->removed)
 

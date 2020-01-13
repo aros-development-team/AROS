@@ -10,7 +10,7 @@ EXEDIR  := $(AROSDIR)/Prefs
 #MM workbench-prefs-palette : includes linklibs workbench-prefs-palette-catalogs \
 #MM workbench-prefs-palette-icons
 
-#USER_CPPFLAGS := -DDEBUG
+#USER_CPPFLAGS := -DDEBUG=1
 
 %build_prog mmake=workbench-prefs-palette \
     progname=Palette targetdir=$(EXEDIR) \

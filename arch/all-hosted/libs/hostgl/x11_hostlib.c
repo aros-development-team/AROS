@@ -30,7 +30,7 @@ static const char *x11_func_names[] =
     NULL
 };
 
-APTR HostLibBase;
+static APTR HostLibBase;
 
 void *x11_hostlib_load_so(const char *sofile, const char **names, void **funcptr)
 {

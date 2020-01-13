@@ -97,6 +97,9 @@ typedef unsigned long IPTR;
 #define	STORAGEDRIVERS "SYS:Storage/DOSDrivers/"
 #define	PARAMSLENGTH   (sizeof(struct DosEnvec) + sizeof(IPTR)*4)
 
+#define	NAMESTR_MAX	256
+#define	PATHSTR_MAX	512
+
 enum
 {
 	ERR_SPECIAL = 5000,
@@ -202,19 +205,23 @@ typedef struct UtilityBase *UtilityBase_t;
 #ifdef AROS_FAST_BPTR
 #define BSTR_EXTRA 1
 #define BSTR_OFFSET 0
-#define bstrcpy(dest, src, len) Strlcpy((dest), (src), len + 1)
+#define bstrcpy(dest, src, len) \
+{ \
+	Strlcpy((dest), (src), ((len) + 1)); \
+	dest[len] = '\0'; \
+}
 #else
 #define BSTR_EXTRA 2
 #define BSTR_OFFSET 1
 #define bstrcpy(dest, src, len) \
 { \
 	dest[0] = (len); \
-	Strlcpy(&dest[1], (src), len + 1); \
+	CopyMem((src), &dest[1], len); \
 }
 #endif
 
 static const int __nocommandline __attribute__((used));
-const TEXT version[] = "\0$VER: " PROGNAME " 50.15 (" ADATE ")";
+const TEXT version[] = "\0$VER: " PROGNAME " 50.16 (" ADATE ")";
 
 ULONG CheckDevice(char *name);
 void  InitParams(IPTR *params);
@@ -248,7 +255,7 @@ char *DeviceString;
 BOOL  IsEHandler, IsFilesystem;
 BOOL  IsCli;
 BOOL flagargs[NUM_ARGS];
-char txtBuf[256];
+char txtBuf[NAMESTR_MAX];
 extern struct WBStartup *_WBenchMsg;
 
 int main(void)
@@ -257,7 +264,7 @@ int main(void)
   IPTR *params;
   LONG error = RETURN_FAIL;
   struct RDArgs	*rda;
-  char dirname[512];
+  char dirname[PATHSTR_MAX];
 
   if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
   {
@@ -300,7 +307,7 @@ int main(void)
                     DEBUG_MOUNT(KPrintF("Mount: search for devname <%s>\n",
                                        (IPTR)*MyDevPtr));
 
-		    Strlcpy(dirname, *MyDevPtr, 512);
+		    Strlcpy(dirname, *MyDevPtr, PATHSTR_MAX);
 		    dirname[len-1] = '\0';
 
                     if ((error=CheckDevice(dirname))!=RETURN_OK)
@@ -333,9 +340,9 @@ int main(void)
                           }
 
                           slen = strlen(*SearchPtr);
-			  Strlcpy(dirname, *SearchPtr, 512);
+			  Strlcpy(dirname, *SearchPtr, PATHSTR_MAX);
 			  dirname[slen]	= '\0';
-                          Strlcat(dirname, *MyDevPtr, 512);
+                          Strlcat(dirname, *MyDevPtr, PATHSTR_MAX);
 			  dirname[slen+len-1] =	'\0';
 			  DEBUG_MOUNT(KPrintF("Mount: try File <%s>\n", (IPTR)dirname));
 
@@ -348,7 +355,7 @@ int main(void)
                         {
                           DEBUG_MOUNT(KPrintF("Mount: try from mountlist\n"));
 			  dirname[0] = '\0';
-                          Strlcat(dirname, *MyDevPtr, 512);
+                          Strlcat(dirname, *MyDevPtr, PATHSTR_MAX);
 			  dirname[len-1] = '\0';
 			  error=readmountlist(params, dirname, MOUNTLIST);
 			  DEBUG_MOUNT(KPrintF("Mount: readmountlist(default) returned %ld\n", error));
@@ -723,8 +730,8 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	if (DeviceString)
 	    FreeVec(DeviceString);
 	
-	if ((DeviceString = AllocVec(len+1,MEMF_PUBLIC|MEMF_CLEAR)))
-	    Strlcpy(DeviceString, (STRPTR)args[ARG_DEVICE], len);
+	if ((DeviceString = AllocVec(len + 1,MEMF_PUBLIC|MEMF_CLEAR)))
+	    Strlcpy(DeviceString, (STRPTR)args[ARG_DEVICE], len + 1);
     }
 
     if (args[ARG_UNIT] != 0)
@@ -743,7 +750,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	    if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 	    {
-		Strlcpy(UnitString, (STRPTR)args[ARG_UNIT], len);
+		Strlcpy(UnitString, (STRPTR)args[ARG_UNIT], len + 1);
 		params[2] = (IPTR)UnitString;
 		DEBUG_MOUNT(KPrintF("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
 	    }
@@ -775,7 +782,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	    if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 	    {
-		Strlcpy(FlagsString, (STRPTR)args[ARG_FLAGS], len);
+		Strlcpy(FlagsString, (STRPTR)args[ARG_FLAGS], len + 1);
 		params[3] = (IPTR) FlagsString;
 		DEBUG_MOUNT(KPrintF("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
 	    }
@@ -889,7 +896,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	    DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
 
 	    if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
-		Strlcpy(StartupString,(STRPTR)args[ARG_STARTUP], len);
+		Strlcpy(StartupString,(STRPTR)args[ARG_STARTUP], len + 1);
 	    else
 	    {
 		result = ERROR_NO_FREE_STORE;
@@ -972,7 +979,7 @@ ULONG			error = RETURN_FAIL;
 UBYTE			*nameptr;
 int			toollen;
 BOOL			mountinfo=FALSE;
-char			name[256+1];
+char			name[NAMESTR_MAX];
 
   DEBUG_MOUNT(KPrintF("ReadMountFile: <%s>\n", (IPTR)filename));
 
@@ -1005,7 +1012,7 @@ char			name[256+1];
     if (name[0] == '\0')
     {
       nameptr		=	FilePart(filename);
-      Strlcpy(name, nameptr, 256);
+      Strlcpy(name, nameptr, NAMESTR_MAX);
     }
   }
 
@@ -1813,7 +1820,7 @@ LONG mount(IPTR	*params, STRPTR	name)
 		    }
 		    if (Activate)
 		    {
-			Strlcat(name, ":", 512);
+			Strlcat(name, ":", PATHSTR_MAX);
 			DEBUG_MOUNT(KPrintF("Activating \"%s\"\n", (IPTR)name));
 			DeviceProc(name);
 		    }
@@ -1889,14 +1896,14 @@ void _snprintf(STRPTR buffer, LONG buffer_size, CONST_STRPTR format, ...)
 
 void ShowFault(LONG code, const char *s, ...)
 {
-	char buf[256];
+	char buf[NAMESTR_MAX];
 	va_list ap;
 	int l;
 
 	va_start(ap, s);
 	l = VSNPrintf(buf, sizeof(buf) - 2, s, (RAWARG)ap);
 	va_end(ap);
-	Strlcpy(&buf[l], ": ", sizeof(buf) - l);
+	Strlcpy(&buf[l], ": ", sizeof(buf));
 	l += 2;
 	Fault(code, NULL, &buf[l], sizeof(buf) - l);
 	if (buf[l] == 0)

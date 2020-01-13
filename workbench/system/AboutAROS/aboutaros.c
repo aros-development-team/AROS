@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2020, The AROS Development Team. All rights reserved.
     This file is part of the About program, which is distributed under
     the terms of version 2 of the GNU General Public License.
     
@@ -38,7 +38,11 @@
 #include "sponsors.h"
 #include "acknowledgements.h"
 
-#define VERSION "$VER: AboutAROS 0.2 ("ADATE") ©AROS Dev Team"
+#if defined(BUILDCPU)
+CONST_STRPTR str_aroscpu = "" BUILDCPU "";
+#endif
+
+#define VERSION "$VER: AboutAROS 0.3 ("ADATE") ©AROS Dev Team"
 
 #define WINDOW_BG   ((IPTR) "2:00000000,00000000,00000000")
 #define REGISTER_BG ((IPTR) "7:V,00000000,92000000,91000000-00000000,82000000,81000000")
@@ -190,6 +194,9 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     STRPTR                 str_variant    = NULL;
     STRPTR                 str_arosarch   = NULL;
     STRPTR                 str_buildtype;
+#if defined(BUILDCPU)
+    STRPTR                 str_buildcpu;
+#endif
     IPTR                   abiversion;
     STRPTR                 str_abi;
     BOOL                   showLogotype;
@@ -227,7 +234,11 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     }
     else
         str_abi = "ABI_WIP";
-    
+
+#if defined(BUILDCPU)
+    str_buildcpu = AllocPooled(pool, strlen(_(MSG_BUILD_CPU)) + strlen(str_aroscpu) + 1);
+    sprintf(str_buildcpu, _(MSG_BUILD_CPU), str_aroscpu);
+#endif
 
     /* Initialize page labels ----------------------------------------------*/
     pages[0] = _(MSG_PAGE_AUTHORS);
@@ -241,7 +252,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         MUIA_Application_Title, __(MSG_TITLE),
         MUIA_Application_Version, (IPTR)VERSION,
-        MUIA_Application_Copyright, (IPTR)"© 2010, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"© 2010-2020, The AROS Development Team",
         MUIA_Application_Description, __(MSG_TITLE),
         MUIA_Application_Base, (IPTR) "ABOUTAROS",
         SubWindow, (IPTR) (window = (Object *)WindowObject,
@@ -334,8 +345,8 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Text_Contents,        __(MSG_LICENSE_1),
                         MUIA_Weight,               0,
                     End,
-                    Child, (IPTR) TextObject,
-                        MUIA_Text_Contents, (IPTR) " ",
+                    Child, (IPTR) RectangleObject,
+                        MUIA_FixHeightTxt, (IPTR) " ",
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) (licenseButton = (Object *)TextObject,
@@ -356,6 +367,17 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_Text_Contents,        __(MSG_MORE_INFORMATION),
                 End,
                 Child, (IPTR) VSpace(4),
+#if defined(BUILDCPU)
+                Child, (IPTR) TextObject,
+                    MUIA_Text_PreParse, (IPTR) "\0333\033c",
+                    MUIA_Text_Contents, (IPTR) str_buildcpu,
+                    MUIA_Weight,               0,
+                End,
+                Child, (IPTR) RectangleObject,
+                    MUIA_FixHeightTxt, (IPTR) " ",
+                    MUIA_Weight,               0,
+                End,
+#endif
                 Child, (IPTR) VGroup,
                     InnerSpacing(4,4),
 

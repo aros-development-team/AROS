@@ -1,6 +1,6 @@
 /*
 
-    (C) 1995-2011 The AROS Development Team
+    (C) 1995-2020 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -40,12 +40,12 @@
     NAME
  
         Assign [(name):] [{(target)}] [LIST] [EXISTS] [DISMOUNT] [DEFER]
-	       [PATH] [ADD] [REMOVE] [VOLS] [DIRS] [DEVICES]
+	       [PATH] [ADD] [PREPEND] [REMOVE] [VOLS] [DIRS] [DEVICES]
  
     SYNOPSIS
  
         NAME, TARGET/M, LIST/S, EXISTS/S, DISMOUNT/S, DEFER/S, PATH/S, ADD/S,
-	REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
+	PREPEND/S, REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
  
     LOCATION
  
@@ -83,6 +83,7 @@
 		      to exist when the ASSIGN command is executed
 	ADD       --  don't replace an assign but add another object for a
                       NAME (multi-assigns)
+	PREPEND   --  like ADD, but puts the assign at the front of the list
 	REMOVE    --  remove an ASSIGN
 	VOLS      --  show assigned volumes if in LIST mode
 	DIRS      --  show assigned directories if in LIST mode
@@ -108,7 +109,7 @@
 	There are some fundamental building blocks that defines the semantics
 	of the Assign command.
  
-	Only one of the switches ADD, REMOVE, PATH and DEFER may be specified.
+	Only one of the switches ADD, PREPEND, REMOVE, PATH and DEFER may be specified.
  
 	If EXISTS is specified, only the name parameter is important.
  
@@ -128,9 +129,9 @@
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.9 (18.10.07) © AROS" ;
+static const char version[] = "\0$VER: Assign unofficial 50.10 (13.01.2020) © AROS" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.9 (18.10.07) © AROS" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.10 (13.01.2020) © AROS" ;
 #endif
 
 struct localdata
@@ -170,7 +171,7 @@ static void _DeferFlush(struct localdata *ld, BPTR fh);
 
 
 static
-const UBYTE template[] =
+const UBYTE argtemplate[] =
 "NAME,"
 "TARGET/M,"
 "LIST/S,"
@@ -178,7 +179,8 @@ const UBYTE template[] =
 "DISMOUNT/S,"
 "DEFER/S,"
 "PATH/S,"
-"ADD/S,"
+"ADD=APPEND/S,"
+"PREPEND/S,"
 "REMOVE/S,"
 "VOLS/S,"
 "DIRS/S,"
@@ -194,6 +196,7 @@ struct ArgList
     IPTR defer;
     IPTR path;
     IPTR add;
+    IPTR prepend;
     IPTR remove;
     IPTR vols;
     IPTR dirs;
@@ -223,14 +226,14 @@ static int Main(struct ExecBase *sBase)
 
 		NEWLIST(&DeferList);
 
-		readarg = ReadArgs(template, (IPTR *)MyArgList, NULL);
+		readarg = ReadArgs(argtemplate, (IPTR *)MyArgList, NULL);
 		if (readarg)
 		{
 			/* Verify mutually exclusive args
 			 */
-			if ((MyArgList->add!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
+			if ((MyArgList->add!=0) + (MyArgList->prepend!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
 			{
-				PutStr("Only one of ADD, REMOVE, PATH or DEFER is allowed\n");
+				PutStr("Only one of ADD/APPEND, PREPEND, REMOVE, PATH or DEFER is allowed\n");
 				FreeArgs(readarg);
 				CloseLibrary((struct Library *) DOSBase);
 				return RETURN_FAIL;

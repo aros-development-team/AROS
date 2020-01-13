@@ -2,8 +2,11 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FONTSDIRPL  := $(AROSDIR)/Fonts/AmigaPL
+FONTSDIRPL  := $(AROSDIR)/Storage/Fonts/AmigaPL
+EXCLUDEFILES := \
+        mmakefile.src \
+        AmigaPL_fonts.readme
 
 #MM- workbench-fonts : workbench-fontsPL
 
-%copy_dir_recursive mmake=workbench-fontsPL dst=$(FONTSDIRPL) excludefiles="mmakefile AmigaPL_fonts.readme"
+%copy_dir_recursive mmake=workbench-fontsPL dst=$(FONTSDIRPL) excludefiles="$(EXCLUDEFILES)"
