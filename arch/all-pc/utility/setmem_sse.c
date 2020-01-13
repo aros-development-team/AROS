@@ -1,6 +1,6 @@
 #ifdef __SSE__
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -29,7 +29,7 @@ static VOID __smallsetmem(APTR destination, UBYTE c, ULONG length)
 
 /*  SYNOPSIS */
         AROS_LHA(APTR, destination, A0),
-        AROS_LHA(ULONG, c, D0),
+        AROS_LHA(UBYTE, c, D0),
         AROS_LHA(LONG, length, D1),
 
 /*  LOCATION */
@@ -71,7 +71,7 @@ static VOID __smallsetmem(APTR destination, UBYTE c, ULONG length)
     {
         ULONG presize, ssefillcount;
 
-        presize = (((((IPTR) destination + 16 ) & ~0xF) - (IPTR)destination) % 16);
+        presize = (((IPTR) destination + 15 ) & ~15) - (IPTR)destination;
         ssefillcount = (length - presize) / 16;
         postsize = length - ssefillcount * 16 - presize;
 
