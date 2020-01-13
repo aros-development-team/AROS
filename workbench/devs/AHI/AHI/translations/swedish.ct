@@ -282,7 +282,7 @@ Kan inte hitta `%s'!
 ;
 msgTextNoOpen
 Kan inte öppna `%s', version %ld.
-; Unable to open `%sŽ version %ld.
+; Unable to open `%s version %ld.
 ;
 ; *** Additions
 ;
