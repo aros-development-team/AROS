@@ -1092,7 +1092,7 @@ struct card_def
 };
 
 #define NBR_CARDS 11
-struct card_def cards[NBR_CARDS];
+extern struct card_def cards[NBR_CARDS];
 
 void rtl8169_get_functions(struct RTL8169Unit *Unit);
 void rtl8169_USecDelay(struct net_device *, ULONG);
