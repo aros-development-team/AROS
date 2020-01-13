@@ -328,7 +328,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
              * works on AROS 64-bit.
              */
             if ((hunktype & 0xFFFFFF) == HUNK_RELRELOC32)
-              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(curhunk)));
+              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(lasthunk)));
             else
               *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
 
