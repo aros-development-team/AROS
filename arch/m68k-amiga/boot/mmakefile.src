@@ -84,6 +84,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     linklibs-loadseg \
 #MM     compiler-stdc \
 #MM     compiler-stdcio \
+#MM     hidd-m68k-sagagfx \
 #MM     compiler-posixc
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
