@@ -13,7 +13,7 @@ trigger:
 
 jobs:
 - job: Build
-  timeoutInMinutes: 240
+  timeoutInMinutes: 360
   pool:
     vmImage: '$(arosbuild.vmimage)'
 
