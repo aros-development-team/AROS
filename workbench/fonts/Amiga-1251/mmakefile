@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FONTSDIRRU  := $(AROSDIR)/Fonts/Amiga-1251
+FONTSDIRRU  := $(AROSDIR)/Storage/Fonts/Amiga-1251
 
 FONTSRU     := XEN_Amiga-1251 XHelvetica_Amiga-1251 topaz_Amiga-1251 SWScrFont_Amiga-1251 Scala_Amiga-1251
 FONTFILESRU := $(foreach f, $(FONTSRU), $(foreach s, $(filter-out $(f)/CVS, $(wildcard $(f)/*)), $(FONTSDIRRU)/$(s)))
