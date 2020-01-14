@@ -69,7 +69,7 @@ static struct completioninfo *InitCompletion(struct filehandle *fh, BOOL withinf
     APTR pool;
 
     if (fh->gtbase == NULL)
-        fh->gtbase = OpenLibrary("gadtools.library", 39);
+        fh->gtbase = TaggedOpenLibrary(TAGGEDOPEN_GADTOOLS);
 
     if (fh->gfxbase == NULL)
         fh->gfxbase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
