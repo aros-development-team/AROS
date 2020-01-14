@@ -283,7 +283,7 @@ msgTextNoFind
 ;
 msgTextNoOpen
 '%s' version %ld avaaminen epäonnistui.
-; Unable to open `%s version %ld.
+; Unable to open `%s? version %ld.
 ;
 ; *** Additions
 ;

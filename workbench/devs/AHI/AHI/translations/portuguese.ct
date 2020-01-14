@@ -1,8 +1,8 @@
 ## version $VER: ahiprefs.catalog 4.6 (4.8.2004)
-## language portuguÍs
+## language portugu√™s
 ## codeset 0
 ;
-## chunk AUTH Translated by Frederico Borges <famb@mail.telepac.pt> & R˙ben Alvim <mindwalker@mail.telepac.pt>
+## chunk AUTH Translated by Frederico Borges <famb@mail.telepac.pt> & R√∫ben Alvim <mindwalker@mail.telepac.pt>
 ;#language english
 ;#version 4
 ;
@@ -51,11 +51,11 @@ msgMenuEdit
 ; \000Edit
 ;
 msgItemDefaults
-H\000Voltar ‡ ConfiguraÁ„o Habitual
+H\000Voltar √† Configura√ß√£o Habitual
 ; D\000Reset To Defaults
 ;
 msgItemLastSaved
-U\000⁄ltima ConfiguraÁ„o Gravada
+U\000√öltima Configura√ß√£o Gravada
 ; L\000Last Saved
 ;
 msgItemRestore
@@ -63,11 +63,11 @@ R\000Restaurar o Estado Anterior
 ; R\000Restore
 ;
 msgMenuSettings
-\000OpÁıes
+\000Op√ß√µes
 ; \000Settings
 ;
 msgItemCreateIcons
-I\000Criar Õcones?
+I\000Criar √çcones?
 ; I\000Create Icons?
 ;
 msgMenuHelp
@@ -83,17 +83,17 @@ G\000Guia do Utilizador do AHI...
 ; H\000AHI User's guide...
 ;
 msgItemConceptIndex
-\000Õndice de Conceitos...
+\000√çndice de Conceitos...
 ; \000Concept Index...
 ;
 ; *** The pages ***
 ;
 msgPageMode
-ConfiguraÁ„o do Modo
+Configura√ß√£o do Modo
 ; Mode settings
 ;
 msgPageAdvanced
-ConfiguraÁıes AvanÁadas
+Configura√ß√µes Avan√ßadas
 ; Advanced settings
 ;
 ; *** The units ***
@@ -103,13 +103,13 @@ Unidade: %ld
 ; Unit %ld
 ;
 msgUnitMusic
-Unidade de M˙sica
+Unidade de M√∫sica
 ; Music unit
 ;
 ; *** Properties box ***
 ;
 msgProperties
-ID do Modo\nGravaÁ„o\nAutor\n"Copyright"\n"Driver"\nVers„o\nAnnotation
+ID do Modo\nGrava√ß√£o\nAutor\n"Copyright"\n"Driver"\nVers√£o\nAnnotation
 ; Mode ID\nRecording\nAuthor\nCopyright\nDriver\nVersion\nAnnotation
 ;
 msgPropRecordFull
@@ -121,17 +121,17 @@ msgPropRecordHalf
 ; Half duplex
 ;
 msgPropRecordNone
-N„o
+N√£o
 ; Nope
 ;
 ; *** Options ***
 ;
 msgOptions
-OpÁıes
+Op√ß√µes
 ; Options
 ;
 msgOptFrequency
-_FrequÍncia
+_Frequ√™ncia
 ; _Frequency
 ;
 msgOptChannels
@@ -147,7 +147,7 @@ _Volume
 ; _Volume
 ;
 msgOptMonitor
-_MonitorizaÁ„o
+_Monitoriza√ß√£o
 ; _Monitor
 ;
 msgOptGain
@@ -167,18 +167,18 @@ Sem Entradas
 ; No inputs
 ;
 msgOptOutput
-_SaÌda
+_Sa√≠da
 ; _Output
 ;
 msgOptNoOutputs
-Sem SaÌdas
+Sem Sa√≠das
 ; No outputs
 ;
 ;
 ; *** Global Options ***
 ;
 msgGlobalOptions
-OpÁıes Globais
+Op√ß√µes Globais
 ; Global options
 ;
 msgGlobOptDebugLevel
@@ -190,7 +190,7 @@ _Eco
 ; _Echo
 ;
 msgGlobOptSurround
-"Surround" nos Modos "_R·pidos"
+"Surround" nos Modos "_R√°pidos"
 ; Surround in "_Fast" modes
 ;
 msgGlobOptCPULimit
@@ -222,7 +222,7 @@ Ligado
 ; Enabled
 ;
 msgEchoFast
-R·pido
+R√°pido
 ; Fast
 ;
 msgEchoDisabled
@@ -263,26 +263,26 @@ msgTextProgramName
 
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright ¬©%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s\nTraduÁ„o para PortuguÍs por Frederico Borges & R˙ben Alvim / ATO
-; %s%s\nCopyright ©%s
+%s%s\nCopyright ¬©%s\nTradu√ß√£o para Portugu√™s por Frederico Borges & R√∫ben Alvim / ATO
+; %s%s\nCopyright ¬©%s
 ;
 msgTextNoWindow
-N„o foi possÌvel abrir a janela.
+N√£o foi poss√≠vel abrir a janela.
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-N„o foi possÌvel localizar Seleccionador de Ficheiros
+N√£o foi poss√≠vel localizar Seleccionador de Ficheiros
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
-N„o foi possÌvel encontrar o `%s'!
+N√£o foi poss√≠vel encontrar o `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-N„o foi possÌvel abrir a `%s¥ vers„o %ld.
-; Unable to open `%s¥ version %ld.
+N√£o foi poss√≠vel abrir a `%s¬¥ vers√£o %ld.
+; Unable to open `%s¬¥ version %ld.
 ;
 ; *** Additions
 ;

@@ -282,7 +282,7 @@ msgTextNoFind
 ;
 msgTextNoOpen
 Imposible abrir `%s' versión %ld.
-; Unable to open `%s version %ld.
+; Unable to open `%s? version %ld.
 ;
 ; *** Additions
 ;
