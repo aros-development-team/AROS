@@ -9,6 +9,15 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/alib.h>
+#include <proto/gadtools.h>
+#include <proto/asl.h>
+
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <utility/utility.h>
@@ -18,14 +27,6 @@
 #include <libraries/asl.h>
 #include <devices/rawkeycodes.h>
 
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
-#include <proto/utility.h>
-#include <proto/alib.h>
-#include <proto/gadtools.h>
-#include <proto/asl.h>
 #include "con_handler_intern.h"
 #include "support.h"
 #include "completion.h"
@@ -71,7 +72,7 @@ static struct completioninfo *InitCompletion(struct filehandle *fh, BOOL withinf
         fh->gtbase = OpenLibrary("gadtools.library", 39);
 
     if (fh->gfxbase == NULL)
-        fh->gfxbase = (APTR) OpenLibrary("graphics.library", 39);
+        fh->gfxbase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 
     if (fh->lastwritetask && GadToolsBase)
         if (fh->lastwritetask->tc_Node.ln_Type == NT_PROCESS)

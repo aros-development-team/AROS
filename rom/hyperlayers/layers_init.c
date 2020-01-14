@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Layers Resident and initialization.
@@ -7,15 +7,17 @@
 */
 
 #include LC_LIBDEFS_FILE
-#include <graphics/gfxbase.h>
+
 #include <proto/exec.h>
+
+#include <graphics/gfxbase.h>
 #include <aros/symbolsets.h>
 
 #include "layers_intern.h"
 
 static int LayersInit(LIBBASETYPEPTR LIBBASE)
 {
-    GfxBase = (APTR)OpenLibrary("graphics.library", 41);
+    GfxBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (GfxBase == NULL)
         return FALSE;
 

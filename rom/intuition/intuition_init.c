@@ -6,6 +6,15 @@
 
 /****************************************************************************************/
 
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <proto/graphics.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/oop.h>
+#include <proto/alib.h>
+
 #include <string.h>
 #include <exec/lists.h>
 #include <exec/resident.h>
@@ -14,11 +23,6 @@
 #include <exec/alerts.h>
 #include <hidd/gfx.h>
 #include <oop/oop.h>
-#include <proto/graphics.h>
-#include <proto/exec.h>
-#include <proto/intuition.h>
-#include <proto/oop.h>
-#include <proto/alib.h>
 #include <devices/input.h>
 #include <intuition/classes.h>
 #include <intuition/pointerclass.h>
@@ -38,9 +42,6 @@
     #include "transplayers.h"
     #include "smallmenu.h"
 #endif
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 #ifdef INTUITION_NOTIFY_SUPPORT
 /* screennotify/notifyintuition init routines from notify.c */
@@ -97,7 +98,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     /* Open our dependencies */
     if (!(GetPrivIBase(LIBBASE)->UtilityBase = OpenLibrary("utility.library", 0))) {
         return FALSE;
-    } else if (!(GfxBase = GetPrivIBase(LIBBASE)->GfxBase = (APTR)OpenLibrary("graphics.library", 41))) {
+    } else if (!(GfxBase = GetPrivIBase(LIBBASE)->GfxBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
     } else if (!(GetPrivIBase(LIBBASE)->LayersBase = (APTR)OpenLibrary("layers.library", 41))) {
