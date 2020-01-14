@@ -1,42 +1,42 @@
 ## version $VER: multiview.catalog 1.0 (13.08.2008)
 ## codeset 0
-## language português
+## language portuguÃªs
 ;
-; Translated by João Ralha (hardwired)
+; Translated by JoÃ£o Ralha (hardwired)
 ;
 ;
 MSG_CANT_OPEN_LIB
-Não conseguiu abrir %s V%ld!\n
+NÃ£o conseguiu abrir %s V%ld!\n
 ;Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC
-Não foi possível criar os objetos de interconexão!
+NÃ£o foi possÃ­vel criar os objetos de interconexÃ£o!
 ;Can't create interconnection objects!
 ;
 MSG_CANT_LOCK_SCR
-Não é possível bloquear\no écran público!
+NÃ£o Ã© possÃ­vel bloquear\no Ã©cran pÃºblico!
 ;Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Não foi possível obter DrawInfo!
+NÃ£o foi possÃ­vel obter DrawInfo!
 ;
 MSG_CANT_GET_VI
-Não foi possível obter VisualInfo!
+NÃ£o foi possÃ­vel obter VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Não foi possível criar as imagens SYSICLASS!
+NÃ£o foi possÃ­vel criar as imagens SYSICLASS!
 ;Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Não foi possível criar os botões!
+NÃ£o foi possÃ­vel criar os botÃµes!
 ;Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Não foi possível criar os menus!
+NÃ£o foi possÃ­vel criar os menus!
 ;Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Não foi possível criar a janela!
+NÃ£o foi possÃ­vel criar a janela!
 ;Can't create window!
 ;
 MSG_SAVE_FAILED
@@ -88,7 +88,7 @@ MSG_MEN_EDIT_SELECTALL
 ;[\0Select All
 ;
 MSG_MEN_EDIT_CLEARSELECTED
-]\0Limpar a selecção
+]\0Limpar a selecÃ§Ã£o
 ;]\0Clear Selected
 ;
 MSG_MEN_WINDOW
@@ -96,7 +96,7 @@ Janela
 ;Window
 ;
 MSG_MEN_WINDOW_SEPSCREEN
- \0Usar écran próprio
+ \0Usar Ã©cran prÃ³prio
 ; \0Use Separate Screen
 ;
 MSG_MEN_WINDOW_MINIMIZE
@@ -112,7 +112,7 @@ MSG_MEN_WINDOW_MAXIMIZE
 ; \0Maximize
 ;
 MSG_MEN_SETTINGS
-Configurações
+ConfiguraÃ§Ãµes
 ;Settings
 ;
 MSG_MEN_SETTINGS_SAVEDEF
@@ -136,15 +136,15 @@ MSG_MEN_PICT_RESET
 ; \0Reset Size
 ;
 MSG_MEN_PICT_FIT_WIN
- \0Ajustar à janela
+ \0Ajustar Ã  janela
 ; \0Fit to Window
 ;
 MSG_MEN_PICT_KEEP_ASPECT
- \0Conservar as proporções
+ \0Conservar as proporÃ§Ãµes
 ; \0Keep Aspect Ratio
 ;
 MSG_MEN_PICT_FORCE_MAP
- \0Forçar mapeamento de cores
+ \0ForÃ§ar mapeamento de cores
 ; \0Force Palette Mapping
 ;
 MSG_MEN_PICT_DITHER
