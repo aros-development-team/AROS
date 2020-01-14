@@ -1,11 +1,14 @@
 /*
-    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "state_tracker/st_gl_api.h"
 #include "state_tracker/st_api.h"
