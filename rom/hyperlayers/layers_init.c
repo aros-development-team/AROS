@@ -21,7 +21,7 @@ static int LayersInit(LIBBASETYPEPTR LIBBASE)
     if (GfxBase == NULL)
         return FALSE;
 
-    UtilityBase = (APTR)OpenLibrary("utility.library", 0);
+    UtilityBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (UtilityBase == NULL) {
         CloseLibrary((APTR)GfxBase);
         return FALSE;

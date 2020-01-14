@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -83,7 +83,7 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
 
     D(bug("[AHCI--] %s: ahci.device Initialization\n", __PRETTY_FUNCTION__);)
 
-    AHCIBase->ahci_UtilityBase = OpenLibrary("utility.library", 36);
+    AHCIBase->ahci_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!AHCIBase->ahci_UtilityBase)
         return FALSE;
 

@@ -47,7 +47,7 @@ static int Security_AfterDOS(LIBBASETYPEPTR secBase)
 
     if (!(DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS)) ||
              !(IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION)) ||
-             !(UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)) ||
+             !(UtilityBase = (struct UtilityBase *)TaggedOpenLibrary(TAGGEDOPEN_UTILITY)) ||
              !(ReqToolsBase = (struct ReqToolsBase *)OpenLibrary("reqtools.library", 38)) ||
              !CreateServer(secBase))
     {

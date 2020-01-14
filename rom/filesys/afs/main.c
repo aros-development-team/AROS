@@ -51,7 +51,7 @@ static struct AFSBase *AFS_alloc(void)
     if (handler == NULL)
     	return NULL;
 
-    handler->utilitybase = OpenLibrary("utility.library",0);
+    handler->utilitybase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (handler->utilitybase != NULL) {
 	handler->dosbase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS);
 	if (handler->dosbase != NULL) {

@@ -96,7 +96,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->ExecLockBase = OpenResource("execlock.resource");
 #endif
     /* Open our dependencies */
-    if (!(GetPrivIBase(LIBBASE)->UtilityBase = OpenLibrary("utility.library", 0))) {
+    if (!(GetPrivIBase(LIBBASE)->UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
         return FALSE;
     } else if (!(GfxBase = GetPrivIBase(LIBBASE)->GfxBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);

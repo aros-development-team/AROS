@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: kbd Hidd for standalone i386 AROS
@@ -36,7 +36,7 @@ static int PCKbd_InitAttrs(struct kbdbase *LIBBASE)
     if (!LIBBASE->ksd.cs_KernelBase)
         return FALSE;
 
-    LIBBASE->ksd.cs_UtilityBase = OpenLibrary("utility.library", 36);
+    LIBBASE->ksd.cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->ksd.cs_UtilityBase)
         return FALSE;
         

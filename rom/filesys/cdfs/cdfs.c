@@ -228,7 +228,7 @@ static struct CDFS *CDFS_Init(struct ExecBase *SysBase)
     Forbid();
     cdfs = (struct CDFS *)FindSemaphore("CDFS");
     if (cdfs == NULL) {
-        if ((dispose->cb_UtilityBase = OpenLibrary("utility.library",0))) {
+        if ((dispose->cb_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
             cdfs = dispose;
             dispose = NULL;
             InitSemaphore(&cdfs->cb_Semaphore);

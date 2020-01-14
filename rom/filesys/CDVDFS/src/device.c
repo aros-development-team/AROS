@@ -237,7 +237,7 @@ ULONG signals;
      */
     global->DosProc = (PROC *) FindTask(NULL);
     DOSBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_DOS);
-    UtilityBase = (APTR)OpenLibrary("utility.library",37);
+    UtilityBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     CodesetsBase = NULL;
 
     global->Dback = CreateMsgPort();

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@ static int PCI_Init(struct pcibase *LIBBASE)
     if (!LIBBASE->psd.kernelBase)
         return FALSE;
 
-    LIBBASE->psd.utilityBase = OpenLibrary("utility.library", 36);
+    LIBBASE->psd.utilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->psd.utilityBase)
         return FALSE;
         

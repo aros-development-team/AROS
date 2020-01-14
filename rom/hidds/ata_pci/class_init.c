@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2019, The AROS Development Team. All rights reserved
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -49,7 +49,7 @@ static int pciata_init(struct atapciBase *base)
 {
     D(bug("[ATA:PCI] %s()\n", __PRETTY_FUNCTION__));
 
-    base->cs_UtilityBase = OpenLibrary("utility.library", 36);
+    base->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!base->cs_UtilityBase)
         return FALSE;
 

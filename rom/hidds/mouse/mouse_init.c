@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,7 +23,7 @@ static int Mouse_InitClass(struct mousebase *LIBBASE)
 {
     D(bug("[Mouse] base class initialization\n"));
 
-    LIBBASE->csd.cs_UtilityBase = OpenLibrary("utility.library", 36);
+    LIBBASE->csd.cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->csd.cs_UtilityBase)
         return FALSE;
 

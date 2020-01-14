@@ -200,7 +200,7 @@ static int SCSI_init(struct scsiBase *SCSIBase)
         }
     }
 
-    SCSIBase->scsi_UtilityBase = OpenLibrary("utility.library", 36);
+    SCSIBase->scsi_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!SCSIBase->scsi_UtilityBase)
     {
         bug("[SCSI--] %s: Failed to open utility.library v36\n", __PRETTY_FUNCTION__);

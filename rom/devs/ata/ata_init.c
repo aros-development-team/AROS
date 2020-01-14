@@ -199,7 +199,7 @@ static int ATA_init(struct ataBase *ATABase)
         }
     }
 
-    ATABase->ata_UtilityBase = OpenLibrary("utility.library", 36);
+    ATABase->ata_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!ATABase->ata_UtilityBase)
     {
         bug("[ATA--] %s: Failed to open utility.library v36\n", __PRETTY_FUNCTION__);
