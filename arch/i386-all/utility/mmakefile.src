@@ -5,9 +5,15 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/utility
 
-FILES := 
+FILES := \
+    utility_archinit
 
 #MM- kernel-utility-i386 : includes
 
 # generate rules to build kernel-utility-pc for i386 also...
 %gen_archfamilyrules mainmmake=kernel-utility family=pc arch=i386
+
+%build_archspecific mainmmake=kernel-utility modname=utility maindir=rom/utility \
+    arch=i386 files=$(FILES)
+
+%common
