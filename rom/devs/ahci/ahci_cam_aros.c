@@ -31,7 +31,6 @@
 
 #include LC_LIBDEFS_FILE
 
-static const char *str_ha0 = "HA0";
 static const char *str_typedisk = "DISK";
 static const char *str_typeatapi = "ATAPI";
 static const char *str_typeunk = "UNKNOWN(ATAPI?)";
@@ -224,7 +223,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
     struct ExpansionBase *ExpansionBase;
     BOOL dos_loaded;
     struct DeviceNode *devnode;
-    TEXT dosdevname[4] = str_ha0;
+    TEXT dosdevname[4] = "HA0";
     const ULONG DOS_ID = AROS_MAKE_ID('D','O','S','\001');
     const ULONG CDROM_ID = AROS_MAKE_ID('C','D','V','D');
 
