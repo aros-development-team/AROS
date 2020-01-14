@@ -1,5 +1,5 @@
 ;
-;	$VER: security.cd 1.0 (14.09.2018)
+;	$VER: Security.cd 1.0 (28.02.94)
 ;
 ; misc. strings
 ;
@@ -16,7 +16,7 @@ MSG_LOGINREQ_GUI(//)
 Security Login Request
 ;
 MSG_LOGINPROMPT_GUI(//)
-AROS %s at %s\n\nEnter your Login ID
+\33cWelcome to the AROS Research OS\nAROS Version: %s\n\nPlease fill in your user details\nto log onto %s.
 ;
 MSG_LOGINREQ_CON(//)
 \033[0;0H\033[J\n\n\n     AROS %s at %s\n
@@ -45,7 +45,7 @@ Logged in on %s, %s at %s.\n\nNever logged in before.
 ; warning strings
 ;
 MSG_NOMUFS(100//)
-You must have at least one partition with the MultiUserFileSystem
+You must have at least one partition with the AFFS FileSystem
 ;
 MSG_NOCONFIGFILE(//)
 Couldn't load the configuration file\nUsing the default configuration
