@@ -8,7 +8,7 @@ Snoopy
 ; Snoopy
 ;
 MSG_COPYRIGHT
-© 2006-2008, The AROS Development Team
+Â© 2006-2008, The AROS Development Team
 ; \xa9 2006-2008, The AROS Development Team
 ;
 MSG_AUTHOR
@@ -68,7 +68,7 @@ Lagre
 ; Save
 ;
 MSG_OPEN
-Åpne
+Ã…pne
 ; Open
 ;
 MSG_USE
@@ -100,7 +100,7 @@ Handling
 ; Action
 ;
 MSG_TARGET
-Mål
+MÃ¥l
 ; Target
 ;
 MSG_OPTION
@@ -128,7 +128,7 @@ Tilbakestill oppdatering|Avbryt
 ; Reset Patches|Cancel
 ;
 MSG_ASK_RESET
-Ønsker du virkelig å tilbakestille oppdateringene til deres opprinnelige funksjoner?
+Ã˜nsker du virkelig Ã¥ tilbakestille oppdateringene til deres opprinnelige funksjoner?
 ; Do you really want to reset the patches to their original functions?
 ;
 MSG_REMOVE_SNOOP
@@ -136,8 +136,8 @@ Fjern|Behold
 ; Remove|Keep
 ;
 MSG_ASK_REMOVE
-Ønsker du virkelig å fjerne Snoopy prosessen?\n\
-Dette kan være farlig hvis en annen prosess hare endret Snoopy sine endringer..
+Ã˜nsker du virkelig Ã¥ fjerne Snoopy prosessen?\n\
+Dette kan vÃ¦re farlig hvis en annen prosess hare endret Snoopy sine endringer..
 ; Do you really want to remove the Snoopy process?\n\
 ; This can be quite dangerous when another task has patched Snoopy's patches.
 ;
@@ -182,6 +182,6 @@ Versjon %ld
 ; Version %ld
 ;
 MSG_SIZE
-Størrelse %d
+StÃ¸rrelse %d
 ; Size %d
 ;

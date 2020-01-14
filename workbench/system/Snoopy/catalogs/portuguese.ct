@@ -1,16 +1,16 @@
 ## version $VER: snoopy.catalog 1.0 (06.09.2008)
-## language português
+## language portuguÃªs
 ## codeset 0
 ;
 ; TODO: update translation and set version to 2
 ;
-; Translated by João Ralha
+; Translated by JoÃ£o Ralha
 ;
 MSG_TITLE
 Snoopy
 ;
 MSG_COPYRIGHT
-© 2006, The AROS Development Team
+Â© 2006, The AROS Development Team
 ;
 MSG_AUTHOR
 The AROS Development Team
@@ -23,17 +23,17 @@ Um simples supervisor do sistema
 ;Simple system monitor
 ;
 MSG_SETTINGS
-Configurações
+ConfiguraÃ§Ãµes
 ;Settings
 ;
 MSG_SHOW_FAILS
-Mostrar só falhas
-;Mostrar sólo las fallas
+Mostrar sÃ³ falhas
+;Mostrar sÃ³lo las fallas
 ;Only show fails
 ;
 MSG_CLI_NUMBER
-Ver o nº da CLI
-;Mostrar el número de CLI
+Ver o nÂº da CLI
+;Mostrar el nÃºmero de CLI
 ;Show CLI number
 ;
 MSG_FULL_PATH
@@ -51,11 +51,11 @@ Ignorar Workbench/Shell
 ;Ignore Workbench/Shell
 ;
 MSG_SYSTEM_FUNC
-Funções de Sistema
+FunÃ§Ãµes de Sistema
 ;System Functions
 ;
 MSG_DOS_FUNC
-Funções AmigaDOS
+FunÃ§Ãµes AmigaDOS
 ;AmigaDOS Functions
 ;
 MSG_SAVE
@@ -82,7 +82,7 @@ Cancelar
 ;Cancel
 ;
 MSG_OUTPUT_FIELD
-Largura do Campo de Saída
+Largura do Campo de SaÃ­da
 ;Output Field Width
 ;
 MSG_NAME
@@ -90,7 +90,7 @@ Nome
 ;Name
 ;
 MSG_ACTION
-Acção
+AcÃ§Ã£o
 ;Action
 ;
 MSG_TARGET
@@ -98,7 +98,7 @@ Destino
 ;Target
 ;
 MSG_OPTION
-Opção
+OpÃ§Ã£o
 ;Option
 ;
 MSG_OK
@@ -122,8 +122,8 @@ Restaurar Patches|Cancelar
 ;Reset Patches|Cancel
 ;
 MSG_ASK_RESET
-Queres restaurar os patches \nás suas funções originais?
-;¿Quieres regresar los parches a sus funciones originales?
+Queres restaurar os patches \nÃ¡s suas funÃ§Ãµes originais?
+;Â¿Quieres regresar los parches a sus funciones originales?
 ;Do you really want to reset the patches to their original functions?
 ;
 MSG_REMOVE_SNOOP
@@ -169,7 +169,7 @@ Modificar
 ;Modify
 ;
 MSG_VERSION
-Versão %ld
+VersÃ£o %ld
 ;Version %ld
 ;
 MSG_SIZE
