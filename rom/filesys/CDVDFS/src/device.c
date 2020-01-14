@@ -5,7 +5,7 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2013 The AROS Development Team
+ *              (C) Copyright 2002-2020 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
@@ -236,7 +236,7 @@ ULONG signals;
      *  process only.
      */
     global->DosProc = (PROC *) FindTask(NULL);
-    DOSBase = (APTR)OpenLibrary("dos.library",37);
+    DOSBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_DOS);
     UtilityBase = (APTR)OpenLibrary("utility.library",37);
     CodesetsBase = NULL;
 

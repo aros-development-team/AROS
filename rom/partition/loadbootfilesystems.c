@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,7 +52,7 @@
     struct DosLibrary *DOSBase;
     ULONG lasterr = 0;
 
-    PBASE(PartitionBase)->pb_DOSBase = OpenLibrary("dos.library", 36);
+    PBASE(PartitionBase)->pb_DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
     DOSBase = (struct DosLibrary *)PBASE(PartitionBase)->pb_DOSBase;
     /* We should really have dos.library online now */
     D(bug("[LoadBootPartitions] DOSBase 0x%p\n", DOSBase));

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a bootable device into the system.
@@ -128,7 +128,7 @@
     ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
     /* See if DOS is up and running... */
-    DOSBase = OpenLibrary("dos.library", 0);
+    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
     /* See if DOS has chosen a boot device yet */
     if (!(ExpansionBase->Flags & EBF_DOSFLAG))

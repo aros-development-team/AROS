@@ -45,7 +45,7 @@ static int Security_AfterDOS(LIBBASETYPEPTR secBase)
      *  reqtools.library V38+ and create the Server
      */
 
-    if (!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37)) ||
+    if (!(DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS)) ||
              !(IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION)) ||
              !(UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)) ||
              !(ReqToolsBase = (struct ReqToolsBase *)OpenLibrary("reqtools.library", 38)) ||

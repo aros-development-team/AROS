@@ -1,5 +1,5 @@
 /*
-   Copyright © 2001-2011, The AROS Development Team. All rights reserved.
+   Copyright © 2001-2020, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Partition initialization code
@@ -25,7 +25,7 @@ static int PartitionInit(LIBBASETYPEPTR LIBBASE)
      * It will fail if we are in kickstart; partition.library is initialized
      * long before dos.library.
      */
-    LIBBASE->pb_DOSBase = OpenLibrary("dos.library", 36);
+    LIBBASE->pb_DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
     return TRUE;
 }
