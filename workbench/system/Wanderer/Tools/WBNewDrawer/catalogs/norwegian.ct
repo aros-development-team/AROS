@@ -12,7 +12,7 @@ Oppretter en ny skuff med valgfritt ikon
 ; Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT
-©2006, AROS Dev Team
+Â©2006, AROS Dev Team
 ; \xa92006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
@@ -20,11 +20,11 @@ Opprett ny skuff
 ; Create new drawer
 ;
 MSG_LINE
-Skriv inn navnet på den nye skuffen
+Skriv inn navnet pÃ¥ den nye skuffen
 ; Enter the name of the new drawer
 ;
 MSG_NAME
-Nytt navn på skuffen:
+Nytt navn pÃ¥ skuffen:
 ; New drawer name:
 ;
 MSG_ICON
@@ -52,7 +52,7 @@ MSG_ALREADY_EXIST
 ; '%s' already exists!
 ;
 MSG_CANT_CREATE
-Klarer ikke å opprette skuffen '%s'!
+Klarer ikke Ã¥ opprette skuffen '%s'!
 ; Can't create drawer '%s'!
 ;
 MSG_INFO_ALREADY
@@ -68,7 +68,7 @@ Trenger 2 argumenter!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Ugyldig kataloglås!
+Ugyldig kataloglÃ¥s!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY

@@ -1,30 +1,30 @@
 ## version $VER: wbnewdrawer.catalog 2.0 (30.03.2016)
-## language português
+## language portuguÃªs
 ## codeset 0
 ;
-; Translated by João Ralha (hardwired)
+; Translated by JoÃ£o Ralha (hardwired)
 ;
 MSG_TITLE
 WBNewDrawer
-;WBNuevoCajón
+;WBNuevoCajÃ³n
 ;
 MSG_DESCRIPTION
-Cria um directório com um icone opcional
+Cria um directÃ³rio com um icone opcional
 ;Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT
-©2006, AROS Dev Team
+Â©2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
-Criar um directório
+Criar um directÃ³rio
 ;Create new drawer
 ;
 MSG_LINE
-Escreva o nome do novo directório
+Escreva o nome do novo directÃ³rio
 ;Enter the name of the new drawer
 ;
 MSG_NAME
-Nome do directório:
+Nome do directÃ³rio:
 ;New drawer name:
 ;
 MSG_ICON
@@ -43,41 +43,41 @@ Mudar nome
 ;Rename_Me
 ;
 MSG_ERROR_TITLE
-WBNuevoCajón: Error
+WBNuevoCajÃ³n: Error
 ;WBNewDrawer: Erro
 ;
 MSG_ALREADY_EXIST
-¡'%s' já existe!
+Â¡'%s' jÃ¡ existe!
 ;'%s' already exists!
 ;
 MSG_CANT_CREATE
-¡No é possível criar o directório '%s'!
+Â¡No Ã© possÃ­vel criar o directÃ³rio '%s'!
 ;Can't create drawer '%s'!
 ;
 MSG_INFO_ALREADY
-¡'%s'.info já existe!
+Â¡'%s'.info jÃ¡ existe!
 ;'%s'.info already exists!
 ;
 MSG_ILLEGAL_CHARS
-¡'%s' contêm caracteres ilegais!
+Â¡'%s' contÃªm caracteres ilegais!
 ;'%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
-¡Necessita de dois argumentos!
+Â¡Necessita de dois argumentos!
 ;Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-¡Bloqueo inválido do directório!
+Â¡Bloqueo invÃ¡lido do directÃ³rio!
 ;Invalid directory lock!
 ;
 MSG_WB_ONLY
-¡Não pode iniciar a partir da shell!\n
+Â¡NÃ£o pode iniciar a partir da shell!\n
 ;Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-¡Não foi possível criar a aplicação!
+Â¡NÃ£o foi possÃ­vel criar a aplicaÃ§Ã£o!
 ;Failed to create Application!
 ;
 MSG_WRONG_ICON_TYPE
-¡O ficheiro de icone '%s'.info não é do tipo directório!
+Â¡O ficheiro de icone '%s'.info nÃ£o Ã© do tipo directÃ³rio!
 ;The existing icon file '%s'.info isn't of type Drawer!
