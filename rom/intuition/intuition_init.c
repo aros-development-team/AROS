@@ -105,7 +105,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
-    } else if (!(GetPrivIBase(LIBBASE)->KeymapBase = (APTR)OpenLibrary("keymap.library", 41))) {
+    } else if (!(GetPrivIBase(LIBBASE)->KeymapBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_KEYMAP))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->LayersBase);
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
