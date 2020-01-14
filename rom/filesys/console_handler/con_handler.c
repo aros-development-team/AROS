@@ -269,8 +269,8 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 
     fh->intuibase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     fh->dosbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_DOS);
-    fh->utilbase = (APTR) OpenLibrary("utility.library", 0);
-    fh->workbenchbase = (APTR) OpenLibrary("workbench.library", 0);
+    fh->utilbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    fh->workbenchbase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
 
 #if defined(__AROSPLATFORM_SMP__)
     if (ExecLockBase)

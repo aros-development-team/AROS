@@ -86,7 +86,7 @@ static UWORD const g_image_data[] = {
 
 void Init_Intui(struct CDVDBase *global) {
 	IntuitionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
-	WorkbenchBase = (APTR)OpenLibrary("workbench.library", 37);
+	WorkbenchBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
 	IconBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_ICON);
 	if (IconBase)
 		global->g_user_disk_object = GetDiskObject ("env:cdda");
