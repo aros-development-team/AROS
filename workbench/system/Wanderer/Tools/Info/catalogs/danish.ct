@@ -13,8 +13,8 @@ Vis ikonoplysninger
 ; Display Icon information
 ;
 MSG_COPYRIGHT
-Icon information\n© 2003-2010 The AROS Dev Team
-; Icon information\n© 2003-2010 The AROS Dev Team
+Icon information\nÂ© 2003-2010 The AROS Dev Team
+; Icon information\nÂ© 2003-2010 The AROS Dev Team
 ;
 MSG_ICON
 Ikon
@@ -25,7 +25,7 @@ Navn
 ; Name
 ;
 MSG_COMMENT
-Bemærkninger
+BemÃ¦rkninger
 ; Comment
 ;
 MSG_STACK
@@ -33,7 +33,7 @@ Stak
 ; Stack
 ;
 MSG_DEFTOOL
-Værktøj
+VÃ¦rktÃ¸j
 ; Tool
 ;
 MSG_ICONTYPE
@@ -49,7 +49,7 @@ Skuffe
 ; Drawer
 ;
 MSG_TOOL
-Værktøj
+VÃ¦rktÃ¸j
 ; Tool
 ;
 MSG_PROJECT
@@ -81,11 +81,11 @@ Beskyttelse
 ; Protection
 ;
 MSG_TOOLTYPES
-Værktøjstyper
+VÃ¦rktÃ¸jstyper
 ; Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-Fejl: Kan ikke køres fra skal
+Fejl: Kan ikke kÃ¸res fra skal
 ; Error: Cannot be started from shell
 ;
 MSG_ABOUT
@@ -97,7 +97,7 @@ Afslut
 ; Quit
 ;
 MSG_READ
-Læs
+LÃ¦s
 ; Read
 ;
 MSG_WRITE
@@ -105,7 +105,7 @@ Skriv
 ; Write
 ;
 MSG_EXECUTE
-Udfør
+UdfÃ¸r
 ; Execute
 ;
 MSG_DELETE
@@ -125,11 +125,11 @@ Arkiveret
 ; Archived
 ;
 MSG_STICKY
-Klæbrig
+KlÃ¦brig
 ; Sticky
 ;
 MSG_SIZE
-Størrelse
+StÃ¸rrelse
 ; Size
 ;
 MSG_VERSION
@@ -161,11 +161,11 @@ Dato
 ; Date
 ;
 MSG_NEW_KEY
-Ny nøgle
+Ny nÃ¸gle
 ; New key
 ;
 MSG_DELETE_KEY
-Slet nøgle
+Slet nÃ¸gle
 ; Delete key
 ;
 MSG_SAVE
