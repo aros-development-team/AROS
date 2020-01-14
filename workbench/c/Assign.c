@@ -11,6 +11,10 @@
 
 #define AROS_ALMOST_COMPATIBLE
 
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
+
 #ifdef __AROS__
 #include <aros/asmcall.h>
 #include <proto/arossupport.h>
@@ -27,8 +31,6 @@
 #include <dos/dosextens.h>
 #include <dos/exall.h>
 #include <utility/tagitem.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
 
 #include <string.h>
 
@@ -121,6 +123,8 @@
 
 ******************************************************************************/
 
+struct UtilityBase *UtilityBase;
+
 #ifndef __AROS__
 #define AROS_BSTR_strlen(s) *((UBYTE *)BADDR(s))
 #endif
@@ -129,9 +133,9 @@
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.10 (13.01.2020) © AROS" ;
+static const char version[] = "\0$VER: Assign unofficial 50.11 (13.01.2020) © AROS" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.10 (13.01.2020) © AROS" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.11 (13.01.2020) © AROS" ;
 #endif
 
 struct localdata
@@ -154,7 +158,7 @@ struct localdata
 static int Main(struct ExecBase *sBase);
 static int checkAssign(struct localdata *ld, STRPTR name);
 static int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
-             BOOL add, BOOL remove);
+             BOOL add, BOOL prepend, BOOL remove);
 static void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices);
 static int removeAssign(struct localdata *ld, STRPTR name);
 static STRPTR GetFullPath(struct localdata *ld, BPTR lock);
@@ -210,6 +214,93 @@ __startup AROS_PROCH(Start, argstr, argsize, sBase)
 	AROS_PROCFUNC_EXIT
 }
 
+#if !defined(AssignPrepend)
+BOOL _AssignAddToList(struct localdata *ld, CONST_STRPTR name, BPTR lock,  ULONG position)
+{
+    struct DosList     *dl;
+    struct AssignList **al, *newal;
+    int cnt = 0;
+    BOOL retval = DOSTRUE;
+
+    D(bug("[mount] %s('%s', 0x%p, %d)\n", __func__, name, lock, position);)
+
+    if(lock == BNULL)
+        return DOSFALSE;
+
+    dl = LockDosList(LDF_ASSIGNS | LDF_WRITE);
+    dl = FindDosEntry(dl, name, LDF_ASSIGNS);
+
+    if (dl != NULL)
+    {
+	D(bug("[Mount] %s: dl = 0x%p, type = %08x\n", __func__, dl, dl->dol_Type);)
+	if  (!(dl->dol_Type == DLT_VOLUME || dl->dol_Type == DLT_DEVICE))
+	{    
+	    newal = AllocVec(sizeof(struct AssignList), MEMF_PUBLIC | MEMF_CLEAR);
+	    if(newal != NULL)
+	    {
+		for(al = &dl->dol_misc.dol_assign.dol_List; *al && (cnt < position); al = &((*al)->al_Next), cnt++);
+		if (cnt == 0)
+		{
+		    char lnTmp[128];
+
+		    D(bug("[Mount] %s: replacing top level lock 0x%p\n", __func__, dl->dol_Lock);)
+		    if ((newal->al_Lock = dl->dol_Lock) == BNULL)
+		    {
+			newal->al_Lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
+		    }
+		    dl->dol_Lock = lock;
+		    if (NameFromLock(lock, lnTmp, sizeof(lnTmp)))
+		    {
+			STRPTR s2, oldin = dl->dol_misc.dol_assign.dol_AssignName;
+
+			s2 = (STRPTR)AllocVec(strlen(lnTmp) + 1, MEMF_PUBLIC | MEMF_CLEAR);
+			if (s2 != NULL)
+			{
+			    Strlcpy(s2, lnTmp, strlen(lnTmp) + 1);
+			    dl->dol_misc.dol_assign.dol_AssignName = s2;
+			    FreeVec(oldin);
+			}
+			else
+			{
+			    SetIoErr(ERROR_NO_FREE_STORE);
+			}
+		    }
+		}
+		else
+		{
+		    D(bug("[Mount] %s: inseting @ %d\n", __func__, cnt);)
+		    newal->al_Lock = lock;
+		}
+
+		if (*al)
+		    newal->al_Next = *al;
+		*al = newal;
+	    }
+	    else
+	    {
+		SetIoErr(ERROR_NO_FREE_STORE);
+		retval = DOSFALSE;
+	    }
+	}
+	else
+	{
+	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	    retval = DOSFALSE;
+	}
+    }
+    else
+    {
+        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	retval = DOSFALSE;
+    }
+    UnLockDosList(LDF_ASSIGNS | LDF_WRITE);
+
+    return retval;
+}
+#else
+#define _AssignAddToList(ld,name,lock,position) AssignAddToList(name,lock,position)
+#endif
+
 static int Main(struct ExecBase *sBase)
 {
 	struct localdata _ld, *ld = &_ld;
@@ -219,82 +310,86 @@ static int Main(struct ExecBase *sBase)
 	int error = RETURN_OK;
 
 	SysBase = sBase;
-	DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",37);
-	if (DOSBase)
+	UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",50);
+	if (UtilityBase)
 	{
-		memset(&arglist, 0, sizeof(arglist));
+	    DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",37);
+	    if (DOSBase)
+	    {
+		    SetMem(&arglist, 0, sizeof(arglist));
 
-		NEWLIST(&DeferList);
+		    NEWLIST(&DeferList);
 
-		readarg = ReadArgs(argtemplate, (IPTR *)MyArgList, NULL);
-		if (readarg)
-		{
-			/* Verify mutually exclusive args
-			 */
-			if ((MyArgList->add!=0) + (MyArgList->prepend!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
-			{
-				PutStr("Only one of ADD/APPEND, PREPEND, REMOVE, PATH or DEFER is allowed\n");
-				FreeArgs(readarg);
-				CloseLibrary((struct Library *) DOSBase);
-				return RETURN_FAIL;
-			}
+		    readarg = ReadArgs(argtemplate, (IPTR *)MyArgList, NULL);
+		    if (readarg)
+		    {
+			    /* Verify mutually exclusive args
+			     */
+			    if ((MyArgList->add!=0) + (MyArgList->prepend!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
+			    {
+				    PutStr("Only one of ADD/APPEND, PREPEND, REMOVE, PATH or DEFER is allowed\n");
+				    FreeArgs(readarg);
+				    CloseLibrary((struct Library *) DOSBase);
+				    return RETURN_FAIL;
+			    }
 
-			/* Check device name
-			 */
-			if (MyArgList->name)
-			{
-				char *pos;
+			    /* Check device name
+			     */
+			    if (MyArgList->name)
+			    {
+				    char *pos;
 
-				/* Correct assign name construction? The rule is that the device name
-				 * should end with a colon at the same time as no other colon may be
-				 * in the name.
-				 */
-				pos = strchr(MyArgList->name, ':');
-				if (!pos || pos[1])
-				{
-					Printf("Invalid device name %s\n", (IPTR)MyArgList->name);
-					FreeArgs(readarg);
-					CloseLibrary((struct Library *) DOSBase);
-					return RETURN_FAIL;
-				}
-			}
+				    /* Correct assign name construction? The rule is that the device name
+				     * should end with a colon at the same time as no other colon may be
+				     * in the name.
+				     */
+				    pos = strchr(MyArgList->name, ':');
+				    if (!pos || pos[1])
+				    {
+					    Printf("Invalid device name %s\n", (IPTR)MyArgList->name);
+					    FreeArgs(readarg);
+					    CloseLibrary((struct Library *) DOSBase);
+					    return RETURN_FAIL;
+				    }
+			    }
 
-			/* If the EXISTS keyword is specified, we only care about NAME */
-			if (MyArgList->exists)
-			{
-				error = checkAssign(ld, MyArgList->name);
-				DEBUG_ASSIGN(Printf("checkassign error %ld\n",error));
-			}
-			else if (MyArgList->name)
-			{
-				/* If a NAME is specified, our primary task is to add or
-				   remove an assign */
+			    /* If the EXISTS keyword is specified, we only care about NAME */
+			    if (MyArgList->exists)
+			    {
+				    error = checkAssign(ld, MyArgList->name);
+				    DEBUG_ASSIGN(Printf("checkassign error %ld\n",error));
+			    }
+			    else if (MyArgList->name)
+			    {
+				    /* If a NAME is specified, our primary task is to add or
+				       remove an assign */
 
-				error = doAssign(ld, MyArgList->name, MyArgList->target, MyArgList->dismount, MyArgList->defer,
-				                 MyArgList->path, MyArgList->add, MyArgList->remove);
-				DEBUG_ASSIGN(Printf("doassign error %ld\n",error));
-				if (MyArgList->list)
-				{
-					/* With the LIST keyword, the current assigns will be
-					   displayed also when (after) making an assign */
+				    error = doAssign(ld, MyArgList->name, MyArgList->target, MyArgList->dismount, MyArgList->defer,
+						     MyArgList->path, MyArgList->add, MyArgList->prepend, MyArgList->remove);
+				    DEBUG_ASSIGN(Printf("doassign error %ld\n",error));
+				    if (MyArgList->list)
+				    {
+					    /* With the LIST keyword, the current assigns will be
+					       displayed also when (after) making an assign */
 
-					showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
-				}
-			}
-			else
-			{
-				/* If no NAME was given, we just show the current assigns
-				   as specified by the user (VOLS, DIRS, DEVICES) */
+					    showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
+				    }
+			    }
+			    else
+			    {
+				    /* If no NAME was given, we just show the current assigns
+				       as specified by the user (VOLS, DIRS, DEVICES) */
 
-				showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
-			}
+				    showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
+			    }
 
-			FreeArgs(readarg);
-		}
+			    FreeArgs(readarg);
+		    }
 
-		CloseLibrary((struct Library *) DOSBase);
+		    CloseLibrary((struct Library *) DOSBase);
+	    }
+	    CloseLibrary((struct Library *) UtilityBase);
 	}
-
 	DEBUG_ASSIGN(Printf("error %ld\n", error));
 
 	return error;
@@ -459,7 +554,7 @@ STRPTR GetFullPath(struct localdata *ld, BPTR lock)
 
 static
 int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
-             BOOL add, BOOL remove)
+             BOOL add, BOOL prepend, BOOL remove)
 {
 	STRPTR colon;
 	BPTR   lock = BNULL;
@@ -578,15 +673,21 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 					DEBUG_ASSIGN(Printf("doassign AssignPath error %ld\n",error));
 				}
 			}
-			else if (add)
+			else if ((add) || (prepend))
 			{
-				if (!AssignAdd(name, lock))
+				BOOL success = FALSE;
+				if (add)
+				    success = AssignAdd(name, lock);
+				else
+				    success = _AssignAddToList(ld, name, lock, 0);
+
+				if (!success)
 				{
 					struct DosList *dl;
 
 					error = RETURN_FAIL;
 					ioerr = IoErr();
-					DEBUG_ASSIGN(Printf("doassign AssignAdd error %ld\n",error));
+					DEBUG_ASSIGN(Printf("doassign add/prepend error %ld\n",error));
 
 					/* Check if the assign doesn't exist at all. If so, create it.
 					 * This fix bug id 145. - Piru

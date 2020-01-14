@@ -268,7 +268,7 @@ int main(void)
 
   if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
   {
-    if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",37)))
+    if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",50)))
     {
 	SetMem(&flagargs, 0, sizeof(flagargs));
 	IsEHandler = TRUE;

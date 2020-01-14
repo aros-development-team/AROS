@@ -65,6 +65,9 @@ If EXISTS "ENV:SYS/theme.var"
 else
     Assign "THEME:" "THEMES:AROSDefault"
 endif
+If EXISTS "THEME:Images"
+    Assign "IMAGES:"  "THEME:Images" PREPEND
+endif
 
 Touch >NIL: "FONTS:__TEST__"
 If WARN
