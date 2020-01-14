@@ -56,13 +56,13 @@ MSG_TAB_SYSTEM
 System
 ;
 MSG_MEMORY_SIZE
-Minnestørrelse
+MinnestÃ¸rrelse
 ;
 MSG_MEMORY_FREE
 Ledig minne
 ;
 MSG_VIDEO_SIZE
-Grafikkminnestørrelse
+GrafikkminnestÃ¸rrelse
 ;
 MSG_VIDEO_FREE
 Ledig grafikkminne
@@ -101,7 +101,7 @@ MSG_SLOW
 Sakte
 ;
 MSG_TASK_TOMBSTONE
-<død>
+<dÃ¸d>
 ;
 MSG_TASK_UNKNOWN
 <ukjent>
