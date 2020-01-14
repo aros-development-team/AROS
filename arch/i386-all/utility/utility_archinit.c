@@ -1,3 +1,4 @@
+#ifdef __SSE__
 /*
     Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
@@ -27,3 +28,4 @@ static int utility_archinit(struct Library *UtilityBase)
 }
 
 ADD2INITLIB(utility_archinit, 0);
+#endif
