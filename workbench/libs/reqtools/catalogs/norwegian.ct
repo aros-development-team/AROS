@@ -30,7 +30,7 @@ MSG_LAST_BAR_CANCEL
 _Forrige|_Avbryt
 ;
 MSG_REQUEST
-Forespørsel
+ForespÃ¸rsel
 ;
 MSG_INFORMATION
 Informasjon
@@ -59,13 +59,13 @@ MSG_PALETTE_COLORS
 _Farger:
 ;
 MSG_RED
-_Rød:
+_RÃ¸d:
 ;
 MSG_GREEN
-_Grønn:
+_GrÃ¸nn:
 ;
 MSG_BLUE
-_Blå:
+_BlÃ¥:
 ;
 MSG_COPY
 _Kopier
@@ -123,7 +123,7 @@ MSG_PARENT
 _Forrige
 ;
 MSG_PATTERN
-Møns_ter:
+MÃ¸ns_ter:
 ;
 MSG_GET
 _Hent
@@ -140,7 +140,7 @@ MSG_FULL
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-Kunne ikke åpne skrifttypen!
+Kunne ikke Ã¥pne skrifttypen!
 ;
 MSG_BOLD
 _Uthevet
@@ -163,16 +163,16 @@ MSG_DASH_EHB
 -EHB
 ;
 MSG_REGULAR_SIZE
-Vanlig størrelse
+Vanlig stÃ¸rrelse
 ;
 MSG_TEXT_SIZE
-Tekststørrelse
+TekststÃ¸rrelse
 ;
 MSG_GFX_SIZE
-Grafikkstørrelse
+GrafikkstÃ¸rrelse
 ;
 MSG_MAX_SIZE
-Maksimal størrelse
+Maksimal stÃ¸rrelse
 ;
 MSG_OVERSCAN
 O_verscan:
@@ -181,7 +181,7 @@ MSG_WIDTH
 _Bredde:
 ;
 MSG_HEIGHT
-_Høyde:
+_HÃ¸yde:
 ;
 ;
 MSG_DEFAULT

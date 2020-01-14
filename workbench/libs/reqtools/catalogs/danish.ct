@@ -13,7 +13,7 @@
 ; *** General ***
 ;
 ; Note: there are two spaces around the Ok string to make it 4 chars wide.
-; Bemærk: Der er to mellemrum omkring Ok strengen så den bliver 4 tegn.
+; BemÃ¦rk: Der er to mellemrum omkring Ok strengen sÃ¥ den bliver 4 tegn.
 MSG_OK
  _Ok
 ;
@@ -29,7 +29,7 @@ MSG_LAST_BAR_CANCEL
 _Sidste|_Afbryd
 ;
 MSG_REQUEST
-Forespørgsel
+ForespÃ¸rgsel
 ;
 MSG_INFORMATION
 Oplysning
@@ -37,7 +37,7 @@ Oplysning
 ; *** GetLong Requester ***
 ;
 ; Note: there are two spaces around the next three strings!
-; Bemærk: Der er to mellemrum omkring de næste tre strenge!
+; BemÃ¦rk: Der er to mellemrum omkring de nÃ¦ste tre strenge!
 MSG_MIN_FMT
  Min: %ld
 ;
@@ -59,13 +59,13 @@ MSG_PALETTE_COLORS
 _Palette Farver:
 ;
 MSG_RED
-_Rød:
+_RÃ¸d:
 ;
 MSG_GREEN
-_Grøn:
+_GrÃ¸n:
 ;
 MSG_BLUE
-_Blå:
+_BlÃ¥:
 ;
 MSG_COPY
 _Kopier
@@ -77,7 +77,7 @@ MSG_SPREAD
 _Spred
 ;
 MSG_UNDO
-Ophæ_v
+OphÃ¦_v
 ;
 ; ** 2.5 **
 ;
@@ -120,13 +120,13 @@ MSG_VOLUMES
 _Volumer
 ;
 MSG_PARENT
-_Forælder
+_ForÃ¦lder
 ;
 MSG_PATTERN
-Møns_ter:
+MÃ¸ns_ter:
 ;
 MSG_GET
-_GenLæs
+_GenLÃ¦s
 ;
 MSG_DOT_INFO
 ._info
@@ -140,7 +140,7 @@ MSG_FULL
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-Kunne ikke åbne skrift-typen!
+Kunne ikke Ã¥bne skrift-typen!
 ;
 MSG_BOLD
 _Fed
@@ -163,16 +163,16 @@ MSG_DASH_EHB
 -EHB
 ;
 MSG_REGULAR_SIZE
-Normal størrelse
+Normal stÃ¸rrelse
 ;
 MSG_TEXT_SIZE
-Tekst størrelse
+Tekst stÃ¸rrelse
 ;
 MSG_GFX_SIZE
-Grafik størrelse
+Grafik stÃ¸rrelse
 ;
 MSG_MAX_SIZE
-Maksimal størrelse
+Maksimal stÃ¸rrelse
 ;
 MSG_OVERSCAN
 O_verscan:
@@ -181,11 +181,11 @@ MSG_WIDTH
 _Bredde:
 ;
 MSG_HEIGHT
-_Højde:
+_HÃ¸jde:
 ;
 ;
 MSG_DEFAULT
-Grundværdi
+GrundvÃ¦rdi
 ;
 MSG_COLORS
 _Farver:

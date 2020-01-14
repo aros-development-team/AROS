@@ -2,13 +2,13 @@
 ;
 ;   ReqTools V38
 ;
-;   PortuguÍs
+;   Portugu√™s
 ;
 ;******************
 ;
 ## version $VER: reqtools.catalog 39 (31.03.2016)
 ## codeset 0
-## language portuguÍs
+## language portugu√™s
 ;
 ; *** General ***
 ;
@@ -31,7 +31,7 @@ MSG_REQUEST
 Pedido
 ;
 MSG_INFORMATION
-InformaÁ„o
+Informa√ß√£o
 ;
 ; *** GetLong Requester ***
 ;
@@ -86,19 +86,19 @@ MSG_SWAP_TITLE
 Trocar com...
 ;
 MSG_SPREAD_TITLE
-Espalhar atÈ...
+Espalhar at√©...
 ;
 ; *** File Requester ***
 ;
 MSG_CREATE_DRAWER
-O DirectÛrio '%s'\nn„o existe. Crio-o?
+O Direct√≥rio '%s'\nn√£o existe. Crio-o?
 ;
 MSG_DIR_ERROR
-Erro no DirectÛrio!
+Erro no Direct√≥rio!
 ;
 ;
 MSG_MATCH_WINTITLE
-Padr„o...
+Padr√£o...
 ;
 MSG_DRAWER
 Gaveta
@@ -110,7 +110,7 @@ MSG_ALL
 _Todos
 ;
 MSG_MATCH
-_Padr„o...
+_Padr√£o...
 ;
 MSG_CLEAR
 Apa_gar
@@ -122,7 +122,7 @@ MSG_PARENT
 _D.Acima
 ;
 MSG_PATTERN
-Pa_dr„o:
+Pa_dr√£o:
 ;
 MSG_GET
 _Apanhar
@@ -139,13 +139,13 @@ MSG_FULL
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-N„o pode abrir a fonte!
+N√£o pode abrir a fonte!
 ;
 MSG_BOLD
 _Negrito
 ;
 MSG_ITALIC
-_It·lico
+_It√°lico
 ;
 MSG_UNDERLINE
 _Sublinhado
@@ -153,7 +153,7 @@ _Sublinhado
 ; *** ScreenMode Requester ***
 ;
 MSG_DASH_INTERLACED
--EntrelaÁado
+-Entrela√ßado
 ;
 MSG_DASH_HAM
 -HAM
@@ -168,10 +168,10 @@ MSG_TEXT_SIZE
 Tamanho de texto
 ;
 MSG_GFX_SIZE
-Tamanho de gr·ficos
+Tamanho de gr√°ficos
 ;
 MSG_MAX_SIZE
-Tamanho m·ximo
+Tamanho m√°ximo
 ;
 MSG_OVERSCAN
 O_verscan:
@@ -193,5 +193,5 @@ MSG_MAX
 Max:
 ;
 MSG_AUTOSCROLL
-_Scroll Autom·tico:
+_Scroll Autom√°tico:
 ;
