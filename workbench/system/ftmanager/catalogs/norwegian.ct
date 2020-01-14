@@ -20,7 +20,7 @@ MSG_ASL_FONTS_TRUETYPE
 Skrift:TrueType
 ;
 MSG_LABEL_DESTINATION
-Mål
+MÃ¥l
 ;
 MSG_ASL_FONTS
 Skrift:
@@ -128,7 +128,7 @@ MSG_METRIC_GLOBALBOUNDINGBOX
 Global
 ;
 MSG_METRIC_RAWFONTMETRIC
-Opprinnelig font størrelse
+Opprinnelig font stÃ¸rrelse
 ;
 MSG_METRIC_ASCENDER
 Ascender
@@ -167,10 +167,10 @@ MSG_LABEL_YMAX
 yMaks
 ;
 MSG_LABEL_SIZEFACTOR
-Størrelsesfaktor
+StÃ¸rrelsesfaktor
 ;
 MSG_LABEL_SPACEWIDTH
-Størrelsesbredde
+StÃ¸rrelsesbredde
 ;
 MSG_LABEL_FIXEDWIDTH
 Fastbredde
@@ -182,19 +182,19 @@ MSG_LABEL_STEMWEIGHT
 Stammebredde
 ;
 MSG_LABEL_SLANTSTYLE
-Skråstilt
+SkrÃ¥stilt
 ;
 MSG_LABEL_HORIZSTYLE
 Horisontalt
 ;
 MSG_FRAME_PREVIEW
-Forhåndsvis
+ForhÃ¥ndsvis
 ;
 MSG_PREVIEW_STRING
 The quick brown fox jumped over the lazy dog.
 ;
 MSG_LABEL_SIZE
-Størrelse
+StÃ¸rrelse
 ;
 MSG_LABEL_ANTIALIASING
 Kantutjevning
