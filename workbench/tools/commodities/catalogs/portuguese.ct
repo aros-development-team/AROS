@@ -1,59 +1,59 @@
 ## version $VER: Commodities.catalog 1.2 (29.09.2008)
-## language português
+## language portuguÃªs
 ## codeset 0
 ;
 ; FIXME: This file requires updating. When done, bump version to 3
 ;
 MSG_CANT_OPEN_LIB
-Não foi possível abrir %s V%ld!\n
+NÃ£o foi possÃ­vel abrir %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
-Não foi possível abrir 'input.device'
+NÃ£o foi possÃ­vel abrir 'input.device'
 ; Can't open 'input.device'
 ;
 ; ***NEW***
 ;
 MSG_CANT_LOCK_SCR
-Não foi possível utilizar o écran público!\n
+NÃ£o foi possÃ­vel utilizar o Ã©cran pÃºblico!\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
-¡No puedo tomar la información visual!\n
+Â¡No puedo tomar la informaciÃ³n visual!\n
 ; Can't get VisualInfo!\n
 ;
 MSG_CANT_CREATE_GADGET
-Não foi possível criar os botões!\n
+NÃ£o foi possÃ­vel criar os botÃµes!\n
 ; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
-Não foi possível criar os menus!\n
+NÃ£o foi possÃ­vel criar os menus!\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-Não foi possível acomodar os menus!\n
-;!No puedo layout los menús!\n
+NÃ£o foi possÃ­vel acomodar os menus!\n
+;!No puedo layout los menÃºs!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
-Não foi possível criar a janela!\n
+NÃ£o foi possÃ­vel criar a janela!\n
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
-Não foi possível disponibilizar memória para a aplicação\n
-;¡No puedo reservar memory para la aplicación\n
+NÃ£o foi possÃ­vel disponibilizar memÃ³ria para a aplicaÃ§Ã£o\n
+;Â¡No puedo reservar memory para la aplicaciÃ³n\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
-Não foi possível criar a porta de mensagens!\n
+NÃ£o foi possÃ­vel criar a porta de mensagens!\n
 ; Can't create message port!\n
 ;
 MSG_CANT_CREATE_BROKER
-Não foi possível criar o objeto CxBroker!\n
+NÃ£o foi possÃ­vel criar o objeto CxBroker!\n
 ; Can't create CxBroker object!\n
 ;
 MSG_CANT_CREATE_CUSTOM
-Não foi possível criar o objeto CxCustom!\n
+NÃ£o foi possÃ­vel criar o objeto CxCustom!\n
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
@@ -102,11 +102,11 @@ Cambio: Tecla designada = <%s>
 ; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
-Commodidades disponíveis
+Commodidades disponÃ­veis
 ; Available commodities
 ;
 MSG_EXCHANGE_INFO
-Informação
+InformaÃ§Ã£o
 ; Information
 ;
 MSG_EXCHANGE_GAD_SHOW
@@ -139,12 +139,12 @@ Blanker
 ; Blanker
 ;
 MSG_BLANKER_CXTITLE
-Protecção de écran do sistema
+ProtecÃ§Ã£o de Ã©cran do sistema
 ;System Screen Blanker
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-A inactividade de sistema aciona a protecção de écran
+A inactividade de sistema aciona a protecÃ§Ã£o de Ã©cran
 ;Ennegrece pantalla cuando el system esta inactivo
 ; Blanks screen when system inactive
 ;
@@ -161,7 +161,7 @@ Trazer para a frente
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
-Coloca a janela em primeiro plano com apenas por selecção desta
+Coloca a janela em primeiro plano com apenas por selecÃ§Ã£o desta
 ; Click windows to front
 ;
 ; ===============================================
@@ -172,7 +172,7 @@ Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
-Janelas sólidas
+Janelas sÃ³lidas
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
@@ -187,7 +187,7 @@ AutoPoint
 ; AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
-Auto selecção
+Auto selecÃ§Ã£o
 ;Foco automatico
 ; Autopointer
 ;
@@ -201,7 +201,7 @@ Activa automaticamente a janela abaixo do ponteiro do rato
 ;
 MSG_STARTMENU_CXNAME
 Menu Iniciar
-;StartMenú
+;StartMenÃº
 ; StartMenu
 ;
 MSG_STARTMENU_CXTITLE
@@ -211,7 +211,7 @@ Menu de arranque de programas
 ;
 MSG_STARTMENU_CXDESCR
 Inicia os programas a partir do menu
-;Lanza programas del menú
+;Lanza programas del menÃº
 ; Program launch commodity
 ;
 ; ===============================================
@@ -222,11 +222,11 @@ FKey
 ; FKey
 ;
 MSG_FKEY_CXTITLE
-Designa funções a teclas
+Designa funÃ§Ãµes a teclas
 ; Function To Keys:
 ;
 MSG_FKEY_CXDESCR
-Designa funções especiais lançadas a partir do teclado
+Designa funÃ§Ãµes especiais lanÃ§adas a partir do teclado
 ; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
@@ -257,7 +257,7 @@ Comando
 ; Command
 ;
 MSG_FKEY_COMMAND_PARAMS
-Parâmetros do comando
+ParÃ¢metros do comando
 ; Command Parameters
 ;
 MSG_FKEY_CMD_CYCLE_WIN
@@ -266,7 +266,7 @@ Circula ventanas
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
-Alternar écrans
+Alternar Ã©crans
 ; Cycle Screens
 ;
 MSG_FKEY_CMD_ENLARGE_WIN
@@ -275,11 +275,11 @@ Aumentar janela
 ;
 MSG_FKEY_CMD_SHRINK_WIN
 Diminuir janela
-;Empqueñecer ventana
+;EmpqueÃ±ecer ventana
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Alterar a dimensão da janela
+Alterar a dimensÃ£o da janela
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_RESCUE_WIN
@@ -294,11 +294,11 @@ Inserir texto
 ; Insert Text
 ;
 MSG_FKEY_CMD_RUN_PROG
-Lançar programa
+LanÃ§ar programa
 ; Run Program
 ;
 MSG_FKEY_CMD_RUN_AREXX
-Lança um ARexx-script
+LanÃ§a um ARexx-script
 ;Lanza ARexx-Script
 ; Run Arexx Script
 ;
@@ -316,7 +316,7 @@ Sem_CAPS-LOCK
 ; ***NEW***
 ;
 MSG_NOCAPSLOCK_CXTITLE
-Sem bloqueio de maiúsculas
+Sem bloqueio de maiÃºsculas
 ; NoCapsLock:
 ;
 ; ***NEW***
@@ -339,6 +339,6 @@ Menu Profundidade:
 ;DepthMenu:
 ;
 MSG_DEPTHMENU_CXDESCR
-Providencia um menu Pop-up para os botões de profundidade
+Providencia um menu Pop-up para os botÃµes de profundidade
 ;Popup menu for depth gadgets
 ;
