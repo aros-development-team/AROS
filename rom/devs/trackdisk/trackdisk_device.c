@@ -63,7 +63,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     unit = AllocMem(sizeof(struct TDU), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (!tdb->td_nomount)
-	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",40);
+	ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (unit)
     {
 	unit->tdu_DiskIn = TDU_NODISK;	/* Assume there is no floppy in there */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
+ * Copyright © 2012-2020, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -237,8 +237,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
             return FALSE;
     }
 
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
-                                                        40L);
+    ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
     if (ExpansionBase)
     {

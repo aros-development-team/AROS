@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2019, The AROS Development Team. All rights reserved
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -50,9 +50,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
     const ULONG IdCDVD = AROS_MAKE_ID('C','D','V','D');
 
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
-                                                        40L);
-
+    ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (ExpansionBase)
     {
         IPTR pp[24];

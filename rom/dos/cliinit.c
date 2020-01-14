@@ -500,11 +500,11 @@ static LONG internalBootCliHandler(void)
 
     DOSBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_DOS);
     if (DOSBase == NULL) {
-        D(bug("Dos/CliInit: Impossible! Where did dos.library go?\n"));
+        D(bug("Dos/CliInit: failed to open dos.library!\n"));
         Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
     }
 
-    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
+    ExpansionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (!ExpansionBase)
         err = ERROR_INVALID_RESIDENT_LIBRARY;
 

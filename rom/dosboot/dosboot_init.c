@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -163,7 +163,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("dosboot_Init: GO GO GO!\n"));
 
-    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
+    ExpansionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
     D(bug("[Strap] ExpansionBase 0x%p\n", ExpansionBase));
     if( ExpansionBase == NULL )
