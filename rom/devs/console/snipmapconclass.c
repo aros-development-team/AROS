@@ -27,6 +27,8 @@
 #include "console_gcc.h"
 #include "consoleif.h"
 
+extern const STRPTR CONCLIP_PORTNAME;
+
 struct snipmapcondata
 {
     ULONG start_selection_x;
@@ -74,8 +76,6 @@ static VOID snipmapcon_copy(Class *cl, Object *o, Msg msg)
        }
      */
 }
-
-static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
 static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
 {
