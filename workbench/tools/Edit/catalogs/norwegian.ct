@@ -12,7 +12,7 @@ MSG_NEWEMPTYFILE
 Ny
 ;
 MSG_OPENNEWFILE
-Åpne fil...
+Ã…pne fil...
 ;
 MSG_LOADINPRJ
 Hent fil...
@@ -63,7 +63,7 @@ MSG_DELLINE
 Slett linje
 ;
 MSG_SUBTOOLS
-Verktøy
+VerktÃ¸y
 ;
 MSG_INDENT
 Innrykk
@@ -75,10 +75,10 @@ MSG_UPPERCASE
 Store bokstaver
 ;
 MSG_LOWERCASE
-Små bokstaver
+SmÃ¥ bokstaver
 ;
 MSG_TOGGLECASE
-Veksle store/små bokstaver
+Veksle store/smÃ¥ bokstaver
 ;
 MSG_INSERTFILE
 Sett inn fil...
@@ -87,19 +87,19 @@ MSG_UNDO
 Angre
 ;
 MSG_REDO
-Gjør om
+GjÃ¸r om
 ;
 MSG_SEARCHTITLE
-Søk
+SÃ¸k
 ;
 MSG_FIND
-Søk...
+SÃ¸k...
 ;
 MSG_REPLACE
 Erstatt...
 ;
 MSG_SUBFIND
-Søk
+SÃ¸k
 ;
 MSG_NEXTFIND
 Neste
@@ -117,7 +117,7 @@ MSG_NEXTPAGE
 Neste side
 ;
 MSG_GOTOLINE
-Gå til linje...
+GÃ¥ til linje...
 ;
 MSG_FINDBRACKET
 Matchende parenteser
@@ -126,10 +126,10 @@ MSG_LASTMODIF
 Siste modifikasjon
 ;
 MSG_BEGOFLINE
-Start på linje
+Start pÃ¥ linje
 ;
 MSG_ENDOFLINE
-Slutt på linje
+Slutt pÃ¥ linje
 ;
 ; Macro Menu
 ;
@@ -154,7 +154,7 @@ MSG_ENVTITLE
 Innstillinger
 ;
 MSG_SCRMODE
-Oppløsning...
+OpplÃ¸sning...
 ;
 MSG_FONTS
 Skrifttyper...
@@ -172,16 +172,16 @@ MSG_SAVEPREFSAS
 Lagre innstillinger som...
 ;
 ERR_BADOS
-Krever OS v2.0 eller høyere.
+Krever OS v2.0 eller hÃ¸yere.
 ;
 ERR_NOASLREQ
-Kan ikke åpne ASL-anmoder!
+Kan ikke Ã¥pne ASL-anmoder!
 ;
 ERR_NOMEM
 Ikke nok minne!
 ;
 ERR_NOGUI
-Klarte ikke åpne brukergrensesnittet!
+Klarte ikke Ã¥pne brukergrensesnittet!
 ;
 ERR_NONAME
 Uten navn
@@ -190,10 +190,10 @@ ERR_WRITECLIP
 Klarte ikke skrive til utklippstavle!
 ;
 ERR_OPENCLIP
-Klarte ikke åpne utklippstavle!
+Klarte ikke Ã¥pne utklippstavle!
 ;
 ERR_LOADFILE
-Klarte ikke åpne fil!
+Klarte ikke Ã¥pne fil!
 ;
 ERR_NOTXTINCLIP
 Utklippstavlen inneholder ingen tekst
@@ -202,31 +202,31 @@ ERR_WRONG_TYPE
 Objektet er av feil type!
 ;
 ERR_READCLIP
-Klarte ikke lese fil på grunn av for lite minne!
+Klarte ikke lese fil pÃ¥ grunn av for lite minne!
 ;
 ERR_NOBRACKET
-Ingen parentes under markøren!
+Ingen parentes under markÃ¸ren!
 ;
 ERR_NOT_FOUND
-Klarte ikke finne mønsteret '%s'
+Klarte ikke finne mÃ¸nsteret '%s'
 ;
 ERR_LOADFONT
-Klarte ikke åpne skrifttypen!
+Klarte ikke Ã¥pne skrifttypen!
 ;
 ERR_NOPREFEDITOR
 Klarte ikke finne innstillingseditoren!
 ;
 ERR_BADPREFSFILE
-Feil filformat på innstillingsfilen.
+Feil filformat pÃ¥ innstillingsfilen.
 ;
 ERR_FILEMODIFIED
-%s er endret.\nEr du sikker på at du vil lukke?
+%s er endret.\nEr du sikker pÃ¥ at du vil lukke?
 ;
 ERR_SLC
 Lagre|Lukk|Avbryt
 ;
 ERR_NOSEARCHTEXT
-Ingen tekst å søke etter!
+Ingen tekst Ã¥ sÃ¸ke etter!
 ;
 ERR_FILEEXISTS
 Filen finnes allerede. Overskrive?
@@ -275,19 +275,19 @@ Linjer
 ; *************************
 ;
 MSG_SEARCHWINDOW
-Søk etter
+SÃ¸k etter
 ;
 MSG_REPLACEWINDOW
-Søk og erstatt
+SÃ¸k og erstatt
 ;
 MSG_SEARCHSTRING
-Søk:
+SÃ¸k:
 ;
 MSG_REPLACESTRING
 Er_statt:
 ;
 MSG_OPTCASE
-Store/små bokstaver
+Store/smÃ¥ bokstaver
 ;
 MSG_OPTWORDS
 Hele ord
@@ -299,7 +299,7 @@ MSG_BUTTONREPALL
 Erstatt _alle
 ;
 MSG_BUTTONSEARCH
-Sø_k
+SÃ¸_k
 ;
 MSG_NEXTSEARCH
 Forrige

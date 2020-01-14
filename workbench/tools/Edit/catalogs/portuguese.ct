@@ -1,8 +1,8 @@
 ## version $VER: JanoEditor.catalog 1.1 (17.03.2017).
 ## codeset 0
-## language português
+## language portuguÃªs
 ;
-; Translated by João Ralha
+; Translated by JoÃ£o Ralha
 ;
 ; Catalog description for JanoEditor
 ; JanoEditor.cd
@@ -39,7 +39,7 @@ Guardar como...
 ;Save as...
 ;
 MSG_SAVECHANGES
-Guardar as alterações
+Guardar as alteraÃ§Ãµes
 ;Save changes
 ;
 MSG_PRINTFILE
@@ -47,7 +47,7 @@ Imprimir
 ;Print
 ;
 MSG_INFORMATION
-Informação...
+InformaÃ§Ã£o...
 ;Information...
 ;
 MSG_CLOSE
@@ -77,7 +77,7 @@ Colar
 ;Paste
 ;
 MSG_MARK
-Marcar parágrafo
+Marcar parÃ¡grafo
 ;Mark
 ;
 MSG_MARKCOLUMN
@@ -98,23 +98,23 @@ Ferramentas
 ;Tools
 ;
 MSG_INDENT
-Indentação
+IndentaÃ§Ã£o
 ;Indent
 ;
 MSG_UNINDENT
-Sem indentação
+Sem indentaÃ§Ã£o
 ;Unindent
 ;
 MSG_UPPERCASE
-Maiúsculas
+MaiÃºsculas
 ;Upper case
 ;
 MSG_LOWERCASE
-Minúsculas
+MinÃºsculas
 ;Lower case
 ;
 MSG_TOGGLECASE
-Alterar capitalização
+Alterar capitalizaÃ§Ã£o
 ;Toggle case
 ;
 MSG_INSERTFILE
@@ -160,11 +160,11 @@ Substituir
 ;Replace
 ;
 MSG_PREVPAGE
-Pág. anterior
+PÃ¡g. anterior
 ;Prev page
 ;
 MSG_NEXTPAGE
-Pág. seguinte
+PÃ¡g. seguinte
 ;Next page
 ;
 MSG_GOTOLINE
@@ -176,7 +176,7 @@ Revisar corchetes
 ;Matching bracket
 ;
 MSG_LASTMODIF
-Última modificação
+Ãšltima modificaÃ§Ã£o
 ;Last modification
 ;
 MSG_BEGOFLINE
@@ -193,11 +193,11 @@ MSG_MACROTITLE
 Macro
 ;
 MSG_STARTRECORD
-Inicia gravação
+Inicia gravaÃ§Ã£o
 ;Start recording
 ;
 MSG_STOPRECORD
-Parar gravação
+Parar gravaÃ§Ã£o
 ;Stop recording
 ;
 MSG_PLAYMACRO
@@ -215,7 +215,7 @@ Ambiente
 ;Environment
 ;
 MSG_SCRMODE
-Modo de écran...
+Modo de Ã©cran...
 ;Screen mode...
 ;
 MSG_FONTS
@@ -249,19 +249,19 @@ OS obsoleto. Instale la v2.0 ou superior.
 ;Obsolete OS. Install v2.0 or better.
 ;
 ERR_NOASLREQ
-Não pode iniciar requester ASL!
+NÃ£o pode iniciar requester ASL!
 ;Cannot alloc ASL requester!
 ;
 ERR_NOMEM
-Não há memória disponível!
+NÃ£o hÃ¡ memÃ³ria disponÃ­vel!
 ;Out of memory!
 ;
 ERR_NOGUI
-O interface principal não abre!
+O interface principal nÃ£o abre!
 ;Main interface failed to open!
 ;
 ERR_NONAME
-Sem descrição
+Sem descriÃ§Ã£o
 ;No title
 ; Not really an error but simplify translation
 ;
@@ -270,19 +270,19 @@ Erro ao escrever para o dispositivo 'clipboard'
 ;Write error into clipboard device
 ;
 ERR_OPENCLIP
-Não foi possível abrir o 'clipboard'!
+NÃ£o foi possÃ­vel abrir o 'clipboard'!
 ;Unable to open clipboard!
 ;
 ERR_LOADFILE
-Não foi possível abrir o ficheiro
+NÃ£o foi possÃ­vel abrir o ficheiro
 ;Unable to load requested file
 ;
 ERR_NOTXTINCLIP
-Não existe texto no 'clipboard'
+NÃ£o existe texto no 'clipboard'
 ;No text in clipboard
 ;
 ERR_WRONG_TYPE
-O objecto é um directório!
+O objecto Ã© um directÃ³rio!
 ;Object is a directory!
 ;
 ERR_READCLIP
@@ -290,19 +290,19 @@ Leitura incompleta - provavelmente por falta de memoria
 ;Read operation incomplete due to probably a lack of memory
 ;
 ERR_NOBRACKET
-¡No há un parenteses no cursor!
+Â¡No hÃ¡ un parenteses no cursor!
 ;No parenthesis under cursor!
 ;
 ERR_NOT_FOUND
-Padrão '%s' não encontrado
+PadrÃ£o '%s' nÃ£o encontrado
 ;Pattern `%s' not found
 ;
 ERR_LOADFONT
-Não foi possível abrir a fonte desejada!
+NÃ£o foi possÃ­vel abrir a fonte desejada!
 ;Can't open desired font!
 ;
 ERR_NOPREFEDITOR
-Não encontrou o editor de prefs.!
+NÃ£o encontrou o editor de prefs.!
 ;Can't find preference editor!
 ;
 ERR_BADPREFSFILE
@@ -310,7 +310,7 @@ Mau formato do ficheiro de prefs.
 ;Bad preference file format.
 ;
 ERR_FILEMODIFIED
-%s foi alterado.\n¿ Tem certeza que quer fechar este?
+%s foi alterado.\nÂ¿ Tem certeza que quer fechar este?
 ;%s has been modified.\nAre you sure want to close it?
 ;
 ERR_SLC
@@ -322,15 +322,15 @@ Texto indefinido para localizar!
 ;No text to search for!
 ;
 ERR_FILEEXISTS
-O ficheiro já existe. Escrever por cima?
+O ficheiro jÃ¡ existe. Escrever por cima?
 ;This file already exists. Overwrite it?
 ;
 ERR_OC
-Sim|¡Não!
+Sim|Â¡NÃ£o!
 ;Yes|No!
 ;
 WARN_RECORD
-Inicia gravação macro
+Inicia gravaÃ§Ã£o macro
 ;Start recording macro
 ;
 WARN_RECORDED
@@ -347,12 +347,12 @@ WARN_REC
 ; *************************************
 ;
 MSG_ABOUT
-Informação
+InformaÃ§Ã£o
 ;Information
 ;
 MSG_FORMATINFO
-%s\nProgramado por T.Pierron y C.Guillaume © 2000\n\nFicheiro editado: %s\nTamanho: %iu %s, %iu %s.
-;%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
+%s\nProgramado por T.Pierron y C.Guillaume Â© 2000\n\nFicheiro editado: %s\nTamanho: %iu %s, %iu %s.
+;%s\nDesigned by T.Pierron and C.Guillaume Â© 2000\n\nFile edited: %s\nLength: %iu %s, %iu %s.
 ;
 MSG_CONTINUE
 Continuar
@@ -380,7 +380,7 @@ linhas
 ; *************************
 ;
 MSG_SEARCHWINDOW
-Padrão de procura
+PadrÃ£o de procura
 ;Search pattern
 ;
 MSG_REPLACEWINDOW
@@ -430,14 +430,14 @@ _Cancelar
 ;_Cancel
 ;
 MSG_REPLACEALL
-%iu %s de '%s' substituídos
+%iu %s de '%s' substituÃ­dos
 ;%iu %s of `%s' replaced
 ;
 MSG_OCCURENCY
-ocorrência
+ocorrÃªncia
 ;occurency
 ;
 MSG_OCCURENCIES
-ocorrências
+ocorrÃªncias
 ;occurencies
 ;
