@@ -40,7 +40,7 @@ S\000Sidste modus
 ; L\000Last Mode
 ;
 msgMenuNextMode
-N\000Næste modus
+N\000NÃ¦ste modus
 ; N\000Next Mode
 ;
 msgMenuPropertyList
@@ -96,7 +96,7 @@ Lydmodus-ID: 0x%08lx
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Opløsning: %ld bit %s
+OplÃ¸sning: %ld bit %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono

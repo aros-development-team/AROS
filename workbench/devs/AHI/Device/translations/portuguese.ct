@@ -1,8 +1,8 @@
 ## version $VER: ahi.catalog 4.2 (26.5.26)
-## language português
+## language portuguÃªs
 ## codeset 0
 ;
-## chunk AUTH Translated by Frederico Borges <famb@mail.telepac.pt> & Rúben Alvim <mindwalker@mail.telepac.pt>
+## chunk AUTH Translated by Frederico Borges <famb@mail.telepac.pt> & RÃºben Alvim <mindwalker@mail.telepac.pt>
 ;#language english
 ;#version 4
 ;
@@ -36,7 +36,7 @@ msgMenuControl
 ; \000\000Control
 ;
 msgMenuLastMode
-;U\000Último Modo
+;U\000Ãšltimo Modo
 ; L\000Last Mode
 ;
 msgMenuNextMode
@@ -76,7 +76,7 @@ Cancelar
 ; Cancel
 ;
 msgReqFrequency
-Frequência
+FrequÃªncia
 ; Frequency
 ;
 ; Name of default mode in requester
@@ -96,7 +96,7 @@ ID do Modo audio
 ; Audio mode ID: 0x%08lx
 ;
 msgReqInfoResolution
-Resolução: %ld bit %s
+ResoluÃ§Ã£o: %ld bit %s
 ; Resolution: %ld bit %s
 ;
 msgReqInfoMono
@@ -104,11 +104,11 @@ mono
 ; mono
 ;
 msgReqInfoStereo
-Estéreo
+EstÃ©reo
 ; stereo
 ;
 msgReqInfoStereoPan
-stereo com separação de canais (pan)
+stereo com separaÃ§Ã£o de canais (pan)
 ; stereo with panning
 ;
 msgReqInfoChannels
