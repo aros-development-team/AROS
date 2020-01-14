@@ -101,7 +101,7 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     } else if (!(GfxBase = GetPrivIBase(LIBBASE)->GfxBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
-    } else if (!(GetPrivIBase(LIBBASE)->LayersBase = (APTR)OpenLibrary("layers.library", 41))) {
+    } else if (!(GetPrivIBase(LIBBASE)->LayersBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_LAYERS))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
