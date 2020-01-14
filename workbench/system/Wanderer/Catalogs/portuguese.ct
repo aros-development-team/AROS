@@ -1,8 +1,8 @@
 ## version $VER: wanderer.catalog 1.0 (20.09.2008)
-## language português
+## language portuguÃªs
 ## codeset 0
 ;
-; Translated by João Ralha (hardwired)
+; Translated by JoÃ£o Ralha (hardwired)
 ;
 MSG_TITLE
 Wanderer
@@ -12,7 +12,7 @@ Administrador de Arquivos
 ; File Manager
 ;
 MSG_SCREENTITLE
-Wanderer: Memória Gráfica %s | Outra Memória %s
+Wanderer: MemÃ³ria GrÃ¡fica %s | Outra MemÃ³ria %s
 ; Wanderer %s graphics mem %s other mem
 ;
 MSG_MEM_B
@@ -51,7 +51,7 @@ MSG_MEN_SC_SHELL
 W
 ;
 MSG_MEN_GUISET
-Configuração do GUI
+ConfiguraÃ§Ã£o do GUI
 ; GUI Settings...
 ;
 MSG_MEN_ABOUT
@@ -70,7 +70,7 @@ Janela
 ; Window
 ;
 MSG_MEN_NEWDRAW
-Novo Directório...
+Novo DirectÃ³rio...
 ; New Drawer...
 ;
 MSG_MEN_SC_NEWDRAW
@@ -92,21 +92,21 @@ Actualizar
 ; Update
 ;
 MSG_MEN_CONTENTS
-Selecionar conteúdo
+Selecionar conteÃºdo
 ; Select Contents
 ;
 MSG_MEN_SC_CONTENTS
 A
 ;
 MSG_MEN_CLRSEL
-Limpar selecção
+Limpar selecÃ§Ã£o
 ; Clear selection
 ;
 MSG_MEN_SC_CLRSEL
 Z
 ;
 MSG_MEN_SNAPSHT
-Guardar posição
+Guardar posiÃ§Ã£o
 ; Snapshot
 ;
 MSG_MEN_ALL
@@ -119,7 +119,7 @@ Ver
 ;
 MSG_MEN_ICVIEW
 Ver como icones
-; Vista con íconos
+; Vista con Ã­conos
 ;Icon view
 ;
 MSG_MEN_DCVIEW
@@ -190,7 +190,7 @@ MSG_MEN_SC_RENAME
 R
 ;
 MSG_MEN_INFO
-Informacão...
+InformacÃ£o...
 ; Information...
 ;
 MSG_MEN_SC_INFO
@@ -205,17 +205,17 @@ Ferramentas
 ; Tools
 ;
 MSG_REALLYQUIT
-¿Quer sair do Wanderer?
+Â¿Quer sair do Wanderer?
 ; Do you really want to quit Wanderer?
 ;
 MSG_YESNO
-*Sí|No
-; *Sim|Não
+*SÃ­|No
+; *Sim|NÃ£o
 ;
 MSG_DUMMY
 DUMMY
 ; DUMMY :)
 MSG_USERSCREENTITLE
-Wanderer: Memória Gráfica %pc - Outra memória %f
+Wanderer: MemÃ³ria GrÃ¡fica %pc - Outra memÃ³ria %f
 ; Wanderer %pc graphics mem %pf other mem
 ;

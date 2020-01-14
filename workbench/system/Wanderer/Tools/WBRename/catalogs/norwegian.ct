@@ -8,7 +8,7 @@ WBRename
 ; WBRename
 ;
 MSG_DESCRIPTION
-Endre navn på filer og skuffer
+Endre navn pÃ¥ filer og skuffer
 ; Renames files and drawers
 ;
 MSG_COPYRIGHT
@@ -56,7 +56,7 @@ Trenger 2 argumenter!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Ugyldig kataloglås!
+Ugyldig kataloglÃ¥s!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY

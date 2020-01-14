@@ -19,11 +19,11 @@ ugyldig nummer
 ; bad number
 ;
 MSG_ERROR_REQUIRED_ARG_MISSING
-nødvendig argument mangler
+nÃ¸dvendig argument mangler
 ; required argument missing
 ;
 MSG_ERROR_KEY_NEEDS_ARG
-verdi etter nøkkelord mangler
+verdi etter nÃ¸kkelord mangler
 ; value after keyword missing
 ;
 MSG_ERROR_TOO_MANY_ARGS
@@ -31,7 +31,7 @@ feil antall argumenter
 ; wrong number of arguments
 ;
 MSG_ERROR_UNMATCHED_QUOTES
-ikke samsvarende anførselstegn
+ikke samsvarende anfÃ¸rselstegn
 ; unmatched quotes
 ;
 MSG_ERROR_LINE_TOO_LONG
@@ -39,7 +39,7 @@ linjen med argumenter er ugyldig eller for lang
 ; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
-filen er ikke kjørbar
+filen er ikke kjÃ¸rbar
 ; file is not executable
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
@@ -83,7 +83,7 @@ ugyldig objektnavn
 ; object name invalid
 ;
 MSG_ERROR_INVALID_LOCK
-ugyldig objektlås
+ugyldig objektlÃ¥s
 ; invalid object lock
 ;
 MSG_ERROR_OBJECT_WRONG_TYPE
@@ -99,7 +99,7 @@ disken er skrivebeskyttet
 ; disk is write-protected
 ;
 MSG_ERROR_RENAME_ACROSS_DEVICES
-forsøk på navnebytte over enheter
+forsÃ¸k pÃ¥ navnebytte over enheter
 ; rename across devices attempted
 ;
 MSG_ERROR_DIRECTORY_NOT_EMPTY
@@ -107,7 +107,7 @@ mappen er ikke tom
 ; directory not empty
 ;
 MSG_ERROR_TOO_MANY_LEVELS
-for mange nivåer
+for mange nivÃ¥er
 ; too many levels
 ;
 MSG_ERROR_DEVICE_NOT_MOUNTED
@@ -115,7 +115,7 @@ enhet (eller volum) er ikke montert
 ; device (or volume) is not mounted
 ;
 MSG_ERROR_SEEK_ERROR
-søkefeil
+sÃ¸kefeil
 ; seek failure
 ;
 MSG_ERROR_COMMENT_TOO_BIG
@@ -167,19 +167,19 @@ funksjonen er ikke implementert
 ; function not implemented
 ;
 MSG_ERROR_RECORD_NOT_LOCKED
-ulåst oppføring
+ulÃ¥st oppfÃ¸ring
 ; record not locked
 ;
 MSG_ERROR_LOCK_COLLISION
-låskonflikt i oppføring
+lÃ¥skonflikt i oppfÃ¸ring
 ; record lock collision
 ;
 MSG_ERROR_LOCK_TIMEOUT
-timeout av oppføringslås
+timeout av oppfÃ¸ringslÃ¥s
 ; record lock timeout
 ;
 MSG_ERROR_UNLOCK_ERROR
-opplåsingsfeil i oppføring
+opplÃ¥singsfeil i oppfÃ¸ring
 ; record unlock error
 ;
 MSG_ERROR_BUFFER_OVERFLOW
@@ -191,7 +191,7 @@ MSG_ERROR_BREAK
 ; ***Break
 ;
 MSG_ERROR_NOT_EXECUTABLE
-filen er ikke kjørbar
+filen er ikke kjÃ¸rbar
 ; file not executable
 ;
 MSG_STRING_DISK_NOT_VALIDATED
@@ -227,7 +227,7 @@ Ingen disk i "%s"
 ; No disk present in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-Du MÅ byttet ut volum "%s" i "%s"!
+Du MÃ… byttet ut volum "%s" i "%s"!
 ; You MUST replace volume "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
@@ -235,7 +235,7 @@ Volum "%s" har lese-/skrivefeil
 ; Volume "%s" has a read/write error
 ;
 MSG_STRING_RETRY
-Prøv igjen
+PrÃ¸v igjen
 ; Retry
 ;
 MSG_STRING_CANCEL

@@ -277,8 +277,8 @@ Impossible de trouver `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Impossible d'ouvrir `%s version %ld.
-; Unable to open `%s version %ld.
+Impossible d'ouvrir `%s? version %ld.
+; Unable to open `%s? version %ld.
 ;
 ; *** Additions
 ;

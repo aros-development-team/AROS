@@ -1,5 +1,5 @@
 ## version $VER: Format.catalog 1.0 (18.8.2008)
-## language português
+## language portuguÃªs
 ## codeset 0
 ;
 MSG_OK
@@ -15,7 +15,7 @@ Cancelar
 ;
 MSG_INSERT_DISK
 Inserir disco para ser formatado no dispositivo %s\n\
-Prima RETURN para iniciar formatação ou CTRL-C para abortar: 
+Prima RETURN para iniciar formataÃ§Ã£o ou CTRL-C para abortar: 
 ; Insert disk to be formatted in device %s\n\
 ; Press RETURN to begin formatting or CTRL-C to abort: 
 ;
@@ -58,7 +58,7 @@ MSG_FORMAT_REQUEST_TEXT
 Formatar outro volume\n\
 %s?\n\n\
 AVISO!\n\n\
-Toda a informação contida será apagada!\n\
+Toda a informaÃ§Ã£o contida serÃ¡ apagada!\n\
 (%s)
 ; OK to format volume\n\
 ; %s?\n\n\
@@ -100,19 +100,19 @@ Formatar
 ; Format
 ;
 MSG_DESCRIPTION
-Utilitário de formatação de disco
+UtilitÃ¡rio de formataÃ§Ã£o de disco
 ; Disk Formatting Utility
 ;
 MSG_COPYRIGHT
-Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
-; Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+Copyright Â© 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+; Copyright Â© 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
 ;
 MSG_AUTHOR
 Ben Hutchings, Pavel Fedin, The AROS Development Team
 ; Ben Hutchings, Pavel Fedin, The AROS Development Team
 ;
 MSG_LABEL_CURRENT_INFORMATION
-Informação currente:
+InformaÃ§Ã£o currente:
 ; Current Information:
 ;
 MSG_LABEL_NEW_VOLUME_NAME
@@ -144,7 +144,7 @@ Formatar
 ; Format
 ;
 MSG_BTN_QFORMAT
-Formatar rápido
+Formatar rÃ¡pido
 ; Quick Format
 ;
 MSG_BTN_CANCEL
@@ -156,11 +156,11 @@ Parar
 ; Stop
 ;
 MSG_ERROR_NO_APPLICATION
-Não pode criar a aplicação\n
+NÃ£o pode criar a aplicaÃ§Ã£o\n
 ; Can't create application\n
 ;
 MSG_ERROR_NO_WINDOW
-Não pode abrir a janela\n
+NÃ£o pode abrir a janela\n
 ; Can't open window\n
 ;
 MSG_REQ_ERROR_TITLE
@@ -191,8 +191,8 @@ Invalid DosType specification
 ; Invalid DosType specification
 ;
 MSG_ERROR_TOO_LARGE_1
-O tamanho do dispositivo é maior que 4 GigaBytes. O\
-Amiga file-system pode não funcionar num dispositivo tão grande.
+O tamanho do dispositivo Ã© maior que 4 GigaBytes. O\
+Amiga file-system pode nÃ£o funcionar num dispositivo tÃ£o grande.
 ; This device is larger than 4 gigabytes in size. The\
 ;  Amiga file-system cannot handle a device this large.
 ;
@@ -267,7 +267,7 @@ invalidate (CMD_CLEAR)
 ; invalidate (CMD_CLEAR)
 ;
 MSG_ERROR_VERIFY
-Erro de verificação
+Erro de verificaÃ§Ã£o
 ; Verify error
 ;
 MSG_COMMAND_FORMAT64
@@ -287,10 +287,10 @@ read (CMD_READ)
 ; read (CMD_READ)
 ;
 MSG_ERROR_TRASHCAN
-Não conseguiu criar a trashcan no volume\n%s
+NÃ£o conseguiu criar a trashcan no volume\n%s
 ; Couldn't create trashcan on volume\n%s
 ;
 MSG_ERROR_ICON
-Não conseguiu criar Icone do disco no volume\n%s
+NÃ£o conseguiu criar Icone do disco no volume\n%s
 ; Couldn't create disk icon on volume\n%s
 ;

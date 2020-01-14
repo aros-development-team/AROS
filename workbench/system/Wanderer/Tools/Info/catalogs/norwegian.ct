@@ -12,8 +12,8 @@ Ikoninformasjon
 ; Icon informations
 ;
 MSG_COPYRIGHT
-Ikoninformasjon\n© AROS Development Team
-; Icon informations\n©AROS Dev Team
+Ikoninformasjon\nÂ© AROS Development Team
+; Icon informations\nÂ©AROS Dev Team
 ;
 MSG_ICON
 Ikon
@@ -48,7 +48,7 @@ Skuff
 ; Drawer
 ;
 MSG_TOOL
-Verktøy
+VerktÃ¸y
 ; Tool
 ;
 MSG_PROJECT
@@ -56,7 +56,7 @@ Prosjekt
 ; Project
 ;
 MSG_GARBAGE
-Søppel
+SÃ¸ppel
 ; Garbage
 ;
 MSG_DEVICE
@@ -82,7 +82,7 @@ Beskyttelse
 ; Protection
 ;
 MSG_TOOLTYPES
-Verktøytype
+VerktÃ¸ytype
 ; Tooltypes
 ;
 MSG_ERROR_SHELLSTART
@@ -106,7 +106,7 @@ Skrivbar
 ; Write
 ;
 MSG_EXECUTE
-Utfør
+UtfÃ¸r
 ; Execute
 ;
 MSG_DELETE
@@ -126,12 +126,12 @@ Arkivert
 ; Archived
 ;
 MSG_STICKY
-Låst fast
+LÃ¥st fast
 ; Sticky
 ; FIXME: ?bersetzung?
 ;
 MSG_SIZE
-Størrelse
+StÃ¸rrelse
 ; Size
 ;
 MSG_VERSION
@@ -163,7 +163,7 @@ Dato
 ; Date
 ;
 MSG_NEW_KEY
-Ny nøkkel
+Ny nÃ¸kkel
 ; New key
 ;
 MSG_DELETE_KEY
@@ -187,6 +187,6 @@ Filsti
 ; Path
 ;
 MSG_BTNPATH
-Åpne filsti...
+Ã…pne filsti...
 ; Open path...
 ;

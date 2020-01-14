@@ -16,7 +16,7 @@ Skjerminfo
 ; Screen info
 ;
 MSG_SIZE
-St¯rrelse
+St√∏rrelse
 ; Size
 ;
 MSG_TITLE
@@ -56,7 +56,7 @@ MSG_SCREEN_PARM
 ; %d x %d, depth=%d
 ;
 MSG_OVERWRITE
-Filen '%s' eksisterer allerde.\nÿnsker du virkelig Â overskrive?
+Filen '%s' eksisterer allerde.\n√ònsker du virkelig √• overskrive?
 ; File '%s' already exists.\nDo you really want to overwrite it?
 ;
 MSG_ERROR_TITLE
@@ -84,7 +84,7 @@ Skriving av filen '%s' feilet med IO feil %ld!
 ; Writing of '%s' failed with IO Error %ld!
 ;
 MSG_ERR_OPENFILE
-Klarte ikke Âpne '%s' for skriving!
+Klarte ikke √•pne '%s' for skriving!
 ; Can't open file '%s' for output!
 ;
 MSG_ERR_APP

@@ -13,8 +13,8 @@ Opretter en ny skuffe med valgfrit ikon
 ; Creates new drawer with optional icon
 ;
 MSG_COPYRIGHT
-©2006, AROS Dev Team
-; ©2006, AROS Dev Team
+Â©2006, AROS Dev Team
+; Â©2006, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Opret ny skuffe
@@ -41,7 +41,7 @@ _Afbryd
 ; Ca_ncel
 ;
 MSG_BASENAME
-Omdøb_mig
+OmdÃ¸b_mig
 ; Rename_Me
 ;
 MSG_ERROR_TITLE
@@ -65,15 +65,15 @@ MSG_ILLEGAL_CHARS
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
-Behøver 2 argumenter!
+BehÃ¸ver 2 argumenter!
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
-Ugyldig kataloglås!
+Ugyldig kataloglÃ¥s!
 ; Invalid directory lock!
 ;
 MSG_WB_ONLY
-Kan ikke køres fra skal!\n
+Kan ikke kÃ¸res fra skal!\n
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP

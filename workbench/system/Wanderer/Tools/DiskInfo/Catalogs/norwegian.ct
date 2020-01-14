@@ -16,7 +16,7 @@ _Ok
 ; _OK
 ;
 MSG_ERROR_LOCALE
-Klarte ikke initialisiere språkinnstillingene.
+Klarte ikke initialisiere sprÃ¥kinnstillingene.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
@@ -60,7 +60,7 @@ Kapasitet
 ; Capacity
 ;
 MSG_BLOCK_SIZE
-Blokkstørrelse
+BlokkstÃ¸rrelse
 ; Block size
 ;
 MSG_BLOCKS
@@ -100,7 +100,7 @@ DOS-enhet:
 ; DOS Device:
 ;
 MSG_DEVICEINFO
-Tilkoblet på:
+Tilkoblet pÃ¥:
 ; Connected on:
 ;
 MSG_FILESYSTEM

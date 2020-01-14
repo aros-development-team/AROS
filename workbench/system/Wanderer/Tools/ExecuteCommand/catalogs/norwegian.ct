@@ -4,11 +4,11 @@
 ;
 ;
 MSG_TITLE
-Utfør
+UtfÃ¸r
 ; Execute
 ;
 MSG_DESCRIPTION
-Utfør kommando
+UtfÃ¸r kommando
 ; Execute Command
 ;
 MSG_LABEL_COMMANDLINE
@@ -16,7 +16,7 @@ Kommando og argumenter:
 ; Command and arguments:
 ;
 MSG_BUTTON_EXECUTE
-_Kjør
+_KjÃ¸r
 ; _Execute
 ;
 MSG_BUTTON_CANCEL
@@ -36,7 +36,7 @@ MSG_ERROR_OK
 ; *OK
 ;
 MSG_ERROR_LOCALE
-Klarte ikke initialisere språkinnstillingene.
+Klarte ikke initialisere sprÃ¥kinnstillingene.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
@@ -44,10 +44,10 @@ Klarte ikke initialisere "Custom" klassen.
 ; Can't initialize custom classes.
 ;
 MSG_ERROR_OPEN_CONSOLE
-Klarte ikke åpne konsollvinduet.
+Klarte ikke Ã¥pne konsollvinduet.
 ; Can't open console window.
 ;
 MSG_ERROR_EXECUTE
-Klarte ikke utføre kommandoen.
+Klarte ikke utfÃ¸re kommandoen.
 ; Can't execute command.
 ;

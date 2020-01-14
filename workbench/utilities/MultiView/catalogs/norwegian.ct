@@ -4,7 +4,7 @@
 ;
 ;
 MSG_CANT_OPEN_LIB
-Kan ikke åpne %s V%ld!\n
+Kan ikke Ã¥pne %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_CREATE_IC
@@ -12,7 +12,7 @@ Kan ikke lage sammenkoblingsobjekt!
 ; Can't create interconnection objects!
 ;
 MSG_CANT_LOCK_SCR
-Kan ikke låse offentlig skjerm!
+Kan ikke lÃ¥se offentlig skjerm!
 ; Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
@@ -36,7 +36,7 @@ Kan ikke lage menyer!
 ; Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Kan ikke åpne vinduet!
+Kan ikke Ã¥pne vinduet!
 ; Can't create window!
 ;
 MSG_CANT_CREATE_MSGPORT
@@ -56,7 +56,7 @@ Prosjekt
 ; Project
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Åpne...
+O\0Ã…pne...
 ; O\0Open...
 ;
 MSG_MEN_PROJECT_SAVEAS
@@ -140,7 +140,7 @@ MSG_MEN_PICT_ZOOM_OUT
 ;  \0Zoom out
 ;
 MSG_MEN_PICT_RESET
- \0Orginalstørrelse
+ \0OrginalstÃ¸rrelse
 ;  \0Reset Size
 ;
 MSG_MEN_PICT_FIT_WIN
@@ -148,7 +148,7 @@ MSG_MEN_PICT_FIT_WIN
 ;  \0Fit to Window
 ;
 MSG_MEN_PICT_KEEP_ASPECT
- \0Behold størrelsesforholdet
+ \0Behold stÃ¸rrelsesforholdet
 ;  \0Keep Aspect Ratio
 ;
 MSG_MEN_PICT_FORCE_MAP
@@ -164,27 +164,27 @@ Tekst
 ; Text
 ;
 MSG_MEN_TEXT_WORDWRAP
- \0Skru på tekstbrytning
+ \0Skru pÃ¥ tekstbrytning
 ;  \0Enable Word Wrap
 ;
 MSG_MEN_TEXT_SEARCH
- \0Søk for...
+ \0SÃ¸k for...
 ;  \0Search for...
 ;
 MSG_MEN_TEXT_SEARCH_PREV
- \0Søk etter forrige
+ \0SÃ¸k etter forrige
 ;  \0Search for previous
 ;
 MSG_MEN_TEXT_SEARCH_NEXT
- \0Søk etter neste
+ \0SÃ¸k etter neste
 ;  \0Search for next
 ;
 MSG_ASL_OPEN_TITLE
-Velg fil å åpne
+Velg fil Ã¥ Ã¥pne
 ; Select File to Open
 ;
 MSG_ASL_SAVE_TITLE
-Velg fil å lagre til
+Velg fil Ã¥ lagre til
 ; Select File to Save to
 ;
 MSG_ABOUT

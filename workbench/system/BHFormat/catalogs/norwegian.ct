@@ -17,7 +17,7 @@ Avbryt
 ;
 MSG_INSERT_DISK
 Sett inn disken som skal formateres i enhet %s\n\
-Tryk ENTER for å begynne formateringen eller CTRL-C for å avbryte:
+Tryk ENTER for Ã¥ begynne formateringen eller CTRL-C for Ã¥ avbryte:
 ; Insert disk to be formatted in device %s\n\
 ; Press RETURN to begin formatting or CTRL-C to abort: 
 ;
@@ -30,7 +30,7 @@ MSG_VERIFYING
 ; \rVerifying 
 ;
 MSG_INITIALIZING
-Klargjør disk...\n
+KlargjÃ¸r disk...\n
 ; Initializing disk...\n
 ;
 ; ===========================================================
@@ -45,7 +45,7 @@ Formaterer disk...
 ; Formatting Disk...
 ;
 MSG_GUI_INITIALIZING
-Klargjør disk...
+KlargjÃ¸r disk...
 ; Initializing Disk...
 ;
 MSG_IN_DEVICE
@@ -61,9 +61,9 @@ Formater|Avbryt
 ; Format|Cancel
 ;
 MSG_FORMAT_REQUEST_TEXT
-OK å formatere volume %s?\n\n\
+OK Ã¥ formatere volume %s?\n\n\
 ADVARSEL!\n\n\
-Alle data vil gå tapt!\n\
+Alle data vil gÃ¥ tapt!\n\
 (%s)
 ; OK to format volume\n\
 ; %s?\n\n\
@@ -106,19 +106,19 @@ Diskformatering
 ; Format
 ;
 MSG_DESCRIPTION
-Verktøy for å formatere disker
+VerktÃ¸y for Ã¥ formatere disker
 ; Disk Formatting Utility
 ;
 MSG_COPYRIGHT
-Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
-; Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+Copyright Â© 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+; Copyright Â© 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
 ;
 MSG_AUTHOR
 Ben Hutchings, Pavel Fedin, The AROS Development Team
 ; Ben Hutchings, Pavel Fedin, The AROS Development Team
 ;
 MSG_LABEL_CURRENT_INFORMATION
-Nåværende opplysninger:
+NÃ¥vÃ¦rende opplysninger:
 ; Current Information:
 ;
 MSG_LABEL_NEW_VOLUME_NAME
@@ -130,7 +130,7 @@ Tom
 ; Empty
 ;
 MSG_LABEL_PUT_TRASHCAN
-Plaser søppelkasse:
+Plaser sÃ¸ppelkasse:
 ; Put Trashcan:
 ;
 MSG_LABEL_FFS
@@ -166,7 +166,7 @@ Kan ikke opprette applikasjonen\n
 ; Can't create application\n
 ;
 MSG_ERROR_NO_WINDOW
-Kan ikke åpne vinduet\n
+Kan ikke Ã¥pne vinduet\n
 ; Can't open window\n
 ;
 MSG_REQ_ERROR_TITLE
@@ -187,7 +187,7 @@ Feil
 MSG_ERRORS_FAILURE
 FEIL
 ; Failure
-; Med store bokstaver for å skille mellom Error og Feil
+; Med store bokstaver for Ã¥ skille mellom Error og Feil
 ;
 MSG_FORMAT
 Format 
@@ -198,31 +198,31 @@ Ugyldig DosType-angivelse
 ; Invalid DosType specification
 ;
 MSG_ERROR_TOO_LARGE_1
-Denne enheten har en størrelse på over 4 gigabyte. Amiga-\
- filsystemet kan ikke håndtere så store enheter.
+Denne enheten har en stÃ¸rrelse pÃ¥ over 4 gigabyte. Amiga-\
+ filsystemet kan ikke hÃ¥ndtere sÃ¥ store enheter.
 ; This device is larger than 4 gigabytes in size. The\
 ;  Amiga file-system cannot handle a device this large.
 ;
 MSG_ERROR_TOO_LARGE_2
-Denne enheten går utover de første 4 gigabyte av disken\
- den er på. For å bruke den, må du først installere\
+Denne enheten gÃ¥r utover de fÃ¸rste 4 gigabyte av disken\
+ den er pÃ¥. For Ã¥ bruke den, mÃ¥ du fÃ¸rst installere\
  version 43 eller nyere av Amiga-filsystemet.
 ; This device extends beyond the first 4 gigabytes of the\
 ;  disk it is on.  In order to use it, you must install\
 ;  version 43 or later of the Amiga file-system.
 ;
 MSG_ERROR_TOO_LARGE_3
-Denne enheten er større end 2 gigabyte i størrelse. For å bruke\
- den, må du installere version 40 eller nyere av Amiga-\
+Denne enheten er stÃ¸rre end 2 gigabyte i stÃ¸rrelse. For Ã¥ bruke\
+ den, mÃ¥ du installere version 40 eller nyere av Amiga-\
  filsystemet.
 ; This device is larger than 2 gigabytes in size. In order to\
 ;  use it, you must install version 40 or later of the Amiga\
 ;  file-system.
 ;
 MSG_ERROR_TOO_LARGE_4
-Denne enheten er satt til å bruke buffere i hukommelsen, som\
- muligens ikke er \"public\". Dette kan få din datamaskin til\
- å gå ned hvis du bruker virtuel hukommelse. Du bør derfor\
+Denne enheten er satt til Ã¥ bruke buffere i hukommelsen, som\
+ muligens ikke er \"public\". Dette kan fÃ¥ din datamaskin til\
+ Ã¥ gÃ¥ ned hvis du bruker virtuel hukommelse. Du bÃ¸r derfor\
  legge til 1 til BufMemType-innstillingen for denne enheten.
 ; This device is set to use buffers in memory that may not be\
 ;  \"public\". This can cause your computer to crash if you use a\
@@ -230,15 +230,15 @@ Denne enheten er satt til å bruke buffere i hukommelsen, som\
 ;  setting for this device to avoid this.
 ;
 MSG_ERROR_DEVICE
-Åpne enhet svarte med feil %ld
+Ã…pne enhet svarte med feil %ld
 ; Device open returned error %ld
 ;
 MSG_ERROR_IDE
-Denne enheten ser ut til å være på et IDE-drev\
+Denne enheten ser ut til Ã¥ vÃ¦re pÃ¥ et IDE-drev\
  som bruker en eldre Commodore IDE-driver. Denne kan\
- forsøke å gjøre long data-overførsler som noen\
- IDE-drev ikke kan utføre korrekt. For å unngå denne\
- risikoen for datatap, bør du endre denne enhets\
+ forsÃ¸ke Ã¥ gjÃ¸re long data-overfÃ¸rsler som noen\
+ IDE-drev ikke kan utfÃ¸re korrekt. For Ã¥ unngÃ¥ denne\
+ risikoen for datatap, bÃ¸r du endre denne enhets\
  MaxTransfer-innstilling til 0x10000.
 ; This device appears to be on an IDE drive\
 ;  using an old Commodore IDE driver.  This driver may\
@@ -248,13 +248,13 @@ Denne enheten ser ut til å være på et IDE-drev\
 ;  MaxTransfer setting to 0x10000.
 ;
 MSG_ERROR_DEVICE_QUERY
-Enhetsforespørsel (NSCMD_DEVICEQUERY) svarte med feil %ld
+EnhetsforespÃ¸rsel (NSCMD_DEVICEQUERY) svarte med feil %ld
 ; Device query (NSCMD_DEVICEQUERY) returned error %ld
 ;
 MSG_ERROR_64BIT
-Denne enheten strekker seg utover de første 4 gigabyte av disken.\
- For å bruke enheten, må du enten bruke en driver som\
- understøtter NSD's 64-bitkommandoer eller installere og kjøre\
+Denne enheten strekker seg utover de fÃ¸rste 4 gigabyte av disken.\
+ For Ã¥ bruke enheten, mÃ¥ du enten bruke en driver som\
+ understÃ¸tter NSD's 64-bitkommandoer eller installere og kjÃ¸re\
  NSDPatch-programmet.
 ; This device extends beyond the first 4 gigabytes of the disk.\
 ;  In order to use this device, you must either use a driver\
@@ -266,11 +266,11 @@ Enheten %s svarte med feil %ld
 ; Device %s returned error %ld
 ;
 MSG_ERROR_FLUSH
-tøm (CMD_UPATE)
+tÃ¸m (CMD_UPATE)
 ; flush (CMD_UPATE)
 ;
 MSG_ERROR_INVALIDATE
-ugyldigjør (CMD_CLEAR)
+ugyldigjÃ¸r (CMD_CLEAR)
 ; invalidate (CMD_CLEAR)
 ;
 MSG_ERROR_VERIFY
@@ -294,10 +294,10 @@ les (CMD_READ)
 ; read (CMD_READ)
 ;
 MSG_ERROR_TRASHCAN
-Kunne ikke opprette søppelkasse på volum\n%s
+Kunne ikke opprette sÃ¸ppelkasse pÃ¥ volum\n%s
 ; Couldn't create trashcan on volume\n%s
 ;
 MSG_ERROR_ICON
-Kunne ikke opprette diskikon på volum\n%s
+Kunne ikke opprette diskikon pÃ¥ volum\n%s
 ; Couldn't create disk icon on volume\n%s
 ;

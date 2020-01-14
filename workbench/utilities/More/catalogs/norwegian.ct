@@ -3,13 +3,13 @@
 ## language norwegian
 ;
 MSG_CANT_OPEN_LIB
-Kan ikke åpne %s V%1d!
+Kan ikke Ã¥pne %s V%1d!
 ;
 MSG_NO_MEM
 Ikke nok minne!
 ;
 MSG_CANT_LOCK_SCR
-Kan ikke låse offentlig skjerm!
+Kan ikke lÃ¥se offentlig skjerm!
 ;
 MSG_CANT_GET_DRI
 Kan ikke hente DrawInfo!
@@ -39,7 +39,7 @@ MSG_MEN_PROJECT
 Fil
 ;
 MSG_MEN_PROJECT_OPEN
-O\0Åpne...
+O\0Ã…pne...
 ;
 MSG_MEN_PROJECT_SAVEAS
 A\0Lagre som...
@@ -69,13 +69,13 @@ MSG_MEN_NAVIGATION_JUMP
 J\0Hopp...
 ;
 MSG_ASL_OPEN_TITLE
-Velg fil å åpne
+Velg fil Ã¥ Ã¥pne
 ;
 MSG_ASL_SAVE_TITLE
-Velg fil å lagre til
+Velg fil Ã¥ lagre til
 ;
 MSG_ABOUT
-More V%ld.%ld\n (%s)\nCopyright © %s av %s
+More V%ld.%ld\n (%s)\nCopyright Â© %s av %s
 ;
 MSG_ABOUT_TITLE
 More
@@ -84,10 +84,10 @@ MSG_CONTINUE
 Fortsett
 ;
 MSG_JUMP_TITLE
-Gå til linje...
+GÃ¥ til linje...
 ;
 MSG_FIND_TITLE
-Søk
+SÃ¸k
 ;
 MSG_OK
 OK

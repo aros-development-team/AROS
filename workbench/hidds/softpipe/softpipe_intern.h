@@ -2,9 +2,12 @@
 #define _SOFTPIPE_INTERN_H
 
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "state_tracker/sw_winsys.h"
 

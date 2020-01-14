@@ -263,10 +263,10 @@ msgTextProgramName
 AHI Instellingen
 ; AHI preferences
 ;
-;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
+;You can use something like "%s%s\nCopyright Â©%s\nEnglish translation by Your Name" here...
 msgTextCopyright
-%s%s\nCopyright ©%s\nNederlandse vertaling door Michel Vissers.
-; %s%s\nCopyright ©%s
+%s%s\nCopyright Â©%s\nNederlandse vertaling door Michel Vissers.
+; %s%s\nCopyright Â©%s
 ;
 msgTextNoWindow
 Kan venster niet openen.
@@ -281,8 +281,8 @@ Kan `%s' niet vinden!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Kan `%s´ versie %ld niet openen.
-; Unable to open `%s´ version %ld.
+Kan `%sÂ´ versie %ld niet openen.
+; Unable to open `%sÂ´ version %ld.
 ;
 ; *** Additions
 ;

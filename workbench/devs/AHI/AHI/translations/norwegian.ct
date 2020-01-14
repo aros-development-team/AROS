@@ -182,7 +182,7 @@ Globale valg
 ; Global options
 ;
 msgGlobOptDebugLevel
-Feilsøkingsnivå
+FeilsÃ¸kingsnivÃ¥
 ; _Debug level
 ;
 msgGlobOptEcho
@@ -208,7 +208,7 @@ Lav
 ; Low
 ;
 msgDebugHigh
-Høy
+HÃ¸y
 ; High
 ;
 msgDebugFull
@@ -218,7 +218,7 @@ Full
 ; *** Echo ***
 ;
 msgEchoEnabled
-På
+PÃ¥
 ; Enabled
 ;
 msgEchoFast
@@ -232,7 +232,7 @@ Av
 ; *** Surround ***
 ;
 msgSurroundEnabled
-På
+PÃ¥
 ; Enabled
 ;
 msgSurroundDisabled
@@ -269,11 +269,11 @@ msgTextCopyright
 ; %s%s\nCopyright @%s
 ;
 msgTextNoWindow
-Klarte ikke åpne vindu.
+Klarte ikke Ã¥pne vindu.
 ; Unable to open window.
 ;
 msgTextNoFileRequester
-Klarte ikke allokere filforespørsel.
+Klarte ikke allokere filforespÃ¸rsel.
 ; Unable to allocate file requester.
 ;
 msgTextNoFind
@@ -281,7 +281,7 @@ Klarte ikke finne `%s'!
 ; Unable to find `%s'!
 ;
 msgTextNoOpen
-Klarte ikke åpne `%s' versjon %ld.
+Klarte ikke Ã¥pne `%s' versjon %ld.
 ; Unable to open `%s' version %ld.
 ;
 ; *** Additions

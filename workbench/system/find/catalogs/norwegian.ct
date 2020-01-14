@@ -7,7 +7,7 @@ Finn
 ; Find
 ;
 MSG_APP_DESCRIPTION
-Filsøkeverktøy
+FilsÃ¸keverktÃ¸y
 ; File search tool
 ;
 MSG_APP_COPYRIGHT
@@ -27,7 +27,7 @@ Full filsti
 ; Full Path
 ;
 MSG_LST_SIZE
-Størrelse
+StÃ¸rrelse
 ; Size
 ;
 MSG_LST_ATTRIBUTES
@@ -51,7 +51,7 @@ Filsti
 ; Path
 ;
 MSG_LBL_PATTERN
-Søkestreng
+SÃ¸kestreng
 ; Pattern
 ;
 MSG_LBL_CONTENTS
@@ -67,7 +67,7 @@ Stop
 ; Stop
 ;
 MSG_BTN_OPEN
-Åpne
+Ã…pne
 ; Open
 ;
 MSG_BTN_VIEW
@@ -97,7 +97,7 @@ Feil:\nKlarte ikke allokere nok minne.
 ; Error:\nCan't allocate memory.
 ;
 MSG_ERR_NO_WINDOW
-Feil:\nKlarte ikke åpne vinduet.
+Feil:\nKlarte ikke Ã¥pne vinduet.
 ; Error:\nCan't open window.
 ;
 MSG_ERR_DOS
@@ -105,13 +105,13 @@ DOS Feil:\n%s
 ; DOS Error:\n%s
 ;
 MSG_ERR_NO_FILE
-Feil:\nKlarte ikke åpne filen\n\"%s\"\.
+Feil:\nKlarte ikke Ã¥pne filen\n\"%s\"\.
 ; Error:\nCan't open file\n\"%s\".
 ;
 MSG_ERR_NO_DIR
-Feil:\nKlarte ikke åpne katalogen\n\"%s\"\.
+Feil:\nKlarte ikke Ã¥pne katalogen\n\"%s\"\.
 ; Error:\nCan't open directory\n\"%s\".
 ;
 MSG_ERR_PATTERN
-Feil:\nKlarte ikke å parse søkestrengen.
+Feil:\nKlarte ikke Ã¥ parse sÃ¸kestrengen.
 ; Error:\nCan't parse pattern.

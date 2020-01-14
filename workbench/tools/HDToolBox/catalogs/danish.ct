@@ -9,7 +9,7 @@ Aktiv
 ; Active
 ;
 WORD_AddEntry
-Tilføj post
+TilfÃ¸j post
 ; Add Entry
 ;
 WORD_All
@@ -33,11 +33,11 @@ Afbryd
 ; Cancel
 ;
 WORD_Changed
-Ændret
+Ã†ndret
 ; Changed
 ;
 WORD_Change_Type
-Ændr type
+Ã†ndr type
 ; Change Type
 ;
 WORD_Create_Table
@@ -73,7 +73,7 @@ O.k.
 ; Ok
 ;
 WORD_Parent
-Forælder
+ForÃ¦lder
 ; Parent
 ;
 WORD_Partitions
@@ -97,19 +97,19 @@ Fjern post
 ; Remove Entry
 ;
 WORD_Rename
-Omdøb
+OmdÃ¸b
 ; Rename
 ;
 WORD_Resize_Move
-Ændr størrelse/flyt
+Ã†ndr stÃ¸rrelse/flyt
 ; Resize/Move
 ;
 WORD_Save_Changes
-Gem ændringer
+Gem Ã¦ndringer
 ; Save Changes
 ;
 WORD_Size
-Størrelse
+StÃ¸rrelse
 ; Size
 ;
 WORD_Unit
@@ -137,7 +137,7 @@ Afslut
 ; Quit
 ;
 MSG_ASK_SAVE
-Alle data på ændrede partitioner vil blive ødelagt!\nVil du gennemføre ændringerne til partitionstabel '%s'?
+Alle data pÃ¥ Ã¦ndrede partitioner vil blive Ã¸delagt!\nVil du gennemfÃ¸re Ã¦ndringerne til partitionstabel '%s'?
 ; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
 ;
 MSG_NO_MEMORY
@@ -149,15 +149,15 @@ Partitionstabellen er fuld
 ; Partition table full
 ;
 MSG_Select_Empty_Area
-Vælg tomt område
+VÃ¦lg tomt omrÃ¥de
 ; Select empty area
 ;
 MSG_Select_Partition_Resize_Move
-vælg en partition til flytning/størrelsesforandring
+vÃ¦lg en partition til flytning/stÃ¸rrelsesforandring
 ; Select a partition and resize/move it
 ;
 MSG_Welcome
-Velkommen til partitioneringsværktøjet
+Velkommen til partitioneringsvÃ¦rktÃ¸jet
 ; Welcome to the partitioning tool
 ;
 MSG_WriteTableError

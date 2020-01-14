@@ -1,9 +1,16 @@
 /*
-    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
+
+#include <proto/utility.h>
+#include <proto/exec.h>
+#include <proto/gallium.h>
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "util/os_misc.h"
 #include "pipe/p_defines.h"
@@ -13,10 +20,6 @@
 #include "util/u_inlines.h"
 
 #include "main/context.h"
-
-#include <proto/utility.h>
-#include <proto/exec.h>
-#include <proto/gallium.h>
 
 #include "mesa3dgl_support.h"
 #include "mesa3dgl_gallium.h"
@@ -209,7 +212,7 @@ static VOID MESA3DGLFrameBufferCreateResource(struct mesa3dgl_framebuffer * amfb
     amfb->textures[statt] = amfb->screen->resource_create(amfb->screen, &templ);
 }
 
-static boolean MESA3DGLFrameBufferValidate(struct st_context_iface *stctx,
+static bool MESA3DGLFrameBufferValidate(struct st_context_iface *stctx,
                        struct st_framebuffer_iface *stfbi,
                        const enum st_attachment_type *statts,
                        unsigned count,
@@ -257,7 +260,7 @@ static boolean MESA3DGLFrameBufferValidate(struct st_context_iface *stctx,
     return TRUE;
 }
 
-static boolean MESA3DGLFrameBufferFlushFront(struct st_context_iface *stctx,
+static bool MESA3DGLFrameBufferFlushFront(struct st_context_iface *stctx,
                           struct st_framebuffer_iface *stfbi,
                           enum st_attachment_type statt)
 {

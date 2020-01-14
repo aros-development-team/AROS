@@ -16,11 +16,11 @@ Nightly %s Build
 ; Nightly %s Build
 ;
 MSG_SNAPSHOT
-Øjebliksbillede
+Ã˜jebliksbillede
 ; Snapshot
 ;
 MSG_MILESTONE
-Milepæl
+MilepÃ¦l
 ; Milestone
 ;
 MSG_RELEASE
@@ -28,11 +28,11 @@ Udgivelse
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2020, The AROS Development Team. Alle rettigheder forbeholdes.
-; Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+Copyright Â© 1995-2020, The AROS Development Team. Alle rettigheder forbeholdes.
+; Copyright Â© 1995-2020, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
-Udgivet under vilkårene i
+Udgivet under vilkÃ¥rene i
 ; Released under the terms of the
 ;
 MSG_LICENSE_2
@@ -44,11 +44,11 @@ MSG_LICENSE_3
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Besøg http://www.aros.org for flere oplysninger.
+BesÃ¸g http://www.aros.org for flere oplysninger.
 ; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
-Ophavsmænd
+OphavsmÃ¦nd
 ; Authors
 ;
 MSG_PAGE_SPONSORS
@@ -88,7 +88,7 @@ MSG_SECTION_WORKBENCH
 ; Workbench
 ;
 MSG_SECTION_TOOLS
-Værktøj
+VÃ¦rktÃ¸j
 ; Tools
 ;
 MSG_SECTION_PREFERENCES
@@ -112,7 +112,7 @@ DOS
 ; DOS
 ;
 MSG_SECTION_NETWORK
-Netværk
+NetvÃ¦rk
 ; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
@@ -124,7 +124,7 @@ Dokumentation
 ; Documentation
 ;
 MSG_SECTION_TRANSLATION
-Oversættelse
+OversÃ¦ttelse
 ; Translation
 ;
 MSG_SECTION_ARTISTRY
