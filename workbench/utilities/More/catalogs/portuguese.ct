@@ -1,41 +1,41 @@
 ## version $VER: more.catalog 1.0 (13.08.2008)
 ## codeset 0
-## language português
+## language portuguÃªs
 ;
-; Translated by João Ralha
+; Translated by JoÃ£o Ralha
 ;
 MSG_CANT_OPEN_LIB
-Não conseguiu abrir %s V%ld!
+NÃ£o conseguiu abrir %s V%ld!
 ;Can't open %s V%ld!
 ;
 MSG_NO_MEM
-Sem memória disponível!
+Sem memÃ³ria disponÃ­vel!
 ;Out of memory!
 ;
 MSG_CANT_LOCK_SCR
-Não é possível bloquear\no écran público!
+NÃ£o Ã© possÃ­vel bloquear\no Ã©cran pÃºblico!
 ;Can't lock public screen!
 ;
 MSG_CANT_GET_DRI
-Não obteve a estrutura DrawInfo!
+NÃ£o obteve a estrutura DrawInfo!
 ;
 MSG_CANT_GET_VI
-Não obteve VisualInfo!
+NÃ£o obteve VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE
-Não foi possível criar as imagens SYSICLASS!
+NÃ£o foi possÃ­vel criar as imagens SYSICLASS!
 ;Can't create SYSICLASS images!
 ;
 MSG_CANT_CREATE_GADGET
-Não foi possível criar os botões!
+NÃ£o foi possÃ­vel criar os botÃµes!
 ;Can't create gadgets!
 ;
 MSG_CANT_CREATE_MENUS
-Não foi possível criar os menus!
+NÃ£o foi possÃ­vel criar os menus!
 ;Can't create menus!
 ;
 MSG_CANT_CREATE_WIN
-Não foi possível criar a janela!
+NÃ£o foi possÃ­vel criar a janela!
 ;Can't create window!
 ;
 MSG_MEN_PROJECT
@@ -63,7 +63,7 @@ S\0Sair
 ;Q\0Quit
 ;
 MSG_MEN_NAVIGATION
-Navegação
+NavegaÃ§Ã£o
 ;Navigation
 ;
 MSG_MEN_NAVIGATION_FIND
@@ -91,7 +91,7 @@ Selecionar o ficheiro para Guardar
 ;Select File to Save to
 ;
 MSG_ABOUT
-More V%ld.%ld\n (%s)\nCopyright © %s by %s
+More V%ld.%ld\n (%s)\nCopyright Â© %s by %s
 ;
 MSG_ABOUT_TITLE
 More
