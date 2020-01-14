@@ -1,7 +1,7 @@
 ;
 ;	$VER: Security.cd 1.0 (30.09.2007)
 ;
-; Translated by Jo„o Ralha (hardwired)
+; Translated by Jo√£o Ralha (hardwired)
 ;
 ; misc. strings
 ;
@@ -14,7 +14,7 @@ Continuar
 ;Resume
 ;
 MSG_WARNING_GUI
-Aviso de SeguranÁa
+Aviso de Seguran√ßa
 ;Security Warning
 ;
 MSG_LOGINREQ_GUI
@@ -23,9 +23,9 @@ Pedido de Acesso Seguro
 ;
 MSG_LOGINPROMPT_GUI
 \33cBem-vindos ao AROS Research OS\n\
-VersiÛn de AROS: %s\n\n\
+Versi√≥n de AROS: %s\n\n\
 Escreva seus dados de utilizador\n\
-para iniciar sess„o %s.
+para iniciar sess√£o %s.
 ;\33cWelcome to the AROS Research OS\nAROS Version: %s\n\nPlease fill in your user details\nto log onto %s.
 ;
 MSG_LOGINREQ_CON
@@ -40,7 +40,7 @@ Entre a sua Password
 ;Enter your Password
 ;
 MSG_PASSWDPROMPT_CON
-;ContraseÒa :
+;Contrase√±a :
 Password :
 ;
 MSG_LOGINFAIL_GUI
@@ -48,11 +48,11 @@ Utilizador incorrecto
 ;Login Incorrect
 ;
 MSG_LOGINFAIL_CON
-\n....°Utilizador incorrecto!\n
+\n....¬°Utilizador incorrecto!\n
 ;\n    Login Incorrect !!\n
 ;
 MSG_LASTLOGIN
-Entrada em %s, %s en %s.\n\nA ˙ltima entrada em %s, %s fue en %s.
+Entrada em %s, %s en %s.\n\nA √∫ltima entrada em %s, %s fue en %s.
 ;Logged in on %s, %s at %s.\n\nLast login on %s, %s at %s.
 ;
 MSG_FIRSTLOGIN
@@ -62,55 +62,55 @@ Entrada em %s, %s en %s.\n\nNenhum registo anterior.
 ; warning strings
 ;
 MSG_NOMUFS
-Dever· ter pelo menos uma partiÁ„o com sistema de ficheiros AFFS
+Dever√° ter pelo menos uma parti√ß√£o com sistema de ficheiros AFFS
 ;You must have at least one partition with the AFFS FileSystem
 ;
 MSG_NOCONFIGFILE
-;No se puede cargar el archivo de configuraciÛn\n\
-;Usando la configuraciÛn predeterminada
+;No se puede cargar el archivo de configuraci√≥n\n\
+;Usando la configuraci√≥n predeterminada
 Couldn't load the configuration file\nUsing the default configuration
 ;
 MSG_BADKEYFILE
-;ViolaciÛn de Seguridad:\n\
-;El archivo de claves est· mal\n\
+;Violaci√≥n de Seguridad:\n\
+;El archivo de claves est√° mal\n\
 ;o es inconsistente
 Security violation: Bad or inconsistent keyfile(s) found
 ;
 MSG_BADENTRY_PASSWD
-;La entrada del renglÛn %ld del archivo\n\
-;de contraseÒas est· mal. Ser· ignorada
+;La entrada del rengl√≥n %ld del archivo\n\
+;de contrase√±as est√° mal. Ser√° ignorada
 Bad entry found on line %ld of the password file\nThis line will be ignored
 ;
 MSG_BADENTRY_GROUP
-;La entrada del renglÛn %ld del archivo \n\
-;de grupos est· mal. Ser· ignorada
+;La entrada del rengl√≥n %ld del archivo \n\
+;de grupos est√° mal. Ser√° ignorada
 Bad entry found on line %ld of the group file\nThis line will be ignored
 ;
 MSG_BADVALUE_CONFIG
-;El valor en el renglÛn %ld del archivo\n\
-;de configuraciÛn est· mal. Ser· ignorado
+;El valor en el rengl√≥n %ld del archivo\n\
+;de configuraci√≥n est√° mal. Ser√° ignorado
 Bad value(s) found on line %ld of the configuration file\n\
 This value will be ignored
 ;
 MSG_BADOPTION_CONFIG
-;La opciÛn en el renglÛn %ld del archivo\n\
-;de configuraciÛn est· mal. Ser· ignorado
+;La opci√≥n en el rengl√≥n %ld del archivo\n\
+;de configuraci√≥n est√° mal. Ser√° ignorado
 Bad option found on line %ld of the configuration file\nThis line will be ignored
 ;
 MSG_TOOMANYSECGROUPS
 Demasiados grupos secundarios para el usuario con uid %ld\n\
-Se ignorar· el renglÛn %ld del archivo de grupos
+Se ignorar√° el rengl√≥n %ld del archivo de grupos
 ;Too many secondary groups for user with uid %ld\n\
 ;Line %ld of the group file will be ignored
 ;
 ; logfile strings
 ;
 MSG_LOG_STARTUP
-InÌcio
+In√≠cio
 ;Startup
 ;
 MSG_LOG_LOGIN
-Sess„o aberta desde %ld a \'%s\'
+Sess√£o aberta desde %ld a \'%s\'
 ;Login from %ld to \'%s\'
 ;
 MSG_LOG_LOGINFAIL
@@ -126,10 +126,10 @@ Falhou a password para %ld
 ;Passwd for %ld failed
 ;
 MSG_LOG_CHECKPASSWD
-ComprobaÁ„o da Password para %ld
+Comproba√ß√£o da Password para %ld
 ;CheckPasswd for %ld
 ;
 MSG_LOG_CHECKPASSWDFAIL
-Falhou a comprobaÁ„o da Password para %ld
+Falhou a comproba√ß√£o da Password para %ld
 ;CheckPasswd for %ld failed
 ;
