@@ -18,6 +18,7 @@
 
 #include "ahci.h"
 
+static const char *str_devicename = "ahci.device";
 
 static void ahci_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
@@ -99,7 +100,7 @@ void AHCIUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     Hidd_StorageUnit_Switch (msg->attrID, idx)
     {
     case aoHidd_StorageUnit_Device:
-        *msg->storage = (IPTR)"ahci.device";
+        *msg->storage = (IPTR)str_devicename;
         return;
 
     case aoHidd_StorageUnit_Number:
