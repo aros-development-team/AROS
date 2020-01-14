@@ -38,7 +38,7 @@ LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqTy
 	struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,options[type]};
 	struct IntuitionBase *IntuitionBase;
 
-	IntuitionBase = (APTR)OpenLibrary("intuition.library", 39);
+	IntuitionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
 	if (IntuitionBase != NULL)
 	{
 	    es.es_TextFormat=string;

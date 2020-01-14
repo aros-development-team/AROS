@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Security library initialization code.
@@ -46,7 +46,7 @@ static int Security_AfterDOS(LIBBASETYPEPTR secBase)
      */
 
     if (!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37)) ||
-             !(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37)) ||
+             !(IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION)) ||
              !(UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)) ||
              !(ReqToolsBase = (struct ReqToolsBase *)OpenLibrary("reqtools.library", 38)) ||
              !CreateServer(secBase))

@@ -291,7 +291,7 @@ LONG mainprogram(struct ExecBase *SysBase)
 
     if(initcachebuffers()==0) {
 
-      if((IntuitionBase=(APTR)OpenLibrary("intuition.library",37))!=0) {
+      if((IntuitionBase=(APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION))!=0) {
 
 #ifdef STARTDEBUG
           dreq("(1) Filesystem initializing...");

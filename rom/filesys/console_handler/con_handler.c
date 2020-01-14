@@ -267,7 +267,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     if (!fh)
         return NULL;
 
-    fh->intuibase = (APTR) OpenLibrary("intuition.library", 0);
+    fh->intuibase = (APTR) TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     fh->dosbase = (APTR) OpenLibrary("dos.library", 0);
     fh->utilbase = (APTR) OpenLibrary("utility.library", 0);
     fh->workbenchbase = (APTR) OpenLibrary("workbench.library", 0);

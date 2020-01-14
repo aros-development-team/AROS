@@ -4,7 +4,7 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *		(C) Copyright 2002-2009 The AROS Development Team
+ *		(C) Copyright 2002-2020 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
@@ -85,7 +85,7 @@ static UWORD const g_image_data[] = {
 };
 
 void Init_Intui(struct CDVDBase *global) {
-	IntuitionBase = (APTR)OpenLibrary("intuition.library", 37);
+	IntuitionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
 	WorkbenchBase = (APTR)OpenLibrary("workbench.library", 37);
 	IconBase = (APTR)OpenLibrary("icon.library", 37);
 	if (IconBase)
