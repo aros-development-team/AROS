@@ -933,19 +933,6 @@ endif
 
 
 #------------------------------------------------------------------------------
-# Make an alias from one arch specific build to another arch.
-# arguments:
-# - mainmmake: the mmake of the module in the main tree
-# - arch: the current arch
-# - alias: the alias to which this should point
-%define rule_archalias mainmmake=\A arch=\A alias=\A
-
-#MM- %(mainmmake)-%(arch) : %(mainmmake)-%(alias)
-%end
-#------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
 # Generate a rule to assemble a source file to an object file. Basename may
 # contain a directory part, then the source file has to be in that directory.
 # The generated file will be put in the object directory without the directory.
@@ -2930,11 +2917,26 @@ BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
 %end
 #-----------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# Make an alias from one arch specific build to another arch.
+# arguments:
+# - mainmmake: the mmake of the module in the main tree
+# - arch: the current arch
+# - alias: the alias to which this should point
+%define rule_archalias mainmmake=\A arch=\A alias=\A
+
+#MM- %(mainmmake)-%(arch) : %(mainmmake)-%(alias)
+%end
+
+#------------------------------------------------------------------------------
 
 %define gen_archfamilyrules mainmmake=/A family=/A arch=/A
-#MM- %(mainmmake)-%(arch) : %(mainmmake)-%(family)
-#MM- %(mainmmake)-%(arch)-quick : %(mainmmake)-%(family)-quick
-#MM- %(mainmmake)-%(arch)-includes : %(mainmmake)-%(family)-includes
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch) alias=%(family)
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-quick alias=%(family)-quick
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-includes alias=%(family)-includes
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-linklib alias=%(family)-linklib
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-kobj alias=%(family)-kobj
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-kobj-quick alias=%(family)-kobj-quick
 %end
 
 #------------------------------------------------------------------------------
