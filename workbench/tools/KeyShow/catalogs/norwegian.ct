@@ -7,7 +7,7 @@ Vis tastaturoppsett
 ; Show Keyboard Layout
 ;
 MSG_AppCopyright
-Copyright © 2012 The AROS Development Team
+Copyright Â© 2012 The AROS Development Team
 ; Copyright \xa9 2012 The AROS Development Team
 ;
 MSG_WI_TITLE
@@ -47,7 +47,7 @@ Alt
 ; Alt
 ;
 MSG_KEY_LOCK
-Lås
+LÃ¥s
 ; Lock
 ;
 MSG_KEY_HELP
