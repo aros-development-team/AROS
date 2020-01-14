@@ -3,7 +3,7 @@
 ## codeset 0
 ;
 MSG_FILEREQ_TITLE
-Vælg fil
+VÃ¦lg fil
 ; Select File
 ;
 MSG_FILEREQ_POSITIVE_GAD
@@ -19,11 +19,11 @@ Volumes
 ; Volumes
 ;
 MSG_FILEREQ_PARENT_GAD
-Forælder
+ForÃ¦lder
 ; Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
-Mønster
+MÃ¸nster
 ; Pattern
 ;
 MSG_FILEREQ_DRAWER_LABEL
@@ -55,11 +55,11 @@ Slet|Afbryd
 ; Delete|Cancel
 ;
 MSG_FILEREQ_RENAME_TITLE
-Omdøb
+OmdÃ¸b
 ; Rename
 ;
 MSG_FILEREQ_RENAME_OK
-Omdøb
+OmdÃ¸b
 ; Rename
 ;
 MSG_FILEREQ_RENAME_CANCEL
@@ -79,15 +79,15 @@ Afbryd
 ; Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_DEFNAME
-Omdøb mig
+OmdÃ¸b mig
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Vælg efter mønster
+VÃ¦lg efter mÃ¸nster
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
-Vælg
+VÃ¦lg
 ; Select
 ;
 MSG_FILEREQ_SELECT_CANCEL
@@ -103,7 +103,7 @@ L\0Forrige navn
 ; L\0Last Name
 ;
 MSG_FILEREQ_MEN_CONTROL_NEXTNAME
-N\0Næste navn
+N\0NÃ¦ste navn
 ; N\0Next Name
 ;
 MSG_FILEREQ_MEN_CONTROL_RESTORE
@@ -111,7 +111,7 @@ R\0Genskab
 ; R\0Restore
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
-P\0Forælder
+P\0ForÃ¦lder
 ; P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
@@ -119,7 +119,7 @@ V\0Volumes
 ; V\0Volumes
 ;
 MSG_FILEREQ_MEN_CONTROL_UPDATE
-U\0Opdatér
+U\0OpdatÃ©r
 ; U\0Update
 ;
 MSG_FILEREQ_MEN_CONTROL_DELETE
@@ -131,11 +131,11 @@ T\0Opret ny skuffe...
 ; T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
-E\0Omdøb...
+E\0OmdÃ¸b...
 ; E\0Rename...
 ;
 MSG_FILEREQ_MEN_CONTROL_SELECT
-#\0Vælg...
+#\0VÃ¦lg...
 ; #\0Select...
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
@@ -151,23 +151,23 @@ Filliste
 ; File list
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTNAME
-1\0Sortér efter navn
+1\0SortÃ©r efter navn
 ; 1\0Sort by name
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDATE
-2\0Sortér efter dato
+2\0SortÃ©r efter dato
 ; 2\0Sort by date
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTSIZE
-3\0Sortér efter størrelse
+3\0SortÃ©r efter stÃ¸rrelse
 ; 3\0Sort by size
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTUP
-+\Stigende rækkefølge
++\Stigende rÃ¦kkefÃ¸lge
 ; +\0Ascending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDOWN
--\Faldende rækkefølge
+-\Faldende rÃ¦kkefÃ¸lge
 ; -\0Descending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
@@ -183,7 +183,7 @@ MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
 ; 6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Vælg skærmtilstand
+VÃ¦lg skÃ¦rmtilstand
 ; Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
@@ -199,19 +199,19 @@ Overskan
 ; Overscan
 ;
 MSG_MODEREQ_OVERSCAN_TEXT
-Skriftstørrelse
+SkriftstÃ¸rrelse
 ; Text Size
 ;
 MSG_MODEREQ_OVERSCAN_GRAPHICS
-Grafikstørrelse
+GrafikstÃ¸rrelse
 ; Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
-Ekstrem størrelse
+Ekstrem stÃ¸rrelse
 ; Extreme Size
 ;
 MSG_MODEREQ_OVERSCAN_MAXIMUM
-Maksimal størrelse
+Maksimal stÃ¸rrelse
 ; Maximum Size
 ;
 MSG_MODEREQ_WIDTH_LABEL
@@ -219,7 +219,7 @@ Bredde
 ; Width
 ;
 MSG_MODEREQ_HEIGHT_LABEL
-Højde
+HÃ¸jde
 ; Height
 ;
 MSG_MODEREQ_COLORS_LABEL
@@ -243,15 +243,15 @@ Tilstandsegenskaber
 ; Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
-Understøtter ikke Workbench
+UnderstÃ¸tter ikke Workbench
 ; Does not support Workbench
 ;
 MSG_MODEREQ_PROPERTIES_NOTGENLOCK
-Understøtter ikke genlock
+UnderstÃ¸tter ikke genlock
 ; Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
-Ikke trækbar
+Ikke trÃ¦kbar
 ; Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
@@ -267,19 +267,19 @@ Interlaced
 ; Interlaced
 ;
 MSG_MODEREQ_PROPERTIES_ECS
-Kræver ECS
+KrÃ¦ver ECS
 ; Requires ECS
 ;
 MSG_MODEREQ_PROPERTIES_WB
-Understøtter Workbench
+UnderstÃ¸tter Workbench
 ; Supports Workbench
 ;
 MSG_MODEREQ_PROPERTIES_GENLOCK
-Understøtter genlock
+UnderstÃ¸tter genlock
 ; Supports genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
-Trækbar
+TrÃ¦kbar
 ; Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
@@ -299,7 +299,7 @@ L\0Forrige tilstand
 ; L\0Last Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_NEXTMODE
-N\0Næste tilstand
+N\0NÃ¦ste tilstand
 ; N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
@@ -319,7 +319,7 @@ C\0Afbryd
 ; C\0Cancel
 ;
 MSG_FONTREQ_TITLE
-Vælg skrifttype
+VÃ¦lg skrifttype
 ; Select Font
 ;
 MSG_FONTREQ_POSITIVE_GAD
@@ -339,7 +339,7 @@ L\0Forrige skrifttype
 ; L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
-N\0Næste skrifttype
+N\0NÃ¦ste skrifttype
 ; N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE

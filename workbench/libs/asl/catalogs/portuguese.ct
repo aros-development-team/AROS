@@ -1,8 +1,8 @@
 ## version $VER: asl.catalog 1.0 (29.09.2007)
 ## codeset 0
-## language portuguÍs
+## language portugu√™s
 ;
-; Translated by Jo„o Ralha
+; Translated by Jo√£o Ralha
 ;
 MSG_FILEREQ_TITLE
 Selecionar ficheiro
@@ -25,11 +25,11 @@ D.Acima
 ;Parent
 ;
 MSG_FILEREQ_PATTERN_LABEL
-Padr„o
+Padr√£o
 ;Pattern
 ;
 MSG_FILEREQ_DRAWER_LABEL
-DirectÛrio
+Direct√≥rio
 ;Drawer
 ;
 MSG_FILEREQ_FILE_LABEL
@@ -37,7 +37,7 @@ Ficheiro
 ;File
 ;
 MSG_FILEREQ_LV_DRAWER
-DirectÛrio
+Direct√≥rio
 ;Drawer
 ;
 MSG_FILEREQ_LV_ASSIGN
@@ -49,7 +49,7 @@ Apagar ficheiro
 ;Delete File
 ;
 MSG_FILEREQ_DELETE_MSG
-Aviso: N„o poder· recuperar\n o que apagar! Apagar de certeza\n%s?
+Aviso: N√£o poder√° recuperar\n o que apagar! Apagar de certeza\n%s?
 ;Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 ;
 MSG_FILEREQ_DELETE_OKCANCEL
@@ -69,7 +69,7 @@ Cancelar
 ;Cancel
 ;
 MSG_FILEREQ_CREATEDRAWER_TITLE
-Criar directÛrio
+Criar direct√≥rio
 ;Create Drawer
 ;
 MSG_FILEREQ_CREATEDRAWER_OK
@@ -85,7 +85,7 @@ Nome_indefenido
 ;Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Selecionar segundo padr„o
+Selecionar segundo padr√£o
 ;Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK
@@ -129,7 +129,7 @@ B\0Apgar
 ;D\0Delete
 ;
 MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
-J\0Criar um novo directÛrio...
+J\0Criar um novo direct√≥rio...
 ;T\0Create new drawer...
 ;
 MSG_FILEREQ_MEN_CONTROL_RENAME
@@ -173,22 +173,22 @@ MSG_FILEREQ_MEN_FILELIST_SORTDOWN
 ;-\0Descending order
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
-4\0Ver directÛrios primero
+4\0Ver direct√≥rios primero
 ;4\0Mostrar los cajones primero
 ;4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
-5\0Ver directÛrios com ficheiros
+5\0Ver direct√≥rios com ficheiros
 ;5\0Mostrar los cajones con archivos
 ;5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
-6\0Ver directÛrios no final
+6\0Ver direct√≥rios no final
 ;6\0Mostrar los cajones al final
 ;6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
-Selecionar o modo de Ècran
+Selecionar o modo de √©cran
 ;Select Screen Mode
 ;
 MSG_MODEREQ_POSITIVE_GAD
@@ -207,7 +207,7 @@ Tamanho do texto
 ;Text Size
 ;
 MSG_MODEREQ_OVERSCAN_GRAPHICS
-Tamanho dos gr·ficos
+Tamanho dos gr√°ficos
 ;Graphics Size
 ;
 MSG_MODEREQ_OVERSCAN_EXTREME
@@ -215,7 +215,7 @@ Tamanho extremo
 ;Extreme Size
 ;
 MSG_MODEREQ_OVERSCAN_MAXIMUM
-Tamanho m·ximo
+Tamanho m√°ximo
 ;Maximum Size
 ;
 MSG_MODEREQ_WIDTH_LABEL
@@ -231,7 +231,7 @@ Cores
 ;Colors
 ;
 MSG_MODEREQ_AUTOSCROLL_LABEL
-Scroll autom·tico
+Scroll autom√°tico
 ;
 MSG_MODEREQ_AUTOSCROLL_OFF
 Desactivado
@@ -246,15 +246,15 @@ Propriedades do modo
 ;Mode Properties
 ;
 MSG_MODEREQ_PROPERTIES_NOTWB
-N„o suporta Workbench
+N√£o suporta Workbench
 ;Does not support Workbench
 ;
 MSG_MODEREQ_PROPERTIES_NOTGENLOCK
-N„o suporta genlock
+N√£o suporta genlock
 ;Does not support genlock
 ;
 MSG_MODEREQ_PROPERTIES_NOTDRAG
-N„o arrast·vel
+N√£o arrast√°vel
 ;Not draggable
 ;
 MSG_MODEREQ_PROPERTIES_HAM
@@ -264,7 +264,7 @@ MSG_MODEREQ_PROPERTIES_EHB
 Extra-HalfBright
 ;
 MSG_MODEREQ_PROPERTIES_LACE
-EntrelaÁado
+Entrela√ßado
 ;Interlaced
 ;
 MSG_MODEREQ_PROPERTIES_ECS
@@ -279,7 +279,7 @@ MSG_MODEREQ_PROPERTIES_GENLOCK
 Suporta genlock
 ;
 MSG_MODEREQ_PROPERTIES_DRAG
-Arrast·vel
+Arrast√°vel
 ;Draggable
 ;
 MSG_MODEREQ_PROPERTIES_DPFPRI2
