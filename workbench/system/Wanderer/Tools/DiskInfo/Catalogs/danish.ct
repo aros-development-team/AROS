@@ -7,7 +7,7 @@
 MSG_TITLE
 Disk Info
 ; Disk Info
-;consider better translation - overvej bedre oversættelse, evt. Diskoplysninger
+;consider better translation - overvej bedre oversÃ¦ttelse, evt. Diskoplysninger
 ;
 MSG_ERROR_HEADER
 FEJL
@@ -20,7 +20,7 @@ _O.k.
 MSG_ERROR_LOCALE
 Kan ikke initialisere regionaldata.
 ; Can't initialize locale.
-; Better translation needed -> behøver bedre oversættelse 
+; Better translation needed -> behÃ¸ver bedre oversÃ¦ttelse 
 ;
 MSG_ERROR_CLASSES
 Kan ikke initialisere tilpassede klasser.
@@ -47,8 +47,8 @@ Olivier Adam
 ; Olivier Adam
 ;
 MSG_COPYRIGHT
-©2006-2009 AROS Dev Team
-; ©2006-2009 AROS Dev Team
+Â©2006-2009 AROS Dev Team
+; Â©2006-2009 AROS Dev Team
 ;
 MSG_USED
 Brugt plads
@@ -63,7 +63,7 @@ Kapacitet
 ; Capacity
 ;
 MSG_BLOCK_SIZE
-Blokstørrelse
+BlokstÃ¸rrelse
 ; Block size
 ;
 MSG_BLOCKS
@@ -79,11 +79,11 @@ Status
 ; Status
 ;
 MSG_READABLE
-Læsbar
+LÃ¦sbar
 ; Readable
 ;
 MSG_READABLE_WRITABLE
-Læsbar/skrivbar
+LÃ¦sbar/skrivbar
 ; Readable/writable
 ;
 MSG_VALIDATING
@@ -103,7 +103,7 @@ DOS-enhed:
 ; DOS Device:
 ;
 MSG_DEVICEINFO
-Tilsluttet på:
+Tilsluttet pÃ¥:
 ; Connected on:
 ;
 MSG_FILESYSTEM
