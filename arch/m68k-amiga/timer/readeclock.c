@@ -31,8 +31,6 @@ AROS_LH1(ULONG, ReadEClock,
     if (old > dest->ev_lo)
     	dest->ev_hi++;
 
-    /* GetSysTime promises to not change the value in A0 */
-    asm volatile("movel %0, %%a0"::"r"(dest):"a0");
     return TimerBase->tb_eclock_rate;
 
     AROS_LIBFUNC_EXIT
