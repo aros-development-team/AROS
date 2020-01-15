@@ -121,12 +121,49 @@ static void TimerHook(struct Resource *cia, struct TimerBase *tb, WORD iCRBit)
         SetICR(tb->tb_eclock_res, 0x80 | (1 << tb->tb_eclock_intbit));
 }
 
+/*
+ * Create a register preserving call stub
+ */
+#define _AS_STRING(x)	#x
+#define AS_STRING(x)	_AS_STRING(x)
+
+#define PRESERVE_A0(lib, libname, funcname, funcid) \
+	do { \
+		void libname##_##funcname##_Wrapper(void) \
+	        { asm volatile ( \
+	        	"move.l %a0,%sp@-\n" \
+	        	"bsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
+	        	"move.l %sp@+,%a0\n" \
+	        	"rts\n" ); } \
+		/* Insert into the library's jumptable */ \
+		__AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
+	} while (0)
+
+#define PRESERVE_A0A1(lib, libname, funcname, funcid) \
+	do { \
+		void libname##_##funcname##_Wrapper(void) \
+	        { asm volatile ( \
+	        	"movem.l %a0-%a1,%sp@-\n" \
+	        	"bsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
+	        	"movem.l %sp@+,%a0-%a1\n" \
+	        	"rts\n" ); } \
+		/* Insert into the library's jumptable */ \
+		__AROS_SETVECADDR(lib, funcid, libname##_##funcname##_Wrapper); \
+	} while (0)
+
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     struct Interrupt *inter;
     struct Interrupt fakeinter;
     struct BattClockBase *BattClockBase;
     struct GfxBase *GfxBase;
+
+    PRESERVE_A0A1(LIBBASE, Timer, AddTime, 7);
+    PRESERVE_A0A1(LIBBASE, Timer, SubTime, 8);
+    PRESERVE_A0A1(LIBBASE, Timer, CmpTime, 9);
+    PRESERVE_A0(LIBBASE, Timer, ReadEClock, 10);
+    PRESERVE_A0(LIBBASE, Timer, GetSysTime, 11);
+    PRESERVE_A0(LIBBASE, Timer, GetUpTime, 12);
 
     GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 
@@ -148,7 +185,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     /* Initialise the lists */
     NEWLIST(&LIBBASE->tb_Lists[UNIT_VBLANK]);
     NEWLIST(&LIBBASE->tb_Lists[UNIT_MICROHZ]);
- 
+
     inter = &LIBBASE->tb_vbint;
     inter->is_Code = (APTR)cia_vbint;
     inter->is_Data         = LIBBASE;
@@ -208,7 +245,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     AddICRVector(LIBBASE->tb_cia[0], -1, &fakeinter);
     AddICRVector(LIBBASE->tb_cia[1], -1, &fakeinter);
 
-    Enable(); 
+    Enable();
 
     D(bug("timer.device init\n"));
 
