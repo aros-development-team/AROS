@@ -132,7 +132,7 @@ static void TimerHook(struct Resource *cia, struct TimerBase *tb, WORD iCRBit)
 		void libname##_##funcname##_Wrapper(void) \
 	        { asm volatile ( \
 	        	"move.l %a0,%sp@-\n" \
-	        	"bsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
+	        	"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
 	        	"move.l %sp@+,%a0\n" \
 	        	"rts\n" ); } \
 		/* Insert into the library's jumptable */ \
@@ -144,7 +144,7 @@ static void TimerHook(struct Resource *cia, struct TimerBase *tb, WORD iCRBit)
 		void libname##_##funcname##_Wrapper(void) \
 	        { asm volatile ( \
 	        	"movem.l %a0-%a1,%sp@-\n" \
-	        	"bsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
+	        	"jsr " AS_STRING(AROS_SLIB_ENTRY(funcname, libname, funcid)) "\n" \
 	        	"movem.l %sp@+,%a0-%a1\n" \
 	        	"rts\n" ); } \
 		/* Insert into the library's jumptable */ \
