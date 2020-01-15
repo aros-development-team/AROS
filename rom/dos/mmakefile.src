@@ -24,7 +24,7 @@ USER_CPPFLAGS += -DDOCACHECLEAR
 IMAGE_TYPES := aos elf
 
 FILES	  := bstr_helper errorlist \
-             boot isbootable \
+             boot banner isbootable \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
 	     packethelper namefrom internalloadseg_support \
