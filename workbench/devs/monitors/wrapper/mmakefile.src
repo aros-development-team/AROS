@@ -4,12 +4,12 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES      := wrapper
 STORAGEDIR := $(AROSDIR)/Storage/Monitors
-ifneq($(AROS_TARGET_ARCH),pc)
+ifneq ($(AROS_TARGET_ARCH),pc)
 PCDEVSDIR := $(AROSDIR)/Storage/Monitors
 else
 PCDEVSDIR := $(AROS_DEVS)/Monitors
 endif
-ifneq($(AROS_TARGET_ARCH),amiga)
+ifneq ($(AROS_TARGET_ARCH),amiga)
 AMIGADEVSDIR := $(AROSDIR)/Storage/Monitors
 else
 AMIGADEVSDIR := $(AROS_DEVS)/Monitors
