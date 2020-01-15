@@ -217,50 +217,6 @@ static BOOL WriteBMP_Colormap(BPTR filehandle, int numcolors,
     FWrite( filehandle, palette, len, 1 );
 }
 
-/****************************************************************************************/
-
-void WriteBytesL_Uint32(LONG val, unsigned char **byteBuffer, int offset)
-{
-    //Linear Conversion
-    unsigned char buffer[4];
-    buffer[offset++] = (UBYTE)(val & 0xFF);
-    buffer[offset++] = (UBYTE)((val >> 8) & 0xFF);
-    buffer[offset++] = (UBYTE)((val >> 16) & 0xFF);
-    buffer[offset++] = (UBYTE)((val >> 24) & 0xFF);
-    
-    memcpy(*byteBuffer, buffer, 4);
-}
-
-void WriteBytesL_Uint16(WORD val, unsigned char **byteBuffer, int offset)
-{
-    //Linear Conversion
-    unsigned char buffer[2];
-    buffer[offset++] = (UBYTE)(val & 0xFF);
-    buffer[offset++] = (UBYTE)(val >> 8);    
-    memcpy(*byteBuffer, buffer, 2);
-}
-
-
-void WriteBytesB_Uint32(LONG val, unsigned char **byteBuffer, int offset)
-{
-    //Byte-Swapping Conversion
-    unsigned char buffer[4];
-    buffer[offset++] = (UBYTE)((val >> 24) & 0xFF);
-    buffer[offset++] = (UBYTE)((val >> 16) & 0xFF);
-    buffer[offset++] = (UBYTE)((val >> 8) & 0xFF);
-    buffer[offset++] = (UBYTE)(val & 0xFF);
-    memcpy(*byteBuffer, buffer, 4);
-}
-
-void WriteBytesB_Uint16(WORD val, unsigned char **byteBuffer, int offset)
-{
-    //Byte-Swapping Conversion
-    unsigned char buffer[2];
-    buffer[offset++] = (UBYTE)(val >> 8);
-    buffer[offset++] = (UBYTE)(val & 0xFF);
-    memcpy(*byteBuffer, buffer, 2);
-}
-
 /**************************************************************************************************/
 
 static BOOL LoadBMP(struct IClass *cl, Object *o)
@@ -596,9 +552,10 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
     	UBYTE           tempRGB;
 	struct BitMapHeader     *bmhd;
     	struct ColorRegister    *colormap;
-    	unsigned char *buffer = "";
 	long                    *colorregs;
     	ULONG                   alignwidth, alignbytes, pixelfmt;
+    ULONG 			ulbuff;
+	UWORD			uwbuff;
 
 	D(bug("bmp.datatype/SaveBMP()\n"));
 
@@ -723,44 +680,44 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
 		
         /** Write fileheader data to file **/
         char *sig = "BM"; 
-        memcpy(buffer, sig, 2);          
-        FWrite( filehandle, buffer, 2, 1 );
+        memcpy(&ulbuff, sig, 2);          
+        FWrite( filehandle, &ulbuff, 2, 1 );
     
             
-        WriteBytesL_Uint32(bfsize, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint16(bfReserved, &buffer, 0);
-        FWrite( filehandle, buffer, 2, 1 );
-        WriteBytesL_Uint16(bfReserved, &buffer, 0);
-        FWrite( filehandle, buffer, 2, 1 );
-        WriteBytesL_Uint32(bfOffBits, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );    
+        ulbuff = AROS_LONG2LE(bfsize);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        uwbuff = AROS_WORD2LE(bfReserved);
+        FWrite( filehandle, &uwbuff, 2, 1 );
+        uwbuff = AROS_WORD2LE(bfReserved);
+        FWrite( filehandle, &uwbuff, 2, 1 );
+        ulbuff = AROS_LONG2LE(bfOffBits);
+        FWrite( filehandle, &ulbuff, 4, 1 );    
     	        
         /** Write infoheader data to file **/
-        WriteBytesL_Uint32(biSize, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint32(biWidth, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint32(biHeight, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
+        ulbuff = AROS_LONG2LE(biSize);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        ulbuff = AROS_LONG2LE(biWidth);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        ulbuff = AROS_LONG2LE(biHeight);
+        FWrite( filehandle, &ulbuff, 4, 1 );
         
-        WriteBytesL_Uint16(biPlanes, &buffer, 0);
-        FWrite( filehandle, buffer, 2, 1 );
-        WriteBytesL_Uint16(biBitCount, &buffer, 0);
-        FWrite( filehandle, buffer, 2, 1 );
+        uwbuff = AROS_WORD2LE(biPlanes);
+        FWrite( filehandle, &uwbuff, 2, 1 );
+        uwbuff = AROS_WORD2LE(biBitCount);
+        FWrite( filehandle, &uwbuff, 2, 1 );
         
-        WriteBytesL_Uint32(biCompression, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint32(biSizeImage, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint32(biXPelsPerMeter, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint32(biYPelsPerMeter, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint32(biClrUsed, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );
-        WriteBytesL_Uint32(biClrImportant, &buffer, 0);
-        FWrite( filehandle, buffer, 4, 1 );   
+        ulbuff = AROS_LONG2LE(biCompression);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        ulbuff = AROS_LONG2LE(biSizeImage);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        ulbuff = AROS_LONG2LE(biXPelsPerMeter);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        ulbuff = AROS_LONG2LE(biYPelsPerMeter);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        ulbuff = AROS_LONG2LE(biClrUsed);
+        FWrite( filehandle, &ulbuff, 4, 1 );
+        ulbuff = AROS_LONG2LE(biClrImportant);
+        FWrite( filehandle, &ulbuff, 4, 1 );   
     
     
         /** If biBitCount == 8 Convert ColorMap to RGBQuads & Write to file **/
