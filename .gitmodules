@@ -4,3 +4,6 @@
 [submodule "arch/all-pc/acpitool/catalogs"]
 	path = arch/all-pc/acpitool/catalogs
 	url = https://github.com/aros-translation-team/acpitool.git
+[submodule "rom/dos/catalogs"]
+	path = rom/dos/catalogs
+	url = https://github.com/aros-translation-team/dos.library.git
