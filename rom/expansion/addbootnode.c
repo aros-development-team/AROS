@@ -128,7 +128,7 @@
     ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
     /* See if DOS is up and running... */
-    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    DOSBase = OpenLibrary("dos.library", 0);
 
     /* See if DOS has chosen a boot device yet */
     if (!(ExpansionBase->Flags & EBF_DOSFLAG))
