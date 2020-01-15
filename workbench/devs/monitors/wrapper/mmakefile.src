@@ -47,7 +47,7 @@ $(PCDEVSDIR):
 	@$(ECHO) "Creating   $@..."
 	@$(MKDIR) $(PCDEVSDIR)
 
-ifneq($(PCDEVSDIR),$(AMIGADEVSDIR))
+ifneq ($(PCDEVSDIR),$(AMIGADEVSDIR))
 $(AMIGADEVSDIR):
 	@$(ECHO) "Creating   $@..."
 	@$(MKDIR) $(AMIGADEVSDIR)
