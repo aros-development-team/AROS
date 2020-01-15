@@ -39,7 +39,8 @@ USER_LDFLAGS := -static-libstdc++ \
 NOWARN_FLAGS := -Wno-unused-value -Wno-unused-variable
 USER_CFLAGS += $(NOWARN_FLAGS)
 
-#MM- workbench-devs-monitors: devs-monitors-intelgma
+#MM- workbench-devs-monitors : devs-monitors-intelgma-$(AROS_TARGET_ARCH)
+#MM- devs-monitors-intelgma-pc : devs-monitors-intelgma
 #MM devs-monitors-intelgma : hidd-i2c hidd-gallium intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
 
 %build_prog mmake=devs-monitors-intelgma \
