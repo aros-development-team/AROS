@@ -5,13 +5,13 @@ include $(SRCDIR)/config/aros.cfg
 
 STORAGEICONS := Wrapper
 PCDEVSICONS    := ATI IntelGMA NVidia VMWare
-ifneq($(AROS_TARGET_ARCH),pc)
+ifneq ($(AROS_TARGET_ARCH),pc)
 PCDEVSDIR := $(AROSDIR)/Storage/Monitors
 else
 PCDEVSDIR := $(AROS_DEVS)/Monitors
 endif
 AMIGADEVSICONS    := SAGA
-ifneq($(AROS_TARGET_ARCH),amiga)
+ifneq ($(AROS_TARGET_ARCH),amiga)
 AMIGADEVSDIR := $(AROSDIR)/Storage/Monitors
 else
 AMIGADEVSDIR := $(AROS_DEVS)/Monitors
@@ -20,10 +20,13 @@ endif
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-devs-monitors-clean iconset-Gorilla-wbench-icons-storage-monitors-clean
 #MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-devs-monitors iconset-Gorilla-wbench-icons-storage-monitors
 
-%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors icons=$(PCDEVSICONS) image=Wrapper.png \
+#MM- iconset-Gorilla-wbench-icons-devs-monitors : iconset-Gorilla-wbench-icons-devs-monitors-pc iconset-Gorilla-wbench-icons-devs-monitors-amiga
+#MM- iconset-Gorilla-wbench-icons-devs-monitors-clean : iconset-Gorilla-wbench-icons-devs-monitors-pc-clean iconset-Gorilla-wbench-icons-devs-monitors-amiga-clean
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-pc icons=$(PCDEVSICONS) image=Wrapper.png \
              dir=$(PCDEVSDIR)
 
-%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors icons=$(AMIGADEVSICONS) image=Wrapper.png \
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-amiga icons=$(AMIGADEVSICONS) image=Wrapper.png \
              dir=$(AMIGADEVSDIR)
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
