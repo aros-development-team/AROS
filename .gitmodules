@@ -1,0 +1,3 @@
+[submodule "workbench/libs/muimaster/catalogs"]
+	path = workbench/libs/muimaster/catalogs
+	url = https://github.com/aros-translation-team/muimaster.library.git
