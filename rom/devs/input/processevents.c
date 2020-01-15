@@ -65,8 +65,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-const char *str_idresethand = "input.device reset handler";
-
 AROS_INTH1(ResetHandler, struct inputbase *, InputDevice)
 {
     AROS_INTFUNC_INIT
@@ -200,7 +198,7 @@ void ProcessEvents(struct inputbase *InputDevice)
 
     InputDevice->ResetSig = 1L << AllocSignal(-1);
 
-    resethandler.is_Node.ln_Name = str_idresethand;
+    resethandler.is_Node.ln_Name = "input.device reset handler";
     resethandler.is_Node.ln_Type = NT_INTERRUPT;
     resethandler.is_Node.ln_Pri = -128;
 

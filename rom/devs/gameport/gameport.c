@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gameport device
@@ -101,8 +101,6 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 static AROS_INTP(gpSendQueuedEvents);
 
 
-static const char *str_gpvbs = "Gameport VBlank server";
-
 /****************************************************************************************/
 
 /* 'data' is a pointer to GPBase->gp_nTicks. */
@@ -144,7 +142,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR GPBase)
 
     GPBase->gp_VBlank.is_Code         = (VOID_FUNC)gpVBlank;
     GPBase->gp_VBlank.is_Data         = GPBase;
-    GPBase->gp_VBlank.is_Node.ln_Name = str_gpvbs;
+    GPBase->gp_VBlank.is_Node.ln_Name = "Gameport VBlank server";
     GPBase->gp_VBlank.is_Node.ln_Pri  = 0;
     GPBase->gp_VBlank.is_Node.ln_Type = NT_INTERRUPT;
 	
