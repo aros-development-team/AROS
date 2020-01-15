@@ -88,8 +88,6 @@ static const char * const copyrights[] =
     struct Library *lib;
     struct Resident *res;
 
-    bug("[Exec] %s(%d)", __func__, tag);
-
     if(tag > 0)
     {
 	/*
