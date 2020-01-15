@@ -3,6 +3,12 @@
 include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 
+ifneq($(AROS_TARGET_ARCH),pc)
+EXEDIR := $(AROSDIR)/Storage/Monitors
+else
+EXEDIR := $(AROSDIR)/Devs/Monitors
+endif
+
 GALLIUM_PATH = $(top_srcdir)/src/gallium
 
 IGMA_HIDD_SOURCES := \
@@ -32,8 +38,6 @@ USER_LDFLAGS := -static-libstdc++ \
 # disable necessary warnings
 NOWARN_FLAGS := -Wno-unused-value -Wno-unused-variable
 USER_CFLAGS += $(NOWARN_FLAGS)
-
-EXEDIR := $(AROSDIR)/Devs/Monitors
 
 #MM- workbench-devs-monitors: devs-monitors-intelgma
 #MM devs-monitors-intelgma : hidd-i2c hidd-gallium intelgma-linklibs-gallium_i915 linklibs-galliumauxiliary
