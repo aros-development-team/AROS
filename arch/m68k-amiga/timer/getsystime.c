@@ -46,8 +46,5 @@ AROS_LH1(void, GetSysTime,
     }
     D(bug("systime=%d/%d\n", dest->tv_secs, dest->tv_micro));
 
-    /* GetSysTime promises to not change the value in A0 */
-    asm volatile("movel %0, %%a0"::"r"(dest):"a0");
-
     AROS_LIBFUNC_EXIT
 } /* GetSysTime */
