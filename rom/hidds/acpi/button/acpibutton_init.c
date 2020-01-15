@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -198,7 +198,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
     if (!_csd->cs_ACPICABase)
         return FALSE;
 
-    _csd->cs_UtilityBase = OpenLibrary("utility.library", 36);
+    _csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!_csd->cs_UtilityBase)
     {
         CloseLibrary(_csd->cs_ACPICABase);

@@ -14,6 +14,7 @@
 #include <proto/graphics.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+
 #include <exec/memory.h>
 #include <graphics/gfxnodes.h>
 #include <oop/oop.h>
@@ -51,7 +52,7 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     if (!GfxBase)
     {
-        GfxBase = (void *)OpenLibrary("graphics.library", 41);
+        GfxBase = (void *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
         if (!GfxBase)
 	    ok = FALSE;
     }

@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -109,7 +109,7 @@ static int FNAME_SDC(CommonInit)(LIBBASETYPEPTR LIBBASE)
 {
     DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
-    if ((ExpansionBase = OpenLibrary("expansion.library", 40L)) == NULL)
+    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION)) == NULL)
     {
         bug("[SDCard--] %s: Failed to open expansion.library\n", __PRETTY_FUNCTION__);
         goto libinit_fail;

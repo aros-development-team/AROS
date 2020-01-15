@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VESA Gfx Hidd for standalone i386 AROS
@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
+
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <graphics/driver.h>
@@ -82,7 +83,7 @@ static int VESAGfx_Init(LIBBASETYPEPTR LIBBASE)
      * after adding the driver.
      * Autoinit code would close it only upon driver expunge.
      */
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
+    GfxBase = (struct GfxBase *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     if (GfxBase)
     {
         if (initVesaGfxHW(&xsd->data))

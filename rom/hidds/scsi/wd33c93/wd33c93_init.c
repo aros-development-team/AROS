@@ -1,5 +1,5 @@
 /*
-    Copyright © 2019, The AROS Development Team. All rights reserved
+    Copyright © 2019-2020, The AROS Development Team. All rights reserved
     $Id$
 */
 
@@ -41,7 +41,7 @@ static int wd33c93_HiddInit(struct scsiwd33c93Base *base)
 {
     D(bug("[SCSI:WD33C93] %s()\n", __PRETTY_FUNCTION__));
 
-    base->cs_UtilityBase = OpenLibrary("utility.library", 36);
+    base->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!base->cs_UtilityBase)
         return FALSE;
 

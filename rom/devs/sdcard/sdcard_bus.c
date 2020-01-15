@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,6 +40,8 @@
 #include LC_LIBDEFS_FILE
 
 /* Generic "Bus Unit" Functions */
+
+static const char *str_mmc0 = "MMC0";
 
 BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
 {
@@ -374,7 +376,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                             D(bug("[SDBus%02u] %s: #         READ_BL_LEN : %dbytes\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, pp[DE_SIZEBLOCK + 4] / sdcUnit->sdcu_Sectors));
                             D(bug("[SDBus%02u] %s: #         C_SIZE : %d\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcUnit->sdcu_Cylinders));
 
-                            pp[0] 		        = (IPTR)"MMC0";
+                            pp[0] 		        = (IPTR)str_mmc0;
                             pp[1]		        = (IPTR)MOD_NAME_STRING;
                             pp[2]		        = 0;
                             pp[DE_TABLESIZE    + 4]     = DE_BOOTBLOCKS;

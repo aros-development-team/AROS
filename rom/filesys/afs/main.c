@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,9 +51,9 @@ static struct AFSBase *AFS_alloc(void)
     if (handler == NULL)
     	return NULL;
 
-    handler->utilitybase = OpenLibrary("utility.library",0);
+    handler->utilitybase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (handler->utilitybase != NULL) {
-	handler->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",0);
+	handler->dosbase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS);
 	if (handler->dosbase != NULL) {
 
 	    /* changeint task and sigbit */

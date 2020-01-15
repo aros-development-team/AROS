@@ -24,6 +24,8 @@
 #include "dos_intern.h"
 #include "../dosboot/bootflags.h"
 
+extern char *generate_banner(void);
+
 #ifdef __mc68000
 /*
  * Load DEVS:system-configuration only on m68k.
@@ -141,16 +143,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
     if (cis) {
         BPTR cos = OpenFromLock(DupLockFromFH(cis));
-        BYTE const C[] = "Copyright © 1995-2020, The AROS Development Team.\n"
-                         "Licensed under the AROS Public License.\n"
-#if defined(REPOTYPE)
-                         "Version " REPOTYPE "" REPOREVISION
-#if defined(REPOID)
-                         " (" REPOID ")"
-#endif
-                         "\n"
-#endif
-                         "built on " ISODATE ".\n";
+        BYTE *C = generate_banner();
 
         D(bug("[DOS] %s:  handle @ 0x%p (0x%p)\n", __func__, cis, cos);)
 
@@ -198,6 +191,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             Close(cos);
             /* NOTE: 'cas' will already have been closed by the Shell */
         }
+        FreeVec(C);
     } else {
         D(bug("[DOS] %s:  .. failed!\n", __func__);)
         Alert(AN_NoWindow);

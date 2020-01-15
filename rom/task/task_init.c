@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,7 +40,7 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
     ExecLockBase = TaskResBase->trb_ExecLock;
 #endif
 
-    TaskResBase->trb_UtilityBase = OpenLibrary("utility.library", 0);
+    TaskResBase->trb_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!TaskResBase->trb_UtilityBase)
         return FALSE;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Decoration support code
@@ -36,7 +36,7 @@ BOOL int_LoadDecorator(const char *name, struct IntScreen *screen, struct Intuit
 
 	/* Open dos.library only once, when first needed */
 	if (!DOSBase)
-            GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+            GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
         if (DOSBase)
         {

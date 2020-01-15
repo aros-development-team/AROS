@@ -16,6 +16,8 @@
 
 #include "ata.h"
 
+static const char *str_devicename = "ata.device";
+
 /*****************************************************************************************
 
     NAME
@@ -219,7 +221,7 @@ void ATAUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     Hidd_StorageUnit_Switch (msg->attrID, idx)
     {
     case aoHidd_StorageUnit_Device:
-        *msg->storage = (IPTR)"ata.device";
+        *msg->storage = (IPTR)str_devicename;
         return;
 
     case aoHidd_StorageUnit_Number:

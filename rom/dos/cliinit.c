@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -498,13 +498,13 @@ static LONG internalBootCliHandler(void)
     WaitPort(&bootProc->pr_MsgPort);
     dp = (struct DosPacket *)(GetMsg(&bootProc->pr_MsgPort)->mn_Node.ln_Name);
 
-    DOSBase = (APTR)OpenLibrary("dos.library", 0);
+    DOSBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_DOS);
     if (DOSBase == NULL) {
-        D(bug("Dos/CliInit: Impossible! Where did dos.library go?\n"));
+        D(bug("Dos/CliInit: failed to open dos.library!\n"));
         Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
     }
 
-    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
+    ExpansionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (!ExpansionBase)
         err = ERROR_INVALID_RESIDENT_LIBRARY;
 
