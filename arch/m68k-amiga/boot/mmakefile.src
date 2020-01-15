@@ -103,7 +103,7 @@ rom_entry.o: FORCE
 ext_entry.o: FORCE
 
 USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
-#USER_CPPFLAGS += -DDEFKRN_CMDLINE="\"nomonitors sysdebug=InitCode,debugmmu,mungwall\""
+#USER_CPPFLAGS += -DDEFKRN_CMDLINE="\"sysdebug=InitCode,debugmmu,mungwall\""
 
 # Use -m68060 when compiling .S files, as we will need the
 # expanded instruction set to detect alternate CPUs

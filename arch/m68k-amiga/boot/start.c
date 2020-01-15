@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: m68k-amiga bootstrap to exec.
@@ -32,10 +32,6 @@
 
 #define SS_STACK_SIZE	0x02000
 
-/* nomonitors - Until we have working m68k PCI support,
- *              attempting to load the monitor drivers
- *              just wastes a lot of time during boot
- */
  #ifndef DEFKRN_CMDLINE
 #if AROS_SERIAL_DEBUG
 #define DEFKRN_CMDLINE      "sysdebug=InitCode"

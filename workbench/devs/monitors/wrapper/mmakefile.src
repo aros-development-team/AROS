@@ -3,8 +3,17 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES      := wrapper
-DEVSDIR    := $(AROS_DEVS)/Monitors
 STORAGEDIR := $(AROSDIR)/Storage/Monitors
+ifneq ($(AROS_TARGET_ARCH),pc)
+PCDEVSDIR := $(AROSDIR)/Storage/Monitors
+else
+PCDEVSDIR := $(AROS_DEVS)/Monitors
+endif
+ifneq ($(AROS_TARGET_ARCH),amiga)
+AMIGADEVSDIR := $(AROSDIR)/Storage/Monitors
+else
+AMIGADEVSDIR := $(AROS_DEVS)/Monitors
+endif
 
 #MM- workbench-devs-monitors: devs-monitors-wrapper devs-monitors-wrapper-copy
 
@@ -15,27 +24,32 @@ STORAGEDIR := $(AROSDIR)/Storage/Monitors
     files=$(FILES)
 
 #MM
-devs-monitors-wrapper-copy: $(DEVSDIR)/ATI \
-			    $(DEVSDIR)/NVidia $(DEVSDIR)/VMWare $(DEVSDIR)/SAGA
+devs-monitors-wrapper-copy: $(PCDEVSDIR)/ATI \
+			    $(PCDEVSDIR)/NVidia $(PCDEVSDIR)/VMWare $(AMIGADEVSDIR)/SAGA
 
-$(DEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
+$(PCDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
 	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 
-$(DEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
+$(PCDEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
 	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 
-$(DEVSDIR)/VMWare: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
+$(PCDEVSDIR)/VMWare: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
 	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 
-$(DEVSDIR)/SAGA: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
+$(AMIGADEVSDIR)/SAGA: $(STORAGEDIR)/Wrapper | $(AMIGADEVSDIR)
 	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 
-$(DEVSDIR):
+$(PCDEVSDIR):
 	@$(ECHO) "Creating   $@..."
-	@$(MKDIR) $(DEVSDIR)
+	@$(MKDIR) $(PCDEVSDIR)
 
+ifneq ($(PCDEVSDIR),$(AMIGADEVSDIR))
+$(AMIGADEVSDIR):
+	@$(ECHO) "Creating   $@..."
+	@$(MKDIR) $(AMIGADEVSDIR)
+endif
 %common

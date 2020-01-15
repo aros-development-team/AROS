@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main mouse class.
@@ -164,7 +164,7 @@ static int PCMouse_InitAttrs(struct mousebase *LIBBASE)
 
     EnterFunc(bug("PCMouse_InitAttrs\n"));
 
-    LIBBASE->msd.utilityBase = OpenLibrary("utility.library", 36);
+    LIBBASE->msd.utilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->msd.utilityBase)
         return FALSE;
 

@@ -42,6 +42,8 @@
 #define CODE_COPY	'C'
 #define CODE_PASTE	'V'
 
+extern const STRPTR CONCLIP_PORTNAME;
+
 struct MyEditHookMsg
 {
     struct Message msg;
@@ -49,7 +51,6 @@ struct MyEditHookMsg
     WORD code;
 };
 
-static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 struct Scroll
 {
     struct Gadget scroller;     /* proportionnal gadget */

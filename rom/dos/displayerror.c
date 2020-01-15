@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -87,7 +87,7 @@
 
     if (DOSBase->dl_IntuitionBase == NULL)
     {
-        DOSBase->dl_IntuitionBase = OpenLibrary("intuition.library", 37L);
+        DOSBase->dl_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     }
 
     if (DOSBase->dl_IntuitionBase == NULL)

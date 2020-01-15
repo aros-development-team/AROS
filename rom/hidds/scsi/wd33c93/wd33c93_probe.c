@@ -1,5 +1,5 @@
 /*
-    Copyright © 2019, The AROS Development Team. All rights reserved.
+    Copyright © 2019-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware detection routine
@@ -86,7 +86,7 @@ static int wd33c93Probe(struct scsiwd33c93Base *base)
     D(bug("[SCSI:WD33C93] %s: Enumerating devices\n", __func__));
 
 #if (1)
-    struct Library *ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
+    struct Library *ExpansionBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (ExpansionBase)
     {
         struct ConfigDev *cd = NULL;

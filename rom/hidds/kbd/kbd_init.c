@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,7 +21,7 @@ static int KBD_InitClass(struct kbdbase *LIBBASE)
 
     D(bug("[KBD] base class initialization\n"));
     
-    LIBBASE->csd.cs_UtilityBase = OpenLibrary("utility.library", 0);
+    LIBBASE->csd.cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->csd.cs_UtilityBase)
         return FALSE;
 

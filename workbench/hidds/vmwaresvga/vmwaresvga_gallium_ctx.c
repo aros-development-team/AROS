@@ -1,5 +1,5 @@
 /*
-    Copyright 2019, The AROS Development Team. All rights reserved.
+    Copyright 2019-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -307,7 +307,6 @@ void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData *data, struct 
 
     wsctx->surface_map = VMWareSVGA_WSSurf_SurfaceMap;
     wsctx->surface_unmap = VMWareSVGA_WSSurf_SurfaceUnMap;
-    wsctx->surface_invalidate = VMWareSVGA_WSSurf_SurfaceInvalidate;
 
     wsctx->shader_create = VMWareSVGA_WSCtx_ShaderCreate;
     wsctx->shader_destroy = VMWareSVGA_WSCtx_ShaderDestroy;

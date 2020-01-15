@@ -274,7 +274,7 @@ LONG mainprogram(struct ExecBase *SysBase)
   putreg(REG_A4,(LONG)newdata);
 #endif
   
-  if((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37))!=0) {
+  if((DOSBase=(struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS))!=0) {
     D(bug("[SFS] DOSBase = %p\n", DOSBase));
 
     globals->mytask=(struct Process *)FindTask(0);
@@ -291,7 +291,7 @@ LONG mainprogram(struct ExecBase *SysBase)
 
     if(initcachebuffers()==0) {
 
-      if((IntuitionBase=(APTR)OpenLibrary("intuition.library",37))!=0) {
+      if((IntuitionBase=(APTR)TaggedOpenLibrary(TAGGEDOPEN_INTUITION))!=0) {
 
 #ifdef STARTDEBUG
           dreq("(1) Filesystem initializing...");
@@ -6593,7 +6593,7 @@ static void sdlhtask(void)
 #endif
   struct DosLibrary *DOSBase;
 
-  if((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37))!=0) {
+  if((DOSBase=(struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS))!=0) {
     Forbid();
     if(FindPort("SFS DosList handler")==0) {
       struct MsgPort *port;

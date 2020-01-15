@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, The AROS Development Team
+ * Copyright (C) 2013-2020, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -33,7 +33,7 @@ static LONG CDFS_DeviceMount(struct CDFS *cdfs, struct CDFSDevice *dev)
         err = op->op_Mount(vol);
         if (err == RETURN_OK) {
             struct Library *DOSBase;
-            DOSBase = OpenLibrary("dos.library",0);
+            DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
             vol->cv_Ops = op;
 
@@ -228,7 +228,7 @@ static struct CDFS *CDFS_Init(struct ExecBase *SysBase)
     Forbid();
     cdfs = (struct CDFS *)FindSemaphore("CDFS");
     if (cdfs == NULL) {
-        if ((dispose->cb_UtilityBase = OpenLibrary("utility.library",0))) {
+        if ((dispose->cb_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
             cdfs = dispose;
             dispose = NULL;
             InitSemaphore(&cdfs->cb_Semaphore);
