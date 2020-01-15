@@ -1,5 +1,5 @@
 /*
-    Copyright 2019, The AROS Development Team. All rights reserved.
+    Copyright 2019-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -43,21 +43,6 @@ VMWareSVGA_WSSurf_SurfaceUnMap(struct svga_winsys_context *swc,
    struct HIDDGalliumVMWareSVGASurf *surface = VMWareSVGA_WSSurf_HiddSurfFromWinSysSurf(srf);
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p, 0x%p)\n", __func__, swc, surface));
-}
-
-enum pipe_error
-VMWareSVGA_WSSurf_SurfaceInvalidate(struct svga_winsys_context *swc,
-                                   struct svga_winsys_surface *surf)
-{
-    D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
-
-   /* this is a noop since surface invalidation is not needed for DMA path.
-    * DMA is enabled when guest-backed surface is not enabled or
-    * guest-backed dma is enabled.  Since guest-backed dma is enabled
-    * when guest-backed surface is enabled, that implies DMA is always enabled;
-    * hence, surface invalidation is not needed.
-    */
-   return PIPE_OK;
 }
 
 void
