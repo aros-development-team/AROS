@@ -88,13 +88,15 @@ static const char * const copyrights[] =
     struct Library *lib;
     struct Resident *res;
 
+    bug("[Exec] %s(%d)", __func__, tag);
+
     if(tag > 0)
     {
 	/*
 	    Try to open the library. If it opened, return.
 	*/
 	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
-
+#if (0)
 	/*
 	    If it didn't open, FindResident(), InitResident(), and then
 	    try to open it again.
@@ -102,9 +104,10 @@ static const char * const copyrights[] =
 	if(!(res = FindResident(libnames[tag-1]))) return NULL;
 	InitResident(res, BNULL);
 	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
+#endif
     }
-
-    if(tag < 0) return( (APTR)copyrights[(-tag)-1] );
+    else 
+        if(tag < 0) return( (APTR)copyrights[(-tag)-1] );
 
     /*
 	If we get here, tag must be 0, or the lib didn't open.
