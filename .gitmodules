@@ -49,3 +49,6 @@
 [submodule "workbench/libs/identify/tools/catalogs"]
 	path = workbench/libs/identify/tools/catalogs
 	url = https://github.com/aros-translation-team/identify.git
+[submodule "workbench/libs/reqtools/catalogs"]
+	path = workbench/libs/reqtools/catalogs
+	url = https://github.com/aros-translation-team/reqtools.library.git
