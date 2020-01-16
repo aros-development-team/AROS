@@ -52,3 +52,6 @@
 [submodule "workbench/libs/reqtools/catalogs"]
 	path = workbench/libs/reqtools/catalogs
 	url = https://github.com/aros-translation-team/reqtools.library.git
+[submodule "workbench/devs/AHI/AHI/translations"]
+	path = workbench/devs/AHI/AHI/translations
+	url = https://github.com/aros-translation-team/ahi-prefs.git
