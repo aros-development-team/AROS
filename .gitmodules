@@ -25,3 +25,6 @@
 [submodule "workbench/c/R/catalogs"]
 	path = workbench/c/R/catalogs
 	url = https://github.com/aros-translation-team/r.git
+[submodule "workbench/classes/zune/aboutwindow/catalogs"]
+	path = workbench/classes/zune/aboutwindow/catalogs
+	url = https://github.com/aros-translation-team/aboutwindow.git
