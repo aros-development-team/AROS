@@ -37,3 +37,6 @@
 [submodule "workbench/devs/diskimage/device/catalogs"]
 	path = workbench/devs/diskimage/device/catalogs
 	url = https://github.com/aros-translation-team/diskimage.device.git
+[submodule "workbench/devs/diskimage/zune_gui/catalogs"]
+	path = workbench/devs/diskimage/zune_gui/catalogs
+	url = https://github.com/aros-translation-team/diskimage-zune.git
