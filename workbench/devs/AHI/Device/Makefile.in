@@ -93,7 +93,7 @@ GENERATED	= version.h \
 		install revup bindist bindist-install
 
 
-all:		$(EXECUTABLE) $(srcdir)/ahi.ct $(CATALOGS)
+all:		$(EXECUTABLE) $(srcdir)/translations/ahi.ct $(CATALOGS)
 
 mostlyclean:
 	$(RM) $(EXECUTABLE) *.o *.a Makefile.dep
@@ -123,8 +123,8 @@ revup:
 
 bindist:	all
 	$(INSTALL) -d $(CATDIR) $(CATSRCDIR) $(CATSRCDIR)/ahi
-	$(INSTALL_DATA) ${srcdir}/ahi.cd $(CATSRCDIR)
-	$(INSTALL_DATA) ${srcdir}/ahi.ct $(CATSRCDIR)
+	$(INSTALL_DATA) ${srcdir}/translations/ahi.cd $(CATSRCDIR)
+	$(INSTALL_DATA) ${srcdir}/translations/ahi.ct $(CATSRCDIR)
 	for i in $(LANGUAGES); do \
 	  $(INSTALL) -d $(CATDIR)/$$i; \
 	  $(INSTALL_DATA) $$i.catalog $(CATDIR)/$$i/ahi.catalog; \
@@ -178,18 +178,18 @@ gatestubs.h:	$(top_srcdir)/Include/SFD/ahi_lib.sfd
 	$(SFDC) $(SFDC_TARGET) --mode=gateproto $^ --output $@ \
 	        --gateprefix=gw --libprefix=_ --libarg=last --addvectors=device
 
-$(srcdir)/localize.c:	ahi.cd C_c_AHI.sd
-	$(FLEXCAT) $(srcdir)/ahi.cd $(srcdir)/localize.c=$(srcdir)/C_c_AHI.sd 
+$(srcdir)/localize.c:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
+	$(FLEXCAT) $(srcdir)/translations/ahi.cd $(srcdir)/localize.c=$(srcdir)/C_c_AHI.sd 
 
-$(srcdir)/localize.h:	ahi.cd C_c_AHI.sd
-	$(FLEXCAT) $(srcdir)/ahi.cd $(srcdir)/localize.h=$(srcdir)/C_h_AHI.sd
+$(srcdir)/localize.h:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
+	$(FLEXCAT) $(srcdir)/translations/ahi.cd $(srcdir)/localize.h=$(srcdir)/C_h_AHI.sd
 
 %.catalog:		translations/%.ct
 	$(FLEXCAT) \
-		   $(srcdir)/ahi.cd $< CATALOG=$@
+		   $(srcdir)/translations/ahi.cd $< CATALOG=$@
 
 %.ct:
-	$(FLEXCAT) $(srcdir)/ahi.cd $@ NEWCTFILE=$@
+	$(FLEXCAT) $(srcdir)/translations/ahi.cd $@ NEWCTFILE=$@
 
 # Just some test code...
 
@@ -222,4 +222,4 @@ addroutines_ppc.o:	addroutines_ppc.s
 addroutines_68k.o:	addroutines_68k.s
 dspechofuncs_68k.o:	dspechofuncs_68k.s
 
-$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/ahi.ct:	ahi.cd
+$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/translations/ahi.ct:	$(srcdir)/translations/ahi.cd

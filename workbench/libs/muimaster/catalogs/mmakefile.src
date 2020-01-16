@@ -1,9 +1,0 @@
-# Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-
-include $(SRCDIR)/config/aros.cfg
-
-CATALOGS:=
-
-%build_catalogs mmake=workbench-libs-muimaster-catalogs \
-    catalogs=$(CATALOGS) source="../muimaster_strings.h" \
-    name=muimaster subdir=System/Libs
