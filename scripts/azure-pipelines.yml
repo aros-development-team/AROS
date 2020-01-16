@@ -31,7 +31,10 @@ jobs:
 
   steps:
   - script: |
-      CONFIGOPTS="--target=$(arosbuild.target)"
+      if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
+        CONFIGOPTS="$(arosbuild.config.extra)"
+      fi
+      CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)"
       if [ "$AROSBUILD_VARIANT" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
       fi
@@ -55,7 +58,10 @@ jobs:
     displayName: 'Installing AROS build dependencies for Ubuntu'
 
   - script: |
-      CONFIGOPTS="--target=$(arosbuild.target)"
+      if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
+        CONFIGOPTS="$(arosbuild.config.extra)"
+      fi
+      CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)""
       if [ "$AROSBUILD_VARIANT" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
       fi
