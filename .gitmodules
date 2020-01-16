@@ -19,3 +19,6 @@
 [submodule "rom/usb/trident/catalogs"]
 	path = rom/usb/trident/catalogs
 	url = https://github.com/aros-translation-team/trident.git
+[submodule "workbench/c/LoadResource/catalogs"]
+	path = workbench/c/LoadResource/catalogs
+	url = https://github.com/aros-translation-team/loadresource.git
