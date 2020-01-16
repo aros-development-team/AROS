@@ -31,3 +31,6 @@
 [submodule "workbench/classes/zune/prefswindow/catalogs"]
 	path = workbench/classes/zune/prefswindow/catalogs
 	url = https://github.com/aros-translation-team/prefswindow.git
+[submodule "workbench/classes/zune/systemprefswindow/catalogs"]
+	path = workbench/classes/zune/systemprefswindow/catalogs
+	url = https://github.com/aros-translation-team/systemprefswindow.git
