@@ -34,3 +34,6 @@
 [submodule "workbench/classes/zune/systemprefswindow/catalogs"]
 	path = workbench/classes/zune/systemprefswindow/catalogs
 	url = https://github.com/aros-translation-team/systemprefswindow.git
+[submodule "workbench/devs/diskimage/device/catalogs"]
+	path = workbench/devs/diskimage/device/catalogs
+	url = https://github.com/aros-translation-team/diskimage.device.git
