@@ -178,10 +178,10 @@ gatestubs.h:	$(top_srcdir)/Include/SFD/ahi_lib.sfd
 	$(SFDC) $(SFDC_TARGET) --mode=gateproto $^ --output $@ \
 	        --gateprefix=gw --libprefix=_ --libarg=last --addvectors=device
 
-$(srcdir)/localize.c:	ahi.cd C_c_AHI.sd
+$(srcdir)/localize.c:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
 	$(FLEXCAT) $(srcdir)/translations/ahi.cd $(srcdir)/localize.c=$(srcdir)/C_c_AHI.sd 
 
-$(srcdir)/localize.h:	ahi.cd C_c_AHI.sd
+$(srcdir)/localize.h:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
 	$(FLEXCAT) $(srcdir)/translations/ahi.cd $(srcdir)/localize.h=$(srcdir)/C_h_AHI.sd
 
 %.catalog:		translations/%.ct
@@ -222,4 +222,4 @@ addroutines_ppc.o:	addroutines_ppc.s
 addroutines_68k.o:	addroutines_68k.s
 dspechofuncs_68k.o:	dspechofuncs_68k.s
 
-$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/translations/ahi.ct:	ahi.cd
+$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/translations/ahi.ct:	$(srcdir)/translations/ahi.cd
