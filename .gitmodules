@@ -58,3 +58,6 @@
 [submodule "workbench/devs/AHI/Device/translations"]
 	path = workbench/devs/AHI/Device/translations
 	url = https://github.com/aros-translation-team/ahi.device.git
+[submodule "workbench/utilities/MultiView/catalogs"]
+	path = workbench/utilities/MultiView/catalogs
+	url = https://github.com/aros-translation-team/multiview.git
