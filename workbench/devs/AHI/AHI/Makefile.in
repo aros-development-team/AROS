@@ -61,7 +61,7 @@ CATALOGS	= $(addsuffix .catalog, $(LANGUAGES))
 
 .PHONY:		all clean distclean maintainer-clean bindist revup
 
-all:		$(EXECUTABLES) ahiprefs.ct $(CATALOGS)
+all:		$(EXECUTABLES) ${srcdir}/translations/ahiprefs.ct $(CATALOGS)
 
 clean:
 	$(RM) $(EXECUTABLES) $(LANGTARGETS) version.h \
@@ -170,4 +170,4 @@ Makefile.dep:	$(DEPENDENCIES) version.h
 
 -include Makefile.dep
 
-$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/translations/ahiprefs.ct:	ahiprefs.cd
+$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/translations/ahiprefs.ct:	${srcdir}/translations/ahiprefs.cd
