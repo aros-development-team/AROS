@@ -7,3 +7,6 @@
 [submodule "rom/dos/catalogs"]
 	path = rom/dos/catalogs
 	url = https://github.com/aros-translation-team/dos.library.git
+[submodule "rom/filesys/SFS/SFSdefrag/Catalogs"]
+	path = rom/filesys/SFS/SFSdefrag/Catalogs
+	url = https://github.com/aros-translation-team/sfsdefrag.git
