@@ -16,3 +16,6 @@
 [submodule "rom/security/catalogs"]
 	path = rom/security/catalogs
 	url = https://github.com/aros-translation-team/security.library.git
+[submodule "rom/usb/trident/catalogs"]
+	path = rom/usb/trident/catalogs
+	url = https://github.com/aros-translation-team/trident.git
