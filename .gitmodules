@@ -13,3 +13,6 @@
 [submodule "rom/hidds/pci/pcitool/catalogs"]
 	path = rom/hidds/pci/pcitool/catalogs
 	url = https://github.com/aros-translation-team/pcitool.git
+[submodule "rom/security/catalogs"]
+	path = rom/security/catalogs
+	url = https://github.com/aros-translation-team/security.library.git
