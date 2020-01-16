@@ -22,3 +22,6 @@
 [submodule "workbench/c/LoadResource/catalogs"]
 	path = workbench/c/LoadResource/catalogs
 	url = https://github.com/aros-translation-team/loadresource.git
+[submodule "workbench/c/R/catalogs"]
+	path = workbench/c/R/catalogs
+	url = https://github.com/aros-translation-team/r.git
