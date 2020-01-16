@@ -55,3 +55,6 @@
 [submodule "workbench/devs/AHI/AHI/translations"]
 	path = workbench/devs/AHI/AHI/translations
 	url = https://github.com/aros-translation-team/ahi-prefs.git
+[submodule "workbench/devs/AHI/Device/translations"]
+	path = workbench/devs/AHI/Device/translations
+	url = https://github.com/aros-translation-team/ahi.device.git
