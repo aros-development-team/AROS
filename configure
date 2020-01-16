@@ -2839,7 +2839,7 @@ exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_binutils_version=`cat ${srcdir}/config/binutils_def`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
-default_grub2_version="2.02"
+default_grub2_version="2.04"
 target_grub2_version=$default_grub2_version
 
 # The AROS target is slightly different to the normal GNU style
