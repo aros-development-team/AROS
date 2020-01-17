@@ -82,3 +82,6 @@
 [submodule "workbench/tools/InstallAROS/catalogs"]
 	path = workbench/tools/InstallAROS/catalogs
 	url = https://github.com/aros-translation-team/installaros.git
+[submodule "workbench/tools/HDToolBox/catalogs"]
+	path = workbench/tools/HDToolBox/catalogs
+	url = https://github.com/aros-translation-team/hdtoolbox.git
