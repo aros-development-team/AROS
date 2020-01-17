@@ -64,3 +64,6 @@
 [submodule "workbench/utilities/More/catalogs"]
 	path = workbench/utilities/More/catalogs
 	url = https://github.com/aros-translation-team/more.git
+[submodule "workbench/utilities/Installer/catalogs"]
+	path = workbench/utilities/Installer/catalogs
+	url = https://github.com/aros-translation-team/installer.git
