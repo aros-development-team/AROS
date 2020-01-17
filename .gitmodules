@@ -61,3 +61,6 @@
 [submodule "workbench/utilities/MultiView/catalogs"]
 	path = workbench/utilities/MultiView/catalogs
 	url = https://github.com/aros-translation-team/multiview.git
+[submodule "workbench/utilities/More/catalogs"]
+	path = workbench/utilities/More/catalogs
+	url = https://github.com/aros-translation-team/more.git
