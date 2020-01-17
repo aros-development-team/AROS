@@ -79,3 +79,6 @@
 [submodule "workbench/system/AboutAROS/catalogs"]
 	path = workbench/system/AboutAROS/catalogs
 	url = https://github.com/aros-translation-team/aboutaros.git
+[submodule "workbench/tools/InstallAROS/catalogs"]
+	path = workbench/tools/InstallAROS/catalogs
+	url = https://github.com/aros-translation-team/installaros.git
