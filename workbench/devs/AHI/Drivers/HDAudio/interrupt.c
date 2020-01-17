@@ -222,15 +222,20 @@ PlaybackInterrupt( struct HDAudioChip* card )
         if (! skip_mix)
         {
 #if defined(__AROS__) && (__WORDSIZE==64)
-            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, (APTR)card->mix_buffer);
+            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, (APTR)(((IPTR)card->upper_mix_buffer << 32) | card->lower_mix_buffer));
 #else
-            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, (APTR)card->mix_bufferlo);
+            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, (APTR)card->lower_mix_buffer);
 #endif
         }
 
         /* Now translate and transfer to the DMA buffer */
-        srclong = (LONG*) card->mix_buffer;
-        dstlong = (LONG*) card->current_buffer;
+#if defined(__AROS__) && (__WORDSIZE==64)
+        srclong = (LONG*) (((IPTR)card->upper_mix_buffer << 32) | card->lower_mix_buffer);
+        dstlong = (LONG*) (((IPTR)card->upper_current_buffer << 32) | card->lower_current_buffer);
+#else
+        srclong = (LONG*) card->lower_mix_buffer;
+        dstlong = (LONG*) card->lower_current_buffer;
+#endif
 
         i = frames;
 
@@ -277,17 +282,17 @@ RecordInterrupt( struct HDAudioChip* card )
 #ifdef __AMIGAOS4__
     int i = 0;
     int frames = card->current_record_bytesize / 2;
-     WORD *src = card->current_record_buffer;
-     WORD* dst = card->current_record_buffer;
+     WORD *src = card->lower_current_record_buffer;
+     WORD* dst = card->lower_current_record_buffer;
 #endif
     
     struct AHIRecordMessage rm =
     {
         AHIST_S16S,
 #if defined(__AROS__) && (__WORDSIZE==64)
-        (APTR)card->current_record_buffer,
+        (APTR)(((IPTR)card->upper_current_record_buffer << 32) | card->lower_current_record_buffer),
 #else
-        (APTR)card->current_record_bufferlo,
+        (APTR)card->lower_current_record_buffer,
 #endif        
         RECORD_BUFFER_SAMPLES
     };

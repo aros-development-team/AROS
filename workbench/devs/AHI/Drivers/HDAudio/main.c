@@ -228,15 +228,23 @@ ULONG _AHIsub_Start(ULONG flags,
     if (flags & AHISF_PLAY)
     {
         ULONG dma_sample_frame_size;
-        
+        APTR    bufftmp;
+
         detect_headphone_change(card);
 
-        card->mix_buffer = (UQUAD) AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
-        if (card->mix_buffer == 0)
+        bufftmp = AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
+        if (bufftmp == NULL)
         {
             D(bug("[HDAudio] Unable to allocate %ld bytes for mixing buffer.", AudioCtrl->ahiac_BuffSize));
             return AHIE_NOMEM;
         }
+#if defined(__AROS__) && (__WORDSIZE==64)
+        card->lower_mix_buffer = (IPTR)bufftmp & 0xFFFFFFFF;
+        card->upper_mix_buffer = ((IPTR)bufftmp >> 32) & 0xFFFFFFFF;
+#else
+        card->lower_mix_buffer = (ULONG)bufftmp;
+        card->upper_mix_buffer = 0;
+#endif
 
         /* Allocate a buffer large enough for 32-bit double-buffered playback (mono or stereo) */
         if (AudioCtrl->ahiac_Flags & AHIACF_STEREO)
@@ -674,7 +682,8 @@ static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_b
         buffer = pci_alloc_consistent(buffer_size, &non_aligned_address, 128);
 
 #if defined(__AROS__) && (__WORDSIZE==64)
-        stream->bdl[entry].address = (UQUAD)buffer;
+        stream->bdl[entry].lower_address = (ULONG)((IPTR)buffer & 0xFFFFFFFF);
+        stream->bdl[entry].upper_address = (ULONG)(((IPTR)buffer >> 32) & 0xFFFFFFFF);
 #else
         stream->bdl[entry].lower_address = (ULONG)buffer;
         stream->bdl[entry].upper_address = 0;
