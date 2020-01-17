@@ -6,8 +6,9 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2010-2020 The AROS Developer Team
 (C) Copyright 2009-2010 Stephen Jones.
+(C) Copyright xxxx-2009 Davy Wentzler.
 
 The Initial Developer of the Original Code is Davy Wentzler.
 
@@ -230,9 +231,8 @@ ULONG _AHIsub_Start(ULONG flags,
         
         detect_headphone_change(card);
 
-        card->mix_buffer = (APTR) AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
-
-        if (card->mix_buffer == NULL)
+        card->mix_buffer = (UQUAD) AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
+        if (card->mix_buffer == 0)
         {
             D(bug("[HDAudio] Unable to allocate %ld bytes for mixing buffer.", AudioCtrl->ahiac_BuffSize));
             return AHIE_NOMEM;
@@ -253,13 +253,8 @@ ULONG _AHIsub_Start(ULONG flags,
         //bug("dma_buffer_size = %ld, %lx, freq = %d\n", dma_buffer_size, dma_buffer_size, AudioCtrl->ahiac_MixFreq);
         build_buffer_descriptor_list(card, 2, dma_buffer_size, output_stream);
 
-#if defined(__AROS__) && (__WORDSIZE==64)
-        card->playback_buffer1 = (APTR)(((IPTR)output_stream->bdl[0].upper_address << 32) | output_stream->bdl[0].lower_address);
-        card->playback_buffer2 = (APTR)(((IPTR)output_stream->bdl[1].upper_address << 32) | output_stream->bdl[1].lower_address);
-#else
-        card->playback_buffer1 = (APTR) output_stream->bdl[0].lower_address;
-        card->playback_buffer2 = (APTR) output_stream->bdl[1].lower_address;
-#endif
+        card->playback_buffer1 = output_stream->bdl[0].address;
+        card->playback_buffer2 = output_stream->bdl[1].address;
 
         //bug("BDLE[0] = %lx, BDLE[1] = %lx\n", output_stream->bdl[0].lower_address, output_stream->bdl[1].lower_address);
         if (stream_reset(output_stream, card) == FALSE)
@@ -314,14 +309,9 @@ ULONG _AHIsub_Start(ULONG flags,
         dma_buffer_size = RECORD_BUFFER_SAMPLES * 4;
 
         build_buffer_descriptor_list(card, 2, dma_buffer_size, input_stream);
-    
-#if defined(__AROS__) && (__WORDSIZE==64)
-        card->record_buffer1 = (APTR)(((IPTR)input_stream->bdl[0].upper_address << 32) | input_stream->bdl[0].lower_address);
-        card->record_buffer2 = (APTR)(((IPTR)input_stream->bdl[1].upper_address << 32) | input_stream->bdl[1].lower_address);
-#else
-        card->record_buffer1 = (APTR) input_stream->bdl[0].lower_address;
-        card->record_buffer2 = (APTR) input_stream->bdl[1].lower_address;
-#endif
+
+        card->record_buffer1 = input_stream->bdl[0].address;
+        card->record_buffer2 = input_stream->bdl[1].address;
 
         if (stream_reset(input_stream, card) == FALSE)
         {
@@ -435,13 +425,13 @@ void _AHIsub_Stop(ULONG flags,
 
         card->current_bytesize = 0;
         card->current_frames = 0;
-        card->current_buffer = NULL;
+        card->current_buffer = 0;
 
         if (card->mix_buffer)
         {
-            FreeVec(card->mix_buffer);
+            FreeVec((APTR)card->mix_buffer);
         }
-        card->mix_buffer = NULL;
+        card->mix_buffer = 0;
 
         free_buffer_descriptor_list(card, 2, output_stream);
 
@@ -453,8 +443,8 @@ void _AHIsub_Stop(ULONG flags,
         struct Stream *input_stream = &(card->streams[0]);
         outl_clearbits(HD_SD_CONTROL_STREAM_RUN, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
 
-        card->record_buffer1 = NULL;
-        card->record_buffer2 = NULL;
+        card->record_buffer1 = 0;
+        card->record_buffer2 = 0;
         card->current_record_bytesize = 0;
 
         card->is_recording = FALSE;
@@ -684,8 +674,7 @@ static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_b
         buffer = pci_alloc_consistent(buffer_size, &non_aligned_address, 128);
 
 #if defined(__AROS__) && (__WORDSIZE==64)
-        stream->bdl[entry].lower_address = (ULONG)((IPTR)buffer & 0xFFFFFFFF);
-        stream->bdl[entry].upper_address = (ULONG)(((IPTR)buffer >> 32) & 0xFFFFFFFF);
+        stream->bdl[entry].address = (UQUAD)buffer;
 #else
         stream->bdl[entry].lower_address = (ULONG)buffer;
         stream->bdl[entry].upper_address = 0;
