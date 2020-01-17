@@ -85,3 +85,6 @@
 [submodule "workbench/tools/HDToolBox/catalogs"]
 	path = workbench/tools/HDToolBox/catalogs
 	url = https://github.com/aros-translation-team/hdtoolbox.git
+[submodule "workbench/tools/BoingIconBar/catalogs"]
+	path = workbench/tools/BoingIconBar/catalogs
+	url = https://github.com/aros-translation-team/boingiconbar.git
