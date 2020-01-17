@@ -9,9 +9,10 @@
 
 @SET_MAKE@
 
-VPATH		= @srcdir@
+VPATH		= @builddir@ @srcdir@
 
 top_srcdir	= @top_srcdir@
+builddir        = @builddir@
 srcdir		= @srcdir@
 PREFIX		= @prefix@
 DISTDIR		= @DISTDIR@
@@ -29,7 +30,7 @@ AR              = @AR@
 RANLIB          = @RANLIB@
 STRIP		= @STRIP@ @STRIPFLAGS@
 
-CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir}
+CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir} -iquote ${builddir}
 CFLAGS		= @CFLAGS@
 ASFLAGS		= @ASFLAGS@
 LDFLAGS		= @LDFLAGS@ -nostartfiles
@@ -83,7 +84,7 @@ endif
 #endif
 
 GENERATED	= version.h \
-		  gatestubs.c gatestubs.h
+		  gatestubs.c gatestubs.h ${builddir}/localize.h
 
 #
 # Targets
@@ -178,11 +179,11 @@ gatestubs.h:	$(top_srcdir)/Include/SFD/ahi_lib.sfd
 	$(SFDC) $(SFDC_TARGET) --mode=gateproto $^ --output $@ \
 	        --gateprefix=gw --libprefix=_ --libarg=last --addvectors=device
 
-$(srcdir)/localize.c:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
-	$(FLEXCAT) $(srcdir)/translations/ahi.cd $(srcdir)/localize.c=$(srcdir)/C_c_AHI.sd 
+${builddir}/localize.c:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
+	$(FLEXCAT) $(srcdir)/translations/ahi.cd ${builddir}/localize.c=$(srcdir)/C_c_AHI.sd 
 
-$(srcdir)/localize.h:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
-	$(FLEXCAT) $(srcdir)/translations/ahi.cd $(srcdir)/localize.h=$(srcdir)/C_h_AHI.sd
+${builddir}/localize.h:	$(srcdir)/translations/ahi.cd C_c_AHI.sd
+	$(FLEXCAT) $(srcdir)/translations/ahi.cd ${builddir}/localize.h=$(srcdir)/C_h_AHI.sd
 
 %.catalog:		translations/%.ct
 	$(FLEXCAT) \
