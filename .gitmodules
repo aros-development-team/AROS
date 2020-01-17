@@ -70,3 +70,6 @@
 [submodule "workbench/utilities/Clock/catalogs"]
 	path = workbench/utilities/Clock/catalogs
 	url = https://github.com/aros-translation-team/clock.git
+[submodule "workbench/system/Wanderer/Catalogs"]
+	path = workbench/system/Wanderer/Catalogs
+	url = https://github.com/aros-translation-team/wanderer.git
