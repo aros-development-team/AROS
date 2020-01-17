@@ -88,3 +88,6 @@
 [submodule "workbench/tools/BoingIconBar/catalogs"]
 	path = workbench/tools/BoingIconBar/catalogs
 	url = https://github.com/aros-translation-team/boingiconbar.git
+[submodule "workbench/system/SysMon/catalogs"]
+	path = workbench/system/SysMon/catalogs
+	url = https://github.com/aros-translation-team/sysmon.git
