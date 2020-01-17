@@ -91,3 +91,6 @@
 [submodule "workbench/system/SysMon/catalogs"]
 	path = workbench/system/SysMon/catalogs
 	url = https://github.com/aros-translation-team/sysmon.git
+[submodule "workbench/tools/commodities/catalogs"]
+	path = workbench/tools/commodities/catalogs
+	url = https://github.com/aros-translation-team/commodities.git
