@@ -73,3 +73,6 @@
 [submodule "workbench/system/Wanderer/Catalogs"]
 	path = workbench/system/Wanderer/Catalogs
 	url = https://github.com/aros-translation-team/wanderer.git
+[submodule "workbench/tools/SysExplorer/catalogs"]
+	path = workbench/tools/SysExplorer/catalogs
+	url = https://github.com/aros-translation-team/sysexplorer.git
