@@ -67,3 +67,6 @@
 [submodule "workbench/utilities/Installer/catalogs"]
 	path = workbench/utilities/Installer/catalogs
 	url = https://github.com/aros-translation-team/installer.git
+[submodule "workbench/utilities/Clock/catalogs"]
+	path = workbench/utilities/Clock/catalogs
+	url = https://github.com/aros-translation-team/clock.git
