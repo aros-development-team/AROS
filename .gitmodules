@@ -94,3 +94,6 @@
 [submodule "workbench/tools/commodities/catalogs"]
 	path = workbench/tools/commodities/catalogs
 	url = https://github.com/aros-translation-team/commodities.git
+[submodule "workbench/prefs/palette/catalogs"]
+	path = workbench/prefs/palette/catalogs
+	url = https://github.com/aros-translation-team/palette-prefs.git
