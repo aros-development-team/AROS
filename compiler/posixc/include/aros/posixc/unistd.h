@@ -2,11 +2,13 @@
 #define _POSIXC_UNISTD_H_
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file unistd.h
 */
+
+#include <aros/features.h>
 #include <aros/system.h>
 
 /*
@@ -14,7 +16,6 @@
  */
 #define _POSIX_VERSION              200809L
 #define _POSIX2_VERSION             200809L
-#define _XOPEN_VERSION              700
 
 /*
    POSIX options and option groups:

@@ -2,12 +2,13 @@
 #define _POSIXC_FCNTL_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file fcntl.h
 */
 
+#include <aros/features.h>
 #include <aros/system.h>
 
 /* Both Linux and NetBSD seem to include this file and
