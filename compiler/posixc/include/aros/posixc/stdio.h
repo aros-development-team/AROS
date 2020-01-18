@@ -8,6 +8,8 @@
     POSIX.1-2008 header file stdio.h
 */
 
+#include <aros/features.h>
+
 /* C99 */
 #include <aros/stdc/stdio.h>
 

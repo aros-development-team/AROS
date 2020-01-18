@@ -2,16 +2,20 @@
 #define _POSIXC_SYS_TYPES_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file sys/types.h
 */
 
+#include <aros/features.h>
 #include <aros/system.h>
 #include <aros/macros.h>
 
-#include <aros/types/blk_t.h> /* blkcnt_t and blksize_t */
+/*****************************************************************************/
+
+#include <aros/types/off_t.h>
+#include <aros/types/blk_t.h>
 #include <aros/types/clock_t.h>
 #include <aros/types/clockid_t.h>
 #include <aros/types/dev_t.h>
@@ -22,7 +26,7 @@
 #include <aros/types/key_t.h>
 #include <aros/types/mode_t.h>
 #include <aros/types/nlink_t.h>
-#include <aros/types/off_t.h>
+
 #include <aros/types/pid_t.h>
 /* NOTIMPL
     pthread_attr_t
