@@ -59,8 +59,12 @@
 	is returned, then errno is set to indicate the error.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
+	On 32bit systems, fopen and related operations only work with
+	32bit filesystems/files. Anything larger than 2GB needs to use
+	the correct 64bit structures and functions.
+       
+	This function must not be used in a shared library or
+	in a threaded application.
 
     EXAMPLE
 

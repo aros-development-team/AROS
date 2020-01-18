@@ -16,10 +16,10 @@
         FILE *stream)
 
 /*  FUNCTION
-
+	Returns the current position in a stream.
 
     INPUTS
-	stream - Modify this stream
+	stream - Query this stream
 
     RESULT
 

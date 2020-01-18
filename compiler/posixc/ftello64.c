@@ -16,14 +16,16 @@
         FILE *stream)
 
 /*  FUNCTION
-
+	Returns the current position in a stream.
 
     INPUTS
-	stream - Modify this stream
+	stream - Query this stream
 
     RESULT
 
     NOTES
+	Returns the position in files that may be larger than 2GB, if the
+	underlying filesystem supports it.
 
     EXAMPLE
 

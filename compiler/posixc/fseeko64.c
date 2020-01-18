@@ -38,7 +38,8 @@
 	variable errno is set.
 
     NOTES
-	64-bit version
+	Allows seeking on files that may be larger than 2GB, if the
+	underlying filesystem supports it.
 
     EXAMPLE
 
