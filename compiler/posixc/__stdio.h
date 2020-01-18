@@ -13,6 +13,10 @@
 #include <stddef.h>
 #include <exec/lists.h>
 
+#if !defined(__off64_t_defined)
+#define off64_t UQUAD
+#endif
+
 struct __sFILE
 {
     int fd;
@@ -35,7 +39,14 @@ typedef struct
 #define FILENODE2FILE(fn)       (&((fn)->File))
 #define FILE2FILENODE(f)        ((FILENODE *)(((char *)(f))-offsetof(FILENODE,File)))
 
-int __smode2oflags(const char *mode);
-int __oflags2sflags(int oflags);
+extern int __smode2oflags(const char *mode);
+extern int __oflags2sflags(int oflags);
 
+#if !defined(POSIXC_NOSTDIO_DECL)
+extern FILE * __fopen (const char * pathname, const char * mode, int    large);
+extern int __fseeko (FILE * stream, off_t  offset, int    whence);
+extern off_t __ftello (FILE *stream);
+extern int __fseeko64 (FILE * stream, off64_t  offset, int    whence);
+extern off64_t __ftello64 (FILE *stream);
+#endif
 #endif /* ___STDIO_H */

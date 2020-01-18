@@ -5,17 +5,14 @@
     C99 function fopen().
 */
 
-#include <fcntl.h>
-#include <string.h>
 #include "__stdio.h"
-
 
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
 
-	FILE * fopen (
+	FILE * fopen64 (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -68,15 +65,11 @@
 	Most modes are not supported right now.
 
     SEE ALSO
-	fclose(), fread(), fwrite(), open(), fgets(), fgetc(),
-	fputs(), fputc(), getc(), putc()
+	fseeko64(), ftello64()
 
     INTERNALS
 
 ******************************************************************************/
 {
-
-    return __fopen(pathname, mode, 0);
-
-} /* fopen */
-
+    return __fopen(pathname, mode, 1);
+} /* fopen64 */

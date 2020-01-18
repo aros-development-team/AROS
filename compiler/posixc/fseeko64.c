@@ -1,27 +1,22 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Change the position in a stream.
 */
 
-#include <fcntl.h>
-#include <errno.h>
-#include <dos/dos.h>
-#include <proto/dos.h>
 #include "__stdio.h"
-#include "__fdesc.h"
 
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
 
-	int fseeko (
+	int fseeko64 (
 
 /*  SYNOPSIS */
 	FILE * stream,
-	off_t  offset,
+	off64_t  offset,
 	int    whence)
 
 /*  FUNCTION
@@ -43,9 +38,7 @@
 	variable errno is set.
 
     NOTES
-	on 32bit platforms, off_t is a 32bit value, and so the 64bit
-        version (fseeko64) is needed to work with large files.
-        off_t is 64bit natively on 64bit platforms.
+	64-bit version
 
     EXAMPLE
 
@@ -54,13 +47,14 @@
 	modes
 
     SEE ALSO
-	fseek()
+	fopen64(), ftello64()
 
     INTERNALS
+	just a hack, not 64-bit
 
 ******************************************************************************/
 {
 
-    return __fseeko (stream, offset, whence);
+    return __fseeko64(stream, offset, whence);
 
-} /* fseeko */
+} /* fseeko64 */

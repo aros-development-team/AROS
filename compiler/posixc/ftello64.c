@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@
     NAME */
 #include <stdio.h>
 
-        off_t ftello (
+        off64_t ftello64 (
 
 /*  SYNOPSIS */
         FILE *stream)
@@ -24,22 +24,19 @@
     RESULT
 
     NOTES
-	on 32bit platforms, off_t is a 32bit value, and so the 64bit
-        version (ftello64) is needed to work with large files.
-        off_t is 64bit natively on 64bit platforms.
-
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	fopen64(), ftello64()
 
     INTERNALS
 
 ******************************************************************************/
 {
 
-    return __ftello(stream);
+    return __ftello64(stream);
 
-} /* ftello */
+} /* ftello64 */
