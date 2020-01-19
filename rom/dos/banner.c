@@ -24,7 +24,7 @@ char *generate_banner()
     CParams[0] = (IPTR)TaggedOpenLibrary(-2);
     CParams[1] = (IPTR)TaggedOpenLibrary(-3);
     CParams[2] = (IPTR)CExtra;
-    banner = AllocVec(strlen((char *)CParams[0]) + strlen((char *)CParams[1]) + strlen((char *)CParams[2]) + 1, MEMF_CLEAR);
+    banner = AllocVec(strlen((char *)CParams[0]) + strlen((char *)CParams[1]) + strlen((char *)CParams[2]) + 2, MEMF_CLEAR);
     RawDoFmt("%s%s\n%s", (RAWARG)CParams, RAWFMTFUNC_STRING, banner);
     return banner;
 }
