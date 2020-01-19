@@ -1,0 +1,10 @@
+# Copyright © 2020, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+##MM- fonts-truetype : fonts-truetype-architext
+#MM- fonts-truetype-architext : fonts-truetype-architext-ttf
+
+%copy_files_q mmake=fonts-truetype-architext-ttf files="$(call WILDCARD, *.ttf)" \
+    dst=$(AROSDIR)/Fonts/TrueType

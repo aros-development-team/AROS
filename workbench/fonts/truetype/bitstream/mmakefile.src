@@ -1,15 +1,17 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-fonts : workbench-fonts-truetype-cpy workbench-fonts-truetype-extra
+#MM- fonts-truetype : fonts-truetype-bitstream
+#MM- fonts-truetype-quick : fonts-truetype-bitstream
+#MM- fonts-truetype-bitstream : fonts-truetype-bitstream-ttf fonts-truetype-bitstream-amifonts
 
-%copy_files_q mmake=workbench-fonts-truetype-cpy files="$(call WILDCARD, *.ttf)" \
+%copy_files_q mmake=fonts-truetype-bitstream-ttf files="$(call WILDCARD, *.ttf)" \
     dst=$(AROSDIR)/Fonts/TrueType
 
 #MM
-workbench-fonts-truetype-extra :
+fonts-truetype-bitstream-amifonts :
 	@cd $(SRCDIR)/$(CURDIR); for file in *.font *.otag; do \
             if [ ! -e "$(AROSDIR)/Fonts/$$file" ]; then \
                 $(ECHO) Copying "$$file"...; \
