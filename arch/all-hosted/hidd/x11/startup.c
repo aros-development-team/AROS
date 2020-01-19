@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,10 +52,14 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
     int res = FALSE;
     ULONG err;
 
-    D(bug("[X11] X11_Startup()\n"));
+    D(
+        bug("[X11] %s()\n", __func__);
+        bug("[X11] %s: X11Base @ 0x%p\n", __func__, LIBBASE);
+        bug("[X11] %s: xsd @ 0x%p\n", __func__, &LIBBASE->xsd);
+    )
 
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
-    D(bug("[X11_Startup] GfxBase 0x%p\n", GfxBase));
+    D(bug("[X11] GfxBase 0x%p\n", GfxBase));
     if (!GfxBase)
         return FALSE;
 
@@ -82,7 +86,7 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
 
     err = AddDisplayDriverA(LIBBASE->xsd.gfxclass, NULL, NULL);
 
-    D(bug("[X11_Startup] AddDisplayDriver() result: %u\n", err));
+    D(bug("[X11] AddDisplayDriver() result: %u\n", err));
     if (!err)
     {
         LIBBASE->library.lib_OpenCnt = 1;
@@ -90,10 +94,10 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
     }
     else
     {
-	if (kbdriver)
-	    HW_RemoveDriver(kbd, kbdriver);
-	if (msdriver)
-	    HW_RemoveDriver(ms, msdriver);
+        if (kbdriver)
+            HW_RemoveDriver(kbd, kbdriver);
+        if (msdriver)
+            HW_RemoveDriver(ms, msdriver);
     }
 
     CloseLibrary(&GfxBase->LibNode);

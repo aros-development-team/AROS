@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2016, The AROS Development Team. All rights reserved.
+    Copyright  1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Disk-resident part of X11 display driver
@@ -7,15 +7,18 @@
 */
 
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/graphics.h>
+#include <proto/oop.h>
+#include <proto/icon.h>
+#include <proto/x11gfx.h>
+
 #include <dos/dosextens.h>
 #include <oop/oop.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
-#include <proto/graphics.h>
-#include <proto/oop.h>
-#include <proto/icon.h>
 
 #include <stdlib.h>
 
@@ -81,88 +84,69 @@ int __nocommandline = 1;
 
 static ULONG LoadKeyCode2RawKeyTable(STRPTR filename)
 {
-    struct X11Base *X11Base;
+    struct Library *X11ClBase;
     ULONG displays;
     BPTR  fh;
 
-    X11Base = (struct X11Base *)OpenLibrary(X11_LIBNAME, X11_VERSION);
-    if (!X11Base) {
-        D(bug("[X11] No X11 driver in the system\n"));
+    D(bug("[X11:DiskStart] %s()\n", __func__));
+
+    X11ClBase = (struct Library *)OpenLibrary(X11_LIBNAME, X11_VERSION);
+    if (!X11ClBase) {
+        D(bug("[X11:DiskStart] No X11 driver in the system\n"));
         return 0;
     }
-
-    displays = X11Base->library.lib_OpenCnt - 1;
+    D(
+        bug("[X11:DiskStart] %s: X11ClBase @ 0x%p\n", __func__, X11ClBase);
+    )
+    displays = X11ClBase->lib_OpenCnt - 1;
 
     if ((fh = Open(filename, MODE_OLDFILE)))
     {
-	D(bug("[X11] X keymap file handle: %p\n", fh));
+        UBYTE	   	        keycode2rawkey[256];
 
-	if ((256 == Read(fh, X11Base->keycode2rawkey, 256)))
-	{
-		D(bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n"));
-		X11Base->havetable = TRUE;
-	}
-	Close(fh);
+        D(bug("[X11:DiskStart] %s: X key table file handle: %p\n", __func__, fh));
+        D(bug("[X11:DiskStart] %s: X key table name       : %s\n", __func__, filename));
+
+        if ((256 == Read(fh, keycode2rawkey, 256)))
+        {
+                x11kdb_LoadkeyTable(keycode2rawkey);
+                D(bug("[X11:DiskStart] %s: table loaded\n", __func__));
+        }
+        Close(fh);
     }
-    
-    CloseLibrary(&X11Base->library);
+
+    CloseLibrary(X11ClBase);
 
     return displays;
 }
 
-#if 0
-/* This function uses library open count as displays count */
-static ULONG AddDisplays(ULONG num, ULONG old)
-{
-    struct X11Base *X11Base;
-    ULONG i, err;
-
-    D(bug("[X11] Making %u displays\n", num));
-    D(bug("[X11] Current displays count: %u\n", old));
-
-    /* Add displays if needed, open the library once more for every display */
-    for (i = old; i < num; i++)
-    {
-        /* This increments counter */
-	X11Base = (struct X11Base *)OpenLibrary(X11_LIBNAME, X11_VERSION);
-	if (!X11Base)
-	{
-	    D(bug("[X11] Failed to open X11 library!\n"));
-	    break;
-	}
-
-	err = AddDisplayDriverA(X11Base->gfxclass, NULL, NULL);
-
-	/* If driver setup failed, decrement counter back and abort */
-	if (!err)
-	{
-	    D(bug("[X11] Failed to add display object\n"));
-
-	    CloseLibrary(X11Base);
-	    break;
-	}
-    }
-    
-    return i;
-}
-#endif
-
 int main(void)
 {
-    BPTR olddir = BNULL;
-    STRPTR myname;
     struct DiskObject *icon;
     struct RDArgs *rdargs = NULL;
+    BPTR olddir = BNULL;
     ULONG old_displays;
+    STRPTR myname;
     int res = RETURN_OK;
+    struct Node *x11entry;
+
     struct MyArgs args =
     {
-	1,
-	DEF_KEYMAP
+        1,
+        DEF_KEYMAP
     };
+
     struct StackSwapStruct sss;
     struct StackSwapArgs ssa;
     UBYTE *stack;
+
+    D(bug("[X11:DiskStart] %s()\n", __func__));
+
+    if ((x11entry = FindName(&SysBase->LibList, X11_LIBNAME)))
+    {
+        D(bug("[X11:DiskStart] %s: X11gfx has already loaded @ 0x%p\n", __func__, x11entry));
+        return res;
+    }
 
     stack = AllocMem(STACK_SIZE, MEMF_ANY);
     if (stack == NULL)
@@ -171,44 +155,43 @@ int main(void)
     if (WBenchMsg)
     {
         olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
-	myname = WBenchMsg->sm_ArgList[0].wa_Name;
+        myname = WBenchMsg->sm_ArgList[0].wa_Name;
     }
     else
     {
-	struct Process *me = (struct Process *)FindTask(NULL);
+        struct Process *me = (struct Process *)FindTask(NULL);
     
-	if (me->pr_CLI)
-	{
+        if (me->pr_CLI)
+        {
             struct CommandLineInterface *cli = BADDR(me->pr_CLI);
 
-	    myname = AROS_BSTR_ADDR(cli->cli_CommandName);
-	} else
-	    myname = me->pr_Task.tc_Node.ln_Name;
+            myname = AROS_BSTR_ADDR(cli->cli_CommandName);
+        } else
+            myname = me->pr_Task.tc_Node.ln_Name;
     }
-    D(bug("[X11] Command name: %s\n", myname));
+    D(bug("[X11:DiskStart] %s: Command name: %s\n", __func__, myname));
 
     icon = GetDiskObject(myname);
-    D(bug("[X11] Icon 0x%p\n", icon));
-
     if (icon)
     {
         STRPTR str;
+        D(bug("[X11:DiskStart] %s: Icon 0x%p\n", __func__, icon));
 
-	str = FindToolType(icon->do_ToolTypes, "DISPLAYS");
-	if (str)
-	    args.displays = atoi(str);
-	
-	str = FindToolType(icon->do_ToolTypes, "KEYMAP");
-	if (str)
-	    args.keymap = str;
+        str = FindToolType(icon->do_ToolTypes, "DISPLAYS");
+        if (str)
+            args.displays = atoi(str);
+        
+        str = FindToolType(icon->do_ToolTypes, "KEYMAP");
+        if (str)
+            args.keymap = str;
     }
 
     if (!WBenchMsg) {
         rdargs = ReadArgs(ARGS_TEMPLATE, (IPTR *)&args, NULL);
-	D(bug("[X11] RDArgs 0x%p\n", rdargs));
+        D(bug("[X11:DiskStart] %s: RDArgs 0x%p\n", __func__, rdargs));
     }
 
-    D(bug("[X11] Keymap: %s\n", args.keymap));
+    D(bug("[X11:DiskStart] %s: Keymap: %s\n", __func__, args.keymap));
 
     /* Call LoadKeyCode2RawKeyTable() with a new stack: it initialises
        x11gfx.hidd, and some X servers need a larger than normal stack */
@@ -219,6 +202,8 @@ int main(void)
     ssa.Args[0] = (IPTR)args.keymap;
 
     old_displays = NewStackSwap(&sss, LoadKeyCode2RawKeyTable, &ssa);
+
+    D(bug("[X11:DiskStart] %s: cleaning up\n", __func__));
 
 /*
  * TODO: In order for this to work X11 driver needs to be fixed
@@ -246,6 +231,8 @@ int main(void)
     if (olddir)
         CurrentDir(olddir);
     FreeMem(stack, STACK_SIZE);
+
+    D(bug("[X11:DiskStart] %s: exiting\n", __func__));
 
     return res;
 }
