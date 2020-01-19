@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -13,7 +13,6 @@
 #include <prefs/prefhdr.h>
 #include <prefs/font.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 /*********************************************************************************************/

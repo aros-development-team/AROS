@@ -51,7 +51,6 @@
 
 #include <dos/dostags.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/detach.h>
