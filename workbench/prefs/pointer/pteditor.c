@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,11 +7,11 @@
 
 #include <libraries/asl.h>
 
-// #define DEBUG 1
-#include <zune/customclasses.h>
+ #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
 #include <proto/alib.h>
+#include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -50,28 +50,37 @@ AROS_UFHA(APTR, msg, A1))
     AROS_USERFUNC_INIT
 
     struct PTEditor_DATA *data = h->h_Data;
+    ULONG old, entry;
 
-    ULONG entry = XGET(data->pted_typeCycle, MUIA_Cycle_Active);
+    D(bug("[PointerPrefs:Editor] %s: data @ 0x%p\n", __func__, data));
 
-    D(bug("[POINTERPREF] entry %d oldentry %d\n", entry, data->pded_oldentry));
+    entry = XGET(data->pted_typeCycle, MUIA_Cycle_Active);
+    old = data->pded_oldentry;
+
+    D(bug("[PointerPrefs:Editor] %s: entry %d oldentry %d\n", __func__, entry, old));
 
     // store data from previous entry
-    strlcpy
+    Strlcpy
     (
-        pointerprefs[data->pded_oldentry].filename,
+        pointerprefs[old].filename,
         (STRPTR)XGET(data->pted_fileString, MUIA_String_Contents),
         NAMEBUFLEN
     );
-    pointerprefs[data->pded_oldentry].npp.npp_AlphaValue =
+
+    D(bug("[PointerPrefs:Editor] %s: '%s'\n", __func__, pointerprefs[old].filename));
+
+    pointerprefs[old].npp.npp_AlphaValue =
         XGET(data->pted_alphaSlider, MUIA_Numeric_Value) * 0x0101;
-    pointerprefs[data->pded_oldentry].npp.npp_X =
+    pointerprefs[old].npp.npp_X =
         - XGET(data->pted_previewImage, MUIA_PPreview_HSpotX);
-    pointerprefs[data->pded_oldentry].npp.npp_Y =
+    pointerprefs[old].npp.npp_Y =
         - XGET(data->pted_previewImage, MUIA_PPreview_HSpotY);
 
     // set data of current entry
     NNSET(data->pted_fileString,  MUIA_String_Contents, pointerprefs[entry].filename);
     NNSET(data->pted_alphaSlider, MUIA_Numeric_Value,   pointerprefs[entry].npp.npp_AlphaValue >> 8);
+
+    D(bug("[PointerPrefs:Editor] %s: Informing the preview. ..\n", __func__));
 
     SetAttrs
     (
@@ -95,6 +104,8 @@ AROS_UFHA(APTR, msg, A1))
     AROS_USERFUNC_INIT
 
     struct PTEditor_DATA *data = h->h_Data;
+
+    D(bug("[PointerPrefs:Editor] %s: data @ 0x%p\n", __func__,data));
 
     STRPTR filename = (STRPTR)XGET(data->pted_fileString, MUIA_String_Contents);
     SET(data->pted_previewImage, MUIA_PPreview_FileName, filename);

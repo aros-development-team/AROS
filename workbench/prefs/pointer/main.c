@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,10 +20,9 @@
 #include "args.h"
 #include "prefs.h"
 
-// #define DEBUG 1
 #include <aros/debug.h>
 
-#define VERSION "$VER: Pointer 1.4 (04.06.2012) AROS Dev Team"
+#define VERSION "$VER: Pointer 1.5 (19.01.2020) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)
