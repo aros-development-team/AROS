@@ -7,6 +7,7 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
 
 #MM- hidd-x11gfx-yes : hosted-X11
 #MM- hosted-X11 : hosted-X11-x11gfx hosted-X11-monitor
+#MM hosted-X11-monitor : hosted-X11-x11gfx-includes
 #MM- hosted-X11-quick : hosted-X11-x11gfx-quick hosted-X11-monitor-quick
 
 #MM hosted-X11-monitor : iconset-$(AROS_TARGET_ICONSET)-x11
