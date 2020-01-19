@@ -6,8 +6,9 @@ Software distributed under the License is distributed on an "AS IS" basis, WITHO
 ANY KIND, either express or implied. See the License for the specific language governing rights and
 limitations under the License.
 
-(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2010-2020 The AROS Developer Team
 (C) Copyright 2009-2010 Stephen Jones.
+(C) Copyright xxxx-2009 Davy Wentzler.
 
 The Initial Developer of the Original Code is Davy Wentzler.
 
@@ -63,7 +64,7 @@ CardInterrupt( struct HDAudioChip* card )
 //            ULONG position;
             BOOL playback = FALSE;
             BOOL recording = FALSE;
-            
+
             //bug("Stream irq\n");
             for (i = 0; i < card->nr_of_streams; i++)
             {
@@ -85,18 +86,18 @@ CardInterrupt( struct HDAudioChip* card )
             
             pci_outb(0xFF, HD_INTSTS, card);
 
-            z++;            
-#ifdef TIME_LIMITED            
+            z++;
+#ifdef TIME_LIMITED
             timer++;
-            
+
             if (timer > TIME_LIMIT) // stop playback
             {
                 outb_clearbits(HD_SD_CONTROL_STREAM_RUN, card->streams[card->nr_of_input_streams].sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
             }
 #endif
-            
+
             //bug("SIRQ\n");
-            
+
             if (playback)
             {
               //  bug("PB\n");
@@ -117,7 +118,7 @@ CardInterrupt( struct HDAudioChip* card )
                    {
                       D(bug("[HDAudio] Lost IRQ!\n"));
                    }
-                   
+
                    card->flip = 1;
                    card->current_buffer = card->playback_buffer2;
                 }
@@ -144,7 +145,7 @@ CardInterrupt( struct HDAudioChip* card )
                    {
                       D(bug("[HDAudio] Lost rec IRQ!\n"));
                    }
-                   
+
                    card->recflip = 1;
                    card->current_record_buffer = card->record_buffer2;
                 }
@@ -152,7 +153,7 @@ CardInterrupt( struct HDAudioChip* card )
                 Cause(&card->record_interrupt);
             }
         }
-        
+
         if (intreq & HD_INTCTL_CIE)
         {
             //D(bug("[HDAudio] CIE\n"));
@@ -169,18 +170,18 @@ CardInterrupt( struct HDAudioChip* card )
                 {
 //                    D(bug("[HDAudio] RIRB overrun!\n"));
                 }
-           
+
                 if (rirb_status & 0x1) // RINTFL
                 {
                     card->rirb_irq++;
-                    
+
                     /*if (card->rirb_irq > 1)
                     {
                        D(bug("[HDAudio] IRQ: rirb_irq = %d\n", card->rirb_irq));
                     }*/
                     //D(bug("[HDAudio] RIRB IRQ!\n"));
                 }
-           
+
                 pci_outb(0x5, HD_RIRBSTS, card);
             }
         }
@@ -207,7 +208,7 @@ PlaybackInterrupt( struct HDAudioChip* card )
     struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
     struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
 
-    if (card->mix_buffer != NULL && card->current_buffer != NULL && card->is_playing)
+    if (card->mix_buffer != 0 && card->current_buffer != 0 && card->is_playing)
     {
         BOOL   skip_mix;
 
@@ -215,17 +216,26 @@ PlaybackInterrupt( struct HDAudioChip* card )
         LONG* srclong, *dstlong;
         int frames = card->current_frames;
 
-        skip_mix = CallHookPkt(AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0);  
+        skip_mix = CallHookPkt(AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0);
         CallHookPkt(AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL);
 
         if (! skip_mix)
         {
-            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, card->mix_buffer);
+#if defined(__AROS__) && (__WORDSIZE==64)
+            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, (APTR)(((IPTR)card->upper_mix_buffer << 32) | card->lower_mix_buffer));
+#else
+            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, (APTR)card->lower_mix_buffer);
+#endif
         }
 
         /* Now translate and transfer to the DMA buffer */
-        srclong = (LONG*) card->mix_buffer;
-        dstlong = (LONG*) card->current_buffer;
+#if defined(__AROS__) && (__WORDSIZE==64)
+        srclong = (LONG*) (((IPTR)card->upper_mix_buffer << 32) | card->lower_mix_buffer);
+        dstlong = (LONG*) (((IPTR)card->upper_current_buffer << 32) | card->lower_current_buffer);
+#else
+        srclong = (LONG*) card->lower_mix_buffer;
+        dstlong = (LONG*) card->lower_current_buffer;
+#endif
 
         i = frames;
 
@@ -272,14 +282,18 @@ RecordInterrupt( struct HDAudioChip* card )
 #ifdef __AMIGAOS4__
     int i = 0;
     int frames = card->current_record_bytesize / 2;
-     WORD *src = card->current_record_buffer;
-     WORD* dst = card->current_record_buffer;
+     WORD *src = card->lower_current_record_buffer;
+     WORD* dst = card->lower_current_record_buffer;
 #endif
     
     struct AHIRecordMessage rm =
     {
         AHIST_S16S,
-        card->current_record_buffer,
+#if defined(__AROS__) && (__WORDSIZE==64)
+        (APTR)(((IPTR)card->upper_current_record_buffer << 32) | card->lower_current_record_buffer),
+#else
+        (APTR)card->lower_current_record_buffer,
+#endif        
         RECORD_BUFFER_SAMPLES
     };
 

@@ -10,24 +10,42 @@ include $(SRCDIR)/config/aros.cfg
 #MM linklibs-startup : linklibs-startup-setup includes includes-copy \
 #MM     compiler-stdc-includes compiler-posixc-includes kernel-task-includes
 
-FILES :=        \
+NIXFILES := \
+	nixmain
+
+FILES := \
 	startup \
 	detach  \
-	nixmain \
 	elf-startup
 
-OBJS  := $(addprefix $(AROS_LIB)/,$(addsuffix .o,$(FILES)))
+NIXOBJS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .o,$(NIXFILES)))
+OBJS  := $(addprefix $(AROS_LIB)/,$(addsuffix .o,$(FILES) $(NIXFILES)))
+
+NIXDEPS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .d,$(NIXFILES)))
 DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
 
-linklibs-startup: $(OBJS)
+linklibs-startup: $(NIXOBJS) $(OBJS)
 
 #MM
-linklibs-startup-quick: $(OBJS)
+linklibs-startup-quick: $(NIXOBJS) $(OBJS)
+
+# standard startup object rules ...
 
 $(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/%.o
 	@$(CP) $< $@
 
 %rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
+
+# Posix/*nix startup object rules ...
+
+$(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/nix/%.o
+	@$(CP) $< $@
+
+USER_CPPFLAGS += -D_XOPEN_SOURCE=700
+
+%rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)/nix
+
+# Generic rules ...
 
 #MM linklibs-startup-setup
 %rule_makedirs dirs="$(GENDIR)/$(CURDIR) $(AROS_LIB)" setuptarget=linklibs-startup-setup
@@ -36,6 +54,6 @@ $(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/%.o
 
 .PHONY: linklibs-startup linklibs-startup-setup
 
-%include_deps depstargets="linklibs-startup" deps=$(DEPS)
+%include_deps depstargets="linklibs-startup" deps="$(DEPS) $(NIXDEPS)"
 
 %common

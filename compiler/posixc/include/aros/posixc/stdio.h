@@ -2,11 +2,13 @@
 #define _POSIXC_STDIO_H_
 
 /*
-    Copyright Â© 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdio.h
 */
+
+#include <aros/features.h>
 
 /* C99 */
 #include <aros/stdc/stdio.h>

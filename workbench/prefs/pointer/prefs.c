@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,12 +11,12 @@
 
 #include <aros/macros.h>
 
-// #define DEBUG 1
-#include <aros/debug.h>
+ #include <aros/debug.h>
 
 #include <proto/exec.h>
-#include <proto/iffparse.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/iffparse.h>
 
 #include <prefs/prefhdr.h>
 
@@ -104,7 +104,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                                 pointerprefs[which].npp.npp_WhichInFile = AROS_BE2LONG(loadprefs.npp.npp_WhichInFile);
                                 pointerprefs[which].npp.npp_X = AROS_BE2WORD(loadprefs.npp.npp_X);
                                 pointerprefs[which].npp.npp_Y = AROS_BE2WORD(loadprefs.npp.npp_Y);
-                                strlcpy(pointerprefs[which].filename, loadprefs.filename, NAMEBUFLEN);
+                                Strlcpy(pointerprefs[which].filename, loadprefs.filename, NAMEBUFLEN);
 
                                 D(bug("Prefs_ImportFH: which %d name %s\n", which, pointerprefs[which].filename));
 
@@ -183,7 +183,7 @@ BOOL Prefs_ExportFH(BPTR fh)
                             saveprefs.npp.npp_WhichInFile = AROS_LONG2BE(pointerprefs[i].npp.npp_WhichInFile);
                             saveprefs.npp.npp_X = AROS_WORD2BE(pointerprefs[i].npp.npp_X);
                             saveprefs.npp.npp_Y = AROS_WORD2BE(pointerprefs[i].npp.npp_Y);
-                            strlcpy(saveprefs.filename, pointerprefs[i].filename, NAMEBUFLEN);
+                            Strlcpy(saveprefs.filename, pointerprefs[i].filename, NAMEBUFLEN);
 
                             ULONG chunksize = sizeof(struct NewPointerPrefs) + strlen(saveprefs.filename) + 1;
                             D(bug("Prefs_ExportFH: size %d name %s\n", chunksize, saveprefs.filename));
@@ -296,7 +296,7 @@ BOOL Prefs_Default(VOID)
     {
         pointerprefs[i].npp.npp_Which = i;
         pointerprefs[i].npp.npp_AlphaValue = 0xffff;
-        strcpy(pointerprefs[i].filename, "Images:Pointers/");
+        Strlcpy(pointerprefs[i].filename, "Images:Pointers/", 17);
     }
 
     return TRUE;

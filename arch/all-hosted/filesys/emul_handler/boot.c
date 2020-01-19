@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Emergency console launcher for hosted AROS
@@ -21,6 +21,7 @@
 
 #include "emul_intern.h"
 
+#define EXPANSION_NOPRIVATEBASES
 #include "expansion_intern.h"
 #include "bootflags.h"
 

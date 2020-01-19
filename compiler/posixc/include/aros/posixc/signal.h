@@ -8,6 +8,8 @@
     POSIX.1-2008 header file <signal.h>
 */
 
+#include <aros/features.h>
+
 /* C99 */
 #include <aros/stdc/signal.h>
 

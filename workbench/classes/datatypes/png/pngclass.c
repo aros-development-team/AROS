@@ -61,7 +61,7 @@ struct PNGStuff
     int 	png_lace;
     int 	png_num_lace_passes;
     int 	png_depth;
-    int 	png_format;
+    int 	dtbuffer_format;
 };
 
 /**************************************************************************************************/
@@ -247,36 +247,99 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	return FALSE;
     }
 
-
     png_read_info(png.png_ptr, png.png_info_ptr);
     png_get_IHDR(png.png_ptr, png.png_info_ptr,
     	    	 &png.png_width, &png.png_height, &png.png_bits,
 		 &png.png_type, &png.png_lace, NULL, NULL);
 
-    D(bug("png.datatype/LoadPNG():PNG IHDR: Size %ld x %ld  Bits %d  Type %d Lace %d\n",
+    D(
+        bug("[png.datatype] %s: PNG IHDR: %ldx%ldx  (type:%d, lace:%d)\n", __func__,
     	   png.png_width,
 	   png.png_height,
-	   png.png_bits,
 	   png.png_type,
-	   png.png_lace));
+	   png.png_lace);
+        bug("[png.datatype] %s: PNG IHDR: %d bits per channel\n", __func__,
+	   png.png_bits);
+    )
 
     if (png.png_bits == 16)
     {
+        D(bug("[png.datatype] %s: set_strip_16\n", __func__);)
     	png_set_strip_16(png.png_ptr);
     }
-    else if (png.png_bits < 8)
+
+#if defined(PNGDATATYPE_ALWAYS_ARGB)
+    if(png.png_type == PNG_COLOR_TYPE_PALETTE)
     {
-    	png_set_packing(png.png_ptr);
+        D(bug("[png.datatype] %s: set_palette_to_rgb\n", __func__);)
+        png_set_palette_to_rgb(png.png_ptr);
+        png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
+    }
+#endif
+
+    if (png.png_bits < 8)
+    {
 	if (png.png_type == PNG_COLOR_TYPE_GRAY)
 	{
+            D(bug("[png.datatype] %s: set_expand_gray_1_2_4_to_8\n", __func__);)
 	    png_set_expand_gray_1_2_4_to_8(png.png_ptr);
 	}
+        else
+        {
+            D(bug("[png.datatype] %s: set_packing\n", __func__);)
+            png_set_packing(png.png_ptr);
+        }
     }
 
-    if (png.png_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+    if (png.png_type == PNG_COLOR_TYPE_PALETTE)
     {
+    	png_bytep trans;
+	int 	  num_trans;
+    	if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
+	{
+            if (num_trans > 1)
+            {
+                D(bug("[png.datatype] %s: converting palette with mixed-alpha to truecolor\n", __func__);)
+
+                png_set_palette_to_rgb(png.png_ptr);
+                png_set_tRNS_to_alpha(png.png_ptr);
+                png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
+            }
+        }
+    }
+    else if (png.png_type != PNG_COLOR_TYPE_PALETTE)
+    {
+        if(png_get_valid(png.png_ptr, png.png_info_ptr, PNG_INFO_tRNS))
+        {
+            D(bug("[png.datatype] %s: set_tRNS_to_alpha\n", __func__);)
+            png_set_tRNS_to_alpha(png.png_ptr);
+        }
+    }
+
+#if defined(PNGDATATYPE_ALWAYS_ARGB)
+    /* the following would only be necessary if we treat/convert everything
+     * as/to argb
+     */
+    if(
+        png.png_type == PNG_COLOR_TYPE_RGB
+        || png.png_type == PNG_COLOR_TYPE_GRAY
+        || png.png_type == PNG_COLOR_TYPE_PALETTE
+      )
+    {
+        D(bug("[png.datatype] %s: set_filler\n", __func__);)
+        png_set_filler(png.png_ptr, 0xFF, PNG_FILLER_AFTER);
+    }
+#endif
+
+    if(
+#if defined(PNGDATATYPE_ALWAYS_ARGB)
+        (png.png_type == PNG_COLOR_TYPE_GRAY) ||
+#endif
+        (png.png_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+      )
+    {
+        D(bug("[png.datatype] %s: set_gray_to_rgb\n", __func__);)
     	png_set_gray_to_rgb(png.png_ptr);
-        png_set_tRNS_to_alpha(png.png_ptr);
     }
 
     {
@@ -287,7 +350,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	{
 	    png_file_gamma = 0.45455;
 	}
-
+        D(bug("[png.datatype] %s: set_gamma\n", __func__);)
 	png_set_gamma(png.png_ptr, png_file_gamma, png_screen_gamma);
     }
 
@@ -296,27 +359,30 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     switch(png.png_type)
     {
     	case PNG_COLOR_TYPE_GRAY:
+#if !defined(PNGDATATYPE_ALWAYS_ARGB)
 	    png.png_depth = 8;
-	    png.png_format = PBPAFMT_GREY8;
+	    png.dtbuffer_format = PBPAFMT_GREY8;
 	    break;
-
+#endif
 	case PNG_COLOR_TYPE_PALETTE:
+#if !defined(PNGDATATYPE_ALWAYS_ARGB)
 	    png.png_depth = 8;
-	    png.png_format = PBPAFMT_LUT8;
+	    png.dtbuffer_format = PBPAFMT_LUT8;
 	    break;
-
+#endif
 	case PNG_COLOR_TYPE_RGB:
+#if !defined(PNGDATATYPE_ALWAYS_ARGB)
 	    png.png_depth = 24;
-	    png.png_format = PBPAFMT_RGB;
+	    png.dtbuffer_format = PBPAFMT_RGB;
 	    break;
-
+#endif
 	case PNG_COLOR_TYPE_GRAY_ALPHA:
 	case PNG_COLOR_TYPE_RGB_ALPHA:
 	    png.png_depth = 32;
 #if defined(PBPAFMT_RGBA)
-	    png.png_format = PBPAFMT_RGBA;
+	    png.dtbuffer_format = PBPAFMT_RGBA;
 #else
-	    png.png_format = PBPAFMT_ARGB;
+	    png.dtbuffer_format = PBPAFMT_ARGB;
 	    png_set_swap_alpha(png.png_ptr);
 #endif
 
@@ -330,6 +396,11 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
     png_read_update_info(png.png_ptr, png.png_info_ptr);
 
+    D(
+        bug("[png.datatype] %s: depth = %d\n", __func__, png.png_depth);
+        bug("[png.datatype] %s: channels = %d\n", __func__, png_get_channels(png.png_ptr, png.png_info_ptr));
+    )
+
     bmhd->bmh_Width = png.png_width;
     bmhd->bmh_Height = png.png_height;
     bmhd->bmh_Depth = png.png_depth;
@@ -340,32 +411,48 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     	png_bytep trans;
 	int 	  num_trans;
 
+        D(bug("[png.datatype] %s: handling mask\n", __func__);)
+
     	if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
 	{
 	    png_byte best_trans = 255;
 	    int      i, best_index = 0;
 
-	    for(i = 0; i < num_trans; i++, trans++)
-	    {
-	    	if (*trans < best_trans)
-		{
-		    best_trans = *trans;
-		    best_index = i;
-		}
-	    }
-
-	    if (best_trans < 128) /* 128 = randomly choosen */
-	    {
+            D(bug("[png.datatype] %s: %d trans @ 0x%p\n", __func__, num_trans, trans);)
+            if (i == 1)
+            {
 	    	bmhd->bmh_Masking = mskHasTransparentColor;
-		bmhd->bmh_Transparent = best_index;
-	    }
+		bmhd->bmh_Transparent = *trans;
+            }
+            else
+            {
+                bug("[png.datatype] %s: alpha-mask handling failed", __func__);
+#if (0)
+                // This code is disabled - it is wrong/broken
+                for(i = 0; i < num_trans; i++, trans++)
+                {
+                    D(bug("[png.datatype] %s: #%02d  = %02x\n", __func__, i, *trans);)
 
-	} /* if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL)) */
+                    if (*trans < best_trans)
+                    {
+                        best_trans = *trans;
+                        best_index = i;
+                    }
+                }
 
-    } /* if (png.png_type == PNG_COLOR_TYPE_PALETTE) */
+                if (best_trans < 128) /* 128 = randomly choosen */
+                {
+                    bug("[png.datatype] %s: transparent color = %d\n", __func__, best_index);
+
+                    bmhd->bmh_Masking = mskHasTransparentColor;
+                    bmhd->bmh_Transparent = best_index;
+                }
+#endif
+            }
+	}
+    }
 
     /* Palette? */
-
     if ((png.png_type == PNG_COLOR_TYPE_PALETTE) ||
     	(png.png_type == PNG_COLOR_TYPE_GRAY))
     {
@@ -373,6 +460,8 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	ULONG	    	    	*cregs = 0;
     	png_colorp  	    	col = 0;
     	int 	    	    	numcolors = 1L << png.png_depth;
+
+        bug("[png.datatype] %s: reading palette\n", __func__);
 
 	if (png.png_type == PNG_COLOR_TYPE_PALETTE)
 	{
@@ -451,7 +540,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 		    if(!DoSuperMethod(cl, o,
 				      PDTM_WRITEPIXELARRAY, /* Method_ID */
 				      (IPTR) buf,	    /* PixelData */
-				      png.png_format,	    /* PixelFormat */
+				      png.dtbuffer_format,	    /* PixelFormat */
 				      0,		    /* PixelArrayMod (number of bytes per row) */
 				      0,		    /* Left edge */
 				      y,	    	    /* Top edge */
@@ -573,7 +662,7 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
     if (numplanes > 24)
     {
         png.png_depth = 32;
-        png.png_format = PBPAFMT_ARGB;
+        png.dtbuffer_format = PBPAFMT_ARGB;
         png.png_type = PNG_COLOR_TYPE_RGB_ALPHA;
 
         png_set_IHDR(png.png_ptr, png.png_info_ptr, width, height, 8, png.png_type,
@@ -582,7 +671,7 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
     else if (numplanes > 8)
     {
         png.png_depth = 24;
-        png.png_format = PBPAFMT_RGB;
+        png.dtbuffer_format = PBPAFMT_RGB;
         png.png_type = PNG_COLOR_TYPE_RGB;
 
         png_set_IHDR(png.png_ptr, png.png_info_ptr, width, height, 8, png.png_type,
@@ -592,7 +681,7 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
     {
         int i;
         png.png_depth = 8;
-        png.png_format = PBPAFMT_LUT8;
+        png.dtbuffer_format = PBPAFMT_LUT8;
         png.png_type = PNG_COLOR_TYPE_PALETTE;
 
         png_set_IHDR(png.png_ptr, png.png_info_ptr, width, height, 8, png.png_type,
@@ -630,7 +719,7 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
         if (!DoSuperMethod(cl, o,
                 PDTM_READPIXELARRAY,
                 (IPTR)linebuf,
-                png.png_format,
+                png.dtbuffer_format,
                 width,
                 0,
                 line,

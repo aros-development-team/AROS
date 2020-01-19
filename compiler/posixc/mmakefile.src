@@ -6,6 +6,9 @@ POSIXC := \
     __env \
     __exec \
     __fdesc \
+    __fopen \
+    __fseeko \
+    __ftello \
     __posixc_assert \
     __posixc_environ \
     __posixc_init \
@@ -62,6 +65,7 @@ POSIXC := \
     flock \
     flockfile \
     fopen \
+    fopen64 \
     fprintf \
     fputc \
     fputs \
@@ -70,11 +74,13 @@ POSIXC := \
     fscanf \
     fseek \
     fseeko \
+    fseeko64 \
     fsetpos \
     fstat \
     fsync \
     ftell \
     ftello \
+    ftello64 \
     ftruncate \
     funlockfile \
     fwrite \
@@ -231,7 +237,7 @@ POSIXC_COMMON := \
 
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
 USER_CFLAGS += $(NOWARN_FLAGS)
-USER_CPPFLAGS := -D__TIMER_NOLIBBASE__
+USER_CPPFLAGS := -D__TIMER_NOLIBBASE__ -D_XOPEN_SOURCE=700
 USER_LDFLAGS := -noposixc
 
 POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notdir $(POSIXC_COMMON))))

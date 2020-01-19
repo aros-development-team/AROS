@@ -200,7 +200,7 @@ MESA3DGL_MESA_CXX_SOURCES := \
 MESA3DGL_MESA_SOURCES_CXX := $(MESA3DGL_MESA_CXX_SOURCES:.cpp=)
 
 #MM
-mesa3d-linklib-mesa-generated : $(MESA3DGL_MESA_GENERATED_C_HEADERS) $(MESA3DGL_MESA_GENERATED_C_SOURCES)
+mesa3d-linklib-mesa-generated : $(MESA3DGL_MESA_GENERATED_C_HEADERS) $(MESA3DGL_MESA_GENERATED_C_SOURCES) | $(top_builddir)/$(CUR_MESADIR)/main
 
 #MM mesa3d-linklib-mesa : mesa3d-linklib-mesa-generated mesa3d-linklib-compiler-generated
 

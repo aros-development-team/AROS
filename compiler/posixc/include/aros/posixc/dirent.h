@@ -2,12 +2,13 @@
 #define _POSIXC_DIRENT_H_
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file dirent.h
 */
 
+#include <aros/features.h>
 #include <aros/system.h>
 
 /* FIXME: Is this allowed ? */

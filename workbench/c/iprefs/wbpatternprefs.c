@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -14,7 +14,6 @@
 #include <prefs/wbpattern.h>
 #include <datatypes/pictureclass.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 /*********************************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VESA Gfx hardware support functions
@@ -15,6 +15,7 @@
 #include <asm/io.h>
 #include <proto/bootloader.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/oop.h>
 #include <utility/hooks.h>
 #include <utility/tagitem.h>
@@ -23,8 +24,6 @@
 
 #include "vesagfx_intern.h"
 #include "vesagfx_hidd.h"
-
-#include <string.h>
 
 static void Find_PCI_Card(struct HWData *sd);
 
@@ -305,8 +304,5 @@ void ClearBuffer(struct HWData *data)
     	data->owned = TRUE;
     }
 
-    p = (IPTR *)data->framebuffer;
-    limit = (IPTR *)((IPTR)p + data->height * data->bytesperline);
-    while (p < limit)
-        *p++ = 0;
+    SetMem(data->framebuffer, 0 ,data->height * data->bytesperline);
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -16,7 +16,6 @@
 
 #include <string.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 /*********************************************************************************************/

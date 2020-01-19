@@ -1,5 +1,5 @@
 /*
-    Copyright  2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,6 @@
 
 #include <datatypes/pictureclass.h>
 
-// #define DEBUG 1
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
@@ -29,18 +28,19 @@
 struct PPreview_DATA
 {
     Object                     *pprv_prevEditor;
-    UWORD                       pprv_alpha;
-    UWORD                       pprv_hspot_x;
-    UWORD                       pprv_hspot_y;
     STRPTR                      pprv_filename;
-    struct MUI_EventHandlerNode pprv_ehn;
     APTR                        pprv_dto;
     struct BitMapHeader        *pprv_bmhd;
     struct BitMap              *pprv_bm;
+    struct MUI_EventHandlerNode pprv_ehn;
     LONG                        pprv_offset_x;
     LONG                        pprv_offset_y;
     LONG                        pprv_draw_width;
     LONG                        pprv_draw_height;
+    UWORD                       pprv_alpha;
+    UWORD                       pprv_hspot_x;
+    UWORD                       pprv_hspot_y;
+    WORD                        fill1, fill2;
     BOOL                        pprv_set_hspot;
 };
 
@@ -50,6 +50,8 @@ struct PPreview_DATA
 /*** Functions **************************************************************/
 STATIC VOID killdto(struct PPreview_DATA *data)
 {
+    D(bug("[PointerPrefs:Preview] %s()\n", __func__));
+
     data->pprv_bm   = NULL;
     data->pprv_bmhd = NULL;
 
@@ -63,6 +65,8 @@ STATIC VOID killdto(struct PPreview_DATA *data)
 STATIC IPTR setup_datatype(Class *cl, Object *obj)
 {
     SETUP_INST_DATA;
+
+    D(bug("[PointerPrefs:Preview] %s()\n", __func__));
 
     if (data->pprv_dto) killdto(data); /* Object already existed */
 
@@ -83,7 +87,7 @@ STATIC IPTR setup_datatype(Class *cl, Object *obj)
 
         me->pr_WindowPtr = oldwinptr;
 
-        D(bug("[Pointer/setup] dto %p\n", data->pprv_dto));
+        D(bug("[PointerPrefs:Preview] %s: dto %p\n", __func__, data->pprv_dto));
         if (data->pprv_dto)
         {
             struct FrameInfo fri = {0};
@@ -96,17 +100,12 @@ STATIC IPTR setup_datatype(Class *cl, Object *obj)
                     GET(data->pprv_dto, PDTA_BitMapHeader, &data->pprv_bmhd);
                     if (data->pprv_bmhd)
                     {
-                        if (data->pprv_bmhd->bmh_Masking != mskNone)
-                            SET(obj, MUIA_FillArea, TRUE);
-                        else
-                            SET(obj, MUIA_FillArea, FALSE);
-
                         GetDTAttrs(data->pprv_dto, PDTA_DestBitMap, &data->pprv_bm, TAG_DONE);
                         if (!data->pprv_bm)
                         {
                             GetDTAttrs(data->pprv_dto, PDTA_BitMap, &data->pprv_bm, TAG_DONE);
                         }
-                        D(bug("[Pointer/setup] BitMap %p\n", data->pprv_bm));
+                        D(bug("[PointerPrefs:Preview] %s: BitMap %p\n", __func__, data->pprv_bm));
                         if (data->pprv_bm) return TRUE;
                     } /* if (data->bmhd) */
                 } /* if (DoMethod(data->dto, DTM_PROCLAYOUT, 0, 1)) */
@@ -150,8 +149,10 @@ Object *PPreview__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
                 break;
 
             case MUIA_PPreview_FileName:
-                FreeVec(data->pprv_filename);
-                data->pprv_filename = StrDup((STRPTR)tag->ti_Data);
+                {
+                    data->pprv_filename = StrDup((STRPTR)tag->ti_Data);
+                    D(bug("[PointerPrefs:Preview] %s: name @ %p = '%s'\n", __func__, data->pprv_filename, data->pprv_filename));
+                }
                 break;
 
         }
@@ -210,11 +211,15 @@ IPTR PPreview__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                 break;
 
             case MUIA_PPreview_FileName:
-                needs_redraw = TRUE;
-                FreeVec(data->pprv_filename);
-                data->pprv_filename = StrDup((STRPTR)tag->ti_Data);
-                //if (_flags(obj) & MADF_SETUP) setup_datatype(cl, obj);
-                setup_datatype(cl, obj);
+                {
+                    needs_redraw = TRUE;
+                    D(bug("[PointerPrefs:Preview] %s: freeing old name @ %p ('%s')\n", __func__, data->pprv_filename, data->pprv_filename));
+                    FreeVec(data->pprv_filename);
+                    data->pprv_filename = StrDup((STRPTR)tag->ti_Data);
+                    D(bug("[PointerPrefs:Preview] %s: new name @ %p = '%s'\n", __func__, data->pprv_filename, data->pprv_filename));
+                    //if (_flags(obj) & MADF_SETUP) setup_datatype(cl, obj);
+                    setup_datatype(cl, obj);
+                }
                 break;
 
         } /* switch(tag->ti_Tag) */
@@ -299,7 +304,7 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         LONG bmwidth  = data->pprv_bmhd->bmh_Width;
         LONG bmheight = data->pprv_bmhd->bmh_Height;
 
-        // calculate for centered rendering
+        /* calculate for centered rendering */
         if (_width(obj) > bmwidth + 2) // two pixels for bounding box
         {
             drawwidth = bmwidth;
@@ -322,13 +327,37 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
             drawoffsety = _top(obj);
         }
 
-        // remember offset for event handler
+        /* remember offset for event handler */
         data->pprv_offset_x = drawoffsetx;
         data->pprv_offset_y = drawoffsety;
         data->pprv_draw_width = drawwidth;
         data->pprv_draw_height = drawheight;
 
-        D(bug("[Pointer/Draw] bitmap %p depth %u\n", data->pprv_bm, depth));
+        {
+            /* fill the background */
+            WORD fillpen;
+            UWORD x, y;
+
+            for (x = 0; x < drawwidth; x += 5)
+            {
+                for (y = 0; y < drawheight; y += 5)
+                {
+                    UBYTE fillw = 4, fillh = 4;
+                    if (x + 4 > drawwidth)
+                        fillw = drawwidth - x;
+                    if (y + 4 > drawheight)
+                        fillh = drawheight - y;
+                    if ((((x / 5) + (y / 5)) % 2) == 0)
+                        fillpen = (data->fill1 == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->fill1;
+                    else
+                        fillpen = (data->fill2 == -1) ? _dri(obj)->dri_Pens[SHADOWPEN] : data->fill2;
+
+                    SetAPen(_rp(obj), fillpen);
+                    RectFill(_rp(obj), drawoffsetx + x, drawoffsety + y, drawoffsetx + x + fillw, drawoffsety + y + fillh);
+                }
+            }
+        }
+        D(bug("[PointerPrefs:Preview] %s: bitmap %p depth %u\n", __func__, data->pprv_bm, depth));
         if ((depth >= 15) && (data->pprv_bmhd->bmh_Masking == mskHasAlpha))
         {
             /* Transparency on high color rast port with alpha channel in picture*/
@@ -346,7 +375,7 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
                 pa.pbpa_Height = bmheight;
                 if (DoMethodA(data->pprv_dto, (Msg) &pa))
                 {
-                    D(bug("[Pointer/Draw] ReadPixelarray for d>=15 OK\n"));
+                    D(bug("[PointerPrefs:Preview] %s: ReadPixelarray for d>=15 OK\n", __func__));
                     WritePixelArrayAlpha
                     (
                         img, 0, 0, bmwidth * 4, _rp(obj),
@@ -388,7 +417,7 @@ IPTR PPreview__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         // draw hotspot
         if (data->pprv_set_hspot)
         {
-            D(bug("[Pointer/Draw] Draw hotspot at %d %d\n", drawoffsetx + data->pprv_hspot_x, drawoffsety + data->pprv_hspot_y));
+            D(bug("[PointerPrefs:Preview] %s: Draw hotspot at %d %d\n", __func__, drawoffsetx + data->pprv_hspot_x, drawoffsety + data->pprv_hspot_y));
 	    /* I experimented with inversion, it looks better IMHO - sonic
             SetAPen(_rp(obj), 1); */
 	    SetDrMd(_rp(obj), COMPLEMENT);
@@ -440,7 +469,7 @@ IPTR PPreview__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
             {
                 if (msg->imsg->Code == SELECTUP)
                 {
-                    D(bug("[PPreview/HandleEvent] offx %d offy %d w %d h %d mx %d my %d\n",
+                    D(bug("[PointerPrefs:Preview] %s: offx %d offy %d w %d h %d mx %d my %d\n", __func__,
                         data->pprv_offset_x, data->pprv_offset_y,
                         data->pprv_draw_width, data->pprv_draw_height,
                         msg->imsg->MouseX, msg->imsg->MouseY));
@@ -448,7 +477,7 @@ IPTR PPreview__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
                     {
                         data->pprv_hspot_x = msg->imsg->MouseX - data->pprv_offset_x;
                         data->pprv_hspot_y = msg->imsg->MouseY - data->pprv_offset_y;
-                        D(bug("[PPreview/HandleEvent] X %d Y %d\n", data->pprv_hspot_x, data->pprv_hspot_y));
+                        D(bug("[PointerPrefs:Preview] %s: X %d Y %d\n", __func__, data->pprv_hspot_x, data->pprv_hspot_y));
                         MUI_Redraw(obj, MADF_DRAWOBJECT);
 
                         SET(data->pprv_prevEditor, MUIA_PrefsEditor_Changed, TRUE);
@@ -466,8 +495,50 @@ IPTR PPreview__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
     return 0;
 }
 
+
+IPTR PPreview__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
+{
+    SETUP_INST_DATA;
+    
+    if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
+
+    data->fill1 = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
+    	    	    	    	  0x9C9C9C9C,
+				  0xBDBDBDBD,
+				  0xE4E4E4E4,
+				  OBP_Precision, PRECISION_GUI,
+				  OBP_FailIfBad, FALSE,
+				  TAG_DONE);
+    data->fill2 = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
+    	    	    	    	  0xD3D3D3D3,
+				  0xD7D7D7D7,
+				  0xE4E4E4E4,
+				  OBP_Precision, PRECISION_GUI,
+				  OBP_FailIfBad, FALSE,
+				  TAG_DONE);
+    return TRUE;
+}
+
+IPTR PPreview__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+    SETUP_INST_DATA;
+ 
+    if (data->fill1 != -1)
+    {
+    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->fill1);
+    	data->fill1 = -1;
+    }
+    if (data->fill2 != -1)
+    {
+    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->fill2);
+    	data->fill2 = -1;
+    }
+    
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_9
+ZUNE_CUSTOMCLASS_11
 (
     PPreview, NULL, MUIC_Area, NULL,
     OM_NEW,             struct opSet *,
@@ -477,6 +548,8 @@ ZUNE_CUSTOMCLASS_9
     MUIM_Setup,         struct MUIP_Setup *,
     MUIM_Cleanup,       struct MUIP_Cleanup *,
     MUIM_Draw,          struct MUIP_Draw *,
+    MUIM_Show,          struct MUIP_Setup *,
+    MUIM_Hide,          struct MUIP_Cleanup *,
     MUIM_AskMinMax,     struct MUIP_AskMinMax *,
     MUIM_HandleEvent,   struct MUIP_HandleEvent *
 );

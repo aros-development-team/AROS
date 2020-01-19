@@ -30,7 +30,7 @@ $(BOOT_EFI):
 $(BOOT_EFI)/fonts:
 	%mkdirs_q $@
 
-$(BOOT_EFI)/i386-efi:
+$(BOOT_EFI)/$(AROS_TARGET_CPU)-efi:
 	%mkdirs_q $@
 
 #MM
@@ -116,12 +116,12 @@ grub2-pc-iso-setup: $(BOOT_GRUB)/i386-pc
 	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/i386-pc/grub2_eltorito
 
 #MM
-grub2-efi-iso-setup: $(BOOT_EFI)/i386-efi
+grub2-efi-iso-setup: $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi
 	@$(ECHO) Creating $(BOOT_EFI)...
 	@cd $(HOSTGENDIR)/$(CURDIR)/efi/grub-core                           	&& \
 	../grub-mkimage $(MKIMG_EFI) -d . -o grub.efi $(EFI_MODS) $(GRUB2_MODS) && \
 	$(CP) grub.efi $(AROSDIR)/EFI/BOOT/$(EFI_GRUB_IMG)                     	&& \
-	$(CP) *.mod $(BOOT_EFI)/i386-efi                                         	&& \
-	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_EFI)/i386-efi
+	$(CP) *.mod $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi                                         	&& \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi
 
 %common

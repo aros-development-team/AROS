@@ -1,9 +1,0 @@
-# Copyright © 2019, The AROS Development Team. All rights reserved.
-# $Id: mmakefile.src
-
-include $(SRCDIR)/config/aros.cfg
-
-CATALOGS:=french german czech polish italian norwegian
-%build_catalogs mmake=workbench-tools-iconbar-catalogs \
-    catalogs=$(CATALOGS) \
-    name=BoingIconBar subdir=System/Tools

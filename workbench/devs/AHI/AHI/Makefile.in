@@ -15,7 +15,10 @@ endif
 
 @SET_MAKE@
 
+VPATH		= @builddir@ @srcdir@
+
 top_srcdir	= @top_srcdir@
+builddir        = @builddir@
 srcdir		= @srcdir@
 PREFIX		= @prefix@
 DISTDIR		= @DISTDIR@
@@ -32,13 +35,10 @@ INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
 
-CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir}
+CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir} -iquote ${builddir}
 CFLAGS		= @CFLAGS@
 LDFLAGS		= @LDFLAGS@
 LIBS		= @LIBS@
-
-VPATH		= @srcdir@
-
 
 #
 # Files
@@ -54,6 +54,8 @@ EXECUTABLES	= AHI_MUI # AHI_BGUI AHI_CA
 LANGUAGES	= $(basename $(shell cd ${srcdir}/translations; for file in *.ct; do if [ -f $$file ]; then printf "%s" "$$file "; fi; done))
 CATALOGS	= $(addsuffix .catalog, $(LANGUAGES))
 
+GENERATED	= version.h \
+		  ${builddir}/ahiprefs_Cat.h
 
 #
 # Targets
@@ -121,7 +123,6 @@ revup:
 Makefile: Makefile.in ../config.status
 	(cd .. && ./config.status)
 
-
 #
 # Rules
 ########################################
@@ -136,11 +137,11 @@ AHI_MUI:	$(OBJECTS) $(OBJECTS_MUI)
 	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
-$(srcdir)/ahiprefs_Cat.c:	$(srcdir)/translations/ahiprefs.cd $(srcdir)/C_c_noauto.sd $(srcdir)/ahiprefs_Cat.h
-	$(FLEXCAT) $(srcdir)/translations/ahiprefs.cd $(srcdir)/ahiprefs_Cat.c=$(srcdir)/C_c_noauto.sd
+${builddir}/ahiprefs_Cat.c:	$(srcdir)/translations/ahiprefs.cd $(srcdir)/C_c_noauto.sd ${builddir}/ahiprefs_Cat.h
+	$(FLEXCAT) $(srcdir)/translations/ahiprefs.cd ${builddir}/ahiprefs_Cat.c=$(srcdir)/C_c_noauto.sd
 
-$(srcdir)/ahiprefs_Cat.h:	$(srcdir)/translations/ahiprefs.cd $(srcdir)/C_h_noauto.sd
-	$(FLEXCAT) $(srcdir)/translations/ahiprefs.cd $(srcdir)/ahiprefs_Cat.h=$(srcdir)/C_h_noauto.sd
+${builddir}/ahiprefs_Cat.h:	$(srcdir)/translations/ahiprefs.cd $(srcdir)/C_h_noauto.sd
+	$(FLEXCAT) $(srcdir)/translations/ahiprefs.cd ${builddir}/ahiprefs_Cat.h=$(srcdir)/C_h_noauto.sd
 
 %.catalog:	translations/%.ct
 	$(FLEXCAT) \
@@ -164,7 +165,7 @@ depend:
 	$(RM) Makefile.dep
 	$(MAKE) Makefile.dep
 
-Makefile.dep:	$(DEPENDENCIES) version.h
+Makefile.dep:	$(DEPENDENCIES) $(GENERATED)
 	@echo Making $@
 	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
 

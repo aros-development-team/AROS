@@ -948,6 +948,7 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 /*****************************************************************************************
 
     NAME
+    moHidd_Gfx_DisplayToBMCoords
 
     SYNOPSIS
         OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisplayToBMCoords *msg);
@@ -986,6 +987,7 @@ VOID GFXHIDD__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, struct p
 /*****************************************************************************************
 
     NAME
+    moHidd_Gfx_BMToDisplayCoords
 
     SYNOPSIS
         OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_BMToDisplayCoords *msg);

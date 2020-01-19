@@ -52,3 +52,48 @@
 [submodule "workbench/libs/reqtools/catalogs"]
 	path = workbench/libs/reqtools/catalogs
 	url = https://github.com/aros-translation-team/reqtools.library.git
+[submodule "workbench/devs/AHI/AHI/translations"]
+	path = workbench/devs/AHI/AHI/translations
+	url = https://github.com/aros-translation-team/ahi-prefs.git
+[submodule "workbench/devs/AHI/Device/translations"]
+	path = workbench/devs/AHI/Device/translations
+	url = https://github.com/aros-translation-team/ahi.device.git
+[submodule "workbench/utilities/MultiView/catalogs"]
+	path = workbench/utilities/MultiView/catalogs
+	url = https://github.com/aros-translation-team/multiview.git
+[submodule "workbench/utilities/More/catalogs"]
+	path = workbench/utilities/More/catalogs
+	url = https://github.com/aros-translation-team/more.git
+[submodule "workbench/utilities/Installer/catalogs"]
+	path = workbench/utilities/Installer/catalogs
+	url = https://github.com/aros-translation-team/installer.git
+[submodule "workbench/utilities/Clock/catalogs"]
+	path = workbench/utilities/Clock/catalogs
+	url = https://github.com/aros-translation-team/clock.git
+[submodule "workbench/system/Wanderer/Catalogs"]
+	path = workbench/system/Wanderer/Catalogs
+	url = https://github.com/aros-translation-team/wanderer.git
+[submodule "workbench/tools/SysExplorer/catalogs"]
+	path = workbench/tools/SysExplorer/catalogs
+	url = https://github.com/aros-translation-team/sysexplorer.git
+[submodule "workbench/system/AboutAROS/catalogs"]
+	path = workbench/system/AboutAROS/catalogs
+	url = https://github.com/aros-translation-team/aboutaros.git
+[submodule "workbench/tools/InstallAROS/catalogs"]
+	path = workbench/tools/InstallAROS/catalogs
+	url = https://github.com/aros-translation-team/installaros.git
+[submodule "workbench/tools/HDToolBox/catalogs"]
+	path = workbench/tools/HDToolBox/catalogs
+	url = https://github.com/aros-translation-team/hdtoolbox.git
+[submodule "workbench/tools/BoingIconBar/catalogs"]
+	path = workbench/tools/BoingIconBar/catalogs
+	url = https://github.com/aros-translation-team/boingiconbar.git
+[submodule "workbench/system/SysMon/catalogs"]
+	path = workbench/system/SysMon/catalogs
+	url = https://github.com/aros-translation-team/sysmon.git
+[submodule "workbench/tools/commodities/catalogs"]
+	path = workbench/tools/commodities/catalogs
+	url = https://github.com/aros-translation-team/commodities.git
+[submodule "workbench/prefs/palette/catalogs"]
+	path = workbench/prefs/palette/catalogs
+	url = https://github.com/aros-translation-team/palette-prefs.git
