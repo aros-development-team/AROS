@@ -16,6 +16,9 @@ KEYMAPS := \
 #MM workbench-devs-keymaps-build : workbench-devs-keymaps-setup
 #MM- workbench-devs-keymaps-quick : workbench-devs-keymaps-build
 
+KEYMAPFILES := $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
+KEYMAPOBJS := $(foreach f,$(KEYMAPS),$(GENDIR)/$(CURDIR)/$(f).o)
+
 #MM
 workbench-devs-keymaps-build : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
 	$(Q)$(NOP)
@@ -27,6 +30,8 @@ $(AROS_DEVS)/Keymaps/% : $(OBJDIR)/%.o
 
 $(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c
 	%compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="$(USER_INCLUDES) $(BASE_CFLAGS) -O0 $(USER_CFLAGS)"
+
+$(KEYMAPFILES): $(KEYMAPOBJS)
 
 #MM workbench-devs-keymaps-setup
 %rule_makedirs dirs="$(AROS_DEVS)/Keymaps $(OBJDIR)" setuptarget=workbench-devs-keymaps-setup
