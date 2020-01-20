@@ -1,15 +1,18 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function InternalLoadSeg()
     Lang: english
 */
 
+#include <aros/debug.h>
+
+#include <proto/dos.h>
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
-#include <proto/dos.h>
-#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include "internalloadseg.h"
 

@@ -1,25 +1,25 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
     Lang: english
 */
 
-#define DATTR(x)
+#include <aros/debug.h>
+
+#include <proto/dos.h>
+#include <proto/arossupport.h>
+#include <proto/debug.h>
+#include <proto/exec.h>
 
 #include <aros/asmcall.h>
-#include <aros/debug.h>
 #include <aros/macros.h>
 #include <exec/memory.h>
 #include <dos/elf.h>
 #include <dos/dosasl.h>
 #include <libraries/debug.h>
 #include <resources/processor.h>
-#include <proto/dos.h>
-#include <proto/arossupport.h>
-#include <proto/debug.h>
-#include <proto/exec.h>
 
 #include <string.h>
 #include <stddef.h>
@@ -27,6 +27,8 @@
 #include "internalloadseg.h"
 #include "dos_intern.h"
 #include "include/loadseg.h"
+
+#define DATTR(x)
 
 struct hunk
 {
@@ -988,6 +990,21 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Everything is loaded now. Register the module at kernel.resource */
+    {
+        struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+        if (segnode)
+        {
+            D(bug("[DOS:ILSELF] %s: elf seglist info @ 0x%p\n", __func__, segnode);)
+
+            segnode->ln_Name = hunks;
+            segnode->ln_Type = SEGTYPE_ELF;
+
+            ObtainSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
+            AddTail(&((struct IntDosBase *)DOSBase)->segdata, segnode);
+            ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
+        }
+    }
+
     register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;
 
