@@ -1,6 +1,8 @@
 #define PREFIX_STR "DEVS:Keymaps"
 #define PREFIX_LEN 14			/* Two more bytes for '/' and NULL terminator */
 
+//#define KMS_KEYMAPS_HUNKONLY
+
 struct kms_base
 {
     struct KMSLibrary pub;
