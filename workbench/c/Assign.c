@@ -133,9 +133,9 @@ struct UtilityBase *UtilityBase;
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.11 (13.01.2020) © AROS" ;
+static const char version[] = "\0$VER: Assign unofficial 50.12 (20.01.2020) © AROS" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.11 (13.01.2020) © AROS" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.12 (20.01.2020) © AROS" ;
 #endif
 
 struct localdata
@@ -213,93 +213,6 @@ __startup AROS_PROCH(Start, argstr, argsize, sBase)
 	return Main(sBase);
 	AROS_PROCFUNC_EXIT
 }
-
-#if !defined(AssignPrepend)
-BOOL _AssignAddToList(struct localdata *ld, CONST_STRPTR name, BPTR lock,  ULONG position)
-{
-    struct DosList     *dl;
-    struct AssignList **al, *newal;
-    int cnt = 0;
-    BOOL retval = DOSTRUE;
-
-    D(bug("[mount] %s('%s', 0x%p, %d)\n", __func__, name, lock, position);)
-
-    if(lock == BNULL)
-        return DOSFALSE;
-
-    dl = LockDosList(LDF_ASSIGNS | LDF_WRITE);
-    dl = FindDosEntry(dl, name, LDF_ASSIGNS);
-
-    if (dl != NULL)
-    {
-	D(bug("[Mount] %s: dl = 0x%p, type = %08x\n", __func__, dl, dl->dol_Type);)
-	if  (!(dl->dol_Type == DLT_VOLUME || dl->dol_Type == DLT_DEVICE))
-	{    
-	    newal = AllocVec(sizeof(struct AssignList), MEMF_PUBLIC | MEMF_CLEAR);
-	    if(newal != NULL)
-	    {
-		for(al = &dl->dol_misc.dol_assign.dol_List; *al && (cnt < position); al = &((*al)->al_Next), cnt++);
-		if (cnt == 0)
-		{
-		    char lnTmp[128];
-
-		    D(bug("[Mount] %s: replacing top level lock 0x%p\n", __func__, dl->dol_Lock);)
-		    if ((newal->al_Lock = dl->dol_Lock) == BNULL)
-		    {
-			newal->al_Lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
-		    }
-		    dl->dol_Lock = lock;
-		    if (NameFromLock(lock, lnTmp, sizeof(lnTmp)))
-		    {
-			STRPTR s2, oldin = dl->dol_misc.dol_assign.dol_AssignName;
-
-			s2 = (STRPTR)AllocVec(strlen(lnTmp) + 1, MEMF_PUBLIC | MEMF_CLEAR);
-			if (s2 != NULL)
-			{
-			    Strlcpy(s2, lnTmp, strlen(lnTmp) + 1);
-			    dl->dol_misc.dol_assign.dol_AssignName = s2;
-			    FreeVec(oldin);
-			}
-			else
-			{
-			    SetIoErr(ERROR_NO_FREE_STORE);
-			}
-		    }
-		}
-		else
-		{
-		    D(bug("[Mount] %s: inseting @ %d\n", __func__, cnt);)
-		    newal->al_Lock = lock;
-		}
-
-		if (*al)
-		    newal->al_Next = *al;
-		*al = newal;
-	    }
-	    else
-	    {
-		SetIoErr(ERROR_NO_FREE_STORE);
-		retval = DOSFALSE;
-	    }
-	}
-	else
-	{
-	    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	    retval = DOSFALSE;
-	}
-    }
-    else
-    {
-        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	retval = DOSFALSE;
-    }
-    UnLockDosList(LDF_ASSIGNS | LDF_WRITE);
-
-    return retval;
-}
-#else
-#define _AssignAddToList(ld,name,lock,position) AssignAddToList(name,lock,position)
-#endif
 
 static int Main(struct ExecBase *sBase)
 {
@@ -679,7 +592,7 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 				if (add)
 				    success = AssignAdd(name, lock);
 				else
-				    success = _AssignAddToList(ld, name, lock, 0);
+				    success = AssignAddToList(name, lock, 0);
 
 				if (!success)
 				{
