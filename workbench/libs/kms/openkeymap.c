@@ -63,8 +63,8 @@
     IPTR hunkinfo = 0;
     struct TagItem segtags[2] =
     {
-        { GSLI_ElfHandle,       (IPTR)&hunkinfo },
-        { TAG_DONE,             0               }
+        { GSLI_68KHUNK, (IPTR)&hunkinfo },
+        { TAG_DONE,     0               }
     };
     BOOL ishunk = FALSE;
 #endif
