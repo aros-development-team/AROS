@@ -34,8 +34,8 @@ LOADSEG_FILES := internalloadseg \
 		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
-	     allocdosobject assignadd assignlate assignlock assignpath \
-	     attemptlockdoslist changemode checksignal \
+	     allocdosobject assignadd assignaddtolist assignlate assignlock \
+	     assignpath attemptlockdoslist changemode checksignal \
 	     cli cliinit cliinitnewcli cliinitrun \
 	     close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
