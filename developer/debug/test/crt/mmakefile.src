@@ -1,0 +1,19 @@
+#   $Id$
+#
+#   Makefile for AROS C Standard Library Tests
+
+include $(SRCDIR)/config/aros.cfg
+
+CRTTESTFILES := \
+        all-tests \
+
+EXEDIR := $(AROS_TESTS)/crt
+
+#MM test-crt : test-crt-$(AROS_TARGET_CPU)
+#MM- test-crt-quick : test-crt-$(AROS_TARGET_CPU)-quick
+
+#MM test-crt : includes includes-copy linklibs kernel
+
+USER_CFLAGS = -ffloat-store
+%build_progs mmake=test-crt-stdc-general \
+    files=$(CRTTESTFILES) targetdir=$(EXEDIR)

@@ -12,8 +12,9 @@ EXEDIR := $(AROS_TESTS)
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-#MM- test : test-common \
-#MM  test-clib \
+#MM- test : \
+#MM  test-common \
+#MM  test-crt \
 #MM  test-kernel \
 #MM  test-intuition \
 #MM  test-layers \

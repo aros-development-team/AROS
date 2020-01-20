@@ -1,0 +1,64 @@
+#   $Id$
+#
+#   Makefile for AROS C POSIX Library Tests
+
+include $(SRCDIR)/config/aros.cfg
+
+POSIXCTESTFILES := \
+        chdir \
+        chmod \
+        chown \
+        execl \
+        execl2 execl2_vfork execl2_slave \
+        fchdir \
+        fchmod \
+        fcntl \
+        flock \
+        getfsstat \
+        getpass \
+        lseek \
+        mnt_names \
+        open \
+        opendir \
+        pipe \
+        random \
+        randtest \
+        scandir \
+        statfs \
+        strptime \
+        uname \
+        usleep \
+        vfork \
+        vfork_execl \
+        wait \
+        waitpid \
+        posix_memalign
+
+POSIXCTESTFILES += \
+         argv0_test1 argv0_test2
+
+POSIXCNIXTESTFILES := \
+         argv0_slave argv0_test3  argv0_test4
+
+EXEDIR := $(AROS_TESTS)/crt/posix
+
+#MM- test-crt : test-crt-posixc test-crt-posixc-$(AROS_TARGET_CPU)
+#MM- test-crt-quick : test-crt-posixc-quick test-crt-posixc-$(AROS_TARGET_CPU)-quick
+
+#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-nix
+#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-nix-quick
+
+#MM test-crt-posixc-general : includes includes-copy linklibs kernel
+#MM test-crt-posixc-nix : includes includes-copy linklibs kernel
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
+USER_CFLAGS = -ffloat-store
+
+%build_progs mmake=test-crt-posixc-general \
+    files=$(POSIXCTESTFILES) targetdir=$(EXEDIR)
+
+NOWARN_CFLAGS := $(NOWARN_FORMAT_TRUNCATION)
+USER_CFLAGS = -ffloat-store $(NOWARN_CFLAGS)
+
+%build_progs mmake=test-crt-posixc-nix \
+    files=$(POSIXCNIXTESTFILES) targetdir=$(EXEDIR) nix=yes coverageinstr=no
