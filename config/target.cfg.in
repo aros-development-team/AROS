@@ -56,6 +56,7 @@ KERNEL_CXXFLAGS               = $(USER_CXXFLAGS)
 KERNEL_OBJCFLAGS              := @aros_kernel_objcflags@
 KERNEL_INCLUDES               := @aros_kernel_includes@
 KERNEL_LDFLAGS                := @aros_kernel_ldflags@
+KERNEL_OPTIMIZATION_CFLAGS    := @kernel_optimization_cflags@
 
 KERNEL_ISA_FLAGS              = @aros_kernel_isa_flags@
 KERNEL_ISA_CFLAGS             = $(KERNEL_ISA_FLAGS)

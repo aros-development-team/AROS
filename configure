@@ -681,6 +681,7 @@ aros_debug_aflags
 aros_debug_cxxflags
 aros_debug_cflags
 aros_debug_cppflags
+kernel_optimization_cflags
 aros_kernel_ldflags
 aros_kernel_objcflags
 aros_kernel_includes
@@ -16026,6 +16027,14 @@ $as_echo_n "checking default optimization level to use... " >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $optimization_level" >&5
 $as_echo "$optimization_level" >&6; }
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking kernel optimization level to conserve space" >&5
+$as_echo_n "checking kernel optimization level to conserve space... " >&6; }
+if test "$kernel_optimization_level" = ""; then
+    kernel_optimization_level=$optimization_level
+fi
+kernel_optimization_cflags="$kernel_optimization_level"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_optimization_level" >&5
+$as_echo "$kernel_optimization_level" >&6; }
 
 if ! test "$gcc_default_cpu" = "" ; then
     target_extra_cfg+="$export_newline""# ARM gcc default target$export_newline""GCC_DEFAULT_CPU         := $gcc_default_cpu$export_newline""GCC_DEFAULT_FPU         := $gcc_default_fpu$export_newline""GCC_DEFAULT_FLOAT_ABI   := $gcc_default_float_abi$export_newline""GCC_DEFAULT_MODE        := $gcc_default_mode$export_newline"
@@ -16128,6 +16137,7 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Target Related #########################
+
 
 
 
