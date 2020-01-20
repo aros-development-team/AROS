@@ -16,7 +16,7 @@
 #include <exec/lists.h>
 
 #include "dos_intern.h"
-#include "include/loadseg.h"
+#include "internalloadseg.h"
 
 /*****************************************************************************
 
