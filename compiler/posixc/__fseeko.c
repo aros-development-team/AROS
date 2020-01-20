@@ -155,6 +155,13 @@ int __fseeko64 (
 	    return -1;
     }
 
+    if (((offset <= LONG_MIN) || (offset >= LONG_MAX)) && !(fdesc->fcb->privflags & _FCB_FS64))
+    {
+        /* asked to seek too far on a 32bit filesystem.. */
+        errno = EBADF;
+        return -1;
+    }
+
     fh = fdesc->fcb->handle;
 
     /* This is buffered IO, flush the buffer before any Seek */
