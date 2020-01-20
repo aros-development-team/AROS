@@ -777,7 +777,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
   else
     mode = &AHIBase->ahib_AudioMode;
   if(mode[0] == (IPTR) AHI_INVALID_ID)
-  { static const Tag tags[] = { AHIDB_Realtime,TRUE,TAG_DONE };
+  { static const struct TagItem tags[] = { {AHIDB_Realtime, TRUE}, {TAG_DONE, 0} };
     mode[0] = AHI_BestAudioIDA((struct TagItem *)tags);
   }
 

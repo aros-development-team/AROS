@@ -767,7 +767,7 @@ ReadCmd ( struct AHIRequest *ioreq,
       error = AHIE_HALFDUPLEX;   // FIXIT!
     }
     else
-    { static const Tag tags[] = { AHIC_Record,TRUE,TAG_DONE };
+    { static const struct TagItem tags[] = { {AHIC_Record, TRUE}, {TAG_DONE, 0} };
       error = AHI_ControlAudioA(iounit->AudioCtrl, (struct TagItem *)tags);
     }
 
@@ -888,7 +888,7 @@ WriteCmd ( struct AHIRequest *ioreq,
       error = AHIE_HALFDUPLEX;   // FIXIT!
     }
     else
-    { static const Tag tags[] = { AHIC_Play,TRUE,TAG_DONE };
+    { static const struct TagItem tags[] = { {AHIC_Play, TRUE}, {TAG_DONE, 0} };
       error = AHI_ControlAudioA(iounit->AudioCtrl, (struct TagItem *)tags);
     }
 
@@ -1060,7 +1060,7 @@ FeedReaders ( struct AHIDevUnit *iounit,
   if( ! iounit->ReadList.mlh_Head->mln_Succ )
   {
     if(--iounit->RecordOffDelay == 0)
-    { static const Tag tags[] = { AHIC_Record,FALSE,TAG_DONE };
+    { static const struct TagItem tags[] = { {AHIC_Record, FALSE}, {TAG_DONE, 0} };
       AHI_ControlAudioA(iounit->AudioCtrl, (struct TagItem *)tags);
       iounit->IsRecording = FALSE;
     }
@@ -1644,7 +1644,7 @@ static void UpdateMasterVolume( struct AHIDevUnit *iounit,
       ioreq1->ahir_Std.io_Message.mn_Node.ln_Succ;
       ioreq1 = (struct AHIRequest*) ioreq1->ahir_Std.io_Message.mn_Node.ln_Succ)
   {
-    ULONG id     = ioreq1->ahir_Private[1];
+    IPTR id      = ioreq1->ahir_Private[1];
     int   c      = 0;
     LONG  minscale = 0x10000;
 
