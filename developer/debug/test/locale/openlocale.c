@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../clib/test.h"
+#include "../crt/test.h"
 
 struct LocaleBase * LocaleBase = NULL;
 struct Locale * locale = NULL;
