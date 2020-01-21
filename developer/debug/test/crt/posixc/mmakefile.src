@@ -45,20 +45,55 @@ EXEDIR := $(AROS_TESTS)/crt/posix
 #MM- test-crt : test-crt-posixc test-crt-posixc-$(AROS_TARGET_CPU)
 #MM- test-crt-quick : test-crt-posixc-quick test-crt-posixc-$(AROS_TARGET_CPU)-quick
 
-#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-nix
-#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-nix-quick
+#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-nix test-crt-posixc-posix1
+#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick
 
 #MM test-crt-posixc-general : includes includes-copy linklibs kernel
 #MM test-crt-posixc-nix : includes includes-copy linklibs kernel
+
+#MM- test-crt-posixc-posix1 :                   \
+#MM     test-crt-posixc-posix1-scanf            \
+##MM     test-crt-posixc-posix1-getline          \
+##MM     test-crt-posixc-posix1-fmemopen         \
+#MM     test-crt-posixc-posix1-regex            \
+#MM     test-crt-posixc-posix1-printf
+
+#MM- test-crt-posixc-posix1-quick :             \
+#MM     test-crt-posixc-posix1-scanf-quick      \
+##MM     test-crt-posixc-posix1-getline-quick    \
+##MM     test-crt-posixc-posix1-fmemopen-quick   \
+#MM     test-crt-posixc-posix1-regex-quick      \
+#MM     test-crt-posixc-posix1-printf-quick
+
+#MM test-crt-posixc-posix1-scanf : includes includes-copy linklibs kernel
+#MM test-crt-posixc-posix1-getline : includes includes-copy linklibs kernel
+#MM test-crt-posixc-posix1-fmemopen : includes includes-copy linklibs kernel
+#MM test-crt-posixc-posix1-regex : includes includes-copy linklibs kernel
+#MM test-crt-posixc-posix1-printf : includes includes-copy linklibs kernel
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
 USER_CFLAGS = -ffloat-store
 
 %build_progs mmake=test-crt-posixc-general \
-    files=$(POSIXCTESTFILES) targetdir=$(EXEDIR)
+    files="$(POSIXCTESTFILES)" targetdir=$(EXEDIR)
 
 NOWARN_CFLAGS := $(NOWARN_FORMAT_TRUNCATION)
 USER_CFLAGS = -ffloat-store $(NOWARN_CFLAGS)
 
 %build_progs mmake=test-crt-posixc-nix \
     files=$(POSIXCNIXTESTFILES) targetdir=$(EXEDIR) nix=yes coverageinstr=no
+
+%build_prog mmake=test-crt-posixc-posix1-scanf \
+    progname=scanf files="posix.1/scanf-examples" targetdir=$(EXEDIR)
+
+%build_prog mmake=test-crt-posixc-posix1-getline \
+    progname=getline files="posix.1/getline-examples" targetdir=$(EXEDIR)
+
+%build_prog mmake=test-crt-posixc-posix1-fmemopen \
+    progname=fmemopen files="posix.1/fmemopen-example" targetdir=$(EXEDIR)
+
+%build_prog mmake=test-crt-posixc-posix1-regex \
+    progname=regex files="posix.1/regex-examples" targetdir=$(EXEDIR)
+
+%build_prog mmake=test-crt-posixc-posix1-printf \
+    progname=printf files="posix.1/printf-examples" targetdir=$(EXEDIR)
