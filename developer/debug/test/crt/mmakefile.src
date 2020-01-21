@@ -15,5 +15,5 @@ EXEDIR := $(AROS_TESTS)/crt
 #MM test-crt : includes includes-copy linklibs kernel
 
 USER_CFLAGS = -ffloat-store
-%build_progs mmake=test-crt-stdc-general \
+%build_progs mmake=test-crt \
     files=$(CRTTESTFILES) targetdir=$(EXEDIR)
