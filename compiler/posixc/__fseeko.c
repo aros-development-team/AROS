@@ -5,10 +5,12 @@
     Change the position in a stream.
 */
 
-#include <fcntl.h>
-#include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
+
+#include <fcntl.h>
+#include <limits.h>
+#include <errno.h>
 
 #define POSIXC_NOSTDIO_DECL
 
