@@ -2,7 +2,7 @@
 #define DOS_DOSTAGS_H
 
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tags for DOS routines
@@ -164,6 +164,14 @@
 /**********************************************************************
  **************************** Miscellaneous ***************************
  **********************************************************************/
+
+/* Tags for GetSegListInfo(). */
+
+#define GSLI_Dummy	(TAG_USER + 4000)
+ 
+#define GSLI_ElfHandle  (GSLI_Dummy + 4) 
+#define GSLI_68KHUNK    (GSLI_Dummy + 5)
+#define GSLI_68KOVLAY   (GSLI_Dummy + 6)
 
 /* Tags for AllocDosObject(). */
 

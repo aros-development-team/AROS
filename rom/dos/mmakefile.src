@@ -34,8 +34,8 @@ LOADSEG_FILES := internalloadseg \
 		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
-	     allocdosobject assignadd assignlate assignlock assignpath \
-	     attemptlockdoslist changemode checksignal \
+	     allocdosobject assignadd assignaddtolist assignlate assignlock \
+	     assignpath attemptlockdoslist changemode checksignal \
 	     cli cliinit cliinitnewcli cliinitrun \
 	     close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
@@ -46,8 +46,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
 	     getcurrentdirname getdeviceproc getfilesystask getprogramdir \
-	     getprogramname getprompt getvar info inhibit input \
-	     internalunloadseg ioerr isfilesystem \
+	     getprogramname getprompt getseglistinfo getvar info inhibit \
+	     input internalunloadseg ioerr isfilesystem \
 	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
 	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry nil \

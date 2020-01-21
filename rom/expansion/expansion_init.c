@@ -73,7 +73,7 @@ static void initExpBase(LIBBASETYPEPTR LIBBASE, BPTR segList)
 
     /* initialize internal resources */
     LIBBASE->ExecBase = SysBase;
-    LIBBASE->SegList = segList;
+    LIBBASE->SegList = (IPTR)segList;
 
     NEWLIST(&LIBBASE->MountList);
     NEWLIST(&LIBBASE->BoardList);

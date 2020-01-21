@@ -1,28 +1,28 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
 
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/arossupport.h>
+
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <dos/dosasl.h>
 #include <dos/doshunks.h>
 #include <dos/dosextens.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/arossupport.h>
 #include <aros/asmcall.h>
-#include <aros/debug.h>
 #include <aros/macros.h>
 
 #include "dos_intern.h"
 #include "internalloadseg.h"
 #include "include/loadseg.h"
-
-#include <proto/dos.h>
 
 #define GETHUNKPTR(x) ((UBYTE*)(BADDR(hunktab[x]) + sizeof(BPTR)))
 
@@ -86,8 +86,6 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct SRBuffer 
 
     return err;
 }
-
-static BOOL allowed_hunk(BPTR seglist);
 
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
@@ -478,11 +476,23 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         }
     } /* switch */
   } /* while */
+
 done:
-  if (firsthunk && !allowed_hunk(firsthunk))
+
+  if (firsthunk)
   {
-      ERROR(ERROR_NOT_EXECUTABLE);
-      goto end;
+    struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+    if (segnode)
+    {
+      D(bug("[DOS:ILSAOS] %s: hunk seglist info @ 0x%p\n", __func__, segnode);)
+
+      segnode->ln_Name = firsthunk;
+      segnode->ln_Type = SEGTYPE_HUNK;
+
+      ObtainSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
+      AddTail(&((struct IntDosBase *)DOSBase)->segdata, segnode);
+      ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
+    }
   }
 
   if (hunktab)
@@ -616,25 +626,3 @@ AROS_UFH4(BPTR, LoadSeg_Overlay,
 }
 
 #endif
-
-static BOOL allowed_hunk(BPTR seglist)
-{
-#ifdef __mc68000
-    return TRUE;
-#else
-    /* deadwood: This is a not-so-great solution to the problem of crashes/reboots
-     * when users accidentally try running m68k hunk executables.
-     * I think the better solution would be to load the hunk (or non-native elf)
-     * but stop it from executing or redirect to emulator by mechanism similar
-     * to OS4 GetSegListInfo() and struct PseudoSegList. This way also runtime
-     * generated seglists would be handled properly.
-     */
-    UBYTE * ptr = (UBYTE *)BADDR(seglist) + sizeof(BPTR);
-
-    /* Allow bitmap fonts */
-    if (ptr[18] == 0x0f && ptr[19] == 0x80)
-        return TRUE;
-
-    return FALSE;
-#endif
-}

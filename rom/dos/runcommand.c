@@ -1,12 +1,11 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a loaded command synchronously
     Lang: english
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -69,19 +68,45 @@
 {
     AROS_LIBFUNC_INIT
 
-    STRPTR oldargs;
-    volatile APTR oldReturnAddr;
-
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
-
-    UBYTE *stack;
-    LONG ret;
+    volatile APTR oldReturnAddr;
+    STRPTR oldargs;
     struct StackSwapStruct sss;
     struct StackSwapArgs args;
+    UBYTE *stack;
+    LONG ret;
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+    IPTR elfinfo = 0;
+    struct TagItem segtags[2] =
+    {
+        { GSLI_ElfHandle,       (IPTR)&elfinfo  },
+        { TAG_DONE,             0               }
+    };
+    BOOL archsuitable = FALSE;
+#endif
     D(BOOL injected;)
 
     ASSERT_VALID_PROCESS(me);
+
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+    D(bug("[DOS] %s: seglist @ 0x%p\n", __func__, segList);)
+    if (GetSegListInfo(segList, segtags))
+    {
+        D(bug("[DOS] %s: elfinfo == 0x%p\n", __func__, elfinfo);)
+        if (elfinfo)
+            archsuitable = TRUE;
+    }
+
+    if (!archsuitable)
+    {
+#if (0)
+        /* TODO: report failure reason? */
+        me->pr_Result2 = ;
+#endif
+        return -1;
+    }
+#endif
 
     if(stacksize < AROS_STACKSIZE)
         stacksize = AROS_STACKSIZE;

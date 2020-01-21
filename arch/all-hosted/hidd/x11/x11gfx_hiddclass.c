@@ -307,12 +307,12 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     ULONG i, screen;
     Display *disp;
     
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
     /* Do GfxHidd initalization here */
     if (!initx11stuff(XSD(cl)))
     {
-        D(bug("[X11Gfx] %s: initialisation failed!\n", __PRETTY_FUNCTION__));
+        D(bug("[X11:Gfx] %s: initialisation failed!\n", __func__));
         return NULL;
     }
     
@@ -325,14 +325,14 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     if (!(XSD(cl)->options & OPTION_FORCESTDMODES))
     {
         XVMCALL(XF86VidModeGetAllModeLines, disp, screen, &modeNum, &modes);
-        D(bug("[X11Gfx] Found %u modes, table at 0x%P\n", modeNum, modes));
+        D(bug("[X11:Gfx] Found %u modes, table at 0x%P\n", modeNum, modes));
     
         if (modeNum)
         {
             /* Got XF86VidMode data, use it */
             if ((resolution = AllocMem(modeNum * sizeof(struct TagItem) * XVIDMODETAGS, MEMF_PUBLIC)) == NULL)
             {
-                D(bug("[X11] failed to allocate memory for %d modes: %d !!!\n", modeNum, XSD(cl)->vi->class));
+                D(bug("[X11:Gfx] failed to allocate memory for %d modes: %d !!!\n", modeNum, XSD(cl)->vi->class));
 
                 XCALL(XCloseDisplay, disp);
                 cleanupx11stuff(XSD(cl));
@@ -396,7 +396,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
             if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 2), MEMF_PUBLIC)) == NULL)
             {
-                D(bug("[X11] failed to allocate memory for mode tag's: %d !!!\n", XSD(cl)->vi->class));
+                D(bug("[X11:Gfx] failed to allocate memory for mode tag's: %d !!!\n", XSD(cl)->vi->class));
 
                 FreeMem(resolution, modeNum * sizeof(struct TagItem) * XVIDMODETAGS);
                 XCALL(XCloseDisplay, disp);
@@ -454,7 +454,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     }
     else
     {
-        D(bug("[X11Gfx] unsupported color model: %d\n", XSD(cl)->vi->class));
+        D(bug("[X11:Gfx] unsupported color model: %d\n", XSD(cl)->vi->class));
         if (resolution)
         {
             FreeMem(resolution, modeNum * sizeof(struct TagItem) * XVIDMODETAGS);
@@ -476,11 +476,11 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     /* We assume chunky */
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
 
-    D(bug("Calling super method\n"));
+    D(bug("[X11:Gfx] Calling super method\n"));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
 
-    D(bug("Super method returned\n"));
+    D(bug("[X11:Gfx] Super method returned\n"));
 
     FreeMem(resolution, modeNum * sizeof(struct TagItem) * XVIDMODETAGS);
     FreeMem(mode_tags, sizeof(struct TagItem) * (realmode + 2));
@@ -492,14 +492,14 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         struct gfx_data *data = OOP_INST_DATA(cl, o);
 
         data->basebm = OOP_FindClass(CLID_Hidd_BitMap);
-        bug("[X11] BitMap class @ 0x%p\n", data->basebm);
+        D(bug("[X11:Gfx] BitMap class @ 0x%p\n", data->basebm);)
 
         LOCK_X11
         data->display   = XSD(cl)->display;
         data->screen    = DefaultScreen( data->display );
         data->depth     = DisplayPlanes( data->display, data->screen );
         data->colmap    = DefaultColormap( data->display, data->screen );
-        D(bug("x11_func.XCreateFontCursor(%x), display(%x)\n", x11_func.XCreateFontCursor, data->display));
+        D(bug("[X11:Gfx] calling x11_func.XCreateFontCursor(%x), display(%x)\n", x11_func.XCreateFontCursor, data->display));
         /* Create cursor */
         data->cursor = XCALL(XCreateFontCursor,  data->display, XC_top_left_arrow);
 
@@ -551,7 +551,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
         UNLOCK_X11
     
-        D(bug("[X11Gfx] Got object from super\n"));
+        D(bug("[X11:Gfx] Got object from super\n"));
 
         data->display = XSD(cl)->display;
     }
@@ -562,7 +562,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 /********** GfxHidd::Dispose()  ******************************/
 VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    D(bug("[X11Gfx] %s(0x%p)\n", __PRETTY_FUNCTION__, o));
+    D(bug("[X11:Gfx] %s(0x%p)\n", __func__, o));
 
     cleanupx11stuff(XSD(cl));
 
@@ -578,7 +578,7 @@ OOP_Object *X11Cl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct p
     struct gfx_data *data = OOP_INST_DATA(cl, o);
     OOP_Object      *object = NULL;
 
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
     if (msg->cl == data->basebm)
     {
@@ -633,7 +633,7 @@ VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
 
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
@@ -671,7 +671,7 @@ VOID X11Cl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     ULONG idx;
     struct x11_staticdata *data = XSD(cl);
 
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
     tstate = msg->attrList;
     while ((tag = NextTagItem(&tstate)))
@@ -703,7 +703,7 @@ VOID X11Cl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
     struct gfx_data *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
     mode = GC_DRMD(msg->gc);
 
@@ -736,7 +736,7 @@ VOID X11Cl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 BOOL X11Cl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
     struct pHidd_Gfx_SetCursorShape *msg)
 {
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
 #if X11SOFTMOUSE
     /* Dummy implementation */
@@ -788,7 +788,7 @@ BOOL X11Cl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
 VOID X11Cl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
     struct pHidd_Gfx_SetCursorVisible *msg)
 {
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
 #if X11SOFTMOUSE
     /* Dummy implementation */
@@ -854,7 +854,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
     int numvisuals;
     XImage *testimage;
 
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s(0x%p)\n", __func__, xsd);)
 
     if (!X11_Init(xsd))
         return FALSE;
@@ -869,14 +869,14 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 
     if (numvisuals > 1)
     {
-        D(bug("[X11Gfx] %s: got %d visualinfo from X\n", __PRETTY_FUNCTION__, numvisuals));
+        D(bug("[X11:Gfx] %s: got %d visualinfo from X\n", __func__, numvisuals));
 
 //            CCALL(raise, SIGSTOP);
     }
 
     if (NULL == visinfo)
     {
-        D(bug("[X11Gfx] %s: no visualinfo available!\n", __PRETTY_FUNCTION__));
+        D(bug("[X11:Gfx] %s: no visualinfo available!\n", __func__));
 
         CCALL(raise, SIGSTOP);
 
@@ -915,7 +915,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
             break;
 
         default:
-            D(bug("[X11Gfx] %s: unsupported display mode!\n", __PRETTY_FUNCTION__));
+            D(bug("[X11:Gfx] %s: unsupported display mode!\n", __func__));
 
             CCALL(raise, SIGSTOP);
         }
@@ -931,16 +931,16 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
                     RootWindow(xsd->display, DefaultScreen(xsd->display)),
                     &win_attributes))
             {
-                D(bug("[X11Gfx] %s: failed to obtain bits per pixel\n", __PRETTY_FUNCTION__));
+                D(bug("[X11:Gfx] %s: failed to obtain bits per pixel\n", __func__));
 
                 CCALL(raise, SIGSTOP);
             }
             xsd->depth = win_attributes.depth;
             D(
                 bug("\n");
-                bug("[X11Gfx] %s: Display Depth = %dbit (Default = %dbit)\n", __PRETTY_FUNCTION__, DisplayPlanes(xsd->display, DefaultScreen(xsd->display)), DefaultDepth(xsd->display, DefaultScreen(xsd->display)));
+                bug("[X11:Gfx] %s: Display Depth = %dbit (Default = %dbit)\n", __func__, DisplayPlanes(xsd->display, DefaultScreen(xsd->display)), DefaultDepth(xsd->display, DefaultScreen(xsd->display)));
 #if (0)
-                bug("[X11Gfx] %s: %d Bits per Pixel\n", __PRETTY_FUNCTION__, xsd->depth);
+                bug("[X11:Gfx] %s: %d Bits per Pixel\n", __func__, xsd->depth);
 #endif
             )
         }
@@ -957,7 +957,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
         }
         else
         {
-            D(bug("[X11Gfx] %s: failed to create query image\n", __PRETTY_FUNCTION__));
+            D(bug("[X11:Gfx] %s: failed to create query image\n", __func__));
             CCALL(raise, SIGSTOP);
         }
 
@@ -977,7 +977,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
             BlackPixel(xsd->display, DefaultScreen(xsd->display)));
     if (0 == xsd->dummy_window_for_creating_pixmaps)
     {
-        D(bug("[X11Gfx] %s: failed to create pixmap window\n", __PRETTY_FUNCTION__));
+        D(bug("[X11:Gfx] %s: failed to create pixmap window\n", __func__));
         ok = FALSE;
     }
 
@@ -1021,7 +1021,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 
 static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 {
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
     LOCK_X11
 
@@ -1047,7 +1047,7 @@ static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 
 static int x11gfx_init(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("[X11Gfx] %s: initialising semaphore @ 0x%p\n", __PRETTY_FUNCTION__, &LIBBASE->xsd.sema));
+    D(bug("[X11:Gfx] %s: initialising semaphore @ 0x%p\n", __func__, &LIBBASE->xsd.sema));
 
     InitSemaphore(&LIBBASE->xsd.sema);
 
@@ -1058,7 +1058,7 @@ static int x11gfx_init(LIBBASETYPEPTR LIBBASE)
 
 static int x11gfx_expunge(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("[X11Gfx] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11:Gfx] %s()\n", __func__));
 
     OOP_ReleaseAttrBases(attrbases);
     return TRUE;

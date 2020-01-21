@@ -3189,6 +3189,12 @@ if test "$optimization" = "default"; then
 AC_MSG_CHECKING([default optimization level to use])
 AC_MSG_RESULT($optimization_level)
 fi
+AC_MSG_CHECKING([kernel optimization level to conserve space])
+if test "$kernel_optimization_level" = ""; then
+    kernel_optimization_level=$optimization_level
+fi
+kernel_optimization_cflags="$kernel_optimization_level"
+AC_MSG_RESULT($kernel_optimization_level)
 
 if ! test "$gcc_default_cpu" = "" ; then
     target_extra_cfg+="$export_newline""# ARM gcc default target$export_newline""GCC_DEFAULT_CPU         := $gcc_default_cpu$export_newline""GCC_DEFAULT_FPU         := $gcc_default_fpu$export_newline""GCC_DEFAULT_FLOAT_ABI   := $gcc_default_float_abi$export_newline""GCC_DEFAULT_MODE        := $gcc_default_mode$export_newline"
@@ -3363,6 +3369,7 @@ AC_SUBST(aros_kernel_cflags)
 AC_SUBST(aros_kernel_includes)
 AC_SUBST(aros_kernel_objcflags)
 AC_SUBST(aros_kernel_ldflags)
+AC_SUBST(kernel_optimization_cflags)
 AC_SUBST(aros_debug_cppflags)
 AC_SUBST(aros_debug_cflags)
 AC_SUBST(aros_debug_cxxflags)

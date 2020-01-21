@@ -2,7 +2,7 @@
 #define DEVICES_KEYMAP_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keymap definitions
@@ -35,11 +35,40 @@ struct KeyMap
     CONST UBYTE * km_HiRepeatable;
 };
 
+#if (__WORDSIZE == 64)
+struct KeyMapPacked
+{
+    CONST ULONG km_LoKeyMapTypes;
+    CONST ULONG km_LoKeyMap;
+    CONST ULONG km_LoCapsable;
+    CONST ULONG km_LoRepeatable;
+    CONST ULONG km_HiKeyMapTypes;
+    CONST ULONG km_HiKeyMap;
+    CONST ULONG km_HiCapsable;
+    CONST ULONG km_HiRepeatable;
+} __packed;
+#endif
+
 struct KeyMapNode
 {
     struct Node   kn_Node;
     struct KeyMap kn_KeyMap;
 };
+
+#if (__WORDSIZE == 64)
+struct KeyMapNodePacked
+{
+    struct
+    {
+        ULONG   ln_Succ;
+        ULONG   ln_Pred;
+        UBYTE   ln_Type;
+        BYTE    ln_Pri;
+        ULONG   ln_Name;
+    } kn_Node;
+    struct KeyMapPacked kn_KeyMap;
+} __packed;
+#endif
 
 #define KC_NOQUAL   0
 #define KC_VANILLA  7

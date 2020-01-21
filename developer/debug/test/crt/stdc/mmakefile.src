@@ -1,0 +1,58 @@
+#   $Id$
+#
+#   Makefile for AROS C Standard Library Tests
+
+include $(SRCDIR)/config/aros.cfg
+
+STDCTESTFILES := \
+        arguments \
+        ctype \
+        environ \
+        exit \
+        jmpbuf \
+        mktime \
+        raise \
+        setjmp \
+        sscanf \
+        stpblk \
+        strchr \
+        strtok \
+        strtod \
+        strtol \
+        strtoul \
+        strtoull \
+        system \
+        time \
+        tmpfile \
+        stdin1 stdin2 stdin3 stdin4 \
+        argv0_slave \
+        abort \
+        assert
+
+STDCPRINTTESTFILES := \
+        snprintf \
+        sprintf \
+        sprintf_f
+
+EXEDIR := $(AROS_TESTS)/crt/stdc
+
+#MM- test-crt : test-crt-stdc test-crt-stdc-$(AROS_TARGET_CPU)
+#MM- test-crt-quick : test-crt-stdc-quick test-crt-stdc-$(AROS_TARGET_CPU)-quick
+
+#MM- test-crt-stdc : test-crt-stdc-general test-crt-stdc-print
+#MM- test-crt-stdc-quick : test-crt-stdc-general-quick test-crt-stdc-print-quick
+
+#MM test-crt-stdc-general : includes includes-copy linklibs kernel
+#MM test-crt-stdc-print : includes includes-copy linklibs kernel
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
+
+USER_CFLAGS = -noposixc -ffloat-store
+%build_progs mmake=test-crt-stdc-general \
+    files=$(STDCTESTFILES) targetdir=$(EXEDIR)
+
+NOWARN_CFLAGS := $(NOWARN_FORMAT_TRUNCATION)
+USER_CFLAGS = -noposixc -ffloat-store $(NOWARN_CFLAGS)
+
+%build_progs mmake=test-crt-stdc-print \
+    files=$(STDCPRINTTESTFILES) targetdir=$(EXEDIR)

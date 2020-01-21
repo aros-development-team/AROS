@@ -1,6 +1,10 @@
 #ifndef INTERNALLOADSEG_H
 #define INTERNALLOADSEG_H
 
+#define SEGTYPE_HUNK            1
+#define SEGTYPE_HUNK_OVERLAY    2
+#define SEGTYPE_ELF             10
+
 BPTR InternalLoadSeg_AOS(BPTR file,
                          BPTR table,
                          SIPTR * funcarray,

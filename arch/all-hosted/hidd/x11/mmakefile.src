@@ -5,10 +5,14 @@ include $(SRCDIR)/config/aros.cfg
 DISK_FILES  := disk_startup
 DISK_EXEDIR := $(AROS_DEVS)/Monitors
 
-#MM- hidd-x11gfx-yes : kernel-x11gfx
-#MM devs-monitors-x11 : iconset-$(AROS_TARGET_ICONSET)-x11
+#MM- hidd-x11gfx-yes : hosted-X11
+#MM- hosted-X11 : hosted-X11-x11gfx hosted-X11-monitor
+#MM hosted-X11-monitor : hosted-X11-x11gfx-includes
+#MM- hosted-X11-quick : hosted-X11-x11gfx-quick hosted-X11-monitor-quick
 
-%build_prog mmake=devs-monitors-x11 \
+#MM hosted-X11-monitor : iconset-$(AROS_TARGET_ICONSET)-x11
+
+%build_prog mmake=hosted-X11-monitor \
     progname=X11 targetdir=$(DISK_EXEDIR) \
     files=$(DISK_FILES)
 
@@ -50,10 +54,10 @@ FILES :=  \
     x11gfx_fullscreen \
     x11gfx_bitmapclass
 
-#MM kernel-x11gfx : x11keymaptable devs-monitors-x11
-#MM kernel-x11gfx-kobj : x11keymaptable devs-monitors-x11
+#MM hosted-X11-x11gfx : x11keymaptable hosted-X11-monitor
+#MM hosted-X11-x11gfx-kobj : x11keymaptable hosted-X11-monitor
 
-%build_module mmake=kernel-x11gfx \
+%build_module mmake=hosted-X11-x11gfx \
   modname=x11gfx modtype=hidd version=$(AROS_TARGET_PLATFORM) \
   files=$(FILES) uselibs="hiddstubs"
 

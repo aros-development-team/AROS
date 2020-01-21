@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Header for dos.library
@@ -187,6 +187,9 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
 
         DOSBase->dl_Root->rn_Info = MKBADDR(dosinfo);
 
+        /* initialize segment data list */
+        NEWLIST(&((struct IntDosBase *)DOSBase)->segdata);
+        InitSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
         taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR) * 20, MEMF_CLEAR);
         if (!taskarray)
         {

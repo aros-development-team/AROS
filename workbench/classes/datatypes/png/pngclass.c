@@ -419,7 +419,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	    int      i, best_index = 0;
 
             D(bug("[png.datatype] %s: %d trans @ 0x%p\n", __func__, num_trans, trans);)
-            if (i == 1)
+            if (num_trans == 1)
             {
 	    	bmhd->bmh_Masking = mskHasTransparentColor;
 		bmhd->bmh_Transparent = *trans;
@@ -442,7 +442,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
                 if (best_trans < 128) /* 128 = randomly choosen */
                 {
-                    bug("[png.datatype] %s: transparent color = %d\n", __func__, best_index);
+                    D(bug("[png.datatype] %s: transparent color = %d\n", __func__, best_index);)
 
                     bmhd->bmh_Masking = mskHasTransparentColor;
                     bmhd->bmh_Transparent = best_index;
@@ -461,7 +461,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     	png_colorp  	    	col = 0;
     	int 	    	    	numcolors = 1L << png.png_depth;
 
-        bug("[png.datatype] %s: reading palette\n", __func__);
+        D(bug("[png.datatype] %s: reading palette\n", __func__);)
 
 	if (png.png_type == PNG_COLOR_TYPE_PALETTE)
 	{

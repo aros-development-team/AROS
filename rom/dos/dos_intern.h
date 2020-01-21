@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -40,14 +40,16 @@ AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
 
 struct IntDosBase
 {
-    struct DosLibrary pub;
-    struct Library *debugBase;
-    struct RootNode rootNode  __attribute__((aligned(4)));
-    struct ErrorString errors  __attribute__((aligned(4)));
+    struct DosLibrary           pub;
+    struct Library              *debugBase;
+    struct RootNode             rootNode  __attribute__((aligned(4)));
+    struct ErrorString          errors  __attribute__((aligned(4)));
+    struct SignalSemaphore      segsem;
+    struct List                 segdata;
 #ifdef __arm__
-    ULONG arm_Arch; /* ARM-specific info for ELF loader */
-    BOOL  arm_VFP;
-    BOOL  arm_VFP_v3;
+    ULONG                       arm_Arch; /* ARM-specific info for ELF loader */
+    BOOL                        arm_VFP;
+    BOOL                        arm_VFP_v3;
 #endif
 };
 
