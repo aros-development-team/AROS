@@ -4010,7 +4010,7 @@ IPTR Window__MUIM_AddControlCharHandler(struct IClass *cl, Object *obj,
 
     if (msg->ccnode->ehn_Events)
     {
-        msg->ccnode->ehn_Priority = msg->ccnode->ehn_Priority;
+        ((struct Node *)msg->ccnode)->ln_Pri = msg->ccnode->ehn_Priority;
         Enqueue((struct List *)&data->wd_CCList,
             (struct Node *)msg->ccnode);
     }
