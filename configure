@@ -8759,12 +8759,12 @@ case "$target_cpu" in
         arm_isa_extra="ISA_ARM_FLAGS                = -marm -mfloat-abi=hard"
         ;;
     *m68k*)
-        m68k_isa_extra="ISA_MC68000_FLAGS             = -march=68000"
-        m68k_020_isa_extra="ISA_MC68020_FLAGS             = -march=68020"
-        m68k_030_isa_extra="ISA_MC68030_FLAGS             = -march=68030"
-        m68k_040_isa_extra="ISA_MC68040_FLAGS             = -march=68040"
-        m68k_060_isa_extra="ISA_MC68060_FLAGS             = -march=68060"
-        m68k_ac080_isa_extra="ISA_AC68080_FLAGS             = -march=68040"
+        m68k_isa_extra="ISA_FLOAT_FLAGS               = -msoft-float""$export_newline""ISA_MC68000_FLAGS             = -march=68000 $""(ISA_FLOAT_FLAGS)"
+        m68k_020_isa_extra="ISA_MC68020_FLAGS             = -march=68020 $""(ISA_FLOAT_FLAGS)"
+        m68k_030_isa_extra="ISA_MC68030_FLAGS             = -march=68030 $""(ISA_FLOAT_FLAGS)"
+        m68k_040_isa_extra="ISA_MC68040_FLAGS             = -march=68040 $""(ISA_FLOAT_FLAGS)"
+        m68k_060_isa_extra="ISA_MC68060_FLAGS             = -march=68060 $""(ISA_FLOAT_FLAGS)"
+        m68k_ac080_isa_extra="ISA_AC68080_FLAGS             = -march=68040 $""(ISA_FLOAT_FLAGS)"
         m68k_020_ext="ISA_MC68020_EXT               :=020"
         m68k_030_ext="ISA_MC68030_EXT               :=030"
         m68k_040_ext="ISA_MC68040_EXT               :=040"
@@ -16027,6 +16027,8 @@ $as_echo_n "checking default optimization level to use... " >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $optimization_level" >&5
 $as_echo "$optimization_level" >&6; }
 fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking kernel optimization level to conserve space" >&5
 $as_echo_n "checking kernel optimization level to conserve space... " >&6; }
 if test "$kernel_optimization_level" = ""; then
