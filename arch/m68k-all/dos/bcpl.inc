@@ -43,7 +43,7 @@ BCPL(0, SlotCount)
 #if (0)
 // According to Bill Kinnersley's documentation 0x4 == Start
 BCPL(0x04, Start)
-#else
+#endif
 BCPL(0x08, Exit)
 BCPL(0x0c, multiply)
 BCPL(0x10, divide)
