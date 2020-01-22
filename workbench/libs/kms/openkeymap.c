@@ -59,7 +59,7 @@
     STRPTR km_name;
     BPTR km_seg;
 #if defined(KMS_KEYMAPS_HUNKONLY)
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     IPTR hunkinfo = 0;
     struct TagItem segtags[2] =
     {
