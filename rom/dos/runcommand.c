@@ -76,7 +76,7 @@
     struct StackSwapArgs args;
     UBYTE *stack;
     LONG ret;
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     IPTR elfinfo = 0;
     struct TagItem segtags[2] =
     {
@@ -89,7 +89,7 @@
 
     ASSERT_VALID_PROCESS(me);
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     D(bug("[DOS] %s: seglist @ 0x%p\n", __func__, segList);)
     if (GetSegListInfo(segList, segtags))
     {
