@@ -7,8 +7,17 @@ BCPL(-0x68, IsInteractive)
 BCPL(-0x64, DateStamp)
 BCPL(-0x60, SetProtection)
 BCPL(-0x5c, SetComment)
+#if (0)
+// According to Bill Kinnersley's documentation -0x58 == deviceproc c entry.
+BCPL(-0x58, DeviceProc)
+// According to Bill Kinnersley's documentation -0x54 == queuepkt c entry.
+BCPL(-0x54, QueuePkt)
+// According to Bill Kinnersley's documentation -0x50 == clearmem.
+BCPL(-0x50, clearmem)
+#else
 BCPL(-0x54, NoReqLoadSeg)
 BCPL(-0x50, clearvec)
+#endif
 BCPL(-0x4c, LoadSeg)
 BCPL(-0x48, CreateProc)
 BCPL(-0x44, IoErr)
@@ -23,9 +32,18 @@ BCPL(-0x24, DeleteFile)
 BCPL(-0x20, Seek)
 BCPL(-0x18, Write)
 BCPL(-0x0c, Read)
+#if (0)
+// According to Bill Kinnersley's documentation -0x8 == strncpy
+BCPL(-0x08, strncpy)
+#else
 BCPL(-0x08, copyvec)
+#endif
 BCPL(-0x04, Open)
 BCPL(0, SlotCount)
+#if (0)
+// According to Bill Kinnersley's documentation 0x4 == Start
+BCPL(0x04, Start)
+#else
 BCPL(0x08, Exit)
 BCPL(0x0c, multiply)
 BCPL(0x10, divide)
@@ -73,11 +91,13 @@ BCPL(0xc0, sendPacket)
 BCPL(0xc4, returnPacket)
 BCPL(0xc8, openWindow)
 BCPL(0xcc, setCurrentDir)
+// Bill Kinnersley has 0xd0 == buildsysreq
 BCPL(0xd0, systemRequest)
 BCPL(0xd4, writet)
 BCPL(0xd8, rdch)
 BCPL(0xdc, unrdch)
 BCPL(0xe0, wrch)
+// Bill Kinnersley has these as readinB writeoutB
 BCPL(0xe4, readinput_long)
 BCPL(0xe8, writeoutput_long)
 BCPL(0xec, findinput)
@@ -100,7 +120,9 @@ BCPL(0x12c, toupper)
 BCPL(0x130, charicmp)
 BCPL(0x134, stricmp)
 BCPL(0x138, rdargs)
+// Bill Kinnersley has this as 0x13c == rdline
 BCPL(0x13c, rditem)
+// Bill Kinnersley has this as 0x140 == parseline
 BCPL(0x140, subString)
 BCPL(0x144, load)
 BCPL(0x148, UnLoadSeg)
@@ -127,10 +149,12 @@ BCPL(0x1b0, lock)
 BCPL(0x1b4, UnLock)
 BCPL(0x1b8, getlong)
 BCPL(0x1bc, putlong)
+// Bill Kinnersley has 0x1c0 == openfile
 BCPL(0x1c0, openDevInfo)
 BCPL(0x1c4, DupLock)
 BCPL(0x1c8, makesysreq)
 BCPL(0x1cc, strcpy)
+// Bill Kinnersley has 0x1e4 as runloaded
 BCPL(0x1e4, runCommand)
 BCPL(0x1ec, lock_1ec)
 BCPL(0x1f0, findDevInfo)
