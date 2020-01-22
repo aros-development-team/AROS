@@ -989,6 +989,7 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
+#if !defined(LIBLOADSEG)
     /* Everything is loaded now. Register the module at kernel.resource */
     {
         struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
@@ -1004,6 +1005,7 @@ BPTR InternalLoadSeg_ELF
             ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
         }
     }
+#endif
 
     register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;
