@@ -109,7 +109,7 @@
 	return NULL;
 
 #if defined(KMS_KEYMAPS_HUNKONLY)
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     D(bug("[KMS] %s: seglist @ 0x%p\n", __func__, km_seg);)
     if (GetSegListInfo(km_seg, segtags))
     {
