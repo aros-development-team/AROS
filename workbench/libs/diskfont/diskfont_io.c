@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Functions for reading disk font files.
@@ -22,7 +22,6 @@
 
 /****************************************************************************************/
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 /****************************************************************************************/
