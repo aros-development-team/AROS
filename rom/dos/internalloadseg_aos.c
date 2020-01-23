@@ -337,6 +337,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         }
       break;
 
+      case HUNK_ABSRELOC16:
       case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
         {
@@ -381,7 +382,14 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(count)));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
-              val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+              if ((hunktype & 0xFFFFFF) == HUNK_ABSRELOC16)
+              {
+                val = (AROS_BE2LONG(*addr) - ((IPTR)GETHUNKPTR(lasthunk) + offset)) + (IPTR)GETHUNKPTR(count);
+              }
+              else
+              {
+                val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+              }
               *addr = (ULONG)AROS_LONG2BE(val);
 
               --i;
@@ -395,6 +403,12 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             read_block_buffered(fh, &word, sizeof(word), funcarray, srb, DOSBase);
           }
         }
+      break;
+
+
+      {
+        D(bug("HUNK_ABSRELOC16\n"));
+      }
       break;
 
       case HUNK_END:
