@@ -195,7 +195,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     D(bug(" memory"));
 
     /*
-     * On 64bit systems, Hunk segments are ALWAYS
+     * Allocate enough space to store the code, the hunk length, and the
+     * next hunk pointer.
+     * NB - On 64bit systems, Hunk segments are ALWAYS
      * allocated in the 32bit address space using MEMF_31BIT.
      * This is to make sure that relocatable symbols can correctly be
      * resolved, allowing hunk files to be LoadSeged on 64bit
@@ -293,7 +295,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("HUNK_RELOC32:\n"));
         while (1)
         {
-          ULONG *addr;
+          ULONG *addr, val;
           ULONG offset;
 
           if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
@@ -321,9 +323,14 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
             if ((hunktype & 0xFFFFFF) == HUNK_RELRELOC32)
-              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(lasthunk)));
+            {
+              val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(lasthunk));
+            }
             else
-              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
+            {
+              val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+            }
+            *addr = (ULONG)AROS_LONG2BE(val);
 
             --i;
           }
@@ -338,7 +345,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
           while (1)
           {
-            ULONG *addr;
+            ULONG *addr, val;
             UWORD word;
             
             Wordcount++;
@@ -374,7 +381,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(count)));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
-              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
+              val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+              *addr = (ULONG)AROS_LONG2BE(val);
 
               --i;
             } /* while (i > 0)*/

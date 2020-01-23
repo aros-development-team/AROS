@@ -22,7 +22,7 @@
 
 /****************************************************************************************/
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -35,6 +35,25 @@
 
 #define SKIPPTR(ptr) 	ptr += sizeof(LONG)
 
+#if AROS_BIG_ENDIAN     
+// BE conversion functions.
+#define CONVLONG(ptr, destlong)  \
+destlong = (*((ULONG *)(ptr))); \
+SKIPLONG(ptr);
+
+#define CONVWORD(ptr, destword) \
+destword = (*((UWORD *)(ptr))); \
+SKIPWORD(ptr);
+
+#define CONVBYTE(ptr, destbyte) \
+destbyte = ptr[0]; \
+SKIPBYTE(ptr);
+
+#define COPYPTR(ptr, destptr) \
+(destptr) = (APTR)(IPTR)(*((ULONG *)(ptr))); \
+SKIPPTR(ptr);
+#else
+// LE conversion functions.
 #define CONVLONG(ptr, destlong)  \
 destlong = ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3]; \
 SKIPLONG(ptr);
@@ -47,21 +66,8 @@ SKIPWORD(ptr);
 destbyte = ptr[0]; \
 SKIPBYTE(ptr);
 
-/*
-We don't need endian conversion of pointers since this is done inside LoadSeg_AOS()
-#define CONVPTR(ptr, destptr) \
-((APTR)destptr) = (APTR)(ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3]); \
-SKIPPTR(ptr);
-*/
-
-#if 0
 #define COPYPTR(ptr, destptr) \
-((APTR)destptr) = (APTR)(ptr[0] | ptr[1] << 8 | ptr [2] << 16 | ptr[3] << 24); \
-SKIPPTR(ptr);
-#else
-
-#define COPYPTR(ptr, destptr) \
-(destptr) = (APTR)(IPTR)(*((ULONG *)(ptr))); \
+(destptr) = (APTR)((IPTR)0 + ptr[0] << 24 | ptr[1] << 16 | ptr [2] << 8 | ptr[3]); \
 SKIPPTR(ptr);
 #endif
 /****************************************************************************************/
@@ -83,11 +89,11 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname, BOOL do
     UWORD *destptr;
     ULONG *destlptr;
     ULONG chardatasize;
-    struct DiskFontHeader tmp_dfh, *dfh = 0;
-    struct TextFont *tf = 0;
+    struct DiskFontHeader tmp_dfh = { 0 }, *dfh = NULL;
+    struct TextFont *tf = NULL;
 
     APTR ctf_chardata_ptrs[8] = {0};
-    struct ColorFontColors *cfc_ptr = 0;
+    struct ColorFontColors *cfc_ptr = NULL;
     UWORD *colortable_ptr = NULL;
 
     APTR    chardata_ptr 	= NULL,
