@@ -405,12 +405,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         }
       break;
 
-
-      {
-        D(bug("HUNK_ABSRELOC16\n"));
-      }
-      break;
-
       case HUNK_END:
       {
         D(bug("HUNK_END\n"));
