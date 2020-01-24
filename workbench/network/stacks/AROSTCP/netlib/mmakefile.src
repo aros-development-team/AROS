@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 USER_INCLUDES := -isystem ../netinclude/
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS) -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT \
-        -D__BSD_VISIBLE=1
+        -D_XOPEN_SOURCE=600 -D__BSD_VISIBLE=1
 
 #MM- linklibs: arostcp-linklibs
 #MM- workbench-network-stacks-arostcp : arostcp-linklibs
