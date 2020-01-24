@@ -54,8 +54,8 @@
 #ifdef __USE_FILE_OFFSET64
 #undef __USE_FILE_OFFSET64
 #endif
-/* __USE_BSD
- * expose definitions and prototypes for BSD4.3 */
+/* __USE_SYSV
+ * expose definitions and prototypes for System V Unix */
 #ifdef __USE_SYSV
 #undef __USE_SYSV
 #endif
