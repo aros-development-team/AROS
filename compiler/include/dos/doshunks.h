@@ -2,7 +2,7 @@
 #define DOS_DOSHUNKS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definition of hunks, used in executable files.
@@ -37,6 +37,10 @@
 #define HUNK_RELRELOC32   1021
 #define HUNK_ABSRELOC16   1022
 
+/* Extended Hunk Format types */
+#define HUNK_PPC_CODE     1257
+#define HUNK_RELRELOC26   1260
+
 /* Hunk sub-types */
 #define EXT_SYMB      0   /* symbol table */
 #define EXT_DEF       1   /* definition for relocatable hunks */
@@ -56,6 +60,9 @@
 #define EXT_RELCOMMON 137 /* 32bit relative reference to common block */
 #define EXT_ABSREF16  138
 #define EXT_ABSREF8   139
+
+/* Extended Hunk Format sub-types */
+#define EXT_RELREF26  229
 
 /* Hunk flags */
 #define HUNKB_ADVISORY 29 /* Hunk is ignored, if unknown to loader. */

@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2019, The AROS Development Team. All rights reserved.
+    Copyright  2003-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,7 +23,7 @@
 
 #include <aros/debug.h>
 
-#define VERSION "$VER: Input 1.1 ("ADATE") AROS Dev Team"
+#define VERSION "$VER: Input 1.2 ("ADATE") The AROS Dev Team"
 
 /*********************************************************************************************/
 
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
                 if (ARG(PUBSCREEN))
                     pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
 
-                Prefs_ScanDirectory("DEVS:Keymaps/#?_~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));
+                Prefs_ScanDirectory("DEVS:Keymaps/#?~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));
 
                 application = ApplicationObject,
                     MUIA_Application_Title,  __(MSG_NAME),

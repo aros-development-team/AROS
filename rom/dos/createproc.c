@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process (in an old way).
@@ -70,7 +70,19 @@
         CreateNewProc(), LoadSeg(), UnLoadSeg()
 
     INTERNALS
-        Basically passes this call to CreateNewProc().
+        In AROS this call is basically passed to CreateNewProc().
+        On older version of AmigaOS, CreateProc calls the internal BCPL
+        function -48.  A SegArray is created based on the supplied seglist.
+                The name buffer is subtracted from the stack request
+                20 bytes are AllocMem'ed for the SegArray.
+                The GV is obtained from DosLib.
+                The Task, Process and MsgPort are initialized as above.
+                The SPReg and ReturnAddr get set.
+                The 1st, and 2nd SegList are copied from the parent, the 3rd
+                    SegList is the one supplied by caller, but the SegArray
+                    length is set to 2
+                AddTask() is called, with initPC = 1st SegList, and finalPC the
+                    same as above.
 
 *****************************************************************************/
 {

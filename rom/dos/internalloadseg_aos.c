@@ -195,14 +195,14 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     D(bug(" memory"));
 
     /*
-     * We need space for the code, the length of this hunk and
-     * for a pointer to the next hunk.
-     * Note also MEMF_31BIT flag appended to memory requirements.
-     * This is important on 64-bit machines where AmigaDOS hunk
-     * files need to be loaded into low memory (<2GB). This is needed
-     * for correct interpretation of pointers in these files.
-     * Yes, they can't be executed in such environments, but they still can
-     * be read as data files. This allows to use Amiga bitmap fonts on AROS.
+     * Allocate enough space to store the code, the hunk length, and the
+     * next hunk pointer.
+     * NB - On 64bit systems, Hunk segments are ALWAYS
+     * allocated in the 32bit address space using MEMF_31BIT.
+     * This is to make sure that relocatable symbols can correctly be
+     * resolved, allowing hunk files to be LoadSeged on 64bit
+     * architectures, and so that traditional AmigaOS Font, and
+     * Keymap files can be correctly processed and used.
      */
     hunksize = count * 4 + sizeof(ULONG) + sizeof(BPTR);
     hunkptr = ilsAllocVec(hunksize, req | MEMF_31BIT);
@@ -295,7 +295,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("HUNK_RELOC32:\n"));
         while (1)
         {
-          ULONG *addr;
+          ULONG *addr, val;
           ULONG offset;
 
           if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
@@ -322,19 +322,22 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             //D(bug("\t\t0x%06lx\n", offset));
             addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
-            /* See the above MEMF_31 explanation for why this
-             * works on AROS 64-bit.
-             */
             if ((hunktype & 0xFFFFFF) == HUNK_RELRELOC32)
-              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(lasthunk)));
+            {
+              val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(lasthunk));
+            }
             else
-              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
+            {
+              val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+            }
+            *addr = (ULONG)AROS_LONG2BE(val);
 
             --i;
           }
         }
       break;
 
+      case HUNK_ABSRELOC16:
       case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
         {
@@ -343,7 +346,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
           while (1)
           {
-            ULONG *addr;
+            ULONG *addr, val;
             UWORD word;
             
             Wordcount++;
@@ -379,10 +382,15 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(count)));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
-              /* See the above MEMF_31 explanation for why this
-               * works on AROS 64-bit.
-               */
-              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
+              if ((hunktype & 0xFFFFFF) == HUNK_ABSRELOC16)
+              {
+                val = (AROS_BE2LONG(*addr) - ((IPTR)GETHUNKPTR(lasthunk) + offset)) + (IPTR)GETHUNKPTR(count);
+              }
+              else
+              {
+                val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+              }
+              *addr = (ULONG)AROS_LONG2BE(val);
 
               --i;
             } /* while (i > 0)*/
@@ -478,7 +486,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   } /* while */
 
 done:
-
+#if !defined(LIBLOADSEG)
   if (firsthunk)
   {
     struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
@@ -494,6 +502,7 @@ done:
       ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
     }
   }
+#endif
 
   if (hunktab)
   {

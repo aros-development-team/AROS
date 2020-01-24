@@ -108,7 +108,10 @@
                         stack, DOSBase);
                     D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
                         segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
-                    return segs;
+                    if (segs)
+                        return segs;
+                    else
+                        break;
                 }
             }
         }

@@ -628,6 +628,26 @@ BCPL closeDevice    /*  80, void, @IORequest */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
+/*
+ * On older AmigaOS versions, Both NewCLI and Run call this function.
+ * It:
+ *      Allocates memory for Process structure and stack, and puts this
+ *        on the MemList
+ *      Fills the Task, Process, and DOS MsgPort:
+ *        SigWait for signal 8, and default TrapCode
+ *      Reserves stack space to hold the Process name
+ *      Copies the parent's Console Handler, File Handler, and Window
+ *      AddTask()'s with special initPC and finalPC.
+ *        The finalPC code frees the SegArray.
+ *        The initPC code:
+ *      Fills the stack with "tttu", terminating with -1 and SP;
+ *      Sets the BCPL coroutine list to point to SPLower;
+ *      Looks at the Segarray.  If there is more than one entry, it calls
+ *        GetSegList to fill in the GV;
+ *      It then fills in a5 and a6, waits for a startup packet, and
+ *        then calls the program code at 4(a2).
+ */
+
 BCPL createProcBCPL     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name,  */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(GV_DOSBase),%a6

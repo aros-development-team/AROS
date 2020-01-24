@@ -65,6 +65,7 @@ FILES	:= \
     getextsprite \
     getrexxvar \
     getrpattrs \
+    getseglistinfotags \
     getvisualinfo \
     gt_getgadgetattrs \
     gt_setgadgetattrs \

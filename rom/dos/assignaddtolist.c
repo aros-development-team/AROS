@@ -71,7 +71,7 @@
 	    newal = AllocVec(sizeof(struct AssignList), MEMF_PUBLIC | MEMF_CLEAR);
 	    if(newal != NULL)
 	    {
-		for(al = &dl->dol_misc.dol_assign.dol_List; *al && (cnt < position); al = &((*al)->al_Next), cnt++);
+		for(al = &dl->dol_misc.dol_assign.dol_List; *al && (cnt < position + 1); al = &((*al)->al_Next), cnt++);
 		if (cnt == 0)
 		{
 		    char lnTmp[128];
