@@ -46,14 +46,22 @@
         struct UtilityBase *, UtilityBase, 51, Utility)
 
 /*  FUNCTION
-
+    Appends the string 'source' to the string 'destination'. The total length
+    including the terminating NUL is limited to 'size'.
+    
     INPUTS
-
+    destination - the target string. Might be NULL.
+    source - the string which will be appended. Might be NULL.
+    size - the length of the 'destination' buffer
+    
     RESULT
-
+    The number of Bytes which would have been written without the truncation.
+    
     NOTES
 
     EXAMPLE
+    Strlcpy(buffer, "Hello ", sizeof buffer);
+    Strlcat(buffer, "World.", sizeof buffer);
 
     BUGS
 
@@ -67,32 +75,50 @@
 {
     AROS_LIBFUNC_INIT
 
-    STRPTR d = destination;
-    CONST_STRPTR s = source;
-    LONG n = size;
-    LONG dlen;
-
-    while (n-- != 0 && *d != '\0')
-        d++;
-    
-    dlen = d - destination;
-    n = size - dlen;
-
-    if (n == 0)
-        return dlen + Strlen(s);
-    
-    while (*s != '\0')
+    if (destination)
     {
-        if (n != 1)
+        if (source)
         {
-            *d++ = *s;
-            n--;
+            STRPTR d = destination;
+            CONST_STRPTR s = source;
+            LONG n = size;
+            LONG dlen;
+
+            while (n-- != 0 && *d != '\0')
+                d++;
+            
+            dlen = d - destination;
+            n = size - dlen;
+
+            if (n == 0)
+                return dlen + Strlen(s);
+            
+            while (*s != '\0')
+            {
+                if (n != 1)
+                {
+                    *d++ = *s;
+                    n--;
+                }
+                s++;
+            }
+            *d = '\0';
+
+            return dlen + (s - source);
         }
-        s++;
+        else
+        {
+            return Strlen(destination);
+        }
     }
-    *d = '\0';
-
-    return dlen + (s - source);
-
+    else
+    {
+        if (source)
+        {
+            return Strlen(source);
+        }
+    }
+    return 0;
+    
     AROS_LIBFUNC_EXIT
 }
