@@ -23,7 +23,8 @@
     RESULT
 
     NOTES
-
+    Check the LVO before adding this function to the library.
+    
     EXAMPLE
 
     BUGS
@@ -44,7 +45,7 @@
 
         while (*string++);
 
-        return (ULONG)(((IPTR)string) - ((IPTR)str_start));
+        return (ULONG)(((IPTR)string) - ((IPTR)str_start)) - 1;
     }
     return 0;
 
