@@ -325,7 +325,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
   switch( attribute )
   {
     case AHIDB_Bits:
-      return 32;
+      return 16;
 
     case AHIDB_Frequencies:
       return FREQUENCIES;
