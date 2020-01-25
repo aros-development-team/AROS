@@ -384,7 +384,7 @@ _AHIsub_GetAttr( ULONG                   attribute,
       return (IPTR) "Alsa";    // We have only one "output"!
 
     case AHIDB_MinOutputVolume:
-      return 0x00000;
+      return 0x10000; /* There is no AROS-side volume control, use host side */
 
     case AHIDB_MaxOutputVolume:
       if (AlsaBase->al_MixerElem)
@@ -413,11 +413,15 @@ _AHIsub_HardwareControl( ULONG                   attribute,
   switch(attribute)
   {
   case AHIC_OutputVolume:
-    if (AlsaBase->al_MixerElem)
+    /* Do not modify host volume from AROS side. Volume value from preferences
+     * will be different than current hosts and will cause unwanted volume
+     * change in host master volume
+     */
+    /* if (AlsaBase->al_MixerElem)
     {
         LONG val = (0x20 - LinToLog(argument)) * AlsaBase->al_MaxVolume / 0x20;
         ALSA_MixerSetVolume(AlsaBase->al_MixerElem, (LONG)val);
-    }
+    } */
 
     return TRUE;
 
