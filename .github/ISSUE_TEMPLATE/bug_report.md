@@ -38,5 +38,8 @@ If applicable, add screenshots to help explain your problem.
  - arm
  - other:
 
+**Version**
+Provide the GID ID from AboutAROS (call menu Wanderer>AROS>About)
+
 **Additional context**
 Add any other context about the problem here.
