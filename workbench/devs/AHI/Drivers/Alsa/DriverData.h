@@ -5,6 +5,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
+#define DRIVER_NEEDS_GLOBAL_EXECBASE
 #include "DriverBase.h"
 
 struct AlsaBase
