@@ -81,6 +81,8 @@ Slave( struct ExecBase* SysBase )
   APTR                    framesptr = NULL;
   LONG                    i = 0;
 
+  Wait(SIGF_SINGLE);
+
   AudioCtrl  = (struct AHIAudioCtrlDrv*) FindTask(NULL)->tc_UserData;
   AHIsubBase = (struct DriverBase*) dd->ahisubbase;
   dd->slavesignal = AllocSignal( -1 );

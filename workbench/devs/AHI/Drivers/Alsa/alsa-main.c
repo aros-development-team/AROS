@@ -225,16 +225,13 @@ _AHIsub_Start( ULONG                   flags,
 
     D(bug("[Alsa]: AHIsub_Start\n"));
 
-    Forbid();
-
     dd->slavetask = CreateNewProc( proctags );
 
     if( dd->slavetask != NULL )
     {
       dd->slavetask->pr_Task.tc_UserData = AudioCtrl;
+      Signal( dd->slavetask, SIGF_SINGLE );
     }
-
-    Permit();
 
     if( dd->slavetask != NULL )
     {
