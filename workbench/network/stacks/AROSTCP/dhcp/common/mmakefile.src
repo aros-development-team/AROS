@@ -2,6 +2,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes
 USER_CPPFLAGS := \
+        -D_XOPEN_SOURCE=600 \
         -D__BSD_VISIBLE=1
 
 FILES :=	alloc bpf comapi conflex ctrace discover dispatch	\

@@ -23,7 +23,6 @@ POSIXCTESTFILES := \
         pipe \
         random \
         randtest \
-        scandir \
         statfs \
         strptime \
         uname \
@@ -33,6 +32,9 @@ POSIXCTESTFILES := \
         wait \
         waitpid \
         posix_memalign
+
+POSIXC2K8TESTFILES := \
+        scandir
 
 POSIXCTESTFILES += \
          argv0_test1 argv0_test2
@@ -97,3 +99,11 @@ USER_CFLAGS = -ffloat-store $(NOWARN_CFLAGS)
 
 %build_prog mmake=test-crt-posixc-posix1-printf \
     progname=printf files="posix.1/printf-examples" targetdir=$(EXEDIR)
+
+# POSIX.1-2008
+
+USER_CPPFLAGS = -D_XOPEN_SOURCE=700
+
+%build_progs mmake=test-crt-posixc-general \
+    files="$(POSIXC2K8TESTFILES)" targetdir=$(EXEDIR)
+

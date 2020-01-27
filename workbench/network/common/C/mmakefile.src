@@ -3,7 +3,8 @@
 include $(SRCDIR)/config/aros.cfg
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
-USER_CFLAGS := $(NOWARN_FLAGS) -D__BSD_VISIBLE=1
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -D_XOPEN_SOURCE=600 -D__BSD_VISIBLE=1
 
 #MM- workbench-network-common : workbench-network-common-c
 

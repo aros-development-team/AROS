@@ -17,6 +17,7 @@ include $(SRCDIR)/config/aros.cfg
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../includes
 USER_CPPFLAGS := \
         -DCLIENT_PATH="C:" \
+        -D_XOPEN_SOURCE=600 \
         -D__BSD_VISIBLE=1
 
 FILES :=	dhclient dhcglobals clparse

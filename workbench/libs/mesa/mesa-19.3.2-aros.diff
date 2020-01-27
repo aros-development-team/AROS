@@ -1,6 +1,6 @@
 diff -ruN mesa-19.3.2/include/EGL/eglplatform.h mesa-19.3.2.aros/include/EGL/eglplatform.h
 --- mesa-19.3.2/include/EGL/eglplatform.h	2020-01-09 18:12:09.000000000 +0000
-+++ mesa-19.3.2.aros/include/EGL/eglplatform.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/include/EGL/eglplatform.h	2020-01-18 19:38:05.890000000 +0000
 @@ -107,6 +107,14 @@
  typedef struct gbm_bo      *EGLNativePixmapType;
  typedef void               *EGLNativeWindowType;
@@ -18,7 +18,7 @@ diff -ruN mesa-19.3.2/include/EGL/eglplatform.h mesa-19.3.2.aros/include/EGL/egl
  struct ANativeWindow;
 diff -ruN mesa-19.3.2/include/c11/threads_posix.h mesa-19.3.2.aros/include/c11/threads_posix.h
 --- mesa-19.3.2/include/c11/threads_posix.h	2020-01-09 18:12:09.000000000 +0000
-+++ mesa-19.3.2.aros/include/c11/threads_posix.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/include/c11/threads_posix.h	2020-01-18 19:38:05.890000000 +0000
 @@ -50,6 +50,13 @@
  
  #include <pthread.h>
@@ -35,7 +35,7 @@ diff -ruN mesa-19.3.2/include/c11/threads_posix.h mesa-19.3.2.aros/include/c11/t
  #ifdef INIT_ONCE_STATIC_INIT
 diff -ruN mesa-19.3.2/include/c99_math.h mesa-19.3.2.aros/include/c99_math.h
 --- mesa-19.3.2/include/c99_math.h	2020-01-09 18:12:09.000000000 +0000
-+++ mesa-19.3.2.aros/include/c99_math.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/include/c99_math.h	2020-01-18 19:38:05.890000000 +0000
 @@ -180,6 +180,8 @@
        return FP_NAN;
     }
@@ -47,7 +47,7 @@ diff -ruN mesa-19.3.2/include/c99_math.h mesa-19.3.2.aros/include/c99_math.h
  #endif
 diff -ruN mesa-19.3.2/src/egl/main/egldisplay.c mesa-19.3.2.aros/src/egl/main/egldisplay.c
 --- mesa-19.3.2/src/egl/main/egldisplay.c	2020-01-09 18:12:09.000000000 +0000
-+++ mesa-19.3.2.aros/src/egl/main/egldisplay.c	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/egl/main/egldisplay.c	2020-01-18 19:38:05.890000000 +0000
 @@ -71,6 +71,7 @@
     { _EGL_PLATFORM_X11, "x11" },
     { _EGL_PLATFORM_WAYLAND, "wayland" },
@@ -58,7 +58,7 @@ diff -ruN mesa-19.3.2/src/egl/main/egldisplay.c mesa-19.3.2.aros/src/egl/main/eg
     { _EGL_PLATFORM_SURFACELESS, "surfaceless" },
 diff -ruN mesa-19.3.2/src/egl/main/egldisplay.h mesa-19.3.2.aros/src/egl/main/egldisplay.h
 --- mesa-19.3.2/src/egl/main/egldisplay.h	2020-01-09 18:12:09.000000000 +0000
-+++ mesa-19.3.2.aros/src/egl/main/egldisplay.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/egl/main/egldisplay.h	2020-01-18 19:38:05.890000000 +0000
 @@ -47,6 +47,7 @@
     _EGL_PLATFORM_X11,
     _EGL_PLATFORM_WAYLAND,
@@ -69,7 +69,7 @@ diff -ruN mesa-19.3.2/src/egl/main/egldisplay.h mesa-19.3.2.aros/src/egl/main/eg
     _EGL_PLATFORM_SURFACELESS,
 diff -ruN mesa-19.3.2/src/gallium/auxiliary/driver_ddebug/dd_util.h mesa-19.3.2.aros/src/gallium/auxiliary/driver_ddebug/dd_util.h
 --- mesa-19.3.2/src/gallium/auxiliary/driver_ddebug/dd_util.h	2020-01-09 18:12:09.000000000 +0000
-+++ mesa-19.3.2.aros/src/gallium/auxiliary/driver_ddebug/dd_util.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/gallium/auxiliary/driver_ddebug/dd_util.h	2020-01-18 19:38:05.890000000 +0000
 @@ -38,7 +38,7 @@
  #include "util/u_string.h"
  
@@ -79,9 +79,23 @@ diff -ruN mesa-19.3.2/src/gallium/auxiliary/driver_ddebug/dd_util.h mesa-19.3.2.
  #include <unistd.h>
  #include <sys/stat.h>
  #elif defined(PIPE_OS_WINDOWS)
+diff -ruN mesa-19.3.2/src/gallium/include/pipe/p_compiler.h mesa-19.3.2.aros/src/gallium/include/pipe/p_compiler.h
+--- mesa-19.3.2/src/gallium/include/pipe/p_compiler.h	2020-01-09 18:12:10.000000000 +0000
++++ mesa-19.3.2.aros/src/gallium/include/pipe/p_compiler.h	2020-01-24 11:10:07.140000000 +0000
+@@ -35,6 +35,10 @@
+ 
+ #include "util/macros.h"
+ 
++#if defined(__AROS__)
++#include <sys/types.h>
++#endif
++
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stddef.h>
 diff -ruN mesa-19.3.2/src/gallium/include/pipe/p_config.h mesa-19.3.2.aros/src/gallium/include/pipe/p_config.h
 --- mesa-19.3.2/src/gallium/include/pipe/p_config.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/gallium/include/pipe/p_config.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/gallium/include/pipe/p_config.h	2020-01-18 19:38:05.890000000 +0000
 @@ -122,6 +122,10 @@
  #define PIPE_ARCH_AARCH64
  #endif
@@ -115,7 +129,7 @@ diff -ruN mesa-19.3.2/src/gallium/include/pipe/p_config.h mesa-19.3.2.aros/src/g
  #endif
 diff -ruN mesa-19.3.2/src/mapi/glapi/glapi.h mesa-19.3.2.aros/src/mapi/glapi/glapi.h
 --- mesa-19.3.2/src/mapi/glapi/glapi.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/mapi/glapi/glapi.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/mapi/glapi/glapi.h	2020-01-18 19:38:05.890000000 +0000
 @@ -90,6 +90,11 @@
  # define GET_DISPATCH() _glapi_tls_Dispatch
  # define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _glapi_tls_Context
@@ -130,7 +144,7 @@ diff -ruN mesa-19.3.2/src/mapi/glapi/glapi.h mesa-19.3.2.aros/src/mapi/glapi/gla
  _GLAPI_EXPORT extern struct _glapi_table *_glapi_Dispatch;
 diff -ruN mesa-19.3.2/src/mapi/u_current.c mesa-19.3.2.aros/src/mapi/u_current.c
 --- mesa-19.3.2/src/mapi/u_current.c	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/mapi/u_current.c	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/mapi/u_current.c	2020-01-18 19:38:05.890000000 +0000
 @@ -106,6 +106,12 @@
  __thread void *u_current_context
      __attribute__((tls_model("initial-exec")));
@@ -203,7 +217,7 @@ diff -ruN mesa-19.3.2/src/mapi/u_current.c mesa-19.3.2.aros/src/mapi/u_current.c
        return (struct _glapi_table *) tss_get(u_current_table_tsd);
 diff -ruN mesa-19.3.2/src/mapi/u_current.h mesa-19.3.2.aros/src/mapi/u_current.h
 --- mesa-19.3.2/src/mapi/u_current.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/mapi/u_current.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/mapi/u_current.h	2020-01-18 19:38:05.890000000 +0000
 @@ -34,6 +34,7 @@
  
  extern __thread void *u_current_context
@@ -232,7 +246,7 @@ diff -ruN mesa-19.3.2/src/mapi/u_current.h mesa-19.3.2.aros/src/mapi/u_current.h
  #endif
 diff -ruN mesa-19.3.2/src/mesa/main/compiler.h mesa-19.3.2.aros/src/mesa/main/compiler.h
 --- mesa-19.3.2/src/mesa/main/compiler.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/mesa/main/compiler.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/mesa/main/compiler.h	2020-01-18 19:38:05.890000000 +0000
 @@ -54,6 +54,8 @@
  #elif defined(__APPLE__)
  #include <CoreFoundation/CFByteOrder.h>
@@ -244,7 +258,7 @@ diff -ruN mesa-19.3.2/src/mesa/main/compiler.h mesa-19.3.2.aros/src/mesa/main/co
  #define CPU_TO_LE32( x )	htole32( x )
 diff -ruN mesa-19.3.2/src/util/detect_os.h mesa-19.3.2.aros/src/util/detect_os.h
 --- mesa-19.3.2/src/util/detect_os.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/util/detect_os.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/util/detect_os.h	2020-01-18 19:38:05.890000000 +0000
 @@ -15,6 +15,11 @@
  #ifndef DETECT_OS_H
  #define DETECT_OS_H
@@ -259,7 +273,7 @@ diff -ruN mesa-19.3.2/src/util/detect_os.h mesa-19.3.2.aros/src/util/detect_os.h
  #define DETECT_OS_UNIX 1
 diff -ruN mesa-19.3.2/src/util/os_misc.c mesa-19.3.2.aros/src/util/os_misc.c
 --- mesa-19.3.2/src/util/os_misc.c	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/util/os_misc.c	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/util/os_misc.c	2020-01-18 19:38:05.890000000 +0000
 @@ -60,6 +60,8 @@
  #  include <kernel/OS.h>
  #elif DETECT_OS_WINDOWS
@@ -281,10 +295,14 @@ diff -ruN mesa-19.3.2/src/util/os_misc.c mesa-19.3.2.aros/src/util/os_misc.c
     return false;
 diff -ruN mesa-19.3.2/src/util/os_misc.h mesa-19.3.2.aros/src/util/os_misc.h
 --- mesa-19.3.2/src/util/os_misc.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/util/os_misc.h	2020-01-14 01:46:41.770000000 +0000
-@@ -40,7 +40,7 @@
++++ mesa-19.3.2.aros/src/util/os_misc.h	2020-01-24 11:01:05.890000000 +0000
+@@ -39,8 +39,11 @@
+ 
  #include "detect_os.h"
  
++#if DETECT_OS_UNIX || DETECT_OS_AROS
++#  include <sys/types.h>
++#endif
  
 -#if DETECT_OS_UNIX
 +#if DETECT_OS_UNIX || DETECT_OS_AROS
@@ -293,7 +311,7 @@ diff -ruN mesa-19.3.2/src/util/os_misc.h mesa-19.3.2.aros/src/util/os_misc.h
  #endif
 diff -ruN mesa-19.3.2/src/util/os_time.c mesa-19.3.2.aros/src/util/os_time.c
 --- mesa-19.3.2/src/util/os_time.c	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/util/os_time.c	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/util/os_time.c	2020-01-18 19:38:05.890000000 +0000
 @@ -37,7 +37,7 @@
  
  #include "util/u_atomic.h"
@@ -350,7 +368,7 @@ diff -ruN mesa-19.3.2/src/util/os_time.c mesa-19.3.2.aros/src/util/os_time.c
     }
 diff -ruN mesa-19.3.2/src/util/u_string.h mesa-19.3.2.aros/src/util/u_string.h
 --- mesa-19.3.2/src/util/u_string.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/util/u_string.h	2020-01-14 01:50:08.160000000 +0000
++++ mesa-19.3.2.aros/src/util/u_string.h	2020-01-18 19:38:05.890000000 +0000
 @@ -76,6 +76,10 @@
     va_end(ap);
  }
@@ -375,7 +393,7 @@ diff -ruN mesa-19.3.2/src/util/u_string.h mesa-19.3.2.aros/src/util/u_string.h
  #endif
 diff -ruN mesa-19.3.2/src/util/u_thread.h mesa-19.3.2.aros/src/util/u_thread.h
 --- mesa-19.3.2/src/util/u_thread.h	2020-01-09 18:12:10.000000000 +0000
-+++ mesa-19.3.2.aros/src/util/u_thread.h	2020-01-14 01:46:41.770000000 +0000
++++ mesa-19.3.2.aros/src/util/u_thread.h	2020-01-18 19:38:05.890000000 +0000
 @@ -69,7 +69,7 @@
  static inline void u_thread_setname( const char *name )
  {

@@ -29,6 +29,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -45,15 +47,22 @@
         struct UtilityBase *, UtilityBase, 50, Utility)
 
 /*  FUNCTION
-
+    Copies the string 'source' into 'destination'. String will be
+    null-terminated. Not more than 'size' Bytes will be written.
+    
     INPUTS
-
+    destination - the target. Might be NULL.
+    source      - the string which will be copied. Might be NULL.
+    size        - the size of the 'destination'
+    
     RESULT
-
+    The string lenght of 'source'.
+    
     NOTES
 
     EXAMPLE
-
+    Strlcpy(buffer, "Hello", sizeof buffer);
+    
     BUGS
 
     SEE ALSO
@@ -66,28 +75,46 @@
 {
     AROS_LIBFUNC_INIT
 
-    STRPTR d = destination;
-    CONST_STRPTR s = source;
-    LONG n = size;
-
-    if (n != 0 && --n != 0)
+    if (destination)
     {
-        do
+        if (source)
         {
-            if ((*d++ = *s++) == 0)
-                break;
-        } while (--n != 0);
-    }
+            STRPTR d = destination;
+            CONST_STRPTR s = source;
+            LONG n = size;
 
-    if (n == 0)
+            if (n != 0 && --n != 0)
+            {
+                do
+                {
+                    if ((*d++ = *s++) == 0)
+                        break;
+                } while (--n != 0);
+            }
+
+            if (n == 0)
+            {
+                if (size != 0)
+                    *d = '\0';
+                while (*s++)
+                    ;
+            }
+
+            return s - source - 1;
+        }
+        if (size > 0)
+        {
+            *destination = '\0';
+        }
+    }
+    else
     {
-        if (size != 0)
-            *d = '\0';
-        while (*s++)
-            ;
+        if (source)
+        {
+            return Strlen(source);
+        }
     }
-
-    return s - source - 1;
+    return 0;
 
     AROS_LIBFUNC_EXIT
 }

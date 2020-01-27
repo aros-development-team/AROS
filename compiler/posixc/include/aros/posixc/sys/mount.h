@@ -42,7 +42,7 @@
 
 #include <aros/features.h>
 
-#ifndef _POSIX_SOURCE
+#ifdef __USE_BSD
 
 #include <stdint.h>
 

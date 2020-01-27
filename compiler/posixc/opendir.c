@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function opendir().
@@ -13,6 +13,7 @@
 #include <stdio.h>
 #endif
 #include <unistd.h>
+#include <limits.h>
 #include <errno.h>
 #include <fcntl.h>
 

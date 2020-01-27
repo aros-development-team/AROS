@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for utility.library.
@@ -67,7 +67,7 @@ static inline ULONG Strlen(CONST_STRPTR string)
 
     while (*string++);
 
-    return (ULONG)(((IPTR)string) - ((IPTR)str_start));
+    return (ULONG)(((IPTR)string) - ((IPTR)str_start)) - 1;
 }
 #endif
 

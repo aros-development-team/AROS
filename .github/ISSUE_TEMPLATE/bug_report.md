@@ -24,11 +24,12 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Architecture**
- - Amiga
+ - Amiga (including UAE, Vampire cards)
  - pc (native)
  - linux (hosted)
  - Raspberry Pi
- - PPC
+ - mingw
+ - darwin
  - other:
  
 **CPU**
@@ -36,7 +37,11 @@ If applicable, add screenshots to help explain your problem.
  - x86_64
  - m68k
  - arm
+ - ppc
  - other:
+
+**Version**
+Provide the GID ID from AboutAROS (call menu Wanderer>AROS>About)
 
 **Additional context**
 Add any other context about the problem here.
