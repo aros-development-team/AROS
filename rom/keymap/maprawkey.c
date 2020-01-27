@@ -89,8 +89,11 @@
     code = event->ie_Code;
     qual = event->ie_Qualifier;
 
-    /* Get info on keypress */
-    if (!GetKeyInfo(&ki, code, qual, keyMap))
+    /*
+     * Get info on keypress.
+     * only codes under 0x78 are valid keyboard codes,
+     * codes above 0x77 are newmouse wheel events */
+    if ((code >= 0x78) || (!GetKeyInfo(&ki, code, qual, keyMap)))
         goto done; /* Invalid key mapping (like CTRL-ALT-A if a doesn't support CTRL-ALT */
 
     /* Handle decoding of the the different keytypes (normal, KCF_STRING, KCF_DEAD and KCF_NOP) */

@@ -137,8 +137,7 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km)
     WORD            retval = -1;
 
     /* Get the key info for the key */
-    
-    if (GetKeyInfo(&ki, code, qual, km))
+    if ((code < 0x78) && GetKeyInfo(&ki, code, qual, km))
     {
         if (ki.Key_MapType & KCF_DEAD)
         {
@@ -161,7 +160,7 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km)
             }
         }
     }
-    
+
     return (retval);
 }
 
