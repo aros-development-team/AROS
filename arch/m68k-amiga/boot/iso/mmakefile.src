@@ -118,8 +118,8 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
                 -l -J -r \
 		"$(AROSDIR).HUNK"
 	@cd $(AROSDIR).HUNK ; lha c $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.lha AROS.HUNK *
-	@rdbtool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf create size=100Mi + init + add 100% dostype=ffs+intl bootable=true boot_pri=0 max_transfer=0x1fe00 num_buffer=80
-	@xdftool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf open 0 + pack $(AROSDIR).HUNK
+#	@rdbtool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf create size=100Mi + init + add 100% dostype=ffs+intl bootable=true boot_pri=0 max_transfer=0x1fe00 num_buffer=80
+#	@xdftool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf open 0 + pack $(AROSDIR).HUNK
 
 $(DEVEL_ISO):   $(AROSDIR)/.backdrop \
 		$(AROSDIR)/Emergency-Boot.adf \
