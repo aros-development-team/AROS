@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define AROS_ALMOST_COMPATIBLE
-
 #include <dos/dos.h>
 #include <dos/filehandler.h>
 #include <libraries/expansionbase.h>

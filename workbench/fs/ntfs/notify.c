@@ -9,8 +9,6 @@
  * $Id $
  */
 
-#define AROS_ALMOST_COMPATIBLE
-
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/notify.h>

@@ -10,8 +10,6 @@
  * $Id$
  */
 
-#define AROS_ALMOST_COMPATIBLE
-
 #include <aros/macros.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
