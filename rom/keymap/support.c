@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -16,14 +16,14 @@
 #include "keymap_intern.h"
 
 /****************************************************************************************/
-
+#if (0)
 #if DEBUG
     extern struct KeymapBase *DebugKeymapBase;
 #   undef SysBase
 #   define SysBase DebugKeymapBase->SysBase
 
 #endif
-
+#endif
 /****************************************************************************************/
 
 BOOL WriteToBuffer(struct BufInfo *bufinfo, UBYTE *string, LONG numchars)
@@ -42,6 +42,8 @@ BOOL WriteToBuffer(struct BufInfo *bufinfo, UBYTE *string, LONG numchars)
 BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
 {
     BOOL valid = TRUE; /* valid code is default */
+
+    D(bug("[keymap] %s: code %04x\n", __func__, code));
 
     if (code & IECODE_UP_PREFIX) /* Key pressed ? */
     {
@@ -70,7 +72,7 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
         if (qual & IEQUALIFIER_CONTROL)
             ki->KCFQual |= KCF_CONTROL;
 
-        D(bug("mrk: KCF qual: %d\n", ki->KCFQual));
+        D(bug("[keymap] %s: KCF qual: %d\n", __func__, ki->KCFQual));
 
         /* Get the type of the key */
         if (code <= 0x3F)
@@ -85,27 +87,43 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
         else
         {
             code -= 0x40; /* hex 40 is first indexed */
-
-            /* Get key info from high keymap */
-            ki->Key_MapType = km->km_HiKeyMapTypes[code];
-            ki->Key_Mapping = km->km_HiKeyMap[code];
-            capsable    = GetBitProperty(km->km_HiCapsable,   code);
-            repeatable  = GetBitProperty(km->km_HiRepeatable, code);
+#if !defined(NONSTANDARD_KEYMAP)
+            if (code < 0x38)
+            {
+#endif
+                /* Get key info from high keymap */
+                ki->Key_MapType = km->km_HiKeyMapTypes[code];
+                ki->Key_Mapping = km->km_HiKeyMap[code];
+                capsable    = GetBitProperty(km->km_HiCapsable,   code);
+                repeatable  = GetBitProperty(km->km_HiRepeatable, code);
+#if !defined(NONSTANDARD_KEYMAP)
+            }
+            else
+            {
+                bug("[keymap] %s: invalid high key %02x\n", __func__, code + 0x40);
+                valid = FALSE;
+            }
+#endif
         }
 
-        D(bug("mrk: capsable=%d\n", capsable));
-
-        if ((qual & IEQUALIFIER_CAPSLOCK) && capsable)
-            ki->KCFQual |= KCF_SHIFT;
-
-        if ((qual & IEQUALIFIER_REPEAT) && (!repeatable))
+        if (valid)
         {
-            valid = FALSE; /* Repeating not supported for key, skip keypress */
-        }
-        
-        D(bug("mrk:repeat test passed\n"));
+            if ((qual & IEQUALIFIER_REPEAT) && (!repeatable))
+            {
+                D(bug("[keymap] %s: non-repeatable keypress\n", __func__);)
+                valid = FALSE; /* Repeating not supported for key, skip keypress */
+            }
+            else
+            {
+                D(bug("[keymap] %s: repeat test passed\n", __func__));
+                D(bug("[keymap] %s: capsable=%d\n", __func__, capsable));
 
-        D(bug("mrk: key mapping: %04x\n", ki->Key_Mapping));
+                if ((qual & IEQUALIFIER_CAPSLOCK) && capsable)
+                    ki->KCFQual |= KCF_SHIFT;
+
+                D(bug("[keymap] %s: key type %02x, mapping: %04x\n", __func__, ki->Key_MapType, ki->Key_Mapping));
+            }
+        }
     }
 
     return (valid);

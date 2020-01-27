@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -8,6 +8,8 @@
 
 #include <devices/keymap.h>
 
+#define DEFAULT_KEYMAP
+#include "keymap_intern.h"
 
 #undef N
 #undef S
@@ -155,8 +157,9 @@ static CONST UBYTE hikeymaptypes[] =
     NOP,        /* 74 */
     NOP,        /* 75 */
     NOP,        /* 76 */
-    NOP,        /* 77 */
-    NOP,        /* 78 */
+    NOP        /* 77 */
+#if defined(NONSTANDARD_KEYMAP)
+    , NOP,        /* 78 */
     NOP,        /* 79 */
     NOP,        /* 7A */
     NOP,        /* 7B */
@@ -164,7 +167,7 @@ static CONST UBYTE hikeymaptypes[] =
     NOP,        /* 7D */
     NOP,        /* 7E */
     NOP         /* 7F */
-    
+#endif
 };
 
 #undef N
@@ -684,6 +687,7 @@ STATIC CONST UBYTE space_descr[] =
     ' ', '´' /*0xB4*/, '`','^','~', '¨' /*0xA8*/, '°' /*0xB0*/
 };
 
+/* NB: under AmigaOS, hikeymap covers the range 0x40 -> 0x77 */
 static CONST IPTR hikeymap[] =
 {
     DEAD(space_descr),          /* 40 SPACE */
@@ -741,8 +745,9 @@ static CONST IPTR hikeymap[] =
     BYTES(0, 0, 0, 0),          /* 74 */
     BYTES(0, 0, 0, 0),          /* 75 */
     BYTES(0, 0, 0, 0),          /* 76 */
-    BYTES(0, 0, 0, 0),          /* 77 */
-    BYTES(0, 0, 0, 0),          /* 78 */
+    BYTES(0, 0, 0, 0)          /* 77 */
+#if defined(NONSTANDARD_KEYMAP)
+    , BYTES(0, 0, 0, 0),          /* 78 */
     BYTES(0, 0, 0, 0),          /* 79 */
     BYTES(0, 0, 0, 0),          /* 7A */
     BYTES(0, 0, 0, 0),          /* 7B */
@@ -750,6 +755,7 @@ static CONST IPTR hikeymap[] =
     BYTES(0, 0, 0, 0),          /* 7D */
     BYTES(0, 0, 0, 0),          /* 7E */
     BYTES(0, 0, 0, 0),          /* 7F */
+#endif
 };
 
 #undef SETBITS
@@ -783,8 +789,10 @@ static CONST UBYTE hicapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),    /* 60 - 67 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),    /* 68 - 6F */
     
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0),    /* 70 - 77 */
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)     /* 78 - 7F */
+    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)     /* 70 - 77 */
+#if defined(NONSTANDARD_KEYMAP)
+    , SETBITS(0, 0, 0, 0, 0, 0, 0, 0)     /* 78 - 7F */
+#endif
 };
 
 static CONST UBYTE lorepeatable[] =
@@ -813,8 +821,10 @@ static CONST UBYTE hirepeatable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),    /* 60 - 67 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),    /* 68 - 6F */
     
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0),    /* 70 - 77 */
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)     /* 78 - 7F */
+    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)     /* 70 - 77 */
+#if defined(NONSTANDARD_KEYMAP)
+    , SETBITS(0, 0, 0, 0, 0, 0, 0, 0)     /* 78 - 7F */
+#endif
 };
 
 CONST struct KeyMap def_km =

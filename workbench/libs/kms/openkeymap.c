@@ -4,8 +4,6 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#include <libraries/kms.h>
-
 #include <string.h>
 
 #include "kms_intern.h"
@@ -58,8 +56,6 @@
     ULONG buflen = 0;
     STRPTR km_name;
     BPTR km_seg;
-#if defined(KMS_KEYMAPS_HUNKONLY)
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     IPTR hunkinfo = 0;
     struct TagItem segtags[2] =
     {
@@ -67,8 +63,6 @@
         { TAG_DONE,     0               }
     };
     BOOL ishunk = FALSE;
-#endif
-#endif /* !KMS_KEYMAPS_HUNKONLY */
 
     km_name  = FilePart(name);
     if (km_name == name)
@@ -108,9 +102,8 @@
     if (!km_seg)
 	return NULL;
 
-#if defined(KMS_KEYMAPS_HUNKONLY)
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    D(bug("[KMS] %s: seglist @ 0x%p\n", __func__, km_seg);)
+    D(bug("[KMS] %s: loaded seglist @ 0x%p\n", __func__, km_seg);)
+
     if (GetSegListInfo(km_seg, segtags))
     {
         D(bug("[KMS] %s: hunkinfo == 0x%p\n", __func__, hunkinfo);)
@@ -119,23 +112,20 @@
     }
 
     if (!ishunk)
+    {
         return NULL;
+    }
+#if !AROS_BIG_ENDIAN || (__WORDSIZE != 32)
     else
     {
-#if (__WORDSIZE == 64)
-        // TODO: convert the hunk seglist data to 64bit-LE values ...
-        return NULL;
-#else
-#if !AROS_BIG_ENDIAN
-        // TODO: convert the hunk seglist data to LE values ...
-        return NULL;
-#endif
-#endif
+        if ((km_seg = parsekeymapseg(km_seg)) == BNULL)
+            return NULL;
     }
 #endif
-#endif /* !KMS_KEYMAPS_HUNKONLY */
 
-    kmn = BADDR(km_seg) + sizeof(APTR);
+    D(bug("[KMS] %s: using seglist @ 0x%p\n", __func__, km_seg);)
+
+    kmn = BADDR(km_seg) + sizeof(BPTR);
     if (kmr)
     {
         Forbid();
