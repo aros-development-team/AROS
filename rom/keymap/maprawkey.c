@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: keymap.library function MapRawKey()
@@ -70,18 +70,21 @@
     struct BufInfo bufinfo;
     struct KeyInfo ki;
     UWORD          code, qual;
-        
+
     bufinfo.Buffer       = buffer;
     bufinfo.BufLength    = length;
     bufinfo.CharsWritten = 0L;
 
+    D(bug("[keymap] %s(0x%p)\n", __func__, keyMap));
+
     if (!keyMap)
         keyMap = KMBase(KeymapBase)->DefaultKeymap;
-    
-        
+
     /* Don't handle non-rawkey events */
     if (event->ie_Class != IECLASS_RAWKEY)
         goto done;
+
+    D(bug("[keymap] %s: using keymap @ 0x%p\n", __func__, keyMap));
 
     code = event->ie_Code;
     qual = event->ie_Qualifier;
@@ -99,17 +102,17 @@
             BYTE idx;
             UBYTE c;
 
-            D(bug("mrk: KC_NOQUAL\n"));
+            D(bug("[keymap] %s: KC_NOQUAL\n", __func__));
 
-            D(bug("mrk: getting idx at [%d][%d]\n", ki.Key_MapType & KC_VANILLA, ki.KCFQual));
+            D(bug("[keymap] %s: getting idx at [%d][%d]\n", __func__, ki.Key_MapType & KC_VANILLA, ki.KCFQual));
             idx = keymaptype_table[ki.Key_MapType & KC_VANILLA][ki.KCFQual];
-            
+
             if (idx != -1)
             {
-                D(bug("mrk: valid qual, idx=%d, key mapping=%04x\n", idx, ki.Key_Mapping));
+                D(bug("[keymap] %s: valid qual, idx=%d, key mapping=%04x\n", __func__, idx, ki.Key_Mapping));
                 if (idx == -2)
                 {
-                    D(bug("mrk: Ctrl-C mode\n"));
+                    D(bug("[keymap] %s: Ctrl-C mode\n", __func__));
                     /* Special-case where bit 5 & 6 should be cleared */
                     idx = 3;
                     c = GetMapChar(ki.Key_Mapping, idx);
@@ -122,14 +125,13 @@
                      c = GetMapChar(ki.Key_Mapping, idx);
                 }
 
-                D(bug("mrk: Putting %c (%d 0x%x) into buffer\n", c, c, c));
+                D(bug("[keymap] %s: Putting %c (%d 0x%x) into buffer\n", __func__, c, c, c));
 
                 if (c != 0) /* If we get a 0 from the keymap, it means the char converts to "" */
                 {
                     if (!WriteToBuffer(&bufinfo, &c, 1))
                         goto overflow;
                 }
-
             } /* if (idx != -1) */
             break;
         }
@@ -138,11 +140,11 @@
         {
             BYTE idx;
 
-            D(bug("mrk: KCF_STRING\n"));
-            
-            D(bug("mrk: getting idx at [%d][%d]\n", ki.Key_MapType & KC_VANILLA, ki.KCFQual));
+            D(bug("[keymap] %s: KCF_STRING\n", __func__));
+
+            D(bug("[keymap] %s: getting idx at [%d][%d]\n", __func__, ki.Key_MapType & KC_VANILLA, ki.KCFQual));
             idx = keymapstr_table[ki.Key_MapType & KC_VANILLA][ki.KCFQual];
-            
+
             if (idx != -1)
             {
                 UBYTE *str_descrs = (UBYTE *)ki.Key_Mapping;
@@ -156,14 +158,12 @@
                 len    = str_descrs[idx];
                 offset = str_descrs[idx + 1];
 
-                D(bug("mrk: len=%d, offset=%d\n", len, offset));
+                D(bug("[keymap] %s: len=%d, offset=%d\n", __func__, len, offset));
 
                 /* Write string to buffer */
                 if (!WriteToBuffer(&bufinfo, &(str_descrs[offset]), len))
                     goto overflow;
-
             } /* if (idx != -1) */
-
             break;
         }
 
@@ -172,14 +172,13 @@
             BYTE idx;
 
             /* Get the index to the right dead key descrptor */
-            D(bug("mrk: KCF_DEAD\n"));
-            
-            D(bug("mrk: getting idx at [%d][%d]\n", ki.Key_MapType & KC_VANILLA, ki.KCFQual));
+            D(bug("[keymap] %s: KCF_DEAD\n", __func__));
+
+            D(bug("[keymap] %s: getting idx at [%d][%d]\n", __func__, ki.Key_MapType & KC_VANILLA, ki.KCFQual));
             idx = keymapstr_table[ki.Key_MapType & KC_VANILLA][ki.KCFQual];
-            
+
             if (idx != -1)
             {
-
                 UBYTE *dead_descr = (UBYTE *)ki.Key_Mapping;
                 UBYTE dead_type;
                 UBYTE dead_val;
@@ -189,7 +188,6 @@
 
                 dead_type = dead_descr[idx];
                 dead_val  = dead_descr[idx + 1];
-
 
                 if (dead_type == 0)
                 {
@@ -204,7 +202,6 @@
                     ** interesting by themselves.
                     ** However, if a DPF_MOD key follows..
                     */
-
                 }
                 else if (dead_type == DPF_MOD)
                 {
@@ -222,7 +219,7 @@
                     if (dki_1 != -1) /* Was it a dead key ? */
                     {
                         dk_idx = dki_1;
-                        
+
                         /* Is this a double deadkey (higher nibble set ?) */
                         if (dki_1 >> DP_2DFACSHIFT)
                         {
@@ -238,21 +235,16 @@
                             }
                         }
                     }
-
                     dead_val = dead_descr[dead_val + dk_idx];
 
                     if (!WriteToBuffer(&bufinfo, &dead_val, 1))
                         goto overflow;
-
                 }
                 else
                 {
                     D(bug("Keymap contains illegal deadkey type for code %04x, event->ie_Code\n"));
                 }
-
-
             } /* if (idx != -1) */
-
             break;
         }
 
@@ -262,7 +254,6 @@
         default:
             D(bug("Error in keymap, more than one decode action specified for code %04x\n", event->ie_Code));
             break;
-
     } /* switch (ki.Key_MapType & (KC_NOQUAL|KCF_STRING|KCF_DEAD|KCF_NOP)) */
 
 done:                   
