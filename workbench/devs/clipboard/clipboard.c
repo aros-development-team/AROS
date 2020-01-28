@@ -7,7 +7,6 @@
 
 /****************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE 1
 #include <exec/resident.h>
 #include <devices/clipboard.h>
 #include <devices/newstyle.h>

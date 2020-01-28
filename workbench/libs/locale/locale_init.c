@@ -8,7 +8,6 @@
 
 #include <aros/debug.h>
 
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
