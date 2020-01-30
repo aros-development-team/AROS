@@ -637,6 +637,14 @@ static int wlong(int fd, ULONG val)
     return write(fd, &val, sizeof(val));
 }
 
+static int wshort(int fd, UWORD val)
+{
+    UBYTE s[2];
+    s[0] = (val >> 8) & 0xff;
+    s[1] = val & 0xff;
+    return write(fd, s, 2);
+}
+
 int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, int symtabndx)
 {
     int i, err, syms;
@@ -679,7 +687,7 @@ int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, 
 static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
 {
     int i;
-
+    int relreloc_written = 0;
     if (hh[h]->relocs == 0)
     	return;
 
@@ -718,16 +726,43 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     	    if (hh[h]->relreloc[count].shid != shid)
     	    	break;
     	count -= i;
-    	wlong(hunk_fd, count);
+        if (h == shid) {
+            D(bug("RELRELOC32 within one hunk. Discarding...\n"));
+            i+=count;
+            continue;
+        }
+    	if (count > 65535)
+    	    bug("RELRELOC32 count exceeds 65535!\n");
+    	wshort(hunk_fd, count);
     	D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
     	/* Convert from ELF hunk ID to AOS hunk ID */
-    	wlong(hunk_fd, hh[shid]->hunk);
+    	wshort(hunk_fd, hh[shid]->hunk);
     	for (; count > 0; i++, count--) {
     	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
-    	    wlong(hunk_fd, hh[h]->relreloc[i].offset);
+    	    if (hh[h]->relreloc[i].offset > 65535)
+    		bug("RELRELOC32 offset %d exceeds 65535!!!\n", hh[h]->relreloc[i].offset);
+    	    wshort(hunk_fd, hh[h]->relreloc[i].offset);
+            relreloc_written++;
     	}
     }
-    wlong(hunk_fd, 0);
+
+    /* If no relrelocs were written, rewind the counter back so that there is no HUNK_RELRELOC32 in the file */
+    if (relreloc_written == 0)
+    {
+        D(bug("No relreloc32 written, rewinding file back\n"));
+        lseek(hunk_fd, -4, SEEK_CUR);
+    }
+    else
+    {
+        /* Otherwise mark end of the RELRELOC32 by a reloc count of 0 */
+        wshort(hunk_fd, 0);
+
+        /* If file is now not aligned on 4 bytes, align it */
+        if (lseek(hunk_fd, 0, SEEK_CUR) % 4)
+        {
+            wshort(hunk_fd, 0);
+        }
+    }
 }
 
 static int copy_to(int in, int out)
