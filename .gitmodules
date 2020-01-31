@@ -109,3 +109,6 @@
 [submodule "workbench/prefs/font/catalogs"]
 	path = workbench/prefs/font/catalogs
 	url = https://github.com/aros-translation-team/font-prefs.git
+[submodule "workbench/prefs/input/catalogs"]
+	path = workbench/prefs/input/catalogs
+	url = https://github.com/aros-translation-team/input-prefs.git
