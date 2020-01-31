@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal monitor database functions
@@ -16,14 +16,17 @@
  */
 void *FindMonitorNode(ULONG id, struct IntuitionBase *IntuitionBase)
 {
+    struct msGetCompositionFlags cfmsg;
     struct MinNode *n;
     void *ret = NULL;
 
-    ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+    cfmsg.MethodID = MM_CheckID;
 
+    ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
     for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ)
     {
-	if (DoMethod((Object *)n, MM_CheckID, id))
+        cfmsg.ModeID = id;
+	if (DoMethodA((Object *)n, &cfmsg))
 	{
 	    ret = n;
 	    break;
@@ -77,6 +80,7 @@ void *FindBestMonitorNode(void *class, const char *name, ULONG modeid, struct In
  */
 void *FindBest3dMonitor(void *family, struct IntuitionBase *IntuitionBase)
 {
+    STACKED ULONG capmsgID;
     void *ret = NULL;
     ULONG maxidx = 0;
     struct MinNode *n;
@@ -86,7 +90,8 @@ void *FindBest3dMonitor(void *family, struct IntuitionBase *IntuitionBase)
 
     for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ)
     {
-        idx = DoMethod((Object *)n, MM_Calc3dCapability);
+        capmsgID = MM_Calc3dCapability;
+        idx = DoMethodA((Object *)n, (Msg)&capmsgID);
 
         if (idx > maxidx)
         {

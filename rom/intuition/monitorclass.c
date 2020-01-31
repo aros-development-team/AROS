@@ -61,10 +61,10 @@ Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionB
             Object *ptr = GetPrivIBase(IntuitionBase)->DefaultPointer;
 
             if (ptr) {
-                struct SharedPointer *pointer;
-
-                GetAttr(POINTERA_SharedPointer, ptr, (IPTR *)&pointer);
-                DoMethod(mon, MM_SetPointerShape, pointer);
+                struct msSetPointerShape pmsg;
+                pmsg.MethodID = MM_SetPointerShape;
+                GetAttr(POINTERA_SharedPointer, ptr, (IPTR *)&pmsg.pointer);
+                DoMethodA(mon, &pmsg);
             }
         }
 
