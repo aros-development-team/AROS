@@ -118,3 +118,6 @@
 [submodule "workbench/prefs/reqtools/catalogs"]
 	path = workbench/prefs/reqtools/catalogs
 	url = https://github.com/aros-translation-team/reqtools-prefs.git
+[submodule "workbench/prefs/boot/catalogs"]
+	path = workbench/prefs/boot/catalogs
+	url = https://github.com/aros-translation-team/boot-prefs.git
