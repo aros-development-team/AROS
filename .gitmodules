@@ -121,3 +121,6 @@
 [submodule "workbench/prefs/boot/catalogs"]
 	path = workbench/prefs/boot/catalogs
 	url = https://github.com/aros-translation-team/boot-prefs.git
+[submodule "workbench/prefs/icontrol/catalogs"]
+	path = workbench/prefs/icontrol/catalogs
+	url = https://github.com/aros-translation-team/icontrol-prefs.git
