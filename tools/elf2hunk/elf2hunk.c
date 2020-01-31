@@ -283,6 +283,7 @@ static void set_error(int err)
 #define bug(fmt,args...)	fprintf(stderr, fmt ,##args )
 
 static int must_swap = -1;
+static int flags = 0;
 
 static void eh_fixup(struct elfheader *eh)
 {
@@ -745,7 +746,14 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
     	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
     	    if (hh[h]->relreloc[i].offset > 65535)
             {
-    		D(bug("RELRELOC32 offset %d exceeds 65535!!!\n", hh[h]->relreloc[i].offset);)
+                if (flags & F_VERBOSE)
+                {
+                    bug("relocation offset %d is too big for RELRELOC32\n", hh[h]->relreloc[i].offset);
+                    if ((hh[h]->relreloc[i].symbol) && (strlen(hh[h]->relreloc[i].symbol) > 0))
+                    {
+                        bug("  -> failed to relocate symbol '%s'\n", hh[h]->relreloc[i].symbol);
+                    }
+                }
                 relreloc_failed++;
             }
     	    wshort(hunk_fd, hh[h]->relreloc[i].offset);
@@ -874,8 +882,8 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target
             if (sh[i].type == SHT_SYMTAB_SHNDX) {
                 if (symtab_shndx == -1)
                     symtab_shndx = i;
-                else
-                    D(bug("[ELF2HUNK] file contains multiple symtab shndx tables. only using the first one\n"));
+                else if (flags & F_VERBOSE)
+                    bug("[ELF2HUNK] file contains multiple symtab shndx tables. only using the first one\n");
             }
         }
         else
@@ -1171,8 +1179,6 @@ static int copy(const char *src, const char *dst, int flags)
 
 int main(int argc, char **argv)
 {
-    int flags = 0;
-
     if (argc == 4 && strcmp(argv[1],"-v") == 0) {
         flags |= F_VERBOSE;
         argc--;
