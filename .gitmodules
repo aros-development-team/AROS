@@ -100,3 +100,6 @@
 [submodule "developer/debug/test/crt/posixc/posix.1"]
 	path = developer/debug/test/crt/posixc/posix.1
 	url = https://github.com/agordon/posix-libc-examples.git
+[submodule "workbench/prefs/appearance/catalogs"]
+	path = workbench/prefs/appearance/catalogs
+	url = https://github.com/aros-translation-team/appearance-prefs
