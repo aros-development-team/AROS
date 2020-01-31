@@ -13,6 +13,8 @@ CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@
 CFLAGS_ASSOCIATIVE_MATH                 := @aros_cflags_associative_math@
 CFLAGS_NO_MATH_ERRNO                    := @aros_cflags_no_math_errno@
 CFLAGS_NO_TRAPPING_MATH                 := @aros_cflags_no_trapping_math@
+CFLAGS_FLOAT_STORE                      := @aros_cflags_float_store@
+CFLAGS_NO_FLOAT_STORE                   := @aros_cflags_no_float_store@
 
 # Auto vectorize
 CFLAGS_TREE_VECTORIZE                   := @aros_cflags_tree_vectorize@
@@ -66,11 +68,23 @@ CFLAGS_NO_BUILTIN                       := @aros_cflags_no_builtin@
 CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
 CFLAGS_NO_BUILTIN_VSNPRINTF             := @aros_cflags_no_builtin_vsnprintf@
 
+#
 CFLAGS_FREESTANDING                     := @aros_cflags_freestanding@
 CFLAGS_NO_FREESTANDING                  := @aros_cflags_no_freestanding@
 
+#
 CFLAGS_ASYNCHRONOUS_UNWIND_TABLES       := @aros_cflags_asynchronous_unwind_tables@
 CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES    := @aros_cflags_no_asynchronous_unwind_tables@
+
+#
+CFLAGS_FUNCTION_SECTIONS                := @aros_cflags_function_sections@
+CFLAGS_DATA_SECTIONS                    := @aros_cflags_data_sections@
+
+#
+CFLAGS_MERGE_CONSTANTS                  := @aros_cflags_merge_constants@
+CFLAGS_NO_MERGE_CONSTANTS               := @aros_cflags_no_merge_constants@
+CFLAGS_MERGE_ALL_CONSTANTS              := @aros_cflags_merge_all_constants@
+CFLAGS_NO_MERGE_ALL_CONSTANTS           := @aros_cflags_no_merge_all_constants@
 
 CFLAGS_VISIBILITY_HIDDEN                := @aros_cflags_visibility_hidden@
 
