@@ -103,3 +103,6 @@
 [submodule "workbench/prefs/appearance/catalogs"]
 	path = workbench/prefs/appearance/catalogs
 	url = https://github.com/aros-translation-team/appearance-prefs.git
+[submodule "workbench/prefs/boingiconbar/catalogs"]
+	path = workbench/prefs/boingiconbar/catalogs
+	url = https://github.com/aros-translation-team/boingiconbar-prefs.git
