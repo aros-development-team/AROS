@@ -102,4 +102,4 @@
 	url = https://github.com/agordon/posix-libc-examples.git
 [submodule "workbench/prefs/appearance/catalogs"]
 	path = workbench/prefs/appearance/catalogs
-	url = https://github.com/aros-translation-team/appearance-prefs
+	url = https://github.com/aros-translation-team/appearance-prefs.git
