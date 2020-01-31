@@ -112,3 +112,6 @@
 [submodule "workbench/prefs/input/catalogs"]
 	path = workbench/prefs/input/catalogs
 	url = https://github.com/aros-translation-team/input-prefs.git
+[submodule "workbench/prefs/locale/catalogs"]
+	path = workbench/prefs/locale/catalogs
+	url = https://github.com/aros-translation-team/locale-prefs.git
