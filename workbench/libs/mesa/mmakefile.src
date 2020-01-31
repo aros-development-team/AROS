@@ -76,7 +76,7 @@ MESAGL_LIBRARY_SOURCES_CXX := \
 USER_LDFLAGS += -static-libstdc++ \
   -L$(top_libdir) \
   -Wl,--start-group -lglapi -lmesa -lcompiler -lgalliumauxiliary -lgallium -lmesautil \
-  -lpthread -lz -lposixc -lstdcio -lstdc
+  -lpthread -lz_rel -lposixc_rel -lstdcio_rel -lstdc_rel
 
 #USER_LDFLAGS += -Wl,--end-group
 #USER_CPPFLAGS += -DDEBUG=1
