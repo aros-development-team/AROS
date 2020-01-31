@@ -40,6 +40,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fassociative-math
 #  -fno-math-errno
 #  -fno-trapping-math
+#  -ffloat-store
 #  -ftree-vectorize
 #  -flto
 #  -fwhole-program
@@ -63,6 +64,10 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 
 #  -ffreestanding
 #  -fasynchronous-unwind-tables
+#  -ffunction-sections
+#  -fdata-sections
+#  -fmerge-constants
+#  -fmerge-all-constants
 
 # C++/ObjC++
 #  -fpermissive
@@ -113,6 +118,15 @@ AC_TRY_COMPILE(,, aros_no_trapping_math="yes", aros_no_trapping_math="no")
 AC_MSG_RESULT($aros_no_trapping_math)
 if test "x-$aros_no_trapping_math" = "x-yes" ; then
     aros_cflags_no_trapping_math=-fno-trapping-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffloat-store])
+CFLAGS=-ffloat-store
+AC_TRY_COMPILE(,, aros_float_store="yes", aros_float_store="no")
+AC_MSG_RESULT($aros_float_store)
+if test "x-$aros_float_store" = "x-yes" ; then
+    aros_cflags_float_store=-ffloat-store
+    aros_cflags_no_float_store=-fno-float-store
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -ftree-vectorize])
@@ -293,6 +307,40 @@ AC_MSG_RESULT($aros_asynchronous_unwind_tables)
 if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
     aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
     aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffunction-sections])
+CFLAGS=-ffunction-sections
+AC_TRY_COMPILE(,, aros_function_sections="yes", aros_function_sections="no")
+AC_MSG_RESULT($aros_function_sections)
+if test "x-$aros_function_sections" = "x-yes" ; then
+    aros_cflags_function_sections=-ffunction-sections
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fdata-sections])
+CFLAGS=-fdata-sections
+AC_TRY_COMPILE(,, aros_data_sections="yes", aros_data_sections="no")
+AC_MSG_RESULT($aros_data_sections)
+if test "x-$aros_data_sections" = "x-yes" ; then
+    aros_cflags_data_sections=-fdata-sections
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fmerge-constants])
+CFLAGS=-fmerge-constants
+AC_TRY_COMPILE(,, aros_merge_constants="yes", aros_merge_constants="no")
+AC_MSG_RESULT($aros_merge_constants)
+if test "x-$aros_merge_constants" = "x-yes" ; then
+    aros_cflags_merge_constants=-fmerge-constants
+    aros_cflags_no_merge_constants=-fno-merge-constants
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fmerge-all-constants])
+CFLAGS=-fmerge-all-constants
+AC_TRY_COMPILE(,, aros_merge_all_constants="yes", aros_merge_all_constants="no")
+AC_MSG_RESULT($aros_merge_all_constants)
+if test "x-$aros_merge_all_constants" = "x-yes" ; then
+    aros_cflags_merge_all_constants=-fmerge-all-constants
+    aros_cflags_no_merge_all_constants=-fno-merge-all-constants
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fvisibility=hidden])
@@ -1189,6 +1237,8 @@ AC_SUBST(aros_cflags_fast_math)
 AC_SUBST(aros_cflags_associative_math)
 AC_SUBST(aros_cflags_no_math_errno)
 AC_SUBST(aros_cflags_no_trapping_math)
+AC_SUBST(aros_cflags_float_store)
+AC_SUBST(aros_cflags_no_float_store)
 AC_SUBST(aros_cflags_tree_vectorize)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
@@ -1233,6 +1283,13 @@ AC_SUBST(aros_cflags_no_freestanding)
 
 AC_SUBST(aros_cflags_asynchronous_unwind_tables)
 AC_SUBST(aros_cflags_no_asynchronous_unwind_tables)
+
+AC_SUBST(aros_cflags_function_sections)
+AC_SUBST(aros_cflags_data_sections)
+AC_SUBST(aros_cflags_merge_constants)
+AC_SUBST(aros_cflags_no_merge_constants)
+AC_SUBST(aros_cflags_merge_all_constants)
+AC_SUBST(aros_cflags_no_merge_all_constants)
 
 AC_SUBST(aros_cflags_visibility_hidden)
 
