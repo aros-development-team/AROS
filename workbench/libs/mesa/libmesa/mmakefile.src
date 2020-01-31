@@ -147,7 +147,10 @@ $(top_builddir)/$(CUR_MESADIR)/main/format_unpack.c: PRIVATE_XML :=
 $(top_builddir)/$(CUR_MESADIR)/main/format_unpack.c: $(format_unpack_deps)
 	$(call es-gen, $<)
 
-$(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp:
+$(top_builddir)/$(CUR_MESADIR)/main:
+	%mkdirs_q $@
+
+$(top_builddir)/$(CUR_MESADIR)/main/git_sha1.h.tmp: | $(top_builddir)/$(CUR_MESADIR)/main
 	$(Q)$(IF) $(TEST) -d $(top_srcdir)/.git; then \
 		$(IF) which git > /dev/null; then \
 		    git --git-dir=$(top_srcdir)/.git log -n 1 --oneline | \

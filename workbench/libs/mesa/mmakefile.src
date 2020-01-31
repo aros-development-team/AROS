@@ -73,10 +73,11 @@ MESAGL_LIBRARY_SOURCES_C := \
 MESAGL_LIBRARY_SOURCES_CXX := \
             mesa3dgl_
 
-USER_LDFLAGS := -static-libstdc++ \
+USER_LDFLAGS += -static-libstdc++ \
   -L$(top_libdir) \
   -Wl,--start-group -lglapi -lmesa -lcompiler -lgalliumauxiliary -lgallium -lmesautil \
-  -lpthread -lposixc -lstdcio -lstdc
+  -lpthread -lz -lposixc -lstdcio -lstdc
+
 #USER_LDFLAGS += -Wl,--end-group
 #USER_CPPFLAGS += -DDEBUG=1
 
