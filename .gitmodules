@@ -127,3 +127,6 @@
 [submodule "workbench/prefs/network/catalogs"]
 	path = workbench/prefs/network/catalogs
 	url = https://github.com/aros-translation-team/network-prefs.git
+[submodule "workbench/prefs/pointer/catalogs"]
+	path = workbench/prefs/pointer/catalogs
+	url = https://github.com/aros-translation-team/pointer-prefs.git
