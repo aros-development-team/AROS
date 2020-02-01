@@ -133,3 +133,6 @@
 [submodule "workbench/prefs/printer/catalogs"]
 	path = workbench/prefs/printer/catalogs
 	url = https://github.com/aros-translation-team/printer-prefs.git
+[submodule "workbench/prefs/Editor/catalogs"]
+	path = workbench/prefs/Editor/catalogs
+	url = https://github.com/aros-translation-team/editor-prefs.git
