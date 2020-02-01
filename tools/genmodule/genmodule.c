@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Main for genmodule. A tool to generate files for building modules.
@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 
     case MAKEFILE:
         writemakefile(cfg);
+        writelinkentries(cfg);
         break;
 
     case WRITEFUNCLIST:
