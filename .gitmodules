@@ -124,3 +124,6 @@
 [submodule "workbench/prefs/icontrol/catalogs"]
 	path = workbench/prefs/icontrol/catalogs
 	url = https://github.com/aros-translation-team/icontrol-prefs.git
+[submodule "workbench/prefs/network/catalogs"]
+	path = workbench/prefs/network/catalogs
+	url = https://github.com/aros-translation-team/network-prefs.git
