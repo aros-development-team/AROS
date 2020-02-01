@@ -4,12 +4,14 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := con_handler support completion
 
-USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\"" \
-                 -D__DOS_NOLIBBASE__ \
-                 -D__INPUT_NOLIBBASE__ \
-                 -D__INTUITION_NOLIBBASE__ \
-                 -D__UTILITY_NOLIBBASE__ \
-                 -D__GRAPHICS_NOLIBBASE__
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -DADATE="\"$(shell date '+%d.%m.%Y')\"" \
+               -D__DOS_NOLIBBASE__ \
+               -D__INPUT_NOLIBBASE__ \
+               -D__INTUITION_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__ \
+               -D__GRAPHICS_NOLIBBASE__
 
 USER_LDFLAGS := -static
 

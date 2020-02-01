@@ -10,7 +10,9 @@ include $(SRCDIR)/config/aros.cfg
 FUNCS := peekqualifier
 FILES := processevents support
 
-USER_CPPFLAGS += -D__GRAPHICS_NOLIBBASE__
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__GRAPHICS_NOLIBBASE__
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-input \

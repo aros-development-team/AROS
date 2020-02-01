@@ -50,6 +50,8 @@ FUNCTIONS := \
 	unpackstructuretags \
 	vsnprintf
 
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
 USER_LDFLAGS := -static
 
 #MM kernel-utility : kernel-utility-$(ARCH)-$(CPU)

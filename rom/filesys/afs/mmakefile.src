@@ -19,7 +19,10 @@ FILES := main \
 
 #MM- kernel-fs-afs : includes linklibs
 
-USER_CPPFLAGS := -D__INTUITION_NOLIBBASE__ -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -D__INTUITION_NOLIBBASE__ \
+	       -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-fs-afs \

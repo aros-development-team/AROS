@@ -23,6 +23,8 @@ endif
 FILES := common_init timer_init lowlevel ticks timervblank
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock getuptime
 
+USER_CPPFLAGS += \
+               -DUSE_EXEC_DEBUG
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-timer \
