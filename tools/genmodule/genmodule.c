@@ -34,6 +34,7 @@ int main(int argc, char **argv)
             if (cfg->options & OPTION_RELLINKLIB)
                 writestubs(cfg, 1); /* relbase */
         }
+        writelinkentries(cfg);
         break;
 
     case INCLUDES:
@@ -54,7 +55,6 @@ int main(int argc, char **argv)
 
     case MAKEFILE:
         writemakefile(cfg);
-        writelinkentries(cfg);
         break;
 
     case WRITEFUNCLIST:

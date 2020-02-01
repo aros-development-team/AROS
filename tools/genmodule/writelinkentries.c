@@ -17,6 +17,7 @@ void writelinkentries(struct config *cfg)
     char moduleversname[512];
     char name[512];
     struct functionhead *funclistit;
+    unsigned int lvo;
 
     if (!cfg->flavour)
     {
@@ -36,6 +37,44 @@ void writelinkentries(struct config *cfg)
         exit(20);
     }
 
+    /* lvo contains the number of functions already printed in the functable */
+    lvo = 0;
+
+    if (!(cfg->options & OPTION_NORESIDENT))
+    {
+        fprintf(out,"# Generated module entry points...\n");
+        if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
+        {
+            fprintf(out,
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_1_OpenLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_2_CloseLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_3_ExpungeLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_4_ExtFuncLib\n",
+                    moduleversname, cfg->basename,
+                    moduleversname, cfg->basename,
+                    moduleversname, cfg->basename,
+                    moduleversname, cfg->basename
+            );
+            lvo += 4;
+        }
+        if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+        {
+            lvo++;
+            fprintf(out,
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_%d_MCC_Query\n",
+                    moduleversname, cfg->basename, lvo
+            );
+        }
+        else if (cfg->modtype == DATATYPE)
+        {
+            lvo++;
+            fprintf(out,
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_%d_ObtainEngine\n",
+                   moduleversname, cfg->basename, lvo
+            );
+        }
+    }
+
     if (cfg->classlist == NULL
         || strcmp(cfg->basename, cfg->classlist->basename) != 0
         || cfg->funclist != NULL)
@@ -46,12 +85,38 @@ void writelinkentries(struct config *cfg)
              funclistit = funclistit->next
         )
         {
-            if (funclistit->libcall == REGISTERMACRO)
+            fprintf(out,
+                    "%s_ENTRYPOINTS += -Wl,--entry=",
+                    moduleversname
+            );
+
+            switch (funclistit->libcall)
             {
-                fprintf(out,
-                        "%s_ENTRYPOINTS += --entry %s_%d_%s\n",
-                        moduleversname, cfg->basename, funclistit->lvo, funclistit->name
-                );
+            case STACK:
+                    {
+                        fprintf(out,
+                                "%s\n"
+#if defined(LINKENTRY_USE_STACKENTRYFULL)
+                                "%s_ENTRYPOINTS += -Wl,--entry="
+#endif
+                                , funclistit->name
+#if defined(LINKENTRY_USE_STACKENTRYFULL)
+                                , moduleversname
+#endif
+                        );
+                    }
+#if !defined(LINKENTRY_USE_STACKENTRYFULL)
+                    break;
+#endif
+            case REGISTER:
+            case REGISTERMACRO:
+                    {
+                        fprintf(out,
+                                "%s_%d_%s\n",
+                                cfg->basename, funclistit->lvo, funclistit->name
+                        );
+                    }
+                    break;
             }
         }
     }
@@ -65,7 +130,7 @@ void writelinkentries(struct config *cfg)
         )
         {
             fprintf(out,
-                        "%s_ENTRYPOINTS += --entry %s\n",
+                        "%s_ENTRYPOINTS += -Wl,--entry=%s\n",
                         moduleversname, funclistit->name
                 );
         }
