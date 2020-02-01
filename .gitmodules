@@ -136,3 +136,6 @@
 [submodule "workbench/prefs/Editor/catalogs"]
 	path = workbench/prefs/Editor/catalogs
 	url = https://github.com/aros-translation-team/editor-prefs.git
+[submodule "workbench/prefs/PSI/catalogs"]
+	path = workbench/prefs/PSI/catalogs
+	url = https://github.com/aros-translation-team/psi-prefs.git
