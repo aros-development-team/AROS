@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Accesses AppIcon information from workbench.library.
     Lang: English
 */
+
+#include <aros/debug.h>
 
 #include <exec/types.h>
 #include <exec/ports.h>
@@ -17,8 +19,6 @@
 #include "workbench_intern.h"
 #include <workbench/workbench.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
 /*****************************************************************************
 
     NAME */
@@ -103,7 +103,7 @@
             {
                 currentnode = GetSucc(currentnode);
 
-                bug("[getnextappicon] appicon found: %s \n", ((struct AppIcon*)currentnode)->ai_Text );
+                D(bug("[getnextappicon] appicon found: %s \n", ((struct AppIcon*)currentnode)->ai_Text );)
 
                 strcpy(text, ((struct AppIcon*)currentnode)->ai_Text );
                 return ((struct AppIcon*)currentnode)->ai_DiskObject;

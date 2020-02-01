@@ -1,11 +1,10 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Open a drawer or launch a program.
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
