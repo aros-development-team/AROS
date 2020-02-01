@@ -50,10 +50,10 @@ void writelinkentries(struct config *cfg)
                     "%s_ENTRYPOINTS += -Wl,--entry=%s_2_%s_CloseLib\n"
                     "%s_ENTRYPOINTS += -Wl,--entry=%s_3_%s_ExpungeLib\n"
                     "%s_ENTRYPOINTS += -Wl,--entry=%s_4_%s_ExtFuncLib\n",
-                    moduleversname, moduleversname, cfg->basename,
-                    moduleversname, moduleversname, cfg->basename,
-                    moduleversname, moduleversname, cfg->basename,
-                    moduleversname, moduleversname, cfg->basename
+                    moduleversname, cfg->basename, cfg->basename,
+                    moduleversname, cfg->basename, cfg->basename,
+                    moduleversname, cfg->basename, cfg->basename,
+                    moduleversname, cfg->basename, cfg->basename
             );
             lvo += 4;
         }
