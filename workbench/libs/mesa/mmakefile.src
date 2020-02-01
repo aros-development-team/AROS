@@ -6,6 +6,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 include $(SRCDIR)/$(CURDIR)/mesa.cfg
+-include $(GENDIR)/$(CURDIR)/mesa3dgl/mesa3dgllibrary.entrypoints
 
 #
 # common mesa3d fetch...
@@ -32,7 +33,7 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 
 SHARED_LIB_SOURCES = \
             emul_arosc \
-            tls \
+            tls
 
 MESA3DGL_SOURCES = \
             mesa3dgl_support \
@@ -46,7 +47,7 @@ MESA3DGL_SOURCES = \
             mesa3dgl_glagetprocaddress \
             mesa3dgl_glamakecurrent \
             mesa3dgl_glasetrast \
-            mesa3dgl_glaswapbuffers \
+            mesa3dgl_glaswapbuffers
 
 USER_INCLUDES += \
             -I$(top_srcdir)/src/mesa \
@@ -72,6 +73,11 @@ MESAGL_LIBRARY_SOURCES_C := \
 
 MESAGL_LIBRARY_SOURCES_CXX := \
             mesa3dgl_
+
+ifneq ($(mesa3dgl_ENTRYPOINTS),)
+MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
+USER_LDFLAGS := -Wl,--gc-sections $(mesa3dgl_ENTRYPOINTS)
+endif
 
 USER_LDFLAGS += -static-libstdc++ \
   -L$(top_libdir) \
