@@ -747,7 +747,8 @@ static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
         data->columns_allocated = new_columns;
     }
     data->columns = new_columns;
-    data->strings++;            /* Skip entry pos */
+    /* Skip entry pos (-1) and enough indexes to get (-9). Based on MPlayer source codes. */
+    data->strings += 10;
 
     return TRUE;
 }
@@ -775,7 +776,10 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
         entry_data = NULL;      /* it's a title request */
     }
     else
+    {
+        data->strings[-1] = (STRPTR)(IPTR)entry_pos;
         entry_data = data->entries[entry_pos]->data;
+    }
 
     /* Get the display formation */
     DoMethod(obj, MUIM_List_Display, (IPTR) entry_data,
