@@ -46,10 +46,10 @@ void writelinkentries(struct config *cfg)
         if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
         {
             fprintf(out,
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_1_%s_OpenLib\n"
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_2_%s_CloseLib\n"
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_3_%s_ExpungeLib\n"
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_4_%s_ExtFuncLib\n",
+                    "%s_ENTRYPOINTS += -Wl,--undefined=%s_1_%s_OpenLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--undefined=%s_2_%s_CloseLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--undefined=%s_3_%s_ExpungeLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--undefined=%s_4_%s_ExtFuncLib\n",
                     moduleversname, cfg->basename, cfg->basename,
                     moduleversname, cfg->basename, cfg->basename,
                     moduleversname, cfg->basename, cfg->basename,
@@ -61,7 +61,7 @@ void writelinkentries(struct config *cfg)
         {
             lvo++;
             fprintf(out,
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_%d_MCC_Query\n",
+                    "%s_ENTRYPOINTS += -Wl,--undefined=%s_%d_MCC_Query\n",
                     moduleversname, cfg->basename, lvo
             );
         }
@@ -69,7 +69,7 @@ void writelinkentries(struct config *cfg)
         {
             lvo++;
             fprintf(out,
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_%d_ObtainEngine\n",
+                    "%s_ENTRYPOINTS += -Wl,--undefined=%s_%d_ObtainEngine\n",
                    moduleversname, cfg->basename, lvo
             );
         }
@@ -86,7 +86,7 @@ void writelinkentries(struct config *cfg)
         )
         {
             fprintf(out,
-                    "%s_ENTRYPOINTS += -Wl,--entry=",
+                    "%s_ENTRYPOINTS += -Wl,--undefined=",
                     moduleversname
             );
 
@@ -97,7 +97,7 @@ void writelinkentries(struct config *cfg)
                         fprintf(out,
                                 "%s\n"
 #if defined(LINKENTRY_USE_STACKENTRYFULL)
-                                "%s_ENTRYPOINTS += -Wl,--entry="
+                                "%s_ENTRYPOINTS += -Wl,--undefined="
 #endif
                                 , funclistit->name
 #if defined(LINKENTRY_USE_STACKENTRYFULL)
@@ -130,7 +130,7 @@ void writelinkentries(struct config *cfg)
         )
         {
             fprintf(out,
-                        "%s_ENTRYPOINTS += -Wl,--entry=%s\n",
+                        "%s_ENTRYPOINTS += -Wl,--undefined=%s\n",
                         moduleversname, funclistit->name
                 );
         }
