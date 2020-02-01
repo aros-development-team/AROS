@@ -46,14 +46,14 @@ void writelinkentries(struct config *cfg)
         if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
         {
             fprintf(out,
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_1_OpenLib\n"
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_2_CloseLib\n"
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_3_ExpungeLib\n"
-                    "%s_ENTRYPOINTS += -Wl,--entry=%s_4_ExtFuncLib\n",
-                    moduleversname, cfg->basename,
-                    moduleversname, cfg->basename,
-                    moduleversname, cfg->basename,
-                    moduleversname, cfg->basename
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_1_%s_OpenLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_2_%s_CloseLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_3_%s_ExpungeLib\n"
+                    "%s_ENTRYPOINTS += -Wl,--entry=%s_4_%s_ExtFuncLib\n",
+                    moduleversname, moduleversname, cfg->basename,
+                    moduleversname, moduleversname, cfg->basename,
+                    moduleversname, moduleversname, cfg->basename,
+                    moduleversname, moduleversname, cfg->basename
             );
             lvo += 4;
         }
