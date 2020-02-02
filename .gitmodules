@@ -163,3 +163,6 @@
 [submodule "workbench/system/BHFormat/catalogs"]
 	path = workbench/system/BHFormat/catalogs
 	url = https://github.com/aros-translation-team/format.git
+[submodule "workbench/system/find/catalogs"]
+	path = workbench/system/find/catalogs
+	url = https://github.com/aros-translation-team/find.git
