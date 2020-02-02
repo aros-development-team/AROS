@@ -166,3 +166,6 @@
 [submodule "workbench/system/find/catalogs"]
 	path = workbench/system/find/catalogs
 	url = https://github.com/aros-translation-team/find.git
+[submodule "workbench/system/ftmanager/catalogs"]
+	path = workbench/system/ftmanager/catalogs
+	url = https://github.com/aros-translation-team/ftmanager.git
