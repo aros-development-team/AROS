@@ -140,7 +140,7 @@ NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_MISLEADING_INDENTATION) \
 GLU_COMMONFLAGS := $(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $(CFLAGS_NO_EXCEPTIONS)
 ifneq ($(glu_ENTRYPOINTS),)
 GLU_COMMONFLAGS += $(CFLAGS_FUNCTION_SECTIONS)
-USER_LDFLAGS := -Wl,--gc-sections $(glu_ENTRYPOINTS)
+#USER_LDFLAGS := -Wl,--gc-sections $(glu_ENTRYPOINTS)
 endif
 USER_CPPFLAGS := -DLIBRARYBUILD
 USER_CFLAGS := $(GLU_COMMONFLAGS) $(NOWARN_FLAGS)
@@ -159,7 +159,7 @@ CC_SOURCES := \
 %build_module mmake=workbench-libs-glu \
     modname=glu modtype=library linklibname=GLU \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(EMUL_CXX_SOURCES) $(CC_SOURCES)" \
-    uselibs="GL stdcio stdc"
+    uselibs="GL posixc stdcio stdc"
 
 #MM
 workbench-libs-glu-includes:
