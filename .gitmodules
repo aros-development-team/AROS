@@ -148,3 +148,6 @@
 [submodule "workbench/prefs/time/catalogs"]
 	path = workbench/prefs/time/catalogs
 	url = https://github.com/aros-translation-team/time-prefs.git
+[submodule "workbench/prefs/trackdisk/catalogs"]
+	path = workbench/prefs/trackdisk/catalogs
+	url = https://github.com/aros-translation-team/trackdisk-prefs.git
