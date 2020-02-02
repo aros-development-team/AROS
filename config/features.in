@@ -277,18 +277,106 @@ fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-floor])
 CFLAGS=-fno-builtin-floor
-AC_TRY_COMPILE(,, aros_no_builtin_floor="yes", aros_no_builtin_floor="no")
-AC_MSG_RESULT($aros_no_builtin_floor)
-if test "x-$aros_no_builtin_floor" = "x-yes" ; then
+AC_TRY_COMPILE(,, aros_builtin_floor="yes", aros_builtin_floor="no")
+AC_MSG_RESULT($aros_builtin_floor)
+if test "x-$aros_builtin_floor" = "x-yes" ; then
     aros_cflags_no_builtin_floor=-fno-builtin-floor
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-vsnprintf])
 CFLAGS=-fno-builtin-vsnprintf
-AC_TRY_COMPILE(,, aros_no_builtin_vsnprintf="yes", aros_no_builtin_vsnprintf="no")
-AC_MSG_RESULT($aros_no_builtin_vsnprintf)
-if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
+AC_TRY_COMPILE(,, aros_builtin_vsnprintf="yes", aros_builtin_vsnprintf="no")
+AC_MSG_RESULT($aros_builtin_vsnprintf)
+if test "x-$aros_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ffs])
+CFLAGS=-fno-builtin-ffs
+AC_TRY_COMPILE(,, aros_builtin_ffs="yes", aros_builtin_ffs="no")
+AC_MSG_RESULT($aros_builtin_ffs)
+if test "x-$aros_builtin_ffs" = "x-yes" ; then
+    aros_cflags_no_builtin_ffs=-fno-builtin-ffs
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ffsll])
+CFLAGS=-fno-builtin-ffsll
+AC_TRY_COMPILE(,, aros_builtin_ffsll="yes", aros_builtin_ffsll="no")
+AC_MSG_RESULT($aros_builtin_ffsll)
+if test "x-$aros_builtin_ffsll" = "x-yes" ; then
+    aros_cflags_no_builtin_ffsll=-fno-builtin-ffsll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-bswap32])
+CFLAGS=-fno-builtin-bswap32
+AC_TRY_COMPILE(,, aros_builtin_bswap32="yes", aros_builtin_bswap32="no")
+AC_MSG_RESULT($aros_builtin_bswap32)
+if test "x-$aros_builtin_bswap32" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap32=-fno-builtin-bswap32
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-bswap64])
+CFLAGS=-fno-builtin-bswap64
+AC_TRY_COMPILE(,, aros_builtin_bswap64="yes", aros_builtin_bswap64="no")
+AC_MSG_RESULT($aros_builtin_bswap64)
+if test "x-$aros_builtin_bswap64" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap64=-fno-builtin-bswap64
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-clz])
+CFLAGS=-fno-builtin-clz
+AC_TRY_COMPILE(,, aros_builtin_clz="yes", aros_builtin_clz="no")
+AC_MSG_RESULT($aros_builtin_clz)
+if test "x-$aros_builtin_clz" = "x-yes" ; then
+    aros_cflags_no_builtin_clz=-fno-builtin-clz
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-clzll])
+CFLAGS=-fno-builtin-clzll
+AC_TRY_COMPILE(,, aros_builtin_clzll="yes", aros_builtin_clzll="no")
+AC_MSG_RESULT($aros_builtin_clzll)
+if test "x-$aros_builtin_clzll" = "x-yes" ; then
+    aros_cflags_no_builtin_clzll=-fno-builtin-clzll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ctz])
+CFLAGS=-fno-builtin-ctz
+AC_TRY_COMPILE(,, aros_builtin_ctz="yes", aros_builtin_ctz="no")
+AC_MSG_RESULT($aros_builtin_ctz)
+if test "x-$aros_builtin_ctz" = "x-yes" ; then
+    aros_cflags_no_builtin_ctz=-fno-builtin-ctz
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-expect])
+CFLAGS=-fno-builtin-expect
+AC_TRY_COMPILE(,, aros_builtin_expect="yes", aros_builtin_expect="no")
+AC_MSG_RESULT($aros_builtin_expect)
+if test "x-$aros_builtin_expect" = "x-yes" ; then
+    aros_cflags_no_builtin_expect=-fno-builtin-expect
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-popcount])
+CFLAGS=-fno-builtin-popcount
+AC_TRY_COMPILE(,, aros_builtin_popcount="yes", aros_builtin_popcount="no")
+AC_MSG_RESULT($aros_builtin_popcount)
+if test "x-$aros_builtin_popcount" = "x-yes" ; then
+    aros_cflags_no_builtin_popcount=-fno-builtin-popcount
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-popcountll])
+CFLAGS=-fno-builtin-popcountll
+AC_TRY_COMPILE(,, aros_builtin_popcountll="yes", aros_builtin_popcountll="no")
+AC_MSG_RESULT($aros_builtin_popcountll)
+if test "x-$aros_builtin_popcountll" = "x-yes" ; then
+    aros_cflags_no_builtin_popcountll=-fno-builtin-popcountll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-unreachable])
+CFLAGS=-fno-builtin-unreachable
+AC_TRY_COMPILE(,, aros_builtin_unreachable="yes", aros_builtin_unreachable="no")
+AC_MSG_RESULT($aros_builtin_unreachable)
+if test "x-$aros_builtin_unreachable" = "x-yes" ; then
+    aros_cflags_no_builtin_unreachable=-fno-builtin-unreachable
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -ffreestanding])
@@ -1277,6 +1365,17 @@ AC_SUBST(aros_cflags_builtin)
 AC_SUBST(aros_cflags_no_builtin)
 AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_no_builtin_vsnprintf)
+AC_SUBST(aros_cflags_no_builtin_ffs)
+AC_SUBST(aros_cflags_no_builtin_ffsll)
+AC_SUBST(aros_cflags_no_builtin_bswap32)
+AC_SUBST(aros_cflags_no_builtin_bswap64)
+AC_SUBST(aros_cflags_no_builtin_clz)
+AC_SUBST(aros_cflags_no_builtin_clzll)
+AC_SUBST(aros_cflags_no_builtin_ctz)
+AC_SUBST(aros_cflags_no_builtin_expect)
+AC_SUBST(aros_cflags_no_builtin_popcount)
+AC_SUBST(aros_cflags_no_builtin_popcountll)
+AC_SUBST(aros_cflags_no_builtin_unreachable)
 
 AC_SUBST(aros_cflags_freestanding)
 AC_SUBST(aros_cflags_no_freestanding)
