@@ -175,3 +175,6 @@
 [submodule "workbench/system/Wanderer/Tools/DiskInfo/catalogs"]
 	path = workbench/system/Wanderer/Tools/DiskInfo/catalogs
 	url = https://github.com/aros-translation-team/diskinfo.git
+[submodule "workbench/system/Wanderer/Tools/ExecuteCommand/catalogs"]
+	path = workbench/system/Wanderer/Tools/ExecuteCommand/catalogs
+	url = https://github.com/aros-translation-team/executecommand.git
