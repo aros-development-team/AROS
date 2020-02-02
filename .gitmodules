@@ -151,3 +151,6 @@
 [submodule "workbench/prefs/trackdisk/catalogs"]
 	path = workbench/prefs/trackdisk/catalogs
 	url = https://github.com/aros-translation-team/trackdisk-prefs.git
+[submodule "workbench/prefs/wanderer/catalogs"]
+	path = workbench/prefs/wanderer/catalogs
+	url = https://github.com/aros-translation-team/wanderer-prefs.git
