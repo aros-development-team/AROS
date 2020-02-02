@@ -145,3 +145,6 @@
 [submodule "workbench/prefs/serial/catalogs"]
 	path = workbench/prefs/serial/catalogs
 	url = https://github.com/aros-translation-team/serial-prefs.git
+[submodule "workbench/prefs/time/catalogs"]
+	path = workbench/prefs/time/catalogs
+	url = https://github.com/aros-translation-team/time-prefs.git
