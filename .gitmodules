@@ -142,3 +142,6 @@
 [submodule "workbench/prefs/screenmode/catalogs"]
 	path = workbench/prefs/screenmode/catalogs
 	url = https://github.com/aros-translation-team/screenmode-prefs.git
+[submodule "workbench/prefs/serial/catalogs"]
+	path = workbench/prefs/serial/catalogs
+	url = https://github.com/aros-translation-team/serial-prefs.git
