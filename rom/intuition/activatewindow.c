@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -192,25 +192,27 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
             if (scr)
             {
-                struct SharedPointer *shared_pointer;
+                struct msSetPointerShape pmsg;
+                pmsg.MethodID = MM_SetPointerShape;
+                pmsg.pointer = NULL;
 
                 if (!pointer)
                     pointer = GetPrivIBase(IntuitionBase)->DefaultPointer;
 
-                GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&shared_pointer);
+                GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&pmsg.pointer);
 
                 DEBUG_POINTER(dprintf("ActivateWindow: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
-                              scr, pointer, shared_pointer->sprite));
+                              scr, pointer, pmsg.pointer->sprite));
 
-                if (DoMethod(scr->IMonitorNode, MM_SetPointerShape, shared_pointer))
+                if (DoMethodA(scr->IMonitorNode, &pmsg))
                 {
-                    ObtainSharedPointer(shared_pointer, IntuitionBase);
+                    ObtainSharedPointer(pmsg.pointer, IntuitionBase);
                     ReleaseSharedPointer(scr->Pointer, IntuitionBase);
-                    scr->Pointer = shared_pointer;
+                    scr->Pointer = pmsg.pointer;
                     if (window)
                     {
-                        window->XOffset = shared_pointer->xoffset;
-                        window->YOffset = shared_pointer->yoffset;
+                        window->XOffset = pmsg.pointer->xoffset;
+                        window->YOffset = pmsg.pointer->yoffset;
                     }
                 }
                 else

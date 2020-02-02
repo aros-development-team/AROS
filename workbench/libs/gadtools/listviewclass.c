@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools listview class.
@@ -390,8 +390,13 @@ STATIC VOID ScrollEntries(struct Gadget *g, struct LVData *data, WORD old_top, W
     	
     	if ( (rp = ObtainGIRPort(gi)) )
     	{
-    	    DoMethod((Object *)g, GM_RENDER, (IPTR) gi, (IPTR) rp, redraw_type);
-    	    
+    	    struct gpRender rmsg;
+    	    rmsg.MethodID = GM_RENDER;
+    	    rmsg.gpr_GInfo = gi;
+    	    rmsg.gpr_RPort = rp;
+    	    rmsg.gpr_Redraw = redraw_type;
+    	    DoMethodA((Object *)g, &rmsg);
+
     	    ReleaseGIRPort(rp);
     	}
     	
@@ -583,20 +588,26 @@ STATIC IPTR listview_set(Class *cl, struct Gadget *g,struct opSet *msg)
 			D(bug("Listview::Set: old_Selected %ld != Selected %ld\n",old_selected,data->ld_Selected));
 		        if ((rp = ObtainGIRPort(msg->ops_GInfo)))
 			{
-		            /* rerender old selected if it was visible */
+			    struct gpRender rmsg;
+			    rmsg.MethodID = GM_RENDER;
+			    rmsg.gpr_GInfo = msg->ops_GInfo;
+			    rmsg.gpr_RPort = rp;
+			    rmsg.gpr_Redraw = GREDRAW_UPDATE;
 
+		            /* rerender old selected if it was visible */
 			    if ((old_selected >= data->ld_Top) &&
 				(old_selected < data->ld_Top + NumItemsFit(g, data)))
-		            { 
+		            {
+
 				D(bug("Listview::Set: rerender old_Selected\n"));
+
 		        	data->ld_FirstDamaged = old_selected - data->ld_Top;
 	    			data->ld_NumDamaged = 1;
 
-				DoMethod((Object *)g, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
+				DoMethodA((Object *)g, &rmsg);
 			    }
 
 			    /* rerender new selected if it is visible */
-
 			    if ((data->ld_Selected >= data->ld_Top) &&
 				(data->ld_Selected < data->ld_Top + NumItemsFit(g, data)))
 		            { 
@@ -604,11 +615,11 @@ STATIC IPTR listview_set(Class *cl, struct Gadget *g,struct opSet *msg)
 		        	data->ld_FirstDamaged = data->ld_Selected - data->ld_Top;
 	    			data->ld_NumDamaged = 1;
 				
-				DoMethod((Object *)g, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
+				DoMethodA((Object *)g, &rmsg);
 			    }
-			    
+
 			    ReleaseGIRPort(rp);
-			    
+
 			} /* if ((rp = ObtainGIRPort(msg->ops_GInfo))) */
 			else
 			{
@@ -694,7 +705,12 @@ STATIC IPTR listview_set(Class *cl, struct Gadget *g,struct opSet *msg)
     {
     	if ((rp = ObtainGIRPort(msg->ops_GInfo)))
 	{
-	    DoMethod((Object *)g, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_REDRAW);
+	    struct gpRender rmsg;
+	    rmsg.MethodID = GM_RENDER;
+	    rmsg.gpr_GInfo = msg->ops_GInfo;
+	    rmsg.gpr_RPort = rp;
+	    rmsg.gpr_Redraw = GREDRAW_REDRAW;
+	    DoMethodA((Object *)g, &rmsg);
  
 	    ReleaseGIRPort(rp);
 	}
@@ -870,9 +886,14 @@ IPTR GTListView__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
 	    (msg->gpi_IEvent->ie_Code == SELECTDOWN) ||
 	    (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON))
 	{
+	    struct opSet smsg;
+
 	    /* offset from top of listview of the entry clicked */
 	    clickpos = (msg->gpi_Mouse.Y - LV_BORDER_Y) / 
     			TotalItemHeight(data);
+
+	    smsg.MethodID = OM_SET;
+	    smsg.ops_GInfo = msg->gpi_GInfo;
 
 	    if (clickpos < 0)
 	    {
@@ -883,8 +904,8 @@ IPTR GTListView__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
 			 {GTLV_Top, data->ld_Top - 1},
 			 {TAG_DONE		    }
 		    };
-
-		    DoMethod((Object *)g, OM_SET, (IPTR) set_tags, (IPTR) msg->gpi_GInfo);		    
+		    smsg.ops_AttrList = set_tags;
+		    DoMethodA((Object *)g, &smsg);		    
 		}
 		
 	        clickpos = 0;
@@ -892,9 +913,9 @@ IPTR GTListView__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
 	    } else if (clickpos >= shown)
 	    {
 	        WORD max_top = data->ld_NumEntries - NumItemsFit(g, data);
-		
+
 		if (max_top < 0) max_top = 0;
-		
+
 	    	if (data->ld_Top < max_top)
 		{
 	            struct TagItem set_tags[] =
@@ -902,14 +923,13 @@ IPTR GTListView__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
 			 {GTLV_Top, data->ld_Top + 1},
 			 {TAG_DONE		    }
 		    };
-
-		    DoMethod((Object *)g, OM_SET, (IPTR) set_tags, (IPTR) msg->gpi_GInfo);		    		
+		    smsg.ops_AttrList = set_tags;
+		    DoMethodA((Object *)g, &smsg);		    
 		}
-		
+
 	        clickpos = shown - 1;
 	    }
-	    
-	    
+
 	    if ((clickpos >= 0) && (clickpos < shown))
 	    {
     		if ((clickpos + data->ld_Top != data->ld_Selected) ||
@@ -917,33 +937,37 @@ IPTR GTListView__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
     		{
 		    struct RastPort *rp;
 		    WORD oldpos = data->ld_Selected;
-		    
+
 		    data->ld_Selected = clickpos + data->ld_Top;
 
 		    rp = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rp)
 		    {
+			struct gpRender rmsg;
+			rmsg.MethodID = GM_RENDER;
+			rmsg.gpr_GInfo = msg->gpi_GInfo;
+			rmsg.gpr_RPort = rp;
+			rmsg.gpr_Redraw = GREDRAW_UPDATE;
+
 	    		/* Rerender new active */
 	    		data->ld_FirstDamaged = clickpos;
 	    		data->ld_NumDamaged = 1;
 
 			data->ld_Flags |= LVFLG_FORCE_SELECT_STATE;
-			DoMethod((Object *)g, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
+			DoMethodA((Object *)g, &rmsg);
 
 			/* Rerender old active if it was shown in the listview */
 			if (    (oldpos >= data->ld_Top) 
 			     && (oldpos < data->ld_Top + NumItemsFit(g, data))
 			     && (oldpos != data->ld_Selected) )
 			{
-
 	    		    data->ld_FirstDamaged = oldpos - data->ld_Top;
 	    		    data->ld_NumDamaged = 1;
 
-			    DoMethod((Object *)g, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
+			    DoMethodA((Object *)g, &rmsg);
 			}
 
 			ReleaseGIRPort(rp);
-
 		    }
 
 		    DoShowSelected(data, msg->gpi_GInfo, GadToolsBase);
@@ -977,11 +1001,17 @@ IPTR GTListView__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive 
     {
         if ((rp = ObtainGIRPort(msg->gpgi_GInfo)))
 	{
+	    struct gpRender rmsg;
+	    rmsg.MethodID = GM_RENDER;
+	    rmsg.gpr_GInfo = msg->gpgi_GInfo;
+	    rmsg.gpr_RPort = rp;
+	    rmsg.gpr_Redraw = GREDRAW_UPDATE;
+
 	    data->ld_FirstDamaged = data->ld_Selected - data->ld_Top;
 	    data->ld_NumDamaged = 1;
 
-	    DoMethod((Object *)g, GM_RENDER, (IPTR) msg->gpgi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
-	
+	    DoMethodA((Object *)g, &rmsg);
+
 	    ReleaseGIRPort(rp);
 	}
     }	

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: Internal GadTools palette class.
@@ -445,7 +445,11 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
         }
 
         /* Relayout the gadget */
-        DoMethod(o, GM_LAYOUT, (IPTR) msg->ops_GInfo, FALSE);
+        struct gpLayout lmsg;
+        lmsg.MethodID = GM_LAYOUT;
+        lmsg.gpl_GInfo = msg->ops_GInfo;
+        lmsg.gpl_Initial = FALSE;
+        DoMethodA(o, &lmsg);
     }
     
     ReturnPtr ("Palette::Set", IPTR, retval);
@@ -782,15 +786,19 @@ IPTR GTPalette__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
         
             if (clicked_color != data->pd_Color)
             {
-                struct RastPort *rp;
-            
+                struct gpRender rmsg;
+
                 data->pd_Color = clicked_color;
-        
-                if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
+
+                if ((rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo)))
                 {
-                    DoMethod((Object *)g, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
-        
-                    ReleaseGIRPort(rp);
+
+                    rmsg.MethodID = GM_RENDER;
+                    rmsg.gpr_GInfo = msg->gpi_GInfo;
+                    rmsg.gpr_Redraw = GREDRAW_UPDATE;
+                    DoMethodA((Object *)g, &rmsg);
+
+                    ReleaseGIRPort(rmsg.gpr_RPort);
                 }
             }
     
@@ -820,7 +828,12 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
     retval = GMR_MEACTIVE;
     
     if (ie->ie_Class == IECLASS_RAWMOUSE)
-    {       
+    {
+        struct gpRender rmsg;
+        rmsg.MethodID = GM_RENDER;
+        rmsg.gpr_GInfo = msg->gpi_GInfo;
+        rmsg.gpr_Redraw = GREDRAW_UPDATE;
+
         WORD x = msg->gpi_Mouse.X + data->pd_GadgetBox.Left;
         WORD y = msg->gpi_Mouse.Y + data->pd_GadgetBox.Top;
         
@@ -848,19 +861,17 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 #if 0             
                 if (!InsidePalette(data, x, y))
                 {
-                    struct RastPort *rp;
-                         
                     /* Left released outside of gadget area, go back
                     ** to old state
                     */
                     data->pd_Color = data->pd_ColorBackup;
                     D(bug("Left released outside gadget\n"));
 
-                    if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
+                    if ((rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo)))
                     {
-                         DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+                         DoMethodA(o, &rmsg);
                              
-                         ReleaseGIRPort(rp);
+                         ReleaseGIRPort(rmsg.gpr_RPort);
                     }
                 }
                 else
@@ -891,14 +902,12 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             
                    if (over_color != data->pd_Color)
                     {
-                        struct RastPort *rp;
-
                         data->pd_Color = over_color;
-                        if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
+                        if ((rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo)))
                         {
-                            DoMethod(o, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
+                            DoMethodA(o, &rmsg);
             
-                            ReleaseGIRPort(rp);
+                            ReleaseGIRPort(rmsg.gpr_RPort);
                         }
 
                     } /* if (mouse is over a different color) */
@@ -914,17 +923,15 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
             case MENUUP:
             {
                 /* Right released on gadget, go back to old state */
-                
-                struct RastPort *rp;
-                
+               
                 data->pd_Color = data->pd_ColorBackup;
                 D(bug("Right mouse pushed \n"));
 
-                if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
+                if ((rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo)))
                 {
-                    DoMethod(o, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
-                             
-                    ReleaseGIRPort(rp);
+                    DoMethodA(o, &rmsg);
+
+                    ReleaseGIRPort(rmsg.gpr_RPort);
                 }
 
                 retval = GMR_NOREUSE;
@@ -955,17 +962,17 @@ IPTR GTPalette__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
         if (gi)
         {
-            struct RastPort *rp = ObtainGIRPort(gi);
+            struct gpRender rmsg;
+            rmsg.gpr_RPort = ObtainGIRPort(gi);
 
-            if (rp)
-            {                
-                DoMethod(   o, 
-                            GM_RENDER,
-                            (IPTR) gi,
-                            (IPTR) rp,
-                            FindTagItem(GA_Disabled, msg->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE);
+            if (rmsg.gpr_RPort)
+            {
+                rmsg.MethodID = GM_RENDER;
+                rmsg.gpr_GInfo = gi;
+                rmsg.gpr_Redraw = FindTagItem(GA_Disabled, msg->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE;
+                DoMethodA(o, &rmsg);
 
-                ReleaseGIRPort(rp);
+                ReleaseGIRPort(rmsg.gpr_RPort);
             
             } /* if */
             

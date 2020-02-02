@@ -1,4 +1,4 @@
-# Copyright © 2015-2019, The AROS Development Team. All rights reserved.
+# Copyright © 2015-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -8,6 +8,8 @@ include $(SRCDIR)/config/aros.cfg
 
 INCLUDE_FILES := task.h
 
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
 USER_LDFLAGS := -static
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
 

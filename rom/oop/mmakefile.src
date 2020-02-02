@@ -27,6 +27,7 @@ FUNCS :=    addclass		\
 	    setattrs
 
 USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
                -DAROS_USE_OOP \
                -D__OOP_NOLIBBASE__ \
                -D__UTILITY_NOLIBBASE__

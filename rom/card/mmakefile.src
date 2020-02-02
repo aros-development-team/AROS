@@ -2,6 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/card \
 		 -I$(SRCDIR)/arch/all-$(ARCH)/card
 USER_INCLUDES += -I$(SRCDIR)/rom/card

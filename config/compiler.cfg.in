@@ -67,6 +67,17 @@ CFLAGS_BUILTIN                          := @aros_cflags_builtin@
 CFLAGS_NO_BUILTIN                       := @aros_cflags_no_builtin@
 CFLAGS_NO_BUILTIN_FLOOR                 := @aros_cflags_no_builtin_floor@
 CFLAGS_NO_BUILTIN_VSNPRINTF             := @aros_cflags_no_builtin_vsnprintf@
+CFLAGS_NO_BUILTIN_FFS                   := @aros_cflags_no_builtin_ffs@
+CFLAGS_NO_BUILTIN_FFSLL                 := @aros_cflags_no_builtin_ffsll@
+CFLAGS_NO_BUILTIN_BSWAP32               := @aros_cflags_no_builtin_bswap32@
+CFLAGS_NO_BUILTIN_BSWAP64               := @aros_cflags_no_builtin_bswap64@
+CFLAGS_NO_BUILTIN_CLZ                   := @aros_cflags_no_builtin_clz@
+CFLAGS_NO_BUILTIN_CLZLL                 := @aros_cflags_no_builtin_clzll@
+CFLAGS_NO_BUILTIN_CTZ                   := @aros_cflags_no_builtin_ctz@
+CFLAGS_NO_BUILTIN_EXPECT                := @aros_cflags_no_builtin_expect@
+CFLAGS_NO_BUILTIN_POPCOUNT              := @aros_cflags_no_builtin_popcount@
+CFLAGS_NO_BUILTIN_POPCOUNTLL            := @aros_cflags_no_builtin_popcountll@
+CFLAGS_NO_BUILTIN_UNREACHABLE           := @aros_cflags_no_builtin_unreachable@
 
 #
 CFLAGS_FREESTANDING                     := @aros_cflags_freestanding@

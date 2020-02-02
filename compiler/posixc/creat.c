@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function creat().
@@ -10,7 +10,7 @@
     NAME */
 #include <fcntl.h>
 
-	int creat (
+	int posixc_creat (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -47,5 +47,5 @@
 ******************************************************************************/
 {
     return open (pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
-} /* creat */
+} /* posixc_creat */
 

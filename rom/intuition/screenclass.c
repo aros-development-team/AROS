@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -971,12 +971,18 @@ IPTR ScreenClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
     if (gammaset)
     {
+        struct msSetScreenGamma sgmsg;
+
         /*
          * Update gamma table on the monitor.
          * The monitorclass takes care itself about whether this screen
          * currently controlls gamma table.
          */
-        DoMethod((Object *)screen->IMonitorNode, MM_SetScreenGamma, &GetPrivScreen(screen)->GammaControl, FALSE);
+
+        sgmsg.MethodID = MM_SetScreenGamma;
+        sgmsg.gamma = &GetPrivScreen(screen)->GammaControl;
+        sgmsg.force = TRUE;
+        DoMethodA((Object *)screen->IMonitorNode, &sgmsg);
     }
 
     return 0;

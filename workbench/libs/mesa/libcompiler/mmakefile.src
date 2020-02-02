@@ -7,6 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 
 CUR_MESADIR := src/compiler
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+-include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
 #MM- mesa3dgl-linklibs : mesa3dgl-linklibs-$(AROS_TARGET_CPU)
@@ -28,6 +29,10 @@ USER_INCLUDES += \
             -iquote $(top_builddir)/$(CUR_MESADIR)/nir \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary
+
+ifneq ($(mesa3dgl_ENTRYPOINTS),)
+MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
+endif
 
 # disable necessary warnings
 NOWARN_FLAGS := \

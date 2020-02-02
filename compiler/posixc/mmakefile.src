@@ -23,6 +23,7 @@ POSIXC := \
     __vfork \
     access \
     alphasort \
+    alphasort64 \
     basename \
     cfgetispeed \
     cfgetospeed \
@@ -36,6 +37,7 @@ POSIXC := \
     close \
     closedir \
     creat \
+    creat64 \
     dirfd \
     dirname \
     drand48 \
@@ -60,6 +62,7 @@ POSIXC := \
     fflush \
     fgetc \
     fgetpos \
+    fgetpos64 \
     fgets \
     fileno \
     flock \
@@ -76,7 +79,9 @@ POSIXC := \
     fseeko \
     fseeko64 \
     fsetpos \
+    fsetpos64 \
     fstat \
+    fstat64 \
     fsync \
     ftell \
     ftello \
@@ -118,7 +123,9 @@ POSIXC := \
     link \
     lrand48 \
     lseek \
+    lseek64 \
     lstat \
+    lstat64 \
     mkdir \
     mknod \
     mkstemp \
@@ -141,6 +148,7 @@ POSIXC := \
     random \
     read \
     readdir \
+    readdir64 \
     readlink \
     realpath \
     regex/regerror \
@@ -153,6 +161,7 @@ POSIXC := \
     rewinddir \
     rmdir \
     scandir \
+    scandir64 \
     scanf \
     seed48 \
     seekdir \
@@ -181,6 +190,7 @@ POSIXC := \
     sleep \
     srand48 \
     stat \
+    stat64 \
     statfs \
     strerror \
     strptime \
@@ -237,10 +247,13 @@ POSIXC_COMMON := \
 
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
 USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_MERGE_CONSTANTS)
+
 USER_CPPFLAGS := \
         -D__TIMER_NOLIBBASE__ \
         -D_BSD_SOURCE \
-        -D_XOPEN_SOURCE=700
+        -D_XOPEN_SOURCE=700 \
+        -D_LARGEFILE64_SOURCE
+
 USER_LDFLAGS := -noposixc
 
 POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notdir $(POSIXC_COMMON))))

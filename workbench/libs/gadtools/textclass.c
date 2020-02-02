@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
  
     Internal GadTools text class (NUMERIC_KIND and TEXT_KIND) .
@@ -158,7 +158,12 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     if ((retval) && (OCLASS(o) == cl)) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
-	    DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rport, GREDRAW_UPDATE);
+            struct gpRender rmsg;
+            rmsg.MethodID = GM_RENDER;
+            rmsg.gpr_GInfo = msg->ops_GInfo;
+            rmsg.gpr_RPort = rport;
+            rmsg.gpr_Redraw = GREDRAW_REDRAW;
+	    DoMethodA(o, &rmsg);
 	    ReleaseGIRPort(rport);
 	    retval = FALSE;
 	}
@@ -447,7 +452,12 @@ IPTR GTText__OM_SET(Class *cl, Object *o, struct opSet *msg)
 	    struct RastPort *rp = ObtainGIRPort(gi);
 	    if (rp)
 	    {
-		DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
+                struct gpRender rmsg;
+                rmsg.MethodID = GM_RENDER;
+                rmsg.gpr_GInfo = gi;
+                rmsg.gpr_RPort = rp;
+                rmsg.gpr_Redraw = GREDRAW_REDRAW;
+		DoMethodA(o, &rmsg);
 		ReleaseGIRPort(rp);
 	    } /* if */
 	} /* if */

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2020, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -126,14 +126,19 @@ IPTR ButtonGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 	if (gi)
 	{
 	    struct RastPort *rp = ObtainGIRPort(gi);
-	    
+
 	    if (rp)
 	    {
-		DoMethod((Object *)g, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
+                struct gpRender rmsg;
+                rmsg.MethodID = GM_RENDER;
+                rmsg.gpr_GInfo = gi;
+                rmsg.gpr_RPort = rp;
+                rmsg.gpr_Redraw = GREDRAW_REDRAW;
+		DoMethodA((Object *)g, &rmsg);
 		ReleaseGIRPort(rp);
 	    }
-	} 
-    } 
+	}
+    }
 
     return retval;
 }

@@ -1369,11 +1369,16 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
         if (GetPrivIBase(IntuitionBase)->ActiveMonitor)
         {
+            struct msGetDisplayBounds bmsg =
+            {
+                MethodID : MM_GetDisplayBounds,
+                Bounds : &DBounds,
+            };
             struct msDisplayToScreenCoords coordmsg =
             {
                 MethodID : MM_DisplayToScreenCoords,
             };
-            DoMethod(GetPrivIBase(IntuitionBase)->ActiveMonitor, MM_GetDisplayBounds, &DBounds);
+            DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, &bmsg);
             DWidth = (DBounds.MaxX - DBounds.MinX) + 1;
             DHeight = (DBounds.MaxY - DBounds.MinY) + 1;
             DEBUG_MONITOR(bug("[InputHandler] Display Dimensions: %dx%d\n", DWidth, DHeight);)
@@ -2607,7 +2612,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
                 if (--GetPrivIBase(IntuitionBase)->PointerDelay == 0)
                 {
-                    struct SharedPointer    *shared_pointer;
                     struct Window           *window = IntuitionBase->ActiveWindow;
                     struct IntScreen         *scr;
 
@@ -2617,7 +2621,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
                     if (window)
                     {
+                        struct msSetPointerShape pmsg;
                         Object *pointer = ((struct IntWindow *)window)->pointer;
+
+                        pmsg.MethodID = MM_SetPointerShape;
 
                         DEBUG_POINTER(dprintf("InputHandler:  Pointer 0x%lx\n",
                                       pointer));
@@ -2636,22 +2643,22 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                 pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
                             }
 
-                            GetAttr(POINTERA_SharedPointer, pointer, (IPTR *) &shared_pointer);
+                            GetAttr(POINTERA_SharedPointer, pointer, (IPTR *) &pmsg.pointer);
 
                             DEBUG_POINTER(dprintf("InputHandler: scr 0x%lx pointer 0x%lx shared_pointer 0x%lx\n",
-                                          scr, pointer, shared_pointer));
+                                          scr, pointer, pmsg.pointer));
                             DEBUG_POINTER(dprintf("InputHandler: sprite 0x%lx\n",
-                                          shared_pointer->sprite));
+                                          pmsg.pointer->sprite));
 
-                            if (DoMethod(scr->IMonitorNode, MM_SetPointerShape, shared_pointer))
+                            if (DoMethodA(scr->IMonitorNode, &pmsg))
                             {
-                                ObtainSharedPointer(shared_pointer, IntuitionBase);
+                                ObtainSharedPointer(pmsg.pointer, IntuitionBase);
                                 ReleaseSharedPointer(scr->Pointer, IntuitionBase);
-                                scr->Pointer = shared_pointer;
+                                scr->Pointer = pmsg.pointer;
                                 if (window)
                                 {
-                                    window->XOffset = shared_pointer->xoffset;
-                                    window->YOffset = shared_pointer->yoffset;
+                                    window->XOffset = pmsg.pointer->xoffset;
+                                    window->YOffset = pmsg.pointer->yoffset;
                                 }
                             }
                             else

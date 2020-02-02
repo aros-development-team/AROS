@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools mx class.
@@ -195,13 +195,17 @@ IPTR GTMX__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
     if ((retval) && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(o))))
     {
-        struct RastPort *rp;
+	struct gpRender rmsg;
 
-	rp = ObtainGIRPort(msg->ops_GInfo);
-	if (rp)
+	rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
+	if (rmsg.gpr_RPort)
 	{
-	    DoMethod(o, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rp, GREDRAW_REDRAW);
-	    ReleaseGIRPort(rp);
+	    rmsg.MethodID = GM_RENDER;
+	    rmsg.gpr_GInfo = msg->ops_GInfo;
+	    rmsg.gpr_Redraw = GREDRAW_REDRAW;
+
+	    DoMethodA(o, &rmsg);
+	    ReleaseGIRPort(rmsg.gpr_RPort);
 	    retval = FALSE;
 	}
     }
@@ -400,10 +404,15 @@ IPTR GTMX__GM_RENDER(Class *cl, struct ExtGadget *g, struct gpRender *msg)
 IPTR GTMX__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     struct MXData   *data = INST_DATA(cl, o);
+    struct gpRender rmsg;
     int     	    y, blobheight = data->spacing + data->fontheight;
     IPTR    	    retval = GMR_NOREUSE;
 
     D(bug("blobheight: %d\n", blobheight));
+
+    rmsg.MethodID = GM_RENDER;
+    rmsg.gpr_GInfo = msg->gpi_GInfo;
+    rmsg.gpr_Redraw = GREDRAW_UPDATE;
 
     for (y = 0; y < data->numlabels; y++)
     {
@@ -412,14 +421,12 @@ IPTR GTMX__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
         {
             if (y != data->active)
             {
-                struct RastPort *rp;
-
-                rp = ObtainGIRPort(msg->gpi_GInfo);
-                if (rp)
+                rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo);
+                if (rmsg.gpr_RPort)
                 {
                     data->newactive = y;
-                    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
-                    ReleaseGIRPort(rp);
+                    DoMethodA(o, &rmsg);
+                    ReleaseGIRPort(rmsg.gpr_RPort);
                     *msg->gpi_Termination = data->active = y;
                     retval |= GMR_VERIFY;
                 }

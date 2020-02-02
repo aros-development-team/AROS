@@ -1,11 +1,10 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Miscellanous support functions.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <aros/atomic.h>

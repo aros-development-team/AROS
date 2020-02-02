@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,7 +17,7 @@
     NAME */
 #include <sys/stat.h>
 
-	int stat(
+	int posixc_stat(
 
 /*  SYNOPSIS */
 	const char *path,

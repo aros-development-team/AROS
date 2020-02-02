@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function scandir().
@@ -14,7 +14,7 @@
     NAME */
 #include <dirent.h>
 
-        int scandir (
+        int posixc_scandir (
 
 /*  SYNOPSIS */
         const char *dir,

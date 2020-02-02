@@ -2,7 +2,7 @@
 #define _STDC_STDIO_H_
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdio.h
@@ -75,7 +75,11 @@ char *tmpnam(char *s);
 /* File access functions */
 int fclose(FILE *stream);
 int fflush(FILE *stream);
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 FILE *fopen(const char * restrict filename, const char * restrict mode);
+#endif
 FILE *freopen(const char * restrict filename, const char * restrict mode,
 	FILE * restrict stream);
 void setbuf(FILE * restrict stream, char * restrict buf);
@@ -126,9 +130,13 @@ size_t fwrite(const void * restrict ptr, size_t size, size_t nmemb,
     FILE * restrict stream);
 
 /* File positioning functions */
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 int fgetpos(FILE * restrict stream, fpos_t * restrict pos);
-int fseek(FILE *stream, long int offset, int whence);
 int fsetpos(FILE *stream, const fpos_t *pos);
+#endif
+int fseek(FILE *stream, long int offset, int whence);
 long int ftell(FILE *stream);
 void rewind(FILE *stream);
 

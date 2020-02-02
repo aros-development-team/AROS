@@ -1,4 +1,4 @@
-#$Id: mmakefile.src 52306 2016-03-28 11:39:31Z NicJA $
+#$Id$
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -6,7 +6,11 @@ FILES :=  bus_init bus_class
 
 NOWARN_FLAGS := $(NOWARN_PARENTHESES)
 USER_CFLAGS := $(NOWARN_FLAGS)
-USER_CPPFLAGS := -DAROS_USE_OOP -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -DAROS_USE_OOP \
+               -D__OOP_NOMETHODBASES__ \
+               -D__OOP_NOATTRBASES__
 #USER_CPPFLAGS += -DDEBUG
 USER_LDFLAGS := -static
 

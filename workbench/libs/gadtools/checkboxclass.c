@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools checkbox class.
@@ -168,11 +168,15 @@ IPTR GTCheckBox__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
     if ((retval) && (msg->MethodID != OM_NEW) &&
         ((msg->MethodID != OM_UPDATE) || (OCLASS(g) == cl)))
     {
-	rp = ObtainGIRPort(msg->ops_GInfo);
-	if (rp)
+	struct gpRender rmsg;
+	rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
+	if (rmsg.gpr_RPort)
 	{
-	    DoMethod((Object *)g, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
-	    ReleaseGIRPort(rp);
+	    rmsg.MethodID = GM_RENDER;
+	    rmsg.gpr_GInfo = msg->ops_GInfo;
+	    rmsg.gpr_Redraw = GREDRAW_UPDATE;
+	    DoMethodA((Object *)g, &rmsg);
+	    ReleaseGIRPort(rmsg.gpr_RPort);
 	    retval = FALSE;
 	}
     }

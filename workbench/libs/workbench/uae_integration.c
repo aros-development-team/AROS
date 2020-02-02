@@ -1,5 +1,5 @@
 /*
-    Copyright  2010, The AROS Development Team. All rights reserved.
+    Copyright  2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,7 +20,6 @@
 #include <workbench/workbench.h>
 
 #ifdef __AROS__
-//#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
