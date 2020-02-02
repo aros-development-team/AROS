@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX.1-2008 function creat().
+    POSIX.1-2008 function creat64().
 */
 
 /*****************************************************************************
@@ -10,7 +10,7 @@
     NAME */
 #include <fcntl.h>
 
-	int posixc_creat (
+	int posixc_creat64 (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -47,5 +47,5 @@
 ******************************************************************************/
 {
     return open (pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
-} /* posixc_creat */
+} /* posixc_creat64 */
 

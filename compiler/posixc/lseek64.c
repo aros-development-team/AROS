@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Reposition read/write file offset.
@@ -17,11 +17,11 @@
     NAME */
 #include <unistd.h>
 
-	off_t posixc_lseek (
+	__off64_t posixc_lseek64 (
 
 /*  SYNOPSIS */
 	int    filedes,
-	off_t  offset,
+	__off64_t  offset,
 	int    whence)
 
 /*  FUNCTION
@@ -154,4 +154,4 @@
 error:
     errno = __stdc_ioerr2errno (IoErr ());
     return (off_t) -1;
-} /* posixc_lseek */
+} /* posixc_lseek64 */

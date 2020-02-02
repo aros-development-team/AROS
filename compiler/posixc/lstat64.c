@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,11 +24,11 @@ static BPTR __lock(
 
 #include <sys/stat.h>
 
-        int posixc_lstat(
+        int posixc_lstat64(
 
 /*  SYNOPSIS */
         const char  *path,
-        struct stat *sb)
+        struct stat64 *sb)
 
 /*  FUNCTION
         Returns information about a file like stat does except that lstat
@@ -51,7 +51,7 @@ static BPTR __lock(
     BUGS
 
     SEE ALSO
-        stat(), fstat()
+        stat64(), fstat64()
 
     INTERNALS
 	Consult stat() documentation for details.
@@ -87,14 +87,14 @@ static BPTR __lock(
             */
 
             SetIoErr(0);
-            return __stat_from_path(path, sb);
+            return __stat64_from_path(path, sb);
         }
 
         errno = __stdc_ioerr2errno(IoErr());
         return -1;
     }
     else
-        res = __stat(lock, sb, FALSE);
+        res = __stat64(lock, sb, FALSE);
 
     UnLock(lock);
 

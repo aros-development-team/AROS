@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX.1-2008 function readdir().
+    POSIX.1-2008 function readdir64().
 */
 
 #include "__posixc_intbase.h"
@@ -25,7 +25,7 @@
     NAME */
 #include <dirent.h>
 
-	struct dirent *posixc_readdir(
+	struct dirent64 *posixc_readdir64(
 
 /*  SYNOPSIS */
 	DIR *dir)

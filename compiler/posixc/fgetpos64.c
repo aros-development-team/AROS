@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Get the position in a stream.
@@ -12,11 +12,11 @@
     NAME */
 #include <stdio.h>
 
-	int posixc_fgetpos (
+	int posixc_fgetpos64 (
 
 /*  SYNOPSIS */
 	FILE   * stream,
-	fpos_t * pos)
+	__fpos64_t * pos)
 
 /*  FUNCTION
 	Get the current position in a stream. This function is eqivalent
@@ -59,5 +59,5 @@
     }
 
     return 0;
-} /* posixc_fgetpos */
+} /* posixc_fgetpos64 */
 

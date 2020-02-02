@@ -12,7 +12,7 @@
     NAME */
 #include <stdio.h>
 
-	FILE * fopen64 (
+	FILE * posixc_fopen64 (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -75,4 +75,4 @@
 ******************************************************************************/
 {
     return __fopen(pathname, mode, 1);
-} /* fopen64 */
+} /* posixc_fopen64 */

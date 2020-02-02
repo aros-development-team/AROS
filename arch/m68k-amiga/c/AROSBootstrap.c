@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2019, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2020, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
@@ -511,7 +511,7 @@ ssize_t read(int fd, void *buff, size_t len)
     return Read((BPTR)fd, buff, (LONG)len);
 }
 
-off_t lseek(int fd, off_t offset, int whence)
+off_t posixc_lseek(int fd, off_t offset, int whence)
 {
     LONG mode = SEEK_SET;
     LONG err;

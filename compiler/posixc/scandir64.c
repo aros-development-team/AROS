@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX.1-2008 function scandir().
+    POSIX.1-2008 function scandir64().
 */
 
 #include <errno.h>
@@ -14,13 +14,13 @@
     NAME */
 #include <dirent.h>
 
-        int posixc_scandir (
+        int posixc_scandir64 (
 
 /*  SYNOPSIS */
         const char *dir,
-        struct dirent ***namelist,
-        int (*select)(const struct dirent *),
-        int (*compar)(const struct dirent **, const struct dirent **)
+        struct dirent64 ***namelist,
+        int (*select)(const struct dirent64 *),
+        int (*compar)(const struct dirent64 **, const struct dirent64 **)
         )
 
 /*  FUNCTION
@@ -52,11 +52,11 @@
 ******************************************************************************/
 {
     DIR *dirp = NULL;
-    struct dirent *dp;
-    struct dirent *newdp;
+    struct dirent64 *dp;
+    struct dirent64 *newdp;
     int cnt = 0;
-    struct dirent **darr = NULL;
-    struct dirent **newdarr;
+    struct dirent64 **darr = NULL;
+    struct dirent64 **newdarr;
     int arrcnt = 0;
     int selected;
     int olderrno;
@@ -70,7 +70,7 @@
 
     do
     {
-        if ((dp = readdir(dirp)) != NULL)
+        if ((dp = posixc_readdir64(dirp)) != NULL)
         {
             selected = 0;
             if (select != NULL)

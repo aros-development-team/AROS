@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function fstat().
@@ -16,11 +16,11 @@
 
 #include <sys/stat.h>
 
-	int posixc_fstat(
+	int posixc_fstat64(
 
 /*  SYNOPSIS */
 	int fd,
-	struct stat *sb)
+	struct stat64 *sb)
 
 /*  FUNCTION
 	Returns information about a file specified by an open file descriptor.
@@ -46,7 +46,7 @@
 	stat()
 
     INTERNALS
-	Consult stat() documentation for details.
+	Consult stat64() documentation for details.
 
 ******************************************************************************/
 {

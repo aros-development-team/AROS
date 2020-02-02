@@ -1,5 +1,5 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fopen().
@@ -15,7 +15,7 @@
     NAME */
 #include <stdio.h>
 
-	FILE * fopen (
+	FILE * posixc_fopen (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -82,5 +82,5 @@
 
     return __fopen(pathname, mode, 0);
 
-} /* fopen */
+} /* posixc_fopen */
 

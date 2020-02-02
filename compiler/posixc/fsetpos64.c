@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Change the position in a stream.
@@ -12,11 +12,11 @@
     NAME */
 #include <stdio.h>
 
-	int posixc_fsetpos (
+	int posixc_fsetpos64 (
 
 /*  SYNOPSIS */
 	FILE		* stream,
-	const fpos_t	* pos)
+	const __fpos64_t	* pos)
 
 /*  FUNCTION
 	Change the current position in a stream. This function is eqivalent
@@ -56,5 +56,5 @@
     retval = fseek (stream, *pos, SEEK_SET);
 
     return retval;
-} /* posixc_fsetpos */
+} /* posixc_fsetpos64 */
 

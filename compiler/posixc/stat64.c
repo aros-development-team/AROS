@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,30 +17,30 @@
     NAME */
 #include <sys/stat.h>
 
-	int posixc_stat(
+	int posixc_stat64(
 
 /*  SYNOPSIS */
 	const char *path,
-	struct stat *sb)
+	struct stat64 *sb)
 
 /*  FUNCTION
 	Returns information about a file. Information is stored in stat
 	structure having the following fields:
 	
 	dev_t           st_dev;     - ID of device containing the file
-	ino_t           st_ino;     - inode number
+	ino64_t         st_ino;     - (lfs) inode number
 	mode_t          st_mode;    - protection mode
 	nlink_t         st_nlink;   - number of hard links
 	uid_t           st_uid;     - user ID of the file's owner
 	gid_t           st_gid;     - group ID of the file's group
 	dev_t           st_rdev;    - device ID (if the file is character
 	                              or block special file)
-	off_t           st_size;    - file size, in bytes
+	off64_t         st_size;    - (lfs) file size, in bytes
 	time_t          st_atime;   - time of last acces
 	time_t          st_mtime;   - time of last data modification
 	time_t          st_ctime;   - time of last file status change
 	blksize_t       st_blksize; - optimal blocksize for I/O
-	blkcnt_t        st_blocks;  - number of blocks allocated for file
+	blkcnt64_t      st_blocks;  - (lfs) number of blocks allocated for file
 
     INPUTS
 	path - Pathname of the file
@@ -57,7 +57,7 @@
     BUGS
 
     SEE ALSO
-	lstat(), fstat()
+	lstat64(), fstat64()
 
     INTERNALS
 	Value of st_ino field is computed as hash from the canonical path of
