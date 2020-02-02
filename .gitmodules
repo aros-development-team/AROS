@@ -178,3 +178,6 @@
 [submodule "workbench/system/Wanderer/Tools/ExecuteCommand/catalogs"]
 	path = workbench/system/Wanderer/Tools/ExecuteCommand/catalogs
 	url = https://github.com/aros-translation-team/executecommand.git
+[submodule "workbench/system/Wanderer/Tools/ExecuteStartup/catalogs"]
+	path = workbench/system/Wanderer/Tools/ExecuteStartup/catalogs
+	url = https://github.com/aros-translation-team/executestartup.git
