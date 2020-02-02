@@ -181,3 +181,6 @@
 [submodule "workbench/system/Wanderer/Tools/ExecuteStartup/catalogs"]
 	path = workbench/system/Wanderer/Tools/ExecuteStartup/catalogs
 	url = https://github.com/aros-translation-team/executestartup.git
+[submodule "workbench/system/Wanderer/Tools/WBNewDrawer/catalogs"]
+	path = workbench/system/Wanderer/Tools/WBNewDrawer/catalogs
+	url = https://github.com/aros-translation-team/wbnewdrawer.git
