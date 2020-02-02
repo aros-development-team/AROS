@@ -187,3 +187,6 @@
 [submodule "workbench/system/Wanderer/Tools/WBRename/catalogs"]
 	path = workbench/system/Wanderer/Tools/WBRename/catalogs
 	url = https://github.com/aros-translation-team/wbrename.git
+[submodule "workbench/tools/Edit/catalogs"]
+	path = workbench/tools/Edit/catalogs
+	url = https://github.com/aros-translation-team/editor.git
