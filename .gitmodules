@@ -172,3 +172,6 @@
 [submodule "workbench/system/Snoopy/catalogs"]
 	path = workbench/system/Snoopy/catalogs
 	url = https://github.com/aros-translation-team/snoopy.git
+[submodule "workbench/system/Wanderer/Tools/DiskInfo/catalogs"]
+	path = workbench/system/Wanderer/Tools/DiskInfo/catalogs
+	url = https://github.com/aros-translation-team/diskinfo.git
