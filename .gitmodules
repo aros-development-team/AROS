@@ -160,3 +160,6 @@
 [submodule "workbench/network/stacks/AROSTCP/MUI.MiamiPanel/catalogs"]
 	path = workbench/network/stacks/AROSTCP/MUI.MiamiPanel/catalogs
 	url = https://github.com/aros-translation-team/miamipanel.git
+[submodule "workbench/system/BHFormat/catalogs"]
+	path = workbench/system/BHFormat/catalogs
+	url = https://github.com/aros-translation-team/format.git
