@@ -7,18 +7,10 @@ include $(SRCDIR)/config/aros.cfg
 
 CUR_MESADIR := src/mesa
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+-include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
 #MM- mesa3dgl-linklibs : mesa3d-linklib-mesa
-
-# disable necessary warnings
-NOWARN_FLAGS := $(MESA_NOWARNFLAGS) $(NOWARN_RETURN_TYPE) $(NOWARN_UNUSED_CONST_VARIABLE) \
-                $(NOWARN_STRICT_ALIASING) $(NOWARN_MAYBE_UNINITIALIZED) $(NOWARN_ARRAY_BOUNDS)
-USER_CPPFLAGS += \
-                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
-                -DPACKAGE_BUGREPORT=\"https://bugs.freedesktop.org/enter_bug.cgi?product=Mesa\"
-USER_CFLAGS += $(NOWARN_FLAGS)
-USER_CXXFLAGS += $(NOWARN_FLAGS)
 
 USER_INCLUDES += \
             -iquote $(top_builddir)/$(CUR_MESADIR) \
@@ -34,6 +26,19 @@ USER_INCLUDES += \
             -I$(top_srcdir)/src/gallium/auxiliary \
             -I$(top_srcdir)/include
 
+ifneq ($(mesa3dgl_ENTRYPOINTS),)
+MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
+endif
+
+# disable necessary warnings
+NOWARN_FLAGS := $(MESA_NOWARNFLAGS) $(NOWARN_RETURN_TYPE) $(NOWARN_UNUSED_CONST_VARIABLE) \
+                $(NOWARN_STRICT_ALIASING) $(NOWARN_MAYBE_UNINITIALIZED) $(NOWARN_ARRAY_BOUNDS)
+USER_CPPFLAGS += \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                -DPACKAGE_BUGREPORT=\"https://bugs.freedesktop.org/enter_bug.cgi?product=Mesa\"
+USER_CFLAGS += $(NOWARN_FLAGS)
+USER_CXXFLAGS += $(NOWARN_FLAGS)
+
 MESA_GENERATED_C_SOURCES := \
             main/api_exec.c \
             main/enums.c \
@@ -47,6 +52,18 @@ MESA_GENERATED_C_SOURCES := \
 MESA3D_SOURCES := $(filter-out $(MESA_GENERATED_C_SOURCES),$(PROGRAM_FILES) $(PROGRAM_NIR_FILES) $(MESA_GALLIUM_FILES))
 MESA3D_GALLIUM_CXX_SOURCES := $(filter %.cpp, $(MESA3D_SOURCES))
 MESA3D_GALLIUM_C_SOURCES := $(filter %.c, $(MESA3D_SOURCES))
+
+ifeq ($(MESA_USE_X86),TRUE)
+MESA3D_GALLIUM_ASM_SOURCES := $(filter %.S, $(X86_FILES))
+MESA3D_GALLIUM_C_SOURCES += $(filter x86/%.c, $(ASM_C_FILES))
+endif
+ifeq ($(MESA_USE_X86_64),TRUE)
+MESA3D_GALLIUM_ASM_SOURCES := $(filter %.S, $(X86_64_FILES))
+MESA3D_GALLIUM_C_SOURCES += $(filter x86-64/%.c, $(ASM_C_FILES))
+endif
+ifeq ($(MESA_USE_SSE41),TRUE)
+MESA3D_GALLIUM_C_SOURCES += $(filter %.c, $(X86_SSE41_FILES))
+endif
 
 define es-gen
 	%mkdir_q dir="$(dir $@)"
@@ -200,11 +217,15 @@ MESA3DGL_MESA_CXX_SOURCES := \
 
 MESA3DGL_MESA_SOURCES_CXX := $(MESA3DGL_MESA_CXX_SOURCES:.cpp=)
 
+MESA3DGL_MESA_ASM_SOURCES := \
+            $(wildcard $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3D_GALLIUM_ASM_SOURCES)))
+MESA3DGL_MESA_SOURCES_ASM := $(MESA3DGL_MESA_ASM_SOURCES:.S=)
+
 #MM
 mesa3d-linklib-mesa-generated : $(MESA3DGL_MESA_GENERATED_C_HEADERS) $(MESA3DGL_MESA_GENERATED_C_SOURCES) | $(top_builddir)/$(CUR_MESADIR)/main
 
 #MM mesa3d-linklib-mesa : mesa3d-linklib-mesa-generated mesa3d-linklib-compiler-generated
 
-%build_linklib mmake=mesa3d-linklib-mesa libname=mesa libdir="$(top_libdir)" objdir="$(top_builddir)/$(CUR_MESADIR)" files="$(MESA3DGL_MESA_SOURCES_C)" cxxfiles="$(MESA3DGL_MESA_SOURCES_CXX)"
+%build_linklib mmake=mesa3d-linklib-mesa libname=mesa libdir="$(top_libdir)" objdir="$(top_builddir)/$(CUR_MESADIR)" files="$(MESA3DGL_MESA_SOURCES_C)" cxxfiles="$(MESA3DGL_MESA_SOURCES_CXX)" asmfiles="$(MESA3DGL_MESA_SOURCES_ASM)"
 
 %common
