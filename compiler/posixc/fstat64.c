@@ -24,12 +24,12 @@
 
 /*  FUNCTION
 	Returns information about a file specified by an open file descriptor.
-	Information is stored in stat structure. Consult stat() documentation
+	Information is stored in stat64 structure. Consult stat() documentation
 	for detailed description of that structure.
 
     INPUTS
 	filedes - File descriptor of the file
-	sb - Pointer to stat structure that will be filled by the fstat()
+	sb - Pointer to stat structure that will be filled by fstat64()
 	call.
 
     RESULT
@@ -59,6 +59,6 @@
 	return -1;
     }
 
-    return __stat(desc->fcb->handle, sb, (desc->fcb->privflags & _FCB_ISDIR) ? FALSE : TRUE);
+    return __stat64(desc->fcb->handle, sb, (desc->fcb->privflags & _FCB_ISDIR) ? FALSE : TRUE);
 }
 

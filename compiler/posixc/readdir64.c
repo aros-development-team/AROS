@@ -88,19 +88,19 @@
 
     if (PosixCBase->doupath && dir->pos == 0)
     {
-        dir->ent.d_type = DT_DIR;
-        dir->ent.d_name[0]='.';
-        dir->ent.d_name[1]='\0';
-        dir->ent.d_reclen = 1;
+        dir->ent64.d_type = DT_DIR;
+        dir->ent64.d_name[0]='.';
+        dir->ent64.d_name[1]='\0';
+        dir->ent64.d_reclen = 1;
     } 
     else
     if (PosixCBase->doupath && dir->pos == 1)
     {
-        dir->ent.d_type = DT_DIR;
-        dir->ent.d_name[0]='.';
-    	dir->ent.d_name[1]='.';
-    	dir->ent.d_name[2]='\0';
-        dir->ent.d_reclen = 2;
+        dir->ent64.d_type = DT_DIR;
+        dir->ent64.d_name[0]='.';
+    	dir->ent64.d_name[1]='.';
+    	dir->ent64.d_name[2]='\0';
+        dir->ent64.d_reclen = 2;
     }
     else
     {
@@ -135,28 +135,28 @@
                     continue;
             }
           
-            strncpy(dir->ent.d_name, name, max);
-            dir->ent.d_reclen = strlen(name);
+            strncpy(dir->ent64.d_name, name, max);
+            dir->ent64.d_reclen = strlen(name);
 
             switch (fib->fib_DirEntryType)
             {
             case ST_FILE:
-              dir->ent.d_type = DT_REG; 
+              dir->ent64.d_type = DT_REG; 
               break;
             case ST_ROOT:
             case ST_USERDIR:
-              dir->ent.d_type = DT_DIR; 
+              dir->ent64.d_type = DT_DIR; 
               break;
             case ST_SOFTLINK:
             case ST_LINKFILE:
             case ST_LINKDIR:
-              dir->ent.d_type = DT_LNK; 
+              dir->ent64.d_type = DT_LNK; 
               break;
             case ST_PIPEFILE:
-              dir->ent.d_type = DT_FIFO; 
+              dir->ent64.d_type = DT_FIFO; 
               break;
             default:
-              dir->ent.d_type = DT_UNKNOWN; 
+              dir->ent64.d_type = DT_UNKNOWN; 
               break;
             }
             
@@ -164,7 +164,7 @@
         }
     }
    
-    D(bug("%s) d_type=%d\n", dir->ent.d_name, (int)dir->ent.d_type));
+    D(bug("%s) d_type=%d\n", dir->ent64.d_name, (int)dir->ent64.d_type));
     dir->pos++;
-    return &(dir->ent);
+    return &(dir->ent64);
 }

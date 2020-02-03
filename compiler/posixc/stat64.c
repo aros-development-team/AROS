@@ -101,14 +101,14 @@
             */
 
             SetIoErr(0);
-            return __stat_from_path(path, sb);
+            return __stat64_from_path(path, sb);
         }
 
 	errno = __stdc_ioerr2errno(IoErr());
 	return -1;
     }
     else
-        res = __stat(lock, sb, FALSE);
+        res = __stat64(lock, sb, FALSE);
 
     UnLock(lock);
 
