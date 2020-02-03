@@ -193,3 +193,6 @@
 [submodule "workbench/tools/KeyShow/catalogs"]
 	path = workbench/tools/KeyShow/catalogs
 	url = https://github.com/aros-translation-team/keyshow.git
+[submodule "workbench/tools/ScreenGrabber/catalogs"]
+	path = workbench/tools/ScreenGrabber/catalogs
+	url = https://github.com/aros-translation-team/screengrabber.git
