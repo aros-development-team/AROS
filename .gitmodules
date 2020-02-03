@@ -190,3 +190,6 @@
 [submodule "workbench/tools/Edit/catalogs"]
 	path = workbench/tools/Edit/catalogs
 	url = https://github.com/aros-translation-team/editor.git
+[submodule "workbench/tools/KeyShow/catalogs"]
+	path = workbench/tools/KeyShow/catalogs
+	url = https://github.com/aros-translation-team/keyshow.git
