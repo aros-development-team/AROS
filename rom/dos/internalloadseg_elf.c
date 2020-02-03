@@ -989,24 +989,6 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
-#if !defined(LIBLOADSEG)
-    /* Everything is loaded now. Register the module at kernel.resource */
-    {
-        struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-        if (segnode)
-        {
-            D(bug("[DOS:ILSELF] %s: elf seglist info @ 0x%p\n", __func__, segnode);)
-
-            segnode->ln_Name = hunks;
-            segnode->ln_Type = SEGTYPE_ELF;
-
-            ObtainSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-            AddTail(&((struct IntDosBase *)DOSBase)->segdata, segnode);
-            ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-        }
-    }
-#endif
-
     register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;
 

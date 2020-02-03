@@ -87,24 +87,6 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct SRBuffer 
     return err;
 }
 
-void register_hunkseginfo(BPTR segment, struct DosLibrary * DOSBase)
-{
-  D(bug("[DOS:ILSAOS] %s: hunk @ 0x%p\n", __func__, segment);)
-
-  struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-  if (segnode)
-  {
-    D(bug("[DOS:ILSAOS] %s: seglist info @ 0x%p\n", __func__, segnode);)
-
-    segnode->ln_Name = segment;
-    segnode->ln_Type = SEGTYPE_HUNK;
-
-    ObtainSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-    AddTail(&((struct IntDosBase *)DOSBase)->segdata, segnode);
-    ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-  }
-}
-
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
@@ -556,9 +538,6 @@ done:
 
     if (table)
     {
-#if !defined(LIBLOADSEG)
-      register_hunkseginfo(firsthunk, DOSBase);
-#endif
       return firsthunk;
     }
 
@@ -581,9 +560,6 @@ done:
         h[5] = (ULONG)MKBADDR(hunktab);
         D(bug("overlay loaded!\n"));
         segaddr = (BPTR)(-(LONG)MKBADDR(h));
-#if !defined(LIBLOADSEG)
-        register_hunkseginfo(segaddr, DOSBase);
-#endif
         return segaddr;
 #endif
       }
@@ -597,9 +573,6 @@ done:
     last_p = firsthunk;
 
     register_hunk(fh, firsthunk, NULL, DOSBase);
-#if !defined(LIBLOADSEG)
-    register_hunkseginfo(firsthunk, DOSBase);
-#endif
 
     ilsFreeVec(hunktab);
     hunktab = NULL;
