@@ -175,3 +175,27 @@
 [submodule "workbench/system/Wanderer/Tools/DiskInfo/catalogs"]
 	path = workbench/system/Wanderer/Tools/DiskInfo/catalogs
 	url = https://github.com/aros-translation-team/diskinfo.git
+[submodule "workbench/system/Wanderer/Tools/ExecuteCommand/catalogs"]
+	path = workbench/system/Wanderer/Tools/ExecuteCommand/catalogs
+	url = https://github.com/aros-translation-team/executecommand.git
+[submodule "workbench/system/Wanderer/Tools/ExecuteStartup/catalogs"]
+	path = workbench/system/Wanderer/Tools/ExecuteStartup/catalogs
+	url = https://github.com/aros-translation-team/executestartup.git
+[submodule "workbench/system/Wanderer/Tools/WBNewDrawer/catalogs"]
+	path = workbench/system/Wanderer/Tools/WBNewDrawer/catalogs
+	url = https://github.com/aros-translation-team/wbnewdrawer.git
+[submodule "workbench/system/Wanderer/Tools/WBRename/catalogs"]
+	path = workbench/system/Wanderer/Tools/WBRename/catalogs
+	url = https://github.com/aros-translation-team/wbrename.git
+[submodule "workbench/tools/Edit/catalogs"]
+	path = workbench/tools/Edit/catalogs
+	url = https://github.com/aros-translation-team/editor.git
+[submodule "workbench/tools/KeyShow/catalogs"]
+	path = workbench/tools/KeyShow/catalogs
+	url = https://github.com/aros-translation-team/keyshow.git
+[submodule "workbench/tools/ScreenGrabber/catalogs"]
+	path = workbench/tools/ScreenGrabber/catalogs
+	url = https://github.com/aros-translation-team/screengrabber.git
+[submodule "workbench/tools/WiMP/catalogs"]
+	path = workbench/tools/WiMP/catalogs
+	url = https://github.com/aros-translation-team/wimp.git

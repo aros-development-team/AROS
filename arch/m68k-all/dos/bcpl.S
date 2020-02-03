@@ -226,6 +226,13 @@ BCPL SetComment     /* -5c, BOOL, &name, &comment */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
+BCPL DeviceProc      /* -58, &name */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		%a6@(29 * -6)	/* DOS/DeviceProc() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
 BCPL NoReqLoadSeg   /* -54, SegList ^, @name */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	%a2@(GV_DOSBase),%a6
@@ -686,7 +693,7 @@ BCPL setSignals     /*  90, void, &MsgPort, mask */
     lsl.l	#8,%d0
     lsl.l	#4,%d0			/* shift to C-F signals */
     and.l	#0xf000,%d0		/* mask only C-F signals */
-    jsr		%a6@(54 * -6)	/* Signal */
+    jsr		%a6@(54 * -6)	/* Exec/Signal() */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
@@ -698,7 +705,7 @@ BCPL clearSignals   /* 94, BOOL , mask */
     lsl.l	#4,%d1
     and.l	#0xf000,%d1
     move.l	%d1,%d2
-    jsr		%a6@(51 * -6)	/* SetSignal */
+    jsr		%a6@(51 * -6)	/* Exec/SetSignal() */
     moveq	#0,%d1
     and.l	%d2,%d0
     beq.s	0f
