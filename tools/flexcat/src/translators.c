@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 /* convert ISO-8859-2 strings to AmigaPL */
-void iso88592toamigapl(char *str)
+void iso88592toamigapl(unsigned char *str)
 {
     int i, len = strlen(str);
     for (i = 0; i < len; i ++)
@@ -47,7 +47,7 @@ void iso88592toamigapl(char *str)
 }
 
 /* convert Windows-1251 strings to Amiga-1251 */
-void win1251toamiga1251(char *str)
+void win1251toamiga1251(unsigned char *str)
 {
     int i, len = strlen(str);
     for (i = 0; i < len; i ++)
