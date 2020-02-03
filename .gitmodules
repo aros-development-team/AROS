@@ -196,3 +196,6 @@
 [submodule "workbench/tools/ScreenGrabber/catalogs"]
 	path = workbench/tools/ScreenGrabber/catalogs
 	url = https://github.com/aros-translation-team/screengrabber.git
+[submodule "workbench/tools/WiMP/catalogs"]
+	path = workbench/tools/WiMP/catalogs
+	url = https://github.com/aros-translation-team/wimp.git
