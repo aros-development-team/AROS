@@ -91,6 +91,6 @@ $(GENDIR)/$(CURDIR)/dos/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCD
 	@$(ECHO) Generating $@...
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
 
-%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" objdir=$(OBJDIR)/dos libdir=$(GENDIR)/lib
+%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" objdir=$(OBJDIR)/loadseg libdir=$(GENDIR)/lib
 
 %common
