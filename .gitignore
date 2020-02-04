@@ -1031,6 +1031,7 @@
 /compiler/zlib/mmakefile
 
 # /config/
+/config/autom4te.cache
 /config/host.cfg
 /config/config.h
 /config/mmakefile
