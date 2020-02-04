@@ -314,7 +314,7 @@ BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt
             fprintf(stderr, "error, too many rows of keys defined (%d >= %d)\n", (keyno >> 3), cnt);
             exit(20);
         }
-        flags[rowstart] = caps;
+        flags[rowstart >> 3] = caps;
         keyno = rowstart + 8;
         D(fprintf(stdout, "key #%02d - %02d caps = 0x%02x\n", keyno - 8, keyno - 1, caps);)
     }
