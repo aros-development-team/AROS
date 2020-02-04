@@ -537,9 +537,7 @@ done:
 #endif
 
     if (table)
-    {
       return firsthunk;
-    }
 
     hunksize = *((ULONG*)BADDR(hunktab[0]) - 1);
     if (last > first && hunksize >= 32 / 4)
@@ -553,14 +551,12 @@ done:
         D(bug("overlay not supported!\n"));
         ERROR(ERROR_BAD_HUNK);
 #else
-        BPTR segaddr;
         /* overlay executable */
         h[3] = (ULONG)fh;
         h[4] = (ULONG)overlaytable;
         h[5] = (ULONG)MKBADDR(hunktab);
         D(bug("overlay loaded!\n"));
-        segaddr = (BPTR)(-(LONG)MKBADDR(h));
-        return segaddr;
+        return (BPTR)(-(LONG)MKBADDR(h));
 #endif
       }
     }
