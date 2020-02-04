@@ -1,0 +1,5 @@
+MKKEYMAP_SRCS := \
+    mkkeymap.c config.c parsedescriptor.c writekeymap.c
+
+#MKKEYMAP_INCS := mkkeymap.h config.h
+MKKEYMAP_DEPS := $(addprefix $(SRCDIR)/tools/mkkeymap/,$(MKKEYMAP_SRCS) $(MKKEYMAP_INCS))

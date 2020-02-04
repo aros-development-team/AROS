@@ -1,0 +1,75 @@
+# this file is a template/example amiga keymap descriptor
+# (c) 2020 The AROS Development Team.
+
+## begin config
+keymap: testkeymap
+## end config
+
+# the "types" must come before "string", "deadkey", and "map"  sections.
+
+## begin lokeymaptypes
+KCF_SHIFT
+KCF_ALT
+KC_NOQUAL
+KC_VANILLA
+KCF_SHIFT KCF_ALT
+## end lokeymaptypes
+
+## begin hikeymaptypes
+KC_NOQUAL
+KC_NOQUAL
+KCF_CONTROL
+KCF_STRING KCF_SHIFT
+KCF_NOP
+## end hikeymaptypes
+
+# "string" and "deadkey" sections must
+# come after the "types", but before the remaining sections
+
+## begin string
+id: string1
+## end string
+
+## begin string
+id: string2
+## end string
+
+## begin deadkey
+id: dead1
+## end deadkey
+
+## begin deadkey
+id: dead2
+## end deadkey
+
+# the "map" sections which must follow the "type", "string" and "deadkey" sections.
+# the "capsable" and "repeatable" sections can be included anywhere.
+
+## begin lokeymap
+## end lokeymap
+
+## begin locapsable
+0, 0, 0, 0, 0, 0, 0, 0  # 00 - 07
+1, 1, 1, 1, 1, 1, 1, 1  # 08 - 0F
+1, 0, 0, 0, 0, 0, 0, 0  # 10 - 17
+## end locapsable
+
+## begin lorepeatable
+1, 1, 1, 1, 1, 1, 0, 1  # 00 - 07
+1, 1, 1, 1, 0, 1, 1, 1  # 08 - 0F
+1, 1, 1, 0, 1, 1, 1, 1  # 10 - 17
+## end lorepeatable
+
+## begin hikeymap
+## end hikeymap
+
+## begin hicapsable
+0, 0, 0, 0, 0, 0, 0, 0  # 40 - 47
+## end hicapsable
+
+## begin hirepeatable
+1, 1, 1, 0, 0, 0, 1, 0  # 40 - 47
+1, 1, 0, 0, 1, 1, 1, 1  # 48 - 4F
+0, 0, 0, 0, 0, 0, 0, 0  # 50 - 57
+0, 0, 1, 1, 1, 1, 1, 0  # 58 - 5F
+## end hirepeatable
