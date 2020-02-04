@@ -16,8 +16,6 @@ AROS_TARGET_VARIANT     ?= @aros_target_variant@
 
 AMIGAOSNDKDIR           ?= $(SRCDIR)/local/NDK_3.1
 
-MKKEYMAP		?= $(CROSSTOOLSDIR)/mkkeymap
-
 # normally, these variable's should go in mmake.config/globalvarfile
 export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 export AROS_TARGET_ICONSET := @aros_target_iconset@
