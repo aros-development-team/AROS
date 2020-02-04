@@ -228,6 +228,7 @@ BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *typesptr, UBYTE cn
             fprintf(stderr, "error, too many key types defined (%d >= %d)\n", keyno, cnt);
             exit(20);
         }
+        typesptr[keyno] = keytypes;
         D(fprintf(stdout, "key #%02d types = 0x%02x\n", keyno, keytypes);)
         keyno++;
     }
@@ -313,6 +314,7 @@ BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt
             fprintf(stderr, "error, too many rows of keys defined (%d >= %d)\n", (keyno >> 3), cnt);
             exit(20);
         }
+        flags[rowstart] = caps;
         keyno = rowstart + 8;
         D(fprintf(stdout, "key #%02d - %02d caps = 0x%02x\n", keyno - 8, keyno - 1, caps);)
     }
@@ -381,7 +383,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 2: /* lokeymaptypes */
-                if (!processSectTypes(cfg, descf, NULL, 0x40))
+                if (!processSectTypes(cfg, descf, cfg->LoKeyMapTypes, 0x40))
                 {
                     fprintf(stderr, "error processing lokey map-types section\n");
                     exit(20);
@@ -389,7 +391,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 3: /* lokeymap */
-                if (!processSectMap(cfg, descf, NULL, 0x40))
+                if (!processSectMap(cfg, descf, cfg->LoKeyMap, 0x40))
                 {
                     fprintf(stderr, "error processing lokey map section\n");
                     exit(20);
@@ -397,7 +399,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 4: /* locapsable */
-                if (!processSectCapsRep(cfg, descf, NULL, 0x8))
+                if (!processSectCapsRep(cfg, descf, cfg->LoCapsable, 0x8))
                 {
                     fprintf(stderr, "error processing lokey capsable section\n");
                     exit(20);
@@ -405,7 +407,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 5: /* lorepeatable */
-                if (!processSectCapsRep(cfg, descf, NULL, 0x8))
+                if (!processSectCapsRep(cfg, descf, cfg->LoRepeatable, 0x8))
                 {
                     fprintf(stderr, "error processing lokey repeatable section\n");
                     exit(20);
@@ -413,7 +415,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 6: /* hikeymaptypes */
-                if (!processSectTypes(cfg, descf, NULL, 0x38))
+                if (!processSectTypes(cfg, descf, cfg->HiKeyMapTypes, 0x38))
                 {
                     fprintf(stderr, "error processing hikey map-types section\n");
                     exit(20);
@@ -421,7 +423,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 7: /* hikeymap */
-                if (!processSectMap(cfg, descf, NULL, 0x38))
+                if (!processSectMap(cfg, descf, cfg->HiKeyMap, 0x38))
                 {
                     fprintf(stderr, "error processing hikey map section\n");
                     exit(20);
@@ -429,7 +431,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 8: /* hicapsable */
-                if (!processSectCapsRep(cfg, descf, NULL, 0x7))
+                if (!processSectCapsRep(cfg, descf, cfg->HiCapsable, 0x7))
                 {
                     fprintf(stderr, "error processing hikey capsable section\n");
                     exit(20);
@@ -437,7 +439,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 9: /* hirepeatable */
-                if (!processSectCapsRep(cfg, descf, NULL, 0x7))
+                if (!processSectCapsRep(cfg, descf, cfg->HiRepeatable, 0x7))
                 {
                     fprintf(stderr, "error processing hikey repeatable section\n");
                     exit(20);

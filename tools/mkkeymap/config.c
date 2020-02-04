@@ -39,6 +39,7 @@ struct config *initconfig(int argc, char **argv)
     }
 
     memset(cfg, 0, sizeof(struct config));
+    NEWLIST(&cfg->KeyDesc);
 
     while ((c = getopt(argc, argv, ":d:k:v")) != -1)
     {
