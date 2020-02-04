@@ -195,12 +195,13 @@
 #define         __USE_LARGEFILE         1
 #endif
 
-#if defined(_LARGEFILE64_SOURCE)
-#define         __USE_LARGEFILE64       1
-#endif
-
 #if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
 # define        __USE_FILE_OFFSET64     1
+#endif
+
+// On AROS, __USE_FILES_OFFSET64 implies __USE_LARGEFILE64
+#if defined(__USE_FILE_OFFSET64) || defined(_LARGEFILE64_SOURCE)
+#define         __USE_LARGEFILE64       1
 #endif
 
 #endif

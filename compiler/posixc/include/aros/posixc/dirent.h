@@ -131,7 +131,7 @@ static inline int scandir (const char *dir, struct dirent ***namelist,
 {
     int (*select64)(const struct dirent64 *) = (int (*)(const struct dirent64 *))select;
     int (*compar64)(const struct dirent64 **, const struct dirent64 **) = (int (*)(const struct dirent64 **, const struct dirent64 **))compar;
-    return posixc_scandir64(dir, (dirent64 ***)namelist, select64, compar64);
+    return posixc_scandir64(dir, (struct dirent64 ***)namelist, select64, compar64);
 }
 #else
 static inline int scandir (const char *dir, struct dirent ***namelist,
