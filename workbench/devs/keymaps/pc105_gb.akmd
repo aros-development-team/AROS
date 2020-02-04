@@ -2,7 +2,7 @@
 # (c) 2020 The AROS Development Team.
 
 ## begin config
-keymap: testkeymap
+keymap: pc105_gb
 ## end config
 
 # the "types" must come before "string", "deadkey", and "map"  sections.
