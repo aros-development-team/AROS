@@ -47,7 +47,7 @@ USER_CPPFLAGS += \
 USER_LDFLAGS := \
   -L$(top_libdir) \
   -lgalliumauxiliary -lmesautil \
-  -lpthread -lposixc -lstdcio -lstdc
+  -lz -lpthread -lposixc -lstdcio -lstdc
 
 %build_module mmake=hidd-vmwaresvga \
   modname=vmwaresvga modtype=hidd \
