@@ -44,13 +44,27 @@ static char *getname(BPTR file, char **bufferp, struct DosLibrary *DOSBase)
 
 void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
 {
-    if (DOSBase && DebugBase)
+    if (DOSBase)
     {
-        char *buffer = NULL;
-        char *nameptr = getname(file, &buffer, DOSBase);
-        struct ELF_DebugInfo dbg = {eh, sh};
-        RegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
-        FreeMem(buffer, 512);
+        struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+        if (segnode)
+        {
+            segnode->ln_Name = (char *)hunks;
+            segnode->ln_Type = SEGTYPE_ELF;
+
+            ObtainSemaphore(&IDosBase(DOSBase)->segsem);
+            AddTail(&IDosBase(DOSBase)->segdata, segnode);
+            ReleaseSemaphore(&IDosBase(DOSBase)->segsem);
+
+            if (DebugBase)
+            {
+                char *buffer = NULL;
+                char *nameptr = getname(file, &buffer, DOSBase);
+                struct ELF_DebugInfo dbg = {eh, sh};
+                RegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
+                FreeMem(buffer, 512);
+            }
+        }
     }
 }
 
@@ -63,7 +77,19 @@ void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBas
 {
     struct Library *DebugBase;
     if (DOSBase)
+    {
+        struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+        if (segnode)
+        {
+            segnode->ln_Name = (char *)hunks;
+            segnode->ln_Type = SEGTYPE_HUNK;
+
+            ObtainSemaphore(&IDosBase(DOSBase)->segsem);
+            AddTail(&IDosBase(DOSBase)->segdata, segnode);
+            ReleaseSemaphore(&IDosBase(DOSBase)->segsem);
+        }
         DebugBase = IDosBase(DOSBase)->debugBase;
+    }
     else
         DebugBase = OpenLibrary("debug.library", 0);
     if (DebugBase)

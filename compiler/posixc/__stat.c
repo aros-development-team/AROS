@@ -35,6 +35,12 @@ static void __fill_statbuffer(
     struct FileInfoBlock *fib,
     int                  fallback_to_defaults,
     BPTR                 lock);
+static void __fill_stat64buffer(
+    struct stat64          *sb,
+    char                 *buffer,
+    struct FileInfoBlock *fib,
+    int                  fallback_to_defaults,
+    BPTR                 lock);
 
 int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
 {
@@ -212,12 +218,12 @@ int __stat64(BPTR lock, struct stat64 *sb, BOOL filehandle)
     if (filehandle)
     {
         BPTR filelock = DupLockFromFH(lock);
-        __fill_statbuffer(sb, (char*) buffer, fib, fallback_to_defaults, filelock);
+        __fill_stat64buffer(sb, (char*) buffer, fib, fallback_to_defaults, filelock);
         UnLock(filelock);
     }
     else
     {
-        __fill_statbuffer(sb, (char*) buffer, fib, fallback_to_defaults, lock);
+        __fill_stat64buffer(sb, (char*) buffer, fib, fallback_to_defaults, lock);
     }
 
     FreeVec(buffer);
@@ -474,7 +480,7 @@ int __stat64_from_path(const char *path, struct stat64 *sb)
     }
 
     if (*filepart == '\0' || fallback_to_defaults)
-        __fill_statbuffer(sb, abspath, fib, fallback_to_defaults, lock);
+        __fill_stat64buffer(sb, abspath, fib, fallback_to_defaults, lock);
     else
         /* examine entries of parent directory until we find the object to stat */
         do
@@ -485,7 +491,7 @@ int __stat64_from_path(const char *path, struct stat64 *sb)
             {
                 if (stricmp(fib->fib_FileName, filepart) == 0)
                 {
-                    __fill_statbuffer(sb, abspath, fib, 0, lock);
+                    __fill_stat64buffer(sb, abspath, fib, 0, lock);
                     res = 0;
                     break;
                 }
@@ -791,6 +797,96 @@ static void hashlittle2(
 
 static void __fill_statbuffer(
     struct stat          *sb,
+    char                 *buffer,
+    struct FileInfoBlock *fib,
+    int                  fallback_to_defaults,
+    BPTR                 lock)
+{
+    uint64_t hash;
+    uint32_t pc = 1, pb = 1; /* initial hash values */
+
+    hashlittle2(buffer, strlen((char*) buffer), &pc, &pb);
+    hash = pc + (((uint64_t)pb)<<32);
+
+    if(fallback_to_defaults)
+    {
+	/* Empty file, not protected, as old as it can be... */
+	fib->fib_Size = 0;
+	fib->fib_NumBlocks = 0;
+	fib->fib_Date.ds_Days = 0;
+	fib->fib_Date.ds_Minute = 0;
+	fib->fib_Date.ds_Tick = 0;
+	fib->fib_OwnerUID = 0;
+	fib->fib_OwnerGID = 0;
+	fib->fib_Protection = 0;
+	/* Most probable value */
+	fib->fib_DirEntryType = ST_PIPEFILE;
+    }
+
+    sb->st_dev     = (dev_t) (lock ? ((struct FileLock *)BADDR(lock))->fl_Volume : BNULL);
+    sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
+                                 smaller than uint64_t, but it's ok */
+    sb->st_size    = (off_t)fib->fib_Size;
+    /* FIXME: Update to properly handle the struct timespec fields
+       st_atim, st_mtim and st_ctim */
+    sb->st_atime   =
+    sb->st_ctime   =
+    sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __stdc_gmtoffset()) * 60 +
+	              fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
+    sb->st_uid     = __id_a2u(fib->fib_OwnerUID);
+    sb->st_gid     = __id_a2u(fib->fib_OwnerGID);
+    sb->st_mode    = __prot_a2u(fib->fib_Protection);
+
+    {
+        struct InfoData info;
+
+        if (lock && Info(lock, &info))
+        {
+            sb->st_blksize = info.id_BytesPerBlock;
+        }
+        else
+        {
+            /* The st_blksize is just a guideline anyway, so we set it
+               to 1024 in case Info() didn't succeed */
+            sb->st_blksize = 1024;
+        }
+    }
+    if(fib->fib_Size > 0 && sb->st_blksize > 0)
+	sb->st_blocks = 
+	    (1 + ((long) fib->fib_Size - 1) / sb->st_blksize) * 
+	    (sb->st_blksize / 512);
+    else
+	sb->st_blocks  = 0;
+
+    switch (fib->fib_DirEntryType)
+    {
+        case ST_PIPEFILE:
+            /* don't use S_IFIFO, we don't have a mkfifo() call ! */
+            sb->st_mode |= S_IFCHR;
+            break;
+
+        case ST_ROOT:
+        case ST_USERDIR:
+        case ST_LINKDIR:
+            sb->st_nlink = 1;
+            sb->st_mode |= S_IFDIR;
+            break;
+
+        case ST_SOFTLINK:
+            sb->st_nlink = 1;
+            sb->st_mode |= S_IFLNK;
+            break;
+
+        case ST_FILE:
+        case ST_LINKFILE:
+        default:
+            sb->st_nlink = 1;
+            sb->st_mode |= S_IFREG;
+    }
+}
+
+static void __fill_stat64buffer(
+    struct stat64          *sb,
     char                 *buffer,
     struct FileInfoBlock *fib,
     int                  fallback_to_defaults,

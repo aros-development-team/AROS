@@ -7,7 +7,7 @@
 
 /*
  * Set features depending on which standards have been requested.
- * posixc headers use mostly the same flags as glibc for compatability */
+ * posixc headers use mostly the same flags as glibc for compatibility */
 
 /* __USE_ISOC99
  * expose definitions and prototypes for ISO C99. */
