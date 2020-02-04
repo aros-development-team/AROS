@@ -18,6 +18,7 @@
 #include "mkkeymap.h"
 
 #define D(x)
+#define DLINE(x)
 
 static unsigned int     slen = 0; /* The allocation length pointed to be line */
 static char             *line = NULL; /* The current read file */
@@ -73,6 +74,7 @@ BOOL processSectConfig(struct config *cfg, FILE *descf)
     D(fprintf(stdout, "processing 'config' section\n");)
     while ((readline(descf))!=NULL)
     {
+        DLINE(fprintf(stdout, "line = '%s'\n", line);)
         if (strncmp(line, "##", 2)==0)
         {
             s = line+2;
@@ -104,6 +106,7 @@ BOOL processSectString(struct config *cfg, FILE *descf)
     D(fprintf(stdout, "processing 'string' section\n");)
     while ((readline(descf))!=NULL)
     {
+        DLINE(fprintf(stdout, "line = '%s'\n", line);)
         if (strncmp(line, "##", 2)==0)
         {
             s = line+2;
@@ -124,6 +127,7 @@ BOOL processSectDeadkey(struct config *cfg, FILE *descf)
     D(fprintf(stdout, "processing 'deadkey' section\n");)
     while ((readline(descf))!=NULL)
     {
+        DLINE(fprintf(stdout, "line = '%s'\n", line);)
         if (strncmp(line, "##", 2)==0)
         {
             s = line+2;
@@ -137,7 +141,7 @@ BOOL processSectDeadkey(struct config *cfg, FILE *descf)
     return FALSE;
 }
 
-BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *types, UBYTE cnt)
+BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *typesptr, UBYTE cnt)
 {
     UBYTE keytypes, keyno = 0;
     char *s;
@@ -145,6 +149,7 @@ BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *types, UBYTE cnt)
     D(fprintf(stdout, "processing 'types' section\n");)
     while ((readline(descf))!=NULL)
     {
+        DLINE(fprintf(stdout, "line = '%s'\n", line);)
         keytypes = 0;
         if (strncmp(line, "##", 2)==0)
         {
@@ -172,6 +177,9 @@ BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *types, UBYTE cnt)
 
         while (s < atend)
         {
+            if (*s == '#')
+                break;
+
             for (i = 0, type = 0; type==0 && i<nums; i++)
             {
                 if (strncmp(s, types[i], strlen(types[i]))==0)
@@ -182,33 +190,38 @@ BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *types, UBYTE cnt)
                     break;
                 }
             }
-            switch (type)
+
+            if (type != 0)
             {
-                case 1:
-                    keytypes |= KC_NOQUAL;
-                    break;
-                case 2:
-                    keytypes |= KCF_SHIFT;
-                    break;
-                case 3:
-                    keytypes |= KCF_ALT;
-                    break;
-                case 4:
-                    keytypes |= KCF_CONTROL;
-                    break;
-                case 5:
-                    keytypes |= KCF_DEAD;
-                    break;
-                case 6:
-                    keytypes |= KC_VANILLA;
-                    break;
-                case 7:
-                    keytypes |= KCF_STRING;
-                    break;
-                case 8:
-                    keytypes |= KCF_NOP;
-                    break;
+                switch (type)
+                {
+                    case 1:
+                        keytypes |= KC_NOQUAL;
+                        break;
+                    case 2:
+                        keytypes |= KCF_SHIFT;
+                        break;
+                    case 3:
+                        keytypes |= KCF_ALT;
+                        break;
+                    case 4:
+                        keytypes |= KCF_CONTROL;
+                        break;
+                    case 5:
+                        keytypes |= KCF_DEAD;
+                        break;
+                    case 6:
+                        keytypes |= KC_VANILLA;
+                        break;
+                    case 7:
+                        keytypes |= KCF_STRING;
+                        break;
+                    case 8:
+                        keytypes |= KCF_NOP;
+                        break;
+                }
             }
+            else s++;
         }
         if (keyno >= cnt)
         {
@@ -221,13 +234,14 @@ BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *types, UBYTE cnt)
     return FALSE;
 }
 
-BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *types, UBYTE cnt)
+BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE cnt)
 {
     char *s;
 
     D(fprintf(stdout, "processing 'map' section\n");)
     while ((readline(descf))!=NULL)
     {
+        DLINE(fprintf(stdout, "line = '%s'\n", line);)
         if (strncmp(line, "##", 2)==0)
         {
             s = line+2;
@@ -249,6 +263,7 @@ BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt
     D(fprintf(stdout, "processing 'capsable/repeatable' section\n");)
     while ((readline(descf))!=NULL)
     {
+        DLINE(fprintf(stdout, "line = '%s'\n", line);)
         if (strncmp(line, "##", 2)==0)
         {
             s = line+2;
