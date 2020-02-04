@@ -75,7 +75,7 @@ KC_NOQUAL  		# 3F
 ## end lokeymaptypes
 
 ## begin hikeymaptypes
-KC_NOQUAL, 		# 40 SPACE
+KC_NOQUAL  		# 40 SPACE
 KC_NOQUAL  		# 41 BACKSPACE
 KCF_STRING KCF_SHIFT 	# 42 TAB
 KC_NOQUAL 		# 43 ENTER
