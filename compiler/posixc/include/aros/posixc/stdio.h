@@ -22,6 +22,7 @@
 
 __BEGIN_DECLS
 
+#if !defined(NO_POSIX_WRAPPERS)
 FILE *posixc_fopen(const char * restrict filename, const char * restrict mode);
 FILE *posixc_fopen64(const char * restrict filename, const char * restrict mode);
 #if defined(__USE_FILE_OFFSET64)
@@ -35,6 +36,10 @@ static inline FILE *fopen(const char * restrict filename, const char * restrict 
     return posixc_fopen(filename, mode);
 }
 #endif
+#else  /* NO_POSIX_WRAPPERS */
+FILE *fopen(const char * restrict filename, const char * restrict mode);
+FILE *fopen64(const char * restrict filename, const char * restrict mode);
+#endif /* NO_POSIX_WRAPPERS */
 
 /* NOTIMPL char	*ctermid(char *); */
 /* NOTIMPL int dprintf(int, const char *restrict, ...) */
@@ -42,6 +47,7 @@ FILE *fdopen (int filedes, const char *mode);
 int fileno(FILE *);
 void flockfile(FILE *);
 /* NOTIMPL FILE *fmemopen(void *restrict, size_t, const char *restrict) */
+#if !defined(NO_POSIX_WRAPPERS)
 int posixc_fgetpos(FILE * restrict stream, fpos_t * restrict pos);
 int posixc_fsetpos(FILE *stream, const fpos_t *pos);
 int posixc_fgetpos64(FILE * restrict stream, __fpos64_t * restrict pos);
@@ -95,6 +101,20 @@ static inline off_t ftello(FILE *stream)
     return posixc_ftello(stream);
 }
 #endif
+#else  /* NO_POSIX_WRAPPERS */
+int fgetpos(FILE * restrict stream, fpos_t * restrict pos);
+int fsetpos(FILE *stream, const fpos_t *pos);
+int fgetpos64(FILE * restrict stream, __fpos64_t * restrict pos);
+int fsetpos64(FILE *stream, const __fpos64_t *pos);
+int fseeko(FILE *stream, off_t offset, int whence);
+#if defined(__off64_t_defined)
+int fseeko64(FILE *stream, off64_t offset, int whence);
+#endif
+off_t ftello(FILE *stream);
+#if defined(__off64_t_defined)
+off64_t ftello64(FILE *stream);
+#endif
+#endif /* NO_POSIX_WRAPPERS */
 /* NOTIMPL int ftrylockfile(FILE *); */
 void funlockfile(FILE *);
 int getc_unlocked(FILE *);

@@ -28,19 +28,23 @@ FILES := adler32 \
          contrib/infback9/infback9 \
          contrib/infback9/inftree9
 
-USER_CPPFLAGS := -D_XOPEN_SOURCE=600 -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
+
+LIBZ_CPPFLAGS := -D_XOPEN_SOURCE=600 -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
+
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
 
 %build_module mmake=workbench-libs-z \
   modname=z1 modtype=library \
   files="$(FILES)" linklibname=z
 
-
 #MM- linklibs: linklibs-z-static
 
-USER_CPPFLAGS := -D_XOPEN_SOURCE=600 -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H -DNO_STRERROR
+# N.B: z.static is compiled without the posix wrappers, so that it looks for the default function
+# symbol names (e.g. lseek)
+
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNO_POSIX_WRAPPERS
 
 %build_linklib mmake=linklibs-z-static libname=z.static files="$(FILES)"
-
 
 INCLUDE_FILES := zlib.h zconf.h
 %copy_includes
@@ -51,6 +55,5 @@ workbench-libs-z-pc : $(AROS_LIB)/pkgconfig/zlib.pc
 $(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
 	$(CP) $^ $@
-
 
 %common
