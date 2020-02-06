@@ -14,10 +14,10 @@ OLDKEYMAPS := \
     pc105_tr pc105_ua pc105_usx pc105_col \
     sun_usa 
 
-#MM- workbench-devs-complete : workbench-devs-keymaps-setup
+#MM- workbench-devs-complete : workbench-devs-keymaps
 
 #MM- workbench-devs-keymaps :  includes workbench-devs-keymaps-build
-#MM workbench-devs-keymaps-build : workbench-devs-keymaps-setup
+#MM workbench-devs-keymaps-build : workbench-devs-keymaps-setup tools-mkkeymap
 #MM- workbench-devs-keymaps-quick : workbench-devs-keymaps-build
 
 KEYMAPFILES := $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
@@ -29,7 +29,8 @@ workbench-devs-keymaps-build : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
 OBJDIR := $(GENDIR)/$(CURDIR)
 
 $(AROS_DEVS)/Keymaps/% : $(SRCDIR)/$(CURDIR)/%.akmd
-	$(MKKEYMAP) -d $< -k $@
+	$(Q)$(ECHO) "Generating $(notdir $@) KeyMap..."
+	$(Q)$(MKKEYMAP) -d $< -k $@
 
 #MM workbench-devs-keymaps-setup
 %rule_makedirs dirs="$(AROS_DEVS)/Keymaps" setuptarget=workbench-devs-keymaps-setup
