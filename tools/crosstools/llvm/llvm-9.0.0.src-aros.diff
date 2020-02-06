@@ -1,0 +1,44 @@
+diff --git a/include/llvm/ADT/Triple.h b/include/llvm/ADT/Triple.h
+index edeb31efab8..52aaaf23eb7 100644
+--- a/include/llvm/ADT/Triple.h
++++ b/include/llvm/ADT/Triple.h
+@@ -155,6 +155,7 @@ public:
+     UnknownOS,
+ 
+     Ananas,
++    AROS,
+     CloudABI,
+     Darwin,
+     DragonFly,
+@@ -448,6 +449,11 @@ public:
+     return isOSVersionLT(Minor + 4, Micro, 0);
+   }
+ 
++  /// Is this an AROS triple.
++  bool isAROS() const {
++    return getOS() == Triple::AROS;
++  }
++
+   /// isMacOSX - Is this a Mac OS X triple. For legacy reasons, we support both
+   /// "darwin" and "osx" as OS X triples.
+   bool isMacOSX() const {
+diff --git a/lib/Support/Triple.cpp b/lib/Support/Triple.cpp
+index d419463e6a5..fa54f15f7c1 100644
+--- a/lib/Support/Triple.cpp
++++ b/lib/Support/Triple.cpp
+@@ -177,6 +177,7 @@ StringRef Triple::getOSTypeName(OSType Kind) {
+   case UnknownOS: return "unknown";
+ 
+   case Ananas: return "ananas";
++  case AROS: return "aros";
+   case CloudABI: return "cloudabi";
+   case Darwin: return "darwin";
+   case DragonFly: return "dragonfly";
+@@ -482,6 +483,7 @@ static Triple::VendorType parseVendor(StringRef VendorName) {
+ static Triple::OSType parseOS(StringRef OSName) {
+   return StringSwitch<Triple::OSType>(OSName)
+     .StartsWith("ananas", Triple::Ananas)
++    .StartsWith("aros", Triple::AROS)
+     .StartsWith("cloudabi", Triple::CloudABI)
+     .StartsWith("darwin", Triple::Darwin)
+     .StartsWith("dragonfly", Triple::DragonFly)
