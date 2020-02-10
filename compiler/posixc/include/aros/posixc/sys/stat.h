@@ -138,34 +138,34 @@ __BEGIN_DECLS
 int chmod(const char *path, mode_t mode);
 int fchmod(int fildes, mode_t mode);
 /* NOTIMPL int fchmodat(int, const char *, mode_t, int); */
-int posixc_fstat(int fd, struct stat *sb);
-int posixc_fstat64(int fd, struct stat64 *sb);
+int __posixc_fstat(int fd, struct stat *sb);
+int fstat64(int fd, struct stat64 *sb);
 #if defined(__USE_FILE_OFFSET64)
 static inline int fstat(int fd, struct stat *sb)
 {
     struct stat64 * _sb64 = (struct stat64 *)sb;
-    return posixc_fstat64(fd, _sb64);
+    return fstat64(fd, _sb64);
 }
 #else
 static inline int fstat(int fd, struct stat *sb)
 {
-    return posixc_fstat(fd, sb);
+    return __posixc_fstat(fd, sb);
 }
 #endif
 /* NOTIMPL int fstatat(int, const char *restrict, struct stat *restrict, int); */
 /* NOTIMPL int futimens(int, const struct timespec [2]); */
-int posixc_lstat(const char * restrict path, struct stat * restrict sb);
-int posixc_lstat64(const char * restrict path, struct stat64 * restrict sb);
+int __posixc_lstat(const char * restrict path, struct stat * restrict sb);
+int lstat64(const char * restrict path, struct stat64 * restrict sb);
 #if defined(__USE_FILE_OFFSET64)
 static inline int lstat(const char * restrict path, struct stat * restrict sb)
 {
     struct stat64 * _sb64 = (struct stat64 *)sb;
-    return posixc_lstat64(path, _sb64);
+    return lstat64(path, _sb64);
 }
 #else
 static inline int lstat(const char * restrict path, struct stat * restrict sb)
 {
-    return posixc_lstat(path, sb);
+    return __posixc_lstat(path, sb);
 }
 #endif
 int mkdir(const char *path, mode_t mode);
@@ -174,18 +174,18 @@ int mkdir(const char *path, mode_t mode);
 /* NOTIMPL int mkfifoat(int, const char *, mode_t); */
 int mknod(const char *path, mode_t mode, dev_t dev);
 /* NOTIMPL int mknodat(int, const char *, mode_t, dev_t); */
-int posixc_stat(const char * restrict path, struct stat * restrict sb);
-int posixc_stat64(const char * restrict path, struct stat64 * restrict sb);
+int __posixc_stat(const char * restrict path, struct stat * restrict sb);
+int stat64(const char * restrict path, struct stat64 * restrict sb);
 #if defined(__USE_FILE_OFFSET64)
 static inline int stat(const char * restrict path, struct stat * restrict sb)
 {
     struct stat64 * _sb64 = (struct stat64 *)sb;
-    return posixc_stat64(path, _sb64);
+    return stat64(path, _sb64);
 }
 #else
 static inline int stat(const char * restrict path, struct stat * restrict sb)
 {
-    return posixc_stat(path, sb);
+    return __posixc_stat(path, sb);
 }
 #endif
 mode_t umask(mode_t numask);

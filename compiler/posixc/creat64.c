@@ -10,7 +10,7 @@
     NAME */
 #include <fcntl.h>
 
-	int posixc_creat64 (
+	int creat64 (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -47,5 +47,5 @@
 ******************************************************************************/
 {
     return open (pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
-} /* posixc_creat64 */
+} /* creat64 */
 

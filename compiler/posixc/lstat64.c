@@ -24,7 +24,7 @@ static BPTR __lock(
 
 #include <sys/stat.h>
 
-        int posixc_lstat64(
+        int lstat64(
 
 /*  SYNOPSIS */
         const char  *path,

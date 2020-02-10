@@ -12,7 +12,7 @@
     NAME */
 #include <stdio.h>
 
-	int posixc_fgetpos (
+	int __posixc_fgetpos (
 
 /*  SYNOPSIS */
 	FILE   * stream,
@@ -59,5 +59,5 @@
     }
 
     return 0;
-} /* posixc_fgetpos */
+} /* __posixc_fgetpos */
 

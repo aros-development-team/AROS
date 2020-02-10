@@ -15,7 +15,7 @@
     NAME */
 #include <stdio.h>
 
-	FILE * posixc_fopen (
+	FILE * __posixc_fopen (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -82,5 +82,5 @@
 
     return __fopen(pathname, mode, 0);
 
-} /* posixc_fopen */
+} /* __posixc_fopen */
 

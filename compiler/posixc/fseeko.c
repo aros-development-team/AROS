@@ -17,7 +17,7 @@
     NAME */
 #include <stdio.h>
 
-	int posixc_fseeko (
+	int __posixc_fseeko (
 
 /*  SYNOPSIS */
 	FILE * stream,
@@ -63,4 +63,4 @@
 
     return __fseeko (stream, offset, whence);
 
-} /* posixc_fseeko */
+} /* __posixc_fseeko */
