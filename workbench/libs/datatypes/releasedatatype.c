@@ -52,16 +52,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList)->dtl_Lock);
-   
-    if(dt != NULL)
-    {
-	if(((struct CompoundDataType *)dt)->OpenCount)
-	    ((struct CompoundDataType*)dt)->OpenCount--;
-	else
-	    Alert(AN_Unknown);
-    }
-    
+    if(!dt)
+        return;
+
+   ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList)->dtl_Lock);
+
+    if(((struct CompoundDataType *)dt)->OpenCount)
+        ((struct CompoundDataType*)dt)->OpenCount--;
+    else
+        Alert(AN_Unknown);
+
     ReleaseSemaphore(&(GPB(DataTypesBase)->dtb_DTList)->dtl_Lock);
 
     AROS_LIBFUNC_EXIT
