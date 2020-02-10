@@ -2,7 +2,7 @@
 #define DATATYPES_DATATYPESCLASS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -129,6 +129,12 @@
 
 /* V44: Size of object if of type DTST_MEMORY */
 #define  DTA_SourceSize	    	(DTA_Dummy + 40)
+
+/* V44: Reserved tag */
+#define  DTA_Reserved           (DTA_Dummy + 41)
+
+/* V45: */
+#define  DTA_Class              (DTA_Dummy + 62)
 
 /* DTObject attributes */
 #define  DTA_Name         (DTA_Dummy + 100)
