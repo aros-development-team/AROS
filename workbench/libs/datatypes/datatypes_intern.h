@@ -181,29 +181,29 @@ struct IntDataTypesList
 
 /* Prototypes for help functions */
 struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
-			    STRPTR name);
+                            STRPTR name);
 struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase);
 struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
-				     struct DTHookContext *dthc,
+                                     struct DTHookContext *dthc,
                                      struct DataType *prevdt,
-				     UBYTE *CheckArray, UWORD CheckSize,
-				     UBYTE *Filename, ULONG Size);
+                                     UBYTE *CheckArray, UWORD CheckSize,
+                                     UBYTE *Filename, ULONG Size);
 struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
                                      struct DataType *prevdt,
-				     struct Library *DataTypesBase);
+                                     struct Library *DataTypesBase);
 
 ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...) __stackparm;
 ULONG Do_OM_NOTIFY(struct Library *DataTypesBase, Object *object, struct GadgetInfo *ginfo, ULONG flags, Tag firstTag,...) __stackparm;
 ULONG DoGad_OM_NOTIFY(struct Library *DataTypesBase, Object *object,
-		      struct Window *window, struct Requester *req,
-		      ULONG flags, Tag firstTag, ...) __stackparm;
+                      struct Window *window, struct Requester *req,
+                      ULONG flags, Tag firstTag, ...) __stackparm;
 ULONG dogadgetmethod(struct Library *DataTypesBase, struct Gadget *gad,
-		     struct Window *win, struct Requester *req,
-		     ULONG MethodID, ...) __stackparm;
+                     struct Window *win, struct Requester *req,
+                     ULONG MethodID, ...) __stackparm;
 struct Catalog *opencatalog(struct Library *DataTypesBase, struct Locale *locale,
-			    STRPTR name, Tag firstTag, ...) __stackparm;
+                            STRPTR name, Tag firstTag, ...) __stackparm;
 BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
-	     ULONG Length);
+             ULONG Length);
 
 BOOL InstallClass(struct Library *DataTypesBase);
 BOOL TryRemoveClass(struct Library *DataTypesBase);
