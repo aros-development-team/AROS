@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,6 +14,13 @@
 #include <libraries/iffparse.h>
 
 #include <aros/debug.h>
+
+static inline struct DataType *DataTypeFromANode(struct Node *aNode)
+{
+    struct DataType *dtNode;
+    dtNode = (struct DataType *)((IPTR)aNode - sizeof(struct Node));
+    return dtNode;
+}
 
 /*****************************************************************************
 
@@ -30,22 +37,29 @@
 	struct Library *, DataTypesBase, 6, DataTypes)
 
 /*  FUNCTION
-
     Examine the data pointed to by 'handle'.
 
     INPUTS
+    type    --  specifies the stream-type of 'handle', using one of the following types;
+		DTST_FILE - 'handle' is a BPTR lock
+		DTST_CLIPBOARD - 'handle' is a struct IFFHandle *
+		DTST_RAM - (v45) 'handle' is a STRPTR datatype-name
+    handle  --  handle to return a datatype for.
+    attrs   --  additional attributes.
+                
+		DTA_GroupID  -  (v45) (ULONG)
+		                the group (GID_#?) to match.
+		                0 is used as a wildcard value.
 
-    type    --  type of 'handle'
-    handle  --  handle to examine (if 'type' is DTST_FILE, 'handle' should be
-                a BPTR lock; if it's DTST_CLIPBOARD, 'handle' should be a
-		struct IFFHandle *).
-    attrs   --  additional attributes (currently none defined).
+		DTA_DataType -  (v45) (struct DataType *)
+			        starts/continues search from the specified
+				DataType. NULL has the same effect as not
+				using DTA_DataType.
 
     RESULT
-
     A pointer to a DataType or NULL if failure. IoErr() gives more information
     in the latter case:
-
+    
     ERROR_NO_FREE_STORE     --  Not enough memory available
     ERROR_OBJECT_NOT_FOUND  --  Unable to open the data type object
     ERROR_NOT_IMPLEMENTED   --  Unknown handle type
@@ -69,6 +83,11 @@
     AROS_LIBFUNC_INIT
 
     struct CompoundDataType *cdt = NULL;
+    struct DataType *prevdt;
+    ULONG grpid;
+
+    prevdt = (struct DataType *)GetTagData(DTA_DataType, 0, attrs);
+    grpid = (ULONG)GetTagData(DTA_GroupID, 0, attrs);
 
     D(bug("datatypes.library/ObtainDataType - sem = %p\n", &(GPB(DataTypesBase)->dtb_DTList->dtl_Lock)));
     ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList->dtl_Lock));
@@ -83,17 +102,17 @@
 
 	    if((fib = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
 	    {
-
    	        D(bug("datatypes.library/ObtainDataType: alloced DOS_FIB. Now calling ExamineLock\n"));
 
-		cdt = ExamineLock((BPTR)handle, fib, DataTypesBase);
+		cdt = ExamineLock((BPTR)handle, fib, prevdt, DataTypesBase);
 
    	        D(bug("datatypes.library/ObtainDataType: DTST_FILE. ExamineLock call returned\n"));
 
 		FreeDosObject(DOS_FIB, fib);
 	    }
-	    break;
 	}
+	break;
+
     case DTST_CLIPBOARD:
 	{
 	    struct ClipboardHandle *cbh;
@@ -140,6 +159,7 @@
    
 		    cdt = ExamineData(DataTypesBase,
 				      &dthc,
+				      prevdt,
 				      CheckArray,
 				      (UWORD)cbh->cbh_Req.io_Actual,
 				      "",
@@ -151,7 +171,31 @@
 	    }
 	}
 	break;
-	
+
+    case DTST_RAM:
+	{ // v45
+	    if (!prevdt)
+	    {
+		prevdt = DataTypeFromANode(GetHead(&(GPB(DataTypesBase)->dtb_DTList->dtl_SortedList)));
+	    }
+	    else
+	    {
+		prevdt = DataTypeFromANode(prevdt->dtn_Node2.ln_Succ);
+	    }
+	    for (; prevdt && prevdt->dtn_Node2.ln_Succ; prevdt = DataTypeFromANode(prevdt->dtn_Node2.ln_Succ))
+	    {
+		if (prevdt->dtn_Header && ((grpid == 0) || (prevdt->dtn_Header->dth_GroupID == grpid)))
+		{
+		    cdt = (struct CompoundDataType *)prevdt;
+		    break;
+		}
+	    }
+	}
+	break;
+
+#if defined(DTST_HOTLINK)
+    case DTST_HOTLINK:
+#endif
     default:
 	SetIoErr(ERROR_NOT_IMPLEMENTED);
 	break;

@@ -2,7 +2,7 @@
 #define DATATYPES_INTERN_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal datatypes.library definitions.
@@ -185,9 +185,11 @@ struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase);
 struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
 				     struct DTHookContext *dthc,
+                                     struct DataType *prevdt,
 				     UBYTE *CheckArray, UWORD CheckSize,
 				     UBYTE *Filename, ULONG Size);
 struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
+                                     struct DataType *prevdt,
 				     struct Library *DataTypesBase);
 
 ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...) __stackparm;
@@ -202,7 +204,6 @@ struct Catalog *opencatalog(struct Library *DataTypesBase, struct Locale *locale
 			    STRPTR name, Tag firstTag, ...) __stackparm;
 BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 	     ULONG Length);
-
 
 BOOL InstallClass(struct Library *DataTypesBase);
 BOOL TryRemoveClass(struct Library *DataTypesBase);

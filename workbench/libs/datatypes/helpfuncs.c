@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -123,7 +123,6 @@ struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 }
 
 
-
 BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 	     ULONG Length)
 {
@@ -193,7 +192,7 @@ BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 
 #define getDTLIST (GPB(DataTypesBase)->dtb_DTList)
 
-struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
+struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struct DataType *prevdt,
 				     struct Library *DataTypesBase)
 {
     struct CompoundDataType *cdt = NULL;
@@ -274,6 +273,7 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 
 					cdt = ExamineData(DataTypesBase,
 							  &dthc,
+							  prevdt,
 							  CheckArray,
 							  CheckSize,
 							  fib->fib_FileName,
@@ -426,6 +426,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
 
 struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
 				     struct DTHookContext *dthc,
+				     struct DataType *prevdt,
 				     UBYTE *CheckArray, UWORD CheckSize,
 				     UBYTE *Filename, ULONG Size)
 {
