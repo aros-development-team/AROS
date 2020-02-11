@@ -12,7 +12,7 @@
     NAME */
 #include <dirent.h>
 
-        int posixc_alphasort (
+        int __posixc_alphasort (
 
 /*  SYNOPSIS */
         const struct dirent **a,

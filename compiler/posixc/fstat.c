@@ -16,7 +16,7 @@
 
 #include <sys/stat.h>
 
-	int posixc_fstat(
+	int __posixc_fstat(
 
 /*  SYNOPSIS */
 	int fd,

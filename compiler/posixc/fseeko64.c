@@ -12,7 +12,7 @@
     NAME */
 #include <stdio.h>
 
-	int posixc_fseeko64 (
+	int fseeko64 (
 
 /*  SYNOPSIS */
 	FILE * stream,
@@ -58,4 +58,4 @@
 
     return __fseeko64(stream, offset, whence);
 
-} /* posixc_fseeko64 */
+} /* fseeko64 */

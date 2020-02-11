@@ -79,26 +79,26 @@ __BEGIN_DECLS
 DIR *opendir (const char *filename);
 int closedir(DIR *dir);
 #if !defined(NO_POSIX_WRAPPERS)
-struct dirent *posixc_readdir (DIR *dir);
+struct dirent *__posixc_readdir (DIR *dir);
 #if defined(__USE_LARGEFILE64)
-struct dirent64 *posixc_readdir64 (DIR *dir);
+struct dirent64 *readdir64 (DIR *dir);
 #endif
 #if defined(__USE_FILE_OFFSET64)
 static inline struct dirent *readdir(DIR *dir)
 {
-    return (struct dirent *)posixc_readdir64(dir);
+    return (struct dirent *)readdir64(dir);
 }
 #else
 static inline struct dirent *readdir(DIR *dir)
 {
-    return posixc_readdir(dir);
+    return __posixc_readdir(dir);
 }
 #endif
 
-/* NOTIMPL int posixc_readdir_r (DIR *dir, struct dirent *entry, struct dirent **result); */
+/* NOTIMPL int __posixc_readdir_r (DIR *dir, struct dirent *entry, struct dirent **result); */
 # ifdef __USE_LARGEFILE64
 /* NOTIMPL 
-int posixc_readdir64_r (DIR *dir,
+int readdir64_r (DIR *dir,
                         struct dirent64 *entry,
                         struct dirent64 **result) */
 # endif
@@ -112,12 +112,12 @@ struct dirent64 *readdir64 (DIR *dir);
 #ifdef __USE_XOPEN2K8
 int dirfd(DIR *dir);
 #if !defined(NO_POSIX_WRAPPERS)
-int posixc_scandir (const char *dir, struct dirent ***namelist,
+int __posixc_scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
               int (*compar)(const struct dirent **,
                             const struct dirent **));
 #if defined(__USE_LARGEFILE64)
-int posixc_scandir64 (const char *dir,
+int scandir64 (const char *dir,
                       struct dirent64 ***namelist,
                       int (*select) (const struct dirent64 *),
                       int (*compar) (const struct dirent64 **,
@@ -131,7 +131,7 @@ static inline int scandir (const char *dir, struct dirent ***namelist,
 {
     int (*select64)(const struct dirent64 *) = (int (*)(const struct dirent64 *))select;
     int (*compar64)(const struct dirent64 **, const struct dirent64 **) = (int (*)(const struct dirent64 **, const struct dirent64 **))compar;
-    return posixc_scandir64(dir, (struct dirent64 ***)namelist, select64, compar64);
+    return scandir64(dir, (struct dirent64 ***)namelist, select64, compar64);
 }
 #else
 static inline int scandir (const char *dir, struct dirent ***namelist,
@@ -139,22 +139,22 @@ static inline int scandir (const char *dir, struct dirent ***namelist,
               int (*compar)(const struct dirent **,
                             const struct dirent **))
 {
-    return posixc_scandir(dir, namelist, select, compar);
+    return __posixc_scandir(dir, namelist, select, compar);
 }
 #endif
-int posixc_alphasort(const struct dirent **a, const struct dirent **b);
+int __posixc_alphasort(const struct dirent **a, const struct dirent **b);
 #if defined(__USE_LARGEFILE64)
-int posixc_alphasort64 (const struct dirent64 **a, const struct dirent64 **b);
+int alphasort64 (const struct dirent64 **a, const struct dirent64 **b);
 #endif
 #if defined(__USE_FILE_OFFSET64)
 static inline int alphasort(const struct dirent **a, const struct dirent **b)
 {
-    return posixc_alphasort64((const struct dirent64 **)a, (const struct dirent64 **)b);
+    return alphasort64((const struct dirent64 **)a, (const struct dirent64 **)b);
 }
 #else
 static inline int alphasort(const struct dirent **a, const struct dirent **b)
 {
-    return posixc_alphasort(a, b);
+    return __posixc_alphasort(a, b);
 }
 #endif
 #else /* NO_POSIX_WRAPPERS */

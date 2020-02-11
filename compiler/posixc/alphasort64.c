@@ -12,7 +12,7 @@
     NAME */
 #include <dirent.h>
 
-        int posixc_alphasort64 (
+        int alphasort64 (
 
 /*  SYNOPSIS */
         const struct dirent64 **a,

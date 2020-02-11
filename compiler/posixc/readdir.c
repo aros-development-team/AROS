@@ -25,7 +25,7 @@
     NAME */
 #include <dirent.h>
 
-	struct dirent *posixc_readdir(
+	struct dirent *__posixc_readdir(
 
 /*  SYNOPSIS */
 	DIR *dir)

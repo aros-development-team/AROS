@@ -17,7 +17,7 @@
     NAME */
 #include <unistd.h>
 
-	off_t posixc_lseek (
+	off_t __posixc_lseek (
 
 /*  SYNOPSIS */
 	int    filedes,
@@ -154,4 +154,4 @@
 error:
     errno = __stdc_ioerr2errno (IoErr ());
     return (off_t) -1;
-} /* posixc_lseek */
+} /* __posixc_lseek */

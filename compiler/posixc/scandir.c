@@ -14,7 +14,7 @@
     NAME */
 #include <dirent.h>
 
-        int posixc_scandir (
+        int __posixc_scandir (
 
 /*  SYNOPSIS */
         const char *dir,

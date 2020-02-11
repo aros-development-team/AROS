@@ -10,7 +10,7 @@
     NAME */
 #include <fcntl.h>
 
-	int posixc_creat (
+	int __posixc_creat (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -47,5 +47,5 @@
 ******************************************************************************/
 {
     return open (pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
-} /* posixc_creat */
+} /* __posixc_creat */
 
