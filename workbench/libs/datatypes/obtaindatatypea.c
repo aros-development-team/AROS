@@ -174,21 +174,31 @@ static inline struct DataType *DataTypeFromANode(struct Node *aNode)
 
     case DTST_RAM:
 	{ // v45
-	    if (!prevdt)
+	    if (!handle)
 	    {
-		prevdt = DataTypeFromANode(GetHead(&(GPB(DataTypesBase)->dtb_DTList->dtl_SortedList)));
+		if (!prevdt)
+		{
+		    prevdt = DataTypeFromANode(GetHead(&(GPB(DataTypesBase)->dtb_DTList->dtl_SortedList)));
+		}
+		else
+		{
+		    prevdt = DataTypeFromANode(prevdt->dtn_Node2.ln_Succ);
+		}
+		for (; prevdt && prevdt->dtn_Node2.ln_Succ; prevdt = DataTypeFromANode(prevdt->dtn_Node2.ln_Succ))
+		{
+		    if (prevdt->dtn_Header && ((grpid == 0) || (prevdt->dtn_Header->dth_GroupID == grpid)))
+		    {
+			cdt = (struct CompoundDataType *)prevdt;
+			break;
+		    }
+		}
 	    }
 	    else
 	    {
-		prevdt = DataTypeFromANode(prevdt->dtn_Node2.ln_Succ);
-	    }
-	    for (; prevdt && prevdt->dtn_Node2.ln_Succ; prevdt = DataTypeFromANode(prevdt->dtn_Node2.ln_Succ))
-	    {
-		if (prevdt->dtn_Header && ((grpid == 0) || (prevdt->dtn_Header->dth_GroupID == grpid)))
-		{
-		    cdt = (struct CompoundDataType *)prevdt;
-		    break;
-		}
+		struct Node *tmpDt = FindNameNoCase(DataTypesBase, &(GPB(DataTypesBase)->dtb_DTList->dtl_SortedList),
+			    (STRPTR)handle);
+		if (tmpDt)
+		    cdt = (struct CompoundDataType *)DataTypeFromANode(tmpDt);
 	    }
 	}
 	break;
