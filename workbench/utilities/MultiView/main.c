@@ -345,7 +345,7 @@ static void GetOptions(struct WBStartup *startup)
         if (s = (char *)FindToolType(toolarray,"EXPORT"))
         {
             cmdexport = StrDup(s);
-            bug("[MultiView] EXPORT = '%s'\n", cmdexport);
+            D(bug("[MultiView] EXPORT = '%s'\n", cmdexport);)
         }
     }
 }
