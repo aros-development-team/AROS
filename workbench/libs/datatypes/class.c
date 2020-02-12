@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Implementation of datatype rootclass
     Lang: English
 */
+
+#include <aros/debug.h>
 
 #define USE_BOOPSI_STUBS
 #include <exec/types.h>
@@ -30,8 +32,6 @@
 #include "datatypes_intern.h"
 
 #include <clib/boopsistubs.h>
-
-#include <aros/debug.h>
 
 /* #include <devices/printer.h>  --  No printer stuff yet... */
 
@@ -390,8 +390,9 @@ AROS_UFH3(IPTR, Dispatcher,
 				} /*  switch(... & DTF_TYPE_MASK) */
 				break;
 				
+			    case DTST_RAM:
 			    case DTST_CLIPBOARD:
-			    	D(bug("datatypes.library/class/OM_NEW: SourceType = DTST_CLIPBOARD\n"));
+			    	D(bug("datatypes.library/class/OM_NEW: SourceType = DTST_RAM | DTST_CLIPBOARD\n"));
 
 				newdto->dto_Handle = handle;
 				Success = TRUE;
