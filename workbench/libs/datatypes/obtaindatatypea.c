@@ -18,7 +18,7 @@
 static inline struct DataType *DataTypeFromANode(struct Node *aNode)
 {
     struct DataType *dtNode;
-    dtNode = (struct DataType *)((IPTR)aNode - sizeof(struct Node));
+    dtNode = (struct DataType *)((IPTR)aNode - offsetof(struct DataType, dtn_Node2));
     return dtNode;
 }
 
