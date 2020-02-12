@@ -15,7 +15,7 @@ void getColorString(char **colorString, UBYTE Depth, ULONG Colors, ULONG ModeID)
 {
     if (Colors > 0)
     {
-        if ((ModeID & (HAM_KEY|EXTRAHALFBRITE_KEY)) == 0)
+        if ((ModeID == INVALID_ID) || ((ModeID & (HAM_KEY|EXTRAHALFBRITE_KEY)) == 0))
         {
             *colorString = AllocVec(24, MEMF_ANY);
             sprintf(*colorString, "     Colors:  %d", (int)Colors);
