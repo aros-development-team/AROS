@@ -228,7 +228,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     ULONG                   biSize, biWidth, biHeight, biCompression;
     ULONG                   biClrUsed, biClrImportant;
     UWORD                   biPlanes, biBitCount;
-    ULONG                   alignwidth, alignedwidth, alignbytes, alignedbytes, pixelfmt;
+    ULONG                   alignwidth, alignbytes, alignedbytes, pixelfmt;
     long                    x, y;
     int                     cont, byte;
     int 		    numcolors;
@@ -239,15 +239,11 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 
     D(bug("BMP.datatype/LoadBMP()\n"));
 
-    if( !(BMPhandle = AllocMem(sizeof(BMPHandleType), MEMF_ANY)) )
+    if( !(BMPhandle = AllocMem(sizeof(BMPHandleType), MEMF_CLEAR)) )
     {
         SetIoErr(ERROR_NO_FREE_STORE);
         return FALSE;
     }
-    BMPhandle->filebuf = NULL;
-    BMPhandle->linebuf = NULL;
-    BMPhandle->codecvars = NULL;
-    
     
     if( GetDTAttrs(o,   DTA_SourceType    , (IPTR)&sourcetype ,
                         DTA_Handle        , (IPTR)&(BMPhandle->filehandle),
@@ -300,6 +296,8 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     bfOffBits = (filebuf[13]<<24) | (filebuf[12]<<16) | (filebuf[11]<<8) | filebuf[10];
     D(bug("BMP.datatype/LoadBMP() --- bfSize %ld bfOffBits %ld\n", bfSize, bfOffBits));
 
+//TODO: the first ULONG should contain the DIB header size
+#if (1)
     /* load BitmapInfoHeader from file, make sure, there are at least 40 bytes in buffer */
     if ( (BMPhandle->filebufbytes -= 40) < 0 && !LoadBMP_FillBuf(BMPhandle, 40) )
     {
@@ -327,7 +325,8 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
         BMP_Exit(BMPhandle, ERROR_NOT_IMPLEMENTED);
         return FALSE;
     }
-
+#endif
+    
     /* check color mode */
     numcolors = 0; 
     pixelfmt = PBPAFMT_LUT8;
@@ -338,35 +337,37 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
         alignbytes = alignwidth / 8;
         numcolors = 2;
         break;
+
     case 4:
         alignwidth = (biWidth + 7) & ~7UL;
         alignbytes = alignwidth / 2;
         numcolors = 16;
         break;
+
     case 8:
-        alignwidth = (biWidth + 3) & ~3UL;          
+        alignwidth = (biWidth + 3) & ~3UL;
         alignbytes = alignwidth;
         numcolors = 256;
         break;
-    case 24:
-        alignbytes = (biWidth + 3) & ~3UL;
-        alignwidth = alignbytes * 3; //2376 
-        //Or Use Correction Factor
-        alignedwidth = ((biWidth * 3) + 3) & ~3UL; //Not Modulus 4
-        //alignedbytes = ((int)(alignwidth / 3)) + 3;
-        if(alignwidth != alignedwidth)
-        {
-            alignwidth = alignedwidth;
-            //alignbytes = alignedbytes;
-        }
+
+    case 16:
+        alignbytes = (biWidth + 1) & ~3UL;
+        alignwidth = ((biWidth * 2) + 1) & ~3UL;
         pixelfmt = PBPAFMT_RGB;
         break;
+
+    case 24:
+        alignbytes = (biWidth + 3) & ~3UL;
+        alignwidth = ((biWidth * 3) + 3) & ~3UL;
+        pixelfmt = PBPAFMT_RGB;
+        break;
+
   case 32:
         alignbytes = biWidth;
         alignwidth = alignbytes * 4;
-        //pixelfmt = PBPAFMT_RGBA;
         pixelfmt = PBPAFMT_ARGB;
         break;
+
     default:
         D(bug("BMP.datatype/LoadBMP() --- unsupported color depth\n"));
         BMP_Exit(BMPhandle, ERROR_NOT_IMPLEMENTED);
@@ -377,11 +378,9 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     /* set BitMapHeader with image size */
     bmhd->bmh_Width  = bmhd->bmh_PageWidth  = biWidth;
     bmhd->bmh_Height = bmhd->bmh_PageHeight = biHeight;
-    bmhd->bmh_Depth  = biBitCount;
 
     /* get empty colormap, then fill in colormap to use*/
-    //if (biBitCount != 24)
-        if (biBitCount <= 8)
+    if ((bmhd->bmh_Depth = biBitCount) <= 8)
     {
         if( !(GetDTAttrs(o, PDTA_ColorRegisters, (IPTR)&colormap,
             PDTA_CRegs, (IPTR)&colorregs,
@@ -398,7 +397,9 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
             return FALSE;
         }
     }
-    
+    else if (bmhd->bmh_Depth == 16)
+        bmhd->bmh_Depth = 24;
+
     /* skip offset */
     bfOffBits = bfOffBits - 14 - 40 - numcolors*4;
     D(bug("BMP.datatype/LoadBMP() --- remaining offset %ld\n", bfOffBits));
@@ -420,8 +421,13 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
                               TAG_DONE);
 
     /* Now decode the picture data into a chunky buffer; and pass it to Bitmap line-by-line */
-    UBYTE linebuf[alignwidth];
-    BMPhandle->linebufsize = BMPhandle->linebufbytes = alignwidth;
+    ULONG linebufwidth = alignwidth;
+    if (biBitCount == 16)
+        linebufwidth += (alignwidth >> 1);
+
+    bug("BMP.datatype/LoadBMP: linebufwidth = %u, alignwidth = %u\n", linebufwidth, alignwidth);
+
+    BMPhandle->linebufsize = BMPhandle->linebufbytes = linebufwidth;
     if (! (BMPhandle->linebuf = BMPhandle->linebufpos = AllocMem(BMPhandle->linebufsize, MEMF_ANY)) )
     {
         BMP_Exit(BMPhandle, ERROR_NO_FREE_STORE);
@@ -436,26 +442,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
         int r, g, b, a;
         
         BMPhandle->linebufpos = BMPhandle->linebuf;
-        if (biBitCount == 24)
-        {
-            if ( (BMPhandle->filebufbytes -= alignwidth) < 0 && !LoadBMP_FillBuf(BMPhandle, alignwidth) )
-            {
-                D(bug("BMP.datatype/LoadBMP() --- early end of bitmap data, x %ld y %ld\n", x, y));
-                //BMP_Exit(BMPhandle, ERROR_OBJECT_WRONG_TYPE);
-                //return FALSE;
-                cont = 0;
-            }
-            for (x=0; x<alignbytes; x++)
-            {
-                b = *(BMPhandle->filebufpos)++;
-                g = *(BMPhandle->filebufpos)++;
-                r = *(BMPhandle->filebufpos)++;
-                *(BMPhandle->linebufpos)++ = r;
-                *(BMPhandle->linebufpos)++ = g;
-                *(BMPhandle->linebufpos)++ = b;
-            }
-        }
-      else if (biBitCount == 32)
+        if (biBitCount == 32)
         {	    
             if ( (BMPhandle->filebufbytes -= alignwidth) < 0 && !LoadBMP_FillBuf(BMPhandle, alignwidth) )
             {
@@ -476,6 +463,52 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
                 *(BMPhandle->linebufpos)++ = b;
                 //*(BMPhandle->linebufpos)++ = a;            		                       
             }
+        }
+        else if (biBitCount == 24)
+        {
+            if ( (BMPhandle->filebufbytes -= alignwidth) < 0 && !LoadBMP_FillBuf(BMPhandle, alignwidth) )
+            {
+                D(bug("BMP.datatype/LoadBMP() --- early end of bitmap data, x %ld y %ld\n", x, y));
+                //BMP_Exit(BMPhandle, ERROR_OBJECT_WRONG_TYPE);
+                //return FALSE;
+                cont = 0;
+            }
+
+            for (x=0; x<alignbytes; x++)
+            {
+                b = *(BMPhandle->filebufpos)++;
+                g = *(BMPhandle->filebufpos)++;
+                r = *(BMPhandle->filebufpos)++;
+                *(BMPhandle->linebufpos)++ = r;
+                *(BMPhandle->linebufpos)++ = g;
+                *(BMPhandle->linebufpos)++ = b;
+            }
+        }
+        else if (biBitCount == 16)
+	{
+            UWORD pixel;
+	    if ( (BMPhandle->filebufbytes -= alignwidth) < 0 && !LoadBMP_FillBuf(BMPhandle, alignwidth) )
+	    {
+		D(bug("bmp.datatype/LoadBMP() --- early end of bitmap data, x %ld y %ld\n", x, y));
+		cont = 0;
+	    }
+
+	    for (x=0; x< alignbytes; x++)
+	    {
+		pixel = *(BMPhandle->filebufpos)++;
+		pixel |= (*(BMPhandle->filebufpos)++) << 8;
+                /* Use bit replication to give a fuller range of colours
+                   (so e.g. pure white is possible) */
+		*(BMPhandle->linebufpos) = (pixel & 0x7c00) >> 7;
+		*(BMPhandle->linebufpos) |= *BMPhandle->linebufpos >> 5;
+		BMPhandle->linebufpos++;
+		*(BMPhandle->linebufpos) = (pixel & 0x03e0) >> 2;
+		*(BMPhandle->linebufpos) |= *BMPhandle->linebufpos >> 5;
+		BMPhandle->linebufpos++;
+		*(BMPhandle->linebufpos) = (pixel & 0x001f) << 3;
+		*(BMPhandle->linebufpos) |= *BMPhandle->linebufpos >> 5;
+		BMPhandle->linebufpos++;
+	    }
         }
         else
         {
@@ -506,24 +539,17 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
                     case 8:
                         *(BMPhandle->linebufpos)++ = byte;
                         break;
-#if (0)
-                    case 24:
-                        *(BMPhandle->linebufpos)++ = byte;
-                        break;
-                    case 32:
-                        *(BMPhandle->linebufpos)++ = byte;
-                        break;
-#endif
                 }
             }
         }
+
         if
         (
             !DoSuperMethod(cl, o,
                    PDTM_WRITEPIXELARRAY,	/* Method_ID */
                    (IPTR)BMPhandle->linebuf,	/* PixelData */
                    pixelfmt,			/* PixelFormat */
-                   alignwidth,			/* PixelArrayMod (number of bytes per row) */
+                   linebufwidth,		/* PixelArrayMod (number of bytes per row) */
                    0,				/* Left edge */
                    y,				/* Top edge */
                    biWidth,			/* Width */
@@ -615,11 +641,11 @@ static BOOL SaveBMP(struct IClass *cl, Object *o, struct dtWrite *dtw )
         pixelfmt = PBPAFMT_RGBA; //PBPAFMT_ARGB;
         break;
     default:
-        D(bug("BMP.datatype/LoadBMP() --- unsupported color depth\n"));
+        D(bug("BMP.datatype/SaveBMP() --- unsupported color depth\n"));
         SetIoErr(ERROR_OBJECT_WRONG_TYPE);
         return FALSE;
     }
-    D(bug("BMP.datatype/LoadBMP() --- align: pixels %ld bytes %ld\n", alignwidth, alignbytes));
+    D(bug("BMP.datatype/SaveBMP() --- align: pixels %ld bytes %ld\n", alignwidth, alignbytes));
         
 #if (0)
     /* Only Save 8bit or 24bit for Testing */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,7 +35,7 @@ struct NewMenu nm[] =
     {NM_TITLE, (STRPTR)MSG_MEN_PROJECT                                                  },      /* 0 */
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_OPEN                                             },
      {NM_ITEM, NM_BARLABEL                                                              },
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS                                           },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_EXPORT                                           },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS_IFF                                       },
      {NM_ITEM, NM_BARLABEL                                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_PRINT                                            },
@@ -207,7 +207,7 @@ void SetMenuFlags(void)
     
     if (win) ClearMenuStrip(win);
 
-    ChangeItemState( MSG_MEN_PROJECT_SAVEAS, dto_supports_write );
+    ChangeItemState( MSG_MEN_PROJECT_EXPORT, (cmdexport != NULL) ? TRUE : FALSE );
     ChangeItemState( MSG_MEN_PROJECT_SAVEAS_IFF, dto_supports_write_iff );
     ChangeItemState( MSG_MEN_PROJECT_PRINT, dto_supports_print );
     ChangeItemState( MSG_MEN_EDIT_COPY, dto_supports_copy );
