@@ -11,11 +11,14 @@ void aboutfmt_Picture(char *fmtbuff)
     sprintf(fmtbuff, "%s", templBase);
 }
 
-void getColorString(char **colorString, UBYTE Depth, ULONG Colors, ULONG ModeID)
+void formatImageStrings(char **dimString, char **colorString, ULONG Width, ULONG Height, UBYTE Depth, ULONG Colors, ULONG ModeID)
 {
-    if (Colors > 0)
+    ULONG RealDepth = Depth;
+    ULONG RealColors;
+
+    if ((RealColors = Colors) > 0)
     {
-        if ((ModeID == INVALID_ID) || ((ModeID & (HAM_KEY|EXTRAHALFBRITE_KEY)) == 0))
+        if ((Depth <= 8) && ((ModeID == INVALID_ID) || ((ModeID & (HAM_KEY|EXTRAHALFBRITE_KEY)) == 0)))
         {
             *colorString = AllocVec(24, MEMF_ANY);
             sprintf(*colorString, "     Colors:  %d", (int)Colors);
@@ -23,16 +26,32 @@ void getColorString(char **colorString, UBYTE Depth, ULONG Colors, ULONG ModeID)
         else
         {
             char *modeStr;
-            if (ModeID & HAM_KEY)
+            if (Depth > 8)
+            {
+                unsigned cnt = Colors;
+                RealDepth = 1;
+
+                modeStr = "HAMx";
+
+                while (cnt > 0)
+                {
+                    RealDepth += 1;
+                    cnt >>= 1;
+                }
+                modeStr[3] = RealDepth + '0';
+                RealColors = 1 << ((RealDepth - 2) * 3);
+            }
+            else if (ModeID & HAM_KEY)
             {
                 modeStr = "HAMx";
                 modeStr[3] = Depth + '0';
+                RealColors = 1 << (Depth - 2);
             }
             else
                 modeStr = "EHB"; 
 
             *colorString = AllocVec(28 + strlen(modeStr), MEMF_ANY);
-            sprintf(*colorString, "     Colors:  %d (%s)", (int)Colors, modeStr);
+            sprintf(*colorString, "     Colors:  %d (%s)", (int)RealColors, modeStr);
         }
     }
     else
@@ -46,6 +65,7 @@ void getColorString(char **colorString, UBYTE Depth, ULONG Colors, ULONG ModeID)
         else
             strcpy(*colorString, "     Colors:  Hi-color");
     }
+    sprintf(*dimString, "     Dimensions:  %dx%dx%d", Width, Height, RealDepth);
 }
 
 void about_Picture(Object *picture, char *details[])
@@ -59,8 +79,7 @@ void about_Picture(Object *picture, char *details[])
         PDTA_NumColors, &pictCols, TAG_DONE))
     {
         details[0] = AllocVec(36, MEMF_ANY);
-        sprintf(details[0], "     Dimensions:  %dx%dx%d", pictBMH->bmh_Width, pictBMH->bmh_Height, pictBMH->bmh_Depth);
-        getColorString(&details[1], pictBMH->bmh_Depth, pictCols, pictMode);
+        formatImageStrings(&details[0], &details[1], pictBMH->bmh_Width, pictBMH->bmh_Height, pictBMH->bmh_Depth, pictCols, pictMode);
         details[2] = "";
     }
 }
@@ -92,8 +111,7 @@ void about_Animation(Object *picture, char *details[])
         ADTA_FramesPerSecond, &animFPS, TAG_DONE))
     {
         details[0] = AllocVec(36, MEMF_ANY);
-        sprintf(details[0], "     Dimensions:  %dx%dx%d", (int)animWidth, (int)animHeight, (int)animDepth);
-        getColorString(&details[1], animDepth, animCols, animMode);
+        formatImageStrings(&details[0], &details[1], animWidth, animHeight, animDepth, animCols, animMode);
 
         details[2] = AllocVec(32, MEMF_ANY);
         sprintf(details[2], "     %d frames @ %dfps", (int)animFrames, (int)animFPS);
