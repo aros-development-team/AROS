@@ -1,9 +1,9 @@
 # DataType Description for WebM
 Name=WebM
-Version=$VER: WebM 2.4 (01.01.2016)
+Version=$VER: WebM 45.0 (13.02.2020)
 BaseName=webm
 Pattern=#?.webm
-Mask=0x1A 0x45 0xDF 0xA3
+Mask= 0x1A 0x45 0xDF 0xA3
 GroupID=movi
 ID=webm
 Flags=DTF_BINARY,DTF_CASE
