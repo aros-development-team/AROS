@@ -1,0 +1,112 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+CLASSFILES := webpclass
+
+#MM- workbench-datatypes-complete: workbench-datatypes-webp
+#MM workbench-datatypes-webp : \
+#MM includes \
+#MM linklibs \
+#MM workbench-libs-z \
+#MM datatypes-webp-linklibs-webpdecode \
+#MM datatypes-webp-linklibs-webpdsp \
+#MM datatypes-webp-linklibs-webpencode \
+#MM datatypes-webp-linklibs-webputils
+
+USER_CPPFLAGS   := -DEMSCRIPTEN
+USER_CFLAGS := -noposixc
+
+WEBPDSPFILES := \
+        src/dsp/alpha_processing \
+        src/dsp/cpu \
+        src/dsp/dec \
+        src/dsp/dec_clip_tables \
+        src/dsp/filters \
+        src/dsp/lossless \
+        src/dsp/rescaler \
+        src/dsp/upsampling \
+        src/dsp/yuv
+
+WEBPDSPFILES += \
+        src/dsp/cost \
+        src/dsp/enc \
+        src/dsp/lossless_enc \
+        src/dsp/ssim
+
+%build_linklib mmake=datatypes-webp-linklibs-webpdsp \
+    libname=webpdsp files="$(WEBPDSPFILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/webpdsp libdir=$(GENDIR)/$(CURDIR)/lib
+
+WEBPDECODEFILES := \
+        src/dec/alpha_dec \
+        src/dec/buffer_dec \
+        src/dec/frame_dec \
+        src/dec/idec_dec \
+        src/dec/io_dec \
+        src/dec/quant_dec \
+        src/dec/tree_dec \
+        src/dec/vp8_dec \
+        src/dec/vp8l_dec \
+        src/dec/webp_dec
+
+%build_linklib mmake=datatypes-webp-linklibs-webpdecode \
+    libname=webpdecode files="$(WEBPDECODEFILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/webpdecode libdir=$(GENDIR)/$(CURDIR)/lib
+
+WEBPENCODEFILES := \
+        src/enc/alpha_enc \
+        src/enc/analysis_enc \
+        src/enc/backward_references_cost_enc \
+        src/enc/backward_references_enc \
+        src/enc/config_enc \
+        src/enc/cost_enc \
+        src/enc/filter_enc \
+        src/enc/frame_enc \
+        src/enc/histogram_enc \
+        src/enc/iterator_enc \
+        src/enc/near_lossless_enc \
+        src/enc/picture_enc \
+        src/enc/picture_csp_enc \
+        src/enc/picture_psnr_enc \
+        src/enc/picture_rescale_enc \
+        src/enc/picture_tools_enc \
+        src/enc/predictor_enc \
+        src/enc/quant_enc \
+        src/enc/syntax_enc \
+        src/enc/token_enc \
+        src/enc/tree_enc \
+        src/enc/vp8l_enc \
+        src/enc/webp_enc
+
+%build_linklib mmake=datatypes-webp-linklibs-webpencode \
+    libname=webpencode files="$(WEBPENCODEFILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/webpencode libdir=$(GENDIR)/$(CURDIR)/lib
+
+WEBPUTILSFILES := \
+        src/utils/bit_reader_utils \
+        src/utils/color_cache_utils \
+        src/utils/filters_utils \
+        src/utils/huffman_utils \
+        src/utils/quant_levels_dec_utils \
+        src/utils/rescaler_utils \
+        src/utils/random_utils \
+        src/utils/thread_utils \
+        src/utils/utils
+
+WEBPUTILSFILES += \
+        src/utils/bit_writer_utils \
+        src/utils/huffman_encode_utils \
+        src/utils/quant_levels_utils
+
+%build_linklib mmake=datatypes-webp-linklibs-webputils \
+    libname=webputils files="$(WEBPUTILSFILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/webputils libdir=$(GENDIR)/$(CURDIR)/lib
+
+USER_LDFLAGS := -L$(GENDIR)/$(CURDIR)/lib -lwebpencode -lwebpdecode -lwebpdsp -lwebputils -lstdc_rel
+
+WEBPFILES := webpclass
+
+%build_module mmake=workbench-datatypes-webp \
+    modname=webp modtype=datatype \
+    files=$(WEBPFILES)
