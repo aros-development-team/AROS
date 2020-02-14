@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,12 +15,12 @@
         AROS_LH3(struct DTMethod *, FindTriggerMethod,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DTMethod *, methods, A0),
-	AROS_LHA(STRPTR           , command, A1),
-	AROS_LHA(ULONG            , method , D0),
+        AROS_LHA(struct DTMethod *, methods, A0),
+        AROS_LHA(STRPTR           , command, A1),
+        AROS_LHA(ULONG            , method , D0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 44, DataTypes)
+        struct Library *, DataTypesBase, 44, DataTypes)
 
 /*  FUNCTION
 
@@ -64,28 +64,28 @@
     
     if (methods)
     {
-	while(methods->dtm_Method != STM_DONE)
-	{
-	    if(command != NULL)
-	    {
-		if(Stricmp(methods->dtm_Command, command) == 0)
-		{
-		    retval = methods;
-		    break;
-		}
-	    }
+        while(methods->dtm_Method != STM_DONE)
+        {
+            if(command != NULL)
+            {
+                if(Stricmp(methods->dtm_Command, command) == 0)
+                {
+                    retval = methods;
+                    break;
+                }
+            }
 
-	    if(method != ~0)
-	    {
-		if(methods->dtm_Method == method)
-		{
-		    retval = methods;
-		    break;
-		}
-	    }
-	    
-	    methods++;
-	}
+            if(method != ~0)
+            {
+                if(methods->dtm_Method == method)
+                {
+                    retval = methods;
+                    break;
+                }
+            }
+            
+            methods++;
+        }
     }
     
     return retval;

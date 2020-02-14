@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,21 +18,21 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH9(LONG, DrawDTObjectA,
+        AROS_LH9(LONG, DrawDTObjectA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp   , A0),
-	AROS_LHA(Object          *, o    , A1),
-	AROS_LHA(LONG             , x    , D0),
-	AROS_LHA(LONG             , y    , D1),
-	AROS_LHA(LONG             , w    , D2),
-	AROS_LHA(LONG             , h    , D3),
-	AROS_LHA(LONG             , th   , D4),
-	AROS_LHA(LONG             , tv   , D5),
-	AROS_LHA(struct TagItem  *, attrs, A2),
+        AROS_LHA(struct RastPort *, rp   , A0),
+        AROS_LHA(Object          *, o    , A1),
+        AROS_LHA(LONG             , x    , D0),
+        AROS_LHA(LONG             , y    , D1),
+        AROS_LHA(LONG             , w    , D2),
+        AROS_LHA(LONG             , h    , D3),
+        AROS_LHA(LONG             , th   , D4),
+        AROS_LHA(LONG             , tv   , D5),
+        AROS_LHA(struct TagItem  *, attrs, A2),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 21, DataTypes)
+        struct Library *, DataTypesBase, 21, DataTypes)
 
 /*  FUNCTION
 
@@ -91,7 +91,7 @@
     struct dtDraw draw;
 
     if(rp == NULL)
-	return 0;
+        return 0;
 
     draw.MethodID     = DTM_DRAW;
     draw.dtd_RPort    = rp;

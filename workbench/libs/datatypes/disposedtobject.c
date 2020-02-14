@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -16,13 +16,13 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(void, DisposeDTObject,
+        AROS_LH1(void, DisposeDTObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object *, o, A0),
+        AROS_LHA(Object *, o, A0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 9, DataTypes)
+        struct Library *, DataTypesBase, 9, DataTypes)
 
 /*  FUNCTION
 
@@ -54,18 +54,18 @@
 
     if(o != NULL)
     {
-	struct DTSpecialInfo 	*dtsi = ((struct Gadget *)o)->SpecialInfo;
-	struct IClass 		*cl = OCLASS(o);
-	struct Library 		*DTClassBase = (struct Library *)cl->cl_UserData;
-	
-	while(dtsi->si_Flags & (DTSIF_PRINTING | DTSIF_LAYOUTPROC))
-	{
-	    Delay(50);
-	}
-	
-	DisposeObject(o);
-	
-	CloseLibrary(DTClassBase);
+        struct DTSpecialInfo 	*dtsi = ((struct Gadget *)o)->SpecialInfo;
+        struct IClass 		*cl = OCLASS(o);
+        struct Library 		*DTClassBase = (struct Library *)cl->cl_UserData;
+        
+        while(dtsi->si_Flags & (DTSIF_PRINTING | DTSIF_LAYOUTPROC))
+        {
+            Delay(50);
+        }
+        
+        DisposeObject(o);
+        
+        CloseLibrary(DTClassBase);
     }
     
     AROS_LIBFUNC_EXIT

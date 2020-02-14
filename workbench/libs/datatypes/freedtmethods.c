@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -16,10 +16,10 @@
         AROS_LH1(VOID, FreeDTMethods,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, methods, A0),
+        AROS_LHA(APTR, methods, A0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 47, DataTypes)
+        struct Library *, DataTypesBase, 47, DataTypes)
 
 /*  FUNCTION
 

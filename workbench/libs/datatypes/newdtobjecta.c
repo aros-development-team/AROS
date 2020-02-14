@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,11 +23,11 @@
         AROS_LH2(Object *, NewDTObjectA,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR            , name , D0),
-	AROS_LHA(struct TagItem *, attrs, A0),
+        AROS_LHA(APTR            , name , D0),
+        AROS_LHA(struct TagItem *, attrs, A0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 8, DataTypes)
+        struct Library *, DataTypesBase, 8, DataTypes)
 
 /*  FUNCTION
 
@@ -42,15 +42,15 @@
 
     DTA_SourceType  --  The type of source data (defaults to DTST_FILE).
                         If the source is the clipboard the name field
-			contains the numeric clipboard unit.
+                        contains the numeric clipboard unit.
 
     DTA_Handle      --  Can be used instead of the 'name' field. If the
                         source is DTST_FILE, ths must be a valid FileHandle;
-			must be a valid IFFHandle if source is DTST_CLIPBOARD.
+                        must be a valid IFFHandle if source is DTST_CLIPBOARD.
 
     DTA_DataType    --  The class of the data. Data is a pointer to a valid
                         DataType; only used when creating a new object that
-			doens't have any source data.
+                        doens't have any source data.
 
     DTA_GroupID     --  If the object isn't of this type, fail with an IoErr()
                         of ERROR_OBJECT_WRONG_TYPE.
@@ -122,236 +122,236 @@
     if(!(SourceType = GetTagData(DTA_SourceType, DTST_FILE, attrs)))
     {
         D(bug("datatypes.library/NewDTObjectA: Bad DTA_SourceType (or no such tag)\n"));
-	error = ERROR_REQUIRED_ARG_MISSING;
+        error = ERROR_REQUIRED_ARG_MISSING;
     }
     else
     {
         D(bug("datatypes.library/NewDTObjectA: DTA_SourceType okay\n"));
 
-	DataType = (struct DataType *)GetTagData(DTA_DataType, (IPTR) NULL, attrs);
-	Handle   =              (APTR)GetTagData(DTA_Handle,   (IPTR) NULL, attrs);
-	GroupID  =                    GetTagData(DTA_GroupID,         0,    attrs);
-	BaseName =           (UBYTE *)GetTagData(DTA_BaseName, (IPTR) NULL, attrs);
+        DataType = (struct DataType *)GetTagData(DTA_DataType, (IPTR) NULL, attrs);
+        Handle   =              (APTR)GetTagData(DTA_Handle,   (IPTR) NULL, attrs);
+        GroupID  =                    GetTagData(DTA_GroupID,         0,    attrs);
+        BaseName =           (UBYTE *)GetTagData(DTA_BaseName, (IPTR) NULL, attrs);
 
         D(bug("datatypes.library/NewDTObjectA: Got attrs DTA_DataType, DTA_Handle and DTA_GroupID\n"));
-	
-	if((SourceType == DTST_RAM) && GroupID)
-	{
+        
+        if((SourceType == DTST_RAM) && GroupID)
+        {
             D(bug("datatypes.library/NewDTObjectA: SourceType is DTST_RAM and GroupID is != 0\n"));
-	    switch (GroupID)
-	    {
-	    case GID_ANIMATION:  BaseName="animation";         break;
-	    case GID_DOCUMENT:   BaseName="document";          break;
-	    case GID_INSTRUMENT: BaseName="instrument";        break;
-	    case GID_MOVIE:      BaseName="movie";             break;
-	    case GID_MUSIC:      BaseName="music";             break;
-	    case GID_PICTURE:    BaseName="picture";           break;
-	    case GID_SOUND:      BaseName="sound";             break;
-	    case GID_TEXT:       BaseName="ascii";             break;
-		
-	    default:             error = ERROR_BAD_NUMBER;   break;
-	    }
-	}
-	else
-	{
+            switch (GroupID)
+            {
+            case GID_ANIMATION:  BaseName="animation";         break;
+            case GID_DOCUMENT:   BaseName="document";          break;
+            case GID_INSTRUMENT: BaseName="instrument";        break;
+            case GID_MOVIE:      BaseName="movie";             break;
+            case GID_MUSIC:      BaseName="music";             break;
+            case GID_PICTURE:    BaseName="picture";           break;
+            case GID_SOUND:      BaseName="sound";             break;
+            case GID_TEXT:       BaseName="ascii";             break;
+                
+            default:             error = ERROR_BAD_NUMBER;   break;
+            }
+        }
+        else
+        {
             D(bug("datatypes.library/NewDTObjectA: SourceType is *not* DTST_RAM or GroupID is 0\n"));
 
-	    if(Handle != NULL)
-	    {
- 		D(bug("datatypes.library/NewDTObjectA: We have a DTA_Handle. Calling ObtainDataTypeA\n"));
-		
-		DataType = ObtainDataTypeA(SourceType, Handle, attrs);
+            if(Handle != NULL)
+            {
+                D(bug("datatypes.library/NewDTObjectA: We have a DTA_Handle. Calling ObtainDataTypeA\n"));
+                
+                DataType = ObtainDataTypeA(SourceType, Handle, attrs);
 
-    		D(bug("datatypes.library/NewDTObjectA: ObtainDataTypeA() returned %x\n", DataType));
+                D(bug("datatypes.library/NewDTObjectA: ObtainDataTypeA() returned %x\n", DataType));
 
-	    }
-	    else
-	    {
+            }
+            else
+            {
                 D(bug("datatypes.library/NewDTObjectA: DTA_Handle is NULL\n"));
-		if(DataType == NULL)
-		{
-   		    D(bug("datatypes.library/NewDTObjectA: DataType is NULL\n"));
+                if(DataType == NULL)
+                {
+                    D(bug("datatypes.library/NewDTObjectA: DataType is NULL\n"));
 
-		    switch(SourceType)
-		    {
-		    case DTST_FILE:
-    			D(bug("datatypes.library/NewDTObjectA: SourceType is DTST_FILE\n"));
+                    switch(SourceType)
+                    {
+                    case DTST_FILE:
+                        D(bug("datatypes.library/NewDTObjectA: SourceType is DTST_FILE\n"));
 
-			if((lock = Lock(name, ACCESS_READ)))
-			{
-    			    D(bug("datatypes.library/NewDTObjectA: Lock(\"%s\") okay\n", name));
-			    if((DataType = ObtainDataTypeA(SourceType,
-							   (APTR)lock, attrs)))
-			    {
-   				D(bug("datatypes.library/NewDTObjectA: ObtainDataType returned %x\n", DataType));
-				if (GroupID && (DataType->dtn_Header->dth_GroupID != GroupID))
-				{
-    				    D(bug("datatypes.library/NewDTObjectA: Bad GroupID\n"));
+                        if((lock = Lock(name, ACCESS_READ)))
+                        {
+                            D(bug("datatypes.library/NewDTObjectA: Lock(\"%s\") okay\n", name));
+                            if((DataType = ObtainDataTypeA(SourceType,
+                                                           (APTR)lock, attrs)))
+                            {
+                                D(bug("datatypes.library/NewDTObjectA: ObtainDataType returned %x\n", DataType));
+                                if (GroupID && (DataType->dtn_Header->dth_GroupID != GroupID))
+                                {
+                                    D(bug("datatypes.library/NewDTObjectA: Bad GroupID\n"));
 
-				    ReleaseDataType(DataType);
-				    DataType = NULL;
-				    error = ERROR_OBJECT_WRONG_TYPE;
-				}
-				else
-				    Handle = (APTR)lock;
-			    }
+                                    ReleaseDataType(DataType);
+                                    DataType = NULL;
+                                    error = ERROR_OBJECT_WRONG_TYPE;
+                                }
+                                else
+                                    Handle = (APTR)lock;
+                            }
 
-			    if(Handle == NULL)
-			    {
-				UnLock(lock);
-				lock = BNULL;
-			    }
-			    
-			} /* if lock aquired */
-			else
-			    error = IoErr();
-			break;
-			
-		    case DTST_CLIPBOARD:
-    			D(bug("datatypes.library/NewDTObjectA: SourceType = DTST_CLIPBOARD\n"));
+                            if(Handle == NULL)
+                            {
+                                UnLock(lock);
+                                lock = BNULL;
+                            }
+                            
+                        } /* if lock aquired */
+                        else
+                            error = IoErr();
+                        break;
+                        
+                    case DTST_CLIPBOARD:
+                        D(bug("datatypes.library/NewDTObjectA: SourceType = DTST_CLIPBOARD\n"));
 
-			if(!(iff = AllocIFF()))
-			    error = ERROR_NO_FREE_STORE;
-			else
-			{
-    			    D(bug("datatypes.library/NewDTObjectA: AllocIFF okay\n"));
-			    if((iff->iff_Stream = (IPTR)OpenClipboard((IPTR)name)))
-			    {
-    				D(bug("datatypes.library/NewDTObjectA: OpenClipBoard okay\n"));
+                        if(!(iff = AllocIFF()))
+                            error = ERROR_NO_FREE_STORE;
+                        else
+                        {
+                            D(bug("datatypes.library/NewDTObjectA: AllocIFF okay\n"));
+                            if((iff->iff_Stream = (IPTR)OpenClipboard((IPTR)name)))
+                            {
+                                D(bug("datatypes.library/NewDTObjectA: OpenClipBoard okay\n"));
 
-				InitIFFasClip(iff);
-				
-				if(!OpenIFF(iff, IFFF_READ))
-				{
-    				    D(bug("datatypes.library/NewDTObjectA: OpenIFF okay\n"));
-				    
-				    if((DataType = ObtainDataTypeA(SourceType,
-								  iff, attrs)))
-				    {
-   					D(bug("datatypes.library/NewDTObjectA: ObtainDataType returned %x\n", DataType));
+                                InitIFFasClip(iff);
+                                
+                                if(!OpenIFF(iff, IFFF_READ))
+                                {
+                                    D(bug("datatypes.library/NewDTObjectA: OpenIFF okay\n"));
+                                    
+                                    if((DataType = ObtainDataTypeA(SourceType,
+                                                                  iff, attrs)))
+                                    {
+                                        D(bug("datatypes.library/NewDTObjectA: ObtainDataType returned %x\n", DataType));
 
-					if (GroupID && (DataType->dtn_Header->dth_GroupID != GroupID))
-					{
-    					    D(bug("datatypes.library/NewDTObjectA: Bad GroupID\n"));
+                                        if (GroupID && (DataType->dtn_Header->dth_GroupID != GroupID))
+                                        {
+                                            D(bug("datatypes.library/NewDTObjectA: Bad GroupID\n"));
 
-					    ReleaseDataType(DataType);
-					    DataType = NULL;
-					    error = ERROR_OBJECT_WRONG_TYPE;
-					}
-					else
-					    Handle = iff;
-					    
-				    } /* ObtainDataType okay */
-				    if(Handle == NULL)
-					CloseIFF(iff);
-					
-				} /* OpenIFF okay */
-				
-				if(Handle == NULL)
-				    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
-				    
-			    } /* OpenClipBoard okay */
-			    
-			    if(Handle == NULL)
-			    {
-				FreeIFF(iff);
-				iff = NULL;
-			    }
-			    
-			} /* AllocIFF okay */
-			
-			break;
-			
-		    } /* switch(SourceType) */
-		    
-		} /* if (DataType == NULL */
-		
-	    } /* DTA_Handle == NULL */
-	    
-	} /* SourceType != DTST_RAM or GroupID == 0 */
-	
-	if(DataType != NULL)
-	    BaseName = DataType->dtn_Header->dth_BaseName;
-	
-	if(BaseName != NULL)
-	{
-	    UBYTE libname[120];
-	    struct Library *DTClassBase;
+                                            ReleaseDataType(DataType);
+                                            DataType = NULL;
+                                            error = ERROR_OBJECT_WRONG_TYPE;
+                                        }
+                                        else
+                                            Handle = iff;
+                                            
+                                    } /* ObtainDataType okay */
+                                    if(Handle == NULL)
+                                        CloseIFF(iff);
+                                        
+                                } /* OpenIFF okay */
+                                
+                                if(Handle == NULL)
+                                    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
+                                    
+                            } /* OpenClipBoard okay */
+                            
+                            if(Handle == NULL)
+                            {
+                                FreeIFF(iff);
+                                iff = NULL;
+                            }
+                            
+                        } /* AllocIFF okay */
+                        
+                        break;
+                        
+                    } /* switch(SourceType) */
+                    
+                } /* if (DataType == NULL */
+                
+            } /* DTA_Handle == NULL */
+            
+        } /* SourceType != DTST_RAM or GroupID == 0 */
+        
+        if(DataType != NULL)
+            BaseName = DataType->dtn_Header->dth_BaseName;
+        
+        if(BaseName != NULL)
+        {
+            UBYTE libname[120];
+            struct Library *DTClassBase;
 
-    	    D(bug("datatypes.library/NewDTObjectA: Trying OpenLibrary(datatypes/%s.datatype)\n", BaseName));
-	    strcpy(libname, "datatypes/");
-	    strcat(libname, BaseName);
-	    strcat(libname, ".datatype");
-	    
-	    if(!(DTClassBase = OpenLibrary(libname, 0)))
-		error = DTERROR_UNKNOWN_DATATYPE;
-	    else
-	    {
-		struct IClass *DTClass;
+            D(bug("datatypes.library/NewDTObjectA: Trying OpenLibrary(datatypes/%s.datatype)\n", BaseName));
+            strcpy(libname, "datatypes/");
+            strcat(libname, BaseName);
+            strcat(libname, ".datatype");
+            
+            if(!(DTClassBase = OpenLibrary(libname, 0)))
+                error = DTERROR_UNKNOWN_DATATYPE;
+            else
+            {
+                struct IClass *DTClass;
 
-   		D(bug("datatypes.library/NewDTObjectA: OpenLibrary okay. Now calling ObtainEngine\n"));
-		
-		/* Call ObtainEngine() */
-		if((DTClass = AROS_LVO_CALL0(Class *, struct Library *,
-					     DTClassBase, 5,)))
-		    
-		{
-		    struct TagItem Tags[4];
+                D(bug("datatypes.library/NewDTObjectA: OpenLibrary okay. Now calling ObtainEngine\n"));
+                
+                /* Call ObtainEngine() */
+                if((DTClass = AROS_LVO_CALL0(Class *, struct Library *,
+                                             DTClassBase, 5,)))
+                    
+                {
+                    struct TagItem Tags[4];
 
-    		    D(bug("datatypes.library/NewDTObjectA: ObtainEngine returned %x\n", DTClass));
-		    
-		    Tags[0].ti_Tag  = DTA_Name;
-		    Tags[0].ti_Data = (IPTR)name;
-		    Tags[1].ti_Tag  = DTA_DataType;
-		    Tags[1].ti_Data = (IPTR)DataType;
-		    Tags[2].ti_Tag  = DTA_Handle;
-		    Tags[2].ti_Data = (IPTR)Handle;
-		    Tags[3].ti_Tag  = TAG_MORE;
-		    Tags[3].ti_Data = (IPTR)attrs;
-		    
-    		    D(bug("datatypes.library/NewDTObjectA: Calling NewObjectA on obtained engine\n"));
+                    D(bug("datatypes.library/NewDTObjectA: ObtainEngine returned %x\n", DTClass));
+                    
+                    Tags[0].ti_Tag  = DTA_Name;
+                    Tags[0].ti_Data = (IPTR)name;
+                    Tags[1].ti_Tag  = DTA_DataType;
+                    Tags[1].ti_Data = (IPTR)DataType;
+                    Tags[2].ti_Tag  = DTA_Handle;
+                    Tags[2].ti_Data = (IPTR)Handle;
+                    Tags[3].ti_Tag  = TAG_MORE;
+                    Tags[3].ti_Data = (IPTR)attrs;
+                    
+                    D(bug("datatypes.library/NewDTObjectA: Calling NewObjectA on obtained engine\n"));
 
-		    dtobj = NewObjectA(DTClass, NULL, Tags);
+                    dtobj = NewObjectA(DTClass, NULL, Tags);
 
-    		    D(bug("datatypes.library/NewDTObjectA: NewObjectA returned %x\n", dtobj));
-		    
-		    lock = BNULL;
-		    iff = NULL;
-		    
-		} /* ObtainEngine okay */
-		
-		if(dtobj == NULL)
-		    CloseLibrary(DTClassBase);
-		    
-	    } /* datatype class library could be opened */
+                    D(bug("datatypes.library/NewDTObjectA: NewObjectA returned %x\n", dtobj));
+                    
+                    lock = BNULL;
+                    iff = NULL;
+                    
+                } /* ObtainEngine okay */
+                
+                if(dtobj == NULL)
+                    CloseLibrary(DTClassBase);
+                    
+            } /* datatype class library could be opened */
 
-	} /* if (BaseName != NULL) */
-	
-	if(dtobj == NULL)
-	{
-    	    D(bug("datatypes.library/NewDTObjectA: dtobj is NULL. Cleaning up\n"));
+        } /* if (BaseName != NULL) */
+        
+        if(dtobj == NULL)
+        {
+            D(bug("datatypes.library/NewDTObjectA: dtobj is NULL. Cleaning up\n"));
 
-	    if(lock != BNULL)
-		UnLock(lock);
-	    
-	    if(iff != NULL)
-	    {
-    		D(bug("datatypes.library/NewDTObjectA: Calling CloseIFF\n"));
-		CloseIFF(iff);
-    		D(bug("datatypes.library/NewDTObjectA: Calling CloseClipboard\n"));
-		CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
-    		D(bug("datatypes.library/NewDTObjectA: Calling FreeIFF\n"));
-		FreeIFF(iff);
-   		D(bug("datatypes.library/NewDTObjectA: IFF cleanup done\n"));
+            if(lock != BNULL)
+                UnLock(lock);
+            
+            if(iff != NULL)
+            {
+                D(bug("datatypes.library/NewDTObjectA: Calling CloseIFF\n"));
+                CloseIFF(iff);
+                D(bug("datatypes.library/NewDTObjectA: Calling CloseClipboard\n"));
+                CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
+                D(bug("datatypes.library/NewDTObjectA: Calling FreeIFF\n"));
+                FreeIFF(iff);
+                D(bug("datatypes.library/NewDTObjectA: IFF cleanup done\n"));
 
-	    } /* if (iff != NULL) */
-	    
-	} /* if (dtobj == NULL) */
-	
+            } /* if (iff != NULL) */
+            
+        } /* if (dtobj == NULL) */
+        
     } /* SourceType okay */
         
     if(error == ERROR_OBJECT_NOT_FOUND)
-	error = DTERROR_COULDNT_OPEN;
+        error = DTERROR_COULDNT_OPEN;
 
     D(bug("datatypes.library/NewDTObjectA: Done. Returning %x\n", dtobj));
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -14,16 +14,16 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH4(ULONG, SetDTAttrsA,
+        AROS_LH4(ULONG, SetDTAttrsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object *          , o    , A0),
-	AROS_LHA(struct Window    *, win  , A1),
-	AROS_LHA(struct Requester *, req  , A2),
-	AROS_LHA(struct TagItem   *, attrs, A3),
+        AROS_LHA(Object *          , o    , A0),
+        AROS_LHA(struct Window    *, win  , A1),
+        AROS_LHA(struct Requester *, req  , A2),
+        AROS_LHA(struct TagItem   *, attrs, A3),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 10, DataTypes)
+        struct Library *, DataTypesBase, 10, DataTypes)
 
 /*  FUNCTION
 

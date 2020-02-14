@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,11 +15,11 @@
         AROS_LH2(struct ToolNode *, FindToolNodeA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct List    *, toollist, A0),
-	AROS_LHA(struct TagItem *, attrs   , A1),
+        AROS_LHA(struct List    *, toollist, A0),
+        AROS_LHA(struct TagItem *, attrs   , A1),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 41, DataTypes)
+        struct Library *, DataTypesBase, 41, DataTypes)
 
 /*  FUNCTION
 
@@ -75,7 +75,7 @@
     struct ToolNode *tNode;
 
     if(toollist == NULL)
-	return NULL;
+        return NULL;
 
     program = (STRPTR)GetTagData(TOOLA_Program, (IPTR)NULL, attrs);
     which   =   (WORD)GetTagData(TOOLA_Which, -1, attrs);
@@ -83,28 +83,28 @@
 
     ForeachNode(toollist, tNode)
     {
-	/* Match program name */
-	if(program != NULL)
-	{
-	    if(Stricmp(tNode->tn_Tool.tn_Program, program) != 0)
-		continue;
-	}
+        /* Match program name */
+        if(program != NULL)
+        {
+            if(Stricmp(tNode->tn_Tool.tn_Program, program) != 0)
+                continue;
+        }
 
-	/* Check type */
-	if(which != -1)
-	{
-	    if(which != tNode->tn_Tool.tn_Which)
-		continue;
-	}
-	
-	/* Check launch type */
-	if(ltype != -1)
-	{
-	    if(ltype != (tNode->tn_Tool.tn_Flags & TF_LAUNCH_MASK))
-		continue;
-	}
-	
-	return tNode;
+        /* Check type */
+        if(which != -1)
+        {
+            if(which != tNode->tn_Tool.tn_Which)
+                continue;
+        }
+        
+        /* Check launch type */
+        if(ltype != -1)
+        {
+            if(ltype != (tNode->tn_Tool.tn_Flags & TF_LAUNCH_MASK))
+                continue;
+        }
+        
+        return tNode;
     }
 
     return NULL;
