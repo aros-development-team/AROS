@@ -296,7 +296,7 @@ static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
 					desty,			// dest y
 					destwidth,		// width
 					1,			// height
-					RECTFMT_ARGB);		// src format
+					pd->SrcPixelFormat);		// src format
 	}
 	if( !success ) return FALSE;
 	if( srcyinc )
