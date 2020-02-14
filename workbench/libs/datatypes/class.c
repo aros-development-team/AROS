@@ -33,7 +33,7 @@
 
 #include <clib/boopsistubs.h>
 
-/* #include <devices/printer.h>  --  No printer stuff yet... */
+#include "dt_inlines.h"
 
 /*****************************************************************************/
 
@@ -62,11 +62,11 @@ void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
 *
 */
 
-IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
+IPTR SetAttributes(struct Library *DataTypesBase, Class *CLASS, Object *object,
 		    Msg msg)
 {
     IPTR result = 0;
-    struct DTObject *dto = INST_DATA(class, object);
+    struct DTObject *dto = INST_DATA(CLASS, object);
     struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
    
     LONG TopVert  = dtsi->si_TopVert;
@@ -97,9 +97,13 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 	    
 	case DTA_PrinterProc:   dto->dto_PrinterProc = (struct Process *)data;
 	                                                   break;
-	case DTA_LayoutProc:    dto->dto_LayoutProc = (struct Process *)data;
-	                                                   break;
-	    
+	case DTA_LayoutProc:
+	    {
+		dto->dto_LayoutProc = (struct Process *)data;
+		D(bug("[datatypes.library:dtclass] LayoutProc = 0x%p\n", data));
+	    }
+	   break;
+
 	case DTA_ObjName:
 	    if(dto->dto_ObjName)
 	    {
@@ -270,14 +274,14 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 */
 
 AROS_UFH3(IPTR, Dispatcher,
-	  AROS_UFHA(Class *, class, A0),
+	  AROS_UFHA(Class *, CLASS, A0),
 	  AROS_UFHA(Object *, object, A2),
 	  AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
 
-    struct DataTypesBase *DataTypesBase = (struct DataTypesBase *)class->cl_UserData;
-    struct DTObject *dto = INST_DATA(class,object);
+    struct DataTypesBase *DataTypesBase = (struct DataTypesBase *)CLASS->cl_UserData;
+    struct DTObject *dto = INST_DATA(CLASS,object);
     struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
     
     IPTR retval = 0;
@@ -289,9 +293,9 @@ AROS_UFH3(IPTR, Dispatcher,
 	    struct Gadget   *newobject;
 	    struct DTObject *newdto;
 	    
-	    D(bug("datatypes.library/class/OM_NEW\n"));
+	    D(bug("[datatypes.library:dtclass] OM_NEW\n"));
 
-	    if(!(newobject = (struct Gadget *)DoSuperMethodA(class, object,
+	    if(!(newobject = (struct Gadget *)DoSuperMethodA(CLASS, object,
 							     msg)))
 		SetIoErr(ERROR_NO_FREE_STORE);
 	    else
@@ -301,10 +305,10 @@ AROS_UFH3(IPTR, Dispatcher,
 		BOOL Success = FALSE;
 		APTR handle;
 
-	        D(bug("datatypes.library/class/OM_NEW: DoSuperMethod succeeded\n"));
+	        D(bug("[datatypes.library:dtclass] OM_NEW: DoSuperMethod succeeded\n"));
 		
-		newdto = INST_DATA(class, newobject);
-		
+		newdto = INST_DATA(CLASS, newobject);
+
 		newobject->Flags |= GFLG_RELSPECIAL;
 		newobject->SpecialInfo = &newdto->dto_DTSpecialInfo;
 		
@@ -320,7 +324,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		{
 		    LONG namelen = 2;
 
-	    	    D(bug("datatypes.library/class/OM_NEW: DTA_Name tag found\n"));
+	    	    D(bug("[datatypes.library:dtclass] OM_NEW: DTA_Name tag found\n"));
 		    
 		    if (newdto->dto_SourceType == DTST_FILE)
 		    {
@@ -331,7 +335,7 @@ AROS_UFH3(IPTR, Dispatcher,
 			SetIoErr(ERROR_NO_FREE_STORE);
 		    else
 		    {
-	   		D(bug("datatypes.library/class/OM_NEW: Namelen allocation succeeded\n"));
+	   		D(bug("[datatypes.library:dtclass] OM_NEW: Namelen allocation succeeded\n"));
 			
 			switch(newdto->dto_SourceType)
 			{
@@ -348,12 +352,12 @@ AROS_UFH3(IPTR, Dispatcher,
 			    Success = TRUE;
 			else
 			{
-	   		    D(bug("datatypes.library/class/OM_NEW: DTA_DataType tag value okay\n"));
+	   		    D(bug("[datatypes.library:dtclass] OM_NEW: DTA_DataType tag value okay\n"));
 			    
 			    switch(newdto->dto_SourceType)
 			    {
 			    case DTST_FILE:
-			    	D(bug("datatypes.library/class/OM_NEW: SourceType = DTST_FILE\n"));
+			    	D(bug("[datatypes.library:dtclass] OM_NEW: SourceType = DTST_FILE\n"));
 
 				switch(newdto->dto_DataType->dtn_Header->dth_Flags & DTF_TYPE_MASK)
 				{
@@ -378,12 +382,12 @@ AROS_UFH3(IPTR, Dispatcher,
 				    break;
 				    
 				default:
-	   			    D(bug("datatypes.library/class/OM_NEW: calling NewOpen()\n"));
+	   			    D(bug("[datatypes.library:dtclass] OM_NEW: calling NewOpen()\n"));
 
 				    if((newdto->dto_Handle = (APTR)NewOpen((struct Library *)DataTypesBase, newdto->dto_Name, DTST_FILE, 0)))
 					Success = TRUE;
 
-	    			    D(bug("datatypes.library/class/OM_NEW: NewOpened() returned %s\n", Success ? "success" : "failure"));
+	    			    D(bug("[datatypes.library:dtclass] OM_NEW: NewOpened() returned %s\n", Success ? "success" : "failure"));
 				    
 				    UnLock((BPTR)handle);
 				    break;
@@ -391,8 +395,13 @@ AROS_UFH3(IPTR, Dispatcher,
 				break;
 				
 			    case DTST_RAM:
+				D(
+					bug("[datatypes.library:dtclass] OM_NEW: SourceType = DTST_RAM\n");
+					if (handle)
+						bug("[datatypes.library:dtclass] OM_NEW: DTST_RAM with handle = 0x%p\n", handle);
+				)
 			    case DTST_CLIPBOARD:
-			    	D(bug("datatypes.library/class/OM_NEW: SourceType = DTST_RAM | DTST_CLIPBOARD\n"));
+			    	D(bug("[datatypes.library:dtclass] OM_NEW: SourceType = DTST_RAM | DTST_CLIPBOARD\n"));
 
 				newdto->dto_Handle = handle;
 				Success = TRUE;
@@ -404,15 +413,15 @@ AROS_UFH3(IPTR, Dispatcher,
 		
 		if(Success)
 		{
-		    SetAttributes((struct Library *)DataTypesBase, class,
+		    SetAttributes((struct Library *)DataTypesBase, CLASS,
 				  (Object *)newobject, msg);
 		    retval = (IPTR)newobject;
 		}
 		else
-		    CoerceMethod(class, (Object *)newobject, OM_DISPOSE);
+		    CoerceMethod(CLASS, (Object *)newobject, OM_DISPOSE);
 	    }
 
-	    D(bug("datatypes.library/class/OM_NEW: returning %x handle = %x\n", retval, newdto->dto_Handle));
+	    D(bug("[datatypes.library:dtclass] OM_NEW: returning %x handle = %x\n", retval, newdto->dto_Handle));
 
 	    break;
 	} /* case OM_NEW: */
@@ -425,13 +434,13 @@ AROS_UFH3(IPTR, Dispatcher,
 	/* Fall through */
     case OM_SET:
 	/* Let superclass see the new attributes... */
-	retval  = DoSuperMethodA(class, object, msg);
+	retval  = DoSuperMethodA(CLASS, object, msg);
 	/* ...and set our own new attributes. */
-	retval += SetAttributes((struct Library *)DataTypesBase, class, object, msg);
+	retval += SetAttributes((struct Library *)DataTypesBase, CLASS, object, msg);
 	break;
 	
     case OM_GET:
-	D(bug("datatypes.library/class/OM_GET: tag = %x\n", ((struct opGet*)msg)->opg_AttrID));
+	D(bug("[datatypes.library:dtclass] OM_GET: tag = %x\n", ((struct opGet*)msg)->opg_AttrID));
 	{
 	    IPTR *store = ((struct opGet *)msg)->opg_Storage;
 	    retval = 1;
@@ -480,7 +489,7 @@ AROS_UFH3(IPTR, Dispatcher,
 	    case DTA_Data:          *store = (IPTR)object;          break;
 
 	    default:
-		retval = DoSuperMethodA(class, object, msg);
+		retval = DoSuperMethodA(CLASS, object, msg);
 		break;
 	    } /* switch(AttrId) */
 	} /* case OM_GET: */
@@ -782,8 +791,8 @@ AROS_UFH3(IPTR, Dispatcher,
 			dts.dts_Select = dto->dto_SelectRect;
 			DoMethodA(object, (Msg)&dts);
 		    }
-		    
-		    Do_OM_NOTIFY((struct Library *)DataTypesBase, object,
+
+		    Do_OM_NOTIFY(object,
 				 ((struct gpInput *)msg)->gpi_GInfo, 0, GA_ID,
 				 (ULONG)((struct Gadget *)object)->GadgetID,
 				 DTA_Busy, FALSE, TAG_DONE );
@@ -791,7 +800,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		
 		if (dto->dto_Flags & DTOFLGF_HAS_MOVED)
 		{
-		    Do_OM_NOTIFY((struct Library *)DataTypesBase, object,
+		    Do_OM_NOTIFY(object,
 				 ((struct gpInput *)msg)->gpi_GInfo, 0, GA_ID,
 				 (ULONG)((struct Gadget *)object)->GadgetID,
 				 DTA_Sync, TRUE,
@@ -828,14 +837,21 @@ AROS_UFH3(IPTR, Dispatcher,
 	{
 	    struct GadgetInfo *ginfo;
 
-	    dto->dto_Domain= *((struct IBox *)(&((struct Gadget*)object)->LeftEdge));
-	    
+	    D(bug("[datatypes.library:dtclass] LAYOUT\n"));
+	    dto->dto_Domain = *((struct IBox *)(&((struct Gadget*)object)->LeftEdge));
+
+	    D(bug("[datatypes.library:dtclass] Domain @ 0x%p\n", dto->dto_Domain));
+
 	    if((ginfo = ((struct gpLayout *)msg)->gpl_GInfo))
 	    {
 		struct Window *window;
-		
+
+		D(bug("[datatypes.library:dtclass] GInfo @ 0x%p\n", ginfo));
+
 		if((window = ginfo->gi_Window))
 		{
+		    D(bug("[datatypes.library:dtclass] Window @ 0x%p\n", window));
+
 		    if(dto->dto_Domain.Left < 0)
 			dto->dto_Domain.Left += window->Width - 1;
 		    
@@ -849,13 +865,17 @@ AROS_UFH3(IPTR, Dispatcher,
 			dto->dto_Domain.Height += window->Height;
 		}
 	    }
-	    
+
+	    D(bug("[datatypes.library:dtclass] Calculating print dims\n"));
+
 	    /* Calculate printable dimensions */
 	    dto->dto_TotalPHoriz = (dtsi->si_HorizUnit) ?
 		dtsi->si_HorizUnit*dtsi->si_TotHoriz : dto->dto_Domain.Width;
 	    dto->dto_TotalPVert  = (dtsi->si_VertUnit ) ?
 		dtsi->si_VertUnit*dtsi->si_TotVert : dto->dto_Domain.Height;
 	 
+	    D(bug("[datatypes.library:dtclass] layout done\n"));
+
 	    retval = TRUE;
 	    
 	}  /* Fall through */ /* case DTM_PROCLAYOUT: */
@@ -871,7 +891,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		dto->dto_Handle = NULL;
 	    }
 	}
-	
+	D(bug("[datatypes.library:dtclass] framebox done\n"));	
 	break;
 	
     case DTM_ABORTPRINT:
@@ -971,9 +991,11 @@ AROS_UFH3(IPTR, Dispatcher,
 	
         /* Fall through so the superclass can free its resources */
     default:
-	retval = DoSuperMethodA(class, object, msg);
+	retval = DoSuperMethodA(CLASS, object, msg);
 	break;
     }
+
+    D(bug("[datatypes.library:dtclass] returning %p\n", retval));
 
     return retval;
 

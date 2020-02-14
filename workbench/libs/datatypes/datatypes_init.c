@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,12 +11,15 @@
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
+#include <proto/locale.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 
 #include "datatypes_intern.h"
 #include LC_LIBDEFS_FILE
+
+#include "dt_inlines.h"
 
 static int Init(LIBBASETYPEPTR LIBBASE)
 {
@@ -51,7 +54,6 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->dtb_LibsCatalog =
 	opencatalog
 	(
-	    (struct Library *)LIBBASE,
 	    NULL,
 	    "Sys/libs.catalog",
 	    OC_BuiltInLanguage,
@@ -75,7 +77,6 @@ static int Open(LIBBASETYPEPTR LIBBASE)
 	DataTypesBase->dtb_LibsCatalog =
 	    opencatalog
 	    (
-		(struct Library *)DataTypesBase,
 		NULL,
 		"Sys/libs.catalog",
 		OC_BuiltInLanguage,

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,6 +18,7 @@
 #include <clib/boopsistubs.h>
 #include "datatypes_intern.h"
 
+#include "dt_inlines.h"
 
 struct PrintMessage
 {
@@ -97,10 +98,10 @@ void AsyncPrinter(void)
 	DeleteMsgPort(ReplyPort);
     }
 
-    setattrs((struct Library *)DataTypesBase, object, DTA_PrinterProc, NULL,
+    setattrs(object, DTA_PrinterProc, NULL,
 	     TAG_DONE);
    
-    DoGad_OM_NOTIFY((struct Library *)DataTypesBase, object, pm->pm_window,
+    DoGad_OM_NOTIFY(object, pm->pm_window,
 		    pm->pm_requester, 0, GA_ID, 
 		    (ULONG)((struct Gadget*)object)->GadgetID,
 		    DTA_PrinterStatus, result, TAG_DONE);

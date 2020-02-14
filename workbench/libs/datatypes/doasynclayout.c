@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,6 +17,8 @@
 #include <intuition/cghooks.h>
 #include <clib/boopsistubs.h>
 #include "datatypes_intern.h"
+
+#include "dt_inlines.h"
 
 struct LayoutMessage
 {
@@ -70,7 +72,8 @@ void AsyncLayouter(void)
         {
             /* Prepare to exit */
             dtsi->si_Flags &= ~DTSIF_LAYOUT;
-            setattrs((struct Library *)dtb, object, DTA_LayoutProc, NULL,
+            D(bug("[datatypes.library] %s: Calling Set LayoutProc NULL\n", __func__);)
+            setattrs(object, DTA_LayoutProc, NULL,
                 TAG_DONE);
             done = TRUE;
         }
@@ -79,7 +82,7 @@ void AsyncLayouter(void)
    
     ReleaseSemaphore(&dtsi->si_Lock);
    
-    DoGad_OM_NOTIFY((struct Library *)dtb, object, lm->lm_window, NULL, 0, 
+    DoGad_OM_NOTIFY(object, lm->lm_window, NULL, 0, 
 		    GA_ID, (ULONG)((struct Gadget *)object)->GadgetID,
 		    DTA_Data,         object,
 		    DTA_TopVert,      dtsi->si_TopVert,
@@ -146,6 +149,8 @@ void AsyncLayouter(void)
     struct DTSpecialInfo *dtsi=((struct Gadget *)object)->SpecialInfo;
     struct Process *LayoutProc;
     
+    D(bug("[datatypes.library] %s()\n", __func__);)
+
     ObtainSemaphore(&(GPB(DataTypesBase)->dtb_Semaphores[SEM_ASYNC]));
     
     if(dtsi->si_Flags & DTSIF_LAYOUT)
@@ -154,6 +159,8 @@ void AsyncLayouter(void)
 	
 	if(GetAttr(DTA_LayoutProc, object, (IPTR *)&LayoutProc))
 	{
+	    D(bug("[datatypes.library] %s: LayoutProc @ 0x%p\n", __func__, LayoutProc);)
+
 	    if(LayoutProc != NULL)
 		Signal((struct Task *)LayoutProc, SIGBREAKF_CTRL_C);
 	}
@@ -163,12 +170,12 @@ void AsyncLayouter(void)
     else
     {
 	struct LayoutMessage *lm;
-	
+
 	dtsi->si_Flags |= (DTSIF_LAYOUT | DTSIF_LAYOUTPROC);
-	
-	Do_OM_NOTIFY(DataTypesBase, object, gpl->gpl_GInfo, 0, DTA_Data, NULL,
+
+	Do_OM_NOTIFY(object, gpl->gpl_GInfo, 0, DTA_Data, NULL,
 		     TAG_DONE);
-	
+
 	if((lm = AllocVec(sizeof(struct LayoutMessage),
 			 MEMF_PUBLIC | MEMF_CLEAR)))
 	{
@@ -197,7 +204,8 @@ void AsyncLayouter(void)
 	    {
 		PutMsg(&LayoutProc->pr_MsgPort, &lm->lm_Msg);
 	    
-		setattrs(DataTypesBase, object, DTA_LayoutProc, LayoutProc, TAG_DONE);
+		D(bug("[datatypes.library] %s: Calling Set LayoutProc 0x%p\n", __func__, LayoutProc);)
+		setattrs(object, DTA_LayoutProc, LayoutProc, TAG_DONE);
 		retval = TRUE;
 	    }
 	    else
