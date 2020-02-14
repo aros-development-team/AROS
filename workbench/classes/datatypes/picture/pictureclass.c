@@ -58,11 +58,6 @@ ISG BOOL                  DestMode
 
 #ifndef __AROS__
 #include "compilerspecific.h"
-#else
-#ifdef STATIC
-#undef STATIC
-#endif
-#define STATIC
 #endif
 #include "debug.h"
 #include "pictureclass.h"
@@ -115,7 +110,7 @@ const IPTR SupportedMethods[] =
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg);
+IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg);
 
 /**************************************************************************************************/
 
@@ -128,7 +123,7 @@ IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, Tag tag1, ...)
 
 /**************************************************************************************************/
 
-STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
+struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     struct Gadget *g;
     struct TagItem *attrs = msg->ops_AttrList;
@@ -171,8 +166,12 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
     pd->Remap = TRUE;
     pd->SrcPixelFormat = -1;
     pd->DitherQuality = 0;
-    pd->UseFriendBM = 1;
-    pd->DestMode = 1;	/* needs to be changed to FALSE after Multiview adaptation */
+    pd->UseFriendBM = TRUE;
+#if (0)
+    pd->DestMode = FALSE;
+#else
+    pd->DestMode = TRUE;	/* needs to be changed to FALSE after Multiview adaptation */
+#endif
 
     /* Prefs overrides default, but application overrides Prefs */
     ReadPrefs(pd);
@@ -222,7 +221,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
+IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
@@ -244,7 +243,7 @@ STATIC IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Picture_Data *pd;
     struct TagItem *tl = msg->ops_AttrList;
@@ -417,7 +416,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
+IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 {
     struct Picture_Data *pd;
 
@@ -642,7 +641,7 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
 }
 /**************************************************************************************************/
 
-STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
+IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 {
     struct Picture_Data *pd;
     struct DTSpecialInfo *si;
@@ -705,7 +704,7 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
+IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
     struct Picture_Data  *pd = INST_DATA(cl, g);
@@ -741,7 +740,7 @@ STATIC IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct gpInpu
     return retval;
 }
 
-STATIC IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
+IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
     struct Picture_Data  *pd = INST_DATA(cl, g);
@@ -819,7 +818,7 @@ STATIC IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpI
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     IPTR RetVal;
 
@@ -838,7 +837,7 @@ STATIC IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     struct Picture_Data *pd;
     struct DTSpecialInfo *si;
@@ -1048,7 +1047,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
+IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 {
     NotifyAttrChanges((Object *) g, msg->gpl_GInfo, 0,
    				 GA_ID, g->GadgetID,
@@ -1062,7 +1061,7 @@ STATIC IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *
 
 /**************************************************************************************************/
 
-STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
+IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
 {
     struct Picture_Data *pd;
 
@@ -1184,7 +1183,7 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
 
 /**************************************************************************************************/
 
-STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
+IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
 {
     struct Picture_Data *pd;
 
@@ -1313,7 +1312,7 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
 
 /**************************************************************************************************/
 
-STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
+IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 {
     struct Picture_Data *pd;
     ULONG xscale, yscale;
@@ -1363,7 +1362,7 @@ STATIC IPTR PDT_Scale(struct IClass *cl, struct Gadget *g, struct pdtScale *msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
+IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
 {
     struct Picture_Data *pd;
     ULONG Width, Height, Depth;
@@ -1423,7 +1422,7 @@ STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_ObtainDrawInfo(struct IClass *cl, struct Gadget *g, struct opSet *msg)
+IPTR DT_ObtainDrawInfo(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
@@ -1447,7 +1446,7 @@ STATIC IPTR DT_ObtainDrawInfo(struct IClass *cl, struct Gadget *g, struct opSet 
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_Draw(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
+IPTR DT_Draw(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
@@ -1479,7 +1478,7 @@ STATIC IPTR DT_Draw(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
+IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
 {
     IPTR RetVal;
     struct IODRPReq *pio = &msg->dtp_PIO->iodrp;
@@ -1602,7 +1601,7 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
+IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
 {
     bug("picture.datatype/DTM_Write fh %d mode %d\n", msg->dtw_FileHandle, msg->dtw_Mode);
     if (msg->dtw_FileHandle == BNULL)
@@ -1619,7 +1618,7 @@ STATIC IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
 
 /**************************************************************************************************/
 
-STATIC IPTR DT_ReleaseDrawInfo(struct IClass *cl, struct Gadget *g, struct dtReleaseDrawInfo *msg)
+IPTR DT_ReleaseDrawInfo(struct IClass *cl, struct Gadget *g, struct dtReleaseDrawInfo *msg)
 {
     struct Picture_Data *pd;
     IPTR RetVal;
