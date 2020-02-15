@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Change the position in a stream.
@@ -12,7 +12,7 @@
     NAME */
 #include <stdio.h>
 
-	int fsetpos (
+	int __posixc_fsetpos (
 
 /*  SYNOPSIS */
 	FILE		* stream,
@@ -56,5 +56,5 @@
     retval = fseek (stream, *pos, SEEK_SET);
 
     return retval;
-} /* fsetpos */
+} /* __posixc_fsetpos */
 

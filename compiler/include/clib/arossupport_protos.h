@@ -2,7 +2,7 @@
 #define  CLIB_AROSSUPPORT_PROTOS_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for aros.lib
@@ -95,7 +95,7 @@ void FreeRastPort(struct RastPort *rp);
 __END_DECLS
 
 /* don't use SysBase->kprintf on AmigaOS, or AROS m68k */
-#if defined(__AROS__) && !defined(__mc68000)
+#if defined(__AROS__) && (defined(USE_EXEC_DEBUG) || !defined(__mc68000))
 #   define kprintf     (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
 #   define rkprintf    (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
 #   define vkprintf    (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf)

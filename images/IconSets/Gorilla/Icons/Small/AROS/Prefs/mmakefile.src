@@ -1,0 +1,20 @@
+# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := Time Locale Serial Presets Input IControl Font ScreenMode Palette Pointer Printer
+ADDITIONALICONS := AHI Appearance Boot  \
+ ReqTools Wanderer Zune Editor Trackdisk PSI Network Trident \
+ OpenURL BoingIconBar
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-prefs-clean
+#MM- iconset-GorillaSmall-additional-icons-aros-clean : iconset-GorillaSmall-additional-icons-aros-prefs-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-prefs
+#MM- iconset-GorillaSmall-additional-icons-aros : iconset-GorillaSmall-additional-icons-aros-prefs
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-prefs icons=$(BASEICONS) \
+             dir=$(AROS_PREFS)
+
+%build_icons mmake=iconset-GorillaSmall-additional-icons-aros-prefs icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PREFS)

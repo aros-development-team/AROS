@@ -4,6 +4,7 @@
 /*** Instance data **********************************************************/
 struct Colorfield_DATA
 {
+    struct ColorMap *cm;
     ULONG rgb[3];
     UBYTE pen;
     UBYTE flags;    

@@ -1,5 +1,5 @@
 ## version $VER: info.catalog 1.2 (31.3.2019)
-## language français
+## language franÃ§ais
 ## codeset 0
 ;
 ;
@@ -7,14 +7,14 @@ MSG_TITLE
 Informations
 ;
 MSG_DESCRIPTION
-Informations des icônes
+Informations des icÃ´nes
 ;
 MSG_COPYRIGHT
-Informations des icônes\n\xa9 2003-2019, l'équipe de développement d'AROS
+Informations des icÃ´nes\n\xa9 2003-2019, l'Ã©quipe de dÃ©veloppement d'AROS
 ;Icon information \xa9 2003-2010, The AROS Development Team
 ;
 MSG_ICON
-Icône
+IcÃ´ne
 ;
 MSG_NAME
 Nom
@@ -29,13 +29,13 @@ MSG_DEFTOOL
 Outil
 ;
 MSG_ICONTYPE
-Type d'icône
+Type d'icÃ´ne
 ;
 MSG_DISK
 Disque
 ;
 MSG_DRAWER
-Répertoire
+RÃ©pertoire
 ;
 MSG_TOOL
 Outil
@@ -65,10 +65,10 @@ MSG_TOOLTYPES
 Tooltypes
 ;
 MSG_ERROR_SHELLSTART
-Erreur : Informations ne peut être démarré depuis le shell
+Erreur : Informations ne peut Ãªtre dÃ©marrÃ© depuis le shell
 ;
 MSG_ABOUT
-À propos...
+Ã€ propos...
 ;
 MSG_QUIT
 Quitter
@@ -83,7 +83,7 @@ MSG_EXECUTE
 Executable
 ;
 MSG_DELETE
-Effaçable
+EffaÃ§able
 ;
 MSG_SCRIPT
 Script
@@ -92,10 +92,10 @@ MSG_PURE
 Pur
 ;
 MSG_ARCHIVED
-Archivé
+ArchivÃ©
 ;
 MSG_STICKY
-Adhésif
+AdhÃ©sif
 ;
 MSG_SIZE
 Taille
@@ -104,13 +104,13 @@ MSG_VERSION
 Version
 ;
 MSG_OWNERID
-Identificateur du propriétaire
+Identificateur du propriÃ©taire
 ;
 MSG_GROUPID
 Identificateur du groupe
 ;
 MSG_OWNERNAME
-Propriétaire
+PropriÃ©taire
 ;
 MSG_GROUPNAME
 Groupe
@@ -122,10 +122,10 @@ MSG_DATE
 Date
 ;
 MSG_NEW_KEY
-Nouvelle entrée
+Nouvelle entrÃ©e
 ;
 MSG_DELETE_KEY
-Effacer l'entrée
+Effacer l'entrÃ©e
 ;
 MSG_SAVE
 _Sauver
@@ -137,10 +137,10 @@ MSG_OK
 Ok
 ;
 MSG_PATH
-Chemin d'accès
+Chemin d'accÃ¨s
 ;Path
 ;
 MSG_BTNPATH
-Ouvrir le répertoire...
+Ouvrir le rÃ©pertoire...
 ;Open path...
 ;

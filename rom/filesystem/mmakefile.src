@@ -2,6 +2,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
+
 %build_module mmake=kernel-filesystem \
   modname=FileSystem modtype=resource \
   files="filesystem"

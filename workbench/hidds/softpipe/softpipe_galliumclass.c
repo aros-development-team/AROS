@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,12 +48,15 @@ struct HiddSoftpipeDisplaytarget * HiddSoftpipe_Displaytarget(struct sw_displayt
     return (struct HiddSoftpipeDisplaytarget *)dt;
 }
 
-static boolean
+static bool
 HiddSoftpipe_IsFormatSupported( struct sw_winsys *ws,
                                           unsigned tex_usage,
                                           enum pipe_format format )
 {
-   return TRUE;
+
+    bug("[SoftPipe] %s: fmt #%d\n", __PRETTY_FUNCTION__, format);
+
+    return true;
 }
 
 

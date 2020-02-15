@@ -265,7 +265,7 @@
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    /* No __stdc_progam_startup() called; Alert()
+    /* No __stdc_program_startup() called; Alert()
     */
     if (StdCBase->startup_errorptr == NULL)
     {

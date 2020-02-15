@@ -2,17 +2,25 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-network : network-dhcp-client
 
-#MM network-dhcp-client : network-dhcp-client-quick
-
-#MM network-dhcp-client-quick : network-dhcp-libdhcp   \
+#MM network-dhcp-client :   \
+#MM				network-dhcp-libdhcp   \
 #MM				network-dhcp-libdst    \
 #MM				network-dhcp-libomapip \
 #MM				network-dhcp-libminires
 
-USER_CFLAGS :=	-I$(SRCDIR)/$(CURDIR)/../includes -DCLIENT_PATH="C:" \
+#MM network-dhcp-client-quick :   \
+#MM				network-dhcp-libdhcp-quick   \
+#MM				network-dhcp-libdst-quick    \
+#MM				network-dhcp-libomapip-quick \
+#MM				network-dhcp-libminires-quick
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../includes
+USER_CPPFLAGS := \
+        -DCLIENT_PATH="C:" \
+        -D_XOPEN_SOURCE=600 \
         -D__BSD_VISIBLE=1
 
-FILES :=	dhclient clparse
+FILES :=	dhclient dhcglobals clparse
 
 %build_prog mmake=network-dhcp-client nix=yes		\
 	targetdir="$(AROS_SYSTEM)/Network/AROSTCP/C"	\

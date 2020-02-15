@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
 # Copyright (C) 2013, The AROS Development Team. All rights reserved.
 # $Id$
@@ -39,7 +40,7 @@ TITLES_REGX = re.compile(r"""
 def parsedoc(filename, targetdir):
     # print "reading " + filename
     blocks = {}
-    filehandle = open(filename)
+    filehandle = open(filename, encoding="ISO-8859-15")
     content = filehandle.read()
     doc = AD_REGX.search(content)
     current_title = None
@@ -53,13 +54,13 @@ def parsedoc(filename, targetdir):
                 blocks[current_title] += line.expandtabs()[4:] + "\n"
 
         # check for empty chapters, because we don't want to print them
-        for title, content in blocks.iteritems():
+        for title, content in blocks.items():
             if content.strip() == "":
                 blocks[title] = ""
 
     filehandle.close()
 
-    if blocks.has_key("NAME"):
+    if "NAME" in blocks:
         # get docname
         docname = blocks["NAME"].split()[0]
         if docname == "":
@@ -67,7 +68,7 @@ def parsedoc(filename, targetdir):
 
         docfilename = docname + ".guide"
         today = datetime.date.today()
-        filehandle = open(os.path.join(targetdir, docfilename), "w")
+        filehandle = open(os.path.join(targetdir, docfilename), "w", encoding="ISO-8859-15")
 
         # The titles we want to printed
         shell_titles = ("Name", "Format", "Template", "Synopsis", "Location", "Function",
@@ -81,7 +82,7 @@ def parsedoc(filename, targetdir):
 
         for title in shell_titles:
             title_key = title.upper()
-            if blocks.has_key(title_key) and blocks[title_key] != "":
+            if title_key in blocks and blocks[title_key] != "":
                 filehandle.write("@{B}" + title + "@{UB}\n")
                 filehandle.write(blocks[title_key])
                 filehandle.write("\n")
@@ -97,7 +98,7 @@ def main():
     sourcedir = sys.argv[1]
     targetdir = sys.argv[2]
 
-    print "gendoc sourcedir " + sourcedir + " targetdir " + targetdir
+    print("gendoc sourcedir " + sourcedir + " targetdir " + targetdir)
 
     if not os.path.exists(targetdir):
         os.mkdir(targetdir)

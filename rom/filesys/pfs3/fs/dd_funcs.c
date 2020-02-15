@@ -179,12 +179,12 @@ static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
 	if (!pkt->dp_Arg1)
 	{
 		if (g->currentvolume)
-			return (SIPTR)MKBADDR(g->currentvolume->devlist);
+			return MKBADDR(g->currentvolume->devlist);
 		else
-			return (SIPTR)BNULL;
+			return 0;
 	}
 	else
-		return (SIPTR)MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
+		return MKBADDR(((fileentry_t *) pkt->dp_Arg1)->le.volume->devlist);
 }
 
 
@@ -216,7 +216,7 @@ static SIPTR dd_Lock(struct DosPacket *pkt, globaldata * g)
 	GetFileInfoFromLock(pkt->dp_Arg1, 0, parentfe, parentfi);
 	BCPLtoCString(pathname, (DSTR)BARG2(pkt));
 	DB(Trace(1, "Lock", "locking : %s parent: %lx \n", pathname, pkt->dp_Arg1));
-	DB(if (parentfi) Trace(1, "Lock", "anodenr = %lx and %lx \n", parentfe->nextanode,
+	DB(if (parentfi) Trace(1, "Lock", "anodenr = %lx and %lx \n", parentfe->le.anodenr,
 		(parentfi->file.direntry ? parentfi->file.direntry->anode : ANODE_ROOTDIR)));
 	SkipColon(fullname, pathname);
 
@@ -270,7 +270,7 @@ static SIPTR dd_Lock(struct DosPacket *pkt, globaldata * g)
 
 	DB(Trace(1, "Lock", "adres: %lx\n", filefe));
 	pkt->dp_Res2 = 0;
-	return (SIPTR)MKBADDR(&filefe->lock);
+	return MKBADDR(&filefe->lock);
 }
 
 static SIPTR dd_Unlock(struct DosPacket *pkt, globaldata * g)
@@ -363,7 +363,7 @@ static SIPTR dd_DupLock(struct DosPacket *pkt, globaldata * g)
 	}
 
 	DB(Trace(1, "DupLock", "of %lx adres: %lx\n", srcfe, dstfe));
-	return (SIPTR)MKBADDR(&dstfe->le.lock);
+	return MKBADDR(&dstfe->le.lock);
 }
 
 static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
@@ -413,7 +413,7 @@ static SIPTR dd_CreateDir(struct DosPacket *pkt, globaldata * g)
 	if (newdirle)
 	{
 		PFSDoNotify(&newdirle->le.info.file, TRUE, g);
-		return (SIPTR)MKBADDR(&newdirle->le.lock);
+		return MKBADDR(&newdirle->le.lock);
 	}
 	else
 		return DOSFALSE;
@@ -473,11 +473,11 @@ static SIPTR dd_Parent(struct DosPacket *pkt, globaldata * g)
 	{
 		FreeListEntry(parentfe, g);
 		pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
-		//NormalErrorMsg("ßE Parent failed", NULL);
+		//NormalErrorMsg("\DFE Parent failed", NULL);
 		return (0);
 	}
 
-	return (SIPTR)MKBADDR(&parentfe->lock);
+	return MKBADDR(&parentfe->lock);
 }
 
 
@@ -919,10 +919,8 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	// ARG1 = BSTR new disk name
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 
-	UBYTE newlabel[FNSIZE];
-	struct volumedata *volume;
-	struct DeviceList *devlist;
-	listentry_t *fe;
+	UBYTE newlabel[FNSIZE], *newname;
+	UBYTE newnamelen;
 
 #if MULTIUSER
 	if (g->user->uid != muROOT_UID)
@@ -933,52 +931,34 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 #endif
 
 	BCPLtoCString(newlabel, (DSTR)BARG1(pkt));
-	volume = g->currentvolume;
 
-	if (!CheckVolume(volume, 1, &pkt->dp_Res2, g))
+	if (!CheckVolume(g->currentvolume, 1, &pkt->dp_Res2, g))
 		return DOSFALSE;
 
-	/* make new doslist entry COPY VAN DISKINSERTSEQUENCE */
-	devlist = (struct DeviceList *)MakeDosEntry(newlabel, DLT_VOLUME);
-	if (devlist)
-	{
+	newnamelen = strlen(newlabel) + 2;
+	newname = AllocMem(newnamelen, MEMF_CLEAR | MEMF_PUBLIC);
+	if (newname) {
 		/* change rootblock */
 		if (RenameDisk(newlabel, g))
 		{
-			/* free old devlist */
-//          LockDosList (LDF_VOLUMES|LDF_READ);
-			Forbid();
-			RemDosEntry((struct DosList *)volume->devlist);
-			FreeDosEntry((struct DosList *)volume->devlist);
-//          UnLockDosList (LDF_VOLUMES|LDF_READ);
-			Permit();
-
-			/* fill in new. Diskname NIET */
-			g->currentvolume->devlist = devlist;
-			devlist->dl_Task = g->msgport;
-			devlist->dl_VolumeDate.ds_Days = volume->rootblk->creationday;
-			devlist->dl_VolumeDate.ds_Minute = volume->rootblk->creationminute;
-			devlist->dl_VolumeDate.ds_Tick = volume->rootblk->creationtick;
-			devlist->dl_LockList = BNULL;    // disk still inserted
-			devlist->dl_DiskType = volume->rootblk->disktype;
-
-			/* toevoegen */
-			AddDosEntry((struct DosList *)devlist);
-			volume->devlist = (struct DeviceList *)devlist;
-
-			/* alle locks veranderen */
-			for (fe = HeadOf(&volume->fileentries); fe->next; fe = fe->next)
-				fe->lock.fl_Volume = MKBADDR(devlist);
+				// change volume name
+				struct DeviceList *devlist = g->currentvolume->devlist;
+				UBYTE *oldname = BADDR(devlist->dl_Name);
+				strcpy(newname + 1, newlabel);
+				newname[0] = newnamelen;
+				devlist->dl_Name = MKBADDR(newname);
+				FreeMem(oldname, oldname[0] + 2);
 		}
 		else
 		{
+			FreeMem(newname, newnamelen);
 			pkt->dp_Res2 = ERROR_INVALID_COMPONENT_NAME;
 			return DOSFALSE;
 		}
 	}
 	else
 	{
-		pkt->dp_Res2 = ERROR_NO_FREE_STORE;     // ??
+		pkt->dp_Res2 = ERROR_NO_FREE_STORE;
 		return DOSFALSE;
 	}
 
@@ -1057,12 +1037,19 @@ static SIPTR dd_Info(struct DosPacket *pkt, globaldata * g)
 			- g->rootblock->alwaysfree - 1;
 		info->id_NumBlocksUsed = info->id_NumBlocks - alloc_data.alloc_available;
 		info->id_BytesPerBlock = volume->bytesperblock;
-#ifdef KS13WRAPPER
+		// Return faked large block size to prevent WB disk free space calculation overflow
+		// (if >=16G, minimum block size is 1024, >=32G, 2048 and so on..)
+		info->id_NumBlocksUsed >>= g->infoblockshift;
+		info->id_NumBlocks >>= g->infoblockshift;
+		info->id_BytesPerBlock <<= g->infoblockshift;
+		
+#ifdef KSWRAPPER
 		// 1.x C:Info only understands DOS\0
-		info->id_DiskType = DOSBase->dl_lib.lib_Version >= 37 ? ID_INTER_FFS_DISK : ID_DOS_DISK;
+		info->id_DiskType = g->v37DOS ? ID_INTER_FFS_DISK : ID_DOS_DISK;
 #else
 		info->id_DiskType = ID_INTER_FFS_DISK;  // c:Info does not like this
 #endif
+
 		info->id_VolumeNode = MKBADDR(volume->devlist);
 		info->id_InUse = !IsMinListEmpty(&volume->fileentries);
 
@@ -1160,8 +1147,7 @@ static SIPTR dd_SerializeDisk(struct DosPacket *pkt, globaldata * g)
 	if (pkt->dp_Res2)
 		goto inh_error;
 
-	g->request->iotd_Req.io_Command = CMD_UPDATE;
-	DoIO((struct IORequest *)g->request);
+	UpdateAndMotorOff(g);
 	FreeBufmem(rbl, g);
 	return DOSTRUE;
 
@@ -1488,22 +1474,99 @@ static SIPTR dd_ReadLink(struct DosPacket *pkt, globaldata * g)
 
 	lockentry_t *parentle;
 	union objectinfo linkfi, *parentfi;
-	char *fullname;
+	char *fullname, *prefixptr, oldchar;
 	SIPTR *error = &pkt->dp_Res2;
+	LONG res;
 
 	GetFileInfoFromLock(pkt->dp_Arg1, 0, parentle, parentfi);
 
 	/* strip upto first : */
 	SkipColon(fullname, (char *)pkt->dp_Arg2);
 
-	if (!(FindObject(parentfi, fullname, &linkfi,
-					 &pkt->dp_Res2, g)))
-	{
-		if (pkt->dp_Res2 != ERROR_IS_SOFT_LINK)
-			return DOSFALSE;
+	if (FindObject(parentfi, fullname, &linkfi, error, g))	{
+		if (!IsSoftLink(linkfi))
+		{
+			*error = ERROR_OBJECT_WRONG_TYPE;
+			return -1;
+		}
+		/*
+		 * The softlink is the last element of the path. Determine
+		 * if we have a prefix. We can have:
+		 *
+		 * 1. no prefix:
+		 * "softlink"
+		 *
+		 * 2. prefix:
+		 * "foo:softlink"
+		 * "bar:normal/dirs/softlink"
+		 * "normal/dirs/softlink"
+		 *
+		 * The prefix cut position is after the last '/' element,
+		 * if found, else the cut position is after the first ':'
+		 * element found, or no prefix was specified.
+		 */
+		prefixptr = rindex(fullname, '/');
+		if (prefixptr)
+			prefixptr++;
+		else if (fullname != (char *)pkt->dp_Arg2)
+			prefixptr = fullname;
 	}
-
-	return ReadSoftLink(&linkfi, (char *)pkt->dp_Arg3, pkt->dp_Arg4, &pkt->dp_Res2, g);
+	else
+	{
+		if (*error != ERROR_IS_SOFT_LINK)
+			return -1;
+		/*
+		 * The softlink is part of the path, but not the last
+		 * element. Determine if we have a prefix.
+		 *
+		 * We can have g->unparsed point to:
+		 *
+		 * 1. no prefix:
+		 *  "softlink/unparsed/stuff"
+		 *           ^
+		 * 2. prefix:
+		 *  "foo:softlink/unparsed/stuff"
+		 *               ^
+		 *  "bar:normal/dirs/softlink/unparsed/stuff"
+		 *                           ^
+		 *  "normal/dirs/softlink/unparsed/stuff"
+		 *                       ^
+		 * To determine the prefix cut position, walk backwards
+		 * until '/ is found. If no '/' is met before we reach the
+		 * path beginning, check if ':' was present in the path. If
+		 * so that is the prefix.
+		 */
+		for (prefixptr = g->unparsed - 1;
+		     prefixptr > fullname;
+		     prefixptr--)
+		{
+			if (*prefixptr == '/')
+			{
+				prefixptr++;
+				break;
+			}
+		}
+		if (prefixptr == fullname) /* no '/' was found ? */
+		{
+			/* If the path includes a volume/device ("foo:"),
+			 * fullname is the prefix cut position, else no
+			 * prefix is specified.
+			 */
+			if (fullname == (char *)pkt->dp_Arg2)
+				prefixptr = 0;
+		}
+ 	}
+ 
+	/* Terminate to get the prefix, if any */
+	if (prefixptr)
+	{
+		oldchar = *prefixptr;
+		*prefixptr = '\0';
+	}
+	res = ReadSoftLink(&linkfi, prefixptr ? (char *)pkt->dp_Arg2 : "", (char *)pkt->dp_Arg3, pkt->dp_Arg4, error, g);
+	if (prefixptr)
+		*prefixptr = oldchar;
+	return res;
 }
 
 
@@ -1519,13 +1582,16 @@ static SIPTR dd_InhibitOn(struct DosPacket *pkt, globaldata * g)
 
 	if (pkt->dp_Arg1 != DOSFALSE)   /* don't check for DOSTRUE (Holger Kruse!) */
 	{
-		while (g->currentvolume)    /* inefficiënt.. */
-			DiskRemoveSequence(g);
+		if (!SafeDiskRemoveSequence(g)) {
+			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+			return DOSFALSE;
+		}
 		g->inhibitcount++;
 		g->timeron = FALSE;
 		g->timeout = 0;
 		g->DoCommand = InhibitedCommands;
 		g->disktype = ID_BUSY;
+		g->newvolumepending = FALSE;
 	}
 
 	/* else ->already uninhibited */
@@ -1555,7 +1621,7 @@ static SIPTR dd_InhibitOff(struct DosPacket *pkt, globaldata * g)
 
 			g->DoCommand = NormalCommands;
 			g->timeron = FALSE;
-			NewVolume(TRUE, g);
+			g->newvolumepending = TRUE;
 		}
 	}
 
@@ -1584,9 +1650,10 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	if (g->inhibitcount == 0)
 	{
 		g->dirty = FALSE;
-		while (g->currentvolume)
-			DiskRemoveSequence(g);  // should always succeed now
-
+		if (!SafeDiskRemoveSequence(g)) {
+			pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+			return DOSFALSE;
+		}
 	}
 
 	/* format disk */
@@ -1644,13 +1711,17 @@ static SIPTR dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 			no->unparsed++;     /* make it a cstring!! */
 		}
 		else
+		{
+			FreeMemP (no->objectname, g);
+			FreeMemP (no, g);
 			return DOSFALSE;
+		}
 	}
 	else
 	{
 		/* try to locate object */
 		found = FindObject (&oi, no->objectname+1, &filefi, &pkt->dp_Res2, g);
-		if (found)
+		if (found && (IsVolume(filefi) || (ULONG)filefi.file.direntry > 2))
 		{
 			no->anodenr = IsVolume(filefi) ? ANODE_ROOTDIR : filefi.file.direntry->anode;
 		}
@@ -1660,6 +1731,8 @@ static SIPTR dd_AddNotify (struct DosPacket *pkt, globaldata *g)
 	if (IsDelDir (oi))
 	{
 		pkt->dp_Res2 = ERROR_OBJECT_WRONG_TYPE;
+		FreeMemP (no->objectname, g);
+		FreeMemP (no, g);
 		return DOSFALSE;
 	}
 #endif
@@ -2116,6 +2189,8 @@ static LONG dd_MorphOSQueryAttr(struct DosPacket *pkt, globaldata *g)
 
 #if EXTENDED_PACKETS_OS4
 
+/* Totally untested at the moment, logic copied from UAE */
+
 #define DP64_INIT -3
 /* Not real one but close enough */
 struct DosPacket64OS4
@@ -2170,7 +2245,7 @@ static void dd_ChangeFileSize64(struct DosPacket *pkt, globaldata *g)
 {
 	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	LONG error;
+	SIPTR error;
 	SFSIZE pos;
 
 	listentry = InitOS464(pkt, g, FALSE);
@@ -2189,7 +2264,7 @@ static void dd_GetFilePosition64(struct DosPacket *pkt, globaldata *g)
 {
 	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	LONG error;
+	SIPTR error;
 	SFSIZE pos;
 
 	listentry = InitOS464(pkt, g, TRUE);
@@ -2208,7 +2283,7 @@ static void dd_ChangeFilePosition64(struct DosPacket *pkt, globaldata *g)
 {
 	struct DosPacket64OS4 *dp = (struct DosPacket64OS4*)pkt;
 	listentry_t *listentry;
-	LONG error;
+	SIPTR error;
 	SFSIZE pos;
 
 	listentry = InitOS464(pkt, g, FALSE);

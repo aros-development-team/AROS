@@ -1,0 +1,26 @@
+# $Id: $
+
+include $(SRCDIR)/config/aros.cfg
+
+FONTSDIRRU  := $(AROSDIR)/Storage/Fonts/Amiga-1251
+
+FONTSRU     := XEN_Amiga-1251 XHelvetica_Amiga-1251 topaz_Amiga-1251 SWScrFont_Amiga-1251 Scala_Amiga-1251
+FONTFILESRU := $(foreach f, $(FONTSRU), $(foreach s, $(filter-out $(f)/CVS, $(wildcard $(f)/*)), $(FONTSDIRRU)/$(s)))
+
+DIRSRU      := $(FONTSDIRRU) $(addprefix $(FONTSDIRRU)/,$(FONTSRU))
+
+#MM- workbench-fonts : workbench-fontsRU
+#MM workbench-fontsRU : workbench-fonts-setupRU
+workbench-fontsRU: $(FONTFILESRU)
+
+#MM
+workbench-fonts-quickRU: $(FONTFILESRU)
+
+$(FONTSDIRRU)/% : %
+	@$(CP) $< $@
+
+#MM
+workbench-fonts-setupRU : $(DIRSRU)
+
+$(DIRSRU):
+	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi

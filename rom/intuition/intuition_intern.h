@@ -702,11 +702,11 @@ struct IntDrawInfo
 
 struct GammaControl
 {
-    BOOL   UseGammaControl;
-    BOOL   Active;
     UBYTE *GammaTableR;
     UBYTE *GammaTableG;
     UBYTE *GammaTableB;
+    BOOL   UseGammaControl;
+    BOOL   Active;
 };
 
 struct IntScreen
@@ -735,8 +735,6 @@ struct IntScreen
 #endif
     Object		    *IMonitorNode;
     struct SharedPointer    *Pointer;
-    BOOL                     ShowPointer;
-    BOOL                     SysFont;
     struct Window           *MenuVerifyActiveWindow;
     int                      MenuVerifyTimeOut;
     int                      MenuVerifyMsgCount;
@@ -762,12 +760,14 @@ struct IntScreen
     ULONG                    TitlebarWinActive;
 #endif
     struct GammaControl      GammaControl;
-    BOOL                     frontmost;
-
-    BOOL                     WindowLock;
 #if USE_NEWDISPLAYBEEP
     UBYTE                    BeepingCounter;
 #endif
+    BOOL                     ShowPointer;
+    BOOL                     SysFont;
+    BOOL                     frontmost;
+
+    BOOL                     WindowLock;
 };
 
 void UpdateScreenBitMap(struct Screen *s, struct IntuitionBase *IntuitionBase);
@@ -1099,7 +1099,7 @@ void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *Intuit
 void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct IntuitionBase *IntuitionBase);
 
 /* misc.c */
-extern void MySetPointerPos(struct IntuitionBase *IntuitionBase);
+extern void SetActiveMonPointerPos(struct IntuitionBase *IntuitionBase);
 extern BOOL ResetPointer(struct IntuitionBase *IntuitionBase);
 extern void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase);
 extern struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
@@ -1174,6 +1174,7 @@ AROS_UFPA(APTR  , args      , A1));
 
 #define DEBUG_ACTIVATEGADGET(x)     	;
 #define DEBUG_ACTIVATEWINDOW(x)     	;
+#define DEBUG_ACTIVATESCREEN(x)     	;
 #define DEBUG_ADDCLASS(x)           	;
 #define DEBUG_ADDGADGET(x)          	;
 #define DEBUG_ADDGLIST(x)           	;

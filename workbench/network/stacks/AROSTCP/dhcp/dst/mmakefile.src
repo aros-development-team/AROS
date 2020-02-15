@@ -1,6 +1,10 @@
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS :=	-I$(SRCDIR)/$(CURDIR)/../includes -DHMAC_MD5 -DMINIRES_LIB \
+USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/../includes
+USER_CPPFLAGS := \
+        -DHMAC_MD5 \
+        -DMINIRES_LIB \
+        -D_XOPEN_SOURCE=600 \
         -D__BSD_VISIBLE=1
 
 FILES :=	base64 dst_api dst_support hmac_link md5_dgst prandom

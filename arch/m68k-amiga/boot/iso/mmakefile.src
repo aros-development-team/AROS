@@ -12,6 +12,7 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 #MM			kernel-oop  \
 #MM			kernel-package-amiga-m68k	\
 #MM			kernel-bootstrap-amiga-m68k	\
+#MM			kernel-fs-xtra  \
 #MM			AROS-amiga-m68k-drivers \
 #MM			bootdisk-amiga-m68k-gen \
 #MM         iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd
@@ -27,6 +28,7 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 
 TAR ?= tar
 Q ?= @
+#QE2H ?= -v
 
 $(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
 		@$(CP) $< $@
@@ -82,7 +84,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(MKDIR) -p "$(DISTDIR)"
 	@$(MKDIR) -p "$(AROSDIR).HUNK"
 	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
-	@$(ELF2HUNK) "$(AROSDIR)" "$(AROSDIR).HUNK"
+	@$(ELF2HUNK) $(QE2H) "$(AROSDIR)" "$(AROSDIR).HUNK"
 	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
 	@$(RM) -rf "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)/aros.elf"
 	@$(RM) -rf "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/theme.var"
@@ -105,6 +107,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_ARCH)/aros.hunk.gz" "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)"
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs"
 	@$(CP) "$(AROSDIR).HUNK/README.txt" "$(DISTDIR)/README"
+#	@$(CP) -fv "$(AROSDIR).HUNK/boot/*/*.bin" "$(DISTDIR)/"
 	@mkisofs -f \
 		-o $@ \
 		-allow-leading-dots \
@@ -116,9 +119,8 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
                 -l -J -r \
 		"$(AROSDIR).HUNK"
 	@cd $(AROSDIR).HUNK ; lha c $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.lha AROS.HUNK *
-	@rdbtool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf create size=100Mi + init rdb_cyls=2
-	@rdbtool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf add dostype=ffs+intl bootable=true max_transfer=0x1fe00 num_buffer=80
-	@xdftool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf open part=DH0 + pack $(AROSDIR).HUNK
+#	@rdbtool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf create size=100Mi + init + add 100% dostype=ffs+intl bootable=true boot_pri=0 max_transfer=0x1fe00 num_buffer=80
+#	@xdftool $(DISTDIR)/aros-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-boot.hdf open 0 + pack $(AROSDIR).HUNK
 
 $(DEVEL_ISO):   $(AROSDIR)/.backdrop \
 		$(AROSDIR)/Emergency-Boot.adf \

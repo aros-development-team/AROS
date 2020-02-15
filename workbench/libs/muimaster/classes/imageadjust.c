@@ -32,6 +32,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "imageadjust_private.h"
+#include "locale.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -495,16 +496,38 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Imageadjust_DATA *data;
     struct TagItem *tag;
     struct TagItem *tags;
-    static const char *const labels_all[] =
-        { "Pattern", "Vector", "Color", "External", "Bitmap", "Gradient",
-            NULL };
-    static const char *const labels_image[] =
-        { "Pattern", "Vector", "Color", "External", NULL };
-    static const char *const labels_bg[] =
-        { "Pattern", "Color", "Bitmap", "Gradient", NULL };
-    static const char *const labels_color[] = { "Color", NULL };
-    static const char *const gradient_type_entries[] =
-        { "Scaled", "Tiled", NULL };
+    
+    static const char *labels_all[7];
+    labels_all[0] = _(MSG_IMAGEADJUST_PATTERN);
+    labels_all[1] = _(MSG_IMAGEADJUST_VECTOR);
+    labels_all[2] = _(MSG_IMAGEADJUST_COLOR);
+    labels_all[3] = _(MSG_IMAGEADJUST_EXTERNAL);
+    labels_all[4] = _(MSG_IMAGEADJUST_BITMAP);
+    labels_all[5] = _(MSG_IMAGEADJUST_GRADIENT);
+    labels_all[6] = NULL;
+
+    static const char *labels_image[5];
+    labels_image[0] = _(MSG_IMAGEADJUST_PATTERN);
+    labels_image[1] = _(MSG_IMAGEADJUST_VECTOR);
+    labels_image[2] = _(MSG_IMAGEADJUST_COLOR);
+    labels_image[3] = _(MSG_IMAGEADJUST_EXTERNAL);
+    labels_image[4] = NULL;
+
+    static const char *labels_bg[5];
+    labels_bg[0] = _(MSG_IMAGEADJUST_PATTERN);
+    labels_bg[1] = _(MSG_IMAGEADJUST_COLOR);
+    labels_bg[2] = _(MSG_IMAGEADJUST_BITMAP);
+    labels_bg[3] = _(MSG_IMAGEADJUST_GRADIENT);
+    labels_bg[4] = NULL;
+
+    static const char *labels_color[2];
+    labels_color[0] = _(MSG_IMAGEADJUST_COLOR);
+    labels_color[1] = NULL;
+
+    static const char *gradient_type_entries[3];
+    gradient_type_entries[0] = _(MSG_IMAGEADJUST_SCALED);
+    gradient_type_entries[1] = _(MSG_IMAGEADJUST_TILED);
+    gradient_type_entries[2] = NULL;
 
     Object *pattern_group = NULL;
     Object *vector_group = NULL;
@@ -566,10 +589,10 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             End;
 
         gradient_group = (Object *) ColGroup(2),
-            Child, (IPTR) FreeLabel("Type:"),
+            Child, (IPTR) FreeLabel(_(MSG_IMAGEADJUST_TYPE)),
             Child, (IPTR) (gradient_type_cycle = MUI_MakeObject(MUIO_Cycle,
                 (IPTR) "Type:", (IPTR) gradient_type_entries)),
-            Child, (IPTR) FreeLabel("Angle:"),
+            Child, (IPTR) FreeLabel(_(MSG_IMAGEADJUST_ANGLE)),
             Child, (IPTR) VGroup,
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
@@ -579,7 +602,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
                         MUIA_Text_PreParse, (IPTR) "\33c",
-                        MUIA_Text_Contents, (IPTR) "Vertical",
+                        MUIA_Text_Contents, (IPTR) _(MSG_IMAGEADJUST_VERTICAL),
                         End),
                     Child,
                         (IPTR) (gradient_vert_button = (Object *) TextObject,
@@ -587,7 +610,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
                         MUIA_Text_PreParse, (IPTR) "\33c",
-                        MUIA_Text_Contents, (IPTR) "Horizontal",
+                        MUIA_Text_Contents, (IPTR) _(MSG_IMAGEADJUST_HORIZONTAL),
                         End),
                     End,
                 Child, (IPTR) (gradient_angle_slider = (Object *) SliderObject,
@@ -596,10 +619,10 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                     MUIA_Numeric_Max, 179,
                     End),
                 End,
-            Child, (IPTR) FreeLabel("Colors:"),
+            Child, (IPTR) FreeLabel(_(MSG_IMAGEADJUST_COLORS)),
             Child, (IPTR) HGroup,
                 Child, (IPTR) (gradient_start_poppen = (Object *) PoppenObject,
-                    MUIA_Window_Title, (IPTR) "Start pen",
+                    MUIA_Window_Title, (IPTR) _(MSG_IMAGEADJUST_START_PEN),
                     MUIA_Pendisplay_Spec, (IPTR) "rbbbbbbbb,bbbbbbbb,bbbbbbbb",
                     End),
                 Child, (IPTR) VCenter((gradient_swap_button =
@@ -611,11 +634,11 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                     End)),
                 Child, (IPTR) (gradient_end_poppen =
                     (Object *) PoppenObject,
-                    MUIA_Window_Title, (IPTR) "End pen",
+                    MUIA_Window_Title, (IPTR) MSG_IMAGEADJUST_END_PEN,
                     MUIA_Pendisplay_Spec, (IPTR) "r55555555,55555555,55555555",
                     End),
                 End,
-            Child, (IPTR) FreeLabel("Preview:"),
+            Child, (IPTR) FreeLabel(_(MSG_IMAGEADJUST_PREVIEW)),
             Child, (IPTR) (gradient_imagedisplay =
                 (Object *) ImagedisplayObject, TextFrame,
                 InnerSpacing(0, 0),

@@ -1,0 +1,19 @@
+# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := Sashimi
+ADDITIONALICONS := Bifteck Hardware Tests 
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-debug-clean
+#MM- iconset-GorillaSmall-additional-icons-aros : iconset-GorillaSmall-additional-icons-aros-debug-clean
+
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-debug
+#MM- iconset-GorillaSmall-additional-icons-aros : iconset-GorillaSmall-additional-icons-aros-debug
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-debug icons=$(BASEICONS) \
+             dir=$(AROS_DEBUG)
+
+%build_icons mmake=iconset-GorillaSmall-additional-icons-aros-debug icons=$(ADDITIONALICONS) \
+             dir=$(AROS_DEBUG)

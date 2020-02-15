@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -45,13 +45,15 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+    IntuitionBase = IntuitionBase;  /* shut up the compiler */
+
     DEBUG_REQUEST(dprintf("InitRequester: req 0x%lx\n", requester));
 
-    IntuitionBase = IntuitionBase;  /* shut up the compiler */
 
     SANITY_CHECK(requester)
 
-    memset(requester, 0, sizeof(struct Requester));
+    SetMem(requester, 0, sizeof(struct Requester));
 
     AROS_LIBFUNC_EXIT
 } /* InitRequester */

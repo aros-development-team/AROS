@@ -102,6 +102,16 @@ void LoadPlugins (struct DiskImageBase *libBase) {
 				}
 				ead = eabuffer;
 				do {
+					// don't load *.dbg files
+					int slen = strlen(ead->ed_Name);
+					if (slen > 4)
+					{
+						if (!strcmp(ead->ed_Name + slen - 4, ".dbg"))
+						{
+							continue;
+						}
+					}
+
 					curr_dir = CurrentDir(dir);
 					if (EAD_IS_FILE(ead) && (seglist = LoadSeg(ead->ed_Name))) {
 						APTR (*entry)(void) = (APTR)((BPTR *)BADDR(seglist) + 1);

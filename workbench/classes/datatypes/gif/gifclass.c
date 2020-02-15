@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -143,15 +143,15 @@ static BOOL LoadGIF_Colormap(GifHandleType *gifhandle, int havecolmap, int *numc
 		D(bug("gif.datatype/LoadGIF_Colormap() --- colormap loading failed\n"));
 		return FALSE;
 	    }
-	    colormap[i].red = *(gifhandle->filebufpos)++;
-	    colormap[i].green = *(gifhandle->filebufpos)++;
-	    colormap[i].blue = *(gifhandle->filebufpos)++;
+	    colormap[i].red = *(gifhandle->filebufpos++);
+	    colormap[i].green = *(gifhandle->filebufpos++);
+	    colormap[i].blue = *(gifhandle->filebufpos++);
 	    colregs[j++] = ((ULONG)colormap[i].red)<<24;
 	    colregs[j++] = ((ULONG)colormap[i].green)<<24;
 	    colregs[j++] = ((ULONG)colormap[i].blue)<<24;
 //          D(if (i<5) bug("gif r %02lx g %02lx b %02lx\n", colormap[i].red, colormap[i].green, colormap[i].blue));
 	}
-	D(bug("gif.datatype/LoadGIF_Colormap() --- %d colors loaded\n", numcolors));
+	D(bug("gif.datatype/LoadGIF_Colormap() --- %d colors loaded\n", *numcolors));
     }
     else
     {
@@ -298,7 +298,7 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
 	}
 	)
 #endif
-	switch ( *(gifhandle->filebufpos)++ )
+	switch ( *(gifhandle->filebufpos++) )
 	{
 	case ';':
 	    /* End of the GIF dataset */
@@ -320,7 +320,7 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
 	    }
 	    D(bug("gif.datatype/LoadGIF() --- extended object type %02x len %d\n", (int)gifhandle->filebufpos[0], (int)gifhandle->filebufpos[1]));
 	    gifhandle->filebufpos++;
-	    while ( (i = *(gifhandle->filebufpos)++) )
+	    while ( (i = *(gifhandle->filebufpos++)) )
 	    {
 		if ( (gifhandle->filebufbytes -= i+1) < 0 && !LoadGIF_FillBuf(gifhandle, i+1) )
 		{
@@ -514,9 +514,10 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
     GifHandleType           *gifhandle;
     UBYTE                   *filebuf;
-    unsigned int            width, height, widthxheight, numplanes, numcolors;
+    unsigned int            width, height, widthxheight, numplanes;
     struct BitMapHeader     *bmhd;
-    long                    *colorregs;
+    IPTR                numcolors;
+    ULONG                    *colorregs;
     int                     i, ret;
 #if LEGACY
     struct BitMap           *bm;
@@ -613,9 +614,9 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 	    GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
 	    return FALSE;
 	}
-	*(gifhandle->filebufpos)++ = colorregs[i] >> 24;
-	*(gifhandle->filebufpos)++ = colorregs[i+1] >> 24;
-	*(gifhandle->filebufpos)++ = colorregs[i+2] >> 24;
+	*(gifhandle->filebufpos++) = (colorregs[i] >> 24) & 0xFF;
+	*(gifhandle->filebufpos++) = (colorregs[i+1] >> 24) & 0xFF;
+	*(gifhandle->filebufpos++) = (colorregs[i+2] >> 24) & 0xFF;
     }
 
     /* write image header, image has same size as screen */
@@ -687,7 +688,7 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 	GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
 	return FALSE;
     }
-    *(gifhandle->filebufpos)++ = ';';
+    *(gifhandle->filebufpos++) = ';';
 
     /* flush write buffer to file and exit */
     SaveGIF_EmptyBuf(gifhandle, 0);

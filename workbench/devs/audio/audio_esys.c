@@ -1,5 +1,5 @@
 /*
-     Copyright 2010-2016, The AROS Development Team. All rights reserved.
+     Copyright 2010-2020, The AROS Development Team. All rights reserved.
      $Id$
  */
 
@@ -14,6 +14,14 @@
 
 #include "audio_intern.h"
 #include <proto/dos.h>
+
+ETASK *global_eta;
+
+TSYS ematsys0;
+TSYS *ematsys;
+
+ESYS emasys0;
+ESYS *emasys;
 
 /*
  *  InitSLAVE

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
+ * Copyright © 2012-2020, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -31,6 +31,27 @@
 
 #include LC_LIBDEFS_FILE
 
+static const char *str_typedisk = "DISK";
+static const char *str_typeatapi = "ATAPI";
+static const char *str_typeunk = "UNKNOWN(ATAPI?)";
+
+static const char *str_enabled = "enabled";
+static const char *str_disabled = "disabled";
+static const char *str_enabling = "enabling";
+static const char *str_frozen = "frozen";
+static const char *str_unfrozen = "unfrozen";
+static const char *str_disabled2 = "<disabled>";
+static const char *str_freezing = "freezing";
+static const char *str_unsupported = "notsupp";
+
+static const char *str_yes = "YES";
+static const char *str_no = "NO";
+
+static const char *str_found = "%s: Found %s \"%*.*s %*.*s\" serial=\"%*.*s\"\n"
+		"%s: tags=%d/%d satacap=%04x satafea=%04x NCQ=%s "
+		"capacity=%lld.%02dMB\n";
+static const char *str_found2 = "%s: f85=%04x f86=%04x f87=%04x WC=%s RA=%s SEC=%s\n";
+static const char *str_unabletoident = "%s: Detected %s device but unable to IDENTIFY\n";
 /*
  * Execute a SCSI TEST UNIT READY every 250ms, to see
  * if the medium has changed.
@@ -237,8 +258,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
             return FALSE;
     }
 
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
-                                                        40L);
+    ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
     if (ExpansionBase)
     {
@@ -695,16 +715,16 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 	switch(at->at_type) {
 	case ATA_PORT_T_DISK:
 		xa->fis->command = ATA_C_IDENTIFY;
-		type = "DISK";
+		type = str_typedisk;
 		break;
 	case ATA_PORT_T_ATAPI:
 		xa->fis->command = ATA_C_ATAPI_IDENTIFY;
 		xa->flags |= ATA_F_AUTOSENSE;
-		type = "ATAPI";
+		type = str_typeatapi;
 		break;
 	default:
 		xa->fis->command = ATA_C_ATAPI_IDENTIFY;
-		type = "UNKNOWN(ATAPI?)";
+		type = str_typeunk;
 		break;
 	}
 	xa->fis->features = 0;
@@ -712,8 +732,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 	xa->timeout = 1000;
 
 	if (ahci_ata_cmd(xa) != ATA_S_COMPLETE) {
-		kprintf("%s: Detected %s device but unable to IDENTIFY\n",
-			ATANAME(ap, atx), type);
+		kprintf(str_unabletoident, ATANAME(ap, atx), type);
 		ahci_ata_put_xfer(xa);
 		goto err;
 	}
@@ -806,42 +825,40 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 	 */
 	if (at->at_identify.cmdset82 & ATA_IDENTIFY_WRITECACHE) {
 		if (at->at_identify.features85 & ATA_IDENTIFY_WRITECACHE)
-			wcstr = "enabled";
+			wcstr = str_enabled;
 		else if (at->at_type == ATA_PORT_T_ATAPI)
-			wcstr = "disabled";
+			wcstr = str_disabled;
 		else
-			wcstr = "enabling";
+			wcstr = str_enabling;
 	} else {
-		    wcstr = "notsupp";
+		    wcstr = str_unsupported;
 	}
 
 	if (at->at_identify.cmdset82 & ATA_IDENTIFY_LOOKAHEAD) {
 		if (at->at_identify.features85 & ATA_IDENTIFY_LOOKAHEAD)
-			rastr = "enabled";
+			rastr = str_enabled;
 		else if (at->at_type == ATA_PORT_T_ATAPI)
-			rastr = "disabled";
+			rastr = str_disabled;
 		else
-			rastr = "enabling";
+			rastr = str_enabling;
 	} else {
-		    rastr = "notsupp";
+		    rastr = str_unsupported;
 	}
 
 	if (at->at_identify.cmdset82 & ATA_IDENTIFY_SECURITY) {
 		if (at->at_identify.securestatus & ATA_SECURE_FROZEN)
-			scstr = "frozen";
+			scstr = str_frozen;
 		else if (at->at_type == ATA_PORT_T_ATAPI)
-			scstr = "unfrozen";
+			scstr = str_unfrozen;
 		else if (AhciNoFeatures & (1 << ap->ap_num))
-			scstr = "<disabled>";
+			scstr = str_disabled2;
 		else
-			scstr = "freezing";
+			scstr = str_freezing;
 	} else {
-		    scstr = "notsupp";
+		    scstr = str_unsupported;
 	}
 
-	kprintf("%s: Found %s \"%*.*s %*.*s\" serial=\"%*.*s\"\n"
-		"%s: tags=%d/%d satacap=%04x satafea=%04x NCQ=%s "
-		"capacity=%lld.%02dMB\n",
+	kprintf(str_found,
 
 		ATANAME(ap, atx),
 		type,
@@ -853,11 +870,11 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 		devncqdepth, ap->ap_sc->sc_ncmds,
 		at->at_identify.satacap,
 		at->at_identify.satafsup,
-		(at->at_ncqdepth > 1 ? "YES" : "NO"),
+		(at->at_ncqdepth > 1 ? str_yes : str_no),
 		(long long)capacity_bytes / (1024 * 1024),
 		(int)(capacity_bytes % (1024 * 1024)) * 100 / (1024 * 1024)
 	);
-	kprintf("%s: f85=%04x f86=%04x f87=%04x WC=%s RA=%s SEC=%s\n",
+	kprintf(str_found2,
 		ATANAME(ap, atx),
 		at->at_identify.features85,
 		at->at_identify.features86,

@@ -2,7 +2,7 @@
 #define _VMWARESVGA_INTERN_H
 
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -140,6 +140,5 @@ void VMWareSVGA_WSCtx_WinSysInit(struct HIDDGalliumVMWareSVGAData *, struct HIDD
 void *VMWareSVGA_WSSurf_SurfaceMap(struct svga_winsys_context *swc, struct svga_winsys_surface *srf, unsigned flags, boolean *retry);
 void VMWareSVGA_WSSurf_SurfaceUnMap(struct svga_winsys_context *swc, struct svga_winsys_surface *srf, boolean *rebind);
 void VMWareSVGA_WSSurf_SurfaceReference(struct HIDDGalliumVMWareSVGASurf **, struct HIDDGalliumVMWareSVGASurf *);
-enum pipe_error VMWareSVGA_WSSurf_SurfaceInvalidate(struct svga_winsys_context *swc, struct svga_winsys_surface *surf);
 
 #endif

@@ -1,12 +1,11 @@
 /*
-    Copyright © 2013-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: A600/A1200/A4000 ATA HIDD
     Lang: English
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <hardware/ata.h>
@@ -230,6 +229,13 @@ APTR GAYLEATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Ms
         pio->port = data->bus->port;
         pio->altport  = data->bus->altport;
         pio->dataport = (UBYTE*)(((ULONG)pio->port) & ~3);
+        /* 
+         * (A600/A1200) Data port is in a shadow bank of gayle (offset of 0x2000).
+         * This shadow bank is for 16/32-bit data transfers, while the
+         * other one is much slower due to 8-bit transfers, only.
+         */
+        if (!data->bus->a4000)
+            pio->dataport = (UBYTE*)(((ULONG)pio->port) + 0x2000);
     }
 
     return pio;

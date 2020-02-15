@@ -1,0 +1,533 @@
+# AROS Build pipeline
+# Builds a single target defined in the pipeline variables.
+# set -:
+#    arosbuild.name
+#    arosbuild.target
+#    arosbuild.variant
+#    arosbuild.package  - "system" "boot-iso"
+#    arosbuild.packagefmt - "lha" "zip" "tar.bz2"
+#
+
+trigger:
+- master
+
+jobs:
+- job: Build
+  timeoutInMinutes: 360
+  pool:
+    vmImage: '$(arosbuild.vmimage)'
+
+  variables:
+    AROSBUILDTOOLCHAINDIR:  '$(AZBUILDPATH)/toolchain' # Location toolchains are installed in
+    AROSPORTSSRCSDIR:  '$(AZBUILDPATH)/portssources' # Location external sources are downloaded to.
+    AROSBUILDSDIR:  '$(AZBUILDPATH)/builds' # Location builds are done in
+    AROSBUILDBINDIR:  '$(AZBUILDPATH)/binaires' # Location builds are done in
+    AROSLOGSDIR:  '$(AZBUILDPATH)/logs' # Location logs are stored in.
+    AROSDISTFILESDIR:  '$(AZBUILDPATH)/distfiles' # Location built binaries are copied to.
+    AZBUILDPATH: '$(Build.BinariesDirectory)' # workspace path
+    AROSBUILDDIR:  '$(AROSBUILDSDIR)/$(arosbuild.name)' # current builds directory
+    AROSSRCDIR: '$(system.defaultWorkingDirectory)' # Path to the source code
+    AROSCONTRIBSRCDIR: '$(Agent.BuildDirectory)/s-contrib' # Path to the contrib source code
+
+  steps:
+  - script: |
+      if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
+        CONFIGOPTS="$(arosbuild.config.extra)"
+      fi
+      CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)"
+      if [ "$AROSBUILD_VARIANT" != "" ]; then
+        CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
+      fi
+      if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
+        CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
+      fi
+      sudo apt-key adv --keyserver packages.microsoft.com --recv-keys B02C46DF417A0893
+      sudo apt-get update -y
+      sudo ACCEPT_EULA=Y apt-get upgrade -y
+      sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
+      sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
+      sudo apt-get install -y python3-mako libswitch-perl gperf gcc-multilib g++ ccache
+      sudo apt-get install -y jlha-utils wget
+      if [ "$AROSBUILD_TARGET" = "mingw32-i386" ]; then
+        sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
+        CONFIGOPTS="$CONFIGOPTS --with-kernel-toolchain-prefix=i686-w64-mingw32-"
+      fi
+      CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
+      echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
+    condition: eq( variables['Agent.OS'], 'Linux' )
+    displayName: 'Installing AROS build dependencies for Ubuntu'
+
+  - script: |
+      if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
+        CONFIGOPTS="$(arosbuild.config.extra)"
+      fi
+      CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)"
+      if [ "$AROSBUILD_VARIANT" != "" ]; then
+        CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
+      fi
+      if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
+        CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
+      fi
+      ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
+      brew list gawk &>/dev/null || brew install gawk
+      brew list gnu-sed &>/dev/null || brew install gnu-sed
+      brew list autoconf &>/dev/null || brew install autoconf
+      brew list automake &>/dev/null || brew install automake
+      brew list wget &>/dev/null || brew install wget
+      brew list ccache &>/dev/null || brew install ccache
+      brew list cmake &>/dev/null || brew install cmake
+      brew list netpbm &>/dev/null || brew install netpbm
+      brew list md5sha1sum &>/dev/null || brew install md5sha1sum
+      brew install caskroom/cask/brew-cask 2> /dev/null
+      brew cask install xquartz
+      sudo easy_install pip3
+      pip3 install Mako
+      brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
+      ln -s /opt/X11/include/X11 /usr/include/X11
+      CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
+      echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
+    condition: eq( variables['Agent.OS'], 'Darwin' )
+    displayName: 'Installing AROS build dependencies for MacOS'
+
+  - script: |
+      mkdir -p '$(AZBUILDPATH)/host/x86'
+      wget https://ftp.gnu.org/gnu/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz -P $(AZBUILDPATH)/host
+      wget https://ftp.gnu.org/gnu/gmp/gmp-4.2.4.tar.gz -P $(AZBUILDPATH)/host
+      wget https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz -P $(AZBUILDPATH)/host
+      wget https://ftp.gnu.org/gnu/mpfr/mpfr-4.0.1.tar.gz -P $(AZBUILDPATH)/host
+      cd $(AZBUILDPATH)/host
+      tar xzf gcc-8.3.0.tar.gz
+      tar xzf gmp-4.2.4.tar.gz
+      tar xzf mpc-1.1.0.tar.gz
+      tar xzf mpfr-4.0.1.tar.gz
+      echo 'Building darwin x86 toolchain'
+      mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
+      cd $(AZBUILDPATH)/host/x86/gmp
+      $(AZBUILDPATH)/host/gmp-4.2.4/configure --disable-shared --enable-static --prefix=/opt/gcc/x86
+      make -j 2
+      sudo make install
+      mkdir -p '$(AZBUILDPATH)/host/x86/mpfr'
+      cd $(AZBUILDPATH)/host/x86/mpfr
+      $(AZBUILDPATH)/host/mpfr-4.0.1/configure --disable-shared --enable-static --prefix=/opt/gcc/x86 --with-gmp=/opt/gcc/x86
+      make -j 2
+      sudo make install
+      mkdir -p '$(AZBUILDPATH)/host/x86/mpc'
+      cd $(AZBUILDPATH)/host/x86/mpc
+      $(AZBUILDPATH)/host/mpc-1.1.0/configure --disable-shared --enable-static --prefix=/opt/gcc/x86 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x86
+      make -j 2
+      sudo make install
+      mkdir -p '$(AZBUILDPATH)/host/x86/gcc'
+      cd $(AZBUILDPATH)/host/x86/gcc
+      $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=/opt/gcc/x86
+      make -j 2
+      sudo make install
+      sudo find /opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+      echo "##vso[task.setvariable variable=CC]/opt/gcc/x86/8/bin/gcc"
+      echo "##vso[task.setvariable variable=CXX]/opt/gcc/x86/8/bin/g++"
+      if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
+        echo 'Building darwin PPC toolchain'
+        mkdir -p '$(AZBUILDPATH)/host/ppc/gcc'
+        cd $(AZBUILDPATH)/host/ppc/gcc
+        PATH="/dir/containing/dsymutil/from/xcode6:$PATH"
+        export MACOSX_PPC_DEPLOYMENT_TARGET=10.4
+        CC=/opt/gcc/x86/8/bin/gcc CXX=/opt/gcc/x86/8/bin/g++ $(AZBUILDPATH)/host/gcc-8.3.0/configure \
+          --prefix=/opt/gcc/ppc/8 --disable-nls --disable-multilib --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 \
+          --target=powerpc-apple-darwin10.8.0 --with-sysroot=/Developer/SDKs/MacOSX10.4u.sdk \
+          CFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2" \
+          LDFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4" \
+          CXXFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2"
+        make -j 2
+        sudo make install
+        sudo find /opt/gcc/ppc/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+        echo "##vso[task.setvariable variable=MACOSX_PPC_DEPLOYMENT_TARGET]$MACOSX_PPC_DEPLOYMENT_TARGET"
+        CONFIGOPTS="$(AROSCONFIGOPTIONS) --with-kernel-toolchain-prefix=powerpc-apple-darwin10.8.0-"
+        echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
+      fi
+    condition: eq( variables['Agent.OS'], 'Darwin' )
+    displayName: 'Build native toolchains for MacOS'
+
+  - script: |
+      mkdir -p '$(AROSCONTRIBSRCDIR)'
+      echo '##vso[task.prependpath]$(AROSCONTRIBSRCDIR)'
+      git clone --depth 1 --recurse-submodules https://github.com/aros-development-team/contrib.git $(AROSCONTRIBSRCDIR)/
+      mkdir -p '$(AROSBUILDSDIR)'
+      mkdir -p '$(AROSBUILDBINDIR)'
+      mkdir -p '$(AROSBUILDTOOLCHAINDIR)'
+      mkdir -p '$(AROSPORTSSRCSDIR)'
+      mkdir -p '$(AROSLOGSDIR)'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/config'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/sources'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/toolchain'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/sdk'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/distfiles'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/contrib'
+      mkdir -p '$(Build.ArtifactStagingDirectory)/publish/logs'
+      echo '##vso[task.prependpath]$(AROSBUILDTOOLCHAINDIR)'
+      echo '##vso[task.prependpath]$(AROSBUILDSDIR)'
+      echo '##vso[task.prependpath]$(AROSPORTSSRCSDIR)'
+      echo '##vso[task.prependpath]$(AROSLOGSDIR)'
+      BUILDDATE=$(date -u +'%Y%m%d')
+      echo "##vso[task.setvariable variable=arosbuilddate]$BUILDDATE"
+      echo "##vso[task.setvariable variable=arosbuildid]AROS-$BUILDDATE"
+      echo "##vso[task.setvariable variable=AROSPACKAGEDIR]$(AROSBUILDSDIR)/AROS-$BUILDDATE-$(arosbuild.name)-$(arosbuild.package)"
+      echo "Common BUILD dir '$(AROSBUILDSDIR)'"
+      echo "Common TOOLCHAIN dir '$(AROSBUILDTOOLCHAINDIR)'"
+      echo "Common PORTSSOURCES dir '$(AROSPORTSSRCSDIR)'"
+      echo "Common LOG dir '$(AROSLOGSDIR)'"
+    displayName: 'Setup common workspace'
+
+  - script: |
+      mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-source'
+      cp -r $(AROSSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-source/
+      echo "Creating $(AROSBUILDID)-source.tar.bz2"
+      tar cjvf $(AROSBUILDID)-source.tar.bz2 --exclude=.git $(AROSBUILDID)-source
+      md5sum $(AROSBUILDID)-source.tar.bz2 >$(AROSBUILDID)-source.tar.bz2.md5
+      mv $(AROSBUILDID)-source.tar.bz2 $(AROSBUILDBINDIR)/
+      mv $(AROSBUILDID)-source.tar.bz2.md5 $(AROSBUILDBINDIR)/
+      rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-source
+    workingDirectory: '$(AROSBUILDSDIR)'
+    displayName: 'Creating AROS source package'
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDBINDIR)'
+      contents: '$(AROSBUILDID)-source*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/sources
+
+  - script: |
+      mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source'
+      cp -r $(AROSCONTRIBSRCDIR)/* $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source/
+      echo "Creating $(AROSBUILDID)-source.tar.bz2"
+      tar cjvf $(AROSBUILDID)-contrib-source.tar.bz2 --exclude=.git $(AROSBUILDID)-contrib-source
+      md5sum $(AROSBUILDID)-contrib-source.tar.bz2 >$(AROSBUILDID)-contrib-source.tar.bz2.md5
+      mv $(AROSBUILDID)-contrib-source.tar.bz2 $(AROSBUILDBINDIR)/
+      mv $(AROSBUILDID)-contrib-source.tar.bz2.md5 $(AROSBUILDBINDIR)/
+      rm -Rf $(AROSBUILDSDIR)/$(AROSBUILDID)-contrib-source
+    workingDirectory: '$(AROSBUILDSDIR)'
+    displayName: 'Creating contrib source package'
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDBINDIR)'
+      contents: '$(AROSBUILDID)-contrib-source*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/sources
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish source tarball build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/sources
+      artifactName: sources
+
+  - script: |
+      mkdir -p ~/.ssh
+      mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources'
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
+      ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+      sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
+      rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
+    env:
+      MAPPED_USER: $(SF_RSYNC_USER)
+      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    displayName: 'Deploying source package(s)'
+
+  - script: |
+      mkdir -p '$(AROSBUILDDIR)'
+      mkdir -p '$(AROSPACKAGEDIR)'
+      echo '##vso[task.prependpath]$(AROSBUILDDIR)'
+      echo '##vso[task.prependpath]$(AROSPACKAGEDIR)'
+      echo "Target BUILD dir '$(AROSBUILDDIR)'"
+      echo "Target PACKAGE dir '$(AROSPACKAGEDIR)'"
+    displayName: 'Setup $(arosbuild.name) workspace'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Configuring $(arosbuild.name) Toolchain'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute make -j 2 crosstools
+      rm -Rf $(AROSBUILDDIR)/*
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name) Toolchain'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Configuring $(arosbuild.name)'
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDDIR)'
+      contents: '**/*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/config
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish configuration build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/config
+      artifactName: $(arosbuild.name) config
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+        if [ -f /tmp/_aros_build_failed ]; then
+          exit 5
+        fi
+      }
+      execute make -j 2
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name) core system'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      }
+      execute make -j 2 boot-distfiles
+      if [ -f /tmp/_aros_build_failed ]; then
+        touch /tmp/_aros_boot_build_failed
+        rm /tmp/_aros_build_failed
+        rm -Rf $(AROSBUILDDIR)/distfiles
+        echo '##vso[task.complete result=SucceededWithIssues;]DONE'
+      else
+        if [ -d "$(AROSBUILDDIR)/distfiles" ]; then 
+          mv distfiles distfiles-boot
+        fi
+      fi
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name) boot distfiles'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      }
+      execute make -j 2 distfiles
+      if [ -f /tmp/_aros_build_failed ]; then
+        touch /tmp/_aros_distfiles_build_failed
+        rm /tmp/_aros_build_failed
+        rm -Rf $(AROSBUILDDIR)/distfiles
+        echo '##vso[task.complete result=SucceededWithIssues;]DONE'
+      fi
+    workingDirectory: '$(AROSBUILDDIR)'
+    displayName: 'Build $(arosbuild.name) main distfiles'
+
+  - script: |
+      function execute {
+        {
+          echo '>>>' $*
+          $*
+          if [ $? != 0 ]; then
+            touch /tmp/_aros_build_failed
+          fi
+        } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      }
+      cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib
+      mv $(AROSCONTRIBSRCDIR) $(AROSSRCDIR)/contrib
+      execute make -j 2 contrib
+      mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
+      if [ -f /tmp/_aros_build_failed ]; then
+        touch /tmp/_aros_contrib_build_failed
+        rm /tmp/_aros_build_failed
+        echo '##vso[task.complete result=SucceededWithIssues;]DONE'
+      fi
+    workingDirectory: '$(AROSBUILDDIR)'
+    condition: eq( variables['arosbuild.withcontrib'], 'yes' )
+    displayName: 'Build $(arosbuild.name) contrib'
+
+  - script: |
+      function copycontribrecursive() {
+        for e in $*/*; do
+          if [ -d "$e" ]; then
+            (copycontribrecursive $e)
+          fi
+          if [ -e "$e" ]; then
+            file=`echo $e | sed "s|$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/||g"`
+            if [ ! -e "$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib/$file" ]; then
+              mkdir -p `dirname $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file`
+              cp $e $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file
+            fi
+          fi
+        done
+      }
+
+      if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
+        if [ ! -f /tmp/_aros_boot_build_failed ]; then
+          mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+          cp -r $(AROSBUILDDIR)/distfiles-boot/* $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+          cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+          cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+          echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)"
+          if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]
+          then
+            zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+          else
+            if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]
+            then
+              tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+            else
+              if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]
+              then
+                lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)
+              fi
+            fi
+          fi
+          md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5
+          mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDBINDIR)/
+          mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt).md5 $(AROSBUILDBINDIR)/
+          rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
+        fi
+      fi
+      if [ ! -f /tmp/_aros_distfiles_build_failed ]; then
+        cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
+        cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
+        cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSPACKAGEDIR)/
+        echo "Creating $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)"
+        if [[ "$(arosbuild.packagefmt)" = "zip" ]]
+        then
+          zip -r9 $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+        else
+          if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
+          then
+            tar cjvf $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+          else
+            if [[ "$(arosbuild.packagefmt)" = "lha" ]]
+            then
+              lha -a $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)
+            fi
+          fi
+        fi
+        md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
+        mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)/
+        mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(AROSBUILDBINDIR)/
+        rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)'
+      fi
+      if [ "$AROSBUILD_WITHCONTRIB" = "yes" ]; then
+        if [ ! -f /tmp/_aros_contrib_build_failed ]; then
+          mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
+          copycontribrecursive $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS
+          cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+          cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
+          tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
+          md5sum $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 >$(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5
+          mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDBINDIR)/
+          mv $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2.md5 $(AROSBUILDBINDIR)/
+          rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
+        fi
+      fi
+      cd $(AROSLOGSDIR)
+      bzip2 $(arosbuild.package)-$(arosbuild.name).log
+      md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
+      rm -Rf $(AROSPACKAGEDIR)
+    workingDirectory: '$(AROSBUILDSDIR)'
+    displayName: 'Creating $(arosbuild.name) package(s)'
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDBINDIR)'
+      contents: '$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/distfiles
+
+  - task: CopyFiles@2
+    condition: ne( variables['arosbuild.bootpackage'], '' )
+    inputs:
+      SourceFolder: '$(AROSBUILDBINDIR)'
+      contents: '$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/distfiles
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish distfiles build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/distfiles
+      artifactName: $(arosbuild.name) distfiles
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDBINDIR)'
+      contents: '$(AROSBUILDID)-$(arosbuild.name)-contrib*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/contrib
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish contrib build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/contrib
+      artifactName: $(arosbuild.name) contrib
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSLOGSDIR)'
+      contents: '$(arosbuild.package)-$(arosbuild.name).log.*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/logs
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish log build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/logs
+      artifactName: $(arosbuild.name) logs
+
+  - script: |
+      mkdir -p ~/.ssh
+      mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
+      mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure'
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+      mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
+      mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
+      ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+      sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
+    env:
+      MAPPED_USER: $(SF_RSYNC_USER)
+      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    displayName: 'Deploying build'

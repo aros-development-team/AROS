@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2018, The AROS Development Team. All rights reserved.
+    Copyright  2004-2019, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
     
@@ -246,7 +246,6 @@ struct TagItem32 * FindTag32Item(ULONG tagValue, const struct TagItem32 *tagList
     }
 
     return NULL;
-
 }
 
 IPTR GetTag32Data(ULONG tagValue, ULONG defaultVal, const struct TagItem32 *tagList)
@@ -1040,6 +1039,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object    *_WP_AdvancedViewWindow = NULL,
             *_WP_AdvancedViewPageGroupObj = NULL,
             *_WP_AdvancedViewWindowVGrp = NULL,
+            *_WP_AdvancedViewContentsGrp = NULL,
             *_WP_AdvancedViewBackgroundGrpObj = NULL,
             *_WP_AdvancedViewRenderModeGrpObj = NULL,
             *_WP_AdvancedViewRenderModeObj = NULL,
@@ -1318,7 +1318,12 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     _WP_AdvancedViewWindow = (Object *)WindowObject,
                     MUIA_Window_CloseGadget, FALSE,
                     MUIA_Window_Title, (IPTR)_(MSG_ADVANCEDOPTIONS),
-                    WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = (Object *)VGroup, End),
+                    WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = (Object *)VGroup,
+                        Child, (IPTR)(ScrollgroupObject,
+                            MUIA_Scrollgroup_Contents, (IPTR) (_WP_AdvancedViewContentsGrp = (Object *)VirtgroupObject,
+                            End),
+                        End),
+                    End),
                 End;
 
     /*_WP_AdvancedViewPageGroupObj = Object for handling multi (3) page groups---------*/
@@ -1599,7 +1604,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedView_IconRenderGrpObj);
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedView_LabelRenderGrpObj);
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedViewBackgroundGrpObj);
-    DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedViewPageGroupObj);/*add pagesGroup to view*/
+    DoMethod(_WP_AdvancedViewContentsGrp, OM_ADDMEMBER,_WP_AdvancedViewPageGroupObj);/*add pagesGroup to view*/
     DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_ButtonGrpObj);
 
 /*END Add advanced view objects to AdvancedViewWindow object-----------------*/
@@ -2104,7 +2109,16 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Freeing old ViewSetting Ta
         if (_viewSettings_Node->wpedbo_Options)
         {
 D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Allocated new Tag storage @ 0x%p [%d bytes] \n", _viewSettings_Node->wpedbo_Options, chunk_size - _viewSettings_TagOffset));
+             
             CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpedbo_Options, tag_count * sizeof(struct TagItem32));
+
+#if AROS_BIG_ENDIAN            
+            BYTE num = 0;
+            do {
+                _viewSettings_Node->wpedbo_Options[num].ti_Tag = AROS_LE2LONG(_viewSettings_Node->wpedbo_Options[num].ti_Tag);
+                _viewSettings_Node->wpedbo_Options[num].ti_Data = AROS_LE2LONG(_viewSettings_Node->wpedbo_Options[num].ti_Data);
+            } while(++num < tag_count);
+#endif        
             _viewSettings_Node->wpedbo_Options[tag_count].ti_Tag = TAG_DONE;
         }
     }
@@ -2182,11 +2196,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: End of header chunk ..\n"
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context 0x%p\n", context));
 
-                                error = ReadChunkBytes(
-                                                    handle, 
-                                            chunk_buffer, 
-                                            this_chunk_size
-                                               );
+                                error = ReadChunkBytes(handle, chunk_buffer, this_chunk_size);
                                     
                                 if (error == this_chunk_size)
                                 {
@@ -2280,8 +2290,8 @@ D(bug("[WPEditor] Failed to open stream!, returncode %ld!\n", error));
 }
 
 #define SAVEVIEWSETTINGSTAG(tag, defvalue)                                                                                                  \
-    _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(tag);                                                               \
-    _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(tag, defvalue, _viewSettings_Node->wpedbo_Options));  \
+    _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = tag;                                                               \
+    _viewSettings_TagList[_viewSettings_TagCount].ti_Data = GetTag32Data(tag, defvalue, _viewSettings_Node->wpedbo_Options);  \
     _viewSettings_TagCount += 1;
 
 
@@ -2351,12 +2361,12 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
                         /* helper to convert to little endian */
             STACKED IPTR           ti_Data = 0;
 
-                        // save navigation bahaviour
-                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_WindowNavigationMethod);
-                        GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
-                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+            // save navigation bahaviour
+            _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_WindowNavigationMethod);
+            GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
+            _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindow_WindowNavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
-                        _wp_GlobalTagCounter += 1;
+            _wp_GlobalTagCounter += 1;
 
 #if defined(DEBUG_SHOWUSERFILES)
             _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_UserFiles_ShowFilesFolder);
@@ -2564,7 +2574,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Stri
                                         case MUIA_IconWindowExt_ImageBackFill_BGTileMode:
                                         case MUIA_IconWindowExt_ImageBackFill_BGXOffset:
                                         case MUIA_IconWindowExt_ImageBackFill_BGYOffset:
-                                            _viewSettings_TagList[_viewSettings_TagCount].ti_Tag   = tag->ti_Tag;
+                                            _viewSettings_TagList[_viewSettings_TagCount].ti_Tag  = tag->ti_Tag;
                                             _viewSettings_TagList[_viewSettings_TagCount].ti_Data = tag->ti_Data;
                                             _viewSettings_TagCount += 1;
                                             break;

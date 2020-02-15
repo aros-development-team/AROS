@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,9 +13,10 @@
 
 #include <string.h>
 
-#ifndef DEBUG
-#define DEBUG 0
+#ifdef DEBUG
+#undef DEBUG
 #endif
+#define DEBUG 0
 
 #include "os.h"
 #include "bitmap.h"
@@ -174,6 +175,8 @@ struct Volume *initVolume
 	volume = AllocMem(sizeof(struct Volume) + strlen(blockdevice) + 1,MEMF_PUBLIC | MEMF_CLEAR);
 	if (volume != NULL)
 	{
+		volume->FNameMax = MAX_NAME_LENGTH;
+		D(bug("[afs] initVolume: NameLen MAX =%d\n",volume->FNameMax));
 		volume->device = device;
 		volume->ioh.blockdevice = (STRPTR)(&volume[1]); /* Data after the volume alloc */
 		strcpy(volume->ioh.blockdevice, blockdevice);

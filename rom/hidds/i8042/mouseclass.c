@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The PS/2 mouse driver class.
@@ -110,6 +110,8 @@ static const char *mice_str[] =
     "IntelliMouse(tm)-compatible PS/2 mouse"
 };
 
+static const char *driver_name = "i8042.hidd";
+
 VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
@@ -146,7 +148,7 @@ VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch (idx)
         {
         case aoHidd_Name:
-            *msg->storage = (IPTR)"i8042.hidd";
+            *msg->storage = (IPTR)driver_name;
             return;
 
         case aoHidd_HardwareName:

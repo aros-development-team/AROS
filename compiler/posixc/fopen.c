@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fopen().
 */
 
 #include <fcntl.h>
+#include <string.h>
 #include "__stdio.h"
 
 
@@ -14,7 +15,7 @@
     NAME */
 #include <stdio.h>
 
-	FILE * fopen (
+	FILE * __posixc_fopen (
 
 /*  SYNOPSIS */
 	const char * pathname,
@@ -58,8 +59,12 @@
 	is returned, then errno is set to indicate the error.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
+	On 32bit systems, fopen and related operations only work with
+	32bit filesystems/files. Anything larger than 2GB needs to use
+	the correct 64bit structures and functions.
+       
+	This function must not be used in a shared library or
+	in a threaded application.
 
     EXAMPLE
 
@@ -74,20 +79,8 @@
 
 ******************************************************************************/
 {
-    int fd;
-    int openmode = __smode2oflags(mode);
 
-    if (openmode != -1)
-    {
-        fd = open(pathname, openmode, 644);
-        if (fd == -1)
-            return NULL;
-    
-        return fdopen(fd, NULL);
-    }
-    else
-    {
-        return NULL;
-    }
-} /* fopen */
+    return __fopen(pathname, mode, 0);
+
+} /* __posixc_fopen */
 

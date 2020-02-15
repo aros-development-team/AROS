@@ -1,0 +1,60 @@
+# AROS repository git attributes.
+#
+
+#
+# Localised files
+#
+# These languages traditionally use  ISO-8859-1 in AmigaOS
+# do not change them, and do not use symbols in their catalogs
+# that cannot be displayed by ISO-8859-1
+#
+*.cd                 text encoding=ISO-8859-1
+
+albanian.ct          text encoding=ISO-8859-1
+catalan.ct           text encoding=ISO-8859-1
+danish.ct            text encoding=ISO-8859-1
+dutch.ct             text encoding=ISO-8859-1
+faroese.ct           text encoding=ISO-8859-1
+finnish.ct           text encoding=ISO-8859-1
+french.ct            text encoding=ISO-8859-1
+german.ct            text encoding=ISO-8859-1
+irish.ct             text encoding=ISO-8859-1
+icelandic.ct         text encoding=ISO-8859-1
+italian.ct           text encoding=ISO-8859-1
+norwegian.ct         text encoding=ISO-8859-1
+portuguese.ct        text encoding=ISO-8859-1
+spanish.ct           text encoding=ISO-8859-1
+swedish.ct           text encoding=ISO-8859-1
+
+# ISO-8859-2
+#
+bosnian.ct           text encoding=ISO-8859-2
+croatian.ct          text encoding=ISO-8859-2
+czech.ct             text encoding=ISO-8859-2
+hungarian.ct         text encoding=ISO-8859-2
+rumanian.ct          text encoding=ISO-8859-2
+slovak.ct            text encoding=ISO-8859-2
+slovene.ct           text encoding=ISO-8859-2
+# Polish is stored as ISO-8859-2 but used as AmigaPL
+polish.ct            text encoding=ISO-8859-2
+
+# ISO-8859-3
+#
+maltese.ct           text encoding=ISO-8859-3
+turkish.ct           text encoding=ISO-8859-3
+
+# ISO-8859-4
+#
+estonian.ct          text encoding=ISO-8859-4
+latvian.ct           text encoding=ISO-8859-4
+lithuanian.ct        text encoding=ISO-8859-4
+
+# ISO-8859-5
+#
+bulgarian.ct         text encoding=ISO-8859-5
+macedonian.ct        text encoding=ISO-8859-5
+serbian.ct           text encoding=ISO-8859-5
+ukrainian.ct         text encoding=ISO-8859-5
+
+# Russian is stored as WINDOWS-1251 but used as Amiga-1251
+russian.ct           text encoding=WINDOWS-1251

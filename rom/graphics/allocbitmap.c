@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new BitMap
@@ -549,7 +549,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                         break;
 
                     if (clear)
-                        memset (nbm->Planes[plane], 0, RASSIZE(sizex,sizey));
+                        SetMem (nbm->Planes[plane], 0, RASSIZE(sizex,sizey));
                 }
 
                 if (plane != depth)

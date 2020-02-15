@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 /*
@@ -8,10 +8,10 @@
  * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
-
-#ifndef DEBUG
-#define DEBUG 0
+#ifdef DEBUG
+#undef DEBUG
 #endif
+#define DEBUG 0
 
 #include "os.h"
 #include "filehandles2.h"
@@ -384,13 +384,15 @@ struct BlockCache *linkNewBlock
 	)
 {
 ULONG key; /* parent; */
-UBYTE buffer[32];
-STRPTR name;
+UBYTE buffer[volume->FNameMax + 1];
+CONST_FSBSTR name;
 
+	SetMem(buffer, 0, volume->FNameMax + 1);
 	file->buffer[BLK_PARENT(volume)] = OS_LONG2BE(dir->blocknum);
 	D(bug("[afs] linkNewBlock: linking block %ld\n", file->blocknum));
-	name = (STRPTR)((char *)file->buffer+(BLK_FILENAME_START(volume)*4));
-	StrCpyFromBstr(name, buffer);
+	name = (CONST_FSBSTR)((char *)file->buffer+(BLK_FILENAME_START(volume)*4));
+	StrCpyFromBstr(name, buffer, sizeof(buffer) - 1);
+
 	key = getHashKey
 		(buffer, volume->SizeBlock-56, volume->dosflags)+BLK_TABLE_START;
 	/* sort in ascending order */

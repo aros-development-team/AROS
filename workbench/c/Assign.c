@@ -1,6 +1,6 @@
 /*
 
-    (C) 1995-2011 The AROS Development Team
+    (C) 1995-2020 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -9,7 +9,9 @@
     Lang: English
 */
 
-#define AROS_ALMOST_COMPATIBLE
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
 
 #ifdef __AROS__
 #include <aros/asmcall.h>
@@ -27,8 +29,6 @@
 #include <dos/dosextens.h>
 #include <dos/exall.h>
 #include <utility/tagitem.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
 
 #include <string.h>
 
@@ -40,12 +40,12 @@
     NAME
  
         Assign [(name):] [{(target)}] [LIST] [EXISTS] [DISMOUNT] [DEFER]
-	       [PATH] [ADD] [REMOVE] [VOLS] [DIRS] [DEVICES]
+	       [PATH] [ADD] [PREPEND] [REMOVE] [VOLS] [DIRS] [DEVICES]
  
     SYNOPSIS
  
         NAME, TARGET/M, LIST/S, EXISTS/S, DISMOUNT/S, DEFER/S, PATH/S, ADD/S,
-	REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
+	PREPEND/S, REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
  
     LOCATION
  
@@ -83,6 +83,7 @@
 		      to exist when the ASSIGN command is executed
 	ADD       --  don't replace an assign but add another object for a
                       NAME (multi-assigns)
+	PREPEND   --  like ADD, but puts the assign at the front of the list
 	REMOVE    --  remove an ASSIGN
 	VOLS      --  show assigned volumes if in LIST mode
 	DIRS      --  show assigned directories if in LIST mode
@@ -108,7 +109,7 @@
 	There are some fundamental building blocks that defines the semantics
 	of the Assign command.
  
-	Only one of the switches ADD, REMOVE, PATH and DEFER may be specified.
+	Only one of the switches ADD, PREPEND, REMOVE, PATH and DEFER may be specified.
  
 	If EXISTS is specified, only the name parameter is important.
  
@@ -120,6 +121,8 @@
 
 ******************************************************************************/
 
+struct UtilityBase *UtilityBase;
+
 #ifndef __AROS__
 #define AROS_BSTR_strlen(s) *((UBYTE *)BADDR(s))
 #endif
@@ -128,9 +131,9 @@
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.9 (18.10.07) © AROS" ;
+static const char version[] = "\0$VER: Assign unofficial 50.12 (20.01.2020) © AROS" ;
 #else
-static const char version[] __attribute__((used)) = "\0$VER: Assign 50.9 (18.10.07) © AROS" ;
+static const char version[] __attribute__((used)) = "\0$VER: Assign 50.12 (20.01.2020) © AROS" ;
 #endif
 
 struct localdata
@@ -153,7 +156,7 @@ struct localdata
 static int Main(struct ExecBase *sBase);
 static int checkAssign(struct localdata *ld, STRPTR name);
 static int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
-             BOOL add, BOOL remove);
+             BOOL add, BOOL prepend, BOOL remove);
 static void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices);
 static int removeAssign(struct localdata *ld, STRPTR name);
 static STRPTR GetFullPath(struct localdata *ld, BPTR lock);
@@ -170,7 +173,7 @@ static void _DeferFlush(struct localdata *ld, BPTR fh);
 
 
 static
-const UBYTE template[] =
+const UBYTE argtemplate[] =
 "NAME,"
 "TARGET/M,"
 "LIST/S,"
@@ -178,7 +181,8 @@ const UBYTE template[] =
 "DISMOUNT/S,"
 "DEFER/S,"
 "PATH/S,"
-"ADD/S,"
+"ADD=APPEND/S,"
+"PREPEND/S,"
 "REMOVE/S,"
 "VOLS/S,"
 "DIRS/S,"
@@ -194,6 +198,7 @@ struct ArgList
     IPTR defer;
     IPTR path;
     IPTR add;
+    IPTR prepend;
     IPTR remove;
     IPTR vols;
     IPTR dirs;
@@ -216,82 +221,86 @@ static int Main(struct ExecBase *sBase)
 	int error = RETURN_OK;
 
 	SysBase = sBase;
-	DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",37);
-	if (DOSBase)
+	UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",50);
+	if (UtilityBase)
 	{
-		memset(&arglist, 0, sizeof(arglist));
+	    DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",37);
+	    if (DOSBase)
+	    {
+		    SetMem(&arglist, 0, sizeof(arglist));
 
-		NEWLIST(&DeferList);
+		    NEWLIST(&DeferList);
 
-		readarg = ReadArgs(template, (IPTR *)MyArgList, NULL);
-		if (readarg)
-		{
-			/* Verify mutually exclusive args
-			 */
-			if ((MyArgList->add!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
-			{
-				PutStr("Only one of ADD, REMOVE, PATH or DEFER is allowed\n");
-				FreeArgs(readarg);
-				CloseLibrary((struct Library *) DOSBase);
-				return RETURN_FAIL;
-			}
+		    readarg = ReadArgs(argtemplate, (IPTR *)MyArgList, NULL);
+		    if (readarg)
+		    {
+			    /* Verify mutually exclusive args
+			     */
+			    if ((MyArgList->add!=0) + (MyArgList->prepend!=0) + (MyArgList->remove!=0) + (MyArgList->path!=0) + (MyArgList->defer!=0) > 1)
+			    {
+				    PutStr("Only one of ADD/APPEND, PREPEND, REMOVE, PATH or DEFER is allowed\n");
+				    FreeArgs(readarg);
+				    CloseLibrary((struct Library *) DOSBase);
+				    return RETURN_FAIL;
+			    }
 
-			/* Check device name
-			 */
-			if (MyArgList->name)
-			{
-				char *pos;
+			    /* Check device name
+			     */
+			    if (MyArgList->name)
+			    {
+				    char *pos;
 
-				/* Correct assign name construction? The rule is that the device name
-				 * should end with a colon at the same time as no other colon may be
-				 * in the name.
-				 */
-				pos = strchr(MyArgList->name, ':');
-				if (!pos || pos[1])
-				{
-					Printf("Invalid device name %s\n", (IPTR)MyArgList->name);
-					FreeArgs(readarg);
-					CloseLibrary((struct Library *) DOSBase);
-					return RETURN_FAIL;
-				}
-			}
+				    /* Correct assign name construction? The rule is that the device name
+				     * should end with a colon at the same time as no other colon may be
+				     * in the name.
+				     */
+				    pos = strchr(MyArgList->name, ':');
+				    if (!pos || pos[1])
+				    {
+					    Printf("Invalid device name %s\n", (IPTR)MyArgList->name);
+					    FreeArgs(readarg);
+					    CloseLibrary((struct Library *) DOSBase);
+					    return RETURN_FAIL;
+				    }
+			    }
 
-			/* If the EXISTS keyword is specified, we only care about NAME */
-			if (MyArgList->exists)
-			{
-				error = checkAssign(ld, MyArgList->name);
-				DEBUG_ASSIGN(Printf("checkassign error %ld\n",error));
-			}
-			else if (MyArgList->name)
-			{
-				/* If a NAME is specified, our primary task is to add or
-				   remove an assign */
+			    /* If the EXISTS keyword is specified, we only care about NAME */
+			    if (MyArgList->exists)
+			    {
+				    error = checkAssign(ld, MyArgList->name);
+				    DEBUG_ASSIGN(Printf("checkassign error %ld\n",error));
+			    }
+			    else if (MyArgList->name)
+			    {
+				    /* If a NAME is specified, our primary task is to add or
+				       remove an assign */
 
-				error = doAssign(ld, MyArgList->name, MyArgList->target, MyArgList->dismount, MyArgList->defer,
-				                 MyArgList->path, MyArgList->add, MyArgList->remove);
-				DEBUG_ASSIGN(Printf("doassign error %ld\n",error));
-				if (MyArgList->list)
-				{
-					/* With the LIST keyword, the current assigns will be
-					   displayed also when (after) making an assign */
+				    error = doAssign(ld, MyArgList->name, MyArgList->target, MyArgList->dismount, MyArgList->defer,
+						     MyArgList->path, MyArgList->add, MyArgList->prepend, MyArgList->remove);
+				    DEBUG_ASSIGN(Printf("doassign error %ld\n",error));
+				    if (MyArgList->list)
+				    {
+					    /* With the LIST keyword, the current assigns will be
+					       displayed also when (after) making an assign */
 
-					showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
-				}
-			}
-			else
-			{
-				/* If no NAME was given, we just show the current assigns
-				   as specified by the user (VOLS, DIRS, DEVICES) */
+					    showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
+				    }
+			    }
+			    else
+			    {
+				    /* If no NAME was given, we just show the current assigns
+				       as specified by the user (VOLS, DIRS, DEVICES) */
 
-				showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
-			}
+				    showAssigns(ld, MyArgList->vols, MyArgList->dirs, MyArgList->devices);
+			    }
 
-			FreeArgs(readarg);
-		}
+			    FreeArgs(readarg);
+		    }
 
-		CloseLibrary((struct Library *) DOSBase);
+		    CloseLibrary((struct Library *) DOSBase);
+	    }
+	    CloseLibrary((struct Library *) UtilityBase);
 	}
-
 	DEBUG_ASSIGN(Printf("error %ld\n", error));
 
 	return error;
@@ -456,7 +465,7 @@ STRPTR GetFullPath(struct localdata *ld, BPTR lock)
 
 static
 int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
-             BOOL add, BOOL remove)
+             BOOL add, BOOL prepend, BOOL remove)
 {
 	STRPTR colon;
 	BPTR   lock = BNULL;
@@ -575,15 +584,21 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 					DEBUG_ASSIGN(Printf("doassign AssignPath error %ld\n",error));
 				}
 			}
-			else if (add)
+			else if ((add) || (prepend))
 			{
-				if (!AssignAdd(name, lock))
+				BOOL success = FALSE;
+				if (add)
+				    success = AssignAdd(name, lock);
+				else
+				    success = AssignAddToList(name, lock, 0);
+
+				if (!success)
 				{
 					struct DosList *dl;
 
 					error = RETURN_FAIL;
 					ioerr = IoErr();
-					DEBUG_ASSIGN(Printf("doassign AssignAdd error %ld\n",error));
+					DEBUG_ASSIGN(Printf("doassign add/prepend error %ld\n",error));
 
 					/* Check if the assign doesn't exist at all. If so, create it.
 					 * This fix bug id 145. - Piru

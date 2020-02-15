@@ -1,44 +1,48 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for CONU_CHARMAP console units.
     Lang: english
 */
 
-#include <string.h>
-
-#include <exec/ports.h>
-#include <proto/graphics.h>
-#include <proto/intuition.h>
-#include <proto/alib.h>
-#include <intuition/intuition.h>
-
-#include <intuition/imageclass.h>
-#include <intuition/gadgetclass.h>
-#include <intuition/sghooks.h>
-#include <libraries/gadtools.h>
-
-#include <graphics/rastport.h>
-#include <aros/asmcall.h>
-
-#include <stdlib.h>
-
 #define SDEBUG 0
 //#define DEBUG 1
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include <proto/utility.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <proto/alib.h>
+
+#include <exec/ports.h>
+#include <intuition/intuition.h>
+#include <intuition/imageclass.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/sghooks.h>
+#include <libraries/gadtools.h>
+#include <graphics/rastport.h>
+#include <aros/asmcall.h>
+
+#include <string.h>
+#include <stdlib.h>
 
 #include "console_gcc.h"
 #include "consoleif.h"
 
 #include "charmap.h"
 
+#undef ConsoleDevice
+#define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
+
 #define	PROP_FLAGS \
 	AUTOKNOB | FREEVERT | PROPNEWLOOK | PROPBORDERLESS
 
 #define CODE_COPY	'C'
 #define CODE_PASTE	'V'
+
+extern const STRPTR CONCLIP_PORTNAME;
 
 struct MyEditHookMsg
 {
@@ -47,7 +51,6 @@ struct MyEditHookMsg
     WORD code;
 };
 
-static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 struct Scroll
 {
     struct Gadget scroller;     /* proportionnal gadget */
@@ -145,10 +148,6 @@ CONST struct Scroll ScrollBar = {
 };
 
 
-#ifdef ConsoleDevice
-#undef ConsoleDevice
-#endif
-
 #ifdef GfxBase
 #undef GfxBase
 #endif
@@ -160,7 +159,6 @@ static VOID charmapcon_refresh(Class *cl, Object *o, LONG off);
 static VOID charmapcon_add_prop(Class *cl, Object *o)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
-    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct Scroll *pg;
     struct Image *dummy;
     struct Window *win = CU(o)->cu_Window;
@@ -274,7 +272,6 @@ static VOID charmapcon_add_prop(Class *cl, Object *o)
 static VOID charmapcon_adj_prop(Class *cl, Object *o)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
-    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct Window *w = CU(o)->cu_Window;
     ULONG VertBody, VertPot;
 
@@ -308,7 +305,6 @@ static VOID charmapcon_adj_prop(Class *cl, Object *o)
 void charmapcon_free_prop(Class *cl, Object *o)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
-    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct Window *win = CU(o)->cu_Window;
 
     if (data->prop)
@@ -353,7 +349,7 @@ static Object *charmapcon_new(Class *cl, Object *o, struct opSet *msg)
         /* Clear for checking inside dispose() whether stuff was allocated.
            Basically this is bug-prevention.
          */
-        memset(data, 0, sizeof(struct charmapcondata));
+        SetMem(data, 0, sizeof(struct charmapcondata));
 
         data->scrollback_max = 500;     /* FIXME: Don't hardcode it */
         data->ccd_GfxBase = newGfxBase;
@@ -463,22 +459,22 @@ static VOID charmap_ascii(Class *cl, Object *o, ULONG xcp, ULONG ycp,
 
     // Ensure the line has sufficient capacity.
     if (line->size < xcp + len)
-        charmap_resize(line, xcp + len);
+        charmap_resize(ConsoleDevice, line, xcp + len);
 
     // .. copy the required data
-    memset(line->fgpen + xcp, CU(o)->cu_FgPen, len);
-    memset(line->bgpen + xcp, CU(o)->cu_BgPen, len);
-    memset(line->flags + xcp, CU(o)->cu_TxFlags, len);
+    SetMem(line->fgpen + xcp, CU(o)->cu_FgPen, len);
+    SetMem(line->bgpen + xcp, CU(o)->cu_BgPen, len);
+    SetMem(line->flags + xcp, CU(o)->cu_TxFlags, len);
     memcpy(line->text + xcp, str, len);
 
     // If cursor output is moved further right on the screen than
     // the last output, we need to fill the line
     if (oldsize < xcp)
     {
-        memset(line->fgpen + oldsize, CU(o)->cu_FgPen, xcp - oldsize);
-        memset(line->bgpen + oldsize, CU(o)->cu_BgPen, xcp - oldsize);
-        memset(line->flags + oldsize, CU(o)->cu_TxFlags, xcp - oldsize);
-        memset(line->text + oldsize, ' ', xcp - oldsize);
+        SetMem(line->fgpen + oldsize, CU(o)->cu_FgPen, xcp - oldsize);
+        SetMem(line->bgpen + oldsize, CU(o)->cu_BgPen, xcp - oldsize);
+        SetMem(line->flags + oldsize, CU(o)->cu_TxFlags, xcp - oldsize);
+        SetMem(line->text + oldsize, ' ', xcp - oldsize);
     }
 }
 
@@ -635,7 +631,7 @@ static VOID charmap_insert_char(Class *cl, Object *o, ULONG x, ULONG y)
 
     /* FIXME: This is wasteful, since it copies the buffers straight over,
      * so we have to do memmove's further down. */
-    charmap_resize(line, line->size + 1);
+    charmap_resize(ConsoleDevice, line, line->size + 1);
 
     memmove(line->fgpen + x + 1, line->fgpen + x, line->size - x - 1);
     memmove(line->bgpen + x + 1, line->bgpen + x, line->size - x - 1);
@@ -655,7 +651,7 @@ static VOID charmap_formfeed(Class *cl, Object *o)
 
     while (line)
     {
-        charmap_resize(line, 0);
+        charmap_resize(ConsoleDevice, line, 0);
         line = line->next;
     }
 }
@@ -1050,7 +1046,6 @@ struct ConClipData
 static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
 {
     struct charmapcondata *data = INST_DATA(cl, o);
-    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
     struct MsgPort replyport, *port;
     struct SGWork sgw;
     struct MyEditHookMsg msg;
@@ -1086,7 +1081,7 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
         /* AROS conclip format */
         D(bug("AROS conclip\n"));
         
-        memset( &replyport, 0, sizeof( replyport ) );
+        SetMem( &replyport, 0, sizeof( replyport ) );
 
         replyport.mp_Node.ln_Type = NT_MSGPORT;
         replyport.mp_Flags = PA_SIGNAL;

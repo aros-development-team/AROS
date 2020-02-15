@@ -1,10 +1,14 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for console.device
     Lang: english
 */
+
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <exec/lists.h>
@@ -21,10 +25,6 @@
 #include "console_gcc.h"
 
 #include "consoleif.h"
-
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
 
 static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
     UBYTE *numparams_ptr, LONG toparse, IPTR *p_tab, Object *unit,
@@ -93,9 +93,9 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
     {
         UWORD i;
         for (i = 0; i < towrite; i++)
-            kprintf("%x", write_str[i]);
+            bug("%x", write_str[i]);
 
-        kprintf("\n");
+        bug("\n");
 
     }
 #endif
@@ -736,9 +736,9 @@ VOID printstring(STRPTR string, ULONG len,
 {
     while (len--)
     {
-        kprintf("%d/%c ", *string, *string);
+        bug("%d/%c ", *string, *string);
         string++;
     }
 
-    kprintf("\n");
+    bug("\n");
 }

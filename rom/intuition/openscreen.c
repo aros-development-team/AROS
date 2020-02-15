@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -1219,6 +1219,7 @@ static const char THIS_FILE[] = __FILE__;
 
         if(ok && (screen->Screen.RastPort.BitMap == NULL))
         {
+            struct msGetRootBitMap rbmmsg;
 #ifdef __AROS__ /* AROS: BitMap needs ModeID */
             ULONG Depth = (dimensions.MaxDepth > 8) ? dimensions.MaxDepth : ns.Depth;
             struct TagItem bmtags[] =
@@ -1268,7 +1269,10 @@ static const char THIS_FILE[] = __FILE__;
                 pixfmt = GetCyberIDAttr(CYBRIDATTR_PIXFMT,modeid);
             }
 
-            DoMethod((Object*)screen->IMonitorNode,MM_GetRootBitMap,pixfmt,(ULONG)&root);
+            rbmmsg.MethodID = MM_GetRootBitMap;
+            rbmmsg.PixelFormat = pixfmt;
+            rbmmsg.Store = &root;
+            DoMethodA((Object*)screen->IMonitorNode, &rbmmsg);
 
             DEBUG_OPENSCREEN(dprintf("OpenScreen: root BitMap 0x%lx\n",root));
 
@@ -2018,7 +2022,7 @@ static const char THIS_FILE[] = __FILE__;
         if (ok)
         {
             CopyMem(&defaultdricolors,screen->DInfo.dri_Colors,sizeof (defaultdricolors));
-            memset(((UBYTE *) screen->DInfo.dri_Colors) + sizeof(defaultdricolors), 0, 4 * DRIPEN_NUMDRIPENS - sizeof(defaultdricolors));
+            SetMem(((UBYTE *) screen->DInfo.dri_Colors) + sizeof(defaultdricolors), 0, 4 * DRIPEN_NUMDRIPENS - sizeof(defaultdricolors));
         }
 #endif
 
@@ -2382,6 +2386,11 @@ static const char THIS_FILE[] = __FILE__;
         screen = 0;
 
     } /* if (!ok) */
+    else if (screen->Screen.RastPort.BitMap)
+    {
+        /* Copy the BitMap's info for compatability with existing AmigaOS apps */
+        CopyMem(screen->Screen.RastPort.BitMap, &screen->Screen.BitMap_OBSOLETE, sizeof(struct BitMap));
+    }
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: return 0x%lx\n", screen));
 

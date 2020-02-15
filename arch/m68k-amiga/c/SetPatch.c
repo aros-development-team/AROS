@@ -52,6 +52,7 @@ asm (
     "addq.l #4,%sp\n"
     "rte\n"
     ".endfunc\n"
+    ".chip 68k\n"
 );
 
 APTR getvbr(void);
@@ -64,6 +65,7 @@ asm (
     "movec %vbr,%d0\n"
     "rte\n"
     ".endfunc\n"
+    ".chip 68k\n"
 );
 
 static void setvbr(APTR vbr)
@@ -81,6 +83,7 @@ static void setvbr(APTR vbr)
     "movec %%d0,%%vbr\n"
     "rte\n"
     "0:\n"
+    ".chip 68k\n"
     : : "m" (vbr)
     );
 }
@@ -190,7 +193,11 @@ AROS_SH5H(SetPatch, 41.4, "AROS SetPatch (m68k)",
         BOOL x68040 = FALSE, x68060 = FALSE;
 
         GfxBase = (struct GfxBase*)OpenLibrary("graphics.library", 0);
-        if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
+
+        if (SysBase->AttnFlags & AFF_68080) {
+            SysBase->AttnFlags |= AFF_68881 | AFF_68882;
+        }
+        else if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
             BOOL ox68040 = FALSE, ox68060 = FALSE;
 
             Forbid();

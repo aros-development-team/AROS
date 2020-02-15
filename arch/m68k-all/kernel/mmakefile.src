@@ -2,6 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM kernel-kernel-m68k : includes-asm_h-m68k
+
 FILES := \
         dispatch \
         schedule \
@@ -18,7 +20,7 @@ FILES := \
         bushandler
 #kernel_gdb
 
-AFILES=issuper fpusavecontext fpurestorecontext buserror
+AFILES=issuper fpusavecontext fpurestorecontext buserror ammxsavecontext ammxrestorecontext
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 	       -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include

@@ -1,10 +1,19 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
 /****************************************************************************************/
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <proto/graphics.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/oop.h>
+#include <proto/alib.h>
 
 #include <string.h>
 #include <exec/lists.h>
@@ -14,11 +23,6 @@
 #include <exec/alerts.h>
 #include <hidd/gfx.h>
 #include <oop/oop.h>
-#include <proto/graphics.h>
-#include <proto/exec.h>
-#include <proto/intuition.h>
-#include <proto/oop.h>
-#include <proto/alib.h>
 #include <devices/input.h>
 #include <intuition/classes.h>
 #include <intuition/pointerclass.h>
@@ -38,9 +42,6 @@
     #include "transplayers.h"
     #include "smallmenu.h"
 #endif
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 #ifdef INTUITION_NOTIFY_SUPPORT
 /* screennotify/notifyintuition init routines from notify.c */
@@ -62,7 +63,7 @@ AROS_UFP3(ULONG, rootDispatcher,
 
 const ULONG coltab[] =
 {
-    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70     */
+    0XAAAAAAAA, 0XAAAAAAAA, 0XAAAAAAAA, /* Grey       */
     0x00000000, 0x00000000, 0x00000000, /* Black      */
     0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White      */
     0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue */
@@ -95,16 +96,16 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     GetPrivIBase(LIBBASE)->ExecLockBase = OpenResource("execlock.resource");
 #endif
     /* Open our dependencies */
-    if (!(GetPrivIBase(LIBBASE)->UtilityBase = OpenLibrary("utility.library", 0))) {
+    if (!(GetPrivIBase(LIBBASE)->UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
         return FALSE;
-    } else if (!(GfxBase = GetPrivIBase(LIBBASE)->GfxBase = (APTR)OpenLibrary("graphics.library", 41))) {
+    } else if (!(GfxBase = GetPrivIBase(LIBBASE)->GfxBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
-    } else if (!(GetPrivIBase(LIBBASE)->LayersBase = (APTR)OpenLibrary("layers.library", 41))) {
+    } else if (!(GetPrivIBase(LIBBASE)->LayersBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_LAYERS))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
-    } else if (!(GetPrivIBase(LIBBASE)->KeymapBase = (APTR)OpenLibrary("keymap.library", 41))) {
+    } else if (!(GetPrivIBase(LIBBASE)->KeymapBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_KEYMAP))) {
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->LayersBase);
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
         CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
@@ -117,8 +118,8 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
     LIBBASE->ib_HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
 
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;

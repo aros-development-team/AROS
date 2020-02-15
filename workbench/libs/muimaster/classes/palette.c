@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,13 +12,13 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/colorwheel.h>
+
 #include <utility/hooks.h>
-#include "gadgets/colorwheel.h"
+#include <gadgets/colorwheel.h>
 #include <gadgets/gradientslider.h>
-#include "intuition/icclass.h"
-#include "intuition/gadgetclass.h"
-#include <string.h>
-#include <stdio.h>
+#include <intuition/icclass.h>
+#include <intuition/gadgetclass.h>
+#include <exec/rawfmt.h>
 
 #include "debug.h"
 
@@ -29,6 +29,7 @@
 #include "prefs.h"
 #include "palette.h"
 #include "palette_private.h"
+#include "../locale.h"
 
 #define ColorWheelBase data->colorwheelbase
 
@@ -56,8 +57,8 @@ static LONG display_func(struct Hook *hook, char **array,
     }
     else
     {
-        /* if no, show default color names */
-        sprintf(data->buf, "Color %ld", (long)(array[-1] + 1));
+        IPTR colorargs = (IPTR)(long)(array[-1] + 1);
+        RawDoFmt(_(MSG_PALETTE_COLOR), (RAWARG)&colorargs, RAWFMTFUNC_STRING, data->buf);
         *array++ = data->buf;
     }
     return 0;
@@ -259,10 +260,10 @@ IPTR Palette__OM_GET(struct IClass * cl, Object * obj, struct opGet * msg)
     switch (msg->opg_AttrID)
     {
     case MUIA_Palette_Entries:
-        *store = (IPTR) & data->entries;
+        *store = (IPTR) data->entries;
         return TRUE;
     case MUIA_Palette_Names:
-        *store = (IPTR) & data->names;
+        *store = (IPTR) data->names;
         return TRUE;
 
     case MUIA_Coloradjust_Red:

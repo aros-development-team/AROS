@@ -94,7 +94,7 @@
     {
 	no = AllocVec
 	(
-	    sizeof(struct IntNamedObject) + strlen(name) + 1,
+	    sizeof(struct IntNamedObject) + Strlen(name) + 1,
 	    MEMF_CLEAR|MEMF_PUBLIC
 	);
 

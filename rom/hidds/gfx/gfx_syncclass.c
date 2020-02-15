@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sync info class
@@ -14,6 +14,7 @@
 #include <proto/graphics.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+
 #include <exec/memory.h>
 #include <graphics/gfxnodes.h>
 #include <oop/oop.h>
@@ -51,7 +52,7 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     if (!GfxBase)
     {
-        GfxBase = (void *)OpenLibrary("graphics.library", 41);
+        GfxBase = (void *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
         if (!GfxBase)
 	    ok = FALSE;
     }
@@ -70,6 +71,9 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	ULONG board = 0;
     	struct TagItem *tag;
 
+	data->hdispmax = (ULONG)-1;
+	data->vdispmax = (ULONG)-1;
+
 	/* Parse mandatory attributes */
 	while ((tag = NextTagItem(&tstate)))
     	{
@@ -85,6 +89,14 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 	    	case aoHidd_Sync_VDisp:
 	    	    data->vdisp = tag->ti_Data;
+	    	    break;
+
+	    	case aoHidd_Sync_HDispMax:
+	    	    data->hdispmax = tag->ti_Data;
+	    	    break;
+
+	    	case aoHidd_Sync_VDispMax:
+	    	    data->vdispmax = tag->ti_Data;
 	    	    break;
 
 		case aoHidd_Sync_Flags:
@@ -141,10 +153,16 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 	if (ok)
 	{
+	    /* max displayable area (overscan) */
+	    if (data->hdispmax == (ULONG)-1)
+		data->hdispmax = data->hdisp;
+	    if (data->vdispmax == (ULONG)-1)
+		data->vdispmax = data->vdisp;
+
 	    /* By default minimum/maximum bitmap size is equal to display size */
             data->hmin = data->hdisp;
             data->vmin = data->vdisp;
-
+	    
             if (GFXHIDD__Hidd_Gfx__GetFBModeQuick(csd->gfxhiddclass, data->gfxhidd) == vHidd_FrameBuffer_Mirrored)
             {
                 /* But for mirrored framebuffer mode we can have larger bitmaps */
@@ -375,6 +393,14 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 	    case aoHidd_Sync_VDisp:
 		*msg->storage = data->vdisp;
+		break;
+
+	    case aoHidd_Sync_HDispMax:
+		*msg->storage = data->hdispmax;
+		break;
+
+	    case aoHidd_Sync_VDispMax:
+		*msg->storage = data->vdispmax;
 		break;
 
 	    case aoHidd_Sync_HSyncStart:
@@ -703,7 +729,9 @@ static BOOL parse_sync_tags(struct class_static_data *csd, struct sync_data *dat
     if (change_totclk)
     {
         if (data->pixelclock)
+	{
             data->mspc->total_colorclocks = 100000000 / (data->pixelclock / data->htotal * 28);
+	}
 	else
 	{
 	    /*

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Alert.Hook for AROS
@@ -163,7 +163,7 @@ static AROS_UFH3(ULONG, Alerthook_init,
         /* This rather strange contraption will centre the string. */
         *((UBYTE *)tname) = (82 - (buf - tname)) << 2;
 
-        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
+        IntuitionBase = (struct IntuitionBase *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
 
         if(IntuitionBase)
         {

@@ -1,12 +1,16 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for CONU_SNIPMAP console units.
 */
 
-#include <string.h>
+#define SDEBUG 0
+//#define DEBUG 1
+#define DEBUG 0
+#include <aros/debug.h>
 
+#include <proto/utility.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
@@ -18,13 +22,12 @@
 #include <graphics/rastport.h>
 #include <aros/asmcall.h>
 
-#define SDEBUG 0
-//#define DEBUG 1
-#define DEBUG 0
-#include <aros/debug.h>
+#include <string.h>
 
 #include "console_gcc.h"
 #include "consoleif.h"
+
+extern const STRPTR CONCLIP_PORTNAME;
 
 struct snipmapcondata
 {
@@ -32,9 +35,8 @@ struct snipmapcondata
     ULONG start_selection_y;
 };
 
-#ifdef ConsoleDevice
 #undef ConsoleDevice
-#endif
+#define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
 /***********  SnipMapCon::New()  **********************/
 
@@ -45,7 +47,7 @@ static Object *snipmapcon_new(Class *cl, Object *o, struct opSet *msg)
     if (o)
     {
         struct snipmapdata *data = INST_DATA(cl, o);
-        memset(data, 0, sizeof(struct snipmapcondata));
+        SetMem(data, 0, sizeof(struct snipmapcondata));
     }
     ReturnPtr("SnipMapCon::New", Object *, o);
 }
@@ -75,12 +77,8 @@ static VOID snipmapcon_copy(Class *cl, Object *o, Msg msg)
      */
 }
 
-static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
-
 static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
 {
-    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)cl->cl_UserData;
-
     /* if conclip is running, insert <CSI> "0 v" and we're done.
      * The console.handler will be responsible for the actual paste.
      */

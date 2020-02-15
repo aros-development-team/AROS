@@ -1,4 +1,4 @@
-# Copyright © 2000-2019, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2020, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Main makefile for AROS
@@ -9,6 +9,7 @@ AROS_BUILD_HOST         ?= @aros_build_host@
 AROS_HOST_CPU           ?= @aros_host_cpu@
 AROS_HOST_ARCH          ?= @aros_host_arch@
 AROS_TARGET_CPU         ?= @aros_target_cpu@
+AROS_TARGET_CPU_TYPE    ?= @aros_target_cpu_extra@
 AROS_TARGET_CPU_MODE    ?= @aros_target_cpu_mode@
 AROS_TARGET_ARCH        ?= @aros_target_arch@
 AROS_TARGET_VARIANT     ?= @aros_target_variant@
@@ -40,6 +41,13 @@ endif
 #
 # Rules for Configure generated files ...
 #
+
+$(TOP)/config.status: $(SRCDIR)/configure
+	@echo "****"
+	@echo "**** The configure script must be executed before running '$(MAKE)'."
+	@echo "****               Please run \"./configure\"."
+	@echo "****"
+	@exit 1
 
 #$(TOP)/Makefile: $(SRCDIR)/Makefile.in $(TOP)/config.status
 #	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
@@ -193,7 +201,7 @@ $(CREATEDTDESC): $(wildcard $(SRCDIR)/tools/dtdesc/*.[ch]) $(wildcard $(SRCDIR)/
 	@$(ECHO) Building createdtdesc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/dtdesc -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(AFSLIB): $(wildcard $(SRCDIR)/workbench/devs/afs/*.[ch])
+$(AFSLIB): $(wildcard $(SRCDIR)/rom/filesys/afs/*.[ch])
 	@$(ECHO) Building afslib...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/copytoafs -f Makefile.afslib SRCDIR=$(SRCDIR) TOP=$(TOP)
 
@@ -205,7 +213,7 @@ $(ILBMTOC): $(SRCDIR)/tools/ilbmtoc/ilbmtoc.c
 	@$(ECHO) Building ilbmtoc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/ilbmtoc SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(ILBMTOICON): $(SRCDIR)/tools/ilbmtoicon/ilbmtoicon.c
+$(ILBMTOICON): $(SRCDIR)/tools/ilbmtoicon/ilbmtoicon.c $(SRCDIR)/tools/ilbmtoicon/infoinfo.c
 	@$(ECHO) Building ilbmtoicon...
 	@$(CALL) $(MAKE) $(MKARGS) $@ -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
 
@@ -328,4 +336,3 @@ distfiles::
 	@$(MAKE) $(MKARGS) crosstools-toolchain
 	@$(MAKE) $(MKARGS) crosstools-toolchain features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
-

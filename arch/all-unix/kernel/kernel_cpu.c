@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,9 @@
 #include <proto/exec.h>
 
 #include <unistd.h>
+#include <time.h>
 
+#include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_globals.h"
@@ -18,6 +20,12 @@
 #include "kernel_scheduler.h"
 
 #define D(x)
+#define BILLION 1000000000L
+
+extern struct HostInterface *HostIFace;
+extern UQUAD getIETPriv1(struct Task *);
+extern void setIETPriv1(struct Task *, UQUAD);
+extern void setIETPrivTime(struct Task *, ULONG, ULONG, ULONG);
 
 /*
  * Task exception handler.
@@ -71,13 +79,24 @@ void cpu_Switch(regs_t *regs)
     struct KernelBase *KernelBase = getKernelBase();
     struct Task *task = SysBase->ThisTask;
     struct AROSCPUContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
+    struct timespec timeSpec;
+    u_int64_t diff;
+    UQUAD tp1;
 
     D(bug("[KRN] cpu_Switch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
     D(PRINT_SC(regs));
 
+    HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &timeSpec);
+
     SAVEREGS(ctx, regs);
     ctx->errno_backup = *KernelBase->kb_PlatformData->errnoPtr;
     task->tc_SPReg = (APTR)SP(regs);
+
+    tp1 = getIETPriv1(task);
+    diff = BILLION * (timeSpec.tv_sec - (tp1 >> 32)) + timeSpec.tv_nsec - (tp1 & 0xFFFFFFFF);
+
+    setIETPrivTime(task, diff, diff / BILLION, diff % BILLION);
+
     core_Switch();
 }
 
@@ -85,6 +104,7 @@ void cpu_Dispatch(regs_t *regs)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pd = KernelBase->kb_PlatformData;
+    struct timespec timeSpec;
     struct Task *task;
     sigset_t sigs;
 
@@ -102,6 +122,10 @@ void cpu_Dispatch(regs_t *regs)
     }
 
     D(bug("[KRN] cpu_Dispatch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
+
+    HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &timeSpec);
+    setIETPriv1(task, (((UQUAD)timeSpec.tv_sec << 32) | timeSpec.tv_nsec));
+
     cpu_DispatchContext(task, regs, pd);
 }
 

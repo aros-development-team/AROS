@@ -1,25 +1,25 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
     Lang: english
 */
 
-#define DATTR(x)
+#include <aros/debug.h>
+
+#include <proto/dos.h>
+#include <proto/arossupport.h>
+#include <proto/debug.h>
+#include <proto/exec.h>
 
 #include <aros/asmcall.h>
-#include <aros/debug.h>
 #include <aros/macros.h>
 #include <exec/memory.h>
 #include <dos/elf.h>
 #include <dos/dosasl.h>
 #include <libraries/debug.h>
 #include <resources/processor.h>
-#include <proto/dos.h>
-#include <proto/arossupport.h>
-#include <proto/debug.h>
-#include <proto/exec.h>
 
 #include <string.h>
 #include <stddef.h>
@@ -27,6 +27,8 @@
 #include "internalloadseg.h"
 #include "dos_intern.h"
 #include "include/loadseg.h"
+
+#define DATTR(x)
 
 struct hunk
 {
@@ -283,7 +285,7 @@ static int __attribute__ ((noinline)) load_hunk
         D(bug("[dos] hunk @ %p, size=%08x, addr @ %p\n", hunk, hunk->size, sh->addr));
 
         /* Update the pointer to the previous one, which is now the current one */
-        *next_hunk_ptr = &hunk->next;
+        *next_hunk_ptr = (APTR)((IPTR)hunk + offsetof(struct hunk, next));
 
         if (sh->type != SHT_NOBITS)
             return !elf_read_block(file, sh->offset, sh->addr, sh->size, funcarray, srb, DOSBase);
@@ -987,7 +989,6 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
-    /* Everything is loaded now. Register the module at kernel.resource */
     register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;
 

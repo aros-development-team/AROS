@@ -46,7 +46,7 @@ static const char *glx_func_names[] =
 struct gl_func gl_func;
 static const char *gl_func_names[];
 
-APTR HostLibBase;
+static APTR HostLibBase;
 
 static void *hostlib_load_so(const char *sofile, const char **names, void **funcptr)
 {

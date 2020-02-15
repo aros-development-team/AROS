@@ -348,7 +348,7 @@ void doaskuser(char *title,int rawkeystart, int numkeys, KeySym k)
 		    unsigned char kc = (unsigned char)((XKeyEvent *)&event)->keycode;
 		    table[kc] = rawkeystart++;
 		    
-		    sprintf(s, "%03ld",(long)((XKeyEvent *)&event)->keycode);
+		    snprintf(s, 6, "%03ld",(long)((XKeyEvent *)&event)->keycode);
 		    XDrawString(dpy, w, gc, 50, 20, s, strlen(s));
 
 		} else {

@@ -2,11 +2,13 @@
 #define _POSIXC_UNISTD_H_
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file unistd.h
 */
+
+#include <aros/features.h>
 #include <aros/system.h>
 
 /*
@@ -14,7 +16,6 @@
  */
 #define _POSIX_VERSION              200809L
 #define _POSIX2_VERSION             200809L
-#define _XOPEN_VERSION              700
 
 /*
    POSIX options and option groups:
@@ -404,7 +405,28 @@ int isatty(int fd);
 int link(const char *name1, const char *name2);
 /* NOTIMPL int linkat(int, const char *, int, const char *, int); */
 /* NOTIMPL int lockf(int filedes, int function, off_t size); */
+#if !defined(NO_POSIX_WRAPPERS)
+off_t __posixc_lseek(int filedes, off_t offset, int whence);
+#if defined(__off64_t_defined)
+__off64_t lseek64(int filedes, __off64_t offset, int whence);
+#endif
+#if defined(__USE_FILE_OFFSET64)
+static inline off_t lseek(int filedes, off_t offset, int whence)
+{
+    return (off_t)lseek64(filedes, (__off64_t) offset, whence);
+}
+#else
+static inline off_t lseek(int filedes, off_t offset, int whence)
+{
+    return __posixc_lseek(filedes, offset, whence);
+}
+#endif
+#else  /* NO_POSIX_WRAPPERS */
 off_t lseek(int filedes, off_t offset, int whence);
+#if defined(__off64_t_defined)
+__off64_t lseek64(int filedes, __off64_t offset, int whence);
+#endif
+#endif /* NO_POSIX_WRAPPERS */
 /* NOTIMPL int nice(int incr); */
 long pathconf(const char *path, int name);
 /* NOTIMPL int pause(void); */

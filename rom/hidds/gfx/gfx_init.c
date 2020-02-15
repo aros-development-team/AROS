@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gfx Hidd initialization code.
@@ -14,6 +14,7 @@
 #include <exec/types.h>
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include <aros/symbolsets.h>
 
@@ -181,11 +182,12 @@ static VOID delete_pixfmts(struct class_static_data *csd)
 
 static BOOL create_std_pixfmts(struct class_static_data *csd)
 {
-    ULONG i;
+    struct Library *UtilityBase = csd->cs_UtilityBase;
     struct pixfmt_data *pf;
-    
-    memset(csd->std_pixfmts, 0, sizeof (OOP_Object *) * num_Hidd_StdPixFmt);
-    
+    ULONG i;
+
+    SetMem(csd->std_pixfmts, 0, sizeof (OOP_Object *) * num_Hidd_StdPixFmt);
+
     for (i = 0; i < num_Hidd_StdPixFmt; i ++)
     {
         pf = (struct pixfmt_data *)create_and_init_object(csd->pixfmtclass, (UBYTE *)&stdpfs[i],  sizeof (stdpfs[i]), csd);

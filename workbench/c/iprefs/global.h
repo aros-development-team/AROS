@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -203,18 +203,6 @@ struct IFFHandle *CreateIFF(STRPTR filename, LONG *stopchunks, LONG numstopchunk
 void KillIFF(struct IFFHandle *iff);
 APTR LoadChunk(struct IFFHandle *iff, LONG size, ULONG memtype);
 
-/* localeprefs.c */
-
-void LocalePrefs_Handler(STRPTR filename);
-
-/* screenmodeprefs.c */
-
-void ScreenModePrefs_Handler(STRPTR filename);
-
-/* serialprefs.c */
-
-void SerialPrefs_Handler(STRPTR filename);
-
 /* fontprefs.c */
 
 void FontPrefs_Handler(STRPTR filename);
@@ -227,10 +215,13 @@ void InputPrefs_Handler(STRPTR filename);
 
 void IControlPrefs_Handler(STRPTR filename);
 
-/* wbpatternprefs.c */
+/* localeprefs.c */
 
-void WBPatternPrefs_Handler(STRPTR filename);
-void RootPatternCleanup (void);
+void LocalePrefs_Handler(STRPTR filename);
+
+/* paletteprefs.c */
+
+void PalettePrefs_Handler(STRPTR filename);
 
 /* pointerprefs.c */
 
@@ -239,6 +230,19 @@ void PointerPrefs_Handler(STRPTR filename);
 /* printerprefs.c */
 
 void PrinterPrefs_Handler(STRPTR filename);
+
+/* screenmodeprefs.c */
+
+void ScreenModePrefs_Handler(STRPTR filename);
+
+/* serialprefs.c */
+
+void SerialPrefs_Handler(STRPTR filename);
+
+/* wbpatternprefs.c */
+
+void WBPatternPrefs_Handler(STRPTR filename);
+void RootPatternCleanup (void);
 
 /*********************************************************************************************/
 

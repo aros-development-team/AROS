@@ -1,12 +1,11 @@
 /*
-    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
 #include <oop/oop.h>
 #include <hidd/hidd.h>
-#include <hidd/keyboard.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -22,7 +21,7 @@ static int KBD_InitClass(struct kbdbase *LIBBASE)
 
     D(bug("[KBD] base class initialization\n"));
     
-    LIBBASE->csd.cs_UtilityBase = OpenLibrary("utility.library", 0);
+    LIBBASE->csd.cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->csd.cs_UtilityBase)
         return FALSE;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -150,8 +150,8 @@ static inline ULONG llPollJoystick(int port)
 ULONG llPortOpen(struct LowLevelBase *LowLevelBase, int port, UWORD *bits)
 {
     UWORD potbits, potres;
-    ULONG type = LowLevelBase->ll_PortType[port];
-    struct Library *PotgoBase = LowLevelBase->ll_PotgoBase;
+    ULONG type = LowLevelBase->ll_Arch.llad_PortType[port];
+    struct Library *PotgoBase = LowLevelBase->ll_Arch.llad_PotgoBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
     if (type == 0 || type == JP_TYPE_GAMECTLR || type == JP_TYPE_JOYSTK) {
@@ -183,8 +183,8 @@ ULONG llPortOpen(struct LowLevelBase *LowLevelBase, int port, UWORD *bits)
         type = llPollGameCtrl(port);
         if (type == 0)
             type = JP_TYPE_JOYSTK;
-        LowLevelBase->ll_PortType[port] = type & JP_TYPE_MASK;
-        D(bug("%s: Autosense: 0x%08x\n", __func__, LowLevelBase->ll_PortType[port]));
+        LowLevelBase->ll_Arch.llad_PortType[port] = type & JP_TYPE_MASK;
+        D(bug("%s: Autosense: 0x%08x\n", __func__, LowLevelBase->ll_Arch.llad_PortType[port]));
     }
 
     *bits = potbits;
@@ -193,7 +193,7 @@ ULONG llPortOpen(struct LowLevelBase *LowLevelBase, int port, UWORD *bits)
     
 static VOID llPortClose(struct LowLevelBase *LowLevelBase, int port, UWORD potbits)
 {
-    struct Library *PotgoBase = LowLevelBase->ll_PotgoBase;
+    struct Library *PotgoBase = LowLevelBase->ll_Arch.llad_PotgoBase;
 
     if (potbits) {
         FreePotBits(potbits);

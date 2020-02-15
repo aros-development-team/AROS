@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,6 +31,12 @@ static void hashlittle2(const void *key, size_t length,
 		                   uint32_t *pc, uint32_t *pb);
 static void __fill_statbuffer(
     struct stat          *sb,
+    char                 *buffer,
+    struct FileInfoBlock *fib,
+    int                  fallback_to_defaults,
+    BPTR                 lock);
+static void __fill_stat64buffer(
+    struct stat64          *sb,
     char                 *buffer,
     struct FileInfoBlock *fib,
     int                  fallback_to_defaults,
@@ -131,6 +137,100 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
     return 0;
 }
 
+int __stat64(BPTR lock, struct stat64 *sb, BOOL filehandle)
+{
+    struct FileInfoBlock *fib;
+    UBYTE *buffer;
+    int buffersize = 256;
+    int fallback_to_defaults = 0;
+    BOOL Examined;
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+
+    if (!fib)
+    {
+        errno = __stdc_ioerr2errno(IoErr());
+
+        return -1;
+    }
+
+    Examined = filehandle
+             ? ExamineFH(lock, fib)
+             : Examine(lock, fib);
+    if (!Examined)
+    {
+	if(IoErr() == ERROR_NOT_IMPLEMENTED ||
+	   IoErr() == ERROR_ACTION_NOT_KNOWN)
+	{
+	    fallback_to_defaults = 1;
+	}
+	else
+	{
+            errno = __stdc_ioerr2errno(IoErr());
+            FreeDosObject(DOS_FIB, fib);
+            return -1;
+	}
+    }
+
+    /* Get the full path of the stated filesystem object and use it to
+       compute hash value */
+    do
+    {
+        BOOL GotName;
+
+        if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
+        {
+            errno = ENOMEM;
+            FreeDosObject(DOS_FIB, fib);
+            return -1;
+        }
+
+        GotName = filehandle
+                ? NameFromFH(lock, buffer, buffersize)
+                : NameFromLock(lock, buffer, buffersize);
+        if(GotName)
+            break;
+        else if(   IoErr() == ERROR_OBJECT_IN_USE
+                || IoErr() == ERROR_NOT_IMPLEMENTED
+                || IoErr() == ERROR_ACTION_NOT_KNOWN
+                || (IoErr() == ERROR_OBJECT_NOT_FOUND && fib->fib_EntryType == ST_PIPEFILE))
+        {
+            /* We can't retrieve name because lock is an exclusive lock
+               or Examine is not implemented in this handler
+               or the lock refers to an XPIPE: file having always empty name */
+            buffer[0] = '\0';
+            break;
+        }
+        else if(IoErr() != ERROR_LINE_TOO_LONG)
+        {
+            errno = __stdc_ioerr2errno(IoErr());
+            FreeDosObject(DOS_FIB, fib);
+            FreeVec(buffer);
+            return -1;
+        }
+        FreeVec(buffer);
+        buffersize *= 2;
+    }
+    while(TRUE);
+
+    // We need a FileLock. Otherwise a call of Info() within __fill_statbuffer() will crash
+    // FIXME: how can we get a lock on an exclusive file?
+    if (filehandle)
+    {
+        BPTR filelock = DupLockFromFH(lock);
+        __fill_stat64buffer(sb, (char*) buffer, fib, fallback_to_defaults, filelock);
+        UnLock(filelock);
+    }
+    else
+    {
+        __fill_stat64buffer(sb, (char*) buffer, fib, fallback_to_defaults, lock);
+    }
+
+    FreeVec(buffer);
+    FreeDosObject(DOS_FIB, fib);
+
+    return 0;
+}
 
 int __stat_from_path(const char *path, struct stat *sb)
 {
@@ -278,6 +378,151 @@ out:
     return res;
 }
 
+int __stat64_from_path(const char *path, struct stat64 *sb)
+{
+    int                  len;
+    char                 *mypath;
+    int                  cwdsize = FILENAME_MAX;
+    char                 *cwd = NULL;
+    char                 *abspath = NULL;
+    char                 *filepart = NULL;
+    char                 *split;
+    struct FileInfoBlock *fib = NULL;
+    BPTR                 lock = BNULL;
+    BPTR                 cwdlock;
+    int                  fallback_to_defaults = 0;
+    BOOL                 loop;
+    int                  res = -1;
+
+    /* copy path and strip trailing slash */
+    len = strlen(path);
+    if (!(mypath = AllocVec(len + 1, MEMF_ANY)))
+    {
+        errno = ENOMEM;
+        goto out;
+    }
+    strcpy(mypath, path);
+    if (len && mypath[len-1] == '/')
+        mypath[len-1] = '\0';
+
+    /* do we have an absolute path */
+    if (!strchr(mypath, ':'))
+    {
+        /* no, then create one */
+        cwdlock = CurrentDir(BNULL);
+        CurrentDir(cwdlock);
+        do
+        {
+            if (!(cwd = AllocVec(cwdsize, MEMF_ANY)))
+            {
+                errno = ENOMEM;
+                goto out;
+            }
+
+            if (NameFromLock(cwdlock, cwd, cwdsize))
+                break;
+            else if (IoErr() != ERROR_LINE_TOO_LONG)
+            {
+                errno = __stdc_ioerr2errno(IoErr());
+                goto out;
+            }
+
+            FreeVec(cwd);
+            cwdsize *= 2;
+        }
+        while (TRUE);
+
+        /* get memory for current dir + '/' + input path + zero byte */
+        len = strlen(cwd) + 1 + len + 1;
+        abspath = AllocVec(len, MEMF_ANY);
+        if (!abspath)
+        {
+            errno = ENOMEM;
+            goto out;
+        }
+
+        strcpy(abspath, cwd);
+        AddPart(abspath, mypath, len);
+        FreeVec(mypath);
+    }
+    else
+        abspath = mypath;
+
+    /* split into path part and file part */
+    split = FilePart(abspath);
+    filepart = AllocVec(strlen(split) + 1, MEMF_ANY);
+    if (!filepart)
+    {
+        errno = ENOMEM;
+        goto out;
+    }
+    strcpy(filepart, split);
+    *split = '\0';
+
+    if (   !(fib = AllocDosObject(DOS_FIB, NULL))
+        || !(lock = Lock(abspath, SHARED_LOCK)))
+    {
+        errno = __stdc_ioerr2errno(IoErr());
+        goto out;
+    }
+
+    /* examine parent directory of object to stat */
+    if (!Examine(lock, fib))
+    {
+        if (IoErr() == ERROR_NOT_IMPLEMENTED ||
+            IoErr() == ERROR_ACTION_NOT_KNOWN)
+            fallback_to_defaults = 1;
+        else
+        {
+            errno = __stdc_ioerr2errno(IoErr());
+            goto out;
+        }
+    }
+
+    if (*filepart == '\0' || fallback_to_defaults)
+        __fill_stat64buffer(sb, abspath, fib, fallback_to_defaults, lock);
+    else
+        /* examine entries of parent directory until we find the object to stat */
+        do
+        {
+            loop = ExNext(lock, fib);
+
+            if (loop)
+            {
+                if (stricmp(fib->fib_FileName, filepart) == 0)
+                {
+                    __fill_stat64buffer(sb, abspath, fib, 0, lock);
+                    res = 0;
+                    break;
+                }
+
+                continue;
+            }
+
+            if (IoErr() != ERROR_NO_MORE_ENTRIES)
+                errno = __stdc_ioerr2errno(IoErr());
+            else
+                /* nothing found to stat */
+                errno = ENOENT;
+        }
+        while (loop);
+
+out:
+    if (lock)
+        UnLock(lock);
+
+    FreeVec(cwd);
+
+    /* if we had absolute path as input, mypath is free'd here */
+    FreeVec(abspath);
+
+    FreeVec(filepart);
+
+    if (fib)
+        FreeDosObject(DOS_FIB, fib);
+
+    return res;
+}
 
 static mode_t __prot_a2u(ULONG protect)
 {
@@ -552,6 +797,96 @@ static void hashlittle2(
 
 static void __fill_statbuffer(
     struct stat          *sb,
+    char                 *buffer,
+    struct FileInfoBlock *fib,
+    int                  fallback_to_defaults,
+    BPTR                 lock)
+{
+    uint64_t hash;
+    uint32_t pc = 1, pb = 1; /* initial hash values */
+
+    hashlittle2(buffer, strlen((char*) buffer), &pc, &pb);
+    hash = pc + (((uint64_t)pb)<<32);
+
+    if(fallback_to_defaults)
+    {
+	/* Empty file, not protected, as old as it can be... */
+	fib->fib_Size = 0;
+	fib->fib_NumBlocks = 0;
+	fib->fib_Date.ds_Days = 0;
+	fib->fib_Date.ds_Minute = 0;
+	fib->fib_Date.ds_Tick = 0;
+	fib->fib_OwnerUID = 0;
+	fib->fib_OwnerGID = 0;
+	fib->fib_Protection = 0;
+	/* Most probable value */
+	fib->fib_DirEntryType = ST_PIPEFILE;
+    }
+
+    sb->st_dev     = (dev_t) (lock ? ((struct FileLock *)BADDR(lock))->fl_Volume : BNULL);
+    sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
+                                 smaller than uint64_t, but it's ok */
+    sb->st_size    = (off_t)fib->fib_Size;
+    /* FIXME: Update to properly handle the struct timespec fields
+       st_atim, st_mtim and st_ctim */
+    sb->st_atime   =
+    sb->st_ctime   =
+    sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __stdc_gmtoffset()) * 60 +
+	              fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
+    sb->st_uid     = __id_a2u(fib->fib_OwnerUID);
+    sb->st_gid     = __id_a2u(fib->fib_OwnerGID);
+    sb->st_mode    = __prot_a2u(fib->fib_Protection);
+
+    {
+        struct InfoData info;
+
+        if (lock && Info(lock, &info))
+        {
+            sb->st_blksize = info.id_BytesPerBlock;
+        }
+        else
+        {
+            /* The st_blksize is just a guideline anyway, so we set it
+               to 1024 in case Info() didn't succeed */
+            sb->st_blksize = 1024;
+        }
+    }
+    if(fib->fib_Size > 0 && sb->st_blksize > 0)
+	sb->st_blocks = 
+	    (1 + ((long) fib->fib_Size - 1) / sb->st_blksize) * 
+	    (sb->st_blksize / 512);
+    else
+	sb->st_blocks  = 0;
+
+    switch (fib->fib_DirEntryType)
+    {
+        case ST_PIPEFILE:
+            /* don't use S_IFIFO, we don't have a mkfifo() call ! */
+            sb->st_mode |= S_IFCHR;
+            break;
+
+        case ST_ROOT:
+        case ST_USERDIR:
+        case ST_LINKDIR:
+            sb->st_nlink = 1;
+            sb->st_mode |= S_IFDIR;
+            break;
+
+        case ST_SOFTLINK:
+            sb->st_nlink = 1;
+            sb->st_mode |= S_IFLNK;
+            break;
+
+        case ST_FILE:
+        case ST_LINKFILE:
+        default:
+            sb->st_nlink = 1;
+            sb->st_mode |= S_IFREG;
+    }
+}
+
+static void __fill_stat64buffer(
+    struct stat64          *sb,
     char                 *buffer,
     struct FileInfoBlock *fib,
     int                  fallback_to_defaults,

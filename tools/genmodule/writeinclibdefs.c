@@ -85,6 +85,8 @@ void writeinclibdefs(struct config *cfg)
         "#define LIBBASETYPE      %s\n"
         "#define LIBBASETYPEPTR   %s *\n"
         "#define MOD_NAME_STRING  \"%s%c%s\"\n"
+        "#define MOD_DATE_STRING  \"%s\"\n"
+        "#define MOD_VERS_STRING  \"%u.%u\"\n"
         "#define VERSION_NUMBER   %u\n"
         "#define MAJOR_VERSION    %u\n"
         "#define REVISION_NUMBER  %u\n"
@@ -93,6 +95,7 @@ void writeinclibdefs(struct config *cfg)
         cfg->basename,
         cfg->libbase, _libbasetype, _libbasetype,
         cfg->modulename, sep, cfg->suffix,
+        cfg->datestring, cfg->majorversion, cfg->minorversion,
         cfg->majorversion, cfg->majorversion,
         cfg->minorversion, cfg->minorversion,
         cfg->modulename, cfg->suffix

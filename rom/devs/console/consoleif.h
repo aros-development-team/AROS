@@ -1,7 +1,7 @@
 #ifndef CONSOLEIF_H
 #define CONSOLEIF_H
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the console class
@@ -36,7 +36,8 @@ enum
     M_Console_NewWindowSize,
     M_Console_HandleGadgets,
     M_Console_Copy,
-    M_Console_Paste
+    M_Console_Paste,
+    M_Console_GetColorPen = M_Console_Paste + 5
 };
 
 struct P_Console_ScrollDown
@@ -128,6 +129,13 @@ struct P_Console_GetDefaultParams
     IPTR *Params;
 };
 
+struct P_Console_GetColorPen
+{
+    ULONG MethodID;
+    UWORD ColorIdx;
+    UBYTE *PenPtr;
+};
+
 #define Console_DoCommand(o, cmd, numparams, params)	\
 ({							\
 	struct P_Console_DoCommand p;			\
@@ -177,6 +185,16 @@ struct P_Console_GetDefaultParams
     p.MethodID	= M_Console_GetDefaultParams;		\
     p.Command	= cmd;					\
     p.Params	= params;				\
+    DoMethodA((o), (Msg)&p);				\
+})
+
+
+#define Console_GetColorPen(o, coloridx, penptr)	\
+({							\
+    struct P_Console_GetColorPen p;		        \
+    p.MethodID	= M_Console_GetColorPen;		\
+    p.ColorIdx = coloridx;		                \
+    p.PenPtr = penptr;		                        \
     DoMethodA((o), (Msg)&p);				\
 })
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -99,7 +99,7 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
         /* Open dos.library only once, when first needed */
         if (!DOSBase)
         {
-            GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+            GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)TaggedOpenLibrary(TAGGEDOPEN_DOS);
         }
 
         if (DOSBase)

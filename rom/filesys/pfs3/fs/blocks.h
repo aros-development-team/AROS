@@ -86,6 +86,35 @@
 #include <stddef.h>
 #endif
 
+/* limits */
+#define MAXSMALLBITMAPINDEX 4
+#define MAXBITMAPINDEX 103
+// was 28576. was 119837. Nu max reserved bitmap 256K.
+#define MAXNUMRESERVED (4096 + 255*1024*8)
+#define MAXSUPER 15
+#define MAXSMALLINDEXNR 98
+#if LARGE_FILE_SIZE
+// last two bytes used for extended file size
+#define DELENTRYFNSIZE 16
+#else
+#define DELENTRYFNSIZE 18
+#endif
+/* maximum disksize in sectors, limited by number of bitmapindexblocks
+ * smalldisk = 10.241.440 blocks of 512 byte = 5G
+ * normaldisk = 213.021.952 blocks of 512 byte = 104G
+ * 2k reserved blocks = 104*509*509*32 blocks of 512 byte = 411G
+ * 4k reserved blocks = 1,6T
+ *  */
+#define BITMAP_PAYLOAD_1K ((1024/4)-3) // 253
+#define BITMAP_PAYLOAD_2K ((2048/4)-3) // 509
+#define BITMAP_PAYLOAD_4K ((4096/4)-3) // 1021
+ 
+#define MAXSMALLDISK ((MAXSMALLBITMAPINDEX+1)*BITMAP_PAYLOAD_1K*BITMAP_PAYLOAD_1K*32)
+#define MAXDISKSIZE1K ((MAXBITMAPINDEX+1)*BITMAP_PAYLOAD_1K*BITMAP_PAYLOAD_1K*32)
+#define MAXDISKSIZE2K ((MAXBITMAPINDEX+1)*BITMAP_PAYLOAD_2K*BITMAP_PAYLOAD_2K*32)
+#define MAXDISKSIZE4K ((ULONG)(MAXBITMAPINDEX+1)*BITMAP_PAYLOAD_4K*BITMAP_PAYLOAD_4K*32)
+#define MAXDISKSIZE MAXDISKSIZE4K
+
 #if defined(__GNUC__) || defined(__VBCC__)
 /* Force SAS/C compatible alignment rules for all these structures */
 #pragma pack(2)
@@ -110,26 +139,26 @@ typedef struct rootblock
     ULONG lastreserved;     /* reserved area. sector number of last reserved block */
     ULONG firstreserved;	/* sector number of first reserved block */
     ULONG reserved_free;    /* number of reserved blocks (blksize blocks) free  */
-    UWORD reserved_blksize;          /* size of reserved blocks in bytes */
+    UWORD reserved_blksize; /* size of reserved blocks in bytes */
     UWORD rblkcluster;      /* number of sectors in rootblock, including bitmap  */
     ULONG blocksfree;       /* blocks free                      */
     ULONG alwaysfree;       /* minimum number of blocks free    */
     ULONG roving_ptr;       /* current LONG bitmapfield nr for allocation       */
     ULONG deldir;           /* deldir location (<= 17.8)        */
     ULONG disksize;         /* disksize in sectors              */
-    ULONG extension;        /* rootblock extension (16.4)       */
+    ULONG extension;        /* rootblock extension (16.4)       offset=88 $58 */
     ULONG not_used;
     union
     {
-        UWORD anodeblocks[208];         /* SMALL: 200*84 = 16800 anodes */
+        // UWORD anodeblocks[208];         /* SMALL: 200*84 = 16800 anodes */
         struct
         {
-            ULONG bitmapindex[5];       /* 5 bitmap indexblocks with 253 bitmap blocks each */
-            ULONG indexblocks[99];      /* 99 index blocks with 253 anode blocks each       */
+            ULONG bitmapindex[MAXSMALLBITMAPINDEX + 1];       /* 5 bitmap indexblocks with 253 bitmap blocks each */
+            ULONG indexblocks[MAXSMALLINDEXNR + 1];      /* 99 index blocks with 253 (more if reserved blocks > 1K) anode blocks each       */
         } small;
         struct 
         {
-            ULONG bitmapindex[104];		/* 104 bitmap indexblocks = max 104 G */
+            ULONG bitmapindex[MAXBITMAPINDEX + 1];		/* 104 bitmap indexblocks = max 104 G*/
         } large;
     } idx;
 } rootblock_t;
@@ -412,7 +441,7 @@ struct rootblockextension
 	UWORD deldirsize;			/* size of deldir */
 	UWORD fnsize;				/* filename size (18.1) */
 	UWORD not_used_2[3];
-	ULONG superindex[16];		/* MODE_SUPERINDEX only. */
+	ULONG superindex[MAXSUPER + 1];		/* MODE_SUPERINDEX only. offset=64 $40 */
 	UWORD dd_uid;				/* deldir user id (17.9)			*/
 	UWORD dd_gid;				/* deldir group id					*/
 	ULONG dd_protection;		/* deldir protection				*/
@@ -484,43 +513,22 @@ struct lru_cachedblock
 #define CMSIZE 80
 #define MAX_ENTRYSIZE (sizeof(struct direntry) + FNSIZE + CMSIZE + 34)
 
-/* limits */
-#define MAXSMALLBITMAPINDEX 4
-#define MAXBITMAPINDEX 103
-// was 28576. was 119837. Nu max reserved bitmap 256K.
-#define MAXNUMRESERVED (4096 + 255*1024*8)
-#define MAXSUPER 15
-#define MAXSMALLINDEXNR 98
-#if LARGE_FILE_SIZE
-// last two bytes used for extended file size
-#define DELENTRYFNSIZE 16
-#else
-#define DELENTRYFNSIZE 18
-#endif
-/* maximum disksize in sectors, limited by number of bitmapindexblocks
- * smalldisk = 10.241.440 blocks of 512 byte = 5G
- * normaldisk = 213.021.952 blocks of 512 byte = 104G
- * 2k reserved blocks = 104*509*509*32 blocks of 512 byte = 411G
- * 4k reserved blocks = 1,6T
- *  */
-#define MAXSMALLDISK (5*253*253*32)
-#define MAXDISKSIZE1K (104*253*253*32)
-#define MAXDISKSIZE2K (104*509*509*32)
-#define MAXDISKSIZE4K ((ULONG)104*1021*1021*32)
-#define MAXDISKSIZE MAXDISKSIZE4K
-
 /* disk id 'PFS\1'  */
 //#ifdef BETAVERSION
 //#define ID_PFS_DISK		(0x42455441L)	/*	'BETA'	*/
 //#else
+#ifndef ID_PFS_DISK
 #define ID_PFS_DISK		(0x50465301L)	/*  'PFS\1' */
+#endif
 //#endif
 #define ID_BUSY			(0x42555359L)	/*	'BUSY'  */
 
 #define ID_MUAF_DISK	(0x6d754146L)	/*	'muAF'	*/
 #define ID_MUPFS_DISK	(0x6d755046L)	/*	'muPF'	*/
 #define ID_AFS_DISK		(0x41465301L)	/*	'AFS\1' */
+#ifndef ID_PFS2_DISK
 #define ID_PFS2_DISK	(0x50465302L)	/*	'PFS\2'	*/
+#endif
 #define ID_AFS_USER_TEST (0x41465355L)	/*	'AFSU'	*/
 
 /* block id's		*/
@@ -554,7 +562,7 @@ struct lru_cachedblock
 #define ROOTBLOCK 2
 
 /* Longs per bitmapblock */
-#define LONGS_PER_BMB ((g->rootblock->reserved_blksize/4)-3)
+#define LONGS_PER_BMB ((g->rootblock->reserved_blksize/4)-3) // 253/509/1021
 
 /* get filenote from directory entry */
 #define FILENOTE(de) ((UBYTE*)(&((de)->startofname) + (de)->nlength))

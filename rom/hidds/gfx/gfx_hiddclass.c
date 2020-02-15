@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gfx Hidd driver class implementation.
@@ -917,6 +917,7 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	*msg->storage = data->mdb.num_syncs;
 	return;
 
+    case aoHidd_Gfx_SupportsDisplayChange:
     case aoHidd_Gfx_IsWindowed:
     case aoHidd_Gfx_SupportsHWCursor:
     case aoHidd_Gfx_SupportsGamma:
@@ -942,6 +943,84 @@ VOID GFXHIDD__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/*****************************************************************************************
+
+    NAME
+    moHidd_Gfx_DisplayToBMCoords
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_DisplayToBMCoords *msg);
+
+	OOP_Object *HIDD_Gfx_DisplayToBMCoords(OOP_Object *Target, UWORD DispX, UWORD DispY, UWORD *TargetX, UWORD *TargetY);
+
+    LOCATION
+	hidd.gfx.driver
+
+    FUNCTION
+
+    INPUTS
+	Target - The BitMap Object to transform the Display co-ordinates to.
+	DispX,DispY - The Display co-ordinates to transform.
+	TargetX,TargetY - Where to store the transformed co-ordinates.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+VOID GFXHIDD__Hidd_Gfx__DisplayToBMCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisplayToBMCoords *msg)
+{
+	*msg->TargetX = msg->DispX;
+	*msg->TargetY = msg->DispY;
+}
+
+/*****************************************************************************************
+
+    NAME
+    moHidd_Gfx_BMToDisplayCoords
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_BMToDisplayCoords *msg);
+
+	OOP_Object *HIDD_Gfx_BMToDisplayCoords(OOP_Object *Target, UWORD TargetX, UWORD TargetY, UWORD *DispX, UWORD *DispY);
+
+    LOCATION
+	hidd.gfx.driver
+
+    FUNCTION
+
+    INPUTS
+	Target - The BitMap Object to transform the co-ordinates from.
+	TargetX,TargetY - The BitMap co-ordinates to transform.
+	DispX,DispY - Where to store the transformed co-ordinates.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+VOID GFXHIDD__Hidd_Gfx__BMToDisplayCoords(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_BMToDisplayCoords *msg)
+{
+	*msg->DispX = msg->TargetX;
+	*msg->DispY = msg->TargetY;
 }
 
 /*****************************************************************************************
@@ -1387,6 +1466,7 @@ OOP_Object *GFXHIDD__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct
 static inline BOOL alloc_mode_bm(struct mode_bm *bm, ULONG numsyncs, ULONG numpfs,
     	    	    	    	 OOP_Class *cl)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     bm->bpr = WIDTH_TO_BYTES(numpfs);
     
     bm->bm = AllocVec(bm->bpr * numsyncs, MEMF_CLEAR);
@@ -1394,7 +1474,7 @@ static inline BOOL alloc_mode_bm(struct mode_bm *bm, ULONG numsyncs, ULONG numpf
 	return FALSE;
 	
     /* We initialize the mode bitmap to all modes valid */
-    memset(bm->bm, 0xFF, bm->bpr * numsyncs);
+    SetMem(bm->bm, 0xFF, bm->bpr * numsyncs);
     
     return TRUE;
 }
@@ -1652,7 +1732,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     mdb = &data->mdb;
     InitSemaphore(&mdb->sema);
 
-    memset(&pixfmt_data, 0, sizeof (pixfmt_data));
+    SetMem(&pixfmt_data, 0, sizeof (pixfmt_data));
 
     init_def_tags(def_sync_tags,	num_Hidd_Sync_Attrs);
     init_def_tags(def_pixfmt_tags,	num_Hidd_PixFmt_Attrs);
@@ -3391,12 +3471,13 @@ VOID GFXHIDD__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *obj, OOP_Ms
 
 OOP_Object *GFXHIDD__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     HIDDT_PixelFormat 	    cmp_pf;
     struct class_static_data *data;
     struct pixfmt_data 	    *retpf = NULL;
 
-    memset(&cmp_pf, 0, sizeof(cmp_pf));
+    SetMem(&cmp_pf, 0, sizeof(cmp_pf));
 
     data = CSD(cl);
     if (!parse_pixfmt_tags(pixFmtTags, &cmp_pf, 0, CSD(cl)))
@@ -4109,7 +4190,7 @@ ULONG GFXHIDD__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     INPUTS
 	gfxHidd - A display driver object.
-	data    - a pointer to a HIDD_ViewPortDats structure.
+	data    - a pointer to a HIDD_ViewPortData structure.
 
     RESULT
 	The same code as used as return value for graphics.library/MakeVPort().

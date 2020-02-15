@@ -1,6 +1,18 @@
+diff -ruN glu-9.0.0/src/include/gluos.h glu-9.0.0.aros/src/include/gluos.h
+--- glu-9.0.0/src/include/gluos.h	2012-09-15 01:48:54.000000000 +0100
++++ glu-9.0.0.aros/src/include/gluos.h	2020-01-14 18:53:52.270000000 +0000
+@@ -77,6 +77,8 @@
+ #include <malloc.h>
+ #define WINGDIAPI
+ 
++#elif defined(__AROS__)
++#include <stddef.h>
+ #else
+ 
+ /* Disable Microsoft-specific keywords */
 diff -ruN glu-9.0.0/src/libnurbs/interface/insurfeval.cc glu-9.0.0.aros/src/libnurbs/interface/insurfeval.cc
 --- glu-9.0.0/src/libnurbs/interface/insurfeval.cc	2012-09-15 01:48:54.000000000 +0100
-+++ glu-9.0.0.aros/src/libnurbs/interface/insurfeval.cc	2019-04-03 20:07:20.650123200 +0100
++++ glu-9.0.0.aros/src/libnurbs/interface/insurfeval.cc	2020-01-12 23:32:21.050000000 +0000
 @@ -1344,6 +1344,8 @@
    free(lowerXYZ);
    free(upperNormal);
@@ -21,7 +33,7 @@ diff -ruN glu-9.0.0/src/libnurbs/interface/insurfeval.cc glu-9.0.0.aros/src/libn
  /*-----------------------begin evalMachine-------------------*/
 diff -ruN glu-9.0.0/src/libnurbs/nurbtess/sampleCompTop.cc glu-9.0.0.aros/src/libnurbs/nurbtess/sampleCompTop.cc
 --- glu-9.0.0/src/libnurbs/nurbtess/sampleCompTop.cc	2012-09-15 01:48:54.000000000 +0100
-+++ glu-9.0.0.aros/src/libnurbs/nurbtess/sampleCompTop.cc	2019-04-03 20:07:20.655097500 +0100
++++ glu-9.0.0.aros/src/libnurbs/nurbtess/sampleCompTop.cc	2020-01-12 23:32:21.050000000 +0000
 @@ -511,26 +511,6 @@
      }
    else if(up_rightCornerWhere != 2)
@@ -51,7 +63,7 @@ diff -ruN glu-9.0.0/src/libnurbs/nurbtess/sampleCompTop.cc glu-9.0.0.aros/src/li
  			  leftStartIndex,
 diff -ruN glu-9.0.0/src/libtess/priorityq.c glu-9.0.0.aros/src/libtess/priorityq.c
 --- glu-9.0.0/src/libtess/priorityq.c	2012-09-15 01:48:54.000000000 +0100
-+++ glu-9.0.0.aros/src/libtess/priorityq.c	2019-04-10 03:14:26.089025000 +0100
++++ glu-9.0.0.aros/src/libtess/priorityq.c	2020-01-12 23:32:21.050000000 +0000
 @@ -65,6 +65,7 @@
       return NULL;
    }
@@ -62,7 +74,7 @@ diff -ruN glu-9.0.0/src/libtess/priorityq.c glu-9.0.0.aros/src/libtess/priorityq
    pq->initialized = FALSE;
 diff -ruN glu-9.0.0/src/libutil/mipmap.c glu-9.0.0.aros/src/libutil/mipmap.c
 --- glu-9.0.0/src/libutil/mipmap.c	2012-09-15 01:48:54.000000000 +0100
-+++ glu-9.0.0.aros/src/libutil/mipmap.c	2019-04-10 03:13:14.787011600 +0100
++++ glu-9.0.0.aros/src/libutil/mipmap.c	2020-01-12 23:32:21.050000000 +0000
 @@ -4509,6 +4509,8 @@
  	     glPixelStorei(GL_UNPACK_SKIP_PIXELS, psm.unpack_skip_pixels);
  	     glPixelStorei(GL_UNPACK_ROW_LENGTH, psm.unpack_row_length);

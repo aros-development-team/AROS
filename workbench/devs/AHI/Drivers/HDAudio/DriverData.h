@@ -37,12 +37,20 @@ struct HDAudioBase
 #define RECORD_BUFFER_SAMPLES     1024
 #define RECORD_BUFFER_SIZE_VALUE  ADCBS_BUFSIZE_4096
 
-
+#define HDAADDR(name) \
+    union \
+    { \
+        UQUAD name; \
+        struct \
+        { \
+            ULONG lower_ ## name; \
+            ULONG upper_ ## name; \
+        }; \
+    };
 
 struct BDLE // Buffer Descriptor List (3.6.2)
 {
-    ULONG lower_address; // address for 32-bit systems
-    ULONG upper_address; // only for use with 64-bit systems
+    HDAADDR(address);
     ULONG length; // in bytes
     ULONG reserved_ioc; // bit 0 is Interrupt on Completion
 };
@@ -171,46 +179,41 @@ struct HDAudioChip
     struct Interrupt    record_interrupt;
     
     /*** Card structures **************************************************/
-    
-    APTR                playback_buffer1;
-    APTR                playback_buffer2;
-    
+    HDAADDR(playback_buffer1);
+    HDAADDR(playback_buffer2);
+
     /*** Playback interrupt variables ****************************************/
 
     /** The mixing buffer (a cyclic buffer filled by AHI) */
-    APTR                mix_buffer;
+    HDAADDR(mix_buffer);
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_frames;
-    
+
     /** The length of each playback buffer in sample bytes */
     ULONG               current_bytesize;
 
     /** Where (inside the cyclic buffer) we're currently writing */
-    APTR                current_buffer;
-
-
+    HDAADDR(current_buffer);
 
     /*** Recording interrupt variables ***************************************/
 
     /** The recording buffer (simple double buffering is used */
-    APTR                record_buffer1;
-    APTR                record_buffer2;
-    APTR                record_buffer1_nonaligned;
-    APTR                record_buffer2_nonaligned;
+    HDAADDR(record_buffer1);
+    HDAADDR(record_buffer2);
+    HDAADDR(record_buffer1_nonaligned);
+    HDAADDR(record_buffer2_nonaligned);
 
     /** Were (inside the recording buffer) the current data is */
-    APTR                current_record_buffer;
-    
+    HDAADDR(current_record_buffer);
+
     /** The length of each record buffer in sample bytes */
     ULONG               current_record_bytesize;
-    
+
     /** Analog mixer variables ***********************************************/
 
     /** The currently selected input */
     UWORD               input;
-    
-    
 
     /** The currently selected output */
     UWORD               output;
@@ -223,7 +226,6 @@ struct HDAudioChip
 
     /** The current (playback) output volume */
     Fixed               output_volume;
-
 };
 
 #endif /* AHI_Drivers_Card_DriverData_h */

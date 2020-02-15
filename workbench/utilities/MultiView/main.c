@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /*********************************************************************************************/
+
+#include <proto/icon.h>
+#include <exec/rawfmt.h>
 
 #include "global.h"
 
@@ -92,6 +95,8 @@ static void CloseDTO(void);
 static void KillWindow(void);
 static void ScrollTo(UWORD dir, UWORD quali);
 static void FitToWindow(void);
+
+char *cmdexport = NULL;
 
 /*********************************************************************************************/
 
@@ -291,7 +296,58 @@ static void GetArguments(void)
     {
         textattr.ta_YSize = *(LONG *)args[ARG_FONTSIZE];
     }
+}
 
+static struct DiskObject *LoadProgIcon(struct WBStartup *startup, BPTR *icondir, STRPTR iconname)
+{
+    struct DiskObject *progicon = NULL;
+    
+    if (startup)
+    {
+    	BPTR olddir;
+	
+	*icondir = startup->sm_ArgList[0].wa_Lock;
+	
+	olddir = CurrentDir(*icondir);	
+    	progicon = GetDiskObject(startup->sm_ArgList[0].wa_Name);		
+	CurrentDir(olddir);
+
+	strncpy(iconname, startup->sm_ArgList[0].wa_Name, 255);
+    }
+    else
+    {	
+	if (GetProgramName(iconname, 255))
+	{
+    	    BPTR olddir;
+	    
+	    *icondir = GetProgramDir();
+	    
+	    olddir = CurrentDir(*icondir);
+    	    progicon = GetDiskObject(iconname);	    
+	    CurrentDir(olddir);
+	}	    
+    }
+    
+    return progicon;
+}
+
+static void GetOptions(struct WBStartup *startup)
+{
+    struct DiskObject *mvIcon;
+    char mvIconName[256];
+    BPTR mvDirLock;
+    
+    mvIcon = LoadProgIcon(startup, &mvDirLock, mvIconName);
+    if (mvIcon)
+    {
+        const STRPTR *toolarray = (const STRPTR *)mvIcon->do_ToolTypes;
+        char *s;
+        if (s = (char *)FindToolType(toolarray,"EXPORT"))
+        {
+            cmdexport = StrDup(s);
+            D(bug("[MultiView] EXPORT = '%s'\n", cmdexport);)
+        }
+    }
 }
 
 /*********************************************************************************************/
@@ -1321,9 +1377,43 @@ static void HandleAll(void)
                                     if (filename) OpenDTO();
                                     break;
 
-                                case MSG_MEN_PROJECT_SAVEAS:
-                                    filename = GetFileName(MSG_ASL_SAVE_TITLE);
-                                    if (filename) DoWriteMethod(filename, DTWM_RAW);
+                                case MSG_MEN_PROJECT_EXPORT:
+                                    {
+                                        UBYTE *autocon="CON:0/40/640/150/Export.../auto/close/wait";
+
+                                        struct TagItem stags[5];
+                                        char command[1024];
+                                        char filepath[256];
+                                        BPTR tmpLock;
+
+                                        if ((tmpLock = Lock(filename, ACCESS_READ)) != BNULL)
+                                        {
+                                            NameFromLock(tmpLock, filepath, 256);
+                                            UnLock(tmpLock);
+                                        }
+                                        else
+                                        {
+                                            NameFromLock(cd, filepath, 256);
+                                            AddPart(filepath, filename, 256);
+                                        }
+
+                                        stags[0].ti_Data = (IPTR)filepath;
+                                        RawDoFmt(cmdexport, (RAWARG)&stags[0].ti_Data, RAWFMTFUNC_STRING, command);
+                                        if (tmpLock = Open(autocon, MODE_OLDFILE))
+                                        {
+                                            stags[0].ti_Tag = SYS_Input;
+                                            stags[0].ti_Data = (IPTR)tmpLock;
+                                            stags[1].ti_Tag = SYS_Output;
+                                            stags[1].ti_Data = 0;
+                                            stags[2].ti_Tag = SYS_Asynch;
+                                            stags[2].ti_Data = TRUE;
+                                            stags[3].ti_Tag = SYS_UserShell;
+                                            stags[3].ti_Data = TRUE;
+                                            stags[4].ti_Tag = TAG_END;
+
+                                            System(command, stags);
+                                        }
+                                    }
                                     break;
 
                                 case MSG_MEN_PROJECT_SAVEAS_IFF:
@@ -1577,6 +1667,7 @@ void InitWin(void)
 
 int main(int argc, char **argv)
 {
+    struct WBStartup *startup = NULL;
     int rc;
 
     /* This is for when Cleanup() is called */
@@ -1604,7 +1695,7 @@ int main(int argc, char **argv)
     
     if (argc == 0)
     {
-        struct WBStartup *startup = (struct WBStartup *) argv;
+        startup = (struct WBStartup *) argv;
         
         if (startup->sm_NumArgs >= 2)
         {
@@ -1622,6 +1713,7 @@ int main(int argc, char **argv)
     {
         GetArguments();
     }
+    GetOptions(startup);
 
     InitIScreenNotify();
     InitWin();

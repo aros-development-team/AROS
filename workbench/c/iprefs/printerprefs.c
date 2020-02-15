@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -10,8 +10,8 @@
 
 #include "global.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
+
 #include <aros/macros.h>
 #include <datatypes/pictureclass.h>
 #include <prefs/prefhdr.h>

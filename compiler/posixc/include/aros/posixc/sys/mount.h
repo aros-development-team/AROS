@@ -37,12 +37,12 @@
  *
  *      @(#)mount.h     7.22 (Berkeley) 6/3/91
  */
-
-
 #ifndef _POSIXC_SYS_MOUNT_H_
 #define _POSIXC_SYS_MOUNT_H_
 
-#ifndef _POSIX_SOURCE
+#include <aros/features.h>
+
+#ifdef __USE_BSD
 
 #include <stdint.h>
 

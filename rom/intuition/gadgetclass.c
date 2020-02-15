@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2020, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -441,7 +441,7 @@ IPTR GadgetClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	/* set some defaults */
 	/*
 	 * The instance object is cleared memory!
-	 * memset (eg, 0, sizeof(struct GadgetData));
+	 * SetMem (eg, 0, sizeof(struct GadgetData));
 	 */
 	eg->Flags         = GFLG_EXTENDED;
 	eg->GadgetType    = GTYP_CUSTOMGADGET;

@@ -55,7 +55,7 @@ void ClearBuffer(void)
 
     if (!Buffer && !(Buffer = MAlloc(GENBUFSIZE)))
         Die(NULL, AN_Unknown | AG_NoMemory);
-    memset(Buffer, 0, GENBUFSIZE);
+    SetMem(Buffer, 0, GENBUFSIZE);
 }
 
 void FreeBuffer(void)
@@ -68,7 +68,7 @@ void FreeBuffer(void)
 
 void PurgeKeyBuffer(void)
 {
-    memset(Key, 0, sizeof(Key));
+    SetMem(Key, 0, sizeof(Key));
 }
 
 /*
@@ -583,7 +583,7 @@ void LoadConfig(struct Library *_Base)
                 rdargs->RDA_BufSiz = 0;
                 rdargs->RDA_ExtHelp = NULL;
                 rdargs->RDA_Flags = RDAF_NOPROMPT;
-                memset(argarray, 0, sizeof(argarray));
+                SetMem(argarray, 0, sizeof(argarray));
                 if (ReadArgs("LIMITDOSSETPROTECTION/K/N,PROFILE/K/N,LASTLOGINREQ/K/N,LOGSTARTUP/K/N,"
                                 "LOGLOGIN/K/N,LOGLOGINFAIL/K/N,LOGPASSWD/K/N,LOGPASSWDFAIL/K/N,"
                                 "LOGCHECKPASSWD/K/N,LOGCHECKPASSWDFAIL/K/N,PASSWDUIDLEVEL/K/N,"

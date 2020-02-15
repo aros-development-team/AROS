@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2011, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -16,6 +16,8 @@
 #include "editwindow_class.h"
 #include "editpanel_class.h"
 #include "screenpanel_class.h"
+
+struct MUI_CustomClass *CL_ScreenPanel = NULL;
 
 /****************************************************************************************/
 
@@ -566,6 +568,6 @@ VOID ScreenPanel_Init(VOID)
 
 VOID ScreenPanel_Exit(VOID)
 {
-    if (CL_ScreenPanel )
+    if (CL_ScreenPanel)
         MUI_DeleteCustomClass(CL_ScreenPanel);
 }

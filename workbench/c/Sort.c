@@ -60,8 +60,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <string.h>
-
 #define TEMPLATE "FROM/A,TO/A,COLSTART/K,CASE/S,NUMERIC/S"
 
 #define ARG_FROM	0

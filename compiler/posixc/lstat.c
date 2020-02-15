@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +24,7 @@ static BPTR __lock(
 
 #include <sys/stat.h>
 
-        int lstat(
+        int __posixc_lstat(
 
 /*  SYNOPSIS */
         const char  *path,

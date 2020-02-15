@@ -112,6 +112,7 @@ AROS_UFH3(void, Metric,
 
 struct Hook MetricHook = { {NULL, NULL}, UFHN(Metric) };
 
+struct MUI_CustomClass *FontInfoClass = NULL;
 
 IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 {

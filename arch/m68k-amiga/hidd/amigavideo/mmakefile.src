@@ -2,6 +2,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+AMIGAVIDEO_C_SOURCES := \
+            startup \
+            amigavideo_chipset \
+            amigavideo_blitter \
+            amigavideo_hiddclass \
+            amigavideo_compositorclass \
+            amigavideo_bitmapclass
+
 USER_CPPFLAGS += \
                -D__OOP_NOATTRBASES__ \
                -D__OOP_NOMETHODBASES__ \
@@ -13,4 +21,4 @@ USER_CPPFLAGS += \
 
 %build_module mmake=kernel-amiga-m68k-amigavideo \
     modname=amigavideo modtype=hidd \
-    files="startup amigavideo_hiddclass amigavideo_bitmapclass chipset blitter" uselibs="hiddstubs"
+    files="$(AMIGAVIDEO_C_SOURCES)" uselibs="hiddstubs"

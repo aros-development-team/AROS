@@ -88,7 +88,6 @@ void FreeVecPooled(APTR pool, APTR mem);
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...);
 VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...);
 #ifdef __AROS__
-void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, VA_LIST args);
 STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args);
 #else
 void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, CONST_APTR args);
@@ -162,9 +161,11 @@ STRPTR CombinePaths(CONST_STRPTR p1, CONST_STRPTR p2);
 struct MsgPort *CreatePortNoSignal (void);
 void DeletePortNoSignal (struct MsgPort *port);
 
+#if !defined(__AROS__)
 /* strlcpy.c */
 void Strlcpy (STRPTR dst, CONST_STRPTR src, int size);
 void Strlcat (STRPTR dst, CONST_STRPTR src, int size);
+#endif
 
 /* swab2.c */
 void swab2 (CONST_APTR source, APTR dest, ULONG bytes);

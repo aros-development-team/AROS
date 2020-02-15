@@ -27,6 +27,7 @@ OBJS := main.o \
         showfuncs.o \
         swapfuncs.o \
         utils.o \
+        translators.o \
         locale_other.o
 
 OBJDIR := $(HOSTGENDIR)/tools/flexcat

@@ -1,4 +1,4 @@
-# Copyright © 2003-2019, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -12,6 +12,9 @@ REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(REPODIR))
 REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(REPODIR))
 
 USER_CPPFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+ifneq ($(AROS_TARGET_CPU_TYPE),)
+    USER_CPPFLAGS  += -DBUILDCPU=\"$(AROS_TARGET_CPU_TYPE)\"
+endif
 ifneq ($(REPOTYPE),)
     USER_CPPFLAGS  += -DREPOTYPE=\"$(REPOTYPE)\" -DREPOREVISION=\"$(REPOREVISION)\" -DREPOID=\"$(REPOID)\"
 endif
@@ -34,15 +37,15 @@ $(GENDIR)/$(CURDIR)/aboutaros.o: $(GENERATED)
 
 $(TOP)/$(CURDIR)/authors.h : $(SRCDIR)/$(CURDIR)/db/credits $(SRCDIR)/$(CURDIR)/scripts/authors2header.py
 	@$(ECHO) Generating $@
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/authors2header.py <$< >$@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/authors2header.py $< $@
 
 $(TOP)/$(CURDIR)/sponsors.h : $(SRCDIR)/$(CURDIR)/db/sponsors $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py
 	@$(ECHO) Generating $@
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py <$< >$@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/sponsors2header.py $< $@
 
 $(TOP)/$(CURDIR)/acknowledgements.h : $(SRCDIR)/ACKNOWLEDGEMENTS $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py
 	@$(ECHO) Generating $@
-	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py <$< >$@
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/scripts/acknowledgements2header.py $< $@
 
 #MM
 aboutaros-clean :

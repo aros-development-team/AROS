@@ -2,7 +2,7 @@
 #define GENMODULE_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
 
     Desc: global include for genmodule. Defines global variables and
           the function prototypes.
@@ -31,5 +31,6 @@ void writefd(struct config *);
 void writeskel(struct config *cfg);
 void writethunk(struct config *cfg);
 void writegetlibbase(struct config *cfg, int is_rel);
+void writelinkentries(struct config *cfg);
 
 #endif

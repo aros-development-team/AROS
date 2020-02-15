@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -56,7 +56,7 @@ BOOL ReadUnicodeTable(struct Globals *glob, STRPTR name)
     BPTR fh;
     struct Library *DOSBase;
 
-    if (!(DOSBase = OpenLibrary("dos.library", 0)))
+    if (!(DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS)))
         return FALSE;
 
     fh = Open(name, MODE_OLDFILE);

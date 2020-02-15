@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -67,7 +67,8 @@ static IPTR coolimage_new(Class * cl, Object * o, struct opSet * msg)
 
 	if (!data->image)
 	{
-	    CoerceMethod(cl, o, OM_DISPOSE);
+	    STACKULONG dispose_msg = OM_DISPOSE;
+	    CoerceMethodA(cl, o, &dispose_msg);
 	    o = NULL;
 	} else {
 	    data->bgcol = GetTagData(COOLIM_BgColor,

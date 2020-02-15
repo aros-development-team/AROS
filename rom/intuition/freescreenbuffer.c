@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -59,6 +59,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     DEBUG_FREESCREENBUFFER(dprintf("FreeScreenBuffer: Screen 0x%lx ScreenBuffer 0x%lx\n",
                                    screen, screenbuffer));
@@ -76,7 +77,7 @@
                 struct MsgPort safereply;
                 struct ScreenBuffer scb;
 
-                memset( &safereply, 0, sizeof( safereply ) );
+                SetMem( &safereply, 0, sizeof( safereply ) );
                 safereply.mp_Node.ln_Type = NT_MSGPORT;
                 safereply.mp_Flags = PA_SIGNAL;
                 safereply.mp_SigTask = FindTask(NULL);

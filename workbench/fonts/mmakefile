@@ -9,7 +9,7 @@ FONTFILES   := $(foreach f, $(FONTS), $(foreach s, $(filter-out $(f)/CVS, $(call
 
 DIRS        := $(FONTSDIR) $(addprefix $(FONTSDIR)/,$(FONTS))
 
-#MM workbench-fonts : workbench-fontsRU workbench-fonts-setup
+#MM workbench-fonts : workbench-fonts-setup
 workbench-fonts: $(FONTFILES)
 
 #MM

@@ -51,6 +51,9 @@ typedef unsigned char u_char;
 typedef unsigned short u_short;
 typedef unsigned long u_long;
 
+static const char *str_fmtnull = "(fmt null)\n";
+static const char *str_null = "(null)";
+
 /* Max number conversion buffer length: a u_quad_t in base 2, plus NUL byte. */
 #define MAXNBUF	(sizeof(intmax_t) * NBBY + 1)
 
@@ -273,7 +276,7 @@ kvcprintf(char const *fmt, void (*func)(int, void*), void *arg,
 		d = NULL;
 
 	if (fmt == NULL)
-		fmt = "(fmt null)\n";
+		fmt = str_fmtnull;
 
 	if (radix < 2 || radix > 36)
 		radix = 10;
@@ -432,7 +435,7 @@ reswitch:
 		case 's':
 			p = va_arg(ap, char *);
 			if (p == NULL)
-				p = "(null)";
+				p = str_null;
 			if (!dot)
 				n = strlen (p);
 			else

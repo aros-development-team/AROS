@@ -1,0 +1,16 @@
+# Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+STORAGEICONS := Wrapper
+DEVSICONS    := ATI IntelGMA NVidia VMWare SAGA
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-devs-monitors-clean iconset-GorillaSmall-wbench-icons-storage-monitors-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-devs-monitors iconset-GorillaSmall-wbench-icons-storage-monitors
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-devs-monitors icons=$(DEVSICONS) image=Wrapper.png \
+             dir=$(AROS_DEVS)/Monitors
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
+             dir=$(AROSDIR)/Storage/Monitors

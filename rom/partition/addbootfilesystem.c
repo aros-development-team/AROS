@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -55,7 +55,7 @@
     ObtainSemaphore(&PBASE(PartitionBase)->bootSem);
 
     if (!PBASE(PartitionBase)->pb_DOSBase)
-	PBASE(PartitionBase)->pb_DOSBase = OpenLibrary("dos.library", 36);
+	PBASE(PartitionBase)->pb_DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
     /* If dos.library is available, load the filesystem immediately */
     if (PBASE(PartitionBase)->pb_DOSBase)

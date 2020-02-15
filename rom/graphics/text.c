@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: Graphics function Text()
@@ -120,7 +120,7 @@ void BltTemplateBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     
     if ((raster = AllocRaster(raswidth, rasheight)))
     {
-    	memset(raster, 0, RASSIZE(raswidth, rasheight));
+    	SetMem(raster, 0, RASSIZE(raswidth, rasheight));
 	
 	tf = rp->Font;
 	

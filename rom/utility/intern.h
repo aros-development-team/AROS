@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information for utility.library.
@@ -58,6 +58,17 @@
 #endif
 #ifndef PROTO_UTILITY_H
 #include <proto/utility.h>
+#endif
+
+#if (1)
+static inline ULONG Strlen(CONST_STRPTR string)
+{
+    CONST_STRPTR str_start = (CONST_STRPTR)string;
+
+    while (*string++);
+
+    return (ULONG)(((IPTR)string) - ((IPTR)str_start)) - 1;
+}
 #endif
 
 /* Definition of a utility namespace, needed here for the library base. */

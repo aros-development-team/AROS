@@ -2,7 +2,7 @@
 #define ___FDESC_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: file descriptors handling internals - header file
@@ -26,6 +26,8 @@ typedef struct _fcb
 #define _FCB_DONTCLOSE_FH ((unsigned int)1<<1)
 #define _FCB_FLUSHONREAD  ((unsigned int)1<<2)
 #define _FCB_CONSOLERAW   ((unsigned int)1<<3)
+#define _FCB_FH64         ((unsigned int)1<<14)
+#define _FCB_FS64         ((unsigned int)1<<15)
 
 #define FLUSHONREADCHECK                                                \
     if (__builtin_expect(fdesc->fcb->privflags & _FCB_FLUSHONREAD, 0))  \

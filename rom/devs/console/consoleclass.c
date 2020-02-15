@@ -1,28 +1,27 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base class for console units
     Lang: english
 */
 
-#include <string.h>
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <proto/intuition.h>
 #include <proto/utility.h>
+
 #include <aros/asmcall.h>
 #include <devices/conunit.h>
 #include <intuition/classes.h>
 #include <intuition/intuition.h>
 
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
+#include <string.h>
 
 #include "consoleif.h"
 #include "console_gcc.h"
-
-
 
 VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr);
 
@@ -37,7 +36,6 @@ struct consoledata
     struct intConUnit intunit;
 };
 
-
 #undef ConsoleDevice
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
@@ -48,16 +46,11 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 {
     struct Window *win;
     EnterFunc(bug("Console::New()\n"));
-    struct Library *UtilityBase;
-
-    UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-    if (!UtilityBase)
-        ReturnPtr("Console::New", Object *, NULL);
 
     /* Get console window */
     win =
         (struct Window *)GetTagData(A_Console_Window, 0, msg->ops_AttrList);
-    CloseLibrary(UtilityBase);
+
     if (!win)
     {
         ReturnPtr("Console::New", Object *, NULL);
@@ -75,7 +68,11 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 
         unit = (struct ConUnit *)data;
 
-        memset(data, 0, sizeof(struct consoledata));
+        SetMem(data, 0, sizeof(struct consoledata));
+        for (i = 0; i < CONUNIT_PEN_MAX; i ++)
+        {
+            data->intunit.pens[i] = i;
+        }
 
         /* Initialize the unit fields */
         unit->cu_Window = win;
@@ -326,8 +323,8 @@ static VOID console_docommand(Class *cl, Object *o,
                 switch (param)
                 {
                 case 0:
-                    CU(o)->cu_FgPen = 1;
-                    CU(o)->cu_BgPen = 0;
+                    Console_GetColorPen(o, 0, &CU(o)->cu_BgPen);
+                    Console_GetColorPen(o, 1, &CU(o)->cu_FgPen);
                     CU(o)->cu_TxFlags = 0;
                     break;
                 case 1:
@@ -371,10 +368,10 @@ static VOID console_docommand(Class *cl, Object *o,
                 case 35:
                 case 36:
                 case 37:
-                    CU(o)->cu_FgPen = param - 30;
+                    Console_GetColorPen(o, param - 30, &CU(o)->cu_FgPen);
                     break;
                 case 39:
-                    CU(o)->cu_FgPen = 1;
+                    Console_GetColorPen(o, 1, &CU(o)->cu_FgPen);
                     break;
 
                 case 40:
@@ -385,11 +382,11 @@ static VOID console_docommand(Class *cl, Object *o,
                 case 45:
                 case 46:
                 case 47:
-                    CU(o)->cu_BgPen = param - 40;
+                    Console_GetColorPen(o, param - 40, &CU(o)->cu_BgPen);
                     break;
 
                 case 49:
-                    CU(o)->cu_BgPen = 1;
+                    Console_GetColorPen(o, 0, &CU(o)->cu_BgPen);
                     break;
                 } /* switch(param) */
             } /* for(i = 0; i < msg->NumParams; i++) */
@@ -530,7 +527,12 @@ static VOID console_newwindowsize(Class *cl, Object *o,
     return;
 }
 
-
+IPTR console_getpencolor(Class *cl, Object *o, struct P_Console_GetColorPen *msg)
+{
+    struct consoledata *data = INST_DATA(cl, o);
+    *msg->PenPtr = (UBYTE)data->intunit.pens[msg->ColorIdx];
+    return TRUE;
+}
 
 /********* Console class dispatcher **********************************/
 AROS_UFH3S(IPTR, dispatch_consoleclass,
@@ -543,6 +545,10 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
 
     switch (msg->MethodID)
     {
+    case M_Console_GetColorPen:
+        retval = (IPTR) console_getpencolor(cl, o, (struct P_Console_GetColorPen *)msg);
+        break;
+
     case OM_NEW:
         retval = (IPTR) console_new(cl, o, (struct opSet *)msg);
         break;

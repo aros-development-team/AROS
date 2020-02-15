@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2020, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -446,7 +446,7 @@ IPTR PropGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         /* Set some default values in the propinfo structure */
         /*
           The instance object is cleared memory!
-          memset(&(data->propinfo), 0, sizeof (struct PropInfo));
+          SetMem(&(data->propinfo), 0, sizeof (struct PropInfo));
         */
         data->propinfo.Flags    = PROPNEWLOOK|AUTOKNOB|FREEVERT;
         data->propinfo.VertPot  = 0;

@@ -17,6 +17,7 @@ FILES := \
     scanpo \
     showfuncs \
     swapfuncs \
+    translators \
     utils \
     locale \
     getft \

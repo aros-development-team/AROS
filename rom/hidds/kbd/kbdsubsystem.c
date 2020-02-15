@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,6 @@
 
 #include <aros/debug.h>
 #include <hidd/hidd.h>
-#include <hidd/keyboard.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
@@ -61,7 +60,7 @@
 
 *****************************************************************************************/
 
-static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
+static void GlobalCallback(struct kbd_staticdata *csd, KbdIrqData_t code)
 {
     struct kbd_data *data;
     

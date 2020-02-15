@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -43,7 +43,7 @@ static struct OOP_ABDescr abd[] =
 
 static BOOL initclasses(struct x11_staticdata *xsd)
 {
-    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11] %s()\n", __func__));
 
     /* Get some attrbases */
 
@@ -61,7 +61,7 @@ static BOOL initclasses(struct x11_staticdata *xsd)
 
 static VOID freeclasses(struct x11_staticdata *xsd)
 {
-    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[X11] %s()\n", __func__));
 
     OOP_ReleaseAttrBases(abd);
 }
@@ -110,11 +110,14 @@ static int MySysErrorHandler(Display * display)
 
 int X11_Init(struct x11_staticdata *xsd)
 {
-    D(bug("[X11] %s()\n", __PRETTY_FUNCTION__));
+    D(
+        bug("[X11] %s()\n", __func__);
+        bug("[X11] %s: xsd @ 0x%p\n", __func__, xsd);
+    )
 
     if (xsd->display)
     {
-        D(bug("[X11] %s: already initialized\n", __PRETTY_FUNCTION__));
+        D(bug("[X11] %s: already initialized\n", __func__));
         return TRUE;
     }
 
@@ -122,7 +125,7 @@ int X11_Init(struct x11_staticdata *xsd)
        currently */
 
     xsd->display = XCALL(XOpenDisplay, NULL);
-    D(bug("[X11] %s: X display @ 0x%p\n", __PRETTY_FUNCTION__, xsd->display));
+    D(bug("[X11] %s: X display @ 0x%p\n", __func__, xsd->display));
 
     if (xsd->display)
     {
@@ -192,7 +195,7 @@ int X11_Init(struct x11_staticdata *xsd)
         D(
             if (xsd->options & OPTION_DELAYXWINMAPPING)
             {
-                D(bug("[X11] %s: option DELAYXWINMAPPING\n", __PRETTY_FUNCTION__));
+                D(bug("[X11] %s: option DELAYXWINMAPPING\n", __func__));
             }
         )
 
@@ -208,22 +211,29 @@ int X11_Init(struct x11_staticdata *xsd)
         xtp.kill_signal = SIGBREAKF_CTRL_C;
         xtp.xsd = xsd;
 
+        xsd->xtd = AllocMem(sizeof(struct XKeyTableData), MEMF_CLEAR);
+        D(bug("[X11] %s: xtd @ 0x%p (* @ 0x%p)\n", __func__, xsd->xtd, &xsd->xtd);)
         if ((x11task = create_x11task(&xtp)))
         {
             if (initclasses(xsd))
             {
-                D(bug("[X11] %s: task & classes initialized\n", __PRETTY_FUNCTION__));
+                D(bug("[X11] %s: task & classes initialized\n", __func__));
                 return TRUE;
             }
 
             Signal(x11task, xtp.kill_signal);
         }
 
-        XCALL(XCloseDisplay, xsd->display);
+        if (xsd->xtd)
+        {
+            FreeMem((APTR)xsd->xtd, sizeof(struct XKeyTableData));
+            xsd->xtd = NULL;
+        }
 
+        XCALL(XCloseDisplay, xsd->display);
     }
 
-   D(bug("[X11] %s: failed to initialize\n", __PRETTY_FUNCTION__));
+   D(bug("[X11] %s: failed to initialize\n", __func__));
 
     return FALSE;
 }

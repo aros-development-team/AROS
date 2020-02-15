@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile for AROS Test
+#   Makefile for AROS Test binaries & scripts.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -12,10 +12,33 @@ EXEDIR := $(AROS_TESTS)
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-#MM- test : test-common test-clib test-kernel test-intuition \
-#MM  test-layers test-zune workbench-libs-version test-$(AROS_TARGET_ARCH) test-miscfiles
+#MM- test : \
+#MM  test-common \
+#MM  test-crt \
+#MM  test-kernel \
+#MM  test-intuition \
+#MM  test-layers \
+#MM  test-zune \
+#MM  test-miscfiles
 
-#MM  test-common : includes workbench-libs-version linklibs
+#MM- test-quick : \
+#MM  test-common-quick \
+#MM  test-crt-quick \
+#MM  test-kernel-quick \
+#MM  test-intuition-quick \
+#MM  test-layers-quick \
+#MM  test-zune-quick \
+#MM  test-miscfiles-quick
+
+#MM- test : test-$(AROS_TARGET_ARCH) \
+#MM  test-$(AROS_TARGET_CPU) \
+#MM  test-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- test-quick : test-$(AROS_TARGET_ARCH)-quick \
+#MM  test-$(AROS_TARGET_CPU)-quick \
+#MM  test-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM  test-common : includes linklibs
 
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR)

@@ -1,9 +1,11 @@
-#!/bin/env python
+#!/usr/bin/env python3
 # -*- coding: iso-8859-15 -*-
 
 import sys
 
-print '''#ifndef _ACKNOWLEDGEMENTS_H_
+outfile = open(sys.argv[2], "w", encoding="iso-8859-15")
+
+outfile.write('''#ifndef _ACKNOWLEDGEMENTS_H_
 #define _ACKNOWLEDGEMENTS_H_
 
 /*
@@ -13,16 +15,20 @@ print '''#ifndef _ACKNOWLEDGEMENTS_H_
 
 const char * const ACKNOWLEDGEMENTS[] =
 {
-'''
+''')
 
 count = 0
-for line in sys.stdin:
-    print '    "%s",' % line.strip()
+file = open(sys.argv[1], "r", encoding="iso-8859-15")
+for line in file:
+    outfile.write('    "%s",\n' % line.strip())
     count += 1
     
-print '''};
+outfile.write('''};
 
 #define ACKNOWLEDGEMENTS_SIZE (%d)
 
 #endif /* _ACKNOWLEDGEMENTS_H_ */
-''' % count
+''' % count)
+
+file.close()
+outfile.close()

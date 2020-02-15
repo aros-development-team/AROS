@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -10,7 +10,6 @@
 
 #include "global.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <datatypes/pictureclass.h>
@@ -98,11 +97,17 @@ static void LoadPointerPrefs(STRPTR filename, WORD which, WORD installas, LONG n
 
 static void LoadPointerFile(STRPTR filename, ULONG which, UWORD installas, UWORD x, UWORD y)
 {
-    Object *o;
     struct BitMap *bm = NULL;
     UWORD h_which;
+    BPTR  flock;
+    Object *o;
 
     D(bug("[PointerPrefs] Load file: %s\n", filename));
+
+    /* attempt to lock the file first to make sure paths are initalised */
+    if ((flock = Lock(filename, ACCESS_READ)) != BNULL)
+        UnLock(flock);
+
     o = NewDTObject(filename, DTA_GroupID, GID_PICTURE, PDTA_Remap, FALSE, TAG_DONE);
     D(bug("[PointerPrefs] Datatype object: 0x%p\n", o));
     /* If datatypes failed, try to load AmigaOS 3.x prefs file */

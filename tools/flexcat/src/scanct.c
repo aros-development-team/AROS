@@ -250,6 +250,10 @@ int ScanCTFile(char *ctfile)
 
                 if((newstr = ReadLine(fp, FALSE)) != NULL)
                 {
+                    /* if we have a function to convert the encoding, do it.. */
+                    if (TranslateString)
+                        TranslateString(newstr);
+
                     for(cs = FirstCatString; cs != NULL; cs = cs->Next)
                     {
                         if(strcmp(cs->ID_Str, newidstr) == 0)

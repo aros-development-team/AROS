@@ -1,0 +1,201 @@
+[submodule "workbench/libs/muimaster/catalogs"]
+	path = workbench/libs/muimaster/catalogs
+	url = https://github.com/aros-translation-team/muimaster.library.git
+[submodule "arch/all-pc/acpitool/catalogs"]
+	path = arch/all-pc/acpitool/catalogs
+	url = https://github.com/aros-translation-team/acpitool.git
+[submodule "rom/dos/catalogs"]
+	path = rom/dos/catalogs
+	url = https://github.com/aros-translation-team/dos.library.git
+[submodule "rom/filesys/SFS/SFSdefrag/Catalogs"]
+	path = rom/filesys/SFS/SFSdefrag/Catalogs
+	url = https://github.com/aros-translation-team/sfsdefrag.git
+[submodule "rom/hidds/pci/pcitool/catalogs"]
+	path = rom/hidds/pci/pcitool/catalogs
+	url = https://github.com/aros-translation-team/pcitool.git
+[submodule "rom/security/catalogs"]
+	path = rom/security/catalogs
+	url = https://github.com/aros-translation-team/security.library.git
+[submodule "rom/usb/trident/catalogs"]
+	path = rom/usb/trident/catalogs
+	url = https://github.com/aros-translation-team/trident.git
+[submodule "workbench/c/LoadResource/catalogs"]
+	path = workbench/c/LoadResource/catalogs
+	url = https://github.com/aros-translation-team/loadresource.git
+[submodule "workbench/c/R/catalogs"]
+	path = workbench/c/R/catalogs
+	url = https://github.com/aros-translation-team/r.git
+[submodule "workbench/classes/zune/aboutwindow/catalogs"]
+	path = workbench/classes/zune/aboutwindow/catalogs
+	url = https://github.com/aros-translation-team/aboutwindow.git
+[submodule "workbench/classes/zune/prefswindow/catalogs"]
+	path = workbench/classes/zune/prefswindow/catalogs
+	url = https://github.com/aros-translation-team/prefswindow.git
+[submodule "workbench/classes/zune/systemprefswindow/catalogs"]
+	path = workbench/classes/zune/systemprefswindow/catalogs
+	url = https://github.com/aros-translation-team/systemprefswindow.git
+[submodule "workbench/devs/diskimage/device/catalogs"]
+	path = workbench/devs/diskimage/device/catalogs
+	url = https://github.com/aros-translation-team/diskimage.device.git
+[submodule "workbench/devs/diskimage/zune_gui/catalogs"]
+	path = workbench/devs/diskimage/zune_gui/catalogs
+	url = https://github.com/aros-translation-team/diskimage-zune.git
+[submodule "workbench/libs/asl/catalogs"]
+	path = workbench/libs/asl/catalogs
+	url = https://github.com/aros-translation-team/asl.library.git
+[submodule "workbench/libs/identify/catalogs"]
+	path = workbench/libs/identify/catalogs
+	url = https://github.com/aros-translation-team/identify.library.git
+[submodule "workbench/libs/identify/tools/catalogs"]
+	path = workbench/libs/identify/tools/catalogs
+	url = https://github.com/aros-translation-team/identify.git
+[submodule "workbench/libs/reqtools/catalogs"]
+	path = workbench/libs/reqtools/catalogs
+	url = https://github.com/aros-translation-team/reqtools.library.git
+[submodule "workbench/devs/AHI/AHI/translations"]
+	path = workbench/devs/AHI/AHI/translations
+	url = https://github.com/aros-translation-team/ahi-prefs.git
+[submodule "workbench/devs/AHI/Device/translations"]
+	path = workbench/devs/AHI/Device/translations
+	url = https://github.com/aros-translation-team/ahi.device.git
+[submodule "workbench/utilities/MultiView/catalogs"]
+	path = workbench/utilities/MultiView/catalogs
+	url = https://github.com/aros-translation-team/multiview.git
+[submodule "workbench/utilities/More/catalogs"]
+	path = workbench/utilities/More/catalogs
+	url = https://github.com/aros-translation-team/more.git
+[submodule "workbench/utilities/Installer/catalogs"]
+	path = workbench/utilities/Installer/catalogs
+	url = https://github.com/aros-translation-team/installer.git
+[submodule "workbench/utilities/Clock/catalogs"]
+	path = workbench/utilities/Clock/catalogs
+	url = https://github.com/aros-translation-team/clock.git
+[submodule "workbench/system/Wanderer/Catalogs"]
+	path = workbench/system/Wanderer/Catalogs
+	url = https://github.com/aros-translation-team/wanderer.git
+[submodule "workbench/tools/SysExplorer/catalogs"]
+	path = workbench/tools/SysExplorer/catalogs
+	url = https://github.com/aros-translation-team/sysexplorer.git
+[submodule "workbench/system/AboutAROS/catalogs"]
+	path = workbench/system/AboutAROS/catalogs
+	url = https://github.com/aros-translation-team/aboutaros.git
+[submodule "workbench/tools/InstallAROS/catalogs"]
+	path = workbench/tools/InstallAROS/catalogs
+	url = https://github.com/aros-translation-team/installaros.git
+[submodule "workbench/tools/HDToolBox/catalogs"]
+	path = workbench/tools/HDToolBox/catalogs
+	url = https://github.com/aros-translation-team/hdtoolbox.git
+[submodule "workbench/tools/BoingIconBar/catalogs"]
+	path = workbench/tools/BoingIconBar/catalogs
+	url = https://github.com/aros-translation-team/boingiconbar.git
+[submodule "workbench/system/SysMon/catalogs"]
+	path = workbench/system/SysMon/catalogs
+	url = https://github.com/aros-translation-team/sysmon.git
+[submodule "workbench/tools/commodities/catalogs"]
+	path = workbench/tools/commodities/catalogs
+	url = https://github.com/aros-translation-team/commodities.git
+[submodule "workbench/prefs/palette/catalogs"]
+	path = workbench/prefs/palette/catalogs
+	url = https://github.com/aros-translation-team/palette-prefs.git
+[submodule "developer/debug/test/crt/posixc/posix.1"]
+	path = developer/debug/test/crt/posixc/posix.1
+	url = https://github.com/agordon/posix-libc-examples.git
+[submodule "workbench/prefs/appearance/catalogs"]
+	path = workbench/prefs/appearance/catalogs
+	url = https://github.com/aros-translation-team/appearance-prefs.git
+[submodule "workbench/prefs/boingiconbar/catalogs"]
+	path = workbench/prefs/boingiconbar/catalogs
+	url = https://github.com/aros-translation-team/boingiconbar-prefs.git
+[submodule "workbench/prefs/font/catalogs"]
+	path = workbench/prefs/font/catalogs
+	url = https://github.com/aros-translation-team/font-prefs.git
+[submodule "workbench/prefs/input/catalogs"]
+	path = workbench/prefs/input/catalogs
+	url = https://github.com/aros-translation-team/input-prefs.git
+[submodule "workbench/prefs/locale/catalogs"]
+	path = workbench/prefs/locale/catalogs
+	url = https://github.com/aros-translation-team/locale-prefs.git
+[submodule "workbench/prefs/reqtools/catalogs"]
+	path = workbench/prefs/reqtools/catalogs
+	url = https://github.com/aros-translation-team/reqtools-prefs.git
+[submodule "workbench/prefs/boot/catalogs"]
+	path = workbench/prefs/boot/catalogs
+	url = https://github.com/aros-translation-team/boot-prefs.git
+[submodule "workbench/prefs/icontrol/catalogs"]
+	path = workbench/prefs/icontrol/catalogs
+	url = https://github.com/aros-translation-team/icontrol-prefs.git
+[submodule "workbench/prefs/network/catalogs"]
+	path = workbench/prefs/network/catalogs
+	url = https://github.com/aros-translation-team/network-prefs.git
+[submodule "workbench/prefs/pointer/catalogs"]
+	path = workbench/prefs/pointer/catalogs
+	url = https://github.com/aros-translation-team/pointer-prefs.git
+[submodule "workbench/prefs/printer/catalogs"]
+	path = workbench/prefs/printer/catalogs
+	url = https://github.com/aros-translation-team/printer-prefs.git
+[submodule "workbench/prefs/Editor/catalogs"]
+	path = workbench/prefs/Editor/catalogs
+	url = https://github.com/aros-translation-team/editor-prefs.git
+[submodule "workbench/prefs/PSI/catalogs"]
+	path = workbench/prefs/PSI/catalogs
+	url = https://github.com/aros-translation-team/psi-prefs.git
+[submodule "workbench/prefs/screenmode/catalogs"]
+	path = workbench/prefs/screenmode/catalogs
+	url = https://github.com/aros-translation-team/screenmode-prefs.git
+[submodule "workbench/prefs/serial/catalogs"]
+	path = workbench/prefs/serial/catalogs
+	url = https://github.com/aros-translation-team/serial-prefs.git
+[submodule "workbench/prefs/time/catalogs"]
+	path = workbench/prefs/time/catalogs
+	url = https://github.com/aros-translation-team/time-prefs.git
+[submodule "workbench/prefs/trackdisk/catalogs"]
+	path = workbench/prefs/trackdisk/catalogs
+	url = https://github.com/aros-translation-team/trackdisk-prefs.git
+[submodule "workbench/prefs/wanderer/catalogs"]
+	path = workbench/prefs/wanderer/catalogs
+	url = https://github.com/aros-translation-team/wanderer-prefs.git
+[submodule "workbench/prefs/Zune/catalogs"]
+	path = workbench/prefs/Zune/catalogs
+	url = https://github.com/aros-translation-team/zune-prefs.git
+[submodule "workbench/network/stacks/AROSTCP/MUI.MiamiPanel/catalogs"]
+	path = workbench/network/stacks/AROSTCP/MUI.MiamiPanel/catalogs
+	url = https://github.com/aros-translation-team/miamipanel.git
+[submodule "workbench/system/BHFormat/catalogs"]
+	path = workbench/system/BHFormat/catalogs
+	url = https://github.com/aros-translation-team/format.git
+[submodule "workbench/system/find/catalogs"]
+	path = workbench/system/find/catalogs
+	url = https://github.com/aros-translation-team/find.git
+[submodule "workbench/system/ftmanager/catalogs"]
+	path = workbench/system/ftmanager/catalogs
+	url = https://github.com/aros-translation-team/ftmanager.git
+[submodule "workbench/system/Snoopy/catalogs"]
+	path = workbench/system/Snoopy/catalogs
+	url = https://github.com/aros-translation-team/snoopy.git
+[submodule "workbench/system/Wanderer/Tools/DiskInfo/catalogs"]
+	path = workbench/system/Wanderer/Tools/DiskInfo/catalogs
+	url = https://github.com/aros-translation-team/diskinfo.git
+[submodule "workbench/system/Wanderer/Tools/ExecuteCommand/catalogs"]
+	path = workbench/system/Wanderer/Tools/ExecuteCommand/catalogs
+	url = https://github.com/aros-translation-team/executecommand.git
+[submodule "workbench/system/Wanderer/Tools/ExecuteStartup/catalogs"]
+	path = workbench/system/Wanderer/Tools/ExecuteStartup/catalogs
+	url = https://github.com/aros-translation-team/executestartup.git
+[submodule "workbench/system/Wanderer/Tools/WBNewDrawer/catalogs"]
+	path = workbench/system/Wanderer/Tools/WBNewDrawer/catalogs
+	url = https://github.com/aros-translation-team/wbnewdrawer.git
+[submodule "workbench/system/Wanderer/Tools/WBRename/catalogs"]
+	path = workbench/system/Wanderer/Tools/WBRename/catalogs
+	url = https://github.com/aros-translation-team/wbrename.git
+[submodule "workbench/tools/Edit/catalogs"]
+	path = workbench/tools/Edit/catalogs
+	url = https://github.com/aros-translation-team/editor.git
+[submodule "workbench/tools/KeyShow/catalogs"]
+	path = workbench/tools/KeyShow/catalogs
+	url = https://github.com/aros-translation-team/keyshow.git
+[submodule "workbench/tools/ScreenGrabber/catalogs"]
+	path = workbench/tools/ScreenGrabber/catalogs
+	url = https://github.com/aros-translation-team/screengrabber.git
+[submodule "workbench/tools/WiMP/catalogs"]
+	path = workbench/tools/WiMP/catalogs
+	url = https://github.com/aros-translation-team/wimp.git

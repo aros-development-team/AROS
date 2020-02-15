@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gfx chunky bitmap class implementation.
@@ -42,7 +42,8 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     /* Initialize the instance data to 0 */
     data = OOP_INST_DATA(cl, o);
-    memset(data, 0, sizeof (*data));
+
+    SetMem(data, 0, sizeof (*data));
 
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
     OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);

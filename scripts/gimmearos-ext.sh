@@ -11,7 +11,7 @@
 # In contrast to gimmearos.sh this script creates the toolchain
 # in external directories.
 
-# $VER: gimmearos-ext.sh 1.15 (01.09.2019)
+# $VER: gimmearos-ext.sh 1.16 (18.01.2020)
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -219,11 +219,12 @@ case "$input" in
         ;;
 esac
 
-cd "$curdir"
 
 input=""
 until [ "$input" = "99" ]
 do
+    cd "$curdir"
+
     echo -e "\n\n\n\n\n"
     echo -e "******************************************************"
     echo -e "* Step 2: get the sources from the GITHUB repository *"
@@ -242,18 +243,28 @@ do
     case "$input" in
         1 ) echo -e "\nGetting AROS V1 core with Git...\n"
             git clone https://github.com/aros-development-team/AROS.git "$srcdir"
+            cd "$srcdir"
+            git submodule update --init --recursive
             ;;
         2 ) echo -e "\nGetting contrib V1 with Git...\n"
             git clone https://github.com/aros-development-team/contrib.git "$srcdir/contrib"
+            cd "$srcdir/contrib"
+            git submodule update --init --recursive
             ;;
         3 ) echo -e "\nGetting ports V1 with Git...\n"
             git clone https://github.com/aros-development-team/ports.git "$srcdir/ports"
+            cd "$srcdir/ports"
+            git submodule update --init --recursive
             ;;
         4 ) echo -e "\nGetting documentation V1 with Git...\n"
             git clone https://github.com/aros-development-team/documentation.git "$srcdir/documentation"
+            cd "$srcdir/documentation"
+            git submodule update --init --recursive
             ;;
         5 ) echo -e "\nGetting binaries V1 with Git...\n"
             git clone https://github.com/aros-development-team/binaries.git "$srcdir/binaries"
+            cd "$srcdir/binaries"
+            git submodule update --init --recursive
             ;;
 
         0 ) exit 0
@@ -261,7 +272,6 @@ do
     esac
 done
 
-cd "$curdir"
 
 input=""
 until [ "$input" = "99" ]
@@ -314,8 +324,6 @@ do
 done
 
 
-cd "$curdir"
-
 input=""
 until [ "$input" = "99" ]
 do
@@ -339,26 +347,18 @@ do
         1 ) echo -e "\nBuilding i386 Toolchain...\n"
             cd aros-i386-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-i386-toolchain-builddir
             ;;
         2 ) echo -e "\nBuilding x86_64 Toolchain...\n"
             cd aros-x86_64-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-x86_64-toolchain-builddir
             ;;
         3 ) echo -e "\nBuilding m68k Toolchain...\n"
             cd aros-m68k-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-m68k-toolchain-builddir
             ;;
         4 ) echo -e "\nBuilding armhf Toolchain...\n"
             cd aros-armhf-toolchain-builddir
             make $makeopts crosstools
-            cd "$curdir"
-            rm -rf aros-armhf-toolchain-builddir
             ;;
 
         0 ) exit 0
@@ -366,8 +366,6 @@ do
     esac
 done
 
-
-cd "$curdir"
 
 input=""
 until [ "$input" = "99" ]
@@ -454,8 +452,6 @@ do
     esac
 done
 
-
-cd "$curdir"
 
 input=""
 until [ "$input" = "99" ]
@@ -564,7 +560,5 @@ do
             ;;
     esac
 done
-
-cd "$curdir"
 
 exit 0

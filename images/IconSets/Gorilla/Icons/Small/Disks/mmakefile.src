@@ -1,0 +1,29 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := CDROM_Amiga Harddisk_Amiga Harddisk_Linux Harddisk_MacOS Harddisk_Windows
+
+#MM- themes-GorillaSmall-icons-clean : themes-GorillaSmall-icons-disks-clean
+#MM- themes-GorillaSmall-icons : themes-GorillaSmall-icons-disks
+%build_icons mmake=themes-GorillaSmall-icons-disks icons=$(ICONS) \
+             dir=$(AROS_CONTRIB)/Icons/Gorilla/Disks
+
+#MM
+iconset-GorillaSmall-icons-aros-livecd :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/CDROM_AROS.info.src $(SRCDIR)/$(CURDIR)/CDROM_AROS.png $(AROSDIR)/disk.info
+
+#MM
+iconset-GorillaSmall-icons-aros-linux-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_Linux.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_Linux.png $(AROSDIR)/disk.info
+
+#MM
+iconset-GorillaSmall-icons-aros-windows-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_Windows.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_Windows.png $(AROSDIR)/disk.info
+
+#MM
+iconset-GorillaSmall-icons-aros-darwin-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/AROSHarddisk_MacOS.info.src $(SRCDIR)/$(CURDIR)/AROSHarddisk_MacOS.png $(AROSDIR)/disk.info
+
+

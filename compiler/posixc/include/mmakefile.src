@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-INCLUDES := $(call WILDCARD, aros/posixc/*.h aros/posixc/sys/*.h aros/types/*.h \
+INCLUDES := $(call WILDCARD, aros/*.h aros/posixc/*.h aros/posixc/sys/*.h aros/types/*.h \
     libraries/*.h \
 )
 

@@ -1,3 +1,4 @@
+handle SIGALRM pass noprint nostop
 handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
@@ -451,8 +452,8 @@ define loadframe
     info frame $arg0
     end_log
     
-    shell grep "eip =" frameinfo.tmp >loadseg.tmp
-    shell sed -e 's/eip = \(0x[0-9,a-f]*\).*/loadseg \1/' loadseg.tmp >frameinfo.tmp
+    shell grep -E "(e|r)ip =" frameinfo.tmp >loadseg.tmp
+    shell sed -E -e "s/(e|r)ip = (0x[0-9,a-f]*).*/loadseg \2/" loadseg.tmp >frameinfo.tmp
     
     source frameinfo.tmp
 end

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -611,7 +611,7 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
     data = root->table->data;
     block = data->rdbblock+1; /* RDB will be written at the end */
 
-    memset(root->buffer, 0, root->de.de_SizeBlock << 2);
+    SetMem(root->buffer, 0, root->de.de_SizeBlock << 2);
 
     /* write bad blocks */
     bn = (struct BadBlockNode *)data->badblocklist.lh_Head;

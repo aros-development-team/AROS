@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Get a copy of monitors list
@@ -59,15 +59,17 @@
     AROS_LIBFUNC_INIT
     
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+    struct msGetCompositionFlags cfmsg;
     struct MinNode *n;
     Object **res;
     ULONG num = 1;
-    ULONG id = GetTagData(GMLA_DisplayID, INVALID_ID, tags);
+
+    cfmsg.MethodID = MM_CheckID;
+    cfmsg.ModeID = GetTagData(GMLA_DisplayID, INVALID_ID, tags);
 
     ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
-
     for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ) {
-	if ((id == INVALID_ID) || DoMethod((Object *)n, MM_CheckID, id))
+	if ((cfmsg.ModeID == INVALID_ID) || DoMethodA((Object *)n, &cfmsg))
 	    num++;
     }
 
@@ -76,7 +78,7 @@
     if (res) {
 	num = 0;
         for (n = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head; n->mln_Succ; n = n->mln_Succ) {
-	    if ((id == INVALID_ID) || DoMethod((Object *)n, MM_CheckID, id))
+	    if ((cfmsg.ModeID == INVALID_ID) || DoMethod((Object *)n, MM_CheckID, cfmsg.ModeID))
 		res[num++] = (Object *)n;
 	}
 	res[num] = NULL;

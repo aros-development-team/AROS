@@ -36,8 +36,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-expansion-kobj \
 #MM     kernel-filesystem-kobj \
 #MM     kernel-freeanim-kobj \
-#MM     kernel-fs-afs-kobj \
-#MM     kernel-fs-cdfs-kobj \
+#MM     kernel-fs-core-kobj \
 #MM     kernel-fs-con-kobj \
 #MM     kernel-fs-ram-kobj \
 #MM     kernel-gameport-kobj \
@@ -61,7 +60,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-m680x0-kobj \
 #MM     kernel-misc-kobj \
 #MM     kernel-oop-kobj \
-#MM     kernel-partition-kobj \
 #MM     kernel-processor-kobj \
 #MM     kernel-task-kobj \
 #MM     kernel-potgo-kobj \
@@ -75,6 +73,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-workbook-kobj \
 #MM     kernel-workbench-devs-amiga-m68k \
+#MM     kernel-vampire-amiga-m68k \
 #MM     workbench-libs-gadtools-kobj \
 #MM     workbench-libs-icon-kobj \
 #MM     workbench-libs-lowlevel-kobj \
@@ -86,6 +85,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     linklibs-loadseg \
 #MM     compiler-stdc \
 #MM     compiler-stdcio \
+#MM     hidd-m68k-sagagfx \
 #MM     compiler-posixc
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
@@ -103,7 +103,7 @@ rom_entry.o: FORCE
 ext_entry.o: FORCE
 
 USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
-#USER_CPPFLAGS += -DDEFKRN_CMDLINE="\"nomonitors sysdebug=InitCode,debugmmu,mungwall\""
+#USER_CPPFLAGS += -DDEFKRN_CMDLINE="\"sysdebug=InitCode,debugmmu,mungwall\""
 
 # Use -m68060 when compiling .S files, as we will need the
 # expanded instruction set to detect alternate CPUs
@@ -127,7 +127,7 @@ KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass keyboard mouse p96gfx
-KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
+KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader vampire
 KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
@@ -151,7 +151,7 @@ KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
             mathffp mathieeesingbas freeanim lowlevel nonvolatile nvdisk \
             setpatch
 KDEVS   := cd ata
-KHNDLRS := cdfs
+KHNDLRS := cdrom
 KHIDDS  := bus storage system
 KRSRCS  := shellcommands workbook wbtag
 KHOOKS  := alert
@@ -313,10 +313,10 @@ AFILES  :=
 KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench setpatch
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
-KHNDLRS := cdfs con afs ram
+KHNDLRS := cdrom con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass keyboard mouse storage system p96gfx
 KRSRCS  := battclock processor task lddemon dosboot cia potgo disk \
-           misc shell shellcommands workbook wbtag card FileSystem
+           misc shell shellcommands workbook wbtag card FileSystem vampire
 KHOOKS  := alert romboot
 
 KOBJS_any := \

@@ -1,0 +1,111 @@
+diff -ruN grub-2.04/grub-core/fs/affs.c grub-2.04.aros/grub-core/fs/affs.c
+--- grub-2.04/grub-core/fs/affs.c	2019-04-23 09:54:47.000000000 +0100
++++ grub-2.04.aros/grub-core/fs/affs.c	2020-01-16 19:13:41.085635000 +0000
+@@ -202,7 +202,9 @@
+ 	goto fail;
+ 
+       /* Make sure this is an affs filesystem.  */
+-      if (grub_strncmp ((char *) (data->bblock.type), "DOS", 3) != 0
++      if (((grub_strncmp ((char *) (data->bblock.type), "DOS", 3) != 0)
++	  /* Test if the filesystem is a muFS filesystem.  */
++	  && (grub_strncmp ((char *) (data->bblock.type), "muF", 3) != 0))
+ 	  /* Test if the filesystem is a OFS filesystem.  */
+ 	  || !(data->bblock.flags & GRUB_AFFS_FLAG_FFS))
+ 	continue;
+diff -ruN grub-2.04/grub-core/lib/gnulib/getprogname.c grub-2.04.aros/grub-core/lib/gnulib/getprogname.c
+--- grub-2.04/grub-core/lib/gnulib/getprogname.c	2019-07-04 15:06:07.000000000 +0100
++++ grub-2.04.aros/grub-core/lib/gnulib/getprogname.c	2020-01-16 19:13:41.085635000 +0000
+@@ -28,6 +28,10 @@
+ # include <string.h>
+ #endif
+ 
++#ifdef _AMIGA
++# include <proto/exec.h>
++#endif
++
+ #ifdef __MVS__
+ # ifndef _OPEN_SYS
+ #  define _OPEN_SYS
+@@ -240,6 +244,10 @@
+         }
+     }
+   return NULL;
++
++# elif defined _AMIGA                                        /* AmigaOS-like */
++  struct Task *thisTask = FindTask(NULL);
++  return (thisTask->tc_Node.ln_Name);  
+ # else
+ #  error "getprogname module not ported to this OS"
+ # endif
+diff -ruN grub-2.04/grub-core/osdep/aros/getroot.c grub-2.04.aros/grub-core/osdep/aros/getroot.c
+--- grub-2.04/grub-core/osdep/aros/getroot.c	2018-11-24 17:13:02.000000000 +0000
++++ grub-2.04.aros/grub-core/osdep/aros/getroot.c	2020-01-16 19:13:41.085635000 +0000
+@@ -29,7 +29,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <proto/exec.h>
+diff -ruN grub-2.04/grub-core/osdep/aros/hostdisk.c grub-2.04.aros/grub-core/osdep/aros/hostdisk.c
+--- grub-2.04/grub-core/osdep/aros/hostdisk.c	2019-04-23 09:54:47.000000000 +0100
++++ grub-2.04.aros/grub-core/osdep/aros/hostdisk.c	2020-01-16 19:13:41.085635000 +0000
+@@ -45,7 +45,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <devices/hardblocks.h>
+diff -ruN grub-2.04/grub-core/osdep/aros/relpath.c grub-2.04.aros/grub-core/osdep/aros/relpath.c
+--- grub-2.04/grub-core/osdep/aros/relpath.c	2018-11-24 17:13:02.000000000 +0000
++++ grub-2.04.aros/grub-core/osdep/aros/relpath.c	2020-01-16 19:13:41.085635000 +0000
+@@ -29,7 +29,6 @@
+ 
+ #include <string.h>
+ #include <dos/dos.h>
+-#include <dos/filesystem.h>
+ #include <dos/exall.h>
+ #include <proto/dos.h>
+ #include <proto/exec.h>
+diff -ruN grub-2.04/grub-core/osdep/basic/no_platform.c grub-2.04.aros/grub-core/osdep/basic/no_platform.c
+--- grub-2.04/grub-core/osdep/basic/no_platform.c	2018-11-24 17:13:02.000000000 +0000
++++ grub-2.04.aros/grub-core/osdep/basic/no_platform.c	2020-01-16 19:13:41.085635000 +0000
+@@ -30,12 +30,13 @@
+   grub_util_error ("%s", _("no IEEE1275 routines are available for your platform"));
+ }
+ 
+-void
++int
+ grub_install_register_efi (grub_device_t efidir_grub_dev,
+ 			   const char *efifile_path,
+ 			   const char *efi_distributor)
+ {
+   grub_util_error ("%s", _("no EFI routines are available for your platform"));
++  return 0;
+ }
+ 
+ void
+diff -ruN grub-2.04/grub-core/osdep/generic/blocklist.c grub-2.04.aros/grub-core/osdep/generic/blocklist.c
+--- grub-2.04/grub-core/osdep/generic/blocklist.c	2018-11-24 17:13:02.000000000 +0000
++++ grub-2.04.aros/grub-core/osdep/generic/blocklist.c	2020-01-16 19:22:42.985635000 +0000
+@@ -59,7 +59,7 @@
+ 
+       grub_disk_cache_invalidate_all ();
+ 
+-      file = grub_file_open (core_path_dev, GRUB_FILE_TYPE_NONE | FILE_TYPE_NO_DECOMPRESS);
++      file = grub_file_open (core_path_dev, GRUB_FILE_TYPE_NONE | GRUB_FILE_TYPE_NO_DECOMPRESS);
+       if (file)
+ 	{
+ 	  if (grub_file_size (file) != core_size)
+@@ -116,7 +116,7 @@
+ 
+   grub_file_t file;
+   /* Now read the core image to determine where the sectors are.  */
+-  file = grub_file_open (core_path_dev, GRUB_FILE_TYPE_NONE | FILE_TYPE_NO_DECOMPRESS);
++  file = grub_file_open (core_path_dev, GRUB_FILE_TYPE_NONE | GRUB_FILE_TYPE_NO_DECOMPRESS);
+   if (! file)
+     grub_util_error ("%s", grub_errmsg);
+ 

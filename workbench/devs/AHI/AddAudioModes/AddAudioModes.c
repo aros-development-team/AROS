@@ -1,6 +1,6 @@
 /*
      AddAudioModes - Manipulates AHI's audio mode database 
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2019 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -18,7 +18,6 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <config.h>

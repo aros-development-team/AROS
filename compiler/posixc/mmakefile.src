@@ -6,6 +6,9 @@ POSIXC := \
     __env \
     __exec \
     __fdesc \
+    __fopen \
+    __fseeko \
+    __ftello \
     __posixc_assert \
     __posixc_environ \
     __posixc_init \
@@ -20,6 +23,7 @@ POSIXC := \
     __vfork \
     access \
     alphasort \
+    alphasort64 \
     basename \
     cfgetispeed \
     cfgetospeed \
@@ -33,6 +37,7 @@ POSIXC := \
     close \
     closedir \
     creat \
+    creat64 \
     dirfd \
     dirname \
     drand48 \
@@ -57,11 +62,13 @@ POSIXC := \
     fflush \
     fgetc \
     fgetpos \
+    fgetpos64 \
     fgets \
     fileno \
     flock \
     flockfile \
     fopen \
+    fopen64 \
     fprintf \
     fputc \
     fputs \
@@ -70,11 +77,15 @@ POSIXC := \
     fscanf \
     fseek \
     fseeko \
+    fseeko64 \
     fsetpos \
+    fsetpos64 \
     fstat \
+    fstat64 \
     fsync \
     ftell \
     ftello \
+    ftello64 \
     ftruncate \
     funlockfile \
     fwrite \
@@ -112,7 +123,9 @@ POSIXC := \
     link \
     lrand48 \
     lseek \
+    lseek64 \
     lstat \
+    lstat64 \
     mkdir \
     mknod \
     mkstemp \
@@ -135,6 +148,7 @@ POSIXC := \
     random \
     read \
     readdir \
+    readdir64 \
     readlink \
     realpath \
     regex/regerror \
@@ -147,6 +161,7 @@ POSIXC := \
     rewinddir \
     rmdir \
     scandir \
+    scandir64 \
     scanf \
     seed48 \
     seekdir \
@@ -175,6 +190,7 @@ POSIXC := \
     sleep \
     srand48 \
     stat \
+    stat64 \
     statfs \
     strerror \
     strptime \
@@ -230,8 +246,14 @@ POSIXC_COMMON := \
 #MM- core-linklibs : linklibs-posixc
 
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
-USER_CFLAGS += $(NOWARN_FLAGS)
-USER_CPPFLAGS := -D__TIMER_NOLIBBASE__
+USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_MERGE_CONSTANTS)
+
+USER_CPPFLAGS := \
+        -D__TIMER_NOLIBBASE__ \
+        -D_BSD_SOURCE \
+        -D_XOPEN_SOURCE=700 \
+        -D_LARGEFILE64_SOURCE
+
 USER_LDFLAGS := -noposixc
 
 POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notdir $(POSIXC_COMMON))))

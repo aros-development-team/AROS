@@ -150,8 +150,7 @@ static BOOL RenameDisk (UBYTE *newname, globaldata *g)  //%4.5
 		*diskname = strlen(newname);
 		CopyMem (newname, diskname+1, strlen(newname));
 		RawWrite ((UBYTE *)volume->rootblk, 1, ROOTBLOCK, g);   /* %7.2 */
-		g->request->iotd_Req.io_Command = CMD_UPDATE;
-		DoIO ((struct IORequest *)g->request);
+		UpdateAndMotorOff(g);
 		volume->rootblockchangeflag = FALSE;
 		return DOSTRUE;
 	}

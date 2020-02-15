@@ -24,13 +24,17 @@
 #include "globals.h"
 #include "locale.h"
 
-#define VERSION "$VER: FTManager 1.5 (23.1.2018) (C) 2011-2018 The AROS Development Team"
+#define VERSION "$VER: FTManager 1.6 (12.1.2020) (C) 2011-2020 The AROS Development Team"
 
 /***********************************************************************/
+/*                      Global variables                               */
+/***********************************************************************/
 
-/* Global variables */
+FT_Library ftlibrary;
+
 BPTR destdir;
 UWORD codepage[256];
+
 struct Library *CodesetsBase;
 
 /***********************************************************************/

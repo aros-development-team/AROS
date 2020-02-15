@@ -12,8 +12,10 @@ endif
 
 # Optional components
 
+AROS_PREFS_SET            := @config_prefs_set@
+
 #Bootloader
-GRUB2_VERSION := @target_grub2_version@
+GRUB2_VERSION             := @target_grub2_version@
 
 # DBUS flags
 DBUS_CFLAGS               := @DBUS_CFLAGS@

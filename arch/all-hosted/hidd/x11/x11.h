@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -13,6 +13,9 @@
 
 #include <oop/oop.h>
 #include <proto/exec.h>
+#include <hidd/keyboard.h>
+
+#include "x11_class.h"
 
 #ifndef X11_TYPES_H
 /* Note: x11_types.h is not included intentionally to resolve compilation
@@ -68,7 +71,7 @@ VOID Hidd_Mouse_X11_HandleEvent(OOP_Object *o, XEvent *event);
 /* Private data */
 struct x11kbd_data
 {
-    VOID  (*kbd_callback)(APTR, UWORD);
+    KbdIrqCallBack_t  kbd_callback;
     APTR    callbackdata;
     UWORD   prev_keycode;
 };
@@ -89,10 +92,8 @@ struct pHidd_Kbd_X11_HandleEvent
 };
 
 VOID Hidd_Kbd_X11_HandleEvent(OOP_Object *o, XEvent *event);
+
 /* misc */
-
-
-
 
 struct x11task_params
 {
@@ -112,16 +113,15 @@ struct xwinnode
     BOOL    	     window_mapped;
 };
 
-
 /* Messages used for sending info to the HIDD's task */
 
 enum
 {
-	NOTY_MAPWINDOW,
-	NOTY_WINCREATE,
-	NOTY_WINDISPOSE,
-	NOTY_RESIZEWINDOW,
-	NOTY_NEWCURSOR
+        NOTY_MAPWINDOW,
+        NOTY_WINCREATE,
+        NOTY_WINDISPOSE,
+        NOTY_RESIZEWINDOW,
+        NOTY_NEWCURSOR
 };
 
 
@@ -138,80 +138,85 @@ struct notify_msg
      ULONG  	     height;
 };
 
+struct XKeyTableData
+{
+    UBYTE	   	        keycode2rawkey[256];
+    BOOL                        havetable;    
+};
+
 struct x11_staticdata
 {
     /*
-     * These three members MUST be in the beginning of this structure
+     * The first two members MUST be in the beginning of this structure
      * because they are exposed to disk-based part (see x11_class.h)
      */
-    UBYTE	   	     keycode2rawkey[256];
-    BOOL	   	     havetable;
-    OOP_Class 	    	    *gfxclass;
+    struct XKeyTableData        *xtd;
+    OOP_Class 	    	        *gfxclass;
 
-    OOP_Class 	    	    *bmclass;
-    OOP_Class 	    	    *mouseclass;
-    OOP_Class 	    	    *kbdclass;
+    OOP_Class 	    	        *bmclass;
+    OOP_Class 	    	        *mouseclass;
+    OOP_Class 	    	        *kbdclass;
 
-    struct SignalSemaphore   sema; /* Protecting this whole struct */
+    struct SignalSemaphore      sema; /* Protecting this whole struct */
     
     /* This port is used for asking the x11 task for notifications
        on when some event occurs, for example MapNotify
     */
-    struct MsgPort  	    *x11task_notify_port;
+    struct MsgPort  	        *x11task_notify_port;
     
-    Display 	    	    *display;
-    BOOL    	    	     local_display;
+    Display 	    	        *display;
+    BOOL    	    	        local_display;
     
-    ULONG   	    	     refcount;
+    ULONG   	    	        refcount;
     
-    OOP_Object      	    *gfxhidd;
-    OOP_Object      	    *mousehidd;
-    OOP_Object      	    *kbdhidd;
+    OOP_Object      	        *gfxhidd;
+    OOP_Object      	        *mousehidd;
+    OOP_Object      	        *kbdhidd;
 
 #if USE_XSHM
-    struct SignalSemaphore   shm_sema;	/* singlethread access to shared mem */
-    BOOL    	    	     use_xshm;	/* May we use Xshm? */
-    void    	    	    *xshm_info;
+    struct SignalSemaphore      shm_sema;	/* singlethread access to shared mem */
+    BOOL    	    	        use_xshm;	/* May we use Xshm? */
+    void    	    	        *xshm_info;
 #endif    
     
     /* This window is used as a friend drawable for pixmaps. The window is
        never mapped, i.e. it is never shown onscreen.
     */
-    Window  	    	     dummy_window_for_creating_pixmaps;
+    Window  	    	        dummy_window_for_creating_pixmaps;
     
-    XVisualInfo     	     *vi;
-    ULONG   	    	     red_shift;
-    ULONG   	    	     green_shift;
-    ULONG   	    	     blue_shift;
+    XVisualInfo     	        *vi;
+    ULONG   	    	        red_shift;
+    ULONG   	    	        green_shift;
+    ULONG   	    	        blue_shift;
 
-    ULONG   	    	     depth; /* Size of pixel in bits */ /* stegerg: was called "size" */
-    ULONG   	    	     bytes_per_pixel;
+    ULONG   	    	        depth; /* Size of pixel in bits */ /* stegerg: was called "size" */
+    ULONG   	    	        bytes_per_pixel;
     
-    ULONG   	    	     clut_shift;
-    ULONG   	    	     clut_mask;
+    ULONG   	    	        clut_shift;
+    ULONG   	    	        clut_mask;
     
-    Atom    	    	     delete_win_atom;
-    Atom    	    	     clipboard_atom;
-    Atom    	    	     clipboard_property_atom;
-    Atom    	    	     clipboard_incr_atom;
-    Atom    	    	     clipboard_targets_atom;
-    Time    	    	     x_time;
+    Atom    	    	        delete_win_atom;
+    Atom    	    	        clipboard_atom;
+    Atom    	    	        clipboard_property_atom;
+    Atom    	    	        clipboard_incr_atom;
+    Atom    	    	        clipboard_targets_atom;
+    Time    	    	        x_time;
 
-    VOID	    	     (*activecallback)(APTR, OOP_Object *);
-    APTR	    	     callbackdata;
+    VOID	    	        (*activecallback)(APTR, OOP_Object *);
+    APTR	    	        callbackdata;
 
-    ULONG                   options;
+    ULONG                       options;
 
-    struct MsgPort  	    *hostclipboardmp;
-    struct Message  	    *hostclipboardmsg;
-    ULONG   	    	     hostclipboard_readstate;
-    unsigned char   	    *hostclipboard_incrbuffer;
-    ULONG   	    	     hostclipboard_incrbuffer_size;
-    unsigned char   	    *hostclipboard_writebuffer;
-    ULONG   	    	     hostclipboard_writebuffer_size;
-    Window    	    	     hostclipboard_writerequest_window;
-    Atom    	    	     hostclipboard_writerequest_property;
-    ULONG   	    	     hostclipboard_write_chunks;
+    struct MsgPort  	        *hostclipboardmp;
+    struct Message  	        *hostclipboardmsg;
+    ULONG   	    	        hostclipboard_readstate;
+    unsigned char   	        *hostclipboard_incrbuffer;
+    ULONG   	    	        hostclipboard_incrbuffer_size;
+    unsigned char   	        *hostclipboard_writebuffer;
+    ULONG   	    	        hostclipboard_writebuffer_size;
+    Window    	    	        hostclipboard_writerequest_window;
+    Atom    	    	        hostclipboard_writerequest_property;
+    ULONG   	    	        hostclipboard_write_chunks;
 };
 
 #define OPTION_FULLSCREEN       (1 << 0)

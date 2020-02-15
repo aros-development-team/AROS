@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -24,23 +24,26 @@
       struct LowLevelBase *, LowLevelBase, 11, LowLevel)
 
 /*  FUNCTION
- 
+           remove a keyboard interrupt previously registerd
+           with addkbint.
+
     INPUTS
  
     RESULT
  
     BUGS
-        This function is unimplemented.
 
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
 
-    /* TODO: Write lowlevel/RemKBInt() */
-    aros_print_not_implemented ("lowlevel/RemKBInt");
-
     if (intHandle)
     {
+        struct Interrupt *kbInt = (struct Interrupt *)intHandle;
+        ObtainSemaphore(&LowLevelBase->ll_Lock);
+        Remove(&kbInt->is_Node);
+        ReleaseSemaphore(&LowLevelBase->ll_Lock);
+        FreeVec(kbInt);
     }
 
     return;

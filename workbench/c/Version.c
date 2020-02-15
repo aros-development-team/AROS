@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Version CLI command
@@ -69,10 +69,12 @@
 #include <ctype.h>
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
+#include <exec/rawfmt.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
@@ -662,7 +664,7 @@ int findinfile(BPTR file, CONST_STRPTR string, STRPTR buffer, int *lenptr, unsig
 
     if (args.arg_md5sum)
     {
-        memset(digest, 0, 16);
+        SetMem(digest, 0, 16);
         MD5Final(digest, &md5ctx);
     }
 
@@ -1293,9 +1295,11 @@ int createlibraryver(struct Library *MyLibrary)
         return RETURN_FAIL;
     }
 
-    strcpy(tmpbuffer, MyLibrary->lib_Node.ln_Name);
-    strcat(tmpbuffer, buffer);
-    //Printf("createlibraryver: tmpbuffer: \"%s\"\n", (LONG) tmpbuffer);
+    IPTR lvparams[2];
+    lvparams[0] = (IPTR)MyLibrary->lib_Node.ln_Name;
+    lvparams[1] = (IPTR)buffer;
+    RawDoFmt("%s%s", (RAWARG)&lvparams, RAWFMTFUNC_STRING, tmpbuffer);
+
     pos = makedatafromstring(tmpbuffer);
     if (pos > error)
     {
@@ -1325,8 +1329,11 @@ int createdefvers(CONST_STRPTR name)
         parsedver.pv_vername &&
         parsedver.pv_revname)
     {
-        __sprintf(parsedver.pv_vername, "%ld", (long)parsedver.pv_version);
-        __sprintf(parsedver.pv_revname, ".%ld", (long)parsedver.pv_revision);
+        IPTR versparam;
+        versparam = (IPTR)parsedver.pv_version;
+        RawDoFmt("%ld", (RAWARG)&versparam, RAWFMTFUNC_STRING, parsedver.pv_vername);
+        versparam = (IPTR)parsedver.pv_revision;
+        RawDoFmt(".%ld", (RAWARG)&versparam, RAWFMTFUNC_STRING, parsedver.pv_revname);
 
         return RETURN_OK;
     }
@@ -1972,9 +1979,12 @@ int makerescmdver(CONST_STRPTR name)
 static
 int setvervar(CONST_STRPTR name, LONG ver, LONG rev)
 {
+    IPTR versparams[2];
     UBYTE buf[32];
 
-    __sprintf(buf, "%ld.%ld", (long) ver, (long) rev);
+    versparams[0] = (IPTR)ver;
+    versparams[1] = (IPTR)rev;
+    RawDoFmt("%ld.%ld", (RAWARG)&versparams, RAWFMTFUNC_STRING, buf);
 
     return SetVar((STRPTR) name, buf, -1, GVF_LOCAL_ONLY | LV_VAR) ? RETURN_OK : -1;
 }
@@ -2076,14 +2086,17 @@ int makeverstring(CONST_STRPTR name)
                 error = makeexeclistver(&SysBase->LibList, filepart);
                 if (error != RETURN_OK)
                 {
+                    IPTR fnameparams[2];
                     STRPTR namebuf;
                     ULONG namelen = strlen(filepart);
 
                     /* 12 is "MOSSYS:LIBS/" */
                     if ((namebuf = AllocVec(12 + namelen + 4 + 1, MEMF_PUBLIC)))
                     {
-                        strcpy(namebuf, "LIBS:");
-                        strcat(namebuf, filepart);
+                        fnameparams[0] = (IPTR)"LIBS:";
+                        fnameparams[1] = (IPTR)filepart;
+                        RawDoFmt("%s%s", (RAWARG)&fnameparams, RAWFMTFUNC_STRING, namebuf);
+
                         error = makefilever(namebuf);
 
                         /* Try devices
@@ -2093,8 +2106,9 @@ int makeverstring(CONST_STRPTR name)
                             error = makeexeclistver(&SysBase->DeviceList, filepart);
                             if (error != RETURN_OK)
                             {
-                                strcpy(namebuf, "DEVS:");
-                                strcat(namebuf, filepart);
+                                fnameparams[0] = (IPTR)"DEVS:";
+                                RawDoFmt("%s%s", (RAWARG)&fnameparams, RAWFMTFUNC_STRING, namebuf);
+
                                 error = makefilever(namebuf);
                             }
                         }

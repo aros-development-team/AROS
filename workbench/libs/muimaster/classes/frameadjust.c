@@ -29,6 +29,7 @@
 #include "support_classes.h"
 #include "frame.h"
 #include "frameadjust_private.h"
+#include "locale.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -161,17 +162,17 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj,
             Child, (IPTR) (GR_fd1 = (Object *)RowGroup(2), End), /* RowGroup */
             Child, (IPTR) (GR_fd2 = (Object *)RowGroup(2), End), /* RowGroup */
             Child, (IPTR) HGroup,
-                Child, (IPTR) Label("Inner Spacing:"),
+                Child, (IPTR) Label(_(MSG_FRAMEADJUST_INNER_SPACING)),
                 Child, (IPTR) RowGroup(2),
-                    Child, (IPTR) Label2("Left"),
+                    Child, (IPTR) Label2(_(MSG_FRAMEADJUST_LEFT)),
                     Child, (IPTR) (SL_left = MakeSpacingSlider()),
                     Child, (IPTR) HSpace(8),
-                    Child, (IPTR) Label2("Top"),
+                    Child, (IPTR) Label2(_(MSG_FRAMEADJUST_TOP)),
                     Child, (IPTR) (SL_top = MakeSpacingSlider()),
-                    Child, (IPTR) Label2("Right"),
+                    Child, (IPTR) Label2(_(MSG_FRAMEADJUST_RIGHT)),
                     Child, (IPTR) (SL_right = MakeSpacingSlider()),
                     Child, (IPTR) HSpace(8),
-                    Child, (IPTR) Label2("Bottom"),
+                    Child, (IPTR) Label2(_(MSG_FRAMEADJUST_BOTTOM)),
                     Child, (IPTR) (SL_bottom = MakeSpacingSlider()),
                 End, /* RowGroup */
             End, /* HGroup */

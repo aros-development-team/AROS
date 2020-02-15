@@ -95,7 +95,8 @@ static IPTR coolbutton_new(Class * cl, Object * o, struct opSet * msg)
 
 	if (!data->frame)
 	{
-	    CoerceMethod(cl, o, OM_DISPOSE);
+	    STACKULONG dispose_msg = OM_DISPOSE;
+	    CoerceMethodA(cl, o, &dispose_msg);
 	    o = NULL;
 	} else {
 	    if (CyberGfxBase && data->image)

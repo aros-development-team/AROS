@@ -109,7 +109,7 @@ cpu_detect_asm:
 2:	/* Apollo 68080 */
 	movec	%pcr,%d0
 	move.l	%d0,%a2@(4) // save PCR
-	move.w	#0x048f,%d0
+	move.w	#0x040f,%d0
 	bra.s	cpu_detect_trap_illg
 3:	/* Also enables FPU */
 	movec	%d0,%pcr

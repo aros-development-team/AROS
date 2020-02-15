@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -34,23 +34,22 @@
 
 /*********************************************************************************************/
 
-#define MAXPENS       8
-
-STATIC UWORD defaultpen[MAXPENS * 4] =
-{
-    0, 1, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1, 65535
-};
+#if (NUMDRIPENS > 12)
+STATIC CONST UWORD defaultpen8[NUMDRIPENS + 1] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1 , 2 , 1, -1};
+#else
+STATIC CONST UWORD defaultpen8[NUMDRIPENS + 1] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1, -1};
+#endif
 
 STATIC struct ColorSpec defaultcolor[MAXPENS * 4] =
 {
-    {0, 43690,  43690,  43690   },
-    {1, 0,      0,      0       },
-    {2, 65535,  65535,  65535   },
-    {3, 21845,  30583,  43690   },
-    {4, 26214,  26214,  26214   },
-    {5, 61166,  61166,  61166   },
-    {6, 56797,  30583,  17476   },
-    {7, 65535,  61166,  4369    },
+    {0, 0xAAAA, 0xAAAA, 0xAAAA  },
+    {1, 0x0000, 0x0000, 0x0000  },
+    {2, 0xFFFF, 0xFFFF, 0xFFFF  },
+    {3, 0x6666, 0x8888, 0xBBBB  },
+    {4, 0xEEEE, 0x4444, 0x4444  },
+    {5, 0x5555, 0xDDDD, 0x5555  },
+    {6, 0x0000, 0x4444, 0xDDDD  },
+    {7, 0xEEEE, 0x9999, 0x0000  },
     {65535                      }
 };
 
@@ -60,7 +59,7 @@ struct FilePrefHeader
     UBYTE ph_Version;
     UBYTE ph_Type;
     UBYTE ph_Flags[4];
-};
+} __packed;
 
 /*********************************************************************************************/
 
@@ -71,6 +70,8 @@ struct PalettePrefs paletteprefs;
 static BOOL Prefs_Load(STRPTR from)
 {
     BOOL retval = FALSE;
+
+    D(bug("[Palette] %s('%s')\n", __func__, from));
 
     BPTR fh = Open(from, MODE_OLDFILE);
     if (fh)
@@ -90,36 +91,40 @@ BOOL Prefs_ImportFH(BPTR fh)
     BOOL                retval = FALSE;
     LONG                i;
 
+    D(bug("[Palette] %s(0x%p)\n", __func__, fh));
+
     if ((iff = AllocIFF()))
     {
+        D(bug("[Palette] %s:  iff allocated @ 0x%p\n", __func__, iff));
+
         iff->iff_Stream = (IPTR)fh;
 
         InitIFFasDOS(iff);
 
         if (!OpenIFF(iff, IFFF_READ))
         {
-            D(bug("Prefs_ImportFH: OpenIFF okay.\n"));
+            D(bug("[Palette] %s:  iff opened for READ\n", __func__));
 
             if (!StopChunk(iff, ID_PREF, ID_PALT))
             {
                 struct PalettePrefs loadprefs;
-                D(bug("Prefs_ImportFH: ID_PREF->ID_PALT\n"));
+                D(bug("[Palette] %s:  ID_PREF:ID_PALT\n", __func__));
 
                 if (!ParseIFF(iff, IFFPARSE_SCAN))
                 {
                     struct ContextNode *cn;
 
-                    D(bug("Prefs_ImportFH: ParseIFF okay.\n"));
+                    D(bug("[Palette] %s:  ParseIFF okay.\n", __func__));
 
                     cn = CurrentChunk(iff);
 
                     if (cn->cn_Size == sizeof(struct PalettePrefs))
                     {
-                        D(bug("Prefs_ImportFH: ID_PALT chunk size okay.\n"));
+                        D(bug("[Palette] %s:  ID_PALT chunk size okay.\n", __func__));
 
                         if (ReadChunkBytes(iff, &loadprefs, sizeof(struct PalettePrefs)) == sizeof(struct PalettePrefs))
                         {
-                            D(bug("Prefs_ImportFH: Reading chunk successful.\n"));
+                            D(bug("[Palette] %s:  Reading chunk successful.\n", __func__));
 
 #if (AROS_BIG_ENDIAN == 0)
                             CopyMem(loadprefs.pap_Reserved, paletteprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
@@ -139,10 +144,16 @@ BOOL Prefs_ImportFH(BPTR fh)
 #endif
                             for (i = 0; i < MAXPENS; i++)
                             {
+                                paletteprefs.pap_4ColorPens[i] = AROS_BE2WORD(loadprefs.pap_4ColorPens[i]);
+                                paletteprefs.pap_8ColorPens[i] = AROS_BE2WORD(loadprefs.pap_8ColorPens[i]);
+                                D(
+                                    bug("[Palette] %s: #%02d    4c = %04x, 8c = %04x\n", __func__, i, paletteprefs.pap_4ColorPens[i], paletteprefs.pap_8ColorPens[i]);
+                                    bug("[Palette] %s:    :%02d r:%04x g:%04x b:%04x\n", __func__, paletteprefs.pap_Colors[i].ColorIndex, paletteprefs.pap_Colors[i].Red, paletteprefs.pap_Colors[i].Green, paletteprefs.pap_Colors[i].Blue);
+                                )
                                 if (paletteprefs.pap_8ColorPens[i] >= PEN_C3)
                                     paletteprefs.pap_8ColorPens[i] -= (PEN_C3 - 4);
                             }
-                            D(bug("Prefs_ImportFH: Everything okay :-)\n"));
+                            D(bug("[Palette] %s:  ID_PALT chunk parsed.\n", __func__));
 
                             retval = TRUE;
                         }
@@ -152,12 +163,15 @@ BOOL Prefs_ImportFH(BPTR fh)
             else if (!StopChunk(iff, ID_ILBM, ID_CMAP))
             {
                 struct ColorRegister colreg;
-                D(bug("Prefs_ImportFH: ID_ILBM->ID_CMAP\n"));
+                D(bug("[Palette] %s:  ID_ILBM:ID_CMAP\n", __func__));
 
                 for (i = 0; i < MAXPENS; i++)
                 {
                     if (ReadChunkBytes(iff, &colreg, sizeof(struct ColorRegister)) != sizeof(struct ColorRegister))
                         break;
+#if (0)
+                    paletteprefs.pap_Colors[i].ColorIndex   = i;
+#endif
 #if (AROS_BIG_ENDIAN == 0)
                     paletteprefs.pap_Colors[i].Red   = AROS_BE2WORD(colreg.red);
                     paletteprefs.pap_Colors[i].Green = AROS_BE2WORD(colreg.green);
@@ -167,7 +181,9 @@ BOOL Prefs_ImportFH(BPTR fh)
                     paletteprefs.pap_Colors[i].Green = (colreg.green << 24) | (colreg.green << 16) | (colreg.green << 8) | colreg.green;
                     paletteprefs.pap_Colors[i].Blue  = (colreg.blue << 24) | (colreg.blue << 16) | (colreg.blue << 8) | colreg.blue;
 #endif
+                    D(bug("[Palette] %s: #%02d r:%04x g:%04x b:%04x\n", __func__, i, paletteprefs.pap_Colors[i].Red, paletteprefs.pap_Colors[i].Green, paletteprefs.pap_Colors[i].Blue);)
                 }
+                D(bug("[Palette] %s:  ID_CMAP chunk parsed.\n", __func__));
             }
 
             CloseIFF(iff);
@@ -189,6 +205,8 @@ BOOL Prefs_ExportFH(BPTR fh)
     BOOL                delete_if_error = FALSE;
 #endif
     LONG                i;
+
+    D(bug("[Palette] %s(0x%p)\n", __func__, fh));
 
 #if (AROS_BIG_ENDIAN == 0)
     CopyMem(paletteprefs.pap_Reserved, saveprefs.pap_Reserved, sizeof(paletteprefs.pap_Reserved));
@@ -213,12 +231,12 @@ BOOL Prefs_ExportFH(BPTR fh)
     }
 #endif
 
-    D(bug("Prefs_ExportFH: fh: %lx\n", fh));
 
     if ((iff = AllocIFF()))
     {
+        D(bug("[Palette] %s:  iff allocated @ 0x%p\n", __func__, iff));
+
         iff->iff_Stream = (IPTR) fh;
-        D(bug("Prefs_ExportFH: stream opened.\n"));
 
 #if defined(DELETEONERROR)
         delete_if_error = TRUE;
@@ -228,17 +246,17 @@ BOOL Prefs_ExportFH(BPTR fh)
 
         if (!OpenIFF(iff, IFFF_WRITE))
         {
-            D(bug("Prefs_ExportFH: OpenIFF okay.\n"));
+            D(bug("[Palette] %s:  iff opened for WRITE\n", __func__));
 
             if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
             {
-                D(bug("Prefs_ExportFH: PushChunk(FORM) okay.\n"));
+                D(bug("[Palette] %s: pushed chunk ID_PREF:ID_FORM\n", __func__));
 
                 if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
                 {
                     struct FilePrefHeader head;
 
-                    D(bug("Prefs_ExportFH: PushChunk(PRHD) okay.\n"));
+                    D(bug("[Palette] %s: pushed chunk ID_PREF:ID_PRHD\n", __func__));
 
                     head.ph_Version  = PHV_CURRENT;
                     head.ph_Type     = 0;
@@ -249,18 +267,17 @@ BOOL Prefs_ExportFH(BPTR fh)
 
                     if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
                     {
-                        D(bug("Prefs_ExportFH: WriteChunkBytes(PRHD) okay.\n"));
+                        D(bug("[Palette] %s: wrote chunk bytes for ID_PREF:ID_PRHD\n", __func__));
 
                         PopChunk(iff);
 
                         if (!PushChunk(iff, ID_PREF, ID_PALT, sizeof(struct PalettePrefs)))
                         {
-                            D(bug("Prefs_ExportFH: PushChunk(LCLE) okay.\n"));
+                            D(bug("[Palette] %s: pushed chunk ID_PREF:ID_PALT\n", __func__));
 
                             if (WriteChunkBytes(iff, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
                             {
-                                D(bug("Prefs_ExportFH: WriteChunkBytes(PALT) okay.\n"));
-                                D(bug("Prefs_ExportFH: Everything okay :-)\n"));
+                                D(bug("[Palette] %s: wrote chunk bytes for ID_PREF:ID_PALT\n", __func__));
 
                                 retval = TRUE;
                             }
@@ -353,13 +370,23 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
 BOOL Prefs_Default(VOID)
 {
+    UWORD pen = 0;
+    int i;
+
     paletteprefs.pap_Reserved[0] = 0;
     paletteprefs.pap_Reserved[1] = 0;
     paletteprefs.pap_Reserved[2] = 0;
     paletteprefs.pap_Reserved[3] = 0;
 
-    CopyMem(defaultpen, paletteprefs.pap_4ColorPens, sizeof paletteprefs.pap_4ColorPens);
-    CopyMem(defaultpen, paletteprefs.pap_8ColorPens, sizeof paletteprefs.pap_8ColorPens);
+    for (i = 0; i < (sizeof(paletteprefs.pap_4ColorPens) >> 1); i++)
+    {
+        if (i >= NUMDRIPENS)
+            pen = (UWORD)-1;
+        if (pen != (UWORD)-1)
+            pen = defaultpen8[i];
+        paletteprefs.pap_4ColorPens[i] = pen;
+        paletteprefs.pap_8ColorPens[i] = pen;
+    }
     CopyMem(defaultcolor, paletteprefs.pap_Colors, sizeof paletteprefs.pap_Colors);
 
     return TRUE;

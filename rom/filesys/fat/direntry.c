@@ -1,20 +1,22 @@
 /*
  * fat-handler - FAT12/16/32 filesystem handler
  *
+ * Copyright © 2007-2020 The AROS Development Team
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2019 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  *
  * $Id$
  */
+ 
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/dos.h>
 
 #include <aros/macros.h>
 #include <exec/types.h>
 #include <dos/dos.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
 
 #include <string.h>
 
@@ -497,7 +499,7 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
             if (clusteradded)
                 while (GetDirEntry(dh, de->index + 1, de, glob) == 0)
                 {
-                    memset(&de->e.entry, 0, sizeof(struct FATDirEntry));
+                    SetMem(&de->e.entry, 0, sizeof(struct FATDirEntry));
                     UpdateDirEntry(de, glob);
                 }
 

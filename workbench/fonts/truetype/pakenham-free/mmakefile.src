@@ -1,0 +1,20 @@
+# Copyright © 2020, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- fonts-truetype : fonts-truetype-pakenham-free
+#MM- fonts-truetype-quick : fonts-truetype-pakenham-free
+#MM- fonts-truetype-pakenham-free : fonts-truetype-pakenham-free-ttf fonts-truetype-pakenham-free-amifonts
+
+%copy_files_q mmake=fonts-truetype-pakenham-free-ttf files="$(call WILDCARD, *.ttf)" \
+    dst=$(AROSDIR)/Fonts/TrueType
+
+#MM
+fonts-truetype-pakenham-free-amifonts :
+	@cd $(SRCDIR)/$(CURDIR); for file in *.font *.otag; do \
+            if [ ! -e "$(AROSDIR)/Fonts/$$file" ]; then \
+                $(ECHO) Copying "$$file"...; \
+                $(CP) "$$file" $(AROSDIR)/Fonts; \
+            fi; \
+        done

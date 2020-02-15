@@ -28,9 +28,13 @@
 
 static BOOL AMiGAROM_MatchWords(APTR roma, APTR romb)
 {
-    ULONG *roma_ptr = (ULONG *)roma;
-    ULONG *romb_ptr = (ULONG *)romb;
+    ULONG *roma_ptr;
+    ULONG *romb_ptr;
 
+    /* skip the first 2 ULONG (header) which should match */
+    roma_ptr = (ULONG *)((IPTR)roma + (sizeof(IPTR) << 1));
+    romb_ptr = (ULONG *)((IPTR)romb + (sizeof(IPTR) << 1));
+    
     if ((roma_ptr[0] == romb_ptr[0]) &&
         (roma_ptr[1] == romb_ptr[1]) &&
         (roma_ptr[2] == romb_ptr[2]) &&
@@ -41,8 +45,15 @@ static BOOL AMiGAROM_MatchWords(APTR roma, APTR romb)
 
 static BOOL AMiGAROM_IsValid(APTR romimg)
 {
-    /* TODO: Check for a valid ROM header */
-    return TRUE;
+    BOOL valid = FALSE;
+    ULONG *rom_ptr = (ULONG *)romimg;
+
+    /* check we have a valid rom signature. .. */
+    if ((rom_ptr[0] & 0xFFF00000) == 0x11100000)
+    {
+        valid = TRUE;
+    }
+    return valid;
 }
 
 static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)

@@ -2139,13 +2139,11 @@ diff -ruN gcc-6.5.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-6.5.0.aros
 diff -ruN gcc-6.5.0/libstdc++-v3/config/os/aros/os_defines.h gcc-6.5.0.aros/libstdc++-v3/config/os/aros/os_defines.h
 --- gcc-6.5.0/libstdc++-v3/config/os/aros/os_defines.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-6.5.0.aros/libstdc++-v3/config/os/aros/os_defines.h	2019-03-01 02:31:13.371291400 +0000
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,9 @@
 +// Specific definitions for AROS  -*- C++ -*-
 +
 +#ifndef _GLIBCXX_OS_DEFINES
 +#define _GLIBCXX_OS_DEFINES
-+
-+#define __off64_t   off_t
 +
 +// No support for referencing weak symbols without a definition.
 +#define _GLIBCXX_USE_WEAK_REF 0

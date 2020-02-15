@@ -1,7 +1,10 @@
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS :=	-I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes \
-        -D__BSD_VISIBLE
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/.. \
+     -I$(SRCDIR)/$(CURDIR)/../includes
+USER_CPPFLAGS := \
+        -D_XOPEN_SOURCE=600 \
+        -D__BSD_VISIBLE=1
 
 FILES :=	alloc array auth buffer connection convert dispatch	\
 		errwarn generic handle hash inet_addr iscprint listener	\

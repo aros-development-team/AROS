@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 	
     Desc: Iprefs
@@ -51,7 +51,6 @@
 
 #include <dos/dostags.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/detach.h>
@@ -98,7 +97,7 @@ preftable[] =
     {"input"	    , inputprefsname     , InputPrefs_Handler      },
     {"locale"	    , localeprefsname	 , LocalePrefs_Handler     }, /* Keep before font */
     {"font" 	    , fontprefsname      , FontPrefs_Handler       },
-    {"palette"	    , paletteprefsname   , NULL                    },
+    {"palette"	    , paletteprefsname   , PalettePrefs_Handler    },
     {"wbpattern"    , patternprefsname   , WBPatternPrefs_Handler  },
     {"icontrol"     , icontrolprefsname  , IControlPrefs_Handler   },
     {"screenmode"   , screenmodeprefsname, ScreenModePrefs_Handler },

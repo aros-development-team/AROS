@@ -170,6 +170,7 @@ INFOINFO                      := $(TOOLDIR)/infoinfo$(HOST_EXE_SUFFIX)
 GENSETS                       := $(TOOLDIR)/gensets$(HOST_EXE_SUFFIX)
 COLLECT-AROS                  := $(TOOLDIR)/collect-aros$(HOST_EXE_SUFFIX)
 GENMODULE                     := $(TOOLDIR)/genmodule$(HOST_EXE_SUFFIX)
+MKKEYMAP                     := $(TOOLDIR)/mkkeymap$(HOST_EXE_SUFFIX)
 SETREV                        := $(TOOLDIR)/setrev$(HOST_EXE_SUFFIX)
 @make_extra_commands@
 RESIDENT_BEGIN                := compiler/libinit/libentry
@@ -187,9 +188,14 @@ AROS_LD                       := $(TARGET_LD)
 
 STRIP                         := $(TARGET_STRIP)
 
-CALL                          := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) AROS_HOST_CPU=$(AROS_HOST_CPU) \
-                                     AROS_TARGET_ARCH=$(AROS_TARGET_ARCH) AROS_TARGET_CPU=$(AROS_TARGET_CPU) AROS_TARGET_CPU_MODE=$(AROS_TARGET_CPU_MODE) \
-                                     AROS_TARGET_VARIANT=$(AROS_TARGET_VARIANT) AROS_TARGET_SUFFIX=$(AROS_TARGET_SUFFIX)
+CALL                          := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) \
+                                     AROS_HOST_CPU=$(AROS_HOST_CPU) \
+                                     AROS_TARGET_ARCH=$(AROS_TARGET_ARCH) \
+                                     AROS_TARGET_CPU=$(AROS_TARGET_CPU) \
+                                     AROS_TARGET_CPU_TYPE=$(AROS_TARGET_CPU_TYPE) \
+                                     AROS_TARGET_CPU_MODE=$(AROS_TARGET_CPU_MODE) \
+                                     AROS_TARGET_VARIANT=$(AROS_TARGET_VARIANT) \
+                                     AROS_TARGET_SUFFIX=$(AROS_TARGET_SUFFIX)
 
 # At the moment we have two copies of the includes...
 # This is the AROS includes, minus clib/mlib.
@@ -219,6 +225,10 @@ ifeq ($(DEBUG),yes)
     CONFIG_CPPFLAGS           += $(DEBUG_CPPFLAGS)
     CONFIG_AFLAGS             += $(DEBUG_AFLAGS)
     CONFIG_LDFLAGS            += $(DEBUG_LDFLAGS)
+    KERNEL_CFLAGS             += $(DEBUG_CFLAGS)
+    KERNEL_CXXFLAGS           += $(DEBUG_CXXFLAGS)
+    KERNEL_CPPFLAGS           += $(DEBUG_CPPFLAGS)
+    KERNEL_LDFLAGS            += $(DEBUG_LDFLAGS)
     HOST_CFLAGS               += $(DEBUG_CFLAGS)
     HOST_CXXFLAGS             += $(DEBUG_CXXFLAGS)
     HOST_CPPFLAGS             += $(DEBUG_CPPFLAGS)

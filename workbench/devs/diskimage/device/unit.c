@@ -637,7 +637,7 @@ void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error,
 	if (unit->ErrorString && unit->ErrorStringLength) {
 		if (error_string != NO_ERROR_STRING) {
 			VSNPrintf(unit->ErrorString, unit->ErrorStringLength,
-				GetString(&libBase->LocaleInfo, error_string), error_args);
+				GetString(&libBase->LocaleInfo, error_string), (RAWARG)error_args);
 		} else if (error != NO_ERROR) {
 			struct Library *DOSBase = libBase->DOSBase;
 			Fault(error, NULL, unit->ErrorString, unit->ErrorStringLength);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, The AROS Development Team
+ * Copyright (C) 2013-2020, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -146,7 +146,7 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
         cp = &dir->FileIdentifier[0];
     } else {
         fib->fib_Size = 0;
-        memset(&fib->fib_Date, 0, sizeof(fib->fib_Date));
+        SetMem(&fib->fib_Date, 0, sizeof(fib->fib_Date));
         fib->fib_DirEntryType = ST_USERDIR;
         len = il->il_PathTable->DirectoryIdentifierLength;
         cp = &il->il_PathTable->DirectoryIdentifier[0];

@@ -1,16 +1,33 @@
-# Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+# Copyright © 2010-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
 STORAGEICONS := Wrapper
-DEVSICONS    := ATI IntelGMA NVidia VMWare
+PCDEVSICONS    := ATI IntelGMA NVidia VMWare
+ifneq ($(AROS_TARGET_ARCH),pc)
+PCDEVSDIR := $(AROSDIR)/Storage/Monitors
+else
+PCDEVSDIR := $(AROS_DEVS)/Monitors
+endif
+AMIGADEVSICONS    := SAGA
+ifneq ($(AROS_TARGET_ARCH),amiga)
+AMIGADEVSDIR := $(AROSDIR)/Storage/Monitors
+else
+AMIGADEVSDIR := $(AROS_DEVS)/Monitors
+endif
 
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-devs-monitors-clean iconset-Gorilla-wbench-icons-storage-monitors-clean
 #MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-devs-monitors iconset-Gorilla-wbench-icons-storage-monitors
 
-%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors icons=$(DEVSICONS) image=Wrapper.png \
-             dir=$(AROS_DEVS)/Monitors
+#MM- iconset-Gorilla-wbench-icons-devs-monitors : iconset-Gorilla-wbench-icons-devs-monitors-pc iconset-Gorilla-wbench-icons-devs-monitors-amiga
+#MM- iconset-Gorilla-wbench-icons-devs-monitors-clean : iconset-Gorilla-wbench-icons-devs-monitors-pc-clean iconset-Gorilla-wbench-icons-devs-monitors-amiga-clean
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-pc icons=$(PCDEVSICONS) image=Wrapper.png \
+             dir=$(PCDEVSDIR)
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-devs-monitors-amiga icons=$(AMIGADEVSICONS) image=Wrapper.png \
+             dir=$(AMIGADEVSDIR)
 
 %build_icons mmake=iconset-Gorilla-wbench-icons-storage-monitors icons=$(STORAGEICONS) image=Wrapper.png \
              dir=$(AROSDIR)/Storage/Monitors

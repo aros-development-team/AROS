@@ -29,6 +29,7 @@
 #include "support_classes.h"
 #include "penspec.h"
 #include "penadjust_private.h"
+#include "locale.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -122,11 +123,23 @@ static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
 
 IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    static const char *const register_labels[] =
-        { "MUI", "Colormap", "RGB", NULL };
-    static const char *const lv_labels[] =
-        { "Shine", "Halfshine", "Background", "Halfshadow", "Shadow",
-            "Text", "Fill", "Mark", NULL };
+    static const char *register_labels[4];
+    register_labels[0] = _(MSG_PENADJUST_MUI);
+    register_labels[1] = _(MSG_PENADJUST_COLORMAP);
+    register_labels[2] = _(MSG_PENADJUST_RGB);
+    register_labels[3] = NULL;
+    
+    static const char *lv_labels[9];
+    lv_labels[0] = _(MSG_PENADJUST_SHINE);
+    lv_labels[1] = _(MSG_PENADJUST_HALFSHINE);
+    lv_labels[2] = _(MSG_PENADJUST_BACKGROUND);
+    lv_labels[3] = _(MSG_PENADJUST_HALFSHADOW);
+    lv_labels[4] = _(MSG_PENADJUST_SHADOW);
+    lv_labels[5] = _(MSG_PENADJUST_TEXT);
+    lv_labels[6] = _(MSG_PENADJUST_FILL);
+    lv_labels[7] = _(MSG_PENADJUST_MARK);
+    lv_labels[8] = NULL;
+
     static const struct Hook muipen_display_hook =
         { {NULL, NULL}, HookEntry, MuipenDisplayFunc, NULL };
 

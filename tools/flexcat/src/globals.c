@@ -37,6 +37,8 @@ int             NumberOfWarnings = 0;   /* We count warnings to be smart
                                            call DisplayBeep() only once */
 int             buffer_size = 2048;     /* Size of the I/O buffer */
 
+translatestring  TranslateString = NULL;
+
 const char USED_VAR versionCookie[] = VERSTAG;
 
 ///

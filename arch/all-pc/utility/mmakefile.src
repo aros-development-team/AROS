@@ -1,0 +1,18 @@
+# $Id$
+#
+
+include $(SRCDIR)/config/aros.cfg
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/utility/make.opts
+-include $(SRCDIR)/arch/$(CPU)-all/utility/make.opts
+
+USER_INCLUDES := -I$(SRCDIR)/rom/utility
+
+FILES := \
+    setmem_sse
+
+#MM- kernel-utility-pc : includes
+
+%build_archspecific mainmmake=kernel-utility modname=utility maindir=rom/utility \
+    arch=pc files=$(FILES)
+
+%common

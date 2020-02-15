@@ -29,6 +29,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "coloradjust_private.h"
+#include "locale.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -224,19 +225,19 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         (cl, obj, NULL,
         MUIA_Group_Columns, 2,
         MUIA_Group_VertSpacing, 1,
-        Child, (IPTR) Label1("Red:"),
+        Child, (IPTR) Label1(_(MSG_COLORADJUST_RED)),
         Child, (IPTR) (rslider = (Object *)SliderObject,
             MUIA_Group_Horiz, TRUE,
             MUIA_Numeric_Min, 0,
             MUIA_Numeric_Max, 255,
         End),
-        Child, (IPTR) Label1("Green:"),
+        Child, (IPTR) Label1(_(MSG_COLORADJUST_GREEN)),
         Child, (IPTR) (gslider = (Object *)SliderObject,
             MUIA_Group_Horiz, TRUE,
             MUIA_Numeric_Min, 0,
             MUIA_Numeric_Max, 255,
         End),
-        Child, (IPTR) Label1("Blue:"),
+        Child, (IPTR) Label1(_(MSG_COLORADJUST_BLUE)),
         Child, (IPTR) (bslider = (Object *)SliderObject,
             MUIA_Group_Horiz, TRUE,
             MUIA_Numeric_Min, 0,

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: iso-8859-15 -*-
 # Copyright © 2002-2008, The AROS Development Team. All rights reserved.
 # $Id$
@@ -36,24 +37,26 @@ def parse(file):
         line = line.strip()
 
         if ':' in line:
-	    if len(names) > 0:
-	        credits.append([area, names])
+            if len(names) > 0:
+                credits.append([area, names])
 
-	    area = line[:-1]
+            area = line[:-1]
 
-	    names = []
+            names = []
 
         elif line != '':
-	    names.append(line)
+            names.append(line)
 
     if len(names) > 0:
         credits.append([area, names])
 
     return credits
 
-credits = parse(sys.stdin)
+file = open(sys.argv[1], "r", encoding="iso-8859-15")
+outfile = open(sys.argv[2], "w", encoding="iso-8859-15")
+credits = parse(file)
 
-sys.stdout.write('''#ifndef _AUTHORS_H_
+outfile.write('''#ifndef _AUTHORS_H_
 #define _AUTHORS_H_
 
 /*
@@ -91,16 +94,20 @@ struct TagItem *AUTHORS = TAGLIST
 ''')
 
 for area in credits:
-    sys.stdout.write('''    SECTION
+    outfile.write('''    SECTION
     (
         %s''' % labels2sids[area[0]])
             
     for name in area[1]:
-        sys.stdout.write(',\n        NAME("%s")' % name.replace('"', '\\"'))
+        outfile.write(',\n        NAME("%s")' % name.replace('"', '\\"'))
     
-    print '\n    ),'
+    outfile.write('\n    ),\n')
     
-print '''    TAG_DONE
+outfile.write('''    TAG_DONE
 );
 
-#endif /* _AUTHORS_H_ */'''
+#endif /* _AUTHORS_H_ */
+''')
+
+file.close()
+outfile.close()

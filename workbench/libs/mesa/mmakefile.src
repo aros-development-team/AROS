@@ -6,6 +6,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 include $(SRCDIR)/$(CURDIR)/mesa.cfg
+-include $(GENDIR)/$(CURDIR)/mesa3dgl/mesa3dgllibrary.entrypoints
 
 #
 # common mesa3d fetch...
@@ -25,14 +26,15 @@ include $(SRCDIR)/$(CURDIR)/mesa.cfg
 # Real Mesa3DGL.library rules...
 #
 
-#MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)
-#MM- mesa3dgl-library-yes : mesa3dgl-library
+#MM- workbench-libs-complete : mesa3dgl-library-$(AROS_TARGET_TOOLCHAIN)-$(AROS_TARGET_CPU)
+#MM- mesa3dgl-library-yes-x86_64 : mesa3dgl-library
+#MM- mesa3dgl-library-yes-i386 : mesa3dgl-library
 
 #MM mesa3dgl-library : includes workbench-libs-dxtn-includes linklibs-galliumauxiliary workbench-libs-gallium-linklib mesa3dgl-linklibs
 
 SHARED_LIB_SOURCES = \
             emul_arosc \
-            tls \
+            tls
 
 MESA3DGL_SOURCES = \
             mesa3dgl_support \
@@ -46,7 +48,7 @@ MESA3DGL_SOURCES = \
             mesa3dgl_glagetprocaddress \
             mesa3dgl_glamakecurrent \
             mesa3dgl_glasetrast \
-            mesa3dgl_glaswapbuffers \
+            mesa3dgl_glaswapbuffers
 
 USER_INCLUDES += \
             -I$(top_srcdir)/src/mesa \
@@ -62,10 +64,6 @@ USER_INCLUDES += \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary
 
-##ifeq ($(TARGET_ARCH),x86)
-##USER_CFLAGS += -DUSE_X86_ASM
-##endif
-
 MESAGL_LIBRARY_SOURCES_C := \
             $(SHARED_LIB_SOURCES) \
             $(MESA3DGL_SOURCES)
@@ -73,10 +71,16 @@ MESAGL_LIBRARY_SOURCES_C := \
 MESAGL_LIBRARY_SOURCES_CXX := \
             mesa3dgl_
 
-USER_LDFLAGS := -static-libstdc++ \
+ifneq ($(mesa3dgl_ENTRYPOINTS),)
+MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
+#USER_LDFLAGS := -Wl,--gc-sections $(mesa3dgl_ENTRYPOINTS)
+endif
+
+USER_LDFLAGS += -static-libstdc++ \
   -L$(top_libdir) \
   -Wl,--start-group -lglapi -lmesa -lcompiler -lgalliumauxiliary -lgallium -lmesautil \
-  -lpthread -lposixc -lstdcio -lstdc
+  -lpthread $(MESA_ZLIB) -lposixc_rel -lstdcio_rel -lstdc_rel
+
 #USER_LDFLAGS += -Wl,--end-group
 #USER_CPPFLAGS += -DDEBUG=1
 

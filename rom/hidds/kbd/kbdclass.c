@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2019, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,6 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <hidd/hidd.h>
-#include <hidd/keyboard.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <proto/alib.h>
@@ -50,17 +49,22 @@
         CLID_Hidd_Kbd
 
     FUNCTION
-        Specifies a keyboard event handler. The handler will called be every time a
-        keyboard event happens. A "C" calling convention is used, declare the handler
-        functions as follows:
+        Specifies a keyboard event handler. The handler will be called every time a
+        keyboard event occurs.  Handlers should be declared using 'C' calling conventions, 
+        e.g.:
 
-        void KeyboardIRQ(APTR data, UWORD keyCode)
+        void KeyboardIRQ(APTR data, KbdIrqData_t keyData)
 
         Handler parameters are:
-            data    - Anything you specify using aoHidd_Kbd_IrqHandlerData
-            keyCode - A raw key code as specified in devices/rawkeycodes.h.
-                      Key release event is indicated by ORing this value
+            data    - The handler will be called with this set to the value
+                      defined using the aoHidd_Kbd_IrqHandlerData attribute.
+            keyData - The keyData is an OR'd value of the input handlers flags
+                      and the raw key code as specified in devices/rawkeycodes.h.
+                      keyData = (flags << 16 ) | rawkeycode.
+                      A key 'release' event is indicated by OR'ing this value
                       with IECODE_UP_PREFIX (defined in devices/inputevent.h)
+                      currently supported flags are -:
+                      KBD_NOCAPSUP - The keyboard does not generate an UP event for Caps Lock.
 
         The handler is called inside interrupts, so usual restrictions apply to it.
 

@@ -4,3 +4,4 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- iconset-Gorilla-icons : iconset-Gorilla-wbench-icons iconset-Gorilla-additional-icons
+#MM- iconset-GorillaSmall-icons : iconset-GorillaSmall-wbench-icons iconset-GorillaSmall-additional-icons

@@ -30,8 +30,8 @@ AROS_LH1(ULONG, ReadEClock,
     dest->ev_lo += eclock;
     if (old > dest->ev_lo)
     	dest->ev_hi++;
+
     return TimerBase->tb_eclock_rate;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */
-

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2019, The AROS Development Team. All rights reserved
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -50,8 +50,7 @@ BOOL scsi_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct scsi_Unit *unit)
     const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
     const ULONG IdCDVD = AROS_MAKE_ID('C','D','V','D');
 
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
-                                                        40L);
+    ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
     if (ExpansionBase)
     {
@@ -201,7 +200,7 @@ static int SCSI_init(struct scsiBase *SCSIBase)
         }
     }
 
-    SCSIBase->scsi_UtilityBase = OpenLibrary("utility.library", 36);
+    SCSIBase->scsi_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!SCSIBase->scsi_UtilityBase)
     {
         bug("[SCSI--] %s: Failed to open utility.library v36\n", __PRETTY_FUNCTION__);

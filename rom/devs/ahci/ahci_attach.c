@@ -56,6 +56,22 @@
 
 extern CONST_STRPTR ahciDeviceName;
 
+static const char *str_gen1 = "1 (1.5Gbps)";
+static const char *str_gen2 = "2 (3Gbps)";
+static const char *str_gen3 = "3 (6Gbps)";
+static const char *str_genunk = "unknown";
+
+static const char *str_revision095 = "AHCI 0.95";
+static const char *str_revision100 = "AHCI 1.0";
+static const char *str_revision110 = "AHCI 1.1";
+static const char *str_revision120 = "AHCI 1.2";
+static const char *str_revision130 = "AHCI 1.3";
+static const char *str_revision140 = "AHCI 1.4";
+static const char *str_revision150 = "AHCI 1.5";	/* future will catch up to us */
+
+static const char *str_warnrevision = "Warning: Unknown AHCI revision 0x%08x\n";
+static const char *str_revisionunk = "AHCI <unknown>";
+
 static int	ahci_vt8251_attach(device_t);
 static int	ahci_ati_sb600_attach(device_t);
 static int	ahci_ati_sb700_attach(device_t);
@@ -357,16 +373,16 @@ ahci_pci_attach(device_t dev)
 
 	switch (cap & AHCI_REG_CAP_ISS) {
 	case AHCI_REG_CAP_ISS_G1:
-		gen = "1 (1.5Gbps)";
+		gen = str_gen1;
 		break;
 	case AHCI_REG_CAP_ISS_G2:
-		gen = "2 (3Gbps)";
+		gen = str_gen2;
 		break;
 	case AHCI_REG_CAP_ISS_G3:
-		gen = "3 (6Gbps)";
+		gen = str_gen3;
 		break;
 	default:
-		gen = "unknown";
+		gen = str_genunk;
 		break;
 	}
 
@@ -375,30 +391,29 @@ ahci_pci_attach(device_t dev)
 
 	switch (reg) {
 	case AHCI_REG_VS_0_95:
-		revision = "AHCI 0.95";
+		revision = str_revision095;
 		break;
 	case AHCI_REG_VS_1_0:
-		revision = "AHCI 1.0";
+		revision = str_revision100;
 		break;
 	case AHCI_REG_VS_1_1:
-		revision = "AHCI 1.1";
+		revision = str_revision110;
 		break;
 	case AHCI_REG_VS_1_2:
-		revision = "AHCI 1.2";
+		revision = str_revision120;
 		break;
 	case AHCI_REG_VS_1_3:
-		revision = "AHCI 1.3";
+		revision = str_revision130;
 		break;
 	case AHCI_REG_VS_1_4:
-		revision = "AHCI 1.4";
+		revision = str_revision140;
 		break;
 	case AHCI_REG_VS_1_5:
-		revision = "AHCI 1.5";	/* future will catch up to us */
+		revision = str_revision150;	/* future will catch up to us */
 		break;
 	default:
-		device_printf(sc->sc_dev,
-			      "Warning: Unknown AHCI revision 0x%08x\n", reg);
-		revision = "AHCI <unknown>";
+		device_printf(sc->sc_dev, str_warnrevision, reg);
+		revision = str_revisionunk;
 		break;
 	}
 	sc->sc_vers = reg;

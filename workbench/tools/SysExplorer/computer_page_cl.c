@@ -278,8 +278,8 @@ char *SplitBootArgs(struct TagItem *bootinfo, char *buffer, LONG bufsize)
     {
         D(bug("[SysExplorer] %s: splitting '%s'\n", __func__, rawargs));
         count = strlen(rawargs);
-        if (count > bufsize)
-            count = bufsize;
+        if (count > bufsize - 1)
+            count = bufsize - 1;
         for (i = 0; i < count ; i++)
         {
             if (rawargs[i] == ' ')
@@ -287,6 +287,11 @@ char *SplitBootArgs(struct TagItem *bootinfo, char *buffer, LONG bufsize)
             else
                 buffer[i] = rawargs[i];
         }
+        buffer[i] = '\0';
+    }
+    else
+    {
+        *buffer = '\0';
     }
     return buffer;
 }
@@ -367,12 +372,16 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                 Child, (IPTR)(ColGroup(2),
                     GroupFrame,
                     MUIA_FrameTitle, (IPTR)"Boot Config",
-                    Child, (IPTR)Label("Loader"),
-                    Child, (IPTR)(TextObject,
+                    Child, (IPTR)Label(_(MSG_BOOTLOADER)),
+                    Child, (IPTR)(ScrollgroupObject,
                         TextFrame,
                         MUIA_Background, MUII_TextBack,
-                        MUIA_CycleChain, 1,
-                        MUIA_Text_Contents, bootldr,
+                        MUIA_Scrollgroup_Contents, (IPTR)(NFloattextObject,
+                            NoFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_CycleChain, 1,
+                            MUIA_Floattext_Text, bootldr,
+                        End),
                     End),
                     Child, (IPTR)Label(__(MSG_ARGUMENTS)),
                     Child, (IPTR)(ScrollgroupObject,

@@ -1,4 +1,6 @@
-#include <libraries/kms.h>
+
+#include <aros/debug.h>
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -49,11 +51,18 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct KeyMapResource *kmr = ((struct kms_base *)KMSBase)->kmr;
     struct KeyMapNode *kmn = NULL, *kmn2 = NULL;
     ULONG buflen = 0;
     STRPTR km_name;
     BPTR km_seg;
-    struct KeyMapResource *kmr = ((struct kms_base *)KMSBase)->kmr;
+    IPTR hunkinfo = 0;
+    struct TagItem segtags[2] =
+    {
+        { GSLI_68KHUNK, (IPTR)&hunkinfo },
+        { TAG_DONE,     0               }
+    };
+    BOOL ishunk = FALSE;
 
     km_name  = FilePart(name);
     if (km_name == name)
@@ -86,12 +95,6 @@
 	AddPart(name, km_name, buflen);
     }
 
-    /*
-     * Currently keymaps are still loaded using LoadSeg().
-     * In future we can extend this. For example we can add
-     * support for AmigaOS4(tm)-compatible keymaps which are plain text files.
-     * ELF keymaps have one strong disadvantage: they are CPU-dependent.
-     */
     km_seg = LoadSeg(name);
     if (buflen)
 	FreeMem(name, buflen);
@@ -99,8 +102,30 @@
     if (!km_seg)
 	return NULL;
 
-    kmn = BADDR(km_seg) + sizeof(APTR);
+    D(bug("[KMS] %s: loaded seglist @ 0x%p\n", __func__, km_seg);)
 
+    if (GetSegListInfo(km_seg, segtags))
+    {
+        D(bug("[KMS] %s: hunkinfo == 0x%p\n", __func__, hunkinfo);)
+        if (hunkinfo)
+            ishunk = TRUE;
+    }
+
+    if (!ishunk)
+    {
+        return NULL;
+    }
+#if !AROS_BIG_ENDIAN || (__WORDSIZE != 32)
+    else
+    {
+        if ((km_seg = parsekeymapseg(km_seg)) == BNULL)
+            return NULL;
+    }
+#endif
+
+    D(bug("[KMS] %s: using seglist @ 0x%p\n", __func__, km_seg);)
+
+    kmn = BADDR(km_seg) + sizeof(BPTR);
     if (kmr)
     {
         Forbid();

@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Workbook Window Class
@@ -435,6 +435,7 @@ static void wbRedimension(Class *cl, Object *obj)
 /* Rescan the Lock for new entries */
 static void wbRescan(Class *cl, Object *obj)
 {
+    struct opMember opmmsg;
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
     struct wbWindow_Icon *wbwi;
@@ -444,8 +445,10 @@ static void wbRescan(Class *cl, Object *obj)
     SetWindowPointer(my->Window, WA_BusyPointer, TRUE, TAG_END);
 
     /* Remove and undisplay any existing icons */
+    opmmsg.MethodID = OM_REMMEMBER;
     while ((wbwi = (struct wbWindow_Icon *)REMHEAD(&my->IconList)) != NULL) {
-        DoMethod(my->Set, OM_REMMEMBER, wbwi->wbwiObject);
+        opmmsg.opam_Object = wbwi->wbwiObject;
+        DoMethodA(my->Set, &opmmsg);
         DisposeObject(wbwi->wbwiObject);
         FreeMem(wbwi, sizeof(*wbwi));
     }
@@ -462,8 +465,12 @@ static void wbRescan(Class *cl, Object *obj)
     }
 
     /* Display the new icons */
+    opmmsg.MethodID = OM_ADDMEMBER;
     ForeachNode(&my->IconList, wbwi)
-        DoMethod(my->Set, OM_ADDMEMBER, wbwi->wbwiObject);
+    {
+        opmmsg.opam_Object = wbwi->wbwiObject;
+        DoMethodA(my->Set, &opmmsg);
+    }
 
     /* Adjust the scrolling regions */
     wbRedimension(cl, obj);

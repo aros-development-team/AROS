@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -60,6 +60,8 @@ ULONG TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
 
 ULONG TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
 {
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+
     DEBUG_WORKBENCH(dprintf("TellWBTaskToCloseWindows: currenttask <%s>\n",
                             FindTask(NULL)->tc_Node.ln_Name));
 
@@ -74,7 +76,7 @@ ULONG TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
 
         /* Setup our reply port. By doing this manually, we can use SIGB_SINGLE
          * and thus avoid allocating a signal (which may fail). */
-        memset( &replymp, 0, sizeof( replymp ) );
+        SetMem( &replymp, 0, sizeof( replymp ) );
 
         replymp.mp_Node.ln_Type = NT_MSGPORT;
         replymp.mp_Flags        = PA_SIGNAL;

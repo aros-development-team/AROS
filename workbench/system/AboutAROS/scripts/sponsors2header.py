@@ -1,9 +1,11 @@
-#!/bin/env python
+#!/usr/bin/env python3
 # -*- coding: iso-8859-15 -*-
 
 import sys
 
-sys.stdout.write('''#ifndef _SPONSORS_H_
+outfile = open(sys.argv[2], "w", encoding="iso-8859-15")
+
+outfile.write('''#ifndef _SPONSORS_H_
 #define _SPONSORS_H_
 
 /*
@@ -20,11 +22,16 @@ struct TagItem *SPONSORS = TAGLIST
     (
         SID_NONE''')
 
-for line in sys.stdin:
-    sys.stdout.write(',\n        NAME("%s")' % line.strip())
+file = open(sys.argv[1], "r", encoding="iso-8859-15")
+for line in file:
+    outfile.write(',\n        NAME("%s")' % line.strip())
     
-print '''\n    ),
+outfile.write('''\n    ),
     TAG_DONE
 );
 
-#endif /* _SPONSORS_H_ */'''
+#endif /* _SPONSORS_H_ */
+''')
+
+file.close()
+outfile.close()

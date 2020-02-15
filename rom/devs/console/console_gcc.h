@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -182,11 +182,16 @@ struct intPasteData
     ULONG pasteBufferSize;
 };
 
+#define CONUNIT_PEN_MAX 8
+
 #define CON_INPUTBUF_SIZE 512
+
 struct intConUnit
 {
     struct ConUnit unit;
     ULONG conFlags;
+
+    UWORD pens[CONUNIT_PEN_MAX];
 
     /* Buffer where characters received from the console input handler
        will be stored
@@ -312,6 +317,7 @@ struct ConsoleBase
 
     struct Library *cb_IntuitionBase;
     struct Library *cb_KeymapBase;
+    struct Library *cb_UtilityBase;
 };
 
 #undef CB
@@ -322,5 +328,8 @@ struct ConsoleBase
 
 #undef KeymapBase
 #define KeymapBase (((const struct ConsoleBase *)ConsoleDevice)->cb_KeymapBase)
+
+#undef UtilityBase
+#define UtilityBase (((const struct ConsoleBase *)ConsoleDevice)->cb_UtilityBase)
 
 #endif /* CONSOLE_GCC_H */

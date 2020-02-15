@@ -16,6 +16,8 @@
 
 #include "scsi.h"
 
+static const char *str_devicename = "scsi.device";
+
 /*****************************************************************************************
 
     NAME
@@ -219,7 +221,7 @@ void SCSIUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     Hidd_StorageUnit_Switch (msg->attrID, idx)
     {
     case aoHidd_StorageUnit_Device:
-        *msg->storage = (IPTR)"scsi.device";
+        *msg->storage = (IPTR)str_devicename;
         return;
 
     case aoHidd_StorageUnit_Number:

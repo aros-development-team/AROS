@@ -2,12 +2,13 @@
 #define _POSIXC_FCNTL_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file fcntl.h
 */
 
+#include <aros/features.h>
 #include <aros/system.h>
 
 /* Both Linux and NetBSD seem to include this file and
@@ -146,7 +147,24 @@ struct flock
 
 __BEGIN_DECLS
 
-int creat (const char * filename, int mode);
+#if !defined(NO_POSIX_WRAPPERS)
+int __posixc_creat(const char * filename, int mode);
+int creat64(const char * filename, int mode);
+#if defined(__USE_FILE_OFFSET64)
+static inline int creat(const char * filename, int mode)
+{
+    return creat64(filename, mode);
+}
+#else
+static inline int creat(const char * filename, int mode)
+{
+    return __posixc_creat(filename, mode);
+}
+#endif
+#else  /* NO_POSIX_WRAPPERS */
+int creat(const char * filename, int mode);
+int creat64(const char * filename, int mode);
+#endif /* NO_POSIX_WRAPPERS */
 int fcntl (int fd, int cmd, ...);
 int open  (const char * filename, int flags, ...);
 /* NOTIMPL int openat(int, const char *, int, ...); */

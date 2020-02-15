@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -50,6 +50,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG Result = TRUE;
     ULONG lock = LockIBase(0);
@@ -166,7 +167,7 @@
 
             if (size > POINTERSIZE)
                 size = POINTERSIZE;
-            memset(ActivePrefs->PointerMatrix, 0, POINTERSIZE * sizeof (UWORD));
+            SetMem(ActivePrefs->PointerMatrix, 0, POINTERSIZE * sizeof (UWORD));
             CopyMem(fp->data, ActivePrefs->PointerMatrix, size * sizeof (UWORD));
             ActivePrefs->XOffset = fp->XOffset;
             ActivePrefs->YOffset = fp->YOffset;
@@ -183,10 +184,11 @@
         case IPREFS_TYPE_PALETTE_V37:
         DEBUG_SETIPREFS(bug("[Intuition] %s: IP_PALETTE_V%d %p %d\n", __func__, type == IPREFS_TYPE_PALETTE_V39 ? 39 : 37, data, length));
         {
-            struct ColorSpec *pp = data;
-            struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
-            BOOL update_pointer = FALSE;
+            BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
             struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
+            struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
+            struct ColorSpec *pp = data;
+            BOOL update_pointer = FALSE;
 
             DEBUG_SETIPREFS(bug("[Intuition] %s: Intuition Color32 Table 0x%p\n", __func__, p));
 
@@ -250,6 +252,21 @@
                                 p[idx].red,
                                 p[idx].green,
                                 p[idx].blue));
+
+                    /* update the wokrbench displays palette ... */
+                    if (!closed)
+                    {
+                        UBYTE wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+
+                        if (idx < 4)
+                            SetRGB32(&GetPrivIBase(IntuitionBase)->WorkBench->ViewPort, idx, p[idx].red, p[idx].green, p[idx].blue);
+                        else if ((idx < 8) && (wbdepth >= 3))
+                        {
+                            ULONG lastcol = ((wbdepth > 8) ? 256 : (1 << wbdepth)) - 4;
+
+                            SetRGB32(&GetPrivIBase(IntuitionBase)->WorkBench->ViewPort, lastcol + idx, p[idx].red, p[idx].green, p[idx].blue);
+                        }
+                    }
                 }
                 pp++;
             }
@@ -264,9 +281,13 @@
         case IPREFS_TYPE_PENS_V39:
         DEBUG_SETIPREFS(bug("[Intuition] %s: IP_PENS_V39\n", __func__));
         {
+            BOOL closed = (GetPrivIBase(IntuitionBase)->WorkBench) ? FALSE : TRUE;
             struct IOldPenPrefs *fp = data;
-            UWORD *dataptr;
+            UWORD *defpenptr, *scrppenptr, *scrpenptr = NULL;
+            struct IntScreen      *wbsint;
+            UBYTE wbdepth;
             int i;
+
             DEBUG_SETIPREFS(bug("[Intuition] %s: Count %ld Type %ld\n",
                         __func__,
                         (LONG) fp->Count,
@@ -274,13 +295,41 @@
 
             if (fp->Type==0)
             {
-                dataptr = &GetPrivIBase(IntuitionBase)->DriPens4[0];
+                defpenptr = &GetPrivIBase(IntuitionBase)->DriPens4[0];
                 DEBUG_SETIPREFS(bug("[Intuition] %s: Pens4[]\n", __func__));
+                if (!closed)
+                {
+                    struct IntDrawInfo      *dri;
+
+                    wbsint = GetPrivScreen(GetPrivIBase(IntuitionBase)->WorkBench);
+                    wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+                    
+                    if ((wbdepth < 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
+                    {
+                        DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
+                        scrpenptr = dri->dri_Pens;
+                        scrppenptr = wbsint->Pens;
+                    }
+                }
             }
             else
             {
-                dataptr = &GetPrivIBase(IntuitionBase)->DriPens8[0];
+                defpenptr = &GetPrivIBase(IntuitionBase)->DriPens8[0];
                 DEBUG_SETIPREFS(bug("[Intuition] %s: Pens8[]\n", __func__));
+                if (!closed)
+                {
+                    struct IntDrawInfo      *dri;
+
+                    wbsint = GetPrivScreen(GetPrivIBase(IntuitionBase)->WorkBench);
+                    wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+
+                    if ((wbdepth >= 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
+                    {
+                        DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
+                        scrpenptr = dri->dri_Pens;
+                        scrppenptr = wbsint->Pens;
+                    }
+                }
             }
             for (i=0;i<NUMDRIPENS;i++)
             {
@@ -298,7 +347,22 @@
                                 __func__,
                                 (LONG) i,
                                 (LONG) fp->PenTable[i]));
-                    dataptr[i] = fp->PenTable[i];
+
+                    defpenptr[i] = fp->PenTable[i];
+
+                    if (scrpenptr)
+                    {
+                        UWORD penval = fp->PenTable[i];
+#if (0)
+                        if ((penval > 3) && (wbdepth >= 3))
+                        {
+                            ULONG lastpen = ((wbdepth > 8) ? 252 : (1 << wbdepth)) - 8;
+                            penval += lastpen;
+                        }
+#endif
+                        scrpenptr[i] = penval;
+                        scrppenptr[i] = penval;
+                    }
                 }
             }
         }

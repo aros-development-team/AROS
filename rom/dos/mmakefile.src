@@ -8,23 +8,26 @@ REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(REPODIR))
 REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(REPODIR))
 
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)/dos
-USER_CPPFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\""
+DOS_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -D__DOS_NOLIBBASE__ \
+	       -DISODATE="\"$(shell date '+%Y-%m-%d')\""
 ifneq ($(REPOTYPE),)
-    USER_CPPFLAGS  += -DREPOTYPE=\"$(REPOTYPE)\" -DREPOREVISION=\"$(REPOREVISION)\" -DREPOID=\"$(REPOID)\"
+    DOS_CPPFLAGS  += -DREPOTYPE=\"$(REPOTYPE)\" -DREPOREVISION=\"$(REPOREVISION)\" -DREPOID=\"$(REPOID)\"
 endif
 USER_LDFLAGS := -static
 ifeq ($(AROS_TARGET_CPU),m68k)
 # Make sure we optimize this code for size on m68k..
 OPTIMIZATION_CFLAGS := -Os
-USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
+DOS_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
 endif
 
-USER_CPPFLAGS += -DDOCACHECLEAR
+DOS_CPPFLAGS += -DDOCACHECLEAR
 
 IMAGE_TYPES := aos elf
 
 FILES	  := bstr_helper errorlist \
-             boot isbootable \
+             boot banner isbootable \
 	     match_misc newcliproc rootnode fs_driver \
 	     patternmatching internalseek internalflush \
 	     packethelper namefrom internalloadseg_support \
@@ -34,8 +37,8 @@ LOADSEG_FILES := internalloadseg \
 		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
 FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
-	     allocdosobject assignadd assignlate assignlock assignpath \
-	     attemptlockdoslist changemode checksignal \
+	     allocdosobject assignadd assignaddtolist assignlate assignlock \
+	     assignpath attemptlockdoslist changemode checksignal \
 	     cli cliinit cliinitnewcli cliinitrun \
 	     close comparedates createdir createnewproc \
 	     createproc currentdir datestamp datetostr delay deletefile \
@@ -46,8 +49,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     findvar flush format fputc fputs fread freeargs freedeviceproc \
 	     freedosentry freedosobject fwrite getargstr getconsoletask \
 	     getcurrentdirname getdeviceproc getfilesystask getprogramdir \
-	     getprogramname getprompt getvar info inhibit input \
-	     internalunloadseg ioerr isfilesystem \
+	     getprogramname getprompt getseglistinfo getvar info inhibit \
+	     input internalunloadseg ioerr isfilesystem \
 	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
 	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry nil \
@@ -75,7 +78,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 #MM- core-linklibs : linklibs-dos
 
-USER_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+DOS_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+USER_CPPFLAGS := $(DOS_CPPFLAGS)
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \
@@ -87,6 +91,6 @@ $(GENDIR)/$(CURDIR)/dos/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCD
 	@$(ECHO) Generating $@...
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
 
-%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" objdir=$(OBJDIR)/dos libdir=$(GENDIR)/lib
+%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" objdir=$(OBJDIR)/loadseg libdir=$(GENDIR)/lib
 
 %common

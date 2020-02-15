@@ -19,7 +19,8 @@ FILES := \
 	messages \
 	boot \
 	assroutines \
-	resethandler
+	resethandler \
+	fsresource
 
 PFS3_CFLAGS := \
 	-DEXTRAPACKETS=1 \
@@ -67,6 +68,8 @@ USER_CPPFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
+USER_LDFLAGS += --static -nosysbase -Wl,--defsym -Wl,SysBase=0x4
+
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
     files="$(FILES)" objdir=$(OBJDIR)/pfs3
@@ -79,7 +82,7 @@ USER_CPPFLAGS := \
     modname=pfs3ds modtype=handler \
     files="$(FILES)" objdir=$(OBJDIR)/pfs3ds
 
-USER_LDFLAGS += -nosysbase -Wl,--defsym -Wl,SysBase=0x4
+
 
 KS13STUFF := \
     -DKS13WRAPPER \

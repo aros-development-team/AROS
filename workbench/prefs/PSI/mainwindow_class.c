@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-1997 Stefan Stuntz.
-    Copyright © 2009-2010, The AROS Development Team.
+    Copyright © 2009-2020, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -18,6 +18,8 @@
 #include "screenpanel_class.h"
 #include "screenlist_class.h"
 #include "mainwindow_class.h"
+
+struct MUI_CustomClass *CL_MainWindow = NULL;
 
 /****************************************************************************************/
 

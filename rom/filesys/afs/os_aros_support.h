@@ -2,9 +2,12 @@
 #define OS_AROS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <proto/utility.h>
+#include <proto/dos.h>
 
 #include <aros/macros.h>
 #include <aros/preprocessor/variadic/cast2iptr.hpp>
@@ -17,7 +20,6 @@
 #include <exec/interrupts.h>
 #include <exec/types.h>
 #include <aros/debug.h>
-#include <proto/dos.h>
 
 #include "error.h"
 #include "afshandler.h"

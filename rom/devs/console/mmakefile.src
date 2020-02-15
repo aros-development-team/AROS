@@ -2,12 +2,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES	:=  support consoleclass stdconclass charmapconclass charmap snipmapconclass consoletask
+FILES	:=  support consoleclass stdconclass charmapconclass rendezvous charmap snipmapconclass consoletask
 FUNCS	:=  cdinputhandler rawkeyconvert setconsnip getconsnip addconsniphook remconsniphook
 
 #MM- kernel-console : includes linklibs
 
-USER_CPPFLAGS := -D__GRAPHICS_NOLIBBASE__ \
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__GRAPHICS_NOLIBBASE__ \
                -D__INTUITION_NOLIBBASE__ \
                -D__KEYMAP_NOLIBBASE__ \
                -D__UTILITY_NOLIBBASE__

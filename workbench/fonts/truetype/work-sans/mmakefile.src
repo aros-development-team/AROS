@@ -1,0 +1,20 @@
+# Copyright © 2020, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- fonts-truetype : fonts-truetype-work-sans
+#MM- fonts-truetype-quick : fonts-truetype-work-sans
+#MM- fonts-truetype-work-sans : fonts-truetype-work-sans-ttf fonts-truetype-work-sans-amifonts
+
+%copy_files_q mmake=fonts-truetype-work-sans-ttf files="$(call WILDCARD, *.ttf)" \
+    dst=$(AROSDIR)/Fonts/TrueType
+
+#MM
+fonts-truetype-work-sans-amifonts :
+	@cd $(SRCDIR)/$(CURDIR); for file in *.font *.otag; do \
+            if [ ! -e "$(AROSDIR)/Fonts/$$file" ]; then \
+                $(ECHO) Copying "$$file"...; \
+                $(CP) "$$file" $(AROSDIR)/Fonts; \
+            fi; \
+        done

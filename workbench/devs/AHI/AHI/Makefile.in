@@ -15,7 +15,10 @@ endif
 
 @SET_MAKE@
 
+VPATH		= @builddir@ @srcdir@
+
 top_srcdir	= @top_srcdir@
+builddir        = @builddir@
 srcdir		= @srcdir@
 PREFIX		= @prefix@
 DISTDIR		= @DISTDIR@
@@ -32,13 +35,10 @@ INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
 
-CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir}
+CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${srcdir} -iquote ${builddir}
 CFLAGS		= @CFLAGS@
 LDFLAGS		= @LDFLAGS@
 LIBS		= @LIBS@
-
-VPATH		= @srcdir@
-
 
 #
 # Files
@@ -54,6 +54,8 @@ EXECUTABLES	= AHI_MUI # AHI_BGUI AHI_CA
 LANGUAGES	= $(basename $(shell cd ${srcdir}/translations; for file in *.ct; do if [ -f $$file ]; then printf "%s" "$$file "; fi; done))
 CATALOGS	= $(addsuffix .catalog, $(LANGUAGES))
 
+GENERATED	= version.h \
+		  ${builddir}/ahiprefs_Cat.h
 
 #
 # Targets
@@ -61,7 +63,7 @@ CATALOGS	= $(addsuffix .catalog, $(LANGUAGES))
 
 .PHONY:		all clean distclean maintainer-clean bindist revup
 
-all:		$(EXECUTABLES) ahiprefs.ct $(CATALOGS)
+all:		$(EXECUTABLES) ${srcdir}/translations/ahiprefs.ct $(CATALOGS)
 
 clean:
 	$(RM) $(EXECUTABLES) $(LANGTARGETS) version.h \
@@ -92,8 +94,8 @@ bindist:	all
 	$(INSTALL_DATA) ${srcdir}/AHI.info $(PREFSDIR)
 	$(INSTALL_DATA) ${srcdir}/AHI.MWB.info $(PREFSDIR)
 
-	$(INSTALL_DATA) ${srcdir}/ahiprefs.cd $(CATSRCDIR)
-	$(INSTALL_DATA) ${srcdir}/ahiprefs.ct $(CATSRCDIR)
+	$(INSTALL_DATA) ${srcdir}/translations/ahiprefs.cd $(CATSRCDIR)
+	$(INSTALL_DATA) ${srcdir}/translations/ahiprefs.ct $(CATSRCDIR)
 	for i in $(LANGUAGES); do \
 	  $(INSTALL) -d $(CATDIR)/$$i; \
 	  $(INSTALL_DATA) $$i.catalog $(CATDIR)/$$i/ahiprefs.catalog; \
@@ -121,7 +123,6 @@ revup:
 Makefile: Makefile.in ../config.status
 	(cd .. && ./config.status)
 
-
 #
 # Rules
 ########################################
@@ -136,18 +137,18 @@ AHI_MUI:	$(OBJECTS) $(OBJECTS_MUI)
 	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
 
-$(srcdir)/ahiprefs_Cat.c:	$(srcdir)/ahiprefs.cd $(srcdir)/C_c_noauto.sd $(srcdir)/ahiprefs_Cat.h
-	$(FLEXCAT) $(srcdir)/ahiprefs.cd $(srcdir)/ahiprefs_Cat.c=$(srcdir)/C_c_noauto.sd
+${builddir}/ahiprefs_Cat.c:	$(srcdir)/translations/ahiprefs.cd $(srcdir)/C_c_noauto.sd ${builddir}/ahiprefs_Cat.h
+	$(FLEXCAT) $(srcdir)/translations/ahiprefs.cd ${builddir}/ahiprefs_Cat.c=$(srcdir)/C_c_noauto.sd
 
-$(srcdir)/ahiprefs_Cat.h:	$(srcdir)/ahiprefs.cd $(srcdir)/C_h_noauto.sd
-	$(FLEXCAT) $(srcdir)/ahiprefs.cd $(srcdir)/ahiprefs_Cat.h=$(srcdir)/C_h_noauto.sd
+${builddir}/ahiprefs_Cat.h:	$(srcdir)/translations/ahiprefs.cd $(srcdir)/C_h_noauto.sd
+	$(FLEXCAT) $(srcdir)/translations/ahiprefs.cd ${builddir}/ahiprefs_Cat.h=$(srcdir)/C_h_noauto.sd
 
 %.catalog:	translations/%.ct
 	$(FLEXCAT) \
-		   $(srcdir)/ahiprefs.cd $< CATALOG=$@ 
+		   $(srcdir)/translations/ahiprefs.cd $< CATALOG=$@ 
 
 %.ct:
-	$(FLEXCAT) $(srcdir)/ahiprefs.cd $@ NEWCTFILE=$@
+	$(FLEXCAT) $(srcdir)/translations/ahiprefs.cd $@ NEWCTFILE=$@
 
 #
 # Dependencies
@@ -164,10 +165,10 @@ depend:
 	$(RM) Makefile.dep
 	$(MAKE) Makefile.dep
 
-Makefile.dep:	$(DEPENDENCIES) version.h
+Makefile.dep:	$(DEPENDENCIES) $(GENERATED)
 	@echo Making $@
 	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
 
 -include Makefile.dep
 
-$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/ahiprefs.ct:	ahiprefs.cd
+$(wildcard $(srcdir)/translations/*.ct) $(srcdir)/translations/ahiprefs.ct:	${srcdir}/translations/ahiprefs.cd

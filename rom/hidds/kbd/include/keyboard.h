@@ -2,7 +2,7 @@
 #define HIDD_KEYBOARD_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the keyboard hidd.
@@ -23,6 +23,9 @@
 extern OOP_AttrBase HiddKbdAB;
 #endif
 
+typedef ULONG KbdIrqData_t;
+typedef VOID (*KbdIrqCallBack_t)(APTR, KbdIrqData_t);
+
 enum {
    aoHidd_Kbd_IrqHandler,
    aoHidd_Kbd_IrqHandlerData,
@@ -34,6 +37,13 @@ enum {
 #define aHidd_Kbd_IrqHandlerData	(aoHidd_Kbd_IrqHandlerData + HiddKbdAB)
 
 #define IS_HIDDKBD_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddKbdAB, num_Hidd_Kbd_Attrs)
+
+/*
+ * The following flags are OR'd by hardware drivers with the keycode to pass to the IrqHandler(s)
+ */
+
+// Qualifier keys sent with KEYTOGGLE set, set their state based on the keys UP/DOWN state.
+#define KBD_KEYTOGGLE (1 << 7)
 
 /*
  * The following methods are legacy and deprecated. Do not use them.

@@ -47,6 +47,8 @@
  *	@(#)errno.h	8.5 (Berkeley) 1/21/94
  */
 
+#include <aros/features.h>
+
 /* C99 */
 #include <aros/stdc/errno.h>
 

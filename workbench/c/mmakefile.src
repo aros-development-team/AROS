@@ -1,4 +1,4 @@
-# Copyright © 2003-2019, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -85,11 +85,29 @@ USER_LDFLAGS    := -static
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : workbench-c-$(AROS_TARGET_CPU)
-#MM workbench-c-quick : workbench-c-$(AROS_TARGET_CPU)-quick
+#MM workbench-c : \
+#MM        workbench-c-$(AROS_TARGET_ARCH) \
+#MM        workbench-c-$(AROS_TARGET_CPU) \
+#MM        workbench-c-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
-#MM workbench-c : includes kernel-task-includes linklibs workbench-c-adddatatypes workbench-c-sh workbench-c-requeststring workbench-libs-uuid
-#MM workbench-c-quick : workbench-c-adddatatypes-quick workbench-c-sh-quick workbench-c-requeststring-quick
+#MM workbench-c-quick : \
+#MM        workbench-c-$(AROS_TARGET_ARCH)-quick \
+#MM        workbench-c-$(AROS_TARGET_CPU)-quick \
+#MM        workbench-c-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM workbench-c : \
+#MM        includes \
+#MM        kernel-task-includes \
+#MM        linklibs \
+#MM        workbench-c-adddatatypes \
+#MM        workbench-c-sh \
+#MM        workbench-c-requeststring \
+#MM        workbench-libs-uuid
+
+#MM workbench-c-quick : \
+#MM        workbench-c-adddatatypes-quick \
+#MM        workbench-c-sh-quick \
+#MM        workbench-c-requeststring-quick
 
 %build_prog mmake=workbench-c-requeststring progname=RequestString \
     files=RequestString targetdir=$(AROS_C) coverageinstr=no

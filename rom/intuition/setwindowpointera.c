@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -45,7 +45,7 @@
     AROS_LIBFUNC_INIT
 
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    DEBUG_SETPOINTER(dprintf("SetWindowPointer: window 0x%lx\n", window));
+    DEBUG_SETPOINTER(dprintf("SetWindowPointer: window 0x%p\n", window));
 
     if (window)
     {
@@ -53,13 +53,15 @@
         Object *pointer = (Object *)GetTagData(WA_Pointer, 0, taglist);
         BOOL	busy = (GetTagData(WA_BusyPointer, FALSE, taglist) != 0) ? TRUE : FALSE;
 
-        DEBUG_SETPOINTER(dprintf("SetWindowPointer: pointer 0x%lx busy %d\n",
-                                 pointer, busy));
+        DEBUG_SETPOINTER(dprintf("SetWindowPointer: %spointer 0x%p\n",
+                                (busy) ? "busy" : "",
+                                pointer));
 
         lock = LockIBase(0);
 
-        DEBUG_SETPOINTER(dprintf("SetWindowPointer: old pointer 0x%lx busy %d\n",
-                                 IW(window)->pointer, IW(window)->busy));
+        DEBUG_SETPOINTER(dprintf("SetWindowPointer: old %spointer 0x%p\n",
+                                (IW(window)->busy) ? "busy " : "",
+                                IW(window)->pointer));
 
         if (IW(window)->pointer != pointer || IW(window)->busy != busy)
         {
@@ -77,6 +79,8 @@
             {
                 struct IntScreen *scr = GetPrivScreen(window->WScreen);
 
+                DEBUG_SETPOINTER(dprintf("SetWindowPointer: screen @ 0x%p\n", scr));
+
                 if (GetTagData(WA_PointerDelay, FALSE, taglist) &&
                         IntuitionBase->ActiveScreen == &scr->Screen)
                 {
@@ -85,27 +89,29 @@
                 }
                 else
                 {
-                    struct SharedPointer *shared_pointer;
+                    struct msSetPointerShape pmsg;
+                    pmsg.MethodID = MM_SetPointerShape;
+                    pmsg.pointer = NULL;
 
                     if (pointer == NULL)
                         pointer = GetPrivIBase(IntuitionBase)->DefaultPointer;
                     if (busy)
                         pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
 
-                    GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&shared_pointer);
+                    GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&pmsg.pointer);
 
                     DEBUG_POINTER(dprintf("SetWindowPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
-                                          scr, pointer, shared_pointer->sprite));
+                                          scr, pointer, pmsg.pointer->sprite));
 
-                    if (DoMethod(scr->IMonitorNode, MM_SetPointerShape, shared_pointer))
+                    if (DoMethodA(scr->IMonitorNode, &pmsg))
                     {
-                        ObtainSharedPointer(shared_pointer, IntuitionBase);
+                        ObtainSharedPointer(pmsg.pointer, IntuitionBase);
                         ReleaseSharedPointer(scr->Pointer, IntuitionBase);
-                        scr->Pointer = shared_pointer;
+                        scr->Pointer = pmsg.pointer;
                         if (window)
                         {
-                            window->XOffset = shared_pointer->xoffset;
-                            window->YOffset = shared_pointer->yoffset;
+                            window->XOffset = pmsg.pointer->xoffset;
+                            window->YOffset = pmsg.pointer->yoffset;
                         }
                     }
                     else

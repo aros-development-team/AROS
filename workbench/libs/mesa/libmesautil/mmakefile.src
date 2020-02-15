@@ -7,9 +7,12 @@ include $(SRCDIR)/config/aros.cfg
 
 CUR_MESADIR := src/util
 include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+-include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
-#MM- mesa3dgl-linklibs : mesa3d-linklib-mesautil
+#MM- mesa3dgl-linklibs : mesa3dgl-linklibs-$(AROS_TARGET_CPU)
+#MM- mesa3dgl-linklibs-x86_64 : mesa3d-linklib-mesautil
+#MM- mesa3dgl-linklibs-i386 : mesa3d-linklib-mesautil
 
 USER_INCLUDES += \
             -I$(top_srcdir)/$(CUR_MESADIR) \
@@ -18,6 +21,10 @@ USER_INCLUDES += \
             -iquote $(top_srcdir)/src/mapi \
             -iquote $(top_srcdir)/src/gallium/include \
             -iquote $(top_srcdir)/src/gallium/auxiliary
+
+ifneq ($(mesa3dgl_ENTRYPOINTS),)
+MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
+endif
 
 USER_CFLAGS += $(MESA_NOWARNFLAGS)
 USER_CXXFLAGS += $(MESA_NOWARNFLAGS)

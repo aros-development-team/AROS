@@ -2,7 +2,7 @@
 #define  KEYBOARD_INTERN_H
 
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -35,7 +35,7 @@ struct KeyboardBase
 					   releases) and there are pending requests */
 
     UWORD   kb_nHandlers;      		/* Number of reset handlers added */
-    UWORD  *kb_keyBuffer;
+    ULONG  *kb_keyEventBuffer;  /* Should be KbdIrqData_t * */
     UWORD   kb_writePos;
     BOOL    kb_ResetPhase;	        /* True if reset has begun */
     UBYTE  *kb_Matrix;
