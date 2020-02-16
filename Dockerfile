@@ -6,8 +6,6 @@ ENV BUILD_BINUTILSVER "2.32"
 ENV BUILD_GCCVER "9.1.0"
 ENV BUILD_DIR "/tmp/build"
 
-# Compile AROS here (won't compile in sources dir)
-RUN mkdir -p $BUILD_DIR
 WORKDIR /work
 
 COPY ./ /work/
@@ -15,6 +13,7 @@ COPY ./ /work/
 # Retrieve contribs: will be available in /work/contrib
 # note: dir name MUST be "contrib"
 RUN git clone https://github.com/AmigaPorts/AROS-contrib.git contrib \
+    && mkdir -p $BUILD_DIR \
     && cd $BUILD_DIR \
     && /work/configure --target=$BUILD_EXT $BUILD_CONFIGUREEXTRAS --enable-ccache \
       --with-iconset=$BUILD_ICONSET --enable-build-type=nightly \
