@@ -14,11 +14,12 @@ COPY ./ /work/
 
 # Retrieve contribs: will be available in /work/contrib
 # note: dir name MUST be "contrib"
-RUN git clone https://github.com/AmigaPorts/AROS-contrib.git contrib
-
-RUN cd $BUILD_DIR
-RUN /work/configure --target=$BUILD_EXT $BUILD_CONFIGUREEXTRAS --enable-ccache --with-iconset=$BUILD_ICONSET --enable-build-type=nightly --with-serial-debug --with-binutils-version=$BUILD_BINUTILSVER --with-gcc-version=$BUILD_GCCVER
-
-RUN make -j8 default-x11keymaptable
-RUN make -j8 contrib
-RUN make distfiles
+RUN git clone https://github.com/AmigaPorts/AROS-contrib.git contrib \
+    && cd $BUILD_DIR \
+    && /work/configure --target=$BUILD_EXT $BUILD_CONFIGUREEXTRAS --enable-ccache \
+      --with-iconset=$BUILD_ICONSET --enable-build-type=nightly \
+      --with-serial-debug --with-binutils-version=$BUILD_BINUTILSVER \
+      --with-gcc-version=$BUILD_GCCVER \
+    && make -j8 default-x11keymaptable \
+    && make -j8 contrib \
+    && make distfiles
