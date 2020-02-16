@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -49,13 +49,13 @@ struct StringDef __dtStrings[]=
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(CONST_STRPTR, GetDTString,
+        AROS_LH1(CONST_STRPTR, GetDTString,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, id, D0),
+        AROS_LHA(ULONG, id, D0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 23, DataTypes)
+        struct Library *, DataTypesBase, 23, DataTypes)
 
 /*  FUNCTION
 
@@ -90,18 +90,18 @@ struct StringDef __dtStrings[]=
    
     if((LocaleBase != NULL) && 
        (GPB(DataTypesBase)->dtb_LibsCatalog != NULL))
-	str = GetCatalogStr(GPB(DataTypesBase)->dtb_LibsCatalog, id, NULL);
+        str = GetCatalogStr(GPB(DataTypesBase)->dtb_LibsCatalog, id, NULL);
    
     if(str == NULL)
     {
-	for(sd = __dtStrings; sd->sd_String; sd++)
-	{
-	    if (sd->sd_StringID == id)
-	    {
-		str = sd->sd_String;
-		break;
-	    }
-	}
+        for(sd = __dtStrings; sd->sd_String; sd++)
+        {
+            if (sd->sd_StringID == id)
+            {
+                str = sd->sd_String;
+                break;
+            }
+        }
     }
     
     return str;

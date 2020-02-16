@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,16 +17,16 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH4(IPTR, DoDTMethodA,
+        AROS_LH4(IPTR, DoDTMethodA,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object           *, o  , A0),
-	AROS_LHA(struct Window    *, win, A1),
-	AROS_LHA(struct Requester *, req, A2),
-	AROS_LHA(Msg               , msg, A3),
+        AROS_LHA(Object           *, o  , A0),
+        AROS_LHA(struct Window    *, win, A1),
+        AROS_LHA(struct Requester *, req, A2),
+        AROS_LHA(Msg               , msg, A3),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 15, DataTypes)
+        struct Library *, DataTypesBase, 15, DataTypes)
 
 /*  FUNCTION
 
@@ -68,13 +68,13 @@
     case DTM_COPY:
     case DTM_PRINT:
     case DTM_WRITE:
-	((struct dtGeneral *)msg)->dtg_GInfo = NULL;
-	retval = DoMethodA(o, msg);
-	break;
+        ((struct dtGeneral *)msg)->dtg_GInfo = NULL;
+        retval = DoMethodA(o, msg);
+        break;
       
     default:
-	retval = DoGadgetMethodA((struct Gadget *)o, win, req, msg);
-	break;
+        retval = DoGadgetMethodA((struct Gadget *)o, win, req, msg);
+        break;
    }
    
     return retval;

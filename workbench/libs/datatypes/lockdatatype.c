@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,13 +15,13 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(VOID, LockDataType,
+        AROS_LH1(VOID, LockDataType,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DataType *, dt, A0),
+        AROS_LHA(struct DataType *, dt, A0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 40, DataTypes)
+        struct Library *, DataTypesBase, 40, DataTypes)
 
 /*  FUNCTION
 
@@ -58,7 +58,7 @@
     AROS_LIBFUNC_INIT
 
     if(dt == NULL || dt->dtn_Length == 0)
-	return;
+        return;
 
     ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList)->dtl_Lock);
    

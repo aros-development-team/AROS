@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,13 +17,13 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(ULONG *, GetDTMethods,
+        AROS_LH1(ULONG *, GetDTMethods,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object *, object, A0),
+        AROS_LHA(Object *, object, A0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 17, DataTypes)
+        struct Library *, DataTypesBase, 17, DataTypes)
 
 /*  FUNCTION
 
@@ -61,14 +61,14 @@
     struct opGet opGet;
    
     if(object == NULL)
-	return NULL;
+        return NULL;
 
     opGet.MethodID    = OM_GET;
     opGet.opg_AttrID  = DTA_Methods;
     opGet.opg_Storage = (IPTR *)&retval;
     
     if(!DoMethodA(object, (Msg)&opGet))
-	retval = NULL;
+        retval = NULL;
    
     return retval;
 

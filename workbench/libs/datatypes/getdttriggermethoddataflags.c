@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -16,11 +16,11 @@
         AROS_LH1(ULONG, GetDTTriggerMethodDataFlags,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, method, A0),
+        AROS_LHA(ULONG, method, A0),
 
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 48, DataTypes)
+        struct Library *, DataTypesBase, 48, DataTypes)
 
 /*  FUNCTION
 
@@ -82,16 +82,16 @@
     case  STM_FASTFORWARD:
     case  STM_STOP:
     case  STM_RESUME:
-	return STMD_VOID;
+        return STMD_VOID;
     
     case  STM_COMMAND:
-	return STMD_STRPTR;
-	    
+        return STMD_STRPTR;
+            
     case  STM_LOCATE:
-	return STMD_ULONG;
+        return STMD_ULONG;
 
     default:
-	break;
+        break;
     }
 
     /* User defined */

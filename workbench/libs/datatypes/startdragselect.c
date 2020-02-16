@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,7 +17,7 @@
         AROS_LH1(ULONG, StartDragSelect,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object *, o, A0),
+        AROS_LHA(Object *, o, A0),
 
 /*  LOCATION */
         struct Library *, DataTypesBase, 50, DataTypes)
@@ -62,26 +62,26 @@
     BOOL                  retval = TRUE;
 
     if(o == NULL)
-	return FALSE;
+        return FALSE;
 
     dtsi = ((struct Gadget *)o)->SpecialInfo;
 
     /* Doesn't support drag selection? */
     if(FindMethod(GetDTMethods(o), DTM_SELECT) == NULL)
     {
-	SetIoErr(ERROR_ACTION_NOT_KNOWN);
-	return FALSE;
+        SetIoErr(ERROR_ACTION_NOT_KNOWN);
+        return FALSE;
     }
     
     ObtainSemaphore(&dtsi->si_Lock);
 
     if(dtsi->si_Flags & DTSIF_LAYOUTPROC)
     {
-	retval = FALSE;
-	SetIoErr(ERROR_OBJECT_IN_USE);
+        retval = FALSE;
+        SetIoErr(ERROR_OBJECT_IN_USE);
     }
     else
-	dtsi->si_Flags |= DTSIF_DRAGSELECT;
+        dtsi->si_Flags |= DTSIF_DRAGSELECT;
 
     ReleaseSemaphore(&dtsi->si_Lock);
 

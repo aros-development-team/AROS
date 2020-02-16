@@ -60,6 +60,13 @@ ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 #GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_COMMON_OPTS += --disable-libunwind-exceptions
 GCC_COMMON_OPTS += --with-multilib
+ifneq (,$(findstring big-endian,$(ISA_ARM_FLAGS)))
+GCC_LIBATOMIC_MULTILIB_TARGETS := \
+arm/eb/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mbig-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)
+else
+GCC_LIBATOMIC_MULTILIB_TARGETS := \
+arm/el/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mlittle-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)
+endif
 else
 # If we are building GCC >= 5, for x86 targets, enable libmpx
 # ifeq ($(shell test $(GCC_VERSION_MAJOR) -gt 4; echo $$?),0)
@@ -307,6 +314,9 @@ tools-crosstools-gcc-libatomic :
 	@$(IF) ! $(TEST) -f $(libatomic-installflag) ; then \
 	    $(IF) $(TEST) -f $(crosstools-gcc--configflag) ; then \
 	        $(RM) $(crosstools-gcc--configflag) ; \
+	    fi ; \
+	    $(IF) ! $(TEST) "$(GCC_LIBATOMIC_MULTILIB_TARGETS)" = "" ; then \
+	        $(ECHO) "$(GCC_LIBATOMIC_MULTILIB_TARGETS)" > $(HOSTGENDIR)/$(CURDIR)/gcc/$(AROS_TARGET_CPU)-aros/libatomic/multilib.out ; \
 	    fi ; \
 	    gcc_build_libatomic="" $(MAKE) -f ./mmakefile crosstools-gcc--configure \
 	    && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/gcc all-target-libatomic \

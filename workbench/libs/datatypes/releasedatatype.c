@@ -15,13 +15,13 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(VOID, ReleaseDataType,
+        AROS_LH1(VOID, ReleaseDataType,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DataType *, dt, A0),
+        AROS_LHA(struct DataType *, dt, A0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 7, DataTypes)
+        struct Library *, DataTypesBase, 7, DataTypes)
 
 /*  FUNCTION
 
