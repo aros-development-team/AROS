@@ -287,6 +287,7 @@ static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
 	}
 	else
 	{
+	    D(bug("[picture.datatype] pixfmt %08x\n", pd->SrcPixelFormat);)
 	    success = WritePixelArray(	destline,		// src buffer
 					0,			// src x
 					0,			// src y
@@ -296,7 +297,8 @@ static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
 					desty,			// dest y
 					destwidth,		// width
 					1,			// height
-					pd->SrcPixelFormat);		// src format
+					// src format (if specified, otherwise fallback to ARGB)
+					(pd->SrcPixelFormat) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);
 	}
 	if( !success ) return FALSE;
 	if( srcyinc )
