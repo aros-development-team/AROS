@@ -28,6 +28,23 @@
 | darwin-ppc | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-ppc?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=25&branchName=master) |
 | mingw32-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=23&branchName=master) |
 
+## Building the Docker container
+
+The Dockerfile in this repo will compile AROS in order to have a toolchain working for building AROS applications.
+
+This image is built from the [amigadev/docker-base:latest](https://github.com/AmigaPorts/docker-base) base image.
+
+### Build the Docker container
+
+docker build --rm -t "amigadev/arosv1-cross-toolchain:x86_64" -f Dockerfile.x86_64 .
+
+Compiling AROS requires some extenal packages. If you already have them in `./bin/Sources/` you can use them and save some time on compilation (and allow an offline image build):
+
+docker build --rm -t "amigadev/arosv1-cross-toolchain:x86_64" --build-arg HAVE_LOCAL_PACKAGES=1 -f Dockerfile.x86_64 .
+
+To run the image for tests/debugging:
+
+docker run --rm -it "amigadev/arosv1-cross-toolchain:x86_64" /bin/bash
 
 ## Contributing
 
@@ -40,4 +57,3 @@ This project is licensed under the APL License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 AROS contains parts built upon external components - see the [ACKNOWLEDGEMENTS](ACKNOWLEDGEMENTS) file for details
-
