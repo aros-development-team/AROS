@@ -19,6 +19,7 @@ RUN git clone https://github.com/AmigaPorts/AROS-contrib.git contrib \
       --with-iconset=$BUILD_ICONSET --enable-build-type=nightly \
       --with-serial-debug --with-binutils-version=$BUILD_BINUTILSVER \
       --with-gcc-version=$BUILD_GCCVER \
-    && make -j8 default-x11keymaptable \
-    && make -j8 contrib \
+    && make -j$(getconf _NPROCESSORS_ONLN) crosstools-toolchain \
+    && make -j$(getconf _NPROCESSORS_ONLN) default-x11keymaptable \
+    && make -j$(getconf _NPROCESSORS_ONLN) contrib \
     && make distfiles
