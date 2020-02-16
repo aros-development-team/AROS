@@ -38,7 +38,7 @@ This image is built from the [amigadev/docker-base:latest](https://github.com/Am
 
 docker build --rm -t "amigadev/arosv1-cross-toolchain:x86_64" -f Dockerfile.x86_64 .
 
-Compiling AROS requires some extenal packages. If you already have them in `./bin/Sources/` you can use them and save some time on compilation (and allow an offline image build):
+Compiling AROS requires some external packages. If you already have them in `./bin/Sources/` you can use them and save some time on compilation (and allow an offline image build):
 
 docker build --rm -t "amigadev/arosv1-cross-toolchain:x86_64" --build-arg HAVE_LOCAL_PACKAGES=1 -f Dockerfile.x86_64 .
 
