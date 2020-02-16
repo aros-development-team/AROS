@@ -57,42 +57,42 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 
     if((LayersBase = OpenLibrary("layers.library", 39)))
     {
-	if((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
-	{
-	    if((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)))
-	    {
-		if((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 39)))
-		{
-		    if((DiskfontBase = OpenLibrary("diskfont.library", 37)))
-		    {
+        if((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
+        {
+            if((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)))
+            {
+                if((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 39)))
+                {
+                    if((DiskfontBase = OpenLibrary("diskfont.library", 37)))
+                    {
 #ifdef __AROS__
-			if((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)))
+                        if((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)))
 #else
-			if((UtilityBase = (struct Library *)OpenLibrary("utility.library", 37)))
+                        if((UtilityBase = (struct Library *)OpenLibrary("utility.library", 37)))
 #endif
-			{
-			    if((DataTypesBase = OpenLibrary("datatypes.library", 37)))
-			    {
-				if((IFFParseBase = OpenLibrary("iffparse.library", 37)))
-				{
-				    if((CyberGfxBase = OpenLibrary("cybergraphics.library", 37)))
-				    {
-					if((dt_class = DT_MakeClass(libbase)))
-					{
-					    AddClass(dt_class);
-					
-					    D(bug("picture.datatype/__UserLibInit: Returning success\n"));
+                        {
+                            if((DataTypesBase = OpenLibrary("datatypes.library", 37)))
+                            {
+                                if((IFFParseBase = OpenLibrary("iffparse.library", 37)))
+                                {
+                                    if((CyberGfxBase = OpenLibrary("cybergraphics.library", 37)))
+                                    {
+                                        if((dt_class = DT_MakeClass(libbase)))
+                                        {
+                                            AddClass(dt_class);
+                                        
+                                            D(bug("picture.datatype/__UserLibInit: Returning success\n"));
 
-					    return 0;
-					}
-				    }
-				}
-			    }
-			}
-		    }
-		}
-	    }
-	}
+                                            return 0;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
     D(bug("picture.datatype/__UserLibInit: Returning failure\n"));
@@ -110,9 +110,9 @@ ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
 
     if(dt_class)
     {
-	RemoveClass(dt_class);
-	FreeClass(dt_class);
-	dt_class = NULL;
+        RemoveClass(dt_class);
+        FreeClass(dt_class);
+        dt_class = NULL;
     }
 
     D(bug("picture.datatype/__UserLibCleanup: Closing Libraries\n"));

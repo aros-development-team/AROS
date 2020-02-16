@@ -37,8 +37,8 @@ struct MinNode *Node_Next(APTR node)
     if(node == NULL) return NULL;
     if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
     if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
-	return NULL;
-	    
+        return NULL;
+            
     return ((struct MinNode*)node)->mln_Succ;
 }
 
@@ -49,7 +49,7 @@ struct MinNode *Node_Prev(APTR node)
     if(node == NULL) return NULL;
     if(((struct MinNode*)node)->mln_Pred == NULL) return NULL;
     if(((struct MinNode*)node)->mln_Pred->mln_Pred == NULL)
-	return NULL;
+        return NULL;
 
     return ((struct MinNode*)node)->mln_Pred;
 }
@@ -90,8 +90,8 @@ ULONG List_Length(APTR list)
 
     while(node)
     {
-	len++;
-	node = Node_Next(node);
+        len++;
+        node = Node_Next(node);
     }
     
     return len;
@@ -109,7 +109,7 @@ struct MinNode *List_Find(APTR list, ULONG num)
 
     while(num--)
     {
-	if(!(node = Node_Next(node))) break;
+        if(!(node = Node_Next(node))) break;
     }
 
     return node;
@@ -144,15 +144,15 @@ LONG GetFileSize( BPTR fileh )
     
     if (fib)
     {
-	if (ExamineFH( fileh, fib ))
-	{
-	    if ((fib->fib_DirEntryType > 0) && (fib->fib_DirEntryType != ST_SOFTLINK))
-	    {
-		size = 0;
-	    }
-	    size = fib->fib_Size;
-	}
-	FreeDosObject( DOS_FIB, fib );
+        if (ExamineFH( fileh, fib ))
+        {
+            if ((fib->fib_DirEntryType > 0) && (fib->fib_DirEntryType != ST_SOFTLINK))
+            {
+                size = 0;
+            }
+            size = fib->fib_Size;
+        }
+        FreeDosObject( DOS_FIB, fib );
     }
     
     return size;
@@ -167,24 +167,24 @@ struct IFFHandle *PrepareClipboard(void)
 
     if(iff)
     {
-	if((iff->iff_Stream = (ULONG) OpenClipboard (0)))
-	{
-	    InitIFFasClip(iff);
-	    if(!OpenIFF(iff,IFFF_WRITE))
-	    {
-		if(!PushChunk(iff, MAKE_ID('F','T','X','T'), MAKE_ID('F','O','R','M'), IFFSIZE_UNKNOWN))
-		{
-		    if(!PushChunk(iff, 0, MAKE_ID('C','H','R','S'), IFFSIZE_UNKNOWN))
-		    {
-			return iff;
-		    }
-		    PopChunk(iff);
-		}
-		CloseIFF(iff);
-	    }
-	    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
-	}
-	FreeIFF(iff);
+        if((iff->iff_Stream = (ULONG) OpenClipboard (0)))
+        {
+            InitIFFasClip(iff);
+            if(!OpenIFF(iff,IFFF_WRITE))
+            {
+                if(!PushChunk(iff, MAKE_ID('F','T','X','T'), MAKE_ID('F','O','R','M'), IFFSIZE_UNKNOWN))
+                {
+                    if(!PushChunk(iff, 0, MAKE_ID('C','H','R','S'), IFFSIZE_UNKNOWN))
+                    {
+                        return iff;
+                    }
+                    PopChunk(iff);
+                }
+                CloseIFF(iff);
+            }
+            CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
+        }
+        FreeIFF(iff);
     }
     
     return NULL;
