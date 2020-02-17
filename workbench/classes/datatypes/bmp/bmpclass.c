@@ -376,6 +376,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
         alignwidth = biWidth;
         alignbytes = biWidth << 2;
         pixelfmt = PBPAFMT_ARGB;
+        bmhd->bmh_Masking = mskHasAlpha;
         break;
 
     default:
