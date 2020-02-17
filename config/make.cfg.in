@@ -1,4 +1,4 @@
-# Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+# Copyright © 1995-2020, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Static makefile rule file for AROS.
@@ -69,12 +69,16 @@ AROS_DIR_CLASSES              := Classes
 AROS_DIR_DATATYPES            := $(AROS_DIR_CLASSES)/Datatypes
 AROS_DIR_GADGETS              := $(AROS_DIR_CLASSES)/Gadgets
 AROS_DIR_DEVS                 := Devs
+AROS_DIR_DRIVERS              := Drivers
 AROS_DIR_EXPANSION            := Expansion
 AROS_DIR_FS                   := L
 AROS_DIR_LIBRARIES            := Libs
 AROS_DIR_LOCALE               := Locale
 AROS_DIR_S                    := S
+AROS_DIR_STORAGE              := Storage
+AROS_DIR_SYSTEM               := System
 AROS_DIR_TOOLS                := Tools
+AROS_DIR_UTILITIES            := Utilities
 
 AROS_DIR_DEVELOPER            := Developer
 AROS_DIR_BIN                  := bin
@@ -99,7 +103,7 @@ AROS_EXPANSION                := $(AROSDIR)/$(AROS_DIR_EXPANSION)
 AROS_FS	                      := $(AROSDIR)/$(AROS_DIR_FS)
 AROS_FS_ARCH                  := $(AROSDIR)/$(AROS_DIR_ARCH)/$(AROS_DIR_FS)
 AROS_RESOURCES                := $(AROS_DEVS)
-AROS_DRIVERS                  := $(AROS_DEVS)/Drivers
+AROS_DRIVERS                  := $(AROS_DEVS)/$(AROS_DIR_DRIVERS)
 AROS_LIBRARIES                := $(AROSDIR)/$(AROS_DIR_LIBRARIES)
 AROS_LIBRARIES_ARCH           := $(AROSDIR)/$(AROS_DIR_ARCH)/$(AROS_DIR_LIBRARIES)
 AROS_LOCALE                   := $(AROSDIR)/$(AROS_DIR_LOCALE)
@@ -110,12 +114,13 @@ AROS_ENVARC                   := $(AROS_PREFS)/Env-Archive
 AROS_PACKAGES                 := $(AROS_ENVARC)/SYS/Packages
 AROS_PRINTERS                 := $(AROS_DEVS)/Printers
 AROS_S                        := $(AROSDIR)/$(AROS_DIR_S)
-AROS_SYSTEM                   := $(AROSDIR)/System
+AROS_STORAGE                  := $(AROSDIR)/$(AROS_DIR_STORAGE)
+AROS_SYSTEM                   := $(AROSDIR)/$(AROS_DIR_SYSTEM)
 AROS_WANDERER                 := $(AROS_SYSTEM)/Wanderer
 AROS_THEMES                   := $(AROS_PREFS)/Presets/Themes
 AROS_IMAGES                   := $(AROS_SYSTEM)/Images
 AROS_TOOLS                    := $(AROSDIR)/$(AROS_DIR_TOOLS)
-AROS_UTILITIES                := $(AROSDIR)/Utilities
+AROS_UTILITIES                := $(AROSDIR)/$(AROS_DIR_UTILITIES)
 
 AROS_CONTRIB                  := $(AROSDIR)/$(AROS_DIR_CONTRIB)
 
