@@ -41,40 +41,40 @@ static LONG WebP_Export (Class *cl, Object *o, struct dtWrite *msg)
     D(bug("[webp.datatype] %s()\n", __func__));
 
     GetDTAttrs(o,
-	    PDTA_BitMapHeader,	&bmh,
-	    TAG_END);	
+            PDTA_BitMapHeader,	&bmh,
+            TAG_END);	
 
     if (bmh)
     {
-	width = bmh->bmh_Width;
-	height = bmh->bmh_Height;
-	depth = bmh->bmh_Depth;
+        width = bmh->bmh_Width;
+        height = bmh->bmh_Height;
+        depth = bmh->bmh_Depth;
 
-	if ((buffer = AllocVec(width * height * 4, MEMF_PRIVATE)) != NULL)
-	{
-	    DoSuperMethod(cl, o,
-		PDTM_READPIXELARRAY,
-		buffer, PBPAFMT_RGBA,
-		width * 4, 0, 0, width, height);
+        if ((buffer = AllocVec(width * height * 4, MEMF_PRIVATE)) != NULL)
+        {
+            DoSuperMethod(cl, o,
+                PDTM_READPIXELARRAY,
+                buffer, PBPAFMT_RGBA,
+                width * 4, 0, 0, width, height);
 
-	    size = WebPEncodeRGBA(buffer, width, height, width * 4, 75.f, &output);
+            size = WebPEncodeRGBA(buffer, width, height, width * 4, 75.f, &output);
 
-	    if(size != 0)
-	    {
-		Write(fh, output, size);
+            if(size != 0)
+            {
+                Write(fh, output, size);
 
-		FreeVec(buffer);
-		free(output);
-		return (0);
-	    }
-	}
+                FreeVec(buffer);
+                free(output);
+                return (0);
+            }
+        }
     }
     return DTERROR_COULDNT_SAVE;
 }
 
 /**************************************************************************************************/
 
-static LONG WebP_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *bmh) //, ULONG index, ULONG *total)
+static LONG WebP_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *bmh)
 {
     LONG status, error = (0);
     UBYTE *buffer, *output;
@@ -93,76 +93,76 @@ static LONG WebP_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
 
     if (buffer != NULL)
     {
-	Seek(file, 0, OFFSET_BEGINNING);
+        Seek(file, 0, OFFSET_BEGINNING);
 
-	if (Read(file, buffer, size) != -1)
-	{
-	    output = WebPDecodeRGBA(buffer, size, &width, &height);
+        if (Read(file, buffer, size) != -1)
+        {
+            output = WebPDecodeRGBA(buffer, size, &width, &height);
 
-	    FreeVec(buffer);
+            FreeVec(buffer);
 
-	    if (output != NULL)
-	    {
-		bmh->bmh_Width = width;
-		bmh->bmh_Height = height;
-		bmh->bmh_Depth = 32;
+            if (output != NULL)
+            {
+                bmh->bmh_Width = width;
+                bmh->bmh_Height = height;
+                bmh->bmh_Depth = 32;
 
-		bmh->bmh_Masking = mskHasAlpha;
+                bmh->bmh_Masking = mskHasAlpha;
 
-		SetDTAttrs(o, NULL, NULL,
-		DTA_NominalHoriz,	bmh->bmh_Width,
-		DTA_NominalVert,	bmh->bmh_Height,
-		PDTA_SourceMode,	PMODE_V43,
-		DTA_ErrorLevel,	&level,
-		DTA_ErrorNumber,	&error,
-		TAG_END);
+                SetDTAttrs(o, NULL, NULL,
+                DTA_NominalHoriz,	bmh->bmh_Width,
+                DTA_NominalVert,	bmh->bmh_Height,
+                PDTA_SourceMode,	PMODE_V43,
+                DTA_ErrorLevel,	&level,
+                DTA_ErrorNumber,	&error,
+                TAG_END);
 
-		DoSuperMethod(cl, o,
-		PDTM_WRITEPIXELARRAY, output, PBPAFMT_RGBA,
-		bmh->bmh_Width * 4, 0, 0, bmh->bmh_Width, bmh->bmh_Height);
+                DoSuperMethod(cl, o,
+                PDTM_WRITEPIXELARRAY, output, PBPAFMT_RGBA,
+                bmh->bmh_Width * 4, 0, 0, bmh->bmh_Width, bmh->bmh_Height);
 
-		free(output);
-	    }
-	    else
-		error = DTERROR_INVALID_DATA;
-	}
-	else
-	    error = DTERROR_COULDNT_OPEN;
+                free(output);
+            }
+            else
+                error = DTERROR_INVALID_DATA;
+        }
+        else
+            error = DTERROR_COULDNT_OPEN;
     }
     else
-	error = ERROR_NO_FREE_STORE;
-	
+        error = ERROR_NO_FREE_STORE;
+        
     return error;
 }
 
 static LONG  WebP_Import (Class *cl, Object *o, struct TagItem *tags) {
     struct BitMapHeader *bmh = NULL;
-    char *filename;
-    LONG srctype;
+    char *filename = (char *)GetTagData(DTA_Name, 0, tags);
+    SIPTR srctype;
     LONG error = ERROR_OBJECT_NOT_FOUND;
-    BPTR file = (BPTR)NULL;
+    BPTR file = BNULL;
 
     D(bug("[webp.datatype] %s()\n", __func__));
 
-    filename = (char *)GetTagData(DTA_Name, (IPTR)"Untitled", tags);
-
     GetDTAttrs(o,
-	    PDTA_BitMapHeader,	&bmh,
-	    DTA_Handle,			&file,
-	    DTA_SourceType,		&srctype,
-	    TAG_END);
+            PDTA_BitMapHeader,	&bmh,
+            (filename) ? DTA_Handle : TAG_IGNORE,
+                &file,
+            DTA_SourceType,		&srctype,
+            TAG_END);
 
     if (bmh && file && srctype == DTST_FILE) {
-	error =  WebP_Decode(cl, o, file, bmh);
-	if (error == (0)) {
-	    SetDTAttrs(o, NULL, NULL,
-		    DTA_ObjName,FilePart(filename),
-		    TAG_END);
-	}
+        D(bug("[webp.datatype] %s: attempt to decode file @ 0x%p\n", __func__, file));
+        error =  WebP_Decode(cl, o, file, bmh);
+        if (error == (0)) {
+            SetDTAttrs(o, NULL, NULL,
+                    DTA_ObjName,FilePart(filename),
+                    TAG_END);
+        }
     }
 
     if(srctype == DTST_RAM)
-	error = (0);
+        error = (0);
 
     return error;
 }
@@ -176,17 +176,17 @@ IPTR WebP__OM_NEW(struct IClass *cl, Object *o, struct opSet *msg)
 
     if (retval) {
 
-	D(bug("[webp.datatype] %s: object @ 0x%p\n", __func__, retval));
+        D(bug("[webp.datatype] %s: object @ 0x%p\n", __func__, retval));
 
-	error =  WebP_Import(cl, (Object *)retval, msg->ops_AttrList);
-	if (error != (0)) {
-	    D(bug("[webp.datatype] %s: disposing...\n", __func__));
+        error =  WebP_Import(cl, (Object *)retval, msg->ops_AttrList);
+        if (error != (0)) {
+            D(bug("[webp.datatype] %s: disposing...\n", __func__));
 
-	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-	    SetIoErr(error);
+            CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
+            SetIoErr(error);
 
-	    retval = (IPTR)NULL;
-	}
+            retval = (IPTR)NULL;
+        }
     }
     return retval;
 }
@@ -201,14 +201,14 @@ IPTR WebP__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
     D(bug("[webp.datatype] %s()\n", __func__));
 
     if (dtw->dtw_Mode == DTWM_RAW) {
-	D(bug("[webp.datatype] %s: exporting in webp format...\n", __func__));
+        D(bug("[webp.datatype] %s: exporting in webp format...\n", __func__));
 
-	error = WebP_Export(cl, o, dtw);
-	if (error == (0)) {
-	    retval = TRUE;
-	} else {
-	    SetIoErr(error);
-	}
+        error = WebP_Export(cl, o, dtw);
+        if (error == (0)) {
+            retval = TRUE;
+        } else {
+            SetIoErr(error);
+        }
     }
     else
         retval = DoSuperMethodA( cl, o, (Msg)dtw );
