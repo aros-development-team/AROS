@@ -102,7 +102,7 @@ BOOL ConvertTC2TC( struct Picture_Data *pd )
                                     0,				// dest y
                                     pd->SrcWidth,		// width
                                     pd->SrcHeight,		// height
-                                    pd->SrcPixelFormat);	// src format
+                                    (pd->SrcPixelFormat) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);	// src format
     }
     else
     {
@@ -684,6 +684,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
         ULONG destwidth = pd->DestWidth;
         UBYTE *sparsetable = pd->SparseTable;
         BOOL argb = pd->SrcPixelFormat==PBPAFMT_ARGB;
+        BOOL rgba = pd->SrcPixelFormat==PBPAFMT_RGBA;
         BOOL scale = pd->Scale;
 
         srcline = AllocLineBuffer( MAX(srcwidth, destwidth) * 4, 1, 1 );
@@ -732,7 +733,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                     while( x-- )
                     {
                         if( argb )
-                            thissrc++; // skip alpha
+                            thissrc++;
                         if( feedback )
                         {
                             rerr >>= feedback;
@@ -742,6 +743,9 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                         rerr += (*thissrc++);
                         gerr += (*thissrc++);
                         berr += (*thissrc++);
+                        if( rgba )
+                            thissrc++;
+
                         rval = CLIP( rerr );
                         gval = CLIP( gerr );
                         bval = CLIP( berr );
@@ -787,11 +791,13 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                     while( x-- )
                     {
                         if( argb )
-                            thissrc++; // skip alpha
+                            thissrc++;
                         index  = (*thissrc++)>>2 & 0x38; // red
                         index |= (*thissrc++)>>5 & 0x07; // green
                         index |= (*thissrc++)    & 0xc0; // blue
-                        
+                        if( rgba )
+                            thissrc++;
+
                         *thisdest++ = sparsetable[index];
                     }
                     if( scale )
