@@ -61,12 +61,14 @@ workbench-devs-datatypes : $(DTFILES) $(DTSTORAGEFILES)
 workbench-devs-datatypes-quick : workbench-devs-datatypes
 
 #MM workbench-devs-datatypes-setup :
-%rule_makedirs dirs="$(DTDIR) $(DTSTORAGEFILES)" setuptarget=workbench-devs-datatypes-setup
+%rule_makedirs dirs="$(DTDIR) $(DTSTORAGEDIR)" setuptarget=workbench-devs-datatypes-setup
 
 $(DTDIR)/% : $(SRCDIR)/$(CURDIR)/%.dtd $(CREATEDTDESC)
-	cd $(DTDIR) && $(CREATEDTDESC) $<
+	$(Q)$(ECHO) "Generating  $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(DTDIR) && $(CREATEDTDESC) $<
 
 $(DTSTORAGEDIR)/% : $(SRCDIR)/$(CURDIR)/%.dtd $(CREATEDTDESC)
-	cd $(DTSTORAGEDIR) && $(CREATEDTDESC) $<
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(DTSTORAGEDIR) && $(CREATEDTDESC) $<
 
 %common
