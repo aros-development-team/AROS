@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #define USE_BOOPSI_STUBS
 #include <aros/macros.h>
 #include <datatypes/datatypes.h>
@@ -18,8 +21,6 @@
 #include <datatypes/datatypesclass.h>
 #include "datatypes_intern.h"
 #include <clib/boopsistubs.h>
-
-#include <aros/debug.h>
 
 /************************** ASCII/BINARY RECOGNITION *************************/
 
@@ -333,9 +334,11 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
         {
             if (!(cur->DTH.dth_MaskLen) && (cur->Function))
             {
+                D(bug("[FindDtInList] *** Calling %s Match Function @ 0x%p\n", cur->DT.dtn_Node1.ln_Name, cur->Function));
                 found = (cur->Function)(dthc);
             }
-            else if(CheckSize >= cur->DTH.dth_MaskLen)
+
+            if (!found && cur->DTH.dth_MaskLen && CheckSize >= cur->DTH.dth_MaskLen)
             {
                 WORD *msk = cur->DTH.dth_Mask;
                 UBYTE *cmp = CheckArray;
@@ -397,6 +400,8 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                     {
                         if(cur->Function)
                         {
+                            D(bug("[FindDtInList] *** Calling %s Validation Function @ 0x%p\n", cur->DT.dtn_Node1.ln_Name, cur->Function));
+
                             found = (cur->Function)(dthc);
 
                             if (dthc->dthc_IFF)

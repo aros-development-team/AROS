@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -891,7 +891,7 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
 #else
                 TEXT CDname[256];
 
-                __sprintf(CDname,"%s.%s", name, TARGETCPU);
+                __sprintf(CDname,".%s.%s", name, TARGETCPU);
                 D(bug("[AddDataTypes] Checking for '%s'\n", CDname);)
 
                 if((SegList = LoadSeg(CDname)))
@@ -1066,7 +1066,9 @@ struct CompoundDataType *AddDataType(struct StackVars *sv,
                         BPTR file;
                         ULONG AllocLen;
                         BPTR SegList;
-                        
+
+                        D(bug("[AddDataTypes] Attempting to open '%s'\n", cdt->Function);)
+
                         if((file = Open(cdt->DT.dtn_FunctionName, MODE_OLDFILE)))
                         {
                             if(Seek(file, 0, OFFSET_END) >= 0)
