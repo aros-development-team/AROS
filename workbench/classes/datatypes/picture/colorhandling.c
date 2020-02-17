@@ -102,7 +102,7 @@ BOOL ConvertTC2TC( struct Picture_Data *pd )
                                     0,				// dest y
                                     pd->SrcWidth,		// width
                                     pd->SrcHeight,		// height
-                                    (pd->SrcPixelFormat) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);	// src format
+                                    (pd->SrcPixelFormat != -1) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);	// src format
     }
     else
     {
@@ -298,7 +298,7 @@ static BOOL ScaleArraySimple( struct Picture_Data *pd, struct RastPort rp )
                                         destwidth,		// width
                                         1,			// height
                                         // src format (if specified, otherwise fallback to ARGB)
-                                        (pd->SrcPixelFormat) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);
+                                        (pd->SrcPixelFormat != -1 && pd->SrcPixelFormat != 0) ? (pd->SrcPixelFormat) : RECTFMT_ARGB);
         }
         if( !success ) return FALSE;
         if( srcyinc )
@@ -325,7 +325,9 @@ BOOL AllocSrcBuffer( struct Picture_Data *pd, long width, long height, ULONG pix
     }
     pd->SrcWidth = width;
     pd->SrcHeight = height;
-    pd->SrcPixelFormat = pixelformat;
+    if ((pd->SrcPixelFormat = pixelformat) == -1)
+        pd->SrcPixelFormat = RECTFMT_ARGB;
+
     pd->SrcPixelBytes = pixelbytes;
     D(bug("picture.datatype/AllocSrcBuffer: Chunky source buffer allocated, %ld bytes\n", (long)(pd->SrcWidthBytes * height)));
     return TRUE;
@@ -368,8 +370,14 @@ BOOL AllocDestBM( struct Picture_Data *pd )
          */
         friend_bm = pd->DestScreen->RastPort.BitMap;
     }
-    else if (pd->TrueColorDest && (pd->SrcPixelFormat != -1))
-        flags |= (BMF_SPECIALFMT | SHIFT_PIXFMT(pixelformats[pd->SrcPixelFormat]));
+    else if (pd->TrueColorDest)
+    {
+        flags |= BMF_SPECIALFMT;
+        if (pd->SrcPixelFormat != -1)
+            flags |= SHIFT_PIXFMT(pixelformats[pd->SrcPixelFormat]);
+        else
+            flags |= SHIFT_PIXFMT(PIXFMT_ARGB32);
+    }
     D(bug("[AllocDestBM] Friend: 0x%p, flags: 0x%08lX\n", friend_bm, flags));
     pd->DestBM = AllocBitMap( pd->DestWidth,
                               pd->DestHeight,
