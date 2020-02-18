@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
-    $Id: ilbmclass.c 51525 2016-02-24 14:26:39Z jmcmullan $ Update 2020-02-16.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 /**********************************************************************/
