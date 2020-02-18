@@ -862,12 +862,14 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
 #if __mc68000
                 if((prop = FindProp(iff, ID_DTYP, ID_DTCD)))
                 {
+                    D(bug("[AddDataTypes] Found DTCD Chunk (%ubytes)\n", prop->sp_Size);)
+
                     if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR)))
                     {
                         cdt->DTCDChunk = func;
                         cdt->DTCDSize = prop->sp_Size;
 
-                        CopyMem(prop->sp_Data,func,prop->sp_Size);
+                        CopyMem(prop->sp_Data, func, prop->sp_Size);
 
                         HookBuffer = cdt->DTCDChunk;
                         HookBufSize = cdt->DTCDSize;
@@ -881,6 +883,8 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
                                                       (LONG_FUNC *)FunctionArray,
                                                       &DefaultStack)))
                         {
+                            D(bug("[AddDataTypes] DTCD Chunk Seg @ 0x%p\n", SegList);)
+
                             cdt->SegList = SegList;
                             cdt->Function = BADDR(SegList) + sizeof(BPTR);
                         }
@@ -1094,7 +1098,7 @@ struct CompoundDataType *AddDataType(struct StackVars *sv,
                                             if((SegList = InternalLoadSeg((BPTR)(sv), BNULL, (LONG_FUNC *)FunctionArray, &DefaultStack)))
                                             {
                                                 cdt->SegList = SegList;
-                                                cdt->Function = BADDR(SegList) + sizeof(BPTR);  // FIXME: is this portable?
+                                                cdt->Function = BADDR(SegList) + sizeof(BPTR);
                                             }
                                         }
                                         else

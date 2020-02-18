@@ -7,4 +7,4 @@ Mask='G' 'I' 'F' '8' ANY 'a'
 GroupID=pict
 ID=_gif
 Flags=DTF_BINARY,DTF_CASE
-Priority=1
+Priority=0
