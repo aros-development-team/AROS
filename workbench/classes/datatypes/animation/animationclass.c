@@ -673,12 +673,12 @@ IPTR DT_RemapFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *
                             }
                             if (buffdepth <= 8)
                             {
-                                bug("[animation.datatype] %s: HAM->CM WritePixelLine8(0x%p)\n", __func__, outline);
+                                D(bug("[animation.datatype] %s: HAM->CM WritePixelLine8(0x%p)\n", __func__, outline);)
                                 WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
                             }
                             else
                             {
-                                bug("[animation.datatype] %s: HAM->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);
+                                D(bug("[animation.datatype] %s: HAM->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);)
                                 WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
                             }
                         }
@@ -702,12 +702,12 @@ IPTR DT_RemapFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *
 
                             if (buffdepth <= 8)
                             {
-                                bug("[animation.datatype] %s: ->CM WritePixelLine8(0x%p)\n", __func__, outline);
+                                D(bug("[animation.datatype] %s: ->CM WritePixelLine8(0x%p)\n", __func__, outline);)
                                 WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
                             }
                             else
                             {
-                                bug("[animation.datatype] %s: ->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);
+                                D(bug("[animation.datatype] %s: ->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);)
                                 WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
                             }
                         }
