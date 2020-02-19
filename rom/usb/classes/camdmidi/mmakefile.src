@@ -2,7 +2,12 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-usb-classes-camdusbmidi : kernel-usb-classes-camdusbmidi-object kernel-usb-usbclass kernel-usb-poseidon-includes
+#MM kernel-usb-classes-camdusbmidi : kernel-usb-usbclass kernel-usb-poseidon-includes camdusbmidi-object-$(AROS_TARGET_CPU)
+
+#MM- camdusbmidi-object-i386 : kernel-usb-classes-camdusbmidi-object
+#MM- camdusbmidi-object-x86_64 : kernel-usb-classes-camdusbmidi-object
+#MM- camdusbmidi-object-arm : kernel-usb-classes-camdusbmidi-object
+#MM- camdusbmidi-object-ppc : kernel-usb-classes-camdusbmidi-object
 
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 USER_LDFLAGS := -static
