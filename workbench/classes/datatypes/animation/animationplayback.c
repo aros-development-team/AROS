@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development	Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development	Team. All rights reserved.
     $Id$
 */
 
@@ -200,6 +200,16 @@ struct AnimFrame *NextFrame(struct ProcessPrivate *priv, struct AnimFrame *frame
     return frameFound;
 }
 
+BOOL GetFrameCacheBitmap(struct BitMap **frameBM,  struct AnimFrame *frame)
+{
+    if (frame->af_Flags & AFFLAGF_READY)
+    {
+        *frameBM = (struct BitMap *)frame->af_CacheBM;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 AROS_UFH3(void, playerProc,
         AROS_UFHA(STRPTR,              argPtr, A0),
         AROS_UFHA(ULONG,               argSize, D0),
@@ -300,11 +310,11 @@ AROS_UFH3(void, playerProc,
                     }
 
                     // frame has changed ... render it ..
-                    if ((curFrame) && ((priv->pp_Data->ad_FrameBM = (struct BitMap *)curFrame->af_CacheBM) != NULL))
+                    if ((curFrame) && GetFrameCacheBitmap(&priv->pp_Data->ad_FrameBM,  curFrame))
                     {
                         D(
                             bug("[animation.datatype/PLAY]: %s: Rendering Frame #%d\n", __func__,  GetNODEID(curFrame));
-                            bug("[animation.datatype/PLAY]: %s:      BitMap @ 0x%p\n", __func__, curFrame->af_CacheBM);
+                            bug("[animation.datatype/PLAY]: %s:      BitMap @ 0x%p\n", __func__, priv->pp_Data->ad_FrameBM);
                         )
 
                         priv->pp_PlayerFlags &= ~PRIVPROCF_BUSY;

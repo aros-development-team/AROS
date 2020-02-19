@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development	Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development	Team. All rights reserved.
     $Id$
 */
 
@@ -576,150 +576,155 @@ IPTR DT_RemapFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *
 
     D(bug("[animation.datatype]: %s()\n", __func__);)
 
-    // remap the frame bitmap ..
-    if (msg->Target && ((tmpline = AllocVec(animd->ad_BitMapHeader.bmh_Width, MEMF_ANY)) != NULL))
+    if (msg->Frame)
     {
-        buffdepth = (UBYTE)GetBitMapAttr(msg->Target, BMA_DEPTH);
-        srcdepth = (UBYTE)GetBitMapAttr(msg->Frame->af_Frame.alf_BitMap, BMA_DEPTH);
-
-        if (((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8)) || (buffdepth > 8))
+        // remap the frame bitmap ..
+        if (msg->Target && ((tmpline = AllocVec(animd->ad_BitMapHeader.bmh_Width, MEMF_ANY)) != NULL))
         {
-            D(
-                if (animd->ad_ModeID & HAM_KEY)
-                    bug("[animation.datatype] %s: remapping HAM%d\n", __func__, srcdepth);
-                else
-                    bug("[animation.datatype] %s: remapping to %dbit\n", __func__, buffdepth);
-            )
-            outline = AllocVec((animd->ad_BitMapHeader.bmh_Width << 2), MEMF_ANY);
-        }
-        else
-            outline = tmpline;
+            buffdepth = (UBYTE)GetBitMapAttr(msg->Target, BMA_DEPTH);
+            srcdepth = (UBYTE)GetBitMapAttr(msg->Frame->af_Frame.alf_BitMap, BMA_DEPTH);
 
-        if ((remapRP = CreateRastPort()) != NULL)
-        {
-            if ((targetRP = CreateRastPort()) != NULL)
+            if (((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8)) || (buffdepth > 8))
             {
-                remapRP->BitMap = msg->Frame->af_Frame.alf_BitMap;
-                targetRP->BitMap = msg->Target;
+                D(
+                    if (animd->ad_ModeID & HAM_KEY)
+                        bug("[animation.datatype] %s: remapping HAM%d\n", __func__, srcdepth);
+                    else
+                        bug("[animation.datatype] %s: remapping to %dbit\n", __func__, buffdepth);
+                )
+                outline = AllocVec((animd->ad_BitMapHeader.bmh_Width << 2), MEMF_ANY);
+            }
+            else
+                outline = tmpline;
 
-                for(i = 0; i < animd->ad_BitMapHeader.bmh_Height; i++)
+            if ((remapRP = CreateRastPort()) != NULL)
+            {
+                if ((targetRP = CreateRastPort()) != NULL)
                 {
-                    if ((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8))
+                    remapRP->BitMap = msg->Frame->af_Frame.alf_BitMap;
+                    targetRP->BitMap = msg->Target;
+
+                    for(i = 0; i < animd->ad_BitMapHeader.bmh_Height; i++)
                     {
-                        UBYTE hamr = 0, hamg = 0, hamb = 0;
-
-                        for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
+                        if ((animd->ad_ModeID & HAM_KEY) && (srcdepth <= 8))
                         {
-                            BOOL compose = TRUE;
-                            ULONG mask = 1 << (7 - (x & 7));
-                            UBYTE p;
+                            UBYTE hamr = 0, hamg = 0, hamb = 0;
 
-                            tmpline[x] = 0;
-                            for (p = 0; p < srcdepth; p++)
+                            for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
                             {
-                                UBYTE *planedata = (UBYTE *)msg->Frame->af_Frame.alf_BitMap->Planes[p];
-                                ULONG offset = (i * animd->ad_BitMapHeader.bmh_Width) + x;
+                                BOOL compose = TRUE;
+                                ULONG mask = 1 << (7 - (x & 7));
+                                UBYTE p;
 
-                                if ((planedata) && (planedata[offset / 8 ] & mask))
-                                    tmpline[x] |=  (1 << p);
-                            }
-
-                            curpen = tmpline[x];
-                            if (HAMFlag(srcdepth, curpen) == 0)
-                            {
-                                curpen = HAMComponent(srcdepth, curpen);
-                                if (buffdepth <= 8)
+                                tmpline[x] = 0;
+                                for (p = 0; p < srcdepth; p++)
                                 {
-                                    compose = FALSE;
+                                    UBYTE *planedata = (UBYTE *)msg->Frame->af_Frame.alf_BitMap->Planes[p];
+                                    ULONG offset = (i * animd->ad_BitMapHeader.bmh_Width) + x;
+
+                                    if ((planedata) && (planedata[offset / 8 ] & mask))
+                                        tmpline[x] |=  (1 << p);
+                                }
+
+                                curpen = tmpline[x];
+                                if (HAMFlag(srcdepth, curpen) == 0)
+                                {
+                                    curpen = HAMComponent(srcdepth, curpen);
+                                    if (buffdepth <= 8)
+                                    {
+                                        compose = FALSE;
+                                        outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
+                                    }
+                                    hamr = (animd->ad_ColorData.acd_GRegs[curpen * 3] & 0xFF);
+                                    hamg = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 1] & 0xFF);
+                                    hamb = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 2] & 0xFF);
+                                }
+                                else if (HAMFlag(srcdepth, curpen) == 1)
+                                {
+                                    //modify blue..
+                                    hamb = HAMColor(srcdepth, curpen, hamb);
+                                }
+                                else if (HAMFlag(srcdepth, curpen) == 2)
+                                {
+                                    // modify red
+                                    hamr = HAMColor(srcdepth, curpen, hamr);
+                                }
+                                else if (HAMFlag(srcdepth, curpen) == 3)
+                                {
+                                    //modify green
+                                    hamg = HAMColor(srcdepth, curpen, hamg);
+                                }
+
+                                if (compose)
+                                {
+                                    if (buffdepth <= 8)
+                                    {
+                                        // TODO: Map pixel color
+                                        outline[x] = 0;
+                                    }
+                                    else
+                                    {
+                                        outline[x * 4] = 0;
+                                        outline[x * 4 + 1] = hamr;
+                                        outline[x * 4 + 2] = hamg;
+                                        outline[x * 4 + 3] = hamb;
+                                    }
+                                }
+                            }
+                            if (buffdepth <= 8)
+                            {
+                                bug("[animation.datatype] %s: HAM->CM WritePixelLine8(0x%p)\n", __func__, outline);
+                                WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                            }
+                            else
+                            {
+                                bug("[animation.datatype] %s: HAM->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);
+                                WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
+                            }
+                        }
+                        else
+                        {
+                            ReadPixelLine8(remapRP,0,i,animd->ad_BitMapHeader.bmh_Width,tmpline,NULL);
+
+                            for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
+                            {
+                                curpen = tmpline[x];
+                                if (buffdepth <= 8)
                                     outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
-                                }
-                                hamr = (animd->ad_ColorData.acd_GRegs[curpen * 3] & 0xFF);
-                                hamg = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 1] & 0xFF);
-                                hamb = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 2] & 0xFF);
-                            }
-                            else if (HAMFlag(srcdepth, curpen) == 1)
-                            {
-                                //modify blue..
-                                hamb = HAMColor(srcdepth, curpen, hamb);
-                            }
-                            else if (HAMFlag(srcdepth, curpen) == 2)
-                            {
-                                // modify red
-                                hamr = HAMColor(srcdepth, curpen, hamr);
-                            }
-                            else if (HAMFlag(srcdepth, curpen) == 3)
-                            {
-                                //modify green
-                                hamg = HAMColor(srcdepth, curpen, hamg);
-                            }
-
-                            if (compose)
-                            {
-                                if (buffdepth <= 8)
-                                {
-                                    // TODO: Map pixel color
-                                    outline[x] = 0;
-                                }
                                 else
                                 {
                                     outline[x * 4] = 0;
-                                    outline[x * 4 + 1] = hamr;
-                                    outline[x * 4 + 2] = hamg;
-                                    outline[x * 4 + 3] = hamb;
+                                    outline[x * 4 + 1] = (animd->ad_ColorData.acd_GRegs[curpen * 3] & 0xFF);
+                                    outline[x * 4 + 2] = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 1] & 0xFF);
+                                    outline[x * 4 + 3] = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 2] & 0xFF);
                                 }
                             }
-                        }
-                        if (buffdepth <= 8)
-                        {
-                            D(bug("[animation.datatype] %s: HAM->CM WritePixelLine8(0x%p)\n", __func__, outline);)
-                            WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
-                        }
-                        else
-                        {
-                            D(bug("[animation.datatype] %s: HAM->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);)
-                            WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
-                        }
-                    }
-                    else
-                    {
-                        ReadPixelLine8(remapRP,0,i,animd->ad_BitMapHeader.bmh_Width,tmpline,NULL);
 
-                        for(x = 0; x < animd->ad_BitMapHeader.bmh_Width; x++)
-                        {
-                            curpen = tmpline[x];
                             if (buffdepth <= 8)
-                                outline[x] = animd->ad_ColorData.acd_ColorTable[1][curpen];
+                            {
+                                bug("[animation.datatype] %s: ->CM WritePixelLine8(0x%p)\n", __func__, outline);
+                                WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                            }
                             else
                             {
-                                outline[x * 4] = 0;
-                                outline[x * 4 + 1] = (animd->ad_ColorData.acd_GRegs[curpen * 3] & 0xFF);
-                                outline[x * 4 + 2] = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 1] & 0xFF);
-                                outline[x * 4 + 3] = (animd->ad_ColorData.acd_GRegs[curpen * 3 + 2] & 0xFF);
+                                bug("[animation.datatype] %s: ->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);
+                                WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
                             }
                         }
-
-                        if (buffdepth <= 8)
-                        {
-                            D(bug("[animation.datatype] %s: ->CM WritePixelLine8(0x%p)\n", __func__, outline);)
-                            WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
-                        }
-                        else
-                        {
-                            D(bug("[animation.datatype] %s: ->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);)
-                            WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
-                        }
                     }
+                    targetRP->BitMap = NULL;
+                    FreeRastPort(targetRP);
                 }
-                targetRP->BitMap = NULL;
-                FreeRastPort(targetRP);
+                remapRP->BitMap = NULL;
+                FreeRastPort(remapRP);
             }
-            remapRP->BitMap = NULL;
-            FreeRastPort(remapRP);
+
+            if (outline != tmpline)
+                FreeVec(outline);
+            FreeVec(tmpline);
         }
 
-        if (outline != tmpline)
-            FreeVec(outline);
-        FreeVec(tmpline);
+        msg->Frame->af_Flags = AFFLAGF_READY;
     }
 
     return 1;
