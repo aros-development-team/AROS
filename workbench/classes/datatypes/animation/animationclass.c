@@ -516,18 +516,30 @@ IPTR DT_RenderFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame 
 
     if ((msg->Frame) && (msg->Target))
     {
+        D(bug("[animation.datatype]: %s: frame @ 0x%p, target @ 0x%p\n", __func__, (msg->Frame), (msg->Target));)
+
         if ((animd->ad_ColorData.acd_NumColors > 0) && (animd->ad_Flags & ANIMDF_REMAP))
         {
+            D(bug("[animation.datatype]: %s: remapping frame\n", __func__);)
+
             DoMethod((Object *)g, PRIVATE_REMAPFRAME, msg->Frame, msg->Target);
         }
         else
         {
             struct BitMap *sourceBM = (struct BitMap *)msg->Frame->af_CacheBM;
+
+            D(bug("[animation.datatype]: %s: rendering frame (cachebm @ 0x%p)\n", __func__, sourceBM);)
+
             if (!sourceBM)
                 sourceBM = msg->Frame->af_Frame.alf_BitMap;
+            
+            D(bug("[animation.datatype]: %s: source bitmap @ 0x%p\n", __func__, sourceBM);)
+
             BltBitMap(sourceBM, 0, 0, msg->Target, 0, 0, animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, 0xC0, 0xFF, NULL);
         }
     }
+
+    D(bug("[animation.datatype]: %s: done\n", __func__);)
 
     return (IPTR)1;
 }
@@ -658,9 +670,15 @@ IPTR DT_RemapFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *
                             }
                         }
                         if (buffdepth <= 8)
+                        {
+                            D(bug("[animation.datatype] %s: HAM->CM WritePixelLine8(0x%p)\n", __func__, outline);)
                             WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                        }
                         else
+                        {
+                            D(bug("[animation.datatype] %s: HAM->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);)
                             WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
+                        }
                     }
                     else
                     {
@@ -681,9 +699,15 @@ IPTR DT_RemapFrame(struct IClass *cl, struct Gadget *g, struct privRenderFrame *
                         }
 
                         if (buffdepth <= 8)
+                        {
+                            D(bug("[animation.datatype] %s: ->CM WritePixelLine8(0x%p)\n", __func__, outline);)
                             WritePixelLine8(targetRP,0,i,animd->ad_BitMapHeader.bmh_Width,outline,NULL);
+                        }
                         else
+                        {
+                            D(bug("[animation.datatype] %s: ->TC WritePixelArray(0x%p, RECTFMT_ARGB)\n", __func__, outline);)
                             WritePixelArray(outline, 0, 0, animd->ad_BitMapHeader.bmh_Width, targetRP, 0, i, animd->ad_BitMapHeader.bmh_Width, 1, RECTFMT_ARGB);
+                        }
                     }
                 }
                 targetRP->BitMap = NULL;
@@ -1569,35 +1593,51 @@ IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
             D(bug("[animation.datatype] %s: rendering keyframe\n", __func__);)
             DoMethod((Object *)g, PRIVATE_MAPFRAMEPENS, animd->ad_KeyFrame);
             DoMethod((Object *)g, PRIVATE_RENDERFRAME, animd->ad_KeyFrame, animd->ad_CacheBM);
+#if (0)
             animd->ad_FrameBM =  animd->ad_KeyFrame->af_Frame.alf_BitMap;
+#else
+            animd->ad_FrameBM =  animd->ad_CacheBM;
+#endif
         }
     }
 
-    LockLayer(0, msg->gpr_GInfo->gi_Window->WLayer);
-
-    if (animd->ad_FrameBM)
+    if (animd->ad_ProcessData && (animd->ad_ProcessData->pp_PlayerFlags & PRIVPROCF_RUNNING))
     {
-        BltBitMapRastPort(animd->ad_FrameBM,
-            animd->ad_HorizTop, animd->ad_VertTop,
-            msg->gpr_RPort,
-            animd->ad_RenderLeft, animd->ad_RenderTop, animd->ad_RenderWidth, animd->ad_RenderHeight, 0xC0);
-    }
-    else
-    {
-        // for now fill the animations area
-        SetRPAttrs(msg->gpr_RPort, RPTAG_FgColor, 0xEE8888, TAG_DONE );
-        RectFill(msg->gpr_RPort,
-            animd->ad_RenderLeft, animd->ad_RenderTop,
-            animd->ad_RenderLeft + animd->ad_RenderWidth - 1, animd->ad_RenderTop + animd->ad_RenderHeight - 1);
-    }
+        struct BitMap * renderBM = animd->ad_FrameBM;
 
-    if (animd->ad_Flags & ANIMDF_SHOWPANEL)
-    {
-        DoMethodA((Object *)animd->ad_Tapedeck, (Msg)msg);
+        if ((!renderBM) && (animd->ad_KeyFrame))
+        {
+            renderBM =  animd->ad_KeyFrame->af_Frame.alf_BitMap;
+        }
+        LockLayer(0, msg->gpr_GInfo->gi_Window->WLayer);
+
+        if (renderBM)
+        {
+            D(bug("[animation.datatype] %s: rendering frame bitmap @ 0x%p\n", __func__, renderBM);)
+
+            BltBitMapRastPort(renderBM,
+                animd->ad_HorizTop, animd->ad_VertTop,
+                msg->gpr_RPort,
+                animd->ad_RenderLeft, animd->ad_RenderTop, animd->ad_RenderWidth, animd->ad_RenderHeight, 0xC0);
+        }
+        else
+        {
+            // for now fill the animations area
+            D(bug("[animation.datatype] %s: clearing display area\n", __func__);)
+
+            SetRPAttrs(msg->gpr_RPort, RPTAG_FgColor, 0xEE8888, TAG_DONE );
+            RectFill(msg->gpr_RPort,
+                animd->ad_RenderLeft, animd->ad_RenderTop,
+                animd->ad_RenderLeft + animd->ad_RenderWidth - 1, animd->ad_RenderTop + animd->ad_RenderHeight - 1);
+        }
+
+        if (animd->ad_Flags & ANIMDF_SHOWPANEL)
+        {
+            DoMethodA((Object *)animd->ad_Tapedeck, (Msg)msg);
+        }
+
+        UnlockLayer(msg->gpr_GInfo->gi_Window->WLayer);
     }
-
-    UnlockLayer(msg->gpr_GInfo->gi_Window->WLayer);
-
     return (IPTR)TRUE;
 }
 
