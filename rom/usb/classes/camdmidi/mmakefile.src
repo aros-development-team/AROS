@@ -2,15 +2,15 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM kernel-usb-classes-camdusbmidi : kernel-usb-classes-camdusbmidi-object kernel-usb-usbclass kernel-usb-poseidon-includes
+
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 USER_LDFLAGS := -static
 
-FILES :=    camdusbmidi.class debug
+FILES := camdusbmidi.class debug
 
-#MM- kernel-usb-classes-camdusbmidi : kernel-usb-usbclass kernel-usb-poseidon-includes
-
-%build_module_library mmake=kernel-usb-classes-camdusbmidi \
+%build_module mmake=kernel-usb-classes-camdusbmidi \
     modname=camdusbmidi modtype=usbclass modsuffix="class" \
-    files="$(FILES)"
+    files="$(FILES)" includedir="$(GENDIR)/$(CURDIR)/include"
 
 %common
