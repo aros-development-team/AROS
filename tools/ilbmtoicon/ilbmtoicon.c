@@ -380,6 +380,8 @@ static char *checkquotes(char *s)
         i++;
         s++;
     }
+    if (i >= 255)
+        i = 255;
     s3[i] = '\0';
     s = s3;
 
