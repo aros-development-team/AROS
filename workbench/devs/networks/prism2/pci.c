@@ -339,11 +339,10 @@ static struct DevUnit *CreatePCIUnit(ULONG index, struct DevBase *base)
 
 VOID DeletePCIUnit(struct DevUnit *unit, struct DevBase *base)
 {
-   struct BusContext *context;
-
    if(unit != NULL)
    {
-      context = unit->card;
+      struct BusContext *context = unit->card;
+
 #if defined(__amigaos4__) || defined(__AROS__)
       if((unit->flags & UNITF_RESETADDED) != 0)
          RemResetCallback(&unit->reset_handler);
@@ -380,7 +379,7 @@ VOID DeletePCIUnit(struct DevUnit *unit, struct DevBase *base)
 
 static struct BusContext *AllocCard(ULONG index, struct DevBase *base)
 {
-   struct BusContext *context;
+   struct BusContext *context = NULL;
 
 #if !(defined(__MORPHOS__) || defined(__amigaos4__))
    if(base->prometheus_base != NULL)
@@ -467,7 +466,7 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
 static BOOL AddPCIIntServer(APTR card, struct Interrupt *interrupt,
    struct DevBase *base)
 {
-   BOOL success;
+   BOOL success = FALSE;
 
 #if !(defined(__MORPHOS__) || defined(__amigaos4__))
    if(base->prometheus_base != NULL)
