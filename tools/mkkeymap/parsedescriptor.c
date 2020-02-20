@@ -23,6 +23,7 @@
 static unsigned int     slen = 0; /* The allocation length pointed to be line */
 static char             *line = NULL; /* The current read file */
 static unsigned int     lineno = 0; /* The line number, will be increased by one everytime a line is read */
+struct List             strentries;
 
 char *readline(FILE *descf)
 {
@@ -99,12 +100,61 @@ BOOL processSectConfig(struct config *cfg, FILE *descf)
     return FALSE;
 }
 
+void GetEncodedBytes(char *s, UBYTE *strbuffer, ULONG *count)
+{
+    BOOL done = FALSE;
+    char *ptr = s, *out = strbuffer, *nxt, c;
+    UBYTE tmp;
+
+    while (!done)
+    {
+        c = *ptr;
+        switch (c)
+        {
+        case '\0':
+            done = 1;
+            break;
+
+        /* skip spaces and commas ..*/
+        case ' ':
+        case '\t':
+        case ',':
+            break;
+
+        case '\'':
+            if (ptr[2] == '\'')
+            {
+                *out = (UBYTE)ptr[1];
+                *count = *count + 1;
+                out++;
+                ptr += 2;
+            }
+            break;
+        
+        default:
+            tmp = (UBYTE)strtol(ptr, &nxt, 0);
+            if (nxt != ptr)
+            {
+                *out = tmp;
+                *count = *count + 1;
+                out++;
+                ptr = nxt - 1;
+            }
+        }
+        ptr++;
+    }
+}
+
 BOOL processSectString(struct config *cfg, FILE *descf)
 {
-    char *s;
+    char strbuffer[32];
+    ULONG count = 0;
+    char *s, *id = NULL;
+    BOOL retval = TRUE, done = FALSE;
 
     D(fprintf(stdout, "processing 'string' section\n");)
-    while ((readline(descf))!=NULL)
+    memset(strbuffer, 0, sizeof(strbuffer));
+    while (!done && (readline(descf)!=NULL))
     {
         DLINE(fprintf(stdout, "line = '%s'\n", line);)
         if (strncmp(line, "##", 2)==0)
@@ -113,19 +163,55 @@ BOOL processSectString(struct config *cfg, FILE *descf)
             while (isspace(*s)) s++;
 
             if (strncmp(s, "end", 3)!=0)
-                return FALSE;
-            return TRUE;
+            {
+                retval = FALSE;
+            }
+            done = TRUE;
+        }
+        else if (strncmp(line, "#", 1)!=0)
+        {
+            if (strncmp(line, "id:", 3)==0)
+            {
+                id = line+3;
+                D(fprintf(stdout, "string ID: %s\n", id);)
+            }
+            else
+                GetEncodedBytes(line, strbuffer, &count);
         }
     }
-    return FALSE;
+    D(fprintf(stdout, "string section contained %u bytes\n", count);)
+    if (id && count)
+    {
+        struct Node *strNode = malloc(sizeof(struct Node) + count + strlen(id) + 1);
+        char *tmp;
+        D(
+            int i;
+            for (i = 0; i < count; i ++)
+                fprintf(stdout, " %d", strbuffer[count]);
+            fprintf(stdout, "\n");
+        )
+        tmp = (char *)((IPTR)strNode + sizeof(struct Node));
+        strNode->ln_Name = tmp;
+        sprintf(strNode->ln_Name, "%s", id);
+        tmp = (char *)((IPTR)strNode->ln_Name + strlen(strNode->ln_Name));
+        memcpy(tmp, strbuffer, count);
+        strNode->ln_Pri = count;
+        // Add the node ...
+        ADDTAIL(&strentries, strNode);
+    }
+    return retval;
 }
 
 BOOL processSectDeadkey(struct config *cfg, FILE *descf)
 {
-    char *s;
+    char dkbuffer[32];
+    ULONG count = 0;
+    char *s, *id = NULL;
+    BOOL retval = TRUE, done = FALSE;
 
     D(fprintf(stdout, "processing 'deadkey' section\n");)
-    while ((readline(descf))!=NULL)
+    memset(dkbuffer, 0, sizeof(dkbuffer));
+    while (!done && (readline(descf)!=NULL))
     {
         DLINE(fprintf(stdout, "line = '%s'\n", line);)
         if (strncmp(line, "##", 2)==0)
@@ -134,11 +220,43 @@ BOOL processSectDeadkey(struct config *cfg, FILE *descf)
             while (isspace(*s)) s++;
 
             if (strncmp(s, "end", 3)!=0)
-                return FALSE;
-            return TRUE;
+            {
+                retval = FALSE;
+            }
+            done = TRUE;
+        }
+        else if (strncmp(line, "#", 1)!=0)
+        {
+            if (strncmp(line, "id:", 3)==0)
+            {
+                id = line+3;
+                D(fprintf(stdout, "deadkey ID: %s\n", id);)
+            }
+            else
+                GetEncodedBytes(line, dkbuffer, &count);
         }
     }
-    return FALSE;
+    D(fprintf(stdout, "deadkey section contained %u bytes\n", count);)
+    if (id && count)
+    {
+        struct Node *strNode = malloc(sizeof(struct Node) + count + strlen(id) + 1);
+        char *tmp;
+        D(
+            int i;
+            for (i = 0; i < count; i ++)
+                fprintf(stdout, " %d", dkbuffer[count]);
+            fprintf(stdout, "\n");
+        )
+        tmp = (char *)((IPTR)strNode + sizeof(struct Node));
+        strNode->ln_Name = tmp;
+        sprintf(strNode->ln_Name, "%s", id);
+        tmp = (char *)((IPTR)strNode->ln_Name + strlen(strNode->ln_Name));
+        memcpy(tmp, dkbuffer, count);
+        strNode->ln_Pri = count;
+        // Add the node ...
+        ADDTAIL(&strentries, strNode);
+    }
+    return retval;
 }
 
 BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *typesptr, UBYTE cnt)
@@ -475,6 +593,7 @@ BOOL parseKeyDescriptor(struct config *cfg)
     descf = fopen(cfg->descriptor, "r");
     if (descf != NULL)
     {
+        NEWLIST(&strentries);
         retval = processDescriptor(cfg, descf);
         fclose(descf);
     }
