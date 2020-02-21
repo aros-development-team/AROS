@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -97,7 +97,7 @@
 	    break;
 	}
     }
-    return retval;
+    return (ULONG)retval;
 
     AROS_LIBFUNC_EXIT
 } /* GetCyberIDAttr */

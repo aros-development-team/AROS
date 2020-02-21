@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,11 +20,11 @@
     NAME */
 #include <proto/cybergraphics.h>
 
-	AROS_LH2(ULONG, GetCyberMapAttr,
+	AROS_LH2(IPTR, GetCyberMapAttr,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct BitMap *, bitMap, A0),
-	AROS_LHA(ULONG          , attribute, D0),
+	AROS_LHA(IPTR          , attribute, D0),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 16, Cybergraphics)
@@ -72,7 +72,7 @@
     OOP_Object *bm_obj = NULL;
     OOP_Object *pf = NULL;
     
-    IPTR retval;
+    IPTR retval = 0;
     
     if (IS_HIDD_BM(bitMap))
     {
@@ -91,8 +91,6 @@
     case CYBRMATTR_BPPIX:
 	if (pf)
 	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
-	else
-	    retval = 0;
 	break;
 
     case CYBRMATTR_PIXFMT:
@@ -110,7 +108,7 @@
 
                 OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
 	        if ((stdpf >= vHidd_StdPixFmt_0RGB32) && (stdpf >= vHidd_StdPixFmt_0BGR32))
-		    retval += 91;
+		    retval += 91; // TODO: This is not safe - use the actual values.
             }
 
 	    D(bug("[GetCyberMapAttr] Pixel format is %d\n", retval));
@@ -142,6 +140,7 @@
 	    retval = TRUE;
 	break;
 
+    case CYBRMATTR_COLORMAP:
     default:
 	D(bug("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n"));
 	break;
