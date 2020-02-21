@@ -217,7 +217,7 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
         { aHidd_PixFmt_Depth,       24	}, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,3	}, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,24	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR032 }, /* 12 Native */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR24 }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
