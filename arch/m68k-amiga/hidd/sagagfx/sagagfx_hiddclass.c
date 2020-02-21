@@ -169,9 +169,9 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
 {
     struct TagItem *userSyncs = NULL;
 
-    MAKE_SYNC(320x240, 25180, 320, 656, 752, 800, 240, 490, 492 , 524, 0, "SAGA:320x240");
+    MAKE_SYNC(320x240, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA 320x240");
     MAKE_SYNC(640x360, 28375, 640, 896, 984, 1088, 360, 504, 508, 518, 1, "SAGA:640x360");
-    MAKE_SYNC(640x480, 25180, 640, 656, 752, 800, 480, 490, 492, 525, 0, "SAGA:640x480");
+    MAKE_SYNC(640x480, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA 640x480");
     MAKE_SYNC(720x400, 28320, 720, 738, 846, 900, 400, 412, 414, 449, 2, "SAGA:720x400");
     MAKE_SYNC(720x576, 28375, 720, 753, 817, 908, 576, 582, 586, 624, 1, "SAGA:720x576");
     MAKE_SYNC(800x600, 28375, 800, 848, 880, 960, 600, 603, 607, 615, 1, "SAGA:800x600");
@@ -217,7 +217,7 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
         { aHidd_PixFmt_Depth,       24	}, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,3	}, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,24	}, /* 11 */
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR24 }, /* 12 Native */
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_BGR032 }, /* 12 Native */
         { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
         { TAG_DONE, 0UL }
     };
