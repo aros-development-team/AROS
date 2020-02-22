@@ -224,8 +224,8 @@
 	cmnode->Depth	= info.MaxDepth;
 	cmnode->DisplayID = mode;
 	cmnode->DisplayTagList = NULL;
-	CopyMem("CGFX:", cmnode->ModeText, 5);
-	CopyMem(name.Name, cmnode->ModeText + 5, DISPLAYNAMELEN - 5);
+	CopyMem(name.Name, cmnode->ModeText, DISPLAYNAMELEN);
+	cmnode->ModeText[DISPLAYNAMELEN - 1] = '\0';
 
 	/* Keep track of the node */
 	AddTail(cybermlist, (struct Node *)cmnode);
