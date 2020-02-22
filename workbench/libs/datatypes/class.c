@@ -35,11 +35,55 @@
 
 #include "dt_inlines.h"
 
-/*****************************************************************************/
+/****** datatypes.library/DrawBox *********************************************
+*
+*   NAME
+*       DrawBox - draw a box for area marking
+*
+*   SYNOPSIS
+*
+*   FUNCTION
+*
+*   INPUTS
+*
+*   RETURNS
+*
+*   EXAMPLE
+*
+*   SEE ALSO
+*
+******************************************************************************
+*
+*/
 
-void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
-             LONG x1, LONG y1, LONG x2, LONG y2);
-
+static void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
+             LONG x1, LONG y1, LONG x2, LONG y2)
+{
+    rp->Flags |= FRST_DOT;
+    rp->linpatcnt = 15;
+    
+    SetWriteMask(rp, 0x03);
+    
+    if(x1 != x2)
+    {
+        Move(rp,x1,y1);
+        Draw(rp,x2,y1);
+        
+        Move(rp,x2,y2);
+        Draw(rp,x1,y2);
+    }
+    
+    if(y1 != y2)
+    {
+        Move(rp,x2,y1);
+        Draw(rp,x2,y2);
+        
+        Move(rp,x1,y2);
+        Draw(rp,x1,y1);
+    }
+    
+    SetWriteMask(rp, 0xff);
+}
 
 /****** datatypes.library/SetAttributes ***************************************
 *
@@ -62,8 +106,8 @@ void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
 *
 */
 
-IPTR SetAttributes(struct Library *DataTypesBase, Class *CLASS, Object *object,
-                    Msg msg)
+static IPTR SetAttributes(struct Library *DataTypesBase, Class *CLASS, Object *object,
+                    struct opSet *msg)
 {
     IPTR result = 0;
     struct DTObject *dto = INST_DATA(CLASS, object);
@@ -76,7 +120,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *CLASS, Object *object,
     LONG VisHoriz = dtsi->si_VisHoriz;
     LONG TotHoriz = dtsi->si_TotHoriz;
    
-    struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
+    struct TagItem *tstate = msg->ops_AttrList;
     struct TagItem *tag;
    
     while ((tag = NextTagItem(&tstate)) != NULL)
@@ -100,7 +144,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *CLASS, Object *object,
         case DTA_LayoutProc:
             {
                 dto->dto_LayoutProc = (struct Process *)data;
-                D(bug("[datatypes.library:dtclass] LayoutProc = 0x%p\n", data));
+                D(bug("[datatypes.library:dtclass] %s: LayoutProc = 0x%p\n", __func__, data));
             }
            break;
 
@@ -251,6 +295,88 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *CLASS, Object *object,
     return result;
 }
 
+
+/****** datatypes.library/GetAttributes ***************************************
+*
+*   NAME
+*       GetAttribute - get a DTObject's attribute
+*
+*   SYNOPSIS
+*
+*   FUNCTION
+*
+*   INPUTS
+*
+*   RETURNS
+*
+*   EXAMPLE
+*
+*   SEE ALSO
+*
+******************************************************************************
+*
+*/
+
+static IPTR GetAttribute(struct Library *DataTypesBase, Class *CLASS, Object *object,
+                    struct opGet *msg)
+{
+    D(bug("[datatypes.library:dtclass] %(%08x)\n", __func__, msg->opg_AttrID));
+
+    IPTR *store = ((struct opGet *)msg)->opg_Storage;
+    struct DTObject *dto = INST_DATA(CLASS, object);
+    struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
+    IPTR retval = 1;
+
+    switch(msg->opg_AttrID)
+    {
+    case DTA_TopVert:       *store = dtsi->si_TopVert;   break;
+    case DTA_VisibleVert:   *store = dtsi->si_VisVert;   break;
+    case DTA_TotalVert:     *store = dtsi->si_TotVert;   break;
+    case DTA_VertUnit:      *store = dtsi->si_VertUnit;  break;
+
+    case DTA_TopHoriz:      *store = dtsi->si_TopHoriz;  break;
+    case DTA_VisibleHoriz:  *store = dtsi->si_VisHoriz;  break;
+    case DTA_TotalHoriz:    *store = dtsi->si_TotHoriz;  break;
+    case DTA_HorizUnit:     *store = dtsi->si_HorizUnit; break;
+
+    case DTA_PrinterProc:   *store = (IPTR)dto->dto_PrinterProc; break;
+    case DTA_LayoutProc:    *store = (IPTR)dto->dto_LayoutProc;  break;
+
+    case DTA_Name:          *store = (IPTR)dto->dto_Name;     break;
+    case DTA_SourceType:    *store = dto->dto_SourceType;      break;
+    case DTA_Handle:	    *store = (IPTR)dto->dto_Handle;   break;
+    case DTA_DataType:      *store = (IPTR)dto->dto_DataType; break;
+    case DTA_Domain:        *store = (IPTR)&dto->dto_Domain;  break;
+
+    case DTA_ObjName:       *store = (IPTR)dto->dto_ObjName;       break;
+    case DTA_ObjAuthor:     *store = (IPTR)dto->dto_ObjAuthor;     break;
+    case DTA_ObjAnnotation: *store = (IPTR)dto->dto_ObjAnnotation; break;
+    case DTA_ObjCopyright:  *store = (IPTR)dto->dto_ObjCopyright;  break;
+    case DTA_ObjVersion:    *store = (IPTR)dto->dto_ObjVersion;    break;
+    case DTA_ObjectID:      *store = dto->dto_ObjectID;             break;
+    case DTA_UserData:      *store = dto->dto_UserData;             break;
+    case DTA_FrameInfo:     *store = (IPTR)&dto->dto_FrameInfo;    break;
+
+    case DTA_SelectDomain:
+        if (dtsi->si_Flags & DTSIF_HIGHLIGHT)
+            *store = (IPTR)&dto->dto_SelectDomain;
+        else
+            *store = (IPTR)NULL;
+        break;
+
+    case DTA_TotalPVert:    *store = dto->dto_TotalPVert;   break;
+    case DTA_TotalPHoriz:   *store = dto->dto_TotalPHoriz;  break;
+    case DTA_NominalVert:   *store = dto->dto_NominalVert;  break;
+    case DTA_NominalHoriz:  *store = dto->dto_NominalHoriz; break;
+    case DTA_Data:          *store = (IPTR)object;          break;
+
+    default:
+        retval = DoSuperMethodA(CLASS, object, msg);
+        break;
+    }
+
+    return retval;
+}
 
 /****** datatypes.library/Dispatcher ******************************************
 *
@@ -413,8 +539,7 @@ AROS_UFH3(IPTR, Dispatcher,
                 
                 if(Success)
                 {
-                    SetAttributes((struct Library *)DataTypesBase, CLASS,
-                                  (Object *)newobject, msg);
+                    SetAttributes((struct Library *)DataTypesBase, CLASS, (Object *)newobject, (struct opSet *)msg);
                     retval = (IPTR)newobject;
                 }
                 else
@@ -427,72 +552,15 @@ AROS_UFH3(IPTR, Dispatcher,
         } /* case OM_NEW: */
 
     case OM_UPDATE:
-        /* Avoid update loops */
-/*	if(DoMethod(object, ICM_CHECKLOOP))
-            break; */
-
-        /* Fall through */
     case OM_SET:
         /* Let superclass see the new attributes... */
         retval  = DoSuperMethodA(CLASS, object, msg);
         /* ...and set our own new attributes. */
-        retval += SetAttributes((struct Library *)DataTypesBase, CLASS, object, msg);
+        retval += SetAttributes((struct Library *)DataTypesBase, CLASS, object, (struct opSet *)msg);
         break;
         
     case OM_GET:
-        D(bug("[datatypes.library:dtclass] OM_GET: tag = %x\n", ((struct opGet*)msg)->opg_AttrID));
-        {
-            IPTR *store = ((struct opGet *)msg)->opg_Storage;
-            retval = 1;
-            
-            switch(((struct opGet*)msg)->opg_AttrID)
-            {
-            case DTA_TopVert:       *store = dtsi->si_TopVert;   break;
-            case DTA_VisibleVert:   *store = dtsi->si_VisVert;   break;
-            case DTA_TotalVert:     *store = dtsi->si_TotVert;   break;
-            case DTA_VertUnit:      *store = dtsi->si_VertUnit;  break;
-                
-            case DTA_TopHoriz:      *store = dtsi->si_TopHoriz;  break;
-            case DTA_VisibleHoriz:  *store = dtsi->si_VisHoriz;  break;
-            case DTA_TotalHoriz:    *store = dtsi->si_TotHoriz;  break;
-            case DTA_HorizUnit:     *store = dtsi->si_HorizUnit; break;
-                
-            case DTA_PrinterProc:   *store = (IPTR)dto->dto_PrinterProc; break;
-            case DTA_LayoutProc:    *store = (IPTR)dto->dto_LayoutProc;  break;
-                
-            case DTA_Name:          *store = (IPTR)dto->dto_Name;     break;
-            case DTA_SourceType:    *store = dto->dto_SourceType;      break;
-            case DTA_Handle:	    *store = (IPTR)dto->dto_Handle;   break;
-            case DTA_DataType:      *store = (IPTR)dto->dto_DataType; break;
-            case DTA_Domain:        *store = (IPTR)&dto->dto_Domain;  break;
-                
-            case DTA_ObjName:       *store = (IPTR)dto->dto_ObjName;       break;
-            case DTA_ObjAuthor:     *store = (IPTR)dto->dto_ObjAuthor;     break;
-            case DTA_ObjAnnotation: *store = (IPTR)dto->dto_ObjAnnotation; break;
-            case DTA_ObjCopyright:  *store = (IPTR)dto->dto_ObjCopyright;  break;
-            case DTA_ObjVersion:    *store = (IPTR)dto->dto_ObjVersion;    break;
-            case DTA_ObjectID:      *store = dto->dto_ObjectID;             break;
-            case DTA_UserData:      *store = dto->dto_UserData;             break;
-            case DTA_FrameInfo:     *store = (IPTR)&dto->dto_FrameInfo;    break;
-                
-            case DTA_SelectDomain:
-                if (dtsi->si_Flags & DTSIF_HIGHLIGHT)
-                    *store = (IPTR)&dto->dto_SelectDomain;
-                else
-                    *store = (IPTR)NULL;
-                break;
-                
-            case DTA_TotalPVert:    *store = dto->dto_TotalPVert;   break;
-            case DTA_TotalPHoriz:   *store = dto->dto_TotalPHoriz;  break;
-            case DTA_NominalVert:   *store = dto->dto_NominalVert;  break;
-            case DTA_NominalHoriz:  *store = dto->dto_NominalHoriz; break;
-            case DTA_Data:          *store = (IPTR)object;          break;
-
-            default:
-                retval = DoSuperMethodA(CLASS, object, msg);
-                break;
-            } /* switch(AttrId) */
-        } /* case OM_GET: */
+        retval = GetAttribute((struct Library *)DataTypesBase, CLASS, object, (struct opGet *)msg);
         break;
         
     case GM_HITTEST:
@@ -818,17 +886,6 @@ AROS_UFH3(IPTR, Dispatcher,
             ((struct Gadget *)object)->Flags &= ~(GFLG_SELECTED | GFLG_RELSPECIAL);
         } /* case GM_GOINACTIVE */
         break;
-        
-    case GM_DOMAIN:
-        if(object == NULL)
-            break;
-
-        if(dtsi != NULL)
-        {
-            ; /* TODO */
-        }
-
-        break;
 
     /* GM_LAYOUT and DTM_PROCLAYOUT have the same semantics; DTM_PROCLAYOUT
        must be in the process context, GM_LAYOUT must not. */
@@ -895,36 +952,21 @@ AROS_UFH3(IPTR, Dispatcher,
         break;
         
     case DTM_ABORTPRINT:
-        Forbid();
-
-        if(dto->dto_PrinterProc != NULL)
-            Signal((struct Task *)dto->dto_PrinterProc, SIGBREAKF_CTRL_C);
-        
-        Permit();
-        
-        break;
-
-    case DTM_PRINT:
-        /*	retval = PDERR_CANCEL;  --  No printer stuff yet... */
-        SetIoErr(ERROR_NOT_IMPLEMENTED);
-        break;
-        
-    case DTM_REMOVEDTOBJECT:	/* TODO... */
-        break;
-
-    case DTM_WRITE:
-        retval = 0;
-        SetIoErr(ERROR_NOT_IMPLEMENTED);
+        {
+            Forbid();
+            if(dto->dto_PrinterProc != NULL)
+                Signal((struct Task *)dto->dto_PrinterProc, SIGBREAKF_CTRL_C);
+            Permit();
+        }
         break;
 
     case OM_DISPOSE:
-        retval = IoErr();
-        
-        if(dto->dto_DataType != NULL)
         {
             APTR handle;
+
+            retval = IoErr();
             
-            if((handle = dto->dto_Handle))
+            if ((dto->dto_DataType) && ((handle = dto->dto_Handle) != NULL))
             {
                 switch(dto->dto_SourceType)
                 {
@@ -962,33 +1004,32 @@ AROS_UFH3(IPTR, Dispatcher,
                     
                     break;
                 } /* switch(sourcetype) */
-            } /* if(got handle) */
-        } /* if(datatype != NULL) */
-        
-        if(dto->dto_Name)
-            FreeVec(dto->dto_Name);
-        
-        if(dto->dto_ObjName)
-            FreeVec(dto->dto_ObjName);
-        
-        if(dto->dto_ObjAuthor)
-            FreeVec(dto->dto_ObjAuthor);
-        
-        if(dto->dto_ObjAnnotation)
-            FreeVec(dto->dto_ObjAnnotation);
-        
-        if(dto->dto_ObjCopyright)
-            FreeVec(dto->dto_ObjCopyright);
-        
-        if(dto->dto_ObjVersion)
-            FreeVec(dto->dto_ObjVersion);
-        
-        /* Redirect error to the DataTypes error codes */
-        if(retval == ERROR_OBJECT_NOT_FOUND)
-            retval = DTERROR_COULDNT_OPEN;
-        
-        SetIoErr(retval);
-        
+            } /* if(dto_DataType && dto_Handle) */
+            
+            if(dto->dto_Name)
+                FreeVec(dto->dto_Name);
+            
+            if(dto->dto_ObjName)
+                FreeVec(dto->dto_ObjName);
+            
+            if(dto->dto_ObjAuthor)
+                FreeVec(dto->dto_ObjAuthor);
+            
+            if(dto->dto_ObjAnnotation)
+                FreeVec(dto->dto_ObjAnnotation);
+            
+            if(dto->dto_ObjCopyright)
+                FreeVec(dto->dto_ObjCopyright);
+            
+            if(dto->dto_ObjVersion)
+                FreeVec(dto->dto_ObjVersion);
+            
+            /* Redirect error to the DataTypes error codes */
+            if(retval == ERROR_OBJECT_NOT_FOUND)
+                retval = DTERROR_COULDNT_OPEN;
+            
+            SetIoErr(retval);
+        }
         /* Fall through so the superclass can free its resources */
     default:
         retval = DoSuperMethodA(CLASS, object, msg);
@@ -1000,55 +1041,4 @@ AROS_UFH3(IPTR, Dispatcher,
     return retval;
 
     AROS_USERFUNC_EXIT
-}
-
-
-/****** datatypes.library/DrawBox *********************************************
-*
-*   NAME
-*       DrawBox - draw a box for area marking
-*
-*   SYNOPSIS
-*
-*   FUNCTION
-*
-*   INPUTS
-*
-*   RETURNS
-*
-*   EXAMPLE
-*
-*   SEE ALSO
-*
-******************************************************************************
-*
-*/
-
-void DrawBox(struct Library *DataTypesBase, struct RastPort *rp,
-             LONG x1, LONG y1, LONG x2, LONG y2)
-{
-    rp->Flags |= FRST_DOT;
-    rp->linpatcnt = 15;
-    
-    SetWriteMask(rp, 0x03);
-    
-    if(x1 != x2)
-    {
-        Move(rp,x1,y1);
-        Draw(rp,x2,y1);
-        
-        Move(rp,x2,y2);
-        Draw(rp,x1,y2);
-    }
-    
-    if(y1 != y2)
-    {
-        Move(rp,x2,y1);
-        Draw(rp,x2,y2);
-        
-        Move(rp,x1,y2);
-        Draw(rp,x1,y1);
-    }
-    
-    SetWriteMask(rp, 0xff);
 }
