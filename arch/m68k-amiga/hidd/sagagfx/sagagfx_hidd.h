@@ -37,6 +37,7 @@ struct SAGAGfx_staticdata
 
     UBYTE           cursor_clut[16*16];
     UWORD           cursor_pal[4];
+    UBYTE           cursor_visible;
 
     WORD            cursorX;
     WORD            cursorY;
