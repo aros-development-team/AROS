@@ -140,7 +140,9 @@
 	    retval = TRUE;
 	break;
 
+#if defined(CYBRMATTR_COLORMAP)
     case CYBRMATTR_COLORMAP:
+#endif
     default:
 	D(bug("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n"));
 	break;
