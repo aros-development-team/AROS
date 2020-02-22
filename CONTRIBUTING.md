@@ -1,7 +1,7 @@
 # Applying for access.
 
 In the first instance you should show interest in the project by forking and providing pull requests
-for patches to improve AROS. You should also join the developer mailing list, and request to officially
+for patches to improve AROS. You should also join the [slack channel](https://arosdevteam.slack.com) or developer mailing list, and request to officially
 join the GitHub organization if you are interested in being directly involved in the project, or would
 like to collaborate.
 
