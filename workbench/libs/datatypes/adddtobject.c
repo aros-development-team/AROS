@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,13 +17,13 @@
         AROS_LH4(LONG, AddDTObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window    *, win, A0),
-	AROS_LHA(struct Requester *, req, A1),
-	AROS_LHA(Object           *, obj, A2),
-	AROS_LHA(LONG              , pos, D0),
+        AROS_LHA(struct Window    *, win, A0),
+        AROS_LHA(struct Requester *, req, A1),
+        AROS_LHA(Object           *, obj, A2),
+        AROS_LHA(LONG              , pos, D0),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 12, DataTypes)
+        struct Library *, DataTypesBase, 12, DataTypes)
 
 /*  FUNCTION
 
@@ -66,7 +66,7 @@
     AROS_LIBFUNC_INIT
 
     if(obj == NULL || win == NULL)
-	return -1;
+        return -1;
 
     return AddGList(win, (struct Gadget *)obj, pos, 1, req);
 

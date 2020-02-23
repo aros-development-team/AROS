@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -22,14 +22,14 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH2(LONG, RemoveDTObject,
+        AROS_LH2(LONG, RemoveDTObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Window *, window, A0),
-	AROS_LHA(Object        *, object, A1),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(Object        *, object, A1),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 16, DataTypes)
+        struct Library *, DataTypesBase, 16, DataTypes)
 
 /*  FUNCTION
 
@@ -69,16 +69,16 @@
    
     if(object != NULL)
     {
-	struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
-	
-	while(dtsi->si_Flags & DTSIF_LAYOUTPROC)
-	{
-	    Delay(50);
-	}
-		
-	retval = RemoveGList(window, (struct Gadget *)object, 1);
+        struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
+        
+        while(dtsi->si_Flags & DTSIF_LAYOUTPROC)
+        {
+            Delay(50);
+        }
+                
+        retval = RemoveGList(window, (struct Gadget *)object, 1);
 
-	DoMethod(object, DTM_REMOVEDTOBJECT, 0);
+        DoMethod(object, DTM_REMOVEDTOBJECT, 0);
     }
     
     return retval;

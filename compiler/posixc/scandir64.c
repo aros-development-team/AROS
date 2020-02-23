@@ -14,7 +14,7 @@
     NAME */
 #include <dirent.h>
 
-        int posixc_scandir64 (
+        int scandir64 (
 
 /*  SYNOPSIS */
         const char *dir,
@@ -70,7 +70,7 @@
 
     do
     {
-        if ((dp = posixc_readdir64(dirp)) != NULL)
+        if ((dp = readdir64(dirp)) != NULL)
         {
             selected = 0;
             if (select != NULL)

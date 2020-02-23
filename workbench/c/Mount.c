@@ -221,7 +221,7 @@ typedef struct UtilityBase *UtilityBase_t;
 #endif
 
 static const int __nocommandline __attribute__((used));
-const TEXT version[] = "\0$VER: " PROGNAME " 50.16 (" ADATE ")";
+const TEXT version[] = "\0$VER: " PROGNAME " 50.17 (" ADATE ")";
 
 ULONG CheckDevice(char *name);
 void  InitParams(IPTR *params);
@@ -1888,27 +1888,26 @@ void ShowError(STRPTR name, const char *s, ...)
 
 void _snprintf(STRPTR buffer, LONG buffer_size, CONST_STRPTR format, ...)
 {
-	va_list ap;
-	va_start(ap, format);
-	VSNPrintf(buffer, buffer_size, format, (RAWARG)ap);
-	va_end(ap);
+	AROS_SLOWSTACKFORMAT_PRE(format);
+	VSNPrintf(buffer, buffer_size, format, (RAWARG)AROS_SLOWSTACKFORMAT_ARG(format));
+	AROS_SLOWSTACKFORMAT_POST(format);
 }
 
 void ShowFault(LONG code, const char *s, ...)
 {
 	char buf[NAMESTR_MAX];
-	va_list ap;
 	int l;
 
-	va_start(ap, s);
-	l = VSNPrintf(buf, sizeof(buf) - 2, s, (RAWARG)ap);
-	va_end(ap);
-	Strlcpy(&buf[l], ": ", sizeof(buf));
+	AROS_SLOWSTACKFORMAT_PRE(s);
+	l = VSNPrintf(buf, NAMESTR_MAX - 2, s, (RAWARG)AROS_SLOWSTACKFORMAT_ARG(s));
+	AROS_SLOWSTACKFORMAT_POST(s);
+
+	Strlcpy(&buf[l], ": ", NAMESTR_MAX);
 	l += 2;
-	Fault(code, NULL, &buf[l], sizeof(buf) - l);
+	Fault(code, NULL, &buf[l], NAMESTR_MAX - l);
 	if (buf[l] == 0)
-	    _snprintf(&buf[l], sizeof(buf) - l, "%ld", (long)code);
-	buf[sizeof(buf)-1] = 0;
+	    _snprintf(&buf[l], NAMESTR_MAX - l, "%ld", (long)code);
+	buf[NAMESTR_MAX-1] = 0;
 	if (IsCli)
 	{
 		PutStr(buf);

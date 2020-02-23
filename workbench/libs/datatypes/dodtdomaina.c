@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,13 +18,13 @@
         AROS_LH7(ULONG, DoDTDomainA,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object           *, o     , A0),
-	AROS_LHA(struct Window    *, win   , A1),
-	AROS_LHA(struct Requester *, req   , A2),
-	AROS_LHA(struct RastPort  *, rport , A3),
-	AROS_LHA(ULONG             , which , D0),
-	AROS_LHA(struct IBox      *, domain, A4),
-	AROS_LHA(struct TagItem   *, attrs , A5),
+        AROS_LHA(Object           *, o     , A0),
+        AROS_LHA(struct Window    *, win   , A1),
+        AROS_LHA(struct Requester *, req   , A2),
+        AROS_LHA(struct RastPort  *, rport , A3),
+        AROS_LHA(ULONG             , which , D0),
+        AROS_LHA(struct IBox      *, domain, A4),
+        AROS_LHA(struct TagItem   *, attrs , A5),
 
 
 /*  LOCATION */
@@ -77,7 +77,7 @@
     ULONG           ret;
 
     if(o == NULL)
-	return 0;
+        return 0;
 
     gpd.MethodID   = GM_DOMAIN;
     gpd.gpd_GInfo  = ((struct Gadget *)o)->SpecialInfo;

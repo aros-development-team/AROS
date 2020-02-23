@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -19,11 +19,11 @@
         AROS_LH2(ULONG, GetDTAttrsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object         *, o    , A0),
-	AROS_LHA(struct TagItem *, attrs, A2),
+        AROS_LHA(Object         *, o    , A0),
+        AROS_LHA(struct TagItem *, attrs, A2),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 11, DataTypes)
+        struct Library *, DataTypesBase, 11, DataTypes)
 
 /*  FUNCTION
 
@@ -34,17 +34,17 @@
     o      --  pointer to a data type object; may be NULL
     attrs  --  the attributes to get terminated with TAG_DONE; each Tag's
                data element should contain the address of the respective
-	       storage element; may be NULL
-	       
-	       <base attribs>
+               storage element; may be NULL
                
-	       DTA_DataType (#1)
-	       DTA_ObjName
-	       DTA_ObjAuthor
-	       DTA_ObjAnnotation
-	       DTA_ObjCopyright
-	       DTA_ObjVersion
-	       DTA_ObjectID
+               <base attribs>
+               
+               DTA_DataType (#1)
+               DTA_ObjName
+               DTA_ObjAuthor
+               DTA_ObjAnnotation
+               DTA_ObjCopyright
+               DTA_ObjVersion
+               DTA_ObjectID
 
     RESULT
 
@@ -78,19 +78,19 @@
     struct opGet          opGet;
 
     if(o == NULL || attrs == NULL)
-	return 0;
+        return 0;
    
     opGet.MethodID = OM_GET;
    
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
-	opGet.opg_AttrID  = tag->ti_Tag;
-	opGet.opg_Storage = (IPTR *)tag->ti_Data;
-	
-	if(DoMethodA(o, (Msg)&opGet))
-	    result++;
-	else
-	    *(opGet.opg_Storage) = 0;
+        opGet.opg_AttrID  = tag->ti_Tag;
+        opGet.opg_Storage = (IPTR *)tag->ti_Data;
+        
+        if(DoMethodA(o, (Msg)&opGet))
+            result++;
+        else
+            *(opGet.opg_Storage) = 0;
     }
 
     return(result);

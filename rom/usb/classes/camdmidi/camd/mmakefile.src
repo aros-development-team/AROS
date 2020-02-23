@@ -1,0 +1,25 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+OBJDIR := $(GENDIR)/$(CURDIR)
+CAMDOBJDIR := $(OBJDIR)/../camdusbmidi/arch
+
+SRCFILE := poseidonusb
+
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
+
+#MM kernel-usb-classes-camdusbmidi-object : kernel-usb-classes-camdusbmidi-includes
+
+$(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c | $(OBJDIR)
+	%compile_q
+
+%rule_link_binary file=$(CAMDOBJDIR)/$(SRCFILE).bin.o name=$(SRCFILE) objs=$(OBJDIR)/$(SRCFILE).o
+
+#MM
+kernel-usb-classes-camdusbmidi-object : $(CAMDOBJDIR)/$(SRCFILE).bin.o
+
+GLOB_MKDIRS += $(OBJDIR)
+
+%common

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -16,12 +16,12 @@
         AROS_LH3(struct DTMethod *, CopyDTTriggerMethods,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DTMethod *, methods, A0),
-	AROS_LHA(struct DTMethod *, include, A1),
-	AROS_LHA(struct DTMethod *, exclude, A2),
+        AROS_LHA(struct DTMethod *, methods, A0),
+        AROS_LHA(struct DTMethod *, include, A1),
+        AROS_LHA(struct DTMethod *, exclude, A2),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 46, DataTypes)
+        struct Library *, DataTypesBase, 46, DataTypes)
 
 /*  FUNCTION
 
@@ -34,8 +34,8 @@
     include  --  array of methods to include terminated with ~0UL; may be NULL
     method   --  array of methods to exclude terminated with ~0UL; may be NULL
                  the dtm_Command and dtm_Method fields may have the options
-		 described in the FindTriggerMethod to filter out the given
-		 entries
+                 described in the FindTriggerMethod to filter out the given
+                 entries
     RESULT
 
     The new array of methods or NULL if something went wrong (like out of
@@ -74,39 +74,39 @@
     struct DTMethod *newmets;
 
     if(methods == NULL)
-	return NULL;
+        return NULL;
 
     if(inc != NULL)
     {
-	while(inc->dtm_Method != STM_DONE)
-	{
-	    nMethods++;
-	    inc++;
-	}
+        while(inc->dtm_Method != STM_DONE)
+        {
+            nMethods++;
+            inc++;
+        }
     }
 
     if(exc != NULL)
     {
-	while(exc->dtm_Method != STM_DONE)
-	{
-	    if(FindTriggerMethod(methods, NULL, exc->dtm_Method) != NULL)
-		nMethods--;
-	    
-	    exc++;
-	}
+        while(exc->dtm_Method != STM_DONE)
+        {
+            if(FindTriggerMethod(methods, NULL, exc->dtm_Method) != NULL)
+                nMethods--;
+            
+            exc++;
+        }
     }
 
     while(met->dtm_Method != STM_DONE)
     {
-	nMethods++;
-	met++;
+        nMethods++;
+        met++;
     }
     
     newM = AllocVec((nMethods + 1)*sizeof(struct DTMethod), MEMF_PUBLIC);
 
     /* No memory available? */
     if(newM == NULL)
-	return NULL;
+        return NULL;
     
     newmets = newM;
     met     = methods;
@@ -114,17 +114,17 @@
     /* Copy new methods */
     if(include != NULL)
     {
-	while(include->dtm_Method != STM_DONE)
-	    *newmets++ = *include++;
+        while(include->dtm_Method != STM_DONE)
+            *newmets++ = *include++;
     }
     
     /* Copy old methods except the excluded ones */
     while(met->dtm_Method != STM_DONE)
     {
-	if(FindTriggerMethod(exclude, NULL, met->dtm_Method) == NULL)
-	    *newmets++ = *met;
-	
-	met++;
+        if(FindTriggerMethod(exclude, NULL, met->dtm_Method) == NULL)
+            *newmets++ = *met;
+        
+        met++;
     }
     
     newmets->dtm_Method = STM_DONE;

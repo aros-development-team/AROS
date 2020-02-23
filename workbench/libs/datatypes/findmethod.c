@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,11 +17,11 @@
         AROS_LH2(ULONG *, FindMethod,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG *, methods       , A0),
-	AROS_LHA(ULONG  , searchmethodid, A1),
+        AROS_LHA(ULONG *, methods       , A0),
+        AROS_LHA(ULONG  , searchmethodid, A1),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 43, DataTypes)
+        struct Library *, DataTypesBase, 43, DataTypes)
 
 /*  FUNCTION
 
@@ -57,14 +57,14 @@
     AROS_LIBFUNC_INIT
 
     if(methods == NULL)
-	return NULL;
+        return NULL;
 
     while(((LONG)(*methods)) != -1)
     {
-	if(*methods == searchmethodid)
-	    return methods;
+        if(*methods == searchmethodid)
+            return methods;
 
-	methods++;
+        methods++;
     }
 
     return NULL;

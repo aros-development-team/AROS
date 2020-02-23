@@ -38,7 +38,7 @@ static void writeskelfunc(struct config *cfg, struct functionhead *funclist)
         fprintf(out,
                 "/*****************************************************************************\n\n"
                 "    NAME */\n"
-                "        AROS_LH%d(%s, %s,\n\n"
+                "        AROS_LH%u(%s, %s,\n\n"
                 "/*  SYNOPSIS */\n",
                 funclist->argcount, funclist->type, funclist->internalname
         );
@@ -80,6 +80,7 @@ static void writeskelfunc(struct config *cfg, struct functionhead *funclist)
                 cfg->libbasetypeptrextern, cfg->libbase, funclist->lvo, cfg->basename
         );
     }
+    fclose(out);
 }
 
 void writeskel(struct config *cfg)

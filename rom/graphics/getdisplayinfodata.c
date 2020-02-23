@@ -439,9 +439,13 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	    	(IS_REAL_STDPIXFMT(stdpixfmt) || (stdpixfmt == vHidd_StdPixFmt_Unknown)))
 	    {
 	    	STRPTR pixfmt_name = "";
-		
+
 		switch(stdpixfmt)
 		{
+		    case vHidd_StdPixFmt_LUT8:
+		    	pixfmt_name = "CLUT";
+			break;
+
 		    case vHidd_StdPixFmt_RGB16:
 		    case vHidd_StdPixFmt_RGB15:
 		    case vHidd_StdPixFmt_RGB24:
@@ -490,8 +494,8 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 			
 		}
 		if (stdpixfmt != vHidd_StdPixFmt_Plane)
-		    snprintf(ni->Name, DISPLAYNAMELEN, "%s %2dbit %s",
-		    	 sync_description, (int)depth, pixfmt_name);
+		    snprintf(ni->Name, DISPLAYNAMELEN, "%sx%2u %s",
+		    	 sync_description, depth, pixfmt_name);
 		else
 		    strncpy(ni->Name, sync_description, DISPLAYNAMELEN - 1);
 	    }

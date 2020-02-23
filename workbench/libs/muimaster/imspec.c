@@ -1,6 +1,6 @@
 /*
+    Copyright  2002-2020, The AROS Development Team.
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2007, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -892,14 +892,14 @@ STRPTR zune_image_spec_duplicate(IPTR in)
 
     if (in >= MUII_WindowBack && in < MUII_BACKGROUND)
     {
-        sprintf(spec_buf, "6:%ld", in);
+        sprintf(spec_buf, "6:%lu", in);
         spec = spec_buf;
     }
     else
     {
         if (in >= MUII_BACKGROUND && in < MUII_LASTPAT)
         {
-            sprintf(spec_buf, "0:%ld", in);
+            sprintf(spec_buf, "0:%lu", in);
             spec = spec_buf;
         }
         else

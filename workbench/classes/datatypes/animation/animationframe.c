@@ -1,5 +1,5 @@
 /*
-    Copyright © 2016, The AROS Development	Team. All rights reserved.
+    Copyright © 2016-2020, The AROS Development	Team. All rights reserved.
     $Id$
 */
 
@@ -41,6 +41,7 @@ void cacheFrame(struct Animation_Data *animd, struct AnimFrame *frame)
         frame->af_CacheBM = (char *)AllocBitMap(animd->ad_BitMapHeader.bmh_Width, animd->ad_BitMapHeader.bmh_Height, 24,
                                   BMF_CLEAR, animd->ad_CacheBM);
         rendFrameMsg.Target = (struct BitMap *)frame->af_CacheBM;
+        frame->af_Flags = 0;
         DFRAMES("[animation.datatype/CACHE]: %s: allocated frame cache bm @ 0x%p (friend @ 0x%p)\n", __func__, frame->af_CacheBM, animd->ad_CacheBM)
     }
     DoMethodA(animd->ad_ProcessData->pp_Object, (Msg)&rendFrameMsg);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development	Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development	Team. All rights reserved.
     $Id$
 */
 
@@ -76,6 +76,8 @@ struct AnimFrame *NextToBuffer(struct ProcessPrivate *priv, struct AnimFrame *ne
     else
         prevFrame = startFrame;
 
+    DFRAMES("[animation.datatype/BUFFER]: %s: starting frame @ 0x%p\n", __func__, prevFrame)
+
 findprevframe:
     while ((prevFrame->af_Node.ln_Succ) && (prevFrame->af_Node.ln_Succ->ln_Succ) && 
                 ((prevFrame == (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames) ||
@@ -83,6 +85,8 @@ findprevframe:
     {
         prevFrame = (struct AnimFrame *)prevFrame->af_Node.ln_Succ;
     }
+
+    DFRAMES("[animation.datatype/BUFFER]: %s: trying frame @ 0x%p (ID %u)\n", __func__, prevFrame, GetNODEID(prevFrame))
 
     if (GetNODEID(prevFrame) == (priv->pp_Data->ad_FrameData.afd_Frames - 1))
     {
@@ -94,13 +98,17 @@ findprevframe:
         }
     }
 
+    DFRAMES("[animation.datatype/BUFFER]: %s: prevframe @ 0x%p\n", __func__, prevFrame)
+
     if (prevFrame != (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames)
     {
         startFrame = prevFrame;
         newFrame->af_Frame.alf_Frame = GetNODEID(prevFrame) + 1;
+        DFRAMES("[animation.datatype/BUFFER]: %s: start at frame #%u\n", __func__, newFrame->af_Frame.alf_Frame)
     }
     else
     {
+        DFRAMES("[animation.datatype/BUFFER]: %s: start at the begining\n", __func__)
         startFrame = NULL;
         newFrame->af_Frame.alf_Frame = 0;
     }
@@ -255,6 +263,7 @@ AROS_UFH3(void, bufferProc,
                         if ((curFrame) ||
                             ((curFrame = AllocMem(sizeof(struct AnimFrame), MEMF_ANY|MEMF_CLEAR)) != NULL))
                         {
+                            D(bug("[animation.datatype/BUFFER]: %s: frame @ 0x%p\n", __func__, curFrame);)
                             curFrame->af_Frame.MethodID = ADTM_LOADFRAME;
 
                             ObtainSemaphoreShared(&priv->pp_Data->ad_FrameData.afd_AnimFramesLock);
@@ -263,6 +272,7 @@ AROS_UFH3(void, bufferProc,
                                  if (priv->pp_PlaybackSync != -1)
                                     playbacksig |=  (1 << priv->pp_PlaybackSync);
 
+                                D(bug("[animation.datatype/BUFFER]: %s:   BufferSpecific = #%d\n", __func__, priv->pp_BufferSpecific);)
                                 curFrame->af_Frame.alf_Frame = priv->pp_BufferSpecific;
                                 priv->pp_BufferSpecific = -1;
                                 startFrame = (struct AnimFrame *)&priv->pp_Data->ad_FrameData.afd_AnimFrames;

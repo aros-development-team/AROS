@@ -1,5 +1,5 @@
 /*
-    Copyright © 2000-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2000-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DataTypesDescriptorCreator
@@ -591,6 +591,44 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
  
  EndChunk(IH);
 
+ if(TheDTDesc->DTCD)
+ {
+  void *DTCDdata = NULL;
+  int DTCDsize;
+  FILE *dtcdInput=fopen(TheDTDesc->DTCD, "r");
+  if(dtcdInput)
+  {
+   fseek(dtcdInput, 0, SEEK_END); // seek to end of file
+   DTCDsize = ftell(dtcdInput); // get current file pointer
+   fseek(dtcdInput, 0, SEEK_SET); // seek back to beginning of file
+   DTCDdata=malloc(DTCDsize);
+   if (fread(DTCDdata, DTCDsize, 1, dtcdInput) > 0)
+   {
+    // TODO: validate the data is HUNK
+   }
+   fclose(dtcdInput);
+  }
+
+  if (DTCDdata)
+  {
+   if(!NewChunk(IH, MAKE_ID('D','T','C','D')))
+   {
+    CloseIFF(IH);
+    remove(TheDTDesc->Name);
+    return(FALSE);
+   }
+
+   if(WriteChunkData(IH, DTCDdata, DTCDsize)<=0)
+   {
+    free(DTCDdata);
+    EndChunk(IH);
+    CloseIFF(IH);
+    return(FALSE);
+   }
+   free(DTCDdata);
+   EndChunk(IH);
+  }
+ }     
  CloseIFF(IH);
 
  return(TRUE);
@@ -678,18 +716,25 @@ int ParseArgs(int argc, char **argv, struct DTDesc *TheDTDesc)
 
    TheDTDesc->OutputName=argv[i];
   }
-  else
+  else if(strcmp(argv[i], "-m") == 0)
   {
-   if(strcmp(argv[i], "-h") == 0)
+   if(++i >= argc)
    {
     Usage(TheDTDesc->ProgName);
 
     return(FALSE);
    }
-   else
-   {
-    TheDTDesc->InputName=argv[i];
-   }
+   TheDTDesc->DTCD=argv[i];
+  }
+  else if(strcmp(argv[i], "-h") == 0)
+  {
+   Usage(TheDTDesc->ProgName);
+
+   return(FALSE);
+  }
+  else
+  {
+   TheDTDesc->InputName=argv[i];
   }
  }
 
@@ -704,9 +749,9 @@ void Usage(char *ProgName)
  NamePtr = ProgName ? ProgName : DefaultName;
 
  fprintf(stderr, "\n"
-		 "usage: %s [-o <Output-Name>] <Input-Name>\n"
-		 "\n",
-	NamePtr);
+                 "usage: %s [-o <Output-Name>] [-m <DTCD binary>] <Input-Name>\n"
+                 "\n",
+        NamePtr);
 }
 
 void Cleanup(struct DTDesc *TheDTDesc)

@@ -406,19 +406,19 @@ int link(const char *name1, const char *name2);
 /* NOTIMPL int linkat(int, const char *, int, const char *, int); */
 /* NOTIMPL int lockf(int filedes, int function, off_t size); */
 #if !defined(NO_POSIX_WRAPPERS)
-off_t posixc_lseek(int filedes, off_t offset, int whence);
+off_t __posixc_lseek(int filedes, off_t offset, int whence);
 #if defined(__off64_t_defined)
-__off64_t posixc_lseek64(int filedes, __off64_t offset, int whence);
+__off64_t lseek64(int filedes, __off64_t offset, int whence);
 #endif
 #if defined(__USE_FILE_OFFSET64)
 static inline off_t lseek(int filedes, off_t offset, int whence)
 {
-    return (off_t)posixc_lseek64(filedes, (__off64_t) offset, whence);
+    return (off_t)lseek64(filedes, (__off64_t) offset, whence);
 }
 #else
 static inline off_t lseek(int filedes, off_t offset, int whence)
 {
-    return posixc_lseek(filedes, offset, whence);
+    return __posixc_lseek(filedes, offset, whence);
 }
 #endif
 #else  /* NO_POSIX_WRAPPERS */

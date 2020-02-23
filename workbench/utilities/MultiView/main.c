@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /*********************************************************************************************/
+
+#include <proto/icon.h>
+#include <exec/rawfmt.h>
 
 #include "global.h"
 
@@ -93,12 +96,16 @@ static void KillWindow(void);
 static void ScrollTo(UWORD dir, UWORD quali);
 static void FitToWindow(void);
 
+char *cmdexport = NULL;
+
 /*********************************************************************************************/
 
 void OutputMessage(CONST_STRPTR msg)
 {
     struct EasyStruct es;
     
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (msg)
     {
         if ( IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI )
@@ -113,7 +120,7 @@ void OutputMessage(CONST_STRPTR msg)
         }
         else
         {
-            Printf("MultiView: %s\n", msg);
+            Printf("[MultiView] %s\n", msg);
         }
     }
 }
@@ -122,6 +129,7 @@ void OutputMessage(CONST_STRPTR msg)
 
 void WinCleanup(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
 
     if (win)
     {
@@ -160,7 +168,9 @@ void WinCleanup(void)
 void Cleanup(CONST_STRPTR msg)
 {
     struct ScreenNotifyMessage *snmsg;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     OutputMessage(msg);
 
     while (!EndScreenNotify (isnstarted))
@@ -194,7 +204,9 @@ void Cleanup(CONST_STRPTR msg)
 static void OpenLibs(void)
 {
     struct libinfo *li;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     for(li = libtable; li->var; li++)
     {
         if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
@@ -211,6 +223,8 @@ static void OpenLibs(void)
 static void CloseLibs(void)
 {
     struct libinfo *li;
+
+    D(bug("[MultiView] %s()\n", __func__));
     
     for(li = libtable; li->var; li++)
     {
@@ -222,6 +236,8 @@ static void CloseLibs(void)
 
 static void LoadFont(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     font = OpenDiskFont(&textattr);
     if (!font)
     {
@@ -238,6 +254,8 @@ static void LoadFont(void)
 
 static void KillFont(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (font) CloseFont(font);
 }
 
@@ -246,6 +264,8 @@ static void KillFont(void)
 static void InitDefaults(void)
 {
     struct TextFont *defaultfont = GfxBase->DefaultFont;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     /* This might be a bit problematic depending on how default system font
        switching through Font prefs program works and if then the previous
@@ -265,6 +285,7 @@ static void InitDefaults(void)
 
 static void GetArguments(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
 
     if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
     {
@@ -291,13 +312,69 @@ static void GetArguments(void)
     {
         textattr.ta_YSize = *(LONG *)args[ARG_FONTSIZE];
     }
+}
 
+static struct DiskObject *LoadProgIcon(struct WBStartup *startup, BPTR *icondir, STRPTR iconname)
+{
+    struct DiskObject *progicon = NULL;
+
+    D(bug("[MultiView] %s()\n", __func__));
+
+    if (startup)
+    {
+    	BPTR olddir;
+	
+	*icondir = startup->sm_ArgList[0].wa_Lock;
+	
+	olddir = CurrentDir(*icondir);	
+    	progicon = GetDiskObject(startup->sm_ArgList[0].wa_Name);		
+	CurrentDir(olddir);
+
+	strncpy(iconname, startup->sm_ArgList[0].wa_Name, 255);
+    }
+    else
+    {	
+	if (GetProgramName(iconname, 255))
+	{
+    	    BPTR olddir;
+	    
+	    *icondir = GetProgramDir();
+	    
+	    olddir = CurrentDir(*icondir);
+    	    progicon = GetDiskObject(iconname);	    
+	    CurrentDir(olddir);
+	}	    
+    }
+    
+    return progicon;
+}
+
+static void GetOptions(struct WBStartup *startup)
+{
+    struct DiskObject *mvIcon;
+    char mvIconName[256];
+    BPTR mvDirLock;
+
+    D(bug("[MultiView] %s()\n", __func__));
+
+    mvIcon = LoadProgIcon(startup, &mvDirLock, mvIconName);
+    if (mvIcon)
+    {
+        const STRPTR *toolarray = (const STRPTR *)mvIcon->do_ToolTypes;
+        char *s;
+        if (s = (char *)FindToolType(toolarray,"EXPORT"))
+        {
+            cmdexport = StrDup(s);
+            D(bug("[MultiView] EXPORT = '%s'\n", cmdexport);)
+        }
+    }
 }
 
 /*********************************************************************************************/
 
 static void FreeArguments(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
     if (myargs) FreeArgs(myargs);
 }
 
@@ -329,6 +406,8 @@ static void MakeICObjects(void)
         {PGA_Top                , DTA_TopHoriz  },
         {TAG_DONE                               }
     };
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     model_obj           = NewObject(NULL, MODELCLASS, ICA_TARGET, ICTARGET_IDCMP,
                                                       TAG_DONE);
@@ -371,6 +450,8 @@ static void MakeICObjects(void)
 
 static void KillICObjects(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (!model_has_members)
     {
         if (dto_to_vert_ic_obj) DisposeObject(dto_to_vert_ic_obj);
@@ -389,6 +470,8 @@ static void KillICObjects(void)
 
 static void GetVisual(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     scr = LockPubScreen((CONST_STRPTR)args[ARG_PUBSCREEN]);
     if (!scr) Cleanup(MSG(MSG_CANT_LOCK_SCR));
 
@@ -403,6 +486,8 @@ static void GetVisual(void)
 
 static void FreeVisual(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (vi)  FreeVisualInfo(vi);
     if (dri) FreeScreenDrawInfo(scr, dri);
     if (scr) UnlockPubScreen(NULL, scr);
@@ -423,6 +508,8 @@ static void MakeGadgets(void)
 
     IPTR imagew[NUM_IMAGES], imageh[NUM_IMAGES];
     WORD v_offset, h_offset, btop, i;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     for(i = 0; i < NUM_IMAGES; i++)
     {
@@ -540,6 +627,8 @@ static void KillGadgets(void)
 {
     WORD i;
 
+    D(bug("[MultiView] %s()\n", __func__));
+
     for(i = 0; i < NUM_GADGETS;i++)
     {
         if (win) RemoveGadget(win, (struct Gadget *)gad[i]);
@@ -558,6 +647,8 @@ static void KillGadgets(void)
 
 void AddDTOToWin(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     EraseRect(win->RPort, win->BorderLeft,
                           win->BorderTop,
                           win->Width - 1 - win->BorderRight,
@@ -583,17 +674,19 @@ static void OpenDTO(void)
     IPTR            val;
     struct DataType *dt;
 
+    D(bug("[MultiView] %s()\n", __func__));
+
     old_dto = dto;
 
     do
     {
+        D(bug("[MultiView] calling NewDTObject\n"));
+
         if (!old_dto && args[ARG_CLIPBOARD])
         {
             APTR clipunit = 0;
 
             if (args[ARG_CLIPUNIT]) clipunit = *(APTR *)args[ARG_CLIPUNIT];
-
-            D(bug("MultiView: calling NewDTObject\n"));
 
             dto = NewDTObject(clipunit, ICA_TARGET    , (IPTR)model_obj,
                                     GA_ID         , 1000           ,
@@ -601,7 +694,6 @@ static void OpenDTO(void)
                                     DTA_TextAttr  , (IPTR)&textattr,
                                     TAG_DONE);
 
-            D(bug("MultiView: NewDTObject returned %x\n", dto));
         }
         else
         {
@@ -610,6 +702,7 @@ static void OpenDTO(void)
                                     DTA_TextAttr    , (IPTR)&textattr,
                                     TAG_DONE);
         }
+        D(bug("[MultiView] NewDTObject returned %x\n", dto));
 
         if (!dto)
         {
@@ -767,7 +860,7 @@ static void OpenDTO(void)
         dto_supports_selectall ? " DTM_SELECT" : "",
         dto_supports_clearselected ? " DTM_CLEARSELECTED" : ""));
     
-    D(bug("Multiview: Found Triggers:%s%s%s%s%s%s%s\n\n",
+    D(bug("[MultiView] Found Triggers:%s%s%s%s%s%s%s\n\n",
         dto_supports_activate_field ? " STM_ACTIVATE_FIELD" : "",
         dto_supports_next_field ? " STM_NEXT_FIELD" : "",
         dto_supports_prev_field ? " STM_PREV_FIELD" : "",
@@ -801,6 +894,8 @@ static void OpenDTO(void)
             {
                 // zoom has been set to 1 above
                 FitToWindow();
+                D(bug("[MultiView] %s: FitToWindow returned\n", __func__));
+
                 SetDTAttrs (dto, NULL, NULL,
                             PDTA_DestMode, (pdt_force_map) ? PMODE_V42 : PMODE_V43,
                             TAG_DONE);
@@ -811,12 +906,15 @@ static void OpenDTO(void)
             }
         }
     }
+    D(bug("[MultiView] %s: finished\n", __func__));
 }
 
 /*********************************************************************************************/
 
 static void CloseDTO(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (dto)
     {
         if (win) RemoveDTObject(win, dto);
@@ -830,6 +928,9 @@ static void CloseDTO(void)
 static void MakeWindow(void)
 {
     WORD minwidth, minheight;
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (pdt_fit_win)
         winwidth = winheight = 0;
 
@@ -905,6 +1006,8 @@ static void MakeWindow(void)
 
 static void KillWindow(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (win)
     {
         if (dto) RemoveDTObject(win, dto);
@@ -920,6 +1023,8 @@ static void KillWindow(void)
 
 static void InitIScreenNotify(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (!(isnport = CreateMsgPort()))
     {
         Cleanup(MSG(MSG_CANT_CREATE_MSGPORT));
@@ -941,6 +1046,9 @@ static void InitIScreenNotify(void)
 static void HandleIScreenNotify(void)
 {
     struct ScreenNotifyMessage *isnmsg;
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     while ((isnmsg = (struct ScreenNotifyMessage *) GetMsg (isnport)))
     {
         IPTR isnmclass = isnmsg->snm_Class;
@@ -979,6 +1087,8 @@ static void ScrollTo(UWORD dir, UWORD quali)
     LONG oldtop, top, total, visible, delta = 1;
     BOOL horiz;
     BOOL inc;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
 #ifdef __AROS__    
     switch(dir)
@@ -1080,6 +1190,8 @@ static void ScrollTo(UWORD dir, UWORD quali)
 
 static void FitToWindow(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if( pdt_fit_win )
     {
         int x, y;
@@ -1090,6 +1202,7 @@ static void FitToWindow(void)
         DoScaleMethod(x, y, pdt_keep_aspect);
 //      DoLayout(TRUE); seems to be done by intuition ?
     }
+    D(bug("[MultiView] %s: done\n", __func__));
 }
 
 /*********************************************************************************************/
@@ -1107,7 +1220,9 @@ static void HandleAll(void)
     BOOL                quitme = FALSE;
     const STRPTR        not_supported = "Sorry, not supported yet\n";
     ULONG               sigs;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     while (!quitme)
     {
 //        if ( (sigs & winmask) || (sigs & msgmask) )
@@ -1321,9 +1436,43 @@ static void HandleAll(void)
                                     if (filename) OpenDTO();
                                     break;
 
-                                case MSG_MEN_PROJECT_SAVEAS:
-                                    filename = GetFileName(MSG_ASL_SAVE_TITLE);
-                                    if (filename) DoWriteMethod(filename, DTWM_RAW);
+                                case MSG_MEN_PROJECT_EXPORT:
+                                    {
+                                        UBYTE *autocon="CON:0/40/640/150/Export.../auto/close/wait";
+
+                                        struct TagItem stags[5];
+                                        char command[1024];
+                                        char filepath[256];
+                                        BPTR tmpLock;
+
+                                        if ((tmpLock = Lock(filename, ACCESS_READ)) != BNULL)
+                                        {
+                                            NameFromLock(tmpLock, filepath, 256);
+                                            UnLock(tmpLock);
+                                        }
+                                        else
+                                        {
+                                            NameFromLock(cd, filepath, 256);
+                                            AddPart(filepath, filename, 256);
+                                        }
+
+                                        stags[0].ti_Data = (IPTR)filepath;
+                                        RawDoFmt(cmdexport, (RAWARG)&stags[0].ti_Data, RAWFMTFUNC_STRING, command);
+                                        if (tmpLock = Open(autocon, MODE_OLDFILE))
+                                        {
+                                            stags[0].ti_Tag = SYS_Input;
+                                            stags[0].ti_Data = (IPTR)tmpLock;
+                                            stags[1].ti_Tag = SYS_Output;
+                                            stags[1].ti_Data = 0;
+                                            stags[2].ti_Tag = SYS_Asynch;
+                                            stags[2].ti_Data = TRUE;
+                                            stags[3].ti_Tag = SYS_UserShell;
+                                            stags[3].ti_Data = TRUE;
+                                            stags[4].ti_Tag = TAG_END;
+
+                                            System(command, stags);
+                                        }
+                                    }
                                     break;
 
                                 case MSG_MEN_PROJECT_SAVEAS_IFF:
@@ -1532,7 +1681,7 @@ static void HandleAll(void)
                             case DTA_Sync:
                                 /* Refresh the DataType object,
                                    unless we wait for initial rendering */
-                                D(bug("Multiview: DTA_SYNC\n"));
+                                D(bug("[MultiView] DTA_SYNC\n"));
                                 RefreshDTObjects (dto, win, NULL, TAG_DONE);
                                 break;
 
@@ -1554,6 +1703,8 @@ static void HandleAll(void)
 
 void InitWin(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     InitDefaults();
     LoadFont();
     MakeICObjects();
@@ -1577,7 +1728,10 @@ void InitWin(void)
 
 int main(int argc, char **argv)
 {
+    struct WBStartup *startup = NULL;
     int rc;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     /* This is for when Cleanup() is called */
     rc = setjmp(exit_buf);
@@ -1604,7 +1758,7 @@ int main(int argc, char **argv)
     
     if (argc == 0)
     {
-        struct WBStartup *startup = (struct WBStartup *) argv;
+        startup = (struct WBStartup *) argv;
         
         if (startup->sm_NumArgs >= 2)
         {
@@ -1622,6 +1776,7 @@ int main(int argc, char **argv)
     {
         GetArguments();
     }
+    GetOptions(startup);
 
     InitIScreenNotify();
     InitWin();

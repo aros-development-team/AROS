@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,8 +16,8 @@
 /* Putchar procedure needed by RawDoFmt() */
 
 AROS_UFH2(void, dt_putchr,
-	  AROS_UFHA(UBYTE,    chr, D0),
-	  AROS_UFHA(STRPTR *, p,   A3))
+          AROS_UFHA(UBYTE,    chr, D0),
+          AROS_UFHA(STRPTR *, p,   A3))
 {
     AROS_USERFUNC_INIT
     *(*p)++ = chr;
@@ -25,7 +25,7 @@ AROS_UFH2(void, dt_putchr,
 }
 
 void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
-		 UBYTE *format, ...)
+                 UBYTE *format, ...)
 {
     AROS_SLOWSTACKFORMAT_PRE(format);
     RawDoFmt(format, AROS_SLOWSTACKFORMAT_ARG(format), (VOID_FUNC)dt_putchr, &buffer);
@@ -38,15 +38,15 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH3(ULONG, LaunchToolA,
+        AROS_LH3(ULONG, LaunchToolA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Tool *   , tool,    A0),
+        AROS_LHA(struct Tool *   , tool,    A0),
         AROS_LHA(STRPTR          , project, A1),
-	AROS_LHA(struct TagItem *, attrs,   A2),
+        AROS_LHA(struct TagItem *, attrs,   A2),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 42, DataTypes)
+        struct Library *, DataTypesBase, 42, DataTypes)
 
 /*  FUNCTION
 
@@ -63,9 +63,9 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 
     NP_Priority (BYTE) -- priority of the launched tool (default is the
                           priority of the currect process except for
-			  Workbench applications where the default priority
-			  is 0 if not overridden by the TOOLPRI tooltype).
-			  
+                          Workbench applications where the default priority
+                          is 0 if not overridden by the TOOLPRI tooltype).
+                          
     NP_Synchronous (BOOL) -- don't return until lauched application process
                              finishes (defaults to FALSE).
 
@@ -94,9 +94,9 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 
     if (tool == NULL)
     {
-	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
-	
-	return 0;
+        SetIoErr(ERROR_REQUIRED_ARG_MISSING);
+        
+        return 0;
     }
 
     isSynchronous = (BOOL)GetTagData(NP_Synchronous, (IPTR)FALSE, attrs);
@@ -104,47 +104,47 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
     switch (tool->tn_Flags & TF_LAUNCH_MASK)
     {
     case TF_SHELL:
-	{
-	    char tBuffer[512];
-	    LONG ret;
+        {
+            char tBuffer[512];
+            LONG ret;
 
-	    dt__sprintf
+            dt__sprintf
             (
                 DataTypesBase, tBuffer,
                 "\"%s\" \"%s\"", tool->tn_Program, project
             );
 
-	    output = Open("CON:////Output window/AUTO/WAIT/CLOSE/INACTIVE",
-			  MODE_NEWFILE);
+            output = Open("CON:////Output window/AUTO/WAIT/CLOSE/INACTIVE",
+                          MODE_NEWFILE);
 
-	    if (output != BNULL)
-	    {
-		struct TagItem tags[] = { { SYS_Asynch, !isSynchronous },
-					  { SYS_Input , (IPTR)NULL      },
-					  { SYS_Output, (IPTR)output   },
-					  { TAG_DONE,                  } };
+            if (output != BNULL)
+            {
+                struct TagItem tags[] = { { SYS_Asynch, !isSynchronous },
+                                          { SYS_Input , (IPTR)NULL      },
+                                          { SYS_Output, (IPTR)output   },
+                                          { TAG_DONE,                  } };
 
 
-		ret = SystemTagList(tBuffer, tags);
+                ret = SystemTagList(tBuffer, tags);
 
-		/* Error? */
-		if (ret == -1)
-		{
-		    return 0;
-		}
+                /* Error? */
+                if (ret == -1)
+                {
+                    return 0;
+                }
 
-		Close(output);
-	    }
-	    else
-	    {
-		return 0;
-	    }
-	}
+                Close(output);
+            }
+            else
+            {
+                return 0;
+            }
+        }
 
-	break;
+        break;
 
     case TF_WORKBENCH:
-	{
+        {
             BOOL            success       = FALSE;
             struct Library *WorkbenchBase = OpenLibrary("workbench.library", 39L);
             
@@ -172,17 +172,17 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
             
             if (!success) return 0;
         }	
-	break;
+        break;
 
     case TF_RX:
-	/* Sorry, no Arexx in AROS yet. */
+        /* Sorry, no Arexx in AROS yet. */
         /* FIXME: No Arexx compatibility yet */
 
-	/* Do some "RX command" here */
-	return 0;
+        /* Do some "RX command" here */
+        return 0;
 
     default:
-	return 0;
+        return 0;
     }
 
     return 1;

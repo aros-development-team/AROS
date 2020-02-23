@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,7 +35,7 @@ struct NewMenu nm[] =
     {NM_TITLE, (STRPTR)MSG_MEN_PROJECT                                                  },      /* 0 */
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_OPEN                                             },
      {NM_ITEM, NM_BARLABEL                                                              },
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS                                           },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_EXPORT                                           },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS_IFF                                       },
      {NM_ITEM, NM_BARLABEL                                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_PRINT                                            },
@@ -89,7 +89,9 @@ struct NewMenu nmtext[] =
 static struct MenuItem * FindMenuItem( struct Menu *menu, ULONG msgid )
 {
     struct MenuItem *item;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     while( menu )
     {
         if( (IPTR)GTMENU_USERDATA(menu) == msgid )
@@ -112,6 +114,8 @@ static void ChangeItemState( ULONG msgid, BOOL state )
 {
     struct MenuItem *item;
 
+    D(bug("[MultiView] %s()\n", __func__));
+
     item = FindMenuItem(menus, msgid);
     if (item)
     {
@@ -125,6 +129,8 @@ static void SetItemChecked( ULONG msgid, BOOL state )
 {
     struct MenuItem *item;
 
+    D(bug("[MultiView] %s()\n", __func__));
+
     item = FindMenuItem(menus, msgid);
     if (item)
     {
@@ -137,7 +143,9 @@ static void SetItemChecked( ULONG msgid, BOOL state )
 void InitMenus(struct NewMenu *newm)
 {
     struct NewMenu *actnm;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     for(actnm = newm; actnm->nm_Type != NM_END; actnm++)
     {
         if (actnm->nm_Label != NM_BARLABEL)
@@ -170,7 +178,9 @@ struct Menu * MakeMenus(struct NewMenu *newm)
         {GTMN_NewLookMenus, TRUE},
         {TAG_DONE               }
     };
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     menu = CreateMenusA(newm, NULL);
     if (!menu) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
     
@@ -186,6 +196,8 @@ struct Menu * MakeMenus(struct NewMenu *newm)
 
 void KillMenus(void)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (win) ClearMenuStrip(win);
     if (menus) FreeMenus(menus);
     if (pictmenus) FreeMenus(pictmenus);
@@ -204,10 +216,12 @@ void SetMenuFlags(void)
     struct MenuItem *item;
     IPTR val;
     BOOL ret;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (win) ClearMenuStrip(win);
 
-    ChangeItemState( MSG_MEN_PROJECT_SAVEAS, dto_supports_write );
+    ChangeItemState( MSG_MEN_PROJECT_EXPORT, (cmdexport != NULL) ? TRUE : FALSE );
     ChangeItemState( MSG_MEN_PROJECT_SAVEAS_IFF, dto_supports_write_iff );
     ChangeItemState( MSG_MEN_PROJECT_PRINT, dto_supports_print );
     ChangeItemState( MSG_MEN_EDIT_COPY, dto_supports_copy );
@@ -220,7 +234,7 @@ void SetMenuFlags(void)
     {
         if (dto_subclass_gid == GID_PICTURE)
         {
-            D(bug("Multiview: is picture.datatype\n"));
+            D(bug("[MultiView] is picture.datatype\n"));
             menu->NextMenu = pictmenus;
             SetItemChecked( MSG_MEN_PICT_FIT_WIN, pdt_fit_win );
             SetItemChecked( MSG_MEN_PICT_KEEP_ASPECT, pdt_keep_aspect );
@@ -229,7 +243,7 @@ void SetMenuFlags(void)
         }
         else if (dto_subclass_gid == GID_TEXT)
         {
-            D(bug("Multiview: is text.datatype\n"));
+            D(bug("[MultiView] is text.datatype\n"));
             menu->NextMenu = textmenus;
             ret = GetDTAttrs(dto, TDTA_WordWrap, (IPTR)&val, TAG_DONE);
             item = FindMenuItem(menus, MSG_MEN_TEXT_WORDWRAP);
@@ -245,7 +259,7 @@ void SetMenuFlags(void)
         }
         else
         {
-            D(bug("Multiview: is unknown datatype\n"));
+            D(bug("[MultiView] is unknown datatype\n"));
             menu->NextMenu = NULL;
         }
     }
@@ -271,7 +285,9 @@ STRPTR GetFileName(ULONG msgtextid)
     static UBYTE         filebuffer[300];
     struct FileRequester *req;
     STRPTR               filepart, retval = NULL;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     AslBase = OpenLibrary("asl.library", 39);
     if (AslBase)
     {
@@ -318,6 +334,8 @@ static struct Library * FindClassBase(CONST_STRPTR className)
 {
     struct Library *lib;
 
+    D(bug("[MultiView] %s()\n", __func__));
+
     Forbid();
     lib = (struct Library *)FindName(&SysBase->LibList, className);
     Permit();
@@ -328,6 +346,8 @@ static struct Library * FindClassBase(CONST_STRPTR className)
 static struct IClass *FindClassSuper(struct IClass *baseClass)
 {
     struct IClass *tmp = baseClass->cl_Super;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     while ((tmp->cl_Super != NULL) &&
            (strncmp(tmp->cl_Super->cl_ID, "datatypesclass", 14)))
@@ -344,6 +364,8 @@ static char *versToStr(char *version)
     char *tmp;
     STRPTR              sp;
     WORD                i = 0;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     for(sp = version;
         (*sp != 0) && ((*sp < '0') || (*sp > '9'));
@@ -373,6 +395,8 @@ void About(void)
     int                         count = 12, tmplLen;
     IPTR                *abouttxt;
     WORD                i = 0;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     tmplLen = strlen(internal_about_tmpl);
     
@@ -461,6 +485,8 @@ ULONG DoTrigger(ULONG what)
 {
     struct dtTrigger msg;
 
+    D(bug("[MultiView] %s()\n", __func__));
+
     msg.MethodID          = DTM_TRIGGER;
     msg.dtt_GInfo         = NULL;
     msg.dtt_Function      = what;
@@ -476,14 +502,16 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
     struct dtWrite msg;
     BPTR fh;
     ULONG retval;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     fh = BNULL;
     if (name)
     {
         fh = Open( name, MODE_NEWFILE );
         if (!fh)
         {
-            D(bug("Multiview: Cannot open %s\n", name));
+            D(bug("[MultiView] Cannot open %s\n", name));
             OutputMessage(MSG(MSG_SAVE_FAILED));
             return FALSE;
         }
@@ -497,14 +525,14 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
     msg.dtw_Mode          = mode;
     msg.dtw_AttrList      = NULL;
 
-    D(bug("Multiview: Saving %s mode %ld\n", name ? name : (STRPTR)"[nothing]", mode));
+    D(bug("[MultiView] Saving %s mode %ld\n", name ? name : (STRPTR)"[nothing]", mode));
     retval = DoDTMethodA(dto, win, NULL, (Msg)&msg);
     if (fh)
     {
         Close( fh );
         if( !retval )
         {
-            D(bug("Multiview: Error during write !\n"));
+            D(bug("[MultiView] Error during write !\n"));
             OutputMessage(MSG(MSG_SAVE_FAILED));
         }
     }
@@ -519,7 +547,9 @@ ULONG DoPrintMethod(VOID)
     struct MsgPort *mp;
     struct IORequest *pio;
     ULONG retval = PDERR_CANCEL;
-   
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     if ((mp = CreateMsgPort())) {
         if ((pio = CreateIORequest(mp, sizeof(union printerIO)))) {
             if (0 == OpenDevice("printer.device", 0, pio, 0)) {
@@ -529,7 +559,7 @@ ULONG DoPrintMethod(VOID)
                 msg.dtp_GInfo         = NULL;
                 msg.dtp_PIO           = (union printerIO *)pio;
                 msg.dtp_AttrList      = NULL;
-                D(bug("Multiview: Printing...\n"));
+                D(bug("[MultiView] Printing...\n"));
 
                 /* We're not using PrintDTObjectA() here at this
                  * time, because we don't plan on waiting for the
@@ -558,8 +588,10 @@ ULONG DoPrintMethod(VOID)
 
 ULONG DoLayout(ULONG initial)
 {
-    ULONG res;
+    ULONG res = 0;
     struct gpLayout msg;
+
+    D(bug("[MultiView] %s()\n", __func__));
 
     D(bug("=> erase\n"));
     EraseRect(win->RPort, win->BorderLeft,
@@ -580,17 +612,21 @@ ULONG DoLayout(ULONG initial)
     res = DoDTMethodA(dto, win, 0, (Msg)&msg);
 #endif
     D(bug("layout result %ld\n", res));
-    return res;
 #else
     RemoveDTObject(win, dto);
     AddDTObject(win, NULL, dto, -1);
 #endif
+
+    D(bug("[MultiView] %s: done\n", __func__));
+    return res;
 }
 
 /*********************************************************************************************/
 
 ULONG DoScaleMethod(ULONG xsize, ULONG ysize, BOOL aspect)
 {
+    D(bug("[MultiView] %s()\n", __func__));
+
 #ifdef __GNUC__
     struct pdtScale msg;
     
@@ -612,7 +648,9 @@ ULONG DoScaleMethod(ULONG xsize, ULONG ysize, BOOL aspect)
 void DoZoom(WORD zoomer)
 {
     UWORD curwidth, curheight;
-    
+
+    D(bug("[MultiView] %s()\n", __func__));
+
     if (zoomer > 0)
     {
         curwidth = pdt_origwidth * zoomer;

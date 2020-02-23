@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,14 +17,14 @@
 
     NAME */
 
-	AROS_LH2(VOID, ReleaseDTDrawInfo,
+        AROS_LH2(VOID, ReleaseDTDrawInfo,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object *, o     , A0),
-	AROS_LHA(APTR    , handle, A1),
+        AROS_LHA(Object *, o     , A0),
+        AROS_LHA(APTR    , handle, A1),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 22, DataTypes)
+        struct Library *, DataTypesBase, 22, DataTypes)
 
 /*  FUNCTION
 
@@ -67,7 +67,7 @@
     struct dtReleaseDrawInfo rdi;
 
     if(o == NULL)
-	return;
+        return;
 
     rdi.MethodID   = DTM_RELEASEDRAWINFO;
     rdi.dtr_Handle = handle;

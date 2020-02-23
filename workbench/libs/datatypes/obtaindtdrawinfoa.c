@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -19,14 +19,14 @@
 
     NAME */
 
-	AROS_LH2(APTR, ObtainDTDrawInfoA,
+        AROS_LH2(APTR, ObtainDTDrawInfoA,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object         *, o  ,   A0),
-	AROS_LHA(struct TagItem *, attrs, A1),
+        AROS_LHA(Object         *, o  ,   A0),
+        AROS_LHA(struct TagItem *, attrs, A1),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 20, DataTypes)
+        struct Library *, DataTypesBase, 20, DataTypes)
 
 /*  FUNCTION
 
@@ -72,7 +72,7 @@
     struct opSet ops;
 
     if(o == NULL)
-	return NULL;
+        return NULL;
 
     ops.MethodID     = DTM_OBTAINDRAWINFO;
     ops.ops_AttrList = attrs;

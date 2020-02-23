@@ -1,0 +1,11 @@
+# DataType Description for WebP
+Name=WebP
+Version=$VER: WebP 45.0 (12.02.2020)
+BaseName=webp
+Pattern=#?.webp
+Mask='R' 'I' 'F' 'F' ANY ANY ANY ANY 'W' 'E' 'B' 'P'
+GroupID=pict
+ID=webp
+Flags=DTF_BINARY,DTF_CASE
+Priority=1
+

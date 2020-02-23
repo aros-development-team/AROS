@@ -199,3 +199,6 @@
 [submodule "workbench/tools/WiMP/catalogs"]
 	path = workbench/tools/WiMP/catalogs
 	url = https://github.com/aros-translation-team/wimp.git
+[submodule "developer/debug/test/datatypes"]
+	path = developer/debug/test/datatypes
+	url = https://github.com/aros-development-team/datatype-test-binaries.git

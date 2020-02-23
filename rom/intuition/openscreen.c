@@ -2386,6 +2386,11 @@ static const char THIS_FILE[] = __FILE__;
         screen = 0;
 
     } /* if (!ok) */
+    else if (screen->Screen.RastPort.BitMap)
+    {
+        /* Copy the BitMap's info for compatability with existing AmigaOS apps */
+        CopyMem(screen->Screen.RastPort.BitMap, &screen->Screen.BitMap_OBSOLETE, sizeof(struct BitMap));
+    }
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: return 0x%lx\n", screen));
 

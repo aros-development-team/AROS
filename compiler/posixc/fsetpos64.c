@@ -12,7 +12,7 @@
     NAME */
 #include <stdio.h>
 
-	int posixc_fsetpos64 (
+	int fsetpos64 (
 
 /*  SYNOPSIS */
 	FILE		* stream,
@@ -56,5 +56,5 @@
     retval = fseek (stream, *pos, SEEK_SET);
 
     return retval;
-} /* posixc_fsetpos64 */
+} /* fsetpos64 */
 

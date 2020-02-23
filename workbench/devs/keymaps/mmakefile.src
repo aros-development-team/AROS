@@ -17,7 +17,7 @@ OLDKEYMAPS := \
 #MM- workbench-devs-complete : workbench-devs-keymaps
 
 #MM- workbench-devs-keymaps :  includes workbench-devs-keymaps-build
-#MM workbench-devs-keymaps-build : workbench-devs-keymaps-setup
+#MM workbench-devs-keymaps-build : workbench-devs-keymaps-setup tools-mkkeymap
 #MM- workbench-devs-keymaps-quick : workbench-devs-keymaps-build
 
 KEYMAPFILES := $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))

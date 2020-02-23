@@ -245,7 +245,7 @@ diff -ruN gcc-8.3.0/gcc/config/arm/aros.h gcc-8.3.0.aros/gcc/config/arm/aros.h
 diff -ruN gcc-8.3.0/gcc/config/arm/t-aros gcc-8.3.0.aros/gcc/config/arm/t-aros
 --- gcc-8.3.0/gcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.3.0.aros/gcc/config/arm/t-aros	2019-04-14 21:44:31.586676100 +0100
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,63 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
 +#
@@ -275,29 +275,40 @@ diff -ruN gcc-8.3.0/gcc/config/arm/t-aros gcc-8.3.0.aros/gcc/config/arm/t-aros
 +v7ve_fpus := vfpv3-d16 vfpv3 vfpv3-d16-fp16 vfpv3-fp16 vfpv4 neon neon-fp16 simd
 +all_v7_a_r := armv7-a armv7ve armv7-r
 +
-+MULTILIB_OPTIONS     = marm mbig-endian/mlittle-endian mfpu=auto march=armv6+fp/march=armv7-a+fp
-+MULTILIB_DIRNAMES    = arm eb el autofp v6 v7
++MULTILIB_OPTIONS     = marm mbig-endian/mlittle-endian
++MULTILIB_DIRNAMES    = arm eb el
++MULTILIB_OPTIONS     += mfpu=vfpv3-d16/mfpu=neon
++MULTILIB_DIRNAMES    += vfpv3-d16 neon
++MULTILIB_OPTIONS     += march=armv7-a+fp
++MULTILIB_DIRNAMES    += v7-a
++
 +MULTILIB_EXCEPTIONS  =
 +MULTILIB_MATCHES     =
 +MULTILIB_REUSE       =
 +MULTILIB_REQUIRED    =
 +
-+MULTILIB_OPTIONS       += mfloat-abi=hard
-+MULTILIB_DIRNAMES      += fpu
-+MULTILIB_REQUIRED      += marm/mbig-endian/mfpu=auto/march=armv6+fp/mfloat-abi=hard marm/mbig-endian/mfpu=auto/march=armv7-a+fp/mfloat-abi=hard
++MULTILIB_OPTIONS        += mfloat-abi=softfp/mfloat-abi=hard
++MULTILIB_DIRNAMES       += softfp hard
++MULTILIB_REQUIRED	+= marm/mlittle-endian/mfpu=vfpv3-d16/march=armv7-a+fp/mfloat-abi=*
++MULTILIB_REQUIRED	+= marm/mlittle-endian/mfpu=neon/march=armv7-a+fp/mfloat-abi=*
++MULTILIB_REQUIRED	+= marm/mbig-endian/mfpu=vfpv3-d16/march=armv7-a+fp/mfloat-abi=*
++MULTILIB_REQUIRED	+= marm/mbig-endian/mfpu=neon/march=armv7-a+fp/mfloat-abi=*
 +
-+MULTILIB_MATCHES       += $(foreach FPU,$(do_fpus), mfpu?auto=mfpu?$(FPU))
-+MULTILIB_MATCHES       += march?armv6+fp=march?armv6 march?armv7-a+fp=march?armv7
-+MULTILIB_MATCHES       += $(foreach FP,$(v7a_fpus), march?armv7-a+fp=march?armv7-a+$(FP))
-+MULTILIB_MATCHES       += $(foreach FP,$(v7ve_fpus), march?armv7-a+fp=march?armv7ve+$(FP))
-+MULTILIB_MATCHES       += $(foreach AV7A,$(all_v7_a_r), march?armv7-a+fp=march?$(AV7A) march?armv7-a+fp=march?$(AV7A)+fp)
++MULTILIB_MATCHES	+= $(foreach FPU,$(do_fpus), mfpu?auto=mfpu?$(FPU))
++MULTILIB_MATCHES	+= march?armv6+fp=march?armv6 march?armv7-a+fp=march?armv7
++MULTILIB_MATCHES	+= $(foreach FP,$(v7a_fpus), march?armv7-a+fp=march?armv7-a+$(FP))
++MULTILIB_MATCHES	+= $(foreach FP,$(v7ve_fpus), march?armv7-a+fp=march?armv7ve+$(FP))
++MULTILIB_MATCHES	+= $(foreach AV7A,$(all_v7_a_r), march?armv7-a+fp=march?$(AV7A) march?armv7-a+fp=march?$(AV7A)+fp)
 +
-+MULTILIB_REUSE         += marm/mbig-endian/mfpu.auto/march.armv6+fp/mfloat-abi.hard=marm/mbig-endian/march.armv6+fp/mfloat-abi.hard
-+MULTILIB_REUSE         += marm/mbig-endian/mfpu.auto/march.armv6+fp/mfloat-abi.hard=mbig-endian/march.armv6+fp/mfloat-abi.hard
-+MULTILIB_REUSE         += marm/mbig-endian/mfpu.auto/march.armv6+fp/mfloat-abi.hard=mbig-endian/mfpu.auto/march.armv6+fp/mfloat-abi.hard
-+MULTILIB_REUSE         += marm/mbig-endian/mfpu.auto/march.armv7-a+fp/mfloat-abi.hard=marm/mbig-endian/march.armv7-a+fp/mfloat-abi.hard
-+MULTILIB_REUSE         += marm/mbig-endian/mfpu.auto/march.armv7-a+fp/mfloat-abi.hard=mbig-endian/march.armv7-a+fp/mfloat-abi.hard
-+MULTILIB_REUSE         += marm/mbig-endian/mfpu.auto/march.armv7-a+fp/mfloat-abi.hard=mbig-endian/mfpu.auto/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mbig-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=marm/mbig-endian/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mbig-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=mbig-endian/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mbig-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=mbig-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mbig-endian/mfpu.neon/march.armv7-a+fp/mfloat-abi.hard=mbig-endian/mfpu.neon/march.armv7-a+fp/mfloat-abi.hard
++
++MULTILIB_REUSE		+= marm/mlittle-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=marm/mlittle-endian/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mlittle-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=mlittle-endian/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mlittle-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=mlittle-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard
++MULTILIB_REUSE		+= marm/mlittle-endian/mfpu.neon/march.armv7-a+fp/mfloat-abi.hard=mlittle-endian/mfpu.neon/march.armv7-a+fp/mfloat-abi.hard
 diff -ruN gcc-8.3.0/gcc/config/aros-stdint.h gcc-8.3.0.aros/gcc/config/aros-stdint.h
 --- gcc-8.3.0/gcc/config/aros-stdint.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.3.0.aros/gcc/config/aros-stdint.h	2019-04-14 21:44:31.586676100 +0100

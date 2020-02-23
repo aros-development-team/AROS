@@ -5,11 +5,14 @@
  *                   By Chris Hodges <chrisly@platon42.de>
  */
 
-/* TODO: Somebody needs to port the assembly 68k camd driver to something that is used under AROS! */
-
 #include "debug.h"
 
 #include "camdusbmidi.class.h"
+
+#if !defined(__mc68000__)
+extern const void *_binary_poseidonusb_start;
+extern const void *_binary_poseidonusb_size;
+#endif
 
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
@@ -63,7 +66,9 @@ ADD2EXPUNGELIB(libExpunge, 0)
  * ***********************************************************************
  */
 
+#if defined(__mc68000__)
 #include "CAMDDriver.c"
+#endif
 
 /* /// "usbAttemptInterfaceBinding()" */
 struct NepClassHid * usbAttemptInterfaceBinding(struct NepHidBase *nh, struct PsdInterface *pif)
@@ -185,13 +190,24 @@ struct NepClassHid * usbForceInterfaceBinding(struct NepHidBase *nh, struct PsdI
                                                "Couldn't generate CAMD MIDI driver '%s'!",
                                                buf);
                             } else {
-                                UBYTE *tmpmem = psdAllocVec(sizeof(CAMDDriver));
+                                ULONG binsize;
+                                UBYTE *tmpmem, *binstart;
+#if !defined(__mc68000__)
+                                binsize = (unsigned long)&_binary_poseidonusb_size;
+                                binstart = (UBYTE *)&_binary_poseidonusb_start;
+#else
+                                binsize = sizeof(CAMDDriver);
+                                binstart = (UBYTE *)CAMDDriver;
+#endif
+                                tmpmem = psdAllocVec(binsize);
                                 if(tmpmem)
                                 {
-                                    CopyMemQuick(CAMDDriver, tmpmem, sizeof(CAMDDriver));
+                                    CopyMemQuick(binstart, tmpmem, binsize);
+#if defined(__mc68000__)
                                     // fix name of driver -- position is hardcoded, but unlikely to move
-                                    strcpy(&tmpmem[0x46], nch->nch_ShortID);
-                                    Write(fh, tmpmem, sizeof(CAMDDriver));
+                                    strcpy(&tmpmem[0x46], nch->nch_ShortID); // "poseidonusb"
+#endif
+                                    Write(fh, tmpmem, binsize);
                                     psdFreeVec(tmpmem);
                                     psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                    "Generated CAMD MIDI driver '%s'!",

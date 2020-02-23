@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,7 @@
 #include <aros/symbolsets.h>
 
 #include <proto/exec.h>
+#include <proto/locale.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -18,13 +19,15 @@
 #include "datatypes_intern.h"
 #include LC_LIBDEFS_FILE
 
+#include "dt_inlines.h"
+
 static int Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
 
     for (i = 0; i < SEM_MAX; i++)
     {
-	InitSemaphore(&LIBBASE->dtb_Semaphores[i]);
+        InitSemaphore(&LIBBASE->dtb_Semaphores[i]);
     }
 
     /*
@@ -42,22 +45,21 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->dtb_DTList = GetDataTypesList(LIBBASE);
     D(bug("Datatypes list at 0x%08lX\n", LIBBASE->dtb_DTList));
     if (!LIBBASE->dtb_DTList)
-	return FALSE;
+        return FALSE;
 
     if(!InstallClass((struct Library *)LIBBASE))
-	return FALSE;
+        return FALSE;
 
     /* Try opening the catalog, don't worry if we fail, just keep trying. */
     LIBBASE->dtb_LibsCatalog =
-	opencatalog
-	(
-	    (struct Library *)LIBBASE,
-	    NULL,
-	    "Sys/libs.catalog",
-	    OC_BuiltInLanguage,
-	    "english",
-	    TAG_DONE
-	);
+        opencatalog
+        (
+            NULL,
+            "Sys/libs.catalog",
+            OC_BuiltInLanguage,
+            "english",
+            TAG_DONE
+        );
 
     D(bug("datatypes.library correctly initialized\n"));
 
@@ -72,16 +74,15 @@ static int Open(LIBBASETYPEPTR LIBBASE)
     /* Try opening the catalog again. */
     if(DataTypesBase->dtb_LibsCatalog == NULL)
     {
-	DataTypesBase->dtb_LibsCatalog =
-	    opencatalog
-	    (
-		(struct Library *)DataTypesBase,
-		NULL,
-		"Sys/libs.catalog",
-		OC_BuiltInLanguage,
-		"english",
-		TAG_DONE
-	    );
+        DataTypesBase->dtb_LibsCatalog =
+            opencatalog
+            (
+                NULL,
+                "Sys/libs.catalog",
+                OC_BuiltInLanguage,
+                "english",
+                TAG_DONE
+            );
     }
 
     D(bug("Return from open of datatypes.library\n"));
@@ -94,10 +95,10 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
 {
     /* stegerg: if later someone else re-opens datatypes.library, then
                 the datatypes.class would have to be re-added with
-		AddClass in libopen() (if FreeClass returned FALSE,
-		where the class was not freed, but still removed),
-		or re-make the class (when FreeClass returned TRUE) */
-		
+                AddClass in libopen() (if FreeClass returned FALSE,
+                where the class was not freed, but still removed),
+                or re-make the class (when FreeClass returned TRUE) */
+                
     return TryRemoveClass((struct Library *)DataTypesBase);
 }
 

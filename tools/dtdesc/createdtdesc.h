@@ -1,5 +1,5 @@
 /*
-    Copyright © 2000, The AROS Development Team. All rights reserved.
+    Copyright © 2000-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DataTypesDescriptorCreator
@@ -33,6 +33,7 @@ struct DTDesc
  char *ProgName;
  char *InputName;
  char *OutputName;
+ char *DTCD;
  FILE *Input;
 
  struct DataTypeHeader DTH;

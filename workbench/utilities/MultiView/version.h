@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -8,6 +8,6 @@
 
 
 #define VERSION         1
-#define REVISION        6
-#define DATESTR         "13.02.2016"
-#define VERSIONSTR      "$VER: MultiView 1.6 (" DATESTR ")"
+#define REVISION        7
+#define DATESTR         "11.02.2020"
+#define VERSIONSTR      "$VER: MultiView 1.7 (" DATESTR ")"

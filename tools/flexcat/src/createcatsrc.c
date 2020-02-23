@@ -470,6 +470,7 @@ void CreateSourceFile(char *SourceFile, char *TemplateFile, char *CDFile)
 
   if((fpout = fopen(SourceFile, "w")) == NULL)
   {
+    fclose(fpin);
     ShowError(MSG_ERR_NOSOURCE, SourceFile);
     return;
   }

@@ -17,7 +17,7 @@
     NAME */
 #include <unistd.h>
 
-	__off64_t posixc_lseek64 (
+	__off64_t lseek64 (
 
 /*  SYNOPSIS */
 	int    filedes,
@@ -154,4 +154,4 @@
 error:
     errno = __stdc_ioerr2errno (IoErr ());
     return (off_t) -1;
-} /* posixc_lseek64 */
+} /* lseek64 */

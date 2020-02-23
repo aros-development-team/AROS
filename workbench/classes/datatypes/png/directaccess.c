@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -330,13 +330,12 @@ static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread,
 
 	    case PNG_COLOR_TYPE_RGB_ALPHA:
 		png.png_depth = 32;
-	    #if 0
+#if defined(PBPAFMT_RGBA)
 		png.png_format = PBPAFMT_RGBA;
-	    #else
-	        /* PBPAFMT_RGBA not supported by picture.datatype, therefore using PBPAFMT_ARGB */
+#else
 		png.png_format = PBPAFMT_ARGB;
 		png_set_swap_alpha(png.png_ptr);
-	    #endif
+#endif
 		break;
 
 	    default:

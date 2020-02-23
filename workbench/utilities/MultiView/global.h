@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -239,6 +239,8 @@ enum
 /*********************************************************************************************/
 
 /* main.c */
+
+extern char *cmdexport;
 
 void OutputMessage(CONST_STRPTR msg);
 void Cleanup(CONST_STRPTR msg);

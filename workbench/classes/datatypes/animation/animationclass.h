@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2016, The AROS Development	Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development	Team. All rights reserved.
     $Id$
 */
 
@@ -78,8 +78,12 @@ struct AnimFrame
 {
     struct Node                 af_Node;
 #define af_CacheBM af_Node.ln_Name
+    ULONG                       af_Flags;
     struct adtNewFormatFrame    af_Frame;
 };
+
+#define AFFLAGB_READY      0
+#define AFFLAGF_READY      (1 << 0)
 
 /* for sanity, we embed the frame number in the ln_type/ln_pri fields */
 static inline UWORD GetNODEID(struct AnimFrame *node) {
