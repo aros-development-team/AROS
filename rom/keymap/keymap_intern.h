@@ -1,7 +1,7 @@
 #ifndef KEYMAP_INTERN_H
 #define KEYMAP_INTERN_H
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keymaps internal structure
@@ -23,11 +23,15 @@
 
 #define KEYMAPNAME "keymap.library"
 
-#define DEBUG 0 /* This must be set globally because of cpak */
+/* uncomment the following line to use keymaps with 0x40 entries
+ * in highkeymap, as opposed to 0x38 that AmigaOS uses */
+//define NONSTANDARD_KEYMAP
 
 struct KeymapBase;
+#if !defined(DEFAULT_KEYMAP)
 extern const UBYTE keymaptype_table[8][8];
 extern const UBYTE keymapstr_table[8][8];
+#endif
 
 /* Structures */
 struct BufInfo

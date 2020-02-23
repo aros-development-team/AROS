@@ -10,6 +10,8 @@ include $(SRCDIR)/config/aros.cfg
 FILES := defaultkeymap support
 FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
 USER_LDFLAGS := -static
 
 #MM kernel-keymap-includes : \

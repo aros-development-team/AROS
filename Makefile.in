@@ -117,7 +117,7 @@ CONFIGUREFILES += $(HOSTGENDIR)/config/host.cfg
 # Standard Rules ...
 #
 
-all: $(CONFIGUREFILES) crosstools-toolchain features
+all: $(CONFIGUREFILES) crosstools-toolchain features $(MKKEYMAP)
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.AROS
 
 makedirs:
@@ -200,6 +200,10 @@ $(FLEXCAT): $(wildcard $(SRCDIR)/tools/flexcat/src/*.[ch]) $(wildcard $(SRCDIR)/
 $(CREATEDTDESC): $(wildcard $(SRCDIR)/tools/dtdesc/*.[ch]) $(wildcard $(SRCDIR)/tools/dtdesc/c_iff/*.[ch])
 	@$(ECHO) Building createdtdesc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/dtdesc -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
+
+$(MKKEYMAP): $(wildcard $(SRCDIR)/tools/mkkeymap/*.[ch]) features
+	@$(ECHO) Building mkkeymap...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/mkkeymap -f Makefile MKKEYMAP=$(MKKEYMAP) SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(AFSLIB): $(wildcard $(SRCDIR)/rom/filesys/afs/*.[ch])
 	@$(ECHO) Building afslib...
@@ -310,7 +314,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 	test kernel boot workbench compiler contrib ports sdk mmake query
 
 # Workaround for bug in make v3.81 (should normally be handled by .DEFAULT)
-install test kernel boot workbench compiler contrib ports : crosstools-toolchain features $(CONFIGUREFILES)
+install test kernel boot workbench compiler contrib ports : crosstools-toolchain features $(CONFIGUREFILES) $(MKKEYMAP)
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 
@@ -335,5 +339,6 @@ distfiles::
 .DEFAULT: $(CONFIGUREFILES)
 	@$(MAKE) $(MKARGS) crosstools-toolchain
 	@$(MAKE) $(MKARGS) crosstools-toolchain features
+	@$(MAKE) $(MKARGS) $(MKKEYMAP)
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 

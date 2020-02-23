@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools cycle class.
@@ -214,18 +214,20 @@ IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
     if(rerender)
     {
-        struct RastPort *rp;
-
+        struct gpRender rmsg;
         if(data->active > data->numlabels-1)
 	    data->active = 0;
 
 	//kprintf("Rerendering\n");
 
-        rp = ObtainGIRPort(msg->ops_GInfo);
-        if(rp)
+        rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
+        if(rmsg.gpr_RPort)
         {
-            DoMethod(o, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rp, GREDRAW_UPDATE);
-            ReleaseGIRPort(rp);
+            rmsg.MethodID = GM_RENDER;
+            rmsg.gpr_GInfo = msg->ops_GInfo;
+            rmsg.gpr_Redraw = GREDRAW_UPDATE;
+            DoMethodA(o, &rmsg);
+            ReleaseGIRPort(rmsg.gpr_RPort);
             result = FALSE;
         }
     }

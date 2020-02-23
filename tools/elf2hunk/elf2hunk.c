@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,6 +17,8 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <dirent.h>
+
+#include <libgen.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -281,6 +283,7 @@ static void set_error(int err)
 #define bug(fmt,args...)	fprintf(stderr, fmt ,##args )
 
 static int must_swap = -1;
+static int flags = 0;
 
 static void eh_fixup(struct elfheader *eh)
 {
@@ -637,7 +640,15 @@ static int wlong(int fd, ULONG val)
     return write(fd, &val, sizeof(val));
 }
 
-int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, int symtabndx)
+static int wshort(int fd, UWORD val)
+{
+    UBYTE s[2];
+    s[0] = (val >> 8) & 0xff;
+    s[1] = val & 0xff;
+    return write(fd, s, 2);
+}
+
+int write_hunksymbols(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, int symtabndx)
 {
     int i, err, syms;
     struct symbol *sym = hh[symtabndx]->data;
@@ -676,12 +687,14 @@ int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, 
     return 1;
 }
 
-static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
+static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
 {
+    int relreloc_failed = 0;
+    int relreloc_needed = 0;
     int i;
 
     if (hh[h]->relocs == 0)
-    	return;
+    	return relreloc_failed;
 
     /* Sort the relocations by reference hunk id */
     qsort(hh[h]->reloc, hh[h]->relocs, sizeof(hh[h]->reloc[0]), reloc_cmp);
@@ -718,16 +731,54 @@ static void reloc_dump(int hunk_fd, struct hunkheader **hh, int h)
     	    if (hh[h]->relreloc[count].shid != shid)
     	    	break;
     	count -= i;
-    	wlong(hunk_fd, count);
+        if (h == shid) {
+            D(bug("RELRELOC32 within one hunk. Discarding...\n"));
+            i+=count;
+            continue;
+        }
+    	if (count > 65535)
+    	    bug("RELRELOC32 count exceeds 65535!\n");
+    	wshort(hunk_fd, count);
     	D(bug("\t  %d relocations relative to Hunk %d\n", count, hh[shid]->hunk));
     	/* Convert from ELF hunk ID to AOS hunk ID */
-    	wlong(hunk_fd, hh[shid]->hunk);
+    	wshort(hunk_fd, hh[shid]->hunk);
     	for (; count > 0; i++, count--) {
     	    D(bug("\t\t%d: 0x%08x %s\n", i, (int)hh[h]->relreloc[i].offset, hh[h]->relreloc[i].symbol));
-    	    wlong(hunk_fd, hh[h]->relreloc[i].offset);
+    	    if (hh[h]->relreloc[i].offset > 65535)
+            {
+                if (flags & F_VERBOSE)
+                {
+                    bug("relocation offset %d is too big for RELRELOC32\n", hh[h]->relreloc[i].offset);
+                    if ((hh[h]->relreloc[i].symbol) && (strlen(hh[h]->relreloc[i].symbol) > 0))
+                    {
+                        bug("  -> failed to relocate symbol '%s'\n", hh[h]->relreloc[i].symbol);
+                    }
+                }
+                relreloc_failed++;
+            }
+    	    wshort(hunk_fd, hh[h]->relreloc[i].offset);
+            relreloc_needed++;
     	}
     }
-    wlong(hunk_fd, 0);
+
+    /* If no relrelocs were required, rewind the counter back so that there is no HUNK_RELRELOC32 in the file */
+    if (relreloc_needed == 0)
+    {
+        D(bug("No relreloc32 written, rewinding file back\n"));
+        lseek(hunk_fd, -4, SEEK_CUR);
+    }
+    else
+    {
+        /* Otherwise mark end of the RELRELOC32 by a reloc count of 0 */
+        wshort(hunk_fd, 0);
+
+        /* If file is now not aligned on 4 bytes, align it */
+        if (lseek(hunk_fd, 0, SEEK_CUR) % 4)
+        {
+            wshort(hunk_fd, 0);
+        }
+    }
+    return relreloc_failed;
 }
 
 static int copy_to(int in, int out)
@@ -753,19 +804,17 @@ static int copy_to(int in, int out)
     return 0;
 }
 
-int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
+int elf2hunk(int file, int hunk_fd, const char *libname, int flags, char* target)
 {
     const __attribute__((unused)) char *names[3]={ "CODE", "DATA", "BSS" };
     struct hunkheader **hh;
     struct elfheader  eh;
     struct sheader   *sh;
     char *strtab = NULL;
-    int symtab_shndx = -1;
-    int err;
-    ULONG  i;
+    int hunks = 0, retval = EXIT_SUCCESS;
+    int symtab_shndx = -1, err;
+    ULONG  int_shnum, i;
     BOOL   exec_hunk_seen __attribute__ ((unused)) = FALSE;
-    ULONG  int_shnum;
-    int hunks = 0;
 
     /* load and validate ELF header */
     D(bug("Load header\n"));
@@ -833,8 +882,8 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
             if (sh[i].type == SHT_SYMTAB_SHNDX) {
                 if (symtab_shndx == -1)
                     symtab_shndx = i;
-                else
-                    D(bug("[ELF2HUNK] file contains multiple symtab shndx tables. only using the first one\n"));
+                else if (flags & F_VERBOSE)
+                    bug("[ELF2HUNK] file contains multiple symtab shndx tables. only using the first one\n");
             }
         }
         else
@@ -960,7 +1009,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
                 bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4));
                 for (s = 0; s < int_shnum; s++) {
                     if (hh[s] && hh[s]->type == HUNK_SYMBOL)
-                        sym_dump(hunk_fd, sh, hh, i, s);
+                        write_hunksymbols(hunk_fd, sh, hh, i, s);
                 }
             )
 
@@ -969,19 +1018,25 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
     	    break;
     	case HUNK_CODE:
     	case HUNK_DATA:
-    	    D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
-    	    err = write(hunk_fd, hh[i]->data, ((hh[i]->size + 4)/4)*4);
-    	    if (err < 0)
-    	    	return EXIT_FAILURE;
-            D(
-                for (s = 0; s < int_shnum; s++) {
-                    if (hh[s] && hh[s]->type == HUNK_SYMBOL)
-                        sym_dump(hunk_fd, sh, hh, i, s);
+            {
+                int failcnt;
+                D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
+                err = write(hunk_fd, hh[i]->data, ((hh[i]->size + 4)/4)*4);
+                if (err < 0)
+                    return EXIT_FAILURE;
+                D(
+                    for (s = 0; s < int_shnum; s++) {
+                        if (hh[s] && hh[s]->type == HUNK_SYMBOL)
+                            write_hunksymbols(hunk_fd, sh, hh, i, s);
+                    }
+                )
+                if ((failcnt = write_hunkrelocs(hunk_fd, hh, i)) > 0)
+                {
+                    bug("%d relocation(s) failed in HUNK #%d of %s\n", failcnt, hh[i]->hunk, target);
                 }
-            )
-    	    reloc_dump(hunk_fd, hh, i);
-    	    wlong(hunk_fd, HUNK_END);
-    	    D(bug("\tHUNK_END\n"));
+                wlong(hunk_fd, HUNK_END);
+                D(bug("\tHUNK_END\n"));
+            }
     	    break;
     	default:
     	    D(bug("Unsupported allocatable hunk type %d\n", (int)hh[i]->type));
@@ -1006,7 +1061,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
         free(strtab);
 
     D(bug("All good, all done.\n"));
-    return EXIT_SUCCESS;
+    return retval;
 
 error:
     return EXIT_FAILURE;
@@ -1077,6 +1132,7 @@ static int copy(const char *src, const char *dst, int flags)
     int src_fd, hunk_fd;
     struct stat st;
     int mode, ret;
+    char *target = basename((char *)dst);
 
     if (flags & F_VERBOSE)
        printf("%s ->\n  %s\n", src, dst);
@@ -1110,7 +1166,7 @@ static int copy(const char *src, const char *dst, int flags)
     	return EXIT_FAILURE;
     }
 
-    ret = elf2hunk(src_fd, hunk_fd, NULL, flags);
+    ret = elf2hunk(src_fd, hunk_fd, NULL, flags, target);
     if (ret != 0)
         perror(src);
 
@@ -1123,8 +1179,6 @@ static int copy(const char *src, const char *dst, int flags)
 
 int main(int argc, char **argv)
 {
-    int flags = 0;
-
     if (argc == 4 && strcmp(argv[1],"-v") == 0) {
         flags |= F_VERBOSE;
         argc--;

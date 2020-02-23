@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal GadTools button class.
@@ -85,7 +85,6 @@ IPTR GTButton__OM_SET(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR 		retval = 0UL;
     struct TagItem 	*tag, tags[2];
-    struct RastPort 	*rport;
 
     /* Catch everything, but GA_Disabled. */
     tag = FindTagItem(GA_Disabled, msg->ops_AttrList);
@@ -100,10 +99,14 @@ IPTR GTButton__OM_SET(Class * cl, Object * obj, struct opSet * msg)
     /* Redraw the gadget, if an attribute was changed and if this is the
        objects' base-class. */
     if ((retval) && (OCLASS(obj) == cl)) {
-	rport = ObtainGIRPort(msg->ops_GInfo);
-	if (rport) {
-	    DoMethod(obj, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rport, GREDRAW_UPDATE);
-	    ReleaseGIRPort(rport);
+        struct gpRender rmsg;
+	rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
+	if (rmsg.gpr_RPort) {
+	    rmsg.MethodID = GM_RENDER;
+	    rmsg.gpr_GInfo = msg->ops_GInfo;
+	    rmsg.gpr_Redraw = GREDRAW_UPDATE;
+	    DoMethodA(obj, &rmsg);
+	    ReleaseGIRPort(rmsg.gpr_RPort);
 	    retval = FALSE;
 	}
     }

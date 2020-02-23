@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Change the position in a stream.
@@ -17,7 +17,7 @@
     NAME */
 #include <stdio.h>
 
-	int fseeko (
+	int posixc_fseeko (
 
 /*  SYNOPSIS */
 	FILE * stream,
@@ -63,4 +63,4 @@
 
     return __fseeko (stream, offset, whence);
 
-} /* fseeko */
+} /* posixc_fseeko */

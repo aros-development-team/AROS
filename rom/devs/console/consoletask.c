@@ -1,10 +1,13 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code executed by the console.device task.
     Lang: english
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include <exec/lists.h>
 #include <proto/exec.h>
@@ -18,9 +21,6 @@
 
 #include "console_gcc.h"
 #include "consoleif.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 VOID con_inject(struct ConsoleBase *ConsoleDevice, struct ConUnit *cu,
     const UBYTE *data, LONG size)
@@ -395,9 +395,9 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
                     break;
 
                 default:
-                    kprintf
+                    bug
                         ("!!! UNKNOWN COMMAND RECEIVED BY CONSOLE TASK !!!\n");
-                    kprintf("!!! THIS SHOULD NEVER HAPPEN !!!\n");
+                    bug("!!! THIS SHOULD NEVER HAPPEN !!!\n");
                     break;
                 }
 
@@ -488,7 +488,7 @@ static void answer_read_request(struct IOStdReq *req,
 
      */
 
-/* kprintf("receiving task=%s, sigbit=%d\n, mode=%d"
+/* bug("receiving task=%s, sigbit=%d\n, mode=%d"
 	, ((struct Task *)req->io_Message.mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name
 	, req->io_Message.mn_ReplyPort->mp_SigBit
 	, req->io_Message.mn_ReplyPort->mp_Flags

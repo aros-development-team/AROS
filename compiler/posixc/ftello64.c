@@ -10,7 +10,7 @@
     NAME */
 #include <stdio.h>
 
-        off64_t ftello64 (
+        off64_t posixc_ftello64 (
 
 /*  SYNOPSIS */
         FILE *stream)
@@ -41,4 +41,4 @@
 
     return __ftello64(stream);
 
-} /* ftello64 */
+} /* posixc_ftello64 */

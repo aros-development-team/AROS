@@ -739,10 +739,27 @@ aros_cflags_iquote
 aros_cflags_isystem_end
 aros_cflags_isystem
 aros_cflags_visibility_hidden
+aros_cflags_no_merge_all_constants
+aros_cflags_merge_all_constants
+aros_cflags_no_merge_constants
+aros_cflags_merge_constants
+aros_cflags_data_sections
+aros_cflags_function_sections
 aros_cflags_no_asynchronous_unwind_tables
 aros_cflags_asynchronous_unwind_tables
 aros_cflags_no_freestanding
 aros_cflags_freestanding
+aros_cflags_no_builtin_unreachable
+aros_cflags_no_builtin_popcountll
+aros_cflags_no_builtin_popcount
+aros_cflags_no_builtin_expect
+aros_cflags_no_builtin_ctz
+aros_cflags_no_builtin_clzll
+aros_cflags_no_builtin_clz
+aros_cflags_no_builtin_bswap64
+aros_cflags_no_builtin_bswap32
+aros_cflags_no_builtin_ffsll
+aros_cflags_no_builtin_ffs
 aros_cflags_no_builtin_vsnprintf
 aros_cflags_no_builtin_floor
 aros_cflags_no_builtin
@@ -772,6 +789,8 @@ aros_cflags_whole_program
 aros_cflags_nolto
 aros_cflags_lto
 aros_cflags_tree_vectorize
+aros_cflags_no_float_store
+aros_cflags_float_store
 aros_cflags_no_trapping_math
 aros_cflags_no_math_errno
 aros_cflags_associative_math
@@ -2842,6 +2861,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fassociative-math
 #  -fno-math-errno
 #  -fno-trapping-math
+#  -ffloat-store
 #  -ftree-vectorize
 #  -flto
 #  -fwhole-program
@@ -2865,6 +2885,10 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 
 #  -ffreestanding
 #  -fasynchronous-unwind-tables
+#  -ffunction-sections
+#  -fdata-sections
+#  -fmerge-constants
+#  -fmerge-all-constants
 
 # C++/ObjC++
 #  -fpermissive
@@ -3011,6 +3035,33 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_no_trapping_math" >&6; }
 if test "x-$aros_no_trapping_math" = "x-yes" ; then
     aros_cflags_no_trapping_math=-fno-trapping-math
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffloat-store" >&5
+$as_echo_n "checking whether ${CC} accepts -ffloat-store... " >&6; }
+CFLAGS=-ffloat-store
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_float_store="yes"
+else
+  aros_float_store="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_float_store" >&5
+$as_echo "$aros_float_store" >&6; }
+if test "x-$aros_float_store" = "x-yes" ; then
+    aros_cflags_float_store=-ffloat-store
+    aros_cflags_no_float_store=-fno-float-store
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ftree-vectorize" >&5
@@ -3480,14 +3531,14 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  aros_no_builtin_floor="yes"
+  aros_builtin_floor="yes"
 else
-  aros_no_builtin_floor="no"
+  aros_builtin_floor="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_builtin_floor" >&5
-$as_echo "$aros_no_builtin_floor" >&6; }
-if test "x-$aros_no_builtin_floor" = "x-yes" ; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_floor" >&5
+$as_echo "$aros_builtin_floor" >&6; }
+if test "x-$aros_builtin_floor" = "x-yes" ; then
     aros_cflags_no_builtin_floor=-fno-builtin-floor
 fi
 
@@ -3506,15 +3557,301 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  aros_no_builtin_vsnprintf="yes"
+  aros_builtin_vsnprintf="yes"
 else
-  aros_no_builtin_vsnprintf="no"
+  aros_builtin_vsnprintf="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_builtin_vsnprintf" >&5
-$as_echo "$aros_no_builtin_vsnprintf" >&6; }
-if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_vsnprintf" >&5
+$as_echo "$aros_builtin_vsnprintf" >&6; }
+if test "x-$aros_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-ffs" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-ffs... " >&6; }
+CFLAGS=-fno-builtin-ffs
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_ffs="yes"
+else
+  aros_builtin_ffs="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_ffs" >&5
+$as_echo "$aros_builtin_ffs" >&6; }
+if test "x-$aros_builtin_ffs" = "x-yes" ; then
+    aros_cflags_no_builtin_ffs=-fno-builtin-ffs
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-ffsll" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-ffsll... " >&6; }
+CFLAGS=-fno-builtin-ffsll
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_ffsll="yes"
+else
+  aros_builtin_ffsll="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_ffsll" >&5
+$as_echo "$aros_builtin_ffsll" >&6; }
+if test "x-$aros_builtin_ffsll" = "x-yes" ; then
+    aros_cflags_no_builtin_ffsll=-fno-builtin-ffsll
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-bswap32" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-bswap32... " >&6; }
+CFLAGS=-fno-builtin-bswap32
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_bswap32="yes"
+else
+  aros_builtin_bswap32="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_bswap32" >&5
+$as_echo "$aros_builtin_bswap32" >&6; }
+if test "x-$aros_builtin_bswap32" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap32=-fno-builtin-bswap32
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-bswap64" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-bswap64... " >&6; }
+CFLAGS=-fno-builtin-bswap64
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_bswap64="yes"
+else
+  aros_builtin_bswap64="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_bswap64" >&5
+$as_echo "$aros_builtin_bswap64" >&6; }
+if test "x-$aros_builtin_bswap64" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap64=-fno-builtin-bswap64
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-clz" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-clz... " >&6; }
+CFLAGS=-fno-builtin-clz
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_clz="yes"
+else
+  aros_builtin_clz="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_clz" >&5
+$as_echo "$aros_builtin_clz" >&6; }
+if test "x-$aros_builtin_clz" = "x-yes" ; then
+    aros_cflags_no_builtin_clz=-fno-builtin-clz
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-clzll" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-clzll... " >&6; }
+CFLAGS=-fno-builtin-clzll
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_clzll="yes"
+else
+  aros_builtin_clzll="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_clzll" >&5
+$as_echo "$aros_builtin_clzll" >&6; }
+if test "x-$aros_builtin_clzll" = "x-yes" ; then
+    aros_cflags_no_builtin_clzll=-fno-builtin-clzll
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-ctz" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-ctz... " >&6; }
+CFLAGS=-fno-builtin-ctz
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_ctz="yes"
+else
+  aros_builtin_ctz="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_ctz" >&5
+$as_echo "$aros_builtin_ctz" >&6; }
+if test "x-$aros_builtin_ctz" = "x-yes" ; then
+    aros_cflags_no_builtin_ctz=-fno-builtin-ctz
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-expect" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-expect... " >&6; }
+CFLAGS=-fno-builtin-expect
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_expect="yes"
+else
+  aros_builtin_expect="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_expect" >&5
+$as_echo "$aros_builtin_expect" >&6; }
+if test "x-$aros_builtin_expect" = "x-yes" ; then
+    aros_cflags_no_builtin_expect=-fno-builtin-expect
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-popcount" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-popcount... " >&6; }
+CFLAGS=-fno-builtin-popcount
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_popcount="yes"
+else
+  aros_builtin_popcount="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_popcount" >&5
+$as_echo "$aros_builtin_popcount" >&6; }
+if test "x-$aros_builtin_popcount" = "x-yes" ; then
+    aros_cflags_no_builtin_popcount=-fno-builtin-popcount
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-popcountll" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-popcountll... " >&6; }
+CFLAGS=-fno-builtin-popcountll
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_popcountll="yes"
+else
+  aros_builtin_popcountll="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_popcountll" >&5
+$as_echo "$aros_builtin_popcountll" >&6; }
+if test "x-$aros_builtin_popcountll" = "x-yes" ; then
+    aros_cflags_no_builtin_popcountll=-fno-builtin-popcountll
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fno-builtin-unreachable" >&5
+$as_echo_n "checking whether ${CC} accepts -fno-builtin-unreachable... " >&6; }
+CFLAGS=-fno-builtin-unreachable
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_unreachable="yes"
+else
+  aros_builtin_unreachable="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_unreachable" >&5
+$as_echo "$aros_builtin_unreachable" >&6; }
+if test "x-$aros_builtin_unreachable" = "x-yes" ; then
+    aros_cflags_no_builtin_unreachable=-fno-builtin-unreachable
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffreestanding" >&5
@@ -3569,6 +3906,112 @@ $as_echo "$aros_asynchronous_unwind_tables" >&6; }
 if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
     aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
     aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffunction-sections" >&5
+$as_echo_n "checking whether ${CC} accepts -ffunction-sections... " >&6; }
+CFLAGS=-ffunction-sections
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_function_sections="yes"
+else
+  aros_function_sections="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_function_sections" >&5
+$as_echo "$aros_function_sections" >&6; }
+if test "x-$aros_function_sections" = "x-yes" ; then
+    aros_cflags_function_sections=-ffunction-sections
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fdata-sections" >&5
+$as_echo_n "checking whether ${CC} accepts -fdata-sections... " >&6; }
+CFLAGS=-fdata-sections
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_data_sections="yes"
+else
+  aros_data_sections="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_data_sections" >&5
+$as_echo "$aros_data_sections" >&6; }
+if test "x-$aros_data_sections" = "x-yes" ; then
+    aros_cflags_data_sections=-fdata-sections
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fmerge-constants" >&5
+$as_echo_n "checking whether ${CC} accepts -fmerge-constants... " >&6; }
+CFLAGS=-fmerge-constants
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_merge_constants="yes"
+else
+  aros_merge_constants="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_merge_constants" >&5
+$as_echo "$aros_merge_constants" >&6; }
+if test "x-$aros_merge_constants" = "x-yes" ; then
+    aros_cflags_merge_constants=-fmerge-constants
+    aros_cflags_no_merge_constants=-fno-merge-constants
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fmerge-all-constants" >&5
+$as_echo_n "checking whether ${CC} accepts -fmerge-all-constants... " >&6; }
+CFLAGS=-fmerge-all-constants
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_merge_all_constants="yes"
+else
+  aros_merge_all_constants="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_merge_all_constants" >&5
+$as_echo "$aros_merge_all_constants" >&6; }
+if test "x-$aros_merge_all_constants" = "x-yes" ; then
+    aros_cflags_merge_all_constants=-fmerge-all-constants
+    aros_cflags_no_merge_all_constants=-fno-merge-all-constants
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fvisibility=hidden" >&5
@@ -6193,6 +6636,26 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -24,6 +24,7 @@
 #include <aros/debug.h>
 
 #define VERSION "$VER: Input 1.2 ("ADATE") The AROS Dev Team"
+#define EXCLUDEPATTERN "~(#?.info|#?.dbg)"
 
 /*********************************************************************************************/
 
@@ -53,7 +54,7 @@ int main(int argc, char **argv)
                 if (ARG(PUBSCREEN))
                     pScreen = LockPubScreen((CONST_STRPTR)ARG(PUBSCREEN));
 
-                Prefs_ScanDirectory("DEVS:Keymaps/#?~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));
+                Prefs_ScanDirectory("DEVS:Keymaps/" EXCLUDEPATTERN, &keymap_list, sizeof(struct KeymapEntry));
 
                 application = ApplicationObject,
                     MUIA_Application_Title,  __(MSG_NAME),

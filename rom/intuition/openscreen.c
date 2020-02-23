@@ -1219,6 +1219,7 @@ static const char THIS_FILE[] = __FILE__;
 
         if(ok && (screen->Screen.RastPort.BitMap == NULL))
         {
+            struct msGetRootBitMap rbmmsg;
 #ifdef __AROS__ /* AROS: BitMap needs ModeID */
             ULONG Depth = (dimensions.MaxDepth > 8) ? dimensions.MaxDepth : ns.Depth;
             struct TagItem bmtags[] =
@@ -1268,7 +1269,10 @@ static const char THIS_FILE[] = __FILE__;
                 pixfmt = GetCyberIDAttr(CYBRIDATTR_PIXFMT,modeid);
             }
 
-            DoMethod((Object*)screen->IMonitorNode,MM_GetRootBitMap,pixfmt,(ULONG)&root);
+            rbmmsg.MethodID = MM_GetRootBitMap;
+            rbmmsg.PixelFormat = pixfmt;
+            rbmmsg.Store = &root;
+            DoMethodA((Object*)screen->IMonitorNode, &rbmmsg);
 
             DEBUG_OPENSCREEN(dprintf("OpenScreen: root BitMap 0x%lx\n",root));
 

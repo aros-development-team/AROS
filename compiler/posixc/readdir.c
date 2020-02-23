@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function readdir().
@@ -25,7 +25,7 @@
     NAME */
 #include <dirent.h>
 
-	struct dirent *readdir(
+	struct dirent *posixc_readdir(
 
 /*  SYNOPSIS */
 	DIR *dir)

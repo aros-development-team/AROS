@@ -11,7 +11,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define AROS_ALMOST_COMPATIBLE
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>

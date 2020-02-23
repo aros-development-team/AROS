@@ -25,29 +25,38 @@ void SetActiveMonPointerPos(struct IntuitionBase *IntuitionBase)
     Object *mon = _intuitionBase->ActiveMonitor;
 
     if (mon)
-        DoMethod(mon, MM_SetPointerPos, IntuitionBase->MouseX, IntuitionBase->MouseY);
+    {
+        struct msSetPointerPos ppmsg;
+        ppmsg.MethodID = MM_SetPointerPos;
+        ppmsg.x = IntuitionBase->MouseX;
+        ppmsg.y = IntuitionBase->MouseY;
+        DoMethodA(mon, &ppmsg);
+    }
 }
 
 BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
 {
     struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
+    struct msSetPointerShape pmsg;
     Object *mon;
-    struct SharedPointer *pointer = NULL;
     Object *obj = _intuitionBase->DefaultPointer;
     BOOL res = TRUE;
 
+    pmsg.pointer = NULL;
+
     if (obj)
-        GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pointer);
-    D(bug("[ResetPointer] Default pointer is 0x%p\n", pointer));
-    if (!pointer)
+        GetAttr(POINTERA_SharedPointer, obj, (IPTR *)&pmsg.pointer);
+    D(bug("[ResetPointer] Default pointer is 0x%p\n", pmsg.pointer));
+    if (!pmsg.pointer)
         return TRUE;
 
     ObtainSemaphoreShared(&_intuitionBase->MonitorListSem);
 
     ForeachNode(&_intuitionBase->MonitorList, mon) {
         if (!FindFirstScreen(mon, IntuitionBase)) {
+            pmsg.MethodID = MM_SetPointerShape;
             D(bug("[ResetPointer] Setting default pointer for monitor 0x%p\n", mon));
-            if (!DoMethod(mon, MM_SetPointerShape, pointer))
+            if (!DoMethodA(mon, &pmsg))
                 res = FALSE;
         }
     }
@@ -265,18 +274,21 @@ Object *MakePointerFromPrefs(struct IntuitionBase *IntuitionBase, struct Prefere
 
 void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **old, Object *pointer)
 {
+    struct msSetPointerShape pmsg;
     struct IntScreen 	*scr;
     struct Window   	*win;
     struct SharedPointer *oldpointer;
-    struct SharedPointer *newpointer;
     Object *oldobject;
 
     DEBUG_POINTER(dprintf("InstallPointer(0x%p)\n", pointer);)
 
+    pmsg.MethodID = MM_SetPointerShape;
+    pmsg.pointer = NULL;
+
     ULONG lock = LockIBase(0);
 
     GetAttr(POINTERA_SharedPointer, *old, (IPTR *)&oldpointer);
-    GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&newpointer);
+    GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&pmsg.pointer);
 
     for (scr = GetPrivScreen(IntuitionBase->FirstScreen); scr; scr = GetPrivScreen(scr->Screen.NextScreen))
     {
@@ -284,20 +296,20 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
         {
             if (((struct IntWindow *)win)->pointer == *old)
             {
-                win->XOffset = newpointer->xoffset;
-                win->YOffset = newpointer->yoffset;
+                win->XOffset = pmsg.pointer->xoffset;
+                win->YOffset = pmsg.pointer->yoffset;
             }
         }
 
         if (scr->Pointer == oldpointer)
         {
             DEBUG_POINTER(dprintf("InstallPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
-                                  scr, pointer, newpointer->sprite));
-            if (DoMethod(scr->IMonitorNode, MM_SetPointerShape, newpointer))
+                                  scr, pointer, pmsg.pointer->sprite));
+            if (DoMethodA(scr->IMonitorNode, &pmsg))
             {
-                ObtainSharedPointer(newpointer, IntuitionBase);
+                ObtainSharedPointer(pmsg.pointer, IntuitionBase);
                 ReleaseSharedPointer(oldpointer, IntuitionBase);
-                scr->Pointer = newpointer;
+                scr->Pointer = pmsg.pointer;
             }
             else
             {

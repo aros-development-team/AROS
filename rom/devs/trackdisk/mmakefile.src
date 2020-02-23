@@ -5,6 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-pc-i386-trackdisk : includes
 #MM- kernel-pc-i386-trackdisk-kobj : includes
 
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
 USER_INCLUDES := -I$(TOP)/rom/devs
 USER_LDFLAGS := -static
 

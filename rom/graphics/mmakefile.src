@@ -3,7 +3,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/cgfx
-USER_CPPFLAGS := -D__OOP_NOMETHODBASES__
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -D__OOP_NOMETHODBASES__
 USER_LDFLAGS := -static
 
 FILES	  := \

@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2020, The AROS Development Team. All rights reserved.
    $Id$
 */
 
@@ -106,12 +106,15 @@ static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
         /* Hide mouse pointer */
         if (scr)
         {
+            struct msSetPointerShape pmsg;
+            pmsg.MethodID = MM_SetPointerShape;
+            pmsg.pointer = NULL;
+
             pointer = MakePointerFromData(IntuitionBase, empty_pointer,
                 0, 0, 1, 1);
             GetAttr(POINTERA_SharedPointer, pointer,
-                (IPTR *) & shared_pointer);
-            DoMethod(GetPrivScreen(scr)->IMonitorNode, MM_SetPointerShape,
-                shared_pointer);
+                (IPTR *) &pmsg.pointer);
+            DoMethodA(GetPrivScreen(scr)->IMonitorNode, &pmsg);
         }
     }
 

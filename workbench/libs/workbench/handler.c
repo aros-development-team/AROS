@@ -1,11 +1,10 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     The Workbench Handler process and associated functions.
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/ports.h>

@@ -131,7 +131,7 @@ static void CheckTaskStack(struct Task *task)
         unusedstack++;
     }
     
-    out("Task %x (%25s) Stack Size =%6d, Left =%6d, Used %s%6d%s\n",
+    out("Task %p (%25s) Stack Size =%6d, Left =%6d, Used %s%6d%s\n",
                 task,
                 task->tc_Node.ln_Name ?
                         (const char *)task->tc_Node.ln_Name : "<NONAME>",
@@ -139,7 +139,7 @@ static void CheckTaskStack(struct Task *task)
                 unusedstack,
                 ((stacksize - unusedstack) < stacksize) ? "=" : ">",
                 stacksize - unusedstack,
-                (unusedstack < 512) ? ": Needs more stack!!!!!!!!!" : "");
+                (unusedstack < 512) ? ": Needs more stack!" : "");
 }
 
 static void Action(void)

@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Open the file information window for a specified file.
 */
-
-#define DEBUG 1
 
 #include <exec/types.h>
 #include <exec/ports.h>

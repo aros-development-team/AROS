@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-ata-kobj-includes : kernel-scsi--kobj-includes
 
 USER_CPPFLAGS := \
+        -DUSE_EXEC_DEBUG \
         -D__OOP_NOMETHODBASES__ \
         -D__OOP_NOATTRBASES__
 #USER_CPPFLAGS += -DDEBUG

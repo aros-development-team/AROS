@@ -5,8 +5,6 @@
     Undocumented WBConfig
 */
 
-#define DEBUG 0
-
 #include <exec/types.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
@@ -51,7 +49,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    bug("WBConfig() not implemented. P1=%08x P2=%08x\n", unk1, unk2);
+    D(bug("WBConfig() not implemented. P1=%08x P2=%08x\n", unk1, unk2);)
     return 0;
         
     AROS_LIBFUNC_EXIT

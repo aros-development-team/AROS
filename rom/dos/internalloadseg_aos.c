@@ -98,7 +98,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
   BPTR *hunktab = BADDR(table);
   BPTR firsthunk = BNULL, prevhunk = BNULL;
-  ULONG hunktype, count, first, last, curhunk, lasthunk, numhunks;
+  ULONG lcount, hunktype, first, last, curhunk, lasthunk, numhunks;
+  UWORD wcount;
   LONG t;
   UBYTE name_buf[255];
   register int i;
@@ -126,15 +127,15 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   /* start point is HUNK_HEADER + 4 */
   while (1)
   {
-    if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+    if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
       goto end;
-    if (count == 0L)
+    if (lcount == 0L)
       break;
-    count = AROS_BE2LONG(count);
-    count *= 4;
-    if (read_block_buffered(fh, name_buf, count, funcarray, srb, DOSBase))
+    lcount = AROS_BE2LONG(lcount);
+    lcount *= 4;
+    if (read_block_buffered(fh, name_buf, lcount, funcarray, srb, DOSBase))
       goto end;
-    D(bug("\tlibname: \"%.*s\"\n", count, name_buf));
+    D(bug("\tlibname: \"%.*s\"\n", lcount, name_buf));
   }
   if (read_block_buffered(fh, &numhunks, sizeof(numhunks), funcarray, srb, DOSBase))
     goto end;
@@ -172,13 +173,13 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       continue;
     }
 
-    if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+    if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
       goto end;
 
-    count = AROS_BE2LONG(count);
-    tmp = count & (HUNKF_FAST | HUNKF_CHIP);
-    count &= 0xFFFFFF;
-    D(bug("\tHunk %d size: 0x%06lx bytes in ", i, count*4));
+    lcount = AROS_BE2LONG(lcount);
+    tmp = lcount & (HUNKF_FAST | HUNKF_CHIP);
+    lcount &= 0xFFFFFF;
+    D(bug("\tHunk %d size: 0x%06lx bytes in ", i, lcount*4));
     req = MEMF_CLEAR | MEMF_PUBLIC;
     if (tmp == (HUNKF_FAST | HUNKF_CHIP)) {
       if (read_block_buffered(fh, &req, sizeof(req), funcarray, srb, DOSBase))
@@ -204,7 +205,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
      * architectures, and so that traditional AmigaOS Font, and
      * Keymap files can be correctly processed and used.
      */
-    hunksize = count * 4 + sizeof(ULONG) + sizeof(BPTR);
+    hunksize = lcount * 4 + sizeof(ULONG) + sizeof(BPTR);
     hunkptr = ilsAllocVec(hunksize, req | MEMF_31BIT);
     if (!hunkptr)
       ERROR(ERROR_NO_FREE_STORE);
@@ -245,43 +246,43 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
              --------------------   */
 
         D(bug("HUNK_SYMBOL (skipping)\n"));
-          while(!read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase) && count)
+          while(!read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase) && lcount)
           {
-            count = AROS_BE2LONG(count) ;
+            lcount = AROS_BE2LONG(lcount) ;
 
-            if (seek_forward(fh, count+1, funcarray, srb, DOSBase))
+            if (seek_forward(fh, lcount+1, funcarray, srb, DOSBase))
               goto end;
           }
       break;
 
       case HUNK_UNIT:
 
-        if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
           goto end;
 
-        count = AROS_BE2LONG(count) ;
+        lcount = AROS_BE2LONG(lcount) ;
 
-        count *= 4;
-        if (read_block_buffered(fh, name_buf, count, funcarray, srb, DOSBase))
+        lcount *= 4;
+        if (read_block_buffered(fh, name_buf, lcount, funcarray, srb, DOSBase))
           goto end;
-        D(bug("HUNK_UNIT: \"%.*s\"\n", count, name_buf));
+        D(bug("HUNK_UNIT: \"%.*s\"\n", lcount, name_buf));
         break;
 
       case HUNK_CODE:
       case HUNK_DATA:
       case HUNK_BSS:
 
-        if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
           goto end;
 
-        count = AROS_BE2LONG(count);
+        lcount = AROS_BE2LONG(lcount);
 
         D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
-          segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
+          segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, lcount*4));
 
-        if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
+        if ((hunktype & 0xFFFFFF) != HUNK_BSS && lcount)
         {
-          if (read_block_buffered(fh, GETHUNKPTR(curhunk), count*4, funcarray, srb, DOSBase))
+          if (read_block_buffered(fh, GETHUNKPTR(curhunk), lcount*4, funcarray, srb, DOSBase))
             goto end;
 
         }
@@ -291,27 +292,26 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_RELOC32:
-      case HUNK_RELRELOC32:
         D(bug("HUNK_RELOC32:\n"));
         while (1)
         {
           ULONG *addr, val;
           ULONG offset;
 
-          if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+          if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
             goto end;
-          if (count == 0L)
+          if (lcount == 0L)
             break;
 
-          count = AROS_BE2LONG(count);
+          lcount = AROS_BE2LONG(lcount);
 
-          i = count;
-          if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+          i = lcount;
+          if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
             goto end;
 
-          count = AROS_BE2LONG(count);
+          lcount = AROS_BE2LONG(lcount);
 
-          D(bug("\tHunk #%ld:\n", count));
+          D(bug("\tHunk #%ld:\n", lcount));
           while (i > 0)
           {
             if (read_block_buffered(fh, &offset, sizeof(offset), funcarray, srb, DOSBase))
@@ -322,21 +322,57 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             //D(bug("\t\t0x%06lx\n", offset));
             addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
-            if ((hunktype & 0xFFFFFF) == HUNK_RELRELOC32)
-            {
-              val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(lasthunk));
-            }
-            else
-            {
-              val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
-            }
+            val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(lcount);
+
+            D(bug("\t %08x:    %08x ->", addr, *addr));
             *addr = (ULONG)AROS_LONG2BE(val);
+            D(bug(" %08x (%08x)\n", *addr, val));
 
             --i;
           }
         }
       break;
 
+      case HUNK_RELRELOC32:
+        D(bug("HUNK_RELRELOC32:\n"));
+        while (1)
+        {
+          ULONG *addr, val;
+          UWORD offset;
+
+          if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
+            goto end;
+          if (wcount == 0L)
+            break;
+
+          wcount = AROS_BE2WORD(wcount);
+
+          i = wcount;
+          if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
+            goto end;
+
+          wcount = AROS_BE2WORD(wcount);
+
+          D(bug("\tHunk #%ld:\n", wcount));
+          while (i > 0)
+          {
+            if (read_block_buffered(fh, &offset, sizeof(offset), funcarray, srb, DOSBase))
+              goto end;
+
+            offset = AROS_BE2WORD(offset);
+
+            //D(bug("\t\t0x%06lx\n", offset));
+            addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
+
+            val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(wcount) - GETHUNKPTR(lasthunk));
+
+            *addr = (ULONG)AROS_LONG2BE(val);
+
+            --i;
+          }
+        }
+      break;
+        
       case HUNK_ABSRELOC16:
       case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
@@ -365,8 +401,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
             word = AROS_BE2WORD(word);
 
-            count = word;
-            D(bug("\tHunk #%ld @%p: %ld relocations\n", count, GETHUNKPTR(lasthunk), i));
+            lcount = word;
+            D(bug("\tHunk #%ld @%p: %ld relocations\n", lcount, GETHUNKPTR(lasthunk), i));
             while (i > 0)
             {
               Wordcount++;
@@ -379,16 +415,16 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
                  we get the word we need.  */
               offset = AROS_BE2WORD(word);
 
-              D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(count)));
+              D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(lcount)));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
               if ((hunktype & 0xFFFFFF) == HUNK_ABSRELOC16)
               {
-                val = (AROS_BE2LONG(*addr) - ((IPTR)GETHUNKPTR(lasthunk) + offset)) + (IPTR)GETHUNKPTR(count);
+                val = (AROS_BE2LONG(*addr) - ((IPTR)GETHUNKPTR(lasthunk) + offset)) + (IPTR)GETHUNKPTR(lcount);
               }
               else
               {
-                val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count);
+                val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(lcount);
               }
               *addr = (ULONG)AROS_LONG2BE(val);
 
@@ -434,13 +470,13 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_DEBUG:
-        if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
           goto end;
 
-        count = AROS_BE2LONG(count);
+        lcount = AROS_BE2LONG(lcount);
 
-        D(bug("HUNK_DEBUG (%x Bytes)\n",count));
-        if (seek_forward(fh, count, funcarray, srb, DOSBase))
+        D(bug("HUNK_DEBUG (%x Bytes)\n",lcount));
+        if (seek_forward(fh, lcount, funcarray, srb, DOSBase))
           goto end;
         break;
 
@@ -449,17 +485,17 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("HUNK_OVERLAY:\n"));
         if (table) /* overlay inside overlay? */
           ERROR(ERROR_BAD_HUNK);
-        if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
           goto end;
-        count = AROS_BE2LONG(count);
-        D(bug("Overlay table size: %d\n", count));
+        lcount = AROS_BE2LONG(lcount);
+        D(bug("Overlay table size: %d\n", lcount));
 
         /* See above for MEMF_31BIT explanation */
-        count = count * 4 + sizeof(ULONG) + sizeof(ULONG);
-        overlaytable = ilsAllocVec(count, MEMF_CLEAR | MEMF_31BIT);
+        lcount = lcount * 4 + sizeof(ULONG) + sizeof(ULONG);
+        overlaytable = ilsAllocVec(lcount, MEMF_CLEAR | MEMF_31BIT);
         if (overlaytable == NULL)
           ERROR(ERROR_NO_FREE_STORE);
-        if (read_block_buffered(fh, overlaytable, count - sizeof(ULONG), funcarray, srb, DOSBase))
+        if (read_block_buffered(fh, overlaytable, lcount - sizeof(ULONG), funcarray, srb, DOSBase))
             goto end;
         goto done;
       }
@@ -473,10 +509,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       default:
         if (hunktype & HUNKF_ADVISORY) {
           D(bug("Unknown hunk 0x%06lx with advisory flag skipped\n", hunktype & 0xFFFFFF));
-          if (read_block_buffered(fh, &count, sizeof(count), funcarray, srb, DOSBase))
+          if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
             goto end;
-          count = AROS_BE2LONG(count);
-          if (seek_forward(fh, count * 4, funcarray, srb, DOSBase))
+          lcount = AROS_BE2LONG(lcount);
+          if (seek_forward(fh, lcount * 4, funcarray, srb, DOSBase))
             goto end;
         } else {
           bug("Hunk type 0x%06lx not implemented\n", hunktype & 0xFFFFFF);
@@ -486,24 +522,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   } /* while */
 
 done:
-#if !defined(LIBLOADSEG)
-  if (firsthunk)
-  {
-    struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-    if (segnode)
-    {
-      D(bug("[DOS:ILSAOS] %s: hunk seglist info @ 0x%p\n", __func__, segnode);)
-
-      segnode->ln_Name = firsthunk;
-      segnode->ln_Type = SEGTYPE_HUNK;
-
-      ObtainSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-      AddTail(&((struct IntDosBase *)DOSBase)->segdata, segnode);
-      ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-    }
-  }
-#endif
-
   if (hunktab)
   {
     ULONG hunksize;

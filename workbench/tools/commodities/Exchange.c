@@ -43,7 +43,6 @@
 
 ******************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE
 #define MUIMASTER_YES_INLINE_STDARG
 
 #ifndef __AROS__

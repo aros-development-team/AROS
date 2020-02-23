@@ -23,21 +23,54 @@
 #include <aros/types/time_t.h>
 #include <aros/types/timespec_s.h>
 
+/* NB we must use the __xxx_t types here, because the xxx_t version
+ * may not be defined */
 struct stat
 {
     dev_t           st_dev;	    /* inode's device */
-    ino_t           st_ino;	    /* inode's number */
+#if defined(__USE_FILE_OFFSET64)
+    __ino64_t       st_ino;	    /* inode's number */
+#else
+    __ino_t         st_ino;	    /* inode's number */
+#endif
     mode_t          st_mode;	    /* inode protection mode */
     nlink_t         st_nlink;	    /* number of hard links */
     uid_t           st_uid;	    /* user ID of the file's owner */
     gid_t           st_gid;	    /* group ID of the file's group */
     dev_t           st_rdev;	    /* device type */
-    off_t           st_size;	    /* file size, in bytes */
+#if defined(__USE_FILE_OFFSET64)
+    __off64_t       st_size;        /* file size, in bytes */
+#else
+    __off_t         st_size;	    /* file size, in bytes */
+#endif
     struct timespec st_atim;	    /* time of last access */
     struct timespec st_mtim;	    /* time of last data modification */
     struct timespec st_ctim;	    /* time of last file status change */
     blksize_t       st_blksize;	    /* optimal blocksize for I/O */
-    blkcnt_t        st_blocks;	    /* blocks allocated for file */
+#if defined(__USE_FILE_OFFSET64)
+    __blkcnt64_t    st_blocks;      /* blocks allocated for file */
+#else
+    __blkcnt_t      st_blocks;      /* blocks allocated for file */
+#endif
+    unsigned long   st_flags;	    /* user defined flags for file */
+    unsigned long   st_gen;         /* file generation number */
+};
+
+struct stat64
+{
+    dev_t           st_dev;	    /* inode's device */
+    __ino64_t       st_ino;	    /* inode's number */
+    mode_t          st_mode;	    /* inode protection mode */
+    nlink_t         st_nlink;	    /* number of hard links */
+    uid_t           st_uid;	    /* user ID of the file's owner */
+    gid_t           st_gid;	    /* group ID of the file's group */
+    dev_t           st_rdev;	    /* device type */
+    __off64_t       st_size;        /* file size, in bytes */
+    struct timespec st_atim;	    /* time of last access */
+    struct timespec st_mtim;	    /* time of last data modification */
+    struct timespec st_ctim;	    /* time of last file status change */
+    blksize_t       st_blksize;	    /* optimal blocksize for I/O */
+    __blkcnt64_t    st_blocks;      /* blocks allocated for file */
     unsigned long   st_flags;	    /* user defined flags for file */
     unsigned long   st_gen;         /* file generation number */
 };
@@ -105,17 +138,56 @@ __BEGIN_DECLS
 int chmod(const char *path, mode_t mode);
 int fchmod(int fildes, mode_t mode);
 /* NOTIMPL int fchmodat(int, const char *, mode_t, int); */
-int fstat(int fd, struct stat *sb);
+int posixc_fstat(int fd, struct stat *sb);
+int posixc_fstat64(int fd, struct stat64 *sb);
+#if defined(__USE_FILE_OFFSET64)
+static inline int fstat(int fd, struct stat *sb)
+{
+    struct stat64 * _sb64 = (struct stat64 *)sb;
+    return posixc_fstat64(fd, _sb64);
+}
+#else
+static inline int fstat(int fd, struct stat *sb)
+{
+    return posixc_fstat(fd, sb);
+}
+#endif
 /* NOTIMPL int fstatat(int, const char *restrict, struct stat *restrict, int); */
 /* NOTIMPL int futimens(int, const struct timespec [2]); */
-int lstat(const char * restrict path, struct stat * restrict sb);
+int posixc_lstat(const char * restrict path, struct stat * restrict sb);
+int posixc_lstat64(const char * restrict path, struct stat64 * restrict sb);
+#if defined(__USE_FILE_OFFSET64)
+static inline int lstat(const char * restrict path, struct stat * restrict sb)
+{
+    struct stat64 * _sb64 = (struct stat64 *)sb;
+    return posixc_lstat64(path, _sb64);
+}
+#else
+static inline int lstat(const char * restrict path, struct stat * restrict sb)
+{
+    return posixc_lstat(path, sb);
+}
+#endif
 int mkdir(const char *path, mode_t mode);
 /* NOTIMPL int mkdirat(int, const char *, mode_t); */
 /* NOTIMPL int mkfifo(const char *path, mode_t mode); */
 /* NOTIMPL int mkfifoat(int, const char *, mode_t); */
 int mknod(const char *path, mode_t mode, dev_t dev);
 /* NOTIMPL int mknodat(int, const char *, mode_t, dev_t); */
-int stat(const char * restrict path, struct stat * restrict sb);
+int posixc_stat(const char * restrict path, struct stat * restrict sb);
+int posixc_stat64(const char * restrict path, struct stat64 * restrict sb);
+#if defined(__USE_FILE_OFFSET64)
+static inline int stat(const char * restrict path, struct stat * restrict sb)
+{
+    struct stat64 * _sb64 = (struct stat64 *)sb;
+    return posixc_stat64(path, _sb64);
+}
+#else
+static inline int stat(const char * restrict path, struct stat * restrict sb)
+{
+    return posixc_stat(path, sb);
+}
+#endif
 mode_t umask(mode_t numask);
 /* NOTIMPL int utimensat(int, const char *, const struct timespec [2], int); */
 

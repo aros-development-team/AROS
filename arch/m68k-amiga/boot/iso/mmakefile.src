@@ -28,6 +28,7 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 
 TAR ?= tar
 Q ?= @
+#QE2H ?= -v
 
 $(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
 		@$(CP) $< $@
@@ -83,7 +84,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(MKDIR) -p "$(DISTDIR)"
 	@$(MKDIR) -p "$(AROSDIR).HUNK"
 	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
-	@$(ELF2HUNK) "$(AROSDIR)" "$(AROSDIR).HUNK"
+	@$(ELF2HUNK) $(QE2H) "$(AROSDIR)" "$(AROSDIR).HUNK"
 	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
 	@$(RM) -rf "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)/aros.elf"
 	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_ARCH)/aros.hunk.gz" "$(AROSDIR).HUNK/$(AROS_DIR_ARCH)"

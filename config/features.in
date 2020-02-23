@@ -40,6 +40,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fassociative-math
 #  -fno-math-errno
 #  -fno-trapping-math
+#  -ffloat-store
 #  -ftree-vectorize
 #  -flto
 #  -fwhole-program
@@ -63,6 +64,10 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 
 #  -ffreestanding
 #  -fasynchronous-unwind-tables
+#  -ffunction-sections
+#  -fdata-sections
+#  -fmerge-constants
+#  -fmerge-all-constants
 
 # C++/ObjC++
 #  -fpermissive
@@ -113,6 +118,15 @@ AC_TRY_COMPILE(,, aros_no_trapping_math="yes", aros_no_trapping_math="no")
 AC_MSG_RESULT($aros_no_trapping_math)
 if test "x-$aros_no_trapping_math" = "x-yes" ; then
     aros_cflags_no_trapping_math=-fno-trapping-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffloat-store])
+CFLAGS=-ffloat-store
+AC_TRY_COMPILE(,, aros_float_store="yes", aros_float_store="no")
+AC_MSG_RESULT($aros_float_store)
+if test "x-$aros_float_store" = "x-yes" ; then
+    aros_cflags_float_store=-ffloat-store
+    aros_cflags_no_float_store=-fno-float-store
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -ftree-vectorize])
@@ -263,18 +277,106 @@ fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-floor])
 CFLAGS=-fno-builtin-floor
-AC_TRY_COMPILE(,, aros_no_builtin_floor="yes", aros_no_builtin_floor="no")
-AC_MSG_RESULT($aros_no_builtin_floor)
-if test "x-$aros_no_builtin_floor" = "x-yes" ; then
+AC_TRY_COMPILE(,, aros_builtin_floor="yes", aros_builtin_floor="no")
+AC_MSG_RESULT($aros_builtin_floor)
+if test "x-$aros_builtin_floor" = "x-yes" ; then
     aros_cflags_no_builtin_floor=-fno-builtin-floor
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-vsnprintf])
 CFLAGS=-fno-builtin-vsnprintf
-AC_TRY_COMPILE(,, aros_no_builtin_vsnprintf="yes", aros_no_builtin_vsnprintf="no")
-AC_MSG_RESULT($aros_no_builtin_vsnprintf)
-if test "x-$aros_no_builtin_vsnprintf" = "x-yes" ; then
+AC_TRY_COMPILE(,, aros_builtin_vsnprintf="yes", aros_builtin_vsnprintf="no")
+AC_MSG_RESULT($aros_builtin_vsnprintf)
+if test "x-$aros_builtin_vsnprintf" = "x-yes" ; then
     aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ffs])
+CFLAGS=-fno-builtin-ffs
+AC_TRY_COMPILE(,, aros_builtin_ffs="yes", aros_builtin_ffs="no")
+AC_MSG_RESULT($aros_builtin_ffs)
+if test "x-$aros_builtin_ffs" = "x-yes" ; then
+    aros_cflags_no_builtin_ffs=-fno-builtin-ffs
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ffsll])
+CFLAGS=-fno-builtin-ffsll
+AC_TRY_COMPILE(,, aros_builtin_ffsll="yes", aros_builtin_ffsll="no")
+AC_MSG_RESULT($aros_builtin_ffsll)
+if test "x-$aros_builtin_ffsll" = "x-yes" ; then
+    aros_cflags_no_builtin_ffsll=-fno-builtin-ffsll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-bswap32])
+CFLAGS=-fno-builtin-bswap32
+AC_TRY_COMPILE(,, aros_builtin_bswap32="yes", aros_builtin_bswap32="no")
+AC_MSG_RESULT($aros_builtin_bswap32)
+if test "x-$aros_builtin_bswap32" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap32=-fno-builtin-bswap32
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-bswap64])
+CFLAGS=-fno-builtin-bswap64
+AC_TRY_COMPILE(,, aros_builtin_bswap64="yes", aros_builtin_bswap64="no")
+AC_MSG_RESULT($aros_builtin_bswap64)
+if test "x-$aros_builtin_bswap64" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap64=-fno-builtin-bswap64
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-clz])
+CFLAGS=-fno-builtin-clz
+AC_TRY_COMPILE(,, aros_builtin_clz="yes", aros_builtin_clz="no")
+AC_MSG_RESULT($aros_builtin_clz)
+if test "x-$aros_builtin_clz" = "x-yes" ; then
+    aros_cflags_no_builtin_clz=-fno-builtin-clz
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-clzll])
+CFLAGS=-fno-builtin-clzll
+AC_TRY_COMPILE(,, aros_builtin_clzll="yes", aros_builtin_clzll="no")
+AC_MSG_RESULT($aros_builtin_clzll)
+if test "x-$aros_builtin_clzll" = "x-yes" ; then
+    aros_cflags_no_builtin_clzll=-fno-builtin-clzll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ctz])
+CFLAGS=-fno-builtin-ctz
+AC_TRY_COMPILE(,, aros_builtin_ctz="yes", aros_builtin_ctz="no")
+AC_MSG_RESULT($aros_builtin_ctz)
+if test "x-$aros_builtin_ctz" = "x-yes" ; then
+    aros_cflags_no_builtin_ctz=-fno-builtin-ctz
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-expect])
+CFLAGS=-fno-builtin-expect
+AC_TRY_COMPILE(,, aros_builtin_expect="yes", aros_builtin_expect="no")
+AC_MSG_RESULT($aros_builtin_expect)
+if test "x-$aros_builtin_expect" = "x-yes" ; then
+    aros_cflags_no_builtin_expect=-fno-builtin-expect
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-popcount])
+CFLAGS=-fno-builtin-popcount
+AC_TRY_COMPILE(,, aros_builtin_popcount="yes", aros_builtin_popcount="no")
+AC_MSG_RESULT($aros_builtin_popcount)
+if test "x-$aros_builtin_popcount" = "x-yes" ; then
+    aros_cflags_no_builtin_popcount=-fno-builtin-popcount
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-popcountll])
+CFLAGS=-fno-builtin-popcountll
+AC_TRY_COMPILE(,, aros_builtin_popcountll="yes", aros_builtin_popcountll="no")
+AC_MSG_RESULT($aros_builtin_popcountll)
+if test "x-$aros_builtin_popcountll" = "x-yes" ; then
+    aros_cflags_no_builtin_popcountll=-fno-builtin-popcountll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-unreachable])
+CFLAGS=-fno-builtin-unreachable
+AC_TRY_COMPILE(,, aros_builtin_unreachable="yes", aros_builtin_unreachable="no")
+AC_MSG_RESULT($aros_builtin_unreachable)
+if test "x-$aros_builtin_unreachable" = "x-yes" ; then
+    aros_cflags_no_builtin_unreachable=-fno-builtin-unreachable
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -ffreestanding])
@@ -293,6 +395,40 @@ AC_MSG_RESULT($aros_asynchronous_unwind_tables)
 if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
     aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
     aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffunction-sections])
+CFLAGS=-ffunction-sections
+AC_TRY_COMPILE(,, aros_function_sections="yes", aros_function_sections="no")
+AC_MSG_RESULT($aros_function_sections)
+if test "x-$aros_function_sections" = "x-yes" ; then
+    aros_cflags_function_sections=-ffunction-sections
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fdata-sections])
+CFLAGS=-fdata-sections
+AC_TRY_COMPILE(,, aros_data_sections="yes", aros_data_sections="no")
+AC_MSG_RESULT($aros_data_sections)
+if test "x-$aros_data_sections" = "x-yes" ; then
+    aros_cflags_data_sections=-fdata-sections
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fmerge-constants])
+CFLAGS=-fmerge-constants
+AC_TRY_COMPILE(,, aros_merge_constants="yes", aros_merge_constants="no")
+AC_MSG_RESULT($aros_merge_constants)
+if test "x-$aros_merge_constants" = "x-yes" ; then
+    aros_cflags_merge_constants=-fmerge-constants
+    aros_cflags_no_merge_constants=-fno-merge-constants
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fmerge-all-constants])
+CFLAGS=-fmerge-all-constants
+AC_TRY_COMPILE(,, aros_merge_all_constants="yes", aros_merge_all_constants="no")
+AC_MSG_RESULT($aros_merge_all_constants)
+if test "x-$aros_merge_all_constants" = "x-yes" ; then
+    aros_cflags_merge_all_constants=-fmerge-all-constants
+    aros_cflags_no_merge_all_constants=-fno-merge-all-constants
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fvisibility=hidden])
@@ -1189,6 +1325,8 @@ AC_SUBST(aros_cflags_fast_math)
 AC_SUBST(aros_cflags_associative_math)
 AC_SUBST(aros_cflags_no_math_errno)
 AC_SUBST(aros_cflags_no_trapping_math)
+AC_SUBST(aros_cflags_float_store)
+AC_SUBST(aros_cflags_no_float_store)
 AC_SUBST(aros_cflags_tree_vectorize)
 AC_SUBST(aros_cflags_lto)
 AC_SUBST(aros_cflags_nolto)
@@ -1227,12 +1365,30 @@ AC_SUBST(aros_cflags_builtin)
 AC_SUBST(aros_cflags_no_builtin)
 AC_SUBST(aros_cflags_no_builtin_floor)
 AC_SUBST(aros_cflags_no_builtin_vsnprintf)
+AC_SUBST(aros_cflags_no_builtin_ffs)
+AC_SUBST(aros_cflags_no_builtin_ffsll)
+AC_SUBST(aros_cflags_no_builtin_bswap32)
+AC_SUBST(aros_cflags_no_builtin_bswap64)
+AC_SUBST(aros_cflags_no_builtin_clz)
+AC_SUBST(aros_cflags_no_builtin_clzll)
+AC_SUBST(aros_cflags_no_builtin_ctz)
+AC_SUBST(aros_cflags_no_builtin_expect)
+AC_SUBST(aros_cflags_no_builtin_popcount)
+AC_SUBST(aros_cflags_no_builtin_popcountll)
+AC_SUBST(aros_cflags_no_builtin_unreachable)
 
 AC_SUBST(aros_cflags_freestanding)
 AC_SUBST(aros_cflags_no_freestanding)
 
 AC_SUBST(aros_cflags_asynchronous_unwind_tables)
 AC_SUBST(aros_cflags_no_asynchronous_unwind_tables)
+
+AC_SUBST(aros_cflags_function_sections)
+AC_SUBST(aros_cflags_data_sections)
+AC_SUBST(aros_cflags_merge_constants)
+AC_SUBST(aros_cflags_no_merge_constants)
+AC_SUBST(aros_cflags_merge_all_constants)
+AC_SUBST(aros_cflags_no_merge_all_constants)
 
 AC_SUBST(aros_cflags_visibility_hidden)
 

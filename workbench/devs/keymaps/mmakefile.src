@@ -3,6 +3,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 KEYMAPS := \
+    pc105_gb
+
+OLDKEYMAPS := \
     pc104_il pc104_usa pc104_usa2 \
     pc105_al pc105_b pc105_bg pc105_br pc105_by pc105_cdn pc105_cz pc105_d pc105_dk pc105_dvl \
     pc105_dvr pc105_dvx pc105_e pc105_est pc105_f pc105_fin pc105_gb pc105_gbx pc105_gr \
@@ -12,12 +15,12 @@ KEYMAPS := \
     sun_usa 
 
 #MM- workbench-devs-complete : workbench-devs-keymaps
+
 #MM- workbench-devs-keymaps :  includes workbench-devs-keymaps-build
 #MM workbench-devs-keymaps-build : workbench-devs-keymaps-setup
 #MM- workbench-devs-keymaps-quick : workbench-devs-keymaps-build
 
 KEYMAPFILES := $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
-KEYMAPOBJS := $(foreach f,$(KEYMAPS),$(GENDIR)/$(CURDIR)/$(f).o)
 
 #MM
 workbench-devs-keymaps-build : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
@@ -25,13 +28,9 @@ workbench-devs-keymaps-build : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
 
 OBJDIR := $(GENDIR)/$(CURDIR)
 
-$(AROS_DEVS)/Keymaps/% : $(OBJDIR)/%.o
-	%link_q opt="$(LDFLAGS) $(NOSTARTUP_LDFLAGS)"
-
-$(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c
-	%compile_q cmd="$(TARGET_CC) $(TARGET_SYSROOT)" opt="$(USER_INCLUDES) $(BASE_CFLAGS) -O0 $(USER_CFLAGS)"
-
-$(KEYMAPFILES): $(KEYMAPOBJS)
+$(AROS_DEVS)/Keymaps/% : $(SRCDIR)/$(CURDIR)/%.akmd
+	$(Q)$(ECHO) "Generating $(notdir $@) KeyMap..."
+	$(Q)$(MKKEYMAP) -d $< -k $@
 
 #MM workbench-devs-keymaps-setup
-%rule_makedirs dirs="$(AROS_DEVS)/Keymaps $(OBJDIR)" setuptarget=workbench-devs-keymaps-setup
+%rule_makedirs dirs="$(AROS_DEVS)/Keymaps" setuptarget=workbench-devs-keymaps-setup

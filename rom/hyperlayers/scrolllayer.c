@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -85,8 +85,8 @@
   }
   else
   {
-    l->Scroll_X -= dx;
-    l->Scroll_Y -= dy;
+    l->Scroll_X += dx;
+    l->Scroll_Y += dy;
   }
   
   UnlockLayer(l);

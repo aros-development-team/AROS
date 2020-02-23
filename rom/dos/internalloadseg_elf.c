@@ -285,7 +285,7 @@ static int __attribute__ ((noinline)) load_hunk
         D(bug("[dos] hunk @ %p, size=%08x, addr @ %p\n", hunk, hunk->size, sh->addr));
 
         /* Update the pointer to the previous one, which is now the current one */
-        *next_hunk_ptr = &hunk->next;
+        *next_hunk_ptr = (APTR)((IPTR)hunk + offsetof(struct hunk, next));
 
         if (sh->type != SHT_NOBITS)
             return !elf_read_block(file, sh->offset, sh->addr, sh->size, funcarray, srb, DOSBase);
@@ -988,24 +988,6 @@ BPTR InternalLoadSeg_ELF
             sh[i].addr = NULL;
         }
     }
-
-#if !defined(LIBLOADSEG)
-    /* Everything is loaded now. Register the module at kernel.resource */
-    {
-        struct Node *segnode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-        if (segnode)
-        {
-            D(bug("[DOS:ILSELF] %s: elf seglist info @ 0x%p\n", __func__, segnode);)
-
-            segnode->ln_Name = hunks;
-            segnode->ln_Type = SEGTYPE_ELF;
-
-            ObtainSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-            AddTail(&((struct IntDosBase *)DOSBase)->segdata, segnode);
-            ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
-        }
-    }
-#endif
 
     register_elf(file, hunks, &eh, sh, DOSBase);
     goto end;

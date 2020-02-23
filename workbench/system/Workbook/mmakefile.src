@@ -1,9 +1,10 @@
-# Copyright © 2011, The AROS Development Team. All rights reserved.
+# Copyright © 2011-2020, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -D__NOLIBBASE__
+USER_CPPFLAGS := \
+	       -D__NOLIBBASE__
 
 FILES := workbook workbook_intern \
 	 wbapp \
@@ -20,7 +21,9 @@ FILES := workbook workbook_intern \
     detach=no
 
 ## For the 'workbook.resource' embedded commands
-USER_CFLAGS += -DAROS_ROM
+USER_CPPFLAGS += \
+               -DUSE_EXEC_DEBUG \
+	       -DAROS_ROM
 
 OBJDIR := $(OBJDIR).kernel
 

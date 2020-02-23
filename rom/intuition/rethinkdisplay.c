@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -150,6 +150,7 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
 
             if (!failure)
             {
+                struct msSetScreenGamma sgmsg;
                 struct MinNode *m;
 
                 DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView ViewLord 0x%lx\n",&IntuitionBase->ViewLord));
@@ -163,8 +164,11 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
                  * same registers for both LUT palette and gamma table. Consequently,
                  * we may need to reload gamma table after the mode has been changed.
                  */
-                ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+                sgmsg.MethodID = MM_SetScreenGamma;
+                sgmsg.gamma = &GetPrivScreen(screen)->GammaControl;
+                sgmsg.force = TRUE;
 
+                ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
                 for (m = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head;
                      m->mln_Succ; m = m->mln_Succ)
                 {
@@ -173,7 +177,7 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
                     if (screen)
                     {
                         GetPrivScreen(screen)->GammaControl.Active = TRUE;
-                        DoMethod((Object *)m, MM_SetScreenGamma, &GetPrivScreen(screen)->GammaControl, TRUE);
+                        DoMethodA((Object *)m, &sgmsg);
                     }
 	        }
 

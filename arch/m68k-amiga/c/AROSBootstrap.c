@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2019, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2020, The AROS Development Team.  All rights reserved.
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */

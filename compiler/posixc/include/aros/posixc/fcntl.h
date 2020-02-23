@@ -147,7 +147,24 @@ struct flock
 
 __BEGIN_DECLS
 
-int creat (const char * filename, int mode);
+#if !defined(NO_POSIX_WRAPPERS)
+int posixc_creat(const char * filename, int mode);
+int posixc_creat64(const char * filename, int mode);
+#if defined(__USE_FILE_OFFSET64)
+static inline int creat(const char * filename, int mode)
+{
+    return posixc_creat64(filename, mode);
+}
+#else
+static inline int creat(const char * filename, int mode)
+{
+    return posixc_creat(filename, mode);
+}
+#endif
+#else  /* NO_POSIX_WRAPPERS */
+int creat(const char * filename, int mode);
+int creat64(const char * filename, int mode);
+#endif /* NO_POSIX_WRAPPERS */
 int fcntl (int fd, int cmd, ...);
 int open  (const char * filename, int flags, ...);
 /* NOTIMPL int openat(int, const char *, int, ...); */

@@ -6,6 +6,9 @@ FUNCS := allocmiscresource freemiscresource
 
 #MM- kernel-misc : includes linklibs
 
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
+
 %build_module mmake=kernel-misc \
   modname=misc modtype=resource \
   files="misc_init $(FUNCS)"

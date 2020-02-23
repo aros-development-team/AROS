@@ -2,7 +2,6 @@
     Copyright © 1995-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
-#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
 #include <exec/memory.h>

@@ -2751,8 +2751,9 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
     basenames=$(%(mmake)_C_FILES) targetdir="$(%(mmake)_OBJDIR)" \
     cppflags=$(%(mmake)_CPPFLAGS) cflags=$(%(mmake)_CFLAGS) dflags=$(%(mmake)_DFLAGS) \
     compiler="%(compiler)" srcdir=%(srcdir) usetree=%(usetree)
-%rule_assemble basename=% targetdir="$(%(mmake)_OBJDIR)" \
-    aflags=$(%(mmake)_AFLAGS)
+%rule_assemble_multi mmake=%(mmake) \
+    cmd=$(%(mmake)_ASSEMBLER) basenames=$(%(mmake)_ASMFILES) targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags=$(%(mmake)_CPPFLAGS) aflags=$(%(mmake)_AFLAGS)
 
 %rule_link_linklib mmake=%(mmake) libname="%(libname)" objs=$(%(mmake)_OBJS) libdir="%(libdir)" linker="%(compiler)"
 endif
