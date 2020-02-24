@@ -21,10 +21,15 @@ static FILE *my_popen(const char *command, const char *file)
 
     FILE *pipe;
 
+    if (command_len >= sizeof(command_buf) - 1)
+        fatal("collect_sets()", strerror(ENAMETOOLONG));
+    memcpy(command_buf, command, command_len);
+    if (command[command_len - 1] != ' ')
+    {
+        command_buf[command_len++] = ' ';
+    }
     if (file_len + command_len >= sizeof(command_buf))
         fatal("collect_sets()", strerror(ENAMETOOLONG));
-
-    memcpy(command_buf, command, command_len);
     memcpy(command_buf + command_len, file, file_len + 1);
 
     set_compiler_path();
