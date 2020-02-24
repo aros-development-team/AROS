@@ -2,6 +2,6 @@
 
 extern char *KernelArgs;
 extern char *SystemVersion;
-char buf[BUFFER_SIZE];
+extern char buf[BUFFER_SIZE];
 
 int bootstrap(int argc, char ** argv);
