@@ -213,19 +213,19 @@ int main(int argc, char *argv[])
     }
     else
     {
-	docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-r", "-o", output,
+	docommandlp(ld_name, ld_name, OBJECT_FORMAT, TARGET_LINKFLAGS, "-o", output,
 	    tempoutput, "-T", ldscriptname, do_verbose, NULL);
     }
 #else
 #ifdef OBJECT_FORMAT_EXTRA_FINAL
     if (incremental == 0)
     {
-        docommandlp(ld_name, ld_name, OBJECT_FORMAT, OBJECT_FORMAT_EXTRA_FINAL, "-r", "-o", output,
+        docommandlp(ld_name, ld_name, OBJECT_FORMAT, OBJECT_FORMAT_EXTRA_FINAL, TARGET_LINKFLAGS, "-o", output,
             tempoutput, "-T", ldscriptname, do_verbose, NULL);
     }
     else
 #endif
-    docommandlp(ld_name, ld_name, OBJECT_FORMAT, "-r", "-o", output,
+    docommandlp(ld_name, ld_name, OBJECT_FORMAT, TARGET_LINKFLAGS, "-o", output,
         tempoutput, "-T", ldscriptname, do_verbose, NULL);
 #endif
 

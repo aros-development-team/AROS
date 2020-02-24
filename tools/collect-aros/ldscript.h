@@ -9,8 +9,6 @@ const static char LDSCRIPT_PART1[] =
 "\n"
 "          It *should* be general enough to be used on many architectures.\n"
 "*/\n"
-"\n"
-"FORCE_COMMON_ALLOCATION\n" \
 "\n" \
 "SECTIONS\n"
 "{\n"

@@ -31,6 +31,12 @@ HOST_LDFLAGS += -liberty
 COLLECT-AROS-DOCOMMAND := docommand-spawn.c
 endif
 
+ifeq ($(AROS_TOOLCHAIN),gnu)
+CALINKFLAGS := -dc
+endif
+CALINKFLAGS += -r
+COLLECT_CFLAGS += -DTARGET_LINKFLAGS=\""$(CALINKFLAGS)"\"
+
 all : $(COLLECT-AROS)
 
 COLLECT-AROS-FILES := collect-aros.c gensets.c misc.c $(COLLECT-AROS-BACKEND) \
@@ -38,7 +44,7 @@ COLLECT-AROS-FILES := collect-aros.c gensets.c misc.c $(COLLECT-AROS-BACKEND) \
 $(COLLECT-AROS) : misc.h ldscript.h gensets.h docommand.h backend.h $(COLLECT-AROS-DIR)/env.h
 $(COLLECT-AROS) : $(COLLECT-AROS-FILES)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) -o $@ $(COLLECT_CFLAGS) $(COLLECT-AROS-FILES) $(HOST_LDFLAGS) 
+	$(HOST_CC) -o $@ $(COLLECT_CFLAGS) $(COLLECT-AROS-FILES) $(HOST_LDFLAGS) 
 
 
 clean :
