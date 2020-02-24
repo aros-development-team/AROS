@@ -585,6 +585,8 @@ ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 aros_toolchain_sysroot
+aros_nowarnflags_ignored_optimization_argument
+aros_warnflags_ignored_optimization_argument
 aros_nowarnflags_int_in_bool_context
 aros_warnflags_int_in_bool_context
 aros_nowarnflags_class_memaccess
@@ -4573,6 +4575,7 @@ CFLAGS="$save_cflags"
 #  -Wmissing-prototypes
 #  -Wclass-memaccess
 #  -Wint-in-bool-context
+#  -Wignored-optimization-argument
 
 # C warnings first
 ac_ext=c
@@ -6528,6 +6531,33 @@ if test "x-$aros_int_in_bool_context" = "x-yes" ; then
     aros_warnflags_int_in_bool_context=-Wint-in-bool-context
     aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wignored-optimization-argument" >&5
+$as_echo_n "checking whether ${CC} accepts -Wignored-optimization-argument... " >&6; }
+CFLAGS=-Wignored-optimization-argument
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_ignored_optimization_argument="yes"
+else
+  aros_ignored_optimization_argument="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_ignored_optimization_argument" >&5
+$as_echo "$aros_ignored_optimization_argument" >&6; }
+if test "x-$aros_ignored_optimization_argument" = "x-yes" ; then
+    aros_warnflags_ignored_optimization_argument=-Wignored-optimization-argument
+    aros_nowarnflags_ignored_optimization_argument=-Wno-ignored-optimization-argument
+fi
 CFLAGS="$save_cflags"
 
 # Check the C++ warnings
@@ -6730,6 +6760,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # ...and warning flags...
 #
+
+
 
 
 

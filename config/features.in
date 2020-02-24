@@ -596,6 +596,7 @@ CFLAGS="$save_cflags"
 #  -Wmissing-prototypes
 #  -Wclass-memaccess
 #  -Wint-in-bool-context
+#  -Wignored-optimization-argument
 
 # C warnings first
 AC_LANG_PUSH(C)
@@ -1250,6 +1251,15 @@ if test "x-$aros_int_in_bool_context" = "x-yes" ; then
     aros_warnflags_int_in_bool_context=-Wint-in-bool-context
     aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
 fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wignored-optimization-argument])
+CFLAGS=-Wignored-optimization-argument
+AC_TRY_COMPILE(,, aros_ignored_optimization_argument="yes", aros_ignored_optimization_argument="no")
+AC_MSG_RESULT($aros_ignored_optimization_argument)
+if test "x-$aros_ignored_optimization_argument" = "x-yes" ; then
+    aros_warnflags_ignored_optimization_argument=-Wignored-optimization-argument
+    aros_nowarnflags_ignored_optimization_argument=-Wno-ignored-optimization-argument
+fi
 CFLAGS="$save_cflags"
 
 # Check the C++ warnings
@@ -1554,6 +1564,8 @@ AC_SUBST(aros_warnflags_class_memaccess)
 AC_SUBST(aros_nowarnflags_class_memaccess)
 AC_SUBST(aros_warnflags_int_in_bool_context)
 AC_SUBST(aros_nowarnflags_int_in_bool_context)
+AC_SUBST(aros_warnflags_ignored_optimization_argument)
+AC_SUBST(aros_nowarnflags_ignored_optimization_argument)
 
 # Additional toolchain support ...
 AC_SUBST(aros_toolchain_sysroot)
