@@ -122,7 +122,7 @@ int check_and_print_undefined_symbols(const char *file)
     char buf[200];
     size_t cnt;
 
-    FILE *pipe = my_popen(NM_NAME " -ulC ", file);
+    FILE *pipe = my_popen(NM_NAME " --demangle --undefined-only ", file); // --line-numbers
 
     while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
     {
