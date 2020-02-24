@@ -825,7 +825,7 @@ case "$aros_toolchain" in
         toolchain_ar="llvm-ar"
         toolchain_ranlib="llvm-ranlib"
         toolchain_nm="llvm-nm"
-        toolchain_strip="true"
+        toolchain_strip="${NOP}"
         toolchain_objcopy="llvm-objcopy"
         toolchain_objdump="llvm-objdump"
         use_libatomic=yes
@@ -2554,7 +2554,11 @@ if test "$aros_target_toolchain" = "yes"; then
     orig_target_ar="${tmp_tool_prefix}${toolchain_ar}"
     orig_target_ranlib="${tmp_tool_prefix}${toolchain_ranlib}"
     orig_target_nm="${tmp_tool_prefix}${toolchain_nm}"
-    orig_target_strip="${tmp_tool_prefix}${toolchain_strip}"
+    if ! test "$toolchain_strip" = "${NOP}"; then
+        orig_target_strip="${tmp_tool_prefix}${toolchain_strip}"
+    else
+        orig_target_strip="${toolchain_strip}"
+    fi
     orig_target_objcopy="${tmp_tool_prefix}${toolchain_objcopy}"
     orig_target_objdump="${tmp_tool_prefix}${toolchain_objdump}"
 else
@@ -2581,8 +2585,12 @@ else
     AROS_REQUIRED(ranlib,$orig_target_ranlib)
     AROS_TOOL_TARGET(orig_target_nm,nm,${aros_tool_prefix}${toolchain_nm})
     AROS_REQUIRED(nm,$orig_target_nm)
-    AROS_TOOL_TARGET(orig_target_strip,strip,${aros_tool_prefix}${toolchain_strip})
-    AROS_REQUIRED(strip,$orig_target_strip)
+    if ! test "$toolchain_strip" = "${NOP}"; then
+            AROS_TOOL_TARGET(orig_target_strip,strip,${aros_tool_prefix}${toolchain_strip})
+            AROS_REQUIRED(strip,$orig_target_strip)
+    else
+        orig_target_strip="${toolchain_strip}"
+    fi
     AROS_TOOL_TARGET(orig_target_objcopy,objcopy,${aros_tool_prefix}${toolchain_objcopy})
     AROS_REQUIRED(objcopy,$orig_target_objcopy)
     AROS_TOOL_TARGET(orig_target_objdump,objdump,${aros_tool_prefix}${toolchain_objdump})
@@ -2711,7 +2719,11 @@ aros_target_objcopy="${prefix}${toolchain_objcopy}"
 aros_target_objdump="${prefix}${toolchain_objdump}"
 aros_target_ranlib="${prefix}${toolchain_ranlib} $aros_target_ranlib_flags"
 aros_target_nm="${prefix}${toolchain_nm} $aros_target_nm_flags"
-aros_target_strip="${prefix}${toolchain_strip}"
+if ! test "$toolchain_strip" = "${NOP}"; then
+    aros_target_strip="${prefix}${toolchain_strip}"
+else
+    aros_target_strip="${toolchain_strip}"
+fi
 aros_plain_nm="${prefix}${toolchain_nm}"
 aros_plain_ar="${prefix}${toolchain_ar}"
 
