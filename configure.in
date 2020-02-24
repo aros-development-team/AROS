@@ -780,7 +780,7 @@ aros_kernel_ldflags="-Wl,-rpath,./lib"
 
 aros_kernel_ar_flags="cr"
 aros_target_ar_flags="cr"
-aros_target_nm_flags="-C -ul"
+aros_target_nm_flags="--demangle --undefined-only"
 aros_target_strip_flags="--strip-unneeded -R.comment"
 
 aros_c_libs=
@@ -866,6 +866,7 @@ case "$aros_toolchain" in
             toolchain_ranlib="gcc-ranlib"
             toolchain_nm="gcc-nm"
         fi
+        aros_target_nm_flags="$aros_target_nm_flags --line-numbers"
         toolchain_strip="strip"
         toolchain_objcopy="objcopy"
         toolchain_objdump="objdump"
