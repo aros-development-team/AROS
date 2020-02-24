@@ -13,7 +13,7 @@
 * The main AROS target and distfiles are built for each arch.
 * The builds are downloadable via http://www.aros.org/nightly1.php [![Download AROS Research Operating System](https://img.shields.io/sourceforge/dt/aros.svg)](https://sourceforge.net/projects/aros/files/nightly2/).
 
-| BUILD Arch <td colspan=2> Status |
+| BUILD Arch <td colspan=2> Status
 | --- | --- | --- |
 | --- | GNU toolchain | LLVM toolchain |
 | --- | --- | --- |
