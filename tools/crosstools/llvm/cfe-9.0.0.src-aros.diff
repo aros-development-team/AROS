@@ -362,7 +362,7 @@ index 0000000000..57cdd8fb33
 +                    CmdArgs.push_back("-lstdc.static");
 +                }
 +            }// OPT_static endif
-+        }// OPT_nostartfiles endif
++        }// !OPT_nostartfiles endif
 +        CmdArgs.push_back("-lcodesets");
 +        CmdArgs.push_back("-lkeymap");
 +        CmdArgs.push_back("-lexpansion");
@@ -390,11 +390,11 @@ index 0000000000..57cdd8fb33
 +        }
 +        CmdArgs.push_back("-lautoinit");
 +        CmdArgs.push_back("-llibinit");
-+        if (!Args.hasArg(options::OPT_nostartfiles)) {
-+            if (!Args.hasArg(options::OPT_static)) {
++        if (Args.hasArg(options::OPT_nostartfiles)) {
++            if (Args.hasArg(options::OPT_static)) {
 +                CmdArgs.push_back("-lstdc.static");
 +            }
-+        }// 2nd OPT_nostartfiles endif
++        }// OPT_nostartfiles endif
 +        CmdArgs.push_back("--end-group");
 +  }
 +
