@@ -15,7 +15,7 @@
 
 | | | |
 | --- | --- | --- |
-| BUILD Arch <td colspan=2> Status
+| BUILD Arch <td colspan=2> Status |
 | --- | GNU toolchain | LLVM toolchain |
 | amiga-m68k | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=14&branchName=master) | --- |
 | pc-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=16&branchName=master) | --- |
