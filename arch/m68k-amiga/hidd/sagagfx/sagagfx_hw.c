@@ -45,6 +45,7 @@ static struct saga_pll_data {
     ULONG freq;
     UWORD data[11];
 } saga_pll[] = {
+    { 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }},
     { 3000000, { 0x0000, 0xFF20, 0x0900, 0x0303, 0x0505, 0x0A5A, 0x3232, 0x0000, 0x0000, 0x0008, 0x401B } },
     { 3111111, { 0x0504, 0xFF00, 0x0920, 0x1C1C, 0x0505, 0x0A5A, 0x3232, 0x0000, 0x0000, 0x0004, 0x401A } },
     { 3125000, { 0x0202, 0xFF00, 0x0910, 0x0D0C, 0x0505, 0x0A5A, 0x3232, 0x0000, 0x0000, 0x0006, 0x401A } },
@@ -6553,7 +6554,7 @@ void SAGA_SetPLL(ULONG clock)
     }
 
     /* Calculate AUDIO CTS value (Hz * 6144) / (128 * 48000) */
-    ULONG pll = clk / 1000; //(UQUAD)clock * 6144 / (128 * 48000);
+    ULONG pll = (clk / 1000) & 0xffff; //(UQUAD)clock * 6144 / (128 * 48000);
 
     /* PLL-CTS command */
     pll |= 0x24000000;

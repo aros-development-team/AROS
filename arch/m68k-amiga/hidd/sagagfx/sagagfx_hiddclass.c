@@ -169,9 +169,9 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
 {
     struct TagItem *userSyncs = NULL;
 
-    MAKE_SYNC(320x240, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA 320x240");
+    MAKE_SYNC(320x240, 28375, 320, 688, 720, 800, 240, 483, 487, 494, 1, "SAGA:320x240");
     MAKE_SYNC(640x360, 28375, 640, 896, 984, 1088, 360, 504, 508, 518, 1, "SAGA:640x360");
-    MAKE_SYNC(640x480, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA 640x480");
+    MAKE_SYNC(640x480, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA:640x480");
     MAKE_SYNC(720x400, 28320, 720, 738, 846, 900, 400, 412, 414, 449, 2, "SAGA:720x400");
     MAKE_SYNC(720x576, 28375, 720, 753, 817, 908, 576, 582, 586, 624, 1, "SAGA:720x576");
     MAKE_SYNC(800x600, 28375, 800, 848, 880, 960, 600, 603, 607, 615, 1, "SAGA:800x600");
@@ -426,8 +426,12 @@ BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorPos)
 
         XSD(cl)->cursorX = x;
         XSD(cl)->cursorY = y;
-        WRITE16(SAGA_VIDEO_SPRITEX, x);
-        WRITE16(SAGA_VIDEO_SPRITEY, y);
+
+        if (XSD(cl)->cursor_visible)
+        {
+            WRITE16(SAGA_VIDEO_SPRITEX, x);
+            WRITE16(SAGA_VIDEO_SPRITEY, y);
+        }
     }
     return TRUE;
 }
@@ -446,6 +450,8 @@ VOID METHOD(SAGAGfx, Hidd_Gfx, SetCursorVisible)
         WRITE16(SAGA_VIDEO_SPRITEX, SAGA_VIDEO_MAXHV - 1);
         WRITE16(SAGA_VIDEO_SPRITEY, SAGA_VIDEO_MAXVV - 1);
     }
+
+    XSD(cl)->cursor_visible = msg->visible;
 }
 
 BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorShape)
@@ -570,16 +576,16 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, CreateObject)
         }
         else
         {
-            /* Non-displayable friends of our bitmaps are plain chunky bitmaps */
+            /* Non-displayable friends of our bitmaps are our bitmaps too */
             OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 
             D(bug("[SAGA] Not displayable. Friend=%p.\n", friend));
 
             if (friend && (OOP_OCLASS(friend) == XSD(cl)->bmclass))
             {
-                D(bug("[SAGA] ClassID = ChunkyBM\n"));
-                tags[0].ti_Tag  = aHidd_BitMap_ClassID;
-                tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
+                D(bug("[SAGA] ClassID = ChunkyBM, friend is OK, returning correct class\n"));
+                tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
+                tags[0].ti_Data = (IPTR)XSD(cl)->bmclass;
             }
         }
 
@@ -595,6 +601,41 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, CreateObject)
     D(bug("[SAGA] CreateObject returns %p\n", object));
 
     return object;
+}
+
+/*********  GfxHidd::CopyBox()  ************************/
+
+void METHOD(SAGAGfx, Hidd_Gfx, CopyBox)
+{
+    ULONG mode = GC_DRMD(msg->gc);
+    IPTR src=0, dst=0;
+
+bug("[SAGA] CopyBox(%p, %p, dx:%d, dy:%d, sx:%d, sy:%d, w:%d, h:%d)\n", msg->src, msg->dest, msg->destX, msg->destY,
+msg->srcX, msg->srcY, msg->width, msg->height);
+
+    if (OOP_OCLASS(msg->src) != XSD(cl)->bmclass ||
+        OOP_OCLASS(msg->dest) != XSD(cl)->bmclass)
+    {
+        bug("[SAGA] CopyBox - either source or dest is not SAGA bitmap\n");
+        bug("[SAGA] oclass src: %p, oclass dst: %p, bmclass: %p\n", OOP_OCLASS(msg->src), OOP_OCLASS(msg->dest), XSD(cl)->bmclass);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+    else
+    {
+        struct SAGAGfxBitmapData *bm_src = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+        struct SAGAGfxBitmapData *bm_dst = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+
+        if (bm_src->bitsperpix <= 8 || bm_dst->bitsperpix <= 8 || (bm_src->bitsperpix != bm_dst->bitsperpix))
+        {
+            bug("[SAGA] bpp_src=%d, bpp_dst=%d\n", bm_src->bitsperpix, bm_dst->bitsperpix);
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+        else
+        {
+            bug("[SAGA] both bitmaps compatible. drmd=%d\n", mode);
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        }
+    }
 }
 
 /*********  GfxHidd::Show()  ***************************/
@@ -625,7 +666,6 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
         tags[0].ti_Data = TRUE;
 //        OOP_SetAttrs(msg->bitMap, tags);
 
-        WRITE16(SAGA_VIDEO_MODE, SAGA_VIDEO_FORMAT_OFF);
 
         WRITE16(SAGA_VIDEO_HPIXEL, bmdata->hwregs.hpixel);
         WRITE16(SAGA_VIDEO_HSSTRT, bmdata->hwregs.hsstart);
@@ -650,15 +690,58 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
         WRITE16(SAGA_VIDEO_BPLHMOD, 0);
 
         WRITE16(SAGA_VIDEO_MODE, bmdata->hwregs.video_mode);
+
+        {
+            IPTR ptr = 0xdff800;
+
+            for (int y = 0; y < 16; y++)
+            {
+                ULONG pix = 0x80008000;
+                ULONG val = 0;
+
+                for (int x = 0; x < 16; x++)
+                {
+                    switch (XSD(cl)->cursor_clut[y*16 + x])
+                    {
+                        case 1:
+                            val |= pix & 0xffff;
+                            break;
+                        case 2:
+                            val |= pix & 0xffff0000;
+                            break;
+                        case 3:
+                            val |= pix;
+                            break;
+                        default:
+                            break;
+                    }
+                    pix >>= 1;
+                }
+                WRITE32(ptr, val);
+                ptr += 4;
+            }
+
+            for (int i=1; i < 4; i++) {
+                WRITE16(0xdff3a0 + (i << 1), XSD(cl)->cursor_pal[i]);
+            }
+
+            if (XSD(cl)->cursor_visible)
+            {
+                WRITE16(SAGA_VIDEO_SPRITEX, XSD(cl)->cursorX);
+                WRITE16(SAGA_VIDEO_SPRITEY, XSD(cl)->cursorY);
+            }
+            else
+            {
+                WRITE16(SAGA_VIDEO_SPRITEX, SAGA_VIDEO_MAXHV - 1);
+                WRITE16(SAGA_VIDEO_SPRITEY, SAGA_VIDEO_MAXVV - 1);
+            }
+        }
     }
     else
     {
         D(bug("[SAGA] No bitmap to show? Falling back to AGA...\n"));
 
-        SAGA_SetPLL(SAGA_PIXELCLOCK);
         WRITE16(SAGA_VIDEO_MODE, SAGA_VIDEO_FORMAT_AMIGA);
-
-        return NULL;
     }
 
     data->visible = msg->bitMap;

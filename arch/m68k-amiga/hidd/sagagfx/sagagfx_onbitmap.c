@@ -63,7 +63,7 @@ OOP_Object *METHOD(SAGABitMap, Root, New)
         data->bytesperpix   = OOP_GET(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel);
         data->bitsperpix    = OOP_GET(data->pixfmtobj, aHidd_PixFmt_BitsPerPixel);
 
-        data->VideoBuffer = AllocVecPooled(XSD(cl)->mempool, 64 + data->bytesperline * data->height);
+        data->VideoBuffer = AllocVecPooled(XSD(cl)->mempool, 64 + data->bytesperline * (data->height + 10));
         data->VideoData = (UBYTE *)(((IPTR)data->VideoBuffer + 31) & ~31);
 
         attrs[0].ti_Data = (IPTR)data->VideoData;
