@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -122,7 +122,17 @@ int check_and_print_undefined_symbols(const char *file)
     char buf[200];
     size_t cnt;
 
-    FILE *pipe = my_popen(NM_NAME " --demangle --undefined-only ", file); // --line-numbers
+    strcpy(buf, NM_NAME);
+    if (strstr(buf, "--demangle"))
+        strcat(buf, " --demangle");
+    if (strstr(buf, "--undefined-only"))
+        strcat(buf, " --undefined-only");
+#if (0)
+    //TODO: if we are using gnu nm, we should add --line-numbers
+    if (strstr(buf, "--line-numbers"))
+        strcat(buf, " --line-numbers");
+#endif
+    FILE *pipe = my_popen(buf, file);
 
     while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0)
     {

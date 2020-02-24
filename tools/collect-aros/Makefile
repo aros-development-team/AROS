@@ -1,4 +1,4 @@
-# Copyright © 2000-2009, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2020, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Makefile to build collect-aros.
