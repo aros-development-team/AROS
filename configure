@@ -8162,6 +8162,8 @@ case "$aros_toolchain" in
         toolchain_def_opt_lvl="-O2"
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
+        aros_cxx_libs="-stdlib=libc++"
+        aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
     *gnu*)
         toolchain_c_compiler="gcc"
