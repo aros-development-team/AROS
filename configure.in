@@ -2133,6 +2133,10 @@ if test "$aros_toolchain" = "gnu" ; then
         fi
     fi
 
+    if test "$GCC_VERSION_MAJOR" -lt "10" ; then
+        aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
+    fi
+
     if test "$gcc_fix_bitfields" = "true" ; then
         case "$aros_target_cpu" in
         *x86_64* | *i?86*)
@@ -2174,6 +2178,7 @@ else
 fi
 if test "$aros_toolchain" = "llvm" ; then
     AC_MSG_RESULT($target_llvm_version)
+    aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
 fi
 
 AC_MSG_CHECKING([whether to enable Objective-C suppport])
