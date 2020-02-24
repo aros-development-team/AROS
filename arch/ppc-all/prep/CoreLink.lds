@@ -1,4 +1,3 @@
-FORCE_COMMON_ALLOCATION
 SECTIONS
 {
     .text : {
