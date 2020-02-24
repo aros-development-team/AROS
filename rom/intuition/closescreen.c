@@ -404,6 +404,12 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
                 DeactivateWindow(NULL,msg->msg.task,IntuitionBase);
             }
 #endif
+	    /* If there is active screen, activate its monitor now */
+	    if (IntuitionBase->ActiveScreen)
+	    {
+		ActivateMonitor(((struct IntScreen *)(IntuitionBase->ActiveScreen))->IMonitorNode, -1, -1, IntuitionBase);
+	    }
+	    
             return;
         }
         parent = parent->NextScreen;
