@@ -2,7 +2,7 @@
 #define AROS_X86_64_CPU_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -63,6 +63,14 @@ typedef  void *cpumask_t;
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__TINYC__)
 register unsigned char * AROS_GET_SP __asm__("%rsp");
+
+#elif defined(__clang__)
+#define AROS_GET_SP ({ \
+       unsigned long long rsp; \
+       asm("mov %%rsp, %0" : "=r"(rsp)); \
+       rsp; \
+})
+
 #endif
 
 /*do we need a function attribute to get parameters on the stack? */
