@@ -766,6 +766,8 @@ aros_cflags_no_builtin_vsnprintf
 aros_cflags_no_builtin_floor
 aros_cflags_no_builtin
 aros_cflags_builtin
+aros_cflags_no_common
+aros_cflags_common
 aros_cflags_noalignednew
 aros_cflags_alignednew
 aros_cflags_noinstrfuncs
@@ -2880,6 +2882,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -ftest-coverage
 #  -finstrument-functions
 #  -faligned-new
+#  -fcommon
 
 #  -fno-builtin
 #  -fno-builtin-floor
@@ -3489,6 +3492,33 @@ $as_echo "$aros_aligned_new" >&6; }
 if test "x-$aros_aligned_new" = "x-yes" ; then
     aros_cflags_alignednew=-faligned-new
     aros_cflags_noalignednew=-fno-aligned-new
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fcommon" >&5
+$as_echo_n "checking whether ${CC} accepts -fcommon... " >&6; }
+CFLAGS=-fcommon
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_common="yes"
+else
+  aros_common="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_common" >&5
+$as_echo "$aros_common" >&6; }
+if test "x-$aros_common" = "x-yes" ; then
+    aros_cflags_common=-fcommon
+    aros_cflags_no_common=-fno-common
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fbuiltin" >&5
@@ -6666,6 +6696,9 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
+
+
 
 
 

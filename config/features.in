@@ -57,6 +57,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -ftest-coverage
 #  -finstrument-functions
 #  -faligned-new
+#  -fcommon
 
 #  -fno-builtin
 #  -fno-builtin-floor
@@ -264,6 +265,15 @@ AC_MSG_RESULT($aros_aligned_new)
 if test "x-$aros_aligned_new" = "x-yes" ; then
     aros_cflags_alignednew=-faligned-new
     aros_cflags_noalignednew=-fno-aligned-new
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fcommon])
+CFLAGS=-fcommon
+AC_TRY_COMPILE(,, aros_common="yes", aros_common="no")
+AC_MSG_RESULT($aros_common)
+if test "x-$aros_common" = "x-yes" ; then
+    aros_cflags_common=-fcommon
+    aros_cflags_no_common=-fno-common
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fbuiltin])
@@ -1370,6 +1380,9 @@ AC_SUBST(aros_cflags_noinstrfuncs)
 
 AC_SUBST(aros_cflags_alignednew)
 AC_SUBST(aros_cflags_noalignednew)
+
+AC_SUBST(aros_cflags_common)
+AC_SUBST(aros_cflags_no_common)
 
 AC_SUBST(aros_cflags_builtin)
 AC_SUBST(aros_cflags_no_builtin)
