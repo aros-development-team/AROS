@@ -169,9 +169,9 @@ OOP_Object *METHOD(SAGAGfx, Root, New)
 {
     struct TagItem *userSyncs = NULL;
 
-    MAKE_SYNC(320x240, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA 320x240");
+    MAKE_SYNC(320x240, 28375, 320, 688, 720, 800, 240, 483, 487, 494, 1, "SAGA:320x240");
     MAKE_SYNC(640x360, 28375, 640, 896, 984, 1088, 360, 504, 508, 518, 1, "SAGA:640x360");
-    MAKE_SYNC(640x480, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA 640x480");
+    MAKE_SYNC(640x480, 28375, 640, 688, 720, 800, 480, 483, 487, 494, 1, "SAGA:640x480");
     MAKE_SYNC(720x400, 28320, 720, 738, 846, 900, 400, 412, 414, 449, 2, "SAGA:720x400");
     MAKE_SYNC(720x576, 28375, 720, 753, 817, 908, 576, 582, 586, 624, 1, "SAGA:720x576");
     MAKE_SYNC(800x600, 28375, 800, 848, 880, 960, 600, 603, 607, 615, 1, "SAGA:800x600");
@@ -666,7 +666,6 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
         tags[0].ti_Data = TRUE;
 //        OOP_SetAttrs(msg->bitMap, tags);
 
-        WRITE16(SAGA_VIDEO_MODE, SAGA_VIDEO_FORMAT_OFF);
 
         WRITE16(SAGA_VIDEO_HPIXEL, bmdata->hwregs.hpixel);
         WRITE16(SAGA_VIDEO_HSSTRT, bmdata->hwregs.hsstart);
@@ -692,7 +691,6 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
 
         WRITE16(SAGA_VIDEO_MODE, bmdata->hwregs.video_mode);
 
-        if (XSD(cl)->cursor_visible)
         {
             IPTR ptr = 0xdff800;
 
@@ -727,15 +725,22 @@ OOP_Object *METHOD(SAGAGfx, Hidd_Gfx, Show)
                 WRITE16(0xdff3a0 + (i << 1), XSD(cl)->cursor_pal[i]);
             }
 
-            WRITE16(SAGA_VIDEO_SPRITEX, XSD(cl)->cursorX);
-            WRITE16(SAGA_VIDEO_SPRITEY, XSD(cl)->cursorY);
+            if (XSD(cl)->cursor_visible)
+            {
+                WRITE16(SAGA_VIDEO_SPRITEX, XSD(cl)->cursorX);
+                WRITE16(SAGA_VIDEO_SPRITEY, XSD(cl)->cursorY);
+            }
+            else
+            {
+                WRITE16(SAGA_VIDEO_SPRITEX, SAGA_VIDEO_MAXHV - 1);
+                WRITE16(SAGA_VIDEO_SPRITEY, SAGA_VIDEO_MAXVV - 1);
+            }
         }
     }
     else
     {
         D(bug("[SAGA] No bitmap to show? Falling back to AGA...\n"));
 
-        SAGA_SetPLL(SAGA_PIXELCLOCK);
         WRITE16(SAGA_VIDEO_MODE, SAGA_VIDEO_FORMAT_AMIGA);
     }
 
