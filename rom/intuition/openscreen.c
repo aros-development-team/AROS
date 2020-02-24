@@ -89,7 +89,7 @@ static const char THIS_FILE[] = __FILE__;
 #endif
 
 /*****************************************************************************
- 
+
     NAME */
         AROS_LH1(struct Screen *, OpenScreen,
 
@@ -232,7 +232,7 @@ static const char THIS_FILE[] = __FILE__;
         }
     }
     if (!CyberGfxBase)
-    { 
+    {
         FireScreenNotifyMessage(0, SNOTIFY_AFTER_OPENSCREEN, IntuitionBase);
         return NULL;
     }
@@ -289,7 +289,7 @@ static const char THIS_FILE[] = __FILE__;
     if (ok && tagList)
     {
         char *pubname = NULL;
-        
+
         modeid = GetTagData(SA_DisplayID,INVALID_ID, tagList);
 #ifndef __AROS__
         /*
@@ -362,7 +362,7 @@ static const char THIS_FILE[] = __FILE__;
                 else
                 {
                     struct IMonitorNode *node = FindMonitorNode(IBase->AmbientScreenMode.ModeID,IntuitionBase);
-                    
+
                     if (node)
                     {
                         monitorname = node->MonitorName;
@@ -441,7 +441,7 @@ static const char THIS_FILE[] = __FILE__;
 
                     /* Signal bit number to use when signalling public screen
                        signal task. */
-            
+
                     sigbit = GetTagData(SA_PubSig,(ULONG)-1,tagList);
 
                     DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_PubSig 0x%lx\n",sigbit));
@@ -717,7 +717,7 @@ static const char THIS_FILE[] = __FILE__;
             case SA_VesaFallback:
                 vesafallback = tag->ti_Data;
                 break;
-            
+
             case SA_ModeEditControl:
                 modecontrol = (ULONG*)tag->ti_Data;
                 break;
@@ -1033,7 +1033,7 @@ static const char THIS_FILE[] = __FILE__;
         modetags[4].ti_Data = ns.Height;
 
 #ifdef __AROS__
-        /* 
+        /*
          * AROS: We don't have FindBestWidthAndHeight().
          * TODO: Can we merge better here ?
          */
@@ -1100,7 +1100,7 @@ static const char THIS_FILE[] = __FILE__;
         GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
 #ifdef __AROS__ /* AROS: We don't need MonitorSpec, however we get DisplayInfo early to get the compositors bm hooks. */
         && GetDisplayInfoData(displayinfo, (APTR)&dispinfo, sizeof(dispinfo), DTAG_DISP, modeid)
-#else 
+#else
         && GetDisplayInfoData(displayinfo, (APTR)&monitor, sizeof(monitor), DTAG_MNTR, modeid)
 #endif
        )
@@ -1186,7 +1186,7 @@ static const char THIS_FILE[] = __FILE__;
             if (IsCyberModeID(modeid) && custombm)
             {
                 int pixfmt = GetCyberIDAttr(CYBRIDATTR_PIXFMT,modeid);
-                                                               
+
                 if(GetCyberMapAttr(custombm,CYBRMATTR_PIXFMT) != pixfmt)
                 {
                     // incompatible formats !
@@ -1205,7 +1205,7 @@ static const char THIS_FILE[] = __FILE__;
                 ns.Type &= ~CUSTOMBITMAP;
             }
         } else {
-            screen->Screen.RastPort.BitMap = NULL;            
+            screen->Screen.RastPort.BitMap = NULL;
         }
 
         if ((screen->IMonitorNode = FindMonitorNode(modeid,IntuitionBase)))
@@ -1289,7 +1289,7 @@ static const char THIS_FILE[] = __FILE__;
                 {
                     allocbitmapflags |= (/*BMF_CLEAR|*/BMF_DISPLAYABLE|BMF_MINPLANES);
                 }
-        
+
                 if((screen->Screen.RastPort.BitMap = AllocBitMap((ns.Width > stdwidth) ? ns.Width : stdwidth,
                                  (ns.Height > stdheight) ? ns.Height : stdheight,
                                  Depth,
@@ -1614,7 +1614,7 @@ static const char THIS_FILE[] = __FILE__;
         if (ns.Depth >= 3)
         {
             /*
-             * AROS: Use screen depth instead of 'numcolors' in order to calculate 
+             * AROS: Use screen depth instead of 'numcolors' in order to calculate
              * numbers of last 4 colors of the screen.
              * This is necessary because we can have 8- or 16- color screen whose
              * ColorMap will still have 32 colors for AmigaOS(tm) compatibility
@@ -1828,7 +1828,7 @@ static const char THIS_FILE[] = __FILE__;
         } else if (sysfont == 1) {
 
             screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &IBase->ScreenFont);
-            
+
             if (screen->DInfo.dri_Font)
             {
                 screen->SysFont = TRUE;
@@ -1895,7 +1895,7 @@ static const char THIS_FILE[] = __FILE__;
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set Custom Pens\n"));
             screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
             screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
-            
+
             for(i = 0; (i < NUMDRIPENS) && (customdripens[i] != (UWORD)~0) && (screen->Pens[i] != (UWORD)~0); i++)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: Pen[%ld] %ld --> %ld\n",i,screen->Pens[i],customdripens[i]));
@@ -1920,7 +1920,7 @@ static const char THIS_FILE[] = __FILE__;
             screen->Screen.BlockPen = screen->Screen.DetailPen;
             screen->Screen.DetailPen = 0;
         }
-            
+
         screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
         screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
 
@@ -2448,8 +2448,7 @@ VOID int_openscreen(struct OpenScreenActionMsg *msg,
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set as ActiveScreen\n"));
     }
 
-    /* AROS: If it's the first screen being opened, activate its monitor */
-    if (!oldFirstScreen)
+    /* AROS: Allways attempt to activate monitor, current FirstScreen can be using a different one! */
 	ActivateMonitor(screen->IMonitorNode, -1, -1, IntuitionBase);
 
     /* set the default pub screen */
@@ -2487,5 +2486,3 @@ VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
     AddResourceToList(screen, RESOURCE_SCREEN, IntuitionBase);
 }
-
-
