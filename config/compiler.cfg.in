@@ -53,7 +53,7 @@ CFLAGS_ALIGNED_NEW                      := @aros_cflags_alignednew@
 CFLAGS_NO_ALIGNED_NEW                   := @aros_cflags_noalignednew@
 
 CFLAGS_COMMON                           := @aros_cflags_common@
-CFLAGS_NO_COMMON                        := @aros_cflags_nocommon@
+CFLAGS_NO_COMMON                        := @aros_cflags_no_common@
 
 # GCOV flags
 CFLAGS_PROFILE_ARCS                     := @aros_cflags_profilearcs@
