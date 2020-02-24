@@ -7903,6 +7903,37 @@ fi
 rm -f conftest.mmap conftest.txt
 
 
+#
+# Disable common symbols
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC_BASE} accepts -fno-common" >&5
+$as_echo_n "checking whether ${CC_BASE} accepts -fno-common... " >&6; }
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -fno-common"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  use_no_common="yes"
+else
+  use_no_common="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_no_common" >&5
+$as_echo "$use_no_common" >&6; }
+if test "x-$use_no_common" = "x-yes" ; then
+    aros_host_cflags="$aros_host_cflags -fno-common"
+fi
+CFLAGS="$save_cflags"
+
+
 #-----------------------------------------------------------------------------
 
 #
@@ -15006,6 +15037,8 @@ fi
 save_cc="$CC"
 save_cflags="$CFLAGS"
 if test "x$test_kernel_cc" != "xno"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Testing kernel compiler..." >&5
+$as_echo "$as_me: Testing kernel compiler..." >&6;}
     CFLAGS="-iquote."
     kernel_cflags_iquote=$host_cflags_iquote
     kernel_cflags_iquote_end=$host_cflags_iquote_end
@@ -15072,6 +15105,9 @@ $as_echo "$has_iquote" >&6; }
             kernel_cflags_iquote=-I
             kernel_cflags_iquote_end=-I-
         fi
+    fi
+    if test "x-$use_no_common" = "x-yes" ; then
+        aros_kernel_cflags="$aros_kernel_cflags -fno-common"
     fi
     if test "x-$use_no_stack_protector" = "x-yes" ; then
         aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"

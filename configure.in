@@ -662,6 +662,19 @@ AC_CHECK_FUNCS([getpagesize kqueue statfs statvfs \
 
 AC_FUNC_MMAP
 
+#
+# Disable common symbols
+AC_MSG_CHECKING([whether ${CC_BASE} accepts -fno-common])
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -fno-common"
+AC_TRY_COMPILE(,, use_no_common="yes", use_no_common="no")
+AC_MSG_RESULT($use_no_common)
+if test "x-$use_no_common" = "x-yes" ; then
+    aros_host_cflags="$aros_host_cflags -fno-common"
+fi
+CFLAGS="$save_cflags"
+
+
 #-----------------------------------------------------------------------------
 
 #
@@ -2847,6 +2860,7 @@ fi
 save_cc="$CC"
 save_cflags="$CFLAGS"
 if test "x$test_kernel_cc" != "xno"; then
+    AC_MSG_NOTICE([Testing kernel compiler...])
     CFLAGS="-iquote."
     kernel_cflags_iquote=$host_cflags_iquote
     kernel_cflags_iquote_end=$host_cflags_iquote_end
@@ -2877,6 +2891,9 @@ if test "x$test_kernel_cc" != "xno"; then
             kernel_cflags_iquote=-I
             kernel_cflags_iquote_end=-I-
         fi
+    fi
+    if test "x-$use_no_common" = "x-yes" ; then
+        aros_kernel_cflags="$aros_kernel_cflags -fno-common"
     fi
     if test "x-$use_no_stack_protector" = "x-yes" ; then
         aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
