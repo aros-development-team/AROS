@@ -107,7 +107,7 @@ def unpack( source, destination ):
     while input.tell() < inputSize:
         (path, data) = readFile( input )
         
-        print '« %s (%d bytes)' % (path, len( data ))
+        print('« %s (%d bytes)' % (path, len( data )))
         
         directory = os.path.dirname( path )
         if directory != '' and not os.path.exists( directory ):
@@ -136,7 +136,7 @@ def pack( destination, files ):
     writeHeader( output, PKG_VERSION )
     
     for path in files:
-        print '» %s (%d bytes)' % (path, os.path.getsize( path ))
+        print('» %s (%d bytes)' % (path, os.path.getsize( path )))
         
         input = open( path, 'rb' )
         writeFile( output, path, input.read() )
@@ -170,5 +170,5 @@ if __name__ == '__main__':
         destination = sys.argv[3]
         unpack( source, destination )
     else:
-        print 'Invalid mode.'
+        print('Invalid mode.')
 
