@@ -216,9 +216,9 @@ PARSEOFFSETS                  := $(TOOLDIR)/parseoffsets$(HOST_EXE_SUFFIX)
 
 .PHONY : all clean setup subdirs
 
-BASE_CFLAGS                   := $(CONFIG_BASE_CFLAGS)
-BASE_CXXFLAGS                 := $(CONFIG_BASE_CXXFLAGS)
-BASE_CPPFLAGS                 := $(CONFIG_BASE_CPPFLAGS)
+BASE_CFLAGS                   = $(CONFIG_BASE_CFLAGS)
+BASE_CXXFLAGS                 = $(CONFIG_BASE_CXXFLAGS)
+BASE_CPPFLAGS                 = $(CONFIG_BASE_CPPFLAGS)
 
 # Was debugging enabled? Better set up the options.
 ifeq ($(DEBUG),yes)
