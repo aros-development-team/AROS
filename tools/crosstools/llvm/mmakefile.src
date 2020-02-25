@@ -16,7 +16,25 @@ LLVM_ARCHBASE     := llvm-$(LLVM_VERSION).src
 LLVMLLD_ARCHBASE  := lld-$(LLVM_VERSION).src
 CLANG_ARCHBASE    := cfe-$(LLVM_VERSION).src
 
+#LLVM_ALL_TARGETS := yes
+
+ifeq ($(LLVM_ALL_TARGETS),yes)
 LLVM_TARGETS      := "X86;ARM;PowerPC"
+else
+ifeq ($(AROS_TARGET_CPU),i386)
+LLVM_TARGETS      := "X86"
+endif
+ifeq ($(AROS_TARGET_CPU),x86_64)
+LLVM_TARGETS      := "X86"
+endif
+ifeq ($(AROS_TARGET_CPU),arm)
+LLVM_TARGETS      := "ARM"
+endif
+ifeq ($(AROS_TARGET_CPU),ppc)
+LLVM_TARGETS      := "PowerPC"
+endif
+endif
+
 LLVM_HOST         := "$(AROS_TARGET_CPU)"
 
 LLVM_CMAKETARGET  :=
