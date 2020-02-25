@@ -419,6 +419,10 @@ static int relocate
                 *(LONG *)p = (QUAD)s + (QUAD)rel->addend;
                 break;
 
+            case R_X86_64_PC64:
+                *(UQUAD *)p = (UQUAD)s + (UQUAD)rel->addend - (IPTR) p;
+                break;
+
             case R_X86_64_NONE: /* No reloc */
                 break;
 

@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2006-2019 The AROS Development Team. All rights reserved.
+ Copyright (C) 2006-2020 The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: ELF loader extracted from our internal_load_seg_elf in dos.library.
@@ -237,6 +237,10 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                 
         case R_X86_64_32S:
             *(int32_t *)p = (int64_t)s + (int64_t)rel->addend;
+            break;
+
+        case R_X86_64_PC64:
+            *(uint64_t *)p = (uint64_t)s + (uint64_t)rel->addend - (uint64_t) p;
             break;
 
         case R_X86_64_NONE: /* No reloc */

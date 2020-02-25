@@ -2,7 +2,7 @@
 #define DOS_ELF_H
 
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definition of ELF file structures.
@@ -67,6 +67,7 @@
 #define R_X86_64_PLT32  4
 #define R_X86_64_32     10
 #define R_X86_64_32S    11
+#define R_X86_64_PC64   24
 
 #define R_68K_NONE      0
 #define R_68K_32        1
