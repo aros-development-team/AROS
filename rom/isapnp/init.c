@@ -46,8 +46,7 @@
 #include "pnp.h"
 #include "pnp_structs.h"
 
-static BOOL
-PatchBrokenCards( struct ISAPNPBase* res );
+static BOOL PatchBrokenCards( struct ISAPNPBase* res );
 
 /******************************************************************************
 ** Resource resident structure ************************************************
@@ -92,6 +91,8 @@ const char IDString[]  = ISAPNPNAME " " VERS "\r\n";
 
 static const char VersTag[] =
  "$VER: " ISAPNPNAME " " VERS " ©2001 Martin Blom.\r\n";
+
+struct ISAPNPBase* res = NULL;
 
 /******************************************************************************
 ** Resource initialization ****************************************************
