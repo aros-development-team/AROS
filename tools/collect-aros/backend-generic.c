@@ -128,13 +128,13 @@ int check_and_print_undefined_symbols(const char *file)
     size_t cnt;
 
     strcpy(buf, NM_NAME);
-    if (strstr(buf, "--demangle"))
+    if (!strstr(buf, "--demangle"))
         strcat(buf, " --demangle");
-    if (strstr(buf, "--undefined-only"))
+    if (!strstr(buf, "--undefined-only"))
         strcat(buf, " --undefined-only");
 #if (0)
     //TODO: if we are using gnu nm, we should add --line-numbers
-    if (strstr(buf, "--line-numbers"))
+    if (!strstr(buf, "--line-numbers"))
         strcat(buf, " --line-numbers");
 #endif
     FILE *pipe = my_popen(buf, file);
