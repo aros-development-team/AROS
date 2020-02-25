@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,7 +59,7 @@ BOOL SilentSub(IPTR a1, IPTR a2)
         success = FALSE;
     }
 
-    sp = AROS_GET_SP;
+    sp = (APTR)AROS_GET_SP;
     if(t->tc_SPReg < t->tc_SPLower || t->tc_SPReg > t->tc_SPUpper
         || sp < t->tc_SPLower || sp > t->tc_SPUpper)
     {
@@ -120,7 +120,7 @@ int main(void)
     Forbid();
     NewStackSwap(&sss, SilentSub, &args);
 
-    sp = AROS_GET_SP;
+    sp = (APTR)AROS_GET_SP;
     if(t->tc_SPReg < t->tc_SPLower || t->tc_SPReg > t->tc_SPUpper
         || sp < t->tc_SPLower || sp > t->tc_SPUpper)
     {
