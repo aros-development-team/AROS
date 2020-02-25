@@ -4,7 +4,7 @@
 import os, sys, struct
 from stat import ST_SIZE
 
-PKG_PREFIX                 = 'PKG'
+PKG_PREFIX                 = b'PKG'
 PKG_VERSION                = 1
 
 PKG_HEADER_FORMAT          = '3cB' 
@@ -35,7 +35,7 @@ def writeHeader( file, version ):
     file.write( 
         struct.pack( 
             PKG_HEADER_FORMAT, 
-            PKG_PREFIX[0], PKG_PREFIX[1], PKG_PREFIX[2], PKG_VERSION
+            PKG_PREFIX[0], PKG_PREFIX[1], PKG_PREFIX[2], version
         )
     )
     
