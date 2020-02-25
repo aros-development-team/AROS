@@ -155,7 +155,6 @@ FETCH                         := $(SRCDIR)/scripts/fetch.sh
 CPYDIRREC                     := $(PYTHON) $(SRCDIR)/scripts/cpy-dir-rec.py
 
 # The paths to the generated tools
-TOOLDIR                       := $(HOSTDIR)/tools
 TOOLLIB                       := $(TOOLDIR)/libtool.a
 MMAKE                         := $(TOOLDIR)/mmake$(HOST_EXE_SUFFIX)
 ARCHTOOL                      := $(TOOLDIR)/archtool$(HOST_EXE_SUFFIX)
