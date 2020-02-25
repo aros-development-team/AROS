@@ -27,7 +27,7 @@
 
 #include <exec/types.h>
 
-struct ISAPNPBase* res;
+extern struct ISAPNPBase* res;
 
 void
 FreeISAPNPBase( struct ISAPNPBase* res );
