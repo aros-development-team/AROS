@@ -123,6 +123,7 @@ TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
 
 TARGET_LIBATOMIC              = @use_libatomic@
 TARGET_C_LIBS                 := @aros_c_libs@
+TARGET_CXX_LDFLAGS            := @aros_cxx_ldflags@
 TARGET_CXX_LIBS               := @aros_cxx_libs@
 
 COVERAGEINSTR_FLAGS           = $(CFLAGS_PROFILE_ARCS) $(CFLAGS_TEST_COVERAGE)
