@@ -32,13 +32,14 @@ jobs:
   steps:
   - script: |
       if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != ""]; then
-        CONFIGOPTS="--with-toolchain=$(arosbuild.toolchain.family)"
+        TARGET_TOOLCHAIN_OPTS="--with-toolchain=$(arosbuild.toolchain.family)"
         TARGET_TOOLCHAIN="$(arosbuild.toolchain.family)"
       else
         TARGET_TOOLCHAIN="gnu"
       fi
-      echo "##vso[task.setvariable variable=CONFIGOPTS]$CONFIGOPTS"
-      echo "##vso[task.setvariable variable=TARGET_TOOLCHAIN]$TARGET_TOOLCHAIN"
+      echo 'Preparing environment for build with $TARGET_TOOLCHAIN toolchain'
+      echo "##vso[task.setvariable variable=TOOLCHAIN]$TARGET_TOOLCHAIN"
+      echo "##vso[task.setvariable variable=TOOLCHAINOPTS]$TARGET_TOOLCHAIN_OPTS"
     displayName: 'Preparing common environment...'
 
   - script: |
@@ -49,6 +50,7 @@ jobs:
       if [ "$AROSBUILD_VARIANT" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
       fi
+      CONFIGOPTS="$CONFIGOPTS $(TOOLCHAINOPTS)"
       if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
       fi
@@ -78,6 +80,7 @@ jobs:
       if [ "$AROSBUILD_VARIANT" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
       fi
+      CONFIGOPTS="$CONFIGOPTS $(TOOLCHAINOPTS)"
       if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
       fi
@@ -268,7 +271,7 @@ jobs:
       }
       execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
     workingDirectory: '$(AROSBUILDDIR)'
-    displayName: 'Configuring $(arosbuild.name) $(TARGET_TOOLCHAIN) Toolchain'
+    displayName: 'Configuring $(arosbuild.name) $(TOOLCHAIN) Toolchain'
 
   - script: |
       function execute {
@@ -286,7 +289,7 @@ jobs:
       execute make -j 2 crosstools
       rm -Rf $(AROSBUILDDIR)/*
     workingDirectory: '$(AROSBUILDDIR)'
-    displayName: 'Build $(arosbuild.name) $(TARGET_TOOLCHAIN) Toolchain'
+    displayName: 'Build $(arosbuild.name) $(TOOLCHAIN) Toolchain'
 
   - script: |
       function execute {
