@@ -75,7 +75,7 @@ MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
 #USER_LDFLAGS := -Wl,--gc-sections $(mesa3dgl_ENTRYPOINTS)
 endif
 
-USER_LDFLAGS += -static-libstdc++ \
+USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) \
   -L$(top_libdir) \
   -Wl,--start-group -lglapi -lmesa -lcompiler -lgalliumauxiliary -lgallium -lmesautil \
   -lpthread $(MESA_ZLIB) -lposixc_rel -lstdcio_rel -lstdc_rel
