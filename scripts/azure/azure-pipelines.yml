@@ -31,7 +31,7 @@ jobs:
 
   steps:
   - script: |
-     if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != ""];
+     if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != ""]; then
        CONFIGOPTS="--with-toolchain=$(arosbuild.toolchain.family)"
        TARGET_TOOLCHAIN="$(arosbuild.toolchain.family)"
      else
