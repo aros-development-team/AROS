@@ -39,7 +39,7 @@ jobs:
      fi
      echo "##vso[task.setvariable variable=CONFIGOPTS]$CONFIGOPTS"
      echo "##vso[task.setvariable variable=TARGET_TOOLCHAIN]$TARGET_TOOLCHAIN"
-     displayName: 'Preparing common environment...'
+    displayName: 'Preparing common environment...'
 
   - script: |
       if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
