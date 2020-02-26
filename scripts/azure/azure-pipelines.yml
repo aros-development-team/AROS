@@ -31,8 +31,19 @@ jobs:
 
   steps:
   - script: |
+     if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != ""];
+       CONFIGOPTS="--with-toolchain=$(arosbuild.toolchain.family)"
+       TARGET_TOOLCHAIN="$(arosbuild.toolchain.family)"
+     else
+       TARGET_TOOLCHAIN="gnu"
+     fi
+     echo "##vso[task.setvariable variable=CONFIGOPTS]$CONFIGOPTS"
+     echo "##vso[task.setvariable variable=TARGET_TOOLCHAIN]$TARGET_TOOLCHAIN"
+     displayName: 'Preparing common environment...'
+
+  - script: |
       if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
-        CONFIGOPTS="$(arosbuild.config.extra)"
+        CONFIGOPTS="$CONFIGOPTS $(arosbuild.config.extra)"
       fi
       CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)"
       if [ "$AROSBUILD_VARIANT" != "" ]; then
@@ -257,7 +268,7 @@ jobs:
       }
       execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
     workingDirectory: '$(AROSBUILDDIR)'
-    displayName: 'Configuring $(arosbuild.name) Toolchain'
+    displayName: 'Configuring $(arosbuild.name) $(TARGET_TOOLCHAIN) Toolchain'
 
   - script: |
       function execute {
@@ -275,7 +286,7 @@ jobs:
       execute make -j 2 crosstools
       rm -Rf $(AROSBUILDDIR)/*
     workingDirectory: '$(AROSBUILDDIR)'
-    displayName: 'Build $(arosbuild.name) Toolchain'
+    displayName: 'Build $(arosbuild.name) $(TARGET_TOOLCHAIN) Toolchain'
 
   - script: |
       function execute {
