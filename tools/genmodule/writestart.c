@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Print the library magic and init code in the file modname_start.c.
@@ -592,7 +592,14 @@ static void writeresident(FILE *out, struct config *cfg)
             "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
     );
     if (cfg->options & OPTION_RESAUTOINIT)
-        fprintf(out, "static const struct InitTable GM_UNIQUENAME(InitTable);\n");
+        fprintf(out, "struct InitTable\n"
+                "{\n"
+                "    IPTR              Size;\n"
+                "    const APTR       *FuncTable;\n"
+                "    struct DataTable *DataTable;\n"
+                "    APTR              InitLibTable;\n"
+                "};\n"
+                "static const struct InitTable GM_UNIQUENAME(InitTable);\n");
     fprintf(out,
             "\n"
             "extern const char GM_UNIQUENAME(LibName)[];\n"
@@ -679,14 +686,7 @@ static void writeresident(FILE *out, struct config *cfg)
                 "    (APTR)&GM_UNIQUENAME(InitTable)\n"
                 "};\n"
                 "\n"
-                "__section(\".text.romtag\") static struct InitTable\n"
-                "{\n"
-                "    IPTR              Size;\n"
-                "    const APTR       *FuncTable;\n"
-                "    struct DataTable *DataTable;\n"
-                "    APTR              InitLibTable;\n"
-                "}\n"
-                "const GM_UNIQUENAME(InitTable) =\n"
+                "__section(\".text.romtag\") static struct InitTable const GM_UNIQUENAME(InitTable) =\n"
                 "{\n"
                 "    LIBBASESIZE,\n"
                 "    &GM_UNIQUENAME(FuncTable)[0],\n"
