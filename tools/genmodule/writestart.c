@@ -230,17 +230,6 @@ static void writedecl(FILE *out, struct config *cfg)
         fprintf(out, "%s\n", linelistit->s);
     }
 
-    fprintf(out,
-            "#if !defined(VERSION_NUMBER)\n"
-            "extern int GM_UNIQUENAME(Version);\n"
-            "#define VERSION_NUMBER (GM_UNIQUENAME(Version))\n"
-            "#endif\n"
-            "#if !defined(REVISION_NUMBER)\n"
-            "extern int GM_UNIQUENAME(Revision);\n"
-            "#define REVISION_NUMBER (GM_UNIQUENAME(Version))\n"
-            "#endif\n"
-    );
-
     /* Is there a variable for storing the segList ? */
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
     {
@@ -603,14 +592,18 @@ static void writeresident(FILE *out, struct config *cfg)
             "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
     );
     if ((cfg->options & OPTION_RESAUTOINIT) && !(cfg->options & OPTION_NOINITTABLE))
+    {
         fprintf(out, "struct InitTable\n"
                 "{\n"
                 "    IPTR              Size;\n"
                 "    const APTR       *FuncTable;\n"
                 "    struct DataTable *DataTable;\n"
                 "    APTR              InitLibTable;\n"
-                "};\n"
-                "static const struct InitTable GM_UNIQUENAME(InitTable);\n");
+                "};\n");
+        if (!(cfg->options & OPTION_NORESSTRUCT))
+            fprintf(out, "static ");
+        fprintf(out, "const struct InitTable GM_UNIQUENAME(InitTable);\n");
+    }
     fprintf(out,
             "\n"
             "extern const char GM_UNIQUENAME(LibName)[];\n"
@@ -1020,7 +1013,9 @@ static void writeinitlib(FILE *out, struct config *cfg)
     else
     {
         fprintf(out,
+            "#if defined(REVISION_NUMBER)\n"
             "    ((struct Library *)LIBBASE)->lib_Revision = REVISION_NUMBER;\n"
+            "#endif\n"
         );
     }
 
