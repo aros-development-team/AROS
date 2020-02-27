@@ -591,7 +591,7 @@ static void writeresident(FILE *out, struct config *cfg)
     fprintf(out,
             "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
     );
-    if (cfg->options & OPTION_RESAUTOINIT)
+    if ((cfg->options & OPTION_RESAUTOINIT) && !(cfg->options & OPTION_NOINITTABLE))
         fprintf(out, "struct InitTable\n"
                 "{\n"
                 "    IPTR              Size;\n"
@@ -641,68 +641,80 @@ static void writeresident(FILE *out, struct config *cfg)
                 cfg->basename
         );
     }
-    fprintf(out,
-            "__section(\".text.romtag\") struct Resident const GM_UNIQUENAME(ROMTag) =\n"
-            "{\n"
-            "    RTC_MATCHWORD,\n"
-            "    (struct Resident *)&GM_UNIQUENAME(ROMTag),\n"
-            "    (APTR)&%s,\n"
-            "    RESIDENTFLAGS,\n"
-            "    VERSION_NUMBER,\n",
-            rt_skip
-    );
-    switch (cfg->modtype)
-    {
-    case LIBRARY:
-    case MUI:
-    case MCC:
-    case MCP:
-    case GADGET:
-    case DATATYPE:
-    case USBCLASS:
-    case HIDD:
-        fprintf(out, "    NT_LIBRARY,\n");
-        break;
-    case DEVICE:
-        fprintf(out, "    NT_DEVICE,\n");
-        break;
-    case RESOURCE:
-    case HANDLER:
-        fprintf(out, "    NT_RESOURCE,\n");
-        break;
-    default:
-        fprintf(stderr, "Internal error: unsupported modtype for NT_...\n");
-        exit(20);
-        break;
-    }
-    fprintf(out,
-            "    RESIDENTPRI,\n"
-            "    (CONST_STRPTR)&GM_UNIQUENAME(LibName)[0],\n"
-            "    (CONST_STRPTR)&GM_UNIQUENAME(LibID)[6],\n"
-    );
-    if (cfg->options & OPTION_RESAUTOINIT)
+    if (!(cfg->options & OPTION_NORESSTRUCT))
     {
         fprintf(out,
-                "    (APTR)&GM_UNIQUENAME(InitTable)\n"
-                "};\n"
-                "\n"
-                "__section(\".text.romtag\") static struct InitTable const GM_UNIQUENAME(InitTable) =\n"
+                "__section(\".text.romtag\") struct Resident const GM_UNIQUENAME(ROMTag) =\n"
                 "{\n"
-                "    LIBBASESIZE,\n"
-                "    &GM_UNIQUENAME(FuncTable)[0],\n"
-                "    NULL,\n"
-                "    (APTR)GM_UNIQUENAME(InitLib)\n"
-                "};\n"
+                "    RTC_MATCHWORD,\n"
+                "    (struct Resident *)&GM_UNIQUENAME(ROMTag),\n"
+                "    (APTR)&%s,\n"
+                "    RESIDENTFLAGS,\n"
+                "    VERSION_NUMBER,\n",
+                rt_skip
         );
+
+        switch (cfg->modtype)
+        {
+        case LIBRARY:
+        case MUI:
+        case MCC:
+        case MCP:
+        case GADGET:
+        case DATATYPE:
+        case USBCLASS:
+        case HIDD:
+            fprintf(out, "    NT_LIBRARY,\n");
+            break;
+        case DEVICE:
+            fprintf(out, "    NT_DEVICE,\n");
+            break;
+        case RESOURCE:
+        case HANDLER:
+            fprintf(out, "    NT_RESOURCE,\n");
+            break;
+        default:
+            fprintf(stderr, "Internal error: unsupported modtype for NT_...\n");
+            exit(20);
+            break;
+        }
+
+        fprintf(out,
+                "    RESIDENTPRI,\n"
+                "    (CONST_STRPTR)&GM_UNIQUENAME(LibName)[0],\n"
+                "    (CONST_STRPTR)&GM_UNIQUENAME(LibID)[6],\n"
+        );
+
+        if (cfg->options & OPTION_RESAUTOINIT)
+        {
+            fprintf(out,
+                    "    (APTR)&GM_UNIQUENAME(InitTable)\n"
+                    "};\n"
+                    "\n"
+                    "__section(\".text.romtag\") static struct InitTable const GM_UNIQUENAME(InitTable) =\n"
+                    "{\n"
+                    "    LIBBASESIZE,\n"
+                    "    &GM_UNIQUENAME(FuncTable)[0],\n"
+                    "    NULL,\n"
+                    "    (APTR)GM_UNIQUENAME(InitLib)\n"
+                    "};\n"
+            );
+        }
+        else
+            fprintf(out, "    (APTR)GM_UNIQUENAME(InitLib)\n};\n");
     }
-    else
-        fprintf(out, "    (APTR)GM_UNIQUENAME(InitLib)\n};\n");
 
     fprintf(out,
             "\n"
+            "#if defined(MOD_NAME_STRING)\n"
             "__section(\".text.romtag\") const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
+            "#endif\n"
+            "#if defined(VERSION_STRING)\n"
             "__section(\".text.romtag\") const char GM_UNIQUENAME(LibID)[] = VERSION_STRING;\n"
+            "#endif\n"
+            "#if defined(COPYRIGHT_STRING)\n"
             "__section(\".text.romtag\") const char GM_UNIQUENAME(Copyright)[] = COPYRIGHT_STRING;\n"
+            "#endif\n"
             "\n"
     );
 }
