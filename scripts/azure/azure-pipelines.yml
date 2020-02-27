@@ -37,9 +37,9 @@ jobs:
       else
         TARGET_TOOLCHAIN="gnu"
       fi
-      echo 'Preparing environment for build with $TARGET_TOOLCHAIN toolchain'
-      echo "##vso[task.setvariable variable=TOOLCHAIN]$TARGET_TOOLCHAIN"
-      echo "##vso[task.setvariable variable=TOOLCHAINOPTS]$TARGET_TOOLCHAIN_OPTS"
+      echo "Preparing environment for build with $(TARGET_TOOLCHAIN) toolchain"
+      echo "##vso[task.setvariable variable=TOOLCHAIN]$(TARGET_TOOLCHAIN)"
+      echo "##vso[task.setvariable variable=TOOLCHAINOPTS]$(TARGET_TOOLCHAIN_OPTS)"
     displayName: 'Preparing common environment...'
 
   - script: |
