@@ -129,7 +129,7 @@ void writestart(struct config *cfg)
         writesets(out, cfg);
     }
 
-    if (cfg->modtype != HANDLER)
+    if ((cfg->modtype != HANDLER) && !(cfg->options & OPTION_NOFUNCTABLE))
         writefunctable(out, cfg);
 
     for (cl = cfg->classlist; cl != NULL; cl = cl->next)
@@ -229,6 +229,17 @@ static void writedecl(FILE *out, struct config *cfg)
     {
         fprintf(out, "%s\n", linelistit->s);
     }
+
+    fprintf(out,
+            "#if !defined(VERSION_NUMBER)\n"
+            "extern int GM_UNIQUENAME(Version);\n"
+            "#define VERSION_NUMBER (GM_UNIQUENAME(Version))\n"
+            "#endif\n"
+            "#if !defined(REVISION_NUMBER)\n"
+            "extern int GM_UNIQUENAME(Revision);\n"
+            "#define REVISION_NUMBER (GM_UNIQUENAME(Version))\n"
+            "#endif\n"
+    );
 
     /* Is there a variable for storing the segList ? */
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
