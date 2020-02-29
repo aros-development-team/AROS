@@ -38,6 +38,7 @@ jobs:
         export TARGETTOOLCHAIN="gnu"
       fi
       echo "Preparing environment for build with $TARGETTOOLCHAIN toolchain"
+      df -H
       echo "##vso[task.setvariable variable=TOOLCHAIN;]$TARGETTOOLCHAIN"
       echo "##vso[task.setvariable variable=TOOLCHAINOPTS;]$TARGETTOOLCHAINOPTS"
     displayName: 'Preparing common environment...'
