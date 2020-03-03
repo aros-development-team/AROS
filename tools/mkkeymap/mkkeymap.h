@@ -68,5 +68,6 @@ struct KeyMap_Hunk {
 };
 
 extern BOOL parseKeyDescriptor(struct config *);
+extern BOOL writeKeyMap(struct config *cfg);
 
 #endif

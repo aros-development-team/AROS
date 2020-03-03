@@ -1,5 +1,8 @@
 # this file is a template/example amiga keymap descriptor
 # (c) 2020 The AROS Development Team.
+#
+# NB - the maps contain incomplete data and
+# are meant only as a guide on formatting.
 
 ## begin config
 keymap: testkeymap
@@ -46,6 +49,8 @@ id: dead2
 # the "capsable" and "repeatable" sections can be included anywhere.
 
 ## begin lokeymap
+'¬', '`', '¬', '`'
+'!', '1', '!', '1'
 ## end lokeymap
 
 ## begin locapsable
@@ -61,6 +66,9 @@ id: dead2
 ## end lorepeatable
 
 ## begin hikeymap
+0xA0, 0xA0, ' ', ' '
+8, 8, 8, 8
+id:string1
 ## end hikeymap
 
 ## begin hicapsable

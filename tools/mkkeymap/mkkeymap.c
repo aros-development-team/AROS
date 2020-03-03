@@ -11,6 +11,7 @@
 #include <ctype.h>
 
 #include "mkkeymap.h"
+#include "debug.h"
 
 int main(int argc, char **argv)
 {
@@ -39,9 +40,10 @@ int main(int argc, char **argv)
                 *ext = '\0';
             }
         }
-
-        if (cfg->verbose)
-            fprintf(stdout, "creating keymap '%s'\n", cfg->keymap);
+        if (writeKeyMap(cfg))
+        {
+            D(fprintf(stdout, "%s successfully generated\n", cfg->keymap);)
+        }
     }
 
     return 0;

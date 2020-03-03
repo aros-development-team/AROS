@@ -10,4 +10,14 @@
 #include <dos/doshunks.h>
 
 #include "mkkeymap.h"
+#include "debug.h"
 
+BOOL writeKeyMap(struct config *cfg)
+{
+    BOOL doverbose = cfg->verbose;
+    D(doverbose = TRUE;)
+
+    if (doverbose)
+        fprintf(stdout, "creating keymap '%s'\n", cfg->keymap);
+
+}

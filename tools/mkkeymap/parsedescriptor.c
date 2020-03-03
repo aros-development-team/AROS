@@ -16,9 +16,7 @@
 #include <ctype.h>
 
 #include "mkkeymap.h"
-
-#define D(x)
-#define DLINE(x)
+#include "debug.h"
 
 static unsigned int     slen = 0; /* The allocation length pointed to be line */
 static char             *line = NULL; /* The current read file */
@@ -100,10 +98,81 @@ BOOL processSectConfig(struct config *cfg, FILE *descf)
     return FALSE;
 }
 
+void GetEncodedChar(char *s, UBYTE *dchar, ULONG *len)
+{
+    *len = 0;
+    if (s[0] == '\\')
+    {
+        char c = s[1];
+        switch (c)
+        {
+        case 'b':
+            *len = 2;
+            *dchar = 0x8;
+            break;
+
+        case 'f':
+            *len = 2;
+            *dchar = 0xC;
+            break;
+
+        case 'n':
+            *len = 2;
+            *dchar = 0xA;
+            break;
+
+        case 'r':
+            *len = 2;
+            *dchar = 0xD;
+            break;
+
+        case 't':
+            *len = 2;
+            *dchar = 0x9;
+            break;
+
+        case 'v':
+            *len = 2;
+            *dchar = 0xB;
+            break;
+
+        case '\\':
+            *len = 2;
+            *dchar = 0x5c;
+            break;
+
+        case '\'':
+            *len = 2;
+            *dchar = 0x27;
+            break;
+
+        case '\"':
+            *len = 2;
+            *dchar = 0x22;
+            break;
+
+        case '\?':
+            *len = 2;
+            *dchar = 0x3F;
+            break;
+
+        default:
+            fprintf(stdout, "support for char sequence needs implemented\n");
+            break;
+        }
+    }
+    else
+    {
+        *len = 1;
+        *dchar = s[0];
+    }
+}
+
 void GetEncodedBytes(char *s, UBYTE *strbuffer, ULONG *count)
 {
     BOOL done = FALSE;
-    char *ptr = s, *out = strbuffer, *nxt, c;
+    char *ptr = s, *nxt, c;
+    UBYTE *out = strbuffer;
     UBYTE tmp;
 
     while (!done)
@@ -122,24 +191,29 @@ void GetEncodedBytes(char *s, UBYTE *strbuffer, ULONG *count)
             break;
 
         case '\'':
-            if (ptr[2] == '\'')
             {
-                *out = (UBYTE)ptr[1];
+                ULONG clen;
+                char cbyte;
+
+                GetEncodedChar(&ptr[1], &cbyte, &clen);
+                D(fprintf(stdout, "decoded %u bytes into char '%c'\n", clen, cbyte);)
+                *out = cbyte;
                 *count = *count + 1;
                 out++;
-                ptr += 2;
+                ptr = (char *)((IPTR)ptr + 1 + clen);
             }
             break;
-        
+
         default:
-            tmp = (UBYTE)strtol(ptr, &nxt, 0);
+            tmp = (UBYTE)strtoul(ptr, &nxt, 0);
             if (nxt != ptr)
             {
                 *out = tmp;
                 *count = *count + 1;
                 out++;
-                ptr = nxt - 1;
+                ptr = (char *)((IPTR)nxt - 1);
             }
+            break;
         }
         ptr++;
     }
@@ -147,13 +221,14 @@ void GetEncodedBytes(char *s, UBYTE *strbuffer, ULONG *count)
 
 BOOL processSectString(struct config *cfg, FILE *descf)
 {
-    char strbuffer[32];
-    ULONG count = 0;
+    UBYTE strbuffer[32], *buffptr;
+    ULONG bcount, count = 0;
     char *s, *id = NULL;
     BOOL retval = TRUE, done = FALSE;
 
     D(fprintf(stdout, "processing 'string' section\n");)
     memset(strbuffer, 0, sizeof(strbuffer));
+    buffptr = strbuffer;
     while (!done && (readline(descf)!=NULL))
     {
         DLINE(fprintf(stdout, "line = '%s'\n", line);)
@@ -176,7 +251,12 @@ BOOL processSectString(struct config *cfg, FILE *descf)
                 D(fprintf(stdout, "string ID: %s\n", id);)
             }
             else
-                GetEncodedBytes(line, strbuffer, &count);
+            {
+                bcount = 0;
+                GetEncodedBytes(line, buffptr, &bcount);
+                buffptr += bcount;
+                count += bcount;
+            }
         }
     }
     D(fprintf(stdout, "string section contained %u bytes\n", count);)
@@ -187,7 +267,7 @@ BOOL processSectString(struct config *cfg, FILE *descf)
         D(
             int i;
             for (i = 0; i < count; i ++)
-                fprintf(stdout, " %d", strbuffer[count]);
+                fprintf(stdout, " %u", strbuffer[i]);
             fprintf(stdout, "\n");
         )
         tmp = (char *)((IPTR)strNode + sizeof(struct Node));
@@ -204,13 +284,14 @@ BOOL processSectString(struct config *cfg, FILE *descf)
 
 BOOL processSectDeadkey(struct config *cfg, FILE *descf)
 {
-    char dkbuffer[32];
-    ULONG count = 0;
+    UBYTE dkbuffer[32], *buffptr;
+    ULONG bcount, count = 0;
     char *s, *id = NULL;
     BOOL retval = TRUE, done = FALSE;
 
     D(fprintf(stdout, "processing 'deadkey' section\n");)
     memset(dkbuffer, 0, sizeof(dkbuffer));
+    buffptr = dkbuffer;
     while (!done && (readline(descf)!=NULL))
     {
         DLINE(fprintf(stdout, "line = '%s'\n", line);)
@@ -233,7 +314,12 @@ BOOL processSectDeadkey(struct config *cfg, FILE *descf)
                 D(fprintf(stdout, "deadkey ID: %s\n", id);)
             }
             else
-                GetEncodedBytes(line, dkbuffer, &count);
+            {
+                bcount = 0;
+                GetEncodedBytes(line, buffptr, &bcount);
+                buffptr += bcount;
+                count += bcount;
+            }
         }
     }
     D(fprintf(stdout, "deadkey section contained %u bytes\n", count);)
@@ -244,7 +330,7 @@ BOOL processSectDeadkey(struct config *cfg, FILE *descf)
         D(
             int i;
             for (i = 0; i < count; i ++)
-                fprintf(stdout, " %d", dkbuffer[count]);
+                fprintf(stdout, " %u", dkbuffer[i]);
             fprintf(stdout, "\n");
         )
         tmp = (char *)((IPTR)strNode + sizeof(struct Node));
@@ -353,8 +439,9 @@ BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *typesptr, UBYTE cn
     return FALSE;
 }
 
-BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE cnt)
+BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE *typesptr, UBYTE cnt)
 {
+    int i;
     char *s;
 
     D(fprintf(stdout, "processing 'map' section\n");)
@@ -370,6 +457,31 @@ BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE cnt)
                 return FALSE;
             return TRUE;
         }
+        if ((typesptr[i] & (KCF_DEAD|KCF_STRING)) != 0)
+        {
+            if (strncmp(line, "id:", 3)!=0)
+            {
+                D(fprintf(stdout, "ERROR: string/deadkey ID expected!\n");)
+                return FALSE;
+            }
+            s = line+3;
+            D(fprintf(stdout, "string/deadkey ID '%s'\n", s);)
+            // TODO: verify if the etnry exists...
+        }
+        else
+        {
+            UBYTE tmpbuffer[32];
+            ULONG bcount = 0;
+            GetEncodedBytes(line, tmpbuffer, &bcount);
+            if (bcount != 4)
+            {
+                D(fprintf(stdout, "ERROR: incorrect number of entries in map!\n");)
+                return FALSE;
+            }
+            map[i] = (tmpbuffer[0] << 24 | tmpbuffer[1] << 16 | tmpbuffer[2] << 8 | tmpbuffer[3]);
+            D(fprintf(stdout, "%08x\n", (ULONG)map[i]);)
+        }
+        i++;
     }
     return FALSE;
 }
@@ -509,7 +621,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 3: /* lokeymap */
-                if (!processSectMap(cfg, descf, cfg->LoKeyMap, 0x40))
+                if (!processSectMap(cfg, descf, cfg->LoKeyMap, cfg->LoKeyMapTypes, 0x40))
                 {
                     fprintf(stderr, "error processing lokey map section\n");
                     exit(20);
@@ -541,7 +653,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 7: /* hikeymap */
-                if (!processSectMap(cfg, descf, cfg->HiKeyMap, 0x38))
+                if (!processSectMap(cfg, descf, cfg->HiKeyMap, cfg->HiKeyMapTypes, 0x38))
                 {
                     fprintf(stderr, "error processing hikey map section\n");
                     exit(20);
