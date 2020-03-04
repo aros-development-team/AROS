@@ -176,7 +176,7 @@ static void Action(void)
 
     if (!(rp = CloneRastPort(&scr->RastPort)))
     {
-    	Cleanup("Can´t clone screen rastport!");
+    	Cleanup("Can't clone screen rastport!");
     }
     SetDrMd(rp,JAM1);
 
