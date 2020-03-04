@@ -148,7 +148,7 @@ struct MenuHandlerData
 #define ITEXT_EXTRA_TOP    1
 #define ITEXT_EXTRA_BOTTOM 1
 
-static const char subitemindicator[] = "»";
+static const char subitemindicator[] = "\xBB"; // right chevron
 
 
 static void HandleMouseMove(struct MenuHandlerData *mhd);
