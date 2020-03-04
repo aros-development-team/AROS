@@ -203,7 +203,7 @@ static BOOL LoadBMP_Colormap(BMPHandleType *BMPhandle, int numcolors,
 
 /**************************************************************************************************/
 
-static BOOL WriteBMP_Colormap(BPTR filehandle, int numcolors,
+static VOID WriteBMP_Colormap(BPTR filehandle, int numcolors,
                             struct ColorRegister *colormap)
 {
     //Convert ColorMap to RGBQuads 'BGR0'
