@@ -16,17 +16,18 @@ BPTR FILE_Open( CONST_STRPTR path, LONG mode )
 {
     LONG mode2dos[] = { MODE_OLDFILE, MODE_NEWFILE };
     BPTR file; 
-    
-    if( mode != MODE_READ && mode != MODE_WRITE );
-    
+
+    if( mode != MODE_READ && mode != MODE_WRITE )
+         goto error;
+
     file = Open( path, mode2dos[mode] );
     if( file == BNULL ) goto error;
-    
+
     Seek( file, 0, OFFSET_END );
     file_size = Seek( file, 0, OFFSET_BEGINNING ) + 1;
-    
+
     return file;
-    
+
 error:
     return BNULL;
 }
