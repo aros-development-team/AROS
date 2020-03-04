@@ -17,7 +17,7 @@
  * $Id$
  */
 #ifndef _ATH_AR5416_DESC_H_
-#define _ATH_AR5416_DESC_H
+#define _ATH_AR5416_DESC_H_
 
 /*
  * Hardware-specific descriptor structures.
