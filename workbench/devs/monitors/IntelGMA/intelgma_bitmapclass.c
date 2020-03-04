@@ -536,6 +536,12 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
     UNLOCK_BITMAP
 }
 
+static void _drawpixel(int x, int y)
+{
+    OUT_RING((2 << 29) | (0x24 << 22) );
+    OUT_RING((y << 16) | x);
+}
+
 VOID METHOD(GMABM, Hidd_BitMap, DrawEllipse)
 {
 	GMABitMap_t *bm = OOP_INST_DATA(cl, o);
@@ -556,11 +562,6 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawEllipse)
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
 
-	void _drawpixel(int x, int y)
-	{
-		OUT_RING((2 << 29) | (0x24 << 22) );
-		OUT_RING((y << 16) | x);
-	}
 
 	LOCK_BITMAP
 
@@ -685,12 +686,6 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawLine)
 
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
-
-	void _drawpixel(int x, int y)
-	{
-		OUT_RING((2 << 29) | (0x24 << 22) );
-		OUT_RING((y << 16) | x);
-	}
 
     if (doclip)
     {
