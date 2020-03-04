@@ -1355,7 +1355,7 @@ AROS_UFH3(
 
     if (((data->icld__Option_LabelTextMaxLen != data->icld__Option_LastLabelTextMaxLen) &&
         (data->icld__Option_LabelTextMultiLine > 1)) ||
-        (data->icld__Option_LabelTextMultiLine != data->icld__Option_LastLabelTextMultiLine));
+        (data->icld__Option_LabelTextMultiLine != data->icld__Option_LastLabelTextMultiLine))
     {
         struct IconEntry *iconentry_Current = NULL;
 #if defined(__AROS__)
