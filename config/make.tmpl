@@ -3761,6 +3761,8 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 
 %define build_with_cmake mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     aros_prefix= extraoptions= installoptions= maketarget= compiler=target \
+    cmakebuildcmd= \
+    cmakeinstallcmd= \
     precmake=  postcmake= \
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags= \
@@ -3857,12 +3859,24 @@ endif
 #MM
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
+ifeq (%(cmakebuildcmd),)
+%(mmake)-cmakecmdbuild := $(MAKE) -C $(%(mmake)-pkgdir) %(maketarget)
+else
+%(mmake)-cmakecmdbuild := %(cmakebuildcmd)
+endif
+
+ifeq (%(cmakeinstallcmd),)
+%(mmake)-cmakecmdinstall := cmake %(installoptions) -P cmake_install.cmake
+else
+%(mmake)-cmakecmdinstall := %(cmakeinstallcmd)
+endif
+
 $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	$(IF) ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
 	    $(RM)  $(%(mmake)-installflag) && \
-	    $(MAKE) -C $(%(mmake)-pkgdir) %(maketarget) && \
+	    $(%(mmake)-cmakecmdbuild) && \
 	    cd $(%(mmake)-pkgdir) && \
-	    cmake %(installoptions) -P cmake_install.cmake && \
+	    $(%(mmake)-cmakecmdinstall) && \
 	    $(TOUCH) $@ -r $^; \
 	fi
 
