@@ -20,7 +20,7 @@
 #include "patches.h"
 #include "locale.h"
 
-#define VERSION "$VER: Snoopy 0.13 (04.05.2015) © 2006-2015 The AROS Dev Team"
+#define VERSION "$VER: Snoopy 0.13 (04.05.2015) \xA9 2006-2015 The AROS Dev Team"
 
 static Object *app, *window, *saveBtn, *openBtn, *useBtn, *undoBtn, *resetBtn, *cancelBtn;
 static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM, *breakPointCM, *patternStr;

@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *version = "$VER: Calculator 1.5 (31.05.2018) © AROS Dev Team";
+const char *version = "$VER: Calculator 1.5 (31.05.2018) \xA9 1995-2018 The AROS Dev Team";
 
 #define ARG_TEMPLATE "PUBSCREEN,TAPE/K"
 enum {ARG_PUBSCREEN,ARG_TAPE,NUM_ARGS};

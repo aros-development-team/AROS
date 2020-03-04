@@ -26,7 +26,7 @@
 
 #include "renderer.h"
 
-CONST_STRPTR version = "$VER: SMP-Smallpt 1.0 (03.03.2017) ©2017 The AROS Development Team";
+CONST_STRPTR version = "$VER: SMP-Smallpt 1.0 (03.03.2017) \xA9 2017 The AROS Development Team";
 
 APTR KernelBase;
 

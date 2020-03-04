@@ -154,7 +154,7 @@ int main(int argc, char **argv)
                 if ( PROGRAM_ERROR != RETURN_FAIL )
                 {
                     outfunc("dumpmem - Memory Dump tool.\n"
-                        "© Copyright the AROS Dev Team.\n"
+                        "\xA9 Copyright the AROS Dev Team.\n"
                          "-----------------------------\n\n"
                          "Dumping From [%p] for %d bytes...\n\n",
                          (void *)start_address, dump_size);

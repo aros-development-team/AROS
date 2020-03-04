@@ -96,7 +96,7 @@
 //#define DEBUG 1
 #include <aros/debug.h>
 
-const TEXT ver[] = "$VER:CLI 1.2 (07.02.2017) © AROS Dev Team";
+const TEXT ver[] = "$VER:CLI 1.2 (07.02.2017) \xA9 1995-2017 The AROS Dev Team";
 static BPTR olddir = (BPTR)-1;
 
 int main(int argc, char **argv)

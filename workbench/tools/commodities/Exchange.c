@@ -468,7 +468,7 @@ static void MakeGUI(void)
         MUIA_Application_Title, __(MSG_EXCHANGE_CXNAME),
         MUIA_Application_Version, (IPTR)version,
         MUIA_Application_Copyright,
-            (IPTR)"Copyright  © 1995-2016, The AROS Development Team",
+            (IPTR)"Copyright  \xA9 1995-2016, The AROS Development Team",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, __(MSG_EXCHANGE_CXDESCR),
         MUIA_Application_BrokerPri, cx_pri,

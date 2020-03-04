@@ -108,7 +108,7 @@ int main(void)
 {
     TEXT buffer[128];
 
-    printf("AROS utility.library v50 SetMem test\n© The AROS Development Team. All rights reserved.\n");
+    printf("AROS utility.library v50 SetMem test\n\xA9 The AROS Development Team. All rights reserved.\n");
 
     printf("\nPerforming output validtity tests ...\n");
 

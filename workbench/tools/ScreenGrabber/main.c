@@ -30,7 +30,7 @@
 #define APPNAME "ScreenGrabber"
 #define VERSION "ScreenGrabber 0.4 (29.06.2006)"
 
-static const char version[] __attribute__((used)) = "$VER: " VERSION " ©2006 AROS Dev Team";
+static const char version[] __attribute__((used)) = "$VER: " VERSION " \xA9 2006 AROS Dev Team";
 
 static Object *app, *MainWindow, *ScreenList, *FilenameString, *SaveButton, *RefreshButton, *GrabButton;
 static Object *Size, *Title, *DefTitle, *Pause, *Hide, *Progress;
@@ -309,7 +309,7 @@ BOOL GUIInit()
     app = ApplicationObject,
 	    MUIA_Application_Title, (IPTR)APPNAME,
 	    MUIA_Application_Version, (IPTR)VERSION,
-	    MUIA_Application_Copyright, (IPTR)"© 2004-2006, The AROS Development Team",
+	    MUIA_Application_Copyright, (IPTR)"\xA9 2004-2006, The AROS Development Team",
 	    MUIA_Application_Author, (IPTR)"Michal Schulz",
 	    MUIA_Application_Description, _(MSG_WINDOW_TITLE),
         disko ? MUIA_Application_DiskObject : TAG_IGNORE, (IPTR)disko,

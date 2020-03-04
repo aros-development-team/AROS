@@ -125,7 +125,7 @@ int main(void)
     app = ApplicationObject,
         MUIA_Application_Title, "RequestString",
         MUIA_Application_Version, version,
-        MUIA_Application_Copyright, "© 2009-2010 The AROS Development Team",
+        MUIA_Application_Copyright, "\xA9 2009-2010 The AROS Development Team",
         MUIA_Application_Author, "The AROS Development Team",
         MUIA_Application_Description, "Request string from user",
         MUIA_Application_Base, "REQUESTSTRING",

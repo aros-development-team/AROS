@@ -58,7 +58,7 @@ struct InfoNode
     BOOL donotwait;
 };
 
-const TEXT version_string[] = "$VER: ExecuteStartup 0.2 (20.10.2007) © AROS Dev Team";
+const TEXT version_string[] = "$VER: ExecuteStartup 0.2 (20.10.2007) \xA9 The AROS Dev Team";
 
 static TEXT fileNameBuffer[MAXFILENAMELENGTH];
 static APTR poolmem;

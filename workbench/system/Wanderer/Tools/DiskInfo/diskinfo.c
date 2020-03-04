@@ -271,7 +271,7 @@ Object *DiskInfo__OM_NEW
         CLASS, self, NULL,
 
         MUIA_Application_Title, __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.5 ("ADATE") ©2006-2009 AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: DiskInfo 0.5 ("ADATE") \xA9 2006-2009 The AROS Dev Team",
         MUIA_Application_Copyright, __(MSG_COPYRIGHT),
         MUIA_Application_Author, __(MSG_AUTHOR),
         MUIA_Application_Description, __(MSG_DESCRIPTION),

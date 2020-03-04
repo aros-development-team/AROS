@@ -25,7 +25,7 @@
 #include "locale.h"
 #include "support.h"
 
-#define VERSION "$VER: Execute 0.2 (13.01.2006) ©AROS Dev Team"
+#define VERSION "$VER: Execute 0.2 (13.01.2006) \xA9 2006 The AROS Dev Team"
 
 /*** Private methods ********************************************************/
 #define MUIM_ExecuteCommand_ExecuteCommand  (TAG_USER | 0x20000000)
@@ -107,7 +107,7 @@ Object *ExecuteCommand__OM_NEW
         
         MUIA_Application_Title, __(MSG_TITLE),
         MUIA_Application_Version, (IPTR) VERSION,
-        MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"\xA9 2006, The AROS Dev Team",
         MUIA_Application_Description, __(MSG_DESCRIPTION),
         SubWindow, (IPTR) (window = (Object *)WindowObject,
             MUIA_Window_Title,       __(MSG_DESCRIPTION),

@@ -121,7 +121,7 @@ DEFINE_DOSBase_global                                                         \
 __used static const UBYTE name##_version[] = "$VER: "                         \
                                  stringify(name) " "                          \
                                  stringify(version) " "                       \
-                                 "(" ADATE ") © The AROS Development Team\n"; \
+                                 "(" ADATE ") \xA9 The AROS Development Team\n"; \
                                                                               \
 DEFINE_main(name)                                                             \
 {                                                                             \

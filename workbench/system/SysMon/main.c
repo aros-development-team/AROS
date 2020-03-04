@@ -19,7 +19,7 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: SysMon 1.10 (19.04.2019) ©2011-2019 The AROS Development Team"
+#define VERSION "$VER: SysMon 1.10 (19.04.2019) \xA9 2011-2019 The AROS Development Team"
 
 CONST_STRPTR CPU_DEFSTR  = "CPU --\n--.- %";
 

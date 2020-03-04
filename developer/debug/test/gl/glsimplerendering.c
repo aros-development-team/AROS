@@ -58,7 +58,7 @@ PFNGLDELETEPROGRAMPROC      glDeleteProgram         = NULL;
 PFNGLUNIFORM1FPROC          glUniform1f             = NULL;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation    = NULL;
 
-CONST_STRPTR version = "$VER: glsimplerendering 1.0 (28.04.2019) ©2010-2019 The AROS Development Team";
+CONST_STRPTR version = "$VER: glsimplerendering 1.0 (28.04.2019) \xA9 2010-2019 The AROS Development Team";
 
 const GLchar * fragmentShaderSource =
 "uniform float angle;"

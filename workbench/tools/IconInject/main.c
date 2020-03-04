@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static const char version[] __attribute__((used)) = "\0$VER: IconInject 0.1 (06.03.09) © The AROS Dev Team" ;
+static const char version[] __attribute__((used)) = "\0$VER: IconInject 0.1 (06.03.09) \xA9 2009 The AROS Dev Team" ;
 
 static
 const UBYTE iitemplate[] =
