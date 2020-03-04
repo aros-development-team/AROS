@@ -536,10 +536,10 @@ VOID METHOD(GMABM, Hidd_BitMap, DrawPixel)
     UNLOCK_BITMAP
 }
 
-static void _drawpixel(int x, int y)
-{
-    OUT_RING((2 << 29) | (0x24 << 22) );
-    OUT_RING((y << 16) | x);
+#define _drawpixel(x,y) \
+{ \
+    OUT_RING((2 << 29) | (0x24 << 22) ); \
+    OUT_RING((y << 16) | x); \
 }
 
 VOID METHOD(GMABM, Hidd_BitMap, DrawEllipse)
