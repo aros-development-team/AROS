@@ -28,9 +28,9 @@ static const char * const libnames[] =
 static const char * const copyrights[] =
 {
     "AROS Research Operating System (AROS)",
-    "Copyright © 1995-2020, ",
+    "Copyright \xA9 1995-2020, ",
     "The AROS Development Team.",
-    "Other parts © by respective owners.",
+    "Other parts \xA9 by respective owners.",
     "ALPHA ",
     MOD_NAME_STRING,
     "exec " MOD_VERS_STRING " (" MOD_DATE_STRING ")\r\n"
