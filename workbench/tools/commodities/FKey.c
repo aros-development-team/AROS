@@ -1211,7 +1211,7 @@ static void HandleAction(void)
             break;
 
         case ACTION_RUN_PROG:
-            if (ki->param)
+            if (ki->param[0] != '\0')
             {
                 BPTR infh;
 
