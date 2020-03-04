@@ -60,12 +60,12 @@ static void OpenLibs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0)))
     {
-    	Cleanup("Can´t open intuition.library!");
+    	Cleanup("Can't open intuition.library!");
     }
     
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",0)))
     {
-    	Cleanup("Can´t open graphics.library!");
+    	Cleanup("Can't open graphics.library!");
     }
 }
 
@@ -97,7 +97,7 @@ static void Action(void)
     
     if (!(rp = CloneRastPort(&win->WScreen->RastPort)))
     {
-    	Cleanup("Can´t clone screen rastport!");
+    	Cleanup("Can't clone screen rastport!");
     }
     SetDrMd(rp,JAM1);
     
