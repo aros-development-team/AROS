@@ -193,7 +193,7 @@ void BOOTLOADER_AddCoreSkipPaths(struct List *SkipList)
 #endif
 }
 
-void BOOTLOADER_PartFixUp(struct Install_DATA *data, IPTR systype)
+BOOL BOOTLOADER_PartFixUp(struct Install_DATA *data, IPTR systype)
 {
     D(bug("[InstallAROS] %s()\n", __func__));
 
@@ -206,9 +206,10 @@ void BOOTLOADER_PartFixUp(struct Install_DATA *data, IPTR systype)
                 _(MSG_WARNING),
                 _(MSG_CONTINUECANCELPART),
                 _(MSG_GRUBNONFFSWARNING), NULL) != 1)
-            return 0;
+            return FALSE;
     }
 #endif
+    return TRUE;
 }
 
 static LONG FindWindowsPartition(STRPTR device, LONG unit)

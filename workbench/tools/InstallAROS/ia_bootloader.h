@@ -44,7 +44,7 @@ extern struct BootLoaderInfo BootLoaderData[];
 extern LONG BootLoaderType;
 
 extern void BOOTLOADER_InitSupport(void);
-extern void BOOTLOADER_PartFixUp(struct Install_DATA *data, IPTR systype);
+extern BOOL BOOTLOADER_PartFixUp(struct Install_DATA *data, IPTR systype);
 extern void BOOTLOADER_DoInstall(Class * CLASS, Object * self);
 extern void BOOTLOADER_AddCoreSkipPaths(struct List *SkipList);
 
