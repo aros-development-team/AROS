@@ -1,0 +1,515 @@
+# German PC105 amiga keymap descriptor
+# (c) 2020 The AROS Development Team.
+
+## begin config
+keymap: pc105_d
+## end config
+
+## begin lokeymaptypes
+KCF_DEAD|KC_VANILLA                  # 00
+KCF_SHIFT|KCF_ALT                    # 01
+KCF_SHIFT|KCF_ALT                    # 02
+KCF_SHIFT|KCF_ALT                    # 03
+KCF_SHIFT|KCF_ALT                    # 04
+KCF_SHIFT|KCF_ALT                    # 05
+KCF_SHIFT|KCF_ALT                    # 06
+KCF_SHIFT|KCF_ALT                    # 07
+KCF_SHIFT|KCF_ALT                    # 08
+KCF_SHIFT|KCF_ALT                    # 09
+KCF_SHIFT|KCF_ALT                    # 0A
+KC_VANILLA                           # 0B
+KCF_DEAD|KCF_SHIFT|KCF_ALT           # 0C
+KC_VANILLA                           # 0D
+KCF_NOP                              # 0E
+KC_NOQUAL                            # 0F
+KC_VANILLA                           # 10 q
+KC_VANILLA                           # 11 w
+KCF_DEAD|KC_VANILLA                  # 12 e
+KC_VANILLA                           # 13 r
+KC_VANILLA                           # 14 t
+KC_VANILLA                           # 15 z
+KCF_DEAD|KC_VANILLA                  # 16 u
+KCF_DEAD|KC_VANILLA                  # 17 i
+KCF_DEAD|KC_VANILLA                  # 18 o
+KC_VANILLA                           # 19 p
+KC_VANILLA                           # 1A
+KC_VANILLA                           # 1B
+KCF_NOP                              # 1C
+KC_NOQUAL                            # 1D
+KC_NOQUAL                            # 1E
+KC_NOQUAL                            # 1F
+KCF_DEAD|KC_VANILLA                  # 20 a
+KC_VANILLA                           # 21 s
+KC_VANILLA                           # 22 d
+KCF_DEAD|KC_VANILLA                  # 23 f
+KCF_DEAD|KC_VANILLA                  # 24 g
+KCF_DEAD|KC_VANILLA                  # 25 h
+KCF_DEAD|KC_VANILLA                  # 26 j
+KCF_DEAD|KC_VANILLA                  # 27 k
+KC_VANILLA                           # 28 l
+KCF_SHIFT|KCF_ALT                    # 29
+KCF_SHIFT|KCF_ALT                    # 2A
+KC_VANILLA                           # 2B
+KCF_NOP                              # 2C
+KC_NOQUAL                            # 2D
+KC_NOQUAL                            # 2E
+KC_NOQUAL                            # 2F
+KCF_SHIFT|KCF_ALT                    # 30
+KCF_DEAD|KC_VANILLA                  # 31 y
+KC_VANILLA                           # 32 x
+KC_VANILLA                           # 33 c
+KC_VANILLA                           # 34 v
+KC_VANILLA                           # 35 b
+KCF_DEAD|KC_VANILLA                  # 36 n
+KC_VANILLA                           # 37 m
+KCF_SHIFT|KCF_ALT                    # 38
+KCF_SHIFT|KCF_ALT                    # 39
+KC_VANILLA                           # 3A
+KCF_NOP                              # 3B
+KC_NOQUAL                            # 3C
+KC_NOQUAL                            # 3D
+KC_NOQUAL                            # 3E
+KC_NOQUAL                            # 3F
+## end lokeymaptypes
+
+## begin hikeymaptypes
+KCF_DEAD|KCF_ALT                     # 40 SPACE
+KC_NOQUAL                            # 41 BACKSPACE
+KCF_STRING|KCF_SHIFT                 # 42 TAB
+KC_NOQUAL                            # 43 ENTER
+KCF_CONTROL                          # 44 RETURN
+KCF_ALT                              # 45 ESCAPE
+KC_NOQUAL                            # 46 DEL 
+KCF_STRING|KCF_SHIFT                 # 47 INSERT ??
+KCF_STRING|KCF_SHIFT                 # 48 PAGE UP ??
+KCF_STRING|KCF_SHIFT                 # 49 PAGE DOWN ??
+KC_NOQUAL                            # 4A NUMERIC PAD -
+KCF_STRING|KCF_SHIFT                 # 4B F11 ??
+KCF_STRING|KCF_SHIFT                 # 4C CURSORUP*/
+KCF_STRING|KCF_SHIFT                 # 4D CURSORDOWN
+KCF_STRING|KCF_SHIFT                 # 4E CURSORRIGHT
+KCF_STRING|KCF_SHIFT                 # 4F CURSORLEFT
+KCF_STRING|KCF_SHIFT                 # 50 F1
+KCF_STRING|KCF_SHIFT                 # 51 F2
+KCF_STRING|KCF_SHIFT                 # 52 F3
+KCF_STRING|KCF_SHIFT                 # 53 F4
+KCF_STRING|KCF_SHIFT                 # 54 F5
+KCF_STRING|KCF_SHIFT                 # 55 F6
+KCF_STRING|KCF_SHIFT                 # 56 F7
+KCF_STRING|KCF_SHIFT                 # 57 F8
+KCF_STRING|KCF_SHIFT                 # 58 F9
+KCF_STRING|KCF_SHIFT                 # 59 F10
+KCF_NOP                              # 5A NUMLOCK
+KC_NOQUAL                            # 5B NUMPAD )
+KC_NOQUAL                            # 5C NUMPAD /
+KC_NOQUAL                            # 5D NUMPAD *
+KC_NOQUAL                            # 5E NUMPAD +
+KCF_STRING                           # 5F HELP
+KCF_NOP                              # 60 LEFT SHIFT
+KCF_NOP                              # 61 RIGHT SHIFT
+KCF_NOP                              # 62 CAPS LOCK
+KCF_NOP                              # 63 CONTROL
+KCF_NOP                              # 64 LALT
+KCF_NOP                              # 65 RALT
+KCF_NOP                              # 66 LCOMMAND
+KCF_NOP                              # 67 RCOMMAND
+KCF_NOP                              # 68 LEFT MOUSE BUTTON
+KCF_NOP                              # 69 RIGHT MOUSE BUTTON
+KCF_NOP                              # 6A MIDDLE MOUSE BUTTON
+KCF_NOP                              # 6B
+KCF_NOP                              # 6C
+KCF_NOP                              # 6D
+KCF_STRING|KCF_ALT                   # 6E PAUSE/BREAK ??*/
+KCF_STRING|KCF_SHIFT                 # 6F F12 ??
+KCF_STRING|KCF_CONTROL               # 70 HOME ??
+KCF_STRING|KCF_CONTROL               # 71 END ??
+KCF_NOP                              # 72
+KCF_NOP                              # 73
+KCF_NOP                              # 74
+KCF_NOP                              # 75
+KCF_NOP                              # 76
+KCF_NOP                              # 77
+## end hikeymaptypes
+
+## begin string
+id: a_descr
+1, 0x10,
+1, 0x25,
+0, 'æ',
+0, 'Æ',
+0, 0x01,
+0, 0x01,
+0, 0x81,
+0, 0x81,
+'a', 'á', 'à', 'â', 'ã', 'ä', 'å',
+'á', 'á', 'â', 'á', 'á', 'á', 'á',
+'à', 'â', 'à', 'à', 'à', 'à', 'à',
+'A', 'Á', 'À', 'Â', 'Ã', 'Ä', 'Å',
+'Á', 'Á', 'Â', 'Á', 'Á', 'Á', 'Á',
+'À', 'Â', 'À', 'À', 'À', 'À', 'À'
+## end string
+
+## begin string
+id: e_descr
+1, 0x10,
+1, 0x25,
+0, 0xA4,
+0, '¢',
+0, 0x05,
+0, 0x05,
+0, 0x85,
+0, 0x85,
+'e', 'é', 'è', 'ê', 'e', 'ë', 'e',
+'é', 'é', 'ê', 'é', 'é', 'é', 'é',
+'è', 'ê', 'è', 'è', 'è', 'è', 'è',
+'E', 'É', 'È', 'Ê', 'E', 'Ë', 'E',
+'É', 'É', 'Ê', 'É', 'É', 'É', 'É', 
+'È', 'Ê', 'È', 'È', 'È', 'È', 'È'
+## end string
+
+## begin string
+id: u_descr
+1, 0x10,
+1, 0x25,
+0, 'µ',
+0, 'µ',
+0, 0x15,
+0, 0x15,
+0, 0x95,
+0, 0x95,
+'u', 'ú', 'ù', 'û', 'u', 'ü', 'u',
+'ú', 'ú', 'û', 'ú', 'ú', 'ú', 'ú',
+'ù', 'û', 'ù', 'ù', 'ù', 'ù', 'ù',
+'U', 'Ú', 'Ù', 'Û', 'U', 'Ü', 'U',
+'Ú', 'Ú', 'Û', 'Ú', 'Ú', 'Ú', 'Ú',
+'Ù', 'Û', 'Ù', 'Ù', 'Ù', 'Ù', 'Ù'
+## end string
+
+## begin string
+id: i_descr
+1, 0x10,
+1, 0x25,
+0, '¡',
+0, '¦',
+0, 0x09,
+0, 0x09,
+0, 0x89,
+0, 0x89,
+'i', 'í', 'ì', 'î', 'i', 'ï', 'i',
+'í', 'í', 'î', 'í', 'í', 'í', 'í',
+'ì', 'î', 'ì', 'ì', 'ì', 'ì', 'ì',
+'I', 'Í', 'Ì', 'Î', 'I', 'Ï', 'I',
+'Í', 'Í', 'Î', 'Í', 'Í', 'Í', 'Í',
+'Ì', 'Î', 'Ì', 'Ì', 'Ì', 'Ì', 'Ì'
+## end string
+
+## begin string
+id: o_descr
+1, 0x10,
+1, 0x25,
+0, 'ø', /* 0xF8 */
+0, 'Ø', /* 0xD8 */
+0, 0x0F,
+0, 0x0F,
+0, 0x8F,
+0, 0x8F,
+'o', 'ó', 'ò', 'ô', 'õ', 'ö', 'o',
+'ó', 'ó', 'ô', 'ó', 'ó', 'ó', 'ó',
+'ò', 'ô', 'ò', 'ò', 'ò', 'ò', 'ò',
+'O', 'Ó', 'Ò', 'Ô', 'Õ', 'Ö', 'O',
+'Ó', 'Ó', 'Ô', 'Ó', 'Ó', 'Ó', 'Ó',
+'Ò', 'Ô', 'Ò', 'Ò', 'Ò', 'Ò', 'Ò'
+## end string
+
+## begin string
+id: y_descr
+1, 0x10,
+1, 0x25,
+0, '±',
+0, '¬',
+0, 0x19,
+0, 0x19,
+0, 0x99,
+0, 0x99,
+'y', 'ı', 'y', 'y', 'y', 'ÿ', 'y',
+'ı', 'ı', 'ı', 'ı', 'ı', 'ı', 'ı',
+'y', 'y', 'y', 'y', 'y', 'y', 'y',
+'Y', 'İ', 'Y', 'Y', 'Y', 'Y', 'Y',
+'İ', 'İ', 'İ', 'İ', 'İ', 'İ', 'İ',
+'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y'
+## end string
+
+## begin string
+id: n_descr
+1, 0x10,
+1, 0x25,
+0, '­',
+0, '¯',
+0, 0x0E,
+0, 0x0E,
+0, 0x8E,
+0, 0x8E,
+'n', 'n', 'n', 'n', 'ñ', 'n', 'n',
+'n', 'n', 'n', 'n', 'n', 'n', 'n',
+'n', 'n', 'n', 'n', 'n', 'n', 'n',
+'N', 'N', 'N', 'N', 'Ñ', 'N', 'N',
+'N', 'N', 'N', 'N', 'N', 'N', 'N',
+'N', 'N', 'N', 'N', 'N', 'N', 'N'
+## end string
+
+## begin string
+id: f_descr
+0, 'f',
+0, 'F',
+8, 0x71
+8, 0x71
+0, 0x06,
+0, 0x06,
+0, 0x86,
+0, 0x86
+## end string
+
+## begin string
+id: g_descr
+0, 'g',
+0, 'G',
+8, 0x72
+8, 0x72
+0, 0x07,
+0, 0x07,
+0, 0x87,
+0, 0x87
+## end string
+
+## begin string
+id: h_descr
+0, 'h',
+0, 'H',
+8, 3,
+8, 3,
+0, 0x08,
+0, 0x08,
+0, 0x88,
+0, 0x88
+## end string
+
+## begin string
+id: j_descr
+0, 'j',
+0, 'J',
+8, 4,
+8, 4,
+0, 0x0A,
+0, 0x0A,
+0, 0x8A,
+0, 0x8A,
+## end string
+
+## begin string
+id:k_descr
+0, 'k',
+0, 'K',
+8, 5,
+8, 5,
+0, 0x0B,
+0, 0x0B,
+0, 0x8B,
+0, 0x8B,
+## end string
+
+## begin string
+id:key00_descr
+0, '^',
+0, '°',
+8, 3,
+8, 6,
+0, 0,
+0, 0,
+0, 0,
+0, 0
+## end string
+
+## begin string
+id:key0c_descr
+8, 0x71
+8, 0x72
+0, '=', 
+0, '+'
+## end string
+
+## begin string
+id: space_descr[] =
+1, 0x4,
+0, 0xA0,
+' ', '´', '`', '^', '~', '¨', '°',
+'´', '´', '^', '´', '´', '´', '´',
+'`', '^', '`', '`', '`', '`', '`'
+## end string
+
+## begin lokeymap
+id:key00_descr
+'!', '¹', '!', '1'
+'@', '²', '"', '2'
+'#', '³', '§', '3'
+'¢', '°', '$', '4'
+'%', '¼', '%', '5'
+'^', '½', '&', '6'
+'¾', '{', '/', '7'
+'*', '[', '(', '8'
+'«', ']', ')', '9'
+'»', '}', '=', '0'
+'|', '\\', '?', 'ß'
+id:key0c_descr
+'`', '`', '\'', '#'
+0, 0, 0, 0
+0, 0, 0, '0'
+'@', '@', 'Q', 'q'
+'°', '°', 'W', 'w'
+id:e_descr
+'®', '®', 'R', 'r'
+'Ş', 'ş', 'T', 't'
+'¥', 0xA4, 'Z', 'z'
+id:u_descr
+id:i_descr
+id:o_descr
+'¶', '¶', 'P', 'p'
+'{', '[', 'Ü', 'ü'
+'*', '~', '*', '+'
+0, 0, 0, 0
+0, 0, 0, '1'
+0, 0, 0, '2'
+0, 0, 0, '3'
+id:a_descr
+'§', 'ß', 'S', 's'
+'Ğ', 'ğ', 'D', 'd'
+id:f_descr
+id:g_descr
+id:h_descr
+id:j_descr
+id:k_descr
+'£', '@', 'L', 'l'
+':', ';', 'Ö', 'ö'
+'"', '\'', 'Ä', 'ä'
+'`', '`', '\'', '#'
+0, 0, 0, 0
+0, 0, 0, '4'
+0, 0, 0, '5'
+0, 0, 0, '6'
+'¦', '|', '>', '<'
+id:y_descr
+'÷', '×', 'X', 'x'
+'Ç', 'ç', 'C', 'c'
+'ª', 'ª', 'V', 'v'
+'º', 'º', 'B', 'b'
+id:n_descr
+'µ', 'µ', 'M', 'm'
+'<', ',', ';', ','
+'>', '.', ':', '.'
+'?', '/', '_', '-'
+0, 0, 0, 0
+0, 0, 0, ','
+0, 0, 0, '7'
+0, 0, 0, '8'
+0, 0, 0, '9'
+## end lokeymap
+
+## begin hikeymap
+id:space_descr
+8, 8, 8, 8
+id:tab_descr
+13, 13, 13, 13
+0, 0, 10, 13
+0, 0, 0x9B, 27
+127, 127, 127, 127
+id:insert_descr
+id:pageup_descr
+id:pagedown_descr
+'-', '-', '-', '-'
+id:f11_descr
+id:up_descr
+id:down_descr
+id:right_descr
+id:left_descr
+id:f1_descr
+id:f2_descr
+id:f3_descr
+id:f4_descr
+id:f5_descr
+id:f6_descr
+id:f7_descr
+id:f8_descr
+id:f9_descr
+id:f10_descr
+0, 0, 0, 0
+'/', '/', '/', '/'
+'*', '*', '*', '*'
+'-', '-', '-', '-'
+'+', '+', '+', '+'
+id:help_descr
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+id:pausebreak_descr
+id:f12_descr
+id:home_descr
+id:end_descr
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+## end hikeymap
+
+## begin locapsable
+0, 0, 0, 0, 0, 0, 0, 0    # 00 - 07
+0, 0, 0, 0, 0, 0, 0, 0    # 08 - 0F
+1, 1, 1, 1, 1, 1, 1, 1    # 10 - 17
+1, 1, 1, 0, 0, 0, 0, 0    # 18 - 1F
+1, 1, 1, 1, 1, 1, 1, 1    # 20 - 27
+1, 1, 1, 0, 0, 0, 0, 0    # 28 - 2F
+0, 1, 1, 1, 1, 1, 1, 1    # 30 - 37
+0, 0, 0, 0, 0, 0, 0, 0    # 38 - 3F
+## end locapsable
+
+## begin hicapsable
+0, 0, 0, 0, 0, 0, 0, 0    # 40 - 47
+0, 0, 0, 0, 0, 0, 0, 0    # 48 - 4F
+0, 0, 0, 0, 0, 0, 0, 0    # 50 - 57
+0, 0, 0, 0, 0, 0, 0, 0    # 58 - 5F
+0, 0, 0, 0, 0, 0, 0, 0    # 60 - 67
+0, 0, 0, 0, 0, 0, 0, 0    # 68 - 6F
+0, 0, 0, 0, 0, 0, 0, 0    # 70 - 77
+## end hicapsable
+
+## begin lorepeatable
+1, 1, 1, 1, 1, 1, 1, 1    # 00 - 07
+1, 1, 1, 1, 1, 1, 0, 1    # 08 - 0F
+1, 1, 1, 1, 1, 1, 1, 1    # 10 - 17
+1, 1, 1, 1, 0, 1, 1, 1    # 18 - 1F
+1, 1, 1, 1, 1, 1, 1, 1    # 20 - 27
+1, 1, 1, 1, 0, 1, 1, 1    # 28 - 2F
+1, 1, 1, 1, 1, 1, 1, 1    # 30 - 37
+1, 1, 1, 0, 1, 1, 1, 1    # 38 - 3F
+## end lorepeatable
+
+## begin hirepeatable
+1, 1, 1, 0, 0, 0, 1, 0    # 40 - 47
+1, 1, 0, 0, 1, 1, 1, 1    # 48 - 4F
+0, 0, 0, 0, 0, 0, 0, 0    # 50 - 57
+0, 0, 1, 1, 1, 1, 1, 0    # 58 - 5F
+0, 0, 0, 0, 0, 0, 0, 0    # 60 - 67
+0, 0, 0, 0, 0, 0, 0, 0    # 68 - 6F
+0, 0, 0, 0, 0, 0, 0, 0    # 70 - 77
+## end hirepeatable
