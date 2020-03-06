@@ -21,7 +21,9 @@
 static unsigned int     slen = 0; /* The allocation length pointed to be line */
 static char             *line = NULL; /* The current read file */
 static unsigned int     lineno = 0; /* The line number, will be increased by one everytime a line is read */
-struct List             strentries;
+
+#define TYPE_STRINGDESC (1 << 0)
+#define TYPE_DEADDESC   (1 << 1)
 
 char *readline(FILE *descf)
 {
@@ -247,7 +249,11 @@ BOOL processSectString(struct config *cfg, FILE *descf)
         {
             if (strncmp(line, "id:", 3)==0)
             {
-                id = line+3;
+                s = line+3;
+                while (isspace(*s)) s++;
+
+                id = malloc (strlen (s) + 1);
+                strcpy (id, s);
                 D(fprintf(stdout, "string ID: %s\n", id);)
             }
             else
@@ -273,12 +279,14 @@ BOOL processSectString(struct config *cfg, FILE *descf)
         tmp = (char *)((IPTR)strNode + sizeof(struct Node));
         strNode->ln_Name = tmp;
         sprintf(strNode->ln_Name, "%s", id);
-        tmp = (char *)((IPTR)strNode->ln_Name + strlen(strNode->ln_Name));
+        tmp = (char *)((IPTR)strNode->ln_Name + strlen(strNode->ln_Name) + 1);
         memcpy(tmp, strbuffer, count);
+        strNode->ln_Type = TYPE_STRINGDESC;
         strNode->ln_Pri = count;
         // Add the node ...
-        ADDTAIL(&strentries, strNode);
+        ADDTAIL(&cfg->KeyDesc, strNode);
     }
+    free(id);
     return retval;
 }
 
@@ -310,7 +318,11 @@ BOOL processSectDeadkey(struct config *cfg, FILE *descf)
         {
             if (strncmp(line, "id:", 3)==0)
             {
-                id = line+3;
+                s = line+3;
+                while (isspace(*s)) s++;
+
+                id = malloc (strlen (s) + 1);
+                strcpy (id, s);
                 D(fprintf(stdout, "deadkey ID: %s\n", id);)
             }
             else
@@ -336,12 +348,14 @@ BOOL processSectDeadkey(struct config *cfg, FILE *descf)
         tmp = (char *)((IPTR)strNode + sizeof(struct Node));
         strNode->ln_Name = tmp;
         sprintf(strNode->ln_Name, "%s", id);
-        tmp = (char *)((IPTR)strNode->ln_Name + strlen(strNode->ln_Name));
+        tmp = (char *)((IPTR)strNode->ln_Name + strlen(strNode->ln_Name) + 1);
         memcpy(tmp, dkbuffer, count);
+        strNode->ln_Type = TYPE_DEADDESC;
         strNode->ln_Pri = count;
         // Add the node ...
-        ADDTAIL(&strentries, strNode);
+        ADDTAIL(&cfg->KeyDesc, strNode);
     }
+    free(id);
     return retval;
 }
 
@@ -439,6 +453,19 @@ BOOL processSectTypes(struct config *cfg, FILE *descf, UBYTE *typesptr, UBYTE cn
     return FALSE;
 }
 
+IPTR FindListEntry(struct config *cfg, char *id)
+{
+    struct Node *entry;
+    ForeachNode(&cfg->KeyDesc, entry)
+    {
+        if (!strcmp(entry->ln_Name, id))
+        {
+            return (IPTR)entry;
+        }
+    }
+    return 0;
+}
+
 BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE *typesptr, UBYTE cnt)
 {
     int i;
@@ -461,12 +488,28 @@ BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE *typesptr,
         {
             if (strncmp(line, "id:", 3)!=0)
             {
-                D(fprintf(stdout, "ERROR: string/deadkey ID expected!\n");)
+                fprintf(stdout, "ERROR: string/deadkey ID expected!\n");
                 return FALSE;
             }
             s = line+3;
+            while (isspace(*s)) s++;
+
             D(fprintf(stdout, "string/deadkey ID '%s'\n", s);)
-            // TODO: verify if the etnry exists...
+            if ((map[i] = FindListEntry(cfg, s)) == 0)
+            {
+                fprintf(stdout, "ERROR: string/deadkey descriptor '%s' missing!\n", s);
+                return FALSE;
+            }
+            else if ((typesptr[i] & KCF_DEAD) && (((struct Node *)map[i])->ln_Type == TYPE_STRINGDESC))
+            {
+                fprintf(stdout, "ERROR: deadkey descriptor type mismatch!\n");
+                return FALSE;
+            }
+            else if ((typesptr[i] & KCF_STRING) && (((struct Node *)map[i])->ln_Type == TYPE_DEADDESC))
+            {
+                fprintf(stdout, "ERROR: string descriptor type mismatch!\n");
+                return FALSE;
+            }
         }
         else
         {
@@ -705,7 +748,7 @@ BOOL parseKeyDescriptor(struct config *cfg)
     descf = fopen(cfg->descriptor, "r");
     if (descf != NULL)
     {
-        NEWLIST(&strentries);
+        NEWLIST(&cfg->KeyDesc);
         retval = processDescriptor(cfg, descf);
         fclose(descf);
     }

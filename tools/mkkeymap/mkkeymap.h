@@ -16,6 +16,7 @@
 
 #include "config.h"
 
+#if (0)
 struct Reloc_Node {
     u_int32_t                   Next;
     u_int32_t                   Offset;
@@ -66,6 +67,8 @@ struct KeyMap_Hunk {
     u_int8_t                    kh_HiCapsable[0x07];
     u_int8_t                    kh_HiRepeatable[0x07];
 };
+#endif
+
 
 extern BOOL parseKeyDescriptor(struct config *);
 extern BOOL writeKeyMap(struct config *cfg);

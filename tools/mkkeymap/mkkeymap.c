@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 
     if (cfg->verbose)
     {
-        fprintf(stdout, "mkkeymap 0.2 © 2020, The AROS Development Team.\n");
+        fprintf(stdout, "mkkeymap 0.3 © 2020, The AROS Development Team.\n");
 
         fprintf(stdout, "parsing descriptor: %s\n", cfg->descriptor);
     }
