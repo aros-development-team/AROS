@@ -2,8 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-KEYMAPS := \
-    pc105_gb
+KMDESCRIPTORS :=  $(call WILDCARD, *.akmd)
+KEYMAPS :=  $(KMDESCRIPTORS:.akmd=)
 
 OLDKEYMAPS := \
     pc104_il pc104_usa pc104_usa2 \
