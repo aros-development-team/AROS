@@ -131,7 +131,7 @@ KCF_NOP                              # 76
 KCF_NOP                              # 77
 ## end hikeymaptypes
 
-## begin string
+## begin deadkey
 id: a_descr
 1, 0x10,
 1, 0x25,
@@ -147,9 +147,9 @@ id: a_descr
 'A', 'Á', 'À', 'Â', 'Ã', 'Ä', 'Å',
 'Á', 'Á', 'Â', 'Á', 'Á', 'Á', 'Á',
 'À', 'Â', 'À', 'À', 'À', 'À', 'À'
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: e_descr
 1, 0x10,
 1, 0x25,
@@ -165,9 +165,9 @@ id: e_descr
 'E', 'É', 'È', 'Ê', 'E', 'Ë', 'E',
 'É', 'É', 'Ê', 'É', 'É', 'É', 'É', 
 'È', 'Ê', 'È', 'È', 'È', 'È', 'È'
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: u_descr
 1, 0x10,
 1, 0x25,
@@ -183,9 +183,9 @@ id: u_descr
 'U', 'Ú', 'Ù', 'Û', 'U', 'Ü', 'U',
 'Ú', 'Ú', 'Û', 'Ú', 'Ú', 'Ú', 'Ú',
 'Ù', 'Û', 'Ù', 'Ù', 'Ù', 'Ù', 'Ù'
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: i_descr
 1, 0x10,
 1, 0x25,
@@ -201,9 +201,9 @@ id: i_descr
 'I', 'Í', 'Ì', 'Î', 'I', 'Ï', 'I',
 'Í', 'Í', 'Î', 'Í', 'Í', 'Í', 'Í',
 'Ì', 'Î', 'Ì', 'Ì', 'Ì', 'Ì', 'Ì'
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: o_descr
 1, 0x10,
 1, 0x25,
@@ -219,9 +219,9 @@ id: o_descr
 'O', 'Ó', 'Ò', 'Ô', 'Õ', 'Ö', 'O',
 'Ó', 'Ó', 'Ô', 'Ó', 'Ó', 'Ó', 'Ó',
 'Ò', 'Ô', 'Ò', 'Ò', 'Ò', 'Ò', 'Ò'
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: y_descr
 1, 0x10,
 1, 0x25,
@@ -237,9 +237,9 @@ id: y_descr
 'Y', 'İ', 'Y', 'Y', 'Y', 'Y', 'Y',
 'İ', 'İ', 'İ', 'İ', 'İ', 'İ', 'İ',
 'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y'
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: n_descr
 1, 0x10,
 1, 0x25,
@@ -255,9 +255,9 @@ id: n_descr
 'N', 'N', 'N', 'N', 'Ñ', 'N', 'N',
 'N', 'N', 'N', 'N', 'N', 'N', 'N',
 'N', 'N', 'N', 'N', 'N', 'N', 'N'
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: f_descr
 0, 'f',
 0, 'F',
@@ -267,9 +267,9 @@ id: f_descr
 0, 0x06,
 0, 0x86,
 0, 0x86
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: g_descr
 0, 'g',
 0, 'G',
@@ -279,9 +279,9 @@ id: g_descr
 0, 0x07,
 0, 0x87,
 0, 0x87
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: h_descr
 0, 'h',
 0, 'H',
@@ -291,9 +291,9 @@ id: h_descr
 0, 0x08,
 0, 0x88,
 0, 0x88
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id: j_descr
 0, 'j',
 0, 'J',
@@ -303,9 +303,9 @@ id: j_descr
 0, 0x0A,
 0, 0x8A,
 0, 0x8A,
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id:k_descr
 0, 'k',
 0, 'K',
@@ -315,9 +315,9 @@ id:k_descr
 0, 0x0B,
 0, 0x8B,
 0, 0x8B,
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id:key00_descr
 0, '^',
 0, '°',
@@ -327,24 +327,242 @@ id:key00_descr
 0, 0,
 0, 0,
 0, 0
-## end string
+## end deadkey
 
-## begin string
+## begin deadkey
 id:key0c_descr
 8, 0x71
 8, 0x72
 0, '=', 
 0, '+'
-## end string
+## end deadkey
 
-## begin string
-id: space_descr[] =
+## begin deadkey
+id: space_descr
 1, 0x4,
 0, 0xA0,
 ' ', '´', '`', '^', '~', '¨', '°',
 '´', '´', '^', '´', '´', '´', '´',
 '`', '^', '`', '`', '`', '`', '`'
+## end deadkey
+
+# standard descriptors ....
+
+## begin string
+# 42 TAB 
+id: tab_descr
+1,4,
+2,5,
+0x9,
+0x9B,'Z'
 ## end string
+
+## begin string
+# 47 INSERT ??
+id: insert_descr
+4,4,
+4,8,
+0x9B,'4','0','~',
+0x9B,'5','0','~'
+## end string
+
+## begin string
+# 48 PAGEUP ??
+id: pageup_descr
+4,4,
+4,8,
+0x9B,'4','1','~',
+0x9B,'5','1','~'
+## end string
+
+## begin string
+# 49 PAGEDOWN ??
+id: pagedown_descr
+4,4,
+4,8,
+0x9B,'4','2','~',
+0x9B,'5','2','~'
+## end string
+
+## begin string
+# 4C CURSOR UP
+id: up_descr
+2,4,
+2,6,
+0x9B,'A',
+0x9B,'T'
+## end string
+
+## begin string
+# 4D CURSOR DOWN
+id: down_descr
+2,4,
+2,6,
+0x9B,'B',
+0x9B,'S'
+## end string
+
+## begin string
+# 4E CURSOR RIGHT
+id: right_descr
+2,4,
+3,6,
+0x9B,'C',
+0x9B,' ','@'
+## end string
+
+## begin string
+# 4F CURSOR LEFT
+id: left_descr
+2,4,
+3,6,
+0x9B,'D',
+0x9B,' ','A'
+## end string
+
+## begin string
+# 50 F1
+id: f1_descr
+3,4,
+4,7,
+0x9B,'0','~',
+0x9B,'1','0','~'
+## end string
+
+## begin string
+# 51
+id: f2_descr
+3,4,
+4,7,
+0x9B,'1','~',
+0x9B,'1','1','~'
+## end string
+
+## begin string
+# 52
+id: f3_descr
+3,4,
+4,7,
+0x9B,'2','~',
+0x9B,'1','2','~'
+## end string
+
+## begin string
+# 53
+id: f4_descr
+3,4,
+4,7,
+0x9B,'3','~',
+0x9B,'1','3','~'
+## end string
+
+## begin string
+# 54
+id: f5_descr
+3,4,
+4,7,
+0x9B,'4','~',
+0x9B,'1','4','~'
+## end string
+
+## begin string
+# 55
+id: f6_descr
+3,4,
+4,7,
+0x9B,'5','~',
+0x9B,'1','5','~'
+## end string
+
+## begin string
+# 56
+id: f7_descr
+3,4,
+4,7,
+0x9B,'6','~',
+0x9B,'1','6','~'
+## end string
+
+## begin string
+# 57
+id: f8_descr
+3,4,
+4,7,
+0x9B,'7','~',
+0x9B,'1','7','~'
+## end string
+
+## begin string
+# 58
+id: f9_descr
+3,4,
+4,7,
+0x9B,'8','~',
+0x9B,'1','8','~'
+## end string
+
+## begin string
+# 59
+id: f10_descr
+3,4,
+4,7,
+0x9B,'9','~',
+0x9B,'1','9','~'
+## end string
+
+## begin string
+# 4B F11 ??
+id: f11_descr
+4,4,
+4,8,
+0x9B,'2','0','~',
+0x9B,'3','0','~'
+## end string
+
+## begin string
+# 6F F12 ??
+id: f12_descr
+4,4,
+4,8,
+0x9B,'2','1','~',
+0x9B,'3','1','~'
+## end string
+
+## begin string
+# 5F HELP
+id: help_descr
+3,2,
+0x9B,'?','~'
+## end string
+
+## begin string
+# 6E PAUSE/BREAK ??
+id: pausebreak_descr
+4,4,
+4,8,
+0x9B,'4','3','~',
+0x9B,'5','3','~'
+## end string
+
+## begin string
+# 70 HOME ??
+id: home_descr
+4,4,
+4,8,
+0x9B,'4','4','~',
+0x9B,'5','4','~'
+## end string
+
+## begin string
+# 71 END ??
+id: end_descr
+4,4,
+4,8,
+0x9B,'4','5','~',
+0x9B,'5','5','~'
+## end string
+
+# map tables ....
 
 ## begin lokeymap
 id:key00_descr

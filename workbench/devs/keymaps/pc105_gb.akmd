@@ -173,15 +173,6 @@ id: pagedown_descr
 ## end string
 
 ## begin string
-# 4B F11 ??
-id: f11_descr
-4,4,
-4,8,
-0x9B,'2','0','~',
-0x9B,'3','0','~'
-## end string
-
-## begin string
 # 4C CURSOR UP
 id: up_descr
 2,4,
@@ -308,6 +299,24 @@ id: f10_descr
 ## end string
 
 ## begin string
+# 4B F11 ??
+id: f11_descr
+4,4,
+4,8,
+0x9B,'2','0','~',
+0x9B,'3','0','~'
+## end string
+
+## begin string
+# 6F F12 ??
+id: f12_descr
+4,4,
+4,8,
+0x9B,'2','1','~',
+0x9B,'3','1','~'
+## end string
+
+## begin string
 # 5F HELP
 id: help_descr
 3,2,
@@ -321,15 +330,6 @@ id: pausebreak_descr
 4,8,
 0x9B,'4','3','~',
 0x9B,'5','3','~'
-## end string
-
-## begin string
-# 6F F12 ??
-id: f12_descr
-4,4,
-4,8,
-0x9B,'2','1','~',
-0x9B,'3','1','~'
 ## end string
 
 ## begin string
