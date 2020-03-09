@@ -54,7 +54,7 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
 
     keycode = ciaa->ciasdr;
 
-    ciaa->ciacra |= 0x40;
+    ciaa->ciacra |= CIACRAF_SPMODE;
     ReadEClock(&eclock1);
 
     keycode = ~((keycode >> 1) | (keycode << 7));
@@ -89,7 +89,7 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
     	    break;
     }
 
-    ciaa->ciacra &= ~0x40; // end handshake
+    ciaa->ciacra &= ~CIACRAF_SPMODE; // end handshake
 
     return 0;
 
@@ -169,6 +169,10 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     if (o)
     {
+	volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
+	struct Library *TimerBase;
+	struct EClockVal eclock1, eclock2;
+
 	struct Interrupt *inter = &XSD(cl)->kbint;
         struct kbd_data *data = OOP_INST_DATA(cl, o);
         
@@ -179,6 +183,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	if (OpenDevice("timer.device", UNIT_ECLOCK, (struct IORequest*)XSD(cl)->timerio, 0))
 	    Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);
 	XSD(cl)->TimerBase = data->TimerBase = (struct Library*)XSD(cl)->timerio->tr_node.io_Device;
+	TimerBase =  data->TimerBase;
 
 	if (!(XSD(cl)->ciares = OpenResource("ciaa.resource")))
 	    Alert(AT_DeadEnd | AG_OpenRes | AN_Unknown);
@@ -189,6 +194,23 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	inter->is_Node.ln_Name = "kbr";
 	inter->is_Code = (APTR)keyboard_interrupt;
 	inter->is_Data = data;
+
+	/* Send handshake to the Keyboard microcontroller in case it was left in the undefined state. This sets also
+	   the serial port of CIA as input */
+
+	/* Start handshake. Serial port as output pulls the line down */
+	ciaa->ciacra |= CIACRAF_SPMODE;
+	ReadEClock(&eclock1);
+
+	// busy wait until handshake pulse has been long enough
+	for (;;) {
+	    ReadEClock(&eclock2);
+	    if ((LONG)(eclock2.ev_lo - eclock1.ev_lo) >= 80)
+		break;
+	}
+
+	/* End handshake and set serial port as input. It will be pulled up */
+	ciaa->ciacra &= ~CIACRAF_SPMODE;
 	
 	if (AddICRVector(XSD(cl)->ciares, 3, inter))
 	    Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);	
