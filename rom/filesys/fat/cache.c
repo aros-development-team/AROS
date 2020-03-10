@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Disk cache.
@@ -109,7 +109,7 @@ APTR Cache_CreateCache(APTR priv, ULONG hash_size, ULONG block_count,
 
         c->blocks = AllocVec(sizeof(APTR) * block_count,
             MEMF_PUBLIC | MEMF_CLEAR);
-        if(c == NULL)
+        if(c->blocks == NULL)
             success = FALSE;
 
         for(i = 0; i < block_count && success; i++)
