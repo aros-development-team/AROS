@@ -516,10 +516,10 @@ BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorShape)
             switch (XSD(cl)->cursor_clut[y*16 + x])
             {
                 case 1:
-                    val |= pix & 0xffff;
+                    val |= pix & 0xffff0000;
                     break;
                 case 2:
-                    val |= pix & 0xffff0000;
+                    val |= pix & 0x0000ffff;
                     break;
                 case 3:
                     val |= pix;
