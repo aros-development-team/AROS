@@ -7,7 +7,9 @@ DEBUG_ACPI=no
 ACPICAPACKAGE      := acpica
 ACPICAVERSION      := 20190215
 ACPICAREPOSITORIES := \
-    https://acpica.org/sites/acpica/files https://sources.voidlinux.org/acpica-utils-$(ACPICAVERSION)
+    https://acpica.org/sites/acpica/files \
+    https://sources.voidlinux.org/acpica-utils-$(ACPICAVERSION) \
+    http://fabric-mirror.vps.hosteurope.de/gentoo/distfiles/ed
 ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)
 ACPICASRCDIR       := $(PORTSDIR)/acpica/$(ACPICAARCHBASE)
 
