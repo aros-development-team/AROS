@@ -429,6 +429,9 @@ BOOL METHOD(SAGAGfx, Hidd_Gfx, SetCursorPos)
 
         if (XSD(cl)->cursor_visible)
         {
+            x += XSD(cl)->hotX;
+            y += XSD(cl)->hotY;
+
             WRITE16(SAGA_VIDEO_SPRITEX, x);
             WRITE16(SAGA_VIDEO_SPRITEY, y);
         }
