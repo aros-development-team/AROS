@@ -10,7 +10,7 @@
 #include <dos/doshunks.h>
 #include <arpa/inet.h>
 
-#include "mkkeymap.h"
+#include "mkamikeymap.h"
 #include "debug.h"
 
 struct KeyMap_Hunk {

@@ -10,7 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "mkkeymap.h"
+#include "mkamikeymap.h"
 #include "debug.h"
 
 int main(int argc, char **argv)

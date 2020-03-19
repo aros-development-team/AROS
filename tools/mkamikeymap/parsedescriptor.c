@@ -15,7 +15,7 @@
 #include <limits.h>
 #include <ctype.h>
 
-#include "mkkeymap.h"
+#include "mkamikeymap.h"
 #include "debug.h"
 
 static unsigned int     slen = 0; /* The allocation length pointed to be line */
