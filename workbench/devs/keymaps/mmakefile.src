@@ -30,7 +30,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 
 $(AROS_DEVS)/Keymaps/% : $(SRCDIR)/$(CURDIR)/%.akmd
 	$(Q)$(ECHO) "Generating $(notdir $@) KeyMap..."
-	$(Q)$(MKKEYMAP) -d $< -k $@
+	$(Q)$(MKAMIKEYMAP) -d $< -k $@
 
 #MM workbench-devs-keymaps-setup
 %rule_makedirs dirs="$(AROS_DEVS)/Keymaps" setuptarget=workbench-devs-keymaps-setup
