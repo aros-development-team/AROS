@@ -9,20 +9,12 @@ $Id$
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
 
-#ifdef __AROS__
 #include <aros/debug.h>
 #include <clib/alib_protos.h>
-#else
-#include "../portable_macros.h"
-#define WANDERER_BUILTIN_ICONLISTVIEW 1
-#endif
 
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -32,23 +24,6 @@ $Id$
 #include "iconlist.h"
 #include "iconlistview.h"
 #include "iconlistview_private.h"
-
-#ifndef __AROS__
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-
-#define ScrollbuttonObject MUI_MakeObject(MUIO_Button, (IPTR)"scroll"
-
-#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -392,7 +367,6 @@ BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 }
 BOOPSI_DISPATCHER_END
 
-#ifdef __AROS__
 const struct __MUIBuiltinClass _MUI_IconListview_desc =
 {
     MUIC_IconListview, 
@@ -400,13 +374,5 @@ const struct __MUIBuiltinClass _MUI_IconListview_desc =
     sizeof(struct IconListview_DATA), 
     (void*)IconListview_Dispatcher 
 };
-#endif
 #endif /* ZUNE_BUILTIN_ICONLISTVIEW */
 
-#ifndef __AROS__
-struct MUI_CustomClass  *initIconListviewClass(void)
-{
-  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct IconListview_DATA), ENTRY(IconListview_Dispatcher));
-}
-
-#endif

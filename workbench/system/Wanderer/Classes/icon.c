@@ -3,13 +3,8 @@
     $Id$
 */
 
-#include "../portable_macros.h"
-#ifndef __AROS__
-#define WANDERER_BUILTIN_ICONLIST 1
-#else
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 #define DEBUG_ILC_EVENTS
 #define DEBUG_ILC_KEYEVENTS
@@ -39,13 +34,8 @@
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
 
-#ifdef __AROS__
 #include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
-#else
-#include <devices_AROS/rawkeycodes.h>
-#endif
-
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -56,26 +46,13 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
-#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
-#else
-#include <prefs_AROS/prefhdr.h>
-#include <prefs_AROS/wanderer.h>
-#endif
 
 #include <proto/cybergraphics.h>
 
-#ifdef __AROS__
 #include <cybergraphx/cybergraphics.h>
-#else
-#include <cybergraphx_AROS/cybergraphics.h>
-#endif
 
-
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
@@ -86,21 +63,6 @@
 #include "iconlist_attributes.h"
 
 #include "iconlistview.h"
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
 
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
 #define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
@@ -149,11 +111,7 @@ for                                                        \
 #ifdef AndRectRect
 /* Fine */
 #else
-#ifdef __AROS__
 #error "Implement AndRectRect (rom/graphics/andrectrect.c)"
-#else
-#warning "Implement AndRectRect (rom/graphics/andrectrect.c)"
-#endif
 #endif
 
 ///RectAndRect()
@@ -1503,11 +1461,7 @@ D(bug("[Icon] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, data
     data->icld__Option_LabelTextBorderWidth       = ILC_ICONLABEL_BORDERWIDTH_DEFAULT;
     data->icld__Option_LabelTextBorderHeight      = ILC_ICONLABEL_BORDERHEIGHT_DEFAULT;
     
-    #ifdef __AROS__
     ForeachNode(&data->icld_Icon, node)
-    #else
-    Foreach_Node(&data->icld_Icon, node);
-    #endif
     {
         if (!node->IcD_DiskObj)
         {
@@ -1717,11 +1671,7 @@ D(bug("[Icon] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PR
                 0);
 
             /* We could have deleted also other icons so they must be redrawn */
-            #ifdef __AROS__
-      ForeachNode(&data->icld_Icon, icon)
-      #else
-      Foreach_Node(&data->icld_Icon, icon);
-        #endif
+            ForeachNode(&data->icld_Icon, icon)
             {
                 if ((icon != data->update_icon) && (icon->IcD_Flags & ICONENTRY_FLAG_VISIBLE))
                 {
@@ -2070,11 +2020,8 @@ D(bug("[Icon] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __PRET
             obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
             clear_xoffset, clear_yoffset, 0
         );
-  #ifdef __AROS__
+
         ForeachNode(&data->icld_Icon, icon)
-  #else
-        Foreach_Node(&data->icld_Icon, icon);
-  #endif
         {
             if ((icon->IcD_Flags & ICONENTRY_FLAG_VISIBLE) &&
                 (icon->IcD_DiskObj) &&
@@ -2183,14 +2130,7 @@ IPTR Icon__MUIM_Icon_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_
 #if WANDERER_BUILTIN_ICONLIST
 BOOPSI_DISPATCHER(IPTR,Icon_Dispatcher, CLASS, obj, message)
 {
-    #ifdef __AROS__
     switch (message->MethodID)
-    #else
-    struct IClass *CLASS = cl;
-    Msg message = msg;
-
-    switch (msg->MethodID)
-    #endif
     {
         case OM_NEW:                            return Icon__OM_NEW(CLASS, obj, (struct opSet *)message);
         case OM_DISPOSE:                        return Icon__OM_DISPOSE(CLASS, obj, message);
@@ -2204,9 +2144,9 @@ BOOPSI_DISPATCHER(IPTR,Icon_Dispatcher, CLASS, obj, message)
         case MUIM_Cleanup:                      return Icon__MUIM_Cleanup(CLASS, obj, (struct MUIP_Cleanup *)message);
         case MUIM_AskMinMax:                    return Icon__MUIM_AskMinMax(CLASS, obj, (struct MUIP_AskMinMax *)message);
         case MUIM_Draw:                         return Icon__MUIM_Draw(CLASS, obj, (struct MUIP_Draw *)message);
-  #ifdef __AROS__
+
         case MUIM_Layout:                       return Icon__MUIM_Layout(CLASS, obj, (struct MUIP_Layout *)message);
-  #endif
+
         case MUIM_CreateDragImage:              return Icon__MUIM_CreateDragImage(CLASS, obj, (APTR)message);
         case MUIM_DeleteDragImage:              return Icon__MUIM_DeleteDragImage(CLASS, obj, (APTR)message);
 
@@ -2217,22 +2157,11 @@ BOOPSI_DISPATCHER(IPTR,Icon_Dispatcher, CLASS, obj, message)
     return DoSuperMethodA(CLASS, obj, message);
 }
 BOOPSI_DISPATCHER_END
-
-#ifdef __AROS__
-/* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_Icon_desc = { 
     MUIC_Icon, 
     MUIC_Area, 
     sizeof(struct Icon_DATA), 
     (void*)Icon_Dispatcher
 };
-#endif
-#endif
-
-#ifndef __AROS__
-struct MUI_CustomClass  *initIconClass(void)
-{
-  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct Icon_DATA), ENTRY(Icon_Dispatcher));
-}
 
 #endif

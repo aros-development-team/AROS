@@ -2,29 +2,17 @@
   Copyright  2004-2013, The AROS Development Team. All rights reserved.
   $Id$
 */
-
-#include "portable_macros.h"
-
-#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
-#endif
 
 #define WANDERER_MODULE_BACKFILL_ENABLED
 
-#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-#ifdef __AROS__
 #include <zune/customclasses.h>
-#else
-#include <zune_AROS/customclasses.h>
-#endif
-
 
 #include <proto/utility.h>
 
@@ -43,21 +31,12 @@
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
 
-#ifdef __AROS__
 #include <clib/alib_protos.h>
-#endif
 
 #include <graphics/scale.h>
 
-#ifdef __AROS__
 #include <prefs/wanderer.h>
-#else
-#include <prefs_AROS/wanderer.h>
-#endif
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
 #endif
@@ -71,22 +50,6 @@
 #include "Classes/iconlistview.h"
 #include "Classes/iconlist_attributes.h"
 
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
-
 /*** Global Data **********************************************************/
 
 static struct IconWindow_BackFill_Descriptor   image_backfill_descriptor;
@@ -99,11 +62,8 @@ static struct List                             image_backfill_images;
 static struct BackFillSourceImageRecord *ImageBackFill_FindSourceRecord(char *source_name, IPTR source_mode)
 {
   struct BackFillSourceImageRecord *source_record = NULL;
-  #ifdef __AROS__
+
   ForeachNode(&image_backfill_images, source_record)
-  #else
-  Foreach_Node(&image_backfill_images, source_record);
-  #endif
   {
     if ((strcmp(source_record->bfsir_SourceImage, source_name)==0) && (source_record->bfsir_BackGroundRenderMode == source_mode)) return source_record;
   }
@@ -116,11 +76,7 @@ static struct BackFillSourceImageBuffer *ImageBackFill_FindBufferRecord(struct B
 {
   struct BackFillSourceImageBuffer *buffer_record = NULL;
   
-  #ifdef __AROS__
   ForeachNode(&source_record->bfsir_Buffers, buffer_record)
-  #else
-  Foreach_Node(&source_record->bfsir_Buffers, buffer_record);
-  #endif
   {
     if ((buffer_record->bfsib_BitMapWidth == buffer_width) && (buffer_record->bfsib_BitMapHeight == buffer_height)) return buffer_record;
   }

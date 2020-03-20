@@ -116,13 +116,8 @@ struct IconWindow_DATA
     struct IconWindow_Panel_Data        iwd_LeftPanel;
     struct IconWindow_Panel_Data        iwd_BottomPanel;
 
-#ifdef __AROS__
     struct Hook                         iwd_PrefsUpdated_hook;
     struct Hook                         iwd_ProcessBackground_hook;
-#else
-    struct Hook                         *iwd_PrefsUpdated_hook;
-    struct Hook                         *iwd_ProcessBackground_hook;
-#endif
 
     struct Hook                         *iwd_ActionHook;
 
@@ -144,12 +139,7 @@ struct IconWindow_DATA
 
 #define SETUP_ICONWINDOW_INST_DATA       struct IconWindow_DATA *data = INST_DATA(CLASS, self)
 
-#ifdef __AROS__
 #define IconWindowObject                 BOOPSIOBJMACRO_START(IconWindow_CLASS->mcc_Class)
-#else
-#define IconWindowObject NewObject(IconWindow_CLASS->mcc_Class, NULL
-//#define IconWindowObject NewObject(IconWindow_Class->mcc_Class, NULL
-#endif
 
 struct iconWindow_Extension
 {

@@ -3,13 +3,8 @@
     $Id$
 */
 
-#ifndef __AROS__
-#include "../portable_macros.h"
-#define WANDERER_BUILTIN_ICONVOLUMELIST 1
-#else
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 #define DEBUG_ILC_EVENTS
 #define DEBUG_ILC_KEYEVENTS
@@ -37,10 +32,8 @@
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
 
-#ifdef __AROS__
 #include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
-#endif
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -51,26 +44,13 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
-#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
-#else
-#include <prefs_AROS/prefhdr.h>
-#include <prefs_AROS/wanderer.h>
-#endif
 
 #include <proto/cybergraphics.h>
 
-#ifdef __AROS__
 #include <cybergraphx/cybergraphics.h>
-#else
-#include <cybergraphx_AROS/cybergraphics.h>
-#endif
 
-
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
@@ -81,21 +61,6 @@
 #include "icon_attributes.h"
 #include "iconlist.h"
 #include "iconvolumelist_private.h"
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-#define D(x) if (DEBUG) x
-#ifdef __amigaos4__
-#define bug DebugPrintF
-#else
-#define bug kprintf
-#endif
-#else
-#define  D(...)
-#endif
-#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -760,10 +725,6 @@ IPTR IconVolumeList__OM_GET(struct IClass * CLASS, Object * obj,
 #if WANDERER_BUILTIN_ICONVOLUMELIST
 BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
 {
-#if !defined(__AROS__)
-    struct IClass *CLASS = cl;
-    Msg message = msg;
-#endif
     switch (message->MethodID)
     {
     case OM_NEW:
@@ -788,7 +749,6 @@ BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
 }
 
 BOOPSI_DISPATCHER_END
-#if defined(__AROS__)
     /* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconVolumeList_desc = {
     MUIC_IconVolumeList,
@@ -796,14 +756,4 @@ const struct __MUIBuiltinClass _MUI_IconVolumeList_desc = {
     sizeof(struct IconVolumeList_DATA),
     (void *)IconVolumeList_Dispatcher
 };
-#endif
-#else
-#if !defined(__AROS__)
-struct MUI_CustomClass *initIconVolumeListClass(void)
-{
-    return (struct MUI_CustomClass *)MUI_CreateCustomClass(NULL, NULL,
-        IconList_Class, sizeof(struct IconVolumeList_DATA),
-        ENTRY(IconVolumeList_Dispatcher));
-}
-#endif
 #endif /* WANDERER_BUILTIN_ICONVOLUMELIST */

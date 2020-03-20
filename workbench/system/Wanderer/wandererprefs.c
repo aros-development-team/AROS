@@ -5,24 +5,17 @@
 
 #define ZCC_QUIET
 
-#include "portable_macros.h"
-#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
-#endif
 
 #define IFF_CHUNK_BUFFER_SIZE 1024
 
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-#ifdef __AROS__
 #include <zune/customclasses.h>
-#else
-#include <zune_AROS/customclasses.h>
-#endif
 
 #include <proto/workbench.h>
 
@@ -30,15 +23,11 @@
 
 #include <proto/dos.h>
 
-#ifdef __AROS__
 #include <proto/alib.h>
-#endif
 
 #include <proto/iffparse.h>
 
-#ifdef __AROS__
 #include <proto/aros.h>
-#endif
 
 #include <aros/arosbase.h>
 #include <aros/inquire.h>
@@ -46,10 +35,6 @@
 #include <string.h>
 #include <stdio.h>
 
-
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
 #endif
@@ -65,29 +50,8 @@
 #include "locale.h"
 #include "version.h"
 
-#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
-#else
-#include <prefs_AROS/prefhdr.h>
-#include <prefs_AROS/wanderer.h>
-#endif
-
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
 
 static CONST_STRPTR     wandererPrefs_PrefsFile = "ENV:SYS/Wanderer/global.prefs";
 static CONST_STRPTR     wandererPrefs_FontsPrefsFile = "ENV:SYS/Font.prefs";
@@ -235,11 +199,7 @@ static
 struct Node *findname(struct List *list, CONST_STRPTR name)
 {
   struct Node *node;
-  #ifdef __AROS__
   ForeachNode(list, node)
-  #else
-  Foreach_Node(list, node);
-  #endif
   {
     if (!Stricmp(node->ln_Name, (STRPTR) name))
     {
@@ -294,12 +254,8 @@ D(bug("[Wanderer:Prefs] ProcessUserScreenTitle: EXTERN screentitle_TemplateLen =
         {
           struct Library *MyLibrary = NULL;
 
-        #ifdef __AROS__
           MyLibrary = (struct Library *)findname(&SysBase->LibList, "workbench.library");
           //workbench.library is just opened, what is the sense of this istruction?
-        #else
-          MyLibrary = WorkbenchBase;
-        #endif
 
           sprintf(infostr, "%ld.%ld",(long int) MyLibrary->lib_Version,(long int) MyLibrary->lib_Revision);
           found = TRUE;
@@ -587,7 +543,7 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
   struct TagItem *tstate = message->ops_AttrList;
   struct TagItem *tag;
   
-  while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
+  while ((tag = NextTagItem((struct TagItem **)&tstate)) != NULL)
   {
     switch (tag->ti_Tag)
     {
@@ -736,11 +692,7 @@ struct WandererPrefs_ViewSettingsNode *WandererPrefs_FindViewSettingsNode(struct
 {
   struct WandererPrefs_ViewSettingsNode *current_Node = NULL;
   
-  #ifdef __AROS__
   ForeachNode(&data->wpd_ViewSettings, current_Node)
-  #else
-  Foreach_Node(&data->wpd_ViewSettings, current_Node);
-  #endif
   {
     if ((strcmp(current_Node->wpbn_Name, node_Name)) == 0) return current_Node;
   }
@@ -772,11 +724,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk: Creating new no
 
     _viewSettings_Node->wpbn_Name = AllocVec(strlen(_viewSettings_ViewName) + 1, MEMF_CLEAR|MEMF_PUBLIC);
     strcpy(_viewSettings_Node->wpbn_Name, _viewSettings_ViewName);
-    #ifdef __AROS__
     _viewSettings_Node->wpbn_NotifyObject = (Object *)NotifyObject, End;
-    #else
-    _viewSettings_Node->wpbn_NotifyObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
-    #endif
 
     AddTail(&data->wpd_ViewSettings, &_viewSettings_Node->wpbn_Node);
   }
@@ -1026,11 +974,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotify
 
   current_Node->wpbn_Name = AllocVec(strlen(message->Background_Name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
   strcpy(current_Node->wpbn_Name, message->Background_Name);
-    #ifdef __AROS__
-    current_Node->wpbn_NotifyObject = (Object *)NotifyObject, End;
-    #else
-    current_Node->wpbn_NotifyObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
-    #endif
+  current_Node->wpbn_NotifyObject = (Object *)NotifyObject, End;
   AddTail(&data->wpd_ViewSettings, &current_Node->wpbn_Node);
 
 D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject: Notify Object @ 0x%p\n", current_Node->wpbn_NotifyObject));
