@@ -26,6 +26,7 @@ USER_INCLUDES += \
             -iquote $(top_srcdir)/$(CUR_MESADIR) \
             -iquote $(top_srcdir)/$(CUR_MESADIR)/util \
             -iquote $(top_srcdir)/$(CUR_MESADIR)/indices \
+            -iquote $(top_srcdir)/src/compiler/nir \
             -iquote $(top_builddir)/src/compiler/nir
 
 # disable necessary warnings

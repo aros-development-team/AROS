@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -54,7 +54,7 @@
             if (cur_ctx == st_ctx)
             {
                 /* Unbind if current */
-                _ctx->st->flush(_ctx->st, 0, NULL);
+                _ctx->st->flush(_ctx->st, 0, NULL, NULL, NULL);
                 glstapi->make_current(glstapi, NULL, NULL, NULL);
             }
 

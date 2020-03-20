@@ -18,7 +18,8 @@ USER_INCLUDES += \
             -iquote $(top_srcdir)/src/mesa \
             -iquote $(top_srcdir)/src/mapi \
             -iquote $(top_srcdir)/src/gallium/include \
-            -iquote $(top_srcdir)/src/gallium/auxiliary
+            -iquote $(top_srcdir)/src/gallium/auxiliary \
+            -iquote $(top_srcdir)/$(CUR_MESADIR)/format
 
 ifneq ($(mesa3dgl_ENTRYPOINTS),)
 MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
@@ -27,10 +28,10 @@ endif
 USER_CFLAGS += $(MESA_NOWARNFLAGS)
 USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
 
-$(top_builddir)/$(CUR_MESADIR)/format_srgb.c: $(top_srcdir)/$(CUR_MESADIR)/format_srgb.py
+$(top_builddir)/$(CUR_MESADIR)/%.c: $(top_srcdir)/$(CUR_MESADIR)/%.py $(top_srcdir)/$(CUR_MESADIR)/format/u_format.csv
 	%mkdir_q dir="$(dir $@)"
 	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
-	$(Q)$(PYTHON)  $< > $@
+	$(Q)$(PYTHON)  $^ > $@
 
 MESA_UTIL_C_FILES := $(filter %.c, $(MESA_UTIL_FILES))
 MESA_UTIL_CXX_FILES := $(filter %.cpp, $(MESA_UTIL_FILES))
