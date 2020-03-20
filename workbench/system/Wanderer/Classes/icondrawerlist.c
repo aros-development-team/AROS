@@ -3,13 +3,8 @@ Copyright  2002-2009, The AROS Development Team. All rights reserved.
 $Id$
 */
 
-#ifndef __AROS__
-#include "../portable_macros.h"
-#define WANDERER_BUILTIN_ICONDRAWERLIST 1
-#else
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 #define DEBUG_ILC_EVENTS
 #define DEBUG_ILC_KEYEVENTS
@@ -22,11 +17,7 @@ $Id$
 
 //#define CREATE_FULL_DRAGIMAGE
 
-#if !defined(__AROS__)
-#define DRAWICONSTATE DrawIconState
-#else
 #define DRAWICONSTATE DrawIconStateA
-#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -45,13 +36,8 @@ $Id$
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
 
-#ifdef __AROS__
 #include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
-#else
-#include <devices_AROS/rawkeycodes.h>
-#endif
-
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -62,25 +48,13 @@ $Id$
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
-#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
-#else
-#include <prefs_AROS/prefhdr.h>
-#include <prefs_AROS/wanderer.h>
-#endif
 
 #include <proto/cybergraphics.h>
 
-#ifdef __AROS__
 #include <cybergraphx/cybergraphics.h>
-#else
-#include <cybergraphx_AROS/cybergraphics.h>
-#endif
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -92,21 +66,6 @@ $Id$
 #include "icon_attributes.h"
 #include "iconlist.h"
 #include "icondrawerlist_private.h"
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -380,31 +339,19 @@ IPTR IconDrawerList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, str
 #if WANDERER_BUILTIN_ICONDRAWERLIST
 BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, CLASS, obj, message)
 {
-#ifdef __AROS__
     switch (message->MethodID)
-#else
-    struct IClass *CLASS = cl;
-    Msg message = msg;
-
-    switch (msg->MethodID)
-#endif
     {
         case OM_NEW: return IconDrawerList__OM_NEW(CLASS, obj, (struct opSet *)message);
         case OM_DISPOSE: return IconDrawerList__OM_DISPOSE(CLASS, obj, message);
         case OM_SET: return IconDrawerList__OM_SET(CLASS, obj, (struct opSet *)message);
         case OM_GET: return IconDrawerList__OM_GET(CLASS, obj, (struct opGet *)message);
 
-#ifdef __AROS__
         case MUIM_IconList_Update: return IconDrawerList__MUIM_Update(CLASS, obj, (APTR)message);
-#else
-        case MUIM_IconList_Update: return IconDrawerList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
-#endif
     }
     return DoSuperMethodA(CLASS, obj, message);
 }
 BOOPSI_DISPATCHER_END
 
-#ifdef __AROS__
 /* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = { 
     MUIC_IconDrawerList, 
@@ -412,13 +359,4 @@ const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = {
     sizeof(struct IconDrawerList_DATA), 
     (void*)IconDrawerList_Dispatcher 
 };
-#endif
-#endif
-
-#ifndef __AROS__
-struct MUI_CustomClass  *initIconDrawerListClass(void)
-{
-    return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL,  NULL, IconList_Class, sizeof(struct IconDrawerList_DATA), ENTRY(IconDrawerList_Dispatcher));
-}
-
 #endif

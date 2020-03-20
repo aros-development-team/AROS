@@ -5,14 +5,10 @@
 
 #define ZCC_QUIET
 
-#include "portable_macros.h"
-
-#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 #define WANDERER_DEFAULT_BACKDROP
 
@@ -20,19 +16,11 @@
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
 
-#ifdef __AROS__
 #include <zune/customclasses.h>
-#else
-#include <zune_AROS/customclasses.h>
-#endif
 
 #include <dos/notify.h>
 
-#ifdef __AROS__
 #include <workbench/handler.h>
-#else
-#include <workbench_AROS/handler.h>
-#endif
 
 #include <proto/graphics.h>
 #include <proto/utility.h>
@@ -41,31 +29,19 @@
 
 #include <proto/icon.h>
 
-#ifdef __AROS__
 #include <proto/workbench.h>
-#endif
 
 #include <proto/layers.h>
 
-#ifdef __AROS__
 #include <proto/alib.h>
-#endif
 
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
 
-
-#ifdef __AROS__
 #include <aros/detach.h>
 #include <prefs/wanderer.h>
-#else
-#include <prefs_AROS/wanderer.h>
-#endif
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
@@ -84,21 +60,6 @@
 #include "appobjects.h"
 
 #include "version.h"
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
 
 #ifndef NO_ICON_POSITION
 #define NO_ICON_POSITION                               (0x8000000) /* belongs to workbench/workbench.h */
@@ -121,15 +82,10 @@ static struct List      _WandererIntern_FSHandlerList;
 extern Object           *_WandererIntern_AppObj;
 extern Class            *_WandererIntern_CLASS;
 /* Internal Hooks */
-#ifdef __AROS__
 struct Hook             _WandererIntern_hook_standard;
 struct Hook             _WandererIntern_hook_action;
 struct Hook             _WandererIntern_hook_backdrop;
-#else
-struct Hook             *_WandererIntern_hook_standard;
-struct Hook             *_WandererIntern_hook_action;
-struct Hook             *_WandererIntern_hook_backdrop;
-#endif
+
 
 /*** Instance Data **********************************************************/
 struct Wanderer_DATA
@@ -166,8 +122,6 @@ const UBYTE     wand_backdropprefs[] = "SYS/Wanderer/backdrop.prefs";
 /**************************************************************************
 * HOOK FUNCS                                                              *
 **************************************************************************/
-///Wanderer__HookFunc_DisplayCopyFunc()
-#ifdef __AROS__
 AROS_UFH3
 (
     BOOL, Wanderer__HookFunc_DisplayCopyFunc,
@@ -176,10 +130,6 @@ AROS_UFH3
     AROS_UFHA(APTR, unused_param, A1)
 )
 {
-#else
-HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APTR unused_param)
-{
-#endif
     AROS_USERFUNC_INIT
 
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
@@ -280,13 +230,7 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
 
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_DisplayCopyFunc,Wanderer__HookFunc_DisplayCopyFunc);
-#endif
-///
 
-///Wanderer__HookFunc_AskModeFunc()
-#ifdef __AROS__
 AROS_UFH3
 (
     ULONG, Wanderer__HookFunc_AskModeFunc,
@@ -295,10 +239,6 @@ AROS_UFH3
     AROS_UFHA(APTR, unused_param, A1)
 )
 {
-#else
-HOOKPROTO(Wanderer__HookFunc_AskModeFunc, ULONG, struct dCopyStruct *obj, APTR unused_param)
-{
-#endif
     AROS_USERFUNC_INIT
 
     ULONG back = OPMODE_NONE;
@@ -354,12 +294,7 @@ HOOKPROTO(Wanderer__HookFunc_AskModeFunc, ULONG, struct dCopyStruct *obj, APTR u
 
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_AskModeFunc,Wanderer__HookFunc_AskModeFunc);
-#endif
-///
 
-///Wanderer__Func_CopyDropEntries()
 AROS_UFH3(void, Wanderer__Func_CopyDropEntries,
         AROS_UFHA(STRPTR,              argPtr, A0),
         AROS_UFHA(ULONG,               argSize, D0),
@@ -381,19 +316,12 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         opModes.deletemode = OPMODE_ASK;
         opModes.protectmode = OPMODE_ASK;
         opModes.overwritemode = OPMODE_ASK;
-#ifdef __AROS__
+
         struct Hook displayCopyHook;
         struct Hook displayAskHook;
         displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
         displayAskHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskModeFunc;
         opModes.askhook = &displayAskHook;
-#else
-        struct Hook *displayCopyHook;
-        struct Hook *displayAskHook;
-        displayCopyHook = &Hook_DisplayCopyFunc;
-        displayAskHook = &Hook_AskModeFunc;
-        opModes.askhook = displayAskHook;
-#endif
 
         if (CreateCopyDisplay(ACTION_COPY, &dobjects))
         {
@@ -430,10 +358,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     AROS_USERFUNC_EXIT
 }
-///
 
-///Wanderer__HookFunc_ActionFunc()
-#ifdef __AROS__
 AROS_UFH3
 (
     void, Wanderer__HookFunc_ActionFunc,
@@ -442,10 +367,6 @@ AROS_UFH3
     AROS_UFHA(struct IconWindow_ActionMsg *, msg, A1)
 )
 {
-#else
-HOOKPROTO(Wanderer__HookFunc_ActionFunc, void, Object *obj, struct IconWindow_ActionMsg *msg)
-{
-#endif
     AROS_USERFUNC_INIT
 
 D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
@@ -793,13 +714,7 @@ D(bug("[Wanderer] %s: win:<%s> first file:<%s> mx=%d my=%d\n", __PRETTY_FUNCTION
 
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_ActionFunc,Wanderer__HookFunc_ActionFunc);
-#endif
-///
 
-///Wanderer__HookFunc_StandardFunc()
-#ifdef __AROS__
 AROS_UFH3
 (
     void, Wanderer__HookFunc_StandardFunc,
@@ -808,10 +723,6 @@ AROS_UFH3
     AROS_UFHA(void **, funcptr, A1)
 )
 {
-#else
-HOOKPROTO(Wanderer__HookFunc_StandardFunc, void, void *dummy, void **funcptr)
-{
-#endif
     AROS_USERFUNC_INIT
 
     void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
@@ -819,13 +730,7 @@ HOOKPROTO(Wanderer__HookFunc_StandardFunc, void, void *dummy, void **funcptr)
 
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_StandardFunc,Wanderer__HookFunc_StandardFunc);
-#endif
-///
 
-///Wanderer__HookFunc_BackdropFunc()
-#ifdef __AROS__
 AROS_UFH3
 (
     void, Wanderer__HookFunc_BackdropFunc,
@@ -834,10 +739,6 @@ AROS_UFH3
     AROS_UFHA(void **, funcptr, A1)
 )
 {
-#else
-HOOKPROTO(Wanderer__HookFunc_BackdropFunc, void, void *dummy, void **funcptr)
-{
-#endif
     AROS_USERFUNC_INIT
 
     struct Wanderer_DATA *data = INST_DATA(_WandererIntern_CLASS, _WandererIntern_AppObj);
@@ -920,12 +821,7 @@ D(bug("[Wanderer] %s: Making Workbench window visable..\n", __PRETTY_FUNCTION__)
     }
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_BackdropFunc,Wanderer__HookFunc_BackdropFunc);
-#endif
-///
-/******** code from workbench/c/Info.c *******************/
-///fmtlarge()
+
 static void fmtlarge(UBYTE *buf, IPTR num)
 {
     UQUAD d;
@@ -2878,11 +2774,8 @@ void wanderer_menufunc_wanderer_about(Object **pwand)
             End,
         End;
 
-#ifdef __AROS__
         DoMethod(_app(self), OM_ADDMEMBER, (IPTR) data->wd_AboutWindow);
-#else
-        DoMethod(self, OM_ADDMEMBER, (IPTR) data->wd_AboutWindow);
-#endif
+
         DoMethod
         (
             data->wd_AboutWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
@@ -3275,8 +3168,6 @@ VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
     }
 }
 
-///Wanderer__HookFunc_UpdateMenuStatesFunc()
-#ifdef __AROS__
 AROS_UFH3
 (
     ULONG, Wanderer__HookFunc_UpdateMenuStatesFunc,
@@ -3285,10 +3176,6 @@ AROS_UFH3
     AROS_UFHA(APTR,             param,  A1)
 )
 {
-#else
-HOOKPROTO(Wanderer__HookFunc_UpdateMenuStatesFunc, ULONG, struct dCopyStruct *obj, APTR param)
-{
-#endif
     AROS_USERFUNC_INIT
 
     __unused Object        *self = ( Object *)obj;
@@ -3359,15 +3246,9 @@ D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererInte
         }
 
         /*-- Setup hooks structures ----------------------------------------*/
-#ifdef __AROS__
         _WandererIntern_hook_standard.h_Entry = (HOOKFUNC) Wanderer__HookFunc_StandardFunc;
         _WandererIntern_hook_action.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_ActionFunc;
         _WandererIntern_hook_backdrop.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_BackdropFunc;
-#else
-        _WandererIntern_hook_standard = &Hook_StandardFunc;
-        _WandererIntern_hook_action   = &Hook_ActionFunc;
-        _WandererIntern_hook_backdrop   = &Hook_BackdropFunc;
-#endif
 
         // ---
         if ((data->wd_CommandPort = CreateMsgPort()) == NULL)
@@ -3417,13 +3298,10 @@ D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererInte
 
         // All the following should be moved to InitWandererPrefs
 
-#ifdef __AROS__
         data->wd_Prefs = (Object *)WandererPrefsObject,
                                         MUIA_Wanderer_FileSysNotifyPort, (IPTR)data->wd_NotifyPort,
                                     End; // FIXME: error handling
-#else
-        data->wd_Prefs = NewObject(WandererPrefs_CLASS->mcc_Class, NULL, TAG_DONE); // FIXME: error handling
-#endif
+
 
         if (data->wd_Prefs)
         {
@@ -3474,7 +3352,7 @@ IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     SETUP_WANDERER_INST_DATA;
     struct TagItem *tstate = message->ops_AttrList, *tag;
 
-    while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
+    while ((tag = NextTagItem((struct TagItem **)&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
@@ -3588,24 +3466,10 @@ D(bug("[Wanderer] %s: Workbench Window Obj @ %x\n", __PRETTY_FUNCTION__, data->w
 
         Detach();
 
-#ifdef __AROS__
 D(bug("[Wanderer] %s: Really handing control to Zune ..\n", __PRETTY_FUNCTION__));
 
         DoSuperMethodA(CLASS, self, message);
-#else
-        {
-            IPTR sigs = 0;
-            while (DoMethod(self,MUIM_Application_NewInput,&sigs) != MUIV_Application_ReturnID_Quit)
-            {
-                if (sigs)
-                {
-                    sigs = Wait(sigs | SIGBREAKF_CTRL_C);
-                    if (sigs & SIGBREAKF_CTRL_C) break;
-                }
-            }
-            return 0;
-        }
-#endif
+
         return RETURN_OK;
     }
     
@@ -3613,11 +3477,8 @@ D(bug("[Wanderer] %s: Really handing control to Zune ..\n", __PRETTY_FUNCTION__)
     
     return RETURN_ERROR;
 }
-///
 
-///Wanderer__MUIM_Wanderer_HandleTimer()
 /*This function uses GetScreenTitle() function...*/
-
 IPTR Wanderer__MUIM_Wanderer_HandleTimer
 (
     Class *CLASS, Object *self, Msg message
@@ -3694,11 +3555,7 @@ D(bug("[Wanderer] %s: Couldnt Lock WB Screen!!\n", __PRETTY_FUNCTION__));
 D(bug("[Wanderer] %s: WBHM_TYPE_HIDE\n", __PRETTY_FUNCTION__));
                 pub_screen_list = LockPubScreenList();
 
-#ifdef __AROS__
                 ForeachNode (pub_screen_list, pub_screen_node)
-#else
-                Foreach_Node(pub_screen_list, pub_screen_node);
-#endif
                 {
                     if (pub_screen_node->psn_Screen == data->wd_Screen)
                         visitor_count = pub_screen_node->psn_VisitorCount;
@@ -3886,11 +3743,9 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       _(MSG_MEN_BACKDROP),    _(MSG_MEN_SC_BACKDROP)  , _NewWandIntMenu__OPTION_BACKDROP      , 0, (APTR) MEN_WANDERER_BACKDROP },
                 {NM_ITEM,       _(MSG_MEN_EXECUTE),     _(MSG_MEN_SC_EXECUTE)   , 0                                     , 0, (APTR) MEN_WANDERER_EXECUTE },
                 {NM_ITEM,       _(MSG_MEN_SHELL),       _(MSG_MEN_SC_SHELL)     , 0                                     , 0, (APTR) MEN_WANDERER_SHELL },
-#if defined(__AROS__)
                 {NM_ITEM,       "AROS" },
                     {NM_SUB,    _(MSG_MEN_ABOUT),       NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_AROS_ABOUT },
                     {NM_SUB,    _(MSG_MEN_GUISET),      NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS },
-#endif
                 {NM_ITEM,       _(MSG_MEN_ABOUT),       NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_ABOUT },
                 {NM_ITEM,       _(MSG_MEN_QUIT) ,       _(MSG_MEN_SC_QUIT)      , 0                                     , 0, (APTR) MEN_WANDERER_QUIT },
                 {NM_ITEM,       _(MSG_MEN_SHUTDOWN),    NULL                    , 0                                        , 0, (APTR) MEN_WANDERER_SHUTDOWN },
@@ -3947,11 +3802,9 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       _(MSG_MEN_BACKDROP),    _(MSG_MEN_SC_BACKDROP)  , _NewWandIntMenu__OPTION_BACKDROP      , 0, (APTR) MEN_WANDERER_BACKDROP },
                 {NM_ITEM,       _(MSG_MEN_EXECUTE),     _(MSG_MEN_SC_EXECUTE)   , 0                                     , 0, (APTR) MEN_WANDERER_EXECUTE },
                 {NM_ITEM,       _(MSG_MEN_SHELL),       _(MSG_MEN_SC_SHELL)     , 0                                     , 0, (APTR) MEN_WANDERER_SHELL },
-#if defined(__AROS__)
                 {NM_ITEM,       "AROS" },
                     {NM_SUB,    _(MSG_MEN_ABOUT),       NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_AROS_ABOUT },
                     {NM_SUB,    _(MSG_MEN_GUISET),      NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS },
-#endif
                 {NM_ITEM,       _(MSG_MEN_ABOUT),       NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_ABOUT },
                 {NM_ITEM,       _(MSG_MEN_QUIT) ,       _(MSG_MEN_SC_QUIT)      , 0                                     , 0, (APTR) MEN_WANDERER_QUIT },
                 {NM_ITEM,       _(MSG_MEN_SHUTDOWN),    NULL                        , 0                                        , 0, (APTR) MEN_WANDERER_SHUTDOWN },
@@ -4047,7 +3900,6 @@ D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen
     _NewWandDrawerMenu__menustrip = Wanderer__Func_CreateWandererIntuitionMenu (isWorkbenchWindow, useBackdrop);
 
     /* Create a new icon drawer window with the correct drawer being set */
-#ifdef __AROS__ 
     window = (Object *)IconWindowObject,
                 MUIA_UserData,                      1,
                 MUIA_Wanderer_Prefs,                  (IPTR)data->wd_Prefs,
@@ -4062,22 +3914,6 @@ D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen
                 isWorkbenchWindow ? TAG_IGNORE : MUIA_Wanderer_FileSysNotifyList, (IPTR)&_WandererIntern_FSHandlerList,
                 MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
              End;
-#else
-     window = NewObject(IconWindow_CLASS->mcc_Class, NULL,
-                MUIA_UserData,                      1,
-                MUIA_Wanderer_Prefs,                  data->wd_Prefs,
-                MUIA_Wanderer_Screen,                 data->wd_Screen,
-                MUIA_Window_ScreenTitle,              GetUserScreenTitle(data->wd_Prefs),
-                MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
-                TAG_IconWindow_Drawer,                (IPTR) message->drawer,
-                MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
-                MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
-                isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
-                MUIA_Wanderer_FileSysNotifyPort, data->wd_NotifyPort,
-                isWorkbenchWindow ? TAG_IGNORE : MUIA_Wanderer_FileSysNotifyList, (IPTR)&_WandererIntern_FSHandlerList,
-                MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
-             TAG_DONE);
-#endif
 
     if (data->wd_Screen)
     {
@@ -4166,11 +4002,8 @@ D(bug("[Wanderer] %s: execute all notifies\n", __PRETTY_FUNCTION__));
 
 D(bug("[Wanderer] %s: add window to app\n", __PRETTY_FUNCTION__));
         /* Add the window to the application */
-#ifdef __AROS__
         DoMethod(_app(self), OM_ADDMEMBER, (IPTR) window);
-#else
-        DoMethod(self, OM_ADDMEMBER, (IPTR) window);
-#endif
+
 D(bug("[Wanderer] %s: open window\n", __PRETTY_FUNCTION__));
         /* And now open it */
         DoMethod(window, MUIM_IconWindow_Open);

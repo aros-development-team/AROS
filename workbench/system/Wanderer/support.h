@@ -7,9 +7,7 @@
 */
 
 #include <exec/types.h>
-#ifdef __AROS__
 #include <dos/bptr.h>
-#endif
 
 /*** Prototypes *************************************************************/
 BOOL ReadLine(BPTR fh, STRPTR buffer, ULONG size);

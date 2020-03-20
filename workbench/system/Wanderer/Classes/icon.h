@@ -58,10 +58,6 @@ struct MUIP_Icon_GetIconPrivate     {STACKED ULONG MethodID; STACKED struct Icon
 
 extern const struct __MUIBuiltinClass _MUI_Icon_desc; /* PRIV */
 
-#ifdef __AROS__
 #define IconObject       MUIOBJMACRO_START(MUIC_Icon)
-#else
-#define IconObject         NewObject(Icon_Class->mcc_Class, NULL
-#endif
 
 #endif /* _WANDERER_CLASSES_ICON_H */

@@ -5,28 +5,17 @@
 
 #define ZCC_QUIET
 
-#include "portable_macros.h"
-
-#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
-#endif
 
 #define TXTBUFF_LEN 1024
 
-#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-#ifdef __AROS__
 #include <zune/customclasses.h>
-#else
-#include <zune_AROS/customclasses.h>
-#endif
-
 
 #include <proto/utility.h>
 
@@ -45,9 +34,6 @@
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
 #endif
@@ -61,22 +47,6 @@
 #include "wandererprefs.h"
 #include "iconwindow.h"
 #include "iconwindow_iconlist.h"
-
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
 
 extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
@@ -94,11 +64,7 @@ struct IconWindowDrawerList_DATA
     Object                      *iwidld_IconWindow;
     struct RastPort             *iwidld_RastPort;
     struct MUI_EventHandlerNode iwidld_EventHandlerNode;
-#ifdef __AROS__
     struct Hook                 iwidld_ProcessIconListPrefs_hook;
-#else
-    struct Hook                 *iwidld_ProcessIconListPrefs_hook;
-#endif
 
     IPTR                        iwidld_ViewPrefs_ID;
     Object                      *iwidld_ViewPrefs_NotificationObject;
@@ -117,7 +83,6 @@ struct IconWindowDrawerList_DATA
 
 /*** Hook functions *********************************************************/
 ///IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc()
-#ifdef __AROS__
 AROS_UFH3(
     void, IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc,
     AROS_UFHA(struct Hook *,    hook,   A0),
@@ -125,10 +90,6 @@ AROS_UFH3(
     AROS_UFHA(IPTR *,             param,  A1)
 )
 {
-#else
-HOOKPROTO(IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc, void, APTR *obj, IPTR *param)
-{
-#endif
     AROS_USERFUNC_INIT
 
     /* Get our private data */
@@ -232,9 +193,6 @@ HOOKPROTO(IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
     }
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_ProcessIconListPrefsFunc, IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc);
-#endif
 ///
 
 ///
@@ -260,11 +218,7 @@ Object *IconWindowDrawerList__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         SETUP_INST_DATA;
         D(bug("[Wanderer:DrawerList] %s: SELF @ 0x%p\n", __PRETTY_FUNCTION__, self));
 
-#ifdef __AROS__
         data->iwidld_ProcessIconListPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc;
-#else
-        data->iwidld_ProcessIconListPrefs_hook = &Hook_ProcessIconListPrefsFunc;
-#endif
 
         if (_newIconList__FSNotifyPort != 0)
         {
@@ -689,7 +643,6 @@ IPTR IconWindowDrawerList__MUIM_IconWindowIconList_RateLimitRefresh
 ///
 
 /*** Setup ******************************************************************/
-#ifdef __AROS__
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
 (
     IconWindowDrawerList, NULL, MUIC_IconDrawerList, NULL,
@@ -702,17 +655,3 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     MUIM_IconWindowDrawerList_FileSystemChanged,    Msg,
     MUIM_IconWindowIconList_RateLimitRefresh,       Msg
 );
-#else
-ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
-(
-    IconWindowDrawerList, NULL,  NULL, IconDrawerList_Class,
-    OM_NEW,                                         struct opSet *,
-    OM_SET,                                         struct opSet *,
-    OM_GET,                                         struct opGet *,
-    MUIM_Setup,                                     Msg,
-    MUIM_Cleanup,                                   Msg,
-    MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
-    MUIM_IconWindowDrawerList_FileSystemChanged,    Msg,
-    MUIM_IconWindowIconList_RateLimitRefresh,       Msg
-);
-#endif

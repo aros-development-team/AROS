@@ -3,13 +3,8 @@
     $Id$
 */
 
-#include "../portable_macros.h"
-#if !defined(__AROS__)
-#define WANDERER_BUILTIN_ICONLIST 1
-#else
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 //#define DEBUG_ILC_FUNCS
 //#define DEBUG_ILC_ATTRIBS
@@ -43,12 +38,8 @@
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
 
-#if defined(__AROS__)
 #include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
-#else
-#include <devices_AROS/rawkeycodes.h>
-#endif
 
 
 #include <proto/exec.h>
@@ -60,26 +51,13 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
-#if defined(__AROS__)
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
-#else
-#include <prefs_AROS/prefhdr.h>
-#include <prefs_AROS/wanderer.h>
-#endif
 
 #include <proto/cybergraphics.h>
 
-#if defined(__AROS__)
 #include <cybergraphx/cybergraphics.h>
-#else
-#include <cybergraphx_AROS/cybergraphics.h>
-#endif
 
-
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
@@ -88,21 +66,6 @@
 #include "iconlist.h"
 #include "iconlist_private.h"
 #include "iconlistview.h"
-
-#if !defined(__AROS__)
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
 
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
 #define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
@@ -768,11 +731,7 @@ static void NullifyLasso(struct IconList_DATA *data, Object *obj)
     data->icld_LassoActive = FALSE;
 
     /* Remove Lasso flag from affected icons.. */
-#if defined(__AROS__)
     ForeachNode(&data->icld_IconList, node)
-#else
-    Foreach_Node(&data->icld_IconList, node);
-#endif
     {
         if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
         {
@@ -1358,11 +1317,8 @@ AROS_UFH3(
         (data->icld__Option_LabelTextMultiLine != data->icld__Option_LastLabelTextMultiLine))
     {
         struct IconEntry *iconentry_Current = NULL;
-#if defined(__AROS__)
+
         ForeachNode(&data->icld_IconList, iconentry_Current)
-#else
-        Foreach_Node(&data->icld_IconList, iconentry_Current);
-#endif
         {
             IconList__LabelFunc_CreateLabel((Object *)obj, data, iconentry_Current);
         }
@@ -2326,11 +2282,7 @@ IPTR IconList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-#if defined(__AROS__)
     ForeachNode(&data->icld_IconList, node)
-#else
-    Foreach_Node(&data->icld_IconList, node);
-#endif
     {
         if (node->ie_DiskObj)
             FreeDiskObject(node->ie_DiskObj);
@@ -2363,7 +2315,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 #endif
 
     /* parse initial taglist */
-    for (tags = message->ops_AttrList; (tag = NextTagItem((TAGITEM)&tags)); )
+    for (tags = message->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
         switch (tag->ti_Tag)
         {
@@ -3162,11 +3114,7 @@ IPTR IconList__MUIM_Cleanup(struct IClass *CLASS, Object *obj, struct MUIP_Clean
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-#if defined(__AROS__)
     ForeachNode(&data->icld_IconList, node)
-#else
-    Foreach_Node(&data->icld_IconList, node);
-#endif
     {
         if (node->ie_DiskObj)
         {
@@ -3636,11 +3584,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
                     0);
 
                 /* We could have deleted also other icons so they must be redrawn */
-#if defined(__AROS__)
                 ForeachNode(&data->icld_IconList, entry)
-#else
-                Foreach_Node(&data->icld_IconList, entry);
-#endif
                 {
                     if ((entry != data->update_entry) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
                     {
@@ -4081,11 +4025,8 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
             obj, MUIM_DrawBackground, viewrect.MinX, viewrect.MinY, (viewrect.MaxX - viewrect.MinX) + 1, (viewrect.MaxY - viewrect.MinY) + 1,
             clear_xoffset, clear_yoffset, 0
         );
-#if defined(__AROS__)
+
         ForeachNode(&data->icld_IconList, entry)
-#else
-        Foreach_Node(&data->icld_IconList, entry);
-#endif
         {
             if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
             {
@@ -4766,11 +4707,8 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
     }
 
     /* Deselection lopp */
-#if defined(__AROS__)
+
     ForeachNode(&data->icld_IconList, node)
-#else
-    Foreach_Node(&data->icld_IconList, node);
-#endif
     {
         if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
         {
@@ -6023,11 +5961,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             struct Rectangle     rect;
 
                             /* Check if clicked on entry */
-#if defined(__AROS__)
+
                             ForeachNode(&data->icld_IconList, node)
-#else
-                            Foreach_Node(&data->icld_IconList, node);
-#endif
                             {
                                 if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                                 {
@@ -6293,11 +6228,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             endIndex = ((maxY - 1) - data->icld_LVMAttribs->lmva_HeaderHeight) / data->icld_LVMAttribs->lmva_RowHeight;
                         }
 
-#if defined(__AROS__)
                         ForeachNode(&data->icld_IconList, node)
-#else
-                        Foreach_Node(&data->icld_IconList, node);
-#endif
                         {
                             IPTR update_entry = (IPTR)NULL;
 
@@ -6584,11 +6515,8 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         struct IconEntry *entry = NULL;
 
 #if defined(CREATE_FULL_DRAGIMAGE)
-#if defined(__AROS__)
+
         ForeachNode(&data->icld_SelectionList, node)
-#else
-        Foreach_Node(&data->icld_SelectionList, node);
-#endif
         {
             entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
             if ((entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) && (entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
@@ -6880,11 +6808,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         /* go through list and check if dropped on entry */
         int rowCount = 0;
 
-#if defined(__AROS__)
         ForeachNode(&data->icld_IconList, node)
-#else
-        Foreach_Node(&data->icld_IconList, node);
-#endif
         {
             if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
             {
@@ -7155,11 +7079,8 @@ IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg 
 
     data->icld_SelectionLastClicked = NULL;
     data->icld_FocusIcon = NULL;
-#if defined(__AROS__)
+
     ForeachNodeSafe(&data->icld_SelectionList, node, next_node)
-#else
-    Foreach_NodeSafe(&data->icld_SelectionList, node, next_node);
-#endif
     {
         struct IconEntry    *entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
         BOOL                update_entry = FALSE;
@@ -7336,11 +7257,7 @@ IPTR IconList__MUIM_IconList_CoordsSort(struct IClass *CLASS, Object *obj, struc
     }
 
 #if defined(DEBUG_ILC_ICONSORTING_DUMP)
-#if defined(__AROS__)
     ForeachNode(&data->icld_IconList, entry)
-#else   
-    Foreach_Node(&data->icld_IconList, entry);
-#endif
     {
         D(bug("[IconList] %s: %d   %d   '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconX, entry->ie_IconY, entry->ie_IconListEntry.label));
     }
@@ -7680,14 +7597,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #if defined(WANDERER_BUILTIN_ICONLIST)
 BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 {
-#if defined(__AROS__)
     switch (message->MethodID)
-#else
-    struct IClass *CLASS = cl;
-    Msg message = msg;
-
-    switch (msg->MethodID)
-#endif
     {
         case OM_NEW:                            return IconList__OM_NEW(CLASS, obj, (struct opSet *)message);
         case OM_DISPOSE:                        return IconList__OM_DISPOSE(CLASS, obj, message);
@@ -7706,18 +7616,14 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_Cleanup:                      return IconList__MUIM_Cleanup(CLASS, obj, (struct MUIP_Cleanup *)message);
         case MUIM_AskMinMax:                    return IconList__MUIM_AskMinMax(CLASS, obj, (struct MUIP_AskMinMax *)message);
         case MUIM_Draw:                         return IconList__MUIM_Draw(CLASS, obj, (struct MUIP_Draw *)message);
-#if defined(__AROS__)
         case MUIM_Layout:                       return IconList__MUIM_Layout(CLASS, obj, (struct MUIP_Layout *)message);
-#endif
         case MUIM_HandleEvent:                  return IconList__MUIM_HandleEvent(CLASS, obj, (struct MUIP_HandleEvent *)message);
         case MUIM_CreateDragImage:              return IconList__MUIM_CreateDragImage(CLASS, obj, (APTR)message);
         case MUIM_DeleteDragImage:              return IconList__MUIM_DeleteDragImage(CLASS, obj, (APTR)message);
         case MUIM_DragQuery:                    return IconList__MUIM_DragQuery(CLASS, obj, (APTR)message);
         case MUIM_DragReport:                   return IconList__MUIM_DragReport(CLASS, obj, (APTR)message);
         case MUIM_DragDrop:                     return IconList__MUIM_DragDrop(CLASS, obj, (APTR)message);
-#if defined(__AROS__)
         case MUIM_UnknownDropDestination:       return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
-#endif
         case MUIM_IconList_Update:              return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
         case MUIM_IconList_Clear:               return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
         case MUIM_IconList_RethinkDimensions:   return IconList__MUIM_IconList_RethinkDimensions(CLASS, obj, (APTR)message);
@@ -7740,7 +7646,6 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 }
 BOOPSI_DISPATCHER_END
 
-#if defined(__AROS__)
 /* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconList_desc = { 
     MUIC_IconList, 
@@ -7748,12 +7653,4 @@ const struct __MUIBuiltinClass _MUI_IconList_desc = {
     sizeof(struct IconList_DATA), 
     (void*)IconList_Dispatcher
 };
-#endif
 #endif /* WANDERER_BUILTIN_ICONLIST */
-
-#if !defined(__AROS__)
-struct MUI_CustomClass  *initIconListClass(void)
-{
-    return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct IconList_DATA), ENTRY(IconList_Dispatcher));
-}
-#endif

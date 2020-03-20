@@ -5,30 +5,19 @@
 
 #define ZCC_QUIET
 
-#include "portable_macros.h"
-
-#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
-#endif
 
 //#define DEBUG_NETWORKBROWSER
 //#define DEBUG_SHOWUSERFILES
 #define TXTBUFF_LEN 1024
 
-#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
-#endif
 
 #include <exec/types.h>
 #include <libraries/mui.h>
 
-#ifdef __AROS__
 #include <zune/customclasses.h>
-#else
-#include <zune_AROS/customclasses.h>
-#endif
-
 
 #include <proto/utility.h>
 
@@ -47,9 +36,6 @@
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
 #endif
@@ -65,21 +51,6 @@
 #include "iconwindow_iconlist.h"
 #include "appobjects.h"
 
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
-
 extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
 #define WIWVLVERS       1
@@ -94,19 +65,11 @@ struct IconWindowVolumeList_DATA
     Object                      *iwcd_IconWindow;
     struct RastPort             *iwcd_RastPort;
     struct MUI_EventHandlerNode iwcd_EventHandlerNode;
-#ifdef __AROS__
     struct Hook                 iwcd_ProcessIconListPrefs_hook;
-#else
-    struct Hook                 *iwcd_ProcessIconListPrefs_hook;
-#endif
 
     IPTR                        iwcd_ViewPrefs_ID;
     Object                      *iwcd_ViewPrefs_NotificationObject;
-#ifdef __AROS__
     struct Hook                 iwvcd_UpdateNetworkPrefs_hook;
-#else
-    struct Hook                 *iwvcd_UpdateNetworkPrefs_hook;
-#endif
 
     IPTR                        iwvcd_ShowNetworkBrowser;
     IPTR                        iwvcd_ShowUserFolder;
@@ -122,7 +85,6 @@ static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
 
 /*** Hook functions *********************************************************/
 ///IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc()
-#ifdef __AROS__
 AROS_UFH3(
     void, IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc,
     AROS_UFHA(struct Hook *,    hook,   A0),
@@ -130,10 +92,6 @@ AROS_UFH3(
     AROS_UFHA(IPTR *,             param,  A1)
 )
 {
-#else
-HOOKPROTO(IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc, void, APTR *obj, IPTR *param)
-{
-#endif
     AROS_USERFUNC_INIT
 
     /* Get our private data */
@@ -213,13 +171,9 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
     }
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_ProcessIconListPrefsFunc,IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc);
-#endif
 ///
 
 ///IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc()
-#ifdef __AROS__
 AROS_UFH3(
     void, IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc,
     AROS_UFHA(struct Hook *,    hook,   A0),
@@ -227,10 +181,6 @@ AROS_UFH3(
     AROS_UFHA(APTR,             param,  A1)
 )
 {
-#else
-HOOKPROTO(IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc, void, APTR *obj, APTR param)
-{
-#endif
     AROS_USERFUNC_INIT
 
     /* Get our private data */
@@ -283,9 +233,6 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc, void, APTR *obj
     }
     AROS_USERFUNC_EXIT
 }
-#ifndef __AROS__
-MakeStaticHook(Hook_UpdateNetworkPrefsFunc,IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc);
-#endif
 
 #define BDRPLINELEN_MAX 1024
 BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bdrp_direntry, struct List* entryList)
@@ -442,11 +389,8 @@ Object *IconWindowVolumeList__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 
         data->iwvcd_FSNotifyPort = (struct MsgPort *)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
 
-#ifdef __AROS__
         data->iwcd_ProcessIconListPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc;
-#else
-        data->iwcd_ProcessIconListPrefs_hook = &Hook_ProcessIconListPrefsFunc;
-#endif
+
     }
 
     return self;
@@ -584,11 +528,7 @@ IPTR IconWindowVolumeList__MUIM_Setup
   
     if (prefs)
     {
-#ifdef __AROS__
         ((struct IconWindowVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowVolumeList__HookFunc_UpdateNetworkPrefsFunc;
-#else
-        ((struct IconWindowVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook = &Hook_UpdateNetworkPrefsFunc;
-#endif
 
         DoMethod
           (
@@ -1295,7 +1235,6 @@ IPTR IconWindowVolumeList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Ob
 
 ///
 /*** Setup ******************************************************************/
-#ifdef __AROS__
 ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
 (
     IconWindowVolumeList, NULL, MUIC_IconVolumeList, NULL,
@@ -1314,23 +1253,3 @@ ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
     MUIM_IconList_DrawEntry,    struct MUIP_IconList_DrawEntry *,
     MUIM_IconList_DrawEntryLabel, struct MUIP_IconList_DrawEntryLabel *
 );
-#else
-ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
-(
-    IconWindowVolumeList, NULL,  NULL, IconVolumeList_Class,
-    OM_NEW,                     struct opSet *,
-    OM_SET,                     struct opSet *,
-    OM_GET,                     struct opGet *,
-    MUIM_Setup,                 Msg,
-    MUIM_Cleanup,               Msg,
-    MUIM_DrawBackground,        Msg,
-    MUIM_HandleEvent,           Msg,
-    MUIM_IconList_Update,       struct MUIP_IconList_Update *,
-    MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
-    MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
-    MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *,
-    MUIM_IconList_PropagateEntryPos, struct MUIP_IconList_PropagateEntryPos *,
-    MUIM_IconList_DrawEntry,    struct MUIP_IconList_DrawEntry *,
-    MUIM_IconList_DrawEntryLabel, struct MUIP_IconList_DrawEntryLabel *
-);
-#endif

@@ -21,29 +21,9 @@
 #include <graphics/rastport.h>
 #include <intuition/pointerclass.h>
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-#define NO_INLINE_STDARG
-#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-  #define D(x) if (DEBUG) x
-  #ifdef __amigaos4__
-  #define bug DebugPrintF
-  #else
-  #define bug kprintf
-  #endif
-#else
-  #define  D(...)
-#endif
-#endif
-
-
-#ifndef __MORPHOS__
 Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
     Object *rc;
@@ -57,7 +37,6 @@ Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 
     return rc;
 }
-#endif
 
 Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...)
 {
@@ -143,34 +122,3 @@ BOOL AndRectRect(struct Rectangle *rect1, struct Rectangle *rect2, struct Rectan
 
 } /* AndRectRect */
 
-#if defined(__AMIGA__) && !defined(__PPC__)
-APTR AllocVecPooled(APTR  pool, ULONG size)
-{
-    
-    IPTR *memory;
-    
-    if (pool == NULL) return NULL;
-    
-    size   += sizeof(IPTR);
-    memory  = AllocPooled(pool, size);
-    
-    if (memory != NULL)
-    {
-        *memory++ = size;
-    }
-
-    return memory;
-} /* AllocVecPooled() */
-
-
-void FreeVecPooled(APTR pool, APTR memory)
-{
-    if (memory != NULL)
-    {
-        IPTR *real = (IPTR *) memory;
-        IPTR size  = *--real;
-
-        FreePooled(pool, real, size);
-    }
-} /* FreeVecPooled() */
-#endif

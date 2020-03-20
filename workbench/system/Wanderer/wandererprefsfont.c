@@ -2,28 +2,18 @@
      Copyright © 2002-2011, The AROS Development Team. All rights reserved.
      $Id$
 */
-#include "portable_macros.h"
-#ifdef __AROS__
+
 #define DEBUG 0
-#endif
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
 
-#ifdef __AROS__
 #include <zune/customclasses.h>
-#else
-#include <zune_AROS/customclasses.h>
-#endif
 
 #include <dos/notify.h>
 
-#ifdef __AROS__
 #include <workbench/handler.h>
-#else
-#include <workbench_AROS/handler.h>
-#endif
 
 #ifndef PROTO_EXEC_H
 #include <proto/exec.h>
@@ -61,10 +51,8 @@
 #include <proto/datatypes.h>
 #endif
 
-#ifdef __AROS__
 #ifndef PROTO_ALIB_H
 #include <proto/alib.h>
-#endif
 #endif
 
 #ifndef PROTO_ASL_H
@@ -83,34 +71,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __AROS__
 #include <prefs/prefhdr.h>
-#else
-#include <prefs_AROS/prefhdr.h>
-#endif
 
 #include <prefs/font.h>
 
-#ifdef __AROS__
 #include <aros/debug.h>
-#endif
 
 #include "wandererprefsfont.h"
-
-#ifndef __AROS__
-#define DEBUG 1
-
-#ifdef DEBUG
-    #define D(x) if (DEBUG) x
-    #ifdef __amigaos4__
-    #define bug DebugPrintF
-    #else
-    #define bug kprintf
-    #endif
-#else
-    #define  D(...)
-#endif
-#endif
 
 #define CHECK_PRHD_VERSION 1
 #define CHECK_PRHD_SIZE    1
@@ -300,9 +267,7 @@ void WandererPrefs_ReloadFontPrefs(CONST_STRPTR prefsfile, struct WandererFontPr
 
                     type = (fontprefs.fp_Type[0] << 8) + fontprefs.fp_Type[1];
 
-#ifdef __AROS__
                     D(bug("[wanderer] WandererPrefs_CheckFont: Type = %d  Name = %s\n", type, fontprefs.fp_Name));
-#endif
 
                     if (type == FP_WBFONT)
                     {
