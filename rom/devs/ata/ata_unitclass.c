@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -66,7 +66,7 @@ static BYTE ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
 
 OOP_Object *ATAUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    D(bug("[ATA:Unit] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[ATA:Unit] %s()\n", __func__));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
     if (o)
@@ -74,7 +74,7 @@ OOP_Object *ATAUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         struct ataBase *ATABase = cl->UserData;
         struct ata_Unit *unit = OOP_INST_DATA(cl, o);
 
-        D(bug("[ATA:Unit] %s: instance @ 0x%p\n", __PRETTY_FUNCTION__, o));
+        D(bug("[ATA:Unit] %s: instance @ 0x%p\n", __func__, o));
 
         unit->au_Drive = AllocPooled(ATABase->ata_MemPool, sizeof(struct DriveIdent));
         if (!unit->au_Drive)
@@ -109,7 +109,7 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct ataBase *ATABase = cl->UserData;
     struct ata_Unit *unit = OOP_INST_DATA(cl, o);
 
-    D(bug("[ATA:Unit] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[ATA:Unit] %s()\n", __func__));
 
     FreePooled(ATABase->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
     OOP_DoSuperMethod(cl, o, msg);
