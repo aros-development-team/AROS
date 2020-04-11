@@ -176,8 +176,8 @@ D(bug("[rtl8139] Init()\n"));
 
             struct Hook FindHook =
             {
-                h_Entry:    (IPTR (*)())PCI_Enumerator,
-                h_Data:     LIBBASE,
+                .h_Entry =    (IPTR (*)())PCI_Enumerator,
+                .h_Data  =     LIBBASE,
             };
 
             HIDD_PCI_EnumDevices(   LIBBASE->rtl8139b_PCI,
