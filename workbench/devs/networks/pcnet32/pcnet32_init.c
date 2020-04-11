@@ -103,8 +103,8 @@ D(bug("[pcnet32] init.Init()\n"));
             D(bug("[pcnet32] Got PCI object\n"));
 
             struct Hook FindHook = {
-                h_Entry:    (IPTR (*)())Enumerator,
-                h_Data:     LIBBASE,
+                .h_Entry =    (IPTR (*)())Enumerator,
+                .h_Data  =     LIBBASE,
             };
 
             struct TagItem Requirements[] = {
