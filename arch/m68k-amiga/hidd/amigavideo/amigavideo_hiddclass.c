@@ -320,7 +320,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         else
             rdfargs[1] = (IPTR)"PAL";
 
-        mytags[2].ti_Data = (IPTR)AllocVec(strlen((char *)rdfargs[0]) + strlen((char *)rdfargs[1]) + 32, MEMF_PUBLIC);
+        mytags[2].ti_Data = (IPTR)AllocVec(strlen((char *)rdfargs[0]) + strlen((char *)rdfargs[1]) + 33, MEMF_PUBLIC);
         RawDoFmt("Amiga %s Chipset %s Display Hardware", (RAWARG)rdfargs, RAWFMTFUNC_STRING, mytags[2].ti_Data);
         D(bug("[AmigaVideo:Hidd] %s: Hardware = '%s'\n", __func__, mytags[2].ti_Data));
     }
