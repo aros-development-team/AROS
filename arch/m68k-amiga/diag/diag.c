@@ -62,6 +62,19 @@ static void debugRAM(void)
 }
 )
 
+// Preserve all registers because there are buggy boot roms that modify
+// non-scratch registers, for example Blizzard SCSI Kit IV.
+extern ULONG calldiagrom_asm(void);
+asm (
+        "       .text\n"
+        "       .globl calldiagrom_asm\n"
+        "calldiagrom_asm:\n"
+        "       movem.l %d2-%d7/%a2-%a6,%sp@-\n"
+        "       jsr (%a4)\n"
+        "       movem.l %sp@+,%d2-%d7/%a2-%a6\n"
+        "       rts\n"
+);
+
 static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
 {
 	struct DiagArea *diag = configDev->cd_Rom.er_DiagArea;
@@ -72,11 +85,11 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *c
 	// call autoconfig ROM da_DiagPoint
 	D(bug("Call boot rom @%p board %p diag %p configdev %p\n",
 		code, configDev->cd_BoardAddr, diag, configDev));
-	ret = AROS_UFC6(ULONG, code,
+	ret = AROS_UFC6(ULONG, calldiagrom_asm,
 		AROS_UFCA(APTR, configDev->cd_BoardAddr, A0),
 		AROS_UFCA(struct DiagArea*, diag, A2),
 		AROS_UFCA(struct ConfigDev*, configDev, A3),
-		AROS_UFCA(ULONG, 0, A4), // Dummy variable. Preserve A4 because Blizzard 1260 ROM modifies it.
+		AROS_UFCA(void, code, A4),
 		AROS_UFCA(struct ExpansionBase*, ExpansionBase, A5),
 		AROS_UFCA(struct ExecBase*, SysBase, A6));
 	D(bug(ret ? "->success\n" : "->failed\n"));
