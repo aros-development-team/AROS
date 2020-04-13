@@ -138,15 +138,15 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     
             struct Hook FindHook =
             {
-                h_Entry:    (IPTR (*)()) PCI_Enumerator,
-                h_Data:     LIBBASE,
+                .h_Entry =    (IPTR (*)()) PCI_Enumerator,
+                .h_Data  =     LIBBASE,
             };
     
             struct pHidd_PCI_EnumDevices enummsg =
             {
-                    mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-                    callback:       &FindHook,
-                    requirements:   (struct TagItem *) &Requirements,
+                    .mID =            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+                    .callback =       &FindHook,
+                    .requirements =   (struct TagItem *) &Requirements,
             }, *msg = &enummsg;
     
             i = 0;

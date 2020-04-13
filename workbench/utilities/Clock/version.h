@@ -9,6 +9,6 @@
 #define VERSION 	1
 #define REVISION 	4
 #define DATESTR 	"10.02.2006"
-#define VERSIONSTR	"$VER: Clock 1.4 (" DATESTR ") ©AROS Dev Team"
+#define VERSIONSTR	"$VER: Clock 1.4 (" DATESTR ") 0xA9 AROS Dev Team"
 
 #endif /* _VERSION_H */
