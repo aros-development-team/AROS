@@ -149,15 +149,7 @@ SprintfA( char *dst, const char *fmt, IPTR* args )
 void
 AHIInitSemaphore( struct SignalSemaphore* sigSem )
 {
-  // TODO: Verify license compatibility (Code mostly stolen from AROS).
-
-  sigSem->ss_WaitQueue.mlh_Head     = (struct MinNode *)&sigSem->ss_WaitQueue.mlh_Tail;
-  sigSem->ss_WaitQueue.mlh_Tail     = NULL;
-  sigSem->ss_WaitQueue.mlh_TailPred = (struct MinNode *)&sigSem->ss_WaitQueue.mlh_Head;
-  sigSem->ss_Link.ln_Type = NT_SIGNALSEM;
-  sigSem->ss_NestCount = 0;
-  sigSem->ss_Owner = 0;
-  sigSem->ss_QueueCount = -1;
+    InitSemaphore(sigSem);
 }
 
 
@@ -168,31 +160,7 @@ AHIInitSemaphore( struct SignalSemaphore* sigSem )
 void
 AHIObtainSemaphore( struct SignalSemaphore* sigSem )
 {
-  // TODO: Verify license compatibility (Code mostly stolen from AROS).
-
-  struct Task *me;
-
-  Disable(); // Not Forbid()!
-  me = FindTask(NULL);
-  sigSem->ss_QueueCount++;
-  if( sigSem->ss_QueueCount == 0 )
-  {
-    sigSem->ss_Owner = me;
-    sigSem->ss_NestCount++;
-  }
-  else if( sigSem->ss_Owner == me )
-  {
-    sigSem->ss_NestCount++;
-  }
-  else
-  {
-    struct SemaphoreRequest sr;
-    sr.sr_Waiter = me;
-    me->tc_SigRecvd &= ~SIGF_SINGLE;
-    AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
-    Wait(SIGF_SINGLE);
-  }
-  Enable();
+    ObtainSemaphore(sigSem);
 }
 
 
@@ -203,51 +171,7 @@ AHIObtainSemaphore( struct SignalSemaphore* sigSem )
 void
 AHIReleaseSemaphore( struct SignalSemaphore* sigSem )
 {
-  // TODO: Verify license compatibility (Code mostly stolen from AROS).
-  
-  Disable(); // Not Forbid()!
-
-  sigSem->ss_NestCount--;
-  sigSem->ss_QueueCount--;
-  if(sigSem->ss_NestCount == 0)
-  {
-    if( sigSem->ss_QueueCount >= 0
-	&& sigSem->ss_WaitQueue.mlh_Head->mln_Succ != NULL )
-    {
-      struct SemaphoreRequest *sr;
-      struct SemaphoreMessage *sm;
-      sr = (struct SemaphoreRequest *)sigSem->ss_WaitQueue.mlh_Head;
-
-      // Note that shared semaphores are not supported!
-
-      sm = (struct SemaphoreMessage *)sr;
-
-      Remove((struct Node *)sr);
-      sigSem->ss_NestCount++;
-      if(sr->sr_Waiter != NULL)
-      {
-	sigSem->ss_Owner = sr->sr_Waiter;
-	Signal(sr->sr_Waiter, SIGF_SINGLE);
-      }
-      else
-      {
-	sigSem->ss_Owner = (struct Task *)sm->ssm_Semaphore;
-	sm->ssm_Semaphore = sigSem;
-	ReplyMsg((struct Message *)sr);
-      }
-    }
-    else
-    {
-      sigSem->ss_Owner = NULL;
-      sigSem->ss_QueueCount = -1;
-    }
-  }
-  else if(sigSem->ss_NestCount < 0)
-  {
-    Alert( AN_SemCorrupt );
-  }
-
-  Enable();
+    ReleaseSemaphore(sigSem);
 }
 
 
@@ -258,27 +182,7 @@ AHIReleaseSemaphore( struct SignalSemaphore* sigSem )
 LONG
 AHIAttemptSemaphore( struct SignalSemaphore* sigSem )
 {
-  // TODO: Verify license compatibility (Code mostly stolen from AROS).
-
-  LONG rc = FALSE;
-
-  Disable(); // Not Forbid()!
-
-  sigSem->ss_QueueCount++;
-  if( sigSem->ss_QueueCount == 0 )
-  {
-    sigSem->ss_Owner = (APTR) ~0;
-    sigSem->ss_NestCount++;
-    rc = TRUE;
-  }
-  else
-  {
-    sigSem->ss_QueueCount--;
-  }
-
-  Enable();
-
-  return rc;
+    return AttemptSemaphore(sigSem);
 }
 
 
