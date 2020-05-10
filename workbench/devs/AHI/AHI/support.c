@@ -520,7 +520,7 @@ struct List *GetModes(struct AHIUnitPrefs *prefs) {
   
       if( t != NULL )
       {
-        LONG realtime;
+        IPTR realtime;
 
         t->node.ln_Name = t->name;
         t->ID = id;
