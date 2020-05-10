@@ -230,7 +230,7 @@ _AHIsub_Start( ULONG                   flags,
     if( dd->slavetask != NULL )
     {
       dd->slavetask->pr_Task.tc_UserData = AudioCtrl;
-      Signal( dd->slavetask, SIGF_SINGLE );
+      Signal( (struct Task *)dd->slavetask, SIGF_SINGLE );
     }
 
     if( dd->slavetask != NULL )
