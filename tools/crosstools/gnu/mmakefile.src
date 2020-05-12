@@ -59,6 +59,7 @@ ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 #GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
 #GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
 GCC_COMMON_OPTS += --disable-libunwind-exceptions
+GCC_COMMON_OPTS += --disable-libstdcxx-verbose
 GCC_COMMON_OPTS += --with-multilib
 ifneq (,$(findstring big-endian,$(ISA_ARM_FLAGS)))
 GCC_LIBATOMIC_MULTILIB_TARGETS := \
