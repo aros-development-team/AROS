@@ -487,8 +487,8 @@ int G45_Init(struct g45staticdata *sd)
             {
                 struct Hook FindHook =
                 {
-                    .h_Entry = (IPTR (*)())Enumerator,
-                    .h_Data  =  sd,
+                    h_Entry: (IPTR (*)())Enumerator,
+                    h_Data:  sd,
                 };
 
                 HIDD_PCI_EnumDevices(sd->PCIObject, &FindHook, Requirements);

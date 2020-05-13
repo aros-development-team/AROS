@@ -134,14 +134,14 @@ D(bug("[rtl8168] Init()\n"));
 	    };
 
             struct Hook FindHook = {
-                .h_Entry =    (IPTR (*)())PCI_Enumerator,
-                .h_Data  =     LIBBASE,
+                h_Entry:    (IPTR (*)())PCI_Enumerator,
+                h_Data:     LIBBASE,
             };
 
 	    struct pHidd_PCI_EnumDevices enummsg = {
-		.mID =            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-		.callback =       &FindHook,
-		.requirements =   (struct TagItem *)&Requirements,
+		mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+		callback:       &FindHook,
+		requirements:   (struct TagItem *)&Requirements,
 	    }, *msg = &enummsg;
 
 	    OOP_DoMethod(LIBBASE->rtl8168b_PCI, (OOP_Msg)msg);

@@ -21,7 +21,7 @@
 #include "smeditor.h"
 
 #define VERSION "ScreenMode Preferences 1.11 (11.01.2020)"
-#define COPYRIGHT "Copyright 0xA9 1995-2020, The AROS Development Team"
+#define COPYRIGHT "Copyright © 1995-2020, The AROS Development Team"
 
 static const char vers[] = VERSION;
 static const char version[] __attribute__((used)) = "$VER: " VERSION "\n";

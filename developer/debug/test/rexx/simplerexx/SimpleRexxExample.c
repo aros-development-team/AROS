@@ -96,7 +96,7 @@ ULONG	signals;
 		{
 			if (RexxStuff) printf(strings[STR_ID_PORT_NAME],
 							ARexxName(RexxStuff));
-			else printf("%s",strings[STR_ID_NO_AREXX]);
+			else printf(strings[STR_ID_NO_AREXX]);
 		}
 
 		while (loopflag)

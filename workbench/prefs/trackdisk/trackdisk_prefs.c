@@ -73,7 +73,7 @@ int main(void)
         MUIA_Application_Description, __(MSG_DESCRIPTION),
 	    MUIA_Application_SingleTask, TRUE,
         MUIA_Application_Title, __(MSG_NAME),
-	MUIA_Application_Version, (IPTR)"$VER: Trackdisk 41.5 (30.11.2007) 0xA9 2007 Pavel Fedin and Team AROS",
+	MUIA_Application_Version, (IPTR)"$VER: Trackdisk 41.5 (30.11.2007) ©2007 Pavel Fedin and Team AROS",
 	    MUIA_Application_Window,
 	    MainWin = MUI_NewObject("Window.mui", MUIA_Window_ID, MAKE_ID('M', 'A', 'I', 'N'),
             MUIA_Window_Title,__(MSG_WINDOW_TITLE),

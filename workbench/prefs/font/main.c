@@ -17,7 +17,7 @@
 #include "fpeditor.h"
 #include "prefs.h"
 
-#define VERSION "$VER: Fonts 1.1 ("ADATE") 0xA9 AROS Dev Team"
+#define VERSION "$VER: Fonts 1.1 ("ADATE") ©AROS Dev Team"
 
 int main(int argc, char **argv)
 {

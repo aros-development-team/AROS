@@ -1417,8 +1417,8 @@ in_getaddr(s, which)
 void
 printb(s, v, bits)
 	char *s;
-	unsigned short v;
 	char *bits;
+	unsigned short v;
 {
 	int i, any = 0;
 	char c;

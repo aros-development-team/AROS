@@ -164,8 +164,8 @@ D(bug("[e1000] Init()\n"));
             D(bug("[e1000] PCI Subsystem HIDD object @ %p\n", LIBBASE->e1kb_PCI));
 
             struct Hook FindHook = {
-                .h_Entry =    (IPTR (*)())PCI_Enumerator,
-                .h_Data  =     LIBBASE,
+                h_Entry:    (IPTR (*)())PCI_Enumerator,
+                h_Data:     LIBBASE,
             };
 
             struct TagItem Requirements[] = {

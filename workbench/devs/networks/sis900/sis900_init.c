@@ -130,8 +130,8 @@ D(bug("[SiS900] Init()\n"));
             D(bug("[SiS900] PCI Subsystem HIDD object @ %p\n", LIBBASE->sis900b_PCI));
 
             struct Hook FindHook = {
-                .h_Entry =    (IPTR (*)())PCI_Enumerator,
-                .h_Data  =     LIBBASE,
+                h_Entry:    (IPTR (*)())PCI_Enumerator,
+                h_Data:     LIBBASE,
             };
 
             struct TagItem Requirements[] = {
