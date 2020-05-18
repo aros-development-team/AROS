@@ -29,6 +29,7 @@ struct WandererPrefsIFFChunkHeader
 struct WandererPrefs
 {
     ULONG wpd_NavigationMethod;  // Are we using the toolbar or not for navigation
+    ULONG wpd_IconDropMode;   // Copy or move files when dropped to a new location 
     ULONG wpd_ToolbarEnabled; // Is the toolbar enabled?
     
     ULONG wpd_IconListMode; // How is it going to be listed
@@ -39,6 +40,8 @@ struct WandererPrefs
 
 #define WPD_NAVIGATION_CLASSIC 0
 #define WPD_NAVIGATION_ENHANCED 1
+#define WPD_ICONDROPMODE_MOVE 0
+#define WPD_ICONDROPMODE_COPY 1
 #define WPD_ICONLISTMODE_GRID 0
 #define WPD_ICONLISTMODE_PLAIN 1
 #define WPD_ICONTEXTMODE_OUTLINE 0

@@ -65,6 +65,7 @@ struct TagItem32 {
 struct WandererPrefs_DATA
 {
     ULONG                       wpd_NavigationMethod;
+    ULONG                       wpd_IconDropMode;
     ULONG                       wpd_ToolbarEnabled;
     ULONG                       wpd_ShowNetwork;
     ULONG                       wpd_ShowUserFiles;
@@ -566,6 +567,11 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
       case MUIA_IconWindow_WindowNavigationMethod:
         data->wpd_NavigationMethod = (LONG)tag->ti_Data;
         break;
+
+      case MUIA_IconWindow_IconDropMode: 
+        data->wpd_IconDropMode = (ULONG)tag->ti_Data;
+        break;
+
     }
   }
   
@@ -601,6 +607,10 @@ D(bug("[Wanderer:Prefs] WandererPrefs__GET: MUIA_IconWindowExt_ScreenTitle_Strin
 
     case MUIA_IconWindow_WindowNavigationMethod:
       *store = (IPTR)data->wpd_NavigationMethod;
+      break;
+
+    case MUIA_IconWindow_IconDropMode:
+      *store = (IPTR)data->wpd_IconDropMode;
       break;
 
     default:

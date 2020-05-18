@@ -7,6 +7,8 @@
 #include <aros/autoinit.h>
 #include <aros/debug.h>
 
+#define ZCC_QUIET
+
 #ifndef ZUNE_CUSTOMCLASS_PASS
 #define ZUNE_CUSTOMCLASS_PASS   100
 #endif

@@ -1,1134 +1,831 @@
 /*
-    Copyright © 2007-2019, The AROS Development Team. All rights reserved.
+    Copyright 2007-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include  "filesystems.h"
+#include "filesystems.h"
+#include "filesystems_utilities.h"
+#include "locale.h"
 
-struct TagItem DummyTags[] = { {TAG_DONE, 0}};
-
-/* define some nonglobal data that can be used by the display hook */
-
-///strcrem()
-static void strcrem(char *s, char *d, char c) 
+/**
+ * Displays a requset window asking the user if he is absolutely sure to overwrite and unprotect a file. The answeres are 
+ * recorded in the OpModes struct and the request window is opened by calling the askHook.
+ * 
+ * Params: destPath -> Target path
+ *         opModes  -> OpModes struct where the answers are stored
+ *         askHook  -> Hook responsible for opening a request window
+ *         askData  -> FileCopyData struct containg the data displayed by the askHook
+ *         fib      -> FileInfoBlock struct for the file in question
+ * 
+ * Result: TRUE if user accept to overwrite and unprotect (if necessary), FALSE if not
+ */
+static BOOL askToOverwriteAndUnprotect(CONST_STRPTR destPath, struct OpModes *opModes, struct Hook *askHook, struct FileCopyData *askData, struct FileInfoBlock *fib)
 {
-    while (*s) {
-        if (*s != c) *d++= *s;
-        s++;
-    }
-    *d = 0;
-}
-///
+    BOOL retvalue = FALSE;
 
-///AskChoiceNew()
-WORD AskChoiceNew(const char *title, const char *strg, const char *gadgets, UWORD sel, BOOL centered) 
-{
+    STRPTR directory = GetPathPart(destPath);
+    askData->spath = directory;
 
-    Object  *app, *win;
-    Object  *button, *bObject, *selObject;
-    LONG       back, old;
-    BOOL    running = TRUE;
-    ULONG   signals;
-    ULONG   id;
-    char    Buffer[64], Buffer1[64];
-
-    back = 0;
-
-    app = MUI_NewObject(MUIC_Application,
-    
-        MUIA_Application_Title,     (IPTR)"Requester",
-        MUIA_Application_Base,      (IPTR)"WANDERER_REQ",
-    
-        SubWindow, (IPTR)(win = MUI_NewObject(MUIC_Window,
-            MUIA_Window_Title,           title,
-            MUIA_Window_Activate,        TRUE,
-            MUIA_Window_DepthGadget,     TRUE,
-            MUIA_Window_SizeGadget,  FALSE,
-            MUIA_Window_AppWindow,      FALSE,
-            MUIA_Window_CloseGadget,    FALSE,
-            MUIA_Window_Borderless,  FALSE,
-            MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Moused,
-            MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Moused,
-        
-            WindowContents, (IPTR)MUI_NewObject(MUIC_Group,
-                Child, (IPTR)MUI_NewObject(MUIC_Text,
-                    TextFrame,
-                    MUIA_InnerLeft,(12),
-                    MUIA_InnerRight,(12),
-                    MUIA_InnerTop,(12),
-                    MUIA_InnerBottom,(12),
-                    MUIA_Background, MUII_TextBack,
-                    MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)strg,
-                TAG_DONE),
-                Child, (IPTR)(bObject = MUI_NewObject(MUIC_Group,MUIA_Group_Horiz, TRUE,TAG_DONE)),
-            TAG_DONE),
-        TAG_DONE)),
-    TAG_DONE);
-
-
-    if (app) 
+    if (opModes->overwritemode != OPMODE_NONE)
     {
-        old = 0;
-        back = 11;
-        selObject = NULL;
-
-        while (old != -1) 
+        if (opModes->overwritemode != OPMODE_ALL)
         {
-            old = SplitName(gadgets, '|', Buffer, old, sizeof(Buffer));
-            if (old == -1) back = 10;
-            strcrem(Buffer, Buffer1, '_');
-            button = SimpleButton(Buffer1);
-            if (button) 
-            {
-                if ((back-10) == sel) selObject = button;
-                set(button, MUIA_CycleChain, 1);
-                DoMethod(bObject, MUIM_Group_InitChange);
-                DoMethod(bObject, OM_ADDMEMBER, button);
-                DoMethod(bObject, MUIM_Group_ExitChange);
-                DoMethod(button,MUIM_Notify,MUIA_Pressed, FALSE, app,2,MUIM_Application_ReturnID,back);
-            }
-            back++;
+            // If user has not already accepted all files, ask
+            askData->file = FilePart(destPath);
+            askData->type = 2;
+
+            opModes->overwritemode = CallHook(askHook, (Object *)askData, NULL);
         }
 
-        back = -1;
-
-        if (centered) 
+        // If user accepts to overwrite
+        if ((opModes->overwritemode == OPMODE_ALL) || (opModes->overwritemode == OPMODE_YES))
         {
-            set (win, MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Centered);
-            set (win, MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Centered);
-        }
-        if (selObject) set(win, MUIA_Window_ActiveObject, selObject);
-        set(win,MUIA_Window_Open,TRUE);
-
-        while (running) 
-        {
-            id = DoMethod(app,MUIM_Application_Input,&signals);
-            switch (id) 
+            // If protection bit is set, ask to unprotect
+            if (((fib->fib_Protection & (FILEINFO_PROTECTED | FILEINFO_WRITE)) != 0) && (opModes->protectmode != OPMODE_NONE))
             {
-
-                case MUIV_Application_ReturnID_Quit:
-                    running = FALSE;
-                    break;
-                case 10:
-                    running = FALSE;
-                    back = 0;
-                    break;
-                case 11:
-                    running = FALSE;
-                    back = 1;
-                    break;
-                case 12:
-                    running = FALSE;
-                    back = 2;
-                    break;
-                case 13:
-                    running = FALSE;
-                    back = 3;
-                    break;
-                case 14:
-                    running = FALSE;
-                    back = 4;
-                    break;
-                case 15:
-                    running = FALSE;
-                    back = 5;
-                    break;
-                case 16:
-                    running = FALSE;
-                    back = 6;
-                    break;
-                case 17:
-                    running = FALSE;
-                    back = 7;
-                    break;
-                case 18:
-                    running = FALSE;
-                    back = 8;
-                    break;
-            }
-            if (running && signals) Wait(signals);
-        }
-        set(win,MUIA_Window_Open,FALSE);
-        MUI_DisposeObject(app);
-    }
-    return back;
-}
-///
-
-/// AskChoice()
-WORD AskChoice(const char *title, const char *strg, const char *gadgets, UWORD sel) 
-{
-    return AskChoiceNew(title, strg, gadgets, sel, FALSE);
-}
-///
-
-///AskChoiceCentered()
-WORD AskChoiceCentered(const char *title, const char *strg, const char *gadgets, UWORD sel) 
-{
-    return AskChoiceNew(title, strg, gadgets, sel, TRUE);
-}
-///
-
-///combinePath()
-static char *combinePath(APTR pool, char *path, char *file)
-{
-    int l;
-    char *out;
-    if ((path == NULL) || (file == NULL)) return NULL;
-    if (strlen(path) == 0) return NULL;
-    if (strlen(file) == 0) return NULL;
-    
-    l = strlen(path) + strlen(file) + 1;
-    if (path[strlen(path)-1] != '/') l++;
-
-    if (pool == NULL) out = AllocVec(l, MEMF_CLEAR); 
-    else out = AllocVecPooled(pool, l);
-    
-    if (out) 
-    {
-        strcpy(out, path);
-        AddPart(out, file, l);
-    }
-    return out;
-}
-///
-
-///allocPath()
-static char *allocPath(APTR pool, char *str)
-{
-    char *s0, *s1, *s;
-    int  l;
-
-    s = NULL;
-    s0 = str;
-
-    s1 = PathPart(str);
-    if (s1) 
-    {
-        for (l=0; s0 != s1; s0++,l++);
-        
-        s = AllocVecPooled(pool, l+1);
-        if (s) strncpy(s, str, l);
-    }
-    return s;
-}
-///
-
-///freeString()
-void freeString(APTR pool, char *str) 
-{
-    if (str) 
-    {
-        if (pool == NULL) 
-            FreeVec(str); 
-        else 
-            FreeVecPooled(pool, str);
-    }
-}
-///
-
-///allocString()
-/*
-** allocates memory for a string and copies them to the new buffer
-**
-** inputs:     str      source string
-** return:     char     pointer to string or NULL
-**
-*/              
-static char *allocString(APTR pool, char *str) 
-{
-    char  *b;
-    int  l;
-
-    if (str == NULL) return NULL;
-
-    l = strlen(str);
-    
-    if (pool == NULL) 
-        b = (char*) AllocVec(l+1, MEMF_CLEAR); 
-    else b = (char*) AllocVecPooled(pool, l+1);
-    
-    if (b && (l>0)) strncpy (b, str, l + 1);
-    return b;
-}
-///
-
-///CombineString()
-char *CombineString(char *format, ...)
-{
-    int   cnt = 0, cnt1;
-    int   len;
-    char  *s, *s1, *str, *p;
-    char  *back = NULL;
-
-    va_list  ap;
-    s = format;
-    while ((s = strstr(s,"%s")) != NULL) {cnt++; s++; }
-
-    if (cnt >0) 
-    {
-        len = strlen(format) - 2*cnt;
-        va_start(ap, format);
-        cnt1 = cnt;
-
-        while (cnt1--) 
-        {
-            p = va_arg(ap, char *);
-            len += strlen(p);
-        };
-        va_end(ap);
-        len++;
-        if (len>0) 
-        {
-            back = AllocVec(len, MEMF_CLEAR);
-            if (back) 
-            {
-                str = back;
-                s = format;
-                va_start(ap, format);
-                while ((s1 = strstr(s, "%s")) != NULL) 
+                if (opModes->protectmode != OPMODE_ALL)
                 {
-                    p = va_arg(ap, char *);
-                    len = s1-s;
-                    strncpy(str, s, len);
-                    s = s1+2;
-                    str += len;
-                    strcpy(str, p);
-                    str += strlen(p);
-                };
-                if (s) strcpy(str, s);
-                va_end(ap);
+                    // If user has not already accepted all files, ask
+                    askData->file = FilePart(destPath);
+                    askData->type = 1;
+
+                    opModes->protectmode = CallHook(askHook, (Object *)askData, NULL);
+                }
+
+                if ((opModes->protectmode == OPMODE_ALL) || (opModes->protectmode == OPMODE_YES))
+                {
+                    // User accepted to unprotect file
+                    SetProtection(destPath, 0);
+                    retvalue = TRUE;
+                }
             }
-        }
-    }
-    return back;
-}
-///
-
-///GetFileInfo()
-static LONG GetFileInfo(char *name)
-{
-    struct  FileInfoBlock  *FIB;
-    LONG       info,Success2;
-    BPTR       nLock;
-
-    info = -1;
-
-    FIB = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-    if (FIB) 
-    {
-        nLock = Lock(name, ACCESS_READ);
-        if (nLock) 
-        {
-            Success2 = Examine(nLock,FIB);
-            if (Success2) 
+            else
             {
-                info = 0;
-                if (FIB->fib_DirEntryType>0) info |= FILEINFO_DIR;
-                if ((FIB->fib_Protection & FIBF_DELETE) != 0) info |= FILEINFO_PROTECTED;
-                if ((FIB->fib_Protection & FIBF_WRITE) != 0) info |= FILEINFO_WRITE;
+                // User accepted overwrite and protection bit not set
+                retvalue = TRUE;
             }
-            UnLock(nLock);
         }
-        FreeDosObject (DOS_FIB,(APTR) FIB);
     }
-    return info;
-}
-///
-
-///GetProtectionInfo()
-static LONG GetProtectionInfo(char *name)
-{
-    struct  FileInfoBlock  *FIB;
-    LONG       info,Success2;
-    BPTR       nLock;
-
-    info = 0;
-
-    FIB = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-    if (FIB) 
+    
+    if (directory != NULL)
     {
-        nLock = Lock(name, ACCESS_READ);
-        if (nLock) 
-        {
-            Success2 = Examine(nLock,FIB);
-            if (Success2) 
-            {
-                info = FIB->fib_Protection;
-            }
-            UnLock(nLock);
-        }
-        FreeDosObject (DOS_FIB,(APTR) FIB);
+        FreeVec(directory);
     }
-    return info;
+
+    return retvalue;
 }
-///
 
-///GetCommentInfo()
-static char *GetCommentInfo(APTR pool, char *name)
+/**
+ * Displays a requset window asking the user if he is absolutely sure to delete and unprotect a file. The answeres are 
+ * recorded in the OpModes struct and the request window is opened by calling the askHook.
+ * 
+ * Params: destPath -> Target path
+ *         opModes  -> OpModes struct where the answers are stored
+ *         askHook  -> Hook responsible for opening a request window
+ *         askData  -> FileCopyData struct containg the data displayed by the askHook
+ *         fib      -> Sourde file's FileInfoBlock struct
+ * 
+ * Result: TRUE if user accepted to delete and unprotect (if necessary), FALSE if not
+ */
+static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, CONST_STRPTR infoFilePath, struct FileInfoBlock *fib)
 {
-    struct  FileInfoBlock  *FIB;
-    LONG       Success2;
-    BPTR       nLock;
-    char       *info;
+    BOOL retvalue = FALSE;
+    STRPTR directory = GetPathPart(path);
+    struct FileCopyData askData;
 
-    info = NULL;
-
-    FIB = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-    if (FIB) 
+    // If deleting ask for confirmation, ask to unprotect
+    if (opModes && (opModes->deletemode != OPMODE_NONE))
     {
-        nLock = Lock(name, ACCESS_READ);
-        if (nLock) 
+        askData.file = FilePart(path);
+        askData.spath = directory;
+        askData.type = 0;
+
+        if (opModes->deletemode != OPMODE_ALL)
         {
-            Success2 = Examine(nLock,FIB);
-            if (Success2) 
-            {
-                info = allocString(pool, (char*) &FIB->fib_Comment);
-            }
-            UnLock(nLock);
+            opModes->deletemode = CallHook(askHook, (Object *)&askData, NULL);
         }
-        FreeDosObject (DOS_FIB,(APTR) FIB);
+        if ((opModes->deletemode == OPMODE_ALL) || (opModes->deletemode == OPMODE_YES))
+        {
+            LONG protection = fib->fib_Protection;
+            if ((protection & FIBB_DELETE) != 0 && (protection & FIBB_WRITE) != 0)
+            {
+                askData.type = 1;
+
+                opModes->protectmode = CallHook(askHook, (Object *)&askData, NULL);
+                if ((opModes->protectmode == OPMODE_ALL) || (opModes->protectmode == OPMODE_YES))
+                {
+                    SetProtection(path, 0);
+                    if (infoFilePath != NULL)
+                    {
+                        SetProtection(infoFilePath, 0);
+                    }
+                    retvalue = TRUE;
+                }
+            }
+            else
+            {
+                retvalue = TRUE;
+            }
+        }
     }
-    return info;
-}
-///
 
-///deleteFile()
-static BOOL deleteFile(char *file)
-{
-    DeleteFile(file);
-    return TRUE;
+    return retvalue;
 }
-///
 
-///copyFile()
-static BOOL copyFile(APTR pool, char *file, char *destpath,
-    struct FileInfoBlock *fileinfo, struct Hook *displayHook,
-    struct dCopyStruct *display)
+/**
+ * Function responsible for doing the actual file copy by reading and writing a set of bytes from the source file and writing them
+ * to the target file. Is also responsible for updating the progress window displayed on the desktop.
+ * 
+ * Params: sourcePath  -> Source file path
+ *         destPath    -> Target file path
+ *         fib         -> Source file's FileInfoBlock struct
+ *         displayHook -> Hook showing a progress window
+ *         userdata    -> Structure containing pointers to various UI elements used by the displayHook
+ * 
+ * Result: FALSE if everything went ok, TRUE if user aborted the operation or anything failed
+ */
+static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, struct FileInfoBlock *fib, struct Hook *displayHook, APTR userdata)
 {
-    struct  FileInfoBlock  *fib;
-    char   *to;
-    LONG   clen, wlen;
+    struct FileCopyData hookData;
+
+    STRPTR directory;
     LONG bufferlen = COPYLEN;
-    LONG         filelen = 0;
-    BOOL   quit = TRUE;
-    BPTR   in, out;
-    BYTE   *buffer;
-    BPTR   nLock;
+    LONG filelen = 0;
+    BOOL quit = TRUE;
+    BOOL stop = FALSE;
+    BPTR in, out;
+    BYTE *buffer;
 
-    if (display != NULL) display->totallen = 0;
-    if (display != NULL) display->actlen = 0;
-    if (fileinfo) 
+    hookData.userdata = userdata;
+
+    if (fib->fib_Size <= COPYLEN)
     {
-        filelen = fileinfo->fib_Size;
-        if (fileinfo->fib_Size <= COPYLEN) bufferlen = fileinfo->fib_Size;
-        if (bufferlen < 8192) bufferlen = 8192;
-        fib = fileinfo;
+        bufferlen = fib->fib_Size;
+    }
+    if (bufferlen < 8192)
+    {
+        bufferlen = 8192;
+    }
+
+    if (displayHook != NULL)
+    {
+        directory = GetPathPart(sourcePath);
+        hookData.totallen = 0;
+        hookData.actlen = 0;
+        hookData.spath = directory;
+        hookData.dpath = (STRPTR)destPath;
+        hookData.filelen = fib->fib_Size;
+        hookData.file = fib->fib_FileName;
+        hookData.flags = ACTION_COPY;
+
+        stop = CallHook(displayHook, (Object *)&hookData, NULL);
+    }
+
+    if (stop)
+    {
+        FreeVec(directory);
+        return stop;
+    }
+
+    buffer = AllocVec(bufferlen, MEMF_CLEAR);
+    if (buffer)
+    {
+        in = Open(sourcePath, MODE_OLDFILE);
+        if (in > 0)
+        {
+            out = Open(destPath, MODE_NEWFILE);
+            if (out > 0)
+            {
+                LONG clen, wlen;
+                UWORD difftime = clock();
+
+                do
+                {
+                    clen = Read(in, buffer, bufferlen);
+                    if (clen > 0)
+                    {
+                        wlen = Write(out, buffer, clen);
+                        hookData.difftime = clock() - difftime;
+                        if (hookData.difftime < 1)
+                        {
+                            hookData.difftime = 1;
+                        }
+                        hookData.actlen = clen;
+                        hookData.totallen += clen;
+
+                        if (displayHook)
+                        {
+                            hookData.flags |= ACTION_UPDATE;
+                            stop = CallHook(displayHook, (Object *)&hookData, NULL);
+                        }
+
+                        if (clen != wlen)
+                        {
+                            // Did not manage to write whole buffer, abort.
+                            DisplayIOError(_(MSG_FAILED_TO_WRITE_TO_FILE), IoErr(), (IPTR)destPath);
+                            clen = 0;
+                        }
+                    }
+                } while (clen > 0 || stop);
+
+                quit = stop;
+
+                Close(out);
+                CopyFileInfo(fib, sourcePath, destPath);
+            }
+            else
+            {
+                DisplayIOError(_(MSG_FAILED_TO_WRITE_TO_FILE), IoErr(), (IPTR)destPath);
+            }
+
+            Close(in);
+        }
+        else
+        {
+            DisplayIOError(_(MSG_FAILED_TO_ALLOCATE_MEMORY), -1, (IPTR)sourcePath);
+        }
+
+        FreeVec(buffer);
+    }
+
+    if (displayHook)
+    {
+        FreeVec(directory);
+    }
+
+    return quit;
+}
+
+/**
+ * Deletes a file from the filesystem and updates a progress window accordingly.
+ * 
+ * Params: path        -> File to be deleted 
+ *         displayHook -> Hook responsible for displaying a progress window
+ *         userdata    -> Structure containing pointers to various UI elements used by the displayHook
+ * 
+ * Result: TRUE if operation was aborted or anything failed, FALSE if not
+ */
+static BOOL deleteSingleFile(CONST_STRPTR path, struct Hook *displayHook, APTR userdata)
+{
+    struct FileCopyData hookData;
+    hookData.userdata = userdata;
+    BOOL stop = FALSE;
+    STRPTR directory;
+
+    if (displayHook != NULL)
+    {
+        directory = GetPathPart(path);
+        hookData.spath = directory;
+        hookData.file = FilePart(path);
+        hookData.flags = ACTION_DELETE;
+
+        stop = CallHook(displayHook, (Object *)&hookData, NULL);
+    }
+
+    if (!stop)
+    {
+        BOOL success = DeleteFile(path);
+
+        if (!success)
+        {
+            DisplayIOError(_(MSG_FAILED_TO_DELETE_FILE), IoErr(), (IPTR)path);
+            stop = TRUE;
+        }
+    }
+
+    if (displayHook)
+    {
+        FreeVec(directory);
+    }
+
+    return stop;
+}
+
+/**
+ * Moves a file from one location to another. 
+ * 
+ * Params: sourcePath  -> Source file path 
+ *         dstDir      -> Target file path
+ *         newDir      -> If set to true, file already exists check is skipped. 
+ * 
+ * Result: TRUE if operation was aborted or anything failed, FALSE if not
+ */
+static BOOL moveFile(CONST_STRPTR sourcePath, CONST_STRPTR destDir, BOOL newDir)
+{
+    STRPTR to;
+    BOOL stop = FALSE;
+
+    to = CombinePath(FilePart(sourcePath), destDir);
+
+    if (!newDir)
+    {
+        if (FileExists(to))
+        {
+            stop = TRUE;
+
+            DisplayIOError(_(MSG_FAILED_TO_MOVE_FILE), IoErr(), (IPTR)sourcePath);
+        }
+    }
+
+    if (to && !stop)
+    {
+        if (Rename(sourcePath, to) == DOSFALSE)
+        {
+            stop = TRUE;
+            DisplayIOError(_(MSG_FAILED_TO_MOVE_FILE), IoErr(), (IPTR)sourcePath);
+        }
+        FreeVec(to);
+    }
+
+    return stop;
+}
+
+/**
+ * Helper function called by DeleteContent which calls the DeleteContent function for all files in a directory
+ */
+static BOOL deleteDirectoryContents(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct FileInfoBlock *fib, struct Hook *displayHook, APTR userdata)
+{
+    BOOL stop = FALSE;
+    BPTR sourceDirectoryLock = ReadFileInfoBlockAndLockPath(path, fib);
+    if (sourceDirectoryLock == 0)
+    {
+        return TRUE;
+    }
+    BOOL success = FALSE;
+
+    success = ExNext(sourceDirectoryLock, fib);
+
+    while (success && !stop)
+    {
+        STRPTR nextPath = CombinePath(fib->fib_FileName, path);
+        if (nextPath != NULL)
+        {
+            stop = DeleteContent(nextPath, opModes, askHook, displayHook, userdata);
+            FreeVec(nextPath);
+        }
+        success = ExNext(sourceDirectoryLock, fib);
+    }
+
+    if (!stop)
+    {
+        LONG error = IoErr();
+        if (error != ERROR_NO_MORE_ENTRIES)
+        {
+            DisplayIOError(_(MSG_FAILED_TO_READ_DIRECTORY_CONTENT), IoErr(), (IPTR)path);
+            stop = TRUE;
+        }
+    }
+
+    UnLock(sourceDirectoryLock);
+
+    return stop;
+}
+
+/**
+ * Helper function that checks if target file/directory already exists 
+ */
+BOOL checkIfAlreadyExists(CONST_STRPTR targetPath, CONST_STRPTR sourcePath, struct Hook *askHook, struct OpModes *opModes)
+{
+    BOOL stop = FALSE;
+
+    if (FileExists(targetPath))
+    {
+        struct FileInfoBlock *destFib = GetFileInfoBlock(targetPath);
+
+        // Ask to overwrite and then ask to unprotect
+        if (destFib != NULL && opModes && (opModes->overwritemode != OPMODE_NONE))
+        {
+            struct FileCopyData *askData = AllocVec(sizeof(struct FileCopyData), MEMF_CLEAR);
+
+            stop = !askToOverwriteAndUnprotect(targetPath, opModes, askHook, askData, destFib);
+
+            FreeVec(askData);
+        }
+
+        FreeDosObject(DOS_FIB, (APTR)destFib);
+    }
+    return stop;
+}
+
+/**
+ * Copies a singe file from one path to another. 
+ * 
+ * Params: sourcePath         -> Source file path
+ *         sourceInfoFilePath -> Source .info file path
+ *         targetDir          -> Target file path 
+ *         hasInfoFile        -> If true the file being copied has an .info file
+ *         askHook            -> Hook responsible for displaying a query window
+ *         opModes            -> Structure responsible for holding answers to the queries 
+ *         userdata           -> Structure containing pointers to various UI elements used by the displayHook
+ *         displayHook        -> Hook responsible for showing a progress window
+ *         fib                -> Source file's FileInfoBlock struct
+ *         inDir              -> If true the file being copied is part of a directory copy
+ * 
+ * Result: TRUE if the operation was aborted or anything failed, FALSE if not
+ *
+ */
+static BOOL copySingleFile(CONST_STRPTR sourcePath, CONST_STRPTR sourceInfoFilePath, CONST_STRPTR targetDir, BOOL hasInfoFile, struct Hook *askHook, struct OpModes *opModes, APTR userdata, struct Hook *displayHook, struct FileInfoBlock *fib, BOOL inDir)
+{
+    BOOL doCopy = TRUE;
+    BOOL stop = FALSE;
+    struct FileInfoBlock *infoFib;
+    struct FileCopyData *askData;
+    STRPTR targetInfoFilePath;
+    CONST_STRPTR fileName = FilePart(sourcePath);
+    STRPTR targetPath = CombinePath(fileName, targetDir);
+
+    if (hasInfoFile)
+    {
+        CONST_STRPTR infoFileName = FilePart(sourceInfoFilePath);
+
+        targetInfoFilePath = CombinePath(infoFileName, targetDir);
+        if (targetInfoFilePath == NULL)
+        {
+            stop = TRUE;
+        }
+
+        infoFib = GetFileInfoBlock(sourceInfoFilePath);
+        if (infoFib == NULL)
+        {
+            stop = TRUE;
+        }
+    }
+
+    // If we are copying a directory, we only need to check if the directory exists and not every single file
+    if (!inDir)
+    {
+        stop = checkIfAlreadyExists(targetPath, sourcePath, askHook, opModes);
+    }
+
+    if (doCopy && !stop)
+    {
+        stop = performDataCopy(sourcePath, targetPath, fib, displayHook, userdata);
+        if (hasInfoFile && !stop)
+        {
+            stop = performDataCopy(sourceInfoFilePath, targetInfoFilePath, infoFib, displayHook, userdata);
+        }
+    }
+
+    FreeVec(targetPath);
+
+    if (hasInfoFile)
+    {
+        FreeVec(targetInfoFilePath);
+        FreeDosObject(DOS_FIB, (APTR)infoFib);
+    }
+
+    return stop;
+}
+/**
+ * Helper function called by CopyContent function which calls the CopyContent function for all files in a directory
+ */
+static BOOL copyDirectory(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *askHook, struct OpModes *opModes, APTR userdata, struct Hook *displayHook, struct FileInfoBlock *sourceFib, BPTR sourceDirectoryLock)
+{
+    BOOL success = FALSE;
+    BOOL stop = FALSE;
+
+    success = ExNext(sourceDirectoryLock, sourceFib);
+
+    // Iterates the directory and calls CopyContent for every file found
+    while (success && !stop)
+    {
+        CONST_STRPTR nextSourcePath = CombinePath(sourceFib->fib_FileName, sourcePath);
+
+        stop = CopyContent(nextSourcePath, targetDir, displayHook, askHook, opModes, userdata, FALSE);
+
+        FreeVec((APTR)nextSourcePath);
+
+        success = ExNext(sourceDirectoryLock, sourceFib);
+    }
+
+    // If the error is not ERROR_NO_MORE_ENTRIES, we display an error message
+    LONG error = IoErr();
+    if (error != ERROR_NO_MORE_ENTRIES)
+    {
+        DisplayIOError(_(MSG_FAILED_TO_READ_DIRECTORY_CONTENT), error, (IPTR)sourcePath);
+    }
+
+    return stop;
+}
+
+/**
+ * Helper function called by DeleteContent, CopyContent or MoveContent for determining if the source path points
+ * to a file or .info file. It also checks if any of them exist.
+ */
+BOOL infoFileSetup(CONST_STRPTR sourcePath, STRPTR *sourceInfoFilePath, STRPTR *localSourcePath, BOOL *hasInfoFile)
+{
+    // Wanderer handles a file and its companion .info file together. The input file path will only contain a pointer to the actual file and
+    // not the .info file. This is true even though for situations where the only file being copied is the .info file, and the actual file does
+    // not exist. Therefore we need to determine if:
+    // 1. The file begin copied is an .info file
+    // 2. The file being copied has an .info file
+    //
+    // If 1, the sourcePath is set to the .info file path and hasInfoFile is set to false (as this would then mean .info.info ...).
+    // If 2, we need to handle the .info file as well as the actual file
+
+    BOOL doFileExists = FileExists(sourcePath);
+
+    *sourceInfoFilePath = ConstructInfofileName(sourcePath);
+    if (sourceInfoFilePath == NULL)
+    {
+        return TRUE;
+    }
+    *hasInfoFile = FileExists(*sourceInfoFilePath);
+    if (!doFileExists && *hasInfoFile)
+    {
+        *localSourcePath = *sourceInfoFilePath;
+        *hasInfoFile = FALSE;
+    }
+
+    return FALSE;
+}
+
+
+
+/* API functions */
+
+/**
+ * Creates a new directory for the give path and returns a write lock for the newly created directory.
+ * If the directory already exists, a write lock for the existing directory is returned.
+ * 
+ * Params: path -> Full path to the new directory
+ * 
+ * Result: write lock for directory 
+ */
+BPTR CreateDirectory(CONST_STRPTR path)
+{
+    struct FileInfoBlock *fib;
+    BPTR lock = 0;
+
+    if (FileExists(path))
+    {
+        fib = GetFileInfoBlock(path);
+
+        if (fib)
+        {
+            if (fib->fib_DirEntryType > 0)
+            {
+                lock = Lock(path, ACCESS_WRITE);
+                if (!lock)
+                {
+                    DisplayIOError(_(MSG_FAILED_TO_LOCK_PATH), IoErr(), (IPTR)path);
+                }
+            }
+
+            FreeDosObject(DOS_FIB, (APTR)fib);
+        }
     }
     else
     {
-        fib = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-        if (fib) 
+        lock = CreateDir(path);
+        if (!lock)
         {
-            nLock = Lock(file, ACCESS_READ);
-            if (nLock) 
-            {
-                if (Examine(nLock,fib) == 0)
-                {
-                    UnLock(nLock);
-                    return TRUE;
-                }
-                UnLock(nLock);
-                filelen = fib->fib_Size;
-                if (fib->fib_Size <= COPYLEN) bufferlen = fib->fib_Size;
-                if (bufferlen < 8192) bufferlen = 8192;
-            }
-        }
-        else
-        {
-            return TRUE;
+            DisplayIOError(_(MSG_FAILED_TO_CREATE_DIRECTORY), IoErr(), (IPTR)path);
         }
     }
-    to = combinePath(pool, destpath, FilePart(file));
-    if (to) 
-    {
-        buffer = AllocVecPooled(pool, bufferlen);
-        if (buffer) 
-        {
-            in = Open(file, MODE_OLDFILE);
-            if (in) 
-            {
-                out = Open(to, MODE_NEWFILE);
-                if (out) 
-                {
-                    BOOL stop = FALSE;
-                    unsigned int difftime = clock();
-                    do 
-                    {
-                        clen = Read(in, buffer, bufferlen);
-                        if ((clen !=0) && (clen != -1)) 
-                        {
-                            wlen = Write(out, buffer,clen);
-                            if (display)
-                            {
-                                display->difftime = clock() - difftime;
-                                if (display->difftime < 1) display->difftime = 1;
-                                display->actlen = clen;
-                                display->totallen += clen;
-                                display->filelen = filelen;
-                                if (displayHook)
-                                {
-                                    display->flags |= ACTION_UPDATE;
-                                    stop = CallHook(displayHook, (Object *) display, NULL);
-                                }
-                            }
 
-                            if (clen != wlen) clen = 0;
-                        }
-                    }
-                    while ((clen !=0) && (clen != -1) && !stop);
-                    
-                    quit = stop;
-
-                    Close(out);
-                    
-                    if (fib) 
-                    {
-                        SetComment(to, fib->fib_Comment);
-                        SetProtection(to, fib->fib_Protection);
-                    }
-                }
-                Close(in);
-            }
-            FreeVecPooled(pool, buffer);
-        }
-        freeString(pool, to);
-    }
-    if (fileinfo == NULL) FreeDosObject(DOS_FIB,(APTR) fib);
-
-    return quit;
-}
-///
-
-static VOID handleUnprotect(LONG info, char * spath, char * file, char * target, struct Hook * askHook, WORD * pmode, BOOL * unprotect)
-{
-    struct  dCopyStruct askDisplay;
-
-    if ((info & (FILEINFO_PROTECTED|FILEINFO_WRITE)) != 0)
-    {
-        if (*pmode != OPMODE_NONE)
-        {
-            if (
-                (*pmode == OPMODE_ASK) || (*pmode == OPMODE_YES) ||
-                (*pmode == OPMODE_ALL)  || (*pmode == OPMODE_NO)
-            )
-            {
-                askDisplay.spath = spath;
-                askDisplay.file = file;
-                askDisplay.type = 1;
-                askDisplay.filelen = 0;
-                if (*pmode != OPMODE_ALL) *pmode = CallHook(askHook, (Object *) &askDisplay, NULL);
-                if ((*pmode == OPMODE_ALL) || (*pmode == OPMODE_YES))
-                {
-                    SetProtection(target, 0);
-                    *unprotect = TRUE;
-                }
-            }
-        }
-    }
-    else *unprotect = TRUE;
+    return lock;
 }
 
-#define dmode (opModes->deletemode)
-#define pmode (opModes->protectmode)
-#define omode (opModes->overwritemode)
-///actionDir()
-static BOOL actionDir(APTR pool, ULONG flags, char *source, char *dest,
-    BOOL quit, struct Hook *dHook, struct OpModes * opModes, APTR userdata)
+/**
+ * Checks if two files or directories resides on the same device
+ *
+ * Params: path1 -> First path to compare
+ *         path2 -> Second path to compare
+ *
+ * Result: TRUE if on same device, FALSE if not
+ */
+BOOL IsOnSameDevice(CONST_STRPTR path1, CONST_STRPTR path2)
 {
-    struct  FileInfoBlock  *FIB, *FIB2;
-    struct  dCopyStruct    display;
-    struct  dCopyStruct    askDisplay;
-    struct  FileEntry    *fe, *fef, *fel;
+    BOOL returnValue = FALSE;
 
-    BPTR       NewLock, cDir, nDir, nLock;
-    ULONG      Success, Success1, Success2, DosError, len;
-    char       *dname, *comment, *dpath;
-    BOOL       del, created, unprotect, failure;
-    BOOL       overwrite;
-    LONG       info, prot;
-
-    if (quit) return TRUE;
-
-    created = FALSE;
-
-    display.userdata = userdata;
-    askDisplay.userdata = userdata;
-
-    fef = NULL;
-    fel = NULL;
-    
-    FIB = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-    if (FIB) 
+    BPTR slock = Lock(path1, SHARED_LOCK);
+    if (slock)
     {
-        FIB2 = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-        if (FIB2) 
+        BPTR tlock = Lock(path2, SHARED_LOCK);
+        if (tlock)
         {
-            NewLock = Lock(source ,ACCESS_READ);
-            if (NewLock) 
+            if (SameDevice(slock, tlock) != DOSFALSE)
             {
-                cDir = CurrentDir(NewLock);
-
-                Success1=Examine(NewLock,FIB);
-                if (Success1) 
-                {
-                    do 
-                    {
-                        /* For each entry in directory ... */
-                        Success=ExNext(NewLock,FIB);
-
-                        /* If OPMODE_NONE, stop all actions */
-                        if ((flags & (ACTION_DELETE | ACTION_COPY)) == ACTION_DELETE) 
-                        {
-                            if (dmode == OPMODE_NONE) Success = FALSE;
-                        }
-
-                        if (Success && Success1) 
-                        {
-                            if (FIB->fib_DirEntryType>0) 
-                            {
-                                /* The entry is a directory */
-                                dname = NULL;
-
-                                /* If copying, check if the destination directory exists and create if needed */
-                                if (((flags & ACTION_COPY) != 0) && dest) 
-                                {
-                                    dname = combinePath(pool, dest, FIB->fib_FileName);
-                                    if (dname) 
-                                    {
-                                        created = FALSE;
-                                        nLock = Lock(dname, ACCESS_READ);
-                                        if (nLock) 
-                                        {
-                                            Success2 = Examine(nLock,FIB2);
-                                            if (Success2) if (FIB2->fib_DirEntryType>0) created = TRUE;
-                                            UnLock(nLock);
-                                        }
-                                        if (!created) 
-                                        {
-                                            nDir = CreateDir(dname);
-                                            if (nDir) 
-                                            {
-                                                prot = GetProtectionInfo(FIB->fib_FileName);
-                                                comment = GetCommentInfo(pool, FIB->fib_FileName);
-                                                if (comment) SetComment(dname, comment);
-                                                SetProtection(dname, prot);
-                                                freeString(pool, comment);
-
-                                                created = TRUE;
-                                                UnLock(nDir);
-                                            }
-                                        }
-                                    }
-                                }
-                                unprotect = FALSE;
-                                del = FALSE;
-
-                                /* If deleting, ask for confirmation and ask to unprotect */
-                                if (opModes && (dmode != OPMODE_NONE) && ((flags & ACTION_DELETE) != 0))
-                                {
-                                    if ((dmode == OPMODE_ASK) || (dmode == OPMODE_YES) || (dmode == OPMODE_ALL) || (dmode == OPMODE_NO))
-                                    {
-                                        askDisplay.spath = FIB->fib_FileName;
-                                        askDisplay.file = NULL;
-                                        askDisplay.type = 0;
-                                        askDisplay.filelen = FIB->fib_Size;
-                                        if (dmode != OPMODE_ALL) dmode = CallHook(opModes->askhook, (Object *) &askDisplay, NULL);
-                                        if ((dmode == OPMODE_ALL) || (dmode == OPMODE_YES))
-                                        {
-
-                                            unprotect = FALSE;
-                                            info = GetFileInfo(FIB->fib_FileName);
-
-                                            handleUnprotect(info, FIB->fib_FileName, NULL, FIB->fib_FileName, opModes->askhook, &pmode, &unprotect);
-                                            
-                                            if (unprotect) 
-                                            {
-                                                del = TRUE;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                /* If directory was created or we are deleting, trawl deeper and repeat actions */
-                                if (created || ((flags & ACTION_DELETE) !=0)) 
-                                {
-                                    if (((dmode == OPMODE_NO) || (dmode == OPMODE_NONE)) && (flags == ACTION_DELETE))
-                                    {
-                                        quit = FALSE;
-                                    } 
-                                    else 
-                                    {
-                                        quit = actionDir(pool, flags, FIB->fib_FileName, dname, quit, dHook, opModes, userdata);
-                                    }
-                                }
-
-                                /* If deleting and all actions succeeded in deeper directory, add the directory to "to be deleted" list */
-                                if (!quit && del && unprotect) 
-                                {
-                                    if (FIB->fib_FileName) 
-                                    {
-                                        len = strlen(FIB->fib_FileName);
-                                        if (len>0) 
-                                        {
-                                            
-                                            fe = AllocVecPooled(pool, sizeof(struct FileEntry) + len);
-                                            if (fe) 
-                                            {
-                                                strcpy(fe->name, FIB->fib_FileName);
-                                                if (fel) 
-                                                {
-                                                    fel->next = fe;
-                                                    fel = fe;
-                                                } 
-                                                else 
-                                                {
-                                                    fef = fe;
-                                                    fel = fe;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                freeString(pool, dname);
-                            } 
-                            else 
-                            {
-                                /* The entry is a file */
-                                if (dHook) 
-                                {
-                                    display.file = FIB->fib_FileName;
-                                    display.filelen = FIB->fib_Size;
-                                    display.spath = source;
-                                    display.dpath = dest;
-                                    display.flags = (flags &= ~ACTION_UPDATE);
-                                    display.totallen = 0;
-                                    display.actlen = 0;
-
-                                    quit = CallHook(dHook, (Object *) &display, NULL);
-                                }
-
-                                overwrite = TRUE;
-
-                                /* If copying, ask for overwrite destinatin and ask for unprotect destination */
-                                if (((flags & ACTION_COPY) != 0) && dest)
-                                {
-                                    dpath = combinePath(pool, dest, FIB->fib_FileName);
-                                    if (dpath) 
-                                    {
-                                        info = GetFileInfo(dpath);
-                                        if (info != -1) 
-                                        {
-                                            overwrite = FALSE;
-                                            if (opModes && (omode != OPMODE_NONE))
-                                            {
-                                                if (
-                                                    (omode == OPMODE_ASK) || (omode == OPMODE_YES) ||
-                                                    (omode == OPMODE_ALL) || (omode == OPMODE_NO)
-                                                ) 
-                                                {
-                                                    askDisplay.spath = dest;
-                                                    askDisplay.file = FIB->fib_FileName;
-                                                    askDisplay.type = 2;
-                                                    askDisplay.filelen = 0;
-                                                    if (omode != OPMODE_ALL) omode = CallHook(opModes->askhook, (Object *) &askDisplay, NULL);
-                                                    if ((omode == OPMODE_ALL) || (omode == OPMODE_YES))
-                                                    {
-                                                        handleUnprotect(info, dest, FIB->fib_FileName, dpath, opModes->askhook, &pmode, &overwrite);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        freeString(pool, dpath);
-                                    }
-                                }
-
-                                /* Copy the file */
-                                failure = FALSE;
-                                if (!quit && ((flags & ACTION_COPY) !=0) && overwrite)
-                                {
-                                    display.flags = (flags &= ~ACTION_UPDATE);
-                                    failure = copyFile(pool, FIB->fib_FileName, dest, FIB, dHook, &display);
-                                }
-
-                                /* If failed, ask if process should continue */
-                                if (failure && !quit) 
-                                {
-                                    if (opModes)
-                                    {
-                                        askDisplay.spath = source;
-                                        askDisplay.file = FIB->fib_FileName;
-                                        askDisplay.type = 3;
-                                        askDisplay.filelen = 0;
-                                        if (CallHook(opModes->askhook, (Object *) &askDisplay, NULL) == ACCESS_SKIP)
-                                            quit = FALSE; else quit = TRUE;
-                                    } 
-                                    else quit = FALSE;
-                                }
-
-                                /* If deleting ask for confirmation and ask to unprotect */
-                                if (!quit && opModes && (dmode != OPMODE_NONE) && ((flags & ACTION_DELETE) !=0))
-                                {
-                                    if (
-                                        (dmode == OPMODE_ASK) || (dmode == OPMODE_YES) ||
-                                        (dmode == OPMODE_ALL) || (dmode == OPMODE_NO)
-                                    ) 
-                                    {
-                                        askDisplay.spath = source;
-                                        askDisplay.file = FIB->fib_FileName;
-                                        askDisplay.type = 0;
-                                        askDisplay.filelen = FIB->fib_Size;
-                                        if (dmode != OPMODE_ALL) dmode = CallHook(opModes->askhook, (Object *) &askDisplay, NULL);
-                                        if ((dmode == OPMODE_ALL) || (dmode == OPMODE_YES))
-                                        {
-
-                                            info = GetFileInfo(FIB->fib_FileName);
-                                            unprotect = FALSE;
-
-                                            handleUnprotect(info, source, FIB->fib_FileName, FIB->fib_FileName, opModes->askhook, &pmode, &unprotect);
-
-                                            /* If file ready to be deleted, add it to "to be deleted" list */
-                                            if (unprotect) 
-                                            {
-                                                if (FIB->fib_FileName) 
-                                                {
-                                                    len = strlen(FIB->fib_FileName);
-                                                    if (len>0) 
-                                                    {
-                                                        
-                                                        fe = AllocVecPooled(pool, sizeof(struct FileEntry) + len);
-                                                        if (fe) 
-                                                        {
-                                                            strcpy(fe->name, FIB->fib_FileName);
-                                                            if (fel) 
-                                                            {
-                                                                fel->next = fe;
-                                                                fel = fe;
-                                                            } 
-                                                            else 
-                                                            {
-                                                                fef = fe;
-                                                                fel = fe;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                            }
-                        } 
-                        else 
-                        {
-                            DosError=IoErr();
-                            /* Is this the end of entries in directory ? */
-                            if (DosError!=ERROR_NO_MORE_ENTRIES) Success=TRUE;
-                        }
-                    } 
-                    while (Success && !quit);
-                }
-
-                /* Delete all directories and files which were put on the "to be deleted" list */
-                while (fef) 
-                {
-                    len = strlen(fef->name);
-                    if (len > 0) 
-                    {
-                        deleteFile(fef->name);
-                    }
-                    fe = fef->next;
-                    FreeVecPooled(pool, fef);
-                    fef = fe;
-                }
-
-                CurrentDir(cDir);
-                UnLock(NewLock);
+                returnValue = TRUE;
             }
-            FreeDosObject (DOS_FIB,(APTR) FIB2);
         }
-        FreeDosObject (DOS_FIB,(APTR) FIB);
+        UnLock(tlock);
     }
+    UnLock(slock);
 
-    return quit;
+    return returnValue;
 }
-///
-#undef dmode
-#undef pmode
-#undef omode
 
-///CopyContent()
-BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct OpModes *opModes, APTR userdata) 
+/**
+ * Moves all content from one path to another. The path can point to a directory, regular file or info file. 
+ * 
+ * Params: sourcePath -> Source file path
+ *         targetDir  -> Target directory
+ * 
+ * Result: FALSE if operation ended successfully, TRUE if it was stopped prematurely
+ */
+BOOL MoveContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir)
 {
+    BOOL stop = FALSE;
+    BOOL hasInfoFile = FALSE;
+    STRPTR sourceInfoFilePath;
+    STRPTR localSourcePath = (STRPTR)sourcePath;
 
-    struct  FileInfoBlock  *FIB;
-    struct  dCopyStruct    display;
-    struct  dCopyStruct    askDisplay;
-    char       *destname, *dest, *path, *comment, *dpath, *infoname, *destinfo;
-    //LONG       len;
-    LONG        Success2, prot;
-    BPTR       nLock, nDir;
-    APTR        pool;
-    BOOL       created = FALSE;
-    BOOL       dir = TRUE;
-    BOOL       back = FALSE;
-    BOOL       deletesrc, unprotectsrc;
-    LONG       info;
-
-    if (p == NULL) 
+    BOOL quit = infoFileSetup(sourcePath, &sourceInfoFilePath, &localSourcePath, &hasInfoFile);
+    if (quit)
     {
-        pool = CreatePool(MEMF_CLEAR|MEMF_ANY, POOLSIZE, POOLSIZE);
-    } 
-    else pool = p;
-
-    if (pool == NULL) return FALSE;
-
-    infoname = AllocVecPooled(pool, strlen(s)+6);
-    display.userdata = userdata;
-    askDisplay.userdata = userdata;
-    
-    if (infoname) 
-    {
-        strcpy (infoname, s);
-        strcat(infoname,".info");
-    }
-
-    if (d) destinfo = AllocVecPooled(pool, strlen(d)+6); else destinfo = NULL;
-
-    if (destinfo) 
-    {
-        strcpy (destinfo, d);
-        strcat(destinfo,".info");
-    }
-    
-    destname = FilePart(s);
-
-    info = GetFileInfo(s);
-
-    if (info == -1) 
-    {
-        freeString(pool, infoname);
-        freeString(pool, destinfo);
-        if (p == NULL) DeletePool(pool);
         return TRUE;
     }
 
-    if ((info & FILEINFO_DIR) != 0) dir = TRUE; else dir = FALSE;
-
-    dest = NULL;
-
-    if ((flags & ACTION_COPY) !=0 ) dest = allocString(pool, d);
-
-    /* If copying a directory, create target directory */
-    if (makeparentdir && dir && dest) 
+    if (!stop)
     {
-        if (destname) 
+        STRPTR nextTargetFile = CombinePath(FilePart(sourcePath), targetDir);
+
+        if (FileExists(nextTargetFile))
         {
-            if (strlen(destname)>0) 
+            stop = TRUE;
+            DisplayIOError(_(MSG_FAILED_TO_MOVE_FILE), IoErr(), (IPTR)sourcePath);
+        }
+
+        if (!stop)
+        {
+            BPTR sourceDirectoryLock = LockDirectory(localSourcePath);
+            BPTR targetDirectoryLock = Lock(targetDir, ACCESS_WRITE);
+
+            stop = moveFile(localSourcePath, targetDir, FALSE);
+
+            if (hasInfoFile && !stop)
             {
-                freeString(pool, dest);
-                dest = NULL;
-                FIB = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-                if (FIB) 
+                stop = moveFile(sourceInfoFilePath, targetDir, FALSE);
+            }
+
+            UnLock(targetDirectoryLock);
+            UnLock(sourceDirectoryLock);
+        }
+    }
+
+    FreeVec(sourceInfoFilePath);
+
+    return stop;
+}
+
+/**
+ * Copies all content from one path to another. The source path can point to a directory, regular file or info file. 
+ * 
+ * Params: sourcePath  -> Source path 
+ *         targetDir   -> Target path
+ *         displayHook -> Hook used to display a progress window
+ *         askHook     -> Hook used to display a request window
+ *         opModes     -> Holds data for various user choices
+ *         userdata    -> Contains a pointer to a struct with all the Zune objects used by the display Hook
+ *         first       -> Must be set to true for the initial call (if copying a directory, this function will be called recursively)
+ * 
+ * Result: FALSE if operation ended successfully, TRUE if it was stopped prematurely
+ */
+BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *displayHook, struct Hook *askHook, struct OpModes *opModes, APTR userdata, BOOL first)
+{
+    BOOL isDir;
+    BOOL stop = FALSE;
+    BOOL hasInfoFile = FALSE;
+    BOOL doFileExists;
+    STRPTR sourceInfoFilePath;
+    STRPTR localSourcePath = (STRPTR)sourcePath;
+    struct FileInfoBlock *sourceFib;
+
+    BOOL quit = infoFileSetup(sourcePath, &sourceInfoFilePath, &localSourcePath, &hasInfoFile);
+    if (quit)
+    {
+        return TRUE;
+    }
+
+    sourceFib = GetFileInfoBlock(localSourcePath);
+    if (sourceFib == NULL)
+    {
+        stop = TRUE;
+    }
+    else
+    {
+        isDir = sourceFib->fib_DirEntryType > 0;
+    }
+
+    if (isDir && !stop)
+    {
+        STRPTR nextTargetDir = CombinePath(FilePart(sourcePath), targetDir);
+        if (nextTargetDir != NULL)
+        {
+            if (first && FileExists(nextTargetDir))
+            {
+                stop = checkIfAlreadyExists(nextTargetDir, sourcePath, askHook, opModes);
+            }
+
+            if (!stop)
+            {
+                BPTR targetDirectoryLock = CreateDirectory(nextTargetDir);
+                BPTR sourceDirectoryLock = ReadFileInfoBlockAndLockPath(sourcePath, sourceFib);
+                stop = copyDirectory(sourcePath, nextTargetDir, askHook, opModes, userdata, displayHook, sourceFib, sourceDirectoryLock);
+                UnLock(targetDirectoryLock);
+
+                // need to copy .info file for directory
+                targetDirectoryLock = Lock(targetDir, ACCESS_WRITE);
+                if (hasInfoFile && first)
                 {
-                    dest = combinePath(pool, d, destname);
-                    if (dest) 
+                    STRPTR targetPath = CombinePath(FilePart(sourceInfoFilePath), targetDir);
+                    if (targetPath != NULL)
                     {
-                        nLock = Lock(dest, ACCESS_READ);
-                        if (nLock) 
-                        {
-                            Success2 = Examine(nLock,FIB);
-                            if (Success2) if (FIB->fib_DirEntryType>0) created = TRUE;
-                            UnLock(nLock);
-                        }
-                        if (!created) 
-                        {
-                            nDir = CreateDir(dest);
-                            if (nDir) 
-                            {
-                                created = TRUE;
-                                UnLock(nDir);
-                                prot = GetProtectionInfo(s);
-                                comment = GetCommentInfo(pool, s);
-                                if (comment) SetComment(dest, comment);
-                                SetProtection(dest, prot);
-                                freeString(pool, comment);
-                            }
-                        }
-                        if (!created) 
-                        {
-                            freeString(pool, dest);
-                            dest = NULL;
-                            created = FALSE;
-                        }
+                        stop = performDataCopy(sourceInfoFilePath, targetPath, sourceFib, displayHook, userdata);
+                        FreeVec(targetPath);
                     }
-                    FreeDosObject (DOS_FIB,(APTR) FIB);
-                }
-            }
-        }
-    }
-
-    path = NULL;
-
-    deletesrc = FALSE;
-    unprotectsrc = TRUE;
-    /* If deleting ask for confirmation, ask to unprotect */
-    if (opModes && (opModes->deletemode != OPMODE_NONE) && ((flags & ACTION_DELETE) != 0) && ((makeparentdir && dir) || !dir))
-    {
-        if (dir) 
-        {
-            askDisplay.spath = s;
-            askDisplay.file = NULL;
-        } 
-        else 
-        {
-            path = allocPath(pool, s);
-            askDisplay.spath = path;
-            askDisplay.file = FilePart(s);
-        }
-        askDisplay.type = 0;
-
-        if (opModes->deletemode != OPMODE_ALL) opModes->deletemode = CallHook(opModes->askhook, (Object *) &askDisplay, NULL);
-        if ((opModes->deletemode == OPMODE_ALL) || (opModes->deletemode == OPMODE_YES))
-        {
-            deletesrc = TRUE;
-            if ((info & (FILEINFO_PROTECTED|FILEINFO_WRITE)) != 0)
-            {
-                askDisplay.type = 1;
-                unprotectsrc = FALSE;
-                opModes->protectmode = CallHook(opModes->askhook, (Object *) &askDisplay, NULL);
-                if ((opModes->protectmode == OPMODE_ALL) || (opModes->protectmode == OPMODE_YES))
-                {
-                    SetProtection(s, 0);
-                    if (infoname) SetProtection(infoname, 0);
-                    unprotectsrc = TRUE;
-                }
-            }
-        }
-    }
-
-    /* If copying ask to overwrite, ask to unprotect */
-    if (dest) 
-    {
-        if (opModes && !dir)
-        {
-            dpath = combinePath(pool, d, FilePart(s));
-            if (dpath) 
-            {
-                info = GetFileInfo(dpath);
-                if (info != -1) 
-                {
-                    if (opModes && (opModes->overwritemode != OPMODE_NONE))
+                    else
                     {
-                        if (
-                            (opModes->overwritemode == OPMODE_ASK) || (opModes->overwritemode == OPMODE_YES) ||
-                            (opModes->overwritemode == OPMODE_ALL) || (opModes->overwritemode == OPMODE_NO)
-                        ) 
-                        {
-                            askDisplay.spath = d;
-                            askDisplay.file = FilePart(s);
-                            askDisplay.type = 2;
-                            if (opModes->overwritemode != OPMODE_ALL) opModes->overwritemode = CallHook(opModes->askhook, (Object *) &askDisplay, NULL);
-                            if ((opModes->overwritemode == OPMODE_ALL) || (opModes->overwritemode == OPMODE_YES))
-                            {
-                                if (((info & (FILEINFO_PROTECTED|FILEINFO_WRITE)) != 0) && (opModes->protectmode != OPMODE_NONE))
-                                {
-                                    if (
-                                        (opModes->protectmode == OPMODE_ASK) || (opModes->protectmode == OPMODE_YES) ||
-                                        (opModes->protectmode == OPMODE_ALL) || (opModes->protectmode == OPMODE_NO)
-                                    ) 
-                                    {
-                                        askDisplay.spath = d;
-                                        askDisplay.file = FilePart(s);
-                                        askDisplay.type = 1;
-                                        if (opModes->protectmode != OPMODE_ALL) opModes->protectmode = CallHook(opModes->askhook, (Object *) &askDisplay, NULL);
-                                        if ((opModes->protectmode == OPMODE_ALL) || (opModes->protectmode == OPMODE_YES))
-                                        {
-                                            SetProtection(dpath, 0);
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        stop = TRUE;
                     }
                 }
-                freeString(pool, dpath);
-            }
-        }
-    }
-    freeString(pool, path);
 
-    if (dir) 
-    {
-        if (dest || ((flags & ACTION_DELETE) != 0))
-        {
-            if (
-                ((opModes->deletemode == OPMODE_NONE) || (opModes->deletemode == OPMODE_NO)) &&
-                (flags & (ACTION_DELETE|ACTION_COPY)) == ACTION_DELETE
-            ) 
-            {
-                back = FALSE; 
+                UnLock(targetDirectoryLock);
+                UnLock(sourceDirectoryLock);
             }
-            else 
-            {
-                back = actionDir(pool, flags, s, dest, FALSE, displayHook, opModes, userdata);
-            }
-        } 
-        else back = TRUE;
-    } 
-    else 
-    {
-        if (flags == ACTION_DELETE) back = FALSE; 
+            FreeVec(nextTargetDir);
+        }
         else
         {
-            STRPTR path = allocPath(pool, s);
-            display.file = FilePart(s);
-            display.filelen = 0;
-            display.totallen = 0;
-            display.actlen = 0;
-
-            if (path) display.spath = path; else display.spath = s;
-            display.dpath = d;
-            display.flags = (flags &= ~ACTION_UPDATE);
-            if (displayHook) CallHook(displayHook, (Object *) &display, NULL);
-            back = copyFile(pool, s, d, NULL, displayHook, &display);
-            freeString(pool, path);
+            stop = TRUE;
         }
     }
-
-    if (!back && destinfo && infoname) 
+    else if (!stop)
     {
-        SetProtection(destinfo, 0);
-        copyFile(pool, infoname, d, NULL, NULL, NULL);
+        BPTR sourceDirectoryLock = LockDirectory(localSourcePath);
+        BPTR targetDirectoryLock = Lock(targetDir, ACCESS_WRITE);
+
+        stop = copySingleFile(localSourcePath, sourceInfoFilePath, targetDir, first && hasInfoFile, askHook, opModes, userdata, displayHook, sourceFib, !first);
+
+        UnLock(targetDirectoryLock);
+        UnLock(sourceDirectoryLock);
     }
 
-    if (!back && opModes && (opModes->deletemode != OPMODE_NONE) && ((flags & ACTION_DELETE) !=0))
-    {
-        if (unprotectsrc && deletesrc)
-        {
-            deleteFile(s);
-            if (infoname) deleteFile(infoname);
-        }
-    }
-    
-    freeString(pool, infoname);
-    freeString(pool, destinfo);
-    freeString(pool, dest);
+    FreeDosObject(DOS_FIB, (APTR)sourceFib);
+    FreeVec(sourceInfoFilePath);
 
-    if (p == NULL) 
-        DeletePool(pool);
-    return !back;
+    return stop;
 }
-///
+
+/**
+ * Deletes all content from the given path. The path can point to a directory, regular file or info file. 
+ * 
+ * Params: path        -> File path
+ *         opModes     -> Holds data for various user choices
+ *         askHook     -> Hook used to display a request window
+ *         displayHook -> Hook used to display a progress window
+ *         userdata    -> Contains a pointer to a struct with all the Zune objects used by the display Hook
+ * 
+ * Result: FALSE if operation ended successfully, TRUE if it was stopped prematurely
+ */
+BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct Hook *displayHook, APTR userdata)
+{
+    BOOL stop = FALSE;
+    BOOL isDir = FALSE;
+    BOOL doDelete = FALSE;
+    BOOL hasInfoFile = FALSE;
+    STRPTR infoFilePath;
+    STRPTR localPath = (STRPTR)path;
+
+    BOOL quit = infoFileSetup(path, &infoFilePath, &localPath, &hasInfoFile);
+    if (quit)
+    {
+        return TRUE;
+    }
+
+    struct FileInfoBlock *sourceFib = GetFileInfoBlock(localPath);
+    if (sourceFib != NULL)
+    {
+        isDir = sourceFib->fib_DirEntryType > 0;
+
+        doDelete = askToDeleteAndUnprotect(localPath, opModes, askHook, hasInfoFile ? infoFilePath : NULL, sourceFib);
+
+        if (doDelete)
+        {
+            if (isDir)
+            {
+                stop = deleteDirectoryContents(localPath, opModes, askHook, sourceFib, displayHook, userdata);
+            }
+
+            if (!stop)
+            {
+                stop = deleteSingleFile(localPath, displayHook, userdata);
+
+                if (hasInfoFile && !stop)
+                {
+                    stop = deleteSingleFile(infoFilePath, displayHook, userdata);
+                }
+            }
+        }
+    }
+    else
+    {
+        stop = TRUE;
+    }
+
+    FreeVec((APTR)infoFilePath);
+
+    return stop;
+}
