@@ -138,7 +138,7 @@ int main(int argc, char **argv)
     application = (Object *)ApplicationObject,
         MUIA_Application_Title, (IPTR) MSG(MSG_WINDOW_TITLE),
         MUIA_Application_Version, (IPTR) versionString,
-        MUIA_Application_Copyright, (IPTR)"0xA9 2006, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"(C) 2006, The AROS Development Team",
         MUIA_Application_Description, (IPTR) MSG(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "CLOCK",
         SubWindow, (IPTR) (window = (Object *)WindowObject,

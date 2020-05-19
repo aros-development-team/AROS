@@ -98,7 +98,7 @@
 #define MSG_SETTINGS_PLUGINS_STR "Plugins..."
 #define MSG_PROJECT_CLOSE_STR "Close"
 #define MSG_OK_GAD_STR "Ok"
-#define MSG_ABOUT_REQ_STR "%s version %ld.%ld\n%s version %ld.%ld\n\nCopyright 0xA9 2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik0x40a500.org"
+#define MSG_ABOUT_REQ_STR "%s version %ld.%ld\n%s version %ld.%ld\n\nCopyright (C) 2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik0x40a500.org"
 #define MSG_ERROR_STR "Error"
 #define MSG_NOAISS_REQ_STR "AISS assign not found.\n\nDownload and install the latest version\nfrom here: http://masonicons.de"
 #define MSG_OLDAISS_REQ_STR "AISS v%ld.%ld or newer required.\n\nDownload and install the latest version\nfrom here: http://masonicons.de"

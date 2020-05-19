@@ -36,10 +36,10 @@
  */
 
 static const char version[] __attribute__((used)) = "$VER: arp 3.2 (12.09.2005) "
-  "Copyright 0xA9 2005 Pavel Fedin <sonic_amiga@rambler.ru>\n"
-  "Copyright 0xA9 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
+  "Copyright (C) 2005 Pavel Fedin <sonic_amiga@rambler.ru>\n"
+  "Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
   "Helsinki University of Technology, Finland.\n"
-  "Copyright 0xA9 1984 The Regents of the University of California.\n"
+  "Copyright (C) 1984 The Regents of the University of California.\n"
   "All rights reserved.\n";
 
 

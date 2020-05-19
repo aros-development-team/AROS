@@ -422,7 +422,7 @@ int main(int argc, char *argv[])
         app = ApplicationObject,
             MUIA_Application_Title      , "PSI",
             MUIA_Application_Version    , VersionString,
-            MUIA_Application_Copyright  , "0xA9 1995-97, Stefan Stuntz",
+            MUIA_Application_Copyright  , "(C) 1995-97, Stefan Stuntz",
             MUIA_Application_Author     , "Stefan Stuntz",
             MUIA_Application_Description, "Public Screen Inspector",
             MUIA_Application_SingleTask , TRUE,

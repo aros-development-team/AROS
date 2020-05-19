@@ -23,7 +23,7 @@
 #include "locale.h"
 #include "wpeditor.h"
 
-#define VERSIONSTR "$VER: Wanderer Prefs 1.4 (14.01.2012) 0xA9 1995-2012 The AROS Development Team"
+#define VERSIONSTR "$VER: Wanderer Prefs 1.4 (14.01.2012) (C) 1995-2012 The AROS Development Team"
 
 int main(void)
 {
