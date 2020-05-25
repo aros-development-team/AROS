@@ -174,6 +174,17 @@ IPTR Slider__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+IPTR Slider__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_SliderData *data = INST_DATA(cl, obj);
+    if (data->text_buffer) FreeVec((APTR)data->text_buffer);
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/**************************************************************************
  OM_SET
 **************************************************************************/
 IPTR Slider__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -397,8 +408,9 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj,
         if (!(data->flags & SLIDER_VALIDSTRING))
         {
             longget(obj, MUIA_Numeric_Value, &val);
-            data->text_buffer = (CONST_STRPTR) DoMethod(obj,
-                MUIM_Numeric_Stringify, val);
+            if (data->text_buffer) FreeVec((APTR)data->text_buffer);
+            data->text_buffer = StrDup((CONST_STRPTR) DoMethod(obj,
+                MUIM_Numeric_Stringify, val));
             data->text_length = strlen(data->text_buffer);
             data->text_width =
                 TextLength(_rp(obj), data->text_buffer, data->text_length);
@@ -556,6 +568,8 @@ BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
     {
     case OM_NEW:
         return Slider__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_DISPOSE:
+        return Slider__OM_DISPOSE(cl, obj, msg);
     case OM_SET:
         return Slider__OM_SET(cl, obj, (struct opSet *)msg);
     case OM_GET:
