@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <libgen.h>
 
 #include <dos/doshunks.h>
 #include <arpa/inet.h>
@@ -58,12 +59,13 @@ BOOL writeKeyMap(struct config *cfg)
     ULONG tmp;
     int r = 0, i;
 
+    char *kmname = basename(cfg->keymap);
     struct KeyMap_Hunk *hunkRaw;
     ULONG *relocData;
     APTR hunkData;
 
     if (doverbose)
-        fprintf(stdout, "creating keymap '%s'\n", cfg->keymap);
+        fprintf(stdout, "creating keymap '%s' ('%s')\n", cfg->keymap, kmname);
 
     for (i = 0; i < 0x40; i ++)
     {
@@ -89,13 +91,13 @@ BOOL writeKeyMap(struct config *cfg)
 
     if (doverbose)
     {
-        fprintf(stdout, "allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct KeyMap_Hunk) + strlen(cfg->keymap) + 1 + stdtsize, stdtsize);
+        fprintf(stdout, "allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct KeyMap_Hunk) + strlen(kmname) + 1 + stdtsize, stdtsize);
         fprintf(stdout, "creating %u relocations\n", reloccnt + 9);
     }
 
-    hunkRaw = malloc(sizeof(struct KeyMap_Hunk) + stdtsize + strlen(cfg->keymap) + 1);
+    hunkRaw = malloc(sizeof(struct KeyMap_Hunk) + stdtsize + strlen(kmname) + 1);
     hunkRaw->Hunk = htonl(HUNK_CODE);
-    hunkRaw->Length = sizeof(struct KeyMap_Hunk) + stdtsize + strlen(cfg->keymap) + 1;
+    hunkRaw->Length = sizeof(struct KeyMap_Hunk) + stdtsize + strlen(kmname) + 1;
     hunkRaw->Length >>= 2;
     hunkRaw->Length -= 2;
     hunkRaw->Length = htonl(hunkRaw->Length);
@@ -110,10 +112,10 @@ BOOL writeKeyMap(struct config *cfg)
     relocData[r++] = 0;
 
     hunkData = (APTR)((IPTR)hunkRaw + sizeof(struct KeyMap_Hunk));
-    strcpy(hunkData, cfg->keymap);
+    strcpy(hunkData, kmname);
     hunkRaw->kh_KeyMapNode.kn_Node.ln_Name = htonl(((IPTR)hunkData - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
     relocData[r++] = htonl(((IPTR)&hunkRaw->kh_KeyMapNode.kn_Node.ln_Name - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
-    hunkData = (APTR)((IPTR)hunkData + strlen(cfg->keymap) + 1);
+    hunkData = (APTR)((IPTR)hunkData + strlen(kmname) + 1);
 
     hunkRaw->kh_KeyMapNode.kn_KeyMap.km_LoKeyMapTypes = htonl(((IPTR)&hunkRaw->kh_LoKeyMapTypes[0] - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
     relocData[r++] = htonl(((IPTR)&hunkRaw->kh_KeyMapNode.kn_KeyMap.km_LoKeyMapTypes - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
