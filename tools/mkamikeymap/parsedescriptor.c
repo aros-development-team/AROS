@@ -223,7 +223,7 @@ void GetEncodedBytes(char *s, UBYTE *strbuffer, ULONG *count)
 
 BOOL processSectString(struct config *cfg, FILE *descf)
 {
-    UBYTE strbuffer[32], *buffptr;
+    UBYTE strbuffer[256], *buffptr;
     ULONG bcount, count = 0;
     char *s, *id = NULL;
     BOOL retval = TRUE, done = FALSE;
@@ -292,7 +292,7 @@ BOOL processSectString(struct config *cfg, FILE *descf)
 
 BOOL processSectDeadkey(struct config *cfg, FILE *descf)
 {
-    UBYTE dkbuffer[32], *buffptr;
+    UBYTE dkbuffer[256], *buffptr;
     ULONG bcount, count = 0;
     char *s, *id = NULL;
     BOOL retval = TRUE, done = FALSE;
@@ -468,7 +468,7 @@ IPTR FindListEntry(struct config *cfg, char *id)
 
 BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE *typesptr, UBYTE cnt)
 {
-    int i;
+    int i = 0;
     char *s;
 
     D(fprintf(stdout, "processing 'map' section\n");)

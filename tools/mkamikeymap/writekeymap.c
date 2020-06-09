@@ -70,7 +70,7 @@ BOOL writeKeyMap(struct config *cfg)
         if ((cfg->LoKeyMapTypes[i] & (KCF_DEAD|KCF_STRING)) != 0)
         {
             stNode = (struct Node *)cfg->LoKeyMap[i];
-            fprintf(stdout, "node @ 0x%p\n", stNode);
+            D(fprintf(stdout, "node @ 0x%p\n", stNode);)
             stdtsize += (UBYTE)stNode->ln_Pri;
             reloccnt++;
         }
@@ -81,14 +81,17 @@ BOOL writeKeyMap(struct config *cfg)
         if ((cfg->HiKeyMapTypes[i] & (KCF_DEAD|KCF_STRING)) != 0)
         {
             stNode = (struct Node *)cfg->HiKeyMap[i];
-            fprintf(stdout, "node @ 0x%p\n", stNode);
+            D(fprintf(stdout, "node @ 0x%p\n", stNode);)
             stdtsize += (UBYTE)stNode->ln_Pri;
             reloccnt++;
         }
     }
 
-    fprintf(stdout, "allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct KeyMap_Hunk) + strlen(cfg->keymap) + 1 + stdtsize, stdtsize);
-    fprintf(stdout, "creating %u relocations\n", reloccnt + 9);
+    if (doverbose)
+    {
+        fprintf(stdout, "allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct KeyMap_Hunk) + strlen(cfg->keymap) + 1 + stdtsize, stdtsize);
+        fprintf(stdout, "creating %u relocations\n", reloccnt + 9);
+    }
 
     hunkRaw = malloc(sizeof(struct KeyMap_Hunk) + stdtsize + strlen(cfg->keymap) + 1);
     hunkRaw->Hunk = htonl(HUNK_CODE);
@@ -190,11 +193,20 @@ BOOL writeKeyMap(struct config *cfg)
     tmp = htonl(tmp);
     fwrite(&tmp, 4, 1, out);
 
+    if (doverbose)
+        fprintf(stdout, "wrote 6x4 (24) bytes hunk exe header\n");
+
     /* write hunk code */
-    fwrite(hunkRaw, (hunkRaw->Length << 2), 1, out);
+    fwrite(hunkRaw, (ntohl(hunkRaw->Length) << 2), 1, out);
+
+    if (doverbose)
+        fprintf(stdout, "wrote %d bytes hunk code\n", (ntohl(hunkRaw->Length) << 2));
 
     /* write relocs .. */
-    fwrite(relocData, ((reloccnt + 4) << 2), 1, out);
+    fwrite(relocData, ((reloccnt + 12) << 2), 1, out);
+
+    if (doverbose)
+        fprintf(stdout, "wrote %d bytes relocation data\n", ((reloccnt + 12) << 2));
 
     fclose(out);
 }
