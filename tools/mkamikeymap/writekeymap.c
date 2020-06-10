@@ -53,7 +53,7 @@ BOOL writeKeyMap(struct config *cfg)
 {
     FILE *out;
     struct Node *stNode;
-    ULONG stdtsize = 0, reloccnt = 0;
+    ULONG stdtsize = 0, hunksize, reloccnt = 0;
     BOOL doverbose = cfg->verbose;
     D(doverbose = TRUE;)
     ULONG tmp;
@@ -95,12 +95,11 @@ BOOL writeKeyMap(struct config *cfg)
         fprintf(stdout, "creating %u relocations\n", reloccnt + 9);
     }
 
-    hunkRaw = malloc(sizeof(struct KeyMap_Hunk) + stdtsize + strlen(kmname) + 1);
+    hunksize = (sizeof(struct KeyMap_Hunk) + stdtsize + strlen(kmname) + 2) & ~0x1;
+
+    hunkRaw = malloc(hunksize);
     hunkRaw->Hunk = htonl(HUNK_CODE);
-    hunkRaw->Length = sizeof(struct KeyMap_Hunk) + stdtsize + strlen(kmname) + 1;
-    hunkRaw->Length >>= 2;
-    hunkRaw->Length -= 2;
-    hunkRaw->Length = htonl(hunkRaw->Length);
+    hunkRaw->Length = htonl((hunksize >> 2) - 2);
 
     memcpy(&hunkRaw->kh_LoKeyMapTypes[0], cfg->LoKeyMapTypes, 0x40);
     memcpy(&hunkRaw->kh_LoCapsable[0], cfg->LoCapsable, 0x8);
@@ -190,16 +189,14 @@ BOOL writeKeyMap(struct config *cfg)
     fwrite(&tmp, 4, 1, out);
     tmp = 0;
     fwrite(&tmp, 4, 1, out);
-    tmp = sizeof(struct KeyMap_Hunk) + strlen(cfg->keymap) + 1 + stdtsize;
-    tmp >>= 2;
-    tmp = htonl(tmp);
+    tmp = htonl((hunksize >> 2) - 2);
     fwrite(&tmp, 4, 1, out);
 
     if (doverbose)
         fprintf(stdout, "wrote 6x4 (24) bytes hunk exe header\n");
 
     /* write hunk code */
-    fwrite(hunkRaw, (ntohl(hunkRaw->Length) << 2), 1, out);
+    fwrite(hunkRaw, hunksize, 1, out);
 
     if (doverbose)
         fprintf(stdout, "wrote %d bytes hunk code\n", (ntohl(hunkRaw->Length) << 2));
