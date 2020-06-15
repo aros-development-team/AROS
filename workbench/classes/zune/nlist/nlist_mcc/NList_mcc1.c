@@ -816,7 +816,7 @@ IPTR mNL_Set(struct IClass *cl,Object *obj,Msg msg)
       case MUIA_List_ConstructHook :
       case MUIA_NList_ConstructHook :
 /*D(bug("%lx|set_ConstructHook=0x%lx \n",obj,tag->ti_Data));*/
-        if (tag->ti_Data == (ULONG)MUIV_NList_ConstructHook_String)
+        if (tag->ti_Data == (IPTR)MUIV_NList_ConstructHook_String)
           data->NList_ConstructHook = (struct Hook *) &NL_ConstructHook_String;
         else
           data->NList_ConstructHook = (struct Hook *) tag->ti_Data;
@@ -833,7 +833,7 @@ IPTR mNL_Set(struct IClass *cl,Object *obj,Msg msg)
       case MUIA_List_DestructHook :
       case MUIA_NList_DestructHook :
 /*D(bug("%lx|set_DestructHook=0x%lx \n",obj,tag->ti_Data));*/
-        if (tag->ti_Data == (ULONG)MUIV_NList_DestructHook_String)
+        if (tag->ti_Data == (IPTR)MUIV_NList_DestructHook_String)
           data->NList_DestructHook = (struct Hook *) &NL_DestructHook_String;
         else
           data->NList_DestructHook = (struct Hook *) tag->ti_Data;
