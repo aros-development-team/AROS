@@ -373,7 +373,8 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
-        static unsigned char  buf[1024];
+        static UBYTE windowTitleBuffer[1024]; 
+        STRPTR windowTitle;
         D(IPTR                  offset);
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
 
@@ -388,14 +389,14 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: NextIcon returned MUIV_IconList_Ne
 
         if ((msg->isroot) && (ent->type == ST_ROOT))
         {
-            strcpy((STRPTR)buf, ent->label);
+            windowTitle = ent->label;
         }
         else
         {
-            strcpy((STRPTR)buf, ent->ile_IconEntry->ie_IconNode.ln_Name);
+            windowTitle = ent->ile_IconEntry->ie_IconNode.ln_Name;
         }
 
-D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY_FUNCTION__, offset, buf));
+D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY_FUNCTION__, offset, windowTitle));
 
         if  ((ent->type == ST_ROOT) || (ent->type == ST_USERDIR) || (ent->type == ST_LINKDIR))
         {
@@ -412,7 +413,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                     if (XGET(child, MUIA_UserData))
                     {
                         STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
-                        if (child_drawer && !Stricmp(buf,(CONST_STRPTR)child_drawer))
+                        if (child_drawer && !Stricmp(windowTitle,(CONST_STRPTR)child_drawer))
                         {
                             BOOL is_open = ( BOOL )XGET(child, MUIA_Window_Open);
 
@@ -430,13 +431,15 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                         }
                     }
                 } 
-                DoMethod(_app(obj), MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
+
+                DoMethod(_app(obj), MUIM_Wanderer_CreateDrawerWindow, (IPTR) windowTitle);
                 // FIXME: error handling
             }
             else
             {
+                strcpy(windowTitleBuffer, windowTitle);
                 /* Open drawer in same window */
-                SET(obj, MUIA_IconWindow_Location, (IPTR) buf);
+                SET(obj, MUIA_IconWindow_Location, (IPTR) windowTitleBuffer);
             }
         } 
         else if ((ent->type == ST_FILE) || (ent->type == ST_LINKFILE))
