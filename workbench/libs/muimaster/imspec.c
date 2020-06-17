@@ -367,6 +367,12 @@ static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
                     &spec->u.penspec));
             break;
 
+        case 'r':              /* a penspec, WookieChat is doing this on MorphOS */
+            spec = get_pen_imspec(s + 1);
+            D(bug("zune_image_spec_to_structure : penspec %lx\n",
+                    &spec->u.penspec));
+            break;
+
         case '3':              /* BOOPSI image class name */
             spec = get_boopsi_imspec(s + 2);
             break;

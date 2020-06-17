@@ -662,7 +662,7 @@ static LONG DoRefresh(struct NLData *data)
  */
 
 
-void NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg)
+void NL_DrawQuietBG(struct NLData *data,LONG dowhat,IPTR bg)
 {
   if (data->do_draw_all)
   {

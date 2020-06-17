@@ -80,7 +80,7 @@ extern void NL_SetCols(struct NLData *data);
 extern LONG NL_DoNotifies(struct NLData *data,LONG which);
 extern void NL_UpdateScrollersValues(struct NLData *data);
 extern ULONG NL_UpdateScrollers(struct NLData *data,BOOL force);
-extern void NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg);
+extern void NL_DrawQuietBG(struct NLData *data,LONG dowhat,IPTR bg);
 extern void NL_Select(struct NLData *data,LONG dowhat,LONG ent,BYTE sel);
 extern void ScrollVert(struct NLData *data,WORD dy,LONG LPVisible);
 extern void ScrollHoriz(struct NLData *data,WORD dx,LONG LPVisible);
