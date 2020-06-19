@@ -570,6 +570,7 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         /* Cache device base pointer. Useful. */
         data->ab_Base = ATABase;
+        data->ab_Object = o;
 
         /* Install reset callback */
         data->ab_ResetInt.is_Node.ln_Name = ATABase->ata_Device.dd_Library.lib_Node.ln_Name;

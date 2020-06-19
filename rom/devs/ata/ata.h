@@ -58,11 +58,6 @@ struct ata_Bus;
 struct ataBase
 {
     struct Device           	ata_Device;    			/* Exec device structure                */
-    struct Task            	*ata_Daemon;    		/* master task pointer                  */
-    struct MsgPort         	*DaemonPort;    		/* Daemon's message port                */
-    struct MinList          	Daemon_ios;    			/* Daemon's IORequests                  */
-    struct SignalSemaphore  	DaemonSem;
-    struct Task            	*daemonParent;  		/* Who sends control requests to daemon */
     int                     	ata__buscount; 			/* Number of all buses                  */
     struct SignalSemaphore  	DetectionSem;  			/* Device detection semaphore           */
 
@@ -133,6 +128,12 @@ struct ata_Controller
     struct Node         	ac_Node;
     OOP_Class           	*ac_Class;
     OOP_Object          	*ac_Object;
+
+    struct MsgPort         	*DaemonPort;    		/* Daemon's message port                */
+    struct MinList          	Daemon_ios;    			/* Daemon's IORequests                  */
+    struct SignalSemaphore  	DaemonSem;
+    struct Task            	*ac_daemonParent;  		/* Who sends control requests to daemon */
+    struct Task            	*ac_Daemon;
 };
 
 /*
@@ -141,6 +142,7 @@ struct ata_Controller
 struct ata_Bus
 {
    struct ataBase          	*ab_Base;  			/* device self */
+    OOP_Object          	*ab_Object;
 
    /** Bus object data **/
    struct ATA_BusInterface	*busVectors;     		/* Control vector table     */
@@ -392,7 +394,7 @@ void ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u);
 
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase);
-void DaemonCode(struct ataBase *LIBBASE);
+void DaemonCode(struct ataBase *LIBBASE, struct ata_Controller *ataNode);
 
 BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
 

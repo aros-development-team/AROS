@@ -874,13 +874,13 @@ AROS_LH1(ULONG, GetBlkSize,
  * The check is done by sending HD_SCSICMD+1 command (internal testchanged
  * command). ATAPI units should already handle the command further.
  */
-void DaemonCode(struct ataBase *ATABase)
+void DaemonCode(struct ataBase *ATABase, struct ata_Controller *ataNode)
 {
     struct IORequest *timer;	// timer
     UBYTE b = 0;
     ULONG sigs;
 
-    D(bug("[ATA**] You woke up DAEMON\n"));
+    D(bug("[ATA**] ATA DAEMON woke for controller @ 0x%p\n", ataNode));
 
     /*
      * Prepare message ports and timer.device's request
@@ -891,7 +891,7 @@ void DaemonCode(struct ataBase *ATABase)
         D(bug("[ATA++] Failed to open timer!\n"));
 
         Forbid();
-        Signal(ATABase->daemonParent, SIGF_SINGLE);
+        Signal(ataNode->ac_daemonParent, SIGF_SINGLE);
         return;
     }
 
@@ -900,13 +900,13 @@ void DaemonCode(struct ataBase *ATABase)
     {
         ata_CloseTimer(timer);
         Forbid();
-        Signal(ATABase->daemonParent, SIGF_SINGLE);
+        Signal(ataNode->ac_daemonParent, SIGF_SINGLE);
         return;
     }
 
     /* This also signals that we have initialized successfully */
-    ATABase->ata_Daemon = FindTask(NULL);
-    Signal(ATABase->daemonParent, SIGF_SINGLE);
+    ataNode->ac_Daemon = FindTask(NULL);
+    Signal(ataNode->ac_daemonParent, SIGF_SINGLE);
 
     D(bug("[ATA++] Starting sweep medium presence detection\n"));
 
@@ -931,9 +931,9 @@ void DaemonCode(struct ataBase *ATABase)
             struct IOStdReq *ios;
 
             DB2(bug("[ATA++] Detecting media presence\n"));
-            ObtainSemaphore(&ATABase->DaemonSem);
+            ObtainSemaphore(&ataNode->DaemonSem);
 
-            ForeachNode(&ATABase->Daemon_ios, ios)
+            ForeachNode(&ataNode->Daemon_ios, ios)
             {
                 /* Using the request will clobber its Node. Save links. */
                 struct Node *s = ios->io_Message.mn_Node.ln_Succ;
@@ -945,7 +945,7 @@ void DaemonCode(struct ataBase *ATABase)
                 ios->io_Message.mn_Node.ln_Pred = p;
             }
 
-            ReleaseSemaphore(&ATABase->DaemonSem);
+            ReleaseSemaphore(&ataNode->DaemonSem);
         }
 
         /*
@@ -958,12 +958,13 @@ void DaemonCode(struct ataBase *ATABase)
         b++;
     } while (!sigs);
 
+    ataNode->ac_Daemon = NULL;
     D(bug("[ATA++] Daemon quits\n"));
 
     ata_CloseTimer(timer);
 
     Forbid();
-    Signal(ATABase->daemonParent, SIGF_SINGLE);
+    Signal(ataNode->ac_daemonParent, SIGF_SINGLE);
 }
 
 /*
@@ -1014,25 +1015,31 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
 
                     if (unit->au_XferModes & AF_XFER_PACKET)
                     {
+                        struct ata_Controller *ataNode = NULL;
+
                         ata_RegisterVolume(0, 0, unit);
 
-                        /* For ATAPI device we also submit media presence detection request */
-                        unit->DaemonReq = (struct IOStdReq *)CreateIORequest(ATABase->DaemonPort, sizeof(struct IOStdReq));
-                        if (unit->DaemonReq)
+                        OOP_GetAttr(bus->ab_Object, aHidd_ATABus_Controller, (IPTR *)&ataNode);
+                        if (ataNode)
                         {
-                            /*
-                             * We don't want to keep stalled open count of 1, so we
-                             * don't call OpenDevice() here. Instead we fill in the needed
-                             * fields manually.
-                             */
-                            unit->DaemonReq->io_Device = &ATABase->ata_Device;
-                            unit->DaemonReq->io_Unit   = &unit->au_Unit;
-                            unit->DaemonReq->io_Command = HD_SCSICMD+1;
+                            /* For ATAPI device we also submit media presence detection request */
+                            unit->DaemonReq = (struct IOStdReq *)CreateIORequest(ataNode->DaemonPort, sizeof(struct IOStdReq));
+                            if (unit->DaemonReq)
+                            {
+                                /*
+                                 * We don't want to keep stalled open count of 1, so we
+                                 * don't call OpenDevice() here. Instead we fill in the needed
+                                 * fields manually.
+                                 */
+                                unit->DaemonReq->io_Device = &ATABase->ata_Device;
+                                unit->DaemonReq->io_Unit   = &unit->au_Unit;
+                                unit->DaemonReq->io_Command = HD_SCSICMD+1;
 
-                            ObtainSemaphore(&ATABase->DaemonSem);
-                            AddTail((struct List *)&ATABase->Daemon_ios,
-                                    &unit->DaemonReq->io_Message.mn_Node);
-                            ReleaseSemaphore(&ATABase->DaemonSem);
+                                ObtainSemaphore(&ataNode->DaemonSem);
+                                AddTail((struct List *)&ataNode->Daemon_ios,
+                                        &unit->DaemonReq->io_Message.mn_Node);
+                                ReleaseSemaphore(&ataNode->DaemonSem);
+                            }
                         }
                     }
                     else

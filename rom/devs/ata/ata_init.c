@@ -244,83 +244,64 @@ static int ATA_init(struct ataBase *ATABase)
     }
 #endif
 
+    InitSemaphore(&ATABase->DetectionSem);
+
     D(bug("[ATA  ] %s: Base ATA Hidd Class @ 0x%p\n", __func__, ATABase->ataClass));
 
-    /* Try to setup daemon task looking for diskchanges */
-    NEWLIST(&ATABase->Daemon_ios);
-    InitSemaphore(&ATABase->DaemonSem);
-    InitSemaphore(&ATABase->DetectionSem);
-    ATABase->daemonParent = FindTask(NULL);
-    SetSignal(0, SIGF_SINGLE);
-
-    if (!NewCreateTask(TASKTAG_PC, DaemonCode,
-                       TASKTAG_NAME       , "ATA.daemon",
-                       TASKTAG_STACKSIZE  , STACK_SIZE,
-                       TASKTAG_TASKMSGPORT, &ATABase->DaemonPort,
-                       TASKTAG_PRI        , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri than handler tasks */
-                       TASKTAG_ARG1       , ATABase,
-                       TAG_DONE))
-    {
-        bug("[ATA  ] %s: Failed to start up daemon!\n", __func__);
-        return FALSE;
-    }
-
-    /* Wait for handshake */
-    Wait(SIGF_SINGLE);
-    D(bug("[ATA  ] %s: Daemon task set to 0x%p\n", __func__, ATABase->ata_Daemon));
-
-    return ATABase->ata_Daemon ? TRUE : FALSE;
+    return TRUE;
 }
 
 static int ata_expunge(struct ataBase *ATABase)
 {
     struct ata_Controller *ataNode, *tmpNode;
-    ForeachNodeSafe (&ATABase->ata_Controllers, ataNode, tmpNode)
+    OOP_Object *storageRoot;
+    int retval = TRUE;
+
+    /*
+     * CLID_Hidd_Storage is a singletone, you can get it as many times as
+     * you want. Here we save up some space in struct ataBase by
+     * obtaining storageRoot object only when we need it. This happens
+     * rarely, so small performance loss is OK here.
+     */
+    storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+    if (!storageRoot)
+        storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+    if (storageRoot)
     {
-        OOP_Object *storageRoot;
-        /*
-         * CLID_Hidd_Storage is a singletone, you can get it as many times as
-         * you want. Here we save up some space in struct ataBase by
-         * obtaining storageRoot object only when we need it. This happens
-         * rarely, so small performance loss is OK here.
-         */
-        storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-        if (!storageRoot)
-            storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-        if (storageRoot && HW_RemoveDriver(storageRoot, ataNode->ac_Object))
+        ForeachNodeSafe (&ATABase->ata_Controllers, ataNode, tmpNode)
         {
-            Remove(&ataNode->ac_Node);
-            /* Destroy our singletone */
-            OOP_MethodID disp_msg = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            if (HW_RemoveDriver(storageRoot, ataNode->ac_Object))
+            {
+                Remove(&ataNode->ac_Node);
+                /* Destroy our singletone */
+                OOP_MethodID disp_msg = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
-            D(bug("[ATA  ] ata_expunge: Stopping Daemon...\n"));
-            ATABase->daemonParent = FindTask(NULL);
-            SetSignal(0, SIGF_SINGLE);
-            Signal(ATABase->ata_Daemon, SIGBREAKF_CTRL_C);
-            Wait(SIGF_SINGLE);
-
-            D(bug("[ATA  ] ata_expunge: Done, destroying subystem object\n"));
-            OOP_DoSuperMethod(ataNode->ac_Class, ataNode->ac_Object, &disp_msg);
-            FreeMem(ataNode, sizeof(struct ata_Controller));
-        }
-        else
-        {
-            /* Our subsystem is in use, we have some bus driver(s) around. */
-            D(bug("[ATA  ] ata_expunge: ATA subsystem is in use\n"));
-            return FALSE;
+                D(bug("[ATA  ] ata_expunge: destroying controller object\n"));
+                OOP_DoSuperMethod(ataNode->ac_Class, ataNode->ac_Object, &disp_msg);
+                FreeMem(ataNode, sizeof(struct ata_Controller));
+            }
+            else
+            {
+                /* A controller couldnt be removed, so the subsystem is still in use. */
+                D(bug("[ATA  ] ata_expunge: ATA subsystem is in use\n"));
+                retval = FALSE;
+            }
         }
     }
 
+    if (retval)
+    {
 #if defined(__OOP_NOATTRBASES__)
-    D(bug("[ATA  ] ata_expunge: Releasing attribute bases\n"));
-    OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
+        D(bug("[ATA  ] ata_expunge: Releasing attribute bases\n"));
+        OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
 #endif
 
-    if (ATABase->ata_UtilityBase)
-        CloseLibrary(ATABase->ata_UtilityBase);
+        if (ATABase->ata_UtilityBase)
+            CloseLibrary(ATABase->ata_UtilityBase);
+    }
 
     D(bug("[ATA  ] ata_expunge: Exiting\n"));
-    return TRUE;
+    return retval;
 }
 
 static int open(struct ataBase *ATABase, struct IORequest *iorq,
