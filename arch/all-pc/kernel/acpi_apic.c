@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,9 +52,11 @@ void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
         (struct APICCPUWake_Data *)regs->ebx;
 #endif
 
-    D(bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__));
-    D(bug("[Kernel:ACPI-APIC] %s: Wake data @ 0x%p\n", __func__, apicWake));
-    D(bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC ID %03u (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase));
+    D(
+      bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__);
+      bug("[Kernel:ACPI-APIC] %s: Wake data @ 0x%p\n", __func__, apicWake);
+      bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC ID %03u (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
+     )
 
 #if (__WORDSIZE==64)
     regs->rax =

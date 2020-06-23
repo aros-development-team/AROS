@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,6 +40,8 @@ int acpi_ScanTableEntries(CONST ACPI_TABLE_HEADER *table, ULONG thl, UINT8 type,
     UINT8 *table_end  = (UINT8 *)table + table->Length;
     UINT8 *table_entry = (UINT8 *)table + thl;
     int count;
+
+    D(bug("[Kernel:ACPI] %s(0x%p)\n", __func__, table));
 
     for (count = 0; table_entry < table_end; table_entry += ((ACPI_SUBTABLE_HEADER *)table_entry)->Length) {
         ACPI_SUBTABLE_HEADER *sh = (ACPI_SUBTABLE_HEADER *)table_entry;
@@ -154,4 +156,5 @@ void acpi_Init(struct PlatformData *pdata)
             }
         }
     }
+    D(bug("[Kernel:ACPI] %s: finished\n", __func__));
 }

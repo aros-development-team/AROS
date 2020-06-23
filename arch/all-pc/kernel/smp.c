@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -233,7 +233,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
             apicData->cores[cpuNo].cpu_LocalID
         };
 
-        D(bug("[Kernel:SMP] Launching CPU #%u (ID %03u)\n", cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
+        DWAKE(bug("[Kernel:SMP] Launching CPU #%u (ID %03u)\n", cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
 
         KrnSpinInit(&apicReadyLocks[cpuNo]);
         
@@ -298,7 +298,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
             if (wakeresult != -1)
             {
                 KrnSpinUnLock(&apicReadyLocks[cpuNo]);
-                D(bug("[Kernel:SMP] CPU #%u started up\n", cpuNo + 1));
+                DWAKE(bug("[Kernel:SMP] CPU #%u started up\n", cpuNo + 1));
             }
         }
         D(if (wakeresult) { bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult); } ) 
