@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel IA-32 APIC driver.
@@ -34,10 +34,10 @@
 #include "apic_ia32.h"
 
 #define D(x)
-#define DINT(x)
-#define DWAKE(x)        /* Badly interferes with AP startup */
-#define DID(x)          /* Badly interferes with everything */
-#define DPIT(x)
+#define DINT(x) 
+#define DWAKE(x)         /* Badly interferes with AP startup */
+#define DID(x)           /* Badly interferes with everything */
+#define DPIT(x) 
 /* #define DEBUG_WAIT */
 
 /*
@@ -278,6 +278,13 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
 
         tsc_final = RDTSC();
 
+        calibrated_tsc += ((tsc_final - tsc_initial) * 11931LL) / ((UQUAD)pit_final);
+        DPIT(
+            difftsc[i] = tsc_final - tsc_initial;
+            pitresults[i] = (pit_final);
+            )
+
+#if 0
         if (pit_final < 11931)
         {
             calibrated_tsc += ((tsc_final - tsc_initial) * 11931LL) / (11931LL - (UQUAD)pit_final);
@@ -302,6 +309,7 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
               )
             iter -= 1;
         }
+#endif
     }
 
     DPIT(
@@ -309,6 +317,7 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
         {
           bug("[Kernel:APIC-IA32.%03u] %s: pit_final #%02u = %u (%llu)\n", cpuNum, __func__, i, pitresults[i], difftsc[i]);
         }
+        bug("[Kernel:APIC-IA32.%03u] %s: iter: %u, freq: %llu\n", cpuNum, __func__, iter, (iter * calibrated_tsc) + ((calibrated_tsc / iter) * (10 - iter)));
       )
 
     return (iter * calibrated_tsc) + ((calibrated_tsc / iter) * (10 - iter));
@@ -335,6 +344,14 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
 
         lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
+bug("lapic_initial: %u, lapic_final: %u\n", lapic_initial, lapic_final);
+
+        calibrated += (((UQUAD)(lapic_initial - lapic_final) * 11931LL)/((UQUAD)pit_final)) ;
+            DPIT(
+                difflapic[i] = lapic_initial - lapic_final;
+                pitresults[i] = pit_final;
+              )
+#if 0
         if (pit_final < 11931)
         {
             calibrated += (((UQUAD)(lapic_initial - lapic_final) * 11931LL)/(11931LL - (UQUAD)pit_final)) ;
@@ -359,6 +376,7 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
               )
             iter -= 1;
         }
+#endif
     }
 
     DPIT(
@@ -366,6 +384,7 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
         {
           bug("[Kernel:APIC-IA32.%03u] %s: pit_final #%02u = %u (%u)\n", cpuNum, __func__, i, pitresults[i], difflapic[i]);
         }
+        bug("[Kernel:APIC-IA32.%03u] %s: iter: %u, freq: %llu\n", cpuNum, __func__, iter, (iter * calibrated) + ((calibrated / iter) * (10 - iter)));
       )
 
     return (iter * calibrated) + ((calibrated / iter) * (10 - iter));
