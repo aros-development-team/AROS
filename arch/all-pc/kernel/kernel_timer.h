@@ -44,8 +44,10 @@ static inline unsigned short pit_wait(unsigned short time)
         delta = last_tick - tick;
         last_tick = tick;
 
-        if (delta < elapsed)
+        if (delta < elapsed) {
             elapsed -= delta;
+            asm volatile("pause"); /* Tell CPU we are spinning! */
+        }
         else {
             delta -= elapsed;
             elapsed = 0;
