@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -56,6 +56,9 @@
     {
     case KATTR_Architecture:
 	return (intptr_t)AROS_ARCHITECTURE;
+
+    case KATTR_TimeSource:
+	return (intptr_t)KernelBase->kb_TimeSource;
 
     default:
 	return -1;
