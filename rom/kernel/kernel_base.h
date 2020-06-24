@@ -2,7 +2,7 @@
 #define KERNEL_BASE_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -60,17 +60,18 @@ struct KernelBase
 {
     struct Node         kb_Node;
 #ifdef KERNELIRQ_NEEDSCONTROLLERS
-    struct List         kb_ICList;              /* list of all controller types */
+    struct List         kb_ICList;                      /* list of all controller types         */
     struct List         kb_InterruptMappings;
 #endif
     struct MinList      kb_Exceptions[EXCEPTIONS_COUNT];
     struct KernelInt    kb_Interrupts[HW_IRQ_COUNT];
-    ULONG               kb_ContextFlags;	/* Hints for KrnCreateContext() */
-    ULONG               kb_ContextSize;	/* Total length of CPU context  */
-    ULONG               kb_PageSize;		/* Physical memory page size	*/
+    ULONG               kb_ContextFlags;            /* Hints for KrnCreateContext()         */
+    ULONG               kb_ContextSize;	                /* Total length of CPU context          */
+    ULONG               kb_PageSize;                /* Physical memory page size            */
+    APTR                kb_TimeSource;                  /* active/preferred timesource resource */
     struct PlatformData *kb_PlatformData;
 #ifdef KERNELIRQ_NEEDSCONTROLLERS
-    UBYTE               kb_ICTypeBase;          /* used to set IC controller ID's */
+    UBYTE               kb_ICTypeBase;                  /* used to set IC controller ID's       */
 #endif
 };
 
