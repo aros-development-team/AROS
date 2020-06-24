@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := hpet_init
-FUNCS := hpet_gettscount hpet_alloctsunit hpet_freetsunit hpet_gettsunitattrsa
+FUNCS := hpet_gettsattrsa hpet_alloctsunit hpet_freetsunit hpet_gettsunitattrsa
 
 #MM- includes-generate : kernel-pc-hpet-includes
 

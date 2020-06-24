@@ -3,6 +3,9 @@
     $Id$
 */
 
+#include <resources/timesource.h>
+#include <proto/arossupport.h>
+
 #include "hpet_intern.h"
 
 /*****************************************************************************
@@ -10,21 +13,21 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH0(ULONG, GetTSCount,
+	AROS_LH1(BOOL, GetTSAttrsA,
 
 /*  SYNOPSIS */
+	AROS_LHA(const struct TagItem *, tags, A0),
 
 /*  LOCATION */
 	struct HPETBase *, base, 1, Hpet)
 
 /*  FUNCTION
-	Return the total number of HPET units in the system.
+	Query attributes of HPET TimeSource resource.
 
     INPUTS
 	None
 
     RESULT
-	Total number of HPET units
 
     NOTES
 
@@ -40,7 +43,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    return base->unitCnt;
+    struct TagItem *tag, *tstate = (struct TagItem *)tags;
+
+    while ((tag = LibNextTagItem(&tstate)))
+    {
+    	switch (tag->ti_Tag)
+    	{
+	case TIMESOURCE_COUNT:
+	    *(IPTR *)tag->ti_Data = base->unitCnt;
+	    break;
+	}
+    }
+
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 }

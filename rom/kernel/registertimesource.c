@@ -10,6 +10,11 @@
 
 #include <kernel_base.h>
 
+#include <kernel_debug.h>
+
+/* We have own bug(), so don't use aros/debug.h to avoid conflicts */
+#define D(x)
+
 /*****************************************************************************
 
     NAME */
@@ -46,7 +51,13 @@
 
     /* HACK: for now we just use the given timesource if we dont have one yet... */
     if (!KernelBase->kb_TimeSource)
+    {
+        D(
+            bug("[KRN] KrnRegisterTimeSource: using TimeSource resource @ %p\n", tsbase);
+          )
+
         KernelBase->kb_TimeSource = tsbase;
+    }
 
     return;
 
