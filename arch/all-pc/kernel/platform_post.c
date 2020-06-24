@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2017-2018, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,6 +22,7 @@
 #include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_ipi.h"
+#include "kernel_timer.h"
 #include "acpi.h"
 #include "apic.h"
 #include "smp.h"
@@ -38,6 +39,7 @@
 void PlatformPostInit(void)
 {
     D(bug("[Kernel] %s()\n", __func__));
+    pit_start(0);
 }
 
 /*
