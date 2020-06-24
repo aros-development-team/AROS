@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,6 +28,5 @@ void pit_udelay(unsigned int usec)
 
     D(bug("[PIT] udelay: %d usec = %d ticks\n", usec, start));
 
-    pit_start(start);
     pit_wait(start);
 }
