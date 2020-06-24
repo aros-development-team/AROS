@@ -270,19 +270,29 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
 
     for (i = 0; i < 10; i ++)
     {
-        pit_start(11931);
-
         tsc_initial = RDTSC();
 
         pit_final   = pit_wait(11931);
 
         tsc_final = RDTSC();
 
-        calibrated_tsc += ((tsc_final - tsc_initial) * 11931LL) / ((UQUAD)pit_final);
-        DPIT(
-            difftsc[i] = tsc_final - tsc_initial;
-            pitresults[i] = (pit_final);
+        /* Honour only the properly timed calculations */
+        if (pit_final >= 11931 && pit_final <= 13124)
+        {
+            calibrated_tsc += ((tsc_final - tsc_initial) * 11931LL) / ((UQUAD)pit_final);
+            DPIT(
+                difftsc[i] = tsc_final - tsc_initial;
+                pitresults[i] = (pit_final);
             )
+        }
+        else
+        {
+            DPIT(
+                difftsc[i] = tsc_final - tsc_initial;
+                pitresults[i] = 0;
+              )
+            iter -= 1;
+        }
 
 #if 0
         if (pit_final < 11931)
@@ -336,21 +346,30 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
 
     for (i = 0; i < 10; i ++)
     {
-        pit_start(11931);
-
         lapic_initial = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
         pit_final   = pit_wait(11931);
 
         lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
-bug("lapic_initial: %u, lapic_final: %u\n", lapic_initial, lapic_final);
-
-        calibrated += (((UQUAD)(lapic_initial - lapic_final) * 11931LL)/((UQUAD)pit_final)) ;
+        /* Honour only the properly timed calculations */
+        if (pit_final >= 11931 && pit_final <= 13124)
+        {
+            calibrated += (((UQUAD)(lapic_initial - lapic_final) * 11931LL)/((UQUAD)pit_final)) ;
             DPIT(
                 difflapic[i] = lapic_initial - lapic_final;
                 pitresults[i] = pit_final;
+            )
+        }
+        else
+        {
+            DPIT(
+                difftsc[i] = lapic_initial - lapic_final;
+                pitresults[i] = 0;
               )
+            iter -= 1;
+        }
+
 #if 0
         if (pit_final < 11931)
         {
