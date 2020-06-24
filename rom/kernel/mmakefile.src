@@ -31,7 +31,7 @@ FUNCS :=     spininit spinislocked spintrylock spinlock spinunlock addexceptionh
 	     putchar maygetchar allocpages freepages getsystemattr formatstr		         \
 	     initmemory statmemory _bug _displayalert 	                                         \
 	     getcpucount getcpunumber alloccpumask clearcpumask getcpumask cpuinmask             \
-             freecpumask schedulecpu allockernelbase prepareexecbase
+             freecpumask schedulecpu allockernelbase prepareexecbase registertimesource
 FILES     := kernel_init cpu_init kernel_debug kernel_panic                                      \
 	     kernel_cpu kernel_intr kernel_interruptcontroller                                   \
 	     kernel_memory kernel_romtags kernel_scheduler kernel_globals tlsf

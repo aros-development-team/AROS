@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,7 +12,7 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(ULONG, AllocHPETUnit,
+	AROS_LH1(ULONG, AllocTSUnit,
 
 /*  SYNOPSIS */
 	AROS_LHA(const char *, user, A0),

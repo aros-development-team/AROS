@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include <hardware/pit.h>
 
 /*
@@ -74,3 +75,6 @@ static inline unsigned short pit_wait(unsigned short start)
 #endif
 
 void pit_udelay(unsigned int usec);
+=======
+#include <resources/pit.h>
+>>>>>>> 7c4e8701cd2f7f065bf2e5b96832d36fea26509d

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,9 @@
 #include <aros/symbolsets.h>
 #include <exec/memory.h>
 #include <utility/hooks.h>
+
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/acpica.h>
 
 #include "hpet_intern.h"
@@ -76,10 +78,18 @@ static int hpet_Init(struct HPETBase *base)
             /* Fill in the data */
             base->unitCnt = 0;
             AcpiScanTables("HPET", &enumHook, base);
-            CloseLibrary(ACPICABase);
-            ACPICABase = NULL;
+        }
 
-            return TRUE;
+        /* register the time source with the kernel */
+        APTR KernelBase;
+        KernelBase = OpenResource("kernel.resource");
+        if (KernelBase)
+        {
+            struct TagItem tstags[1] =
+            {
+                { TAG_DONE, 0 }
+            };
+            KrnRegisterTimeSource(base, tstags);
         }
     }
 

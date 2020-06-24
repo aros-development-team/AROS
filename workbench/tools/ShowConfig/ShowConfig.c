@@ -173,7 +173,7 @@ int main()
 {
     struct MemHeader *mh;
     APTR KernelBase;
-    APTR HPETBase;
+    APTR TimeSource, HPETBase;
     int offset = 0;
 
 #if (__WORDSIZE==64)
@@ -201,18 +201,30 @@ int main()
     if (ProcessorBase)
         PrintProcessorInformation();
 
+    KernelBase = OpenResource("kernel.resource");
+    if (KernelBase)
+    {
+        TimeSource = (APTR)KrnGetSystemAttr(KATTR_TimeSource);
+        if (TimeSource != (APTR)-1)
+                printf("Kernel Time Source:\t%s\n", ((struct Node *)TimeSource)->ln_Name);
+    }
+
     HPETBase = OpenResource("hpet.resource");
     if (HPETBase)
     {
-    	const char *owner;
+    	const struct Node *owner;
+        struct Node unusedtsunit =
+        {
+            .ln_Name = "Available for use"
+        };
     	ULONG i = 0;
 
-	while (GetUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
+	while (GetTSUnitAttrs(i, TIMESOURCE_UNIT_OWNER, &owner, TAG_DONE))
 	{
 	    if (!owner)
-	    	owner = "Available for use";
+	    	owner = &unusedtsunit;
 
-	    printf("HPET %u:\t\t%s\n", (unsigned)(++i), owner);
+	    printf("HPET %u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
 	}
     }
 
@@ -229,7 +241,7 @@ int main()
         printf(")\n");
     }
 
-    KernelBase = OpenResource("kernel.resource");
+
     if (KernelBase)
     {
 	struct TagItem *bootinfo = KrnGetBootInfo();

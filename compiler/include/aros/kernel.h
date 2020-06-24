@@ -2,7 +2,7 @@
 #define AROS_KERNEL_H
 
 /*
-    Copyright ï¿½ 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TagItems for the kernel.resource
@@ -85,6 +85,7 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KATTR_SystemLoad        (TAG_USER + 0x03F00003)
 #define KATTR_CPULoad           (TAG_USER + 0x03F00004)
 #define KATTR_CPULoad_END       (KATTR_CPULoad + 32)
+#define KATTR_TimeSource	(KATTR_CPULoad_END + 1) /* [.G] (APTR)    - Kernel TimeSource resource                                  */
 
 /* Tag IDs for KrnStatMemory() */
 #define KMS_Free		(TAG_USER + 0x04000000)
