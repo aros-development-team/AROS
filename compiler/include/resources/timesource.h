@@ -13,6 +13,6 @@
 
 #define TIMESOURCE_TAG_BASE	(TAG_USER + 0x0AAA0000)
 
-#define TIMESOURCE_UNIT_OWNER	(TIMESOURCE_TAG_BASE + 0)	/* (const char *) Current owner	of the unit		*/
+#define TIMESOURCE_UNIT_OWNER	(TIMESOURCE_TAG_BASE + 0)	/* (const strcut Node *) Current owner of the unit      */
 
 #endif /* !RESOURCES_TIMESOURCE_H */

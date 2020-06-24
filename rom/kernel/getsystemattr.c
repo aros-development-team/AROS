@@ -28,9 +28,17 @@
 	Get value of internal system attributes.
 	Currently defined attributes are:
 
-	  KATTR_Architecture [.G] (char *)        - Name of architecture the kernel built for.
+	  KATTR_Architecture   [.G] (char *) - Name of architecture the kernel built for.
 
-	  KATTR_PeripheralBase [.G] IPTR   - IO Base address for ARM peripherals
+	  KATTR_TimeSource     [.G] APTR     - Used Time Source Resource, or -1 if not set.
+
+	  KATTR_SystemLoad     [.G]
+	  KATTR_CPULoad        [.G]
+	  KATTR_CPULoad_END    [.G]
+
+	  KATTR_AffinityMask   [.G]
+
+	  KATTR_PeripheralBase [.G] IPTR     - (ARM only) peripheral IO Base address.
 
     INPUTS
 	id - ID of the attribute to get
@@ -58,8 +66,8 @@
 	return (intptr_t)AROS_ARCHITECTURE;
 
     case KATTR_TimeSource:
-	return (intptr_t)KernelBase->kb_TimeSource;
-
+        if (KernelBase->kb_TimeSource)
+            return (intptr_t)KernelBase->kb_TimeSource;
     default:
 	return -1;
     }

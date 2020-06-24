@@ -447,15 +447,19 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
 
         if (HPETBase)
         {
-            const char *owner;
+            const struct Node *owner;
+            struct Node unusedtsunit =
+            {
+                .ln_Name = _(MSG_AVAILABLE)
+            };
             ULONG i = 0;
 
             while (bufsize > 5 && GetTSUnitAttrs(i, TIMESOURCE_UNIT_OWNER, &owner, TAG_DONE))
             {
                 if (!owner)
-                    owner = _(MSG_AVAILABLE);
+                    owner = &unusedtsunit;
 
-                snprintf(bufptr, bufsize, "HPET %u:\t\t%s\n", (unsigned)(++i), owner);
+                snprintf(bufptr, bufsize, "HPET %u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
 
                 slen = strlen(bufptr);
                 bufptr += slen;
