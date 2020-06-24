@@ -64,7 +64,7 @@
 	    *(IPTR *)tag->ti_Data = base->units[unit].block;
 	    break;
 
-	case HPET_UNIT_OWNER:
+	case TIMESOURCE_UNIT_OWNER:
 	    *(const char **)tag->ti_Data = base->units[unit].Owner;
 	    break;
 	}

@@ -450,7 +450,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
             const char *owner;
             ULONG i = 0;
 
-            while (bufsize > 5 && GetTSUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
+            while (bufsize > 5 && GetTSUnitAttrs(i, TIMESOURCE_UNIT_OWNER, &owner, TAG_DONE))
             {
                 if (!owner)
                     owner = _(MSG_AVAILABLE);
