@@ -277,7 +277,7 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
         tsc_final = RDTSC();
 
         /* Honour only the properly timed calculations */
-        if (pit_final >= 11931 && pit_final <= 13124)
+        if (pit_final >= 11931 && pit_final <= 12000)
         {
             calibrated_tsc += ((tsc_final - tsc_initial) * 11931LL) / ((UQUAD)pit_final);
             DPIT(
@@ -327,16 +327,16 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
         {
           bug("[Kernel:APIC-IA32.%03u] %s: pit_final #%02u = %u (%llu)\n", cpuNum, __func__, i, pitresults[i], difftsc[i]);
         }
-        bug("[Kernel:APIC-IA32.%03u] %s: iter: %u, freq: %llu\n", cpuNum, __func__, iter, (iter * calibrated_tsc) + ((calibrated_tsc / iter) * (10 - iter)));
+        bug("[Kernel:APIC-IA32.%03u] %s: iter: %u, freq: %llu\n", cpuNum, __func__, iter, (100 * calibrated_tsc) / iter);
       )
 
-    return (iter * calibrated_tsc) + ((calibrated_tsc / iter) * (10 - iter));
+    return 100 * calibrated_tsc / iter;
 }
 
 static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
 {
     ULONG lapic_initial, lapic_final;
-    ULONG calibrated = 0;
+    UQUAD calibrated = 0;
     UWORD pit_final;
     int iter = 10, i;
     DPIT(
@@ -353,7 +353,7 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
         lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
         /* Honour only the properly timed calculations */
-        if (pit_final >= 11931 && pit_final <= 13124)
+        if (pit_final >= 11931 && pit_final <= 12000)
         {
             calibrated += (((UQUAD)(lapic_initial - lapic_final) * 11931LL)/((UQUAD)pit_final)) ;
             DPIT(
@@ -364,7 +364,7 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
         else
         {
             DPIT(
-                difftsc[i] = lapic_initial - lapic_final;
+                difflapic[i] = lapic_initial - lapic_final;
                 pitresults[i] = 0;
               )
             iter -= 1;
@@ -403,10 +403,10 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
         {
           bug("[Kernel:APIC-IA32.%03u] %s: pit_final #%02u = %u (%u)\n", cpuNum, __func__, i, pitresults[i], difflapic[i]);
         }
-        bug("[Kernel:APIC-IA32.%03u] %s: iter: %u, freq: %llu\n", cpuNum, __func__, iter, (iter * calibrated) + ((calibrated / iter) * (10 - iter)));
+        bug("[Kernel:APIC-IA32.%03u] %s: iter: %u, freq: %llu\n", cpuNum, __func__, iter, 100 * calibrated / iter);
       )
 
-    return (iter * calibrated) + ((calibrated / iter) * (10 - iter));
+    return 100 * calibrated / iter;
 }
 
 
@@ -718,8 +718,8 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     /* Deassert INIT after a small delay */
     pit_udelay(10 * 1000);
 
-    /* Deassert INIT */
-    status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_DM_INIT);
+    /* Deassert INIT to all - Intel docs says we should use shorthand here! */
+    status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, (2 << 18) | ICR_INT_LEVELTRIG | ICR_DM_INIT);
     if (status_ipisend)
     {
     	bug("[Kernel:APIC-IA32.%03u] %s: Error deasserting INIT\n", cpuNo, __func__);
