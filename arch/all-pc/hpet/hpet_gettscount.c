@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,22 +10,21 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(void, FreeHPETUnit,
+	AROS_LH0(ULONG, GetTSCount,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, unit, D0),
 
 /*  LOCATION */
-	struct HPETBase *, base, 3, Hpet)
+	struct HPETBase *, base, 1, Hpet)
 
 /*  FUNCTION
-	Free the specified HPET unit.
+	Return the total number of HPET units in the system.
 
     INPUTS
-	unit - a number of previously allocated HPET unit.
+	None
 
     RESULT
-    	None.
+	Total number of HPET units
 
     NOTES
 
@@ -41,8 +40,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Very simple. Even don't need a semaphore. */
-    base->units[unit].Owner = NULL;
+    return base->unitCnt;
 
     AROS_LIBFUNC_EXIT
 }

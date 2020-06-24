@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2019, The AROS Development Team.
+    Copyright (C) 2013-2020, The AROS Development Team.
     $Id$
 */
 
@@ -450,7 +450,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
             const char *owner;
             ULONG i = 0;
 
-            while (bufsize > 5 && GetUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
+            while (bufsize > 5 && GetTSUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
             {
                 if (!owner)
                     owner = _(MSG_AVAILABLE);

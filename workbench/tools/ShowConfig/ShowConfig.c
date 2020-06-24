@@ -207,7 +207,7 @@ int main()
     	const char *owner;
     	ULONG i = 0;
 
-	while (GetUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
+	while (GetTSUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
 	{
 	    if (!owner)
 	    	owner = "Available for use";
