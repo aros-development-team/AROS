@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: IBM PC-compatible PIT (8253) specific definitions
@@ -63,11 +63,42 @@ static inline void pit_start(unsigned short start)
  * It's assumed that the start value is reasonably lower, and the CPU has time
  * to detect the wraparound.
  */
+static inline unsigned short pit_wait(unsigned short time)
+{
+    unsigned short last_tick = 0;
+    unsigned short tick = 0;
+    unsigned short elapsed = time;
+    unsigned short delta = 0;
+
+    outb(CH0|ACCESS_LATCH, PIT_CONTROL);
+    last_tick = ch_read(PIT_CH0);
+
+    do
+    {
+        outb(CH0|ACCESS_LATCH, PIT_CONTROL);
+        tick = ch_read(PIT_CH0);
+        delta = last_tick - tick;
+        last_tick = tick;
+
+        if (delta < elapsed) {
+            elapsed -= delta;
+            asm volatile("pause"); /* Tell CPU we are spinning! */
+        }
+        else {
+            delta -= elapsed;
+            elapsed = 0;
+        }
+    } while (elapsed != 0);
+
+    return time + delta;
+}
+
+#if 0
 static inline unsigned short pit_wait(unsigned short start)
 {
     unsigned short end = 0xffff - start;
     unsigned short tick;
-
+    
     do
     {
         outb(CH0|ACCESS_LATCH, PIT_CONTROL);
@@ -76,6 +107,7 @@ static inline unsigned short pit_wait(unsigned short start)
 
     return 0xffff - tick;
 }
+#endif
 
 void pit_udelay(unsigned int usec);
 
