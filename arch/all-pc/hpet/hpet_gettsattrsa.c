@@ -50,8 +50,24 @@
     	switch (tag->ti_Tag)
     	{
 	case TIMESOURCE_COUNT:
-	    *(IPTR *)tag->ti_Data = base->unitCnt;
-	    break;
+                    *(IPTR *)tag->ti_Data = base->unitCnt;
+                    break;
+        case TIMESOURCE_ID:
+                    *(char *)tag->ti_Data = "HPET";
+                    break;
+        case TIMESOURCE_FRIENDLY:
+                    *(char *)tag->ti_Data = "High precision event timer";
+                    break;
+        // TODO: provide sane values ....
+        case TIMESOURCE_FREQUENCY:
+                    *(IPTR *)tag->ti_Data = 10000; // 10 Mhz
+                    break;
+        case TIMESOURCE_PERIODIC:
+                    *(IPTR *)tag->ti_Data = (IPTR)TRUE;
+                    break;
+        case TIMESOURCE_ONESHOT:
+                    *(IPTR *)tag->ti_Data = (IPTR)TRUE;
+                    break;
 	}
     }
 
