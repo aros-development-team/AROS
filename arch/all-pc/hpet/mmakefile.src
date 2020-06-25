@@ -11,6 +11,8 @@ USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-pc-hpet \
   modname=hpet modtype=resource \
+  conffile=$(SRCDIR)/rom/kernel/timesource.conf \
+  confoverride=hpet.conf \
   files="$(FILES) $(FUNCS)" uselibs=acpica
 
 %common
