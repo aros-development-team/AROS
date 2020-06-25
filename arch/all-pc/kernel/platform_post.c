@@ -1,5 +1,5 @@
 /*
-    Copyright � 2017-2018, The AROS Development Team. All rights reserved.
+    Copyright � 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,7 +39,9 @@
 void PlatformPostInit(void)
 {
     D(bug("[Kernel] %s()\n", __func__));
+#if (0)
     pit_start(0);
+#endif
 }
 
 /*
