@@ -16,7 +16,7 @@
 	AROS_LH2(BOOL, GetTSUnitAttrsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, unit, D0),
+	AROS_LHA(IPTR, unit, D0),
 	AROS_LHA(const struct TagItem *, tags, A0),
 
 /*  LOCATION */
@@ -65,7 +65,7 @@
 	    break;
 
 	case TIMESOURCE_UNIT_OWNER:
-	    *(const char **)tag->ti_Data = base->units[unit].Owner;
+	    *(const struct Node **)tag->ti_Data = base->units[unit].Owner;
 	    break;
 	}
     }

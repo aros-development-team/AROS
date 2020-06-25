@@ -11,26 +11,26 @@
 #define HPET_PCI_VENDOR_SHIFT		16
 
 /* page_protect components */
-#define HPET_PAGE_PROTECT_MASK	0x0F
-#define HPET_OEM_ATTR_MASK	0xF0
-#define HPET_OEM_ATTR_SHIFT	4
+#define HPET_PAGE_PROTECT_MASK	        0x0F
+#define HPET_OEM_ATTR_MASK	        0xF0
+#define HPET_OEM_ATTR_SHIFT	        4
 
-#define HPET_PAGE_NONE	0
-#define HPET_PAGE_4K	1
-#define HPET_PAGE_64K	2
+#define HPET_PAGE_NONE	                0
+#define HPET_PAGE_4K	                1
+#define HPET_PAGE_64K	                2
 
 
 struct HPETUnit
 {
-    IPTR	base;
-    IPTR	block;
-    const char *Owner;
+    IPTR	                base;
+    IPTR	                block;
+    const struct Node           *Owner;
 };
 
 struct HPETBase
 {
-    struct Library          libnode;
-    ULONG		    unitCnt;
-    struct HPETUnit	   *units;
-    struct SignalSemaphore  lock;
+    struct Library              libnode;
+    ULONG		        unitCnt;
+    struct HPETUnit	        *units;
+    struct SignalSemaphore      lock;
 };

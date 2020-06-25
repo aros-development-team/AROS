@@ -13,7 +13,7 @@
 	AROS_LH1(void, FreeTSUnit,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, unit, D0),
+	AROS_LHA(IPTR, unit, D0),
 
 /*  LOCATION */
 	struct HPETBase *, base, 3, Hpet)
@@ -41,8 +41,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Very simple. Even don't need a semaphore. */
-    base->units[unit].Owner = NULL;
+    if (unit < base->unitCnt)
+    {
+        /* Very simple. Even don't need a semaphore. */
+        base->units[unit].Owner = NULL;
+    }
 
     AROS_LIBFUNC_EXIT
 }

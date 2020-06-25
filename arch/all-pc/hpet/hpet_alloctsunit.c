@@ -12,10 +12,10 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(ULONG, AllocTSUnit,
+	AROS_LH1(IPTR, AllocTSUnit,
 
 /*  SYNOPSIS */
-	AROS_LHA(const char *, user, A0),
+	AROS_LHA(const struct Node *, owner, A0),
 
 /*  LOCATION */
 	struct HPETBase *, base, 2, Hpet)
@@ -24,10 +24,10 @@
 	Allocate a free HPET timer for use.
 
     INPUTS
-	user - a string specifying the name of current user. Can not be NULL.
+	owner - a Node specifying the consumer of the time source. Can not be NULL.
 
     RESULT
-	A number of HPET timer unit allocated for exclusive use, or -1 if
+	An opaque handle for the HPET timer unit allocated for exclusive use, or -1 if
 	there was no free HPET.
 
     NOTES
@@ -46,21 +46,24 @@
 
     ULONG i;
 
-    ObtainSemaphore(&base->lock);
-
-    for (i = 0; i < base->unitCnt; i++)
+    if (owner)
     {
-    	if (!base->units[i].Owner)
-    	{
-    	    base->units[i].Owner = user;
+        ObtainSemaphore(&base->lock);
 
-    	    ReleaseSemaphore(&base->lock);
-    	    return i;
-    	}
+        for (i = 0; i < base->unitCnt; i++)
+        {
+            if (!base->units[i].Owner)
+            {
+                base->units[i].Owner = owner;
+
+                ReleaseSemaphore(&base->lock);
+                return i;
+            }
+        }
+        
+        ReleaseSemaphore(&base->lock);
     }
-    
-    ReleaseSemaphore(&base->lock);
-    return -1;
+    return (IPTR)-1;
 
     AROS_LIBFUNC_EXIT
 }
