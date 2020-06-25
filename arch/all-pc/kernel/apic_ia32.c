@@ -18,6 +18,10 @@
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
 
+#if (1)
+#include <hardware/pit.h>
+#endif
+
 #include <inttypes.h>
 
 #include "kernel_base.h"
@@ -272,7 +276,7 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
     {
         tsc_initial = RDTSC();
 
-        pit_final   = krnClockSourceUdelay(11931);
+        pit_final   = pit_wait(11931);
 
         tsc_final = RDTSC();
 
@@ -348,7 +352,7 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
     {
         lapic_initial = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
-        pit_final   = krnClockSourceUdelay(11931);
+        pit_final   = pit_wait(11931);
 
         lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
