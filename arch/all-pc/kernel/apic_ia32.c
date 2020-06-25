@@ -435,7 +435,9 @@ static UQUAD ia32_tsc_calibrate(apicid_t cpuNum)
                 model = ((eax & 0xF00000) >>14) | ((eax & 0xF0) >> 4);
                 D(bug("[Kernel:APIC-IA32.%03u] %s: model = %02x\n", cpuNum, __func__, model);)
                 if (model == 0x4E || model == 0x5E)
-                    return 24000000 * numerator / denominator;
+                    return 24000000 * numerator / denominator; // 24.0 MHz
+                else if (model == 0x5C)
+                    return 19200000 * numerator / denominator; // 19.2 MHz
             }
         }
     }
@@ -481,6 +483,10 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
     if (!APIC_INTEGRATED(apic_ver))
     	maxlvt = 2;
 #endif
+
+    D(
+        bug("[Kernel:APIC-IA32.%03u] %s(%p, %p)\n", cpuNum, __func__, apic, __APICBase);
+      )
 
     if ((coreICInstID = krnAddInterruptController(KernelBase, &APICInt_IntrController)) != (icintrid_t)-1)
     {

@@ -69,6 +69,10 @@
     {
         retval = (intptr_t)AROS_ARCHITECTURE;
     }
+    else if ((id == KATTR_TimeSource) && (KernelBase->kb_TimeSource))
+    {
+        retval = (intptr_t)KernelBase->kb_TimeSource;
+    }
     
     return retval;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,6 +26,7 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct APICData *apicData = pdata->kb_APIC;
+    apicid_t cpuNum = core_APIC_GetNumber(apicData);
 #if defined(__AROSEXEC_SMP__)
     IPTR __LAPICBase = apicData->lapicBase;
     struct X86SchedulerPrivate  *apicScheduleData;
@@ -33,10 +34,14 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
 #endif
     UWORD current;
 
+    D(
+        bug("[Kernel:APIC.%03u] %s()\n", cpuNum, __func__);
+      )
+
     if (apicData->flags & APF_TIMER)
     {
 #if defined(__AROSEXEC_SMP__)
-        apicid_t cpuNum = core_APIC_GetNumber(apicData);
+
         UQUAD now = RDTSC();
         
         // Update LAPIC tick
