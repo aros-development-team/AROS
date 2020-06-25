@@ -226,7 +226,7 @@ static ULONG ia32_ipi_send(IPTR __APICBase, ULONG target, ULONG cmd)
 
     for (ipisend_timeout = 1000; ipisend_timeout > 0; ipisend_timeout--)
     {
-        kcs_udelay(100);
+        krnClockSourceUdelay(100);
 #ifdef DEBUG_WAIT
         if ((ipisend_timeout % 100) == 0)
         {
@@ -252,7 +252,7 @@ static ULONG ia32_ipi_send(IPTR __APICBase, ULONG target, ULONG cmd)
  * This calibration algorithm is based on NetBSD one.
  *
  * wait for 11931 PIT ticks, which is equal to 10 milliseconds.
- * We don't use kcs_udelay() here, because for improved accuracy we need to sample LAPIC timer counter twice,
+ * We don't use krnClockSourceUdelay() here, because for improved accuracy we need to sample LAPIC timer counter twice,
  * before and after our actual delay (PIT setup also takes up some time, so LAPIC will count away from its
  * initial value).  We run it 10 times to make up for cache setup discrepancies.
  */
@@ -272,7 +272,7 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
     {
         tsc_initial = RDTSC();
 
-        pit_final   = pit_wait(11931);
+        pit_final   = krnClockSourceUdelay(11931);
 
         tsc_final = RDTSC();
 
@@ -348,7 +348,7 @@ static UQUAD ia32_lapic_calibrate_pit(apicid_t cpuNum, IPTR __APICBase)
     {
         lapic_initial = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
-        pit_final   = pit_wait(11931);
+        pit_final   = krnClockSourceUdelay(11931);
 
         lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
@@ -722,7 +722,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
     }
 
     /* Deassert INIT after a small delay */
-    kcs_udelay(10 * 1000);
+    krnClockSourceUdelay(10 * 1000);
 
     /* Deassert INIT to all - Intel docs says we should use shorthand here! */
     status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, (2 << 18) | ICR_INT_LEVELTRIG | ICR_DM_INIT);
@@ -763,7 +763,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, apicid_t wake_apicid, IPTR __APICBa
         status_ipisend = ia32_ipi_send(__APICBase, wake_apicid, ICR_DM_STARTUP | ((IPTR)wake_apicstartrip >> 12));
 
         /* Allow the target APIC to accept the IPI */
-        kcs_udelay(200);
+        krnClockSourceUdelay(200);
 
 #ifdef CONFIG_LEGACY
 	/* Pentium erratum 3AP quirk */

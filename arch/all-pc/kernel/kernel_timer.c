@@ -22,11 +22,28 @@ static inline unsigned int usec2tick(unsigned int usec)
     return ret;
 }
 
-void kcs_udelay(unsigned int usec)
+void krnClockSourceInit(void)
+{
+    D(bug("[Krn] %s()\n", __func__));
+
+    if (KernelBase->kb_ClockSource)
+    {
+#if (0)
+#endif
+    }
+}
+
+void krnClockSourceUdelay(unsigned int usec)
 {
     unsigned int start = usec2tick(usec);
 
-    D(bug("[Krn] kcs_udelay: %d usec = %d ticks\n", usec, start));
+    D(bug("[Krn] %s: %d usec = %d ticks\n", __func__, usec, start));
 
+    if (KernelBase->kb_ClockSource)
+    {
+        APTR CSBase  = KernelBase->kb_ClockSource;
+    }
+#if (1)
     pit_wait(start);
+#endif
 }
