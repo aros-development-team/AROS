@@ -59,16 +59,15 @@ const static struct Node KernCSNode =
     /* HACK: for now we just use the given clocksource if we dont have one yet... */
     if ((!KernelBase->kb_ClockSource) && CSBase)
     {
-        IPTR CSUnit;
         D(
             bug("[KRN] KrnRegisterClockSource: using ClockSource resource @ %p\n", CSBase);
           )
 
-        KernelBase->kb_ClockSource = CSBase;
-        CSUnit = AllocCSUnit(&KernCSNode);
-        if (CSUnit != (IPTR)-1)
+        KernelBase->kb_ClockUnit = AllocCSUnit(&KernCSNode);
+        if (KernelBase->kb_ClockUnit != (IPTR)-1)
         {
-            bug("[KRN] KrnRegisterClockSource: allocated unit %p for clocksource @ %p\n", CSUnit, CSBase);
+            KernelBase->kb_ClockSource = CSBase;
+            bug("[KRN] KrnRegisterClockSource: allocated unit %p for clocksource @ %p\n", KernelBase->kb_ClockUnit, KernelBase->kb_ClockSource);
         }
     }
 
