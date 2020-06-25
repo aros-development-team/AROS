@@ -67,7 +67,7 @@ const static struct Node KernCSNode =
         if (KernelBase->kb_ClockUnit != (IPTR)-1)
         {
             KernelBase->kb_ClockSource = CSBase;
-            bug("[KRN] KrnRegisterClockSource: allocated unit %p for clocksource @ %p\n", KernelBase->kb_ClockUnit, KernelBase->kb_ClockSource);
+            D(bug("[KRN] KrnRegisterClockSource: allocated unit %p for clocksource @ %p\n", KernelBase->kb_ClockUnit, KernelBase->kb_ClockSource);)
         }
     }
 
