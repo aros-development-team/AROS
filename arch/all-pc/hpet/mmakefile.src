@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := hpet_init
-FUNCS := hpet_gettsattrsa hpet_alloctsunit hpet_freetsunit hpet_gettsunitattrsa
+FUNCS := hpet_getcsattrsa hpet_alloccsunit hpet_freecsunit hpet_getcsunitattrsa
 
 #MM- includes-generate : kernel-pc-hpet-includes
 
@@ -11,7 +11,7 @@ USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-pc-hpet \
   modname=hpet modtype=resource \
-  conffile=$(SRCDIR)/rom/kernel/timesource.conf \
+  conffile=$(SRCDIR)/rom/kernel/clocksource.conf \
   confoverride=hpet.conf \
   files="$(FILES) $(FUNCS)" uselibs=acpica
 

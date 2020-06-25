@@ -2,7 +2,7 @@
     Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS HPET TimeSource definitions.
+    Desc: AROS HPET ClockSource definitions.
     Lang: english
 */
 
@@ -10,7 +10,7 @@
 #define RESOURCES_HPET_H
 
 #include <utility/tagitem.h>
-#include <resources/timesource.h>
+#include <resources/clocksource.h>
 
 #define HPET_TAG_BASE	(TAG_USER + 0x0ABC0000)
 

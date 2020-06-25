@@ -10,7 +10,7 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(void, FreeTSUnit,
+	AROS_LH1(void, FreeCSUnit,
 
 /*  SYNOPSIS */
 	AROS_LHA(IPTR, unit, D0),

@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,11 +22,11 @@ static inline unsigned int usec2tick(unsigned int usec)
     return ret;
 }
 
-void pit_udelay(unsigned int usec)
+void kcs_udelay(unsigned int usec)
 {
     unsigned int start = usec2tick(usec);
 
-    D(bug("[PIT] udelay: %d usec = %d ticks\n", usec, start));
+    D(bug("[Krn] kcs_udelay: %d usec = %d ticks\n", usec, start));
 
     pit_wait(start);
 }

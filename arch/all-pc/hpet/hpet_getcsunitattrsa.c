@@ -13,7 +13,7 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH2(BOOL, GetTSUnitAttrsA,
+	AROS_LH2(BOOL, GetCSUnitAttrsA,
 
 /*  SYNOPSIS */
 	AROS_LHA(IPTR, unit, D0),
@@ -64,7 +64,7 @@
 	    *(IPTR *)tag->ti_Data = base->units[unit].block;
 	    break;
 
-	case TIMESOURCE_UNIT_OWNER:
+	case CLOCKSOURCE_UNIT_OWNER:
 	    *(const struct Node **)tag->ti_Data = base->units[unit].Owner;
 	    break;
 	}

@@ -30,7 +30,7 @@
 
 	  KATTR_Architecture   [.G] (char *) - Name of architecture the kernel built for.
 
-	  KATTR_TimeSource     [.G] APTR     - Used Time Source Resource, or -1 if not set.
+	  KATTR_ClockSource     [.G] APTR     - Used Time Source Resource, or -1 if not set.
 
 	  KATTR_SystemLoad     [.G]
 	  KATTR_CPULoad        [.G]
@@ -65,9 +65,10 @@
     case KATTR_Architecture:
 	return (intptr_t)AROS_ARCHITECTURE;
 
-    case KATTR_TimeSource:
-        if (KernelBase->kb_TimeSource)
-            return (intptr_t)KernelBase->kb_TimeSource;
+    case KATTR_ClockSource:
+        if (KernelBase->kb_ClockSource)
+            return (intptr_t)KernelBase->kb_ClockSource;
+
     default:
 	return -1;
     }

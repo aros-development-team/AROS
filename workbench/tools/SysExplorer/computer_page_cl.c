@@ -20,7 +20,7 @@
 #include <proto/aros.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include <proto/timesource.h>
+#include <proto/clocksource.h>
 #include <proto/kernel.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
@@ -306,7 +306,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     IPTR bootldr = 0;
     IPTR args = 0;
     APTR KernelBase;
-    APTR TSBase;
+    APTR CSBase;
 
     STRPTR pagetitles[5];
     int pagecnt = 0;
@@ -333,7 +333,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         pagetitles[pagecnt++] = (STRPTR)_(MSG_PROCESSORS);
     }
     pagetitles[pagecnt++] = (STRPTR)_(MSG_RAM);
-    if ((TSBase = OpenResource("hpet.resource")) != NULL)
+    if ((CSBase = OpenResource("hpet.resource")) != NULL)
     {
         pagetitles[pagecnt++] = (STRPTR)_(MSG_HPET);
     }
@@ -416,7 +416,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                     End),
                 End),
             End),
-            TSBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
+            CSBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
                 Child, (IPTR)(NListviewObject,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
@@ -451,7 +451,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         bufptr = buffer;
         bufsize = sizeof(buffer);
 
-        if (TSBase)
+        if (CSBase)
         {
             const struct Node *owner;
             struct Node unusedtsunit =
@@ -460,7 +460,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
             };
             ULONG i = 0;
 
-            while (bufsize > 5 && GetTSUnitAttrs(i, TIMESOURCE_UNIT_OWNER, &owner, TAG_DONE))
+            while (bufsize > 5 && GetCSUnitAttrs(i, CLOCKSOURCE_UNIT_OWNER, &owner, TAG_DONE))
             {
                 if (!owner)
                     owner = &unusedtsunit;

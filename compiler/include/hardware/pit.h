@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: IBM PC-compatible PIT (8253) specific definitions
@@ -93,22 +93,4 @@ static inline unsigned short pit_wait(unsigned short time)
     return time + delta;
 }
 
-#if 0
-static inline unsigned short pit_wait(unsigned short start)
-{
-    unsigned short end = 0xffff - start;
-    unsigned short tick;
-    
-    do
-    {
-        outb(CH0|ACCESS_LATCH, PIT_CONTROL);
-        tick = ch_read(PIT_CH0);
-    } while (tick > end);
-
-    return 0xffff - tick;
-}
-#endif
-
-void pit_udelay(unsigned int usec);
-
-#endif
+#endif /* !HARDWARE_PIT_H */

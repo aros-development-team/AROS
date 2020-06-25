@@ -68,7 +68,7 @@ struct KernelBase
     ULONG               kb_ContextFlags;            /* Hints for KrnCreateContext()         */
     ULONG               kb_ContextSize;	                /* Total length of CPU context          */
     ULONG               kb_PageSize;                /* Physical memory page size            */
-    APTR                kb_TimeSource;                  /* active/preferred timesource resource */
+    APTR                kb_ClockSource;                  /* active/preferred clocksource resource */
     struct PlatformData *kb_PlatformData;
 #ifdef KERNELIRQ_NEEDSCONTROLLERS
     UBYTE               kb_ICTypeBase;                  /* used to set IC controller ID's       */

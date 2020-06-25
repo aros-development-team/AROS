@@ -8,7 +8,7 @@
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
-#include <proto/timesource.h>
+#include <proto/clocksource.h>
 
 #include <kernel_base.h>
 
@@ -17,7 +17,7 @@
 /* We have own bug(), so don't use aros/debug.h to avoid conflicts */
 #define D(x)
 
-const static struct Node KernTSNode =
+const static struct Node KernCSNode =
 {
     .ln_Name = "kernel.resource"
 };
@@ -27,10 +27,10 @@ const static struct Node KernTSNode =
     NAME */
 #include <proto/kernel.h>
 
-        AROS_LH2(void, KrnRegisterTimeSource,
+        AROS_LH2(void, KrnRegisterClockSource,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, TSBase, A0),
+	AROS_LHA(APTR, CSBase, A0),
 	AROS_LHA(struct TagItem *, tstags, A1),
 
 /*  LOCATION */
@@ -56,19 +56,19 @@ const static struct Node KernTSNode =
 {
     AROS_LIBFUNC_INIT
 
-    /* HACK: for now we just use the given timesource if we dont have one yet... */
-    if ((!KernelBase->kb_TimeSource) && TSBase)
+    /* HACK: for now we just use the given clocksource if we dont have one yet... */
+    if ((!KernelBase->kb_ClockSource) && CSBase)
     {
-        IPTR TSUnit;
+        IPTR CSUnit;
         D(
-            bug("[KRN] KrnRegisterTimeSource: using TimeSource resource @ %p\n", TSBase);
+            bug("[KRN] KrnRegisterClockSource: using ClockSource resource @ %p\n", CSBase);
           )
 
-        KernelBase->kb_TimeSource = TSBase;
-        TSUnit = AllocTSUnit(&KernTSNode);
-        if (TSUnit != (IPTR)-1)
+        KernelBase->kb_ClockSource = CSBase;
+        CSUnit = AllocCSUnit(&KernCSNode);
+        if (CSUnit != (IPTR)-1)
         {
-            bug("[KRN] KrnRegisterTimeSource: allocated unit %p for timesource @ %p\n", TSUnit, TSBase);
+            bug("[KRN] KrnRegisterClockSource: allocated unit %p for clocksource @ %p\n", CSUnit, CSBase);
         }
     }
 

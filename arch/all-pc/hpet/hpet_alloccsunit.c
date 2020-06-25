@@ -12,7 +12,7 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(IPTR, AllocTSUnit,
+	AROS_LH1(IPTR, AllocCSUnit,
 
 /*  SYNOPSIS */
 	AROS_LHA(const struct Node *, owner, A0),
@@ -24,7 +24,7 @@
 	Allocate a free HPET timer for use.
 
     INPUTS
-	owner - a Node specifying the consumer of the time source. Can not be NULL.
+	owner - a Node specifying the consumer of the clock source. Can not be NULL.
 
     RESULT
 	An opaque handle for the HPET timer unit allocated for exclusive use, or -1 if

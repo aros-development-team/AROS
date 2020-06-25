@@ -3,7 +3,7 @@
     $Id$
 */
 
-#include <resources/timesource.h>
+#include <resources/clocksource.h>
 #include <proto/arossupport.h>
 
 #include "hpet_intern.h"
@@ -13,7 +13,7 @@
     NAME */
 #include <proto/hpet.h>
 
-	AROS_LH1(BOOL, GetTSAttrsA,
+	AROS_LH1(BOOL, GetCSAttrsA,
 
 /*  SYNOPSIS */
 	AROS_LHA(const struct TagItem *, tags, A0),
@@ -22,7 +22,7 @@
 	struct HPETBase *, base, 1, Hpet)
 
 /*  FUNCTION
-	Query attributes of HPET TimeSource resource.
+	Query attributes of HPET ClockSource resource.
 
     INPUTS
 	None
@@ -49,23 +49,23 @@
     {
     	switch (tag->ti_Tag)
     	{
-	case TIMESOURCE_COUNT:
+	case CLOCKSOURCE_COUNT:
                     *(IPTR *)tag->ti_Data = base->unitCnt;
                     break;
-        case TIMESOURCE_ID:
+        case CLOCKSOURCE_ID:
                     *(char *)tag->ti_Data = "HPET";
                     break;
-        case TIMESOURCE_FRIENDLY:
+        case CLOCKSOURCE_FRIENDLY:
                     *(char *)tag->ti_Data = "High precision event timer";
                     break;
         // TODO: provide sane values ....
-        case TIMESOURCE_FREQUENCY:
-                    *(IPTR *)tag->ti_Data = 10000; // 10 Mhz
+        case CLOCKSOURCE_FREQUENCY:
+                    *(IPTR *)tag->ti_Data = 10000000; // 10 Mhz
                     break;
-        case TIMESOURCE_PERIODIC:
+        case CLOCKSOURCE_PERIODIC:
                     *(IPTR *)tag->ti_Data = (IPTR)TRUE;
                     break;
-        case TIMESOURCE_ONESHOT:
+        case CLOCKSOURCE_ONESHOT:
                     *(IPTR *)tag->ti_Data = (IPTR)TRUE;
                     break;
 	}

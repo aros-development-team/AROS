@@ -79,16 +79,16 @@ static int hpet_Init(struct HPETBase *base)
             base->unitCnt = 0;
             AcpiScanTables("HPET", &enumHook, base);
 
-            /* register the time source with the kernel */
+            /* register the clock source with the kernel */
             APTR KernelBase;
             KernelBase = OpenResource("kernel.resource");
             if (KernelBase)
             {
-                struct TagItem tstags[1] =
+                struct TagItem cstags[1] =
                 {
                     { TAG_DONE, 0 }
                 };
-                KrnRegisterTimeSource(base, tstags);
+                KrnRegisterClockSource(base, cstags);
             }
         }
     }

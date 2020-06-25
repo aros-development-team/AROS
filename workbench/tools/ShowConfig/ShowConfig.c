@@ -5,7 +5,7 @@
 #include <resources/processor.h>
 
 #include <proto/aros.h>
-#include <proto/timesource.h>
+#include <proto/clocksource.h>
 #include <proto/kernel.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -173,7 +173,7 @@ int main()
 {
     struct MemHeader *mh;
     APTR KernelBase;
-    APTR TSBase;
+    APTR CSBase;
     int offset = 0;
 
 #if (__WORDSIZE==64)
@@ -204,14 +204,14 @@ int main()
     KernelBase = OpenResource("kernel.resource");
     if (KernelBase)
     {
-        TSBase = (APTR)KrnGetSystemAttr(KATTR_TimeSource);
-        if (TSBase != (APTR)-1)
-                printf("Kernel Time Source:\t%s\n", ((struct Node *)TSBase)->ln_Name);
+        CSBase = (APTR)KrnGetSystemAttr(KATTR_ClockSource);
+        if (CSBase != (APTR)-1)
+                printf("Kernel Clock Source:\t%s\n", ((struct Node *)CSBase)->ln_Name);
     }
 
 #if (1)
-    TSBase = OpenResource("hpet.resource");
-    if (TSBase)
+    CSBase = OpenResource("hpet.resource");
+    if (CSBase)
     {
     	const struct Node *owner;
         struct Node unusedtsunit =
@@ -220,7 +220,7 @@ int main()
         };
     	ULONG i = 0;
 
-	while (GetTSUnitAttrs(i, TIMESOURCE_UNIT_OWNER, &owner, TAG_DONE))
+	while (GetCSUnitAttrs(i, CLOCKSOURCE_UNIT_OWNER, &owner, TAG_DONE))
 	{
 	    if (!owner)
 	    	owner = &unusedtsunit;
