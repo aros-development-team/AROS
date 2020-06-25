@@ -20,7 +20,7 @@
 #include <proto/aros.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include <proto/hpet.h>
+#include <proto/timesource.h>
 #include <proto/kernel.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
@@ -306,7 +306,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     IPTR bootldr = 0;
     IPTR args = 0;
     APTR KernelBase;
-    APTR HPETBase;
+    APTR TSBase;
 
     STRPTR pagetitles[5];
     int pagecnt = 0;
@@ -333,7 +333,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         pagetitles[pagecnt++] = (STRPTR)_(MSG_PROCESSORS);
     }
     pagetitles[pagecnt++] = (STRPTR)_(MSG_RAM);
-    if ((HPETBase = OpenResource("hpet.resource")) != NULL)
+    if ((TSBase = OpenResource("hpet.resource")) != NULL)
     {
         pagetitles[pagecnt++] = (STRPTR)_(MSG_HPET);
     }
@@ -410,7 +410,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                     End),
                 End),
             End),
-            HPETBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
+            TSBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
                 Child, (IPTR)(NListviewObject,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
@@ -445,7 +445,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         bufptr = buffer;
         bufsize = sizeof(buffer);
 
-        if (HPETBase)
+        if (TSBase)
         {
             const struct Node *owner;
             struct Node unusedtsunit =

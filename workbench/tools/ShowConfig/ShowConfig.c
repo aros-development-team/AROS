@@ -5,7 +5,7 @@
 #include <resources/processor.h>
 
 #include <proto/aros.h>
-#include <proto/hpet.h>
+#include <proto/timesource.h>
 #include <proto/kernel.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -173,7 +173,7 @@ int main()
 {
     struct MemHeader *mh;
     APTR KernelBase;
-    APTR TimeSource, HPETBase;
+    APTR TSBase;
     int offset = 0;
 
 #if (__WORDSIZE==64)
@@ -204,13 +204,14 @@ int main()
     KernelBase = OpenResource("kernel.resource");
     if (KernelBase)
     {
-        TimeSource = (APTR)KrnGetSystemAttr(KATTR_TimeSource);
-        if (TimeSource != (APTR)-1)
-                printf("Kernel Time Source:\t%s\n", ((struct Node *)TimeSource)->ln_Name);
+        TSBase = (APTR)KrnGetSystemAttr(KATTR_TimeSource);
+        if (TSBase != (APTR)-1)
+                printf("Kernel Time Source:\t%s\n", ((struct Node *)TSBase)->ln_Name);
     }
 
-    HPETBase = OpenResource("hpet.resource");
-    if (HPETBase)
+#if (1)
+    TSBase = OpenResource("hpet.resource");
+    if (TSBase)
     {
     	const struct Node *owner;
         struct Node unusedtsunit =
@@ -227,6 +228,7 @@ int main()
 	    printf("HPET %u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
 	}
     }
+#endif
 
     printf("RAM:");
     for (mh = (struct MemHeader *)SysBase->MemList.lh_Head; mh->mh_Node.ln_Succ; mh = (struct MemHeader *)mh->mh_Node.ln_Succ) {
