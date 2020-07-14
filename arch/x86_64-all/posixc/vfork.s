@@ -26,4 +26,5 @@ AROS_CDEFNAME(vfork):
                                     address */
     lea     bufsize(%rsp), %rax     /* set stack value in jmp_buf */
     mov     %rax, stack(%rdi)       /* this function call */
+    sub     $0x8, %rsp              /* align stack to 16 bytes */
     call    __vfork                 /* __vfork call won't return */
