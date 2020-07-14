@@ -25,5 +25,5 @@ AROS_CDEFNAME(vfork):
     mov     %rax, 0(%rdi)           /* to this function call return
                                     address */
     lea     bufsize(%rsp), %rax     /* set stack value in jmp_buf */
-    mov     %rax, 120(%rdi)         /* this function call */
+    mov     %rax, stack(%rdi)       /* this function call */
     call    __vfork                 /* __vfork call won't return */
