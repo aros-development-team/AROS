@@ -2,7 +2,6 @@
     Copyright 2007-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 #include "filesystems.h"
 #include "filesystems_utilities.h"
 #include "locale.h"
@@ -107,7 +106,7 @@ static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, 
         if ((opModes->deletemode == OPMODE_ALL) || (opModes->deletemode == OPMODE_YES))
         {
             LONG protection = fib->fib_Protection;
-            if ((protection & FIBB_DELETE) != 0 && (protection & FIBB_WRITE) != 0)
+            if ((protection & FIBF_DELETE) != 0 && (protection & FIBF_WRITE) != 0)
             {
                 askData.type = 1;
 
@@ -131,6 +130,8 @@ static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, 
 
     return retvalue;
 }
+
+
 
 /**
  * Function responsible for doing the actual file copy by reading and writing a set of bytes from the source file and writing them
@@ -530,7 +531,9 @@ BOOL infoFileSetup(CONST_STRPTR sourcePath, STRPTR *sourceInfoFilePath, STRPTR *
     {
         return TRUE;
     }
+    
     *hasInfoFile = FileExists(*sourceInfoFilePath);
+    
     if (!doFileExists && *hasInfoFile)
     {
         *localSourcePath = *sourceInfoFilePath;

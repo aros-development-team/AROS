@@ -133,7 +133,6 @@ AROS_UFH3
 )
 {
     AROS_USERFUNC_INIT
-    D(bug("[Wanderer]: %s filelen: %ld, file: %s, spath: %s, actlen: %d, totallen: %ld, difftime: %ld, dpath: %s flags:"BYTE_TO_BINARY_PATTERN"\n", __PRETTY_FUNCTION__, obj->filelen, obj->file, obj->spath, obj->actlen, obj->totallen, obj->difftime, obj->dpath, BYTE_TO_BINARY(obj->flags)));
 
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
 
@@ -2658,13 +2657,7 @@ void wanderer_menufunc_icon_delete(void)
         D(bug("[Wanderer] Delete Updating icons...\n"));
         DoMethod(window, MUIM_IconWindow_UnselectAll);
         DoMethod(iconList, MUIM_IconList_Update);
-
-        IPTR sortFlags = XGET(iconList, MUIA_IconList_SortFlags);
-
-        if ((sortFlags & MUIV_IconList_Sort_AutoSort) == 0)
-        {
-            DoMethod(iconList, MUIM_IconList_Sort);
-        }
+        DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
 ///
