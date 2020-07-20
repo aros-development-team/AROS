@@ -2,30 +2,12 @@
 #define WANDERER_FILESYSTEMS_H
 
 #include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <time.h>
-#include <math.h>
-#include <stdarg.h>
 #include <exec/types.h>
 #include <exec/memory.h>
-#include <dos/dos.h>
-#include <intuition/intuitionbase.h>
-#include <intuition/classusr.h>
-
-#include <clib/alib_protos.h>
-
-#include <utility/utility.h>
-#include <dos/dosextens.h>
-#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-
-#include <proto/muimaster.h>
-
-#ifndef _PROTO_INTUITION_H
-#include <proto/intuition.h>
-#endif
+#include <dos/dos.h>
 
 /* FILEINFO CONSTANTS */
 
@@ -42,36 +24,23 @@
 #define FILEINFO_PROTECTED  2
 #define FILEINFO_WRITE      4
 
-#define ACTION_COPY         1
-#define ACTION_DELETE       2
-#define ACTION_DIRTOABS     4
-#define ACTION_MAKEDIRS     8
-#define ACTION_GETINFO      16
-#define ACTION_UPDATE       (1 << 31)
+#define DROP_MODE_MOVE      0
+#define DROP_MODE_COPY      1
+
+#define ACTION_COPY         (1 << 4)
+#define ACTION_DELETE       (1 << 2)
+#define ACTION_DIRTOABS     (1 << 3)
+#define ACTION_MAKEDIRS     (1 << 1)
+#define ACTION_GETINFO      (1 << 5)
+#define ACTION_MOVE         (1 << 6)
+#define ACTION_UPDATE       (1 << 7)
 
 #define PATH_NOINFO         0
 #define PATH_RECURSIVE      1
 #define PATH_NONRECURSIVE   2
 
-
 #define PATHBUFFERSIZE      2048
-#define COPYLEN             131072
-#define POOLSIZE            COPYLEN * 2
-
-
-struct dCopyStruct
-{
-    char  *spath;
-    char  *dpath;
-    char  *file;
-    APTR            userdata;
-    ULONG           flags;
-    ULONG           filelen;
-    ULONG           actlen;
-    ULONG           totallen;
-    UWORD           type;
-    unsigned int    difftime;
-};
+#define COPYLEN              100
 
 struct MUIDisplayObjects
 {
@@ -94,34 +63,31 @@ struct MUIDisplayObjects
     char                SpeedBuffer[32];
 };
 
-struct FileInfo
+struct FileCopyData
 {
-    ULONG   len;
-    ULONG   protection;
-    char    *comment;
-};
-
-struct FileEntry
-{
-    struct  FileEntry   *next;
-    char    name[1];
+    STRPTR          spath;
+    STRPTR          dpath;
+    STRPTR          file;
+    APTR            userdata;
+    ULONG           flags;
+    ULONG           filelen;
+    ULONG           actlen;
+    ULONG           totallen;
+    UBYTE           type;
+    UWORD           difftime;
 };
 
 struct OpModes
 {
-    struct Hook *askhook;
     WORD        deletemode;
     WORD        protectmode;
     WORD        overwritemode;
 };
 
-char  *CombineString(char *format, ...);
-void freeString(APTR pool, char *str);
-
-WORD AskChoiceNew(const char *title, const char *strg, const char *gadgets, UWORD sel, BOOL centered);
-WORD AskChoice(const char *title, const char *strg, const char *gadgets, UWORD sel);
-WORD AskChoiceCentered(const char *title, const char *strg, const char *gadgets, UWORD sel);
-
-BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct OpModes *opModes, APTR userdata);
+BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook* displayHook, struct Hook* askHook, struct OpModes *opModes, APTR userdata, BOOL root);
+BOOL MoveContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir);
+BPTR CreateDirectory(CONST_STRPTR path);
+BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct Hook* displayHook, APTR userdata);
+BOOL IsOnSameDevice(CONST_STRPTR path1, CONST_STRPTR path2);
 
 #endif /* WANDERER_FILESYSTEMS_H */

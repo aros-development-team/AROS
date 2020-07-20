@@ -93,8 +93,10 @@ struct IconList_Drop_SourceEntry
 struct IconList_Drop_Event
 {
     struct List drop_SourceList;       /* iconlist obj         */
-    Object      *drop_TargetObj;        /* iconlist obj         */
-    STRPTR      drop_TargetPath;        /* destination path     */
+    Object*     drop_TargetObj;        /* iconlist obj         */
+    STRPTR      drop_TargetPath;       /* destination path     */
+    Object*     drop_SourceObj;        /* source iconlist obj  */ 
+    ULONG       drop_Mode;             /* iconlist drop mode   */
 };
 
 struct IconEntry

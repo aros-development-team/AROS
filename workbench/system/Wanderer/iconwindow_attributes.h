@@ -15,6 +15,7 @@
 #define MUIA_IconWindow_Font                                    (MUIB_IconWindow | 0x00000003) /* ISG */
 #define MUIA_IconWindow_IconList                                (MUIB_IconWindow | 0x00000004) /* --G */
 #define MUIA_IconWindow_WindowNavigationMethod                  (MUIB_IconWindow | 0x00000005) /* ISG */
+#define MUIA_IconWindow_IconDropMode                            (MUIB_IconWindow | 0x00000006) /* ISG */
 
 #define MUIA_IconWindow_ActionHook                              (MUIB_IconWindow | 0x00000010) /* I-- */ /* Hook to call when some action happens */
 

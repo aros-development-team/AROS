@@ -161,11 +161,12 @@ struct WPEditor_DATA
                                                         *wped_FirstBGAdvancedObj;    
 
     ULONG                                               wped_DimensionsSet;
-
+                                                        
     Object                                              *wped_ViewSettings_GroupObj,
                                                         *wped_ViewSettings_SpacerObj,
                                                         *wped_c_NavigationMethod,
                                                         *wped_cm_ToolbarEnabled, 
+                                                        *wped_IconDropMode,
 #if defined(DEBUG_CHANGESCREENTITLE)
                                                         *wped_s_screentitle, 
 #endif
@@ -182,6 +183,7 @@ struct WPEditor_DATA
 
 //static struct Hook navichangehook;
 static STRPTR        _wpeditor_intern_NavigationModes[3];
+static STRPTR        _wpeditor_intern_IconDropModes[3];
 
 static STRPTR        _wpeditor_intern_IconListModeNames[iconlist_ListViewModesCount + 1];
 static ULONG         _wpeditor_intern_IconListModeIDs[iconlist_ListViewModesCount + 1];
@@ -337,7 +339,6 @@ AROS_UFH3(
                         (MUIV_IconList_Sort_AutoSort | MUIV_IconList_Sort_ByName), _viewSettings_Node->wpedbo_Options);
                 ULONG current_ViewFlags = GetTag32Data(MUIA_IconList_DisplayFlags,
                         ICONLIST_DISP_SHOWINFO, _viewSettings_Node->wpedbo_Options);
-
 
                 D(bug("[WPEditor] WandererPrefs_Hook_OpenAdvancedOptionsFunc: Found ViewSettings chunk for node we are editing\n"));
                 if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe) == TRUE)
@@ -1004,13 +1005,15 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     struct WPEditor_DATA *data = NULL;
     struct WPEditor_AdvancedBackgroundWindow_DATA  *advancedView_data = NULL;
 
-    Object  *_WP_Navigation_HGrp1 = NULL,
+    Object  *_WP_Navigation_VGrp1 = NULL,
             *_WP_Navigation_InnerHGrp1 = NULL,
             *_WP_Navigation_TypeObj = NULL,
+            *_WP_Navigation_IconDropModeObj = NULL,
             *_WP_Navigation_InnerHGrp2 = NULL,
 #if defined(DEBUG_CHANGESCREENTITLE)
             *_WP_Navigation_HGrp2 =NULL,
             *_WP_Navigation_InnerHGrp3 = NULL,
+            *_WP_Navigation_InnerHGrp4 = NULL,
             *_WP_Navigator_ScreenTitleObj = NULL,
 #endif
             *_WP_NavigationObj = NULL,    
@@ -1111,16 +1114,15 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
     _WP_NavigationObj = (Object *)GroupObject, End;
 
-    _WP_Navigation_HGrp1 = (Object *)HGroup,                    // general 
+    _WP_Navigation_VGrp1 = (Object *)VGroup,                    // general 
                     MUIA_FrameTitle, __(MSG_NAVIGATION),
-                    MUIA_Group_SameSize, TRUE,
                     MUIA_Frame, MUIV_Frame_Group,
-                    MUIA_Group_Columns, 2,
+                    MUIA_Group_Horiz, FALSE,
                 End;
 
     _WP_Navigation_InnerHGrp1 = (Object *)HGroup,
-                    MUIA_Group_Columns, 2,
-                    MUIA_Group_SameSize, FALSE,
+                    MUIA_Group_Columns, 3,
+                    MUIA_Group_SameSize, TRUE,
                     Child, (IPTR) Label1(_(MSG_METHOD)),
                 End;
 
@@ -1130,6 +1132,13 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     _WP_Navigation_TypeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_NavigationModes);
 
     /*END Navigation cycle button----------------*/
+
+    /*Drop mode cycle button---------------------*/
+    _wpeditor_intern_IconDropModes[WPD_ICONDROPMODE_MOVE] = (STRPTR)_(MSG_ICONDROPMODE_MOVE);
+    _wpeditor_intern_IconDropModes[WPD_ICONDROPMODE_COPY] = (STRPTR)_(MSG_ICONDROPMODE_COPY);
+    _WP_Navigation_IconDropModeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_IconDropModes);
+    /*END Drop mode cycle button-----------------*/
+
     _WP_Navigation_InnerHGrp2 = (Object *)HGroup,
                     MUIA_Group_Columns, 2,
                     MUIA_Group_SameSize, FALSE,
@@ -1147,6 +1156,12 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                 End;
 
     _WP_Navigation_InnerHGrp3 = (Object *)HGroup, End;
+
+    _WP_Navigation_InnerHGrp4 = (Object *)HGroup,
+                    MUIA_Group_Columns, 2,
+                    MUIA_Group_SameSize, FALSE,
+                    Child, (IPTR)Label1(_(MSG_ICONDROPMODE)),
+                End;
 
     _WP_Navigator_ScreenTitleObj = (Object *)StringObject,
                     StringFrame,
@@ -1198,7 +1213,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                     MUIA_FrameTitle,  __(MSG_OBJECTS),
                     MUIA_Group_SameSize, TRUE,
                     MUIA_Frame, MUIV_Frame_Group,
-                    MUIA_Group_Columns, 2,
+                    MUIA_Group_Columns, 3,
                 End;
     
     _WP_Toolbar_InnerGroupObj2 = (Object *)HGroup,
@@ -1206,7 +1221,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                     MUIA_Group_SameSize, FALSE,
                     Child, (IPTR)Label1(_(MSG_TOOLBAR_ENABLED)),
                 End;
-            
+
     _WP_Toolbar_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
 
     _WP_Toolbar_InnerGroupObj3 = (Object *)HGroup,
@@ -1229,6 +1244,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                     MUIA_Group_SameSize, TRUE,
                 End;
 
+
+
     _WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/Revert");
     _WP_Toolbar_PreviewSearchObj = ImageButton("", "THEME:Images/Gadgets/Search");
 /*END _WP_Toolbar_GroupObj---------------------------------------------------*/
@@ -1239,24 +1256,26 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
     DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,_WP_Navigation_TypeObj);
     DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER, Label1(_(MSG_ICONDROPMODE)));
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,_WP_Navigation_IconDropModeObj);
     DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
+
 #if defined(DEBUG_NETWORKBROWSER)
     _WP_NetworkBrowser_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
     DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1(_(MSG_NETWORKONWB)));
     DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,_WP_NetworkBrowser_EnabledObj);
-#else
-    DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
-    DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
 #endif
+
 #if defined(DEBUG_SHOWUSERFILES)
-    DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1(_(MSG_USERFILEONWB)));
-    DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,_WP_UserFiles_ShowFileFolderObj);
-#else
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,Label1(_(MSG_USERFILEONWB)));
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,_WP_UserFiles_ShowFileFolderObj);
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
     DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
     DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
 #endif
-    DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
-    DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_Navigation_InnerHGrp1, OM_ADDMEMBER,HVSpace);
 
 #if defined(DEBUG_CHANGESCREENTITLE)
     DoMethod(_WP_Navigator_ScreenTitleObj,MUIM_Set, MUIA_ShortHelp,_(MSG_BUBBLESCREENTITLE));
@@ -1264,10 +1283,11 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_Navigation_HGrp2, OM_ADDMEMBER,_WP_Navigation_InnerHGrp3);
 #endif
 
-    DoMethod(_WP_Navigation_HGrp1, OM_ADDMEMBER,_WP_Navigation_InnerHGrp1);
-    DoMethod(_WP_Navigation_HGrp1, OM_ADDMEMBER,_WP_Navigation_InnerHGrp2);
+    DoMethod(_WP_Navigation_VGrp1, OM_ADDMEMBER,_WP_Navigation_InnerHGrp1);
+ /*   DoMethod(_WP_Navigation_VGrp1, OM_ADDMEMBER,_WP_Navigation_InnerHGrp4);
+    DoMethod(_WP_Navigation_VGrp1, OM_ADDMEMBER,_WP_Navigation_InnerHGrp2);*/
 
-    DoMethod(_WP_NavigationObj, OM_ADDMEMBER,_WP_Navigation_HGrp1);
+    DoMethod(_WP_NavigationObj, OM_ADDMEMBER,_WP_Navigation_VGrp1);
 #if defined(DEBUG_CHANGESCREENTITLE)
     DoMethod(_WP_NavigationObj, OM_ADDMEMBER,_WP_Navigation_HGrp2);
 #endif
@@ -1679,6 +1699,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advanced
         data->wped_ViewSettings_SpacerObj             = _WP_ViewSettings_SpacerObj;
 
         data->wped_c_NavigationMethod                 = _WP_Navigation_TypeObj;
+        data->wped_IconDropMode                       = _WP_Navigation_IconDropModeObj;
         data->wped_cm_ToolbarEnabled                  = _WP_Toolbar_EnabledObj;
 #if defined(DEBUG_CHANGESCREENTITLE)
         data->wped_s_screentitle                      =_WP_Navigator_ScreenTitleObj;
@@ -1926,6 +1947,12 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk(%d tags)\n", tag_count));
                 {
 D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindow_WindowNavigationMethod, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
                     SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
+                    break;
+                }
+                case MUIA_IconWindow_IconDropMode:
+                {
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindow_IconDropMode, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+                    SET(data->wped_IconDropMode, MUIA_Cycle_Active, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
                     break;
                 }
 #if defined(DEBUG_SHOWUSERFILES)
@@ -2366,6 +2393,13 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
             GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
             _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindow_WindowNavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
+            _wp_GlobalTagCounter += 1;
+
+            // save iconwindow drop mode 
+            _wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindow_IconDropMode);
+            GET(data->wped_IconDropMode, MUIA_Cycle_Active, &ti_Data);
+            _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindow_IconDropMode @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
             _wp_GlobalTagCounter += 1;
 
 #if defined(DEBUG_SHOWUSERFILES)

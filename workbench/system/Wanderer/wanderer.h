@@ -46,10 +46,7 @@ struct Wanderer_FSHandler
 };
 
 /*** Macros *****************************************************************/
-#ifdef __AROS__
 #define WandererObject BOOPSIOBJMACRO_START(Wanderer_CLASS->mcc_Class)
-#else
-#define WandererObject NewObject(Wanderer_CLASS->mcc_Class, NULL
-#endif
+
 
 #endif /* _WANDERER_H_ */

@@ -6768,7 +6768,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
     if ((entry) && ((IPTR)entry != MUIV_IconList_NextIcon_End))
     {
         /* Ok.. atleast one entry was dropped .. */
-        char                             tmp_dirbuff[256];
+        TEXT                            tmp_dirbuff[256];
         BPTR                            tmp_dirlock = (BPTR) NULL;
 
         BOOL                            iconMove = FALSE;
@@ -7036,7 +7036,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
             if (copycount > 0)
             {
                 dragDropEvent->drop_TargetObj = obj;
-
+                dragDropEvent->drop_SourceObj = message->obj;
 #if defined(DEBUG_ILC_ICONDRAGDROP)
                 D(bug("[IconList] %s: Causing DROP notification..\n", __PRETTY_FUNCTION__));
 #endif
