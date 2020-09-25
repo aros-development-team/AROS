@@ -156,8 +156,6 @@ SprintfA( char *dst, const char *fmt, IPTR* args )
 void
 AHIInitSemaphore( struct SignalSemaphore* sigSem )
 {
-  // TODO: Verify license compatibility (Code mostly stolen from AROS).
-
   sigSem->ss_WaitQueue.mlh_Head     = (struct MinNode *)&sigSem->ss_WaitQueue.mlh_Tail;
   sigSem->ss_WaitQueue.mlh_Tail     = NULL;
   sigSem->ss_WaitQueue.mlh_TailPred = (struct MinNode *)&sigSem->ss_WaitQueue.mlh_Head;
