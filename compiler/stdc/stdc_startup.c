@@ -6,8 +6,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
-
-#include "__stdc_intbase.h"
+#include <libraries/stdc.h>
 
 static void __stdc_startup(struct ExecBase *SysBase)
 {
