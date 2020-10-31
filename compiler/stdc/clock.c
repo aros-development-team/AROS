@@ -6,6 +6,7 @@
 */
 
 #include <aros/symbolsets.h>
+#include <proto/dos.h>
 
 #include "__stdc_intbase.h"
 
@@ -46,13 +47,32 @@
 ******************************************************************************/
 {
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    struct DateStamp 	t;
+    clock_t		retval;
 
-    return (clock_t)time(NULL) - StdCBase->starttime;
+    DateStamp(&t); /* Get timestamp */
+
+    /* Day difference */
+    retval =  (t.ds_Days - StdCBase->starttime.ds_Days);
+
+    /* Convert into minutes */
+    retval *= (24 * 60);
+
+    /* Minute difference */
+    retval += (t.ds_Minute - StdCBase->starttime.ds_Minute);
+
+    /* Convert into CLOCKS_PER_SEC (which is the same as TICKS_PER_SECOND) units */
+    retval *= (60 * TICKS_PER_SECOND);
+
+    /* Add tick difference */
+    retval += (t.ds_Tick - StdCBase->starttime.ds_Tick);
+
+    return retval;
 } /* clock */
 
 int __init_clock(struct StdCIntBase *StdCBase)
 {
-    StdCBase->starttime = (clock_t)time(NULL);
+    DateStamp(&StdCBase->starttime);
 
     return 1;
 }

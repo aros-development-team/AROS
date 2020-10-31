@@ -15,10 +15,10 @@
 #include <intuition/intuitionbase.h>
 #include <devices/timer.h>
 #include <dos/bptr.h>
+#include <dos/dos.h>
 
 #include <time.h>
 
-#include <aros/types/clock_t.h>
 /* Some structs that are defined privately */
 struct signal_func_data;
 
@@ -46,7 +46,7 @@ struct StdCIntBase
     struct MsgPort              timeport;
     char                        timebuffer[26];
     struct tm                   tmbuffer;
-    clock_t                     starttime;
+    struct DateStamp            starttime;
 
     /* __stdc_startup.c */
     int                         *startup_errorptr;
