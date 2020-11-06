@@ -162,8 +162,11 @@
      * NOTE: AmigaOS 3.1's C:Execute closes Input(),
      *       so we need to catch that here.
      */
-    if (Cli() && Cli()->cli_CurrentInput == Input()) {
-        Flush(Input());
+    if (Input())
+    {
+        struct FileHandle *in = (struct FileHandle *)BADDR(Input());
+        if (in->fh_Func3 != -1)
+            Flush(Input());
     }
 
     FreeMem(stack,stacksize);
