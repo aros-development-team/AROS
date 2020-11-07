@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -82,7 +82,8 @@ LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WOR
             comment = FALSE;
 
             /* '+' continuation */
-            if (j > 0 && buf[j-1] == '+') {
+            /* requires "<space>+", validated with AmigaOS 3.1/2.1 Shell */
+            if (j > 1 && buf[j-1] == '+' && buf[j-2] == ' ') {
                 buf[j-1] = c;
                 continue;
             }
