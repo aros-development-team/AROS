@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI bus driver for ahci.device
@@ -19,6 +19,7 @@
 #include <aros/symbolsets.h>
 #include <asm/io.h>
 #include <exec/lists.h>
+#include <hardware/pci.h>
 #include <hardware/ahci.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
@@ -26,7 +27,6 @@
 #include <string.h>
 
 #include "ahci.h"
-#include "pci.h"
 
 typedef struct 
 {

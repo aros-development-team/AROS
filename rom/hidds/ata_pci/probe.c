@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware detection routine
@@ -33,7 +33,7 @@
 #include "bus_class.h"
 #include "interface_pio.h"
 #include "interface_dma.h"
-#include "pci.h"
+#include <hardware/pci.h>
 
 #define DSATA(x)
 
