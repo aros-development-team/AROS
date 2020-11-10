@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 
 STDCTESTFILES := \
         arguments \
+        clock \
         ctype \
         environ \
         exit \
