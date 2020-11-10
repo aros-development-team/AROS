@@ -8,12 +8,14 @@
 #include <devices/timer.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
+#include <hidd/system.h>
 
 #include <proto/bootloader.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
 
+#include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
 
@@ -112,6 +114,7 @@ AROS_UFH3(void, pciEnumerator,
 /* /// "pciInit()" */
 BOOL pciInit(struct PCIDevice *hd)
 {
+    OOP_Object                  *root;
     struct PCIController *hc;
     struct PCIController *nexthc;
     struct PCIUnit *hu;
@@ -154,6 +157,10 @@ BOOL pciInit(struct PCIDevice *hd)
         return FALSE;
     }
 
+    root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
+    if (!root)
+        root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ)
     {
@@ -175,7 +182,48 @@ BOOL pciInit(struct PCIDevice *hd)
         {
             if(hc->hc_DevID == hu->hu_DevID)
             {
+                struct TagItem usbc_tags[] =
+                {
+                    {aHidd_Name,                0       },
+                    {aHidd_HardwareName,        0       },
+                    {aHidd_Producer,            0       },
+            #define USB_TAG_VEND 2
+                    {aHidd_Product,             0       },
+            #define USB_TAG_PROD 3
+                    {aHidd_DriverData,          0       },
+            #define USB_TAG_DATA 4
+                    {TAG_DONE,                  0       }
+                };
                 Remove(&hc->hc_Node);
+
+                hc->hc_Node.ln_Name = AllocVec(16, MEMF_CLEAR);
+                sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", hu->hu_UnitNo);
+                usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
+
+                usbc_tags[USB_TAG_VEND].ti_Data = 0;
+                usbc_tags[USB_TAG_PROD].ti_Data = hu->hu_DevID;
+
+                switch (hc->hc_HCIType)
+                {
+                case HCITYPE_UHCI:
+                    {
+                        usbc_tags[1].ti_Data = (IPTR)"PCI USB 1.x UHCI Host controller";
+                        break;
+                    }
+
+                case HCITYPE_OHCI:
+                    {
+                        usbc_tags[1].ti_Data = (IPTR)"PCI USB 1.1 OHCI Host controller";
+                        break;
+                    }
+
+                case HCITYPE_EHCI:
+                    {
+                        usbc_tags[1].ti_Data = (IPTR)"PCI USB 2.0 EHCI Host controller";
+                        break;
+                    }
+                }
+                HW_AddDriver(root, hd->usbContrClass, usbc_tags);
                 hc->hc_Unit = hu;
                 AddTail(&hu->hu_Controllers, &hc->hc_Node);
             }

@@ -94,6 +94,11 @@ struct PCIUnit
 #define HCITYPE_OHCI	 0x10
 #define HCITYPE_EHCI	 0x20
 
+struct usb_Controller
+{
+    struct Node		  uc_Node;
+};
+
 struct PCIController
 {
     struct Node		  hc_Node;
@@ -191,6 +196,9 @@ struct PCIDevice
     struct UtilityBase *hd_UtilityBase;	  /* for tags etc */
 
     struct List		hd_TempHCIList;
+
+    OOP_Class	       *usbContrClass;
+
     OOP_Object	       *hd_PCIHidd;
     OOP_AttrBase	hd_HiddAB;
     OOP_AttrBase	hd_HiddPCIDeviceAB;

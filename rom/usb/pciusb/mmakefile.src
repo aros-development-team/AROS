@@ -2,7 +2,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := pci_aros buffer uhcichip ohcichip ehcichip dev uhwcmd debug
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
+
+FILES := pci_aros buffer uhcichip ohcichip ehcichip dev uhwcmd debug usb_controllerclass
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
 
@@ -19,6 +22,7 @@ ifeq ($(ARCH),pc)
 USER_CPPFLAGS := -DHAVE_ACPICA=1
 USER_LDFLAGS += -lacpica
 endif
+#USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-usb-pciusb \
     modname=pciusb modtype=device \
