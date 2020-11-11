@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NewShell CLI Command
@@ -65,6 +65,9 @@
                     operations. If nothing is specified S:Shell-Startup
                     is used.
 
+
+        STACK   --  Size of stack to be used for new shell
+
     RESULT
 
     NOTES
@@ -93,7 +96,7 @@
 
 #include <aros/shcommands.h>
 
-AROS_SH3(NewShell, 41.2,
+AROS_SH3(NewShell, 41.3,
 AROS_SHA(STRPTR, ,WINDOW, ,"CON:10/50/640/480/AROS-Shell/CLOSE"),
 AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"),
 AROS_SHA(LONG *, ,STACK,/N,NULL))
@@ -103,14 +106,24 @@ AROS_SHA(LONG *, ,STACK,/N,NULL))
     BPTR from = Open(SHArg(FROM),   MODE_OLDFILE);
     BPTR win  = Open(SHArg(WINDOW), MODE_OLDFILE);
     LONG *stackp = SHArg(STACK);
-    ULONG stack;
+    ULONG stack = 0;
 
     LONG rc = RETURN_FAIL;
 
-    if (stackp == NULL || *stackp < AROS_STACKSIZE)
-        stack = AROS_STACKSIZE;
+    if (stackp == NULL)
+    {
+        struct CommandLineInterface *cli = Cli();
+        if (cli)
+        {
+            /* Inherit stack size from parent shell */
+            stack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+        }
+    }
     else
         stack = *stackp;
+
+    if (stack < AROS_STACKSIZE)
+        stack = AROS_STACKSIZE;
 
     if (win)
     {
