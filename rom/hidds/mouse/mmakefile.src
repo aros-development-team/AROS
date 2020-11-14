@@ -2,27 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-MY_INCLS    := $(call WILDCARD, include/*.h)
-DEST_INC    := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
-GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
-
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
-
-$(AROS_INCLUDES)/hidd/%.h : include/%.h
-	@$(CP) $< $@
-
-$(GENINCDIR)/hidd/%.h : include/%.h
-	@$(CP) $< $@
-
-#MM
-setup-includes :
-	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB) *.s
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=hidd dir=include
 
 FILES := mouse_init driverdata mouseclass subsystem
 
