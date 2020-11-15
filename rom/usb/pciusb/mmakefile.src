@@ -2,10 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
-%copy_includes path=hidd dir=include/hidd
-
-FILES := pci_aros buffer uhcichip ohcichip ehcichip dev uhwcmd debug usb_controllerclass
+FILES := pci_aros buffer uhcichip ohcichip ehcichip dev uhwcmd debug
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
 

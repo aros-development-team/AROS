@@ -15,14 +15,16 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
-#include "uhwcmd.h"
+#include "debug.h"
+
+#include "poseidon.library.h"
 
 OOP_Object *USBController__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object *usbController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (usbController)
     {
-        struct usb_Controller *data = OOP_INST_DATA(cl, usbController);
+        struct USBController *data = OOP_INST_DATA(cl, usbController);
         D(bug ("[USB:Controller] %s: Controller Entry @ 0x%p\n", __func__, data);)
     }
     return usbController;

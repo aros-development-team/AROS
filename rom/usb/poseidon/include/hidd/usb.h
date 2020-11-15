@@ -9,6 +9,7 @@
     Lang: english
 */
 
-#define CLID_Hidd_USB           "hidd.usb"
+#define CLID_Hidd_USBController         "hidd.usb.controller"
+#define CLID_Hidd_USBDevice             "hidd.usb.device"
 
 #endif

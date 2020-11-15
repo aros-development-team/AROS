@@ -43,6 +43,10 @@
 #include <utility/pack.h>
 #include <libraries/iffparse.h>
 
+#if defined(__AROS__)
+#include <oop/oop.h>
+#endif
+
 /* Types for psdGetAttrs() and psdSetAttrs() */
 #define PGA_STACK      0x01
 #define PGA_USBCLASS   0x02
@@ -443,6 +447,18 @@
 
 /* Private stuff starts here */
 
+#if defined(__AROS__)
+struct USBController
+{
+    struct Node		  uc_Node;
+};
+
+struct USBDevice
+{
+    struct Node		  uc_Node;
+};
+#endif
+
 #if defined(__GNUC__)
 # pragma pack(2)
 #endif
@@ -633,6 +649,10 @@ struct PsdBase
     ULONG               ps_OSVersion;     /* Internal OS Version descriptor */
     BOOL                ps_StartedAsTask; /* Did we start in Task Mode before DOS was available? */
     struct PsdHandlerTask ps_EventHandler; /* Event handler */
+#if defined(__AROS__)
+    OOP_Class	       *ps_ContrClass;
+    OOP_Class	       *ps_DevClass;
+#endif
 };
 
 /* ps_Flags */
