@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, The AROS Development Team.
+    Copyright (C) 2015-2020, The AROS Development Team.
     $Id$
 */
 
@@ -439,6 +439,6 @@ void StorageStartup(struct SysexpBase *SysexpBase)
     RegisterBase(storageunitwindowclass_name, StorageUnitWindow_CLASS);
 
     RegisterClassHandler(CLID_Hidd_Storage, 90, NULL, storageHWEnum, NULL);
-    RegisterClassHandler(CLID_Hidd_StorageController, 90, StorageBase->sesb_GenericWindowCLASS, storageHWEnum, NULL);
+    RegisterStorageControllerHandler(CLID_Hidd_StorageController, 90, StorageBase->sesb_GenericWindowCLASS, NULL, NULL);
     RegisterStorageBusHandler(CLID_Hidd_StorageBus, 0, StorageBusWindow_CLASS, NULL, NULL);
 }
