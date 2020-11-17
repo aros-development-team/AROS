@@ -1,7 +1,7 @@
 #ifndef KERNEL_APIC_H
 #define KERNEL_APIC_H
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Generic AROS APIC definitions.
@@ -89,7 +89,7 @@ void core_APIC_GetMask(struct APICData *, apicid_t, cpumask_t *);
 BOOL core_APIC_CPUInMask(apicid_t, cpumask_t *);
 
 void core_SetupIDT(apicid_t, apicidt_t *);
-BOOL core_SetIDTGate(apicidt_t *, int, uintptr_t, BOOL);
+BOOL core_SetIDTGate(apicidt_t *, int, uintptr_t, BOOL, BOOL);
 BOOL core_SetIRQGate(void *, int, uintptr_t);
 void core_DefaultIRETQ();
 

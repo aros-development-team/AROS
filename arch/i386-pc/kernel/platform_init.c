@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -78,7 +78,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
     // Set up the base syscall handler(s)
     NEWLIST(&data->kb_SysCallHandlers);
     if (!core_SetIDTGate(idt, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL),
-                         (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE))
+                         (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, FALSE))
     {
         krnPanic(NULL, "Failed to set BSP Syscall Vector\n"
                        "Vector #%02X\n",

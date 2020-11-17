@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -97,7 +97,7 @@ const void *IntrDefaultGates[256] =
 };
 
 /* Set the raw CPU vectors gate in the IDT */
-BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable)
+BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable, BOOL force)
 {
     DIDT(
         APTR gateOld;
@@ -114,6 +114,9 @@ BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable)
 #endif
         if (gateOld) bug("[Kernel] %s: existing gate @ 0x%p\n", __func__, gateOld);
     )
+
+    if (IGATES[vect].p && force)
+        IGATES[vect].p = 0;
 
     /* If the gate isn't already enabled, set it */
     if (!IGATES[vect].p)
@@ -150,7 +153,7 @@ BOOL core_SetIRQGate(void *idt, int IRQ, uintptr_t gate)
         bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
     )
 
-    return core_SetIDTGate(IGATES, HW_IRQ_BASE + IRQ, gate, TRUE);
+    return core_SetIDTGate(IGATES, HW_IRQ_BASE + IRQ, gate, TRUE, FALSE);
 }
 
 void core_ReloadIDT()
@@ -191,7 +194,7 @@ void core_SetupIDT(apicid_t _APICID, apicidt_t *IGATES)
         {
             off = (uintptr_t)DEF_IRQRETFUNC;
 
-            if (!core_SetIDTGate(IGATES, i, off, FALSE))
+            if (!core_SetIDTGate(IGATES, i, off, FALSE, TRUE))
             {
                 bug("[Kernel] %s[%d]: gate #%d failed\n", __func__, _APICID, i);
             }

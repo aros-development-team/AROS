@@ -95,7 +95,7 @@ BOOL APICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             else
             {
                 /* Don't enable the vector yet */
-                if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE))
+                if (!core_SetIDTGate((apicidt_t *)apicPrivate->cores[0].cpu_IDT, HW_IRQ_BASE + irq, (uintptr_t)IntrDefaultGates[HW_IRQ_BASE + irq], FALSE, FALSE))
                 {
                     bug("[Kernel:APIC-IA32] %s: failed to set IRQ %d's Vector gate\n", __func__, irq);
                 }
@@ -509,7 +509,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
             /* Obtain/set the critical IRQs and Vectors */
             for (i = 0; i < X86_CPU_EXCEPT_COUNT; i++)
             {
-                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE))
+                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, i, (uintptr_t)IntrDefaultGates[i], TRUE, FALSE))
                 {
                     krnPanic(NULL, "Failed to set CPU Exception Vector\n"
                                    "Vector #$%02X\n", i);
@@ -520,7 +520,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
                 if (i == APIC_EXCEPT_SYSCALL)
                     continue;
 
-                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(i), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(i)], TRUE))
+                if (!core_SetIDTGate((apicidt_t *)apic->cores[cpuNum].cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(i), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(i)], TRUE, FALSE))
                 {
                     krnPanic(NULL, "Failed to set APIC Exception Vector\n"
                                     "Vector #$%02X\n", i);

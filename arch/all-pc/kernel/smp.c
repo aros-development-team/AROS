@@ -96,7 +96,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 #if (__WORDSIZE==64)
     core_SetupIDT(apicCPUNo, apicCPU->cpu_IDT);
 
-    if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE))
+    if (!core_SetIDTGate((struct int_gate_64bit *)apicCPU->cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, TRUE))
     {
         krnPanic(NULL, "Failed to set APIC Syscall Vector\n"
                        "Vector #$%02X\n",
