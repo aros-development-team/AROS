@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -978,7 +978,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
 
     if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, FALSE, NULL))
     {
-        DINIT(bug("[ATA%02ld] ata_setup_unit: ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
+        bug("[ATA%02ld] ata_setup_unit: ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum);
         return FALSE;
     }
 
@@ -2293,48 +2293,49 @@ void ata_InitBus(struct ata_Bus *bus)
     /*
      * initialize timer for the sake of scanning
      */
-    bus->ab_Timer = ata_OpenTimer(bus->ab_Base);
-
-    OOP_GetAttr(obj, aHidd_ATABus_UseIOAlt, &haveAltIO);
-    bus->haveAltIO = haveAltIO != 0;
-
-    DINIT(bug("[ATA  ] ata_InitBus(%p)\n", bus));
-
-    bus->ab_Dev[0] = DEV_NONE;
-    bus->ab_Dev[1] = DEV_NONE;
-
-    /* Check if device 0 and/or 1 is present on this bus. It may happen that
-       a single drive answers for both device addresses, but the phantom
-       drive will be filtered out later */
-    for (i = 0; i < MAX_BUSUNITS; i++)
+    if ((bus->ab_Timer = ata_OpenTimer(bus->ab_Base)) != NULL)
     {
-        /* Select device and disable IRQs */
-        PIO_Out(bus, DEVHEAD_VAL | (i << 4), ata_DevHead);
-        ata_WaitTO(bus->ab_Timer, 0, 400, 0);
-        PIO_OutAlt(bus, ATACTLF_INT_DISABLE, ata_AltControl);
+        OOP_GetAttr(obj, aHidd_ATABus_UseIOAlt, &haveAltIO);
+        bus->haveAltIO = haveAltIO != 0;
 
-        /* Write some pattern to registers. This is a variant of a more
-           common technique, with the difference that we don't use the
-           sector count register because some bad ATAPI drives disallow
-           writing to it */
-        PIO_Out(bus, 0x55, ata_LBALow);
-        PIO_Out(bus, 0xaa, ata_LBAMid);
-        PIO_Out(bus, 0xaa, ata_LBALow);
-        PIO_Out(bus, 0x55, ata_LBAMid);
-        PIO_Out(bus, 0x55, ata_LBALow);
-        PIO_Out(bus, 0xaa, ata_LBAMid);
+        DINIT(bug("[ATA  ] ata_InitBus(%p)\n", bus));
 
-        tmp1 = PIO_In(bus, ata_LBALow);
-        tmp2 = PIO_In(bus, ata_LBAMid);
-        DB2(bug("[ATA  ] ata_InitBus: Reply 0x%02X 0x%02X\n", tmp1, tmp2));
+        bus->ab_Dev[0] = DEV_NONE;
+        bus->ab_Dev[1] = DEV_NONE;
 
-        if ((tmp1 == 0x55) && (tmp2 == 0xaa))
-            bus->ab_Dev[i] = DEV_UNKNOWN;
-        DINIT(bug("[ATA  ] ata_InitBus: Device type = 0x%02X\n", bus->ab_Dev[i]));
+        /* Check if device 0 and/or 1 is present on this bus. It may happen that
+           a single drive answers for both device addresses, but the phantom
+           drive will be filtered out later */
+        for (i = 0; i < MAX_BUSUNITS; i++)
+        {
+            /* Select device and disable IRQs */
+            PIO_Out(bus, DEVHEAD_VAL | (i << 4), ata_DevHead);
+            ata_WaitTO(bus->ab_Timer, 0, 400, 0);
+            PIO_OutAlt(bus, ATACTLF_INT_DISABLE, ata_AltControl);
+
+            /* Write some pattern to registers. This is a variant of a more
+               common technique, with the difference that we don't use the
+               sector count register because some bad ATAPI drives disallow
+               writing to it */
+            PIO_Out(bus, 0x55, ata_LBALow);
+            PIO_Out(bus, 0xaa, ata_LBAMid);
+            PIO_Out(bus, 0xaa, ata_LBALow);
+            PIO_Out(bus, 0x55, ata_LBAMid);
+            PIO_Out(bus, 0x55, ata_LBALow);
+            PIO_Out(bus, 0xaa, ata_LBAMid);
+
+            tmp1 = PIO_In(bus, ata_LBALow);
+            tmp2 = PIO_In(bus, ata_LBAMid);
+            DB2(bug("[ATA  ] ata_InitBus: Reply 0x%02X 0x%02X\n", tmp1, tmp2));
+
+            if ((tmp1 == 0x55) && (tmp2 == 0xaa))
+                bus->ab_Dev[i] = DEV_UNKNOWN;
+            DINIT(bug("[ATA  ] ata_InitBus: Device type = 0x%02X\n", bus->ab_Dev[i]));
+        }
+
+        ata_ResetBus(bus);
+        ata_CloseTimer(bus->ab_Timer);
     }
-
-    ata_ResetBus(bus);
-    ata_CloseTimer(bus->ab_Timer);
     DINIT(bug("[ATA  ] ata_InitBus: Finished\n"));
 }
 
