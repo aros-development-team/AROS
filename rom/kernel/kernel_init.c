@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main kernel.resource initialization.
@@ -118,7 +118,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     D(bug("[KRN] Kernel_Init() done\n"));
 
     /* Set global KernelBase storage and return */
-    D(bug("[%s] Set global KernelBase\n"));
+    D(bug("[KRN] Set global KernelBase\n"));
     setKernelBase(KernelBase);
 
     return KernelBase;
