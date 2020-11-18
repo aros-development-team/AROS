@@ -69,6 +69,8 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     struct SCSICmd scsi = {};
     union scsi_cdb cdb = {};
 
+    D(bug("[AHCI%02ld] %s()\n", unit->sim_Unit, __func__));
+
     if (ap->ap_type == ATA_PORT_T_DISK) {
         sector_size = at->at_identify.sector_size;
     } else if (ap->ap_type == ATA_PORT_T_ATAPI) {
@@ -202,6 +204,8 @@ AROS_LH1(void, BeginIO,
     struct DriveGeometry *geom;
     struct NSDeviceQueryResult *nsqr;
     BOOL done = (io->io_Flags & IOF_QUICK) ? TRUE : FALSE;
+
+    D(bug("[AHCI%02ld] %s(0x%p)\n", unit->sim_Unit, __func__, io));
 
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
     io->io_Error = 0;

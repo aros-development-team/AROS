@@ -147,7 +147,7 @@ static int ahci_RegisterPort(struct ahci_port *ap)
     struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
     struct cam_sim *unit;
     char name[64];
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 
     unit = AllocPooled(AHCIBase->ahci_MemPool, sizeof(*unit));
     if (!unit)
@@ -229,7 +229,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
 
     unit->au_UnitNum = device_get_unit(ap->ap_sc->sc_dev) * 32 + ap->ap_num;
 
-    D(bug("[AHCI>>] %s()\n", __PRETTY_FUNCTION__)); 
+    D(bug("[AHCI>>] %s()\n", __func__)); 
     D(bug("[AHCI>>] %s: ap = %p, at = %p, unit = %d\n", __func__, ap, at, ap->ap_sim ? ap->ap_sim->sim_Unit : -1));
 
     /* See if dos.library has run */
@@ -411,7 +411,7 @@ ata_fix_identify(struct ata_identify *id)
 {
 	u_int16_t	*swap;
 	int		i;
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 
 	swap = (u_int16_t *)id->serial;
 	for (i = 0; i < sizeof(id->serial) / sizeof(u_int16_t); i++)
@@ -449,7 +449,7 @@ ahci_set_xfer(struct ahci_port *ap, struct ata_port *atx)
 	struct ata_xfer	*xa;
 	u_int16_t mode;
 	u_int16_t mask;
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 
 	at = atx ? atx : ap->ap_ata[0];
 
@@ -504,7 +504,7 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 {
 	struct ata_port *at;
 	struct ata_xfer	*xa;
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 
 	at = atx ? atx : ap->ap_ata[0];
 
@@ -634,7 +634,7 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 static int
 ahci_cam_probe_atapi(struct ahci_port *ap, struct ata_port *atx)
 {
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 	ahci_set_xfer(ap, atx);
 	return(0);
 }
@@ -668,7 +668,7 @@ ahci_cam_probe(struct ahci_port *ap, struct ata_port *atx)
 	const char	*scstr;
 	const char	*type;
 
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 	error = EIO;
 
 	/*

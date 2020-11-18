@@ -111,7 +111,7 @@ ahci_lookup_device(device_t dev)
     u_int8_t subclass = pci_get_subclass(dev);
     u_int8_t progif = pci_read_config(dev, PCIR_PROGIF, 1);
     int is_ahci;
-    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    D(bug("[AHCI] %s()\n", __func__)); 
 
     /*
      * Generally speaking if the pci device does not identify as
@@ -144,7 +144,7 @@ static int
 ahci_vt8251_attach(device_t dev)
 {
     struct ahci_softc *sc = device_get_softc(dev);
-    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    D(bug("[AHCI] %s()\n", __func__)); 
 
     sc->sc_flags |= AHCI_F_NO_NCQ;
     return (ahci_pci_attach(dev));
@@ -157,7 +157,7 @@ ahci_ati_sb600_attach(device_t dev)
     pcireg_t magic;
     u_int8_t subclass = pci_get_subclass(dev);
     u_int8_t revid;
-    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    D(bug("[AHCI] %s()\n", __func__)); 
 
     if (subclass == PCIS_STORAGE_IDE) {
         revid = pci_read_config(dev, PCIR_REVID, 1);
@@ -180,7 +180,7 @@ static int
 ahci_ati_sb700_attach(device_t dev)
 {
     struct ahci_softc *sc = device_get_softc(dev);
-    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    D(bug("[AHCI] %s()\n", __func__)); 
 
     sc->sc_flags |= AHCI_F_IGN_FR;
     sc->sc_flags |= AHCI_F_NO_PM;
@@ -191,7 +191,7 @@ static int
 ahci_nvidia_mcp_attach(device_t dev)
 {
     struct ahci_softc *sc = device_get_softc(dev);
-    D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    D(bug("[AHCI] %s()\n", __func__)); 
 
     sc->sc_flags |= AHCI_F_IGN_FR;
     return (ahci_pci_attach(dev));
@@ -216,7 +216,7 @@ ahci_pci_attach(device_t dev)
 # define gen			dev->dev_gen
 #endif
 
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 
 	if (pci_read_config(dev, PCIR_COMMAND, 2) & 0x0400) {
 		device_printf(dev, "BIOS disabled PCI interrupt, "
@@ -488,7 +488,7 @@ noccc:
 	 * order.
 	 */
 	for (i = 0; error == 0 && i < AHCI_MAX_PORTS; i++) {
-            D(bug("[AHCI] %s: checking port %d\n", __PRETTY_FUNCTION__, i)); 
+            D(bug("[AHCI] %s: checking port %d\n", __func__, i)); 
             if ((pi & (1 << i)) == 0) {
                 /* dont allocate stuff if the port isnt implemented */
                 continue;
@@ -512,7 +512,7 @@ noccc:
                 IPTR str[1];
                 OOP_Object *bus;
 
-                D(bug("[AHCI] %s: port @ 0x%p\n", __PRETTY_FUNCTION__, sc->sc_ports[i])); 
+                D(bug("[AHCI] %s: port @ 0x%p\n", __func__, sc->sc_ports[i])); 
                 name = (char *)AllocVec(20, MEMF_CLEAR);
                 str[0] = i;
                 RawDoFmt("AHCI channel #%d", (RAWARG)str, RAWFMTFUNC_STRING, name);
@@ -523,7 +523,7 @@ noccc:
                 if ((attrs[PORT_TAG_PRODUCT].ti_Data = sc->sc_ad->ad_product) == 0)
                         attrs[PORT_TAG_PRODUCT].ti_Data = pci_get_device(dev);
 
-                D(bug("[AHCI] %s: Registering '%s' with controller @ 0x%p\n", __PRETTY_FUNCTION__, name, dev->dev_Controller)); 
+                D(bug("[AHCI] %s: Registering '%s' with controller @ 0x%p\n", __func__, name, dev->dev_Controller)); 
                 bus = HW_AddDriver(dev->dev_Controller, AHCIBase->busClass, attrs);
                 if (!bus)
                 {
@@ -531,11 +531,11 @@ noccc:
                       "Failed to create Bus object for device %04X:%04X port %d\n",
                       attrs[PORT_TAG_PRODUCER].ti_Data, attrs[PORT_TAG_PRODUCT].ti_Data, i);
                 }
-                D(bug("[AHCI] %s: Bus Obj @ 0x%p\n", __PRETTY_FUNCTION__, bus)); 
+                D(bug("[AHCI] %s: Bus Obj @ 0x%p\n", __func__, bus)); 
             }
             else
             {
-                D(bug("[AHCI] %s: Failed to alloc port\n", __PRETTY_FUNCTION__)); 
+                D(bug("[AHCI] %s: Failed to alloc port\n", __func__)); 
             }
 	}
 
@@ -605,7 +605,7 @@ noccc:
 # undef	gen
 #endif
         
-        D(bug("[AHCI] %s: done\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s: done\n", __func__)); 
 	return(0);
 }
 
@@ -619,7 +619,7 @@ ahci_pci_detach(device_t dev)
 	struct ahci_port *ap;
 	int	i;
 
-        D(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+        D(bug("[AHCI] %s()\n", __func__)); 
 
 	/*
 	 * Disable the controller and de-register the interrupt, if any.

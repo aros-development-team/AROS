@@ -81,7 +81,7 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
 {
     struct BootLoaderBase	*BootLoaderBase;
 
-    D(bug("[AHCI--] %s: ahci.device Initialization\n", __PRETTY_FUNCTION__);)
+    D(bug("[AHCI--] %s()\n", __func__);)
 
     AHCIBase->ahci_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!AHCIBase->ahci_UtilityBase)
@@ -93,7 +93,7 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
     AHCIBase->ahci_HostCount=0;
 
     BootLoaderBase = OpenResource("bootloader.resource");
-    D(bug("[AHCI--] %s: BootloaderBase = %p\n", __PRETTY_FUNCTION__, BootLoaderBase));
+    D(bug("[AHCI--] %s: BootloaderBase = %p\n", __func__, BootLoaderBase));
     if (BootLoaderBase != NULL)
     {
         struct List *list;
@@ -110,7 +110,7 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
 
                     if (strstr(CmdLine, "disable"))
                     {
-                        D(bug("[AHCI--] %s: Disabling AHCI support\n", __PRETTY_FUNCTION__));
+                        D(bug("[AHCI--] %s: Disabling AHCI support\n", __func__));
                         return FALSE;
                     }
                 }
@@ -125,7 +125,7 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
     if (AHCIBase->ahci_MemPool == NULL)
         return FALSE;
 
-    D(bug("[AHCI--] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, AHCIBase->ahci_MemPool);)
+    D(bug("[AHCI--] %s: MemPool @ %p\n", __func__, AHCIBase->ahci_MemPool);)
 
 #if defined(__OOP_NOATTRBASES__)
     /* Get some useful bases */
@@ -142,8 +142,10 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
     }
 #endif
 
-    D(bug("[AHCI--] %s: Base AHCI Hidd Class @ %p\n", __PRETTY_FUNCTION__, AHCIBase->ahciClass);)
-    D(bug("[AHCI--] %s: AHCI PCI Bus Class @ %p\n", __PRETTY_FUNCTION__, AHCIBase->busClass);)
+    D(
+      bug("[AHCI--] %s: Base AHCI Hidd Class @ %p\n", __func__, AHCIBase->ahciClass);
+      bug("[AHCI--] %s: AHCI PCI Bus Class @ %p\n", __func__, AHCIBase->busClass);
+    )
 
     AHCIBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
     if (!AHCIBase->storageRoot)
@@ -152,7 +154,7 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
     {
         return FALSE;
     }
-    D(bug("[AHCI--] %s: storage root @ %p\n", __PRETTY_FUNCTION__, AHCIBase->storageRoot);)
+    D(bug("[AHCI--] %s: storage root @ %p\n", __func__, AHCIBase->storageRoot);)
 
     return TRUE;
 }

@@ -60,7 +60,7 @@ int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t bo
 int bus_dma_tag_destroy(bus_dma_tag_t tag)
 {
     struct bus_dma_tag_slab *slab;
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
     for (slab = TAILQ_FIRST(&tag->dt_slabs); slab;
          slab = TAILQ_FIRST(&tag->dt_slabs)) {
         TAILQ_REMOVE(&tag->dt_slabs, slab, sl_node);
@@ -76,7 +76,7 @@ static struct bus_dma_tag_slab *bus_dmamem_alloc_slab(bus_dma_tag_t tag)
     int boundary = tag->dt_boundary;
     struct bus_dma_tag_slab *slab;
 
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
 
     if (boundary < 4)
         boundary = 4;
@@ -109,7 +109,7 @@ int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap
     void *addr;
     struct bus_dma_tag_slab *slab;
     int i;
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
 
     TAILQ_FOREACH(slab, &tag->dt_slabs, sl_node) {
         if (slab->sl_segfree != 0)
@@ -172,14 +172,14 @@ void bus_dmamem_free(bus_dma_tag_t tag, void *vaddr, bus_dmamap_t map)
 
 int bus_dmamap_create(bus_dma_tag_t tag, unsigned flags, bus_dmamap_t *map)
 {
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
     bus_dmamem_alloc(tag, NULL, 0, map);
     return 0;
 }
 
 void bus_dmamap_destroy(bus_dma_tag_t tag, bus_dmamap_t map)
 {
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
     bus_dmamem_free(tag, NULL, map);
 }
 
@@ -194,7 +194,7 @@ void bus_dmamap_sync(bus_dma_tag_t tag, bus_dmamap_t map, unsigned flags)
 {
     ULONG len = tag->dt_maxsegsz;
 
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
 
     if (!(flags & (1 << 31)))
         CachePreDMA(map, &len, flags);
@@ -213,7 +213,7 @@ struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, 
     struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
     OOP_AttrBase HiddPCIDeviceAttrBase = AHCIBase->ahci_HiddPCIDeviceAttrBase;
 
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
 
     resource = AllocPooled(AHCIBase->ahci_MemPool, sizeof(*resource));
     if (!resource)
@@ -256,7 +256,7 @@ int bus_release_resource(device_t dev, enum bus_resource_t type, int rid, struct
     struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
     OOP_AttrBase HiddPCIDeviceAttrBase = AHCIBase->ahci_HiddPCIDeviceAttrBase;
 
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
 
     if (type == SYS_RES_MEMORY && rid > PCIR_BAR(0) && rid < PCIR_BAR(6)) {
         struct pHidd_PCIDriver_UnmapPCI unmap;
@@ -294,7 +294,7 @@ int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t fu
     struct Interrupt *handler = AllocVec(sizeof(struct Interrupt)+sizeof(void *)*2, MEMF_PUBLIC | MEMF_CLEAR);
     void **fa;
 
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
 
     if (handler == NULL)
         return ENOMEM;
@@ -323,7 +323,7 @@ int bus_teardown_intr(device_t dev, struct resource *r, void *cookie)
     struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
     OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
 
-    DDMA(bug("[AHCI] %s()\n", __PRETTY_FUNCTION__)); 
+    DDMA(bug("[AHCI] %s()\n", __func__)); 
 
     HIDD_PCIDevice_RemoveInterrupt(dev->dev_Object, cookie);
     FreeVec(cookie);
