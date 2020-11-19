@@ -3,6 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 # First try to install arch/cpu specific files if any
+#MM- workbench-s-quick : workbench-s
 #MM workbench-s : workbench-s-$(ARCH)-$(CPU) workbench-s-setup
 workbench-s : $(AROS_S)/Startup-Sequence $(AROS_S)/Shell-Startup \
 	$(AROS_S)/PCD $(AROS_S)/SPat $(AROS_S)/DPat
