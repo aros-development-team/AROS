@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Eject/Load CLI command. 
@@ -80,17 +80,21 @@ int __nocommandline;
 #include <dos/dos.h>
 #include <dos/filehandler.h>
 #include <devices/trackdisk.h>
+#include <devices/scsidisk.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 
-#define NAME_BUFFER_SIZE 32
+#define NAME_BUFFER_SIZE        32
 #ifndef ERROR_UNKNOWN
-#define ERROR_UNKNOWN 100
-#define AROS_BSTR_ADDR(s) (((STRPTR)BADDR(s))+1)
+#define ERROR_UNKNOWN           100
+#define AROS_BSTR_ADDR(s)       (((STRPTR)BADDR(s))+1)
 #endif
 
-const TEXT version_string[] = "$VER: Eject 41.1 (26.9.2009)";
+#define START_STOP              0x1b
+#define ALLOW_MEDIUM_REMOVAL    0x1e
+
+const TEXT version_string[] = "$VER: Eject 41.2 (19.11.2020)";
 const TEXT template[] = "DEVICE/A";
 const TEXT load_name[] = "Load";
 
@@ -101,6 +105,73 @@ struct Args
 };
 
 
+LONG SCSIEject(struct IOStdReq *request, struct MsgPort *port, LONG *result, BOOL load)
+{
+    UBYTE allowRmBlk[6] = { ALLOW_MEDIUM_REMOVAL, 0, 0, 0, 0, 0 };
+    UBYTE startStop1Blk[6] = { START_STOP, 0, 0, 0, 1, 0 };
+    UBYTE startStop2Blk[6] = { START_STOP, 0, 0, 0, 2, 0 };
+
+    UBYTE buffer[2];           /* a data buffer used for mode sense data */
+    UBYTE Sense[32];        /* buffer for request sense data */
+    struct SCSICmd Cmd;      /* where the actual SCSI command goes */
+    LONG error = 0;
+
+    Cmd.scsi_Data = (UWORD *)buffer;     /* where we put mode sense data */
+    Cmd.scsi_Length = 254;               /* how much we will accept      */
+    Cmd.scsi_CmdLength = 6;              /* length of the command        */
+    Cmd.scsi_Flags = SCSIF_AUTOSENSE;    /* do automatic REQUEST_SENSE   */
+    Cmd.scsi_SenseData = (UBYTE *)Sense; /* where sense data will go     */
+    Cmd.scsi_SenseLength = 18;           /* how much we will accept      */
+    Cmd.scsi_SenseActual = 0;            /* how much has been received   */
+
+    request->io_Length  = sizeof(struct SCSICmd);
+    request->io_Data    = (APTR)&Cmd;
+    request->io_Command = HD_SCSICMD;
+
+    Cmd.scsi_Command=(UBYTE *)allowRmBlk; /* issuing ALLOW_MEDIUM_REMOVAL command */
+    error = DoIO((struct IORequest *)request);
+
+    Cmd.scsi_Command=(UBYTE *)startStop1Blk; /* issuing START_STOP command */
+    DoIO((struct IORequest *)request);
+
+    Cmd.scsi_Command=(UBYTE *)startStop2Blk; /* issuing START_STOP command */
+    DoIO((struct IORequest *)request);
+    return error;
+}
+
+LONG TrackdiskEject(struct IOStdReq *request, struct MsgPort *port, LONG *result, BOOL load)
+{
+    ULONG signals, received;
+    LONG error = 0;
+
+    /* Send command to eject or load media */
+
+    request->io_Command = TD_EJECT;
+    request->io_Length = load ? 0 : 1;
+    SendIO((struct IORequest *)request);
+    signals = (1 << port->mp_SigBit) | SIGBREAKF_CTRL_C;
+    received = 0;
+
+    /* Wait for command completion or user break */
+
+    while ((received & SIGBREAKF_CTRL_C) == 0 && GetMsg(port) == NULL)
+        received = Wait(signals);
+    if ((received & SIGBREAKF_CTRL_C) != 0)
+    {
+        AbortIO((struct IORequest *)request);
+        WaitIO((struct IORequest *)request);
+        GetMsg(port);
+        error = ERROR_BREAK;
+        *result = RETURN_WARN;
+    }
+    else
+    {
+        if (request->io_Error != 0)
+            error = ERROR_UNKNOWN;
+    }
+    return error;
+}
+
 int main(void)
 {
     struct RDArgs *read_args = NULL;
@@ -108,7 +179,6 @@ int main(void)
     struct Args args = {NULL};
     struct MsgPort *port = NULL;
     struct IOStdReq *request = NULL;
-    ULONG signals, received;
     struct DosList *dos_list;
     TEXT node_name[NAME_BUFFER_SIZE];
     UWORD i;
@@ -152,7 +222,7 @@ int main(void)
             error = ERROR_INVALID_COMPONENT_NAME;
     }
 
-    /* Determine trackdisk-like device underlying DOS device */
+    /* Determine block device underlying DOS device */
 
     if (error == 0)
     {
@@ -177,48 +247,25 @@ int main(void)
             error = ERROR_OBJECT_WRONG_TYPE;
     }
 
-    /* Open trackdisk-like device */
+    /* Open block device */
 
     if (error == 0)
     {
         if (OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit,
-            (APTR)request, 0) != 0)
+            (struct IORequest *)request, 0) != 0)
             error = ERROR_UNKNOWN;
     }
 
     if (error == 0)
     {
-        /* Send command to eject or load media */
-
-        request->io_Command = TD_EJECT;
-        request->io_Length = load ? 0 : 1;
-        SendIO((APTR)request);
-        signals = (1 << port->mp_SigBit) | SIGBREAKF_CTRL_C;
-        received = 0;
-
-        /* Wait for command completion or user break */
-
-        while ((received & SIGBREAKF_CTRL_C) == 0 && GetMsg(port) == NULL)
-            received = Wait(signals);
-        if ((received & SIGBREAKF_CTRL_C) != 0)
-        {
-            AbortIO((APTR)request);
-            WaitIO((APTR)request);
-            GetMsg(port);
-            error = ERROR_BREAK;
-            result = RETURN_WARN;
-        }
-        else
-        {
-            if (request->io_Error != 0)
-                error = ERROR_UNKNOWN;
-        }
+        error = SCSIEject(request, port, &result, load);
+        error = TrackdiskEject(request, port, &result, load);
     }
 
     /* Deallocate resources */
 
     if (request != NULL)
-        CloseDevice((APTR)request);
+        CloseDevice((struct IORequest *)request);
     DeleteIORequest(request);
     DeleteMsgPort(port);
 
