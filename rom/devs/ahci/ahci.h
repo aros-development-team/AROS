@@ -106,7 +106,11 @@ static const int ahcidebug = 0xff;
 #define  AHCI_REG_CAP2_BOH		(1<<0) /* BIOS/OS Handoff */
 #define  AHCI_REG_CAP2_NVMP		(1<<1) /* NVMHCI Present */
 #define  AHCI_REG_CAP2_APST		(1<<2) /* A-Partial to Slumber Trans */
-#define  AHCI_FMT_CAP2		"\020" "\003BOH" "\002NVMP" "\001BOH"
+#define  AHCI_REG_CAP2_SDS		(1<<3) /* Supports DevSleep */
+#define  AHCI_REG_CAP2_SADM		(1<<4) /* Supports A-DevSleep Mgmt */
+#define  AHCI_REG_CAP2_DESO		(1<<5) /* DevSleep only from Slumber */
+#define  AHCI_FMT_CAP2		"\020" "\006DESO" "\005SADM" "\004SDS"	\
+				"\003APST" "\002NVMP" "\001BOH"
 
 #define AHCI_REG_BOHC		0x028 /* BIOS/OS Handoff Control and Status */
 #define  AHCI_REG_BOHC_BOS		(1<<0) /* BIOS Owned Semaphore */
@@ -201,6 +205,7 @@ static const int ahcidebug = 0xff;
 #define  AHCI_PREG_CMD_ALPE		(1<<26) /* Aggro Pwr Mgmt Enable */
 #define  AHCI_PREG_CMD_ASP		(1<<27) /* Aggro Slumber/Partial */
 #define  AHCI_PREG_CMD_ICC		0xf0000000 /* Interface Comm Ctrl */
+#define  AHCI_PREG_CMD_ICC_DEVSLEEP	0x80000000
 #define  AHCI_PREG_CMD_ICC_SLUMBER	0x60000000
 #define  AHCI_PREG_CMD_ICC_PARTIAL	0x20000000
 #define  AHCI_PREG_CMD_ICC_ACTIVE	0x10000000
@@ -238,6 +243,7 @@ static const int ahcidebug = 0xff;
 #define  AHCI_PREG_SSTS_IPM_ACTIVE	0x100
 #define  AHCI_PREG_SSTS_IPM_PARTIAL	0x200
 #define  AHCI_PREG_SSTS_IPM_SLUMBER	0x600
+#define  AHCI_PREG_SSTS_IPM_DEVSLEEP	0x800
 
 #define AHCI_PREG_SCTL		0x2c /* SATA Control */
 #define  AHCI_PREG_SCTL_DET		0xf /* Device Detection */
@@ -253,12 +259,12 @@ static const int ahcidebug = 0xff;
 #define  AHCI_PREG_SCTL_IPM_NONE	0x000
 #define  AHCI_PREG_SCTL_IPM_NOPARTIAL	0x100
 #define  AHCI_PREG_SCTL_IPM_NOSLUMBER	0x200
-#define  AHCI_PREG_SCTL_IPM_DISABLED	0x300
+#define  AHCI_PREG_SCTL_IPM_NODEVSLP	0x400
 #define	 AHCI_PREG_SCTL_SPM		0xf000	/* Select Power Management */
-#define	 AHCI_PREG_SCTL_SPM_NONE	0x0000
-#define	 AHCI_PREG_SCTL_SPM_NOPARTIAL	0x1000
-#define	 AHCI_PREG_SCTL_SPM_NOSLUMBER	0x2000
-#define	 AHCI_PREG_SCTL_SPM_DISABLED	0x3000
+#define	 AHCI_PREG_SCTL_SPM_NONE	0x0000  /* not used by AHCI */
+#define	 AHCI_PREG_SCTL_SPM_NOPARTIAL	0x1000  /* not used by AHCI */
+#define	 AHCI_PREG_SCTL_SPM_NOSLUMBER	0x2000  /* not used by AHCI */
+#define	 AHCI_PREG_SCTL_SPM_DISABLED	0x3000  /* not used by AHCI */
 #define  AHCI_PREG_SCTL_PMP		0xf0000	/* Set PM port for xmit FISes */
 #define  AHCI_PREG_SCTL_PMP_SHIFT	16
 
@@ -326,6 +332,10 @@ static const int ahcidebug = 0xff;
 #define  AHCI_PREG_FBS_DEV_SHIFT	8
 #define  AHCI_PREG_FBS_ADO_SHIFT	12
 #define  AHCI_PREG_FBS_DWE_SHIFT	16
+
+#define AHCI_PREG_DEVSLP	0x44 /* Device Sleep */
+#define  AHCI_PREG_DEVSLP_DSP		0x00000002 /* Device Sleep Present */
+#define  AHCI_PREG_DEVSLP_ADSE		0x00000001 /* A-Device Sleep Enable*/
 
 /*
  * AHCI mapped structures
@@ -449,6 +459,8 @@ struct ahci_port {
 #define AP_F_EXCLUSIVE_ACCESS	0x0200
 #define AP_F_ERR_CCB_RESERVED	0x0400
 #define AP_F_HARSH_REINIT	0x0800
+#define AP_F_FBSS_ENABLED	0x1000
+#define AP_F_BOOT_SYNCHRONOUS	0x2000
 	int			ap_signal;	/* os per-port thread sig */
 	thread_t		ap_thread;	/* os per-port thread */
 	struct lock		ap_lock;	/* os per-port lock */
@@ -515,6 +527,7 @@ struct ahci_softc {
 	bus_space_tag_t		sc_iot;		/* split from sc_regs */
 	bus_space_handle_t	sc_ioh;		/* split from sc_regs */
 
+	int			sc_irq_type;
 	int			sc_rid_irq;	/* saved bus RIDs */
 	int			sc_rid_regs;
 	u_int32_t		sc_cap;		/* capabilities */
@@ -522,6 +535,7 @@ struct ahci_softc {
 	u_int32_t		sc_vers;	/* AHCI version */
 	int			sc_numports;
 	u_int32_t		sc_portmask;
+	u_int32_t		sc_ipm_disable;
 
 	void			*sc_irq_handle;	/* installed irq vector */
 
@@ -530,12 +544,17 @@ struct ahci_softc {
 	bus_dma_tag_t		sc_tag_cmdt;
 	bus_dma_tag_t		sc_tag_data;
 
+	size_t			sc_rfis_size;
+	size_t			sc_cmdlist_size;
+
 	int			sc_flags;
 #define AHCI_F_NO_NCQ			0x00000001
 #define AHCI_F_IGN_FR			0x00000002
 #define AHCI_F_INT_GOOD			0x00000004
 #define AHCI_F_FORCE_FBSS		0x00000008
-#define AHCI_F_NO_PM			0x00000010
+#define AHCI_F_IGN_CR			0x00000010
+#define AHCI_F_CYCLE_FR			0x00000020
+#define AHCI_F_FORCE_SCLO		0x00000040
 
 	u_int			sc_ncmds;
 
@@ -594,6 +613,7 @@ int	ahci_pwait_eq(struct ahci_port *, int, bus_size_t,
 void	ahci_intr(void *);
 void	ahci_port_intr(struct ahci_port *ap, int blockable);
 
+int	ahci_comreset(struct ahci_port *ap, int *pmdetectp);
 int	ahci_port_start(struct ahci_port *ap);
 int	ahci_port_stop(struct ahci_port *ap, int stop_fis_rx);
 int	ahci_port_clo(struct ahci_port *ap);
@@ -645,6 +665,7 @@ void	ahci_os_unlock_port(struct ahci_port *ap);
 
 extern u_int32_t AhciForceGen;
 extern u_int32_t AhciNoFeatures;
+extern int ahci_synchronous_boot;
 
 enum {AHCI_LINK_PWR_MGMT_NONE, AHCI_LINK_PWR_MGMT_MEDIUM,
       AHCI_LINK_PWR_MGMT_AGGR};

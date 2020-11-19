@@ -37,7 +37,6 @@ typedef struct
 } EnumeratorArgs;
 
 CONST_STRPTR ahciDeviceName = "ahci.device";
-CONST_STRPTR ahciControllerName = "PCI AHCI Controller";
 
 int ahci_attach(device_t dev)
 {
@@ -138,7 +137,7 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
     struct TagItem ahci_tags[] =
     {
         {aHidd_Name             , (IPTR)ahciDeviceName          },
-        {aHidd_HardwareName     , (IPTR)ahciControllerName      },
+        {aHidd_HardwareName     , 0                             },
         {aHidd_Producer		, 0                             },
 #define AHCI_TAG_VEND 2
         {aHidd_Product		, 0                             },
@@ -177,10 +176,28 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
     D(bug("[AHCI:PCI] %s: Registering Detected Hosts..\n", __func__));
 	
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
+	char revbuf[32];
+        ULONG reg;
+
         if ((ahci_tags[AHCI_TAG_VEND].ti_Data = dev->dev_softc->sc_ad->ad_vendor) == 0)
             ahci_tags[AHCI_TAG_VEND].ti_Data = pci_get_vendor(dev);
         if ((ahci_tags[AHCI_TAG_PROD].ti_Data = dev->dev_softc->sc_ad->ad_product) == 0)
             ahci_tags[AHCI_TAG_PROD].ti_Data = pci_get_device(dev);
+
+	/* check the revision */
+        ULONG ioh = pci_read_config(dev, PCIR_BAR(5), 4);
+	reg = *(u_int32_t *)((IPTR)ioh + AHCI_REG_VS);
+	if (reg & 0x0000FF) {
+		ksnprintf(revbuf, sizeof(revbuf), "AHCI %d.%d.%d",
+			  (reg >> 16), (UBYTE)(reg >> 8), (UBYTE)reg);
+	} else {
+		ksnprintf(revbuf, sizeof(revbuf), "AHCI %d.%d",
+			  (reg >> 16), (UBYTE)(reg >> 8));
+	}
+        dev->dev_revision = AllocVec(strlen(revbuf) + 1, MEMF_CLEAR);
+        CopyMem(revbuf, (APTR)dev->dev_revision, strlen(revbuf));
+        ahci_tags[1].ti_Data = (IPTR)AllocVec(strlen(revbuf) + 16, MEMF_CLEAR);
+        sprintf((char *)ahci_tags[1].ti_Data, "PCI %s Controller", dev->dev_revision);
         ahci_tags[AHCI_TAG_DATA].ti_Data = (IPTR)dev;
         HW_AddDriver(AHCIBase->storageRoot, AHCIBase->ahciClass, ahci_tags);
         D(bug("[AHCI:PCI] %s: AHCI Controller Object @ 0x%p\n", __func__, dev->dev_Controller));

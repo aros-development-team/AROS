@@ -17,6 +17,7 @@
 #include "ahci.h"
 #include "timer.h"
 
+/* Callout Support Functions */
 void callout_init_mp(struct callout *co)
 {
     D(bug("[AHCI] %s()\n", __func__)); 
@@ -40,7 +41,7 @@ void callout_stop(struct callout *co)
     Permit();
 }
 
-void callout_stop_sync(struct callout *co)
+void callout_cancel(struct callout *co)
 {
     D(bug("[AHCI] %s()\n", __func__)); 
     callout_stop(co);
@@ -83,6 +84,16 @@ int callout_reset(struct callout *co, unsigned ticks, timeout_t *func, void *arg
     return (t == NULL) ? ENOMEM : 0;
 }
 
+/* IRQ Support Functions */
+int pci_alloc_1intr(device_t dev, int msi_enable,
+	    int *rid0, u_int *irq_flags)
+{
+    *rid0 = AHCI_IRQ_RID;
+    *irq_flags = RF_SHAREABLE | RF_ACTIVE;
+}
+
+
+/* AHCI Support Functions */
 void	ahci_os_sleep(int ms)
 {
     struct IORequest *io = ahci_OpenTimer();
@@ -167,6 +178,7 @@ void	ahci_os_start_port(struct ahci_port *ap)
     atomic_set_int(&ap->ap_signal, AP_SIGF_INIT | AP_SIGF_THREAD_SYNC);
     lockinit(&ap->ap_lock, "ahcipo", 0, LK_CANRECURSE);
     lockinit(&ap->ap_sim_lock, "ahcicam", 0, LK_CANRECURSE);
+    lockinit(&ap->ap_sig_lock, "ahport", 0, 0);
     ksnprintf(name, sizeof(name), "%d", ap->ap_num);
 
     kthread_create(ahci_port_thread, ap, &ap->ap_thread,

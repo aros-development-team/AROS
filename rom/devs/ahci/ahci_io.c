@@ -9,7 +9,7 @@
 /* Maintainer: Jason S. McMullan <jason.mcmullan@gmail.com>
  */
  
-#include <aros/debug.h>
+ #include <aros/debug.h>
 
 #include <proto/exec.h>
 
@@ -45,6 +45,27 @@
 #include "timer.h"
 
 #include LC_LIBDEFS_FILE
+
+//#define DEBUG_AHCI_UNIT 1
+//#define DEBUG_AHCI_IOR
+
+/* */
+
+#if defined(DEBUG_AHCI_UNIT)
+#define AHCI_UNIT_DBG if (unit->sim_Unit == DEBUG_AHCI_UNIT)
+#else
+#define AHCI_UNIT_DBG
+#endif
+
+#if defined(DEBUG_AHCI_IOR)
+#define AHCI_IO_FMT     "0x%p"
+#define AHCI_IO_STR     " IO " AHCI_IO_FMT
+#define AHCI_IO_DBG     ,io
+#else
+#define AHCI_IO_FMT
+#define AHCI_IO_STR
+#define AHCI_IO_DBG
+#endif
 
 /* Translate to a SCSI command, since the
  * backend will make that work on both ATAPI
@@ -87,7 +108,7 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         return TRUE;
     }
     if ((len & bmask) || len == 0) {
-        D(bug("[AHCI%02ld] IO %p Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len=0x%x, bmask=0x%x)\n", unit->sim_Unit, io, io->io_Flags, io->io_Command, len, bmask));
+        D(bug("[AHCI%02ld]" AHCI_IO_STR " Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len=0x%x, bmask=0x%x)\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command, len, bmask));
         io->io_Error = IOERR_BADLENGTH;
         return TRUE;
     }
@@ -205,18 +226,22 @@ AROS_LH1(void, BeginIO,
     struct NSDeviceQueryResult *nsqr;
     BOOL done = (io->io_Flags & IOF_QUICK) ? TRUE : FALSE;
 
-    D(bug("[AHCI%02ld] %s(0x%p)\n", unit->sim_Unit, __func__, io));
+    D(bug("[AHCI%02ld] %s(" AHCI_IO_FMT ")\n", unit->sim_Unit, __func__ AHCI_IO_DBG));
 
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
     io->io_Error = 0;
 
-    D(bug("[AHCI%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Command));
+    D(
+        AHCI_UNIT_DBG
+            bug("[AHCI%02ld]" AHCI_IO_STR " Start, io_Flags = %d, io_Command = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command)
+    );
 
     /* Unit going offline? Don't permit new commands. */
     if (unit->sim_Flags & SIMF_OffLine) {
         io->io_Error = IOERR_OPENFAIL;
         if (!(io->io_Flags & IOF_QUICK))
             ReplyMsg(&io->io_Message);
+        D(bug("[AHCI%02ld] %s: WARN - unit is offline\n", unit->sim_Unit, __func__));
         return;
     }
 
@@ -226,6 +251,10 @@ AROS_LH1(void, BeginIO,
 
     switch (io->io_Command) {
     case NSCMD_DEVICEQUERY:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " NSCMD_DEVICEQUERY\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         if (len < sizeof(*nsqr))
             goto bad_length;
 
@@ -239,19 +268,35 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
         break;
     case TD_PROTSTATUS:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_PROTSTATUS\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         IOStdReq(io)->io_Actual = (ap->ap_type == ATA_PORT_T_DISK) ? 0 : -1;
         done = TRUE;
         break;
     case TD_CHANGENUM:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_CHANGENUM\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         IOStdReq(io)->io_Actual = unit->sim_ChangeNum;
         done = TRUE;
         break;
     case TD_CHANGESTATE:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_CHANGESTATE\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         IOStdReq(io)->io_Actual = (unit->sim_Flags & SIMF_MediaPresent) ? 0 : -1;
         done = TRUE;
         break;
     case TD_EJECT:
     {
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_EJECT\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         if (at->at_identify.config & (1 << 7))
         {
             // FIXME: Eject removable media
@@ -260,10 +305,18 @@ AROS_LH1(void, BeginIO,
         break;
     }
     case TD_GETDRIVETYPE:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_GETDRIVETYPE\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         IOStdReq(io)->io_Actual = DRIVE_NEWSTYLE;
         done = TRUE;
         break;
     case TD_GETGEOMETRY:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_GETGEOMETRY\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         if (len < sizeof(*geom))
             goto bad_length;
 
@@ -295,6 +348,10 @@ AROS_LH1(void, BeginIO,
         done = ahci_sector_rw(io, off64, TRUE);
         break;
     case TD_MOTOR:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_MOTOR\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         // FIXME: Tie in with power management
         IOStdReq(io)->io_Actual = 1;
         done = TRUE;
@@ -330,10 +387,18 @@ AROS_LH1(void, BeginIO,
             goto bad_cmd;
         break;
     case TD_ADDCHANGEINT:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_ADDCHANGEINT\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         break;
     case TD_REMCHANGEINT:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " TD_REMCHANGEINT\n", unit->sim_Unit AHCI_IO_DBG);
+            )
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         done = TRUE;
@@ -349,15 +414,26 @@ AROS_LH1(void, BeginIO,
     default:
         bug("ahci.device %d: Unknown IO command %d\n", unit->sim_Unit, io->io_Command);
 bad_cmd:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld] WARN -" AHCI_IO_STR " Fault, io_Flags = %d, IOERR_NOCMD (io_Command = %d), len = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command, len);
+            )
         io->io_Error = IOERR_NOCMD;
         done = TRUE;
         break;
 bad_length:
-        D(bug("[AHCI%02ld] IO %p Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len = %d)\n", unit->sim_Unit, io, io->io_Flags, io->io_Command, len));
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld]" AHCI_IO_STR " Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len = %d)\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command, len);
+            )
         io->io_Error = IOERR_BADLENGTH;
         done = TRUE;
         break;
 bad_address:
+        D(
+            AHCI_UNIT_DBG
+                bug("[AHCI%02ld] WARN -" AHCI_IO_STR " IOERR_BADADDRESS Fault, io_Flags = %d, io_Command = %d, len = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command, len);
+            )
         io->io_Error = IOERR_BADADDRESS;
         done = TRUE;
         break;
@@ -376,9 +452,15 @@ bad_address:
     if (done && !(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
 
-    if (done)
-        D(bug("[AHCI%02ld] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Command, io->io_Error));
-
+    D(
+        AHCI_UNIT_DBG
+        {
+            if (done)
+                bug("[AHCI%02ld]" AHCI_IO_STR " Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command, io->io_Error);
+        }
+       bug("[AHCI%02ld] %s:" AHCI_IO_STR " finished\n", unit->sim_Unit, __func__ AHCI_IO_DBG);
+    )
+   
     AROS_LIBFUNC_EXIT
 }
 
@@ -387,6 +469,12 @@ AROS_LH1(LONG, AbortIO,
     struct AHCIBase *, AHCIBase, 6, ahci)
 {
     AROS_LIBFUNC_INIT
+
+    D(
+        struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
+        AHCI_UNIT_DBG
+            bug("[AHCI%02ld] %s(0x%p)\n", unit->sim_Unit, __func__, io);
+    )
 
     /* Aborting IOs is not (yet) supported */
     return 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2020, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -37,6 +37,10 @@
 #undef kprintf
 #define kprintf(fmt, args...) device_printf(NULL, fmt ,##args)
 
+#if !defined(NELEM)
+#define NELEM(a) (sizeof(a)/sizeof(a[0]))
+#endif
+
 typedef uint8_t u_int8_t;
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
@@ -73,7 +77,6 @@ static inline int device_printf(device_t dev, const char *fmt, ...)
     va_end(args);
     return err;
 }
-
 
 #define panic(fmt, args...) do { Forbid(); device_printf(NULL, fmt ,##args); Disable(); for (;;); } while (0);
 
@@ -201,6 +204,11 @@ static inline u_int16_t pci_get_device(device_t dev)
     return (u_int16_t)pci_read_config(dev, PCIR_DEVICE, 2);
 }
 
+static inline u_int8_t pci_get_revid(device_t dev)
+{
+    return (u_int8_t)pci_read_config(dev, PCIR_REVID, 1);
+}
+
 static inline u_int8_t pci_get_class(device_t dev)
 {
     return (u_int8_t)pci_read_config(dev, PCIR_CLASS, 1);
@@ -300,7 +308,8 @@ static inline bus_space_handle_t rman_get_bushandle(struct resource *r)
 /* Bus IRQ */
 typedef void driver_intr_t(void *arg);
 
-#define INTR_MPSAFE 0
+#define INTR_HIFREQ     0 /* high frequency interrupt */
+#define INTR_MPSAFE     0
 
 int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t handler, void *arg, void **cookiep, void *serializer);
 
@@ -403,7 +412,7 @@ void callout_init(struct callout *c);
 
 void callout_stop(struct callout *c);
 
-void callout_stop_sync(struct callout *c);
+void callout_cancel(struct callout *c);
 
 int callout_reset(struct callout *c, unsigned int ticks, void (*func)(void *), void *arg);
 
@@ -461,5 +470,7 @@ static inline int ffs(unsigned int bits)
 
 struct ata_xfer;
 void ahci_ata_io_complete(struct ata_xfer *xa);
+int pci_alloc_1intr(device_t dev, int msi_enable,
+	    int *rid0, u_int *irq_flags);
 
 #endif /* AHCI_AROS_H */

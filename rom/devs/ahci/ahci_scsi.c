@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2020, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -184,7 +184,7 @@ static void ahci_ata_sense(struct ata_xfer *xa,
     if (rfis->error & ATA_D2H_ERROR_AMNF)
         sense_data->flags |= SSD_ILI;
     sense_data->add_sense_code = asc;
-    sense_data->add_sense_qual = asq;
+    sense_data->add_sense_code_qual = asq;
 }
 
 static void ahci_io_complete(struct ata_xfer *xa)
