@@ -2,16 +2,16 @@
 #define _BOOTSTRAP_H
 
 /*
-    Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2020 The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/multiboot.h>
 
-#ifdef DEBUG
+#if defined(DEBUG) && (DEBUG > 0)
 #define D(x)    x
 #else
-#define D(x)    /* eps */
+#define D(x)
 #endif
 
 #ifdef MULTIBOOT_64BIT

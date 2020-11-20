@@ -1,20 +1,21 @@
 /*
-    Copyright © 2006-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 32-bit bootstrap code used to boot the 64-bit AROS kernel.
     Lang: English
 */
 
-//#define DEBUG
-//#define DEBUG_MEM
-//#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
-//#define DEBUG_TAGLIST
+/*
+#define DEBUG
+#define DEBUG_MEM
+#define DEBUG_MEM_TYPE MMAP_TYPE_RAM
+#define DEBUG_TAGLIST
+*/
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <aros/multiboot2.h>
-//#include <asm/cpu.h>
 #include <asm/x86_64/cpu.h>
 
 #include <bootconsole.h>
@@ -69,20 +70,20 @@ const struct multiboot_header __header __attribute__((used,section(".aros.startu
     32
 };
 
-struct my_mb2_header
+struct bootstrap_mb2_header
 {
     struct mb2_header 			header;
     struct mb2_header_tag_framebuffer	tag_fb __attribute__((aligned(8)));
     struct mb2_header_tag		tag_end __attribute__((aligned(8)));
 };
 
-const struct my_mb2_header __header_v2 __attribute__((used,section(".aros.startup"),aligned(8))) =
+const struct bootstrap_mb2_header __header_v2 __attribute__((used,section(".aros.startup"),aligned(8))) =
 {
     {
     	MB2_MAGIC,
     	MB2_ARCH_I386,
-    	sizeof(struct my_mb2_header),
-    	-(MB2_MAGIC + MB2_ARCH_I386 + sizeof(struct my_mb2_header))
+    	sizeof(struct bootstrap_mb2_header),
+    	-(MB2_MAGIC + MB2_ARCH_I386 + sizeof(struct bootstrap_mb2_header))
     },
     {
         MB2_HEADER_TAG_FRAMEBUFFER,
@@ -103,6 +104,7 @@ const struct my_mb2_header __header_v2 __attribute__((used,section(".aros.startu
     First portion of code, called from GRUB directly. It has to set the stack
     up, disable interrupts and jump to the regular C code
 */
+static void __bootstrap(unsigned int, void *) __attribute__((used));
 asm("	.text\n\t"
     "	.globl kernel_bootstrap\n\t"
     "	.type  kernel_bootstrap,@function\n"
@@ -115,7 +117,7 @@ asm("	.text\n\t"
     "	movb $-1,%al\n\t"
     "	outb %al, $0x21\n\t"                            /* And disable them physically */
     "	outb %al, $0xa1\n\t"
-    "	jmp __bootstrap"
+    "	jmp __bootstrap\n"
 );
 
 /*
@@ -288,6 +290,10 @@ static char *ar_name(const struct ar_header *header, const struct ar_header *lon
     return tmp;
 }
 
+D(
+#define str_Bootstrap "bootstrap"
+)
+
 unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned long end)
 {
     char *p = (char *)mod_start;
@@ -303,7 +309,7 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
         mo->Name = "Kickstart ELF";
         mo->eh = (void*)mod_start;
 
-        D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->Name, mo->eh));
+        D(kprintf("[%s] * ELF module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
 
 	if (mod_end > end)
 	    end = mod_end;
@@ -316,7 +322,7 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
          */
         void *file = p + 8;
 
-        D(kprintf("[BOOT] * package @ %p:\n", mod_start));
+        D(kprintf("[%s] * package @ %p:\n", str_Bootstrap, mod_start);)
 
         while (file < (void*)mod_end)
         {
@@ -330,7 +336,7 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
 
             mo->Name = s;
             mo->eh = file;
-            D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->Name, mo->eh));
+            D(kprintf("[%s]   * PKG module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
 
             file += len;
         }
@@ -344,7 +350,7 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
         const struct ar_header *longnames = NULL;
 
         /* ar(1) archive */
-        D(kprintf("[BOOT] * archive @ %p:\n", mod_start));
+        D(kprintf("[%s] * archive @ %p:\n", str_Bootstrap, mod_start);)
 
         /* Look for the GNU extended name section */
         for (file = (void *)(p + 8); (void *)file < (void*)mod_end; file = ar_next(file))
@@ -356,7 +362,7 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
                 break;
             }
         }
-        D(kprintf("[BOOT] *   longnames @ %p\n", longnames));
+        D(kprintf("[%s] *   longnames @ %p\n", str_Bootstrap, longnames);)
 
         for (file = (void *)(p + 8); (void *)file < (void*)mod_end; file = ar_next(file))
         {
@@ -368,18 +374,16 @@ unsigned long AddModule(unsigned long mod_start, unsigned long mod_end, unsigned
 
                 mo->Name = s;
                 mo->eh = (void *)data;
-                D(kprintf("[BOOT] *   ar module %s @ %p\n", mo->Name, mo->eh));
-            } else {
-                D(kprintf("[BOOT] *   Ignored @ %p (%s)\n", file, s));
-            }
+                D(kprintf("[%s] *   ar module %s @ %p\n", str_Bootstrap, mo->Name, mo->eh);)
+            } 
+            D(else  kprintf("[%s] *   Ignored @ %p (%s)\n", str_Bootstrap, file, s);)
         }
 
 	if (mod_end > end)
 	    end = mod_end;
 
     }
-    else
-       	kprintf("[BOOT] Unknown module 0x%p\n", p);
+    D(else kprintf("[%s] Unknown module 0x%p\n", str_Bootstrap, p);)
 
     return end;
 }
@@ -389,7 +393,7 @@ void AllocFB(void)
 {
     if (scr_Type == SCR_GFX)
     {
-	D(kprintf("[BOOT] Allocating %u bytes for console mirror (%ux%u)\n", scr_Width * scr_Height, scr_Width, scr_Height));
+	D(kprintf("[%s] Allocating %u bytes for console mirror (%ux%u)\n", str_Bootstrap, scr_Width * scr_Height, scr_Width, scr_Height);)
 
     	__bs_malloc(scr_Width * scr_Height);
     }
@@ -420,7 +424,7 @@ int ParseCmdLine(const char *cmdline)
 
 struct mb_mmap *mmap_make(unsigned long *len, unsigned long mem_lower, unsigned long long mem_upper)
 {
-    D(kprintf("[BOOT] No memory map supplied by the bootloader, using defaults\n"));
+    D(kprintf("[%s] No memory map supplied by the bootloader, using defaults\n", str_Bootstrap);)
 
     MemoryMap[0].size = 20;
     MemoryMap[0].addr = 0;
@@ -438,8 +442,8 @@ struct mb_mmap *mmap_make(unsigned long *len, unsigned long mem_lower, unsigned 
 
 static void prepare_message(unsigned long kick_start, unsigned long kick_base, void *kick_end, void *DebugInfo_ptr)
 {
-    D(kprintf("[BOOT] Kickstart 0x%p - 0x%p (base 0x%p), protection 0x%p - 0x%p\n", kick_start, kick_end, kick_base,
-    	      &_prot_lo, &_prot_hi));
+    D(kprintf("[%s] Kickstart 0x%p - 0x%p (base 0x%p), protection 0x%p - 0x%p\n", str_Bootstrap, kick_start, kick_end, kick_base,
+    	      &_prot_lo, &_prot_hi);)
 
     tag->ti_Tag  = KRN_KernelBase;
     tag->ti_Data = KERNEL_OFFSET | kick_base;
@@ -546,20 +550,20 @@ static void __bootstrap(unsigned int magic, void *mb)
     ksize = len;
     mm2   = mmap;
 
-    kprintf("[BOOT] Memory map contents:\n", mmap);
+    kprintf("[%s] Memory map contents:\n", str_Bootstrap, mmap);
     while (ksize >= sizeof(struct mb_mmap))
     {
 #ifdef DEBUG_MEM_TYPE
         if (mm2->type == DEBUG_MEM_TYPE)
 #endif
-	    kprintf("[BOOT] Type %lu addr %p len %p\n", mm2->type, mm2->addr, mm2->len);
+	    kprintf("[%s] Type %lu addr %p len %p\n", str_Bootstrap, mm2->type, mm2->addr, mm2->len);
 
         ksize -= mm2->size+4;
         mm2 = (struct mb_mmap *)(mm2->size + (unsigned long)mm2 + 4);
     }
 #endif
 
-    D(kprintf("[BOOT] Modules end at 0x%p\n", mod_end));
+    D(kprintf("[%s] Modules end at 0x%p\n", str_Bootstrap, mod_end);)
     if (!firstMod)
     {
     	panic("No kickstart modules found, nothing to run");
@@ -582,7 +586,7 @@ static void __bootstrap(unsigned int magic, void *mb)
     	panic("Failed to determine kickstart size");
     }
 
-    D(kprintf("[BOOT] Code %u, data %u\n", ro_size, rw_size));
+    D(kprintf("[%s] Code %u, data %u\n", str_Bootstrap, ro_size, rw_size);)
 
     /*
      * Total kickstart size + alignment window (page size - 1) + some free space (512KB) for
@@ -648,7 +652,7 @@ static void __bootstrap(unsigned int magic, void *mb)
     	      "Your system doesn't have enough memory.");
     }
 
-    kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
+    D(kprintf("[%s] Loading kickstart, data 0x%p, code 0x%p...\n", str_Bootstrap, kstart, kbase);)
 
     if (!LoadKernel(firstMod, (void *)kbase, (void *)kstart, (char *)__bss_track, DEF_SYSBASE, &kend, &kentry, &kdebug))
     {
@@ -659,9 +663,9 @@ static void __bootstrap(unsigned int magic, void *mb)
     prepare_message(kstart, kbase, kend, kdebug);
 
 #ifdef DEBUG_TAGLIST
-    kprintf("[BOOT] Boot taglist:\n");
+    kprintf("[%s] Boot taglist:\n", str_Bootstrap);
     for (tag = km; tag->ti_Tag != TAG_DONE; tag++)
-    	kprintf("[BOOT] 0x%llp 0x%llp\n", tag->ti_Tag, tag->ti_Data);
+    	kprintf("[%s] 0x%llp 0x%llp\n", str_Bootstrap, tag->ti_Tag, tag->ti_Data);
 #endif
 
     /* Jump to the kickstart */
@@ -672,6 +676,9 @@ static void __bootstrap(unsigned int magic, void *mb)
 
 void Hello(void)
 {
-    kprintf  ("[BOOT] Entered AROS Bootstrap @ 0x%p\n", __bootstrap);
-    D(kprintf("[BOOT] Stack @ 0x%p, [%d bytes]\n", __stack, sizeof(__stack)));
+    D(
+        kprintf  ("[%s] Entered AROS Bootstrap @ 0x%p\n", str_Bootstrap, __bootstrap);
+        kprintf("[%s] Stack @ 0x%p, [%d bytes]\n", str_Bootstrap, __stack, sizeof(__stack));
+    )
+    return;
 }

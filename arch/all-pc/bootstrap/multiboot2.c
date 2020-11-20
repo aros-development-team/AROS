@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Multiboot v2 parser
@@ -7,8 +7,6 @@
 */
 
 /* #define DEBUG */
-#define DTAGS(x)
-#define DMMAP(x)
 
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
@@ -20,6 +18,10 @@
 
 #include "bootstrap.h"
 #include "support.h"
+
+D(
+#define str_BSMultiboot2 "bootstrap:multiboot2"
+)
 
 /*
  * AROS expects memory map in original format. However, we won't bother 
@@ -39,7 +41,7 @@ static struct mb_mmap *mmap_convert(struct mb2_tag_mmap *tag, unsigned long *mma
     int mmap2_len = tag->size - sizeof(struct mb2_tag_mmap);
     struct mb_mmap *ret = (struct mb_mmap *)mmap;
 
-    DMMAP(kprintf("[Multiboot2] Memory map at 0x%p, total size %u, entry size %u\n", mmap2, mmap2_len, tag->entry_size));
+    DMMAP(kprintf("[%s] Memory map at 0x%p, total size %u, entry size %u\n", str_BSMultiboot2, mmap2, mmap2_len, tag->entry_size);)
 
     while (mmap2_len >= sizeof(struct mb2_mmap))
     {
@@ -68,7 +70,7 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
 
     con_InitMultiboot2(mb);
     Hello();
-    D(kprintf("[Multiboot2] Multiboot v2 data @ 0x%p [%u bytes]\n", mb, *(unsigned int *)mb));
+    D(kprintf("[%s] Multiboot v2 data @ 0x%p [%u bytes]\n", str_BSMultiboot2, mb, *(unsigned int *)mb);)
 
     AllocFB();
 
@@ -85,18 +87,18 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
      */
     for (mbtag = mb + 8; mbtag->type != MB2_TAG_END; mbtag = (void *)mbtag + AROS_ROUNDUP2(mbtag->size, 8))
     {
-        DTAGS(kprintf("[Multiboot2] Tag %u, size %u\n", mbtag->type, mbtag->size));
+        DTAGS(kprintf("[%s] Tag %u, size %u\n", str_BSMultiboot2, mbtag->type, mbtag->size);)
 
         switch (mbtag->type)
         {
         case MB2_TAG_CMDLINE:
             cmdline = ((struct mb2_tag_string *)mbtag)->string;
-            D(kprintf("[Multiboot2] Command line @ 0x%p : '%s'\n", cmdline, cmdline));
+            D(kprintf("[%s] Command line @ 0x%p : '%s'\n", str_BSMultiboot2, cmdline, cmdline);)
             break;
 
         case MB2_TAG_MMAP:
             mmap = mmap_convert((struct mb2_tag_mmap *)mbtag, mmap_len);
-            D(kprintf("[Multiboot2] Memory map @ 0x%p\n", mmap));
+            D(kprintf("[%s] Memory map @ 0x%p\n", str_BSMultiboot2, mmap);)
             break;
 
         case MB2_TAG_BASIC_MEMINFO:
@@ -131,13 +133,13 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
 
 #ifdef MULTIBOOT_64BIT
         case MB2_TAG_EFI64:
-            D(kprintf("[Multiboot2] EFI 64-bit System table 0x%016llX\n", ((struct mb2_tag_efi64 *)mbtag)->pointer));
+            D(kprintf("[%s] EFI 64-bit System table 0x%016llX\n", str_BSMultiboot2, ((struct mb2_tag_efi64 *)mbtag)->pointer);)
 
             tag->ti_Tag  = KRN_EFISystemTable;
             tag->ti_Data = ((struct mb2_tag_efi64 *)mbtag)->pointer;
 #else
         case MB2_TAG_EFI32:
-            D(kprintf("[Multiboot2] EFI 32-bit System table 0x%08X\n", ((struct mb2_tag_efi32 *)mbtag)->pointer));
+            D(kprintf("[%s] EFI 32-bit System table 0x%08X\n", str_BSMultiboot2, ((struct mb2_tag_efi32 *)mbtag)->pointer);)
 
             tag->ti_Tag  = KRN_EFISystemTable;
             tag->ti_Data = ((struct mb2_tag_efi32 *)mbtag)->pointer;
@@ -158,7 +160,7 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
     {
         if (vbe)
         {
-            kprintf("[Multiboot2] Got VESA display mode 0x%x from the bootstrap\n", vbe->vbe_mode);
+            D(kprintf("[%s] Got VESA display mode 0x%x from the bootstrap\n", str_BSMultiboot2, vbe->vbe_mode);)
 
             /*
              * We are already running in VESA mode set by the bootloader.
@@ -178,9 +180,11 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
         }
         else if (fb)
         {
-            kprintf("[Multiboot2] Got framebuffer display %dx%dx%d from the bootstrap\n",
+            D(
+                kprintf("[%s] Got framebuffer display %dx%dx%d from the bootstrap\n", str_BSMultiboot2,
                     fb->common.framebuffer_width, fb->common.framebuffer_height, fb->common.framebuffer_bpp);
-            D(kprintf("[Multiboot2] Address 0x%016llX, type %d, %d bytes per line\n", fb->common.framebuffer_addr, fb->common.framebuffer_type, fb->common.framebuffer_pitch));
+                kprintf("[%s] Address 0x%016llX, type %d, %d bytes per line\n", str_BSMultiboot2, fb->common.framebuffer_addr, fb->common.framebuffer_type, fb->common.framebuffer_pitch);
+            )
 
             /*
              * AROS VESA driver supports only RGB framebuffer because we are

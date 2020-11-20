@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define DEBUG
+/* #define DEBUG */
 
 #include <aros/kernel.h>
 
@@ -15,6 +15,10 @@
 #include "bootstrap.h"
 #include "support.h"
 
+D(
+#define str_BSMultiboot "bootstrap:multiboot"
+)
+
 unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len)
 {
     const char *cmdline = NULL;
@@ -24,7 +28,7 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
 
     con_InitMultiboot(mb);
     Hello();
-    D(kprintf("[Multiboot] Multiboot v1 structure @ %p\n", mb));
+    D(kprintf("[%s] Multiboot v1 structure @ %p\n", str_BSMultiboot, mb);)
 
     /*
      * Now allocate our mirror buffer.
@@ -35,7 +39,7 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
     if (mb->flags & MB_FLAGS_CMDLINE)
     {
         cmdline = (const char *)mb->cmdline;
-        D(kprintf("[Multiboot] Command line @ %p : '%s'\n", mb->cmdline, cmdline));
+        D(kprintf("[%s] Command line @ %p : '%s'\n", str_BSMultiboot, mb->cmdline, cmdline);)
 
         usable = STR_TOP_ADDR(usable, cmdline);
     }
@@ -45,13 +49,13 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
         mmap = (struct mb_mmap *)mb->mmap_addr;
         len  = mb->mmap_length;
 
-        D(kprintf("[Multiboot] Memory map at 0x%p, length %u\n", mmap, len));
+        D(kprintf("[%s] Memory map at 0x%p, length %u\n", str_BSMultiboot, mmap, len);)
         usable = TOP_ADDR(usable, (void *)mmap + len);
     }
 
     if (mb->flags & MB_FLAGS_MEM)
     {
-        D(kprintf("[Multiboot] Low memory %u KB, upper memory %u KB\n", mb->mem_lower, mb->mem_upper));
+        D(kprintf("[%s] Low memory %u KB, upper memory %u KB\n", str_BSMultiboot, mb->mem_lower, mb->mem_upper);)
 
         if (!mmap)
         {
@@ -90,14 +94,15 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
         if (mb->flags & MB_FLAGS_GFX)
         {
             /* We prefer complete VBE data if present */
-            kprintf("[Multiboot] Got VESA display mode 0x%x from the bootstrap\n", mb->vbe_mode);
+            D(
+                kprintf("[%s] Got VESA display mode 0x%x from the bootstrap\n", str_BSMultiboot, mb->vbe_mode);
+                kprintf("[%s]   Mode info 0x%p, controller into 0x%p\n", str_BSMultiboot, mb->vbe_mode_info, mb->vbe_control_info);
+                kprintf("[%s]   VBE version 0x%04X\n", str_BSMultiboot, ((struct vbe_controller *)mb->vbe_control_info)->version);
+                kprintf("[%s]   Resolution %d x %d\n", str_BSMultiboot, ((struct vbe_mode  *)mb->vbe_mode_info)->x_resolution, ((struct vbe_mode  *)mb->vbe_mode_info)->y_resolution);
+                kprintf("[%s]   Mode flags 0x%04X, framebuffer 0x%p\n", str_BSMultiboot, ((struct vbe_mode  *)mb->vbe_mode_info)->mode_attributes, ((struct vbe_mode *)mb->vbe_mode_info)->phys_base);
+                kprintf("[%s]   Windows A 0x%04X B 0x%04X\n", str_BSMultiboot, ((struct vbe_mode *)mb->vbe_mode_info)->win_a_segment, ((struct vbe_mode *)mb->vbe_mode_info)->win_b_segment);
+            )
 
-            D(kprintf("[Multiboot] Mode info 0x%p, controller into 0x%p\n", mb->vbe_mode_info, mb->vbe_control_info));
-            D(kprintf("[Multiboot] VBE version 0x%04X\n", ((struct vbe_controller *)mb->vbe_control_info)->version));
-            D(kprintf("[Multiboot] Resolution %d x %d\n", ((struct vbe_mode  *)mb->vbe_mode_info)->x_resolution, ((struct vbe_mode  *)mb->vbe_mode_info)->y_resolution));
-            D(kprintf("[Multiboot] Mode flags 0x%04X, framebuffer 0x%p\n", ((struct vbe_mode  *)mb->vbe_mode_info)->mode_attributes, ((struct vbe_mode *)mb->vbe_mode_info)->phys_base));
-            D(kprintf("[Multiboot] Windows A 0x%04X B 0x%04X\n", ((struct vbe_mode *)mb->vbe_mode_info)->win_a_segment, ((struct vbe_mode *)mb->vbe_mode_info)->win_b_segment));
-        
             /*
              * We are already running in VESA mode set by the bootloader.
              * Pass on the mode information to AROS.
@@ -109,7 +114,7 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
             tag->ti_Tag = KRN_VBEControllerInfo;
             tag->ti_Data = mb->vbe_control_info;
             tag++;
-        
+
             tag->ti_Tag = KRN_VBEMode;
             tag->ti_Data = mb->vbe_mode;
             tag++;
@@ -124,9 +129,11 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
              * Looks like we are running on EFI machine with no VBE support (Mac).
              * Convert framebuffer data to VBEModeInfo and hand it to AROS.
              */
-            kprintf("[Multiboot] Got framebuffer display %dx%dx%d from the bootstrap\n", mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp);
-            D(kprintf("[Multiboot] Address 0x%016llX, type %d, %d bytes per line\n", mb->framebuffer_addr, mb->framebuffer_type, mb->framebuffer_pitch));
-        
+            D(
+                kprintf("[%s] Got framebuffer display %dx%dx%d from the bootstrap\n", str_BSMultiboot, mb->framebuffer_width, mb->framebuffer_height, mb->framebuffer_bpp);
+                kprintf("[%s]   Address 0x%016llX, type %d, %d bytes per line\n", str_BSMultiboot, mb->framebuffer_addr, mb->framebuffer_type, mb->framebuffer_pitch);
+            )
+
             /*
              * AROS VESA driver supports only RGB framebuffer because we are
              * unlikely to have VGA palette registers for other cases.
@@ -174,7 +181,7 @@ unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsign
         struct mb_module *mod = (struct mb_module *)mb->mods_addr;
         int i;
 
-        D(kprintf("[Multiboot] GRUB has loaded %d files\n", mb->mods_count));
+        D(kprintf("[%s] GRUB has loaded %d files\n", str_BSMultiboot, mb->mods_count);)
 
         /* Go through the list of modules loaded by GRUB */
         for (i=0; i < mb->mods_count; i++)

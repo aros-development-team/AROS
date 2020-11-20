@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#define DEBUG 0
+/* #define DEBUG */
 
 #include <aros/kernel.h>
 #include <hardware/vbe.h>
@@ -15,6 +15,10 @@
 #include "bootstrap.h"
 #include "support.h"
 #include "vesa.h"
+
+D(
+#define str_BSVESA "bootstrap:vesa"
+)
 
 void setupVESA(char *vesa)
 {
@@ -29,7 +33,7 @@ void setupVESA(char *vesa)
 
     if (!tmp)
     {
-    	kprintf("[VESA] Setup failed, not enough working memory\n");
+    	D(kprintf("[%s] Setup failed, not enough working memory\n", str_BSVESA);)
     	return;
     }
 
@@ -68,13 +72,13 @@ void setupVESA(char *vesa)
      * something useful, like kickstart modules or boot information.
      * So we preserve our region and put it back when we are done.
      */
-    D(kprintf("[VESA] Backing up low memory, buffer at 0x%p\n", tmp));
+    D(kprintf("[%s] Backing up low memory, buffer at 0x%p\n", str_BSVESA, tmp);)
     memcpy(tmp, VESA_START, vesa_size);
 
-    D(kprintf("[VESA] vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size));
+    D(kprintf("[%s] vesa.bin @ %p [size=%d]\n", str_BSVESA, &_binary_vesa_start, &_binary_vesa_size);)
     memcpy(VESA_START, vesa_start, vesa_size);
 
-    kprintf("[VESA] BestModeMatch for %ldx%ldx%ld = ", x, y, d);
+    D(kprintf("[%s] BestModeMatch for %ldx%ldx%ld = ", str_BSVESA, x, y, d);)
     mode = findMode(x, y, d, vfreq, prioritise_depth);
 
     /* Get information and copy it from 16-bit memory space to our 32-bit memory */
@@ -87,7 +91,7 @@ void setupVESA(char *vesa)
     if (VBEModeInfo.mode_attributes & VM_LINEAR_FB)
         mode |= VBE_MODE_LINEAR_FB;
 
-    kprintf("%x\n",mode);
+    D(kprintf("%x\n",mode);)
 
     r = setVbeMode(mode, set_refresh);
     if (r == VBE_RC_SUPPORTED)
@@ -108,13 +112,15 @@ void setupVESA(char *vesa)
     	con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
     	AllocFB();
 
-	D(kprintf("[VESA] VBE version 0x%04X\n", VBEControllerInfo.version));
-        D(kprintf("[VESA] Mode 0x%x\n", mode));
-	D(kprintf("[VESA] Resolution %d x %d\n", VBEModeInfo.x_resolution, VBEModeInfo.y_resolution));
-	D(kprintf("[VESA] %d bits per pixel, %d/%d bytes per line\n", VBEModeInfo.bits_per_pixel, VBEModeInfo.bytes_per_scanline, VBEModeInfo.linear_bytes_per_scanline));
-	D(kprintf("[VESA] Mode flags 0x%04X, framebuffer 0x%p\n", VBEModeInfo.mode_attributes, VBEModeInfo.phys_base));
-	D(kprintf("[VESA] Windows A 0x%04X B 0x%04X\n", VBEModeInfo.win_a_segment, VBEModeInfo.win_b_segment));
-        D(kprintf("[VESA] Palette width %d\n", palwidth));
+	D(
+            kprintf("[%s] VBE version 0x%04X\n", str_BSVESA, VBEControllerInfo.version);
+            kprintf("[%s]   Mode 0x%x\n", str_BSVESA, mode);
+            kprintf("[%s]   Resolution %d x %d\n", str_BSVESA, VBEModeInfo.x_resolution, VBEModeInfo.y_resolution);
+            kprintf("[%s]   %d bits per pixel, %d/%d bytes per line\n", str_BSVESA, VBEModeInfo.bits_per_pixel, VBEModeInfo.bytes_per_scanline, VBEModeInfo.linear_bytes_per_scanline);
+            kprintf("[%s]   Mode flags 0x%04X, framebuffer 0x%p\n", str_BSVESA, VBEModeInfo.mode_attributes, VBEModeInfo.phys_base);
+            kprintf("[%s]   Windows A 0x%04X B 0x%04X\n", str_BSVESA, VBEModeInfo.win_a_segment, VBEModeInfo.win_b_segment);
+            kprintf("[%s]   Palette width %d\n", str_BSVESA, palwidth);
+        )
 
         tag->ti_Tag = KRN_VBEModeInfo;
         tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
@@ -133,5 +139,5 @@ void setupVESA(char *vesa)
         tag++;
     }
     
-    kprintf("[VESA] Setup complete\n");
+    D(kprintf("[%s] Setup complete\n", str_BSVESA);)
 }

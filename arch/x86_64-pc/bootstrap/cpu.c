@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -73,10 +73,10 @@ void setup_mmu(void)
     int i;
     struct PDE2M *pdes[] = { &PDE[0][0], &PDE[1][0], &PDE[2][0], &PDE[3][0] };
 
-    D(kprintf("[BOOT] Setting up MMU, kickstart base 0x%p\n", kick_base));
-    D(kprintf("[BOOT] cr0: 0x%p cr3: 0x%p cr4: 0x%p\n", rdcr(cr0), rdcr(cr3), rdcr(cr4)));
+    D(kprintf("[BOOT] Setting up MMU, kickstart base 0x%p\n", kick_base);)
+    D(kprintf("[BOOT] cr0: 0x%p cr3: 0x%p cr4: 0x%p\n", rdcr(cr0), rdcr(cr3), rdcr(cr4));)
 
-    D(kprintf("[BOOT] Setting up descriptor tables.\n"));
+    D(kprintf("[BOOT] Setting up descriptor tables.\n");)
 
     /* Supervisor code segment */
     GDT.super_cs.type	    = 0x1a;	/* code, non-conforming, readable	*/
@@ -103,8 +103,8 @@ void setup_mmu(void)
     GDT.super_ds.base_mid   = 0;
     GDT.super_ds.base_high  = 0;
 
-    D(kprintf("[BOOT] Mapping first 4G area with MMU\n"));
-    D(kprintf("[BOOT] PML4 0x%p, PDP 0x%p, PDE 0x%p\n", PML4, PDP, PDE));
+    D(kprintf("[BOOT] Mapping first 4G area with MMU\n");)
+    D(kprintf("[BOOT] PML4 0x%p, PDP 0x%p, PDE 0x%p\n", PML4, PDP, PDE);)
 
     /*
      * Page map level 4 Entry.
@@ -132,7 +132,7 @@ void setup_mmu(void)
     {
         int j;
 
-	D(kprintf("[BOOT] PDE[%u] 0x%p\n", i, pdes[i]));
+	D(kprintf("[BOOT] PDE[%u] 0x%p\n", i, pdes[i]);)
 
         /*
          * Set the PDP entry up and point to the PDE table.
@@ -197,31 +197,31 @@ void kick(void *kick_base, struct TagItem64 *km)
         cpuid(0x80000001, v1, v2, v3, v4);
         if (v4 & (1 << 29))
         {
-            D(kprintf("[BOOT] x86-64 CPU ok\n"));
+            D(kprintf("[BOOT] x86-64 CPU ok\n");)
 
 	    KernelTarget.off = kick_base;
 
 	    asm volatile ("lgdt %0"::"m"(GDT_sel));
-	    D(kprintf("[BOOT] GDTR loaded\n"));
+	    D(kprintf("[BOOT] GDTR loaded\n");)
 
             /* Enable PAE */
             wrcr(cr4, _CR4_PAE | _CR4_PGE);
-            D(kprintf("[BOOT] PAE is on\n"));
+            D(kprintf("[BOOT] PAE is on\n");)
             
             /* enable pages */
             wrcr(cr3, &PML4);
-            D(kprintf("[BOOT] cr3 loaded\n"));
+            D(kprintf("[BOOT] cr3 loaded\n");)
 
             /* enable long mode */
             rdmsr(EFER, &v1, &v2);
             v1 |= _EFER_LME;
             wrmsr(EFER, v1, v2);
-            D(kprintf("[BOOT] Long mode is on\n"));
+            D(kprintf("[BOOT] Long mode is on\n");)
 
             /* enable paging and activate long mode */
             wrcr(cr0, _CR0_PG | _CR0_PE);
 
-	    kprintf("[BOOT] Leaving 32-bit environment. LJMP $%x,$%p\n\n", SEG_SUPER_CS, KernelTarget.off);
+	    D(kprintf("[BOOT] Leaving 32-bit environment. LJMP $%x,$%p\n\n", SEG_SUPER_CS, KernelTarget.off);)
 	    asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(km),"S"(AROS_BOOT_MAGIC));
         }
     }
