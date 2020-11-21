@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,13 +12,23 @@
 
 #include "task_intern.h"
 
-void TaskResAddTask(struct TaskResBase *TaskResBase, struct Task *task)
+AROS_UFH3(void, TaskRes_PreLaunch,
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(struct Task *, task, A2),
+          AROS_UFHA(IPTR, unused, A1))
 {
-    struct TaskListEntry *newEntry;
+    AROS_USERFUNC_INIT
 
+    struct TaskListEntry *newEntry;
+    struct TaskResBase *TaskResBase = (struct TaskResBase *)h->h_Data;
+
+    D(
+      bug("[TaskRes] %s(0x%p)\n", __func__, task);
+      bug("[TaskRes] %s: TaskResBase @ 0x%p\n", __func__, TaskResBase);
+    )
     if ((newEntry = AllocMem(sizeof(struct TaskListEntry), MEMF_CLEAR)) != NULL)
     {
-        D(bug("[TaskRes] TaskResAddTask: taskentry @ 0x%p for '%s'\n", newEntry, task->tc_Node.ln_Name));
+        D(bug("[TaskRes] %s: taskentry @ 0x%p for '%s'\n", __func__, newEntry, task->tc_Node.ln_Name));
         newEntry->tle_Task = task;
         NEWLIST(&newEntry->tle_HookTypes);
         if (IsListEmpty(&TaskResBase->trb_LockedLists))
@@ -26,6 +36,8 @@ void TaskResAddTask(struct TaskResBase *TaskResBase, struct Task *task)
         else
             AddTail(&TaskResBase->trb_NewTasks, &newEntry->tle_Node);
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_LH4(APTR, NewAddTask,
@@ -37,26 +49,33 @@ AROS_LH4(APTR, NewAddTask,
 {
     AROS_LIBFUNC_INIT
 
-    APTR newTask;
     struct TaskResBase *TaskResBase;
-    
+    struct Hook plHook = { NULL };
+    struct TagItem nat_Tags[] = {
+        { TASKTAG_PRELAUNCHHOOK,        (IPTR)&plHook   },
+        { TAG_DONE,                     0               },
+        { TAG_DONE,                     0               }
+    };
     TaskResBase = (struct TaskResBase *)SysBase->lb_TaskResBase;
 
-    D(bug("[TaskRes] NewAddTask(0x%p)\n", task));
+    D(bug("[TaskRes] %s(0x%p)\n", __func__, task));
 
-    newTask = AROS_CALL4(APTR, TaskResBase->trb_NewAddTask,
+    plHook.h_Entry = (APTR)TaskRes_PreLaunch;
+    plHook.h_Data = TaskResBase;
+    if (tagList)
+    {
+        nat_Tags[1].ti_Tag = TAG_MORE;
+        nat_Tags[1].ti_Data = (IPTR)tagList;
+    }
+
+    D(bug("[TaskRes] %s: Calling original Exec->NewAddTask()\n", __func__));
+
+    return AROS_CALL4(APTR, TaskResBase->trb_NewAddTask,
                 AROS_LCA(struct Task *,     task,      A1),
                 AROS_LCA(APTR,              initialPC, A2),
                 AROS_LCA(APTR,              finalPC,   A3),
-                AROS_LCA(struct TagItem *,  tagList,   A4),
+                AROS_LCA(struct TagItem *,  nat_Tags,   A4),
 		struct ExecBase *, SysBase);
-
-    D(bug("[TaskRes] NewAddTask: task @ 0x%p\n", newTask));
-
-    if (newTask)
-        TaskResAddTask(TaskResBase, newTask);
-
-    return newTask;
 
     AROS_LIBFUNC_EXIT
 }
@@ -78,16 +97,16 @@ AROS_LH1(void, RemTask,
         findTask = FindTask(NULL);
 
     D(
-        bug("[TaskRes] RemTask(0x%p)\n", task);
+        bug("[TaskRes] %s(0x%p)\n", __func__, task);
         if (findTask != task)
-            bug("[TaskRes] Real task @ 0x%p\n", findTask);
+            bug("[TaskRes] %s: Real task @ 0x%p\n", __func__, findTask);
     )
 
     ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tmpEntry)
     {
         if (taskEntry->tle_Task == findTask)
         {
-            D(bug("[TaskRes] RemTask: destroying new entry @ 0x%p\n", taskEntry));
+            D(bug("[TaskRes] %s: destroying new entry @ 0x%p\n", __func__, taskEntry));
             Remove(&taskEntry->tle_Node);
             FreeMem(taskEntry, sizeof(struct TaskListEntry));
             removed = TRUE;
@@ -107,16 +126,16 @@ AROS_LH1(void, RemTask,
         {
             if (taskEntry->tle_Task == findTask)
             {
-                D(bug("[TaskRes] RemTask: taskentry @ 0x%p for '%s'\n", taskEntry, task->tc_Node.ln_Name));
+                D(bug("[TaskRes] %s: taskentry @ 0x%p for '%s'\n", __func__, taskEntry, task->tc_Node.ln_Name));
                 if (IsListEmpty(&TaskResBase->trb_LockedLists))
                 {
-                    D(bug("[TaskRes] RemTask: destroying entry\n"));
+                    D(bug("[TaskRes] %s: destroying entry\n", __func__));
                     Remove(&taskEntry->tle_Node);
                     FreeMem(taskEntry, sizeof(struct TaskListEntry));
                 }
                 else
                 {
-                    D(bug("[TaskRes] RemTask: flag entry for removal\n"));
+                    D(bug("[TaskRes] %s: flag entry for removal\n", __func__));
                     taskEntry->tle_Task = NULL;
                 }
                 break;
@@ -129,7 +148,7 @@ AROS_LH1(void, RemTask,
 #endif
     }
 
-    D(bug("[TaskRes] RemTask: Calling original Exec->RemTask()\n"));
+    D(bug("[TaskRes] %s: Calling original Exec->RemTask()\n", __func__));
 
     if (TaskResBase->trb_RemTask)
     {
