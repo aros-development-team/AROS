@@ -2,7 +2,7 @@
 #define EXEC_TASKS_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Task structure and constants
@@ -58,8 +58,8 @@ struct Task
     APTR	tc_UserData;	/* For use by the task; no restrictions! */
 };
 
-#define tc_TrapAlloc	    tc_UnionETask.tc_ETrap.tc_ETrapAlloc
-#define tc_TrapAble	    tc_UnionETask.tc_ETrap.tc_ETrapAble
+#define tc_TrapAlloc	                tc_UnionETask.tc_ETrap.tc_ETrapAlloc
+#define tc_TrapAble	                tc_UnionETask.tc_ETrap.tc_ETrapAble
 
 /* Macros */
 #define GetTrapAlloc(t) \
@@ -96,48 +96,48 @@ struct StackSwapArgs
 };
 
 /* tc_Flags Bits */
-#define TB_PROCTIME	0
-#define TB_ETASK	3
-#define TB_STACKCHK	4
-#define TB_EXCEPT	5
-#define TB_SWITCH	6
-#define TB_LAUNCH	7
+#define TB_PROCTIME	                0
+#define TB_ETASK	                3
+#define TB_STACKCHK	                4
+#define TB_EXCEPT	                5
+#define TB_SWITCH	                6
+#define TB_LAUNCH	                7
 
-#define TF_PROCTIME	(1L<<0)
-#define TF_ETASK	(1L<<3)
-#define TF_STACKCHK	(1L<<4)
-#define TF_EXCEPT	(1L<<5)
-#define TF_SWITCH	(1L<<6)
-#define TF_LAUNCH	(1L<<7)
+#define TF_PROCTIME	                (1L<<0)
+#define TF_ETASK	                (1L<<3)
+#define TF_STACKCHK	                (1L<<4)
+#define TF_EXCEPT	                (1L<<5)
+#define TF_SWITCH	                (1L<<6)
+#define TF_LAUNCH	                (1L<<7)
 
 /* Task States (tc_State) */
-#define TS_INVALID	0
-#define TS_ADDED	1
-#define TS_RUN		2
-#define TS_READY	3
-#define TS_WAIT		4
-#define TS_EXCEPT	5
-#define TS_REMOVED	6
+#define TS_INVALID	                0
+#define TS_ADDED	                1
+#define TS_RUN		                2
+#define TS_READY	                3
+#define TS_WAIT		                4
+#define TS_EXCEPT	                5
+#define TS_REMOVED	                6
 /* AROS specific */
-#define TS_TOMBSTONED	7
-#define TS_SPIN	        8
+#define TS_TOMBSTONED	                7
+#define TS_SPIN	                        8
 
 /* Predefined Signals */
-#define SIGB_ABORT	0
-#define SIGB_CHILD	1
-#define SIGB_BLIT	4	/* Note: same as SIGB_SINGLE */
-#define SIGB_SINGLE	4	/* Note: same as SIGB_BLIT */
-#define SIGB_INTUITION	5
-#define SIGB_NET	7
-#define SIGB_DOS	8
+#define SIGB_ABORT	                0
+#define SIGB_CHILD	                1
+#define SIGB_BLIT	                4	/* Note: same as SIGB_SINGLE */
+#define SIGB_SINGLE	                4	/* Note: same as SIGB_BLIT */
+#define SIGB_INTUITION	                5
+#define SIGB_NET	                7
+#define SIGB_DOS	                8
 
-#define SIGF_ABORT	(1L<<0)
-#define SIGF_CHILD	(1L<<1)
-#define SIGF_BLIT	(1L<<4)
-#define SIGF_SINGLE	(1L<<4)
-#define SIGF_INTUITION	(1L<<5)
-#define SIGF_NET	(1L<<7)
-#define SIGF_DOS	(1L<<8)
+#define SIGF_ABORT	                (1L<<0)
+#define SIGF_CHILD	                (1L<<1)
+#define SIGF_BLIT	                (1L<<4)
+#define SIGF_SINGLE	                (1L<<4)
+#define SIGF_INTUITION	                (1L<<5)
+#define SIGF_NET	                (1L<<7)
+#define SIGF_DOS	                (1L<<8)
 
 /* Define this when compiling MorphOS-compatible source */
 #ifdef AROS_MORPHOS_COMPATIBLE
@@ -190,10 +190,10 @@ struct ETask
 #endif
 
 /* Return codes from new child functions */
-#define CHILD_NOTNEW   1 /* Function not called from a new style task */
-#define CHILD_NOTFOUND 2 /* Child not found */
-#define CHILD_EXITED   3 /* Child has exited */
-#define CHILD_ACTIVE   4 /* Child is currently active and running */
+#define CHILD_NOTNEW                    1               /* Function not called from a new style task */
+#define CHILD_NOTFOUND                  2               /* Child not found */
+#define CHILD_EXITED                    3               /* Child has exited */
+#define CHILD_ACTIVE                    4               /* Child is currently active and running */
 
 /* Tags for NewCreateTaskA() and NewAddTask() */
 
@@ -221,17 +221,18 @@ struct ETask
 #define TASKTAG_FLAGS           (TASKTAG_Dummy + 26)
 #define TASKTAG_TCBEXTRASIZE    (TASKTAG_Dummy + 28)
 #define TASKTAG_AFFINITY        (TASKTAG_Dummy + 29)
-#define TASKAFFINITY_BOOT        0
-#define TASKAFFINITY_ANY          ((IPTR)-1)
-#define TASKAFFINITY_ALL_BUT_SELF ((IPTR)-2)
+#define TASKAFFINITY_BOOT               0
+#define TASKAFFINITY_ANY                ((IPTR)-1)
+#define TASKAFFINITY_ALL_BUT_SELF       ((IPTR)-2)
+#define TASKTAG_PRELAUNCHHOOK   (TASKTAG_Dummy + 30)
 
-#define TASKERROR_OK       0
-#define TASKERROR_NOMEMORY 1
+#define TASKERROR_OK                    0
+#define TASKERROR_NOMEMORY              1
 
 /* Actions for ShutdownA() */
 
-#define SD_ACTION_POWEROFF   0
-#define SD_ACTION_COLDREBOOT 1
-#define SD_ACTION_WARMREBOOT 2
+#define SD_ACTION_POWEROFF              0
+#define SD_ACTION_COLDREBOOT            1
+#define SD_ACTION_WARMREBOOT            2
 
 #endif /* EXEC_TASKS_H */

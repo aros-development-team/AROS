@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a task.
@@ -22,6 +22,84 @@
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 #endif
+
+static void TaskLaunch(struct Task *parent, struct Task *task, struct Hook *plHook)
+{
+#if defined(__AROSEXEC_SMP__)
+    int cpunum = KrnGetCPUNumber();
+#else
+    Disable();
+#endif
+
+    /* Add the new task to the ready list. */
+#if !defined(__AROSEXEC_SMP__)
+    task->tc_State = TS_READY;
+    Enqueue(&SysBase->TaskReady, &task->tc_Node);
+#else
+    task->tc_State = TS_INVALID;
+    krnSysCallReschedTask(task, TS_READY);
+#endif
+
+    /*
+        Determine if a task switch is necessary. (If the new task has a
+        higher priority than the current one and the current one
+        is still active.) If the current task isn't of type TS_RUN it
+        is already gone.
+    */
+    if (
+#if defined(__AROSEXEC_SMP__)
+        (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (IntETask(task->tc_UnionETask.tc_ETask) && KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))))
+    {
+        parent = GET_THIS_TASK;
+        if (
+#endif
+        parent && task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
+        parent->tc_State == TS_RUN)
+    {
+        DADDTASK("TaskLaunch: Rescheduling...\n");
+        if (plHook)
+        {
+            DADDTASK("TaskLaunch: Calling pre-launch hook\n");
+            CALLHOOKPKT(plHook, task, 0);
+        }
+        /* Reschedule() will take care about disabled task switching automatically */
+        Reschedule();
+    }
+#if defined(__AROSEXEC_SMP__)
+    }
+    else if (PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity)
+    {
+        //bug("[Exec] AddTask: CPU #%d not in mask [%08x:%08x]\n", cpunum, KrnGetCPUMask(cpunum), IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+        DADDTASK("TaskLaunch: CPU #%d not in mask\n", cpunum);
+        if (IntETask(task->tc_UnionETask.tc_ETask))
+        {
+            if (plHook)
+            {
+                DADDTASK("TaskLaunch: Calling pre-launch hook\n");
+                CALLHOOKPKT(plHook, task, 0);
+            }
+            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
+        }
+        
+    }
+    else
+    {
+       bug("[Exec] TaskLaunch: Unable to Launch on the selected CPU\n");
+        // TODO: Free up all the task data ..
+        krnSysCallReschedTask(task, TS_REMOVED);
+        if (GetETask(task))
+            KrnDeleteContext(GetETask(task)->et_RegFrame);
+        CleanupETask(task);
+        task = NULL;
+    }
+#else
+    else if (plHook)
+    {
+        CALLHOOKPKT(plHook, task, 0);
+    }
+    Enable();
+#endif
+}
 
 /*****************************************************************************
 
@@ -80,12 +158,11 @@
 
     struct Task *parent;
     struct MemList *mlExtra = NULL;
+    struct Hook *plHook = NULL;
+    if (tagList)
+        plHook = (struct Hook *)LibGetTagData(TASKTAG_PRELAUNCHHOOK, 0, tagList);
 
     ASSERT_VALID_PTR(task);
-
-#if defined(__AROSEXEC_SMP__)
-    int cpunum = KrnGetCPUNumber();
-#endif
 
     parent = GET_THIS_TASK;
 
@@ -216,64 +293,12 @@
         lists.
      */
 
-#if !defined(__AROSEXEC_SMP__)
-    Disable();
-#endif
+    DADDTASK("NewAddTask: launching task ...");
 
-    /* Add the new task to the ready list. */
-#if !defined(__AROSEXEC_SMP__)
-    task->tc_State = TS_READY;
-    Enqueue(&SysBase->TaskReady, &task->tc_Node);
-#else
-    task->tc_State = TS_INVALID;
-    krnSysCallReschedTask(task, TS_READY);
-#endif
+    TaskLaunch(parent, task, plHook);
 
-    /*
-        Determine if a task switch is necessary. (If the new task has a
-        higher priority than the current one and the current one
-        is still active.) If the current task isn't of type TS_RUN it
-        is already gone.
-    */
-    if (
-#if defined(__AROSEXEC_SMP__)
-        (!(PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) || (IntETask(task->tc_UnionETask.tc_ETask) && KrnCPUInMask(cpunum, IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity))))
-    {
-        parent = GET_THIS_TASK;
-        if (
-#endif
-        parent && task->tc_Node.ln_Pri > parent->tc_Node.ln_Pri &&
-        parent->tc_State == TS_RUN)
-    {
-        DADDTASK("NewAddTask: Rescheduling...\n");
+    DADDTASK("NewAddTask: task 0x%p launched", task);
 
-        /* Reschedule() will take care about disabled task switching automatically */
-        Reschedule();
-    }
-#if defined(__AROSEXEC_SMP__)
-    }
-    else if (PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity)
-    {
-        //bug("[Exec] AddTask: CPU #%d not in mask [%08x:%08x]\n", cpunum, KrnGetCPUMask(cpunum), IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
-        DADDTASK("NewAddTask: CPU #%d not in mask\n", cpunum);
-        if (IntETask(task->tc_UnionETask.tc_ETask))
-            KrnScheduleCPU(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity);
-    }
-    else
-    {
-       bug("[Exec] NewAddTask: Unable to Launch on the selected CPU\n");
-        // TODO: Free up all the task data ..
-        krnSysCallReschedTask(task, TS_REMOVED);
-        if (GetETask(task))
-            KrnDeleteContext(GetETask(task)->et_RegFrame);
-        CleanupETask(task);
-        task = NULL;
-    }
-#else
-    Enable();
-#endif
-
-    DADDTASK("NewAddTask: Added task 0x%p", task);
     return task;
 
     AROS_LIBFUNC_EXIT
