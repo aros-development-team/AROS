@@ -79,7 +79,6 @@ void nvme_complete_event(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
 
     D(bug("[NVME:HW] %s: cmd id = %u\n", __func__, cqe->command_id);)
     D(bug("[NVME:HW] %s:     status = %04x\n", __func__, AROS_LE2WORD(cqe->status) >> 1);)
-    D(bug("[NVME:HW] %s:     result = %08x\n", __func__, AROS_LE2LONG(cqe->result));)
 
     if (nvmeq->cehooks[cqe->command_id])
     {

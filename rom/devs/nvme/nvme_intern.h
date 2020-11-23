@@ -127,6 +127,8 @@ struct completionevent_handler
 {
     struct Task *ceh_Task;
     ULONG ceh_SigSet;
+    ULONG ceh_Result;
+    UWORD ceh_Status;
 };
 
 struct nvme_queue;

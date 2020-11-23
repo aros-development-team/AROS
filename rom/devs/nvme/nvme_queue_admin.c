@@ -30,6 +30,8 @@ void nvme_complete_adminevent(struct nvme_queue *nvmeq, struct nvme_completion *
     if (nvmeq->cehandlers[cqe->command_id])
     {
         D(bug ("[NVME:ADMIN] %s: Signaling 0x%p (%08x)\n", __func__, nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);)
+        nvmeq->cehandlers[cqe->command_id]->ceh_Result = AROS_LE2LONG(cqe->result);
+        nvmeq->cehandlers[cqe->command_id]->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
         Signal(nvmeq->cehandlers[cqe->command_id]->ceh_Task, nvmeq->cehandlers[cqe->command_id]->ceh_SigSet);
     }
 }
