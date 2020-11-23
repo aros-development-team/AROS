@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VMWare.
@@ -210,7 +210,8 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     while (sync_curr < sync_count)
     {
         char *sync_Description = AllocVec(SYNC_DESCNAME_LEN, MEMF_CLEAR);
-        struct TagItem *sync_mode = AllocVec(11 * sizeof(struct TagItem), MEMF_CLEAR);
+        struct TagItem *sync_mode = AllocVec(8 * sizeof(struct TagItem), MEMF_CLEAR);
+        int smtagno = 0;
 
         sync_modeid = VMWareSVGA__GetDefSyncSizes(sync_curr, &sync_Width, &sync_Height);
         sync_displayid = sync_curr/sync_modes;
@@ -227,30 +228,33 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         }
         DINFO(bug("[VMWareSVGA] %s: Description '%s'\n", __func__, sync_Description));
 
-        sync_mode[0].ti_Tag = aHidd_Sync_Description;
-        sync_mode[0].ti_Data = (IPTR)sync_Description;
+        sync_mode[smtagno].ti_Data = (IPTR)sync_Description;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_Description;
 
-        sync_mode[1].ti_Tag = aHidd_Sync_PixelClock;
+        sync_mode[smtagno].ti_Data = 60 * sync_Width * sync_Height;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_PixelClock;
 
-        sync_mode[2].ti_Tag = aHidd_Sync_HDisp;
-        sync_mode[2].ti_Data = sync_Width;
+        sync_mode[smtagno].ti_Data = sync_Width;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_HDisp;
 
-        sync_mode[3].ti_Tag = aHidd_Sync_VDisp;
-        sync_mode[3].ti_Data = sync_Height;
+        sync_mode[smtagno].ti_Data = sync_Height;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_VDisp;
+#if (0)
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_HSyncStart;
 
-        sync_mode[4].ti_Tag = aHidd_Sync_HSyncStart;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_HSyncEnd;
+#endif
+        sync_mode[smtagno].ti_Data = sync_Width;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_HTotal;
+#if (0)
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_VSyncStart;
 
-        sync_mode[5].ti_Tag = aHidd_Sync_HSyncEnd;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_VSyncEnd;
+#endif
+        sync_mode[smtagno].ti_Data = sync_Height;
+        sync_mode[smtagno++].ti_Tag = aHidd_Sync_VTotal;
 
-        sync_mode[6].ti_Tag = aHidd_Sync_HTotal;
-
-        sync_mode[7].ti_Tag = aHidd_Sync_VSyncStart;
-
-        sync_mode[8].ti_Tag = aHidd_Sync_VSyncEnd;
-
-        sync_mode[9].ti_Tag = aHidd_Sync_VTotal;
-
-        sync_mode[10].ti_Tag = TAG_DONE;
+        sync_mode[smtagno].ti_Tag = TAG_DONE;
 
         modetags[1 + sync_curr].ti_Tag = aHidd_Gfx_SyncTags;
         modetags[1 + sync_curr].ti_Data = (IPTR)sync_mode;
