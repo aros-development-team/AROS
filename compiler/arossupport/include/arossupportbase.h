@@ -20,11 +20,10 @@
 
 struct AROSSupportBase
 {
-    void    	    * StdOut;
+    IPTR    	    _pad;
     int     	    (*kprintf)(const char *, ...) ATTRIB_FMT(1, 2);
     int     	    (*rkprintf)(const char *, const char *, int, const char *, ...) ATTRIB_FMT(4, 5);
     int     	    (*vkprintf)(const char *, va_list);
-    void    	    * DebugConfig;    
 };
 
 #endif /* AROS_AROSSUPPORTBASE_H */

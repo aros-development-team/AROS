@@ -84,9 +84,6 @@
     va_list	 ap;
     int 	 ret;
 
-    /* FIXME check the systems and the debug level */
-    // Check SysBase->DebugAROSBase->DebugConfig
-
     va_start(ap, fmt);
     ret = vkprintf((const char *)fmt, ap);
     va_end(ap);
