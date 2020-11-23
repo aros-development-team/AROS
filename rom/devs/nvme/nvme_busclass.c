@@ -34,6 +34,8 @@
 
 #include "nvme_intern.h"
 #include "nvme_hw.h"
+#include "nvme_queue.h"
+#include "nvme_queue_admin.h"
 
 #define DIRQ(x)
 
@@ -215,6 +217,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     APTR buffer = HIDD_PCIDriver_AllocPCIMem(data->ab_Dev->dev_PCIDriverObject, 8192);
     struct ExpansionBase *ExpansionBase;
     struct nvme_command c;
+    struct completionevent_handler busehandle;
     int nn;
 
     if (buffer)
@@ -222,6 +225,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
         D(bug ("[NVME:Bus] NVMEBus_Start: buffer @ 0x%p, ExpansionBase @ 0x%p\n", buffer, ExpansionBase);)
+
+        busehandle.ceh_Task = FindTask(NULL);
+        busehandle.ceh_SigSet = SIGF_SINGLE;
 
         for (nn = 0; nn < data->ab_UnitCnt; nn++)
         {
@@ -237,14 +243,14 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
             memset(buffer, 0, 8192);
             memset(&c, 0, sizeof(c));
-            c.common.op.command_id = nvme_alloc_cmdid(data->ab_Dev->dev_AdminQueue);
             c.identify.op.opcode = nvme_admin_identify;
             c.identify.prp1 = (UQUAD)buffer;
             c.identify.nsid = AROS_LONG2LE(nn + 1);
             c.identify.cns = 0;
 
             D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_identify\n", nn + 1);)
-            nvme_submit_cmd(data->ab_Dev->dev_AdminQueue, &c);
+            nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
+            Wait(busehandle.ceh_SigSet);
 
             D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     ncap = %p\n", nn + 1, id_ns->ncap);)
             if (id_ns->ncap != 0)
@@ -254,14 +260,14 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u lba_range_type @ 0x%p\n", nn + 1, rt);)
 
                 memset(&c, 0, sizeof(c));
-                c.common.op.command_id = nvme_alloc_cmdid(data->ab_Dev->dev_AdminQueue);
                 c.features.op.opcode = nvme_admin_get_features;
                 c.features.prp1 = (UQUAD)rt;
                 c.features.nsid = AROS_LONG2LE(nn + 1);
                 c.features.fid = AROS_LONG2LE(NVME_FEAT_LBA_RANGE);
 
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_get_features\n", nn + 1);)
-                nvme_submit_cmd(data->ab_Dev->dev_AdminQueue, &c);
+                nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
+                Wait(busehandle.ceh_SigSet);
 
                 if (!(rt->attributes & NVME_LBART_ATTRIB_HIDE))
                 {

@@ -13,7 +13,9 @@ INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
 NVMEDEVICEFILES :=  \
         nvme_init \
         nvme_io \
-        nvme_hw
+        nvme_hw \
+        nvme_queue \
+        nvme_queue_admin
 
 NVMECLASSFILES :=  \
         nvme_controllerclass \
@@ -23,7 +25,7 @@ NVMECLASSFILES :=  \
 USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
 
 # Enable AROS debugging
-USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG=1
 
 USER_LDFLAGS := -static
 

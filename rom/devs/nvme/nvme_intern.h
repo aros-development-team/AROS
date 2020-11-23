@@ -123,10 +123,20 @@ typedef struct {
     struct nvme_queue   *dev_AdminQueue;
 } *device_t;
 
+struct completionevent_handler
+{
+    struct Task *ceh_Task;
+    ULONG ceh_SigSet;
+};
+
+struct nvme_queue;
+typedef void (*_NVMEQUEUE_CE_HOOK)(struct nvme_queue *, struct nvme_completion *);
 struct nvme_queue {
 //    struct device *q_dmadev;
     device_t dev;
-//    spinlock_t q_lock;
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t q_lock;
+#endif
 
 //    dma_addr_t sq_dma_addr;
 //    dma_addr_t cq_dma_addr;
@@ -141,7 +151,8 @@ struct nvme_queue {
     UWORD sq_head;
     UWORD sq_tail;
     /* completion queue */
-    struct MsgPort **cports;
+    _NVMEQUEUE_CE_HOOK *cehooks;
+    struct completionevent_handler **cehandlers;
     volatile struct nvme_completion *cqba;
     UWORD cq_head;
     UWORD cq_phase;

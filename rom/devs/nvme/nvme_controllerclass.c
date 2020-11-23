@@ -23,6 +23,8 @@
 
 #include "nvme_intern.h"
 #include "nvme_hw.h"
+#include "nvme_queue.h"
+#include "nvme_queue_admin.h"
 
 /* /// "NVME_IntCode()" */
 static AROS_INTH1(NVME_IntCode, struct nvme_queue *, nvmeq)
@@ -76,14 +78,8 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 UQUAD cap;
                 ULONG aqa;
                 
-                dev->dev_AdminQueue->cports = AllocMem(sizeof(APTR) * 16, MEMF_CLEAR);
-                for (cmdno = 0; cmdno < 16; cmdno++)
-                {
-#if (0)
-                    dev->dev_AdminQueue->cports[cmdno] = CreatePort("Admin", 0);
-                    D(bug ("[NVME:Controller] Root__New: cmdid #%u admin port @ 0x%p\n", dev->dev_AdminQueue->cports[cmdno]);)
-#endif
-                }
+                dev->dev_AdminQueue->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
+                dev->dev_AdminQueue->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
 
                 aqa = dev->dev_AdminQueue->q_depth - 1;
                 aqa |= aqa << 16;
@@ -119,19 +115,23 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 APTR buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
                 if (buffer)
                 {
+                    struct completionevent_handler contrehandle;
                     struct nvme_id_ctrl *ctrl = (struct nvme_id_ctrl *)buffer;
                     struct nvme_command c;
 
+                    contrehandle.ceh_Task = FindTask(NULL);
+                    contrehandle.ceh_SigSet = SIGF_SINGLE;
+
                     memset(&c, 0, sizeof(c));
-                    c.common.op.command_id = nvme_alloc_cmdid(dev->dev_AdminQueue);
                     c.identify.op.opcode = nvme_admin_identify;
                     c.identify.nsid = 0;
                     c.identify.prp1 = (UQUAD)buffer;
                     c.identify.cns = 1;
 
                     D(bug ("[NVME:Controller] Root__New: sending nvme_admin_identify\n");)
-                    nvme_submit_cmd(dev->dev_AdminQueue, &c);
-
+                    nvme_submit_admincmd(dev, &c, &contrehandle);
+                    Wait(contrehandle.ceh_SigSet);
+    
                     D(bug ("[NVME:Controller] Root__New: Model '%s'\n", ctrl->mn);)
                     D(bug ("[NVME:Controller] Root__New: Serial '%s'\n", ctrl->sn);)
                     D(bug ("[NVME:Controller] Root__New: F/W '%s'\n", ctrl->fr);)
