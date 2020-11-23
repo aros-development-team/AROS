@@ -33,6 +33,8 @@ int nvme_alloc_cmdid(struct nvme_queue *nvmeq)
 #endif
 
     cmdid = nvmeq->cmdid_data + 1;
+    if (cmdid > 15)
+        cmdid = 0;
     nvmeq->cmdid_data = cmdid;
 
 #if defined(__AROSEXEC_SMP__)
