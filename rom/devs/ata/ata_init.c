@@ -46,33 +46,53 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 {
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
-    TEXT dosdevname[4] = "HD0";
+    TEXT dosdevstem[3] = "HD";
     const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
     const ULONG IdCDVD = AROS_MAKE_ID('C','D','V','D');
 
     ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
     if (ExpansionBase)
     {
+        TEXT dosdevname[4];
+        struct ataBase *ATABase;
+        struct TagItem ATAIDTags[] = 
+        {
+            {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
+            {TAG_DONE,              0                       }  
+        };
         IPTR pp[24];
 
-        /* This should be dealt with using some sort of volume manager or such. */
         switch (unit->au_DevType)
         {
             case DG_DIRECT_ACCESS:
                 break;
             case DG_CDROM:
-                dosdevname[0] = 'C';
+                dosdevstem[0] = 'C';
                 break;
             default:
-                D(bug("[ATA>>]:-ata_RegisterVolume called on unknown devicetype\n"));
+                D(bug("[ATA>>]:-ata_RegisterVolume called on unknown devicetype\n");)
+                break;
         }
 
-        if (unit->au_UnitNum < 10)
-            dosdevname[2] += unit->au_UnitNum % 10;
+        ATABase = unit->au_Bus->ab_Base;
+        if ((unit->au_IDNode = HIDD_Storage_AllocateID(ATABase->storageRoot, ATAIDTags)))
+        {
+            Dbug("[ATA>>] %s: unit ID allocated @ 0x%p\n", __func__, unit->au_IDNode);)
+            pp[0] 		    = (IPTR)unit->au_IDNode->ln_Name;
+        }
         else
-            dosdevname[2] = 'A' - 10 + unit->au_UnitNum;
-    
-        pp[0] 		    = (IPTR)dosdevname;
+        {
+            bug("[ATA>>] %s: using legacy device name\n", __func__);
+            dosdevname[0] = dosdevstem[0];
+            dosdevname[1] = dosdevstem[1];
+            dosdevname[2] = '0';
+            if (unit->au_UnitNum < 10)
+                dosdevname[2] += unit->au_UnitNum % 10;
+            else
+                dosdevname[2] = 'A' - 10 + unit->au_UnitNum;
+            pp[0] 		    = (IPTR)dosdevname;
+        }
+
         pp[1]		    = (IPTR)MOD_NAME_STRING;
         pp[2]		    = unit->au_UnitNum;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
@@ -96,8 +116,10 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 
         if (devnode)
         {
-            D(bug("[ATA>>]:-ata_RegisterVolume: '%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
-                  devnode->dn_Name, pp[DE_DOSTYPE + 4], StartCyl, EndCyl));
+            D(
+                bug("[ATA>>]:-ata_RegisterVolume: '%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
+                    devnode->dn_Name, pp[DE_DOSTYPE + 4], StartCyl, EndCyl);
+            )
 
             AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
             D(bug("done\n"));
@@ -129,6 +151,7 @@ static CONST_STRPTR const methBaseIDs[] =
 {
     IID_HW,
     IID_Hidd_ATABus,
+    IID_Hidd_Storage,
     IID_Hidd_StorageController,
     NULL
 };
@@ -222,6 +245,8 @@ static int ATA_init(struct ataBase *ATABase)
     if (OOP_ObtainAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs))
     {
         bug("[ATA--] %s: Failed to obtain AttrBases!\n", __func__);
+        DeletePool(ATABase->ata_MemPool);
+        CloseLibrary(ATABase->ata_UtilityBase);
         return FALSE;
     }
     D(
@@ -240,15 +265,30 @@ static int ATA_init(struct ataBase *ATABase)
 #if defined(__OOP_NOATTRBASES__)
          OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
 #endif
+        DeletePool(ATABase->ata_MemPool);
+        CloseLibrary(ATABase->ata_UtilityBase);
         return FALSE;
     }
 #endif
 
-    InitSemaphore(&ATABase->DetectionSem);
+    ATABase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+    if (!ATABase->storageRoot)
+        ATABase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
 
-    D(bug("[ATA  ] %s: Base ATA Hidd Class @ 0x%p\n", __func__, ATABase->ataClass));
+    if (ATABase->storageRoot)
+    {
+        InitSemaphore(&ATABase->DetectionSem);
 
-    return TRUE;
+        D(bug("[ATA  ] %s: Base ATA Hidd Class @ 0x%p\n", __func__, ATABase->ataClass));
+
+        return TRUE;
+    }
+#if defined(__OOP_NOATTRBASES__)
+     OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
+#endif
+    DeletePool(ATABase->ata_MemPool);
+    CloseLibrary(ATABase->ata_UtilityBase);
+    return FALSE;
 }
 
 static int ata_expunge(struct ataBase *ATABase)
@@ -257,20 +297,11 @@ static int ata_expunge(struct ataBase *ATABase)
     OOP_Object *storageRoot;
     int retval = TRUE;
 
-    /*
-     * CLID_Hidd_Storage is a singletone, you can get it as many times as
-     * you want. Here we save up some space in struct ataBase by
-     * obtaining storageRoot object only when we need it. This happens
-     * rarely, so small performance loss is OK here.
-     */
-    storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-    if (!storageRoot)
-        storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-    if (storageRoot)
+    if (ATABase->storageRoot)
     {
         ForeachNodeSafe (&ATABase->ata_Controllers, ataNode, tmpNode)
         {
-            if (HW_RemoveDriver(storageRoot, ataNode->ac_Object))
+            if (HW_RemoveDriver(ATABase->storageRoot, ataNode->ac_Object))
             {
                 Remove(&ataNode->ac_Node);
                 /* Destroy our singletone */

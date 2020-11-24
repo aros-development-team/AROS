@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ata.device main private include file
@@ -78,6 +78,8 @@ struct ataBase
     struct Library         	*ata_UtilityBase;
     BPTR                    	ata_SegList;
 
+    OOP_Object                  *storageRoot;
+
     /* Bus HIDD classes */
     OOP_Class              	*ataClass;
     OOP_Class              	*busClass;
@@ -93,6 +95,7 @@ struct ataBase
 #if defined(__OOP_NOMETHODBASES__)
     OOP_MethodID                hwMethodBase;
     OOP_MethodID                busMethodBase;
+    OOP_MethodID                HiddSMethodBase;
     OOP_MethodID                HiddSCMethodBase;
 #endif
 
@@ -114,9 +117,12 @@ struct ataBase
 
 #if defined(__OOP_NOMETHODBASES__)
 #undef HWBase
-#undef HiddATABusBase
 #define HWBase                          (ATABase->hwMethodBase)
+#undef HiddATABusBase
 #define HiddATABusBase                  (ATABase->busMethodBase)
+#undef HiddStorageBase
+#define HiddStorageBase                 (ATABase->HiddSMethodBase)
+#undef HiddStorageControllerBase
 #define HiddStorageControllerBase       (ATABase->HiddSCMethodBase)
 #endif
 
@@ -310,6 +316,8 @@ struct ata_Unit
    struct ata_Bus     *au_Bus;         /* Bus on which this unit is */
    struct IOStdReq    *DaemonReq;      /* Disk change monitoring request */
 
+    struct Node         *au_IDNode;
+    
    ULONG               au_XferModes;   /* available transfer modes */
    ULONG               au_UseModes;    /* Used transfer modes */
 
