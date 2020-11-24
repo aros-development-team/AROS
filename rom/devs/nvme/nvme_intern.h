@@ -191,10 +191,10 @@ struct nvme_Unit
     ULONG               au_UnitNum;     /* Unit number as coded by device */
 
     ULONG               au_SecShift;
-    ULONG               au_SecCnt;
-    ULONG               au_Low;
-    ULONG               au_High;
-    
+    UQUAD               au_SecCnt;
+    UQUAD               au_Low;
+    UQUAD               au_High;
+
     UBYTE               au_Model[41];
     UBYTE               au_FirmwareRev[9];
     UBYTE               au_SerialNumber[21];

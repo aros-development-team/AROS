@@ -118,27 +118,23 @@ AROS_LH1(void, BeginIO,
         IOStdReq(io)->io_Actual = sizeof(*nsqr);
         done = TRUE;
         break;
+
     case TD_PROTSTATUS:
     case TD_CHANGENUM:
     case TD_CHANGESTATE:
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
+
     case TD_EJECT:
-    {
-#if (0)
-        if (at->at_identify.config & (1 << 7))
-        {
-            // FIXME: Eject removable media
-        }
-#endif
-        done = TRUE;
+        done = FALSE;
         break;
-    }
+
     case TD_GETDRIVETYPE:
         IOStdReq(io)->io_Actual = DRIVE_NEWSTYLE;
         done = TRUE;
         break;
+
     case TD_GETGEOMETRY:
         if (len < sizeof(*geom))
             goto bad_length;
@@ -148,18 +144,20 @@ AROS_LH1(void, BeginIO,
 
         geom->dg_Heads        = 1;
         geom->dg_SectorSize   = 1 << unit->au_SecShift;
-        geom->dg_TotalSectors = 0;
-#if (0)
-            geom->dg_Cylinders    = at->at_identify.ncyls;
-            geom->dg_CylSectors   = at->at_identify.nsectors * at->at_identify.nheads;
-#endif
-        geom->dg_TrackSectors = unit->au_SecCnt;
+        if (unit->au_SecCnt >> 32 != 0)
+            geom->dg_TotalSectors = 0xffffffff;
+        else
+            geom->dg_TotalSectors = unit->au_SecCnt;
+        geom->dg_Cylinders    = 1;
+        geom->dg_CylSectors   = 1;
+        geom->dg_TrackSectors = geom->dg_TotalSectors;
         geom->dg_BufMemType   = MEMF_PUBLIC;
         geom->dg_DeviceType   = DG_DIRECT_ACCESS;
         geom->dg_Flags        = 0;
         IOStdReq(io)->io_Actual = sizeof(*geom);
         done = TRUE;
         break;
+
     case TD_FORMAT:
 #if (0)
         if (len & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
@@ -172,11 +170,13 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
 #endif
         break;
+
     case TD_MOTOR:
         // FIXME: Tie in with power management
         IOStdReq(io)->io_Actual = 1;
         done = TRUE;
         break;
+
     case CMD_WRITE:
         off64  = iotd->iotd_Req.io_Offset;
 #if (0)
@@ -185,6 +185,7 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
 #endif
         break;
+
     case TD_WRITE64:
     case NSCMD_TD_WRITE64:
         off64  = iotd->iotd_Req.io_Offset;
@@ -195,6 +196,7 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
 #endif
         break;
+
     case CMD_READ:
         off64  = iotd->iotd_Req.io_Offset;
 #if (0)
@@ -203,6 +205,7 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
 #endif
         break;
+
     case TD_READ64:
     case NSCMD_TD_READ64:
         off64  = iotd->iotd_Req.io_Offset;
@@ -213,6 +216,7 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
 #endif
         break;
+
     case HD_SCSICMD:
         if (sizeof(struct SCSICmd) != len)
             goto bad_length;
@@ -227,23 +231,28 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
 #endif
         break;
+
     case TD_ADDCHANGEINT:
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         break;
+
     case TD_REMCHANGEINT:
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         done = TRUE;
         break;
+
     case CMD_CLEAR:
         // FIXME: Implemennt cache invalidate
         done = TRUE;
         break;
+
     case CMD_UPDATE:
         // FIXME: Implement cache flush
         done = TRUE;
         break;
+
     default:
         bug("nvme.device %d: Unknown IO command %d\n", unit->au_UnitNum, io->io_Command);
 bad_cmd:
@@ -268,7 +277,6 @@ bad_address:
         ReleaseSemaphore(&unit->au_Lock);
     } else
         io->io_Flags &= ~IOF_QUICK;
-        
 
     /* Need a reply now? */
     if (done && !(io->io_Flags & IOF_QUICK))
