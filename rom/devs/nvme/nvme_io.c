@@ -56,16 +56,11 @@ AROS_LH1(void, BeginIO,
         CMD_WRITE,
         CMD_UPDATE,
         CMD_CLEAR,
-        TD_ADDCHANGEINT,
-        TD_CHANGENUM,
-        TD_CHANGESTATE,
-        TD_EJECT,
         TD_FORMAT,
         TD_GETGEOMETRY,
         TD_MOTOR,
         TD_PROTSTATUS,
         TD_READ64,
-        TD_REMCHANGEINT,
         TD_WRITE64,
         NSCMD_DEVICEQUERY,
         NSCMD_TD_READ64,
@@ -120,14 +115,8 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_PROTSTATUS:
-    case TD_CHANGENUM:
-    case TD_CHANGESTATE:
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
-        break;
-
-    case TD_EJECT:
-        done = FALSE;
         break;
 
     case TD_GETDRIVETYPE:
@@ -215,32 +204,6 @@ AROS_LH1(void, BeginIO,
 #else
         done = TRUE;
 #endif
-        break;
-
-    case HD_SCSICMD:
-        if (sizeof(struct SCSICmd) != len)
-            goto bad_length;
-#if (0)
-        if (ap->ap_type == ATA_PORT_T_DISK)
-            done = nvme_scsi_disk_io(io, data);
-        else if (ap->ap_type == ATA_PORT_T_ATAPI)
-            done = nvme_scsi_atapi_io(io, data);
-        else
-            goto bad_cmd;
-#else
-        done = TRUE;
-#endif
-        break;
-
-    case TD_ADDCHANGEINT:
-        if (io->io_Flags & IOF_QUICK)
-            goto bad_cmd;
-        break;
-
-    case TD_REMCHANGEINT:
-        if (io->io_Flags & IOF_QUICK)
-            goto bad_cmd;
-        done = TRUE;
         break;
 
     case CMD_CLEAR:
