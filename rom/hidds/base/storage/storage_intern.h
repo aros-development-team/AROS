@@ -27,6 +27,7 @@ struct BusNode
 
 struct class_static_data
 {
+    struct Library	        *cs_UtilityBase;
     struct Library              *cs_OOPBase;
     BPTR                        cs_SegList;
     APTR                        cs_MemPool;
@@ -69,10 +70,10 @@ struct HiddStorageIntBase
 
 /* ID Namespace structures */
 
-struct Storage_IDFamily
+struct Storage_IDStem
 {
-    struct Node                                 SIDF_Node;                      /* ln_Name = IDBase (e.g "CD") */
-    struct List                                 SIDF_IDs;
+    struct Node                                 SIDS_Node;                      /* ln_Name = IDBase (e.g "CD") */
+    struct List                                 SIDS_IDs;
 };
 
 struct Storage_IDNode

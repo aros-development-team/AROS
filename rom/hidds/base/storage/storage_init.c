@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,30 +27,35 @@ static int Storage_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[HiddStorage] %s(csd=%p)\n", __func__, csd));
 
-    OOP_Object *hwroot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
 
-    if (hwroot)
+    if ((csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY)))
     {
-        D(bug("[HiddStorage] %s: hwroot @ 0x%p\n", __func__, hwroot));
-        csd->hwAttrBase = OOP_ObtainAttrBase(IID_HW);
-        csd->hwMethodBase = OOP_GetMethodID(IID_HW, 0);
-        csd->hiddSCMethodBase = OOP_GetMethodID(IID_Hidd_StorageController, 0);
+        OOP_Object *hwroot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
 
-        NEWLIST(&csd->cs_IDs);
-
-        csd->cs_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
-        if (csd->cs_MemPool == NULL)
-            return FALSE;
-
-        D(bug("[HiddStorage] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, csd->cs_MemPool));
-
-        if (HW_AddDriver(hwroot, csd->storageClass, NULL))
+        if (hwroot)
         {
-            D(bug("[HiddStorage] %s: initialised\n", __func__));
-            return TRUE;
+            D(bug("[HiddStorage] %s: hwroot @ 0x%p\n", __func__, hwroot));
+            csd->hwAttrBase = OOP_ObtainAttrBase(IID_HW);
+            csd->hwMethodBase = OOP_GetMethodID(IID_HW, 0);
+            csd->hiddSCMethodBase = OOP_GetMethodID(IID_Hidd_StorageController, 0);
+
+            NEWLIST(&csd->cs_IDs);
+
+            csd->cs_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+            if (csd->cs_MemPool == NULL)
+                return FALSE;
+
+            D(bug("[HiddStorage] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, csd->cs_MemPool));
+
+            if (HW_AddDriver(hwroot, csd->storageClass, NULL))
+            {
+                D(bug("[HiddStorage] %s: initialised\n", __func__));
+                return TRUE;
+            }
         }
+        D(bug("[HiddStorage] %s: failed\n", __func__));
     }
-    D(bug("[HiddStorage] %s: failed\n", __func__));
+    D(else bug("[HiddStorage] %s: failed to open utility.library\n", __func__);)
 
     return FALSE;
 }

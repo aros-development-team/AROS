@@ -14,6 +14,10 @@
 #define CLID_Hidd_StorageBus                    IID_Hidd_StorageBus
 #define CLID_Hidd_StorageUnit                   IID_Hidd_StorageUnit
 
+#define tHidd_Storage_BASE                      TAG_USER
+#define tHidd_Storage_IDStem                    (tHidd_Storage_BASE + 0x1000)
+
+
 /* Unit types */
 #define vHidd_StorageUnit_Type_Unknown          0x00
 #define vHidd_StorageUnit_Type_RaidArray        0x01
