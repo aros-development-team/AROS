@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI device class
@@ -148,6 +148,35 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
     }
 
     return 0;
+}
+
+void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_SetMSIEnabled *msg)
+{
+    UWORD capmsi = findCapabilityOffset(cl, o, PCICAP_MSI);
+    if (capmsi)
+    {
+        tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+        UWORD msiflags;
+        msiflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS);
+        msiflags &= ~PCIMSIF_ENABLE;
+        if (msg->val)
+            msiflags |= PCIMSIF_ENABLE;
+        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);        
+    }
+}
+
+void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ClearAndSetMSIXFlags *msg) //struct pci_dev *dev, u16 clear, u16 set)
+{
+    UWORD capmsix = findCapabilityOffset(cl, o, PCICAP_MSIX);
+    if (capmsix)
+    {
+        tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+        UWORD msixflags;
+        msixflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS);
+        msixflags &= ~msg->clear;
+        msixflags |= msg->set;
+        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS, msixflags);
+    }
 }
 
 BOOL PCIDev__Hidd_PCIDevice__HasExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_HasExtendedConfig *msg)

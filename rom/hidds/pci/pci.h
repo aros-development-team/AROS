@@ -2,7 +2,7 @@
 #define _PCI_H
 
 /*
-    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -282,23 +282,67 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCICTRLF_VGAENABLE          (1 << PCICTRLB_VGAENABLE)
 
 /* PCI capabilities */
-#define PCICAP_POWER_MANAGEMENT     0x01
-#define PCICAP_AGP                  0x02
-#define PCICAP_VITAL_PRODUCT_DATA   0x03
-#define PCICAP_SLOT_ID              0x04
-#define PCICAP_MSI                  0x05
-#define PCICAP_CPCI_HOT_SWAP        0x06
-#define PCICAP_PCIX                 0x07
-#define PCICAP_HYPER_TRANSPORT      0x08
-#define PCICAP_VENDOR_SPECIFIC      0x09
-#define PCICAP_DEBUG_PORT           0x0a
-#define PCICAP_CPCI_CR              0x0b
-#define PCICAP_HOT_PLUG_CONTROLLER  0x0c
-#define PCICAP_SSVPID               0x0d
-#define PCICAP_AGP3                 0x0e
-#define PCICAP_PCIE                 0x10
-#define PCICAP_MSIX                 0x11
-#define PCICAP_ADVANCED_FEATURES    0x13
+#define PCICAP_POWER_MANAGEMENT         0x01
+#define PCICAP_AGP                      0x02
+#define PCICAP_VITAL_PRODUCT_DATA       0x03
+#define PCICAP_SLOT_ID                  0x04
+#define PCICAP_MSI                      0x05
+#define PCICAP_CPCI_HOT_SWAP            0x06
+#define PCICAP_PCIX                     0x07
+#define PCICAP_HYPER_TRANSPORT          0x08
+#define PCICAP_VENDOR_SPECIFIC          0x09
+#define PCICAP_DEBUG_PORT               0x0a
+#define PCICAP_CPCI_CR                  0x0b
+#define PCICAP_HOT_PLUG_CONTROLLER      0x0c
+#define PCICAP_SSVPID                   0x0d
+#define PCICAP_AGP3                     0x0e
+#define PCICAP_PCIE                     0x10
+#define PCICAP_MSIX                     0x11
+#define PCICAP_ADVANCED_FEATURES        0x13
+
+/* MSI capability defines */
+#define PCIMSI_FLAGS                    2                                /* MSI control flags */
+#define PCIMSI_RFU                      3                                /* MSI capability flags */
+#define PCIMSI_ADDRESSLO                4                                /* MAR Lower 32 bits */
+#define PCIMSI_ADDRESSHI                8                                /* MAR Upper 32 bits (PCIMSIF_64BIT) */
+#define PCIMSI_DATA32                   8                                /* (32-bit) Data */
+#define PCIMSI_MASK32                   12                               /* (32-bit) Mask bits register */
+#define PCIMSI_PENDING32                16                               /* (32-bit) Pending interrupts */
+#define PCIMSI_DATA64                   12                               /* (64-bit) Data */
+#define PCIMSI_MASK64                   16                               /* (64-bit) Mask bits register */
+#define PCIMSI_PENDING64                20                               /* (64-bit) Pending interrupts */
+
+#define PCIMSIB_ENABLE                  0                               /* MSI feature enable(d) */
+#define PCIMSIF_ENABLE                  (1 << PCIMSIB_ENABLE)
+#define PCIMSIB_64BIT                   7                               /* 64-bit addresses */
+#define PCIMSIF_64BIT                   (1 << PCIMSIB_64BIT)
+#define PCIMSIB_MASKBIT                 8                               /* 64-bit mask bits */
+#define PCIMSIF_MASKBIT                 (1 << PCIMSIB_MASKBIT)
+
+#define PCIMSIF_QMASK                   (0x7 << 1)                      /* Maximum available queue size */
+#define PCIMSIF_QSIZE                   (0x7 << 4)                      /* Configured message queue size */
+
+/* MSIX capability defines */
+#define PCIMSIX_FLAGS                  2
+#define PCIMSIX_TABLE                  4
+#define PCIMSIX_PBA                    8
+#define PCI_CAP_MSIX_SIZEOF            12                               /* size of MSIX registers */
+#define PCIMSIX_ENTRY_SIZE             16
+
+#define PCIMSIXB_MASKALL                14
+#define PCIMSIXF_MASKALL                (1 << PCIMSIXB_MASKALL)
+#define PCIMSIXB_ENABLE                 15
+#define PCIMSIXF_ENABLE                 (1 << PCIMSIXB_ENABLE)
+#define PCIMSIXF_QSIZE                  0x7FF
+#define PCIMSIXF_BIRMASK                (0x7 << 0)
+
+#define PCIMSIX_ENTRY_LOWER_ADDR       0
+#define PCIMSIX_ENTRY_UPPER_ADDR       4
+#define PCIMSIX_ENTRY_DATA             8
+#define PCIMSIX_ENTRY_VECTOR_CTRL      12
+
+#define PCIMSIX_ENTRY_CTRL_MASKBIT     1
+
 
 #endif /* _PCI_H */
 
