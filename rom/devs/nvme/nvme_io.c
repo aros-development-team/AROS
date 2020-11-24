@@ -62,7 +62,7 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     ioehandle.ceh_Task = FindTask(NULL);
     ioehandle.ceh_SigSet = SIGF_SINGLE;
 
-    bug("[NVME%02ld] %s()\n", unit->au_UnitNum, __func__);
+    D(bug("[NVME%02ld] %s()\n", unit->au_UnitNum, __func__);)
 
     memset(&cmdio, 0, sizeof(cmdio));
     if (is_write) {
@@ -85,7 +85,7 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 #endif
     CachePostDMA(data, &len, is_write ? DMAFLAGS_POSTWRITE : DMAFLAGS_POSTREAD);
 
-    bug("[NVME%02ld] %s: NVME IO Status %08x\n", unit->au_UnitNum, __func__, ioehandle.ceh_Status);
+    D(bug("[NVME%02ld] %s: NVME IO Status %08x\n", unit->au_UnitNum, __func__, ioehandle.ceh_Status);)
 
     return done;
 }
