@@ -327,9 +327,12 @@ AROS_LH1(void, BeginIO,
         SetMem(geom, 0, len);
         if (ap->ap_type == ATA_PORT_T_DISK) {
             geom->dg_SectorSize   = at->at_identify.sector_size;
-            geom->dg_TotalSectors = 0;
             geom->dg_Cylinders    = at->at_identify.ncyls;
             geom->dg_CylSectors   = at->at_identify.nsectors * at->at_identify.nheads;
+            if (((UQUAD)geom->dg_Cylinders * geom->dg_CylSectors) >> 32 != 0)
+                geom->dg_TotalSectors = 0xffffffff;
+            else
+                geom->dg_TotalSectors = geom->dg_Cylinders * geom->dg_CylSectors;
             geom->dg_Heads        = at->at_identify.nheads;
             geom->dg_TrackSectors = at->at_identify.nsectors;
         }
