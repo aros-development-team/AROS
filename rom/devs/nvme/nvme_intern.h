@@ -134,17 +134,10 @@ struct completionevent_handler
 struct nvme_queue;
 typedef void (*_NVMEQUEUE_CE_HOOK)(struct nvme_queue *, struct nvme_completion *);
 struct nvme_queue {
-//    struct device *q_dmadev;
     device_t dev;
 #if defined(__AROSEXEC_SMP__)
     spinlock_t q_lock;
 #endif
-
-//    dma_addr_t sq_dma_addr;
-//    dma_addr_t cq_dma_addr;
-//    wait_queue_head_t sq_full;
-//    wait_queue_t sq_cong_wait;
-//    struct bio_list sq_cong;
     ULONG volatile *q_db;
     UWORD q_depth;
     UWORD cq_vector;

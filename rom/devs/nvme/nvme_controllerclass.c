@@ -53,11 +53,11 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         struct nvme_Controller *data = OOP_INST_DATA(cl, nvmeController);
         struct nvme_queue *nvmeq;
 
-//        D(bug ("[NVME:Controller] Root__New: New '%s' Controller Obj @ %p\n", new_tags[0].ti_Data, nvmeController);)
+        D(bug ("[NVME:Controller] Root__New: New Controller Obj @ %p\n", nvmeController);)
 
         /*register the controller in nvme.device */
-        D(bug ("[NVME:Controller] Root__New: Controller Entry @ 0x%p\n", data);)
-        D(bug ("[NVME:Controller] Root__New: Controller Data @ 0x%p\n", dev);)
+        D(bug ("[NVME:Controller] Root__New:     Controller Entry @ 0x%p\n", data);)
+        D(bug ("[NVME:Controller] Root__New:     Controller Data @ 0x%p\n", dev);)
 
         data->ac_Class = cl;
         data->ac_Object = nvmeController;
@@ -67,11 +67,11 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
             OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Base0, (IPTR *)&dev->dev_nvmeregbase);
 
-            D(bug ("[NVME:Controller] Root__New: NVME RegBase @ 0x%p\n", dev->dev_nvmeregbase);)
+            D(bug ("[NVME:Controller] Root__New:     NVME RegBase @ 0x%p\n", dev->dev_nvmeregbase);)
             dev->dbs = ((void volatile *)dev->dev_nvmeregbase) + 4096;
-            D(bug ("[NVME:Controller] Root__New: dbs @ 0x%p\n", dev->dbs);)
+            D(bug ("[NVME:Controller] Root__New:     dbs @ 0x%p\n", dev->dbs);)
             dev->dev_AdminQueue = nvme_alloc_queue(dev, 0, 64, 0);
-            D(bug ("[NVME:Controller] Root__New: admin queue @ 0x%p\n", dev->dev_AdminQueue);)
+            D(bug ("[NVME:Controller] Root__New:     admin queue @ 0x%p\n", dev->dev_AdminQueue);)
             if (dev->dev_AdminQueue)
             {
                 unsigned long timeout, cmdno;
@@ -101,7 +101,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 timeout = ((NVME_CAP_TIMEOUT(cap) + 1) * HZ / 2) + jiffies;
 #endif
                 dev->db_stride = NVME_CAP_STRIDE(cap);
-                D(bug ("[NVME:Controller] Root__New: doorbell stride = %u\n", dev->db_stride);)
+                D(bug ("[NVME:Controller] Root__New:     doorbell stride = %u\n", dev->db_stride);)
 
                 // add interrupt
                 OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &data->ac_PCIIntLine);
@@ -131,12 +131,14 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     D(bug ("[NVME:Controller] Root__New: sending nvme_admin_identify\n");)
                     nvme_submit_admincmd(dev, &c, &contrehandle);
                     Wait(contrehandle.ceh_SigSet);
-    
-                    D(bug ("[NVME:Controller] Root__New: Model '%s'\n", ctrl->mn);)
-                    D(bug ("[NVME:Controller] Root__New: Serial '%s'\n", ctrl->sn);)
-                    D(bug ("[NVME:Controller] Root__New: F/W '%s'\n", ctrl->fr);)
-                    D(bug ("[NVME:Controller] Root__New:   %u namespace(s)\n", ctrl->nn);)
+
+                    if (!contrehandle.ceh_Status)
                     {
+                        D(bug ("[NVME:Controller] Root__New:     Model '%s'\n", ctrl->mn);)
+                        D(bug ("[NVME:Controller] Root__New:     Serial '%s'\n", ctrl->sn);)
+                        D(bug ("[NVME:Controller] Root__New:     F/W '%s'\n", ctrl->fr);)
+                        D(bug ("[NVME:Controller] Root__New:        %u namespace(s)\n", ctrl->nn);)
+
                         struct TagItem attrs[] =
                         {
                                 {aHidd_Name,                (IPTR)"nvme.device"                             },
@@ -194,9 +196,6 @@ BOOL NVME__Hidd_StorageController__RemoveBus(OOP_Class *cl, OOP_Object *o, struc
 BOOL NVME__Hidd_StorageController__SetUpBus(OOP_Class *cl, OOP_Object *o, struct pHidd_StorageController_SetUpBus *Msg)
 {
     struct NVMEBase *NVMEBase = cl->UserData;
-#if (0)
-	struct nvme_Controller *data = OOP_INST_DATA(cl, o);
-#endif
 
     D(bug ("[NVME:Controller] Hidd_StorageController__SetUpBus(0x%p)\n", Msg->busObject);)
 

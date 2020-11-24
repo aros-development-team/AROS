@@ -12,6 +12,7 @@
 
 #include <proto/utility.h>
 
+#include <hidd/hidd.h>
 #include <hidd/storage.h>
 #include <hidd/nvme.h>
 #include <oop/oop.h>
@@ -36,35 +37,28 @@ static void nvme_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct NVMEBase *NVMEBase = cl->UserData;
-#if (0)
-    struct nvme_Bus *uBus = (struct nvme_Bus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
-#endif
+    int unitnsno = (int)GetTagData(aHidd_StorageUnit_Number, 0, msg->attrList);
+    device_t dev = (device_t)GetTagData(aHidd_DriverData, 0, msg->attrList);
+
     D(bug ("[NVME:Unit] Root__New()\n");)
 
-#if (0)
-    if (!uBus)
+    if (!dev)
         return NULL;
-#endif
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
         struct nvme_Unit *unit = OOP_INST_DATA(cl, o);
-#if (0)
-        struct ata_port  *at = uBus->ab_Port->ap_ata[0];
-#endif
         D(bug ("[NVME:Unit] Root__New: Unit Obj @ %p\n", o);)
 
         InitSemaphore(&unit->au_Lock);
         NEWLIST(&unit->au_IOs);
+        unit->au_UnitNum = (dev->dev_HostID << 12) | unitnsno;
         
         char *DevName = (char *)GetTagData(aHidd_StorageUnit_Model, 0, msg->attrList);
         char *DevSer = (char *)GetTagData(aHidd_StorageUnit_Serial, 0, msg->attrList);
         char *DevFW = (char *)GetTagData(aHidd_StorageUnit_Revision, 0, msg->attrList);
-#if (0)
-        unit->au_Bus = uBus;
-        uBus->ab_Unit = o;
-#endif
+
         if (DevName)
         {
             nvme_strcpy(DevName, unit->au_Model, 40);
@@ -86,10 +80,6 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 void NVMEUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-#if (0)
-    struct NVMEBase *NVMEBase = cl->UserData;
-    struct nvme_Unit *unit = OOP_INST_DATA(cl, o);
-#endif
     D(bug ("[NVME:Unit] Root__Dispose(%p)\n", o);)
 
     OOP_DoSuperMethod(cl, o, msg);
@@ -99,9 +89,6 @@ void NVMEUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct NVMEBase *NVMEBase = cl->UserData;
     struct nvme_Unit *unit = OOP_INST_DATA(cl, o);
-#if (0)
-    struct ata_port  *at = unit->au_Bus->ab_Port->ap_ata[0];
-#endif
     ULONG idx;
 
     Hidd_StorageUnit_Switch (msg->attrID, idx)
@@ -139,7 +126,7 @@ void NVMEUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     Hidd_NVMEUnit_Switch (msg->attrID, idx)
     {
     case aoHidd_NVMEUnit_Features:
-        *msg->storage = (IPTR)at->at_features;
+        *msg->storage = (IPTR)unit->au_features;
         return;
     }
 #endif
