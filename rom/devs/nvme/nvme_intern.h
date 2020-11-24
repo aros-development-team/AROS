@@ -70,6 +70,7 @@ struct NVMEBase
     OOP_MethodID                nvme_HiddPCIDeviceMethodBase;
     OOP_MethodID                nvme_HiddPCIDriverMethodBase;
     OOP_MethodID                nvme_HWMethodBase;
+    OOP_MethodID                nvme_SMethodBase;
     OOP_MethodID                nvme_SCMethodBase;
 #endif
     struct List                 nvme_Controllers;
@@ -96,6 +97,8 @@ struct NVMEBase
 #define HiddPCIDriverBase       (NVMEBase->nvme_HiddPCIDriverMethodBase)
 #undef HWBase
 #define HWBase                  (NVMEBase->nvme_HWMethodBase)
+#undef HiddStorageBase
+#define HiddStorageBase         (NVMEBase->nvme_SMethodBase)
 #undef HiddStorageControllerBase
 #define HiddStorageControllerBase       (NVMEBase->nvme_SCMethodBase)
 #endif
@@ -175,9 +178,11 @@ struct nvme_Bus
     UWORD               ab_UnitCnt;
     OOP_Object          **ab_Units;
 
-    char *ab_DevName;
-    char *ab_DevSer;
-    char *ab_DevFW;
+    struct Node         *ab_IDNode;
+
+    char                *ab_DevName;
+    char                *ab_DevSer;
+    char                *ab_DevFW;
 };
 
 struct nvme_Unit

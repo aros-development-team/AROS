@@ -304,12 +304,17 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                         IPTR pp[24];
                         const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
-                        TEXT dosdevname[4] = "HD0";
 
                         unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
 
                         if (ExpansionBase)
                         {
+                            const TEXT dosdevstem[3] = "HD";
+                            struct TagItem NVMEIDTags[] = 
+                            {
+                                {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
+                                {TAG_DONE,              0                       }  
+                            };
                             struct DeviceNode *devnode;
 
                             D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %u\n", 1 << id_ns->lbaf[lbaf].ds);)
@@ -320,7 +325,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             unit->au_Low = lbaStart;
                             unit->au_High = lbaEnd;
 
-                            pp[0] 		    = (IPTR)dosdevname;
+                            data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
+
+                            pp[0] 		    = (IPTR)data->ab_IDNode->ln_Name;
                             pp[1]		    = (IPTR)MOD_NAME_STRING;
                             pp[2]		    = unit->au_UnitNum;
                             pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;

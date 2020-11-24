@@ -65,6 +65,7 @@ static CONST_STRPTR const methBaseIDs[] =
     IID_Hidd_PCIDevice,
     IID_Hidd_PCIDriver,
     IID_HW,
+    IID_Hidd_Storage,
     IID_Hidd_StorageController,
     NULL
 };
