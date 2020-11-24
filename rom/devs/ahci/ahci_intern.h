@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2018, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2020, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -84,6 +84,7 @@ struct AHCIBase
     OOP_MethodID                ahci_HiddPCIDeviceMethodBase;
     OOP_MethodID                ahci_HiddPCIDriverMethodBase;
     OOP_MethodID                ahci_HWMethodBase;
+    OOP_MethodID                ahci_SMethodBase;
 #endif
     struct List                 ahci_Controllers;
 };
@@ -105,6 +106,8 @@ struct AHCIBase
 #if defined(__OOP_NOMETHODBASES__)
 #undef HWBase
 #define HWBase                  (AHCIBase->ahci_HWMethodBase)
+#undef HiddStorageBase
+#define HiddStorageBase                  (AHCIBase->ahci_SMethodBase)
 #endif
 #define OOPBase                 (AHCIBase->ahci_OOPBase)
 #define UtilityBase             (AHCIBase->ahci_UtilityBase)

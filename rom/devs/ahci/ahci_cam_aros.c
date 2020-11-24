@@ -223,7 +223,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
     struct ExpansionBase *ExpansionBase;
     BOOL dos_loaded;
     struct DeviceNode *devnode;
-    TEXT dosdevname[4] = "HA0";
+    TEXT dosdevstem[3] = "HD";
     const ULONG DOS_ID = AROS_MAKE_ID('D','O','S','\001');
     const ULONG CDROM_ID = AROS_MAKE_ID('C','D','V','D');
 
@@ -251,7 +251,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
         case ATA_PORT_T_DISK:
             break;
         case ATA_PORT_T_ATAPI:
-            dosdevname[0] = 'C';
+            dosdevstem[0] = 'C';
             break;
         default:
             D(bug("[AHCI>>]:-ahci_RegisterVolume called on unknown devicetype\n"));
@@ -262,14 +262,32 @@ static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at, struc
 
     if (ExpansionBase)
     {
+        struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
+        TEXT dosdevname[4];
+        struct TagItem AHCIIDTags[] = 
+        {
+            {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
+            {TAG_DONE,              0                       }  
+        };
         IPTR pp[4 + DE_BOOTBLOCKS + 1];
 
-        if (ap->ap_num < 10)
-            dosdevname[2] += ap->ap_num;
+        if ((ap->ap_IDNode = HIDD_Storage_AllocateID(AHCIBase->storageRoot, AHCIIDTags)))
+        {
+            pp[0] 		    = (IPTR)ap->ap_IDNode->ln_Name;
+        }
         else
-            dosdevname[2] = 'A' + (ap->ap_num - 10);
-    
-        pp[0] 		    = (IPTR)dosdevname;
+        {
+            dosdevname[0] = dosdevstem[0];
+            dosdevname[1] = 'A';
+            dosdevname[2] = '0';
+            if (ap->ap_num < 10)
+                dosdevname[2] += ap->ap_num % 10;
+            else
+                dosdevname[2] = 'A' - 10 + ap->ap_num;
+            pp[0] 		    = (IPTR)dosdevname;
+        }
+
+        pp[0] 		    = (IPTR)ap->ap_IDNode->ln_Name;
         pp[1]		    = (IPTR)MOD_NAME_STRING;
         pp[2]		    = unit->au_UnitNum;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;

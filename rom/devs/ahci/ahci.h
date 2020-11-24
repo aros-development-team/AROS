@@ -444,6 +444,8 @@ struct ahci_port {
 	struct ahci_softc	*ap_sc;
 	bus_space_handle_t	ap_ioh;
 
+        struct Node             *ap_IDNode;
+
 	int			ap_num;
 	int			ap_pmcount;
 	int			ap_flags;
