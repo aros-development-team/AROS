@@ -99,6 +99,7 @@ enum nvme_admin_opcode {
     nvme_admin_security_recv	= 0x82,
 };
 
+#define NVME_CAP_MQES(cap)	        ((cap) & 0xffff)
 #define NVME_CAP_TIMEOUT(cap)	(((cap) >> 24) & 0xff)
 #define NVME_CAP_STRIDE(cap)	(((cap) >> 32) & 0xf)
 

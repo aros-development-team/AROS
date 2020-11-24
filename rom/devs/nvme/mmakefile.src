@@ -15,7 +15,8 @@ NVMEDEVICEFILES :=  \
         nvme_io \
         nvme_hw \
         nvme_queue \
-        nvme_queue_admin
+        nvme_queue_admin \
+        nvme_queue_io
 
 NVMECLASSFILES :=  \
         nvme_controllerclass \

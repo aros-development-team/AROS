@@ -36,9 +36,60 @@
 #include <string.h>
 
 #include "nvme_intern.h"
+#include "nvme_queue_io.h"
 //#include "timer.h"
 
 #include LC_LIBDEFS_FILE
+
+#define DMAFLAGS_PREREAD     0
+#define DMAFLAGS_PREWRITE    DMA_ReadFromRAM
+#define DMAFLAGS_POSTREAD    (1 << 31)
+#define DMAFLAGS_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
+
+static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
+{
+    struct IOExtTD *iotd = (struct IOExtTD *)io;
+    struct nvme_Unit *unit = (struct nvme_Unit *)io->io_Unit;
+    APTR data = iotd->iotd_Req.io_Data;
+    ULONG len = iotd->iotd_Req.io_Length;
+    struct nvme_queue *nvmeq = unit->au_IOQueue;
+    struct completionevent_handler ioehandle;
+    struct nvme_command cmdio;
+    BOOL done = TRUE;
+    
+    ULONG nsid = unit->au_UnitNum & ((1 << 12) - 1);
+
+    ioehandle.ceh_Task = FindTask(NULL);
+    ioehandle.ceh_SigSet = SIGF_SINGLE;
+
+    bug("[NVME%02ld] %s()\n", unit->au_UnitNum, __func__);
+
+    memset(&cmdio, 0, sizeof(cmdio));
+    if (is_write) {
+            cmdio.rw.op.opcode = nvme_cmd_write;
+    } else {
+            cmdio.rw.op.opcode = nvme_cmd_read;
+    }
+    
+    cmdio.rw.nsid = AROS_LONG2LE(nsid);
+    cmdio.rw.prp1 = (UQUAD)data; // needs to be in LE
+    cmdio.rw.slba = off64 >> (unit->au_SecShift - 9); // needs to be in LE
+    cmdio.rw.length = AROS_WORD2LE((len >> unit->au_SecShift) - 1);
+    cmdio.rw.control = 0;
+    cmdio.rw.dsmgmt = 0;
+
+    CachePreDMA(data, &len, is_write ? DMAFLAGS_PREWRITE : DMAFLAGS_PREREAD);
+#if defined(NVME_DOIO)
+    nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle);
+    Wait(ioehandle.ceh_SigSet);
+#endif
+    CachePostDMA(data, &len, is_write ? DMAFLAGS_POSTWRITE : DMAFLAGS_POSTREAD);
+
+    bug("[NVME%02ld] %s: NVME IO Status %08x\n", unit->au_UnitNum, __func__, ioehandle.ceh_Status);
+
+    return done;
+}
+
 
 /*
     Try to do IO commands. All commands which require talking with nvme devices
@@ -85,9 +136,8 @@ AROS_LH1(void, BeginIO,
 
     D(bug("[NVME%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command));
 #if (0)
-
     /* Unit going offline? Don't permit new commands. */
-    if (unit->au_Flags & SIMF_OffLine) {
+    if (unit->au_Flags & OFFLINE) {
         io->io_Error = IOERR_OPENFAIL;
         if (!(io->io_Flags & IOF_QUICK))
             ReplyMsg(&io->io_Message);
@@ -148,16 +198,15 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_FORMAT:
+        D(bug("[NVME%02ld] TD_FORMAT\n", unit->au_UnitNum);)
 #if (0)
         if (len & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
             goto bad_length;
         off64  = iotd->iotd_Req.io_Offset;
         if (off64 & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
             goto bad_address;
-        done = nvme_sector_rw(io, off64, TRUE);
-#else
-        done = TRUE;
 #endif
+        done = nvme_sector_rw(io, off64, TRUE);
         break;
 
     case TD_MOTOR:
@@ -167,43 +216,31 @@ AROS_LH1(void, BeginIO,
         break;
 
     case CMD_WRITE:
+        D(bug("[NVME%02ld] CMD_WRITE\n", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
-#if (0)
         done = nvme_sector_rw(io, off64, TRUE);
-#else
-        done = TRUE;
-#endif
         break;
 
     case TD_WRITE64:
     case NSCMD_TD_WRITE64:
+        D(bug("[NVME%02ld] TD_WRITE64\n", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
-#if (0)
         done = nvme_sector_rw(io, off64, TRUE);
-#else
-        done = TRUE;
-#endif
         break;
 
     case CMD_READ:
+        D(bug("[NVME%02ld] CMD_READ\n", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
-#if (0)
         done = nvme_sector_rw(io, off64, FALSE);
-#else
-        done = TRUE;
-#endif
         break;
 
     case TD_READ64:
     case NSCMD_TD_READ64:
+        D(bug("[NVME%02ld] TD_READ64\n", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
-#if (0)
         done = nvme_sector_rw(io, off64, FALSE);
-#else
-        done = TRUE;
-#endif
         break;
 
     case CMD_CLEAR:

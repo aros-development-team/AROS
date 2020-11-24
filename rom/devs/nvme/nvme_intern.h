@@ -134,7 +134,6 @@ struct completionevent_handler
     UWORD ceh_Status;
 };
 
-struct nvme_queue;
 typedef void (*_NVMEQUEUE_CE_HOOK)(struct nvme_queue *, struct nvme_completion *);
 struct nvme_queue {
     device_t dev;
@@ -192,6 +191,9 @@ struct nvme_Unit
 
     struct SignalSemaphore au_Lock;
     struct List         au_IOs;
+    struct nvme_queue   *au_IOQueue;
+
+    struct Interrupt	au_IOIntHandler;
 
     ULONG               au_UnitNum;     /* Unit number as coded by device */
 

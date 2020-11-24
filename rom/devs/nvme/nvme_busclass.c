@@ -39,23 +39,6 @@
 
 #define DIRQ(x)
 
-#if (0)
-/* /// "NVME_IOIntCode()" */
-static AROS_INTH1(NVME_IOIntCode, struct nvme_queue *, nvmeq)
-{
-    AROS_INTFUNC_INIT
-
-    D(bug ("[NVME:Controller] %s(0x%p)\n", __func__, nvmeq);)
-
-    nvme_process_cq(nvmeq);
-    
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
-}
-/* \\\ */
-#endif
-
 OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct NVMEBase *NVMEBase = cl->UserData;
@@ -358,6 +341,10 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                                 D(bug("done\n"));
                             }
                         }
+                    }
+                    else
+                    {
+                        bug("[NVME:Bus] NVMEBus_Start: Failed to create ns#%u unit\n", nn + 1);
                     }
                 }
             }

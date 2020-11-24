@@ -157,9 +157,25 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         sprintf((char *)attrs[BUS_TAG_HARDWARENAME].ti_Data, "NVME %u.%u Device Bus", (dev->dev_nvmeregbase->vs >> 16) & 0xFFFF, dev->dev_nvmeregbase->vs & 0xFFFF);
                         HW_AddDriver(dev->dev_Controller, NVMEBase->busClass, attrs);
                     }
+                    else
+                    {
+                        bug("[NVME:Controller] Root__New: ERROR - failed to query controller identity!\n");
+                    }
                     HIDD_PCIDriver_FreePCIMem(dev->dev_PCIDriverObject, buffer);
                 }
+                else
+                {
+                    D(bug ("[NVME:Controller] Root__New: ERROR - failed to create DMA buffer!\n");)
+                }
             }
+            else
+            {
+                bug("[NVME:Controller] Root__New: ERROR - failed to create Admin Queue!\n");
+            }
+        }
+        else
+        {
+            bug("[NVME:Controller] Root__New: ERROR - device data missing!\n");
         }
 
         AddTail(&NVMEBase->nvme_Controllers, &data->ac_Node);
