@@ -77,7 +77,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
         ATABase = unit->au_Bus->ab_Base;
         if ((unit->au_IDNode = HIDD_Storage_AllocateID(ATABase->storageRoot, ATAIDTags)))
         {
-            Dbug("[ATA>>] %s: unit ID allocated @ 0x%p\n", __func__, unit->au_IDNode);)
+            D(bug("[ATA>>] %s: unit ID allocated @ 0x%p\n", __func__, unit->au_IDNode);)
             pp[0] 		    = (IPTR)unit->au_IDNode->ln_Name;
         }
         else
