@@ -49,6 +49,8 @@ struct APICData
 {
     IPTR	                lapicBase; 	/* Local APIC base address			        */
     ULONG	                apic_count;	/* Total number of APICs in the system		        */
+    UBYTE	                msibase;	/* starting msi IRQ                                     */
+    UBYTE	                msilast;	/* last allocated msi                                   */
     UWORD	                flags;	        /* See below					        */
     struct CPUData          cores[0];	/* Per-CPU data					        */
 };
@@ -94,7 +96,6 @@ BOOL core_SetIRQGate(void *, int, uintptr_t);
 void core_DefaultIRETQ();
 
 ULONG core_APIC_AllocMSI(ULONG);
-void core_APIC_RegisterMSI(void *);
 
 extern struct IntrController APICInt_IntrController;
 

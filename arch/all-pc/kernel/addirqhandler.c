@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -75,15 +75,15 @@
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct IntrNode *handle = NULL;
 
-    D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
+    D(bug("[KRN] %s(%02x, %012p, %012p, %012p):\n", __func__, irq, handler, handlerData, handlerData2));
 
-    if ((irq < HW_IRQ_COUNT) || (pdata->kb_PDFlags & PLATFORMF_HAVEMSI))
+    if (irq < HW_IRQ_COUNT)
     {
         /* Go to supervisor mode */
         (void)goSuper();
 
         handle = krnAllocIntrNode();
-        D(bug("[KRN] handle=%012p\n", handle));
+        D(bug("[KRN] %s: handle @ 0x%012p\n", __func__, handle));
 
         if (handle)
         {
@@ -101,15 +101,12 @@
 
                 ictl_enable_irq(irq, KernelBase);
             }
-            else
-            {
-                core_APIC_RegisterMSI(handle);
-            }
             Enable();
         }
 
         goUser();
     }
+    D(else bug("[KRN] %s: Invalid IRQ no #%u.", irq);)
 
     return handle;
 

@@ -10,6 +10,7 @@
 #include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
+#include <proto/kernel.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -162,6 +163,7 @@ void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct 
         msiflags &= ~PCIMSIF_ENABLE;
         if (msg->val)
             msiflags |= PCIMSIF_ENABLE;
+        D(bug("[PCIDevice] %s: MSI flags = %04x\n", __func__, msiflags);)
         HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);        
     }
 }
@@ -196,14 +198,14 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
         CLID_Hidd_PCIDevice
 
     FUNCTION
-        Returns the APIC IRQ for a given vector.
+        Returns the Hardware IRQ for a given device MSI vector.
 
     INPUTS
         obj   - Pointer to the device object.
         vector - Vector to return the IRQ for.
 
     RESULT
-        Returns the APIC IRQ on success, for use with AddIRQHandler.
+        Returns the Hardware IRQ on success, for use with AddIntServer.
 
     NOTES
 
@@ -212,7 +214,7 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
     BUGS
 
     SEE ALSO
-        moHidd_PCIDevice_ObtainVectors
+        moHidd_PCIDevice_ObtainVectors, AddIntServer
 
     INTERNALS
 
@@ -229,18 +231,22 @@ UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHi
     if (capmsi)
     {
         UWORD msiflags;
-        msiflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS);
+        msiflags = getWord(cl, o, capmsi + PCIMSI_FLAGS);
         if (msiflags & PCIMSIF_ENABLE)
         {
+            D(bug("[PCIDevice] %s: MSI Queue size = %u\n", __func__, ((msiflags & PCIMSIF_QSIZE) >> 4));)
             /* MSI is enabled .. but is the requested vector valid? */
             if (msg->vector < ((msiflags & PCIMSIF_QSIZE) >> 4))
             {
-                ULONG msimdr = HIDD_PCIDriver_ReadConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_DATA32);
+                UWORD msimdr = getWord(cl, o, capmsi + PCIMSI_DATA32);
+                D(bug("[PCIDevice] %s: msimdr = %04x\n", __func__, msimdr);)
                 vectirq = (msimdr & 0xFF) + msg->vector;
             }
+            else bug("[PCIDevice] %s: Illegal MSI vector %u\n", __func__, msg->vector);
         }
+        else bug("[PCIDevice] %s: MSI is dissabled for the device\n", __func__);
     }
-
+    else bug("[PCIDevice] %s: Device doesn't support MSI\n", __func__);
     /* If MSI wasnt enabled and they have just asked for the first vector - return the PCI int line */
     if (!vectirq && msg->vector == 0)
     {
@@ -264,7 +270,7 @@ UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHi
         CLID_Hidd_PCIDevice
 
     FUNCTION
-        Allocates APIC IRQ's and assigns them to the device MSI vector configuration.
+        Allocates Hardware IRQ's and assigns them to the device MSI vector configuration.
 
     INPUTS
         obj   - Pointer to the device object.
@@ -290,35 +296,50 @@ UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHi
 *****************************************************************************************/
 BOOL PCIDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
 {
-    UWORD vectmin;
-    UWORD vectmax;
+    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl, o);
+    UWORD capmsi = findCapabilityOffset(cl, o, PCICAP_MSI);
+    UWORD vectmin, vectmax, vectcnt;
+    ULONG apicIRQBase = 0;
 
     D(bug("[PCIDevice] %s()\n", __func__);)
 
-    vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
-    vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
-
-    D(bug("[PCIDevice] %s: min = %u, max = %u\n", __func__, vectmin, vectmax);)
-
-#if (0)
-    // Itterate over the kernels IRQ list to find a suitable range controlled by the APIC Interrupt controller...
-    for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
+    if (capmsi)
     {
-        if (KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type)
+        UWORD msiflags;
+        msiflags = getWord(cl, o, capmsi + PCIMSI_FLAGS);
+
+        D(bug("[PCIDevice] %s: Max Device MSI vectors = %u\n", __func__, (msiflags & PCIMSIF_QMASK) >> 1);)
+
+        vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
+        if (vectmin > (msiflags & PCIMSIF_QMASK) >> 1)
+            return FALSE;
+
+        vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
+        if (vectmax > (msiflags & PCIMSIF_QMASK) >> 1)
+            vectmax = (msiflags & PCIMSIF_QMASK) >> 1;
+
+        for (vectcnt = vectmax; vectcnt >= vectmax; vectcnt--)
         {
-            if (startIRQ == -1)
-                startIRQ = HW_IRQ_BASE + irq;
-            else if ((HW_IRQ_BASE + irq) == (startIRQ + count))
+            if ((apicIRQBase = KrnAllocIRQ(IRQTYPE_MSI, vectcnt)) != (ULONG)-1)
             {
-                cpuIRQ = startIRQ;
+                D(bug("[PCIDevice] %s: Allocated %u IRQs starting at #%u\n", __func__, vectmin, apicIRQBase);)
                 break;
             }
         }
-        else
-            cpuIRQ = -1;
+        if (apicIRQBase)
+        {
+            D(bug("[PCIDevice] %s: Configuring Device with %u MSI vectors...\n", __func__, vectcnt);)
+            HIDD_PCIDevice_SetMSIEnabled(o, 0);
+            msiflags &= ~PCIMSIF_QSIZE;
+            msiflags |= (vectcnt << 4);
+            D(bug("[PCIDevice] %s: flags = %04x\n", __func__, msiflags);)
+            setLong(cl, o, capmsi + PCIMSI_ADDRESSLO, (0xFEE << 20) | (0 << 12));
+            setWord(cl, o, capmsi + PCIMSI_DATA32, apicIRQBase);
+            setWord(cl, o, capmsi + PCIMSI_FLAGS, msiflags); 
+            HIDD_PCIDevice_SetMSIEnabled(o, 1);
+            return TRUE;
+        }
     }
-#endif
-
     D(bug("[PCIDevice] %s: Failed to obtain/enable MSI vectors\n", __func__);)
 
     return FALSE;

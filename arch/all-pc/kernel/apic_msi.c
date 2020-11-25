@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,54 +22,65 @@ ULONG core_APIC_AllocMSI(ULONG count)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
-    apicid_t cpuNo = KrnGetCPUNumber();
-    apicidt_t *IGATES = (apicidt_t *)apicPrivate->cores[cpuNo].cpu_IDT;
-    ULONG msiID = APIC_MSI_BASE;
-    int startIRQ = -1, cpuIRQ = -1, irq;
+    ULONG msiID = (ULONG)-1;
+    UWORD startIRQ = (UWORD)-1, cpuIRQ = (UWORD)-1, irq;
 
-    D(bug("[APIC:MSI] %s()\n"));
+    D(
+        bug("[APIC:MSI] %s(%u)\n", __func__, count);
+        bug("[APIC:MSI] %s: msibase = %u\n", __func__, apicPrivate->msibase);
+        bug("[APIC:MSI] %s: msilast = %u\n", __func__, apicPrivate->msilast);
+        bug("[APIC:MSI] %s: HW_IRQ_BASE = %u, HW_IRQ_COUNT = %u\n", __func__, HW_IRQ_BASE, HW_IRQ_COUNT);
+    )
 
-    for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
-    {
-        if (KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type)
+    if (apicPrivate->msibase)
+    {        
+        UBYTE first = apicPrivate->msilast;
+        if (!first)
+            first = apicPrivate->msibase;
+
+        for (irq = first; irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
         {
-            if (startIRQ == -1)
-                startIRQ = HW_IRQ_BASE + irq;
-            else if ((HW_IRQ_BASE + irq) == (startIRQ + count))
+            D(bug("[APIC:MSI] %s: trying #%u\n", __func__, irq);)
+            if (KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type)
             {
-                cpuIRQ = startIRQ;
-                break;
+                D(bug("[APIC:MSI] %s:     .. apic IRQ ..\n", __func__);)
+                if (startIRQ == (UWORD)-1)
+                {
+                    startIRQ = irq;
+                    D(bug("[APIC:MSI] %s:  startIRQ = %u\n", __func__, startIRQ);)
+                }
+                else if (irq == (startIRQ + count - 1))
+                {
+                    cpuIRQ = startIRQ;
+                    D(bug("[APIC:MSI] %s:  end = %u\n", __func__, HW_IRQ_BASE + irq);)
+                    break;
+                }
+            }
+            else
+            {
+                startIRQ = cpuIRQ = (UWORD)-1;
             }
         }
+
+        if (cpuIRQ != (UWORD)-1)
+        {
+            msiID = HW_IRQ_BASE + cpuIRQ;
+            D(bug("[APIC:MSI] %s: Enabling IRQ's #%u -> #%u\n", __func__, cpuIRQ, cpuIRQ + count);)
+
+            for (irq = cpuIRQ; irq < (cpuIRQ + count); irq++)
+            {
+                ictl_enable_irq(HW_IRQ_BASE + irq, KernelBase);
+            }
+
+            D(bug("[APIC:MSI] %s: New MSI IRQ ID Base = %u, for %d IRQs\n", __func__, msiID, count);)
+            apicPrivate->msilast = cpuIRQ + count;
+        }
         else
-            cpuIRQ = -1;
+        {
+            D(bug("[APIC:MSI] %s: not enough free IRQs\n", __func__);)
+            msiID = (ULONG)-1;
+        }
     }
-    if (cpuIRQ != -1)
-    {
-        msiID += ((cpuNo << 8) | (cpuIRQ));
-
-        for (irq = cpuIRQ; irq < (cpuIRQ + count); irq++)
-            IGATES[irq].p = 1;
-
-        D(bug("[APIC:MSI] %s: New MSI IRQ ID Base = %d, for %d IRQs\n", __func__, (int)msiID, count));
-    }
-    else
-        msiID = (ULONG)-1;
-
+    D(bug("[APIC:MSI] %s: returning %d\n", __func__, msiID);)
     return msiID;
-}
-
-void core_APIC_RegisterMSI(void *handle)
-{
-    struct IntrNode *msihandle = (struct IntrNode *)handle;
-
-    D(bug("[APIC:MSI] %s: MSI Handler @ 0x%p\n", msihandle));
-    if ((msihandle->in_nr >= APIC_MSI_BASE) && (msihandle->in_nr < (ULONG)-1))
-    {
-        ULONG tmp = msihandle->in_nr - APIC_MSI_BASE;
-        int msiCPUIRQ = (tmp & 0xFF);
-        apicid_t msiCPUNo = (tmp >> 8) & 0xFF;
-
-        bug("[APIC:MSI] %s: Registering MSI %d (%03u:%02X)\n", (int)msihandle->in_nr, msiCPUNo, msiCPUIRQ);
-    }
 }
