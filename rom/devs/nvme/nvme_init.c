@@ -78,7 +78,7 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
 {
     struct BootLoaderBase	*BootLoaderBase;
 
-    D(bug("[NVME--] %s: nvme.device Initialization\n", __func__);)
+    D(bug("[NVME--] %s: %s Initialization\n", __func__, nvmeDeviceName);)
 
     NVMEBase->nvme_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!NVMEBase->nvme_UtilityBase)
@@ -239,7 +239,6 @@ AROS_UFH3(void, nvme_PCIEnumerator_h,
 
     EnumeratorArgs *a = hook->h_Data;
     struct NVMEBase *NVMEBase = a->NVMEBase;
-    OOP_MethodID HiddPCIDeviceBase = NVMEBase->nvme_HiddPCIDeviceMethodBase;
     CONST_STRPTR owner;
 
     dev = AllocPooled(NVMEBase->nvme_MemPool, sizeof(*dev));
@@ -250,7 +249,7 @@ AROS_UFH3(void, nvme_PCIEnumerator_h,
     dev->dev_Object   = Device;
     dev->dev_HostID   = NVMEBase->nvme_HostCount;
 
-    D(bug("[NVME:PCI] %s: NVME PCI device @ 0x%p\n", __func__, Device));
+    D(bug("[NVME:PCI] %s: %s PCI device @ 0x%p\n", __func__, nvmeControllerName, Device));
 
     owner = HIDD_PCIDevice_Obtain(Device, NVMEBase->nvme_Device.dd_Library.lib_Node.ln_Name);
     if (owner)

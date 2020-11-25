@@ -26,8 +26,12 @@
 #include "nvme_queue.h"
 #include "nvme_queue_admin.h"
 
-/* /// "NVME_IntCode()" */
-static AROS_INTH1(NVME_IntCode, struct nvme_queue *, nvmeq)
+/*
+    NVME_AdminIntCode:
+        handle incomming completion event interrupts
+        for the controllers Admin queue.
+*/
+static AROS_INTH1(NVME_AdminIntCode, struct nvme_queue *, nvmeq)
 {
     AROS_INTFUNC_INIT
 
@@ -39,8 +43,8 @@ static AROS_INTH1(NVME_IntCode, struct nvme_queue *, nvmeq)
 
     AROS_INTFUNC_EXIT
 }
-/* \\\ */
 
+/* Controller class methods */
 OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct NVMEBase *NVMEBase = (struct NVMEBase *)cl->UserData;
@@ -105,12 +109,12 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
                 // add interrupt
                 OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &data->ac_PCIIntLine);
-                data->ac_PCIIntHandler.is_Node.ln_Name = "NVME Controller Interrupt";
-                data->ac_PCIIntHandler.is_Node.ln_Pri = 5;
-                data->ac_PCIIntHandler.is_Code = (VOID_FUNC) NVME_IntCode;
-                data->ac_PCIIntHandler.is_Data = dev->dev_AdminQueue;
+                dev->dev_AdminIntHandler.is_Node.ln_Name = "NVME Controller Interrupt";
+                dev->dev_AdminIntHandler.is_Node.ln_Pri = 5;
+                dev->dev_AdminIntHandler.is_Code = (VOID_FUNC) NVME_AdminIntCode;
+                dev->dev_AdminIntHandler.is_Data = dev->dev_AdminQueue;
                 AddIntServer(INTB_KERNEL + data->ac_PCIIntLine,
-                    &data->ac_PCIIntHandler);
+                    &dev->dev_AdminIntHandler);
 
                 APTR buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
                 if (buffer)

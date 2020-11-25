@@ -13,6 +13,7 @@
 #include <proto/utility.h>
 
 #include <hidd/hidd.h>
+#include <hidd/pci.h>
 #include <hidd/storage.h>
 #include <hidd/nvme.h>
 #include <oop/oop.h>
@@ -72,15 +73,18 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     if (o)
     {
         struct nvme_Unit *unit = OOP_INST_DATA(cl, o);
+        char *DevName, *DevSer, *DevFW;
+        int depth;
+
         D(bug ("[NVME:Unit] Root__New: Unit Obj @ %p\n", o);)
 
         InitSemaphore(&unit->au_Lock);
         NEWLIST(&unit->au_IOs);
         unit->au_UnitNum = (dev->dev_HostID << 12) | unitnsno;
         
-        char *DevName = (char *)GetTagData(aHidd_StorageUnit_Model, 0, msg->attrList);
-        char *DevSer = (char *)GetTagData(aHidd_StorageUnit_Serial, 0, msg->attrList);
-        char *DevFW = (char *)GetTagData(aHidd_StorageUnit_Revision, 0, msg->attrList);
+        DevName = (char *)GetTagData(aHidd_StorageUnit_Model, 0, msg->attrList);
+        DevSer = (char *)GetTagData(aHidd_StorageUnit_Serial, 0, msg->attrList);
+        DevFW = (char *)GetTagData(aHidd_StorageUnit_Revision, 0, msg->attrList);
 
         if (DevName)
         {
@@ -101,14 +105,13 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 #if !defined(MIN)
 # define MIN(a,b)       (a < b) ? a : b
 #endif
-        int depth = MIN(NVME_CAP_MQES(dev->dev_nvmeregbase->cap) + 1, 1024);
-        // TODO: Allocate an MSI interrupt!
-        int vector = 80 + unitnsno;
+        depth = MIN(NVME_CAP_MQES(dev->dev_nvmeregbase->cap) + 1, 1024);
 
-        unit->au_IOQueue = nvme_alloc_queue(dev, unitnsno + 1, depth, vector);
-        D(bug ("[NVME:Unit] Root__New:     IO queue @ 0x%p (IRQ#%u, depth = %u)\n", unit->au_IOQueue, vector, depth);)
+        unit->au_IOQueue = nvme_alloc_queue(dev, unitnsno + 1, depth, unitnsno + 1);
+        D(bug ("[NVME:Unit] Root__New:     IO queue @ 0x%p (IRQ#%u, depth = %u)\n", unit->au_IOQueue, unitirq, depth);)
         if (unit->au_IOQueue)
         {
+            UBYTE unitirq = HIDD_PCIDevice_VectorIRQ(dev->dev_Object, unitnsno + 1);
             struct nvme_command c;
             struct completionevent_handler adminehandle;
             int flags;
@@ -152,7 +155,7 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
                     unit->au_IOIntHandler.is_Node.ln_Pri = 5;
                     unit->au_IOIntHandler.is_Code = (VOID_FUNC) NVME_IOIntCode;
                     unit->au_IOIntHandler.is_Data = unit->au_IOQueue;
-                    AddIntServer(INTB_KERNEL + vector,
+                    AddIntServer(INTB_KERNEL + unitirq,
                         &unit->au_IOIntHandler);
                 }
                 else

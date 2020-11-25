@@ -97,6 +97,8 @@ struct NVMEBase
 #if defined(__OOP_NOMETHODBASES__)
 #undef HiddPCIDriverBase
 #define HiddPCIDriverBase       (NVMEBase->nvme_HiddPCIDriverMethodBase)
+#undef HiddPCIDeviceBase
+#define HiddPCIDeviceBase       (NVMEBase->nvme_HiddPCIDeviceMethodBase)
 #undef HWBase
 #define HWBase                  (NVMEBase->nvme_HWMethodBase)
 #undef HiddStorageBase
@@ -128,6 +130,7 @@ typedef struct {
     
     ULONG               ctrl_config;
 
+    struct Interrupt	dev_AdminIntHandler;
     struct nvme_queue   *dev_AdminQueue;
 } *device_t;
 
@@ -168,7 +171,6 @@ struct nvme_Controller
     OOP_Object          *ac_Object;
     device_t            ac_dev;
     IPTR		ac_PCIIntLine;
-    struct Interrupt	ac_PCIIntHandler;
 };
 
 struct nvme_Unit;

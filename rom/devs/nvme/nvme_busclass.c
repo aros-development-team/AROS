@@ -202,154 +202,191 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
     if (buffer)
     {
+        IPTR PCIIntLine = 0, AdminIntLine;
+        const struct TagItem vectreqs[] = 
+        {
+            { tHidd_PCIVector_Min,      data->ab_UnitCnt + 1    },
+            { tHidd_PCIVector_Max,      data->ab_UnitCnt + 1    },
+            { TAG_DONE,                 0                       } 
+        };
         ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
         D(bug ("[NVME:Bus] NVMEBus_Start: buffer @ 0x%p, ExpansionBase @ 0x%p\n", buffer, ExpansionBase);)
 
         busehandle.ceh_Task = FindTask(NULL);
         busehandle.ceh_SigSet = SIGF_SINGLE;
+        OOP_GetAttr(data->ab_Dev->dev_Object, aHidd_PCIDevice_INTLine, &PCIIntLine);
+        AdminIntLine = PCIIntLine;
 
-        for (nn = 0; nn < data->ab_UnitCnt; nn++)
+        bug ("[NVME:Bus] NVMEBus_Start: Initial Admin IRQ = %u\n", AdminIntLine);
+
+        Disable();
+        bug ("[NVME:Bus] NVMEBus_Start: Removing Admin Int Server...\n");
+        // Remove the device Admin Interrupt handler
+        RemIntServer(INTB_KERNEL + AdminIntLine,
+                    &data->ab_Dev->dev_AdminIntHandler);
+        bug ("[NVME:Bus] NVMEBus_Start: Attempting to Obtain PCI Device MSI Vectors ...\n");
+        if (HIDD_PCIDevice_ObtainVectors(data->ab_Dev->dev_Object, vectreqs))
         {
-            struct nvme_id_ns *id_ns = (struct nvme_id_ns *)buffer;
-            struct TagItem attrs[] =
+            bug ("[NVME:Bus] NVMEBus_Start: Obtained MSI Vectors!\n");
+            //Switch The Admin Queue IRQ;
+            AdminIntLine = HIDD_PCIDevice_VectorIRQ(data->ab_Dev->dev_Object, 0);
+        }
+        bug ("[NVME:Bus] NVMEBus_Start: Re-Adding Admin Int Server ...\n");
+        // Re-Add the device Admin Interrupt handler
+        AddIntServer(INTB_KERNEL + AdminIntLine,
+            &data->ab_Dev->dev_AdminIntHandler);
+        Enable();
+
+        bug ("[NVME:Bus] NVMEBus_Start: Ending Admin IRQ = %u\n", AdminIntLine);
+
+        if (AdminIntLine != PCIIntLine)
+        {
+            for (nn = 0; nn < data->ab_UnitCnt; nn++)
             {
-                    {aHidd_Name,                        (IPTR)"nvme.device"     },
-                    {aHidd_DriverData,                  (IPTR)data->ab_Dev      },
-                    {aHidd_StorageUnit_Number,          nn                      },
-                    {aHidd_StorageUnit_Model,           (IPTR)data->ab_DevName  },
-                    {aHidd_StorageUnit_Serial,          (IPTR)data->ab_DevSer   },
-                    {aHidd_StorageUnit_Revision,        (IPTR)data->ab_DevFW    },
-                    {TAG_DONE,                          0                       }
-            };
+                struct nvme_id_ns *id_ns = (struct nvme_id_ns *)buffer;
+                struct TagItem attrs[] =
+                {
+                        {aHidd_Name,                        (IPTR)"nvme.device"     },
+                        {aHidd_DriverData,                  (IPTR)data->ab_Dev      },
+                        {aHidd_StorageUnit_Number,          nn                      },
+                        {aHidd_StorageUnit_Model,           (IPTR)data->ab_DevName  },
+                        {aHidd_StorageUnit_Serial,          (IPTR)data->ab_DevSer   },
+                        {aHidd_StorageUnit_Revision,        (IPTR)data->ab_DevFW    },
+                        {TAG_DONE,                          0                       }
+                };
 
-            memset(buffer, 0, 8192);
-            memset(&c, 0, sizeof(c));
-            c.identify.op.opcode = nvme_admin_identify;
-            c.identify.prp1 = (UQUAD)buffer;
-            c.identify.nsid = AROS_LONG2LE(nn + 1);
-            c.identify.cns = 0;
-
-            D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_identify\n", nn + 1);)
-            nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-            Wait(busehandle.ceh_SigSet);
-
-            if ((!busehandle.ceh_Status) && (id_ns->ncap != 0))
-            {
-                int lbaf = id_ns->flbas & 0xf;
-                lbaStart = 0;
-
-                D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     ncap = %p\n", nn + 1, id_ns->ncap);)
-            
-                struct nvme_lba_range_type *rt = (struct nvme_lba_range_type *)(IPTR)buffer + 4096;
-
-                D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u lba_range_type buffer @ 0x%p\n", nn + 1, rt);)
-
+                memset(buffer, 0, 8192);
                 memset(&c, 0, sizeof(c));
-                c.features.op.opcode = nvme_admin_get_features;
-                c.features.prp1 = (UQUAD)rt;
-                c.features.fid = AROS_LONG2LE(NVME_FEAT_LBA_RANGE);
-                c.features.nsid = AROS_LONG2LE(nn + 1);
+                c.identify.op.opcode = nvme_admin_identify;
+                c.identify.prp1 = (UQUAD)buffer;
+                c.identify.nsid = AROS_LONG2LE(nn + 1);
+                c.identify.cns = 0;
 
-                D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_get_features\n", nn + 1);)
+                D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_identify\n", nn + 1);)
                 nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
                 Wait(busehandle.ceh_SigSet);
 
-                if (!busehandle.ceh_Status)
+                if ((!busehandle.ceh_Status) && (id_ns->ncap != 0))
                 {
-                    D(
-                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u range type info:\n", nn + 1);
-                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           type %02x\n", nn + 1, rt->type);
-                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           attribs %02x\n", nn + 1, rt->attributes);
-                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           slba %08x%08x\n", nn + 1, (rt->slba >> 32), rt->slba & 0xFFFFFFFF);
-                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           nlb %08x%08x\n", nn + 1, (rt->nlb >> 32), rt->nlb & 0xFFFFFFFF);
-                    )
+                    int lbaf = id_ns->flbas & 0xf;
+                    lbaStart = 0;
 
-                    if (!(rt->attributes & NVME_LBART_ATTRIB_HIDE))
+                    D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     ncap = %p\n", nn + 1, id_ns->ncap);)
+                
+                    struct nvme_lba_range_type *rt = (struct nvme_lba_range_type *)(IPTR)buffer + 4096;
+
+                    D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u lba_range_type buffer @ 0x%p\n", nn + 1, rt);)
+
+                    memset(&c, 0, sizeof(c));
+                    c.features.op.opcode = nvme_admin_get_features;
+                    c.features.prp1 = (UQUAD)rt;
+                    c.features.fid = AROS_LONG2LE(NVME_FEAT_LBA_RANGE);
+                    c.features.nsid = AROS_LONG2LE(nn + 1);
+
+                    D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_get_features\n", nn + 1);)
+                    nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
+                    Wait(busehandle.ceh_SigSet);
+
+                    if (!busehandle.ceh_Status)
                     {
-                        lbaStart = rt->slba;
-                        lbaEnd =  rt->slba + rt->nlb;
-                    }
-                    else
-                    {
-                        D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
-                        lbaEnd = 0;
-                    }
-                }
-                else
-                    lbaEnd = id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9);
+                        D(
+                            bug ("[NVME:Bus] NVMEBus_Start: ns#%u range type info:\n", nn + 1);
+                            bug ("[NVME:Bus] NVMEBus_Start: ns#%u           type %02x\n", nn + 1, rt->type);
+                            bug ("[NVME:Bus] NVMEBus_Start: ns#%u           attribs %02x\n", nn + 1, rt->attributes);
+                            bug ("[NVME:Bus] NVMEBus_Start: ns#%u           slba %08x%08x\n", nn + 1, (rt->slba >> 32), rt->slba & 0xFFFFFFFF);
+                            bug ("[NVME:Bus] NVMEBus_Start: ns#%u           nlb %08x%08x\n", nn + 1, (rt->nlb >> 32), rt->nlb & 0xFFFFFFFF);
+                        )
 
-                if (lbaEnd)
-                {
-                    if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL)
-                    {
-                        struct nvme_Unit *unit;
-
-                        IPTR pp[24];
-                        const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
-
-                        unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
-
-                        if (ExpansionBase)
+                        if (!(rt->attributes & NVME_LBART_ATTRIB_HIDE))
                         {
-                            const TEXT dosdevstem[3] = "HD";
-                            struct TagItem NVMEIDTags[] = 
-                            {
-                                {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
-                                {TAG_DONE,              0                       }  
-                            };
-                            struct DeviceNode *devnode;
-
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %u\n", 1 << id_ns->lbaf[lbaf].ds);)
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9));)
-
-                            unit->au_SecShift = id_ns->lbaf[lbaf].ds;
-                            unit->au_SecCnt = id_ns->nsze << (unit->au_SecShift - 9);
-                            unit->au_Low = lbaStart;
-                            unit->au_High = lbaEnd;
-
-                            data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
-
-                            pp[0] 		    = (IPTR)data->ab_IDNode->ln_Name;
-                            pp[1]		    = (IPTR)MOD_NAME_STRING;
-                            pp[2]		    = unit->au_UnitNum;
-                            pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
-                            pp[DE_SIZEBLOCK    + 4] = 1 << unit->au_SecShift;
-                            pp[DE_NUMHEADS     + 4] = 1;
-                            pp[DE_SECSPERBLOCK + 4] = 1;
-                            pp[DE_BLKSPERTRACK + 4] = unit->au_SecCnt;
-                            pp[DE_RESERVEDBLKS + 4] = 2;
-                            pp[DE_LOWCYL       + 4] = unit->au_Low;
-                            pp[DE_HIGHCYL      + 4] = unit->au_High;
-                            pp[DE_NUMBUFFERS   + 4] = 10;
-                            pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC | MEMF_31BIT;
-                            pp[DE_MAXTRANSFER  + 4] = 0x00200000;
-                            pp[DE_MASK         + 4] = 0x7FFFFFFE;
-                            pp[DE_BOOTPRI      + 4] = 0;
-                            pp[DE_DOSTYPE      + 4] = IdDOS;
-                            pp[DE_CONTROL      + 4] = 0;
-                            pp[DE_BOOTBLOCKS   + 4] = 2;
-
-                            devnode = MakeDosNode(pp);
-                            if (devnode)
-                            {
-                                D(bug("[NVME:Bus] NVMEBus_Start: DeviceNode @ 0x%p\n", devnode));
-                                D(bug("[NVME:Bus] NVMEBus_Start:'%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
-                                      devnode->dn_Name, pp[DE_DOSTYPE + 4], pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]));
-
-                                AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
-                                D(bug("done\n"));
-                            }
+                            lbaStart = rt->slba;
+                            lbaEnd =  rt->slba + rt->nlb;
+                        }
+                        else
+                        {
+                            D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
+                            lbaEnd = 0;
                         }
                     }
                     else
+                        lbaEnd = id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9);
+
+                    if (lbaEnd)
                     {
-                        bug("[NVME:Bus] NVMEBus_Start: Failed to create ns#%u unit\n", nn + 1);
+                        if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL)
+                        {
+                            struct nvme_Unit *unit;
+
+                            IPTR pp[24];
+                            const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
+
+                            unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
+
+                            if (ExpansionBase)
+                            {
+                                const TEXT dosdevstem[3] = "HD";
+                                struct TagItem NVMEIDTags[] = 
+                                {
+                                    {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
+                                    {TAG_DONE,              0                       }  
+                                };
+                                struct DeviceNode *devnode;
+
+                                D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %u\n", 1 << id_ns->lbaf[lbaf].ds);)
+                                D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", id_ns->nsze << (id_ns->lbaf[lbaf].ds - 9));)
+
+                                unit->au_SecShift = id_ns->lbaf[lbaf].ds;
+                                unit->au_SecCnt = id_ns->nsze << (unit->au_SecShift - 9);
+                                unit->au_Low = lbaStart;
+                                unit->au_High = lbaEnd;
+
+                                data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
+
+                                pp[0] 		    = (IPTR)data->ab_IDNode->ln_Name;
+                                pp[1]		    = (IPTR)MOD_NAME_STRING;
+                                pp[2]		    = unit->au_UnitNum;
+                                pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
+                                pp[DE_SIZEBLOCK    + 4] = 1 << unit->au_SecShift;
+                                pp[DE_NUMHEADS     + 4] = 1;
+                                pp[DE_SECSPERBLOCK + 4] = 1;
+                                pp[DE_BLKSPERTRACK + 4] = unit->au_SecCnt;
+                                pp[DE_RESERVEDBLKS + 4] = 2;
+                                pp[DE_LOWCYL       + 4] = unit->au_Low;
+                                pp[DE_HIGHCYL      + 4] = unit->au_High;
+                                pp[DE_NUMBUFFERS   + 4] = 10;
+                                pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC | MEMF_31BIT;
+                                pp[DE_MAXTRANSFER  + 4] = 0x00200000;
+                                pp[DE_MASK         + 4] = 0x7FFFFFFE;
+                                pp[DE_BOOTPRI      + 4] = 0;
+                                pp[DE_DOSTYPE      + 4] = IdDOS;
+                                pp[DE_CONTROL      + 4] = 0;
+                                pp[DE_BOOTBLOCKS   + 4] = 2;
+
+                                devnode = MakeDosNode(pp);
+                                if (devnode)
+                                {
+                                    D(bug("[NVME:Bus] NVMEBus_Start: DeviceNode @ 0x%p\n", devnode));
+                                    D(bug("[NVME:Bus] NVMEBus_Start:'%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
+                                          devnode->dn_Name, pp[DE_DOSTYPE + 4], pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]));
+
+                                    AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
+                                    D(bug("done\n"));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            bug("[NVME:Bus] NVMEBus_Start: Failed to create ns#%u unit\n", nn + 1);
+                        }
                     }
                 }
             }
         }
-
+        else
+        {
+            bug("[NVME:Bus] NVMEBus_Start: Failed to obtain MSI IRQs/Vectors\n");
+        }
         CloseLibrary((struct Library *)ExpansionBase);
 
         HIDD_PCIDriver_FreePCIMem(data->ab_Dev->dev_PCIDriverObject, buffer);
