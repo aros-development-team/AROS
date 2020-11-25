@@ -219,8 +219,34 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
 *****************************************************************************************/
 UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
 {
+    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl, o);
+    UWORD capmsi = findCapabilityOffset(cl, o, PCICAP_MSI);
+    UBYTE vectirq = 0;
+
     D(bug("[PCIDevice] %s()\n", __func__);)
-    return 0;
+
+    /* Is MSI even supported? */
+    if (capmsi)
+    {
+        UWORD msiflags;
+        msiflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS);
+        if (msiflags & PCIMSIF_ENABLE)
+        {
+            /* MSI is enabled .. but is the requested vector valid? */
+            if (msg->vector < ((msiflags & PCIMSIF_QSIZE) >> 4))
+            {
+                ULONG msimdr = HIDD_PCIDriver_ReadConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_DATA32);
+                vectirq = (msimdr & 0xFF) + msg->vector;
+            }
+        }
+    }
+
+    /* If MSI wasnt enabled and they have just asked for the first vector - return the PCI int line */
+    if (!vectirq && msg->vector == 0)
+    {
+        vectirq = getByte(cl, o, PCICS_INT_LINE);
+    }
+    return vectirq;
 }
 
 
