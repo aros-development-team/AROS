@@ -22,7 +22,7 @@ ULONG core_APIC_AllocMSI(ULONG count)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
-    ULONG msiID = (ULONG)-1;
+    ULONG msiIRQ = (ULONG)-1;
     UWORD startIRQ = (UWORD)-1, cpuIRQ = (UWORD)-1, irq;
 
     D(
@@ -64,23 +64,23 @@ ULONG core_APIC_AllocMSI(ULONG count)
 
         if (cpuIRQ != (UWORD)-1)
         {
-            msiID = HW_IRQ_BASE + cpuIRQ;
             D(bug("[APIC:MSI] %s: Enabling IRQ's #%u -> #%u\n", __func__, cpuIRQ, cpuIRQ + count);)
 
             for (irq = cpuIRQ; irq < (cpuIRQ + count); irq++)
             {
-                ictl_enable_irq(HW_IRQ_BASE + irq, KernelBase);
+                ictl_enable_irq(irq, KernelBase);
             }
+            msiIRQ = cpuIRQ;
 
-            D(bug("[APIC:MSI] %s: New MSI IRQ ID Base = %u, for %d IRQs\n", __func__, msiID, count);)
+            D(bug("[APIC:MSI] %s: New MSI IRQ ID Base = %u, for %d IRQs\n", __func__, msiIRQ, count);)
             apicPrivate->msilast = cpuIRQ + count;
         }
         else
         {
             D(bug("[APIC:MSI] %s: not enough free IRQs\n", __func__);)
-            msiID = (ULONG)-1;
+            msiIRQ = (ULONG)-1;
         }
     }
-    D(bug("[APIC:MSI] %s: returning %d\n", __func__, msiID);)
-    return msiID;
+    D(bug("[APIC:MSI] %s: returning %d\n", __func__, msiIRQ);)
+    return msiIRQ;
 }
