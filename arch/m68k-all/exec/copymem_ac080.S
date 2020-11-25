@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Optimized Apollo Core 080 CopyMem by Bax
@@ -90,7 +90,8 @@ blit_up_fast_xloop:
 	move.l (%a0)+,(%a1)+
 	move.l (%a0)+,(%a1)+
 blit_up_fast_xmain:
-	dbf %d0,blit_up_fast_xloop
+	subq.l #1,%d0
+	bne.b	blit_up_fast_xloop
 
 	bra.s	blit_up_fast_xleftmain
 
