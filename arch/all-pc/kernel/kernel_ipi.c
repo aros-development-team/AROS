@@ -31,7 +31,7 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     IPTR __APICBase = apicPrivate->lapicBase;
 
-    D(bug("[Kernel:IPI] Sending IPI %02d form CPU.%03u to target mask @ 0x%p\n", ipi_number, cpunum, cpu_mask));
+    D(bug("[Kernel:IPI] Sending IPI %02d from CPU.%03u to target mask @ 0x%p\n", ipi_number, cpunum, cpu_mask));
     
     asm volatile("sfence");
 
