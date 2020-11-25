@@ -152,6 +152,7 @@ static UWORD findExpressExtendedCapabilityOffset(OOP_Class * cl, OOP_Object *o, 
 
 void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_SetMSIEnabled *msg)
 {
+    D(bug("[PCIDevice] %s()\n", __func__);)
     UWORD capmsi = findCapabilityOffset(cl, o, PCICAP_MSI);
     if (capmsi)
     {
@@ -167,6 +168,7 @@ void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct 
 
 void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ClearAndSetMSIXFlags *msg)
 {
+    D(bug("[PCIDevice] %s()\n", __func__);)
     UWORD capmsix = findCapabilityOffset(cl, o, PCICAP_MSIX);
     if (capmsix)
     {
@@ -217,6 +219,7 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
 *****************************************************************************************/
 UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
 {
+    D(bug("[PCIDevice] %s()\n", __func__);)
     return 0;
 }
 
@@ -261,8 +264,36 @@ UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHi
 *****************************************************************************************/
 BOOL PCIDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
 {
-    UWORD vectmin = GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
-    UWORD vectmax = GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
+    UWORD vectmin;
+    UWORD vectmax;
+
+    D(bug("[PCIDevice] %s()\n", __func__);)
+
+    vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
+    vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
+
+    D(bug("[PCIDevice] %s: min = %u, max = %u\n", __func__, vectmin, vectmax);)
+
+#if (0)
+    // Itterate over the kernels IRQ list to find a suitable range controlled by the APIC Interrupt controller...
+    for (irq = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT); irq < ((APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT) + APIC_IRQ_COUNT); irq++)
+    {
+        if (KERNELIRQ_LIST(irq).lh_Type == APICInt_IntrController.ic_Node.ln_Type)
+        {
+            if (startIRQ == -1)
+                startIRQ = HW_IRQ_BASE + irq;
+            else if ((HW_IRQ_BASE + irq) == (startIRQ + count))
+            {
+                cpuIRQ = startIRQ;
+                break;
+            }
+        }
+        else
+            cpuIRQ = -1;
+    }
+#endif
+
+    D(bug("[PCIDevice] %s: Failed to obtain/enable MSI vectors\n", __func__);)
 
     return FALSE;
 }
@@ -303,6 +334,7 @@ BOOL PCIDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct 
 *****************************************************************************************/
 VOID PCIDev__Hidd_PCIDevice__ReleaseVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReleaseVectors *msg)
 {
+    D(bug("[PCIDevice] %s()\n", __func__);)
     return;
 }
 
