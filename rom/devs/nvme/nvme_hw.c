@@ -25,6 +25,9 @@
 
 int nvme_alloc_cmdid(struct nvme_queue *nvmeq)
 {
+#if defined(__AROSEXEC_SMP__)
+    struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
+#endif
     int cmdid;
 
     Disable();
@@ -47,6 +50,9 @@ int nvme_alloc_cmdid(struct nvme_queue *nvmeq)
 
 int nvme_submit_cmd(struct nvme_queue *nvmeq, struct nvme_command *cmd)
 {
+#if defined(__AROSEXEC_SMP__)
+    struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
+#endif
     unsigned long flags;
     UWORD tail;
 

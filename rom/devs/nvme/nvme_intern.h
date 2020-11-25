@@ -26,29 +26,31 @@ struct NVMEBase
    /*
     * Device structure - used to manage devices by Exec
     */
-   struct Device           nvme_Device;
+   struct Device                nvme_Device;
 
    /*
     * master task pointer
     */
-   struct Task            *nvme_Daemon;
+   struct Task                  *nvme_Daemon;
 
    /* Count of all hosts detected */
-   ULONG                   nvme_HostCount;
+   ULONG                        nvme_HostCount;
 
    /*
     * List of all units
     */
-   struct MinList          nvme_Units;
+   struct MinList               nvme_Units;
 
    /*
     * memory pool
     */
-    APTR                    nvme_MemPool;
+    APTR                        nvme_MemPool;
 
     struct Library              *nvme_OOPBase;
     struct Library              *nvme_UtilityBase;
-
+#if defined(__AROSEXEC_SMP__)
+    APTR                        nvme_KernelBase;
+#endif
     /* Frequently used object offsets */
     OOP_Class                   *nvmeClass;
     OOP_Class                   *busClass;
@@ -104,6 +106,9 @@ struct NVMEBase
 #endif
 #define OOPBase                 (NVMEBase->nvme_OOPBase)
 #define UtilityBase             (NVMEBase->nvme_UtilityBase)
+#if defined(__AROSEXEC_SMP__)
+#define KernelBase              (NVMEBase->nvme_KernelBase)
+#endif
 
 #include <exec/semaphores.h>
 
