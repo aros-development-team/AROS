@@ -165,7 +165,7 @@ void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct 
     }
 }
 
-void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ClearAndSetMSIXFlags *msg) //struct pci_dev *dev, u16 clear, u16 set)
+void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ClearAndSetMSIXFlags *msg)
 {
     UWORD capmsix = findCapabilityOffset(cl, o, PCICAP_MSIX);
     if (capmsix)
@@ -177,6 +177,133 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
         msixflags |= msg->set;
         HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS, msixflags);
     }
+}
+
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_VectorIRQ
+
+    SYNOPSIS
+        UBYTE OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_VectorIRQ *Msg);
+
+        UBYTE HIDD_PCIDevice_VectorIRQ(OOP_Object *obj, ULONG vector);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Returns the APIC IRQ for a given vector.
+
+    INPUTS
+        obj   - Pointer to the device object.
+        vector - Vector to return the IRQ for.
+
+    RESULT
+        Returns the APIC IRQ on success, for use with AddIRQHandler.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_ObtainVectors
+
+    INTERNALS
+
+*****************************************************************************************/
+UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
+{
+    return 0;
+}
+
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_ObtainVectors
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_ObtainVectors *Msg);
+
+        OOP_Object *HIDD_PCIDevice_ObtainVectors(OOP_Object *obj, const struct TagItem *requirements);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Allocates APIC IRQ's and assigns them to the device MSI vector configuration.
+
+    INPUTS
+        obj   - Pointer to the device object.
+        requirements - TagList of allocation requirements.
+        
+        supported Tags-:
+                tHidd_PCIVector_Min           - Minimum number of vectors/irqs to allocate
+                tHidd_PCIVector_Max          - Maximum number of vectors/irqs to allocate
+    RESULT
+        TRUE on success.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_ReleaseVectors
+
+    INTERNALS
+
+*****************************************************************************************/
+BOOL PCIDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
+{
+    UWORD vectmin = GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
+    UWORD vectmax = GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
+
+    return FALSE;
+}
+
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_ReleaseVectors
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_ReleaseVectors *Msg);
+
+        OOP_Object *HIDD_PCIDevice_ReleaseVectors(OOP_Object *obj);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Releases the APIC IRQ's and clears the PCI devices MSI vector configuration.
+
+    INPUTS
+        obj   - Pointer to the device object.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_ObtainVectors
+
+    INTERNALS
+
+*****************************************************************************************/
+VOID PCIDev__Hidd_PCIDevice__ReleaseVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReleaseVectors *msg)
+{
+    return;
 }
 
 BOOL PCIDev__Hidd_PCIDevice__HasExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_HasExtendedConfig *msg)
@@ -250,7 +377,6 @@ VOID PCIDev__Hidd_PCIDevice__WriteConfigLong(OOP_Class *cl, OOP_Object *o, struc
     INTERNALS
 
 *****************************************************************************************/
-
 BOOL PCIDev__Hidd_PCIDevice__AddInterrupt(OOP_Class *cl, OOP_Object *o,
      struct pHidd_PCIDevice_AddInterrupt *msg)
 {
@@ -295,7 +421,6 @@ BOOL PCIDev__Hidd_PCIDevice__AddInterrupt(OOP_Class *cl, OOP_Object *o,
     INTERNALS
 
 *****************************************************************************************/
-
 VOID PCIDev__Hidd_PCIDevice__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
      struct pHidd_PCIDevice_RemoveInterrupt *msg)
 {
@@ -339,7 +464,6 @@ VOID PCIDev__Hidd_PCIDevice__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
     INTERNALS
 
 *****************************************************************************************/
-
 CONST_STRPTR PCIDev__Hidd_PCIDevice__Obtain(OOP_Class *cl, OOP_Object *o,
      struct pHidd_PCIDevice_Obtain *msg)
 {
@@ -401,7 +525,6 @@ CONST_STRPTR PCIDev__Hidd_PCIDevice__Obtain(OOP_Class *cl, OOP_Object *o,
     INTERNALS
 
 *****************************************************************************************/
-
 VOID PCIDev__Hidd_PCIDevice__Release(OOP_Class *cl, OOP_Object *o,
      struct pHidd_PCIDevice_Release *msg)
 {

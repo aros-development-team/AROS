@@ -46,6 +46,14 @@ enum
     tHidd_PCI_Driver
 };
 
+/* Tags for ObtainVectors method */
+enum
+{
+    tHidd_PCIVector_Min          = TAG_USER + 0x10000,
+    tHidd_PCIVector_Max
+};
+
+
 /* PCI device class */
 #include <interface/Hidd_PCIDevice.h>
 
