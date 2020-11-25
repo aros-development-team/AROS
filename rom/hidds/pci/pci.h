@@ -301,16 +301,13 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCICAP_ADVANCED_FEATURES        0x13
 
 /* MSI capability defines */
-#define PCIMSI_FLAGS                    2                                /* MSI control flags */
-#define PCIMSI_RFU                      3                                /* MSI capability flags */
+#define PCIMSI_FLAGS                    0                                /* MSI Control Flags Word */
+#define PCIMSI_NXT                      2                                /* Next ID Byte */
+#define PCIMSI_CAP                      3                                /* MSI Capability Flags Byte */
 #define PCIMSI_ADDRESSLO                4                                /* MAR Lower 32 bits */
+#define PCIMSI_DATA32                   10                               /* (32-bit) Data Word */
 #define PCIMSI_ADDRESSHI                8                                /* MAR Upper 32 bits (PCIMSIF_64BIT) */
-#define PCIMSI_DATA32                   8                                /* (32-bit) Data */
-#define PCIMSI_MASK32                   12                               /* (32-bit) Mask bits register */
-#define PCIMSI_PENDING32                16                               /* (32-bit) Pending interrupts */
-#define PCIMSI_DATA64                   12                               /* (64-bit) Data */
-#define PCIMSI_MASK64                   16                               /* (64-bit) Mask bits register */
-#define PCIMSI_PENDING64                20                               /* (64-bit) Pending interrupts */
+#define PCIMSI_DATA64                   14                               /* (64-bit) Data Word */
 
 #define PCIMSIB_ENABLE                  0                               /* MSI feature enable(d) */
 #define PCIMSIF_ENABLE                  (1 << PCIMSIB_ENABLE)
