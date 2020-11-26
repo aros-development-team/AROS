@@ -635,6 +635,9 @@ BOOL CreateMaskPlane( struct Picture_Data *pd )
 
 /**************************************************************************************************/
 
+#define SKIPFIRSTBYTE (1 << 0)
+#define SKIPLASTBYTE (1 << 1)
+
 static BOOL RemapTC2CM( struct Picture_Data *pd )
 {
     unsigned int DestNumColors;
@@ -691,9 +694,13 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
         ULONG srcwidth = pd->SrcWidth;
         ULONG destwidth = pd->DestWidth;
         UBYTE *sparsetable = pd->SparseTable;
-        BOOL argb = pd->SrcPixelFormat==PBPAFMT_ARGB;
-        BOOL rgba = pd->SrcPixelFormat==PBPAFMT_RGBA;
+        int skipbyte = 0;
         BOOL scale = pd->Scale;
+
+        if (pd->SrcPixelFormat == PBPAFMT_ARGB)
+            skipbyte = SKIPFIRSTBYTE;
+        else if (pd->SrcPixelFormat == PBPAFMT_RGBA)
+            skipbyte = SKIPLASTBYTE;
 
         srcline = AllocLineBuffer( MAX(srcwidth, destwidth) * 4, 1, 1 );
         if( !srcline )
@@ -728,7 +735,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                     if( scale )
                     {
                         ScaleLineSimple( srcbuf, srcline, destwidth, pd->SrcPixelBytes, pd->XScale );
-                        argb = TRUE;
+                        skipbyte = SKIPFIRSTBYTE;
                         thissrc = srcline;
                     }
                     else
@@ -740,7 +747,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                     x = destwidth;
                     while( x-- )
                     {
-                        if( argb )
+                        if( skipbyte == SKIPFIRSTBYTE )
                             thissrc++;
                         if( feedback )
                         {
@@ -751,7 +758,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                         rerr += (*thissrc++);
                         gerr += (*thissrc++);
                         berr += (*thissrc++);
-                        if( rgba )
+                        if( skipbyte == SKIPLASTBYTE )
                             thissrc++;
 
                         rval = CLIP( rerr );
@@ -798,12 +805,12 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
                     x = srcwidth;
                     while( x-- )
                     {
-                        if( argb )
+                        if( skipbyte == SKIPFIRSTBYTE )
                             thissrc++;
                         index  = (*thissrc++)>>2 & 0x38; // red
                         index |= (*thissrc++)>>5 & 0x07; // green
                         index |= (*thissrc++)    & 0xc0; // blue
-                        if( rgba )
+                        if( skipbyte == SKIPLASTBYTE )
                             thissrc++;
 
                         *thisdest++ = sparsetable[index];
