@@ -49,7 +49,8 @@ ULONG core_APIC_AllocMSI(ULONG count)
                     startIRQ = irq;
                     D(bug("[APIC:MSI] %s:  startIRQ = %u\n", __func__, startIRQ);)
                 }
-                else if (irq == (startIRQ + count - 1))
+
+                if (irq == (startIRQ + count - 1))
                 {
                     cpuIRQ = startIRQ;
                     D(bug("[APIC:MSI] %s:  end = %u\n", __func__, HW_IRQ_BASE + irq);)
