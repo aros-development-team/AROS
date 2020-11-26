@@ -311,13 +311,15 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 
 #define PCIMSIB_ENABLE                  0                               /* MSI feature enable(d) */
 #define PCIMSIF_ENABLE                  (1 << PCIMSIB_ENABLE)
+#define PCIMSIB_MMC                     1                               /* Multi-message Capable */
+#define PCIMSIB_MMEN                    4                               /* Multi-message Enable */
 #define PCIMSIB_64BIT                   7                               /* 64-bit addresses */
 #define PCIMSIF_64BIT                   (1 << PCIMSIB_64BIT)
 #define PCIMSIB_MASKBIT                 8                               /* 64-bit mask bits */
 #define PCIMSIF_MASKBIT                 (1 << PCIMSIB_MASKBIT)
 
-#define PCIMSIF_QMASK                   (0x7 << 1)                      /* Maximum available queue size */
-#define PCIMSIF_QSIZE                   (0x7 << 4)                      /* Configured message queue size */
+#define PCIMSIF_MMC_MASK                (0x7 << PCIMSIB_MMC)            /* Maximum available queue size */
+#define PCIMSIF_MMEN_MASK               (0x7 << PCIMSIB_MMEN)           /* Configured message queue size */
 
 /* MSIX capability defines */
 #define PCIMSIX_FLAGS                  2
