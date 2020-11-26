@@ -1,6 +1,6 @@
-diff -ruN gcc-10.1.0/configure gcc-10.1.0.aros/configure
---- gcc-10.1.0/configure	2020-05-07 11:49:58.000000000 +0100
-+++ gcc-10.1.0.aros/configure	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/configure gcc-10.2.0.aros/configure
+--- gcc-10.2.0/configure	2020-07-23 07:35:16.916379838 +0100
++++ gcc-10.2.0.aros/configure	2020-11-26 14:08:08.830000000 +0000
 @@ -3950,6 +3950,9 @@
    powerpcle-*-solaris*)
      noconfigdirs="$noconfigdirs gdb sim tcl tk itcl"
@@ -20,9 +20,9 @@ diff -ruN gcc-10.1.0/configure gcc-10.1.0.aros/configure
  esac
  fi
  
-diff -ruN gcc-10.1.0/configure.ac gcc-10.1.0.aros/configure.ac
---- gcc-10.1.0/configure.ac	2020-05-07 11:49:58.000000000 +0100
-+++ gcc-10.1.0.aros/configure.ac	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/configure.ac gcc-10.2.0.aros/configure.ac
+--- gcc-10.2.0/configure.ac	2020-07-23 07:35:16.916379838 +0100
++++ gcc-10.2.0.aros/configure.ac	2020-11-26 14:08:08.830000000 +0000
 @@ -1225,6 +1225,9 @@
    powerpcle-*-solaris*)
      noconfigdirs="$noconfigdirs gdb sim tcl tk itcl"
@@ -42,9 +42,9 @@ diff -ruN gcc-10.1.0/configure.ac gcc-10.1.0.aros/configure.ac
  esac
  fi
  
-diff -ruN gcc-10.1.0/fixincludes/configure gcc-10.1.0.aros/fixincludes/configure
---- gcc-10.1.0/fixincludes/configure	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/fixincludes/configure	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/fixincludes/configure gcc-10.2.0.aros/fixincludes/configure
+--- gcc-10.2.0/fixincludes/configure	2020-07-23 07:35:16.928379970 +0100
++++ gcc-10.2.0.aros/fixincludes/configure	2020-11-26 14:08:08.830000000 +0000
 @@ -4813,6 +4813,7 @@
  fi
  else
@@ -53,9 +53,9 @@ diff -ruN gcc-10.1.0/fixincludes/configure gcc-10.1.0.aros/fixincludes/configure
  	i?86-*-msdosdjgpp* | \
  	i?86-*-mingw32* | \
  	x86_64-*-mingw32* | \
-diff -ruN gcc-10.1.0/fixincludes/configure.ac gcc-10.1.0.aros/fixincludes/configure.ac
---- gcc-10.1.0/fixincludes/configure.ac	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/fixincludes/configure.ac	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/fixincludes/configure.ac gcc-10.2.0.aros/fixincludes/configure.ac
+--- gcc-10.2.0/fixincludes/configure.ac	2020-07-23 07:35:16.928379970 +0100
++++ gcc-10.2.0.aros/fixincludes/configure.ac	2020-11-26 14:08:08.830000000 +0000
 @@ -49,6 +49,7 @@
  	TARGET=oneprocess
  fi],
@@ -64,9 +64,9 @@ diff -ruN gcc-10.1.0/fixincludes/configure.ac gcc-10.1.0.aros/fixincludes/config
  	i?86-*-msdosdjgpp* | \
  	i?86-*-mingw32* | \
  	x86_64-*-mingw32* | \
-diff -ruN gcc-10.1.0/gcc/config/aarch64/aros.h gcc-10.1.0.aros/gcc/config/aarch64/aros.h
---- gcc-10.1.0/gcc/config/aarch64/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/aarch64/aros.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/aarch64/aros.h gcc-10.2.0.aros/gcc/config/aarch64/aros.h
+--- gcc-10.2.0/gcc/config/aarch64/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/aarch64/aros.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,63 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
@@ -131,9 +131,9 @@ diff -ruN gcc-10.1.0/gcc/config/aarch64/aros.h gcc-10.1.0.aros/gcc/config/aarch6
 +#undef LIBGCC_SPEC
 +#define LIBGCC_SPEC "-lgcc"
 +
-diff -ruN gcc-10.1.0/gcc/config/aarch64/t-aros gcc-10.1.0.aros/gcc/config/aarch64/t-aros
---- gcc-10.1.0/gcc/config/aarch64/t-aros	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/aarch64/t-aros	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/aarch64/t-aros gcc-10.2.0.aros/gcc/config/aarch64/t-aros
+--- gcc-10.2.0/gcc/config/aarch64/t-aros	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/aarch64/t-aros	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,21 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
@@ -156,9 +156,9 @@ diff -ruN gcc-10.1.0/gcc/config/aarch64/t-aros gcc-10.1.0.aros/gcc/config/aarch6
 +
 +
 +
-diff -ruN gcc-10.1.0/gcc/config/arm/aros.h gcc-10.1.0.aros/gcc/config/arm/aros.h
---- gcc-10.1.0/gcc/config/arm/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/arm/aros.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/arm/aros.h gcc-10.2.0.aros/gcc/config/arm/aros.h
+--- gcc-10.2.0/gcc/config/arm/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/arm/aros.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,82 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
@@ -242,9 +242,9 @@ diff -ruN gcc-10.1.0/gcc/config/arm/aros.h gcc-10.1.0.aros/gcc/config/arm/aros.h
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff -ruN gcc-10.1.0/gcc/config/arm/t-aros gcc-10.1.0.aros/gcc/config/arm/t-aros
---- gcc-10.1.0/gcc/config/arm/t-aros	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/arm/t-aros	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/arm/t-aros gcc-10.2.0.aros/gcc/config/arm/t-aros
+--- gcc-10.2.0/gcc/config/arm/t-aros	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/arm/t-aros	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,63 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
@@ -309,9 +309,9 @@ diff -ruN gcc-10.1.0/gcc/config/arm/t-aros gcc-10.1.0.aros/gcc/config/arm/t-aros
 +MULTILIB_REUSE		+= marm/mlittle-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=mlittle-endian/march.armv7-a+fp/mfloat-abi.hard
 +MULTILIB_REUSE		+= marm/mlittle-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard=mlittle-endian/mfpu.vfpv3-d16/march.armv7-a+fp/mfloat-abi.hard
 +MULTILIB_REUSE		+= marm/mlittle-endian/mfpu.neon/march.armv7-a+fp/mfloat-abi.hard=mlittle-endian/mfpu.neon/march.armv7-a+fp/mfloat-abi.hard
-diff -ruN gcc-10.1.0/gcc/config/aros-stdint.h gcc-10.1.0.aros/gcc/config/aros-stdint.h
---- gcc-10.1.0/gcc/config/aros-stdint.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/aros-stdint.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/aros-stdint.h gcc-10.2.0.aros/gcc/config/aros-stdint.h
+--- gcc-10.2.0/gcc/config/aros-stdint.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/aros-stdint.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,56 @@
 +/* Definitions for <stdint.h> types for AROS systems.
 +   Copyright (C) 2018 Free Software Foundation, Inc.
@@ -369,9 +369,9 @@ diff -ruN gcc-10.1.0/gcc/config/aros-stdint.h gcc-10.1.0.aros/gcc/config/aros-st
 +
 +#define INTPTR_TYPE       (LONG_TYPE_SIZE == 64 ?  INT64_TYPE :  INT32_TYPE)
 +#define UINTPTR_TYPE      (LONG_TYPE_SIZE == 64 ? UINT64_TYPE : UINT32_TYPE)
-diff -ruN gcc-10.1.0/gcc/config/aros.h gcc-10.1.0.aros/gcc/config/aros.h
---- gcc-10.1.0/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/aros.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/aros.h gcc-10.2.0.aros/gcc/config/aros.h
+--- gcc-10.2.0/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/aros.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,112 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
@@ -485,9 +485,9 @@ diff -ruN gcc-10.1.0/gcc/config/aros.h gcc-10.1.0.aros/gcc/config/aros.h
 +#define TARGET_HAS_F_SETLKW
 +
 +#define TARGET_POSIX_IO
-diff -ruN gcc-10.1.0/gcc/config/aros.opt gcc-10.1.0.aros/gcc/config/aros.opt
---- gcc-10.1.0/gcc/config/aros.opt	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/aros.opt	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/aros.opt gcc-10.2.0.aros/gcc/config/aros.opt
+--- gcc-10.2.0/gcc/config/aros.opt	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/aros.opt	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,35 @@
 +; Processor-independent options for AROS.
 +
@@ -524,9 +524,9 @@ diff -ruN gcc-10.1.0/gcc/config/aros.opt gcc-10.1.0.aros/gcc/config/aros.opt
 +nix
 +Driver
 +
-diff -ruN gcc-10.1.0/gcc/config/i386/aros.h gcc-10.1.0.aros/gcc/config/i386/aros.h
---- gcc-10.1.0/gcc/config/i386/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/i386/aros.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/i386/aros.h gcc-10.2.0.aros/gcc/config/i386/aros.h
+--- gcc-10.2.0/gcc/config/i386/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/i386/aros.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,25 @@
 +/* Definitions for Intel 386 running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -553,9 +553,9 @@ diff -ruN gcc-10.1.0/gcc/config/i386/aros.h gcc-10.1.0.aros/gcc/config/i386/aros
 +
 +#undef	LINK_SPEC
 +#define LINK_SPEC "-m elf_i386 -L%R/lib"
-diff -ruN gcc-10.1.0/gcc/config/i386/aros64.h gcc-10.1.0.aros/gcc/config/i386/aros64.h
---- gcc-10.1.0/gcc/config/i386/aros64.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/i386/aros64.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/i386/aros64.h gcc-10.2.0.aros/gcc/config/i386/aros64.h
+--- gcc-10.2.0/gcc/config/i386/aros64.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/i386/aros64.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,34 @@
 +/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -591,9 +591,9 @@ diff -ruN gcc-10.1.0/gcc/config/i386/aros64.h gcc-10.1.0.aros/gcc/config/i386/ar
 +#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386} -L %R/lib" 
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
-diff -ruN gcc-10.1.0/gcc/config/m68k/m68k.c gcc-10.1.0.aros/gcc/config/m68k/m68k.c
---- gcc-10.1.0/gcc/config/m68k/m68k.c	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/m68k/m68k.c	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/m68k/m68k.c gcc-10.2.0.aros/gcc/config/m68k/m68k.c
+--- gcc-10.2.0/gcc/config/m68k/m68k.c	2020-07-23 07:35:17.412385302 +0100
++++ gcc-10.2.0.aros/gcc/config/m68k/m68k.c	2020-11-26 14:08:08.830000000 +0000
 @@ -4979,7 +4979,7 @@
    else if (letter == '/')
      asm_fprintf (file, "%R");
@@ -603,9 +603,9 @@ diff -ruN gcc-10.1.0/gcc/config/m68k/m68k.c gcc-10.1.0.aros/gcc/config/m68k/m68k
    else if (letter == 'p')
      {
        output_addr_const (file, op);
-diff -ruN gcc-10.1.0/gcc/config/m68k/m68k.h gcc-10.1.0.aros/gcc/config/m68k/m68k.h
---- gcc-10.1.0/gcc/config/m68k/m68k.h	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/m68k/m68k.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/m68k/m68k.h gcc-10.2.0.aros/gcc/config/m68k/m68k.h
+--- gcc-10.2.0/gcc/config/m68k/m68k.h	2020-07-23 07:35:17.412385302 +0100
++++ gcc-10.2.0.aros/gcc/config/m68k/m68k.h	2020-11-26 14:08:08.830000000 +0000
 @@ -325,7 +325,9 @@
     register elimination.  */
  #define FIRST_PSEUDO_REGISTER 25
@@ -627,9 +627,9 @@ diff -ruN gcc-10.1.0/gcc/config/m68k/m68k.h gcc-10.1.0.aros/gcc/config/m68k/m68k
  
  /* Base register for access to arguments of the function.
   * This isn't a hardware register. It will be eliminated to the
-diff -ruN gcc-10.1.0/gcc/config/m68k/m68k.md gcc-10.1.0.aros/gcc/config/m68k/m68k.md
---- gcc-10.1.0/gcc/config/m68k/m68k.md	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/m68k/m68k.md	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/m68k/m68k.md gcc-10.2.0.aros/gcc/config/m68k/m68k.md
+--- gcc-10.2.0/gcc/config/m68k/m68k.md	2020-07-23 07:35:17.416385346 +0100
++++ gcc-10.2.0.aros/gcc/config/m68k/m68k.md	2020-11-26 14:08:08.830000000 +0000
 @@ -133,7 +133,8 @@
    [(D0_REG		0)
     (A0_REG		8)
@@ -649,15 +649,15 @@ diff -ruN gcc-10.1.0/gcc/config/m68k/m68k.md gcc-10.1.0.aros/gcc/config/m68k/m68
        return MOTOROLA ? "move.l %?(%1),%0" : "movel %1@(%?), %0";
      }
    else if (MOTOROLA)
-diff -ruN gcc-10.1.0/gcc/config/m68k/t-aros gcc-10.1.0.aros/gcc/config/m68k/t-aros
---- gcc-10.1.0/gcc/config/m68k/t-aros	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/m68k/t-aros	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/m68k/t-aros gcc-10.2.0.aros/gcc/config/m68k/t-aros
+--- gcc-10.2.0/gcc/config/m68k/t-aros	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/m68k/t-aros	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,2 @@
 +# Custom multilibs for AROS
 +M68K_MLIB_CPU += && match(MLIB, "^68")
-diff -ruN gcc-10.1.0/gcc/config/rs6000/aros.h gcc-10.1.0.aros/gcc/config/rs6000/aros.h
---- gcc-10.1.0/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/rs6000/aros.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config/rs6000/aros.h gcc-10.2.0.aros/gcc/config/rs6000/aros.h
+--- gcc-10.2.0/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/rs6000/aros.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,151 @@
 +/* Definitions for Powerpc running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -810,10 +810,10 @@ diff -ruN gcc-10.1.0/gcc/config/rs6000/aros.h gcc-10.1.0.aros/gcc/config/rs6000/
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff -ruN gcc-10.1.0/gcc/config/rs6000/rs6000.c gcc-10.1.0.aros/gcc/config/rs6000/rs6000.c
---- gcc-10.1.0/gcc/config/rs6000/rs6000.c	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/rs6000/rs6000.c	2020-05-12 13:32:06.450000000 +0100
-@@ -1262,6 +1262,8 @@
+diff -ruN gcc-10.2.0/gcc/config/rs6000/rs6000.c gcc-10.2.0.aros/gcc/config/rs6000/rs6000.c
+--- gcc-10.2.0/gcc/config/rs6000/rs6000.c	2020-07-23 07:35:17.456385787 +0100
++++ gcc-10.2.0.aros/gcc/config/rs6000/rs6000.c	2020-11-26 14:08:08.830000000 +0000
+@@ -1264,6 +1264,8 @@
      rs6000_handle_longcall_attribute, NULL },
    { "shortcall", 0, 0, false, true,  true,  false,
      rs6000_handle_longcall_attribute, NULL },
@@ -822,10 +822,10 @@ diff -ruN gcc-10.1.0/gcc/config/rs6000/rs6000.c gcc-10.1.0.aros/gcc/config/rs600
    { "ms_struct", 0, 0, false, false, false, false,
      rs6000_handle_struct_attribute, NULL },
    { "gcc_struct", 0, 0, false, false, false, false,
-diff -ruN gcc-10.1.0/gcc/config/rs6000/rs6000.h gcc-10.1.0.aros/gcc/config/rs6000/rs6000.h
---- gcc-10.1.0/gcc/config/rs6000/rs6000.h	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/rs6000/rs6000.h	2020-05-12 13:32:06.450000000 +0100
-@@ -1530,6 +1530,7 @@
+diff -ruN gcc-10.2.0/gcc/config/rs6000/rs6000.h gcc-10.2.0.aros/gcc/config/rs6000/rs6000.h
+--- gcc-10.2.0/gcc/config/rs6000/rs6000.h	2020-07-23 07:35:17.460385830 +0100
++++ gcc-10.2.0.aros/gcc/config/rs6000/rs6000.h	2020-11-26 14:08:08.830000000 +0000
+@@ -1532,6 +1532,7 @@
    int nargs_prototype;		/* # args left in the current prototype */
    int prototype;		/* Whether a prototype was defined */
    int stdarg;			/* Whether function is a stdarg function.  */
@@ -833,9 +833,10 @@ diff -ruN gcc-10.1.0/gcc/config/rs6000/rs6000.h gcc-10.1.0.aros/gcc/config/rs600
    int call_cookie;		/* Do special things for this call */
    int sysv_gregno;		/* next available GP register */
    int intoffset;		/* running offset in struct (darwin64) */
-diff -ruN gcc-10.1.0/gcc/config/t-aros gcc-10.1.0.aros/gcc/config/t-aros
---- gcc-10.1.0/gcc/config/t-aros	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config/t-aros	2020-05-12 13:32:06.450000000 +0100
+
+diff -ruN gcc-10.2.0/gcc/config/t-aros gcc-10.2.0.aros/gcc/config/t-aros
+--- gcc-10.2.0/gcc/config/t-aros	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/config/t-aros	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,29 @@
 +# In AROS, "/usr" is a four-letter word.
 +# Must match NATIVE_SYSTEM_HEADER_COMPONENT in aros.h !
@@ -866,9 +867,9 @@ diff -ruN gcc-10.1.0/gcc/config/t-aros gcc-10.1.0.aros/gcc/config/t-aros
 +	  cp $(srcdir)/ginclude/$$file include/$$file; \
 +	  chmod a+r include/$$file; \
 +	done
-diff -ruN gcc-10.1.0/gcc/config.build gcc-10.1.0.aros/gcc/config.build
---- gcc-10.1.0/gcc/config.build	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config.build	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config.build gcc-10.2.0.aros/gcc/config.build
+--- gcc-10.2.0/gcc/config.build	2020-07-23 07:35:17.316384243 +0100
++++ gcc-10.2.0.aros/gcc/config.build	2020-11-26 14:08:08.830000000 +0000
 @@ -73,6 +73,9 @@
      build_xm_file=i386/xm-djgpp.h
      build_exeext=.exe
@@ -879,9 +880,9 @@ diff -ruN gcc-10.1.0/gcc/config.build gcc-10.1.0.aros/gcc/config.build
    *-*-sysv*)
      # All other System V variants.
      build_install_headers_dir=install-headers-cpio
-diff -ruN gcc-10.1.0/gcc/config.gcc gcc-10.1.0.aros/gcc/config.gcc
---- gcc-10.1.0/gcc/config.gcc	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config.gcc	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config.gcc gcc-10.2.0.aros/gcc/config.gcc
+--- gcc-10.2.0/gcc/config.gcc	2020-07-23 07:35:17.316384243 +0100
++++ gcc-10.2.0.aros/gcc/config.gcc	2020-11-26 14:08:08.830000000 +0000
 @@ -856,6 +856,16 @@
        ;;
    esac
@@ -986,9 +987,9 @@ diff -ruN gcc-10.1.0/gcc/config.gcc gcc-10.1.0.aros/gcc/config.gcc
  powerpc*-*-linux*)
  	tm_file="${tm_file} dbxelf.h elfos.h gnu-user.h linux.h freebsd-spec.h rs6000/sysv4.h"
  	extra_options="${extra_options} rs6000/sysv4.opt"
-diff -ruN gcc-10.1.0/gcc/config.host gcc-10.1.0.aros/gcc/config.host
---- gcc-10.1.0/gcc/config.host	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/config.host	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/config.host gcc-10.2.0.aros/gcc/config.host
+--- gcc-10.2.0/gcc/config.host	2020-07-23 07:35:17.316384243 +0100
++++ gcc-10.2.0.aros/gcc/config.host	2020-11-26 14:08:08.830000000 +0000
 @@ -287,6 +287,10 @@
      out_host_hook_obj=host-hpux.o
      host_xmake_file="${host_xmake_file} x-hpux"
@@ -1000,44 +1001,44 @@ diff -ruN gcc-10.1.0/gcc/config.host gcc-10.1.0.aros/gcc/config.host
    *-*-*vms*)
      host_xm_file="vms/xm-vms.h"
      host_xmake_file=vms/x-vms
-diff -ruN gcc-10.1.0/gcc/ginclude/aros/types/null.h gcc-10.1.0.aros/gcc/ginclude/aros/types/null.h
---- gcc-10.1.0/gcc/ginclude/aros/types/null.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/ginclude/aros/types/null.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/ginclude/aros/types/null.h gcc-10.2.0.aros/gcc/ginclude/aros/types/null.h
+--- gcc-10.2.0/gcc/ginclude/aros/types/null.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/ginclude/aros/types/null.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' NULL definition with gcc's one */
 +#define __need_NULL
 +#include <stddef.h>
-diff -ruN gcc-10.1.0/gcc/ginclude/aros/types/ptrdiff_t.h gcc-10.1.0.aros/gcc/ginclude/aros/types/ptrdiff_t.h
---- gcc-10.1.0/gcc/ginclude/aros/types/ptrdiff_t.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/ginclude/aros/types/ptrdiff_t.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/ginclude/aros/types/ptrdiff_t.h gcc-10.2.0.aros/gcc/ginclude/aros/types/ptrdiff_t.h
+--- gcc-10.2.0/gcc/ginclude/aros/types/ptrdiff_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/ginclude/aros/types/ptrdiff_t.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' ptrdiff_t definition with gcc's one */
 +#define __need_ptrdiff_t
 +#include <stddef.h>
-diff -ruN gcc-10.1.0/gcc/ginclude/aros/types/size_t.h gcc-10.1.0.aros/gcc/ginclude/aros/types/size_t.h
---- gcc-10.1.0/gcc/ginclude/aros/types/size_t.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/ginclude/aros/types/size_t.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/ginclude/aros/types/size_t.h gcc-10.2.0.aros/gcc/ginclude/aros/types/size_t.h
+--- gcc-10.2.0/gcc/ginclude/aros/types/size_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/ginclude/aros/types/size_t.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' size_t definition with gcc's one */
 +#define __need_size_t
 +#include <stddef.h>
-diff -ruN gcc-10.1.0/gcc/ginclude/aros/types/wchar_t.h gcc-10.1.0.aros/gcc/ginclude/aros/types/wchar_t.h
---- gcc-10.1.0/gcc/ginclude/aros/types/wchar_t.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/ginclude/aros/types/wchar_t.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/ginclude/aros/types/wchar_t.h gcc-10.2.0.aros/gcc/ginclude/aros/types/wchar_t.h
+--- gcc-10.2.0/gcc/ginclude/aros/types/wchar_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/ginclude/aros/types/wchar_t.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' wchar_t definition with gcc's one */
 +#define __need_wchar_t
 +#include <stddef.h>
-diff -ruN gcc-10.1.0/gcc/ginclude/aros/types/wint_t.h gcc-10.1.0.aros/gcc/ginclude/aros/types/wint_t.h
---- gcc-10.1.0/gcc/ginclude/aros/types/wint_t.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/ginclude/aros/types/wint_t.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/ginclude/aros/types/wint_t.h gcc-10.2.0.aros/gcc/ginclude/aros/types/wint_t.h
+--- gcc-10.2.0/gcc/ginclude/aros/types/wint_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/gcc/ginclude/aros/types/wint_t.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,3 @@
 +/* Replace AROS' wint_t definition with gcc's one */
 +#define __need_wint_t
 +#include <stddef.h>
-diff -ruN gcc-10.1.0/gcc/ginclude/stddef.h gcc-10.1.0.aros/gcc/ginclude/stddef.h
---- gcc-10.1.0/gcc/ginclude/stddef.h	2020-05-07 11:49:59.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/ginclude/stddef.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/ginclude/stddef.h gcc-10.2.0.aros/gcc/ginclude/stddef.h
+--- gcc-10.2.0/gcc/ginclude/stddef.h	2020-07-23 07:35:17.644387858 +0100
++++ gcc-10.2.0.aros/gcc/ginclude/stddef.h	2020-11-26 14:08:08.830000000 +0000
 @@ -125,6 +125,7 @@
  #ifndef __PTRDIFF_T
  #ifndef _PTRDIFF_T_
@@ -1086,9 +1087,9 @@ diff -ruN gcc-10.1.0/gcc/ginclude/stddef.h gcc-10.1.0.aros/gcc/ginclude/stddef.h
  #endif /* _BSD_SIZE_T_ */
  #endif /* _SIZE_T_ */
  #endif /* __SIZE_T */
-diff -ruN gcc-10.1.0/gcc/system.h gcc-10.1.0.aros/gcc/system.h
---- gcc-10.1.0/gcc/system.h	2020-05-07 11:50:00.000000000 +0100
-+++ gcc-10.1.0.aros/gcc/system.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/gcc/system.h gcc-10.2.0.aros/gcc/system.h
+--- gcc-10.2.0/gcc/system.h	2020-07-23 07:35:17.828389885 +0100
++++ gcc-10.2.0.aros/gcc/system.h	2020-11-26 14:08:08.830000000 +0000
 @@ -694,6 +694,7 @@
  #undef FLOAT /* Likewise.  */
  #undef ABS /* Likewise.  */
@@ -1097,9 +1098,9 @@ diff -ruN gcc-10.1.0/gcc/system.h gcc-10.1.0.aros/gcc/system.h
  
  /* Provide a default for the HOST_BIT_BUCKET.
     This suffices for POSIX-like hosts.  */
-diff -ruN gcc-10.1.0/include/filenames.h gcc-10.1.0.aros/include/filenames.h
---- gcc-10.1.0/include/filenames.h	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/include/filenames.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/include/filenames.h gcc-10.2.0.aros/include/filenames.h
+--- gcc-10.2.0/include/filenames.h	2020-07-23 07:35:18.676399225 +0100
++++ gcc-10.2.0.aros/include/filenames.h	2020-11-26 14:08:08.830000000 +0000
 @@ -43,6 +43,13 @@
  #  define HAS_DRIVE_SPEC(f) HAS_DOS_DRIVE_SPEC (f)
  #  define IS_DIR_SEPARATOR(c) IS_DOS_DIR_SEPARATOR (c)
@@ -1114,9 +1115,9 @@ diff -ruN gcc-10.1.0/include/filenames.h gcc-10.1.0.aros/include/filenames.h
  #else /* not DOSish */
  #  if defined(__APPLE__)
  #    ifndef HAVE_CASE_INSENSITIVE_FILE_SYSTEM
-diff -ruN gcc-10.1.0/libatomic/configure.tgt gcc-10.1.0.aros/libatomic/configure.tgt
---- gcc-10.1.0/libatomic/configure.tgt	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libatomic/configure.tgt	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libatomic/configure.tgt gcc-10.2.0.aros/libatomic/configure.tgt
+--- gcc-10.2.0/libatomic/configure.tgt	2020-07-23 07:35:18.696399446 +0100
++++ gcc-10.2.0.aros/libatomic/configure.tgt	2020-11-26 14:08:08.830000000 +0000
 @@ -119,6 +119,10 @@
  
  # Other system configury
@@ -1128,9 +1129,9 @@ diff -ruN gcc-10.1.0/libatomic/configure.tgt gcc-10.1.0.aros/libatomic/configure
    aarch64*-*-linux*)
  	# OS support for atomic primitives.
  	config_path="${config_path} linux/aarch64 posix"
-diff -ruN gcc-10.1.0/libatomic/libatomic_i.h gcc-10.1.0.aros/libatomic/libatomic_i.h
---- gcc-10.1.0/libatomic/libatomic_i.h	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libatomic/libatomic_i.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libatomic/libatomic_i.h gcc-10.2.0.aros/libatomic/libatomic_i.h
+--- gcc-10.2.0/libatomic/libatomic_i.h	2020-07-23 07:35:18.696399446 +0100
++++ gcc-10.2.0.aros/libatomic/libatomic_i.h	2020-11-26 14:08:08.830000000 +0000
 @@ -35,6 +35,9 @@
  #include <limits.h>
  #include <string.h>
@@ -1151,15 +1152,15 @@ diff -ruN gcc-10.1.0/libatomic/libatomic_i.h gcc-10.1.0.aros/libatomic/libatomic
  
  /* Macros for handing sub-word sized quantities.  */
  #define MASK_1		((UWORD)0xff)
-diff -ruN gcc-10.1.0/libgcc/config/arm/t-aros gcc-10.1.0.aros/libgcc/config/arm/t-aros
---- gcc-10.1.0/libgcc/config/arm/t-aros	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libgcc/config/arm/t-aros	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libgcc/config/arm/t-aros gcc-10.2.0.aros/libgcc/config/arm/t-aros
+--- gcc-10.2.0/libgcc/config/arm/t-aros	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libgcc/config/arm/t-aros	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,2 @@
 +LIB1ASMFUNCS += _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls
 +
-diff -ruN gcc-10.1.0/libgcc/config/m68k/aros-atomic.c gcc-10.1.0.aros/libgcc/config/m68k/aros-atomic.c
---- gcc-10.1.0/libgcc/config/m68k/aros-atomic.c	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libgcc/config/m68k/aros-atomic.c	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libgcc/config/m68k/aros-atomic.c gcc-10.2.0.aros/libgcc/config/m68k/aros-atomic.c
+--- gcc-10.2.0/libgcc/config/m68k/aros-atomic.c	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libgcc/config/m68k/aros-atomic.c	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,204 @@
 +/* AROS-specific atomic operations for m68k AROS.
 +   Copyright (C) 2019 Free Software Foundation, Inc.
@@ -1365,17 +1366,17 @@ diff -ruN gcc-10.1.0/libgcc/config/m68k/aros-atomic.c gcc-10.1.0.aros/libgcc/con
 +WORD_SYNC_OP (test_and_set, , COMMA, oldval)
 +SUBWORD_SYNC_OP (test_and_set, , COMMA, unsigned char, 1, oldval)
 +SUBWORD_SYNC_OP (test_and_set, , COMMA, unsigned short, 2, oldval)
-diff -ruN gcc-10.1.0/libgcc/config/m68k/t-aros gcc-10.1.0.aros/libgcc/config/m68k/t-aros
---- gcc-10.1.0/libgcc/config/m68k/t-aros	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libgcc/config/m68k/t-aros	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libgcc/config/m68k/t-aros gcc-10.2.0.aros/libgcc/config/m68k/t-aros
+--- gcc-10.2.0/libgcc/config/m68k/t-aros	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libgcc/config/m68k/t-aros	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,4 @@
 +
 +aros-atomic.o: $(srcdir)/config/m68k/aros-atomic.c
 +	$(gcc_compile) -mcpu=68020 -c $<
 +libgcc-objects += aros-atomic.o
-diff -ruN gcc-10.1.0/libgcc/config.host gcc-10.1.0.aros/libgcc/config.host
---- gcc-10.1.0/libgcc/config.host	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libgcc/config.host	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libgcc/config.host gcc-10.2.0.aros/libgcc/config.host
+--- gcc-10.2.0/libgcc/config.host	2020-07-23 07:35:18.752400064 +0100
++++ gcc-10.2.0.aros/libgcc/config.host	2020-11-26 14:08:08.830000000 +0000
 @@ -445,6 +445,12 @@
  	unwind_header=config/arm/unwind-arm.h
  	extra_parts="$extra_parts crti.o crtn.o"
@@ -1389,7 +1390,7 @@ diff -ruN gcc-10.1.0/libgcc/config.host gcc-10.1.0.aros/libgcc/config.host
  arm*-*-freebsd*)                # ARM FreeBSD EABI
  	tmake_file="${tmake_file} arm/t-arm t-fixedpoint-gnu-prefix arm/t-elf"
  	tmake_file="${tmake_file} arm/t-bpabi arm/t-freebsd"
-@@ -935,6 +941,9 @@
+@@ -941,6 +947,9 @@
  m32rle-*-linux*)
  	tmake_file="$tmake_file m32r/t-linux t-fdpbit"
  	;;
@@ -1399,7 +1400,7 @@ diff -ruN gcc-10.1.0/libgcc/config.host gcc-10.1.0.aros/libgcc/config.host
  m68k-*-elf* | fido-*-elf)
  	tmake_file="$tmake_file m68k/t-floatlib"
  	;;
-@@ -1485,6 +1494,9 @@
+@@ -1491,6 +1500,9 @@
  	tmake_file="$tmake_file nvptx/t-nvptx"
  	extra_parts="crt0.o"
  	;;
@@ -1409,9 +1410,9 @@ diff -ruN gcc-10.1.0/libgcc/config.host gcc-10.1.0.aros/libgcc/config.host
  *)
  	echo "*** Configuration ${host} not supported" 1>&2
  	exit 1
-diff -ruN gcc-10.1.0/libgcc/gthr.h gcc-10.1.0.aros/libgcc/gthr.h
---- gcc-10.1.0/libgcc/gthr.h	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libgcc/gthr.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libgcc/gthr.h gcc-10.2.0.aros/libgcc/gthr.h
+--- gcc-10.2.0/libgcc/gthr.h	2020-07-23 07:35:18.800400591 +0100
++++ gcc-10.2.0.aros/libgcc/gthr.h	2020-11-26 14:08:08.830000000 +0000
 @@ -141,6 +141,11 @@
  #define GTHREAD_USE_WEAK 0
  #endif
@@ -1424,9 +1425,9 @@ diff -ruN gcc-10.1.0/libgcc/gthr.h gcc-10.1.0.aros/libgcc/gthr.h
  #ifndef GTHREAD_USE_WEAK
  #define GTHREAD_USE_WEAK 1
  #endif
-diff -ruN gcc-10.1.0/libgcc/unwind-dw2-fde.c gcc-10.1.0.aros/libgcc/unwind-dw2-fde.c
---- gcc-10.1.0/libgcc/unwind-dw2-fde.c	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libgcc/unwind-dw2-fde.c	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libgcc/unwind-dw2-fde.c gcc-10.2.0.aros/libgcc/unwind-dw2-fde.c
+--- gcc-10.2.0/libgcc/unwind-dw2-fde.c	2020-07-23 07:35:18.804400637 +0100
++++ gcc-10.2.0.aros/libgcc/unwind-dw2-fde.c	2020-11-26 14:08:08.830000000 +0000
 @@ -100,8 +100,10 @@
  #endif
  
@@ -1449,10 +1450,10 @@ diff -ruN gcc-10.1.0/libgcc/unwind-dw2-fde.c gcc-10.1.0.aros/libgcc/unwind-dw2-f
  }
  
  void
-diff -ruN gcc-10.1.0/libgcc/unwind-dw2.c gcc-10.1.0.aros/libgcc/unwind-dw2.c
---- gcc-10.1.0/libgcc/unwind-dw2.c	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libgcc/unwind-dw2.c	2020-05-12 13:32:06.450000000 +0100
-@@ -1569,7 +1569,9 @@
+diff -ruN gcc-10.2.0/libgcc/unwind-dw2.c gcc-10.2.0.aros/libgcc/unwind-dw2.c
+--- gcc-10.2.0/libgcc/unwind-dw2.c	2020-07-23 07:35:18.804400637 +0100
++++ gcc-10.2.0.aros/libgcc/unwind-dw2.c	2020-11-26 14:08:08.830000000 +0000
+@@ -1572,7 +1572,9 @@
  static inline void
  init_dwarf_reg_size_table (void)
  {
@@ -1462,9 +1463,9 @@ diff -ruN gcc-10.1.0/libgcc/unwind-dw2.c gcc-10.1.0.aros/libgcc/unwind-dw2.c
  }
  
  static void __attribute__((noinline))
-diff -ruN gcc-10.1.0/libiberty/filename_cmp.c gcc-10.1.0.aros/libiberty/filename_cmp.c
---- gcc-10.1.0/libiberty/filename_cmp.c	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libiberty/filename_cmp.c	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libiberty/filename_cmp.c gcc-10.2.0.aros/libiberty/filename_cmp.c
+--- gcc-10.2.0/libiberty/filename_cmp.c	2020-07-23 07:35:19.048403324 +0100
++++ gcc-10.2.0.aros/libiberty/filename_cmp.c	2020-11-26 14:08:08.830000000 +0000
 @@ -55,9 +55,12 @@
  int
  filename_cmp (const char *s1, const char *s2)
@@ -1480,9 +1481,9 @@ diff -ruN gcc-10.1.0/libiberty/filename_cmp.c gcc-10.1.0.aros/libiberty/filename
  #else
    for (;;)
      {
-diff -ruN gcc-10.1.0/libobjc/configure gcc-10.1.0.aros/libobjc/configure
---- gcc-10.1.0/libobjc/configure	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libobjc/configure	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libobjc/configure gcc-10.2.0.aros/libobjc/configure
+--- gcc-10.2.0/libobjc/configure	2020-07-23 07:35:19.060403458 +0100
++++ gcc-10.2.0.aros/libobjc/configure	2020-11-26 14:08:08.830000000 +0000
 @@ -11301,217 +11301,6 @@
  # Miscellanea
  # -----------
@@ -1701,9 +1702,9 @@ diff -ruN gcc-10.1.0/libobjc/configure gcc-10.1.0.aros/libobjc/configure
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if the type of bitfields matters" >&5
  $as_echo_n "checking if the type of bitfields matters... " >&6; }
  if ${gt_cv_bitfield_type_matters+:} false; then :
-diff -ruN gcc-10.1.0/libobjc/configure.ac gcc-10.1.0.aros/libobjc/configure.ac
---- gcc-10.1.0/libobjc/configure.ac	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libobjc/configure.ac	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libobjc/configure.ac gcc-10.2.0.aros/libobjc/configure.ac
+--- gcc-10.2.0/libobjc/configure.ac	2020-07-23 07:35:19.060403458 +0100
++++ gcc-10.2.0.aros/libobjc/configure.ac	2020-11-26 14:08:08.830000000 +0000
 @@ -203,7 +203,7 @@
  # -----------
  
@@ -1713,9 +1714,9 @@ diff -ruN gcc-10.1.0/libobjc/configure.ac gcc-10.1.0.aros/libobjc/configure.ac
  
  gt_BITFIELD_TYPE_MATTERS
  
-diff -ruN gcc-10.1.0/libobjc/thr.c gcc-10.1.0.aros/libobjc/thr.c
---- gcc-10.1.0/libobjc/thr.c	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libobjc/thr.c	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libobjc/thr.c gcc-10.2.0.aros/libobjc/thr.c
+--- gcc-10.2.0/libobjc/thr.c	2020-07-23 07:35:19.064403501 +0100
++++ gcc-10.2.0.aros/libobjc/thr.c	2020-11-26 14:08:08.830000000 +0000
 @@ -35,6 +35,7 @@
  #include "objc/runtime.h"
  #include "objc-private/module-abi-8.h"
@@ -1724,9 +1725,9 @@ diff -ruN gcc-10.1.0/libobjc/thr.c gcc-10.1.0.aros/libobjc/thr.c
  #include <gthr.h>
  
  #include <stdlib.h>
-diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_base.h gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_base.h
---- gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_base.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_base.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_base.h gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_base.h
+--- gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_base.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_base.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,30 @@
 +namespace std _GLIBCXX_VISIBILITY(default)
 +{
@@ -1758,9 +1759,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_base.h gcc-10.1.0.aros/li
 +
 +_GLIBCXX_END_NAMESPACE_VERSION
 +} // namespace
-diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_configure_char.cc
---- gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_configure_char.cc	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_configure_char.cc
+--- gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_configure_char.cc	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,99 @@
 +// Locale support -*- C++ -*-
 +
@@ -1861,9 +1862,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_configure_char.cc gcc-10.
 +
 +_GLIBCXX_END_NAMESPACE_VERSION
 +} // namespace
-diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_inline.h gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_inline.h
---- gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_inline.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_inline.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_inline.h gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_inline.h
+--- gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_inline.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_inline.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,173 @@
 +// Locale support -*- C++ -*-
 +
@@ -2038,9 +2039,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_inline.h gcc-10.1.0.aros/
 +
 +_GLIBCXX_END_NAMESPACE_VERSION
 +} // namespace
-diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_noninline.h
---- gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_noninline.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/config/os/aros/ctype_noninline.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_noninline.h
+--- gcc-10.2.0/libstdc++-v3/config/os/aros/ctype_noninline.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/config/os/aros/ctype_noninline.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,56 @@
 +  const ctype_base::mask*
 +  ctype<char>::classic_table() throw()
@@ -2098,9 +2099,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-10.1.0.ar
 +      }
 +    return __high;
 +  }
-diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/os_defines.h gcc-10.1.0.aros/libstdc++-v3/config/os/aros/os_defines.h
---- gcc-10.1.0/libstdc++-v3/config/os/aros/os_defines.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/config/os/aros/os_defines.h	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/config/os/aros/os_defines.h gcc-10.2.0.aros/libstdc++-v3/config/os/aros/os_defines.h
+--- gcc-10.2.0/libstdc++-v3/config/os/aros/os_defines.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/config/os/aros/os_defines.h	2020-11-26 14:08:08.830000000 +0000
 @@ -0,0 +1,9 @@
 +// Specific definitions for AROS  -*- C++ -*-
 +
@@ -2111,9 +2112,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/config/os/aros/os_defines.h gcc-10.1.0.aros/li
 +#define _GLIBCXX_USE_WEAK_REF 0
 +
 +#endif
-diff -ruN gcc-10.1.0/libstdc++-v3/configure gcc-10.1.0.aros/libstdc++-v3/configure
---- gcc-10.1.0/libstdc++-v3/configure	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/configure	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/configure gcc-10.2.0.aros/libstdc++-v3/configure
+--- gcc-10.2.0/libstdc++-v3/configure	2020-07-23 07:35:19.188404867 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/configure	2020-11-26 14:08:08.830000000 +0000
 @@ -5824,12 +5824,12 @@
  
  
@@ -2217,9 +2218,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/configure gcc-10.1.0.aros/libstdc++-v3/configu
    arm*-*-symbianelf*)
      # This is a freestanding configuration; there is nothing to do here.
      ;;
-diff -ruN gcc-10.1.0/libstdc++-v3/configure.ac gcc-10.1.0.aros/libstdc++-v3/configure.ac
---- gcc-10.1.0/libstdc++-v3/configure.ac	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/configure.ac	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/configure.ac gcc-10.2.0.aros/libstdc++-v3/configure.ac
+--- gcc-10.2.0/libstdc++-v3/configure.ac	2020-07-23 07:35:19.188404867 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/configure.ac	2020-11-26 14:08:08.830000000 +0000
 @@ -90,9 +90,9 @@
  GLIBCXX_CONFIGURE
  
@@ -2233,9 +2234,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/configure.ac gcc-10.1.0.aros/libstdc++-v3/conf
  AM_PROG_LIBTOOL
  ACX_LT_HOST_FLAGS
  AC_SUBST(enable_shared)
-diff -ruN gcc-10.1.0/libstdc++-v3/configure.host gcc-10.1.0.aros/libstdc++-v3/configure.host
---- gcc-10.1.0/libstdc++-v3/configure.host	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/configure.host	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/configure.host gcc-10.2.0.aros/libstdc++-v3/configure.host
+--- gcc-10.2.0/libstdc++-v3/configure.host	2020-07-23 07:35:19.188404867 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/configure.host	2020-11-26 14:08:08.830000000 +0000
 @@ -222,6 +222,9 @@
      os_include_dir="os/generic"
      atomicity_dir="cpu/generic"
@@ -2246,9 +2247,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/configure.host gcc-10.1.0.aros/libstdc++-v3/co
    bsd*)
      # Plain BSD attempts to share FreeBSD files.
      os_include_dir="os/bsd/freebsd"
-diff -ruN gcc-10.1.0/libstdc++-v3/crossconfig.m4 gcc-10.1.0.aros/libstdc++-v3/crossconfig.m4
---- gcc-10.1.0/libstdc++-v3/crossconfig.m4	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/crossconfig.m4	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/crossconfig.m4 gcc-10.2.0.aros/libstdc++-v3/crossconfig.m4
+--- gcc-10.2.0/libstdc++-v3/crossconfig.m4	2020-07-23 07:35:19.188404867 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/crossconfig.m4	2020-11-26 14:08:08.830000000 +0000
 @@ -5,6 +5,31 @@
  AC_DEFUN([GLIBCXX_CROSSCONFIG],[
  # Base decisions on target environment.
@@ -2281,9 +2282,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/crossconfig.m4 gcc-10.1.0.aros/libstdc++-v3/cr
    arm*-*-symbianelf*)
      # This is a freestanding configuration; there is nothing to do here.
      ;;
-diff -ruN gcc-10.1.0/libstdc++-v3/include/Makefile.in gcc-10.1.0.aros/libstdc++-v3/include/Makefile.in
---- gcc-10.1.0/libstdc++-v3/include/Makefile.in	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/include/Makefile.in	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/include/Makefile.in gcc-10.2.0.aros/libstdc++-v3/include/Makefile.in
+--- gcc-10.2.0/libstdc++-v3/include/Makefile.in	2020-07-23 07:35:19.236405394 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/include/Makefile.in	2020-11-26 14:08:08.830000000 +0000
 @@ -1793,6 +1793,7 @@
  	    -e '/^#/s/\(${uppercase}${uppercase}*\)/_GLIBCXX_\1/g' \
  	    -e 's/_GLIBCXX_SUPPORTS_WEAK/__GXX_WEAK__/g' \
@@ -2292,9 +2293,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/include/Makefile.in gcc-10.1.0.aros/libstdc++-
  	    -e 's,^#include "\(.*\)",#include <bits/\1>,g' \
  	    < $< > $@
  
-diff -ruN gcc-10.1.0/libstdc++-v3/include/c_global/cstdint gcc-10.1.0.aros/libstdc++-v3/include/c_global/cstdint
---- gcc-10.1.0/libstdc++-v3/include/c_global/cstdint	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/include/c_global/cstdint	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/include/c_global/cstdint gcc-10.2.0.aros/libstdc++-v3/include/c_global/cstdint
+--- gcc-10.2.0/libstdc++-v3/include/c_global/cstdint	2020-07-23 07:35:19.252405572 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/include/c_global/cstdint	2020-11-26 14:08:08.830000000 +0000
 @@ -73,8 +73,10 @@
    using ::uint_fast64_t;
  
@@ -2306,9 +2307,9 @@ diff -ruN gcc-10.1.0/libstdc++-v3/include/c_global/cstdint gcc-10.1.0.aros/libst
    using ::uint_least64_t;
  
    using ::uintmax_t;
-diff -ruN gcc-10.1.0/libstdc++-v3/include/std/ratio gcc-10.1.0.aros/libstdc++-v3/include/std/ratio
---- gcc-10.1.0/libstdc++-v3/include/std/ratio	2020-05-07 11:50:02.000000000 +0100
-+++ gcc-10.1.0.aros/libstdc++-v3/include/std/ratio	2020-05-12 13:32:06.450000000 +0100
+diff -ruN gcc-10.2.0/libstdc++-v3/include/std/ratio gcc-10.2.0.aros/libstdc++-v3/include/std/ratio
+--- gcc-10.2.0/libstdc++-v3/include/std/ratio	2020-07-23 07:35:19.276405835 +0100
++++ gcc-10.2.0.aros/libstdc++-v3/include/std/ratio	2020-11-26 14:08:08.830000000 +0000
 @@ -212,10 +212,10 @@
      {
      private:
