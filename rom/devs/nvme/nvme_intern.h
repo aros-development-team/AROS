@@ -17,6 +17,10 @@
 #include <hardware/nvme.h>
 #include <hidd/nvme.h>
 
+#if !defined(MIN)
+# define MIN(a,b)       (a < b) ? a : b
+#endif
+
 #define Unit(io) ((struct nvme_Unit *)(io)->io_Unit)
 #define IOStdReq(io) ((struct IOStdReq *)io)
 
@@ -129,9 +133,8 @@ typedef struct {
     ULONG volatile      *dbs;
     
     ULONG               ctrl_config;
-
-    struct Interrupt	dev_AdminIntHandler;
-    struct nvme_queue   *dev_AdminQueue;
+    ULONG               queuecnt;
+    struct nvme_queue   **dev_Queues;
 } *device_t;
 
 struct completionevent_handler
@@ -148,6 +151,7 @@ struct nvme_queue {
 #if defined(__AROSEXEC_SMP__)
     spinlock_t q_lock;
 #endif
+    struct Interrupt	q_IntHandler;
     ULONG volatile *q_db;
     UWORD q_depth;
     UWORD cq_vector;
@@ -198,9 +202,6 @@ struct nvme_Unit
 
     struct SignalSemaphore au_Lock;
     struct List         au_IOs;
-    struct nvme_queue   *au_IOQueue;
-
-    struct Interrupt	au_IOIntHandler;
 
     ULONG               au_UnitNum;     /* Unit number as coded by device */
 

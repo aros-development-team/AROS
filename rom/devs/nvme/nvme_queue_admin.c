@@ -42,16 +42,16 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
 
     D(bug ("[NVME:ADMINQ] %s(0x%p, 0x%p, 0x%p)\n", __func__, dev, cmd);)
 
-    cmd->common.op.command_id = nvme_alloc_cmdid(dev->dev_AdminQueue);
-    dev->dev_AdminQueue->cehooks[cmd->common.op.command_id] = nvme_complete_adminevent;
-    dev->dev_AdminQueue->cehandlers[cmd->common.op.command_id] = handler;
+    cmd->common.op.command_id = nvme_alloc_cmdid(dev->dev_Queues[0]);
+    dev->dev_Queues[0]->cehooks[cmd->common.op.command_id] = nvme_complete_adminevent;
+    dev->dev_Queues[0]->cehandlers[cmd->common.op.command_id] = handler;
 
     if (handler)
     {
         /* clear the signal first */
         SetSignal(0, handler->ceh_SigSet);
     }
-    retval = nvme_submit_cmd(dev->dev_AdminQueue, cmd);
+    retval = nvme_submit_cmd(dev->dev_Queues[0], cmd);
 
     return retval;
 }

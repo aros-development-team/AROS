@@ -50,6 +50,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct NVMEBase *NVMEBase = (struct NVMEBase *)cl->UserData;
 
     device_t dev = (device_t)GetTagData(aHidd_DriverData, 0, msg->attrList);
+    int cpucnt = 1; // TODO: get the correct count;
 
     OOP_Object *nvmeController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (nvmeController)
@@ -73,19 +74,22 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
             D(bug ("[NVME:Controller] Root__New:     NVME RegBase @ 0x%p\n", dev->dev_nvmeregbase);)
             dev->dbs = ((void volatile *)dev->dev_nvmeregbase) + 4096;
+
+            dev->dev_Queues = AllocMem(sizeof(APTR) * (cpucnt + 1), MEMF_CLEAR);
+
             D(bug ("[NVME:Controller] Root__New:     dbs @ 0x%p\n", dev->dbs);)
-            dev->dev_AdminQueue = nvme_alloc_queue(dev, 0, 64, 0);
-            D(bug ("[NVME:Controller] Root__New:     admin queue @ 0x%p\n", dev->dev_AdminQueue);)
-            if (dev->dev_AdminQueue)
+            dev->dev_Queues[0] = nvme_alloc_queue(dev, 0, 64, 0);
+            D(bug ("[NVME:Controller] Root__New:     admin queue @ 0x%p\n", dev->dev_Queues[0]);)
+            if (dev->dev_Queues[0])
             {
                 unsigned long timeout, cmdno;
                 UQUAD cap;
                 ULONG aqa;
                 
-                dev->dev_AdminQueue->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
-                dev->dev_AdminQueue->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
+                dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
+                dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
 
-                aqa = dev->dev_AdminQueue->q_depth - 1;
+                aqa = dev->dev_Queues[0]->q_depth - 1;
                 aqa |= aqa << 16;
 
                 dev->ctrl_config = NVME_CC_ENABLE | NVME_CC_CSS_NVM;
@@ -95,8 +99,8 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
                 dev->dev_nvmeregbase->cc = 0;
                 dev->dev_nvmeregbase->aqa = aqa;
-                dev->dev_nvmeregbase->asq = (UQUAD)dev->dev_AdminQueue->sqba;
-                dev->dev_nvmeregbase->acq = (UQUAD)dev->dev_AdminQueue->cqba;
+                dev->dev_nvmeregbase->asq = (UQUAD)dev->dev_Queues[0]->sqba;
+                dev->dev_nvmeregbase->acq = (UQUAD)dev->dev_Queues[0]->cqba;
                 dev->dev_nvmeregbase->cc = dev->ctrl_config;
 
                 /* parse capabilities ... */
@@ -109,12 +113,12 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
                 // add interrupt
                 OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &data->ac_PCIIntLine);
-                dev->dev_AdminIntHandler.is_Node.ln_Name = "NVME Controller Interrupt";
-                dev->dev_AdminIntHandler.is_Node.ln_Pri = 5;
-                dev->dev_AdminIntHandler.is_Code = (VOID_FUNC) NVME_AdminIntCode;
-                dev->dev_AdminIntHandler.is_Data = dev->dev_AdminQueue;
+                dev->dev_Queues[0]->q_IntHandler.is_Node.ln_Name = "NVME Controller Interrupt";
+                dev->dev_Queues[0]->q_IntHandler.is_Node.ln_Pri = 5;
+                dev->dev_Queues[0]->q_IntHandler.is_Code = (VOID_FUNC) NVME_AdminIntCode;
+                dev->dev_Queues[0]->q_IntHandler.is_Data = dev->dev_Queues[0];
                 AddIntServer(INTB_KERNEL + data->ac_PCIIntLine,
-                    &dev->dev_AdminIntHandler);
+                    &dev->dev_Queues[0]->q_IntHandler);
 
                 APTR buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
                 if (buffer)

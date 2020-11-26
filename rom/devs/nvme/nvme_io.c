@@ -52,13 +52,16 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     struct nvme_Unit *unit = (struct nvme_Unit *)io->io_Unit;
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
-    struct nvme_queue *nvmeq = unit->au_IOQueue;
+    struct nvme_queue *nvmeq;
     struct completionevent_handler ioehandle;
     struct nvme_command cmdio;
+    int cpuno = 1; // TODO: get the correct value..
     BOOL done = TRUE;
     
     ULONG nsid = unit->au_UnitNum & ((1 << 12) - 1);
 
+    nvmeq = unit->au_Bus->ab_Dev->dev_Queues[cpuno];
+    
     ioehandle.ceh_Task = FindTask(NULL);
     ioehandle.ceh_SigSet = SIGF_SINGLE;
 

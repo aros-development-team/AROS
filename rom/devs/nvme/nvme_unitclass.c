@@ -25,24 +25,6 @@
 
 static const char *str_devicename = "nvme.device";
 
-/*
-    NVME_IOIntCode:
-        handle incomming completion event interrupts
-        for a units IO queue.
-*/
-static AROS_INTH1(NVME_IOIntCode, struct nvme_queue *, nvmeq)
-{
-    AROS_INTFUNC_INIT
-
-    D(bug ("[NVME:Unit] %s(0x%p)\n", __func__, nvmeq);)
-
-    nvme_process_cq(nvmeq);
-    
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
-}
-
 /* support functions */
 static void nvme_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
@@ -74,7 +56,6 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     {
         struct nvme_Unit *unit = OOP_INST_DATA(cl, o);
         char *DevName, *DevSer, *DevFW;
-        int depth;
 
         D(bug ("[NVME:Unit] Root__New: Unit Obj @ %p\n", o);)
 
@@ -100,85 +81,6 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         {
             nvme_strcpy(DevFW, unit->au_FirmwareRev, 8);
             D(bug ("[NVME:Unit] Root__New: FW Revis %s\n", unit->au_FirmwareRev);)
-        }
-
-#if !defined(MIN)
-# define MIN(a,b)       (a < b) ? a : b
-#endif
-        depth = MIN(NVME_CAP_MQES(dev->dev_nvmeregbase->cap) + 1, 1024);
-
-        unit->au_IOQueue = nvme_alloc_queue(dev, unitnsno + 1, depth, unitnsno + 1);
-        D(bug ("[NVME:Unit] Root__New:     IO queue @ 0x%p (IRQ#%u, depth = %u)\n", unit->au_IOQueue, unitirq, depth);)
-        if (unit->au_IOQueue)
-        {
-            UBYTE unitirq = HIDD_PCIDevice_VectorIRQ(dev->dev_Object, unitnsno + 1);
-            struct nvme_command c;
-            struct completionevent_handler adminehandle;
-            int flags;
-
-            unit->au_IOQueue->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
-            unit->au_IOQueue->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
-
-            adminehandle.ceh_Task = FindTask(NULL);
-            adminehandle.ceh_SigSet = SIGF_SINGLE;
-
-            /* completion queue needs to be set before the submission queue */
-            flags = NVME_QUEUE_PHYS_CONTIG | NVME_CQ_IRQ_ENABLED;
-
-            memset(&c, 0, sizeof(c));
-            c.create_cq.op.opcode = nvme_admin_create_cq;
-            c.create_cq.prp1 = (IPTR)unit->au_IOQueue->cqba; // Needs to be LE
-            c.create_cq.cqid = AROS_WORD2LE(unitnsno + 1);
-            c.create_cq.qsize = AROS_WORD2LE(unit->au_IOQueue->q_depth - 1);
-            c.create_cq.cq_flags = AROS_WORD2LE(flags);
-            c.create_cq.irq_vector = AROS_WORD2LE(unit->au_IOQueue->cq_vector);
-
-            nvme_submit_admincmd(dev, &c, &adminehandle);
-            Wait(adminehandle.ceh_SigSet);
-            if (!adminehandle.ceh_Status)
-            {
-                flags = NVME_QUEUE_PHYS_CONTIG | NVME_SQ_PRIO_MEDIUM;
-
-                memset(&c, 0, sizeof(c));
-                c.create_sq.op.opcode = nvme_admin_create_sq;
-                c.create_sq.prp1 = (IPTR)unit->au_IOQueue->sqba; // Needs to be LE
-                c.create_sq.sqid = AROS_WORD2LE(unitnsno + 1);
-                c.create_sq.qsize = AROS_WORD2LE(unit->au_IOQueue->q_depth - 1);
-                c.create_sq.sq_flags = AROS_WORD2LE(flags);
-                c.create_sq.cqid = AROS_WORD2LE(unitnsno + 1);
-
-                nvme_submit_admincmd(dev, &c, &adminehandle);
-                Wait(adminehandle.ceh_SigSet);
-                if (!adminehandle.ceh_Status)
-                {
-                    unit->au_IOIntHandler.is_Node.ln_Name = "NVME IO Interrupt";
-                    unit->au_IOIntHandler.is_Node.ln_Pri = 5;
-                    unit->au_IOIntHandler.is_Code = (VOID_FUNC) NVME_IOIntCode;
-                    unit->au_IOIntHandler.is_Data = unit->au_IOQueue;
-                    AddIntServer(INTB_KERNEL + unitirq,
-                        &unit->au_IOIntHandler);
-                }
-                else
-                {
-                    // TODO: Tear down -:
-                    // completion queue we just created..
-                    // ioqueue
-                    // coerce dispose
-                    bug ("[NVME:Unit] Root__New: ERROR - failed to register IO submission queue (status=%u)\n", adminehandle.ceh_Status);
-                }
-            }
-            else
-            {
-                // TODO: Tear down -:
-                // ioqueue
-                // coerce dispose
-                bug ("[NVME:Unit] Root__New: ERROR - failed to register IO completion queue (status=%u)\n", adminehandle.ceh_Status);
-            }
-        }
-        else
-        {
-            // TODO: Tear down -:
-            // coerce dispose
         }
     }
     return o;
