@@ -91,7 +91,7 @@ blit_up_fast_xloop:
 	move.l (%a0)+,(%a1)+
 blit_up_fast_xmain:
 	subq.l #1,%d0
-	bne.b	blit_up_fast_xloop
+	bpl.b	blit_up_fast_xloop
 
 	bra.s	blit_up_fast_xleftmain
 
