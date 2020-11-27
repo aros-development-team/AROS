@@ -10,6 +10,14 @@
 #include "numtostr.h"
 #include "hid.class.h"
 
+#if defined(__AROS__)
+#include <hidd/hidd.h>
+#include <hidd/usb.h>
+#include <hidd/system.h>
+#include <oop/oop.h>
+#include <proto/oop.h>
+#endif
+
 #include <proto/datatypes.h>
 
 static LONG _rand(struct NepHidBase *nh)
@@ -1182,6 +1190,46 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
 #endif
                             nQuirkPS3Controller(nch);
 
+#if defined(__AROS__)
+                            OOP_Object                  *root;
+                            OOP_Class	       *usbDevClass;
+                            OOP_AttrBase	HiddAttrBase;
+                            struct OOP_ABDescr attrbases[] =
+                            {
+                                { (STRPTR) IID_Hidd,            &HiddAttrBase },
+                                { NULL, NULL }
+                            };
+
+                            OOP_ObtainAttrBases(attrbases);
+
+                            root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
+                            if (!root)
+                                root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+
+                            usbDevClass = OOP_FindClass(CLID_Hidd_USBDevice);
+
+                            if ((usbDevClass) && (root))
+                            {
+                                struct TagItem usbd_tags[] =
+                                {
+                                    {aHidd_Name,               (IPTR)"hid.class"       },
+                                    {aHidd_HardwareName,        (IPTR)"USB Human Interface Device"       },
+                                    {aHidd_Producer,            0       },
+                            #define USBD_TAG_VEND 2
+                                    {aHidd_Product,             0       },
+                            #define USBD_TAG_PROD 3
+                                    {aHidd_DriverData,          0       },
+                            #define USBD_TAG_DATA 4
+                                    {TAG_DONE,                  0       }
+                                };
+
+                                usbd_tags[USBD_TAG_VEND].ti_Data = 0;
+                                usbd_tags[USBD_TAG_PROD].ti_Data = 0;
+
+                                HW_AddDriver(root, usbDevClass, usbd_tags);
+                            }
+#endif
+
                             if(nReadReports(nch))
                             {
                                 BOOL fail = FALSE;
@@ -1217,11 +1265,31 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
                             psdFreePipe(nch->nch_EPInPipe);
                             psdFreePipe(nch->nch_EP0Pipe);
                         }
+                        else
+                        {
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                           "failed to allocate pipe");
+                        }
                         DeleteMsgPort(nch->nch_TaskMsgPort);
+                    }
+                    else
+                    {
+                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                       "failed to create message port");
                     }
                     CloseDevice((struct IORequest *) nch->nch_InpIOReq);
                 }
+                else
+                {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "failed to open input.device");
+                }
                 DeleteIORequest((struct IORequest *) nch->nch_InpIOReq);
+            }
+            else
+            {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "failed to allocate IO request");
             }
             DeleteMsgPort(nch->nch_InpMsgPort);
         }
@@ -2546,12 +2614,13 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
     NewList(&nch->nch_HidDesigns);
     NewList(&nch->nch_HidStrings);
 
-    nch->nch_HidGlobal.nhg_UsagePage =
-      nch->nch_HidGlobal.nhg_LogicalMin =
+    nch->nch_HidGlobal.nhg_LogicalMin =
       nch->nch_HidGlobal.nhg_LogicalMax =
       nch->nch_HidGlobal.nhg_PhysicalMin =
       nch->nch_HidGlobal.nhg_PhysicalMax =
-      nch->nch_HidGlobal.nhg_UnitExp =
+      nch->nch_HidGlobal.nhg_UnitExp = (LONG)HID_PARAM_UNDEF;
+
+    nch->nch_HidGlobal.nhg_UsagePage =
       nch->nch_HidGlobal.nhg_Unit = HID_PARAM_UNDEF;
 
     nch->nch_HidGlobal.nhg_ReportID =
