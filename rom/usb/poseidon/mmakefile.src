@@ -13,7 +13,7 @@ FUNCS := \
 SHELLFILES := PsdDevLister PsdErrorlog AddUSBClasses AddUSBHardware PsdStackLoader 
 
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
-USER_CPPFLAGS += -DDEBUG=1
+#USER_CPPFLAGS += -DDEBUG=1
 
 #MM kernel-usb-poseidon-includes : \
 #MM     kernel-exec-includes \
@@ -39,6 +39,6 @@ USER_LDFLAGS := -static
 
 %build_module_simple mmake=kernel-usb-usbromstartup \
   modname=usbromstartup modtype=resource \
-  files="usbromstartup" uselibs="amiga"
+  files="usbromearlystartup usbromlatestartup" uselibs="amiga"
 
 %common
