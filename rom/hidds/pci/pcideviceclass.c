@@ -247,9 +247,11 @@ UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHi
             else bug("[PCIDevice] %s: Illegal MSI vector %u\n", __func__, msg->vector);
         }
         else bug("[PCIDevice] %s: MSI is dissabled for the device\n", __func__);
+#else
+        DMSI(bug("[PCIDevice] %s: MSI unsupported on this platform\n", __func__);)
+#endif
     }
     else bug("[PCIDevice] %s: Device doesn't support MSI\n", __func__);
-#endif
     /* If MSI wasnt enabled and they have just asked for the first vector - return the PCI int line */
     if (!vectirq && msg->vector == 0)
     {
