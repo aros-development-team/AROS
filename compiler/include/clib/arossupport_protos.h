@@ -36,6 +36,12 @@
 #   endif
 #endif
 
+#if defined(__GNUC__) 
+#define ATTRIB_FMT(a,b)  __attribute__ ((format (printf, a, b)))
+#else
+#define ATTRIB_FMT(a,b)
+#endif
+
 /* for va_list in kprintf() proto */
 #include <stdarg.h>
 
@@ -45,9 +51,9 @@
 __BEGIN_DECLS
 
 ULONG   CalcChecksum (APTR mem, ULONG size);
-int     kprintf      (const char * fmt, ...) __attribute__ ((format (printf, 1, 2)));
+int     kprintf      (const char * fmt, ...) ATTRIB_FMT(1, 2);
 int     vkprintf     (const char * fmt, va_list ap);
-int     rkprintf     (const STRPTR, const STRPTR, int, const char * fmt, ...) __attribute__ ((format (printf, 4, 5)));
+int     rkprintf     (const STRPTR, const STRPTR, int, const char * fmt, ...) ATTRIB_FMT(4, 5);
 void    NastyFreeMem (APTR mem, IPTR size);
 APTR    RemoveSList  (APTR * list, APTR node);
 void    hexdump      (const void * data, IPTR offset, ULONG count);
