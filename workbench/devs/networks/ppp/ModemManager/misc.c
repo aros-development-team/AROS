@@ -41,6 +41,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
 #include <aros/debug.h>
 	 
 #ifdef __AROS__

@@ -24,6 +24,7 @@
 #include <proto/workbench.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include <zune/iconimage.h>
 #include "diskinfo.h"

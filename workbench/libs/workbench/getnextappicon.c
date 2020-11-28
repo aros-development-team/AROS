@@ -19,6 +19,8 @@
 #include "workbench_intern.h"
 #include <workbench/workbench.h>
 
+#include <string.h>
+
 /*****************************************************************************
 
     NAME */

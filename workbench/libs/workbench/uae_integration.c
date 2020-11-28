@@ -23,6 +23,8 @@
 #include <aros/debug.h>
 #endif
 
+#include <string.h>
+
 #include "workbench_intern.h"
 #include "uae_integration.h"
 

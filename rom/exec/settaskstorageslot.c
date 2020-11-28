@@ -8,6 +8,8 @@
 #include <exec/nodes.h>
 #include <exec/lists.h>
 
+#include <string.h>
+
 #include "exec_intern.h"
 #include "taskstorage.h"
 

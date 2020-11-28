@@ -58,6 +58,8 @@ int __nocommandline;
 
 #include <resources/task.h>
 
+#include <string.h>
+
 const TEXT version[] = "$VER: TaskList 42.2 (21.01.2017)\n";
 
 APTR TaskResBase = NULL;

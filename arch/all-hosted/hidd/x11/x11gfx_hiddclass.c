@@ -15,6 +15,7 @@
 
 #include <X11/cursorfont.h>
 #include <signal.h>
+#include <string.h>
 
 #include "x11_types.h"
 #include LC_LIBDEFS_FILE

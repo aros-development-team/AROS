@@ -63,6 +63,8 @@
 #include <proto/commodities.h>
 #include <proto/alib.h>
 
+#include <string.h>
+
 const char *verstag = "\0$VER: AltKeyQ 1.0 (23.05.2009) \xA9 2009 The AROS Development Team";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"

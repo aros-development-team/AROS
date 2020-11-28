@@ -12,6 +12,7 @@
 #include <proto/timer.h>
 
 #include <errno.h>
+#include <string.h>
 
 #include "__stdc_intbase.h"
 

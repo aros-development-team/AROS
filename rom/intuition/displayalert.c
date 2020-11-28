@@ -4,6 +4,8 @@
     $Id$
 */
 
+#include <string.h>
+
 #include "intuition_intern.h"
 
 /* I'm too lazy to open the font and query it. Anyway this is hardcoded. */

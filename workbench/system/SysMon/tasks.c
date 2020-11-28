@@ -20,6 +20,8 @@
 #include <libraries/mui.h>
 #include <resources/task.h>
 
+#include <string.h>
+
 #include "locale.h"
 
 #include "tasks.h"

@@ -18,6 +18,8 @@
 
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include "gfx_intern.h"
 
 #include LC_LIBDEFS_FILE

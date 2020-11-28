@@ -15,6 +15,8 @@
 
 #include <aros/debug.h>
 
+#include <string.h>
+
 extern struct parallelbase * pubParallelBase;
 
 ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata)

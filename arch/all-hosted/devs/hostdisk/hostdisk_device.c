@@ -22,6 +22,8 @@
 #include <proto/exec.h>
 #include <proto/hostlib.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 /****************************************************************************************/

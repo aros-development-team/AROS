@@ -43,6 +43,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "e1000_hw.h"
 #include "e1000_api.h"

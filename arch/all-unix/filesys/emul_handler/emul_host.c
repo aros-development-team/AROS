@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 
 #pragma pack()

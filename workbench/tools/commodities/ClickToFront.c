@@ -64,6 +64,7 @@
 #include <proto/icon.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #define  DEBUG 0
 #include <aros/debug.h>

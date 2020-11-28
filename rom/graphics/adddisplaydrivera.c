@@ -13,6 +13,8 @@
 
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "graphics_intern.h"
 #include "compositor_driver.h"
 #include "dispinfo.h"

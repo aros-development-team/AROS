@@ -16,6 +16,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <string.h>
+
 #include "expansion_intern.h"
 
 /*****************************************************************************

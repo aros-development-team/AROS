@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <proto/dos.h>
 #include <errno.h>
+#include <string.h>
+
 #include "__upath.h"
 
 /*****************************************************************************

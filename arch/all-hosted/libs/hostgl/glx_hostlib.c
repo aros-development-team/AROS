@@ -7,6 +7,8 @@
 
 #include <proto/hostlib.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 #define DEBUG 0

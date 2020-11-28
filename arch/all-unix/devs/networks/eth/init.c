@@ -11,6 +11,8 @@
 #include <proto/alib.h>
 #include <proto/oop.h>
 
+#include <string.h>
+
 #include "eth.h"
 
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR LIBBASE)

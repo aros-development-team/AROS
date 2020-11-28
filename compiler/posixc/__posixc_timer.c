@@ -10,6 +10,7 @@
 
 #include <time.h>
 #include <errno.h>
+#include <string.h>
 
 #include "__posixc_intbase.h"
 

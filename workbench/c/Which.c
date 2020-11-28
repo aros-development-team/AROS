@@ -78,6 +78,8 @@
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>
 
+#include <string.h>
+
 #define  ARG_COUNT  4    /* Number of ReadArgs() arguments */
 
 const TEXT version[] = "$VER: Which 41.2 (14.2.2016)";

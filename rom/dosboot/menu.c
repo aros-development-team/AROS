@@ -31,6 +31,8 @@
 #include <aros/bootloader.h>
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 #include "dosboot_intern.h"

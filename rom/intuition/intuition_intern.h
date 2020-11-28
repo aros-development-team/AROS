@@ -100,6 +100,9 @@
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
 
+/* Needed because it's no longer included by string.h> */
+#include <string.h>
+
 #include <aros/asmcall.h>
 
 #if DEBUG_ASSERTS

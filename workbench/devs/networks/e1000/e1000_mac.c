@@ -26,6 +26,8 @@
 
 *******************************************************************************/
 
+#include <string.h>
+
 #include "e1000_api.h"
 
 static s32 e1000_validate_mdi_setting_generic(struct e1000_hw *hw);

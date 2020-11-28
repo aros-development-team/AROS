@@ -11,6 +11,7 @@
 #include <exec/memory.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #define DEBUG 0
 #include "debug.h"

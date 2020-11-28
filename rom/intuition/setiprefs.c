@@ -13,6 +13,8 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 
+#include <string.h>
+
 #include "intuition_intern.h"
 
 /*****************************************************************************

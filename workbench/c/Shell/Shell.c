@@ -19,6 +19,7 @@
 #include <proto/exec.h>
 
 #include <ctype.h>
+#include <string.h>
 
 #include <aros/debug.h>
 

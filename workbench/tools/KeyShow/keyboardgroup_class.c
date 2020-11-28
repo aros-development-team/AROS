@@ -17,6 +17,7 @@
 #include <zune/customclasses.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "keyboardgroup_class.h"
 #include "locale.h"

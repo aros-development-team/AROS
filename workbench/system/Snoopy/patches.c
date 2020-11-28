@@ -11,6 +11,8 @@
 #include <proto/graphics.h>
 #include <proto/alib.h>
 
+#include <string.h>
+
 #include "main.h"
 #include "patches.h"
 #include "setup.h"

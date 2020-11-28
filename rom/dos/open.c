@@ -16,6 +16,8 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "dos_intern.h"
 
 static LONG InternalOpen(CONST_STRPTR name, LONG accessMode, 

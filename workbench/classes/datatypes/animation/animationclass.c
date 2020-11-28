@@ -38,6 +38,7 @@
 #include "animationclass.h"
 
 #include <stdio.h>
+#include <string.h>
 
 extern AROS_UFP3(ULONG, playerHookFunc,
     AROS_UFPA(struct Hook *, hook, A0),

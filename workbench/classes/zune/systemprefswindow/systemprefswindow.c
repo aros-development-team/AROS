@@ -33,6 +33,8 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#include <string.h>
+
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct SystemPrefsWindow_DATA *data = INST_DATA(CLASS, self)
 

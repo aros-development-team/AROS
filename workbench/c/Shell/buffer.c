@@ -8,6 +8,8 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include "buffer.h"
 
 #define BUF_SIZE 512

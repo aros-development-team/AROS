@@ -14,6 +14,8 @@
 #include <aros/asmcall.h>
 #include <exec/ports.h>
 
+#include <string.h>
+
 #include "dos_newcliproc.h"
 #include "dos_intern.h"
 #include "fs_driver.h"

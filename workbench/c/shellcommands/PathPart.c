@@ -43,6 +43,8 @@
 
 #include <aros/shcommands.h>
 
+#include <string.h>
+
 #define MAX_PATH_LEN 2048 /* Same as in C:Delete */
 
 AROS_SH3H(PathPart,50.1, "extract directory or file name from a path, or assemble a path\n",

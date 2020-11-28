@@ -18,6 +18,8 @@
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 
+#include <string.h>
+
 #include "locale.h"
 #include "editor.h"
 #include "prefs.h"

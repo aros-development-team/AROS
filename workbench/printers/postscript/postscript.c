@@ -19,6 +19,8 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 
+#include <string.h>
+
 #define PS_NOSCALING    TRUE    /* Do all scaling in PostScript, not in printer.device */
 #define PS_RGB          TRUE    /* RGB or CMYK printing */
 

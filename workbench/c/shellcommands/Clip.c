@@ -48,6 +48,8 @@
 #define SH_GLOBAL_SYSBASE       1
 #include <aros/shcommands.h>
 
+#include <string.h>
+
 /*
  * otigreat: Without having used the original Clip, it's not clear if
  * > C:Clip SET

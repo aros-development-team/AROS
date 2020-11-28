@@ -13,6 +13,8 @@
 #include <aros/bootloader.h>
 #include <proto/bootloader.h>
 
+#include <string.h>
+
 #include "x11_types.h"
 #include LC_LIBDEFS_FILE
 #include "x11_hostlib.h"

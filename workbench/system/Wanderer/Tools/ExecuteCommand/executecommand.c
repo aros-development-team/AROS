@@ -20,6 +20,7 @@
 #include <proto/workbench.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "executecommand.h"
 #include "locale.h"

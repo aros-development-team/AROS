@@ -43,6 +43,7 @@
 #include <proto/utility.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "pcnet32.h"
 #include "unit.h"

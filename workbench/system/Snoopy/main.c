@@ -13,6 +13,8 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "main.h"
 #include "gui.h"
 #include "patches.h"

@@ -50,6 +50,7 @@
 #include <hardware/intbits.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "unit.h"
 #include LC_LIBDEFS_FILE

@@ -18,6 +18,8 @@
 #include <aros/asmcall.h>
 #endif
 
+#include <string.h>
+
 #include "deviceio.h"
 #include "deviceio_protos.h"
 #include "debug.h"

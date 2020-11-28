@@ -24,6 +24,8 @@
 #include <aros/debug.h>
 #include <aros/atomic.h>
 
+#include <string.h>
+
 /*
     There are no static AttrBases in this class. Therefore it might be placed
     directly in ROM without any harm

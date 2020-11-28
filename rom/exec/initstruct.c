@@ -10,6 +10,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include "exec_debug.h"
 #include "exec_intern.h"
 

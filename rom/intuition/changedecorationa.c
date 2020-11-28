@@ -11,6 +11,8 @@
 
 #include <proto/dos.h>
 
+#include <string.h>
+
 #include "intuition_intern.h"
 #include "intuition_customize.h"
 #include "inputhandler_actions.h"

@@ -37,6 +37,7 @@
 #include <proto/battclock.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "e1000_osdep.h"
 #include "e1000.h"

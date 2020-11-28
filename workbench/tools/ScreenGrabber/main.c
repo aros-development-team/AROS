@@ -25,6 +25,8 @@
 #include <proto/icon.h>
 
 #include <stdio.h>
+#include <string.h>
+
 #include "locale.h"
 
 #define APPNAME "ScreenGrabber"

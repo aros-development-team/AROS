@@ -30,6 +30,8 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#include <string.h>
+
 #include "pci.h"
 #include "syscall.h"
 

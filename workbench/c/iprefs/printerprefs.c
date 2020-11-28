@@ -21,6 +21,8 @@
 #include <intuition/iprefs.h>
 #include <proto/datatypes.h>
 
+#include <string.h>
+
 #define DEV_EXT_LEN 7
 
 /*********************************************************************************************/

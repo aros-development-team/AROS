@@ -8,6 +8,8 @@
 #include <hidd/gfx.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "x11_types.h"
 #include "x11.h"
 #include "x11_hostlib.h"

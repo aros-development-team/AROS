@@ -2,6 +2,8 @@
  * $Id$
  */
 
+#include <string.h>
+
 #include "ppp.h"
 #include "device_protos.h"
 

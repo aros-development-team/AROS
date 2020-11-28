@@ -6,6 +6,8 @@
 #include <aros/debug.h>
 #include <proto/console.h>
 
+#include <string.h>
+
 #include "console_gcc.h"
 
 AROS_LH1(LONG, SetConSnip,

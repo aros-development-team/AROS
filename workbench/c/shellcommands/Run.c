@@ -67,6 +67,8 @@
 
 #include <aros/shcommands.h>
 
+#include <string.h>
+
 AROS_SH2H(Run, 41.3,                  "Start a program as a background process\n",
 AROS_SHAH(BOOL  , ,QUIET  ,/S,FALSE,"\tDon't print the background CLI's number"),
 AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (arguments allowed)\n") )

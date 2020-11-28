@@ -14,6 +14,7 @@
 #include <aros/symbolsets.h>
 
 #include <errno.h>
+#include <string.h>
 
 #include "__fdesc.h"
 #include "__posixc_intbase.h"

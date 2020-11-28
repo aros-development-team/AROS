@@ -34,6 +34,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern OOP_AttrBase HiddAHCIUnitAB;
 extern OOP_AttrBase HiddStorageUnitAB;

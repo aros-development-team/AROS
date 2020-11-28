@@ -24,6 +24,7 @@ Lang: English
 #include <proto/muimaster.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include <aros/debug.h>
 

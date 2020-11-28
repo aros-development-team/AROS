@@ -21,6 +21,8 @@
 #include <devices/printer.h>
 #include <datatypes/datatypesclass.h>
 
+#include <string.h>
+
 #define TPMATCHWORD          0xf10a57ef /* From turboprint's SDK */
 
 #define CMD_OPENDEVICE       (0x100)

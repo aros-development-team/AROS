@@ -9,6 +9,8 @@
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 
+#include <string.h>
+
 static void BSTR2CINLINE(char *s)
 {
         UBYTE len = s[0];

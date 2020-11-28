@@ -14,6 +14,8 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
+#include <string.h>
+
 #include "dos_intern.h"
 
 /*****************************************************************************

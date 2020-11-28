@@ -14,6 +14,8 @@
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
+#include <string.h>
+
 #include "locale.h"
 #include "prefs.h"
 #include "misc.h"

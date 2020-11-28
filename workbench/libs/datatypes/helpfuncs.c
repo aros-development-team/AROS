@@ -22,6 +22,8 @@
 #include "datatypes_intern.h"
 #include <clib/boopsistubs.h>
 
+#include <string.h>
+
 /************************** ASCII/BINARY RECOGNITION *************************/
 
 UBYTE const ASCIITable[256]=

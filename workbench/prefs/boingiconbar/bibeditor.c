@@ -14,6 +14,7 @@
 #include <proto/dos.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <aros/debug.h>
 

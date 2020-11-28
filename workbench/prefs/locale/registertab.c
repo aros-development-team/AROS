@@ -16,6 +16,7 @@
 #include <zune/prefseditor.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "locale.h"
 #include "registertab.h"

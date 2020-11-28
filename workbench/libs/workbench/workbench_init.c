@@ -9,6 +9,8 @@
 #include <aros/atomic.h>
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include "workbench_intern.h"
 #include LC_LIBDEFS_FILE
 #include "handler.h"

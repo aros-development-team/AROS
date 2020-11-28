@@ -16,6 +16,8 @@ conflicts between AROS includes and system includes */
 #include <aros/config.h>
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include "x11_types.h"
 #include "x11_xshm.h"
 

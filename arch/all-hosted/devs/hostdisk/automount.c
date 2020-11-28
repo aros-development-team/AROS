@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include <proto/expansion.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 extern const char GM_UNIQUENAME(LibName)[];

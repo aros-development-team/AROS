@@ -17,6 +17,7 @@
 #include <proto/dos.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "r.h"
 #include "locale.h"

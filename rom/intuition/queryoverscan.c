@@ -6,6 +6,9 @@
 
 #include <graphics/displayinfo.h>
 #include <proto/graphics.h>
+
+#include <string.h>
+
 #include "intuition_intern.h"
 
 /*****************************************************************************

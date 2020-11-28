@@ -18,6 +18,8 @@
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
 
+#include <string.h>
+
 #include "ntfs_fs.h"
 #include "ntfs_protos.h"
 #include "support.h"

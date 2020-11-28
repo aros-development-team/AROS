@@ -9,6 +9,8 @@
 
 #include <aros/debug.h>
 
+#include <string.h>
+
 #define DEBUG_STREAM(x)		;
 
 /***********************/

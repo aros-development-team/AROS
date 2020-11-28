@@ -19,6 +19,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "pthread_intern.h"
 #include "debug.h"

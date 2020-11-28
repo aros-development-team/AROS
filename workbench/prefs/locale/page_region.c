@@ -17,6 +17,7 @@
 #include <zune/prefseditor.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "prefs.h"
 #include "page_region.h"

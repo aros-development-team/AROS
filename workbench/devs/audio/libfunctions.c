@@ -18,6 +18,8 @@
 
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 /***********************************************************************/

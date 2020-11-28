@@ -19,6 +19,8 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 
+#include <string.h>
+
 #include "emul_intern.h"
 
 #define EXPANSION_NOPRIVATEBASES

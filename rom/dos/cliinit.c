@@ -15,6 +15,7 @@
 #include <resources/filesysres.h>
 
 #include <ctype.h>
+#include <string.h>
 
 #include "dos_intern.h"
 #include "../expansion/expansion_intern.h"

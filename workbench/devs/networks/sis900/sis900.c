@@ -47,6 +47,7 @@
 #include <hardware/intbits.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "sis900.h"
 #include "unit.h"

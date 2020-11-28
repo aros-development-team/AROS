@@ -7,6 +7,8 @@
 */
 #include <dos/dosextens.h>
 
+#include <string.h>
+
 #include "dos_intern.h"
 
 #include <aros/debug.h>

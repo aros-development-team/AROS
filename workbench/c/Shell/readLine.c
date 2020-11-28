@@ -11,6 +11,8 @@
 
 #include <aros/debug.h>
 
+#include <string.h>
+
 #define PIPE_NAME "PIPE "
 
 static BOOL checkPipe(STRPTR pchar, STRPTR mchar, STRPTR in, LONG inlen)

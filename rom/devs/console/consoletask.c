@@ -19,6 +19,8 @@
 #include <devices/input.h>
 #include <devices/rawkeycodes.h>
 
+#include <string.h>
+
 #include "console_gcc.h"
 #include "consoleif.h"
 

@@ -12,6 +12,8 @@
 #include <exec/ports.h>
 #include <aros/debug.h>
 
+#include <string.h>
+
 #define CATCOMP_NUMBERS
 
 #include "dos_intern.h"

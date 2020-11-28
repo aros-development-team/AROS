@@ -8,6 +8,8 @@
 
 #include <intuition/intuition.h>
 
+#include <string.h>
+
 #include "intuition_intern.h"
 
 /*****************************************************************************

@@ -3,6 +3,8 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
+#include <string.h>
+
 #include "asmsupport.h"
 #include "debug.h"
 #include "transactions_protos.h"

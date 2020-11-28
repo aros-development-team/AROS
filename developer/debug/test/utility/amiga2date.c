@@ -11,6 +11,8 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 struct DateTime dt;
 struct ClockData cd;
 

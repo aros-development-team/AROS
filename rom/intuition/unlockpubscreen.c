@@ -4,6 +4,8 @@
     $Id$
 */
 
+#include <string.h>
+
 #include "intuition_intern.h"
 
 static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);

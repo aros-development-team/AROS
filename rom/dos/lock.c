@@ -15,6 +15,8 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "dos_intern.h"
 #include "fs_driver.h"
 

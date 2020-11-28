@@ -10,6 +10,8 @@
 #include <exec/rawfmt.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"

@@ -13,6 +13,8 @@
 #include <proto/exec.h>
 #include <exec/rawfmt.h>
 
+#include <string.h>
+
 #include "etask.h"
 #include "exec_util.h"
 #include "exec_debug.h"

@@ -9,6 +9,9 @@
 #include <aros/debug.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
+
+#include <string.h>
+
 #include "dos_intern.h"
 
 static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LONG size, LONG flags, struct DosLibrary *DOSBase);

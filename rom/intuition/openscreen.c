@@ -46,6 +46,9 @@
 #else
 #include <hidd/gfx.h>
 #endif
+
+#include <string.h>
+
 #include "intuition_intern.h"
 #include "intuition_customize.h"
 #include "intuition_extend.h"

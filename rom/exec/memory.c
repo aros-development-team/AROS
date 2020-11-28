@@ -7,6 +7,8 @@
 #include <exec/rawfmt.h>
 #include <exec/memheaderext.h>
 
+#include <string.h>
+
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"

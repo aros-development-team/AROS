@@ -64,6 +64,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <exec/resident.h>
 

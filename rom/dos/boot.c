@@ -21,6 +21,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <string.h>
+
 #include "dos_intern.h"
 #include "../dosboot/bootflags.h"
 

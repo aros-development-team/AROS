@@ -22,6 +22,7 @@
 #include <proto/dos.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "pthread_intern.h"
 #include "debug.h"

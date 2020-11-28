@@ -15,6 +15,7 @@
 #include <proto/oop.h>
 
 #include <stddef.h>
+#include <string.h>
 
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
