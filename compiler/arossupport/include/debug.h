@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Debugging macros.
@@ -19,7 +19,6 @@
 #   include <exec/alerts.h>
 #endif
 
-#include <string.h>
 
 #ifndef DEBUG
 #   define DEBUG 0
