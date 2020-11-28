@@ -52,9 +52,8 @@ struct NVMEBase
 
     struct Library              *nvme_OOPBase;
     struct Library              *nvme_UtilityBase;
-#if defined(__AROSEXEC_SMP__)
     APTR                        nvme_KernelBase;
-#endif
+
     /* Frequently used object offsets */
     OOP_Class                   *nvmeClass;
     OOP_Class                   *busClass;
@@ -112,9 +111,7 @@ struct NVMEBase
 #endif
 #define OOPBase                 (NVMEBase->nvme_OOPBase)
 #define UtilityBase             (NVMEBase->nvme_UtilityBase)
-#if defined(__AROSEXEC_SMP__)
 #define KernelBase              (NVMEBase->nvme_KernelBase)
-#endif
 
 #include <exec/semaphores.h>
 

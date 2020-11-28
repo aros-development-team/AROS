@@ -38,7 +38,6 @@
 #include <string.h>
 
 #include "nvme_intern.h"
-//#include "timer.h"
 #include <hardware/pci.h>
 
 #include LC_LIBDEFS_FILE
@@ -84,13 +83,11 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
     if (!NVMEBase->nvme_UtilityBase)
         return FALSE;
 
-#if defined(__AROSEXEC_SMP__)
     if ((NVMEBase->nvme_KernelBase = OpenResource("kernel.resource")) == NULL)
     {
         CloseLibrary(NVMEBase->nvme_UtilityBase);
         return FALSE;
     }
-#endif
 
     /* Initialize lists */
     NEWLIST(&NVMEBase->nvme_Controllers);

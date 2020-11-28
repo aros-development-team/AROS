@@ -8,6 +8,7 @@
 /* We want all other bases obtained from our base */
 #define __NOLIBBASE__
 
+#include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
 
@@ -38,8 +39,10 @@ static AROS_INTH1(NVME_AdminIntCode, struct nvme_queue *, nvmeq)
     D(bug ("[NVME:Controller] %s(0x%p)\n", __func__, nvmeq);)
 
     nvme_process_cq(nvmeq);
-    
-    return FALSE;
+
+    D(bug ("[NVME:Controller] %s: finished\n", __func__);)
+
+    return TRUE;
 
     AROS_INTFUNC_EXIT
 }
@@ -50,7 +53,6 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct NVMEBase *NVMEBase = (struct NVMEBase *)cl->UserData;
 
     device_t dev = (device_t)GetTagData(aHidd_DriverData, 0, msg->attrList);
-    int cpucnt = 1; // TODO: get the correct count;
 
     OOP_Object *nvmeController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (nvmeController)
@@ -75,7 +77,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             D(bug ("[NVME:Controller] Root__New:     NVME RegBase @ 0x%p\n", dev->dev_nvmeregbase);)
             dev->dbs = ((void volatile *)dev->dev_nvmeregbase) + 4096;
 
-            dev->dev_Queues = AllocMem(sizeof(APTR) * (cpucnt + 1), MEMF_CLEAR);
+            dev->dev_Queues = AllocMem(sizeof(APTR) * (KrnGetCPUCount() + 1), MEMF_CLEAR);
 
             D(bug ("[NVME:Controller] Root__New:     dbs @ 0x%p\n", dev->dbs);)
             dev->dev_Queues[0] = nvme_alloc_queue(dev, 0, 64, 0);

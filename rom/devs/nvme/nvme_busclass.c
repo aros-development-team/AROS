@@ -3,7 +3,6 @@
     $Id$
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -11,6 +10,7 @@
 /* We want all other bases obtained from our base */
 #define __NOLIBBASE__
 
+#include <proto/kernel.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/expansion.h>
@@ -52,8 +52,10 @@ static AROS_INTH1(NVME_IOIntCode, struct nvme_queue *, nvmeq)
     D(bug ("[NVME:Bus] %s(0x%p)\n", __func__, nvmeq);)
 
     nvme_process_cq(nvmeq);
-    
-    return FALSE;
+
+    D(bug ("[NVME:Bus] %s: finished\n", __func__);)
+
+    return TRUE;
 
     AROS_INTFUNC_EXIT
 }
@@ -217,7 +219,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     struct ExpansionBase *ExpansionBase;
     struct nvme_command c;
     struct completionevent_handler busehandle;
-    int nn, cpucnt = 1; // TODO: get the correct count;
+    int nn;
 
     if (buffer)
     {
@@ -225,10 +227,10 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         struct TagItem vectreqs[] = 
         {
             { tHidd_PCIVector_Min,      1                       },
-            { tHidd_PCIVector_Max,      cpucnt                  },
+            { tHidd_PCIVector_Max,      KrnGetCPUCount()        },
             { TAG_DONE,                 0                       } 
         };
-        int depth;
+        int depth, hwqcnt = 1;
 
         ExpansionBase = (struct ExpansionBase *)TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
 
@@ -270,6 +272,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Obtained MSI Vectors!\n");)
             //Switch The Admin Queue IRQ;
             AdminIntLine = HIDD_PCIDevice_VectorIRQ(data->ab_Dev->dev_Object, 0);
+            //hwqcnt = ;
         }
         DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Re-Adding Admin Int Server ...\n");)
         // Re-Add the device Admin Interrupt handler
@@ -283,30 +286,32 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
         depth = MIN(NVME_CAP_MQES(data->ab_Dev->dev_nvmeregbase->cap) + 1, 1024);
 
-        for (nn = 0; nn < 1; nn++)
+        for (nn = 0; nn < hwqcnt; nn++)
         {
-            data->ab_Dev->dev_Queues[nn] = nvme_alloc_queue(data->ab_Dev, nn + 1, depth, nn);
-            D(bug ("[NVME:Bus] NVMEBus_Start:  # IO queue @ 0x%p (depth = %u)\n", data->ab_Dev->dev_Queues[nn], depth);)
-            if (data->ab_Dev->dev_Queues[nn])
+            data->ab_Dev->dev_Queues[nn + 1] = nvme_alloc_queue(data->ab_Dev, nn + 1, depth, nn);
+            D(bug ("[NVME:Bus] NVMEBus_Start:  # IO queue @ 0x%p (depth = %u)\n", data->ab_Dev->dev_Queues[nn + 1], depth);)
+            if (data->ab_Dev->dev_Queues[nn + 1])
             {
-                UBYTE queueirq = HIDD_PCIDevice_VectorIRQ(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn]->cq_vector);
+                UBYTE queueirq = HIDD_PCIDevice_VectorIRQ(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector);
                 int flags;
                 
                 D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u\n", queueirq);)
 
-                data->ab_Dev->dev_Queues[nn]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
-                data->ab_Dev->dev_Queues[nn]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
+                data->ab_Dev->dev_Queues[nn + 1]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
+                data->ab_Dev->dev_Queues[nn + 1]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
 
+                D(bug ("[NVME:Bus] NVMEBus_Start:     hooks @ 0x%p, handlers @ 0x%p\n", data->ab_Dev->dev_Queues[nn + 1]->cehooks, data->ab_Dev->dev_Queues[nn + 1]->cehandlers);)
+                
                 /* completion queue needs to be set before the submission queue */
                 flags = NVME_QUEUE_PHYS_CONTIG | NVME_CQ_IRQ_ENABLED;
 
                 memset(&c, 0, sizeof(c));
                 c.create_cq.op.opcode = nvme_admin_create_cq;
-                c.create_cq.prp1 = (IPTR)data->ab_Dev->dev_Queues[nn]->cqba; // Needs to be LE
+                c.create_cq.prp1 = (IPTR)data->ab_Dev->dev_Queues[nn + 1]->cqba; // Needs to be LE
                 c.create_cq.cqid = AROS_WORD2LE(nn + 1);
-                c.create_cq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn]->q_depth - 1);
+                c.create_cq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->q_depth - 1);
                 c.create_cq.cq_flags = AROS_WORD2LE(flags);
-                c.create_cq.irq_vector = AROS_WORD2LE(queueirq);
+                c.create_cq.irq_vector = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->cq_vector);
 
                 nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
                 Wait(busehandle.ceh_SigSet);
@@ -316,9 +321,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                     memset(&c, 0, sizeof(c));
                     c.create_sq.op.opcode = nvme_admin_create_sq;
-                    c.create_sq.prp1 = (IPTR)data->ab_Dev->dev_Queues[nn]->sqba; // Needs to be LE
+                    c.create_sq.prp1 = (IPTR)data->ab_Dev->dev_Queues[nn + 1]->sqba; // Needs to be LE
                     c.create_sq.sqid = AROS_WORD2LE(nn + 1);
-                    c.create_sq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn]->q_depth - 1);
+                    c.create_sq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->q_depth - 1);
                     c.create_sq.sq_flags = AROS_WORD2LE(flags);
                     c.create_sq.cqid = AROS_WORD2LE(nn + 1);
 
@@ -326,12 +331,13 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     Wait(busehandle.ceh_SigSet);
                     if (!busehandle.ceh_Status)
                     {
-                        data->ab_Dev->dev_Queues[0]->q_IntHandler.is_Node.ln_Name = "NVME IO Interrupt";
-                        data->ab_Dev->dev_Queues[0]->q_IntHandler.is_Node.ln_Pri = 5;
-                        data->ab_Dev->dev_Queues[0]->q_IntHandler.is_Code = (VOID_FUNC) NVME_IOIntCode;
-                        data->ab_Dev->dev_Queues[0]->q_IntHandler.is_Data = data->ab_Dev->dev_Queues[nn];
+                        data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Node.ln_Name = "NVME IO Interrupt";
+                        data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Node.ln_Pri = 0;
+                        data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Code = (VOID_FUNC) NVME_IOIntCode;
+                        data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Data = data->ab_Dev->dev_Queues[nn + 1];
                         AddIntServer(INTB_KERNEL + queueirq,
-                            &data->ab_Dev->dev_Queues[0]->q_IntHandler);
+                            &data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler);
+                        data->ab_Dev->queuecnt++;
                     }
                     else
                     {
@@ -425,12 +431,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 {
                     if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL)
                     {
-                        struct nvme_Unit *unit;
-
-                        IPTR pp[24];
+                        struct nvme_Unit *unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
                         const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
-
-                        unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
+                        IPTR pp[24];
 
                         if (ExpansionBase)
                         {
@@ -449,6 +452,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             unit->au_SecCnt = id_ns->nsze << (unit->au_SecShift - 9);
                             unit->au_Low = lbaStart;
                             unit->au_High = lbaEnd;
+                            unit->au_Bus = data;
 
                             data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
 
