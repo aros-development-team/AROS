@@ -257,9 +257,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 vectreqs[1].ti_Data = featqueues;
         }
 
-        //DIRQ(
-            bug ("[NVME:Bus] NVMEBus_Start: required queues = %u\n", vectreqs[1].ti_Data);
-        //)
+        DIRQ(bug ("[NVME:Bus] NVMEBus_Start: required queues = %u\n", vectreqs[1].ti_Data);)
 
         Disable();
         DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Removing Admin Int Server...\n");)
