@@ -6,7 +6,7 @@
 #define DB_LEVEL 200
 #endif
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <proto/debug.h>
