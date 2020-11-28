@@ -17,6 +17,8 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #define DEBUG 0
 #include <aros/debug.h>
 

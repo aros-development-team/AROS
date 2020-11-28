@@ -34,6 +34,8 @@
 
 #include <SDI/SDI_interrupt.h>
 
+#include <string.h>
+
 #include "trackdisk_device.h"
 #include "trackdisk_hw.h"
 

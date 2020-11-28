@@ -11,6 +11,8 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
+#include <string.h>
+
 #include "acpibutton_intern.h"
 
 struct ACPIButton_ServiceTask

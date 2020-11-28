@@ -18,6 +18,8 @@
 #include <dos/dos.h>
 #include <dos/notify.h>
 
+#include <string.h>
+
 #include "fat_fs.h"
 #include "fat_protos.h"
 

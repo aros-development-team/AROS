@@ -27,6 +27,7 @@
 #include <hidd/gfx.h>
 
 #include <assert.h>
+#include <string.h>
 
 #include "vgagfx_support.h"
 

@@ -11,6 +11,8 @@
 #include <scsi/commands.h>
 #include <scsi/values.h>
 
+#include <string.h>
+
 #include "ahci.h"
 #include "ahci_scsi.h"
 

@@ -21,6 +21,7 @@
 #include <utility/tagitem.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "nvme_intern.h"
 #include "nvme_hw.h"

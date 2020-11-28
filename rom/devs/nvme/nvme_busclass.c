@@ -31,6 +31,8 @@
 #include <hidd/storage.h>
 #include <hidd/nvme.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 #include "nvme_intern.h"

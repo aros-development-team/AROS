@@ -44,6 +44,7 @@
 
 #include <stdarg.h>
 #include <sys/types.h>
+#include <string.h>
 
 #include "ahci.h"
 

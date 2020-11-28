@@ -34,6 +34,8 @@
  * SUCH DAMAGE.
  */
 
+#include <string.h>
+
 #include "ahci.h"
 
 static const char *str_empty = "";

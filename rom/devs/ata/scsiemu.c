@@ -15,6 +15,8 @@
 #include <exec/exec.h>
 #include <devices/scsidisk.h>
 
+#include <string.h>
+
 #include "ata.h"
 
 #undef UtilityBase

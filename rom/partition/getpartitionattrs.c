@@ -5,6 +5,8 @@
 
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "partition_support.h"
 #include "platform.h"
 #include "debug.h"

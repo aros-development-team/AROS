@@ -5,6 +5,8 @@
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
+#include <string.h>
+
 #include "ahci_aros.h"
 
 #define DDMA(x)

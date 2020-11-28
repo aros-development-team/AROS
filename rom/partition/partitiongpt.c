@@ -29,6 +29,8 @@
 #include <proto/partition.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "partition_support.h"
 #include "partition_types.h"
 #include "partitiongpt.h"

@@ -24,6 +24,8 @@
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
 
+#include <string.h>
+
 #include "pci.h"
 
 #define DECAM(x)

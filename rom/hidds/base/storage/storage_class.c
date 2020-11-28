@@ -10,6 +10,8 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
+#include <string.h>
+
 #include "storage_intern.h"
 
 OOP_Object *StorageHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)

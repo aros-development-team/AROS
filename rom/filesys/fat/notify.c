@@ -15,6 +15,8 @@
 #include <dos/notify.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include "fat_fs.h"
 #include "fat_protos.h"
 

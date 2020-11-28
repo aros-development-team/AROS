@@ -21,6 +21,7 @@
 #include <proto/utility.h>
 
 //#include <asm/io.h>
+#include <string.h>
 
 #include "ati.h"
 #include "radeon.h"

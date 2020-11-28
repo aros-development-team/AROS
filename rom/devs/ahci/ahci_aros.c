@@ -14,6 +14,8 @@
 #include <hidd/pci.h>
 #include <devices/timer.h>
 
+#include <string.h>
+
 #include "ahci.h"
 #include "timer.h"
 

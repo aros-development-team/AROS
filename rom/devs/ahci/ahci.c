@@ -51,6 +51,8 @@
  * $OpenBSD: ahci.c,v 1.147 2009/02/16 21:19:07 miod Exp $
  */
 
+#include <string.h>
+
 #include "ahci.h"
 
 void	ahci_port_interrupt_enable(struct ahci_port *ap);

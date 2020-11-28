@@ -18,6 +18,8 @@
 
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include "nv.h"
 #include "nv_dma.h"
 
