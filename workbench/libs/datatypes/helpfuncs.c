@@ -332,12 +332,6 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                 cur->DT.dtn_Node1.ln_Succ;
                 cur = (struct CompoundDataType *)cur->DT.dtn_Node1.ln_Succ)
         {
-            /* we must handle the root datatypes because they have cur->DTH.dth_MaskLen set to 0 */
-            if (!strcmp(cur->DTH.dth_Name, "ascii") || !strcmp(cur->DTH.dth_Name, "binary"))
-            {
-                D(bug("[FindDtInList] base class %s found\n", cur->DTH.dth_Name));
-                found = TRUE;
-            }
             
             if (!found && !(cur->DTH.dth_MaskLen) && (cur->Function))
             {
@@ -345,7 +339,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                 found = (cur->Function)(dthc);
             }
 
-            if (!found && cur->DTH.dth_MaskLen && CheckSize >= cur->DTH.dth_MaskLen)
+            if (!found && CheckSize >= cur->DTH.dth_MaskLen)
             {
                 WORD *msk = cur->DTH.dth_Mask;
                 UBYTE *cmp = CheckArray;
