@@ -19,9 +19,18 @@
  * your stack!
  */
 #include "exec_intern.h"
-
 #include <signal.h>
 #include <string.h>
+
+/*
+ * FIXME: after removing the including of strings.h from aros/debug.h the
+ * define SS_ONSTACK was missing. Including aros/types/stack_t.h caused
+ * an error about redefinition of struct stack_t. As a workaround we create
+ * the define here
+ */
+#ifndef SS_ONSTACK
+#define SS_ONSTACK	0x0001
+#endif
 
 static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
 {
