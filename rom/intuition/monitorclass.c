@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1078,9 +1078,11 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     Relink(MA_BottomLeftMonitor, data->topright, MA_TopRightMonitor, data->bottomleft);
     Relink(MA_MiddleLeftMonitor, data->middleright, MA_MiddleRightMonitor, data->middleleft);
 
-    /* If an active monitor is being removed, we should activate another one */
+    /* If this was the active monitor, try to activate another one */
     if (GetPrivIBase(IntuitionBase)->ActiveMonitor == o)
+    {
         ActivateMonitor((Object *)GetHead(&GetPrivIBase(IntuitionBase)->MonitorList), -1, -1, IntuitionBase);
+    }
 
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
 
@@ -1147,13 +1149,18 @@ void MonitorClass__MM_GetDisplayBounds(Class *cl, Object *obj, struct msGetDispl
             data->FBBounds.MinY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MinY;
             data->FBBounds.MaxY = scr->ViewPort.ColorMap->cm_vpe->DisplayClip.MaxY;
         }
+        else if (GetPrivIBase(IntuitionBase)->ScreenModePrefs)
+        {
+            D(bug("[Monitor] %s: no visible screens - using pref fallback bounds.\n", __func__));
+            data->FBBounds.MinX = data->FBBounds.MinY = 0;
+            data->FBBounds.MaxX = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
+            data->FBBounds.MaxY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height - 1;
+        }
         else
         {
-            D(bug("[Monitor] %s: no visible screens - using fallback bounds.\n", __func__));
-            data->FBBounds.MinX = 0;
-            data->FBBounds.MaxX = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width - 1;
-            data->FBBounds.MinY = 0;
-            data->FBBounds.MaxY = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height - 1;
+            D(bug("[Monitor] %s: no visible screens - or pref fallback bounds.\n", __func__);)
+            data->FBBounds.MinX = data->FBBounds.MinY = 0;
+            data->FBBounds.MaxX = data->FBBounds.MaxY = 1;
         }
     }
 
