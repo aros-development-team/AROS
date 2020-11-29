@@ -2,7 +2,7 @@
 #define AROS_X86_64_CPUCONTEXT_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context definition for x86-64 processors
@@ -20,7 +20,7 @@ typedef struct
     UBYTE data[16];
 } XMMReg;
 
-struct FPXContext
+struct FPFXSContext
 {
     UWORD  fcw;
     UWORD  fsw;
@@ -37,10 +37,23 @@ struct FPXContext
     XMMReg reserved[6];
 };
 
+struct FPXSContext
+{
+    struct FPFXSContext legacy;
+    union {
+        struct {
+            UQUAD xstate_bv;
+            UQUAD xcomp_bv;
+        };
+        UBYTE xsheader[64];
+    };
+    UBYTE xsextd_area[];
+};
+
 struct ExceptionContext
 {
-    ULONG Flags;	/* Context flags		*/
-    ULONG Reserved;	/* Padding			*/
+    ULONG Flags;	                /* Context flags		                        */
+    ULONG Reserved;	                /* Padding			                        */
     UQUAD rax;
     UQUAD rbx;
     UQUAD rcx;
@@ -56,7 +69,7 @@ struct ExceptionContext
     UQUAD r14;
     UQUAD r15;
     UQUAD rbp;
-    UQUAD ds;		/* Segment registers are padded */
+    UQUAD ds;		                /* Segment registers are padded                         */
     UQUAD es;
     UQUAD fs;
     UQUAD gs;
@@ -66,13 +79,18 @@ struct ExceptionContext
     UQUAD rsp;
     UQUAD ss;
 
-    struct FPXContext *FXData;	/* Pointer to SSE context area */
+    union {
+    struct FPFXSContext *FXSData;       /* Pointer to legacy SSE FXSAVE 512 byte context area   */
+    struct FPXSContext *XSData;         /* Pointer to AVX XSAVE context area                    */
+    };
+    ULONG FPUCtxSize;
 };
 
 enum enECFlags
 {
-    ECF_SEGMENTS = 1<<0, /* Segment registers are present */
-    ECF_FPX      = 1<<1, /* SSE context is present	  */
+    ECF_SEGMENTS        = 1<<0,         /* Segment registers are present                        */
+    ECF_FPFXS           = 1<<1,         /* FXSAVE context is present	                        */
+    ECF_FPXS            = 1<<2,         /* XSAVE context is present	                        */
 };
 
 #endif
