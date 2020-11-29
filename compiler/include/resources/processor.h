@@ -135,6 +135,7 @@
 #define VECTORTYPE_SSE41            108
 #define VECTORTYPE_SSE42            109
 #define VECTORTYPE_SSE4A            110
+#define VECTORTYPE_AVX              111
 #define VECTORTYPE_VFP              120
 #define VECTORTYPE_VFPv3            121
 #define VECTORTYPE_NEON             122
