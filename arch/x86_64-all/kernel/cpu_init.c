@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/config.h>
 #include <aros/symbolsets.h>
 #include <exec/types.h>
 #include <asm/cpu.h>
@@ -10,7 +11,7 @@
 #include "kernel_base.h"
 #include <kernel_debug.h>
 
-#define D(x)
+#define D(x) x
 
 static int cpu_Init(struct KernelBase *KernelBase)
 {
@@ -18,6 +19,21 @@ static int cpu_Init(struct KernelBase *KernelBase)
     ULONG AVXOffs = 0;
 
     D(bug("[Kernel] %s: KernelBase @ 0x%p\n", __func__, KernelBase);)
+
+#if AROS_FLAVOUR == AROS_FLAVOUR_EMULATION
+    /* check if the host enabled xgetbv */
+#if (0)
+    if (rdcr(cr4) & _CR4_OSXSBV)
+    {
+        D(bug("[Kernel] %s: Host has enabled xgetbv/xsetbv!\n", __func__, KernelBase);)
+
+        // TODO: get the correct host values ..
+        AVXOffs = 1;
+        XContextSize = 0;
+    }
+#endif
+#else
+    D(bug("[Kernel] %s: Checking for XSAVE/AVX availability...\n", __func__, KernelBase);)
 
     /* Check CPUID to see if the processor
      * has support for XSAVE/AVX
@@ -45,13 +61,16 @@ static int cpu_Init(struct KernelBase *KernelBase)
         :
         : "%eax", "%ebx", "%ecx", "%edx"
     );
+#endif
 
     if (AVXOffs)
     {
         /* Use AVX/XSAVE support */
+#if AROS_FLAVOUR != AROS_FLAVOUR_EMULATION
         D(bug("[Kernel] %s: Enabling AVX ...\n", __func__);)
         /* Enable xgetvb/xsetvb */ 
         wrcr(cr4, rdcr(cr4) | _CR4_OSXSBV);
+#endif
 
         asm volatile (
             "    xor        %%rcx, %%rcx\n\t"
