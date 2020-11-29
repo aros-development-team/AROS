@@ -102,8 +102,8 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
                 dev->dev_nvmeregbase->cc = 0;
                 dev->dev_nvmeregbase->aqa = aqa;
-                dev->dev_nvmeregbase->asq = (UQUAD)dev->dev_Queues[0]->sqba;
-                dev->dev_nvmeregbase->acq = (UQUAD)dev->dev_Queues[0]->cqba;
+                dev->dev_nvmeregbase->asq = (UQUAD)(IPTR)dev->dev_Queues[0]->sqba;
+                dev->dev_nvmeregbase->acq = (UQUAD)(IPTR)dev->dev_Queues[0]->cqba;
                 dev->dev_nvmeregbase->cc = dev->ctrl_config;
 
                 /* parse capabilities ... */
@@ -136,7 +136,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     memset(&c, 0, sizeof(c));
                     c.identify.op.opcode = nvme_admin_identify;
                     c.identify.nsid = 0;
-                    c.identify.prp1 = (UQUAD)buffer;
+                    c.identify.prp1 = (UQUAD)(IPTR)buffer;
                     c.identify.cns = 1;
 
                     D(bug ("[NVME:Controller] Root__New: sending nvme_admin_identify\n");)

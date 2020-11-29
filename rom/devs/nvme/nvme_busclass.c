@@ -374,7 +374,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             memset(buffer, 0, 8192);
             memset(&c, 0, sizeof(c));
             c.identify.op.opcode = nvme_admin_identify;
-            c.identify.prp1 = (UQUAD)buffer;
+            c.identify.prp1 = (UQUAD)(IPTR)buffer;
             c.identify.nsid = AROS_LONG2LE(nn + 1);
             c.identify.cns = 0;
 
@@ -395,7 +395,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                 memset(&c, 0, sizeof(c));
                 c.features.op.opcode = nvme_admin_get_features;
-                c.features.prp1 = (UQUAD)rt;
+                c.features.prp1 = (UQUAD)(IPTR)rt;
                 c.features.fid = AROS_LONG2LE(NVME_FEAT_LBA_RANGE);
                 c.features.nsid = AROS_LONG2LE(nn + 1);
 

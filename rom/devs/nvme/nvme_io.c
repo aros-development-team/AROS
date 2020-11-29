@@ -86,12 +86,14 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
 
     cmdio.rw.nsid = AROS_LONG2LE(nsid);
-    cmdio.rw.prp1 = (UQUAD)data; // needs to be in LE
+    cmdio.rw.prp1 = (UQUAD)(IPTR)data; // needs to be in LE
     cmdio.rw.slba = off64 >> (unit->au_SecShift - 9); // needs to be in LE
     cmdio.rw.length = AROS_WORD2LE((len >> unit->au_SecShift) - 1);
     cmdio.rw.control = 0;
     cmdio.rw.dsmgmt = 0;
 
+    DIO(bug("[NVME%02ld(%02u)] %s: %08x%08x (%u)\n", unit->au_UnitNum, queueno, __func__, cmdio.rw.slba >> 32, cmdio.rw.slba & 0xFFFFFFFF, AROS_LE2WORD(cmdio.rw.length));)
+    
     CachePreDMA(data, &len, is_write ? DMAFLAGS_PREWRITE : DMAFLAGS_PREREAD);
     nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle);
     Wait(ioehandle.ceh_SigSet);
@@ -195,13 +197,11 @@ AROS_LH1(void, BeginIO,
 
     case TD_FORMAT:
         D(bug("[NVME%02ld] TD_FORMAT\n", unit->au_UnitNum);)
-#if (0)
-        if (len & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
+        if (len & (unit->au_SecCnt << unit->au_SecShift - 1))
             goto bad_length;
         off64  = iotd->iotd_Req.io_Offset;
-        if (off64 & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
+        if (off64 & (unit->au_SecCnt << unit->au_SecShift - 1))
             goto bad_address;
-#endif
         done = nvme_sector_rw(io, off64, TRUE);
         break;
 
@@ -274,17 +274,18 @@ AROS_LH1(void, BeginIO,
         break;
 
     default:
-        bug("nvme.device %d: Unknown IO command %d\n", unit->au_UnitNum, io->io_Command);
+        bug("nvme.device %u: Unknown IO command %d\n", unit->au_UnitNum, io->io_Command);
 bad_cmd:
         io->io_Error = IOERR_NOCMD;
         done = TRUE;
         break;
 bad_length:
-        D(bug("[NVME%02ld] IO %p Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len = %d)\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, len));
+        bug("nvme.device %u: IO %p Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len = %d)\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, len);
         io->io_Error = IOERR_BADLENGTH;
         done = TRUE;
         break;
 bad_address:
+        bug("nvme.device %u: IO %p Fault, io_Flags = %d, io_Command = %d, len = %d, IOERR_BADADDRESS\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, len);
         io->io_Error = IOERR_BADADDRESS;
         done = TRUE;
         break;
