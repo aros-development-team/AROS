@@ -1,6 +1,8 @@
 #if !defined(NOMEDIA_ANIM_H)
 #define NOMEDIA_ANIM_H
 
+#define ANIMFRAME_COUNT      2
+
 #if !defined(NOMEDIA_OLDSTYLE)
 /* These coordinates define the Main "Logo" region of the picture */
 
