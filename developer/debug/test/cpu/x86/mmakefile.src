@@ -1,0 +1,19 @@
+# Copyright © 2020, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+##MM- test : test-cpu-x86-avx2
+#MM test-cpu-x86-avx2:
+#MM test-cpu-x86-avx2-quick:
+
+EXEDIR := $(AROS_TESTS)/$(AROS_TARGET_CPU)
+AVX2FILES  := avx2-dotproduct
+#MM- test : test
+
+USER_CFLAGS += -mavx2
+
+%build_progs mmake=test-cpu-x86-avx2 \
+    files=$(AVX2FILES) targetdir=$(EXEDIR)
+
+%common
