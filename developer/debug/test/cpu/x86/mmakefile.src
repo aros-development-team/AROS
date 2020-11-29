@@ -3,17 +3,34 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-##MM- test : test-cpu-x86-avx2
-#MM test-cpu-x86-avx2:
-#MM test-cpu-x86-avx2-quick:
+##MM- test : test-cpu-x86
+#MM- test-cpu-x86 : test-cpu-x86-slow test-cpu-x86-avx test-cpu-x86-avx2
+#MM- test-cpu-x86-quick : test-cpu-x86-slow-quick test-cpu-x86-avx-quick test-cpu-x86-avx2-quick
 
 EXEDIR := $(AROS_TESTS)/$(AROS_TARGET_CPU)
-AVX2FILES  := avx2-dotproduct
+SLOWTFILES  := slow-dotproduct
+AVXTFILES  := avx-dotproduct
 #MM- test : test
 
-USER_CFLAGS += -mavx2
+USER_CFLAGS :=
 
-%build_progs mmake=test-cpu-x86-avx2 \
-    files=$(AVX2FILES) targetdir=$(EXEDIR)
+%build_prog mmake=test-cpu-x86-slow \
+     progname=slow-dotproduct targetdir=$(EXEDIR) \
+     objdir=$(GENDIR)/$(CURDIR)/slow \
+     files=$(SLOWTFILES) uselibs=""
+
+USER_CFLAGS := -mavx
+
+%build_prog mmake=test-cpu-x86-avx \
+     progname=avx-dotproduct targetdir=$(EXEDIR) \
+     objdir=$(GENDIR)/$(CURDIR)/avx \
+     files=$(AVXTFILES) uselibs=""
+
+USER_CFLAGS := -mavx2
+
+%build_prog mmake=test-cpu-x86-avx2 \
+     progname=avx2-dotproduct targetdir=$(EXEDIR) \
+     objdir=$(GENDIR)/$(CURDIR)/avx2 \
+     files=$(AVXTFILES) uselibs=""
 
 %common

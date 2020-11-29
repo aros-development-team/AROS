@@ -7,14 +7,15 @@
 #include <immintrin.h>
 #include <math.h>
 
-const int N = 83;
+#if defined (__AVX2__)
+#define avxstr "avx2"
+#else
+#if defined(__AVX__)
+#define avxstr "avx"
+#endif
+#endif
 
-double slow_dot_product(const double *a, const double *b) {
-  double answer = 0.0;
-  for(int ii = 0; ii < N; ++ii)
-    answer += a[ii]*b[ii];
-  return answer;
-}
+const int N = 83;
 
 /* Horizontal add works within 128-bit lanes. Use scalar ops to add
  * across the boundary. */
@@ -59,7 +60,8 @@ int main() {
   for(int ii = 0; ii < N; ++ii)
     a[ii] = b[ii] = ii/sqrt(N);
 
-  double answer = dot_product(a, b);
-  printf("%f\n", answer);
-  printf("%f\n", slow_dot_product(a,b));
+  double answer;
+  printf("calculating dot product using %s extensions\n", avxstr);
+  answer = dot_product(a, b);
+  printf("result = %f\n", answer);
 }
