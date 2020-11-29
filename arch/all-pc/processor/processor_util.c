@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -200,7 +200,9 @@ D(bug("[processor.x86] :%s()\n", __func__));
     info->Features4 = ecx;
     
     /* Calculate the vector unit */
-    if (info->Features2 & FEATF_SSE42)
+    if (info->Features2 & FEATF_AVX)
+        info->VectorUnit = VECTORTYPE_AVX;
+    else if (info->Features2 & FEATF_SSE42)
         info->VectorUnit = VECTORTYPE_SSE42;
     else if (info->Features2 & FEATF_SSE41)
         info->VectorUnit = VECTORTYPE_SSE41;
