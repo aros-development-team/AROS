@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -100,19 +100,23 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
 #define FEATF_HTT   (1 << FEATB_HTT)
 
 /* ECX 00000001 Flags */
-#define FEATB_SSE3  0
-#define FEATB_VMX   5
-#define FEATB_SSSE3 9
-#define FEATB_CX16  13
-#define FEATB_SSE41 19
-#define FEATB_SSE42 20
+#define FEATB_SSE3      0
+#define FEATB_VMX       5
+#define FEATB_SSSE3     9
+#define FEATB_CX16      13
+#define FEATB_SSE41     19
+#define FEATB_SSE42     20
+#define FEATB_XSAVE     26
+#define FEATB_AVX       28
 
-#define FEATF_SSE3  (1 << FEATB_SSE3)
-#define FEATF_VMX   (1 << FEATB_VMX)
-#define FEATF_SSSE3 (1 << FEATB_SSSE3)
-#define FEATF_CX16  (1 << FEATB_CX16)
-#define FEATF_SSE41 (1 << FEATB_SSE41)
-#define FEATF_SSE42 (1 << FEATB_SSE42)
+#define FEATF_SSE3      (1 << FEATB_SSE3)
+#define FEATF_VMX       (1 << FEATB_VMX)
+#define FEATF_SSSE3     (1 << FEATB_SSSE3)
+#define FEATF_CX16      (1 << FEATB_CX16)
+#define FEATF_SSE41     (1 << FEATB_SSE41)
+#define FEATF_SSE42     (1 << FEATB_SSE42)
+#define FEATF_XSAVE     (1 << FEATB_XSAVE)
+#define FEATF_AVX       (1 << FEATB_AVX)
 
 /* EDX 80000001 AMD Flags */
 #define FEATB_XDNX      20

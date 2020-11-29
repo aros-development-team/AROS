@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
@@ -151,6 +151,14 @@ D(bug("[processor.x86] :%s()\n", __func__));
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features3 & FEATF_3DNOWEXT) >> FEATB_3DNOWEXT); break;
     case(GCIT_SupportsSSE4A):
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features4 & FEATF_SSE4A) >> FEATB_SSE4A); break;
+    case(GCIT_SupportsAVX):
+        {
+            if (info->Features2 & FEATF_XSAVE)
+                *((BOOL *)tag->ti_Data) = (BOOL)((info->Features2 & FEATF_AVX) >> FEATB_AVX);
+            else
+                *((BOOL *)tag->ti_Data) = (BOOL)FALSE;
+            break;
+        }
     case(GCIT_SupportsVME):
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_VME) >> FEATB_VME); break;
     case(GCIT_SupportsPSE):
