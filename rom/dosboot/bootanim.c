@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,6 +12,8 @@
 #include <intuition/screens.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+
+//#define NOMEDIA_OLDSTYLE
 
 #include "dosboot_intern.h"
 #include "nomedia_image.h"
@@ -55,6 +57,17 @@ static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpac
     }
 }
 
+#if !defined(NOMEDIA_OLDSTYLE)
+static void WriteChunkRegion(struct DOSBootBase *DOSBootBase,
+                                    struct RastPort *rp, UWORD x, UWORD y, UWORD width,
+                                    UBYTE *data, UWORD regx, UWORD regy, UWORD regwidth, UWORD regheight)
+{
+    WriteChunkyPixels(rp, x + regx, y + regy,
+                                    x + regx + regwidth - 1, y + regy + regheight - 1,
+                                    data + regx + (regy * width), width);
+}
+#endif
+
 APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 {
     D(bug("Screen: %dx%dx%d\nImage: %dx%dx%d\n",
@@ -85,8 +98,21 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 
           	ad->x = (scr->Width  - NOMEDIA_WIDTH ) >> 1;
 		ad->y = (scr->Height - NOMEDIA_HEIGHT) >> 1;
+
+#if defined(NOMEDIA_OLDSTYLE)
 		WriteChunkyPixels(&scr->RastPort, ad->x, ad->y, ad->x + NOMEDIA_WIDTH - 1, ad->y + NOMEDIA_HEIGHT - 1,
 				  ad->picture, NOMEDIA_WIDTH);
+#else
+                WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                            ad->picture, BOOTLOGO_X, BOOTLOGO_Y, BOOTLOGO_WIDTH, BOOTLOGO_HEIGHT);
+                WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                            ad->picture, AROSLOGO_X, AROSLOGO_Y, AROSLOGO_WIDTH, AROSLOGO_HEIGHT);
+#if (0)
+//dont draw until it animates ...
+                WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                            ad->picture, MEDIALOGO_X, MEDIALOGO_Y, MEDIALOGO_WIDTH, MEDIALOGO_HEIGHT);
+#endif
+#endif
 
 		ad->frame = 0;
 		DOSBootBase->animData = ad;
@@ -109,9 +135,14 @@ void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase)
     		 ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1);
     else
     {
+#if defined(NOMEDIA_OLDSTYLE)
     	WriteChunkyPixels(&scr->RastPort, ad->x + FLASH_X, ad->y + FLASH_Y,
     			  ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1,
     			  ad->picture + FLASH_X, NOMEDIA_WIDTH);
+#else
+        WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                    ad->picture, FLASH_X, FLASH_Y, FLASH_WIDTH, FLASH_HEIGHT);
+#endif
     }
 }
 
