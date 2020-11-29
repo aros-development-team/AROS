@@ -39,7 +39,6 @@ FUNCTIONS := \
 	stricmp \
 	strlcat \
 	strlcpy \
-	strlen \
 	strnicmp \
 	taginarray \
 	tolower \
