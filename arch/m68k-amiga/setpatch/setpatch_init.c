@@ -11,6 +11,8 @@
 #include <proto/graphics.h>
 #include <graphics/gfxbase.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 TEXT CONST aros_patchname[] = "AROS";

@@ -8,6 +8,8 @@
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 
+#include <string.h>
+
 #define  DEBUG  0
 #include <aros/debug.h>
 

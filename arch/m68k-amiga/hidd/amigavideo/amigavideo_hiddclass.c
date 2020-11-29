@@ -23,6 +23,8 @@
 #include <hidd/hidd.h>
 #include <aros/symbolsets.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 #include "chipset.h"

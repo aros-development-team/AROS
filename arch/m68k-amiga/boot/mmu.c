@@ -15,6 +15,8 @@
 #include <libraries/configvars.h>
 #include <hardware/cpu/memory.h>
 
+#include <string.h>
+
 #include "exec_intern.h"
 #include "early.h"
 #undef KernelBase

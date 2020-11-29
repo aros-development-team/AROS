@@ -29,6 +29,7 @@
 #include <aros/symbolsets.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include LC_LIBDEFS_FILE
 

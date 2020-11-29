@@ -23,6 +23,8 @@
 
 #include <devices/timer.h>
 
+#include <string.h>
+
 #include "ata.h"
 #include "ata_bus.h"
 #include "timer.h"

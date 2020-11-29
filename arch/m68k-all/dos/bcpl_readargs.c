@@ -14,6 +14,8 @@
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
 
+#include <string.h>
+
 /*****************************************************************************
 
     NAME */

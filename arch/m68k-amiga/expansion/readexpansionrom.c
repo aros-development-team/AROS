@@ -12,6 +12,8 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include <expansion_intern.h>
 
 /* See rom/expansion/readexpansionrom.c for documentation */
