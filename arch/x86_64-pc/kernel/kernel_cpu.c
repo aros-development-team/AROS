@@ -79,20 +79,52 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     /* Get task's context */
     ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
-    /* 
-     * Restore the fpu, mmx, xmm state
-     * TODO: Change to the lazy saving of the XMM state!!!!
-     */
-    if (ctx->Flags & ECF_FPX)
-	asm volatile("fxrstor (%0)"::"r"(ctx->FXData));
-
+    DSCHED(
+        bug("[Kernel:%03u] cpu_Dispatch: Restoring FPU/MMX registers\n", cpunum);
+        bug("[Kernel:%03u] cpu_Dispatch: tc_ETask = 0x%p\n", cpunum, task->tc_UnionETask.tc_ETask);
+        bug("[Kernel:%03u] cpu_Dispatch: et_RegFrame = 0x%p, FXSData = 0x%p\n", cpunum, ctx, ctx->FXSData);
+    )
+    if (ctx)
+    {
+        /* 
+         * Restore the x86 FPU / XMM / AVX512/ MXCSR state
+         * NB: lazy saving of the x86 FPU states or FPU / XMM / AVX512 state, has
+         * been reported to leak across process, aswell as VM boundaries, giving
+         * attackers possibilities to read private data from other processes,
+         * when using speculative execution side channel attacks.
+         * While this isnt (currently) an issue for AROS, we will not use them none the less ...
+         */
+        if (ctx->Flags & ECF_FPXS)
+        {
+            DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring AVX registers\n", cpunum);)
+            asm volatile("xrstor (%0)"::"r"(ctx->XSData));
+        }
+        else if (ctx->Flags & ECF_FPFXS)
+        {
+            DSCHED(bug("[Kernel:%03u] cpu_Dispatch: restoring SSE registers\n", cpunum);)
+            asm volatile("fxrstor (%0)"::"r"(ctx->FXSData));
+        }
+    }
 #if defined(__AROSEXEC_SMP__)
     IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber = cpunum;
 #endif
 
-    /* TODO: Handle exception
     if (task->tc_Flags & TF_EXCEPT)
-        Exception(); */
+    {
+#if (0)
+        Exception();
+#else
+        /* TODO: Handle exception */
+        DSCHED(
+            bug("[Kernel:%03u] cpu_Dispatch: !! unhandled exception in task @ 0x%p '%s'\n", cpunum, task, task->tc_Node.ln_Name);
+            bug("[Kernel:%03u] cpu_Dispatch: tc_SigExcept %08x, tc_SigRecvd %08x\n", cpunum, task->tc_SigExcept, task->tc_SigRecvd);
+        )
+#endif
+    }
+
+    DSCHED(
+        bug("[Kernel:%03u] cpu_Dispatch: Caching task launch time\n", cpunum);
+    )
 
     /* Store the launch time */
     IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = RDTSC();
@@ -132,16 +164,25 @@ void cpu_Switch(struct ExceptionContext *regs)
         * Copy current task's context into the ETask structure. Note that context on stack
         * misses SSE data pointer.
         */
-        CopyMemQuick(regs, ctx, sizeof(struct ExceptionContext) - sizeof(struct FPXContext *));
+        CopyMemQuick(regs, ctx, sizeof(struct ExceptionContext) - sizeof(struct FPXSContext *));
+        ctx->Flags = ECF_SEGMENTS;
 
         /*
-        * Copy the fpu, mmx, xmm state
-        * TODO: Change to the lazy saving of the XMM state!!!!
+        * Cache x86 FPU / XMM / AVX512 / MXCSR state
+        * NB: See the note about lazy saving of the fpu above!!
         */
-        asm volatile("fxsave (%0)"::"r"(ctx->FXData));
-
-        /* We have the complete data now */
-        ctx->Flags = ECF_SEGMENTS | ECF_FPX;
+        if (ctx->FPUCtxSize > sizeof(struct FPXSContext))
+        {
+            DSCHED(bug("[Kernel:%03u] cpu_Switch: saving AVX registers\n", cpunum);)
+            asm volatile("xsave (%0)"::"r"(ctx->XSData));
+            ctx->Flags |= ECF_FPXS;
+        }
+        else if (ctx->FPUCtxSize == sizeof(struct FPFXSContext))
+        {
+            DSCHED(bug("[Kernel:%03u] cpu_Switch: saving SSE registers\n", cpunum);)
+            asm volatile("fxsave (%0)"::"r"(ctx->FXSData));
+            ctx->Flags |= ECF_FPFXS;
+        }
 
         /* Set task's tc_SPReg */
         task->tc_SPReg = (APTR)regs->rsp;
