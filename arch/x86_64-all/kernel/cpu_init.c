@@ -5,6 +5,7 @@
 
 #include <aros/symbolsets.h>
 #include <exec/types.h>
+#include <asm/cpu.h>
 
 #include "kernel_base.h"
 #include <kernel_debug.h>
