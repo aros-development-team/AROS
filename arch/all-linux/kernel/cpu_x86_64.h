@@ -2,7 +2,7 @@
 #define _SIGCORE_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle unix signals, x86_64 version.
@@ -179,15 +179,15 @@ typedef ucontext_t regs_t;
 
 /*
  * Save all registers from UNIX signal context to AROS context.
- * Save also SSE state if the context has buffer. ECF_FPX will be set
+ * Save also SSE state if the context has buffer. ECF_FPFXS will be set
  * if SSE state was copied.
  */
 #define SAVEREGS(cc, sc)                                       					\
     SAVE_CPU((cc)->regs, sc);									\
-    if (sc->uc_mcontext.fpregs && (cc)->regs.FXData)						\
+    if (sc->uc_mcontext.fpregs && (cc)->regs.FXSData)						\
     {												\
-    	(cc)->regs.Flags |= ECF_FPX;								\
-    	CopyMemQuick(sc->uc_mcontext.fpregs, (cc)->regs.FXData, sizeof(struct FPXContext));	\
+    	(cc)->regs.Flags |= ECF_FPFXS;								\
+    	CopyMemQuick(sc->uc_mcontext.fpregs, (cc)->regs.FXSData, sizeof(struct FPFXSContext));	\
     }
 
 /*
@@ -196,8 +196,8 @@ typedef ucontext_t regs_t;
  */
 #define RESTOREREGS(cc, sc)                                    					\
     RESTORE_CPU((cc)->regs, sc);								\
-    if ((cc)->regs.Flags & ECF_FPX)								\
-	CopyMemQuick((cc)->regs.FXData, sc->uc_mcontext.fpregs, sizeof(struct FPXContext));
+    if ((cc)->regs.Flags & ECF_FPFXS)								\
+	CopyMemQuick((cc)->regs.FXSData, sc->uc_mcontext.fpregs, sizeof(struct FPFXSContext));
 
 /* Print signal context. Used in crash handler. */
 #define PRINT_SC(sc)						\
