@@ -94,8 +94,8 @@ static void WriteChunkRegion(struct DOSBootBase *DOSBootBase,
 APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 {
     D(bug("Screen: %dx%dx%d\nImage: %dx%dx%d\n",
-    	scr->Width, scr->Height, scr->RastPort.BitMap->Depth,
-    	NOMEDIA_WIDTH, NOMEDIA_HEIGHT, NOMEDIA_PLANES));
+        scr->Width, scr->Height, scr->RastPort.BitMap->Depth,
+        NOMEDIA_WIDTH, NOMEDIA_HEIGHT, NOMEDIA_PLANES));
     if ((scr->Width >= NOMEDIA_WIDTH) && (scr->Height >= NOMEDIA_HEIGHT) &&
         (scr->RastPort.BitMap->Depth >= NOMEDIA_PLANES))
     {
@@ -115,7 +115,7 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
                     { IID_Hidd_BitMap,  &ad->bitMapAttrBase     },
                     { NULL,             NULL                    }
                 };
-		ULONG i;
+                ULONG i;
                 ad->framedata[1] = (APTR)(IPTR)-1; // We just repeat the same frame...
 
                 if ((ad->OOPBase = OpenLibrary("oop.library",0)) != NULL)
@@ -152,21 +152,21 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 #endif
                 }
 
-		unpack_byterun1(nomedia_data, ad->framedata[0], size);
+                unpack_byterun1(nomedia_data, ad->framedata[0], size);
 
-		for (i = 0; i < NOMEDIA_COLORS; i++)
-		    SetRGB32(&scr->ViewPort, i, (nomedia_pal[i] << 8) & 0xFF000000,
-						(nomedia_pal[i] << 16) & 0xFF000000, (nomedia_pal[i] << 24) & 0xFF000000);
+                for (i = 0; i < NOMEDIA_COLORS; i++)
+                    SetRGB32(&scr->ViewPort, i, (nomedia_pal[i] << 8) & 0xFF000000,
+                                                (nomedia_pal[i] << 16) & 0xFF000000, (nomedia_pal[i] << 24) & 0xFF000000);
 
-		SetAPen(&scr->RastPort, 0);
-		RectFill(&scr->RastPort, 0, 0, scr->Width, scr->Height);
+                SetAPen(&scr->RastPort, 0);
+                RectFill(&scr->RastPort, 0, 0, scr->Width, scr->Height);
 
-          	ad->x = (scr->Width  - NOMEDIA_WIDTH ) >> 1;
-		ad->y = (scr->Height - NOMEDIA_HEIGHT) >> 1;
+                ad->x = (scr->Width  - NOMEDIA_WIDTH ) >> 1;
+                ad->y = (scr->Height - NOMEDIA_HEIGHT) >> 1;
 
 #if defined(NOMEDIA_OLDSTYLE)
-		WriteChunkyPixels(&scr->RastPort, ad->x, ad->y, ad->x + NOMEDIA_WIDTH - 1, ad->y + NOMEDIA_HEIGHT - 1,
-				  ad->framedata[0], NOMEDIA_WIDTH);
+                WriteChunkyPixels(&scr->RastPort, ad->x, ad->y, ad->x + NOMEDIA_WIDTH - 1, ad->y + NOMEDIA_HEIGHT - 1,
+                                  ad->framedata[0], NOMEDIA_WIDTH);
 #else
                 WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
                                             ad->framedata[0], BOOTLOGO_X, BOOTLOGO_Y, BOOTLOGO_WIDTH, BOOTLOGO_HEIGHT);
@@ -180,13 +180,13 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 #endif
                 ad->framecnt = ANIMFRAME_COUNT;
                 ad->tick = 0;
-		ad->frame = 0;
-		DOSBootBase->animData = ad;
-		DOSBootBase->delayTicks = 25;	/* We run at 2 frames per second */
-		return ad;
-	    }
-	    FreeMem(ad, sizeof(struct AnimData));
-	}
+                ad->frame = 0;
+                DOSBootBase->animData = ad;
+                DOSBootBase->delayTicks = 25;	/* We run at 2 frames per second */
+                return ad;
+            }
+            FreeMem(ad, sizeof(struct AnimData));
+        }
     }
     return NULL;
 }
@@ -197,8 +197,8 @@ void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 
     ad->frame = ad->tick++ % ad->framecnt;
     if (ad->frame)
-    	RectFill(&scr->RastPort, ad->x + FLASH_X, ad->y + FLASH_Y,
-    		 ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1);
+        RectFill(&scr->RastPort, ad->x + FLASH_X, ad->y + FLASH_Y,
+                 ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1);
     else
     {
         UBYTE *source;
@@ -207,9 +207,9 @@ void anim_Animate(struct Screen *scr, struct DOSBootBase *DOSBootBase)
         else
             source = ad->framedata[ad->frame];
 #if defined(NOMEDIA_OLDSTYLE)
-    	WriteChunkyPixels(&scr->RastPort, ad->x + FLASH_X, ad->y + FLASH_Y,
-    			  ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1,
-    			  source + FLASH_X, NOMEDIA_WIDTH);
+        WriteChunkyPixels(&scr->RastPort, ad->x + FLASH_X, ad->y + FLASH_Y,
+                          ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1,
+                          source + FLASH_X, NOMEDIA_WIDTH);
 #else
         WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
                                     source, FLASH_X, FLASH_Y, FLASH_WIDTH, FLASH_HEIGHT);
@@ -235,9 +235,9 @@ void anim_Stop(struct DOSBootBase *DOSBootBase)
         p.visible = TRUE;
         (VOID)OOP_DoMethod(ad->gfxhidd, &p.mID);
 #endif
-    	FreeMem(ad, sizeof(struct AnimData) + (sizeof(struct framedata *) * ad->framecnt));
+        FreeMem(ad, sizeof(struct AnimData) + (sizeof(struct framedata *) * ad->framecnt));
 
-    	DOSBootBase->animData = NULL;
+        DOSBootBase->animData = NULL;
 
     }
 }
