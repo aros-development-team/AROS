@@ -13,6 +13,8 @@
 #include <kernel_objects.h>
 #include "kernel_debug.h"
 
+#define D(x)
+
 AROS_LH0(void *, KrnCreateContext,
 	  struct KernelBase *, KernelBase, 18, Kernel)
 
