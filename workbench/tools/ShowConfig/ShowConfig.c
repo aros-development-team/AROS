@@ -15,6 +15,11 @@
 
 #include "cpuspecific.h"
 
+#define APPNAME "ShowConfig"
+#define VERSION "ShowConfig 0.2"
+
+const char version[] = "$VER: " VERSION " (" ADATE ")\n";
+
 APTR ProcessorBase = NULL;
 char execextra[100];
 
