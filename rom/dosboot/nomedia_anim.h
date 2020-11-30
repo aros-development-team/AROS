@@ -16,7 +16,7 @@
 #define AROSLOGO_X		0
 #define AROSLOGO_Y		145
 #define AROSLOGO_WIDTH	266
-#define AROSLOGO_HEIGHT	203
+#define AROSLOGO_HEIGHT	58
 
 /* These coordinates define the media region(s) of the picture */
 
