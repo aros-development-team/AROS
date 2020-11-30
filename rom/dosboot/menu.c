@@ -6,8 +6,6 @@
    Lang: english
 */
 
-#define __OOP_NOLIBBASE__
-
 #include <aros/config.h>
 #include <aros/debug.h>
 

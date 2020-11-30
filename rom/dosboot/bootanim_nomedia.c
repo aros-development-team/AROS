@@ -1,8 +1,4 @@
 
-#define __OOP_NOLIBBASE__
-#define __OOP_NOATTRBASES__
-#define __OOP_NOMETHODBASES__
-
 #include <aros/debug.h>
 #include <proto/graphics.h>
 
@@ -13,8 +9,9 @@
 
 #include "bootanim.h"
 
-#define STATEF_WINK             (1 << 0)
-#define STATEF_AROSLOGO         (1 << 1)
+// use bits free to this code...
+#define STATEF_WINK             (1 << STATEFLAG_CORE + 0)
+#define STATEF_AROSLOGO         (1 << STATEFLAG_CORE + 1)
 
 static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
 {
