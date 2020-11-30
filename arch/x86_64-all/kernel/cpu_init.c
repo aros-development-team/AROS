@@ -11,7 +11,7 @@
 #include "kernel_base.h"
 #include <kernel_debug.h>
 
-#define D(x) x
+#define D(x)
 
 static int cpu_Init(struct KernelBase *KernelBase)
 {
@@ -54,7 +54,7 @@ static int cpu_Init(struct KernelBase *KernelBase)
         ".no_avx:\n\t"
         "    mov        $0x0d, %%eax\n\t"                                               /* and get the size of the XSAVE area           */
         "    xor        %%ecx, %%ecx\n\t"                                               /* for Extended Control Register 0              */
-        "cpuid\n\t"
+        "    cpuid\n\t"
         "    mov        %%ebx, %0\n\t\n"
         ".xscheck_done:\n\t"
         : "=m"(XContextSize), "=m"(AVXOffs)
@@ -65,22 +65,36 @@ static int cpu_Init(struct KernelBase *KernelBase)
 
     if (AVXOffs)
     {
+        ULONG featMask;
+
         /* Use AVX/XSAVE support */
 #if AROS_FLAVOUR != AROS_FLAVOUR_EMULATION
-        D(bug("[Kernel] %s: Enabling AVX ...\n", __func__);)
-        /* Enable xgetvb/xsetvb */ 
-        wrcr(cr4, rdcr(cr4) | _CR4_OSXSBV);
+        D(bug("[Kernel] %s: Adjusting CR0 flags ...\n", __func__);)
+        /* Enable monitoring media instruction to generate #NM when CR0.TS is set.
+         * Disable coprocessor emulation.
+         */
+        wrcr(cr0, (rdcr(cr0) & ~_CR0_EM) | _CR0_MP);
+        
+        D(bug("[Kernel] %s: Enabling #XF & XGETVB ...\n", __func__);)
+        /* Enable #XF instead of #UD when a SIMD exception occurs
+         * Enable xgetvb/xsetvb
+         */ 
+        wrcr(cr4, rdcr(cr4) | _CR4_OSXMMEXCPT | _CR4_OSXSBV);
 #endif
-
+        D(bug("[Kernel] %s: Enabling Saving AVX context...\n", __func__);)
         asm volatile (
             "    xor        %%rcx, %%rcx\n\t"
             "    xgetbv\n\t"                                                            /* Load XCR0 register                           */
-            "    or         %%eax, 7\n\t"                                               /* Set FPU, XMM, YMM bits                       */
+            "    or         $0b111, %%eax\n\t"                                          /* Set FPU, XMM, YMM bits                       */
+            "    mov        %%eax, %0\n\t\n"
             "    xsetbv\n\t"                                                            /* Save back to XCR0                            */
-            : : : "%eax",  "%rcx"
+            : "=m"(featMask) : : "%eax",  "%rcx"
             );
 
-        D(bug("[Kernel] %s: AVX required size = %u + %u, 64byte align\n", __func__, sizeof(struct AROSCPUContext), XContextSize);)
+        D(
+            bug("[Kernel] %s: AVX feature mask %08x\n", __func__, featMask);
+            bug("[Kernel] %s: AVX required size = %u + %u, 64byte align\n", __func__, sizeof(struct AROSCPUContext), XContextSize);
+        )
         KernelBase->kb_ContextSize = AROS_ROUNDUP2(XContextSize + sizeof(struct AROSCPUContext), 64);
     }
     else
