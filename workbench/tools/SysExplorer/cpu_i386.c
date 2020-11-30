@@ -26,7 +26,7 @@ static const char *features[] =
     "SSE4A",
     "AVX",
     "NoExecute",
-    "64Bit"
+    "64Bit",
     "Hyperthreading"
 };
 
