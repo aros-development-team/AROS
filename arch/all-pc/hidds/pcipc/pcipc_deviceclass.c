@@ -81,6 +81,18 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
                 extcap = (APTR) (mmconfig + 0x100);
                 D(bug("[PCIPC:Device] %s:             MMIO @ 0x%p, *ExtCap = %08x", __func__, mmconfig, *extcap);)
 
+                /*
+                 * FIXME: Check the validity of the extended configuration space
+                 *
+                 * Absence of any Extended Capabilities is required to be indicated
+                 * by an Extended Capability header with a Capability ID of 0000h,
+                 * a Capability Version of 0h, and a Next Capability Offset of 0h.
+                 * For PCI devices OnMyHardware(TM) extended capability header at 0x100 reads 0xffffffff.
+                 * 0xffffffff is non valid extended capability header as it would point
+                 * the next capability outside configuration space.
+                 * If we get extended capability header set with all ones then we won't use ECAM.
+                 * (PCI device in mmio space, not PCIe)
+                 */
                 if(*extcap == 0xffffffff) {
                     D(bug(" (PCI, not PCIe)");)
                 }
