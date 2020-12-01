@@ -1,10 +1,10 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _PCI_H
-#define _PCI_H
+#ifndef _PCIPC_H
+#define _PCIPC_H
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -32,15 +32,21 @@
 #define LEGACY_SUPPORT
 #endif
 
-
 struct pcipc_staticdata
 {
+    struct Library      *OOPBase;
+    struct Library              *utilityBase;
+    APTR                kernelBase;
+
     OOP_AttrBase        hiddPCIDriverAB;
     OOP_AttrBase        hiddAB;
 
     OOP_AttrBase        hidd_PCIDeviceAB;
 
-    OOP_Class	        *driverClass;
+    OOP_MethodID        hidd_PCIDeviceMB;
+
+    OOP_Class	        *pcipcDriverClass;
+    OOP_Class	        *pcipcDeviceClass;
 
     /* Low-level sub-methods */
     ULONG	        (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
@@ -51,39 +57,54 @@ struct pcipc_staticdata
     struct MinList      pcipc_irqRoutingTable;
 };
 
-struct pcibase
+#undef HiddPCIDriverAttrBase
+#undef HiddAttrBase
+#undef HiddPCIDeviceAttrBase
+
+#undef HiddPCIDeviceBase
+
+#define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
+#define HiddAttrBase            (PSD(cl)->hiddAB)
+#define HiddPCIDeviceAttrBase   (PSD(cl)->hidd_PCIDeviceAB)
+
+#define HiddPCIDeviceBase       (PSD(cl)->hidd_PCIDeviceMB)
+
+#define KernelBase              (PSD(cl)->kernelBase)
+#define UtilityBase             (PSD(cl)->utilityBase)
+#define OOPBase                 (PSD(cl)->OOPBase)
+
+struct PCIPCBase
 {
     struct Library	    LibNode;
     struct pcipc_staticdata   psd;
 };
 
-#define BASE(lib) ((struct pcibase*)(lib))
-#define PSD(cl) (&((struct pcibase*)cl->UserData)->psd)
-#define _psd PSD(cl)
+#define BASE(lib)               ((struct PCIPCBase*)(lib))
+#define PSD(cl)                 (&((struct PCIPCBase*)cl->UserData)->psd)
+#define _psd                    PSD(cl)
+
+struct PCIPCDeviceData
+{
+    UBYTE unused;
+};
 
 /* PCI configuration mechanism 1 registers */
-#define PCI_AddressPort	0x0cf8
-#define PCI_DataPort	0x0cfc
+#define PCI_AddressPort	        0x0cf8
+#define PCI_DataPort	        0x0cfc
 
 /*
  * PCI configuration mechanism 2 registers
  * This mechanism is obsolete long ago. But AROS runs on old hardware,
  * and we support this.
  */
-#define PCI_CSEPort	0x0cf8
-#define PCI_ForwardPort 0x0cfa
+#define PCI_CSEPort	        0x0cf8
+#define PCI_ForwardPort         0x0cfa
 
 /*
  * PCI configuration mechanism selector register.
  * Supported by some transition-time chipsets, like Intel Neptune.
  */
-#define PCI_MechSelect	0x0cfb
-
-#define PCICS_PRODUCT   0x02
-
-#define PCIBR_SUBCLASS  0x0a
-#define PCIBR_SECBUS    0x19
-
+#define PCI_MechSelect	        0x0cfb
 
 typedef union _pcicfg
 {
@@ -123,4 +144,4 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd);
 
 #endif
 
-#endif /* _PCI_H */
+#endif /* _PCIPC_H */

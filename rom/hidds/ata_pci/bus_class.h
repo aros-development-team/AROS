@@ -1,4 +1,14 @@
-#define MAX_DEVICEBUSES 2
+
+/* Max Units per Bus reported by the bus class */
+#define MAX_DEVICEBUSES                 2
+
+/* PCI Configuration space registers */
+#define IDE_IO_CFG                      0x54
+
+#define IOCFG_SCR1                      (1 << 7) /* Secondary 1 cable report */
+#define IOCFG_SCR0                      (1 << 6) /* Secondary 0 cable report */
+#define IOCFG_PCR1                      (1 << 5) /* Primary 1 cable report   */
+#define IOCFG_PCR0                      (1 << 4) /* Primary 0 cable report   */
 
 /*
  * A single PCI device is shared between two buses.
@@ -11,71 +21,71 @@
  */
 struct PCIDeviceRef
 {
-    OOP_Object *ref_Device;
-    ULONG       ref_Count;
+    OOP_Object                  *ref_Device;
+    ULONG                       ref_Count;
 };
 
 struct ata_ProbedBus
 {
-    struct Node         atapb_Node;
-	OOP_Object          *atapb_Parent;
-    struct PCIDeviceRef *atapb_Device;
-    UWORD               atapb_Vendor;
-    UWORD               atapb_Product;
-    UBYTE               atapb_BusNo;
-    IPTR                atapb_IOBase;
-    IPTR                atapb_IOAlt;
-    IPTR                atapb_INTLine;
-    IPTR                atapb_DMABase;
+    struct Node                 atapb_Node;
+    OOP_Object                  *atapb_Parent;
+    struct PCIDeviceRef         *atapb_Device;
+    UWORD                       atapb_Vendor;
+    UWORD                       atapb_Product;
+    UBYTE                       atapb_BusNo;
+    IPTR                        atapb_IOBase;
+    IPTR                        atapb_IOAlt;
+    IPTR                        atapb_INTLine;
+    IPTR                        atapb_DMABase;
 };
 
 /* These values are used also for ln_Type */
-#define ATABUSNODEPRI_PROBED       50
-#define ATABUSNODEPRI_PROBEDLEGACY 100
-#define ATABUSNODEPRI_LEGACY       0
+#define ATABUSNODEPRI_PROBED            50
+#define ATABUSNODEPRI_PROBEDLEGACY      100
+#define ATABUSNODEPRI_LEGACY            0
 
 struct PCIATABusData
 {
-    struct ata_ProbedBus *bus;
-    OOP_Object           *pciDriver;
-    APTR                  dmaBuf;
-    void                (*ata_HandleIRQ)(UBYTE, APTR);
-    APTR                  irqData;
-    APTR                  irqHandle;
+    struct ata_ProbedBus        *bus;
+    OOP_Object                  *pciDriver;
+    APTR                        dmaBuf;
+    void                        (*ata_HandleIRQ)(UBYTE, APTR);
+    APTR                        irqData;
+    APTR                        irqHandle;
 };
 
 struct atapciBase
 {
-    struct Library  lib;
+    struct Library              lib;
 
-    struct MinList  probedbuses;
-    ULONG           ata__buscount;
-    ULONG           legacycount;
+    struct MinList              probedbuses;
+    ULONG                       ata__buscount;
+    ULONG                       legacycount;
 
-    OOP_Class      *ataClass;
-    OOP_Class      *busClass;
+    OOP_Class                   *ataClass;
+    OOP_Class                   *busClass;
 
-    OOP_Object	   *storageRoot;
+    OOP_Object	                *storageRoot;
 
 #if defined(__OOP_NOATTRBASES__)
-    OOP_AttrBase    PCIDeviceAttrBase;
-    OOP_AttrBase    PCIDriverAttrBase;
-    OOP_AttrBase    hiddAttrBase;
-    OOP_AttrBase    busAttrBase;
-    OOP_AttrBase    ATABusAttrBase;
-    OOP_AttrBase    hwAttrBase;
+    OOP_AttrBase                PCIDeviceAttrBase;
+    OOP_AttrBase                PCIDriverAttrBase;
+    OOP_AttrBase                hiddAttrBase;
+    OOP_AttrBase                busAttrBase;
+    OOP_AttrBase                ATABusAttrBase;
+    OOP_AttrBase                hwAttrBase;
 #endif
 #if defined(__OOP_NOMETHODBASES__)
-    OOP_MethodID    PCIMethodBase;
-    OOP_MethodID    PCIDeviceMethodBase;
-    OOP_MethodID    PCIDriverMethodBase;
-    OOP_MethodID    HWMethodBase;
-    OOP_MethodID    HiddSCMethodBase;
+    OOP_MethodID                PCIMethodBase;
+    OOP_MethodID                PCIDeviceMethodBase;
+    OOP_MethodID                PCIDriverMethodBase;
+    OOP_MethodID                HWMethodBase;
+    OOP_MethodID                HiddSCMethodBase;
 #endif
 
-    APTR            cs_KernelBase;
-    struct Library *cs_OOPBase;
-    struct Library *cs_UtilityBase;
+    APTR                        cs_KernelBase;
+    struct Library              *cs_OOPBase;
+    struct Library              *cs_UtilityBase;
 };
 
 #if defined(__OOP_NOATTRBASES__)
@@ -86,12 +96,12 @@ struct atapciBase
 #undef HiddBusAB
 #undef HiddATABusAB
 #undef HWAttrBase
-#define HiddPCIDeviceAttrBase (base->PCIDeviceAttrBase)
-#define HiddPCIDriverAttrBase (base->PCIDriverAttrBase)
-#define HiddAttrBase          (base->hiddAttrBase)
-#define HiddBusAB             (base->busAttrBase)
-#define HiddATABusAB          (base->ATABusAttrBase)
-#define HWAttrBase            (base->hwAttrBase)
+#define HiddPCIDeviceAttrBase           (base->PCIDeviceAttrBase)
+#define HiddPCIDriverAttrBase           (base->PCIDriverAttrBase)
+#define HiddAttrBase                    (base->hiddAttrBase)
+#define HiddBusAB                       (base->busAttrBase)
+#define HiddATABusAB                    (base->ATABusAttrBase)
+#define HWAttrBase                      (base->hwAttrBase)
 #endif
 
 #if defined(__OOP_NOMETHODBASES__)

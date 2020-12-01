@@ -1,27 +1,29 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI utility functions
     Lang: english
 */
 
-#include <exec/types.h>
-#include <exec/lists.h>
-#include <exec/memory.h>
-#include <proto/exec.h>
-#include <proto/oop.h>
-#include <oop/oop.h>
-#include <utility/utility.h>
-#include <hidd/pci.h>
-
-#include "pci.h"
-#include "pciutil.h"
-
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include <proto/exec.h>
+#include <proto/oop.h>
+
+#include <exec/types.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <oop/oop.h>
+#include <utility/utility.h>
+#include <hidd/pci.h>
+#include <hardware/pci.h>
+
+#include "pci.h"
+#include "pciutil.h"
 
 #undef HiddPCIDriverBase
 #define HiddPCIDriverBase (psd->hiddPCIDriverMB)

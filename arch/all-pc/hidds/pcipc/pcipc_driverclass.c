@@ -1,42 +1,32 @@
 /*
-    Copyright © 2004-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PCI direct driver for i386/x86_64 native.
+    Desc: PCI direct bus driver, for i386/x86_64 native.
     Lang: English
 */
 
-#define __OOP_NOATTRBASES__
-
-#define DEBUG 0
-
 #include <aros/debug.h>
-#include <aros/symbolsets.h>
-#include <hidd/pci.h>
-#include <oop/oop.h>
-#include <utility/tagitem.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <proto/acpica.h>
 
+#include <aros/symbolsets.h>
+#include <hidd/pci.h>
+#include <hardware/pci.h>
+#include <oop/oop.h>
+#include <utility/tagitem.h>
+
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
 
 #include <string.h>
 
-#include "pci.h"
+#include "pcipc.h"
 
 #define DECAM(x)
-
-#undef HiddPCIDriverAttrBase
-#undef HiddAttrBase
-#undef HiddPCIDeviceAttrBase
-
-#define	HiddPCIDriverAttrBase (PSD(cl)->hiddPCIDriverAB)
-#define HiddAttrBase          (PSD(cl)->hiddAB)
-#define HiddPCIDeviceAttrBase (PSD(cl)->hidd_PCIDeviceAB)
 
 /*
  * N.B. Do not move/remove/refactor the following variable unless you fully
@@ -57,7 +47,7 @@ struct Library *ACPICABase;
     We overload the New method in order to introduce the Hidd Name and
     HardwareName attributes.
 */
-OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *PCIPC__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct pRoot_New mymsg;
     struct TagItem mytags[] =
@@ -79,7 +69,7 @@ OOP_Object *PCPCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
 }
 
-void PCPCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+void PCIPC__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct pcipc_staticdata *psd = PSD(cl);
     ULONG idx;
@@ -88,6 +78,10 @@ void PCPCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         switch (idx)
         {
+            case aoHidd_PCIDriver_DeviceClass:
+                *msg->storage = (IPTR)psd->pcipcDeviceClass;
+                break;
+
             case aoHidd_PCIDriver_IRQRoutingTable:
                 if (IsListEmpty(&psd->pcipc_irqRoutingTable))
                     *msg->storage = (IPTR)NULL;
@@ -106,7 +100,7 @@ void PCPCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 }
 
-IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
+IPTR PCIPC__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_HasExtendedConfig *msg)
 {
     IPTR mmio = 0;
@@ -142,7 +136,7 @@ IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
                 */
 
                 extcap = (APTR) (mmio + 0x100);
-                D(bug("[PCI.PC] %s: bus %d dev %d sub %d extcap %08x\n", __func__, msg->bus, msg->dev, msg->sub, *extcap));
+                D(bug("[PCIPC:Driver] %s: bus %d dev %d sub %d extcap %08x\n", __func__, msg->bus, msg->dev, msg->sub, *extcap));
                 if(*extcap == 0xffffffff) {
                     D(bug("    Device is PCI not PCIe\n"));
                     mmio = 0;
@@ -150,7 +144,7 @@ IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
 
                 break;
             }else{
-                D(bug("[PCI.PC] %s: Device not found! bus %d dev %d sub %d \n", __func__, msg->bus, msg->dev, msg->sub));
+                D(bug("[PCIPC:Driver] %s: Device not found! bus %d dev %d sub %d \n", __func__, msg->bus, msg->dev, msg->sub));
             }
 
             mcfg_alloc++;
@@ -160,12 +154,12 @@ IPTR PCPCI__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
     return mmio;
 }
 
-ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
+ULONG PCIPC__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
 					    struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
     /*
         We NEED the device object as it houses the ExtendedConfig attribute per device.
-        We know that the value stored in ExtendedConfig is the mmio base as returned by PCPCI__Hidd_PCIDriver__HasExtendedConfig.
+        We know that the value stored in ExtendedConfig is the mmio base as returned by Hidd_PCIDriver__HasExtendedConfig.
         If we get ExtendedConfig we will use ECAM method.
 
         While the bus is being enumerated we automagically skip ECAM until ExtendedConfig attribute is set and we have a valid device object.
@@ -180,7 +174,7 @@ ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
 
         configLong = *(ULONG volatile *) (mmio + (msg->reg & 0xffc));
 
-        DECAM(bug("[PCI.PC] %s: ECAM Read @ %p = %08x\n", __func__, (mmio + (msg->reg & 0xffc)), configLong));
+        DECAM(bug("[PCIPC:Driver] %s: ECAM Read @ %p = %08x\n", __func__, (mmio + (msg->reg & 0xffc)), configLong));
 
         return configLong;
     }
@@ -197,13 +191,13 @@ ULONG PCPCI__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     }
 }
 
-UWORD PCPCI__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
+UWORD PCIPC__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
 					    struct pHidd_PCIDriver_ReadConfigWord *msg)
 {
     return ReadConfigWord(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
 }
 
-UBYTE PCPCI__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
+UBYTE PCIPC__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
 					    struct pHidd_PCIDriver_ReadConfigByte *msg)
 {
     pcicfg temp;
@@ -212,7 +206,7 @@ UBYTE PCPCI__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
     return temp.ub[msg->reg & 3];
 }
 
-void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
+void PCIPC__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
     IPTR mmio = 0;
@@ -222,9 +216,9 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
         /* This is the ECAM access method for long write */
         ULONG volatile *longreg;
         longreg = (ULONG volatile *) (mmio + (msg->reg & 0xffc));
-        DECAM(bug("[PCI.PC] %s: ECAM.write.old longreg %p %08x  = %08x\n", __func__, longreg, *longreg, msg->val));
+        DECAM(bug("[PCIPC:Driver] %s: ECAM.write.old longreg %p %08x  = %08x\n", __func__, longreg, *longreg, msg->val));
         *longreg = msg->val;
-        DECAM(bug("[PCI.PC] %s: ECAM.write.new longreg %p %08x == %08x?\n", __func__, longreg, *longreg, msg->val));
+        DECAM(bug("[PCIPC:Driver] %s: ECAM.write.new longreg %p %08x == %08x?\n", __func__, longreg, *longreg, msg->val));
     } else {
         /*
             Last good long register without ECAM,
@@ -253,7 +247,7 @@ static void EnumPCIIRQ(struct pcipc_staticdata *psd,
         n->re_PCIBusNum = bus_num;
         n->re_PCIDevNum = (item->Address >> 16) & 0xFFFF;
 
-        D(bug("[PCI.PC] %s:  %02x:%02x.x", __func__, n->re_PCIBusNum,
+        D(bug("[PCIPC:Driver] %s:  %02x:%02x.x", __func__, n->re_PCIBusNum,
             n->re_PCIDevNum);)
 
         n->re_IRQPin = item->Pin + 1;
@@ -284,13 +278,13 @@ static void FindIRQRouting(struct pcipc_staticdata *psd, ACPI_HANDLE parent,
     BOOL is_bridge;
     ULONG address;
 
-    D(bug("[PCI.PC] %s: Scanning bus %d\n", __func__, bus_num);)
+    D(bug("[PCIPC:Driver] %s: Scanning bus %d\n", __func__, bus_num);)
 
     /* Get routing table for current bus */
     buffer.Length = ACPI_ALLOCATE_BUFFER;
     if (AcpiGetIrqRoutingTable(parent, &buffer) == AE_OK)
     {
-        D(bug("[PCI.PC] %s: Found _PRT\n", __func__);)
+        D(bug("[PCIPC:Driver] %s: Found _PRT\n", __func__);)
 
         /* Translate routing table entries into nodes for our own list */
         for (entry = buffer.Pointer; entry->Length != 0;
@@ -323,7 +317,7 @@ static void FindIRQRouting(struct pcipc_staticdata *psd, ACPI_HANDLE parent,
                 /* Look for more routing tables */
                 if (is_bridge)
                 {
-                    D(bug("[PCI.PC] %s: Found a bridge at %02x:%02x.%x\n",
+                    D(bug("[PCIPC:Driver] %s: Found a bridge at %02x:%02x.%x\n",
                         __func__, bus_num, dev_num, func_num);)
 
                     /* Get this bridge's bus number */
@@ -350,15 +344,18 @@ static ACPI_STATUS ACPIDeviceCallback(ACPI_HANDLE handle, ULONG nesting_level,
     return AE_OK;
 }
 
-static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
+#undef OOPBase
+
+static int PCIPC_InitClass(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = LIBBASE->psd.OOPBase;
     struct pcipc_staticdata *_psd = &LIBBASE->psd;
     struct pHidd_PCI_AddHardwareDriver msg, *pmsg = &msg;
     OOP_Object *pci;
 
-    NEWLIST(&_psd->pcipc_irqRoutingTable);
+    D(bug("[PCIPC:Driver] %s()\n", __func__));
 
-    D(bug("[PCI.PC] %s()\n", __func__));
+    NEWLIST(&_psd->pcipc_irqRoutingTable);
 
     /* Open ACPI and cache the pointer to the MCFG table */
     ACPICABase = OpenLibrary("acpica.library", 0);
@@ -366,13 +363,13 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
     if (ACPICABase)
         AcpiGetTable(ACPI_SIG_MCFG, 1, (ACPI_TABLE_HEADER **)&_psd->pcipc_acpiMcfgTbl);
 
-    _psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     _psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+    _psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     _psd->hidd_PCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
     if (_psd->hiddPCIDriverAB == 0 || _psd->hiddAB == 0 || _psd->hidd_PCIDeviceAB == 0)
     {
-        D(bug("[PCI.PC] %s: ObtainAttrBases failed\n", __func__));
+        D(bug("[PCIPC:Driver] %s: ObtainAttrBases failed\n", __func__));
         return FALSE;
     }
 
@@ -388,22 +385,24 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
         AcpiGetDevices("PNP0A03", ACPIDeviceCallback, _psd, NULL);
     }
 
-    msg.driverClass = _psd->driverClass;
+    msg.driverClass = _psd->pcipcDriverClass;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
-    D(bug("[PCI.PC] %s: Registering Driver with PCI base class...\n", __func__));
+    D(bug("[PCIPC:Driver] %s: Registering Driver with PCI base class...\n", __func__));
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     OOP_DoMethod(pci, (OOP_Msg)pmsg);
     OOP_DisposeObject(pci);
 
-    D(bug("[PCI.PC] %s: Driver initialization finished\n", __func__));
+    D(bug("[PCIPC:Driver] %s: Driver initialization finished\n", __func__));
 
     return TRUE;
 }
 
-static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
+static int PCIPC_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("[PCI.PC] %s()\n", __func__));
+    struct Library *OOPBase = LIBBASE->psd.OOPBase;
+
+    D(bug("[PCIPC:Driver] %s()\n", __func__));
 
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
@@ -414,7 +413,7 @@ static int PCPCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 
     return TRUE;
 }
-	
-ADD2INITLIB(PCPCI_InitClass, 0)
-ADD2EXPUNGELIB(PCPCI_ExpungeClass, 0)
+
+ADD2INITLIB(PCIPC_InitClass, 0)
+ADD2EXPUNGELIB(PCIPC_ExpungeClass, 0)
 

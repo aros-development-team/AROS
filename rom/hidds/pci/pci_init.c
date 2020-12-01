@@ -37,10 +37,6 @@ static int PCI_Init(struct pcibase *LIBBASE)
     if (!LIBBASE->psd.kernelBase)
         return FALSE;
 
-    LIBBASE->psd.utilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-    if (!LIBBASE->psd.utilityBase)
-        return FALSE;
-        
     LIBBASE->psd.hiddPCIAB = OOP_ObtainAttrBase(IID_Hidd_PCI);
     LIBBASE->psd.hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
     LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);

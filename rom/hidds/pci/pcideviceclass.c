@@ -6,22 +6,22 @@
     Lang: English
 */
 
-#include <exec/types.h>
-#include <hidd/pci.h>
-#include <oop/oop.h>
-#include <utility/tagitem.h>
+#include <aros/debug.h>
+
 #include <proto/kernel.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 
+#include <exec/types.h>
+#include <hidd/pci.h>
+#include <hardware/pci.h>
+#include <oop/oop.h>
+#include <utility/tagitem.h>
+
 #include "pci.h"
 #include "pcie.h"
 #include "pciutil.h"
-
-#include <aros/debug.h>
-
-#define DMSI(x)
 
 /*****************************************************************************************
 
@@ -223,37 +223,11 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
 *****************************************************************************************/
 UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
 {
-    UWORD capmsi = findCapabilityOffset(cl, o, PCICAP_MSI);
     UBYTE vectirq = 0;
 
-    DMSI(bug("[PCIDevice] %s()\n", __func__);)
+    D(bug("[PCIDevice] %s()\n", __func__);)
 
-    /* Is MSI even supported? */
-    if (capmsi)
-    {
-#if defined(IRQTYPE_MSI)
-        UWORD msiflags;
-        msiflags = getWord(cl, o, capmsi + PCIMSI_FLAGS);
-        if (msiflags & PCIMSIF_ENABLE)
-        {
-            DMSI(bug("[PCIDevice] %s: MSI Queue size = %u\n", __func__, ((msiflags & PCIMSIF_MMEN_MASK) >> 4));)
-            /* MSI is enabled .. but is the requested vector valid? */
-            if (msg->vector < ((msiflags & PCIMSIF_MMEN_MASK) >> 4))
-            {
-                UWORD msimdr = getWord(cl, o, capmsi + PCIMSI_DATA32);
-                DMSI(bug("[PCIDevice] %s: msimdr = %04x\n", __func__, msimdr);)
-                vectirq = (msimdr & 0xFF) + msg->vector;
-            }
-            else bug("[PCIDevice] %s: Illegal MSI vector %u\n", __func__, msg->vector);
-        }
-        else bug("[PCIDevice] %s: MSI is dissabled for the device\n", __func__);
-#else
-        DMSI(bug("[PCIDevice] %s: MSI unsupported on this platform\n", __func__);)
-#endif
-    }
-    else bug("[PCIDevice] %s: Device doesn't support MSI\n", __func__);
-    /* If MSI wasnt enabled and they have just asked for the first vector - return the PCI int line */
-    if (!vectirq && msg->vector == 0)
+    if (msg->vector == 0)
     {
         vectirq = getByte(cl, o, PCICS_INT_LINE);
     }
@@ -301,54 +275,10 @@ UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHi
 *****************************************************************************************/
 BOOL PCIDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
 {
-    UWORD capmsi = findCapabilityOffset(cl, o, PCICAP_MSI);
-
-    DMSI(bug("[PCIDevice] %s()\n", __func__);)
-
-    if (capmsi)
-    {
-#if defined(IRQTYPE_MSI)
-        UWORD vectmin, vectmax, vectcnt;
-        ULONG apicIRQBase = 0;
-        UWORD msiflags;
-        msiflags = getWord(cl, o, capmsi + PCIMSI_FLAGS);
-
-        DMSI(bug("[PCIDevice] %s: Max Device MSI vectors = %u\n", __func__, (msiflags & PCIMSIF_MMC_MASK) >> 1);)
-
-        vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
-        if (vectmin > (msiflags & PCIMSIF_MMC_MASK) >> 1)
-            return FALSE;
-
-        vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
-        if (vectmax > (msiflags & PCIMSIF_MMC_MASK) >> 1)
-            vectmax = (msiflags & PCIMSIF_MMC_MASK) >> 1;
-
-        for (vectcnt = vectmax; vectcnt >= vectmax; vectcnt--)
-        {
-            if ((apicIRQBase = KrnAllocIRQ(IRQTYPE_MSI, vectcnt)) != (ULONG)-1)
-            {
-                D(bug("[PCIDevice] %s: Allocated %u IRQs starting at #%u\n", __func__, vectmin, apicIRQBase);)
-                break;
-            }
-        }
-        if (apicIRQBase)
-        {
-            DMSI(bug("[PCIDevice] %s: Configuring Device with %u MSI vectors...\n", __func__, vectcnt);)
-            HIDD_PCIDevice_SetMSIEnabled(o, 0);
-            msiflags &= ~PCIMSIF_MMEN_MASK;
-            msiflags |= (vectcnt << 4);
-            DMSI(bug("[PCIDevice] %s: flags = %04x\n", __func__, msiflags);)
-            setLong(cl, o, capmsi + PCIMSI_ADDRESSLO, (0xFEE << 20) | (0 << 12));
-            setWord(cl, o, capmsi + PCIMSI_FLAGS, msiflags); 
-            setWord(cl, o, capmsi + PCIMSI_DATA32, apicIRQBase);
-            HIDD_PCIDevice_SetMSIEnabled(o, 1);
-            return TRUE;
-        }
-#else
-        DMSI(bug("[PCIDevice] %s: MSI unsupported on this platform\n", __func__);)
-#endif
-    }
-    DMSI(bug("[PCIDevice] %s: Failed to obtain/enable MSI vectors\n", __func__);)
+    D(
+        bug("[PCIDevice] %s()\n", __func__);
+        bug("[PCIDevice] %s: MSI unsupported on this platform\n", __func__);
+    )
 
     return FALSE;
 }

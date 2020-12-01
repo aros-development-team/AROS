@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2016, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base PCI driver class
@@ -356,6 +356,12 @@ VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
     {
         switch(idx)
         {
+            case aoHidd_PCIDriver_DeviceClass:
+                /* report the default class if drivers do not provide their own .. */
+                D(bug("[PCI:Driver] %s: Using default device class @ 0x%p\n", __func__, PSD(cl)->pciDeviceClass);)
+                *msg->storage = (IPTR)PSD(cl)->pciDeviceClass;
+                break;
+
             case aoHidd_PCIDriver_DirectBus:
                 *msg->storage = (IPTR)instance->DirectBus;
                 break;
