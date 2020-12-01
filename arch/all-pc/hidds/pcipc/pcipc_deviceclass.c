@@ -78,10 +78,8 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
                 D(bug("[PCIPC:Device] %s:       * bus %d\n", __func__, 0);)
 
                 mmconfig = ((IPTR)mcfg_alloc->Address) | ((deviceBus & 255)<<20) | ((deviceDev & 31) << 15) | ((deviceSub & 7) << 12);
-                D(bug("[PCIPC:Device] %s:             Memory Map Base @ 0x%p\n", __func__, mmconfig);)
                 extcap = (APTR) (mmconfig + 0x100);
-
-                D(bug("[PCIPC:Driver] %s:             MMIO @ 0x%p, *ExtCap = %08x", __func__, mmio, *extcap);)
+                D(bug("[PCIPC:Device] %s:             MMIO @ 0x%p, *ExtCap = %08x", __func__, mmconfig, *extcap);)
 
                 if(*extcap == 0xffffffff) {
                     D(bug(" (PCI, not PCIe)");)
@@ -90,6 +88,7 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
                 {
                     mytags[1].ti_Data = (IPTR)mmconfig;
                 }
+                D(bug("\n");)
                 break;
             }
             offset += sizeof(ACPI_MCFG_ALLOCATION);
