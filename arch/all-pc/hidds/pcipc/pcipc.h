@@ -85,7 +85,7 @@ struct PCIPCBase
 
 struct PCIPCBusData
 {
-    void        *unused;
+    APTR        ecam;
 };
 
 struct PCIPCDeviceData

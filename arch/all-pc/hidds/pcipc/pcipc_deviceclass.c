@@ -31,11 +31,13 @@
 
 OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    OOP_Object *driver = (OOP_Object *)GetTagData(aHidd_PCIDevice_Driver, 0, msg->attrList);
     ULONG deviceBus = (ULONG)GetTagData(aHidd_PCIDevice_Bus, 0, msg->attrList);
     ULONG deviceDev = (ULONG)GetTagData(aHidd_PCIDevice_Dev, 0, msg->attrList);
     ULONG deviceSub = (ULONG)GetTagData(aHidd_PCIDevice_Sub, 0, msg->attrList);
-    struct pRoot_New mymsg;
-    struct TagItem mytags[] =
+    struct pRoot_New pcidevNew;
+    struct PCIPCBusData *ddata;
+    struct TagItem pcidevTags[] =
     {
 	{ aHidd_Name,                           (IPTR)"pcipc.hidd"      },
         { aHidd_PCIDevice_ExtendedConfig,       0                       },
@@ -44,13 +46,15 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     IPTR mmconfig = 0;
     OOP_Object *deviceObj;
 
-    mymsg.mID      = msg->mID;
-    mymsg.attrList = mytags;
+    ddata = OOP_INST_DATA(PSD(cl)->pcipcDriverClass, driver);
+
+    pcidevNew.mID      = msg->mID;
+    pcidevNew.attrList = pcidevTags;
 
     if (msg->attrList)
     {
-        mytags[2].ti_Tag  = TAG_MORE;
-        mytags[2].ti_Data = (IPTR)msg->attrList;
+        pcidevTags[2].ti_Tag  = TAG_MORE;
+        pcidevTags[2].ti_Data = (IPTR)msg->attrList;
     }
  
     if(PSD(cl)->pcipc_acpiMcfgTbl) {
@@ -74,33 +78,15 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             nsegs++;
             if ((deviceBus <= mcfg_alloc->EndBusNumber) && (deviceBus >= mcfg_alloc->StartBusNumber))
             {
-                ULONG *extcap;
                 D(bug("[PCIPC:Device] %s:       * bus %d, dev %d, sub %d\n", __func__, deviceBus, deviceDev, deviceSub);)
 
                 mmconfig = ((IPTR)mcfg_alloc->Address) | ((deviceBus & 255)<<20) | ((deviceDev & 31) << 15) | ((deviceSub & 7) << 12);
-                extcap = (APTR) (mmconfig + 0x100);
-                D(bug("[PCIPC:Device] %s:             MMIO @ 0x%p, *ExtCap = %08x", __func__, mmconfig, *extcap);)
-
-                /*
-                 * FIXME: Check the validity of the extended configuration space
-                 *
-                 * Absence of any Extended Capabilities is required to be indicated
-                 * by an Extended Capability header with a Capability ID of 0000h,
-                 * a Capability Version of 0h, and a Next Capability Offset of 0h.
-                 * For PCI devices OnMyHardware(TM) extended capability header at 0x100 reads 0xffffffff.
-                 * 0xffffffff is non valid extended capability header as it would point
-                 * the next capability outside configuration space.
-                 * If we get extended capability header set with all ones then we won't use ECAM.
-                 * (PCI device in mmio space, not PCIe)
-                 */
-                if(*extcap == 0xffffffff) {
-                    D(bug(" (PCI, not PCIe)");)
-                }
-                else
+                D(bug("[PCIPC:Device] %s:             MMIO @ 0x%p\n", __func__, mmconfig);)
+                if (ddata->ecam)
                 {
-                    mytags[1].ti_Data = (IPTR)mmconfig;
+                    D(bug("[PCIPC:Device] %s:             ECAM Access\n", __func__);)
+                    pcidevTags[1].ti_Data = mmconfig;
                 }
-                D(bug("\n");)
                 break;
             }
             offset += sizeof(ACPI_MCFG_ALLOCATION);
@@ -109,12 +95,39 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         D(bug("[PCIPC:Device] %s: checked %u segment allocation(s)\n", __func__, nsegs);)
     }
 
-    deviceObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
+    deviceObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, &pcidevNew.mID);
     if (deviceObj)
     {
         struct PCIPCDeviceData *data = OOP_INST_DATA(cl, deviceObj);
-        bug("[PCIPC:Device] %s: Device Object created @ 0x%p\n", __func__, deviceObj);
+
+        D(bug("[PCIPC:Device] %s: Device Object created @ 0x%p\n", __func__, deviceObj);)
+
         data->mmconfig = (APTR)mmconfig;
+        if (!deviceBus && !deviceDev && !deviceSub)
+        {
+            struct pHidd_PCIDriver_ReadConfigLong msg;
+
+            msg.mID = HiddPCIDeviceBase + moHidd_PCIDriver_ReadConfigLong;
+            msg.device = deviceObj;
+            msg.bus = msg.dev = msg.sub = 0;
+            msg.reg = PCIEXBAR;
+            ddata->ecam = (APTR)OOP_DoMethod(driver, (OOP_Msg)&msg);
+            D(bug("[PCIPC:Device] %s: ECAM @ 0x%p\n", __func__, ddata->ecam);)
+            if ((ddata->ecam) && (data->mmconfig))
+            {
+                pcidevTags[1].ti_Data = mmconfig;
+                D(bug("[PCIPC:Device] %s: disposing original device object @ 0x%p\n", __func__, deviceObj);)
+                OOP_DisposeObject(deviceObj) ;
+                D(bug("[PCIPC:Device] %s: creating new instance ...\n", __func__);)
+                deviceObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, &pcidevNew.mID);
+                if (deviceObj)
+                {
+                    struct PCIPCDeviceData *data = OOP_INST_DATA(cl, deviceObj);
+                    D(bug("[PCIPC:Device] %s: New Host Bridge Device @ 0x%p\n", __func__, deviceObj);)
+                    data->mmconfig = (APTR)mmconfig;
+                }
+            }
+        }
     }
     return deviceObj;
 }

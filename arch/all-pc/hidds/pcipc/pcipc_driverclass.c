@@ -14,6 +14,7 @@
 #include <proto/acpica.h>
 
 #include <aros/symbolsets.h>
+#include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <hardware/pci.h>
 #include <oop/oop.h>
@@ -43,6 +44,9 @@
  */
 struct Library *ACPICABase;
 
+const char pcipcHWPCI[] = "IA32-native Direct Access PCI Bus Controller";
+const char pcipcHWPCIE[] = "IA32-native PCI Express Controller";
+
 /*
     We overload the New method in order to introduce the Hidd Name and
     HardwareName attributes.
@@ -53,7 +57,6 @@ OOP_Object *PCIPC__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct TagItem mytags[] =
     {
 	{ aHidd_Name,           (IPTR)"pcipc.hidd"			        },
-	{ aHidd_HardwareName,   (IPTR)"IA32 native direct access PCI Bus"    },
 	{ TAG_DONE,             0 					        }
     };
     IPTR mmbase = 0;
@@ -79,30 +82,43 @@ OOP_Object *PCIPC__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 void PCIPC__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
+    struct PCIPCBusData *data = OOP_INST_DATA(cl, o);
     struct pcipc_staticdata *psd = PSD(cl);
     ULONG idx;
+    BOOL handled = FALSE;
 
-    if (IS_PCIDRV_ATTR(msg->attrID, idx))
+    if (IS_HIDD_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+            case aoHidd_HardwareName:
+                handled = TRUE;
+                if (!data->ecam)
+                    *msg->storage = (IPTR)pcipcHWPCI;
+                else
+                    *msg->storage = (IPTR)pcipcHWPCIE;
+                break;
+        }
+    }        
+    else if (IS_PCIDRV_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {
             case aoHidd_PCIDriver_DeviceClass:
+                handled = TRUE;
                 *msg->storage = (IPTR)psd->pcipcDeviceClass;
                 break;
 
             case aoHidd_PCIDriver_IRQRoutingTable:
+                handled = TRUE;
                 if (IsListEmpty(&psd->pcipc_irqRoutingTable))
                     *msg->storage = (IPTR)NULL;
                 else
                     *msg->storage = (IPTR)&psd->pcipc_irqRoutingTable;
                 break;
-
-            default:
-                OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-                break;
         }
     }
-    else
+    if (!handled)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
