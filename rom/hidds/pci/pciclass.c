@@ -115,7 +115,6 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
         { aHidd_PCIDevice_Dev           , 0         },
         { aHidd_PCIDevice_Sub           , 0         },
         { aHidd_PCIDevice_Driver        , (IPTR)drv },
-        { aHidd_PCIDevice_ExtendedConfig, 0         },
         { TAG_DONE                      , 0         }
     };
 
@@ -150,20 +149,17 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
             {
             /* Regular device */
             case 1:
-                devtags[4].ti_Data = HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, 0);
                 InsertDevice(cl, msg->driverObject, &highBus, devtags);
                 break;
 
             /* Cool! Multifunction device, search subfunctions then */
             case 2:
-                devtags[4].ti_Data = HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, 0);
                 InsertDevice(cl, msg->driverObject, &highBus, devtags);
                     
                 for (sub=1; sub < 8; sub++)
                 {
                     devtags[2].ti_Data = sub;
                     if (isPCIDeviceAvailable(cl, drv, bus, dev, sub)) {
-                        devtags[4].ti_Data = HIDD_PCIDriver_HasExtendedConfig(drv, bus, dev, sub);
                         InsertDevice(cl, msg->driverObject, &highBus, devtags);
                     }
                 }

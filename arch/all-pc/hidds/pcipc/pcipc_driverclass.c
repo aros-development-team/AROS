@@ -67,48 +67,12 @@ OOP_Object *PCIPC__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         mytags[2].ti_Tag  = TAG_MORE;
         mytags[2].ti_Data = (IPTR)msg->attrList;
     }
- 
-    if(PSD(cl)->pcipc_acpiMcfgTbl) {
-        ACPI_MCFG_ALLOCATION *mcfg_alloc;
-        int i, nsegs = 0;
-        ULONG offset;
-
-        offset = sizeof(ACPI_TABLE_MCFG);
-        mcfg_alloc = ACPI_ADD_PTR(ACPI_MCFG_ALLOCATION, PSD(cl)->pcipc_acpiMcfgTbl, offset);
-
-        D(
-            bug("[PCIPC:Driver] %s: Parsing MCFG Table allocations...\n", __func__);
-        )
-
-        for (i = 0; offset + sizeof(ACPI_MCFG_ALLOCATION) <= PSD(cl)->pcipc_acpiMcfgTbl->Header.Length; i++)
-        {
-            D(bug("[PCIPC:Driver] %s:     #%u %p - segment %d, bus %d-%d, address 0x%p\n",
-                    __func__, i, mcfg_alloc, mcfg_alloc->PciSegment, mcfg_alloc->StartBusNumber, mcfg_alloc->EndBusNumber,
-                    mcfg_alloc->Address);
-            )
-
-            nsegs++;
-            if ((0 <= mcfg_alloc->EndBusNumber) && (0 >= mcfg_alloc->StartBusNumber))
-            {
-                D(bug("[PCIPC:Driver] %s:       * bus %d\n", __func__, 0);)
-
-                mmbase = ((IPTR)mcfg_alloc->Address) + ((0&255)<<20);
-
-                D(bug("[PCIPC:Driver] %s:             Memory Map Base @ 0x%p\n", __func__, mmbase);)
-                break;
-            }
-            offset += sizeof(ACPI_MCFG_ALLOCATION);
-            mcfg_alloc = ACPI_ADD_PTR(ACPI_MCFG_ALLOCATION, PSD(cl)->pcipc_acpiMcfgTbl, offset);
-        }
-        D(bug("[PCIPC:Driver] %s: checked %u segment allocation(s)\n", __func__, nsegs);)
-    }
 
     busObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
     if (busObj)
     {
         struct PCIPCBusData *data = OOP_INST_DATA(cl, busObj);
         bug("[PCIPC:Driver] %s: Bus Object created @ 0x%p\n", __func__, busObj);
-        data->mmbase = (APTR)mmbase;
     }
     return busObj;
 }
@@ -142,47 +106,6 @@ void PCIPC__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
-}
-
-IPTR PCIPC__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
-					    struct pHidd_PCIDriver_HasExtendedConfig *msg)
-{
-    struct PCIPCBusData *data = OOP_INST_DATA(cl, o);
-    IPTR mmio = 0;
-
-    if (data->mmbase) {
-        ULONG *extcap;
-
-        D(bug("[PCIPC:Driver] %s:       * bus %d dev %d sub %d\n", __func__, msg->bus, msg->dev, msg->sub);)
-
-        /*
-         * FIXME: Check the validity of the extended configuration space
-         *
-         * Absence of any Extended Capabilities is required to be indicated
-         * by an Extended Capability header with a Capability ID of 0000h,
-         * a Capability Version of 0h, and a Next Capability Offset of 0h.
-
-         * For PCI devices OnMyHardware(TM) extended capability header at 0x100 reads 0xffffffff.
-
-         * 0xffffffff is non valid extended capability header as it would point
-         * the next capability outside configuration space.
-
-         * If we get extended capability header set with all ones then we won't use ECAM.
-         * (PCI device in mmio space, not PCIe)
-         */
-
-        mmio = ((IPTR)data->mmbase) | ((msg->dev & 31) << 15) | ((msg->sub & 7) << 12);
-        extcap = (APTR) (mmio + 0x100);
-
-        D(bug("[PCIPC:Driver] %s:             MMIO @ 0x%p, *ExtCap = %08x", __func__, mmio, *extcap);)
-
-        if(*extcap == 0xffffffff) {
-            D(bug(" (PCI, not PCIe)");)
-            mmio = 0;
-        }
-        D(bug("\n");)
-    }
-    return mmio;
 }
 
 ULONG PCIPC__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 

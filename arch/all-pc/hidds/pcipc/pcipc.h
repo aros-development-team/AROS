@@ -85,12 +85,12 @@ struct PCIPCBase
 
 struct PCIPCBusData
 {
-    APTR        mmbase;
+    void        *unused;
 };
 
 struct PCIPCDeviceData
 {
-    UBYTE unused;
+    APTR        mmconfig;
 };
 
 /* PCI configuration mechanism 1 registers */

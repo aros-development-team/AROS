@@ -62,20 +62,6 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 }
 
 /*
-    IPTR PCIDriver::HasExtendedConfiguration(bus, dev, sub)
-
-    This does not need to be implemented in the driver; in that case
-    ECAM access method is not used and extended configuration is unavailable.
-*/
-IPTR PCIDrv__Hidd_PCIDriver__HasExtendedConfig(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_PCIDriver_HasExtendedConfig *msg)
-{
-    /* Wheeeee! Someone has forgotten to reimplement HasExtendedConfig! */
-    bug("[PCIDriver] Alert! PCIDriver::HasExtendedConfig() unimplemented!\n");
-    return (IPTR)NULL;
-}
-
-/*
     Please note, that the following methods
 
     UWORD PCIDriver::ReadConfigWord()

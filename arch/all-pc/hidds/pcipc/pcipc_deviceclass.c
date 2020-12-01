@@ -12,6 +12,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
+#include <proto/acpica.h>
 
 #include <exec/types.h>
 #include <hidd/pci.h>
@@ -19,11 +20,93 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
+#include <acpica/acnames.h>
+#include <acpica/accommon.h>
+
 #include <string.h>
 
 #include "pcipc.h"
 
 #define DMSI(x) x
+
+OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+{
+    ULONG deviceBus = (ULONG)GetTagData(aHidd_PCIDevice_Bus, TRUE, msg->attrList);
+    ULONG deviceDev = (ULONG)GetTagData(aHidd_PCIDevice_Dev, 0, msg->attrList);
+    ULONG deviceSub = (ULONG)GetTagData(aHidd_PCIDevice_Sub, 0, msg->attrList);
+    struct pRoot_New mymsg;
+    struct TagItem mytags[] =
+    {
+	{ aHidd_Name,                           (IPTR)"pcipc.hidd"      },
+        { aHidd_PCIDevice_ExtendedConfig,       0                       },
+	{ TAG_DONE,                             0 			}
+    };
+    IPTR mmconfig = 0;
+    OOP_Object *deviceObj;
+
+    mymsg.mID      = msg->mID;
+    mymsg.attrList = mytags;
+
+    if (msg->attrList)
+    {
+        mytags[2].ti_Tag  = TAG_MORE;
+        mytags[2].ti_Data = (IPTR)msg->attrList;
+    }
+ 
+    if(PSD(cl)->pcipc_acpiMcfgTbl) {
+        ACPI_MCFG_ALLOCATION *mcfg_alloc;
+        int i, nsegs = 0;
+        ULONG offset;
+
+        offset = sizeof(ACPI_TABLE_MCFG);
+        mcfg_alloc = ACPI_ADD_PTR(ACPI_MCFG_ALLOCATION, PSD(cl)->pcipc_acpiMcfgTbl, offset);
+
+        D(
+            bug("[PCIPC:Device] %s: Parsing MCFG Table allocations...\n", __func__);
+        )
+
+        for (i = 0; offset + sizeof(ACPI_MCFG_ALLOCATION) <= PSD(cl)->pcipc_acpiMcfgTbl->Header.Length; i++)
+        {
+            D(bug("[PCIPC:Device] %s:     #%u %p - segment %d, bus %d-%d, address 0x%p\n",
+                    __func__, i, mcfg_alloc, mcfg_alloc->PciSegment, mcfg_alloc->StartBusNumber, mcfg_alloc->EndBusNumber,
+                    mcfg_alloc->Address);
+            )
+            nsegs++;
+            if ((0 <= mcfg_alloc->EndBusNumber) && (0 >= mcfg_alloc->StartBusNumber))
+            {
+                ULONG *extcap;
+                D(bug("[PCIPC:Device] %s:       * bus %d\n", __func__, 0);)
+
+                mmconfig = ((IPTR)mcfg_alloc->Address) | ((deviceBus & 255)<<20) | ((deviceDev & 31) << 15) | ((deviceSub & 7) << 12);
+                D(bug("[PCIPC:Device] %s:             Memory Map Base @ 0x%p\n", __func__, mmconfig);)
+                extcap = (APTR) (mmconfig + 0x100);
+
+                D(bug("[PCIPC:Driver] %s:             MMIO @ 0x%p, *ExtCap = %08x", __func__, mmio, *extcap);)
+
+                if(*extcap == 0xffffffff) {
+                    D(bug(" (PCI, not PCIe)");)
+                }
+                else
+                {
+                    mytags[1].ti_Data = (IPTR)mmconfig;
+                }
+                break;
+            }
+            offset += sizeof(ACPI_MCFG_ALLOCATION);
+            mcfg_alloc = ACPI_ADD_PTR(ACPI_MCFG_ALLOCATION, PSD(cl)->pcipc_acpiMcfgTbl, offset);
+        }
+        D(bug("[PCIPC:Device] %s: checked %u segment allocation(s)\n", __func__, nsegs);)
+    }
+
+    deviceObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
+    if (deviceObj)
+    {
+        struct PCIPCDeviceData *data = OOP_INST_DATA(cl, deviceObj);
+        bug("[PCIPC:Device] %s: Device Object created @ 0x%p\n", __func__, deviceObj);
+        data->mmconfig = (APTR)mmconfig;
+    }
+    return deviceObj;
+}
 
 UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
 {
