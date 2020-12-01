@@ -31,7 +31,7 @@
 
 OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    ULONG deviceBus = (ULONG)GetTagData(aHidd_PCIDevice_Bus, TRUE, msg->attrList);
+    ULONG deviceBus = (ULONG)GetTagData(aHidd_PCIDevice_Bus, 0, msg->attrList);
     ULONG deviceDev = (ULONG)GetTagData(aHidd_PCIDevice_Dev, 0, msg->attrList);
     ULONG deviceSub = (ULONG)GetTagData(aHidd_PCIDevice_Sub, 0, msg->attrList);
     struct pRoot_New mymsg;
