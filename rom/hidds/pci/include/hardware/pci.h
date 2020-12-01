@@ -234,4 +234,77 @@
 
 #define PCIMSIX_ENTRY_CTRL_MASKBIT      1
 
+/*
+ * Device 0:0.0 PCI configuration space (Host Bridge)
+ */
+#define EPBAR		                0x40
+#define MCHBAR		                0x48
+#define GGC		                0x50			/* GMCH Graphics Control */
+#define DEVEN		                0x54			/* Device Enable */
+#define PCIEXBAR	                0x60
+#define DMIBAR		                0x68
+
+#define MESEG_BASE	                0x70	/* Management Engine Base. */
+#define MESEG_LIMIT	                0x78	/* Management Engine Limit. */
+
+#define PAM0		                0x80
+#define PAM1		                0x81
+#define PAM2		                0x82
+#define PAM3		                0x83
+#define PAM4		                0x84
+#define PAM5		                0x85
+#define PAM6		                0x86
+#define LAC		                0x87	/* Legacy Access Control */
+#define SMRAM		                0x88	/* System Management RAM Control */
+
+#define  DEVENB_D0EN	                0
+#define  DEVENF_D0EN	                (1 << DEVENB_D0EN)
+#define  DEVENB_D1F2EN	                1
+#define  DEVENF_D1F2EN	                (1 << DEVENB_D1F2EN)
+#define  DEVENB_D1F1EN	                2
+#define  DEVENF_D1F1EN	                (1 << DEVENB_D1F1EN)
+#define  DEVENB_D1F0EN	                3
+#define  DEVENF_D1F0EN	                (1 << DEVENB_D1F0EN)
+#define  DEVENB_D2EN	                4
+#define  DEVENF_D2EN	                (1 << DEVENB_D2EN)
+#define  DEVENB_D3EN	                5
+#define  DEVENF_D3EN	                (1 << DEVENB_D3EN)
+#define  DEVENB_D4EN	                7
+#define  DEVENF_D4EN	                (1 << DEVENB_D4EN)
+#define  DEVENB_D7EN	                14
+#define  DEVENF_D7EN	                (1 << DEVENB_D7EN)
+
+#define  C_BASE_SEG	                ((0 << 2) | (1 << 1) | (0 << 0))
+
+#define  GB_SMRAME	                3
+#define  GF_SMRAME	                (1 << GB_SMRAME)
+#define  DB_LCK		                4
+#define  DF_LCK		                (1 << DB_LCK)
+#define  DB_CLS		                5
+#define  DF_CLS		                (1 << DB_CLS)
+#define  DB_OPEN		        6
+#define  DF_OPEN		        (1 << DB_OPEN)
+
+#define REMAPBASE	                0x90	/* Remap base. */
+#define REMAPLIMIT	                0x98	/* Remap limit. */
+#define TOM		                0xa0	/* Top of DRAM in memory controller space. */
+#define TOUUD		                0xa8	/* Top of Upper Usable DRAM */
+#define BDSM		                0xb0	/* Base Data Stolen Memory */
+#define BGSM		                0xb4	/* Base GTT Stolen Memory */
+#define TSEG		                0xb8	/* TSEG base */
+#define TOLUD		                0xbc	/* Top of Low Used Memory */
+#define SKPAD		                0xdc	/* Scratchpad Data */
+
+/*
+ * Device 0:1.0 PCI configuration space (PCI Express)
+ */
+#define BCTRL1		                0x3e	/* 16bit */
+
+/*
+ * Device 0:2.0 PCI configuration space (Graphics Device)
+ */
+#define MSAC		                0x62	/* Multi Size Aperture Control */
+#define SWSCI		                0xe8	/* SWSCI  enable */
+#define ASLS		                0xfc	/* OpRegion Base */
+
 #endif /* !HARDWARE_PCI_H */
