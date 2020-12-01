@@ -83,6 +83,11 @@ struct PCIPCBase
 #define PSD(cl)                 (&((struct PCIPCBase*)cl->UserData)->psd)
 #define _psd                    PSD(cl)
 
+struct PCIPCBusData
+{
+    APTR        mmbase;
+};
+
 struct PCIPCDeviceData
 {
     UBYTE unused;
