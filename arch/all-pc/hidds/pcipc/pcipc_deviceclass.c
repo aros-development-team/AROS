@@ -72,7 +72,7 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
                     mcfg_alloc->Address);
             )
             nsegs++;
-            if ((0 <= mcfg_alloc->EndBusNumber) && (0 >= mcfg_alloc->StartBusNumber))
+            if ((deviceBus <= mcfg_alloc->EndBusNumber) && (deviceBus >= mcfg_alloc->StartBusNumber))
             {
                 ULONG *extcap;
                 D(bug("[PCIPC:Device] %s:       * bus %d\n", __func__, 0);)
