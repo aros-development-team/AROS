@@ -2,7 +2,7 @@
 #define HIDD_HIDD_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main HIDD Include File
@@ -35,6 +35,9 @@
 
 #include <interface/Hidd.h>
 #include <interface/HW.h>
+
+#define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
+
 
 /* Values for the HIDD_Type Tag */
 #define vHidd_Type_Any          -1      /* match any type */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main class for HIDD.
@@ -54,8 +54,6 @@
 *****************************************************************************************/
 
 static const char unknown[]  = "--unknown device--";
-
-#define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
 
 /*****************************************************************************************
 
