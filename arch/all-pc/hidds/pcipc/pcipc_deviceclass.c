@@ -75,7 +75,7 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             if ((deviceBus <= mcfg_alloc->EndBusNumber) && (deviceBus >= mcfg_alloc->StartBusNumber))
             {
                 ULONG *extcap;
-                D(bug("[PCIPC:Device] %s:       * bus %d\n", __func__, 0);)
+                D(bug("[PCIPC:Device] %s:       * bus %d, dev %d, sub %d\n", __func__, deviceBus, deviceDev, deviceSub);)
 
                 mmconfig = ((IPTR)mcfg_alloc->Address) | ((deviceBus & 255)<<20) | ((deviceDev & 31) << 15) | ((deviceSub & 7) << 12);
                 extcap = (APTR) (mmconfig + 0x100);
