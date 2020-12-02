@@ -73,11 +73,12 @@ struct pci_staticdata {
     APTR                        kernelBase;
     struct Library              *oopBase;
 
+    OOP_AttrBase                hiddAB;
     OOP_AttrBase                hwAttrBase;
     OOP_AttrBase                hiddPCIAB;
     OOP_AttrBase                hiddPCIDriverAB;
-    OOP_AttrBase                hiddPCIBusAB;
     OOP_AttrBase                hiddPCIDeviceAB;
+    OOP_AttrBase                hiddPCIBusAB;
     OOP_MethodID                hiddPCIDriverMB;
     OOP_MethodID                hwMethodBase;
 
@@ -105,6 +106,7 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
     There are no static AttrBases in this class. Therefore it might be placed
     directly in ROM without any harm
 */
+#undef HiddAttrBase
 #undef HiddPCIAttrBase
 #undef HiddPCIDeviceAttrBase
 #undef HiddPCIDriverAttrBase
@@ -112,6 +114,7 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #undef HiddPCIDriverBase
 #undef HWBase
 
+#define HiddAttrBase            (PSD(cl)->hiddAB)
 #define HiddPCIAttrBase         (PSD(cl)->hiddPCIAB)
 #define HiddPCIDeviceAttrBase   (PSD(cl)->hiddPCIDeviceAB)
 #define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)

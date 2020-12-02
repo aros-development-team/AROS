@@ -31,22 +31,27 @@
 
 static int PCI_Init(struct pcibase *LIBBASE)
 {
+    CONST_STRPTR const attrBaseIDs[] =
+    {
+        IID_Hidd,
+        IID_HW,
+        IID_Hidd_PCI,
+        IID_Hidd_PCIDriver,
+        IID_Hidd_PCIDevice,
+        NULL
+    };
+
     D(bug("[PCI] Initializing PCI system\n"));
 
     LIBBASE->psd.kernelBase = OpenResource("kernel.resource");
     if (!LIBBASE->psd.kernelBase)
         return FALSE;
 
-    LIBBASE->psd.hiddPCIAB = OOP_ObtainAttrBase(IID_Hidd_PCI);
-    LIBBASE->psd.hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
-    LIBBASE->psd.hwAttrBase = OOP_ObtainAttrBase(IID_HW);
-    LIBBASE->psd.hiddPCIDriverMB = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
-    LIBBASE->psd.hwMethodBase = OOP_GetMethodID(IID_HW, 0);
-
-    if (LIBBASE->psd.hiddPCIAB && LIBBASE->psd.hiddPCIDeviceAB &&
-        LIBBASE->psd.hiddPCIDriverAB && LIBBASE->psd.hwAttrBase)
+    if (!OOP_ObtainAttrBasesArray(&LIBBASE->psd.hiddAB, attrBaseIDs))
     {
+        LIBBASE->psd.hiddPCIDriverMB = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
+        LIBBASE->psd.hwMethodBase = OOP_GetMethodID(IID_HW, 0);
+
         OOP_Object *root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
 
         if (!root)
@@ -61,7 +66,6 @@ static int PCI_Init(struct pcibase *LIBBASE)
             return TRUE;
         }
     }
-
     return FALSE;
 }
 
