@@ -39,9 +39,9 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct PCIPCBusData *ddata;
     struct TagItem pcidevTags[] =
     {
-	{ aHidd_Name,                           (IPTR)"pcipc.hidd"      },
+        { aHidd_Name,                           (IPTR)"pcipc.hidd"      },
         { aHidd_PCIDevice_ExtendedConfig,       0                       },
-	{ TAG_DONE,                             0 			}
+        { TAG_DONE,                             0                       }
     };
     IPTR mmconfig = 0;
     OOP_Object *deviceObj;
@@ -65,10 +65,7 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         offset = sizeof(ACPI_TABLE_MCFG);
         mcfg_alloc = ACPI_ADD_PTR(ACPI_MCFG_ALLOCATION, PSD(cl)->pcipc_acpiMcfgTbl, offset);
 
-        D(
-            bug("[PCIPC:Device] %s: Parsing MCFG Table allocations...\n", __func__);
-        )
-
+        D(bug("[PCIPC:Device] %s: Parsing MCFG Table allocations...\n", __func__);)
         for (i = 0; offset + sizeof(ACPI_MCFG_ALLOCATION) <= PSD(cl)->pcipc_acpiMcfgTbl->Header.Length; i++)
         {
             D(bug("[PCIPC:Device] %s:     #%u %p - segment %d, bus %d-%d, address 0x%p\n",
@@ -103,7 +100,9 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         D(bug("[PCIPC:Device] %s: Device Object created @ 0x%p\n", __func__, deviceObj);)
 
         data->mmconfig = (APTR)mmconfig;
-        if (!deviceBus && !deviceDev && !deviceSub)
+        /* If we didnt detect ECAM support from ACPI, try
+         * to detct it now. */
+        if (!deviceBus && !deviceDev && !deviceSub && !ddata->ecam)
         {
             struct pHidd_PCIDriver_ReadConfigLong msg;
 

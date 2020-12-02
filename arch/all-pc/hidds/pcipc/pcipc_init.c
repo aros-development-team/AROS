@@ -22,8 +22,6 @@
 #include LC_LIBDEFS_FILE
 #include "pcipc.h"
 
-#define __NR_iopl   (110)
-
 #undef OOPBase
 
 static int PCIPC_Init(LIBBASETYPEPTR LIBBASE)
@@ -60,12 +58,12 @@ static int PCIPC_Expunge(LIBBASETYPEPTR LIBBASE)
     int ok;
 
     D(bug("[PCIPC] %s()\n", __func__));
-	
+
     OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     if (pci)
     {
         struct pHidd_PCI_RemHardwareDriver msg, *pmsg=&msg;
-	
+
         msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_RemHardwareDriver);
         msg.driverClass = LIBBASE->psd.pcipcDriverClass;
 

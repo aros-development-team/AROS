@@ -6,6 +6,7 @@
 #ifndef _PCIPC_H
 #define _PCIPC_H
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
@@ -34,27 +35,26 @@
 
 struct pcipc_staticdata
 {
-    struct Library      *OOPBase;
+    struct Library              *OOPBase;
     struct Library              *utilityBase;
-    APTR                kernelBase;
+    APTR                        kernelBase;
 
-    OOP_AttrBase        hiddPCIDriverAB;
-    OOP_AttrBase        hiddAB;
+    OOP_AttrBase                hiddPCIDriverAB;
+    OOP_AttrBase                hiddAB;
 
-    OOP_AttrBase        hidd_PCIDeviceAB;
+    OOP_AttrBase                hidd_PCIDeviceAB;
 
-    OOP_MethodID        hidd_PCIDeviceMB;
+    OOP_MethodID                hidd_PCIDeviceMB;
 
-    OOP_Class	        *pcipcDriverClass;
-    OOP_Class	        *pcipcDeviceClass;
+    OOP_Class                   *pcipcDriverClass;
+    OOP_Class                   *pcipcDeviceClass;
 
     /* Low-level sub-methods */
-    ULONG	        (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
-    void	        (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
+    ULONG                       (*ReadConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg);
+    void                        (*WriteConfigLong)(UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val);
 
     /* ACPI related */
-    ACPI_TABLE_MCFG     *pcipc_acpiMcfgTbl;
-    struct MinList      pcipc_irqRoutingTable;
+    ACPI_TABLE_MCFG             *pcipc_acpiMcfgTbl;
 };
 
 #undef HiddPCIDriverAttrBase
@@ -75,8 +75,8 @@ struct pcipc_staticdata
 
 struct PCIPCBase
 {
-    struct Library	    LibNode;
-    struct pcipc_staticdata   psd;
+    struct Library              LibNode;
+    struct pcipc_staticdata     psd;
 };
 
 #define BASE(lib)               ((struct PCIPCBase*)(lib))
@@ -85,37 +85,38 @@ struct PCIPCBase
 
 struct PCIPCBusData
 {
-    APTR        ecam;
+    APTR                        ecam;
+    struct MinList              irqRoutingTable;
 };
 
 struct PCIPCDeviceData
 {
-    APTR        mmconfig;
+    APTR                        mmconfig;
 };
 
 /* PCI configuration mechanism 1 registers */
-#define PCI_AddressPort	        0x0cf8
-#define PCI_DataPort	        0x0cfc
+#define PCI_AddressPort         0x0cf8
+#define PCI_DataPort            0x0cfc
 
 /*
  * PCI configuration mechanism 2 registers
  * This mechanism is obsolete long ago. But AROS runs on old hardware,
  * and we support this.
  */
-#define PCI_CSEPort	        0x0cf8
+#define PCI_CSEPort             0x0cf8
 #define PCI_ForwardPort         0x0cfa
 
 /*
  * PCI configuration mechanism selector register.
  * Supported by some transition-time chipsets, like Intel Neptune.
  */
-#define PCI_MechSelect	        0x0cfb
+#define PCI_MechSelect          0x0cfb
 
 typedef union _pcicfg
 {
-    ULONG   ul;
-    UWORD   uw[2];
-    UBYTE   ub[4];
+    ULONG                       ul;
+    UWORD                       uw[2];
+    UBYTE                       ub[4];
 } pcicfg;
 
 static inline UWORD ReadConfigWord(struct pcipc_staticdata *psd, UBYTE bus,
@@ -123,7 +124,12 @@ static inline UWORD ReadConfigWord(struct pcipc_staticdata *psd, UBYTE bus,
 {
     pcicfg temp;
 
-    temp.ul = psd->ReadConfigLong(bus, dev, sub, reg);
+    if (reg & 1)
+    {
+        bug("[PCIPC] %s: missaligned word access! (reg = %u)\n", __func__, reg);
+    }
+    
+    temp.ul = psd->ReadConfigLong(bus, dev, sub, (reg & ~3));
     return temp.uw[(reg&2)>>1];
 }
 
@@ -132,7 +138,7 @@ static inline UWORD ReadConfigByte(struct pcipc_staticdata *psd, UBYTE bus,
 {
     pcicfg temp;
 
-    temp.ul = psd->ReadConfigLong(bus, dev, sub, reg);
+    temp.ul = psd->ReadConfigLong(bus, dev, sub, (reg & ~3));
     return temp.ub[reg & 3];
 }
 
