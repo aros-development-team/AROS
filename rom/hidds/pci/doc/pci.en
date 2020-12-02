@@ -192,9 +192,14 @@ the main pci class. You may implement this like in the following example
 
 [...]
     struct pHidd_PCI_AddHardwareDriver msg;
+    struct TagItem ahdTags[] =
+    {
+        { TAG_DONE, 0 }
+    };    
     OOP_Object *pci;
     
     msg.driverClass = cl;
+    msg.instanceTags = ahdTags;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);

@@ -508,6 +508,7 @@ BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
         driverClass - A pointer to OOP class of the driver. In order to create an object
                       of some previously registered public class, use
                       oop.library/OOP_FindClass().
+        instanceTags - Tags used during driver instance creation.
 
     RESULT
         None.
@@ -528,7 +529,7 @@ BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
 void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
                                       struct pHidd_PCI_AddHardwareDriver *msg)
 {
-    HW_AddDriver(o, msg->driverClass, NULL);
+    HW_AddDriver(o, msg->driverClass, msg->instanceTags);
 }
 
 AROS_UFH3(static BOOL, searchFunc,
