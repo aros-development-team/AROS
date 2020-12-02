@@ -35,7 +35,6 @@ const char pcidevBridgeNuBName[] = "NuBus Bridge";
 const char pcidevBridgeCBName[] = "CardBus Bridge";
 const char pcidevBridgeRACEName[] = "RACEway Bridge";
 const char pcidevBridgeInfinName[] = "PCI InfiniBand-to-PCI Host Bridge";
-const char pcidevBridgeUnkName[] = "Unknown Bridge";
 
 /*****************************************************************************************
 
@@ -1097,7 +1096,6 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 {
                     UWORD subclass = HIDD_PCIDevice_ReadConfigWord(o, PCIBR_SUBCLASS);
                     handled = TRUE;
-
                     *msg->storage = 0;
                     if ((subclass & 0xFF00) == 0x0600)
                     {
@@ -1134,9 +1132,6 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                             case 10:
                                 *msg->storage = (IPTR)pcidevBridgeInfinName;
                                 break;
-                            default:
-                                *msg->storage = (IPTR)pcidevBridgeUnkName;
-                                break;
                         }
                     }
                     if (!*msg->storage)
@@ -1147,12 +1142,12 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
     if (IS_PCIDEV_ATTR(msg->attrID, idx))
     {
+        handled = TRUE;
         if (Dispatcher[idx] != NULL)
             Dispatcher[idx](cl, o, msg);
         else switch(idx)
         {
             case aoHidd_PCIDevice_isMEM:
-                handled = TRUE;
                 *msg->storage = (
                     (getWord(cl, o, PCICS_COMMAND) &
                         PCICMF_MEMDECODE)
@@ -1160,7 +1155,6 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 break;
 
             case aoHidd_PCIDevice_isIO:
-                handled = TRUE;
                 *msg->storage = (
                     (getWord(cl, o, PCICS_COMMAND) &
                         PCICMF_IODECODE)
@@ -1168,7 +1162,6 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 break;
 
             case aoHidd_PCIDevice_isMaster:
-                handled = TRUE;
                 *msg->storage = (
                     (getWord(cl, o, PCICS_COMMAND) &
                         PCICMF_BUSMASTER)
@@ -1176,7 +1169,6 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 break;
 
             case aoHidd_PCIDevice_paletteSnoop:
-                handled = TRUE;
                 *msg->storage = (
                     (getWord(cl, o, PCICS_COMMAND) &
                         PCICMF_VGASNOOP)
@@ -1184,7 +1176,6 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 break;
 
             case aoHidd_PCIDevice_is66MHz:
-                handled = TRUE;
                 *msg->storage = (
                     (getWord(cl, o, PCICS_STATUS) &
                         PCISTF_66MHZ)
@@ -1192,27 +1183,22 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 break;
 
             case aoHidd_PCIDevice_ClassDesc:
-                handled = TRUE;
                 *msg->storage = (IPTR)dev->strClass;
                 break;
 
             case aoHidd_PCIDevice_SubClassDesc:
-                handled = TRUE;
                 *msg->storage = (IPTR)dev->strSubClass;
                 break;
 
             case aoHidd_PCIDevice_InterfaceDesc:
-                handled = TRUE;
                 *msg->storage = (IPTR)dev->strInterface;
                 break;
 
             case aoHidd_PCIDevice_INTLine:
-                handled = TRUE;
                 *msg->storage = getByte(cl, o, PCICS_INT_LINE);
                 break;
 
             case aoHidd_PCIDevice_IRQStatus:
-                handled = TRUE;
                 *msg->storage = (
                     (getWord(cl, o, PCICS_STATUS) &
                         PCISTF_INTERRUPT_STATUS)
@@ -1220,7 +1206,6 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 break;
 
             case aoHidd_PCIDevice_CapabilitiesPresent:
-                handled = TRUE;
                 *msg->storage = (
                     (getWord(cl, o, PCICS_STATUS) &
                         PCISTF_CAPABILITIES)
@@ -1228,8 +1213,11 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 break;
 
             case aoHidd_PCIDevice_Owner:
-                handled = TRUE;
                 *msg->storage = (IPTR)dev->ownerLock.ss_Link.ln_Name;
+                break;
+
+            default:
+                handled = FALSE;
                 break;
         }
     }
