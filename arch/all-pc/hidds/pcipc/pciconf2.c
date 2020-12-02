@@ -9,6 +9,7 @@
 #include <aros/debug.h>
 #include <asm/io.h>
 #include <proto/exec.h>
+#include <hardware/pci.h>
 
 #include "pcipc.h"
 
