@@ -27,7 +27,7 @@
 
 #include "pcipc.h"
 
-#define DECAM(x)
+#define DMMIO(x)
 
 /*
  * N.B. Do not move/remove/refactor the following variable unless you fully
@@ -127,37 +127,25 @@ void PCIPC__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 ULONG PCIPC__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
 					    struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
-    /*
-        We NEED the device object as it houses the ExtendedConfig attribute per device.
-        We know that the value stored in ExtendedConfig is the mmio base as returned by Hidd_PCIDriver__HasExtendedConfig.
-        If we get ExtendedConfig we will use ECAM method.
+    struct PCIPCBusData *data = OOP_INST_DATA(cl, o);
+    struct PCIPCDeviceData *devdata = OOP_INST_DATA(PSD(cl)->pcipcDeviceClass, msg->device);
 
-        While the bus is being enumerated we automagically skip ECAM until ExtendedConfig attribute is set and we have a valid device object.
-    */
+    if ((data->ecam && devdata->mmconfig) ||
+        (devdata->mmconfig && (msg->reg < 0x100)))
+    {
+        /* use MMIO long read access for ECAM */
+        ULONG configLong = *(ULONG volatile *) (devdata->mmconfig + (msg->reg & 0xffc));
 
-    IPTR mmio = 0;
-
-    OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &mmio);
-    if(mmio) {
-        /* This is the ECAM access method for long read */
-        ULONG configLong;
-
-        configLong = *(ULONG volatile *) (mmio + (msg->reg & 0xffc));
-
-        DECAM(bug("[PCIPC:Driver] %s: ECAM Read @ %p = %08x\n", __func__, (mmio + (msg->reg & 0xffc)), configLong));
+        DMMIO(bug("[PCIPC:Driver] %s: MMIO Read @ %p = %08x\n", __func__, (devdata->mmconfig + (msg->reg & 0xffc)), configLong));
 
         return configLong;
     }
-
-    /*
-        Last good long register without ECAM,
-        macros in CAM methods take care of the alignment.
-        we don't want to return some random value.
-    */
-    if(msg->reg < 0x100) {
+    else
+    {
+        /*
+            Use legacy access if MMIO isnt possible.
+        */
         return PSD(cl)->ReadConfigLong(msg->bus, msg->dev, msg->sub, msg->reg);
-    } else {
-        return 0xffffffff;
     }
 }
 
@@ -179,25 +167,24 @@ UBYTE PCIPC__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
 void PCIPC__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 					    struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
-    IPTR mmio = 0;
+    struct PCIPCBusData *data = OOP_INST_DATA(cl, o);
+    struct PCIPCDeviceData *devdata = OOP_INST_DATA(PSD(cl)->pcipcDeviceClass, msg->device);
 
-    OOP_GetAttr(msg->device, aHidd_PCIDevice_ExtendedConfig, &mmio);
-    if(mmio) {
-        /* This is the ECAM access method for long write */
+    if ((data->ecam && devdata->mmconfig) ||
+        (devdata->mmconfig && (msg->reg < 0x100)))
+    {
+       /* use MMIO long read access for ECAM */
         ULONG volatile *longreg;
-        longreg = (ULONG volatile *) (mmio + (msg->reg & 0xffc));
-        DECAM(bug("[PCIPC:Driver] %s: ECAM.write.old longreg %p %08x  = %08x\n", __func__, longreg, *longreg, msg->val));
+        longreg = (ULONG volatile *) (devdata->mmconfig + (msg->reg & 0xffc));
+        DMMIO(bug("[PCIPC:Driver] %s: MMIO Write %08x @ %p\n", __func__, msg->val, longreg));
         *longreg = msg->val;
-        DECAM(bug("[PCIPC:Driver] %s: ECAM.write.new longreg %p %08x == %08x?\n", __func__, longreg, *longreg, msg->val));
-    } else {
+    }
+    else
+    {
         /*
-            Last good long register without ECAM,
-            macros in CAM methods take care of the alignment.
-            we don't want to store the value in some random address.
+            Use legacy access if MMIO isnt possible.
         */
-        if(msg->reg < 0x100) {
-            PSD(cl)->WriteConfigLong(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
-        }
+        PSD(cl)->WriteConfigLong(msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
     }
 }
 

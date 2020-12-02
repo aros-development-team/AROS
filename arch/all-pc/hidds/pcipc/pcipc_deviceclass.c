@@ -80,7 +80,7 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             {
                 D(bug("[PCIPC:Device] %s:       * bus %d, dev %d, sub %d\n", __func__, deviceBus, deviceDev, deviceSub);)
 
-                mmconfig = ((IPTR)mcfg_alloc->Address) | ((deviceBus & 255)<<20) | ((deviceDev & 31) << 15) | ((deviceSub & 7) << 12);
+                mmconfig = ((IPTR)mcfg_alloc->Address) | (((deviceBus - mcfg_alloc->StartBusNumber) & 255)<<20) | ((deviceDev & 31) << 15) | ((deviceSub & 7) << 12);
                 D(bug("[PCIPC:Device] %s:             MMIO @ 0x%p\n", __func__, mmconfig);)
                 if (ddata->ecam)
                 {
