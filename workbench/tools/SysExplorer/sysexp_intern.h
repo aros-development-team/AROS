@@ -20,6 +20,7 @@ struct SysexpBase
      * be sorted from subclasses to superclasses.
      */
     struct List         sesb_ClassHandlers;
+    struct List         sesb_ClassIgnore;
 
     Object              *sesb_Tree;
 

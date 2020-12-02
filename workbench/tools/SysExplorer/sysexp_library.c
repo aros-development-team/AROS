@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2019, The AROS Development Team.
+    Copyright (C) 2013-2020, The AROS Development Team.
     $Id: main.c 54142 2017-03-16 01:57:58Z NicJA $
 */
 
@@ -12,6 +12,7 @@
 #include <hidd/system.h>
 #include <hidd/gfx.h>
 #include <hidd/storage.h>
+#include <hidd/pci.h>
 #include <libraries/asl.h>
 #include <mui/NListtree_mcc.h>
 #include <mui/NListview_mcc.h>
@@ -234,6 +235,45 @@ AROS_LH2(struct ClassHandlerNode *, FindObjectHandler,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH1(void, RegisterSkipClass,
+         AROS_LHA(CONST_STRPTR, ClassID, A0),
+         struct SysexpBase *, SysexpBase, 15, Sysexp)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[sysexp.library] %s('%s')\n", __func__, ClassID));
+
+    if (!SkipClass(ClassID))
+    {
+        struct Node *skipNode = AllocVec(sizeof(struct Node) + strlen(ClassID) + 1, MEMF_CLEAR);
+        skipNode->ln_Name = (APTR)((IPTR)skipNode + sizeof(struct Node));
+        CopyMem(ClassID, skipNode->ln_Name, strlen(ClassID));
+        AddTail(&SysexpBase->sesb_ClassIgnore, skipNode);
+    }
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(BOOL, SkipClass,
+         AROS_LHA(CONST_STRPTR, ClassID, A0),
+         struct SysexpBase *, SysexpBase, 16, Sysexp)
+{
+    AROS_LIBFUNC_INIT
+    struct Node *skipNode;
+
+    D(bug("[sysexp.library] %s()\n", __func__));
+
+    ForeachNode(&SysexpBase->sesb_ClassIgnore, skipNode)
+    {
+        if (!strcmp(skipNode->ln_Name, ClassID))
+            return TRUE;
+    }
+
+    return FALSE;
+
+    AROS_LIBFUNC_EXIT
+}
+
 /** Library Initialization **/
 
 void *SysexpLibrary_funcTable[] = {
@@ -248,7 +288,11 @@ void *SysexpLibrary_funcTable[] = {
   AROS_SLIB_ENTRY(RegisterClassHandler, Sysexp, 9),
   AROS_SLIB_ENTRY(FindClassHandler, Sysexp, 10),
   AROS_SLIB_ENTRY(FindObjectHandler, Sysexp, 11),
- 
+  AROS_SLIB_ENTRY(Null, LIB, 0),
+  AROS_SLIB_ENTRY(Null, LIB, 0),
+  AROS_SLIB_ENTRY(Null, LIB, 0),
+  AROS_SLIB_ENTRY(RegisterSkipClass, Sysexp, 15),
+  AROS_SLIB_ENTRY(SkipClass, Sysexp, 16),
   (void *)-1
 };
 
@@ -270,11 +314,15 @@ void sysexp_initlib(struct SysexpBase **SysexpBasePtr)
         NEWLIST(&SysexpBase->sesb_GenericBases);
         NEWLIST(&SysexpBase->sesb_Modules);
         NEWLIST(&SysexpBase->sesb_ClassHandlers);
+        NEWLIST(&SysexpBase->sesb_ClassIgnore);
 
         RegisterBase(hwenumfunc_name, hwEnum);
         RegisterBase(devicepageclass_name, DevicePage_CLASS);
         RegisterBase(genericwindowclass_name, GenericWindow_CLASS);
         RegisterBase(computerwindowclass_name, ComputerWindow_CLASS);
+
+        /* We dont want the PCI base object to show in the tree */
+        RegisterSkipClass(CLID_Hidd_PCI);
 
         RegisterClassHandler(CLID_Hidd_Storage, 90, NULL, hwEnum, NULL);
         RegisterClassHandler(CLID_Hidd_StorageController, 90, GenericWindow_CLASS, NULL, NULL);

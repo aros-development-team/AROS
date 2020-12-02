@@ -39,6 +39,15 @@ AHCIFILES := \
         $(AHCIMODDIR)/ahciunit_window_cl
 
 # disabled until a later date ;)
+PCIMODDIR := Modules/PCI
+PCIFILES := \
+        sysexp_locale \
+        $(PCIMODDIR)/pci_init \
+        $(PCIMODDIR)/pci_enum \
+        $(PCIMODDIR)/pci_window_cl \
+        $(PCIMODDIR)/pcidevice_window_cl
+
+# disabled until a later date ;)
 GFXMODDIR := Modules/Gfx
 GFXFILES := \
         $(GFXMODDIR)/gfx_enum \
@@ -49,7 +58,7 @@ FILES := $(BASEFILES)
 
 USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
 USER_CPPFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
-#USER_CPPFLAGS += -DDEBUG
+USER_CPPFLAGS += -DDEBUG=1
 
 EXEDIR      := $(AROSDIR)/Tools
 SYSEXP_GENINCDIR := $(GENDIR)/$(CURDIR)/include
@@ -58,6 +67,16 @@ SYSEXP_GENINCDIR := $(GENDIR)/$(CURDIR)/include
 #MM- workbench-tools-sysexplorer-quick : workbench-tools-sysexplorer-catalogs workbench-tools-sysexplorer-app-quick workbench-tools-sysexplorer-modules-quick
 
 SYSEXPCOMMON_INCLUDES := -I$(SYSEXP_GENINCDIR)
+
+#MM workbench-tools-sysexplorer-module-pci : workbench-tools-sysexplorer-includes
+#MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-pci
+#MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-pci-quick
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(PCIMODDIR)
+USER_LDFLAGS := -static
+%build_module mmake=workbench-tools-sysexplorer-module-pci \
+    modname=pci modtype=library modsuffix=sysexp \
+    files="$(PCIFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+    uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(PCIMODDIR)/pci.conf
 
 ##MM workbench-tools-sysexplorer-module-gfx : workbench-tools-sysexplorer-includes
 ##MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-gfx

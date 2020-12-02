@@ -41,7 +41,7 @@
 #include "enums.h"
 
 #define APPNAME "SysExplorer"
-#define VERSION "SysExplorer 0.8"
+#define VERSION "SysExplorer 0.9"
 #define SysexpModuleDir	"PROGDIR:SysExpModules"
 
 int __nocommandline = 1;
@@ -106,34 +106,43 @@ AROS_UFH3S(BOOL, enumFunc,
 
     if (objValid)
     {
-        int objnum;
-
-        /* This is either HW or HIDD subclass */
-        OOP_GetAttr(obj, aHW_ClassName, (IPTR *)&name);
-        if (!name)
-            OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
-
-        D(bug("[SysExplorer] %s: name = '%s'\n", __func__, name));
-
-        objnum = ++SysexpBase->GlobalCount;
-#if (1)
-        tn = (APTR)DoMethod(SysexpBase->sesb_Tree, MUIM_NListtree_Insert, name, &msg,
-                            parent, MUIV_NListtree_Insert_PrevNode_Sorted, flags);
-        D(bug("[SysExplorer] %s: Inserted TreeNode 0x%p <%s> UserData 0x%p\n", __func__, tn, tn->tn_Name, tn->tn_User));
-
-        /* If we have enumerator for this class, call it now */
-        if (clHandlers && clHandlers->enumFunc && (flags & TNF_LIST))
-            clHandlers->enumFunc(obj, tn);
-
-        if (objnum == SysexpBase->GlobalCount)
+        if (!SkipClass(OOP_OCLASS(obj)->ClassNode.ln_Name))
         {
-            tn->tn_Flags &= ~flags;
-        }
+            int objnum;
+
+            /* This is either HW or HIDD subclass */
+            OOP_GetAttr(obj, aHW_ClassName, (IPTR *)&name);
+            if (!name)
+                OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
+
+            D(bug("[SysExplorer] %s: name = '%s'\n", __func__, name));
+
+            objnum = ++SysexpBase->GlobalCount;
+#if (1)
+            tn = (APTR)DoMethod(SysexpBase->sesb_Tree, MUIM_NListtree_Insert, name, &msg,
+                                parent, MUIV_NListtree_Insert_PrevNode_Sorted, flags);
+            D(bug("[SysExplorer] %s: Inserted TreeNode 0x%p <%s> UserData 0x%p\n", __func__, tn, tn->tn_Name, tn->tn_User));
+
+            /* If we have enumerator for this class, call it now */
+            if (clHandlers && clHandlers->enumFunc && (flags & TNF_LIST))
+                clHandlers->enumFunc(obj, tn);
+
+            if (objnum == SysexpBase->GlobalCount)
+            {
+                tn->tn_Flags &= ~flags;
+            }
 #else
-        DoMethod(_app(SysexpBase->sesb_Tree), MUIM_Application_PushMethod,
-                SysexpBase->sesb_Tree, 6, MUIM_NListtree_Insert, name, &msg,
-                        parent, MUIV_NListtree_Insert_PrevNode_Sorted, flags);
+            DoMethod(_app(SysexpBase->sesb_Tree), MUIM_Application_PushMethod,
+                    SysexpBase->sesb_Tree, 6, MUIM_NListtree_Insert, name, &msg,
+                            parent, MUIV_NListtree_Insert_PrevNode_Sorted, flags);
 #endif
+        }
+        else
+        {
+            /* If we have enumerator for this class, call it now */
+            if (clHandlers && clHandlers->enumFunc)
+                clHandlers->enumFunc(obj, parent);
+        }
     }
     return FALSE; /* Continue enumeration */
 
