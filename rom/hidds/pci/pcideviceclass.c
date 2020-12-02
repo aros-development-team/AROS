@@ -35,6 +35,7 @@ const char pcidevBridgeNuBName[] = "NuBus Bridge";
 const char pcidevBridgeCBName[] = "CardBus Bridge";
 const char pcidevBridgeRACEName[] = "RACEway Bridge";
 const char pcidevBridgeInfinName[] = "PCI InfiniBand-to-PCI Host Bridge";
+const char pcidevBridgeUnkName[] = "Unknown Bridge";
 
 /*****************************************************************************************
 
@@ -1132,6 +1133,9 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                                 break;
                             case 10:
                                 *msg->storage = (IPTR)pcidevBridgeInfinName;
+                                break;
+                            default:
+                                *msg->storage = (IPTR)pcidevBridgeUnkName;
                                 break;
                         }
                     }
