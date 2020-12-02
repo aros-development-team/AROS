@@ -183,7 +183,7 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
     {
         struct pHidd_PCIDevice_ReadConfigByte cmeth;
         cmeth.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigByte;
-        cmeth.reg = capmsi + PCICS_INT_LINE;
+        cmeth.reg = PCICS_INT_LINE;
         vectirq = (UBYTE)OOP_DoMethod(o, &cmeth.mID);
     }
     return vectirq;
