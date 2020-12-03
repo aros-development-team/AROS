@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common console output functions.
@@ -79,12 +79,12 @@ void con_InitSerial(char *cmdline)
     if (opts)
     {
         bcdebugflags |= BC_DEBUGENABLE;
-        if (opts[5] == '=')
+        if (opts[6] == '=')
         {
-            if (strstr(&opts[6], "serial"))
+            if (strstr(&opts[7], "serial"))
             {
                 bcdebugflags |= BC_DEBUGSERIAL;
-                serial_Init(&opts[12]);
+                serial_Init(&opts[13]);
             }
         }
     }
