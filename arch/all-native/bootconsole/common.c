@@ -13,10 +13,12 @@
 
 #include "console.h"
 
+#define BC_DEBUGENABLE  (1 << 0)
+#define BC_DEBUGSERIAL  (1 << 1)
+
 /* Screen type */
 __attribute__((section(".data"))) unsigned char scr_Type = SCR_UNKNOWN;
-
-__attribute__((section(".data"))) static unsigned char use_serial = 0;
+__attribute__((section(".data"))) static unsigned char bcdebugflags = 0;
 
 void con_InitVESA(unsigned short version, struct vbe_mode *mode)
 {
@@ -72,38 +74,49 @@ void con_InitVGA(void)
 
 void con_InitSerial(char *cmdline)
 {
-    char *opts = strstr(cmdline, "debug=serial");
+    char *opts = strstr(cmdline, " debug");
     
     if (opts)
     {
-        use_serial = 1;
-        
-        serial_Init(&opts[12]);
+        bcdebugflags |= BC_DEBUGENABLE;
+        if (opts[5] == '=')
+        {
+            if (strstr(&opts[6], "serial"))
+            {
+                bcdebugflags |= BC_DEBUGSERIAL;
+                serial_Init(&opts[12]);
+            }
+        }
     }
     else
-        use_serial = 0;
+    {
+        bcdebugflags &= ~(BC_DEBUGENABLE|BC_DEBUGSERIAL);
+    }
 }
 
 void con_Putc(char c)
 {
-    /* 0x03 character shuts off boot-time screen console */
-    if (c == 0x03)
+    if (bcdebugflags & BC_DEBUGENABLE)
     {
-        scr_Type = SCR_UNKNOWN;
-        return;
-    }
+        /* 0x03 character shuts off boot-time screen console */
+        if (c == 0x03)
+        {
+            scr_Type = SCR_UNKNOWN;
+            return;
+        }
 
-    if (use_serial)
-        serial_Putc(c);
+        if (bcdebugflags & BC_DEBUGSERIAL)
+            serial_Putc(c);
 
-    switch (scr_Type)
-    {
-    case SCR_TEXT:
-        txt_Putc(c);
-        break;
+        switch (scr_Type)
+        {
+        case SCR_TEXT:
+            txt_Putc(c);
+            break;
 
-    case SCR_GFX:
-        fb_Putc(c);
-        break;
+        case SCR_GFX:
+            fb_Putc(c);
+            break;
+        }
     }
 }

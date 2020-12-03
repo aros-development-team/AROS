@@ -58,10 +58,22 @@ void RelocateBootMsg(const struct TagItem *msg)
 void RelocateTagData(struct TagItem *tag, unsigned long size)
 {
     char *src = (char *)tag->ti_Data;
-    unsigned char *dest = krnAllocBootMem(size);
+    unsigned char *dest;
+    int offset = 0;
+
+    /*
+     * Inject a space at the start of the command line
+     * if necessary, to make parsing switches easier
+     */
+    if ((tag->ti_Data == KRN_CmdLine) && (src[0] != ' '))
+        offset = 1;
+
+    dest = krnAllocBootMem(size + offset);
 
     tag->ti_Data = (IPTR)dest;
-    krnCopyMem(src, dest, size);
+    krnCopyMem(src, (APTR)((IPTR)dest + offset), size);
+    if (offset)
+        dest[0] = ' ';
 }
 
 void RelocateStringData(struct TagItem *tag)
