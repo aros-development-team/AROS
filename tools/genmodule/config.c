@@ -312,6 +312,7 @@ struct config *initconfig(int argc, char **argv)
         funchead = newfunctionhead(cfg->beginiofunc, REGISTERMACRO);
         funchead->type = strdup("void");
         funchead->lvo = 5;
+        funchead->version = -1;
         funcaddarg(funchead, "struct IORequest *ioreq", "A1");
 
         funchead->next = cfg->funclist;
@@ -321,6 +322,7 @@ struct config *initconfig(int argc, char **argv)
         funchead = newfunctionhead(cfg->abortiofunc, REGISTERMACRO);
         funchead->type = strdup("LONG");
         funchead->lvo = 6;
+        funchead->version = -1;
         funcaddarg(funchead, "struct IORequest *ioreq", "A1");
 
         funchead->next = cfg->funclist->next;
