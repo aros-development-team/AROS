@@ -27,7 +27,35 @@
 
 #include "pcipc.h"
 
-#define DMSI(x) x
+#define DMSI(x)
+
+#if (1)
+/* TODO: Move into a suitable header */
+
+/* Find the most-significant bit thats set */
+static inline ULONG fls_long(ULONG x)
+{
+    return ((sizeof(x) * 8) - __builtin_clzl(x));
+}
+
+/* Integer base 2 logarithm of x */
+static inline ULONG ilog2(ULONG x)
+{
+    return (fls_long(x) - 1);
+}
+
+/* Round up, to nearest power of two */
+static inline ULONG roundup_pow_of_two(ULONG x)
+{
+    return (1UL << fls_long(x - 1));
+}
+
+/* Round down, to nearest power of two */
+static inline ULONG rounddown_pow_of_two(ULONG x)
+{
+    return (1UL << ilog2(x));
+}
+#endif
 
 OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -131,6 +159,44 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     return deviceObj;
 }
 
+void PCIPCDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    BOOL handled = FALSE;
+    ULONG idx;
+
+    if (IS_PCIDEV_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+            case aoHidd_PCIDevice_MSICount:
+                {
+                    IPTR capmsi;
+
+                    handled = TRUE;
+                    *msg->storage = 1;
+
+                    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);                    
+                    if (capmsi)
+                    {
+                        struct pHidd_PCIDevice_ReadConfigWord cmeth;
+                        UWORD msiflags;
+
+                        cmeth.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+                        cmeth.reg = capmsi + PCIMSI_FLAGS;
+                        msiflags = (UWORD)OOP_DoMethod(o, &cmeth.mID);
+                        *msg->storage = ( 1 << ((msiflags & PCIMSIF_MMC_MASK) >> 1));
+                    }
+                    break;
+                }
+        }
+    }
+
+    if (!handled)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+    }
+}
+
 UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
 {
     IPTR capmsi, driver;
@@ -152,9 +218,9 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
         msiflags = (UWORD)OOP_DoMethod(o, &cmeth.mID);
         if (msiflags & PCIMSIF_ENABLE)
         {
-            DMSI(bug("[PCIPC:Device] %s: MSI Queue size = %u\n", __func__, ((msiflags & PCIMSIF_MMEN_MASK) >> 4));)
+            DMSI(bug("[PCIPC:Device] %s: MSI Queue size = %u\n", __func__, (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)));)
             /* MSI is enabled .. but is the requested vector valid? */
-            if (msg->vector < ((msiflags & PCIMSIF_MMEN_MASK) >> 4))
+            if (msg->vector < (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)))
             {
                 UWORD msimdr;
 
@@ -172,11 +238,21 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
 
                 vectirq = (msimdr & 0xFF) + msg->vector;
             }
-            else bug("[PCIPC:Device] %s: Illegal MSI vector %u\n", __func__, msg->vector);
+            else
+            {
+                bug("[PCIPC:Device] %s: Illegal MSI vector %u\n", __func__, msg->vector);
+            }
         }
-        else bug("[PCIPC:Device] %s: MSI is dissabled for the device\n", __func__);
+        else
+        {
+            bug("[PCIPC:Device] %s: MSI is dissabled for the device\n", __func__);
+        }
     }
-    else bug("[PCIPC:Device] %s: Device doesn't support MSI\n", __func__);
+    else
+    {
+        bug("[PCIPC:Device] %s: Device doesn't support MSI\n", __func__);
+    }
+
     /* If MSI wasnt enabled and they have just asked for the first vector - return the PCI int line */
     if (!vectirq && msg->vector == 0)
     {
@@ -208,7 +284,7 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
             struct pHidd_PCIDevice_WriteConfigWord wcw;
             struct pHidd_PCIDevice_WriteConfigLong wcl;
         } cmeth;
-        UWORD vectmin, vectmax, vectcnt;
+        UWORD vectmin, vectmax, vectcnt, vecthw;
         ULONG apicIRQBase = 0;
         UWORD msiflags;
 
@@ -218,42 +294,44 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
         cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
         msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
 
-        DMSI(bug("[PCIPC:Device] %s: Max Device MSI vectors = %u\n", __func__, (msiflags & PCIMSIF_MMC_MASK) >> 1);)
+        DMSI(bug("[PCIPC:Device] %s: Initial MSI Flags = %04x\n", __func__, msiflags);)
+
+        vecthw = (1 << ((msiflags & PCIMSIF_MMC_MASK) >> 1));
+        DMSI(bug("[PCIPC:Device] %s: Max Device MSI vectors = %u\n", __func__, vecthw);)
 
         vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
-        if (vectmin > (msiflags & PCIMSIF_MMC_MASK) >> 1)
+        if (vectmin > vecthw)
             return FALSE;
 
         vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
-        if (vectmax > (msiflags & PCIMSIF_MMC_MASK) >> 1)
-            vectmax = (msiflags & PCIMSIF_MMC_MASK) >> 1;
+        if (vectmax > vecthw)
+            vectmax = vecthw;
 
-        for (vectcnt = vectmax; vectcnt >= vectmax; vectcnt--)
+        for (vectcnt = vectmax; vectcnt >= vectmin; vectcnt--)
         {
             if ((apicIRQBase = KrnAllocIRQ(IRQTYPE_MSI, vectcnt)) != (ULONG)-1)
             {
-                DMSI(bug("[PCIPC:Device] %s: Allocated %u IRQs starting at #%u\n", __func__, vectmin, apicIRQBase);)
+                DMSI(bug("[PCIPC:Device] %s: Allocated %u IRQs starting at #%u\n", __func__, vectcnt, apicIRQBase);)
                 break;
             }
         }
-        if (apicIRQBase)
+        if ((apicIRQBase) && (apicIRQBase != -1))
         {
             DMSI(bug("[PCIPC:Device] %s: Configuring Device with %u MSI vectors...\n", __func__, vectcnt);)
 
-            msiflags &= ~(PCIMSIF_ENABLE | PCIMSIF_MMEN_MASK);
-
+            msiflags &= ~PCIMSIF_ENABLE;
             cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
             cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
             cmeth.wcw.val = msiflags;
             OOP_DoMethod(o, &cmeth.wcw.mID); 
 
-            msiflags |= (vectcnt << 4);
+            msiflags |= (ilog2(roundup_pow_of_two(vectcnt)) << 4);
             DMSI(bug("[PCIPC:Device] %s: flags = %04x\n", __func__, msiflags);)
 
             cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
             cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSLO;
-            cmeth.wcl.val = (0xFEE << 20) | (0 << 12) | (0x3 << 2);
-            OOP_DoMethod(o, &cmeth.wcw.mID);
+            cmeth.wcl.val = (0xFEE << 20) | (0 << 12);
+            OOP_DoMethod(o, &cmeth.wcl.mID);
 
             if (msiflags & PCIMSIF_64BIT)
             {
@@ -261,24 +339,17 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
                 cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
                 cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSHI;
                 cmeth.wcl.val = 0;
-                OOP_DoMethod(o, &cmeth.wcw.mID);
-            }
-            cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
-            cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
-            cmeth.wcw.val = msiflags;
-            OOP_DoMethod(o, &cmeth.wcw.mID);
-
-            if (!(msiflags & PCIMSIF_64BIT))
-            {
+                OOP_DoMethod(o, &cmeth.wcl.mID);
+                
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
-                cmeth.wcw.reg = capmsi + PCIMSI_DATA32;
+                cmeth.wcw.reg = capmsi + PCIMSI_DATA64;
                 cmeth.wcw.val = apicIRQBase;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
             else
             {
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
-                cmeth.wcw.reg = capmsi + PCIMSI_DATA64;
+                cmeth.wcw.reg = capmsi + PCIMSI_DATA32;
                 cmeth.wcw.val = apicIRQBase;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
