@@ -78,8 +78,7 @@ struct Library *PrepareAROSSupportBase (struct MemHeader *mh)
     AROSSupportBase->rkprintf = (void *)rkprintf;
     AROSSupportBase->vkprintf = (void *)vkprintf;
 
-    AROSSupportBase->StdOut = NULL;
-    AROSSupportBase->DebugConfig = NULL;
+    AROSSupportBase->_pad = (IPTR)NULL;
 
     return (struct Library *)AROSSupportBase;
 }
