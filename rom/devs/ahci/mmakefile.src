@@ -29,7 +29,10 @@ AHCICLASSFILES :=  \
         ahci_busclass \
         ahci_unitclass
 
-USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
+USER_CPPFLAGS :=  \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
 
 # Contains code from openbsd.org
 USER_CPPFLAGS += -D__BSD_VISIBLE

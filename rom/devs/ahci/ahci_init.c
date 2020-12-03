@@ -46,8 +46,8 @@
 #include "ahci.h"
 #include "timer.h"
 
-u_int32_t AhciForceGen;
-u_int32_t AhciNoFeatures;
+u_int32_t AhciForceGen = 0;
+u_int32_t AhciNoFeatures = 0;
 
 #include LC_LIBDEFS_FILE
 
@@ -113,6 +113,26 @@ static int AHCI_Init(struct AHCIBase *AHCIBase)
                     {
                         D(bug("[AHCI--] %s: Disabling AHCI support\n", __func__));
                         return FALSE;
+                    }
+                    if (strstr(CmdLine, "force150"))
+                    {
+                        D(bug("[AHCI--] %s: Forcing AHCI Gen1\n", __func__));
+                        AhciForceGen = 1;
+                    }
+                    if (strstr(CmdLine, "force300"))
+                    {
+                        D(bug("[AHCI--] %s: Forcing AHCI Gen2\n", __func__));
+                        AhciForceGen = 2;
+                    }
+                    if (strstr(CmdLine, "force600"))
+                    {
+                        D(bug("[AHCI--] %s: Forcing AHCI Gen3\n", __func__));
+                        AhciForceGen = 3;
+                    }
+                    if (strstr(CmdLine, "nofeatures"))
+                    {
+                        D(bug("[AHCI--] %s: Disabling AHCI features\n", __func__));
+                        AhciNoFeatures = -1;
                     }
                 }
             }
