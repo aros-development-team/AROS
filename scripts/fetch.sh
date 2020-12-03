@@ -252,7 +252,7 @@ do_patch()
     
     local ret=true
     
-    if ! patch $patch_opt < $abs_location/$patch; then
+    if ! patch -Z $patch_opt < $abs_location/$patch; then
         ret=false
     fi
     

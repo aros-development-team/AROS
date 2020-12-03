@@ -3634,7 +3634,8 @@ ifeq (%(use_build_env),yes)
     BUILD_ENV := $(%(mmake)-cfg-env)
 endif
 
-%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+# Files are not touched anymore by default, add this to your mmakefile if that is necessry
+#<target>-touchfileflag := $(GENDIR)/$(CURDIR)/.files-touched
 
 ifneq ("$(wildcard %(srcdir)/Makefile)","")
 # in an ideal world, we would depend on the files in the source directory,
@@ -3880,7 +3881,8 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	    $(TOUCH) $@ -r $^; \
 	fi
 
-%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+# Files are not touched anymore by default, add this to your mmakefile if that is necessry
+#<target>-touchfileflag := $(GENDIR)/$(CURDIR)/.files-touched
 ifneq ($(%(mmake)-touchfileflag),)
 $(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)
@@ -4022,7 +4024,7 @@ endif
 	    $(ECHO) $$f >> ./exclude.patterns ; \
 	done ; \
 	$(ECHO) "Creating   \`%(archive)-aros-new.diff'" ; \
-	diff -ruN $(%(mmake)-exclude) \
+	TZ="UTC" diff -ruN $(%(mmake)-exclude) \
 	    $(%(mmake)-srcdir) \
 	    $(%(mmake)-srcdir).aros \
 	    >$(SRCDIR)/$(CURDIR)/%(archive)-aros-new.diff ; \
