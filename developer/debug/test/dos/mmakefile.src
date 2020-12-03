@@ -5,6 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := \
     addpart \
+    clicreatenewproc \
     consolemodes \
     doslist \
     dosvartest \
