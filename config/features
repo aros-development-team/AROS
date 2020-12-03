@@ -740,6 +740,7 @@ aros_cflags_iquote_end
 aros_cflags_iquote
 aros_cflags_isystem_end
 aros_cflags_isystem
+aros_cflags_file_prefix_map
 aros_cflags_visibility_hidden
 aros_cflags_no_merge_all_constants
 aros_cflags_merge_all_constants
@@ -2895,6 +2896,8 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fmerge-constants
 #  -fmerge-all-constants
 
+#  -ffile-prefix-map
+
 # C++/ObjC++
 #  -fpermissive
 #  -frtti
@@ -4070,6 +4073,32 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 $as_echo "$aros_visibility_hidden" >&6; }
 if test "x-$aros_visibility_hidden" = "x-yes" ; then
     aros_cflags_visibility_hidden=-fvisibility=hidden
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -ffile-prefix-map" >&5
+$as_echo_n "checking whether ${CC} accepts -ffile-prefix-map... " >&6; }
+CFLAGS=-ffile-prefix-map=/a=/b
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_file_prefix_map="yes"
+else
+  aros_file_prefix_map="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_file_prefix_map" >&5
+$as_echo "$aros_file_prefix_map" >&6; }
+if test "x-$aros_file_prefix_map" = "x-yes" ; then
+    aros_cflags_file_prefix_map=-ffile-prefix-map
 fi
 
 # C++ features
@@ -6696,6 +6725,7 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
 
 
 

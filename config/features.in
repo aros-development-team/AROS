@@ -70,6 +70,8 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fmerge-constants
 #  -fmerge-all-constants
 
+#  -ffile-prefix-map
+
 # C++/ObjC++
 #  -fpermissive
 #  -frtti
@@ -447,6 +449,14 @@ AC_TRY_COMPILE(,, aros_visibility_hidden="yes", aros_visibility_hidden="no")
 AC_MSG_RESULT($aros_visibility_hidden)
 if test "x-$aros_visibility_hidden" = "x-yes" ; then
     aros_cflags_visibility_hidden=-fvisibility=hidden
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffile-prefix-map])
+CFLAGS=-ffile-prefix-map=/a=/b
+AC_TRY_COMPILE(,, aros_file_prefix_map="yes", aros_file_prefix_map="no")
+AC_MSG_RESULT($aros_file_prefix_map)
+if test "x-$aros_file_prefix_map" = "x-yes" ; then
+    aros_cflags_file_prefix_map=-ffile-prefix-map
 fi
 
 # C++ features
@@ -1414,6 +1424,7 @@ AC_SUBST(aros_cflags_merge_all_constants)
 AC_SUBST(aros_cflags_no_merge_all_constants)
 
 AC_SUBST(aros_cflags_visibility_hidden)
+AC_SUBST(aros_cflags_file_prefix_map)
 
 #
 AC_SUBST(aros_cflags_isystem)

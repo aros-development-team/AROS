@@ -102,6 +102,8 @@ CFLAGS_NO_MERGE_ALL_CONSTANTS           := @aros_cflags_no_merge_all_constants@
 
 CFLAGS_VISIBILITY_HIDDEN                := @aros_cflags_visibility_hidden@
 
+CFLAGS_FILE_PREFIX_MAP                  := @aros_cflags_file_prefix_map@
+
 # C++/ObjC++
 CFLAGS_PERMISSIVE                       := @aros_cxxflags_permissive@
 CFLAGS_NO_PERMISSIVE                    := @aros_cxxflags_nopermissive@
