@@ -15,10 +15,16 @@ MODULE_BOOTSTRAP:=/$(AROS_DIR_ARCH)/bootstrap.gz
 bootloader-grub2-pc-x86_64: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 bootloader-grub2gfx-pc-x86_64: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 
+ifeq ($(DEBUG),yes)
+SEDPARAMS = -e 's|@debug@|debug|g'
+else
+SEDPARAMS = -e 's|@debug@||g'
+endif
+
 $(AROSARCHDIR)/grub/grub.cfg: grub.cfg
 	@$(ECHO) Generating $@...
-	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
+	@$(SED) $(SEDPARAMS) -e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
 
 $(AROSDIR)/EFI/BOOT/grub/grub.cfg: grub-efi.cfg
 	@$(ECHO) Generating $@...
-	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module2 \#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
+	@$(SED) $(SEDPARAMS) -e 's#@modules.default@#sed "s\#^\#    module2 \#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
