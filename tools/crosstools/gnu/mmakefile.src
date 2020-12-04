@@ -332,6 +332,8 @@ tools-crosstools-gdb :
 
 LIBATOMIC_OBJDIR := $(HOSTGENDIR)/$(CURDIR)/gcc/$(AROS_TARGET_CPU)-aros/libatomic
 LIBATOMIC_SRCDIR := $(HOSTDIR)/Ports/host/gcc/gcc-$(GCC_VERSION)/libatomic
-
+ifeq ($(AROS_TARGET_CPU),m68k)
+ISA_FLAGS:=$(ISA_FLOAT_FLAGS)
+endif
 %build_with_configure mmake=tools-crosstools-gcc-libatomic srcdir="$(LIBATOMIC_SRCDIR)" \
 	gendir="$(LIBATOMIC_OBJDIR)"
