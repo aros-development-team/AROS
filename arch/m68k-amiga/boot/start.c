@@ -16,6 +16,8 @@
 #include <proto/exec.h>
 #include <hardware/cpu/memory.h>
 
+#include <string.h>
+
 #include "memory.h"
 
 #include "kernel_romtags.h"
