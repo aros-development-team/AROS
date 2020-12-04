@@ -3,7 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-##MM- test : test-cpu-x86
+#MM- test-x86_64 : test-cpu-x86
+#MM- test-x86_64-quick : test-cpu-x86-quick
 #MM- test-cpu-x86 : test-cpu-x86-slow test-cpu-x86-avx test-cpu-x86-avx2
 #MM- test-cpu-x86-quick : test-cpu-x86-slow-quick test-cpu-x86-avx-quick test-cpu-x86-avx2-quick
 
