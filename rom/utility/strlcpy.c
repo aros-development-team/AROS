@@ -29,6 +29,8 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <aros/crt_replacement.h>
+
 #include "intern.h"
 
 /*****************************************************************************
