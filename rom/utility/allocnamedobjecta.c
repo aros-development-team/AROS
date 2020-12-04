@@ -7,7 +7,7 @@
 */
 #include "intern.h"
 #include <proto/exec.h>
-#include <string.h>
+#include <aros/crt_replacement.h>
 
 /*****************************************************************************
 
@@ -103,7 +103,7 @@
 
 	/* The name is at the first byte after the IntNamedObject struct */
 	no->no_Node.ln_Name = (STRPTR)(no + 1);
-	strcpy(no->no_Node.ln_Name, name);
+	StrCpy(no->no_Node.ln_Name, name);
 
 	no->no_Node.ln_Pri = GetTagData( ANO_Priority, 0, (struct TagItem *)tagList );
 	no->no_UseCount = 0;
