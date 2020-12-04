@@ -107,7 +107,7 @@ ifeq (,$(GCC_EXTRA_OPTS))
 GCC_EXTRA_OPTS += $(GCC_COMMON_OPTS)
 endif
 
-# Disable libatomic until we are ready to build it...
+# Disable libatomic - we build it manually later...
 gcc_build_libatomic?=enable_libatomic=no
 GCC_ENV=$(gcc_build_libatomic)
 
@@ -310,21 +310,6 @@ tools-crosstools-gcc :
 	usecppflags=no usecflags=no usecxxflags=no \
 	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
 
-#MM
-tools-crosstools-gcc-libatomic :
-	@$(IF) ! $(TEST) -f $(libatomic-installflag) ; then \
-	    $(IF) $(TEST) -f $(crosstools-gcc--configflag) ; then \
-	        $(RM) $(crosstools-gcc--configflag) ; \
-	    fi ; \
-	    $(IF) ! $(TEST) "$(GCC_LIBATOMIC_MULTILIB_TARGETS)" = "" ; then \
-	        $(ECHO) "$(GCC_LIBATOMIC_MULTILIB_TARGETS)" > $(HOSTGENDIR)/$(CURDIR)/gcc/$(AROS_TARGET_CPU)-aros/libatomic/multilib.out ; \
-	    fi ; \
-	    gcc_build_libatomic="" $(MAKE) -f ./mmakefile crosstools-gcc--configure \
-	    && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/gcc all-target-libatomic \
-	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/gcc install-target-libatomic \
-	    && $(TOUCH) $(libatomic-installflag) ; \
-	fi
-
 ## GDB ###
 
 #MM
@@ -341,4 +326,12 @@ tools-crosstools-gdb :
 	package_repo="$(GNU_REPOSITORY)/gdb" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
-        extraoptions="$(GDB_EXTRA_OPTS)"
+	extraoptions="$(GDB_EXTRA_OPTS)"
+
+# libatomic
+
+LIBATOMIC_OBJDIR := $(HOSTGENDIR)/$(CURDIR)/gcc/$(AROS_TARGET_CPU)-aros/libatomic
+LIBATOMIC_SRCDIR := $(HOSTDIR)/Ports/host/gcc/gcc-$(GCC_VERSION)/libatomic
+
+%build_with_configure mmake=tools-crosstools-gcc-libatomic srcdir="$(LIBATOMIC_SRCDIR)" \
+	gendir="$(LIBATOMIC_OBJDIR)"
