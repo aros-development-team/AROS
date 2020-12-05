@@ -9,6 +9,22 @@ USER_CPPFLAGS := -DAROS_USE_OOP \
                -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
+# Allow to override private headers
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/hidds/hidd	\
+	         -I$(SRCDIR)/arch/all-$(ARCH)/hidds/hidd
+ifneq ($(FAMILY),)
+USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/hidds/hidd
+endif
+USER_INCLUDES += -I$(SRCDIR)/rom/hidds/hidd
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(ARCH)/hidds/hidd/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/hidds/hidd/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/hidds/hidd/make.opts
+endif
+
+
 %build_module mmake=kernel-hidd \
   modname=hiddclass modtype=hidd \
   files="initcode $(CLASSES)"
