@@ -11,8 +11,6 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 
-#include <string.h>
-
 #include "debug_intern.h"
 
 static module_t * FindModule(BPTR segList, struct Library * DebugBase);

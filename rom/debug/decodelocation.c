@@ -14,7 +14,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-#include <inttypes.h>
+//#include <inttypes.h>
 
 #include "debug_intern.h"
 
