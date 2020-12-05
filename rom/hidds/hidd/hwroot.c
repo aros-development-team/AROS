@@ -3,10 +3,13 @@
     $Id$
 */
 
-#include <hidd/hidd.h>
+
+#include <proto/oop.h>
+#include <proto/utility.h>
+
 #include <oop/oop.h>
 #include <utility/tagitem.h>
-#include <proto/oop.h>
+#include <hidd/hidd.h>
 
 #include "hiddclass_intern.h"
 
@@ -38,6 +41,7 @@
 OOP_Object *HWRoot__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct class_static_data *csd = CSD(cl);
+    struct Library *UtilityBase = csd->cs_UtilityBase;
     char *systemtype = (char *)GetTagData(aHW_ClassName, (IPTR)"Computer", msg->attrList);
     /*
      * This singletone lacks semaphore protection. It is OK since
