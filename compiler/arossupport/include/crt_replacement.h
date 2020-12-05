@@ -12,6 +12,19 @@
 
 /* string.h replacments */
 
+static inline int StrCmp(const char *str1, const char *str2)
+{
+    int diff;
+
+    while (!(diff = *(unsigned char*) str1 - *(unsigned char*) str2) && *str1)
+    {
+        str1 ++;
+        str2 ++;
+    }
+
+    return diff;
+}
+
 static inline char *StrCpy(char *dest, const char *src)
 {
     char *ptr = dest;
