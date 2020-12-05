@@ -12,7 +12,7 @@ char *generate_banner()
 {
     BYTE const CExtra[] = "Licensed under the AROS Public License.\n"
 #if defined(REPOTYPE)
-                         "Version " REPOTYPE "" REPOREVISION
+                         "Version " REPOTYPE " " REPOREVISION
 #if defined(REPOID)
                          " (" REPOID ")"
 #endif
