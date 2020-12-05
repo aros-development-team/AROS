@@ -14,6 +14,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- core-linklibs: linklibs-aros
 
 USER_CPPFLAGS := \
+               -DNO_INLINE_STDARG \
                -DUSE_EXEC_DEBUG \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
