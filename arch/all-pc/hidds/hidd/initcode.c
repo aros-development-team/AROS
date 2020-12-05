@@ -32,7 +32,7 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
     ULONG arg = 1;
     ULONG res;
 
-    bug("[HIDD] %s()\n", __func__));
+    D(bug("[HIDD] %s()\n", __func__));
 
     csd = &lh->hd_csd;
     csd->cs_UtilityBase = OpenLibrary("utility.library", 36);
