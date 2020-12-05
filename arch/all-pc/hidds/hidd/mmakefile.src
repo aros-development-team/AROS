@@ -1,0 +1,17 @@
+#$Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+PCCLASSES := initcode
+HIDDDIR := rom/hidds/hidd
+
+USER_CPPFLAGS := -DAROS_USE_OOP \
+               -D__OOP_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(HIDDDIR)
+
+%build_archspecific \
+  mainmmake=kernel-hidd maindir=$(HIDDDIR) \
+  arch=pc modname=hiddclass \
+  files="$(PCCLASSES)"
