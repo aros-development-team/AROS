@@ -750,6 +750,8 @@ aros_cflags_data_sections
 aros_cflags_function_sections
 aros_cflags_no_asynchronous_unwind_tables
 aros_cflags_asynchronous_unwind_tables
+aros_cflags_no_unwind_tables
+aros_cflags_unwind_tables
 aros_cflags_no_freestanding
 aros_cflags_freestanding
 aros_cflags_no_builtin_unreachable
@@ -2890,6 +2892,7 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 #  -fno-builtin-vsnprintf
 
 #  -ffreestanding
+#  -funwind-tables
 #  -fasynchronous-unwind-tables
 #  -ffunction-sections
 #  -fdata-sections
@@ -3914,6 +3917,33 @@ $as_echo "$aros_freestanding" >&6; }
 if test "x-$aros_freestanding" = "x-yes" ; then
     aros_cflags_freestanding=-ffreestanding
     aros_cflags_no_freestanding=-fno-freestanding
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -funwind-tables" >&5
+$as_echo_n "checking whether ${CC} accepts -funwind-tables... " >&6; }
+CFLAGS=-funwind-tables
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_unwind_tables="yes"
+else
+  aros_unwind_tables="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_unwind_tables" >&5
+$as_echo "$aros_unwind_tables" >&6; }
+if test "x-$aros_unwind_tables" = "x-yes" ; then
+    aros_cflags_unwind_tables=-funwind-tables
+    aros_cflags_no_unwind_tables=-fno-unwind-tables
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -fasynchronous-unwind-tables" >&5
@@ -6725,6 +6755,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
+
 
 
 

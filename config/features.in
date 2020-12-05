@@ -64,6 +64,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -fno-builtin-vsnprintf
 
 #  -ffreestanding
+#  -funwind-tables
 #  -fasynchronous-unwind-tables
 #  -ffunction-sections
 #  -fdata-sections
@@ -398,6 +399,15 @@ AC_MSG_RESULT($aros_freestanding)
 if test "x-$aros_freestanding" = "x-yes" ; then
     aros_cflags_freestanding=-ffreestanding
     aros_cflags_no_freestanding=-fno-freestanding
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -funwind-tables])
+CFLAGS=-funwind-tables
+AC_TRY_COMPILE(,, aros_unwind_tables="yes", aros_unwind_tables="no")
+AC_MSG_RESULT($aros_unwind_tables)
+if test "x-$aros_unwind_tables" = "x-yes" ; then
+    aros_cflags_unwind_tables=-funwind-tables
+    aros_cflags_no_unwind_tables=-fno-unwind-tables
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fasynchronous-unwind-tables])
@@ -1413,6 +1423,8 @@ AC_SUBST(aros_cflags_no_builtin_unreachable)
 AC_SUBST(aros_cflags_freestanding)
 AC_SUBST(aros_cflags_no_freestanding)
 
+AC_SUBST(aros_cflags_unwind_tables)
+AC_SUBST(aros_cflags_no_unwind_tables)
 AC_SUBST(aros_cflags_asynchronous_unwind_tables)
 AC_SUBST(aros_cflags_no_asynchronous_unwind_tables)
 

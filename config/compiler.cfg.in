@@ -86,6 +86,10 @@ CFLAGS_NO_BUILTIN_UNREACHABLE           := @aros_cflags_no_builtin_unreachable@
 CFLAGS_FREESTANDING                     := @aros_cflags_freestanding@
 CFLAGS_NO_FREESTANDING                  := @aros_cflags_no_freestanding@
 
+# Unwinding ..
+CFLAGS_UNWIND_TABLES                    := @aros_cflags_unwind_tables@
+CFLAGS_NO_UNWIND_TABLES                 := @aros_cflags_no_unwind_tables@
+
 #
 CFLAGS_ASYNCHRONOUS_UNWIND_TABLES       := @aros_cflags_asynchronous_unwind_tables@
 CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES    := @aros_cflags_no_asynchronous_unwind_tables@
