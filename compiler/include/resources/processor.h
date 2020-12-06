@@ -91,6 +91,8 @@
 #define GCIT_SupportsSecurityExt    (GCIT_FeaturesBase +  39)
 #define GCIT_SupportsAMMX           (GCIT_FeaturesBase +  40)
 #define GCIT_SupportsAVX            (GCIT_FeaturesBase +  41)
+#define GCIT_SupportsAES            (GCIT_FeaturesBase +  42)
+#define GCIT_Virtualized            (GCIT_FeaturesBase +  100)
 #define GCIT_FeaturesLast           (TAG_USER + 499)
 
 /* Processor family defines */
