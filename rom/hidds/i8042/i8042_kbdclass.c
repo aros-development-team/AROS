@@ -43,7 +43,7 @@ int  kbd_reset(void);
 
 /****************************************************************************************/
 
-
+#define DFAIL(x)        x
 #define KEYBOARDIRQ     1
 #define NOKEY           -1
 
@@ -178,6 +178,7 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         if (kbd)
         {
             struct kbd_data *data = OOP_INST_DATA(cl, kbd);
+            UBYTE status;
 
             D(bug("[i8042:Kbd] %s: controller obj @ 0x%p, data @ 0x%p\n", __func__, kbd, data));
 
@@ -188,8 +189,11 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
             Disable();
             D(bug("[i8042:Kbd] %s: performing keyboard reset ...\n", __func__));
-            kbd_reset();            /* Reset the keyboard */
-            D(bug("[i8042:Kbd] %s: updating leds ...\n", __func__));
+            status = kbd_reset();            /* Reset the keyboard */
+            D(
+                bug("[i8042:Kbd] %s: reset returned %x\n", __func__, status);
+                bug("[i8042:Kbd] %s: updating leds ...\n", __func__);
+            )
             kbd_updateleds(0);
             Enable();
 
@@ -507,34 +511,40 @@ int kbd_reset(void)
 {
     UBYTE status;
 
-    D(bug("[i8042:Kbd] %s()\n", __func__));
-
-    D(bug("[i8042:Kbd] %s: sending self test...\n", __func__));
+    D(
+        bug("[i8042:Kbd] %s()\n", __func__);
+        bug("[i8042:Kbd] %s: sending self test...\n", __func__);
+    )
     kbd_write_command_w(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard controller */
     D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
-    if (kbd_wait_for_input() != 0x55)
+    status = kbd_wait_for_input();
+    if (status != 0x55)
     {
-        D(bug("[i8042:Kbd] %s: Controller test failed!\n", __func__));
+        DFAIL(bug("[i8042:Kbd] %s: Controller test failed! (%x)\n", __func__, status));
         return FALSE;
     }
 
     D(bug("[i8042:Kbd] %s: sending kbd test...\n", __func__));
     kbd_write_command_w(KBD_CTRLCMD_KBD_TEST);
     D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
-    if (kbd_wait_for_input() != 0)
+    status = kbd_wait_for_input();
+    if (status != 0)
     {
-        D(bug("[i8042:Kbd] %s: Keyboard test failed!\n", __func__));
+        DFAIL(bug("[i8042:Kbd] %s: Keyboard test failed! (%x)\n", __func__, status));
         return FALSE;
     }
 
     D(bug("[i8042:Kbd] %s: sending enable...\n", __func__));
     kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
-    D(bug("[i8042:Kbd] %s:     done!\n", __func__));
-
+    D(
+        bug("[i8042:Kbd] %s:     done!\n", __func__);
+        bug("[i8042:Kbd] %s: starting reset cycle ..\n", __func__);
+    )
     do
     {
         D(bug("[i8042:Kbd] %s: sending reset...\n", __func__));
         kbd_write_output_w(KBD_OUTCMD_RESET);
+
         D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
         status = kbd_wait_for_input();
         if (status == KBD_REPLY_ACK)
@@ -542,18 +552,21 @@ int kbd_reset(void)
 
         if (status != KBD_REPLY_RESEND)
         {
-            D(bug("[i8042:Kbd] %s: Keyboard reset ack #1 failed! (%x)\n", __func__, status));
+            DFAIL(bug("[i8042:Kbd] %s: Keyboard reset failed! (%x)\n", __func__, status));
             return FALSE;
         }
     } while(1);
 
+
+    D(bug("[i8042:Kbd] %s: waiting for power-on-reset...\n", __func__);)
     status = kbd_wait_for_input();
     if (status != KBD_REPLY_POR)
     {
-        D(bug("[i8042:Kbd] %s: Keyboard reset ack #2 failed! (%x)\n", __func__, status));
+        DFAIL(bug("[i8042:Kbd] %s: Keyboard power-on-reset failed! (%x)\n", __func__, status));
         return FALSE;
     }
 
+    D(bug("[i8042:Kbd] %s: starting disable cycle ..\n", __func__);)
     do
     {
         D(bug("[i8042:Kbd] %s: sending disable...\n", __func__));
@@ -565,12 +578,12 @@ int kbd_reset(void)
 
         if (status != KBD_REPLY_RESEND)
         {
-            D(bug("[i8042:Kbd] %s: Keyboard disable failed!\n", __func__));
+            DFAIL(bug("[i8042:Kbd] %s: Keyboard disable failed! (%x)\n", __func__, status));
             return FALSE;
         }
     } while (1);
 
-    D(bug("[i8042:Kbd] %s: sending write mode...\n", __func__));
+    D(bug("[i8042:Kbd] %s: sending write mode...\n", __func__);)
     kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
 #if 0
@@ -586,13 +599,17 @@ int kbd_reset(void)
     kbd_write_output_w(KBD_OUTCMD_ENABLE);
 
     D(bug("[i8042:Kbd] %s: enabled ints\n", __func__));
-    
-    if (kbd_wait_for_input() != KBD_REPLY_ACK)
+
+    status = kbd_wait_for_input();
+    if (status != KBD_REPLY_ACK)
     {
-        D(bug("[i8042:Kbd] %s: No REPLY_ACK !!!\nReturning FALSE !!!!\n", __func__));
+        DFAIL(
+            bug("[i8042:Kbd] %s: No REPLY_ACK (%x) !!!\n", __func__, status);
+            bug("[i8042:Kbd] %s: Returning FALSE !!!!\n", __func__);
+        )
         return FALSE;
     }
-    
+
     D(bug("[i8042:Kbd] %s: Successfully reset keyboard!\n", __func__));
 
     return TRUE;
