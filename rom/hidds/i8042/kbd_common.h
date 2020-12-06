@@ -17,11 +17,11 @@
 #define KBD_CONTROL_REG                 0x64
 #define KBD_DATA_REG                    0x60
 
-#define KBD_STATUS_OBF                  0x01    /* keyboard output buffer full */
-#define KBD_STATUS_IBF                  0x02    /* keyboard input buffer full */
-#define KBD_STATUS_MOUSE_OBF            0x20    /* Mouse output buffer full */
-#define KBD_STATUS_GTO                  0x40    /* General receive/xmit timeout */
-#define KBD_STATUS_PERR                 0x80    /* Parity error */
+#define KBD_STATUS_OBF                  (1 << 0)        /* keyboard output buffer full */
+#define KBD_STATUS_IBF                  (1 << 1)        /* keyboard input buffer full */
+#define KBD_STATUS_MOUSE_OBF            (1 << 5)        /* Mouse output buffer full */
+#define KBD_STATUS_GTO                  (1 << 6)        /* General receive/xmit timeout */
+#define KBD_STATUS_PERR                 (1 << 7)        /* Parity error */
 
 #define KBD_CTRLCMD_READ_MODE           0x20
 #define KBD_CTRLCMD_WRITE_MODE          0x60
@@ -36,17 +36,17 @@
 #define KBD_CTRLCMD_WRITE_AUX_OBUF      0xD3
 #define KBD_CTRLCMD_WRITE_MOUSE         0xD4
 
-#define KBD_REPLY_POR                   0xAA    /* Power on reset */
-#define KBD_REPLY_ACK                   0xFA    /* Command ACK */
-#define KBD_REPLY_RESEND                0xFE    /* Command NACK, send the cmd again */
+#define KBD_REPLY_POR                   0xAA            /* Power on reset */
+#define KBD_REPLY_ACK                   0xFA            /* Command ACK */
+#define KBD_REPLY_RESEND                0xFE            /* Command NACK, send the cmd again */
 
-#define KBD_MODE_KBD_INT                0x01    /* Keyboard data generate IRQ1 */
-#define KBD_MODE_MOUSE_INT              0x02    /* Mouse data generate IRQ12 */
-#define KBD_MODE_SYS                    0x04    /* The system flag (?) */
-#define KBD_MODE_NO_KEYLOCK             0x08    /* The keylock doesn't affect the keyboard if set */
-#define KBD_MODE_DISABLE_KBD            0x10    /* Disable keyboard interface */
-#define KBD_MODE_DISABLE_MOUSE          0x20    /* Disable mouse interface */
-#define KBD_MODE_KCC                    0x40    /* Scan code conversion to PC format */
+#define KBD_MODE_KBD_INT                0x01            /* Keyboard data generate IRQ1 */
+#define KBD_MODE_MOUSE_INT              0x02            /* Mouse data generate IRQ12 */
+#define KBD_MODE_SYS                    0x04            /* The system flag (?) */
+#define KBD_MODE_NO_KEYLOCK             0x08            /* The keylock doesn't affect the keyboard if set */
+#define KBD_MODE_DISABLE_KBD            0x10            /* Disable keyboard interface */
+#define KBD_MODE_DISABLE_MOUSE          0x20            /* Disable mouse interface */
+#define KBD_MODE_KCC                    0x40            /* Scan code conversion to PC format */
 #define KBD_MODE_RFU                    0x80
 
 static unsigned char kbd_read_input(void)
@@ -93,6 +93,7 @@ static int kbd_wait_for_input(void)
 {
     return wait_for_input(100);
 }
+
 static int aux_wait_for_input(void)
 {
     return wait_for_input(1000);
