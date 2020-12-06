@@ -45,8 +45,8 @@ struct TimerBase
     APTR		        tb_KernelBase;		/* kernel.resource base					*/
 
     /* Time counters */
-    volatile struct timeval	tb_CurrentTime;	        /* Absolute system time. Can be set by TR_SETSYSTIME.	*/
-    volatile struct timeval	tb_Elapsed;		/* Relative system time. Used for measuring intervals.	*/
+    struct timeval	        tb_CurrentTime;	        /* Absolute system time. Can be set by TR_SETSYSTIME.	*/
+    struct timeval	        tb_Elapsed;		/* Relative system time. Used for measuring intervals.	*/
 
     /* This is required for hardware-specific code */
     APTR		        tb_TimerIRQHandle;	/* Timer IRQ handle					*/
@@ -57,11 +57,11 @@ struct TimerBase
     struct MinList	        tb_Lists[NUM_LISTS];
 
     /* EClock counter */
-    volatile UQUAD               tb_ticks_total;	/* Effective EClock value				*/
-    volatile ULONG               tb_ticks_sec;		/* Fraction of second for CurrentTime in ticks		*/
-    volatile ULONG               tb_ticks_elapsed;	/* Fraction of second for Elapsed in ticks		*/
-    volatile ULONG               tb_prev_tick;		/* Hardware-specific					*/
-    volatile ULONG		 tb_eclock_rate;	/* EClock frequency					*/
+    UQUAD                       tb_ticks_total;	        /* Effective EClock value				*/
+    ULONG                       tb_ticks_sec;		/* Fraction of second for CurrentTime in ticks		*/
+    ULONG                       tb_ticks_elapsed;	/* Fraction of second for Elapsed in ticks		*/
+    ULONG                       tb_prev_tick;		/* Hardware-specific					*/
+    ULONG		        tb_eclock_rate;	        /* EClock frequency					*/
 
 #ifdef USE_VBLANK_EMU
     struct timerequest          tb_vblank_timerequest;  /* VBlank emulation request				*/
