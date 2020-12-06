@@ -13,7 +13,7 @@
 
 /* string.h replacments */
 
-static inline int StrCmp(const char *str1, const char *str2)
+static inline int Strcmp(const char *str1, const char *str2)
 {
     int diff;
 
@@ -26,7 +26,7 @@ static inline int StrCmp(const char *str1, const char *str2)
     return diff;
 }
 
-static inline char *StrCpy(char *dest, const char *src)
+static inline char *Strcpy(char *dest, const char *src)
 {
     char *ptr = dest;
 

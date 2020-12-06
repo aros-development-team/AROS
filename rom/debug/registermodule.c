@@ -101,7 +101,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
                 module_t *mod = (module_t *)(&seg[1]);
 
                 DSYMS(bug("[Debug] Adding module @%p: %s\n", pm, pm->m_name));
-                StrCpy(mod->m_name, pm->m_name);
+                Strcpy(mod->m_name, pm->m_name);
 
                 seg->s_seg = BNULL;
                 seg->s_mod = mod;
@@ -292,7 +292,7 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
             else
             {
                 __sprintf(buffer, "-s %s 0x%lx ", seg->s_name, seg->s_lowest);
-                StrCpy(last, buffer);
+                Strcpy(last, buffer);
                 last += Strlen(buffer);
             }
         }
@@ -335,7 +335,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
     if (!mod)
         return;
     NEWLIST(&tmplist);
-    StrCpy(mod->m_name, name);
+    Strcpy(mod->m_name, name);
     mod->m_seg = segList;
 
     while (segList) {
@@ -391,7 +391,7 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
         D(bug("[Debug] %d sections at 0x%p\n", int_shnum, sections));
         shstr = int_shstrndx;
 
-        StrCpy(mod->m_name, name);
+        Strcpy(mod->m_name, name);
         mod->m_seg = segList;
         if (sections[shstr].type == SHT_STRTAB)
             mod->m_shstr = getstrtab(&sections[shstr]);
@@ -404,7 +404,7 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
                 /* If we have string table, copy it */
                 if ((sections[i].type == SHT_STRTAB) && (!mod->m_str)) {
                     /* We are looking for .strtab, not .shstrtab or .stabstr */
-                    if (mod->m_shstr && (StrCmp(&mod->m_shstr[sections[i].name], ".strtab") == 0)) {
+                    if (mod->m_shstr && (Strcmp(&mod->m_shstr[sections[i].name], ".strtab") == 0)) {
                         D(bug("[Debug] Symbol name table of length %d in section %d\n", sections[i].size, i));
                         mod->m_str = getstrtab(&sections[i]);
                     }
