@@ -86,7 +86,7 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         Wait(SIGF_SINGLE);
         if (!data->irq)
         {
-            D(bug("[i8042:Kbd] %s: controller initialization failed\n", __func__));
+            D(bug("[i8042:Mouse] %s: Mouse initialization failed\n", __func__));
             /*
              * No mouse found. What we can do now is just Dispose() :(
              * Note that we use OOP_DoSuperMethod() in order not to call
