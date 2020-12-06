@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2019, The AROS Development Team. All rights reserved
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -1049,8 +1049,9 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
                 }
                 else
                 {
+                    DINIT(bug("[ATA**] Disposing unit @ 0x%p (obj @ 0x%p)\n", unit, unitObj);)
                     /* Destroy unit that couldn't be initialised */
-                    OOP_DisposeObject((OOP_Object *)unit);
+                    OOP_DisposeObject(unitObj);
                     bus->ab_Dev[iter] = DEV_NONE;
                 }
             }
