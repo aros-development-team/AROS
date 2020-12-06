@@ -11,6 +11,7 @@ FILES := defaultkeymap support
 FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
 USER_CPPFLAGS := \
+               -DNO_INLINE_STDARG \
                -DUSE_EXEC_DEBUG
 USER_LDFLAGS := -static
 

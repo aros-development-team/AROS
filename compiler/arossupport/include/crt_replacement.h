@@ -9,6 +9,7 @@
 #define CRT_REPLACEMENT_H
 
 #include <exec/types.h>
+#include <stddef.h>
 
 /* string.h replacments */
 
@@ -38,6 +39,22 @@ static inline char *StrCpy(char *dest, const char *src)
     return dest;
 }
 
+static inline char *Strncpy(char *dest, const char *src, size_t n)
+{
+    char * ptr = dest;
+
+    while (n && (*ptr = *src))
+    {
+        ptr ++;
+        src ++;
+        n--;
+    }
+
+    while (n--)
+        *ptr++ = '\0';
+
+    return dest;
+}
 
 static inline ULONG Strlen(CONST_STRPTR string)
 {

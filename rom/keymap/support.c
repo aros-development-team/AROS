@@ -9,7 +9,7 @@
 /****************************************************************************************/
 
 #include <devices/inputevent.h>
-#include <string.h>
+#include <aros/crt_replacement.h>
 
 #include <aros/debug.h>
 
@@ -31,7 +31,8 @@ BOOL WriteToBuffer(struct BufInfo *bufinfo, UBYTE *string, LONG numchars)
     if (bufinfo->CharsWritten + numchars > bufinfo->BufLength)
         return (FALSE);
 
-    strncpy(bufinfo->Buffer, string, numchars);
+    /* TODO: check if we can use utility.library/Strlcpy() */
+    Strncpy(bufinfo->Buffer, string, numchars);
     bufinfo->CharsWritten += numchars;
 
     return (TRUE);
