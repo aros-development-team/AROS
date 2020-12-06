@@ -11,7 +11,7 @@
 #include <proto/graphics.h>
 #include <graphics/gfxbase.h>
 
-#include <string.h>
+#include <aros/crt_replacement.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -25,10 +25,10 @@ AROS_LH1(struct MsgPort *, spFindPort,
         struct ExecBase *, SysBase, 65, Exec)
 {
     AROS_LIBFUNC_INIT
-    if (strcmp(name, SETPATCH_1_NAME) == 0) {
+    if (Strcmp(name, SETPATCH_1_NAME) == 0) {
         bug("SetPatch v1.x detected\n");
     }
-    if (strcmp(name, SETPATCH_2_NAME) == 0) {
+    if (Strcmp(name, SETPATCH_2_NAME) == 0) {
         bug("SetPatch v2.x detected\n");
     }
     return (struct MsgPort *)FindName(&SysBase->PortList,name);
@@ -42,7 +42,7 @@ AROS_LH1(struct SignalSemaphore *, spFindSemaphore,
 {
     AROS_LIBFUNC_INIT
     /* WB 3.x C:SetPatch called, we need to enable AGA. */
-    if (strcmp(name, SETPATCH_3_NAME) == 0) {
+    if (Strcmp(name, SETPATCH_3_NAME) == 0) {
         /* Not nice. Calling OpenLibrary() inside FindSemaphore(). */
         struct GfxBase *GfxBase = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
         if (GfxBase) {

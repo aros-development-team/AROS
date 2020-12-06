@@ -4,6 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := setpatch_init addpatch rempatch findpatch
 
+CPPFLAGS := -DNO_INLINE_STDARG
+
 %build_module mmake=kernel-setpatch \
     modname=setpatch modtype=library \
     files="$(FILES)"

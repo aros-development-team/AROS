@@ -1,9 +1,9 @@
 /*
-    Copyright © <year>, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include <string.h>
+#include <aros/crt_replacement.h>
 
 #include <proto/exec.h>
 
@@ -55,7 +55,7 @@
     ObtainSemaphore(&SetPatchBase->sp_Patch3.sp_Semaphore);
 
     ForeachNode(&SetPatchBase->sp_Patch3.sp_PatchList, tmp) {
-        if (strcmp(pe->pe_Name, tmp->pe_Name) == 0) {
+        if (Strcmp(pe->pe_Name, tmp->pe_Name) == 0) {
             found = TRUE;
             break;
         }
