@@ -1,8 +1,8 @@
-#ifndef HIDD_KBD_H
-#define HIDD_KBD_H
+#ifndef I8042_KBD_H
+#define I8042_KBD_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
@@ -12,12 +12,15 @@
 #define __OOP_NOMETHODBASES__
 
 #include <exec/libraries.h>
-#include <oop/oop.h>
 #include <exec/semaphores.h>
 #include <exec/interrupts.h>
-#include <dos/bptr.h>
+#include <exec/io.h>
 
-#include "libbase.h"
+#include <devices/timer.h>
+#include <dos/bptr.h>
+#include <oop/oop.h>
+
+#include "i8042_intern.h"
 
 /****************************************************************************************/
 
@@ -31,15 +34,20 @@
 
 struct kbd_data
 {
-    VOID    (*kbd_callback)(APTR, UWORD);
-    APTR    callbackdata;
-    APTR    irq;
+    struct IORequest    *ioTimer;
+    struct Task         *CtrlTask;
+    ULONG               LEDSigBit;
 
-    ULONG   kbd_keystate;
-    WORD    prev_amigacode;
-    UWORD   prev_keycode;
+    VOID                (*kbd_callback)(APTR, UWORD);
+    APTR                callbackdata;
+    APTR                irq;
+
+    ULONG               kbd_keystate;
+    ULONG               kbd_ledstate;
+    WORD                prev_amigacode;
+    UWORD               prev_keycode;
 };
 
 /****************************************************************************************/
 
-#endif /* HIDD_KBD_H */
+#endif /* I8042_KBD_H */

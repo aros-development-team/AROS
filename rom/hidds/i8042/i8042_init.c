@@ -6,18 +6,18 @@
     Lang: english
 */
 
+#undef  SDEBUG
+#undef  DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <proto/exec.h>
 #include <utility/utility.h>
 
-#include "libbase.h"
-
-#undef  SDEBUG
-#undef  DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
+#include "i8042_intern.h"
 
 #undef OOPBase
 #define OOPBase (LIBBASE->ksd.cs_OOPBase)

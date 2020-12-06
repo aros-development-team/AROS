@@ -1,5 +1,5 @@
-#ifndef _LIBBASE_H
-#define _LIBBASE_H
+#ifndef I8042_INTERN_H
+#define I8042_INTERN_H
 
 #include <dos/bptr.h>
 #include <exec/libraries.h>

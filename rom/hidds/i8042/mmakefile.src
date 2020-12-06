@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := startup i8042_init i8042_kbdclass i8042_mouseclass kbd_common drv_ps2
+FILES := i8042_init i8042_classinit i8042_kbdclass i8042_mouseclass i8042_common i8042_mouseps2
 
 %build_module mmake=kernel-hidd-i8042 \
     modname=i8042 modtype=hidd \

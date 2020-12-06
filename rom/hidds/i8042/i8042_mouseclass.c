@@ -13,7 +13,6 @@
     with -fPIC flag.
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -28,20 +27,14 @@
 
 #include <string.h>
 
-#include "mouse.h"
-
-/* Prototypes */
-
-int test_mouse_ps2(OOP_Class *, OOP_Object *);
-void dispose_mouse_ps2(OOP_Class *, OOP_Object *);
-void getps2State(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
+#include "i8042_mouse.h"
 
 /* defines for buttonstate */
 
 /***** Mouse::New()  ***************************************/
 OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-
+    OOP_Object *mouse;
     D(bug("[i8042:Mouse] %s()\n", __func__));
 
     if (XSD(cl)->mousehidd)
@@ -51,10 +44,10 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         return NULL;
     }
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
+    mouse = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (mouse)
     {
-        struct mouse_data   *data = OOP_INST_DATA(cl, o);
+        struct mouse_data   *data = OOP_INST_DATA(cl, mouse);
         struct TagItem      *tag, *tstate;
 
         tstate = msg->attrList;
@@ -82,8 +75,18 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         } /* while (tags to process) */
 
         /* Search for PS/2 mouse */
-        if (!test_mouse_ps2(cl, o))
+        NewCreateTask(TASKTAG_PC,           PS2Mouse_InitTask,
+                         TASKTAG_NAME,      "i8042 Mouse init",
+                         TASKTAG_STACKSIZE, 1024,
+                         TASKTAG_PRI,       100,
+                         TASKTAG_ARG1,      cl,
+                         TASKTAG_ARG2,      mouse,
+                         TASKTAG_USERDATA,  FindTask(NULL),
+                         TAG_DONE);
+        Wait(SIGF_SINGLE);
+        if (!data->irq)
         {
+            D(bug("[i8042:Kbd] %s: controller initialization failed\n", __func__));
             /*
              * No mouse found. What we can do now is just Dispose() :(
              * Note that we use OOP_DoSuperMethod() in order not to call
@@ -91,13 +94,13 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
              */
             OOP_MethodID disp_mid = msg->mID - moRoot_New + moRoot_Dispose;
 
-            OOP_DoSuperMethod(cl, o, &disp_mid);
-            o = NULL;
+            OOP_DoSuperMethod(cl, mouse, &disp_mid);
+            mouse = NULL;
         }
-        XSD(cl)->mousehidd = o;
+        XSD(cl)->mousehidd = mouse;
     }
 
-    return o;
+    return mouse;
 }
 
 VOID i8042Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -129,7 +132,7 @@ VOID i8042Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         switch (idx)
         {
         case aoHidd_Mouse_State:
-            getps2State(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
+            ps2mouse_getstate(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
             return;
 
         case aoHidd_Mouse_RelativeCoords:

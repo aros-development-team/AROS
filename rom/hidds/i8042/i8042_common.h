@@ -1,3 +1,5 @@
+#ifndef I8042_COMMON_H
+#define I8042_COMMON_H
 /*
     Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
@@ -68,33 +70,72 @@ static void kbd_write_command(unsigned char val)
 
 /****************************************************************************************/
 
-int kbd_read_data(void);
-void kb_wait(ULONG timeout);
-void kbd_write_cmd(int cmd);
-void aux_write_ack(int val);
-void aux_write_noack(int val);
-void kbd_write_output_w(int data);
-int kbd_clear_input(void);
-void kbd_write_command_w(int data); 
-void kbd_usleep(LONG usec);
+void kbd_usleep(struct IORequest* tmr, LONG usec);
 
-static int wait_for_input(ULONG timeout)
+int kbd_read_data(void);
+int kbd_clear_input(void);
+
+void kbd_write_cmd(struct IORequest* tmr, int cmd);
+void aux_write_ack(struct IORequest* tmr, int val);
+void aux_write_noack(struct IORequest* tmr, int val);
+void kbd_write_output_w(struct IORequest* tmr, int val);
+void kbd_write_command_w(struct IORequest* tmr, int val); 
+
+static unsigned char handle_kbd_event(void)
+{
+    unsigned char status = kbd_read_status();
+    unsigned int work = 10000;
+                
+    while (status & KBD_STATUS_OBF)
+    {
+        kbd_read_input();
+
+        status = kbd_read_status();
+        if(!work--)
+        {
+            //printf(KERN_ERR "pc_keyb: controller jammed (0x%02X).\n",status);
+            break;
+        }
+    }
+    return status;
+}
+
+/*
+ * Wait until we can write to a peripheral again. Any input that comes in
+ * while we're waiting is discarded.
+ */
+static void kb_wait(struct IORequest* tmr, ULONG timeout)
+{
+    do
+    {
+        unsigned char status = handle_kbd_event();
+        if (! (status & KBD_STATUS_IBF))
+            return;
+        
+        kbd_usleep(tmr, 1000);
+        timeout--;
+    } while (timeout);
+}
+
+static int wait_for_input(struct IORequest* tmr, ULONG timeout)
 {
     do
     {
         int retval = kbd_read_data();
         if (retval >= 0)
             return retval;
-        kbd_usleep(1000);
+        kbd_usleep(tmr, 1000);
     } while(--timeout);
     return -1;
 }
-static int kbd_wait_for_input(void)
+static int kbd_wait_for_input(struct IORequest* tmr)
 {
-    return wait_for_input(100);
+    return wait_for_input(tmr, 100);
 }
 
-static int aux_wait_for_input(void)
+static int aux_wait_for_input(struct IORequest* tmr)
 {
-    return wait_for_input(1000);
+    return wait_for_input(tmr, 1000);
 }
+
+#endif /* I8042_COMMON_H */

@@ -3,7 +3,6 @@
     $Id$
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/oop.h>
@@ -13,7 +12,7 @@
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 
-#include "libbase.h"
+#include "i8042_intern.h"
 
 #undef HiddAttrBase
 #undef HWBase
@@ -33,13 +32,13 @@ static int i8042_Init(struct kbdbase *LIBBASE)
     if (!kbd)
     {
         /* This can be triggered by old base kickstart */
-        D(bug("[i8042] %s: Subsystem classes not found\n", __func__));
+        D(bug("[i8042] %s: unable to create Keyboard class instance\n", __func__));
         return FALSE;
     }
-    D(bug("[i8042] %s: registering keyboard hardware driver ..\n", __func__));
+    D(bug("[i8042] %s: registering Keyboard hardware driver ..\n", __func__));
     if (!HW_AddDriver(kbd, LIBBASE->ksd.kbdclass, NULL))
     {
-        D(bug("[i8042] %s: No controller detected\n", __func__));
+        D(bug("[i8042] %s: no Keyboard controller detected\n", __func__));
         return FALSE;
     }
     LIBBASE->library.lib_OpenCnt = 1;
@@ -49,12 +48,19 @@ static int i8042_Init(struct kbdbase *LIBBASE)
     D(bug("[i8042] %s: %s @ %p\n", __func__, CLID_HW_Mouse, ms));
     if (ms)
     {
-        D(bug("[i8042] %s: registering mouse hardware driver ..\n", __func__));
+        D(bug("[i8042] %s: registering Mouse hardware driver ..\n", __func__));
         if (HW_AddDriver(ms, LIBBASE->ksd.mouseclass, NULL))
         {
             D(bug("[i8042] %s: Mouse driver installed\n", __func__));
             LIBBASE->library.lib_OpenCnt++;
         }
+    }
+    else
+    {
+        D(
+            bug("[i8042] %s: unable to create Mouse class instance\n", __func__);
+            bug("[i8042] %s: # starting with Keyboard only\n", __func__);
+        )
     }
     D(bug("[i8042] %s: finished\n", __func__));
 
