@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,8 +23,10 @@ void Processor_QueryTask(struct ExecBase *SysBase)
     struct X86ProcessorInformation *procInfo;
     struct Task *thisTask;
 
-    D(bug("[processor.x86] %s()\n", __func__));
-    D(bug("[processor.x86] %s: SysBase @ 0x%p\n", __func__, SysBase));
+    D(
+        bug("[processor.x86] %s()\n", __func__);
+        bug("[processor.x86] %s: SysBase @ 0x%p\n", __func__, SysBase);
+    )
 
     thisTask = FindTask(NULL);
     procInfo = thisTask->tc_UserData;
@@ -48,8 +50,10 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     BOOL retval = TRUE;
     void *taskAffinity;
 
-    D(bug("[processor.x86] %s()\n", __func__));
-    D(bug("[processor.x86] %s: SysBase @ 0x%p, ProcessorBase @ 0x%p\n", __func__, SysBase, ProcessorBase));
+    D(
+        bug("[processor.x86] %s()\n", __func__);
+        bug("[processor.x86] %s: SysBase @ 0x%p, ProcessorBase @ 0x%p\n", __func__, SysBase, ProcessorBase);
+    )
 
     sysprocs = AllocVec(ProcessorBase->cpucount * sizeof(APTR), MEMF_ANY | MEMF_CLEAR);
     if (sysprocs == NULL)
