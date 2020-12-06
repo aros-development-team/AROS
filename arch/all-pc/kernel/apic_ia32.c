@@ -472,6 +472,43 @@ static UQUAD ia32_lapic_calibrate(apicid_t cpuNum, IPTR __APICBase)
     return ia32_lapic_calibrate_pit(cpuNum, __APICBase);
 }
 
+static BOOL APIC_isMSHyperV(void)
+{
+        ULONG arg = 1;
+        ULONG res[4];
+
+        asm volatile (
+            "cpuid"
+                : "=c"(res[0])
+                : "a"(arg)
+                : "%ebx", "%edx"
+        );
+
+        if (res[0] & 0x80000000) {
+            /* Hypervisor Flag .. */
+            arg = 0x40000000;
+            asm volatile (
+                "cpuid"
+                    : "=a"(res[0]), "=b"(res[1]), "=c"(res[2]), "=d"(res[3])
+                    : "a"(arg)
+                    : 
+            );
+            /*
+             * res[0]           contains the number of CPUID functions
+             * res[1 - 3]       contain the hypervisor signature...
+            */
+            if ((res[0] >= HYPERV_CPUID_MIN && res[0] <= HYPERV_CPUID_MAX) &&
+                (res[1] == 0x7263694d) &&       /* 'r','c','i','M' */
+                (res[2] == 0x666f736f) &&       /* 'f','o','s','o' */
+                (res[3] == 0x76482074))         /* 'v','H',' ','t' */
+            {
+                    return TRUE;
+            }
+        }
+	return FALSE;
+}
+
+
 /**********************************************************
                         Driver functions
  **********************************************************/
@@ -574,7 +611,7 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         if (cpuNum == 0)
             APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MT_EXT;
         else
-            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MASK | 0xff;
+            APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MASK | LVT_VEC_MASK;
 
         APIC_REG(__APICBase, APIC_LINT1_VEC) = LVT_MT_NMI;
 
@@ -604,15 +641,49 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
         APIC_REG(__APICBase, APIC_TIMER_ICR) = 0x80000000;	/* Just some very large value */
 
-        apic->cores[cpuNum].cpu_TSCFreq = ia32_tsc_calibrate(cpuNum);
+        D(bug("[Kernel:APIC-IA32.%03u] %s: Calibrating timers ...\n", cpuNum, __func__));
+
+        if (APIC_isMSHyperV())
+        {
+            if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
+            {
+                ULONG res[2];
+
+                D(bug("[Kernel:APIC-IA32.%03u] %s: Reading Hypervisor TSC/APIC frequencies...\n", cpuNum, __func__));
+
+                asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000022)); // Read TSC frequency
+                apic->cores[cpuNum].cpu_TSCFreq = 100 * res[0];
+                D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR TSC frequency = %u\n", cpuNum, __func__, res[0]);)
+
+                asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000023)); // Read APIC frequency
+                apic->cores[cpuNum].cpu_TimerFreq = res[0];
+                D(bug("[Kernel:APIC-IA32.%03u] %s:     MSR APIC frequency = %u...\n", cpuNum, __func__, res[0]);)
+
+                if (ssp)
+                    UserState(ssp);
+            }
+        }
+
+        if (!apic->cores[cpuNum].cpu_TSCFreq)
+        {
+            UQUAD calib_tsc;
+
+            D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating TSC...\n", cpuNum, __func__);)
+            calib_tsc = ia32_tsc_calibrate(cpuNum);
+            apic->cores[cpuNum].cpu_TSCFreq = calib_tsc;
+        }
+        if (!apic->cores[cpuNum].cpu_TimerFreq)
+        {
+            ULONG calib_lapic;
+
+            D(bug("[Kernel:APIC-IA32.%03u] %s:     Calibrating LAPIC...\n", cpuNum, __func__);)
+            calib_lapic = ia32_lapic_calibrate(cpuNum, __APICBase);
+            apic->cores[cpuNum].cpu_TimerFreq = calib_lapic;
+        }
         D(
             bug("[Kernel:APIC-IA32.%03u] %s: TSC frequency should be %u kHz (%u MHz)\n", cpuNum, __func__, (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500)/1000), (ULONG)((apic->cores[cpuNum].cpu_TSCFreq + 500000) / 1000000));
-          )
-        apic->cores[cpuNum].cpu_TimerFreq = ia32_lapic_calibrate(cpuNum, __APICBase);
-        D(
             bug("[Kernel:APIC-IA32.%03u] %s: LAPIC frequency should be %u Hz (%u MHz)\n", cpuNum, __func__, apic->cores[cpuNum].cpu_TimerFreq, (apic->cores[cpuNum].cpu_TimerFreq + 500000) / 1000000);
-          )
-
+        )
         /*
          * Once APIC timer has been calibrated -:
          * # Set it to run at its full frequency.

@@ -144,6 +144,26 @@ enum
 #define TIMER_DIV_64  0x09
 #define TIMER_DIV_128 0x0A
 
+/*
+ * MS HyperV CPUID definitions
+ */
+
+#define HYPERV_CPUID_MIN			0x40000005
+#define HYPERV_CPUID_MAX			0x4000ffff
+ 
+#define HYPERV_CPUID_MAXANDVENDOR		0x40000000
+#define HYPERV_CPUID_INTERFACE			0x40000001
+#define HYPERV_CPUID_VERSION			0x40000002
+#define HYPERV_CPUID_FEATURES			0x40000003
+#define HYPERV_CPUID_ENLIGHT_INFO		0x40000004
+#define HYPERV_CPUID_IMPLM_LIMIT		0x40000005
+
+/*
+ * MS HyperV MSR definitions
+ */
+#define MSR_HYPERV_TSC_FREQUENCY		0x40000022		/* TSC frequency */
+#define MAS_HYPERV_APIC_FREQUENCY		0x40000023		/* APIC timer frequency */
+
 /* Register access macro to make the code more readable */
 #define APIC_REG(base, reg) *((volatile ULONG *)(base + reg))
 
