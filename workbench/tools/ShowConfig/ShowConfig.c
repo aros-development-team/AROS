@@ -16,7 +16,7 @@
 #include "cpuspecific.h"
 
 #define APPNAME "ShowConfig"
-#define VERSION "ShowConfig 0.2"
+#define VERSION "ShowConfig 0.3"
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -214,7 +214,6 @@ int main()
                 printf("Kernel Clock Source:\t%s\n", ((struct Node *)CSBase)->ln_Name);
     }
 
-#if (1)
     CSBase = OpenResource("hpet.resource");
     if (CSBase)
     {
@@ -230,10 +229,9 @@ int main()
 	    if (!owner)
 	    	owner = &unusedtsunit;
 
-	    printf("HPET %u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
+	    printf("HPET %02u:\t\t%s\n", (unsigned)(++i), owner->ln_Name);
 	}
     }
-#endif
 
     printf("RAM:");
     for (mh = (struct MemHeader *)SysBase->MemList.lh_Head; mh->mh_Node.ln_Succ; mh = (struct MemHeader *)mh->mh_Node.ln_Succ) {

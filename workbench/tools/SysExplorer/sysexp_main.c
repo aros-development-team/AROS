@@ -41,7 +41,7 @@
 #include "enums.h"
 
 #define APPNAME "SysExplorer"
-#define VERSION "SysExplorer 0.9"
+#define VERSION "SysExplorer 0.10"
 #define SysexpModuleDir	"PROGDIR:SysExpModules"
 
 int __nocommandline = 1;
