@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,10 @@
 #include <aros/config.h>
 #include <aros/debug.h>
 #include <proto/exec.h>
+
 #include <resources/processor.h>
+
+#include <string.h>
 
 #include "processor_arch_intern.h"
 
@@ -309,57 +312,66 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 
-    /*
-    Check if APERF/MPERF is available
-    Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid
-    */
-    if (info->APERFMPERF)
+    if (info->Features2 & FEATF_HYPERV)
     {
-        APTR ssp;
-        ULONG eax, edx;
-        UQUAD startaperf, endaperf, diffaperf = 0;
-        UQUAD startmperf, endmperf, diffmperf = 0;
-        LONG i;
-
-        ssp = SuperState();
-
-        for(i = 0; i < 10; i++)
+        if (!strcmp("Microsoft Hv", info->HyperVID))
         {
-            rdmsr(MSR_IA32_MPERF, &eax, &edx);
-            startmperf = (UQUAD)edx << 32 | eax;
-            rdmsr(MSR_IA32_APERF, &eax, &edx);
-            startaperf = (UQUAD)edx << 32 | eax;
-
-            rdmsr(MSR_IA32_MPERF, &eax, &edx);
-            endmperf = (UQUAD)edx << 32 | eax;
-            rdmsr(MSR_IA32_APERF, &eax, &edx);
-            endaperf = (UQUAD)edx << 32 | eax;
-
-            if ((startmperf > endmperf) || (startaperf > endaperf))
-                continue; /* Overflow error. Skip */
-
-            diffmperf += endmperf - startmperf;
-            diffaperf += endaperf - startaperf;
+            D(bug("[processor.x86] %s: reading hypervisor values...\n", __func__));
         }
-
-        UserState(ssp);
-
-        D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __func__, info->MaxCPUFrequency, diffaperf, diffmperf));
-
-        if (info->MaxCPUFrequency == 0)
-            ReadMaxFrequencyInformation(info);
-
-        /* Use ratio between MPERF and APERF */
-        if (diffmperf)
-            retFreq = info->MaxCPUFrequency * diffaperf / diffmperf;
-        else
-            retFreq = info->MaxCPUFrequency;
     }
     else
     {
-        /* use PStates? */
-    }
+        /*
+        Check if APERF/MPERF is available
+        Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid
+        */
+        if (info->APERFMPERF)
+        {
+            APTR ssp;
+            ULONG eax, edx;
+            UQUAD startaperf, endaperf, diffaperf = 0;
+            UQUAD startmperf, endmperf, diffmperf = 0;
+            LONG i;
 
+            ssp = SuperState();
+
+            for(i = 0; i < 10; i++)
+            {
+                rdmsr(MSR_IA32_MPERF, &eax, &edx);
+                startmperf = (UQUAD)edx << 32 | eax;
+                rdmsr(MSR_IA32_APERF, &eax, &edx);
+                startaperf = (UQUAD)edx << 32 | eax;
+
+                rdmsr(MSR_IA32_MPERF, &eax, &edx);
+                endmperf = (UQUAD)edx << 32 | eax;
+                rdmsr(MSR_IA32_APERF, &eax, &edx);
+                endaperf = (UQUAD)edx << 32 | eax;
+
+                if ((startmperf > endmperf) || (startaperf > endaperf))
+                    continue; /* Overflow error. Skip */
+
+                diffmperf += endmperf - startmperf;
+                diffaperf += endaperf - startaperf;
+            }
+
+            UserState(ssp);
+
+            D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __func__, info->MaxCPUFrequency, diffaperf, diffmperf));
+
+            if (info->MaxCPUFrequency == 0)
+                ReadMaxFrequencyInformation(info);
+
+            /* Use ratio between MPERF and APERF */
+            if (diffmperf)
+                retFreq = info->MaxCPUFrequency * diffaperf / diffmperf;
+            else
+                retFreq = info->MaxCPUFrequency;
+        }
+        else
+        {
+            /* use PStates? */
+        }
+    }
 #endif
 
     return retFreq;

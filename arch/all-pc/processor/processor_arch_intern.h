@@ -11,6 +11,7 @@
 struct X86ProcessorInformation
 {
     TEXT    VendorID[13]; /* 12 + \0 */
+    TEXT    HyperVID[13]; /* 12 + \0 */
     ULONG   Vendor;
     TEXT    BrandStringBuffer[48];
     STRPTR  BrandString;
@@ -65,22 +66,37 @@ VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info);
 UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
 
 /* EDX 00000001 Flags */
-#define FEATB_FPU   0
-#define FEATB_VME   1
-#define FEATB_PSE   3
-#define FEATB_MSR   5
-#define FEATB_PAE   6
-#define FEATB_CX8   8
-#define FEATB_APIC  9
-#define FEATB_CMOV  15
-#define FEATB_PSE36 17
-#define FEATB_CLFSH 19
-#define FEATB_ACPI  22
-#define FEATB_MMX   23
-#define FEATB_FXSR  24
-#define FEATB_SSE   25
-#define FEATB_SSE2  26
-#define FEATB_HTT   28
+#define FEATB_FPU       0
+#define FEATB_VME       1
+#define FEATB_DBG       2
+#define FEATB_PSE       3
+#define FEATB_TSC       4
+#define FEATB_MSR       5
+#define FEATB_PAE       6
+#define FEATB_MCE       7
+#define FEATB_CX8       8
+#define FEATB_APIC      9
+#define FEATB_RSVD1     10
+#define FEATB_SYSE      11
+#define FEATB_MTRR      12
+#define FEATB_PGE       13
+#define FEATB_MCA       14
+#define FEATB_CMOV      15
+#define FEATB_PAT       16
+#define FEATB_PSE36     17
+#define FEATB_PSN       18
+#define FEATB_CLFSH     19
+#define FEATB_RSVD2     20
+#define FEATB_DS        21
+#define FEATB_ACPI      22
+#define FEATB_MMX       23
+#define FEATB_FXSR      24
+#define FEATB_SSE       25
+#define FEATB_SSE2      26
+#define FEATB_SS        27
+#define FEATB_HTT       28
+#define FEATB_TM        29
+#define FEATB_IA6432    30
 
 #define FEATF_FPU   (1 << FEATB_FPU)
 #define FEATF_VME   (1 << FEATB_VME)
@@ -102,12 +118,21 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
 /* ECX 00000001 Flags */
 #define FEATB_SSE3      0
 #define FEATB_VMX       5
+#define FEATB_SMX       6
+#define FEATB_TM2       8
 #define FEATB_SSSE3     9
+#define FEATB_FMA       12
 #define FEATB_CX16      13
 #define FEATB_SSE41     19
 #define FEATB_SSE42     20
+#define FEATB_X2APIC    21
+#define FEATB_AES       25
 #define FEATB_XSAVE     26
+#define FEATB_OSXSAVE   27
 #define FEATB_AVX       28
+#define FEATB_F16C      29
+#define FEATB_RDRND     30
+#define FEATB_HYPERV    31
 
 #define FEATF_SSE3      (1 << FEATB_SSE3)
 #define FEATF_VMX       (1 << FEATB_VMX)
@@ -117,6 +142,7 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
 #define FEATF_SSE42     (1 << FEATB_SSE42)
 #define FEATF_XSAVE     (1 << FEATB_XSAVE)
 #define FEATF_AVX       (1 << FEATB_AVX)
+#define FEATF_HYPERV    (1 << FEATB_HYPERV)
 
 /* EDX 80000001 AMD Flags */
 #define FEATB_XDNX      20
