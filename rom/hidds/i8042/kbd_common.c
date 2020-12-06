@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+#include <hardware/pit.h>
+
 #include "kbd.h"
 #include "kbd_common.h"
 
@@ -34,15 +36,15 @@ void kbd_usleep(LONG usec)
     int oldtick, tick;
     usec = usec2tick(usec);
 
-    outb(0x80, 0x43);
-    oldtick = inb(0x42);
-    oldtick += inb(0x42) << 8;
+    outb(CH2|ACCESS_LATCH, PIT_CONTROL);
+    oldtick = inb(PIT_CH2);
+    oldtick |= inb(PIT_CH2) << 8;
 
     while (usec > 0)
     {
-        outb(0x80, 0x43);
-        tick = inb(0x42);
-        tick += inb(0x42) << 8;
+        outb(CH2|ACCESS_LATCH, PIT_CONTROL);
+        tick = inb(PIT_CH2);
+        tick |= inb(PIT_CH2) << 8;
 
         usec -= (oldtick - tick);
         if (tick > oldtick) usec -= 0x10000;
