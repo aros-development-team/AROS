@@ -11,30 +11,58 @@
 
 #include <asm/io.h>
 
+/* PIT IO ports */
 #define PIT_CH0	        0x40
 #define PIT_CH1	        0x41    /* This channel is likely missing       */
 #define PIT_CH2	        0x42
 #define PIT_CONTROL     0x43
 
-#define BCD		0x01	/* BCD flag		                */
-#define MODE_TERMINAL	0x00	/* Channel mode		                */
-#define MODE_ONESHOT	0x02
-#define MODE_RATE	0x04
-#define MODE_SQUARE	0x06
-#define MODE_SW_STROBE	0x08
-#define MODE_HW_STROBE	0x0A
-#define ACCESS_LATCH	0x00	/* 'Latch value' command                */
-#define ACCESS_LOW	0x10	/* Access mode		                */
-#define ACCESS_HI	0x20
-#define ACCESS_FULL	0x30    /* 16bit access                         */
-#define CH0		0x00	/* Channel selector	                */
-#define CH1		0x40
-#define CH2		0x80
-#define READBACK	0xC0
+/* PIT control & status byte flags .. */
+#define BCD		(1 << 0)	/* BCD flag		                */
+
+#define MODE_TERMINAL	(0 << 1)	/* Channel mode		                */
+#define MODE_ONESHOT	(1 << 1)
+#define MODE_RATE	(2 << 1)
+#define MODE_SQUARE	(3 << 1)
+#define MODE_SW_STROBE	(4 << 1)
+#define MODE_HW_STROBE	(5 << 1)
+#define MODE_RATE2	(6 << 1)
+#define MODE_SQUARE2	(7 << 1)
+
+#define ACCESS_LATCH	(0 << 4)	/* 'Latch value' command                */
+#define ACCESS_LOW	(1 << 4)	/* Access mode		                */
+#define ACCESS_HI	(2 << 4)
+#define ACCESS_FULL	(3 << 4)        /* 16bit access                         */
+
+/* PIT control selector flags .. */
+#define CH0		(0 << 6)        /* Channel selector	                */
+#define CH1		(1 << 6)
+#define CH2		(2 << 6)
+
+/* Readback operation flags */
+#define RB_CH0		(1 << 1)        /* Channel selector	                */
+#define RB_CH1		(1 << 2)
+#define RB_CH2		(1 << 3)
+#define LATCH_STATUS	(1 << 4)
+#define LATCH_COUNT	(1 << 5)
+#define READBACK	(3 << 6)
+
+/* PIT status byte flags .. */
+#define RBS_NULLCOUNT   (1 << 6)
+#define RBS_OUTPUT      (1 << 7)
 
 /* Two useful macros for accessing counter values */
-#define ch_read(port) inb(port) | (inb(port) << 8)
-#define ch_write(val, port) outb((val) & 0xff, port); outb(((val) >> 8) & 0xff, port)
+static inline unsigned short ch_read(unsigned short port)
+{
+    unsigned char val = inb(port);
+    return (val | (inb(port) << 8));
+}
+
+static inline void ch_write(unsigned short val, unsigned short port)
+{
+    outb((val) & 0xFF, port);
+    outb(((val) >> 8) & 0xFF, port);
+}
 
 /*
  * Start up channel 0 in 'terminal count' mode (mode 0).
@@ -54,8 +82,8 @@ static inline void pit_start(unsigned short start)
 
     /* Wait until the counter loaded new value and really started to count */
     do {
-        outb(READBACK | 0x22, PIT_CONTROL);
-    } while((inb(PIT_CH0) & 0x40) != 0);
+        outb(READBACK | (LATCH_COUNT | RB_CH0), PIT_CONTROL);
+    } while((inb(PIT_CH0) & RBS_NULLCOUNT) != 0);
 }
 
 /*
