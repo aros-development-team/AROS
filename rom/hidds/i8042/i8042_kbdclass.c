@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -8,10 +8,14 @@
 
 /****************************************************************************************/
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <proto/kernel.h>
+
 #include <aros/system.h>
 #include <aros/symbolsets.h>
 #include <oop/oop.h>
@@ -27,9 +31,6 @@
 #include "kbd_common.h"
 #include "keys.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
-
 /****************************************************************************************/
 
 /* Predefinitions */
@@ -42,7 +43,9 @@ int  kbd_reset(void);
 
 /****************************************************************************************/
 
-#define NOKEY -1
+
+#define KEYBOARDIRQ     1
+#define NOKEY           -1
 
 /****************************************************************************************/
 
@@ -59,7 +62,10 @@ static void kbd_keyint(struct kbd_data *data, void *unused)
     UBYTE           info = 0;       /* Data from info reg */
     WORD            work = 10000;
 
-    D(bug("ki: {\n")); 
+    D(
+        bug("[i8042:Kbd] %s()\n", __func__);
+        bug("[i8042:Kbd] %s: ki - {\n", __func__); 
+    )
     for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--)
     {
         /* data from information port */
@@ -73,7 +79,7 @@ static void kbd_keyint(struct kbd_data *data, void *unused)
         }
         keycode = kbd_read_input();
 
-        D(bug("ki: keycode %d (%x)\n", keycode, keycode));
+        D(bug("[i8042:Kbd] %s: ki - keycode %d (%x)\n", __func__, keycode, keycode));
         if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
         {
             /* Ignore errors and messages for mouse -> eat status/error byte */
@@ -83,49 +89,56 @@ static void kbd_keyint(struct kbd_data *data, void *unused)
         kbd_process_key(data, keycode, SysBase);
     } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
-    D(if (!work) bug("kbd.hidd: controller jammed (0x%02X).\n", info);)
-    D(bug("ki: }\n"));
+    D(
+        if (!work)
+            bug("[i8042:Kbd] %s: controller jammed (0x%02X).\n", __func__, info);
+        bug("[i8042:Kbd] %s: ki - }\n", __func__);
+    )
 }
 
-
-OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    OOP_Object *kbd = NULL;
     struct TagItem *tag, *tstate;
     APTR callback = NULL;
     APTR callbackdata = NULL;
     int reset_success;
     int last_code;
-    
-    EnterFunc(bug("Kbd::New()\n"));
+
+    D(bug("[i8042:Kbd] %s()\n", __func__));
 
 #if __WORDSIZE == 32 /* FIXME: REMOVEME: just a debugging thing for the weird s-key problem */
     SysBase->ex_Reserved2[1] = (ULONG)std_keytable;
 #endif
-    if (XSD(cl)->kbdhidd) /* Cannot open twice */
-        ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+    if (XSD(cl)->kbdhidd)
+    {
+        /* Cannot open twice */
+        D(bug("[i8042:Kbd] %s: already instantiated!\n", __func__));
+        return NULL;
+    }
 
     tstate = msg->attrList;
-    D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
+    D(bug("[i8042:Kbd] %s: tstate: %p, tag=%x\n", __func__, tstate, tstate->ti_Tag));
 
     while ((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
         
-        D(bug("Kbd: Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
+        D(bug("[i8042:Kbd] %s: Got tag %d, data %x\n", __func__, tag->ti_Tag, tag->ti_Data));
             
         if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
         {
-            D(bug("Kbd hidd tag\n"));
+            D(bug("[i8042:Kbd] %s:   Kbd hidd tag\n", __func__));
             switch (idx)
             {
                 case aoHidd_Kbd_IrqHandler:
                     callback = (APTR)tag->ti_Data;
-                    D(bug("Got callback %p\n", (APTR)tag->ti_Data));
+                    D(bug("[i8042:Kbd] %s:     Got callback %p\n", __func__, (APTR)tag->ti_Data));
                     break;
                         
                 case aoHidd_Kbd_IrqHandlerData:
                     callbackdata = (APTR)tag->ti_Data;
-                    D(bug("Got data %p\n", (APTR)tag->ti_Data));
+                    D(bug("[i8042:Kbd] %s:     Got data %p\n", __func__, (APTR)tag->ti_Data));
                     break;
             }
         }
@@ -134,6 +147,8 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     
     if (NULL == callback)
         ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+
+    D(bug("[i8042:Kbd] %s: checking for controller ...\n", __func__));
 
     /* Only continue if there appears to be a keyboard controller */
     Disable();
@@ -157,10 +172,14 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             .attrList = kbd_tags
         };
 
-        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
-        if (o)
+        D(bug("[i8042:Kbd] %s: found!\n", __func__));
+
+        kbd = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
+        if (kbd)
         {
-            struct kbd_data *data = OOP_INST_DATA(cl, o);
+            struct kbd_data *data = OOP_INST_DATA(cl, kbd);
+
+            D(bug("[i8042:Kbd] %s: controller obj @ 0x%p, data @ 0x%p\n", __func__, kbd, data));
 
             data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
             data->callbackdata   = callbackdata;
@@ -168,9 +187,13 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             data->prev_keycode   = 0;
 
             Disable();
+            D(bug("[i8042:Kbd] %s: performing keyboard reset ...\n", __func__));
             kbd_reset();            /* Reset the keyboard */
+            D(bug("[i8042:Kbd] %s: updating leds ...\n", __func__));
             kbd_updateleds(0);
             Enable();
+
+            D(bug("[i8042:Kbd] %s: ready\n", __func__));
 
             /*
              * Report last key received before keyboard was reset, so that
@@ -179,20 +202,25 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             if (last_code > 0)
                 kbd_process_key(data, (UBYTE)last_code, SysBase);
 
-            /* Install keyboard interrupt */
-             data->irq = KrnAddIRQHandler(1, kbd_keyint, data, NULL);
+            D(bug("[i8042:Kbd] %s: registering handler for IRQ %u\n", __func__, KEYBOARDIRQ));
 
-             ReturnPtr("Kbd::New", OOP_Object *, o);
+            /* Install keyboard interrupt */
+             data->irq = KrnAddIRQHandler(KEYBOARDIRQ, kbd_keyint, data, NULL);
+
         } /* if (o) */
     }
-    D(else bug("Keyboard controller not detected\n");)
+    D(else bug("[i8042:Kbd] %s: Keyboard controller not detected\n", __func__);)
 
-    return NULL;
+    D(bug("[i8042:Kbd] %s: returning 0x%p\n", __func__, kbd);)
+
+    return kbd;
 }
 
-VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID i8042Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct kbd_data *data = OOP_INST_DATA(cl, o);
+
+    D(bug("[i8042:Kbd] %s()\n", __func__));
 
     KrnRemIRQHandler(data->irq);
     XSD(cl)->kbdhidd = NULL;
@@ -230,6 +258,9 @@ VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 void kbd_updateleds(ULONG kbd_keystate)
 {
     UBYTE info;
+
+    D(bug("[i8042:Kbd] %s()\n", __func__));
+
     kbd_write_output_w(KBD_OUTCMD_SET_LEDS);
     WaitForInput;
     kbd_read_input();
@@ -248,6 +279,8 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
     UBYTE           releaseflag;
     UWORD           event;
     WORD            amigacode;
+
+    D(bug("[i8042:Kbd] %s()\n", __func__));
 
     if ((keycode == KBD_REPLY_ACK) || (keycode == KBD_REPLY_RESEND))
     {
@@ -429,7 +462,7 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
         amigacode = 0x78; /* Reset */
     }
 
-    D(bug("ki: amigacode %d (%x) last %d (%x)\n", amigacode, amigacode,
+    D(bug("[i8042:Kbd] %s: ki - amigacode %d (%x) last %d (%x)\n", __func__, amigacode, amigacode,
         data->prev_amigacode, data->prev_amigacode));
 
     /* Update keystate */
@@ -453,21 +486,13 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
 
     data->prev_amigacode = amigacode;
 
-    D(bug("ki: ********************* c %d (%x)\n", amigacode, amigacode));
+    D(bug("[i8042:Kbd] %s: ki - ********************* c %d (%x)\n", __func__, amigacode, amigacode));
 
     /* Pass the code to handler */
     data->kbd_callback(data->callbackdata, amigacode);
 
     return;
 }
-
-/****************************************************************************************/
-
-/* FIXME: This should go somewhere higher but D(bug()) is not possible there */
-#undef D
-#undef BUG
-#define D(x)
-#define BUG
 
 /****************************************************************************************/
 
@@ -482,62 +507,70 @@ int kbd_reset(void)
 {
     UBYTE status;
 
-    kbd_write_command_w(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard controller */
+    D(bug("[i8042:Kbd] %s()\n", __func__));
 
+    D(bug("[i8042:Kbd] %s: sending self test...\n", __func__));
+    kbd_write_command_w(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard controller */
+    D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
     if (kbd_wait_for_input() != 0x55)
     {
-        D(bug("Kbd: Controller test failed!\n"));
+        D(bug("[i8042:Kbd] %s: Controller test failed!\n", __func__));
         return FALSE;
     }
 
+    D(bug("[i8042:Kbd] %s: sending kbd test...\n", __func__));
     kbd_write_command_w(KBD_CTRLCMD_KBD_TEST);
-    
+    D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
     if (kbd_wait_for_input() != 0)
     {
-        D(bug("Kbd: Keyboard test failed!\n"));
+        D(bug("[i8042:Kbd] %s: Keyboard test failed!\n", __func__));
         return FALSE;
     }
-    
-    kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
 
-    D(bug("Kbd: Keyboard enabled!\n"));
+    D(bug("[i8042:Kbd] %s: sending enable...\n", __func__));
+    kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
+    D(bug("[i8042:Kbd] %s:     done!\n", __func__));
 
     do
     {
+        D(bug("[i8042:Kbd] %s: sending reset...\n", __func__));
         kbd_write_output_w(KBD_OUTCMD_RESET);
+        D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
         status = kbd_wait_for_input();
-        
         if (status == KBD_REPLY_ACK)
             break;
-            
+
         if (status != KBD_REPLY_RESEND)
         {
-            D(bug("Kbd: Keyboard reset failed! (1)\n"));
+            D(bug("[i8042:Kbd] %s: Keyboard reset ack #1 failed! (%x)\n", __func__, status));
             return FALSE;
         }
     } while(1);
 
-    if (kbd_wait_for_input() != KBD_REPLY_POR)
+    status = kbd_wait_for_input();
+    if (status != KBD_REPLY_POR)
     {
-        D(bug("Kbd: Keyboard reset failed! (2)\n"));
+        D(bug("[i8042:Kbd] %s: Keyboard reset ack #2 failed! (%x)\n", __func__, status));
         return FALSE;
     }
 
     do
     {
+        D(bug("[i8042:Kbd] %s: sending disable...\n", __func__));
         kbd_write_output_w(KBD_OUTCMD_DISABLE);
+        D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
         status = kbd_wait_for_input();
-        
         if (status == KBD_REPLY_ACK)
             break;
-            
+
         if (status != KBD_REPLY_RESEND)
         {
-            D(bug("Kbd: Keyboard disable failed!\n"));
+            D(bug("[i8042:Kbd] %s: Keyboard disable failed!\n", __func__));
             return FALSE;
         }
     } while (1);
 
+    D(bug("[i8042:Kbd] %s: sending write mode...\n", __func__));
     kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
 #if 0
@@ -549,17 +582,18 @@ int kbd_reset(void)
     kbd_write_output_w( KBD_MODE_KCC | KBD_MODE_KBD_INT);
 #endif
 
+    D(bug("[i8042:Kbd] %s: sending enable...\n", __func__));
     kbd_write_output_w(KBD_OUTCMD_ENABLE);
 
-    D(bug("Kbd: enabled ints\n"));
+    D(bug("[i8042:Kbd] %s: enabled ints\n", __func__));
     
     if (kbd_wait_for_input() != KBD_REPLY_ACK)
     {
-        D(bug("Kbd: No REPLY_ACK !!!\nReturning FALSE !!!!\n"));
+        D(bug("[i8042:Kbd] %s: No REPLY_ACK !!!\nReturning FALSE !!!!\n", __func__));
         return FALSE;
     }
     
-    D(bug("Kbd: Successfully reset keyboard!\n"));
+    D(bug("[i8042:Kbd] %s: Successfully reset keyboard!\n", __func__));
 
     return TRUE;
 }

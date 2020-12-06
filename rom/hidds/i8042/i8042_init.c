@@ -16,13 +16,13 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef OOPBase
 #define OOPBase (LIBBASE->ksd.cs_OOPBase)
 
-static int PCKbd_InitAttrs(struct kbdbase *LIBBASE)
+static int i8042Kbd_InitAttrs(struct kbdbase *LIBBASE)
 {
     struct OOP_ABDescr attrbases[] =
     {
@@ -31,6 +31,8 @@ static int PCKbd_InitAttrs(struct kbdbase *LIBBASE)
         {IID_Hidd_Mouse, &LIBBASE->ksd.hiddMouseAB },
         {NULL          , NULL                      }
     };
+
+    D(bug("[i8042] %s()\n", __func__));
 
     LIBBASE->ksd.cs_KernelBase = OpenResource("kernel.resource");
     if (!LIBBASE->ksd.cs_KernelBase)
@@ -44,14 +46,15 @@ static int PCKbd_InitAttrs(struct kbdbase *LIBBASE)
         return FALSE;
 
     LIBBASE->ksd.hwMethodBase = OOP_GetMethodID(IID_HW, 0);
-    D(bug("[i8042] Initialization done\n"));
+
+    D(bug("[i8042] %s: Initialization done\n", __func__));
     
     return TRUE;
 }
 
 /****************************************************************************************/
 
-static int PCKbd_ExpungeAttrs(struct kbdbase *LIBBASE)
+static int i8042Kbd_ExpungeAttrs(struct kbdbase *LIBBASE)
 {
     struct OOP_ABDescr attrbases[] =
     {
@@ -61,17 +64,17 @@ static int PCKbd_ExpungeAttrs(struct kbdbase *LIBBASE)
         {NULL          , NULL                      }
     };
     
-    EnterFunc(bug("PCKbd_ExpungeAttrs\n"));
+    D(bug("[i8042] %s()\n", __func__));
 
     OOP_ReleaseAttrBases(attrbases);
 
     if (!LIBBASE->ksd.cs_UtilityBase)
         CloseLibrary(LIBBASE->ksd.cs_UtilityBase);
 
-    ReturnInt("PCKbd_ExpungeAttrs", int, TRUE);
+    ReturnInt("i8042Kbd_ExpungeAttrs", int, TRUE);
 }
 
 /****************************************************************************************/
 
-ADD2INITLIB(PCKbd_InitAttrs, 0)
-ADD2EXPUNGELIB(PCKbd_ExpungeAttrs, 0)
+ADD2INITLIB(i8042Kbd_InitAttrs, 0)
+ADD2EXPUNGELIB(i8042Kbd_ExpungeAttrs, 0)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Low-level routines for i8042 controller.
@@ -10,8 +10,6 @@
 #include "kbd_common.h"
 
 #define TIMER_RPROK 3599597124UL
-
-static int wait_for_input(ULONG timeout);
 
 static ULONG usec2tick(ULONG usec)
 {
@@ -162,27 +160,5 @@ int kbd_clear_input(void)
     } while (--maxread);
 
     return lastcode;
-}
-
-int kbd_wait_for_input(void)
-{
-    return wait_for_input(100);
-}
-
-int aux_wait_for_input(void)
-{
-    return wait_for_input(1000);
-}
-
-static int wait_for_input(ULONG timeout)
-{
-    do
-    {
-        int retval = kbd_read_data();
-        if (retval >= 0)
-            return retval;
-        kbd_usleep(1000);
-    } while(--timeout);
-    return -1;
 }
 

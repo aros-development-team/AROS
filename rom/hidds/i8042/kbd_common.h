@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Low-level definitions for i8042 controller.
@@ -8,8 +8,8 @@
 
 #include <asm/io.h>
 
-#define KBD_NO_DATA     (-1)
-#define KBD_BAD_DATA    (-2)
+#define KBD_NO_DATA                     (-1)
+#define KBD_BAD_DATA                    (-2)
 
 /****************************************************************************************/
 
@@ -49,10 +49,22 @@
 #define KBD_MODE_KCC                    0x40    /* Scan code conversion to PC format */
 #define KBD_MODE_RFU                    0x80
 
-#define kbd_read_input()        inb(KBD_DATA_REG)
-#define kbd_read_status()       inb(KBD_STATUS_REG)
-#define kbd_write_output(val)   outb(val, KBD_DATA_REG)
-#define kbd_write_command(val)  outb(val, KBD_CONTROL_REG)
+static unsigned char kbd_read_input(void)
+{
+    return inb(KBD_DATA_REG);
+}
+static unsigned char kbd_read_status(void)
+{
+    return inb(KBD_STATUS_REG);
+}
+static void kbd_write_output(unsigned char val)
+{
+    outb(val, KBD_DATA_REG);
+}
+static void kbd_write_command(unsigned char val)
+{
+    outb(val, KBD_CONTROL_REG);
+}
 
 /****************************************************************************************/
 
@@ -63,7 +75,25 @@ void aux_write_ack(int val);
 void aux_write_noack(int val);
 void kbd_write_output_w(int data);
 int kbd_clear_input(void);
-int kbd_wait_for_input(void);
-int aux_wait_for_input(void);
 void kbd_write_command_w(int data); 
 void kbd_usleep(LONG usec);
+
+static int wait_for_input(ULONG timeout)
+{
+    do
+    {
+        int retval = kbd_read_data();
+        if (retval >= 0)
+            return retval;
+        kbd_usleep(1000);
+    } while(--timeout);
+    return -1;
+}
+static int kbd_wait_for_input(void)
+{
+    return wait_for_input(100);
+}
+static int aux_wait_for_input(void)
+{
+    return wait_for_input(1000);
+}

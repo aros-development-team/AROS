@@ -1,14 +1,17 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
+
+#include <proto/oop.h>
+
 #include <aros/symbolsets.h>
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
-#include <proto/oop.h>
 
 #include "libbase.h"
 
@@ -19,33 +22,43 @@
 #define HWBase       (LIBBASE->ksd.hwMethodBase)
 #define OOPBase      (LIBBASE->ksd.cs_OOPBase)
 
-static int init_kbd(struct kbdbase *LIBBASE)
+static int i8042_Init(struct kbdbase *LIBBASE)
 {
-    OOP_Object *kbd = OOP_NewObject(NULL, CLID_HW_Kbd, NULL);
-    OOP_Object *ms = OOP_NewObject(NULL, CLID_HW_Mouse, NULL);
+    OOP_Object *kbd;
+    OOP_Object *ms;
 
-    if ((!kbd) || (!ms))
+    D(bug("[i8042] %s()\n", __func__));
+    kbd = OOP_NewObject(NULL, CLID_HW_Kbd, NULL);
+    D(bug("[i8042] %s: %s @ %p\n", __func__, CLID_HW_Kbd, kbd));
+    if (!kbd)
     {
         /* This can be triggered by old base kickstart */
-        D(bug("[i8042] Subsystem classes not found\n"));
+        D(bug("[i8042] %s: Subsystem classes not found\n", __func__));
         return FALSE;
     }
-
+    D(bug("[i8042] %s: registering keyboard hardware driver ..\n", __func__));
     if (!HW_AddDriver(kbd, LIBBASE->ksd.kbdclass, NULL))
     {
-        D(bug("[i8042] No controller detected\n"));
+        D(bug("[i8042] %s: No controller detected\n", __func__));
         return FALSE;
     }
     LIBBASE->library.lib_OpenCnt = 1;
 
     /* Mouse can be missing, it's not a failure */
-    if (HW_AddDriver(ms, LIBBASE->ksd.mouseclass, NULL))
+    ms = OOP_NewObject(NULL, CLID_HW_Mouse, NULL);
+    D(bug("[i8042] %s: %s @ %p\n", __func__, CLID_HW_Mouse, ms));
+    if (ms)
     {
-        D(bug("[i8042] Mouse driver installed\n"));
-        LIBBASE->library.lib_OpenCnt++;
+        D(bug("[i8042] %s: registering mouse hardware driver ..\n", __func__));
+        if (HW_AddDriver(ms, LIBBASE->ksd.mouseclass, NULL))
+        {
+            D(bug("[i8042] %s: Mouse driver installed\n", __func__));
+            LIBBASE->library.lib_OpenCnt++;
+        }
     }
+    D(bug("[i8042] %s: finished\n", __func__));
 
     return TRUE;
 }
 
-ADD2INITLIB(init_kbd, 10);
+ADD2INITLIB(i8042_Init, 10);

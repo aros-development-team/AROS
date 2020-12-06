@@ -1,10 +1,13 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PS/2 mouse driver.
     Lang: English.
 */
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 /****************************************************************************************/
 
@@ -12,6 +15,7 @@
 #include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
+
 #include <oop/oop.h>
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
@@ -19,9 +23,6 @@
 
 #include "mouse.h"
 #include "kbd_common.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /****************************************************************************************/
 

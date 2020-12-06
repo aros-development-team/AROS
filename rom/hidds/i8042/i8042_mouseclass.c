@@ -13,20 +13,22 @@
     with -fPIC flag.
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
+
 #include <oop/oop.h>
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
 #include <devices/inputevent.h>
+
 #include <string.h>
 
 #include "mouse.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /* Prototypes */
 
@@ -37,12 +39,17 @@ void getps2State(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
 /* defines for buttonstate */
 
 /***** Mouse::New()  ***************************************/
-OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("_Mouse::New()\n"));
 
-    if (XSD(cl)->mousehidd) /* Cannot open twice */
-        ReturnPtr("_Mouse::New", OOP_Object *, NULL); /* Should have some error code here */
+    D(bug("[i8042:Mouse] %s()\n", __func__));
+
+    if (XSD(cl)->mousehidd)
+    {
+        /* Cannot open twice */
+        D(bug("[i8042:Mouse] %s: already instantiated!\n", __func__));
+        return NULL;
+    }
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
@@ -93,7 +100,7 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     return o;
 }
 
-VOID PCMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID i8042Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
 
@@ -112,7 +119,7 @@ static const char *mice_str[] =
 
 static const char *driver_name = "i8042.hidd";
 
-VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID i8042Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
