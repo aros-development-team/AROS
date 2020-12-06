@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands, reference code
@@ -11,6 +11,9 @@
 */
 
 /****************************************************************************************/
+
+
+#include <aros/debug.h>
 
 #include <exec/types.h>
 #include <exec/io.h>
@@ -26,7 +29,6 @@
 #include <proto/timer.h>
 
 #include <aros/symbolsets.h>
-#include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -36,6 +38,8 @@
 static AROS_INTH1(VBlankInt, struct TimerBase *, TimerBase)
 {
     AROS_INTFUNC_INIT
+
+    D(bug("%s()\n", __func__);)
 
     /*
      * First increment the current time. No need to Disable() here as
@@ -63,6 +67,8 @@ static AROS_INTH1(VBlankInt, struct TimerBase *, TimerBase)
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     struct Interrupt *is;
+
+    D(bug("%s()\n", __func__);)
 
 #if defined(__AROSEXEC_SMP__)
     struct ExecLockBase *ExecLockBase;
