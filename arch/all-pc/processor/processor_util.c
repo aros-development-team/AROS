@@ -232,19 +232,19 @@ D(bug("[processor.x86] :%s()\n", __func__));
         /* Read The Hypervisor ID ..*/
         cpuid(0x40000000);
         info->HyperVID[0] = ebx & 0xFF;
-        info->HyperVID[1] = ebx & 0xFF00 >> 8;
-        info->HyperVID[2] = ebx & 0xFF0000 >> 16;
-        info->HyperVID[3] = ebx & 0xFF000000 >> 24;
+        info->HyperVID[1] = (ebx & 0xFF00) >> 8;
+        info->HyperVID[2] = (ebx & 0xFF0000) >> 16;
+        info->HyperVID[3] = (ebx & 0xFF000000) >> 24;
 
         info->HyperVID[4] = ecx & 0xFF;
-        info->HyperVID[5] = ecx & 0xFF00 >> 8;
-        info->HyperVID[6] = ecx & 0xFF0000 >> 16;
-        info->HyperVID[7] = ecx & 0xFF000000 >> 24;
+        info->HyperVID[5] = (ecx & 0xFF00) >> 8;
+        info->HyperVID[6] = (ecx & 0xFF0000) >> 16;
+        info->HyperVID[7] = (ecx & 0xFF000000) >> 24;
 
         info->HyperVID[8] = edx & 0xFF;
-        info->HyperVID[9] = edx & 0xFF00 >> 8;
-        info->HyperVID[10] = edx & 0xFF0000 >> 16;
-        info->HyperVID[11] = edx & 0xFF000000 >> 24;
+        info->HyperVID[9] = (edx & 0xFF00) >> 8;
+        info->HyperVID[10] = (edx & 0xFF0000) >> 16;
+        info->HyperVID[11] = (edx & 0xFF000000) >> 24;
         bug("[processor.x86] :%s: Hypervisor ID = '%s'\n", __func__, info->HyperVID);
     }
 }

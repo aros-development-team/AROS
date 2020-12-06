@@ -308,18 +308,22 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
 {
     UQUAD retFreq = info->MaxCPUFrequency;
 
-    D(bug("[processor.x86] :%s()\n", __func__));
+    D(bug("[processor.x86] %s(0x%p)\n", __func__, info);)
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 
     if (info->Features2 & FEATF_HYPERV)
     {
+        D(
+            bug("[processor.x86] %s: processor has hyperv flag\n", __func__);
+            bug("[processor.x86] %s: id '%s'\n", __func__, info->HyperVID);
+        )
         if (!strcmp("Microsoft Hv", info->HyperVID))
         {
             ULONG res[2];
             APTR ssp;
 
-            D(bug("[processor.x86] %s: reading hypervisor values...\n", __func__));
+            D(bug("[processor.x86] %s: reading hypervisor MSR...\n", __func__));
 
             ssp = SuperState();
 
@@ -329,62 +333,62 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
             D(bug("[processor.x86] %s:    MSR TSC frequency = %u\n", __func__, res[0]);)
 
             UserState(ssp);
+
+            return retFreq;
         }
+    }
+
+    /*
+    Check if APERF/MPERF is available
+    Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid
+    */
+    if (info->APERFMPERF)
+    {
+        APTR ssp;
+        ULONG eax, edx;
+        UQUAD startaperf, endaperf, diffaperf = 0;
+        UQUAD startmperf, endmperf, diffmperf = 0;
+        LONG i;
+
+        D(bug("[processor.x86] %s: using APERF/MPERF...\n", __func__));
+
+        ssp = SuperState();
+
+        for(i = 0; i < 10; i++)
+        {
+            rdmsr(MSR_IA32_MPERF, &eax, &edx);
+            startmperf = (UQUAD)edx << 32 | eax;
+            rdmsr(MSR_IA32_APERF, &eax, &edx);
+            startaperf = (UQUAD)edx << 32 | eax;
+
+            rdmsr(MSR_IA32_MPERF, &eax, &edx);
+            endmperf = (UQUAD)edx << 32 | eax;
+            rdmsr(MSR_IA32_APERF, &eax, &edx);
+            endaperf = (UQUAD)edx << 32 | eax;
+
+            if ((startmperf > endmperf) || (startaperf > endaperf))
+                continue; /* Overflow error. Skip */
+
+            diffmperf += endmperf - startmperf;
+            diffaperf += endaperf - startaperf;
+        }
+
+        UserState(ssp);
+
+        D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __func__, info->MaxCPUFrequency, diffaperf, diffmperf));
+
+        if (info->MaxCPUFrequency == 0)
+            ReadMaxFrequencyInformation(info);
+
+        /* Use ratio between MPERF and APERF */
+        if (diffmperf)
+            retFreq = info->MaxCPUFrequency * diffaperf / diffmperf;
+        else
+            retFreq = info->MaxCPUFrequency;
     }
     else
     {
-        /*
-        Check if APERF/MPERF is available
-        Notes: K10, K9 - rdmsr can be used to read current PState/cpufid/cpudid
-        */
-        if (info->APERFMPERF)
-        {
-            APTR ssp;
-            ULONG eax, edx;
-            UQUAD startaperf, endaperf, diffaperf = 0;
-            UQUAD startmperf, endmperf, diffmperf = 0;
-            LONG i;
-
-            D(bug("[processor.x86] %s: using APERF/MPERF...\n", __func__));
-
-            ssp = SuperState();
-
-            for(i = 0; i < 10; i++)
-            {
-                rdmsr(MSR_IA32_MPERF, &eax, &edx);
-                startmperf = (UQUAD)edx << 32 | eax;
-                rdmsr(MSR_IA32_APERF, &eax, &edx);
-                startaperf = (UQUAD)edx << 32 | eax;
-
-                rdmsr(MSR_IA32_MPERF, &eax, &edx);
-                endmperf = (UQUAD)edx << 32 | eax;
-                rdmsr(MSR_IA32_APERF, &eax, &edx);
-                endaperf = (UQUAD)edx << 32 | eax;
-
-                if ((startmperf > endmperf) || (startaperf > endaperf))
-                    continue; /* Overflow error. Skip */
-
-                diffmperf += endmperf - startmperf;
-                diffaperf += endaperf - startaperf;
-            }
-
-            UserState(ssp);
-
-            D(bug("[processor.x86] %s: max: %x, diffa: %x, diffm %x\n", __func__, info->MaxCPUFrequency, diffaperf, diffmperf));
-
-            if (info->MaxCPUFrequency == 0)
-                ReadMaxFrequencyInformation(info);
-
-            /* Use ratio between MPERF and APERF */
-            if (diffmperf)
-                retFreq = info->MaxCPUFrequency * diffaperf / diffmperf;
-            else
-                retFreq = info->MaxCPUFrequency;
-        }
-        else
-        {
-            /* use PStates? */
-        }
+        /* use PStates? */
     }
 #endif
 
