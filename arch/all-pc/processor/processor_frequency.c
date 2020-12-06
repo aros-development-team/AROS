@@ -316,7 +316,19 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
     {
         if (!strcmp("Microsoft Hv", info->HyperVID))
         {
+            ULONG res[2];
+            APTR ssp;
+
             D(bug("[processor.x86] %s: reading hypervisor values...\n", __func__));
+
+            ssp = SuperState();
+
+            /* Read Hypervisor MSR TSC frequency */
+            asm volatile("rdmsr":"=a"(res[0]),"=d"(res[1]):"c"(0x40000022));
+            retFreq = 100 * res[0];
+            D(bug("[processor.x86] %s:    MSR TSC frequency = %u\n", __func__, res[0]);)
+
+            UserState(ssp);
         }
     }
     else
@@ -332,6 +344,8 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
             UQUAD startaperf, endaperf, diffaperf = 0;
             UQUAD startmperf, endmperf, diffmperf = 0;
             LONG i;
+
+            D(bug("[processor.x86] %s: using APERF/MPERF...\n", __func__));
 
             ssp = SuperState();
 
