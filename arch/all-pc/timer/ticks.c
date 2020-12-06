@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware management routines for IBM PC-AT timer
     Lang: english
 */
+
+#include <aros/debug.h>
 
 #include <asm/io.h>
 #include <proto/exec.h>
@@ -70,16 +72,18 @@ static const ULONG TIMER_UTCONV =  (1193180 * 0x100000000ULL / 1000000) - 0x1000
 
 static inline const ULONG usec2tick(const ULONG usec)
 {
-    return usec + (ULONG)(((UQUAD)usec * TIMER_UTCONV) >> 32);
+    return  (ULONG)((UQUAD)usec + (((UQUAD)usec * TIMER_UTCONV) >> 32));
 }
 
 /*
  * Calculate difference and add it to our current EClock value.
  * PIT counters actually count backwards. This is why everything here looks reversed.
  */
-static void EClockAdd(ULONG time, struct TimerBase *TimerBase)
+static void EClockAdd(UWORD time, struct TimerBase *TimerBase)
 {
     ULONG diff = (TimerBase->tb_prev_tick - time);
+
+    D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
 
     if (time > TimerBase->tb_prev_tick)
     {
@@ -95,17 +99,25 @@ static void EClockAdd(ULONG time, struct TimerBase *TimerBase)
 
 void EClockUpdate(struct TimerBase *TimerBase)
 {
-    ULONG time;
+    UWORD time;
+
+    D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
 
     outb(CH0|ACCESS_LATCH, PIT_CONTROL);	/* Latch the current time value */
     time = ch_read(PIT_CH0);	    		/* Read out current 16-bit time */
 
+    D(bug("[Timer] %s: tick prev = %08x\n", __func__, TimerBase->tb_prev_tick));
+
     EClockAdd(time, TimerBase);			/* Increment our time counters	*/
     TimerBase->tb_prev_tick = time;		/* Remember last counter value as start of new interval */
+    D(bug("[Timer] %s:      new = %08x\n", __func__, TimerBase->tb_prev_tick));
 }
 
 void EClockSet(struct TimerBase *TimerBase)
 {
+
+    D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
+
     TimerBase->tb_ticks_sec   = usec2tick(TimerBase->tb_CurrentTime.tv_micro);
     TimerBase->tb_ticks_total = TimerBase->tb_ticks_sec + (UQUAD)TimerBase->tb_CurrentTime.tv_secs * TimerBase->tb_eclock_rate;
 
@@ -119,9 +131,11 @@ void Timer0Setup(struct TimerBase *TimerBase)
     struct ExecLockBase *ExecLockBase = TimerBase->tb_ExecLockBase;
 #endif
     struct timeval time;
-    ULONG delay = 23864;
-    ULONG old_tick;
+    UWORD delay = TimerBase->tb_Platform.tb_ReloadValue;
+    UWORD old_tick;
     struct timerequest *tr;
+
+    D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
 
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase) ObtainLock(TimerBase->tb_ListLock, SPINLOCK_MODE_READ, 0);
@@ -142,14 +156,16 @@ void Timer0Setup(struct TimerBase *TimerBase)
         {
             if (time.tv_micro < 20000)
             {
-                delay = usec2tick(time.tv_micro);
+                delay = (UWORD)usec2tick(time.tv_micro);
             }
         }
     }
 #if defined(__AROSEXEC_SMP__)
     if (ExecLockBase) ReleaseLock(TimerBase->tb_ListLock, 0);
 #endif
-    if (delay < 2) delay = 2;
+    if (delay < TimerBase->tb_Platform.tb_ReloadMin) delay = TimerBase->tb_Platform.tb_ReloadMin;
+
+    D(bug("[Timer] %s: reloading hardware timer (delay %u)\n", __func__, delay));
 
     /*
      * We are going to reload the counter. By this moment, some time has passed after the last EClockUpdate()pdate.

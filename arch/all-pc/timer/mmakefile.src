@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_INCLUDES := -I$(SRCDIR)/rom/timer
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/timer
 
 include $(SRCDIR)/$(CURDIR)/make.opts
 

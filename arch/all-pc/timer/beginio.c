@@ -7,6 +7,7 @@
 */
 
 #include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <asm/io.h>
 

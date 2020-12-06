@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -25,10 +25,14 @@
 
 #define KernelBase LIBBASE->tb_KernelBase
 
+#define DINT(x)
+
 /****************************************************************************************/
 
 static void TimerInt(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
+    DINT(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
+
     /*
      * Sync up with the hardware, we need the proper time value in order to
      * process our requests correctly.
@@ -50,6 +54,8 @@ static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
 {
     AROS_INTFUNC_INIT
 
+    D(bug("[Timer] %s(0x%p)\n", __func__, LIBBASE));
+    
     /* Set a mode that won't generate interrupts */
     outb(CH0|ACCESS_FULL|MODE_ONESHOT, PIT_CONTROL);
 
@@ -62,6 +68,8 @@ static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
 
 static int hw_Init(struct TimerBase *LIBBASE)
 {
+    D(UBYTE chstatus;)
+    D(bug("[Timer] %s(0x%p)\n", __func__, LIBBASE));
 #if defined(__AROSEXEC_SMP__)
     struct ExecLockBase *ExecLockBase;
     if ((ExecLockBase = OpenResource("execlock.resource")) != NULL)
@@ -89,7 +97,7 @@ static int hw_Init(struct TimerBase *LIBBASE)
     LIBBASE->tb_ResetHandler.is_Data = LIBBASE;
     AddResetCallback(&LIBBASE->tb_ResetHandler);
 
-    D(bug("[Timer] Initializing hardware...\n"));
+    D(bug("[Timer] Initializing base values...\n"));
 
     /* We have fixed EClock rate. VBlank will be emulated at 50Hz, can be changed at runtime. */
     SysBase->VBlankFrequency    = 50;
@@ -97,21 +105,40 @@ static int hw_Init(struct TimerBase *LIBBASE)
     LIBBASE->tb_eclock_rate     = 1193180;
     LIBBASE->tb_prev_tick	= 0xFFFF;
 
-    /* Start up the timer. Count the whole range for now. */
-    outb(CH0|ACCESS_FULL|MODE_SW_STROBE, PIT_CONTROL);  /* Software strobe mode, 16-bit access */
-    ch_write(0xFFFF, PIT_CH0);
+    D(bug("[Timer] Initializing hardware...\n"));
 
-    /*
-     * Start the timer2.
-     * FIXME: This is not used by timer.device any more and must be removed.
-     * However PS/2 port driver uses polled microsecond delays via channel 2,
-     * and it relies on it being activated by us. This urgently needs to
-     * be fixed!
-     */
-    outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-    outb(0xb4, 0x43);			/* Binary mode on Timer2, count mode 2 */
-    outb(0x00, 0x42);			/* We're counting whole range */
-    outb(0x00, 0x42);
+    /* Start up the timer. Count the whole range for now. */
+    LIBBASE->tb_Platform.tb_ReloadMin = 2;
+    LIBBASE->tb_Platform.tb_InitValue = 0xFFFF;
+    LIBBASE->tb_Platform.tb_ReloadValue = 0x5D38; // 23864
+
+    D(bug("[Timer]     gate start state = %x\n", (inb(0x61) & 0x3)));
+    if ((inb(0x61) & 0x3))
+    {
+        /* Sanity: make sure the timer is disabled (set PC speaker PIT GATE's off)
+         * before we start changing anything
+         */
+        D(bug("[Timer] disabling CH0/CH2 ...\n"));
+        outb((inb(0x61) & ~0x3), 0x61);
+    }
+    D(
+        bug("[Timer] CH0 setup ..\n", chstatus);
+        outb(READBACK | LATCH_COUNT | RB_CH0, PIT_CONTROL);                          /* Readback channel 0 status            */
+        chstatus = inb(PIT_CH0);
+        bug("[Timer]     initial status = %02x\n", chstatus);
+    )
+    outb(CH0 | ACCESS_FULL | MODE_SW_STROBE, PIT_CONTROL);                      /* Software strobe mode, 16-bit access  */
+    D(
+        outb(READBACK | LATCH_COUNT | RB_CH0, PIT_CONTROL);                          /* Readback channel 0 status            */
+        chstatus = inb(PIT_CH0);
+        bug("[Timer]     configured status = %02x\n", chstatus);
+        bug("[Timer] writing %04x to CH0 data port...\n", LIBBASE->tb_Platform.tb_InitValue);
+    )
+    ch_write(LIBBASE->tb_Platform.tb_InitValue, PIT_CH0);
+    D(bug("[Timer]    started\n"));
+
+    outb((inb(0x61) & 0xfd) | (1 << 0), 0x61);                                  /* Enable the timer (set PC speaker PIT GATE on) */
+    D(bug("[Timer]    IRQ enabled\n"));
 
     /* Own VBlank EMU */
     D(bug("[Timer] Starting VBlank emulation (%u Hz)...\n", SysBase->VBlankFrequency));
@@ -133,6 +160,8 @@ static int hw_Init(struct TimerBase *LIBBASE)
 
 static int hw_Expunge(struct TimerBase *LIBBASE)
 {
+    D(bug("[Timer] %s(0x%p)\n", __func__, LIBBASE));
+
     KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
     RemResetCallback(&LIBBASE->tb_ResetHandler);
 
