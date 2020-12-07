@@ -82,7 +82,9 @@ struct KernelBase
  * - KernelBase is needed by interrupt handling code
  */
 extern struct TagItem *BootMsg;
+#ifndef __KERNEL_NOEXTERNBASE__
 extern struct KernelBase *KernelBase;
+#endif
 
 /* Allocation function */
 struct KernelBase *AllocKernelBase(struct ExecBase *SysBase);
