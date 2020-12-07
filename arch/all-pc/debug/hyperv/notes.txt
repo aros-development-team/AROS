@@ -1,0 +1,27 @@
+To ENABLE
+---------
+
+Edit the arch/x86_64-pc/boot/mmakefile.src
+add "#MM kernel-hvdebug" to the dependancies for kernel-bsp-pc-x86_64
+add "hyperv-debug" to KRSRCS
+
+build AROS ..
+
+To USE
+------
+
+Create a Virtual Machine for AROS in Hyper-V (Generation 1)
+Set COMx to use a named pipe (e.g. "\\.\pipe\AROS-com1")
+
+Start the VM and connect to the serial port using putty.
+NB: Putty needs to be started as admin to use named pipes
+Put the named pipe in the serial port and connect.
+
+When AROS is running the debug exception can be invoked
+from powershell using -:
+
+> debug-vm "<virtual machines name>" -InjectNonMaskableInterrupt -Force
+
+e.g.
+
+ debug-vm "AROS" -InjectNonMaskableInterrupt -Force

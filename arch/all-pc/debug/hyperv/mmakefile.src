@@ -1,0 +1,26 @@
+# Copyright © 2020, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-hvdebug-kobj: includes
+#MM kernel-hvdebug: includes
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
+#USER_CPPFLAGS += -DDEBUG=1
+USER_LDFLAGS := -static
+
+#USER_INCLUDES := -I $(SRCDIR)/rom/exec
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
+		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+
+HVDEBUG_FILES :=            \
+	    hyperv-debug    \
+	    hyperv-tasks    \
+	    hyperv-cpu
+
+%build_module mmake=kernel-hvdebug modname=hyperv-debug modtype=resource \
+    files="$(HVDEBUG_FILES)"
+
+%copy_includes path=resources
