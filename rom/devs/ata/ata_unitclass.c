@@ -80,7 +80,6 @@ OOP_Object *ATAUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         if (!unit->au_Drive)
         {
             OOP_MethodID disp_msg = msg->mID - moRoot_New + moRoot_Dispose;
-            
             OOP_DoSuperMethod(cl, o, &disp_msg);
             return NULL;
         }

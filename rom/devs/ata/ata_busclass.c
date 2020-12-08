@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,8 +36,8 @@ static void Hidd_ATABus_HandleIRQ(UBYTE status, struct ata_Bus *bus)
     if (unit && bus->ab_HandleIRQ)
     {
         /* ok, we have a routine to handle any form of transmission etc. */
-        DIRQ(bug("[ATA%02d] IRQ: Calling dedicated handler 0x%p... \n",
-                 unit->au_UnitNum, bus->ab_HandleIRQ));
+        DIRQ(bug("[ATA%02d] %s: Calling dedicated handler 0x%p... \n",
+                 __func__, unit->au_UnitNum, bus->ab_HandleIRQ));
         bus->ab_HandleIRQ(unit, status);
 
         return;
@@ -47,14 +47,14 @@ static void Hidd_ATABus_HandleIRQ(UBYTE status, struct ata_Bus *bus)
         /*
          * if we got *here* then device is most likely not expected to have an irq.
          */
-        bug("[ATA%02d] Spurious IRQ\n", unit ? unit->au_UnitNum : -1);
+        bug("[ATA%02d] %s: Spurious IRQ\n", unit ? unit->au_UnitNum : -1, __func__);
 
         if (0 == (ATAF_BUSY & status))
         {
-            bug("[ATA  ] STATUS: %02lx\n"     , status);
-            bug("[ATA  ] ALT STATUS: %02lx\n" , PIO_InAlt(bus, ata_AltStatus));
-            bug("[ATA  ] ERROR: %02lx\n"      , PIO_In(bus, ata_Error));
-            bug("[ATA  ] IRQ: REASON: %02lx\n", PIO_In(bus, atapi_Reason));
+            bug("[ATA  ] %s:    STATUS: %02lx\n"     , __func__, status);
+            bug("[ATA  ] %s:    ALT STATUS: %02lx\n" , __func__, PIO_InAlt(bus, ata_AltStatus));
+            bug("[ATA  ] %s:    ERROR: %02lx\n"      , __func__, PIO_In(bus, ata_Error));
+            bug("[ATA  ] %s:    IRQ: REASON: %02lx\n", __func__, PIO_In(bus, atapi_Reason));
         }
     });
 }
@@ -512,17 +512,19 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct ataBase *ATABase = cl->UserData;
+    OOP_Object *bus;
+
     D(bug("[ATA:Bus] %s()\n", __func__));
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
-    if (o)
+    bus = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
+    if (bus)
     {
-        struct ata_Bus *data = OOP_INST_DATA(cl, o);
+        struct ata_Bus *data = OOP_INST_DATA(cl, bus);
         struct TagItem *tstate = msg->attrList;
         struct TagItem *tag;
 
         D(
-          bug("[ATA:Bus] %s: instance @ 0x%p\n", __func__, o);
+          bug("[ATA:Bus] %s: instance @ 0x%p\n", __func__, bus);
           bug("[ATA:Bus] %s: ata_Bus @ 0x%p\n", __func__, data);
          )
 
@@ -570,7 +572,7 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         /* Cache device base pointer. Useful. */
         data->ab_Base = ATABase;
-        data->ab_Object = o;
+        data->ab_Object = bus;
 
         /* Install reset callback */
         data->ab_ResetInt.is_Node.ln_Name = ATABase->ata_Device.dd_Library.lib_Node.ln_Name;
@@ -578,7 +580,10 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         data->ab_ResetInt.is_Data         = data;
         AddResetCallback(&data->ab_ResetInt);
     }
-    return o;
+
+    D(bug("[ATA:Bus] %s: returning 0x%p\n", __func__, bus);)
+
+    return bus;
 }
 
 void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -941,6 +946,7 @@ void ATABus__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg *msg)
 BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
 {
     struct ata_Bus *ab = OOP_INST_DATA(ATABase->busClass, o);
+    struct Task *busTask;
 
     D(bug("[ATA:Bus] %s()\n", __func__));
 
@@ -994,15 +1000,19 @@ BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
      * Start up bus task. It will perform scanning asynchronously, and
      * then, if successful, insert units. This allows to keep things parallel.
      */
-    D(bug("[ATA>>] Start: Bus %u: Unit 0 - %d, Unit 1 - %d\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
-    return NewCreateTask(TASKTAG_PC         , BusTaskCode,
+    D(bug("[ATA>>] %s: Start: Bus %u: Unit 0 - %d, Unit 1 - %d\n", __func__, ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
+    busTask = NewCreateTask(TASKTAG_PC         , BusTaskCode,
                          TASKTAG_NAME       , "ATA[PI] Subsystem",
                          TASKTAG_STACKSIZE  , STACK_SIZE,
                          TASKTAG_PRI        , TASK_PRI,
                          TASKTAG_TASKMSGPORT, &ab->ab_MsgPort,
                          TASKTAG_ARG1       , ab,
                          TASKTAG_ARG2       , ATABase,
-                         TAG_DONE) ? TRUE : FALSE;
+                         TAG_DONE);
+
+    D(bug("[ATA>>] %s: BusTask @ 0x%p\n", __func__, busTask);)
+
+    return  (busTask) ? TRUE : FALSE;
 }
 
 AROS_UFH3(BOOL, Hidd_ATABus_Open,
@@ -1019,7 +1029,7 @@ AROS_UFH3(BOOL, Hidd_ATABus_Open,
     UBYTE dev = reqUnit & 1;
 
     D(bug("[ATA:Bus] %s()\n", __func__));
-    D(bug("[ATA%02ld] Checking bus %u dev %u\n", reqUnit, bus, dev));
+    D(bug("[ATA%02ld] %s: Checking bus %u dev %u\n", reqUnit, __func__, bus, dev));
     
     if ((b->ab_BusNum == bus) && b->ab_Units[dev])
     {

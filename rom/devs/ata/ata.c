@@ -980,7 +980,10 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
     OOP_Object *unitObj;
     struct ata_Unit *unit;
 
-    DINIT(bug("[ATA**] Task started (bus: %u)\n", bus->ab_BusNum));
+    DINIT(
+        bug("[ATA**] %s: Task started (Bus: %u)\n", __func__, bus->ab_BusNum);
+        bug("[ATA**] %s: Bus MsgPort @ 0x%p\n", __func__, bus->ab_MsgPort);
+    )
 
     bus->ab_Timer = ata_OpenTimer(ATABase);
     bus->ab_BounceBufferPool = CreatePool(MEMF_CLEAR | MEMF_31BIT, 131072, 65536);
@@ -994,9 +997,11 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
 
     sig = 1L << bus->ab_MsgPort->mp_SigBit;
 
+    DINIT(bug("[ATA**] %s: Sleepy SigBit = %d, MPSigBit = %d\n", __func__, bus->ab_SleepySignal, bus->ab_MsgPort->mp_SigBit);)
+
     for (iter = 0; iter < MAX_BUSUNITS; ++iter)
     {
-        DINIT(bug("[ATA**] Device %u type %d\n", iter, bus->ab_Dev[iter]));
+        DINIT(bug("[ATA**] %s: Device %u type %d\n", __func__, iter, bus->ab_Dev[iter]);)
 
         if (bus->ab_Dev[iter] > DEV_UNKNOWN)
         {
@@ -1004,28 +1009,38 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
             if (unitObj)
             {
                 unit = OOP_INST_DATA(ATABase->unitClass, unitObj);
+                D(bug("[ATA**] %s: UnitObj @ 0x%p, data @ 0x%p\n", __func__, unitObj, unit);)
                 ata_init_unit(bus, unit, iter);
+                D(bug("[ATA**] %s:     initialized\n", __func__);)
                 if (ata_setup_unit(bus, unit))
                 {
                     /*
                      * Add unit to the bus.
                      * At this point it becomes visible to OpenDevice().
                      */
-                    bus->ab_Units[iter] = unitObj;
+                    D(bug("[ATA**] %s:     setup done\n", __func__);)
 
+                    bus->ab_Units[iter] = unitObj;
                     if (unit->au_XferModes & AF_XFER_PACKET)
                     {
                         struct ata_Controller *ataNode = NULL;
+
+                        D(bug("[ATA**] %s: registering unit packet volume\n", __func__);)
 
                         ata_RegisterVolume(0, 0, unit);
 
                         OOP_GetAttr(bus->ab_Object, aHidd_ATABus_Controller, (IPTR *)&ataNode);
                         if (ataNode)
                         {
+
+                            D(bug("[ATA**] %s: controller data @ 0x%pn", __func__, ataNode);)
+
                             /* For ATAPI device we also submit media presence detection request */
                             unit->DaemonReq = (struct IOStdReq *)CreateIORequest(ataNode->DaemonPort, sizeof(struct IOStdReq));
                             if (unit->DaemonReq)
                             {
+                                D(bug("[ATA**] %s: controller data @ 0x%pn", __func__, ataNode);)
+
                                 /*
                                  * We don't want to keep stalled open count of 1, so we
                                  * don't call OpenDevice() here. Instead we fill in the needed
@@ -1044,12 +1059,15 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
                     }
                     else
                     {
+                        D(bug("[ATA**] %s: registering unit volume\n", __func__);)
+
                         ata_RegisterVolume(0, unit->au_Cylinders - 1, unit);
                     }
+                    D(bug("[ATA**] %s: unit setup done\n", __func__);)
                 }
                 else
                 {
-                    DINIT(bug("[ATA**] Disposing unit @ 0x%p (obj @ 0x%p)\n", unit, unitObj);)
+                    DINIT(bug("[ATA**] %s: Disposing unit @ 0x%p (obj @ 0x%p)\n", __func__, unit, unitObj);)
                     /* Destroy unit that couldn't be initialised */
                     OOP_DisposeObject(unitObj);
                     bus->ab_Dev[iter] = DEV_NONE;
@@ -1058,8 +1076,10 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
         }
     }
 
-    D(bug("[ATA--] Bus %u scan finished\n", bus->ab_BusNum));
+    D(bug("[ATA--] %s: Bus %u scan finished\n", __func__, bus->ab_BusNum);)
     ReleaseSemaphore(&ATABase->DetectionSem);
+
+    D(bug("[ATA--] %s: waiting for signals ...\n", __func__);)
 
     /* Wait forever and process messages */
     for (;;)
