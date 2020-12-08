@@ -692,9 +692,12 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
          */
         if (cpuNum == 0)
         {
+            struct PlatformData *pdata = KernelBase->kb_PlatformData;
+
             KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatServer, KernelBase, SysBase);
             
             apic->flags |= APF_TIMER;
+            pdata->kb_PDFlags |= PLATFORMF_HAVEHEARTBEAT;
         }
 
         APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
