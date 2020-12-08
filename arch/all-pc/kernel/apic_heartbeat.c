@@ -27,8 +27,8 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct APICData *apicData = pdata->kb_APIC;
     apicid_t cpuNum = core_APIC_GetNumber(apicData);
-#if defined(__AROSEXEC_SMP__)
     IPTR __LAPICBase = apicData->lapicBase;
+#if defined(__AROSEXEC_SMP__)
     struct X86SchedulerPrivate  *apicScheduleData;
     tls_t *apicTLS;
 #endif
@@ -41,15 +41,20 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
     if (apicData->flags & APF_TIMER)
     {
 #if defined(__AROSEXEC_SMP__)
-
         UQUAD now = RDTSC();
-        
+#endif
+        ULONG icrval;
+
         // Update LAPIC tick
         apicData->cores[cpuNum].cpu_LAPICTick += APIC_REG(__LAPICBase, APIC_TIMER_ICR);
 
-        // Relaunch LAPIC timer
-        APIC_REG(__LAPICBase, APIC_TIMER_ICR) = (apicData->cores[cpuNum].cpu_TimerFreq + 500) / 1000;
+        icrval = (apicData->cores[cpuNum].cpu_TimerFreq + 500) / 1000;
+        D(bug("[Kernel:APIC.%03u] %s: reloading ICR with %u\n", cpuNum, __func__, icrval);)
 
+        // Relaunch LAPIC timer
+        APIC_REG(__LAPICBase, APIC_TIMER_ICR) = icrval;
+
+#if defined(__AROSEXEC_SMP__)
         if ((now - apicData->cores[cpuNum].cpu_LastCPULoadTime) > apicData->cores[cpuNum].cpu_TSCFreq)
         {
             struct Task *t;
@@ -138,9 +143,9 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
             }
         }
 #else
-        D(bug("[Kernel:APIC] %s()\n", __func__));
 
         current = SCHEDELAPSED_GET;
+        D(bug("[Kernel:APIC] %s: %u\n", __func__, current);)
         if (current)
             SCHEDELAPSED_SET(--current);
 
