@@ -379,7 +379,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     ULONG step = 0;
     BOOL res = TRUE;
 
-    DIRQ(
+    D(
         bug("[ATA%02ld] %s(%s, %s)...\n",
             unit->au_UnitNum, __func__,
             (irq) ? "TRUE" :  "FALSE",
@@ -389,7 +389,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     if (bus->ab_Base->ata_Poll)
         irq = FALSE;
 
-    DIRQ(
+    D(
         bug("[ATA%02ld] %s: using IRQ mode = %s\n",
             unit->au_UnitNum, __func__,
             (irq) ? "TRUE" :  "FALSE");
@@ -410,7 +410,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
         if ((!(status & (1 << 7))) && (status & ((1 << 5) | (1 << 0))))
         {
             fake_irq = TRUE;
-            DIRQ(
+            D(
                 bug("[ATA%02ld] %s: %s occured, status = %02lx, ata error %lx\n",
                     unit->au_UnitNum, __func__, (status & (1 << 5)) ? "drive fault" : "error", status, PIO_In(bus, ata_Error));
                 bug("[ATA%02ld] %s: faking completion IRQ (real IRQ will not come)\n", unit->au_UnitNum, __func__);
