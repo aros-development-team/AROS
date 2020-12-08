@@ -421,7 +421,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
             /*
              * wait for either IRQ or timeout
              */
-            DIRQ(
+            D(
                 bug("[ATA%02ld] Waiting (Current status: %02lx)...\n",
                 unit->au_UnitNum, status);
             )
