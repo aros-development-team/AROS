@@ -11,9 +11,12 @@
 #include <proto/exec.h>
  
 #include <kernel_base.h>
+#include <kernel_debug.h>
 #include <kernel_intr.h>
 #include <kernel_scheduler.h>
 #include <kernel_syscall.h>
+
+#define D(x)
 
 /*
  * Leave the interrupt. This function receives the interrupt register frame
