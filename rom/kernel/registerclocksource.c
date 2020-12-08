@@ -30,11 +30,11 @@ const static struct Node KernCSNode =
         AROS_LH2(void, KrnRegisterClockSource,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, CSBase, A0),
-	AROS_LHA(struct TagItem *, tstags, A1),
+        AROS_LHA(APTR, CSBase, A0),
+        AROS_LHA(struct TagItem *, tstags, A1),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 57, Kernel)
+        struct KernelBase *, KernelBase, 57, Kernel)
 
 /*  FUNCTION
 

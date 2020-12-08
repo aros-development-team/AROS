@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2015-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,18 +18,18 @@
         AROS_LH2(void, KrnGetCPUMask,
 
 /*  SYNOPSIS */
-	AROS_LHA(uint32_t, id, D0),
-	AROS_LHA(void *, mask, A0),
+        AROS_LHA(uint32_t, id, D0),
+        AROS_LHA(void *, mask, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 45, Kernel)
+        struct KernelBase *, KernelBase, 45, Kernel)
 
 /*  FUNCTION
-	Set the CPU number's bit in the mask.
+        Set the CPU number's bit in the mask.
 
     INPUTS
-	CPU number (as returned by KrnGetCPUNumber())
-	Affinity Mask (as returned by KrnAllocCPUMask())
+        CPU number (as returned by KrnGetCPUNumber())
+        Affinity Mask (as returned by KrnAllocCPUMask())
 
     RESULT
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	KrnGetCPUNumber(), KrnAllocCPUMask(), KrnClearCPUMask(), KrnCPUInMask()
+        KrnGetCPUNumber(), KrnAllocCPUMask(), KrnClearCPUMask(), KrnCPUInMask()
 
     INTERNALS
 

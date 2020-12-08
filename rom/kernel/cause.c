@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 3, Kernel)
+        struct KernelBase *, KernelBase, 3, Kernel)
 
 /*  FUNCTION
         Run software interrupt processing sequence

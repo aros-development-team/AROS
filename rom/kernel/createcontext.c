@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -22,27 +22,27 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 18, Kernel)
+        struct KernelBase *, KernelBase, 18, Kernel)
 
 /*  FUNCTION
-	Allocate and initialize CPU context storage area.
+        Allocate and initialize CPU context storage area.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	A pointer to a CPU context storage area.
+        A pointer to a CPU context storage area.
 
     NOTES
-	CPU context storage is considered private and accessible
-	only from within supevisor mode.
+        CPU context storage is considered private and accessible
+        only from within supevisor mode.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    	KrnDeleteContext()
+        KrnDeleteContext()
 
     INTERNALS
 
@@ -59,7 +59,7 @@
     /* Initialize the storage if needed */
 #ifdef PREPARE_INITIAL_CONTEXT
     if (ctx)
-	PREPARE_INITIAL_CONTEXT(ctx);
+        PREPARE_INITIAL_CONTEXT(ctx);
 #endif
 
     goBack(mode);

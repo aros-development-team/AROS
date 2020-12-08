@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -22,24 +22,24 @@
         AROS_LH2(int, KrnBug,
 
 /*  SYNOPSIS */
-	AROS_LHA(const char *, format, A0),
+        AROS_LHA(const char *, format, A0),
         AROS_LHA(va_list, args, A1),
 
 /*  LOCATION */
         struct KernelBase *, KernelBase, 12, Kernel)
 
 /*  FUNCTION
-	Output a formatted string to low-level debug output stream.
+        Output a formatted string to low-level debug output stream.
 
-	The function supports the same set of formatting specifiers
-	as standard C printf() function.
+        The function supports the same set of formatting specifiers
+        as standard C printf() function.
 
     INPUTS
-	format - A format string
-	args   - A list of arguments
+        format - A format string
+        args   - A list of arguments
 
     RESULT
-	Number of successfully printed characters
+        Number of successfully printed characters
 
     NOTES
 
@@ -50,9 +50,9 @@
     SEE ALSO
 
     INTERNALS
-	During very early system startup this function can be called
-	directly with KernelBase set to NULL. Architecture-specific
-	implementations of this function need to take care of it.
+        During very early system startup this function can be called
+        directly with KernelBase set to NULL. Architecture-specific
+        implementations of this function need to take care of it.
 
 ******************************************************************************/
 {

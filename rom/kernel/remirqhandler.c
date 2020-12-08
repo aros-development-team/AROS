@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,14 +27,14 @@
          struct KernelBase *, KernelBase, 8, Kernel)
 
 /*  FUNCTION
-	Remove previously installed hardware IRQ handler
+        Remove previously installed hardware IRQ handler
 
     INPUTS
-	handle - an opaque handler returned by KrnAddIRQHandler()
-	         function
+        handle - an opaque handler returned by KrnAddIRQHandler()
+                 function
 
     RESULT
-	None
+        None
 
     NOTES
 
@@ -61,7 +61,7 @@
         REMOVE(h);
         if (IsListEmpty(&KERNELIRQ_LIST(irq)))
         {
-        	ictl_disable_irq(irq, KernelBase);
+                ictl_disable_irq(irq, KernelBase);
         }
         Enable();
 

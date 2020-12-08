@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,22 +20,22 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 13, Kernel)
+        struct KernelBase *, KernelBase, 13, Kernel)
 
 /*  FUNCTION
-	Determine if the caller is running in supervisor mode
+        Determine if the caller is running in supervisor mode
 
     INPUTS
-	None
+        None
 
     RESULT
-	Nonzero for supervisor mode, zero for user mode
+        Nonzero for supervisor mode, zero for user mode
 
     NOTES
-	Callers should only test the return value against zero.
-	Nonzero values may actually be different, since they
-	may carry some private implementation-dependent information
-	(like CPU privilege level, for example).
+        Callers should only test the return value against zero.
+        Nonzero values may actually be different, since they
+        may carry some private implementation-dependent information
+        (like CPU privilege level, for example).
 
     EXAMPLE
 

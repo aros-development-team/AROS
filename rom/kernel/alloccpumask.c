@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,15 +20,15 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 42, Kernel)
+        struct KernelBase *, KernelBase, 42, Kernel)
 
 /*  FUNCTION
-	Allocate storage for a CPU mask
+        Allocate storage for a CPU mask
 
     INPUTS
 
     RESULT
-	CPU affinity mask storage
+        CPU affinity mask storage
 
     NOTES
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	KrnGetCPUNumber(), KrnClearCPUMask(), KrnGetCPUMask(), KrnCPUInMask()
+        KrnGetCPUNumber(), KrnClearCPUMask(), KrnGetCPUMask(), KrnCPUInMask()
 
     INTERNALS
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,21 +18,21 @@
         AROS_LH2(ULONG, KrnAllocIRQ,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, irq_type, D0),
-	AROS_LHA(ULONG, count, D1),
+        AROS_LHA(ULONG, irq_type, D0),
+        AROS_LHA(ULONG, count, D1),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 38, Kernel)
+        struct KernelBase *, KernelBase, 38, Kernel)
 
 /*  FUNCTION
-	Allocate an arch specific IRQ type.
+        Allocate an arch specific IRQ type.
 
     INPUTS
-	irq_tpe - The Arch specific Type of IRQ to allocate.
+        irq_tpe - The Arch specific Type of IRQ to allocate.
         count   - The number of sequential IRQ's to allocate.
 
     RESULT
-	-1 on failure, or the first 32bit IRQ ID.
+        -1 on failure, or the first 32bit IRQ ID.
 
     NOTES
 

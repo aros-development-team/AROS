@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,21 +18,21 @@
         AROS_LH2(BOOL, KrnCPUInMask,
 
 /*  SYNOPSIS */
-	AROS_LHA(uint32_t, id, D0),
-	AROS_LHA(void *, mask, A0),
+        AROS_LHA(uint32_t, id, D0),
+        AROS_LHA(void *, mask, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 46, Kernel)
+        struct KernelBase *, KernelBase, 46, Kernel)
 
 /*  FUNCTION
-	Test if the CPU number is enabled in the mask.
+        Test if the CPU number is enabled in the mask.
 
     INPUTS
-	CPU number (as returned by KrnGetCPUNumber())
-	Affinity Mask (as returned by KrnAllocCPUMask())
+        CPU number (as returned by KrnGetCPUNumber())
+        Affinity Mask (as returned by KrnAllocCPUMask())
 
     RESULT
-	TRUE or FALSE if the CPU exists in the mask.
+        TRUE or FALSE if the CPU exists in the mask.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	KrnGetCPUNumber(), KrnAllocCPUMask(), KrnClearCPUMask(), KrnGetCPUMask()
+        KrnGetCPUNumber(), KrnAllocCPUMask(), KrnClearCPUMask(), KrnGetCPUMask()
 
     INTERNALS
 

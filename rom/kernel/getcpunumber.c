@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,16 +20,16 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 41, Kernel)
+        struct KernelBase *, KernelBase, 41, Kernel)
 
 /*  FUNCTION
-	Return number of the caller CPU
+        Return number of the caller CPU
 
     INPUTS
-	None
+        None
 
     RESULT
-	Number of the CPU on which the function is called
+        Number of the CPU on which the function is called
 
     NOTES
 

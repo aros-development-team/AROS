@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -36,44 +36,44 @@
         struct KernelBase *, KernelBase, 14, Kernel)
 
 /*  FUNCTION
-	Add a raw CPU exception handler to the chain of handlers.
+        Add a raw CPU exception handler to the chain of handlers.
 
     INPUTS
-	num          - CPU-specific exception number
-	handler      - Pointer to a handler function
-	handlerData,
-	handlerData2 - User-defined data which is passed to the
-		       handler.
-	
-	  Handler function uses a C calling convention and must be
-	  declared as follows:
-	  
-	  int ExceptionHandler(void *ctx, void *handlerData, void *handlerData2)
-	    
-	  handlerData and handlerData2 will be values passed to the
-	  KrnAddExceptionHandler() function. ctx is a CPU context handle.
-	  Consider this parameter private and reserved for now.
+        num          - CPU-specific exception number
+        handler      - Pointer to a handler function
+        handlerData,
+        handlerData2 - User-defined data which is passed to the
+                       handler.
+        
+          Handler function uses a C calling convention and must be
+          declared as follows:
+          
+          int ExceptionHandler(void *ctx, void *handlerData, void *handlerData2)
+            
+          handlerData and handlerData2 will be values passed to the
+          KrnAddExceptionHandler() function. ctx is a CPU context handle.
+          Consider this parameter private and reserved for now.
 
-	  Exception handler should return nonzero value if it processes the
-	  exception and wants to continue program execution. Otherwise it should
-	  return zero. If all exception handlers in the chain return zero, the
-	  exception will be passed on to exec.library trap handler pointed to
-	  by tc_TrapCode field of task structure.
+          Exception handler should return nonzero value if it processes the
+          exception and wants to continue program execution. Otherwise it should
+          return zero. If all exception handlers in the chain return zero, the
+          exception will be passed on to exec.library trap handler pointed to
+          by tc_TrapCode field of task structure.
 
     RESULT
-	An opaque handle that can be used for handler removal or NULL in case
-	of failure (like unsupported exception number).
+        An opaque handle that can be used for handler removal or NULL in case
+        of failure (like unsupported exception number).
 
     NOTES
-	The specification of this function is preliminary and subject to change.
-	Consider it private for now.
+        The specification of this function is preliminary and subject to change.
+        Consider it private for now.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	KrnRemExceptionHandler()
+        KrnRemExceptionHandler()
 
     INTERNALS
 
@@ -89,7 +89,7 @@
         /* Go to supervisor mode */
         (void)goSuper();
 
-	/* Allocate protected memory, accessible only in supervisor mode */
+        /* Allocate protected memory, accessible only in supervisor mode */
         handle = krnAllocIntrNode();
         D(bug("[KRN] handle=%012p\n", handle));
 
@@ -122,11 +122,11 @@ int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, vo
 
     /* We can be called really early. Protect against this. */
     if (!KernelBase || (EXCEPTIONS_COUNT < exception))
-    	return 0;
+        return 0;
 
     ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
     {
-	exhandler_t h = in->in_Handler;
+        exhandler_t h = in->in_Handler;
 
         if (h)
             ret |= h(ctx, in->in_HandlerData, in->in_HandlerData2);

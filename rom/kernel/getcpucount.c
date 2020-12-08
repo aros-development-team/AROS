@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,16 +20,16 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 40, Kernel)
+        struct KernelBase *, KernelBase, 40, Kernel)
 
 /*  FUNCTION
-	Return total number of processors in the system
+        Return total number of processors in the system
 
     INPUTS
-	None
+        None
 
     RESULT
-	Number of running CPUs in this system
+        Number of running CPUs in this system
 
     NOTES
 

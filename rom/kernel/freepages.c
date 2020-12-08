@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,11 +18,11 @@
         AROS_LH2(void, KrnFreePages,
 
 /*  SYNOPSIS */
-	AROS_LHA(void *, addr, A0),
-	AROS_LHA(uintptr_t, length, D0),
+        AROS_LHA(void *, addr, A0),
+        AROS_LHA(uintptr_t, length, D0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 28, Kernel)
+        struct KernelBase *, KernelBase, 28, Kernel)
 
 /*  FUNCTION
 
@@ -31,7 +31,7 @@
     RESULT
 
     NOTES
-    	This function works only on systems with MMU support.
+        This function works only on systems with MMU support.
 
     EXAMPLE
 

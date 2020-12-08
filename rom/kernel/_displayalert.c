@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -35,7 +35,7 @@ static const char *PrintCentered(const char *str, struct KernelBase *KernelBase)
     ULONG s;
 
     if (len > (ALERT_WIDTH - 2))
-    	    len = (ALERT_WIDTH - 2);
+            len = (ALERT_WIDTH - 2);
 
     s = ALERT_WIDTH - 2 - len;
 
@@ -80,12 +80,12 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
     /* Print first three lines (title, task and error) centered */
     for (i = 0; i < 3; i++)
     {
-    	text = PrintCentered(text, KernelBase);
+        text = PrintCentered(text, KernelBase);
 
-    	if (*text == 0)	/* Handle early NULL terminator */
-    	    break;
+        if (*text == 0)	/* Handle early NULL terminator */
+            break;
 
-    	text++;	/* Skip a newline */
+        text++;	/* Skip a newline */
     }
 
     PrintFrame(KernelBase);
@@ -93,10 +93,10 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
     /* Print the rest of alert text (if any) */
     if (*text)
     {
-    	while (*text)
-    	    krnPutC(*text++, KernelBase);
+        while (*text)
+            krnPutC(*text++, KernelBase);
 
-    	krnPutC('\n', KernelBase);
-    	PrintFrame(KernelBase);
+        krnPutC('\n', KernelBase);
+        PrintFrame(KernelBase);
     }
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,10 +17,10 @@
         AROS_LH1I(void, KrnSetScheduler,
 
 /*  SYNOPSIS */
-	AROS_LHA(KRN_SchedType, sched, D0),
+        AROS_LHA(KRN_SchedType, sched, D0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 2, Kernel)
+        struct KernelBase *, KernelBase, 2, Kernel)
 
 /*  FUNCTION
 

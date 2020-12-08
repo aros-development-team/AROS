@@ -54,7 +54,7 @@ void __clear_bss(const struct KernelBSS *bss)
 {
     while (bss->addr)
     {
-	bzero((void*)bss->addr, bss->len);
+        bzero((void*)bss->addr, bss->len);
         bss++;
     }
 }
@@ -87,7 +87,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
 
     KernelBase = AllocKernelBase(SysBase);
     if (!KernelBase)
-    	return NULL;
+        return NULL;
 
     KernelBase->kb_Node.ln_Type = NT_RESOURCE;
     KernelBase->kb_Node.ln_Pri  = RESIDENTPRI;
@@ -98,7 +98,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     D(bug("[KRN] KernelBase 0x%p\n", KernelBase));
 
     for (i=0; i < EXCEPTIONS_COUNT; i++)
-	NEWLIST(&KernelBase->kb_Exceptions[i]);
+        NEWLIST(&KernelBase->kb_Exceptions[i]);
 
     for (i=0; i < HW_IRQ_COUNT; i++)
         NEWLIST(&KERNELIRQ_LIST(i));
@@ -113,7 +113,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
 
     /* Call platform-specific init code */
     if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, KernelBase))
-    	return NULL;
+        return NULL;
 
     D(bug("[KRN] Kernel_Init() done\n"));
 

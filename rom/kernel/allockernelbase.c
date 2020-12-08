@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate kernel.resource base.
@@ -23,7 +23,7 @@ struct KernelBase *AllocKernelBase(struct ExecBase *SysBase)
     /* Allocate the memory */
     mem = AllocMem(i + sizeof(struct KernelBase), MEMF_PUBLIC|MEMF_CLEAR);
     if (!mem)
-    	return NULL;
+        return NULL;
 
     /* Skip past the vector table */
     mem += i;

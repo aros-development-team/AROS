@@ -1,5 +1,5 @@
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,13 +18,13 @@
         AROS_LH1(void, KrnFreeCPUMask,
 
 /*  SYNOPSIS */
-	AROS_LHA(void *, mask, A0),
+        AROS_LHA(void *, mask, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 43, Kernel)
+        struct KernelBase *, KernelBase, 43, Kernel)
 
 /*  FUNCTION
-	Free the mask.
+        Free the mask.
 
     INPUTS
 
@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	KrnAllocCPUMask(), KrnGetCPUMask(), KrnCPUInMask()
+        KrnAllocCPUMask(), KrnGetCPUMask(), KrnCPUInMask()
 
     INTERNALS
 

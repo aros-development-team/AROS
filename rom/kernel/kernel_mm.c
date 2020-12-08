@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Page-based memory allocator, low-level routines.
@@ -34,37 +34,37 @@ void *mm_AllocPages(void *addr, uintptr_t length, uint32_t flags, struct KernelB
      */
     ForeachNode(&SysBase->MemList, mh)
     {
-	/*
-	 * Check for the right requirements and enough free memory.
-	 * The requirements are OK if there's no bit in the
-	 * 'physFlags' that isn't set in the 'mh->mh_Attributes'.
-	 */
-	if ((physFlags & ~mh->mh_Attributes) || mh->mh_Free < length)
-	   continue;
+        /*
+         * Check for the right requirements and enough free memory.
+         * The requirements are OK if there's no bit in the
+         * 'physFlags' that isn't set in the 'mh->mh_Attributes'.
+         */
+        if ((physFlags & ~mh->mh_Attributes) || mh->mh_Free < length)
+           continue;
 
-	if (addr)
-	{
-	    /*
-	     * If we have starting address, only one MemHeader can be
-	     * appropriate for us. We look for it and attempt to allocate
-	     * the given region from it.
-	     */
-	    if (addr >= mh->mh_Lower || addr + length <= mh->mh_Upper)
-	    {
-		res = mm_AllocAbs(mh, addr, length);
-		break;
-	    }
-	}
-	else
-	{
-	    /*
-	     * Otherwise try to allocate pages from every MemHeader.
-	     * Note that we still may fail if the memory is fragmented too much.
-	     */
-	    res = mm_Allocate(mh, length, flags);
-	    if (res)
-		break;
-	}
+        if (addr)
+        {
+            /*
+             * If we have starting address, only one MemHeader can be
+             * appropriate for us. We look for it and attempt to allocate
+             * the given region from it.
+             */
+            if (addr >= mh->mh_Lower || addr + length <= mh->mh_Upper)
+            {
+                res = mm_AllocAbs(mh, addr, length);
+                break;
+            }
+        }
+        else
+        {
+            /*
+             * Otherwise try to allocate pages from every MemHeader.
+             * Note that we still may fail if the memory is fragmented too much.
+             */
+            res = mm_Allocate(mh, length, flags);
+            if (res)
+                break;
+        }
     }
 
     return res;
@@ -78,21 +78,21 @@ void mm_FreePages(void *addr, uintptr_t length, struct KernelBase *KernelBase)
     {
         D(bug("[KrnFreePages] Checking MemHeader 0x%p... ", mh));
 
-	/* Test if the memory belongs to this MemHeader. */
-	if (mh->mh_Lower <= addr && mh->mh_Upper > addr)
-	{
-	    D(bug("[KrnFreePages] Match!\n"));
+        /* Test if the memory belongs to this MemHeader. */
+        if (mh->mh_Lower <= addr && mh->mh_Upper > addr)
+        {
+            D(bug("[KrnFreePages] Match!\n"));
 
-	    /* Test if it really fits into this MemHeader. */
-	    if ((addr + length) > mh->mh_Upper)
-		/* Something is completely wrong. */
-		Alert(AN_MemCorrupt|AT_DeadEnd);
+            /* Test if it really fits into this MemHeader. */
+            if ((addr + length) > mh->mh_Upper)
+                /* Something is completely wrong. */
+                Alert(AN_MemCorrupt|AT_DeadEnd);
 
-	    mm_Free(mh, addr, length);
-	    break;
-	}
+            mm_Free(mh, addr, length);
+            break;
+        }
 
-	D(bug("[KrnFreePages] No match!\n"));
+        D(bug("[KrnFreePages] No match!\n"));
     }
 }
 
@@ -103,7 +103,7 @@ struct MemHeader *mm_AllocExecHeader(struct MemHeader *mh, STRPTR name, IPTR max
 
     if (bootmh)
     {
-	bootmh->mh_Node.ln_Succ    = NULL;
+        bootmh->mh_Node.ln_Succ    = NULL;
         bootmh->mh_Node.ln_Pred    = NULL;
         bootmh->mh_Node.ln_Name    = name;
         bootmh->mh_Node.ln_Type    = mh->mh_Node.ln_Type;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,20 +18,20 @@
         AROS_LH1(void, KrnDeleteContext,
 
 /*  SYNOPSIS */
-	AROS_LHA(void *, context, A0),
+        AROS_LHA(void *, context, A0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 19, Kernel)
+        struct KernelBase *, KernelBase, 19, Kernel)
 
 /*  FUNCTION
-	Free CPU context storage area
+        Free CPU context storage area
 
     INPUTS
-    	context - a pointer to a CPU context storage previously allocated using
-    		  KrnCreateContext()
+        context - a pointer to a CPU context storage previously allocated using
+                  KrnCreateContext()
 
     RESULT
-    	None.
+        None.
 
     NOTES
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-    	KrnCreateContext()
+        KrnCreateContext()
 
     INTERNALS
 

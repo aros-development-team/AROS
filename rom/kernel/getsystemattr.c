@@ -19,32 +19,32 @@
         AROS_LH1(intptr_t, KrnGetSystemAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(uint32_t, id, D0),
+        AROS_LHA(uint32_t, id, D0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 29, Kernel)
+        struct KernelBase *, KernelBase, 29, Kernel)
 
 /*  FUNCTION
-	Get value of internal system attributes.
-	Currently defined attributes are:
+        Get value of internal system attributes.
+        Currently defined attributes are:
 
-	  KATTR_Architecture   [.G] (char *) - Name of architecture the kernel built for.
+          KATTR_Architecture   [.G] (char *) - Name of architecture the kernel built for.
 
-	  KATTR_ClockSource     [.G] APTR     - Used Time Source Resource, or -1 if not set.
+          KATTR_ClockSource     [.G] APTR     - Used Time Source Resource, or -1 if not set.
 
-	  KATTR_SystemLoad     [.G]
-	  KATTR_CPULoad        [.G]
-	  KATTR_CPULoad_END    [.G]
+          KATTR_SystemLoad     [.G]
+          KATTR_CPULoad        [.G]
+          KATTR_CPULoad_END    [.G]
 
-	  KATTR_AffinityMask   [.G]
+          KATTR_AffinityMask   [.G]
 
-	  KATTR_PeripheralBase [.G] IPTR     - (ARM only) peripheral IO Base address.
+          KATTR_PeripheralBase [.G] IPTR     - (ARM only) peripheral IO Base address.
 
     INPUTS
-	id - ID of the attribute to get
+        id - ID of the attribute to get
 
     RESULT
-	Value of the attribute
+        Value of the attribute
 
     NOTES
 
@@ -63,14 +63,14 @@
     switch (id)
     {
     case KATTR_Architecture:
-	return (intptr_t)AROS_ARCHITECTURE;
+        return (intptr_t)AROS_ARCHITECTURE;
 
     case KATTR_ClockSource:
         if (KernelBase->kb_ClockSource)
             return (intptr_t)KernelBase->kb_ClockSource;
 
     default:
-	return -1;
+        return -1;
     }
 
     AROS_LIBFUNC_EXIT

@@ -2,7 +2,7 @@
 #define KERNEL_INTR_H
 
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -44,20 +44,20 @@ static inline int core_Trap(ULONG code, void *regs)
      */
     if (SysBase)
     {
-	void (*trapHandler)(ULONG, void *) = SysBase->TaskTrapCode;
+        void (*trapHandler)(ULONG, void *) = SysBase->TaskTrapCode;
         struct Task *t = GET_THIS_TASK;
 
         if (t)
-	{
-	    if (t->tc_TrapCode)
-		trapHandler = t->tc_TrapCode;
-	}
+        {
+            if (t->tc_TrapCode)
+                trapHandler = t->tc_TrapCode;
+        }
 
-	if (trapHandler)
-	{
-	    trapHandler(code, regs);
-	    return 1;
-	}
+        if (trapHandler)
+        {
+            trapHandler(code, regs);
+            return 1;
+        }
     }
     return 0;
 }

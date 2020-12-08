@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,19 +18,19 @@
         AROS_LH1(void, KrnPutChar,
 
 /*  SYNOPSIS */
-	AROS_LHA(char, c, D0),
+        AROS_LHA(char, c, D0),
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 25, Kernel)
+        struct KernelBase *, KernelBase, 25, Kernel)
 
 /*  FUNCTION
-	Output a single character to low-level debug output stream
+        Output a single character to low-level debug output stream
 
     INPUTS
-	c - A character to output
+        c - A character to output
 
     RESULT
-	None
+        None
 
     NOTES
 
@@ -41,9 +41,9 @@
     SEE ALSO
 
     INTERNALS
-	During very early system startup this function can be called
-	directly with KernelBase set to NULL. Architecture-specific
-	implementations of this function need to take care of it.
+        During very early system startup this function can be called
+        directly with KernelBase set to NULL. Architecture-specific
+        implementations of this function need to take care of it.
 
 ******************************************************************************/
 {

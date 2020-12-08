@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,21 +20,21 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 26, Kernel)
+        struct KernelBase *, KernelBase, 26, Kernel)
 
 /*  FUNCTION
-	Read a single character from low-level debug input stream
+        Read a single character from low-level debug input stream
 
     INPUTS
-	None
+        None
 
     RESULT
-	An ASCII code of the character or -1 if there's no character
-	available
+        An ASCII code of the character or -1 if there's no character
+        available
 
     NOTES
-	This function never waits. If there is no character available on
-	the stream it just returns with -1
+        This function never waits. If there is no character available on
+        the stream it just returns with -1
 
     EXAMPLE
 

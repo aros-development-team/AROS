@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: High-level scheduler calling code
@@ -41,13 +41,14 @@ void core_ExitInterrupt(regs_t *regs)
          */
         if (FLAG_SCHEDSWITCH_ISSET)
         {
-	    /* Run task scheduling sequence */
+            D(bug("[Kernel] %s: Triggering Schedule\n", __func__);)
+            /* Run task scheduling sequence */
             if (core_Schedule())
-	    {
-		cpu_Switch(regs);
-		cpu_Dispatch(regs);
+            {
+                cpu_Switch(regs);
+                cpu_Dispatch(regs);
             }
-	}
+        }
     }
 }
 
@@ -61,7 +62,7 @@ void core_SysCall(int sc, regs_t *regs)
     switch (sc)
     {
     case SC_CAUSE:
-	core_ExitInterrupt(regs);
+        core_ExitInterrupt(regs);
         break;
 
     case SC_SCHEDULE:

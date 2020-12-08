@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -21,21 +21,21 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct KernelBase *, KernelBase, 10, Kernel)
+        struct KernelBase *, KernelBase, 10, Kernel)
 
 /*  FUNCTION
-	Instantly enable interrupts.
+        Instantly enable interrupts.
 
     INPUTS
-	None
+        None
 
     RESULT
-	None
+        None
 
     NOTES
-	This is low level function, it does not have nesting count
-	and state tracking mechanism. It operates directly on the CPU.
-	Normal applications should consider using exec.library/Enable().
+        This is low level function, it does not have nesting count
+        and state tracking mechanism. It operates directly on the CPU.
+        Normal applications should consider using exec.library/Enable().
 
         This function isn't implemented on all platforms.
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	KrnCli()
+        KrnCli()
 
     INTERNALS
 

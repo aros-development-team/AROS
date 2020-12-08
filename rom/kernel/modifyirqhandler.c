@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -34,14 +34,14 @@
         struct KernelBase *, KernelBase, 37, Kernel)
 
 /*  FUNCTION
-	Modify the data passed to a raw hardware IRQ handler.
+        Modify the data passed to a raw hardware IRQ handler.
 
     INPUTS
-	handle       - Existing handle
-	handlerData,
-	handlerData2 - User-defined data which is passed to the
-		       handler.
-	
+        handle       - Existing handle
+        handlerData,
+        handlerData2 - User-defined data which is passed to the
+                       handler.
+        
     RESULT
 
     NOTES
@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-	KrnAddIRQHandler(), KrnRemIRQHandler()
+        KrnAddIRQHandler(), KrnRemIRQHandler()
 
     INTERNALS
 
