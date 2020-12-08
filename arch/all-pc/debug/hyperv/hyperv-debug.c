@@ -10,11 +10,6 @@
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
-#include <aros/x86_64/cpucontext.h>
-
-#include "etask.h"
-#include "kernel_base.h"
-
 #include LC_LIBDEFS_FILE
 
 #define HYPERVDEBUGEXCEPTION    2
@@ -27,16 +22,10 @@ static APTR KernelBase;
 /* Main Exception Handler */
 int HVExceptionHandler(void *ctx, void *handlerData, void *handlerData2)
 {
-    struct KernelBase *KernelBase = (struct KernelBase *)handlerData;
-    struct APICData *apicData;
-
     kprintf("\n[HyperV:DEBUG] %s()\n", __func__);
 
     kprintf("\n");
-
-    apicData  = KernelBase->kb_PlatformData->kb_APIC;
-
-    
+   
     HVDEBUGDumpCPUCtx(ctx);
 
     kprintf("\n");
@@ -44,7 +33,7 @@ int HVExceptionHandler(void *ctx, void *handlerData, void *handlerData2)
     kprintf("[HyperV:DEBUG] %s: SysBase DispCount = %u\n", __func__, SysBase->DispCount);
     kprintf("\n");
 
-    HVDEBUGDumpTasks();
+    HVDEBUGDumpTasks(handlerData);
 
 #if (0)
     /* return from the exception */

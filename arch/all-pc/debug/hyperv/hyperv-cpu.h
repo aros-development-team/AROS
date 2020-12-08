@@ -1,2 +1,2 @@
 
-extern int HVDEBUGDumpCPUCtx(void *ctx);
+extern int HVDEBUGDumpCPUCtx(APTR);

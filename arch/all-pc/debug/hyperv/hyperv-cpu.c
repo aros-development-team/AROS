@@ -4,6 +4,7 @@
 */
 
 #define __KERNEL_NOLIBBASE__
+#define __KERNEL_NOEXTERNBASE__
 
 #include <proto/kernel.h>
 #include <proto/exec.h>
@@ -11,16 +12,10 @@
 
 #include <aros/x86_64/cpucontext.h>
 
-#include "etask.h"
-
 #include LC_LIBDEFS_FILE
 
-#define HYPERVDEBUGEXCEPTION    2
-
-static APTR KernelBase;
-
 /* Task Info */
-int HVDEBUGDumpCPUCtx(void *ctx)
+int HVDEBUGDumpCPUCtx(APTR ctx)
 {
     struct ExceptionContext *regs = (struct ExceptionContext *)ctx;
 

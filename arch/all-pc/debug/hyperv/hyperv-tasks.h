@@ -1,2 +1,2 @@
 
-extern void HVDEBUGDumpTasks(void);
+extern void HVDEBUGDumpTasks(APTR);
