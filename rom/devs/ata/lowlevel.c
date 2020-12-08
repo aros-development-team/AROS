@@ -39,12 +39,12 @@
 #define DATAPI(a) D(a)
 #define DINIT(a) D(a)
 #else
-#define DIRQ(a)      do { } while (0)
-#define DIRQ_MORE(a) do { } while (0)
-#define DUMP(a)      do { } while (0)
-#define DUMP_MORE(a) do { } while (0)
-#define DATA(a)      do { } while (0)
-#define DATAPI(a)    do { } while (0)
+#define DIRQ(a)
+#define DIRQ_MORE(a)
+#define DUMP(a)
+#define DUMP_MORE(a)
+#define DATA(a)
+#define DATAPI(a)
 #define DINIT(a)
 #endif
 /* Errors that shouldn't happen */
@@ -379,26 +379,26 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     ULONG step = 0;
     BOOL res = TRUE;
 
-    D(
+//    DIRQ(
         bug("[ATA%02ld] %s(%s, %s)...\n",
             unit->au_UnitNum, __func__,
             (irq) ? "TRUE" :  "FALSE",
             (fake_irq) ? "TRUE" :  "FALSE");
-    )
+//    )
 
     if (bus->ab_Base->ata_Poll)
         irq = FALSE;
 
-    D(
+//    DIRQ(
         bug("[ATA%02ld] %s: using IRQ mode = %s\n",
             unit->au_UnitNum, __func__,
             (irq) ? "TRUE" :  "FALSE");
         bug("[ATA%02ld] %s: timeout = %u...\n",
             unit->au_UnitNum, __func__, tout);
-    )
+//    )
     if (irq)
     {
-        D(bug("[ATA%02ld] %s: IRQ mode\n", unit->au_UnitNum, __func__);)
+        bug("[ATA%02ld] %s: IRQ mode\n", unit->au_UnitNum, __func__);
         /* Do not read ata_Status in irq mode. It can cause random lost interrupts. */
         if (bus->haveAltIO)
             status = PIO_InAlt(bus, ata_AltStatus);
@@ -410,21 +410,19 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
         if ((!(status & (1 << 7))) && (status & ((1 << 5) | (1 << 0))))
         {
             fake_irq = TRUE;
-            D(
-                bug("[ATA%02ld] %s: %s occured, status = %02lx, ata error %lx\n",
-                    unit->au_UnitNum, __func__, (status & (1 << 5)) ? "drive fault" : "error", status, PIO_In(bus, ata_Error));
-                bug("[ATA%02ld] %s: faking completion IRQ (real IRQ will not come)\n", unit->au_UnitNum, __func__);
-            )
+            bug("[ATA%02ld] %s: %s occured, status = %02lx, ata error %lx\n",
+                unit->au_UnitNum, __func__, (status & (1 << 5)) ? "drive fault" : "error", status, PIO_In(bus, ata_Error));
+            bug("[ATA%02ld] %s: faking completion IRQ (real IRQ will not come)\n", unit->au_UnitNum, __func__);
         }
         else
         {
             /*
              * wait for either IRQ or timeout
              */
-            D(
+    //        DIRQ(
                 bug("[ATA%02ld] Waiting (Current status: %02lx)...\n",
                 unit->au_UnitNum, status);
-            )
+    //        )
             step = ata_WaitTO(unit->au_Bus->ab_Timer, tout, 0,
                 1 << bus->ab_SleepySignal);
         }
@@ -453,12 +451,12 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     }
     else
     {
-        D(bug("[ATA%02ld] %s: no IRQ mode\n", unit->au_UnitNum, __func__);)
+        bug("[ATA%02ld] %s: no IRQ mode\n", unit->au_UnitNum, __func__);
         status = PIO_InAlt(bus, ata_AltStatus);
         while (status & ATAF_BUSY)
         {
             ++step;
-            D(bug("[ATA%02ld] %s: step #%u\n", unit->au_UnitNum, __func__, step);)
+            bug("[ATA%02ld] %s: step #%u\n", unit->au_UnitNum, __func__, step);
             /*
              * every 16n rounds do some extra stuff
              */
@@ -537,15 +535,13 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
         || (block->command == ATA_IDENTIFY_ATAPI));
     UWORD timeout = (fake_irq) ? 1 : TIMEOUT;
 
-    D(
-        bug("[ATA%02ld] %s(0x%p, %u)\n", unit->au_UnitNum, __func__, unit, fake_irq);
-        bug("[ATA%02ld] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, bus);
-        bug("[ATA%02ld] %s: selecting unit..\n", unit->au_UnitNum, __func__);
-    )
+    bug("[ATA%02ld] %s(0x%p, %u)\n", unit->au_UnitNum, __func__, unit, fake_irq);
+    bug("[ATA%02ld] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, bus);
+    bug("[ATA%02ld] %s: selecting unit..\n", unit->au_UnitNum, __func__);
 
     if (FALSE == ata_SelectUnit(unit))
     {
-        D(bug("[ATA%02ld] %s:     unit busy\n", unit->au_UnitNum, __func__);)
+        bug("[ATA%02ld] %s:     unit busy\n", unit->au_UnitNum, __func__);
         return IOERR_UNITBUSY;
     }
 
@@ -682,10 +678,14 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
      * send command now
      * let drive propagate its signals
      */
-    DATA(bug("[ATA%02ld] %s: Sending command\n", unit->au_UnitNum, __func__);)
+//    DATA(
+        bug("[ATA%02ld] %s: Sending command\n", unit->au_UnitNum, __func__);
+//    )
 
     PIO_Out(bus, block->command, ata_Command);
-    DATA(bug("[ATA%02ld] %s: waiting 400ns (bus ab_Base = 0x%p) ..\n", unit->au_UnitNum, __func__, bus->ab_Base);)
+//    DATA(
+        bug("[ATA%02ld] %s: waiting 400ns (bus ab_Base = 0x%p) ..\n", unit->au_UnitNum, __func__, bus->ab_Base);
+//    )
     ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
@@ -696,7 +696,9 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
      */
     if (block->method == CM_PIOWrite)
     {
-    DATA(bug("[ATA%02ld] %s: waiting for PIO write completion ...\n", unit->au_UnitNum, __func__);)
+//    DATA(
+        bug("[ATA%02ld] %s: waiting for PIO write completion ...\n", unit->au_UnitNum, __func__);
+//    )
 	if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, FALSE, FALSE, &status)) {
 	    DERROR(bug("[ATA%02ld] %s: PIOWrite - no response from device. Status %02X\n", unit->au_UnitNum, __func__, status));
 	    return IOERR_UNITBUSY;
@@ -715,7 +717,9 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     /*
      * wait for drive to complete what it has to do
      */
-    DATA(bug("[ATA%02ld] %s: waiting for drive (timeout %u)..\n", unit->au_UnitNum, __func__, timeout);)
+//    DATA(
+        bug("[ATA%02ld] %s: waiting for drive (timeout %u)..\n", unit->au_UnitNum, __func__, timeout);
+//    )
     if (FALSE == ata_WaitBusyTO(unit, timeout, TRUE, fake_irq, &status))
     {
         DERROR(bug("[ATA%02ld] %s: Device is late - no response\n", unit->au_UnitNum, __func__));
@@ -724,7 +728,9 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     else
         err = unit->au_cmd_error;
 
-    DATA(bug("[ATA%02ld] %s: Command done\n", unit->au_UnitNum, __func__);)
+//    DATA(
+        bug("[ATA%02ld] %s: Command done\n", unit->au_UnitNum, __func__);
+//    )
 
     /*
      * clean up DMA
@@ -1021,10 +1027,10 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
      */
     UBYTE u, status;
 
-    DINIT(
+//    DINIT(
         bug("[ATA%02ld] %s()\n", unit->au_UnitNum, __func__);
         bug("[ATA%02ld] %s: sending select unit\n", unit->au_UnitNum, __func__);
-    )
+//    )
     ata_SelectUnit(unit);
 
     if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, FALSE, NULL))
@@ -1037,7 +1043,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
     if (!(status & ((1 << 0) | (1 << 5))))
     {
         u = unit->au_UnitNum & 1;
-        D(bug("[ATA%02ld] %s: device type %u\n", unit->au_UnitNum, __func__, bus->ab_Dev[u]);)
+        bug("[ATA%02ld] %s: device type %u\n", unit->au_UnitNum, __func__, bus->ab_Dev[u]);
 
         switch (bus->ab_Dev[u])
         {
@@ -1058,7 +1064,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
         }
 
         status = PIO_InAlt(bus, ata_AltStatus);
-        D(bug("[ATA%02ld] %s: status before enabling IRQs = %lx\n", unit->au_UnitNum, __func__, status);)
+        bug("[ATA%02ld] %s: status before enabling IRQs = %lx\n", unit->au_UnitNum, __func__, status);
 
         PIO_OutAlt(bus, 0x0, ata_AltControl);
 
@@ -1068,23 +1074,23 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
             /*
              * now make unit self diagnose
              */
-            D(bug("[ATA%02ld] %s: performing self identify (func @ 0x%p)\n", unit->au_UnitNum, __func__, unit->au_Identify);)
+            bug("[ATA%02ld] %s: performing self identify (func @ 0x%p)\n", unit->au_UnitNum, __func__, unit->au_Identify);
             if ((status = unit->au_Identify(unit)) == 0)
                 return TRUE;
             
-            D(bug("[ATA%02ld] %s: identify failed, status = %02lx (ata error %lx)\n", unit->au_UnitNum, __func__, status, PIO_In(bus, ata_Error));)
+            bug("[ATA%02ld] %s: identify failed, status = %02lx (ata error %lx)\n", unit->au_UnitNum, __func__, status, PIO_In(bus, ata_Error));
         }
         else
         {
-            D(bug("[ATA%02ld] %s: error/fault after enabling IRQ's (status = %lx)\n", unit->au_UnitNum, __func__, status);)
+            bug("[ATA%02ld] %s: error/fault after enabling IRQ's (status = %lx)\n", unit->au_UnitNum, __func__, status);
         }
         
     }
     else
     {
-        D(bug("[ATA%02ld] %s: error/fault after selecting unit (status = %lx)\n", unit->au_UnitNum, __func__, status);)
+        bug("[ATA%02ld] %s: error/fault after selecting unit (status = %lx)\n", unit->au_UnitNum, __func__, status);
     }
-    D(bug("[ATA%02ld] %s: setup failed\n", unit->au_UnitNum, __func__);)
+    bug("[ATA%02ld] %s: setup failed\n", unit->au_UnitNum, __func__);
 
     /* flag that there is no unit attached */
     bus->ab_Dev[u] = DEV_NONE;
@@ -1401,43 +1407,44 @@ static BYTE ata_Identify(struct ata_Unit *unit)
     BYTE status;
 
     /* If the right command fails, try the wrong one. If both fail, abort */
-    DINIT(
+//    DINIT(
         bug("[ATA%02ld] %s: Executing ATA_IDENTIFY_%s command\n",
         unit->au_UnitNum, __func__, atapi ? "ATAPI" : "DEVICE");
-    )
+//    )
     if ((status = ata_exec_cmd(unit, &acb)) != 0)
     {
         acb.command = atapi ? ATA_IDENTIFY_DEVICE : ATA_IDENTIFY_ATAPI;
-        DINIT(
+//        DINIT(
         bug("[ATA%02ld] %s: failed (status = %lx)\n", unit->au_UnitNum, __func__, status);
         //ata_ResetBus(bus);
         bug("[ATA%02ld] %s: Executing ATA_IDENTIFY_%s command"
             " instead\n", unit->au_UnitNum, __func__, atapi ? "DEVICE" : "ATAPI");
-        )
+//        )
         if ((status = ata_exec_cmd(unit, &acb)) != 0)
         {
-            DINIT(
-                bug("[ATA%02ld] %s: failed (status = %lx)\n", unit->au_UnitNum, __func__, status);
-                bug("[ATA%02ld] %s: Both command variants failed."
-                    " Discarding drive.\n", unit->au_UnitNum, __func__);
-            )
+//            DINIT(
+            bug("[ATA%02ld] %s: failed (status = %lx)\n", unit->au_UnitNum, __func__, status);
+            bug("[ATA%02ld] %s: Both command variants failed."
+                " Discarding drive.\n",
+                unit->au_UnitNum, __func__);
+//            )
             //ata_ResetBus(bus);
             return IOERR_OPENFAIL;
         }
         unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] ^= 0x82;
         atapi = unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] & 0x80;
-        DINIT(
-            bug("[ATA%02ld] %s:"
-                " Incorrect device signature detected."
-                " Switching device type to %lx.\n",
-                unit->au_UnitNum, __func__,
-                unit->au_Bus->ab_Dev[unit->au_UnitNum & 1]);
-        )
+//        DINIT(
+        bug("[ATA%02ld] %s:"
+            " Incorrect device signature detected."
+            " Switching device type to %lx.\n",
+            unit->au_UnitNum, __func__,
+            unit->au_Bus->ab_Dev[unit->au_UnitNum & 1]);
+//        )
     }
-    DINIT(
+//    DINIT(
         bug("[ATA%02ld] %s: IDENTIFY done\n",
         unit->au_UnitNum, __func__);
-    )
+//    )
 
     /*
      * If every second word is zero with 32-bit reads, switch to 16-bit
@@ -1450,10 +1457,10 @@ static BYTE ata_Identify(struct ata_Unit *unit)
 
         if (n == 0)
         {
-            DINIT(
-                bug("[ATA%02ld] %s: Identify data was invalid with 32-bit reads."
-                    " Switching to 16-bit mode.\n", unit->au_UnitNum, __func__);
-            )
+//            DINIT(
+            bug("[ATA%02ld] %s: Identify data was invalid with 32-bit reads."
+                " Switching to 16-bit mode.\n", unit->au_UnitNum, __func__);
+//            )
 
             Unit_Disable32Bit(unit);
 
@@ -1540,13 +1547,13 @@ static BYTE ata_Identify(struct ata_Unit *unit)
         unit->au_Flags         |= AF_DiscPresent | AF_DiscChanged;
     }
 
-    D(bug("[ATA%02ld] %s: copying unit strings ..\n", unit->au_UnitNum, __func__);)
+    bug("[ATA%02ld] %s: copying unit strings ..\n", unit->au_UnitNum, __func__);
 
     ata_strcpy(unit->au_Drive->id_Model, unit->au_Model, 40);
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
     ata_strcpy(unit->au_Drive->id_FirmwareRev, unit->au_FirmwareRev, 8);
 
-    D(bug("[ATA%02ld] %s: Unit info: %s / %s / %s\n", unit->au_UnitNum, __func__, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);)
+    bug("[ATA%02ld] %s: Unit info: %s / %s / %s\n", unit->au_UnitNum, __func__, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
     common_DetectXferModes(unit);
     common_SetBestXferMode(unit);
 
