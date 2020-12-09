@@ -199,6 +199,7 @@ void PCIPCDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
 {
+    struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
     IPTR capmsi, driver;
     UBYTE vectirq = 0;
 
@@ -220,7 +221,7 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
         {
             DMSI(bug("[PCIPC:Device] %s: MSI Queue size = %u\n", __func__, (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)));)
             /* MSI is enabled .. but is the requested vector valid? */
-            if (msg->vector < (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)))
+            if (msg->vector < data->msicnt)
             {
                 UWORD msimdr;
 
@@ -266,6 +267,7 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
 
 BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
 {
+    struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
     IPTR capmsi, capmsix, driver;
 
     D(bug("[PCIPC:Device] %s()\n", __func__);)
@@ -318,6 +320,8 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
         if ((apicIRQBase) && (apicIRQBase != -1))
         {
             DMSI(bug("[PCIPC:Device] %s: Configuring Device with %u MSI vectors...\n", __func__, vectcnt);)
+
+            data->msicnt = vectcnt;
 
             msiflags &= ~PCIMSIF_ENABLE;
             cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;

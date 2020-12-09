@@ -92,6 +92,7 @@ struct PCIPCBusData
 struct PCIPCDeviceData
 {
     APTR                        mmconfig;
+    UBYTE                       msicnt;
 };
 
 /* PCI configuration mechanism 1 registers */
