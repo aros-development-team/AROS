@@ -5,6 +5,7 @@
 
 #define __KERNEL_NOLIBBASE__
 #define __KERNEL_NOEXTERNBASE__
+#define __AROS_KERNEL__
 
 #include <proto/kernel.h>
 #include <proto/exec.h>
@@ -13,6 +14,9 @@
 #include "etask.h"
 #include "kernel_base.h"
 #include "kernel_intern.h"
+#if defined(__AROSEXEC_SMP__)
+#include "exec_intern.h"
+#endif
 #include "apic.h"
 
 #include "hyperv-cpu.h"
