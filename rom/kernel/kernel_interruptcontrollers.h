@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERRUPTCONTROLLERS_H
 #define KERNEL_INTERRUPTCONTROLLERS_H
 /*
-    Copyright © 2017, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,6 +45,8 @@ struct IntrMapping
 {
     struct Node im_Node;                                                        /* NB - ln_Pri == source IRQ                    */
     UBYTE       im_IRQ;                                                         /* actual IRQ to use                            */
+    UBYTE       im_Polarity;                                                    /* 0 = HIGH, 1 = LOW                            */
+    UBYTE       im_Trig;                                                        /* 0 = LEVEL, 1 = EDGE                          */
 };
 
 /*
