@@ -623,6 +623,10 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
     else
         intrMap->im_Trig = 0;
 
+    /*
+     * TODO: get the SCI interrupt value from FADT,
+     * instead of using hard coded "9"
+     */
     if ((intrMap->im_IRQ == 9)  && (intrMap->im_Polarity) && (intrMap->im_Trig))
     {
         defaultPol = intrMap->im_Polarity - 1;
