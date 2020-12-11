@@ -45,8 +45,8 @@ struct IntrMapping
 {
     struct Node im_Node;                                                        /* NB - ln_Pri == source IRQ                    */
     UBYTE       im_IRQ;                                                         /* actual IRQ to use                            */
-    UBYTE       im_Polarity;                                                    /* 0 = HIGH, 1 = LOW                            */
-    UBYTE       im_Trig;                                                        /* 0 = LEVEL, 1 = EDGE                          */
+    UBYTE       im_Polarity;                                                    /* 0 = Default, 1 = HIGH, 2 = LOW                            */
+    UBYTE       im_Trig;                                                        /* 0 = Default, 1 = LEVEL, 2 = EDGE                          */
 };
 
 /*
