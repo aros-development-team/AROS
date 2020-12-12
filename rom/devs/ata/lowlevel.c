@@ -379,23 +379,23 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     ULONG step = 0;
     BOOL res = TRUE;
 
-//    DIRQ(
+    DIRQ(
         bug("[ATA%02ld] %s(%s, %s)...\n",
             unit->au_UnitNum, __func__,
             (irq) ? "TRUE" :  "FALSE",
             (fake_irq) ? "TRUE" :  "FALSE");
-//    )
+    )
 
     if (bus->ab_Base->ata_Poll)
         irq = FALSE;
 
-//    DIRQ(
+    DIRQ(
         bug("[ATA%02ld] %s: using IRQ mode = %s\n",
             unit->au_UnitNum, __func__,
             (irq) ? "TRUE" :  "FALSE");
         bug("[ATA%02ld] %s: timeout = %u...\n",
             unit->au_UnitNum, __func__, tout);
-//    )
+    )
     if (irq)
     {
         bug("[ATA%02ld] %s: IRQ mode\n", unit->au_UnitNum, __func__);
@@ -419,10 +419,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
             /*
              * wait for either IRQ or timeout
              */
-    //        DIRQ(
-                bug("[ATA%02ld] Waiting (Current status: %02lx)...\n",
-                unit->au_UnitNum, status);
-    //        )
+            DIRQ(bug("[ATA%02ld] Waiting (Current status: %02lx)...\n", unit->au_UnitNum, status);)
             step = ata_WaitTO(unit->au_Bus->ab_Timer, tout, 0,
                 1 << bus->ab_SleepySignal);
         }
@@ -451,12 +448,12 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     }
     else
     {
-        bug("[ATA%02ld] %s: no IRQ mode\n", unit->au_UnitNum, __func__);
+        DIRQ(bug("[ATA%02ld] %s: no IRQ mode\n", unit->au_UnitNum, __func__);)
         status = PIO_InAlt(bus, ata_AltStatus);
         while (status & ATAF_BUSY)
         {
             ++step;
-            bug("[ATA%02ld] %s: step #%u\n", unit->au_UnitNum, __func__, step);
+            DIRQ(bug("[ATA%02ld] %s: step #%u\n", unit->au_UnitNum, __func__, step);)
             /*
              * every 16n rounds do some extra stuff
              */
@@ -535,10 +532,11 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
         || (block->command == ATA_IDENTIFY_ATAPI));
     UWORD timeout = (fake_irq) ? 1 : TIMEOUT;
 
-    bug("[ATA%02ld] %s(0x%p, %u)\n", unit->au_UnitNum, __func__, unit, fake_irq);
-    bug("[ATA%02ld] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, bus);
-    bug("[ATA%02ld] %s: selecting unit..\n", unit->au_UnitNum, __func__);
-
+    DATA(
+        bug("[ATA%02ld] %s(0x%p, %u)\n", unit->au_UnitNum, __func__, unit, fake_irq);
+        bug("[ATA%02ld] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, bus);
+        bug("[ATA%02ld] %s: selecting unit..\n", unit->au_UnitNum, __func__);
+    )
     if (FALSE == ata_SelectUnit(unit))
     {
         bug("[ATA%02ld] %s:     unit busy\n", unit->au_UnitNum, __func__);
@@ -582,7 +580,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     }
 
     block->actual = 0;
-    D(bug("[ATA%02ld] %s: Executing command %02lx\n", unit->au_UnitNum, block->command, __func__));
+    DATA(bug("[ATA%02ld] %s: Executing command %02lx\n", unit->au_UnitNum, block->command, __func__);)
 
     if (block->feature != 0)
         PIO_Out(bus, block->feature, ata_Feature);
@@ -678,14 +676,10 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
      * send command now
      * let drive propagate its signals
      */
-//    DATA(
-        bug("[ATA%02ld] %s: Sending command\n", unit->au_UnitNum, __func__);
-//    )
+    DATA(bug("[ATA%02ld] %s: Sending command\n", unit->au_UnitNum, __func__);)
 
     PIO_Out(bus, block->command, ata_Command);
-//    DATA(
-        bug("[ATA%02ld] %s: waiting 400ns (bus ab_Base = 0x%p) ..\n", unit->au_UnitNum, __func__, bus->ab_Base);
-//    )
+    DATA(bug("[ATA%02ld] %s: waiting 400ns (bus ab_Base = 0x%p) ..\n", unit->au_UnitNum, __func__, bus->ab_Base);)
     ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
@@ -696,9 +690,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
      */
     if (block->method == CM_PIOWrite)
     {
-//    DATA(
-        bug("[ATA%02ld] %s: waiting for PIO write completion ...\n", unit->au_UnitNum, __func__);
-//    )
+    DATA(bug("[ATA%02ld] %s: waiting for PIO write completion ...\n", unit->au_UnitNum, __func__);)
 	if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, FALSE, FALSE, &status)) {
 	    DERROR(bug("[ATA%02ld] %s: PIOWrite - no response from device. Status %02X\n", unit->au_UnitNum, __func__, status));
 	    return IOERR_UNITBUSY;
@@ -717,9 +709,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     /*
      * wait for drive to complete what it has to do
      */
-//    DATA(
-        bug("[ATA%02ld] %s: waiting for drive (timeout %u)..\n", unit->au_UnitNum, __func__, timeout);
-//    )
+    DATA(bug("[ATA%02ld] %s: waiting for drive (timeout %u)..\n", unit->au_UnitNum, __func__, timeout);)
     if (FALSE == ata_WaitBusyTO(unit, timeout, TRUE, fake_irq, &status))
     {
         DERROR(bug("[ATA%02ld] %s: Device is late - no response\n", unit->au_UnitNum, __func__));
@@ -728,9 +718,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     else
         err = unit->au_cmd_error;
 
-//    DATA(
-        bug("[ATA%02ld] %s: Command done\n", unit->au_UnitNum, __func__);
-//    )
+    DATA(bug("[ATA%02ld] %s: Command done\n", unit->au_UnitNum, __func__);)
 
     /*
      * clean up DMA
