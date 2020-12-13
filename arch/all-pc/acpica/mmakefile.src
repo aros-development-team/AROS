@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 DEBUG_ACPI=no
 
 ACPICAPACKAGE      := acpica
-ACPICAVERSION      := 20200214
+ACPICAVERSION      := 20201113
 ACPICAREPOSITORIES := \
     https://acpica.org/sites/acpica/files https://sources.voidlinux.org/acpica-utils-$(ACPICAVERSION)
 ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)
@@ -21,7 +21,7 @@ ACPICA_INCLUDES     := $(ACPICASRCDIR)/source/include
     archive_origins=$(ACPICAREPOSITORIES) \
     suffixes="tar.gz" patches_specs=$(ACPICAPSPECS)
 
-%create_patch mmake="acpica-create-patch" \
+%create_patch mmake=acpica-create-patch \
     archive=$(ACPICAARCHBASE) \
     srcdir=$(ACPICAARCHBASE) \
     suffixes="tar.gz" \
