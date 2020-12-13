@@ -56,12 +56,12 @@ static Object *PCIWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         MUIA_Window_ID, MAKE_ID('P', 'C', 'I', 'C'),
         WindowContents, (IPTR)(RegisterObject,
             MUIA_Register_Titles, (IPTR) pagetitles,
-            Child, VGroup,
-                Child, HVSpace,
-            End,
-            Child, VGroup,
-                Child, HVSpace,
-            End,
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)HVSpace,
+            End),
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)HVSpace,
+            End),
         End),
         TAG_DONE
     );

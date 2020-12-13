@@ -7,6 +7,8 @@
 #include <aros/debug.h>
 
 #include <stddef.h>
+#include <string.h>
+
 #include <exec/types.h>
 
 #include <proto/exec.h>

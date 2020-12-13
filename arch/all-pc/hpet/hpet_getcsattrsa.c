@@ -53,10 +53,10 @@
                     *(IPTR *)tag->ti_Data = base->unitCnt;
                     break;
         case CLOCKSOURCE_ID:
-                    *(char *)tag->ti_Data = "HPET";
+                    *(char *)tag->ti_Data = (IPTR)"HPET";
                     break;
         case CLOCKSOURCE_FRIENDLY:
-                    *(char *)tag->ti_Data = "High precision event timer";
+                    *(char *)tag->ti_Data = (IPTR)"High precision event timer";
                     break;
         // TODO: provide sane values ....
         case CLOCKSOURCE_FREQUENCY:
