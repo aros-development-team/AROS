@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018, The AROS Development Team
+ * Copyright (C) 2012-2020, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -680,6 +680,14 @@ LONG AcpiScanTables(const char *Signature, const struct Hook *Hook, APTR UserDat
 
 #define ACPI_MAX_INIT_TABLES 64
 
+static void ACPICA_NotifyHandler (
+    ACPI_HANDLE                 Device,
+    UINT32                      Value,
+    void                        *Context)
+{
+    D(bug("[ACPI] %s: Received a notify 0x%x (device %p, context %p)\n", __func__, Value, Device, Context));
+}
+
 static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
 {
     ACPI_STATUS err;
@@ -702,7 +710,14 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
     }
 
     D(bug("[ACPI] %s: Tables Initialized\n", __func__));
-    
+
+    err = AcpiInstallNotifyHandler (ACPI_ROOT_OBJECT, ACPI_SYSTEM_NOTIFY,
+                                        ACPICA_NotifyHandler, NULL);
+    if (ACPI_FAILURE(err)) {
+        D(bug("[ACPI] %s: AcpiInstallNotifyHandler returned error %d\n", __func__, err));
+        return FALSE;
+    }
+
     err = AcpiEnableSubsystem(initlevel);
     if (ACPI_FAILURE(err)) {
         D(bug("[ACPI] %s: AcpiEnableSubsystem(0x%02x) returned error %d\n", __func__, initlevel, err));
