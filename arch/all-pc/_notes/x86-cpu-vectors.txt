@@ -1,0 +1,51 @@
+X86 CPU Vectors and Interrupt handling.
+
+This diagram shows the relationship between the CPU vectors (on the left, their use cases in AROS (middle) and
+where they are handled in the Kernel (right)
+
+"x86" Vectors
+
+0
+|  ---                                  ------------------------------------------------------------------------
+|   |                                                  | ExceptionsA        | KernelBase->kb_Exceptions[0..31]
+|   |  ----- x86 CPU Exceptions                        |                    |
+|   |                                                  |                    |
+|   |                                                  |                    |
+|  ---     -----                        ------------------------------------------------------------------------
+|           | |                                        | Device IRQs        | KernelBase->kb_Interrupts[0.. 213(*)]
+|           | |                                        | #0 - #213(*)       |
+|           | |                                        |                    |
+|           | |      -----  PIC interrupts             | #2 is directly     |
+|           | |                                        | connected to PIC   |
+|           | |                                        | and unusable by the|
+|           |---                                       | IO-APIC            |
+|           |                                          |                    |
+|           |                                          |                    |
+|           |        ----- IO-APIC interrupts          |                    |
+|           |                                          |                    |
+|           |                                          |                    |
+|          ---   ---                                   |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |  ----- APIC/"MSI" interrupts       |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|  ~~~           ~~~                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+|   |                                                  | ExceptionsB        | KernelBase->kb_Exceptions[32..41(*)]
+|   |                                                  |                    |
+|   | ------ System CPU Exceptions                     |                    |
+|   |                                                  |                    |
+|   |                                                  |                    |
+|  ---                                   ----------------------------------------------------------------------
+255
+
+* - May vary, depending on how many System CPU Exceptions are defined.
