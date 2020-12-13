@@ -148,10 +148,6 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
     return (icid_t)IOAPICInt_IntrController.ic_Node.ln_Type;
 }
 
-
-UBYTE defaultPol = 0;
-UBYTE defaultTrig = 0;
-
 /*
  *
  */
@@ -159,20 +155,10 @@ void IOAPIC_IntDeliveryOptions(UBYTE pin, UBYTE pol, UBYTE trig, UBYTE *rtPol, U
 {
     if (pol == 0)
     {
-        if (defaultPol == 0)
-        {
-            if (pin < I8259A_IRQCOUNT)
-                *rtPol = 0;
-            else
-                *rtPol = 1; // low
-        }
+        if (pin < I8259A_IRQCOUNT)
+            *rtPol = 0;
         else
-        {
-            if (pin < I8259A_IRQCOUNT)
-                *rtPol = 1; // low
-            else
-                *rtPol = 0;
-        }
+            *rtPol = 1; // low
     }
     else
     {
@@ -183,20 +169,10 @@ void IOAPIC_IntDeliveryOptions(UBYTE pin, UBYTE pol, UBYTE trig, UBYTE *rtPol, U
     }
     if (trig == 0)
     {
-        if (defaultTrig == 0)
-        {
-            if (pin < I8259A_IRQCOUNT)
-                *rtTrig = 0;
-            else
-                *rtTrig = 1; // level
-        }
+        if (pin < I8259A_IRQCOUNT)
+            *rtTrig = 0;
         else
-        {
-            if (pin < I8259A_IRQCOUNT)
-                *rtTrig = 1; // level
-            else
-                *rtTrig = 0;
-        }
+            *rtTrig = 1; // level
     }
     else
     {
@@ -448,6 +424,20 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     irqRoute->vect = intNum + HW_IRQ_BASE;
     irqRoute->mask = 0; // enable!!
+    if (intrMap)
+    {
+        UBYTE rtPol, rtTrig;
+        IOAPIC_IntDeliveryOptions(ioapic_pin, intrMap->im_Polarity, intrMap->im_Trig, &rtPol, &rtTrig);
+        if (rtPol)
+            irqRoute->pol = 1; // low
+        else
+            irqRoute->pol = 0;
+        if (rtTrig)
+            irqRoute->trig = 1; // lvl
+        else
+            irqRoute->trig = 0;
+    }
+
     DINT(
         bug("[Kernel:IOAPIC] %s: ", __func__);
         ioapic_ParseTableEntry(&ioapicData->ioapic_RouteTable[ioapic_pin]);
@@ -507,8 +497,29 @@ struct IntrController IOAPICInt_IntrController =
     }
 }
 
-static char *nmi_flags_polarity[] = { "dfl", "high", "res", "low" };
-static char *nmi_inti_flags_trigger[] = { "dfl", "edge", "res", "level" };
+static UBYTE ACPI_PolFromInti(UWORD inti)
+{
+    switch (inti & ACPI_MADT_POLARITY_MASK) {
+    default:
+    case ACPI_MADT_POLARITY_CONFORMS:
+    case ACPI_MADT_POLARITY_ACTIVE_HIGH:
+            return 1;
+    case ACPI_MADT_POLARITY_ACTIVE_LOW:
+            return 2;
+    }
+}
+
+static UBYTE ACPI_TrigFromInti(UWORD inti)
+{
+    switch (inti & ACPI_MADT_TRIGGER_MASK) {
+    default:
+    case ACPI_MADT_TRIGGER_CONFORMS:
+    case ACPI_MADT_TRIGGER_EDGE:
+            return 2;
+    case ACPI_MADT_TRIGGER_LEVEL:
+            return 1;
+    }
+}
 
 /* Process the 'Interrupt Source' MADT Table */
 AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
@@ -521,9 +532,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
         bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__);
         bug("[Kernel:ACPI-IOAPIC]    %s: %u:%u, GSI %u\n", __func__, intsrc->Id, intsrc->Eid,
                 intsrc->GlobalIrq);
-        bug("[Kernel:ACPI-IOAPIC]    %s: Flags 0x%x (%s %s)\n", __func__,intsrc->IntiFlags,
-        nmi_inti_flags_trigger[(intsrc->IntiFlags & ACPI_MADT_TRIGGER_MASK) >> 2],
-        nmi_flags_polarity[intsrc->IntiFlags & ACPI_MADT_POLARITY_MASK]);
+        bug("[Kernel:ACPI-IOAPIC]    %s: Flags 0x%x\n", __func__,intsrc->IntiFlags);
         if (intsrc->Type == 1)
         {
             bug("[Kernel:ACPI-IOAPIC]    %s: PMI, vector %d\n", __func__, intsrc->IoSapicVector);
@@ -548,19 +557,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
         //intrMap->im_Node.ln_Type = IOAPICInt_IntrController->;
         intrMap->im_IRQ = intsrc->GlobalIrq;
 
-        if ((intsrc->IntiFlags & 0x3) == 0)
-            intrMap->im_Polarity = 0;
-        else if ((intsrc->IntiFlags & 3) == 1)
-            intrMap->im_Polarity = 1;
-        else
-            intrMap->im_Polarity = 2;
-        
-        if (((intsrc->IntiFlags >> 2) & 0x3) == 0)
-            intrMap->im_Trig = 0;
-        else if (((intsrc->IntiFlags >> 2) & 3) == 1)
-            intrMap->im_Trig = 1;
-        else
-            intrMap->im_Trig = 2;
+        intrMap->im_Polarity = ACPI_PolFromInti(intsrc->IntiFlags);
+        intrMap->im_Trig = ACPI_TrigFromInti(intsrc->IntiFlags);
 
         Enqueue(&KernelBase->kb_InterruptMappings, &intrMap->im_Node);
     }
@@ -609,30 +607,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
         intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
     }
 
-    if ((intsrc->IntiFlags & 3) == 3)
-        intrMap->im_Polarity = 2;
-    else if ((intsrc->IntiFlags & 3) != 0)
-        intrMap->im_Polarity = 1;
-    else
-        intrMap->im_Polarity = 0;
-
-    if (((intsrc->IntiFlags >> 2) & 3) == 3)
-        intrMap->im_Trig = 1;
-    else if (((intsrc->IntiFlags >> 2) & 3) != 0)
-        intrMap->im_Trig = 2;
-    else
-        intrMap->im_Trig = 0;
-
-    /*
-     * TODO: get the SCI interrupt value from FADT,
-     * instead of using hard coded "9"
-     */
-    if ((intrMap->im_IRQ == 9)  && (intrMap->im_Polarity) && (intrMap->im_Trig))
-    {
-        defaultPol = intrMap->im_Polarity - 1;
-        defaultTrig = intrMap->im_Trig % 2;
-        DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: setting default delivery based on SCI, to %u:%u\n", __func__, defaultPol, defaultTrig);)
-    }
+    intrMap->im_Polarity = ACPI_PolFromInti(intsrc->IntiFlags);
+    intrMap->im_Trig = ACPI_TrigFromInti(intsrc->IntiFlags);
 
     if (newRt)
     {
@@ -641,9 +617,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
 
     DPARSE(
         bug("[Kernel:ACPI-IOAPIC]    %s: Bus %u, Source IRQ %u, GSI %u\n", __func__, intsrc->Bus, intsrc->SourceIrq, intsrc->GlobalIrq);
-        bug("[Kernel:ACPI-IOAPIC]    %s: Flags 0x%x (%s %s)\n", __func__,intsrc->IntiFlags,
-            nmi_inti_flags_trigger[(intsrc->IntiFlags & ACPI_MADT_TRIGGER_MASK) >> 2],
-            nmi_flags_polarity[intsrc->IntiFlags & ACPI_MADT_POLARITY_MASK]);
+        bug("[Kernel:ACPI-IOAPIC]    %s: Flags 0x%x\n", __func__,intsrc->IntiFlags);
     )
     
     return TRUE;
@@ -666,9 +640,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
     DPARSE(
         bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__);
         bug("[Kernel:ACPI-IOAPIC]    %s: GSI %u\n", __func__, nmi_src->GlobalIrq);
-        bug("[Kernel:ACPI-IOAPIC]    %s: Flags 0x%x (%s %s)\n", __func__,nmi_src->IntiFlags,
-            nmi_inti_flags_trigger[(nmi_src->IntiFlags & ACPI_MADT_TRIGGER_MASK) >> 2],
-            nmi_flags_polarity[nmi_src->IntiFlags & ACPI_MADT_POLARITY_MASK]);
+        bug("[Kernel:ACPI-IOAPIC]    %s: Flags 0x%x\n", __func__,nmi_src->IntiFlags);
     )
 
     if ((intrMap = krnInterruptMapped(KernelBase, nmi_src->GlobalIrq)) == NULL)
@@ -688,19 +660,8 @@ AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
         intrMap->im_Node.ln_Pri = nmi_src->GlobalIrq;
     }
 
-    if ((nmi_src->IntiFlags & 3) == 3)
-        intrMap->im_Polarity = 2;
-    else if ((nmi_src->IntiFlags & 3) != 0)
-        intrMap->im_Polarity = 1;
-    else
-        intrMap->im_Polarity = 0;
-
-    if (((nmi_src->IntiFlags >> 2) & 3) == 3)
-        intrMap->im_Trig = 1;
-    else if (((nmi_src->IntiFlags >> 2) & 3) != 0)
-        intrMap->im_Trig = 2;
-    else
-        intrMap->im_Trig = 0;
+    intrMap->im_Polarity = ACPI_PolFromInti(nmi_src->IntiFlags);
+    intrMap->im_Trig = ACPI_TrigFromInti(nmi_src->IntiFlags);
 
     if (newRt)
     {
