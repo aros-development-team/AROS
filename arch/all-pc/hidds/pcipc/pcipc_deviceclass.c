@@ -311,7 +311,7 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
 
         for (vectcnt = vectmax; vectcnt >= vectmin; vectcnt--)
         {
-            if ((apicIRQBase = KrnAllocIRQ(IRQTYPE_MSI, vectcnt)) != (ULONG)-1)
+            if ((apicIRQBase = KrnAllocIRQ(IRQTYPE_APIC, vectcnt)) != (ULONG)-1)
             {
                 DMSI(bug("[PCIPC:Device] %s: Allocated %u IRQs starting at #%u\n", __func__, vectcnt, apicIRQBase);)
                 break;
