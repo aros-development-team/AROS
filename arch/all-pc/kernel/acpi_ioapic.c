@@ -253,12 +253,21 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             DINT(bug("[Kernel:IOAPIC] %s: Routing Data @ 0x%p\n", __func__, ioapicData->ioapic_RouteTable));
             for (irq = ioapic_irqbase; irq < (ioapic_irqbase + ioapicData->ioapic_IRQCount); irq++)
             {
-                UBYTE ioapic_pin = irq - ioapic_irqbase;
-                struct acpi_ioapic_route *irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
-                struct IntrMapping *intrMap = krnInterruptMapped(KernelBase, irq);
+                struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, irq);
+                struct acpi_ioapic_route *irqRoute;
+                UBYTE ioapic_pin;
                 UBYTE rtPol, rtTrig;
                 BOOL enabled = FALSE;
                 APTR ssp = NULL;
+
+                if (intrMap)
+                {
+                    ioapic_pin = intrMap->im_Int - ioapic_irqbase;
+                }
+                else
+                    ioapic_pin = irq - ioapic_irqbase;
+
+                irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
 
                 DINT(bug("[Kernel:IOAPIC] %s: Route Entry %u @ 0x%p\n", __func__, ioapic_pin, irqRoute));
 
@@ -367,7 +376,7 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     if (intrMap)
     {
-        ioapic_pin = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
+        ioapic_pin = (intrMap->im_Int - ioapicData->ioapic_GSI);
     }
     else
         ioapic_pin = intNum - ioapicData->ioapic_GSI;
@@ -403,7 +412,7 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
     if (intrMap)
     {
-        ioapic_pin = (intrMap->im_IRQ - ioapicData->ioapic_GSI);
+        ioapic_pin = (intrMap->im_Int - ioapicData->ioapic_GSI);
     }
     else
          ioapic_pin = intNum - ioapicData->ioapic_GSI;
@@ -464,7 +473,7 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     apic_base = core_APIC_GetBase();
     DINT(bug("[Kernel:IOAPIC] %s: apicBase = %p\n", __func__, apic_base));
 
-    APIC_REG(apic_base, APIC_EOI) = 1;
+    APIC_REG(apic_base, APIC_EOI) = 0;
 
     return TRUE;
 }
@@ -555,7 +564,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
 
         intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
         //intrMap->im_Node.ln_Type = IOAPICInt_IntrController->;
-        intrMap->im_IRQ = intsrc->GlobalIrq;
+        intrMap->im_Int = intsrc->GlobalIrq;
 
         intrMap->im_Polarity = ACPI_PolFromInti(intsrc->IntiFlags);
         intrMap->im_Trig = ACPI_TrigFromInti(intsrc->IntiFlags);
@@ -565,7 +574,7 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Parse,
     else
     {
         bug("[Kernel:ACPI-IOAPIC]    %s: updating mapping node @ 0x%p\n", __func__, intrMap);
-        intrMap->im_IRQ = intsrc->GlobalIrq;
+        intrMap->im_Int = intsrc->GlobalIrq;
         intrMap->im_Polarity = (intsrc->IntiFlags & 1) ? 1 : 0;
         intrMap->im_Trig = ((intsrc->IntiFlags >> 2) & 1) ? 0 : 1;
     }
@@ -591,22 +600,21 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
     DPARSE(
         bug("[Kernel:ACPI-IOAPIC] ## %s()\n", __func__);
     )
-    if ((intrMap = krnInterruptMapped(KernelBase, intsrc->GlobalIrq)) == NULL)
+
+    if ((intrMap = krnInterruptMapping(KernelBase, intsrc->SourceIrq)) == NULL)
     {
         intrMap = AllocMem(sizeof(struct IntrMapping), MEMF_CLEAR);
         newRt = TRUE;
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
 
         intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
-        //intrMap->im_Node.ln_Type = IOAPICInt_IntrController->;
-        intrMap->im_IRQ = intsrc->GlobalIrq;
     }
     else
     {
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: updating mapping node @ 0x%p\n", __func__, intrMap);)
-        intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
     }
 
+    intrMap->im_Int = intsrc->GlobalIrq;
     intrMap->im_Polarity = ACPI_PolFromInti(intsrc->IntiFlags);
     intrMap->im_Trig = ACPI_TrigFromInti(intsrc->IntiFlags);
 
@@ -619,7 +627,33 @@ AROS_UFH2(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
         bug("[Kernel:ACPI-IOAPIC]    %s: Bus %u, Source IRQ %u, GSI %u\n", __func__, intsrc->Bus, intsrc->SourceIrq, intsrc->GlobalIrq);
         bug("[Kernel:ACPI-IOAPIC]    %s: Flags 0x%x\n", __func__,intsrc->IntiFlags);
     )
-    
+
+    if (intsrc->SourceIrq != intsrc->GlobalIrq)
+    {
+        newRt = FALSE;
+        if ((intrMap = krnInterruptMapping(KernelBase, intsrc->GlobalIrq)) == NULL)
+        {
+            intrMap = AllocMem(sizeof(struct IntrMapping), MEMF_CLEAR);
+            newRt = TRUE;
+            DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
+
+            intrMap->im_Node.ln_Pri = intsrc->GlobalIrq;
+        }
+        else
+        {
+            DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: updating mapping node @ 0x%p\n", __func__, intrMap);)
+        }
+
+        intrMap->im_Int = intsrc->SourceIrq;
+
+        intrMap->im_Polarity = ACPI_PolFromInti(intsrc->IntiFlags);
+        intrMap->im_Trig = ACPI_TrigFromInti(intsrc->IntiFlags);
+
+        if (newRt)
+        {
+            Enqueue(&KernelBase->kb_InterruptMappings, &intrMap->im_Node);
+        }
+    }
     return TRUE;
 
     AROS_USERFUNC_EXIT
@@ -649,16 +683,14 @@ AROS_UFH2(IPTR, ACPI_hook_Table_NMI_Src_Parse,
         newRt = TRUE;
 
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
-
-        intrMap->im_Node.ln_Pri = nmi_src->GlobalIrq;
-        //intrMap->im_Node.ln_Type = IOAPICInt_IntrController->;
-        intrMap->im_IRQ = nmi_src->GlobalIrq;
     }
     else
     {
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: updating mapping node @ 0x%p\n", __func__, intrMap);)
-        intrMap->im_Node.ln_Pri = nmi_src->GlobalIrq;
     }
+
+    intrMap->im_Node.ln_Pri = nmi_src->GlobalIrq;
+    intrMap->im_Int = nmi_src->GlobalIrq;
 
     intrMap->im_Polarity = ACPI_PolFromInti(nmi_src->IntiFlags);
     intrMap->im_Trig = ACPI_TrigFromInti(nmi_src->IntiFlags);

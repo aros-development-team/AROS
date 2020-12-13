@@ -31,11 +31,11 @@ struct IntrController
 {
     struct Node ic_Node;
     ULONG        ic_Count;
-    ULONG        ic_Type;                                                     /* IC drivers private "type"                      */
+    ULONG        ic_Type;                                                     /* IC drivers private "type"                              */
     ULONG        ic_Flags;
     APTR        ic_Private;
-    icid_t      (*ic_Register)(struct KernelBase *);                          /* one time initialization called during Add      */
-    BOOL        (*ic_Init)(struct KernelBase *, icid_t);                      /*                                                */
+    icid_t      (*ic_Register)(struct KernelBase *);                          /* one time initialization called during Add              */
+    BOOL        (*ic_Init)(struct KernelBase *, icid_t);                      /*                                                        */
     BOOL        (*ic_IntrEnable)(APTR, icid_t, icid_t);
     BOOL        (*ic_IntrDisable)(APTR, icid_t, icid_t);
     BOOL        (*ic_IntrAck)(APTR, icid_t, icid_t);
@@ -43,10 +43,14 @@ struct IntrController
 
 struct IntrMapping
 {
-    struct Node im_Node;                                                        /* NB - ln_Pri == source IRQ                    */
-    UBYTE       im_IRQ;                                                         /* actual IRQ to use                            */
-    UBYTE       im_Polarity;                                                    /* 0 = Default, 1 = HIGH, 2 = LOW                            */
-    UBYTE       im_Trig;                                                        /* 0 = Default, 1 = LEVEL, 2 = EDGE                          */
+    /*
+     * im_Node.ln_Pri contains the Device IRQ
+     * as used by KrnAddIRQHandler();
+     */
+    struct Node im_Node;
+    UBYTE       im_Int;                                                         /* controller specific hardware interrupt to use        */
+    UBYTE       im_Polarity;                                                    /* 0 = Default, 1 = HIGH, 2 = LOW                       */
+    UBYTE       im_Trig;                                                        /* 0 = Default, 1 = LEVEL, 2 = EDGE                     */
 };
 
 /*
