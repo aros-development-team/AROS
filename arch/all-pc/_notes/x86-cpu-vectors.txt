@@ -49,3 +49,11 @@ where they are handled in the Kernel (right)
 255
 
 * - May vary, depending on how many System CPU Exceptions are defined.
+
+Depending on the System, IRQs may be handled differently.
+# On machines where APIC is not available or disabled, only ExceptionsA, and the PIC interrupts will be Available/Used.
+# On ACPI machines with APIC, ExceptionsA & B will be used. If enough remaingin vectors are available, and MSI is not
+explicitly disabled by ACPI, then KrnAllocIRQ will allow allocating IRQTYPE_APIC IRQs.
+# If, on ACPI machines with APIC, an IOAPIC is available and enabled, the first 24 Device IRQs will be controlled/routed through it,
+otherwise the legacy PIC controller will be used.
+
