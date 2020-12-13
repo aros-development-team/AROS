@@ -79,7 +79,7 @@
 
         /* sse fill 16bytes at a time ... */
         for (i = 0; i < ssefillcount; ++i) {
-            if (ssefillcount > 3)
+            if ((ssefillcount - i) > 3)
             {
                 _mm_store_si128((__m128i*)p, c16);
                 _mm_store_si128((__m128i*)((IPTR)p + 16), c16);
@@ -88,7 +88,7 @@
                 p += (16 << 2);
                 i += 3;
             }
-            if (ssefillcount > 1)
+            if ((ssefillcount - 0) > 1)
             {
                 _mm_store_si128((__m128i*)p, c16);
                 _mm_store_si128((__m128i*)((IPTR)p + 16), c16);

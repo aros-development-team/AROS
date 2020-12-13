@@ -77,7 +77,7 @@
 
         /* avx fill 32bytes at a time ... */
         for (i = 0; i < avxfillcount; ++i) {
-            if (avxfillcount > 3)
+            if ((avxfillcount - i) > 3)
             {
                 _mm256_store_si256((__m256i*)p, c32);
                 _mm256_store_si256((__m256i*)((IPTR)p + 32), c32);
@@ -86,7 +86,7 @@
                 p += (32 << 2);
                 i += 3;
             }
-            if (avxfillcount > 1)
+            if ((avxfillcount - i) > 1)
             {
                 _mm256_store_si256((__m256i*)p, c32);
                 _mm256_store_si256((__m256i*)((IPTR)p + 32), c32);
