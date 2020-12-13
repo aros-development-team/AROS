@@ -14,11 +14,12 @@
 #include <proto/oop.h>
 #include <proto/acpica.h>
 
+#include <aros/cpu.h>
 #include <exec/types.h>
+#include <utility/tagitem.h>
+#include <oop/oop.h>
 #include <hidd/pci.h>
 #include <hardware/pci.h>
-#include <oop/oop.h>
-#include <utility/tagitem.h>
 
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
@@ -237,7 +238,7 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
                 }
                 DMSI(bug("[PCIPC:Device] %s: msimdr = %04x\n", __func__, msimdr);)
 
-                vectirq = (msimdr & 0xFF) + msg->vector;
+                vectirq = ((msimdr & 0xFF) + msg->vector) - HW_IRQ_BASE;
             }
             else
             {
@@ -347,14 +348,14 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
                 
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA64;
-                cmeth.wcw.val = apicIRQBase;
+                cmeth.wcw.val = HW_IRQ_BASE + apicIRQBase;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
             else
             {
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA32;
-                cmeth.wcw.val = apicIRQBase;
+                cmeth.wcw.val = HW_IRQ_BASE + apicIRQBase;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
 

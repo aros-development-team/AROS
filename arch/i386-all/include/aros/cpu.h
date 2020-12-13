@@ -2,7 +2,7 @@
 #define AROS_I386_CPU_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -10,6 +10,13 @@
     Desc: CPU-specific definitions for 32-bit x86 processors
     Lang: english
 */
+
+/*
+ *  The first Hardware IRQ starts at 32
+ *  (0 - 31 are x86 cpu exceptions, see below..)
+ */
+#define X86_CPU_EXCEPT_COUNT    32
+#define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
 
 typedef  unsigned char cpuid_t;
 typedef  unsigned char apicid_t;
