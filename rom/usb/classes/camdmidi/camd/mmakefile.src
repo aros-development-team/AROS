@@ -11,11 +11,12 @@ USER_LDFLAGS := -static
 USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
 
 #MM kernel-usb-classes-camdusbmidi-object : kernel-usb-classes-camdusbmidi-includes
+#MM- kernel-usb-classes-camdusbmidi-object-quick : kernel-usb-classes-camdusbmidi-object
 
 $(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c | $(OBJDIR)
 	%compile_q
 
-%rule_link_binary file=$(CAMDOBJDIR)/$(SRCFILE).bin.o name=$(SRCFILE) objs=$(OBJDIR)/$(SRCFILE).o
+%rule_link_binary file=$(CAMDOBJDIR)/$(SRCFILE).bin.o name=$(SRCFILE) objs=$(OBJDIR)/$(SRCFILE).o ldflags=$(LDFLAGS)
 
 #MM
 kernel-usb-classes-camdusbmidi-object : $(CAMDOBJDIR)/$(SRCFILE).bin.o

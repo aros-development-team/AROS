@@ -2,19 +2,20 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-usb-classes-camdusbmidi : kernel-usb-usbclass kernel-usb-poseidon-includes camdusbmidi-object-$(AROS_TARGET_CPU)
+#MM- kernel-usb-classes-camdusbmidi : kernel-usb-classes-camdusbmidi-$(AROS_TARGET_CPU)
+#MM kernel-usb-classes-camd-usbmidi : kernel-usb-usbclass kernel-usb-poseidon-includes camdusbmidi-object
 
-#MM- camdusbmidi-object-i386 : kernel-usb-classes-camdusbmidi-object
-#MM- camdusbmidi-object-x86_64 : kernel-usb-classes-camdusbmidi-object
-#MM- camdusbmidi-object-arm : kernel-usb-classes-camdusbmidi-object
-#MM- camdusbmidi-object-ppc : kernel-usb-classes-camdusbmidi-object
+#MM- kernel-usb-classes-camdusbmidi-i386 : kernel-usb-classes-camd-usbmidi
+#MM- kernel-usb-classes-camdusbmidi-x86_64 : kernel-usb-classes-camd-usbmidi
+##MM- kernel-usb-classes-camdusbmidi-arm : kernel-usb-classes-camd-usbmidi
+#MM- kernel-usb-classes-camdusbmidi-ppc : kernel-usb-classes-camd-usbmidi
 
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 USER_LDFLAGS := -static
 
 FILES := camdusbmidi.class debug
 
-%build_module mmake=kernel-usb-classes-camdusbmidi \
+%build_module mmake=kernel-usb-classes-camd-usbmidi \
     modname=camdusbmidi modtype=usbclass modsuffix="class" \
     files="$(FILES)" includedir="$(GENDIR)/$(CURDIR)/include"
 
