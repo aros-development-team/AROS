@@ -24,6 +24,9 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef PROTO_UTILITY_H
+#include <proto/utility.h>
+#endif
 #include "diskimagegui.h"
 #include <proto/exec.h>
 #include <proto/intuition.h>

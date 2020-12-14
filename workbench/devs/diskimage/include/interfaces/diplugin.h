@@ -48,8 +48,12 @@ struct DIPluginIFace {
 	BOOL (*ProgressBarInput)(struct DIPluginIFace *Self, APTR bar);
 	void (*SetProgressBarAttrsA)(struct DIPluginIFace *Self, APTR bar, const struct TagItem *tags);
 	VARARGS68K void (*SetProgressBarAttrs)(struct DIPluginIFace *Self, APTR bar, ...);
+#ifdef __AROS__
+	void (*SetDiskImageErrorA)(struct DIPluginIFace *Self, APTR unit, LONG error, LONG error_string, RAWARG error_args);
+#else
 	void (*SetDiskImageErrorA)(struct DIPluginIFace *Self, APTR unit, LONG error, LONG error_string, CONST_APTR error_args);
 	VARARGS68K void (*SetDiskImageError)(struct DIPluginIFace *Self, APTR unit, LONG error, LONG error_string, ...);
+#endif
 };
 
 #define IPlugin_DOS2IOErr(a) IPlugin->DOS2IOErr(IPlugin,a)
@@ -64,6 +68,14 @@ struct DIPluginIFace {
 #define IPlugin_SetProgressBarAttrsA(a,b) IPlugin->SetProgressBarAttrsA(IPlugin,a,b)
 #define IPlugin_SetProgressBarAttrs(a,...) IPlugin->SetProgressBarAttrs(IPlugin,a,__VA_ARGS__)
 #define IPlugin_SetDiskImageErrorA(a,b,c,d) IPlugin->SetDiskImageErrorA(IPlugin,a,b,c,d)
+#if !defined(__AROS__)
 #define IPlugin_SetDiskImageError(a,b,...) IPlugin->SetDiskImageError(IPlugin,a,b,__VA_ARGS__)
+#else
+#define IPlugin_SetDiskImageError(a,b,c,...)        \
+ ({                                 \
+    const IPTR _args[] = {AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    IPlugin->SetDiskImageErrorA(IPlugin,a, b, c, (RAWARG)_args);     \
+ })
+#endif
 
 #endif

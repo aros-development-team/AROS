@@ -24,8 +24,8 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SUPPORT_H
-#define SUPPORT_H
+#ifndef DISKIMAGE_SUPPORT_H
+#define DISKIMAGE_SUPPORT_H
 
 #ifndef EXEC_EXEC_H
 #include <exec/exec.h>
@@ -54,6 +54,10 @@
 #ifndef __AROS__
 #ifndef CLASSES_WINDOW_H
 #include <classes/window.h>
+#else
+#ifndef PROTO_UTILITY_H
+#include <proto/utility.h>
+#endif
 #endif
 #ifndef GADGETS_LISTBROWSER_H
 #include <gadgets/listbrowser.h>
@@ -85,7 +89,15 @@ void FreeVecPooled(APTR pool, APTR mem);
 #endif
 
 /* asprintf_os3.s / asprintf_aros.c */
+#if !defined(__AROS__)
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...);
+#else
+#define SNPrintf(buf, len, fmt, ... )        \
+ ({                                 \
+    const IPTR _args[] = {AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    VSNPrintf(buf, len, fmt, (RAWARG)_args);     \
+ })
+#endif
 VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...);
 #ifdef __AROS__
 STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args);

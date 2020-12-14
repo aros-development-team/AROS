@@ -149,14 +149,22 @@ void LibBeginIO (REG(a1, struct IOExtTD *iotd), REG(a6, struct DiskImageBase *li
 /* unit.c */
 #ifdef __AROS__
 AROS_PROCP (UnitProcEntry);
-void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error, LONG error_string, VA_LIST error_args);
+void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error, LONG error_string, RAWARG error_args);
 #else
 int UnitProcEntry (void);
 void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error, LONG error_string, CONST_APTR error_args);
 #endif
 int UnitProcMain (struct DiskImageUnit *unit);
 LONG DOS2IOErr (APTR Self, LONG error);
+#if !defined(__AROS__)
 VARARGS68K void SetDiskImageError (APTR Self, struct DiskImageUnit *unit, LONG error, LONG error_string, ...);
+#else
+#define SetDiskImageError(Self,unit,error,error_string,...)        \
+ ({                                 \
+    const IPTR _args[] = {AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+    SetDiskImageErrorA(Self,unit,error,error_string,(RAWARG)_args);     \
+ })
+#endif
 
 /* scsicmd.c */
 LONG DoSCSICmd (struct IOStdReq *io, struct SCSICmd *scsi);

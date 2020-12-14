@@ -41,6 +41,8 @@ struct DIPluginIFace IPluginIFace = {
 	(APTR)SetProgressBarAttrsA,
 	(APTR)SetProgressBarAttrs,
 	(APTR)SetDiskImageErrorA,
+#if !defined(__AROS__)
 	(APTR)SetDiskImageError,
+#endif
 };
 
