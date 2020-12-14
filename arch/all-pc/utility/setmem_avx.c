@@ -7,6 +7,8 @@
 #include <aros/debug.h>
 #include <exec/types.h>
 
+#include <immintrin.h>
+
 #include "setmem_pc.h"
 
 /****i************************************************************************
@@ -65,7 +67,7 @@
         postsize = length - avxfillcount * 32 - presize;
 
         /* setup avx value .. */
-        __m256i c32 = _mm256_set1_epi8(val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val);
+        __m256i c32 = _mm256_set1_epi8( val);
 
         D(bug("[utility:pc] %s: 0x%p, %d\n", __func__, p, presize));
 
@@ -86,7 +88,7 @@
                 p += (32 << 2);
                 i += 3;
             }
-            if ((avxfillcount - i) > 1)
+            else if ((avxfillcount - i) > 1)
             {
                 _mm256_store_si256((__m256i*)p, c32);
                 _mm256_store_si256((__m256i*)((IPTR)p + 32), c32);

@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 -include $(SRCDIR)/arch/$(CPU)-all/utility/make.opts
 
 USER_INCLUDES := -I$(SRCDIR)/rom/utility
-USER_CFLAGS := -mavx
+ISA_FLAGS += -mavx
 
 FILES := \
     setmem_sse \
