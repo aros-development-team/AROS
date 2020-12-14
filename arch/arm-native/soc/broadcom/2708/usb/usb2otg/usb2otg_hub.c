@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,8 @@
 #include <proto/utility.h>
 
 #include <devices/usb_hub.h>
+
+#include <string.h>
 
 #include "usb2otg_intern.h"
 #include "usb2otg_hub.h"
