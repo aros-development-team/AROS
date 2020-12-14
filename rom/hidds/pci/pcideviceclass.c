@@ -207,7 +207,7 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
     SYNOPSIS
         UBYTE OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_VectorIRQ *Msg);
 
-        UBYTE HIDD_PCIDevice_VectorIRQ(OOP_Object *obj, ULONG vector);
+        UBYTE HIDD_PCIDevice_VectorIRQ(OOP_Object *obj, ULONG vectorno);
 
     LOCATION
         CLID_Hidd_PCIDevice
@@ -217,7 +217,7 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
 
     INPUTS
         obj   - Pointer to the device object.
-        vector - Vector to return the IRQ for.
+        vectorno - Vector to return the IRQ for.
 
     RESULT
         Returns the Hardware IRQ on success, for use with AddIntServer.
@@ -240,12 +240,54 @@ UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHi
 
     D(bug("[PCIDevice] %s()\n", __func__);)
 
-    if (msg->vector == 0)
+    if (msg->vectorno == 0)
     {
         vectirq = getByte(cl, o, PCICS_INT_LINE);
     }
     return vectirq;
 }
+
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_ArchVector
+
+    SYNOPSIS
+        UBYTE OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_ArchVector *Msg);
+
+        UBYTE HIDD_PCIDevice_ArchVector(OOP_Object *obj, ULONG vectorno);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Returns the Hardware IRQ for a given device MSI vector.
+
+    INPUTS
+        obj   - Pointer to the device object.
+        vectorno - Vector to return the IRQ for.
+
+    RESULT
+        Returns the Arch specific CPU vector on success.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_ObtainVectors, AddIntServer
+
+    INTERNALS
+
+*****************************************************************************************/
+UBYTE PCIDev__Hidd_PCIDevice__ArchVector(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ArchVector *msg)
+{
+    return 0;
+}
+
 
 
 /*****************************************************************************************

@@ -11,6 +11,13 @@
     Lang: english
 */
 
+/*
+ *  The first Hardware IRQ starts at 32
+ *  (0 - 31 are x86 cpu exceptions, see below..)
+ */
+#define X86_CPU_EXCEPT_COUNT    32
+#define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
+
 typedef  unsigned char cpuid_t;
 typedef  unsigned char apicid_t;
 typedef  void *cpumask_t;

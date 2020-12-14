@@ -14,11 +14,12 @@
 #include <proto/oop.h>
 #include <proto/acpica.h>
 
+#include <aros/cpu.h>
 #include <exec/types.h>
+#include <utility/tagitem.h>
+#include <oop/oop.h>
 #include <hidd/pci.h>
 #include <hardware/pci.h>
-#include <oop/oop.h>
-#include <utility/tagitem.h>
 
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
@@ -221,7 +222,7 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
         {
             DMSI(bug("[PCIPC:Device] %s: MSI Queue size = %u\n", __func__, (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)));)
             /* MSI is enabled .. but is the requested vector valid? */
-            if (msg->vector < data->msicnt)
+            if (msg->vectorno < data->msicnt)
             {
                 UWORD msimdr;
 
@@ -237,11 +238,11 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
                 }
                 DMSI(bug("[PCIPC:Device] %s: msimdr = %04x\n", __func__, msimdr);)
 
-                vectirq = (msimdr & 0xFF) + msg->vector;
+                vectirq = ((msimdr & 0xFF) + msg->vectorno) - HW_IRQ_BASE;
             }
             else
             {
-                bug("[PCIPC:Device] %s: Illegal MSI vector %u\n", __func__, msg->vector);
+                bug("[PCIPC:Device] %s: Illegal MSI vector %u\n", __func__, msg->vectorno);
             }
         }
         else
@@ -255,7 +256,7 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
     }
 
     /* If MSI wasnt enabled and they have just asked for the first vector - return the PCI int line */
-    if (!vectirq && msg->vector == 0)
+    if (!vectirq && msg->vectorno == 0)
     {
         struct pHidd_PCIDevice_ReadConfigByte cmeth;
         cmeth.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigByte;
@@ -263,6 +264,13 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
         vectirq = (UBYTE)OOP_DoMethod(o, &cmeth.mID);
     }
     return vectirq;
+}
+
+UBYTE PCIPCDev__Hidd_PCIDevice__ArchVector(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ArchVector *msg)
+{
+    D(bug("[PCIPC:Device] %s()\n", __func__);)
+
+    return 0;
 }
 
 BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
@@ -347,14 +355,14 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struc
                 
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA64;
-                cmeth.wcw.val = apicIRQBase;
+                cmeth.wcw.val = HW_IRQ_BASE + apicIRQBase;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
             else
             {
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA32;
-                cmeth.wcw.val = apicIRQBase;
+                cmeth.wcw.val = HW_IRQ_BASE + apicIRQBase;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
 

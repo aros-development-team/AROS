@@ -1,4 +1,4 @@
-#ifdef __SSE__
+#ifdef __AVX__
 /*
     Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
@@ -7,8 +7,6 @@
 #include <aros/debug.h>
 #include <exec/types.h>
 
-#include <emmintrin.h>
-
 #include "setmem_pc.h"
 
 /****i************************************************************************
@@ -16,7 +14,7 @@
     NAME */
 #include <proto/utility.h>
 
-        AROS_LH3(APTR, SetMem_SSE,
+        AROS_LH3(APTR, SetMem_AVX,
 
 /*  SYNOPSIS */
         AROS_LHA(APTR, destination, A0),
@@ -58,16 +56,16 @@
     p = (char *) destination;
     val = (char) c;
 
-    if (length > 15)
+    if (length > 31)
     {
-        ULONG presize, ssefillcount;
+        ULONG presize, avxfillcount;
 
-        presize = (((IPTR) destination + 15 ) & ~15) - (IPTR)destination;
-        ssefillcount = (length - presize) / 16;
-        postsize = length - ssefillcount * 16 - presize;
+        presize = (((IPTR) destination + 31 ) & ~31) - (IPTR)destination;
+        avxfillcount = (length - presize) / 32;
+        postsize = length - avxfillcount * 32 - presize;
 
-        /* setup sse value .. */
-        __m128i c16 = _mm_set_epi8(val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val);
+        /* setup avx value .. */
+        __m256i c32 = _mm256_set1_epi8(val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val);
 
         D(bug("[utility:pc] %s: 0x%p, %d\n", __func__, p, presize));
 
@@ -75,30 +73,30 @@
         __smallsetmem(p, val, presize);
         p += presize;
 
-        D(bug("[utility:pc] %s: 0x%p, %d x 16\n", __func__, p, ssefillcount));
+        D(bug("[utility:pc] %s: 0x%p, %d x 32\n", __func__, p, avxfillcount));
 
-        /* sse fill 16bytes at a time ... */
-        for (i = 0; i < ssefillcount; ++i) {
-            if ((ssefillcount - i) > 3)
+        /* avx fill 32bytes at a time ... */
+        for (i = 0; i < avxfillcount; ++i) {
+            if ((avxfillcount - i) > 3)
             {
-                _mm_store_si128((__m128i*)p, c16);
-                _mm_store_si128((__m128i*)((IPTR)p + 16), c16);
-                _mm_store_si128((__m128i*)((IPTR)p + 32), c16);
-                _mm_store_si128((__m128i*)((IPTR)p + 48), c16);
-                p += (16 << 2);
+                _mm256_store_si256((__m256i*)p, c32);
+                _mm256_store_si256((__m256i*)((IPTR)p + 32), c32);
+                _mm256_store_si256((__m256i*)((IPTR)p + 64), c32);
+                _mm256_store_si256((__m256i*)((IPTR)p + 96), c32);
+                p += (32 << 2);
                 i += 3;
             }
-            if ((ssefillcount - 0) > 1)
+            if ((avxfillcount - i) > 1)
             {
-                _mm_store_si128((__m128i*)p, c16);
-                _mm_store_si128((__m128i*)((IPTR)p + 16), c16);
-                p += (16 << 1);
+                _mm256_store_si256((__m256i*)p, c32);
+                _mm256_store_si256((__m256i*)((IPTR)p + 32), c32);
+                p += (32 << 1);
                 i += 1;
             }
             else
             {
-                _mm_store_si128((__m128i*)p, c16);
-                p += 16;
+                _mm256_store_si256((__m256i*)p, c32);
+                p += 32;
             }
         }
     }
@@ -117,7 +115,7 @@
     AROS_LIBFUNC_EXIT
 }
 
-#if defined(USE_SSE_COPYMEM)
-AROS_MAKE_ALIAS(AROS_SLIB_ENTRY(SetMem_SSE,Utility,66),AROS_SLIB_ENTRY(SetMem,Utility,66));
-#endif /* USE_SSE_COPYMEM */
-#endif /* __SSE__ */
+#if defined(USE_AVX_COPYMEM)
+AROS_MAKE_ALIAS(AROS_SLIB_ENTRY(SetMem_AVX,Utility,66),AROS_SLIB_ENTRY(SetMem,Utility,66));
+#endif /* USE_AVX_COPYMEM */
+#endif /* __AVX__ */

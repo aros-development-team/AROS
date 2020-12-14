@@ -28,6 +28,7 @@
 #include "pcipc.h"
 
 #define DMMIO(x)
+#define DIRQ(x)
 
 /*
  * N.B. Do not move/remove/refactor the following variable unless you fully
@@ -213,7 +214,9 @@ void PCIPC__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 
 #undef _psd
 
-/* Class initialization and destruction */
+/**************************************************************************
+ * Class initialization and destruction
+ **************************************************************************/
 
 /* Parse an individual routing entry */
 static void EnumPCIIRQ(struct pcipc_staticdata *psd, struct acpiHostBridge *ahb,
@@ -227,20 +230,20 @@ static void EnumPCIIRQ(struct pcipc_staticdata *psd, struct acpiHostBridge *ahb,
         n->re_PCIBusNum = bus_num;
         n->re_PCIDevNum = (item->Address >> 16) & 0xFFFF;
 
-        D(bug("[PCIPC:Driver] %s:  %02x:%02x.x", __func__, n->re_PCIBusNum,
+        DIRQ(bug("[PCIPC:Driver] %s:  %02x:%02x.x", __func__, n->re_PCIBusNum,
             n->re_PCIDevNum);)
 
         n->re_IRQPin = item->Pin + 1;
-        D(bug(" INT%c", 'A' + n->re_IRQPin - 1));
+        DIRQ(bug(" INT%c", 'A' + n->re_IRQPin - 1));
 
         if (strlen(item->Source) > 0)
         {
-            D(bug(" '%s'\n", item->Source));
+            DIRQ(bug(" '%s'\n", item->Source));
             FreeVec(n);
         }
         else
         {
-            D(bug(" using GSI %u\n", item->SourceIndex));
+            DIRQ(bug(" using GSI %u\n", item->SourceIndex));
             n->re_IRQ = item->SourceIndex;
             ADDTAIL(&ahb->ahb_irqRoutingTable, n);
         }
@@ -251,20 +254,20 @@ static void FindIRQRouting(struct pcipc_staticdata *psd, struct acpiHostBridge *
     UBYTE bus_num)
 {
     ACPI_HANDLE child = NULL;
-    ACPI_DEVICE_INFO *dev_info;
     ACPI_BUFFER buffer;
-    ACPI_PCI_ROUTING_TABLE *entry;
-    UBYTE dev_num, func_num, child_bus_num;
-    BOOL is_bridge;
-    ULONG address;
+    ACPI_STATUS status;
 
-    D(bug("[PCIPC:Driver] %s: Scanning bus %d\n", __func__, bus_num);)
+    DIRQ(bug("[PCIPC:Driver] %s: Scanning bus %d\n", __func__, bus_num);)
 
     /* Get routing table for current bus */
     buffer.Length = ACPI_ALLOCATE_BUFFER;
-    if (AcpiGetIrqRoutingTable(parent, &buffer) == AE_OK)
+    status = AcpiGetIrqRoutingTable(parent, &buffer);
+    if ((ACPI_SUCCESS(status)) && (buffer.Pointer))
     {
-        D(bug("[PCIPC:Driver] %s: Found _PRT\n", __func__);)
+        ACPI_PCI_ROUTING_TABLE *entry;
+
+        DIRQ(bug("[PCIPC:Driver] %s: Found _PRT\n", __func__);)
+
         /* Translate routing table entries into nodes for our own list */
         for (entry = buffer.Pointer; entry->Length != 0;
             entry = (APTR)entry + entry->Length)
@@ -279,12 +282,21 @@ static void FindIRQRouting(struct pcipc_staticdata *psd, struct acpiHostBridge *
      * any bridges found recursively */
     while (AcpiGetNextObject(ACPI_TYPE_DEVICE, parent, child, &child) == AE_OK)
     {
+        ACPI_DEVICE_INFO *dev_info;
+
+        DIRQ(bug("[PCIPC:Driver] %s: %02x device @ 0x%p\n",
+                                __func__, bus_num, child);)
+
         /* Get device:function part of PCI address */
-        if (AcpiGetObjectInfo(child, &dev_info) == AE_OK)
+        status = AcpiGetObjectInfo(child, &dev_info);
+        if (ACPI_SUCCESS(status))
         {
             if ((dev_info->Valid & ACPI_VALID_ADR) != 0)
             {
-                address = (ULONG)dev_info->Address;
+                ULONG address = (ULONG)dev_info->Address;
+                UBYTE dev_num, func_num, child_bus_num;
+                BOOL is_bridge;
+
                 dev_num = address >> 16 & 0xff;
                 func_num = address & 0xff;
 
@@ -295,7 +307,7 @@ static void FindIRQRouting(struct pcipc_staticdata *psd, struct acpiHostBridge *
                 /* Look for more routing tables */
                 if (is_bridge)
                 {
-                    D(bug("[PCIPC:Driver] %s: Found a bridge at %02x:%02x.%x\n",
+                    DIRQ(bug("[PCIPC:Driver] %s: Found a bridge at %02x:%02x.%x\n",
                         __func__, bus_num, dev_num, func_num);)
 
                     /* Get this bridge's bus number */

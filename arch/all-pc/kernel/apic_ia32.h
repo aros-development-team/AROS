@@ -1,12 +1,14 @@
 #ifndef APIC_IA32_H
 #define APIC_IA32_H
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IA-32 APIC hardware definitions.
     Lang: english
 */
+
+#include <aros/cpu.h>
 
 #include "i8259a.h"
 
@@ -15,7 +17,6 @@
 // eventually remapped to LAPIC with help of IOAPIC). Official APIC IRQ base starts right
 // after legacy XT-PIC
 #define APIC_IRQ_MAX            256
-#define X86_CPU_EXCEPT_COUNT    32
 #define APIC_IRQ_BASE           (X86_CPU_EXCEPT_COUNT + I8259A_IRQCOUNT)
 
 // Local APIC exceptions, with SysCall being the last (int $0xff)! The numeric values start
@@ -147,6 +148,8 @@ enum
 /*
  * MS HyperV CPUID definitions
  */
+
+// TODO: Move to public header
 
 #define HYPERV_CPUID_MIN			0x40000005
 #define HYPERV_CPUID_MAX			0x4000ffff
