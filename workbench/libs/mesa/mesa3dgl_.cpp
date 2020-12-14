@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id: emul_cpp.cpp 36255 2010-12-27 11:33:51Z deadwood $
 */
 
@@ -29,3 +29,15 @@ void operator delete[](void * ptr)
 extern "C" void __cxa_pure_virtual()
 {
 }
+
+#if defined(__arm__)
+/* TODO: ARM exception unwinding needs this implemented
+ * preferably in libgcc */
+extern "C"
+{
+  void * __gnu_Unwind_Find_exidx (void *return_address, int *nrecp)
+  {
+      return return_address;
+  }
+}
+#endif
