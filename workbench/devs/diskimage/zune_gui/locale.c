@@ -24,17 +24,26 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include "support.h"
 #include "endian.h"
 #define CATCOMP_BLOCK
 #include "locale.h"
 
+CONST_STRPTR eek = "program error";
 CONST_STRPTR GetString (struct LocaleInfo *li, LONG stringNum) {
-	struct Library *LocaleBase = li->li_LocaleBase;
-	LONG         *l;
-	UWORD        *w;
-	CONST_STRPTR  builtIn;
+    struct Library *LocaleBase;
+    LONG         *l;
+    UWORD        *w;
+    CONST_STRPTR  builtIn;
 
+    D(bug("[DiskImageGUI] %s(0x%p, %d)\n", __func__, li, stringNum);)
+
+    if (li)
+    {
+        LocaleBase = li->li_LocaleBase;
 	l = (LONG *)CatCompBlock;
 
 	while (rbe32(l) != stringNum)
@@ -47,5 +56,11 @@ CONST_STRPTR GetString (struct LocaleInfo *li, LONG stringNum) {
 	if (LocaleBase) {
 		return GetCatalogStr(li->li_Catalog, stringNum, (STRPTR)builtIn);
 	}
+    }
+    else
+    {
+        bug("[DiskImageGUI] %s: called with li == NULL!!!!\n", __func__);
+        builtIn = eek;
+    }
     return builtIn;
 }

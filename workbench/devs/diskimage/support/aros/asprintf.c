@@ -51,12 +51,16 @@ SNPrintfStream *SNPrintfPutCh(SNPrintfStream * s, UBYTE c)
 	return s;
 }
 
+#if !defined(__AROS__)
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...) {
 	VA_LIST args;
 	VA_START(args, fmt);
+
 	VSNPrintf(buf, len, fmt, (RAWARG)args);
+
 	VA_END(args);
 }
+#endif
 
 VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...) {
 	VA_LIST args;

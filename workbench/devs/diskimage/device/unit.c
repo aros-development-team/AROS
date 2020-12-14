@@ -619,12 +619,11 @@ static void DiskChange (struct DiskImageUnit *unit) {
 	ReleaseSemaphore(libBase->DiskChangeSemaphore);
 }
 
+void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error, LONG error_string,
 #ifdef __AROS__
-void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error,
-	LONG error_string, VA_LIST error_args)
+        RAWARG error_args)
 #else
-void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error,
-	LONG error_string, CONST_APTR error_args)
+        CONST_APTR error_args)
 #endif
 {
 	struct DiskImageBase *libBase = unit->LibBase;
@@ -637,7 +636,7 @@ void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error,
 	if (unit->ErrorString && unit->ErrorStringLength) {
 		if (error_string != NO_ERROR_STRING) {
 			VSNPrintf(unit->ErrorString, unit->ErrorStringLength,
-				GetString(&libBase->LocaleInfo, error_string), (RAWARG)error_args);
+				GetString(&libBase->LocaleInfo, error_string), error_args);
 		} else if (error != NO_ERROR) {
 			struct Library *DOSBase = libBase->DOSBase;
 			Fault(error, NULL, unit->ErrorString, unit->ErrorStringLength);
@@ -645,15 +644,13 @@ void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error,
 	}
 }
 
+#if !defined(__AROS__)
 VARARGS68K void SetDiskImageError (APTR Self, struct DiskImageUnit *unit, LONG error,
 	LONG error_string, ...)
 {
 	VA_LIST args;
 	VA_START(args, error_string);
-#ifdef __AROS__
-	SetDiskImageErrorA(Self, unit, error, error_string, args);
-#else
 	SetDiskImageErrorA(Self, unit, error, error_string, VA_ARG(args, CONST_APTR));
-#endif
 	VA_END(args);
 }
+#endif

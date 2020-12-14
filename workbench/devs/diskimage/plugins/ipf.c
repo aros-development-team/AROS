@@ -171,7 +171,11 @@ error:
 			Plugin_CloseImage(Self, image);
 			image = NULL;
 		}
+#if defined(__AROS__)
+		IPlugin_SetDiskImageErrorA(unit, error, error_string, (RAWARG)error_args);
+#else
 		IPlugin_SetDiskImageErrorA(unit, error, error_string, error_args);
+#endif
 	}
 	return image;
 }
