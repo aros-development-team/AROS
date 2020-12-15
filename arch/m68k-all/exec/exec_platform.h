@@ -53,4 +53,17 @@ struct Exec_PlatformData
 #define GET_THIS_TASK                   (SysBase->ThisTask)
 #define SET_THIS_TASK(x)                (SysBase->ThisTask=(x))
 
+/* Use a dummy A4 on m68k, because some badly
+ * behaving programs may not preserve it.
+ */
+#define HAVE_ExecDoInitResident
+#define ExecDoInitResident(a,b,c) \
+({ \
+        a = AROS_UFC4(struct Library *, (b), \
+        AROS_UFCA(struct Library *,  0L, D0), \
+        AROS_UFCA(BPTR,              (c), A0), \
+        AROS_UFCA(ULONG,             0L, A4), \
+        AROS_UFCA(struct ExecBase *, SysBase, A6) \
+    ); \
+})
 #endif

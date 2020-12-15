@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private data belonging to exec.library
@@ -26,6 +26,19 @@
 #include <proto/kernel.h>
 
 #define ALERT_BUFFER_SIZE 2048
+
+#if !defined(HAVE_ExecDoInitResident)
+#define HAVE_ExecDoInitResident
+#define ExecDoInitResident(a,b,c) \
+({ \
+        a = AROS_UFC3(struct Library *, (b), \
+        AROS_UFCA(struct Library *,  0L, D0), \
+        AROS_UFCA(BPTR,              (c), A0), \
+        AROS_UFCA(struct ExecBase *, SysBase, A6) \
+    ); \
+})
+#endif
+
 
 /*
    Internals of this structure are host-specific, we don't know them here
@@ -61,10 +74,11 @@ struct IntExecBase
     struct Exec_PlatformData    PlatformData;                   /* Platform-specific stuff                                      */
     struct SupervisorAlertTask  SAT;
     char                        AlertBuffer[ALERT_BUFFER_SIZE]; /* Buffer for alert text                                        */
+    void                       *ExecLogBase;
 #if defined(__AROSEXEC_BROKENMEMLOCK__)
     struct SignalSemaphore      MemListSem;                     /* Memory list protection semaphore                             */
 #elif defined(__AROSEXEC_SMP__)
-    void *                      ExecLockBase;
+    void                       *ExecLockBase;
     cpumask_t                   *CPUMask;                       /* bitmap of online core                                        */
     spinlock_t                  MemListSpinLock;
     /* First the locks for arbitration of public resources ... */
