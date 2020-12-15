@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 USER_INCLUDES := -I$(SRCDIR)/rom/utility
 
 FILES := \
+    utility_archinit \
     setmem
 
 #MM- kernel-utility-x86_64 : includes

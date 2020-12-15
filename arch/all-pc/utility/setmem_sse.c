@@ -67,7 +67,7 @@
         postsize = length - (ssefillcount * 16) - presize;
 
         /* setup sse value .. */
-        __m128i c16 = _mm_set_epi8(val, val, val, val, val, val, val, val, val, val, val, val, val, val, val, val);
+        __m128i c16 = _mm_set1_epi8(val);
 
         D(bug("[utility:pc] %s: 0x%p, %d\n", __func__, p, presize);)
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -46,10 +46,10 @@ static int cpu_Init(struct KernelBase *KernelBase)
 #endif
 
 #ifdef USE_LEGACY_8087
-	    KernelBase->kb_ContextFlags = ECF_FPU|ECF_FPX;
+	    KernelBase->kb_ContextFlags = ECF_FPU|ECF_FPFXS;
 	    KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;		  /* Legacy 8087 frame with private portion */
 #else
-	    KernelBase->kb_ContextFlags = ECF_FPX;
+	    KernelBase->kb_ContextFlags = ECF_FPFXS;
 #endif
 	    KernelBase->kb_ContextSize += sizeof(struct FPXContext) + 15; /* Add 15 bytes for alignment */
 	    break;

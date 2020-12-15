@@ -2,7 +2,7 @@
 #define AROS_I386_CPUCONTEXT_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context definition for x86 processors
@@ -82,7 +82,8 @@ enum enECFlags
 {
     ECF_SEGMENTS = 1<<0, /* Segment registers are present */
     ECF_FPU      = 1<<1, /* 8087 FPU context is present   */
-    ECF_FPX      = 1<<2, /* SSE context is present	  */
+    ECF_FPFXS           = 1<<2,         /* FXSAVE context is present	                        */
+    ECF_FPXS            = 1<<3,         /* XSAVE context is present	                        */
 };
 
 #endif
