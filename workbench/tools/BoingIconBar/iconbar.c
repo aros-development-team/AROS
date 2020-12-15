@@ -1467,14 +1467,14 @@ static void IconLabel(void)
         PrintIText(&RP_Buffer,
             &Labels,
             pos_x,
-            WindowHeight - LabelFont.ta_YSize + 3);
+            WindowHeight - (LabelFont.ta_YSize + 3));
 
         Labels.FrontPen = 2;
 
         PrintIText(&RP_Buffer,
             &Labels,
             pos_x + 1,
-            WindowHeight - LabelFont.ta_YSize + 3);
+            WindowHeight - (LabelFont.ta_YSize + 4));
 
     }
 }
