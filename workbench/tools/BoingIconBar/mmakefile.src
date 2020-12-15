@@ -1,4 +1,4 @@
-# Copyright © 2011, The AROS Development Team. All rights reserved.
+# Copyright © 2011-2020, The AROS Development Team. All rights reserved.
 # $Id: mmakefile.src
 
 include $(SRCDIR)/config/aros.cfg
@@ -8,7 +8,7 @@ CPFILES := BiB_Eng.guide
 ENVFILE := Iconbar.prefs
 BIBGFX  := bibgfx
 
-USER_CFLAGS := -fno-strict-aliasing
+USER_CFLAGS := $(CFLAGS_NO_STRICT_ALIASING)
 
 #MM- workbench-tools : workbench-tools-iconbar
 #MM  workbench-tools-iconbar : includes linklibs \

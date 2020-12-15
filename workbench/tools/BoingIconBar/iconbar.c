@@ -10,9 +10,7 @@
 //////////////////////////////////////////////////////////////
 
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <aros/debug.h>
 
 #include <proto/workbench.h>
 #include <proto/icon.h>
@@ -37,125 +35,118 @@
 #include <devices/rawkeycodes.h>
 #include <aros/detach.h>
 
-#include "locale.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-//#define DEBUG 1
-#include <aros/debug.h>
+#include "locale.h"
+#include "iconbar.h"
 
 // ------------------------------
+// Forward declarations ....
+static BOOL ReadPrefs(void);                                            // load prefs
+static void LoadBackground(void);                                       //load background pictures
+static BOOL SetWindowParameters(void);                                  // check window sizes
+static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP);        // decode IDCMP main signals
+static void Change_State(LONG Mode);                                    // change icon state
+static void Insert_Icon(LONG Tryb, LONG NrIcon);                        // draw icon
+static void Blink_Icon(LONG NrIcon);                                    // blink the icon
+static BOOL OpenMainWindow(void);                                       // open main window
+static void CloseMainWindow(void);                                      // close main window
+static void CheckMousePosition(void);                                   // check mouse position
+static void Show_Selected_Level(void);                                  // change the submenu
+static void OpenMenuWindow(void);                                       // open menu window
+static void CloseMenuWindow(void);                                      // close menu window
+static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP);           // decode IDCMP menu signals
+static void Launch_Program(STRPTR Program);                             // start the chosed program
+static void Settings(void);                                             // open the prefs program
+static void Reload(void);                                               // reload the BiB
+static void IconLabel(void);                                            // add label to icon
 
+// ------------------------------
+// App data...
+ 
 #define SUM_ICON  200
 #define ICON_ACTIVE (1<<7)
 #define SELECTED_ICON (1<<6)
 
-#define TEMPLATE "SPACE/N/K,STATIC/N/K,AUTOREMAP/S,NAMES/S"
+#define TEMPLATE        "SPACE/N/K,STATIC/N/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K"
 
 // ------------------------------
 
-#define ARG_SPACE     0
-#define ARG_STATIC    1
-#define ARG_AUTOREMAP 2
-#define ARG_NAMES     3
+enum {
+    ARG_SPACE = 0,
+    ARG_STATIC,
+    ARG_AUTOREMAP,
+    ARG_NAMES,
+    ARG_SYSFONT,
+    ARG_LABELFONT,
+    ARG_FONTSIZE,
+    ARG_TOTAL
+};
 
 #define BIB_PREFS "ENV:Iconbar.prefs"
 
+const TEXT version[]="$VER: BoingIconBar 1.11 (15.12.2020) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
 
-static BOOL BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE; 
-static BOOL Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
+static BOOL                                     BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE; 
+static BOOL                                     Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
 
-static BOOL B_Labels=FALSE;
-static TEXT IT_Labels[100];  // buffer for label
+static BOOL                                     B_Labels=FALSE;
+static TEXT                                     IT_Labels[100];  // buffer for label
 
 // -----------
+static char                                     *argSysFont = NULL, *argLabelFont = NULL;
 
-static LONG WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
-static LONG Static=0, Position, OldPosition; 
-static LONG IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon, Spacing=5;
-static LONG Lenght, BeginningWindow, EndingWindow, Window_Max_X, Window_Max_Y;
-static BYTE MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
-TEXT version[]="$VER: BoingIconBar 1.10 (03.03.2016) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
-static TEXT BufferList[20]; 
-static ULONG WindowMask=0, MenuMask=0, WindowSignal;
+static IPTR                                     Spacing=5, Static=0, FontSize = 0;
+static LONG                                     Position, OldPosition; 
+static LONG                                     WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
+static LONG                                     IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon;
+static LONG                                     Length, BeginningWindow, EndingWindow, Window_Max_X, Window_Max_Y;
+static BYTE                                     MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
+static TEXT                                     BufferList[20]; 
+static ULONG                                    WindowMask=0, MenuMask=0, WindowSignal;
 
-static IPTR args[]={ (IPTR)&Spacing, (IPTR)&Static, 0, 0 };
+static IPTR                                     args[ARG_TOTAL] = {
+                        (IPTR)&Spacing,
+                        (IPTR)&Static,
+                        0,
+                        0,
+                        0,
+                        0,
+                        (IPTR)&FontSize
+};
 
-static struct DiskObject *Icon[SUM_ICON]; 
+static struct DiskObject                        *Icon[SUM_ICON]; 
 
-static struct Window *MainWindow, *MenuWindow; 
-static struct Screen *MyScreen; 
+static struct Window                            *MainWindow = NULL, *MenuWindow = NULL; 
+static struct Screen                            *MyScreen = NULL;
 
-static struct BitMap *BMP_Buffer, *BMP_DoubleBuffer;
-static struct RastPort RP_Buffer, RP_DoubleBuffer;
+static struct BitMap                            *BMP_Buffer, *BMP_DoubleBuffer;
+static struct RastPort                          RP_Buffer, RP_DoubleBuffer;
 
 // struct of  icons
-
-static struct Icon_Struct {
-                LONG    Icon_Height;     // height icon
-                LONG    Icon_Width;      // width icon
-                LONG    Icon_PositionX;  // X position on main window
-                LONG    Icon_PositionY;  // Y position on main window
-                LONG    Icon_Status;     // status of icon: normal or selected
-                BOOL   Icon_OK;         // everything OK with icon
-                TEXT   Icon_Path[255];  // name to path of icon
-                LONG    IK_Label_Length; // length of label under icon in chars 
-                STRPTR IK_Label;        // icon label
-
-               } Icons[SUM_ICON];
+static struct Icon_Struct                       Icons[SUM_ICON] = { 0 };
 
 // struct of submenu
+static struct Level_Struct                      Levels[11] = { 0 };
 
-static struct Level_Struct {
-                 TEXT Level_Name[20];   // name submenu - level name 
-                 LONG  Beginning;        // first icon on menu
-                 LONG  WindowPos_X;      // X position main window
-                 LONG  WindowPos_Y;      // Y position main window
-                } Levels[11];
+// ---  Define used fonts
+static struct TextFont                          *TF_LabelFont   = NULL, *TF_SysFont = NULL;
+static const char                               labelfontName[] = "arial.font";
+static const char                               sysfontName[]   = "topaz.font";
+static struct TextAttr                          LabelFont       = { (STRPTR)labelfontName,      9, 0, FPF_DISKFONT };
+static struct TextAttr                          SysFont         = { (STRPTR)sysfontName,        8, 0, FPF_ROMFONT };
 
-// ---  Define labels fonts
-
-static struct TextFont *TF_XHelvetica;
-//struct TextAttr XHelvetica = {"XHelvetica.font", 9, 0, FPF_DISKFONT};
-static struct TextAttr XHelvetica = {"arial.font", 9, 0, FPF_DISKFONT};
-
-// --------------------
-
-static struct TextAttr Topaz8 = {"topaz.font",8,0,FPF_ROMFONT};
-
-static struct IntuiText Names  = {1, 0, JAM1, 0, 0, &Topaz8,     BufferList, NULL};
-static struct IntuiText Labels = {1, 0, JAM1, 0, 0, &XHelvetica, IT_Labels,  NULL};
+static struct IntuiText                         Names  = { 1, 0, JAM1, 0, 0, &SysFont,   BufferList, NULL };
+static struct IntuiText                         Labels = { 1, 0, JAM1, 0, 0, &LabelFont, IT_Labels,  NULL };
 
 //  background pictures
-
 static Object *picture[3];
-static struct BitMap *bm[3];
+static struct BitMap                            *bm[3];
 
-static struct Struct_BackgroundData {
-                       LONG Width; // width
-                       LONG Height;  // height
-                      } BackgroundData[3];
+static struct Struct_BackgroundData             BackgroundData[3];
 
-
-
-// functions
-static BOOL ReadPrefs(void);   // load prefs
-static void LoadBackground(void);  //load background pictures
-static BOOL SetWindowParameters(void);   // check window sizes
-static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP);  // decode IDCMP main signals
-static void Change_State(LONG Mode);  // change icon state
-static void Insert_Icon(LONG Tryb, LONG NrIcon);  // draw icon
-static void Blink_Icon(LONG NrIcon); // blink the icon
-static BOOL OpenMainWindow(void);  // open main window
-static void CloseMainWindow(void);  // close main window
-static void CheckMousePosition(void);  // check mouse position
-static void Show_Selected_Level(void);  // change the submenu
-static void OpenMenuWindow(void); // open menu window
-static void CloseMenuWindow(void);  // close menu window
-static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP);  // decode IDCMP menu signals
-static void Launch_Program(STRPTR Program);  // start the chosed program
-static void Settings(void);  // open the prefs program
-static void Reload(void); // reload the BiB
-static void IconLabel(void);  // add label to icon
- 
 // -------------
 
 int main(int argc, char *argv[])
@@ -198,6 +189,23 @@ int main(int argc, char *argv[])
         {
             Static = *(LONG*)args[ARG_STATIC];
         }
+
+        if (args[ARG_SYSFONT])
+        {
+            argSysFont = AllocVec(strlen((char *)args[ARG_SYSFONT]) + 1, MEMF_CLEAR);
+            CopyMem((APTR)args[ARG_SYSFONT], argSysFont, strlen((char *)args[ARG_SYSFONT]));
+        }
+
+        if (args[ARG_LABELFONT])
+        {
+            argLabelFont = AllocVec(strlen((char *)args[ARG_LABELFONT]) + 1, MEMF_CLEAR);
+            CopyMem((APTR)args[ARG_LABELFONT], argLabelFont, strlen((char *)args[ARG_LABELFONT]));
+        }
+
+        if (args[ARG_FONTSIZE])
+        {
+            FontSize = *(LONG*)args[ARG_FONTSIZE];
+        }
     }
     else
     {   //reading ToolTypes parameters 
@@ -215,17 +223,32 @@ int main(int argc, char *argv[])
                 {
                     TEXT *str;
 
-                    if ((str=FindToolType(dob->do_ToolTypes, "SPACE")))
+                    if ((str = FindToolType(dob->do_ToolTypes, "SPACE")))
                         Spacing = atoi(str);
 
-                    if ((str=FindToolType(dob->do_ToolTypes, "STATIC")))
+                    if ((str = FindToolType(dob->do_ToolTypes, "STATIC")))
                         Static = atoi(str);
 
-                    if ((str=FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
+                    if ((str = FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
                         Icon_Remap = TRUE;
 
-                    if ((str=FindToolType(dob->do_ToolTypes, "NAMES")))
+                    if ((str = FindToolType(dob->do_ToolTypes, "NAMES")))
                         B_Labels = TRUE;
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "SYSFONT")))
+                    {
+                        argSysFont = AllocVec(strlen(str) + 1, MEMF_CLEAR);
+                        CopyMem(str, argSysFont, strlen(str));
+                    }
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "LABELFONT")))
+                    {
+                        argLabelFont = AllocVec(strlen(str) + 1, MEMF_CLEAR);
+                        CopyMem(str, argLabelFont, strlen(str));
+                    }
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "FONTSIZE")))
+                        FontSize = atoi(str);
                 }
                 CurrentDir(oldcd);
             }
@@ -245,7 +268,15 @@ int main(int argc, char *argv[])
 
     Detach(); // must be done after ReadArgs()
 
-    D(bug("[IconBar] space %d static %d autoremap %d names %d\n", Spacing, Static, Icon_Remap, B_Labels));
+    D(
+        bug("[IconBar] space %d\n", Spacing);
+        bug("[IconBar] static %d\n", Static);
+        bug("[IconBar] autoremap %d\n", Icon_Remap);
+        bug("[IconBar] names %d\n", B_Labels);
+        bug("[IconBar] sysfont 0x%p\n", argSysFont);
+        bug("[IconBar] labelfont 0x%p\n", argLabelFont);
+        bug("[IconBar] fontsizes %d\n", FontSize);
+    )
 
     // start notification on prefs file
     BIBport = CreateMsgPort();
@@ -261,6 +292,7 @@ int main(int argc, char *argv[])
             if (StartNotify(NotRequest) == DOSFALSE)
             {
                 printf("StartNotify failed: %ld\n", IoErr());
+                NotRequest->nr_Name = NULL;
                 retval = RETURN_ERROR;
                 goto bailout;
             }
@@ -281,12 +313,37 @@ int main(int argc, char *argv[])
 
     // ------ Opening font if parameter NAMES is active
 
+    if (FontSize)
+    {
+        LabelFont.ta_YSize = FontSize;
+#if (0)
+        SysFont.ta_YSize = FontSize - 1;
+#endif
+    }
+
+    if (argLabelFont)
+    {
+        LabelFont.ta_Name = argLabelFont;
+    }
+
+    if (argSysFont)
+    {
+        SysFont.ta_Name = argSysFont;
+        SysFont.ta_Flags = FPF_DISKFONT;
+        if((TF_SysFont = OpenDiskFont(&SysFont)) == NULL)
+        {
+            printf("Failed to open %s:%u font - Resorting to %s:%u\n", SysFont.ta_Name, SysFont.ta_YSize, sysfontName, 8);
+            SysFont.ta_Name = (char *)sysfontName;
+            SysFont.ta_Flags = FPF_ROMFONT;
+        }
+    }
+
     if(B_Labels == TRUE)
     {
-        if((TF_XHelvetica = OpenDiskFont(&XHelvetica)) == NULL)
+        if((TF_LabelFont = OpenDiskFont(&LabelFont)) == NULL)
         {
             B_Labels = FALSE;
-            puts("No Arial 9 font. Labelling disabled\n");
+            printf("Failed to open %s:%u - Labelling disabled\n", LabelFont.ta_Name, LabelFont.ta_YSize);
         }
     }
 
@@ -360,8 +417,12 @@ int main(int argc, char *argv[])
 bailout:
     CloseMainWindow();
 
-    EndNotify(NotRequest); // replies all pending messages
-    FreeVec(NotRequest);
+    if (NotRequest)
+    {
+        if (NotRequest->nr_Name)
+            EndNotify(NotRequest); // replies all pending messages
+        FreeVec(NotRequest);
+    }
 
     if (BIBport)
         DeleteMsgPort(BIBport);
@@ -385,12 +446,17 @@ bailout:
             DisposeDTObject(picture[x]);
     }
 
-    if(TF_XHelvetica)
-        CloseFont(TF_XHelvetica);
+    if (TF_SysFont)
+        CloseFont(TF_SysFont);
+    if(TF_LabelFont)
+        CloseFont(TF_LabelFont);
     if (rda)
         FreeArgs(rda);
     if (dob)
         FreeDiskObject(dob);
+
+    FreeVec(argSysFont);
+    FreeVec(argLabelFont);
 
     return retval;
 }
@@ -404,7 +470,7 @@ static BOOL ReadPrefs(void)
     Icons[0].Icon_OK = FALSE;
     IconCounter = 0;
     LevelCounter = 0;
-    Lenght = 0;
+    Length = 0;
 
     if((Prefs = Open(BIB_PREFS, MODE_OLDFILE)))
     {
@@ -436,8 +502,8 @@ static BOOL ReadPrefs(void)
 
                     strcpy(BufferList, Levels[LevelCounter].Level_Name);
                     LengthText = IntuiTextLength(&Names);
-                    if(LengthText > Lenght)
-                        Lenght = LengthText;
+                    if(LengthText > Length)
+                        Length = LengthText;
 
                     Levels[LevelCounter].Beginning = IconCounter;
                     LevelCounter++;
@@ -507,19 +573,19 @@ static BOOL ReadPrefs(void)
             sprintf(Levels[LevelCounter].Level_Name, _(MSG_MENU_SETTINGS));
             sprintf(Names.IText, "%s", Levels[LevelCounter].Level_Name);
             LengthText = IntuiTextLength(&Names);
-            if(LengthText > Lenght)
-                Lenght = LengthText;
+            if(LengthText > Length)
+                Length = LengthText;
             LevelCounter++;
 
             // add Quit menu entry
             sprintf(Levels[LevelCounter].Level_Name, _(MSG_MENU_QUIT));
             sprintf(Names.IText, "%s", Levels[LevelCounter].Level_Name);
             LengthText = IntuiTextLength(&Names);
-            if(LengthText > Lenght)
-                Lenght = LengthText;
+            if(LengthText > Length)
+                Length = LengthText;
             LevelCounter++;
 
-            Lenght += 10;
+            Length += 10;
         }
         else
             puts("Can't lock public screen");
@@ -615,7 +681,7 @@ static BOOL SetWindowParameters(void)
                 }
 
                 WindowWidth = WindowWidth + Icons[x].Icon_Width + Spacing;
-                Icons[x].Icon_PositionY = 10;
+                Icons[x].Icon_PositionY = LabelFont.ta_YSize + 1;
 
                 if((x+1) != IconCounter)
                 {
@@ -642,7 +708,7 @@ static BOOL SetWindowParameters(void)
 
         if(B_Labels == TRUE)
         {
-            Levels[y].WindowPos_Y =  Levels[y].WindowPos_Y + 10;
+            Levels[y].WindowPos_Y =  Levels[y].WindowPos_Y + LabelFont.ta_YSize + 1;
         }
 
         // ----------------------------------
@@ -1168,7 +1234,7 @@ static void OpenMenuWindow(void)
     if((MenuWindow = OpenWindowTags(NULL,
                             WA_Left, MyScreen->MouseX,
                             WA_Top, MyScreen->MouseY,
-                            WA_InnerWidth, Lenght + 1,
+                            WA_InnerWidth, Length + 1,
                             WA_InnerHeight, LevelCounter * 16,
                             WA_AutoAdjust, TRUE,
                             WA_ReportMouse, TRUE,
@@ -1184,21 +1250,21 @@ static void OpenMenuWindow(void)
         MenuMask = 1 << MenuWindow->UserPort->mp_SigBit;
 
         SetAPen(MenuWindow->RPort, 1);
-        Move(MenuWindow->RPort, Lenght, 0);
-        Draw(MenuWindow->RPort, Lenght, LevelCounter * 16);
+        Move(MenuWindow->RPort, Length, 0);
+        Draw(MenuWindow->RPort, Length, LevelCounter * 16);
         Draw(MenuWindow->RPort, 0, LevelCounter * 16);
         SetAPen(MenuWindow->RPort, 2);
         Draw(MenuWindow->RPort, 0, 0);
-        Draw(MenuWindow->RPort, Lenght, 0);
+        Draw(MenuWindow->RPort, Length, 0);
 
         // draw bar
         SetAPen(MenuWindow->RPort, 1);
         Move(MenuWindow->RPort, 0, (LevelCounter - 2) * 16);
-        Draw(MenuWindow->RPort, Lenght - 1, (LevelCounter - 2) * 16);
+        Draw(MenuWindow->RPort, Length - 1, (LevelCounter - 2) * 16);
 
         SetAPen(MenuWindow->RPort, 2);
         Move(MenuWindow->RPort, 0, ((LevelCounter - 2) * 16) + 1);
-        Draw(MenuWindow->RPort, Lenght - 1, ((LevelCounter - 2) * 16) + 1);
+        Draw(MenuWindow->RPort, Length - 1, ((LevelCounter - 2) * 16) + 1);
 
         for(x=0; x<LevelCounter; x++)
         {
@@ -1223,7 +1289,8 @@ static void OpenMenuWindow(void)
 
 static void CloseMenuWindow(void)
 {
-    CloseWindow(MenuWindow);
+    if (MenuWindow)
+        CloseWindow(MenuWindow);
     MenuMask = 0;
 
     if(PositionMenuOK == TRUE)
@@ -1249,13 +1316,13 @@ static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP)
 {
     LONG x, kolA, kolB, dluG, x4;
 
-    dluG = Lenght - 2;
+    dluG = Length - 2;
 
     switch(KomIDCMP->Class)
     {
         case IDCMP_MOUSEMOVE:
             if(MenuWindow->MouseX > 0 &&
-                MenuWindow->MouseX < Lenght &&
+                MenuWindow->MouseX < Length &&
                 MenuWindow->MouseY >0)
             {
                 Position = MenuWindow->MouseY / 16;
@@ -1400,14 +1467,14 @@ static void IconLabel(void)
         PrintIText(&RP_Buffer,
             &Labels,
             pos_x,
-            WindowHeight - 12);
+            WindowHeight - (LabelFont.ta_YSize + 3));
 
         Labels.FrontPen = 2;
 
         PrintIText(&RP_Buffer,
             &Labels,
             pos_x + 1,
-            WindowHeight - 13);
+            WindowHeight - (LabelFont.ta_YSize + 4));
 
     }
 }
