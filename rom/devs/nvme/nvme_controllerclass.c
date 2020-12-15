@@ -52,10 +52,9 @@ static AROS_INTH1(NVME_AdminIntCode, struct nvme_queue *, nvmeq)
 OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct NVMEBase *NVMEBase = (struct NVMEBase *)cl->UserData;
-
     device_t dev = (device_t)GetTagData(aHidd_DriverData, 0, msg->attrList);
-
     OOP_Object *nvmeController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     if (nvmeController)
     {
         struct nvme_Controller *data = OOP_INST_DATA(cl, nvmeController);
@@ -86,9 +85,10 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             if (dev->dev_Queues[0])
             {
                 unsigned long timeout, cmdno;
+                APTR buffer;
                 UQUAD cap;
                 ULONG aqa;
-                
+
                 dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
                 dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
 
@@ -96,7 +96,10 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 aqa |= aqa << 16;
 
                 dev->ctrl_config = NVME_CC_ENABLE | NVME_CC_CSS_NVM;
-//                dev->ctrl_config |= (PAGE_SHIFT - 12) << NVME_CC_MPS_SHIFT;
+#if (1)
+                /* TODO: change 9 for the correct page shift value for the platform! */
+                dev->ctrl_config |= (9 - 12) << NVME_CC_MPS_SHIFT;
+#endif
                 dev->ctrl_config |= NVME_CC_ARB_RR | NVME_CC_SHN_NONE;
                 dev->ctrl_config |= NVME_CC_IOSQES | NVME_CC_IOCQES;
 
@@ -114,20 +117,21 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 dev->db_stride = NVME_CAP_STRIDE(cap);
                 D(bug ("[NVME:Controller] Root__New:     doorbell stride = %u\n", dev->db_stride);)
 
-                // add interrupt
-                OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &data->ac_PCIIntLine);
+                /*
+                 * Add the initial admin queue interrupt.
+                 * Use the devices IRQ.
+                 */
                 dev->dev_Queues[0]->q_IntHandler.is_Node.ln_Name = "NVME Controller Interrupt";
                 dev->dev_Queues[0]->q_IntHandler.is_Node.ln_Pri = 5;
                 dev->dev_Queues[0]->q_IntHandler.is_Code = (VOID_FUNC) NVME_AdminIntCode;
                 dev->dev_Queues[0]->q_IntHandler.is_Data = dev->dev_Queues[0];
-                AddIntServer(INTB_KERNEL + data->ac_PCIIntLine,
-                    &dev->dev_Queues[0]->q_IntHandler);
+                HIDD_PCIDriver_AddInterrupt(dev->dev_PCIDriverObject, dev->dev_Object, &dev->dev_Queues[0]->q_IntHandler);
 
-                APTR buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
+                buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
                 if (buffer)
                 {
-                    struct completionevent_handler contrehandle;
                     struct nvme_id_ctrl *ctrl = (struct nvme_id_ctrl *)buffer;
+                    struct completionevent_handler contrehandle;
                     struct nvme_command c;
 
                     contrehandle.ceh_Task = FindTask(NULL);
@@ -199,7 +203,9 @@ VOID NVME__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct NVMEBase *NVMEBase = cl->UserData;
     struct nvme_Controller *nvmeNode, *tmpNode;
+
     D(bug ("[NVME:Controller] Root__Dispose(0x%p)\n", o);)
+
     ForeachNodeSafe (&NVMEBase->nvme_Controllers, nvmeNode, tmpNode)
     {
         if (nvmeNode->ac_Object == o)
