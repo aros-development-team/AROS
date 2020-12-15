@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,7 +20,9 @@
 #include <asm/io.h>
 #include <proto/kernel.h>
 #include <proto/exec.h>
+
 #include <strings.h>
+#include <string.h>
 
 #include "exec_intern.h"
 #include "etask.h"
