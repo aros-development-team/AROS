@@ -198,7 +198,7 @@ void PCIPCDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 }
 
-UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
+VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_GetVectorAttribs *msg)
 {
     struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
     IPTR capmsi, driver;
@@ -224,6 +224,7 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
             /* MSI is enabled .. but is the requested vector valid? */
             if (msg->vectorno < data->msicnt)
             {
+                struct TagItem *tag, *tags;
                 UWORD msimdr;
 
                 if (!(msiflags & PCIMSIF_64BIT))
@@ -238,7 +239,20 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
                 }
                 DMSI(bug("[PCIPC:Device] %s: msimdr = %04x\n", __func__, msimdr);)
 
-                vectirq = ((msimdr & 0xFF) + msg->vectorno) - HW_IRQ_BASE;
+                tags=(struct TagItem *)msg->attribs;
+                while((tag = NextTagItem(&tags)))
+                {
+                    switch (tag->ti_Tag)
+                    {
+                        case tHidd_PCIVector_Int:
+                            tag->ti_Data = ((msimdr & 0xFF) + msg->vectorno) - HW_IRQ_BASE;
+                            break;
+
+                        case tHidd_PCIVector_Native:
+                            tag->ti_Data = ((msimdr & 0xFF) + msg->vectorno);
+                            break;
+                    }
+                }
             }
             else
             {
@@ -254,24 +268,8 @@ UBYTE PCIPCDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct p
     {
         bug("[PCIPC:Device] %s: Device doesn't support MSI\n", __func__);
     }
-
-    /* If MSI wasnt enabled and they have just asked for the first vector - return the PCI int line */
-    if (!vectirq && msg->vectorno == 0)
-    {
-        struct pHidd_PCIDevice_ReadConfigByte cmeth;
-        cmeth.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigByte;
-        cmeth.reg = PCICS_INT_LINE;
-        vectirq = (UBYTE)OOP_DoMethod(o, &cmeth.mID);
-    }
-    return vectirq;
 }
 
-UBYTE PCIPCDev__Hidd_PCIDevice__ArchVector(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ArchVector *msg)
-{
-    D(bug("[PCIPC:Device] %s()\n", __func__);)
-
-    return 0;
-}
 
 BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
 {
