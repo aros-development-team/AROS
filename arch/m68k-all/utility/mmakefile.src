@@ -2,9 +2,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES :=
+FILES := utility_archinit \
 AFILES := sdivmod32 smult32 smult64 udivmod32 umult32 umult64
 
+USER_INCLUDES := -I$(SRCDIR)/rom/utility
 USER_AFLAGS := -I$(GENINCDIR)
 USER_CPPFLAGS := -DDoRegisterCalls
 TARGET_ISA_AFLAGS:=$(ISA_MC68020_FLAGS)
