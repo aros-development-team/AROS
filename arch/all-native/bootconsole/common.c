@@ -120,3 +120,17 @@ void con_Putc(char c)
         }
     }
 }
+
+int con_CanGetc(void)
+{
+    if (bcdebugflags & BC_DEBUGSERIAL)
+        return serial_CanGetc();
+    return 0;
+}
+
+int con_Getc(void)
+{
+    if (bcdebugflags & BC_DEBUGSERIAL)
+        return serial_Getc();
+    return -1;
+}

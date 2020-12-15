@@ -35,6 +35,8 @@ void con_InitSerial(char *cmdline);
 /* Common output */
 void con_Clear(void);
 void con_Putc(char chr);
+int con_CanGetc(void);
+int con_Getc(void);
 
 /* Text output */
 void txt_Clear(void);
@@ -50,3 +52,5 @@ void fb_SetMirror(char *addr);
 /* Serial I/O */
 void serial_Init(char *opts);
 void serial_Putc(char chr);
+int serial_CanGetc(void);
+char serial_Getc(void);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 16450 serial UART serial console.
@@ -97,6 +97,35 @@ static void serial_RawPutc(char data)
 
     /* Send out the byte */
     outb_p(data, base + UART_TX);
+}
+
+int serial_CanGetc(void)
+{
+   port_t base;
+
+#ifdef __ppc__
+    base = IO_Base + Serial_Base;
+#else
+    base = Serial_Base;
+#endif
+
+    if (!(inb_p(base + UART_LSR) & UART_LSR_DR))
+        return 0;
+    return 1;
+}
+
+char serial_Getc(void)
+{
+   port_t base;
+
+#ifdef __ppc__
+    base = IO_Base + Serial_Base;
+#else
+    base = Serial_Base;
+#endif
+
+    while (!(inb_p(base + UART_LSR) & UART_LSR_DR));
+    return inb_p(base + UART_RX);
 }
 
 void serial_Putc(char chr)
