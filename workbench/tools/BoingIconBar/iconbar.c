@@ -681,7 +681,7 @@ static BOOL SetWindowParameters(void)
                 }
 
                 WindowWidth = WindowWidth + Icons[x].Icon_Width + Spacing;
-                Icons[x].Icon_PositionY = 10;
+                Icons[x].Icon_PositionY = LabelFont.ta_YSize + 1;
 
                 if((x+1) != IconCounter)
                 {
@@ -708,7 +708,7 @@ static BOOL SetWindowParameters(void)
 
         if(B_Labels == TRUE)
         {
-            Levels[y].WindowPos_Y =  Levels[y].WindowPos_Y + 10;
+            Levels[y].WindowPos_Y =  Levels[y].WindowPos_Y + LabelFont.ta_YSize + 1;
         }
 
         // ----------------------------------
@@ -1467,14 +1467,14 @@ static void IconLabel(void)
         PrintIText(&RP_Buffer,
             &Labels,
             pos_x,
-            WindowHeight - 12);
+            WindowHeight - LabelFont.ta_YSize + 3);
 
         Labels.FrontPen = 2;
 
         PrintIText(&RP_Buffer,
             &Labels,
             pos_x + 1,
-            WindowHeight - 13);
+            WindowHeight - LabelFont.ta_YSize + 3);
 
     }
 }
