@@ -10,8 +10,7 @@
 
 #include <proto/kernel.h>
 
-#include <asm/io.h>
-#include <hardware/uart.h>
+#include <bootconsole.h>
 
 /* See rom/kernel/maygetchar.c for documentation */
 AROS_LH0(int, KrnMayGetChar,
