@@ -10,7 +10,7 @@ SRCFILE := poseidonusb
 USER_LDFLAGS := -static
 USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
 
-#MM kernel-usb-classes-camdusbmidi-object : kernel-usb-classes-camdusbmidi-includes
+#MM kernel-usb-classes-camdusbmidi-object : kernel-usb-classes-camd-usbmidi-includes
 #MM- kernel-usb-classes-camdusbmidi-object-quick : kernel-usb-classes-camdusbmidi-object
 
 $(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c | $(OBJDIR)
