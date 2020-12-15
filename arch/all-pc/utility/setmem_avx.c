@@ -88,7 +88,7 @@
                 p += (32 << 2);
                 i += 3;
             }
-            if ((avxfillcount - i) > 1)
+            else if ((avxfillcount - i) > 1)
             {
                 _mm256_store_si256((__m256i*)p, c32);
                 _mm256_store_si256((__m256i*)((IPTR)p + 32), c32);

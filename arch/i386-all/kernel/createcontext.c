@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -58,7 +58,7 @@ AROS_LH0(void *, KrnCreateContext,
 	    fpdata += SIZEOF_8087_FRAME;
 	}
 
-	if (ctx->Flags & ECF_FPX)
+	if (ctx->Flags & ECF_FPFXS)
 	{
 	    UBYTE current_xmm[512+15];
 	    UBYTE *curr = (UBYTE *)(((IPTR)current_xmm + 15) & ~15);

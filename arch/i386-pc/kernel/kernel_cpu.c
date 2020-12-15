@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386 native CPU supplementals for task scheduler
@@ -54,7 +54,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     /* Restore GPRs first. CopyMemQuick() may use SSE. */
     CopyMemQuick(ctx, regs, offsetof(struct ExceptionContext, FPData));
     /* Then FPU */
-    if (ctx->Flags & ECF_FPX)
+    if (ctx->Flags & ECF_FPFXS)
     {
         /*
          * We have SSE state, restore it. 
@@ -85,7 +85,7 @@ void cpu_Switch(struct ExceptionContext *regs)
      * Do this before CopyMemQuick(), because this function
      * can use SSE itself.
      */
-    if (KernelBase->kb_ContextFlags & ECF_FPX)
+    if (KernelBase->kb_ContextFlags & ECF_FPFXS)
         asm volatile("fxsave (%0)"::"r"(ctx->FXData));
     if (KernelBase->kb_ContextFlags & ECF_FPU)
         asm volatile("fnsave (%0)"::"r"(ctx->FPData));
