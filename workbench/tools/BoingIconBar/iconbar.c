@@ -70,12 +70,12 @@ static void IconLabel(void);                                            // add l
 #define ICON_ACTIVE (1<<7)
 #define SELECTED_ICON (1<<6)
 
-#define TEMPLATE "SPACE/N/K,STATIC/N/K,AUTOREMAP/S,NAMES/S,SYSFONT/S,LABELFONT/S,FONTSIZE/N/K"
+#define TEMPLATE        "SPACE/N/K,STATIC/N/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K"
 
 // ------------------------------
 
 enum {
-    ARG_SPACE,
+    ARG_SPACE = 0,
     ARG_STATIC,
     ARG_AUTOREMAP,
     ARG_NAMES,
@@ -98,8 +98,9 @@ static TEXT                                     IT_Labels[100];  // buffer for l
 // -----------
 static char                                     *argSysFont = NULL, *argLabelFont = NULL;
 
+static IPTR                                     Spacing=5, Static=0, FontSize = 0;
+static LONG                                     Position, OldPosition; 
 static LONG                                     WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
-static LONG                                     Spacing=5, Static=0, FontSize = 0, Position, OldPosition; 
 static LONG                                     IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon;
 static LONG                                     Length, BeginningWindow, EndingWindow, Window_Max_X, Window_Max_Y;
 static BYTE                                     MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
@@ -118,17 +119,17 @@ static IPTR                                     args[ARG_TOTAL] = {
 
 static struct DiskObject                        *Icon[SUM_ICON]; 
 
-static struct Window                            *MainWindow, *MenuWindow; 
-static struct Screen                            *MyScreen;
+static struct Window                            *MainWindow = NULL, *MenuWindow = NULL; 
+static struct Screen                            *MyScreen = NULL;
 
 static struct BitMap                            *BMP_Buffer, *BMP_DoubleBuffer;
 static struct RastPort                          RP_Buffer, RP_DoubleBuffer;
 
 // struct of  icons
-static struct Icon_Struct                       Icons[SUM_ICON];
+static struct Icon_Struct                       Icons[SUM_ICON] = { 0 };
 
 // struct of submenu
-static struct Level_Struct                      Levels[11];
+static struct Level_Struct                      Levels[11] = { 0 };
 
 // ---  Define used fonts
 static struct TextFont                          *TF_LabelFont   = NULL, *TF_SysFont = NULL;
@@ -291,6 +292,7 @@ int main(int argc, char *argv[])
             if (StartNotify(NotRequest) == DOSFALSE)
             {
                 printf("StartNotify failed: %ld\n", IoErr());
+                NotRequest->nr_Name = NULL;
                 retval = RETURN_ERROR;
                 goto bailout;
             }
@@ -327,10 +329,12 @@ int main(int argc, char *argv[])
     if (argSysFont)
     {
         SysFont.ta_Name = argSysFont;
+        SysFont.ta_Flags = FPF_DISKFONT;
         if((TF_SysFont = OpenDiskFont(&SysFont)) == NULL)
         {
             printf("Failed to open %s:%u font - Resorting to %s:%u\n", SysFont.ta_Name, SysFont.ta_YSize, sysfontName, 8);
             SysFont.ta_Name = (char *)sysfontName;
+            SysFont.ta_Flags = FPF_ROMFONT;
         }
     }
 
@@ -413,8 +417,12 @@ int main(int argc, char *argv[])
 bailout:
     CloseMainWindow();
 
-    EndNotify(NotRequest); // replies all pending messages
-    FreeVec(NotRequest);
+    if (NotRequest)
+    {
+        if (NotRequest->nr_Name)
+            EndNotify(NotRequest); // replies all pending messages
+        FreeVec(NotRequest);
+    }
 
     if (BIBport)
         DeleteMsgPort(BIBport);
@@ -1281,7 +1289,8 @@ static void OpenMenuWindow(void)
 
 static void CloseMenuWindow(void)
 {
-    CloseWindow(MenuWindow);
+    if (MenuWindow)
+        CloseWindow(MenuWindow);
     MenuMask = 0;
 
     if(PositionMenuOK == TRUE)
