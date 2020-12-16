@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -76,7 +76,7 @@ typedef struct sigcontext regs_t;
     switch (cc)->ownedfp				\
     {							\
     case _MC_FPOWNED_PCB:				\
-        flag = ECF_FPX; 				\
+        flag = ECF_FPFXS; 				\
     	dest = (cc)->regs.FPXData;			\
     	len = sizeof(struct FPXContext);		\
     	break;						\
@@ -108,7 +108,7 @@ typedef struct sigcontext regs_t;
     switch (sc)->sc_ownedfp				\
     {							\
     case _MC_FPOWNED_PCB:				\
-        flag = ECF_FPX; 				\
+        flag = ECF_FPFXS; 				\
     	data = (cc)->regs.FPXData;			\
     	len = sizeof(struct FPXContext);		\
     	break;						\

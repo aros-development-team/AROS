@@ -2,7 +2,7 @@
 #define _SIGCORE_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle i386 Linux signals
@@ -196,7 +196,7 @@ typedef struct sigcontext regs_t;
 	CopyMemQuick(sc->fpstate, (cc)->regs.FPData, SIZEOF_8087_FRAME);			\
 	if ((cc)->regs.FXData && (sc->fpstate->magic != 0xFFFF))				\
     	{											\
-    	    (cc)->regs.Flags |= ECF_FPX;							\
+    	    (cc)->regs.Flags |= ECF_FPFXS;							\
     	    CopyMemQuick(sc->fpstate->_fxsr_env, (cc)->regs.FXData, sizeof(struct FPXContext));	\
     	}											\
     }
@@ -213,7 +213,7 @@ typedef struct sigcontext regs_t;
     {												\
     	if ((cc)->regs.Flags & ECF_FPU)								\
     	    CopyMemQuick((cc)->regs.FPData, sc->fpstate, SIZEOF_8087_FRAME);			\
-    	if ((cc)->regs.Flags & ECF_FPX)								\
+    	if ((cc)->regs.Flags & ECF_FPFXS)								\
     	    CopyMemQuick((cc)->regs.FXData, sc->fpstate->_fxsr_env, sizeof(struct FPXContext));	\
     }
 

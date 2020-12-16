@@ -200,7 +200,7 @@ struct AROSCPUContext
     SAVE_CPU(regs, ctx->regs);								\
     if (regs->ContextFlags & CONTEXT_FLOATING_POINT)					\
     {											\
-	ctx->regs.Flags |= ECF_FPX;							\
+	ctx->regs.Flags |= ECF_FPFXS;							\
 	CopyMemQuick(&regs->FltSave, ctx->regs.FXData, sizeof(XMM_SAVE_AREA32));	\
     }											\
     CopyMemQuick(&regs->P1Home, ctx->PHome, 6 * sizeof(IPTR));				\
@@ -212,7 +212,7 @@ struct AROSCPUContext
  */
 #define RESTOREREGS(regs, ctx)								\
     RESTORE_CPU(regs, ctx->regs);							\
-    if (ctx->regs.Flags & ECF_FPX)							\
+    if (ctx->regs.Flags & ECF_FPFXS)							\
     {											\
 	regs->ContextFlags |= CONTEXT_FLOATING_POINT;					\
 	CopyMemQuick(ctx->regs.FXData, &regs->FltSave, sizeof(XMM_SAVE_AREA32));	\
@@ -230,13 +230,13 @@ struct AROSCPUContext
     SAVE_CPU(src, dest)					\
     if (src->ContextFlags & CONTEXT_FLOATING_POINT)	\
     {							\
-	dest.Flags |= ECF_FPX;				\
+	dest.Flags |= ECF_FPFXS;				\
 	dest.FXData = &src->FltSave;			\
     }
 
 #define TRAP_RESTOREREGS(dest, src)			\
     RESTORE_CPU(dest, src);				\
-    if (src.Flags & ECF_FPX)				\
+    if (src.Flags & ECF_FPFXS)				\
     {							\
 	dest->ContextFlags |= CONTEXT_FLOATING_POINT;	\
 	dest->MxCsr = dest->FltSave.MxCsr;		\
@@ -247,7 +247,7 @@ struct AROSCPUContext
  * that common part is already copied.
  */
 #define COPY_FPU(src, dest)								\
-    if ((src)->Flags & ECF_FPX)								\
+    if ((src)->Flags & ECF_FPFXS)								\
     {											\
         IPTR fpdata = (IPTR)(dest) + sizeof(struct AROSCPUContext);			\
 	fpdata = (fpdata + 15) & ~15;							\
