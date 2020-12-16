@@ -972,7 +972,7 @@ void DaemonCode(struct ataBase *ATABase, struct ata_Controller *ataNode)
     in endless loop and calls proper handling function. The IO is Semaphore-
     protected within a bus.
 */
-void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
+void BusTaskCode(struct ataBase *ATABase, struct ata_Bus *bus)
 {
     ULONG sig;
     int iter;
