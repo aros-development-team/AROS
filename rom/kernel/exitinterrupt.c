@@ -1,11 +1,10 @@
 /*
-    Copyright © 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
 */
 
-#include <aros/types/spinlock_s.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
