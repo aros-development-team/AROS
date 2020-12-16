@@ -401,7 +401,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit);
 void ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u);
 
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
-void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase);
+void BusTaskCode(struct ataBase *ATABase, struct ata_Bus *bus);
 void DaemonCode(struct ataBase *LIBBASE, struct ata_Controller *ataNode);
 
 BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);

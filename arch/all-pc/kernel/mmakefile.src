@@ -3,9 +3,11 @@
 include $(SRCDIR)/config/aros.cfg
 
 FUNCS	 := \
+             maygetchar \
              allocirq \
              addirqhandler \
              modifyirq \
+             exitinterrupt \
              displayalert \
              getcpucount \
              getcpunumber \

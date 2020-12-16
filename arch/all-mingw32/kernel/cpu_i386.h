@@ -131,7 +131,7 @@ struct AROSCPUContext
     }												\
     if (regs->ContextFlags & CONTEXT_EXTENDED_REGISTERS)					\
     {												\
-	ctx->regs.Flags |= ECF_FPX;								\
+	ctx->regs.Flags |= ECF_FPFXS;								\
 	CopyMemQuick(regs->ExtendedRegisters, ctx->regs.FXData, MAXIMUM_SUPPORTED_EXTENSION);	\
     }
 
@@ -150,7 +150,7 @@ struct AROSCPUContext
 	regs->ContextFlags |= CONTEXT_FLOATING_POINT;						\
 	CopyMemQuick(ctx->regs.FPData, &regs->FloatSave, sizeof(FLOATING_SAVE_AREA));		\
     }												\
-    if ((ctx->regs.Flags & ECF_FPX) && (orig & CONTEXT_EXTENDED_REGISTERS))			\
+    if ((ctx->regs.Flags & ECF_FPFXS) && (orig & CONTEXT_EXTENDED_REGISTERS))			\
     {												\
 	regs->ContextFlags |= CONTEXT_EXTENDED_REGISTERS;					\
 	CopyMemQuick(ctx->regs.FXData, regs->ExtendedRegisters, MAXIMUM_SUPPORTED_EXTENSION);	\
@@ -171,7 +171,7 @@ struct AROSCPUContext
     }									\
     if (src->ContextFlags & CONTEXT_EXTENDED_REGISTERS)			\
     {									\
-	dest.Flags |= ECF_FPX;						\
+	dest.Flags |= ECF_FPFXS;						\
 	dest.FXData = (struct FPXContext *)src->ExtendedRegisters;	\
     }
 
@@ -179,7 +179,7 @@ struct AROSCPUContext
     RESTORE_CPU(dest, src);					\
     if (src.Flags & ECF_FPU)					\
 	dest->ContextFlags |= CONTEXT_FLOATING_POINT;		\
-    if (src.Flags & ECF_FPX)					\
+    if (src.Flags & ECF_FPFXS)					\
 	dest->ContextFlags |= CONTEXT_EXTENDED_REGISTERS;
 
 /*
@@ -197,7 +197,7 @@ struct AROSCPUContext
     }											\
     else										\
 	(dest)->FPData = NULL;								\
-    if ((src)->Flags & ECF_FPX)								\
+    if ((src)->Flags & ECF_FPFXS)								\
     {											\
 	fpdata = (fpdata + 15) & ~15;							\
 	(dest)->FXData = (struct FPXContext *)fpdata;					\

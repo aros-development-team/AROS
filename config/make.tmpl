@@ -3634,8 +3634,12 @@ ifeq (%(use_build_env),yes)
     BUILD_ENV := $(%(mmake)-cfg-env)
 endif
 
+## **********************************************************************
+## Review the following lines once breakage in contrib has been resolved.
 # Files are not touched anymore by default, add this to your mmakefile if that is necessry
 #<target>-touchfileflag := $(GENDIR)/$(CURDIR)/.files-touched
+%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+## **********************************************************************
 
 ifneq ("$(wildcard %(srcdir)/Makefile)","")
 # in an ideal world, we would depend on the files in the source directory,
@@ -3881,8 +3885,12 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 	    $(TOUCH) $@ -r $^; \
 	fi
 
+## **********************************************************************
+## Review the following lines once breakage in contrib has been resolved.
 # Files are not touched anymore by default, add this to your mmakefile if that is necessry
 #<target>-touchfileflag := $(GENDIR)/$(CURDIR)/.files-touched
+%(mmake)-touchfileflag ?= $(%(mmake)-pkgdir)/.files-touched
+## **********************************************************************
 ifneq ($(%(mmake)-touchfileflag),)
 $(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)

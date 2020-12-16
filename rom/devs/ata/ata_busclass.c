@@ -581,7 +581,7 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         AddResetCallback(&data->ab_ResetInt);
     }
 
-    D(bug("[ATA:Bus] %s: returning 0x%p\n", __func__, bus);)
+    bug("[ATA:Bus] %s: returning 0x%p\n", __func__, bus);
 
     return bus;
 }
@@ -1006,8 +1006,8 @@ BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
                          TASKTAG_STACKSIZE  , STACK_SIZE,
                          TASKTAG_PRI        , TASK_PRI,
                          TASKTAG_TASKMSGPORT, &ab->ab_MsgPort,
-                         TASKTAG_ARG1       , ab,
-                         TASKTAG_ARG2       , ATABase,
+                         TASKTAG_ARG1       , ATABase,
+                         TASKTAG_ARG2       , ab,
                          TAG_DONE);
 
     D(bug("[ATA>>] %s: BusTask @ 0x%p\n", __func__, busTask);)

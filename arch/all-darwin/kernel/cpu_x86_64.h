@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -148,14 +148,14 @@ typedef void (*SIGHANDLER_T)(int);
 
 /*
  * Save all registers from UNIX signal context to AROS context.
- * Save also SSE state if the context has buffer. ECF_FPX will be set
+ * Save also SSE state if the context has buffer. ECF_FPFXS will be set
  * if SSE state was copied.
  */
 #define SAVEREGS(cc, sc)                                       				\
     SAVE_CPU((cc)->regs, sc);								\
     if ((cc)->regs.FXData)								\
     {											\
-    	(cc)->regs.Flags |= ECF_FPX;							\
+    	(cc)->regs.Flags |= ECF_FPFXS;							\
     	CopyMemQuick(&FPSTATE(sc), (cc)->regs.FXData, sizeof(struct FPXContext));	\
     }
 
@@ -165,7 +165,7 @@ typedef void (*SIGHANDLER_T)(int);
  */
 #define RESTOREREGS(cc, sc)                                    				\
     RESTORE_CPU((cc)->regs, sc);							\
-    if ((cc)->regs.Flags & ECF_FPX)							\
+    if ((cc)->regs.Flags & ECF_FPFXS)							\
 	CopyMemQuick((cc)->regs.FXData, &FPSTATE(sc), sizeof(struct FPXContext));
 
 /* Print signal context. Used in crash handler. */
