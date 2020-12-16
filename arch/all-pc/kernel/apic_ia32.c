@@ -598,7 +598,12 @@ void core_APIC_Init(struct APICData *apic, apicid_t cpuNum)
         /* Set Task Priority to 'accept all interrupts' */
         APIC_REG(__APICBase, APIC_TPR) = 0;
 
-        /* Set spurious IRQ vector to 0xFF. APIC enabled, focus check disabled. */
+        /*
+         * Set spurious IRQ vector -:
+         *     APIC = enabled
+         *     Focus Check = disabled
+         *     EOI broadcast suppresion = disabled
+         */
         APIC_REG(__APICBase, APIC_SVR) = SVR_ASE|APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SPURIOUS);
 
         /*

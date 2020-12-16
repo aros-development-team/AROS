@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
     
     http://download.intel.com/design/chipsets/datashts/29056601.pdf
@@ -41,9 +41,6 @@
 
 const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
 
-#define IOREGSEL        0
-#define IOREGWIN        0x10
-
 /* descriptor for an ioapic routing table entry */
 struct acpi_ioapic_route
 {
@@ -82,6 +79,15 @@ void ioapic_ParseTableEntry(UQUAD *tblData)
     }
     else
     {
+        bug(" DM:%02x", tblEntry->dm);
+        if (tblEntry->ds)
+        {
+            bug(" DS");
+        }
+        if (tblEntry->rirr)
+        {
+            bug(" IRR");
+        }
         if (tblEntry->pol)
         {
             bug(" Active LOW,");
@@ -222,6 +228,14 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         DINT(
             bug("[Kernel:IOAPIC] %s: IOAPIC Version appears to be valid...\n", __func__);
         )
+        if (ioapicData->ioapic_Ver >= 0x20)
+        {
+            ioapicData->ioapic_Flags |= IOAPICF_EOI;
+            DINT(
+                bug("[Kernel:IOAPIC] %s: EOI present\n", __func__);
+            )
+        }
+
 	/*
          * Make sure we are using the correct LocalID
          */
@@ -357,6 +371,7 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                     bug("\n");
                 );
             }
+            ioapicData->ioapic_Flags |= IOAPICF_ENABLED;
         }
         ioapic_irqbase += ioapicData->ioapic_IRQCount;
     }
@@ -465,16 +480,70 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
 
 BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
 {
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
+    struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
+    struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
+    struct acpi_ioapic_route *irqRoute;
     IPTR apic_base;
+    UBYTE ioapic_pin;
 
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, intNum);)
 
     /* Write zero to EOI of APIC */
     apic_base = core_APIC_GetBase();
     DINT(bug("[Kernel:IOAPIC] %s: apicBase = %p\n", __func__, apic_base));
-
     APIC_REG(apic_base, APIC_EOI) = 0;
 
+    /* write IOAPIC EIO if necessary .. */
+    if (intrMap)
+    {
+        ioapic_pin = (intrMap->im_Int - ioapicData->ioapic_GSI);
+    }
+    else
+         ioapic_pin = intNum - ioapicData->ioapic_GSI;
+
+    DINT(
+        bug("[Kernel:IOAPIC] %s: IOAPIC Pin %02X\n", __func__, ioapic_pin);
+    )
+    irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
+
+    if (irqRoute->trig == 1)
+    {
+        if (ioapicData->ioapic_Flags & IOAPICF_EOI)
+        {
+            volatile ULONG *ioapic_eoi = (volatile ULONG *)((IPTR)ioapicData->ioapic_Base + IOREGEOI);
+            DINT(
+                bug("[Kernel:IOAPIC] %s: Writting IOAPIC EOI REG (@ 0x%p, %u)\n", __func__, ioapic_eoi, irqRoute->vect);
+            )
+            *ioapic_eoi = irqRoute->vect;
+        }
+        else
+        {
+            int rttrig = irqRoute->trig, rtmask = irqRoute->mask;
+
+            DINT(
+                bug("[Kernel:IOAPIC] %s: Toggling trig/mask\n", __func__);
+            )
+            /*
+             * If the IO-APIC is too old, Replicate the linux kernel behaviour
+             * of setting the pin to edge trigger and back - masking the pin while changing
+             */
+            rttrig = irqRoute->trig;
+            rtmask = irqRoute->mask;
+
+            irqRoute->trig = 0;
+            irqRoute->mask = 1;
+            acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+                (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
+            irqRoute->trig = rttrig;
+            irqRoute->mask = rtmask;
+            acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+                (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
+        }
+    }
     return TRUE;
 }
 
@@ -750,8 +819,8 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
             ioapicval = acpi_IOAPIC_ReadReg(
                 ioapicData->ioapic_Base,
                 IOAPICREG_VER);
-            ioapicData->ioapic_IRQCount = ((ioapicval >> 16) & 0xFF) + 1;
-            ioapicData->ioapic_Ver = (ioapicval & 0xFF);
+            ioapicData->ioapic_IRQCount = ((ioapicval & IOAPICVER_MASKCNT) >> IOAPICVER_CNTSHIFT) + 1;
+            ioapicData->ioapic_Ver = (ioapicval & IOAPICVER_MASKVER);
             DPARSE(bug(" ver %u, max irqs = %u,",
                 ioapicData->ioapic_Ver, ioapicData->ioapic_IRQCount));
             ioapicval = acpi_IOAPIC_ReadReg(
@@ -766,12 +835,12 @@ AROS_UFH3(IPTR, ACPI_hook_Table_IOAPIC_Parse,
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapic_Base,
                     IOAPICREG_REDTBLBASE + i);
-                tblraw = ((UQUAD)ioapicval << 32);
-               
+                tblraw = (UQUAD)ioapicval;
+
                 ioapicval = acpi_IOAPIC_ReadReg(
                     ioapicData->ioapic_Base,
                     IOAPICREG_REDTBLBASE + i + 1);
-                tblraw |= (UQUAD)ioapicval;
+                tblraw |= ((UQUAD)ioapicval << 32);
 
                 DPARSE(
                     bug("[Kernel:ACPI-IOAPIC]    %s:       ", __func__);

@@ -102,16 +102,17 @@ enum
 #define DFR_CLUSTER (0x0 << 28)
 #define DFR_FLAT    (0xF << 28)
 
-#define SVR_VEC_MASK 0xFF
-#define SVR_ASE	     (1 << 8)
-#define SVR_FCC	     (1 << 9)
+#define SVR_VEC_MASK    0xFF
+#define SVR_ASE	        (1 << 8)                        /* APIC enable                          */
+#define SVR_FCC	        (1 << 9)                        /* focus disabled                       */
+#define SVR_DEOI        (1 << 12)                       /* directed EOI (broadcast suppression) */
 
 /* Error register */
-#define ERR_SAE (1 << 2) /* Sent accept error	     */
-#define ERR_RAE (1 << 3) /* Receive accept error     */
-#define ERR_SIV (1 << 5) /* Sent illegal vector	     */
-#define ERR_RIV (1 << 6) /* Received illegal vector  */
-#define ERR_IRA (1 << 7) /* Illegal register address */
+#define ERR_SAE         (1 << 2)                        /* Sent accept error                    */
+#define ERR_RAE         (1 << 3)                        /* Receive accept error                 */
+#define ERR_SIV         (1 << 5)                        /* Sent illegal vector                  */
+#define ERR_RIV         (1 << 6)                        /* Received illegal vector              */
+#define ERR_IRA         (1 << 7)                        /* Illegal register address             */
 
 /* ICRL register */
 #define ICR_VEC_MASK	  0x000000FF	/* Vector number (request argument) mask	*/

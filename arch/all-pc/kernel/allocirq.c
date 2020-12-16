@@ -26,7 +26,7 @@ AROS_LH2(ULONG, KrnAllocIRQ,
 
     if ((irq_type == IRQTYPE_APIC) && (pdata->kb_PDFlags & PLATFORMF_HAVEMSI))
     {
-        D(bug("[KRN] KrnAllocIRQ: Attempting to allocate MSI Interrupt...\n"));
+        D(bug("[KRN] KrnAllocIRQ: Attempting to allocate APIC Interrupt...\n"));
         irqID = core_APIC_AllocMSI(count);
     }
     return irqID;
