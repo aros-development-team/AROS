@@ -1013,7 +1013,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
      * this stuff always goes along the same way
      * WARNING: NO INTERRUPTS AT THIS POINT!
      */
-    UBYTE u, status;
+    UBYTE u = (unit->au_UnitNum & 1), status;
 
 //    DINIT(
         bug("[ATA%02ld] %s()\n", unit->au_UnitNum, __func__);
@@ -1030,7 +1030,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
     status = PIO_InAlt(bus, ata_AltStatus);
     if (!(status & ((1 << 0) | (1 << 5))))
     {
-        u = unit->au_UnitNum & 1;
+
         bug("[ATA%02ld] %s: device type %u\n", unit->au_UnitNum, __func__, bus->ab_Dev[u]);
 
         switch (bus->ab_Dev[u])
@@ -2372,9 +2372,23 @@ static void ata_ResetBus(struct ata_Bus *bus)
     }
 
     if (DEV_NONE != bus->ab_Dev[0])
-        bus->ab_Dev[0] = ata_ReadSignature(bus, 0, &DiagExecuted);
+    {
+        UBYTE sigtype = ata_ReadSignature(bus, 0, &DiagExecuted);
+        /* Only alter the type if we get a better type probed from the signature ..*/
+        if (sigtype > bus->ab_Dev[0])
+        {
+            bus->ab_Dev[0] = sigtype;
+        }
+    }
     if (DEV_NONE != bus->ab_Dev[1])
-        bus->ab_Dev[1] = ata_ReadSignature(bus, 1, &DiagExecuted);
+    {
+        UBYTE sigtype = ata_ReadSignature(bus, 1, &DiagExecuted);
+        /* Only alter the type if we get a better type probed from the signature ..*/
+        if (sigtype > bus->ab_Dev[1])
+        {
+            bus->ab_Dev[1] = sigtype;
+        }
+    }
 }
 
 void ata_InitBus(struct ata_Bus *bus)
