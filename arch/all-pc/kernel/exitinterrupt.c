@@ -1,5 +1,5 @@
 /*
-    Copyright © 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    core_ExitInterrupt(ctx);
+    core_LeaveInterrupt(ctx);
 
     AROS_LIBFUNC_EXIT
 }
