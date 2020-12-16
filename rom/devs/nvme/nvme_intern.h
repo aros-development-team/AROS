@@ -171,7 +171,6 @@ struct nvme_Controller
     OOP_Class           *ac_Class;
     OOP_Object          *ac_Object;
     device_t            ac_dev;
-    IPTR		ac_PCIIntLine;
 };
 
 struct nvme_Unit;

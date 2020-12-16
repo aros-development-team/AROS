@@ -2,7 +2,7 @@
 #define HIDD_PCI_H
 
 /*
-    Copyright © 2003-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,6 +51,12 @@ enum
 {
     tHidd_PCIVector_Min                 = TAG_USER + 0x10000,
     tHidd_PCIVector_Max
+};
+/* Tags for GetVectorAttribs method */
+enum
+{
+    tHidd_PCIVector_Int                 = TAG_USER + 0x10100,
+    tHidd_PCIVector_Native
 };
 
 

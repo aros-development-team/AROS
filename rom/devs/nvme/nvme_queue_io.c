@@ -40,7 +40,7 @@ int nvme_submit_iocmd(struct nvme_queue *nvmeq, struct nvme_command *cmd, struct
 {
     int retval;
 
-    D(bug ("[NVME:IOQ] %s(0x%p, 0x%p, 0x%p)\n", __func__, dev, cmd);)
+    D(bug ("[NVME:IOQ] %s(0x%p, 0x%p)\n", __func__, cmd);)
 
     cmd->common.op.command_id = nvme_alloc_cmdid(nvmeq);
     nvmeq->cehooks[cmd->common.op.command_id] = nvme_complete_ioevent;

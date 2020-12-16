@@ -202,12 +202,12 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
 /*****************************************************************************************
 
     NAME
-        moHidd_PCIDevice_VectorIRQ
+        moHidd_PCIDevice_GetVectorAttribs
 
     SYNOPSIS
-        UBYTE OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_VectorIRQ *Msg);
+        UBYTE OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_GetVectorAttribs *Msg);
 
-        UBYTE HIDD_PCIDevice_VectorIRQ(OOP_Object *obj, ULONG vectorno);
+        UBYTE HIDD_PCIDevice_GetVectorAttribs(OOP_Object *obj, ULONG vectorno);
 
     LOCATION
         CLID_Hidd_PCIDevice
@@ -218,6 +218,7 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
     INPUTS
         obj   - Pointer to the device object.
         vectorno - Vector to return the IRQ for.
+        attribs - struct TagItem array of requested attrib details.
 
     RESULT
         Returns the Hardware IRQ on success, for use with AddIntServer.
@@ -234,60 +235,10 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
     INTERNALS
 
 *****************************************************************************************/
-UBYTE PCIDev__Hidd_PCIDevice__VectorIRQ(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_VectorIRQ *msg)
+VOID PCIDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_GetVectorAttribs *msg)
 {
-    UBYTE vectirq = 0;
-
     D(bug("[PCIDevice] %s()\n", __func__);)
-
-    if (msg->vectorno == 0)
-    {
-        vectirq = getByte(cl, o, PCICS_INT_LINE);
-    }
-    return vectirq;
 }
-
-
-/*****************************************************************************************
-
-    NAME
-        moHidd_PCIDevice_ArchVector
-
-    SYNOPSIS
-        UBYTE OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_ArchVector *Msg);
-
-        UBYTE HIDD_PCIDevice_ArchVector(OOP_Object *obj, ULONG vectorno);
-
-    LOCATION
-        CLID_Hidd_PCIDevice
-
-    FUNCTION
-        Returns the Hardware IRQ for a given device MSI vector.
-
-    INPUTS
-        obj   - Pointer to the device object.
-        vectorno - Vector to return the IRQ for.
-
-    RESULT
-        Returns the Arch specific CPU vector on success.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        moHidd_PCIDevice_ObtainVectors, AddIntServer
-
-    INTERNALS
-
-*****************************************************************************************/
-UBYTE PCIDev__Hidd_PCIDevice__ArchVector(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ArchVector *msg)
-{
-    return 0;
-}
-
 
 
 /*****************************************************************************************
