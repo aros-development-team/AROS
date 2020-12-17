@@ -1,14 +1,3 @@
-Coordination:
-    Aaron Digulla
-
-Evangelism:
-    Ola "4pLaY" Stokka
-    Matt Parsons
-    Stephen Jones
-    Pascal Papara
-    Paolo Besser
-    Niko Tomatsidis
-
 HIDD subsystem:
     Aaron Digulla
     Georg Steger
@@ -128,7 +117,7 @@ Zune:
     Fabio Alemagna
     Adam Chodorowski
     Nick Andrews (Kalamatee)
-   
+
 Kernel:
     Iain Templeton
     Michal Schulz
@@ -219,11 +208,19 @@ Art work:
     Adam Chodorowski
     Damir Sijakovik
 
-Testing:
-    Niko Tomatsidis
-    Apollo Team
-   
 Website:
     Adam Chodorowski
     Daniel Holmen
     Tom / Mithrandir
+
+Testing:
+    Niko Tomatsidis
+    Apollo Team
+ 
+Evangelism:
+    Ola "4pLaY" Stokka
+    Matt Parsons
+    Stephen Jones
+    Pascal Papara
+    Paolo Besser
+    Niko Tomatsidis
