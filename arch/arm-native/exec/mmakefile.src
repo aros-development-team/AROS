@@ -15,8 +15,8 @@ CFILES          := \
 
 ##exec_init
 
-#MM kernel-exec-raspi-arm : kernel-kernel-arm-includes kernel-exec-includes 
-#MM kernel-exec-raspi-armeb : kernel-kernel-armeb-includes kernel-exec-includes 
+#MM kernel-exec-raspi-arm : kernel-kernel-arm-includes kernel-exec-includes kernel-kernel-includes
+#MM kernel-exec-raspi-armeb : kernel-kernel-armeb-includes kernel-exec-includes kernel-kernel-includes
 
 USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
