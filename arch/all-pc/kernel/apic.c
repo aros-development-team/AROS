@@ -122,11 +122,11 @@ void core_APIC_GetMask(struct APICData *data, apicid_t cpuNo, cpumask_t *mask)
 
     if ((IPTR)mask != TASKAFFINITY_ANY)
     {
-        idlong = cpuNo / 32;
-        idbit = cpuNo - (idlong * 32); 
+        idlong = cpuNo >> 5;
+        idbit = cpuNo - (idlong << 5); 
 
-        D(bug("[APIC] %s: %d -> %d:%d\n", __func__, cpuNo, idlong, idbit));
         D(bug("[APIC] %s: mask @ 0x%p\n", __func__, mask));
+        D(bug("[APIC] %s: %d -> %d:%d\n", __func__, cpuNo, idlong, idbit));
 
         if ((apicMask = (ULONG *)mask) != NULL)
             apicMask[idlong] = (1 << idbit);

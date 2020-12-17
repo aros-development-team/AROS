@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,7 +41,7 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
         if ((IPTR)cpu_mask == TASKAFFINITY_ANY)
         {
             // Shorthand - all including self
-            cmd |= 0x80000;
+            cmd |= ICR_DSH_ALL;
 
             D(bug("[Kernel:IPI] waiting for DS bit to be clear\n"));
             while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS) asm volatile("pause");
@@ -51,7 +51,7 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
         else if ((IPTR)cpu_mask == TASKAFFINITY_ALL_BUT_SELF)
         {
             // Shorthand - all excluding self
-            cmd |= 0xc0000;
+            cmd |= ICR_DSH_ALLBUTSELF;
 
             D(bug("[Kernel:IPI] waiting for DS bit to be clear\n"));
             while (APIC_REG(__APICBase, APIC_ICRL) & ICR_DS) asm volatile("pause");
@@ -72,7 +72,7 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
                     if (cpunum == i)
                     {
                         D(bug("[Kernel:IPI] sending IPI cmd %08x to destination %08x (self-ipi)\n", cmd, (apicPrivate->cores[i].cpu_LocalID << 24)));
-                        APIC_REG(__APICBase, APIC_ICRL) = cmd | 0x40000;
+                        APIC_REG(__APICBase, APIC_ICRL) = cmd | ICR_DSH_SELF;
                     }
                     else
                     {
@@ -83,6 +83,10 @@ void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBas
                 }
             }
         }
+    }
+    else
+    {
+        D(bug("[Kernel:IPI] unhandled IPI cmd %08x\n", cmd));
     }
 }
 
