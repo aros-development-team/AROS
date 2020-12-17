@@ -15,6 +15,8 @@ extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility,26)();
 extern ULONG AROS_SLIB_ENTRY(SMult64_020,Utility,33)();
 extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility,34)();
 
+#define SetFunc(a,b) SetFunction(UtilityBase, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility,a))
+
 static int UtilityM68K_ArchInit(struct Library *UtilityBase)
 {
     /* Are we running on a m68020 or higher?
@@ -40,4 +42,3 @@ static int UtilityM68K_ArchInit(struct Library *UtilityBase)
 }
 
 ADD2INITLIB(UtilityM68K_ArchInit, 0);
-#endif
