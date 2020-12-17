@@ -114,12 +114,19 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     TLS_SET(SysBase,SysBase);
     TLS_SET(KernelBase,KernelBase);
 
+    D(bug("[Kernel:SMP] %s[%03u]: TLS configured\n", __func__, apicCPUNo));
+
     if ((apicBSTask = cpu_InitBootStrap(apicCPUNo)) != NULL)
     {
+        D(bug("[Kernel:SMP] %s[%03u]: AP Bootstrap Task @ 0x%p\n", __func__, apicCPUNo, apicBSTask));
         apicBSTask->tc_SPLower = NULL;
         apicBSTask->tc_SPUpper = (APTR)~0;
 
         cpu_BootStrap(apicBSTask);
+    }
+    else
+    {
+        bug("[Kernel:SMP] %s[%03u]: Failed to launch AP Bootstrap task!\n", __func__, apicCPUNo);
     }
 #else
     bug("[Kernel:SMP] APIC #%u of %u Going IDLE (Halting)...\n", apicCPUNo + 1, apicData->apic_count);
@@ -160,8 +167,8 @@ static int smp_Setup(struct KernelBase *KernelBase)
         /* Is it in lowmem? */
         if ((IPTR)lowmem->mh_Lower < 0x000100000)
         {
-            D(bug("[Kernel:SMP] Trying memheader @ 0x%p\n", lowmem));
-            D(bug("[Kernel:SMP] * 0x%p - 0x%p (%s pri %d)\n", lowmem->mh_Lower, lowmem->mh_Upper, lowmem->mh_Node.ln_Name, lowmem->mh_Node.ln_Pri));
+            D(bug("[Kernel:SMP] %s: Trying memheader @ 0x%p\n", __func__, lowmem));
+            D(bug("[Kernel:SMP] %s: * 0x%p - 0x%p (%s pri %d)\n", __func__, lowmem->mh_Lower, lowmem->mh_Upper, lowmem->mh_Node.ln_Name, lowmem->mh_Node.ln_Pri));
 
             /*
              * Attempt to allocate space for the SMP bootstrap code.
@@ -185,7 +192,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
     CopyMem(&_binary_smpbootstrap_start, bs, (unsigned long)&_binary_smpbootstrap_size);
     pdata->kb_APIC_TrampolineBase = bs;
 
-    D(bug("[Kernel:SMP] Copied APIC bootstrap code to 0x%p\n", bs));
+    D(bug("[Kernel:SMP] %s: Copied APIC bootstrap code to 0x%p\n", __func__, bs));
 
     /*
      * Store constant arguments in bootstrap's data area
@@ -200,6 +207,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
     bs->PML4 = __KernBootPrivate->MMU.mmu_PML4;
 #endif
     bs->IP   = smp_Entry;
+    D(bug("[Kernel:SMP] %s: AP Entry Point @ 0x%p\n", __func__, bs->IP));
 
     return 1;
 }
@@ -221,7 +229,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
     spinlock_t *apicReadyLocks;
 
     apicReadyLocks = AllocMem(sizeof(spinlock_t) * apicData->apic_count, MEMF_CLEAR|MEMF_ANY);
-    D(bug("[Kernel:SMP] %d Ready spinlocks starting at 0x%p\n", apicData->apic_count, apicReadyLocks));
+    D(bug("[Kernel:SMP] %s: %d Ready spinlocks starting at 0x%p\n", __func__, apicData->apic_count, apicReadyLocks));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (cpuNo = 1; cpuNo < apicData->apic_count; cpuNo++)
@@ -233,7 +241,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
             apicData->cores[cpuNo].cpu_LocalID
         };
 
-        DWAKE(bug("[Kernel:SMP] Launching CPU #%u (ID %03u)\n", cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
+        DWAKE(bug("[Kernel:SMP] %s: Launching CPU #%u (ID %03u)\n", __func__, cpuNo + 1, apicData->cores[cpuNo].cpu_LocalID));
 
         KrnSpinInit(&apicReadyLocks[cpuNo]);
         
@@ -243,7 +251,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
         apicTLS = apicData->cores[cpuNo].cpu_TLS;
         apicTLS->ScheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC);
         core_InitScheduleData(apicTLS->ScheduleData);
-        D(bug("[Kernel:SMP] Scheduling Data @ 0x%p\n", apicTLS->ScheduleData));
+        D(bug("[Kernel:SMP] %s: Scheduling Data @ 0x%p\n", __func__, apicTLS->ScheduleData));
 #endif
         apicData->cores[cpuNo].cpu_IDT = PlatformAllocIDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
 
@@ -252,7 +260,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
          * We allocate the same three stacks as in core_CPUSetup().
          */
         _APICStackBase = AllocMem(STACK_SIZE * 3, MEMF_CLEAR);
-        D(bug("[Kernel:SMP] Allocated STACK for APIC ID %03u @ 0x%p ..\n", apicData->cores[cpuNo].cpu_LocalID, _APICStackBase));
+        D(bug("[Kernel:SMP] %s: Allocated STACK for APIC ID %03u @ 0x%p ..\n", __func__, apicData->cores[cpuNo].cpu_LocalID, _APICStackBase));
         if (!_APICStackBase)
                 return 0;
 
@@ -267,6 +275,8 @@ static int smp_Wake(struct KernelBase *KernelBase)
         /* Lock the spinlock before launching the core */
         KrnSpinLock(&apicReadyLocks[cpuNo], NULL, SPINLOCK_MODE_WRITE);
 
+        D(bug("[Kernel:SMP] %s: Asking core to run @ 0x%p\n", __func__, bs->IP));
+
         /* Start IPI sequence */
         wakeresult = krnSysCallCPUWake(&apicWake);
 
@@ -278,7 +288,7 @@ static int smp_Wake(struct KernelBase *KernelBase)
              * Before we proceed we need to make sure that the core has picked up
              * its stack and we can reload bootstrap argument area with another one.
              */
-            DWAKE(bug("[Kernel:SMP] Waiting for CPU #%u to initialise .. ", cpuNo + 1));
+            DWAKE(bug("[Kernel:SMP] %s: Waiting for CPU #%u to initialise .. ", __func__, cpuNo + 1));
             while (!KrnSpinTryLock(&apicReadyLocks[cpuNo], SPINLOCK_MODE_READ))
             {
                 asm volatile("pause");
@@ -298,13 +308,13 @@ static int smp_Wake(struct KernelBase *KernelBase)
             if (wakeresult != -1)
             {
                 KrnSpinUnLock(&apicReadyLocks[cpuNo]);
-                DWAKE(bug("[Kernel:SMP] CPU #%u started up\n", cpuNo + 1));
+                DWAKE(bug("[Kernel:SMP] %s: CPU #%u started up\n", __func__, cpuNo + 1));
             }
         }
-        D(if (wakeresult) { bug("[Kernel:SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult); } ) 
+        D(if (wakeresult) { bug("[Kernel:SMP] %s: core_APIC_Wake() failed, status 0x%p\n", __func__, wakeresult); } ) 
     }
 
-    D(bug("[Kernel:SMP] Done\n"));
+    D(bug("[Kernel:SMP] %s: Done\n", __func__));
 
     return 1;
 }
