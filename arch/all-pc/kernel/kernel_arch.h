@@ -51,12 +51,6 @@ struct PlatformData
 #define IRQ_COUNT       I8259A_IRQCOUNT
 
 /*
- *  The first Hardware IRQ starts at 32
- *  (0 - 31 are cpu exceptions, see below..)
- */
-#define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
-
-/*
  * We handle all 255 exception vectors. However vectors starting from 0x20
  * are hardware IRQs which are handled separately. So - 32 raw exceptions.
  */
