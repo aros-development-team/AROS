@@ -216,6 +216,26 @@ VOID NVME__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     }
 }
 
+void  NVME__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct NVMEBase *NVMEBase = cl->UserData;
+    struct nvme_Controller *data = OOP_INST_DATA(cl, o);
+    ULONG idx;
+
+    HW_Switch(msg->attrID, idx)
+    {
+        case aoHW_Device:
+            {
+                if (data->ac_dev)
+                    *msg->storage = (IPTR)data->ac_dev->dev_Object;
+            }
+            return;
+        default:
+            break;
+    }
+    OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
 BOOL NVME__Hidd_StorageController__RemoveBus(OOP_Class *cl, OOP_Object *o, struct pHidd_StorageController_RemoveBus *Msg)
 {
     D(bug ("[NVME:Controller] Hidd_StorageController__RemoveBus(0x%p)\n", o);)
