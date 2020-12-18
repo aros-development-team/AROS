@@ -21,7 +21,7 @@
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 
-#include "bus_class.h"
+#include "ata_pci_intern.h"
 
 static CONST_STRPTR attrBaseIDs[] =
 {
@@ -47,14 +47,14 @@ static CONST_STRPTR const methBaseIDs[] =
 
 static int pciata_init(struct atapciBase *base)
 {
-    D(bug("[ATA:PCI] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[ATA:PCI] %s()\n", __func__));
 
-    base->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-    if (!base->cs_UtilityBase)
+    base->psd.cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!base->psd.cs_UtilityBase)
         return FALSE;
 
-    base->cs_KernelBase = OpenResource("kernel.resource");
-    if (!base->cs_KernelBase)
+    base->psd.cs_KernelBase = OpenResource("kernel.resource");
+    if (!base->psd.cs_KernelBase)
         return FALSE;
 
     /*
@@ -62,36 +62,37 @@ static int pciata_init(struct atapciBase *base)
      * Because of this, we do not obtain PCI bases here. We do it later, in device
      * discovery code.
      */
-    if (OOP_ObtainAttrBasesArray(&base->hiddAttrBase, &attrBaseIDs[AB_MANDATORY]))
+    if (OOP_ObtainAttrBasesArray(&base->psd.hiddAttrBase, &attrBaseIDs[AB_MANDATORY]))
         return FALSE;
 
-    base->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
-    if (!base->storageRoot)
-        base->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-    if (!base->storageRoot)
+    base->psd.storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
+    if (!base->psd.storageRoot)
+        base->psd.storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+    if (!base->psd.storageRoot)
     {
-        OOP_ReleaseAttrBasesArray(&base->hiddAttrBase, &attrBaseIDs[AB_MANDATORY]);
+        OOP_ReleaseAttrBasesArray(&base->psd.hiddAttrBase, &attrBaseIDs[AB_MANDATORY]);
         return FALSE;
     }
-    D(bug("[ATA:PCI] %s: storage root @ 0x%p\n", __PRETTY_FUNCTION__, base->storageRoot);)
+    D(bug("[ATA:PCI] %s: storage root @ 0x%p\n", __func__, base->psd.storageRoot);)
 
-    if ((base->ataClass = OOP_FindClass(CLID_Hidd_ATA)) == NULL)
+    if ((base->psd.ataClass = OOP_FindClass(CLID_Hidd_ATA)) == NULL)
     {
-        OOP_ReleaseAttrBasesArray(&base->hiddAttrBase, &attrBaseIDs[AB_MANDATORY]);
+        OOP_ReleaseAttrBasesArray(&base->psd.hiddAttrBase, &attrBaseIDs[AB_MANDATORY]);
         return FALSE; 
     }
     D(
-      bug("[ATA:PCI] %s: Base %s Class @ 0x%p\n", __PRETTY_FUNCTION__, CLID_Hidd_ATA, base->ataClass);
-      bug("[ATA:PCI] %s: PCI %s Class @ 0x%p\n", __PRETTY_FUNCTION__, CLID_Hidd_ATABus, base->busClass);
+      bug("[ATA:PCI] %s: Base %s Class @ 0x%p\n", __func__, CLID_Hidd_ATA, base->psd.ataClass);
+      bug("[ATA:PCI] %s: PCI %s Class @ 0x%p\n", __func__, CLID_Hidd_ATABus, base->psd.ataPCIClass);
+      bug("[ATA:PCI] %s: PCI %s Class @ 0x%p\n", __func__, CLID_Hidd_ATABus, base->psd.ataPCIBusClass);
     )
 
 #if defined(__OOP_NOMETHODBASES__)
-    if (OOP_ObtainMethodBasesArray(&base->HWMethodBase, methBaseIDs))
+    if (OOP_ObtainMethodBasesArray(&base->psd.HWMethodBase, methBaseIDs))
     {
-        bug("[ATA:PCI] %s: Failed to obtain MethodBases!\n", __PRETTY_FUNCTION__);
-        bug("[ATA:PCI] %s:     %s = %p\n", __PRETTY_FUNCTION__, methBaseIDs[0], base->HWMethodBase);
-        bug("[ATA:PCI] %s:     %s = %p\n", __PRETTY_FUNCTION__, methBaseIDs[1], base->HiddSCMethodBase);
-        OOP_ReleaseAttrBasesArray(&base->hiddAttrBase, attrBaseIDs);
+        bug("[ATA:PCI] %s: Failed to obtain MethodBases!\n", __func__);
+        bug("[ATA:PCI] %s:     %s = %p\n", __func__, methBaseIDs[0], base->psd.HWMethodBase);
+        bug("[ATA:PCI] %s:     %s = %p\n", __func__, methBaseIDs[1], base->psd.HiddSCMethodBase);
+        OOP_ReleaseAttrBasesArray(&base->psd.hiddAttrBase, attrBaseIDs);
         return FALSE;
     }
 #endif
@@ -102,10 +103,10 @@ static int pciata_init(struct atapciBase *base)
 static int pciata_expunge(struct atapciBase *base)
 {
     /* Release all attribute bases */
-    OOP_ReleaseAttrBasesArray(&base->hiddAttrBase, &attrBaseIDs[AB_MANDATORY]);
+    OOP_ReleaseAttrBasesArray(&base->psd.hiddAttrBase, &attrBaseIDs[AB_MANDATORY]);
 
-    if (base->cs_UtilityBase)
-        CloseLibrary(base->cs_UtilityBase);
+    if (base->psd.cs_UtilityBase)
+        CloseLibrary(base->psd.cs_UtilityBase);
 
     return TRUE;
 }

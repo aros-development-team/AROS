@@ -14,17 +14,23 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
-#include <hardware/ata.h>
-#include <hidd/bus.h>
-#include <hidd/ata.h>
-#include <hidd/pci.h>
-#include <oop/oop.h>
 #include <utility/tagitem.h>
 
-#include "bus_class.h"
+#include <hidd/bus.h>
+#include <hidd/pci.h>
+#include <hidd/ata.h>
+#include <oop/oop.h>
+
+#include <hardware/pci.h>
+#include <hardware/ata.h>
+
+
+#include "ata_pci_intern.h"
+#include "ata_pci_bus.h"
+
 #include "interface_pio.h"
 #include "interface_dma.h"
-#include <hardware/pci.h>
+
 
 AROS_INTH1(ata_PCI_Interrupt, struct PCIATABusData *, data)
 {
@@ -81,7 +87,7 @@ OOP_Object *PCIATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 {
     struct atapciBase *base = cl->UserData;
     struct ata_ProbedBus *pBus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
-    D(bug("[ATA:PCI:Bus] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[ATA:PCI:Bus] %s()\n", __func__));
 
     if (!pBus)
         return NULL;
@@ -92,7 +98,7 @@ OOP_Object *PCIATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         struct PCIATABusData *data = OOP_INST_DATA(cl, o);
         OOP_MethodID mDispose;
 
-        D(bug("[ATA:PCI:Bus] %s: instance @ 0x%p\n", __PRETTY_FUNCTION__, o));
+        D(bug("[ATA:PCI:Bus] %s: instance @ 0x%p\n", __func__, o));
 
         data->bus = pBus;
 
@@ -128,7 +134,7 @@ OOP_Object *PCIATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
                 HIDD_PCIDriver_FreePCIMem(data->pciDriver, data->dmaBuf);
                 data->dmaBuf = NULL;
             }
-	    D(bug("[ATA:PCI:Bus] %s: DMA Buf @ 0x%p\n", __PRETTY_FUNCTION__, data->dmaBuf));
+	    D(bug("[ATA:PCI:Bus] %s: DMA Buf @ 0x%p\n", __func__, data->dmaBuf));
         }
 nodma:
         if (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED)
@@ -214,7 +220,7 @@ void PCIATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct atapciBase *base = cl->UserData;
     struct PCIATABusData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[ATA:PCI:Bus] %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[ATA:PCI:Bus] %s()\n", __func__));
 
     if (data->dmaBuf)
         HIDD_PCIDriver_FreePCIMem(data->pciDriver, data->dmaBuf);
