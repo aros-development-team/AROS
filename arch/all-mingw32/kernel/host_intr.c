@@ -339,9 +339,7 @@ int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
         }
 #endif
 
-#if (0)
         MainTEB = NtCurrentTeb();
-#endif
         LastErrorPtr = MainTEB + LastErrOffset;
 
         SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, NULL, 0, &SwitcherId);
