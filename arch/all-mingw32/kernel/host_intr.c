@@ -353,13 +353,16 @@ int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
             if (!StartClock(0, TimerPeriod))
                 return 0;
 
+            D(printf("[KRN] Clock started with period ID %lu\n", TimerPeriod));
+
             /* Return system page size */
-            GetSystemInfo(&info);   
+            GetSystemInfo(&info);
+            D(printf("[KRN] Page size @ %lu\n", info.dwPageSize));
             return info.dwPageSize;
         }
-            D(else printf("[KRN] Failed to run task switcher thread\n");)
+        else printf("[KRN] Failed to run task switcher thread\n");
     }
-        D(else printf("[KRN] failed to get thread handle\n");)
+    else printf("[KRN] failed to get thread handle\n");
 
     CloseHandle(IntObjects[IRQ_TIMER]);
     return 0;
