@@ -55,7 +55,7 @@ void *AllocateRAM32(size_t len)
             addr = NULL;
         }
     }
-    D(fprintf(stderr, stderr, "[AllocateRAM] Inherited memory handle 0x%p address 0x%p\n", RAM_Handle, addr));
+    D(fprintf(stderr, "[AllocateRAM] Inherited memory handle 0x%p address 0x%p\n", RAM_Handle, addr));
 
     if (!RAM_Handle)
     {
