@@ -6,6 +6,7 @@ FUNCS	 := \
              maygetchar \
              allocirq \
              addirqhandler \
+             getirq \
              modifyirq \
              exitinterrupt \
              displayalert \
