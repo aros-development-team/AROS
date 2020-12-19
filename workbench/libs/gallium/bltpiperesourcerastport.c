@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -66,9 +66,9 @@
 
     struct Rectangle renderableLayerRect;
     struct pHidd_Gallium_DisplayResource drmsg = {
-        mID : ((struct GalliumBase *)GalliumBase)->galliumMId_DisplayResource,
-        resource : srcPipeResource,
-        bitmap: destRP->BitMap,
+        .mID      = ((struct GalliumBase *)GalliumBase)->galliumMId_DisplayResource,
+        .resource = srcPipeResource,
+        .bitmap   = destRP->BitMap,
     };
     struct Rectangle result;
     struct ClipRect *CR;
@@ -124,11 +124,11 @@
     if (copied)
     {
         struct pHidd_BitMap_UpdateRect urmsg = {
-            mID     :   ((struct GalliumBase *)GalliumBase)->galliumMId_UpdateRect,
-            x       :   renderableLayerRect.MinX,
-            y       :   renderableLayerRect.MinY,
-            width   :   renderableLayerRect.MaxX - renderableLayerRect.MinX + 1,
-            height  :   renderableLayerRect.MaxY - renderableLayerRect.MinY + 1
+            .mID    =   ((struct GalliumBase *)GalliumBase)->galliumMId_UpdateRect,
+            .x      =   renderableLayerRect.MinX,
+            .y      =   renderableLayerRect.MinY,
+            .width  =   renderableLayerRect.MaxX - renderableLayerRect.MinX + 1,
+            .height =   renderableLayerRect.MaxY - renderableLayerRect.MinY + 1
         };
         
         OOP_Object * bm = HIDD_BM_OBJ(destRP->BitMap);
