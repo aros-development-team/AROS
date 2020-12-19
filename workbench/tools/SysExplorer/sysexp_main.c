@@ -396,7 +396,7 @@ AROS_UFH3(void, SysExplorer__Proc_EnumerateHardware,
         D(bug("[SysExplorer] %s: Enumerating Devices..\n", __func__));
 
         /* Kick the recursive enumeration into action */
-        CALLHOOKPKT((struct Hook *)&enum_hook, hwRoot, MUIV_NListtree_Insert_ListNode_Root);
+        CALLHOOKPKT((struct Hook *)&enum_hook, hwRoot, (APTR)MUIV_NListtree_Insert_ListNode_Root);
     }
     D(bug("[SysExplorer] %s: Finished..\n", __func__));
 
