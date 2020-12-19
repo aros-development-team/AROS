@@ -98,7 +98,7 @@ AROS_LH1(void, GetCPUInfo,
             *((ULONG *)passedTag->ti_Data) = ENDIANNESS_LE;
             break;
         case(GCIT_ProcessorSpeed):
-            *((UQUAD *)passedTag->ti_Data) = GetCurrentProcessorFrequency(processor);
+            *((UQUAD *)passedTag->ti_Data) = GetCurrentProcessorFrequency(ProcessorBase, processor);
             break;
         case(GCIT_ProcessorLoad):
 #if defined(__AROSEXEC_SMP__)            

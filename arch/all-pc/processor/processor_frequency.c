@@ -7,12 +7,15 @@
 
 #include <aros/config.h>
 #include <aros/debug.h>
+
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include <resources/processor.h>
 
 #include <string.h>
 
+#include "processor_intern.h"
 #include "processor_arch_intern.h"
 
 /*
@@ -304,7 +307,7 @@ VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info)
    using performance counter. Other methods might include reading power state
    and checking with ACPI power tables or hardcoded power tables */
 
-UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
+UQUAD GetCurrentProcessorFrequency(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info)
 {
     UQUAD retFreq = info->MaxCPUFrequency;
 
@@ -314,11 +317,16 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
 
     if (info->Features2 & FEATF_HYPERV)
     {
+        struct UtilityBase *UtilityBase;
+        APTR **procPriv = ProcessorBase->Private1;
         D(
             bug("[processor.x86] %s: processor has hyperv flag\n", __func__);
             bug("[processor.x86] %s: id '%s'\n", __func__, info->HyperVID);
         )
-        if (!strcmp("Microsoft Hv", info->HyperVID))
+
+        UtilityBase = *(procPriv)[ProcessorBase->cpucount];
+
+        if (!Stricmp("Microsoft Hv", info->HyperVID))
         {
             ULONG res[2];
             APTR ssp;
