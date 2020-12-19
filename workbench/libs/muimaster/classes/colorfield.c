@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -154,7 +154,7 @@ IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_Colorfield_Pen:
-            if ((data->pen = (UBYTE) tag->ti_Data) != -1)
+            if ((data->pen = (UBYTE) tag->ti_Data) != (UBYTE)-1)
                 data->flags |= FLAG_FIXED_PEN;
             break;
 
@@ -222,7 +222,7 @@ IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj,
                 data->cm = NULL;
                 ReleasePen(cm, disposepen);
             }
-            if ((data->pen = (UBYTE) tag->ti_Data) != -1)
+            if ((data->pen = (UBYTE) tag->ti_Data) != (UBYTE)-1)
                 data->flags |= FLAG_FIXED_PEN;
             newcol = TRUE;
             break;
