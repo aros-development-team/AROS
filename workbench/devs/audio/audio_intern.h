@@ -1,5 +1,5 @@
 /*
-     Copyright 2010-202, The AROS Development Team. All rights reserved.
+     Copyright 2010-2020, The AROS Development Team. All rights reserved.
      $Id$
  */
 
@@ -23,11 +23,11 @@
 #include <proto/exec.h>
 
 // Internal flags
-#define ADIOB_REPLYDEV     0
-#define ADIOF_REPLYDEV     (1<<0)
+#define ADIOB_REPLYDEV		0
+#define ADIOF_REPLYDEV		(1<<0)
 
-#define DEVB_DELEXP     0
-#define DEVF_DELEXP     (1<<0)
+#define DEVB_DELEXP		0
+#define DEVF_DELEXP		(1<<0)
 
 struct audiobase
 {
@@ -78,7 +78,7 @@ typedef struct elist ELIST;
 
 // Quitting mode for enode_FreeList() asked in enode_AllocList().
 #define	ELIST_FREE			0		// Ask to enode_AllocList when enode_FreeList is called to free the enodes the list has.
-#define	ELIST_SIMPLE		1		// No free the nodes they will be freed manually.
+#define	ELIST_SIMPLE			1		// No free the nodes they will be freed manually.
 #define	ELIST_EMPTY			0		// Ask this to enode_AllocList() to get an empty list.
 
 struct EmaSys
@@ -105,9 +105,9 @@ extern TSYS *ematsys;
 
 // Some extra commands.
 #define		CMD_ABORTIO		1000			// This is my cmd for ioaborting.
-#define		CMD_CLOSE			1001			// This is my cmd for closing slave process.
+#define		CMD_CLOSE		1001			// This is my cmd for closing slave process.
 // Some unit states.
-#define		UNIT_STOP		1 << 0			// This unit is stopped;
+#define		UNIT_STOP		(1 << 0)		// This unit is stopped;
 
 // Function protos
 
