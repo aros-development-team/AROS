@@ -437,7 +437,7 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
 
     request->ios2_DataLength = packet_size;
 
-    D(bug("[%s]: CopyPacket: packet @ %x (%d bytes)\n", unit->e1ku_name, ptr, packet_size));
+    D(bug("[%s]: CopyPacket: packet @ 0%p (%d bytes)\n", unit->e1ku_name, ptr, packet_size));
 
     /* Filter packet */
 
@@ -701,7 +701,7 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
         NEWLIST(&unit->e1ku_type_trackers);
 
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->e1ku_IRQ);
-        D(bug("[%s] CreateUnit: Device IRQ  : %d\n", unit->e1ku_name, unit->e1ku_IRQ));
+        D(bug("[%s] CreateUnit: Device IRQ  #%u\n", unit->e1ku_name, (UBYTE)unit->e1ku_IRQ));
 
         for (i = 1; i <= 5; i++)
         {
@@ -713,20 +713,20 @@ struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
                 if (BaseType & ADDRF_IO)
                 {
                     IOBase = BaseAddr;
-                    D(bug("[%s] CreateUnit: Device IO @ %p [%d bytes]\n", unit->e1ku_name, IOBase, BaseLen));
+                    D(bug("[%s] CreateUnit: Device IO @ %p [%d bytes]\n", unit->e1ku_name, (APTR)IOBase, (int)BaseLen));
                 }
                 else
                 {
                     Flash_Base = BaseAddr;
                     Flash_Size = BaseLen;
-                    D(bug("[%s] CreateUnit: Device Flash @ %p [%d bytes]\n", unit->e1ku_name, Flash_Base, Flash_Size));
+                    D(bug("[%s] CreateUnit: Device Flash @ %p [%d bytes]\n", unit->e1ku_name, (APTR)Flash_Base, (int)Flash_Size));
                 }
             }
         }
 
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &MMIO_Base);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &MMIO_Size);
-        D(bug("[%s] CreateUnit: Device MMIO @ %p\n", unit->e1ku_name, MMIO_Base));
+        D(bug("[%s] CreateUnit: Device MMIO @ %p\n", unit->e1ku_name, (APTR)MMIO_Base));
 
         ((struct e1000_hw *)unit->e1ku_Private00)->io_base = (unsigned long)IOBase;
         ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr = (UBYTE *)HIDD_PCIDriver_MapPCI(driver, (APTR)MMIO_Base, MMIO_Size);

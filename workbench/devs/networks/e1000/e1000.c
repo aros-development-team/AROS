@@ -114,7 +114,7 @@ void e1000func_irq_enable(struct net_device *unit)
 
 static void e1000_clean_all_rx_rings(struct net_device *unit)
 {
-    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit));
+    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __func__, unit));
 //    e1000func_clean_rx_ring(unit, unit->e1ku_rxRing);
 }
 
@@ -127,7 +127,7 @@ static void e1000func_enter_82542_rst(struct net_device *unit)
     if (((struct e1000_hw *)unit->e1ku_Private00)->revision_id != E1000_REVISION_2)
         return;
 
-    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit));
+    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __func__, unit));
 
     e1000_pci_clear_mwi((struct e1000_hw *)unit->e1ku_Private00);
 
@@ -151,7 +151,7 @@ static void e1000func_leave_82542_rst(struct net_device *unit)
     if (((struct e1000_hw *)unit->e1ku_Private00)->revision_id != E1000_REVISION_2)
         return;
 
-    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit));
+    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __func__, unit));
 
     rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
     rctl &= ~E1000_RCTL_RST;
@@ -178,17 +178,17 @@ static void e1000func_configure_tx(struct net_device *unit)
     UQUAD tdba;
     int i;
 
-    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit));
+    D(bug("[%s]: %s(unit @ %p)\n", unit->e1ku_name, __func__, unit));
 
     /* Setup the HW Tx Head and Tail descriptor pointers */
     for (i = 0; i < unit->e1ku_txRing_QueueSize; i++)
     {
-        D(bug("[%s] %s: Tx Queue %d @ %p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, &unit->e1ku_txRing[i]));
-        D(bug("[%s] %s: Tx Queue count = %d)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_txRing[i].count));
+        D(bug("[%s] %s: Tx Queue %d @ %p)\n", unit->e1ku_name, __func__, i, &unit->e1ku_txRing[i]));
+        D(bug("[%s] %s: Tx Queue count = %d)\n", unit->e1ku_name, __func__, unit->e1ku_txRing[i].count));
 
         tdba = (IPTR)unit->e1ku_txRing[i].dma;
         tdlen = (ULONG)(unit->e1ku_txRing[i].count * sizeof(struct e1000_tx_desc));
-        D(bug("[%s] %s: Tx Queue Ring Descriptor DMA @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_txRing[i].dma, tdlen));
+        D(bug("[%s] %s: Tx Queue Ring Descriptor DMA @ %p [%d bytes]\n", unit->e1ku_name, __func__, unit->e1ku_txRing[i].dma, tdlen));
 
         E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDBAL(i), (ULONG)(tdba & 0x00000000ffffffffULL));
         E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDBAH(i), (ULONG)(tdba >> 32));
@@ -197,7 +197,7 @@ static void e1000func_configure_tx(struct net_device *unit)
         E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDT(i), 0);
         unit->e1ku_txRing[i].tdh = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_TDH(i));
         unit->e1ku_txRing[i].tdt = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_TDT(i));
-        D(bug("[%s] %s: Tx Queue TDH=%d, TDT=%d\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_txRing[i].tdh, unit->e1ku_txRing[i].tdt));
+        D(bug("[%s] %s: Tx Queue TDH=%d, TDT=%d\n", unit->e1ku_name, __func__, unit->e1ku_txRing[i].tdh, unit->e1ku_txRing[i].tdt));
     }
 
     /* Set the default values for the Tx Inter Packet Gap timer */
@@ -262,7 +262,7 @@ static void e1000func_setup_rctl(struct net_device *unit)
 {
     ULONG rctl;
 
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
 
@@ -329,7 +329,7 @@ static void e1000func_configure_rx(struct net_device *unit)
     UQUAD rdba;
     int i;
 
-    D(bug("[%s]: %s(0x%p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit));
+    D(bug("[%s]: %s(0x%p)\n", unit->e1ku_name, __func__, unit));
 
     /* disable receivers while setting up the descriptors */
     rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
@@ -352,12 +352,12 @@ static void e1000func_configure_rx(struct net_device *unit)
      * the Base and Length of the Rx Descriptor Ring */
     for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++)
     {
-        D(bug("[%s] %s: Rx Queue %d @ %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, &unit->e1ku_rxRing[i]));
-        D(bug("[%s] %s:        count = %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_rxRing[i].count));
+        D(bug("[%s] %s: Rx Queue %d @ %p\n", unit->e1ku_name, __func__, i, &unit->e1ku_rxRing[i]));
+        D(bug("[%s] %s:        count = %d\n", unit->e1ku_name, __func__, unit->e1ku_rxRing[i].count));
 
         rdlen = (ULONG)(unit->e1ku_rxRing[i].count * sizeof(struct e1000_rx_desc));
         rdba = (IPTR)unit->e1ku_rxRing[i].dma;
-        D(bug("[%s] %s:        Ring Descriptor DMA @ %p, [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_rxRing[i].dma, rdlen));
+        D(bug("[%s] %s:        Ring Descriptor DMA @ %p, [%d bytes]\n", unit->e1ku_name, __func__, unit->e1ku_rxRing[i].dma, rdlen));
 
         E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAL(i), (ULONG)(rdba & 0x00000000ffffffffULL));
         E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAH(i), (ULONG)(rdba >> 32));
@@ -366,11 +366,11 @@ static void e1000func_configure_rx(struct net_device *unit)
         E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDT(i), 0);
         unit->e1ku_rxRing[i].rdh = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_RDH(i));
         unit->e1ku_rxRing[i].rdt = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_RDT(i));
-        D(bug("[%s] %s:        RDH Reg %d, RDT Reg %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_rxRing[i].rdh, unit->e1ku_rxRing[i].rdt));
-        D(bug("[%s] %s:        RDH = %d, RDT = %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + unit->e1ku_rxRing[i].rdh)), readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + unit->e1ku_rxRing[i].rdt))));
+        D(bug("[%s] %s:        RDH Reg %d, RDT Reg %d\n", unit->e1ku_name, __func__, unit->e1ku_rxRing[i].rdh, unit->e1ku_rxRing[i].rdt));
+        D(bug("[%s] %s:        RDH = %d, RDT = %d\n", unit->e1ku_name, __func__, readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + unit->e1ku_rxRing[i].rdh)), readl((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + unit->e1ku_rxRing[i].rdt))));
     }
 
-    D(bug("[%s] %s: Configuring checksum Offload..\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s] %s: Configuring checksum Offload..\n", unit->e1ku_name, __func__));
 
     if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type >= e1000_82543)
     {
@@ -397,7 +397,7 @@ void e1000func_reset(struct net_device *unit)
     bool legacy_pba_adjust = FALSE;
     u16 hwm;
 
-    D(bug("[%s]: %s(0x%p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit);)
+    D(bug("[%s]: %s(0x%p)\n", unit->e1ku_name, __func__, unit);)
 
     /* Repartition Pba for greater than 9k mtu
        To take effect CTRL.RST is required.     */
@@ -492,7 +492,7 @@ void e1000func_reset(struct net_device *unit)
     }
 
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_PBA, pba);
-    D(bug("[%s]: %s: pba = %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, pba);)
+    D(bug("[%s]: %s: pba = %d\n", unit->e1ku_name, __func__, pba);)
 
     /* flow control settings */
     /* The high water mark must be low enough to fit one full frame
@@ -521,7 +521,7 @@ void e1000func_reset(struct net_device *unit)
 
     if (e1000_init_hw((struct e1000_hw *)unit->e1ku_Private00))
     {
-        D(bug("[%s] %s: Hardware Error\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+        D(bug("[%s] %s: Hardware Error\n", unit->e1ku_name, __func__);)
     }
     /* if (unit->hwflags & HWFLAGS_PHY_PWR_BIT) { */
     if ((mac->type >= e1000_82544) &&
@@ -546,7 +546,7 @@ void e1000func_reset(struct net_device *unit)
 
 int e1000func_set_mac(struct net_device *unit)
 {
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
     /* 82542 2.0 needs to be in reset to write receive address registers */
     if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type == e1000_82542)
@@ -573,7 +573,7 @@ void e1000func_set_multi(struct net_device *unit)
     ULONG rctl, mc_count;
     int i = 0;
 
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
     /* Check for Promiscuous and All Multicast modes */
 
@@ -623,12 +623,12 @@ void e1000func_set_multi(struct net_device *unit)
 
 int request_irq(struct net_device *unit)
 {
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
     AddIntServer(INTB_KERNEL | unit->e1ku_IRQ, &unit->e1ku_irqhandler);
     AddIntServer(INTB_VERTB, &unit->e1ku_touthandler);
 
-    D(bug("[%s] %s: IRQ Handlers configured\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+    D(bug("[%s] %s: IRQ Handlers configured\n", unit->e1ku_name, __func__);)
 
     return 0;
 }
@@ -646,19 +646,19 @@ static int e1000func_setup_tx_resources(struct net_device *unit,
 {
     ULONG size;
 
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__);)
 
     size = sizeof(struct e1000_buffer) * tx_ring->count;
 
-    D(bug("[%s] %s: Configuring for %d buffers\n", unit->e1ku_name, __PRETTY_FUNCTION__, tx_ring->count));
+    D(bug("[%s] %s: Configuring for %d buffers\n", unit->e1ku_name, __func__, tx_ring->count));
 
     if ((tx_ring->buffer_info = AllocMem(size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
     {
-        D(bug("[%s] %s: Unable to allocate memory for the transmit descriptor ring\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+        D(bug("[%s] %s: Unable to allocate memory for the transmit descriptor ring\n", unit->e1ku_name, __func__);)
         return -E1000_ERR_CONFIG;
     }
 
-    D(bug("[%s] %s: Tx Buffer Info @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, tx_ring->buffer_info, size);)
+    D(bug("[%s] %s: Tx Buffer Info @ %p [%d bytes]\n", unit->e1ku_name, __func__, tx_ring->buffer_info, size);)
 
     /* round up to nearest 4K */
     tx_ring->size = tx_ring->count * sizeof(struct e1000_tx_desc);
@@ -668,7 +668,7 @@ static int e1000func_setup_tx_resources(struct net_device *unit,
     {
 setup_tx_desc_die:
         FreeMem(tx_ring->buffer_info, size);
-        D(bug("[%s] %s: Unable to allocate memory for the transmit descriptor ring\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+        D(bug("[%s] %s: Unable to allocate memory for the transmit descriptor ring\n", unit->e1ku_name, __func__);)
         return -E1000_ERR_CONFIG;
     }
     tx_ring->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)tx_ring->desc);
@@ -677,7 +677,7 @@ setup_tx_desc_die:
     if (!e1000func_check_64k_bound(unit, tx_ring->desc, tx_ring->size))
     {
         void *olddesc = tx_ring->desc;
-        D(bug("[%s] %s: tx_ring align check failed: %u bytes at %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, tx_ring->size, tx_ring->desc);)
+        D(bug("[%s] %s: tx_ring align check failed: %u bytes at %p\n", unit->e1ku_name, __func__, tx_ring->size, tx_ring->desc);)
         /* Try again, without freeing the previous */
         if ((tx_ring->desc = AllocMem(tx_ring->size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
         {
@@ -694,7 +694,7 @@ setup_tx_desc_die:
             FreeMem(tx_ring->desc, tx_ring->size);
             FreeMem(olddesc, tx_ring->size);
             tx_ring->dma = NULL;
-            D(bug("[%s] %s: Unable to allocate aligned memory for the transmit descriptor ring\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+            D(bug("[%s] %s: Unable to allocate aligned memory for the transmit descriptor ring\n", unit->e1ku_name, __func__);)
 
             FreeMem(tx_ring->buffer_info, size);
             return -E1000_ERR_CONFIG;
@@ -704,7 +704,7 @@ setup_tx_desc_die:
         }
     }
 
-    D(bug("[%s] %s: Tx Ring Descriptors @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, tx_ring->desc, tx_ring->size);)
+    D(bug("[%s] %s: Tx Ring Descriptors @ %p [%d bytes]\n", unit->e1ku_name, __func__, tx_ring->desc, tx_ring->size);)
 
     tx_ring->next_to_use = 0;
     tx_ring->next_to_clean = 0;
@@ -721,7 +721,7 @@ int e1000func_setup_all_tx_resources(struct net_device *unit)
         err = e1000func_setup_tx_resources(unit, &unit->e1ku_txRing[i]);
         if (err)
         {
-            D(bug("[%s] %s: Allocation for Tx Queue %u failed\n", unit->e1ku_name, __PRETTY_FUNCTION__, i);)
+            D(bug("[%s] %s: Allocation for Tx Queue %u failed\n", unit->e1ku_name, __func__, i);)
             for (i-- ; i >= 0; i--)
             {
                 e1000func_free_tx_resources(unit, &unit->e1ku_txRing[i]);
@@ -738,27 +738,27 @@ static int e1000func_setup_rx_resources(struct net_device *unit,
 {
     int buffer_size;
 
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
     
     buffer_size = sizeof(struct e1000_rx_buffer) * rx_ring->count;
 
-    D(bug("[%s] %s: Configuring for %d buffers\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_ring->count);)
+    D(bug("[%s] %s: Configuring for %d buffers\n", unit->e1ku_name, __func__, rx_ring->count);)
 
     if ((rx_ring->buffer_info = AllocMem(buffer_size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
-        D(bug("[%s] %s: Unable to allocate memory for the receive ring buffers\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+        D(bug("[%s] %s: Unable to allocate memory for the receive ring buffers\n", unit->e1ku_name, __func__);)
         return -E1000_ERR_CONFIG;
     }
 
-    D(bug("[%s] %s: Rx Buffer Info @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_ring->buffer_info, buffer_size);)
+    D(bug("[%s] %s: Rx Buffer Info @ %p [%d bytes]\n", unit->e1ku_name, __func__, rx_ring->buffer_info, buffer_size);)
 
     /* Round up to nearest 4K */
     rx_ring->size = rx_ring->count * sizeof(struct e1000_rx_desc);
-    D(bug("[%s] %s: Wanted Size = %d bytes\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_ring->size);)
+    D(bug("[%s] %s: Wanted Size = %d bytes\n", unit->e1ku_name, __func__, rx_ring->size);)
     rx_ring->size = ALIGN(rx_ring->size, 4096);
 
     if ((rx_ring->desc = AllocMem(rx_ring->size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
     {
-        D(bug("[%s] %s: Unable to allocate memory for the receive ring descriptors\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+        D(bug("[%s] %s: Unable to allocate memory for the receive ring descriptors\n", unit->e1ku_name, __func__);)
 setup_rx_desc_die:
         FreeMem(rx_ring->buffer_info, buffer_size);
         return -E1000_ERR_CONFIG;
@@ -769,7 +769,7 @@ setup_rx_desc_die:
     if (!e1000func_check_64k_bound(unit, rx_ring->desc, rx_ring->size))
     {
         void *olddesc = rx_ring->desc;
-        D(bug("[%s] %s: rx_ring align check failed: %u bytes at %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_ring->size, rx_ring->desc);)
+        D(bug("[%s] %s: rx_ring align check failed: %u bytes at %p\n", unit->e1ku_name, __func__, rx_ring->size, rx_ring->desc);)
 
         /* Try again, without freeing the previous */
         if ((rx_ring->desc = AllocMem(rx_ring->size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
@@ -777,7 +777,7 @@ setup_rx_desc_die:
             /* Failed allocation, critical failure */
             FreeMem(olddesc, rx_ring->size);
             rx_ring->dma = NULL;
-            D(bug("[%s] %s: Unable to allocate memory for the receive descriptor ring\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+            D(bug("[%s] %s: Unable to allocate memory for the receive descriptor ring\n", unit->e1ku_name, __func__);)
             goto setup_rx_desc_die;
         }
         rx_ring->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)rx_ring->desc);
@@ -787,7 +787,7 @@ setup_rx_desc_die:
             FreeMem(rx_ring->desc, rx_ring->size);
             FreeMem(olddesc, rx_ring->size);
             rx_ring->dma = NULL;
-            D(bug("[%s] %s: Unable to allocate aligned memory for the receive descriptor ring\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+            D(bug("[%s] %s: Unable to allocate aligned memory for the receive descriptor ring\n", unit->e1ku_name, __func__);)
             goto setup_rx_desc_die;
         } else {
             /* Free old allocation, new allocation was successful */
@@ -795,7 +795,7 @@ setup_rx_desc_die:
         }
     }
 
-    D(bug("[%s] %s: Rx Ring Descriptors @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_ring->desc, rx_ring->size);)
+    D(bug("[%s] %s: Rx Ring Descriptors @ %p [%d bytes]\n", unit->e1ku_name, __func__, rx_ring->desc, rx_ring->size);)
 
     /* set up ring defaults */
     rx_ring->next_to_clean = 0;
@@ -808,14 +808,14 @@ int e1000func_setup_all_rx_resources(struct net_device *unit)
 {
     int i, err = 0;
 
-    D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit);)
+    D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __func__, unit);)
 
     for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++)
     {
         err = e1000func_setup_rx_resources(unit, &unit->e1ku_rxRing[i]);
         if (err)
         {
-            D(bug("[%s] %s: Allocation for Rx Queue %u failed\n", unit->e1ku_name, __PRETTY_FUNCTION__, i);)
+            D(bug("[%s] %s: Allocation for Rx Queue %u failed\n", unit->e1ku_name, __func__, i);)
             for (i-- ; i >= 0; i--)
             {
                 e1000func_free_rx_resources(unit, &unit->e1ku_rxRing[i]);
@@ -830,7 +830,7 @@ int e1000func_setup_all_rx_resources(struct net_device *unit)
 void e1000func_unmap_and_free_tx_resource(struct net_device *unit,
                                              struct e1000_buffer *buffer_info)
 {
-    D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit);)
+    D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __func__, unit);)
     if (buffer_info->dma) {
         buffer_info->dma = NULL;
     }
@@ -848,7 +848,7 @@ void e1000func_clean_tx_ring(struct net_device *unit,
     unsigned long size;
     unsigned int i;
 
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     /* Free all the Tx ring buffers */
     for (i = 0; i < tx_ring->count; i++) {
@@ -874,7 +874,7 @@ void e1000func_clean_tx_ring(struct net_device *unit,
 void e1000func_free_tx_resources(struct net_device *unit,
                                 struct e1000_tx_ring *tx_ring)
 {
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     e1000func_clean_tx_ring(unit, tx_ring);
 
@@ -892,7 +892,7 @@ void e1000func_clean_rx_ring(struct net_device *unit,
     unsigned long size;
     unsigned int i;
 
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     /* Free all the Rx ring buffers */
     for (i = 0; i < rx_ring->count; i++) {
@@ -923,7 +923,7 @@ void e1000func_clean_rx_ring(struct net_device *unit,
 void e1000func_free_rx_resources(struct net_device *unit,
                                     struct e1000_rx_ring *rx_ring)
 {
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     e1000func_clean_rx_ring(unit, rx_ring);
 
@@ -937,7 +937,7 @@ void e1000func_free_rx_resources(struct net_device *unit,
 #if 0
 static int e1000func_close(struct net_device *unit)
 {
-    D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit);)
+    D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __func__, unit);)
 
     unit->e1ku_ifflags &= ~IFF_UP;
 
@@ -978,8 +978,8 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
     i = rx_ring->next_to_use;
 
     D(
-        bug("[%s]: %s(0x%p, 0x%p, %d)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit, rx_ring, cleaned_count);
-        bug("[%s]: %s: starting at %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, i);
+        bug("[%s]: %s(0x%p, 0x%p, %d)\n", unit->e1ku_name, __func__, unit, rx_ring, cleaned_count);
+        bug("[%s]: %s: starting at %d\n", unit->e1ku_name, __func__, i);
      )
 
     while (cleaned_count--)
@@ -989,12 +989,12 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
         if ((buffer_info->buffer = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
         {
             D(
-                bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, buffer_info->buffer, unit->rx_buffer_len);
+                bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __func__, i, buffer_info->buffer, unit->rx_buffer_len);
                 if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)buffer_info->buffer)) == NULL)
                 {
-                    bug("[%s] %s: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, __PRETTY_FUNCTION__, i);
+                    bug("[%s] %s: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, __func__, i);
                 }
-                bug("[%s] %s: Buffer %d DMA @ %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, buffer_info->dma);
+                bug("[%s] %s: Buffer %d DMA @ %p\n", unit->e1ku_name, __func__, i, buffer_info->dma);
             )
 
             rx_desc = E1000_RX_DESC(rx_ring, i);
@@ -1006,7 +1006,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
             i = 0;
     }
     D(
-        bug("[%s]: %s: next_to_use = %d, i = %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_ring->next_to_use, i);
+        bug("[%s]: %s: next_to_use = %d, i = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_use, i);
      )
     if (rx_ring->next_to_use != i) {
         rx_ring->next_to_use = i;
@@ -1014,7 +1014,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
             i = (rx_ring->count - 1);
 
         D(
-            bug("[%s]: %s: Adjusting RDT to %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, i);
+            bug("[%s]: %s: Adjusting RDT to %d\n", unit->e1ku_name, __func__, i);
         )
         writel(i, (APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt));
     }
@@ -1024,25 +1024,25 @@ void e1000func_configure(struct net_device *unit)
 {
     int i;
 
-    D(bug("[%s]: %s(0x%p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit));
+    D(bug("[%s]: %s(0x%p)\n", unit->e1ku_name, __func__, unit));
 
     e1000func_set_multi(unit);
 
     e1000func_configure_tx(unit);
     e1000func_setup_rctl(unit);
     e1000func_configure_rx(unit);
-    D(bug("[%s] %s: Tx/Rx Configured\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s] %s: Tx/Rx Configured\n", unit->e1ku_name, __func__));
 
     /* call E1000_DESC_UNUSED which always leaves
      * at least 1 descriptor unused to make sure
      * next_to_use != next_to_clean */
     for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++)
     {
-        D(bug("[%s] %s: Allocating Rx Buffers for queue %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, i));
+        D(bug("[%s] %s: Allocating Rx Buffers for queue %d\n", unit->e1ku_name, __func__, i));
         struct e1000_rx_ring *ring = &unit->e1ku_rxRing[i];
         e1000func_alloc_rx_buffers(unit, ring, E1000_DESC_UNUSED(ring));
     }
-    D(bug("[%s] %s: Finished\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s] %s: Finished\n", unit->e1ku_name, __func__));
 }
 
 BOOL e1000func_clean_tx_irq(struct net_device *unit,
@@ -1055,17 +1055,17 @@ BOOL e1000func_clean_tx_irq(struct net_device *unit,
     BOOL retval = FALSE;
     unsigned int total_tx_packets=0;
 
-    D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     i = tx_ring->next_to_clean;
     eop = tx_ring->buffer_info[i].next_to_watch;
     eop_desc = E1000_TX_DESC(tx_ring, eop);
 
-    D(bug("[%s] %s: starting at  %d, eop=%d, desc @ %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, eop, eop_desc));
+    D(bug("[%s] %s: starting at  %d, eop=%d, desc @ %p\n", unit->e1ku_name, __func__, i, eop, eop_desc));
 
     while (eop_desc->upper.data & AROS_LONG2LE(E1000_TXD_STAT_DD)) {
         for (cleaned = FALSE; !cleaned; ) {
-            D(bug("[%s] %s: cleaning Tx buffer %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, i));
+            D(bug("[%s] %s: cleaning Tx buffer %d\n", unit->e1ku_name, __func__, i));
             tx_desc = E1000_TX_DESC(tx_ring, i);
             buffer_info = &tx_ring->buffer_info[i];
             cleaned = (i == eop);
@@ -1109,15 +1109,15 @@ BOOL e1000func_clean_tx_irq(struct net_device *unit,
         if (tx_ring->buffer_info[eop].dma  && !(E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_STATUS) &  E1000_STATUS_TXOFF)) {
             /* detected Tx unit hang */
             D(
-                bug("[%s] %s: Detected Tx Unit Hang -:\n", unit->e1ku_name);
-                bug("[%s] %s:     Tx Queue             <%lu>\n", unit->e1ku_name, __PRETTY_FUNCTION__, (unsigned long)((tx_ring - unit->e1ku_txRing) / sizeof(struct e1000_tx_ring)));
-                bug("[%s] %s:     TDH                  <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, MMIO_R32(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdh));
-                bug("[%s] %s:     TDT                  <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, MMIO_R32(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt));
-                bug("[%s] %s:     next_to_use          <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, tx_ring->next_to_use);
-                bug("[%s] %s:     next_to_clean        <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, tx_ring->next_to_clean);
-                bug("[%s] %s:   buffer_info[next_to_clean]\n", unit->e1ku_name, __PRETTY_FUNCTION__);
-                bug("[%s] %s:     next_to_watch        <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, eop);
-                bug("[%s] %s:     next_to_watch.status <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, eop_desc->upper.fields.status);
+                bug("[%s] %s: Detected Tx Unit Hang -:\n", unit->e1ku_name, __func__);
+                bug("[%s] %s:     Tx Queue             <%lu>\n", unit->e1ku_name, __func__, (unsigned long)((tx_ring - unit->e1ku_txRing) / sizeof(struct e1000_tx_ring)));
+                bug("[%s] %s:     TDH                  <%x>\n", unit->e1ku_name, __func__, MMIO_R32(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdh));
+                bug("[%s] %s:     TDT                  <%x>\n", unit->e1ku_name, __func__, MMIO_R32(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt));
+                bug("[%s] %s:     next_to_use          <%x>\n", unit->e1ku_name, __func__, tx_ring->next_to_use);
+                bug("[%s] %s:     next_to_clean        <%x>\n", unit->e1ku_name, __func__, tx_ring->next_to_clean);
+                bug("[%s] %s:   buffer_info[next_to_clean]\n", unit->e1ku_name, __func__);
+                bug("[%s] %s:     next_to_watch        <%x>\n", unit->e1ku_name, __func__, eop);
+                bug("[%s] %s:     next_to_watch.status <%x>\n", unit->e1ku_name, __func__, eop_desc->upper.fields.status);
             )
 //			netif_stop_queue(netdev);
         }
@@ -1161,7 +1161,7 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
     }
     adapter->hw_csum_good++;
 #else
-    bug("[%s] %s: Frame (Pre)Checksum %x%x%x%x\n", unit->e1ku_name, __PRETTY_FUNCTION__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);
+    bug("[%s] %s: Frame (Pre)Checksum %x%x%x%x\n", unit->e1ku_name, __func__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);
     if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type >= e1000_82543)
     {
         if (status_err & E1000_RXD_STAT_IXSM)
@@ -1181,7 +1181,7 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
             /* It must be a TCP or UDP packet with a valid checksum */
             if (valid && (status_err & E1000_RXD_STAT_TCPCS)) {
                 /* TCP checksum is good */
-                bug("[%s] %s: Using offloaded Checksum\n", unit->e1ku_name, __PRETTY_FUNCTION__);
+                bug("[%s] %s: Using offloaded Checksum\n", unit->e1ku_name, __func__);
 
                 doChecksum = FALSE;
                 frame->eth_packet_crc[0] = (csum & 0xff000000) >> 24;
@@ -1196,7 +1196,7 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
         else
         {
             /* let the stack verify checksum errors */
-            bug("[%s] %s: Checksum Error\n", unit->e1ku_name, __PRETTY_FUNCTION__);
+            bug("[%s] %s: Checksum Error\n", unit->e1ku_name, __func__);
 #if (HAVE_CSUM_STATS)
             unit->e1ku_stats.hw_csum_err++;
 #endif
@@ -1206,17 +1206,17 @@ static void e1000func_rx_checksum(struct net_device *unit, u32 status_err,
     if (doChecksum)
     {
         // We need to calculate the frames checksum ...
-        bug("[%s] %s: Frames checksum needs calculated...\n", unit->e1ku_name, __PRETTY_FUNCTION__);
+        bug("[%s] %s: Frames checksum needs calculated...\n", unit->e1ku_name, __func__);
     }
 
-    bug("[%s] %s: Frame (Post)Checksum %x%x%x%x\n", unit->e1ku_name, __PRETTY_FUNCTION__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);
+    bug("[%s] %s: Frame (Post)Checksum %x%x%x%x\n", unit->e1ku_name, __func__, frame->eth_packet_crc[0], frame->eth_packet_crc[1], frame->eth_packet_crc[2], frame->eth_packet_crc[3]);
 }
 
 UBYTE get_status(struct net_device *unit,
                                     UBYTE *_status, struct e1000_rx_desc *rx_desc)
 {
     *_status = rx_desc->status;
-    bug("[%s] %s: Status: %08x\n", unit->e1ku_name, __PRETTY_FUNCTION__, *_status);
+    bug("[%s] %s: Status: %08x\n", unit->e1ku_name, __func__, *_status);
     return *_status;
 }
 
@@ -1239,7 +1239,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
     rx_desc = E1000_RX_DESC(rx_ring, i);
     D(buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];)
 
-    D(bug("[%s] %s: Starting at %d, Rx Desc @ %p, Buffer Info @ %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, rx_desc, buffer_info);)
+    D(bug("[%s] %s: Starting at %d, Rx Desc @ %p, Buffer Info @ %p\n", unit->e1ku_name, __func__, i, rx_desc, buffer_info);)
 
     while (get_status(unit, &status, rx_desc) & E1000_RXD_STAT_DD) {
         D(
@@ -1272,7 +1272,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
          * packet, also make sure the frame isn't just CRC only */
         if (!(status & E1000_RXD_STAT_EOP) || (length <= ETH_CRCSIZE)) {
             /* All receives must fit into a single buffer */
-            D(bug("[%s] %s: Receive packet consumed multiple buffers - recyclcing\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+            D(bug("[%s] %s: Receive packet consumed multiple buffers - recyclcing\n", unit->e1ku_name, __func__);)
             /* recycle */
             goto next_desc;
         }
@@ -1281,13 +1281,13 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 
         if (rx_desc->errors & E1000_RXD_ERR_FRAME_ERR_MASK){
             UBYTE last_byte = *(frame->eth_packet_data + length - 1);
-            D(bug("[%s] %s: Frame Error %d (last byte %x)\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_desc->errors, last_byte);)
+            D(bug("[%s] %s: Frame Error %d (last byte %x)\n", unit->e1ku_name, __func__, rx_desc->errors, last_byte);)
             if (TBI_ACCEPT((struct e1000_hw *)unit->e1ku_Private00, status,
                           rx_desc->errors, length, last_byte,
                           unit->e1ku_frame_min,
                           unit->e1ku_frame_max))
             {
-                D(bug("[%s] %s: TBI accepted\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+                D(bug("[%s] %s: TBI accepted\n", unit->e1ku_name, __func__);)
                 e1000_tbi_adjust_stats_82543((struct e1000_hw *)unit->e1ku_Private00,
                                           unit->e1ku_hw_stats,
                                           length, frame->eth_packet_data,
@@ -1296,7 +1296,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                 length--;
             } else {
                 /* recycle */
-                D(bug("[%s] %s: TBI rejected - recyclcing\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+                D(bug("[%s] %s: TBI rejected - recyclcing\n", unit->e1ku_name, __func__);)
                 goto next_desc;
             }
         }
@@ -1337,7 +1337,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         {
             D(
                 ULONG *framecrc_ptr = (ULONG *)frame->eth_packet_crc;
-                bug("[%s] %s: Packet IP accepted with type = %d, checksum = %08x\n", unit->e1ku_name, __PRETTY_FUNCTION__, AROS_BE2WORD(frame->eth_packet_type), AROS_LE2LONG(*framecrc_ptr));
+                bug("[%s] %s: Packet IP accepted with type = %d, checksum = %08x\n", unit->e1ku_name, __func__, AROS_BE2WORD(frame->eth_packet_type), AROS_LE2LONG(*framecrc_ptr));
               ) 
             /* Packet is addressed to this driver */
 
@@ -1356,7 +1356,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                 {
                     if (request->ios2_PacketType == AROS_BE2WORD(frame->eth_packet_type))
                     {
-                        D(bug("[%s] %s: copy packet for opener ..\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+                        D(bug("[%s] %s: copy packet for opener ..\n", unit->e1ku_name, __func__);)
                         CopyPacket(LIBBASE, unit, request, length, AROS_BE2WORD(frame->eth_packet_type), frame);
                         accepted = TRUE;
                     }
@@ -1379,7 +1379,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                     CopyPacket(LIBBASE, unit,
                         (APTR)unit->e1ku_request_ports[ADOPT_QUEUE]->
                         mp_MsgList.lh_Head, length, AROS_BE2WORD(frame->eth_packet_type), frame);
-                    D(bug("[%s] %s: packet copied to orphan queue\n", unit->e1ku_name, __PRETTY_FUNCTION__);)
+                    D(bug("[%s] %s: packet copied to orphan queue\n", unit->e1ku_name, __func__);)
                 }
             }
         }
@@ -1397,29 +1397,29 @@ next_desc:
     // Enabling this stalls the queue ...
     if ((cleaned_count = E1000_DESC_UNUSED(rx_ring)))
     {
-        D(bug("[%s] %s: Updating rdt\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+        D(bug("[%s] %s: Updating rdt\n", unit->e1ku_name, __func__));
         writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
     }
 #else
     // ...but it seems we have to tell the hardware to wrap around?
     if (update == TRUE)
     {
-        D(bug("[%s] %s: Adjusting RDH/RDT\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+        D(bug("[%s] %s: Adjusting RDH/RDT\n", unit->e1ku_name, __func__));
         writel(readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt), ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
         writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdh);
     }
 #endif
 
     D(
-        bug("[%s] %s: Next to clean = %d\n", unit->e1ku_name, __PRETTY_FUNCTION__, rx_ring->next_to_clean);
-        bug("[%s] %s:     RDH                  <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdh));
-        bug("[%s] %s:     RDT                  <%x>\n", unit->e1ku_name, __PRETTY_FUNCTION__, readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt));
+        bug("[%s] %s: Next to clean = %d\n", unit->e1ku_name, __func__, rx_ring->next_to_clean);
+        bug("[%s] %s:     RDH                  <%x>\n", unit->e1ku_name, __func__, readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdh));
+        bug("[%s] %s:     RDT                  <%x>\n", unit->e1ku_name, __func__, readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt));
      )
 
     unit->e1ku_stats.PacketsReceived += total_rx_packets;
     //adapter->total_rx_packets += total_rx_packets;
     //adapter->total_rx_bytes += total_rx_bytes;
-    D(bug("[%s] %s: Received %d packets (%d bytes)\n", unit->e1ku_name, __PRETTY_FUNCTION__, total_rx_packets, total_rx_bytes);)
+    D(bug("[%s] %s: Received %d packets (%d bytes)\n", unit->e1ku_name, __func__, total_rx_packets, total_rx_bytes);)
 
     return cleaned;
 }
@@ -1430,7 +1430,7 @@ void e1000_pci_clear_mwi(struct e1000_hw *hw)
 {
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
 
-    D(bug("[%s]: %s()\n", ((struct e1000Unit *)hw->back)->e1ku_name, __PRETTY_FUNCTION__);)
+    D(bug("[%s]: %s()\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__);)
 
     /* Check if the devices cache line size is set first ?*/
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
@@ -1444,7 +1444,7 @@ void e1000_pci_set_mwi(struct e1000_hw *hw)
 {
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
 
-    D(bug("[%s]: %s()\n", ((struct e1000Unit *)hw->back)->e1ku_name, __PRETTY_FUNCTION__);)
+    D(bug("[%s]: %s()\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__);)
 
     /* Check if the devices cache line size is set first ?*/
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
@@ -1458,14 +1458,14 @@ LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_ReadConfigWord pcireadmsg;
 
-    D(bug("[%s]: %s(reg:%d)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __PRETTY_FUNCTION__, reg);)
+    D(bug("[%s]: %s(reg:%d)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, reg);)
 
     if (((struct e1000Unit *)hw->back)->e1ku_PCIeCap)
     {
         pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
         pcireadmsg.reg = ((struct e1000Unit *)hw->back)->e1ku_PCIeCap + reg;
         *value = (UWORD)OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
-        D(bug("[%s] %s: ------> [%04x]\n", ((struct e1000Unit *)hw->back)->e1ku_name, __PRETTY_FUNCTION__, *value);)
+        D(bug("[%s] %s: ------> [%04x]\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, *value);)
         return (E1000_SUCCESS);
     }
 
@@ -1475,18 +1475,18 @@ LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 void e1000_read_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_ReadConfigWord pcireadmsg;
-    D(bug("[%s]: %s(reg:%d)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __PRETTY_FUNCTION__, reg);)
+    D(bug("[%s]: %s(reg:%d)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, reg);)
 
     pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
     pcireadmsg.reg = reg;
     *value = (UWORD)OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, (OOP_Msg)&pcireadmsg);
-    D(bug("[%s] %s: ------> [%04x]\n", ((struct e1000Unit *)hw->back)->e1ku_name, __PRETTY_FUNCTION__, *value);)
+    D(bug("[%s] %s: ------> [%04x]\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, *value);)
 }
 
 void e1000_write_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
-    D(bug("[%s]: %s(reg:%d, %04x)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __PRETTY_FUNCTION__, reg, *value);)
+    D(bug("[%s]: %s(reg:%d, %04x)\n", ((struct e1000Unit *)hw->back)->e1ku_name, __func__, reg, *value);)
 
     pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
     pciwritemsg.reg = reg;
