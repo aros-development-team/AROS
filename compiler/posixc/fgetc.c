@@ -21,12 +21,12 @@
     NAME */
 #include <stdio.h>
 
-	int fgetc (
+/*	int fgetc (
 
-/*  SYNOPSIS */
-	FILE * stream)
+    SYNOPSIS
+	FILE * stream
 
-/*  FUNCTION
+    FUNCTION
 	Read one character from the stream. If there is no character
 	available or an error occurred, the function returns EOF.
 
@@ -48,6 +48,7 @@
     INTERNALS
 
 ******************************************************************************/
+int  __posixc_fgetc (	FILE * stream)
 {
     int c;
     fdesc *fdesc = __getfdesc(stream->fd);
