@@ -1900,7 +1900,7 @@ case "$target_os" in
                 aros_nominal_depth=8
                 gcc_target_cpu="i386"
 
-                kernel_tool_prefix="i386-mingw32-"
+                kernel_tool_prefix="i686-w64-mingw32-"
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
