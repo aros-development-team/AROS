@@ -22,8 +22,8 @@
 /*	int rename (
 
     SYNOPSIS
-	const char * oldpath,
-	const char * newpath)
+	const char * oldpath
+	const char * newpath
 
     FUNCTION
 	Renames a file or directory.

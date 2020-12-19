@@ -33,7 +33,7 @@ int main(void)
     Strlcpy(buffer, "12345678901234567890", sizeof buffer);
     printf("buffer '%s' len %d (should be 11)\n", buffer, (int)Strlen(buffer));
 
-    printf("\nTesting Strlcat\n", buffer);
+    printf("\nTesting Strlcat\n");
 
     Strlcpy(buffer, "12345678", sizeof buffer);
     Strlcat(buffer, "abcdefghijklmnopqr", sizeof buffer);

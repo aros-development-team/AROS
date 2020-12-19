@@ -118,7 +118,7 @@ Vec radiance_expl(struct Task *me, const Ray &r, int depth, unsigned short *Xi,i
 #endif
       if (diff < AROS_STACKSIZE / 2)
       {
-          bug("[SMP-SmallPT-Task] Stack nearly exhausted after %d iterations (%dkB left of %dkB total), breaking recurrence\n", depth, (diff + 512) / 1024,
+          bug("[SMP-SmallPT-Task] Stack nearly exhausted after %d iterations (%ldkB left of %ldkB total), breaking recurrence\n", depth, (diff + 512) / 1024,
               ((IPTR)me->tc_SPUpper - (IPTR)me->tc_SPLower + 512) / 1024);
           return obj.e;
       }
@@ -201,7 +201,7 @@ Vec radiance(struct Task *me, const Ray &r, int depth, unsigned short *Xi)
 #endif
         if (diff < AROS_STACKSIZE / 2)
         {
-            bug("[SMP-SmallPT-Task] Stack nearly exhausted after %d iterations (%dkB left of %dkB total), breaking recurrence\n", depth, (diff + 512) / 1024,
+            bug("[SMP-SmallPT-Task] Stack nearly exhausted after %d iterations (%ldkB left of %ldkB total), breaking recurrence\n", depth, (diff + 512) / 1024,
                 ((IPTR)me->tc_SPUpper - (IPTR)me->tc_SPLower + 512) / 1024);
             return obj.e;
         }
@@ -294,7 +294,7 @@ void __test()
 
     diff = (IPTR)ptr - bottom;
 #endif
-    bug("--> USED STACK: %d\n", diff);
+    bug("--> USED STACK: %d\n", (int)diff);
 }
 
 extern "C" void RenderTile(struct ExecBase *SysBase, struct MsgPort *masterPort, struct MsgPort **myPort)
