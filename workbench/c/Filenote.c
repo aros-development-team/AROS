@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011 The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020 The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filenote CLI command
@@ -137,8 +137,9 @@ int main(void)
     if (apath)
     {
         /* Make sure DOS knows the buffer size.
+
          */
-        apath->ap_Flags = APF_DOWILD | APF_FollowHLinks;
+        apath->ap_Flags = (BYTE)((UBYTE)APF_DOWILD | APF_FollowHLinks);
         apath->ap_Strlen = MAX_PATH_LEN;
         apath->ap_BreakBits = 0;
         apath->ap_FoundBreak = 0;
