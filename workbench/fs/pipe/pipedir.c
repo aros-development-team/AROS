@@ -505,10 +505,11 @@ struct DosPacket  *pkt;
 */
 
 static void  InitPipedirLock ()
-
-{ if (PipedirLock == NULL)
-    { PipedirLock= (struct FileLock *) (((SIPTR) LockBytes + 3) & ((~0)<<2));
-      InitLock (PipedirLock, NULL);
+{
+    if (PipedirLock == NULL)
+    {
+        PipedirLock= (struct FileLock *)(((IPTR) LockBytes + 0x3) & ~0x3);
+        InitLock (PipedirLock, NULL);
     }
 }
 
