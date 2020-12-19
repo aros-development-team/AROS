@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -93,7 +93,7 @@ static void Action(void)
     
     if (!(rp = CloneRastPort(&win->WScreen->RastPort)))
     {
-    	Cleanup("Can´t clone screen rastport!");
+    	Cleanup("Can't clone screen rastport!");
     }
     SetDrMd(rp,JAM1);
     
