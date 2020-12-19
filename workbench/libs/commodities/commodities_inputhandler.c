@@ -454,21 +454,23 @@ static void TransFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 
 static void DebugFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 {
+#if (0)
     kprintf("\n----\nDEBUG NODE: %lx, ID: %lx\n"
 	    "\tCxMsg: %lx, type: %x, data %lx destination %lx\n",
 	    co, co->co_Ext.co_DebugID, msg->cxm_Routing, msg->cxm_Data,
 	    msg->cxm_Type);
+#endif
 
     if (msg->cxm_Type != CXM_IEVENT)
     {
 	return;
     }
 
-    kprintf("dump IE: %lx\n"
-	    "\tClass %lx"
-	    "\tCode %lx"
-	    "\tQualifier %lx"
-	    "\nEventAddress %lx",
+    kprintf("dump IE: %08x\n"
+	    "\tClass %08x"
+	    "\tCode %08x"
+	    "\tQualifier %08x"
+	    "\nEventAddress 0x%p",
 	    msg->cxm_Data, msg->cxm_Data->ie_Class, msg->cxm_Data->ie_Code,
 	    msg->cxm_Data->ie_Qualifier, msg->cxm_Data->ie_EventAddress);
 }
