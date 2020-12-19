@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -101,7 +101,7 @@ static void UpdatePenspec(Object *obj, struct Penadjust_DATA *data)
 
     zune_pen_intern_to_spec(&data->intpenspec, &data->penspec);
 
-    D(bug(" ## penspec now %s\n", &data->penspec));
+    D(bug(" ## penspec now '%s'\n", (char *)&data->penspec));
 }
 
 static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
