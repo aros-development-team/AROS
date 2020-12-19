@@ -1,18 +1,20 @@
 #include "filesystems_utilities.h"
 
-#include <stdarg.h>
-#include <string.h>
-
+#include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/muimaster.h>
+#include <clib/alib_protos.h>
+
 #include <dos/dos.h>
 
 #include <exec/exec.h>
-#include <proto/exec.h>
 #include <exec/memory.h>
 #include <exec/rawfmt.h>
 
-#include <proto/muimaster.h>
 #include <libraries/mui.h>
+
+#include <stdarg.h>
+#include <string.h>
 
 #include "locale.h"
 
