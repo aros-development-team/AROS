@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -183,7 +183,7 @@ void Receiver_NewStatus_first(
 	UBYTE status
 ){
 	if(status<0x80){
-		D(bug("Error, Receiver_NewStatus_first, status: %ld\n",status));
+		D(bug("Error, Receiver_NewStatus_first, status: %02x\n",status));
 		Receiver_SetError(driverdata,CMEF_MsgErr);
 	}else{
 		Receiver_NewStatus(driverdata,status);
@@ -204,7 +204,7 @@ void Receiver_SysEx(
 			driverdata->Input_Treat=Receiver_NewStatus_first;
 		}else{
 			Receiver_SysExSuperTreat(driverdata,0xff);
-			D(bug("Error, Receiver_SysEx, data: %ld\n",data));
+			D(bug("Error, Receiver_SysEx, data: %02x\n",data));
 			Receiver_ErrorAndNewStatus(driverdata,data);
 		}
 	}else{
@@ -232,7 +232,7 @@ void Receiver_SysCom3_2(
 	UBYTE data
 ){
 	if(data>=0x80){
-		D(bug("Error, Receiver_SysCom3_2, data: %ld\n",data));
+		D(bug("Error, Receiver_SysCom3_2, data: %02x\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data2=data;
@@ -246,7 +246,7 @@ void Receiver_SysCom3_1(
 	UBYTE data
 ){
 	if(data>=0x80){
-		D(bug("Error, Receiver_SysCom3_1, data: %ld\n",data));
+		D(bug("Error, Receiver_SysCom3_1, data: %02x\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -259,7 +259,7 @@ void Receiver_SysCom2(
 	UBYTE data
 ){
 	if(data>=0x80){
-		D(bug("Error, Receiver_SysCom2, data: %ld\n",data));
+		D(bug("Error, Receiver_SysCom2, data: %02x\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -295,7 +295,7 @@ void Receiver_NewSysCom(
 			break;
 		default:
 			// Undefined SysCom. Topic: should the error not be set?
-			D(bug("Error, Receiver_NewSysCom, status: %ld\n",status));
+			D(bug("Error, Receiver_NewSysCom, status: %02x\n",status));
 			Receiver_SetError(driverdata,CMEF_MsgErr);
 			driverdata->Input_Treat=Receiver_NewStatus_first;
 			break;
@@ -316,7 +316,7 @@ void Receiver_General3_2(
 	UBYTE data
 ){
 	if(data>=0x80){
-		D(bug("Error, Receiver_General3_2, data: %ld\n",data));
+		D(bug("Error, Receiver_General3_2, data: %02x\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data2=data;
@@ -342,7 +342,7 @@ void Receiver_General3_first(
 	UBYTE data
 ){
 	if(data>=0x80){
-		D(bug("Error, Receiver_General3_first, data: %ld\n",data));
+		D(bug("Error, Receiver_General3_first, data: %02x\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -373,7 +373,7 @@ void Receiver_General2_first(
 	UBYTE data
 ){
 	if(data>=0x80){
-		D(bug("Error, Receiver_General2_first, data: %ld\n",data));
+		D(bug("Error, Receiver_General2_first, data: %02x\n",data));
 		Receiver_ErrorAndNewStatus(driverdata,data);
 	}else{
 		driverdata->msg2.data1=data;
@@ -431,7 +431,7 @@ void Receiver_first(
 	}
 
 	if(input&0x8000){
-		D(bug("Error, Receiver_first. Overflow: %lx\n",input));
+		D(bug("Error, Receiver_first. Overflow: %02x\n",input));
 		Receiver_SetError(driverdata,CMEF_RecvOverflow);
 	}
 
