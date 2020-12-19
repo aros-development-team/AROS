@@ -3,12 +3,15 @@
     $Id$
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
+#include <proto/utility.h>
+
 #include <resources/processor.h>
+
 #include <string.h>
 
+#include "processor_intern.h"
 #include "processor_arch_intern.h"
 
 static const char *vendors[] =
@@ -26,17 +29,24 @@ static const char *vendors[] =
     NULL
 };
 
-static void ReadVendorID(struct X86ProcessorInformation * info)
+static void ReadVendorID(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info)
 {
+    struct UtilityBase *UtilityBase;
+    APTR *procPriv = ProcessorBase->Private1;
     ULONG eax, ebx, ecx, edx;
     ULONG * ulongptr = NULL;
     ULONG index = 0;
+
     info->Vendor = VENDOR_UNKNOWN;
     info->CPUIDHighestStandardFunction = 0x0;
     info->CPUIDHighestExtendedFunction = 0x0;
     
     D(bug("[processor.x86] :%s()\n", __func__));
-    
+
+    /* UtilityBase is embeded in the last slot .. */
+    UtilityBase = procPriv[ProcessorBase->cpucount];
+    D(bug("[processor.x86] %s: UtilityBase @ 0x%p\n", __func__, UtilityBase);)
+
     /* Reading CPU Vendor ID */
     ulongptr = (ULONG *)info->VendorID;
     index = 0;
@@ -48,7 +58,7 @@ static void ReadVendorID(struct X86ProcessorInformation * info)
     /* Select manufacturer based on Vendor ID */
     for (index = 0; vendors[index]; index++)
     {
-        if (strcmp(info->VendorID, vendors[index]) == 0)
+        if (Stricmp(info->VendorID, vendors[index]) == 0)
         {
             info->Vendor = index + VENDOR_AMD;
             break;
@@ -454,11 +464,11 @@ static void ReadMSRSupportInformation(struct X86ProcessorInformation * info)
     }
 }
 
-VOID ReadProcessorInformation(struct X86ProcessorInformation * info)
+VOID ReadProcessorInformation(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info)
 {
     D(bug("[processor.x86] :%s()\n", __func__));
 
-    ReadVendorID(info);
+    ReadVendorID(ProcessorBase, info);
     ReadBrandString(info);
     ReadFamilyModelStepping(info);
     ReadFeaturesFlags(info);

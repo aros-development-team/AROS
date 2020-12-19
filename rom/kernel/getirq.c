@@ -15,17 +15,17 @@
     NAME */
 #include <proto/kernel.h>
 
-        AROS_LH2(ULONG, KrnModifyIRQA,
+        AROS_LH2(void, KrnGetIRQA,
 
 /*  SYNOPSIS */
         AROS_LHA(ULONG, irq, D0),
         AROS_LHA(struct TagItem *, attribs, A0),
 
 /*  LOCATION */
-        struct KernelBase *, KernelBase, 39, Kernel)
+        struct KernelBase *, KernelBase, 63, Kernel)
 
 /*  FUNCTION
-        Modify an IRQ using the passed in tags.
+        Query an IRQ using the passed in tags.
 
     INPUTS
 
@@ -46,7 +46,7 @@
     AROS_LIBFUNC_INIT
 
     /* The implementation of this function is architecture-specific */
-    return 0;
+    return;
 
     AROS_LIBFUNC_EXIT
 }

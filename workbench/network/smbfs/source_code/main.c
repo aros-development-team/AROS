@@ -6,7 +6,7 @@
  * SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
  *
  * Copyright (C) 2000-2016 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
- * Copyright (C) 2011-2014,2016-2019, The AROS Development Team
+ * Copyright (C) 2011-2014,2016-2020, The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1866,7 +1866,7 @@ Setup(
 	TAG_END);
 	if(error != OK)
 	{
-		ReportError("Could not initialize 'bsdsocket.library' (%ld, %s).",error,amitcp_strerror(error));
+		ReportError("Could not initialize 'bsdsocket.library' (%d, %s).",error,amitcp_strerror(error));
 		goto out;
 	}
 
@@ -1919,7 +1919,7 @@ Setup(
 					description[i] = '\0';
 			}
 
-			ReportError("%s '%s' (%ld, %s).",msg,translation_file,error,description);
+			ReportError("%s '%s' (%d, %s).",msg,translation_file,error,description);
 			goto out;
 		}
 	}

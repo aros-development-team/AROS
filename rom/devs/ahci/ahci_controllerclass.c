@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,6 +59,26 @@ VOID AHCI__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
             Remove(&ahciNode->ac_Node);
         }
     }
+}
+
+void  AHCI__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct AHCIBase *AHCIBase = cl->UserData;
+    struct ahci_Controller *data = OOP_INST_DATA(cl, o);
+    ULONG idx;
+
+    HW_Switch(msg->attrID, idx)
+    {
+        case aoHW_Device:
+            {
+                if (data->ac_dev)
+                    *msg->storage = (IPTR)data->ac_dev->dev_Object;
+            }
+            return;
+        default:
+            break;
+    }
+    OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 BOOL AHCI__Hidd_StorageController__RemoveBus(OOP_Class *cl, OOP_Object *o, struct pHidd_StorageController_RemoveBus *Msg)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -158,7 +158,7 @@
 
     if (!(ctx->stmanager = MESA3DGLNewStManager(pscreen)))
     {
-        bug("%s: ERROR - failed to create ST Manager\n");
+        bug("%s: ERROR - failed to create ST Manager\n", __func__);
         DestroyPipeScreen(ctx->driver, pscreen);
 #if (0)
         DestroyPipe(ctx->driver);

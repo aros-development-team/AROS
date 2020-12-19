@@ -16,48 +16,22 @@
 
 #include <aros/debug.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/kernel.h>
 
-        AROS_LH2(ULONG, KrnModifyIRQA,
-
-/*  SYNOPSIS */
+AROS_LH2(ULONG, KrnModifyIRQA,
         AROS_LHA(ULONG, irq, D0),
         AROS_LHA(struct TagItem *, attribs, A0),
-
-/*  LOCATION */
         struct KernelBase *, KernelBase, 39, Kernel)
-
-/*  FUNCTION
-        Modify an IRQ using the passed in tags.
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     UBYTE irqPol = (UBYTE)-1, irqTrig = (UBYTE)-1;
-    struct TagItem *irqTag;
 
     D(bug("[Kernel] %s(%u, 0x%p)\n", __func__, irq, attribs);)
 
     if (attribs)
     {
+        struct TagItem *irqTag;
         if ((irqTag = LibFindTagItem(KERNELTAG_IRQ_POLARITY, attribs)))
         {    
             irqPol = (UBYTE)irqTag->ti_Data;

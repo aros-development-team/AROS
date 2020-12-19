@@ -180,7 +180,7 @@ smba_connect (smba_connect_parameters_t * p, unsigned int ip_addr, int use_E, ch
 		if (strlen (p->server_ipname) > 16)
 		{
 			errnum = -ENAMETOOLONG;
-			ReportError("Server name '%s' is too long for NetBIOS (max %ld characters).",p->server_ipname,16);
+			ReportError("Server name '%s' is too long for NetBIOS (max %d characters).",p->server_ipname,16);
 			goto error_occured;
 		}
 
@@ -208,7 +208,7 @@ smba_connect (smba_connect_parameters_t * p, unsigned int ip_addr, int use_E, ch
 
 	if ((errnum = smb_proc_connect (&res->server)) < 0)
 	{
-		ReportError("Cannot connect to server (%ld, %s).", -errnum,amitcp_strerror(-errnum));
+		ReportError("Cannot connect to server (%d, %s).", -errnum,amitcp_strerror(-errnum));
 		goto error_occured;
 	}
 
@@ -1388,7 +1388,7 @@ extract_service (char *service, char *server, size_t server_size, char *share, s
 	if ((strlen (complete_service) > 63) || (strlen (share_start) > 63))
 	{
 		result = -ENAMETOOLONG;
-		ReportError("Server or share name is too long in '%s' (max %ld characters).",service,63);
+		ReportError("Server or share name is too long in '%s' (max %d characters).",service,63);
 		goto out;
 	}
 
@@ -1440,7 +1440,7 @@ smba_start(char * service,char *opt_workgroup,char *opt_username,char *opt_passw
 		}
 		else if (BroadcastNameQuery(server,"",(UBYTE *)&ipAddr) != 0)
 		{
-			ReportError("Unknown host '%s' (%ld, %s).",server,lookup_error,host_strerror(lookup_error));
+			ReportError("Unknown host '%s' (%d, %s).",server,lookup_error,host_strerror(lookup_error));
 			error = (-ENOENT);
 			goto out;
 		}
@@ -1452,7 +1452,7 @@ smba_start(char * service,char *opt_workgroup,char *opt_username,char *opt_passw
 		h = gethostbyaddr ((char *) &ipAddr, sizeof (ipAddr), AF_INET);
 		if (h == NULL)
 		{
-			ReportError("Unknown host '%s' (%ld, %s).",server,h_errno,host_strerror(errno));
+			ReportError("Unknown host '%s' (%d, %s).",server,h_errno,host_strerror(errno));
 			error = (-ENOENT);
 			goto out;
 		}
@@ -1472,7 +1472,7 @@ smba_start(char * service,char *opt_workgroup,char *opt_username,char *opt_passw
 		/* Make sure the hostname is 16 characters or less (for Netbios) */
 		if (strlen (hostName) > 16)
 		{
-			ReportError("Server host name '%s' is too long (max %ld characters).", hostName, 16);
+			ReportError("Server host name '%s' is too long (max %d characters).", hostName, 16);
 			error = (-ENAMETOOLONG);
 			goto out;
 		}
@@ -1504,7 +1504,7 @@ smba_start(char * service,char *opt_workgroup,char *opt_username,char *opt_passw
 
 	if (strlen(opt_workgroup) > 15)
 	{
-		ReportError("Workgroup/domain name '%s' is too long (max %ld characters).", opt_workgroup,15);
+		ReportError("Workgroup/domain name '%s' is too long (max %d characters).", opt_workgroup,15);
 		error = (-ENAMETOOLONG);
 		goto out;
 	}
@@ -1516,7 +1516,7 @@ smba_start(char * service,char *opt_workgroup,char *opt_username,char *opt_passw
 	{
 		if (strlen (opt_servername) > 16)
 		{
-			ReportError("Server name '%s' is too long (max %ld characters).", opt_servername,16);
+			ReportError("Server name '%s' is too long (max %d characters).", opt_servername,16);
 			error = (-ENAMETOOLONG);
 			goto out;
 		}
@@ -1528,7 +1528,7 @@ smba_start(char * service,char *opt_workgroup,char *opt_username,char *opt_passw
 	{
 		if (strlen (opt_clientname) > 16)
 		{
-			ReportError("Client name '%s' is too long (max %ld characters).", opt_clientname,16);
+			ReportError("Client name '%s' is too long (max %d characters).", opt_clientname,16);
 			error = (-ENAMETOOLONG);
 			goto out;
 		}
@@ -1552,7 +1552,7 @@ smba_start(char * service,char *opt_workgroup,char *opt_username,char *opt_passw
 	error = smba_connect (&par, ipAddr, use_extended, workgroup, opt_cachesize, opt_max_transmit, opt_raw_smb, &the_server);
 	if(error < 0)
 	{
-		ReportError("Could not connect to server (%ld, %s).",-error,amitcp_strerror(-error));
+		ReportError("Could not connect to server (%d, %s).",-error,amitcp_strerror(-error));
 		goto out;
 	}
 

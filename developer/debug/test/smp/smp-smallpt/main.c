@@ -1,5 +1,5 @@
 /*
-    Copyright 2017, The AROS Development Team. All rights reserved.
+    Copyright 2017-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -142,7 +142,7 @@ int main()
 
     GetCPUInfo(tags);
 
-    D(bug("[SMP-Smallpt] %s: detected %d CPU cores\n", __func__, coreCount);)
+    D(bug("[SMP-Smallpt] %s: detected %d CPU cores\n", __func__, (int)coreCount);)
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
     if (rda != NULL)

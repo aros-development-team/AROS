@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,8 +39,8 @@
     AROS_LIBFUNC_INIT
 
     struct pHidd_Gallium_DestroyPipeScreen drmsg = {
-    mID : OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DestroyPipeScreen),
-    screen : pscreen,
+        .mID    = OOP_GetMethodID(IID_Hidd_Gallium, moHidd_Gallium_DestroyPipeScreen),
+        .screen = pscreen,
     };
 
     OOP_DoMethod((OOP_Object *)pipe, (OOP_Msg)&drmsg);

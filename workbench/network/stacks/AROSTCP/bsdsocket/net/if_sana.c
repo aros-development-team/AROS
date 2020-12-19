@@ -1155,7 +1155,7 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
 #endif
 
   default: 
-    __log(LOG_ERR, "%s%ld: can't handle af%ld\n",
+    __log(LOG_ERR, "%s%d: can't handle af%d\n",
 	ssc->ss_if.if_name, ssc->ss_if.if_unit, dst->sa_family);
     error = EAFNOSUPPORT; 
     goto bad; 

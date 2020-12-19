@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,7 @@ int main(void)
     BPTR in = Input(), out = Output();
     Flush(in);
     for (c = FGetC(in);
-         c != '\n' && c != ENDSTREAMCH;
+         c != '\n' && c != (UBYTE)ENDSTREAMCH;
          c = FGetC(in)
     )
         FPutC(out, c);

@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2019 The AROS Dev Team
+ * Copyright (C) 2005 - 2020 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -293,8 +293,8 @@ D(bug("[AROSTCP](amiga_main.c) main: Got CTRL-C while %ld %s still open.\n",
 	             (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries"));
 #endif
 
-          __log(LOG_ERR, "Got CTRL-C while %ld %s still open.\n",
-	       MasterSocketBase->lib_OpenCnt - 1,
+          __log(LOG_ERR, "Got CTRL-C while %d %s still open.\n",
+	       (MasterSocketBase->lib_OpenCnt - 1),
 	             (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries");
 
           api_show(); /* stopping not successful, show API to users */ 
@@ -494,7 +494,7 @@ D(bug("[AROSTCP](amiga_main.c) taskname_changed()\n"));
   
   AROSTCP_Task->tc_Node.ln_Name = (UBYTE *)newname;
   if (initialized)
-    printf("New task name %s\n", newname);
+    printf("New task name '%s'\n", (char *)newname);
 
   return TRUE;
 }

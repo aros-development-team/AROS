@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -68,7 +68,7 @@ int deleteDirContents(char *startpath, int depth, int dnum, int fnum)
     if (ExAll(lock, ead, size, ED_TYPE, eac))
     {
         error = IoErr();
-        kprintf("entries = %ld\n", eac->eac_Entries);
+        kprintf("entries = %d\n", (int)eac->eac_Entries);
         ExAllEnd(lock, ead, size, ED_TYPE, eac);
         UnLock(lock);
         FreeVec(ead);

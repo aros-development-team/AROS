@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function access().
@@ -181,7 +181,7 @@
     }
 
     FreeDosObject(DOS_FIB, fib);
-    if (lock);
+    if (lock)
 	UnLock(lock);
 
     return result;

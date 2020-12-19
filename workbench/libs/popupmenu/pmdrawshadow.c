@@ -29,7 +29,11 @@
 
 // Clamping macro, make sure that x stays within l <= x <= u
 
-#define CLAMP(x, l, u)      x=x>u?x=u:x;x=x<l?x=l:x;
+#define CLAMP(x, l, u) \
+({ \
+    x = (x > u) ? u : x; \
+    x = (x < l) ? l : x; \
+})
 
 struct CGFXHookMsg {
     APTR    memptr;

@@ -155,16 +155,16 @@ struct ProcessPrivate
     struct AnimFrame            *pp_PlaybackFrame;
 
     ULONG                       pp_BufferSigMask;
-    UBYTE                       pp_BufferEnable;
-    UBYTE                       pp_BufferDisable;
-    UBYTE                       pp_BufferFill;
-    UBYTE                       pp_BufferPurge;
+    BYTE                       pp_BufferEnable;
+    BYTE                       pp_BufferDisable;
+    BYTE                       pp_BufferFill;
+    BYTE                       pp_BufferPurge;
 
     ULONG                       pp_PlaybackSigMask;
-    UBYTE                       pp_PlaybackEnable;
-    UBYTE                       pp_PlaybackDisable;
-    UBYTE                       pp_PlaybackTick;          /* signal frames needs to change      */
-    UBYTE                       pp_PlaybackSync;          /* signal position changed            */
+    BYTE                       pp_PlaybackEnable;
+    BYTE                       pp_PlaybackDisable;
+    BYTE                       pp_PlaybackTick;          /* signal frames needs to change      */
+    BYTE                       pp_PlaybackSync;          /* signal position changed            */
 };
 
 #define PRIVPROCF_ENABLED       (1 << 0)

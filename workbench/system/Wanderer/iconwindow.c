@@ -1,5 +1,5 @@
 /*
-  Copyright © 2004-2019, The AROS Development Team. All rights reserved.
+  Copyright © 2004-2020, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -1588,7 +1588,7 @@ IPTR IconWindow__MUIM_IconWindow_Snapshot
 
     if (message->snapshotall == TRUE)
     {
-        struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+        struct IconList_Entry *icon_entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
         struct IconEntry      *node = NULL;
         struct TagItem            icon_tags[] =
         {

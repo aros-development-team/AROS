@@ -1941,7 +1941,7 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk(%d tags)\n", tag_count));
         if (cont)
         {
                         /* prefs file is stored in little endian */
-            switch ((int)AROS_LE2LONG(global_chunk[i].ti_Tag))
+            switch ((ULONG)AROS_LE2LONG(global_chunk[i].ti_Tag))
             {
                 case MUIA_IconWindow_WindowNavigationMethod:
                 {

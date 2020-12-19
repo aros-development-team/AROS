@@ -8,7 +8,7 @@
 #include <dos/dos.h>
 #include <dos/dostags.h>
 
-#ifdef __AMIGA__
+#ifndef __AROS__
 #define IPTR ULONG
 #define CLI_DEFAULTSTACK_UNIT sizeof(IPTR)
 typedef struct RAWARG_s { } *RAWARG;

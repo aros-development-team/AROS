@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -6744,7 +6744,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconList_Entry *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
 
     if (data->icld_DragDropEvent)
     {
@@ -6934,7 +6934,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                 LONG offset_x = message->x - (data->click_x + _mleft(obj));
                 LONG offset_y = message->y - (data->click_y + _mtop(obj));
 
-                entry = (IPTR)MUIV_IconList_NextIcon_Start;
+                entry = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
                 while ((IPTR)entry != MUIV_IconList_NextIcon_End)
                 {
                     DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
@@ -6965,7 +6965,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         {
             int copycount = 0;
             /* Create list of entries to copy .. */
-            entry = (IPTR)MUIV_IconList_NextIcon_Start;
+            entry = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
             while ((IPTR)entry != MUIV_IconList_NextIcon_End)
             {
                 DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);

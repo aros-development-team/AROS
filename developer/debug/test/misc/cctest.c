@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,7 +27,7 @@ static char s[256];
 void arrgh(TYPE a, TYPE b, TYPE shouldbe_a, TYPE shouldbe_b)
 {
     sprintf(s,"\n\n\n******* CONDITION CODES TERRIBLY WRONG ******* " FORMAT_STRING "\n\n\n", a, b, shouldbe_a, shouldbe_b);
-    bug(s);
+    bug("%s", s);
 }
 
 int main(void)

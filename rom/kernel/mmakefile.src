@@ -24,7 +24,7 @@ ifneq ($(AROS_TARGET_VARIANT),)
 endif
 
 FUNCS :=     spininit spinislocked spintrylock spinlock spinunlock addexceptionhandler           \
-	     allocirq modifyirq addirqhandler modifyirqhandler exitinterrupt cause cli sti                     \
+	     allocirq getirq modifyirq addirqhandler modifyirqhandler exitinterrupt cause cli sti                     \
              bug createcontext deletecontext displayalert dispatch getbootinfo issuper mapglobal \
 	     remexceptionhandler remirqhandler schedule setprotection getscheduler setscheduler  \
 	     switch unmapglobal virtualtophysical obtaininput releaseinput 		         \

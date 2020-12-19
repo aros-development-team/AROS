@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux fbdev Gfx Hidd for AROS.
@@ -503,7 +503,7 @@ static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, st
     }
 
     D(kprintf("FB;  mask: (%p, %p, %p, %p), shift: (%ld, %ld, %ld, %ld)\n",
-          pftags[4].ti_Data, pftags[5].ti_Data, pftags[6].ti_Data, pftags[7].ti_Data,
+          (APTR)pftags[4].ti_Data, (APTR)pftags[5].ti_Data, (APTR)pftags[6].ti_Data, (APTR)pftags[7].ti_Data,
           pftags[0].ti_Data, pftags[1].ti_Data, pftags[2].ti_Data, pftags[3].ti_Data));
 
     switch (fsi->type)

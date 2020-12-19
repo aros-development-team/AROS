@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function getenv().
@@ -12,7 +12,6 @@
 
 #include "__stdcio_intbase.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************
@@ -63,7 +62,7 @@
     {
     	LONG len = IoErr();
 
-        D(bug("[getenv] Variable found of size %d\n", size));
+        D(bug("[getenv] Variable found of size %d\n", len));
 
         if (len + 1 > StdCIOBase->varsize)
         {

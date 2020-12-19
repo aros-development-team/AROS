@@ -1580,15 +1580,15 @@ IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_BetterString_Insert *ms
   switch(msg->pos)
   {
     default:
-    case MUIV_BetterString_Insert_StartOfString:
+    case (LONG)MUIV_BetterString_Insert_StartOfString:
       pos = msg->pos;
     break;
 
-    case MUIV_BetterString_Insert_EndOfString:
+    case (LONG)MUIV_BetterString_Insert_EndOfString:
       pos = strlen(data->Contents);
     break;
 
-    case MUIV_BetterString_Insert_BufferPos:
+    case (LONG)MUIV_BetterString_Insert_BufferPos:
       pos = data->BufferPos;
     break;
   }

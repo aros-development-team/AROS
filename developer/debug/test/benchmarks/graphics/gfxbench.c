@@ -372,8 +372,8 @@ static void listvideocards()
     if (pciBus)
     {
         struct Hook FindHook = {
-        h_Entry:    (IPTR (*)())Enumerator,
-        h_Data:     NULL,
+        .h_Entry =    (IPTR (*)())Enumerator,
+        .h_Data =     NULL,
         };
 
         struct TagItem Requirements[] = {
@@ -384,9 +384,9 @@ static void listvideocards()
         };
     
         struct pHidd_PCI_EnumDevices enummsg = {
-        mID:        OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-        callback:   &FindHook,
-        requirements:   (struct TagItem*)&Requirements,
+        .mID =       OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+        .callback =   &FindHook,
+        .requirements =   (struct TagItem*)&Requirements,
         }, *msg = &enummsg;
 
         OOP_DoMethod(pciBus, (OOP_Msg)msg);

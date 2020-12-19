@@ -42,7 +42,7 @@ static IPTR Keymap__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 	    {
 	        char *dst;
 
-	    	if (data->keymap->displayflag)
+	    	if (data->keymap->displayflag[0] != '\0')
 	    	{
 	    	    unsigned int len = strlen(data->keymap->displayflag);
 	    	    

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -287,22 +287,22 @@ static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
 
         bug("%s: MUI Notification loop detected! (#%d)\n", FindTask(NULL)->tc_Node.ln_Name, counter++);
 #if DEBUG
-        D(bug("  Source object: 0x%x", obj));
+        D(bug("  Source object: 0x%p", obj));
 
         switch ((IPTR) nnode->nn_DestObj)
         {
         case MUIV_Notify_Application:
-            D(bug("  Dest object: 0x%x (MUIV_Notify_Application)\n",
+            D(bug("  Dest object: 0x%p (MUIV_Notify_Application)\n",
                     _app(obj)));
             break;
         case MUIV_Notify_Self:
-            D(bug("  Dest object: 0x%x (MUIV_Notify_Self)\n", obj));
+            D(bug("  Dest object: 0x%p (MUIV_Notify_Self)\n", obj));
             destobj = obj;
             break;
         case MUIV_Notify_Window:
             if (muiRenderInfo(obj)) /* otherwise _win(obj) does NULL access! */
             {
-                D(bug("  Dest object: 0x%x (MUIV_Notify_Window)\n",
+                D(bug("  Dest object: 0x%p (MUIV_Notify_Window)\n",
                         _win(obj)));
             }
             else
@@ -312,10 +312,10 @@ static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
             }
             break;
         default:
-            D(bug("  Dest object: 0x%x\n", nnode->nn_DestObj));
+            D(bug("  Dest object: 0x%p\n", nnode->nn_DestObj));
             break;
         }
-        D(bug("  Attribute: 0x%x   Value: 0x%x\n", tag->ti_Tag,
+        D(bug("  Attribute: 0x%08x   Value: %p\n", tag->ti_Tag,
                 tag->ti_Data));
 
 #endif

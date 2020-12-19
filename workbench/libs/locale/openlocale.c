@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     OpenLocale() - Give access to a new locale.
@@ -162,7 +162,7 @@ extern void InitLocale(
                             }
                         }
                     } /* from a stop chunk */
-                    else if (error != IFFERR_EOC)
+                    else if (error != (ULONG)IFFERR_EOC)
                         break;
 
                 } /* while(1) */

@@ -61,9 +61,9 @@ static inline ULONG __attribute__((always_inline)) rdmsri(ULONG msr_no)
     return ret;
 }
 
-VOID ReadProcessorInformation(struct X86ProcessorInformation * info);
+VOID ReadProcessorInformation(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info);
+UQUAD GetCurrentProcessorFrequency(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info);
 VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info);
-UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
 
 /* EDX 00000001 Flags */
 #define FEATB_FPU       0

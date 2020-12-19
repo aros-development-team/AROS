@@ -6350,7 +6350,7 @@ IPTR _DragNDrop_DragDrop(struct IClass *cl, Object *obj, UNUSED Msg msg)
               if(isFlagSet(dtn->tn_Flags, TNF_LIST) && isFlagSet(dtn->tn_Flags, TNF_OPEN))
               {
                 ln    = CLN( dtn );
-                tn2   = MUIV_NListtree_Move_NewTreeNode_Head;
+                tn2   = (struct MUI_NListtree_TreeNode *)MUIV_NListtree_Move_NewTreeNode_Head;
               }
               else
               {

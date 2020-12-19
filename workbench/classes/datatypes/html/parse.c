@@ -109,8 +109,10 @@ page_struct * parse_init( void *mempool )
 	page_struct	*page;
 	parse_struct	*pdata;
 
-	D( printf("structsize tag %d esc %d stack %d page %d seg %d style %d\n", sizeof(tag_struct),
-		sizeof(esc_struct), sizeof(stack_struct), sizeof(page_struct), sizeof(seg_struct), sizeof(style_flags)); )
+	D( printf("structsize tag %d esc %d stack %d page %d seg %d style %d\n",
+		(int)sizeof(tag_struct), (int)sizeof(esc_struct),
+		(int)sizeof(stack_struct), (int)sizeof(page_struct),
+		(int)sizeof(seg_struct), (int)sizeof(style_flags)); )
 
 	page = MALLOC( mempool, sizeof( page_struct ) );
 	if( !page )
@@ -398,7 +400,7 @@ static seg_struct* seglist_store( parse_struct *pdata, u_char cmd )
 		}
 		if( !pdata->page->seglist )
 		{	/* initial */
-			D(printf("initial seglist alloc %p size 0x%x\n", seg, SEGLISTSIZE * sizeof(seg_struct));)
+			D(printf("initial seglist alloc %p size 0x%lx\n", seg, SEGLISTSIZE * sizeof(seg_struct));)
 			pdata->page->seglist = seg;
 		}
 		else

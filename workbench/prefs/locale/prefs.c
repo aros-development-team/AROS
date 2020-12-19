@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2020, The AROS Development Team. All rights reserved.
    $Id$
 */
 
@@ -118,7 +118,7 @@ char *GetAROSRegionAttribs(struct AnchorPath *ap, char **regionNamePtr)
                             if (cn->cn_ID == MAKE_ID('F','L','A','G'))
                             {
                                 lockFlag = AllocVecPooled(mempool, cn->cn_Size + 18 + 1);
-                                sprintf(lockFlag, flagpathstr);
+                                sprintf(lockFlag, "%s", flagpathstr);
                                 ReadChunkBytes(iff, lockFlag + 18, cn->cn_Size);
                                 lockFlag[cn->cn_Size + 17] = ']';
                                 D(bug("[LocalePrefs] GetAROSRegionAttribs: Flag '%s'\n", lockFlag));

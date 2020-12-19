@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial device
@@ -415,7 +415,7 @@ AROS_LH1(void, beginio,
 
         if (NULL != SU->su_ActiveRead)
         {
-          kprintf("READ: error in datastructure!");
+          bug("READ: error in datastructure!");
         }
 
         
@@ -800,7 +800,7 @@ AROS_LH1(void, beginio,
                                                 tags);
         if (FALSE == success) {
           ioreq->IOSer.io_Error = SerErr_InvParam;
-          kprintf("HIDD_SerialUnit_SetParameters() failed.\n");
+          bug("HIDD_SerialUnit_SetParameters() failed.\n");
           return;
 	}
         SU->su_ReadLen  = ioreq->io_ReadLen;
@@ -828,7 +828,7 @@ AROS_LH1(void, beginio,
         /* might have to queue that request */
         if (0 != (SU->su_Status & STATUS_WRITES_PENDING))
         {
-kprintf("%s: Queuing SDCMD_BREAK! This probably doesn't work correctly!\n");
+          bug("%s: Queuing SDCMD_BREAK! This probably doesn't work correctly!\n", __func__);
           PutMsg(&SU->su_QWriteCommandPort,
                  (struct Message *)ioreq);
           ioreq->IOSer.io_Flags &= ~IOF_QUICK;

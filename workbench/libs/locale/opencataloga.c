@@ -152,10 +152,10 @@ static IPTR _OpenCatalog(const struct Locale * locale, CONST_STRPTR name, STRPTR
 
         ForeachNode(&_localeBase->lb_CatalogList, catalog)
         {
-            if (catalog->ic_Name &&
-                catalog->ic_Catalog.cat_Language &&
-                (0 == strcmp(catalog->ic_Name, name)) &&
-                (0 == strcmp(catalog->ic_Catalog.cat_Language, language)))
+            if ((catalog->ic_Name[0] != '\0') &&
+                 (catalog->ic_Catalog.cat_Language) &&
+                 (0 == strcmp(catalog->ic_Name, name)) &&
+                 (0 == strcmp(catalog->ic_Catalog.cat_Language, language)))
             {
                 DEBUG_OPENCATALOG(dprintf
                     ("OpenCatalogA: found Catalog 0x%lx\n", catalog));

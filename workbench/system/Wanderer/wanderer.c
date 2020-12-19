@@ -1876,7 +1876,7 @@ void wanderer_menufunc_icon_information()
 {
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconList_Entry *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
 
     D(bug("[Wanderer] %s: Window @ %p, IconList @ %p\n", __PRETTY_FUNCTION__, window, iconList));
         
@@ -1957,7 +1957,7 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
 {
     Object                      *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
     Object                      *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry       *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconList_Entry       *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
     struct IconEntry            *node = NULL;
     BOOL                        snapshot  = *flags;
     struct TagItem              icontags[] = 
@@ -2055,7 +2055,7 @@ void wanderer_menufunc_icon_leaveout(void)
     Object                                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     Object                                *rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     Object                                *rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
-    struct IconList_Entry                 *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconList_Entry                 *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
     // struct IconEntry                      *node     = NULL;
     char                                *leavout_dir = NULL;
     struct DesktopLinkIcon_Entry        *bdrpeNode = NULL, *bdrpeNext, *loiEntry = NULL;
@@ -2233,7 +2233,7 @@ void wanderer_menufunc_icon_putaway(void)
     Object                        *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     Object                        *rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
     Object                        *rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
-    struct IconList_Entry         *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconList_Entry         *entry    = (APTR)(IPTR)MUIV_IconList_NextIcon_Start;
     struct IconEntry              *node = NULL;
     struct PutAwayIcon_Volume        *paivNode = NULL, *paivNext, *paiVolume = NULL;
     struct DesktopLinkIcon_Entry        *bdrpeNode = NULL, *paieNode = NULL, *paieNext, *paiEntry = NULL;
