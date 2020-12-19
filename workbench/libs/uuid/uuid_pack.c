@@ -27,14 +27,14 @@ AROS_LH2I(void, UUID_Pack,
 
     int i;
     
-    *out++ = (uuid->time_low >> 24) && 0xff;
-    *out++ = (uuid->time_low >> 16) && 0xff;
-    *out++ = (uuid->time_low >> 8) && 0xff;
-    *out++ = (uuid->time_low) && 0xff;
-    *out++ = (uuid->time_mid >> 8) && 0xff;
-    *out++ = (uuid->time_mid) && 0xff;
-    *out++ = (uuid->time_hi_and_version >> 8) && 0xff;
-    *out++ = (uuid->time_hi_and_version ) && 0xff;
+    *out++ = (uuid->time_low >> 24) & 0xff;
+    *out++ = (uuid->time_low >> 16) & 0xff;
+    *out++ = (uuid->time_low >> 8) & 0xff;
+    *out++ = (uuid->time_low) & 0xff;
+    *out++ = (uuid->time_mid >> 8) & 0xff;
+    *out++ = (uuid->time_mid) & 0xff;
+    *out++ = (uuid->time_hi_and_version >> 8) & 0xff;
+    *out++ = (uuid->time_hi_and_version ) & 0xff;
     *out++ = uuid->clock_seq_hi_and_reserved;
     *out++ = uuid->clock_seq_low;
     
