@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS specific list class implementation.
@@ -284,7 +284,7 @@ ULONG AROSList__AROSM_List_Insert(Class *cl, Object *o, struct AROSP_List_Insert
 	    case AROSV_List_Insert_Top:
 	    	pos = 0L;
 	    	break;
-	    case AROSV_List_Insert_Bottom:
+	    case (ULONG)AROSV_List_Insert_Bottom:
 	    	pos = data->ld_NumEntries;
 	    	break;
 	    	
@@ -313,7 +313,7 @@ ULONG AROSList__AROSM_List_Insert(Class *cl, Object *o, struct AROSP_List_Insert
     	    return (0UL);
     	
     	/* Copy all old entries BEFORE the new ones, into the new array */    
-    	if (pos != AROSV_List_Insert_Top)
+    	if (pos != (ULONG)AROSV_List_Insert_Top)
     	{
     	    CopyMem(	data->ld_PointerArray,
     	    		newptrarray, 
