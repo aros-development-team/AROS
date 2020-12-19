@@ -570,7 +570,7 @@ static BOOL ReadPrefs(void)
             CurrentLevel= 0;
 
             // add Settings menu entry
-            sprintf(Levels[LevelCounter].Level_Name, _(MSG_MENU_SETTINGS));
+            sprintf(Levels[LevelCounter].Level_Name, "%s", _(MSG_MENU_SETTINGS));
             sprintf(Names.IText, "%s", Levels[LevelCounter].Level_Name);
             LengthText = IntuiTextLength(&Names);
             if(LengthText > Length)
@@ -578,7 +578,7 @@ static BOOL ReadPrefs(void)
             LevelCounter++;
 
             // add Quit menu entry
-            sprintf(Levels[LevelCounter].Level_Name, _(MSG_MENU_QUIT));
+            sprintf(Levels[LevelCounter].Level_Name, "%s", _(MSG_MENU_QUIT));
             sprintf(Names.IText, "%s", Levels[LevelCounter].Level_Name);
             LengthText = IntuiTextLength(&Names);
             if(LengthText > Length)
