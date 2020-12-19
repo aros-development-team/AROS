@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright © 2012 The AROS Development Team
+ * Copyright © 2012-2020 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -499,7 +499,8 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
     while (pathlen > 0)
     {
         /* zoom forward and find the first dir separator */
-        for (len = 0; (len < pathlen) && (path[len] != '/') && (path[len] != '\0'); len++);
+        for (len = 0; (len < pathlen) && (path[len] != '/') && (path[len] != '\0'); len++)
+            ;
 
 	D(bug("[NTFS] %s: remaining path is '", __PRETTY_FUNCTION__); RawPutChars(path, pathlen);
 	  bug("' (%d bytes), current chunk is '", pathlen); RawPutChars(path, (len == 0) ? 1 : len);
