@@ -103,8 +103,8 @@ void pciEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
 {
     struct Hook FindHook =
     {
-        h_Entry:    (IPTR (*)())PCIEnumerator_h,
-        h_Data:     &privatehookdata
+        .h_Entry =    (IPTR (*)())PCIEnumerator_h,
+        .h_Data =     &privatehookdata
     };
     static const struct TagItem Requirements[] =
     {
@@ -112,9 +112,9 @@ void pciEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
     };
     struct pHidd_PCI_EnumDevices enummsg =
     {
-        mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-        callback:       &FindHook,
-        requirements:   Requirements,
+        .mID =            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+        .callback =       &FindHook,
+        .requirements =   Requirements,
     };
     OOP_Object *pci;
     privatehookdata.ed_Controller = obj;
