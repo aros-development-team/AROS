@@ -5,7 +5,6 @@
 
 #include <aros/config.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -40,10 +39,17 @@ static void Processor_QueryTask(struct ExecBase *SysBase)
     pqData = thisTask->tc_UserData;
     ProcessorBase = pqData->ProcessorBase;
 
+    D(
+        bug("[processor.x86] %s: ProcessorBase @ 0x%p\n", __func__, ProcessorBase);
+        bug("[processor.x86] %s: This CPU ProcInfo @ 0x%p\n", __func__, pqData->pqd_ProcInfo);
+    )
+
     if (pqData->pqd_ProcInfo)
         ReadProcessorInformation(ProcessorBase, pqData->pqd_ProcInfo);
     else
-        bug("[processor.x86] %s: ERROR: procinfo missing!\n", __func__)
+    {
+        bug("[processor.x86] %s: ERROR: procinfo missing!\n", __func__);
+    }
 
     D(bug("[processor.x86] %s: Finished!\n", __func__));
 }
@@ -78,6 +84,8 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
         FreeVec(sysprocs);
         return FALSE;
     }
+
+    D(bug("[processor.x86] %s: UtilityBase @ 0x%p\n", __func__, sysprocs[ProcessorBase->cpucount]);)
 
     ProcessorBase->Private1 = sysprocs;
 

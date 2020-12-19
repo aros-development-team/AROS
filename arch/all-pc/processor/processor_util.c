@@ -3,7 +3,6 @@
     $Id$
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/utility.h>
@@ -33,7 +32,7 @@ static const char *vendors[] =
 static void ReadVendorID(struct ProcessorBase *ProcessorBase, struct X86ProcessorInformation * info)
 {
     struct UtilityBase *UtilityBase;
-    APTR **procPriv = ProcessorBase->Private1;
+    APTR *procPriv = ProcessorBase->Private1;
     ULONG eax, ebx, ecx, edx;
     ULONG * ulongptr = NULL;
     ULONG index = 0;
@@ -44,7 +43,9 @@ static void ReadVendorID(struct ProcessorBase *ProcessorBase, struct X86Processo
     
     D(bug("[processor.x86] :%s()\n", __func__));
 
-    UtilityBase = *(procPriv)[ProcessorBase->cpucount];
+    /* UtilityBase is embeded in the last slot .. */
+    UtilityBase = procPriv[ProcessorBase->cpucount];
+    D(bug("[processor.x86] %s: UtilityBase @ 0x%p\n", __func__, UtilityBase);)
 
     /* Reading CPU Vendor ID */
     ulongptr = (ULONG *)info->VendorID;

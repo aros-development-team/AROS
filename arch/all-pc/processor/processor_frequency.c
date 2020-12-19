@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define DEBUG 0
-
 #include <aros/config.h>
 #include <aros/debug.h>
 
@@ -318,13 +316,15 @@ UQUAD GetCurrentProcessorFrequency(struct ProcessorBase *ProcessorBase, struct X
     if (info->Features2 & FEATF_HYPERV)
     {
         struct UtilityBase *UtilityBase;
-        APTR **procPriv = ProcessorBase->Private1;
+        APTR *procPriv = ProcessorBase->Private1;
         D(
             bug("[processor.x86] %s: processor has hyperv flag\n", __func__);
             bug("[processor.x86] %s: id '%s'\n", __func__, info->HyperVID);
         )
 
-        UtilityBase = *(procPriv)[ProcessorBase->cpucount];
+        /* UtilityBase is embeded in the last slot .. */
+        UtilityBase = procPriv[ProcessorBase->cpucount];
+        D(bug("[processor.x86] %s: UtilityBase @ 0x%p\n", __func__, UtilityBase);)
 
         if (!Stricmp("Microsoft Hv", info->HyperVID))
         {
