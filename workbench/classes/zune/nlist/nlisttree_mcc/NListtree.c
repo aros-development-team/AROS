@@ -2859,7 +2859,7 @@ static void InsertImage( struct NListtree_Data *data, struct MUI_NListtree_TreeN
       x1 = IMAGE_Closed;
     }
 
-    snprintf(tmpbuf, DATA_BUF_SIZE, "\033O[%p]", (unsigned long)data->Image[x1].ListImage );
+    snprintf(tmpbuf, DATA_BUF_SIZE, "\033O[%p]", (APTR)data->Image[x1].ListImage );
     strncat(data->buf, tmpbuf, DATA_BUF_SIZE);
 
     x1 = SPEC_Hor;
@@ -2867,13 +2867,13 @@ static void InsertImage( struct NListtree_Data *data, struct MUI_NListtree_TreeN
     // add some indent width
     if(data->IndentWidth > 0)
     {
-      snprintf(tmpbuf, DATA_BUF_SIZE, "\033O[%p;%x;%d,%d]", (unsigned long)data->Image[IMAGE_Tree].ListImage, (unsigned int)MUIA_TI_Spec, (int)x1, (unsigned int)data->IndentWidth);
+      snprintf(tmpbuf, DATA_BUF_SIZE, "\033O[%p;%x;%d,%d]", (APTR)data->Image[IMAGE_Tree].ListImage, (unsigned int)MUIA_TI_Spec, (int)x1, (unsigned int)data->IndentWidth);
       strncat(data->buf, tmpbuf, DATA_BUF_SIZE);
     }
 
     if(data->UseFolderImage == TRUE)
     {
-      snprintf(tmpbuf, DATA_BUF_SIZE, "\033O[%p]\033O[%p;%x;%d,%d]", (unsigned long)data->Image[IMAGE_Folder].ListImage, (unsigned long)data->Image[IMAGE_Tree].ListImage, (unsigned int)MUIA_TI_Spec, (unsigned int)SPEC_Space, 3);
+      snprintf(tmpbuf, DATA_BUF_SIZE, "\033O[%p]\033O[%p;%x;%d,%d]", (APTR)data->Image[IMAGE_Folder].ListImage, (APTR)data->Image[IMAGE_Tree].ListImage, (unsigned int)MUIA_TI_Spec, (unsigned int)SPEC_Space, 3);
       strncat(data->buf, tmpbuf, DATA_BUF_SIZE);
     }
   }
