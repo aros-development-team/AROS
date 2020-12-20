@@ -1,11 +1,10 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function snprintf().
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************

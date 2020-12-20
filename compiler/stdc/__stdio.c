@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Setup and support code for stdio.h functionality
@@ -15,8 +15,9 @@
 #include "__stdio.h"
 #include "__stdcio_intbase.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
+
+#include "debug.h"
 
 /* For each opener stdin, stdout and stderr may be different */
 static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
@@ -31,7 +32,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
         | __STDCIO_STDIO_DONTCLOSE
         | __STDCIO_STDIO_DONTFREE
         | __STDCIO_STDIO_FLUSHONREAD;
-    D(bug("[__init_stdio]: intstdin.fh=0x%x\n", StdCIOBase->intstdin.fh));
+    D(bug("[%s] %s: intstdin.fh=0x%x\n", STDCNAME, __func__, StdCIOBase->intstdin.fh));
     StdCIOBase->StdCIOBase._stdin = &StdCIOBase->intstdin;
 
     StdCIOBase->intstdout.fh = Output();
@@ -39,7 +40,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
         __STDCIO_STDIO_WRITE
         | __STDCIO_STDIO_DONTCLOSE
         | __STDCIO_STDIO_DONTFREE;
-    D(bug("[__init_stdio]: intstdout.fh=0x%x\n", StdCIOBase->intstdout.fh));
+    D(bug("[%s] %s: intstdout.fh=0x%x\n", STDCNAME, __func__, StdCIOBase->intstdout.fh));
     StdCIOBase->StdCIOBase._stdout = &StdCIOBase->intstdout;
 
     StdCIOBase->intstderr.fh = me->pr_CES ? me->pr_CES : me->pr_COS;
@@ -47,7 +48,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
         __STDCIO_STDIO_WRITE
         | __STDCIO_STDIO_DONTCLOSE
         | __STDCIO_STDIO_DONTFREE;
-    D(bug("[__init_stdio]: intstderr.fh=0x%x\n", StdCIOBase->intstderr.fh));
+    D(bug("[%s] %s: intstderr.fh=0x%x\n", STDCNAME, __func__, StdCIOBase->intstderr.fh));
     StdCIOBase->StdCIOBase._stderr = &StdCIOBase->intstderr;
 
     return 1;
@@ -58,11 +59,11 @@ static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
 {
     FILE *stream;
 
-    D(bug("[__close_stdio]: StdCIOBase: %x, DOSBase: %x\n", StdCIOBase, DOSBase));
+    D(bug("[%s] %s: StdCIOBase: %x, DOSBase: %x\n", STDCNAME, __func__, StdCIOBase, DOSBase));
 
     ForeachNode(&StdCIOBase->files, stream)
     {
-        D(bug("[__close_stdio]: stream: %x, fh: %x\n", stream, stream->fh));
+        D(bug("[%s] %s: stream: %x, fh: %x\n", STDCNAME, __func__, stream, stream->fh));
         stream->flags |= __STDCIO_STDIO_DONTFREE;
         fclose(stream);
     }

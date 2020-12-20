@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function malloc().
@@ -7,14 +7,14 @@
 
 #include "__stdc_intbase.h"
 
-#define DEBUG 0
-
 #include <errno.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -71,7 +71,7 @@
 
 int __init_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("__init_memstuff: task(%x), StdCBase(%x)\n",
+    D(bug("[%s] %s: task(%x), StdCBase(%x)\n", STDCNAME, __func__,
           FindTask(NULL), StdCBase
     ));
 
@@ -90,7 +90,7 @@ int __init_memstuff(struct StdCIntBase *StdCBase)
 
 void __exit_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("__exit_memstuff: task(%x), StdCBase(%x), acb_mempool(%x)\n",
+    D(bug("[%s] %s: task(%x), StdCBase(%x), acb_mempool(%x)\n", STDCNAME, __func__,
           FindTask(NULL), StdCBase, StdCBase->mempool
     ));
 

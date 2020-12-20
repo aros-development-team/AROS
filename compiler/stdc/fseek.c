@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fseek()
@@ -10,8 +10,9 @@
 
 #include "__stdio.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -63,7 +64,7 @@
     LONG mode;
     BPTR fh = stream->fh;
 
-    D(bug("[stdcio/fseek()] Entering stream=0x%x, offset=%d, whence=%d\n",
+    D(bug("[%s] %s: Entering stream=0x%x, offset=%d, whence=%d\n", STDCNAME, __func__,
           stream, offset, whence
     ));
 
@@ -88,7 +89,7 @@
 
     if (Seek(fh, offset, mode) < 0)
     {
-        D(bug("[stdcio/fseek()] Failed (IoErr()=%d)\n", IoErr()));
+        D(bug("[%s] %s: Failed (IoErr()=%d)\n", STDCNAME, __func__, IoErr()));
         if (IoErr() == ERROR_UNKNOWN)
             errno = EINVAL;
         else
@@ -97,7 +98,7 @@
     }
     else
     {
-        D(bug("[stdcio/fseek()] Done\n"));
+        D(bug("[%s] %s: Done\n", STDCNAME, __func__));
         return 0;
     }
 } /* fseek */

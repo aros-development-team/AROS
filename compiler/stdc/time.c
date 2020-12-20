@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Return the current time in seconds.
@@ -16,7 +16,6 @@
 
 #include "__stdc_intbase.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 static int __init_timerbase(struct StdCIntBase *StdCBase);

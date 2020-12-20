@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2009-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <dos/stdio.h>
@@ -9,11 +9,11 @@
 #include <assert.h>
 #include <setjmp.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include "__stdc_intbase.h"
 #include "__exitfunc.h"
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -57,7 +57,7 @@
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    D(bug("[__stdc_program_startup] StdCBase 0x%p\n", StdCBase));
+    D(bug("[%s] %s: StdCBase 0x%p\n", STDCNAME, __func__, StdCBase));
 
     StdCBase->startup_errorptr = errorptr;
     *StdCBase->exit_jmpbuf = *exitjmp;
@@ -103,7 +103,7 @@
 {
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
-    D(bug("[__stdc_program_end]\n"));
+    D(bug("[%s] %s()\n", STDCNAME, __func__));
 
     struct ETask *etask = GetETask(FindTask(NULL));
     if (etask)
@@ -269,7 +269,7 @@
     */
     if (StdCBase->startup_errorptr == NULL)
     {
-        kprintf("[__stdc_jmp2exit] Trying to exit without proper initialization\n");
+        kprintf("[%s] %s: Trying to exit without proper initialization\n", STDCNAME, __func__);
         Alert(AT_DeadEnd | AG_BadParm);
     }
 

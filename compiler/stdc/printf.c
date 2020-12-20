@@ -1,12 +1,11 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function printf().
 */
 #include <libraries/stdcio.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 #if DEBUG
 #include <aros/libcall.h>

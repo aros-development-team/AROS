@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function exit()
@@ -10,6 +10,8 @@
 #include <aros/debug.h>
 
 #include <assert.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -57,7 +59,7 @@
 
 ******************************************************************************/
 {
-    D(bug("[arosc] exit(%d)\n", code));
+    D(bug("[%s] %s(%d)\n", STDCNAME, __func__, code));
 
     __stdc_jmp2exit(1, code);
 
