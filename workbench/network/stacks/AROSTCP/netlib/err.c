@@ -81,10 +81,7 @@ err(int eval, const char *fmt, ...)
 }
 
 void
-verr(eval, fmt, ap)
-	int eval;
-	const char *fmt;
-	va_list ap;
+verr(int eval, const char *fmt, va_list ap)
 {
 	verrc(eval, errno, fmt, ap);
 }
@@ -99,11 +96,10 @@ errc(int eval, int code, const char *fmt, ...)
 }
 
 void
-verrc(eval, code, fmt, ap)
-	int eval;
-	int code;
-	const char *fmt;
-	va_list ap;
+verrc(int eval,
+	int code,
+	const char *fmt,
+	va_list ap)
 {
 	if (err_file == 0)
 		err_set_file((FILE *)0);
@@ -128,10 +124,9 @@ errx(int eval, const char *fmt, ...)
 }
 
 void
-verrx(eval, fmt, ap)
-	int eval;
-	const char *fmt;
-	va_list ap;
+verrx(int eval,
+	const char *fmt,
+	va_list ap)
 {
 	if (err_file == 0)
 		err_set_file((FILE *)0);
@@ -154,9 +149,7 @@ warn(const char *fmt, ...)
 }
 
 void
-vwarn(fmt, ap)
-	const char *fmt;
-	va_list ap;
+vwarn(const char *fmt, va_list ap)
 {
 	vwarnc(errno, fmt, ap);
 }
@@ -171,10 +164,9 @@ warnc(int code, const char *fmt, ...)
 }
 
 void
-vwarnc(code, fmt, ap)
-	int code;
-	const char *fmt;
-	va_list ap;
+vwarnc(int code,
+	const char *fmt,
+	va_list ap)
 {
 	if (err_file == 0)
 		err_set_file((FILE *)0);
@@ -196,9 +188,7 @@ warnx(const char *fmt, ...)
 }
 
 void
-vwarnx(fmt, ap)
-	const char *fmt;
-	va_list ap;
+vwarnx(const char *fmt, va_list ap)
 {
 	if (err_file == 0)
 		err_set_file((FILE *)0);
