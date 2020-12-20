@@ -18,6 +18,8 @@
 
 #include <aros/debug.h>
 
+#include "debug.h"
+
 static int __init_timerbase(struct StdCIntBase *StdCBase);
 #define TimerBase       StdCBase->StdCTimerBase
 
@@ -91,7 +93,7 @@ static int __init_timerbase(struct StdCIntBase *StdCBase);
 
 static int __init_timerbase(struct StdCIntBase *StdCBase)
 {
-    D(bug("__init_timerbase\n"));
+    D(bug("[%s] %s()\n", STDCNAME, __func__));
 
     memset( &StdCBase->timeport, 0, sizeof( StdCBase->timeport ) );
     StdCBase->timeport.mp_Node.ln_Type   = NT_MSGPORT;
@@ -112,12 +114,12 @@ static int __init_timerbase(struct StdCIntBase *StdCBase)
     )
     {
         TimerBase = (struct Device *)StdCBase->timereq.tr_node.io_Device;
-        D(bug("__init_timerbase TimerBase=%x\n", TimerBase));
+        D(bug("[%s] %s: TimerBase=%x\n", STDCNAME, __func__, TimerBase));
         return 1;
     }
     else
     {
-        D(bug("__init_timerbase OpenDevice failed\n"));
+        D(bug("[%s] %s: OpenDevice failed\n", STDCNAME, __func__));
         return 0;
     }
 }
@@ -125,7 +127,7 @@ static int __init_timerbase(struct StdCIntBase *StdCBase)
 
 static void __exit_timerbase(struct StdCIntBase *StdCBase)
 {
-    D(bug("__exit_timerbase\n"));
+    D(bug("[%s] %s()\n", STDCNAME, __func__));
 
     if (TimerBase != NULL)
     {

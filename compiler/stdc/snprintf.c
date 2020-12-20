@@ -7,6 +7,8 @@
 
 #include <aros/debug.h>
 
+#include "debug.h"
+
 /*****************************************************************************
 
     NAME */
@@ -62,7 +64,7 @@
     int     retval;
     va_list args;
 
-    D(bug("[snprintf] start; str %p('%s'), format: %p('%s')\n",
+    D(bug("[%s] %s: start - str %p('%s'), format: %p('%s')\n", STDCNAME, __func__,
           str, str, format, format
     ));
 
@@ -72,7 +74,7 @@
 
     va_end (args);
 
-    D(bug("[snprintf] end; str %p('%s'), format: %p('%s')\n",
+    D(bug("[%s] %s: end - str %p('%s'), format: %p('%s')\n", STDCNAME, __func__,
           str, str, format, format
     ));
 
