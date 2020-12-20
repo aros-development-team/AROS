@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,7 +39,7 @@ struct TextFont *zune_font_get(Object *obj, IPTR font)
         /* font already loaded, just return it */
         if (mri->mri_Fonts[-preset])
         {
-            D(bug("zune_font_get : return mri_Fonts[%d]=%lx\n",
+            D(bug("zune_font_get : return mri_Fonts[%d]=0x%p\n",
                     preset, mri->mri_Fonts[-preset]));
             return mri->mri_Fonts[-preset];
         }

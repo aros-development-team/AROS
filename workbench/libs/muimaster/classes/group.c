@@ -1,6 +1,6 @@
 /*
+    Copyright © 2002-2020, The AROS Development Team.
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2017, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -410,7 +410,7 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return 0;
     }
 
-/*      D(bug("Group_New(0x%lx)\n",obj)); */
+/*      D(bug("Group_New(0x%p)\n",obj)); */
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -1768,7 +1768,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 
     cstate = (Object *) children->mlh_Head;
 
-    D(bug("minmax_pagemode(%lx)\n", obj, tmp.DefWidth));
+    D(bug("minmax_pagemode(0x%p) defw = %ld\n", obj, tmp.DefWidth));
 
     while ((child = NextObject(&cstate)))
     {
@@ -1779,7 +1779,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
             continue;
 
         tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
-        D(bug("minmax_pagemode(%p) minh child = %d tmpmin=%d\n", obj,
+        D(bug("minmax_pagemode(0x%p) minh child = %d tmpmin=%d\n", obj,
                 _minheight(child), tmp.MinHeight));
         tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
         tmp.MaxHeight = MIN(tmp.MaxHeight, w0_maxheight(child));
@@ -1791,7 +1791,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
             MAX(tmp.DefWidth,
             ((w0_defwidth(child) <
                     MUI_MAXMAX) ? w0_defwidth(child) : tmp.DefWidth));
-        D(bug("minmax_pagemode(%lx) defw = %ld\n", obj, tmp.DefWidth));
+        D(bug("minmax_pagemode(0x%p) defw = %ld\n", obj, tmp.DefWidth));
     }
 
     if (data->titlegroup)
@@ -1842,7 +1842,7 @@ IPTR Group__MUIM_AskMinMax(struct IClass *cl, Object *obj,
             continue;
         /*  Ask child  */
         DoMethodA(child, (Msg) & childMsg);
-        /*  D(bug("*** group %lx, child %lx min=%ld,%ld\n", */
+        /*  D(bug("*** group 0x%p, child 0x%p min=%ld,%ld\n", */
         /*      obj, child, childMinMax.MinWidth, childMinMax.MinHeight)); */
         __area_finish_minmax(child, childMsg.MinMaxInfo);
     }

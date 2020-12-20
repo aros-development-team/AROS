@@ -1,6 +1,6 @@
 /* 
+    Copyright  2002-2020, The AROS Development Team.
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -122,7 +122,7 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return (IPTR) NULL;
     }
 
-/*      D(bug("Text_New(0x%lx)\n", obj)); */
+/*      D(bug("Text_New(0x%p)\n", obj)); */
 
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 0;
@@ -266,7 +266,7 @@ static void setup_text(struct MUI_TextData *data, Object *obj)
     }
     zune_text_get_bounds(data->ztext, obj);
 
-/*      D(bug("muimaster.library/text.c: ZText of 0x%lx at 0x%lx\n", */
+/*      D(bug("muimaster.library/text.c: ZText of 0x%p at 0x%p\n", */
 /*          obj, data->ztext)); */
 }
 
@@ -366,7 +366,7 @@ IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj,
         msg->MinMaxInfo->MinWidth = 0;
 
     D(bug
-        ("Text_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n",
+        ("Text_AskMinMax 0x%p (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n",
             obj, data->contents, msg->MinMaxInfo->MinWidth,
             msg->MinMaxInfo->MinHeight, msg->MinMaxInfo->MaxWidth,
             msg->MinMaxInfo->MaxHeight, msg->MinMaxInfo->DefWidth,
@@ -386,7 +386,7 @@ IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj,
     APTR clip;
 
 /*    D(bug("muimaster.library/text.c: Draw Text Object at " */
-/*        "0x%lx %ldx%ldx%ldx%ld\n", obj, _left(obj), _top(obj), */
+/*        "0x%p %ldx%ldx%ldx%ld\n", obj, _left(obj), _top(obj), */
 /*        _right(obj), _bottom(obj))); */
 
     DoSuperMethodA(cl, obj, (Msg) msg);

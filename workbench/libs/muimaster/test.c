@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2020, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -726,7 +726,7 @@ void main(void)
     if (notify)
     {
 	LONG ud;
-	printf("Object created at 0x%lx. Now setting MUIA_UserData to 10\n",notify);
+	printf("Notification Object created at 0x%p. Now setting MUIA_UserData to 10\n",notify);
 	set(notify, MUIA_UserData, 10);
 	get(notify, MUIA_UserData, &ud);
 	printf("UserData is now %ld\n",ud);

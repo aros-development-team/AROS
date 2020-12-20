@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1355,7 +1355,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     NewList((struct List *)&data->images);
 
-    D(bug("List_New(%lx)\n", obj));
+    D(bug("List_New(0x%p)\n", obj));
 
     return (IPTR) obj;
 }
