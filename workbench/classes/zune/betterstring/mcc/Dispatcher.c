@@ -508,7 +508,7 @@ static IPTR mGoActive(struct IClass *cl, Object *obj, UNUSED Msg msg)
 
   ENTER();
 
-  D(DBF_INPUT, "GoActive: %08lx %08lx", obj, data->Flags);
+  D(DBF_INPUT, "GoActive: 0x%p %08x", obj, data->Flags);
 
   FreeContentString(data->Original);
   if((data->Original = AllocContentString(strlen(data->Contents)+1)) != NULL)
@@ -548,7 +548,7 @@ static IPTR mGoInactive(struct IClass *cl, Object *obj, UNUSED Msg msg)
 
   ENTER();
 
-  D(DBF_INPUT, "GoInActive: %08lx", obj);
+  D(DBF_INPUT, "GoInActive: 0x%p", obj);
 
   // clean an eventually marked block and the
   // active state flag of the gadget
