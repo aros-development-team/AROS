@@ -80,65 +80,69 @@ static const char KMsgNoDrives[] =
 
 */
 
-#define MUIM_IC_NextStep                (0x00335551)
-#define MUIM_IC_PrevStep                (0x00335552)
-#define MUIM_IC_UndoSteps               (0x00335553)
+#define MUIM_IC_BASE                    (TAG_USER + 0x00335000)
+#define MUIA_IC_BASE                    (TAG_USER + 0x00336000)
 
-#define MUIM_IC_Install                 (0x00335554)
+#define MUIM_IC_NextStep                (MUIM_IC_BASE + 0x1)
+#define MUIM_IC_PrevStep                (MUIM_IC_BASE + 0x2)
+#define MUIM_IC_UndoSteps               (MUIM_IC_BASE + 0x3)
 
-#define MUIM_FindDrives                 (0x00335555)
-#define MUIM_PartitionFree              (0x00335556)
-#define MUIM_Partition                  (0x00335557)
-#define MUIM_Format                     (0x00335558)
+#define MUIM_IC_Install                 (MUIM_IC_BASE + 0x4)
+#define MUIM_IC_SetLocalePrefs          (MUIM_IC_BASE + 0x5)
 
-#define MUIM_IC_CopyFiles               (0x0033555a)
-#define MUIM_IC_CopyFile                (0x0033555b)
+#define MUIM_FindDrives                 (MUIM_IC_BASE + 0x6)
+#define MUIM_PartitionFree              (MUIM_IC_BASE + 0x7)
+#define MUIM_Partition                  (MUIM_IC_BASE + 0x8)
+#define MUIM_Format                     (MUIM_IC_BASE + 0x9)
 
-#define MUIM_IC_CancelInstall           (0x0033556a)
-#define MUIM_IC_ContinueInstall         (0x0033556b)
-#define MUIM_IC_QuitInstall             (0x0033556c)
+#define MUIM_IC_CopyFiles               (MUIM_IC_BASE + 0xa)
+#define MUIM_IC_CopyFile                (MUIM_IC_BASE + 0xb)
 
-#define MUIM_Reboot                     (0x0033556d)
-#define MUIM_RefreshWindow              (0x00335570)
+#define MUIM_IC_CancelInstall           (MUIM_IC_BASE + 0x1a)
+#define MUIM_IC_ContinueInstall         (MUIM_IC_BASE + 0x1b)
+#define MUIM_IC_QuitInstall             (MUIM_IC_BASE + 0x1c)
+
+#define MUIM_Reboot                     (MUIM_IC_BASE + 0x1d)
+#define MUIM_RefreshWindow              (MUIM_IC_BASE + 0x20)
 
 /* to be made obsolete */
 
-#define MUIA_Page                       (0x00335580)
+#define MUIA_Page                       (MUIA_IC_BASE + 0x80)
 
-#define MUIA_PartitionButton            (0x00335581)
-#define MUIA_Gauge1                     (0x00335582)
-#define MUIA_Gauge2                     (0x00335583)
-#define MUIA_Install                    (0x00335584)
+#define MUIA_PartitionButton            (MUIA_IC_BASE + 0x81)
+#define MUIA_Gauge1                     (MUIA_IC_BASE + 0x82)
+#define MUIA_Gauge2                     (MUIA_IC_BASE + 0x83)
+#define MUIA_Install                    (MUIA_IC_BASE + 0x84)
 /**/
-#define MUIA_WelcomeMsg                 (0x0033558a)
-#define MUIA_FinishedMsg                (0x0033558b)
+#define MUIA_WelcomeMsg                 (MUIA_IC_BASE + 0x8a)
+#define MUIA_FinishedMsg                (MUIA_IC_BASE + 0x8b)
 
 /* new - some/most will "vanish(tm)" */
 
-#define MUIA_OBJ_Installer              (0x0033558d)
-#define MUIA_Grub_Options               (0x0033558e)
-#define MUIA_List_Options               (0x0033558f)
+#define MUIA_OBJ_Installer              (MUIA_IC_BASE + 0x8d)
+#define MUIA_Grub_Options               (MUIA_IC_BASE + 0x8e)
+#define MUIA_List_Options               (MUIA_IC_BASE + 0x8f)
 
-#define MUIA_OBJ_Window                 (0x00335590)
-#define MUIA_OBJ_WindowContent          (0x00335591)
+#define MUIA_OBJ_Window                 (MUIA_IC_BASE + 0x90)
+#define MUIA_OBJ_WindowContent          (MUIA_IC_BASE + 0x91)
 
-#define MUIA_OBJ_PageTitle              (0x00335592)
-#define MUIA_OBJ_PageHeader             (0x00335593)
-#define MUIA_OBJ_CActionStrng           (0x00335594)
+#define MUIA_OBJ_PageTitle              (MUIA_IC_BASE + 0x92)
+#define MUIA_OBJ_PageHeader             (MUIA_IC_BASE + 0x93)
+#define MUIA_OBJ_CActionStrng           (MUIA_IC_BASE + 0x94)
 
-#define MUIA_OBJ_Back                   (0x00335595)
-#define MUIA_OBJ_Proceed                (0x00335596)
-#define MUIA_OBJ_Cancel                 (0x00335597)
+#define MUIA_OBJ_Back                   (MUIA_IC_BASE + 0x95)
+#define MUIA_OBJ_Proceed                (MUIA_IC_BASE + 0x96)
+#define MUIA_OBJ_Cancel                 (MUIA_IC_BASE + 0x97)
 
-#define MUIA_IC_License_File            (0x00335598)
-#define MUIA_IC_License_Mandatory	(0x00335599)
+#define MUIA_IC_License_File            (MUIA_IC_BASE + 0x98)
+#define MUIA_IC_License_Mandatory	(MUIA_IC_BASE + 0x99)
 
-#define MUIA_IC_EnableUndo              (0x00335599)
+#define MUIA_IC_EnableUndo              (MUIA_IC_BASE + 0x99)
 
 /* Install Results */
 
-#define MUIA_InstallComplete            (0x003355ff)
-#define MUIA_InstallFailed              (0x003355fe)
+#define MUIA_InstallComplete            (MUIA_IC_BASE + 0xff)
+#define MUIA_InstallFailed              (MUIA_IC_BASE + 0xfe)
 
 #define MUIV_Inst_Completed             (0xff)
 #define MUIV_Inst_InProgress            (0x00)

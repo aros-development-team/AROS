@@ -5,8 +5,8 @@
 
 #define INTUITION_NO_INLINE_STDARG
 
+#define DEBUG 1
 #include <aros/debug.h>
-
 
 #include <dos/dos.h>
 #include <exec/types.h>
@@ -419,8 +419,8 @@ IPTR Install__MUIM_FindDrives(Class * CLASS, Object * self, Msg message)
         StartMess = devnode->dvi_Startup;
         if (!StartMess)
             continue;
-        D(bug("[InstallAROS.fd] Drive found [%s unit %d]\n",
-                StartMess->fssm_Device, StartMess->fssm_Unit));
+        D(bug("[InstallAROS] %s: Drive found [%s unit %d]\n",
+                __func__, StartMess->fssm_Device, StartMess->fssm_Unit));
 
         DriveEnv = StartMess->fssm_Environ;
 
@@ -434,8 +434,8 @@ IPTR Install__MUIM_FindDrives(Class * CLASS, Object * self, Msg message)
                 {
                     /* First drive in system - save its info for grub */
                     D(bug
-                        ("[InstallAROS.fd] First DRIVE found [%s unit %d]...\n",
-                            StartMess->fssm_Device, StartMess->fssm_Unit));
+                        ("[InstallAROS] %s: First DRIVE found [%s unit %d]...\n",
+                            __func__, StartMess->fssm_Device, StartMess->fssm_Unit));
                     founddisk = TRUE;
                     //                    boot_Device = StartMess->fssm_Device;
                     //                    boot_Unit = StartMess->fssm_Unit;
@@ -444,7 +444,7 @@ IPTR Install__MUIM_FindDrives(Class * CLASS, Object * self, Msg message)
                 if (OpenPartitionTable(root) == 0)
                 {
                     result = FindPartition(root);
-                    D(bug("[InstallAROS.fd] Partition '%s'\n", result));
+                    D(bug("[InstallAROS] %s: Partition '%s'\n", __func__, result));
                     ClosePartitionTable(root);
                 }
                 CloseRootPartition(root);
@@ -707,7 +707,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
         case 1:
             if (DoMethod(self, MUIM_Partition) != RETURN_OK)
             {
-                D(bug("[InstallAROS] Partitioning FAILED!!!!\n"));
+                D(bug("[InstallAROS] %s: Partitioning FAILED!!!!\n", __func__));
                 data->disable_back = FALSE;
                 SET(data->page, MUIA_Group_ActivePage,
                     EInstallMessageStage);
@@ -769,7 +769,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 break;
             }
         default:
-            D(bug("[InstallAROS] Launching QuickPart...\n"));
+            D(bug("[InstallAROS] %s: Launching QuickPart...\n", __func__));
             Execute("SYS:Tools/QuickPart", NULL, NULL);
             break;
         }
@@ -1166,14 +1166,14 @@ IPTR Install__MUIM_Partition(Class * CLASS, Object * self, Msg message)
             &option);
         if (option == 1)
         {
-            D(bug("[InstallAROS] Partitioning EVERYTHING! MUAHAHAHA...\n"));
+            D(bug("[InstallAROS] %s: Partitioning EVERYTHING! MUAHAHAHA...\n", __func__));
             strcat(tmpcmd, " WIPE");
         }
         D(else
-                bug("[InstallAROS] Partitioning Free Space...\n");
+                bug("[InstallAROS] %s: Partitioning Free Space...\n", __func__);
         )
 
-        D(bug("[InstallAROS] ### Executing '%s'\n", &tmpcmd));
+        D(bug("[InstallAROS] %s: ### Executing '%s'\n", __func__, &tmpcmd));
         tmp = SystemTagList(tmpcmd, NULL);
 
         SET(data->proceed, MUIA_Disabled, FALSE);
@@ -1188,14 +1188,13 @@ IPTR Install__MUIM_IC_CopyFiles
     struct Install_DATA *data = INST_DATA(CLASS, self);
     LONG totalFiles = -1, totalFilesCopied = 0;
 
-
-    D(bug("[InstallAROS.CFs] Entry, src: %s, dst: %s, mask: %s\n",
-            message->srcDir, message->dstDir, message->fileMask));
+    D(bug("[InstallAROS] %s: Entry, src: %s, dst: %s, mask: %s\n",
+            __func__, message->srcDir, message->dstDir, message->fileMask));
 
     /* Check entry condition */
     if (data->inst_success != MUIV_Inst_InProgress)
     {
-        D(bug("[InstallAROS.CFs] Installation failed\n"));
+        D(bug("[InstallAROS] %s: Installation failed\n", __func__));
         return totalFilesCopied;
     }
 
@@ -1207,7 +1206,7 @@ IPTR Install__MUIM_IC_CopyFiles
         totalFiles =
             CountFiles(message->srcDir, message->skipList, message->fileMask,
             message->recursive);
-        D(bug("[InstallAROS.CFs] Found %ld files in %s\n", totalFiles,
+        D(bug("[InstallAROS] %s: Found %ld files in %s\n", __func__, totalFiles,
                 message->srcDir));
 
         if (totalFiles < 0)
@@ -1255,6 +1254,122 @@ IPTR Install__MUIM_IC_CopyFiles
     return totalFilesCopied;
 }
 
+IPTR Install__MUIM_IC_SetLocalePrefs(Class * CLASS, Object * self, Msg message)
+{
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    BPTR lock = BNULL;
+
+    D(bug("[InstallAROS] %s: Launching Locale Prefs...\n", __func__));
+
+    ULONG srcLen = strlen(source_Path), dstLen =
+        (strlen(data->install_SysTarget) + 1);
+    ULONG envsrcLen = strlen(prefssrc_path), envdstLen =
+        strlen(prefs_path);
+
+    ULONG localeFileLen = srcLen + strlen(localeFile_path) + 3;
+    ULONG inputFileLen = srcLen + strlen(inputFile_path) + 3;
+
+    ULONG localePFileLen =
+        dstLen + envdstLen + strlen(locale_prfs_file) + 4;
+
+    ULONG inputPFileLen =
+        dstLen + envdstLen + strlen(input_prfs_file) + 4;
+
+    ULONG envdstdirLen = 1024;
+    TEXT envDstDir[envdstdirLen];   /* "DH0:Prefs/Env-Archive/SYS" */
+
+    TEXT localeFile[localeFileLen]; /* "CD0:Prefs/Locale" */
+    TEXT localesrcPFile[localePFileLen];    /* "ENV:SYS/locale.prefs" */
+    TEXT localePFile[localePFileLen];       /* "DH0:Prefs/Env-Archive/SYS/locale.prefs" */
+    TEXT inputFile[inputFileLen];   /* "CD0:Prefs/Input" */
+    TEXT inputsrcPFile[inputPFileLen];      /* "ENV:SYS/input.prefs" */
+    TEXT inputPFile[inputPFileLen]; /* "DH0:Prefs/Env-Archive/SYS/input.prefs" */
+
+    sprintf(envDstDir, "%s:", data->install_SysTarget);
+    sprintf(localeFile, "\"%s", source_Path);
+    CopyMem(prefssrc_path, localesrcPFile, envsrcLen + 1);
+    sprintf(localePFile, "%s:", data->install_SysTarget);
+    sprintf(inputFile, "\"%s", source_Path);
+    CopyMem(prefssrc_path, inputsrcPFile, envsrcLen + 1);
+    sprintf(inputPFile, "%s:", data->install_SysTarget);
+
+    AddPart(localeFile, inputFile_path, localeFileLen);
+
+    AddPart(localesrcPFile, locale_prfs_file, localePFileLen);
+
+    AddPart(localePFile, prefs_path, localePFileLen);
+    AddPart(localePFile, locale_prfs_file, localePFileLen);
+
+    AddPart(inputFile, localeFile_path, inputFileLen);
+
+    AddPart(inputsrcPFile, input_prfs_file, inputPFileLen);
+
+    AddPart(inputPFile, prefs_path, inputPFileLen);
+    AddPart(inputPFile, input_prfs_file, inputPFileLen);
+
+    D(bug("[InstallAROS] %s: Excecuting '%s'...\n", __func__, localeFile));
+
+    Execute(localeFile, NULL, NULL);
+
+    DoMethod(data->installer, MUIM_Application_InputBuffered);
+
+    D(bug("[InstallAROS] %s: Excecuting '%s'...\n", __func__, inputFile));
+
+    Execute(inputFile, NULL, NULL);
+
+    DoMethod(data->installer, MUIM_Application_InputBuffered);
+
+    D(bug("[InstallAROS] %s: Copying Locale Settings...\n", __func__));
+
+    //create the dirs "Prefs","Prefs/Env-Archive" and "Prefs/Env-Archive/SYS"
+    AddPart(envDstDir, "Prefs", dstLen + envdstLen);
+    AddPart(envDstDir, "Env-Archive", envdstdirLen);
+    AddPart(envDstDir, "SYS", envdstdirLen);
+    D(bug("[InstallAROS] %s: Create Dir '%s' \n", __func__, envDstDir));
+    if ((lock = Lock(envDstDir, ACCESS_READ)) != BNULL)
+    {
+        D(bug("[InstallAROS] %s: Dir '%s' Exists - no nead to create\n",
+                __func__, envDstDir));
+        UnLock(lock);
+    }
+    else
+    {
+        lock = RecursiveCreateDir(envDstDir);
+        if (lock != NULL)
+            UnLock(lock);
+        else
+        {
+          createdirfaild:
+            D(bug("[InstallAROS] %s: Failed to create %s dir!!\n",
+                    envDstDir, __func__));
+            /* TODO: Should prompt on failure to try again/continue anyhow/exit */
+            goto localecopydone;
+            //data->inst_success = MUIV_Inst_Failed;
+            //return 0;
+        }
+    }
+    
+    lock = BNULL;
+
+    D(bug("[InstallAROS] %s: Copying files\n", __func__));
+
+    if ((lock = Lock(localesrcPFile, ACCESS_READ)) != BNULL)
+    {
+        UnLock(lock);
+        DoMethod(self, MUIM_IC_CopyFile, localesrcPFile, localePFile);
+    }
+
+    lock = BNULL;
+
+    if ((lock = Lock(inputsrcPFile, ACCESS_READ)) != BNULL)
+    {
+        UnLock(lock);
+        DoMethod(self, MUIM_IC_CopyFile, inputsrcPFile, inputPFile);
+    }
+  localecopydone:
+    ;
+}
+
 IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
@@ -1264,8 +1379,8 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     NEWLIST(&SKIPLIST);
 
     D(
-        bug("[InstallAROS] MUIM_IC_Install : Dest Sys Path = '%s'\n", data->install_SysTarget);
-        bug("[InstallAROS] MUIM_IC_Install : Dest Work Path = '%s'\n", data->install_WorkTarget);
+        bug("[InstallAROS] %s: Dest Sys Path = '%s'\n", __func__, data->install_SysTarget);
+        bug("[InstallAROS] %s: Dest Work Path = '%s'\n", __func__, data->install_WorkTarget);
     )
 
     SET(data->back, MUIA_Disabled, TRUE);
@@ -1299,7 +1414,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         char tmp[100];
         sprintf(tmp, "%s:", data->install_WorkTarget);
         D(bug
-            ("[InstallAROS] Install : Checking validity of work partition '%s' ..", tmp));
+            ("[InstallAROS] %s: Checking validity of work partition '%s' ..", __func__, tmp));
         if ((lock = Lock(tmp, SHARED_LOCK)) != BNULL)    /* check the dest dir exists */
         {
             D(bug("OK!\n"));
@@ -1308,16 +1423,16 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         else
         {
             D(bug
-                ("FAILED!\n[InstallAROS] (Warning) INSTALL - Failed to locate chosen work partition : defaulting to '%s'\n",
-                    data->install_SysTarget));
+                ("FAILED!\n[InstallAROS] %s: (Warning) INSTALL - Failed to locate chosen work partition : defaulting to '%s'\n",
+                    __func__, data->install_SysTarget));
             extras_path = data->install_SysTarget;
         }
         lock = BNULL;
     }
     else
     {
-        D(bug("[InstallAROS] Install: Using SYS partition only (%s)\n",
-                data->install_SysTarget));
+        D(bug("[InstallAROS] %s: Using SYS partition only (%s)\n",
+                __func__, data->install_SysTarget));
     }
 
     DoMethod(data->installer, MUIM_Application_InputBuffered);
@@ -1327,115 +1442,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     GET(data->instc_options_main->opt_locale, MUIA_Selected, &option);
     if (option && (data->inst_success == MUIV_Inst_InProgress))
     {
-        D(bug("[InstallAROS] Launching Locale Prefs...\n"));
-
-        ULONG srcLen = strlen(source_Path), dstLen =
-            (strlen(data->install_SysTarget) + 1);
-        ULONG envsrcLen = strlen(prefssrc_path), envdstLen =
-            strlen(prefs_path);
-
-        ULONG localeFileLen = srcLen + strlen(localeFile_path) + 3;
-        ULONG inputFileLen = srcLen + strlen(inputFile_path) + 3;
-
-        ULONG localePFileLen =
-            dstLen + envdstLen + strlen(locale_prfs_file) + 4;
-
-        ULONG inputPFileLen =
-            dstLen + envdstLen + strlen(input_prfs_file) + 4;
-
-        ULONG envdstdirLen = 1024;
-        TEXT envDstDir[envdstdirLen];   /* "DH0:Prefs/Env-Archive/SYS" */
-
-        TEXT localeFile[localeFileLen]; /* "CD0:Prefs/Locale" */
-        TEXT localesrcPFile[localePFileLen];    /* "ENV:SYS/locale.prefs" */
-        TEXT localePFile[localePFileLen];       /* "DH0:Prefs/Env-Archive/SYS/locale.prefs" */
-        TEXT inputFile[inputFileLen];   /* "CD0:Prefs/Input" */
-        TEXT inputsrcPFile[inputPFileLen];      /* "ENV:SYS/input.prefs" */
-        TEXT inputPFile[inputPFileLen]; /* "DH0:Prefs/Env-Archive/SYS/input.prefs" */
-
-        sprintf(envDstDir, "%s:", data->install_SysTarget);
-        sprintf(localeFile, "\"%s", source_Path);
-        CopyMem(prefssrc_path, localesrcPFile, envsrcLen + 1);
-        sprintf(localePFile, "%s:", data->install_SysTarget);
-        sprintf(inputFile, "\"%s", source_Path);
-        CopyMem(prefssrc_path, inputsrcPFile, envsrcLen + 1);
-        sprintf(inputPFile, "%s:", data->install_SysTarget);
-
-        AddPart(localeFile, inputFile_path, localeFileLen);
-
-        AddPart(localesrcPFile, locale_prfs_file, localePFileLen);
-
-        AddPart(localePFile, prefs_path, localePFileLen);
-        AddPart(localePFile, locale_prfs_file, localePFileLen);
-
-        AddPart(inputFile, localeFile_path, inputFileLen);
-
-        AddPart(inputsrcPFile, input_prfs_file, inputPFileLen);
-
-        AddPart(inputPFile, prefs_path, inputPFileLen);
-        AddPart(inputPFile, input_prfs_file, inputPFileLen);
-
-        D(bug("[InstallAROS] Excecuting '%s'...\n", localeFile));
-
-        Execute(localeFile, NULL, NULL);
-
-        DoMethod(data->installer, MUIM_Application_InputBuffered);
-
-        D(bug("[InstallAROS] Excecuting '%s'...\n", inputFile));
-
-        Execute(inputFile, NULL, NULL);
-
-        DoMethod(data->installer, MUIM_Application_InputBuffered);
-
-        D(bug("[InstallAROS] Copying Locale Settings...\n"));
-
-        //create the dirs "Prefs","Prefs/Env-Archive" and "Prefs/Env-Archive/SYS"
-        AddPart(envDstDir, "Prefs", dstLen + envdstLen);
-        AddPart(envDstDir, "Env-Archive", envdstdirLen);
-        AddPart(envDstDir, "SYS", envdstdirLen);
-        D(bug("[InstallAROS] Create Dir '%s' \n", envDstDir));
-        if ((lock = Lock(envDstDir, ACCESS_READ)) != BNULL)
-        {
-            D(bug("[InstallAROS] Dir '%s' Exists - no nead to create\n",
-                    envDstDir));
-            UnLock(lock);
-        }
-        else
-        {
-            lock = RecursiveCreateDir(envDstDir);
-            if (lock != NULL)
-                UnLock(lock);
-            else
-            {
-              createdirfaild:
-                D(bug("[InstallAROS] Failed to create %s dir!!\n",
-                        envDstDir));
-                /* TODO: Should prompt on failure to try again/continue anyhow/exit */
-                goto localecopydone;
-                //data->inst_success = MUIV_Inst_Failed;
-                //return 0;
-            }
-        }
-        
-        lock = BNULL;
-
-        D(bug("[InstallAROS] Copying files\n"));
-
-        if ((lock = Lock(localesrcPFile, ACCESS_READ)) != BNULL)
-        {
-            UnLock(lock);
-            DoMethod(self, MUIM_IC_CopyFile, localesrcPFile, localePFile);
-        }
-
-        lock = BNULL;
-
-        if ((lock = Lock(inputsrcPFile, ACCESS_READ)) != BNULL)
-        {
-            UnLock(lock);
-            DoMethod(self, MUIM_IC_CopyFile, inputsrcPFile, inputPFile);
-        }
-      localecopydone:
-        ;
+        DoMethod(self, MUIM_IC_SetLocalePrefs);
     }
 
     DoMethod(data->installer, MUIM_Application_InputBuffered);
@@ -1472,7 +1479,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         BOOL success = FALSE;
 
         /* Copying Core system Files */
-        D(bug("[InstallAROS] Copying Core files...\n"));
+        D(bug("[InstallAROS] %s: Copying Core files...\n", __func__));
         SET(data->label, MUIA_Text_Contents, __(MSG_COPYCORE));
         sprintf(destinationPath, "%s:", data->install_SysTarget);
 
@@ -1501,15 +1508,15 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         sprintf(tmp, "Protect ADD FLAGS=W ALL QUIET %s:Prefs/Env-Archive",
             data->install_SysTarget);
         D(bug
-            ("[InstallAROS] Changing Protection on Env Files (command='%s')\n",
-                tmp));
+            ("[InstallAROS] %s: Changing Protection on Env Files (command='%s')\n",
+                __func__, tmp));
         success = (BOOL) Execute(tmp, NULL, NULL);
 
         if (!success)
         {
             D(bug
-                ("[InstallAROS] Changing Protection on Env Files failed: %d\n",
-                    IoErr()));
+                ("[InstallAROS] %s: Changing Protection on Env Files failed: %d\n",
+                    __func__, IoErr()));
         }
         ClearSkipList(&SKIPLIST);
     }
@@ -1534,7 +1541,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         data->instc_copt_undoenabled = FALSE;
 
         /* Copying Extras */
-        D(bug("[InstallAROS] Copying Extras to '%s'...\n", extras_path));
+        D(bug("[InstallAROS] %s: Copying Extras to '%s'...\n", __func__, extras_path));
         SET(data->label, MUIA_Text_Contents, __(MSG_COPYEXTRA));
         sprintf(extraspath, "%s:", extras_path);
         CopyDirArray(CLASS, self, extras_source, extraspath, extras_dirs, &SKIPLIST);
@@ -1577,7 +1584,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             UnLock(lock);
 
             /* Copying Developer stuff */
-            D(bug("[InstallAROS] Copying Developer Files...\n"));
+            D(bug("[InstallAROS] %s: Copying Developer Files...\n", __func__));
             SET(data->label, MUIA_Text_Contents, __(MSG_COPYDEVEL));
             sprintf(developerpath, "%s:", extras_path);
             CopyDirArray(CLASS, self, source_Path, developerpath,
@@ -1596,7 +1603,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             data->instc_copt_undoenabled = undoenabled;
         }
         D(else
-           bug("[InstallAROS] Couldn't locate Developer Files...\n");
+           bug("[InstallAROS] %s: Couldn't locate Developer Files...\n", __func__);
         )
 
         ClearSkipList(&SKIPLIST);
@@ -2129,6 +2136,9 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
 
     case MUIM_IC_Install:
         return Install__MUIM_IC_Install(CLASS, self, message);
+
+    case MUIM_IC_SetLocalePrefs:
+        return Install__MUIM_IC_SetLocalePrefs(CLASS, self, message);
 
         //These will be consumed by the io task
     case MUIM_Partition:
