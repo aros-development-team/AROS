@@ -1,92 +1,94 @@
-# German PC105 amiga keymap descriptor
+# Spanish PC105 amiga keymap descriptor
 # (c) 2020 The AROS Development Team.
 # v1.0
 
 ## begin config
-keymap: pc105_d
+keymap: pc105_e
 ## end config
 
+# the "types" must come before "string", "deadkey", and "map"  sections.
+
 ## begin lokeymaptypes
-KCF_DEAD|KC_VANILLA                  # 00
-KCF_SHIFT|KCF_ALT                    # 01
-KCF_SHIFT|KCF_ALT                    # 02
-KCF_SHIFT|KCF_ALT                    # 03
-KCF_SHIFT|KCF_ALT                    # 04
+KCF_SHIFT|KCF_ALT          	     # 00 left of 1
+KCF_SHIFT|KCF_ALT                    # 01 1
+KC_VANILLA                           # 02 2
+KC_VANILLA                           # 03 3
+KCF_SHIFT|KCF_ALT                    # 04 4
 KCF_SHIFT|KCF_ALT                    # 05
 KCF_SHIFT|KCF_ALT                    # 06
 KCF_SHIFT|KCF_ALT                    # 07
 KCF_SHIFT|KCF_ALT                    # 08
 KCF_SHIFT|KCF_ALT                    # 09
-KCF_SHIFT|KCF_ALT                    # 0A
-KC_VANILLA                           # 0B
-KCF_DEAD|KCF_SHIFT|KCF_ALT           # 0C
-KC_VANILLA                           # 0D
-KCF_NOP                              # 0E
-KC_NOQUAL                            # 0F
-KC_VANILLA                           # 10 q
-KC_VANILLA                           # 11 w
-KCF_DEAD|KC_VANILLA                  # 12 e
-KC_VANILLA                           # 13 r
-KC_VANILLA                           # 14 t
-KC_VANILLA                           # 15 z
-KCF_DEAD|KC_VANILLA                  # 16 u
-KCF_DEAD|KC_VANILLA                  # 17 i
-KCF_DEAD|KC_VANILLA                  # 18 o
-KC_VANILLA                           # 19 p
-KC_VANILLA                           # 1A
-KC_VANILLA                           # 1B
-KCF_NOP                              # 1C
-KC_NOQUAL                            # 1D
-KC_NOQUAL                            # 1E
-KC_NOQUAL                            # 1F
+KCF_SHIFT|KCF_ALT	             # 0A
+KCF_SHIFT|KCF_ALT                    # 0B Right of 0
+KCF_SHIFT|KCF_ALT          	     # 0C 2nd right of 0
+KC_NOQUAL          		     # 0D 3rd right of 0
+KC_NOQUAL          		     # 0E undef
+KCF_SHIFT|KCF_ALT          	     # 0F NUM 0
+KC_VANILLA          	    	     # 10 q
+KC_VANILLA                 	     # 11 w
+KCF_DEAD|KC_VANILLA          	     # 12 e
+KC_VANILLA                 	     # 13 r
+KC_VANILLA                 	     # 14 t
+KC_VANILLA                 	     # 15 y
+KCF_DEAD|KC_VANILLA          	     # 16 u
+KCF_DEAD|KC_VANILLA          	     # 17 i
+KCF_DEAD|KC_VANILLA          	     # 18 o
+KC_VANILLA                 	     # 19 p
+KCF_DEAD|KCF_SHIFT|KCF_ALT           # 1A + *
+KCF_SHIFT|KCF_ALT          	     # 1B ´ `
+KC_NOQUAL          	             # 1C undefined
+KC_NOQUAL             	             # 1D NUM 1
+KC_NOQUAL           	             # 1E NUM 2
+KC_NOQUAL           	             # 1F NUM 3
 KCF_DEAD|KC_VANILLA                  # 20 a
-KC_VANILLA                           # 21 s
-KC_VANILLA                           # 22 d
-KCF_DEAD|KC_VANILLA                  # 23 f
-KCF_DEAD|KC_VANILLA                  # 24 g
-KCF_DEAD|KC_VANILLA                  # 25 h
-KCF_DEAD|KC_VANILLA                  # 26 j
-KCF_DEAD|KC_VANILLA                  # 27 k
-KC_VANILLA                           # 28 l
-KCF_SHIFT|KCF_ALT                    # 29
-KCF_SHIFT|KCF_ALT                    # 2A
-KC_VANILLA                           # 2B
-KCF_NOP                              # 2C
-KC_NOQUAL                            # 2D
-KC_NOQUAL                            # 2E
-KC_NOQUAL                            # 2F
-KCF_SHIFT|KCF_ALT                    # 30
-KCF_DEAD|KC_VANILLA                  # 31 y
-KC_VANILLA                           # 32 x
-KC_VANILLA                           # 33 c
-KC_VANILLA                           # 34 v
-KC_VANILLA                           # 35 b
-KCF_DEAD|KC_VANILLA                  # 36 n
-KC_VANILLA                           # 37 m
-KCF_SHIFT|KCF_ALT                    # 38
-KCF_SHIFT|KCF_ALT                    # 39
-KC_VANILLA                           # 3A
-KCF_NOP                              # 3B
-KC_NOQUAL                            # 3C
-KC_NOQUAL                            # 3D
-KC_NOQUAL                            # 3E
-KC_NOQUAL                            # 3F
+KC_VANILLA          		     # 21 s
+KC_VANILLA          		     # 22 d
+KC_VANILLA          		     # 23 f
+KC_VANILLA          		     # 24 g
+KC_VANILLA          		     # 25 h
+KC_VANILLA          		     # 26 j
+KC_VANILLA          		     # 27 k
+KC_VANILLA                 	     # 28 l
+KCF_SHIFT|KCF_ALT                    # 29 ç
+KCF_DEAD|KCF_SHIFT|KCF_ALT           # 2A º ª
+KCF_SHIFT|KCF_ALT              	     # 2B ~ ^
+KC_NOQUAL          		     # 2C undefined
+KC_NOQUAL          		     # 2D NUM 4
+KC_NOQUAL          		     # 2E NUM 5
+KC_NOQUAL          		     # 2F NUM 6
+KCF_SHIFT|KCF_ALT                    # 30 < >
+KC_VANILLA                 	     # 31 z
+KC_VANILLA                 	     # 32 x
+KC_VANILLA                    	     # 33 c
+KC_VANILLA                 	     # 34 v
+KC_VANILLA                 	     # 35 b
+KC_VANILLA                 	     # 36 n
+KC_VANILLA                    	     # 37 m
+KCF_SHIFT|KCF_ALT                    # 38 ;
+KCF_SHIFT|KCF_ALT                    # 39 . :
+KCF_SHIFT          		     # 3A - _
+KC_NOQUAL          		     # 3B undefined
+KC_NOQUAL          		     # 3C NUM .
+KC_NOQUAL          		     # 3D NUM 7
+KC_NOQUAL          		     # 3E NUM 8
+KC_NOQUAL          		     # 3F NUM 9
 ## end lokeymaptypes
 
 ## begin hikeymaptypes
-KCF_DEAD|KCF_ALT                     # 40 SPACE
-KC_NOQUAL                            # 41 BACKSPACE
+KCF_DEAD|KCF_SHIFT             	     # 40 SPACE
+KC_NOQUAL          		     # 41 BACKSPACE
 KCF_STRING|KCF_SHIFT                 # 42 TAB
-KC_NOQUAL                            # 43 ENTER
-KCF_CONTROL                          # 44 RETURN
-KCF_ALT                              # 45 ESCAPE
-KC_NOQUAL                            # 46 DEL 
+KC_NOQUAL                	     # 43 ENTER
+KCF_CONTROL                	     # 44 RETURN
+KCF_ALT          	 	     # 45 ESCAPE
+KC_NOQUAL          	 	     # 46 DEL
 KCF_STRING|KCF_SHIFT                 # 47 INSERT ??
 KCF_STRING|KCF_SHIFT                 # 48 PAGE UP ??
 KCF_STRING|KCF_SHIFT                 # 49 PAGE DOWN ??
-KC_NOQUAL                            # 4A NUMERIC PAD -
+KC_NOQUAL                	     # 4A NUMERIC PAD -
 KCF_STRING|KCF_SHIFT                 # 4B F11 ??
-KCF_STRING|KCF_SHIFT                 # 4C CURSORUP*/
+KCF_STRING|KCF_SHIFT                 # 4C CURSORUP
 KCF_STRING|KCF_SHIFT                 # 4D CURSORDOWN
 KCF_STRING|KCF_SHIFT                 # 4E CURSORRIGHT
 KCF_STRING|KCF_SHIFT                 # 4F CURSORLEFT
@@ -120,7 +122,7 @@ KCF_NOP                              # 6A MIDDLE MOUSE BUTTON
 KCF_NOP                              # 6B
 KCF_NOP                              # 6C
 KCF_NOP                              # 6D
-KCF_STRING|KCF_ALT                   # 6E PAUSE/BREAK ??*/
+KCF_STRING|KCF_ALT                   # 6E PAUSE/BREAK ??
 KCF_STRING|KCF_SHIFT                 # 6F F12 ??
 KCF_STRING|KCF_CONTROL               # 70 HOME ??
 KCF_STRING|KCF_CONTROL               # 71 END ??
@@ -135,7 +137,7 @@ KCF_NOP                              # 77
 ## begin deadkey
 id: a_descr
 1, 0x10,
-1, 0x25,
+1, 0x17,
 0, 'æ',
 0, 'Æ',
 0, 0x01,
@@ -143,17 +145,13 @@ id: a_descr
 0, 0x81,
 0, 0x81,
 'a', 'á', 'à', 'â', 'ã', 'ä', 'å',
-'á', 'á', 'â', 'á', 'á', 'á', 'á',
-'à', 'â', 'à', 'à', 'à', 'à', 'à',
-'A', 'Á', 'À', 'Â', 'Ã', 'Ä', 'Å',
-'Á', 'Á', 'Â', 'Á', 'Á', 'Á', 'Á',
-'À', 'Â', 'À', 'À', 'À', 'À', 'À'
+'A', 'Á', 'À', 'Â', 'Ã', 'Ä', 'Å'
 ## end deadkey
 
 ## begin deadkey
 id: e_descr
 1, 0x10,
-1, 0x25,
+1, 0x17,
 0, 0xA4,
 0, '¢',
 0, 0x05,
@@ -161,17 +159,13 @@ id: e_descr
 0, 0x85,
 0, 0x85,
 'e', 'é', 'è', 'ê', 'e', 'ë', 'e',
-'é', 'é', 'ê', 'é', 'é', 'é', 'é',
-'è', 'ê', 'è', 'è', 'è', 'è', 'è',
-'E', 'É', 'È', 'Ê', 'E', 'Ë', 'E',
-'É', 'É', 'Ê', 'É', 'É', 'É', 'É', 
-'È', 'Ê', 'È', 'È', 'È', 'È', 'È'
+'E', 'É', 'È', 'Ê', 'E', 'Ë', 'E'
 ## end deadkey
 
 ## begin deadkey
 id: u_descr
 1, 0x10,
-1, 0x25,
+1, 0x17,
 0, 'µ',
 0, 'µ',
 0, 0x15,
@@ -179,17 +173,13 @@ id: u_descr
 0, 0x95,
 0, 0x95,
 'u', 'ú', 'ù', 'û', 'u', 'ü', 'u',
-'ú', 'ú', 'û', 'ú', 'ú', 'ú', 'ú',
-'ù', 'û', 'ù', 'ù', 'ù', 'ù', 'ù',
-'U', 'Ú', 'Ù', 'Û', 'U', 'Ü', 'U',
-'Ú', 'Ú', 'Û', 'Ú', 'Ú', 'Ú', 'Ú',
-'Ù', 'Û', 'Ù', 'Ù', 'Ù', 'Ù', 'Ù'
+'U', 'Ú', 'Ù', 'Û', 'U', 'Ü', 'U'
 ## end deadkey
 
 ## begin deadkey
 id: i_descr
 1, 0x10,
-1, 0x25,
+1, 0x17,
 0, '¡',
 0, '¦',
 0, 0x09,
@@ -197,154 +187,44 @@ id: i_descr
 0, 0x89,
 0, 0x89,
 'i', 'í', 'ì', 'î', 'i', 'ï', 'i',
-'í', 'í', 'î', 'í', 'í', 'í', 'í',
-'ì', 'î', 'ì', 'ì', 'ì', 'ì', 'ì',
-'I', 'Í', 'Ì', 'Î', 'I', 'Ï', 'I',
-'Í', 'Í', 'Î', 'Í', 'Í', 'Í', 'Í',
-'Ì', 'Î', 'Ì', 'Ì', 'Ì', 'Ì', 'Ì'
+'I', 'Í', 'Ì', 'Î', 'I', 'Ï', 'I'
 ## end deadkey
 
 ## begin deadkey
 id: o_descr
 1, 0x10,
-1, 0x25,
-0, 'ø', /* 0xF8 */
-0, 'Ø', /* 0xD8 */
+1, 0x17,
+0, 'ø',
+0, 'Ø',
 0, 0x0F,
 0, 0x0F,
 0, 0x8F,
 0, 0x8F,
 'o', 'ó', 'ò', 'ô', 'õ', 'ö', 'o',
-'ó', 'ó', 'ô', 'ó', 'ó', 'ó', 'ó',
-'ò', 'ô', 'ò', 'ò', 'ò', 'ò', 'ò',
-'O', 'Ó', 'Ò', 'Ô', 'Õ', 'Ö', 'O',
-'Ó', 'Ó', 'Ô', 'Ó', 'Ó', 'Ó', 'Ó',
-'Ò', 'Ô', 'Ò', 'Ò', 'Ò', 'Ò', 'Ò'
+'O', 'Ó', 'Ò', 'Ô', 'Õ', 'Ö', 'O'
 ## end deadkey
-
-## begin deadkey
-id: y_descr
-1, 0x10,
-1, 0x25,
-0, '±',
-0, '¬',
-0, 0x19,
-0, 0x19,
-0, 0x99,
-0, 0x99,
-'y', 'ý', 'y', 'y', 'y', 'ÿ', 'y',
-'ý', 'ý', 'ý', 'ý', 'ý', 'ý', 'ý',
-'y', 'y', 'y', 'y', 'y', 'y', 'y',
-'Y', 'Ý', 'Y', 'Y', 'Y', 'Y', 'Y',
-'Ý', 'Ý', 'Ý', 'Ý', 'Ý', 'Ý', 'Ý',
-'Y', 'Y', 'Y', 'Y', 'Y', 'Y', 'Y'
-## end deadkey
-
-## begin deadkey
-id: n_descr
-1, 0x10,
-1, 0x25,
-0, '­',
-0, '¯',
-0, 0x0E,
-0, 0x0E,
-0, 0x8E,
-0, 0x8E,
-'n', 'n', 'n', 'n', 'ñ', 'n', 'n',
-'n', 'n', 'n', 'n', 'n', 'n', 'n',
-'n', 'n', 'n', 'n', 'n', 'n', 'n',
-'N', 'N', 'N', 'N', 'Ñ', 'N', 'N',
-'N', 'N', 'N', 'N', 'N', 'N', 'N',
-'N', 'N', 'N', 'N', 'N', 'N', 'N'
-## end deadkey
-
-## begin deadkey
-id: f_descr
-0, 'f',
-0, 'F',
-8, 0x71
-8, 0x71
-0, 0x06,
-0, 0x06,
-0, 0x86,
-0, 0x86
-## end deadkey
-
-## begin deadkey
-id: g_descr
-0, 'g',
-0, 'G',
-8, 0x72
-8, 0x72
-0, 0x07,
-0, 0x07,
-0, 0x87,
-0, 0x87
-## end deadkey
-
-## begin deadkey
-id: h_descr
-0, 'h',
-0, 'H',
-8, 3,
-8, 3,
-0, 0x08,
-0, 0x08,
-0, 0x88,
-0, 0x88
-## end deadkey
-
-## begin deadkey
-id: j_descr
-0, 'j',
-0, 'J',
-8, 4,
-8, 4,
-0, 0x0A,
-0, 0x0A,
-0, 0x8A,
-0, 0x8A,
-## end deadkey
-
-## begin deadkey
-id:k_descr
-0, 'k',
-0, 'K',
-8, 5,
-8, 5,
-0, 0x0B,
-0, 0x0B,
-0, 0x8B,
-0, 0x8B,
-## end deadkey
-
-## begin deadkey
-id:key00_descr
-0, '^',
-0, '°',
-8, 3,
-8, 6,
-0, 0,
-0, 0,
-0, 0,
-0, 0
-## end deadkey
-
-## begin deadkey
-id:key0c_descr
-8, 0x71
-8, 0x72
-0, '=', 
-0, '+'
-## end deadkey
-
+ 
 ## begin deadkey
 id: space_descr
 1, 0x4,
-0, 0xA0,
-' ', '´', '`', '^', '~', '¨', '°',
-'´', '´', '^', '´', '´', '´', '´',
-'`', '^', '`', '`', '`', '`', '`'
+0, 0XA0,
+' ', '´', '`','^','~', '¨', '°'
+## end deadkey
+
+## begin deadkey
+id: KEY1A_descr
+8, 2,
+8, 3,
+0, '[',
+0, '['
+## end deadkey
+
+## begin deadkey
+id: KEY2A_descr
+8, 1,
+8, 5,
+0, '{',
+0, '{'
 ## end deadkey
 
 # standard descriptors ....
@@ -566,70 +446,70 @@ id: end_descr
 # map tables ....
 
 ## begin lokeymap
-id:key00_descr
-'!', '¹', '!', '1'
-'@', '²', '"', '2'
-'#', '³', '§', '3'
-'¢', '°', '$', '4'
-'%', '¼', '%', '5'
-'^', '½', '&', '6'
-'¾', '{', '/', '7'
-'*', '[', '(', '8'
-'«', ']', ')', '9'
-'»', '}', '=', '0'
-'|', '\\', '?', 'ß'
-id:key0c_descr
-'`', '`', '\'', '#'
+'\\','\\', 'ª','º'
+'¡', '|', '!', '1'
+0, '@', '"', '2'
+'£', '#', '·', '3'
+'$', '~', '$', '4'
+0, 0, '%', '5'
+0, '¬', '&', '6'
+0, '{', '/', '7'
+0, '[', '(', '8'
+'±', ']', ')', '9'
+'°', '}', '=', '0'
+'¿','\\', '?','\''
+'~', '~', '¿', '¡'
+'|', '|', '|', '|'
 0, 0, 0, 0
-0, 0, 0, '0'
-'@', '@', 'Q', 'q'
-'°', '°', 'W', 'w'
+'0', '0', '0', '0'
+0, '@', 'Q', 'q'
+0, 0, 'W', 'w'
 id:e_descr
-'®', '®', 'R', 'r'
-'Þ', 'þ', 'T', 't'
-'¥', 0xA4, 'Z', 'z'
+'®', '¶', 'R', 'r'
+0, 0, 'T', 't'
+'¥', 0, 'Y', 'y'
 id:u_descr
 id:i_descr
 id:o_descr
-'¶', '¶', 'P', 'p'
-'{', '[', 'Ü', 'ü'
-'*', '~', '*', '+'
+'Þ', 'þ', 'P', 'p'
+id:KEY1A_descr
+0, ']', '*', '+'
 0, 0, 0, 0
-0, 0, 0, '1'
-0, 0, 0, '2'
-0, 0, 0, '3'
+'1', '1', '1', '1'
+'2', '2', '2', '2'
+'3', '3', '3', '3'
 id:a_descr
 '§', 'ß', 'S', 's'
 'Ð', 'ð', 'D', 'd'
-id:f_descr
-id:g_descr
-id:h_descr
-id:j_descr
-id:k_descr
-'£', '@', 'L', 'l'
-':', ';', 'Ö', 'ö'
-'"', '\'', 'Ä', 'ä'
-'`', '`', '\'', '#'
+'ª', 0, 'F', 'f'
+0, 0, 'G', 'g'
+0, 0, 'H', 'h'
+'J', 'j', 'J', 'j'
+'&', 0, 'K', 'k'
+0, 0, 'L', 'l'
+'"', '~', 'Ñ', 'ñ'
+id:KEY2A_descr
+0, '}', 'Ç', 'ç'
 0, 0, 0, 0
-0, 0, 0, '4'
-0, 0, 0, '5'
-0, 0, 0, '6'
-'¦', '|', '>', '<'
-id:y_descr
-'÷', '×', 'X', 'x'
-'Ç', 'ç', 'C', 'c'
-'ª', 'ª', 'V', 'v'
-'º', 'º', 'B', 'b'
-id:n_descr
-'µ', 'µ', 'M', 'm'
-'<', ',', ';', ','
-'>', '.', ':', '.'
-'?', '/', '_', '-'
+'4', '4', '4', '4'
+'5', '5', '5', '5'
+'6', '6', '6', '6'
+0, '|', '>', '<'
+'<', '«', 'Z', 'z'
+'>', '»', 'X', 'x'
+'©', '¢', 'C', 'c'
+'`', 0, 'V', 'v'
+'\'', 0, 'B', 'b'
+'¯', '­', 'N', 'n'
+'º', 'µ', 'M', 'm'
+'×', 0, ';', ','
+'÷', '·', ':', '.'
+0, 0, '_', '-'
 0, 0, 0, 0
-0, 0, 0, ','
-0, 0, 0, '7'
-0, 0, 0, '8'
-0, 0, 0, '9'
+'.', '.', '.', '.'
+'7', '7', '7', '7'
+'8', '8', '8', '8'
+'9', '9', '9', '9'
 ## end lokeymap
 
 ## begin hikeymap
@@ -695,9 +575,9 @@ id:end_descr
 0, 0, 0, 0, 0, 0, 0, 0    # 00 - 07
 0, 0, 0, 0, 0, 0, 0, 0    # 08 - 0F
 1, 1, 1, 1, 1, 1, 1, 1    # 10 - 17
-1, 1, 1, 0, 0, 0, 0, 0    # 18 - 1F
+1, 1, 0, 0, 0, 0, 0, 0    # 18 - 1F
 1, 1, 1, 1, 1, 1, 1, 1    # 20 - 27
-1, 1, 1, 0, 0, 0, 0, 0    # 28 - 2F
+1, 1, 0, 1, 0, 0, 0, 0    # 28 - 2F
 0, 1, 1, 1, 1, 1, 1, 1    # 30 - 37
 0, 0, 0, 0, 0, 0, 0, 0    # 38 - 3F
 ## end locapsable

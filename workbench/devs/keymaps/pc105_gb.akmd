@@ -1,5 +1,6 @@
 # British PC105 amiga keymap descriptor
 # (c) 2020 The AROS Development Team.
+# v1.0
 
 ## begin config
 keymap: pc105_gb
