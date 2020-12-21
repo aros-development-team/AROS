@@ -3241,20 +3241,15 @@ endif
 
 
 #------------------------------------------------------------------------------
-%define make_hidd_stubs hidd=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags=$(CFLAGS) parenttarget=linklibs
+%define make_hidd_stubs hidd=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags=$(CFLAGS) parenttarget=linklibs-hidd-stubs
 STUBS_SRC := $(addprefix $(SRCDIR)/$(CURDIR)/,$(addsuffix .c,$(STUBS)))
 STUBS_MEM := $(addsuffix .o,$(STUBS))
-STUBS_OBJ := $(addprefix $(OBJDIR)/,$(STUBS_MEM))
+STUBS_OBJ := $(addprefix $(GENDIR)/lib/hidd/,$(STUBS_MEM))
 STUBS_DEP := $(addprefix $(OBJDIR)/,$(addsuffix .d,$(STUBS)))
-HIDD_LIB := $(AROS_LIB)/libhiddstubs.a
 
-#MM- linklibs : hidd-%(hidd)-stubs
 #MM- %(parenttarget): hidd-%(hidd)-stubs
 #MM hidd-%(hidd)-stubs : includes includes-copy
-hidd-%(hidd)-stubs : setup $(HIDD_LIB)($(STUBS_MEM))
-
-$(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
-	%mklib_q from=$^
+hidd-%(hidd)-stubs : setup $(STUBS_OBJ)
 
 $(STUBS_OBJ) : $(STUBS_SRC) 
 	%compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip %(cflags) %(cppflags))" iquote=$(CFLAGS_IQUOTE) iquote_end=$(CFLAGS_IQUOTE_END)
@@ -3263,11 +3258,11 @@ $(STUBS_DEP) : $(STUBS_SRC)
 	%mkdepend_q flags="$(strip %(dflags) %(cppflags))"
 
 setup ::
-	%mkdirs_q $(OBJDIR) $(AROS_LIB)
+	%mkdirs_q $(OBJDIR) $(GENDIR)/lib/hidd
 
 #MM
 clean ::
-	-@$(RM) $(HIDD_LIB) $(OBJDIR)
+	-@$(RM) $(OBJDIR)
 
 DEPS := $(DEPS) $(STUBS_DEP)
 
@@ -4352,7 +4347,7 @@ PKG_DIR            := $(dir %(file))
 	$(Q)$(ECHO) Packaging $@...
 	$(Q)$(SRCDIR)/tools/package/pkg c $@ $^
 
-%compress_file mmake="%(mmake)" file="%(file)"
+%compress_file mmake=%(mmake) file="%(file)"
 
 %rule_makedirs dirs="$(PKG_DIR)"
 
@@ -4364,10 +4359,11 @@ PKG_DIR            := $(dir %(file))
 
 %define compress_file mmake=/A file=/A
 
-#MM- %(mmake)-gz : %(mmake) %(mmake)-gz-quick
+#MM- %(mmake)-gz : %(mmake) %(mmake)-gz-genbin
+#MM- %(mmake)-gz-quick : %(mmake)-quick %(mmake)-gz-genbin
 
 #MM
-%(mmake)-gz-quick : %(file).gz
+%(mmake)-gz-genbin : %(file).gz
 
 %(file).gz: %(file)
 	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
