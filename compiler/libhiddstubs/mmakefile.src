@@ -7,12 +7,12 @@ include $(SRCDIR)/config/aros.cfg
 #MM- linklibs-hiddstubs: linklibs-hidd-stubs
 
 HIDD_LIB := $(AROS_LIB)/libhiddstubs.a
-HIDD_STUBS := $(call WILDCARD, $(GENDIR)/lib/hidd/*.o)
+HIDD_STUBS_OBJ := $(strip $(call WILDCARD, $(GENDIR)/lib/hidd/*.o))
 
 #MM
 linklibs-hiddstubs: $(HIDD_LIB)
 
-$(HIDD_LIB) : $(STUBS_OBJ)
+$(HIDD_LIB) : $(HIDD_STUBS_OBJ)
 	%mklib_q from=$^
 
 setup ::
