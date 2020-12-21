@@ -1,6 +1,6 @@
 /*
+    Copyright © 2002-2020, The AROS Development Team.
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2017, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -3019,7 +3019,7 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
 /*      D(bug("muimaster.library/window.c: Window Object created at " */
-/*          "0x%lx back=%lx\n", */
+/*          "0x%p back=%lx\n", */
 /*          obj,data->wd_Background)); */
 
     return (IPTR) obj;

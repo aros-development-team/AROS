@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -87,7 +87,7 @@ static void LayoutTabItems(Object *obj, struct Register_DATA *data)
     extra_space = (_width(obj) - data->total_hspacing) % data->columns;
         //data->numitems;
 
-    D(bug("LayoutTabItems(%lx) : width = %d, mwidth = %d, "
+    D(bug("LayoutTabItems(0x%p) : width = %d, mwidth = %d, "
         "max item width = %d, remainder = %d\n",
         obj, _width(obj), _mwidth(obj), item_width, extra_space));
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function malloc().
@@ -7,14 +7,14 @@
 
 #include "__stdc_intbase.h"
 
-#define DEBUG 0
-
 #include <errno.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -71,13 +71,13 @@
 
 int __init_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("__init_memstuff: task(%x), StdCBase(%x)\n",
+    D(bug("[%s] %s: task(0x%p), StdCBase(0x%p)\n", STDCNAME, __func__,
           FindTask(NULL), StdCBase
     ));
 
     StdCBase->mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
 
-    D(bug("__init_memstuff: StdCBase->mempool(%x)\n", StdCBase->mempool));
+    D(bug("[%s] %s: StdCBase->mempool(0x%p)\n", STDCNAME, __func__, StdCBase->mempool));
 
     if (!StdCBase->mempool)
     {
@@ -90,7 +90,7 @@ int __init_memstuff(struct StdCIntBase *StdCBase)
 
 void __exit_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("__exit_memstuff: task(%x), StdCBase(%x), acb_mempool(%x)\n",
+    D(bug("[%s] %s: task(0x%p), StdCBase(0x%p), acb_mempool(0x%p)\n", STDCNAME, __func__,
           FindTask(NULL), StdCBase, StdCBase->mempool
     ));
 

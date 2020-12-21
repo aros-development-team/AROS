@@ -1,6 +1,6 @@
 /* 
+    Copyright © 2002-2020, The AROS Development Team.
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2018, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -361,7 +361,7 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
             *t = 0;
             if (HexToIPTR(s, &tmp) != -1)
             {
-                D(bug("listimage = %lx\n", tmp));
+                D(bug("listimage = %p\n", tmp));
                 if (tmp == 0)
                 {
                     /* According to the MUI autodocs, the result of
@@ -401,7 +401,7 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
             *t = 0;
             if (HexToIPTR(s, &tmp) != -1)
             {
-                D(bug("image = %lx\n", tmp));
+                D(bug("image = %p\n", tmp));
                 if (tmp == 0)
                 {
                     /* Draw nothing if image pointer is NULL, as MUI 4 does

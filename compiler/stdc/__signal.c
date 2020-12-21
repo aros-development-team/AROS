@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012-2018, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -22,8 +22,9 @@
 #include "__signal.h"
 #include "__optionallibs.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
+
+#include "debug.h"
 
 struct signal_func_data *__sig_getfuncdata(int signum)
 {
@@ -100,7 +101,7 @@ void __sig_default(int signum)
         stdcEasyRequest(StdCBase->StdCIntuitionBase, NULL, &es, NULL, s);
     }
     else
-        kprintf("%s\n", s);
+        kprintf("[%s] %s: %s\n", STDCNAME, __func__, s);
 
     __stdc_jmp2exit(0, 20);
 

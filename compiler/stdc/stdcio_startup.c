@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Additional startup code for stdcio.library that is executed during
@@ -12,8 +12,9 @@
 #include <proto/stdcio.h>
 #include <libraries/stdcio.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
+
+#include "debug.h"
 
 static int __stdcio_startup(void)
 {
@@ -21,7 +22,7 @@ static int __stdcio_startup(void)
 
     StdCIOBase->StdCBase = __aros_getbase_StdCBase();
 
-    D(bug("[__stdcio_startup]StdCIOBase->StdCBase = %p\n",
+    D(bug("[%s] %s: StdCIOBase->StdCBase = 0x%p\n", STDCNAME, __func__,
           StdCIOBase->StdCBase
     ));
 

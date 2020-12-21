@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2020, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -197,7 +197,7 @@ ASM struct Library *LibInit(REG(a0, SEGLISTPTR seglist), REG(d0, struct MUIMaste
   mb->sysbase = sysbase;
 	SysBase = sysbase;
 
-  D(bug("Librarybase at 0x%lx\n",mb));
+  D(bug("Librarybase at 0x%p\n",mb));
 
   if (L_InitLib(&mb->library))
     return &mb->library;

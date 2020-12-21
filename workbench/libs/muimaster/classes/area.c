@@ -1,6 +1,6 @@
 /* 
+    Copyright © 2002-2020, The AROS Development Team.
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2016, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -929,7 +929,7 @@ static IPTR Area__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
     msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
 
-/*   D(bug("Area_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n",
+/*   D(bug("Area_AskMinMax 0x%p (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n",
          obj, data->mad_FrameTitle, */
 /*  	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
 /*  	  msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
@@ -1281,7 +1281,7 @@ static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj,
 
     //APTR areaclip;
 
-/*      D(bug("Area_Draw(0x%lx) %ldx%ldx%ldx%ld\n", obj, _left(obj),
+/*      D(bug("Area_Draw(0x%p) %ldx%ldx%ldx%ld\n", obj, _left(obj),
             _top(obj),_right(obj),_bottom(obj))); */
 /*      D(bug(" Area_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags,
             _flags(obj))); */

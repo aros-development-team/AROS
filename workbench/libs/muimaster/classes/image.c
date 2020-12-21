@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2019, The AROS Development Team. All rights reserved.
+    Copyright  2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -149,7 +149,7 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /*      	return NULL; */
 /*      } */
     
-/*      D(bug("Image_New(%lx) spec=%lx\n", obj, data->img)); */
+/*      D(bug("Image_New(0x%p) spec=0x%p\n", obj, data->img)); */
     return (IPTR)obj;
 }
 

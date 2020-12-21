@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -360,8 +360,8 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj,
         MUIA_Virtgroup_Top, MUIV_EveryTime, (IPTR) obj, 4, MUIM_CallHook,
         (IPTR) & data->hook, 4, MUIV_TriggerValue);
 
-    D(bug("Scrollgroup_New(%lx)\n", obj));
-    D(bug(" vert = %lx, horiz = %lx, button = %lx\n", vert, horiz, button));
+    D(bug("Scrollgroup_New(0x%p)\n", obj));
+    D(bug(" vert = 0x%p, horiz = 0x%p, button = 0x%p\n", vert, horiz, button));
     return (IPTR) obj;
 }
 

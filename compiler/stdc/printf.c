@@ -1,16 +1,17 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function printf().
 */
 #include <libraries/stdcio.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 #if DEBUG
 #include <aros/libcall.h>
 #endif
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -276,7 +277,7 @@
     int     retval;
     va_list args;
 
-    D(bug("[printf]: StdCIOBase: 0x%x, stdout=0x%x\n",
+    D(bug("[%s] %s: StdCIOBase = 0x%p, stdout = 0x%p\n", STDCNAME, __func__,
           StdCIOBase, StdCIOBase->_stdout
     ));
 

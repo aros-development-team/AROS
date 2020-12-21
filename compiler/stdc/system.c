@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function system().
@@ -9,7 +9,6 @@
 #include <proto/dos.h>
 #include <errno.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************

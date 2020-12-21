@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function rename().
@@ -7,8 +7,9 @@
 #include <proto/dos.h>
 #include <errno.h>
 
-#define DEBUG 0
 #include <aros/debug.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -63,7 +64,7 @@
 	    {
                 LONG ioerr = IoErr();
                 errno = __stdc_ioerr2errno(ioerr);
-		D(bug("rename(%s, %s) delete errno=%d, IoErr=%d\n",
+		D(bug("[%s] %s: '%s' -> '%s', delete errno=%d, IoErr=%d\n", STDCNAME, __func__,
 			oldpath, newpath, errno, ioerr));
 		Permit();
 		return -1;
@@ -75,7 +76,7 @@
     {
         LONG ioerr = IoErr();
         errno = __stdc_ioerr2errno(ioerr);
-	D(bug("rename(%s, %s) errno=%d, IoErr=%d\n",
+	D(bug("[%s] %s: '%s' -> '%s' errno=%d, IoErr=%d\n", STDCNAME, __func__,
 		oldpath, newpath, errno, ioerr));
 	Permit();
 	return -1;

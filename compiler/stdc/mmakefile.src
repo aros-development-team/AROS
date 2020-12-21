@@ -526,7 +526,9 @@ NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) \
 
 USER_CFLAGS := $(NOWARN_FLAGS) -noposixc $(CFLAGS_NO_BUILTIN)
 USER_LDFLAGS := -nostdc -noposixc
-USER_CPPFLAGS := -Dlint '-D__FBSDID(x)=' 
+USER_CPPFLAGS := \
+        -Dlint '-D__FBSDID(x)=' 
+#USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
@@ -534,6 +536,10 @@ USER_CPPFLAGS := -Dlint '-D__FBSDID(x)='
     linklibfiles=$(STDC_LINKLIB) linklibobjs=$(STDC_LINKOBJS)
 
 STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
+USER_CPPFLAGS := \
+        -Dlint '-D__FBSDID(x)=' \
+        -DSTDC_IO
+#USER_CPPFLAGS += -DDEBUG=1
 
 %build_module mmake=compiler-stdcio \
     modname=stdcio modtype=library \
@@ -622,7 +628,10 @@ STDC_STATIC := \
     vsscanf
 
 USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN) $(CFLAGS_MERGE_CONSTANTS)
-USER_CPPFLAGS := -DSTDC_STATIC -Dlint
+USER_CPPFLAGS := \
+        -DSTDC_STATIC \
+        -Dlint
+#USER_CPPFLAGS += -DDEBUG=1
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
@@ -645,7 +654,7 @@ USER_CPPFLAGS := -DSTDC_STATIC -Dlint
 ifeq ($(AROS_TARGET_CPU),x86_64)
     ISA_FLAGS := $(ISA_X86_FLAGS)
 endif
-USER_CPPFLAGS +=  -DSTDC_LIB32
+USER_CPPFLAGS += -DSTDC_LIB32
 
 %build_linklib mmake=linklibs-stdc-static32 \
     libname=stdc.static files="$(STDC_STATIC)" objs=$(ROM_COMMON_OBJ32) \

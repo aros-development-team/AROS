@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fclose().
@@ -15,8 +15,9 @@
 
 #include "__stdcio_intbase.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -63,7 +64,7 @@
         if (!NameFromFH(stream->fh, s, L_tmpnam+20))
         {
             /* Just leave the file in T: */
-            D(bug("[fclose]: Could not get name from fh, IoErr()=%d\n", IoErr()));
+            D(bug("[%s] %s: Could not get name from fh, IoErr()=%d\n", STDCNAME, __func__, IoErr()));
             s[0] = 0;
         }
     }
@@ -85,7 +86,7 @@
 
     if (strlen(s) > 0)
     {
-        D(bug("[fclose]: Deleting file '%s'\n", s));
+        D(bug("[%s] %s: Deleting file '%s'\n", STDCNAME, __func__, s));
         DeleteFile(s); /* File will be left there if delete fails */
     }
 

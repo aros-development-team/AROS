@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -89,7 +89,7 @@ IPTR Gauge__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     else
         data->buf[0] = 0;
 
-/*      D(bug("Gauge_New(0x%lx, %d)\n",obj,muiAreaData(obj)->mad_Frame)); */
+/*      D(bug("Gauge_New(0x%p, %d)\n",obj,muiAreaData(obj)->mad_Frame)); */
 
     return (IPTR) obj;
 }
@@ -312,7 +312,7 @@ IPTR Gauge__MUIM_Draw(struct IClass *cl, Object *obj,
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
-/*      D(bug("Gauge_Draw(0x%lx) %ldx%ldx%ldx%ld :: %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj), _mleft(obj),_mtop(obj), _mright(obj), _mbottom(obj))); */
+/*      D(bug("Gauge_Draw(0x%p) %ldx%ldx%ldx%ld :: %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj), _mleft(obj),_mtop(obj), _mright(obj), _mbottom(obj))); */
 
     if (data->horiz)
     {

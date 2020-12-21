@@ -1,6 +1,6 @@
 /* 
+    Copyright  2002-2020, The AROS Development Team.
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2018, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1040,15 +1040,15 @@ BOOL zune_frame_intern_to_spec(const struct MUI_FrameSpec_intern *intern,
     /* Must cast to LONG because on AmigaOS SNPrintf() is used which is like
      * RawDoFmt() 16 bit */
     snprintf(&spec[0], 2, "%c", sp);
-    snprintf(tmpSpec, 3, "%lx", (long)intern->state);
+    snprintf(tmpSpec, 3, "%lx", (ULONG)intern->state);
     spec[1] = tmpSpec[0];
-    snprintf(tmpSpec, 3, "%lx", (long)intern->innerLeft);
+    snprintf(tmpSpec, 3, "%lx", (ULONG)intern->innerLeft);
     spec[2] = tmpSpec[0];
-    snprintf(tmpSpec, 3, "%lx", (long)intern->innerRight);
+    snprintf(tmpSpec, 3, "%lx", (ULONG)intern->innerRight);
     spec[3] = tmpSpec[0];
-    snprintf(tmpSpec, 3, "%lx", (long)intern->innerTop);
+    snprintf(tmpSpec, 3, "%lx", (ULONG)intern->innerTop);
     spec[4] = tmpSpec[0];
-    snprintf(tmpSpec, 3, "%lx", (long)intern->innerBottom);
+    snprintf(tmpSpec, 3, "%lx", (ULONG)intern->innerBottom);
     spec[5] = tmpSpec[0];
     spec[6] = '\0';
     return TRUE;
