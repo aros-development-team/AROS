@@ -46,7 +46,7 @@
 
 ******************************************************************************/
 {
-    D(bug("[%s] %s: Calling __vcformat(stream=%x, fputc=%x, format='%s', ...)\n", STDCNAME, __func__,
+    D(bug("[%s] %s: Calling __vcformat(stream = 0x%p, fputc = 0x%p, format = '%s', ...)\n", STDCNAME, __func__,
           stream, fputc, format
     ));
 

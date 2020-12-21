@@ -71,13 +71,13 @@
 
 int __init_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("[%s] %s: task(%x), StdCBase(%x)\n", STDCNAME, __func__,
+    D(bug("[%s] %s: task(0x%p), StdCBase(0x%p)\n", STDCNAME, __func__,
           FindTask(NULL), StdCBase
     ));
 
     StdCBase->mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
 
-    D(bug("[%s] %s: StdCBase->mempool(%x)\n", STDCNAME, __func__, StdCBase->mempool));
+    D(bug("[%s] %s: StdCBase->mempool(0x%p)\n", STDCNAME, __func__, StdCBase->mempool));
 
     if (!StdCBase->mempool)
     {
@@ -90,7 +90,7 @@ int __init_memstuff(struct StdCIntBase *StdCBase)
 
 void __exit_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("[%s] %s: task(%x), StdCBase(%x), acb_mempool(%x)\n", STDCNAME, __func__,
+    D(bug("[%s] %s: task(0x%p), StdCBase(0x%p), acb_mempool(0x%p)\n", STDCNAME, __func__,
           FindTask(NULL), StdCBase, StdCBase->mempool
     ));
 

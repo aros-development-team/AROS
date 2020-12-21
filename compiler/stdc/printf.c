@@ -275,7 +275,7 @@
     int     retval;
     va_list args;
 
-    D(bug("[printf]: StdCIOBase: 0x%x, stdout=0x%x\n",
+    D(bug("[%s] %s: StdCIOBase = 0x%p, stdout = 0x%p\n", STDCNAME, __func__,
           StdCIOBase, StdCIOBase->_stdout
     ));
 

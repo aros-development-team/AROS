@@ -64,7 +64,7 @@
     LONG mode;
     BPTR fh = stream->fh;
 
-    D(bug("[%s] %s: Entering stream=0x%x, offset=%d, whence=%d\n", STDCNAME, __func__,
+    D(bug("[%s] %s: Entering stream = 0x%p, offset = %d, whence = %d\n", STDCNAME, __func__,
           stream, offset, whence
     ));
 

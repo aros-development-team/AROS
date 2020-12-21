@@ -32,7 +32,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
         | __STDCIO_STDIO_DONTCLOSE
         | __STDCIO_STDIO_DONTFREE
         | __STDCIO_STDIO_FLUSHONREAD;
-    D(bug("[%s] %s: intstdin.fh=0x%x\n", STDCNAME, __func__, StdCIOBase->intstdin.fh));
+    D(bug("[%s] %s: intstdin.fh = 0x%p\n", STDCNAME, __func__, StdCIOBase->intstdin.fh));
     StdCIOBase->StdCIOBase._stdin = &StdCIOBase->intstdin;
 
     StdCIOBase->intstdout.fh = Output();
@@ -40,7 +40,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
         __STDCIO_STDIO_WRITE
         | __STDCIO_STDIO_DONTCLOSE
         | __STDCIO_STDIO_DONTFREE;
-    D(bug("[%s] %s: intstdout.fh=0x%x\n", STDCNAME, __func__, StdCIOBase->intstdout.fh));
+    D(bug("[%s] %s: intstdout.fh = 0x%p\n", STDCNAME, __func__, StdCIOBase->intstdout.fh));
     StdCIOBase->StdCIOBase._stdout = &StdCIOBase->intstdout;
 
     StdCIOBase->intstderr.fh = me->pr_CES ? me->pr_CES : me->pr_COS;
@@ -48,7 +48,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
         __STDCIO_STDIO_WRITE
         | __STDCIO_STDIO_DONTCLOSE
         | __STDCIO_STDIO_DONTFREE;
-    D(bug("[%s] %s: intstderr.fh=0x%x\n", STDCNAME, __func__, StdCIOBase->intstderr.fh));
+    D(bug("[%s] %s: intstderr.fh = 0x%p\n", STDCNAME, __func__, StdCIOBase->intstderr.fh));
     StdCIOBase->StdCIOBase._stderr = &StdCIOBase->intstderr;
 
     return 1;
@@ -59,11 +59,11 @@ static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
 {
     FILE *stream;
 
-    D(bug("[%s] %s: StdCIOBase: %x, DOSBase: %x\n", STDCNAME, __func__, StdCIOBase, DOSBase));
+    D(bug("[%s] %s: StdCIOBase = 0x%p, DOSBase = 0x%p\n", STDCNAME, __func__, StdCIOBase, DOSBase));
 
     ForeachNode(&StdCIOBase->files, stream)
     {
-        D(bug("[%s] %s: stream: %x, fh: %x\n", STDCNAME, __func__, stream, stream->fh));
+        D(bug("[%s] %s: stream = 0x%p, fh = 0x%p\n", STDCNAME, __func__, stream, stream->fh));
         stream->flags |= __STDCIO_STDIO_DONTFREE;
         fclose(stream);
     }

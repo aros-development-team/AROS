@@ -114,7 +114,7 @@ static int __init_timerbase(struct StdCIntBase *StdCBase)
     )
     {
         TimerBase = (struct Device *)StdCBase->timereq.tr_node.io_Device;
-        D(bug("[%s] %s: TimerBase=%x\n", STDCNAME, __func__, TimerBase));
+        D(bug("[%s] %s: TimerBase = 0x%p\n", STDCNAME, __func__, TimerBase));
         return 1;
     }
     else
