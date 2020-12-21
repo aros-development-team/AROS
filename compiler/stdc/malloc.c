@@ -77,7 +77,7 @@ int __init_memstuff(struct StdCIntBase *StdCBase)
 
     StdCBase->mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
 
-    D(bug("__init_memstuff: StdCBase->mempool(%x)\n", StdCBase->mempool));
+    D(bug("[%s] %s: StdCBase->mempool(%x)\n", STDCNAME, __func__, StdCBase->mempool));
 
     if (!StdCBase->mempool)
     {
