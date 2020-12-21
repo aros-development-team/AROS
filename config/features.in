@@ -79,6 +79,9 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 
 #  -fvisibility=hidden
 
+# Clang/LLVM
+# -no-integrated-as
+
 # C features first 
 AC_LANG_PUSH(C)
 
@@ -493,9 +496,16 @@ fi
 
 CXXFLAGS="$save_cxxflags"
 
-
 # Check for additional C compiler options..
 AC_LANG_PUSH(C)
+
+AC_MSG_CHECKING([whether ${CC} accepts -no-integrated-as])
+CFLAGS=-no-integrated-as
+AC_TRY_COMPILE(,, aros_no_integrated_as="yes", aros_no_integrated_as="no")
+AC_MSG_RESULT($aros_no_integrated_as)
+if test "x-$aros_no_integrated_as" = "x-yes" ; then
+    aros_cflags_no_integrated_as=-no-integrated-as
+fi
 
 #-----------------------------------------------------------------------------
 #
@@ -1355,6 +1365,7 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+AC_SUBST(aros_cflags_no_integrated_as)
 AC_SUBST(aros_cflags_exceptions)
 AC_SUBST(aros_cflags_noexceptions)
 AC_SUBST(aros_cxxflags_permissive)

@@ -808,6 +808,7 @@ aros_cxxflags_nopermissive
 aros_cxxflags_permissive
 aros_cflags_noexceptions
 aros_cflags_exceptions
+aros_cflags_no_integrated_as
 ac_ct_CXX
 CXXFLAGS
 CXX
@@ -2907,6 +2908,9 @@ $as_echo "$aros_targetcfg_dir" >&6; }
 
 #  -fvisibility=hidden
 
+# Clang/LLVM
+# -no-integrated-as
+
 # C features first
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -4454,7 +4458,6 @@ fi
 
 CXXFLAGS="$save_cxxflags"
 
-
 # Check for additional C compiler options..
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -4462,6 +4465,32 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -no-integrated-as" >&5
+$as_echo_n "checking whether ${CC} accepts -no-integrated-as... " >&6; }
+CFLAGS=-no-integrated-as
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_no_integrated_as="yes"
+else
+  aros_no_integrated_as="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_no_integrated_as" >&5
+$as_echo "$aros_no_integrated_as" >&6; }
+if test "x-$aros_no_integrated_as" = "x-yes" ; then
+    aros_cflags_no_integrated_as=-no-integrated-as
+fi
 
 #-----------------------------------------------------------------------------
 #
@@ -6755,6 +6784,7 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # export the feature flags...
 #
+
 
 
 

@@ -134,6 +134,11 @@ CFLAGS_MS_BITFIELDS                     := @aros_cflags_ms_bitfields@
 CFLAGS_NO_MS_BITFIELDS                  := @aros_cflags_no_ms_bitfields@
 
 #
+# Clang/LLVM
+#
+CFLAGS_NO_INTEGRATED_AS                 := @aros_cflags_no_integrated_as@
+
+#
 # "Enable" compiler warning flags
 #
 
