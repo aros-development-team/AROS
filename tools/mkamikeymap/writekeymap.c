@@ -158,7 +158,7 @@ BOOL writeKeyMap(struct config *cfg)
             struct Node *knode = (struct Node *)cfg->LoKeyMap[i];
             APTR knodedata = (APTR)((IPTR)knode + sizeof(struct Node) + strlen(knode->ln_Name) + 1);
             hunkRaw->kh_LoKeyMap[i] = htonl(((IPTR)hunkData - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
-            memcpy(hunkData, knodedata, knode->ln_Pri);
+            memcpy(hunkData, knodedata, (UBYTE)knode->ln_Pri);
             relocData[r++] = htonl(((IPTR)&hunkRaw->kh_LoKeyMap[i] - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
             hunkData = (APTR)((IPTR)hunkData + (((UBYTE)knode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN));
         }
@@ -179,7 +179,7 @@ BOOL writeKeyMap(struct config *cfg)
             struct Node *knode = (struct Node *)cfg->HiKeyMap[i];
             APTR knodedata = (APTR)((IPTR)knode + sizeof(struct Node) + strlen(knode->ln_Name) + 1);
             hunkRaw->kh_HiKeyMap[i] = htonl(((IPTR)hunkData - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
-            memcpy(hunkData, knodedata, knode->ln_Pri);
+            memcpy(hunkData, knodedata, (UBYTE)knode->ln_Pri);
             relocData[r++] = htonl(((IPTR)&hunkRaw->kh_HiKeyMap[i] - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
             hunkData = (APTR)((IPTR)hunkData + (((UBYTE)knode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN));
         }
