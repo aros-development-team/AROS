@@ -14,6 +14,9 @@
 #include "mkamikeymap.h"
 #include "debug.h"
 
+#define MKAKM_HUNKALIGN 0x3
+#define MKAKM_MAPALIGN  0x3
+
 struct AmiKMap_Node {
     ULONG                       ln_Succ;
     ULONG                       ln_Pred;
@@ -76,8 +79,8 @@ BOOL writeKeyMap(struct config *cfg)
         if ((cfg->LoKeyMapTypes[i] & (KCF_DEAD|KCF_STRING)) != 0)
         {
             stNode = (struct Node *)cfg->LoKeyMap[i];
-            D(fprintf(stdout, "node @ 0x%p\n", stNode);)
-            stdtsize += (UBYTE)stNode->ln_Pri;
+            D(fprintf(stdout, "node @ 0x%p (%u bytes)\n", stNode, (UBYTE)stNode->ln_Pri);)
+            stdtsize += (((UBYTE)stNode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN);
             reloctmp++;
         }
     }
@@ -91,8 +94,8 @@ BOOL writeKeyMap(struct config *cfg)
         if ((cfg->HiKeyMapTypes[i] & (KCF_DEAD|KCF_STRING)) != 0)
         {
             stNode = (struct Node *)cfg->HiKeyMap[i];
-            D(fprintf(stdout, "node @ 0x%p\n", stNode);)
-            stdtsize += (UBYTE)stNode->ln_Pri;
+            D(fprintf(stdout, "node @ 0x%p (%u bytes)\n", stNode, (UBYTE)stNode->ln_Pri);)
+            stdtsize += (((UBYTE)stNode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN);
             reloctmp++;
         }
     }
@@ -106,7 +109,7 @@ BOOL writeKeyMap(struct config *cfg)
         fprintf(stdout, "creating %u relocations\n", reloccnt + 9);
     }
 
-    hunksize = (sizeof(struct AmiKMap_Hunk) + stdtsize + strlen(kmname) + 1 + 0x3) & ~0x3;
+    hunksize = (sizeof(struct AmiKMap_Hunk) + stdtsize + strlen(kmname) + 1 + MKAKM_HUNKALIGN) & ~MKAKM_HUNKALIGN;
 
     hunkRaw = malloc(hunksize);
     hunkRaw->Hunk = htonl(HUNK_CODE);
@@ -157,7 +160,7 @@ BOOL writeKeyMap(struct config *cfg)
             hunkRaw->kh_LoKeyMap[i] = htonl(((IPTR)hunkData - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
             memcpy(hunkData, knodedata, knode->ln_Pri);
             relocData[r++] = htonl(((IPTR)&hunkRaw->kh_LoKeyMap[i] - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
-            hunkData = (APTR)((IPTR)hunkData + knode->ln_Pri);
+            hunkData = (APTR)((IPTR)hunkData + (((UBYTE)knode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN));
         }
     }
 
@@ -178,7 +181,7 @@ BOOL writeKeyMap(struct config *cfg)
             hunkRaw->kh_HiKeyMap[i] = htonl(((IPTR)hunkData - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
             memcpy(hunkData, knodedata, knode->ln_Pri);
             relocData[r++] = htonl(((IPTR)&hunkRaw->kh_HiKeyMap[i] - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
-            hunkData = (APTR)((IPTR)hunkData + knode->ln_Pri);
+            hunkData = (APTR)((IPTR)hunkData + (((UBYTE)knode->ln_Pri + MKAKM_MAPALIGN) & ~MKAKM_MAPALIGN));
         }
     }
 

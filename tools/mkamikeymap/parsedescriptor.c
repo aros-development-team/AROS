@@ -198,7 +198,7 @@ void GetEncodedBytes(char *s, UBYTE *strbuffer, ULONG *count)
                 char cbyte;
 
                 GetEncodedChar(&ptr[1], &cbyte, &clen);
-                D(fprintf(stdout, "decoded %u bytes into char '%c'\n", clen, cbyte);)
+                D(fprintf(stdout, "decoded %u bytes into char '%c' (%02x)\n", clen, cbyte, (UBYTE)cbyte);)
                 *out = cbyte;
                 *count = *count + 1;
                 out++;
@@ -208,6 +208,7 @@ void GetEncodedBytes(char *s, UBYTE *strbuffer, ULONG *count)
 
         default:
             tmp = (UBYTE)strtoul(ptr, &nxt, 0);
+            D(fprintf(stdout, "decoded %02x\n", tmp);)
             if (nxt != ptr)
             {
                 *out = tmp;
