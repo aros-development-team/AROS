@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -419,7 +419,7 @@ IPTR UXIO__Hidd_UnixIO__SendPacket(OOP_Class *cl, OOP_Object *o, struct pHidd_Un
         device.sll_ifindex = pd->ifindex;
         device.sll_family = AF_PACKET;
         memcpy(device.sll_addr, pd->ifaddr.sa_data, 6);
-        device.sll_halen = htons(6);
+        device.sll_halen = 6;
 
         do
         {
