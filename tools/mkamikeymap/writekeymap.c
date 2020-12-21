@@ -14,31 +14,34 @@
 #include "mkamikeymap.h"
 #include "debug.h"
 
-struct KeyMap_Hunk {
+struct AmiKMap_Node {
+    ULONG                       ln_Succ;
+    ULONG                       ln_Pred;
+    UBYTE                       ln_Type;
+    BYTE                        ln_Pri;
+    ULONG                       ln_Name;
+} __packed;
+
+struct AmiKMap_KeyMap {
+    ULONG                       km_LoKeyMapTypes;
+    ULONG                       km_LoKeyMap;
+    ULONG                       km_LoCapsable;
+    ULONG                       km_LoRepeatable;
+    ULONG                       km_HiKeyMapTypes;
+    ULONG                       km_HiKeyMap;
+    ULONG                       km_HiCapsable;
+    ULONG                       km_HiRepeatable;
+} __packed;
+
+struct AmiKMap_KeyMapNode {
+    struct AmiKMap_Node         kn_Node;
+    struct AmiKMap_KeyMap       kn_KeyMap;
+} __packed;
+
+struct AmiKMap_Hunk {
     ULONG			Hunk;
     ULONG			Length;
-    struct
-    {
-        struct
-        {
-            ULONG ln_Succ;
-            ULONG ln_Pred;
-            UBYTE ln_Type;
-            BYTE  ln_Pri;
-            ULONG ln_Name;
-        }           kn_Node;
-        struct
-        {
-            ULONG km_LoKeyMapTypes;
-            ULONG km_LoKeyMap;
-            ULONG km_LoCapsable;
-            ULONG km_LoRepeatable;
-            ULONG km_HiKeyMapTypes;
-            ULONG km_HiKeyMap;
-            ULONG km_HiCapsable;
-            ULONG km_HiRepeatable;
-        }           kn_KeyMap;
-    }                           kh_KeyMapNode;
+    struct AmiKMap_KeyMapNode   kh_KeyMapNode;
     UBYTE			kh_LoKeyMapTypes[0x40];
     ULONG			kh_LoKeyMap[0x40];
     UBYTE			kh_LoCapsable[0x08];
@@ -60,7 +63,7 @@ BOOL writeKeyMap(struct config *cfg)
     int r = 0, i;
 
     char *kmname = basename(cfg->keymap);
-    struct KeyMap_Hunk *hunkRaw;
+    struct AmiKMap_Hunk *hunkRaw;
     ULONG *relocData;
     APTR hunkData;
 
@@ -99,11 +102,11 @@ BOOL writeKeyMap(struct config *cfg)
 
     if (doverbose)
     {
-        fprintf(stdout, "allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct KeyMap_Hunk) + strlen(kmname) + 1 + stdtsize, stdtsize);
+        fprintf(stdout, "allocating %lu bytes for raw keymap data (%u bytes string data)\n", sizeof(struct AmiKMap_Hunk) + strlen(kmname) + 1 + stdtsize, stdtsize);
         fprintf(stdout, "creating %u relocations\n", reloccnt + 9);
     }
 
-    hunksize = (sizeof(struct KeyMap_Hunk) + stdtsize + strlen(kmname) + 2) & ~0x1;
+    hunksize = (sizeof(struct AmiKMap_Hunk) + stdtsize + strlen(kmname) + 1 + 0x3) & ~0x3;
 
     hunkRaw = malloc(hunksize);
     hunkRaw->Hunk = htonl(HUNK_CODE);
@@ -118,7 +121,7 @@ BOOL writeKeyMap(struct config *cfg)
     relocData[r++] = htonl(reloccnt + 9);
     relocData[r++] = 0;
 
-    hunkData = (APTR)((IPTR)hunkRaw + sizeof(struct KeyMap_Hunk));
+    hunkData = (APTR)((IPTR)hunkRaw + sizeof(struct AmiKMap_Hunk));
     strcpy(hunkData, kmname);
     hunkRaw->kh_KeyMapNode.kn_Node.ln_Name = htonl(((IPTR)hunkData - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
     relocData[r++] = htonl(((IPTR)&hunkRaw->kh_KeyMapNode.kn_Node.ln_Name - (IPTR)&hunkRaw->kh_KeyMapNode.kn_Node));
