@@ -39,11 +39,13 @@
 
 #include "ia_locale.h"
 #include "ia_install.h"
+#include "ia_install_intern.h"
+#include "ia_installoption_intern.h"
 #include "ia_bootloader.h"
 
 struct ExpansionBase *ExpansionBase = NULL;
 
-char *boot_Device = "ahci.device";
+char *boot_Device = NULL;
 ULONG boot_Unit = 0;
 
 char *source_Path = NULL;       /* full path to source "tree" */
@@ -52,36 +54,36 @@ char *extras_source = NULL;
 char *dest_Path = NULL;         /* DOS DEVICE NAME of part used to store "aros" */
 char *work_Path = NULL;         /* DOS DEVICE NAME of part used to store "work" */
 
-Object *check_copytowork = NULL;
-Object *check_work = NULL;
+Object *optObjCheckCopyToWork = NULL;
+Object *optObjCheckWork = NULL;
 Object *show_formatsys = NULL;
 Object *show_formatwork = NULL;
-Object *check_formatsys = NULL;
-Object *check_formatwork = NULL;
-Object *cycle_fstypesys = NULL;
-Object *cycle_fstypework = NULL;
-Object *cycle_sysunits = NULL;
-Object *cycle_workunits = NULL;
+Object *optObjCheckFormatSys = NULL;
+Object *optObjCheckFormatWork = NULL;
+Object *optObjCycleFSTypeSys = NULL;
+Object *optObjCycleFSTypeWork = NULL;
+Object *optObjCycleSysUnits = NULL;
+Object *optObjCycleWorkUnits = NULL;
 
-Object *dest_volume = NULL;
-Object *work_volume = NULL;
+Object *optObjDestVolLabel = NULL;
+Object *optObjWorkDestLabel = NULL;
 
-Object *dest_device = NULL;
+Object *optObjDestDevice = NULL;
 Object *cycle_drivetype = NULL;
-Object *dest_unit = NULL;
+Object *optObjDestUnit = NULL;
 Object *show_sizesys = NULL;
 Object *show_sizework = NULL;
-Object *check_sizesys = NULL;
-Object *check_sizework = NULL;
-Object *check_creatework = NULL;
+Object *optObjCheckSysSize = NULL;
+Object *optObjCheckSizeWork = NULL;
+Object *optObjCheckCreateWork = NULL;
 Object *sys_size = NULL;
 Object *work_size = NULL;
-Object *sys_devname = NULL;
+Object *optObjDestVolumeName = NULL;
 Object *work_devname = NULL;
 
 Object *grub_device = NULL;
 Object *grub_unit = NULL;
-Object *cycle_grub2mode = NULL;
+Object *optObjCycleGrub2Mode = NULL;
 
 Object *reboot_group = NULL;
 
@@ -94,60 +96,61 @@ Object *reboot_group = NULL;
             MUIA_Background, MUII_ButtonBack, \
             MUIA_ShowSelState, FALSE,
 
+void SetOptObjNotificationFromOptObj(Object *optobjSrc, Object *optobjTgt, IPTR trigTag, IPTR trigVal, IPTR setTag, IPTR setVal)
+{
+    Object *optObjS, *optObjT;
+    GET(optobjSrc, MUIA_InstallOption_Obj, &optObjS);
+    GET(optobjTgt, MUIA_InstallOption_Obj, &optObjT);
+    DoMethod(optObjS, MUIM_Notify, trigTag, trigVal,
+        (IPTR) optObjT, 3, MUIM_Set,
+        setTag, setVal);
+}
+
+void SetOptObjNotificationFromObj(Object *objSrc, Object *optobjTgt, IPTR trigTag, IPTR trigVal, IPTR setTag, IPTR setVal)
+{
+    Object *optObjT;
+    GET(optobjTgt, MUIA_InstallOption_Obj, &optObjT);
+    DoMethod(objSrc, MUIM_Notify, trigTag, trigVal,
+        (IPTR) optObjT, 3, MUIM_Set,
+        setTag, setVal);
+}
+
+void SetObjNotificationFromOptObj(Object *optobjSrc, Object *objTgt, IPTR trigTag, IPTR trigVal, IPTR setTag, IPTR setVal)
+{
+    Object *optObjS;
+    GET(optobjSrc, MUIA_InstallOption_Obj, &optObjS);
+    DoMethod(optObjS, MUIM_Notify, trigTag, trigVal,
+        (IPTR) objTgt, 3, MUIM_Set,
+        setTag, setVal);
+}
+
 int main(int argc, char *argv[])
 {
     Object *wnd = NULL;         /* installer window objects  - will get swallowed into the class eventually */
     Object *wndcontents = NULL;
     Object *page = NULL;
-
     Object *welcomeMsg = NULL;
     Object *LicenseMsg = NULL;
     Object *doneMsg = NULL;
-
     Object *pagetitle = NULL;
     Object *pageheader = NULL;
     Object *currentaction = NULL;
-
     Object *radio_part = NULL;
-
     Object *label = NULL;
-
     Object *gad_back;
     Object *gad_proceed;
     Object *gad_cancel;
-
     Object *grub_drive = NULL;
     Object *grub_grub = NULL;
-
     Object *LicenseMandGrp = NULL;
-    Object *check_license = ImageObject, BUTTONCOMMON
-            MUIA_Selected, FALSE,
-	End;
-
-    Object *check_format = ImageObject, BUTTONCOMMON
-            MUIA_Selected, TRUE,
-	End;
-
-    Object *check_locale = ImageObject, BUTTONCOMMON
-            MUIA_Selected, FALSE,
-	End;
-
-    Object *check_core = ImageObject, BUTTONCOMMON
-            MUIA_Selected, TRUE,
-        End;
-
-    Object *check_dev = ImageObject, BUTTONCOMMON
-            MUIA_Selected, FALSE,
-        End;
-
-    Object *check_extras = ImageObject, BUTTONCOMMON
-            MUIA_Selected, TRUE,
-        End;
-
-    Object *check_bootloader;
-
-    Object *check_reboot = ImageObject, BUTTONCOMMON
-        End;
+    Object *optObjCheckLicense;
+    Object *optObjCheckFormat;
+    Object *optObjCheckLocale;
+    Object *optObjCheckCore;
+    Object *optObjCheckDev;
+    Object *optObjCheckExtras;
+    Object *optObjCheckBootloader;
+    Object *optObjCheckReboot;
 
     Object *gauge1 =
         (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE,
@@ -164,6 +167,7 @@ int main(int argc, char *argv[])
     static char *opt_drivetypes[] = {
         "AHCI/SATA",
         "IDE",
+        "SCSI",
         "USB",
         NULL
     };
@@ -200,6 +204,64 @@ int main(int argc, char *argv[])
     if (!Locale_Initialize())
         return 20;
 
+    struct MUI_CustomClass *icMcc =
+        MUI_CreateCustomClass(NULL, MUIC_Notify, NULL,
+        sizeof(struct Install_DATA), Install__Dispatcher);
+    if (!icMcc)
+    {
+        return 20;
+    }
+        
+    struct MUI_CustomClass *iocMcc =
+        MUI_CreateCustomClass(NULL, MUIC_Group, NULL,
+        sizeof(struct InstallOption_Data), InstallOption__Dispatcher);
+    if (!iocMcc)
+    {
+        return 20;
+    }
+
+    optObjCheckLicense = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"license",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, FALSE,
+            End),
+        TAG_DONE);
+    optObjCheckFormat = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"format",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, TRUE,
+            End),
+        TAG_DONE);
+    optObjCheckLocale = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"localize",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, FALSE,
+            End),
+        TAG_DONE);
+    optObjCheckCore = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"core",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, TRUE,
+            End),
+        TAG_DONE);
+    optObjCheckDev = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"developer",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, FALSE,
+            End),
+        TAG_DONE);
+    optObjCheckExtras = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"extras",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, TRUE,
+            End),
+        TAG_DONE);
+    optObjCheckReboot = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"reboot",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+            End),
+        TAG_DONE);
+    
     opt_partentries[0] = _(MSG_USEFREE);
     opt_partentries[1] = _(MSG_WIPEDISK);
     opt_partentries[2] = _(MSG_USEEXISTING);
@@ -211,63 +273,96 @@ int main(int argc, char *argv[])
     gad_proceed = SimpleButton(_(MSG_PROCEED));
     gad_cancel = SimpleButton(_(MSG_CANCEL2));
 
-    check_copytowork = ImageObject, BUTTONCOMMON
-            MUIA_Disabled, TRUE,
-        End;
+    optObjCheckCopyToWork = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"copytowork",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Disabled, TRUE,
+            End),
+        TAG_DONE);
 
-    check_work = ImageObject, BUTTONCOMMON
-            MUIA_Selected, FALSE,
-        End;
+    optObjCheckWork = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"work",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, FALSE,
+            End),
+        TAG_DONE);
 
-    check_formatsys = ImageObject, BUTTONCOMMON
-            MUIA_Selected, TRUE,
-        End;
+    optObjCheckFormatSys = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"sysfmt",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, TRUE,
+            End),
+        TAG_DONE);
 
-    check_formatwork = ImageObject, BUTTONCOMMON
-            MUIA_Disabled, TRUE,
-        End;
+    optObjCheckFormatWork = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"workfmt",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Disabled, TRUE,
+            End),
+        TAG_DONE);
 
-    check_sizesys = ImageObject, BUTTONCOMMON
-            MUIA_Selected, FALSE,
-        End;
+    optObjCheckSysSize = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"syssize",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, FALSE,
+            End),
+        TAG_DONE);
 
-    check_sizework = ImageObject, BUTTONCOMMON
-            MUIA_Selected, FALSE,
-            MUIA_Disabled, TRUE,
-        End;
+    optObjCheckSizeWork = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"worksize",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, FALSE,
+                MUIA_Disabled, TRUE,
+            End),
+        TAG_DONE);
 
-    check_creatework = ImageObject, BUTTONCOMMON
-            MUIA_Selected, FALSE,
-            MUIA_Disabled, TRUE,
-        End;
+    optObjCheckCreateWork = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"creatework",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, FALSE,
+                MUIA_Disabled, TRUE,
+            End),
+        TAG_DONE);
 
-    cycle_fstypework = CycleObject,
-            MUIA_CycleChain, 1,
-            MUIA_Cycle_Entries, opt_fstypes,
-            MUIA_Disabled, TRUE,
-            MUIA_Cycle_Active, 1,
-        End;
+    optObjCycleFSTypeWork = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"workfstype",
+            MUIA_InstallOption_Obj, (IPTR)(CycleObject,
+                MUIA_CycleChain, 1,
+                MUIA_Cycle_Entries, opt_fstypes,
+                MUIA_Disabled, TRUE,
+                MUIA_Cycle_Active, 1,
+            End),
+        TAG_DONE);
 
-    cycle_sysunits = CycleObject,
-            MUIA_CycleChain, 1,
-            MUIA_Cycle_Entries, opt_sizeunits,
-            MUIA_Disabled, TRUE,
-            MUIA_Cycle_Active, 1,
-        End;
+    optObjCycleSysUnits = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"sysunits",
+            MUIA_InstallOption_Obj, (IPTR)(CycleObject,
+                MUIA_CycleChain, 1,
+                MUIA_Cycle_Entries, opt_sizeunits,
+                MUIA_Disabled, TRUE,
+                MUIA_Cycle_Active, 1,
+            End),
+        TAG_DONE);
 
-    cycle_workunits = CycleObject,
-            MUIA_CycleChain, 1,
-            MUIA_Cycle_Entries, opt_sizeunits,
-            MUIA_Disabled, TRUE,
-            MUIA_Cycle_Active, 1,
-        End;
+    optObjCycleWorkUnits = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"workunits",
+            MUIA_InstallOption_Obj, (IPTR)(CycleObject,
+                MUIA_CycleChain, 1,
+                MUIA_Cycle_Entries, opt_sizeunits,
+                MUIA_Disabled, TRUE,
+                MUIA_Cycle_Active, 1,
+            End),
+        TAG_DONE);
 
-    cycle_grub2mode = CycleObject,
-            MUIA_CycleChain, 1,
-            MUIA_Cycle_Entries, opt_grub2mode,
-            MUIA_Disabled, FALSE,
-            MUIA_Cycle_Active, 0,
-        End;
+    optObjCycleGrub2Mode = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"grub2mode",
+            MUIA_InstallOption_Obj, (IPTR)(CycleObject,
+                MUIA_CycleChain, 1,
+                MUIA_Cycle_Entries, opt_grub2mode,
+                MUIA_Disabled, FALSE,
+                MUIA_Cycle_Active, 0,
+            End),
+        TAG_DONE);
 
     install_opts =
         AllocMem(sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC);
@@ -311,22 +406,28 @@ int main(int argc, char *argv[])
     work_Path = work_path;
 
     BOOTLOADER_InitSupport();
-    cycle_fstypesys = CycleObject,
-            MUIA_CycleChain, 1,
-            MUIA_Cycle_Entries, opt_fstypes,
-            MUIA_Disabled, FALSE,
-            MUIA_Cycle_Active,
+    optObjCycleFSTypeSys = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"sysfstype",
+            MUIA_InstallOption_Obj, (IPTR)(CycleObject,
+                MUIA_CycleChain, 1,
+                MUIA_Cycle_Entries, opt_fstypes,
+                MUIA_Disabled, FALSE,
+                MUIA_Cycle_Active,
 #if defined(BOOTLOADER_GRUB1)
-                BootLoaderType == BOOTLOADER_GRUB1 ? 0 : 1,
+                    BootLoaderType == BOOTLOADER_GRUB1 ? 0 : 1,
 #else
-                1,
+                    1,
 #endif
-        End;
+            End),
+        TAG_DONE);
 
-    check_bootloader = ImageObject, BUTTONCOMMON
-            MUIA_Selected, BootLoaderType == BOOTLOADER_NONE ? FALSE : TRUE,
-            MUIA_Disabled, BootLoaderType == BOOTLOADER_NONE ? TRUE : FALSE,
-        End;
+    optObjCheckBootloader = NewObject(iocMcc->mcc_Class, NULL,
+            MUIA_InstallOption_ID, (IPTR)"reboot",
+            MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
+                MUIA_Selected, BootLoaderType == BOOTLOADER_NONE ? FALSE : TRUE,
+                MUIA_Disabled, BootLoaderType == BOOTLOADER_NONE ? TRUE : FALSE,
+            End),
+        TAG_DONE);
 
     lock = Lock(DEF_INSTALL_IMAGE, ACCESS_READ);
     UnLock(lock);
@@ -345,8 +446,8 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       __(MSG_TITLE),
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.21 (04.01.2020)",
-        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2014, The AROS Development Team. All rights reserved.",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.22 (22.12.2020)",
+        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2020, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nick Andrews & Neil Cafferkey",
         MUIA_Application_Description, __(MSG_DESCRIPTION),
         MUIA_Application_Base,        (IPTR) "INSTALLER",
@@ -390,7 +491,7 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) LicenseMsg,
                                         Child, (IPTR) (LicenseMandGrp = HGroup,
                                             Child, (IPTR) HVSpace,
-                                            Child, (IPTR) check_license,
+                                            Child, (IPTR) optObjCheckLicense,
                                             Child, (IPTR) LLabel(_(MSG_ACCEPT)),
                                             Child, (IPTR) HVSpace,
                                         End),
@@ -423,23 +524,27 @@ int main(int argc, char *argv[])
                                             End),
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) LLabel(_(MSG_DEVICE)),
-                                            Child, (IPTR) (dest_device =
-                                                StringObject,
-                                                MUIA_CycleChain, 1,
-                                                MUIA_String_Contents, (IPTR) boot_Device,
-                                                MUIA_String_Reject, " \"\'*",
-                                                MUIA_Frame, MUIV_Frame_String,
-                                                MUIA_HorizWeight, 300,
-                                            End),
+                                            Child, (IPTR) (optObjDestDevice = NewObject(iocMcc->mcc_Class, NULL,
+                                                MUIA_InstallOption_ID, (IPTR)"tgtdev",
+                                                MUIA_InstallOption_Obj, (IPTR)(StringObject,
+                                                    MUIA_CycleChain, 1,
+                                                    MUIA_String_Contents, (IPTR) boot_Device,
+                                                    MUIA_String_Reject, " \"\'*",
+                                                    MUIA_Frame, MUIV_Frame_String,
+                                                    MUIA_HorizWeight, 300,
+                                                End),
+                                            TAG_DONE)),
                                             Child, (IPTR) LLabel(_(MSG_UNIT)),
-                                            Child, (IPTR) (dest_unit =
-                                                StringObject,
-                                                MUIA_CycleChain, 1,
-                                                MUIA_String_Integer, 0,
-                                                MUIA_String_Accept, "0123456789",
-                                                MUIA_Frame, MUIV_Frame_String,
-                                                MUIA_HorizWeight, 20,
-                                            End),
+                                            Child, (IPTR) (optObjDestUnit = NewObject(iocMcc->mcc_Class, NULL,
+                                                MUIA_InstallOption_ID, (IPTR)"tgtunit",
+                                                MUIA_InstallOption_Obj, (IPTR)(StringObject,
+                                                    MUIA_CycleChain, 1,
+                                                    MUIA_String_Integer, 0,
+                                                    MUIA_String_Accept, "0123456789",
+                                                    MUIA_Frame, MUIV_Frame_String,
+                                                    MUIA_HorizWeight, 20,
+                                                End),
+                                            TAG_DONE)),
                                         End,
 
                                         Child, (IPTR) HVSpace,
@@ -447,19 +552,21 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) LLabel(_(MSG_DESTPARTITION)),
                                         Child, (IPTR) ColGroup(7),
                                             Child, (IPTR) LLabel(_(MSG_NAME)),
-                                            Child, (IPTR) (sys_devname = StringObject,
-                                                MUIA_CycleChain, 1,
-                                                MUIA_String_Contents, SYS_PART_NAME,
-                                                MUIA_Disabled, TRUE,
-                                                MUIA_Frame, MUIV_Frame_String,
-                                            End),
+                                            Child, (IPTR) (optObjDestVolumeName = NewObject(iocMcc->mcc_Class, NULL,
+                                                MUIA_InstallOption_ID, (IPTR)"tgtvol",
+                                                MUIA_InstallOption_Obj, (IPTR)(StringObject,
+                                                    MUIA_CycleChain, 1,
+                                                    MUIA_Disabled, TRUE,
+                                                    MUIA_Frame, MUIV_Frame_String,
+                                                End),
+                                            TAG_DONE)),
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) LLabel(_(MSG_FILESYSTEM)),
-                                            Child, (IPTR) cycle_fstypesys,
+                                            Child, (IPTR) optObjCycleFSTypeSys,
                                             Child, (IPTR) LLabel(_(MSG_SIZE)),
                                             Child, (IPTR) (sys_size = StringObject,
                                                 MUIA_CycleChain, 1,
@@ -468,8 +575,8 @@ int main(int argc, char *argv[])
                                                 MUIA_Disabled, TRUE,
                                                 MUIA_Frame, MUIV_Frame_String,
                                             End),
-                                            Child, (IPTR) cycle_sysunits,
-                                            Child, (IPTR) check_sizesys,
+                                            Child, (IPTR) optObjCycleSysUnits,
+                                            Child, (IPTR) optObjCheckSysSize,
                                             Child, (IPTR) LLabel(_(MSG_SPECIFYSIZE)),
                                         End,
 
@@ -487,10 +594,10 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) HVSpace,
                                             Child, (IPTR) HVSpace,
-                                            Child, (IPTR) check_creatework,
+                                            Child, (IPTR) optObjCheckCreateWork,
                                             Child, (IPTR) LLabel(_(MSG_CREATE)),
                                             Child, (IPTR) LLabel(_(MSG_FILESYSTEM)),
-                                            Child, (IPTR) cycle_fstypework,
+                                            Child, (IPTR) optObjCycleFSTypeWork,
                                             Child, (IPTR) LLabel(_(MSG_SIZE)),
                                             Child, (IPTR) (work_size = StringObject,
                                                 MUIA_CycleChain, 1,
@@ -499,8 +606,8 @@ int main(int argc, char *argv[])
                                                 MUIA_Disabled, TRUE,
                                                 MUIA_Frame, MUIV_Frame_String,
                                             End),
-                                            Child, (IPTR) cycle_workunits,
-                                            Child, (IPTR) check_sizework,
+                                            Child, (IPTR) optObjCycleWorkUnits,
+                                            Child, (IPTR) optObjCheckSizeWork,
                                             Child, (IPTR) LLabel(_(MSG_SPECIFYSIZE)),
                                         End,
                                     End,
@@ -511,15 +618,15 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) CLabel(_(MSG_INSTALLOPTIONS)),
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) ColGroup(2),
-                                            Child, (IPTR) check_locale,
+                                            Child, (IPTR) optObjCheckLocale,
                                             Child, (IPTR) LLabel(_(MSG_CHOOSELANG)),
-                                            Child, (IPTR) check_core,
+                                            Child, (IPTR) optObjCheckCore,
                                             Child, (IPTR) LLabel(_(MSG_INSTALLCORE)),
-                                            Child, (IPTR) check_extras,
+                                            Child, (IPTR) optObjCheckExtras,
                                             Child, (IPTR) LLabel(_(MSG_INSTALLEXTRA)),
-                                            Child, (IPTR) check_dev,
+                                            Child, (IPTR) optObjCheckDev,
                                             Child, (IPTR) LLabel(_(MSG_INSTALLDEVEL)),
-                                            Child, (IPTR) check_bootloader,
+                                            Child, (IPTR) optObjCheckBootloader,
                                             Child, (IPTR) LLabel(_(MSG_INSTALLBOOT)),
                                         End,
                                         Child, (IPTR) HVSpace,
@@ -536,20 +643,19 @@ int main(int argc, char *argv[])
                                                 Child, (IPTR) HVSpace,
                                             End,
                                             Child, (IPTR) (show_formatsys = ColGroup(2),
-                                                Child, (IPTR) check_formatsys,
+                                                Child, (IPTR) optObjCheckFormatSys,
                                                 Child, (IPTR) LLabel(_(MSG_FORMATPART)),
                                             End),
                                         End,
                                         Child, (IPTR) HVSpace,
-                                        Child, (IPTR) (dest_volume = StringObject,
-                                            MUIA_CycleChain, 1,
-                                            MUIA_Frame, MUIV_Frame_String,
-                                        End),
+                                        Child, (IPTR) (optObjDestVolLabel = NewObject(iocMcc->mcc_Class, NULL,
+                                            MUIA_InstallOption_ID, (IPTR)MUIV_InstallOptionID_Dest,
+                                        TAG_DONE)),
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) ColGroup(2),
-                                            Child, (IPTR) check_work,
+                                            Child, (IPTR) optObjCheckWork,
                                             Child, (IPTR) LLabel(_(MSG_USEWORK)),
-                                            Child, (IPTR) check_copytowork,
+                                            Child, (IPTR) optObjCheckCopyToWork,
                                             Child, (IPTR) LLabel(_(MSG_USEWORKFOR)),
                                         End,
                                         Child, (IPTR) HVSpace,
@@ -560,16 +666,19 @@ int main(int argc, char *argv[])
                                                 Child, (IPTR) HVSpace,
                                             End,
                                             Child, (IPTR) (show_formatwork = ColGroup(2),
-                                                Child, (IPTR) check_formatwork,
+                                                Child, (IPTR) optObjCheckFormatWork,
                                                 Child, (IPTR) LLabel(_(MSG_FORMATPART)),
                                             End),
                                         End,
                                         Child, (IPTR) HVSpace,
-                                        Child, (IPTR) (work_volume = StringObject,
-                                            MUIA_CycleChain, 1,
-                                            MUIA_Disabled, TRUE,
-                                            MUIA_Frame, MUIV_Frame_String,
-                                        End),
+                                        Child, (IPTR) (optObjWorkDestLabel = NewObject(iocMcc->mcc_Class, NULL,
+                                            MUIA_InstallOption_ID, (IPTR)"wrklabel",
+                                            MUIA_InstallOption_Obj, (IPTR)(StringObject,
+                                                MUIA_CycleChain, 1,
+                                                MUIA_Disabled, TRUE,
+                                                MUIA_Frame, MUIV_Frame_String,
+                                            End),
+                                        TAG_DONE)),
                                         Child, (IPTR) HVSpace,
                                     End,
                                 End,
@@ -617,7 +726,7 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) ColGroup(4),
                                             Child, (IPTR) LLabel(_(MSG_MENUMODE)),
-                                            Child, (IPTR) cycle_grub2mode,
+                                            Child, (IPTR) optObjCycleGrub2Mode,
                                             Child, (IPTR) HVSpace,
                                         End,
                                         Child, (IPTR) HVSpace,
@@ -696,7 +805,7 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) (reboot_group = ColGroup(2),
                                             MUIA_Weight,0,
                                             MUIA_ShowMe, FALSE,
-                                            Child, (IPTR) check_reboot,
+                                            Child, (IPTR) optObjCheckReboot,
                                             Child, (IPTR) LLabel(_(MSG_REBOOT)),
                                         End),
                                     End,
@@ -724,30 +833,29 @@ int main(int argc, char *argv[])
         exit(5);
     }
 
+    D(bug("[INST-APP] App @ 0x%p\n", app));
     /* Update GUI in response to certain user actions */
 
     /* Notifications upon selection of drive type */
-    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 0,
-        (IPTR) dest_device, 3, MUIM_Set,
-        MUIA_String_Contents, "ahci.device");
-    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
-        (IPTR) dest_device, 3, MUIM_Set,
-        MUIA_String_Contents, "ata.device");
-    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 2,
-        (IPTR) dest_device, 3, MUIM_Set,
-        MUIA_String_Contents, "usbscsi.device");
-    DoMethod(cycle_drivetype, MUIM_Notify, MUIA_Cycle_Active,
-        MUIV_EveryTime, (IPTR) dest_unit, 3, MUIM_Set, MUIA_String_Integer,
-        0);
-    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 0,
-        (IPTR) sys_devname, 3, MUIM_Set, MUIA_String_Contents,
-        SYS_PART_NAME);
-    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
-        (IPTR) sys_devname, 3, MUIM_Set, MUIA_String_Contents,
-        SYS_PART_NAME);
-    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 2,
-        (IPTR) sys_devname, 3, MUIM_Set, MUIA_String_Contents,
-        USB_SYS_PART_NAME);
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestDevice,
+                                                    MUIA_Cycle_Active, 0, MUIA_String_Contents, "ahci.device");
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestDevice,
+                                                    MUIA_Cycle_Active, 1, MUIA_String_Contents, "ata.device");
+    SetOptObjNotificationFromObj(cycle_drivetype,  optObjDestDevice,
+                                                    MUIA_Cycle_Active, 2, MUIA_String_Contents, "scsi.device");
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestDevice,
+                                                    MUIA_Cycle_Active, 3, MUIA_String_Contents, "usbscsi.device");
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestUnit,
+                                                    MUIA_Cycle_Active, MUIV_EveryTime, MUIA_String_Integer, 0);
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestVolumeName,
+                                                    MUIA_Cycle_Active, 0, MUIA_String_Contents, SYS_PART_NAME);
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestVolumeName,
+                                                    MUIA_Cycle_Active, 1, MUIA_String_Contents, SYS_PART_NAME);
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestVolumeName,
+                                                    MUIA_Cycle_Active, 2, MUIA_String_Contents, SYS_PART_NAME);
+    SetOptObjNotificationFromObj(cycle_drivetype, optObjDestVolumeName,
+                                                    MUIA_Cycle_Active, 3, MUIA_String_Contents, USB_SYS_PART_NAME);
+
     DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 0,
         (IPTR) work_devname, 3, MUIM_Set, MUIA_String_Contents,
         WORK_PART_NAME);
@@ -755,110 +863,95 @@ int main(int argc, char *argv[])
         (IPTR) work_devname, 3, MUIM_Set, MUIA_String_Contents,
         WORK_PART_NAME);
     DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 2,
+        (IPTR) work_devname, 3, MUIM_Set, MUIA_String_Contents,
+        WORK_PART_NAME);
+    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 3,
         (IPTR) work_devname, 3, MUIM_Set, MUIA_String_Contents,
         USB_WORK_PART_NAME);
 
     /* Notifications on change of enable status of 'enter size of sys volume'
      * (this tells us if we are using existing partitions) */
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
-        (IPTR) sys_devname, 3, MUIM_Set, MUIA_Disabled, MUIV_TriggerValue);
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
-        (IPTR) cycle_drivetype, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_TriggerValue);
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
-        (IPTR) dest_device, 3, MUIM_Set, MUIA_Disabled, MUIV_TriggerValue);
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
-        (IPTR) dest_unit, 3, MUIM_Set, MUIA_Disabled, MUIV_TriggerValue);
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
-        (IPTR) cycle_fstypesys, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_TriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjDestVolumeName,
+                                                MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
+    SetObjNotificationFromOptObj(optObjCheckSysSize, cycle_drivetype,
+                                                MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjDestDevice,
+                                                MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjDestUnit,
+                                                MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCycleFSTypeSys,
+                                                MUIA_Disabled, MUIV_EveryTime, MUIA_Disabled, MUIV_TriggerValue);
 
     /* Notifications on change of selected status of 'enter size of sys volume' */
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_creatework, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) sys_size, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) cycle_sysunits, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_creatework, 3, MUIM_Set, MUIA_Selected, FALSE);
+    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckCreateWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetObjNotificationFromOptObj(optObjCheckSysSize, sys_size,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCycleSysUnits,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckSysSize, optObjCheckCreateWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Selected, FALSE);
 
     /* Notifications on change of selected status of 'create work volume' */
-    DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) work_devname, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_sizework, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) cycle_fstypework, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_sizework, 3, MUIM_Set, MUIA_Selected, FALSE);
+    SetObjNotificationFromOptObj(optObjCheckCreateWork, work_devname,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckCreateWork, optObjCheckSizeWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckCreateWork, optObjCycleFSTypeWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckCreateWork, optObjCheckSizeWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Selected, FALSE);
 
     /* Notifications on change of selected status of 'enter size of work volume' */
-    DoMethod(check_sizework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) work_size, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_sizework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) cycle_workunits, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
+    SetObjNotificationFromOptObj(optObjCheckSizeWork, work_size,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckSizeWork, optObjCycleWorkUnits,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
 
-#if 0                           /* Notification doesn't seem to work on String gadgets */
-    DoMethod(dest_volume, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
-        (IPTR) dest_volume, 3, MUIM_WriteString,
-        MUIV_TriggerValue, dest_Path);
-#endif
     /* Notifications on installing bootloader */
-    DoMethod(check_bootloader, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) cycle_grub2mode, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckBootloader, optObjCycleGrub2Mode,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
 
-    DoMethod(check_core, MUIM_Notify, MUIA_Selected, FALSE,
-        (IPTR) check_formatsys, 3, MUIM_Set, MUIA_Selected, FALSE);
-    DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_copytowork, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_copytowork, 3, MUIM_Set, MUIA_Selected, FALSE);
-    DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_formatwork, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
-    DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) check_formatwork, 3, MUIM_Set, MUIA_Selected, FALSE);
-    DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-        (IPTR) work_volume, 3, MUIM_Set,
-        MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckCore, optObjCheckFormatSys,
+                                                MUIA_Selected, FALSE, MUIA_Selected, FALSE);
+    SetOptObjNotificationFromOptObj(optObjCheckWork, optObjCheckCopyToWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckWork, optObjCheckCopyToWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Selected, FALSE);
+    SetOptObjNotificationFromOptObj(optObjCheckWork, optObjCheckFormatWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
+    SetOptObjNotificationFromOptObj(optObjCheckWork, optObjCheckFormatWork,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Selected, FALSE);
+    SetOptObjNotificationFromOptObj(optObjCheckWork, optObjWorkDestLabel,
+                                                MUIA_Selected, MUIV_EveryTime, MUIA_Disabled, MUIV_NotTriggerValue);
 
-    install_opts->opt_license = check_license;
+    D(bug("[INST-APP] Notifications configured\n"));
+
+    /* Update GUI in response to certain user actions */
+
+    GET(optObjCheckLicense, MUIA_InstallOption_Obj, &install_opts->opt_license);
     install_opts->opt_lic_box = LicenseMsg;
     install_opts->opt_lic_mgrp = LicenseMandGrp;
 
     install_opts->opt_partmethod = radio_part;
-    install_opts->opt_sysdevname = sys_devname;
+    GET(optObjDestVolumeName, MUIA_InstallOption_Obj, &install_opts->opt_sysdevname);
     install_opts->opt_workdevname = work_devname;
 
-    install_opts->opt_format = check_format;
-    install_opts->opt_locale = check_locale;
-    install_opts->opt_copycore = check_core;
-    install_opts->opt_copyextra = check_extras;
-    install_opts->opt_developer = check_dev;
-    install_opts->opt_bootloader = check_bootloader;
-
-    install_opts->opt_reboot = check_reboot;
+    GET(optObjCheckFormat, MUIA_InstallOption_Obj, &install_opts->opt_format);
+    GET(optObjCheckLocale, MUIA_InstallOption_Obj, &install_opts->opt_locale);
+    GET(optObjCheckCore, MUIA_InstallOption_Obj, &install_opts->opt_copycore);
+    GET(optObjCheckExtras, MUIA_InstallOption_Obj, &install_opts->opt_copyextra);
+    GET(optObjCheckDev, MUIA_InstallOption_Obj, &install_opts->opt_developer);
+    GET(optObjCheckBootloader, MUIA_InstallOption_Obj, &install_opts->opt_bootloader);
+    GET(optObjCheckReboot, MUIA_InstallOption_Obj, &install_opts->opt_reboot);
 
     grub_opts->gopt_drive = grub_drive;
     grub_opts->gopt_grub = grub_grub;
-    grub_opts->gopt_grub2mode = cycle_grub2mode;
+    GET(optObjCycleGrub2Mode, MUIA_InstallOption_Obj, &grub_opts->gopt_grub2mode);
 
     SET(pagetitle, MUIA_Font, MUIV_Font_Big);
 
-    struct MUI_CustomClass *mcc =
-        MUI_CreateCustomClass(NULL, MUIC_Notify, NULL,
-        sizeof(struct Install_DATA), Install_Dispatcher);
-
-    Object *installer = NewObject(mcc->mcc_Class, NULL,
+    Object *installer = NewObject(icMcc->mcc_Class, NULL,
 
         MUIA_Page, (IPTR) page,
         MUIA_Gauge1, (IPTR) gauge1,
@@ -890,8 +983,13 @@ int main(int argc, char *argv[])
 
         TAG_DONE);
 
+    D(bug("[INST-APP] Installer Instance @ 0x%p\n", installer));
+
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2,
         MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+
+    D(bug("[INST-APP] Installer notifications configured\n"));
 
     SET(wnd, MUIA_Window_Open, TRUE);
     {
@@ -919,7 +1017,7 @@ int main(int argc, char *argv[])
 
     D(bug("[INST-APP] Removing Custom Class\n"));
 
-    MUI_DeleteCustomClass(mcc);
+    MUI_DeleteCustomClass(icMcc);
 
     D(bug("[INST-APP] Removing App Object\n"));
 

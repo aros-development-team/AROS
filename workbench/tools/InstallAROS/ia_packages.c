@@ -11,15 +11,13 @@
 
 extern char *source_Path;
 
-static struct List PACKAGELIST;
-
 #define PACKAGEDIR_BASE "Prefs/Env-Archive/SYS/Packages"
 
-void PACKAGES_InitSupport(void)
+void PACKAGES_InitSupport(struct List *PACKAGELIST)
 {
     D(bug("[InstallAROS] %s()\n", __func__));
 
-    NEWLIST(&PACKAGELIST);
+    NEWLIST(PACKAGELIST);
     // TODO: enumerate available packages .. 
 }
 
