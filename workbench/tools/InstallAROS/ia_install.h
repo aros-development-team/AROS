@@ -82,7 +82,12 @@ static const char KMsgNoDrives[] =
 
 #define MUIM_IC_BASE                            (TAG_USER + 0x00335000)
 #define MUIA_IC_BASE                            (TAG_USER + 0x00336000)
-#define MUIA_IO_BASE                            (TAG_USER + 0x00337000)
+#define MUIM_IO_BASE                            (TAG_USER + 0x00337000)
+#define MUIA_IO_BASE                            (TAG_USER + 0x00338000)
+
+/* ************************************************
+        Main Installer Class Methods/Attribs
+ * ************************************************/
 
 #define MUIM_IC_NextStep                        (MUIM_IC_BASE + 0x1)
 #define MUIM_IC_PrevStep                        (MUIM_IC_BASE + 0x2)
@@ -150,13 +155,22 @@ static const char KMsgNoDrives[] =
 #define MUIV_Inst_Cancelled                     (0x01)
 #define MUIV_Inst_Failed                        (0x10)
 
-/* InstallOption Attribs */
-#define MUIA_InstallOption_Obj                  (MUIA_IO_BASE + 0x1)
-#define MUIA_InstallOption_ID                   (MUIA_IO_BASE + 0x2)
+/* ************************************************
+        Install Option Class Methods/Attribs
+ * ************************************************/
+#define MUIM_InstallOption_Update               (MUIM_IO_BASE + 0x1)
 
-#define MUIV_InstallOptionID_Source             (-2L)
-#define MUIV_InstallOptionID_Dest               (-3L)
-#define MUIV_InstallOptionID_StorageAvail       (-4L)
+#define MUIA_InstallOption_Obj                  (MUIA_IO_BASE + 0x1)            /* Install GUI Object representing the object   */
+#define MUIA_InstallOption_ID                   (MUIA_IO_BASE + 0x2)            /* Install 'unique' Option ID                   */
+#define MUIA_InstallOption_ValueTag             (MUIA_IO_BASE + 0x3)            /* TAG used to access the GUI objects value     */
+#define MUIA_InstallOption_Value                (MUIA_IO_BASE + 0x4)            /* The current value for the option, at this
+                                                                                   stage.
+                                                                                   N.B. this value only changes when the stage
+                                                                                   changes                                      */
+
+#define MUIV_InstallOptionID_Source             (-2L)                           /* Generic attrib for an install source path    */
+#define MUIV_InstallOptionID_Dest               (-3L)                           /* Generic attrib for an install target path    */
+#define MUIV_InstallOptionID_StorageAvail       (-4L)                           /* Generic attrib for storage device (maybe)    */
 
 struct MUIP_CopyFiles
 {

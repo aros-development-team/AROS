@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       __(MSG_TITLE),
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.22 (22.12.2020)",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.23 (22.12.2020)",
         MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2020, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nick Andrews & Neil Cafferkey",
         MUIA_Application_Description, __(MSG_DESCRIPTION),

@@ -15,6 +15,8 @@
 #include "ia_install.h"
 #include "ia_installoption_intern.h"
 
+#define DOPTION(x)
+
 IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
 {
     char *iaID;
@@ -70,9 +72,10 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
             if (self)
             {
                 struct InstallOption_Data *data = INST_DATA(CLASS, self);
-                data->io_Object = iaObj;
-                data->io_ID = iaID;
-                SET(data->io_Object, MUIA_UserData, self);
+                data->iod_Object = iaObj;
+                data->iod_ID = iaID;
+                data->iod_OptionTag = GetTagData(MUIA_InstallOption_ValueTag, 0, message->ops_AttrList);
+                SET(data->iod_Object, MUIA_UserData, self);
             }
             return self;
         }
@@ -84,15 +87,21 @@ IPTR InstallOption__OM_GET(Class * CLASS, Object * self, struct opGet *message)
 {
     struct InstallOption_Data *data = INST_DATA(CLASS, self);
 
-    //D(bug("[InstallAROS:Opt] %s()\n", __func__));
+    DOPTION(bug("[InstallAROS:Opt] %s()\n", __func__));
 
     switch(message->opg_AttrID)
     {
         case MUIA_InstallOption_Obj:
-            *message->opg_Storage = data->io_Object;
+            *message->opg_Storage = data->iod_Object;
             return TRUE;
         case MUIA_InstallOption_ID:
-            *message->opg_Storage = data->io_ID;
+            *message->opg_Storage = data->iod_ID;
+            return TRUE;
+        case MUIA_InstallOption_ValueTag:
+            *message->opg_Storage = data->iod_OptionTag;
+            return TRUE;
+        case MUIA_InstallOption_Value:
+            *message->opg_Storage = data->iod_OptionVal;
             return TRUE;
     }
     return DoSuperMethodA(CLASS, self, message);
@@ -102,14 +111,29 @@ IPTR InstallOption__OM_SET(Class * CLASS, Object * self, struct opSet *message)
 {
     struct InstallOption_Data *data = INST_DATA(CLASS, self);
 
-    //D(bug("[InstallAROS:Opt] %s()\n", __func__));
+    DOPTION(bug("[InstallAROS:Opt] %s()\n", __func__));
 
     return DoSuperMethodA(CLASS, self, message);
 }
 
+IPTR InstallOption__MUIM_InstallOption_Update(Class * CLASS, Object * self, struct opSet *message)
+{
+    struct InstallOption_Data *data = INST_DATA(CLASS, self);
+
+    DOPTION(bug("[InstallAROS:Opt] %s()\n", __func__);)
+
+    if (data->iod_OptionTag)
+    {
+        bug("[InstallAROS:Opt] %s: caching state ...\n", __func__);
+        GET(data->iod_Object, data->iod_OptionTag, &data->iod_OptionVal);
+    }
+    else
+        data->iod_OptionVal = (IPTR)-1;
+}
+
 BOOPSI_DISPATCHER(IPTR, InstallOption__Dispatcher, CLASS, self, message)
 {
-    //D(bug("[InstallAROS:Opt] %s(%08x)\n", __func__, message->MethodID));
+    DOPTION(bug("[InstallAROS:Opt] %s(%08x)\n", __func__, message->MethodID));
 
     /* Handle our methods */
     switch (message->MethodID)
@@ -122,6 +146,9 @@ BOOPSI_DISPATCHER(IPTR, InstallOption__Dispatcher, CLASS, self, message)
 
     case OM_SET:
         return InstallOption__OM_SET(CLASS, self, (struct opSet *)message);
+
+    case MUIM_InstallOption_Update:
+        return InstallOption__MUIM_InstallOption_Update(CLASS, self, (struct opSet *)message);
     }
     return DoSuperMethodA(CLASS, self, message);
 }
