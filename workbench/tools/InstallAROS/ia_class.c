@@ -315,7 +315,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                 {
                     OPTOSET(optObjDestDevice, MUIA_String_Contents, AROS_BSTR_ADDR(fssm->fssm_Device));
                 }
-                OPTOSET(optObjDestUnit, MUIA_String_Contents, fssm->fssm_Unit);
+                OPTOSET(optObjDestUnit, MUIA_String_Integer, fssm->fssm_Unit);
                 devset = TRUE;
             }
         }
@@ -326,7 +326,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
             {
                 OPTOSET(optObjDestDevice, MUIA_String_Contents, boot_Device);
             }
-            OPTOSET(optObjDestUnit, MUIA_String_Contents, boot_Unit);
+            OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
         }
     }
     else if (boot_Device)
@@ -336,7 +336,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         {
             OPTOSET(optObjDestDevice, MUIA_String_Contents, boot_Device);
         }
-        OPTOSET(optObjDestUnit, MUIA_String_Contents, boot_Unit);
+        OPTOSET(optObjDestUnit, MUIA_String_Integer, boot_Unit);
     }
     else
     {
@@ -360,6 +360,10 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         data->instc_default_usb = FALSE;
     UnLock(lock);
 
+    /* Cache the initial values */
+    DoMethod(optObjDestDevice, MUIM_InstallOption_Update);
+    DoMethod(optObjDestUnit, MUIM_InstallOption_Update);
+    
 #if (0)
     boot_Unit = GuessFirstHD(boot_Device);
 #endif
@@ -1334,8 +1338,8 @@ IPTR Install__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         SET(data->proceed, MUIA_Disabled, TRUE);
 
         char tmpcmd[150], tmparg[100];
-        OPTOGET(optObjDestDevice, MUIA_String_Contents, &tmp);
-        OPTOGET(optObjDestUnit, MUIA_String_Integer, &option);
+        GET(optObjDestDevice, MUIA_InstallOption_Value, &tmp);
+        GET(optObjDestUnit, MUIA_InstallOption_Value, &option);
         sprintf(tmpcmd, "C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
             (char *)tmp, option);
 
