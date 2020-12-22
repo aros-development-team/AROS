@@ -16,7 +16,7 @@ FILES   := \
 EXEDIR  := $(AROS_TOOLS)
 
 #MM- workbench-tools : workbench-tools-installaros
-#MM workbench-tools-installaros : workbench-tools-installaros-catalogs
+#MM workbench-tools-installaros : kernel-hidd-storage-includes workbench-tools-installaros-catalogs
 
 USER_CPPFLAGS := -DARCHBOOTDIR=\"$(AROS_DIR_ARCH)\"
 ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub)
