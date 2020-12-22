@@ -3,8 +3,10 @@
 
 struct InstallOption_Data
 {
-    Object      *io_Object;
-    char        *io_ID;
+    Object      *iod_Object;
+    char        *iod_ID;
+    IPTR        *iod_OptionTag;
+    IPTR        iod_OptionVal;
 };
 
 BOOPSI_DISPATCHER_PROTO(IPTR, InstallOption__Dispatcher, CLASS, self, message);

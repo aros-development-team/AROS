@@ -40,6 +40,8 @@
 #include "ia_packages.h"
 #include "ia_bootloader.h"
 
+#define DOPTS(x)
+
 extern struct ExpansionBase *ExpansionBase;
 
 extern char *source_Path;       /* full path to source "tree" */
@@ -626,6 +628,51 @@ IPTR Install__MUIM_FindDrives(Class * CLASS, Object * self, Msg message)
     return retval;
 }
 
+IPTR Install__CacheOptionState(Class * CLASS, Object *optgrpObj, int grpChildID)
+{
+    struct MinList *fmlyList = NULL;
+    IPTR count = 0;
+
+    DOPTS(bug("[InstallAROS:Inst] %s(0x%p, %d)\n", __func__, optgrpObj, grpChildID);)
+
+    GET(optgrpObj, MUIA_Group_ChildList, (IPTR *)&fmlyList);
+    if (!fmlyList)
+    {
+        GET(optgrpObj, MUIA_Family_List, (IPTR *)&fmlyList);
+    }
+    if (fmlyList)
+    {
+        Object *childNode = NULL, *cState;
+        int childCnt = 0;
+
+        DOPTS(bug("[InstallAROS:Inst] %s: List @ 0x%p\n", __func__, fmlyList);)
+
+        cState = (Object *)fmlyList->mlh_Head;
+        while ((childNode = NextObject(&cState)))
+        {
+            DOPTS(bug("[InstallAROS:Inst] %s: child #%u 0x%p\n", __func__, childCnt, childNode);)
+            if ((grpChildID == -1) || (grpChildID == childCnt))
+            {
+                Class *chClass = OCLASS(childNode);
+                DOPTS(bug("[InstallAROS:Inst] %s:      class 0x%p\n", __func__, chClass);)
+                if (chClass && (chClass->cl_ID == CLASS->cl_ID))
+                {
+                    DOPTS(bug("[InstallAROS:Inst] %s: Updating suitable child ..\n", __func__);)
+                    DoMethod(childNode, MUIM_InstallOption_Update);
+                    count += 1;
+                }
+                else
+                {
+                    DOPTS(bug("[InstallAROS:Inst] %s: Checking descendant...\n", __func__);)
+                    count += Install__CacheOptionState(CLASS, childNode, -1);
+                }
+            }
+            childCnt++;
+        }
+    }
+    return count;
+}
+
 IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
@@ -639,6 +686,9 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
         set(self, MUIA_InstallComplete, TRUE);  //ALL DONE!!
 
     SET(data->back, MUIA_Disabled, (BOOL) data->disable_back);
+
+    /* Update the cached state of the options, for the current stage */
+    Install__CacheOptionState(CLASS, data->page, this_page);
 
     next_stage = data->instc_stage_next;
     data->instc_stage_prev = this_page;
