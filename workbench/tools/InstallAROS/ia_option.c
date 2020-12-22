@@ -19,6 +19,7 @@
 
 IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
 {
+    IPTR iaTag = (IPTR)-1;
     char *iaID;
 
     D(bug("[InstallAROS:Opt] %s()\n", __func__));
@@ -37,6 +38,7 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                                 MUIA_CycleChain, 1,
                                 MUIA_Frame, MUIV_Frame_String,
                             End;
+                        iaTag = MUIA_String_Contents;
                         D(bug("[InstallAROS:Opt] %s: MUIV_InstallOptionID_Source Obj @ 0x%p\n", __func__, iaObj));
                     }
                     break;
@@ -46,6 +48,7 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                                 MUIA_CycleChain, 1,
                                 MUIA_Frame, MUIV_Frame_String,
                             End;
+                        iaTag = MUIA_String_Contents;
                         D(bug("[InstallAROS:Opt] %s: MUIV_InstallOptionID_Dest Obj @ 0x%p\n", __func__, iaObj));
                     }
                     break;
@@ -74,7 +77,7 @@ IPTR InstallOption__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
                 struct InstallOption_Data *data = INST_DATA(CLASS, self);
                 data->iod_Object = iaObj;
                 data->iod_ID = iaID;
-                data->iod_OptionTag = GetTagData(MUIA_InstallOption_ValueTag, 0, message->ops_AttrList);
+                data->iod_OptionTag = GetTagData(MUIA_InstallOption_ValueTag, (iaTag != (IPTR)1) ? iaTag : (IPTR)-1, message->ops_AttrList);
                 SET(data->iod_Object, MUIA_UserData, self);
             }
             return self;
@@ -122,7 +125,7 @@ IPTR InstallOption__MUIM_InstallOption_Update(Class * CLASS, Object * self, stru
 
     DOPTION(bug("[InstallAROS:Opt] %s()\n", __func__);)
 
-    if (data->iod_OptionTag)
+    if (data->iod_OptionTag != (IPTR)-1)
     {
         bug("[InstallAROS:Opt] %s: caching state ...\n", __func__);
         GET(data->iod_Object, data->iod_OptionTag, &data->iod_OptionVal);

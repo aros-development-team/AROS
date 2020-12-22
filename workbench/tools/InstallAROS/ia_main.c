@@ -222,42 +222,49 @@ int main(int argc, char *argv[])
 
     optObjCheckLicense = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"license",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, FALSE,
             End),
         TAG_DONE);
     optObjCheckFormat = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"format",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, TRUE,
             End),
         TAG_DONE);
     optObjCheckLocale = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"localize",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, FALSE,
             End),
         TAG_DONE);
     optObjCheckCore = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"core",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, TRUE,
             End),
         TAG_DONE);
     optObjCheckDev = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"developer",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, FALSE,
             End),
         TAG_DONE);
     optObjCheckExtras = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"extras",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, TRUE,
             End),
         TAG_DONE);
     optObjCheckReboot = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"reboot",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
             End),
         TAG_DONE);
@@ -275,6 +282,7 @@ int main(int argc, char *argv[])
 
     optObjCheckCopyToWork = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"copytowork",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Disabled, TRUE,
             End),
@@ -282,6 +290,7 @@ int main(int argc, char *argv[])
 
     optObjCheckWork = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"work",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, FALSE,
             End),
@@ -289,6 +298,7 @@ int main(int argc, char *argv[])
 
     optObjCheckFormatSys = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"sysfmt",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, TRUE,
             End),
@@ -296,6 +306,7 @@ int main(int argc, char *argv[])
 
     optObjCheckFormatWork = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"workfmt",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Disabled, TRUE,
             End),
@@ -303,6 +314,7 @@ int main(int argc, char *argv[])
 
     optObjCheckSysSize = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"syssize",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, FALSE,
             End),
@@ -310,6 +322,7 @@ int main(int argc, char *argv[])
 
     optObjCheckSizeWork = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"worksize",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, FALSE,
                 MUIA_Disabled, TRUE,
@@ -318,6 +331,7 @@ int main(int argc, char *argv[])
 
     optObjCheckCreateWork = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"creatework",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, FALSE,
                 MUIA_Disabled, TRUE,
@@ -326,6 +340,7 @@ int main(int argc, char *argv[])
 
     optObjCycleFSTypeWork = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"workfstype",
+            MUIA_InstallOption_ValueTag, MUIA_Cycle_Active,
             MUIA_InstallOption_Obj, (IPTR)(CycleObject,
                 MUIA_CycleChain, 1,
                 MUIA_Cycle_Entries, opt_fstypes,
@@ -336,6 +351,7 @@ int main(int argc, char *argv[])
 
     optObjCycleSysUnits = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"sysunits",
+            MUIA_InstallOption_ValueTag, MUIA_Cycle_Active,
             MUIA_InstallOption_Obj, (IPTR)(CycleObject,
                 MUIA_CycleChain, 1,
                 MUIA_Cycle_Entries, opt_sizeunits,
@@ -346,6 +362,7 @@ int main(int argc, char *argv[])
 
     optObjCycleWorkUnits = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"workunits",
+            MUIA_InstallOption_ValueTag, MUIA_Cycle_Active,
             MUIA_InstallOption_Obj, (IPTR)(CycleObject,
                 MUIA_CycleChain, 1,
                 MUIA_Cycle_Entries, opt_sizeunits,
@@ -356,6 +373,7 @@ int main(int argc, char *argv[])
 
     optObjCycleGrub2Mode = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"grub2mode",
+            MUIA_InstallOption_ValueTag, MUIA_Cycle_Active,
             MUIA_InstallOption_Obj, (IPTR)(CycleObject,
                 MUIA_CycleChain, 1,
                 MUIA_Cycle_Entries, opt_grub2mode,
@@ -408,6 +426,7 @@ int main(int argc, char *argv[])
     BOOTLOADER_InitSupport();
     optObjCycleFSTypeSys = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"sysfstype",
+            MUIA_InstallOption_ValueTag, MUIA_Cycle_Active,
             MUIA_InstallOption_Obj, (IPTR)(CycleObject,
                 MUIA_CycleChain, 1,
                 MUIA_Cycle_Entries, opt_fstypes,
@@ -423,6 +442,7 @@ int main(int argc, char *argv[])
 
     optObjCheckBootloader = NewObject(iocMcc->mcc_Class, NULL,
             MUIA_InstallOption_ID, (IPTR)"reboot",
+            MUIA_InstallOption_ValueTag, MUIA_Selected,
             MUIA_InstallOption_Obj, (IPTR)(ImageObject, BUTTONCOMMON
                 MUIA_Selected, BootLoaderType == BOOTLOADER_NONE ? FALSE : TRUE,
                 MUIA_Disabled, BootLoaderType == BOOTLOADER_NONE ? TRUE : FALSE,
@@ -526,6 +546,7 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) LLabel(_(MSG_DEVICE)),
                                             Child, (IPTR) (optObjDestDevice = NewObject(iocMcc->mcc_Class, NULL,
                                                 MUIA_InstallOption_ID, (IPTR)"tgtdev",
+                                                MUIA_InstallOption_ValueTag, MUIA_String_Contents,
                                                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_String_Contents, (IPTR) boot_Device,
@@ -537,6 +558,7 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) LLabel(_(MSG_UNIT)),
                                             Child, (IPTR) (optObjDestUnit = NewObject(iocMcc->mcc_Class, NULL,
                                                 MUIA_InstallOption_ID, (IPTR)"tgtunit",
+                                                MUIA_InstallOption_ValueTag, MUIA_String_Integer,
                                                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_String_Integer, 0,
@@ -554,6 +576,7 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) LLabel(_(MSG_NAME)),
                                             Child, (IPTR) (optObjDestVolumeName = NewObject(iocMcc->mcc_Class, NULL,
                                                 MUIA_InstallOption_ID, (IPTR)"tgtvol",
+                                                MUIA_InstallOption_ValueTag, MUIA_String_Contents,
                                                 MUIA_InstallOption_Obj, (IPTR)(StringObject,
                                                     MUIA_CycleChain, 1,
                                                     MUIA_Disabled, TRUE,
@@ -673,6 +696,7 @@ int main(int argc, char *argv[])
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) (optObjWorkDestLabel = NewObject(iocMcc->mcc_Class, NULL,
                                             MUIA_InstallOption_ID, (IPTR)"wrklabel",
+                                            MUIA_InstallOption_ValueTag, MUIA_String_Contents,
                                             MUIA_InstallOption_Obj, (IPTR)(StringObject,
                                                 MUIA_CycleChain, 1,
                                                 MUIA_Disabled, TRUE,
@@ -1015,9 +1039,10 @@ int main(int argc, char *argv[])
 
     DisposeObject(installer);
 
-    D(bug("[INST-APP] Removing Custom Class\n"));
+    D(bug("[INST-APP] Removing Custom Classes\n"));
 
     MUI_DeleteCustomClass(icMcc);
+    MUI_DeleteCustomClass(iocMcc);
 
     D(bug("[INST-APP] Removing App Object\n"));
 
