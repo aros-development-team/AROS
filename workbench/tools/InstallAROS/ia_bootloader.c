@@ -5,7 +5,6 @@
 
 #define INTUITION_NO_INLINE_STDARG
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -38,12 +37,13 @@
 
 #include "ia_locale.h"
 #include "ia_install.h"
+#include "ia_install_intern.h"
 #include "ia_bootloader.h"
 
 extern char *source_Path;
 
 extern Object   *cycle_drivetype;
-extern Object   *cycle_grub2mode;
+extern Object   *optObjCycleGrub2Mode;
 BOOL            gfx_font_exists;
 
 LONG BootLoaderType;
@@ -167,7 +167,7 @@ void BOOTLOADER_InitSupport(void)
     if (BootLoaderData[BOOTLOADER_GRUB2].match3)
     {
         gfx_font_exists = TRUE;
-        SET(cycle_grub2mode, MUIA_Cycle_Active, 1);
+        OPTOSET(optObjCycleGrub2Mode, MUIA_Cycle_Active, 1);
     }
     else
         gfx_font_exists = FALSE;

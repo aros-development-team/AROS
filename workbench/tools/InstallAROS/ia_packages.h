@@ -5,8 +5,8 @@
     $Id$
 */
 
-void PACKAGES_InitSupport(void);
-void PACKAGES_AddCoreSkipPaths(struct List *SkipList);
+void PACKAGES_InitSupport(struct List *);
+void PACKAGES_AddCoreSkipPaths(struct List *);
 void PACKAGES_DoInstall(Class * CLASS, Object * self);
 
 #endif /* IA_PACKAGES_H */

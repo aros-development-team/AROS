@@ -80,74 +80,83 @@ static const char KMsgNoDrives[] =
 
 */
 
-#define MUIM_IC_BASE                    (TAG_USER + 0x00335000)
-#define MUIA_IC_BASE                    (TAG_USER + 0x00336000)
+#define MUIM_IC_BASE                            (TAG_USER + 0x00335000)
+#define MUIA_IC_BASE                            (TAG_USER + 0x00336000)
+#define MUIA_IO_BASE                            (TAG_USER + 0x00337000)
 
-#define MUIM_IC_NextStep                (MUIM_IC_BASE + 0x1)
-#define MUIM_IC_PrevStep                (MUIM_IC_BASE + 0x2)
-#define MUIM_IC_UndoSteps               (MUIM_IC_BASE + 0x3)
+#define MUIM_IC_NextStep                        (MUIM_IC_BASE + 0x1)
+#define MUIM_IC_PrevStep                        (MUIM_IC_BASE + 0x2)
+#define MUIM_IC_UndoSteps                       (MUIM_IC_BASE + 0x3)
 
-#define MUIM_IC_Install                 (MUIM_IC_BASE + 0x4)
-#define MUIM_IC_SetLocalePrefs          (MUIM_IC_BASE + 0x5)
+#define MUIM_IC_Install                         (MUIM_IC_BASE + 0x4)
+#define MUIM_IC_SetLocalePrefs                  (MUIM_IC_BASE + 0x5)
 
-#define MUIM_FindDrives                 (MUIM_IC_BASE + 0x6)
-#define MUIM_PartitionFree              (MUIM_IC_BASE + 0x7)
-#define MUIM_Partition                  (MUIM_IC_BASE + 0x8)
-#define MUIM_Format                     (MUIM_IC_BASE + 0x9)
+#define MUIM_FindDrives                         (MUIM_IC_BASE + 0x6)
+#define MUIM_PartitionFree                      (MUIM_IC_BASE + 0x7)
+#define MUIM_Partition                          (MUIM_IC_BASE + 0x8)
+#define MUIM_Format                             (MUIM_IC_BASE + 0x9)
 
-#define MUIM_IC_CopyFiles               (MUIM_IC_BASE + 0xa)
-#define MUIM_IC_CopyFile                (MUIM_IC_BASE + 0xb)
+#define MUIM_IC_CopyFiles                       (MUIM_IC_BASE + 0xa)
+#define MUIM_IC_CopyFile                        (MUIM_IC_BASE + 0xb)
 
-#define MUIM_IC_CancelInstall           (MUIM_IC_BASE + 0x1a)
-#define MUIM_IC_ContinueInstall         (MUIM_IC_BASE + 0x1b)
-#define MUIM_IC_QuitInstall             (MUIM_IC_BASE + 0x1c)
+#define MUIM_IC_CancelInstall                   (MUIM_IC_BASE + 0x1a)
+#define MUIM_IC_ContinueInstall                 (MUIM_IC_BASE + 0x1b)
+#define MUIM_IC_QuitInstall                     (MUIM_IC_BASE + 0x1c)
 
-#define MUIM_Reboot                     (MUIM_IC_BASE + 0x1d)
-#define MUIM_RefreshWindow              (MUIM_IC_BASE + 0x20)
+#define MUIM_Reboot                             (MUIM_IC_BASE + 0x1d)
+#define MUIM_RefreshWindow                      (MUIM_IC_BASE + 0x20)
 
 /* to be made obsolete */
 
-#define MUIA_Page                       (MUIA_IC_BASE + 0x80)
+#define MUIA_Page                               (MUIA_IC_BASE + 0x0)
 
-#define MUIA_PartitionButton            (MUIA_IC_BASE + 0x81)
-#define MUIA_Gauge1                     (MUIA_IC_BASE + 0x82)
-#define MUIA_Gauge2                     (MUIA_IC_BASE + 0x83)
-#define MUIA_Install                    (MUIA_IC_BASE + 0x84)
+#define MUIA_PartitionButton                    (MUIA_IC_BASE + 0x1)
+#define MUIA_Gauge1                             (MUIA_IC_BASE + 0x2)
+#define MUIA_Gauge2                             (MUIA_IC_BASE + 0x3)
+#define MUIA_Install                            (MUIA_IC_BASE + 0x4)
 /**/
-#define MUIA_WelcomeMsg                 (MUIA_IC_BASE + 0x8a)
-#define MUIA_FinishedMsg                (MUIA_IC_BASE + 0x8b)
+#define MUIA_WelcomeMsg                         (MUIA_IC_BASE + 0xa)
+#define MUIA_FinishedMsg                        (MUIA_IC_BASE + 0xb)
 
 /* new - some/most will "vanish(tm)" */
 
-#define MUIA_OBJ_Installer              (MUIA_IC_BASE + 0x8d)
-#define MUIA_Grub_Options               (MUIA_IC_BASE + 0x8e)
-#define MUIA_List_Options               (MUIA_IC_BASE + 0x8f)
+#define MUIA_OBJ_Installer                      (MUIA_IC_BASE + 0xd)
+#define MUIA_Grub_Options                       (MUIA_IC_BASE + 0xe)
+#define MUIA_List_Options                       (MUIA_IC_BASE + 0xf)
 
-#define MUIA_OBJ_Window                 (MUIA_IC_BASE + 0x90)
-#define MUIA_OBJ_WindowContent          (MUIA_IC_BASE + 0x91)
+#define MUIA_OBJ_Window                         (MUIA_IC_BASE + 0x10)
+#define MUIA_OBJ_WindowContent                  (MUIA_IC_BASE + 0x11)
 
-#define MUIA_OBJ_PageTitle              (MUIA_IC_BASE + 0x92)
-#define MUIA_OBJ_PageHeader             (MUIA_IC_BASE + 0x93)
-#define MUIA_OBJ_CActionStrng           (MUIA_IC_BASE + 0x94)
+#define MUIA_OBJ_PageTitle                      (MUIA_IC_BASE + 0x12)
+#define MUIA_OBJ_PageHeader                     (MUIA_IC_BASE + 0x13)
+#define MUIA_OBJ_CActionStrng                   (MUIA_IC_BASE + 0x14)
 
-#define MUIA_OBJ_Back                   (MUIA_IC_BASE + 0x95)
-#define MUIA_OBJ_Proceed                (MUIA_IC_BASE + 0x96)
-#define MUIA_OBJ_Cancel                 (MUIA_IC_BASE + 0x97)
+#define MUIA_OBJ_Back                           (MUIA_IC_BASE + 0x15)
+#define MUIA_OBJ_Proceed                        (MUIA_IC_BASE + 0x16)
+#define MUIA_OBJ_Cancel                         (MUIA_IC_BASE + 0x17)
 
-#define MUIA_IC_License_File            (MUIA_IC_BASE + 0x98)
-#define MUIA_IC_License_Mandatory	(MUIA_IC_BASE + 0x99)
+#define MUIA_IC_License_File                    (MUIA_IC_BASE + 0x20)
+#define MUIA_IC_License_Mandatory	        (MUIA_IC_BASE + 0x21)
 
-#define MUIA_IC_EnableUndo              (MUIA_IC_BASE + 0x99)
+#define MUIA_IC_EnableUndo                      (MUIA_IC_BASE + 0x30)
 
 /* Install Results */
 
-#define MUIA_InstallComplete            (MUIA_IC_BASE + 0xff)
-#define MUIA_InstallFailed              (MUIA_IC_BASE + 0xfe)
+#define MUIA_InstallComplete                    (MUIA_IC_BASE + 0xff)
+#define MUIA_InstallFailed                      (MUIA_IC_BASE + 0xfe)
 
-#define MUIV_Inst_Completed             (0xff)
-#define MUIV_Inst_InProgress            (0x00)
-#define MUIV_Inst_Cancelled             (0x01)
-#define MUIV_Inst_Failed                (0x10)
+#define MUIV_Inst_Completed                     (0xff)
+#define MUIV_Inst_InProgress                    (0x00)
+#define MUIV_Inst_Cancelled                     (0x01)
+#define MUIV_Inst_Failed                        (0x10)
+
+/* InstallOption Attribs */
+#define MUIA_InstallOption_Obj                  (MUIA_IO_BASE + 0x1)
+#define MUIA_InstallOption_ID                   (MUIA_IO_BASE + 0x2)
+
+#define MUIV_InstallOptionID_Source             (-2L)
+#define MUIV_InstallOptionID_Dest               (-3L)
+#define MUIV_InstallOptionID_StorageAvail       (-4L)
 
 struct MUIP_CopyFiles
 {
@@ -180,55 +189,12 @@ enum EStage
     EDoneStage
 };
 
-struct Install_Options
-{
-    Object	                *opt_license;
-    Object	                *opt_lic_box;
-    Object	                *opt_lic_mgrp;
-
-    Object	                *opt_partmethod;
-    Object	                *opt_sysdevname;
-    Object	                *opt_workdevname;
-
-    Object	                *opt_format;
-    
-    Object	                *opt_locale;
-    Object	                *opt_copycore;
-    Object	                *opt_copyextra;
-    Object	                *opt_developer;
-    Object	                *opt_bootloader;
-
-    Object	                *opt_reboot;
-
-    BOOL	                partitioned;
-    BOOL	                bootloaded;
-};
-
-struct Grub_Options
-{
-    Object                      *gopt_drive;
-    Object                      *gopt_grub;
-    Object                      *gopt_grub2mode;
-    BOOL                        bootinfo;
-};
-
 struct InstallC_UndoRecord
 {
     struct Node                 undo_Node;      /* Inherits from struct Node */
     ULONG                       undo_method;
     char                        *undo_src;
     char                        *undo_dst;
-};
-
-struct optionstmp
-{
-    IPTR	                opt_format;
-    IPTR	                opt_locale;
-    IPTR	                opt_copycore;
-    IPTR	                opt_copyextra;
-    IPTR	                opt_developer;
-    IPTR	                opt_bootloader;
-    IPTR	                opt_reboot;
 };
 
 enum IO_OVERWRITE_FLAGS
@@ -238,80 +204,31 @@ enum IO_OVERWRITE_FLAGS
     IIO_Overwrite_Never
 };
 
-struct Install_DATA
+static void OPTOSET(Object *optObj, IPTR optTag, IPTR optVal)
 {
-    /* Source and Destination Paths used in the Install stage */
-    char                        *install_Source;
-    char                        *install_SysTarget;
-    char                        *install_WorkTarget;
-    /* Bootloader Target used in the Install stage */
-    char                        *bl_TargetDevice;
-    ULONG                       bl_TargetUnit;
-    /* File copy pattern mask */
-    char                        *install_Pattern;
+    Object *optObjS;
+    GET(optObj, MUIA_InstallOption_Obj, &optObjS);
+    SET(optObjS, optTag, optVal);
+}
 
-    /* general objects */
-    Object                      *partition;
-    Object                      *page;
-    Object                      *gauge1;
-    Object                      *gauge2;
-    Object                      *label;
-    /**/
-    Object                      *installer;
+static void OPTOGET(Object *optObj, IPTR optTag, IPTR *optstorage)
+{
+    Object *optObjS;
+    GET(optObj, MUIA_InstallOption_Obj, &optObjS);
+    GET(optObjS, optTag, optstorage);
+}
 
-    Object                      *welcomeMsg;
-    Object                      *doneMsg;
-    
-    /**/
-    Object                      *window;
-    Object                      *contents;
-
-    Object                      *pagetitle;
-    Object                      *pageheader;
-    Object                      *actioncurrent;
-
-    Object                      *back;
-    Object                      *proceed;
-    Object                      *cancel;
-
-    /**/
-    ULONG                       inst_success;
-
-    ULONG                       disable_back,
-                                status_back,
-                                status_proceed,
-                                status_cancel;
-
-    ULONG                       cur_width,
-                                cur_height;
-
-    char                        *instc_lic_file;
-    APTR			instc_lic_buffer;
-
-    struct List     		instc_undorecord;
-
-    /** Option Related **/
-
-    struct Install_Options      *instc_options_main;
-    struct Grub_Options		*instc_options_grub;
-    struct optionstmp		*instc_options_backup;
-    enum EStage                 instc_stage_prev;
-    enum EStage                 instc_stage_next;
-
-    enum IO_OVERWRITE_FLAGS     IO_Always_overwrite;
-
-    BOOL                        instc_default_usb;
-    BOOL                        instc_cflag_driveset;
-    BOOL			instc_copt_undoenabled;
-    BOOL			instc_copt_licensemandatory;
-};
+static IPTR XOPTOGET(Object *optObj, IPTR optTag)
+{
+    Object *optObjS;
+    GET(optObj, MUIA_InstallOption_Obj, &optObjS);
+    return XGET(optObjS, optTag);
+}
 
 extern void AddSkipListEntry(struct List *SkipList, char *SkipEntry);
 extern void ClearSkipList(struct List *SkipList);
 extern BPTR RecursiveCreateDir(CONST_STRPTR dirpath);
 extern LONG CopyDirArray(Class * CLASS, Object * self, CONST_STRPTR sourcePath,
     CONST_STRPTR destinationPath, CONST_STRPTR directories[], struct List *SkipList);
-
-BOOPSI_DISPATCHER_PROTO(IPTR, Install_Dispatcher, CLASS, self, message);
 
 #endif /* IA_INSTALL_H */

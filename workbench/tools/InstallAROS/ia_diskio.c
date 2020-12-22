@@ -39,15 +39,16 @@
 
 #include "ia_locale.h"
 #include "ia_install.h"
+#include "ia_install_intern.h"
 #include "ia_bootloader.h"
 
 extern struct ExpansionBase *ExpansionBase;
 
-extern Object *cycle_sysunits;
-extern Object *cycle_workunits;
+extern Object *optObjCycleSysUnits;
+extern Object *optObjCycleWorkUnits;
 
-extern Object *check_sizesys;
-extern Object *check_sizework;
+extern Object *optObjCheckSysSize;
+extern Object *optObjCheckSizeWork;
 extern Object *sys_size;
 extern Object *work_size;
 
@@ -74,6 +75,7 @@ char * GetDevNameForVolume(char *volumeName)
                     struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
                     D(bug("[InstallAROS] %s:     device entry '%s' @ %p\n", __func__, AROS_BSTR_ADDR(dl->dol_Name), dl));
                     devName = AROS_BSTR_ADDR(dl->dol_Name);
+                    D(bug("[InstallAROS] %s:     devName '%s'\n", __func__, devName));
                 }
             }
             UnLockDosList(LDF_VOLUMES|LDF_READ);
@@ -156,67 +158,94 @@ BOOL myCheckFloppy(struct DosEnvec * DriveEnv)
     return FALSE;
 }
 
+char *CheckPartition(struct PartitionHandle *part, char **name)
+{
+    struct PartitionType *type = NULL;
+    struct PartitionType pttype;
+    char *success = NULL;
+
+    D(bug("[InstallAROS] %s: checking PARTITION\n", __func__));
+
+    *name = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
+
+    GetPartitionAttrsTags
+        (part,
+        PT_NAME, (IPTR)*name, PT_TYPE, (IPTR) & pttype, TAG_DONE);
+
+    type = &pttype;
+    D(bug("[InstallAROS] %s: Type Len = %u\n", __func__, type->id_len));
+    if (type->id_len == 4)
+    {
+        D(bug("[InstallAROS] %s: Found RDB Partition!\n", __func__));
+        D(bug("[InstallAROS] %s: type '%c%c%c%c'\n", __func__, type->id[0], type->id[1], type->id[2], type->id[3]));
+        if ((type->id[0] == 68) && (type->id[1] == 79)
+            && (type->id[2] == 83))
+        {
+            D(bug("[InstallAROS] %s: Found AFFS Partition! '%s'\n", __func__, *name));
+            success = *name;
+        }
+        else if ((type->id[0] == 83) && (type->id[1] == 70)
+            && (type->id[2] == 83))
+        {
+            D(bug("[InstallAROS] %s: Found SFS Partition! '%s'\n", __func__, *name));
+            success = *name;
+        }
+    }
+    else if (type->id_len == 3)
+    {
+        D(bug("[InstallAROS] %s: type '%c%c%c'\n", __func__, type->id[0], type->id[1], type->id[2]));
+    }
+    else if (type->id_len == 2)
+    {
+        D(bug("[InstallAROS] %s: type '%c%c'\n", __func__, type->id[0], type->id[1]));
+    }
+    return  success;
+}
+
 /* Returns the first AROS-supported filesystem's name */
 char *FindPartition(struct PartitionHandle *root)
 {
     struct PartitionHandle *partition = NULL;
     char *success = NULL;
     char *name = NULL;
-    struct PartitionType *type = NULL;
 
-    ForeachNode(&root->table->list, partition)
+    D(bug("[InstallAROS] %s()\n", __func__));
+    
+    if (root->table)
     {
-        D(bug("[InstallAROS.fp] checking part\n"));
-        if (OpenPartitionTable(partition) == 0)
+        ForeachNode(&root->table->list, partition)
         {
-            D(bug("[InstallAROS.fp] checking Child Parts... \n"));
-            success = FindPartition(partition);
-            ClosePartitionTable(partition);
-            D(bug("[InstallAROS.fp] Children Done...\n"));
+            D(bug("[InstallAROS] %s: checking part\n", __func__));
+
+            if (OpenPartitionTable(partition) == 0)
+            {
+                D(bug("[InstallAROS] %s: checking Child Parts... \n", __func__));
+                success = FindPartition(partition);
+                ClosePartitionTable(partition);
+                D(bug("[InstallAROS] %s: Children Done...\n", __func__));
+            }
+            else
+            {
+                success = CheckPartition(partition, &name);
+            }
             if (success != NULL)
             {
-                D(bug("[InstallAROS.fp] Found '%s'\n", success));
+                D(bug("[InstallAROS] %s: Found '%s'\n", __func__, success));
                 break;
             }
         }
-        else
-        {
-            D(bug("[InstallAROS.fp] checking PARTITION\n"));
-            struct PartitionType pttype;
-
-            name = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
-
-            GetPartitionAttrsTags
-                (partition,
-                PT_NAME, (IPTR) name, PT_TYPE, (IPTR) & pttype, TAG_DONE);
-
-            type = &pttype;
-
-            if (type->id_len == 4)
-            {
-                D(bug("[InstallAROS.fp] Found RDB Partition!\n"));
-                if ((type->id[0] == 68) && (type->id[1] == 79)
-                    && (type->id[2] == 83))
-                {
-                    D(bug("[InstallAROS.fp] Found AFFS Partition! '%s'\n",
-                            name));
-                    success = name;
-                    break;
-                }
-                if ((type->id[0] == 83) && (type->id[1] == 70)
-                    && (type->id[2] == 83))
-                {
-                    D(bug("[InstallAROS.fp] Found SFS Partition! '%s'\n",
-                            name));
-                    success = name;
-                    break;
-                }
-            }
-        }
     }
+    else
+    {
+        success = CheckPartition(root, &name);
+    }
+
+    D(bug("[InstallAROS] %s: Scan finished\n", __func__));
 
     if ((!success) && (name))
         FreeVec(name);
+
+    D(bug("[InstallAROS] %s: returning %p\n", __func__, success));
 
     return success;
 }
@@ -264,21 +293,21 @@ LONG GetPartitionSize(BOOL get_work)
 
     if (!get_work)
     {
-        if ((BOOL) XGET(check_sizesys, MUIA_Selected))
+        if ((BOOL) XOPTOGET(optObjCheckSysSize, MUIA_Selected))
         {
             GET(sys_size, MUIA_String_Integer, &tmp);
             size = (LONG) tmp;
-            if (XGET(cycle_sysunits, MUIA_Cycle_Active) == 1)
+            if (XOPTOGET(optObjCycleSysUnits, MUIA_Cycle_Active) == 1)
                 size *= 1024;
         }
     }
     else
     {
-        if ((BOOL) XGET(check_sizework, MUIA_Selected))
+        if ((BOOL) XOPTOGET(optObjCheckSizeWork, MUIA_Selected))
         {
             GET(work_size, MUIA_String_Integer, &tmp);
             size = (LONG) tmp;
-            if (XGET(cycle_workunits, MUIA_Cycle_Active) == 1)
+            if (XOPTOGET(optObjCycleWorkUnits, MUIA_Cycle_Active) == 1)
                 size *= 1024;
         }
     }
@@ -308,7 +337,7 @@ LONG CountFiles(CONST_STRPTR directory, struct List *SkipList, CONST_STRPTR file
     BPTR dirLock = BNULL;
     LONG fileCount = 0;
 
-    D(bug("[InstallAROS.Count] Entry, directory: %s, mask: %s\n", directory,
+    D(bug("[InstallAROS] %s: Entry, directory: %s, mask: %s\n", __func__, directory,
             fileMask));
 
     /* Check if directory exists */
@@ -586,7 +615,7 @@ LONG CopyDirArray(Class * CLASS, Object * self, CONST_STRPTR sourcePath,
 
     numdirs = (numdirs - 1) / 2;
 
-    D(bug("[InstallAROS.CDA] Copying %d Dirs...\n", numdirs);)
+    D(bug("[InstallAROS] %s: Copying %d Dirs...\n", __func__, numdirs);)
 
     while ((directories[dir_count] != NULL)
         && (data->inst_success == MUIV_Inst_InProgress))
@@ -749,7 +778,7 @@ BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath,
     }
     *pathpart = '\0';           /* 'cut' string at end of path */
 
-    D(bug("[InstallAROS.CF] Backup '%s' @ '%s'\n", undorecord->undo_dst,
+    D(bug("[InstallAROS] %s: Backup '%s' @ '%s'\n", __func__, undorecord->undo_dst,
             undorecord->undo_src);)
 
     undorecord->undo_method = MUIM_IC_CopyFile;
@@ -757,7 +786,7 @@ BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath,
     /* Create backup directory */
     if ((lock = Lock(tmp, SHARED_LOCK)) != BNULL)
     {
-        D(bug("[InstallAROS.CF] Dir '%s' Exists - no need to create\n", tmp);)
+        D(bug("[InstallAROS] %s: Dir '%s' Exists - no need to create\n", __func__, tmp);)
         UnLock(lock);
     }
     else
@@ -767,7 +796,7 @@ BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath,
             UnLock(lock);
         else
         {
-            D(bug("[InstallAROS.CF] Failed to create %s dir!!\n", tmp));
+            D(bug("[InstallAROS] %s: Failed to create %s dir!!\n", __func__, tmp));
             FreeVec(tmp);
             return FALSE;
         }
