@@ -127,7 +127,7 @@ IPTR InstallOption__MUIM_InstallOption_Update(Class * CLASS, Object * self, stru
 
     if (data->iod_OptionTag != (IPTR)-1)
     {
-        bug("[InstallAROS:Opt] %s: caching state ...\n", __func__);
+        DOPTION(bug("[InstallAROS:Opt] %s: caching state ...\n", __func__);)
         GET(data->iod_Object, data->iod_OptionTag, &data->iod_OptionVal);
     }
     else
