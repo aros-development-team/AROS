@@ -2,7 +2,7 @@ SECTIONS
 {
     .text : {
         __text_start = .;
-	*(.aros.init)
+        *(SORT_NONE(.aros.init*))
         *(.text*)                   /* wildcard for "gcc -ffunction-sections" */
         *(.gnu.linkonce.t.*)        /* C++ templates? */
         __text_end = .;

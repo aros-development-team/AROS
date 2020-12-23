@@ -8,7 +8,10 @@ FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
 USER_CFLAGS     := -ffixed-r8 -Wall $(CFLAGS_NO_BUILTIN)
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
-USER_CPPFLAGS     := -DUSE_UBOOT
+ifneq ($(AROS_SECTION_COMMENT),)
+USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+endif
+USER_CPPFLAGS   += -DUSE_UBOOT
 OPTIMIZATION_CFLAGS := -O2
 
 ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
@@ -172,8 +175,8 @@ $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES
 	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
 
 $(AROSDIR)/aros-arm-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
-	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
+	$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-arm-raspi.img.elf $@
 
 $(TARGETDIR)/core-be.bin.o: $(OSGENDIR)/boot/core.elf
 	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core-be.bin
