@@ -65,10 +65,9 @@ asm (
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
-static uint32_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
-static uint32_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
-static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init"))) = &stack_fiq[1024 - sizeof(IPTR)];
-
+static uint32_t * const stack_end __attribute__((used, section(".aros.init //"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_super_end __attribute__((used, section(".aros.init //"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init //"))) = &stack_fiq[1024 - sizeof(IPTR)];
 
 struct ARM_Implementation __arm_arosintern  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,0};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
