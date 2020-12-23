@@ -41,7 +41,7 @@ If applicable, add screenshots to help explain your problem.
  - other:
 
 **Version**
-Provide the GID ID from AboutAROS (call menu Wanderer>AROS>About)
+Provide the Git ID from AboutAROS (call menu Wanderer>AROS>About)
 
 **Additional context**
 Add any other context about the problem here.
