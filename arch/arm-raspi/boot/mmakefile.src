@@ -8,7 +8,10 @@ FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
 USER_CFLAGS     := -ffixed-r8 -Wall $(CFLAGS_NO_BUILTIN)
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
-USER_CPPFLAGS     := -DUSE_UBOOT
+ifneq ($(AROS_SECTION_COMMENT),)
+USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+endif
+USER_CPPFLAGS   += -DUSE_UBOOT
 OPTIMIZATION_CFLAGS := -O2
 
 ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom

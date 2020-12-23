@@ -88,7 +88,7 @@ asm("   .section .aros.startup      \n"
 );
 
 // The bootstrap tmp stack is re-used by the reset handler so we store it at this fixed location
-static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup"))) = (void *)(0x1000 - 16);
+static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup" TARGET_SECTION_COMMENT))) = (void *)(0x1000 - 16);
 static struct TagItem *boottag;
 static unsigned long *mem_upper;
 static void *pkg_image = NULL;
