@@ -577,15 +577,14 @@ BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt
             if (shift)
             {
                 keyno++;
-                if ((keyno - rowstart) >= 7)
+                if ((keyno - rowstart) >= 8)
                     break;
-                if ((keyno & 8) != 0)
-                    caps <<= 1;
+                caps <<= 1;
             }
         }
-        if ((keyno >> 3) >= cnt)
+        if ((keyno >> 3) > cnt)
         {
-            fprintf(stderr, "error, too many rows of keys defined (%d >= %d)\n", (keyno >> 3), cnt);
+            fprintf(stderr, "error, too many rows of keys defined (%u > %u)\n", (keyno >> 3), cnt);
             exit(20);
         }
         flags[rowstart >> 3] = caps;
