@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Emergency console launcher for AROS
@@ -22,6 +22,8 @@
 #include <proto/graphics.h>
 #include <proto/alib.h>
 #include <proto/expansion.h>
+
+#include <string.h>
 
 #include LC_LIBDEFS_FILE
 
