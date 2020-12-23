@@ -6833,7 +6833,7 @@ $as_echo_n "checking if we need to comment out the compilers section attributes.
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 asm("\t.section\t.aros.startup,\"ax\"\n\t.globl\tstart\n\t.type\tstart,%function\n\t\tldr\tsp, section_ptr\n");
-static __used void * section_ptr __attribute__((used, section(".aros.startup")));
+static void * section_ptr __attribute__((used, section(".aros.startup")));
 int
 main ()
 {
@@ -6861,7 +6861,7 @@ $as_echo_n "checking which comment style to use... " >&6; }
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 asm("\t.section\t.aros.startup,\"ax\"\n\t.globl\tstart\n\t.type\tstart,%function\n\t\tldr\tsp, section_ptr\n");
-static __used void * section_ptr __attribute__((used, section(".aros.startup #")));
+static void * section_ptr __attribute__((used, section(".aros.startup #")));
 int
 main ()
 {

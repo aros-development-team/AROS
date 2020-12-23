@@ -1364,7 +1364,7 @@ fi
 if test "$AROS_TARGET_CPU" = "arm"; then
     AC_MSG_CHECKING([if we need to comment out the compilers section attributes])
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[asm("\t.section\t.aros.startup,\"ax\"\n\t.globl\tstart\n\t.type\tstart,%function\n\t\tldr\tsp, section_ptr\n");
-static __used void * section_ptr __attribute__((used, section(".aros.startup")));]],[[]])],
+static void * section_ptr __attribute__((used, section(".aros.startup")));]],[[]])],
         [
             aros_targetsection_needscomment=no
         ],[
@@ -1374,7 +1374,7 @@ static __used void * section_ptr __attribute__((used, section(".aros.startup")))
     if test "$aros_targetsection_needscomment" = "yes"; then
         AC_MSG_CHECKING([which comment style to use])
         AC_LINK_IFELSE([AC_LANG_PROGRAM([[asm("\t.section\t.aros.startup,\"ax\"\n\t.globl\tstart\n\t.type\tstart,%function\n\t\tldr\tsp, section_ptr\n");
-static __used void * section_ptr __attribute__((used, section(".aros.startup #")));]],[[]])],
+static void * section_ptr __attribute__((used, section(".aros.startup #")));]],[[]])],
             [
                 aros_targetsection_hashcomment=yes
                 aros_targetsection_comment=\"#\"
