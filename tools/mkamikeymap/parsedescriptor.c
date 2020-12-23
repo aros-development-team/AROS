@@ -530,7 +530,7 @@ BOOL processSectMap(struct config *cfg, FILE *descf, IPTR *map, UBYTE *typesptr,
     return FALSE;
 }
 
-BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt)
+BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt, BOOL ltr)
 {
     UBYTE caps, keyno = 0, rowstart;
     char *s;
@@ -568,7 +568,10 @@ BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt
 
             if (*s == '1')
             {
-                caps |= 1;
+                if (!ltr)
+                    caps |= (1 << 7);
+                else
+                    caps |= 1;
                 shift = TRUE;
             }
             else if (*s == '0')
@@ -579,7 +582,10 @@ BOOL processSectCapsRep(struct config *cfg, FILE *descf, UBYTE *flags, UBYTE cnt
                 keyno++;
                 if ((keyno - rowstart) >= 8)
                     break;
-                caps <<= 1;
+                if (!ltr)
+                    caps >>= 1;
+                else
+                    caps <<= 1;
             }
         }
         if ((keyno >> 3) > cnt)
@@ -672,7 +678,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 4: /* locapsable */
-                if (!processSectCapsRep(cfg, descf, cfg->LoCapsable, 0x8))
+                if (!processSectCapsRep(cfg, descf, cfg->LoCapsable, 0x8, FALSE))
                 {
                     fprintf(stderr, "error processing lokey capsable section\n");
                     exit(20);
@@ -680,7 +686,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 5: /* lorepeatable */
-                if (!processSectCapsRep(cfg, descf, cfg->LoRepeatable, 0x8))
+                if (!processSectCapsRep(cfg, descf, cfg->LoRepeatable, 0x8, FALSE))
                 {
                     fprintf(stderr, "error processing lokey repeatable section\n");
                     exit(20);
@@ -704,7 +710,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 8: /* hicapsable */
-                if (!processSectCapsRep(cfg, descf, cfg->HiCapsable, 0x7))
+                if (!processSectCapsRep(cfg, descf, cfg->HiCapsable, 0x7, FALSE))
                 {
                     fprintf(stderr, "error processing hikey capsable section\n");
                     exit(20);
@@ -712,7 +718,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 9: /* hirepeatable */
-                if (!processSectCapsRep(cfg, descf, cfg->HiRepeatable, 0x7))
+                if (!processSectCapsRep(cfg, descf, cfg->HiRepeatable, 0x7, FALSE))
                 {
                     fprintf(stderr, "error processing hikey repeatable section\n");
                     exit(20);

@@ -28,7 +28,7 @@ workbench-devs-keymaps-build : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
 
 OBJDIR := $(GENDIR)/$(CURDIR)
 
-$(AROS_DEVS)/Keymaps/% : $(SRCDIR)/$(CURDIR)/%.akmd
+$(AROS_DEVS)/Keymaps/% : $(SRCDIR)/$(CURDIR)/%.akmd $(MKAMIKEYMAP)
 	$(Q)$(ECHO) "Generating $(notdir $@) KeyMap..."
 	$(Q)$(MKAMIKEYMAP) -d $< -k $@
 
