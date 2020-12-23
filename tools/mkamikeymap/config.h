@@ -22,6 +22,7 @@ struct config
     char        *descriptor;
     char        *keymap;
     int         verbose;
+    int         bitorder; 
     UBYTE       LoKeyMapTypes[0x40];
     IPTR        LoKeyMap[0x40];
     UBYTE       LoCapsable[0x08];
