@@ -96,6 +96,13 @@ BOOL processSectConfig(struct config *cfg, FILE *descf)
                 D(fprintf(stdout, "using keymap name '%s'\n", cfg->keymap);)
             }
         }
+        if (strncmp(line, "bitorder:", 9)==0)
+        {
+            if (strncmp(&line[9], "lsb", 3)==0)
+                cfg->bitorder = 0;
+            else if (strncmp(&line[9], "msb", 3)==0)
+                cfg->bitorder = 1;
+        }
     }
     return FALSE;
 }
@@ -678,7 +685,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 4: /* locapsable */
-                if (!processSectCapsRep(cfg, descf, cfg->LoCapsable, 0x8, FALSE))
+                if (!processSectCapsRep(cfg, descf, cfg->LoCapsable, 0x8, cfg->bitorder))
                 {
                     fprintf(stderr, "error processing lokey capsable section\n");
                     exit(20);
@@ -686,7 +693,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 5: /* lorepeatable */
-                if (!processSectCapsRep(cfg, descf, cfg->LoRepeatable, 0x8, FALSE))
+                if (!processSectCapsRep(cfg, descf, cfg->LoRepeatable, 0x8, cfg->bitorder))
                 {
                     fprintf(stderr, "error processing lokey repeatable section\n");
                     exit(20);
@@ -710,7 +717,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 8: /* hicapsable */
-                if (!processSectCapsRep(cfg, descf, cfg->HiCapsable, 0x7, FALSE))
+                if (!processSectCapsRep(cfg, descf, cfg->HiCapsable, 0x7, cfg->bitorder))
                 {
                     fprintf(stderr, "error processing hikey capsable section\n");
                     exit(20);
@@ -718,7 +725,7 @@ BOOL processDescriptor(struct config *cfg, FILE *descf)
                 break;
 
             case 9: /* hirepeatable */
-                if (!processSectCapsRep(cfg, descf, cfg->HiRepeatable, 0x7, FALSE))
+                if (!processSectCapsRep(cfg, descf, cfg->HiRepeatable, 0x7, cfg->bitorder))
                 {
                     fprintf(stderr, "error processing hikey repeatable section\n");
                     exit(20);
