@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright � 1995-2012, The AROS Development Team. All rights reserved.
+   Copyright � 1995-2020, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -287,7 +287,12 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
     strcat (buffer, tname);
 
     if (!quiet)
-        printf ("[MMAKE] Making %s in %s\n", tname, path);
+    {
+        if (path && path[0] != 0)
+            printf ("[MMAKE] Making %s in %s\n", tname, path);
+        else
+            printf ("[MMAKE] >> Making %s\n", tname);
+    }
 
     if (!execute (prj, prj->maketool, "-", "-", buffer))
     {
@@ -544,16 +549,17 @@ execute (struct Project * prj, const char * cmd, const char * in,
     return !rc;
 }
 
+#define VOUT(x)
+
 void
-maketarget (struct Project * prj, char * tname)
+maketarget (FILE * deplogfh, struct Project * prj, char * tname, int depth, int offset)
 {
     struct Target * target, * subtarget;
     struct Node * node;
     struct MakefileRef * mfref;
     struct MakefileTarget * mftarget;
     struct List deps;
-
-
+    int updatecnt = 0, targetcnt = 0;
 
     NewList (&deps);
 
@@ -572,7 +578,7 @@ maketarget (struct Project * prj, char * tname)
     if (!target)
     {
         if ((!strcmp(mm_envtarget, tname)) || (verbose))
-            printf ("[MMAKE] Nothing known about target %s in project %s\n", tname, prj->node.name);
+            printf ("[MMAKE][%u]  Nothing known about target %s in project %s\n", depth, tname, prj->node.name);
         if (mm_faillogfh)
         {
             fputs(tname, mm_faillogfh);
@@ -580,8 +586,6 @@ maketarget (struct Project * prj, char * tname)
         }
         return;
     }
-    else if (!quiet)
-        printf ("[MMAKE] Building %s.%s\n", prj->node.name, tname);
 
     target->updated = 1;
 
@@ -593,35 +597,125 @@ maketarget (struct Project * prj, char * tname)
             addnodeonce (&deps, node->name);
     }
 
+#if (0)
+    if (deplogfh)
+        fprintf(deplogfh, "[MMAKE][%u]  Subtargets -:\n", depth);
+#endif
     ForeachNode (&deps, node)
     {
         subtarget = FindNode (&prj->cache->targets, node->name);
 
-        if (!subtarget)
+        if (subtarget)
         {
-            if ((!strcmp(mm_envtarget, node->name)) || (verbose))
-                printf ("[MMAKE] Nothing known about subtarget %s in project %s\n", node->name, prj->node.name);
-            if (mm_faillogfh)
+            VOUT(printf ("[MMAKE][%u]          '%s'", depth, node->name);)
+            if (!subtarget->updated)
             {
-                fputs(node->name, mm_faillogfh);
-                fputs("\n", mm_faillogfh);
+                VOUT(printf (" (needs update)");)
+                ForeachNode (&subtarget->makefiles, mfref)
+                {
+                    //printdirnodemftarget (mfref->makefile->dir);
+                    VOUT(printf ("\n[MMAKE][%u]            -> %s", depth, buildpath(mfref->makefile->dir));)
+                    //printdirnode (mfref->makefile->dir, );
+                }
+                updatecnt++;
             }
-        }
-        else if (!subtarget->updated)
-        {
-            maketarget (prj, node->name);
+            VOUT(printf ("\n");)
         }
     }
+
+    if (updatecnt)
+    {
+        int first = 0;
+
+#if (0)
+        if (deplogfh)
+        {
+            int tmpcnt;
+            for (tmpcnt = 0; tmpcnt < offset; tmpcnt ++)
+                fputs(" ", deplogfh);
+            fprintf(deplogfh, " * %u dependancies to satisfy\n", updatecnt);
+        }
+#endif
+        ForeachNode (&deps, node)
+        {
+            subtarget = FindNode (&prj->cache->targets, node->name);
+
+            if (!subtarget)
+            {
+                if ((!strcmp(mm_envtarget, node->name)) || (verbose))
+                    printf ("[MMAKE][%u] Nothing known about subtarget %s in project %s\n", depth, node->name, prj->node.name);
+                if (mm_faillogfh)
+                {
+                    fputs(node->name, mm_faillogfh);
+                    fputs("\n", mm_faillogfh);
+                }
+            }
+            else if (!subtarget->updated)
+            {
+                int inclen;
+                VOUT(printf ("[MMAKE][%u] %s subtarget %s\n", depth, tname, node->name);)
+                if (first == 0)
+                {
+                    first = 1;
+                    if (depth == 0)
+                    {
+                        if (deplogfh)
+                            fprintf(deplogfh, "[MMAKE][%u] >> %s", depth, node->name);
+                        inclen = strlen(node->name) + 14;
+                    }
+                    else
+                    {
+                        if (deplogfh)
+                            fprintf(deplogfh, " > [%u] %s", depth, node->name);
+                        inclen = strlen(node->name) + 7;
+                    }
+                }
+                else
+                {
+                    if (deplogfh)
+                    {
+                        int tmpcnt;
+                        for (tmpcnt = 0; tmpcnt < offset; tmpcnt ++)
+                            fputs(" ", deplogfh);
+                        fprintf(deplogfh,  " > [%u] %s", depth, node->name);
+                    }
+                    inclen = strlen(node->name) + 7;
+                }
+                maketarget (deplogfh, prj, node->name, depth + 1, offset + inclen);
+            }
+        }
+    }
+    if (deplogfh)
+         fputs("\n", deplogfh);
 
     freelist (&deps);
 
     ForeachNode (&target->makefiles, mfref)
     {
+        subtarget = FindNode (&prj->cache->targets, node->name);
         if (!mfref->virtualtarget)
         {
-            callmake (prj, tname, mfref->makefile);
+            targetcnt++;
         }
     }
 
-    freelist (&deps);
+    if (targetcnt)
+    {
+        if (deplogfh)
+        {
+            int tmpcnt;
+            for (tmpcnt = 0; tmpcnt < offset; tmpcnt ++)
+                fputs(" ", deplogfh);
+            fprintf(deplogfh, " - %u makefile(s) for target %s\n", targetcnt, tname);
+        }
+        VOUT(printf ("[MMAKE][%u]  Building %s.%s\n", depth, prj->node.name, tname);)
+
+        ForeachNode (&target->makefiles, mfref)
+        {
+            if (!mfref->virtualtarget)
+            {
+                callmake (prj, tname, mfref->makefile);
+            }
+        }
+    }
 }

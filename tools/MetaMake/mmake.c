@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2020, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -78,6 +78,7 @@ int verbose = 0;
 int quiet = 0;
 int debug = 0;
 int logfailed = 0;
+int logdeps = 0;
 FILE *mm_faillogfh = NULL;
 
 char *mm_srcdir;    /* Location to scan for cfg files */
@@ -149,6 +150,10 @@ main (int argc, char ** argv)
 	    {
 		logfailed = 1;
 	    }
+            else if (!strcmp (argv[t], "--logdeps"))
+	    {
+		logdeps = 1;
+	    }
 	    else if (!strcmp (argv[t], "--help"))
 	    {
 		printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [-q,--quiet] [--debug] [--help]\n", argv[0]);
@@ -200,11 +205,14 @@ main (int argc, char ** argv)
     if (logfailed)
         mm_faillogfh = fopen ("mmake.failed", "w");
 
+
     for (t=0; t<targetc; t++)
     {
 	char * pname, * tname, * ptr;
 	struct Project * prj;
 
+        FILE * deplogfh = NULL;
+    
 	pname = ptr = targets[t];
 	while (*ptr && *ptr != '.')
 	    ptr ++;
@@ -226,8 +234,22 @@ main (int argc, char ** argv)
             mm_envtarget = tname;
         }
         
+        if (logdeps)
+        {
+            char deplogname[256];
+            sprintf(deplogname, "mmake-%s-%s.deplog", pname, tname);
+            deplogfh = fopen (deplogname, "w");
+            if (deplogfh)
+            {
+                fprintf(deplogfh, "#\n# MetaMake Build Dependancy Log for %s.%s\n#\n\n", pname, tname);
+            }
+        }
+    
 	debug(printf("MMAKE:mmake.c->main: calling maketarget '%s'\n", tname));
-	maketarget (prj, tname);
+	maketarget (deplogfh, prj, tname, 0, 0);
+
+        if (deplogfh)
+            fclose (deplogfh);
 
         if (doenv)
             unsetenv("_MMAKE_TARGET");
