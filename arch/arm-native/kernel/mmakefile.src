@@ -75,3 +75,5 @@ endif
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=raspi-armeb \
   files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
+
+%common

@@ -32,3 +32,5 @@ OPTIMIZATION_CFLAGS :=  -Os
   files=$(CFILES) modname=exec
 
 TARGETDIR = $(BD_OBJDIR$(BDID))
+
+%common
