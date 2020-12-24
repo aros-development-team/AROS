@@ -65,9 +65,8 @@ $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #MM kernel-kernel-raspi-armeb-kobj : includes
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include -I$(SRCDIR)/rom/openfirmware
-ifneq ($(AROS_SECTION_COMMENT),)
 USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
-endif
+
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=raspi-arm \
   files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
