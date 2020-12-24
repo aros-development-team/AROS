@@ -171,20 +171,25 @@ $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
 	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
 
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) --be8 --format elf32-bigarm -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core-be.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	@$(ECHO) "Creating   $@"
+	@$(KERNEL_LD) --be8 --format elf32-bigarm --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core-be.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
 	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
 
 $(AROSDIR)/aros-arm-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
-	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-arm-raspi.img.elf $@
+	@$(ECHO) "Creating   $@"
+	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	@$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-arm-raspi.img.elf $@
 
 $(TARGETDIR)/core-be.bin.o: $(OSGENDIR)/boot/core.elf
-	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core-be.bin
-	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) --be8 -r --format binary --oformat elf32-bigarm core-be.bin -o $@
+	@$(ECHO) "Creating   $@"
+	@$(CP) $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core-be.bin
+	@cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) --be8 -r --format binary --oformat elf32-bigarm core-be.bin -o $@
 
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
-	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
-	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
+	@$(CP) $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
+	@cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
 
 #MM
 distfiles-raspi-be : $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
@@ -208,6 +213,24 @@ $(TARGETDIR)/%.o : %.S
 
 $(TARGETDIR)/%.d : %.c
 	%mkdepend_q
+
+#
+# the following rules are for testing purposes only ..
+#
+
+#MM
+distfiles-raspi-test-imgobjects : $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
+
+#MM- distfiles-raspi-test-imgobjects-quick : distfiles-raspi-test-imgobjects
+
+#MM
+distfiles-raspi-test-img : $(AROSDIR)/aros-arm-raspi.img
+
+#MM- distfiles-raspi-test-img-quick : distfiles-raspi-test-img
+
+#
+#
+#
 
 DEPS	:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 
