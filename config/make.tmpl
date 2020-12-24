@@ -3007,7 +3007,8 @@ endif
 #MM			    %(mainmmake)-$(FAMILY)-quick \
 #MM			    %(mainmmake)-$(CPU)-quick
 
-#MM %(mainmmake)-%(arch) : %(mainmmake)-includes
+#MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-includes
+#MM- %(mainmmake)-%(arch)-includes : %(mainmmake)-includes
 
 ifneq (%(objdir),)
     BD_OBJROOT$(BDID)  := %(objdir)
@@ -3128,7 +3129,8 @@ $(BD_OBJDIR$(BDID))/%.o : %.S
 	%assemble_q
 endif
 
-%include_deps depstargets=$(BD_TARGET) deps=$(BD_DEPS$(BDID))
+%include_deps depstargets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-quick" deps=$(BD_DEPS$(BDID))
+
 %end
 #------------------------------------------------------------------------------
 
