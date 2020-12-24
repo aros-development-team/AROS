@@ -485,6 +485,12 @@ jobs:
           rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
         fi
       fi
+      cd $(AROSBUILDDIR)
+      for deplog in *.deplog; do
+        bzip2 $(deplog)
+        md5sum $(deplog).bz2 > $(AROSLOGSDIR)/$(deplog).bz2.md5
+        mv $(deplog).bz2 $(AROSLOGSDIR)/$(deplog).bz2
+      done
       cd $(AROSLOGSDIR)
       bzip2 $(arosbuild.package)-$(arosbuild.name).log
       md5sum $(arosbuild.package)-$(arosbuild.name).log.bz2 >$(arosbuild.package)-$(arosbuild.name).log.bz2.md5
@@ -526,7 +532,7 @@ jobs:
   - task: CopyFiles@2
     inputs:
       SourceFolder: '$(AROSLOGSDIR)'
-      contents: '$(arosbuild.package)-$(arosbuild.name).log.*'
+      contents: '?(*.bz2|*.md5)'
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/logs
 
   - task: PublishBuildArtifacts@1
