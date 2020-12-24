@@ -675,9 +675,14 @@ maketarget (FILE * deplogfh, struct Project * prj, char * tname, int depth, int 
                     if (deplogfh)
                     {
                         int tmpcnt;
+                        if ((depth == 0) || (offset == 0))
+                            offset = 7;
                         for (tmpcnt = 0; tmpcnt < offset; tmpcnt ++)
                             fputs(" ", deplogfh);
-                        fprintf(deplogfh,  " > [%u] %s", depth, node->name);
+                        if (depth == 0)
+                            fprintf(deplogfh,  "[%u]  > %s", depth, node->name);
+                        else
+                            fprintf(deplogfh,  " > [%u] %s", depth, node->name);
                     }
                     inclen = strlen(node->name) + 7;
                 }
