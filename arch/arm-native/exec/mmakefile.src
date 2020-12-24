@@ -18,6 +18,9 @@ CFILES          := \
 #MM kernel-exec-raspi-arm : kernel-kernel-arm-includes kernel-kernel-includes
 #MM kernel-exec-raspi-armeb : kernel-kernel-armeb-includes kernel-kernel-includes
 
+#MM- kernel-exec-includes-raspi-arm : kernel-kernel-includes
+#MM- kernel-exec-includes-raspi-armeb : kernel-kernel-includes
+
 USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
@@ -32,5 +35,3 @@ OPTIMIZATION_CFLAGS :=  -Os
   files=$(CFILES) modname=exec
 
 TARGETDIR = $(BD_OBJDIR$(BDID))
-
-%common
