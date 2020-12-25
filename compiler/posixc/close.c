@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-        open(), read(), write(), fopen()
+        open(), read(), write(), __posixc_fopen()
 
     INTERNALS
 

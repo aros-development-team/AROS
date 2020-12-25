@@ -14,6 +14,7 @@
         On AROS standardized C interfaces are implemented with a few shared
         libraries. A distinction is made between a standard ANSI-C/ISO-C
         part and a POSIX emulation layer.
+        
         Here the POSIX part is documented.
 
         The posixc.library is a shared library that implements (part of) the C
@@ -22,7 +23,7 @@
         Purpose of this library is to implement a POSIX compliant compatibility
         layer. Currently no full implementation of the POSIX layer is provided
         but enough to port a lot of POSIX compliant or LINUX code over to AROS.
-        As this library has overhead in implementatio 'real' AROS/Amiga programs
+        As this library has overhead in implementation 'real' AROS/Amiga programs
         should not depend on this library.
 
         Also some non-standard or legacy POSIX functions are provided by the
@@ -45,7 +46,7 @@
         this is taken care of by the startup code provided by the compiler.
 
     SEE ALSO
-        stdc.library/--background_C99--
+        stdc/--background_C99--
 
 
 *******************************************************************************/

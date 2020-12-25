@@ -57,7 +57,7 @@
     BUGS
 
     SEE ALSO
-	lstat(), fstat()
+	__posixc_lstat(), __posixc_fstat()
 
     INTERNALS
 	Value of st_ino field is computed as hash from the canonical path of

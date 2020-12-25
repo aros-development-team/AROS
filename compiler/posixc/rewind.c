@@ -30,7 +30,7 @@
     BUGS
 
     SEE ALSO
-	fopen(), fwrite(), fseek()
+	__posixc_fopen(), fwrite(), fseek()
 
     INTERNALS
 

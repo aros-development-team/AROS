@@ -74,7 +74,7 @@
 	Most flags are not supported right now.
 
     SEE ALSO
-	close(), read(), write(), fopen()
+	close(), read(), write(), __posixc_fopen()
 
     INTERNALS
 

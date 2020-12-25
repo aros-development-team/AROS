@@ -42,7 +42,7 @@
         nblocks. Otherwise examine errno for the reason of the error.
 
     SEE ALSO
-        fopen(), fwrite()
+        __posixc_fopen(), fwrite()
 
 ******************************************************************************/
 {

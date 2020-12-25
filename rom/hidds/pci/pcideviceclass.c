@@ -230,7 +230,7 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
     BUGS
 
     SEE ALSO
-        moHidd_PCIDevice_ObtainVectors, AddIntServer
+        moHidd_PCIDevice_ObtainVectors, exec/AddIntServer
 
     INTERNALS
 

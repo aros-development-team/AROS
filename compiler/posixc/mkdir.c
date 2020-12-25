@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	chmod(),  stat(),  umask()
+	chmod(),  __posixc_stat(),  umask()
 
     INTERNALS
 

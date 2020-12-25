@@ -51,7 +51,7 @@ static BPTR __lock(
     BUGS
 
     SEE ALSO
-        stat(), fstat()
+        __posixc_stat(), __posixc_fstat()
 
     INTERNALS
 	Consult stat() documentation for details.

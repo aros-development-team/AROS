@@ -33,7 +33,7 @@
     BUGS
 
     SEE ALSO
-        scandir()
+        __posixc_scandir()
 
     INTERNALS
 

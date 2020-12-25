@@ -53,7 +53,7 @@
     BUGS
 
     SEE ALSO
-        kill(), pause(), sigaction(), signal(), sigprocmask(),
+        kill(), pause(), sigaction(), stdc/signal(), sigprocmask(),
         sigwaitinfo(), sigsetops(), sigwait()
 
     INTERNALS
