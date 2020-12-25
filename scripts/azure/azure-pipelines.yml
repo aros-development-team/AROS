@@ -492,9 +492,11 @@ jobs:
   - script: |
       cd $(AROSBUILDDIR)
       for deplog in *.deplog; do
-        bzip2 $deplog
-        md5sum $deplog.bz2 > $(AROSLOGSDIR)/$deplog.bz2.md5
-        mv $deplog.bz2 $(AROSLOGSDIR)/$deplog.bz2
+        if [ -f $deplog ]; then
+          bzip2 $deplog
+          md5sum $deplog.bz2 > $(AROSLOGSDIR)/$deplog.bz2.md5
+          mv $deplog.bz2 $(AROSLOGSDIR)/$deplog.bz2
+        fi
       done
       cd $(AROSLOGSDIR)
       bzip2 $(arosbuild.package)-$(arosbuild.name).log
