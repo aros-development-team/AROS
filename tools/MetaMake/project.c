@@ -697,7 +697,6 @@ maketarget (FILE * deplogfh, struct Project * prj, char * tname, int depth, int 
 
     ForeachNode (&target->makefiles, mfref)
     {
-        subtarget = FindNode (&prj->cache->targets, node->name);
         if (!mfref->virtualtarget)
         {
             targetcnt++;
