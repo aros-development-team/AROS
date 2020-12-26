@@ -437,7 +437,7 @@ void _AHIsub_Stop(ULONG flags,
 
         if (card->mix_buffer)
         {
-            FreeVec((APTR)card->mix_buffer);
+            FreeVec((APTR)(IPTR)card->mix_buffer);
         }
         card->mix_buffer = 0;
 
