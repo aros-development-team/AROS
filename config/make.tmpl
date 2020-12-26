@@ -125,7 +125,7 @@ endif
 	then \
 		cat %(objdir)/%(err); \
 	else \
-		echo "%(cmd) $(NOSTARTUP_LDFLAGS) $(NOSTARTUP_OBJECTS) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(ldflags) %(endtag) -o $@"; \
+		echo "%(cmd) $(NOSTARTUP_LDFLAGS) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(ldflags) %(endtag) -o $@"; \
 		cat %(objdir)/%(err); \
 		exit 1; \
 	fi
@@ -1609,6 +1609,9 @@ endif
 ifeq ("%(ldflags)","")
 ifeq (%(compiler),target)
 %(mmake)_LDFLAGS            := $(LDFLAGS)
+ifeq (%(usestartup),no)
+%(mmake)_LDFLAGS            += $(NOSTARTUP_OBJECTS)
+endif
 endif
 ifeq (%(compiler),host)
 %(mmake)_LDFLAGS            := $(HOST_LDFLAGS)
