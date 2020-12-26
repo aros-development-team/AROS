@@ -288,9 +288,25 @@ jobs:
         fi
       }
       execute make -j 2 crosstools
+      cd $(AROSBUILDTOOLCHAINDIR)/../
+      tar cjvf $(AROSBUILDID)-$(AGENT_OS)-$(TARGETTOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
+      mv $(AROSBUILDID)-$(TARGETTOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 $(AROSBUILDBINDIR)/
       rm -Rf $(AROSBUILDDIR)/*
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) $(TOOLCHAIN) Toolchain'
+
+
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '$(AROSBUILDBINDIR)'
+      contents: '**/*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/toolchain
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Toolchain Artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/toolchain
+      artifactName: $(arosbuild.name) toolchain
 
   - script: |
       function execute {
