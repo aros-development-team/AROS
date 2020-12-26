@@ -29,15 +29,3 @@ void operator delete[](void * ptr)
 extern "C" void __cxa_pure_virtual()
 {
 }
-
-#if defined(__arm__)
-/* TODO: ARM exception unwinding needs this implemented
- * preferably in libgcc */
-extern "C"
-{
-  void * __gnu_Unwind_Find_exidx (void *return_address, int *nrecp)
-  {
-      return return_address;
-  }
-}
-#endif

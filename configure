@@ -668,6 +668,7 @@ pci_hidd_target
 use_libatomic
 crosstools_cxx_target
 crosstools_target
+aros_target_nostartup_objects
 aros_isa_flags
 aros_isa_extra
 aros_kernel_isa_flags
@@ -693,6 +694,7 @@ aros_config_aflags
 aros_config_cxxflags
 aros_config_cflags
 aros_config_cppflags
+aros_target_cflags
 aros_nowarn_flags
 aros_warn_flags
 aros_shared_ldflags
@@ -8194,6 +8196,7 @@ case "$aros_toolchain" in
         toolchain_def_opt_lvl="-O2"
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
+        aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
         aros_cxx_ldflags="-L $""(CROSSTOOLSDIR)/lib -stdlib=libc++ -static-libstdc++"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
@@ -9992,6 +9995,8 @@ $as_echo "$aros_gcc_cpu" >&6; }
             fi
         fi
 
+        aros_target_nostartup_objects="$""(AROS_LIB)/arm-exidx-unwind.o"
+
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking Which minimum CPU to use" >&5
 $as_echo_n "checking Which minimum CPU to use... " >&6; }
 
@@ -10045,7 +10050,7 @@ $as_echo "$aros_target_cpu_mode" >&6; }
         case "$aros_target_cpu_mode" in
         arm32)
             gcc_default_mode="arm"
-            aros_isa_extra="$aros_isa_extra -mthumb-interwork -march=$aros_gcc_cpu"
+            aros_isa_extra="$aros_isa_extra -march=$aros_gcc_cpu"
         ;;
         arm64)
             as_fn_error $? "ARM 64-bit mode is unsupported" "$LINENO" 5
@@ -16199,6 +16204,9 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Target Related #########################
+
+
+
 
 
 

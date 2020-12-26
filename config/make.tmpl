@@ -79,7 +79,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP) objdir=$(GENDIR)/$(CURDIR) coverageinstr=
+%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" opt="$(TARGET_ISA_LDFLAGS) $(LDFLAGS)" from=$< to=$@ libs=$(LIBS) strip=$(STRIP) objdir=$(GENDIR)/$(CURDIR) coverageinstr=
 	$(Q)$(eval LINKTARGET=%(to))
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
 	$(Q)$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
@@ -118,14 +118,14 @@ endif
 #
 %define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" err="$(notdir $@).err" strip=$(STRIP) objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	$(Q)$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
-	$(Q)$(IF) %(cmd) $(NOSTARTUP_LDFLAGS) \
+	$(Q)$(IF) %(cmd) $(NOSTARTUP_LDFLAGS) $(NOSTARTUP_OBJECTS) \
 		$(GENMAP) %(objdir)/%(module).map \
 		%(objs) %(libs) %(ldflags) %(endtag) \
 		-o $@ 2>&1 > %(objdir)/%(err) 2>&1 ; \
 	then \
 		cat %(objdir)/%(err); \
 	else \
-		echo "%(cmd) $(NOSTARTUP_LDFLAGS) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(ldflags) %(endtag) -o $@"; \
+		echo "%(cmd) $(NOSTARTUP_LDFLAGS) $(NOSTARTUP_OBJECTS) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(ldflags) %(endtag) -o $@"; \
 		cat %(objdir)/%(err); \
 		exit 1; \
 	fi
@@ -1657,7 +1657,7 @@ else
     %(mmake)_DXXFLAGS     := $(%(mmake)_CXXFLAGS)
 endif
 ifeq (%(compiler),target)
-%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS) $(TARGET_ISA_OBJCFLAGS)
+%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS) $(TARGET_ISA_LDFLAGS)
 endif
 ifeq (%(compiler),host)
 %(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS) $(HOST_ISA_OBJCFLAGS)
@@ -1769,7 +1769,7 @@ else
     %(mmake)_DFLAGS := $(%(mmake)_CFLAGS)
 endif
 ifeq (%(compiler),target)
-%(mmake)_LDFLAGS           := %(ldflags) $(TARGET_ISA_OBJCFLAGS)
+%(mmake)_LDFLAGS           := %(ldflags) $(TARGET_ISA_LDFLAGS)
 endif
 ifeq (%(compiler),host)
 %(mmake)_LDFLAGS           := %(ldflags) $(HOST_ISA_OBJCFLAGS)
@@ -2397,7 +2397,7 @@ else
 endif
 
 ifeq (%(compiler),target)
-%(mmake)%(flavour)_ISA_LDFLAGS           := $(TARGET_ISA_OBJCFLAGS)
+%(mmake)%(flavour)_ISA_LDFLAGS           := $(TARGET_ISA_LDFLAGS)
 endif
 ifeq (%(compiler),host)
 %(mmake)%(flavour)_ISA_LDFLAGS           := $(HOST_ISA_OBJCFLAGS)
@@ -3524,7 +3524,8 @@ ifeq (%(compiler),target)
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
 endif
-    %(mmake)-cfg-env += LDFLAGS="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += LDFLAGS="$(strip $(TARGET_ISA_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(TARGET_ISA_LDFLAGS))"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_BUILD="$(HOST_CPPFLAGS)"
 endif
@@ -3542,7 +3543,7 @@ endif
         CXX_FOR_HOST="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
         CXXFLAGS_FOR_HOST="$(strip %(hostisaflags) $(USER_INCLUDES) $(BASE_CXXFLAGS) $(USER_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         LD_FOR_HOST="$(strip $(TARGET_LD))" \
-        LDFLAGS_FOR_HOST="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+        LDFLAGS_FOR_HOST="$(strip $(TARGET_ISA_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS_FOR_TARGET="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
 endif
@@ -3551,7 +3552,7 @@ endif
         CXX_FOR_TARGET="$(strip $(TARGET_CXX) $(TARGET_SYSROOT))" \
         CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags))" \
         LD_FOR_TARGET="$(strip $(TARGET_LD))" \
-        LDFLAGS_FOR_TARGET="$(strip -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        LDFLAGS_FOR_TARGET="$(strip $(TARGET_ISA_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         AR="$(strip $(AR_PLAIN))" \
         AS="$(strip $(TARGET_AS))" \
         OBJCOPY="$(strip $(OBJCOPY))" \
@@ -3820,7 +3821,7 @@ ifeq (%(compiler),host)
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)/%(package)
     endif
 else
-    BD_LDFLAGS               := $(strip $(LDFLAGS) %(extraldflags))
+    BD_LDFLAGS               := $(strip $(TARGET_ISA_LDFLAGS) $(LDFLAGS) %(extraldflags))
     BD_CFLAGS                := $(strip $(CFLAGS) %(extracflags))
     BD_CXXFLAGS              := $(strip $(CXXFLAGS) %(extracxxflags))
     BD_CPPFLAGS              := $(strip $(CPPFLAGS) %(extracppflags))
