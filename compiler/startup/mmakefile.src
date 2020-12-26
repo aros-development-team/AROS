@@ -17,6 +17,9 @@ FILES := \
 	startup \
 	detach  \
 	elf-startup
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
+FILES += arm-exidx-unwind
+endif
 
 NIXOBJS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .o,$(NIXFILES)))
 OBJS  := $(addprefix $(AROS_LIB)/,$(addsuffix .o,$(FILES) $(NIXFILES)))
