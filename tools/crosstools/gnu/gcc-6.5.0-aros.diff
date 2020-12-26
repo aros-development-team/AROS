@@ -187,7 +187,7 @@ diff -ruN gcc-6.5.0/gcc/config/aarch64/t-aros gcc-6.5.0.aros/gcc/config/aarch64/
 diff -ruN gcc-6.5.0/gcc/config/arm/aros.h gcc-6.5.0.aros/gcc/config/arm/aros.h
 --- gcc-6.5.0/gcc/config/arm/aros.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-6.5.0.aros/gcc/config/arm/aros.h	2019-03-01 02:31:13.371291400 +0000
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,86 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
 +   Free Software Foundation, Inc.
@@ -267,6 +267,10 @@ diff -ruN gcc-6.5.0/gcc/config/arm/aros.h gcc-6.5.0.aros/gcc/config/arm/aros.h
 +/* Use own supplement to libgcc.  */
 +#undef LIBGCC_SPEC
 +#define LIBGCC_SPEC "-laeabi -lgcc"
++
++#undef	STARTFILE_SPEC
++#define STARTFILE_SPEC \
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} arm-exidx-unwind%O%s "
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
