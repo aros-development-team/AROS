@@ -120,6 +120,7 @@ TARGET_ISA_CFLAGS             = $(ISA_FLAGS)
 TARGET_ISA_CXXFLAGS           = $(ISA_FLAGS)
 TARGET_ISA_OBJCFLAGS          = $(TARGET_ISA_CFLAGS)
 TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
+TARGET_ISA_LDFLAGS            = $(ISA_FLAGS)
 
 TARGET_LIBATOMIC              = @use_libatomic@
 TARGET_C_LIBS                 := @aros_c_libs@
@@ -133,6 +134,7 @@ FUNCINSTR_LIBS                = instrfunc
 
 NOSTDINC_CFLAGS               := @aros_target_nostdinc_cflags@
 NOSTARTUP_LDFLAGS             := @aros_target_nostartup_ldflags@
+NOSTARTUP_OBJECTS             = @aros_target_nostartup_objects@
 NIX_LDFLAGS                   := @aros_target_nix_ldflags@
 DETACH_LDFLAGS                := @aros_target_detach_ldflags@
 NOSTDLIB_LDFLAGS              := @aros_target_nostdlib_ldflags@
