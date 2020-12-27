@@ -264,6 +264,10 @@ tools-crosstools-gcc :
 	    $(SED) -i -e "s|@aros_target_cc_path@|$(GCC_PATH)|g" $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld ; \
 	fi
 
+
+#MM tools-crosstools-gcc : includes-copy
+#MM crosstools-gcc : includes-copy
+
 #MM tools-crosstools-gcc : crosstools-gcc--fetch crosstools-gcc--configure
 
 #MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch gnu-gcc-autolibs
