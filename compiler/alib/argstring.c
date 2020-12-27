@@ -47,7 +47,6 @@ extern struct Library *IconBase;
     INTERNALS
 
     HISTORY
-	28.04.98  SDuvan  implemented
 
 *****************************************************************************/
 {

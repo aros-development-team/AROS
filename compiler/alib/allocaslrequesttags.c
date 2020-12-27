@@ -44,7 +44,6 @@ extern struct Library *AslBase;
     INTERNALS
 
     HISTORY
-	23-03-2000  bernie  Wrote.
 
 *****************************************************************************/
 {

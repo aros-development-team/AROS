@@ -49,7 +49,6 @@
     INTERNALS
 
     HISTORY
-	09-02-1997  iaint       Adapted from another function.
 
 *****************************************************************************/
 {

@@ -54,10 +54,10 @@
 	Intuition" and the "boopsi Class Reference" documentation.
 
     INTERNALS
-	HPPA: Allocate a structure which can contain all IPTRs between
+	Allocate a structure which can contain all IPTRs between
 	the first argument of, for example, DoMethod() and its first local
 	variable. This will copy a bit too much memory but in the end, it
-	saves a lot of work, since it's not neccessary to register every
+	saves a lot of work, since it's not necessary to register every
 	structure.
 
 ******************************************************************************/
@@ -323,10 +323,10 @@
 	CallHook()
 
     INTERNALS
-	HPPA: Allocate a structure which can contain all APTRs between the
+	Allocate a structure which can contain all APTRs between the
 	first variadic parameter of, for example, CallHook() and its first
 	local variable. This will copy a bit too much memory but in the end,
-	it saves a lot of work, since it's not neccessary to register every
+	it saves a lot of work, since it's not necessary to register every
 	structure.
 
 ******************************************************************************/

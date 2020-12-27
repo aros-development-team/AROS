@@ -25,7 +25,7 @@
 
 /*  FUNCTION
 	Invokes a method on a BOOPSI object, as if this was a object, inherited
-	from the class passed in. Ie the dispatcher of the this class is called
+	from the class passed in. Ie. the dispatcher of the this class is called
         instead of the objects classes dispatcher.
 
     INPUTS

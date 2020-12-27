@@ -26,16 +26,16 @@
         ULONG length)
 
 /*  FUNCTION
-        Set the value of the named Rexx variable.
+        Set the value of the named REXX variable.
 
     INPUTS
-        msg - A Rexx message generated from a running Rexx script
+        msg - A REXX message generated from a running REXX script
         varname - The name of the variable to set the value
         value - a pointer to the beginning of the value to set
         length - the length of the value argument
 
     RESULT
-        0 when success, otherwise a Rexx error value is returned.
+        0 when success, otherwise a REXX error value is returned.
 
     NOTES
 
@@ -47,7 +47,7 @@
         CheckRexxMsg(), GetRexxVar()
 
     INTERNALS
-        This function creates a Rexx message that is sent to the AREXX
+        This function creates a REXX message that is sent to the AREXX
         port with a RXSETVAR command.
 
 

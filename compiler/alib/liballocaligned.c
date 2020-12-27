@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-        exec.library/AllocMem, exec.library/FreeMem().
+        exec.library/AllocMem(), exec.library/FreeMem().
 
     INTERNALS
 

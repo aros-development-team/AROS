@@ -30,7 +30,6 @@
     INTERNALS
 
     HISTORY
-	06.12.96 digulla Created after original from libnix
 
 ******************************************************************************/
 {

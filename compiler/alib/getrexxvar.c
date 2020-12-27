@@ -24,10 +24,10 @@
 	char **value)
 
 /*  FUNCTION
-        Get a the value of the name rexx variable.
+        Get a the value of the name REXX variable.
 
     INPUTS
-        msg - A rexx message generated from a running rexx script
+        msg - A REXX message generated from a running REXX script
         varname - The name of the variable to get the value from
         value - a pointer to a string pointer that will be filled with
                 a pointer to the value of the variable. This value
@@ -36,7 +36,7 @@
         length - the length of the value argument
 
     RESULT
-        0 when succes, otherwise a rexx error value is returned.
+        0 when success, otherwise a REXX error value is returned.
 
     NOTES
         On AROS the pointer returned in value is only valid until the next
@@ -50,7 +50,7 @@
         CheckRexxMsg(), GetRexxVar()
 
     INTERNALS
-        This function creates a rexx message that is sent to the AREXX
+        This function creates a REXX message that is sent to the AREXX
         port with a RXSETVAR command.
 
 

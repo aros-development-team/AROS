@@ -33,7 +33,7 @@
 	MicroSeconds -  The number of microseconds to wait.
 
     RESULT
-	Zero if everything went ok, non-zero if there was a problem.
+	Zero if everything went OK, non-zero if there was a problem.
 
     NOTES
 	If this function fails, the most likely reasons are:

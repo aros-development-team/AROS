@@ -62,7 +62,6 @@ struct DiskObject *__alib_dObject = NULL;	/* Used for reading tooltypes */
     INTERNALS
 
     HISTORY
-	27.04.98  SDuvan  implemented
 
 *****************************************************************************/
 {

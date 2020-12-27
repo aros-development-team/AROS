@@ -27,7 +27,7 @@ extern struct Library * DataTypesBase;
 	...)
 
 /*  FUNCTION
-	Invokes a boopsi method on a datatype object with a GadgetInfo derived from
+	Invokes a BOOPSI method on a datatype object with a GadgetInfo derived from
 	the supplied window or requester parameter.
 
     INPUTS
@@ -53,9 +53,6 @@ extern struct Library * DataTypesBase;
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
-	25-10-96    calid   submitted the code
 
 *****************************************************************************/
 {

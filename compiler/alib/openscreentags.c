@@ -44,8 +44,6 @@ extern struct IntuitionBase * IntuitionBase;
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

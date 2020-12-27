@@ -42,8 +42,6 @@ extern struct Library *IconBase;
 
     HISTORY
 
-    05.05.98  SDuvan  implemented
-
 *****************************************************************************/
 {
     if(__alib_dObject != NULL)

@@ -44,7 +44,6 @@ extern struct Library *CyberGfxBase;
     INTERNALS
 
     HISTORY
-	11-11-2002  Gabriele Greco  Wrote.
 
 *****************************************************************************/
 {
