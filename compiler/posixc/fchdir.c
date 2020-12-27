@@ -33,12 +33,12 @@
         
     RESULT
         If the current directory was changed successfully, zero is returned.
-        Otherwise, -1 is returned and errno set apropriately.
+        Otherwise, -1 is returned and errno set appropriately.
         
     NOTES
         At program exit, the current working directory will be changed back
         to the one that was current when the program first started. If you
-        do not desire this behaviour, use dos.library/CurrentDir() instead.
+        do not desire this behavior, use dos.library/CurrentDir() instead.
 
     EXAMPLE
 

@@ -24,7 +24,7 @@
     RESULT
 
     NOTES
-	Returns the position in files that may be larger than 2GB, if the
+	Returns the position in files that may be larger than 2 GB, if the
 	underlying filesystem supports it.
 
     EXAMPLE

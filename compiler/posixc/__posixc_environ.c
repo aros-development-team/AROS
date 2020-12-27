@@ -34,7 +34,7 @@
 	environptr - ptr to the child environ variable (== &environ).
 
     RESULT
-        0 on fail, other value on succes
+        0 on fail, other value on success
 
     NOTES
         This function will enable environ emulation. This means that

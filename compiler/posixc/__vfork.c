@@ -64,7 +64,7 @@
           memory region so changes to memory in the child are also seen by the
           parent.
 
-        Behaviour for other resources not described in this doc may not be
+        Behavior for other resources not described in this doc may not be
         relied on for future compatibility.
 
     INPUTS

@@ -157,7 +157,7 @@ static int fill_consize(APTR fd, struct winsize *ws)
         }
 
     BUGS
-        Only the requests listed above are implented.
+        Only the requests listed above are implemented.
 
     SEE ALSO
 

@@ -26,7 +26,7 @@
     INPUTS
         clk_id - identifier of the particular clock on which to act
                 CLOCK_REALTIME 
-                System-wide realtime clock. Setting this clock requires appropriate privileges. 
+                System-wide real-time clock. Setting this clock requires appropriate privileges.
                 CLOCK_MONOTONIC 
                 Clock that cannot be set and represents monotonic time since some unspecified starting point. 
                 CLOCK_PROCESS_CPUTIME_ID 

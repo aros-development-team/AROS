@@ -28,7 +28,7 @@
 
 /*  FUNCTION
 	Flush a stream. If the stream is an input stream, then the stream
-	is synchronised for unbuffered I/O. If the stream is an output
+	is synchronized for unbuffered I/O. If the stream is an output
 	stream, then any buffered data is written.
 
     INPUTS

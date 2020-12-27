@@ -31,7 +31,7 @@
 	c - Put this character back into the stream. The next read will
 		return this character. If you push back more than one
 		character, then they will be returned in reverse order.
-		The function gurantees that one character can be
+		The function guarantees that one character can be
 		pushed back but no more. It is possible to push the EOF
 		character back into the stream.
 	stream - Read from this stream

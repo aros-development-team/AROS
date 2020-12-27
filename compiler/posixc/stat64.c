@@ -36,7 +36,7 @@
 	dev_t           st_rdev;    - device ID (if the file is character
 	                              or block special file)
 	off64_t         st_size;    - (lfs) file size, in bytes
-	time_t          st_atime;   - time of last acces
+	time_t          st_atime;   - time of last access
 	time_t          st_mtime;   - time of last data modification
 	time_t          st_ctime;   - time of last file status change
 	blksize_t       st_blksize; - optimal blocksize for I/O

@@ -41,7 +41,7 @@
 		O_NOCTTY:
 		O_TRUNC: If the file exists, then it gets overwritten. This
 			is the default and the opposite to O_APPEND.
-		O_APPEND: If the file exists, then the startung position for
+		O_APPEND: If the file exists, then the starting position for
 			writes is the end of the file.
 		O_NONBLOCK or O_NDELAY: Opens the file in non-blocking mode.
 			If there is no data in the file, then read() on a

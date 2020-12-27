@@ -22,7 +22,7 @@
         Initialise the signal set
 
     INPUTS
-        Set to initialise
+        Set to initialize
 
     RESULT
         "0" for success, "-1" for failure (errno contains error)

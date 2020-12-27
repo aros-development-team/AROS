@@ -49,7 +49,7 @@ short getnixfilesystemtype(LONG id_DiskType)
 
     INPUTS
         buf - pointer to statfs structures where information about filesystems
-            will be stored or NULL
+              will be stored or NULL
         bufsize - size of buf in bytes
         flags - not used
 

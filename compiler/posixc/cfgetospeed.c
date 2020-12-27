@@ -16,7 +16,7 @@ speed_t cfgetospeed(const struct termios *__termios_p)
 
     /* According to man pages and online standard documents providing an
      * invalid pointer does not result in an error. Tests on Linux resulted
-     * in segmentation faults, we can not do this so we retun a speed of 0.
+     * in segmentation faults, we can not do this so we return a speed of 0.
      */
     return B0;
 }

@@ -19,7 +19,7 @@
 
 /*  FUNCTION
 	Test the EOF-Flag of a stream. This flag is set automatically by
-	any function which recognises EOF. To clear it, call clearerr().
+	any function which recognizes EOF. To clear it, call clearerr().
 
     INPUTS
 	stream - The stream to be tested.

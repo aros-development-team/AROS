@@ -18,7 +18,7 @@
 	const char * str)
 
 /*  FUNCTION
-	Print a string to stdout. A newline ('\n') is emmitted after the
+	Print a string to stdout. A newline ('\n') is emitted after the
 	string.
 
     INPUTS

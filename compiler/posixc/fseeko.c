@@ -50,7 +50,7 @@
     EXAMPLE
 
     BUGS
-	Not fully compatible with iso fseeko, especially in 'ab' and 'a+b'
+	Not fully compatible with ISO fseeko, especially in 'ab' and 'a+b'
 	modes
 
     SEE ALSO

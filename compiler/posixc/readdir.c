@@ -41,14 +41,13 @@
         structure, or NULL if an error occurs  or  end-of-file  is
         reached.
 
-	The data returned by readdir() is  overwritten  by  subse­
-        quent calls to readdir() for the same directory stream.
+	The data returned by readdir() is overwritten by subsequent
+        calls to readdir() for the same directory stream.
 
 	According  to POSIX, the dirent structure contains a field
         char d_name[] of unspecified size, with at  most  NAME_MAX
         characters  preceding the terminating null character.  Use
-        of other fields will harm the  portability  of  your  pro­
-        grams.
+        of other fields will harm the portability of your programs.
 
     NOTES
 

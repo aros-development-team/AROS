@@ -56,7 +56,7 @@
 	is returned, then errno is set to indicate the error.
 
     NOTES
-	Provides access larger to files that may be larger than 2GB, if the
+	Provides access larger to files that may be larger than 2 GB, if the
 	underlying filesystem supports it.
        
 	This function must not be used in a shared library or

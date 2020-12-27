@@ -24,9 +24,9 @@
 
     INPUTS
         name      - Name of the environment variable,
-        value     - Value wich the variable must be set or changed to.
+        value     - Value which the variable must be set or changed to.
         overwrite - If non-zero then, if a variable with the name name already
-                    exists, its value is changet to value, otherwise is not
+                    exists, its value is changed to value, otherwise is not
                     changed
                     
     RESULT

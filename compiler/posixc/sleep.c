@@ -26,7 +26,7 @@
 
     RESULT
     	Zero if the requested time has elapsed, or the number of seconds
-	left to sleep when the process was signalled.
+	left to sleep when the process was signaled.
 
     NOTES
 
@@ -38,7 +38,7 @@
 	The current implementation simply uses the dos.library function
 	Delay() to sleep, and cannot be interrupted by incoming signals.
 	This shouldn't be of any importance, since AROS doesn't have 
-	POSIX style signalling yet (but when it is implemented, this
+	POSIX style signaling yet (but when it is implemented, this
 	function needs to be changed). 
 
     SEE ALSO

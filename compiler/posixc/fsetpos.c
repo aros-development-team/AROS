@@ -19,7 +19,7 @@
 	const fpos_t	* pos)
 
 /*  FUNCTION
-	Change the current position in a stream. This function is eqivalent
+	Change the current position in a stream. This function is equivalent
 	to fseek() with whence set to SEEK_SET. However, on some systems
 	fpos_t may be a complex structure, so this routine may be the only
 	way to portably reposition a stream.

@@ -59,7 +59,7 @@
 		DST_EET 	// Eastern European dst
 		DST_CAN 	// Canada
 		DST_GB		// Great Britain and Eire
-		DST_RUM 	// Rumania
+		DST_RUM 	// Romania
 		DST_TUR 	// Turkey
 		DST_AUSTALT	// Australian style with shift in 1986
 

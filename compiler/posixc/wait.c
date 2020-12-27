@@ -58,7 +58,7 @@
         occurred, the global variable errno is set.
 
     NOTES
-        This function will work only for child processeses notifying parent
+        This function will work only for child processes notifying parent
         process of their death, for example processes created by vfork() call.
         If you want to use it for other processes, remember to set the
         NP_NotifyOnDeath tag value to TRUE during child process creation.

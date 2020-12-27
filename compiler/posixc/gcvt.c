@@ -28,7 +28,7 @@
 
     INPUTS
 	number  - The number to convert.
-	ndigits - The number of significan digits that the string has to have.
+	ndigits - The number of significant digits that the string has to have.
 	buf     - The buffer that will contain the result string.
 
     RESULT

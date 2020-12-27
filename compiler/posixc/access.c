@@ -34,7 +34,7 @@
 	       to be checked:
 
 	       W_OK - for write permission
-	       R_OK - for readpermissions
+	       R_OK - for read permissions
 	       X_OK - for execute permission
 	       F_OK - Just to see whether the file exists
 

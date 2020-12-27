@@ -19,7 +19,7 @@
 	__fpos64_t * pos)
 
 /*  FUNCTION
-	Get the current position in a stream. This function is eqivalent
+	Get the current position in a stream. This function is equivalent
 	to ftell(). However, on some systems fpos_t may be a complex
 	structure, so this routine may be the only way to portably
 	get the position of a stream.
