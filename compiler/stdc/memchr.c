@@ -18,7 +18,7 @@
 	size_t	     n)
 
 /*  FUNCTION
-        Locate the first occurence of c which is converted to an unsigned
+        Locate the first occurrence of c which is converted to an unsigned
         char in the first n bytes of the memory pointed to by mem.
 
     INPUTS

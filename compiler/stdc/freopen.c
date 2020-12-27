@@ -34,7 +34,7 @@
                  cleared and indication if stream is read and/or write.
                  No change to position in file or no truncation will be
                  performed.
-        stream - the stream to wich the file will be associated.
+        stream - the stream to which the file will be associated.
 
     RESULT
 	NULL on error or stream. When NULL is returned input stream is

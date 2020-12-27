@@ -36,7 +36,7 @@
         resp. don't or do have state-dependent encodings.
 
     NOTES
-	stdc.library currenlty only supports "C" locale
+	stdc.library currently only supports "C" locale
         This means that the function returns 0 when s is NULL and only 0, 1 or -1
         when s is not NULL.
 

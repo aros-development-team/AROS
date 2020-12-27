@@ -19,7 +19,7 @@
 	size_t	     n)
 
 /*  FUNCTION
-	Calculate str1 - str2 ignoring case. Upto n characters are taken
+	Calculate str1 - str2 ignoring case. Up to n characters are taken
 	into account.
 
     INPUTS

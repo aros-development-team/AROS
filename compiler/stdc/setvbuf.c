@@ -37,7 +37,7 @@
         size: size of the buffer (needs to be at least 208).
 
     RESULT
-        0 on succes, EOF on error. errno indicated error.
+        0 on success, EOF on error. errno indicated error.
         Function fails when size < 208 and buf != NULL.
 
     NOTES

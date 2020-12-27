@@ -29,7 +29,7 @@
 	str - The string which should be converted. Leading
 		whitespace are ignored. The number may be prefixed
 		by a '+' or '-'. An 'e' or 'E' introduces the exponent.
-		Komma is only allowed before exponent.
+		Comma is only allowed before exponent.
 	endptr - If this is non-NULL, then the address of the first
 		character after the number in the string is stored
 		here.

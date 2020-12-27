@@ -26,7 +26,7 @@
 	str - String to search.
 
     RESULT
-	A pointer to the first occurence of a non-blank character in str.
+	A pointer to the first occurrence of a non-blank character in str.
 
     NOTES
     	This function always returns a valid pointer as provided str isn't

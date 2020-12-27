@@ -27,7 +27,7 @@
 	c - Look for this character
 
     RESULT
-	A pointer to the first occurence of c in str or NULL if c is not
+	A pointer to the first occurrence of c in str or NULL if c is not
 	found in str.
 
     NOTES

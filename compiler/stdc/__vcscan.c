@@ -70,7 +70,7 @@ const static struct vcs_ieeetype undef[3] = /* Undefined numeric values, IEEE */
     INPUTS
         data - This is passed to the usercallback getc and ungetc
         get_char - This function gets called when the routine wants to
-            read the next character. It whould return EOF when
+            read the next character. It would return EOF when
             no more characters are available.
         unget_char - This function gets called when the routine wants to
             put a read character back into the stream. The next

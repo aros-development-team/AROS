@@ -51,7 +51,7 @@
     EXAMPLE
 
     BUGS
-        Not fully compatible with iso fseek, especially in 'ab' and 'a+b'
+        Not fully compatible with ISO fseek, especially in 'ab' and 'a+b'
         modes
 
     SEE ALSO

@@ -26,7 +26,7 @@
         -1: error calling handler, errno will be set.
 
     NOTES
-        The behaviour of raise() follows the BSD semantics.
+        The behavior of raise() follows the BSD semantics.
         For each signal the system keeps track of a signal handler is already
         being called.
         If not, the signal handler is called; when yes this will logged and the

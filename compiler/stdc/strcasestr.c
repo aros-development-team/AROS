@@ -26,7 +26,7 @@
 	search - Look for this string
 
     RESULT
-	A pointer to the first occurence of search in str or NULL if search
+	A pointer to the first occurrence of search in str or NULL if search
 	is not found in str.
 
     NOTES

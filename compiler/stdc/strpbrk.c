@@ -24,7 +24,7 @@
 	accept - Look for these characters
 
     RESULT
-	A pointer to the first occurence of any character in accept in str
+	A pointer to the first occurrence of any character in accept in str
 	or NULL if no character of accept is not found in str.
 
     NOTES

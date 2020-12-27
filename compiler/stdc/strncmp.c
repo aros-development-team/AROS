@@ -18,7 +18,7 @@
 	size_t	     n)
 
 /*  FUNCTION
-	Calculate str1 - str2 for upto n chars or upto the first 0 byte.
+	Calculate str1 - str2 for up to n chars or up to the first 0 byte.
 
     INPUTS
 	str1, str2 - Strings to compare
