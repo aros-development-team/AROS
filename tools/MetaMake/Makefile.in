@@ -34,45 +34,15 @@ makedirs:
 	    else true ; fi ; \
 	done
 
-$(mmake_objdir)/mmake.o: $(mmake_srcdir)/mmake.c
-	$(COMPILE) -MT $(mmake_objdir)/mmake.o -MD -MP -MF $(DEPDIR)/mmake.Tpo -c -o $(mmake_objdir)/mmake.o $(mmake_srcdir)/mmake.c
-	mv -f $(DEPDIR)/mmake.Tpo $(DEPDIR)/mmake.Po
-
-$(mmake_objdir)/mem.o: $(mmake_srcdir)/mem.c
-	$(COMPILE) -MT $(mmake_objdir)/mem.o -MD -MP -MF $(DEPDIR)/mem.Tpo -c -o $(mmake_objdir)/mem.o $(mmake_srcdir)/mem.c
-	mv -f $(DEPDIR)/mem.Tpo $(DEPDIR)/mem.Po
-
-$(mmake_objdir)/list.o: $(mmake_srcdir)/list.c
-	$(COMPILE) -MT $(mmake_objdir)/list.o -MD -MP -MF $(DEPDIR)/list.Tpo -c -o $(mmake_objdir)/list.o $(mmake_srcdir)/list.c
-	mv -f $(DEPDIR)/list.Tpo $(DEPDIR)/list.Po
-
-$(mmake_objdir)/var.o: $(mmake_srcdir)/var.c
-	$(COMPILE) -MT $(mmake_objdir)/var.o -MD -MP -MF $(DEPDIR)/var.Tpo -c -o $(mmake_objdir)/var.o $(mmake_srcdir)/var.c
-	mv -f $(DEPDIR)/var.Tpo $(DEPDIR)/var.Po
-
-$(mmake_objdir)/dirnode.o: $(mmake_srcdir)/dirnode.c
-	$(COMPILE) -MT $(mmake_objdir)/dirnode.o -MD -MP -MF $(DEPDIR)/dirnode.Tpo -c -o $(mmake_objdir)/dirnode.o $(mmake_srcdir)/dirnode.c
-	mv -f $(DEPDIR)/dirnode.Tpo $(DEPDIR)/dirnode.Po
-
-$(mmake_objdir)/dep.o: $(mmake_srcdir)/dep.c
-	$(COMPILE) -MT $(mmake_objdir)/dep.o -MD -MP -MF $(DEPDIR)/dep.Tpo -c -o $(mmake_objdir)/dep.o $(mmake_srcdir)/dep.c
-	mv -f $(DEPDIR)/dep.Tpo $(DEPDIR)/dep.Po
-
-$(mmake_objdir)/project.o: $(mmake_srcdir)/project.c
-	$(COMPILE) -MT $(mmake_objdir)/project.o -MD -MP -MF $(DEPDIR)/project.Tpo -c -o $(mmake_objdir)/project.o $(mmake_srcdir)/project.c
-	mv -f $(DEPDIR)/project.Tpo $(DEPDIR)/project.Po
-
-$(mmake_objdir)/cache.o: $(mmake_srcdir)/cache.c
-	$(COMPILE) -MT $(mmake_objdir)/cache.o -MD -MP -MF $(DEPDIR)/cache.Tpo -c -o $(mmake_objdir)/cache.o $(mmake_srcdir)/cache.c
-	mv -f $(DEPDIR)/cache.Tpo $(DEPDIR)/cache.Po
-
-$(mmake_objdir)/io.o: $(mmake_srcdir)/io.c
-	$(COMPILE) -MT $(mmake_objdir)/io.o -MD -MP -MF $(DEPDIR)/io.Tpo -c -o $(mmake_objdir)/io.o $(mmake_srcdir)/io.c
-	mv -f $(DEPDIR)/io.Tpo $(DEPDIR)/io.Po
+$(mmake_objdir)/%.o: $(mmake_srcdir)/%.c
+	@echo "Compiling  $(patsubst $(mmake_srcdir)/%,%,$<)"
+	@$(COMPILE) -MT $(mmake_objdir)/$*.o -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $(mmake_objdir)/$*.o $(mmake_srcdir)/$*.c
+	@mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 
 $(mmake_objdir)/mmake$(EXEEXT): $(mmake_OBJECTS)
+	@echo "Linking  $(patsubst $(mmake_objdir)/%,%,$@)"
 	@rm -f $(mmake_objdir)/mmake$(EXEEXT)
-	$(LINK) $(mmake_OBJECTS) $(mmake_LDADD) $(LIBS)
+	@$(LINK) $(mmake_OBJECTS) $(mmake_LDADD) $(LIBS)
 
 # Clean the sources
 clean:

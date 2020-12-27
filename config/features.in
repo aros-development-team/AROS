@@ -637,6 +637,7 @@ CFLAGS="$save_cflags"
 #  -Wclass-memaccess
 #  -Wint-in-bool-context
 #  -Wignored-optimization-argument
+#  -Wbuiltin-declaration-mismatch
 
 # C warnings first
 AC_LANG_PUSH(C)
@@ -1300,6 +1301,15 @@ if test "x-$aros_ignored_optimization_argument" = "x-yes" ; then
     aros_warnflags_ignored_optimization_argument=-Wignored-optimization-argument
     aros_nowarnflags_ignored_optimization_argument=-Wno-ignored-optimization-argument
 fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wbuiltin-declaration-mismatch])
+CFLAGS=-Wbuiltin-declaration-mismatch
+AC_TRY_COMPILE(,, aros_builtin_declaration_mismatch="yes", aros_builtin_declaration_mismatch="no")
+AC_MSG_RESULT($aros_builtin_declaration_mismatch)
+if test "x-$aros_builtin_declaration_mismatch" = "x-yes" ; then
+    aros_warnflags_builtin_declaration_mismatch=-Wbuiltin-declaration-mismatch
+    aros_nowarnflags_builtin_declaration_mismatch=-Wno-builtin-declaration-mismatch
+fi
 CFLAGS="$save_cflags"
 
 # Check the C++ warnings
@@ -1642,7 +1652,9 @@ AC_SUBST(aros_warnflags_int_in_bool_context)
 AC_SUBST(aros_nowarnflags_int_in_bool_context)
 AC_SUBST(aros_warnflags_ignored_optimization_argument)
 AC_SUBST(aros_nowarnflags_ignored_optimization_argument)
-
+AC_SUBST(aros_warnflags_builtin_declaration_mismatch)
+AC_SUBST(aros_nowarnflags_builtin_declaration_mismatch)
+    
 # Additional toolchain support ...
 AC_SUBST(aros_toolchain_sysroot)
 

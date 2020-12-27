@@ -585,6 +585,8 @@ ac_unique_file="../mmakefile"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 aros_toolchain_sysroot
+aros_nowarnflags_builtin_declaration_mismatch
+aros_warnflags_builtin_declaration_mismatch
 aros_nowarnflags_ignored_optimization_argument
 aros_warnflags_ignored_optimization_argument
 aros_nowarnflags_int_in_bool_context
@@ -4741,6 +4743,7 @@ CFLAGS="$save_cflags"
 #  -Wclass-memaccess
 #  -Wint-in-bool-context
 #  -Wignored-optimization-argument
+#  -Wbuiltin-declaration-mismatch
 
 # C warnings first
 ac_ext=c
@@ -6723,6 +6726,33 @@ if test "x-$aros_ignored_optimization_argument" = "x-yes" ; then
     aros_warnflags_ignored_optimization_argument=-Wignored-optimization-argument
     aros_nowarnflags_ignored_optimization_argument=-Wno-ignored-optimization-argument
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC} accepts -Wbuiltin-declaration-mismatch" >&5
+$as_echo_n "checking whether ${CC} accepts -Wbuiltin-declaration-mismatch... " >&6; }
+CFLAGS=-Wbuiltin-declaration-mismatch
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  aros_builtin_declaration_mismatch="yes"
+else
+  aros_builtin_declaration_mismatch="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_builtin_declaration_mismatch" >&5
+$as_echo "$aros_builtin_declaration_mismatch" >&6; }
+if test "x-$aros_builtin_declaration_mismatch" = "x-yes" ; then
+    aros_warnflags_builtin_declaration_mismatch=-Wbuiltin-declaration-mismatch
+    aros_nowarnflags_builtin_declaration_mismatch=-Wno-builtin-declaration-mismatch
+fi
 CFLAGS="$save_cflags"
 
 # Check the C++ warnings
@@ -6997,6 +7027,8 @@ rm -f $AROS_DEVELOPER/include/__testsincdir.h
 #
 # ...and warning flags...
 #
+
+
 
 
 
