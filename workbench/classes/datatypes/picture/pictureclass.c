@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright Â© 1995-2020, The AROS Development Team. All rights reserved.
+    $Id$ Modified 12-24-20
 */
 
 /* Supported Attributes (Init (new), Set, Get)
@@ -1601,19 +1601,259 @@ IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
 
 /**************************************************************************************************/
 
-IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
+LONG WriteBytes(BPTR file, char *data, LONG offset, LONG length)
 {
-    bug("picture.datatype/DTM_Write fh %p mode %d\n", msg->dtw_FileHandle, msg->dtw_Mode);
+    //Write data buffer to file
+    LONG count = 0;
+    Seek(file,offset,OFFSET_BEGINNING);    	
+    count = Write(file, data, length);
+    if (count != length)
+    {
+    	//("Write error!");
+	    return 0;
+    }
+    return count;
+}
+
+/**************************************************************************************************/
+
+STATIC IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
+{
+    bug("picture.datatype/DTM_Write fh %d mode %d\n", msg->dtw_FileHandle, msg->dtw_Mode);
     if (msg->dtw_FileHandle == BNULL)
     {
         // Multiview calls DTM_Write with NULL filehandle to check
-        // if RAW mode is supported.
+        // Tests if RAW mode is supported
         return TRUE;
     }
     
-    bug("picture.datatype/DTM_Write not implemented\n");
+    bug("picture.datatype/DTM_Write is now implemented - DTWM_IFF.\n");
+    
+    
+    BPTR		      filehandle;
+    int transparent, pad;
+    unsigned char *chunkID; 
+    unsigned int    width, height, numplanes, y, p;
+    int   numcolors, alignwidth, bytesPerRow, i;
+    struct BitMapHeader     *bmhd;
+    struct BitMap           *bm;
+    struct ColorRegister    *colormap;    
+    ULONG                   *colorregs;
+    ULONG 		    ulbuff;
+    UBYTE                   byteBuffer[4];
+    
 
-    return 0;
+    	
+    bug("picture.datatype/DTM_Write - DTWM_IFF/SaveBitMap() \n");
+
+	/* A NULL file handle is a NOP */
+	if( !msg->dtw_FileHandle )
+	{
+		D(bug("picture.datatype/DTM_Write - empty Filehandle - just testing\n"));
+		return TRUE;
+	}
+	filehandle = msg->dtw_FileHandle;
+    
+    
+    /* GET DATATYPE ATTRIBUTES FROM DTO */ 
+    bug("picture.datatype/DTM_Write - DTWM_IFF/Get DTO Attributes \n");    
+
+	/* Get BitMapHeader */
+	if( GetDTAttrs( o,  PDTA_BitMapHeader, (IPTR) &bmhd,                                
+				TAG_DONE ) != 1UL ||
+			!bmhd )
+	{
+		D(bug("picture.datatype/DTM_Write - missing attributes\n"));
+		SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+		return FALSE;
+	}
+
+        /* Get BitMap */
+	if( GetDTAttrs( o,  PDTA_BitMap,       (IPTR) &bm,                                
+				TAG_DONE ) != 1UL ||
+			!bmhd )
+	{
+		D(bug("picture.datatype/DTM_Write - missing attributes\n"));
+		SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+		return FALSE;
+	}            
+        
+        /* Prepare Simple Values */
+        int comp = 0;
+        width = bmhd->bmh_Width;
+        height = bmhd->bmh_Height;
+        pad = bmhd->bmh_Pad;
+        numplanes = bmhd->bmh_Depth;
+        transparent = bmhd->bmh_Transparent;
+    
+        
+        /* Used to get correct filesize */
+	    alignwidth = (width + 15) & ~15;
+        bytesPerRow = (alignwidth / 8);
+
+    
+        /* Set Number of Colors */
+        if ( numplanes > 8 )
+            numcolors = 0;
+        else
+            numcolors = 1<<( numplanes );
+        
+    
+	if( numplanes > 8 )
+	{
+		D(bug("picture.datatype/DTM_Write --- color depth %d, can save only depths less than or eq to 8\n", numplanes));
+		SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+		return FALSE;
+	}
+	D(bug("picture.datatype/DTM_Write --- Picture size %d x %d (x %d bit)\n", width, height, numplanes));    
+    
+        
+    /* WRITE FILE HEADER INFORMATION TO FILE */
+    bug("picture.datatype/DTM_Write - DTWM_IFF/Write File Header to File \n"); 
+    
+    
+    /** Write file signature to file **/
+    LONG offset = 0;    
+    WriteBytes( filehandle, "FORM", offset, 4 );    
+    
+    //Calculate file size less (4+4=8, FORM+size).
+    //Add padding byte at end of file if needed.    
+    LONG bodySize = ((bytesPerRow * numplanes) * height);
+    LONG fileSize = (bodySize + (numcolors * 3) + 48);    
+    
+    /* Write ilbm fileSize */         
+    offset = 4;
+    ulbuff = AROS_LONG2BE(fileSize);
+    memcpy(byteBuffer, &ulbuff, 4);
+    WriteBytes( filehandle, byteBuffer, offset, 4 );
+
+    offset = 8;    
+    WriteBytes( filehandle, "ILBM", offset, 4 );
+
+    offset = 12;        
+    WriteBytes( filehandle, "BMHD", offset, 4 );
+
+    
+    offset = 16;
+    LONG chunkSize = 20;
+    ulbuff = AROS_LONG2BE(chunkSize);
+    memcpy(byteBuffer, &ulbuff, 4);    
+    WriteBytes( filehandle, byteBuffer, offset, 4 );
+       
+    
+    /* WRITE ILBM BMHD TO FILE */
+    
+    /* Prepare BMHD information. */
+    UBYTE BMHD[20];
+    BMHD[0] =  (UBYTE)(width >> 8); //Width
+    BMHD[1] =  (UBYTE)(width & 0xFF);
+    BMHD[2] =  (UBYTE)(height >> 8); //Height
+    BMHD[3] =  (UBYTE)(height & 0xFF);
+    BMHD[4] =  BMHD[5] = 0; //Left Offset
+    BMHD[6] =  BMHD[7] = 0; //Top Offset
+    BMHD[8] =  numplanes;
+    BMHD[9] =  0; //Masking
+    BMHD[10] = 0; //Compression
+    BMHD[11] = pad; //Padding
+    BMHD[12] = (UBYTE)(transparent >> 8); 
+    BMHD[13] = (UBYTE)(transparent & 0xFF);
+    BMHD[14] = 10; //XAspect;
+    BMHD[15] = 11; //YAspect;
+    BMHD[16] = (UBYTE)(width >> 8); //PageWidth
+    BMHD[17] = (UBYTE)(width & 0xFF);
+    BMHD[18] = (UBYTE)(height >> 8); //PageHeight
+    BMHD[19] = (UBYTE)(height & 0xFF);
+
+    /* Write BMHD to File. */    
+    offset += 4; //offset = 20;    
+    WriteBytes( filehandle, BMHD, offset, 20 );
+
+    bug("picture.datatype/DTM_Write - DTWM_IFF/Write BMHD to File \n");
+    
+
+    /* WRITE ILBM CMAP TO FILE */    
+
+    /* Prepare ColorMap Information. */    
+    if ( numplanes <= 8 )
+    { 
+        /* Get ColorMap */
+	    if( GetDTAttrs( o,  PDTA_ColorRegisters, (IPTR)&colormap, 
+                PDTA_CRegs, (IPTR)&colorregs,                               
+		TAG_DONE ) != 2UL ||
+		!colormap || !colorregs )
+	    {
+		    D(bug("ilbm.datatype/SaveBitMap() --- missing attributes\n"));
+		    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+		    return FALSE;
+	    }
+
+        offset = 40;        
+	    WriteBytes( filehandle, "CMAP", offset, 4 );
+        
+        offset += 4;
+        LONG cmapChunkSize = numcolors*3;
+        ulbuff = AROS_LONG2BE(cmapChunkSize);
+        memcpy(byteBuffer, &ulbuff, 4);
+        WriteBytes( filehandle, byteBuffer, offset, 4 ); 
+
+        //Convert CMAP from ColorRegister Colormap.
+        UBYTE Cmap[numcolors * 3];
+        for( i = 0; i < numcolors ; i++)
+        {
+	    Cmap[(i*3)] = colormap[i].red;
+            Cmap[(i*3)+1] = colormap[i].green;
+            Cmap[(i*3)+2] = colormap[i].blue;
+        }        
+        //Write CMAP to File.
+        offset += 4;        
+        WriteBytes( filehandle, Cmap, offset, (numcolors*3) );       
+    }
+    
+    bug("picture.datatype/DTM_Write - DTWM_IFF/Write CMAP to File \n");
+    
+    
+    /* Prepare BODY Information. */
+    offset = (numcolors * 3) + 48;    
+    WriteBytes( filehandle, "BODY", offset, 4 );    
+          
+    if (comp == 0)
+    {
+        //bodySize = (bytesPerRow * numplanes) * height;        
+        chunkSize = bodySize;
+    }    
+
+     /* Write bodySize to File. */ 
+    offset += 4;    
+    ulbuff = AROS_LONG2BE(bodySize);
+    memcpy(byteBuffer, &ulbuff, 4);
+    WriteBytes( filehandle, byteBuffer, offset, 4 );    
+    
+    
+    /* WRITE ILBM BODY TO FILE */
+    
+	/* Now read the picture data line by line and write it to a chunky buffer */	
+    bug("picture.datatype/DTM_Write - DTWM_IFF/copying picture using CopyFromBitplanes \n");
+    
+    offset += 4;
+    UBYTE *src;    
+    bytesPerRow = bm->BytesPerRow;
+    
+    //Copy planar data from the bitplanes of the bitmap.
+    for(y = 0; y < height; y++)
+    {
+        for(p = 0; p < numplanes; p++)
+        {
+            src = bm->Planes[p] + (y * bytesPerRow);            
+
+            WriteBytes(filehandle, src, offset, bytesPerRow);
+            offset += bytesPerRow;
+        }
+    }      
+	
+    bug("picture.datatype/DTM_Write - DTWM_IFF/Normal Exit\n");
+	
+	SetIoErr(0);
+	return TRUE;    
 }
 
 /**************************************************************************************************/
