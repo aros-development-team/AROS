@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -62,45 +62,48 @@ void SetDisplayDefaults(struct IntuitionBase * IntuitionBase)
     if (!_intuitionBase->ScreenModePrefs)
         _intuitionBase->ScreenModePrefs = AllocMem(sizeof(struct IScreenModePrefs), MEMF_ANY);
 
-    _intuitionBase->ScreenModePrefs->smp_DisplayID  = INVALID_ID;
-    _intuitionBase->ScreenModePrefs->smp_Control         = 0;
-
-    if ((defmon = OpenMonitor(NULL, INVALID_ID)) != NULL)
+    if (_intuitionBase->ScreenModePrefs)
     {
-        OOP_Object *sync = (OOP_Object *)defmon->ms_Object, *drv = NULL;
+        _intuitionBase->ScreenModePrefs->smp_DisplayID  = INVALID_ID;
+        _intuitionBase->ScreenModePrefs->smp_Control         = 0;
 
-        D(bug("[Intuition] %s: default monitor @ 0x%p\n", __PRETTY_FUNCTION__, defmon));
-
-        if (sync)
+        if ((defmon = OpenMonitor(NULL, INVALID_ID)) != NULL)
         {
-            OOP_AttrBase HiddSyncAttrBase = _intuitionBase->HiddSyncAttrBase;
-            struct Library *OOPBase = _intuitionBase->OOPBase;
+            OOP_Object *sync = (OOP_Object *)defmon->ms_Object, *drv = NULL;
 
-            D(bug("[Intuition] %s: monitor sync obj @ 0x%p\n", __PRETTY_FUNCTION__, sync));
+            D(bug("[Intuition] %s: default monitor @ 0x%p\n", __PRETTY_FUNCTION__, defmon));
 
-            OOP_GetAttr(sync, aHidd_Sync_GfxHidd, (IPTR *)&drv);
-            if (drv)
+            if (sync)
             {
-                OOP_MethodID HiddGfxBase = _intuitionBase->ib_HiddGfxBase;
-                UBYTE depth;
+                OOP_AttrBase HiddSyncAttrBase = _intuitionBase->HiddSyncAttrBase;
+                struct Library *OOPBase = _intuitionBase->OOPBase;
 
-                HIDD_Gfx_NominalDimensions(drv,
-                    &_intuitionBase->ScreenModePrefs->smp_Width,
-                    &_intuitionBase->ScreenModePrefs->smp_Height,
-                    &depth);
-                _intuitionBase->ScreenModePrefs->smp_Depth = depth;
-                done = TRUE;
+                D(bug("[Intuition] %s: monitor sync obj @ 0x%p\n", __PRETTY_FUNCTION__, sync));
+
+                OOP_GetAttr(sync, aHidd_Sync_GfxHidd, (IPTR *)&drv);
+                if (drv)
+                {
+                    OOP_MethodID HiddGfxBase = _intuitionBase->ib_HiddGfxBase;
+                    UBYTE depth;
+
+                    HIDD_Gfx_NominalDimensions(drv,
+                        &_intuitionBase->ScreenModePrefs->smp_Width,
+                        &_intuitionBase->ScreenModePrefs->smp_Height,
+                        &depth);
+                    _intuitionBase->ScreenModePrefs->smp_Depth = depth;
+                    done = TRUE;
+                }
             }
+            CloseMonitor(defmon);
         }
-        CloseMonitor(defmon);
-    }
-    if (!done)
-    {
-        D(bug("[Intuition] %s: using system defaults..\n", __PRETTY_FUNCTION__));
+        if (!done)
+        {
+            D(bug("[Intuition] %s: using system defaults..\n", __PRETTY_FUNCTION__));
 
-        _intuitionBase->ScreenModePrefs->smp_Width          = GfxBase->NormalDisplayColumns;
-        _intuitionBase->ScreenModePrefs->smp_Height         = GfxBase->NormalDisplayRows;
-        _intuitionBase->ScreenModePrefs->smp_Depth          = AROS_NOMINAL_DEPTH;
+            _intuitionBase->ScreenModePrefs->smp_Width          = GfxBase->NormalDisplayColumns;
+            _intuitionBase->ScreenModePrefs->smp_Height         = GfxBase->NormalDisplayRows;
+            _intuitionBase->ScreenModePrefs->smp_Depth          = AROS_NOMINAL_DEPTH;
+        }
     }
 }
 

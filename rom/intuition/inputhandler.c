@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -1586,13 +1586,18 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
                     ie->ie_Y = scr->TopEdge;
             }
         }
-        else /* !GetPrivIBase(IntuitionBase)->ActiveMonitor */
-        {
+        else if (GetPrivIBase(IntuitionBase)->ScreenModePrefs) /* !GetPrivIBase(IntuitionBase)->ActiveMonitor */
+        {       
             /*
              * If there's no active display, we take the prefs defined dimensions...
              */
             DWidth = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Width;
             DHeight = GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Height;
+        }
+        else
+        {
+            DWidth = 1;
+            DHeight = 1;
         }
 
         /*
