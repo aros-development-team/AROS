@@ -202,3 +202,6 @@
 [submodule "developer/debug/test/datatypes"]
 	path = developer/debug/test/datatypes
 	url = https://github.com/aros-development-team/datatype-test-binaries.git
+[submodule "workbench/system/Wanderer/Tools/Info/catalogs"]
+	path = workbench/system/Wanderer/Tools/Info/catalogs
+	url = https://github.com/aros-translation-team/info.git
