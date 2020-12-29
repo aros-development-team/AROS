@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Gfx Hidd class for SM502.
@@ -66,8 +66,11 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     };
     struct TagItem sync_mode[] =
     {
+        {aHidd_Sync_PixelClock, 0},
 	{aHidd_Sync_HDisp,      0},
 	{aHidd_Sync_VDisp,      0},
+        {aHidd_Sync_HTotal,     0},
+        {aHidd_Sync_VTotal,     0},
 	{aHidd_Sync_HMax,	16384},
 	{aHidd_Sync_VMax,	16384},
 	{aHidd_Sync_Description, (IPTR)"SM502:%hx%v"},
@@ -106,8 +109,11 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     pftags[11].ti_Data = (XSD(cl)->data.bitsperpixel > 24) ? 24 : XSD(cl)->data.bitsperpixel;
     pftags[14].ti_Data = (1 << XSD(cl)->data.depth) - 1;
 
-    sync_mode[0].ti_Data = XSD(cl)->data.width;
-    sync_mode[1].ti_Data = XSD(cl)->data.height;
+    sync_mode[0].ti_Data = 60 * XSD(cl)->data.width * XSD(cl)->data.height;
+    sync_mode[1].ti_Data = XSD(cl)->data.width;
+    sync_mode[2].ti_Data = XSD(cl)->data.height;
+    sync_mode[3].ti_Data = XSD(cl)->data.width;
+    sync_mode[4].ti_Data = XSD(cl)->data.height;
 
     yourtags[1].ti_Data = (IPTR)msg->attrList;
     yourmsg.mID = msg->mID;
