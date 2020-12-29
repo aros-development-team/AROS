@@ -1,15 +1,15 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: catalonian.language description file.
+    Desc: catalan.language description file.
 */
 
-#define LANGSTR     "catalonian"        /* String version of above      */
+#define LANGSTR     "catalan"           /* String version of above      */
 #define NLANGSTR    "català"            /* Native version of LANGSTR    */
-#define LANGVER     41                  /* Version number of language   */
+#define LANGVER     42                  /* Version number of language   */
 #define LANGREV     2                   /* Revision number of language  */
-#define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (30.09.2014)"
+#define LANGTAG     "\0$VER: " LANGSTR ".language 42.2 (29.12.2020)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
 #include "lang_openclose.inc"
