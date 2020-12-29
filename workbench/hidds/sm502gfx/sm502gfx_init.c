@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: sm502 Gfx Hidd for standalone i386 AROS
@@ -37,8 +37,8 @@ static void FreeAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
     
     for (i = 0; i < num; i++)
     {
-	if (bases[i])
-	    OOP_ReleaseAttrBase(iftable[i]);
+        if (bases[i])
+            OOP_ReleaseAttrBase(iftable[i]);
     }
 }
 
@@ -48,12 +48,12 @@ static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 
     for (i = 0; i < num; i++)
     {
-	bases[i] = OOP_ObtainAttrBase(iftable[i]);
-	if (!bases[i])
-	{
-	    FreeAttrBases(iftable, bases, i);
-	    return FALSE;
-	}
+        bases[i] = OOP_ObtainAttrBase(iftable[i]);
+        if (!bases[i])
+        {
+            FreeAttrBases(iftable, bases, i);
+            return FALSE;
+        }
     }
 
     return TRUE;
@@ -78,13 +78,13 @@ static int SM502Gfx_Init(LIBBASETYPEPTR LIBBASE)
     int res = FALSE;
 
     if (!GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
-    	return FALSE;
+        return FALSE;
 
     InitSemaphore(&xsd->framebufferlock);
     InitSemaphore(&xsd->HW_acc);
 
     if (!initSM502GfxHW(&xsd->data))
-    	return FALSE;
+        return FALSE;
 
     D(bug("[SM502Gfx] Init: Everything OK, installing driver\n"));
 
@@ -96,9 +96,9 @@ static int SM502Gfx_Init(LIBBASETYPEPTR LIBBASE)
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41);
     if (!GfxBase)
     {
-	D(bug("[SM502Gfx] Failed to open graphics.library!\n"));
+        D(bug("[SM502Gfx] Failed to open graphics.library!\n"));
 
-	return FALSE;
+        return FALSE;
     }
 
     LIBBASE->vsd.basebm = OOP_FindClass(CLID_Hidd_BitMap);
@@ -115,9 +115,9 @@ static int SM502Gfx_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[SM502Gfx] AddDisplayDriver() result: %u\n", err));
     if (!err)
     {
-	/* We use ourselves, and no one else does */
-    	LIBBASE->library.lib_OpenCnt = 1;
-    	res = TRUE;
+        /* We use ourselves, and no one else does */
+        LIBBASE->library.lib_OpenCnt = 1;
+        res = TRUE;
     }
 
     CloseLibrary(&GfxBase->LibNode);

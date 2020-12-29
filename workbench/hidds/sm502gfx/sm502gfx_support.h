@@ -33,12 +33,12 @@ struct SM502_HWData
 
 static inline ULONG smread(struct SM502_HWData *hw, ULONG reg)
 {
-	return (ULONG)AROS_LE2LONG(*(volatile LONG *)(hw->mmio + reg));
+        return (ULONG)AROS_LE2LONG(*(volatile LONG *)(hw->mmio + reg));
 }
 
 static inline VOID smwrite(struct SM502_HWData *hw, ULONG reg, ULONG val)
 {
-	*(volatile LONG *)(hw->mmio + reg) = AROS_LONG2LE((LONG)val);
+        *(volatile LONG *)(hw->mmio + reg) = AROS_LONG2LE((LONG)val);
 }
 
 #undef HiddPCIDeviceAttrBase
@@ -51,6 +51,6 @@ BOOL initSM502GfxHW(struct SM502_HWData *);
 void DACLoad(struct SM502Gfx_staticdata *, UBYTE *, unsigned char, int);
 void ClearBuffer(struct SM502_HWData *data);
 void sm502DoRefreshArea(struct SM502_HWData *hwdata, struct SM502GfxBitmapData *data,
-		       LONG x1, LONG y1, LONG x2, LONG y2);
+                       LONG x1, LONG y1, LONG x2, LONG y2);
 
 #endif /* SM502GFX_SUPPORT_H */

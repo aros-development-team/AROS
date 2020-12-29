@@ -4,13 +4,13 @@
 #include <hidd/gfx.h>
 
 struct MouseData {
-	APTR shape;
-	OOP_Object *oopshape;
-	ULONG width;
-	ULONG height;
-	ULONG x;
-	ULONG y;
-	LONG visible;
+        APTR shape;
+        OOP_Object *oopshape;
+        ULONG width;
+        ULONG height;
+        ULONG x;
+        ULONG y;
+        LONG visible;
 };
 
 #endif /* SM502GFX_CURSOR_H */
