@@ -81,11 +81,12 @@ int kbd_read_data(void)
 
 int kbd_clear_input(void)
 {
-    int maxread = 100, code, lastcode = KBD_NO_DATA;
+    int maxread = 100, lastcode = KBD_NO_DATA;
     UBYTE status;
 
     do
     {
+        int code;
         status = kbd_read_status();
         if ((code = kbd_read_data()) == KBD_NO_DATA)
             break;
