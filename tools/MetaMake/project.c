@@ -552,14 +552,14 @@ execute (struct Project * prj, const char * cmd, const char * in,
 #define VOUT(x)
 
 void
-maketarget (FILE * deplogfh, struct Project * prj, char * tname, int depth, int offset)
+maketarget (FILE * deplogfh, struct Project * prj, char * tname, unsigned int depth, unsigned int offset)
 {
     struct Target * target, * subtarget;
     struct Node * node;
     struct MakefileRef * mfref;
     struct MakefileTarget * mftarget;
     struct List deps;
-    int updatecnt = 0, targetcnt = 0;
+    unsigned int updatecnt = 0, targetcnt = 0;
 
     NewList (&deps);
 
