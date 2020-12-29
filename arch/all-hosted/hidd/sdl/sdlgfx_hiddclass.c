@@ -250,9 +250,9 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         synctags[i][0].ti_Tag = aHidd_Sync_PixelClock;  synctags[i][0].ti_Data = 60 * modes[i]->w * modes[i]->h;
         synctags[i][1].ti_Tag = aHidd_Sync_HDisp;       synctags[i][1].ti_Data = modes[i]->w;
         synctags[i][2].ti_Tag = aHidd_Sync_VDisp;       synctags[i][2].ti_Data = modes[i]->h;
-        synctags[i][3].ti_Tag = aHidd_Sync_HTotal;      synctags[i][5].ti_Data = modes[i]->w;
-        synctags[i][4].ti_Tag = aHidd_Sync_VTotal;      synctags[i][8].ti_Data = modes[i]->h;
-        synctags[i][5].ti_Tag = aHidd_Sync_Description; synctags[i][9].ti_Data = (IPTR)"SDL:%hx%v";
+        synctags[i][3].ti_Tag = aHidd_Sync_HTotal;      synctags[i][3].ti_Data = modes[i]->w;
+        synctags[i][4].ti_Tag = aHidd_Sync_VTotal;      synctags[i][4].ti_Data = modes[i]->h;
+        synctags[i][5].ti_Tag = aHidd_Sync_Description; synctags[i][5].ti_Data = (IPTR)"SDL:%hx%v";
         synctags[i][6].ti_Tag = TAG_DONE;
     }
 
