@@ -276,12 +276,16 @@ LIBDIR                        := $(AROS_LIB)
 OSGENDIR                      := $(GENDIR)/rom
 KOBJSDIR                      := $(GENDIR)/kobjs
 
-# the build system needs to have some tools in the PATH
-
+# 
+# Add necessary directories to the system PATH, so that the build system can
+# find the toolchain and related build tools.
+# NB: wrappers are generally stored under $(TOOLDIR), with native build tools
+# under $(CROSSTOOLSDIR), so make sure they are in the correct order
 ifeq ($(AROS_PATH_SET),)
-    TMP_TOOLDIR               := $(shell echo $(TOOLDIR) | sed 's/^\(.\):\//\/\1\//')
-    TMP_CROSSTOOLSDIR         := $(shell echo $(CROSSTOOLSDIR) | sed 's/^\(.\):\//\/\1\//')
-    PATH                      := $(TMP_CROSSTOOLSDIR):$(TMP_TOOLDIR):$(TMP_TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX):$(PATH)
+    AROS_BUILD_TOOLDIR        := $(shell echo $(TOOLDIR) | sed 's/^\(.\):\//\/\1\//')
+    AROS_BUILD_CROSSTOOLSDIR  := $(shell echo $(CROSSTOOLSDIR) | sed 's/^\(.\):\//\/\1\//')
+    AROS_BUILD_ARCHTOOLDIR    := $(AROS_BUILD_TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
+    PATH                      := $(AROS_BUILD_TOOLDIR):$(AROS_BUILD_CROSSTOOLSDIR):$(AROS_BUILD_ARCHTOOLDIR):$(PATH)
     AROS_PATH_SET             := yes
     export PATH AROS_PATH_SET
 endif
