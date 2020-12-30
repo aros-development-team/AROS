@@ -9,7 +9,7 @@
 #include "muimaster_strings.h"
 
 #define CATALOG_NAME     "System/Libs/muimaster.catalog"
-#define CATALOG_VERSION  1
+#include "catalogs/catalog_version.h"
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
