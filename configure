@@ -9418,7 +9418,10 @@ case "$target_os" in
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
                 aros_target_cpu="arm"
-                gcc_default_cpu="armv7-a+fp"
+                # we intentionaly leave
+                # gcc_default_cpu empty here
+                # so the correct value is loaded
+                # later.
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="armelf_aros"
                 fi
@@ -9841,7 +9844,13 @@ $as_echo "release" >&6; }
         fi
     fi
 
+    # from gcc 8, armv7-a+fp is used to specify
+    # hard-float/vfpv3-d16
+    arm_v7_flotattgt="armv7-a+fp"
     if test "$GCC_VERSION_MAJOR" -lt "10" ; then
+        if test "$GCC_VERSION_MAJOR" -lt "8" ; then
+            arm_v7_flotattgt="armv7-a"
+        fi
         aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_COMMON)"
     fi
 
@@ -9981,7 +9990,7 @@ $as_echo "$aros_gcc_cpu" >&6; }
     arm*)
                 aros_isa_extra="$export_newline$arm_isa_extra"
         if test "$gcc_default_cpu" = ""; then
-            gcc_default_cpu="armv7-a+fp"
+            gcc_default_cpu=$arm_v7_flotattgt
         fi
 
         if test "$gcc_default_float_abi" = ""; then
