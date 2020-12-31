@@ -340,4 +340,4 @@ ifeq ($(AROS_TARGET_CPU),m68k)
 ISA_FLAGS:=$(ISA_FLOAT_FLAGS)
 endif
 %build_with_configure mmake=tools-crosstools-gcc-libatomic srcdir="$(LIBATOMIC_SRCDIR)" \
-	gendir="$(LIBATOMIC_OBJDIR)"
+	basedir= gendir="$(LIBATOMIC_OBJDIR)"
