@@ -4,6 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/lowlevel/make.opts
 -include $(SRCDIR)/arch/$(CPU)-all/lowlevel/make.opts
 
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
 USER_LDFLAGS := -static
 
 FUNCS	:= \

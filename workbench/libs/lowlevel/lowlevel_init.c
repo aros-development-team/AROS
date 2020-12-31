@@ -161,26 +161,25 @@ BOOL LowLevelTimerInit(LIBBASETYPEPTR LowLevelBase)
                 LowLevelBase->ll_TimerBase = (struct Library *)LowLevelBase->ll_TimerIO->io_Device;
 
                 D(bug("[lowlevel] %s: TimerBase @ %p\n", __func__, LowLevelBase->ll_TimerBase));
+
+                return TRUE;
             }
             else
             {
                 D(bug("[lowlevel] %s: failed to open 'timer.device'\n", __func__);)
-                return FALSE;
             }
         }
         else
         {
             D(bug("[lowlevel] %s: failed to create timer iorequest\n", __func__);)
-            return FALSE;
         }
     }
     else
     {
         D(bug("[lowlevel] %s: failed to create timer msgport\n", __func__);)
-        return FALSE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 VOID LowLevelTimerClose(LIBBASETYPEPTR LowLevelBase)
@@ -196,6 +195,8 @@ VOID LowLevelTimerClose(LIBBASETYPEPTR LowLevelBase)
         LowLevelBase->ll_TimerMP = NULL;
 
     }
+    if (LowLevelBase->ll_UtilityBase)
+        CloseLibrary(LowLevelBase->ll_UtilityBase);
 }
 
 static int Init(LIBBASETYPEPTR LowLevelBase)
@@ -208,28 +209,28 @@ static int Init(LIBBASETYPEPTR LowLevelBase)
     NEWLIST(&LowLevelBase->ll_KBInterrupts);
     LowLevelBase->ll_LastKey = 0xFF;
 
-    if (LowLevelInputInit(LowLevelBase))
+    if ((LowLevelBase->ll_UtilityBase = OpenLibrary("utility.library", 0)))
     {
-        if (!LowLevelTimerInit(LowLevelBase))
+        if (LowLevelInputInit(LowLevelBase))
         {
+            if (LowLevelTimerInit(LowLevelBase))
+            {
+                InitSemaphore(&LowLevelBase->ll_Lock);
+                LowLevelBase->ll_VBlank.is_Data = NULL;
+                LowLevelBase->ll_VBlank.is_Code = NULL;
+
+                return TRUE;
+            }
             D(bug("[lowlevel] %s: failed to initialise timer device\n", __func__);)
 
             LowLevelInputClose(LowLevelBase);
-
-            return FALSE;
+        }
+        else
+        {
+            D(bug("[lowlevel] %s: failed to initialise input device\n", __func__);)
         }
     }
-    else
-    {
-        D(bug("[lowlevel] %s: failed to initialise input device\n", __func__);)
-        return FALSE;
-    }
-
-    InitSemaphore(&LowLevelBase->ll_Lock);
-    LowLevelBase->ll_VBlank.is_Data = NULL;
-    LowLevelBase->ll_VBlank.is_Code = NULL;
-
-    return TRUE;
+    return FALSE;
 }
 
 static int Expunge(LIBBASETYPEPTR LowLevelBase)
@@ -237,6 +238,8 @@ static int Expunge(LIBBASETYPEPTR LowLevelBase)
     D(bug("[lowlevel] %s()\n", __func__);)
     LowLevelTimerClose(LowLevelBase);
     LowLevelInputClose(LowLevelBase);
+    if (LowLevelBase->ll_UtilityBase)
+        CloseLibrary(LowLevelBase->ll_UtilityBase);
 }
 
 ADD2INITLIB(Init, 0);
