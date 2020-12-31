@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,7 +49,7 @@ VOID StorageController__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         Creates a bus driver object and registers it in the controller.
 
     INPUTS
-        obj         - An ATA Controller object to operate on.
+        obj         - A Storage Controller object to operate on.
         busClass - A pointer to OOP class of the bus. In order to create an object
                       of some previously registered public class, use
                       oop.library/OOP_FindClass().
@@ -88,26 +88,29 @@ OOP_Object *StorageController__Hidd_StorageController__AddBus(OOP_Class *cl, OOP
         if (bn)
         {
             D(bug("[Storage:Controller] Hidd_StorageController__AddBus: Bus Node @ 0x%p\n", bn));
-            bus = OOP_NewObject(msg->busClass, NULL, msg->tags);
 
+            bus = OOP_NewObject(msg->busClass, NULL, msg->tags);
             if (!bus)
             {
-                FreePooled( CSD(cl)->cs_MemPool, bn, sizeof(struct BusNode));
                 D(bug("[Storage:Controller] Hidd_StorageController__AddBus: Failed to instantiate Bus\n"));
+
+                FreePooled( CSD(cl)->cs_MemPool, bn, sizeof(struct BusNode));
                 return NULL;
             }
 
-           D(bug("[Storage:Controller] Hidd_StorageController__AddBus: Bus Instance @ 0x%p\n", bus));
+            D(bug("[Storage:Controller] Hidd_StorageController__AddBus: Bus Object @ 0x%p\n", bus));
 
             if (HIDD_StorageController_SetUpBus(o, bus))
             {
-                D(bug("[Storage:Controller] Hidd_StorageController__AddBus: Bus Initialized\n"));
+                D(bug("[Storage:Controller] Hidd_StorageController__AddBus: Bus Initialized\n");)
+
                 /* Add the driver to the end of drivers list */
                 bn->busObject = bus;
                 ObtainSemaphore(&data->scd_BusLock);
                 ADDTAIL(&data->scd_Buses, bn);
                 ReleaseSemaphore(&data->scd_BusLock);
-                
+
+                D(bug("[Storage:Controller] Hidd_StorageController__AddBus: returning 0x%p\n", bus);)
                 return bus;
             }
 
