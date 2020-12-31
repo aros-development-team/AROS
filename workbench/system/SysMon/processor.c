@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -114,7 +114,14 @@ VOID UpdateProcessorInformation(struct SysMonData * smdata)
 
         frequency /= 1000000;
 #endif
-        __sprintf(buffer, "%d MHz", (ULONG)frequency);
+        if (frequency > 1000)
+        {
+            ULONG ghz = frequency / 1000;
+            ULONG mhz = frequency - (ghz * 1000);
+            __sprintf(buffer, "%d.%d GHz", ghz, mhz);
+        }
+        else
+            __sprintf(buffer, "%d MHz", (ULONG)frequency);
         set(smdata->cpufreqvalues[i], MUIA_Text_Contents, (IPTR)buffer);
     }
 }
