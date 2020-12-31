@@ -1,17 +1,18 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
     Lang: english
 */
 
-#include <string.h>
+#include <proto/utility.h>
+#include <proto/locale.h>
+
 #include <aros/libcall.h>
 #include <exec/types.h>
 #include <libraries/lowlevel.h>
 #include <libraries/locale.h>
-#include <proto/locale.h>
 
 #include "lowlevel_intern.h"
 
@@ -81,7 +82,8 @@ static struct
 
     while (NULL != langlist[index].langstring)
     {
-        if (0 == strcmp(locale->loc_LanguageName, langlist[index].langstring))
+        struct Library *UtilityBase = LowLevelBase->ll_UtilityBase;
+        if (0 == Stricmp(locale->loc_LanguageName, langlist[index].langstring))
         {
             CloseLocale(locale);
             CloseLibrary(LocaleBase);

@@ -3,6 +3,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+# gcc 4.6.2 - work around optimizer issue (out of spill registers)
+ifeq ($(AROS_TARGET_CPU),m68k)
+  OPTIMIZATION_CFLAGS += -O1
+endif
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_LDFLAGS := -static
+
 FILES := \
     intern_ieeedpisodd \
     intern_ieeedpld
@@ -26,15 +34,7 @@ FUNCS := \
     ieeedptanh \
     ieeedptieee
 
-
 #MM workbench-libs-mathieeedoubtrans : includes
-
-# gcc 4.6.2 - work around optimizer issue (out of spill registers)
-ifeq ($(AROS_TARGET_CPU),m68k)
-  OPTIMIZATION_CFLAGS += -O1
-endif
-
-USER_LDFLAGS := -static
 
 %build_module mmake=workbench-libs-mathieeedoubtrans \
     modname=mathieeedoubtrans modtype=library \

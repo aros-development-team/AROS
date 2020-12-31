@@ -50,6 +50,7 @@ struct LowLevelBase
 
     /* Input event handling ... */
     struct Library              *ll_InputBase;
+    struct Library              *ll_UtilityBase;
     struct Interrupt        	*ll_InputHandler;
     struct MsgPort          	*ll_InputMP;
     struct IOStdReq         	*ll_InputIO;

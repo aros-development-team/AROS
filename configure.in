@@ -1172,6 +1172,7 @@ case "$target_cpu" in
         arm_isa_extra="ISA_ARM_FLAGS                = -marm"$gcc_default_endian
         ;;
     *m68k*)
+        target_extra_cfg+="$export_newline""AROSROM_MODULE_CFLAGS         := $""(CFLAGS_NO_BUILTIN)$export_newline"
         m68k_isa_extra="ISA_FLOAT_FLAGS               = -msoft-float""$export_newline""ISA_MC68000_FLAGS             = -march=68000 $""(ISA_FLOAT_FLAGS)"
         m68k_020_isa_extra="ISA_MC68020_FLAGS             = -march=68020 $""(ISA_FLOAT_FLAGS)"
         m68k_030_isa_extra="ISA_MC68030_FLAGS             = -march=68030 $""(ISA_FLOAT_FLAGS)"
@@ -1222,7 +1223,7 @@ case "$target_os" in
                 aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
                 aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
-                gcc_target_cpu="mc68000"
+                gcc_target_cpu="m68000"
                 ;;
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1600,7 +1601,7 @@ case "$target_os" in
                 aros_flavour="emulcompat"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
                 aros_isa_flags="$""(ISA_MC68000_FLAGS)"
-                gcc_target_cpu="mc68000"
+                gcc_target_cpu="m68000"
                 ;;
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1964,7 +1965,7 @@ case "$target_os" in
                 aros_debug_ldflags="$aros_symbols_debug"
                 aros_mungwall_debug="0"
                 aros_modules_debug="0"
-                gcc_target_cpu="mc68000"
+                gcc_target_cpu="m68000"
                 ignore_undefined_symbols="-ius"
                 ;;
            *)
@@ -1999,7 +2000,7 @@ case "$target_os" in
                 aros_debug_ldflags="$aros_symbols_debug"
                 aros_mungwall_debug="0"
                 aros_modules_debug="0"
-                gcc_target_cpu="mc68000"
+                gcc_target_cpu="m68000"
                 ignore_undefined_symbols="-ius"
                 ;;
            *)
@@ -2230,6 +2231,7 @@ case "$aros_target_cpu" in
         AC_MSG_RESULT($aros_gcc_cpu)
         if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
             aros_target_cpu_extra=$aros_gcc_cpu
+            gcc_target_cpu=mc$aros_gcc_cpu
         fi
         aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
         ;;
@@ -3214,22 +3216,20 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         fi
     fi
 
+    if test "x-$HOST_WANTS_DBUS" = "x-yes" ; then
+        dnl See if the user wants dbus.library
+        AC_MSG_CHECKING([whether building of dbus.library is enabled])
+        AC_ARG_ENABLE(dbus,AC_HELP_STRING([--enable-dbus],[Enable DBUS support via dbus.library (default=no)]),dbus="yes",dbus="no")
+        if test "$dbus" = "yes" ; then
+            DBUS_CFLAGS=`pkg-config --cflags dbus-1`
+            DBUS_LIBFLAGS=`pkg-config --libs dbus-1`
+            KERNEL_DBUS_KOBJ=kernel-dbus-kobj
+            KERNEL_DBUS_INCLUDES=kernel-dbus-includes
+            aros_target_options+="$export_newline""# Enable DBUS Support$export_newline""OPT_HOST_DBUS              := yes$export_newline"
+        fi
+        AC_MSG_RESULT($dbus)
+    fi
 fi
-
-
-dnl See if the user wants dbus.library
-AC_MSG_CHECKING([whether building of dbus.library is enabled])
-AC_ARG_ENABLE(dbus,AC_HELP_STRING([--enable-dbus],[Enable DBUS support via dbus.library (default=no)]),dbus="yes",dbus="no")
-if test "$dbus" = "yes" ; then
-    ENABLE_DBUS=1
-    DBUS_CFLAGS=`pkg-config --cflags dbus-1`
-    DBUS_LIBFLAGS=`pkg-config --libs dbus-1`
-    KERNEL_DBUS_KOBJ=kernel-dbus-kobj
-    KERNEL_DBUS_INCLUDES=kernel-dbus-includes
-else
-    ENABLE_DBUS=0
-fi
-AC_MSG_RESULT($dbus)
 
 if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
@@ -3254,8 +3254,24 @@ fi
 kernel_optimization_cflags="$kernel_optimization_level"
 AC_MSG_RESULT($kernel_optimization_level)
 
+export_firstextraline="$export_newline# GCC CPU Config$export_newline"
+if ! test "$aros_gcc_cpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_CONFIG_CPU                := $aros_gcc_cpu$export_newline"
+    export_firstextraline=""
+fi
+
 if ! test "$gcc_default_cpu" = "" ; then
-    target_extra_cfg+="$export_newline""# ARM gcc default target$export_newline""GCC_DEFAULT_CPU         := $gcc_default_cpu$export_newline""GCC_DEFAULT_FPU         := $gcc_default_fpu$export_newline""GCC_DEFAULT_FLOAT_ABI   := $gcc_default_float_abi$export_newline""GCC_DEFAULT_MODE        := $gcc_default_mode$export_newline"
+    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_CPU               := $gcc_default_cpu$export_newline"
+    export_firstextraline=""
+fi
+
+if ! test "$gcc_default_fpu" = "" ; then
+    target_extra_cfg+="$export_firstextraline""GCC_DEFAULT_FPU               := $gcc_default_fpu"
+    export_firstextraline=""
+fi
+
+if ! test "$gcc_default_float_abi" = "" ; then
+    target_extra_cfg+="$export_newline""# ARM gcc default config$export_newline""GCC_DEFAULT_FLOAT_ABI         := $gcc_default_float_abi$export_newline""GCC_DEFAULT_MODE              := $gcc_default_mode$export_newline"
 fi
 
 if test "$use_libatomic" = "yes" ; then
@@ -3514,7 +3530,6 @@ AC_SUBST(objc_target)
 AC_SUBST(java_target)
 
 # DBUS related
-AC_SUBST(ENABLE_DBUS)
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBFLAGS)
 AC_SUBST(KERNEL_DBUS_KOBJ)

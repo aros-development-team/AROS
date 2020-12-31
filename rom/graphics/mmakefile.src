@@ -3,6 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/cgfx
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
 	       -D__OOP_NOMETHODBASES__

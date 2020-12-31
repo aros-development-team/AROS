@@ -10,6 +10,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES := defaultkeymap support
 FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
 USER_CPPFLAGS := \
                -DNO_INLINE_STDARG \
                -DUSE_EXEC_DEBUG

@@ -3,6 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_CPPFLAGS := -D__NOLIBBASE__
 USER_LDFLAGS := -static
 
 FILES := support 	 \
@@ -35,7 +37,7 @@ FUNCS := \
     putdefdiskobject \
     putdiskobject \
     puticontaglist
-    
+
 #MM workbench-libs-icon-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
@@ -51,8 +53,6 @@ FUNCS := \
 #MM	workbench-datatypes-png-includes
 #MM- workbench-libs-icon : linklibs
 #MM- core-linklibs: linklibs-icon
-
-USER_CPPFLAGS := -D__NOLIBBASE__
 
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \

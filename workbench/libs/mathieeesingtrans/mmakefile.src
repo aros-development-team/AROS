@@ -3,6 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
 USER_LDFLAGS := -static
 
 FILES := \

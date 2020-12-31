@@ -3311,9 +3311,9 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #                         set, so this allows them to be disabled (unless you can provide
 #                         all the options they would need)
 #     - extracppflags      = additional preprocessor flags.
-#     - usecflags      = same meaning as the one for the %build_with_configure macro.
+#     - usecflags      = .
 #     - extracflags     = additional flags to use with the C compiler.
-#     - usecxxflags      = same meaning as the one for the %build_with_configure macro.
+#     - usecxxflags      = .
 #     - extracxxflags   = additional flags to use with the C++ compiler.
 #     - nix_dir_layout  = if yes the binary will be stored in a bin subdirectory.
 #                         Defaults to the value of the nix argument.
@@ -3467,6 +3467,12 @@ ifneq ($(DEBUG),yes)
     %(mmake)-s_flag = -s
 endif
 
+ifeq (%(targetisaflags),)
+%(mmake)-TARGET_LDFLAGS :=
+else
+%(mmake)-TARGET_LDFLAGS := $(TARGET_ISA_LDFLAGS)
+endif
+
 ifeq (%(usecflags),yes)
     %(mmake)-HOST_CFLAGS=%(hostisaflags) $(HOST_CFLAGS)
     %(mmake)-KERNEL_CFLAGS=%(kernelisaflags) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)
@@ -3531,18 +3537,19 @@ ifeq (%(crossbuild),no)
         LD="$(strip $(TARGET_LD))"
     %(mmake)-cfg-env += CFLAGS="$(strip $(%(mmake)-TARGET_CFLAGS) $(%(mmake)-AC_CFLAGS) %(extracflags))" \
         CXXFLAGS="$(strip $(%(mmake)-TARGET_CXXFLAGS) $(%(mmake)-AC_CXXFLAGS) %(extracxxflags))"
-    %(mmake)-cfg-env += LDFLAGS="$(strip $(TARGET_ISA_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
-    %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(TARGET_ISA_LDFLAGS))"
+    %(mmake)-cfg-env += LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))"
+    %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(%(mmake)-TARGET_LDFLAGS))"
 else
-    %(mmake)-cfg-env += CPP="" \
+    %(mmake)-cfg-env += \
+        CPP="" \
         CXXCPP="" \
         CC="" \
         CXX="" \
-        LD=""
-    %(mmake)-cfg-env += CFLAGS="$(strip $(%(mmake)-HOST_CFLAGS) $(%(mmake)-AC_CFLAGS) %(extracflags))" \
-        CXXFLAGS="$(strip $(%(mmake)-HOST_CXXFLAGS) $(%(mmake)-AC_CXXFLAGS) %(extracxxflags))"
-    %(mmake)-cfg-env += LDFLAGS="$(strip $(HOST_LDFLAGS) $(%(mmake)-ACBUILD_LDFLAGS) $(%(mmake)-s_flag))"
-    %(mmake)-cfg-env += LT_LDFLAGS="$(strip $(HOST_ISA_LDFLAGS))"
+        LD="" \
+        CFLAGS="" \
+        CXXFLAGS="" \
+        LDFLAGS="" \
+        LT_LDFLAGS=""
 endif
 ifeq (%(usecppflags),yes)
     %(mmake)-cfg-env += CPPFLAGS="$(strip $(BASE_CPPFLAGS) $(USER_CPPFLAGS) %(extracppflags))"
@@ -3571,7 +3578,7 @@ endif
         CXX_FOR_TARGET="$(strip $(%(mmake)-TARGET_CXX) $(TARGET_SYSROOT))" \
         CXXFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_CXXFLAGS) $(%(mmake)-ACTARGET_CXXFLAGS) -L$(AROS_DEVELOPER)/lib %(extracxxflags))" \
         LD_FOR_TARGET="$(strip $(TARGET_LD))" \
-        LDFLAGS_FOR_TARGET="$(strip $(TARGET_ISA_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(%(mmake)-ACTARGET_LDFLAGS) $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
+        LDFLAGS_FOR_TARGET="$(strip $(%(mmake)-TARGET_LDFLAGS) -L$(AROS_DEVELOPER)/lib $(%(mmake)-ACTARGET_LDFLAGS) $(USER_LDFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag))" \
         AS_FOR_TARGET="$(strip $(TARGET_AS))" \
         OBJCOPY_FOR_TARGET="$(strip $(TARGET_OBJCOPY))" \
         RANLIB_FOR_TARGET="$(strip $(TARGET_RANLIB))" \

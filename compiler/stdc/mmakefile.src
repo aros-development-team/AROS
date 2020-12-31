@@ -341,6 +341,15 @@ endif
 
 STDC_MATH += $(STDC_WCABS_MATH)
 
+# wide char/string support
+STDC_WCHAR := \
+    wcscat \
+    wcscmp \
+    wcsncmp \
+    wcscpy \
+    wcsncpy \
+    wcslen
+
 STDC := \
     __ctype \
     __exitfunc \
@@ -532,7 +541,7 @@ USER_CPPFLAGS := \
 
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
-    files="$(STDC) $(STDC_COMMON)" \
+    files="$(STDC) $(STDC_WCHAR) $(STDC_COMMON)" \
     linklibfiles=$(STDC_LINKLIB) linklibobjs=$(STDC_LINKOBJS)
 
 STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
@@ -575,6 +584,7 @@ STDC_STATIC := \
     __ctype \
     __vcformat \
     __vcscan \
+    abs labs llabs \
     atoi \
     atol \
     atoll \

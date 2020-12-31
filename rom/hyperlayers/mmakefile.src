@@ -2,6 +2,13 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -D__UTILITY_NOLIBBASE__ \
+	       -D__GRAPHICS_NOLIBBASE__
+USER_LDFLAGS := -static
+
 FILES	  := basicfuncs createlayertaglist movelayerz
 
 FUNCS := \
@@ -57,12 +64,6 @@ FUNCS := \
 #MM     includes-copy
 
 #MM- core-linklibs: linklibs-layers
-
-USER_CPPFLAGS := \
-               -DUSE_EXEC_DEBUG \
-	       -D__UTILITY_NOLIBBASE__ \
-	       -D__GRAPHICS_NOLIBBASE__
-USER_LDFLAGS := -static
 
 %build_module mmake=kernel-layers \
   modname=layers modtype=library \
