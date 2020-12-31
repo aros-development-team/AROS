@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define DEBUG 0
-
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 
@@ -14,7 +12,9 @@
 #include <resources/task.h>
 
 #include "etask.h"
-
+#if defined(__AROSEXEC_SMP__)
+#include "kernel_debug.h"
+#endif
 #include "task_intern.h"
 
 extern APTR AROS_SLIB_ENTRY(NewAddTask, Task, 176)();
@@ -33,11 +33,18 @@ static LONG taskres_Init(struct TaskResBase *TaskResBase)
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
+    {
+        /* we should probably halt the system ..*/
     	return FALSE;
+    }
 
 #if defined(__AROSEXEC_SMP__)
     TaskResBase->trb_ExecLock = OpenResource("execlock.resource");
     ExecLockBase = TaskResBase->trb_ExecLock;
+    if (!ExecLockBase)
+    {
+        krnPanic(KernelBase,"Failed to open Exec's private locking resource!");
+    }
 #endif
 
     TaskResBase->trb_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
