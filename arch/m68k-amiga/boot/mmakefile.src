@@ -196,15 +196,17 @@ $(GENDIR)/boot/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakef
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-Wl,-Map=$(GENDIR)/boot/aros-amiga-m68k-reloc.elf.map \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \
-		-m68000 \
+		-m$(GCC_CONFIG_CPU) \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-rom.ld \
 		-L$(AROS_LIB) $(LIBS) -lgcc
 
 $(GENDIR)/boot/aros-amiga-m68k.elf: $(GENDIR)/boot/aros-amiga-m68k-reloc.elf
 	$(Q)$(KERNEL_LD) -o $@ \
+		-Map $(GENDIR)/boot/aros-amiga-m68k.elf.map \
 		--section-start .rom=$(ROMLOC_rom) \
 		--section-start .ext=$(ROMLOC_ext) \
 		--section-start .ss=$(ROMLOC_ss) \
@@ -227,7 +229,7 @@ clean ::
 	-$(RM) $(TESTS)
 
 USER_INCLUDES += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
-USER_CFLAGS += -fno-delete-null-pointer-checks
+USER_CFLAGS += $(CFLAGS_NO_DELETE_NULL_POINTER_CHECKS)
 
 $(KOBJSDIR)/%.o : %.c
 	%compile_q cmd="$(KERNEL_CC)" opt="$(strip $(CFLAGS) $(CPPFLAGS) -I$(AROS_DEVELOPER)/include -I$(GENINCDIR))"
@@ -341,10 +343,11 @@ $(GENDIR)/boot/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefil
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-Wl,-Map=$(GENDIR)/boot/aros-amiga-m68k-ram.elf.map \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \
-		-m68000 \
+		-m$(GCC_CONFIG_CPU) \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-ram.ld \
 		-L$(AROS_LIB) $(LIBS) -lgcc
 
@@ -361,7 +364,7 @@ $(GENDIR)/boot/objtest/%.tst : $(KOBJSDIR)/%.ko $(GENDIR)/boot/objtest
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \
-		-m68000 \
+		-m$(GCC_CONFIG_CPU) \
 		$< -o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-ram-test.ld
 
 ## if you have problems linking the rom because of .bss sections, etc.
@@ -395,11 +398,10 @@ $(AROSARCHDIR)/aros.elf.dbg : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
 		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \
-		-m68000 \
+		-m$(GCC_CONFIG_CPU) \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-dbg.ld \
 		-L$(AROS_LIB) $(LIBS) -lgcc; \
 		$(TARGET_OBJCOPY) --add-gnu-debuglink=$@ $(AROSARCHDIR)/aros.elf; \
 	fi
-
 
 %common
