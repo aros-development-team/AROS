@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -78,18 +78,25 @@ BOOL Prefs_ImportFH(BPTR fh)
         }
         else
         {
-            if (buffer[0] == ';' )
+            if (dock < BIB_MAX_DOCKS)
             {
-                dock++;
-                strcpy(bibprefs.docks[dock].name, &buffer[1]);
-                program = 0;
-                D(bug("[IconBarPrefs] %s buffer\n", &buffer[1]));
+                if (buffer[0] == ';' )
+                {
+                    dock++;
+                    strcpy(bibprefs.docks[dock].name, &buffer[1]);
+                    program = 0;
+                    D(bug("[IconBarPrefs] %s buffer\n", &buffer[1]));
+                }
+                else
+                {
+                    strcpy(bibprefs.docks[dock].programs[program], buffer);
+                    D(bug("[IconBarPrefs] data set %d / %d   - %s\n", dock, program, bibprefs.docks[dock].programs[program]));
+                    program++;
+                }
             }
             else
             {
-                strcpy(bibprefs.docks[dock].programs[program], buffer);
-                D(bug("[IconBarPrefs] data set %d / %d   - %s\n", dock, program, bibprefs.docks[dock].programs[program]));
-                program++;
+                
             }
         }
         line++;
