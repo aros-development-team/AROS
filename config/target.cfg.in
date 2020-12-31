@@ -35,7 +35,6 @@ CROSSTOOLS_TARGET             := @crosstools_target@
 OBJC_TARGET                   := @objc_target@
 JAVA_TARGET                   := @java_target@
 @aros_target_options@
-ENABLE_DBUS                   := @ENABLE_DBUS@
 
 # -------------------------------------------------------------------------- 
 # KERNEL TOOLCHAIN SECTION
