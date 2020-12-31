@@ -22,6 +22,9 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM- distfiles-quick-raspi-arm : distfiles-raspi
 #MM- distfiles-quick-raspi-armeb : distfiles-raspi-be
 
+#MM- distfiles-raspi-quick : distfiles-raspi
+
+
 #MM distfiles-raspi : \
 #MM kernel-raspi-arm \
 #MM kernel-package-raspi-arm \
