@@ -2,6 +2,12 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -D__NOLIBBASE__
+USER_LDFLAGS := -static
+
 CLASSES	:=  buttonclass textclass sliderclass arrowclass scrollerclass \
 	    stringclass listviewclass checkboxclass cycleclass mxclass \
 	    paletteclass
@@ -37,11 +43,6 @@ FUNCS	:=  createcontext \
 #MM     includes-copy
 #MM- workbench-libs-gadtools : linklibs
 #MM- core-linklibs : linklibs-gadtools
-
-USER_CPPFLAGS := \
-               -DUSE_EXEC_DEBUG \
-	       -D__NOLIBBASE__
-USER_LDFLAGS := -static
 
 %build_module mmake=workbench-libs-gadtools \
     modname=gadtools modtype=library \
