@@ -58,6 +58,8 @@ CFLAGS_NO_ALIGNED_NEW                   := @aros_cflags_noalignednew@
 CFLAGS_COMMON                           := @aros_cflags_common@
 CFLAGS_NO_COMMON                        := @aros_cflags_no_common@
 
+CFLAGS_NO_DELETE_NULL_POINTER_CHECKS    := @aros_cflags_nodelete_nullpointer_checks@
+
 # GCOV flags
 CFLAGS_PROFILE_ARCS                     := @aros_cflags_profilearcs@
 CFLAGS_NO_PROFILE_ARCS                  := @aros_cflags_noprofilearcs@

@@ -58,6 +58,7 @@ AC_MSG_RESULT($aros_targetcfg_dir)
 #  -finstrument-functions
 #  -faligned-new
 #  -fcommon
+#  -fno-delete-null-pointer-checks
 
 #  -fno-builtin
 #  -fno-builtin-floor
@@ -280,6 +281,14 @@ AC_MSG_RESULT($aros_common)
 if test "x-$aros_common" = "x-yes" ; then
     aros_cflags_common=-fcommon
     aros_cflags_no_common=-fno-common
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-delete-null-pointer-checks])
+CFLAGS=-fno-delete-null-pointer-checks
+AC_TRY_COMPILE(,, aros_no_delete_null_pointer_checks="yes", aros_no_delete_null_pointer_checks="no")
+AC_MSG_RESULT($aros_no_delete_null_pointer_checks)
+if test "x-$aros_no_delete_null_pointer_checks" = "x-yes" ; then
+    aros_cflags_nodelete_nullpointer_checks=-fno-delete-null-pointer-checks
 fi
 
 AC_MSG_CHECKING([whether ${CC} accepts -fbuiltin])
@@ -1453,6 +1462,7 @@ AC_SUBST(aros_cflags_noalignednew)
 
 AC_SUBST(aros_cflags_common)
 AC_SUBST(aros_cflags_no_common)
+AC_SUBST(aros_cflags_nodelete_nullpointer_checks)
 
 AC_SUBST(aros_cflags_builtin)
 AC_SUBST(aros_cflags_no_builtin)
