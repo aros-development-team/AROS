@@ -153,10 +153,10 @@ typedef void (*SIGHANDLER_T)(int);
  */
 #define SAVEREGS(cc, sc)                                       				\
     SAVE_CPU((cc)->regs, sc);								\
-    if ((cc)->regs.FXData)								\
+    if ((cc)->regs.FXSData)								\
     {											\
     	(cc)->regs.Flags |= ECF_FPFXS;							\
-    	CopyMemQuick(&FPSTATE(sc), (cc)->regs.FXData, sizeof(struct FPXContext));	\
+        CopyMemQuick(&FPSTATE(sc), (cc)->regs.FXSData, sizeof(struct FPXSContext));	\
     }
 
 /*
@@ -165,8 +165,9 @@ typedef void (*SIGHANDLER_T)(int);
  */
 #define RESTOREREGS(cc, sc)                                    				\
     RESTORE_CPU((cc)->regs, sc);							\
-    if ((cc)->regs.Flags & ECF_FPFXS)							\
-	CopyMemQuick((cc)->regs.FXData, &FPSTATE(sc), sizeof(struct FPXContext));
+    if ((cc)->regs.Flags & ECF_FPFXS) {							\
+        CopyMemQuick((cc)->regs.FXSData, &FPSTATE(sc), sizeof(struct FPXSContext)); \
+    }
 
 /* Print signal context. Used in crash handler. */
 #define PRINT_SC(sc)						\
