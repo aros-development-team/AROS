@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to write defines/modulename.h. Part of genmodule.
@@ -16,7 +16,8 @@ void writeincdefines(struct config *cfg)
     char line[256], *banner;
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->includename);
+#if (1)
+    snprintf(line, 255, "%s/defines/%s_LVO.h", cfg->gendir, cfg->includename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -26,6 +27,44 @@ void writeincdefines(struct config *cfg)
     }
 
     banner = getBanner(cfg);
+    fprintf(out,
+            "#ifndef DEFINES_LVO_%s_H\n"
+            "#define DEFINES_LVO_%s_H\n"
+            "\n"
+            "%s"
+            "\n"
+            "/*\n"
+            "    Desc: Function LVO's for %s\n"
+            "*/\n"
+            "\n",
+            cfg->includenameupper, cfg->includenameupper, banner, cfg->modulename
+    );
+
+    for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
+    {
+        if (!funclistit->priv)
+        {
+            fprintf(out, "#define LVO%s          %u\n", funclistit->name, funclistit->lvo);
+        }
+    }
+
+    fprintf(out,
+            "\n"
+            "#endif /* DEFINES_LVO_%s_H*/\n",
+            cfg->includenameupper
+    );
+    fclose(out);
+#endif
+
+    snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->includename);
+    out = fopen(line, "w");
+
+    if (out == NULL)
+    {
+        perror(line);
+        exit(20);
+    }
+
     fprintf(out,
             "#ifndef DEFINES_%s_H\n"
             "#define DEFINES_%s_H\n"

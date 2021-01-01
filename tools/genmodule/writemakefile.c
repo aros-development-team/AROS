@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to write a Makefile with variables that provides the files
@@ -104,8 +104,8 @@ void writemakefile(struct config *cfg)
     if (cfg->options & OPTION_INCLUDES)
     {
         fprintf(out,
-                "clib/%s_protos.h inline/%s.h defines/%s.h proto/%s.h",
-                cfg->includename, cfg->includename, cfg->includename, cfg->includename
+                "clib/%s_protos.h inline/%s.h defines/%s.h defines/%s_LVO.h proto/%s.h",
+                cfg->includename, cfg->includename, cfg->includename, cfg->includename, cfg->includename
         );
     }
     if (cfg->interfacelist)
