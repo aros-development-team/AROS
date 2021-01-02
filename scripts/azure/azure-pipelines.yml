@@ -350,6 +350,18 @@ jobs:
       artifactName: $(arosbuild.name) toolchain
 
   - script: |
+      mkdir -p ~/.ssh
+      mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/'
+      mv $(AROSBUILDBINDIR)/$(AROSBUILDID)*-toolchain* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
+      ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+      sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
+      rm -Rf '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)'
+    env:
+      MAPPED_USER: $(SF_RSYNC_USER)
+      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    displayName: 'Deploying toolchain'
+
+  - script: |
       function execute {
         {
           echo '>>>' $*
