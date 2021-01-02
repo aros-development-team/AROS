@@ -580,13 +580,13 @@ IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG SrcX, LONG SrcY, struct RastPort * destRP, 
     LONG DestX, LONG DestY, LONG SizeX, LONG SizeY)
 {
+    struct BitMapHeader * bmhd = NULL;
     ULONG depth;
-    struct BitMapHeader * bmhd;
 
     depth = (ULONG) GetBitMapAttr(destRP->BitMap, BMA_DEPTH);
     GetDTAttrs((Object *) g, PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
 
-    if ((depth >= 15) && (bmhd->bmh_Masking == mskHasAlpha))
+    if ((depth >= 15) && (bmhd && (bmhd->bmh_Masking == mskHasAlpha)))
     {
         /* Transparency on high color rast port with alpha channel in picture */
         struct RastPort srcRP;
@@ -604,7 +604,7 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
     }
     else
     {   
-        if ((bmhd->bmh_Masking == mskHasMask) || (bmhd->bmh_Masking == mskHasTransparentColor))
+        if (bmhd && ((bmhd->bmh_Masking == mskHasMask) || (bmhd->bmh_Masking == mskHasTransparentColor)))
         {
             /* Transparency with mask */
             APTR mask = NULL;
@@ -998,9 +998,9 @@ IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
 
     {
         struct IBox *domain;
-        IPTR Width, Height;
+        IPTR VWidth = 0, VHeight = 0, Width, Height;
         STRPTR Title;
-    
+
         /*
          *  get attributes
          */
@@ -1012,7 +1012,7 @@ IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
         {
             return FALSE;
         }
-    
+
 #ifdef __AROS__
         si->si_VertUnit = 1;
         si->si_VisVert = domain->Height;
@@ -1022,16 +1022,22 @@ IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
         si->si_VisHoriz = domain->Width;
         si->si_TotHoriz = Width;
 #endif
-    
+
+        if (domain)
+        {
+            VWidth = domain->Width;
+            VHeight = domain->Height;
+        }
+
         NotifyAttrChanges((Object *) g, msg->gpl_GInfo, 0,
                                      GA_ID, g->GadgetID,
     
-                                     DTA_VisibleVert, domain->Height,
+                                     (domain) ? DTA_VisibleVert : TAG_IGNORE, VHeight,
                                      DTA_TotalVert, Height,
                                      DTA_NominalVert, Height,
                                      DTA_VertUnit, 1,
     
-                                     DTA_VisibleHoriz, domain->Width,
+                                     (domain) ? DTA_VisibleHoriz : TAG_IGNORE, VWidth,
                                      DTA_TotalHoriz, Width,
                                      DTA_NominalHoriz, Width,
                                      DTA_HorizUnit, 1,
