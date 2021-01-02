@@ -118,25 +118,25 @@ jobs:
       tar xzf mpc-1.1.0.tar.gz
       tar xzf mpfr-4.0.1.tar.gz
       echo 'Building darwin x86 toolchain'
-      DARWINBUILDXCODEVERS='/Developer/usr/bin/xcodebuild -version'
-      echo 'using XCode version : $(DARWINBUILDXCODEVERS)'
+      DARWINBUILDXCODEVERS:='/Developer/usr/bin/xcodebuild -version'
+      echo "using XCode version : $(DARWINBUILDXCODEVERS)"
       echo '** prerequisite gmp'
-      mkdir -p '/opt/gcc/x86'
+      mkdir -p '~/opt/gcc/x86'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
       cd $(AZBUILDPATH)/host/x86/gmp
-      $(AZBUILDPATH)/host/gmp-4.2.4/configure --disable-shared --enable-static --prefix=/opt/gcc/x86
+      $(AZBUILDPATH)/host/gmp-4.2.4/configure --disable-shared --enable-static --prefix=~/opt/gcc/x86
       make -j 2
       sudo make install
       echo '** prerequisite mpfr'
       mkdir -p '$(AZBUILDPATH)/host/x86/mpfr'
       cd $(AZBUILDPATH)/host/x86/mpfr
-      $(AZBUILDPATH)/host/mpfr-4.0.1/configure --disable-shared --enable-static --prefix=/opt/gcc/x86 --with-gmp=/opt/gcc/x86
+      $(AZBUILDPATH)/host/mpfr-4.0.1/configure --disable-shared --enable-static --prefix=~/opt/gcc/x86 --with-gmp=~/opt/gcc/x86
       make -j 2
       sudo make install
       echo '** prerequisite mpc'
       mkdir -p '$(AZBUILDPATH)/host/x86/mpc'
       cd $(AZBUILDPATH)/host/x86/mpc
-      $(AZBUILDPATH)/host/mpc-1.1.0/configure --disable-shared --enable-static --prefix=/opt/gcc/x86 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x86
+      $(AZBUILDPATH)/host/mpc-1.1.0/configure --disable-shared --enable-static --prefix=~/opt/gcc/x86 --with-gmp=~/opt/gcc/x86 --with-mpfr=~/opt/gcc/x86
       make -j 2
       sudo make install
       echo '** building gcc'
@@ -147,19 +147,19 @@ jobs:
       fi
       mkdir -p '$(AZBUILDPATH)/host/x86/gcc'
       cd $(AZBUILDPATH)/host/x86/gcc
-      $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=/opt/gcc/x86 $(DARWINCONFIGEXTRA)
+      $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=~/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=~/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=~/opt/gcc/x86 $(DARWINCONFIGEXTRA)
       make -j 2
       sudo make install
-      sudo find /opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
-      echo "##vso[task.setvariable variable=CC;]/opt/gcc/x86/8/bin/gcc"
-      echo "##vso[task.setvariable variable=CXX;]/opt/gcc/x86/8/bin/g++"
+      sudo find ~/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+      echo "##vso[task.setvariable variable=CC;]~/opt/gcc/x86/8/bin/gcc"
+      echo "##vso[task.setvariable variable=CXX;]~/opt/gcc/x86/8/bin/g++"
       if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
         echo 'Building darwin PPC toolchain'
         mkdir -p '$(AZBUILDPATH)/host/ppc/gcc'
         cd $(AZBUILDPATH)/host/ppc/gcc
         PATH="/dir/containing/dsymutil/from/xcode6:$PATH"
         export MACOSX_PPC_DEPLOYMENT_TARGET=10.4
-        CC=/opt/gcc/x86/8/bin/gcc CXX=/opt/gcc/x86/8/bin/g++ $(AZBUILDPATH)/host/gcc-8.3.0/configure \
+        CC=~/opt/gcc/x86/8/bin/gcc CXX=~/opt/gcc/x86/8/bin/g++ $(AZBUILDPATH)/host/gcc-8.3.0/configure \
           --prefix=/opt/gcc/ppc/8 --disable-nls --disable-multilib --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 \
           --target=powerpc-apple-darwin10.8.0 --with-sysroot=/Developer/SDKs/MacOSX10.4u.sdk \
           CFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2" \
