@@ -108,7 +108,7 @@ jobs:
 
   - script: |
       cd ~/
-      MACOSHOMEDIR='pwd'
+      MACOSHOMEDIR=`pwd`
       mkdir -p '$(AZBUILDPATH)/host/x86'
       wget https://ftp.gnu.org/gnu/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz -P $(AZBUILDPATH)/host
       wget https://ftp.gnu.org/gnu/gmp/gmp-4.2.4.tar.gz -P $(AZBUILDPATH)/host
@@ -120,8 +120,8 @@ jobs:
       tar xzf mpc-1.1.0.tar.gz
       tar xzf mpfr-4.0.1.tar.gz
       echo 'Building darwin x86 toolchain'
-      DARWINBUILDXCODEVERS='sudo xcode-select --print-path'
-      echo "using XCode version : " $DARWINBUILDXCODEVERS
+      DARWINBUILDXCODEVERS=`sudo xcode-select --print-path`
+      echo "using XCode version : $DARWINBUILDXCODEVERS"
       echo '** prerequisite gmp'
       mkdir -p '$MACOSHOMEDIR/opt/gcc/x86'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
@@ -142,11 +142,11 @@ jobs:
       make -j 2
       sudo make install
       echo '** building gcc'
-      if [ ! -d "/usr/include" ]
-      DARWINCONFIGEXTRA=--with-native-system-header-dir=$DARWINBUILDXCODEVERS/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
-      echo "header config  : " $DARWINCONFIGEXTRA
+      if [ ! -d "/usr/include" ]; then
+        DARWINCONFIGEXTRA=--with-native-system-header-dir=$DARWINBUILDXCODEVERS/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+        echo "header config  : $DARWINCONFIGEXTRA"
       else
-      DARWINCONFIGEXTRA=
+        DARWINCONFIGEXTRA=
       fi
       mkdir -p '$(AZBUILDPATH)/host/x86/gcc'
       cd $(AZBUILDPATH)/host/x86/gcc
