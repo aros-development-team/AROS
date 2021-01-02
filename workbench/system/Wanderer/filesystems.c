@@ -688,7 +688,7 @@ BOOL MoveContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir)
  */
 BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *displayHook, struct Hook *askHook, struct OpModes *opModes, APTR userdata, BOOL first)
 {
-    BOOL isDir;
+    BOOL isDir = FALSE;
     BOOL stop = FALSE;
     BOOL hasInfoFile = FALSE;
     BOOL doFileExists;

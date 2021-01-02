@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -258,7 +258,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     char *filename, *fn;
     struct filehandle *fh;
     struct DeviceNode *dn;
-    LONG err, ok;
+    LONG err, ok = FALSE;
     LONG i;
 
     dn = BADDR(dp->dp_Arg3);

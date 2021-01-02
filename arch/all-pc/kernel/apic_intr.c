@@ -106,11 +106,10 @@ BOOL core_SetIDTGate(apicidt_t *IGATES, int vect, uintptr_t gate, BOOL enable, B
         bug("[Kernel] %s: gate @ 0x%p\n", __func__, gate);
         bug("[Kernel] %s: enable=%d\n", __func__, enable);
 
-        gateOld = 
 #if (__WORDSIZE != 64)
-            (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));
+        gateOld = (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));
 #else
-            (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFFFFFF) << 32) | (((IPTR)IGATES[vect].offset_mid & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));
+        gateOld = (APTR)((((IPTR)IGATES[vect].offset_high & 0xFFFFFFFF) << 32) | (((IPTR)IGATES[vect].offset_mid & 0xFFFF) << 16) | ((IPTR)IGATES[vect].offset_low & 0xFFFF));
 #endif
         if (gateOld) bug("[Kernel] %s: existing gate @ 0x%p\n", __func__, gateOld);
     )
