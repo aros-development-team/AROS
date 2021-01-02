@@ -118,7 +118,7 @@ jobs:
       tar xzf mpc-1.1.0.tar.gz
       tar xzf mpfr-4.0.1.tar.gz
       echo 'Building darwin x86 toolchain'
-      DARWINBUILDXCODEVERS:='/Developer/usr/bin/xcodebuild -version'
+      DARWINBUILDXCODEVERS:='xcode-select --print-path'
       echo "using XCode version : $(DARWINBUILDXCODEVERS)"
       echo '** prerequisite gmp'
       mkdir -p '~/opt/gcc/x86'
@@ -141,7 +141,7 @@ jobs:
       sudo make install
       echo '** building gcc'
       if [ ! -d "/usr/include" ]
-      DARWINCONFIGEXTRA=--with-native-system-header-dir=/Users/strager/Applications/Xcode_$(DARWINBUILDXCODEVERS).app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+      DARWINCONFIGEXTRA=--with-native-system-header-dir=$(DARWINBUILDXCODEVERS)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
       else
       DARWINCONFIGEXTRA=
       fi
