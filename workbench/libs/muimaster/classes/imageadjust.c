@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -404,7 +404,7 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj,
     case '3':
     case '4':
         {
-            struct ExternalListEntry *entry;
+            struct ExternalListEntry *entry = NULL;
             LONG entries = 0;
             int i;
 
@@ -1006,7 +1006,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj,
 
             case 3:            /* External */
                 {
-                    struct ExternalListEntry *entry;
+                    struct ExternalListEntry *entry = NULL;
 
                     DoMethod(data->external_list, MUIM_List_GetEntry,
                         MUIV_List_GetEntry_Active, (IPTR) & entry);
