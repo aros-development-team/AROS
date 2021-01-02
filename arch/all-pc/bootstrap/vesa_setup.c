@@ -16,9 +16,9 @@
 #include "support.h"
 #include "vesa.h"
 
-D(
+#if defined(DEBUG) && (DEBUG)
 #define str_BSVESA "bootstrap:vesa"
-)
+#endif
 
 void setupVESA(char *vesa)
 {
