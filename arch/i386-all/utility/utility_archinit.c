@@ -17,11 +17,13 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
+#include <defines/utility_LVO.h>
+
 #ifdef __AVX_
-extern void AROS_SLIB_ENTRY(SetMem_AVX, Utility, 66)();
+extern void AROS_SLIB_ENTRY(SetMem_AVX, Utility, LVOSetMem)();
 #endif
 #ifdef __SSE_
-extern void AROS_SLIB_ENTRY(SetMem_SSE, Utility, 66)();
+extern void AROS_SLIB_ENTRY(SetMem_SSE, Utility, LVOSetMem)();
 #endif
 
 static int UtilityI386_ArchInit(struct Library *UtilityBase)
@@ -34,7 +36,7 @@ static int UtilityI386_ArchInit(struct Library *UtilityBase)
     if (!setSet && (ctx->Flags & ECF_FPXS))
     {
         D(bug("[Utility:i386] Using AVX SetMem\n"));
-        SetFunction(UtilityBase, -66*LIB_VECTSIZE, AROS_SLIB_ENTRY(SetMem_AVX, Utility, 66));
+        SetFunction(UtilityBase, -LVOSetMem*LIB_VECTSIZE, AROS_SLIB_ENTRY(SetMem_AVX, Utility, LVOSetMem));
         setSet = TRUE;
     }
 #endif
@@ -44,7 +46,7 @@ static int UtilityI386_ArchInit(struct Library *UtilityBase)
         D(bug("[Utility:i386] Using SSE SetMem\n"));
 
         /* Use SSE version of SetMem() */
-        SetFunction(UtilityBase, -66*LIB_VECTSIZE, AROS_SLIB_ENTRY(SetMem_SSE, Utility, 66));
+        SetFunction(UtilityBase, -LVOSetMem*LIB_VECTSIZE, AROS_SLIB_ENTRY(SetMem_SSE, Utility, LVOSetMem));
         setSet = TRUE;
     }
 #endif

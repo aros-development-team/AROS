@@ -9,12 +9,14 @@
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 
+#include <defines/exec_LVO.h>
+
 #include <string.h>
 
 #include "exec_intern.h"
 
-extern void AROS_SLIB_ENTRY(MemoryRawIOInit, Exec, 84)();
-extern void AROS_SLIB_ENTRY(MemoryRawPutChar, Exec, 86)(UBYTE chr);
+extern void AROS_SLIB_ENTRY(MemoryRawIOInit, Exec, LVORawIOInit)();
+extern void AROS_SLIB_ENTRY(MemoryRawPutChar, Exec, LVORawPutChar)(UBYTE chr);
 
 int exec_boot(struct ExecBase *SysBase)
 {
@@ -27,10 +29,10 @@ int exec_boot(struct ExecBase *SysBase)
      */
     if (strstr(cmdline, "debug=memory"))
     {
-        SetFunction(&SysBase->LibNode, -84 * LIB_VECTSIZE,
-            AROS_SLIB_ENTRY(MemoryRawIOInit, Exec, 84));
-        SetFunction(&SysBase->LibNode, -86 * LIB_VECTSIZE,
-            AROS_SLIB_ENTRY(MemoryRawPutChar, Exec, 86));
+        SetFunction(&SysBase->LibNode, -LVORawIOInit * LIB_VECTSIZE,
+            AROS_SLIB_ENTRY(MemoryRawIOInit, Exec, LVORawIOInit));
+        SetFunction(&SysBase->LibNode, -LVORawPutChar * LIB_VECTSIZE,
+            AROS_SLIB_ENTRY(MemoryRawPutChar, Exec, LVORawPutChar));
     }
     RawIOInit();
 

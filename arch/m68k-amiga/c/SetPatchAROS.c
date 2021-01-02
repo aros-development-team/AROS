@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables under AOS.
@@ -31,6 +31,8 @@
 #include <proto/dos.h>
 
 #include <exec/rawfmt.h>
+
+#include <defines/exec_LVO.h>
 
 #include <loadseg.h>
 
@@ -112,14 +114,14 @@ int main(int argc, char **argv)
        }
 
        Disable();
-       oldRawDoFmt      = SetFunction((struct Library *)SysBase, -87 * LIB_VECTSIZE, myRawDoFmt);
+       oldRawDoFmt      = SetFunction((struct Library *)SysBase, -LVORawDoFmt * LIB_VECTSIZE, myRawDoFmt);
        Enable();
 
        PutStr("AROS Support active. Press ^C to unload.\n");
        Wait(SIGBREAKF_CTRL_C);
 
        Disable();
-       SetFunction((struct Library *)SysBase, -87 * LIB_VECTSIZE, oldRawDoFmt);
+       SetFunction((struct Library *)SysBase, -LVORawDoFmt * LIB_VECTSIZE, oldRawDoFmt);
        Enable();
 
        PutStr("AROS Support unloaded.\n");

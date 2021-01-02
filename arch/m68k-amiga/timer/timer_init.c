@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Timer startup and device commands
@@ -40,6 +40,8 @@
 #include <proto/battclock.h>
 
 #include <aros/symbolsets.h>
+
+#include <defines/timer_LVO.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -158,12 +160,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     struct BattClockBase *BattClockBase;
     struct GfxBase *GfxBase;
 
-    PRESERVE_A0A1(LIBBASE, Timer, AddTime, 7);
-    PRESERVE_A0A1(LIBBASE, Timer, SubTime, 8);
-    PRESERVE_A0A1(LIBBASE, Timer, CmpTime, 9);
-    PRESERVE_A0(LIBBASE, Timer, ReadEClock, 10);
-    PRESERVE_A0(LIBBASE, Timer, GetSysTime, 11);
-    PRESERVE_A0(LIBBASE, Timer, GetUpTime, 12);
+    PRESERVE_A0A1(LIBBASE, Timer, AddTime, LVOAddTime);
+    PRESERVE_A0A1(LIBBASE, Timer, SubTime, LVOSubTime);
+    PRESERVE_A0A1(LIBBASE, Timer, CmpTime, LVOCmpTime);
+    PRESERVE_A0(LIBBASE, Timer, ReadEClock, LVOReadEClock);
+    PRESERVE_A0(LIBBASE, Timer, GetSysTime, LVOGetSysTime);
+    PRESERVE_A0(LIBBASE, Timer, GetUpTime, LVOGetUpTime);
 
     GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 

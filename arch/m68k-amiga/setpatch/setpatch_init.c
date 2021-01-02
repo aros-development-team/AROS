@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013, The AROS Development Team
+ * Copyright (C) 2013-2020, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -12,6 +12,8 @@
 #include <graphics/gfxbase.h>
 
 #include <aros/crt_replacement.h>
+
+#include <defines/exec_LVO.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -94,9 +96,9 @@ int SetPatch_Init(struct SetPatchBase *sp)
 
     /* Patch FindPort and FindSemaphore */
 #if 0
-    sp->sp_OldFindPort = SetFunction(SysBase, -65 * LIB_VECTSIZE, Exec_65_spFindPort);
+    sp->sp_OldFindPort = SetFunction(SysBase, -LVOFindPort * LIB_VECTSIZE, Exec_65_spFindPort);
 #endif
-    sp->sp_OldFindSemaphore = SetFunction(SysBase, -99 * LIB_VECTSIZE, Exec_99_spFindSemaphore);
+    sp->sp_OldFindSemaphore = SetFunction(SysBase, -LVOFindSemaphore * LIB_VECTSIZE, Exec_99_spFindSemaphore);
 
     return 1;
 }
