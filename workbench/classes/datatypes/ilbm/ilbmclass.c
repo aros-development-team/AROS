@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -597,29 +597,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
 
 /**************************************************************************************************/
 
-unsigned char *WriteBytesBigEndian_UintBE32(LONG val, int offset)
-{
-    unsigned char *buffer = NULL;
-    buffer[offset] = (UBYTE)((val >> 24) & 0xFF);
-    buffer[offset + 1] = (UBYTE)((val >> 16) & 0xFF);
-    buffer[offset + 2] = (UBYTE)((val >> 8) & 0xFF);
-    buffer[offset + 3] = (UBYTE)(val & 0xFF);
-    return buffer;
-}
-
-/**************************************************************************************************/
-
-unsigned char *WriteBytesBigEndian_UintBE16(WORD val, int offset)
-{
-    unsigned char *buffer = NULL;
-    buffer[offset] = (UBYTE)(val >> 8);
-    buffer[offset + 1] = (UBYTE)(val & 0xFF);
-    return buffer;
-}
-
-/**************************************************************************************************/
-
-LONG WriteBytes(BPTR file, char *data, LONG offset, LONG length)
+LONG WriteBytes(BPTR file, APTR data, LONG offset, LONG length)
 {    
     LONG count = 0;
     Seek(file,offset,OFFSET_BEGINNING);
@@ -639,17 +617,14 @@ LONG WriteBytes(BPTR file, char *data, LONG offset, LONG length)
 
 static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {    
-    //UBYTE                   *filebuf;    
-    //int                      width, height, numcolors;
-    BPTR                     fileHandle;    
-    int                      i, numcolors;
-    struct BitMapHeader     *bmhd;
-    struct BitMap           *bm;
-    //BitMapImage             *BMI = NULL;
-    //struct RastPort         rp;
-    struct ColorRegister    *colormap;
-    LONG                     *colorregs;    
-    //int                     i, j, ret; 
+    BPTR                        fileHandle;    
+    int                         i, numcolors;
+    struct BitMapHeader         *bmhd;
+    struct BitMap               *bm;
+    struct ColorRegister        *colormap;
+    LONG                        *colorregs;    
+    ULONG                       FileOutL;
+    UWORD                       BMHD[10];
 
     D(bug("iff.datatype/Save_BitMapPic()\n"));
     
@@ -680,98 +655,83 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     //Write IFF File Signature 'FORM'.
     LONG offset = 0;
     LONG length = 4;
-    unsigned char *fileID = "FORM";
-    WriteBytes(fileHandle, fileID, offset, length);
+    FileOutL = AROS_LONG2BE(AROS_MAKE_ID('F','O','R','M'));
+    WriteBytes(fileHandle, &FileOutL, offset, length);
 
     //Calculate file size less (4+4, FORM+size)
-    LONG fileSize = (LONG)(((bm->BytesPerRow * bmhd->bmh_Depth) * bmhd->bmh_Height) + (numcolors * 3) + 48);
-    //Add padding byte if needed.
-    
+    ULONG fileSize = (ULONG)(((bm->BytesPerRow * bmhd->bmh_Depth) * bmhd->bmh_Height) + (numcolors * 3) + 48);
+
     offset += 4;
     length = 4;    
-    unsigned char *FileSize;
-    FileSize = WriteBytesBigEndian_UintBE32(fileSize, 0);
-    WriteBytes(fileHandle, FileSize, offset, length);
+    FileOutL = AROS_LONG2BE(fileSize);
+    WriteBytes(fileHandle, &FileOutL, offset, length);
 
     //Write File Format Type 'ILBM'.    
     offset += 4;
     length = 4;
-    unsigned char *typeID = "ILBM";
-    WriteBytes(fileHandle, typeID, offset, length);
+    FileOutL = AROS_LONG2BE(AROS_MAKE_ID('I','L','B','M'));
+    WriteBytes(fileHandle, &FileOutL, offset, length);
 
     //Write ChunkID 'BMHD'.
-    
     offset += 4;
-    length = 4;    
-    WriteBytes(fileHandle, "BMHD", offset, length);    
+    length = 4;
+    FileOutL = AROS_LONG2BE(AROS_MAKE_ID('B','M','H','D'));
+    WriteBytes(fileHandle, &FileOutL, offset, length);    
 
     //Write BMHD ChunkSize.    
     offset += 4;
     length = 4;
-    LONG chunkSize = 20;
-    unsigned char *ChunkSize;
-    ChunkSize = WriteBytesBigEndian_UintBE32(chunkSize, 0);
-    WriteBytes(fileHandle, ChunkSize, offset, length);
+    FileOutL = AROS_LONG2BE(20);
+    WriteBytes(fileHandle, &FileOutL, offset, length);
 
     /* Prepare BMHD information. */
-    //Set_BMHD.    
+    int count = 0;
     offset += 4;
     length = 20;
-    int count = 0;
-    unsigned char BMHD[20];
-    unsigned char *buffer;    
-    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Width, 0);
-    memcpy(BMHD + count, buffer, 2);
-    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Height, 0);
-    memcpy(BMHD + count+2, buffer, 2);
-    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Left, 0);
-    memcpy(BMHD + count+4, buffer, 2);
-    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Top, 0);
-    memcpy(BMHD + count+6, buffer, 2);
-    BMHD[8] = bmhd->bmh_Depth;
-    BMHD[9] = 0; //bmhd->bmh_Masking;
-    BMHD[10] = 0; //bmhd->bmh_Compression;
-    BMHD[11] = bmhd->bmh_Pad;
-    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_Transparent, 0);
-    memcpy(BMHD + count+12, buffer, 2);
-    BMHD[14] = 10; //bmhd->bmh_XAspect;
-    BMHD[15] = 11; //bmhd->bmh_YAspect;
-    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_PageWidth, 0);
-    memcpy(BMHD + count+16, buffer, 2);
-    buffer = WriteBytesBigEndian_UintBE16(bmhd->bmh_PageHeight, 0);
-    memcpy(BMHD + count+18, buffer, 2);
-    //BMHD[21] = ('\0');
+
+    BMHD[0] = AROS_WORD2BE(bmhd->bmh_Width);
+    BMHD[1] = AROS_WORD2BE(bmhd->bmh_Height);
+    BMHD[3] = AROS_WORD2BE(bmhd->bmh_Left);
+    BMHD[4] = AROS_WORD2BE(bmhd->bmh_Top);
+    BMHD[5] = AROS_WORD2BE(bmhd->bmh_Depth);
+    BMHD[6] = AROS_WORD2BE(bmhd->bmh_Pad << 8);
+    BMHD[7] = AROS_WORD2BE(bmhd->bmh_Transparent);
+    BMHD[8] = AROS_WORD2BE(11 << 8 | 11);
+    BMHD[9] = AROS_WORD2BE(bmhd->bmh_PageWidth);
+    BMHD[10] = AROS_WORD2BE(bmhd->bmh_PageHeight);
 
     /* Write BMHD to File. */
     WriteBytes(fileHandle, BMHD, offset, length);
 
     if (bmhd->bmh_Depth <= 8)
     {
+        UBYTE *Cmap;
+
         /* Prepare ColorMap information. */
-        //Set_CMAP.
         offset = 40;
         length = 4;
-        WriteBytes(fileHandle, "CMAP", offset, length);
+        FileOutL = AROS_LONG2BE(AROS_MAKE_ID('C','M','A','P'));
+        WriteBytes(fileHandle, &FileOutL, offset, length);
 
         //Write chunkSize to File.        
         offset += 4;
-        chunkSize = numcolors*3;
-        ChunkSize = WriteBytesBigEndian_UintBE32(chunkSize, 0);
-        WriteBytes(fileHandle, ChunkSize, offset, length);
+        FileOutL = AROS_LONG2BE(numcolors * 3);
+        WriteBytes(fileHandle, &FileOutL, offset, length);
 
         //Convert CMAP from Colormap.
-        UBYTE Cmap[numcolors * 3];
+        length = numcolors * 3;
+        Cmap = AllocVec(length, MEMF_ANY);
         for( i = 0; i < numcolors ; i++)
-        {            
-	        Cmap[(i*3)] = colormap[i].red;
+        {
+            Cmap[(i*3)] = colormap[i].red;
             Cmap[(i*3)+1] = colormap[i].green;
             Cmap[(i*3)+2] = colormap[i].blue;
         }
 
         /* Write ColorMap and CAMG information. */               
         offset += 4;
-        length = numcolors*3;        
         count = WriteBytes(fileHandle, Cmap, offset, numcolors*3);        
+        FreeVec(Cmap);
     }
 
     //=====================================================================//
@@ -783,35 +743,21 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
     /* Prepare BODY information. */
     offset = (numcolors*3) + 48;
     length = 4;
-    WriteBytes(fileHandle, "BODY", offset, length);
+    FileOutL = AROS_LONG2BE(AROS_MAKE_ID('B','O','D','Y'));
+    WriteBytes(fileHandle, &FileOutL, offset, length);
 
-    //Set_BODY.
-    //UBYTE *BODY;    
-    //UBYTE *chunkyBuffer;    
-    //UBYTE *planarBuffer;    
-    //UBYTE *scanLine;    
-    int comp = 0;
     UBYTE    *src;
     LONG     y, p;
-    //int lineOffset = 0;    
     int numplanes = bmhd->bmh_Depth;
-    //int imageWidth = bmhd->bmh_Width;
     int imageHeight = bmhd->bmh_Height;
-    //UBYTE compress = bmhd->bmh_Compression ? cmpByteRun1 : cmpNone;    
     int bytesPerRow = bm->BytesPerRow;
-    //int scanLength = (bytesPerRow * numplanes); 
-
-    if (comp == 0)
-    {
-        chunkSize = (bytesPerRow * numplanes) * imageHeight;
-    }
 
     /* Write chunkSize to File. */
     //Does NOT include Padding Byte!
     //Calculate BODY size without Padding Byte if Odd. 
     offset += 4;
-    ChunkSize = WriteBytesBigEndian_UintBE32(chunkSize, 0);
-    WriteBytes(fileHandle, ChunkSize, offset, length);
+    FileOutL = AROS_LONG2BE((bytesPerRow * numplanes) * imageHeight);
+    WriteBytes(fileHandle, &FileOutL, offset, length);
 
     /* For images with <= 8 bitplanes. */
     //Copy planar data from the bitplanes of the bitmap to the BODY buffer 
