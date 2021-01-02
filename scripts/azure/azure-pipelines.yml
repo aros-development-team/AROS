@@ -144,9 +144,9 @@ jobs:
       echo '** building gcc'
       if [ ! -d "/usr/include" ]; then
         DARWINCONFIGEXTRA="--with-native-system-header-dir=$DARWINBUILDXCODEVERS/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/"
-        DARWINBOOTCFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5"
-        DARWINTARGETCFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5"
-        DARWINTARGETCXXFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5"
+        DARWINBOOTCFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
+        DARWINTARGETCFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
+        DARWINTARGETCXXFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
         echo "header config  : $DARWINCONFIGEXTRA"
       else
         DARWINCONFIGEXTRA=
