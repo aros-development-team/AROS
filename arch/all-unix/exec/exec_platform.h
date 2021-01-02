@@ -15,7 +15,12 @@
  */
 #define _XOPEN_SOURCE
 #endif
+
+#if defined(HAVE_SYS_UCONTEXT_H)
+#include <sys/ucontext.h>
+#else
 #include <ucontext.h>
+#endif
 
 #endif
 
