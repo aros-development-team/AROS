@@ -119,7 +119,7 @@ jobs:
       tar xzf mpfr-4.0.1.tar.gz
       echo 'Building darwin x86 toolchain'
       DARWINBUILDXCODEVERS='sudo xcode-select --print-path'
-      echo "using XCode version : $(DARWINBUILDXCODEVERS)"
+      echo "using XCode version : $DARWINBUILDXCODEVERS"
       echo '** prerequisite gmp'
       mkdir -p '~/opt/gcc/x86'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
@@ -141,7 +141,7 @@ jobs:
       sudo make install
       echo '** building gcc'
       if [ ! -d "/usr/include" ]
-      DARWINCONFIGEXTRA=--with-native-system-header-dir=$(DARWINBUILDXCODEVERS)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+      DARWINCONFIGEXTRA=--with-native-system-header-dir=$DARWINBUILDXCODEVERS/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
       else
       DARWINCONFIGEXTRA=
       fi
