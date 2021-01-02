@@ -43,6 +43,7 @@ int vasprintf(char **ptr, const char * format, va_list ap)
 
     VA_COPY(ap2, ap);
     ret = vsnprintf(NULL, 0, format, ap2);
+    va_end(ap2);
     if(ret <= 0)
         return ret;
 
@@ -52,6 +53,7 @@ int vasprintf(char **ptr, const char * format, va_list ap)
 
     VA_COPY(ap2, ap);
     ret = vsnprintf(*ptr, ret+1, format, ap2);
+    va_end(ap2);
 
     return ret;
 }
