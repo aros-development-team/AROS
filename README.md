@@ -59,10 +59,10 @@
   <tr>
     <td>pc-x86_64-smp</td>
     <td> --- </td>
+    <td> --- </td>
     <td>
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=15&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-smp?branchName=master"></a>
     </td>
-    <td> --- </td>
     <td> --- </td>
   </tr>
   <tr>
