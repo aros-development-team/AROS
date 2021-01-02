@@ -107,7 +107,7 @@ static ULONG sendSigBit = -1;
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
-#define CATALOG_VERSION  3
+#include "catalogs/catalog_version.h"
 
 /************************************************************************************/
 

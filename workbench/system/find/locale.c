@@ -12,7 +12,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/System/Find.catalog"
-#define CATALOG_VERSION  1
+#include "catalogs/catalog_version.h"
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;

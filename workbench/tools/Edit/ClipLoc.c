@@ -19,6 +19,7 @@
 #include "Cursor.h"
 #include "Utility.h"
 #include "ProtoTypes.h"
+#include "catalogs/catalog_version.h"
 
 #define  CATCOMP_NUMBERS		/* We will need the string id */
 #define  CATCOMP_STRINGS		/* and the english string corresponding to the id */
@@ -215,7 +216,7 @@ static APTR catalog = NULL;
 /*** Localise all strings of the program ***/
 void InitLocale(void)
 {
-	if( (catalog = (APTR) OpenCatalog(NULL, "System/Tools/Editor.catalog", OC_Version, 1, TAG_DONE)) )
+	if( (catalog = (APTR) OpenCatalog(NULL, "System/Tools/Editor.catalog", OC_Version, CATALOG_VERSION, TAG_DONE)) )
 	{
 		WORD n;
 		/* Translate menu strings */

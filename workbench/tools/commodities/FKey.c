@@ -42,7 +42,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
-#define CATALOG_VERSION  3
+#include "catalogs/catalog_version.h"
 
 #include <aros/debug.h>
 

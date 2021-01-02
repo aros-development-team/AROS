@@ -30,7 +30,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Libs/Identify.catalog"
-#define CATALOG_VERSION  1
+#include "catalogs/catalog_version.h"
 
 /*** Variables **************************************************************/
 static struct Catalog *catalog;

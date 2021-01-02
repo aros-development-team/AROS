@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/MUI.miamipanel.catalog"
-#define CATALOG_VERSION  0
+#include "catalogs/catalog_version.h"
 
 #include <libraries/gadtools.h>
 #include <mui/TheBar_mcc.h>

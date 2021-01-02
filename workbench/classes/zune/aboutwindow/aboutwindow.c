@@ -26,6 +26,7 @@
 
 #include "aboutwindow.h"
 #include "aboutwindow_private.h"
+#include "catalogs/catalog_version.h"
 
 #define CATCOMP_ARRAY
 #include "strings.h"
@@ -187,9 +188,11 @@ Object *AboutWindow__OM_NEW
     if (pool == NULL) return NULL;
         
     /* Initialize locale ---------------------------------------------------*/
-    catalog = OpenCatalogA
+    catalog = OpenCatalog
     (
-        NULL, "System/Classes/Zune/AboutWindow.catalog", NULL
+        NULL, "System/Classes/Zune/AboutWindow.catalog",
+        OC_Version, CATALOG_VERSION,
+        TAG_DONE
     );
         
     /* Parse initial attributes --------------------------------------------*/

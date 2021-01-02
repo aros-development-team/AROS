@@ -23,6 +23,7 @@
 
 #include "prefswindow.h"
 #include "prefswindow_private.h"
+#include "catalogs/catalog_version.h"
 
 #define CATCOMP_ARRAY
 #include "strings.h"
@@ -58,7 +59,9 @@ Object *PrefsWindow__OM_NEW
     Object         *testButton, *revertButton, 
                    *saveButton, *useButton, *cancelButton;
        
-    catalog = OpenCatalogA(NULL, "System/Classes/Zune/PrefsWindow.catalog", NULL);
+    catalog = OpenCatalog(NULL, "System/Classes/Zune/PrefsWindow.catalog",
+                          OC_Version, CATALOG_VERSION,
+                          TAG_DONE);
     
     tag = FindTagItem(WindowContents, message->ops_AttrList);
     if (tag != NULL)

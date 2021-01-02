@@ -7,6 +7,7 @@
 
 #include "global.h"
 #include "version.h"
+#include "catalogs/catalog_version.h"
 
 #include <stdlib.h>
 
@@ -740,7 +741,7 @@ static void HandleAll(struct Screen *pScreen)
 
 int main(int argc, char **argv)
 {
-    InitLocale("System/Prefs/Time.catalog", 1);
+    InitLocale("System/Prefs/Time.catalog", CATALOG_VERSION);
     InitMenus();
     OpenTimerDev();
     OpenBattClockRes();

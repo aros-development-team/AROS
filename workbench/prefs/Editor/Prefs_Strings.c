@@ -16,6 +16,7 @@
 #endif
 #define	LocaleInfo				LocaleInfoTmp
 #include "../../tools/Edit/strings.h"
+#include "catalogs/catalog_version.h"
 
 /* Gadget messages */
 STRPTR PrefMsg[] = {
@@ -78,8 +79,8 @@ void prefs_local(void)
 {
 	WORD MsgID;
 	/* Custom prefs messages */
-	if( (prefs_cat = (void *) OpenCatalogA(NULL,"System/Prefs/EditorPrefs.catalog",NULL)) &&
-	    (jano_cat = (void *) OpenCatalogA(NULL,"System/Tools/Editor.catalog",NULL)) )
+	if( (prefs_cat = (void *) OpenCatalog(NULL,"System/Prefs/EditorPrefs.catalog",OC_Version, CATALOG_VERSION, TAG_DONE)) &&
+	    (jano_cat = (void *) OpenCatalog(NULL,"System/Tools/Editor.catalog",OC_Version, 1, TAG_DONE)) )
 	{
 		{	/* Various message of pref */
 			STRPTR *str;

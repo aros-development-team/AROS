@@ -73,7 +73,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
-#define CATALOG_VERSION  3
+#include "catalogs/catalog_version.h"
 
 TEXT version[] = "$VER: ASCIITable 1.2 (14.01.2012)";
 

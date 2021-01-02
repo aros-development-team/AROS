@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Tools/SFSDefrag.catalog"
-#define CATALOG_VERSION  1
+#include "Catalogs/catalog_version.h"
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;

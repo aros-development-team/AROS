@@ -39,7 +39,7 @@ struct Catalog *Catalog;
 /****************************************************************************/
 
 #define CATALOG_NAME     "System/Prefs/PSI.catalog"
-#define CATALOG_VERSION  19
+#include "catalogs/catalog_version.h"
 
 /****************************************************************************************/
 

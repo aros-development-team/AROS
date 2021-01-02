@@ -13,6 +13,7 @@
 #include "compilerspecific.h"
 #include "debug.h"
 #include "arossupport.h"
+#include "catalogs/catalog_version.h"
 
 #include <setjmp.h>
 #include <stdio.h>
@@ -1750,7 +1751,7 @@ int main(int argc, char **argv)
     tdt_text_wordwrap = TRUE;
     separate_screen   = FALSE;
 
-    InitLocale("System/Utilities/MultiView.catalog", 2);
+    InitLocale("System/Utilities/MultiView.catalog", CATALOG_VERSION);
     InitMenus(nm);
     InitMenus(nmpict);
     InitMenus(nmtext);

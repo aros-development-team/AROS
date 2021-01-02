@@ -34,6 +34,7 @@
 
 #include "global.h"
 #include "req.h"
+#include "catalogs/catalog_version.h"
 
 #define CATCOMP_NUMBERS
 #include "strings.h"
@@ -1649,7 +1650,7 @@ int main(int argc, char **argv)
     if (rc)
         return rc;
 
-    InitLocale("System/Utilities/More.catalog", 2);
+    InitLocale("System/Utilities/More.catalog", CATALOG_VERSION);
     InitMenus();
     GetArguments(argc, argv);
     OpenLibs();

@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Tools/ACPITool.catalog"
-#define CATALOG_VERSION  2
+#include "catalogs/catalog_version.h"
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;

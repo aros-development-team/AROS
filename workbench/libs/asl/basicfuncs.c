@@ -36,6 +36,7 @@
 #include "filereqsupport.h"
 #include "filereqhooks.h"
 #include "layout.h"
+#include "catalogs/catalog_version.h"
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -402,7 +403,7 @@ struct LayoutData *AllocCommon
         struct TagItem tags[] =
         {
             {OC_BuiltInLanguage , (IPTR)"english"},
-            {OC_Version         , 2              },
+            {OC_Version         , CATALOG_VERSION},
             {TAG_DONE                            }
         };
 

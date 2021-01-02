@@ -80,7 +80,7 @@
 #else
 #define CATALOG_NAME     "System/Tools/Exchange.catalog"
 #endif
-#define CATALOG_VERSION  3
+#include "catalogs/catalog_version.h"
 
 TEXT version[] = "$VER: Exchange 1.3 (1.11.2016)";
 

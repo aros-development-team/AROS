@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Prefs/Boot.catalog"
-#define CATALOG_VERSION  1
+#include "catalogs/catalog_version.h"
 
 static const TEXT DEFYES[] = "Yes", DEFNO[] = "No";
 

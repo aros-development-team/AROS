@@ -3,6 +3,7 @@
 *********/
 
 #include "filereq.h"
+#include "catalogs/catalog_version.h"
 
 #include <proto/locale.h>
 #include <string.h>
@@ -49,7 +50,7 @@ struct Catalog *REGARGS RT_OpenCatalog (struct Locale *locale)
 
     oldwinptr = proc->pr_WindowPtr;
     proc->pr_WindowPtr = (APTR)-1;
-    cat = OpenCatalog (locale, "System/Libs/reqtools.catalog", OC_Version, 39, TAG_DONE);
+    cat = OpenCatalog (locale, "System/Libs/reqtools.catalog", OC_Version, CATALOG_VERSION, TAG_DONE);
     proc->pr_WindowPtr = oldwinptr;
 
     return (cat);
