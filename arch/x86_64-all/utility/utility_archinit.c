@@ -9,7 +9,9 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-extern void AROS_SLIB_ENTRY(SetMem_AVX, Utility, 66)();
+#include <defines/utility_LVO.h>
+
+extern void AROS_SLIB_ENTRY(SetMem_AVX, Utility, LVOSetMem)();
 
 static int Utilityx8664_ArchInit(struct Library *UtilityBase)
 {
@@ -20,7 +22,7 @@ static int Utilityx8664_ArchInit(struct Library *UtilityBase)
     if (!setSet && (ctx->Flags & ECF_FPXS))
     {
         D(bug("[Utility:x86_64] Using AVX SetMem\n"));
-        SetFunction(UtilityBase, -66*LIB_VECTSIZE, AROS_SLIB_ENTRY(SetMem_AVX, Utility, 66));
+        SetFunction(UtilityBase, -LVOSetMem*LIB_VECTSIZE, AROS_SLIB_ENTRY(SetMem_AVX, Utility, LVOSetMem));
         setSet = TRUE;
     }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Init of 68k/FPU mathieeedoubtrans.library
@@ -11,25 +11,27 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-#define SetFunc(a,b) SetFunction((struct Library *)lh, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeDoubTrans,a))
+#include <defines/mathieeedoubtrans_LVO.h>
 
-extern void AROS_SLIB_ENTRY(ATan_6888x,MathIeeeDoubTrans,5)(void);
-extern void AROS_SLIB_ENTRY(Sin_6888x,MathIeeeDoubTrans,6)(void);
-extern void AROS_SLIB_ENTRY(Cos_6888x,MathIeeeDoubTrans,7)(void);
-extern void AROS_SLIB_ENTRY(Tan_6888x,MathIeeeDoubTrans,8)(void);
-extern void AROS_SLIB_ENTRY(Sincos_6888x,MathIeeeDoubTrans,9)(void);
-extern void AROS_SLIB_ENTRY(Sinh_6888x,MathIeeeDoubTrans,10)(void);
-extern void AROS_SLIB_ENTRY(Cosh_6888x,MathIeeeDoubTrans,11)(void);
-extern void AROS_SLIB_ENTRY(Tanh_6888x,MathIeeeDoubTrans,12)(void);
-extern void AROS_SLIB_ENTRY(Exp_6888x,MathIeeeDoubTrans,13)(void);
-extern void AROS_SLIB_ENTRY(Log_6888x,MathIeeeDoubTrans,14)(void);
-extern void AROS_SLIB_ENTRY(Pow_6888x,MathIeeeDoubTrans,15)(void);
-extern void AROS_SLIB_ENTRY(Sqrt_6888x,MathIeeeDoubTrans,16)(void);
-extern void AROS_SLIB_ENTRY(Tieee_6888x,MathIeeeDoubTrans,17)(void);
-extern void AROS_SLIB_ENTRY(Fieee_6888x,MathIeeeDoubTrans,18)(void);
-extern void AROS_SLIB_ENTRY(Asin_6888x,MathIeeeDoubTrans,19)(void);
-extern void AROS_SLIB_ENTRY(Acos_6888x,MathIeeeDoubTrans,20)(void);
-extern void AROS_SLIB_ENTRY(Log10_6888x,MathIeeeDoubTrans,21)(void);
+#define SetFunc(a,b) SetFunction((struct Library *)lh, -(a) * LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeDoubTrans,a))
+
+extern void AROS_SLIB_ENTRY(ATan_6888x,MathIeeeDoubTrans,LVOIEEEDPAtan)(void);
+extern void AROS_SLIB_ENTRY(Sin_6888x,MathIeeeDoubTrans,LVOIEEEDPSin)(void);
+extern void AROS_SLIB_ENTRY(Cos_6888x,MathIeeeDoubTrans,LVOIEEEDPCos)(void);
+extern void AROS_SLIB_ENTRY(Tan_6888x,MathIeeeDoubTrans,LVOIEEEDPTan)(void);
+extern void AROS_SLIB_ENTRY(Sincos_6888x,MathIeeeDoubTrans,LVOIEEEDPSincos)(void);
+extern void AROS_SLIB_ENTRY(Sinh_6888x,MathIeeeDoubTrans,LVOIEEEDPSinh)(void);
+extern void AROS_SLIB_ENTRY(Cosh_6888x,MathIeeeDoubTrans,LVOIEEEDPCosh)(void);
+extern void AROS_SLIB_ENTRY(Tanh_6888x,MathIeeeDoubTrans,LVOIEEEDPTanh)(void);
+extern void AROS_SLIB_ENTRY(Exp_6888x,MathIeeeDoubTrans,LVOIEEEDPExp)(void);
+extern void AROS_SLIB_ENTRY(Log_6888x,MathIeeeDoubTrans,LVOIEEEDPLog)(void);
+extern void AROS_SLIB_ENTRY(Pow_6888x,MathIeeeDoubTrans,LVOIEEEDPPow)(void);
+extern void AROS_SLIB_ENTRY(Sqrt_6888x,MathIeeeDoubTrans,LVOIEEEDPSqrt)(void);
+extern void AROS_SLIB_ENTRY(Tieee_6888x,MathIeeeDoubTrans,LVOIEEEDPTieee)(void);
+extern void AROS_SLIB_ENTRY(Fieee_6888x,MathIeeeDoubTrans,LVOIEEEDPFieee)(void);
+extern void AROS_SLIB_ENTRY(Asin_6888x,MathIeeeDoubTrans,LVOIEEEDPAsin)(void);
+extern void AROS_SLIB_ENTRY(Acos_6888x,MathIeeeDoubTrans,LVOIEEEDPAcos)(void);
+extern void AROS_SLIB_ENTRY(Log10_6888x,MathIeeeDoubTrans,LVOIEEEDPLog10)(void);
 
 struct Library *MathIeeeDoubBasBase;
 
@@ -40,23 +42,23 @@ static int IEEEDPT_Init(struct MathIeeeDoubTransBase *lh)
 	return FALSE;
 
     if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40)) {
-	SetFunc(5, ATan_6888x);
-	SetFunc(6, Sin_6888x);
-	SetFunc(7, Cos_6888x);
-	SetFunc(8, Tan_6888x);
-	SetFunc(9, Sincos_6888x);
-	SetFunc(10, Sinh_6888x);
-	SetFunc(11, Cosh_6888x);
-	SetFunc(12, Tanh_6888x);
-	SetFunc(13, Exp_6888x);
-	SetFunc(14, Log_6888x);
-	/* SetFunc(15, Pow_6888x); */
-	SetFunc(16, Sqrt_6888x);
-	SetFunc(17, Tieee_6888x);
-	SetFunc(18, Fieee_6888x);
-	SetFunc(19, Asin_6888x);
-	SetFunc(20, Acos_6888x);
-	SetFunc(21, Log10_6888x);
+	SetFunc(LVOIEEEDPAtan,          ATan_6888x);
+	SetFunc(LVOIEEEDPSin,           Sin_6888x);
+	SetFunc(LVOIEEEDPCos,           Cos_6888x);
+	SetFunc(LVOIEEEDPTan,           Tan_6888x);
+	SetFunc(LVOIEEEDPSincos,        Sincos_6888x);
+	SetFunc(LVOIEEEDPSinh,          Sinh_6888x);
+	SetFunc(LVOIEEEDPCosh,          Cosh_6888x);
+	SetFunc(LVOIEEEDPTanh,          Tanh_6888x);
+	SetFunc(LVOIEEEDPExp,           Exp_6888x);
+	SetFunc(LVOIEEEDPLog,           Log_6888x);
+	/* SetFunc(LVOIEEEDPPow,        Pow_6888x); */
+	SetFunc(LVOIEEEDPSqrt,          Sqrt_6888x);
+	SetFunc(LVOIEEEDPTieee,         Tieee_6888x);
+	SetFunc(LVOIEEEDPFieee,         Fieee_6888x);
+	SetFunc(LVOIEEEDPAsin,          Asin_6888x);
+	SetFunc(LVOIEEEDPAcos,          Acos_6888x);
+	SetFunc(LVOIEEEDPLog10,         Log10_6888x);
     }
     return TRUE;
 }

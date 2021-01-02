@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CachePreDMA() - Do what is necessary for DMA.
@@ -12,8 +12,10 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 
-extern void AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127)(void);
-extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)(void);
+#include <defines/exec_LVO.h>
+
+extern void AROS_SLIB_ENTRY(CachePreDMA_00,Exec,LVOCachePreDMA)(void);
+extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec,LVOCachePreDMA)(void);
 
 #include <proto/exec.h>
 
@@ -34,13 +36,13 @@ AROS_LH3(APTR, CachePreDMA,
     Disable();
     if (SysBase->AttnFlags & AFF_68040) {
         /* 68040 support */
-        func = AROS_SLIB_ENTRY(CachePreDMA_40, Exec, 127);
+        func = AROS_SLIB_ENTRY(CachePreDMA_40, Exec, LVOCachePreDMA);
     } else {
         /* Everybody else (68000, 68010) */
-        func = AROS_SLIB_ENTRY(CachePreDMA_00, Exec, 127);
+        func = AROS_SLIB_ENTRY(CachePreDMA_00, Exec, LVOCachePreDMA);
     }
 
-    SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 127, func);
+    SetFunction((struct Library *)SysBase, -LVOCachePreDMA * LIB_VECTSIZE, func);
     Enable();
 
     /* Call 'myself', which is now pointing to the correct routine */

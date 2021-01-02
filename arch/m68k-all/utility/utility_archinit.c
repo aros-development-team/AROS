@@ -8,14 +8,16 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-extern ULONG AROS_SLIB_ENTRY(SMult32_020,Utility,23)();
-extern ULONG AROS_SLIB_ENTRY(UMult32_020,Utility,24)();
-extern ULONG AROS_SLIB_ENTRY(SDivMod32_020,Utility,25)();
-extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility,26)();
-extern ULONG AROS_SLIB_ENTRY(SMult64_020,Utility,33)();
-extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility,34)();
+#include <defines/utility_LVO.h>
 
-#define SetFunc(a,b) SetFunction(UtilityBase, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility,a))
+extern ULONG AROS_SLIB_ENTRY(SMult32_020,Utility,LVOSMult32)();
+extern ULONG AROS_SLIB_ENTRY(UMult32_020,Utility,LVOUMult32)();
+extern ULONG AROS_SLIB_ENTRY(SDivMod32_020,Utility,LVOSDivMod32)();
+extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility,LVOUDivMod32)();
+extern ULONG AROS_SLIB_ENTRY(SMult64_020,Utility,LVOSMult64)();
+extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility,LVOUMult64)();
+
+#define SetFunc(a,b) SetFunction(UtilityBase, -(a) * LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility,a))
 
 static int UtilityM68K_ArchInit(struct Library *UtilityBase)
 {
@@ -25,16 +27,16 @@ static int UtilityM68K_ArchInit(struct Library *UtilityBase)
     */
     if(SysBase->AttnFlags & AFF_68020)
     {
-	SetFunc(23, SMult32_020);
-	SetFunc(24, UMult32_020);
-	SetFunc(25, SDivMod32_020);
-	SetFunc(26, UDivMod32_020);
+	SetFunc(LVOSMult32, SMult32_020);
+	SetFunc(LVOUMult32, UMult32_020);
+	SetFunc(LVOSDivMod32, SDivMod32_020);
+	SetFunc(LVOUDivMod32, UDivMod32_020);
 
 	/* The 060 doesn't have some of the instructions I use... */
 	if((SysBase->AttnFlags & AFF_68060) == 0)
 	{
-	    SetFunc(33, SMult64_020);
-	    SetFunc(34, UMult64_020);
+	    SetFunc(LVOSMult64, SMult64_020);
+	    SetFunc(LVOUMult64, UMult64_020);
 	}
     }
 

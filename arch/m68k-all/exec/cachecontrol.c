@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CacheControl() - Global control of the system caches.
@@ -10,11 +10,13 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
+#include <defines/exec_LVO.h>
+
 /* See rom/exec/cachecontrol.c for documentation */
 
-extern void AROS_SLIB_ENTRY(CacheControl_00,Exec,108)(void);
-extern void AROS_SLIB_ENTRY(CacheControl_20,Exec,108)(void);
-extern void AROS_SLIB_ENTRY(CacheControl_40,Exec,108)(void);
+extern void AROS_SLIB_ENTRY(CacheControl_00,Exec,LVOCacheControl)(void);
+extern void AROS_SLIB_ENTRY(CacheControl_20,Exec,LVOCacheControl)(void);
+extern void AROS_SLIB_ENTRY(CacheControl_40,Exec,LVOCacheControl)(void);
 
 #include <proto/exec.h>
 
@@ -29,15 +31,15 @@ AROS_LH2(ULONG, CacheControl,
     Disable();
     if (SysBase->AttnFlags & AFF_68040) {
         /* 68040/68060 support */
-        func = AROS_SLIB_ENTRY(CacheControl_40, Exec, 108);
+        func = AROS_SLIB_ENTRY(CacheControl_40, Exec, LVOCacheControl);
     } else if (SysBase->AttnFlags & AFF_68020) {
         /* 68020/68030 support */
-        func = AROS_SLIB_ENTRY(CacheControl_20, Exec, 108);
+        func = AROS_SLIB_ENTRY(CacheControl_20, Exec, LVOCacheControl);
     } else {
         /* Everybody else (68000, 68010) */
-        func = AROS_SLIB_ENTRY(CacheControl_00, Exec, 108);
+        func = AROS_SLIB_ENTRY(CacheControl_00, Exec, LVOCacheControl);
     }
-    SetFunction((struct Library *)SysBase, -LIB_VECTSIZE * 108, func);
+    SetFunction((struct Library *)SysBase, -LVOCacheControl * LIB_VECTSIZE, func);
     Enable();
 
     return CacheControl(cacheBits, cacheMask);

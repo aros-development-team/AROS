@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: m68k-amiga gdb stub
@@ -106,6 +106,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
+
+#include <defines/exec_LVO.h>
 
 /************************************************************************
  *
@@ -765,9 +767,9 @@ int main(int argc, char **argv)
     	Disable();
     	*(UWORD *)0 = 0x4e41;
     	oldTaskTrapCode = UpdateTrapCode(trapHandler);
-    	oldAddTask  = SetFunction((struct Library *)SysBase, -47 * LIB_VECTSIZE, myAddTask);
+    	oldAddTask  = SetFunction((struct Library *)SysBase, -LVOAddTask * LIB_VECTSIZE, myAddTask);
     	/* Patch Alert() to generate a breakpoint */
-    	oldAlert = SetFunction((struct Library *)SysBase, -18 * LIB_VECTSIZE, myAlert);
+    	oldAlert = SetFunction((struct Library *)SysBase, -LVOAlert * LIB_VECTSIZE, myAlert);
     	Enable();
 
     	gdbstub();
@@ -778,8 +780,8 @@ int main(int argc, char **argv)
     	/* Restore traps. Not really safe, but better than nothing
     	 */
     	Disable();
-    	SetFunction((struct Library *)SysBase, -47 * LIB_VECTSIZE, oldAddTask);
-    	SetFunction((struct Library *)SysBase, -18 * LIB_VECTSIZE, oldAlert);
+    	SetFunction((struct Library *)SysBase, -LVOAddTask * LIB_VECTSIZE, oldAddTask);
+    	SetFunction((struct Library *)SysBase, -LVOAlert * LIB_VECTSIZE, oldAlert);
     	UpdateTrapCode(oldTaskTrapCode);
     	Enable();
 

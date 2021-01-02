@@ -16,6 +16,8 @@
 #include <proto/exec.h>
 #include <strings.h>
 
+#include <defines/exec_LVO.h>
+
 #include "etask.h"
 
 #include "kernel_intern.h"
@@ -76,7 +78,7 @@ static int platform_PostInit(struct KernelBase *KernelBase)
 
     D(bug("[Kernel] platform_PostInit: Patching in our AllocMem to ignore MEMF_CHIP..\n"));
     
-    __AllocMem = SetFunction((struct Library *)SysBase, -33*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel, 33));
+    __AllocMem = SetFunction((struct Library *)SysBase, -LVOAllocMem*LIB_VECTSIZE, AROS_SLIB_ENTRY(AllocMem, Kernel, LVOAllocMem));
 
     D(bug("[Kernel] platform_PostInit: Performing Post Init..\n"));
 

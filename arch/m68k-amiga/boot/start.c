@@ -16,6 +16,8 @@
 #include <proto/exec.h>
 #include <hardware/cpu/memory.h>
 
+#include <defines/exec_LVO.h>
+
 #include <string.h>
 
 #include "memory.h"
@@ -867,25 +869,25 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
     /* Inject code for GetCC, depending on CPU model */
     if (SysBase->AttnFlags & AFF_68010) {
         /* move.w %ccr,%d0; rts; nop */
-        FAKE_IT(SysBase, Exec, GetCC, 88, 0x42c0, 0x4e75, 0x4e71);
+        FAKE_IT(SysBase, Exec, GetCC, LVOGetCC, 0x42c0, 0x4e75, 0x4e71);
     } else {
         /* move.w %sr,%d0; rts; nop */
-        FAKE_IT(SysBase, Exec, GetCC, 88, 0x40c0, 0x4e75, 0x4e71);
+        FAKE_IT(SysBase, Exec, GetCC, LVOGetCC, 0x40c0, 0x4e75, 0x4e71);
     }
 
 #ifdef THESE_ARE_KNOWN_SAFE_ASM_ROUTINES
-    PRESERVE_ALL(SysBase, Exec, Disable, 20);
-    PRESERVE_ALL(SysBase, Exec, Enable, 21);
-    PRESERVE_ALL(SysBase, Exec, Forbid, 22);
+    PRESERVE_ALL(SysBase, Exec, Disable, LVODisable);
+    PRESERVE_ALL(SysBase, Exec, Enable, LVOEnable);
+    PRESERVE_ALL(SysBase, Exec, Forbid, LVOForbid);
 #endif
-    PRESERVE_ALL(SysBase, Exec, Permit, 23);
-    PRESERVE_ALL(SysBase, Exec, ObtainSemaphore, 94);
-    PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, 95);
-    PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, 113);
+    PRESERVE_ALL(SysBase, Exec, Permit, LVOPermit);
+    PRESERVE_ALL(SysBase, Exec, ObtainSemaphore, LVOObtainSemaphore);
+    PRESERVE_ALL(SysBase, Exec, ReleaseSemaphore, LVOReleaseSemaphore);
+    PRESERVE_ALL(SysBase, Exec, ObtainSemaphoreShared, LVOObtainSemaphoreShared);
 
     /* Functions that need sign extension */
-    EXT_BYTE(SysBase, Exec, SetTaskPri, 50);
-    EXT_BYTE(SysBase, Exec, AllocSignal, 55);
+    EXT_BYTE(SysBase, Exec, SetTaskPri, LVOSetTaskPri);
+    EXT_BYTE(SysBase, Exec, AllocSignal, LVOAllocSignal);
 
     /* Only add the 2 standard ROM locations, since
      * we may get memory at 0x00f00000, or when we
