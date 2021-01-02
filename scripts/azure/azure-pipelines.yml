@@ -118,6 +118,8 @@ jobs:
       tar xzf mpc-1.1.0.tar.gz
       tar xzf mpfr-4.0.1.tar.gz
       echo 'Building darwin x86 toolchain'
+      DARWINBUILDXCODEVERS='/Developer/usr/bin/xcodebuild -version'
+      echo 'using XCode version : $(DARWINBUILDXCODEVERS)'
       echo '** prerequisite gmp'
       mkdir -p '/opt/gcc/x86'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
@@ -138,9 +140,14 @@ jobs:
       make -j 2
       sudo make install
       echo '** building gcc'
+      if [ ! -d "/usr/include" ]
+      DARWINCONFIGEXTRA=--with-native-system-header-dir=/Users/strager/Applications/Xcode_$(DARWINBUILDXCODEVERS).app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/
+      else
+      DARWINCONFIGEXTRA=
+      fi
       mkdir -p '$(AZBUILDPATH)/host/x86/gcc'
       cd $(AZBUILDPATH)/host/x86/gcc
-      $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=/opt/gcc/x86
+      $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=/opt/gcc/x86 $(DARWINCONFIGEXTRA)
       make -j 2
       sudo make install
       sudo find /opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
