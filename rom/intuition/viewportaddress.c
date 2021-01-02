@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -47,9 +47,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    /* shut up the compiler */
-    IntuitionBase = IntuitionBase;
 
     return &(Window->WScreen->ViewPort);
 
