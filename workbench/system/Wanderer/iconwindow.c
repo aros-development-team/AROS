@@ -666,6 +666,12 @@ D(bug("]\n"));
     DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
     D(bug("[Wanderer:IconWindow] %s: TopPanelContainerObj 0x%p RootViewObj 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__TopPanelContainerObj, _newIconWin__RootViewObj));
 
+#if defined(MUIA_Window_ZoomGadget)
+#define WINZOOMTAG        MUIA_Window_ZoomGadget
+#else
+#define WINZOOMTAG        TAG_IGNORE
+#endif
+    
     self = (Object *) DoSuperNew(CLASS, self, 
         MUIA_Window_Screen,                                    _newIconWin__Screen,
         MUIA_Window_Backdrop,                                  isBackdrop ? TRUE : FALSE,
@@ -682,9 +688,7 @@ D(bug("]\n"));
         MUIA_Window_CloseGadget,                               (!isBackdrop) ? TRUE : FALSE,
         MUIA_Window_SizeGadget,                                (!isBackdrop) ? TRUE : FALSE,
         MUIA_Window_DepthGadget,                               (!isBackdrop) ? TRUE : FALSE,
-#if defined(MUIA_Window_ZoomGadget)
-        MUIA_Window_ZoomGadget,                                (!isBackdrop) ? TRUE : FALSE,
-#endif
+        WINZOOMTAG,                                             (!isBackdrop) ? TRUE : FALSE,
         MUIA_Window_UseBottomBorderScroller,                   (!isBackdrop) ? TRUE : FALSE,
         MUIA_Window_UseRightBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
         MUIA_Window_IsSubWindow,                             TRUE,
