@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -411,7 +411,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 
     struct IFFHandle 	    *iff;
     struct Hook     	     iffhook;
-    struct FileFaceChunk     fc;
+    struct FileFaceChunk     fc = { 0 };
     struct FileImageChunk    ic1, ic2;
     UBYTE                   *argb1data = NULL, *argb2data = NULL;
     UBYTE   	    	    *img1data = NULL, *img2data = NULL;

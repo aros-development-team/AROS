@@ -10195,9 +10195,23 @@ if test "$aros_host_cpu" == "x86_64" ; then
 fi
 
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
-                                    if test "$aros_host_arch" != "$aros_target_arch" ; then
+
+    if test "$aros_host_arch" != "$aros_target_arch" ; then
         cross_compiling=yes
     fi
+    for ac_header in sys/ucontext.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "sys/ucontext.h" "ac_cv_header_sys_ucontext_h" "#include <signal.h>
+"
+if test "x$ac_cv_header_sys_ucontext_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYS_UCONTEXT_H 1
+_ACEOF
+
+fi
+
+done
+
 else
                     cross_compiling=yes
     fi

@@ -2395,9 +2395,11 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
     dnl For us Android is not a separate OS, but a variant of Linux, so both systems will be
     dnl identified as 'linux'. If this ever involves, we'll have to implement some additional check,
     dnl perhaps introducing aros_host_variant
+    
     if test "$aros_host_arch" != "$aros_target_arch" ; then
         cross_compiling=yes
     fi
+    AC_CHECK_HEADERS(sys/ucontext.h,,,[#include <signal.h>])
 else
     dnl For a native build we only care if our host_cc can produce static ELF files. If so, we can use
     dnl it as kernel_cc. If not, (e.g. we are on Windows or Darwin), we need a crosscompiler.

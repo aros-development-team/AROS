@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,7 +15,9 @@ typedef struct ucontext *regs_t;
 
 #else
 
+#if defined(HAVE_SYS_UCONTEXT_H)
 #include <sys/ucontext.h>
+#endif
 
 #define SIGCORE_NEED_SA_SIGINFO
 
