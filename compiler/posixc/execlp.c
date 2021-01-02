@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function execlp().
@@ -58,6 +58,7 @@
     
     if(!(argv = __exec_valist2array(arg, args)))
     {
+        va_end(args);
         errno = ENOMEM;
         return -1;
     }
