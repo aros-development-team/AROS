@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -183,9 +183,10 @@ AROS_UFH3(void, grab_function,
 
 	    if (DTImage)
 	    {
-		struct BitMapHeader *bmhd;
+		struct BitMapHeader *bmhd = NULL;
 
-		if ((GetDTAttrs(DTImage, PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE)))
+                GetDTAttrs(DTImage, PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
+		if (bmhd)
 		{
 		    ULONG y;
 		    struct pdtBlitPixelArray dtb;
