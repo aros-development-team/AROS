@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -163,7 +163,7 @@ static int fillbuffer(struct List *tasks)
 #if !defined(__AROS__)
     Disable();
 
-    if (!addtask(task, FindTask(NULL)))
+    if (!addtask(tasks, FindTask(NULL)))
     {
         Enable();
         return RETURN_FAIL;
