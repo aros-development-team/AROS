@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,9 +15,9 @@
 #include "bootstrap.h"
 #include "support.h"
 
-D(
+#if defined(DEBUG) && (DEBUG) 
 #define str_BSMultiboot "bootstrap:multiboot"
-)
+#endif
 
 unsigned long mb1_parse(struct multiboot *mb, struct mb_mmap **mmap_addr, unsigned long *mmap_len)
 {
