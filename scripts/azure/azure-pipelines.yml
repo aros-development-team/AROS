@@ -359,6 +359,7 @@ jobs:
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    condition: eq( variables['arosbuild.withtoolchain'], 'yes' )
     displayName: 'Deploying toolchain'
 
   - script: |
