@@ -31,7 +31,9 @@
   </tr>
   <tr>
     <td>amiga-m68k</td>
-    <td> [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=14&branchName=master) </td>
+    <td>
+      [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=14&branchName=master)
+    </td>
     <td> --- </td>
     <td> --- </td>
     <td> --- </td>
