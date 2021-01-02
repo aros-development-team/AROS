@@ -22,7 +22,7 @@ int main(void)
     LONG count = VSNPrintf(buffer, sizeof buffer, "ab%scd%ldef", (RAWARG)args);
     printf("\nbuffer '%s' len %d count %d\n", buffer, (int)Strlen(buffer), count);
 
-    printf("\nTesting Strlcpy\n", buffer);
+    printf("\nTesting Strlcpy\n");
     
     Strlcpy(buffer, "123", sizeof(buffer));
     printf("\nbuffer '%s' len %d (should be 3)\n", buffer, (int)Strlen(buffer));
