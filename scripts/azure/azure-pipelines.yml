@@ -275,6 +275,26 @@ jobs:
     displayName: 'Configuring $(arosbuild.name) $(TOOLCHAIN) Toolchain'
 
   - script: |
+      cp config.* $(AROSLOGSDIR)
+    workingDirectory: '$(AROSBUILDDIR)'
+    condition: eq( variables['Agent.OS'], 'Darwin' )
+    displayName: 'Gathering MacOS config logs'
+
+  - task: CopyFiles@2
+    condition: and(failed(), eq( variables['Agent.OS'], 'Darwin' ))
+    inputs:
+      SourceFolder: '$(AROSLOGSDIR)'
+      contents: '**'
+      targetFolder: $(Build.ArtifactStagingDirectory)/publish/logs
+
+  - task: PublishBuildArtifacts@1
+    condition: and(failed(), eq( variables['Agent.OS'], 'Darwin' ))
+    displayName: Publish log build artifacts
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/logs
+      artifactName: $(arosbuild.name) config log
+
+  - script: |
       function execute {
         {
           echo '>>>' $*
