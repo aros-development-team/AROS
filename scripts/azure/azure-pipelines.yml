@@ -331,7 +331,9 @@ jobs:
       execute make -j 2 crosstools
       cd $(AROSBUILDTOOLCHAINDIR)/../
       tar cjvf $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
+      md5sum $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 >$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5
       mv $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 $(AROSBUILDBINDIR)/
+      $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5 $(AROSBUILDBINDIR)/
       rm -Rf $(AROSBUILDDIR)/*
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) $(TOOLCHAIN) Toolchain'
