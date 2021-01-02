@@ -67,10 +67,10 @@
   </tr>
   <tr>
     <td>raspi-armhf</td>
+    <td> --- </td>
     <td>
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=19&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-raspi-armhf?branchName=master"></a>
     </td>
-    <td> --- </td>
     <td> --- </td>
     <td> --- </td>
   </tr>
