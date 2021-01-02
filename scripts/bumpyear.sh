@@ -1,8 +1,8 @@
 #!/bin/bash
 
 START_YEAR=1995
-OLD_YEAR=2019
-NEW_YEAR=2020
+OLD_YEAR=2020
+NEW_YEAR=2021
 SUB=s/$START_YEAR-$OLD_YEAR/$START_YEAR-$NEW_YEAR/g
 echo "$SUB"
 
@@ -12,6 +12,8 @@ DOC_PATH=./documentation
 sed -i "$SUB" $SOURCE_PATH/arch/m68k-amiga/boot/ext_entry.S
 sed -i "$SUB" $SOURCE_PATH/arch/m68k-amiga/boot/rom_entry.S
 sed -i "$SUB" $SOURCE_PATH/rom/dos/boot.c
+
+# warning: the following are within a submodule
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/aboutaros.cd
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/croatian.ct
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/czech.ct
