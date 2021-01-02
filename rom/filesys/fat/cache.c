@@ -212,31 +212,36 @@ APTR Cache_GetBlock(APTR cache, ULONG blockNum, UBYTE **data)
 
             /* Read the block from disk */
 
-            if(AccessDisk(FALSE, blockNum, RANGE_SIZE, c->block_size,
-                b->data, c->priv) == 0)
+            if (b)
             {
-                /* Remove block from its old position in the hash */
+                if(AccessDisk(FALSE, blockNum, RANGE_SIZE, c->block_size,
+                    b->data, c->priv) == 0)
+                {
+                    /* Remove block from its old position in the hash */
 
-                if(b->state == BS_VALID)
-                    Remove((struct Node *)b);
+                    if(b->state == BS_VALID)
+                        Remove((struct Node *)b);
 
-                /* Add it to the hash at the new location */
+                    /* Add it to the hash at the new location */
 
-                AddHead((struct List *)l, (struct Node *)&b->node1);
-                b->num = blockNum;
-                b->state = BS_VALID;
-                b->use_count = 1;
+                    AddHead((struct List *)l, (struct Node *)&b->node1);
+                    b->num = blockNum;
+                    b->state = BS_VALID;
+                    b->use_count = 1;
+                }
+                else
+                {
+                    /* Read failed, so put the block back on the free list */
+
+                    b->state = BS_EMPTY;
+                    AddHead((struct List *)&c->free_list,
+                        (struct Node *)&b->node2);
+                    b = NULL;
+                    error = ERROR_UNKNOWN;
+                }
             }
             else
-            {
-                /* Read failed, so put the block back on the free list */
-
-                b->state = BS_EMPTY;
-                AddHead((struct List *)&c->free_list,
-                    (struct Node *)&b->node2);
-                b = NULL;
                 error = ERROR_UNKNOWN;
-            }
         }
         else
             error = ERROR_NO_FREE_STORE;
