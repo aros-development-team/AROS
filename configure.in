@@ -1172,7 +1172,7 @@ case "$target_cpu" in
         arm_isa_extra="ISA_ARM_FLAGS                = -marm"$gcc_default_endian
         ;;
     *m68k*)
-        target_extra_cfg+="$export_newline""AROSROM_MODULE_CFLAGS         := $""(CFLAGS_NO_BUILTIN)$export_newline"
+        target_extra_cfg+="$export_newline""AROSROM_MODULE_CFLAGS          = $""(CFLAGS_NO_BUILTIN)$export_newline"
         m68k_isa_extra="ISA_FLOAT_FLAGS               = -msoft-float""$export_newline""ISA_MC68000_FLAGS             = -march=68000 $""(ISA_FLOAT_FLAGS)"
         m68k_020_isa_extra="ISA_MC68020_FLAGS             = -march=68020 $""(ISA_FLOAT_FLAGS)"
         m68k_030_isa_extra="ISA_MC68030_FLAGS             = -march=68030 $""(ISA_FLOAT_FLAGS)"
