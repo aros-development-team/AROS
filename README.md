@@ -13,23 +13,107 @@
 * The main AROS target and distfiles are built for each arch.
 * The builds are downloadable via http://www.aros.org/nightly1.php [![Download AROS Research Operating System](https://img.shields.io/sourceforge/dt/aros.svg)](https://sourceforge.net/projects/aros/files/nightly2/).
 
-| <td colspan=3> |
-| --- | --- | --- |
-| BUILD Arch <td colspan=4> Status
-| --- <td colspan=3> GNU toolchain | LLVM toolchain
-| amiga-m68k | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=14&branchName=master) | --- | --- |
-| pc-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=16&branchName=master) | --- | --- |
-| pc-x86_64 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=17&branchName=master) | --- | --- |
-| pc-x86_64-smp | --- | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-smp?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=15&branchName=master) | --- |
-| raspi-armhf | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-raspi-armhf?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=19&branchName=master) | --- | --- |
-| sam440-ppc | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-sam440-ppc?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=20&branchName=master) | --- | --- |
-| linux-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=21&branchName=master) | --- | --- |
-| linux-x86_64 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-x86_64-gnu?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=18&branchName=master) | --- | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-x86_64-llvm?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=26&branchName=master) |
-| darwin-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=24&branchName=master) | --- | --- |
-| darwin-x86_64 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-x86_64?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=22&branchName=master) | --- | --- |
-| darwin-ppc | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-ppc?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=25&branchName=master) | --- | --- |
-| mingw32-i386 | [![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=23&branchName=master) | --- | --- |
-
+<table>
+  <tr>
+    <td>BUILD Arch</td>
+    <td colspan=4>Status</td>
+  </tr>
+  <tr>
+    <td rowspan=2>Toolchain</td>
+    <td colspan="3">GNU</td>
+    <td>LLVM</td>
+  </tr>
+  <tr>
+    <td>6.5.0</td>
+    <td>9.1.0</td>
+    <td>10.2.0</td>
+    <td>10.0</td>
+  </tr>
+  <tr>
+    <td>amiga-m68k</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-amiga-m68k?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=14&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>pc-i386</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=16&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>pc-x86_64</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=17&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>pc-x86_64-smp</td>
+    <td> --- </td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-smp?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=15&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>raspi-armhf</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-raspi-armhf?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=19&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>sam440-ppc</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-sam440-ppc?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=20&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>linux-i386</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=21&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>linux-x86_64</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-x86_64-gnu?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=18&branchName=master) </td>
+    <td> --- </td>
+    <td> --- </td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-linux-x86_64-llvm?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=26&branchName=master)</td>
+  </tr>
+  <tr>
+    <td>darwin-i386</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=24&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>darwin-x86_64</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-x86_64?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=22&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>darwin-ppc</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-darwin-ppc?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=25&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+  <tr>
+    <td>mingw32-i386</td>
+    <td>[![Build Status](https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-mingw32-i386?branchName=master)](https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=23&branchName=master)</td>
+    <td> --- </td>
+    <td> --- </td>
+    <td> --- </td>
+  </tr>
+</table>
 
 ## Contributing
 
