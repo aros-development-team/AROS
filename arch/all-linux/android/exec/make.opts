@@ -1,0 +1,6 @@
+
+# swapcontext() and friends are not implemented on
+# ARM Linux and are totally missing on Android
+
+USER_CPPFLAGS += -DHAVE_SWAPCONTEXT
+FILES += newstackswap

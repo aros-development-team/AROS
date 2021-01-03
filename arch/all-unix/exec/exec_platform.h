@@ -1,6 +1,10 @@
 #ifndef __EXEC_PLATFORM_H
 #define __EXEC_PLATFORM_H
 
+#if defined(_HAVE_CONFIG_H)
+#include <aros/host-conf.h>
+#endif
+
 #define SCHEDQUANTUM_VALUE      4
 
 #ifdef HOST_OS_android

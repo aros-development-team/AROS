@@ -5,10 +5,22 @@ include $(SRCDIR)/config/aros.cfg
 MAINDIR	    := rom/kernel
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES)
 USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
-	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+	       -DHOST_OS_$(ARCH)
+
+ifneq ($(AROS_TARGET_VARIANT),)
+USER_CPPFLAGS += -DHOST_OS_$(AROS_TARGET_VARIANT)
+endif
 
 ifneq ("","$(strip $(WARN_ERROR))")
 CONFIG_CFLAGS := $(subst $(WARN_ERROR),,$(CONFIG_CFLAGS))
+endif
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
 endif
 
 FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
