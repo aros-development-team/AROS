@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
-# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2021, The AROS Development Team. All rights reserved.
 # $Id$
 
+error()
+{    
+    echo $1
+    exit 1
+}
 
 usage()
 {
@@ -74,6 +79,18 @@ fetch_github()
     $ret
 }
 
+wget_try()
+{
+    local wgetsrc=$1 wgetoutput=$2
+    local ret=true
+
+    if ! wget -t 3 --retry-connrefused -T 15 -c $wgetsrc -O $wgetoutput; then
+        ret=false
+    fi
+
+    $ret
+}
+
 fetch()
 {
     local origin="$1" file="$2" destination="$3"
@@ -90,7 +107,7 @@ fetch()
     
     case $protocol in
         https| http | ftp)    
-            if ! wget -t 3 --retry-connrefused -T 15 -c "$origin/$file" -O "$destination/$file".tmp; then
+            if ! wget_try "$origin/$file" "$destination/$file".tmp; then
                 ret=false
             else
                 mv "$destination/$file".tmp "$destination/$file"
@@ -175,13 +192,6 @@ fetch_cached()
     
     return 1
 }
-
-error()
-{
-    echo $1
-    exit 1
-}
-
 
 unpack()
 {
@@ -279,6 +289,42 @@ patch_cached()
     fi
 }
 
+    
+fetchlock()
+{
+    local location="$1" archive="$2";
+    local notified=0;
+
+    for (( ; ; ))
+    do
+        if ! test -f "$location"; then
+            if ! test -f "${location}/${archive}.fetch"; then
+                trap "fetchunlock $location $archive" INT
+                echo "$$"  > "${location}/${archive}.fetch"
+                break
+            else
+                if test "x${notified}" != "x1"; then
+                    echo "FETCH.sh: waiting for process with PID: $(<${location}/${archive}.fetch) to finish downloading..."
+                fi
+                notified=1
+                continue
+            fi
+        else
+            break
+        fi
+    done
+}
+
+
+fetchunlock()
+{
+    local location="$1" archive="$2";
+
+    if test -f "${location}/${archive}.fetch"; then
+        rm -f "${location}/${archive}.fetch"
+    fi
+}
+
 location="./"
 
 while  test "x$1" != "x"; do
@@ -308,31 +354,40 @@ destination=${destination:-.}
 location=${location:-.}
 patches_origins=${patches_origins:-.}
 
+fetchlockfile="$archive"
+fetchlock "$location" "$fetchlockfile"
+
 fetch_cached "$archive_origins" "$archive" "$suffixes" "$location" archive2
-test -z "$archive2" && error "fetch: Error while fetching the archive \`$archive'."
+
+test -z "$archive2" && fetchunlock "$location" "$fetchlockfile" && error "fetch: Error while fetching the archive \`$archive'."
 archive="$archive2"
 
 for patch in $patches; do
     patch=`echo $patch | cut -d: -f1`
     if test "x$patch" != "x"; then
         if ! fetch_cached "$patches_origins" "$patch" "" "$destination"; then
-	    fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz zip" "$destination" patch2
+            fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz zip" "$destination" patch2
             test -z "$patch2" && error "fetch: Error while fetching the patch \`$patch'."
-	    if ! unpack_cached "$destination" "$patch2" "$destination"; then
-		error "fetch: Error while unpacking \`$patch2'."
-	    fi
+            if ! unpack_cached "$destination" "$patch2" "$destination"; then
+                fetchunlock "$location" "$fetchlockfile"
+                error "fetch: Error while unpacking \`$patch2'."
+            fi
         fi
     fi
 done
 
 if test "x$suffixes" != "x"; then
     if ! unpack_cached "$destination" "$archive" "$location"; then
+        fetchunlock "$location" "$fetchlockfile"
         error "fetch: Error while unpacking \`$archive'."
     fi
 fi
     
 for patch in $patches; do
     if ! patch_cached "$destination" "$patch"; then
+        fetchunlock "$location" "$fetchlockfile"
         error "fetch: Error while applying the patch \`$patch'."
     fi
 done
+
+fetchunlock "$location" "$fetchlockfile"
