@@ -9090,6 +9090,12 @@ case "$target_os" in
         aros_target_arch="darwin"
         aros_target_family="unix"
         aros_flavour="emulation"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Where to find the Darwin SDK" >&5
+$as_echo_n "checking Where to find the Darwin SDK... " >&6; }
+        darwin_sdk_path=`xcrun --show-sdk-path`
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $darwin_sdk_path" >&5
+$as_echo "$darwin_sdk_path" >&6; }
+        aros_kernel_includes="-isystem $darwin_sdk_path/usr/include"
         case "$target_cpu" in
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"

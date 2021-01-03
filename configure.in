@@ -1456,6 +1456,10 @@ case "$target_os" in
         aros_target_arch="darwin"
         aros_target_family="unix"
         aros_flavour="emulation"
+        AC_MSG_CHECKING([Where to find the Darwin SDK])
+        darwin_sdk_path=`xcrun --show-sdk-path`
+        AC_MSG_RESULT($darwin_sdk_path)
+        aros_kernel_includes="-isystem $darwin_sdk_path/usr/include"
         case "$target_cpu" in
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
