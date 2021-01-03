@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -691,14 +691,14 @@ static BOOL Save_BitMapPic(struct IClass *cl, Object *o, struct dtWrite *dtw )
 
     BMHD[0] = AROS_WORD2BE(bmhd->bmh_Width);
     BMHD[1] = AROS_WORD2BE(bmhd->bmh_Height);
-    BMHD[3] = AROS_WORD2BE(bmhd->bmh_Left);
-    BMHD[4] = AROS_WORD2BE(bmhd->bmh_Top);
-    BMHD[5] = AROS_WORD2BE(bmhd->bmh_Depth);
-    BMHD[6] = AROS_WORD2BE(bmhd->bmh_Pad << 8);
-    BMHD[7] = AROS_WORD2BE(bmhd->bmh_Transparent);
-    BMHD[8] = AROS_WORD2BE(11 << 8 | 11);
-    BMHD[9] = AROS_WORD2BE(bmhd->bmh_PageWidth);
-    BMHD[10] = AROS_WORD2BE(bmhd->bmh_PageHeight);
+    BMHD[2] = AROS_WORD2BE(bmhd->bmh_Left);
+    BMHD[3] = AROS_WORD2BE(bmhd->bmh_Top);
+    BMHD[4] = AROS_WORD2BE(bmhd->bmh_Depth);
+    BMHD[5] = AROS_WORD2BE(bmhd->bmh_Pad << 8);
+    BMHD[6] = AROS_WORD2BE(bmhd->bmh_Transparent);
+    BMHD[7] = AROS_WORD2BE(11 << 8 | 11);
+    BMHD[8] = AROS_WORD2BE(bmhd->bmh_PageWidth);
+    BMHD[9] = AROS_WORD2BE(bmhd->bmh_PageHeight);
 
     /* Write BMHD to File. */
     WriteBytes(fileHandle, BMHD, offset, length);
