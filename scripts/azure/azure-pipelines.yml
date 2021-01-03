@@ -122,6 +122,7 @@ jobs:
       echo 'Building darwin x86 toolchain'
       DARWINBUILDXCODEVERS=`sudo xcode-select --print-path`
       echo "using XCode version : $DARWINBUILDXCODEVERS"
+      echo "SDK : $(SDK)"
       echo '** prerequisite gmp'
       mkdir -p '$MACOSHOMEDIR/opt/gcc/x86'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
