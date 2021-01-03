@@ -102,13 +102,13 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
         (*bss_tracker)++;
     }
 
-    return addr + sh->size;
+    return (void *)((uintptr_t)addr + sh->size);
 }
 
 static void *copy_data(void *src, void *addr, uintptr_t len)
 {
     memcpy(addr, src, len);
-    return addr + len;
+    return (void *)((uintptr_t)addr + len);
 }
 
 /* Perform relocations of given section */
@@ -138,7 +138,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
     for (i=0; i<numrel; i++, rel++)
     {
         struct symbol *sym = &symtab[ELF_R_SYM(rel->info)];
-        uintptr_t *p = (void *)(uintptr_t)toreloc->addr + rel->offset;
+        uintptr_t *p = (void *)((uintptr_t)toreloc->addr + rel->offset);
         const char *name = (const char *)(uintptr_t)sh[shsymtab->link].addr + sym->name;
         elf_uintptr_t s;
 
