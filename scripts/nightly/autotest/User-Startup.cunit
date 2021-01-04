@@ -1,0 +1,3 @@
+Execute S/Test cunit/hidds/graphics/cunit-convertpixels
+Execute S/Test cunit/crt/stdc/cunit-fileseek
+Shutdown
