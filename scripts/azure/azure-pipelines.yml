@@ -662,7 +662,8 @@ jobs:
         cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
         cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
         arosexehost=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
-        DISPLAY=:1 timeout 5m boot/$arosexehost/AROSBootstrap
+        chmod 744 "boot/$arosexehost/AROSBootstrap"
+        DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
       fi
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: 'Performing Unit testing with CUnit'
