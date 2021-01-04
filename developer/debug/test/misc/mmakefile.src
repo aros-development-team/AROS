@@ -1,50 +1,52 @@
-# Copyright © 2016-2019, The AROS Development Team. All rights reserved.
+# Copyright © 2016-2021, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
+EXEDIR := $(AROS_TESTS)/misc
+CUNITEXEDIR := $(AROS_TESTS)/cunit/misc
+
 FILES := \
- aslhook \
- busyloop \
- camdtree \
- cctest \
- fileseek \
- frequencies \
- fsresource \
- getcpuinfo \
- helloworld \
- hostcb \
- hostlib \
- iffparsewrite \
- ilbmtoc \
- inquire \
- joystick \
- mathtest \
- partition \
- pthreadtest \
- simplepng \
- versionlib
+    aslhook \
+    busyloop \
+    camdtree \
+    cctest \
+    frequencies \
+    fsresource \
+    getcpuinfo \
+    helloworld \
+    hostcb \
+    hostlib \
+    iffparsewrite \
+    ilbmtoc \
+    inquire \
+    joystick \
+    mathtest \
+    partition \
+    pthreadtest \
+    simplepng \
+    versionlib
 
 UNIXFILES := \
- unixio
+    unixio
 
 SHTESTFILES=\
     pcilist \
     true
 
-EXEDIR := $(AROS_TESTS)/misc
-
-#MM- test : test-misc test-sh
-#MM- test-quick : test-misc-quick test-sh-quick
+#MM- test : test-misc
+#MM- test-quick : test-misc-quick
 
 #MM- test-unix : test-misc-unix
 #MM- test-unix-quick : test-misc-unix-quick
 
-#MM  test-sh : includes linklibs
+#MM  test-misc-common : includes linklibs workbench-libs-version-includes
+#MM  test-misc-sh : includes linklibs
 
-#MM test-misc : workbench-libs-version-includes
+#MM- test-misc : test-misc-common test-misc-sh
+#MM- test-misc-quick : test-misc-common-quick test-misc-sh-quick
 
-%build_progs mmake=test-misc \
+%build_progs mmake=test-misc-common \
     files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
 
 %build_progs mmake=test-misc-unix \
@@ -52,7 +54,7 @@ EXEDIR := $(AROS_TESTS)/misc
 
 USER_CPPFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-%build_progs mmake=test-sh \
+%build_progs mmake=test-misc-sh \
     files=$(SHTESTFILES) targetdir=$(EXEDIR) \
     usestartup=no
 

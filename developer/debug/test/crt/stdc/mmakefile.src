@@ -4,12 +4,16 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+EXEDIR := $(AROS_TESTS)/crt/stdc
+CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/stdc
+
 STDCTESTFILES := \
         arguments \
         clock \
         ctype \
         environ \
         exit \
+        fileseek \
         jmpbuf \
         mktime \
         raise \
@@ -35,25 +39,40 @@ STDCPRINTTESTFILES := \
         sprintf \
         sprintf_f
 
-EXEDIR := $(AROS_TESTS)/crt/stdc
+CUNITSTDCTESTFILES := \
+    cunit-fileseek
 
 #MM- test-crt : test-crt-stdc test-crt-stdc-$(AROS_TARGET_CPU)
 #MM- test-crt-quick : test-crt-stdc-quick test-crt-stdc-$(AROS_TARGET_CPU)-quick
 
-#MM- test-crt-stdc : test-crt-stdc-general test-crt-stdc-print
-#MM- test-crt-stdc-quick : test-crt-stdc-general-quick test-crt-stdc-print-quick
+#MM- test-cunit : test-crt-stdc-cunit
+#MM- test-cunit-quick : test-crt-stdc-cunit-quick
+
+#MM- test-crt-stdc : test-crt-stdc-general test-crt-stdc-print test-crt-stdc-cunit
+#MM- test-crt-stdc-quick : test-crt-stdc-general-quick test-crt-stdc-print-quick test-crt-stdc-cunit-quick
 
 #MM test-crt-stdc-general : includes includes-copy linklibs kernel
 #MM test-crt-stdc-print : includes includes-copy linklibs kernel
+#MM test-crt-stdc-cunit : includes includes-copy linklibs linklibs-cunit
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
 
-USER_CFLAGS = -noposixc -ffloat-store
+STDC_BASE_CFLAGS := -noposixc -ffloat-store $(CFLAGS_NO_BUILTIN) 
+
+USER_CFLAGS = $(STDC_BASE_CFLAGS) 
 %build_progs mmake=test-crt-stdc-general \
     files=$(STDCTESTFILES) targetdir=$(EXEDIR)
 
 NOWARN_CFLAGS := $(NOWARN_FORMAT_TRUNCATION)
-USER_CFLAGS = -noposixc -ffloat-store $(NOWARN_CFLAGS)
+USER_CFLAGS = $(STDC_BASE_CFLAGS) $(NOWARN_CFLAGS)
 
 %build_progs mmake=test-crt-stdc-print \
     files=$(STDCPRINTTESTFILES) targetdir=$(EXEDIR)
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS := $(STDC_BASE_CFLAGS)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-crt-stdc-cunit \
+    files=$(CUNITSTDCTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit"
