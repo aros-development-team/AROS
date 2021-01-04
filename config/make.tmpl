@@ -4004,18 +4004,11 @@ endif
 #MM
 %(mmake) :
 	$(Q)$(ECHO) "Fetching   %(archive) ..."
-	$(Q)$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
+	$(Q)-$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
 	-d %(destination) -po "%(patches_origins)" -p "%(patches_specs)"
 	$(Q)$(IF) ! $(TEST) -f $(%(mmake)-fetchedflag) ; then \
 		 $(TOUCH) $(%(mmake)-fetchedflag) ; \
 	fi
-
-#	$(Q)$(IF) ! $(TEST) -f $(%(mmake)-fetchedflag) ; then \
-#		$(ECHO) "Fetching   %(archive) ..." \
-#		&& $(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
-#		-d %(destination) -po "%(patches_origins)" -p "%(patches_specs)" \
-#		&& $(TOUCH) $(%(mmake)-fetchedflag) ; \
-#	fi
 %end
 #------------------------------------------------------------------------------
 
