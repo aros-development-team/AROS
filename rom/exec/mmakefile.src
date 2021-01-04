@@ -52,6 +52,15 @@ ifeq ($(AROS_TARGET_CPU),m68k)
 OPTIMIZATION_CFLAGS := -Os
 endif
 
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/exec/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+endif
+
 # Use customized entry code which declares SysBase suitable
 # for load-time linking by the bootstrap.
 RESIDENT_BEGIN := $(KICKSTART_BEGIN)

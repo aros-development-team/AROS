@@ -1,4 +1,4 @@
-# Copyright © 2015-2020, The AROS Development Team. All rights reserved.
+# Copyright © 2015-2021, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
@@ -10,8 +10,18 @@ INCLUDE_FILES := task.h
 
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG
+#USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/exec/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+endif
 
 TASKRES_FUNCS :=		\
 	    LockTaskList        \
