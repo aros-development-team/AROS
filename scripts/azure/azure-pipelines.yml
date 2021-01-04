@@ -39,7 +39,7 @@ jobs:
       fi
       echo "Preparing environment for build with $TARGETTOOLCHAIN toolchain"
       df -H
-      echo "##vso[task.setvariable variable=TOOLCHAIN;]$TARGETTOOLCHAIN"
+      echo "##vso[task.setvariable variable=TOOLCHAIN;isOutput=true]$TARGETTOOLCHAIN"
       echo "##vso[task.setvariable variable=TOOLCHAINOPTS;]$TARGETTOOLCHAINOPTS"
     displayName: 'Preparing common environment...'
 
@@ -636,6 +636,7 @@ jobs:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     displayName: 'Deploying build'
+
 
   - script: |
       for oldfile in $(AROSBUILDBINDIR)/*; do
