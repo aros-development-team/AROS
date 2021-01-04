@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create the jumptable for a shared library or a device.
@@ -81,7 +81,7 @@ AROS_LD3(void, CacheClearE,
 	    /* Decrement vector pointer by one and install vector */
 	    __AROS_INITVEC(target,n);
 	    if (*fp)
-		__AROS_SETVECADDR(target,n,(void *)funcDispBase+*fp);
+		__AROS_SETVECADDR(target,n,(APTR)((IPTR)funcDispBase + *fp));
 
 	    /* Use next array entry */
 	    fp++;
@@ -91,10 +91,10 @@ AROS_LD3(void, CacheClearE,
     else
     {
 	/* If FuncDispBase is NULL it's an array of function pointers */
-	void **fp=(void **)functionArray;
+	APTR *fp=(APTR *)functionArray;
 
 	/* -1 terminates the array */
-	while(*fp!=(void *)-1)
+	while(*fp!=(APTR)-1)
 	{
 	    /* Decrement vector pointer by one and install vector */
 	    __AROS_INITVEC(target,n);
