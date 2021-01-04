@@ -5,6 +5,7 @@
 # See arch/all-native/mmakefile.src.
 
 #MM- workbench-hosted: \
+#MM			kernel-hidd-gfx-headlessgfx \
 #MM			kernel-fs-afs		\
 #MM			kernel-fs-cdvdfs	\
 #MM			kernel-fs-cdfs		\
