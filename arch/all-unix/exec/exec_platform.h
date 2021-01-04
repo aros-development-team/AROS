@@ -20,12 +20,15 @@
 #define _XOPEN_SOURCE
 #endif
 
+#if defined(HAVE_UCONTEXT_H)
+#include <ucontext.h>
+#else
 #if defined(HAVE_SYS_UCONTEXT_H)
 #include <sys/ucontext.h>
 #else
-#include <ucontext.h>
+#warning "missing support for ucontext_t on this platform"
 #endif
-
+#endif
 #endif
 
 #ifdef HOST_OS_linux

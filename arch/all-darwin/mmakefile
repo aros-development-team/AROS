@@ -1,0 +1,11 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-darwin-$(CPU) : \
+#MM      workbench-hosted \
+#MM      workbench-unix
+
+#MM- test-darwin: test-unix
+
+%common

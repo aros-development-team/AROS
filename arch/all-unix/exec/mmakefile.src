@@ -13,6 +13,7 @@ USER_CPPFLAGS += -DHOST_OS_$(AROS_TARGET_VARIANT)
 endif
 
 # Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
 -include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/exec/make.opts
 ifneq ($(AROS_TARGET_VARIANT),)

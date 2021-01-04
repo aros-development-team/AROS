@@ -5,6 +5,15 @@ include $(SRCDIR)/config/aros.cfg
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/exec/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+endif
+
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles="execstubs stackswap taskexit" \

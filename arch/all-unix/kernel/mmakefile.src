@@ -16,6 +16,7 @@ CONFIG_CFLAGS := $(subst $(WARN_ERROR),,$(CONFIG_CFLAGS))
 endif
 
 # Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/kernel/make.opts
 -include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
 ifneq ($(AROS_TARGET_VARIANT),)

@@ -8,6 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM    kernel-hidd-linuxinput
 
 #MM- workbench-linux-$(CPU) : \
+#MM      workbench-hosted \
 #MM      workbench-unix \
 #MM      workbench-devs-tap-unix \
 #MM      workbench-devs-eth-unix \
