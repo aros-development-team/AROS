@@ -644,17 +644,16 @@ jobs:
       done
       if [ -f "$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)" ]; then
         if [[ "$(arosbuild.packagefmt)" = "zip" ]]
+        then
+          unzip $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -d $(AROSBUILDBINDIR)
+        else
+          if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
           then
-            unzip $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -d $(AROSBUILDBINDIR)
+            tar xjvf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -C $(AROSBUILDBINDIR)
           else
-            if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
+            if [[ "$(arosbuild.packagefmt)" = "lha" ]]
             then
-              tar xjvf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -C $(AROSBUILDBINDIR)
-            else
-              if [[ "$(arosbuild.packagefmt)" = "lha" ]]
-              then
-                lha -x $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)
-              fi
+              lha -x $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)
             fi
           fi
         fi

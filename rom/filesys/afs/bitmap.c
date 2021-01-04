@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -390,7 +390,10 @@ ULONG bitnr, longnr,null=0;
 
 	D(bug("[afs]    markBlock: block=%lu mode=%lu\n",block,mode));
 	if (block>=volume->countblocks)
-		null = null/null;
+        {
+            showText(afsbase, "Illegal Block - %lu >= %lu", block, volume->countblocks);
+            return 0;
+        }
 	if (!gotoBitmapBlock(afsbase, volume, block, &longnr, &bitnr))
 		return 0;
 	if (mode)
