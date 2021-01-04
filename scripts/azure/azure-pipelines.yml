@@ -663,6 +663,8 @@ jobs:
         cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
         arosexetarget=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
         arosexehost=${arosexetarget%% *}
+        sed -i "/module Devs\/Drivers\/gfx.hidd/a\\
+      module Storage\/Drivers\/headlessgfx.hidd" "boot/$arosexehost/AROSBootstrap.conf"
         chmod 744 "boot/$arosexehost/AROSBootstrap"
         DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
       fi
