@@ -162,6 +162,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if you have the <ucontext.h> header file. */
+#undef HAVE_UCONTEXT_H
+
 /* Define to 1 if you have the <sys/ucontext.h> header file. */
 #undef HAVE_SYS_UCONTEXT_H
 
