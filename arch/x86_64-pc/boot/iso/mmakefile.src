@@ -6,10 +6,14 @@ include $(SRCDIR)/config/aros.cfg
 
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
 
+#MM bootiso-pc-x86_64 : \
+#MM                              bootiso-native
+
 #MM
 bootiso-pc-x86_64: $(TARGET_ISO)
 
-#MM- bootiso-pc-x86_64-quick: bootiso-pc-x86_64
+#MM- bootiso-pc-x86_64-quick: \
+#MM                              bootiso-pc-x86_64
 
 $(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
 		@$(CP) $< $@

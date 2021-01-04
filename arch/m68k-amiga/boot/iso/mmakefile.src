@@ -7,24 +7,24 @@ DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
 
 .PHONY: $(TARGET_ISO) $(DEVEL_ISO)
 
-#MM bootiso-amiga-m68k :	AROS-complete		\
-#MM			kernel-aros \
-#MM			kernel-oop  \
-#MM			kernel-package-amiga-m68k	\
-#MM			kernel-bootstrap-amiga-m68k	\
-#MM			kernel-fs-xtra  \
-#MM			AROS-amiga-m68k-drivers \
-#MM			bootdisk-amiga-m68k-gen \
-#MM         iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd
+#MM bootiso-amiga-m68k : \
+#MM                              bootiso-native \
+#MM                              kernel-aros \
+#MM                              kernel-oop  \
+#MM                              kernel-package-amiga-m68k \
+#MM                              kernel-bootstrap-amiga-m68k \
+#MM                              kernel-fs-xtra  \
+#MM                              AROS-amiga-m68k-drivers \
+#MM                              bootdisk-amiga-m68k-gen
 
-#MM deviso-amiga-m68k :	AROS-complete		\
-#MM			kernel-aros \
-#MM			kernel-oop  \
-#MM			kernel-package-amiga-m68k	\
-#MM			kernel-bootstrap-amiga-m68k	\
-#MM			AROS-amiga-m68k-drivers \
-#MM			bootdisk-amiga-m68k-gen \
-#MM         iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd
+#MM deviso-amiga-m68k : \
+#MM                              bootiso-native \
+#MM                              kernel-aros \
+#MM                              kernel-oop  \
+#MM                              kernel-package-amiga-m68k \
+#MM                              kernel-bootstrap-amiga-m68k \
+#MM                              AROS-amiga-m68k-drivers \
+#MM                              bootdisk-amiga-m68k-gen
 
 TAR ?= tar
 Q ?= @

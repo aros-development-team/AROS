@@ -6,16 +6,16 @@ include $(SRCDIR)/config/aros.cfg
 
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 
-#MM bootiso-pc-i386 :	AROS-complete		\
-#MM			kernel-package-pc-i386		\
-#MM			AROS-pc-drivers		\
-#MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386 \
-#MM         iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd
+#MM bootiso-pc-i386 : \
+#MM                              bootiso-native \
+#MM                              kernel-package-pc-i386 \
+#MM                              AROS-pc-drivers
 
 #MM
 bootiso-pc-i386: $(TARGET_ISO)
 
-#MM- bootiso-pc-i386-quick: bootiso-pc-i386
+#MM- bootiso-pc-i386-quick: \
+#MM                              bootiso-pc-i386
 
 $(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
 		@$(CP) $< $@
