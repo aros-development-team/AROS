@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VESA.
@@ -81,7 +81,7 @@ OOP_Object *VESAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	{aHidd_Gfx_SyncTags,   (IPTR)sync_mode},
 	{TAG_DONE, 0UL}
     };
-    struct TagItem yourtags[] =
+    struct TagItem msgNewTags[] =
     {
 	{aHidd_Gfx_ModeTags, (IPTR)modetags},
         { aHidd_Name            , (IPTR)"vesagfx.hidd"     },
@@ -89,7 +89,7 @@ OOP_Object *VESAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         { aHidd_ProducerName    , (IPTR)"vesa.org"  },
 	{TAG_MORE, 0UL}
     };
-    struct pRoot_New yourmsg;
+    struct pRoot_New msgNew;
 
     EnterFunc(bug("VESAGfx::New()\n"));
 
@@ -115,11 +115,13 @@ OOP_Object *VESAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     sync_mode[2].ti_Data = XSD(cl)->data.width;
     sync_mode[3].ti_Data = XSD(cl)->data.height;
 
-    yourtags[1].ti_Data = (IPTR)msg->attrList;
-    yourmsg.mID = msg->mID;
-    yourmsg.attrList = yourtags;
+    if ((msgNewTags[4].ti_Data = (IPTR)msg->attrList) == NULL)
+        msgNewTags[4].ti_Tag = TAG_DONE;
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&yourmsg);
+    msgNew.mID = msg->mID;
+    msgNew.attrList = msgNewTags;
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&msgNew);
     if (o)
     {
 	struct VESAGfxHiddData *data = OOP_INST_DATA(cl, o);
