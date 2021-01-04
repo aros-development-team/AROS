@@ -662,7 +662,7 @@ jobs:
         cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
         cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
         arosexetarget=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
-        arosexehost=$(arostarget%% *)
+        arosexehost=$(arosexetarget%% *)
         chmod 744 "boot/$arosexehost/AROSBootstrap"
         DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
       fi
