@@ -11,6 +11,8 @@ FILES	:=	\
 	headlessgfx_hiddclass \
 	headlessgfx_bitmapclass
 
+#USER_CPPFLAGS += -DDEBUG=1
+
 %build_module mmake=kernel-hidd-gfx-headlessgfx \
   modname=headlessgfx modtype=hidd \
   files=$(FILES) moduledir=$(EXEDIR)
