@@ -1,19 +1,42 @@
-# Copyright © 2004-2019, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2021, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- bootdisk : boot bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-#MM- bootdisk-quick : bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
-#MM- systemdisk : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-#MM- systemdisk-quick : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+#MM- bootdisk : \
+#MM                              boot \
+#MM                              bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
-#MM- bootiso : boot bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT) bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-#MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)-quick bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+#MM- bootdisk-quick : \
+#MM                              bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
 
-#MM boot : boot-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) boot-$(ARCH)-$(CPU) boot-$(ARCH) boot-$(FAMILY)
+#MM- systemdisk : \
+#MM                              systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
-#MM distfiles-system : iconset-$(AROS_TARGET_ICONSET)-icons-aros-$(AROS_TARGET_ARCH)-system
+#MM- systemdisk-quick : \
+#MM                              systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM- bootiso : \
+#MM                              boot \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT) \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- bootiso-quick : \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)-quick \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM boot : \
+#MM                              boot-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM                              boot-$(ARCH)-$(CPU) \
+#MM                              boot-$(ARCH) \
+#MM                              boot-$(FAMILY)
+
+#MM distfiles-system : \
+#MM                              distfiles-system-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM                              distfiles-system-$(ARCH)-$(CPU) \
+#MM                              distfiles-system-$(ARCH) \
+#MM                              distfiles-system-$(FAMILY)
+#MM                              iconset-$(AROS_TARGET_ICONSET)-icons-aros-$(AROS_TARGET_ARCH)-system
 
 #MM
 distfiles-system:
