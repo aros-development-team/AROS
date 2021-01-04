@@ -214,8 +214,7 @@ static VOID ParseProcessorInformation(Object *GrpProcessors)
 
     for (i = 0; i < count; i++)
     {
-        Object  *CoreSpdLabelObj, *CoreSpdStrObj,
-                *CoreFeatLabelObj, *CoreFeatStrObj;
+        Object  *CoreFeatLabelObj, *CoreFeatStrObj;
         UQUAD cpuspeed;
         struct TagItem cpuTags [] =
         {
@@ -256,7 +255,9 @@ static VOID ParseProcessorInformation(Object *GrpProcessors)
 
         if (cpuspeed)
         {
+            Object  *CoreSpdLabelObj, *CoreSpdStrObj;
             char *CoreSpdStr;
+
             CoreSpdLabelObj = Label("Speed");
             CoreSpdStr = AllocVec(20, MEMF_PUBLIC);
             snprintf(CoreSpdStr, 20, "%llu MHz", (unsigned long long)(cpuspeed / 1000000));
