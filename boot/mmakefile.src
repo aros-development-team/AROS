@@ -29,7 +29,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM                              boot-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
 #MM                              boot-$(ARCH)-$(CPU) \
 #MM                              boot-$(ARCH) \
-#MM                              boot-$(FAMILY)
+#MM                              boot-$(FAMILY) \
+#MM                              test
 
 #MM distfiles-system : \
 #MM                              distfiles-system-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
