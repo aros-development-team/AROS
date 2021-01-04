@@ -3,17 +3,38 @@
 include $(SRCDIR)/config/aros.cfg
 
 EXEDIR      := $(AROS_TESTS)/hidds/gfx
+CUNITEXEDIR := $(AROS_TESTS)/cunit/hidds/gfx
 
 FILES := \
- convertpixels \
- hiddmodeid \
- modeid
+    convertpixels \
+    hiddmodeid \
+    modeid
+
+CUNITFILES := \
+    cunit-convertpixels
 
 #MM- test : test-hidd-gfx
-#MM test-hidd-gfx : includes linklibs
+#MM- test-quick : test-hidd-gfx-quick
 
-%build_progs mmake=test-hidd-gfx \
+#MM- test-cunit : test-hidd-gfx-cunit
+#MM- test-cunit-quick : test-hidd-gfx-cunit-quick
+
+#MM- test-hidd-gfx : test-hidd-gfx-common test-hidd-gfx-cunit
+#MM- test-hidd-gfx-quick : test-hidd-gfx-common-quick test-hidd-gfx-cunit-quick
+
+#MM test-hidd-gfx-common : includes linklibs
+#MM test-hidd-gfx-cunit : includes linklibs linklibs-cunit
+
+%build_progs mmake=test-hidd-gfx-common \
     files=$(FILES) targetdir=$(EXEDIR) \
     uselibs="hiddstubs"
-	
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-hidd-gfx-cunit \
+    files=$(CUNITFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="hiddstubs cunit"
+
 %common
