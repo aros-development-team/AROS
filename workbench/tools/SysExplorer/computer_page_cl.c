@@ -151,9 +151,7 @@ static VOID ParseProcessorInformation(Object *GrpProcessors)
     CONST_STRPTR modelstring;
     char    *CPUInfoLabelStr, *CPUInfoStr;
     Object  *CPUInfoLabelObj, *CPUInfoStrObj;
-    ULONG architecture, endianness, count;
-
-    ULONG i, j;
+    ULONG architecture, endianness, count, i, j;
     struct TagItem cpuArchTags [] =
     {
         {GCIT_SelectedProcessor, 0},
@@ -231,7 +229,7 @@ static VOID ParseProcessorInformation(Object *GrpProcessors)
             modelstring = "Unknown";
 
         CPUInfoLabelStr = AllocVec(14, MEMF_PUBLIC);
-        snprintf(CPUInfoLabelStr, 14, "CPU Core #%u", (int)(i + 1));
+        snprintf(CPUInfoLabelStr, 14, "CPU Core #%u", (unsigned int)(i + 1));
         CPUInfoLabelObj = Label(CPUInfoLabelStr);
 
         CPUInfoStr = AllocVec(strlen(modelstring) + 2, MEMF_PUBLIC);
