@@ -115,7 +115,7 @@ OOP_Object *VESAGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     sync_mode[2].ti_Data = XSD(cl)->data.width;
     sync_mode[3].ti_Data = XSD(cl)->data.height;
 
-    if ((msgNewTags[4].ti_Data = (IPTR)msg->attrList) == NULL)
+    if ((msgNewTags[4].ti_Data = (IPTR)msg->attrList) == 0)
         msgNewTags[4].ti_Tag = TAG_DONE;
 
     msgNew.mID = msg->mID;
