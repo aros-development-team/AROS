@@ -636,3 +636,32 @@ jobs:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     displayName: 'Deploying build'
+
+  - script: |
+      for oldfile in $(AROSBUILDBINDIR)/*; do
+          rm -Rf $oldfile
+      done
+      if [ -f "$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)" ]; then
+        if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]
+          then
+            unzip $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) -d $(AROSBUILDBINDIR)
+          else
+            if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]
+            then
+              tar xjvf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) -C $(AROSBUILDBINDIR)
+            else
+              if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]
+              then
+                lha -x $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDBINDIR)
+              fi
+            fi
+          fi
+        fi
+        cd $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
+        cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
+        arosexehost=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
+        DISPLAY=:1 timeout 5m boot/$arosexehost/AROSBootstrap
+      fi
+    condition: eq( variables['arosbuild.withunittests'], 'yes' )
+    displayName: 'Performing Unit testing with CUnit'
