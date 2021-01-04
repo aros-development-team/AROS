@@ -7,7 +7,7 @@
 */
 
 #define __OOP_NOATTRBASES__
-#define DEBUG 1
+
 #include <aros/debug.h>
 
 #include <proto/oop.h>
