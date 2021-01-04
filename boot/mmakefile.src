@@ -35,7 +35,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM                              distfiles-system-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
 #MM                              distfiles-system-$(ARCH)-$(CPU) \
 #MM                              distfiles-system-$(ARCH) \
-#MM                              distfiles-system-$(FAMILY)
+#MM                              distfiles-system-$(FAMILY) \
 #MM                              iconset-$(AROS_TARGET_ICONSET)-icons-aros-$(AROS_TARGET_ARCH)-system
 
 #MM
