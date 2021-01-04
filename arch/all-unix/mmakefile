@@ -1,0 +1,6 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- distfiles-system-unix : \
+#MM                              AROS-complete

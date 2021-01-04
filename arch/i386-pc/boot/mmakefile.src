@@ -2,28 +2,36 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
+# The "core" AROS components for a bootable system
+
+#MM- boot-pc-i386        : \
+#MM                              bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
+
+#MM- includes-pc-i386 : \
+#MM                              includes-common-i386 \
+#MM                              includes-copy-pc-i386 \
+#MM                              includes-copy
 
 #
 # Rules to create kickstart packages for pc-i386
 #
 
-#MM- kernel-link-pc-i386 :			\
-#MM     kernel-pc-i386-kernel-gz	\
-#MM	kernel-bsp-pc-i386-gz			\
-#MM     kernel-legacy-pc-i386-gz 	\
-#MM	kernel-package-base-gz			\
-#MM	kernel-package-usb-gz			\
-#MM	kernel-package-fs-gz
+#MM- kernel-link-pc-i386 : \
+#MM                              kernel-pc-i386-kernel-gz \
+#MM                              kernel-bsp-pc-i386-gz \
+#MM                              kernel-legacy-pc-i386-gz \
+#MM                              kernel-package-base-gz \
+#MM                              kernel-package-usb-gz \
+#MM                              kernel-package-fs-gz
 
 #
 # The kernel
 #
 
-#MM- kernel-pc-i386-kernel:			\
-#MM     kernel-kernel-kobj			\
-#MM     kernel-exec-kobj			\
-#MM     kernel-task-kobj
+#MM- kernel-pc-i386-kernel: \
+#MM                              kernel-kernel-kobj \
+#MM                              kernel-exec-kobj \
+#MM                              kernel-task-kobj
 
 %link_kickstart mmake=kernel-pc-i386-kernel file=$(AROSARCHDIR)/kernel \
 	startup=$(KOBJSDIR)/kernel_resource.o libs=exec res=task 
@@ -32,29 +40,29 @@ include $(SRCDIR)/config/aros.cfg
 # Board support package
 #
 
-#MM- kernel-bsp-pc-i386 :			\
-#MM	linklibs						\
-#MM kernel-hidd-bus					\
-#MM kernel-hidd-base    			\
-#MM	kernel-battclock    			\
-#MM	kernel-processor    			\
-#MM	kernel-timer    				\
-#MM	kernel-expansion    			\
-#MM	kernel-efi     					\
-#MM	kernel-pc-acpica   				\
-#MM	kernel-hidd-acpibutton			\
-#MM	kernel-pc-hpet     				\
-#MM	kernel-ata      				\
-#MM kernel-hidd-pciata				\
-#MM	kernel-ahci      				\
-#MM	kernel-nvme      				\
-#MM	kernel-pc-i386-serial			\
-#MM	kernel-pc-i386-parallel			\
-#MM kernel-hidd-i8042				\
-#MM kernel-hidd-pci					\
-#MM kernel-hidd-pci-pcipc			\
-#MM kernel-hidd-vesagfx				\
-#MM kernel-hidd-vgagfx    
+#MM- kernel-bsp-pc-i386 : \
+#MM                              linklibs \
+#MM                              kernel-hidd-bus \
+#MM                              kernel-hidd-base \
+#MM                              kernel-battclock \
+#MM                              kernel-processor \
+#MM                              kernel-timer \
+#MM                              kernel-expansion \
+#MM                              kernel-efi \
+#MM                              kernel-pc-acpica \
+#MM                              kernel-hidd-acpibutton \
+#MM                              kernel-pc-hpet \
+#MM                              kernel-ata \
+#MM                              kernel-hidd-pciata \
+#MM                              kernel-ahci \
+#MM                              kernel-nvme \
+#MM                              kernel-pc-i386-serial \
+#MM                              kernel-pc-i386-parallel \
+#MM                              kernel-hidd-i8042 \
+#MM                              kernel-hidd-pci \
+#MM                              kernel-hidd-pci-pcipc \
+#MM                              kernel-hidd-vesagfx \
+#MM                              kernel-hidd-vgagfx    
 
 KRSRCS      := efi hpet
 KRSRCS_ARCH := battclock processor
@@ -72,10 +80,10 @@ KHIDDS      := ata_pci bus i8042 vesagfx vgagfx pci pcipc serial parallel storag
 # Legacy drivers package
 #
 
-#MM- kernel-legacy-pc-i386 :        \
-#MM     kernel-hidd-serialmouse     \
-#MM     kernel-devs-trackdisk       \
-#MM	kernel-isapnp
+#MM- kernel-legacy-pc-i386 : \
+#MM                              kernel-hidd-serialmouse \
+#MM                              kernel-devs-trackdisk \
+#MM                              kernel-isapnp
 
 # ISAPnP disabled because totally untested
 #LEGACY_RSRCS := isapnp
