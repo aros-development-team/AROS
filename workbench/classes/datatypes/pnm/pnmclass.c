@@ -1,5 +1,5 @@
 /*
-	Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+	Copyright © 1995-2021, The AROS Development Team. All rights reserved.
 	$Id$
 */
 
@@ -160,7 +160,7 @@ static BOOL LoadPNM(struct IClass *cl, Object *o)
 		return FALSE;
 	}
 
-	D(bug("pnm.datatype/LoadPNM(): It's a P%d PNM\n"),PNMTYPE);
+	D(bug("pnm.datatype/LoadPNM(): It's a P%d PNM\n",PNMTYPE));
 
 	if(!FGets(FileHandle, LineBuffer, 128))
 	{

@@ -1,0 +1,16 @@
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-hidd-gfx-headlessgfx : kernel-hidd-gfx-includes
+
+EXEDIR := Storage/Drivers
+
+FILES	:=	\
+	headlessgfx_init \
+	headlessgfx_hiddclass \
+	headlessgfx_bitmapclass
+
+%build_module mmake=kernel-hidd-gfx-headlessgfx \
+  modname=headlessgfx modtype=hidd \
+  files=$(FILES) moduledir=$(EXEDIR)
