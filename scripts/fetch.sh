@@ -81,13 +81,13 @@ fetch_github()
 
 wget_try()
 {
-    local wgetsrc=$1 wgetoutput=$2
+    local wgetsrc="$1" wgetoutput="$2"
     local wgetextraflags
     local ret=true
 
     for (( ; ; ))
     do
-        if ! wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c $wgetsrc -O $wgetoutput; then
+        if ! wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c "$wgetsrc" -O "$wgetoutput"; then
             if test "$ret" = false; then
                 break
             fi
@@ -314,7 +314,7 @@ fetchlock()
                 break
             else
                 if test "x${notified}" != "x1"; then
-                    echo "fetch.sh: waiting for process with PID: $(<${location}/${archive}.fetch) to finish downloading..."
+                    echo "fetch.sh: waiting for process with PID: $(<"${location}/${archive}.fetch") to finish downloading..."
                 fi
                 notified=1
                 continue
