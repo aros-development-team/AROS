@@ -642,23 +642,23 @@ jobs:
       for oldfile in $(AROSBUILDBINDIR)/*; do
           rm -Rf $oldfile
       done
-      if [ -f "$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt)" ]; then
-        if [[ "$(arosbuild.bootpackagefmt)" = "zip" ]]
+      if [ -f "$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)" ]; then
+        if [[ "$(arosbuild.packagefmt)" = "zip" ]]
           then
-            unzip $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) -d $(AROSBUILDBINDIR)
+            unzip $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -d $(AROSBUILDBINDIR)
           else
-            if [[ "$(arosbuild.bootpackagefmt)" = "tar.bz2" ]]
+            if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
             then
-              tar xjvf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) -C $(AROSBUILDBINDIR)
+              tar xjvf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -C $(AROSBUILDBINDIR)
             else
-              if [[ "$(arosbuild.bootpackagefmt)" = "lha" ]]
+              if [[ "$(arosbuild.packagefmt)" = "lha" ]]
               then
-                lha -x $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage).$(arosbuild.bootpackagefmt) $(AROSBUILDBINDIR)
+                lha -x $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)
               fi
             fi
           fi
         fi
-        cd $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)/
+        cd $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)/
         cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
         cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
         arosexehost=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
