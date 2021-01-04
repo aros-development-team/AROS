@@ -1,0 +1,17 @@
+diff -ruN cunit-3.2.6/CUnit/Sources/Framework/TestRun.c cunit-3.2.6.aros/CUnit/Sources/Framework/TestRun.c
+--- cunit-3.2.6/CUnit/Sources/Framework/TestRun.c	2020-04-16 17:55:15.000000000 +0000
++++ cunit-3.2.6.aros/CUnit/Sources/Framework/TestRun.c	2021-01-04 00:19:11.870000000 +0000
+@@ -685,12 +685,11 @@
+ 
+ {
+   CU_pRunSummary s = &f_run_summary;
+-  CU_pTestRegistry r = CU_get_registry();
+   size_t max_result_len = 8192;
+   char *result;
+ 
+   assert(NULL != s);
+-  assert(NULL != r);
++  assert(NULL != CU_get_registry());
+ 
+   result = CU_MALLOC(max_result_len);
+   if (result) {
