@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -253,7 +253,7 @@ static void removebackfillhook(struct Screen *scr, struct Hook *oldhook)
 static struct BitMap *LoadDTBitmap (CONST_STRPTR filename, struct Screen *scr,
 				    Object **obj, ULONG *width, ULONG *height)
 {
-    struct BitMapHeader *bmhd;
+    struct BitMapHeader *bmhd = NULL;
     struct BitMap *bitmap = NULL;
     Object *o;
     struct Process *myproc = (struct Process *)FindTask(NULL);
