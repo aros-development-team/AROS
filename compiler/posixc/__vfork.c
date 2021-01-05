@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -29,6 +29,18 @@
 
 #include <aros/debug.h>
 #include <aros/startup.h>
+
+#define VFORK_USE_INLINECOPY
+#if defined(VFORK_USE_INLINECOPY)
+#define _VFORK_COPYENV(a,b) \
+({ \
+    int _i; \
+    for (_i = 0; _i < sizeof(jmp_buf); _i++) \
+        *((UBYTE *)((IPTR)(&a) + _i)) = *((UBYTE *)((IPTR)(&b) + _i)); \
+})
+#else
+#define _VFORK_COPYENV(a,b)      *(a) = *(b)
+#endif
 
 /*****************************************************************************
 
@@ -283,7 +295,7 @@ pid_t __vfork(jmp_buf env)
         vfork_longjmp(env, -1);
     }
     D(bug("__vfork: Parent: allocated udata %p, jmp_buf %p\n", udata, udata->vfork_jmp));
-    *udata->vfork_jmp = *env;
+    _VFORK_COPYENV(udata->vfork_jmp,env);
 
     D(bug("__vfork: Parent: initial jmp_buf %p\n", env));
     D(bug("__vfork: Parent: ip: %p, stack: %p, alt: 0x%p\n", env->retaddr, env->regs[SP], env->regs[ALT]));
@@ -406,7 +418,7 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
     __stdc_set_exitjmp(udata->parent_oldexitjmp, dummy);
 
     /* Save some data from udata before udata is being freed */
-    *env = *udata->vfork_jmp;
+    _VFORK_COPYENV(env,udata->vfork_jmp);
 
     D(bug("__vfork: Parent: freeing udata\n"));
     FreeMem(udata, sizeof(struct vfork_data));
@@ -422,7 +434,7 @@ static void parent_createchild(struct vfork_data *udata)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     jmp_buf vfork_jmp;
 
-    *vfork_jmp = *udata->vfork_jmp;
+    _VFORK_COPYENV(vfork_jmp,udata->vfork_jmp);
 
     struct TagItem tags[] =
     {
