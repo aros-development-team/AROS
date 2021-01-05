@@ -639,17 +639,19 @@ jobs:
 
 
   - script: |
+      echo "Entered AROS Hosted Cunit Test Phase"
       for oldfile in $(AROSBUILDBINDIR)/*; do
           rm -Rf $oldfile
       done
       if [ -f "$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)" ]; then
+        echo "Preparing Host Environment"
         if [[ "$(arosbuild.packagefmt)" = "zip" ]]
         then
           unzip $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -d $(AROSBUILDBINDIR)
         else
           if [[ "$(arosbuild.packagefmt)" = "tar.bz2" ]]
           then
-            tar xjvf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -C $(AROSBUILDBINDIR)
+            tar xjf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) -C $(AROSBUILDBINDIR)
           else
             if [[ "$(arosbuild.packagefmt)" = "lha" ]]
             then
@@ -658,6 +660,7 @@ jobs:
           fi
         fi
         cd $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)/
+        echo "Copying CUnit test scripts, and enabling headless operation"
         cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
         cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
         mv Devs/Monitors/X1* Storage/Monitors
@@ -666,7 +669,9 @@ jobs:
         sed -i "/module Devs\/Drivers\/gfx.hidd/a\\
       module Storage\/Drivers\/headlessgfx.hidd" "boot/$arosexehost/AROSBootstrap.conf"
         chmod 744 "boot/$arosexehost/AROSBootstrap"
+        echo "Launching CUnit tests under AROS hosted ..."
         DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
       fi
+      echo "AROS Hosted Cunit Test Phase completed"
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: 'Performing Unit testing with CUnit'
