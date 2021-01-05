@@ -139,8 +139,6 @@ LONG debug_handler(struct ExecBase *SysBase)
     } while (debugPipe);
 
 /* ACTION_DIE ends up here... */
-    D(bug("%s: Exiting\n"));
-
     replyPkt(dp, SysBase);
 
     CloseLibrary(pb.pb_UtilityBase);
