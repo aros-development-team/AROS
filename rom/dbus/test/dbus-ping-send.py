@@ -19,7 +19,7 @@ signal_object = SignalObject(service)
 
 def send_ping():
     signal_object.broadcast_signal("com.burtonini.dbus.Signal", "Ping")
-    print "Ping!"
+    print ("Ping!")
     return gtk.TRUE
 
 # Call send_ping every second to send the signal

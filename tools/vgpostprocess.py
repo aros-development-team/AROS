@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# script for enhancing Callgrind output with AROS-side symbol names
+
 import re, os, sys
 
 class Module:
@@ -13,7 +15,6 @@ class Module:
 def loadsymbolinformation():
     reg = r'S\|(.*)\|(.*)\|(.*)\|(.*)'
     modules = []
-    symbols = []
     lastmodname = ""
     module = None
 
@@ -97,7 +98,7 @@ def main():
                             # Build out actuall symbol information
                             line = match.group(1) + symbol[0] + os.linesep
                             break
-            
+
             output.write(line)
 
     output.close()
