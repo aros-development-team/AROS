@@ -27,9 +27,11 @@ PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
 #MM linklibs-cunit : cunit-fetch
 
 NOWARN_FLAGS := $(NOWARN_FORMAT_TRUNCATION) $(NOWARN_UNUSED_VARIABLE)
-USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN)
+USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN) $(CPPFLAGS)
 
-CUNIT_CMAKE_FLAGS := -Wno-error=dev
+CUNIT_CMAKE_FLAGS :=  \
+        -DCMAKE_BUILD_TYPE=DEBUG \
+        -Wno-error=dev
 
 %build_with_cmake mmake=linklibs-cunit srcdir=$(PORTSDIR)/cunit/$(ARCHBASE) \
     extraoptions=$(CUNIT_CMAKE_FLAGS) prefix=$(AROS_CONTRIB_SDK)
