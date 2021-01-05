@@ -11,7 +11,11 @@
 
 #include <CUnit/Basic.h>
 
-static FILE *fd;
+/* handles for the respective tests */
+static FILE *fd = NULL;
+static BPTR file = BNULL;
+
+/* storage used during testing */
 static char buffer[32];
 static int i;
 
@@ -20,7 +24,7 @@ static int i;
  */
 int init_suite(void)
 {
-    FILE *tmpfd = fopen( "seek.txt", "wb" );
+    FILE *tmpfd = fopen( "T:seek.txt", "wb" );
     if ( !tmpfd )
     {
         return 1;
@@ -36,13 +40,18 @@ int init_suite(void)
  */
 int clean_suite(void)
 {
+    if (file)
+        Close(file);
+    if (fd)
+        fclose(fd);
+    return 0;
 }
 
 /* Simple test of fopen().
  */
 void testFOPEN(void)
 {
-    fd = fopen( "seek.txt", "rb" );
+    fd = fopen( "T:seek.txt", "rb" );
     CU_ASSERT( fd != NULL );
 }
 
@@ -62,15 +71,14 @@ void testFSEEK(void)
   buffer[7+i]=0;
   printf( "fseek%s", buffer );
   fclose(fd);
+  fd = NULL;
 }
-
-static BPTR file;
 
 /* Simple test of Open().
  */
 void testOPEN(void)
 {
-    file = Open( "seek.txt", MODE_OLDFILE );
+    file = Open( "T:seek.txt", MODE_OLDFILE );
     CU_ASSERT( file != NULL );
 }
 
@@ -85,6 +93,7 @@ void testSEEK(void)
     i += Read( file, &buffer[7], 11 );
     CU_ASSERT(18 == i);
     Close(file);
+    file = BNULL;
 }
 
 int main(void)

@@ -77,6 +77,7 @@ int init_suite(void)
 int clean_suite(void)
 {
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+    return 0;
 }
 
 static int ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt,
