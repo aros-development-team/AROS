@@ -666,6 +666,7 @@ jobs:
         mv Devs/Monitors/X1* Storage/Monitors
         arosexetarget=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
         arosexehost=${arosexetarget%% *}
+        sed -i "s|Startup = 0|Startup = 1|g" "Devs/DOSDrivers/DEBUG"
         sed -i "/module Devs\/Drivers\/gfx.hidd/a\\
       module Storage\/Drivers\/headlessgfx.hidd" "boot/$arosexehost/AROSBootstrap.conf"
         chmod 744 "boot/$arosexehost/AROSBootstrap"
