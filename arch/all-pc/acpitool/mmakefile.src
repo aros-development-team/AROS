@@ -9,7 +9,7 @@ EXEDIR      := $(AROS_DEBUG)/Hardware
 # Build ACPITool only for PC
 #MM- workbench-pc-$(CPU) : debug-tools-acpitool
 
-#MM debug-tools-acpitool : debug-tools-acpitool-icon debug-tools-acpitool-catalogs
+#MM debug-tools-acpitool : debug-tools-acpitool-icon debug-tools-acpitool-catalogs kernel-acpica-sharedlib-includes
 
 %build_prog mmake=debug-tools-acpitool \
     progname=ACPITool targetdir=$(EXEDIR) \
