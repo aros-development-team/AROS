@@ -17,6 +17,7 @@
 
 struct debugArgs {
     struct Node pa_Node;
+    char outbuf[1024];
 };
 
 struct debugBase {
@@ -56,6 +57,13 @@ void replyPkt(struct DosPacket *dp, struct ExecBase *SysBase)
     mn->mn_Node.ln_Name = (char*)dp;
     dp->dp_Port = &((struct Process*)FindTask(NULL))->pr_MsgPort;
     PutMsg(mp, mn);
+}
+
+static BOOL is_ascii(const signed char *c, size_t len) {
+  for (size_t i = 0; i < len; i++) {
+    if(c[i] < 0) return FALSE;
+  }
+  return TRUE;
 }
 
 LONG debug_handler(struct ExecBase *SysBase)
@@ -108,7 +116,19 @@ LONG debug_handler(struct ExecBase *SysBase)
             break;
         case ACTION_WRITE:
             if ((pa = (struct debugArgs *)dp->dp_Arg1)) {
-                kprintf("%s", (char *)dp->dp_Arg2);
+                pa->outbuf[0] = '\0';
+                if (is_ascii((char *)dp->dp_Arg2, dp->dp_Arg3))
+                {
+                    CopyMem((APTR)dp->dp_Arg2, pa->outbuf, dp->dp_Arg3);
+                    pa->outbuf[dp->dp_Arg3] = '\0';
+                }
+                else
+                {
+                    int i;
+                    for (i = 0; i < (dp->dp_Arg3 >> 1); i ++)
+                        pa->outbuf[i] = *(UBYTE *)(dp->dp_Arg2 + (i << 1) + 1);
+                }
+                kprintf("%s", pa->outbuf);
                 dp->dp_Res1 = dp->dp_Arg3;
                 dp->dp_Res2 = 0;
             } else {
