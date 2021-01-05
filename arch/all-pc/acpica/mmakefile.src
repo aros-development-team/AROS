@@ -27,7 +27,7 @@ ACPICA_INCLUDES     := $(ACPICASRCDIR)/source/include
     suffixes="tar.gz" \
     destination=$(PORTSDIR)/acpica
 
-#MM kernel-pc-acpica : acpica-fetch
+#MM kernel-acpica-sharedlib : acpica-fetch
 #MM includes-copy :  acpica-fetch
 
 ACPICA_BASESOURCES = \
@@ -69,7 +69,14 @@ USER_INCLUDES += \
          -iquote $(ACPICA_INCLUDES) \
          -iquote $(ACPICA_INCLUDES)/platform
 
-%build_module mmake=kernel-pc-acpica \
+#
+# explicit rules to build the shared library on supported targets
+#
+
+#MM- kernel-pc-acpica : kernel-acpica-sharedlib
+#MM- kernel-pc-acpica-quick : kernel-acpica-sharedlib-quick
+
+%build_module mmake=kernel-acpica-sharedlib \
   modname=acpica modtype=library \
   files="$(FILES)"
 
@@ -92,7 +99,16 @@ FILES := ACPIInfo
 #MM- workbench-c : workbench-c-$(AROS_TARGET_ARCH)-acpi
 #MM- workbench-c-quick : workbench-c-$(AROS_TARGET_ARCH)-acpi-quick
 
-%build_progs mmake=workbench-c-pc-acpi targetdir=$(AROS_C) \
+#
+# explicit rules to build the tools on supported targets
+#
+
+#MM- workbench-c-pc-acpi : workbench-c-acpi-tools
+#MM- workbench-c-pc-acpi-quick : workbench-c-acpi-tools-quick
+
+#MM workbench-c-acpi-tools : includes linklibs kernel-acpica-sharedlib-includes
+
+%build_progs mmake=workbench-c-acpi-tools targetdir=$(AROS_C) \
   files="$(FILES)" usestartup=no uselibs="acpica"
 
 %common
