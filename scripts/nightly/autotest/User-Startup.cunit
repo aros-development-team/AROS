@@ -2,6 +2,7 @@
 ; Perform basic "Exec" type unit tests...
 
 ; Peform basic 'C' type unit tests..
+Execute S/Test cunit/crt/stdc/cunit-crt-types
 
 ; Perform basic "exec.library" unit tests...
 
