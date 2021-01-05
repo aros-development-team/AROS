@@ -35,39 +35,34 @@
 #define ACTION_MOVE         (1 << 6)
 #define ACTION_UPDATE       (1 << 7)
 
-#define PATH_NOINFO         0
-#define PATH_RECURSIVE      1
-#define PATH_NONRECURSIVE   2
-
-#define PATHBUFFERSIZE      2048
+#define PATHBUFFERSIZE      1024
 #define COPYLEN              100
 
 struct MUIDisplayObjects
 {
-    Object              *sourceObject;
-    Object              *destObject;
     Object              *fileObject;
     Object              *stopObject;
     Object              *copyApp;
-    Object              *performanceObject;
     Object              *win;
+    Object              *numFilesGauge;
     Object              *gauge;
     ULONG               stopflag;
-    ULONG               numfiles;
-    ULONG               smallobjects;
+    ULONG               numObjects;
+    ULONG               totalObjects;
+    CONST_STRPTR        currentObject;
     UWORD               action;
-    BOOL                updateme;
+    DOUBLE              bytes;
 
-    unsigned long long  bytes;
-    char                Buffer[128];
-    char                SpeedBuffer[32];
+    UBYTE               Buffer[PATHBUFFERSIZE];
+    UBYTE               SpeedBuffer[32];
+    UBYTE               NumberBuffer[PATHBUFFERSIZE];
 };
 
 struct FileCopyData
 {
-    STRPTR          spath;
-    STRPTR          dpath;
-    STRPTR          file;
+    CONST_STRPTR    spath;
+    CONST_STRPTR    dpath;
+    CONST_STRPTR    file;
     APTR            userdata;
     ULONG           flags;
     ULONG           filelen;
