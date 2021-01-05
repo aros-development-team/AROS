@@ -90,6 +90,11 @@ LONG debug_handler(struct ExecBase *SysBase)
         case ACTION_FINDOUTPUT:
         case ACTION_FINDUPDATE:
             pa = debugOpen(&pb, pa, (BSTR)dp->dp_Arg3, &dp->dp_Res2);
+            if (dp->dp_Res2 == RETURN_OK) {
+                struct FileHandle *fh = BADDR(dp->dp_Arg1);
+                fh->fh_Arg1 = (SIPTR)pa;
+                fh->fh_Type = mp;
+            }
             dp->dp_Res1 = (dp->dp_Res2 == 0) ? DOSTRUE : DOSFALSE;
             break;
         case ACTION_READ:
@@ -138,7 +143,7 @@ LONG debug_handler(struct ExecBase *SysBase)
         }
     } while (debugPipe);
 
-/* ACTION_DIE ends up here... */
+    /* ACTION_DIE ends up here... */
     replyPkt(dp, SysBase);
 
     CloseLibrary(pb.pb_UtilityBase);
