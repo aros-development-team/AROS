@@ -20,7 +20,7 @@ static int i;
  */
 int init_suite(void)
 {
-    FILE *tmpfd = fopen( "seek.txt", "wb" );
+    FILE *tmpfd = fopen( "T:seek.txt", "wb" );
     if ( !tmpfd )
     {
         return 1;
@@ -42,7 +42,7 @@ int clean_suite(void)
  */
 void testFOPEN(void)
 {
-    fd = fopen( "seek.txt", "rb" );
+    fd = fopen( "T:seek.txt", "rb" );
     CU_ASSERT( fd != NULL );
 }
 
@@ -70,7 +70,7 @@ static BPTR file;
  */
 void testOPEN(void)
 {
-    file = Open( "seek.txt", MODE_OLDFILE );
+    file = Open( "T:seek.txt", MODE_OLDFILE );
     CU_ASSERT( file != NULL );
 }
 
