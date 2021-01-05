@@ -11,7 +11,7 @@ ZLIBVERSION=1.2.11
 REPOSITORIES := https://zlib.net
 ARCHBASE     := zlib-$(ZLIBVERSION)
 ARCHSUFFIX := "tar.gz"
-#PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
 ARCHSRCDIR := $(PORTSDIR)/zlib/$(ARCHBASE)
 
 %fetch mmake=zlib-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/zlib \
@@ -50,6 +50,8 @@ FILES := adler32 \
          contrib/infback9/infback9 \
          contrib/infback9/inftree9
 
+#FILES += x86 fill_window_sse
+FILES += simd_stub
 
 LIBZ_CPPFLAGS := -D_XOPEN_SOURCE=600 -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
 USER_INCLUDES += -I$(ARCHSRCDIR)
@@ -61,13 +63,16 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
   files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname=z
 
 #MM- linklibs: linklibs-z-static
+#MM linklibs-z-static : zlib-fetch
 
 # N.B: z.static is compiled without the posix wrappers, so that it looks for the default function
 # symbol names (e.g. lseek)
 
-USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNO_POSIX_WRAPPERS
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNO_POSIX_WRAPPERS -DNDEBUG
 
-%build_linklib mmake=linklibs-z-static libname=z.static files="$(addprefix $(ARCHSRCDIR)/,$(FILES))"
+%build_linklib mmake=linklibs-z-static libname=z.static \
+    files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/static
 
 INCLUDE_FILES := zlib.h zconf.h
 %copy_includes dir=$(ARCHSRCDIR)
