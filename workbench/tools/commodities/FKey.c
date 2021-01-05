@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1508,7 +1508,7 @@ static void LoadSettings(void)
 
             ki.action = 0xFF;
 
-            if ((tt[0] == QUOTE_START) && ((quote_end = strchr(tt, (char)QUOTE_END))))
+            if ((tt[0] == QUOTE_START) && ((quote_end = strchr(tt, (unsigned char)QUOTE_END))))
             {
                 WORD len = quote_end - tt - 1;
 
