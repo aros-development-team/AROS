@@ -106,7 +106,12 @@ FILES := ACPIInfo
 #MM- workbench-c-pc-acpi : workbench-c-acpi-tools
 #MM- workbench-c-pc-acpi-quick : workbench-c-acpi-tools-quick
 
-#MM workbench-c-acpi-tools : includes linklibs kernel-acpica-sharedlib-includes
+#MM workbench-c-acpi-tools : \
+#MM                                      includes \
+#MM                                      kernel-acpica-sharedlib-includes \
+#MM                                      linklibs \
+#MM                                      kernel-acpica-sharedlib-linklib
+
 
 %build_progs mmake=workbench-c-acpi-tools targetdir=$(AROS_C) \
   files="$(FILES)" usestartup=no uselibs="acpica"
