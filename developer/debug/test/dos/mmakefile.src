@@ -1,7 +1,12 @@
-# Copyright © 2003-2016, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2021, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+CUNITEXEDIR := $(AROS_TESTS)/cunit/dos
+
+EXEDIR          := $(AROS_TESTS)/dos
 
 FILES := \
     addpart \
@@ -51,20 +56,33 @@ PURE_FILES := \
     exit \
     isfilesystem
 
-EXEDIR          := $(AROS_TESTS)/dos
+CUNITSTDCTESTFILES := \
+    cunit-dos-fileseek
 
-USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+#MM- test : test-dos
+#MM- test-quick : test-dos-quick
 
-#MM- test : test-dos test-dos-pure
-#MM- test-quick : test-dos-quick test-dos-pure-quick
+#MM- test-dos : test-dos-common test-dos-pure test-dos-cunit
+#MM- test-dos-quick : test-dos-common-quick test-dos-pure-quick test-dos-cunit-quick
 
-#MM test-dos : includes linklibs
+#MM- test-cunit : test-dos-cunit
+#MM- test-cunit-quick : test-dos-cunit-quick
 
-%build_progs mmake=test-dos \
+#MM test-dos-common : includes linklibs
+
+%build_progs mmake=test-dos-common \
     files=$(FILES) targetdir=$(EXEDIR)
 
 %build_progs mmake=test-dos-pure \
     files=$(PURE_FILES) targetdir=$(EXEDIR) \
     usestartup="no"
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN) 
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-dos-cunit \
+    files=$(CUNITSTDCTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit"
 
 %common

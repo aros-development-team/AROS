@@ -12,7 +12,6 @@
 #include <CUnit/Basic.h>
 
 /* handles for the respective tests */
-static FILE *fd = NULL;
 static BPTR file = BNULL;
 
 /* storage used during testing */
@@ -24,14 +23,6 @@ static int i;
  */
 int init_suite(void)
 {
-    FILE *tmpfd = fopen( "T:seek.txt", "wb" );
-    if ( !tmpfd )
-    {
-        return 1;
-    }
-    fprintf( tmpfd, "() does not work!\n" );
-    fclose(tmpfd);
-
     return 0;
 }
 
@@ -41,59 +32,66 @@ int init_suite(void)
 int clean_suite(void)
 {
     if (file)
-        Close(file);
-    if (fd)
-        fclose(fd);
+        if (0 ==Close (file))
+            return -1;
     return 0;
-}
-
-/* Simple test of fopen().
- */
-void testFOPEN(void)
-{
-    fd = fopen( "T:seek.txt", "rb" );
-    CU_ASSERT( fd != NULL );
-}
-
-/* Simple test of ConvertPixels(argb -> rgb15).
- */
-void testFSEEK(void)
-{
-
-  i = fread( buffer, 1, 1, fd );
-  CU_ASSERT( i == 1 );
-
-  i += fread( &buffer[1], 1, 6, fd );
-  CU_ASSERT( i == 7 );
-
-  fseek( fd, 4, SEEK_CUR );
-  i = fread( &buffer[7], 1, 11, fd );
-  buffer[7+i]=0;
-  printf( "fseek%s", buffer );
-  fclose(fd);
-  fd = NULL;
 }
 
 /* Simple test of Open().
  */
-void testOPEN(void)
+void testOPENW(void)
 {
-    file = Open( "T:seek.txt", MODE_OLDFILE );
-    CU_ASSERT( file != NULL );
+    CU_ASSERT(NULL != (file = Open( "T:cunit-dos-fileseek.txt", MODE_NEWFILE )));
+}
+
+/* Simple test of Write().
+ */
+void testWRITE(void)
+{
+    if (file)
+    {
+        CU_ASSERT(0 != Write(file,"() does not work!\n",18));
+    }
+}
+
+/* Simple test of Close().
+ */
+void testCLOSE(void)
+{
+    if (file)
+    {
+        CU_ASSERT(0 != Close(file));
+        file = BNULL;
+    }
+}
+
+/* Simple test of Open().
+ */
+void testOPENR(void)
+{
+    CU_ASSERT(NULL != (file = Open( "T:cunit-dos-fileseek.txt", MODE_OLDFILE)));
+}
+
+/* Simple test of Read().
+ */
+void testREAD(void)
+{
+    if (file)
+    {
+        CU_ASSERT(7 == (i = Read( file, buffer, 7 )));
+    }
 }
 
 /* Simple test of Seek().
  */
 void testSEEK(void)
 {
-    /* Seek() */
-    i = Read( file, buffer, 7 );
-    CU_ASSERT(7 == i);
-    Seek( file, 4, OFFSET_CURRENT );
-    i += Read( file, &buffer[7], 11 );
-    CU_ASSERT(18 == i);
-    Close(file);
-    file = BNULL;
+    if (file)
+    {
+        /* Seek() */
+        CU_ASSERT(-1 == Seek( file, 4, OFFSET_CURRENT ));
+        CU_ASSERT(18 == (i += Read( file, &buffer[7], 11 )));
+    }
 }
 
 int main(void)
@@ -105,16 +103,18 @@ int main(void)
         return CU_get_error();
 
    /* add a suite to the registry */
-    pSuite = CU_add_suite("FileSeek_Suite", init_suite, clean_suite);
+    pSuite = CU_add_suite("DOSFileSeek_Suite", init_suite, clean_suite);
     if (NULL == pSuite) {
         CU_cleanup_registry();
         return CU_get_error();
     }
 
    /* add the tests to the suite */
-    if ((NULL == CU_add_test(pSuite, "test of fopen()", testFOPEN)) ||
-        (NULL == CU_add_test(pSuite, "test of fseek()", testFSEEK)) ||
-        (NULL == CU_add_test(pSuite, "test of Open()", testOPEN)) ||
+    if ((NULL == CU_add_test(pSuite, "test of Open(\"T:cunit-dos-fileseek.txt\",MODE_NEWFILE)", testOPENW)) ||
+        (NULL == CU_add_test(pSuite, "test of Write()", testWRITE)) ||
+        (NULL == CU_add_test(pSuite, "test of Close()", testCLOSE)) ||
+        (NULL == CU_add_test(pSuite, "test of Open(\"T:cunit-dos-fileseek.txt\",MODE_OLDFILE)", testOPENR)) ||
+        (NULL == CU_add_test(pSuite, "test of Read()", testREAD)) ||
         (NULL == CU_add_test(pSuite, "test of Seek()", testSEEK)))
     {
         CU_cleanup_registry();
