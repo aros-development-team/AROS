@@ -1,6 +1,18 @@
+diff -ruN cunit-3.2.6/CUnit/CMakeLists.txt cunit-3.2.6.aros/CUnit/CMakeLists.txt
+--- cunit-3.2.6/CUnit/CMakeLists.txt	2020-04-16 17:55:15.000000000 +0000
++++ cunit-3.2.6.aros/CUnit/CMakeLists.txt	2021-01-05 04:24:52.950000000 +0000
+@@ -11,7 +11,7 @@
+ 
+ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+   # repeat here so consumers get more warnings
+-  set(CMAKE_C_FLAGS " -Wall -Werror -Werror=strict-prototypes")
++  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Werror=strict-prototypes")
+ endif()
+ 
+ 
 diff -ruN cunit-3.2.6/CUnit/Sources/Framework/TestRun.c cunit-3.2.6.aros/CUnit/Sources/Framework/TestRun.c
 --- cunit-3.2.6/CUnit/Sources/Framework/TestRun.c	2020-04-16 17:55:15.000000000 +0000
-+++ cunit-3.2.6.aros/CUnit/Sources/Framework/TestRun.c	2021-01-04 00:19:11.870000000 +0000
++++ cunit-3.2.6.aros/CUnit/Sources/Framework/TestRun.c	2020-04-16 17:55:15.000000000 +0000
 @@ -685,12 +685,11 @@
  
  {
