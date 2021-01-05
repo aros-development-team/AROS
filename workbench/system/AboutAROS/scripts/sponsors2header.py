@@ -25,7 +25,7 @@ struct TagItem *SPONSORS = TAGLIST
 file = open(sys.argv[1], "r", encoding="iso-8859-15")
 for line in file:
     outfile.write(',\n        NAME("%s")' % line.strip())
-    
+
 outfile.write('''\n    ),
     TAG_DONE
 );

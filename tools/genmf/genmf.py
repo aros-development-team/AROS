@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
-# Copyright (C) 2003-2020, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2021, The AROS Development Team. All rights reserved.
 
-import sys, re, os, errno
+import sys, re, os
 
 if not len(sys.argv) in [2, 3, 4, 5] :
     print("Usage:",sys.argv[0],"tmplfile [inputfile outputfile]")
@@ -40,7 +40,7 @@ class GenmfException(BaseException):
 #   will be added to this array.
 def generate_templrefs(lines, templates):
     templrefs = []
-    
+
     for lineno in range(len(lines)):
         line = lines[lineno]
         if len(line) == 0 or line[0] == "#":
@@ -102,7 +102,7 @@ class arg:
     # Specification can end with /A or /M
     re_mode = re.compile('/(A|M)')
 
-    # You create this object with giving it the default value 
+    # You create this object with giving it the default value
     def __init__(self, default=None):
         self.ismulti = 0
         self.isneeded = 0
@@ -199,7 +199,6 @@ class template:
         self.used = 1
     
         # Reading arguments of the template
-        argno = 0
         while len(line) > 0:
             m = re_arg.match(line)
             if m and m.group(1) in self.args:
@@ -276,7 +275,6 @@ def read_templates(filename):
         print("Error reading template file: "+filename)
 
     re_name = re.compile('[a-zA-Z0-9][a-zA-Z0-9_]*(?=(?:\s|$))')
-    re_openstring = re.compile('[^\s"]*"[^"]*$')
     re_define = re.compile('%define(?=\s)')
     
     lines = infile.readlines()
@@ -351,7 +349,7 @@ while i < len(sys.argv):
 templates = read_templates(argv[1])
 #sys.stderr.write("Read %d templates\n" % len(templates))
 
-if listfile == None:
+if not listfile:
     # Read one input file and write out one outputfile
     if len(sys.argv) == argin:
         lines = sys.stdin.readlines()

@@ -22,7 +22,7 @@ file = open(sys.argv[1], "r", encoding="iso-8859-15")
 for line in file:
     outfile.write('    "%s",\n' % line.strip())
     count += 1
-    
+
 outfile.write('''};
 
 #define ACKNOWLEDGEMENTS_SIZE (%d)

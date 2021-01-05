@@ -6,7 +6,7 @@ import dbus
 bus = dbus.Bus()
 
 def signal_callback(interface, signal_name, service, path, message):
-    print "Received signal %s from %s" % (signal_name, interface)
+    print ("Received signal %s from %s" % (signal_name, interface))
 
 # Catch signals from a specific interface and object, and call signal_callback
 # when they arrive.
