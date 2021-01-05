@@ -2,11 +2,20 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES  := alert_cpu cpu_init newstackswap preparecontext
-AFILES := execstubs stackswap copymem_SSE
+FILES  := \
+        alert_cpu \
+        cpu_init \
+        newstackswap \
+        preparecontext
+
+AFILES := \
+        execstubs \
+        stackswap \
+        copymem_SSE
 
 USER_AFLAGS   := -I$(GENINCDIR)
-USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 OPTIMIZATION_CFLAGS := -O0
 
 # Allow to add architecture-specific options
