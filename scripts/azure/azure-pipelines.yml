@@ -660,6 +660,7 @@ jobs:
         cd $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)/
         cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
         cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
+        mv Devs/Monitors/X1* Storage/Monitors
         arosexetarget=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
         arosexehost=${arosexetarget%% *}
         sed -i "/module Devs\/Drivers\/gfx.hidd/a\\
