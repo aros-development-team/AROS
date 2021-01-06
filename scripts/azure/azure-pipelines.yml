@@ -695,10 +695,11 @@ jobs:
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: 'Performing Unit testing with CUnit'
 
-- task: PublishTestResults@2
-  inputs:
-    testRunner: 'JUnit'
-    testResultsFiles: '**/*.xml'
-    testRunTitle: '$(AROSBUILDID)'
-    platform: '$(arosbuild.name)'
-    searchFolder: '$(AROSLOGSDIR)'
+  - task: PublishTestResults@2
+    condition: eq( variables['arosbuild.withunittests'], 'yes' )
+    inputs:
+      testRunner: 'JUnit'
+      testResultsFiles: '**/*.xml'
+      testRunTitle: '$(AROSBUILDID)'
+      platform: '$(arosbuild.name)'
+      searchFolder: '$(AROSLOGSDIR)'
