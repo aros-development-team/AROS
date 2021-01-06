@@ -14,8 +14,7 @@ AFILES := \
         taskexit
 
 USER_AFLAGS   := -I$(GENINCDIR)
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
