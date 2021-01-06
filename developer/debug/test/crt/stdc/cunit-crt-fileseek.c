@@ -129,6 +129,7 @@ int main(void)
     CU_basic_run_tests();
     CU_basic_set_mode(CU_BRM_SILENT);
     CU_set_output_filename("CRT-FileSeek");
+    CU_automated_enable_junit_xml(CU_TRUE);
     CU_automated_run_tests();
     CU_cleanup_registry();
 
