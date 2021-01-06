@@ -1,7 +1,7 @@
 #ifndef IA_INSTALL_H
 #define IA_INSTALL_H
 /*
-    Copyright © 2003-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,6 @@
 
 #include <libraries/mui.h>
 
-#define kBufSize          (4*65536)
 #define kExallBufSize          (4096)
 
 #define SYS_PART_NAME         "DH0"

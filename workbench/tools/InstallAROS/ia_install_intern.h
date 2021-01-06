@@ -105,7 +105,12 @@ struct Install_DATA
     enum EStage                 instc_stage_prev;
     enum EStage                 instc_stage_next;
 
-    enum IO_OVERWRITE_FLAGS     IO_Always_overwrite;
+    struct InstallIO_Data
+    {
+        ULONG                   iio_BuffSize;
+        APTR                    iio_Buffer; 
+        enum IO_OVERWRITE_FLAGS iio_AlwaysOverwrite;
+    }                           instc_IOd;
 
     BOOL                        instc_default_usb;
     BOOL                        instc_cflag_driveset;

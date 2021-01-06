@@ -1,5 +1,5 @@
 /*
-    Copyright © 2018-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2018-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -733,7 +733,9 @@ BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
     return lock;
 }
 
-BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath,
+BOOL BackUpFile(CONST_STRPTR filepath,
+    CONST_STRPTR backuppath,
+    struct InstallIO_Data *ioData,
     struct InstallC_UndoRecord * undorecord)
 {
     ULONG filepathlen = strlen(filepath);
@@ -742,7 +744,6 @@ BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath,
     STRPTR tmp = NULL;
     STRPTR pathpart = NULL;
     BPTR lock = BNULL, from = BNULL, to = BNULL;
-    static TEXT buffer[kBufSize];
     BOOL err = FALSE;
 
     if (undorecord == NULL)
@@ -813,20 +814,20 @@ BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath,
 
             do
             {
-                if ((s = Read(from, buffer, kBufSize)) == -1)
+                if ((s = Read(from, ioData->iio_Buffer, ioData->iio_BuffSize)) == -1)
                 {
                     err = TRUE;
                     break;
                 };
 
-                if (Write(to, buffer, s) == -1)
+                if (Write(to, ioData->iio_Buffer, s) == -1)
                 {
                     err = TRUE;
                     break;
                 };
 
             }
-            while (s == kBufSize && !err);
+            while (s == ioData->iio_BuffSize && !err);
 
             Close(to);
         }
