@@ -662,7 +662,8 @@ jobs:
         cd $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)/
         echo "Copying CUnit test scripts, and enabling headless operation"
         cp $(AROSSRCDIR)/scripts/nightly/autotest/User-Startup.cunit S/User-Startup
-        cp $(AROSSRCDIR)/scripts/nightly/autotest/T* S/
+        cp $(AROSSRCDIR)/scripts/nightly/autotest/Try S/
+        cp $(AROSSRCDIR)/scripts/nightly/autotest/Test.cunit S/Test
         mv Devs/Monitors/X1* Storage/Monitors
         arosexetarget=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
         arosexehost=${arosexetarget%% *}
