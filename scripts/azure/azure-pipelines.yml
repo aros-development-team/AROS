@@ -119,7 +119,7 @@ jobs:
       esac
       [[ -z "$ncpu" || $ncpu -le 0 ]] && ncpu=1
       echo "Found ${ncpu} cores"
-      echo "##vso[task.setvariable variable=ncpu;]$ncpu"
+      echo "##vso[task.setvariable variable=BUILDTHREADS;]$ncpu"
     displayName: 'Detecting number of build threads'
 
   - script: |
@@ -144,19 +144,19 @@ jobs:
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
       cd $(AZBUILDPATH)/host/x86/gmp
       $(AZBUILDPATH)/host/gmp-4.2.4/configure --disable-shared --enable-static --prefix=$MACOSHOMEDIR/opt/gcc/x86
-      make -j $ncpu
+      make -j $(BUILDTHREADS)
       sudo make install
       echo '** prerequisite mpfr'
       mkdir -p '$(AZBUILDPATH)/host/x86/mpfr'
       cd $(AZBUILDPATH)/host/x86/mpfr
       $(AZBUILDPATH)/host/mpfr-4.0.1/configure --disable-shared --enable-static --prefix=$MACOSHOMEDIR/opt/gcc/x86 --with-gmp=$MACOSHOMEDIR/opt/gcc/x86
-      make -j $ncpu
+      make -j $(BUILDTHREADS)
       sudo make install
       echo '** prerequisite mpc'
       mkdir -p '$(AZBUILDPATH)/host/x86/mpc'
       cd $(AZBUILDPATH)/host/x86/mpc
       $(AZBUILDPATH)/host/mpc-1.1.0/configure --disable-shared --enable-static --prefix=$MACOSHOMEDIR/opt/gcc/x86 --with-gmp=$MACOSHOMEDIR/opt/gcc/x86 --with-mpfr=$MACOSHOMEDIR/opt/gcc/x86
-      make -j $ncpu
+      make -j $(BUILDTHREADS)
       sudo make install
       echo '** building gcc'
       if [ ! -d "/usr/include" ]; then
@@ -174,7 +174,7 @@ jobs:
       mkdir -p '$(AZBUILDPATH)/host/x86/gcc'
       cd $(AZBUILDPATH)/host/x86/gcc
       BOOT_CFLAGS=$DARWINBOOTCFLAGS  CFLAGS_FOR_TARGET=$DARWINTARGETCFLAGS CXXFLAGS_FOR_TARGET=$DARWINTARGETCXXFLAGS  $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=$MACOSHOMEDIR/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=$MACOSHOMEDIR/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=$MACOSHOMEDIR/opt/gcc/x86 $DARWINCONFIGEXTRA
-      BOOT_CFLAGS=$DARWINBOOTCFLAGS  CFLAGS_FOR_TARGET=$DARWINTARGETCFLAGS CXXFLAGS_FOR_TARGET=$DARWINTARGETCXXFLAGS make -j $ncpu
+      BOOT_CFLAGS=$DARWINBOOTCFLAGS  CFLAGS_FOR_TARGET=$DARWINTARGETCFLAGS CXXFLAGS_FOR_TARGET=$DARWINTARGETCXXFLAGS make -j $(BUILDTHREADS)
       sudo make install
       sudo find $MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
       echo "##vso[task.setvariable variable=CC;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc"
@@ -191,7 +191,7 @@ jobs:
           CFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2" \
           LDFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4" \
           CXXFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2"
-        make -j $ncpu
+        make -j $(BUILDTHREADS)
         sudo make install
         sudo find /opt/gcc/ppc/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
         echo "##vso[task.setvariable variable=MACOSX_PPC_DEPLOYMENT_TARGET;]$MACOSX_PPC_DEPLOYMENT_TARGET"
@@ -345,7 +345,7 @@ jobs:
           exit 5
         fi
       }
-      execute make -j $ncpu crosstools
+      execute make -j $(BUILDTHREADS) crosstools
       cd $(AROSBUILDTOOLCHAINDIR)/../
       tar cjvf $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
       md5sum $(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 >$(AROSBUILDID)-$AGENT_OS-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5
@@ -423,7 +423,7 @@ jobs:
           exit 5
         fi
       }
-      execute make -j $ncpu
+      execute make -j $(BUILDTHREADS)
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Build $(arosbuild.name) core system'
 
@@ -437,7 +437,7 @@ jobs:
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
       }
-      execute make -j $ncpu boot-distfiles
+      execute make -j $(BUILDTHREADS) boot-distfiles
       if [ -f /tmp/_aros_build_failed ]; then
         touch /tmp/_aros_boot_build_failed
         rm /tmp/_aros_build_failed
@@ -461,7 +461,7 @@ jobs:
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
       }
-      execute make -j $ncpu distfiles
+      execute make -j $(BUILDTHREADS) distfiles
       if [ -f /tmp/_aros_build_failed ]; then
         touch /tmp/_aros_distfiles_build_failed
         rm /tmp/_aros_build_failed
@@ -483,7 +483,7 @@ jobs:
       }
       cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib
       mv $(AROSCONTRIBSRCDIR) $(AROSSRCDIR)/contrib
-      execute make -j $ncpu contrib
+      execute make -j $(BUILDTHREADS) contrib
       mv $(AROSSRCDIR)/contrib $(AROSCONTRIBSRCDIR)
       if [ -f /tmp/_aros_build_failed ]; then
         touch /tmp/_aros_contrib_build_failed
