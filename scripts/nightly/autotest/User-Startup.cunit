@@ -3,6 +3,7 @@ If NOT WARN
     Echo "## Unit Test Output is redirected to DEBUG:" >DEBUG:
 
     ; Perform basic "Exec" type unit tests...
+    Execute S/Test cunit/exec/cunit-exec-types
 
     ; Peform basic 'C' type unit tests..
     Execute S/Test cunit/crt/stdc/cunit-crt-types
