@@ -1,16 +1,16 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/libcall.h>
 
-#include <signal.h>
+#include <proto/kernel.h>
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
-#include <proto/kernel.h>
+#include <signal.h>
 
 /* See rom/kernel/cli.c for documentation */
 

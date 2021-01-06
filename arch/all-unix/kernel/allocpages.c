@@ -1,15 +1,16 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/libcall.h>
 
+#include <inttypes.h>
+
 #include <kernel_base.h>
 #include <kernel_intern.h>
 
 #include <sys/mman.h>
-#include <inttypes.h>
 
 AROS_LH3I(void *, KrnAllocPages,
 	 AROS_LHA(uint32_t, length, D0),

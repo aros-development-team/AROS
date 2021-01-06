@@ -1,20 +1,21 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /*
- * Include these before AROS includes, because __unused as a macro in AROS,
+ * Include fcntl.h before AROS includes, because __unused as a macro in AROS,
  * causing conflicts with __unused being a structure member name in Linux bits/stat.h.
  */
 #include <fcntl.h>
-#include <unistd.h>
 
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
+
+#include <unistd.h>
 
 AROS_LH0(int, KrnObtainInput,
 	  struct KernelBase *, KernelBase, 33, Kernel)
