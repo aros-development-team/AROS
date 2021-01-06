@@ -1,17 +1,20 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/lists.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
+
+#include <kernel_cpu.h>
+
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <kernel_cpu.h>
+
 #include <sys/time.h>
 
 /* Prototypes */

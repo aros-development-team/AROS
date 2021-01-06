@@ -4,7 +4,9 @@ include $(SRCDIR)/config/aros.cfg
 
 MAINDIR	    := rom/kernel
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES)
-USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+USER_CPPFLAGS := \
+               -D__KERNEL_NOLIBBASE__ \
+               -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -DHOST_OS_$(ARCH)
 
 ifneq ($(AROS_TARGET_VARIANT),)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,10 +13,7 @@
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 
-#include <sys/mman.h>
-
 #include <inttypes.h>
-#include <string.h>
 
 #include "hostinterface.h"
 #include "kernel_base.h"
@@ -25,6 +22,9 @@
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
 #include "kernel_unix.h"
+
+#include <sys/mman.h>
+#include <string.h>
 
 #define D(x)
 

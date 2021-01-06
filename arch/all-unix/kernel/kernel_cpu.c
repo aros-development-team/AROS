@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,9 +8,6 @@
 #include <hardware/intbits.h>
 #include <proto/exec.h>
 
-#include <unistd.h>
-#include <time.h>
-
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
@@ -18,6 +15,9 @@
 #include "kernel_intern.h"
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
+
+#include <unistd.h>
+#include <time.h>
 
 #define D(x)
 #define BILLION 1000000000L
