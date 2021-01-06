@@ -47,8 +47,8 @@ void testLONG(void)
 
 void testQUAD(void)
 {
-    CU_ASSERT(64 == sizeof(QUAD));
-    CU_ASSERT(64 == sizeof(UQUAD));
+    CU_ASSERT(8 == sizeof(QUAD));
+    CU_ASSERT(8 == sizeof(UQUAD));
 }
 
 void testAPTR(void)
