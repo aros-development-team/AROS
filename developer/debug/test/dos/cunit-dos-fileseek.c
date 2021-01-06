@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include <CUnit/Basic.h>
+#include <CUnit/Automated.h>
 
 /* handles for the respective tests */
 static BPTR file = BNULL;
@@ -121,9 +122,12 @@ int main(void)
         return CU_get_error();
     }
 
-    /* Run all tests using the CUnit Basic interface */
+    /* Run all tests using the CUnit Basic & Automated interfaces */
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
+    CU_basic_set_mode(CU_BRM_SILENT);
+    CU_set_output_filename("DOS-FileSeek");
+    CU_automated_run_tests();
     CU_cleanup_registry();
 
     return CU_get_error();

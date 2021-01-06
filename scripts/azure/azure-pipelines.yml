@@ -689,7 +689,16 @@ jobs:
         chmod 744 "boot/$arosexehost/AROSBootstrap"
         echo "Launching CUnit tests under AROS hosted ..."
         DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
+        cp ./*-Results.xml $(AROSLOGSDIR)
       fi
       echo "AROS Hosted Cunit Test Phase completed"
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: 'Performing Unit testing with CUnit'
+
+- task: PublishTestResults@2
+  inputs:
+    testRunner: 'JUnit'
+    testResultsFiles: '**/*.xml'
+    testRunTitle: '$(AROSBUILDID)'
+    platform: '$(arosbuild.name)'
+    searchFolder: '$(AROSLOGSDIR)'
