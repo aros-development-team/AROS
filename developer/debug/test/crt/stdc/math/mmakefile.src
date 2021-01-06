@@ -4,6 +4,10 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+EXEDIR := $(AROS_TESTS)/crt/stdc
+
+USER_CFLAGS = $(CFLAGS_NO_BUILTIN)
+
 FILESFENV := \
         test-fenv
 
@@ -21,10 +25,6 @@ FILESINFTORTURE := \
 
 FILESPARANOIA := \
         paranoia
-
-EXEDIR := $(AROS_TESTS)/clib
-
-USER_CFLAGS = $(CFLAGS_NO_BUILTIN)
 
 #MM- test-crt-stdc : test-crt-stdc-math
 #MM- test-crt-stdc-quick : test-crt-stdc-math-quick
