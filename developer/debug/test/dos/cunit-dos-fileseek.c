@@ -17,7 +17,6 @@ static BPTR file = BNULL;
 
 /* storage used during testing */
 static char buffer[32];
-static int i;
 
 /* The suite initialization function.
   * Returns zero on success, non-zero otherwise.
@@ -79,7 +78,7 @@ void testREAD(void)
 {
     if (file)
     {
-        CU_ASSERT(7 == (i = Read( file, buffer, 7 )));
+        CU_ASSERT(7 == Read( file, buffer, 7 ));
     }
 }
 
@@ -90,8 +89,8 @@ void testSEEK(void)
     if (file)
     {
         /* Seek() */
-        CU_ASSERT(-1 == Seek( file, 4, OFFSET_CURRENT ));
-        CU_ASSERT(18 == (i += Read( file, &buffer[7], 11 )));
+        CU_ASSERT(-1 != Seek( file, 4, OFFSET_CURRENT ));
+        CU_ASSERT(11 == Read( file, &buffer[7], 11 ));
     }
 }
 
