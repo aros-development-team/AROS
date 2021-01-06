@@ -700,6 +700,6 @@ jobs:
     inputs:
       testRunner: 'JUnit'
       testResultsFiles: '**/*.xml'
-      testRunTitle: '$(AROSBUILDID)'
+      testRunTitle: '$(AROSBUILDID)-$(arosbuild.name)'
       platform: '$(arosbuild.name)'
       searchFolder: '$(AROSLOGSDIR)'
