@@ -538,7 +538,7 @@ diff -ruN zlib-1.2.11/crc_folding.c zlib-1.2.11.aros/crc_folding.c
 +}
 diff -ruN zlib-1.2.11/deflate.c zlib-1.2.11.aros/deflate.c
 --- zlib-1.2.11/deflate.c	2017-01-15 17:29:40.000000000 +0000
-+++ zlib-1.2.11.aros/deflate.c	2021-01-05 23:22:02.830000000 +0000
++++ zlib-1.2.11.aros/deflate.c	2021-01-06 00:27:34.030000000 +0000
 @@ -48,8 +48,9 @@
   */
  
@@ -1059,8 +1059,8 @@ diff -ruN zlib-1.2.11/fill_window_sse.c zlib-1.2.11.aros/fill_window_sse.c
 +}
 diff -ruN zlib-1.2.11/simd_stub.c zlib-1.2.11.aros/simd_stub.c
 --- zlib-1.2.11/simd_stub.c	1970-01-01 00:00:00.000000000 +0000
-+++ zlib-1.2.11.aros/simd_stub.c	2021-01-05 23:00:06.820000000 +0000
-@@ -0,0 +1,35 @@
++++ zlib-1.2.11.aros/simd_stub.c	2021-01-06 00:27:13.670000000 +0000
+@@ -0,0 +1,37 @@
 +/* simd_stub.c -- stub implementations
 +* Copyright (C) 2014 Intel Corporation
 +* For conditions of distribution and use, see copyright notice in zlib.h
@@ -1068,9 +1068,15 @@ diff -ruN zlib-1.2.11/simd_stub.c zlib-1.2.11.aros/simd_stub.c
 +#include <assert.h>
 +
 +#include "deflate.h"
++#if defined(__i386__)
 +#include "x86.h"
 +
 +int ZLIB_INTERNAL x86_cpu_enable_simd = 0;
++#endif
++
++void x86_check_features(void)
++{
++}
 +
 +void ZLIB_INTERNAL crc_fold_init(deflate_state *const s) {
 +    assert(0);
@@ -1092,14 +1098,10 @@ diff -ruN zlib-1.2.11/simd_stub.c zlib-1.2.11.aros/simd_stub.c
 +{
 +    assert(0);
 +}
-+
-+void x86_check_features(void)
-+{
-+}
 diff -ruN zlib-1.2.11/x86.c zlib-1.2.11.aros/x86.c
 --- zlib-1.2.11/x86.c	1970-01-01 00:00:00.000000000 +0000
-+++ zlib-1.2.11.aros/x86.c	2021-01-05 23:00:06.820000000 +0000
-@@ -0,0 +1,92 @@
++++ zlib-1.2.11.aros/x86.c	2021-01-06 00:27:24.430000000 +0000
+@@ -0,0 +1,94 @@
 +/*
 + * x86 feature check
 + *
@@ -1110,6 +1112,7 @@ diff -ruN zlib-1.2.11/x86.c zlib-1.2.11.aros/x86.c
 + * For conditions of distribution and use, see copyright notice in zlib.h
 + */
 +
++#if defined(__i386__)
 +#include "x86.h"
 +#include "zutil.h"
 +
@@ -1192,10 +1195,11 @@ diff -ruN zlib-1.2.11/x86.c zlib-1.2.11.aros/x86.c
 +    return TRUE;
 +}
 +#endif  /* _MSC_VER */
++#endif
 diff -ruN zlib-1.2.11/x86.h zlib-1.2.11.aros/x86.h
 --- zlib-1.2.11/x86.h	1970-01-01 00:00:00.000000000 +0000
-+++ zlib-1.2.11.aros/x86.h	2021-01-05 23:00:06.820000000 +0000
-@@ -0,0 +1,15 @@
++++ zlib-1.2.11.aros/x86.h	2021-01-06 00:28:53.930000000 +0000
+@@ -0,0 +1,19 @@
 +/* x86.h -- check for x86 CPU features
 +* Copyright (C) 2013 Intel Corporation Jim Kukunas
 +* For conditions of distribution and use, see copyright notice in zlib.h
@@ -1204,9 +1208,13 @@ diff -ruN zlib-1.2.11/x86.h zlib-1.2.11.aros/x86.h
 +#ifndef X86_H
 +#define X86_H
 +
++#if defined(__i386__)
 +#include "zlib.h"
 +
 +extern int x86_cpu_enable_simd;
++#else
++#define x86_cpu_enable_simd     (0)
++#endif
 +
 +void x86_check_features(void);
 +
