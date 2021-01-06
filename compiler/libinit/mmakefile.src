@@ -27,6 +27,6 @@ $(GENDIR)/compiler/libinit/libentry.o : $(SRCDIR)/compiler/libinit/libentry.c
 	@$(TARGET_CC) $(TARGET_SYSROOT) -c $(TARGET_ISA_CFLAGS) $(TARGET_CFLAGS) $(CFLAGS) $< -o $@
 
 #MM
-libinit-libentry : $(GENDIR)/compiler/libinit/libentry.o $(GENDIR)/$(KICKSTART_BEGIN).o
+libinit-libentry : $(GENDIR)/compiler/libinit/libentry.o
 
 #MM- linklibs-startup : libinit-libentry libinit-kickentry
