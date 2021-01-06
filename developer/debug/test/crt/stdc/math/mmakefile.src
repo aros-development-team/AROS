@@ -26,54 +26,53 @@ EXEDIR := $(AROS_TESTS)/clib
 
 USER_CFLAGS = $(CFLAGS_NO_BUILTIN)
 
-#MM- test-crt : test-crt-math
-#MM- test-crt-quick : test-crt-math-quick
+#MM- test-crt-stdc : test-crt-stdc-math
+#MM- test-crt-stdc-quick : test-crt-stdc-math-quick
 
-#MM- test-crt-math : test-crt-math-fenv test-crt-math-c99-double test-crt-math-c99-float test-crt-math-ieee754 test-crt-math-inftorture test-crt-math-paranoia-double test-crt-math-paranoia-float
-#MM- test-crt-math-quick : test-crt-math-fenv-quick test-crt-math-c99-double-quick test-crt-math-c99-float-quick test-crt-math-ieee754-quick test-crt-math-inftorture-quick test-crt-math-paranoia-double-quick test-crt-math-paranoia-float-quick
-#MM- test-crt-math-common : includes includes-copy linklibs kernel
+#MM- test-crt-stdc-math : test-crt-stdc-math-fenv test-crt-stdc-math-c99-double test-crt-stdc-math-c99-float test-crt-stdc-math-ieee754 test-crt-stdc-math-inftorture test-crt-stdc-math-paranoia-double test-crt-stdc-math-paranoia-float
+#MM- test-crt-stdc-math-common : includes includes-copy linklibs kernel
 
-#MM test-crt-math-fenv : test-crt-math-common
-#MM test-crt-math-c99-double : test-crt-math-common
-#MM test-crt-math-c99-float : test-crt-math-common
-#MM test-crt-math-ieee754 : test-crt-math-common
-#MM test-crt-math-inftorture : test-crt-math-common
-#MM test-crt-math-paranoia-double : test-crt-math-common
-#MM test-crt-math-paranoia-float : test-crt-math-common
+#MM test-crt-stdc-math-fenv : test-crt-stdc-math-common
+#MM test-crt-stdc-math-c99-double : test-crt-stdc-math-common
+#MM test-crt-stdc-math-c99-float : test-crt-stdc-math-common
+#MM test-crt-stdc-math-ieee754 : test-crt-stdc-math-common
+#MM test-crt-stdc-math-inftorture : test-crt-stdc-math-common
+#MM test-crt-stdc-math-paranoia-double : test-crt-stdc-math-common
+#MM test-crt-stdc-math-paranoia-float : test-crt-stdc-math-common
 
 USER_CPPFLAGS = -DSingle
 
-%build_prog mmake=test-crt-math-paranoia-float \
+%build_prog mmake=test-crt-stdc-math-paranoia-float \
     files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
     progname=math-paranoia-float objdir=$(GENDIR)/$(CURDIR)/float
 
 USER_CPPFLAGS =
 
-%build_prog mmake=test-crt-math-paranoia-double \
+%build_prog mmake=test-crt-stdc-math-paranoia-double \
     files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
     progname=math-paranoia-double objdir=$(GENDIR)/$(CURDIR)/double
 
 USER_CPPFLAGS = -DNO_STRICT_DFL_ENV
 
-%build_prog mmake=test-crt-math-fenv \
+%build_prog mmake=test-crt-stdc-math-fenv \
     files=$(FILESFENV) targetdir=$(EXEDIR) \
     progname=math-fenv
 
 USER_CPPFLAGS = -DSYS_MATH_H 
 
-%build_prog mmake=test-crt-math-c99-float \
+%build_prog mmake=test-crt-stdc-math-c99-float \
     files=$(FILESFLOAT) targetdir=$(EXEDIR) \
     progname=math-c99-float objdir=$(GENDIR)/$(CURDIR)/float
 
-%build_prog mmake=test-crt-math-c99-double \
+%build_prog mmake=test-crt-stdc-math-c99-double \
     files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
     progname=math-c99-double objdir=$(GENDIR)/$(CURDIR)/double
 
-%build_prog mmake=test-crt-math-ieee754 \
+%build_prog mmake=test-crt-stdc-math-ieee754 \
     files=$(FILESIEEE754) targetdir=$(EXEDIR) \
     progname=math-ieee754
 
-%build_prog mmake=test-crt-math-inftorture \
+%build_prog mmake=test-crt-stdc-math-inftorture \
     files=$(FILESINFTORTURE) targetdir=$(EXEDIR) \
     progname=math-inftorture
 
