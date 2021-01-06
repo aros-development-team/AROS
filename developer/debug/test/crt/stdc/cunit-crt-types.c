@@ -27,63 +27,63 @@ int clean_suite(void)
 
 void testCHAR(void)
 {
-    CU_ASSERT(8 == sizeof(char));
-    CU_ASSERT(8 == sizeof(signed char));
-    CU_ASSERT(8 == sizeof(unsigned char));
+    CU_ASSERT(1 == sizeof(char));
+    CU_ASSERT(1 == sizeof(signed char));
+    CU_ASSERT(1 == sizeof(unsigned char));
 }
 
 void testSHORT(void)
 {
-    CU_ASSERT(16 == sizeof(short));
-    CU_ASSERT(16 == sizeof(short int));
-    CU_ASSERT(16 == sizeof(signed short));
-    CU_ASSERT(16 == sizeof(signed short int));
-    CU_ASSERT(16 == sizeof(unsigned short));
-    CU_ASSERT(16 == sizeof(unsigned short int));
+    CU_ASSERT(2 == sizeof(short));
+    CU_ASSERT(2 == sizeof(short int));
+    CU_ASSERT(2 == sizeof(signed short));
+    CU_ASSERT(2 == sizeof(signed short int));
+    CU_ASSERT(2 == sizeof(unsigned short));
+    CU_ASSERT(2 == sizeof(unsigned short int));
 }
 
 void testINT(void)
 {
-    CU_ASSERT(16 == sizeof(int));
-    CU_ASSERT(16 == sizeof(signed));
-    CU_ASSERT(16 == sizeof(signed int));
-    CU_ASSERT(16 == sizeof(unsigned));
-    CU_ASSERT(16 == sizeof(unsigned int));
+    CU_ASSERT(2 == sizeof(int));
+    CU_ASSERT(2 == sizeof(signed));
+    CU_ASSERT(2 == sizeof(signed int));
+    CU_ASSERT(2 == sizeof(unsigned));
+    CU_ASSERT(2 == sizeof(unsigned int));
 }
 
 void testLONG(void)
 {
-    CU_ASSERT(32 == sizeof(long));
-    CU_ASSERT(32 == sizeof(long int));
-    CU_ASSERT(32 == sizeof(signed long));
-    CU_ASSERT(32 == sizeof(signed long int));
-    CU_ASSERT(32 == sizeof(unsigned long));
-    CU_ASSERT(32 == sizeof(unsigned long int));
+    CU_ASSERT(4 == sizeof(long));
+    CU_ASSERT(4 == sizeof(long int));
+    CU_ASSERT(4 == sizeof(signed long));
+    CU_ASSERT(4 == sizeof(signed long int));
+    CU_ASSERT(4 == sizeof(unsigned long));
+    CU_ASSERT(4 == sizeof(unsigned long int));
 }
 
 void testLLONG(void)
 {
-    CU_ASSERT(64 == sizeof(long long));
-    CU_ASSERT(64 == sizeof(long long int));
-    CU_ASSERT(64 == sizeof(signed long long));
-    CU_ASSERT(64 == sizeof(signed long long int));
-    CU_ASSERT(64 == sizeof(unsigned long long));
-    CU_ASSERT(64 == sizeof(unsigned long long int));
+    CU_ASSERT(8 == sizeof(long long));
+    CU_ASSERT(8 == sizeof(long long int));
+    CU_ASSERT(8 == sizeof(signed long long));
+    CU_ASSERT(8 == sizeof(signed long long int));
+    CU_ASSERT(8 == sizeof(unsigned long long));
+    CU_ASSERT(8 == sizeof(unsigned long long int));
 }
 
 void testFLOAT(void)
 {
-    CU_ASSERT(32 == sizeof(float));
+    CU_ASSERT(4 == sizeof(float));
 }
 
 void testDOUBLE(void)
 {
-    CU_ASSERT(64 == sizeof(double));
+    CU_ASSERT(8 == sizeof(double));
 }
 
 void testLDOUBLE(void)
 {
-    CU_ASSERT(64 < sizeof(long double));
+    CU_ASSERT(8 < sizeof(long double));
 }
 
 int main(void)

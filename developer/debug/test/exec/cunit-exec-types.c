@@ -29,20 +29,20 @@ int clean_suite(void)
 
 void testBYTE(void)
 {
-    CU_ASSERT(8 == sizeof(BYTE));
-    CU_ASSERT(8 == sizeof(UBYTE));
+    CU_ASSERT(1 == sizeof(BYTE));
+    CU_ASSERT(1 == sizeof(UBYTE));
 }
 
 void testWORD(void)
 {
-    CU_ASSERT(16 == sizeof(WORD));
-    CU_ASSERT(16 == sizeof(UWORD));
+    CU_ASSERT(2 == sizeof(WORD));
+    CU_ASSERT(2 == sizeof(UWORD));
 }
 
 void testLONG(void)
 {
-    CU_ASSERT(32 == sizeof(LONG));
-    CU_ASSERT(32 == sizeof(ULONG));
+    CU_ASSERT(4 == sizeof(LONG));
+    CU_ASSERT(4 == sizeof(ULONG));
 }
 
 void testQUAD(void)
@@ -54,18 +54,18 @@ void testQUAD(void)
 void testAPTR(void)
 {
 #if (__WORDSIZE == 64)
-    CU_ASSERT(64 == sizeof(APTR));
+    CU_ASSERT(8 == sizeof(APTR));
 #else
-    CU_ASSERT(32 == sizeof(APTR));
+    CU_ASSERT(4 == sizeof(APTR));
 #endif
 }
 
 void testIPTR(void)
 {
 #if (__WORDSIZE == 64)
-    CU_ASSERT(64 == sizeof(IPTR));
+    CU_ASSERT(8 == sizeof(IPTR));
 #else
-    CU_ASSERT(32 == sizeof(IPTR));
+    CU_ASSERT(4 == sizeof(IPTR));
 #endif
 }
 
