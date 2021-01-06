@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. 
+    Copyright © 2010-2021, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -64,9 +64,10 @@ extern struct PopupMenuBase * PopupMenuBase;
     D(bug("[PM_ExLst] size %d\n", size));
 
     values = AllocVec(size * sizeof(ULONG), MEMF_ANY);
-    
     if (values)
     {
+        va_end(ap);
+
         values[0] = id; // initial value
 
         va_start(ap, id);
