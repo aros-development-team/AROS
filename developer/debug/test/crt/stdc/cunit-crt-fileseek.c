@@ -49,6 +49,7 @@ void testFOPENW(void)
  */
 void testFPRINTF(void)
 {
+    CU_SKIP_IF(fd == NULL);
     if (fd)
     {
         CU_ASSERT(18 == fprintf( fd, "%s", "() does not work!\n" ));
@@ -59,6 +60,7 @@ void testFPRINTF(void)
  */
 void testFCLOSE(void)
 {
+    CU_SKIP_IF(fd == NULL);
     if (fd)
     {
         CU_ASSERT(0 == fclose(fd));
@@ -77,6 +79,7 @@ void testFOPENR(void)
  */
 void testFREAD(void)
 {
+    CU_SKIP_IF(fd == NULL);
     if (fd)
     {
         CU_ASSERT(1 == (i = fread( buffer, 1, 1, fd )));
@@ -89,6 +92,7 @@ void testFREAD(void)
  */
 void testFSEEK(void)
 {
+    CU_SKIP_IF(fd == NULL);
     if (fd)
     {
         CU_ASSERT(0 == fseek( fd, 4, SEEK_CUR ));
