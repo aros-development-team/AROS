@@ -44,11 +44,19 @@ void testSHORT(void)
 
 void testINT(void)
 {
+#if (__WORDSIZE == 16)
     CU_ASSERT(2 == sizeof(int));
     CU_ASSERT(2 == sizeof(signed));
     CU_ASSERT(2 == sizeof(signed int));
     CU_ASSERT(2 == sizeof(unsigned));
     CU_ASSERT(2 == sizeof(unsigned int));
+#else
+    CU_ASSERT(4 == sizeof(int));
+    CU_ASSERT(4 == sizeof(signed));
+    CU_ASSERT(4 == sizeof(signed int));
+    CU_ASSERT(4 == sizeof(unsigned));
+    CU_ASSERT(4 == sizeof(unsigned int));
+#endif
 }
 
 void testLONG(void)
