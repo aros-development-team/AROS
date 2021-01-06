@@ -30,6 +30,7 @@ FILESPARANOIA := \
 #MM- test-crt-stdc-quick : test-crt-stdc-math-quick
 
 #MM- test-crt-stdc-math : test-crt-stdc-math-fenv test-crt-stdc-math-c99-double test-crt-stdc-math-c99-float test-crt-stdc-math-ieee754 test-crt-stdc-math-inftorture test-crt-stdc-math-paranoia-double test-crt-stdc-math-paranoia-float
+#MM- test-crt-stdc-math-quick : test-crt-stdc-math-fenv-quick test-crt-stdc-math-c99-double-quick test-crt-stdc-math-c99-float-quick test-crt-stdc-math-ieee754-quick test-crt-stdc-math-inftorture-quick test-crt-stdc-math-paranoia-double-quick test-crt-stdc-math-paranoia-float-quick
 #MM- test-crt-stdc-math-common : includes includes-copy linklibs kernel
 
 #MM test-crt-stdc-math-fenv : test-crt-stdc-math-common
