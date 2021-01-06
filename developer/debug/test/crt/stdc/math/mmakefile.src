@@ -24,53 +24,56 @@ FILESPARANOIA := \
 
 EXEDIR := $(AROS_TESTS)/clib
 
-USER_CFLAGS = -fno-builtin
+USER_CFLAGS = $(CFLAGS_NO_BUILTIN)
 
-#MM- test-clib : test-clib-math
-#MM- test-clib-math : test-clib-math-fenv test-clib-math-c99-double test-clib-math-c99-float test-clib-math-ieee754 test-clib-math-inftorture test-clib-math-paranoia-double test-clib-math-paranoia-float
-#MM- test-clib-math-common : includes includes-copy linklibs kernel
+#MM- test-crt : test-crt-math
+#MM- test-crt-quick : test-crt-math-quick
 
-#MM test-clib-math-fenv : test-clib-math-common
-#MM test-clib-math-c99-double : test-clib-math-common
-#MM test-clib-math-c99-float : test-clib-math-common
-#MM test-clib-math-ieee754 : test-clib-math-common
-#MM test-clib-math-inftorture : test-clib-math-common
-#MM test-clib-math-paranoia-double : test-clib-math-common
-#MM test-clib-math-paranoia-float : test-clib-math-common
+#MM- test-crt-math : test-crt-math-fenv test-crt-math-c99-double test-crt-math-c99-float test-crt-math-ieee754 test-crt-math-inftorture test-crt-math-paranoia-double test-crt-math-paranoia-float
+#MM- test-crt-math-quick : test-crt-math-fenv-quick test-crt-math-c99-double-quick test-crt-math-c99-float-quick test-crt-math-ieee754-quick test-crt-math-inftorture-quick test-crt-math-paranoia-double-quick test-crt-math-paranoia-float-quick
+#MM- test-crt-math-common : includes includes-copy linklibs kernel
+
+#MM test-crt-math-fenv : test-crt-math-common
+#MM test-crt-math-c99-double : test-crt-math-common
+#MM test-crt-math-c99-float : test-crt-math-common
+#MM test-crt-math-ieee754 : test-crt-math-common
+#MM test-crt-math-inftorture : test-crt-math-common
+#MM test-crt-math-paranoia-double : test-crt-math-common
+#MM test-crt-math-paranoia-float : test-crt-math-common
 
 USER_CPPFLAGS = -DSingle
 
-%build_prog mmake=test-clib-math-paranoia-float \
+%build_prog mmake=test-crt-math-paranoia-float \
     files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
     progname=math-paranoia-float objdir=$(GENDIR)/$(CURDIR)/float
 
 USER_CPPFLAGS =
 
-%build_prog mmake=test-clib-math-paranoia-double \
+%build_prog mmake=test-crt-math-paranoia-double \
     files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
     progname=math-paranoia-double objdir=$(GENDIR)/$(CURDIR)/double
 
 USER_CPPFLAGS = -DNO_STRICT_DFL_ENV
 
-%build_prog mmake=test-clib-math-fenv \
+%build_prog mmake=test-crt-math-fenv \
     files=$(FILESFENV) targetdir=$(EXEDIR) \
     progname=math-fenv
 
 USER_CPPFLAGS = -DSYS_MATH_H 
 
-%build_prog mmake=test-clib-math-c99-float \
+%build_prog mmake=test-crt-math-c99-float \
     files=$(FILESFLOAT) targetdir=$(EXEDIR) \
     progname=math-c99-float objdir=$(GENDIR)/$(CURDIR)/float
 
-%build_prog mmake=test-clib-math-c99-double \
+%build_prog mmake=test-crt-math-c99-double \
     files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
     progname=math-c99-double objdir=$(GENDIR)/$(CURDIR)/double
 
-%build_prog mmake=test-clib-math-ieee754 \
+%build_prog mmake=test-crt-math-ieee754 \
     files=$(FILESIEEE754) targetdir=$(EXEDIR) \
     progname=math-ieee754
 
-%build_prog mmake=test-clib-math-inftorture \
+%build_prog mmake=test-crt-math-inftorture \
     files=$(FILESINFTORTURE) targetdir=$(EXEDIR) \
     progname=math-inftorture
 
