@@ -96,7 +96,7 @@ void testSEEK(void)
         CU_ASSERT(-1 != Seek( file, 4, OFFSET_CURRENT ));
         CU_ASSERT(-1 != Read( file, &buffer[7], 11 ));
         CU_ASSERT(-1 != Seek( file, 4, OFFSET_BEGINNING ));
-        CU_ASSERT(11 != Read( file, &buffer[18], 11 ));
+        CU_ASSERT(11 == Read( file, &buffer[18], 11 ));
         CU_ASSERT(-1 != Seek( file, -1, OFFSET_END ));
         CU_ASSERT(0 == Read( file, &buffer[29], 1 ));
     }
