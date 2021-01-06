@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
 
     Desc: The functions to read lines from a file
 */
@@ -62,17 +62,27 @@ char *readline(void)
 
         while (!(haseol || feof(file)))
         {
+            char *newline;
             slen += 256;
-            line = (char *)realloc(line, slen);
-            if (fgets(line+len, slen, file))
+            newline = (char *)realloc(line, slen);
+            if (newline)
             {
-                len = strlen(line);
-                haseol = line[len-1]=='\n';
-                if (haseol) line[len-1]='\0';
+                line = newline;
+                if (fgets(line+len, slen, file))
+                {
+                    len = strlen(line);
+                    haseol = line[len-1]=='\n';
+                    if (haseol) line[len-1]='\0';
+                }
+                else if (ferror(file))
+                {
+                    perror(filename);
+                    free(line);
+                    return NULL;
+                }
             }
-            else if (ferror(file))
+            else
             {
-                perror(filename);
                 free(line);
                 return NULL;
             }
