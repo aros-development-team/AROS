@@ -15,6 +15,12 @@
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
+#ifndef _POSIX_C_SOURCE
+/* On Darwin this definition is required by unistd.h
+ * (which is marked as deprecated without the flag)
+  */
+#define _POSIX_C_SOURCE 200112L
+#endif
 #include <unistd.h>
 
 AROS_LH0(int, KrnObtainInput,
