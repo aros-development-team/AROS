@@ -1,4 +1,8 @@
-USER_LDFLAGS  += -static-libstdc++
+USER_LDFLAGS+=-static-libstdc++
 ifeq ("$(HOST_TOOLCHAIN)","gnu")
-    USER_LDFLAGS  += -static-libgcc
+    KERNEL_GCC_VERSION=`$(KERNEL_CC) --version 2>/dev/null`
+    KERNEL_GCC_IS_CLANG=`echo $KERNEL_GCC_VERSION | grep -i -c -E 'LLVM|clang'`
+    if test "$KERNEL_GCC_IS_CLANG" -eq "0"; then
+        USER_LDFLAGS+=-static-libgcc
+    fi
 endif
