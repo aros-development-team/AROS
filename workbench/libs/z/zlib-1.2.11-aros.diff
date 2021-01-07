@@ -1068,7 +1068,7 @@ diff -ruN zlib-1.2.11/simd_stub.c zlib-1.2.11.aros/simd_stub.c
 +#include <assert.h>
 +
 +#include "deflate.h"
-+#if defined(__i386__)
++#if defined(__i386__) || defined(__amd64__)
 +#include "x86.h"
 +
 +int ZLIB_INTERNAL x86_cpu_enable_simd = 0;
@@ -1098,104 +1098,6 @@ diff -ruN zlib-1.2.11/simd_stub.c zlib-1.2.11.aros/simd_stub.c
 +{
 +    assert(0);
 +}
-diff -ruN zlib-1.2.11/x86.c zlib-1.2.11.aros/x86.c
---- zlib-1.2.11/x86.c	1970-01-01 00:00:00.000000000 +0000
-+++ zlib-1.2.11.aros/x86.c	2021-01-06 00:27:24.430000000 +0000
-@@ -0,0 +1,94 @@
-+/*
-+ * x86 feature check
-+ *
-+ * Copyright (C) 2013 Intel Corporation. All rights reserved.
-+ * Author:
-+ *  Jim Kukunas
-+ * 
-+ * For conditions of distribution and use, see copyright notice in zlib.h
-+ */
-+
-+#if defined(__i386__)
-+#include "x86.h"
-+#include "zutil.h"
-+
-+int ZLIB_INTERNAL x86_cpu_enable_simd = 0;
-+
-+#ifndef _MSC_VER
-+#include <pthread.h>
-+
-+pthread_once_t cpu_check_inited_once = PTHREAD_ONCE_INIT;
-+static void _x86_check_features(void);
-+
-+void x86_check_features(void)
-+{
-+  pthread_once(&cpu_check_inited_once, _x86_check_features);
-+}
-+
-+static void _x86_check_features(void)
-+{
-+    int x86_cpu_has_sse2;
-+    int x86_cpu_has_sse42;
-+    int x86_cpu_has_pclmulqdq;
-+    unsigned eax, ebx, ecx, edx;
-+
-+    eax = 1;
-+#ifdef __i386__
-+    __asm__ __volatile__ (
-+        "xchg %%ebx, %1\n\t"
-+        "cpuid\n\t"
-+        "xchg %1, %%ebx\n\t"
-+    : "+a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)
-+    );
-+#else
-+    __asm__ __volatile__ (
-+        "cpuid\n\t"
-+    : "+a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
-+    );
-+#endif  /* (__i386__) */
-+
-+    x86_cpu_has_sse2 = edx & 0x4000000;
-+    x86_cpu_has_sse42 = ecx & 0x100000;
-+    x86_cpu_has_pclmulqdq = ecx & 0x2;
-+
-+    x86_cpu_enable_simd = x86_cpu_has_sse2 &&
-+                          x86_cpu_has_sse42 &&
-+                          x86_cpu_has_pclmulqdq;
-+}
-+#else
-+#include <intrin.h>
-+#include <windows.h>
-+
-+static BOOL CALLBACK _x86_check_features(PINIT_ONCE once,
-+                                         PVOID param,
-+                                         PVOID *context);
-+static INIT_ONCE cpu_check_inited_once = INIT_ONCE_STATIC_INIT;
-+
-+void x86_check_features(void)
-+{
-+    InitOnceExecuteOnce(&cpu_check_inited_once, _x86_check_features,
-+                        NULL, NULL);
-+}
-+
-+static BOOL CALLBACK _x86_check_features(PINIT_ONCE once,
-+                                         PVOID param,
-+                                         PVOID *context)
-+{
-+    int x86_cpu_has_sse2;
-+    int x86_cpu_has_sse42;
-+    int x86_cpu_has_pclmulqdq;
-+    int regs[4];
-+
-+    __cpuid(regs, 1);
-+
-+    x86_cpu_has_sse2 = regs[3] & 0x4000000;
-+    x86_cpu_has_sse42= regs[2] & 0x100000;
-+    x86_cpu_has_pclmulqdq = regs[2] & 0x2;
-+
-+    x86_cpu_enable_simd = x86_cpu_has_sse2 &&
-+                          x86_cpu_has_sse42 &&
-+                          x86_cpu_has_pclmulqdq;
-+    return TRUE;
-+}
-+#endif  /* _MSC_VER */
-+#endif
 diff -ruN zlib-1.2.11/x86.h zlib-1.2.11.aros/x86.h
 --- zlib-1.2.11/x86.h	1970-01-01 00:00:00.000000000 +0000
 +++ zlib-1.2.11.aros/x86.h	2021-01-06 00:28:53.930000000 +0000
@@ -1208,7 +1110,7 @@ diff -ruN zlib-1.2.11/x86.h zlib-1.2.11.aros/x86.h
 +#ifndef X86_H
 +#define X86_H
 +
-+#if defined(__i386__)
++#if defined(__i386__) || defined(__amd64__)
 +#include "zlib.h"
 +
 +extern int x86_cpu_enable_simd;
@@ -1219,6 +1121,38 @@ diff -ruN zlib-1.2.11/x86.h zlib-1.2.11.aros/x86.h
 +void x86_check_features(void);
 +
 +#endif  /* X86_H */
+diff -ruN zlib-1.2.11/x86_aros.c zlib-1.2.11.aros/x86_aros.c
+--- zlib-1.2.11/x86_aros.c	1970-01-01 00:00:00.000000000 +0000
++++ zlib-1.2.11.aros/x86_aros.c	2021-01-07 06:16:32.420000000 +0000
+@@ -0,0 +1,28 @@
++/*
++ * x86 feature check
++ *
++ * Copyright (C) 2021 The AROS Dev Team
++ * 
++ * For conditions of distribution and use, see copyright notice in zlib.h
++ */
++
++#if defined(__i386__) || defined(__amd64__)
++#include "x86.h"
++#include "zutil.h"
++
++int ZLIB_INTERNAL x86_cpu_enable_simd = 0;
++
++#define cpuid(num) \
++    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
++
++void x86_check_features(void)
++{
++    int eax, ebx, ecx, edx;
++
++    cpuid(0x00000001);
++
++    if ((edx & 0x4000000) &&
++        (ecx & 0x100000) && (ecx & 0x2))
++        x86_cpu_enable_simd = 1;
++}
++#endif
 diff -ruN zlib-1.2.11/zutil.h zlib-1.2.11.aros/zutil.h
 --- zlib-1.2.11/zutil.h	2017-01-01 07:37:10.000000000 +0000
 +++ zlib-1.2.11.aros/zutil.h	2021-01-05 23:00:06.820000000 +0000

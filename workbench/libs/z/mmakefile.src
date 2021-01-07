@@ -50,8 +50,12 @@ FILES := adler32 \
          contrib/infback9/infback9 \
          contrib/infback9/inftree9
 
-#FILES += x86 fill_window_sse
+ifeq ($(AROS_TARGET_CPU),x86_64)
+TARGET_ISA_CFLAGS +=  -msse2 -msse4.1 -mpclmul
+FILES += x86_aros fill_window_sse crc_folding
+else
 FILES += simd_stub
+endif
 
 LIBZ_CPPFLAGS := -D_XOPEN_SOURCE=600 -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
 USER_INCLUDES += -I$(ARCHSRCDIR)
@@ -83,5 +87,26 @@ workbench-libs-z-pkgc : $(AROS_LIB)/pkgconfig/zlib.pc
 $(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
 	$(CP) $^ $@
+
+
+%build_prog mmake=wokbench-libs-z-example \
+    progname=example \
+    files=$(ARCHSRCDIR)/test/example targetdir=$(AROS_TESTS)/z uselibs="z1"
+
+#MM wokbench-libs-z-example : \
+#MM        workbench-libs-z-linklib
+
+##MM- test-z : wokbench-libs-z-example
+##MM- test-z-quick : wokbench-libs-z-example-quick
+
+%build_prog mmake=wokbench-libs-z-minigzip \
+    progname=minigzip \
+    files=$(ARCHSRCDIR)/test/minigzip targetdir=$(AROS_C) uselibs="z1"
+
+#MM- workbench-c : \
+#MM        wokbench-libs-z-minigzip
+
+#MM wokbench-libs-z-minigzip : \
+#MM        workbench-libs-z-linklib
 
 %common
