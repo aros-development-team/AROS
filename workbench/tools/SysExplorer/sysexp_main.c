@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2020, The AROS Development Team.
+    Copyright (C) 2013-2021, The AROS Development Team.
     $Id$
 */
 
@@ -40,13 +40,15 @@
 
 #include "enums.h"
 
+#include "sysexp_libdefs.h"
+
 #define APPNAME "SysExplorer"
-#define VERSION "SysExplorer 0.10"
+#define VERSION "SysExplorer " MOD_VERS_STRING
 #define SysexpModuleDir	"PROGDIR:SysExpModules"
 
 int __nocommandline = 1;
 
-const char version[] = "$VER: " VERSION " (" ADATE ")\n";
+const char version[] = "$VER: " VERSION " (" MOD_DATE_STRING ")\n";
 
 extern void sysexp_initlib(struct SysexpBase **SysexpBasePtr);
 
@@ -284,7 +286,13 @@ AROS_UFH3S(void, propertyFunc,
 
         if (data->win)
         {
+            Object *rootGrp = NULL;
             DoMethod(app, OM_ADDMEMBER, data->win);
+            GET(data->win, MUIA_Window_RootObject, &rootGrp);
+            if (DoMethod(rootGrp, MUIM_Group_InitChange))
+            {
+                DoMethod(rootGrp, MUIM_Group_ExitChange);
+            }
             DoMethod(data->win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
                      data->win, 3,
                      MUIM_CallHook, &close_hook, data);
@@ -308,7 +316,7 @@ static BOOL GUIinit(struct SysexpBase *SysexpBase)
     app = ApplicationObject,
         MUIA_Application_Title,         (IPTR)APPNAME,
         MUIA_Application_Version,       (IPTR)VERSION,
-        MUIA_Application_Copyright,     (IPTR)"(C) 2013, The AROS Development Team",
+        MUIA_Application_Copyright,     (IPTR)"(C) 2013-2021, The AROS Development Team",
         MUIA_Application_Author,        (IPTR)"Pavel Fedin",
         MUIA_Application_Base,          (IPTR)APPNAME,
         MUIA_Application_Description,   __(MSG_DESCRIPTION),
