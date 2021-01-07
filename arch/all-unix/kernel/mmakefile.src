@@ -17,6 +17,9 @@ ifneq ("","$(strip $(WARN_ERROR))")
 CONFIG_CFLAGS := $(subst $(WARN_ERROR),,$(CONFIG_CFLAGS))
 endif
 
+# special flag so that included components know we are compiling the
+# arch specific code, and need special handling.
+AROS_ARCH_KERNEL:=yes
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(FAMILY)/kernel/make.opts
 -include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
