@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private data belonging to exec.library
@@ -22,7 +22,9 @@
 #include <aros/types/spinlock_s.h>
 #endif
 
+#ifndef __KERNEL_NOLIBBASE__
 #define __KERNEL_NOLIBBASE__
+#endif
 #include <proto/kernel.h>
 
 #define ALERT_BUFFER_SIZE 2048
