@@ -97,7 +97,10 @@ jobs:
       brew list md5sha1sum &>/dev/null || brew install md5sha1sum
       brew install caskroom/cask/brew-cask 2> /dev/null
       brew install --cask xquartz
-      sudo easy_install pip3
+      brew list python@3.9 &>/dev/null || brew install python@3.9
+      if ! command -v pip3; then
+          sudo easy_install pip3
+      fi
       pip3 install Mako
       DARWINPYTHONDIR=`brew --prefix python`
       CONFIGPATH="$DARWINPYTHONDIR:$PATH"
