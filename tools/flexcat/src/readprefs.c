@@ -102,66 +102,71 @@ char ReadPrefs(void)
   {
     if(GetVar(FLEXCAT_PREFS, prefs, 80, 0) != -1)
     {
-      prefs = realloc(prefs, strlen(prefs) + 1);
-      strcat(prefs, "\n");
-
-      if((rda = AllocDosObject(DOS_RDARGS, TAG_DONE)) != NULL)
+      char *newprefs;
+      newprefs = realloc(prefs, strlen(prefs) + 1);
+      if (newprefs)
       {
-        rda->RDA_Source.CS_Buffer = prefs;
-        rda->RDA_Source.CS_Length = strlen(prefs);
-        rda->RDA_Source.CS_CurChr = 0;
-        rda->RDA_Flags |= RDAF_NOPROMPT;
+          prefs = newprefs
+          strcat(prefs, "\n");
 
-        if((rdargs = ReadArgs(template, Results, rda)) != NULL)
-        {
-          if(Results[SDDIR])
-            strlcpy(prefs_sddir, (char *)Results[SDDIR], MAXPATHLEN);
+          if((rda = AllocDosObject(DOS_RDARGS, TAG_DONE)) != NULL)
+          {
+            rda->RDA_Source.CS_Buffer = prefs;
+            rda->RDA_Source.CS_Length = strlen(prefs);
+            rda->RDA_Source.CS_CurChr = 0;
+            rda->RDA_Flags |= RDAF_NOPROMPT;
 
-          if(Results[MSG_NEW])
-            strlcpy(Msg_New, (char *)Results[MSG_NEW], MAX_NEW_STR_LEN);
+            if((rdargs = ReadArgs(template, Results, rda)) != NULL)
+            {
+              if(Results[SDDIR])
+                strlcpy(prefs_sddir, (char *)Results[SDDIR], MAXPATHLEN);
 
-          if(Results[CODESET])
-            strlcpy(DestCodeset, (char *)Results[CODESET], MAX_NEW_STR_LEN);
+              if(Results[MSG_NEW])
+                strlcpy(Msg_New, (char *)Results[MSG_NEW], MAX_NEW_STR_LEN);
 
-          WarnCTGaps = Results[WARNCTGAPS];
-          NoOptim = Results[NOOPTIM];
-          Fill = Results[FILL];
-          DoExpunge = Results[FLUSH];
-          NoBeep = Results[NOBEEP];
-          Quiet = Results[QUIET];
-          LANGToLower = !Results[NOLANGTOLOWER];
-          Modified = Results[MODIFIED];
-          NoBufferedIO = Results[NOBUFFEREDIO];
-          CopyNEWs = Results[COPYMSGNEW];
-          if(Results[OLDMSGNEW])
-            snprintf(Old_Msg_New, sizeof(Old_Msg_New), "; %s", (char *)Results[OLDMSGNEW]);
+              if(Results[CODESET])
+                strlcpy(DestCodeset, (char *)Results[CODESET], MAX_NEW_STR_LEN);
 
-          if(Results[VERSION])
-            CatVersion = Results[VERSION];
-          
-          if(Results[REVISION])
-            CatRevision = Results[REVISION];
+              WarnCTGaps = Results[WARNCTGAPS];
+              NoOptim = Results[NOOPTIM];
+              Fill = Results[FILL];
+              DoExpunge = Results[FLUSH];
+              NoBeep = Results[NOBEEP];
+              Quiet = Results[QUIET];
+              LANGToLower = !Results[NOLANGTOLOWER];
+              Modified = Results[MODIFIED];
+              NoBufferedIO = Results[NOBUFFEREDIO];
+              CopyNEWs = Results[COPYMSGNEW];
+              if(Results[OLDMSGNEW])
+                snprintf(Old_Msg_New, sizeof(Old_Msg_New), "; %s", (char *)Results[OLDMSGNEW]);
 
-          FreeArgs(rdargs);
+              if(Results[VERSION])
+                CatVersion = Results[VERSION];
+              
+              if(Results[REVISION])
+                CatRevision = Results[REVISION];
 
-          result = TRUE;
-        }
-        else
-        {
-          fputs(MSG_ERR_BADPREFS, stderr);
-          fputs(template, stderr);
-          fputs("\n", stderr);
-          DisplayBeep(NULL);
-        }
-        FreeDosObject(DOS_RDARGS, rda);
+              FreeArgs(rdargs);
+
+              result = TRUE;
+            }
+            else
+            {
+              fputs(MSG_ERR_BADPREFS, stderr);
+              fputs(template, stderr);
+              fputs("\n", stderr);
+              DisplayBeep(NULL);
+            }
+            FreeDosObject(DOS_RDARGS, rda);
+          }
+          else
+          {
+            fputs("Error processing prefs.\n" \
+                  "Can't AllocDosObject()\n", stderr);
+          }
       }
-      else
-      {
-        fputs("Error processing prefs.\n" \
-              "Can't AllocDosObject()\n", stderr);
-      }
-      free(prefs);
     }
+    free(prefs);
   }
 #endif
 
