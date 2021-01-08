@@ -64,7 +64,7 @@ char ReadPrefs(void)
 {
   char result = FALSE;
 
-//#ifdef AMIGA
+#ifdef AMIGA
 
 #define MAX_PREFS_LEN 512
 #define FLEXCAT_PREFS "flexcat.prefs"
