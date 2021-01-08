@@ -64,7 +64,7 @@ char ReadPrefs(void)
 {
   char result = FALSE;
 
-#ifdef AMIGA
+//#ifdef AMIGA
 
 #define MAX_PREFS_LEN 512
 #define FLEXCAT_PREFS "flexcat.prefs"
@@ -164,9 +164,11 @@ char ReadPrefs(void)
             fputs("Error processing prefs.\n" \
                   "Can't AllocDosObject()\n", stderr);
           }
+          free(prefs);
       }
+      else
+        free(prefs);      
     }
-    free(prefs);
   }
 #endif
 
