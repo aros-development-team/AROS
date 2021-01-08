@@ -33,6 +33,21 @@ FILES := png pngerror \
 
 NOWARN_FLAGS := $(NOWARN_DEPRECATED_DECLARATIONS) $(NOWARN_IMPLICIT_FUNCTION_DECL)
 USER_CFLAGS := $(NOWARN_FLAGS)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CPPFLAGS += -DPNG_INTEL_SSE
+FILES += \
+	intel/intel_init \
+	intel/filter_sse2_intrinsics
+endif
+
+## Add for ARM at a later date ...
+#USER_CPPFLAGS += -DPNG_ARM_NEON
+#FILES += \
+#	arm/arm_init \
+#	arm/filter_neon_intrinsics \
+#	arm/palette_neon_intrinsics
+#AFILES += \
+#	arm/filter_neon
 
 #MM- core-linklibs : linklibs-png
 #MM- linklibs-png : workbench-libs-png-pkgconfig
@@ -48,7 +63,7 @@ USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_TIME
 
 %build_linklib mmake=linklibs-png-nostdio libname=png_nostdio \
-	files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" objdir=$(OBJDIR)/no_stdio
+	files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" asmfiles="$(addprefix $(ARCHSRCDIR)/,$(AFILES))" objdir=$(OBJDIR)/no_stdio
 
 #MM
 workbench-libs-png-pkgconfig : $(AROS_LIB)/pkgconfig/libpng.pc
