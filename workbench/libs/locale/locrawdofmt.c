@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
@@ -211,11 +211,9 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     ULONG *iStream;
     APTR dStream;
     ULONG iSize = 0, dSize = 0;
-#if defined(__arm__) || defined(__x86_64__) || defined(__powerpc__)
-    va_list nullarg = {};
-#else
-    va_list nullarg = 0;
-#endif
+    va_list nullarg;
+
+    localeGenNullList(nullarg);
 
     /* Scan to determine the location of the positional arguments */
     GetDataStreamFromFormat(FormatString, nullarg, NULL, NULL,

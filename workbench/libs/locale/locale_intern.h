@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for the locale.library.
@@ -154,6 +154,11 @@ struct IntCatalog
 #define ID_LANG MAKE_ID('L','A','N','G')
 #define ID_CSET MAKE_ID('C','S','E','T')
 #define ID_STRS MAKE_ID('S','T','R','S')
+
+static void localeGenNullList(va_list empty, ...)
+{
+    va_start(empty, empty);
+}
 
 void dispose_catalog(struct IntCatalog * cat,
                      struct LocaleBase * LocaleBase);
