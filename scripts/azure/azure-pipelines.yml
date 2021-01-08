@@ -108,7 +108,7 @@ jobs:
       brew install sshpass
       ln -s /opt/X11/include/X11 /usr/include/X11
       CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
-      echo "##vso[task.setvariable variable=PATH;]${PATH};$CONFIGPATH";
+      echo "##vso[task.setvariable variable=AROSBUILDENVPATH;$CONFIGPATH";
       echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS;]$CONFIGOPTS"
     condition: eq( variables['Agent.OS'], 'Darwin' )
     displayName: 'Installing AROS build dependencies for MacOS'
@@ -315,6 +315,11 @@ jobs:
           exit 5
         fi
       }
+      if [ "$(AROSBUILDENVPATH)" != "" ]; then
+          AROSCONFIGENV="PATH=\"$(AROSBUILDENVPATH)\""
+      else
+          AROSCONFIGENV=""
+      fi
       execute $(AROSCONFIGENV) $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Configuring $(arosbuild.name) $(TOOLCHAIN) Toolchain'
@@ -401,6 +406,11 @@ jobs:
           exit 5
         fi
       }
+      if [ "$(AROSBUILDENVPATH)" != "" ]; then
+          AROSCONFIGENV="PATH=\"$(AROSBUILDENVPATH)\""
+      else
+          AROSCONFIGENV=""
+      fi
       execute $(AROSCONFIGENV) $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Configuring $(arosbuild.name)'
