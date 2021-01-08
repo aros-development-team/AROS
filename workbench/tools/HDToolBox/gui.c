@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -375,7 +375,7 @@ AROS_UFH3(void, buttons_function,
         else if (object == adddevicegadgets.ok)
         {
             char *str = NULL;
-            struct HDTBDevice *dn;
+            struct HDTBDevice *dn = NULL;
 
             get(adddevicegadgets.file, MUIA_String_Contents, &str);
             if (str[0])
@@ -1393,20 +1393,20 @@ AROS_UFH3(void, createml_function,
 
 LONG InitListNode(struct ListNode *node, struct ListNode *parent)
 {
-    struct ListNode *new;
+    struct ListNode *newnode;
 
     D(bug("[HDToolBox] InitListNode()\n"));
 
     NEWLIST(&node->list);
-    new = AllocMem(sizeof(struct ListNode), MEMF_PUBLIC | MEMF_CLEAR);
-    if (new)
+    newnode = AllocMem(sizeof(struct ListNode), MEMF_PUBLIC | MEMF_CLEAR);
+    if (newnode)
     {
         node->parent = parent;
-        new->ln.ln_Name = "..";
-        new->ln.ln_Type = LNT_Parent;
-        new->ln.ln_Pri = 127;
-        new->parent = node;
-        AddTail(&node->list, &new->ln);
+        newnode->ln.ln_Name = "..";
+        newnode->ln.ln_Type = LNT_Parent;
+        newnode->ln.ln_Pri = 127;
+        newnode->parent = node;
+        AddTail(&node->list, &newnode->ln);
         return TRUE;
     }
     return FALSE;
