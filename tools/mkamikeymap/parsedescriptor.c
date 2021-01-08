@@ -1,5 +1,5 @@
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to parse the command line options and the module config file for
@@ -45,17 +45,28 @@ char *readline(FILE *descf)
 
         while (!(haseol || feof(descf)))
         {
+            char * newline;
             slen += 256;
-            line = (char *)realloc(line, slen);
-            if (fgets(line+len, slen, descf))
+            
+            newline = (char *)realloc(line, slen);
+            if (newline)
             {
-                len = strlen(line);
-                haseol = line[len-1]=='\n';
-                if (haseol) line[len-1]='\0';
+                line = newline;
+                if (fgets(line+len, slen, descf))
+                {
+                    len = strlen(line);
+                    haseol = line[len-1]=='\n';
+                    if (haseol) line[len-1]='\0';
+                }
+                else if (ferror(descf))
+                {
+                    perror("descriptor error");
+                    free(line);
+                    return NULL;
+                }
             }
-            else if (ferror(descf))
+            else
             {
-                perror("descriptor error");
                 free(line);
                 return NULL;
             }
