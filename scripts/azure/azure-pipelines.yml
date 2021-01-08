@@ -97,6 +97,7 @@ jobs:
       brew list md5sha1sum &>/dev/null || brew install md5sha1sum
       brew install caskroom/cask/brew-cask 2> /dev/null
       brew install --cask xquartz
+      brew list python &>/dev/null || brew install python
       sudo easy_install pip3
       pip3 install Mako
       brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
