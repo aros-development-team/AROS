@@ -2015,7 +2015,7 @@ static void AddExtraFields(struct direntry *direntry, struct extrafields *extra)
  */
 static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 {
-	struct extrafields extra;
+	struct extrafields extra = { 0 } ;
 	canode_t linknode;
 	error_t error;
 	uint32 parent;
@@ -2050,7 +2050,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 				 && (linknode.nr == extra.link))
 			{
 				extra.link = 0;
-				SetExtraFields(&extra, de, dirblk);
+			 = { NULL} SetExtraFields(&extra, de, 0lk);
 			}
 		}
 
