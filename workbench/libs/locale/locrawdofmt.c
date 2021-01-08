@@ -225,6 +225,8 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
                             iStream, &iSize);
     dStream = alloca(dSize);
 
+    va_end(nullarg);
+
     /* Repack the va_list into the datastream */
     GetDataStreamFromFormat(FormatString, DataStream, dStream, &dSize,
                             iStream, &iSize);
