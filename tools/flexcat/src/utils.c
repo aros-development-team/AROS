@@ -409,7 +409,7 @@ int getoctal(int c)
 
 char *ReadLine(FILE *fp, UNUSED int AllowComment)
 {
-  char *NewLine = NULL;
+  char *NewLine = NULL, *tmpLine;
   int c = '\0';
   int Len = 0, LineLen = 0;
   int FirstChar = TRUE;
@@ -421,7 +421,14 @@ char *ReadLine(FILE *fp, UNUSED int AllowComment)
   {
     if(Len + 10 > LineLen)
     {
-      NewLine = realloc(NewLine, LineLen + BUFSIZE);
+      tmpLine = realloc(NewLine, LineLen + BUFSIZE);
+      if (tmpLine)
+        NewLine = tmpLine;
+      else
+      {
+        free(NewLine);
+        return NULL;
+      }
       LineLen += BUFSIZE;
     }
 
