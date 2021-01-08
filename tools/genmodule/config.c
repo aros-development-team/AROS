@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to parse the command line options and the module config file for
@@ -516,7 +516,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
             };
             const unsigned int nums = sizeof(parts)/sizeof(char *);
             unsigned int partnum;
-            int i, atend = 0;
+            unsigned int i;
 
             s = line+2;
             while (isspace(*s)) s++;
