@@ -227,7 +227,8 @@ void curs_up(Project p)
 
 		/* If cursor exits edit area due to horizontal **
 		** adjustment, scroll the display accordingly: */
-		if((newx=center_horiz(p))!=p->left_pos || scroll)
+                newx = center_horiz(p);
+		if((newx != p->left_pos) || scroll)
 			scroll_xy(p, newx, p->top_line-scroll, scroll);
 
 		/* Update selection */
