@@ -27,6 +27,9 @@
 #ifdef __MORPHOS__
 #include <aros/libcall.h>
 #endif
+#ifndef CLIB_ALIB_PROTOS_H
+#include <clib/alib_protos.h>
+#endif
 
 /* aros_print_not_implemented() macro: */
 #include <aros/debug.h>
@@ -155,9 +158,14 @@ struct IntCatalog
 #define ID_CSET MAKE_ID('C','S','E','T')
 #define ID_STRS MAKE_ID('S','T','R','S')
 
-static void localeGenNullList(va_list empty, ...)
+static void localeDataStreamFromFormat(CONST_STRPTR format, APTR dataStream,  ULONG *dataSize,
+                             ULONG *indexStream, ULONG *indexSize, ...)
 {
-    va_start(empty, empty);
+    va_list empty;
+    va_start(empty, indexSize);
+    GetDataStreamFromFormat(format, empty, dataStream, dataSize,
+                        indexStream, indexSize);
+    va_end(empty);
 }
 
 void dispose_catalog(struct IntCatalog * cat,

@@ -18,8 +18,6 @@
 #include <stdarg.h>
 #include <alloca.h>
 
-#include <clib/alib_protos.h>
-
 AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct Locale *, locale, A2),
@@ -211,21 +209,16 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     ULONG *iStream;
     APTR dStream;
     ULONG iSize = 0, dSize = 0;
-    va_list nullarg;
-
-    localeGenNullList(nullarg);
 
     /* Scan to determine the location of the positional arguments */
-    GetDataStreamFromFormat(FormatString, nullarg, NULL, NULL,
+    localeDataStreamFromFormat(FormatString, NULL, NULL,
                             NULL, &iSize);
     iStream = alloca(iSize);
 
     /* Scan to determine the size of the repacked datastream */
-    GetDataStreamFromFormat(FormatString, nullarg, NULL, &dSize,
+    localeDataStreamFromFormat(FormatString, NULL, &dSize,
                             iStream, &iSize);
     dStream = alloca(dSize);
-
-    va_end(nullarg);
 
     /* Repack the va_list into the datastream */
     GetDataStreamFromFormat(FormatString, DataStream, dStream, &dSize,

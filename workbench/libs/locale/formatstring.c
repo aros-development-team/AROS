@@ -16,8 +16,6 @@
 #include <aros/asmcall.h>
 #include "locale_intern.h"
 
-#include <clib/alib_protos.h>
-
 #include <aros/debug.h>
 
 typedef QUAD FMTLARGESTTYPE;
@@ -615,9 +613,6 @@ APTR InternalFormatString(const struct Locale * locale,
     ULONG indexSize = 0;
     APTR retval;
     struct Locale *def_locale = NULL;
-    va_list nullarg;
-
-    localeGenNullList(nullarg);
 
     if (locale == NULL)
     {
@@ -626,11 +621,9 @@ APTR InternalFormatString(const struct Locale * locale,
     }
 
     /* Generate the indexes for the provided datastream */
-    GetDataStreamFromFormat(fmtTemplate, nullarg, NULL, NULL, NULL, &indexSize);
+    localeDataStreamFromFormat(fmtTemplate, NULL, NULL, NULL, &indexSize);
     indices = alloca(indexSize);
-    GetDataStreamFromFormat(fmtTemplate, nullarg, NULL, NULL, indices, &indexSize);
-
-    va_end(nullarg);
+    localeDataStreamFromFormat(fmtTemplate, NULL, NULL, indices, &indexSize);
 
     retval = InternalFormatString(locale, fmtTemplate,
                                 dataStream, indices, putCharFunc);
