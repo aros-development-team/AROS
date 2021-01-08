@@ -2,6 +2,25 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+JPEGVERSION=9b
+REPOSITORIES := https://ijg.org/files
+ARCHBASE     := jpegsrc.v$(JPEGVERSION)
+ARCHDIR     := jpeg-$(JPEGVERSION)
+ARCHSUFFIX := "tar.gz"
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHDIR):-f,-p1
+ARCHSRCDIR := $(PORTSDIR)/jpeg/$(ARCHDIR)
+
+%fetch mmake=jpeg-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/jpeg \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=jpeg-create-patch \
+    archive=$(ARCHBASE) srcdir=$(ARCHDIR) suffixes=$(ARCHSUFFIX) \
+    destination=$(PORTSDIR)/jpeg
+
+#MM- includes-copy : \
+#MM     jpeg-fetch
+
 #MM workbench-libs-jpeg-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
@@ -25,11 +44,9 @@ USER_CPPFLAGS := -DNO_GETENV
 
 %build_module mmake=workbench-libs-jpeg \
   modname=jfif modtype=library \
-  files="$(FILES)" linklibname=jpeg
-
+  files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname=jpeg
 
 INCLUDE_FILES := jerror.h jmorecfg.h jpeglib.h jconfig.h
-%copy_includes
-
+%copy_includes dir=$(ARCHSRCDIR)
 
 %common
