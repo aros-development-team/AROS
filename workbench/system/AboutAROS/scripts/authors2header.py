@@ -3,7 +3,7 @@
 # Copyright © 2002-2008, The AROS Development Team. All rights reserved.
 # $Id$
 
-import os, sys, string
+import sys
 
 labels2sids = {
     'Coordination'                   : 'SID_COORDINATION',
@@ -97,7 +97,7 @@ for area in credits:
     outfile.write('''    SECTION
     (
         %s''' % labels2sids[area[0]])
-            
+
     for name in area[1]:
         outfile.write(',\n        NAME("%s")' % name.replace('"', '\\"'))
     
