@@ -315,12 +315,13 @@ jobs:
           exit 5
         fi
       }
-      if [ "$(AROSBUILDENVPATH)" != "" ]; then
-          AROSCONFIGENV="PATH=\"$(AROSBUILDENVPATH)\""
+      if [ "$AROSBUILDENVPATH" != "" ]; then
+          AROSCONFIGENV="PATH=\"$AROSBUILDENVPATH\""
+          cho "Using AROSCONFIGENV=$AROSCONFIGENV"
       else
           AROSCONFIGENV=""
       fi
-      execute $(AROSCONFIGENV) $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
+      execute $AROSCONFIGENV $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Configuring $(arosbuild.name) $(TOOLCHAIN) Toolchain'
 
@@ -406,12 +407,13 @@ jobs:
           exit 5
         fi
       }
-      if [ "$(AROSBUILDENVPATH)" != "" ]; then
-          AROSCONFIGENV="PATH=\"$(AROSBUILDENVPATH)\""
+      if [ "$AROSBUILDENVPATH" != "" ]; then
+          AROSCONFIGENV="PATH=\"$AROSBUILDENVPATH\""
+          cho "Using AROSCONFIGENV=$AROSCONFIGENV"
       else
           AROSCONFIGENV=""
       fi
-      execute $(AROSCONFIGENV) $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
+      execute $AROSCONFIGENV $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR) --with-aros-toolchain=yes
     workingDirectory: '$(AROSBUILDDIR)'
     displayName: 'Configuring $(arosbuild.name)'
 
