@@ -90,6 +90,7 @@ wget_try()
             ret=false
             wgetextraflags="--secure-protocol=TLSv1"
         else
+            ret=true
             break
         fi
     done
