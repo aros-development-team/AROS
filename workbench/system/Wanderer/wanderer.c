@@ -2491,6 +2491,8 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
             DoMethod(group, MUIM_Group_ExitChange);
             D(bug("Setting max gauge to: %d\n", d->totalObjects));
             SET(d->gauge, MUIA_Gauge_Max, d->totalObjects);
+            DoMethod(d->copyApp, MUIM_Layout);
+            DoMethod(d->copyApp, MADF_DRAWOBJECT);
         }
         
         SET(d->win,MUIA_Window_Open,TRUE);
