@@ -104,7 +104,7 @@ fetch()
     local protocol
     
     if echo "$origin" | grep ":" >/dev/null; then
-        protocol=$(echo $origin | cut -d':' -f1)
+        protocol=$(echo "$origin" | cut -d':' -f1)
     fi
 
     local ret=true
@@ -184,12 +184,12 @@ fetch_cached()
     if test "x$suffixes" != "x"; then
         for sfx in $suffixes; do
 	    fetch_multiple "$destination" "$file.$sfx" "$destination" && \
-	        export $foundvar="$file.$sfx" && return 0
+	        export "$foundvar"="$file.$sfx" && return 0
         done
        
 	for sfx in $suffixes; do
 	    fetch_multiple "$origins" "$file.$sfx" "$destination" && \
-	        export $foundvar="$file.$sfx" && return 0
+	        export "$foundvar"="$file.$sfx" && return 0
         done    
     else
         fetch_multiple "$destination $origins" "$file" "$destination" && \
@@ -257,7 +257,7 @@ do_patch()
     local location="$1" patch_spec="$2";
     
     local old_PWD="$PWD"
-    cd $location
+    cd "$location"
     local abs_location="$PWD"
     
     local patch=$(echo "$patch_spec": | cut -d: -f1)
