@@ -80,7 +80,7 @@ wget_try()
     local tryurl="$1" wgetoutput="$2"
     local wgetextraflags
     local ret=true
-    local wgetext
+    local wgetext=""
 
     if echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
         if ! echo "$tryurl" | grep "?download" >/dev/null; then
