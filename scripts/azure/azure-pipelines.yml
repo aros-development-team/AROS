@@ -710,6 +710,11 @@ jobs:
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: 'Performing Unit testing with CUnit'
 
+  - task: Ant@1
+    condition: eq( variables['arosbuild.withunittests'], 'yes' )
+    inputs:
+      buildFile: 'scripts/azure/junittohtml.xml'
+
   - task: PublishTestResults@2
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     inputs:
