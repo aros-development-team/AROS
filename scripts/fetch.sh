@@ -80,8 +80,15 @@ wget_try()
     local tryurl="$1" wgetoutput="$2"
     local wgetextraflags
     local ret=true
+    local wgetext
 
-    local urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl")
+    if echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
+        if ! echo "$tryurl" | grep "?download" >/dev/null; then
+            wgetext="?download"
+        fi
+    fi
+
+    local urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
     local wgetsrc=$(cut "--delimiter= " --fields=4 <<< "$urlsrc")
 
     for (( ; ; ))
