@@ -103,7 +103,7 @@ jobs:
       fi
       pip3 install Mako
       DARWINPYTHONDIR=`brew --prefix python`
-      CONFIGPATH="$DARWINPYTHONDIR:$PATH"
+      CONFIGPATH="$DARWINPYTHONDIR/bin:$PATH"
       brew tap esolitos/ipa
       brew install sshpass
       ln -s /opt/X11/include/X11 /usr/include/X11

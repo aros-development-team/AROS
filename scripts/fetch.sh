@@ -262,13 +262,12 @@ do_patch()
     
     local patch=$(echo "$patch_spec": | cut -d: -f1)
     local subdir=$(echo "$patch_spec": | cut -d: -f2)
-    local patch_opt=$(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g")
     
     cd "${subdir:-.}"
     
     local ret=true
     
-    if ! patch -Z "$patch_opt" < "$abs_location/$patch"; then
+    if ! patch -Z $(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g") < "$abs_location/$patch"; then
         ret=false
     fi
     
