@@ -106,7 +106,7 @@ char ReadPrefs(void)
       newprefs = realloc(prefs, strlen(prefs) + 1);
       if (newprefs)
       {
-          prefs = newprefs
+          prefs = newprefs;
           strcat(prefs, "\n");
 
           if((rda = AllocDosObject(DOS_RDARGS, TAG_DONE)) != NULL)
