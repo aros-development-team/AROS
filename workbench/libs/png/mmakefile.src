@@ -5,7 +5,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM- includes-copy : libpng-fetch
 
 LIBPNGVERSION=1.6.37
-REPOSITORIES := http://prdownloads.sourceforge.net/libpng
+REPOSITORIES = http://prdownloads.sourceforge.net/libpng \
+ https://download.sourceforge.net/libpng
 ARCHBASE     := libpng-$(LIBPNGVERSION)
 ARCHSUFFIX := "tar.gz"
 #PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
