@@ -1,0 +1,17 @@
+<project name="genTestReport" default="gen" basedir=".">
+    <description>
+        Generate an HTML report from the Unit Test XML files
+    </description>
+
+    <target name="gen">
+        <property name="genReportDir" location="${basedir}/unitTestReports"/>
+        <delete dir="${genReportDir}"/>
+        <mkdir dir="${genReportDir}"/>
+        <junitreport todir="${basedir}/unitTestReports">
+            <fileset dir="${basedir}">
+                <include name="**/*-Results.xml"/>
+            </fileset>
+            <report format="frames" todir="${genReportDir}/html"/>
+        </junitreport>
+    </target>
+</project>
