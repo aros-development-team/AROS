@@ -317,7 +317,7 @@ jobs:
       }
       if [ "$AROSBUILDENVPATH" != "" ]; then
           AROSCONFIGENV="PATH=\"$AROSBUILDENVPATH\""
-          cho "Using AROSCONFIGENV=$AROSCONFIGENV"
+          echo "Using AROSCONFIGENV=$AROSCONFIGENV"
       else
           AROSCONFIGENV=""
       fi
@@ -409,7 +409,7 @@ jobs:
       }
       if [ "$AROSBUILDENVPATH" != "" ]; then
           AROSCONFIGENV="PATH=\"$AROSBUILDENVPATH\""
-          cho "Using AROSCONFIGENV=$AROSCONFIGENV"
+          echo "Using AROSCONFIGENV=$AROSCONFIGENV"
       else
           AROSCONFIGENV=""
       fi
