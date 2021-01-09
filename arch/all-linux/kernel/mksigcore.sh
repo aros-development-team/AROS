@@ -12,4 +12,4 @@ fi
 type=$(${CC} -D_SIGNAL_H -E "${sigcontextpath}" | grep "^struct sigcontext" | sed 's/{//')
 handler=__sighandler_t
 
-sed "s/@sigcontext@/$type/;s/@sighandler@/$handler/" "${1-.}/sigcore.h.${CPU}.src" > ${2}
+sed "s/@sigcontext@/$type/;s/@sighandler@/$handler/" "${1-.}/sigcore.h.${CPU}.src" > "${2}"

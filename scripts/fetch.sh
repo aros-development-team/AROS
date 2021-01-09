@@ -5,7 +5,7 @@
 
 error()
 {    
-    echo $1
+    echo "$1"
     exit 1
 }
 
@@ -17,7 +17,6 @@ usage()
 fetch_mirrored()
 {
     local origin="$1" file="$2" destination="$3" mirrosgroup="$4" mirrors="$5"
-    local full_path
     local ret=false
 
     for mirror in $mirrors; do
@@ -36,7 +35,6 @@ gnu_mirrors="http://mirror.netcologne.de/gnu http://ftp.gnu.org/pub/gnu ftp://ft
 fetch_gnu()
 {
     local origin="$1" file="$2" destination="$3"
-    local full_path
     local ret=true
 
     if ! fetch_mirrored "$origin" "${file}" "$destination" "GNU" "${gnu_mirrors}"; then
@@ -54,7 +52,6 @@ sf_mirrors="http://downloads.sourceforge.net"
 fetch_sf()
 {
     local origin="$1" file="$2" destination="$3"
-    local full_path
     local ret=true
 
     if ! fetch_mirrored "$origin" "${file}" "$destination" "SourceForge" "${sf_mirrors}"; then
@@ -69,7 +66,6 @@ github_mirrors="https://github.com"
 fetch_github()
 {
     local origin="$1" file="$2" destination="$3"
-    local full_path
     local ret=true
 
     if ! fetch_mirrored "$origin" "$file" "$destination" "Github" "${github_mirrors}"; then
@@ -87,7 +83,7 @@ wget_try()
 
     for (( ; ; ))
     do
-        if ! wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c "$wgetsrc" -O "$wgetoutput"; then
+        if ! wget -t 3 --retry-connrefused "$wgetextraflags" -T 15 -c "$wgetsrc" -O "$wgetoutput"; then
             if test "$ret" = false; then
                 break
             fi
@@ -107,8 +103,8 @@ fetch()
     
     local protocol
     
-    if echo $origin | grep ":" >/dev/null; then
-        protocol=`echo $origin | cut -d':' -f1`
+    if echo "$origin" | grep ":" >/dev/null; then
+        protocol=$(echo $origin | cut -d':' -f1)
     fi
 
     local ret=true
@@ -175,7 +171,7 @@ fetch_cached()
     local __dummy__
     foundvar=${foundvar:-__dummy__}
     
-    export $foundvar=
+    export "$foundvar"=
     
     test -e "$destination" -a ! -d "$destination" && \
         echo "fetch_cached: \`$destination' is not a diretory." && return 1
@@ -187,17 +183,17 @@ fetch_cached()
     
     if test "x$suffixes" != "x"; then
         for sfx in $suffixes; do
-	    fetch_multiple "$destination" "$file".$sfx "$destination" && \
-	        export $foundvar="$file".$sfx && return 0
+	    fetch_multiple "$destination" "$file.$sfx" "$destination" && \
+	        export $foundvar="$file.$sfx" && return 0
         done
        
 	for sfx in $suffixes; do
-	    fetch_multiple "$origins" "$file".$sfx "$destination" && \
-	        export $foundvar="$file".$sfx && return 0
+	    fetch_multiple "$origins" "$file.$sfx" "$destination" && \
+	        export $foundvar="$file.$sfx" && return 0
         done    
     else
         fetch_multiple "$destination $origins" "$file" "$destination" && \
-	    export $foundvar="$file" && return 0
+	    export "$foundvar"="$file" && return 0
     fi
     
     return 1
@@ -208,7 +204,7 @@ unpack()
     local location="$1" archive="$2" archivepath="$3";
     
     local old_PWD="$PWD"
-    cd $location
+    cd "$location"
     
     echo "Unpacking  \`$archive'..."
     
@@ -246,9 +242,9 @@ unpack_cached()
 	! mkdir -p "$location" && return 1
     fi
 
-    if ! test -f ${location}/.${archive}.unpacked;  then
+    if ! test -f "${location}/.${archive}.unpacked";  then
         if unpack "$location" "$archive" "$archivepath"; then
-	    echo yes > ${location}/.${archive}.unpacked
+	    echo yes > "${location}/.${archive}.unpacked"
 	    true
 	else
 	    false
@@ -264,15 +260,15 @@ do_patch()
     cd $location
     local abs_location="$PWD"
     
-    local patch=`echo "$patch_spec": | cut -d: -f1`
-    local subdir=`echo "$patch_spec": | cut -d: -f2`
-    local patch_opt=`echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g"`
+    local patch=$(echo "$patch_spec": | cut -d: -f1)
+    local subdir=$(echo "$patch_spec": | cut -d: -f2)
+    local patch_opt=$(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g")
     
-    cd ${subdir:-.}
+    cd "${subdir:-.}"
     
     local ret=true
     
-    if ! patch -Z $patch_opt < $abs_location/$patch; then
+    if ! patch -Z "$patch_opt" < "$abs_location/$patch"; then
         ret=false
     fi
     
@@ -285,12 +281,12 @@ patch_cached()
 {
     local location="$1" patch="$2";
     
-    local patchname=`echo $patch | cut -d: -f1`
+    local patchname=$(echo "$patch" | cut -d: -f1)
     
     if test "x$patchname" != "x"; then
-        if ! test -f ${location}/.${patchname}.applied;  then
+        if ! test -f "${location}/.${patchname}.applied";  then
             if do_patch "$location" "$patch"; then
-	        echo yes > ${location}/.${patchname}.applied
+	        echo yes > "${location}/.${patchname}.applied"
 	        true
 	    else
 	        false
@@ -373,7 +369,7 @@ test -z "$archive2" && fetchunlock "$location" "$fetchlockfile" && error "fetch:
 archive="$archive2"
 
 for patch in $patches; do
-    patch=`echo $patch | cut -d: -f1`
+    patch=$(echo "$patch" | cut -d: -f1)
     if test "x$patch" != "x"; then
         if ! fetch_cached "$patches_origins" "$patch" "" "$destination"; then
             fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz zip" "$destination" patch2

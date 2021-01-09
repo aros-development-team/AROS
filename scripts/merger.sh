@@ -16,7 +16,7 @@ rm -f conflicts.log added.log
 # First try to merge all the changes from olddir to yourdir into mydir
 # that means that only the files which are both in mydir, yourdir and olddir have to be processed
 
-find $mydir -type f -exec sh -c                                           \
+find "$mydir" -type f -exec sh -c                                           \
     'cur="`echo "{}" | cut -d/ -f2-`";                                    \
     if [ -e $olddir/"$cur" ] && [ -e $yourdir/"$cur" ]; then              \
         echo processing "$cur";                                           \
@@ -38,7 +38,7 @@ find $mydir -type f -exec sh -c                                           \
 # be copied either. All that means that if a file is present both in yourdir and olddir it doesn't need to be
 # copied
 
-find $yourdir -type f -exec sh -c                                      \
+find "$yourdir" -type f -exec sh -c                                      \
     'cur="`echo "{}" | cut -d/ -f2-`";                                 \
     if ! [ -e $olddir/"$cur" ] && ! [ -e $mydir/"$cur" ] &&            \
     (                                                                  \
@@ -67,13 +67,13 @@ find $yourdir -type f -exec sh -c                                      \
 echo Operation finished.
 
 if [ -e conflicts.log ]; then                                                                                   \
-    echo There were `wc -l conflicts.log` conflicts. Have a look at conflicts.log to see in which files.; \
+    echo There were $(wc -l conflicts.log) conflicts. Have a look at conflicts.log to see in which files.; \
 else                                                                                                            \
     echo There were no conflicts;                                                                               \
 fi
 
 if [ -e added.log ]; then                                                                            \
-    echo `wc -l added.log` files have been added. Have a look at added.log to see which ones.; \
+    echo $(wc -l added.log) files have been added. Have a look at added.log to see which ones.; \
 else                                                                                                 \
     echo No new files have been added;                                                               \
 fi
