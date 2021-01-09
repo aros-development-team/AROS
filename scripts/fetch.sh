@@ -77,9 +77,12 @@ fetch_github()
 
 wget_try()
 {
-    local wgetsrc="$1" wgetoutput="$2"
+    local tryurl="$1" wgetoutput="$2"
     local wgetextraflags
     local ret=true
+
+    local urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl")
+    local wgetsrc=$(cut "--delimiter= " --fields=4 <<< "$urlsrc")
 
     for (( ; ; ))
     do
