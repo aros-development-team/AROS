@@ -19,7 +19,7 @@ ARCHSRCDIR := $(PORTSDIR)/libpng/$(ARCHBASE)
     archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
     destination=$(PORTSDIR)/libpng
 
-#MM- includes-copy : \
+#MM includes-copy : \
 #MM     libpng-fetch
 
 #MM workbench-libs-png : workbench-libs-z
