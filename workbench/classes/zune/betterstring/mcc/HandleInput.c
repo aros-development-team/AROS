@@ -1316,7 +1316,7 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
             Object *active;
             get(_win(obj), MUIA_Window_ActiveObject, &active);
             if(obj != active)
-              E(DBF_STARTUP, "MUI error: %lx, %lx", active, obj);
+              E(DBF_STARTUP, "MUI error: 0x%p, 0x%p", active, obj);
 
             WORD x = _mleft(obj);
             WORD y = _mtop(obj);
