@@ -78,7 +78,7 @@ fetch_github()
 wget_try()
 {
     local tryurl="$1" wgetoutput="$2"
-    local wgetextraflags
+    local wgetextraflags=""
     local ret=true
     local wgetext=""
 
@@ -89,11 +89,15 @@ wget_try()
     fi
 
     local urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
-    local wgetsrc=$(echo "$urlsrc" | cut -d' ' -f4)
+    local wgetsrc
+    local origIFS=$IFS
+
+    IFS=$'\n' wgetsrc=$(echo "$urlsrc" | cut -d' ' -f4)
+    IFS=$origIFS
 
     for (( ; ; ))
     do
-        if ! wget -t 3 --retry-connrefused "$wgetextraflags" -T 15 -c "$wgetsrc" -O "$wgetoutput"; then
+        if ! eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c $wgetsrc -O $wgetoutput"; then
             if test "$ret" = false; then
                 break
             fi
@@ -121,15 +125,15 @@ fetch()
     local ret=true
     
     trap 'rm -f "$destination/$file".tmp; exit' SIGINT SIGKILL SIGTERM
-    
+
     case $protocol in
         https| http | ftp)    
-            if ! wget_try "$origin/$file" "$destination/$file".tmp; then
+            if ! wget_try "$origin/$file" "$destination/$file.tmp"; then
                 ret=false
             else
-                mv "$destination/$file".tmp "$destination/$file"
+                mv "$destination/$file.tmp" "$destination/$file"
             fi
-            rm -f "$destination/$file".tmp
+            rm -f "$destination/$file.tmp"
             ;;
         gnu)
             if ! fetch_gnu "${origin:${#protocol}+3}" "$file" "$destination"; then
@@ -150,10 +154,10 @@ fetch()
 	    if test "$origin" = "$destination";  then
 	        ! test -f "$origin/$file" && ret=false
 	    else
-	        if ! cp "$origin/$file" "$destination/$file".tmp; then
+	        if ! cp "$origin/$file" "$destination/$file.tmp"; then
 		    ret=false
 		else
-		    mv "$destination/$file".tmp "$destination/$file"
+		    mv "$destination/$file.tmp" "$destination/$file"
 		fi
 	    fi
 	    ;;
@@ -171,7 +175,7 @@ fetch_multiple()
         echo "Trying     $origin/$file..."
         fetch "$origin" "$file" "$destination" && return  0
     done
-	
+
     return 1
 }
 
@@ -203,7 +207,9 @@ fetch_cached()
 	        export "$foundvar"="$file.$sfx" && return 0
         done    
     else
-        fetch_multiple "$destination $origins" "$file" "$destination" && \
+        fetch_multiple "$destination" "$file" "$destination" && \
+	    export "$foundvar"="$file" && return 0
+        fetch_multiple "$origins" "$file" "$destination" && \
 	    export "$foundvar"="$file" && return 0
     fi
     
@@ -273,15 +279,17 @@ do_patch()
     
     local patch=$(echo "$patch_spec": | cut -d: -f1)
     local subdir=$(echo "$patch_spec": | cut -d: -f2)
-    
+    local patch_opt=$(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g")
+    local patch_cmd="patch -Z $patch_opt < $abs_location/$patch"
+        
     cd "${subdir:-.}"
     
     local ret=true
-    
-    if ! patch -Z $(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g") < "$abs_location/$patch"; then
+
+    if ! eval "$patch_cmd" ; then
         ret=false
     fi
-    
+
     cd "$old_PWD"
     
     $ret
