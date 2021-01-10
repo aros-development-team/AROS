@@ -144,8 +144,8 @@ jobs:
       tar xzf mpfr-4.0.1.tar.gz
       echo 'Building darwin x86 toolchain'
       DARWINBUILDXCODEVERS=`sudo xcode-select --print-path`
-      echo "using XCode version : $DARWINBUILDXCODEVERS"
-      echo "SDK : $(SDK)"
+      echo "Darwin XCode version : $DARWINBUILDXCODEVERS"
+      echo "Darwin SDK : $(SDK)"
       echo '** prerequisite gmp'
       mkdir -p '$MACOSHOMEDIR/opt/gcc/x86'
       mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
@@ -185,6 +185,8 @@ jobs:
       sudo make install
       sudo find $MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
       export MACOSX_DEPLOYMENT_TARGET=$(shell sw_vers -productVersion)
+      echo "##vso[task.setvariable variable=MACOSX_DEPLOYMENT_TARGET;]$MACOSX_DEPLOYMENT_TARGET"
+      echo "Darwin Deployment Target: $(MACOSX_DEPLOYMENT_TARGET)"
       echo "##vso[task.setvariable variable=CC;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc"
       echo "##vso[task.setvariable variable=CXX;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++"
       if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
