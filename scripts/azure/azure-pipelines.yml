@@ -715,6 +715,7 @@ jobs:
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     inputs:
       buildFile: 'scripts/azure/junittohtml.xml'
+      options: -verbose -Dunittest.dir=$(AROSLOGSDIR)
 
   - task: PublishTestResults@2
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
