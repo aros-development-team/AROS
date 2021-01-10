@@ -75,7 +75,30 @@ fetch_github()
     $ret
 }
 
-wget_try()
+wget_ftp()
+{
+    local wgetsrc="$1" wgetoutput="$2"
+    local wgetextraflags
+    local ret=true
+
+    for (( ; ; ))
+    do
+        if !  eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c $wgetsrc -O $wgetoutput"; then
+            if test "$ret" = false; then
+                break
+            fi
+            ret=false
+            wgetextraflags="--secure-protocol=TLSv1"
+        else
+            ret=true
+            break
+        fi
+    done
+
+    $ret
+}
+
+wget_http()
 {
     local tryurl="$1" wgetoutput="$2"
     local wgetextraflags=""
@@ -137,8 +160,16 @@ fetch()
     trap 'rm -f "$destination/$file".tmp; exit' SIGINT SIGKILL SIGTERM
 
     case $protocol in
-        https| http | ftp)    
-            if ! wget_try "$origin/$file" "$destination/$file.tmp"; then
+        https| http)
+            if ! wget_http "$origin/$file" "$destination/$file.tmp"; then
+                ret=false
+            else
+                mv "$destination/$file.tmp" "$destination/$file"
+            fi
+            rm -f "$destination/$file.tmp"
+            ;;
+        ftp)    
+            if ! wget_ftp "$origin/$file" "$destination/$file.tmp"; then
                 ret=false
             else
                 mv "$destination/$file.tmp" "$destination/$file"
