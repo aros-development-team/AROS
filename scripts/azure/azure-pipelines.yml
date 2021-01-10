@@ -184,6 +184,7 @@ jobs:
       BOOT_CFLAGS=$DARWINBOOTCFLAGS  CFLAGS_FOR_TARGET=$DARWINTARGETCFLAGS CXXFLAGS_FOR_TARGET=$DARWINTARGETCXXFLAGS make -j $(BUILDTHREADS)
       sudo make install
       sudo find $MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+      export MACOSX_DEPLOYMENT_TARGET=$(shell sw_vers -productVersion)
       echo "##vso[task.setvariable variable=CC;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc"
       echo "##vso[task.setvariable variable=CXX;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++"
       if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
