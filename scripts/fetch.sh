@@ -97,14 +97,10 @@ wget_try()
 
     for (( ; ; ))
     do
-        eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c $wgetsrc -O $wgetoutput"
-        wgrc="$?"
-        if [ "$wgrc" -ne 0 ]; then
+        if ! eval "wget -t 3 --retry-connrefused $wgetextraflags -T 15 -c $wgetsrc -O $wgetoutput"; then
             if test "$ret" = false; then
-                echo "wget failed on its second attempt (returned $wgrc)"
                 break
             fi
-            echo "wget failed on its first attempt (returned $wgrc)"
             ret=false
             wgetextraflags="--secure-protocol=TLSv1"
         else
