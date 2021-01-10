@@ -89,7 +89,7 @@ wget_try()
     fi
 
     local urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
-    local wgetsrc=$(cut "--delimiter= " --fields=4 <<< "$urlsrc")
+    local wgetsrc=$(echo "$urlsrc" | cut -d' ' -f4)
 
     for (( ; ; ))
     do
