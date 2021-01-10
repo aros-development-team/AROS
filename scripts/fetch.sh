@@ -79,8 +79,10 @@ wget_try()
 {
     local tryurl="$1" wgetoutput="$2"
     local wgetextraflags=""
-    local ret=true
     local wgetext=""
+    local wgetsrc
+    local urlsrc
+    local ret
 
     if echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
         if ! echo "$tryurl" | grep "?download" >/dev/null; then
@@ -88,12 +90,20 @@ wget_try()
         fi
     fi
 
-    local urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
-    local wgetsrc
-    local origIFS=$IFS
-
-    IFS=$'\n' wgetsrc=$(echo "$urlsrc" | cut -d' ' -f4)
-    IFS=$origIFS
+    urlsrc=$(wget --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        urlsrc=$(wget --secure-protocol=TLSv1 --no-verbose --method=HEAD --output-file - "$tryurl$wgetext")
+        ret=$?
+    fi
+    if [ $ret -ne 0 ]; then
+        wgetsrc="$tryurl"
+    else
+        local origIFS=$IFS
+        IFS=$'\n' wgetsrc=($(echo "$urlsrc" | cut -d' ' -f4))
+        IFS=$origIFS
+    fi
+    ret=true
 
     for (( ; ; ))
     do
