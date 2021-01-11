@@ -2,7 +2,7 @@
 #define _POSIXC_DIRENT_H_
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file dirent.h
@@ -84,12 +84,12 @@ struct dirent *__posixc_readdir (DIR *dir);
 struct dirent64 *readdir64 (DIR *dir);
 #endif
 #if defined(__USE_FILE_OFFSET64)
-static inline struct dirent *readdir(DIR *dir)
+static __inline__  struct dirent *readdir(DIR *dir)
 {
     return (struct dirent *)readdir64(dir);
 }
 #else
-static inline struct dirent *readdir(DIR *dir)
+static __inline__  struct dirent *readdir(DIR *dir)
 {
     return __posixc_readdir(dir);
 }
@@ -124,7 +124,7 @@ int scandir64 (const char *dir,
                                     const struct dirent64 **));
 #endif
 #if defined(__USE_FILE_OFFSET64)
-static inline int scandir (const char *dir, struct dirent ***namelist,
+static __inline__  int scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
               int (*compar)(const struct dirent **,
                             const struct dirent **))
@@ -134,7 +134,7 @@ static inline int scandir (const char *dir, struct dirent ***namelist,
     return scandir64(dir, (struct dirent64 ***)namelist, select64, compar64);
 }
 #else
-static inline int scandir (const char *dir, struct dirent ***namelist,
+static __inline__  int scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
               int (*compar)(const struct dirent **,
                             const struct dirent **))
@@ -147,12 +147,12 @@ int __posixc_alphasort(const struct dirent **a, const struct dirent **b);
 int alphasort64 (const struct dirent64 **a, const struct dirent64 **b);
 #endif
 #if defined(__USE_FILE_OFFSET64)
-static inline int alphasort(const struct dirent **a, const struct dirent **b)
+static __inline__  int alphasort(const struct dirent **a, const struct dirent **b)
 {
     return alphasort64((const struct dirent64 **)a, (const struct dirent64 **)b);
 }
 #else
-static inline int alphasort(const struct dirent **a, const struct dirent **b)
+static __inline__  int alphasort(const struct dirent **a, const struct dirent **b)
 {
     return __posixc_alphasort(a, b);
 }
