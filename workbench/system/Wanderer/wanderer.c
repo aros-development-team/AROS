@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright @ 2004-2020, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -79,6 +79,7 @@ void                    DisposeCopyDisplay(struct MUIDisplayObjects *d);
 BOOL                    CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d);
 
 static struct List      _WandererIntern_FSHandlerList;
+volatile BOOL           _isPerformingCopyOperation = FALSE;
 
 /* Stored in the main wanderer executable */
 extern Object           *_WandererIntern_AppObj;
@@ -136,91 +137,41 @@ AROS_UFH3
 
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
 
+    // On initial setup
     if ((obj->flags & ACTION_UPDATE) == 0)
     {
-        d->updateme = TRUE;
-     
-        if ((obj->filelen < 8192) && (d->numfiles > 0))
+        CombineStringWithBuffer(d->NumberBuffer, "%s: %s", _(MSG_WANDERER_FILEACCESS_PROCESSING), d->currentObject);
+        if ((d->action & ACTION_DELETE) == ACTION_DELETE)
         {
-            d->smallobjects++;
-            if (d->smallobjects >= 20) d->smallobjects = 0;
+            CombineStringWithBuffer(d->Buffer, "%s: %s", _(MSG_WANDERER_FILEACCESS_DELETINGFILE), obj->file);
+            SET(d->fileObject, MUIA_Text_Contents, d->Buffer);
+            SetAttrs(d->gauge, MUIA_Gauge_Current, d->numObjects, MUIA_Gauge_InfoText, d->NumberBuffer, TAG_DONE);
         }
-        else
+        else 
         {
-            d->smallobjects = 0;
-        }
-
-        if (d->smallobjects > 0)
-            d->updateme = FALSE;
-
-        if (d->updateme)
-        {
+            SET(d->gauge, MUIA_Gauge_Current, 0);
+            SetAttrs(d->numFilesGauge, MUIA_Gauge_Current, d->numObjects, MUIA_Gauge_InfoText, d->NumberBuffer, TAG_DONE);
             SET(d->fileObject, MUIA_Text_Contents, obj->file);
-            SET(d->sourceObject, MUIA_Text_Contents, obj->spath);
         }
     }
     
-    if (d->action != ACTION_DELETE) 
+    if ((d->action & ACTION_DELETE) == 0)
     {
+
         d->bytes += obj->actlen;
 
-        if ((obj->flags & ACTION_UPDATE) == 0)
+        DOUBLE rate = (DOUBLE)(((DOUBLE)obj->totallen) / (((DOUBLE)obj->difftime) / ((DOUBLE)CLOCKS_PER_SEC))) / 1000.0;
+
+        if (rate < 1000.0)
         {
-            if (d->updateme)
-            {
-                SET(d->gauge, MUIA_Gauge_Current, 0);
-                SET(d->destObject, MUIA_Text_Contents, obj->dpath);
-            }
-            d->numfiles++;
+            sprintf(d->SpeedBuffer, "%.2f kBytes/s", rate);
         }
         else
         {
-            if (d->updateme &&(obj->totallen <= obj->filelen))
-            {
-                double rate = (double) (((double) obj->totallen) / (((double) obj->difftime) / ((double) CLOCKS_PER_SEC))) / 1024.0;
-                if (rate < 1024.0) sprintf(d->SpeedBuffer, "%.2f kBytes/s",  rate); else sprintf(d->SpeedBuffer, "%.2f MBytes/s",  rate / 1024.0);
-                SetAttrs(d->gauge, MUIA_Gauge_Current, (ULONG) (32768.0 * (double) obj->totallen / (double) obj->filelen),  MUIA_Gauge_InfoText, d->SpeedBuffer, TAG_DONE);
-            }
+            sprintf(d->SpeedBuffer, "%.2f MBytes/s", rate / 1000.0);
         }
 
-        if (d->updateme)
-        {
-            if (d->bytes < 1048576)
-            {
-                if (obj->filelen < 1048576)
-                {
-                    sprintf(
-                        d->Buffer, "%s %ld   %s %.2f kBytes   %s %.2f kBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
-                    );
-                }
-                else
-                {
-                    sprintf(
-                        d->Buffer, "%s %ld   %s %.2f MBytes   %s %.2f kBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
-                    );
-                }
-            }
-            else
-            {
-                if (obj->filelen < 1048576)
-                {
-                    sprintf(
-                        d->Buffer, "%s %ld   %s %.2f kBytes   %s %.2f MBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
-                    );
-                }
-                else
-                {
-                    sprintf(
-                        d->Buffer, "%s %ld   %s %.2f MBytes   %s %.2f MBytes", 
-                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), (long)d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
-                    );
-                }
-            }
-            SET(d->performanceObject, MUIA_Text_Contents, d->Buffer);
-        }
+        SetAttrs(d->gauge, MUIA_Gauge_Current, (ULONG)(32768.0 * (double)obj->totallen / (double)obj->filelen), MUIA_Gauge_InfoText, d->SpeedBuffer, TAG_DONE);
     }
     
     DoMethod(d->copyApp, MUIM_Application_InputBuffered);
@@ -312,6 +263,9 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if (copyFunc_DropEvent)
     {
+        // Set to prevent the iconwindow to update during the file copy/move
+        _isPerformingCopyOperation = TRUE;
+
         struct MUIDisplayObjects dobjects;
         struct IconList_Drop_SourceEntry *currententry;
         struct OpModes opModes;
@@ -326,7 +280,6 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         struct Hook displayAskHook;
         displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
         displayAskHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskModeFunc;
-        
 
         UBYTE action = ACTION_COPY;
         currententry = ((struct IconList_Drop_SourceEntry *) copyFunc_DropEvent->drop_SourceList.lh_Head);
@@ -346,22 +299,35 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
             targetDir = copyFunc_DropEvent->drop_TargetPath;
         }
 
+        // Count number of dropped elements
+        WORD numberOfObjects = 0;
+        struct Node *current = &currententry->dropse_Node;       
+        do
+        {
+            numberOfObjects++;
+        } while ((current = GetSucc(current)) != NULL);
+
+        dobjects.totalObjects = numberOfObjects;
+
         // Do not create copy display if we are moving files
         BOOL displayCreated = (action == ACTION_COPY) ? CreateCopyDisplay(action, &dobjects) : TRUE;
 
         if (displayCreated)
         {
-            while ((currententry = (struct IconList_Drop_SourceEntry *)RemTail(&copyFunc_DropEvent->drop_SourceList)) != NULL)
+            BOOL result = FALSE;
+            while ((currententry = (struct IconList_Drop_SourceEntry *)RemTail(&copyFunc_DropEvent->drop_SourceList)) != NULL && !result)
             {
                 if (action & ACTION_COPY) 
                 {
-                    CopyContent(currententry->dropse_Node.ln_Name, targetDir, &displayCopyHook, &displayAskHook, &opModes, (APTR) &dobjects, TRUE);
+                    dobjects.currentObject = (CONST_STRPTR) currententry->dropse_Node.ln_Name;
+                    dobjects.numObjects++;
+                    result = CopyContent(currententry->dropse_Node.ln_Name, targetDir, &displayCopyHook, &displayAskHook, &opModes, (APTR) &dobjects, TRUE);
                 } 
                 else 
                 {
                     MoveContent(currententry->dropse_Node.ln_Name, targetDir);
                 }
-
+                
                 updatedIcons++;
 
                 FreeVec(currententry->dropse_Node.ln_Name);
@@ -373,8 +339,9 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
             {    
                 DisposeCopyDisplay(&dobjects);
             }
+            
         }
-
+        _isPerformingCopyOperation = FALSE;
         if (updatedIcons > 0)
         {
 
@@ -396,6 +363,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
         FreeVec(targetDir);
         FreeMem(copyFunc_DropEvent, sizeof(struct IconList_Drop_Event));
+
     }
     return;
 
@@ -2452,14 +2420,11 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
 {
     BOOL    back = FALSE;
 
-    Object  *group, *fromObject, *toObject, *fileTextObject, *fileLengthObject, *gaugeGroup;
+    Object  *group, *gaugeGroup, *numGaugeGroup;
 
-    d->stopflag = 0; // will be set to 1 when clicking on stop, than the displayhook can tell actionDir() to stop copy 
-    d->bytes = 0;
-    d->numfiles = 0;
+    d->stopflag = 0; // will be set to 1 if the stop button is clicked 
+    d->numObjects = 0;
     d->action = flags;
-    d->smallobjects = 0;
-    d->updateme = FALSE;
     d->copyApp = MUI_NewObject(MUIC_Application,
         MUIA_Application_Title,         (IPTR)wand_copyprocnamestr,
         MUIA_Application_Base,          (IPTR)"WANDERER_COPY",
@@ -2480,46 +2445,16 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
             MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Centered,
             MUIA_Window_Width,          MUIV_Window_Width_Visible(60),
             WindowContents,             (group = MUI_NewObject(MUIC_Group,
-                Child, (IPTR)(fromObject = MUI_NewObject(MUIC_Text,
-                    MUIA_InnerLeft,(8),
-                    MUIA_InnerRight,(8),
-                    MUIA_InnerTop,(2),
-                    MUIA_InnerBottom,(2),
-                    MUIA_Text_PreParse, (IPTR)"\33c",
-                TAG_DONE)),
-                Child, (IPTR)(d->sourceObject = MUI_NewObject(MUIC_Text,
+                Child, (IPTR)(numGaugeGroup = MUI_NewObject(MUIC_Group,
                     TextFrame,
-                    MUIA_InnerLeft,(8),
-                    MUIA_InnerRight,(8),
-                    MUIA_InnerTop,(2),
-                    MUIA_InnerBottom,(2),
-                    MUIA_Background,    MUII_TextBack,
-                    MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)"---",
-                TAG_DONE)),
-                Child, (IPTR)(toObject = MUI_NewObject(MUIC_Text,
-                    MUIA_InnerLeft,(8),
-                    MUIA_InnerRight,(8),
-                    MUIA_InnerTop,(2),
-                    MUIA_InnerBottom,(2),
-                    MUIA_Text_PreParse, (IPTR)"\33c",
-                TAG_DONE)),
-                Child, (IPTR)(d->destObject = MUI_NewObject(MUIC_Text,
-                    TextFrame,
-                    MUIA_InnerLeft,(8),
-                    MUIA_InnerRight,(8),
-                    MUIA_InnerTop,(2),
-                    MUIA_InnerBottom,(2),
-                    MUIA_Background,    MUII_TextBack,
-                    MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)"---",
-                TAG_DONE)),
-                Child, (IPTR)(fileTextObject = MUI_NewObject(MUIC_Text,
-                    MUIA_InnerLeft,(8),
-                    MUIA_InnerRight,(8),
-                    MUIA_InnerTop,(2),
-                    MUIA_InnerBottom,(2),
-                    MUIA_Text_PreParse, (IPTR)"\33c",
+                    Child, d->numFilesGauge = MUI_NewObject(MUIC_Gauge,
+                        MUIA_Gauge_Horiz, TRUE,
+                        MUIA_Gauge_Max, d->totalObjects,
+                        MUIA_Gauge_InfoText, _(MSG_WANDERER_FILEACCESS_PROCESSING),
+                    TAG_DONE),
+                    Child, MUI_NewObject(MUIC_Scale,
+                        MUIA_Scale_Horiz, TRUE,
+                    TAG_DONE),
                 TAG_DONE)),
                 Child, (IPTR)(d->fileObject = MUI_NewObject(MUIC_Text,
                     TextFrame,
@@ -2530,13 +2465,6 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     MUIA_Background,    MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
                     MUIA_Text_Contents, (IPTR)"---",
-                TAG_DONE)),
-                Child, (IPTR)(fileLengthObject = MUI_NewObject(MUIC_Text,
-                    MUIA_InnerLeft,(8),
-                    MUIA_InnerRight,(8),
-                    MUIA_InnerTop,(2),
-                    MUIA_InnerBottom,(2),
-                    MUIA_Text_PreParse, (IPTR)"\33c",
                 TAG_DONE)),
                 Child, (IPTR)(gaugeGroup = MUI_NewObject(MUIC_Group,
                     TextFrame,
@@ -2549,17 +2477,6 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                         MUIA_Scale_Horiz, TRUE,
                     TAG_DONE),
                 TAG_DONE)),
-                Child, (IPTR)( d->performanceObject = MUI_NewObject(MUIC_Text,
-                    TextFrame,
-                    MUIA_InnerLeft,(8),
-                    MUIA_InnerRight,(8),
-                    MUIA_InnerTop,(2),
-                    MUIA_InnerBottom,(2),
-                    MUIA_Background,     MUII_TextBack,
-                    MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)"...........0 Bytes...........",
-                TAG_DONE)),
-
                 Child, (IPTR)( d->stopObject = SimpleButton( _(MSG_WANDERER_FILEACCESS_STOP) ) ),
             TAG_DONE)),
         TAG_DONE)),
@@ -2567,36 +2484,19 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
 
     if (d->copyApp) 
     {
-        if ((flags & (ACTION_COPY|ACTION_DELETE)) == (ACTION_COPY|ACTION_DELETE)) 
+        if ((flags & ACTION_DELETE) == ACTION_DELETE) 
         {
-            SET(fromObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_MOVEFROM) );
-            SET(toObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_MOVETO) );
-            SET(fileTextObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_FILE) );
-            SET(fileLengthObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_TRAFFIC) );
-        } 
-        else if ((flags & ACTION_COPY) == ACTION_COPY) 
-        {
-            SET(fromObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_COPYFROM) );
-            SET(toObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_COPYTO) );
-            SET(fileTextObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_FILE) );
-            SET(fileLengthObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_TRAFFIC) );
-
-        } 
-        else if ((flags & ACTION_DELETE) == ACTION_DELETE) 
-        {
-            SET(fromObject, MUIA_Text_Contents, _(MSG_WANDERER_FILEACCESS_DELETEFROM) );
             DoMethod(group, MUIM_Group_InitChange);
-            DoMethod(group, OM_REMMEMBER, toObject);
-            DoMethod(group, OM_REMMEMBER, fileLengthObject);
-            DoMethod(group, OM_REMMEMBER, d->performanceObject);
-            DoMethod(group, OM_REMMEMBER, d->destObject);
-            DoMethod(group, OM_REMMEMBER, gaugeGroup);
+            DoMethod(group, OM_REMMEMBER, numGaugeGroup);
             DoMethod(group, MUIM_Group_ExitChange);
-            SET(fileTextObject, MUIA_Text_Contents, _(MSG_WANDERER_FILEACCESS_FILETODELETE) );
+            D(bug("Setting max gauge to: %d\n", d->totalObjects));
+            SET(d->gauge, MUIA_Gauge_Max, d->totalObjects);
+            DoMethod(d->copyApp, MUIM_Layout);
+            DoMethod(d->copyApp, MADF_DRAWOBJECT);
         }
-
+        
         SET(d->win,MUIA_Window_Open,TRUE);
-        DoMethod(d->stopObject,MUIM_Notify, MUIA_Pressed, FALSE, d->stopObject, 3, MUIM_WriteLong, 1 ,&d->stopflag);
+        DoMethod(d->stopObject, MUIM_Notify, MUIA_Pressed, FALSE, d->stopObject, 3, MUIM_WriteLong, 1 , &d->stopflag);
         back = TRUE;
     }
     return back;
@@ -2609,6 +2509,7 @@ void wanderer_menufunc_icon_delete(void)
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextIcon_Start;
+    struct IconList_Entry *countEntry = ( void*) MUIV_IconList_NextIcon_Start;
     struct MUIDisplayObjects dobjects;
     struct Hook displayCopyHook;
     struct Hook displayAskHook;
@@ -2625,6 +2526,18 @@ void wanderer_menufunc_icon_delete(void)
 
     updatedIcons = 0;
 
+    // Count number of selected elements
+    WORD numberOfObjects = 0;
+    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &countEntry);
+    do
+    {
+        numberOfObjects++;
+        DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &countEntry);
+    } while ((IPTR)countEntry != MUIV_IconList_NextIcon_End );
+
+    dobjects.totalObjects = numberOfObjects;
+    dobjects.numObjects = 0;
+    
     /* Process all selected entries */
     if (CreateCopyDisplay(ACTION_DELETE, &dobjects))
     {
@@ -2632,10 +2545,11 @@ void wanderer_menufunc_icon_delete(void)
         {   
             if ((IPTR)entry != MUIV_IconList_NextIcon_End)
             {
+                dobjects.currentObject = (CONST_STRPTR) entry->ile_IconEntry->ie_IconNode.ln_Name; 
+                dobjects.numObjects++;
                 if (entry->type != ILE_TYPE_APPICON)
                 {
                     /* delete via filesystems.c */
-                    D(bug("[Wanderer] Delete \"%s\"\n", entry->ile_IconEntry->ie_IconNode.ln_Name);)
                     DeleteContent(entry->ile_IconEntry->ie_IconNode.ln_Name, &opModes, &displayAskHook, &displayCopyHook, &dobjects);
                     updatedIcons++;
                 }
@@ -3761,10 +3675,13 @@ D(bug("[Wanderer] %s: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", __P
 
         if (notifyMessage_UserData != (IPTR)NULL)
         {
-            /* Only IconWindowDrawerList, IconWindowVolumeList class at the moment */
-            D(bug("[Wanderer] %s: Icon Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
-            nodeFSHandler = (struct Wanderer_FSHandler *)notifyMessage_UserData;
-            nodeFSHandler->HandleFSUpdate(nodeFSHandler->target, notifyMessage);
+            if (!_isPerformingCopyOperation)
+            {
+                /* Only IconWindowDrawerList, IconWindowVolumeList class at the moment */
+                D(bug("[Wanderer] %s: Icon Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
+                nodeFSHandler = (struct Wanderer_FSHandler *)notifyMessage_UserData;
+                nodeFSHandler->HandleFSUpdate(nodeFSHandler->target, notifyMessage);
+            }
             continue;
         }
 

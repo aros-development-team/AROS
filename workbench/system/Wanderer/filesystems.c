@@ -170,13 +170,10 @@ static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, stru
 
     if (displayHook != NULL)
     {
-        directory = GetPathPart(sourcePath);
         hookData.totallen = 0;
         hookData.actlen = 0;
-        hookData.spath = directory;
-        hookData.dpath = (STRPTR)destPath;
-        hookData.filelen = fib->fib_Size;
-        hookData.file = fib->fib_FileName;
+        hookData.filelen = (ULONG)fib->fib_Size;
+        hookData.file = sourcePath;
         hookData.flags = ACTION_COPY;
 
         stop = CallHook(displayHook, (Object *)&hookData, NULL);
@@ -224,15 +221,19 @@ static BOOL performDataCopy(CONST_STRPTR sourcePath, CONST_STRPTR destPath, stru
                         {
                             // Did not manage to write whole buffer, abort.
                             DisplayIOError(_(MSG_FAILED_TO_WRITE_TO_FILE), IoErr(), (IPTR)destPath);
-                            clen = 0;
+                            stop = TRUE;
                         }
                     }
-                } while (clen > 0 || stop);
+                } while (clen > 0 && !stop);
 
                 quit = stop;
 
                 Close(out);
-                CopyFileInfo(fib, sourcePath, destPath);
+                
+                if (!stop) 
+                {
+                    CopyFileInfo(fib, sourcePath, destPath);
+                }
             }
             else
             {
@@ -276,10 +277,9 @@ static BOOL deleteSingleFile(CONST_STRPTR path, struct Hook *displayHook, APTR u
     if (displayHook != NULL)
     {
         directory = GetPathPart(path);
-        hookData.spath = directory;
-        hookData.file = FilePart(path);
+        hookData.file = path;
         hookData.flags = ACTION_DELETE;
-
+        
         stop = CallHook(displayHook, (Object *)&hookData, NULL);
     }
 
@@ -501,7 +501,7 @@ static BOOL copyDirectory(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struc
 
     // If the error is not ERROR_NO_MORE_ENTRIES, we display an error message
     LONG error = IoErr();
-    if (error != ERROR_NO_MORE_ENTRIES)
+    if (error != ERROR_NO_MORE_ENTRIES && !stop)
     {
         DisplayIOError(_(MSG_FAILED_TO_READ_DIRECTORY_CONTENT), error, (IPTR)sourcePath);
     }
@@ -793,6 +793,7 @@ BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askH
     STRPTR localPath = (STRPTR)path;
 
     BOOL quit = infoFileSetup(path, &infoFilePath, &localPath, &hasInfoFile);
+ 
     if (quit)
     {
         return TRUE;
@@ -802,7 +803,7 @@ BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askH
     if (sourceFib != NULL)
     {
         isDir = sourceFib->fib_DirEntryType > 0;
-
+ 
         doDelete = askToDeleteAndUnprotect(localPath, opModes, askHook, hasInfoFile ? infoFilePath : NULL, sourceFib);
 
         if (doDelete)
@@ -812,7 +813,7 @@ BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askH
                 stop = deleteDirectoryContents(localPath, opModes, askHook, sourceFib, displayHook, userdata);
             }
 
-            if (!stop)
+            if (!stop && !(isDir && !IsDirectoryEmpty(localPath)))
             {
                 stop = deleteSingleFile(localPath, displayHook, userdata);
 

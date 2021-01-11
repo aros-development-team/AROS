@@ -67,6 +67,109 @@ STRPTR CombineString(STRPTR format, ...)
 }
 
 /**
+ * Combines several strings into one string according to the format specified by using the VNewRawDoFmt 
+ * function.
+ *
+ * Params: buffer -> Existing string pointer to fill with end result
+ *         format -> Output string format
+ *         vararg -> Strings to combine
+ */
+VOID CombineStringWithBuffer(STRPTR buffer, STRPTR format, ...)
+{
+	va_list args;
+		
+	va_start(args, format);
+	VNewRawDoFmt(format, RAWFMTFUNC_STRING, buffer, args);
+	va_end(args);
+}
+
+/**
+ * Checks if given directory is empty
+ * 
+ * Params: path -> Full path to examine
+ * Result: TRUE if empty, FALSE if not 
+ */ 
+BOOL IsDirectoryEmpty(CONST_STRPTR path)
+{
+    struct FileInfoBlock *fib = GetFileInfoBlock(path);
+    BPTR lock = ReadFileInfoBlockAndLockPath(path, fib); 
+    BOOL result = TRUE;
+
+    if (lock)
+    {
+        result = ExNext(lock, fib);
+        UnLock(lock);
+    }
+    FreeDosObject(DOS_FIB, (APTR)fib);
+
+    return !result;
+}
+
+static UWORD countFilesInDirectory(CONST_STRPTR path, struct FileInfoBlock *fib)
+{
+    BPTR lock = ReadFileInfoBlockAndLockPath(path, fib);
+    WORD number = 0;
+
+    if (lock != NULL)
+    {
+        BOOL result = ExNext(lock, fib);
+        while (result)
+        {
+            if (fib->fib_DirEntryType == 2)
+            {
+                STRPTR directory = CombinePath(fib->fib_FileName, path);
+                struct FileInfoBlock *dirFib = GetFileInfoBlock(path);
+                if (dirFib != NULL)
+                {
+                    number += countFilesInDirectory(directory, dirFib);
+                    FreeDosObject(DOS_FIB, (APTR)dirFib);
+                }
+                FreeVec(directory);
+            }
+            else
+            {
+                number++;
+            }
+            result = ExNext(lock, fib);
+        }
+        UnLock(lock);
+    }
+    return number;
+}
+
+/**
+ * Recursively count the number of files in a given directory
+ * 
+ * Params: path -> Full path to examine
+ * Result: number of files
+ */ 
+UWORD CountFiles(CONST_STRPTR path) 
+{
+    struct FileInfoBlock *fib = GetFileInfoBlock(path);
+    WORD number = 0;
+    if (fib != NULL)
+    {
+        if (fib->fib_DirEntryType > 0)
+        {
+            number = countFilesInDirectory(path, fib);
+        }
+        else
+        {
+            number = 1;
+        }
+        FreeDosObject(DOS_FIB, (APTR)fib);
+
+        STRPTR sourceInfoFilePath = ConstructInfofileName(path);
+        if (FileExists(sourceInfoFilePath))
+        {
+            number++;
+        }
+        FreeVec(sourceInfoFilePath);
+    }
+    return number;
+}
+
+/**
  * Displays a request window, can display a set of buttons each with a unique numeric return value
  * 
  * Params: title    -> Window title
@@ -245,6 +348,7 @@ VOID DisplayIOError(CONST_STRPTR errormessage, IPTR ioError, ...)
 
     if (ioError > 0)
     {
+        strcat(buffer, "\n");
         strcat(buffer, _(MSG_FAILED_ERROR));
         Fault(ioError, buffer, buffer, ERROR_LEN);
     }
@@ -289,7 +393,7 @@ struct FileInfoBlock *GetFileInfoBlock(CONST_STRPTR path)
 
             if (!result)
             {
-                FreeVec(fib);
+                FreeDosObject(DOS_FIB, (APTR)fib);
                 fib = NULL;
                 DisplayIOError(_(MSG_FAILED_TO_READ_FILE_INFO_BLOCK), IoErr(), (IPTR)path);
             }
@@ -298,7 +402,7 @@ struct FileInfoBlock *GetFileInfoBlock(CONST_STRPTR path)
         }
         else
         {
-            FreeVec(fib);
+            FreeDosObject(DOS_FIB, (APTR)fib);
             fib = NULL;
             DisplayIOError(_(MSG_FAILED_TO_LOCK_PATH), IoErr(), (IPTR)path);
         }
