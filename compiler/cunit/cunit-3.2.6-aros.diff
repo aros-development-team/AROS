@@ -1,6 +1,6 @@
 diff -ruN cunit-3.2.6/CUnit/CMakeLists.txt cunit-3.2.6.aros/CUnit/CMakeLists.txt
 --- cunit-3.2.6/CUnit/CMakeLists.txt	2020-04-16 17:55:15.000000000 +0000
-+++ cunit-3.2.6.aros/CUnit/CMakeLists.txt	2021-01-05 04:24:52.950000000 +0000
++++ cunit-3.2.6.aros/CUnit/CMakeLists.txt	2020-04-16 17:55:15.000000000 +0000
 @@ -11,7 +11,7 @@
  
  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -10,6 +10,80 @@ diff -ruN cunit-3.2.6/CUnit/CMakeLists.txt cunit-3.2.6.aros/CUnit/CMakeLists.txt
  endif()
  
  
+diff -ruN cunit-3.2.6/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.2.6.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c
+--- cunit-3.2.6/CUnit/Sources/Automated/AutomatedJUnitXml.c	2020-04-16 17:55:15.000000000 +0000
++++ cunit-3.2.6.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2021-01-11 16:47:21.700000000 +0000
+@@ -177,13 +177,14 @@
+   return n;
+ }
+ 
+-static void format_testcase(cu_dstr *dst, const char *esc_name, CU_pSuite suite, CU_pTest test) {
++static void format_testcase(cu_dstr *dst, unsigned int testno, const char *esc_name, CU_pSuite suite, CU_pTest test) {
+   char *esc_test_name = _escape_string(test->pName);
+   CU_pFailureRecord failure = NULL;
+   _dstr_putf(dst,
+-             "    <testcase classname=\"%s.%s\" name=\"%s\" time=\"%f\">\n",
++             "    <testcase id=\"%s.%s.%u\" name=\"%s\" time=\"%f\">\n",
+              CU_automated_package_name_get(),
+              esc_name,
++             testno,
+              esc_test_name,
+              CU_get_test_duration(test)
+   );
+@@ -269,13 +270,14 @@
+     int all_tests = CU_count_all_tests(registry) + count_all_init_funcs(registry);
+ 
+     _dstr_init(&dst);
+-    _dstr_puts(&dst, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
++    _dstr_puts(&dst, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
+     _dstr_putf(&dst,
+-            "<testsuites errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
++            "<testsuites id=\"%s\" name=\"%s\" errors=\"%d\" failures=\"%d\" tests=\"%d\" time=\"%f\">\n",
++            CU_automated_package_name_get(),
++            esc_name,
+             all_errors,
+             all_failures,
+             all_tests,
+-            esc_name,
+             summary->ElapsedTime
+             );
+     free(esc_name);
+@@ -286,27 +288,30 @@
+       int errors = count_suite_init_errors(suite);
+       int test_count = CU_count_suite_tests(suite) + count_suite_init_funcs(suite);
+       int test_failures = errors + CU_count_suite_failures(suite);
++      unsigned int testno = 0;
+       esc_name = _escape_string(suite->pName);
+       _dstr_putf(&dst,
+-              "  <testsuite errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
++              "  <testsuite id=\"%s.%s\" name=\"%s\" errors=\"%d\" failures=\"%d\" tests=\"%d\" time=\"%f\">\n",
++              CU_automated_package_name_get(),
++              esc_name,
++              suite->pName,
+               errors,
+               test_failures,
+               test_count,
+-              suite->pName,
+               CU_get_suite_duration(suite)
+               );
+ 
+       /* record suite setup */
+-      if (suite->pInitializeFuncTest) format_testcase(&dst, esc_name, suite, suite->pInitializeFuncTest);
++      if (suite->pInitializeFuncTest) format_testcase(&dst, testno++, esc_name, suite, suite->pInitializeFuncTest);
+ 
+       /* iterate through all the tests */
+       while (test) {
+-        format_testcase(&dst, esc_name, suite, test);
++        format_testcase(&dst, testno++, esc_name, suite, test);
+         test = test->pNext;
+       }
+ 
+       /* record suite cleanup */
+-      if (suite->pCleanupFuncTest) format_testcase(&dst, esc_name, suite, suite->pCleanupFuncTest);
++      if (suite->pCleanupFuncTest) format_testcase(&dst, testno++, esc_name, suite, suite->pCleanupFuncTest);
+ 
+       _dstr_puts(&dst, "  </testsuite>\n");
+       free(esc_name);
 diff -ruN cunit-3.2.6/CUnit/Sources/Framework/TestRun.c cunit-3.2.6.aros/CUnit/Sources/Framework/TestRun.c
 --- cunit-3.2.6/CUnit/Sources/Framework/TestRun.c	2020-04-16 17:55:15.000000000 +0000
 +++ cunit-3.2.6.aros/CUnit/Sources/Framework/TestRun.c	2020-04-16 17:55:15.000000000 +0000
