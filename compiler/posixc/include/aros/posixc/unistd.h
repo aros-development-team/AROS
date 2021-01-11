@@ -2,7 +2,7 @@
 #define _POSIXC_UNISTD_H_
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file unistd.h
@@ -411,12 +411,12 @@ off_t __posixc_lseek(int filedes, off_t offset, int whence);
 __off64_t lseek64(int filedes, __off64_t offset, int whence);
 #endif
 #if defined(__USE_FILE_OFFSET64)
-static inline off_t lseek(int filedes, off_t offset, int whence)
+static __inline__  off_t lseek(int filedes, off_t offset, int whence)
 {
     return (off_t)lseek64(filedes, (__off64_t) offset, whence);
 }
 #else
-static inline off_t lseek(int filedes, off_t offset, int whence)
+static __inline__  off_t lseek(int filedes, off_t offset, int whence)
 {
     return __posixc_lseek(filedes, offset, whence);
 }

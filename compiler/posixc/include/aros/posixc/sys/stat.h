@@ -2,7 +2,7 @@
 #define _POSIXC_SYS_STAT_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file sys/stat.h
@@ -141,13 +141,13 @@ int fchmod(int fildes, mode_t mode);
 int __posixc_fstat(int fd, struct stat *sb);
 int fstat64(int fd, struct stat64 *sb);
 #if defined(__USE_FILE_OFFSET64)
-static inline int fstat(int fd, struct stat *sb)
+static __inline__  int fstat(int fd, struct stat *sb)
 {
     struct stat64 * _sb64 = (struct stat64 *)sb;
     return fstat64(fd, _sb64);
 }
 #else
-static inline int fstat(int fd, struct stat *sb)
+static __inline__  int fstat(int fd, struct stat *sb)
 {
     return __posixc_fstat(fd, sb);
 }
@@ -157,13 +157,13 @@ static inline int fstat(int fd, struct stat *sb)
 int __posixc_lstat(const char * restrict path, struct stat * restrict sb);
 int lstat64(const char * restrict path, struct stat64 * restrict sb);
 #if defined(__USE_FILE_OFFSET64)
-static inline int lstat(const char * restrict path, struct stat * restrict sb)
+static __inline__  int lstat(const char * restrict path, struct stat * restrict sb)
 {
     struct stat64 * _sb64 = (struct stat64 *)sb;
     return lstat64(path, _sb64);
 }
 #else
-static inline int lstat(const char * restrict path, struct stat * restrict sb)
+static __inline__  int lstat(const char * restrict path, struct stat * restrict sb)
 {
     return __posixc_lstat(path, sb);
 }
@@ -177,13 +177,13 @@ int mknod(const char *path, mode_t mode, dev_t dev);
 int __posixc_stat(const char * restrict path, struct stat * restrict sb);
 int stat64(const char * restrict path, struct stat64 * restrict sb);
 #if defined(__USE_FILE_OFFSET64)
-static inline int stat(const char * restrict path, struct stat * restrict sb)
+static __inline__  int stat(const char * restrict path, struct stat * restrict sb)
 {
     struct stat64 * _sb64 = (struct stat64 *)sb;
     return stat64(path, _sb64);
 }
 #else
-static inline int stat(const char * restrict path, struct stat * restrict sb)
+static __inline__  int stat(const char * restrict path, struct stat * restrict sb)
 {
     return __posixc_stat(path, sb);
 }

@@ -2,7 +2,7 @@
 #define _POSIXC_FCNTL_H_
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file fcntl.h
@@ -151,12 +151,12 @@ __BEGIN_DECLS
 int __posixc_creat(const char * filename, int mode);
 int creat64(const char * filename, int mode);
 #if defined(__USE_FILE_OFFSET64)
-static inline int creat(const char * filename, int mode)
+static __inline__  int creat(const char * filename, int mode)
 {
     return creat64(filename, mode);
 }
 #else
-static inline int creat(const char * filename, int mode)
+static __inline__  int creat(const char * filename, int mode)
 {
     return __posixc_creat(filename, mode);
 }
