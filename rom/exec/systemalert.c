@@ -49,10 +49,18 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
 
         struct Task * t = (struct Task*)PrivExecBase(SysBase)->SAT.sat_Params[1];
         ULONG alertNum = PrivExecBase(SysBase)->SAT.sat_Params[0];
-        struct IntETask * iet = t ? GetIntETask(t) : NULL;
+        if (t)
+        {
+            struct IntETask * iet = GetIntETask(t);
+            location = iet->iet_AlertLocation;
+            stack = iet->iet_AlertStack;
+            type = iet->iet_AlertType;
+            data = (APTR)&iet->iet_AlertData;
+        }
+        else
+            t = PrivExecBase(SysBase)->SAT.sat_Task;
 
-        Alert_DisplayKrnAlert(t, alertNum | AT_DeadEnd, iet->iet_AlertLocation, iet->iet_AlertStack,
-                            iet->iet_AlertType, (APTR)&iet->iet_AlertData, SysBase);
+        Alert_DisplayKrnAlert(t, alertNum | AT_DeadEnd, location, stack, type, data, SysBase);
     }
     else if (PrivExecBase(SysBase)->SAT.sat_IsAvailable && !(alertNum & AT_DeadEnd))
     {
