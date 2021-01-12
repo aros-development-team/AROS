@@ -709,7 +709,7 @@ jobs:
         DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
         for entry in ./*-Results.xml
         do
-          sed -e "/^<testsuites /d" -e  "/^<\\testsuites /d" $entry > $(AROSLOGSDIR)/$entry
+          cp $entry $(AROSLOGSDIR)/$entry
         done
       fi
       echo "AROS Hosted Cunit Test Phase completed"
