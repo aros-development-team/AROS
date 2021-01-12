@@ -117,7 +117,7 @@ jobs:
       brew list gcc@10 &>/dev/null || brew install gcc@10
       echo "##vso[task.setvariable variable=CC;]gcc-10"
       echo "##vso[task.setvariable variable=CXX;]g++-10"
-    condition: and(eq( variables['Agent.OS'], 'Darwin' ), ne( variables['arosbuild.target'], 'darwin-ppc' ))
+    condition: and(eq( variables['Agent.OS'], 'Darwin' ), eq( variables['arosbuild.target'], 'darwin-x86_64' ))
     displayName: 'Install GCC10 toolchain for MacOS'
 
   - script: |
@@ -199,6 +199,8 @@ jobs:
       sudo find $MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
       echo "##vso[task.setvariable variable=CC;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc"
       echo "##vso[task.setvariable variable=CXX;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++"
+      echo "##vso[task.setvariable variable=LDFLAGS;]-L$MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc/8"
+      echo "##vso[task.setvariable variable=LIBRARY_PATH;]$MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc/8:$LIBRARY_PATH"
       if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
         echo 'Building darwin PPC toolchain'
         mkdir -p '$(AZBUILDPATH)/host/ppc/gcc'
@@ -206,19 +208,19 @@ jobs:
         PATH="/dir/containing/dsymutil/from/xcode6:$PATH"
         export MACOSX_PPC_DEPLOYMENT_TARGET=10.4
         CC=$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc CXX=$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++ $(AZBUILDPATH)/host/gcc-8.3.0/configure \
-          --prefix=/opt/gcc/ppc/8 --disable-nls --disable-multilib --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 \
+          --prefix=$MACOSHOMEDIR/opt/gcc/ppc/8 --disable-nls --disable-multilib --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 \
           --target=powerpc-apple-darwin10.8.0 --with-sysroot=/Developer/SDKs/MacOSX10.4u.sdk \
           CFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2" \
           LDFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4" \
           CXXFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2"
         make -j $(BUILDTHREADS)
         sudo make install
-        sudo find /opt/gcc/ppc/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+        sudo find $MACOSHOMEDIR/opt/gcc/ppc/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
         echo "##vso[task.setvariable variable=MACOSX_PPC_DEPLOYMENT_TARGET;]$MACOSX_PPC_DEPLOYMENT_TARGET"
         CONFIGOPTS="$(AROSCONFIGOPTIONS) --with-kernel-toolchain-prefix=powerpc-apple-darwin10.8.0-"
         echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
       fi
-    condition: and(eq( variables['Agent.OS'], 'Darwin' ), eq( variables['arosbuild.target'], 'darwin-ppc' ))
+    condition: and(eq( variables['Agent.OS'], 'Darwin' ), ne( variables['arosbuild.target'], 'darwin-x86_64' ))
     displayName: 'Build native toolchains for MacOS'
 
   - script: |
