@@ -134,12 +134,14 @@ jobs:
       MACOSHOMEDIR=`pwd`
       mkdir -p '$(AZBUILDPATH)/host/x86'
       echo 'Building darwin x86 toolchain'
-      MACOSDEFSDK=$(xcrun --show-sdk-version)
-      DARWINBUILDXCODEVERS=`sudo xcode-select --print-path`
-      echo "Darwin XCode version : $DARWINBUILDXCODEVERS"
+      MACOSDEFSDK=$(sudo xcrun --show-sdk-version)
+      DARWINBUILDXCODEVERS=$(sudo xcode-select --print-path)
+      echo "Initial Darwin XCode version : $DARWINBUILDXCODEVERS"
+      echo "Initial MacOS Deployment Target: $MACOSX_DEPLOYMENT_TARGET"
       echo "MacOS SDK : $SDK (Def: $MACOSDEFSDK)"
       echo "MacOS 10.5 SDK path: $(xcrun --sdk macosx10.5 --show-sdk-path)"
       echo "MacOS 10.12 SDK path: $(xcrun --sdk macosx10.12 --show-sdk-path)"
+      echo "MacOS 10.14 SDK path: $(xcrun --sdk macosx10.14 --show-sdk-path)"
       wget https://ftp.gnu.org/gnu/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz -P $(AZBUILDPATH)/host
       wget https://ftp.gnu.org/gnu/gmp/gmp-4.2.4.tar.gz -P $(AZBUILDPATH)/host
       wget https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz -P $(AZBUILDPATH)/host
@@ -176,7 +178,7 @@ jobs:
         DARWINTARGETCXXFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
         export MACOSX_DEPLOYMENT_TARGET=10.5
         echo "##vso[task.setvariable variable=MACOSX_DEPLOYMENT_TARGET;]$MACOSX_DEPLOYMENT_TARGET"
-        echo "Darwin Deployment Target: $MACOSX_DEPLOYMENT_TARGET"
+        echo "Using MacOS Deployment Target: $MACOSX_DEPLOYMENT_TARGET"
         echo "header config  : $DARWINCONFIGEXTRA"
       else
         DARWINCONFIGEXTRA=
