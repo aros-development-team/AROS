@@ -712,7 +712,7 @@ jobs:
         DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
         for entry in ./*-Results.xml
         do
-          cp $entry $(AROSLOGSDIR)/$entry
+          iconv -t utf8 $entry -o $(AROSLOGSDIR)/$entry
         done
       fi
       echo "AROS Hosted Cunit Test Phase completed"
