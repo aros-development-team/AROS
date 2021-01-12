@@ -114,7 +114,7 @@ jobs:
     displayName: 'Installing AROS build dependencies for MacOS'
 
   - script: |
-      brew install gcc@10
+      brew list gcc@10 &>/dev/null || brew install gcc@10
       echo "##vso[task.setvariable variable=CC;]gcc-10"
       echo "##vso[task.setvariable variable=CXX;]g++-10"
     condition: and(eq( variables['Agent.OS'], 'Darwin' ), ne( variables['arosbuild.target'], 'darwin-ppc' ))
