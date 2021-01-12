@@ -18,6 +18,7 @@ jobs:
     vmImage: '$(arosbuild.vmimage)'
 
   variables:
+    AROSTARGET: '$(arosbuild.target)'
     AROSBUILDTOOLCHAINDIR:  '$(AZBUILDPATH)/toolchain' # Location toolchains are installed in
     AROSPORTSSRCSDIR:  '$(AZBUILDPATH)/portssources' # Location external sources are downloaded to.
     AROSBUILDSDIR:  '$(AZBUILDPATH)/builds' # Location builds are done in
@@ -117,7 +118,7 @@ jobs:
       brew install gcc@10
       echo "##vso[task.setvariable variable=CC;]gcc-10"
       echo "##vso[task.setvariable variable=CXX;]g++-10"
-    condition: and(eq( variables['Agent.OS'], 'Darwin' ), ne( variables['arosbuild.target'], 'darwin-ppc' ))
+    condition: and(eq(variables['Agent.OS'], 'Darwin'), ne(variables.AROSTARGET, 'darwin-ppc'))
     displayName: 'Install GCC10 toolchain for MacOS'
 
   - script: |
@@ -218,7 +219,7 @@ jobs:
         CONFIGOPTS="$(AROSCONFIGOPTIONS) --with-kernel-toolchain-prefix=powerpc-apple-darwin10.8.0-"
         echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
       fi
-    condition: and(eq( variables['Agent.OS'], 'Darwin' ), eq( variables['arosbuild.target'], 'darwin-ppc' ))
+    condition: and(eq(variables['Agent.OS'], 'Darwin' ), eq(variables.AROSTARGET, 'darwin-ppc'))
     displayName: 'Build native toolchains for MacOS'
 
   - script: |
