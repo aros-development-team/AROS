@@ -686,6 +686,8 @@ jobs:
 
   - script: |
       echo "Entered AROS Hosted Cunit Test Phase"
+      sudo apt-get install -y npm
+      sudo npm install -g junit-viewer
       for oldfile in $(AROSBUILDBINDIR)/*; do
           rm -Rf $oldfile
       done
@@ -723,8 +725,13 @@ jobs:
         do
           iconv -t utf8 $entry -o $(AROSLOGSDIR)/$entry
         done
+        junit-viewer --results=$(AROSLOGSDIR)/ --save=$(AROSBUILDBINDIR)/$(arosbuild.name)-$(arosbuilddate)-unittests.html
+        sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(AROSBUILDBINDIR)/$(arosbuild.name)-$(arosbuilddate)-unittests.html $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/htdocs/unittests/
       fi
       echo "AROS Hosted Cunit Test Phase completed"
+    env:
+      MAPPED_USER: $(SF_RSYNC_USER)
+      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: 'Performing Unit testing with CUnit'
 
