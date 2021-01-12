@@ -45,9 +45,6 @@ diff -ruN mesa-20.0.2/include/c99_math.h mesa-20.0.2.aros/include/c99_math.h
  #else
  #error "Need to include or define an fpclassify function"
  #endif
-Binary files mesa-20.0.2/src/compiler/nir/__pycache__/nir_algebraic.cpython-36.pyc and mesa-20.0.2.aros/src/compiler/nir/__pycache__/nir_algebraic.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/compiler/nir/__pycache__/nir_intrinsics.cpython-36.pyc and mesa-20.0.2.aros/src/compiler/nir/__pycache__/nir_intrinsics.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/compiler/nir/__pycache__/nir_opcodes.cpython-36.pyc and mesa-20.0.2.aros/src/compiler/nir/__pycache__/nir_opcodes.cpython-36.pyc differ
 diff -ruN mesa-20.0.2/src/egl/main/egldisplay.c mesa-20.0.2.aros/src/egl/main/egldisplay.c
 --- mesa-20.0.2/src/egl/main/egldisplay.c	2020-03-18 21:24:18.000000000 +0000
 +++ mesa-20.0.2.aros/src/egl/main/egldisplay.c	2020-03-19 14:49:53.700000000 +0000
@@ -138,7 +135,7 @@ diff -ruN mesa-20.0.2/src/intel/genxml/gen_sort_tags.py mesa-20.0.2.aros/src/int
          if a in node.attrib:
              f.write(' {0}="{1}"'.format(a, node.attrib[a]))
 -    children = node.getchildren()
-+    children = node
++    children = list(node)
      if len(children) > 0:
          f.write('>\n')
          for c in children:
@@ -174,13 +171,6 @@ diff -ruN mesa-20.0.2/src/intel/genxml/gen_sort_tags.py mesa-20.0.2.aros/src/int
  
      genxml[:] = enums + sorted_structs.values() + instructions + registers
  
-Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/apiexec.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/apiexec.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/glX_XML.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/glX_XML.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/gl_XML.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/gl_XML.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/license.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/license.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/marshal_XML.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/marshal_XML.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/static_data.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/static_data.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/typeexpr.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/typeexpr.cpython-36.pyc differ
 diff -ruN mesa-20.0.2/src/mapi/glapi/gen/glX_XML.py mesa-20.0.2.aros/src/mapi/glapi/gen/glX_XML.py
 --- mesa-20.0.2/src/mapi/glapi/gen/glX_XML.py	2020-03-18 21:24:19.000000000 +0000
 +++ mesa-20.0.2.aros/src/mapi/glapi/gen/glX_XML.py	2021-01-12 18:20:20.960000000 +0000
@@ -219,7 +209,7 @@ diff -ruN mesa-20.0.2/src/mapi/glapi/gen/gl_XML.py mesa-20.0.2.aros/src/mapi/gla
                      self.images.append( param )
  
 -        if element.getchildren():
-+        if element:
++        if list(element):
              self.initialized = 1
              self.entry_point_parameters[name] = parameters
          else:
@@ -370,8 +360,6 @@ diff -ruN mesa-20.0.2/src/mapi/u_current.h mesa-20.0.2.aros/src/mapi/u_current.h
  #else
     return likely(u_current_context) ? u_current_context : u_current_get_context_internal();
  #endif
-Binary files mesa-20.0.2/src/mesa/main/__pycache__/format_parser.cpython-36.pyc and mesa-20.0.2.aros/src/mesa/main/__pycache__/format_parser.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/mesa/main/__pycache__/get_hash_params.cpython-36.pyc and mesa-20.0.2.aros/src/mesa/main/__pycache__/get_hash_params.cpython-36.pyc differ
 diff -ruN mesa-20.0.2/src/mesa/main/compiler.h mesa-20.0.2.aros/src/mesa/main/compiler.h
 --- mesa-20.0.2/src/mesa/main/compiler.h	2020-03-18 21:24:19.000000000 +0000
 +++ mesa-20.0.2.aros/src/mesa/main/compiler.h	2020-03-19 14:49:53.700000000 +0000
@@ -399,8 +387,6 @@ diff -ruN mesa-20.0.2/src/util/detect_os.h mesa-20.0.2.aros/src/util/detect_os.h
  #if defined(__linux__)
  #define DETECT_OS_LINUX 1
  #define DETECT_OS_UNIX 1
-Binary files mesa-20.0.2/src/util/format/__pycache__/u_format_pack.cpython-36.pyc and mesa-20.0.2.aros/src/util/format/__pycache__/u_format_pack.cpython-36.pyc differ
-Binary files mesa-20.0.2/src/util/format/__pycache__/u_format_parse.cpython-36.pyc and mesa-20.0.2.aros/src/util/format/__pycache__/u_format_parse.cpython-36.pyc differ
 diff -ruN mesa-20.0.2/src/util/os_misc.c mesa-20.0.2.aros/src/util/os_misc.c
 --- mesa-20.0.2/src/util/os_misc.c	2020-03-18 21:24:19.000000000 +0000
 +++ mesa-20.0.2.aros/src/util/os_misc.c	2020-03-19 14:49:53.700000000 +0000
