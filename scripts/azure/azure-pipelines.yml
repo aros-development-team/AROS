@@ -176,7 +176,7 @@ jobs:
         DARWINTARGETCXXFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
         export MACOSX_DEPLOYMENT_TARGET=10.5
         echo "##vso[task.setvariable variable=MACOSX_DEPLOYMENT_TARGET;]$MACOSX_DEPLOYMENT_TARGET"
-        echo "Darwin Deployment Target: $(MACOSX_DEPLOYMENT_TARGET)"
+        echo "Darwin Deployment Target: $MACOSX_DEPLOYMENT_TARGET"
         echo "header config  : $DARWINCONFIGEXTRA"
       else
         DARWINCONFIGEXTRA=
