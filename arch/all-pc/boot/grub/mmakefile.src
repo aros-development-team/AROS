@@ -13,13 +13,31 @@ GRUBOPTS += --enable-affs --disable-fat --disable-ffs --disable-minix --disable-
 endif
 GRUBCFLAGS := $(OPTIMIZATION_CFLAGS) -Wl,--build-id=none
 
+#MM grub : grub-fetch
+
 #MM
 grub-copy-stages : $(AROSARCHDIR)/grub/stage1 $(AROSARCHDIR)/grub/stage2 $(AROSARCHDIR)/grub/stage2_hdisk $(AROSARCHDIR)/grub/iso9660_stage1_5
 
 # DO NOT DECLARE CFLAGS HERE
 # OR MAKE SURE -fno-stack-protector IS DETECTED IF COMPILER SUPPORTS IT
 
+GRUBVERSION=0.97
+REPOSITORIES =  ftp://alpha.gnu.org/gnu/grub
+ARCHBASE     := grub-$(GRUBVERSION)
+ARCHSUFFIX := "tar.gz"
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+ARCHSRCDIR := $(PORTSDIR)/grub/$(ARCHBASE)
+
+%fetch mmake=grub-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/grub \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=grub-create-patch \
+    archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
+    destination=$(PORTSDIR)/grub
+
 %build_with_configure mmake=grub compiler=kernel install_target= \
+    srcdir=$(ARCHSRCDIR) \
     extraoptions="$(GRUBOPTS)" extracflags="$(GRUBCFLAGS)"
 
 $(AROSARCHDIR)/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
