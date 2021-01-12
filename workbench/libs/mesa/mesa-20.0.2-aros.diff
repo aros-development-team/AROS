@@ -121,6 +121,59 @@ diff -ruN mesa-20.0.2/src/gallium/include/pipe/p_config.h mesa-20.0.2.aros/src/g
  #if DETECT_OS_LINUX
  #define PIPE_OS_LINUX
  #endif
+diff -ruN mesa-20.0.2/src/intel/genxml/gen_sort_tags.py mesa-20.0.2.aros/src/intel/genxml/gen_sort_tags.py
+--- mesa-20.0.2/src/intel/genxml/gen_sort_tags.py	2020-03-18 21:24:19.000000000 +0000
++++ mesa-20.0.2.aros/src/intel/genxml/gen_sort_tags.py	2021-01-12 18:20:42.800000000 +0000
+@@ -65,7 +65,7 @@
+         return
+     if node.tag != 'struct' and node.tag != 'group':
+         return
+-    for c in node.getchildren():
++    for c in node:
+         add_struct_refs(items, c)
+ 
+ 
+@@ -115,7 +115,7 @@
+     for a in attribs:
+         if a in node.attrib:
+             f.write(' {0}="{1}"'.format(a, node.attrib[a]))
+-    children = node.getchildren()
++    children = node
+     if len(children) > 0:
+         f.write('>\n')
+         for c in children:
+@@ -138,7 +138,7 @@
+     enum_dict = {}
+     for e in enums:
+         values = e.findall('./value')
+-        e[:] = sorted(e.getchildren(), key=get_value)
++        e[:] = sorted(e, key=get_value)
+         enum_dict[e.attrib['name']] = e
+ 
+     # Structs are a bit annoying because they can refer to each other. We sort
+@@ -147,7 +147,7 @@
+     structs = sorted(xml.findall('./struct'), key=get_name)
+     wrapped_struct_dict = {}
+     for s in structs:
+-        s[:] = sorted(s.getchildren(), key=get_start)
++        s[:] = sorted(s, key=get_start)
+         ws = Struct(s)
+         wrapped_struct_dict[ws.name] = ws
+ 
+@@ -161,11 +161,11 @@
+ 
+     instructions = sorted(xml.findall('./instruction'), key=get_name)
+     for i in instructions:
+-        i[:] = sorted(i.getchildren(), key=get_start)
++        i[:] = sorted(i, key=get_start)
+ 
+     registers = sorted(xml.findall('./register'), key=get_name)
+     for r in registers:
+-        r[:] = sorted(r.getchildren(), key=get_start)
++        r[:] = sorted(r, key=get_start)
+ 
+     genxml[:] = enums + sorted_structs.values() + instructions + registers
+ 
 Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/apiexec.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/apiexec.cpython-36.pyc differ
 Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/glX_XML.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/glX_XML.cpython-36.pyc differ
 Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/gl_XML.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/gl_XML.cpython-36.pyc differ
@@ -128,6 +181,66 @@ Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/license.cpython-36.pyc a
 Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/marshal_XML.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/marshal_XML.cpython-36.pyc differ
 Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/static_data.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/static_data.cpython-36.pyc differ
 Binary files mesa-20.0.2/src/mapi/glapi/gen/__pycache__/typeexpr.cpython-36.pyc and mesa-20.0.2.aros/src/mapi/glapi/gen/__pycache__/typeexpr.cpython-36.pyc differ
+diff -ruN mesa-20.0.2/src/mapi/glapi/gen/glX_XML.py mesa-20.0.2.aros/src/mapi/glapi/gen/glX_XML.py
+--- mesa-20.0.2/src/mapi/glapi/gen/glX_XML.py	2020-03-18 21:24:19.000000000 +0000
++++ mesa-20.0.2.aros/src/mapi/glapi/gen/glX_XML.py	2021-01-12 18:20:20.960000000 +0000
+@@ -48,7 +48,7 @@
+ 
+         self.functions = {}
+ 
+-        for child in element.getchildren():
++        for child in element:
+             if child.tag == "size":
+                 n = child.get( "name" )
+                 c = child.get( "count" )
+@@ -130,7 +130,7 @@
+                     self.counter_list.append(param.counter)
+ 
+ 
+-        for child in element.getchildren():
++        for child in element:
+             if child.tag == "glx":
+                 rop = child.get( 'rop' )
+                 sop = child.get( 'sop' )
+diff -ruN mesa-20.0.2/src/mapi/glapi/gen/gl_XML.py mesa-20.0.2.aros/src/mapi/glapi/gen/gl_XML.py
+--- mesa-20.0.2/src/mapi/glapi/gen/gl_XML.py	2020-03-18 21:24:19.000000000 +0000
++++ mesa-20.0.2.aros/src/mapi/glapi/gen/gl_XML.py	2021-01-12 18:20:13.230000000 +0000
+@@ -713,7 +713,7 @@
+ 
+         parameters = []
+         return_type = "void"
+-        for child in element.getchildren():
++        for child in element:
+             if child.tag == "return":
+                 return_type = child.get( "type", "void" )
+             elif child.tag == "param":
+@@ -743,7 +743,7 @@
+                 if param.is_image():
+                     self.images.append( param )
+ 
+-        if element.getchildren():
++        if element:
+             self.initialized = 1
+             self.entry_point_parameters[name] = parameters
+         else:
+@@ -873,7 +873,7 @@
+ 
+ 
+     def process_OpenGLAPI(self, file_name, element):
+-        for child in element.getchildren():
++        for child in element:
+             if child.tag == "category":
+                 self.process_category( child )
+             elif child.tag == "OpenGLAPI":
+@@ -893,7 +893,7 @@
+         [cat_type, key] = classify_category(cat_name, cat_number)
+         self.categories[cat_type][key] = [cat_name, cat_number]
+ 
+-        for child in cat.getchildren():
++        for child in cat:
+             if child.tag == "function":
+                 func_name = real_function_name( child )
+ 
 diff -ruN mesa-20.0.2/src/mapi/glapi/gen/gl_x86-64_asm.py mesa-20.0.2.aros/src/mapi/glapi/gen/gl_x86-64_asm.py
 --- mesa-20.0.2/src/mapi/glapi/gen/gl_x86-64_asm.py	2020-03-18 21:24:19.000000000 +0000
 +++ mesa-20.0.2.aros/src/mapi/glapi/gen/gl_x86-64_asm.py	2020-03-19 14:49:53.700000000 +0000
@@ -286,6 +399,8 @@ diff -ruN mesa-20.0.2/src/util/detect_os.h mesa-20.0.2.aros/src/util/detect_os.h
  #if defined(__linux__)
  #define DETECT_OS_LINUX 1
  #define DETECT_OS_UNIX 1
+Binary files mesa-20.0.2/src/util/format/__pycache__/u_format_pack.cpython-36.pyc and mesa-20.0.2.aros/src/util/format/__pycache__/u_format_pack.cpython-36.pyc differ
+Binary files mesa-20.0.2/src/util/format/__pycache__/u_format_parse.cpython-36.pyc and mesa-20.0.2.aros/src/util/format/__pycache__/u_format_parse.cpython-36.pyc differ
 diff -ruN mesa-20.0.2/src/util/os_misc.c mesa-20.0.2.aros/src/util/os_misc.c
 --- mesa-20.0.2/src/util/os_misc.c	2020-03-18 21:24:19.000000000 +0000
 +++ mesa-20.0.2.aros/src/util/os_misc.c	2020-03-19 14:49:53.700000000 +0000
