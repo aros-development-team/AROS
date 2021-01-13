@@ -67,9 +67,6 @@ MESAGL_LIBRARY_SOURCES_C := \
             $(SHARED_LIB_SOURCES) \
             $(MESA3DGL_SOURCES)
 
-MESAGL_LIBRARY_SOURCES_CXX := \
-            mesa3dgl_
-
 ifneq ($(mesa3dgl_ENTRYPOINTS),)
 MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
 #USER_LDFLAGS := -Wl,--gc-sections $(mesa3dgl_ENTRYPOINTS)
@@ -88,8 +85,7 @@ USER_LDFLAGS += $(TARGET_CXX_LDFLAGS) \
   conffile=$(SRCDIR)/workbench/libs/gl/gl.conf \
   confoverride=mesa3dgl.conf \
   files="$(MESAGL_LIBRARY_SOURCES_C)" \
-  cxxfiles="$(MESAGL_LIBRARY_SOURCES_CXX)" \
-  uselibs=""
+  alwayscxxlink=yes  uselibs=""
 
 #
 # mesa3d includes...
