@@ -207,7 +207,8 @@ aros_host_make="make"
 aros_host_cflags="$CFLAGS"
 aros_host_cxxflags="$CXXFLAGS"
 aros_host_cppflags="$CPPFLAGS"
-aros_host_ldflags="$LDFLAGS"
+aros_host_baseldflags="$LDFLAGS"
+aros_host_ldflags="$aros_host_baseldflags"
 aros_host_debug="-g -O0"
 aros_host_mkdep="\$(SRCDIR)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
@@ -360,6 +361,7 @@ re-running configure])])
                 ;;
         esac
 
+        aros_kernel_ldflags="$aros_host_baseldflags $aros_kernel_ldflags"
         aros_host_ldflags="$aros_host_ldflags -liconv"
 
         ;;
@@ -1475,7 +1477,7 @@ case "$target_os" in
                 aros_object_format="elf_i386"
                 aros_kernel_ar_flags="-cr"
                 aros_target_strip_flags="-x"
-                kernel_tool_flags="-m32"
+                kernel_tool_flags=""
                 ;;
             *x86_64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
