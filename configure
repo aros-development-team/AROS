@@ -5147,7 +5147,6 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for Darwin host -- $host_cpu\"" >&2;}
                 ;;
         esac
 
-        aros_kernel_ldflags="$aros_host_baseldflags $aros_kernel_ldflags"
         aros_host_ldflags="$aros_host_ldflags -liconv"
 
         ;;
@@ -9190,6 +9189,11 @@ $as_echo "$darwin_sdk_path" >&6; }
                 aros_kernel_objcflags="-fobjc-abi-version=2 -fobjc-legacy-dispatch"
             ;;
             *)
+                case "$host_os" in
+                    darwin*)
+                        aros_kernel_ldflags="$aros_host_baseldflags $aros_kernel_ldflags"
+                    ;;
+                esac
                 aros_kernel_cflags="$aros_kernel_cflags -mmacosx-version-min=$aros_macosx_version"
                 aros_kernel_ldflags="$aros_kernel_ldflags -mmacosx-version-min=$aros_macosx_version"
             ;;
