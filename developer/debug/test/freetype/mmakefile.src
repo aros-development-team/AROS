@@ -5,17 +5,28 @@ include $(SRCDIR)/config/aros.cfg
 #MM- test : test-freetype
 #MM- test-freetype : \
 #MM      test-freetype-ftstring \
-#MM      test-freetype-ftview
+#MM      test-freetype-ftstring-static \
+#MM      test-freetype-ftview \
+#MM      test-freetype-ftview-static
 
 #MM- test-quick : test-freetype-quick
 #MM- test-freetype-quick : \
 #MM      test-freetype-ftstring-quick \
-#MM      test-freetype-ftview-quick
+#MM      test-freetype-ftstring-static-quick \
+#MM      test-freetype-ftview-quick \
+#MM      test-freetype-ftview-static-quick
 
-#MM test-freetype-ftstring : freetype2-demos-fetch includes linklibs \
+
+#MM- test-freetype-deps : freetype2-demos-fetch includes linklibs \
+#MM     workbench-libs-freetype-module-linklib test-freetype-lib-graph
+
+#MM- test-freetype-static-deps : freetype2-demos-fetch includes linklibs \
 #MM     workbench-libs-freetype-linklib test-freetype-lib-graph
-#MM test-freetype-ftview : freetype2-demos-fetch includes linklibs \
-#MM     workbench-libs-freetype-linklib test-freetype-lib-graph
+
+#MM test-freetype-ftstring : test-freetype-deps
+#MM test-freetype-ftstring-static : test-freetype-static-deps
+#MM test-freetype-ftview : test-freetype-deps
+#MM test-freetype-ftviewstatic : test-freetype-static-deps
 
 FT2DEMOS        := ftdmo
 FT2VERS         := 2104
@@ -69,13 +80,23 @@ FREETYPETEST_COMMON := \
 %build_prog mmake=test-freetype-ftstring \
     progname=ftstring targetdir=$(EXEDIR) \
     files="$(addprefix $(FT2SRCDIR)/src/,ftstring $(FREETYPETEST_COMMON))" \
-    uselibs="freetype2.static graph"
+    uselibs="freetype2 graph png"
+
+%build_prog mmake=test-freetype-ftstring-static \
+    progname=ftstring-static targetdir=$(EXEDIR) \
+    files="$(addprefix $(FT2SRCDIR)/src/,ftstring $(FREETYPETEST_COMMON))" \
+    uselibs="freetype2.static graph png z1 " objdir="$(GENDIR)/$(CURDIR)/static"
 
 USER_CPPFLAGS += -DFT2_BUILD_LIBRARY
 
 %build_prog mmake=test-freetype-ftview \
     progname=ftview targetdir=$(EXEDIR) \
     files="$(addprefix $(FT2SRCDIR)/src/,ftview $(FREETYPETEST_COMMON))" \
-    uselibs="freetype2.static graph"
+    uselibs="freetype2 graph png"
+
+%build_prog mmake=test-freetype-ftview-static \
+    progname=ftview-static targetdir=$(EXEDIR) \
+    files="$(addprefix $(FT2SRCDIR)/src/,ftview $(FREETYPETEST_COMMON))" \
+    uselibs="freetype2.static png z1 graph" objdir="$(GENDIR)/$(CURDIR)/static"
 
 %common
