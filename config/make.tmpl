@@ -1530,8 +1530,8 @@ BDID := $(BDTARGETID)
 
 #------------------------------------------------------------------------------
 # Build a program
-%define build_prog mmake=/A progname=/A files= cxxfiles= \
-    objcfiles= \
+%define build_prog mmake=/A progname=/A \
+    files= objcfiles= cxxfiles= alwayscxxlink=no \
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cppflags=$(CPPFLAGS) cflags= dflags= cxxflags= dxxflags= ldflags= \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
@@ -1678,6 +1678,19 @@ endif
 #MM %(mmake) : includes-generate-deps core-linklibs
 %(mmake) : $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME)
 
+ifeq (%(alwayscxxlink),yes)
+ifeq (%(compiler),host)
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+endif
+ifeq (%(compiler),kernel)
+KERNEL_CXX ?= $(KERNEL_CC)
+%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+endif
+endif
+
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile_cxx_multi mmake=%(mmake) \
     basenames=$(%(mmake)_CXX_NARCHFILES) targetdir=$(%(mmake)_OBJDIR) \
@@ -1823,9 +1836,9 @@ endif
 # assumed that all needed boiler plate code is in the files. This should only
 # be used for compiling external code. For AROS code use %build_module
 %define build_module_simple mmake=/A modname=/A modtype=/A \
-    files="$(basename $(call WILDCARD, *.c))" \
-    objcfiles= \
+    files="$(basename $(call WILDCARD, *.c))" objcfiles= \
     cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+    alwayscxxlink=no \
     cppflags=$(CPPFLAGS) \
     cflags=$(CFLAGS) dflags= \
     cxxflags=$(CXXFLAGS) dxxflags= \
@@ -1848,6 +1861,19 @@ $(error using %build_module_simple: modname may not be empty)
 endif
 ifeq (%(modtype),)
 $(error using %build_module_simple: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+ifeq (%(alwayscxxlink),yes)
+ifeq (%(compiler),host)
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+endif
+ifeq (%(compiler),kernel)
+KERNEL_CXX ?= $(KERNEL_CC)
+%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+endif
 endif
 
 # Default values for variables and arguments
@@ -2011,6 +2037,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
     files="$(basename $(call WILDCARD, *.c))" \
     objcfiles= \
     cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+    alwayscxxlink=no \
     linklibfiles= linklibobjs= \
     cppflags=$(CPPFLAGS) \
     cflags=$(CFLAGS) dflags= \
@@ -2088,6 +2115,19 @@ $(error using %build_module: modname may not be empty)
 endif
 ifeq (%(modtype),)
 $(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+ifeq (%(alwayscxxlink),yes)
+ifeq (%(compiler),host)
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT) $(TARGET_LDFLAGS))
+endif
+ifeq (%(compiler),kernel)
+KERNEL_CXX ?= $(KERNEL_CC)
+%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+endif
 endif
 
 # Default values for variables and arguments
@@ -2545,6 +2585,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   files="$(basename $(call WILDCARD, *.c))" \
   objcfiles= \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+  alwayscxxlink=no \
   linklibfiles= linklibobjs= cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= cxxflags=$(CXXFLAGS) dxxflags= \
   objdir= moduledir= prefix=$(AROSDIR) \
   linklibname= uselibs= usehostlibs= \
@@ -2553,9 +2594,8 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
-   files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" \
-   linklibname="%(linklibname)" \
-   linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
+   files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)"  alwayscxxlink=%(alwayscxxlink) \
+   linklibname="%(linklibname)" linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
    cflags="%(cflags)" cppflags="%(cppflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" funcinstr=%(funcinstr) lto=%(lto) \
@@ -2601,7 +2641,8 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   conffile= confoverride= \
   files="$(basename $(call WILDCARD, *.c))" \
   objcfiles= \
-  cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+  cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))"  \
+  alwayscxxlink=no \
   cflags=$(CFLAGS) cppflags=$(CPPFLAGS) dflags= cxxflags="$(CXXFLAGS)" dxxflags= \
   objdir= moduledir= prefix=$(AROSDIR) \
   uselibs= usehostlibs= \
@@ -2611,7 +2652,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" \
    conffile="%(conffile)" confoverride="%(confoverride)" \
-   files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" \
+   files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" alwayscxxlink=%(alwayscxxlink) \
    cflags="%(cflags)" cppflags="%(cppflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
