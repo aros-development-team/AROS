@@ -21,16 +21,23 @@ ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 FILES += arm-exidx-unwind
 endif
 
+CXXFILES := \
+        static-cxx-ops \
+        static-cxx-personality \
+        static-cxx-cxa-pure-virtual \
+
 NIXOBJS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .o,$(NIXFILES)))
-OBJS  := $(addprefix $(AROS_LIB)/,$(addsuffix .o,$(FILES) $(NIXFILES)))
+CXXOBJS  := $(addprefix $(GENDIR)/$(CURDIR)/cxx/,$(addsuffix .o,$(CXXFILES)))
+OBJS  := $(addprefix $(AROS_LIB)/,$(addsuffix .o,$(FILES) $(NIXFILES) $(CXXFILES)))
 
 NIXDEPS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .d,$(NIXFILES)))
+CXXDEPS  := $(addprefix $(GENDIR)/$(CURDIR)/cxx/,$(addsuffix .d,$(CXXFILES)))
 DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
 
-linklibs-startup: $(NIXOBJS) $(OBJS)
+linklibs-startup: $(NIXOBJS) $(CXXOBJS) $(OBJS)
 
 #MM
-linklibs-startup-quick: $(NIXOBJS) $(OBJS)
+linklibs-startup-quick: $(NIXOBJS) $(CXXOBJS) $(OBJS)
 
 # standard startup object rules ...
 
@@ -48,6 +55,13 @@ USER_CPPFLAGS += -D_XOPEN_SOURCE=700
 
 %rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)/nix
 
+# CXX support ...
+
+$(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/cxx/%.o
+	@$(CP) $< $@
+
+%rule_compile_cxx basename=% targetdir=$(GENDIR)/$(CURDIR)/cxx
+
 # Generic rules ...
 
 #MM linklibs-startup-setup
@@ -57,6 +71,6 @@ USER_CPPFLAGS += -D_XOPEN_SOURCE=700
 
 .PHONY: linklibs-startup linklibs-startup-setup
 
-%include_deps depstargets="linklibs-startup" deps="$(DEPS) $(NIXDEPS)"
+%include_deps depstargets="linklibs-startup" deps="$(DEPS) $(CXXDEPS) $(NIXDEPS)"
 
 %common

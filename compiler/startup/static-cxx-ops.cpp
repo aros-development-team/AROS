@@ -1,6 +1,6 @@
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
-    $Id: emul_cpp.cpp 36255 2010-12-27 11:33:51Z deadwood $
+    Copyright © 2021, The AROS Development Team. All rights reserved.
+    $Id:$
 */
 
 #include <proto/exec.h>
@@ -24,8 +24,4 @@ void * operator new[](size_t size)
 void operator delete[](void * ptr)
 {
 	FreeVec(ptr);
-}
-
-extern "C" void __cxa_pure_virtual()
-{
 }

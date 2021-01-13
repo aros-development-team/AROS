@@ -385,7 +385,7 @@ diff -ruN gcc-9.1.0/gcc/config/arm/aros.h gcc-9.1.0.aros/gcc/config/arm/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} arm-exidx-unwind%O%s "
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s} arm-exidx-unwind%O%s "
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
@@ -581,7 +581,7 @@ diff -ruN gcc-9.1.0/gcc/config/aros.h gcc-9.1.0.aros/gcc/config/aros.h
 +
 +#undef	STARTFILE_SPEC
 +#define STARTFILE_SPEC \
-+  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s}"
++  "startup%O%s %{detach:detach%O%s} %{nix:nixmain%O%s} %{static-stdc++:static-cxx-ops%O%s static-cxx-personality%O%s static-cxx-cxa-pure-virtual%O%s}"
 +
 +/* Provide a ENDFILE_SPEC appropriate for AROS. */
 +
