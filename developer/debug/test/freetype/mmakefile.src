@@ -16,12 +16,21 @@ include $(SRCDIR)/config/aros.cfg
 #MM      test-freetype-ftview-quick \
 #MM      test-freetype-ftview-static-quick
 
+#MM- test-freetype-common-deps : \
+#MM     freetype2-demos-fetch \
+#MM     includes \
+#MM     linklibs \
+#MM     test-freetype-lib-graph
 
-#MM- test-freetype-deps : freetype2-demos-fetch includes linklibs \
-#MM     workbench-libs-freetype-module-linklib test-freetype-lib-graph
+#MM- test-freetype-deps : \
+#MM     test-freetype-common-deps \
+#MM     workbench-libs-freetype-module-linklib \
+#MM     workbench-libs-z-linklib \
+#MM     workbench-libs-png-linklib
 
-#MM- test-freetype-static-deps : freetype2-demos-fetch includes linklibs \
-#MM     workbench-libs-freetype-linklib test-freetype-lib-graph
+#MM- test-freetype-static-deps : \
+#MM     test-freetype-common-deps \
+#MM     workbench-libs-freetype-linklib
 
 #MM test-freetype-ftstring : test-freetype-deps
 #MM test-freetype-ftstring-static : test-freetype-static-deps

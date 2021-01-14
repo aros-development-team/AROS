@@ -8,6 +8,14 @@ If NOT WARN
     ; Peform basic 'C' type unit tests..
     Execute S/Test cunit/crt/stdc/cunit-crt-types
 
+    ; Peform basic 'genmodule' unit tests..
+    If EXISTS "SYS:Developer/Debug/Tests/Library/Libs"
+        Assign "LIBS:" "SYS:Developer/Debug/Tests/Library/Libs" ADD
+        Execute S/Test cunit/genmodule/library/cunit-genmodule-autoopen
+        Execute S/Test cunit/genmodule/library/cunit-genmodule-library
+        Execute S/Test cunit/genmodule/library/cunit-genmodule-relbase
+    EndIf
+
     ; Perform basic "exec.library" unit tests...
 
     ; Perform basic "utility.library" unit tests...
