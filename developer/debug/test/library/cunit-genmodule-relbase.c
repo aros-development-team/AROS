@@ -54,7 +54,7 @@ void testGPBSE(void)
     }
     else
     {
-        CU_FAIL("NULL == pertask.library->GetParentBase() (via dummy.library relbase)");
+        CU_FAIL("NULL == pertask.library->GetParentBase() (via userel.library relbase)");
     }
 }
 
