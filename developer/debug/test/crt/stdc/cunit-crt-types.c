@@ -61,12 +61,21 @@ void testINT(void)
 
 void testLONG(void)
 {
+#if (__WORDSIZE == 64)
+    CU_ASSERT(8 == sizeof(long));
+    CU_ASSERT(8 == sizeof(long int));
+    CU_ASSERT(8 == sizeof(signed long));
+    CU_ASSERT(8 == sizeof(signed long int));
+    CU_ASSERT(8 == sizeof(unsigned long));
+    CU_ASSERT(8 == sizeof(unsigned long int));
+#else
     CU_ASSERT(4 == sizeof(long));
     CU_ASSERT(4 == sizeof(long int));
     CU_ASSERT(4 == sizeof(signed long));
     CU_ASSERT(4 == sizeof(signed long int));
     CU_ASSERT(4 == sizeof(unsigned long));
     CU_ASSERT(4 == sizeof(unsigned long int));
+#endif
 }
 
 void testLLONG(void)
