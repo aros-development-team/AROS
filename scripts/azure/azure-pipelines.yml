@@ -203,7 +203,7 @@ jobs:
       sudo find $MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
       echo "##vso[task.setvariable variable=CC;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc"
       echo "##vso[task.setvariable variable=CXX;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++"
-      echo "##vso[task.setvariable variable=LDFLAGS;]-L$MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc/8"
+      #echo "##vso[task.setvariable variable=LDFLAGS;]-L$MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc/8"
       #echo "##vso[task.setvariable variable=LIBRARY_PATH;]$MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc/8:$LIBRARY_PATH"
       echo "LIBRARY_PATH = '$LIBRARY_PATH'"
       if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
