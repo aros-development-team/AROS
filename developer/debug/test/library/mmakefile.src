@@ -5,15 +5,26 @@ include $(SRCDIR)/config/aros.cfg
 #MM      test-library-dummytest_auto \
 #MM      test-library-usereltest \
 #MM      test-library-peropenertest \
-#MM      test-library-peropenertest_child
+#MM      test-library-peropenertest_child \
+#MM      test-genmodule-library-cunit
+
+#MM- test-cunit : test-genmodule-library-cunit
+#MM- test-cunit-quick : test-genmodule-library-cunit-quick
+
 #MM- test-library-userellib: includes-pertask includes-dummy linklibs-pertask linklibs-dummy
+
 #MM test-library-dummytest : test-library-dummylib
 #MM test-library-dummytest_auto : test-library-dummylib
 #MM test-library-peropenertest : test-library-peropenerlib \
 #MM     test-library-pertasklib
 #MM test-library-peropenertest_child : \
 #MM     test-library-pertasklib
+#MM- test-genmodule-library-cunit-deps : \
+#MM     linklibs-cunit \
+#MM     test-library-userellib
+
 #MM test-library-usereltest :  test-library-userellib
+
 #MM- test-library-clean : \
 #MM      test-library-dummytest-clean \
 #MM      test-library-dummytest_auto-clean \
@@ -24,9 +35,12 @@ include $(SRCDIR)/config/aros.cfg
 #MM      test-library-userellib-clean
 
 TARGETDIR := $(AROS_TESTS)/Library
+CUNITEXEDIR := $(AROS_TESTS)/cunit/genmodule/library
 
 USER_INCLUDES := -I$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/include
 USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
+
+# Test Progs
 
 %build_prog mmake=test-library-peropenertest \
     progname=peropenertest targetdir=$(TARGETDIR) \
@@ -47,6 +61,8 @@ USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
     progname=usereltest targetdir=$(TARGETDIR) \
     uselibs="userel pertask"
 
+# Libraries
+
 %build_module mmake=test-library-dummylib \
     modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
 
@@ -64,3 +80,28 @@ USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
     modname=userel modtype=library \
     files="dummyadd pertaskgetparentbase dummyprint4 getchildvalue" \
     prefix=$(TARGETDIR)
+
+# CUnit tests
+
+USER_INCLUDES += -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
+USER_LDFLAGS += -L$(AROS_CONTRIB_LIB)
+
+#MM test-genmodule-library-relbase-cunit : test-genmodule-library-cunit-deps
+
+%build_prog mmake=test-genmodule-library-autoopen-cunit \
+    progname=cunit-genmodule-autoopen targetdir=$(CUNITEXEDIR) \
+    uselibs="dummy cunit"
+
+%build_prog mmake=test-genmodule-library-library-cunit \
+    progname=cunit-genmodule-library targetdir=$(CUNITEXEDIR) \
+    uselibs="dummy cunit"
+
+%build_prog mmake=test-genmodule-library-relbase-cunit \
+    progname=cunit-genmodule-relbase targetdir=$(CUNITEXEDIR) \
+    uselibs="userel pertask cunit"
+
+#MM- test-genmodule-library-cunit : test-genmodule-library-relbase-cunit test-genmodule-library-autoopen-cunit test-genmodule-library-library-cunit
+#MM- test-genmodule-library-cunit-quick : test-genmodule-library-relbase-cunit-quick test-genmodule-library-autoopen-cunit-quick test-genmodule-library-library-cunit-quick
+
+%common
