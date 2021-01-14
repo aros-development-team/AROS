@@ -43,6 +43,18 @@ void testOPEN(void)
     }
 }
 
+void testBASE(void)
+{
+    CU_SKIP_IF(DummyBase == NULL);
+    if(DummyBase != NULL)
+    {
+        CU_ASSERT(NT_LIBRARY == DummyBase->lib_Node.ln_Type);
+        CU_ASSERT(0 != DummyBase->lib_NegSize);
+        CU_ASSERT(0 != DummyBase->lib_PosSize);
+        CU_ASSERT(0 != DummyBase->lib_OpenCnt);
+    }
+}
+
 void testGPBSE(void)
 {
     ULONG a=1,b=2,c=0,d=0;
@@ -93,7 +105,8 @@ int main(void)
 
    /* add the tests to the suite */
     if ((NULL == CU_add_test(pSuite, "test of OpenLibrary() on genmodule generated library", testOPEN)) ||
-        (NULL == CU_add_test(pSuite, "test of calling functions of opened library", testGPBSE)) ||
+        (NULL == CU_add_test(pSuite, "test of opened library base", testBASE)) ||
+        (NULL == CU_add_test(pSuite, "test of calling reg-call functions of opened library", testGPBSE)) ||
         (NULL == CU_add_test(pSuite, "test of CloseLibrary() on genmodule generated library", testCLOSE)))
     {
         CU_cleanup_registry();
