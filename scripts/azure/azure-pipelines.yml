@@ -142,9 +142,13 @@ jobs:
       mkdir -p '$(AZBUILDPATH)/host/x86'
       echo 'Building darwin x86 toolchain'
       DARWINBUILDXCODEVERS=$(sudo xcode-select --print-path)
-      sudo xcode-select -s $DARWINBUILDXCODEVERS
-      MACOSDEFSDK=$(sudo xcrun --show-sdk-version)
       echo "Initial Darwin XCode version : $DARWINBUILDXCODEVERS"
+      if [ ! "$AROSBUILD_XCODE" = "" ]; then
+        DARWINBUILDXCODEVERS="/Applications/Xcode_$AROSBUILD_XCODE.app/Contents/Developer"
+        echo "switching XCode to version : $DARWINBUILDXCODEVERS"
+        sudo xcode-select -s $DARWINBUILDXCODEVERS
+      fi
+      MACOSDEFSDK=$(sudo xcrun --show-sdk-version)
       echo "Initial MacOS Deployment Target: $MACOSX_DEPLOYMENT_TARGET"
       echo "MacOS SDK : $SDK (Def: $MACOSDEFSDK)"
       echo "MacOS 10.5 SDK path: $(xcrun --sdk macosx10.5 --show-sdk-path)"
