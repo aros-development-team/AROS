@@ -143,11 +143,6 @@ jobs:
       echo 'Building darwin x86 toolchain'
       DARWINBUILDXCODEVERS=$(sudo xcode-select --print-path)
       echo "Initial Darwin XCode version : $DARWINBUILDXCODEVERS"
-      if [ ! "$AROSBUILD_XCODE" = "" ]; then
-        DARWINBUILDXCODEVERS="/Applications/Xcode_$AROSBUILD_XCODE.app/Contents/Developer"
-        echo "switching XCode to version : $DARWINBUILDXCODEVERS"
-        sudo xcode-select -s $DARWINBUILDXCODEVERS
-      fi
       MACOSDEFSDK=$(sudo xcrun --show-sdk-version)
       echo "Initial MacOS Deployment Target: $MACOSX_DEPLOYMENT_TARGET"
       echo "MacOS SDK : $SDK (Def: $MACOSDEFSDK)"
@@ -201,6 +196,11 @@ jobs:
       BOOT_CFLAGS=$DARWINBOOTCFLAGS  CFLAGS_FOR_TARGET=$DARWINTARGETCFLAGS CXXFLAGS_FOR_TARGET=$DARWINTARGETCXXFLAGS make -j $(BUILDTHREADS)
       sudo make install
       sudo find $MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+      if [ ! "$AROSBUILD_XCODE" = "" ]; then
+        DARWINBUILDXCODEVERS="/Applications/Xcode_$AROSBUILD_XCODE.app/Contents/Developer"
+        echo "switching XCode to version : $DARWINBUILDXCODEVERS"
+        sudo xcode-select -s $DARWINBUILDXCODEVERS
+      fi
       echo "##vso[task.setvariable variable=CC;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc"
       echo "##vso[task.setvariable variable=CXX;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++"
       #echo "##vso[task.setvariable variable=LDFLAGS;]-L$MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc/8"
