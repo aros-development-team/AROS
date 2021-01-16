@@ -51,7 +51,7 @@ FILES	:= \
 
 FMTPRINTFDIR := $(SRCDIR)/compiler/fmtprintf
 USER_INCLUDES := -I$(SRCDIR)/rom/exec -iquote $(FMTPRINTFDIR)
-USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
+USER_CFLAGS := -noposixc $(CFLAGS_NO_BUILTIN)
 
 %build_linklib mmake=linklibs-arossupport libname=arossupport files=$(FILES)
 
