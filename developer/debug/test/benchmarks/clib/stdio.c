@@ -17,6 +17,8 @@ int main() {
 
     if(buffer && (file = fopen("T:__test__", "w")))
     {
+        printf("Benchmarking 1MB Reads/Writes ...\n");
+
         #define BENCHMARK(z, n, c) fwrite(buffer, BUFSIZE, sizeof(char), file);
         BENCHMARK_BUFFER(fwrite,100, BUFSIZE);
         #undef BENCHMARK
@@ -33,6 +35,8 @@ int main() {
 
     if(buffer && (file = fopen("T:__test__", "w")))
     {
+        printf("Benchmarking 1Byte Reads/Writes ...\n");
+
         #define BENCHMARK(z, n, c) fwrite(buffer, 1, sizeof(char), file);
         BENCHMARK_OPERATION(fwrite,10000000);
         #undef BENCHMARK
