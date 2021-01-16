@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <string.h>
+
 #include "cdfs.h"
 #include "iso9660.h"
 #include "bcache.h"

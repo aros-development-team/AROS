@@ -23,6 +23,10 @@ typedef unsigned short u_short;
 #undef DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
+
+#ifdef printf
+#undef printf
+#endif
 #define printf bug
 
 #else
