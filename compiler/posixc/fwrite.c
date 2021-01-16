@@ -1,17 +1,19 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fwrite().
 */
 
-#include <errno.h>
+#include <aros/debug.h>
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#define DEBUG 0
-#include <aros/debug.h>
+
+#include <errno.h>
+
 #include "__stdio.h"
 #include "__fdesc.h"
 
@@ -20,7 +22,7 @@
     NAME */
 #include <unistd.h>
 
-	size_t fwrite (
+	size_t __posixc_fwrite (
 
 /*  SYNOPSIS */
 	const void * restrict	buf,

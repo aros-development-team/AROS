@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function printf().
@@ -14,7 +14,7 @@
     NAME */
 #include <stdio.h>
 
-	int printf (
+	int __posixc_printf (
 
 /*  SYNOPSIS */
 	const char * format,

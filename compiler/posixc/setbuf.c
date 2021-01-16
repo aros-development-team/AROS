@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function setbuf().
@@ -10,7 +10,7 @@
     NAME */
 #include <stdio.h>
 
-	void setbuf (
+	void __posixc_setbuf (
 
 /*  SYNOPSIS */
 	FILE *stream,

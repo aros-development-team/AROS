@@ -1,11 +1,10 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function dirfd().
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include "__dirdesc.h"

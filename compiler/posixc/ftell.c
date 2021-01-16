@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Tell the position in a stream.
@@ -16,7 +16,7 @@
     NAME */
 #include <stdio.h>
 
-	long ftell (
+	long __posixc_ftell (
 
 /*  SYNOPSIS */
 	FILE * stream)

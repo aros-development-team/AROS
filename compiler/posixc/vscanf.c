@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function vscanf()
@@ -14,7 +14,7 @@
     NAME */
 #include <stdio.h>
 
-	int vscanf (
+	int __posixc_vscanf (
 
 /*  SYNOPSIS */
 	const char * format,

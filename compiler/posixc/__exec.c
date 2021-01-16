@@ -1,9 +1,12 @@
 /*
-    Copyright © 2008-2019, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Support functions for POSIX exec*() functions.
 */
+
+#include <aros/debug.h>
+
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -25,9 +28,6 @@
 #include "__upath.h"
 #include "__fdesc.h"
 #include "__vfork.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 static BOOL containswhite(const char *str);
 static char *escape(const char *str);

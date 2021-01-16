@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fputc().
@@ -18,7 +18,7 @@
     NAME */
 #include <stdio.h>
 
-	int fputc (
+	int __posixc_fputc (
 
 /*  SYNOPSIS */
 	int    c,

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function getenv().
@@ -15,7 +15,7 @@
     NAME */
 #include <stdlib.h>
 
-	char *getenv (
+	char *__posixc_getenv (
 
 /*  SYNOPSIS */
 	const char *name)

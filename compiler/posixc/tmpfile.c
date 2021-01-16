@@ -5,23 +5,23 @@
     POSIX.1-2008 function tmpfile().
 */
 
+#include <aros/debug.h>
+
+#include <proto/dos.h>
+
 #include <sys/param.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <proto/dos.h>
 #include <unistd.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
 
-        FILE * tmpfile(
+        FILE * __posixc_tmpfile(
 
 /*  SYNOPSIS */
 	void)

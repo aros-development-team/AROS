@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function vfprintf()
@@ -20,7 +20,7 @@ static int __putc(int c, void *fh);
     NAME */
 #include <stdio.h>
 
-	int vfprintf (
+	int __posixc_vfprintf (
 
 /*  SYNOPSIS */
 	FILE	   * stream,

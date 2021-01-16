@@ -1,5 +1,5 @@
 /* 
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: special main function for code which has to use special *nix features.
@@ -10,6 +10,8 @@
     Lang: english
 */
 
+#include <aros/debug.h>
+
 #include LC_LIBDEFS_FILE
 
 #include <proto/exec.h>
@@ -17,9 +19,6 @@
 #include <exec/lists.h>
 #include <dos/dos.h>
 #include <aros/startup.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 #include <setjmp.h>
 #include <string.h>

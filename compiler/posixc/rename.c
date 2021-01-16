@@ -1,18 +1,19 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function rename() with optional Amiga<>Posix file name conversion.
 */
 
+#include <aros/debug.h>
+
 #include <proto/dos.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include "__upath.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
+#include "__upath.h"
 
 /*****************************************************************************
 

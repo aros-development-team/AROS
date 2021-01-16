@@ -1,19 +1,18 @@
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PosixC internal functions for Amiga<>UNIX filename conversion
     Lang: english
 */
 
-#include "__posixc_intbase.h"
+#include <aros/debug.h>
 
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
+#include "__posixc_intbase.h"
 
 static const char *__path_devstuff_u2a(const char *path);
 static void  __path_normalstuff_u2a(const char *path, char *buf);

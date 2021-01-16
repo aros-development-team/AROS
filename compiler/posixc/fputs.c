@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fputs().
@@ -15,7 +15,7 @@
     NAME */
 #include <stdio.h>
 
-	int fputs (
+	int __posixc_fputs (
 
 /*  SYNOPSIS */
 	const char * str,
