@@ -7,13 +7,13 @@ include $(SRCDIR)/config/aros.cfg
 EXEDIR := $(AROS_TESTS)/exec
 CUNITEXEDIR := $(AROS_TESTS)/cunit/exec
 
-USER_CFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
+USER_CFLAGS := -noposixc
+USER_CPPFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
 
 EXECPUBLICFILES :=		\
     alert		\
     allocmem		\
     allocxxx        \
-    avltest		\
     childstatus		\
     childwait		\
     copymem		\
@@ -37,7 +37,6 @@ EXECPUBLICFILES :=		\
     tasklist		\
     taskstorage \
     tasktest		\
-    timeport \
     traptest		\
     vblank
 
@@ -50,21 +49,32 @@ CUNITEXECTESTFILES := \
 #MM- test-cunit : test-exec-cunit
 #MM- test-cunit-quick : test-exec-cunit-quick
 
-#MM- test-exec : test-exec-public test-exec-private test-exec-cunit
-#MM- test-exec-quick : test-exec-public-quick test-exec-private-quick test-exec-cunit-quick
+#MM- test-exec : test-exec-public test-exec-public-posixc test-exec-private test-exec-cunit
+#MM- test-exec-quick : test-exec-public-quick test-exec-public-posixc-quick test-exec-private-quick test-exec-cunit-quick
 
 #MM- test-exec-deps : includes includes-copy linklibs kernel
 #MM test-exec-public : test-exec-deps
+#MM test-exec-public-posixc : test-exec-deps
 #MM test-exec-private : test-exec-deps
 #MM test-exec-cunit : test-exec-deps linklibs-cunit
 
 %build_progs mmake=test-exec-public \
     files=$(EXECPUBLICFILES) targetdir=$(EXEDIR)
 
+EXECPOSIXPUBLICFILES := \
+    avltest		\
+    timeport
+
+USER_CFLAGS :=
+
+%build_progs mmake=test-exec-public-posixc \
+    files=$(EXECPOSIXPUBLICFILES) targetdir=$(EXEDIR)
+
 EXECPRIVATEFILES :=		\
     tasktest2
 
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+USER_CFLAGS := -noposixc
 
 %build_progs mmake=test-exec-private \
     files=$(EXECPRIVATEFILES) targetdir=$(EXEDIR)
