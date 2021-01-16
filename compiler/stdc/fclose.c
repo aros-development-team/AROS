@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fclose().
 */
+
+#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -14,8 +16,6 @@
 #include <string.h>
 
 #include "__stdcio_intbase.h"
-
-#include <aros/debug.h>
 
 #include "debug.h"
 
@@ -59,6 +59,8 @@
     int ret = 0;
     char s[L_tmpnam+20] = "";
 
+    D(bug("[%s] %s(0x%p)\n", STDCNAME, __func__, stream));
+
     if (stream->flags & __STDCIO_STDIO_TMP)
     {
         if (!NameFromFH(stream->fh, s, L_tmpnam+20))
@@ -71,13 +73,24 @@
 
     if (!(stream->flags & __STDCIO_STDIO_DONTCLOSE))
     {
-        if (Close(stream->fh))
+        BOOL closed = Close(stream->fh);
+        if (closed)
+        {
+            D(bug("[%s] %s: closed succesfully\n", STDCNAME, __func__));
             ret = 0;
+        }
         else
         {
+            LONG ioErr = IoErr();
+            D(bug("[%s] %s: Failed to close! (IoErr %x)\n", STDCNAME, __func__, ioErr));
+
             ret = EOF;
-            errno = __stdc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(ioErr);
         }
+    }
+    else
+    {
+        D(bug("[%s] %s: DONTCLOSE set\n", STDCNAME, __func__));
     }
 
     Remove((struct Node *)stream);

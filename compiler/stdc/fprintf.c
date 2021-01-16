@@ -1,11 +1,15 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fprintf().
 */
 
+#include <aros/debug.h>
+
 #include <stdarg.h>
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -46,11 +50,15 @@
     int     retval;
     va_list args;
 
+    D(bug("[%s] %s(0x%p, 0x%p)\n", STDCNAME, __func__, fh, format));
+
     va_start (args, format);
 
     retval = vfprintf (fh, format, args);
 
     va_end (args);
+
+    D(bug("[%s] %s: returning %x\n", STDCNAME, __func__, retval));
 
     return retval;
 } /* fprintf */

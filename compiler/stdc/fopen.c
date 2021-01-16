@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fopen().
 */
+
+#include <aros/debug.h>
+
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -13,6 +16,8 @@
 
 #include "__stdio.h"
 #include "__stdcio_intbase.h"
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -78,24 +83,32 @@
 {
     struct StdCIOIntBase *StdCIOBase =
         (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
+    FILE *file = NULL;
     int fhmode;
     char l2, hasplus;
-    FILE *file = NULL;
+
+    D(bug("[%s] %s(0x%p, 0x%p)\n", STDCNAME, __func__, pathname, mode));
 
     l2 = mode[1];
     if (l2 == 'b') l2 = mode[2];
     hasplus = (l2 == '+');
 
     if (!StdCIOBase->streampool)
+    {
         StdCIOBase->streampool = CreatePool(MEMF_ANY, 20*sizeof(FILE), 2*sizeof(FILE));
+        D(bug("[%s] %s: CreatePool streampool @ 0x%p\n", STDCNAME, __func__, StdCIOBase->streampool));
+    }
     if (!StdCIOBase->streampool)
     {
+        D(bug("[%s] %s: failed to alloc streampool\n", STDCNAME, __func__));
         SetIoErr(ERROR_NO_FREE_STORE);
         goto error;
     }
     file = AllocPooled(StdCIOBase->streampool, sizeof(FILE));
+    D(bug("[%s] %s: file @ 0x%p (%d bytes)\n", STDCNAME, __func__, file, sizeof(FILE)));
     if (!file)
     {
+        D(bug("[%s] %s: failed to alloc file storage\n", STDCNAME, __func__));
         SetIoErr(ERROR_NO_FREE_STORE);
         goto error;
     }
@@ -106,13 +119,16 @@
     case 'r':
         file->flags = __STDCIO_STDIO_READ;
         fhmode = MODE_OLDFILE;
+        D(bug("[%s] %s: open mode = READ (using MODE_OLDFILE)\n", STDCNAME, __func__));
         break;
     case 'w':
         file->flags = __STDCIO_STDIO_WRITE;
+        D(bug("[%s] %s: open mode = WRITE (using MODE_NEWFILE)\n", STDCNAME, __func__));
         fhmode = MODE_NEWFILE;
         break;
     case 'a':
         file->flags = __STDCIO_STDIO_WRITE|__STDCIO_STDIO_APPEND;
+        D(bug("[%s] %s: open mode = APPEND (using MODE_READWRITE)\n", STDCNAME, __func__));
         fhmode = MODE_READWRITE;
         break;
     default:
@@ -122,16 +138,20 @@
         file->flags |= __STDCIO_STDIO_RDWR;
 
     file->fh = Open(pathname, fhmode);
+    D(bug("[%s] %s: Open fh = 0x%p\n", STDCNAME, __func__, file->fh));
     if (!file->fh)
         goto error;
 
     if (file->flags & __STDCIO_STDIO_APPEND)
     {
+        D(bug("[%s] %s: seeking to file end ...\n", STDCNAME, __func__));
         if (Seek(file->fh, 0, OFFSET_END) < 0)
             goto error;
     }
 
     AddTail((struct List *)&StdCIOBase->files, (struct Node *)file);
+
+    D(bug("[%s] %s: returning 0x%p\n", STDCNAME, __func__, file));
 
     return file;
 

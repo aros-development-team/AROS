@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Setup and support code for stdio.h functionality
@@ -63,7 +63,7 @@ static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
 
     ForeachNode(&StdCIOBase->files, stream)
     {
-        D(bug("[%s] %s: stream = 0x%p, fh = 0x%p\n", STDCNAME, __func__, stream, stream->fh));
+        D(bug("[%s] %s: stream @ 0x%p, fh = 0x%p\n", STDCNAME, __func__, stream, stream->fh));
         stream->flags |= __STDCIO_STDIO_DONTFREE;
         fclose(stream);
     }

@@ -1,13 +1,14 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Format a string and call a usercallback to output each char.
 */
 /* Original source from libnix */
-#include <stdarg.h>
 
 #include <aros/debug.h>
+
+#include <stdarg.h>
 
 #include "debug.h"
 
@@ -46,9 +47,15 @@
 
 ******************************************************************************/
 {
+    int retval;
+
     D(bug("[%s] %s: Calling __vcformat(stream = 0x%p, fputc = 0x%p, format = '%s', ...)\n", STDCNAME, __func__,
           stream, fputc, format
     ));
 
-    return __vcformat (stream, (int (*)(int, void *))fputc, format, args);
+    retval = __vcformat (stream, (int (*)(int, void *))fputc, format, args);
+
+    D(bug("[%s] %s: returning %x\n", STDCNAME, __func__, retval));
+
+    return retval;
 } /* vfprintf */
