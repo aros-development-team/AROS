@@ -75,12 +75,14 @@ SH_FILES := \
     SetKeyboard \
     WaitX
 
-USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
+USER_INCLUDES    := -I$(OBJDIR)
+USER_CPPFLAGS    := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CFLAGS      := -noposixc
 # We compile the core C: programs statically, for two reasons:
 #   * The amiga-m68k boot floppy doesn't have space for stdc.library
 #   * This gives us some possibility of system recovery if LIBS:
 #     is deleted or badly Assign(ed).
-USER_LDFLAGS    := -static
+USER_LDFLAGS     := -static
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
