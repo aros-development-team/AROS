@@ -2,7 +2,7 @@
 #define _STDC_STDLIB_H_
 
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdlib.h
@@ -88,8 +88,12 @@ void abort (void) __noreturn;
 int atexit(void (*func)(void));
 void exit(int code) __noreturn;
 void _Exit(int status) __noreturn;
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 char *getenv(const char *name);
 int system(const char *string);
+#endif
 
 /* Searching and sorting utilities */
 void *bsearch(const void * key, const void * base, size_t count,

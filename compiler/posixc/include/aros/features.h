@@ -1,7 +1,7 @@
 #ifndef _POSIXC_FEATURES_H
 #define _POSIXC_FEATURES_H
 /*
-    Copyright © 2020, The AROS Development Team. All rights reserved.
+    Copyright © 2020-2021, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -202,6 +202,12 @@
 // On AROS, __USE_FILES_OFFSET64 implies __USE_LARGEFILE64
 #if defined(__USE_FILE_OFFSET64) || defined(_LARGEFILE64_SOURCE)
 #define         __USE_LARGEFILE64       1
+#endif
+
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
+#define NO_POSIX_WRAPPERS
 #endif
 
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Change the position in a stream.
@@ -10,7 +10,7 @@
     NAME */
 #include <stdio.h>
 
-	void rewind (
+	void __posixc_rewind (
 
 /*  SYNOPSIS */
 	FILE * stream)

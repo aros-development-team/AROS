@@ -12,9 +12,6 @@ include $(SRCDIR)/config/aros.cfg
 %build_linklib mmake=linklibs-libinit \
     libname=libinit files="libinit"
 
-$(GENDIR)/$(CURDIR) :
-	%mkdirs_q $@
-
 # Special kickstart module header
 $(GENDIR)/$(CURDIR)/kickentry.o : $(SRCDIR)/$(CURDIR)/kickentry.c | $(GENDIR)/$(CURDIR)
 	@$(ECHO) "Compiling  $<"

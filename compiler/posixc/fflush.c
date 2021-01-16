@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fflush().
@@ -21,7 +21,7 @@
     NAME */
 #include <stdio.h>
 
-	int fflush (
+	int __posixc_fflush (
 
 /*  SYNOPSIS */
 	FILE * stream)

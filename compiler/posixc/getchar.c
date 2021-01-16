@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function getchar().
@@ -21,7 +21,7 @@
     NAME */
 #include <stdio.h>
 
-	int getchar (void)
+	int __posixc_getchar (void)
 
 /*  SYNOPSIS */
 

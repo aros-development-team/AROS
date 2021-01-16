@@ -110,7 +110,7 @@ static UWORD countFilesInDirectory(CONST_STRPTR path, struct FileInfoBlock *fib)
     BPTR lock = ReadFileInfoBlockAndLockPath(path, fib);
     WORD number = 0;
 
-    if (lock != NULL)
+    if (lock != BNULL)
     {
         BOOL result = ExNext(lock, fib);
         while (result)

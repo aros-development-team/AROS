@@ -57,7 +57,7 @@ extern char *_mktemp(char *);
 
     NAME */
 
-	char *tmpnam(
+	char *__posixc_tmpnam(
 
 /*  SYNOPSIS */
 	char *s)

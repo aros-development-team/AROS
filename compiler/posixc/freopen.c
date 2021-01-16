@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI function freopen().
@@ -15,7 +15,7 @@
     NAME */
 #include <stdio.h>
 
-	FILE *freopen (
+	FILE *__posixc_freopen (
 
 /*  SYNOPSIS */
 	const char *path,

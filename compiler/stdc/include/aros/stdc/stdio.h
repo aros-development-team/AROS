@@ -2,7 +2,7 @@
 #define _STDC_STDIO_H_
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdio.h
@@ -69,37 +69,49 @@ int __vcscan (void * data, int (*getc)(void *),
 /* Operations on files */
 int remove(const char *filename);
 int rename(const char *from, const char *to);
-FILE *tmpfile(void);
-char *tmpnam(char *s);
-
-/* File access functions */
-int fclose(FILE *stream);
-int fflush(FILE *stream);
 #if (!defined(_XOPEN_SOURCE) && \
      !defined(_POSIX_SOURCE) && \
      !defined(_BSD_SOURCE))
-FILE *fopen(const char * restrict filename, const char * restrict mode);
+FILE *tmpfile(void);
+char *tmpnam(char *s);
 #endif
+
+/* File access functions */
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
+int fclose(FILE *stream);
+int fflush(FILE *stream);
+FILE *fopen(const char * restrict filename, const char * restrict mode);
 FILE *freopen(const char * restrict filename, const char * restrict mode,
 	FILE * restrict stream);
 void setbuf(FILE * restrict stream, char * restrict buf);
 int setvbuf(FILE * restrict stream, char * restrict buf, int mode,
 	size_t size);
+#endif
 
 /* Formatted input/output functions */
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 int fprintf(FILE * restrict stream, const char * restrict format, ...);
 int fscanf(FILE * restrict stream, const char * restrict format, ...);
 int printf(const char * restrict format, ...);
 int scanf(const char * restrict format, ...);
+#endif
 int snprintf(char * restrict s, size_t n, const char * restrict format, ...);
 int sprintf(char * restrict s, const char * restrict format, ...);
 int sscanf(const char * restrict s, const char * restrict format, ...);
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 int vfprintf(FILE * restrict stream, const char * restrict format,
 	va_list arg);
 int vfscanf(FILE * restrict stream, const char * restrict format,
 	va_list arg);
 int vprintf(const char * restrict format, va_list arg);
 int vscanf(const char * restrict format, va_list arg);
+#endif
 int vsnprintf(char * restrict s, size_t n, const char * restrict format,
 	va_list arg);
 int vsprintf(char * restrict s, const char * restrict format,
@@ -109,25 +121,37 @@ int vsscanf(const char * restrict s, const char * restrict format,
 
 /* Character input/output functions */
 int fgetc(FILE *stream);
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 char *fgets(char * restrict s, int n, FILE * restrict stream);
 int fputc(int c, FILE *stream);
 int fputs(const char * restrict s, FILE * restrict stream);
+#endif
 int getc(FILE *stream);
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 int getchar(void);
 #ifndef _STDIO_H_NOMACRO
 #define getchar()       fgetc(stdin)
 #endif
 char *gets(char *s);
-int putc(int c, FILE *stream);
 int putchar(int c);
 int puts(const char *s);
 int ungetc(int c, FILE *stream);
+#endif
+int putc(int c, FILE *stream);
 
 /* Direct input/output functions */
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 size_t fread(void * restrict ptr, size_t size, size_t nmemb,
     FILE * restrict stream);
 size_t fwrite(const void * restrict ptr, size_t size, size_t nmemb,
     FILE * restrict stream);
+#endif
 
 /* File positioning functions */
 #if (!defined(_XOPEN_SOURCE) && \
@@ -135,15 +159,19 @@ size_t fwrite(const void * restrict ptr, size_t size, size_t nmemb,
      !defined(_BSD_SOURCE))
 int fgetpos(FILE * restrict stream, fpos_t * restrict pos);
 int fsetpos(FILE *stream, const fpos_t *pos);
-#endif
 int fseek(FILE *stream, long int offset, int whence);
 long int ftell(FILE *stream);
 void rewind(FILE *stream);
+#endif
 
 /* Error-handling functions */
 void clearerr(FILE *stream);
+#if (!defined(_XOPEN_SOURCE) && \
+     !defined(_POSIX_SOURCE) && \
+     !defined(_BSD_SOURCE))
 int feof(FILE *stream);
 int ferror(FILE *stream);
+#endif
 void perror(const char *s);
 
 /* AROS specific function to synchronise to keep DOS Input and Output in sync

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function ungetc().
@@ -18,7 +18,7 @@
     NAME */
 #include <stdio.h>
 
-	int ungetc (
+	int __posixc_ungetc (
 
 /*  SYNOPSIS */
 	int    c,

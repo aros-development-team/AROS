@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function vfscanf()
@@ -39,7 +39,7 @@ static int __ungetc(int c, void *_h);
     NAME */
 #include <stdio.h>
 
-	int vfscanf (
+	int __posixc_vfscanf (
 
 /*  SYNOPSIS */
 	FILE	   * stream,

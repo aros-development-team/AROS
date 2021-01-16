@@ -3,11 +3,10 @@
     $Id$
 */
 
-#include <stdio.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <stdio.h>
 
 #include <CUnit/Basic.h>
 #include <CUnit/Automated.h>
@@ -42,7 +41,15 @@ int clean_suite(void)
  */
 void testFOPENW(void)
 {
-    CU_ASSERT(NULL != (fd = fopen( "T:cunit-crt-fileseek.txt", "wb" )));
+    fd = fopen( "T:cunit-crt-fileseek.txt", "wb" );
+    if (fd)
+    {
+        CU_PASS("");
+    }
+    else
+    {
+        CU_FAIL("NULL == (fd = fopen( \"T:cunit-crt-fileseek.txt\", \"wb\" ))");
+    }
 }
 
 /* Simple test of fprintf(file,"wb").
@@ -72,7 +79,15 @@ void testFCLOSE(void)
  */
 void testFOPENR(void)
 {
-    CU_ASSERT(NULL != (fd = fopen( "T:cunit-crt-fileseek.txt", "rb" )));
+    fd = fopen( "T:cunit-crt-fileseek.txt", "rb" );
+    if (fd)
+    {
+        CU_PASS("");
+    }
+    else
+    {
+        CU_FAIL("NULL == (fd = fopen( \"T:cunit-crt-fileseek.txt\", \"rb\" ))");
+    }
 }
 
 /* Simple test of fread().
@@ -87,7 +102,6 @@ void testFREAD(void)
     }
 }
 
-
 /* Simple test of fseek().
  */
 void testFSEEK(void)
@@ -96,6 +110,8 @@ void testFSEEK(void)
     if (fd)
     {
         CU_ASSERT(0 == fseek( fd, 4, SEEK_CUR ));
+        CU_ASSERT(7 == (i = fread( &buffer[7], 1, 11, fd )));
+        CU_ASSERT(0 == fseek(fd, 0, SEEK_SET));
         CU_ASSERT(11 == (i = fread( &buffer[7], 1, 11, fd )));
     }
 }

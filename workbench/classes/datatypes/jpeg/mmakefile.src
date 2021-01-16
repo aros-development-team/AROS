@@ -9,6 +9,7 @@ FILES := jpegclass stubs memory
 
 USER_CPPFLAGS   := -DMYDEBUG
 USER_CPPFLAGS += -DAROS_LC_SETFUNCS
+USER_CFLAGS := -noposixc
 USER_LDFLAGS := -static
 
 %build_module mmake=workbench-datatypes-jpeg \

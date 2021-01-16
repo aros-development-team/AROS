@@ -122,9 +122,6 @@ LIBNURBS_SOURCES = \
 EMUL_C_SOURCES := \
     emul_stdc
 
-EMUL_CXX_SOURCES := \
-    emul_stdc++
-
 LIBRARY_SOURCES := \
             $(addprefix $(top_srcdir)/src/, $(LIBUTIL_SOURCES)) \
             $(addprefix $(top_srcdir)/src/, $(LIBTESS_SOURCES)) \
@@ -145,6 +142,7 @@ endif
 USER_CPPFLAGS := -DLIBRARYBUILD
 USER_CFLAGS := $(GLU_COMMONFLAGS) $(NOWARN_FLAGS)
 USER_CXXFLAGS := $(GLU_COMMONFLAGS) $(CFLAGS_NO_RTTI) $(NOWARN_FLAGS)
+USER_LDFLAGS := -Wl,--start-group -static-libstdc++
 
 CC_SOURCES := \
     $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
@@ -158,8 +156,8 @@ CC_SOURCES := \
 
 %build_module mmake=workbench-libs-glu \
     modname=glu modtype=library linklibname=GLU \
-    files="$(LIBRARY_SOURCES)" cxxfiles="$(EMUL_CXX_SOURCES) $(CC_SOURCES)" \
-    uselibs="GL posixc stdcio stdc"
+    files="$(LIBRARY_SOURCES)" cxxfiles="$(CC_SOURCES)" \
+    uselibs="GL"
 
 #MM
 workbench-libs-glu-includes:

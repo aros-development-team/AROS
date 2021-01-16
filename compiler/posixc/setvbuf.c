@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function setvbuf().
@@ -16,7 +16,7 @@
     NAME */
 #include <stdio.h>
 
-	int setvbuf (
+	int __posixc_setvbuf (
 
 /*  SYNOPSIS */
 	FILE *stream,

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function puts().
@@ -12,7 +12,7 @@
     NAME */
 #include <stdio.h>
 
-	int puts (
+	int __posixc_puts (
 
 /*  SYNOPSIS */
 	const char * str)
