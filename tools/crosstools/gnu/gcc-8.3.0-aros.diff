@@ -261,7 +261,7 @@ diff -ruN gcc-8.3.0/gcc/config/aarch64/aros.h gcc-8.3.0.aros/gcc/config/aarch64/
 +#endif
 +
 +#undef SUBTARGET_CPP_SPEC
-+#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
++#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc|noposixinc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +#undef  SUBTARGET_EXTRA_LINK_SPEC
 +#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
@@ -370,7 +370,7 @@ diff -ruN gcc-8.3.0/gcc/config/arm/aros.h gcc-8.3.0.aros/gcc/config/arm/aros.h
 +#endif
 +
 +#undef SUBTARGET_CPP_SPEC
-+#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
++#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc|noposixinc: -idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +#undef  SUBTARGET_EXTRA_LINK_SPEC
 +#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
@@ -606,7 +606,7 @@ diff -ruN gcc-8.3.0/gcc/config/aros.h gcc-8.3.0.aros/gcc/config/aros.h
 +}
 +
 +#undef CPP_SPEC
-+#define CPP_SPEC "%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc:-idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
++#define CPP_SPEC "%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__}  %{!nostdinc:%{!nostdc:%{!noposixc|noposixinc:-idirafter %R/include/aros/posixc} -idirafter %R/include/aros/stdc}}"
 +
 +/* This is for -profile to use -lc_p instead of -lc.  */
 +#ifndef CC1_SPEC
@@ -619,7 +619,7 @@ diff -ruN gcc-8.3.0/gcc/config/aros.h gcc-8.3.0.aros/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
++  "--start-group -lmui -larossupport -lamiga %{!nostartfiles:%{!static:%{!nostdc:%{!noposixc:%{!deferposixc:-lposixc}} -lstdcio %{!noposixc:%{deferposixc:-lposixc}} -lstdc}}%{static:%{!nostdc:-lstdc.static}}} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit %{nostartfiles:%{static:-lstdc.static}} --end-group"
 +
 +#undef	LIBSTDCXX_STATIC
 +#define LIBSTDCXX_STATIC "pthread"
@@ -638,7 +638,7 @@ diff -ruN gcc-8.3.0/gcc/config/aros.h gcc-8.3.0.aros/gcc/config/aros.h
 diff -ruN gcc-8.3.0/gcc/config/aros.opt gcc-8.3.0.aros/gcc/config/aros.opt
 --- gcc-8.3.0/gcc/config/aros.opt	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.3.0.aros/gcc/config/aros.opt	2019-04-14 20:44:31.586676100 +0000
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,41 @@
 +; Processor-independent options for AROS.
 +
 +; Copyright (C) 2015 Free Software Foundation, Inc.
@@ -663,6 +663,12 @@ diff -ruN gcc-8.3.0/gcc/config/aros.opt gcc-8.3.0.aros/gcc/config/aros.opt
 +Driver
 +
 +noposixc
++Driver
++
++noposixinc
++Driver
++
++deferposixc
 +Driver
 +
 +nostdc
@@ -2328,7 +2334,7 @@ diff -ruN gcc-8.3.0/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-8.3.0.aros
 diff -ruN gcc-8.3.0/libstdc++-v3/config/os/aros/os_defines.h gcc-8.3.0.aros/libstdc++-v3/config/os/aros/os_defines.h
 --- gcc-8.3.0/libstdc++-v3/config/os/aros/os_defines.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-8.3.0.aros/libstdc++-v3/config/os/aros/os_defines.h	2019-04-14 20:44:31.586676100 +0000
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,12 @@
 +// Specific definitions for AROS  -*- C++ -*-
 +
 +#ifndef _GLIBCXX_OS_DEFINES
@@ -2336,6 +2342,9 @@ diff -ruN gcc-8.3.0/libstdc++-v3/config/os/aros/os_defines.h gcc-8.3.0.aros/libs
 +
 +// No support for referencing weak symbols without a definition.
 +#define _GLIBCXX_USE_WEAK_REF 0
++
++// Make AROS wrap the variadic macros.
++#define POSIXC_NOINLINE_VAARGS
 +
 +#endif
 diff -ruN gcc-8.3.0/libstdc++-v3/configure gcc-8.3.0.aros/libstdc++-v3/configure
