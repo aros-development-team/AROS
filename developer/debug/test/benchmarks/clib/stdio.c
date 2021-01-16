@@ -6,14 +6,17 @@
 #include "benchmark.h"
 #include <stdio.h>
 
+#define BUFSIZE 1000000
+
 int main() {
     FILE *file;
-    
-    if((file = fopen("T:__test__", "w")))
+    char *buffer;
+    buffer = malloc(BUFSIZE);
+
+    printf("Please be patient while benchmarks run...\n");
+
+    if(buffer && (file = fopen("T:__test__", "w")))
     {
-        #define BUFSIZE 1000000
-        char buffer[BUFSIZE];
-        
         #define BENCHMARK(z, n, c) fwrite(buffer, BUFSIZE, sizeof(char), file);
         BENCHMARK_BUFFER(fwrite,100, BUFSIZE);
         #undef BENCHMARK
@@ -28,10 +31,8 @@ int main() {
         remove("T:__test__");
     }
 
-    if((file = fopen("T:__test__", "w")))
+    if(buffer && (file = fopen("T:__test__", "w")))
     {
-        char buffer[1];
-        
         #define BENCHMARK(z, n, c) fwrite(buffer, 1, sizeof(char), file);
         BENCHMARK_OPERATION(fwrite,10000000);
         #undef BENCHMARK
@@ -59,6 +60,11 @@ int main() {
         fclose(file);
         remove("T:__test__");
     }
+
+    if (buffer)
+        free(buffer);
+
+    printf("Benchmarks complete...\n");
     
     return 0;
 }
