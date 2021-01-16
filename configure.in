@@ -16,6 +16,7 @@ dnl Lang: english
 AC_INIT(mmakefile)
 AC_PREREQ(2.61)
 AC_CONFIG_AUX_DIR(scripts/autoconf)
+AC_CONFIG_MACRO_DIR(scripts/autoconf/m4)
 
 # Check what host we are running on.
 # If a target is not suggested, we use this one.
@@ -587,6 +588,10 @@ AROS_REQUIRED(patch,$PATCH)
 
 dnl TODO it might be necessary to use a higher version of Python 3
 AM_PATH_PYTHON(3.0)
+
+dnl Check if mako templates are installed..
+AC_MSG_CHECKING(if Python's mako templates are installed)
+PC_PYTHON_CHECK_MODULE(mako, [AC_MSG_RESULT(yes)], [AC_MSG_FAILURE([failed to detect mako templates])])
 
 AC_ARG_ENABLE([libpng-config], [--disable-libpng-config    disable libpng-config test and configuration])
 if test "$enable_libpng_config" != "no"; then
