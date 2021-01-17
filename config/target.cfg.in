@@ -1,4 +1,4 @@
-#   Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2021, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -73,47 +73,47 @@ KERNEL_RANLIB                 := @aros_kernel_ranlib@
 # TARGET TOOLCHAIN SECTION
 # -------------------------------------------------------------------------- 
 
-TARGET_CPP                    := @aros_target_cpp@
-TARGET_CC                     := $(CC_PREFIX)@aros_target_cc@
-TARGET_CXX                    := $(CC_PREFIX)@aros_target_cxx@
-TARGET_AS                     := @aros_target_as@
-TARGET_LD                     := @aros_target_ld@
-SHARED_LD                     := @aros_shared_ld@
-GENMAP                        := @aros_target_genmap@
-TARGET_OBJCOPY                := @aros_target_objcopy@
+TARGET_CPP                    := $(strip @aros_target_cpp@)
+TARGET_CC                     := $(strip $(CC_PREFIX)@aros_target_cc@)
+TARGET_CXX                    := $(strip $(CC_PREFIX)@aros_target_cxx@)
+TARGET_AS                     := $(strip @aros_target_as@)
+TARGET_LD                     := $(strip @aros_target_ld@)
+SHARED_LD                     := $(strip @aros_shared_ld@)
+GENMAP                        := $(strip @aros_target_genmap@)
+TARGET_OBJCOPY                := $(strip @aros_target_objcopy@)
 
-TARGET_DEF_STRIP              := @aros_target_strip@ @aros_target_strip_flags@
+TARGET_DEF_STRIP              := $(strip @aros_target_strip@ @aros_target_strip_flags@)
 
-TARGET_OBJDUMP                := @aros_target_objdump@
+TARGET_OBJDUMP                := $(strip @aros_target_objdump@)
 
-CONFIG_NOWARN_CFLAGS          = $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn)))
-CONFIG_WARN_CFLAGS            := @aros_warn_flags@
-CONFIG_NOWARN_CXXFLAGS        = $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@aros_nowarn_flags@),$($(nowarn)))
+CONFIG_NOWARN_CFLAGS          = $(strip $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn))))
+CONFIG_WARN_CFLAGS            := $(strip @aros_warn_flags@)
+CONFIG_NOWARN_CXXFLAGS        = $(strip $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@aros_nowarn_flags@),$($(nowarn))))
 CONFIG_WARN_CXXFLAGS          := $(subst -Werror-implicit-function-declaration,,@aros_warn_flags@)
 
-TARGET_SYSROOT                = $(COMPILER_SYSROOT)
-CONFIG_BASE_CFLAGS            = @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS)
-CONFIG_BASE_CXXFLAGS          = @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS)
-CONFIG_BASE_CPPFLAGS          = @aros_config_cppflags@
-CONFIG_CFLAGS                 = @aros_config_cflags@ $(CONFIG_WARN_CFLAGS) $(CONFIG_NOWARN_CFLAGS)
-CONFIG_CXXFLAGS               = @aros_config_cxxflags@ $(CONFIG_WARN_CXXFLAGS) $(CONFIG_NOWARN_CXXFLAGS)
-CONFIG_CPPFLAGS               = @aros_config_cppflags@
-CONFIG_AFLAGS                 := @aros_config_aflags@
-CONFIG_LDFLAGS                := @aros_config_ldflags@
-SHARED_CFLAGS                 := @aros_shared_cflags@
-SHARED_AFLAGS                 := @aros_shared_aflags@
-SHARED_LDFLAGS                := @aros_shared_ldflags@
-TARGET_CFLAGS                 = $(OPTIMIZATION_CFLAGS) $(CONFIG_CFLAGS) $(USER_CFLAGS)
-TARGET_CXXFLAGS               = $(OPTIMIZATION_CFLAGS) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS)
-TARGET_CPPFLAGS               = $(USER_INCLUDES) $(CONFIG_CPPFLAGS) $(USER_CPPFLAGS)
-TARGET_LDFLAGS                = $(CONFIG_LDFLAGS) $(TARGET_C_LIBS)
-DEBUG_CFLAGS                  := @aros_debug_cflags@
-DEBUG_CXXFLAGS                := @aros_debug_cxxflags@
-DEBUG_CPPFLAGS                := @aros_debug_cppflags@
-DEBUG_AFLAGS                  := @aros_debug_aflags@
-DEBUG_LDFLAGS                 := @aros_debug_ldflags@
-OPTIMIZATION_CFLAGS           := @aros_optimization_cflags@
-@aros_isa_extra@ISA_FLAGS                     = @aros_isa_flags@
+TARGET_SYSROOT                = $(strip $(COMPILER_SYSROOT))
+CONFIG_BASE_CFLAGS            = $(strip @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS))
+CONFIG_BASE_CXXFLAGS          = $(strip @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS))
+CONFIG_BASE_CPPFLAGS          = $(strip @aros_config_cppflags@)
+CONFIG_CFLAGS                 = $(strip @aros_config_cflags@ $(CONFIG_WARN_CFLAGS) $(CONFIG_NOWARN_CFLAGS))
+CONFIG_CXXFLAGS               = $(strip @aros_config_cxxflags@ $(CONFIG_WARN_CXXFLAGS) $(CONFIG_NOWARN_CXXFLAGS))
+CONFIG_CPPFLAGS               = $(strip @aros_config_cppflags@)
+CONFIG_AFLAGS                 := $(strip @aros_config_aflags@)
+CONFIG_LDFLAGS                := $(strip @aros_config_ldflags@)
+SHARED_CFLAGS                 := $(strip @aros_shared_cflags@)
+SHARED_AFLAGS                 := $(strip @aros_shared_aflags@)
+SHARED_LDFLAGS                := $(strip @aros_shared_ldflags@)
+TARGET_CFLAGS                 = $(strip $(OPTIMIZATION_CFLAGS) $(CONFIG_CFLAGS) $(USER_CFLAGS))
+TARGET_CXXFLAGS               = $(strip $(OPTIMIZATION_CFLAGS) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS))
+TARGET_CPPFLAGS               = $(strip $(USER_INCLUDES) $(CONFIG_CPPFLAGS) $(USER_CPPFLAGS))
+TARGET_LDFLAGS                = $(strip $(CONFIG_LDFLAGS) $(TARGET_C_LIBS))
+DEBUG_CFLAGS                  := $(strip @aros_debug_cflags@)
+DEBUG_CXXFLAGS                := $(strip @aros_debug_cxxflags@)
+DEBUG_CPPFLAGS                := $(strip @aros_debug_cppflags@)
+DEBUG_AFLAGS                  := $(strip @aros_debug_aflags@)
+DEBUG_LDFLAGS                 := $(strip @aros_debug_ldflags@)
+OPTIMIZATION_CFLAGS           := $(strip @aros_optimization_cflags@)
+@aros_isa_extra@ISA_FLAGS                     = $(strip @aros_isa_flags@)
 
 TARGET_ISA_CFLAGS             = $(ISA_FLAGS)
 TARGET_ISA_CXXFLAGS           = $(ISA_FLAGS)
@@ -122,30 +122,30 @@ TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
 TARGET_ISA_LDFLAGS            = $(ISA_FLAGS)
 
 TARGET_LIBATOMIC              = @use_libatomic@
-TARGET_C_LIBS                 := @aros_c_libs@
-TARGET_CXX_LDFLAGS            = @aros_cxx_ldflags@
-TARGET_CXX_LIBS               := @aros_cxx_libs@
+TARGET_C_LIBS                 := $(strip @aros_c_libs@)
+TARGET_CXX_LDFLAGS            = $(strip @aros_cxx_ldflags@)
+TARGET_CXX_LIBS               := $(strip @aros_cxx_libs@)
 
-COVERAGEINSTR_FLAGS           = $(CFLAGS_PROFILE_ARCS) $(CFLAGS_TEST_COVERAGE)
+COVERAGEINSTR_FLAGS           = $(strip $(CFLAGS_PROFILE_ARCS) $(CFLAGS_TEST_COVERAGE))
 COVERAGEINSTR_LIBS            = gcov
 FUNCINSTR_FLAGS               = $(CFLAGS_INSTR_FUNCTIONS)
 FUNCINSTR_LIBS                = instrfunc
 
-NOSTDINC_CFLAGS               := @aros_target_nostdinc_cflags@
-NOSTARTUP_LDFLAGS             := @aros_target_nostartup_ldflags@
-NOSTARTUP_OBJECTS             = @aros_target_nostartup_objects@
-NIX_LDFLAGS                   := @aros_target_nix_ldflags@
-DETACH_LDFLAGS                := @aros_target_detach_ldflags@
-NOSTDLIB_LDFLAGS              := @aros_target_nostdlib_ldflags@
+NOSTDINC_CFLAGS               := $(strip @aros_target_nostdinc_cflags@)
+NOSTARTUP_LDFLAGS             := $(strip @aros_target_nostartup_ldflags@)
+NOSTARTUP_OBJECTS             = $(strip @aros_target_nostartup_objects@)
+NIX_LDFLAGS                   := $(strip @aros_target_nix_ldflags@)
+DETACH_LDFLAGS                := $(strip @aros_target_detach_ldflags@)
+NOSTDLIB_LDFLAGS              := $(strip @aros_target_nostdlib_ldflags@)
 
-AR                            := @aros_target_ar@
-AR_PLAIN                      := @aros_plain_ar@
-RANLIB                        := @aros_target_ranlib@
-NM                            := @aros_target_nm@
-NM_PLAIN                      := @aros_plain_nm@
-OBJCOPY                       := @aros_target_objcopy@
-OBJDUMP                       := @aros_target_objdump@
-STRIP_PLAIN                   := @aros_target_strip@
+AR                            := $(strip @aros_target_ar@)
+AR_PLAIN                      := $(strip @aros_plain_ar@)
+RANLIB                        := $(strip @aros_target_ranlib@)
+NM                            := $(strip @aros_target_nm@)
+NM_PLAIN                      := $(strip @aros_plain_nm@)
+OBJCOPY                       := $(strip @aros_target_objcopy@)
+OBJDUMP                       := $(strip @aros_target_objdump@)
+STRIP_PLAIN                   := $(strip @aros_target_strip@)
 @target_extra_cfg@
 
 # --------------------------------------------------------------------------
