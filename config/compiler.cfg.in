@@ -311,3 +311,4 @@ NOWARN_BUILTIN_DECLARATION_MISMATCH     := @aros_nowarnflags_builtin_declaration
 # Toolchain support
 
 COMPILER_SYSROOT                        := @aros_toolchain_sysroot@
+COMPILER_COMMON_CFLAGS                  := @aros_toolchain_cflags_common@
