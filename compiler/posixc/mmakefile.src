@@ -262,5 +262,5 @@ POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notd
 %build_module mmake=compiler-posixc \
     modname=posixc modtype=library \
     files="$(POSIXC) $(POSIXC_COMMON) $(POSIXC_ARCH)" \
-    linklibfiles=$(POSIXC_LINKLIB) linklibobjs=$(POSIXC_LINKOBJS) \
+    linklibfiles="$(POSIXC_LINKLIB) $(POSIXC_COMMON)" linklibobjs=$(POSIXC_LINKOBJS) \
     uselibs="stdc_rel stdcio_rel"
