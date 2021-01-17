@@ -5,6 +5,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 EXEDIR := $(AROS_TESTS)/crt/stdc
+CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/stdc/math
 
 USER_CFLAGS = $(CFLAGS_NO_BUILTIN)
 
@@ -26,8 +27,8 @@ FILESINFTORTURE := \
 FILESPARANOIA := \
         paranoia
 
-#MM- test-crt-stdc : test-crt-stdc-math
-#MM- test-crt-stdc-quick : test-crt-stdc-math-quick
+#MM- test-crt-stdc : test-crt-stdc-math test-crt-stdc-math-cunit
+#MM- test-crt-stdc-quick : test-crt-stdc-math-quick test-crt-stdc-math-cunit-quick
 
 #MM- test-crt-stdc-math : test-crt-stdc-math-fenv test-crt-stdc-math-c99-double test-crt-stdc-math-c99-float test-crt-stdc-math-ieee754 test-crt-stdc-math-inftorture test-crt-stdc-math-paranoia-double test-crt-stdc-math-paranoia-float
 #MM- test-crt-stdc-math-quick : test-crt-stdc-math-fenv-quick test-crt-stdc-math-c99-double-quick test-crt-stdc-math-c99-float-quick test-crt-stdc-math-ieee754-quick test-crt-stdc-math-inftorture-quick test-crt-stdc-math-paranoia-double-quick test-crt-stdc-math-paranoia-float-quick
@@ -77,3 +78,12 @@ USER_CPPFLAGS = -DSYS_MATH_H
     files=$(FILESINFTORTURE) targetdir=$(EXEDIR) \
     progname=math-inftorture
 
+USER_CPPFLAGS :=
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+STDC_BASE_CFLAGS := -noposixc -ffloat-store $(CFLAGS_NO_BUILTIN) 
+USER_CFLAGS := $(STDC_BASE_CFLAGS)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_prog mmake=test-crt-stdc-math-cunit \
+    files=cunit-math targetdir=$(CUNITEXEDIR) \
+    progname=cunit-math uselibs="cunit"
