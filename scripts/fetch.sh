@@ -195,7 +195,7 @@ fetch()
 	    if test "$origin" = "$destination";  then
 	        ! test -f "$origin/$file" && ret=false
 	    else
-	        if ! cp "$origin/$file" "$destination/$file.tmp"; then
+	        if ! cp "$origin/$file" "$destination/$file.tmp" >/dev/null; then
 		    ret=false
 		else
 		    mv "$destination/$file.tmp" "$destination/$file"
