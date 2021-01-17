@@ -20,6 +20,7 @@ USER_LDFLAGS  := $(TARGET_CXX_LDFLAGS)
 ifeq ($(AROS_TARGET_CPU),x86_64)
 OPTIMIZATION_CFLAGS := -O3
 TARGET_ISA_CFLAGS += -msse
+TARGET_ISA_CXXFLAGS += -msse
 endif
 
 %build_prog mmake=test-smp-smp-smallpt \
