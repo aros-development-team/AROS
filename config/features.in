@@ -1342,6 +1342,24 @@ AC_LANG_PUSH(C)
 #
 # Now check what we need to use with the toolchain
 
+COMPILER_VERSION=`${CC} --version 2>/dev/null`
+IS_LLVM_COMPILER=`echo "$COMPILER_VERSION" | grep -i -c -E 'LLVM|clang'`
+if test "$IS_LLVM_COMPILER" -ne "0"; then
+    IS_GNU_COMPILER=0
+fi
+if test "$IS_LLVM_COMPILER" -eq "0"; then
+    IS_GNU_COMPILER=`echo "$COMPILER_VERSION" | grep -i -c -E 'gcc'`
+fi
+if test "$IS_GNU_COMPILER" -ne "0"; then
+    GNU_COMPILER_VERS="`${CC} -dumpversion`"
+    GCC_VERSION_MAJOR=$(echo $GNU_COMPILER_VERS | cut -d'.' -f1)
+    GCC_VERSION_MINOR=$(echo $GNU_COMPILER_VERS | cut -d'.' -f2)
+    GCC_VERSION_PATCH=$(echo $GNU_COMPILER_VERS | cut -d'.' -f3)
+    if test "$GCC_VERSION_MAJOR" -gt "9" ; then
+        aros_toolchain_cflags_common="$""(CFLAGS_COMMON)"
+    fi
+fi
+
 cat >$AROS_DEVELOPER/include/__testsincdir.h <<_ACEOF
 /* Copyright (c) The AROS Dev Team  */
 #define _TESTINCFOUND
@@ -1667,6 +1685,7 @@ AC_SUBST(aros_nowarnflags_builtin_declaration_mismatch)
     
 # Additional toolchain support ...
 AC_SUBST(aros_toolchain_sysroot)
+AC_SUBST(aros_toolchain_cflags_common)
 
 AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
