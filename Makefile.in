@@ -57,59 +57,59 @@ $(TOP)/config.status: $(SRCDIR)/configure
 
 $(TOP)/mmake.config: $(SRCDIR)/mmake.config.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(TOP)/mmake.config
 CONFIGBUILDFILES += $(TOP)/mmake.config
 
 $(TOP)/config/make.cfg: $(SRCDIR)/config/make.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(TOP)/config/make.cfg
 CONFIGBUILDARCHFILES += $(TOP)/config/make.cfg
 
 $(TOP)/compiler/include/geninc.cfg: $(SRCDIR)/compiler/include/geninc.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(TOP)/compiler/include/geninc.cfg
 
 $(AROS_INCLUDES)/aros/config.h: $(SRCDIR)/config/config.h.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(AROS_INCLUDES)/aros/config.h
 
 $(GENINCDIR)/aros/config.h: $(SRCDIR)/config/config.h.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENINCDIR)/aros/config.h
 
 $(GENDIR)/config/target.cfg: $(SRCDIR)/config/target.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/target.cfg
 CONFIGBUILDARCHFILES += $(GENDIR)/config/target.cfg
 
 $(GENDIR)/config/build.cfg: $(SRCDIR)/config/build.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/build.cfg
 CONFIGBUILDARCHFILES += $(GENDIR)/config/build.cfg
 
 $(GENDIR)/config/make.defaults: $(SRCDIR)/config/make.defaults.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(GENDIR)/config/make.defaults
 
 $(HOSTGENDIR)/config/host.cfg: $(SRCDIR)/config/host.cfg.in $(TOP)/config.status
 	@+$(ECHO) "Regenerating " $(subst $(TOP)/,,$@); \
-	@$(TOP)/config.status --silent --file=$@:$<
+	$(TOP)/config.status --silent --file=$@:$<
 
 CONFIGUREFILES += $(HOSTGENDIR)/config/host.cfg
 
