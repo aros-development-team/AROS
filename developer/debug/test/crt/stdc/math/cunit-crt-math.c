@@ -318,8 +318,8 @@ int main()
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
     CU_basic_set_mode(CU_BRM_SILENT);
-    CU_automated_package_name_set("MathUnitTests");
-    CU_set_output_filename("Math");
+    CU_automated_package_name_set("CRTMathUnitTests");
+    CU_set_output_filename("CRT-Math");
     CU_automated_enable_junit_xml(CU_TRUE);
     CU_automated_run_tests();
     CU_cleanup_registry();

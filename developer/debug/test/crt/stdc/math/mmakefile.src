@@ -85,5 +85,5 @@ USER_CFLAGS := $(STDC_BASE_CFLAGS)
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
 %build_prog mmake=test-crt-stdc-math-cunit \
-    files=cunit-math targetdir=$(CUNITEXEDIR) \
-    progname=cunit-math uselibs="cunit"
+    files=cunit-crt-math targetdir=$(CUNITEXEDIR) \
+    progname=cunit-crt-math uselibs="cunit"
