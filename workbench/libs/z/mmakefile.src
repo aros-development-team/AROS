@@ -88,7 +88,6 @@ $(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
 	$(CP) $^ $@
 
-
 %build_prog mmake=wokbench-libs-z-example \
     progname=example \
     files=$(ARCHSRCDIR)/test/example targetdir=$(AROS_TESTS)/z uselibs="z1"
@@ -96,8 +95,8 @@ $(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
 #MM wokbench-libs-z-example : \
 #MM        workbench-libs-z-linklib
 
-##MM- test-z : wokbench-libs-z-example
-##MM- test-z-quick : wokbench-libs-z-example-quick
+#MM- test-z : wokbench-libs-z-example
+#MM- test-z-quick : wokbench-libs-z-example-quick
 
 %build_prog mmake=wokbench-libs-z-minigzip \
     progname=minigzip \
