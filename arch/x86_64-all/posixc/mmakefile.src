@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_AFLAGS 	:= -I$(GENINCDIR)
 
-#MM- compiler-posixc-x86_64 : includes-asm_h-x86_64
+#MM- compiler-posixc-x86_64 : includes-asm_h
 
 %build_archspecific \
   mainmmake=compiler-posixc maindir=compiler/posixc \

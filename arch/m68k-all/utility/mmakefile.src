@@ -14,6 +14,6 @@ TARGET_ISA_AFLAGS:=$(ISA_MC68020_FLAGS)
   mainmmake=kernel-utility modname=utility maindir=rom/utility arch=m68k \
   files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel
 
-#MM kernel-utility-m68k : includes-asm_h-m68k
+#MM kernel-utility-m68k : includes-asm_h
 
 %common

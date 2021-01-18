@@ -8,7 +8,7 @@ AFILES		:= enable disable readgayle
 #MM kernel-exec-amiga-m68k : \
 #MM     kernel-kernel-amiga-m68k-includes \
 #MM     kernel-exec-includes \
-#MM     includes-asm_h-m68k \
+#MM     includes-asm_h \
 #MM     kernel-kernel-includes
 
 USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)

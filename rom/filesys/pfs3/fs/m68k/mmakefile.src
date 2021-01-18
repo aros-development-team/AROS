@@ -8,10 +8,10 @@ AFILES := \
 USER_AFLAGS := -I$(GENINCDIR)
 
 #MM- kernel-fs-pfs3ds-ks13-amiga-m68k : \
-#MM     includes-asm_h-m68k
+#MM     includes-asm_h
 
 #MM- kernel-fs-pfs3-ks13-amiga-m68k : \
-#MM     includes-asm_h-m68k
+#MM     includes-asm_h
 
 %build_archspecific \
         mainmmake=kernel-fs-pfs3ds-ks13 \

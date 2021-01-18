@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 USER_INCLUDES	:= $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
-#MM- kernel-exec-arm: includes-asm_h-arm kernel-kernel-includes
+#MM- kernel-exec-arm: includes-asm_h kernel-kernel-includes
 
 %build_archspecific \
   mainmmake=kernel-exec modname=exec maindir=rom/exec \

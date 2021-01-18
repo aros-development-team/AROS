@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 CFILES  := setchiprev vbeampos
 AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
 
-#MM kernel-graphics-amiga-m68k : kernel-hidd-includes kernel-graphics-includes includes-asm_h-m68k kernel-hidd-graphics-includes
+#MM kernel-graphics-amiga-m68k : kernel-hidd-includes kernel-graphics-includes includes-asm_h kernel-hidd-graphics-includes
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \
                -I$(SRCDIR)/rom/graphics

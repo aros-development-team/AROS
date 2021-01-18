@@ -12,6 +12,6 @@ USER_CPPFLAGS := -DHOST_OS_$(ARCH)
   files="alert_cpu cachecleare newstackswap preparecontext" \
   arch=ppc modname=exec
 
-#MM kernel-exec-ppc : includes-asm_h-ppc
+#MM kernel-exec-ppc : includes-asm_h
 
 %common

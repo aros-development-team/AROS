@@ -11,4 +11,4 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
   arch=armeb \
   files="fenv" asmfiles="longjmp setjmp"
 
-#MM compiler-stdc-armeb : includes-asm_h-armeb
+#MM compiler-stdc-armeb : includes-asm_h

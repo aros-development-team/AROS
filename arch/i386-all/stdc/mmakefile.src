@@ -81,4 +81,4 @@ STDC_I386_ASMFILES += \
   arch=i386 \
   files="$(STDC_I386_FILES)" linklibfiles="$(STDC_I386_SSE_FILES)" asmfiles="$(STDC_I386_ASMFILES)"
 
-#MM- compiler-stdc-i386 : includes-asm_h-i386
+#MM- compiler-stdc-i386 : includes-asm_h

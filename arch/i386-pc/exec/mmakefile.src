@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 CFILES := cachecleare debug_init debug memoryrawio
 AFILES := cache userstate
 
-#MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h-i386
+#MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h
 
 USER_INCLUDES 	:= $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS 	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)

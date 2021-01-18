@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-kernel-m68k : includes-asm_h-m68k
+#MM kernel-kernel-m68k : includes-asm_h
 
 FILES := \
         dispatch \

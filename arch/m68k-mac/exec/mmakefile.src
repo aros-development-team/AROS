@@ -10,7 +10,7 @@ AFILES          := coldreboot ints superstate sys_trap1_handler \
 		detect_memory_handlers setsr supervisor userstate \
 		execstubs stackswap switchtouser
 
-#MM kernel-exec-mac-m68k : kernel-exec-includes includes-asm_h-m68k
+#MM kernel-exec-mac-m68k : kernel-exec-includes includes-asm_h
 
 #USER_INCLUDES      := -I../ $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 #USER_CPPFLAGS      := -D__AROS__

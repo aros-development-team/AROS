@@ -65,13 +65,13 @@ STDC_M68K_FILES += \
   arch=m68k \
   files="$(STDC_M68K_FILES)" asmfiles="$(STDC_M68K_ASMFILES)"
 
-#MM- compiler-stdc-m68k : includes-asm_h-m68k
+#MM- compiler-stdc-m68k : includes-asm_h
 
 #
 #
 #
 
-#MM- test-clib-m68k: includes-asm_h-m68k test-clib-m68k-jmptests
+#MM- test-clib-m68k: includes-asm_h test-clib-m68k-jmptests
 
 USER_AFLAGS := -I$(GENINCDIR) # -DDEBUG_MAGIC=0x40506070 -DDEBUG=1
 AFILES:=jmptests setjmp longjmp ../posixc/vfork ../posixc/vfork_longjmp
