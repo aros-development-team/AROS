@@ -13,7 +13,7 @@
 # Convert the ISO-8859-1 string in %(string) to the host's locale (if necessary)
 %define localisestr string= var=
 ifeq (,$(findstring "ISO-8859-1",$(LOCALE)))
-    %(var) := $(shell echo %(string) | iconv -f iso-8859-1 )
+    %(var) := $(shell $(ECHO) %(string) | iconv -f iso-8859-1 )
 else
     %(var) := %(string)
 endif
@@ -79,20 +79,20 @@ endif
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" opt="$(TARGET_ISA_LDFLAGS) $(LDFLAGS)" from="$<" to="$@" libs="$(LIBS)" strip="$(STRIP)" objdir="$(GENDIR)/$(CURDIR)" coverageinstr=
+%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS))" ldflags="$(strip $(LDFLAGS))" from="$<" to="$@" libs="$(LIBS)" strip="$(STRIP)" objdir="$(GENDIR)/$(CURDIR)" coverageinstr=
 	$(Q)$(eval LINKTARGET=%(to))
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
 	$(Q)$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
-	$(Q)$(IF) %(cmd) %(from) -o $(LINKTMPFILE) %(opt) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	$(Q)$(IF) %(cmd) %(ldopts) %(from) -o $(LINKTMPFILE) %(ldflags) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "$(LINKTARGET): %(cmd) %(from) -o $(LINKTARGET) %(opt) %(libs)" >> $(GENDIR)/errors ; \
+				$(ECHO) "$(LINKTARGET): %(cmd) %(ldopts) %(from) -o $(LINKTARGET) %(ldflags) %(libs)" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 		else \
 			$(NOP) ; \
 		fi ; \
 		$(CP) $(LINKTMPFILE) $(LINKTARGET) ; \
 	else \
-		$(ECHO) "Link failed: %(cmd) %(from) -o $(LINKTARGET) %(opt) %(libs)" 1>&2 ; \
+		$(ECHO) "Link failed: %(cmd) %(ldopts) %(from) -o $(LINKTARGET) %(ldflags) %(libs)" 1>&2 ; \
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
 	fi
@@ -101,7 +101,7 @@ endif
 		LINKBASEFILES="$(strip $(notdir $(basename %(from))))" ; \
 		$(FOR) covext in $(TARGET_COVERAGEINSTR_EXTS) ; do \
 			$(FOR) file in $$LINKBASEFILES ; do \
-				COVERAGEFILE=`echo $$file$$covext` ; \
+				COVERAGEFILE=`$(ECHO) $$file$$covext` ; \
 				$(IF) $(TEST) -s %(objdir)/$$COVERAGEFILE ; then \
 					$(CP) %(objdir)/$$COVERAGEFILE $(dir $(LINKTARGET))$$COVERAGEFILE ; \
 				fi ; \
@@ -116,15 +116,15 @@ endif
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" err="$(notdir $@).err" strip=$(STRIP) objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
+%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" err="$(notdir $@).err" strip=$(STRIP) objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	$(Q)$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
-	$(Q)$(IF) %(cmd) $(strip $(NOSTARTUP_LDFLAGS) $(NOSTARTUP_OBJECTS) \
+	$(Q)$(IF) %(cmd) $(strip %(ldopts) $(NOSTARTUP_OBJECTS) \
 		$(GENMAP) %(objdir)/%(module).map \
 		%(objs) %(endtag) -o $@ %(ldflags) %(libs)) 2>&1 > %(objdir)/%(err) 2>&1 ; \
 	then \
 		cat %(objdir)/%(err); \
 	else \
-		echo "%(cmd) $(strip $(NOSTARTUP_LDFLAGS) $(GENMAP) %(objdir)/%(module).map %(objs) %(endtag) -o $@ %(ldflags) %(libs))"; \
+		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map %(objs) %(endtag) -o $@ %(ldflags) %(libs))"; \
 		cat %(objdir)/%(err); \
 		exit 1; \
 	fi
@@ -334,6 +334,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
 endif
 ifeq (%(compiler),target)
 %(mmake)_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(LDFLAGS))
 %(mmake)_STRIP ?= $(TARGET_STRIP)
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
@@ -349,6 +350,7 @@ $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
 %(mmake)_LINK ?= $(strip $(HOST_CC))
+%(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
 %(mmake)_STRIP ?= $(HOST_STRIP)
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(HOST_CC)
@@ -363,7 +365,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS >= $(KERNEL_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -428,6 +431,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
 endif
 ifeq (%(compiler),target)
 %(mmake)_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
 %(mmake)_STRIP ?= $(TARGET_STRIP)
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
@@ -442,7 +446,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-%(mmake)_LINK ?= $(strip $(HOST_CXX))
+%(mmake)_LINK ?= $(strip $(HOST_CXX) $(HOST_ISA_LDFLAGS))
+%(mmake)_LD_OPTS := $(HOST_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
 %(mmake)_STRIP ?= $(HOST_STRIP)
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(HOST_CXX)
@@ -458,7 +463,8 @@ $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
 KERNEL_CXX ?= $(KERNEL_CC)
-%(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+%(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
@@ -535,6 +541,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
 endif
 ifeq (%(compiler),target)
 %(mmake)_LINK ?= $(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
 %(mmake)_STRIP ?= $(TARGET_STRIP)
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
@@ -549,7 +556,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-%(mmake)_LINK ?= $(strip $(HOST_CC))
+%(mmake)_LINK ?= $(strip $(HOST_CC) $(HOST_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
 %(mmake)_STRIP ?= $(HOST_STRIP)
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(HOST_CC)
@@ -564,7 +572,8 @@ $(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 $(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 $(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -643,11 +652,11 @@ endif
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : | $(addsuffix .c,%(basenames))
 
 # Be sure that all .c files are found
-%(mmake)_MC_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
-%(mmake)_MC_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+%(mmake)_MC_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)_MC_BASEDIRS := $(shell $(ECHO) $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
 %(mmake)_MC_DIRS := $(foreach dir, $(%(mmake)_MC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(%(mmake)_MC_SRCDIR)/$(CURDIR)/$(dir)))
 ifneq ($(%(mmake)_MC_DIRS),)
-    %(mmake)_MC_DIRS := $(shell echo $(%(mmake)_MC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    %(mmake)_MC_DIRS := $(shell $(ECHO) $(%(mmake)_MC_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %.c $(%(mmake)_MC_DIRS)
 endif
 
@@ -666,6 +675,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
 endif
 ifeq (%(compiler),target)
 %(mmake)_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
 %(mmake)_STRIP ?= $(TARGET_STRIP)
 %(mmake)_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
@@ -678,6 +688,7 @@ $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(CFLAGS_I
 endif
 ifeq (%(compiler),host)
 %(mmake)_LINK ?= $(strip $(HOST_CC))
+%(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
 %(mmake)_STRIP ?= $(HOST_STRIP)
 %(mmake)_ASSEMBLER ?= $(strip $HOST_CC) $(HOST_SYSROOT))
@@ -689,7 +700,8 @@ $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
 $(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
 %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 %(mmake)_STRIP ?= $(ECHO) >/dev/null
 %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -772,7 +784,8 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),host)
-  %(mmake)_LINK ?= $(strip $(HOST_CXX))
+  %(mmake)_LINK ?= $(strip $(HOST_CXX) $(HOST_ISA_LDFLAGS))
+  %(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
   %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
   %(mmake)_STRIP ?= $(HOST_STRIP)
   %(mmake)_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
@@ -785,6 +798,7 @@ ifeq (%(compiler),host)
 endif
 ifeq (%(compiler),target)
   %(mmake)_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
+  %(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
   %(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
   %(mmake)_STRIP ?= $(TARGET_STRIP)
   %(mmake)_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
@@ -797,7 +811,8 @@ ifeq (%(compiler),target)
 endif
 ifeq (%(compiler),kernel)
   KERNEL_CXX ?= $(KERNEL_CC)
-  %(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+  %(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+  %(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
   %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
   %(mmake)_STRIP ?= $(ECHO) >/dev/null
   %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -867,11 +882,11 @@ else
   $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : | $(addsuffix .m,%(basenames))
 
   # Be sure that all .m files are found
-  %(mmake)_MOBJC_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
-  %(mmake)_MOBJC_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+  %(mmake)_MOBJC_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+  %(mmake)_MOBJC_BASEDIRS := $(shell $(ECHO) $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
   %(mmake)_MOBJC_DIRS := $(foreach dir, $(%(mmake)_MOBJC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(%(mmake)_MOBJC_SRCDIR)/$(CURDIR)/$(dir)))
   ifneq ($(%(mmake)_MOBJC_DIRS),)
-    %(mmake)_MOBJC_DIRS := $(shell echo $(%(mmake)_MOBJC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    %(mmake)_MOBJC_DIRS := $(shell $(ECHO) $(%(mmake)_MOBJC_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %.m $(%(mmake)_MOBJC_DIRS)
   endif
 endif
@@ -899,6 +914,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
 endif
 ifeq (%(compiler),target)
   %(mmake)_LINK ?= $(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
+  %(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
   %(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
   %(mmake)_STRIP ?= $(TARGET_STRIP)
   %(mmake)_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
@@ -911,6 +927,7 @@ ifeq (%(compiler),target)
 endif
 ifeq (%(compiler),host)
   %(mmake)_LINK ?= $(strip $(HOST_OBJC))
+  %(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
   %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
   %(mmake)_STRIP ?= $(HOST_STRIP)
   %(mmake)_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
@@ -924,6 +941,7 @@ endif
 ifeq (%(compiler),kernel)
   KERNEL_OBJC ?= $(KERNEL_CC)
   %(mmake)_LINK ?= $(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
+  %(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
   %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
   %(mmake)_STRIP ?= $(ECHO) >/dev/null
   %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
@@ -1006,11 +1024,11 @@ else
 $(%(mmake)-MA_TARGETS) : | $(addsuffix %(suffix),%(basenames))
 
 # Be sure that all .c files are found
-%(mmake)-MA_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
-%(mmake)-MA_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+%(mmake)-MA_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)-MA_BASEDIRS := $(shell $(ECHO) $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
 %(mmake)-MA_DIRS := $(foreach dir, $(%(mmake)-MA_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(%(mmake)-MA_SRCDIR)/$(CURDIR)/$(dir)))
 ifneq ($(%(mmake)-MA_DIRS),)
-    %(mmake)-MA_DIRS := $(shell echo $(%(mmake)-MA_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    %(mmake)-MA_DIRS := $(shell $(ECHO) $(%(mmake)-MA_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %%(suffix) $(%(mmake)-MA_DIRS)
 endif
 
@@ -1031,18 +1049,21 @@ $(%(mmake)-MA_TARGETS) : $(%(mmake)-MA_WILDCARD).o : %%(suffix)
 #------------------------------------------------------------------------------
 # Link %(objs) to %(prog) using the libraries in %(uselibs)
 %define rule_link_prog mmake=TMP prog=/A objs=/A ldflags="$(LDFLAGS)" uselibs= \
-    usehostlibs= usestartup=yes detach=no nix=no cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" strip="$(TARGET_STRIP)" objdir="$(GENDIR)/$(CURDIR)" coverageinstr="$(TARGET_COVERAGEINSTR)"
+    usehostlibs= usestartup=yes detach=no nix=no  \
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(TARGET_ISA_LDFLAGS)" \
+    strip="$(TARGET_STRIP)" objdir="$(GENDIR)/$(CURDIR)" \
+    coverageinstr="$(TARGET_COVERAGEINSTR)"
 
-%(mmake)-link_EXTRA_LDFLAGS := 
+%(mmake)-link_LD_OPTS := 
 %(mmake)-link_EXTRA_LIBS :=
 ifeq (%(nix),yes)
-    %(mmake)-link_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
+    %(mmake)-link_LD_OPTS += $(NIX_LDFLAGS)
 endif
 ifeq (%(usestartup),no)
-    %(mmake)-link_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
+    %(mmake)-link_LD_OPTS += $(NOSTARTUP_LDFLAGS)
 endif
 ifeq (%(detach),yes)
-    %(mmake)-link_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
+    %(mmake)-link_LD_OPTS += $(DETACH_LDFLAGS)
 endif
 
 # Make a list of the lib files this program depends on.
@@ -1068,11 +1089,11 @@ endif
 )
 
 %(prog) : OBJDIR := %(objdir)
-%(prog) : OBJS := %(objs)
-%(prog) : LDFLAGS := $(strip %(ldflags) $(%(mmake)-link_EXTRA_LDFLAGS))
+%(prog) : OBJS := $(strip %(objs))
+%(prog) : LDFLAGS := $(strip %(ldflags))
 %(prog) : LIBS := $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS) %(usehostlibs))
 %(prog) : %(objs) $(%(mmake)-link_DEPLIBS)
-	%link_q cmd="%(cmd)" strip="%(strip)" from="$(OBJS)" opt="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" from="$(OBJS)" ldflags="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
 %end
 #------------------------------------------------------------------------------
 
@@ -1082,18 +1103,20 @@ endif
 # the AROS libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_link_progs mmake=TMP progs=/A targetdir="$(AROSDIR)/$(CURDIR)" nix="%(nix)" \
     objdir="$(GENDIR)/$(CURDIR)" ldflags="$(LDFLAGS)" uselibs= usehostlibs= \
-    usestartup=yes detach=no cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" strip="$(TARGET_STRIP)" coverageinstr="$(TARGET_COVERAGEINSTR)"
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS))" \
+    strip="$(TARGET_STRIP)" coverageinstr="$(TARGET_COVERAGEINSTR)" \
+    usestartup=yes detach=no 
 
-%(mmake)-link_EXTRA_LDFLAGS := 
+%(mmake)-link_LD_OPTS := 
 %(mmake)-link_EXTRA_LIBS :=
 ifeq (%(nix),yes)
-    %(mmake)-link_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
+    %(mmake)-link_LD_OPTS += $(NIX_LDFLAGS)
 endif
 ifeq (%(usestartup),no)
-    %(mmake)-link_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
+    %(mmake)-link_LD_OPTS += $(NOSTARTUP_LDFLAGS)
 endif
 ifeq (%(detach),yes)
-    %(mmake)-link_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
+    %(mmake)-link_LD_OPTS += $(DETACH_LDFLAGS)
 endif
 
 # Make a list of the lib files the programs depend on.
@@ -1114,10 +1137,10 @@ endif
 %(mmake)-link_PROGS := $(addprefix %(targetdir)/,%(progs))
 
 $(%(mmake)-link_PROGS) : OBJDIR := %(objdir)
-$(%(mmake)-link_PROGS) : LDFLAGS := $(strip %(ldflags) $(%(mmake)-link_EXTRA_LDFLAGS))
+$(%(mmake)-link_PROGS) : LDFLAGS := $(strip %(ldflags))
 $(%(mmake)-link_PROGS) : LIBS := $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS) %(usehostlibs))
 $(%(mmake)-link_PROGS) : %(targetdir)/% : %(objdir)/%.o $(%(mmake)-link_DEPLIBS)
-	%link_q cmd="%(cmd)" strip="%(strip)" from="$<" opt="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" from="$<" ldflags="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
 %end
 #------------------------------------------------------------------------------
 
@@ -1148,7 +1171,7 @@ endif
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_linkmodule mmake=TMP module=/A objs=/A endobj=/A err=/A objdir="$(OBJDIR)" \
-    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldflags="$(LDFLAGS)" uselibs= usehostlibs=
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" ldflags="$(LDFLAGS)" uselibs= usehostlibs=
 
 %(mmake)_LDFLAGS  := %(ldflags)
 # Make a list of the lib files the programs depend on.
@@ -1182,7 +1205,7 @@ else
                     -L/usr/lib $(addprefix -l,%(usehostlibs))
 endif 
 %(module) : %(objs) %(endobj) $(%(mmake)_DEPLIBS) $(USER_DEPLIBS)
-	%link_module_q cmd="%(cmd)" err="$(ERR)" endtag="$(ENDTAG)" objs="$(OBJS)" libs="$(LIBS)" objdir="$(OBJDIR)" ldflags="$(LDFLAGS)"
+	%link_module_q cmd="%(cmd)" ldopts="%(ldopts)" err="$(ERR)" endtag="$(ENDTAG)" objs="$(OBJS)" libs="$(LIBS)" objdir="$(OBJDIR)" ldflags="$(LDFLAGS)"
 
 %end
 #------------------------------------------------------------------------------
@@ -1387,7 +1410,7 @@ ifneq (%(modsuffix),)
 endif
 ifneq (%(targetdir),)
     %(mmake)_OPTS += -d %(targetdir)
-    %(mmake)_TARGETDIR := $(shell echo %(targetdir) | sed 's/^\(.\):\//\/\1\//')
+    %(mmake)_TARGETDIR := $(shell $(ECHO) %(targetdir) | sed 's/^\(.\):\//\/\1\//')
     %(mmake)_GENTARGETS := $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_GENTARGETS))
     %(mmake)_GENFILEFLAG=$(%(mmake)_TARGETDIR)/.%(modname).%(modtype)-genfiles
 else
@@ -1395,7 +1418,7 @@ else
 endif
 ifneq (%(stubdir),)
     %(mmake)_OPTS += -l %(stubdir)
-    %(mmake)_STUBTARGETDIR := $(shell echo %(stubdir) | sed 's/^\(.\):\//\/\1\//')
+    %(mmake)_STUBTARGETDIR := $(shell $(ECHO) %(stubdir) | sed 's/^\(.\):\//\/\1\//')
     %(mmake)_STUBTARGETS := $(addprefix $(%(mmake)_STUBTARGETDIR)/,$(%(mmake)_STUBTARGETS))
     %(mmake)_TARGETDIRS += %(stubdir)
 else
@@ -1678,12 +1701,15 @@ else
 endif
 ifeq (%(compiler),target)
 %(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS)
+%(mmake)_LD_OPTS           := $(TARGET_ISA_LDFLAGS)
 endif
 ifeq (%(compiler),host)
 %(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS)
+%(mmake)_LD_OPTS           := $(HOST_ISA_LDFLAGS)
 endif
 ifeq (%(compiler),kernel)
 %(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS)
+%(mmake)_LD_OPTS           := $(KERNEL_ISA_LDFLAGS)
 endif
 ifneq (%(libdir),)
 %(mmake)_LDFLAGS   += -L%(libdir)
@@ -1697,14 +1723,14 @@ endif
 
 ifeq (%(alwayscxxlink),yes)
 ifeq (%(compiler),host)
-%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_ISA_OBJCFLAGS) $(HOST_LDFLAGS))
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
 endif
 ifeq (%(compiler),target)
-%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_ISA_LDFLAGS) $(TARGET_SYSROOT))
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
 endif
 ifeq (%(compiler),kernel)
-KERNEL_CXX ?= $(strip $(KERNEL_CC) $(KERNEL_ISA_LDFLAGS) $(KERNEL_SYSROOT))
-%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_ISA_OBJCFLAGS) $(KERNEL_SYSROOT))
+KERNEL_CXX ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
 endif
 endif
 
@@ -1729,7 +1755,8 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
     objs="$(%(mmake)_OBJS) $(%(mmake)_ARCHOBJS) $(USER_OBJS)" ldflags="$(%(mmake)_LDFLAGS)" \
     uselibs="$(%(mmake)_LIBS)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
-    cmd="$(%(mmake)_LINK)" strip="$(%(mmake)_STRIP)" objdir="$(%(mmake)_OBJDIR)" coverageinstr="$(%(mmake)_COVERAGE)"
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" strip="$(%(mmake)_STRIP)" \
+    objdir="$(%(mmake)_OBJDIR)" coverageinstr="$(%(mmake)_COVERAGE)"
 
 endif
 
@@ -1752,7 +1779,7 @@ endif
 # name as the C file
 %define build_progs mmake=/A files=/A nix=no \
     objdir="$(GENDIR)/$(CURDIR)" targetdir="$(AROSDIR)/$(CURDIR)" \
-    cppflags="$(CPPFLAGS)" cflags="$(CFLAGS)" dflags= ldflags="$(LDFLAGS)" \
+    cppflags="$(CPPFLAGS)" cflags="$(CFLAGS)" dflags= ldflags= \
     includedir= libdir= \
     compiler=target \
     uselibs= usehostlibs= usestartup=yes detach=no \
@@ -1801,15 +1828,23 @@ ifneq (%(dflags),)
 else
     %(mmake)_DFLAGS := $(%(mmake)_CFLAGS)
 endif
+ifeq (%(ldflags),)
 ifeq (%(compiler),target)
-%(mmake)_LDFLAGS           := %(ldflags) $(TARGET_ISA_LDFLAGS)
+%(mmake)_LDFLAGS           := $(strip $(LDFLAGS))
+%(mmake)_LD_OPTS           := $(strip $(TARGET_ISA_LDFLAGS))
 endif
 ifeq (%(compiler),host)
-%(mmake)_LDFLAGS           := %(ldflags) $(HOST_ISA_OBJCFLAGS)
+%(mmake)_LDFLAGS           := $(strip $(HOST_LDFLAGS))
+%(mmake)_LD_OPTS           := $(strip $(HOST_ISA_LDFLAGS))
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LDFLAGS           := %(ldflags) $(KERNEL_ISA_OBJCFLAGS)
+%(mmake)_LDFLAGS           := $(strip $(KERNEL_LDFLAGS))
+%(mmake)_LD_OPTS           := $(strip $(KERNEL_ISA_LDFLAGS))
 endif
+else
+%(mmake)_LDFLAGS           := %(ldflags)
+endif
+
 ifneq (%(libdir),)
     %(mmake)_LDFLAGS += -L%(libdir)
 endif
@@ -1829,7 +1864,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
     ldflags="$(%(mmake)_LDFLAGS)" \
     uselibs="$(%(mmake)_LIBS)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" \
-    cmd="$(%(mmake)_LINK)" strip="$(%(mmake)_STRIP)" objdir="$(%(mmake)_OBJDIR)" coverageinstr="$(%(mmake)_COVERAGE)"
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" strip="$(%(mmake)_STRIP)" objdir="$(%(mmake)_OBJDIR)" coverageinstr="$(%(mmake)_COVERAGE)"
 
 endif
 
@@ -1884,12 +1919,14 @@ ifeq (%(compiler),host)
 ifeq (%(alwayscxxlink),yes)
 %(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_ISA_OBJCFLAGS) $(HOST_LDFLAGS))
 endif
+%(mmake)_LD_OPTS := $(strip $(HOST_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
 %(mmake)_LDFLAGS += $(strip $(HOST_LDFLAGS))
 endif
 ifeq (%(compiler),target)
 ifeq (%(alwayscxxlink),yes)
 %(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_ISA_LDFLAGS) $(TARGET_SYSROOT))
 endif
+%(mmake)_LD_OPTS := $(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
 %(mmake)_LDFLAGS += $(strip $(LDFLAGS))
 endif
 ifeq (%(compiler),kernel)
@@ -1897,6 +1934,7 @@ ifeq (%(alwayscxxlink),yes)
 KERNEL_CXX ?= $(strip $(KERNEL_CC) $(KERNEL_ISA_LDFLAGS) $(KERNEL_SYSROOT))
 %(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_ISA_OBJCFLAGS) $(KERNEL_SYSROOT))
 endif
+%(mmake)_LD_OPTS := $(strip $(KERNEL_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
 %(mmake)_LDFLAGS += $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 endif
 
@@ -2015,7 +2053,7 @@ endif
 
 %rule_linkmodule module="$(%(mmake)_MODULE)" objs="$(%(mmake)_OBJS)" \
     endobj= err="$(%(mmake)_ERR)" objdir="%(objdir)" \
-    cmd="$(%(mmake)_LINK)" ldflags="$(strip $(LDFLAGS) $(%(mmake)_LDFLAGS) $(%(modname)_LDFLAGS))" \
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" ldflags="$(strip $(LDFLAGS) $(%(mmake)_LDFLAGS) $(%(modname)_LDFLAGS))" \
     uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
@@ -2036,7 +2074,6 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
 	$(Q)$(AROS_LD) -Ur -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
 	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
-
 
 ## Dependency fine-tuning
 ##
@@ -2143,21 +2180,24 @@ endif
 
 ifeq (%(compiler),host)
 ifeq (%(alwayscxxlink),yes)
-%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_ISA_LDFLAGS) $(HOST_LDFLAGS))
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
 endif
+%(mmake)_LD_OPTS := $(strip $(HOST_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
 %(mmake)_LDFLAGS += $(strip $(HOST_LDFLAGS))
 endif
 ifeq (%(compiler),target)
 ifeq (%(alwayscxxlink),yes)
-%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_ISA_LDFLAGS) $(TARGET_SYSROOT))
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
 endif
+%(mmake)_LD_OPTS := $(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
 %(mmake)_LDFLAGS := $(strip $(LDFLAGS))
 endif
 ifeq (%(compiler),kernel)
 ifeq (%(alwayscxxlink),yes)
-KERNEL_CXX ?= $(strip $(KERNEL_CC) $(KERNEL_ISA_LDFLAGS))
+KERNEL_CXX ?= $(strip $(KERNEL_CC))
 %(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
 endif
+%(mmake)_LD_OPTS := $(strip $(KERNEL_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
 %(mmake)_LDFLAGS := $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
 endif
 
@@ -2520,14 +2560,14 @@ ifeq (%(build_library),M)
 # The module is linked from all the compiled .o files
 %rule_linkmodule module="$(%(mmake)%(flavour)_MODULE)" objs="$(%(mmake)%(flavour)_STARTOBJS) $(%(mmake)%(flavour)_OBJS) $(USER_OBJS)" \
 		 endobj="$(%(mmake)%(flavour)_ENDOBJS)" err="$(%(mmake)%(flavour)_ERR)" objdir="$(%(mmake)%(flavour)_OBJDIR)" \
-		 cmd="$(%(mmake)%(flavour)_LINK)" ldflags="$($(%(mmake)%(flavour)_DEFNAME)_LDFLAGS)" \
+		 cmd="$(%(mmake)%(flavour)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" ldflags="$($(%(mmake)%(flavour)_DEFNAME)_LDFLAGS)" \
 		 uselibs="$(%(mmake)%(flavour)_LIBS) $($(%(mmake)%(flavour)_DEFNAME)_LIBS)" usehostlibs="%(usehostlibs)"
 endif
 
 ifeq (%(build_abi),M)
 # Link static lib
-%(mmake)%(flavour)_LC_LINKLIBNAME   := $(shell echo $(%(mmake)%(flavour)_LINKLIBNAME) | tr A-Z a-z)
-%(mmake)%(flavour)_LC_MODNAME       := $(shell echo %(modname) | tr A-Z a-z)
+%(mmake)%(flavour)_LC_LINKLIBNAME   := $(shell $(ECHO) $(%(mmake)%(flavour)_LINKLIBNAME) | tr A-Z a-z)
+%(mmake)%(flavour)_LC_MODNAME       := $(shell $(ECHO) %(modname) | tr A-Z a-z)
 ifneq ($(%(mmake)%(flavour)_LINKLIB),)
 %rule_link_linklib mmake=%(mmake) libname="$(%(mmake)%(flavour)_LINKLIBNAME)$(%(mmake)%(flavour)_LIBSUFFIX)" objs="$(%(mmake)%(flavour)_LINKLIBOBJS)" libdir="$(%(mmake)%(flavour)_LIBDIR)"
 ifneq ($(%(mmake)%(flavour)_LC_MODNAME),$(%(mmake)%(flavour)_LC_LINKLIBNAME))
@@ -2865,7 +2905,7 @@ else
 %(mmake)_DESC := %(description)
 endif
 
-%(mmake)_SRC := $(shell echo %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)_SRC := $(shell $(ECHO) %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
 
 ifeq (%(catalogs),)
 %(mmake)_LNGS := $(basename $(notdir $(call WILDCARD, %(srcdir)/*.ct)))
@@ -3109,7 +3149,7 @@ else
 endif
 
 ifeq ($(TARGET),$(BD_TARGET))
-TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(files)))
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(linklibfiles)))
 vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
@@ -3220,7 +3260,7 @@ endif
 
 %define copy_files_q mmake=/A files="$(FILES)" src=. dst=/A
 
-%(mmake)_SRC := $(shell echo %(src) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)_SRC := $(shell $(ECHO) %(src) | sed 's/^\(.\):\//\/\1\//')
 
 %rule_makedirs dirs="%(dst)"
 
@@ -3817,7 +3857,7 @@ endif
 #MM
 %(mmake)-configure : $(%(mmake)-configflag)
 
-$(%(mmake)-configflag) : TMP_SRCDIR := $(shell echo $(%(mmake)-cfg-srcdir) | sed 's/^\(.\):\//\/\1\//')
+$(%(mmake)-configflag) : TMP_SRCDIR := $(shell $(ECHO) $(%(mmake)-cfg-srcdir) | sed 's/^\(.\):\//\/\1\//')
 $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 	$(Q)$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
@@ -4001,7 +4041,7 @@ endif
 #MM
 %(mmake)-cmake : %(precmake) $(%(mmake)-cmakeflag) %(postcmake)
 
-$(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell echo %(srcdir) | sed 's/^\(.\):\//\/\1\//')
+$(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell $(ECHO) %(srcdir) | sed 's/^\(.\):\//\/\1\//')
 $(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
