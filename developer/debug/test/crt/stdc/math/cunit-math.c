@@ -5,7 +5,7 @@
 #include <math.h>
 #include <errno.h>
 
-#include "CUnit/Basic.h"
+#include <CUnit/Basic.h>
 #include <CUnit/Automated.h>
 
 #define GRANULARITY 0.000001
@@ -14,23 +14,28 @@
 /*
  * C99 double versions of functions
  */
+
+done:
+double	sin(double);
+double	cos(double);
+double	tan(double);
 double	acos(double);
 double	asin(double);
 double	atan(double);
 double	atan2(double, double);
-double	cos(double);
-double	sin(double);
-double	tan(double);
+double	sqrt(double);
 
-double	acosh(double);
-double	asinh(double);
-double	atanh(double);
-double	cosh(double);
 double	sinh(double);
+double	cosh(double);
 double	tanh(double);
 
+double	asinh(double);
+double	acosh(double);
+double	atanh(double);
 double	exp(double);
 double	exp2(double);
+
+todo:
 double	expm1(double);
 double	frexp(double, int *);	/* fundamentally !__pure2 */
 int	ilogb(double) __pure2;
@@ -48,7 +53,6 @@ double	cbrt(double);
 double	fabs(double) __pure2;
 double	hypot(double, double);
 double	pow(double, double);
-double	sqrt(double);
 
 double	erf(double);
 double	erfc(double);
@@ -130,21 +134,29 @@ void testTAN(void)
 
 void testASIN(void)
 {
+    double x; // silence codacity
+    
     CU_ASSERT_DOUBLE_EQUAL(asin(0), 0.0, GRANULARITY);
     CU_ASSERT_DOUBLE_EQUAL(asin(-0.5), -0.523599, GRANULARITY);
     CU_ASSERT_DOUBLE_EQUAL(asin(1), M_PI_2, GRANULARITY);
+    
+    x = 1.1;
     errno = 0;
-    CU_ASSERT(isnan(asin(1.1)));
+    CU_ASSERT(isnan(asin(x)));
     CU_ASSERT(errno == EDOM);
 }
 
 void testACOS(void)
 {
-    CU_ASSERT_DOUBLE_EQUAL(acos(0), 1.0, GRANULARITY);
-    CU_ASSERT_DOUBLE_EQUAL(acos(-0.5), M_PI_2, GRANULARITY);
-    CU_ASSERT_DOUBLE_EQUAL(acos(1), 0.0, GRANULARITY);
+    double x;
+    
+    CU_ASSERT_DOUBLE_EQUAL(acos(0), M_PI_2, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(acos(-0.5), 2.094395, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(acos(1), 0, GRANULARITY);
+    
+    x = 1.1;
     errno = 0;
-    CU_ASSERT(isnan(acos(1.1)));
+    CU_ASSERT(isnan(acos(x)));
     CU_ASSERT(errno == EDOM);
 }
 
@@ -158,6 +170,7 @@ void testATAN(void)
 
 void testATAN2(void)
 {
+    double x;
                               /* y, x */
     CU_ASSERT_DOUBLE_EQUAL(atan2(0, 2), 0.0, GRANULARITY);
     CU_ASSERT_DOUBLE_EQUAL(atan2(2, 2), 0.785398, GRANULARITY);
@@ -167,7 +180,100 @@ void testATAN2(void)
     CU_ASSERT_DOUBLE_EQUAL(atan2(-2, -2), -2.356194, GRANULARITY);
     CU_ASSERT_DOUBLE_EQUAL(atan2(-2, 0), -1.570796, GRANULARITY);
     CU_ASSERT_DOUBLE_EQUAL(atan2(-2, 2), -0.785398, GRANULARITY);
-    CU_ASSERT_DOUBLE_EQUAL(atan2(0, 0), 0.0, GRANULARITY);
+    
+    x = 0;
+    CU_ASSERT_DOUBLE_EQUAL(atan2(x, x), 0.0, GRANULARITY);
+}
+
+void testSINH(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(sinh(0), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(sinh(5), 74.203211, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(sinh(-5), -74.203211, GRANULARITY);
+}
+
+void testCOSH(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(cosh(0), 1.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(cosh(5), 74.209949, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(cosh(-5), 74.209949, GRANULARITY);
+}
+
+void testTANH(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(tanh(0), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(tanh(5), 0.999909, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(tanh(-5), -0.999909, GRANULARITY);
+}
+
+void testASINH(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(asinh(0), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(asinh(5), 2.312438, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(asinh(-5), -2.312438, GRANULARITY);
+}
+
+void testACOSH(void)
+{
+    double x;
+    
+    x = 0;
+    errno = 0;
+    CU_ASSERT(isnan(acosh(x)));
+    CU_ASSERT(errno == EDOM);
+
+    CU_ASSERT_DOUBLE_EQUAL(acosh(5), 2.292432, GRANULARITY);
+    
+    x = -5;
+    errno = 0;
+    CU_ASSERT(isnan(acosh(x)));
+    CU_ASSERT(errno == EDOM);
+}
+
+void testATANH(void)
+{
+    double x;
+    
+    CU_ASSERT_DOUBLE_EQUAL(atanh(0), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atanh(0.5), 0.549306, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atanh(-0.5), -0.549306, GRANULARITY);
+
+    x = 5;
+    errno = 0;
+    CU_ASSERT(isnan(atanh(x)));
+    CU_ASSERT(errno == EDOM);
+
+    x = -5;
+    errno = 0;
+    CU_ASSERT(isnan(atanh(x)));
+    CU_ASSERT(errno == EDOM);
+}
+
+void testSQRT(void)
+{
+    double x;
+    
+    CU_ASSERT_DOUBLE_EQUAL(sqrt(0), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(sqrt(5), 2.236068, GRANULARITY);
+
+    x = -1;
+    errno = 0;
+    CU_ASSERT(isnan(sqrt(x)));
+    CU_ASSERT(errno == EDOM);
+}
+
+void testEXP(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(exp(0), 1.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(exp(5), 148.413159, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(exp(-5), 0.006738, GRANULARITY);
+}
+
+void testEXP2(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(exp2(0), 1.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(exp2(5), 32.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(exp2(-5), 0.031250, GRANULARITY);
 }
 
 int main()
@@ -193,7 +299,16 @@ int main()
         (NULL == CU_add_test(pSuite, "test of asin()", testASIN)) ||
         (NULL == CU_add_test(pSuite, "test of acos()", testACOS)) ||
         (NULL == CU_add_test(pSuite, "test of atan()", testATAN)) ||
-        (NULL == CU_add_test(pSuite, "test of atan2()", testATAN2)))
+        (NULL == CU_add_test(pSuite, "test of atan2()", testATAN2)) ||
+        (NULL == CU_add_test(pSuite, "test of sinh()", testSINH)) ||
+        (NULL == CU_add_test(pSuite, "test of cosh()", testCOSH)) ||
+        (NULL == CU_add_test(pSuite, "test of tanh()", testTANH)) ||
+        (NULL == CU_add_test(pSuite, "test of asinh()", testASINH)) ||
+        (NULL == CU_add_test(pSuite, "test of acosh()", testACOSH)) ||
+        (NULL == CU_add_test(pSuite, "test of atanh()", testATANH)) ||
+        (NULL == CU_add_test(pSuite, "test of sqrt()", testSQRT)) ||
+        (NULL == CU_add_test(pSuite, "test of exp()", testEXP)) ||
+        (NULL == CU_add_test(pSuite, "test of exp2()", testEXP2)))
     {
         CU_cleanup_registry();
         return CU_get_error();
