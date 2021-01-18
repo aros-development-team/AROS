@@ -3,6 +3,7 @@
 */
 
 #include <math.h>
+#include <errno.h>
 
 #include "CUnit/Basic.h"
 #include <CUnit/Automated.h>
@@ -107,7 +108,6 @@ void testSIN(void)
     CU_ASSERT_DOUBLE_EQUAL(sin(0), 0.0, GRANULARITY);
     CU_ASSERT_DOUBLE_EQUAL(sin(5), -0.958924, GRANULARITY);
     CU_ASSERT_DOUBLE_EQUAL(sin(-5), 0.958924, GRANULARITY);
-    
 }
 
 void testCOS(void)
@@ -126,6 +126,48 @@ void testTAN(void)
     /* tan(pi/2) is mathemathically not defined
      * but we get a large value */
     CU_ASSERT(tan(M_PI_2) > 15000000000000000.0);
+}
+
+void testASIN(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(asin(0), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(asin(-0.5), -0.523599, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(asin(1), M_PI_2, GRANULARITY);
+    errno = 0;
+    CU_ASSERT(isnan(asin(1.1)));
+    CU_ASSERT(errno == EDOM);
+}
+
+void testACOS(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(acos(0), 1.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(acos(-0.5), M_PI_2, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(acos(1), 0.0, GRANULARITY);
+    errno = 0;
+    CU_ASSERT(isnan(acos(1.1)));
+    CU_ASSERT(errno == EDOM);
+}
+
+void testATAN(void)
+{
+    CU_ASSERT_DOUBLE_EQUAL(atan(0), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan(-0.5), -0.463648, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan(1), 0.785398, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan(5), 1.373401, GRANULARITY);
+}
+
+void testATAN2(void)
+{
+                              /* y, x */
+    CU_ASSERT_DOUBLE_EQUAL(atan2(0, 2), 0.0, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(2, 2), 0.785398, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(2, 0), 1.570796, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(2, -2), 2.356194, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(0, -2), 3.141593, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(-2, -2), -2.356194, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(-2, 0), -1.570796, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(-2, 2), -0.785398, GRANULARITY);
+    CU_ASSERT_DOUBLE_EQUAL(atan2(0, 0), 0.0, GRANULARITY);
 }
 
 int main()
@@ -147,7 +189,11 @@ int main()
     /* add the tests to the suite */
     if ((NULL == CU_add_test(pSuite, "test of sin()", testSIN)) ||
         (NULL == CU_add_test(pSuite, "test of cos()", testCOS)) ||
-        (NULL == CU_add_test(pSuite, "test of tan()", testTAN)))
+        (NULL == CU_add_test(pSuite, "test of tan()", testTAN)) ||
+        (NULL == CU_add_test(pSuite, "test of asin()", testASIN)) ||
+        (NULL == CU_add_test(pSuite, "test of acos()", testACOS)) ||
+        (NULL == CU_add_test(pSuite, "test of atan()", testATAN)) ||
+        (NULL == CU_add_test(pSuite, "test of atan2()", testATAN2)))
     {
         CU_cleanup_registry();
         return CU_get_error();
