@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Shortcut OpenLibrary call for system modules (private!)
@@ -28,7 +28,7 @@ static const char * const libnames[] =
 static const char * const copyrights[] =
 {
     "AROS Research Operating System (AROS)",
-    "Copyright \xA9 1995-2020, ",
+    "Copyright \xA9 1995-2021, ",
     "The AROS Development Team.",
     "Other parts \xA9 by respective owners.",
     "ALPHA ",
