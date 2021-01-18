@@ -1,0 +1,13 @@
+
+The main developper is 
+ Laurent Clévy (laurent.clevy@club-internet.fr)
+
+Contributors are:
+ Bjarne Viksoe 
+   (C++ wrapper, lot of bug fixes)
+ Gary Harris 
+   (bug fixes and W32 support)
+ Dan Sutherland 
+   (bug fixes and W32 support)
+
+See CHANGES.txt for detailed contributions.
