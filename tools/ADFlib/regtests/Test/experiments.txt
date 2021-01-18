@@ -1,0 +1,49 @@
+tests
+
+RENAME
+
+1.
+
+create files with names : file_1a, file_24, dir_1a, dir_5u
+
+two same hashvalue linked lists ($40 and $f8) from the dir block :
+
+	$F8			$40
+887	file_1a 	891 	dir_1a
+889	file_24 	893	dir_5u
+
+
+887 points to 889, 891 points to 893.
+
+
+2.
+
+rename dir_5u into file_5u
+
+	$F8 			$40
+887 	file_1a 	891 	dir_1a
+889 	file_24
+893 	file_5u
+
+
+3.
+
+rename file_1a into dir_3
+
+ 	$F8 			$40
+889 	file_24 	887 	dir_3
+893 	file_5u 	891 	dir_1a
+
+
+4.
+
+create dir_5a, rename dir_1a into toto
+
+	$40
+887 	dir_3
+891 	dir_1a
+895 	dir_5u
+
+	$40 			$F8 			$20
+887 	dir_3 		889 	file_24 	891 	toto
+895 	dir_5u 		893 	file_5u

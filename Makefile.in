@@ -284,7 +284,7 @@ clean:
 		$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc \
 		$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld \
 		$(GENDIR)/scripts/genshared $(TOOLDIR)/genmf.py \
-		tools/adflib/myconf.aros tools/collect-aros/env.h
+		tools/ADFlib/myconf.aros tools/collect-aros/env.h
 
 # Clean the sources and tools
 arch-clean: clean

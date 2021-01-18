@@ -1,0 +1,1215 @@
+Device : Harddisk. Cylinders = 980, Heads = 10, Sectors = 17. Volumes = 2
+Volume : HD partition #0 8500.0 KBytes, "DH0" between sectors [340-17339]. FFS DIRCACHE . Filled at 88.9%.
+
+Using dir cache blocks.
+    632  1996/10/10  21:32:53  008509  Expansion.info
+    632  1991/09/29  22:23:02  008512  WBStartup.info
+    632  1992/09/02  12:40:52  008515  Devs.info
+    632  1992/09/02  13:32:10  008521  Utilities.info
+    848  1995/06/17  17:34:16  008524  Disk.info
+    724  1992/09/02  12:40:49  008527  Prefs.info
+    632  1992/09/02  12:40:51  008530  System.info
+    632  1996/10/10  21:36:26  008533  Tools.info
+   1172  1992/09/02  12:34:04  008536  Trashcan.info
+         1991/09/29  22:23:01  008542  Trashcan/
+         1992/09/02  12:40:53  008544  Storage/
+    632  1991/09/29  22:23:04  008612  Storage/Monitors.info
+    632  1992/09/02  12:40:53  008615  Storage/Printers.info
+    632  1992/09/02  11:57:44  008618  Storage/DOSDrivers.info
+    632  1992/09/02  11:58:21  008621  Storage/DataTypes.info
+    632  1992/09/02  11:57:45  008624  Storage/Keymaps.info
+         1996/10/09  20:33:38  008627  Storage/DOSDrivers/
+    492  1991/09/29  22:23:07  009421  Storage/DOSDrivers/PC0.info
+    481  1991/09/29  22:23:08  009423  Storage/DOSDrivers/RAD.info
+    481  1991/09/29  22:23:09  009425  Storage/DOSDrivers/AUX.info
+    549  1991/09/29  22:23:06  009427  Storage/DOSDrivers/RAD
+    664  1991/09/29  22:23:10  009430  Storage/DOSDrivers/PC0
+     86  1991/09/29  22:23:11  009433  Storage/DOSDrivers/AUX
+    896  1995/01/05  15:12:30  000014  Storage/DOSDrivers/CD0
+    537  1995/03/19  16:25:16  000017  Storage/DOSDrivers/CD0.info
+         1991/09/29  22:23:12  008629  Storage/Keymaps/
+    459  1991/09/29  22:23:13  009435  Storage/Keymaps/f.info
+   1336  1991/09/29  22:23:14  009437  Storage/Keymaps/f, Français
+         1992/09/02  12:40:47  008631  Storage/Monitors/
+    356  1992/09/02  11:58:10  009438  Storage/Monitors/Euro36.info
+    356  1992/09/02  11:58:17  009440  Storage/Monitors/DblPAL.info
+    356  1992/09/02  11:58:11  009442  Storage/Monitors/Euro72.info
+    356  1992/09/02  11:58:13  009444  Storage/Monitors/Multiscan.info
+    356  1992/09/02  11:58:18  009446  Storage/Monitors/DblNTSC.info
+    356  1992/09/02  11:58:19  009448  Storage/Monitors/VGAOnly.info
+    356  1992/09/02  11:58:14  009450  Storage/Monitors/NTSC.info
+    356  1992/09/02  11:58:08  009452  Storage/Monitors/A2024.info
+    356  1992/09/02  11:58:17  009454  Storage/Monitors/Super72.info
+   6168  1992/09/02  11:51:33  009456  Storage/Monitors/NTSC
+   8796  1992/09/02  11:51:33  009457  Storage/Monitors/Euro72
+   8928  1992/09/02  11:51:33  009458  Storage/Monitors/Super72
+   8924  1992/09/02  11:51:33  009459  Storage/Monitors/Multiscan
+   9980  1992/09/02  11:51:33  009460  Storage/Monitors/DblNTSC
+  10664  1992/09/02  11:51:33  009461  Storage/Monitors/A2024
+   9900  1992/09/02  11:51:33  009462  Storage/Monitors/Euro36
+   3128  1992/09/02  11:51:33  009463  Storage/Monitors/VGAOnly
+   9972  1992/09/02  11:51:33  009464  Storage/Monitors/DblPAL
+         1996/10/31  22:07:24  008130  WBStartup/
+  11396  1996/07/15  12:34:51  008133  WBStartup/StormScreenManager
+    643  1996/07/15  12:34:51  008157  WBStartup/StormScreenManager.info
+  10544  1996/10/27  19:54:44  002714  WBStartup/ZJWatch
+    628  1996/10/31  22:07:23  002736  WBStartup/.info
+   1829  1996/10/31  22:07:25  002739  WBStartup/ZJWatch.info
+         1997/01/04  18:20:04  008546  C/
+   1712  1992/09/02  11:51:33  008634  C/Install
+    700  1992/09/02  11:51:33  008635  C/MakeLink
+    828  1992/09/02  11:51:33  008638  C/Status
+   1420  1992/09/02  11:51:33  008641  C/BindDrivers
+   3516  1992/09/02  11:51:33  008642  C/ConClip
+   5820  1996/10/14  22:04:23  008643  C/Ed
+   6880  1994/02/18   9:56:04  008644  C/Mount
+   2472  1992/09/02  11:51:33  008645  C/Search
+   1972  1992/09/02  11:51:33  008646  C/Delete
+    728  1992/09/02  11:51:33  008647  C/Avail
+  14792  1992/09/02  11:51:33  008650  C/Edit
+   1496  1992/09/02  11:51:33  008651  C/Type
+    444  1992/09/02  11:51:33  008652  C/AddBuffers
+  13484  1994/02/15  16:09:06  008654  C/SetPatch
+    432  1992/09/02  11:51:33  008655  C/Break
+   1412  1992/09/02  11:51:33  008657  C/SetKeyboard
+    584  1992/09/02  11:51:33  008658  C/Relabel
+   1200  1992/09/02  11:51:33  008661  C/Join
+    536  1992/09/02  11:51:33  008662  C/Lock
+    688  1992/09/02  11:51:33  008665  C/SetDate
+   1980  1992/09/02  11:51:33  008668  C/Info
+   1120  1992/09/02  11:51:33  008669  C/RequestChoice
+    896  1992/09/02  11:51:33  008670  C/Filenote
+   3220  1992/09/02  11:51:33  008673  C/Assign
+   3652  1992/09/02  11:51:33  008674  C/CPU
+    460  1992/09/02  11:51:33  008675  C/ChangeTaskPri
+   3440  1992/09/02  11:51:33  008677  C/Dir
+   1140  1992/09/02  11:51:33  008678  C/Rename
+   1520  1992/09/02  11:51:33  008679  C/RequestFile
+   1768  1992/09/02  11:51:33  008680  C/MagTape
+   1092  1992/09/02  11:51:33  008681  C/SetFont
+    312  1992/09/02  11:51:33  008682  C/DiskChange
+   1980  1992/09/02  11:51:33  008684  C/Sort
+   1128  1992/09/02  11:51:33  008685  C/RemRAD
+   4432  1992/09/02  11:51:33  008686  C/Execute
+   5496  1992/09/02  11:51:33  008687  C/Copy
+   5108  1992/09/02  11:51:33  008688  C/List
+    464  1992/09/02  11:51:33  008689  C/MakeDir
+   1068  1992/09/02  11:51:33  008691  C/Which
+   1092  1992/09/02  11:51:33  008692  C/Date
+  13164  1992/09/02  11:51:33  008693  C/IPrefs
+   1452  1992/09/02  11:51:33  008694  C/IconX
+   1136  1992/09/02  11:51:33  008695  C/LoadWB
+   5880  1992/09/02  11:51:33  008696  C/AddDataTypes
+   1276  1992/09/02  11:51:33  008697  C/Protect
+    668  1992/09/02  11:51:33  008698  C/SetClock
+    852  1992/09/02  11:51:33  008701  C/Wait
+   2084  1992/09/02  11:51:33  008704  C/Eval
+   4804  1992/09/02  11:51:33  008705  C/Version
+  20152  1995/04/10  23:07:41  009119  C/HighDensityPatch
+   4092  1995/08/29  14:06:06  010685  C/SquirrelSCSI
+   1444  1994/01/12  15:49:31  010027  C/SetPatchMrgCop
+         1992/09/02  12:45:12  008551  Prefs/
+    617  1992/09/02  11:56:00  008706  Prefs/PrinterPS.info
+    617  1992/09/02  11:55:48  008709  Prefs/Input.info
+    632  1992/09/02  11:54:56  008712  Prefs/Presets.info
+    617  1992/09/02  11:55:46  008715  Prefs/IControl.info
+    628  1992/09/02  12:40:49  008718  Prefs/Printer.info
+    580  1992/09/02  11:55:53  008721  Prefs/Palette.info
+    580  1992/09/02  11:56:02  008724  Prefs/ScreenMode.info
+    587  1992/09/02  11:56:07  008727  Prefs/Time.info
+    617  1992/09/02  11:55:51  008730  Prefs/Overscan.info
+    617  1992/09/02  11:56:05  008733  Prefs/Sound.info
+    617  1992/09/02  11:55:58  008736  Prefs/PrinterGfx.info
+    633  1992/09/02  11:56:09  008739  Prefs/WBPattern.info
+    617  1992/09/02  11:55:45  008742  Prefs/Font.info
+    631  1992/09/02  11:55:55  008745  Prefs/Pointer.info
+    617  1992/09/02  11:55:49  008748  Prefs/Locale.info
+    628  1992/09/02  11:56:03  008751  Prefs/Serial.info
+  21688  1992/09/02  11:51:33  008754  Prefs/WBPattern
+  13720  1992/09/02  11:51:33  008755  Prefs/ScreenMode
+  10580  1992/09/02  11:51:33  008756  Prefs/IControl
+         1997/02/14  22:25:31  008757  Prefs/Env-Archive/
+         1978/01/06   4:02:09  009467  Prefs/Env-Archive/ADPro/
+    456  1978/02/08   1:01:04  009469  Prefs/Env-Archive/povpanel.prefs
+     39  1994/04/05  21:56:05  009471  Prefs/Env-Archive/xprzmodem
+      6  1992/09/02  12:41:44  009473  Prefs/Env-Archive/Kickstart
+         1996/01/25  22:30:09  009475  Prefs/Env-Archive/Sys/
+    828  1994/08/04  16:19:26  009873  Prefs/Env-Archive/Sys/crossmac_def_disk.info, 000000000000000040000000000000000000000000000000000000000000000004[66D[K
+    318  1993/08/08  22:12:29  009876  Prefs/Env-Archive/Sys/Pointer.prefs
+     62  1993/08/08  22:11:53  009878  Prefs/Env-Archive/Sys/icontrol.prefs
+    318  1993/08/08  22:12:43  009880  Prefs/Env-Archive/Sys/sound.prefs
+    518  1992/09/02  12:44:47  009882  Prefs/Env-Archive/Sys/font.prefs
+    162  1996/01/25  22:30:09  009885  Prefs/Env-Archive/Sys/printer.prefs
+     62  1992/09/02  12:42:06  009887  Prefs/Env-Archive/Sys/screenmode.prefs
+     72  1993/08/08  22:15:00  009889  Prefs/Env-Archive/Sys/printergfx.prefs
+     70  1993/08/08  22:13:01  009891  Prefs/Env-Archive/Sys/overscan.prefs
+     68  1997/09/29  16:12:17  009893  Prefs/Env-Archive/Sys/serial.prefs
+     54  1995/06/17  17:34:18  009895  Prefs/Env-Archive/Sys/wbconfig.prefs
+    314  1993/10/14  17:22:57  009897  Prefs/Env-Archive/Sys/WBPattern.prefs
+     78  1993/08/08  22:13:37  009899  Prefs/Env-Archive/Sys/input.prefs
+    894  1993/08/08  22:11:37  009901  Prefs/Env-Archive/Sys/locale.prefs
+    434  1992/09/02  12:44:31  009904  Prefs/Env-Archive/Sys/palette.prefs
+      5  1992/09/02  12:41:44  009478  Prefs/Env-Archive/Workbench
+     52  1992/09/02  13:40:54  009480  Prefs/Env-Archive/DOpus_format.prefs
+      4  1993/05/29  10:46:34  009484  Prefs/Env-Archive/space
+    352  1992/09/02  13:39:10  009486  Prefs/Env-Archive/DOpus_print.prefs
+     72  1992/09/02  12:49:32  009488  Prefs/Env-Archive/ShowVIC.prefs
+     25  1992/09/02  12:57:15  009490  Prefs/Env-Archive/PcRestore.prefs
+     68  1995/11/27  17:47:33  009482  Prefs/Env-Archive/ZOOMOPTS
+    206  1997/02/14  22:25:31  009465  Prefs/Env-Archive/ASM-One.Pref
+         1996/01/17  18:32:08  009492  Prefs/Env-Archive/sc/
+     85  1996/01/17  18:32:08  003189  Prefs/Env-Archive/sc/SCOPTIONS
+         1994/06/01  22:35:24  009494  Prefs/Env-Archive/SmartPlay/
+    878  1994/06/01  22:35:24  009906  Prefs/Env-Archive/SmartPlay/SmartPlay.Config
+         1994/01/11  21:55:48  009496  Prefs/Env-Archive/UIK/
+         1994/01/11  21:55:48  009909  Prefs/Env-Archive/UIK/Objects/
+         1994/02/08  17:41:06  009498  Prefs/Env-Archive/GadToolsBox/
+     50  1994/05/17   3:33:41  009500  Prefs/Env-Archive/TERMWINDOW
+    270  1978/01/05   4:01:15  009502  Prefs/Env-Archive/AmiTEL.prefs
+         1994/06/03   9:42:47  009504  Prefs/Env-Archive/Upcat/
+    166  1994/06/03   9:42:47  009911  Prefs/Env-Archive/Upcat/Upcat.prefs
+         1995/11/15  21:52:52  009506  Prefs/Env-Archive/ADOpus/
+     18  1995/11/15  21:52:52  009913  Prefs/Env-Archive/ADOpus/adopus.cfg
+     35  1995/11/15  21:52:52  009915  Prefs/Env-Archive/ADOpus/ImageDex.cfg
+    181  1995/02/06   9:05:31  009508  Prefs/Env-Archive/MultiPlayerPrefs
+         1996/10/09  22:18:35  007976  Prefs/Env-Archive/APlayer/
+         1995/03/22  18:31:33  007982  Prefs/Env-Archive/APlayer/Players/
+         1996/10/09  22:18:35  000232  Prefs/Env-Archive/APlayer/NotePlayers/
+         1996/10/09  22:18:35  000238  Prefs/Env-Archive/APlayer/Agents/
+         1995/06/05  18:18:08  007907  Prefs/Env-Archive/MusicManII/
+    185  1995/06/05  18:18:08  007913  Prefs/Env-Archive/MusicManII/MusicManII.Prefs
+     24  1995/07/06  12:20:10  010454  Prefs/Env-Archive/PlaySID.prefs
+         1996/10/21  20:54:23  003860  Prefs/Env-Archive/AmigaGuide/
+     10  1998/05/27  22:54:16  003863  Prefs/Env-Archive/AmigaGuide/Path
+         1996/05/15  21:00:25  002956  Prefs/Env-Archive/MusicManIII/
+    819  1996/05/15  21:00:25  002959  Prefs/Env-Archive/MusicManIII/MusicManIII.Prefs
+         1996/10/21  21:33:17  008160  Prefs/Env-Archive/STORMCPP/
+    571  1996/10/21  21:33:05  008167  Prefs/Env-Archive/STORMCPP/def_project.info
+    876  1996/10/21  21:33:05  008169  Prefs/Env-Archive/STORMCPP/def_text.c.info
+    876  1996/10/21  21:33:05  008172  Prefs/Env-Archive/STORMCPP/def_text.cc.info
+    861  1996/10/21  21:33:05  008175  Prefs/Env-Archive/STORMCPP/def_text.cpp.info
+    864  1996/10/21  21:33:06  008178  Prefs/Env-Archive/STORMCPP/def_text.h.info
+    861  1996/10/21  21:33:05  008181  Prefs/Env-Archive/STORMCPP/def_text.info
+    504  1996/10/21  21:33:17  008184  Prefs/Env-Archive/STORMCPP/def_librarian.info
+    628  1996/10/21  21:11:49  008164  Prefs/Env-Archive/STORMCPP.info
+     27  1996/10/31  22:08:29  002822  Prefs/Env-Archive/ZJTools.prefs
+    733  1997/07/10  22:30:40  010085  Prefs/Env-Archive/VirusZ_II.Prefs
+     12  1997/07/10  22:30:40  010219  Prefs/Env-Archive/VirusZ_II.Archivers
+     27  1998/04/23  19:29:13  005474  Prefs/Env-Archive/DELICONFIG
+  12076  1992/09/02  11:51:33  008760  Prefs/Printer
+  10852  1992/09/02  11:51:33  008761  Prefs/Serial
+  14352  1992/09/02  11:51:33  008762  Prefs/PrinterGfx
+  22720  1992/09/02  11:51:33  008763  Prefs/Locale
+  24972  1992/09/02  11:51:33  008764  Prefs/Palette
+  11440  1992/09/02  11:51:33  008765  Prefs/Font
+  13028  1992/09/02  11:51:33  008766  Prefs/Time
+  25268  1992/09/02  11:51:33  008767  Prefs/Pointer
+  12652  1992/09/02  11:51:33  008768  Prefs/Sound
+  18500  1992/09/02  11:51:33  008769  Prefs/Overscan
+  13796  1992/09/02  11:51:33  008770  Prefs/Input
+         1997/06/11  22:49:03  008771  Prefs/Env/
+         1978/01/06   4:02:09  009510  Prefs/Env/ADPro/
+    456  1978/02/08   1:01:04  009512  Prefs/Env/povpanel.prefs
+     39  1994/04/05  21:56:05  009514  Prefs/Env/xprzmodem
+    270  1978/01/05   4:01:15  009516  Prefs/Env/AmiTEL.prefs
+      6  1998/10/03  13:34:54  009518  Prefs/Env/Kickstart
+         1997/05/05  20:27:36  009520  Prefs/Env/Sys/
+    828  1994/08/04  16:19:26  009917  Prefs/Env/Sys/crossmac_def_disk.info, 000000000000000040000000000000000000000000000000000000000000000004[66D[K
+    318  1993/08/08  22:12:29  009920  Prefs/Env/Sys/Pointer.prefs
+     62  1993/08/08  22:11:53  009922  Prefs/Env/Sys/icontrol.prefs
+    318  1994/01/27  19:14:38  009924  Prefs/Env/Sys/sound.prefs
+    518  1995/11/27  22:48:19  009926  Prefs/Env/Sys/font.prefs
+    162  1997/10/05  15:20:34  009929  Prefs/Env/Sys/printer.prefs
+     62  1997/05/05  20:27:36  009931  Prefs/Env/Sys/screenmode.prefs
+     72  1993/08/08  22:15:00  009933  Prefs/Env/Sys/printergfx.prefs
+     70  1993/08/08  22:13:01  009935  Prefs/Env/Sys/overscan.prefs
+     68  1997/09/29  16:12:18  009937  Prefs/Env/Sys/serial.prefs
+     54  1992/09/02  11:51:33  009939  Prefs/Env/Sys/wbconfig.prefs
+    314  1978/01/11   2:12:39  009941  Prefs/Env/Sys/WBPattern.prefs
+     78  1996/02/15  19:26:35  009943  Prefs/Env/Sys/input.prefs
+    894  1993/08/08  22:11:37  009945  Prefs/Env/Sys/locale.prefs
+    434  1992/09/02  12:44:32  009948  Prefs/Env/Sys/palette.prefs
+      5  1998/10/03  13:34:53  009523  Prefs/Env/Workbench
+     52  1993/11/29  22:36:07  009525  Prefs/Env/DOpus_format.prefs
+      4  1993/05/29  10:46:34  009529  Prefs/Env/space
+    352  1992/09/02  13:39:10  009531  Prefs/Env/DOpus_print.prefs
+     72  1992/09/02  12:49:32  009533  Prefs/Env/ShowVIC.prefs
+         1997/06/07  17:31:58  009535  Prefs/Env/sc/
+     85  1996/01/17  18:32:08  009950  Prefs/Env/sc/SCOPTIONS
+     11  1998/06/10  20:15:33  009952  Prefs/Env/sc/projdir
+         1996/02/07  22:28:00  009537  Prefs/Env/ImageFX/
+      4  1994/02/02  19:33:57  009954  Prefs/Env/ImageFX/VMEM_Index
+      3  1992/09/02  12:49:11  009956  Prefs/Env/ImageFX/JPEG_Quality
+      4  1996/02/07  22:28:00  009958  Prefs/Env/ImageFX/ANIM_Frame
+      2  1996/10/21  21:43:40  010458  Prefs/Env/ImageFX/JPEG_Smoothing
+     68  1995/11/27  17:47:33  009527  Prefs/Env/ZOOMOPTS
+      5  1994/01/06  23:25:03  009539  Prefs/Env/TERM
+      6  1994/01/06  23:25:03  009541  Prefs/Env/LESSCHARSET
+         1994/06/01  22:35:24  009543  Prefs/Env/SmartPlay/
+    878  1994/06/01  22:35:24  009960  Prefs/Env/SmartPlay/SmartPlay.Config
+         1994/01/11  21:55:51  009545  Prefs/Env/UIK/
+         1994/01/11  21:55:47  009963  Prefs/Env/UIK/Objects/
+    158  1994/01/11  21:55:51  009965  Prefs/Env/UIK/uik.prefs
+         1994/02/08  17:41:06  009547  Prefs/Env/GadToolsBox/
+     50  1994/05/17   3:33:44  009549  Prefs/Env/TERMWINDOW
+         1994/02/22  17:18:29  009551  Prefs/Env/Designer/
+    276  1994/02/22  17:18:29  009967  Prefs/Env/Designer/Designer.Prefs
+     88  1994/07/06  19:48:35  009553  Prefs/Env/Trackdisk.prefs
+         1994/06/03   9:42:46  009555  Prefs/Env/Upcat/
+    166  1994/06/03   9:42:46  009969  Prefs/Env/Upcat/Upcat.prefs
+    181  1995/02/06   9:05:31  009557  Prefs/Env/MultiPlayerPrefs
+         1995/03/15  19:21:50  001826  Prefs/Env/xMore/
+    269  1994/04/11   0:12:02  001829  Prefs/Env/xMore/xMore
+    824  1994/04/11   0:10:50  001834  Prefs/Env/xMore/MAC.cvt
+    597  1994/01/23  20:22:10  001837  Prefs/Env/xMore/keys
+     30  1994/04/10   7:00:22  001840  Prefs/Env/xMore/convert
+    760  1995/03/15  19:21:50  001831  Prefs/Env/xMore/MSDOS.cvt
+         1996/10/09  22:18:35  007979  Prefs/Env/APlayer/
+         1995/03/22  18:31:33  007985  Prefs/Env/APlayer/Players/
+   1464  1995/06/20  10:07:02  007988  Prefs/Env/APlayer/APlayer.prefs
+     32  1995/06/20  10:07:02  007992  Prefs/Env/APlayer/APlayer.libs
+         1996/10/09  22:18:35  000229  Prefs/Env/APlayer/NotePlayers/
+         1996/10/09  22:18:35  000235  Prefs/Env/APlayer/Agents/
+      0  1995/06/01  23:55:04  010067  Prefs/Env/dopus
+         1995/06/05  18:18:08  007910  Prefs/Env/MusicManII/
+    185  1995/06/05  18:18:08  007915  Prefs/Env/MusicManII/MusicManII.Prefs
+         1996/10/31  21:44:54  003855  Prefs/Env/AmigaGuide/
+     10  1998/05/27  22:54:16  010567  Prefs/Env/AmigaGuide/Path
+         1997/06/02  21:47:02  010420  Prefs/Env/mui/
+     24  1995/11/09  16:55:09  010426  Prefs/Env/mui/«Global».prefs
+     24  1995/11/09  16:55:09  010429  Prefs/Env/mui/AmigaMosaic.prefs
+     80  1995/11/09  17:10:53  010431  Prefs/Env/mui/AMOSAIC.1.wini
+     24  1995/11/23  22:20:47  003183  Prefs/Env/mui/X-Wins.prefs
+    160  1995/11/23  22:23:30  003185  Prefs/Env/mui/X-WINS.1.wini
+    120  1995/11/23  22:21:17  003187  Prefs/Env/mui/X-WINS.1.cfg
+     24  1995/11/30  23:25:06  003233  Prefs/Env/mui/Xfig.prefs
+     90  1997/05/05  19:47:34  014907  Prefs/Env/mui/MUI.prefs
+    138  1997/05/05  20:11:37  014909  Prefs/Env/mui/PSI.1.prefs
+   1118  1997/05/05  20:09:56  014911  Prefs/Env/mui/PublicScreens.iff
+    530  1998/07/09  21:02:37  014915  Prefs/Env/mui/IBROWSE.prefs
+    186  1997/06/02  21:47:03  010467  Prefs/Env/mui/VOYAGER.prefs
+      7  1995/12/13  18:02:02  003290  Prefs/Env/wwDriver
+      1  1995/12/13  18:01:58  003292  Prefs/Env/wwTop
+      4  1995/12/13  18:01:58  003294  Prefs/Env/wwBottom
+      4  1995/12/13  18:01:58  003296  Prefs/Env/wwLeft
+      4  1995/12/13  18:01:58  003298  Prefs/Env/wwRight
+         1996/05/15  21:00:25  010424  Prefs/Env/MusicManIII/
+    819  1996/05/15  21:00:25  002962  Prefs/Env/MusicManIII/MusicManIII.Prefs
+      6  1996/10/09  20:30:44  001184  Prefs/Env/SCSI-Install-PROCESSOR
+      2  1996/10/14  22:05:08  000707  Prefs/Env/GOLDEDINSTALL
+         1996/10/21  21:33:04  008186  Prefs/Env/STORMCPP/
+    571  1996/10/21  21:33:03  008192  Prefs/Env/STORMCPP/def_project.info
+    876  1996/10/21  21:33:04  008194  Prefs/Env/STORMCPP/def_text.c.info
+    876  1996/10/21  21:33:04  008197  Prefs/Env/STORMCPP/def_text.cc.info
+    861  1996/10/21  21:33:04  008200  Prefs/Env/STORMCPP/def_text.cpp.info
+    864  1996/10/21  21:33:04  008203  Prefs/Env/STORMCPP/def_text.h.info
+    861  1996/10/21  21:33:03  008206  Prefs/Env/STORMCPP/def_text.info
+    483  1996/01/25  11:32:30  008209  Prefs/Env/STORMCPP/def_librarian.info
+    628  1996/10/21  21:11:51  008189  Prefs/Env/STORMCPP.info
+         1996/12/03  20:56:40  000878  Prefs/Env/AMIS/
+  11594  1996/12/03  20:56:40  000881  Prefs/Env/AMIS/AMIS.prefs
+      6  1996/12/31  15:59:10  001205  Prefs/Env/DIS64
+     27  1996/10/31  22:08:29  002820  Prefs/Env/ZJTools.prefs
+      1  1997/01/04  18:49:28  010086  Prefs/Env/PPaintLanguage
+      4  1997/01/04  18:49:31  010088  Prefs/Env/PPSysInstaller
+      7  1998/10/03  13:34:55  011348  Prefs/Env/Language
+     27  1998/04/23  19:29:13  005472  Prefs/Env/DELICONFIG
+  22936  1992/09/02  11:51:33  008774  Prefs/PrinterPS
+         1994/11/15  22:06:12  008555  System/
+    454  1994/11/15  22:06:12  008775  System/DiskCopy.info
+    927  1997/08/17  23:07:51  008777  System/Shell.info
+    454  1992/09/02  11:53:52  008780  System/FixFonts.info
+    486  1992/09/02  11:53:54  008782  System/NoFastMem.info
+    533  1992/09/02  11:56:11  008784  System/Intellifont.info
+    468  1992/09/02  11:53:55  008787  System/RexxMast.info
+    454  1992/09/02  11:53:53  008789  System/Format.info
+  12896  1992/09/02  11:51:33  008791  System/Format
+  68916  1992/09/02  11:51:33  008792  System/Intellifont
+   1180  1992/09/02  11:51:33  008793  System/CLI
+   9816  1994/07/11  18:08:02  008794  System/DiskCopy
+    840  1992/09/02  11:51:33  008795  System/FixFonts
+    524  1992/09/02  11:51:33  008798  System/NoFastMem
+   2364  1992/09/02  11:51:33  008801  System/RexxMast
+         1994/07/25  19:38:02  008802  System/old/
+    482  1978/01/01   0:26:48  009559  System/old/FastMemFirst.info
+    374  1992/09/02  14:01:05  009561  System/old/MergeMem.info
+    434  1978/01/01   0:26:47  009563  System/old/SlowMemLast.info
+    976  1978/01/01   0:10:40  009565  System/old/FastMemFirst
+   2524  1978/01/01   0:10:44  009568  System/old/MergeMem
+   1628  1978/01/01   0:07:46  009569  System/old/SlowMemLast
+         1996/10/09  20:33:19  008558  L/
+    628  1994/11/15  22:05:58  008804  L/FileSystem_Trans.info
+   1364  1992/09/02  11:51:33  008807  L/port-handler
+  13892  1994/01/05  22:15:10  008808  L/PowerSnap-handler
+         1994/11/15  21:55:20  008809  L/FileSystem_Trans/
+    512  1992/09/02  11:51:33  009570  L/FileSystem_Trans/INTL.crossdos
+    512  1992/09/02  11:51:33  009572  L/FileSystem_Trans/DANSK.crossdos
+   2980  1994/08/17  15:29:08  009574  L/FileSystem_Trans/ftypeDB.mac
+   2392  1992/09/02  11:51:33  008811  L/aux-handler
+   2664  1992/09/02  11:51:33  008812  L/queue-handler
+  25184  1992/09/02  11:51:33  008813  L/CrossDOSFileSystem
+     64  1993/02/01  21:59:44  008814  L/LhA.key
+   3602  1993/08/12  22:02:46  008816  L/Bootblock.brainfile
+   2964  1993/08/22  23:02:46  008817  L/ixpipe-handler
+   5360  1992/12/25  13:46:16  008818  L/prospool-handler
+  17676  1995/04/24  18:26:56  008312  L/CDFileSystem
+  40552  1993/12/15   2:27:46  008819  L/KingCON-handler.020, Optimized version for MC68020 and better
+  40552  1993/12/15   2:27:46  008820  L/KingCON-handler, Optimized version for MC68020 and better
+  69408  1994/09/15  14:36:08  008821  L/CrossMACFileSystem
+  27980  1994/04/21   0:49:02  008822  L/ProfFileSystem
+  24420  1992/09/08  12:16:33  010596  L/FastFileSystem
+         1997/03/19  20:03:42  008561  Devs/
+    632  1992/09/02  11:54:45  008823  Devs/Monitors.info
+    632  1992/09/02  11:54:46  008826  Devs/Printers.info
+    632  1992/09/02  11:54:44  008829  Devs/DOSDrivers.info
+    632  1993/08/08  22:18:44  008832  Devs/DataTypes.info
+    632  1992/09/02  11:54:46  008835  Devs/Keymaps.info
+  16192  1994/09/12  10:23:38  008838  Devs/mfm.device
+         1996/10/12   8:50:18  008839  Devs/DOSDrivers/
+    481  1996/10/11  20:46:18  009575  Devs/DOSDrivers/MAC0.info
+    481  1994/11/15  22:06:06  009577  Devs/DOSDrivers/MAC1.info
+    481  1994/11/15  22:06:07  009579  Devs/DOSDrivers/MAC2.info
+    481  1994/11/15  22:06:07  009581  Devs/DOSDrivers/MAC3.info
+    481  1992/09/02  11:54:42  009583  Devs/DOSDrivers/PIPE.info
+    492  1995/04/03  21:10:08  009585  Devs/DOSDrivers/PC1.info
+    466  1996/10/11  20:46:13  009587  Devs/DOSDrivers/DS1.info
+    481  1996/10/11  20:46:09  009589  Devs/DOSDrivers/PF1.info
+    312  1994/04/25  12:37:36  009591  Devs/DOSDrivers/MAC0
+    312  1994/04/25  12:37:46  009593  Devs/DOSDrivers/MAC1
+    312  1994/04/25  12:37:50  009595  Devs/DOSDrivers/MAC2
+    312  1994/04/25  12:37:58  009597  Devs/DOSDrivers/MAC3
+    670  1995/04/03  21:10:08  009599  Devs/DOSDrivers/PC1
+    104  1992/09/02  11:51:33  009602  Devs/DOSDrivers/PIPE
+    288  1994/10/18  21:37:31  009604  Devs/DOSDrivers/DS0
+    664  1995/04/03  21:10:08  009606  Devs/DOSDrivers/PC0
+    288  1994/05/01  15:19:54  009609  Devs/DOSDrivers/DS1
+    322  1993/11/18  15:24:22  009611  Devs/DOSDrivers/PF1
+    666  1994/01/29  18:18:36  002866  Devs/DOSDrivers/SD0
+    554  1995/01/17  20:10:29  002869  Devs/DOSDrivers/SD0.info
+    666  1994/01/29  18:18:36  002872  Devs/DOSDrivers/SD1
+    554  1995/01/17  20:20:56  002875  Devs/DOSDrivers/SD1.info
+    492  1995/04/03  21:10:08  009865  Devs/DOSDrivers/PC0.info
+    373  1996/10/11  22:15:07  000277  Devs/DOSDrivers/ZIPC
+   1597  1996/10/11  20:45:58  000279  Devs/DOSDrivers/ZIPC.info
+    453  1996/10/11  22:27:39  000692  Devs/DOSDrivers/ZIPPC
+   1597  1996/10/11  20:45:58  000693  Devs/DOSDrivers/ZIPPC.info
+   5412  1992/09/02  11:51:33  008842  Devs/serial.device
+         1992/09/02  12:40:19  008843  Devs/Keymaps/
+   1336  1992/09/02  11:51:33  009613  Devs/Keymaps/f, Français
+   1328  1992/09/02  11:51:33  009614  Devs/Keymaps/gb, British
+   5014  1992/09/02  11:51:33  008845  Devs/postscript_init.ps
+   4272  1992/09/02  11:51:33  008846  Devs/parallel.device
+         1997/02/10  19:20:02  008847  Devs/DataTypes/
+    467  1993/02/06   0:57:34  009615  Devs/DataTypes/PCX.info
+    473  1992/09/02  11:54:53  009617  Devs/DataTypes/AmigaGuide.info
+    473  1992/09/02  11:54:55  009619  Devs/DataTypes/ILBM.info
+    467  1993/07/29  20:33:06  009621  Devs/DataTypes/JPEG.info
+    473  1992/09/02  11:54:52  009623  Devs/DataTypes/8SVX.info
+    473  1992/09/02  11:54:54  009625  Devs/DataTypes/FTXT.info
+    467  1993/07/28   4:38:02  009627  Devs/DataTypes/GIF.info
+     98  1993/09/28  15:42:08  009629  Devs/DataTypes/PCX
+    114  1992/09/02  11:51:33  009631  Devs/DataTypes/AmigaGuide
+     88  1993/07/28   4:38:02  009633  Devs/DataTypes/gif
+    102  1992/09/02  11:51:33  009635  Devs/DataTypes/ILBM
+    102  1992/09/02  11:51:33  009637  Devs/DataTypes/8SVX
+    102  1992/09/02  11:51:33  009639  Devs/DataTypes/FTXT
+     98  1993/07/29  20:33:06  009641  Devs/DataTypes/JPEG
+    110  1995/09/30  16:17:02  004684  Devs/DataTypes/SVG
+    336  1993/09/28  15:42:08  009643  Devs/DataTypes/MacPaint
+    104  1993/09/28  15:42:08  009645  Devs/DataTypes/Windows Bitmap
+    108  1993/09/28  15:42:08  009647  Devs/DataTypes/Windows Icon
+    106  1994/06/14  15:06:12  003554  Devs/DataTypes/REKO Cardset
+   1533  1995/01/22  13:52:22  003556  Devs/DataTypes/REKO Cardset.info
+     96  1994/06/13  20:31:38  003578  Devs/DataTypes/Sun Raster
+   1533  1995/01/21  16:16:22  003580  Devs/DataTypes/Sun Raster.info
+    100  1995/03/12   9:42:24  010740  Devs/DataTypes/C++-Source
+    467  1995/03/12   9:42:24  010742  Devs/DataTypes/C++-Source.info
+     88  1995/03/12   9:39:00  010744  Devs/DataTypes/C-Source
+    467  1995/03/12   9:39:00  010746  Devs/DataTypes/C-Source.info
+    467  1995/09/30  16:17:02  004686  Devs/DataTypes/SVG.info
+     86  1994/10/30  15:58:24  002350  Devs/DataTypes/Targa
+   1527  1995/01/22  13:38:20  002352  Devs/DataTypes/Targa.info
+     86  1996/11/01  13:48:02  015168  Devs/DataTypes/PNG
+    467  1996/11/01  13:48:02  015170  Devs/DataTypes/PNG.info
+    108  1996/05/21  12:08:06  002978  Devs/DataTypes/ZX
+    473  1996/05/17  21:47:20  002980  Devs/DataTypes/ZX.info
+    102  1995/04/22  11:44:16  015323  Devs/DataTypes/Bitmap Font
+    467  1995/04/22  14:28:46  015325  Devs/DataTypes/Bitmap Font.info
+    102  1995/04/22  11:44:18  015327  Devs/DataTypes/Outline Font
+    467  1995/04/22  14:28:46  015329  Devs/DataTypes/Outline Font.info
+    238  1995/03/15  19:19:18  001169  Devs/DataTypes/DeBox
+   1574  1994/10/04  12:19:52  001171  Devs/DataTypes/DeBox.info
+         1997/03/19  20:03:42  011350  Devs/AHI/
+   3424  1991/05/02  17:04:06  011353  Devs/AHI/wavetools.audio
+   3900  1991/05/02  17:04:06  011361  Devs/AHI/toccata.audio
+   5948  1991/05/02  17:04:08  011391  Devs/AHI/paula.audio
+   6412  1991/05/02  17:04:06  011404  Devs/AHI/filesave.audio
+   5056  1991/05/02  17:04:06  011518  Devs/AHI/delfina.audio
+   6944  1992/09/02  11:51:33  008850  Devs/clipboard.device
+         1992/09/02  12:40:47  008851  Devs/Monitors/
+    356  1992/09/02  11:58:15  009649  Devs/Monitors/PAL.info
+   6156  1992/09/02  11:51:33  009651  Devs/Monitors/PAL
+  27420  1992/09/02  11:51:33  008853  Devs/printer.device
+         1996/10/21  20:48:53  008854  Devs/Printers/
+    459  1992/09/02  11:58:40  009652  Devs/Printers/EpsonQ.info
+    459  1992/09/02  11:54:44  009654  Devs/Printers/Generic.info
+    459  1992/09/02  11:58:41  009656  Devs/Printers/EpsonXOld.info
+    459  1992/09/02  11:58:40  009658  Devs/Printers/EpsonX.info
+   6480  1992/09/02  13:52:56  009660  Devs/Printers/EpsonQ
+   7160  1992/09/02  11:51:33  009661  Devs/Printers/EpsonX
+   1084  1992/09/02  11:51:33  009662  Devs/Printers/Generic
+   4712  1992/09/02  11:51:33  009663  Devs/Printers/EpsonXOld
+   6684  1992/09/02  11:51:33  008856  Devs/mfm38_5.device
+         1997/06/11  20:02:29  008857  Devs/clipboards/
+    454  1995/09/18  13:15:40  009666  Devs/clipboards/1
+     92  1998/10/03  14:01:30  009664  Devs/clipboards/0
+      9  1996/12/03  21:00:11  001158  Devs/clipboards/awebed.clip
+   3972  1992/11/22  18:48:54  008859  Devs/BaudBandit.device
+    232  1992/09/02  11:51:33  008860  Devs/system-configuration
+    617  1993/12/15   2:37:40  008862  Devs/KingCON-mountlist, Mountlist-entries for KCON and KRAW.
+   5124  1993/04/18  19:11:08  008865  Devs/artser.device
+   5548  1994/05/01  15:19:48  008866  Devs/diskspare.device
+   2480  1994/08/31  16:37:28  002859  Devs/statram.device
+  16192  1994/09/12  10:23:38  010064  Devs/mfm.device4140
+   8256  1995/08/24  12:28:20  010667  Devs/squirrelscsi.device
+   6460  1990/07/28  14:24:44  010100  Devs/CloantoAudio
+         1997/03/19  20:03:42  014725  Devs/AudioModes/
+    624  1991/05/02  17:04:08  014728  Devs/AudioModes/WAVETOOLS
+    612  1991/05/02  17:04:08  014807  Devs/AudioModes/TOCCATA
+   1484  1991/05/02  17:04:08  014810  Devs/AudioModes/PAULA
+    556  1991/05/02  17:04:08  014814  Devs/AudioModes/FILESAVE
+    612  1991/05/02  17:04:08  014817  Devs/AudioModes/DELFINA
+  26484  1991/05/02  17:04:06  014820  Devs/ahi.device
+         1996/10/31  22:07:13  008564  Tools/
+   1309  1992/09/02  12:40:50  008867  Tools/IconEdit.info
+    826  1992/09/02  11:55:32  008871  Tools/InitPrinter.info
+    632  1992/09/02  11:55:24  008874  Tools/Commodities.info
+    450  1992/09/02  11:55:34  008877  Tools/Lacer.info
+    470  1992/09/02  11:55:36  008879  Tools/MEmacs.info
+    515  1992/09/02  11:55:29  008881  Tools/GraphicDump.info
+    470  1992/09/02  11:55:33  008884  Tools/KeyShow.info
+   1224  1992/09/02  11:57:04  008886  Tools/HDBackup.info
+    579  1992/09/02  11:55:25  008890  Tools/Calculator.info
+    450  1992/09/02  11:55:41  008893  Tools/ShowConfig.info
+    485  1992/09/02  11:55:39  008895  Tools/PrintFiles.info
+    563  1992/09/02  11:55:26  008897  Tools/CMD.info
+    826  1992/09/02  11:56:57  008900  Tools/HDToolBox.info
+    454  1992/09/02  11:55:38  008903  Tools/PrepCard.info
+         1992/09/02  13:08:38  008905  Tools/Commodities/
+    578  1992/09/02  12:40:50  009668  Tools/Commodities/ClickToFront.info
+    557  1992/09/02  13:08:38  009671  Tools/Commodities/CrossDOS.info
+    502  1992/09/02  11:55:14  009674  Tools/Commodities/AutoPoint.info
+    531  1992/09/02  12:40:51  009676  Tools/Commodities/Exchange.info
+    597  1992/09/02  12:40:50  009679  Tools/Commodities/Blanker.info
+    502  1992/09/02  11:55:22  009682  Tools/Commodities/NoCapsLock.info
+    502  1992/09/02  11:55:22  009684  Tools/Commodities/MouseBlanker.info
+    544  1992/09/02  12:40:51  009686  Tools/Commodities/FKey.info
+   2788  1992/09/02  11:51:33  009689  Tools/Commodities/NoCapsLock
+   6780  1992/09/02  11:51:33  009690  Tools/Commodities/Exchange
+   3112  1992/09/02  11:51:33  009691  Tools/Commodities/AutoPoint
+   3028  1992/09/02  11:51:33  009692  Tools/Commodities/MouseBlanker
+   8952  1992/09/02  11:51:33  009693  Tools/Commodities/CrossDOS
+  10208  1992/09/02  11:51:33  009694  Tools/Commodities/FKey
+  10232  1992/09/02  11:51:33  009695  Tools/Commodities/Blanker
+   3792  1992/09/02  11:51:33  009696  Tools/Commodities/ClickToFront
+   2988  1992/09/02  11:51:33  008908  Tools/GraphicDump
+  46144  1992/09/02  11:51:33  008909  Tools/IconEdit
+  21156  1992/09/02  11:51:33  008910  Tools/PrepCard
+ 101832  1992/09/02  11:51:33  008911  Tools/BRU
+  10684  1992/09/02  11:51:33  008912  Tools/KeyShow
+  11928  1992/09/02  11:51:33  008913  Tools/ShowConfig
+  83248  1992/09/02  11:51:33  008914  Tools/HDBackup
+    296  1992/09/02  11:51:33  008915  Tools/InitPrinter
+  10580  1992/09/02  11:51:33  008917  Tools/Calculator
+   7688  1992/09/02  11:51:33  008918  Tools/CMD
+    296  1992/09/02  11:51:33  008919  Tools/Lacer
+  52484  1992/09/02  11:51:33  008921  Tools/MEmacs
+   2196  1992/09/02  11:51:33  008922  Tools/PrintFiles
+  97144  1992/09/02  11:51:33  008923  Tools/HDToolBox
+  11573  1992/09/02  11:51:33  008924  Tools/HDBackup.help
+   1592  1995/03/27  10:16:40  010659  Tools/SquirrelHDToolBox
+    928  1996/10/12   8:26:25  010664  Tools/SquirrelHDToolBox.info
+   2254  1996/10/19  17:49:14  000266  Tools/drive definitions
+         1996/10/31  22:07:30  002684  Tools/ZJTools/
+   6852  1996/09/18  10:33:26  002694  Tools/ZJTools/ZJTool
+   1761  1996/09/17  15:37:40  002709  Tools/ZJTools/ZJTool.info
+         1996/10/31  22:07:25  002744  Tools/ZJTools/Icons/
+    876  1996/10/31  22:07:25  002747  Tools/ZJTools/Icons/Eject.info
+  32656  1996/10/27  19:50:26  002750  Tools/ZJTools/ZJTools.guide
+   1857  1996/09/12  20:22:16  002815  Tools/ZJTools/ZJTools.guide.info
+   2785  1996/10/31  22:07:13  002687  Tools/ZJTools.info
+         1997/06/08  19:35:23  008568  S/
+    460  1978/01/06  22:27:11  008925  S/BB.Config.info
+    300  1997/08/24  19:17:54  008930  S/Pro-Wizard.prefs
+   1559  1992/09/02  11:51:33  008932  S/HDBackup.config
+    268  1993/03/31  19:52:49  008933  S/jed.config
+    615  1992/09/02  11:51:33  008940  S/Ed-startup
+    709  1992/09/02  11:51:33  008943  S/DPat
+   2980  1978/01/06  22:27:10  008946  S/BB.Config
+     10  1993/10/11  19:34:45  008947  S/fontlist.pp
+   1764  1991/07/21  18:15:07  008949  S/classx.sh
+    822  1995/07/04   9:29:01  008937  S/genielist.pp
+    107  1997/06/08  19:33:37  008935  S/PPage.DFLT
+    830  1997/06/08  19:33:40  008950  S/prevfiles.pp
+   1281  1997/07/03  20:39:54  010138  S/Startup-Sequence
+   1843  1992/09/02  11:51:33  008953  S/BRUtab
+    156  1995/09/14  13:23:41  008956  S/Moor.cfg
+   1051  1994/02/24  14:27:39  008959  S/classes
+    248  1992/09/02  11:51:33  008960  S/PCD
+    487  1994/07/25  20:04:48  008962  S/PPage.ini
+    283  1992/09/02  11:51:33  008964  S/SPat
+     48  1994/01/13  13:53:07  008966  S/MineSweeper.highscores
+   2652  1992/02/29  15:45:34  008968  S/Default.iimcr.old
+   2652  1992/02/29  15:45:34  008969  S/Default.immcr.old
+   2652  1992/02/29  15:45:34  008970  S/Default.ipmcr.old
+      4  1997/06/08  19:31:00  008954  S/fontsize.pp
+   2261  1997/06/08  19:35:22  010062  S/.cshrc
+   1388  1998/06/11  20:50:41  003401  S/user-startup
+      6  1992/02/29  15:45:32  008972  S/picmdpath
+   2652  1992/02/29  15:45:34  008974  S/Default.iimcr
+   2652  1992/02/29  15:45:34  008979  S/Default.immcr
+   2652  1992/02/29  15:45:34  008980  S/Default.ipmcr
+         1995/06/12  23:53:55  009032  S/scan/
+      0  1995/06/12  23:51:56  010091  S/scan/scan810000.log
+   2009  1995/06/12  23:53:55  010092  S/scan/scan810000.bmap
+  43916  1995/09/26  22:18:24  004595  S/HippoPlayer.group
+   1163  1995/11/09  17:10:53  001089  S/mosaic-global-history
+     20  1995/12/13  17:52:55  015388  S/TurboCalc.LRU
+   2709  1995/12/30  16:55:40  003316  S/ncomm.key
+    721  1996/10/12  22:01:23  000241  S/aliases
+   1592  1996/08/15  13:16:06  002576  S/PT.config-00
+    628  1996/10/21  21:53:10  002582  S/.info
+   6489  1998/06/02  22:04:01  008609  S/Startup.DM
+  17872  1992/03/14  19:12:42  008992  S/PageGenie.pgen
+   1238  1993/01/28  18:30:32  008994  S/PPageGenie.hlp
+   2337  1993/10/21  15:39:44  009002  S/PPageFilters.dflt
+    473  1993/11/17  22:33:32  009003  S/Startup.supdup
+     62  1994/02/28  23:45:41  009005  S/DT.config
+   1000  1994/01/11  21:57:08  009007  S/poing.scores
+    142  1978/01/01  10:49:19  009011  S/.login
+   1592  1996/07/11  14:39:30  002594  S/PT.config-01
+     36  1996/12/02  22:30:08  000876  S/DCTV-Viewer.prefs
+    460  1997/03/23  22:10:02  011346  S/Startup.DM.info
+    366  1978/01/01  23:52:41  009013  S/BB.Phone
+    112  1992/08/27  15:33:39  009015  S/serial-number
+    116  1978/01/20   2:57:22  009017  S/SigMaker.config
+   3374  1994/01/01  14:15:58  009019  S/mplot.prefs
+      5  1994/02/23  19:25:18  009020  S/PrtSc.cfg
+    804  1994/06/13  17:57:41  009022  S/RexxCommands
+      0  1978/02/07  23:57:47  009025  S/DIAne.Defaults
+    412  1994/09/09  17:28:27  009033  S/P60A.prefs
+    108  1994/03/30  18:55:58  009035  S/Compile.ced
+     94  1994/03/30  18:56:14  009037  S/Make.ced
+    724  1994/03/30  18:56:18  009039  S/NextError.ced
+  82812  1994/12/25   3:25:08  009115  S/Pro-Wizard.reco
+   2574  1996/10/09  22:16:04  007799  S/HippoPlayer.prefs
+     31  1995/06/12  23:53:55  010097  S/scan.defs
+         1997/06/11  22:53:53  008580  T/
+   1271  1990/08/31  10:36:59  009116  T/TxEd.Backup
+    156  1994/05/31  20:35:47  009120  T/JBPQ.0001
+      1  1994/03/09  18:24:58  009122  T/CshCounter
+    264  1994/06/23  22:11:40  009124  T/5ZVW.0000
+    156  1994/05/31  20:00:14  009128  T/JBPQ.0000
+    264  1994/06/26  12:27:06  009130  T/5IC0.0000
+    156  1994/07/30  21:48:35  009132  T/RVSY.0000
+    264  1995/04/04  22:29:17  009010  T/JVYW.0001
+      0  1995/11/07   1:16:50  007858  T/RHOX.0000
+      0  1995/11/08  23:03:48  002360  T/DQBW.0000
+    264  1995/11/30  22:56:34  010422  T/FN5W.0001
+      0  1996/10/21  21:48:52  002575  T/_RxOut
+   5063  1997/03/09  12:13:07  003130  T/cc158528.i
+      1  1996/10/13  14:03:55  009028  T/CshLoggedIn
+    412  1995/12/11  22:33:34  015175  T/3JOZ.0001
+    264  1996/01/17  18:27:03  003315  T/RIEZ.0001
+    264  1996/01/24   1:26:54  007815  T/HOOX.0001
+    264  1996/01/24   6:53:18  007817  T/X5DY.0001
+    264  1996/01/24   7:29:44  007823  T/RBFY.0001
+      2  1996/02/07  20:28:14  003222  T/CODE.return_status.338
+      2  1996/02/07  20:28:27  003224  T/CODE.return_status.374
+    264  1996/10/30  21:32:14  002574  T/RVT1.0001
+    264  1997/03/01  17:10:48  011344  T/ZHWKB.0001
+   5918  1997/03/04  20:03:40  010061  T/Command-00-T05
+  15217  1997/05/05  19:44:16  014873  T/install.log
+    528  1997/05/05  19:44:16  014904  T/install.log.info
+   8161  1997/03/04  19:51:30  010182  T/Command-01-T05
+   4465  1997/08/12  22:16:18  008603  T/Command-00-T06
+      1  1997/06/11  22:49:01  003374  T/CshCounter
+   1425  1998/10/03  13:34:56  009026  T/Command-01-T01
+   2793  1997/08/12  22:16:19  003413  T/Registerform
+         1992/09/02  12:33:55  008582  Locale/
+         1992/09/02  12:49:47  009136  Locale/Catalogs/
+  22276  1992/12/29  21:31:46  009697  Locale/Catalogs/BootX.cd
+         1992/09/02  12:49:47  009698  Locale/Catalogs/français/
+         1992/09/02  12:46:33  009971  Locale/Catalogs/français/Sys/
+   1540  1992/09/02  11:51:33  009976  Locale/Catalogs/français/Sys/commodities.catalog
+  17694  1992/12/29  21:31:52  009977  Locale/Catalogs/français/Sys/BootX.catalog
+   2140  1992/09/02  11:51:33  009978  Locale/Catalogs/français/Sys/libs.catalog
+   1780  1992/09/02  11:51:33  009979  Locale/Catalogs/français/Sys/monitors.catalog
+   9682  1992/09/02  11:51:33  009980  Locale/Catalogs/français/Sys/utilities.catalog
+    348  1992/09/02  11:51:33  009981  Locale/Catalogs/français/Sys/devs.catalog
+  17392  1992/09/02  11:51:33  009983  Locale/Catalogs/français/Sys/installer.catalog
+   3434  1992/09/02  11:51:33  009984  Locale/Catalogs/français/Sys/system.catalog
+   3880  1992/09/02  11:51:33  009985  Locale/Catalogs/français/Sys/dos.catalog
+   1778  1992/09/02  11:51:33  009986  Locale/Catalogs/français/Sys/c.catalog
+   4128  1992/09/02  11:51:33  009987  Locale/Catalogs/français/Sys/workbench.catalog
+   3132  1992/09/02  11:51:33  009988  Locale/Catalogs/français/Sys/prepcard.catalog
+   2314  1992/09/02  11:51:33  009989  Locale/Catalogs/français/Sys/amigaguide.catalog
+  11012  1992/09/02  11:51:33  009990  Locale/Catalogs/français/Sys/prefs.catalog
+   1046  1992/12/29  21:31:50  009991  Locale/Catalogs/français/Sys/reqtools.catalog
+         1992/09/02  12:37:40  009138  Locale/Countries/
+    538  1992/09/02  11:51:33  009700  Locale/Countries/canada_français.country
+    538  1992/09/02  11:51:33  009703  Locale/Countries/portugal.country
+    538  1992/09/02  11:51:33  009706  Locale/Countries/australia.country
+    538  1992/09/02  11:51:33  009709  Locale/Countries/schweiz.country
+    538  1992/09/02  11:51:33  009712  Locale/Countries/sverige.country
+    538  1992/09/02  11:51:33  009715  Locale/Countries/italia.country
+    538  1992/09/02  11:51:33  009718  Locale/Countries/danmark.country
+    538  1992/09/02  11:51:33  009721  Locale/Countries/united_states.country
+    538  1992/09/02  11:51:33  009724  Locale/Countries/norge.country
+    538  1992/09/02  11:51:33  009727  Locale/Countries/france.country
+    538  1992/09/02  11:51:33  009730  Locale/Countries/españa.country
+    538  1992/09/02  11:51:33  009733  Locale/Countries/belgie.country
+    538  1992/09/02  11:51:33  009736  Locale/Countries/united_kingdom.country
+    538  1992/09/02  11:51:33  009739  Locale/Countries/belgique.country
+    538  1992/09/02  11:51:33  009742  Locale/Countries/deutschland.country
+    538  1992/09/02  11:51:33  009745  Locale/Countries/österreich.country
+    538  1992/09/02  11:51:33  009748  Locale/Countries/canada.country
+    538  1992/09/02  11:51:33  009751  Locale/Countries/nederland.country
+    538  1992/09/02  11:51:33  009754  Locale/Countries/suisse.country
+    538  1992/09/02  11:51:33  009757  Locale/Countries/great_britain.country
+    538  1992/09/02  11:51:33  009760  Locale/Countries/svizzera.country
+         1992/09/02  12:37:51  009141  Locale/Help/
+         1992/09/02  12:37:52  009763  Locale/Help/français/
+         1992/09/02  12:37:52  009974  Locale/Help/français/Sys/
+   2941  1992/09/02  11:51:33  009992  Locale/Help/français/Sys/amigaguide.guide
+         1992/09/02  12:37:43  009143  Locale/Languages/
+   1072  1992/09/02  11:51:33  009765  Locale/Languages/français.language
+         1997/03/03  23:17:37  008590  Libs/
+  10416  1994/01/05  15:17:56  009285  Libs/rexxreqtools.library
+  27856  1994/02/22  19:19:54  009286  Libs/rexxplslib.library
+   2876  1992/09/02  13:07:04  009289  Libs/backstab.library
+   4476  1993/10/07   1:40:18  009290  Libs/OwnDevUnit.library
+  13288  1994/01/01  14:24:44  009291  Libs/mtool.library
+  21712  1993/10/07   1:40:26  009292  Libs/xprkermit.library
+  66336  1993/08/22  23:03:06  009293  Libs/bsh.library
+  16196  1992/10/04  13:25:06  009294  Libs/dctv.library
+  28960  1992/09/02  11:51:33  009295  Libs/bullet.library
+  18072  1993/09/22  12:19:26  009296  Libs/locale.library
+   4557  1989/05/24  18:37:00  011541  Libs/rexxmathlib.doc
+ 176468  1994/11/11  22:30:00  007166  Libs/post.library
+   6828  1992/09/02  11:51:33  009297  Libs/iffparse.library
+  12436  1993/02/07  19:08:56  009298  Libs/arp.library
+   4280  1992/09/02  11:51:33  009299  Libs/mathtrans.library
+  40452  1992/09/02  11:51:33  009300  Libs/asl.library
+   2524  1992/09/02  11:51:33  009301  Libs/rexxsupport.library
+  24800  1992/09/02  11:51:33  009302  Libs/amigaguide.library
+  50992  1996/04/08  17:10:36  009303  Libs/reqtools.library
+  10428  1992/09/02  11:51:33  009304  Libs/mathieeesingtrans.library
+  15216  1993/02/03  13:45:52  009305  Libs/GDArexxSupport.library
+  33392  1992/09/02  11:51:33  009306  Libs/rexxsyslib.library
+   8560  1992/09/02  11:51:33  009307  Libs/commodities.library
+   5240  1992/09/02  11:51:33  009308  Libs/mathieeedoubbas.library
+    272  1992/09/02  11:51:33  009309  Libs/version.library
+  15340  1992/09/02  11:51:33  009311  Libs/diskfont.library
+  16584  1992/09/02  11:51:33  009312  Libs/mathieeedoubtrans.library
+  43428  1992/09/02  11:51:33  009313  Libs/68040.library
+  18436  1994/01/31  23:26:22  009314  Libs/req.library, CED
+  18388  1992/09/02  11:51:33  009315  Libs/datatypes.library
+  65840  1992/11/28  14:19:08  009316  Libs/FontEngine.library
+  10448  1993/11/01  21:38:18  009317  Libs/garbagecollector.library
+  19004  1993/10/07   1:40:22  009318  Libs/xprbplus.library
+   1640  1993/04/01  18:23:16  009319  Libs/nofrag.library
+  61216  1992/12/05  17:16:24  009320  Libs/apig.library
+   7100  1991/11/12  12:20:06  009321  Libs/conhandler.library
+   2932  1978/01/13  14:59:52  009322  Libs/diskcode.library
+   6012  1991/07/09  15:22:31  009323  Libs/libfile.monam
+   6372  1992/10/12  21:59:52  009324  Libs/midi.library
+   3580  1978/01/01   0:14:02  009325  Libs/reqtoolsnb.lib
+   2512  1991/11/12  12:20:22  009326  Libs/tdisk.library
+  10592  1993/09/14  12:54:59  009327  Libs/translator.library
+  12608  1980/01/27   8:57:22  009328  Libs/medplayer.library
+   3160  1993/05/24  15:51:10  009329  Libs/iff.library
+  10284  1980/01/03  11:22:50  009330  Libs/removelink.library
+  29556  1994/12/28  17:01:44  001369  Libs/provision.library
+   7900  1995/03/04  18:02:52  010401  Libs/tower.library
+  44348  1995/11/07   1:17:01  007958  Libs/thumbnail.library
+   7076  1989/05/24  18:41:18  011526  Libs/rexxmathlib.library
+ 140696  1996/07/02  16:38:34  008211  Libs/wizard.library
+   1748  1996/08/10  12:59:56  000243  Libs/hhscybershowkey.library
+   1196  1996/01/14  14:05:00  000275  Libs/hhsgiokey.library
+   1036  1996/08/10  13:00:02  000801  Libs/hhsloaderkey.library
+   2140  1996/08/10  12:59:52  000805  Libs/hhsphotoalbumkey.library
+   6128  1993/09/28  21:53:48  003117  Libs/powerpacker.library
+         1997/01/26  21:15:08  011016  Libs/xfd/
+    708  1996/06/03  19:04:52  011019  Libs/xfd/FIRE
+    636  1994/11/05   5:55:34  011022  Libs/xfd/Graftgold_Cruncher
+    535  1996/06/03  19:04:52  011025  Libs/xfd/.README.FIRST
+    908  1996/06/03  19:04:54  011028  Libs/xfd/1AM
+    580  1996/06/03  19:04:52  011031  Libs/xfd/4Vx
+    492  1996/06/03  19:04:52  011034  Libs/xfd/89A8
+   2860  1996/06/03  19:04:54  011036  Libs/xfd/=SB=
+    840  1996/06/03  19:04:54  011043  Libs/xfd/Ace?
+    552  1996/06/03  19:04:54  011046  Libs/xfd/ALC0
+    908  1996/06/03  19:04:54  011049  Libs/xfd/AMOS
+   1196  1996/06/03  19:04:54  011052  Libs/xfd/ArcD
+    708  1996/06/03  19:04:54  011056  Libs/xfd/ArcR
+    788  1996/06/03  19:04:54  011059  Libs/xfd/ATOM
+    888  1996/06/03  19:04:54  011062  Libs/xfd/AXIS
+    508  1996/06/03  19:04:54  011065  Libs/xfd/BOND
+    388  1996/06/03  19:04:54  011067  Libs/xfd/CMP1
+    456  1996/06/03  19:04:54  011069  Libs/xfd/CP
+    536  1996/06/03  19:04:54  011071  Libs/xfd/CRND
+    588  1996/06/03  19:04:54  011074  Libs/xfd/CRUN
+    952  1996/06/03  19:04:54  011077  Libs/xfd/DHp2
+    936  1996/06/03  19:04:54  011080  Libs/xfd/DPRa
+    644  1996/06/03  19:04:54  011083  Libs/xfd/Dtpk
+    544  1996/06/03  19:04:54  011086  Libs/xfd/FUCK
+   1720  1996/06/03  19:04:54  011089  Libs/xfd/GP
+   1260  1996/06/03  19:04:52  011094  Libs/xfd/Graftgold
+    652  1996/06/03  19:04:54  011098  Libs/xfd/HUF
+    548  1996/06/03  19:04:54  011101  Libs/xfd/HUFF
+    716  1996/06/03  19:04:52  011104  Libs/xfd/Ice_TSM
+    772  1996/06/03  19:04:54  011107  Libs/xfd/IFT?
+    800  1996/06/03  19:04:54  011110  Libs/xfd/JR
+    640  1996/06/03  19:04:54  011113  Libs/xfd/KDUB
+    456  1996/06/03  19:04:52  011116  Libs/xfd/LOB
+    688  1996/06/03  19:04:52  011119  Libs/xfd/LZWH
+    816  1996/06/03  19:04:54  011122  Libs/xfd/MASM
+   1256  1996/06/03  19:04:54  011125  Libs/xfd/MASS
+    892  1996/06/03  19:04:54  011129  Libs/xfd/pack
+    556  1996/06/03  19:04:54  011132  Libs/xfd/PaK0
+    484  1996/06/03  19:04:54  011135  Libs/xfd/RLE
+    988  1996/06/03  19:04:54  011137  Libs/xfd/SPv3
+    504  1996/06/03  19:04:52  011140  Libs/xfd/SSUR
+    440  1996/06/03  19:04:52  011142  Libs/xfd/TPWM
+    608  1996/06/03  19:04:54  011144  Libs/xfd/VDCO
+    992  1996/06/03  19:04:54  011147  Libs/xfd/Vic2
+    760  1996/06/03  19:04:54  011150  Libs/xfd/VOL1
+   1228  1996/06/03  19:04:54  011153  Libs/xfd/XP10
+    632  1996/06/03  19:04:54  011161  Libs/xfd/XPAC
+    560  1996/06/03  19:04:52  011164  Libs/xfd/xVdg
+  27992  1994/08/12  10:31:22  005583  Libs/playsid.library
+  67444  1996/06/03  19:04:52  011167  Libs/xfdmaster.library
+  13456  1994/02/20  20:41:30  005642  Libs/xpkmaster.library
+         1992/09/02  11:54:00  008595  Rexxc/
+    300  1992/09/02  11:51:33  009331  Rexxc/TS
+    364  1992/09/02  11:51:33  009333  Rexxc/TCC
+    440  1992/09/02  11:51:33  009335  Rexxc/RXC
+    364  1992/09/02  11:51:33  009337  Rexxc/TCO
+    208  1992/09/02  11:51:33  009339  Rexxc/WaitForPort
+    304  1992/09/02  11:51:33  009341  Rexxc/HI
+    640  1992/09/02  11:51:33  009343  Rexxc/RXSET
+    968  1992/09/02  11:51:33  009346  Rexxc/RX
+    740  1992/09/02  11:51:33  009349  Rexxc/RXLIB
+    300  1992/09/02  11:51:33  009352  Rexxc/TE
+         1996/12/02  22:33:31  008597  Classes/
+         1997/02/10  19:20:23  009354  Classes/DataTypes/
+  46036  1992/09/02  11:51:33  009840  Classes/DataTypes/amigaguide.datatype
+   5888  1992/09/02  11:51:33  009841  Classes/DataTypes/ascii.datatype
+   3644  1996/03/30  15:18:54  009842  Classes/DataTypes/gif.datatype
+   3412  1992/09/02  11:51:33  009843  Classes/DataTypes/ilbm.datatype
+  14512  1992/09/02  11:51:33  009844  Classes/DataTypes/text.datatype
+   4160  1993/09/28  15:42:10  009845  Classes/DataTypes/pcx.datatype
+   5936  1992/09/02  11:51:33  009846  Classes/DataTypes/sound.datatype
+  36724  1993/07/29  20:33:06  009847  Classes/DataTypes/JPEG.datatype
+   2592  1992/09/02  11:51:33  009848  Classes/DataTypes/8svx.datatype
+  12488  1992/09/02  11:51:33  009849  Classes/DataTypes/picture.datatype
+   2716  1993/09/28  15:42:10  009850  Classes/DataTypes/bmp.datatype
+   2024  1993/09/28  15:42:08  009851  Classes/DataTypes/ico.datatype
+   2532  1993/09/28  15:42:10  009852  Classes/DataTypes/macpaint.datatype
+   2832  1995/01/22  13:26:56  003560  Classes/DataTypes/reko.datatype, 68020-version
+   4672  1995/01/22  19:13:48  003567  Classes/DataTypes/sun.datatype, 68020-version
+  11192  1995/04/01  16:20:34  009863  Classes/DataTypes/c.datatype
+   4640  1995/09/30   9:30:32  004688  Classes/DataTypes/SVG.datatype
+   6512  1995/03/16  21:55:52  002336  Classes/DataTypes/targa.datatype, 68020-version
+  28424  1995/10/31  18:19:04  015111  Classes/DataTypes/png.datatype
+   2648  1996/05/20  20:52:52  010057  Classes/DataTypes/zx.datatype
+   5984  1996/05/27  19:37:12  015331  Classes/DataTypes/font.datatype, V 39.4
+   4076  1995/03/21  17:21:08  001160  Classes/DataTypes/debox.datatype
+  79056  1997/02/05  18:35:16  016992  Classes/DataTypes/akPNG.datatype
+         1992/09/02  11:55:08  009357  Classes/Gadgets/
+   5224  1992/09/02  11:51:33  009853  Classes/Gadgets/gradientslider.gadget
+  12796  1992/09/02  11:51:33  009854  Classes/Gadgets/colorwheel.gadget
+         1996/12/02  22:33:30  009994  Classes/Codecs/
+   1908  1995/03/04  18:02:52  009997  Classes/Codecs/picture.codec
+  69420  1995/03/04  18:02:52  010002  Classes/Codecs/jpeg.codec
+   1224  1995/03/04  18:02:50  010397  Classes/codec.class
+         1996/10/09  20:32:26  008599  Utilities/
+    553  1992/09/02  13:32:25  009359  Utilities/Clock.info
+   1478  1993/05/02  13:27:04  009362  Utilities/Amigaguide.info
+    837  1992/09/02  13:32:19  009366  Utilities/MultiView.info
+  11936  1992/09/02  11:51:33  009369  Utilities/More
+  21180  1992/09/02  11:51:33  009370  Utilities/MultiView
+  13876  1992/09/02  11:51:33  009371  Utilities/Clock
+   6656  1993/05/02  13:27:02  009372  Utilities/Amigaguide
+ 113532  1995/04/25  11:47:10  001198  Utilities/Installer
+         1994/02/21  19:56:22  008601  PSFonts/
+   1672  1992/03/14  16:13:54  009373  PSFonts/FunkyFont
+         1994/02/21  19:56:25  009374  PSFonts/afms/
+   4590  1992/03/14  16:13:54  009855  PSFonts/afms/FunkyFont.afm
+         1997/06/09  21:29:49  008518  _exotic/
+         1997/06/09  21:29:42  010221  _exotic/brian/
+   2151  1995/06/28  22:14:43  010224  _exotic/brian/bp_str.txt
+   4108  1995/09/13  20:30:25  010292  _exotic/brian/bp.table
+         1997/06/09  21:29:43  010302  _exotic/delta/
+  14374  1995/06/27  17:39:38  010305  _exotic/delta/dm2.wave
+  18020  1995/06/27  17:38:34  010477  _exotic/delta/dm2.track
+  14250  1995/06/27  17:36:36  010514  _exotic/delta/dm2.sound
+   3552  1995/06/27  17:34:50  010754  _exotic/delta/dm2.keys
+   4424  1995/06/27  17:32:10  010762  _exotic/delta/dm2.help
+  11332  1995/06/27  17:31:58  010772  _exotic/delta/dm2.disk
+  15336  1995/06/27  17:30:04  010856  _exotic/delta/dm2.block
+   2409  1995/07/05  17:11:51  010887  _exotic/delta/dm1_str.txt
+         1997/06/09  21:29:44  010893  _exotic/futucomp/
+  12980  1995/06/26  18:08:22  010896  _exotic/futucomp/fc14.wav
+  18216  1995/06/26  18:09:40  010923  _exotic/futucomp/fc14.vol
+   9088  1995/06/26  18:05:58  010960  _exotic/futucomp/fc14.patt
+  17302  1995/06/27  11:41:58  010979  _exotic/futucomp/fc14.main
+  11960  1995/06/26  18:10:14  011305  _exotic/futucomp/fc14.hlp
+   3048  1995/06/27  13:35:05  011382  _exotic/futucomp/fc14_str.txt
+    369  1995/06/25  22:30:39  011412  _exotic/futucomp/fc13_voi
+   2486  1995/06/27  12:21:18  011414  _exotic/futucomp/fc13_str.txt
+         1997/06/09  21:29:44  011420  _exotic/jamcrack/
+   1075  1995/07/19   1:48:55  011423  _exotic/jamcrack/jamcracker_str.txt
+  18562  1995/07/16  15:02:06  011427  _exotic/jamcrack/jamcracker.main
+         1997/06/09  21:29:45  011465  _exotic/mark2/
+   3636  1995/07/04  20:16:50  011468  _exotic/mark2/m2.set
+   8360  1995/06/27  14:03:10  011477  _exotic/mark2/m2.sequ
+   8360  1995/07/04  20:16:08  014924  _exotic/mark2/m2.seq2
+   6002  1995/06/27  14:02:02  014942  _exotic/mark2/m2.scann
+   6150  1995/06/26   0:06:32  014955  _exotic/mark2/m2.req
+   4034  1995/06/26   0:08:32  014969  _exotic/mark2/m2.menu
+   9762  1995/06/26   0:15:32  014978  _exotic/mark2/m2.inst
+   9696  1995/06/27  14:00:36  014999  _exotic/mark2/m2.arran
+         1997/06/09  21:29:45  015019  _exotic/oktaliz/
+  23082  1995/06/27  13:47:55  015022  _exotic/oktaliz/oktalyzer_pic
+    768  1995/06/27  13:26:24  015069  _exotic/oktaliz/oktalizer_str.txt
+         1997/06/09  21:29:46  015072  _exotic/pumatrack/
+   3074  1995/08/14  23:49:36  015075  _exotic/pumatrack/puma_str.txt
+  10148  1995/08/14  23:43:47  015083  _exotic/pumatrack/puma.wave
+  14126  2010/10/10  10:43:27  015104  _exotic/pumatrack/puma.main
+         1997/06/09  21:29:47  015302  _exotic/sid/
+   6176  1995/08/19  15:09:47  015305  _exotic/sid/sid2_str.txt
+  12868  2010/10/10  10:41:50  015319  _exotic/sid/sid2.wave
+  20586  2010/10/10  10:41:24  015731  _exotic/sid/sid2.patt
+  18560  2010/10/10  10:40:52  000132  _exotic/sid/sid2.main
+  18556  2010/10/10  10:40:28  000321  _exotic/sid/sid2.inst
+  16138  1995/06/28  17:07:18  000359  _exotic/sid/sid.wave
+  11498  1995/06/28  17:06:26  000392  _exotic/sid/sid.samp
+  14294  1995/06/28  17:09:00  000416  _exotic/sid/sid.patt
+  14838  1995/06/28  17:07:58  000445  _exotic/sid/sid.main
+         1997/06/09  21:29:48  000475  _exotic/synth/
+   4678  1995/09/26  23:31:52  000478  _exotic/synth/synth.wave
+   7472  1995/07/27  23:26:22  000489  _exotic/synth/synth.note
+   9112  1995/07/26  15:12:38  000505  _exotic/synth/synth.main
+   7634  1995/07/27  23:25:40  000524  _exotic/synth/synth.instr
+   4742  1995/07/27  23:24:50  000540  _exotic/synth/synth.diskio
+   9726  1995/07/27  23:24:00  000551  _exotic/synth/synth.arpeggio
+   3463  1995/09/13  20:21:06  000571  _exotic/aon_str.txt
+   5274  1995/09/21   0:10:54  000579  _exotic/pack_song.txt
+    668  1995/09/29  23:05:05  000591  _exotic/psid.txt
+   1201  1995/06/30  11:47:13  000594  _exotic/smus_str.txt
+   2168  1997/01/26  23:28:42  000598  _exotic/thx_str.txt
+         1997/08/17  21:05:22  008584  Fonts/
+    524  1998/05/27  22:54:01  009147  Fonts/Minitel16.font
+    264  1998/05/27  22:54:01  009150  Fonts/Minitel80.font
+         1997/08/17  21:04:32  009152  Fonts/_Bullet_Outlines/
+  76604  1978/01/08  22:01:23  009155  Fonts/_Bullet_Outlines/Caslon540.type
+  80162  1978/01/08  22:01:28  009788  Fonts/_Bullet_Outlines/CGOmega.type
+  89392  1978/01/08  22:01:33  016969  Fonts/_Bullet_Outlines/CSTimes.type
+  71056  1978/01/08  22:01:38  000764  Fonts/_Bullet_Outlines/CSTriumvirate.type
+  81866  1978/01/08  22:01:42  000928  Fonts/_Bullet_Outlines/GarthGraphic.type
+  68546  1978/01/08  22:01:46  001097  Fonts/_Bullet_Outlines/ShannonBook.type
+  81236  1978/01/08  22:01:51  001764  Fonts/_Bullet_Outlines/Uncial.type
+         1997/08/17  21:04:42  002157  Fonts/IBM/
+   3252  1993/08/26  20:00:42  002160  Fonts/IBM/8
+    524  1998/05/27  22:53:55  002168  Fonts/DPaint.font
+   1304  1998/05/27  22:53:56  002171  Fonts/courier.font
+         1997/08/17  21:04:43  002175  Fonts/siesta/
+   2600  1992/04/14   2:28:46  002178  Fonts/siesta/8
+   1564  1998/05/27  22:53:58  002185  Fonts/helvetica.font
+    784  1998/05/27  22:53:55  002190  Fonts/ruby.font
+    264  1998/05/27  22:53:54  002662  Fonts/siesta.font
+         1997/08/17  21:04:44  002664  Fonts/DPaint/
+    640  1993/11/29  21:15:11  002667  Fonts/DPaint/5
+   3316  1993/11/29  21:15:12  002670  Fonts/DPaint/8
+    524  1998/05/27  22:53:56  002678  Fonts/diamond.font
+         1997/08/17  21:04:45  003116  Fonts/ruby/
+   4292  1992/09/02  11:51:33  003143  Fonts/ruby/12
+   5708  1992/09/02  11:51:33  003153  Fonts/ruby/15
+   3348  1992/09/02  11:51:33  003166  Fonts/ruby/8
+         1997/08/17  21:04:46  003174  Fonts/_bullet/
+     99  1992/09/02  11:51:33  003177  Fonts/_bullet/if.fnt
+  70726  1992/09/02  11:51:33  003179  Fonts/_bullet/hq3updt.tyq
+ 264324  1992/09/02  11:51:33  003420  Fonts/_bullet/plugin.types, © 1990 Agfa Corporation
+    682  1992/09/02  11:51:33  004137  Fonts/_bullet/hq3.fnt
+   1972  1992/09/02  11:51:33  004140  Fonts/_bullet/if.uc
+   1304  1998/05/27  22:53:58  004145  Fonts/times.font
+         1997/08/17  21:04:53  004149  Fonts/opal/
+   3812  1992/09/02  11:51:33  004152  Fonts/opal/12
+   3284  1992/09/02  11:51:33  004161  Fonts/opal/9
+         1997/08/17  21:04:53  004169  Fonts/sapphire/
+   5040  1992/09/02  11:51:33  004172  Fonts/sapphire/14
+   6928  1992/09/02  11:51:33  004183  Fonts/sapphire/19
+         1997/08/17  21:04:54  004198  Fonts/courier/
+   3020  1992/09/02  11:51:33  004201  Fonts/courier/11, © 1985, 1987 Adobe Systems, Inc.
+   3444  1992/09/02  11:51:33  004208  Fonts/courier/13, © 1985, 1987 Adobe Systems, Inc.
+   4116  1992/09/02  11:51:33  004216  Fonts/courier/15, © 1985, 1987 Adobe Systems, Inc.
+   5156  1992/09/02  11:51:33  004226  Fonts/courier/18, © 1985, 1987 Adobe Systems, Inc.
+   7556  1992/09/02  11:51:33  004238  Fonts/courier/24, © 1985, 1987 Adobe Systems, Inc.
+    524  1998/05/27  22:53:55  004254  Fonts/opal.font
+         1997/08/17  21:04:55  004257  Fonts/diamond/
+   3884  1992/09/02  11:51:33  004260  Fonts/diamond/12
+   7188  1992/09/02  11:51:33  004269  Fonts/diamond/20
+         1997/08/17  21:04:56  004285  Fonts/garnet/
+   5380  1992/09/02  11:51:33  004288  Fonts/garnet/16
+   3732  1992/09/02  11:51:33  004300  Fonts/garnet/9
+         1997/08/17  21:04:57  004309  Fonts/emerald/
+   6168  1992/09/02  11:51:33  004312  Fonts/emerald/17
+   6988  1992/09/02  11:51:33  004326  Fonts/emerald/20
+         1997/08/17  21:04:57  004341  Fonts/PlaySID/
+    616  1992/09/17   9:13:53  004344  Fonts/PlaySID/8
+         1997/08/17  21:04:58  004347  Fonts/topaz/
+   3192  1992/09/02  11:51:33  004350  Fonts/topaz/11
+    524  1998/05/27  22:53:57  004358  Fonts/emerald.font
+    524  1998/05/27  22:53:57  004361  Fonts/garnet.font
+    264  1998/05/27  22:53:57  004364  Fonts/topaz.font
+         1998/05/27  22:47:03  004366  Fonts/helvetica/
+   3000  1992/09/02  11:51:33  004369  Fonts/helvetica/11, © 1985, 1987 Adobe Systems, Inc.
+   3392  1992/09/02  11:51:33  004376  Fonts/helvetica/13, © 1985, 1987 Adobe Systems, Inc.
+   3936  1992/09/02  11:51:33  004384  Fonts/helvetica/15, © 1985, 1987 Adobe Systems, Inc.
+   5228  1992/09/02  11:51:33  004393  Fonts/helvetica/18, © 1985, 1987 Adobe Systems, Inc.
+   7796  1992/09/02  11:51:33  004405  Fonts/helvetica/24, © 1985, 1987 Adobe Systems, Inc.
+   2288  1994/12/22  15:12:50  004422  Fonts/helvetica/9, © 1985, 1987 Adobe Systems, Inc.
+         1997/08/17  21:05:00  004428  Fonts/times/
+   3020  1992/09/02  11:51:33  004431  Fonts/times/11, © 1985, 1987 Adobe Systems, Inc.
+   3548  1992/09/02  11:51:33  004438  Fonts/times/13, © 1985, 1987 Adobe Systems, Inc.
+   4028  1992/09/02  11:51:33  004446  Fonts/times/15, © 1985, 1987 Adobe Systems, Inc.
+   5264  1992/09/02  11:51:33  004455  Fonts/times/18, © 1985, 1987 Adobe Systems, Inc.
+   7700  1992/09/02  11:51:33  004467  Fonts/times/24, © 1985, 1987 Adobe Systems, Inc.
+    524  1998/05/27  22:53:56  004484  Fonts/sapphire.font
+    264  1998/05/27  22:53:57  004487  Fonts/PlaySID.font
+    264  1998/05/27  22:53:54  004489  Fonts/IBM.font
+    185  1978/01/08  22:01:23  004491  Fonts/Caslon540.otag
+      4  1978/01/08  22:01:23  004493  Fonts/Caslon540.font
+    194  1978/01/08  22:01:38  004495  Fonts/CSTriumvirate.otag
+         1997/08/17  21:05:03  004497  Fonts/Condensed60/
+    856  1995/08/25  15:47:16  004500  Fonts/Condensed60/6
+   1908  1995/08/25  15:47:16  004503  Fonts/Condensed60/9
+      4  1978/01/08  22:01:34  004508  Fonts/CsTimes.font
+    182  1978/01/08  22:01:33  004510  Fonts/CsTimes.otag
+      4  1978/01/08  22:01:28  004512  Fonts/CGomega.font
+    185  1978/01/08  22:01:28  004514  Fonts/CGomega.otag
+      4  1978/01/08  22:01:38  004516  Fonts/CSTriumvirate.font
+    195  1978/01/08  22:01:42  004518  Fonts/GarthGraphic.otag
+      4  1978/01/08  22:01:42  004520  Fonts/GarthGraphic.font
+    188  1978/01/08  22:01:46  004522  Fonts/ShannonBook.otag
+      4  1978/01/08  22:01:46  004524  Fonts/ShannonBook.font
+    182  1978/01/08  22:01:51  004526  Fonts/Uncial.otag
+      4  1978/01/08  22:01:51  004528  Fonts/Uncial.font
+         1997/08/17  21:05:06  004530  Fonts/Minitel/
+   3784  1993/07/15  20:21:36  004533  Fonts/Minitel/8
+   3812  1993/07/26  21:48:34  004542  Fonts/Minitel/16
+         1997/08/17  21:05:07  004551  Fonts/TermSPC80/
+   3256  1993/10/07   1:39:54  004554  Fonts/TermSPC80/8
+   5304  1993/10/07   1:39:52  004562  Fonts/TermSPC80/16
+    524  1998/05/27  22:53:59  004574  Fonts/TermSPC80.font
+         1997/08/17  21:05:08  004577  Fonts/TermISO80/
+   3256  1993/10/07   1:39:50  004580  Fonts/TermISO80/8
+   5304  1993/10/07   1:39:48  004588  Fonts/TermISO80/16
+    524  1998/05/27  22:53:59  004703  Fonts/TermISO80.font
+         1997/08/17  21:05:09  004706  Fonts/TermISO132/
+   2236  1993/10/07   1:39:44  004709  Fonts/TermISO132/8
+   3388  1993/10/07   1:39:42  004715  Fonts/TermISO132/16
+    524  1998/05/27  22:54:00  004723  Fonts/TermISO132.font
+         1997/08/17  21:05:10  004726  Fonts/TermIBM80/
+   3256  1993/10/07   1:40:14  004729  Fonts/TermIBM80/8
+   5304  1993/10/07   1:40:12  004737  Fonts/TermIBM80/16
+    524  1998/05/27  22:54:00  004749  Fonts/TermIBM80.font
+         1997/08/17  21:05:11  004752  Fonts/TermDDC80/
+   3256  1993/10/07   1:40:10  004755  Fonts/TermDDC80/8
+   5304  1993/10/07   1:40:08  004763  Fonts/TermDDC80/16
+    524  1998/05/27  22:54:00  004967  Fonts/TermDDC80.font
+         1997/08/17  21:05:12  004970  Fonts/TermDDC132/
+   2488  1993/10/07   1:40:06  004973  Fonts/TermDDC132/8
+   3768  1993/10/07   1:40:04  004979  Fonts/TermDDC132/16
+    524  1998/05/27  22:54:00  005161  Fonts/TermDDC132.font
+         1997/08/17  21:05:13  005164  Fonts/Minitel16/
+   3388  1993/07/26  21:30:14  005167  Fonts/Minitel16/8
+   5244  1993/07/26  21:32:26  005175  Fonts/Minitel16/16
+         1997/08/17  21:05:14  005187  Fonts/Minitel80/
+   2376  1993/07/12  21:35:56  005190  Fonts/Minitel80/8
+    524  1998/05/27  22:53:59  005196  Fonts/Minitel.font
+         1997/08/17  21:05:15  005199  Fonts/A64/
+    732  1993/10/19  12:19:05  005202  Fonts/A64/6
+    264  1998/05/27  22:54:01  005205  Fonts/A64.font
+    524  1998/05/27  22:53:58  005207  Fonts/Condensed60.font
+   1304  1998/05/27  22:54:02  005210  Fonts/DGSansSerif.font
+         1997/08/17  21:05:16  005214  Fonts/DGSansSerif/
+   3352  1995/08/25  15:47:16  005217  Fonts/DGSansSerif/11
+   3600  1995/08/25  15:47:16  005225  Fonts/DGSansSerif/13
+   2644  1995/08/25  15:47:16  005234  Fonts/DGSansSerif/7
+   2852  1995/08/25  15:47:16  005241  Fonts/DGSansSerif/8
+   3032  1995/08/25  15:47:16  005248  Fonts/DGSansSerif/9
+    264  1998/05/27  22:54:02  005255  Fonts/newtopaz.font
+         1997/08/17  21:05:17  005257  Fonts/newtopaz/
+   3332  1995/08/25  15:47:16  005260  Fonts/newtopaz/8
+    264  1998/05/27  22:54:02  005268  Fonts/GoldED.font
+         1997/08/17  21:05:18  005270  Fonts/GoldED/
+   3132  1993/12/19  23:10:30  005273  Fonts/GoldED/10
+         1997/08/17  21:05:18  005281  Fonts/musicline/
+   2004  1995/09/13  21:49:04  005284  Fonts/musicline/8
+   2960  1995/09/13  19:30:22  005289  Fonts/musicline/7
+    524  1998/05/27  22:54:02  005296  Fonts/Musicline.font
+         1997/08/17  21:05:19  005299  Fonts/DCTV-Viewer/
+   3176  1995/04/02   2:11:20  005302  Fonts/DCTV-Viewer/8e
+    264  1998/05/27  22:54:02  005310  Fonts/DCTV-Viewer.font
+         1997/08/17  21:05:20  005312  Fonts/Personal/
+   3900  1995/06/19  18:56:06  005315  Fonts/Personal/8
+    264  1998/05/27  22:54:02  005324  Fonts/Personal.font
+         1997/08/17  21:05:21  005326  Fonts/KaraGRANITE/
+  37096  1989/01/10  21:05:21  005329  Fonts/KaraGRANITE/55.8C
+    264  1998/05/27  22:54:03  005404  Fonts/KaraGRANITE.font
+    264  1998/05/27  22:54:03  005406  Fonts/microknight.font
+         1997/08/17  21:05:22  005408  Fonts/microknight/
+   2888  1997/03/19  19:21:37  005411  Fonts/microknight/8
+         1998/04/29  17:56:30  010555  Fonts/Chorus/
+   2616  1995/07/27  12:57:10  010558  Fonts/Chorus/8
+    264  1998/05/27  22:54:03  010565  Fonts/Chorus.font
+         1995/07/17  23:41:34  008607  ARexx/
+         1994/06/13  17:49:19  009410  ARexx/Rexx/
+    724  1994/03/30  18:56:18  009866  ARexx/Rexx/NextError.ced
+    371  1994/03/30  18:55:14  009869  ARexx/Rexx/Make.ced
+    414  1994/03/30  18:55:10  009871  ARexx/Rexx/Compile.ced
+    414  1994/03/30  18:55:10  009412  ARexx/Compile.ced
+    371  1994/03/30  18:55:14  009414  ARexx/Make.ced
+    724  1994/03/30  18:56:18  009416  ARexx/NextError.ced
+   3305  1992/08/01  10:56:48  009042  ARexx/AddToLabelDataBase.pprx
+    816  1992/03/14  19:12:38  009043  ARexx/ADProComm.rexx
+   2259  1992/03/14  19:12:46  009046  ARexx/ADProHotLink.pprx
+   3619  1992/03/14  19:12:48  008975  ARexx/Align.pprx
+   1021  1992/03/14  19:12:52  008976  ARexx/AllCaps.pprx
+   6052  1992/03/14  19:12:50  009047  ARexx/AlterBoxesOnPages.pprx
+   2798  1993/02/19  14:08:02  009048  ARexx/AutoImport.pprx
+   1075  1993/01/24  13:45:18  008981  ARexx/AutoSave.pprx
+    759  1992/03/14  19:12:58  008927  ARexx/AutoSave.pprx.info
+  26810  1993/01/29  18:31:34  009049  ARexx/BordersSimpleShapes.pprx
+   4711  1992/03/14  19:12:46  009050  ARexx/BoxAttr.pprx
+    944  1992/03/14  19:12:38  009051  ARexx/BoxColors.pprx
+   3650  1993/01/29  18:31:00  009054  ARexx/BoxesFrontToBack.pprx
+   2277  1992/08/02  18:26:00  009055  ARexx/BoxResize.pprx
+    946  1992/03/14  19:12:40  009056  ARexx/Calculator.pprx
+    821  1992/03/14  19:12:42  009059  ARexx/CommandLine.pprx
+   2355  1992/03/14  19:12:58  009062  ARexx/CopyBoxAttributes.pprx
+   4234  1993/02/15  15:56:24  009063  ARexx/CopyBoxContents.pprx
+   2101  1992/03/14  19:12:44  009064  ARexx/CopyBoxToPages.pprx
+   1065  1992/03/14  19:12:42  009065  ARexx/CopyPages.pprx
+   2144  1992/03/14  19:12:44  009066  ARexx/CopyPageSpecs.pprx
+   1028  1992/03/14  19:12:46  009067  ARexx/DeleteRange.pprx
+   3666  1992/03/14  19:12:40  009068  ARexx/DropCaps.pprx
+   2081  1992/03/14  19:12:54  009069  ARexx/DropShadowBox.pprx
+   1413  1992/03/14  19:12:40  009070  ARexx/DropShadowHeader.pprx
+   4719  1992/03/14  19:13:00  009071  ARexx/EnterPersonalInfo.pprx
+   1900  1993/02/10  13:02:32  009072  ARexx/FindAndReplace.pprx
+   1127  1992/07/17  23:28:18  009073  ARexx/FitBitmapToBox.pprx
+   2424  1993/02/15  15:58:38  009074  ARexx/GetTaggedText.pprx
+    898  1992/03/14  19:12:48  009075  ARexx/GreekBoxes.pprx
+   4623  1992/03/14  19:12:52  009078  ARexx/GroupAttr.pprx
+   2080  1992/03/14  19:12:56  009079  ARexx/GroupCopyBoxAttr.pprx
+   4072  1993/02/15  15:59:40  009080  ARexx/GroupCopyBoxContents.pprx
+   1820  1993/02/15  16:00:26  009081  ARexx/GroupCopyToPages.pprx
+   4513  1992/03/14  19:12:44  009082  ARexx/GroupDistribute.pprx
+   2027  1992/03/14  19:12:44  009083  ARexx/GroupMove.pprx
+   1957  1992/03/14  19:12:56  009084  ARexx/GroupRotate.pprx
+   2493  1992/03/14  19:12:56  009085  ARexx/GroupScale.pprx
+   3122  1992/03/14  19:12:56  009086  ARexx/GroupSpace.pprx
+   3548  1992/03/14  19:12:48  009087  ARexx/GroupTile.pprx
+   1018  1992/03/14  19:12:40  009088  ARexx/InitialCaps.pprx
+   3789  1993/02/19  14:11:00  009091  ARexx/Insertdoc.pprx
+   2366  1992/03/14  19:12:46  009092  ARexx/InsertPersonalInfo.pprx
+   1118  1992/07/17  23:28:08  009093  ARexx/LandscapePage.pprx
+   7312  1993/02/15  16:02:26  009094  ARexx/MailMerge.pprx
+   3770  1992/07/18  23:28:04  009095  ARexx/MakeBarChart_Horz.pprx
+   3698  1992/07/18  23:28:02  009096  ARexx/MakeBarChart_Vert.pprx
+   2727  1992/03/14  19:12:46  009097  ARexx/MakeBoxIntoColumns.pprx
+   2376  1992/03/14  19:12:40  009098  ARexx/MakeGuides.pprx
+   4914  1992/07/17  23:27:58  009099  ARexx/MakePieChart.pprx
+   1167  1992/03/14  19:12:38  009100  ARexx/MovePage.pprx
+   1131  1992/03/14  19:12:38  009101  ARexx/NoCaps.pprx
+   5688  1993/02/19  14:11:52  009102  ARexx/ProCalcTableImport.pprx
+   2425  1993/02/19  14:13:46  009103  ARexx/ProCalcTableUpdate.pprx
+   2458  1993/02/15  16:05:50  009104  ARexx/ReplaceMergeCodes.pprx
+   7102  1993/02/01  18:09:28  009105  ARexx/SavePrefs.pprx
+   2396  1992/03/14  19:12:38  009106  ARexx/SetPageSize.pprx
+   1570  1992/03/14  19:12:38  009107  ARexx/SmallCaps.pprx
+   2402  1992/03/14  19:13:02  009108  ARexx/StepAndRepeat.pprx
+   2066  1993/01/28  18:07:44  009109  ARexx/SubstituteFont.pprx
+   3330  1993/01/28  18:04:46  009110  ARexx/TableImport.pprx
+    886  1992/03/14  19:12:44  009111  ARexx/UnGreekBoxes.pprx
+   7308  1993/02/19  14:01:40  009114  ARexx/UnitsConverter.pprx
+   1047  1992/03/14  19:12:38  008982  ARexx/counter.rexx
+    559  1992/07/18  13:11:32  008983  ARexx/FontList.rexx
+   3110  1992/03/14  19:12:38  008986  ARexx/FormatDate.rexx
+    658  1992/03/14  19:12:48  008987  ARexx/getdirlist.rexx
+    266  1992/03/14  19:12:44  008990  ARexx/ItemToFront.rexx
+   2635  1992/02/29  15:45:32  008971  ARexx/launch.rexx
+   2424  1993/02/15  13:14:12  008993  ARexx/PPageAutoSave.rexx
+    622  1993/02/15  15:39:24  008995  ARexx/PPSetup.rexx
+    363  1993/01/29  18:30:20  008998  ARexx/SafeEndEdit.rexx
+    375  1993/01/28  16:20:34  009000  ARexx/SafeSetEdit.rexx
+         1997/06/09  21:22:12  010066  _structure/
+    333  1995/06/26  12:32:28  010464  _structure/arc_str
+    424  1995/06/22  13:38:59  010825  _structure/tar_str.txt
+    667  1995/06/26  13:31:26  010827  _structure/lha.txt
+   1799  1995/06/22  11:59:23  010830  _structure/zip_str.txt
+   1968  1995/06/22  15:26:06  010835  _structure/zoo_str.txt
+   1007  1996/03/19  20:56:40  010427  _structure/lzx_str.txt
+   2180  1996/04/05   1:01:24  002965  _structure/warp_str.txt
+   6911  1995/10/02  22:59:07  003887  _structure/exotic.txt
+  18395  1996/11/24  11:26:45  010081  _structure/inst.txt
+         1996/10/10  19:01:31  010694  SquirrelSCSI/
+         1996/10/09  20:33:30  010700  SquirrelSCSI/SCSIMounter/
+    503  1995/01/26  11:29:18  010703  SquirrelSCSI/SCSIMounter/SCSIMounter.guide.info
+  19234  1994/12/05  17:01:02  010705  SquirrelSCSI/SCSIMounter/SCSIMounter.guide
+    868  1995/01/26  11:29:18  010812  SquirrelSCSI/SCSIMounter/SCSIMounter.doc.info
+  18167  1994/12/05  16:56:06  010815  SquirrelSCSI/SCSIMounter/SCSIMounter.doc
+   1044  1995/01/26  11:29:19  015927  SquirrelSCSI/SCSIMounter/SCSIMounter.info
+  32356  1994/12/05  16:05:46  015931  SquirrelSCSI/SCSIMounter/SCSIMounter
+    628  1995/01/26  11:29:26  015362  SquirrelSCSI/SCSIMounter.info
+         1996/10/09  20:32:16  015365  SquirrelSCSI/Extras/
+         1996/10/09  20:32:17  015368  SquirrelSCSI/Extras/DOSDrivers/
+    523  1995/05/25  10:06:56  015371  SquirrelSCSI/Extras/DOSDrivers/PC270C.info
+    666  1995/01/26  10:26:54  015374  SquirrelSCSI/Extras/DOSDrivers/PC270C
+    523  1995/05/25  10:06:56  015377  SquirrelSCSI/Extras/DOSDrivers/FP0.info
+    504  1995/01/26  10:22:32  015380  SquirrelSCSI/Extras/DOSDrivers/FP0
+    632  1995/01/23  16:31:48  015382  SquirrelSCSI/Extras/DOSDrivers.info
+    628  1995/01/26  11:29:26  015385  SquirrelSCSI/Extras.info
+   5409  1995/08/29  14:18:54  015996  SquirrelSCSI/ReadMe
+    556  1995/06/02  18:32:38  016008  SquirrelSCSI/ReadMe.info
+   9886  1996/10/09   0:13:09  000088  SquirrelSCSI/ZIPMount_12.lha
+   4650  1996/10/09   0:13:14  000162  SquirrelSCSI/ZipTool12.lha
+  24104  1996/10/09   0:12:47  000283  SquirrelSCSI/SCSIdevs.lha
+  27553  1996/10/09  10:02:46  000173  SquirrelSCSI/ProbeSCSI008.lha
+  11834  1996/04/25  12:02:50  000020  SquirrelSCSI/ZIPMount.guide
+    628  1996/10/10  21:32:53  010697  SquirrelSCSI.info
+         1997/05/01  12:30:58  001207  _str/
+   7981  1995/09/18  22:24:59  001210  _str/fred_str.txt
+   2470  1995/06/29  15:42:22  001227  _str/m2_str.txt
+   1987  1996/05/21   0:25:53  001233  _str/tfmx.doc
+  20554  1996/05/15   7:55:36  001238  _str/tfmx.patt
+  82036  1996/05/14   0:10:40  001280  _str/tfmx.pic1
+  20554  1996/05/15   7:41:53  001983  _str/tfmx.pic6
+  20554  1996/05/15   7:49:54  002026  _str/tfmx.track
+  14715  1996/04/09   2:16:07  002618  _str/tfmx.txt
+   2360  1996/05/20  23:46:04  002648  _str/tfmx_str.txt
+    852  1996/05/21   0:33:05  002654  _str/tfmx_str2.txt
+   9133  1995/11/07  22:28:47  002657  _str/ult_form.txt2
+  56917  1995/07/27  17:59:24  002834  _str/digi.txt
+  44640  1995/07/27  22:36:48  003012  _str/digi2.txt.gz
+  48594  1995/06/28  18:48:08  001366  _str/TME_STR.TXT
+  64186  1997/01/11  18:14:24  001525  _str/MLED.TXT.gz
+  10480  1997/11/03  21:49:07  008540  MON.paradox, ExoticRipper 2.22 68020+ CeBIT'94 by Turbo & Marley/Infect.
+  51324  1997/11/03  22:10:30  002278  mod.brian_the_lion, - [01:09] - (PHA) Ripped & Converted with Pro-Wizard v2.16 by Gryzor
+   9382  1998/02/11  22:53:53  010054  MOD.matkamies, ExoticRipper 2.22 68020+ CeBIT'94 by Turbo & Marley/Infect.
+   9338  1998/02/11  23:08:14  010535  FRED.stardust_intro, ExoticRipper 2.22 68020+ CeBIT'94 by Turbo & Marley/Infect.
+    628  1996/10/10  21:32:53  000011  Storage.info
