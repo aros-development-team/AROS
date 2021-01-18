@@ -10,7 +10,7 @@ include $(SRCDIR)/config/aros.cfg
 
 AFILES := userstate
 
-#MM kernel-exec-pc-x86_64 : kernel-kernel-pc-x86_64-includes kernel-exec-includes includes-asm_h-x86_64
+#MM kernel-exec-pc-x86_64 : kernel-kernel-pc-x86_64-includes kernel-exec-includes includes-asm_h
 
 USER_AFLAGS := -isystem $(GENINCDIR)
 

@@ -11,7 +11,7 @@ CFILES  := bstr_helper exit callglobvec \
 AFILES := callentry \
 	  $(BCPL_AFILES)
 
-#MM kernel-dos-m68k : kernel-dos-includes includes-asm_h-m68k
+#MM kernel-dos-m68k : kernel-dos-includes includes-asm_h
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
                -I$(SRCDIR)/rom/dos

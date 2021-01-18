@@ -18,8 +18,7 @@ USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
                  -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
-#MM kernel-kernel-pc-i386 : kernel-pc-acpica-includes includes-asm_h-i386 linklibs-bootconsole
-
+#MM kernel-kernel-pc-i386 : kernel-pc-acpica-includes includes-asm_h linklibs-bootconsole
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \

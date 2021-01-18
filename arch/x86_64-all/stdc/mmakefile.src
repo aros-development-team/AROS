@@ -44,4 +44,4 @@ STDC_X8664_ASMFILES += \
   arch=x86_64 \
   files="$(STDC_X8664_FILES)" asmfiles="$(STDC_X8664_ASMFILES)"
 
-#MM compiler-stdc-x86_64 : includes-asm_h-x86_64
+#MM compiler-stdc-x86_64 : includes-asm_h

@@ -32,6 +32,6 @@ TARGET_ISA_AFLAGS:=$(ISA_MC68060_FLAGS)
   files="$(FILES)" \
   arch=m68k
 
-#MM kernel-exec-m68k : includes-asm_h-m68k
+#MM kernel-exec-m68k : includes-asm_h
 
 %common
