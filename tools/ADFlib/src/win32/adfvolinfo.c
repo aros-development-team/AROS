@@ -1,9 +1,27 @@
-// An ADFLib function for Windows which displays a dialogue box containing details about
-// the current disk file. 
-// Converted from adfVolumeInfo(), part of ADFLib by Laurent Clevy.
-//
-// Gary Harris
-// 30/8/00
+/* An ADFLib function for Windows which displays a dialogue box containing details about
+** the current disk file. 
+** Converted from adfVolumeInfo(), part of ADFLib by Laurent Clevy.
+**
+** Gary Harris
+** 30/8/00
+ *
+ *  This file is part of ADFLib.
+ *
+ *  ADFLib is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  ADFLib is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Foobar; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
 
 
 #include "../ADF_raw.h"
@@ -11,12 +29,13 @@
 
 
 void adfVolumeInfoWin(HWND hWnd, struct Volume *vol)
-// Windows version of adfVolumeInfo().
-// Input:  Receives a handle to the window on which to display the dialogue and a pointer
-//         to a ADFLib Volume structure.
-// Output: Nil. Displays a windows dialogue containing the disk file data.
+/* Windows version of adfVolumeInfo().
+** Input:  Receives a handle to the window on which to display the dialogue and a pointer
+**         to a ADFLib Volume structure.
+** Output: Nil. Displays a windows dialogue containing the disk file data.
+*/
 {
-	char	szTemp[50], szAdfInfo[500];		// Info string.
+	char	szTemp[50], szAdfInfo[500];		/* Info string. */
 	
 	struct	bRootBlock root;
 	char	diskName[35];

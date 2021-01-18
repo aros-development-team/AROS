@@ -32,31 +32,6 @@
 
 extern struct Env adfEnv;
 
-#if !defined(__AROS__)
-/*
- * Disabled on AROS - tmpPath causes a
- * NULL pointer acees, and path() is unused.
- *
- */
-char* path(struct Volume *vol, SECTNUM parent)
-{
-    struct bEntryBlock entryBlk;
-    char *tmpPath;
-    int len;
-
-    tmpPath = NULL;
-    adfReadEntryBlock(vol, parent, &entryBlk);
-    len = min(entryBlk.nameLen, MAXNAMELEN);
-    memcpy(tmpPath,entryBlk.name,len);
-    tmpPath[len]='\0';
-/*    if (entryBlk.parent!=vol->rootBlock) {
-        return(strcat(path(vol,entryBlk.parent), tmpPath));
-    }
-    else
-   */     return(tmpPath);
-}
-#endif
-
 /*
  *
  *

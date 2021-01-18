@@ -3,6 +3,22 @@
  * Copyright 1999 by Dan Sutherland <dan@chromerhino.demon.co.uk>
  *
  * These routines only currently work with drives <2GB and 512 bytes per sector
+ *
+ *  This file is part of ADFLib.
+ *
+ *  ADFLib is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  ADFLib is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Foobar; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <windows.h>
@@ -42,6 +58,8 @@ HANDLE NT4OpenDrive(char *lpstrDrive)
 BOOL NT4CloseDrive(HANDLE hDrv)
 {
 	DWORD dwRet;
+
+	if( hDrv==NULL ) return TRUE;										/* BV */
 
 	if (! DeviceIoControl(hDrv, FSCTL_UNLOCK_VOLUME, NULL, 0, NULL, 0,
 		&dwRet,	NULL))
@@ -114,9 +132,9 @@ ULONG NT4GetDriveSize(HANDLE hDrv)
 
 	size =  dgGeom.Cylinders.LowPart * dgGeom.TracksPerCylinder *
 		dgGeom.SectorsPerTrack * dgGeom.BytesPerSector;
-
-	printf("Total sectors: %i\n", dgGeom.Cylinders.LowPart * dgGeom.TracksPerCylinder * dgGeom.SectorsPerTrack);
-	printf("Byte size: %i\n", size);
-
+/* BV */
+/*	printf("Total sectors: %i\n", dgGeom.Cylinders.LowPart * dgGeom.TracksPerCylinder * dgGeom.SectorsPerTrack);
+**	printf("Byte size: %i\n", size);
+*/
 	return size;
 }
