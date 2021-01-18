@@ -32,6 +32,7 @@ HOST_ISA_CFLAGS          := $(HOST_ISA_FLAGS)
 HOST_ISA_CXXFLAGS        := $(HOST_ISA_FLAGS)
 HOST_ISA_OBJCFLAGS       := $(HOST_ISA_FLAGS)
 HOST_ISA_AFLAGS          := $(HOST_ISA_FLAGS)
+HOST_ISA_LDFLAGS         := $(HOST_ISA_FLAGS)
 
 HOST_IQUOTE              := @host_cflags_iquote@
 HOST_IQUOTE_END          := @host_cflags_iquote_end@

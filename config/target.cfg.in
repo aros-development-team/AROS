@@ -62,6 +62,7 @@ KERNEL_ISA_CFLAGS             = $(KERNEL_ISA_FLAGS)
 KERNEL_ISA_CXXFLAGS           = $(KERNEL_ISA_FLAGS)
 KERNEL_ISA_OBJCFLAGS          = $(KERNEL_ISA_FLAGS)
 KERNEL_ISA_AFLAGS             = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_LDFLAGS             = $(KERNEL_ISA_FLAGS)
 
 KERNEL_IQUOTE                 = @kernel_cflags_iquote@
 KERNEL_IQUOTE_END             = @kernel_cflags_iquote_end@
