@@ -2,7 +2,7 @@
 #define EXEC_LISTS_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2021, The AROS Development Team. All rights reserved.
     $Id$
         
     Structures and macros for exec lists.
@@ -195,17 +195,17 @@ do                                                        \
 #define ForeachNode(list, node)                        \
 for                                                    \
 (                                                      \
-    node = (void *)(((struct List *)(list))->lh_Head); \
+    *(void **)&node = (void *)(((struct List *)(list))->lh_Head); \
     ((struct Node *)(node))->ln_Succ;                  \
-    node = (void *)(((struct Node *)(node))->ln_Succ)  \
+    *(void **)&node = (void *)(((struct Node *)(node))->ln_Succ)  \
 )
 
 #define ForeachNodeSafe(list, current, next)              \
 for                                                       \
 (                                                         \
-    current = (void *)(((struct List *)(list))->lh_Head); \
-    (next = (void *)((struct Node *)(current))->ln_Succ); \
-    current = (void *)next                                \
+    *(void **)&current = (void *)(((struct List *)(list))->lh_Head); \
+    (*(void **)&next = (void *)((struct Node *)(current))->ln_Succ); \
+    *(void **)&current = (void *)next                                \
 )
 
 #define ListLength(list,count)     \
