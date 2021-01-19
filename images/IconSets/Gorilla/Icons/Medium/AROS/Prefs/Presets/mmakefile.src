@@ -1,9 +1,9 @@
-# Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2021, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(SRCDIR)/config/aros.cfg
 
-ICONS := Patterns Themes
+ICONS := Patterns Themes Wallpapers
 
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-prefs-presets-clean
 #MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-prefs-presets
