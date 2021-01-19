@@ -1356,7 +1356,8 @@ if test "$IS_GNU_COMPILER" -ne "0"; then
     GCC_VERSION_MINOR=$(echo $GNU_COMPILER_VERS | cut -d'.' -f2)
     GCC_VERSION_PATCH=$(echo $GNU_COMPILER_VERS | cut -d'.' -f3)
     if test "$GCC_VERSION_MAJOR" -gt "9" ; then
-        aros_toolchain_cflags_common="$""(CFLAGS_COMMON)"
+        dnl $""(CFLAGS_COMMON)
+        aros_toolchain_cflags_common=""
     fi
 fi
 
