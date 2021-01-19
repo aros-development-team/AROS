@@ -323,7 +323,7 @@ do_patch()
     local patch_opt=$(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g")
     local patch_cmd="patch -Z $patch_opt < $abs_location/$patch"
         
-    cd "${subdir:-.}"
+    cd "${subdir:-.}"  2> /dev/null;
     
     local ret=true
 
