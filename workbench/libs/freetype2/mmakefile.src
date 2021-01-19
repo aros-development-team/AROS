@@ -125,7 +125,7 @@ $(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in
 	       -e 's|%LIBBZ2%||' \
 	       -e 's|%LIBZ%|-L $(AROS_LIB) -lz|' \
 	       -e 's|%exec_prefix%|$${prefix}|' \
-	       -e 's|%ft_version%|2.5.0|' \
+	       -e 's|%ft_version%|$(FT2VERS)|' \
 	       -e 's|%includedir%|$${prefix}/include|' \
 	       -e 's|%libdir%|$(AROS_LIB)|' \
 	       -e 's|%prefix%|/Developer|' \
@@ -148,18 +148,27 @@ $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE) : $(FT2SRCDIR)/include/freetyp
 	%mkdir_q dir="$(AROS_INCLUDES)/freetype/config"
 	@$(SED) -e "s|.*FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES.*|/*define FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES*/\\n|g" -e "s|.*FT_CONFIG_OPTION_SUBPIXEL_RENDERING.*|#define FT_CONFIG_OPTION_SUBPIXEL_RENDERING\n|g" -e "s|.*FT_CONFIG_OPTION_SYSTEM_ZLIB.*|#define FT_CONFIG_OPTION_SYSTEM_ZLIB\n|g" -e "s|.*FT_CONFIG_OPTION_USE_PNG.*|#define FT_CONFIG_OPTION_USE_PNG\n|g" $< > $@
 
-$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)/freetype-config : $(FT2SRCDIR)/builds/unix/freetype-config.in
+$(TOOLDIR)/$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)/freetype-config : $(FT2SRCDIR)/builds/unix/freetype-config.in
 	@$(ECHO) "Generating freetype-config for cross-compiling ..."
-	%mkdir_q dir="$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)"
-	@#$(SED) -e "s|%PKG_CONFIG%||g"  $< > $@
-	@$(ECHO) "" > $@
+	%mkdir_q dir="$(TOOLDIR)/$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)"
+	@$(SED) -e "s|%PKG_CONFIG%|false|g" \
+                      -e "s|dynamic_libs=\"-lfreetype\"|dynamic_libs=\"-lfreetype2\"|g" \
+                      -e "s|%LIBSSTATIC_CONFIG%|-lfreetype2.static -lpng -lz|g" \
+                      -e "s|%prefix%|$(AROS_DEVELOPER)|g" \
+                      -e "s|%exec_prefix%|$(AROS_DEVELOPER)|g" \
+                      -e "s|%includedir%|$(AROS_INCLUDES)|g" \
+                      -e "s|%libdir%|$(AROS_LIB)|g" \
+                      -e "s|includedir/freetype2|includedir/freetype|g" \
+                      -e "s|includedir/freetype/freetype/freetype|includedir/freetype/freetype|g" \
+                      -e "s|%ft_version%|$(FT2VERS)|g" \
+                      $< > $@
 	@chmod 744 $@
 
 #"s|.*FT_CONFIG_OPTION_USE_BZIP2.*|/*define FT_CONFIG_OPTION_USE_BZIP2*/\\n|g" $< > $@
 #"s|.*FT_CONFIG_OPTION_USE_HARFBUZZ.*|/*define FT_CONFIG_OPTION_USE_HARFBUZZ*/\\n|g" $< > $@
 
 #MM
-workbench-libs-freetype-genincludes : freetype2-fetch $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE) $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)/freetype-config
+workbench-libs-freetype-genincludes : freetype2-fetch $(AROS_INCLUDES)/freetype/config/$(FT2OPTIONFILE) $(TOOLDIR)/$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)/freetype-config
 	$(NOP)
 
 FT2INT_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/freetype/internal/*.h))
