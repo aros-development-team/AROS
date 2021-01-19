@@ -95,8 +95,8 @@ $(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
 #MM wokbench-libs-z-example : \
 #MM        workbench-libs-z-linklib
 
-#MM- test-z : wokbench-libs-z-example
-#MM- test-z-quick : wokbench-libs-z-example-quick
+##MM- test-z : wokbench-libs-z-example
+##MM- test-z-quick : wokbench-libs-z-example-quick
 
 %build_prog mmake=wokbench-libs-z-minigzip \
     progname=minigzip \
