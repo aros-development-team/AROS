@@ -117,6 +117,7 @@ AROS_S                        := $(AROSDIR)/$(AROS_DIR_S)
 AROS_STORAGE                  := $(AROSDIR)/$(AROS_DIR_STORAGE)
 AROS_SYSTEM                   := $(AROSDIR)/$(AROS_DIR_SYSTEM)
 AROS_WANDERER                 := $(AROS_SYSTEM)/Wanderer
+AROS_WALLPAPERS               := $(AROS_PREFS)/Presets/Wallpapers
 AROS_THEMES                   := $(AROS_PREFS)/Presets/Themes
 AROS_IMAGES                   := $(AROS_SYSTEM)/Images
 AROS_TOOLS                    := $(AROSDIR)/$(AROS_DIR_TOOLS)

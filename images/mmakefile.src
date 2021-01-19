@@ -21,4 +21,6 @@ $(AROS_IMAGES)/Logos/AROS.logo : $(SRCDIR)/$(CURDIR)/$(AROSLOGOFILE)
 #MM
 workbench-images-copylogo : $(AROS_IMAGES)/Logos/AROS.logo
 
+%copy_dir_recursive mmake=workbench-images-wallpapers src=$(SRCDIR)/images/Wallpapers dst=$(AROS_WALLPAPERS)
+
 %copy_dir_recursive mmake=workbench-images-themes src=$(SRCDIR)/images/Themes dst=$(AROS_THEMES)
