@@ -118,9 +118,9 @@ endif
 #
 %define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" err="$(notdir $@).err" strip=$(STRIP) objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	$(Q)$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
-	$(Q)$(IF) %(cmd) $(strip %(ldopts) $(NOSTARTUP_OBJECTS) \
+	$(Q)$(IF) %(cmd) %(ldopts) $(NOSTARTUP_OBJECTS) \
 		$(GENMAP) %(objdir)/%(module).map \
-		%(objs) %(endtag) -o $@ %(ldflags) %(libs)) 2>&1 > %(objdir)/%(err) 2>&1 ; \
+		%(objs) %(endtag) -o $@ %(ldflags) %(libs) 2>&1 > %(objdir)/%(err) 2>&1 ; \
 	then \
 		cat %(objdir)/%(err); \
 	else \
