@@ -690,8 +690,20 @@ jobs:
 
 
   - script: |
-      echo "Entered AROS Hosted Cunit Test Phase"
+      brew list node &>/dev/null || brew install node
+      brew list coreutils &>/dev/null || brew install coreutils
+      echo "##vso[task.setvariable variable=TIMEOUTCMD;]gtimeout"
+    condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), eq( variables['Agent.OS'], 'Darwin' ))
+    displayName: 'Install Node.js/npm for MacOS'
+
+  - script: |
       sudo apt-get install -y npm
+      echo "##vso[task.setvariable variable=TIMEOUTCMD;]timeout"
+    condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['Agent.OS'], 'Darwin' ))
+    displayName: 'Install npm for Linux'
+
+  - script: |
+      echo "Entered AROS Hosted Cunit Test Phase"
       sudo npm install -g junit-viewer
       for oldfile in $(AROSBUILDBINDIR)/*; do
           rm -Rf $oldfile
@@ -724,8 +736,8 @@ jobs:
         sed -i "/module Devs\/Drivers\/gfx.hidd/a\\
       module Storage\/Drivers\/headlessgfx.hidd" "boot/$arosexehost/AROSBootstrap.conf"
         chmod 744 "boot/$arosexehost/AROSBootstrap"
-        echo "Launching CUnit tests under AROS hosted ..."
-        DISPLAY=:1 timeout 5m "boot/$arosexehost/AROSBootstrap"
+        echo "Launching CUnit tests under AROS $(AGENT_OS) hosted ..."
+        DISPLAY=:1 $(TIMEOUTCMD) 5m "boot/$arosexehost/AROSBootstrap"
         for entry in ./*-Results.xml
         do
           iconv -t utf8 $entry -o $(AROSLOGSDIR)/$entry
