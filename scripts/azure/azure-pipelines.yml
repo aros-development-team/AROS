@@ -690,7 +690,8 @@ jobs:
 
 
   - script: |
-      brew list node &>/dev/null || brew install node
+      brew list node &>/dev/null || brew install node || brew link --overwrite node
+      brew unlink md5sha1sum
       brew list coreutils &>/dev/null || brew install coreutils
       npm install -g junit-viewer
       echo "##vso[task.setvariable variable=TIMEOUTCMD;]timeout"
