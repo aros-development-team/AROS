@@ -733,18 +733,22 @@ jobs:
         mv Devs/Monitors/X1* Storage/Monitors
         arosexetarget=$(IFS="-" ; set -- $(arosbuild.name) ; echo $1)
         arosexehost=${arosexetarget%% *}
-        sed -i "s|Startup = 0|Startup = 1|g" ./Devs/DOSDrivers/DEBUG
-        sed -i "/module Devs\/Drivers\/gfx.hidd/a\\
+        sed -i.bak "s|Startup = 0|Startup = 1|g" ./Devs/DOSDrivers/DEBUG
+        rm ./Devs/DOSDrivers/DEBUG.bak
+        sed -i.bak "/module Devs\/Drivers\/gfx.hidd/a\\
       module Storage\/Drivers\/headlessgfx.hidd" ./boot/$arosexehost/AROSBootstrap.conf
+        rm ./boot/$arosexehost/AROSBootstrap.conf.bak
         chmod 744 ./boot/$arosexehost/AROSBootstrap
         echo "Launching CUnit tests under AROS $AGENT_OS hosted ..."
         DISPLAY=:1 $(TIMEOUTCMD) 5m "boot/$arosexehost/AROSBootstrap"
         for entry in ./*-Results.xml
         do
-          sed "/^  <testsuite id=.*/a    <properties>\n      <property name=\"Build Toolchain\" value=\"$(TOOLCHAIN)\"/>\n      <property name=\"Host OS\" value=\"$(uname -a)\"/>\n    </properties>" $entry | iconv -c -t utf8 > $(AROSLOGSDIR)/$entry
+          sed "/^  <testsuite id=.*/a\\
+          <properties>\n      <property name=\"Build Toolchain\" value=\"$(TOOLCHAIN)\"/>\n      <property name=\"Host OS\" value=\"$(uname -a)\"/>\n    </properties>" $entry | iconv -c -t utf8 > $(AROSLOGSDIR)/$entry
         done
         junit-viewer --results=$(AROSLOGSDIR)/ --save=$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html
-        sed -i -e "s|</title>|</title>\n<link href=\"http://www.aros.org/aros.css?v=1.3\" type=\"text/css\" rel=\"stylesheet\">\n<link media=\"print\" href=\"http://www.aros.org/print.css\" type=\"text/css\" rel=\"stylesheet\">|g" -e "s|background-color:#FF1717|background-color:#F03030|g" -e "s|background-color:#E50000|background-color:#E55050|g" -e "s|background-color:#0CAB37|background-color:#46F788|g" -e "s|background-color:#0DBD3D|background-color:#20E070|g" $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html
+        sed -i.bak -e "s|</title>|</title>\n<link href=\"http://www.aros.org/aros.css?v=1.3\" type=\"text/css\" rel=\"stylesheet\">\n<link media=\"print\" href=\"http://www.aros.org/print.css\" type=\"text/css\" rel=\"stylesheet\">|g" -e "s|background-color:#FF1717|background-color:#F03030|g" -e "s|background-color:#E50000|background-color:#E55050|g" -e "s|background-color:#0CAB37|background-color:#46F788|g" -e "s|background-color:#0DBD3D|background-color:#20E070|g" $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html
+        rm $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html.bak
         sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/htdocs/unittests/
       fi
       echo "AROS Hosted Cunit Test Phase completed"
