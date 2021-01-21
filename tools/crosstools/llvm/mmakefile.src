@@ -47,7 +47,6 @@ LLVM_CMAKETARGET  :=
 LLVM_CMAKEOPTIONS :=  \
     -DDEFAULT_SYSROOT="$(AROS_DEVELOPER)" \
     -DCMAKE_INSTALL_BINDIR="$(CROSSTOOLSDIR)" \
-    -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS) \
     -DLLVM_DEFAULT_TARGET_TRIPLE=$(AROS_TARGET_CPU)-unknown-aros \
     -DLLVM_ENABLE_DOXYGEN=OFF \
@@ -59,24 +58,42 @@ LLVM_CMAKEOPTIONS :=  \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_INCLUDE_BENCHMARKS=OFF
 
-LLVM_UNUSED_CMAKEOPTIONS :=  \
-    -DLLDB_DISABLE_LIBEDIT=ON \
-    -DLLDB_DISABLE_CURSES=ON \
-    -DLLDB_DISABLE_PYTHON=ON \
-    -DLLVM_OPTIMIZED_TABLEGEN=ON \
-    -DLLVM_ENABLE_LTO=ON \
-    -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
-    -DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi;lld" \
-    -DLIBCXX_ENABLE_SHARED=OFF \
-    -DLIBCXX_ENABLE_STATIC=ON \
-    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
-    -DLIBCXX_ENABLE_ASSERTIONS=OFF \
-    -DLIBCXX_INCLUDE_TESTS=OFF
+#LLVM_UNUSED_CMAKEOPTIONS :=  \
+#    -DLLDB_DISABLE_LIBEDIT=ON \
+#    -DLLDB_DISABLE_CURSES=ON \
+#    -DLLDB_DISABLE_PYTHON=ON \
+#    -DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi;lld" \
+#    -DLIBCXX_ENABLE_SHARED=OFF \
+#    -DLIBCXX_ENABLE_STATIC=ON \
+#    -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
+#    -DLIBCXX_ENABLE_ASSERTIONS=OFF \
+#    -DLIBCXX_INCLUDE_TESTS=OFF
 
-# TODO: Should be disabled for AROS "host"
-LLVM_CMAKEOPTIONS += -DBUILD_SHARED_LIBS=ON
-# TODO: check if cc_prefix contains ccache
-ifneq ($(CC_PREFIX),)
+# Only perform a MinSizeRel build on Nightly builds,
+# otherwise use the default (Release)
+ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
+LLVM_CMAKEOPTIONS += \
+    -DCMAKE_BUILD_TYPE=MinSizeRel
+endif
+
+# If we arent compiling for AROS, use shared libraries -
+# but if it is the nightly build, use llvm dylib to save space.
+ifneq (aros,$(AROS_HOST_ARCH))
+ifneq (,$(findstring MinSizeRel,$(LLVM_CMAKEOPTIONS)))
+LLVM_CMAKEOPTIONS += \
+    -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
+    -DLLVM_BUILD_LLVM_DYLIB=ON \
+    -DLLVM_LINK_LLVM_DYLIB=ON \
+    -DBUILD_SHARED_LIBS=OFF
+else
+LLVM_CMAKEOPTIONS += \
+    -DBUILD_SHARED_LIBS=ON \
+    -DLLVM_ENABLE_LTO=ON
+endif
+endif
+
+# Enable ccache if it is in use, to aid in recompilation times
+ifneq (,$(findstring ccache,$(CC_PREFIX)))
 LLVM_CMAKEOPTIONS += -DLLVM_CCACHE_BUILD=ON
 endif
 
