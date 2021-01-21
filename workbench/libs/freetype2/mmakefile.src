@@ -120,6 +120,7 @@ FT2FILES := $(addprefix $(FT2AROSBUILDDIR)/,$(FT2BASEARCHFILES)) $(addprefix $(F
 workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc
 
 $(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in
+	@$(ECHO) "Generating /Developer/lib/pkgconfig/freetype2.pc ..."
 	%mkdir_q dir=$(AROS_LIB)/pkgconfig
 	@$(SED) -e 's|%FT2_EXTRA_LIBS%||' \
 	       -e 's|%LIBBZ2%||' \
@@ -127,8 +128,12 @@ $(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in
 	       -e 's|%exec_prefix%|$${prefix}|' \
 	       -e 's|%ft_version%|$(FT2VERS)|' \
 	       -e 's|%includedir%|$${prefix}/include|' \
-	       -e 's|%libdir%|$(AROS_LIB)|' \
+	       -e "s|includedir}/freetype2|includedir}/freetype|g" \
+	       -e 's|%libdir%|$${prefix}/lib|' \
+	       -e "s|-lfreetype|-lfreetype2|g" \
 	       -e 's|%prefix%|/Developer|' \
+	       -e "s|%REQUIRES_PRIVATE%|libpng zlib|g" \
+	       -e 's|%LIBS_PRIVATE%||' \
 	       $< >$@
 
 FT2_INCLUDE_FILES := $(notdir $(call WILDCARD, $(FT2SRCDIR)/include/*.h))
