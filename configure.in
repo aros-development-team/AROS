@@ -339,7 +339,6 @@ case "$host_os" in
 please run 'xcode-select --install' before
 re-running configure])])
         AC_MSG_RESULT($LOC)
-        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
         if [[ -z ${SED+x} ]]; then SED="gsed"; fi
@@ -362,8 +361,24 @@ re-running configure])])
                 ;;
         esac
 
-        aros_host_ldflags="$aros_host_ldflags -liconv"
+        dnl Strip out the unsupported include paths...
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/usr/local/include/||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/usr/local/include||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/local/include/||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/local/include||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/pkg/include/||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/pkg/include||g'`"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
 
+        dnl Strip out the unsupported library paths...
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/usr/local/lib/||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/usr/local/lib||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/local/lib/||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/local/lib||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/pkg/lib/||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/pkg/lib||g'`"
+
+        aros_host_ldflags="$aros_host_ldflags -liconv"
         ;;
 
     dragonfly*)

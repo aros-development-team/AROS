@@ -5166,7 +5166,6 @@ re-running configure" "$LINENO" 5
 fi
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LOC" >&5
 $as_echo "$LOC" >&6; }
-        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
         aros_host_arch="darwin"
         host_cc_elf=no
         if [ -z ${SED+x} ]; then SED="gsed"; fi
@@ -5190,8 +5189,22 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for Darwin host -- $host_cpu\"" >&2;}
                 ;;
         esac
 
-        aros_host_ldflags="$aros_host_ldflags -liconv"
+                aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/usr/local/include/||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/usr/local/include||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/local/include/||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/local/include||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/pkg/include/||g'`"
+        aros_host_cflags="`echo "$aros_host_cflags" | sed 's|-I/opt/pkg/include||g'`"
+        aros_host_cflags="$aros_host_cflags $aros_host_cc_pipe"
 
+                aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/usr/local/lib/||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/usr/local/lib||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/local/lib/||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/local/lib||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/pkg/lib/||g'`"
+        aros_host_ldflags="`echo "$aros_host_ldflags" | sed 's|-L/opt/pkg/lib||g'`"
+
+        aros_host_ldflags="$aros_host_ldflags -liconv"
         ;;
 
     dragonfly*)
