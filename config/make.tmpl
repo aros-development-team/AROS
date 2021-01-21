@@ -3931,9 +3931,11 @@ ifeq (%(compiler),host)
     BD_CFLAGS                := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)
     BD_CXXFLAGS              := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags)
     BD_CPPFLAGS              := $(HOST_CPPFLAGS) %(extracppflags)
-    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix) \
-                                -DCMAKE_BUILD_TYPE=Release \
-                                -DCMAKE_LINKER="$(strip $(HOST_LD))" \
+    %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix)
+ifeq (,$(findstring CMAKE_BUILD_TYPE,%(extraoptions)))
+    %(mmake)-cmake_opts      += --DCMAKE_BUILD_TYPE=Release
+endif
+    %(mmake)-cmake_opts      += -DCMAKE_LINKER="$(strip $(HOST_LD))" \
                                 -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
     ifeq (%(useldlinker),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
