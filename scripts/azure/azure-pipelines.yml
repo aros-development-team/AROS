@@ -690,11 +690,13 @@ jobs:
 
 
   - script: |
-      brew list node &>/dev/null || brew install node || brew link --overwrite node
+      brew uninstall --force node
+      brew uninstall --force npm
+      brew install node || sudo chown -R $(whoami) $(brew --prefix)/* && brew link --overwrite node
       brew unlink md5sha1sum
       brew list coreutils &>/dev/null || brew install coreutils
       npm install -g junit-viewer
-      echo "##vso[task.setvariable variable=TIMEOUTCMD;]timeout"
+      echo "##vso[task.setvariable variable=TIMEOUTCMD;]gtimeout"
     condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), eq( variables['Agent.OS'], 'Darwin' ))
     displayName: 'Install Node.js/npm for MacOS'
 
@@ -748,7 +750,7 @@ jobs:
           <properties>\n      <property name=\"Build Toolchain\" value=\"$(TOOLCHAIN)\"/>\n      <property name=\"Host OS\" value=\"$(uname -a)\"/>\n    </properties>" $entry | iconv -c -t utf8 > $(AROSLOGSDIR)/$entry
         done
         junit-viewer --results=$(AROSLOGSDIR)/ --save=$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html
-        sed -i.bak -e "s|</title>|</title>\n<link href=\"http://www.aros.org/aros.css?v=1.3\" type=\"text/css\" rel=\"stylesheet\">\n<link media=\"print\" href=\"http://www.aros.org/print.css\" type=\"text/css\" rel=\"stylesheet\">|g" -e "s|background-color:#FF1717|background-color:#F03030|g" -e "s|background-color:#E50000|background-color:#E55050|g" -e "s|background-color:#0CAB37|background-color:#46F788|g" -e "s|background-color:#0DBD3D|background-color:#20E070|g" $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html
+        sed -i.bak -e "s|</title>|</title>\n<link href=\"http://www.aros.org/aros.css?v=1.3\" type=\"text/css\" rel=\"stylesheet\">\n<link media=\"print\" href=\"http://www.aros.org/print.css\" type=\"text/css\" rel=\"stylesheet\">|g" -e "s|background-color:#FF1717|background-color:#F03030|g" -e "s|background-color:#E50000|background-color:#E55050|g" -e "s|background-color:#0CAB37|background-color:#46F788|g" -e "s|background-color:#0DBD3D|background-color:#20E070|g" -e "|<h1 class=\"|d" $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html
         rm $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html.bak
         sshpass -p "$MAPPED_PASS" rsync -avz --rsh=ssh $(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html $MAPPED_USER,aros@web.sourceforge.net:/home/project-web/aros/htdocs/unittests/
       fi
@@ -756,10 +758,12 @@ jobs:
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
       MAPPED_PASS: $(SF_RSYNC_PASSWORD)
+    continueOnError: true
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: 'Performing Unit testing with CUnit'
 
   - task: CopyFiles@2
+    continueOnError: true
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     inputs:
       SourceFolder: '$(AROSLOGSDIR)'
@@ -767,19 +771,15 @@ jobs:
       targetFolder: $(Build.ArtifactStagingDirectory)/publish/unittests
 
   - task: PublishBuildArtifacts@1
+    continueOnError: true
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     displayName: Publish unit test build artifacts
     inputs:
       pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/unittests
       artifactName: $(arosbuild.name) unit tests
 
-  - task: Ant@1
-    condition: eq( variables['arosbuild.withunittests'], 'yes' )
-    inputs:
-      buildFile: 'scripts/azure/junittohtml.xml'
-      options: -verbose -debug -Dunittest.dir=$(AROSLOGSDIR)
-
   - task: PublishTestResults@2
+    continueOnError: true
     condition: eq( variables['arosbuild.withunittests'], 'yes' )
     inputs:
       testRunner: 'JUnit'
