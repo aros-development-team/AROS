@@ -7,23 +7,23 @@ assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+- [ ] **Describe the bug**<br/>
+ A clear and concise description of what the bug is.
 
-**To Reproduce**
+- [ ] **To Reproduce**<br/>
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
 4. See error
 
-**Expected behaviour**
+- [ ] **Expected behaviour**<br/>
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
+- [ ] **Screenshots**<br/>
 If applicable, add screenshots to help explain your problem.
 
-**Architecture**
+- [ ] **Architecture**<br/>
  - Amiga (including UAE, Vampire cards)
  - pc (native)
  - linux (hosted)
@@ -32,7 +32,7 @@ If applicable, add screenshots to help explain your problem.
  - darwin
  - other:
  
-**CPU**
+- [ ] **CPU**<br/>
  - i386
  - x86_64
  - m68k
@@ -40,8 +40,8 @@ If applicable, add screenshots to help explain your problem.
  - ppc
  - other:
 
-**Version**
+- [ ] **Version**<br/>
 Provide the Git ID from AboutAROS (call menu Wanderer>AROS>About)
 
-**Additional context**
+- [ ] **Additional context**<br/>
 Add any other context about the problem here.
