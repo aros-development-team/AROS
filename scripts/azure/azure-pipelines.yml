@@ -693,7 +693,7 @@ jobs:
       brew list node &>/dev/null || brew install node
       brew list coreutils &>/dev/null || brew install coreutils
       npm install -g junit-viewer
-      echo "##vso[task.setvariable variable=TIMEOUTCMD;]gtimeout"
+      echo "##vso[task.setvariable variable=TIMEOUTCMD;]timeout"
     condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), eq( variables['Agent.OS'], 'Darwin' ))
     displayName: 'Install Node.js/npm for MacOS'
 
