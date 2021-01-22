@@ -1,3 +1,6 @@
+
+source .gdb_ignore_errors.py
+
 handle SIGALRM pass noprint nostop
 handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
@@ -17,7 +20,7 @@ end
 # Define $symbol = (type)addr if it exists,  undefined if not
 define symbol_check
   log_to_file symbol.tmp on
-  p $arg0
+  ignore-errors p $arg0
   end_log
 
   shell sed -i -e '/^[^\$]/d' -e 's/^\$[0-9]* =/set $'$arg0' =/' symbol.tmp
