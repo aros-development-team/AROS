@@ -120,6 +120,17 @@ CONFIGUREFILES += $(HOSTGENDIR)/config/host.cfg
 all: $(CONFIGUREFILES) crosstools-toolchain features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.AROS
 
+$(AROSDIR)/.gdbinit: $(SRCDIR)/developer/debug/gdb/_gdbinit
+	@$(ECHO) Copying host .gdbinit for AROS ...
+	@$(CP) $(SRCDIR)/developer/debug/gdb/_gdbinit $(AROSDIR)/.gdbinit ;
+
+$(AROSDIR)/.gdb_ignore_errors.py: $(SRCDIR)/developer/debug/gdb/ignore_errors.py
+	@$(ECHO) Copying host gdb support files  for AROS ...
+	@$(CP) $(SRCDIR)/developer/debug/gdb/ignore_errors.py $(AROSDIR)/.gdb_ignore_errors.py ; \
+
+gdbinit: $(AROSDIR)/.gdbinit $(AROSDIR)/.gdb_ignore_errors.py
+	@$(NOP)
+
 makedirs:
 	@$(RM) $(TOP)/errors
 	@$(FOR) dir in $(AROSDIR) $(GENDIR) $(TOOLDIR) ; do \
@@ -128,9 +139,6 @@ makedirs:
 		$(MKDIR) "$$dir" ; \
 	    else true ; fi ; \
 	done
-	@$(IF) [ ! -f $(AROSDIR)/.gdbinit ]; then \
-	    $(CP) $(SRCDIR)/_gdbinit $(AROSDIR)/.gdbinit ; \
-	else true ; fi
 
 $(PARSEOFFSETS): $(wildcard $(SRCDIR)/tools/parseoffsets/*.[ch])
 	@$(ECHO) Building parseoffsets...
@@ -145,7 +153,7 @@ parsesdkoffsets : $(PARSEOFFSETS)
     fi ; 
 
 # Create the tools that are used to build AROS.
-tools : makedirs mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
+tools : makedirs gdbinit mmake $(GENMFSCRIPT) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
@@ -305,7 +313,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/confi
 	@$(NOP)
 
 # targets which do not generate files or for which a file/directory exists
-.PHONY: default all makedirs tools crosstools features docs clean arch-clean dist-clean install \
+.PHONY: default all makedirs gdbinit tools crosstools features docs clean arch-clean dist-clean install \
 	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts \
 	test kernel boot workbench compiler contrib ports sdk mmake query
 
