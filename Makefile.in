@@ -120,6 +120,8 @@ CONFIGUREFILES += $(HOSTGENDIR)/config/host.cfg
 all: $(CONFIGUREFILES) crosstools-toolchain features
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.AROS
 
+AROSGDBFILES=
+
 $(AROSDIR)/.gdbinit: $(SRCDIR)/developer/debug/gdb/_gdbinit
 	@$(ECHO) Copying host .gdbinit for AROS ...
 	@$(CP) $(SRCDIR)/developer/debug/gdb/_gdbinit $(AROSDIR)/.gdbinit ;
@@ -128,7 +130,11 @@ $(AROSDIR)/.gdb_ignore_errors.py: $(SRCDIR)/developer/debug/gdb/ignore_errors.py
 	@$(ECHO) Copying host gdb support files  for AROS ...
 	@$(CP) $(SRCDIR)/developer/debug/gdb/ignore_errors.py $(AROSDIR)/.gdb_ignore_errors.py ; \
 
-gdbinit: $(AROSDIR)/.gdbinit $(AROSDIR)/.gdb_ignore_errors.py
+ifeq (@aros_flavour@,emulation)
+AROSGDBFILES += $(AROSDIR)/.gdbinit $(AROSDIR)/.gdb_ignore_errors.py
+endif
+
+gdbinit: $(AROSGDBFILES)
 	@$(NOP)
 
 makedirs:
