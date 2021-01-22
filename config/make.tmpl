@@ -62,13 +62,13 @@ endif
 
 #------------------------------------------------------------------------------
 # Strip symbols from the specified file
-%define strip_q strip="$(STRIP)" file=
+%define strip_q stripdebug="$(DEBUG)" strip="$(STRIP)" file=
 	$(Q)$(IF) $(TEST) "%(strip)" != ""; then \
-		$(IF) $(TEST) "$(DEBUG)" = "yes"; then \
+		$(IF) $(TEST) "%(stripdebug)" = "yes"; then \
 			%(strip) %(file) --only-keep-debug -o %(file).dbg ; \
 		fi ; \
 		%(strip) %(file) ; \
-		$(IF) $(TEST) "$(DEBUG)" = "yes"; then \
+		$(IF) $(TEST) "%(stripdebug)" = "yes"; then \
 			$(IF) $(TEST) -s %(file).dbg ; then \
 				$(OBJCOPY) --add-gnu-debuglink=%(file).dbg %(file) ; \
 			fi ; \
@@ -79,7 +79,7 @@ endif
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS))" ldflags="$(strip $(LDFLAGS))" from="$<" to="$@" libs="$(LIBS)" strip="$(STRIP)" objdir="$(GENDIR)/$(CURDIR)" coverageinstr=
+%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS))" ldflags="$(strip $(LDFLAGS))" from="$<" to="$@" libs="$(LIBS)" strip="$(STRIP)" stripdebug="$(DEBUG)" objdir="$(GENDIR)/$(CURDIR)" coverageinstr=
 	$(Q)$(eval LINKTARGET=%(to))
 	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
 	$(Q)$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
@@ -96,7 +96,7 @@ endif
 		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 		exit 1 ; \
 	fi
-	%strip_q strip=%(strip) file=$(LINKTARGET)
+	%strip_q stripdebug="%(stripdebug)" strip="%(strip)" file="$(LINKTARGET)"
 	$(Q)$(IF) $(TEST) "%(coverageinstr)" = "yes"; then \
 		LINKBASEFILES="$(strip $(notdir $(basename %(from))))" ; \
 		$(FOR) covext in $(TARGET_COVERAGEINSTR_EXTS) ; do \
@@ -116,7 +116,7 @@ endif
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" err="$(notdir $@).err" strip=$(STRIP) objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
+%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" err="$(notdir $@).err" strip="$(STRIP)" stripdebug="$(DEBUG)" objs=/A endtag= module="$(MODULE)" ldflags="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)"
 	$(Q)$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
 	$(Q)$(IF) %(cmd) %(ldopts) $(NOSTARTUP_OBJECTS) \
 		$(GENMAP) %(objdir)/%(module).map \
@@ -129,7 +129,7 @@ endif
 		exit 1; \
 	fi
 	$(Q)$(IF) $(TEST) ! -s %(objdir)/%(err) ; then $(RM) %(objdir)/%(err) ; fi
-        %strip_q strip=%(strip) file=$@
+        %strip_q strip=%(strip) stripdebug="%(stripdebug)" file=$@
 %end
 #------------------------------------------------------------------------------
 
@@ -1051,7 +1051,7 @@ $(%(mmake)-MA_TARGETS) : $(%(mmake)-MA_WILDCARD).o : %%(suffix)
 %define rule_link_prog mmake=TMP prog=/A objs=/A ldflags="$(LDFLAGS)" uselibs= \
     usehostlibs= usestartup=yes detach=no nix=no  \
     cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(TARGET_ISA_LDFLAGS)" \
-    strip="$(TARGET_STRIP)" objdir="$(GENDIR)/$(CURDIR)" \
+    strip="$(TARGET_STRIP)" stripdebug="$(DEBUG)" objdir="$(GENDIR)/$(CURDIR)" \
     coverageinstr="$(TARGET_COVERAGEINSTR)"
 
 %(mmake)-link_LD_OPTS := 
@@ -1093,7 +1093,7 @@ endif
 %(prog) : LDFLAGS := $(strip %(ldflags))
 %(prog) : LIBS := $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS) %(usehostlibs))
 %(prog) : %(objs) $(%(mmake)-link_DEPLIBS)
-	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" from="$(OBJS)" ldflags="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$(OBJS)" ldflags="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
 %end
 #------------------------------------------------------------------------------
 
@@ -1104,7 +1104,7 @@ endif
 %define rule_link_progs mmake=TMP progs=/A targetdir="$(AROSDIR)/$(CURDIR)" nix="%(nix)" \
     objdir="$(GENDIR)/$(CURDIR)" ldflags="$(LDFLAGS)" uselibs= usehostlibs= \
     cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS))" \
-    strip="$(TARGET_STRIP)" coverageinstr="$(TARGET_COVERAGEINSTR)" \
+    strip="$(TARGET_STRIP)" stripdebug="$(DEBUG)" coverageinstr="$(TARGET_COVERAGEINSTR)" \
     usestartup=yes detach=no 
 
 %(mmake)-link_LD_OPTS := 
@@ -1140,7 +1140,7 @@ $(%(mmake)-link_PROGS) : OBJDIR := %(objdir)
 $(%(mmake)-link_PROGS) : LDFLAGS := $(strip %(ldflags))
 $(%(mmake)-link_PROGS) : LIBS := $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS) %(usehostlibs))
 $(%(mmake)-link_PROGS) : %(targetdir)/% : %(objdir)/%.o $(%(mmake)-link_DEPLIBS)
-	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" from="$<" ldflags="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$<" ldflags="$(LDFLAGS)" libs="$(LIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
 %end
 #------------------------------------------------------------------------------
 
@@ -1171,7 +1171,9 @@ endif
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
 %define rule_linkmodule mmake=TMP module=/A objs=/A endobj=/A err=/A objdir="$(OBJDIR)" \
-    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" ldflags="$(LDFLAGS)" uselibs= usehostlibs=
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" stripdebug="$(DEBUG)" \
+    ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" ldflags="$(LDFLAGS)" \
+    uselibs= usehostlibs=
 
 %(mmake)_LDFLAGS  := %(ldflags)
 # Make a list of the lib files the programs depend on.
@@ -1205,7 +1207,7 @@ else
                     -L/usr/lib $(addprefix -l,%(usehostlibs))
 endif 
 %(module) : %(objs) %(endobj) $(%(mmake)_DEPLIBS) $(USER_DEPLIBS)
-	%link_module_q cmd="%(cmd)" ldopts="%(ldopts)" err="$(ERR)" endtag="$(ENDTAG)" objs="$(OBJS)" libs="$(LIBS)" objdir="$(OBJDIR)" ldflags="$(LDFLAGS)"
+	%link_module_q cmd="%(cmd)" ldopts="%(ldopts)" err="$(ERR)" endtag="$(ENDTAG)" objs="$(OBJS)" libs="$(LIBS)" objdir="$(OBJDIR)" ldflags="$(LDFLAGS)" stripdebug="%(stripdebug)"
 
 %end
 #------------------------------------------------------------------------------
@@ -1734,6 +1736,8 @@ KERNEL_CXX ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
 endif
 endif
 
+%(mmake)_STRIPDEBUG ?= $(DEBUG)
+
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile_cxx_multi mmake=%(mmake) \
     basenames="$(%(mmake)_CXX_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
@@ -1755,7 +1759,8 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
     objs="$(%(mmake)_OBJS) $(%(mmake)_ARCHOBJS) $(USER_OBJS)" ldflags="$(%(mmake)_LDFLAGS)" \
     uselibs="$(%(mmake)_LIBS)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
-    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" strip="$(%(mmake)_STRIP)" \
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" \
+    strip="$(%(mmake)_STRIP)" stripdebug="$(%(mmake)_STRIPDEBUG)" \
     objdir="$(%(mmake)_OBJDIR)" coverageinstr="$(%(mmake)_COVERAGE)"
 
 endif
@@ -1894,7 +1899,7 @@ endif
     cppflags="$(CPPFLAGS)" \
     cflags="$(CFLAGS)" dflags= \
     cxxflags="$(CXXFLAGS)" dxxflags= \
-    objdir="$(OBJDIR)" moduledir= \
+    objdir="$(OBJDIR)" moduledir= stripdebug="$(DEBUG)" \
     uselibs= usehostlibs= compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)"
 
 # Define metamake targets and their dependencies
@@ -2054,7 +2059,7 @@ endif
 %rule_linkmodule module="$(%(mmake)_MODULE)" objs="$(%(mmake)_OBJS)" \
     endobj= err="$(%(mmake)_ERR)" objdir="%(objdir)" \
     cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" ldflags="$(strip $(LDFLAGS) $(%(mmake)_LDFLAGS) $(%(modname)_LDFLAGS))" \
-    uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
+    uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)" stripdebug="%(stripdebug)"
 
 # Link kernel object file
 %(mmake)_KAUTOLIB := dos intuition layers graphics oop utility expansion keymap
@@ -2107,7 +2112,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
     linklibname= uselibs= usehostlibs= \
     compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
     include_set=includes-all includedir= libdir= \
-    build_abi= build_library=
+    build_abi= build_library= stripdebug="$(DEBUG)"
 
 # We will employ a terrifying, but unavoidable, hack here.
 # genmf has no concept of conditionals (ie %ifeq), and MetaMake
@@ -2556,12 +2561,14 @@ endif
 
 $(%(mmake)%(flavour)_DEFNAME)_LDFLAGS = $(%(mmake)_LDFLAGS)
 
+$(%(mmake)%(flavour)_DEFNAME)_STRIPDEBUG ?= %(stripdebug)
+
 ifeq (%(build_library),M)
 # The module is linked from all the compiled .o files
 %rule_linkmodule module="$(%(mmake)%(flavour)_MODULE)" objs="$(%(mmake)%(flavour)_STARTOBJS) $(%(mmake)%(flavour)_OBJS) $(USER_OBJS)" \
 		 endobj="$(%(mmake)%(flavour)_ENDOBJS)" err="$(%(mmake)%(flavour)_ERR)" objdir="$(%(mmake)%(flavour)_OBJDIR)" \
 		 cmd="$(%(mmake)%(flavour)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" ldflags="$($(%(mmake)%(flavour)_DEFNAME)_LDFLAGS)" \
-		 uselibs="$(%(mmake)%(flavour)_LIBS) $($(%(mmake)%(flavour)_DEFNAME)_LIBS)" usehostlibs="%(usehostlibs)"
+		 uselibs="$(%(mmake)%(flavour)_LIBS) $($(%(mmake)%(flavour)_DEFNAME)_LIBS)" usehostlibs="%(usehostlibs)" stripdebug="$($(%(mmake)%(flavour)_DEFNAME)_STRIPDEBUG)"
 endif
 
 ifeq (%(build_abi),M)
@@ -2656,7 +2663,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix="$(AROSDIR)" \
   linklibname= uselibs= usehostlibs= \
   compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
-  include_set=includes-all includedir= libdir=
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)"
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
@@ -2667,7 +2674,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" funcinstr=%(funcinstr) lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
    include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
-   build_abi=M build_library=M
+   build_abi=M build_library=M stripdebug="%(stripdebug)"
 
 %end
 #------------------------------------------------------------------------------
@@ -2684,7 +2691,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix="$(AROSDIR)" \
   linklibname= uselibs= usehostlibs= \
   compiler=target nostartup=yes archspecific=no \
-  include_set=includes-all includedir= libdir=
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)"
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
@@ -2695,7 +2702,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
   nostartup="%(nostartup)" archspecific="%(archspecific)" \
   include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
-  build_abi=M build_library=
+  build_abi=M build_library= stripdebug="%(stripdebug)"
 
 %end
 #------------------------------------------------------------------------------
@@ -2713,7 +2720,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
   objdir= moduledir= prefix="$(AROSDIR)" \
   uselibs= usehostlibs= \
   compiler=target lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
-  include_set=includes-all includedir= libdir=
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)"
 
 %build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
    modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" \
@@ -2724,7 +2731,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
    nostartup="%(nostartup)" archspecific="%(archspecific)" \
    include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
-   build_abi= build_library=M
+   build_abi= build_library=M stripdebug="%(stripdebug)"
 
 %end
 #------------------------------------------------------------------------------
