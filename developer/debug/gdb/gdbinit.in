@@ -1,6 +1,8 @@
 
 source .gdb_ignore_errors.py
 
+set debug-file-directory %AROSDBGDIR%
+
 handle SIGALRM pass noprint nostop
 handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
@@ -63,7 +65,7 @@ define _debug_init
 
     if $_debug_DebugBase == 0
         if $Debug_ModList == 0
-            set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
+            set $_debug_DebugBase = ((struct IntExecBase *)$AbsExecBase)->DebugBase
             # This is the case for debugging a ROM
             set $_debug_ModList = &($_debug_DebugBase->db_Modules)
         else
