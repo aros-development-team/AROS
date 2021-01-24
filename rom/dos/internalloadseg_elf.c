@@ -345,29 +345,16 @@ static int relocate
         sym = &symtab[ELF_R_SYM(rel->info)];
         p = toreloc->addr + rel->offset;
 
-        if (sym->shindex != SHN_XINDEX)
-            shindex = sym->shindex;
-
-        else {
-            if (symtab_shndx == NULL) {
-                D(bug("[ELF Loader] got symbol with shndx 0xfff, but there's no symtab shndx table\n"));
-                SetIoErr(ERROR_BAD_HUNK);
-                return 0;
-            }
-            shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
-        }
-
         DB2(bug("[ELF Loader] Processing symbol %s\n", sh[shsymtab->link].addr + sym->name));
 
-        switch (shindex)
+        switch (sym->shindex)
         {
-#if (0)
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",
                       (STRPTR)sh[shsymtab->link].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
                 return 0;
-#endif
+
             case SHN_ABS:
                 s = sym->value;
                 break;
@@ -382,6 +369,16 @@ static int relocate
                 /* fall through */
 
             default:
+                if (sym->shindex != SHN_XINDEX)
+                    shindex = sym->shindex;
+                else {
+                    if (symtab_shndx == NULL) {
+                        D(bug("[ELF Loader] got symbol with shndx 0xfff, but there's no symtab shndx table\n"));
+                        SetIoErr(ERROR_BAD_HUNK);
+                        return 0;
+                    }
+                    shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
+                }
                 s = (IPTR)sh[shindex].addr + sym->value;
         }
 
