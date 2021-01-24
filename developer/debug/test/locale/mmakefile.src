@@ -8,13 +8,25 @@ FILES := \
  openlocale
 
 EXEDIR := $(AROS_TESTS)/locale
+CUNITEXEDIR := $(AROS_TESTS)/cunit/locale
 
-#MM- test : test-locale
-#MM- test-quick : test-locale-quick
+#MM- test : test-locale test-locale-formatstring-cunit
+#MM- test-quick : test-locale-quick test-locale-formatstring-cunit-quick
 #MM  test-locale : test-locale-miscfiles
 
 %build_progs mmake=test-locale \
     files=$(FILES) targetdir=$(EXEDIR)
+
+
+USER_CPPFLAGS :=
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS :=
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_prog mmake=test-locale-formatstring-cunit \
+    files=cunit-locale-formatstring targetdir=$(CUNITEXEDIR) \
+    progname=cunit-locale-formatstring uselibs="cunit"
+
 
 %copy_files_q mmake=test-locale-miscfiles files="openlocale.prefs" dst=$(EXEDIR)
 
