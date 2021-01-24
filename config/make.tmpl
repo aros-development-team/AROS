@@ -64,13 +64,15 @@ endif
 # Strip symbols from the specified file
 %define strip_q stripdebug="$(DEBUG)" strip="$(STRIP)" file=
 	$(Q)$(IF) $(TEST) "%(strip)" != ""; then \
+		$(eval DBGTARGET=$(subst $(AROSDIR),$(DBGDIR),%(file))) \
 		$(IF) $(TEST) "%(stripdebug)" = "yes"; then \
-			%(strip) %(file) --only-keep-debug -o %(file).dbg ; \
+			$(MKDIR) "$(dir $(DBGTARGET))" && \
+			%(strip) %(file) --only-keep-debug -o $(DBGTARGET).dbg ; \
 		fi ; \
 		%(strip) %(file) ; \
 		$(IF) $(TEST) "%(stripdebug)" = "yes"; then \
-			$(IF) $(TEST) -s %(file).dbg ; then \
-				$(OBJCOPY) --add-gnu-debuglink=%(file).dbg %(file) ; \
+			$(IF) $(TEST) -s $(DBGTARGET).dbg ; then \
+				$(OBJCOPY) --add-gnu-debuglink=$(DBGTARGET).dbg %(file) ; \
 			fi ; \
 		fi ; \
 	fi

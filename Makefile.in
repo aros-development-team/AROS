@@ -122,9 +122,9 @@ all: $(CONFIGUREFILES) crosstools-toolchain features
 
 AROSGDBFILES=
 
-$(AROSDIR)/.gdbinit: $(SRCDIR)/developer/debug/gdb/_gdbinit
+$(AROSDIR)/.gdbinit: $(SRCDIR)/developer/debug/gdb/gdbinit.in
 	@$(ECHO) Copying host .gdbinit for AROS ...
-	@$(CP) $(SRCDIR)/developer/debug/gdb/_gdbinit $(AROSDIR)/.gdbinit ;
+	@$(SED) "s|\%AROSDBGDIR\%|$(DBGDIR)|g" $< > $@
 
 $(AROSDIR)/.gdb_ignore_errors.py: $(SRCDIR)/developer/debug/gdb/ignore_errors.py
 	@$(ECHO) Copying host gdb support files  for AROS ...

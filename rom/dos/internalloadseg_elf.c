@@ -361,14 +361,13 @@ static int relocate
 
         switch (shindex)
         {
-
+#if (0)
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",
                       (STRPTR)sh[shsymtab->link].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
-
                 return 0;
-
+#endif
             case SHN_ABS:
                 s = sym->value;
                 break;
