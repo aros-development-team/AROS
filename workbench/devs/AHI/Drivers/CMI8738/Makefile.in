@@ -9,6 +9,6 @@ srcdir		= @srcdir@
 DRIVER		= cmi8738.audio
 MODEFILE	= CMI8738
 
-OBJECTS		= driver-init.o cmi8738.o accel.o misc.o interrupt.o pci_wrapper.o
+OBJECTS		= driver-init.o cmi8738hw.o accel.o misc.o interrupt.o pci_wrapper.o
 
 include ../Common/Makefile.common
